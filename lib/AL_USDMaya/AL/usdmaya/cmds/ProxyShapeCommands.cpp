@@ -279,7 +279,7 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
 
   MString populationMaskIncludePath;
   bool connectToTime = true;
-  bool unloaded = false;
+  bool unloaded = database.isFlagSet("-ul");
 
   // extract command args
   if(!database.isFlagSet("-f") || !database.getFlagArgument("-f", 0, filePath))
