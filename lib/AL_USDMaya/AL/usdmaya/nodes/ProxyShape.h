@@ -675,7 +675,11 @@ private:
   MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
   MStatus setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& plugs) override;
   bool isBounded() const override;
+  #if MAYA_API_VERSION < 201700
+  MPxNode::SchedulingType schedulingType() const override { return kSerialize; }
+  #else
   MPxNode::SchedulingType schedulingType() const override { return kSerial; }
+  #endif
   MStatus preEvaluation(const MDGContext & context, const MEvaluationNode& evaluationNode) override;
 
   //--------------------------------------------------------------------------------------------------------------------

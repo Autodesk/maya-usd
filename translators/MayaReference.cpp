@@ -129,7 +129,11 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
           command = MString("referenceQuery -f \"") + fnReference.name() + "\"";
           MGlobal::executeCommand(command, filepath);
           TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update referenceNode=%s prim=%s execute \"%s\"=%s\n",
+#if MAYA_API_VERSION < 201700
+                                              fnReference.name().asChar(),
+#else
                                               fnReference.absoluteName().asChar(),
+#endif
                                               prim.GetPath().GetText(),
                                               command.asChar(),
                                               filepath.asChar());
