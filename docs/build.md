@@ -1,5 +1,4 @@
 # Building
-@todo fabrice/baz to validate
 
 ## Build Requirements
 - This project is buildable, for now only on Linux
@@ -35,6 +34,8 @@ cmake \
       -DOPENGL_gl_LIBRARY='/path/to/libglfw.so'\
       -DGLEW_LOCATION='/path/to/glew'\
       -DUSD_CONFIG_FILE='/path/to/pxrConfig.cmake'\
+      -DGTEST_ROOT='/path/to/googletest'\
+      -DCMAKE_PREFIX_PATH='/path/to/maya/lib/cmake'
       ..
 
 make -j <NUM_CORES> install
