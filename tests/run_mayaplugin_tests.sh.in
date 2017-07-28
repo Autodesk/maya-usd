@@ -1,0 +1,15 @@
+#!/bin/bash
+
+export PXR_WORK_THREAD_LIMIT=-3
+
+export PXR_PLUGINPATH=${CMAKE_BINARY_DIR}/src/schemas/AL/usd/schemas/share/usd/plugins/${SCHEMAS_PACKAGE}/resources:\
+${CMAKE_BINARY_DIR}/src/translators/share/usd/plugins/${TRANSLATORS_PACKAGE}/resources:\
+$PXR_PLUGINPATH
+
+export LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/src/schemas/AL/usd/schemas:\
+${CMAKE_BINARY_DIR}/src/translators:\
+$LD_LIBRARY_PATH
+
+export MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/test_plugin/AL_USDMayaTestPlugin:$MAYA_PLUG_IN_PATH
+
+maya -batch -script "${CMAKE_CURRENT_BINARY_DIR}/run_mayaplugin_tests.mel"

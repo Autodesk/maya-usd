@@ -1,0 +1,1152 @@
+//
+// Copyright 2017 Animal Logic
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.//
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+#include "test_usdmaya.h"
+#include "AL/usdmaya/nodes/ProxyShape.h"
+#include "AL/usdmaya/nodes/Transform.h"
+#include "AL/usdmaya/nodes/TransformationMatrix.h"
+#include "AL/usdmaya/nodes/Layer.h"
+#include "AL/usdmaya/StageCache.h"
+#include "maya/MFnTransform.h"
+#include "maya/MSelectionList.h"
+#include "maya/MGlobal.h"
+#include "maya/MAnimControl.h"
+#include "maya/MItDependencyNodes.h"
+#include "maya/MDagModifier.h"
+#include "maya/MFileIO.h"
+#include "maya/MMatrix.h"
+#include "maya/MPlug.h"
+#include "maya/MFnMatrixData.h"
+
+#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/sdf/types.h"
+#include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usdGeom/xform.h"
+#include "pxr/usd/usdGeom/xformCommonAPI.h"
+
+//#define TEST(X, Y) void X##Y()
+
+//  inline const UsdPrim& prim() const
+//  inline bool hasAnimation() const
+//  inline bool hasAnimatedScale() const
+//  inline bool hasAnimatedShear() const
+//  inline bool hasAnimatedTranslation() const
+//  inline bool hasAnimatedRotation() const
+//  inline bool hasAnimatedMatrix() const
+TEST(Transform, hasAnimation)
+{
+  auto constructTransformChain = [] ()
+  {
+    GfVec3f v3f0(2.0f, 3.0f, 4.0f);
+    GfVec3f v3f1(2.2f, 3.0f, 4.0f);
+    GfVec3d v3d0(2.0f, 3.0f, 4.0f);
+    GfVec3d v3d1(2.2f, 3.0f, 4.0f);
+    GfMatrix4d m40(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
+    GfMatrix4d m41(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16);
+
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomXform a0 = UsdGeomXform::Define(stage, SdfPath("/root"));
+    UsdGeomXform a1 = UsdGeomXform::Define(stage, SdfPath("/root/anim_scale"));
+    UsdGeomXform a2 = UsdGeomXform::Define(stage, SdfPath("/root/anim_shear"));
+    UsdGeomXform a3 = UsdGeomXform::Define(stage, SdfPath("/root/anim_translate"));
+    UsdGeomXform a4 = UsdGeomXform::Define(stage, SdfPath("/root/anim_rotate"));
+    UsdGeomXform a5 = UsdGeomXform::Define(stage, SdfPath("/root/anim_matrix"));
+    UsdTimeCode k0(0);
+    UsdTimeCode k1(1);
+    auto op1 = a1.AddScaleOp(UsdGeomXformOp::PrecisionFloat, TfToken("scale"));
+    auto op2 = a2.AddTransformOp(UsdGeomXformOp::PrecisionDouble, TfToken("shear"));
+    auto op3 = a3.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("translate"));
+    auto op4 = a4.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotate"));
+    auto op5 = a5.AddTransformOp(UsdGeomXformOp::PrecisionDouble, TfToken("transform"));
+    op1.Set(v3f0, k0);
+    op1.Set(v3f1, k1);
+    op2.Set(m40, k0);
+    op2.Set(m41, k1);
+    op3.Set(v3d0, k0);
+    op3.Set(v3d1, k1);
+    op4.Set(v3f0, k0);
+    op4.Set(v3f1, k1);
+    op5.Set(m40, k0);
+    op5.Set(m41, k1);
+    return stage;
+  };
+
+  MFileIO::newFile(true);
+
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_transform_animations.usda";
+  std::string sessionLayerContents;
+
+  // generate some data for the proxy shape
+  {
+    auto stage = constructTransformChain();
+    stage->Export(temp_path, false);
+  }
+
+  MString shapeName;
+  {
+    MFnDagNode fn;
+    MObject xform = fn.create("transform");
+    MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+
+    AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+    // force the stage to load
+    proxy->filePathPlug().setString(temp_path.c_str());
+
+    auto stage = proxy->getUsdStage();
+
+    MDagModifier modifier1;
+    MDGModifier modifier2;
+
+    // construct a chain of transform nodes
+    MObject leafNode = proxy->makeUsdTransforms(stage->GetPrimAtPath(SdfPath("/root")), modifier1, AL::usdmaya::nodes::ProxyShape::kRequested, &modifier2);
+
+    // make sure we get some sane looking values.
+    EXPECT_FALSE(leafNode == MObject::kNullObj);
+    EXPECT_EQ(MStatus(MS::kSuccess), modifier1.doIt());
+    EXPECT_EQ(MStatus(MS::kSuccess), modifier2.doIt());
+
+    MItDependencyNodes it(MFn::kPluginTransformNode);
+    for(;!it.isDone(); it.next())
+    {
+      MObject obj = it.item();
+      MFnDependencyNode fn(obj);
+
+      AL::usdmaya::nodes::Transform* ptr = (AL::usdmaya::nodes::Transform*)fn.userNode();
+      AL::usdmaya::nodes::TransformationMatrix* matrix = ptr->transform();
+      MString str = ptr->primPathPlug().asString();
+
+      if(str == "/root")
+      {
+        EXPECT_FALSE(matrix->hasAnimation());
+        EXPECT_FALSE(matrix->hasAnimatedScale());
+        EXPECT_FALSE(matrix->hasAnimatedShear());
+        EXPECT_FALSE(matrix->hasAnimatedTranslation());
+        EXPECT_FALSE(matrix->hasAnimatedRotation());
+        EXPECT_FALSE(matrix->hasAnimatedMatrix());
+      }
+      else if(str == "/root/anim_scale")
+      {
+        EXPECT_TRUE(matrix->hasAnimation());
+        EXPECT_TRUE(matrix->hasAnimatedScale());
+        EXPECT_FALSE(matrix->hasAnimatedShear());
+        EXPECT_FALSE(matrix->hasAnimatedTranslation());
+        EXPECT_FALSE(matrix->hasAnimatedRotation());
+        EXPECT_FALSE(matrix->hasAnimatedMatrix());
+      }
+      else if(str == "/root/anim_shear")
+      {
+        EXPECT_TRUE(matrix->hasAnimation());
+        EXPECT_FALSE(matrix->hasAnimatedScale());
+        EXPECT_TRUE(matrix->hasAnimatedShear());
+        EXPECT_FALSE(matrix->hasAnimatedTranslation());
+        EXPECT_FALSE(matrix->hasAnimatedRotation());
+        EXPECT_FALSE(matrix->hasAnimatedMatrix());
+      }
+      else if(str == "/root/anim_translate")
+      {
+        EXPECT_TRUE(matrix->hasAnimation());
+        EXPECT_FALSE(matrix->hasAnimatedScale());
+        EXPECT_FALSE(matrix->hasAnimatedShear());
+        EXPECT_TRUE(matrix->hasAnimatedTranslation());
+        EXPECT_FALSE(matrix->hasAnimatedRotation());
+        EXPECT_FALSE(matrix->hasAnimatedMatrix());
+      }
+      else if(str == "/root/anim_rotate")
+      {
+        EXPECT_TRUE(matrix->hasAnimation());
+        EXPECT_FALSE(matrix->hasAnimatedScale());
+        EXPECT_FALSE(matrix->hasAnimatedShear());
+        EXPECT_FALSE(matrix->hasAnimatedTranslation());
+        EXPECT_TRUE(matrix->hasAnimatedRotation());
+        EXPECT_FALSE(matrix->hasAnimatedMatrix());
+      }
+      else if(str == "/root/anim_matrix")
+      {
+        EXPECT_TRUE(matrix->hasAnimation());
+        EXPECT_FALSE(matrix->hasAnimatedScale());
+        EXPECT_FALSE(matrix->hasAnimatedShear());
+        EXPECT_FALSE(matrix->hasAnimatedTranslation());
+        EXPECT_FALSE(matrix->hasAnimatedRotation());
+        EXPECT_TRUE(matrix->hasAnimatedMatrix());
+      }
+    }
+  }
+}
+
+//  inline bool primHasScale() const
+//  inline bool primHasRotation() const
+//  inline bool primHasTranslation() const
+//  inline bool primHasShear() const
+//  inline bool primHasScalePivot() const
+//  inline bool primHasScalePivotTranslate() const
+//  inline bool primHasRotatePivot() const
+//  inline bool primHasRotatePivotTranslate() const
+//  inline bool primHasRotateAxes() const
+//  inline bool primHasPivot() const
+//  inline bool primHasTransform() const
+TEST(Transform, primHas)
+{
+  auto constructTransformChain = [] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomXform a0 = UsdGeomXform::Define(stage, SdfPath("/root"));
+    UsdGeomXform a1 = UsdGeomXform::Define(stage, SdfPath("/root/translate"));
+    UsdGeomXform a2 = UsdGeomXform::Define(stage, SdfPath("/root/pivot"));
+    UsdGeomXform a3 = UsdGeomXform::Define(stage, SdfPath("/root/rotatePivotTranslate"));
+    UsdGeomXform a4 = UsdGeomXform::Define(stage, SdfPath("/root/rotatePivot"));
+    UsdGeomXform a5 = UsdGeomXform::Define(stage, SdfPath("/root/rotateAxis"));
+    UsdGeomXform a6 = UsdGeomXform::Define(stage, SdfPath("/root/scalePivotTranslate"));
+    UsdGeomXform a7 = UsdGeomXform::Define(stage, SdfPath("/root/scalePivot"));
+    UsdGeomXform a8 = UsdGeomXform::Define(stage, SdfPath("/root/shear"));
+    UsdGeomXform a9 = UsdGeomXform::Define(stage, SdfPath("/root/scale"));
+    UsdGeomXform aA = UsdGeomXform::Define(stage, SdfPath("/root/transform"));
+
+    a1.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("translate"));
+
+    a2.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("pivot"));
+
+    a3.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivotTranslate"));
+
+    a4.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivot"));
+    a4.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivot"), true);
+
+    a5.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotateAxis"));
+
+    a6.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivotTranslate"));
+
+    a7.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivot"));
+    a7.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivot"), true);
+
+    a8.AddTransformOp(UsdGeomXformOp::PrecisionDouble, TfToken("shear"));
+
+    a9.AddScaleOp(UsdGeomXformOp::PrecisionFloat, TfToken("scale"));
+
+    aA.AddTransformOp(UsdGeomXformOp::PrecisionDouble, TfToken("transform"));
+
+    return stage;
+  };
+
+  MFileIO::newFile(true);
+
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_transform_primHas.usda";
+  std::string sessionLayerContents;
+
+  // generate some data for the proxy shape
+  {
+    auto stage = constructTransformChain();
+    stage->Export(temp_path, false);
+  }
+
+  MString shapeName;
+  {
+    MFnDagNode fn;
+    MObject xform = fn.create("transform");
+    MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+
+    AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+    // force the stage to load
+    proxy->filePathPlug().setString(temp_path.c_str());
+
+    auto stage = proxy->getUsdStage();
+
+    MDagModifier modifier1;
+    MDGModifier modifier2;
+
+    // construct a chain of transform nodes
+    MObject leafNode = proxy->makeUsdTransforms(stage->GetPrimAtPath(SdfPath("/root")), modifier1, AL::usdmaya::nodes::ProxyShape::kRequested, &modifier2);
+
+    // make sure we get some sane looking values.
+    EXPECT_FALSE(leafNode == MObject::kNullObj);
+    EXPECT_EQ(MStatus(MS::kSuccess), modifier1.doIt());
+    EXPECT_EQ(MStatus(MS::kSuccess), modifier2.doIt());
+
+    MItDependencyNodes it(MFn::kPluginTransformNode);
+    for(;!it.isDone(); it.next())
+    {
+      MObject obj = it.item();
+      MFnDependencyNode fn(obj);
+
+      AL::usdmaya::nodes::Transform* ptr = (AL::usdmaya::nodes::Transform*)fn.userNode();
+      AL::usdmaya::nodes::TransformationMatrix* matrix = ptr->transform();
+      MString str = ptr->primPathPlug().asString();
+
+      if(str == "/root")
+      {
+        EXPECT_FALSE(matrix->primHasScale());
+        EXPECT_FALSE(matrix->primHasRotation());
+        EXPECT_FALSE(matrix->primHasTranslation());
+        EXPECT_FALSE(matrix->primHasShear());
+        EXPECT_FALSE(matrix->primHasScalePivot());
+        EXPECT_FALSE(matrix->primHasScalePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotatePivot());
+        EXPECT_FALSE(matrix->primHasRotatePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotateAxes());
+        EXPECT_FALSE(matrix->primHasPivot());
+        EXPECT_FALSE(matrix->primHasTransform());
+      }
+      else if(str == "/root/translate")
+      {
+        EXPECT_FALSE(matrix->primHasScale());
+        EXPECT_FALSE(matrix->primHasRotation());
+        EXPECT_TRUE(matrix->primHasTranslation());
+        EXPECT_FALSE(matrix->primHasShear());
+        EXPECT_FALSE(matrix->primHasScalePivot());
+        EXPECT_FALSE(matrix->primHasScalePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotatePivot());
+        EXPECT_FALSE(matrix->primHasRotatePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotateAxes());
+        EXPECT_FALSE(matrix->primHasPivot());
+        EXPECT_FALSE(matrix->primHasTransform());
+      }
+      else if(str == "/root/pivot")
+      {
+        EXPECT_FALSE(matrix->primHasScale());
+        EXPECT_FALSE(matrix->primHasRotation());
+        EXPECT_FALSE(matrix->primHasTranslation());
+        EXPECT_FALSE(matrix->primHasShear());
+        EXPECT_FALSE(matrix->primHasScalePivot());
+        EXPECT_FALSE(matrix->primHasScalePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotatePivot());
+        EXPECT_FALSE(matrix->primHasRotatePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotateAxes());
+        EXPECT_TRUE(matrix->primHasPivot());
+        EXPECT_FALSE(matrix->primHasTransform());
+      }
+      else if(str == "/root/rotatePivotTranslate")
+      {
+        EXPECT_FALSE(matrix->primHasScale());
+        EXPECT_FALSE(matrix->primHasRotation());
+        EXPECT_FALSE(matrix->primHasTranslation());
+        EXPECT_FALSE(matrix->primHasShear());
+        EXPECT_FALSE(matrix->primHasScalePivot());
+        EXPECT_FALSE(matrix->primHasScalePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotatePivot());
+        EXPECT_TRUE(matrix->primHasRotatePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotateAxes());
+        EXPECT_FALSE(matrix->primHasPivot());
+        EXPECT_FALSE(matrix->primHasTransform());
+      }
+      else if(str == "/root/rotatePivot")
+      {
+        EXPECT_FALSE(matrix->primHasScale());
+        EXPECT_FALSE(matrix->primHasRotation());
+        EXPECT_FALSE(matrix->primHasTranslation());
+        EXPECT_FALSE(matrix->primHasShear());
+        EXPECT_FALSE(matrix->primHasScalePivot());
+        EXPECT_FALSE(matrix->primHasScalePivotTranslate());
+        EXPECT_TRUE(matrix->primHasRotatePivot());
+        EXPECT_FALSE(matrix->primHasRotatePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotateAxes());
+        EXPECT_FALSE(matrix->primHasPivot());
+        EXPECT_FALSE(matrix->primHasTransform());
+      }
+      else if(str == "/root/rotateAxis")
+      {
+        EXPECT_FALSE(matrix->primHasScale());
+        EXPECT_FALSE(matrix->primHasRotation());
+        EXPECT_FALSE(matrix->primHasTranslation());
+        EXPECT_FALSE(matrix->primHasShear());
+        EXPECT_FALSE(matrix->primHasScalePivot());
+        EXPECT_FALSE(matrix->primHasScalePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotatePivot());
+        EXPECT_FALSE(matrix->primHasRotatePivotTranslate());
+        EXPECT_TRUE(matrix->primHasRotateAxes());
+        EXPECT_FALSE(matrix->primHasPivot());
+        EXPECT_FALSE(matrix->primHasTransform());
+      }
+      else if(str == "/root/scalePivotTranslate")
+      {
+        EXPECT_FALSE(matrix->primHasScale());
+        EXPECT_FALSE(matrix->primHasRotation());
+        EXPECT_FALSE(matrix->primHasTranslation());
+        EXPECT_FALSE(matrix->primHasShear());
+        EXPECT_FALSE(matrix->primHasScalePivot());
+        EXPECT_TRUE(matrix->primHasScalePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotatePivot());
+        EXPECT_FALSE(matrix->primHasRotatePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotateAxes());
+        EXPECT_FALSE(matrix->primHasPivot());
+        EXPECT_FALSE(matrix->primHasTransform());
+      }
+      else if(str == "/root/scalePivot")
+      {
+        EXPECT_FALSE(matrix->primHasScale());
+        EXPECT_FALSE(matrix->primHasRotation());
+        EXPECT_FALSE(matrix->primHasTranslation());
+        EXPECT_FALSE(matrix->primHasShear());
+        EXPECT_TRUE(matrix->primHasScalePivot());
+        EXPECT_FALSE(matrix->primHasScalePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotatePivot());
+        EXPECT_FALSE(matrix->primHasRotatePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotateAxes());
+        EXPECT_FALSE(matrix->primHasPivot());
+        EXPECT_FALSE(matrix->primHasTransform());
+      }
+      else if(str == "/root/shear")
+      {
+        EXPECT_FALSE(matrix->primHasScale());
+        EXPECT_FALSE(matrix->primHasRotation());
+        EXPECT_FALSE(matrix->primHasTranslation());
+        EXPECT_TRUE(matrix->primHasShear());
+        EXPECT_FALSE(matrix->primHasScalePivot());
+        EXPECT_FALSE(matrix->primHasScalePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotatePivot());
+        EXPECT_FALSE(matrix->primHasRotatePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotateAxes());
+        EXPECT_FALSE(matrix->primHasPivot());
+        EXPECT_FALSE(matrix->primHasTransform());
+      }
+      else if(str == "/root/scale")
+      {
+        EXPECT_TRUE(matrix->primHasScale());
+        EXPECT_FALSE(matrix->primHasRotation());
+        EXPECT_FALSE(matrix->primHasTranslation());
+        EXPECT_FALSE(matrix->primHasShear());
+        EXPECT_FALSE(matrix->primHasScalePivot());
+        EXPECT_FALSE(matrix->primHasScalePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotatePivot());
+        EXPECT_FALSE(matrix->primHasRotatePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotateAxes());
+        EXPECT_FALSE(matrix->primHasPivot());
+        EXPECT_FALSE(matrix->primHasTransform());
+      }
+      else if(str == "/root/transform")
+      {
+        EXPECT_FALSE(matrix->primHasScale());
+        EXPECT_FALSE(matrix->primHasRotation());
+        EXPECT_FALSE(matrix->primHasTranslation());
+        EXPECT_FALSE(matrix->primHasShear());
+        EXPECT_FALSE(matrix->primHasScalePivot());
+        EXPECT_FALSE(matrix->primHasScalePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotatePivot());
+        EXPECT_FALSE(matrix->primHasRotatePivotTranslate());
+        EXPECT_FALSE(matrix->primHasRotateAxes());
+        EXPECT_FALSE(matrix->primHasPivot());
+        EXPECT_TRUE(matrix->primHasTransform());
+      }
+    }
+  }
+}
+
+//  static bool pushVector(const MVector& input, UsdGeomXformOp& op, UsdTimeCode timeCode = UsdTimeCode::Default());
+//  static bool pushPoint(const MPoint& input, UsdGeomXformOp& op, UsdTimeCode timeCode = UsdTimeCode::Default());
+//  static bool pushRotation(const MEulerRotation& input, UsdGeomXformOp& op, UsdTimeCode timeCode = UsdTimeCode::Default());
+//  static void pushDouble(const double input, UsdGeomXformOp& op, UsdTimeCode timeCode = UsdTimeCode::Default());
+//  static bool pushShear(const MVector& input, UsdGeomXformOp& op, UsdTimeCode timeCode = UsdTimeCode::Default());
+//  static bool pushMatrix(const MMatrix& input, UsdGeomXformOp& op, UsdTimeCode timeCode = UsdTimeCode::Default());
+//  void pushToPrim();
+TEST(Transform, primValuesPushedToUsdMatchMaya)
+{
+  auto constructTransformChain = [] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomXform a = UsdGeomXform::Define(stage, SdfPath("/tm"));
+
+    std::vector<UsdGeomXformOp> ops;
+    ops.push_back(a.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("translate")));
+    ops.push_back(a.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivotTranslate")));
+    ops.push_back(a.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivot")));
+    ops.push_back(a.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotate")));
+    ops.push_back(a.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotateAxis")));
+    ops.push_back(a.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivot"), true));
+    ops.push_back(a.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivotTranslate")));
+    ops.push_back(a.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivot")));
+    ops.push_back(a.AddTransformOp(UsdGeomXformOp::PrecisionDouble, TfToken("shear")));
+    ops.push_back(a.AddScaleOp(UsdGeomXformOp::PrecisionFloat, TfToken("scale")));
+    ops.push_back(a.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivot"), true));
+    a.SetXformOpOrder(ops);
+
+    return stage;
+  };
+
+  MFileIO::newFile(true);
+
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_transform_primValuesPushedToUsdMatchMaya.usda";
+  std::string sessionLayerContents;
+
+  // generate some data for the proxy shape
+  {
+    auto stage = constructTransformChain();
+    stage->Export(temp_path, false);
+  }
+
+  MString shapeName;
+  {
+    MFnDagNode fn;
+    MObject xform = fn.create("transform");
+    MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+
+    AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+    // force the stage to load
+    proxy->filePathPlug().setString(temp_path.c_str());
+
+    auto stage = proxy->getUsdStage();
+
+    MDagModifier modifier1;
+    MDGModifier modifier2;
+
+    // construct a chain of transform nodes
+    MObject leafNode = proxy->makeUsdTransforms(stage->GetPrimAtPath(SdfPath("/tm")), modifier1, AL::usdmaya::nodes::ProxyShape::kRequested, &modifier2);
+
+    // make sure we get some sane looking values.
+    EXPECT_FALSE(leafNode == MObject::kNullObj);
+    EXPECT_EQ(MStatus(MS::kSuccess), modifier1.doIt());
+    EXPECT_EQ(MStatus(MS::kSuccess), modifier2.doIt());
+
+    MFnTransform fnx(leafNode);
+
+    AL::usdmaya::nodes::Transform* transformNode = (AL::usdmaya::nodes::Transform*)fnx.userNode();
+
+    transformNode->pushToPrimPlug().setValue(true);
+    transformNode->readAnimatedValuesPlug().setValue(false);
+
+    UsdGeomXform usd_xform(stage->GetPrimAtPath(SdfPath("/tm")));
+
+    bool reset;
+    std::vector<UsdGeomXformOp> ops = usd_xform.GetOrderedXformOps(&reset);
+    EXPECT_EQ(11, ops.size());
+
+    UsdGeomXformOp& translate = ops[0];
+    UsdGeomXformOp& rotatePivotTranslate = ops[1];
+    UsdGeomXformOp& rotatePivot = ops[2];
+    UsdGeomXformOp& rotate = ops[3];
+    UsdGeomXformOp& rotateAxis = ops[4];
+    UsdGeomXformOp& rotatePivotINV = ops[5];
+    UsdGeomXformOp& scalePivotTranslate = ops[6];
+    UsdGeomXformOp& scalePivot = ops[7];
+    UsdGeomXformOp& shear = ops[8];
+    UsdGeomXformOp& scale = ops[9];
+    UsdGeomXformOp& scalePivotINV = ops[10];
+
+    auto randf = [] (float mn, float mx)
+    {
+      return mn + (mx - mn)*(float(rand()) / RAND_MAX);
+    };
+
+    MPlug wsmPlug = fnx.findPlug("m");
+
+    // Throw some random values at the Maya transform, and ensure those values are correctly passed into USD
+    for(int i = 0; i < 100; ++i)
+    {
+      // translate
+      {
+        MVector v(randf(-20.0f, 20.0f), randf(-20.0f, 20.0f), randf(-20.0f, 20.0f));
+        fnx.setTranslation(v, MSpace::kTransform);
+
+        GfVec3d t(0,0,0);
+        translate.Get(&t);
+
+        stage->Export(temp_path, false);
+        EXPECT_NEAR(t[0], v.x, 1e-5f);
+        EXPECT_NEAR(t[1], v.y, 1e-5f);
+        EXPECT_NEAR(t[2], v.z, 1e-5f);
+      }
+
+      // rotatePivotTranslate
+      {
+        MVector v(randf(-20.0f, 20.0f), randf(-20.0f, 20.0f), randf(-20.0f, 20.0f));
+
+        fnx.setRotatePivotTranslation(v, MSpace::kTransform);
+
+        GfVec3f t(0, 0, 0);
+        rotatePivotTranslate.Get(&t);
+
+        EXPECT_NEAR(t[0], v.x, 1e-5f);
+        EXPECT_NEAR(t[1], v.y, 1e-5f);
+        EXPECT_NEAR(t[2], v.z, 1e-5f);
+      }
+
+      // rotatePivot
+      {
+        MPoint v(randf(-20.0f, 20.0f), randf(-20.0f, 20.0f), randf(-20.0f, 20.0f));
+
+        fnx.setRotatePivot(v, MSpace::kTransform, false);
+
+        GfVec3f t(0, 0, 0);
+        rotatePivot.Get(&t);
+        EXPECT_NEAR(t[0], v.x, 1e-5f);
+        EXPECT_NEAR(t[1], v.y, 1e-5f);
+        EXPECT_NEAR(t[2], v.z, 1e-5f);
+
+        rotatePivotINV.Get(&t);
+        EXPECT_NEAR(t[0], v.x, 1e-5f);
+        EXPECT_NEAR(t[1], v.y, 1e-5f);
+        EXPECT_NEAR(t[2], v.z, 1e-5f);
+      }
+
+      // rotate
+      {
+        MEulerRotation r(randf(-20.0f, 20.0f), randf(-20.0f, 20.0f), randf(-20.0f, 20.0f));
+
+        fnx.setRotation(r);
+
+        GfVec3f t(0, 0, 0);
+        rotate.Get(&t);
+
+        const float radToDeg = 180.0f / 3.141592654f;
+        EXPECT_NEAR(t[0], r.x * radToDeg, 1e-2f);
+        EXPECT_NEAR(t[1], r.y * radToDeg, 1e-2f);
+        EXPECT_NEAR(t[2], r.z * radToDeg, 1e-2f);
+      }
+
+      // rotateAxis
+      {
+        MEulerRotation r(randf(-20.0f, 20.0f), randf(-20.0f, 20.0f), randf(-20.0f, 20.0f));
+        MQuaternion q = r.asQuaternion();
+
+        fnx.setRotateOrientation(q, MSpace::kTransform, false);
+
+        GfVec3f t(0, 0, 0);
+        rotateAxis.Get(&t);
+
+        MQuaternion xyz;
+        const float degToRad = 3.141592654f / 180.0f;
+        xyz = MEulerRotation(t[0] * degToRad, t[1] * degToRad, t[2] * degToRad);
+
+
+        const double dp = (q.x * xyz.x) + (q.y * xyz.y) + (q.z * xyz.z) + (q.w * xyz.w);
+        if(dp < 0)
+        {
+          q.x = -q.x;
+          q.y = -q.y;
+          q.z = -q.z;
+          q.w = -q.w;
+        }
+
+        EXPECT_NEAR(xyz.x, q.x, 1e-5f);
+        EXPECT_NEAR(xyz.y, q.y, 1e-5f);
+        EXPECT_NEAR(xyz.z, q.z, 1e-5f);
+        EXPECT_NEAR(xyz.w, q.w, 1e-5f);
+      }
+
+      // scalePivotTranslate
+      {
+        MVector v(randf(-20.0f, 20.0f), randf(-20.0f, 20.0f), randf(-20.0f, 20.0f));
+
+        fnx.setScalePivotTranslation(v, MSpace::kTransform);
+
+        GfVec3f t(0, 0, 0);
+        scalePivotTranslate.Get(&t);
+
+        EXPECT_NEAR(t[0], v.x, 1e-5f);
+        EXPECT_NEAR(t[1], v.y, 1e-5f);
+        EXPECT_NEAR(t[2], v.z, 1e-5f);
+      }
+
+      // scalePivot
+      {
+        MPoint v(randf(-20.0f, 20.0f), randf(-20.0f, 20.0f), randf(-20.0f, 20.0f));
+
+        fnx.setScalePivot(v, MSpace::kTransform, false);
+
+        GfVec3f t(0, 0, 0);
+        scalePivot.Get(&t);
+
+        EXPECT_NEAR(t[0], v.x, 1e-5f);
+        EXPECT_NEAR(t[1], v.y, 1e-5f);
+        EXPECT_NEAR(t[2], v.z, 1e-5f);
+
+        scalePivotINV.Get(&t);
+
+        EXPECT_NEAR(t[0], v.x, 1e-5f);
+        EXPECT_NEAR(t[1], v.y, 1e-5f);
+        EXPECT_NEAR(t[2], v.z, 1e-5f);
+      }
+
+      // scale
+      {
+        double v[] = { randf(-20.0f, 20.0f), randf(-20.0f, 20.0f), randf(-20.0f, 20.0f)};
+
+        fnx.setScale(v);
+
+        GfVec3f t(0, 0, 0);
+        scale.Get(&t);
+
+        EXPECT_NEAR(t[0], v[0], 1e-5f);
+        EXPECT_NEAR(t[1], v[1], 1e-5f);
+        EXPECT_NEAR(t[2], v[2], 1e-5f);
+      }
+
+      // Just sanity check that the matrices in maya and usd evaluate the same result
+      MMatrix wsm;
+      MObject oMatrix;
+      wsmPlug.getValue(oMatrix);
+      MPlug wsmPlug = fnx.findPlug("m");
+      MFnMatrixData fnMatrix(oMatrix);
+      wsm = fnMatrix.matrix();
+
+      GfMatrix4d transform;
+      bool resetsXformStack = false;
+      usd_xform.GetLocalTransformation(&transform, &resetsXformStack);
+
+
+      EXPECT_NEAR(transform[0][0], wsm[0][0], 1e-3f);
+      EXPECT_NEAR(transform[0][1], wsm[0][1], 1e-3f);
+      EXPECT_NEAR(transform[0][2], wsm[0][2], 1e-3f);
+      EXPECT_NEAR(transform[0][3], wsm[0][3], 1e-3f);
+
+      EXPECT_NEAR(transform[1][0], wsm[1][0], 1e-3f);
+      EXPECT_NEAR(transform[1][1], wsm[1][1], 1e-3f);
+      EXPECT_NEAR(transform[1][2], wsm[1][2], 1e-3f);
+      EXPECT_NEAR(transform[1][3], wsm[1][3], 1e-3f);
+
+      EXPECT_NEAR(transform[2][0], wsm[2][0], 1e-3f);
+      EXPECT_NEAR(transform[2][1], wsm[2][1], 1e-3f);
+      EXPECT_NEAR(transform[2][2], wsm[2][2], 1e-3f);
+      EXPECT_NEAR(transform[2][3], wsm[2][3], 1e-3f);
+
+      EXPECT_NEAR(transform[3][0], wsm[3][0], 1e-3f);
+      EXPECT_NEAR(transform[3][1], wsm[3][1], 1e-3f);
+      EXPECT_NEAR(transform[3][2], wsm[3][2], 1e-3f);
+      EXPECT_NEAR(transform[3][3], wsm[3][3], 1e-3f);
+    }
+  }
+}
+
+//  static bool readVector(MVector& result, const UsdGeomXformOp& op, UsdTimeCode timeCode = UsdTimeCode::Default());
+//  static bool readShear(MVector& result, const UsdGeomXformOp& op, UsdTimeCode timeCode = UsdTimeCode::Default());
+//  static bool readPoint(MPoint& result, const UsdGeomXformOp& op, UsdTimeCode timeCode = UsdTimeCode::Default());
+//  static bool readRotation(MEulerRotation& result, const UsdGeomXformOp& op, UsdTimeCode timeCode = UsdTimeCode::Default());
+//  static double readDouble(const UsdGeomXformOp& op, UsdTimeCode timeCode = UsdTimeCode::Default());
+//  static bool readMatrix(MMatrix& result, const UsdGeomXformOp& op, UsdTimeCode timeCode = UsdTimeCode::Default());
+//  void updateToTime(const UsdTimeCode& time);
+TEST(Transform, animationValuesFromUsdAreCorrectlyRead)
+{
+  std::vector<GfVec3d> translateValues;
+  std::vector<GfVec3f> scaleValues;
+  std::vector<GfVec3f> rotateValues;
+  auto constructTransformChain = [&translateValues, &scaleValues, &rotateValues] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomXform a = UsdGeomXform::Define(stage, SdfPath("/tm"));
+
+    std::vector<UsdGeomXformOp> ops;
+    ops.push_back(a.AddTranslateOp(UsdGeomXformOp::PrecisionDouble, TfToken("translate")));
+    ops.push_back(a.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotate")));
+    ops.push_back(a.AddScaleOp(UsdGeomXformOp::PrecisionFloat, TfToken("scale")));
+    a.SetXformOpOrder(ops);
+
+    UsdGeomXformOp& translate = ops[0];
+    UsdGeomXformOp& rotate = ops[1];
+    UsdGeomXformOp& scale = ops[2];
+
+
+    auto randf = [] (float mn, float mx)
+    {
+      return mn + (mx - mn)*(float(rand()) / RAND_MAX);
+    };
+
+    // set some random animated values in the usd file
+    for(int i = 0; i < 50; ++i)
+    {
+      UsdTimeCode time(i);
+      GfVec3d t(randf(-20.0f, 20.0f), randf(-20.0f, 20.0f), randf(-20.0f, 20.0f));
+      GfVec3f r(randf(-20.0f, 20.0f), randf(-20.0f, 20.0f), randf(-20.0f, 20.0f));
+      GfVec3f s(randf(.1f, 20.0f), randf(.1f, 20.0f), randf(.1f, 20.0f));
+
+      translateValues.push_back(t);
+      scaleValues.push_back(s);
+      rotateValues.push_back(r);
+
+      translate.Set(t, time);
+      scale.Set(s, time);
+      rotate.Set(r, time);
+    }
+
+
+    return stage;
+  };
+
+  MFileIO::newFile(true);
+
+  // In 'off' (DG) mode, setCurrentTime does not seem to trigger an eval.
+  // Force it to 'parallel' for now.
+  MGlobal::executeCommand(MString("evaluationManager -mode \"parallel\";"));
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_transform_animationValuesFromUsdAreCorrectlyRead.usda";
+  std::string sessionLayerContents;
+
+  // generate some data for the proxy shape
+  {
+    auto stage = constructTransformChain();
+    stage->Export(temp_path, false);
+  }
+
+  MString shapeName;
+  {
+    MFnDagNode fn;
+    MObject xform = fn.create("transform");
+    MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+
+    AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+    {
+      MGlobal::executeCommand(MString("connectAttr -f \"time1.outTime\" \"") +  fn.name() + ".time\";");
+    }
+
+    // force the stage to load
+    proxy->filePathPlug().setString(temp_path.c_str());
+
+    auto stage = proxy->getUsdStage();
+
+    MDagModifier modifier1;
+    MDGModifier modifier2;
+
+    // construct a chain of transform nodes
+    MObject leafNode = proxy->makeUsdTransforms(stage->GetPrimAtPath(SdfPath("/tm")), modifier1, AL::usdmaya::nodes::ProxyShape::kRequested, &modifier2);
+
+    // make sure we get some sane looking values.
+    EXPECT_FALSE(leafNode == MObject::kNullObj);
+    EXPECT_EQ(MStatus(MS::kSuccess), modifier1.doIt());
+    EXPECT_EQ(MStatus(MS::kSuccess), modifier2.doIt());
+
+    MFnTransform fnx(leafNode);
+
+    AL::usdmaya::nodes::Transform* transformNode = (AL::usdmaya::nodes::Transform*)fnx.userNode();
+    AL::usdmaya::nodes::TransformationMatrix* transformMatrix = transformNode->transform();
+
+    transformNode->pushToPrimPlug().setValue(false);
+    transformNode->readAnimatedValuesPlug().setValue(true);
+
+    UsdGeomXform usd_xform(stage->GetPrimAtPath(SdfPath("/tm")));
+
+    bool reset;
+    std::vector<UsdGeomXformOp> ops = usd_xform.GetOrderedXformOps(&reset);
+    EXPECT_EQ(3, ops.size());
+
+    MPlug wsmPlug = fnx.findPlug("m");
+
+    // if we don't re-enable the refresh for this test, the scene won't get updated when calling view frame
+    if(MGlobal::kInteractive == MGlobal::mayaState())
+      MGlobal::executeCommand("refresh -suspend false");
+
+    {
+      MTime time(-1, MTime::uiUnit());
+      MAnimControl::setCurrentTime(time);
+    }
+
+    // set some random animated values in the usd file
+    for(int i = 0; i < 50; ++i)
+    {
+      MTime time(i, MTime::uiUnit());
+      MAnimControl::setCurrentTime(time);
+
+      MObject oMatrix;
+      wsmPlug.getValue(oMatrix);
+      MFnMatrixData fnMatrix(oMatrix);
+      fnMatrix.matrix();
+
+      EXPECT_NEAR(transformMatrix->getTimeCode().GetValue(), i, 1e-5f);
+
+      MVector T = fnx.getTranslation(MSpace::kTransform);
+      EXPECT_NEAR(translateValues[i][0], T.x, 1e-5f);
+      EXPECT_NEAR(translateValues[i][1], T.y, 1e-5f);
+      EXPECT_NEAR(translateValues[i][2], T.z, 1e-5f);
+
+      const float degToRad = 3.141592654f / 180.0f;
+      MEulerRotation rotation;
+      fnx.getRotation(rotation);
+      EXPECT_NEAR(degToRad * rotateValues[i][0], rotation.x, 1e-5f);
+      EXPECT_NEAR(degToRad * rotateValues[i][1], rotation.y, 1e-5f);
+      EXPECT_NEAR(degToRad * rotateValues[i][2], rotation.z, 1e-5f);
+
+      double s[3];
+      fnx.getScale(s);
+      EXPECT_NEAR(scaleValues[i][0], s[0], 1e-5f);
+      EXPECT_NEAR(scaleValues[i][1], s[1], 1e-5f);
+      EXPECT_NEAR(scaleValues[i][2], s[2], 1e-5f);
+    }
+
+    {
+      auto timePlug = transformNode->timePlug();
+      auto timeOffsetPlug = transformNode->timeOffsetPlug();
+      auto timeScalarPlug = transformNode->timeScalarPlug();
+      auto outTimePlug = transformNode->outTimePlug();
+
+      // no retest with a time offset of 2
+      MTime timeOffset(2.0, MTime::uiUnit());
+      timeOffsetPlug.setValue(timeOffset);
+      for(int i = 2; i < 50; ++i)
+      {
+        MTime time(i, MTime::uiUnit());
+        MGlobal::viewFrame(time);
+
+        MObject oMatrix;
+        wsmPlug.getValue(oMatrix);
+        MFnMatrixData fnMatrix(oMatrix);
+        fnMatrix.matrix();
+
+        EXPECT_NEAR(transformMatrix->getTimeCode().GetValue(), i - 2, 1e-5f);
+
+        MTime offsetTime = outTimePlug.asMTime();
+        EXPECT_NEAR(offsetTime.value(), time.value() - 2.0, 1e-5f);
+
+        MVector T = fnx.getTranslation(MSpace::kTransform);
+        EXPECT_NEAR(translateValues[i - 2][0], T.x, 1e-5f);
+        EXPECT_NEAR(translateValues[i - 2][1], T.y, 1e-5f);
+        EXPECT_NEAR(translateValues[i - 2][2], T.z, 1e-5f);
+
+        const float degToRad = 3.141592654f / 180.0f;
+        MEulerRotation rotation;
+        fnx.getRotation(rotation);
+        EXPECT_NEAR(degToRad * rotateValues[i - 2][0], rotation.x, 1e-5f);
+        EXPECT_NEAR(degToRad * rotateValues[i - 2][1], rotation.y, 1e-5f);
+        EXPECT_NEAR(degToRad * rotateValues[i - 2][2], rotation.z, 1e-5f);
+
+        double s[3];
+        fnx.getScale(s);
+        EXPECT_NEAR(scaleValues[i - 2][0], s[0], 1e-5f);
+        EXPECT_NEAR(scaleValues[i - 2][1], s[1], 1e-5f);
+        EXPECT_NEAR(scaleValues[i - 2][2], s[2], 1e-5f);
+      }
+
+      // no retest with a time scalar of 2
+      timeScalarPlug.setValue(2.0);
+      MTime zeroTime(0.0, MTime::uiUnit());
+      timeOffsetPlug.setValue(zeroTime);
+      for(int i = 0; i < 25; ++i)
+      {
+        MTime time(i, MTime::uiUnit());
+        MGlobal::viewFrame(time);
+
+        MObject oMatrix;
+        wsmPlug.getValue(oMatrix);
+        MFnMatrixData fnMatrix(oMatrix);
+        fnMatrix.matrix();
+
+        EXPECT_NEAR(transformMatrix->getTimeCode().GetValue(), i * 2.0, 1e-5f);
+
+        MTime offsetTime = outTimePlug.asMTime();
+        EXPECT_NEAR(offsetTime.value(), time.value() * 2.0, 1e-5f);
+
+        MVector T = fnx.getTranslation(MSpace::kTransform);
+        EXPECT_NEAR(translateValues[i * 2][0], T.x, 1e-5f);
+        EXPECT_NEAR(translateValues[i * 2][1], T.y, 1e-5f);
+        EXPECT_NEAR(translateValues[i * 2][2], T.z, 1e-5f);
+
+        const float degToRad = 3.141592654f / 180.0f;
+        MEulerRotation rotation;
+        fnx.getRotation(rotation);
+        EXPECT_NEAR(degToRad * rotateValues[i * 2][0], rotation.x, 1e-5f);
+        EXPECT_NEAR(degToRad * rotateValues[i * 2][1], rotation.y, 1e-5f);
+        EXPECT_NEAR(degToRad * rotateValues[i * 2][2], rotation.z, 1e-5f);
+
+        double s[3];
+        fnx.getScale(s);
+        EXPECT_NEAR(scaleValues[i * 2][0], s[0], 1e-5f);
+        EXPECT_NEAR(scaleValues[i * 2][1], s[1], 1e-5f);
+        EXPECT_NEAR(scaleValues[i * 2][2], s[2], 1e-5f);
+      }
+      timeScalarPlug.setValue(1.0);
+    }
+
+    // now perform the same tests, but this time by modifying the time params on the proxy shape
+    {
+      auto timeOffsetPlug = proxy->timeOffsetPlug();
+      auto timeScalarPlug = proxy->timeScalarPlug();
+      auto outTimePlug = transformNode->outTimePlug();
+
+      // no retest with a time offset of 2
+      MTime timeOffset(2.0, MTime::uiUnit());
+      timeOffsetPlug.setValue(timeOffset);
+      for(int i = 2; i < 50; ++i)
+      {
+        MTime time(i, MTime::uiUnit());
+        MGlobal::viewFrame(time);
+
+        MObject oMatrix;
+        wsmPlug.getValue(oMatrix);
+        MFnMatrixData fnMatrix(oMatrix);
+        fnMatrix.matrix();
+
+        EXPECT_NEAR(transformMatrix->getTimeCode().GetValue(), i - 2, 1e-5f);
+
+        MTime offsetTime = outTimePlug.asMTime();
+        EXPECT_NEAR(offsetTime.value(), time.value() - 2.0, 1e-5f);
+
+        MVector T = fnx.getTranslation(MSpace::kTransform);
+        EXPECT_NEAR(translateValues[i - 2][0], T.x, 1e-5f);
+        EXPECT_NEAR(translateValues[i - 2][1], T.y, 1e-5f);
+        EXPECT_NEAR(translateValues[i - 2][2], T.z, 1e-5f);
+
+        const float degToRad = 3.141592654f / 180.0f;
+        MEulerRotation rotation;
+        fnx.getRotation(rotation);
+        EXPECT_NEAR(degToRad * rotateValues[i - 2][0], rotation.x, 1e-5f);
+        EXPECT_NEAR(degToRad * rotateValues[i - 2][1], rotation.y, 1e-5f);
+        EXPECT_NEAR(degToRad * rotateValues[i - 2][2], rotation.z, 1e-5f);
+
+        double s[3];
+        fnx.getScale(s);
+        EXPECT_NEAR(scaleValues[i - 2][0], s[0], 1e-5f);
+        EXPECT_NEAR(scaleValues[i - 2][1], s[1], 1e-5f);
+        EXPECT_NEAR(scaleValues[i - 2][2], s[2], 1e-5f);
+      }
+
+      // no retest with a time scalar of 2
+      timeScalarPlug.setValue(2.0);
+      MTime zeroTime(0.0, MTime::uiUnit());
+      timeOffsetPlug.setValue(zeroTime);
+      for(int i = 0; i < 25; ++i)
+      {
+        MTime time(i, MTime::uiUnit());
+        MGlobal::viewFrame(time);
+
+        MObject oMatrix;
+        wsmPlug.getValue(oMatrix);
+        MFnMatrixData fnMatrix(oMatrix);
+        fnMatrix.matrix();
+
+        EXPECT_NEAR(transformMatrix->getTimeCode().GetValue(), i * 2.0, 1e-5f);
+
+        MTime offsetTime = outTimePlug.asMTime();
+        EXPECT_NEAR(offsetTime.value(), time.value() * 2.0, 1e-5f);
+
+        MVector T = fnx.getTranslation(MSpace::kTransform);
+        EXPECT_NEAR(translateValues[i * 2][0], T.x, 1e-5f);
+        EXPECT_NEAR(translateValues[i * 2][1], T.y, 1e-5f);
+        EXPECT_NEAR(translateValues[i * 2][2], T.z, 1e-5f);
+
+        const float degToRad = 3.141592654f / 180.0f;
+        MEulerRotation rotation;
+        fnx.getRotation(rotation);
+        EXPECT_NEAR(degToRad * rotateValues[i * 2][0], rotation.x, 1e-5f);
+        EXPECT_NEAR(degToRad * rotateValues[i * 2][1], rotation.y, 1e-5f);
+        EXPECT_NEAR(degToRad * rotateValues[i * 2][2], rotation.z, 1e-5f);
+
+        double s[3];
+        fnx.getScale(s);
+        EXPECT_NEAR(scaleValues[i * 2][0], s[0], 1e-5f);
+        EXPECT_NEAR(scaleValues[i * 2][1], s[1], 1e-5f);
+        EXPECT_NEAR(scaleValues[i * 2][2], s[2], 1e-5f);
+      }
+      timeScalarPlug.setValue(1.0);
+    }
+
+    if(MGlobal::kInteractive == MGlobal::mayaState())
+      MGlobal::executeCommand("refresh -suspend true");
+  }
+}
+
+//  inline UsdTimeCode getTimeCode()
+//  void enableReadAnimatedValues(bool enabled);
+//  inline bool readAnimatedValues() const
+//  inline bool pushToPrimEnabled() const
+//  void enablePushToPrim(bool enabled);
+TEST(Transform, getTimeCode)
+{
+  auto constructTransformChain = [] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomXform a = UsdGeomXform::Define(stage, SdfPath("/tm"));
+    return stage;
+  };
+
+  MFileIO::newFile(true);
+
+  // In 'off' (DG) mode, setCurrentTime does not seem to trigger an eval.
+  // Force it to 'parallel' for now.
+  MGlobal::executeCommand(MString("evaluationManager -mode \"parallel\";"));
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_transform_getTimeCode.usda";
+  std::string sessionLayerContents;
+
+  // generate some data for the proxy shape
+  {
+    auto stage = constructTransformChain();
+    stage->Export(temp_path, false);
+  }
+  MGlobal::viewFrame(-10);
+
+  MString shapeName;
+  {
+    MFnDagNode fn;
+    MObject xform = fn.create("transform");
+    MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+
+    AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+    {
+      MGlobal::executeCommand(MString("connectAttr -f \"time1.outTime\" \"") +  fn.name() + ".time\";");
+    }
+
+    // force the stage to load
+    proxy->filePathPlug().setString(temp_path.c_str());
+
+    auto stage = proxy->getUsdStage();
+
+    MDagModifier modifier1;
+    MDGModifier modifier2;
+
+    // construct a chain of transform nodes
+    MObject leafNode = proxy->makeUsdTransforms(stage->GetPrimAtPath(SdfPath("/tm")), modifier1, AL::usdmaya::nodes::ProxyShape::kRequested, &modifier2);
+
+    // make sure we get some sane looking values.
+    EXPECT_FALSE(leafNode == MObject::kNullObj);
+    EXPECT_EQ(MStatus(MS::kSuccess), modifier1.doIt());
+    EXPECT_EQ(MStatus(MS::kSuccess), modifier2.doIt());
+
+    MFnTransform fnx(leafNode);
+    AL::usdmaya::nodes::Transform* transformNode = (AL::usdmaya::nodes::Transform*)fnx.userNode();
+
+    AL::usdmaya::nodes::TransformationMatrix* transformMatrix = transformNode->transform();
+
+    transformNode->pushToPrimPlug().setValue(false);
+    transformNode->readAnimatedValuesPlug().setValue(false);
+    EXPECT_FALSE(transformMatrix->pushToPrimEnabled());
+    EXPECT_FALSE(transformMatrix->readAnimatedValues());
+
+    // if we don't re-enable the refresh for this test, the scene won't get updated when calling view frame
+    if(MGlobal::kInteractive == MGlobal::mayaState())
+      MGlobal::executeCommand("refresh -suspend false");
+
+    EXPECT_EQ(UsdTimeCode::Default(), transformMatrix->getTimeCode());
+
+    transformNode->pushToPrimPlug().setValue(false);
+    transformNode->readAnimatedValuesPlug().setValue(true);
+    EXPECT_FALSE(transformMatrix->pushToPrimEnabled());
+    EXPECT_TRUE(transformMatrix->readAnimatedValues());
+
+    MTime time(42, MTime::uiUnit());
+    MAnimControl::setCurrentTime(time);
+    MAnimControl::setCurrentTime(time);
+
+    EXPECT_EQ(UsdTimeCode(42), transformMatrix->getTimeCode());
+
+    if(MGlobal::kInteractive == MGlobal::mayaState())
+      MGlobal::executeCommand("refresh -suspend true");
+  }
+}
+
+// Need to test the behaviour of the transform node when the animation data present is from Matrices rather than
+// TRS components.
+TEST(Transform, matrixAnimationChannels)
+{
+  AL_USDMAYA_UNTESTED;
+}
+
+//  TransformationMatrix();
+//  TransformationMatrix(const UsdPrim& prim);
+//  void setPrim(const UsdPrim& prim);
+//  inline void setLocalTranslationOffset(const MVector& localTranslateOffset)
+//  void initialiseToPrim(bool readFromPrim = true, Transform* node = 0);
+//  inline bool pushPrimToMatrix() const
+

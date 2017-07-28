@@ -1,0 +1,18 @@
+AL_USDMaya
+Copyright 2017 Animal Logic Pty Ltd
+
+This product includes software developed at Animal Logic Pty Ltd (http://www.animallogic.com/)
+
+
+============================================================
+USD
+============================================================
+
+Universal Scene Description   
+Copyright 2016 Pixar
+   
+All rights reserved.
+   
+This product includes software developed at:
+       
+Pixar (http://www.pixar.com/).

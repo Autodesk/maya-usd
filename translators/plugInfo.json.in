@@ -1,0 +1,21 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "AL::usdmaya::fileio::translators::MayaReference": {
+                        "bases": ["AL::usdmaya::fileio::translators::TranslatorBase"]
+                    },
+                    "AL::usdmaya::fileio::translators::CameraTranslator": {
+                        "bases": ["AL::usdmaya::fileio::translators::TranslatorBase"]
+                    }
+		}
+            },
+            "LibraryPath": "${LIBRARY_LOCATION}/@CMAKE_SHARED_LIBRARY_PREFIX@@TRANSLATORS_PACKAGE@@CMAKE_SHARED_LIBRARY_SUFFIX@",
+            "Name": "@TRANSLATORS_PACKAGE@",
+            "ResourcePath": "resources",
+            "Root": "..",
+            "Type": "library"
+        }
+    ]
+}

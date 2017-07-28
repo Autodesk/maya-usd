@@ -1,0 +1,68 @@
+#usda 1.0
+(
+    """ This file contains an example schemata for code generation using
+        usdGenSchema.
+    """
+    subLayers = [
+        @@USD_SCHEMA_PATH@@
+    ]
+) 
+
+over "GLOBAL" (
+    customData = {
+        string libraryName        = "@SCHEMAS_PACKAGE@"
+        string libraryPath        = "."
+        string libraryPrefix      = "AL_usd_"#This AL_ is here to get around that the Jinja template doesn't generate a template that supports namespaces. If we had a AL namespace then I could remove this AL.
+        string tokensPrefix       = "@SCHEMAS_TOKENS_PREFIX@"
+    }
+) {
+}
+###################################################################################################
+
+class ALMayaReference "ALMayaReference"(
+  doc = "Data used to import a maya reference."
+  inherits = </Typed>
+  customData = {
+        string className = "MayaReference"
+        string fileName = "MayaReference"
+      }
+)
+{
+  asset mayaReference(
+    doc = "Path to the maya reference."
+  )
+  string mayaNamespace (
+    doc = "Namespace which the maya reference will be imported under."
+  )
+}
+
+###################################################################################################
+
+class ALHostDrivenTransformInfo "ALHostDrivenTransformInfo" (
+  doc = "Connection info for transforms"
+  inherits = </Typed>
+  customData = {
+    string className = "HostDrivenTransformInfo"
+    string fileName = "HostDrivenTransformInfo"
+  }
+)
+{
+  rel targetTransforms;
+  uniform string[] transformSourceNodes;
+
+  uniform string[] scaleAttributes;
+  uniform int[]    scaleAttributeIndices;
+
+  uniform string[] rotateAttributes;
+  uniform int[]    rotateAttributeIndices;
+
+  uniform string[] translateAttributes;
+  uniform int[]    translateAttributeIndices;
+
+  uniform string[] rotateOrderAttributes;
+  uniform int[]    rotateOrderAttributeIndices;
+
+  uniform string[] visibilitySourceNodes;
+  uniform string[] visibilityAttributes;
+  uniform int[]    visibilityAttributeIndices;
+}
