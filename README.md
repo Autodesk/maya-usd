@@ -28,6 +28,7 @@ Email us at **usdmaya@al.com.au**. We may set up a google group or some other fo
 + [Import Export](docs/importExport.md)
 + [Asset Resolution and versioning](docs/assetresolution.md)
 + [Workflows](docs/workflows.md)
++ [Example Plugins](https://github.com/AnimalLogic/StudioExample/README.md)
 
 
 ## How is the repository layed out?
