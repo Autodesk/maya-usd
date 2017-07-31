@@ -30,6 +30,9 @@ Email us at **usdmaya@al.com.au**. We may set up a google group or some other fo
 + [Workflows](docs/workflows.md)
 + [Example Plugins](https://github.com/AnimalLogic/StudioExample/README.md)
 
+## Developers Documentation
+
+[Source code documentation](https://animallogic.github.io/AL_USDMaya/)
 
 ## How is the repository layed out?
 
