@@ -22,6 +22,7 @@ cd $TMP_DIR &&\
             -DMAYA_LOCATION=$MAYA_LOCATION \
             -DGTEST_ROOT=$BUILD_DIR \
             -DUSD_CONFIG_FILE=$BUILD_DIR/pxrConfig.cmake \
+            -DCMAKE_PREFIX_PATH=$MAYA_LOCATION/lib/cmake \
             ..
       make -j ${BUILD_PROCS} install
       ctest -V
