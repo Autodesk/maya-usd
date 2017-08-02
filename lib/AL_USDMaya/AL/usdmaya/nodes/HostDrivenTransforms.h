@@ -28,6 +28,13 @@ namespace AL {
 namespace usdmaya {
 namespace nodes {
 
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  The AL::usdmaya::nodes::HostDrivenTransforms relays Maya animated transform data including translate, scale,
+///         rotate and visibility to USD prims. It works by plugging inputs onto these "driven" attributes and outDrivenTransformsData
+///         to inDrivenTransformsData of AL::usdmaya::node::ProxyShape. AL::usdmaya::node::ProxyShape is in charge of computing
+///         and pushing combined transform matrix into USD prims assigned here by drivenPrimPaths.
+/// \ingroup nodes
+//----------------------------------------------------------------------------------------------------------------------
 class HostDrivenTransforms
   : public MPxNode
   , public maya::NodeHelper
