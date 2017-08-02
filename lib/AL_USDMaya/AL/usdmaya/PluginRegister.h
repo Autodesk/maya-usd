@@ -24,6 +24,7 @@
 #include "AL/usdmaya/cmds/DebugCommands.h"
 #include "AL/usdmaya/cmds/LayerCommands.h"
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
+#include "AL/usdmaya/cmds/ProxyShapeSelectCommands.h"
 #include "AL/usdmaya/cmds/UnloadPrim.h"
 #include "AL/usdmaya/fileio/Export.h"
 #include "AL/usdmaya/fileio/ExportTranslator.h"
@@ -84,6 +85,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ActivatePrim);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeSelect);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePostSelect);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ConfigureSelectionDatabase);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::InternalProxyShapeSelect);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::UsdDebugCommand);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
@@ -118,6 +120,7 @@ template<typename AFnPlugin>
 MStatus unregisterPlugin(AFnPlugin& plugin)
 {
   MStatus status;
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ConfigureSelectionDatabase);
   AL_UNREGISTER_COMMAND(plugin, AL::maya::CommandGuiListGen);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::InternalProxyShapeSelect);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePostSelect);

@@ -69,3 +69,26 @@ AL_usdmaya_ProxyShapeSelect -cl "AL_usdmaya_ProxyShape1";
 There is one final flag: -i/-internal. Please do not use (It will probably cause a crash!)
 [The -i/-internal flag prevents changes to Maya's global selection list. This is occasionally needed internally within the USD Maya plugin, when the proxy shape is listening to state changes caused by the MEL command select, or via the API call MGlobal::setActiveSelectionList. 
 The behaviour of this flag is driven by internal requirements, so no guarantee will be given about its behaviour in future]
+
+### AL_usdmaya_ConfigureSelectionDatabase Overview
+AL_usdmaya_ConfigureSelectionDatabase Overview:
+  This command configures the proxy shapes selection database's state. The selection database store paths that determine which prim paths can be selected.
+
+ Through this command you can disable the SelectionDatabase which will make everything selectable, enabling the selection database makes everything unselectable except for the usd prim and their children that have the selection tag in their properties.
+
++ -rs   / -restrictSelection      : If true it enables the selection restriction, if False the there will be no selection restriction
++ -ps   / -printSelectables       : Prints which prims are are being tracked as selectable.
+
+
+  Enable the selection restriction
+  ```
+  AL_usdmaya_ConfigureSelectionDatabase -rs true "AL_usdmaya_ProxyShape1"
+  ```
+  Disable the selection restriction
+  ```
+  AL_usdmaya_ConfigureSelectionDatabase -rs true "AL_usdmaya_ProxyShape1"
+  ```
+  Print the restriction state of the SelectionDB and all of the prims that are tagged as selectable
+  ```
+  AL_usdmaya_ConfigureSelectionDatabase -ps "AL_usdmaya_ProxyShape1"
+  ``` 

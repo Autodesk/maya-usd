@@ -4,6 +4,16 @@
             "Info": {
                 "Types": {
                     "AL::usdmaya::fileio::translators::TranslatorBase": {}
+                },
+                "SdfMetadata": {
+                    "AL_usdmaya_selectable": {
+                        "appliesTo": [
+                            "prims"
+                        ], 
+                        "default": "", 
+                        "documentation": "Stores the state of the prims selectability", 
+                        "type": "token"
+                    }
                 }
             },
             "Name": "AL.usdmaya",

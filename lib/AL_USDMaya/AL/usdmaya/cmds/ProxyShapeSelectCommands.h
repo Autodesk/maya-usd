@@ -1,0 +1,58 @@
+//
+// Copyright 2017 Animal Logic
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.//
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+#pragma once
+#include "AL/usdmaya/fileio/ImportParams.h"
+#include "maya/MPxCommand.h"
+#include "maya/MSelectionList.h"
+
+#include "pxr/pxr.h"
+#include "pxr/usd/usd/stage.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace AL {
+namespace usdmaya {
+namespace cmds {
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  Modifies the SelectDatabase owned by the ProxyShape. These modifications typically affects if prims are
+///         are selectable or not.
+/// \ingroup commands
+//----------------------------------------------------------------------------------------------------------------------
+class ConfigureSelectionDatabase
+  : public ProxyShapeCommandBase
+{
+private:
+  nodes::ProxyShape* m_proxy;
+  bool m_hasRequestedRestriction = false;
+  bool m_printSelection = false;
+public:
+  AL_MAYA_DECLARE_COMMAND();
+private:
+  bool isUndoable() const override;
+  MStatus doIt(const MArgList& args) override;
+  MStatus undoIt() override;
+  MStatus redoIt() override;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+} // cmds
+} // usdmaya
+} // AL
+//----------------------------------------------------------------------------------------------------------------------
+
+
+

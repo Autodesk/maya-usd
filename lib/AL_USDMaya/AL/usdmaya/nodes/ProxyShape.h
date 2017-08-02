@@ -21,6 +21,7 @@
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
+#include "AL/usdmaya/SelectableDB.h"
 
 #include "maya/MPxSurfaceShape.h"
 #include "maya/MEventMessage.h"
@@ -37,6 +38,7 @@
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/sdf/notice.h"
 #include <stack>
+#include <functional>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -170,6 +172,30 @@ public:
 private:
   SdfPathVector m_selected;
 };
+
+//typedef functions
+struct  HierarchyIterationLogic
+{
+  HierarchyIterationLogic():
+      preIteration(nullptr),
+      iteration(nullptr),
+      postIteration(nullptr)
+  {}
+
+  std::function<void()> preIteration;
+  std::function<void(const fileio::TransformIterator& transformIterator,const UsdPrim& prim)> iteration;
+  std::function<void()> postIteration;
+};
+
+struct FindSelectablePrimsLogic : public HierarchyIterationLogic
+{
+  SdfPathVector newSelectables;
+  SdfPathVector removeSelectables;
+};
+
+
+typedef const HierarchyIterationLogic*  HierarchyIterationLogics[2];
+
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A custom proxy shape node that attaches itself to a USD file, and then renders it.
@@ -511,8 +537,19 @@ public:
   /// \brief  deserialises the translator context
   void deserialiseTranslatorContext();
 
+  /// \brief aggregates logic that needs to iterate through the hierarchy looking for properties/metdata on prims
+  void findTaggedPrims();
+
+  void findTaggedPrims(const HierarchyIterationLogics& iterationLogics);
+
   /// \brief  searches for the excluded geometry
   void findExcludedGeometry();
+
+  /// \brief searches for paths which are selectable
+  void findSelectablePrims();
+
+  //// \brief iterates the prim hierarchy calling pre/iterate/post like functions that are stored in the passed in objects
+  void iteratePrimHierarchy();
 
   /// \brief  returns the plugin translator registry assigned to this shape
   /// \return the translator registry
@@ -628,11 +665,41 @@ public:
   inline void setChangedSelectionState(bool v)
     { m_hasChangedSelection = v; }
 
+  /// \brief Checks to see if a passed in path is Selectable. This takes into account
+  ///        the selection restriction flag
+  /// \param[in] path which will be checked to see if it is selectable
+  /// \return true if the path is selectable
+  bool isPathSelectable(const SdfPath& path) const;
+
+  /// \brief Returns if the selection is restricted
+  /// \return true if the restricted selection is enabled
+  bool isSelectionRestricted() const
+    {return m_isRestrictedSelectionEnabled; }
+
+  /// \brief Enables the restriction of the selectable paths
+  void restrictSelection()
+    { m_isRestrictedSelectionEnabled = true; }
+
+  /// \brief Disables the restriction of the selectable paths
+  void unrestrictSelection()
+    { m_isRestrictedSelectionEnabled = false; }
+
+  /// \brief Returns the SelectionDatabase owned by the ProxyShape
+  /// \return ASelectableDB owned by the ProxyShape
+  AL::usdmaya::SelectableDB& selectableDB()
+    { return m_selectableDB; }
+
+  /// \brief Returns the SelectionDatabase owned by the ProxyShape
+  /// \return A constant SelectableDB owned by the ProxyShape
+  const AL::usdmaya::SelectableDB& selectableDB() const
+    { return const_cast<ProxyShape*>(this)->selectableDB(); }
+
 private:
   static void onSelectionChanged(void* ptr);
   bool removeAllSelectedNodes(SelectionUndoHelper& helper);
   void removeTransformRefs(const std::vector<std::pair<SdfPath, MObject>>& removedRefs, TransformReason reason);
   void insertTransformRefs(const std::vector<std::pair<SdfPath, MObject>>& removedRefs, TransformReason reason);
+
   void constructExcludedPrims();
 
   MObject makeUsdTransformChain_internal(
@@ -790,7 +857,11 @@ private:
     }
 
 private:
+  AL::usdmaya::SelectableDB m_selectableDB;
+  HierarchyIterationLogics m_hierarchyIterationLogics;
+  HierarchyIterationLogic m_findExcludedPrims;
   SelectionList m_selectionList;
+  FindSelectablePrimsLogic m_findSelectablePrims;
   SdfPathVector m_selectedPaths;
   std::vector<SdfPath> m_paths;
   std::vector<UsdPrim> m_prims;
@@ -811,11 +882,13 @@ private:
   SdfPath m_changedPath;
   SdfPathVector m_variantSwitchedPrims;
   UsdImagingGLHdEngine* m_engine = 0;
+
   uint32_t m_engineRefCount = 0;
   bool m_compositionHasChanged = false;
   bool m_drivenTransformsDirty = false;
   bool m_pleaseIgnoreSelection = false;
   bool m_hasChangedSelection = false;
+  bool m_isRestrictedSelectionEnabled = false; //< If the restrictable selection is true, then the SelectableDB determines what prims are selectable or not.
 };
 
 //----------------------------------------------------------------------------------------------------------------------

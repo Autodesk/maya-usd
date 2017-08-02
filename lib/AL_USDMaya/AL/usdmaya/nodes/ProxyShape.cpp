@@ -21,6 +21,7 @@
 #endif
 
 #include "AL/maya/CodeTimings.h"
+
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/StageCache.h"
@@ -136,6 +137,7 @@ MObject ProxyShape::m_emission = MObject::kNullObj;
 MObject ProxyShape::m_shininess = MObject::kNullObj;
 MObject ProxyShape::m_serializedRefCounts = MObject::kNullObj;
 MObject ProxyShape::m_version = MObject::kNullObj;
+
 
 //----------------------------------------------------------------------------------------------------------------------
 Layer* ProxyShape::getLayer()
@@ -293,7 +295,6 @@ void ProxyShape::constructGLImagingEngine()
       excludedGeometryPaths.assign(m_excludedTaggedGeometry.begin(), m_excludedTaggedGeometry.end());
       excludedGeometryPaths.insert(excludedGeometryPaths.end(), m_excludedGeometry.begin(), m_excludedGeometry.end());
 
-      //
       m_engine = new UsdImagingGLHdEngine(m_path, excludedGeometryPaths);
     }
   }
@@ -417,6 +418,69 @@ ProxyShape::ProxyShape()
   m_objectsChangedNoticeKey = TfNotice::Register(me, &ProxyShape::onObjectsChanged, m_stage);
   m_editTargetChanged = TfNotice::Register(me, &ProxyShape::onEditTargetChanged, m_stage);
 
+
+  m_findExcludedPrims.preIteration = [this]() {
+    m_excludedTaggedGeometry.clear();
+  };
+  m_findExcludedPrims.iteration = [this]( const fileio::TransformIterator& transformIterator,
+                                          const UsdPrim& prim) {
+
+    bool excludeGeo = false;
+    if(prim.GetMetadata(Metadata::excludeFromProxyShape, &excludeGeo))
+    {
+      if (excludeGeo)
+      {
+        m_excludedTaggedGeometry.push_back(prim.GetPrimPath());
+      }
+    }
+
+    // If prim has exclusion tag or is a descendent of a prim with it, create as Maya geo
+    if (excludeGeo or primHasExcludedParent(prim))
+    {
+      VtValue schemaName(fileio::ALExcludedPrimSchema.GetString());
+      prim.SetCustomDataByKey(fileio::ALSchemaType, schemaName);
+    }
+  };
+  m_findExcludedPrims.postIteration = [this]() {
+    constructExcludedPrims();
+  };
+
+
+  m_findSelectablePrims.preIteration = [this]() {
+    m_findSelectablePrims.newSelectables.clear();
+    m_findSelectablePrims.removeSelectables.clear();
+  };
+  m_findSelectablePrims.iteration = [this]
+                                    (const fileio::TransformIterator& transformIterator,const UsdPrim& prim) {
+    TfToken seletablePropertyToken;
+    bool hasSelectability = prim.GetMetadata<TfToken>(Metadata::selectability, &seletablePropertyToken);
+    if(hasSelectability)
+    {
+      //Check if this prim is unselectable
+      if(seletablePropertyToken == Metadata::selectable)
+      {
+        m_findSelectablePrims.newSelectables.push_back(prim.GetPath());
+      }
+      else if(m_selectableDB.isPathSelectable(prim.GetPath()) && seletablePropertyToken != Metadata::selectable)
+      {
+        m_findSelectablePrims.removeSelectables.push_back(prim.GetPath());
+      }
+    }
+  };
+  m_findSelectablePrims.postIteration = [this]() {
+    if(m_findSelectablePrims.removeSelectables.size() > 0)
+    {
+      m_selectableDB.removePathsAsSelectable(m_findSelectablePrims.removeSelectables);
+    }
+
+    if(m_findSelectablePrims.newSelectables.size() > 0)
+    {
+      m_selectableDB.addPathsAsSelectable(m_findSelectablePrims.newSelectables);
+    }
+  };
+
+  m_hierarchyIterationLogics[0] = &m_findExcludedPrims;
+  m_hierarchyIterationLogics[1] = &m_findSelectablePrims;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -652,6 +716,66 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     strstr << "Breakdown for Variant Switch:\n";
     maya::Profiler::printReport(strstr);
   }
+
+  SdfPathVector newSelectables;
+  SdfPathVector removeSelectables;
+  auto recordSelectablePrims = [&newSelectables, &removeSelectables, this] (const SdfPath& objectPath, const UsdPrim& prim){
+    if(!prim.IsValid())
+    {
+      return;
+    }
+
+    for( auto entry : prim.GetAllAuthoredMetadata() )
+    {
+      std::cout << "e " << entry.first << " v: " << entry.second << std::endl;
+    }
+
+    TfToken selectablePropertyValue;
+    if(prim.GetMetadata(Metadata::selectability, &selectablePropertyValue))
+    {
+      //Check if this prim is unselectable
+      if(selectablePropertyValue == Metadata::selectable)
+      {
+        newSelectables.push_back(prim.GetPath());
+      }
+      else if(m_selectableDB.isPathSelectable(prim.GetPath()) && selectablePropertyValue != Metadata::selectable)
+      {
+        removeSelectables.push_back(prim.GetPath());
+      }
+    }
+  };
+
+  const SdfPathVector& resyncedPaths = notice.GetResyncedPaths();
+  for(const SdfPath& path : resyncedPaths)
+  {
+    UsdPrim newPrim = m_stage->GetPrimAtPath(path);
+    recordSelectablePrims(path, newPrim);
+  }
+
+  const SdfPathVector& changedInfoOnlyPaths = notice.GetChangedInfoOnlyPaths();
+  for(const SdfPath& path : changedInfoOnlyPaths)
+  {
+    UsdPrim changedPrim;
+    if(path.IsPropertyPath())
+    {
+      changedPrim = m_stage->GetPrimAtPath(path.GetParentPath());
+    }
+    else
+    {
+      changedPrim = m_stage->GetPrimAtPath(path);
+    }
+    recordSelectablePrims(path, changedPrim);
+  }
+
+  if(!removeSelectables.empty())
+  {
+    m_selectableDB.removePathsAsSelectable(removeSelectables);
+  }
+
+  if(!newSelectables.empty())
+  {
+    m_selectableDB.addPathsAsSelectable(newSelectables);
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -700,7 +824,6 @@ std::vector<UsdPrim> ProxyShape::huntForNativeNodesUnderPrim(
     SdfPath startPath,
     fileio::translators::TranslatorManufacture& manufacture)
 {
-
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::huntForNativeNodesUnderPrim\n");
   std::vector<UsdPrim> prims;
   fileio::SchemaPrimsUtils utils(manufacture);
@@ -759,15 +882,12 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
                                          entry.oldPath.GetString().c_str(),
                                          entry.oldIdentifier.c_str(),
                                          path.GetText());
-
           if(!m_compositionHasChanged)
           {
             TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::Already in a composition change state. Ignoring \n");
             m_changedPath = path;
           }
-
           m_compositionHasChanged = true;
-
           onPrePrimChanged(path, m_variantSwitchedPrims);
         }
       }
@@ -913,10 +1033,7 @@ void ProxyShape::reloadStage(MPlug& plug)
   if(m_stage && !MFileIO::isOpeningFile())
   {
     AL_BEGIN_PROFILE_SECTION(PostLoadProcess);
-      AL_BEGIN_PROFILE_SECTION(FindExcludedGeometry);
-        findExcludedGeometry();
-      AL_END_PROFILE_SECTION();
-
+      findTaggedPrims();
       // execute the post load process to import any custom prims
       cmds::ProxyShapePostLoadProcess::initialise(this);
 
@@ -1016,13 +1133,51 @@ bool ProxyShape::primHasExcludedParent(UsdPrim prim)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+
+void ProxyShape::findTaggedPrims()
+{
+  findTaggedPrims(m_hierarchyIterationLogics);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::findTaggedPrims(const HierarchyIterationLogics& iterationLogics)
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::iteratePrimHierarchy\n");
+  if(!m_stage)
+    return;
+
+  for(auto hl : iterationLogics)
+  {
+    hl->preIteration();
+  }
+
+  MDagPath m_parentPath;
+  for(fileio::TransformIterator it(m_stage, m_parentPath); !it.done(); it.next())
+  {
+    const UsdPrim& prim = it.prim();
+    if(!prim.IsValid())
+      continue;
+
+    for(auto hl : iterationLogics)
+    {
+      hl->iteration(it, prim);
+    }
+  }
+
+  for(auto hl : iterationLogics)
+  {
+    hl->postIteration();
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::findExcludedGeometry()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::findExcludedGeometry\n");
   if(!m_stage)
     return;
 
-  m_excludedTaggedGeometry.clear();
+  m_findExcludedPrims.preIteration();
   MDagPath m_parentPath;
 
   for(fileio::TransformIterator it(m_stage, m_parentPath); !it.done(); it.next())
@@ -1030,24 +1185,32 @@ void ProxyShape::findExcludedGeometry()
     const UsdPrim& prim = it.prim();
     if(!prim.IsValid())
       continue;
-
-    bool excludeGeo = false;
-    if(prim.GetMetadata(Metadata::excludeFromProxyShape, &excludeGeo))
-    {
-      if (excludeGeo)
-      {
-        m_excludedTaggedGeometry.push_back(prim.GetPrimPath());
-      }
-    }
-
-    // If prim has exclusion tag or is a descendent of a prim with it, create as Maya geo
-    if (excludeGeo or primHasExcludedParent(prim))
-    {
-      VtValue schemaName(fileio::ALExcludedPrimSchema.GetString());
-      prim.SetCustomDataByKey(fileio::ALSchemaType, schemaName);
-    }
+    m_findExcludedPrims.iteration(it, prim);
   }
-  constructExcludedPrims();
+
+  m_findExcludedPrims.postIteration();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::findSelectablePrims()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::findSelectablePrims\n");
+  if(!m_stage)
+    return;
+
+  m_findSelectablePrims.preIteration();
+
+  MDagPath m_parentPath;
+  for(fileio::TransformIterator it(m_stage, m_parentPath); !it.done(); it.next())
+  {
+    const UsdPrim& prim = it.prim();
+    if(!prim.IsValid())
+      continue;
+
+    m_findSelectablePrims.iteration(it, prim);
+  }
+
+  m_findSelectablePrims.postIteration();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1392,6 +1555,16 @@ void ProxyShape::cleanupTransformRefs()
     }
   }
 }
+
+bool ProxyShape::isPathSelectable(const SdfPath& path) const
+{
+  if(m_isRestrictedSelectionEnabled)
+  {
+    return m_selectableDB.isPathSelectable(path);
+  }
+  return true;
+}
+
 
 //----------------------------------------------------------------------------------------------------------------------
 } // nodes

@@ -796,3 +796,44 @@ TEST(ProxyShapeSelect, selectSamePathTwiceViaMaya)
   EXPECT_EQ(0, required);
   EXPECT_EQ(0, refCount);
 }
+
+// test that the ConfigureSelectionDatabase command configures the ProxyShape correctly
+TEST(ProxyShapeSelect, configureSelectionDatabase)
+{
+  std::function<UsdStageRefPtr()>  constructTransformChain = [] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdPrim p = stage->DefinePrim(SdfPath("/someprim"));
+    return stage;
+  };
+
+  MFileIO::newFile(true);
+  // unsure undo is enabled for this test
+  MGlobal::executeCommand("undoInfo -state 1;");
+  const std::string temp_path = "/tmp/AL_USDMayaTests_ConfigureSelectionDatabaseTests.usda";
+  AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(constructTransformChain, temp_path);
+
+  MGlobal::executeCommand("AL_usdmaya_ConfigureSelectionDatabase -rs false \"AL_usdmaya_ProxyShape1\"", false, true);
+  EXPECT_FALSE(proxyShape->isSelectionRestricted());
+
+  // Test that the restriction can be turned ON via the command, and that the undo works
+  {
+    MGlobal::executeCommand("AL_usdmaya_ConfigureSelectionDatabase -rs true \"AL_usdmaya_ProxyShape1\"", false, true);
+    EXPECT_TRUE(proxyShape->isSelectionRestricted());
+
+    MGlobal::executeCommand("undo", false, true);
+    EXPECT_FALSE(proxyShape->isSelectionRestricted());
+  }
+
+  MGlobal::executeCommand("AL_usdmaya_ConfigureSelectionDatabase -rs true \"AL_usdmaya_ProxyShape1\"", false, true);
+  EXPECT_TRUE(proxyShape->isSelectionRestricted());
+  // Test that the restriction can be turned OFF via the command
+  {
+    MGlobal::executeCommand("AL_usdmaya_ConfigureSelectionDatabase -rs false \"AL_usdmaya_ProxyShape1\"", false, true);
+    EXPECT_FALSE(proxyShape->isSelectionRestricted());
+
+    MGlobal::executeCommand("undo", false, true);
+    EXPECT_TRUE(proxyShape->isSelectionRestricted());
+  }
+}
+

@@ -34,7 +34,6 @@
 #include <sstream>
 #include <algorithm>
 
-
 namespace AL {
 namespace usdmaya {
 namespace cmds {
