@@ -29,20 +29,28 @@ namespace translators {
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
 {
-  std::set<TfType> result;
-  PlugRegistry::GetAllDerivedTypes<TranslatorBase>(&result);
-  if(!result.empty())
+  unsigned int translatorCount = 0;
+  std::set<TfType> loadedTypes;
+  std::set<TfType> derivedTypes;
+
+  bool keepGoing = true;
+  while (keepGoing)
   {
-    // Manufacture an instance.
-    for(auto t: result)
+    keepGoing = false;
+    derivedTypes.clear();
+    PlugRegistry::GetAllDerivedTypes<TranslatorBase>(&derivedTypes);
+    for (const TfType& t : derivedTypes)
     {
-      if(TranslatorFactoryBase* factory = t.GetFactory<TranslatorFactoryBase>())
+      const auto insertResult = loadedTypes.insert(t);
+      if (insertResult.second)
       {
-        TranslatorRefPtr ptr = factory->create(context);
-        if (ptr)
-        {
-          m_translatorsMap.emplace(ptr->getTranslatedType().GetTypeName(), ptr);
-        }
+        // TfType::GetFactory may cause additional plugins to be loaded
+        // may means potentially more translator types. We need to re-iterate
+        // over the derived types just to be sure...
+        keepGoing = true;
+        if (auto* factory = t.GetFactory<TranslatorFactoryBase>())
+          if (TranslatorRefPtr ptr = factory->create(context))
+            m_translatorsMap.emplace(ptr->getTranslatedType().GetTypeName(), ptr);
       }
     }
   }
