@@ -46,6 +46,7 @@ namespace nodes {
 ///          \li \b drivenTranslate - translate, array of compound attribute with 3 unit distance components, default(0,0,0).
 ///          \li \b drivenVisibility - visibility, array of Boolean, default true.
 ///
+///
 ///         The output should be connected to one slot of inDrivenTransformsData on AL::usdmaya::node::ProxyShape:
 ///          \li \b outDrivenTransformsData - custom MPxData to convey data to AL::usdmaya::node::ProxyShape, every set of rotate,
 ///          rotate order, scale and translate is combined to one MMatrix.
