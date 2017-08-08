@@ -307,9 +307,6 @@ public:
   /// Serialised reference counts to rebuild the transform reference information
   AL_DECL_ATTRIBUTE(serializedRefCounts);
 
-  /// Serialised info about the schema prims that have been imported into the scene
-  AL_DECL_ATTRIBUTE(serializedSchemaPrims);
-
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Output Attributes
   //--------------------------------------------------------------------------------------------------------------------
@@ -475,14 +472,13 @@ public:
   /// \brief  searches for the excluded geometry
   void findExcludedGeometry();
 
-  /// \brief  return a reference to the DB of schema prims imported via custom translators (used for variant switching)
-  /// \return a reference to the DB used for variant changes.
-  //nodes::SchemaNodeRefDB& schemaDB()
-  //  { return m_schemaNodeDB; }
-
+  /// \brief  returns the plugin translator registry assigned to this shape
+  /// \return the translator registry
   fileio::translators::TranslatorManufacture& translatorManufacture()
     { return m_translatorManufacture; }
 
+  /// \brief  returns the plugin translator context assigned to this shape
+  /// \return the translator context
   fileio::translators::TranslatorContextPtr& context()
     { return m_context; }
 
@@ -547,12 +543,6 @@ public:
 
   /// \brief  deserialise the state of the transform ref counts prior to saving the file
   void deserialiseTransformRefs();
-
-  /// \brief  serialise the state of the transform ref counts prior to saving the file
-  void serialiseSchemaPrims();
-
-  /// \brief  deserialise the state of the transform ref counts prior to saving the file
-  void deserialiseSchemaPrims();
 
   /// \brief Finds the corresponding translator for each decendant prim that has a corresponding Translator 
   ///        and calls preTearDown.

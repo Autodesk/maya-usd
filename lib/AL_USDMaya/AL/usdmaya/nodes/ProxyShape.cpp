@@ -95,7 +95,6 @@ static void beforeSaveScene(void* clientData)
 
     proxyShape->serialiseTranslatorContext();
     proxyShape->serialiseTransformRefs();
-    proxyShape->serialiseSchemaPrims();
 
     // prior to saving, serialize any modified layers
     MFnDependencyNode fn;
@@ -145,7 +144,6 @@ MObject ProxyShape::m_specular = MObject::kNullObj;
 MObject ProxyShape::m_emission = MObject::kNullObj;
 MObject ProxyShape::m_shininess = MObject::kNullObj;
 MObject ProxyShape::m_serializedRefCounts = MObject::kNullObj;
-MObject ProxyShape::m_serializedSchemaPrims = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 Layer* ProxyShape::getLayer()
@@ -497,7 +495,6 @@ MStatus ProxyShape::initialise()
     m_shininess = addFloatAttr("shininess", "shi", 5.0f, kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance);
 
     m_serializedRefCounts = addStringAttr("serializedRefCounts", "strcs", kReadable | kWritable | kStorable | kHidden);
-    m_serializedSchemaPrims = addStringAttr("serializedSchemaPrims", "ssp", kReadable | kWritable | kStorable | kHidden);
 
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, m_outTime), errorString);
@@ -1890,19 +1887,6 @@ void ProxyShape::deserialiseTransformRefs()
   }
 
   serializedRefCountsPlug().setString("");
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::serialiseSchemaPrims()
-{
-  //serializedSchemaPrimsPlug().setString(m_schemaNodeDB.serialize());
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::deserialiseSchemaPrims()
-{
-  //m_schemaNodeDB.deserialize(serializedSchemaPrimsPlug().asString());
-  //serializedSchemaPrimsPlug().setString("");
 }
 
 //----------------------------------------------------------------------------------------------------------------------

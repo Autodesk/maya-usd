@@ -412,7 +412,6 @@ void ProxyShapePostLoadProcess::createSchemaPrims(
   Trace("ProxyShapePostLoadProcess::createSchemaPrims");
 #if AL_ENABLE_TRACE
   Trace("createSchemaPrims")
-  //schemaNodeDB->outputPrims(std::cerr);
 #endif
   AL_BEGIN_PROFILE_SECTION(CreatePrims);
   {
@@ -550,10 +549,6 @@ MStatus ProxyShapePostLoadProcess::initialise(nodes::ProxyShape* ptrNode)
   createTranformChainsForSchemaPrims(ptrNode, schemaPrims, proxyTransformPath, objsToCreate);
 
   createSchemaPrims(ptrNode, objsToCreate);
-
-#if AL_ENABLE_TRACE
-//  schemaNodeDB.outputPrims(std::cerr);
-#endif
 
   // now perform any post-creation fix up
   connectSchemaPrims(ptrNode, objsToCreate);
