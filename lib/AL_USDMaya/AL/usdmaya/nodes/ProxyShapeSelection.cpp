@@ -1185,7 +1185,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
           for(uint32_t i = 0; i < helper.m_newSelection.length(); ++i)
           {
             MObject obj;
-            helper.m_newSelection.getDependNode(i, object);
+            helper.m_newSelection.getDependNode(i, obj);
 
             if(object == obj)
             {
