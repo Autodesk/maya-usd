@@ -521,6 +521,13 @@ void ProxyShape::onEditTargetChanged(UsdNotice::StageEditTargetChanged const& no
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& variantPrimsToSwitch)
 {
+
+  UsdPrim resyncPrim = m_stage->GetPrimAtPath(primPath);
+  if(!resyncPrim.IsValid())
+  {
+    return;
+  }
+
   AL_BEGIN_PROFILE_SECTION(ObjectChanged);
   MFnDagNode fn(thisMObject());
   MDagPath dag_path;
@@ -593,9 +600,9 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   {
     m_compositionHasChanged = false;
 
-    onPrimResync(m_variantChangePath, m_variantSwitchedPrims);
+    onPrimResync(m_changedPath, m_variantSwitchedPrims);
     m_variantSwitchedPrims.clear();
-    m_variantChangePath = SdfPath();
+    m_changedPath = SdfPath();
 
     std::stringstream strstr;
     strstr << "Breakdown for Variant Switch:\n";
@@ -650,6 +657,7 @@ std::vector<UsdPrim> ProxyShape::huntForNativeNodesUnderPrim(
     SdfPath startPath,
     fileio::translators::TranslatorManufacture& manufacture)
 {
+
   Trace("ProxyShape::huntForNativeNodesUnderPrim");
   std::vector<UsdPrim> prims;
   fileio::SchemaPrimsUtils utils(manufacture);
@@ -710,8 +718,8 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
             it->first == SdfFieldKeys->Active)
         {
           m_compositionHasChanged = true;
-          m_variantChangePath = path;
-          onPrePrimChanged(m_variantChangePath, m_variantSwitchedPrims);
+          m_changedPath = path;
+          onPrePrimChanged(m_changedPath, m_variantSwitchedPrims);
         }
       }
     }

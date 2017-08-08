@@ -543,8 +543,8 @@ public:
       return;
     }
     m_compositionHasChanged = true;
-    m_variantChangePath = changePath;
-    onPrePrimChanged(m_variantChangePath, m_variantSwitchedPrims);
+    m_changedPath = changePath;
+    onPrePrimChanged(m_changedPath, m_variantSwitchedPrims);
   }
 
   /// \brief  change the status of the composition changed status
@@ -726,7 +726,7 @@ private:
   UsdStageRefPtr m_stage;
   SdfPath m_path;
   SchemaNodeRefDB m_schemaNodeDB;
-  SdfPath m_variantChangePath;
+  SdfPath m_changedPath;
   SdfPathVector m_variantSwitchedPrims;
   UsdImagingGLHdEngine* m_engine = 0;
   uint32_t m_engineRefCount = 0;
