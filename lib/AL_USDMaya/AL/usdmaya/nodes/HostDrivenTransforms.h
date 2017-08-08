@@ -28,6 +28,30 @@ namespace AL {
 namespace usdmaya {
 namespace nodes {
 
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  The AL::usdmaya::nodes::HostDrivenTransforms relays Maya animated transform data including translate, scale,
+///         rotate and visibility to USD prims. It works by plugging inputs onto these "driven" attributes and outDrivenTransformsData
+///         to inDrivenTransformsData of AL::usdmaya::node::ProxyShape. AL::usdmaya::node::ProxyShape is in charge of
+///         pushing combined transform matrix and visibility into USD prims assigned here by drivenPrimPaths.
+///
+///         The following attribute determines which UsdPrims are being driven:
+///          \li \b drivenPrimPaths - an array of strings representing driven UsdPrim's SdfPath.
+///
+///
+///         This node has five array attributes can be connected to transform data sources. Unconnected slots fall back to
+///         default value:
+///          \li \b drivenRotate - rotate, array of MAngle, default (0,0,0).
+///          \li \b drivenRotateOrder - rotate orders,  array of enum, valid values are "xyz"(default), "yzx", "zxy", "xzy", "yxz" and "zyx".
+///          \li \b drivenScale - scale, array of compound attribute with 3 float components, default(1,1,1).
+///          \li \b drivenTranslate - translate, array of compound attribute with 3 unit distance components, default(0,0,0).
+///          \li \b drivenVisibility - visibility, array of Boolean, default true.
+///
+///
+///         The output should be connected to one slot of inDrivenTransformsData on AL::usdmaya::node::ProxyShape:
+///          \li \b outDrivenTransformsData - custom MPxData to convey data to AL::usdmaya::node::ProxyShape, every set of rotate,
+///          rotate order, scale and translate is combined to one MMatrix.
+/// \ingroup nodes
+//----------------------------------------------------------------------------------------------------------------------
 class HostDrivenTransforms
   : public MPxNode
   , public maya::NodeHelper
