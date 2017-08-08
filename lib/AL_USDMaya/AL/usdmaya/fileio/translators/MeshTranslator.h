@@ -54,9 +54,9 @@ public:
   static MStatus copyAttributes(const MObject& from, UsdPrim& to, const ExporterParams& params);
 
   /// \brief  Copies vertex data from the maya mesh onto the usd geometry mesh
-  /// \param from the maya mesh to copy the data from
-  /// \param to the USD geometry mesh points attribute to copy to
-  /// \param time the timecode to use when setting the data
+  /// \param  fnMesh the maya mesh to copy the data from
+  /// \param  pointsAttr the USD geometry mesh points attribute to copy to
+  /// \param  time the timecode to use when setting the data
   static void copyVertexData(const MFnMesh& fnMesh, const UsdAttribute& pointsAttr, UsdTimeCode time = UsdTimeCode::Default());
 
   /// \brief  exports a mesh to the USD file and returns the created prim

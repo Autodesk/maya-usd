@@ -213,11 +213,13 @@ class TranslatorManufacture
 public:
   typedef TfRefPtr<TranslatorBase> RefPtr; ///< handle to a plug-in translator
 
+  /// \brief  constructs a registry of translator plugins that are currently registered within usd maya. This construction
+  ///         should only happen once per-proxy shape.
+  /// \param  context the translator context for this registry
   TranslatorManufacture(TranslatorContextPtr context);
 
   /// \brief  returns a translator for the specified prim type.
   /// \param  type_name the scheman name
-  /// \param  context the translator context passed through from the proxy shape
   /// \return returns the requested translator type
   RefPtr get(const TfToken type_name);
 

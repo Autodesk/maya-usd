@@ -17,7 +17,6 @@
 //----------------------------------------------------------------------------------------------------------------------
 /// \file   Metadata.h
 /// \brief  This file contains the tokens for the USDMaya metadata.
-/// \code
 //----------------------------------------------------------------------------------------------------------------------
 #include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
@@ -27,9 +26,17 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace AL {
 namespace usdmaya {
 
-struct Metadata{
+/// \brief	The MetaData tokens we attach to various prims
+struct Metadata
+{
+  /// MetaData token that allows the overriding of the transform type from the default AL_usdmaya_Transform on import.
   static const TfToken transformType;
+
+  /// MetaData token that can be applied to a prim which will add it to the UsdImaging ignore list (so that it will not
+  /// be rendered in Hydra).
   static const TfToken excludeFromProxyShape;
+
+  /// MetaData token that controls whether a prim will be imported as Maya geometry
   static const TfToken importAsNative;
 };
 

@@ -176,6 +176,11 @@ private:
   /// \brief  access the pushToPrim attribute plug on this node instance
   ///         pushToPrim - When enabled, any changes you make to the transform values in maya, will be pushed back onto the USD primitive.
   /// \return the plug to the pushToPrim attribute
+  /// \var    MPlug readAnimatedValuesPlug() const;
+  /// \brief  With USD, we typically have two possible sets of values on any given attribute. There is a 'default' value,
+  ///         and the keyframed values. If this plug is true, the transform node will read the animated values. If the plug
+  ///         is false then the default value will be read.
+  /// \return the plug to the readAnimatedValues attribute
 
   /// \var    static MObject primPath();
   /// \brief  access the primPath attribute handle
@@ -198,6 +203,9 @@ private:
   /// \var    static MObject localTranslateOffset();
   /// \brief  access the localTranslateOffset attribute handle
   /// \return the localTranslateOffset attribute
+  /// \var    static MObject readAnimatedValues();
+  /// \brief  access the readAnimatedValues attribute handle
+  /// \return the readAnimatedValues attribute
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name Output Attributes

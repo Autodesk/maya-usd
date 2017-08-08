@@ -23,17 +23,16 @@ namespace AL {
 namespace usdmaya {
 namespace fileio {
 
+#ifndef USE_AL_DEFAULT
+ #define USE_AL_DEFAULT 0
+#endif
+
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  parameters for the exporter. These parameters are constructed by any command or file translator that wishes
 ///         to export data from maya, which are then passed to the AL::usdmaya::fileio::Export class to perform the
 ///         actual export work.
 /// \ingroup   fileio
 //----------------------------------------------------------------------------------------------------------------------
-
-#ifndef USE_AL_DEFAULT
- #define USE_AL_DEFAULT 0
-#endif
-
 struct ExporterParams
 {
   MSelectionList m_nodes; ///< the selected node to be exported

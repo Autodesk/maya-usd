@@ -100,11 +100,8 @@ struct AnimationTranslator
   }
 
   /// \brief  add a mesh to the animation translator
-  /// \param  plug the maya attribute to test
+  /// \param  path the path to the animated maya mesh
   /// \param  attribute the corresponding maya attribute to write the anim data into if the plug is animated
-  /// \param  scale a scale to apply to convert units if needed
-  /// \param  assumeExpressionIsAnimated if we encounter an expression, assume that the attribute is animated (true) or
-  ///         static (false).
   inline void addMesh(const MDagPath& path, const UsdAttribute& attribute)
   {
     m_animatedMeshes.emplace_back(path, attribute);

@@ -29,19 +29,19 @@ namespace usdmaya {
 namespace fileio {
 
 //----------------------------------------------------------------------------------------------------------------------
-/* \brief  A class that wraps up the entire export process
-
-This command will export the maya hierarchy at the specified prim path or selection, into the USD format. During traversal of the maya DAG hierarchy,
-the USD schema type is exported on the prim if it can be determined from the maya node type, if the schema type couldn't be determined a Xform type
-prim is exported to represent it. If a known type is found, then it is exported via the the corresponding export translator which is configured based
-on the input parameters of the command.
-
-Each exporter has an explicit list of plugs that will get exported if certain input parameters are passed in then they can be exported over a frame range
-
-Instances are currently not fully supported. If instances are encountered and the duplicateInstances flag is ON, then the hierarchy is deduplicated. If
-duplicateInstances is off then only the first instance found is exported.
-*/
-
+/// \brief  A class that wraps up the entire export process
+///
+/// This command will export the maya hierarchy at the specified prim path or selection, into the USD format. During
+/// traversal of the maya DAG hierarchy, the USD schema type is exported on the prim if it can be determined from the
+/// maya node type, if the schema type couldn't be determined a Xform type prim is exported to represent it. If a known
+/// type is found, then it is exported via the the corresponding export translator which is configured based
+/// on the input parameters of the command.
+///
+/// Each exporter has an explicit list of plugs that will get exported if certain input parameters are passed in then
+/// they can be exported over a frame range
+///
+/// Instances are currently not fully supported. If instances are encountered and the duplicateInstances flag is ON,
+/// then the hierarchy is deduplicated. If duplicateInstances is off then only the first instance found is exported.
 /// \ingroup   fileio
 //----------------------------------------------------------------------------------------------------------------------
 class Export

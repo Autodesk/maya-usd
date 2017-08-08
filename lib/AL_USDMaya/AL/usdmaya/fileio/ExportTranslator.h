@@ -48,7 +48,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "*.
   static constexpr const char* const kUseTimelineRange = "Use Timeline Range"; ///< export using the timeline range option name
   static constexpr const char* const kFrameMin = "Frame Min"; ///< specify min time frame option name
   static constexpr const char* const kFrameMax = "Frame Max"; ///< specify max time frame option name
-  static constexpr const char* const kFilterSample = "Filter Sample"; /// < export filter sample option name
+  static constexpr const char* const kFilterSample = "Filter Sample"; ///< export filter sample option name
 
   /// \brief  provide a method to specify the export options
   /// \param  options a set of options that are constructed and later used for option parsing

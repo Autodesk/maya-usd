@@ -69,6 +69,7 @@ struct SelectionUndoHelper
   /// \param  proxy pointer to the maya node on which the selection operation will be performed.
   /// \param  paths the USD paths to be selected / toggled / unselected
   /// \param  mode the selection mode (add, remove, xor, etc)
+  /// \param  internal if the internal flag is set, then modifications to Maya's selection list will NOT occur.
   SelectionUndoHelper(nodes::ProxyShape* proxy, SdfPathVector paths, MGlobal::ListAdjustment mode, bool internal = false);
 
   /// \brief  performs the selection changes
@@ -100,8 +101,14 @@ class SelectionList
 {
 public:
 
+  /// \brief  default ctor
   SelectionList() = default;
-  SelectionList(const SelectionList&) = default;
+
+  /// \brief  copy ctor
+  /// \param  sl the selection list to copy
+  SelectionList(const SelectionList& sl) = default;
+
+  /// \brief  dtor
   ~SelectionList() = default;
 
   /// \brief  clear the selection list
@@ -177,6 +184,9 @@ class ProxyShape
   friend class SelectionUndoHelper;
   friend class ProxyShapeUI;
 public:
+
+  /// \brief  a mapping between a maya transform (or MObject::kNullObj), and the prim that exists at that location
+  ///         in the DAG graph.
   typedef std::vector<std::pair<MObject, UsdPrim> > MObjectToPrim;
 
   /// \brief  ctor
@@ -547,7 +557,7 @@ public:
   /// \brief Finds the corresponding translator for each decendant prim that has a corresponding Translator 
   ///        and calls preTearDown.
   /// \param[in] path of the point in the hierarchy that is potentially undergoing structural changes
-  /// \param[out] vector of SdfPaths that are decendants of 'path'
+  /// \param[out] outPathVector of SdfPaths that are decendants of 'path'
   void onPrePrimChanged(const SdfPath& path, SdfPathVector& outPathVector);
 
   /// \brief Re-Creates and updates the maya prim hierarchy starting from the specified primpath

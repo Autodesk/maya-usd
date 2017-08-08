@@ -220,11 +220,15 @@ public:
   /// \param  itemsToRemove the prims that need to be removed from the DB. tearDown will be called on each prim
   void removeEntries(const SdfPathVector& itemsToRemove);
 
-
+  /// \brief  An internal structure used to store a mapping between an SdfPath, the type of prim found at that location,
+  ///         the maya transform that may have been created (assuming the translator plugin specifies that it needs
+  ///         a parent transform), and any nodes that the translator plugin may have created.
   struct PrimLookup
   {
     /// \brief  ctor
     /// \param  path the prim path of the items we will be tracking
+    /// \param  type the USD typename of the prim at the specified path. Used to help us determine which translator plugin
+    ///         to call to tear down this prim.
     /// \param  mayaObj the maya transform
     PrimLookup(const SdfPath& path, const TfToken& type, MObject mayaObj)
       : m_path(path), m_type(type), m_object(mayaObj), m_createdNodes() {}
@@ -268,6 +272,8 @@ public:
     MObjectHandle m_object;
     MObjectHandleArray m_createdNodes;
   };
+
+  /// a sorted array of prim mappings
   typedef std::vector<PrimLookup> PrimLookups;
 
   /// comparison utility (for sorting array of pointers to node references based on their path)

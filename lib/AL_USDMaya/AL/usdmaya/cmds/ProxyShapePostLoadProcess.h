@@ -62,7 +62,7 @@ public:
   /// \param  shape the proxy shape these transforms are being pulled in from
   /// \param  schemaPrims an array of prims for which transforms should be created
   /// \param  proxyTransformPath a path to the transform node that resides above the proxy shape
-  /// \return a mapping from the MObjects created, to the UsdPrim that is represented
+  /// \param  objsToCreate a mapping from the MObjects created (for the transform nodes), to the UsdPrim that is represented
   static void createTranformChainsForSchemaPrims(
       nodes::ProxyShape* shape,
       const std::vector<UsdPrim>& schemaPrims,
@@ -72,7 +72,7 @@ public:
   /// \brief  After transforms exist to parent the custom plugin-prim types (i.e. after a call to
   ///         createTranformChainsForSchemaPrims), this method should be called to call the plugin translators for all
   ///         those nodes that should be imported into the Maya Scene.
-  /// \param  schemaNodeDB the database of plugin nodes imported into the scene (used for variant switching book keeping)
+  /// \param  proxy the proxy shape to create the schema prims on
   /// \param  objsToCreate the mapping returned from createTranformChainsForSchemaPrims
   static void createSchemaPrims(
       nodes::ProxyShape* proxy,
@@ -80,7 +80,7 @@ public:
 
   /// \brief  called once all plugin nodes have been created, and will request that each plugin translator performs
   ///         the postImport fixup to safely make any connections between Maya nodes
-  /// \param  schemaNodeDB the database of plugin nodes imported into the scene (used for variant switching book keeping)
+  /// \param  proxy the proxy shape to connect the schema prims
   /// \param  objsToCreate the mapping returned from createTranformChainsForSchemaPrims
   static void connectSchemaPrims(
       nodes::ProxyShape* proxy,
