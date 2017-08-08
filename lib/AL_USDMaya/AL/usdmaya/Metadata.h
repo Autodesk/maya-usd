@@ -26,7 +26,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace AL {
 namespace usdmaya {
 
-/// \brief	The MetaData tokens we attach to various prims
+/// \brief  The MetaData tokens we attach to various prims
 struct Metadata
 {
   /// MetaData token that allows the overriding of the transform type from the default AL_usdmaya_Transform on import.

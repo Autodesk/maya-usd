@@ -31,7 +31,7 @@ namespace usdmaya {
 struct DrivenTransforms
 {
   inline size_t transformCount() const
-  	  { return m_drivenPrimPaths.size(); }
+    { return m_drivenPrimPaths.size(); }
   void initTransform(uint32_t index);
 
   std::vector<std::string> m_drivenPrimPaths;
