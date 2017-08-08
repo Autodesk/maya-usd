@@ -75,7 +75,7 @@ public:
   /// \param  schemaNodeDB the database of plugin nodes imported into the scene (used for variant switching book keeping)
   /// \param  objsToCreate the mapping returned from createTranformChainsForSchemaPrims
   static void createSchemaPrims(
-      nodes::SchemaNodeRefDB* schemaNodeDB,
+      nodes::ProxyShape* proxy,
       const MObjectToPrim& objsToCreate);
 
   /// \brief  called once all plugin nodes have been created, and will request that each plugin translator performs
@@ -83,7 +83,7 @@ public:
   /// \param  schemaNodeDB the database of plugin nodes imported into the scene (used for variant switching book keeping)
   /// \param  objsToCreate the mapping returned from createTranformChainsForSchemaPrims
   static void connectSchemaPrims(
-      nodes::SchemaNodeRefDB* schemaNodeDB,
+      nodes::ProxyShape* proxy,
       const MObjectToPrim& objsToCreate);
 
 private:

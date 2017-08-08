@@ -20,7 +20,6 @@
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
-#include "AL/usdmaya/nodes/USDToMayaMappingDB.h"
 
 #include "maya/MPxSurfaceShape.h"
 #include "maya/MEventMessage.h"
@@ -468,8 +467,14 @@ public:
 
   /// \brief  return a reference to the DB of schema prims imported via custom translators (used for variant switching)
   /// \return a reference to the DB used for variant changes.
-  nodes::SchemaNodeRefDB& schemaDB()
-    { return m_schemaNodeDB; }
+  //nodes::SchemaNodeRefDB& schemaDB()
+  //  { return m_schemaNodeDB; }
+
+  fileio::translators::TranslatorManufacture& translatorManufacture()
+    { return m_translatorManufacture; }
+
+  fileio::translators::TranslatorContextPtr& context()
+    { return m_context; }
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   ProxyShape selection
@@ -746,7 +751,9 @@ private:
   SdfPathVector m_excludedTaggedGeometry;
   UsdStageRefPtr m_stage;
   SdfPath m_path;
-  SchemaNodeRefDB m_schemaNodeDB;
+  //SchemaNodeRefDB m_schemaNodeDB;
+  fileio::translators::TranslatorContextPtr m_context;
+  fileio::translators::TranslatorManufacture m_translatorManufacture;
   SdfPath m_variantChangePath;
   SdfPathVector m_variantSwitchedPrims;
   UsdImagingGLHdEngine* m_engine = 0;

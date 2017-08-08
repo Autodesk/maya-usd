@@ -18,7 +18,7 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/nodes/test_Layer.cpp
         AL/usdmaya/nodes/test_ProxyShape.cpp
         AL/usdmaya/nodes/test_TransformMatrix.cpp
-        AL/usdmaya/nodes/test_USDToMayaMappingDB.cpp
+        AL/usdmaya/nodes/test_TranslatorContext.cpp
         test_maya_MenuBuilder.cpp
         test_maya_NodeHelper.cpp
         test_translators_AnimationTranslator.cpp

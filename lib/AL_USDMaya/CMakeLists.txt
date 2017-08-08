@@ -120,7 +120,6 @@ list(APPEND AL_usdmaya_nodes_headers
         AL/usdmaya/nodes/ProxyShapeUI.h
         AL/usdmaya/nodes/Transform.h
         AL/usdmaya/nodes/TransformationMatrix.h
-        AL/usdmaya/nodes/USDToMayaMappingDB.h
 )
 list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/HostDrivenTransforms.cpp
@@ -132,7 +131,6 @@ list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/ProxyShapeUI.cpp
         AL/usdmaya/nodes/Transform.cpp
         AL/usdmaya/nodes/TransformationMatrix.cpp
-        AL/usdmaya/nodes/USDToMayaMappingDB.cpp
 )
 
 list(APPEND AL_usdmaya_public_headers

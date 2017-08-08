@@ -25,8 +25,7 @@
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/usd/usd/prim.h"
 
-#include <map>
-#include <unordered_map>
+#include <vector>
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -165,10 +164,10 @@ public:
   /// \return the type name for that prim
   TfToken getTypeForPath(SdfPath path) const
   {
-    const auto it = m_primMapping.find(path.GetString());
+    const auto it = find(path);
     if(it != m_primMapping.end())
     {
-      return it->second.m_type;
+      return it->type();
     }
     return TfToken();
   }
@@ -195,24 +194,162 @@ public:
   /// \brief  debugging utility to help keep track of prims during a variant switch
   void validatePrims();
 
-private:
+  /// \brief  This method is used to determine whether this DB has an entry for the specified prim path and the given type.
+  ///         This is used within a variant switch to determine if a node can be updated, or whether it needs to be imported.
+  /// \param  path the path to the prim to query
+  /// \param  type the type of prim
+  /// \return true if an entry is found that matches, false otherwise
+  bool hasEntry(const SdfPath& path, const TfToken& type)
+  {
+    auto it = find(path);
+    if(it != m_primMapping.end())
+    {
+      return type == it->type();
+    }
+    return false;
+  }
 
-  TranslatorContext(const nodes::ProxyShape* proxyShape)
-    : m_proxyShape(proxyShape), m_primMapping()
-    {}
+  /// \brief  This is called during a variant switch to determine whether the variant switch will allow Maya nodes
+  ///         to be updated, or whether they need to be deleted.
+  /// \param  primPath the path to the prim that triggered the variant switch
+  /// \param  itemsToRemove the returned list of items that need to be removed
+  /// \param callPreUnload true calling the preUnload on all the prims is needed.
+  void preRemoveEntry(const SdfPath& primPath, SdfPathVector& itemsToRemove, bool callPreUnload=true);
 
-  const nodes::ProxyShape* m_proxyShape;
+  /// \brief  call this to remove a prim from the DB (you do not need to lock/unlock here).
+  /// \param  itemsToRemove the prims that need to be removed from the DB. tearDown will be called on each prim
+  void removeEntries(const SdfPathVector& itemsToRemove);
+
 
   struct PrimLookup
   {
+    /// \brief  ctor
+    /// \param  path the prim path of the items we will be tracking
+    /// \param  mayaObj the maya transform
+    PrimLookup(const SdfPath& path, const TfToken& type, MObject mayaObj)
+      : m_path(path), m_type(type), m_object(mayaObj), m_createdNodes() {}
+
+    /// \brief  dtor
+    ~PrimLookup() {}
+
+    /// \brief  get the prim path of this reference
+    /// \return the prim path for this reference
+    const SdfPath& path() const
+      { return m_path; }
+
+    /// \brief  get the maya object of the node
+    /// \return the maya node for this reference
+    MObjectHandle objectHandle() const
+      { return m_object; }
+
+    /// \brief  get the maya object of the node
+    /// \return the maya node for this reference
+    MObject object() const
+      { return objectHandle().object(); }
+
+    /// \brief  the
+    /// \return the maya node for this reference
+    TfToken type() const
+      { return m_type; }
+
+    /// \brief  the
+    /// \return the maya node for this reference
+    MObjectHandleArray& createdNodes()
+      { return m_createdNodes; }
+
+    /// \brief  the
+    /// \return the maya node for this reference
+    const MObjectHandleArray& createdNodes() const
+      { return m_createdNodes; }
+
+  private:
+    SdfPath m_path;
     TfToken m_type;
     MObjectHandle m_object;
     MObjectHandleArray m_createdNodes;
   };
+  typedef std::vector<PrimLookup> PrimLookups;
+
+  /// comparison utility (for sorting array of pointers to node references based on their path)
+  struct value_compare
+  {
+    /// \brief  compare schema node ref to path
+    /// \param  a the node ref pointer on the left of the < operator
+    /// \param  b the sdf path on the right of the < operator
+    /// \return true if a->primPath() < b, false otherwise
+    inline bool operator() (const PrimLookup& a, const SdfPath& b) const
+      { return a.path() < b; }
+
+    /// \brief  compare schema node ref to path
+    /// \param  a the sdf path on the left of the < operator
+    /// \param  b the node ref pointer on the right of the < operator
+    /// \return true if a < b->primPath(), false otherwise
+    inline bool operator() (const SdfPath& a, const PrimLookup& b) const
+      { return a < b.path(); }
+
+    /// compare schema node ref to schema node ref
+    /// \brief  compare schema node ref to path
+    /// \param  a the node ref pointer on the left of the < operator
+    /// \param  b the node ref pointer on the right of the < operator
+    /// \return true if a->primPath() < b->primPath(), false otherwise
+    inline bool operator() (const PrimLookup& a, const PrimLookup& b) const
+      { return a.path() < b.path(); }
+  };
+
+  /// \brief  This is used for testing only. Do not call.
+  void clearPrimMappings()
+    { m_primMapping.clear(); }
+
+private:
+  void unloadPrim(
+      const SdfPath& primPath,
+      const MObject& primObj);
+  void preUnloadPrim(
+      UsdPrim& primPath,
+      const MObject& primObj);
+
+
+  inline PrimLookups::iterator find(const SdfPath& path)
+  {
+    PrimLookups::iterator end = m_primMapping.end();
+    PrimLookups::iterator it = std::lower_bound(m_primMapping.begin(), end, path, value_compare());
+    if(it != end)
+    {
+      if(it->path() == path)
+        return it;
+    }
+    return end;
+  }
+
+  inline PrimLookups::const_iterator find(const SdfPath& path) const
+  {
+    PrimLookups::const_iterator end = m_primMapping.end();
+    PrimLookups::const_iterator it = std::lower_bound(m_primMapping.begin(), end, path, value_compare());
+    if(it != end)
+    {
+      if(it->path() == path)
+        return it;
+    }
+    return end;
+  }
+
+  inline PrimLookups::iterator findLocation(const SdfPath& path)
+  {
+    PrimLookups::iterator end = m_primMapping.end();
+    PrimLookups::iterator it = std::lower_bound(m_primMapping.begin(), end, path, value_compare());
+    return it;
+  }
+
+
+  TranslatorContext(nodes::ProxyShape* proxyShape)
+    : m_proxyShape(proxyShape), m_primMapping()
+    {}
+
+  nodes::ProxyShape* m_proxyShape;
 
   // map between a usd prim path and either a dag parent node or
   // a dependency node
-  std::unordered_map<std::string, PrimLookup> m_primMapping;
+  PrimLookups m_primMapping;
 };
 
 typedef TfRefPtr<TranslatorContext> TranslatorContextPtr;

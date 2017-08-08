@@ -371,7 +371,7 @@ void ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(
     MPlug outTime = ptrNode->outTimePlug();
 
     MFnTransform fnx(proxyTransformPath);
-    fileio::SchemaPrimsUtils schemaPrimUtils(ptrNode->schemaDB().translatorManufacture());
+    fileio::SchemaPrimsUtils schemaPrimUtils(ptrNode->translatorManufacture());
     for(auto it = schemaPrims.begin(); it != schemaPrims.end(); ++it)
     {
       const UsdPrim& usdPrim = *it;
@@ -406,18 +406,18 @@ void ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(
 
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShapePostLoadProcess::createSchemaPrims(
-    nodes::SchemaNodeRefDB* schemaNodeDB,
+    nodes::ProxyShape* proxy,
     const MObjectToPrim& objsToCreate)
 {
   Trace("ProxyShapePostLoadProcess::createSchemaPrims");
 #if AL_ENABLE_TRACE
   Trace("createSchemaPrims")
-  schemaNodeDB->outputPrims(std::cerr);
+  //schemaNodeDB->outputPrims(std::cerr);
 #endif
   AL_BEGIN_PROFILE_SECTION(CreatePrims);
   {
-    fileio::translators::TranslatorContextPtr context = schemaNodeDB->context();
-    fileio::translators::TranslatorManufacture& translatorManufacture = schemaNodeDB->translatorManufacture();
+    fileio::translators::TranslatorContextPtr context = proxy->context();
+    fileio::translators::TranslatorManufacture& translatorManufacture = proxy->translatorManufacture();
 
     auto it = objsToCreate.begin();
     const auto end = objsToCreate.end();
@@ -427,16 +427,11 @@ void ProxyShapePostLoadProcess::createSchemaPrims(
       UsdPrim prim = it->second;
       fileio::translators::TranslatorRefPtr translator = translatorManufacture.get(prim.GetTypeName());
       Trace("Translator-createSchemaPrims: hasEntry(" << prim.GetPath().GetText() << ", "
-            << prim.GetTypeName() << ")=" << schemaNodeDB->hasEntry(prim.GetPath(), prim.GetTypeName()));
-      if(!schemaNodeDB->hasEntry(prim.GetPath(), prim.GetTypeName()))
+            << prim.GetTypeName() << ")=" << context->hasEntry(prim.GetPath(), prim.GetTypeName()));
+      if(!context->hasEntry(prim.GetPath(), prim.GetTypeName()))
       {
         AL_BEGIN_PROFILE_SECTION(SchemaPrims);
-        if(fileio::importSchemaPrim(prim, object, 0, context, translator))
-        {
-          schemaNodeDB->addEntry(prim.GetPath(), object);
-          schemaNodeDB->unlock(); // TODO FIXME Bad for performance but allows every new entry to not break the update for later prims
-        }
-        else
+        if(!fileio::importSchemaPrim(prim, object, 0, context, translator))
         {
           std::cerr << "Error: unable to load schema prim node: '" << prim.GetName().GetString() << "' that has type: '" << prim.GetTypeName() << "'" << std::endl;
         }
@@ -459,12 +454,12 @@ void ProxyShapePostLoadProcess::createSchemaPrims(
 
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShapePostLoadProcess::connectSchemaPrims(
-    nodes::SchemaNodeRefDB* schemaNodeDB,
+    nodes::ProxyShape* proxy,
     const MObjectToPrim& objsToCreate)
 {
   Trace("ProxyShapePostLoadProcess::connectSchemaPrims");
-  fileio::translators::TranslatorContextPtr context = schemaNodeDB->context();
-  fileio::translators::TranslatorManufacture& translatorManufacture = schemaNodeDB->translatorManufacture();
+  fileio::translators::TranslatorContextPtr context = proxy->context();
+  fileio::translators::TranslatorManufacture& translatorManufacture = proxy->translatorManufacture();
 
   auto it = objsToCreate.begin();
   const auto end = objsToCreate.end();
@@ -534,12 +529,11 @@ MStatus ProxyShapePostLoadProcess::initialise(nodes::ProxyShape* ptrNode)
   std::vector<UsdPrim> schemaPrims;
   std::vector<ImportCallback> callBacks;
 
-  nodes::SchemaNodeRefDB& schemaNodeDB = ptrNode->schemaDB();
 
   UsdStageRefPtr stage = ptrNode->getUsdStage();
   if(stage)
   {
-    huntForNativeNodes(proxyTransformPath, schemaPrims, callBacks, stage, schemaNodeDB.translatorManufacture());
+    huntForNativeNodes(proxyTransformPath, schemaPrims, callBacks, stage, ptrNode->translatorManufacture());
     constructLayers(fn.object(), ptrNode, stage);
   }
   else
@@ -555,17 +549,14 @@ MStatus ProxyShapePostLoadProcess::initialise(nodes::ProxyShape* ptrNode)
   MObjectToPrim objsToCreate;
   createTranformChainsForSchemaPrims(ptrNode, schemaPrims, proxyTransformPath, objsToCreate);
 
-
-  schemaNodeDB.lock();
-  createSchemaPrims(&schemaNodeDB, objsToCreate);
-  schemaNodeDB.unlock();
+  createSchemaPrims(ptrNode, objsToCreate);
 
 #if AL_ENABLE_TRACE
-  schemaNodeDB.outputPrims(std::cerr);
+//  schemaNodeDB.outputPrims(std::cerr);
 #endif
 
   // now perform any post-creation fix up
-  connectSchemaPrims(&schemaNodeDB, objsToCreate);
+  connectSchemaPrims(ptrNode, objsToCreate);
 
   ptrNode->findExcludedGeometry();
   return MS::kSuccess;

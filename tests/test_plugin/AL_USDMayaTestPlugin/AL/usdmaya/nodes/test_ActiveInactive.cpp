@@ -35,7 +35,7 @@
 
 #include <fstream>
 
-const char* const g_inactive =
+static const char* const g_inactive =
 "#usda 1.0\n"
 "\n"
 "def Xform \"root\"\n"
@@ -48,7 +48,7 @@ const char* const g_inactive =
 "    }\n"
 "}\n";
 
-const char* const g_active =
+static const char* const g_active =
 "#usda 1.0\n"
 "\n"
 "def Xform \"root\"\n"
@@ -59,7 +59,7 @@ const char* const g_active =
 "    }\n"
 "}\n";
 
-const char* const g_variants =
+static const char* const g_variants =
 "#usda 1.0\n"
 "(\n"
 "    defaultPrim = \"rig_variants\"\n"
@@ -104,7 +104,7 @@ const char* const g_variants =
 "    }\n"
 "}\n";
 
-const char* const g_customTransformType =
+static const char* const g_customTransformType =
 "#usda 1.0\n"
 "\n"
 "def Xform \"root\"\n"
@@ -117,7 +117,7 @@ const char* const g_customTransformType =
 "    }\n"
 "}\n";
 
-const char* const g_duplicateTransformNames =
+static const char* const g_duplicateTransformNames =
 "#usda 1.0\n"
 "\n"
 "def Xform \"root\"\n"
