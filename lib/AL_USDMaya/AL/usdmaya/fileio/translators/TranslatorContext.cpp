@@ -498,7 +498,7 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
 void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
 {
   Trace("SchemaNodeRefDB::preUnloadPrim");
-  assert(m_proxy);
+  assert(m_proxyShape);
   auto stage = m_proxyShape->getUsdStage();
   if(stage)
   {
@@ -525,7 +525,7 @@ void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
 void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
 {
   Trace("SchemaNodeRefDB::unloadPrim");
-  assert(m_proxy);
+  assert(m_proxyShape);
   auto stage = m_proxyShape->getUsdStage();
   if(stage)
   {
