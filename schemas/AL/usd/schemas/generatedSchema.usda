@@ -1,0 +1,36 @@
+#usda 1.0
+(
+    "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
+)
+
+class ALMayaReference "ALMayaReference" (
+    doc = "Data used to import a maya reference."
+)
+{
+    string mayaNamespace (
+        doc = "Namespace which the maya reference will be imported under."
+    )
+    asset mayaReference (
+        doc = "Path to the maya reference."
+    )
+}
+
+class ALHostDrivenTransformInfo "ALHostDrivenTransformInfo" (
+    doc = "Connection info for transforms"
+)
+{
+    uniform int[] rotateAttributeIndices
+    uniform string[] rotateAttributes
+    uniform int[] rotateOrderAttributeIndices
+    uniform string[] rotateOrderAttributes
+    uniform int[] scaleAttributeIndices
+    uniform string[] scaleAttributes
+    rel targetTransforms
+    uniform string[] transformSourceNodes
+    uniform int[] translateAttributeIndices
+    uniform string[] translateAttributes
+    uniform int[] visibilityAttributeIndices
+    uniform string[] visibilityAttributes
+    uniform string[] visibilitySourceNodes
+}
+

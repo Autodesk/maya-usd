@@ -52,8 +52,8 @@
                     }
                 }
             }, 
-            "LibraryPath": "${SCHEMAS_LIBRARY_DIR}/@CMAKE_SHARED_LIBRARY_PREFIX@@SCHEMAS_PACKAGE@@CMAKE_SHARED_LIBRARY_SUFFIX@",
-            "Name": "@SCHEMAS_PACKAGE@", 
+            "LibraryPath": "${SCHEMAS_LIBRARY_DIR}/libAL_USDMayaSchemas.so", 
+            "Name": "AL_USDMayaSchemas", 
             "ResourcePath": "resources", 
             "Root": "..", 
             "Type": "library"

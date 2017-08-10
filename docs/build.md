@@ -27,12 +27,8 @@ Fill out the paths below then run the following commands to build and install
 cmake \
       -DCMAKE_INSTALL_PREFIX='/path/to/install' \
       -DCMAKE_MODULE_PATH='/paths/to/folders/which/have/cmake/files' \
-      -DCMAKE_BUILD_TYPE=RelWithDebInfo \
       -DBOOST_ROOT='/path/to/boost' \
       -DMAYA_LOCATION='/path/to/maya' \
-      -DOPENEXR_LOCATION='/path/to/openexr'\
-      -DOPENGL_gl_LIBRARY='/path/to/libglfw.so'\
-      -DGLEW_LOCATION='/path/to/glew'\
       -DUSD_CONFIG_FILE='/path/to/pxrConfig.cmake'\
       -DGTEST_ROOT='/path/to/googletest'\
       -DCMAKE_PREFIX_PATH='/path/to/maya/lib/cmake'
@@ -40,6 +36,14 @@ cmake \
 
 make -j <NUM_CORES> install
 ```
+
+### CMake Options
+
+Name | Description | Default
+--- | --- | ---
+BUILD_USDMAYA_SCHEMAS | Build optional schemas | ON
+BUILD_USDMAYA_TRANSLATORS | Build optional translators | ON
+VALIDATE_GENERATED_SCHEMAS | Run usdGenSchemas.py to validate checked in code | OFF
 
 ## Using Rez
 ```
