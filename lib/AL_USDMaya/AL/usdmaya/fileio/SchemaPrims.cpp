@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/Utils.h"
+#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/fileio/NodeFactory.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
@@ -104,6 +105,7 @@ bool importSchemaPrim(  const UsdPrim& prim,
   if(torBase)
   {
     Trace("Translator-Import: import prim: " << prim.GetPath().GetText());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("SchemaPrims::importSchemaPrim import %s\n", prim.GetPath().GetText());
     if(torBase->import(prim, parent) != MS::kSuccess)
     {
       std::cerr << "Failed to import schema prim \"" << prim.GetPath().GetText() << "\"\n";

@@ -15,6 +15,7 @@
 //
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/Utils.h"
+#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/HostDrivenTransforms.h"
 #include "AL/maya/Common.h"
 
@@ -271,6 +272,7 @@ void HostDrivenTransforms::updateVisibility(MDataBlock& dataBlock, DrivenTransfo
 //----------------------------------------------------------------------------------------------------------------------
 MStatus HostDrivenTransforms::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("HostDrivenTransforms::compute called\n");
   Trace("HostDrivenTransforms::compute " << plug.name().asChar());
   if (plug == m_outDrivenTransformsData)
   {

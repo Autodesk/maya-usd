@@ -15,6 +15,7 @@
 //
 #include "AL/usdmaya/Global.h"
 #include "AL/usdmaya/StageCache.h"
+#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/Layer.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
@@ -48,6 +49,7 @@ MCallbackId Global::m_fileNew;
 //----------------------------------------------------------------------------------------------------------------------
 static void onFileNew(void*)
 {
+  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("onFileNew\n");
   Trace("onFileNew");
   // These should both clear the caches, however they don't actually do anything of the sort. Puzzled.
   UsdUtilsStageCache::Get().Clear();
@@ -57,12 +59,14 @@ static void onFileNew(void*)
 //----------------------------------------------------------------------------------------------------------------------
 static void preFileOpen(void*)
 {
+  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("preFileOpen\n");
   Trace("preFileOpen");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 static void postFileOpen(void*)
 {
+  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("postFileOpen\n");
   Trace("postFileOpen");
 
   MFnDependencyNode fn;
@@ -129,6 +133,7 @@ static void postFileOpen(void*)
 //----------------------------------------------------------------------------------------------------------------------
 static void preFileSave(void*)
 {
+  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("preFileSave\n");
   Trace("preFileSave");
 
   // currently, if we have selected a shape in the usd proxy shape, a series of transforms will have been created.
@@ -141,12 +146,14 @@ static void preFileSave(void*)
 //----------------------------------------------------------------------------------------------------------------------
 static void postFileSave(void*)
 {
+  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("postFileSave\n");
   Trace("postFileSave");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void Global::onPluginLoad()
 {
+  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Registering callbacks\n");
   m_fileNew = MSceneMessage::addCallback(MSceneMessage::kAfterNew, onFileNew);
   m_preSave = MSceneMessage::addCallback(MSceneMessage::kBeforeSave, preFileSave);
   m_postSave = MSceneMessage::addCallback(MSceneMessage::kAfterSave, postFileSave);
@@ -159,6 +166,7 @@ void Global::onPluginLoad()
 //----------------------------------------------------------------------------------------------------------------------
 void Global::onPluginUnload()
 {
+  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Removing callbacks\n");
   MSceneMessage::removeCallback(m_fileNew);
   MSceneMessage::removeCallback(m_preSave);
   MSceneMessage::removeCallback(m_postSave);

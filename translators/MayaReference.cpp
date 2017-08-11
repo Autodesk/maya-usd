@@ -61,6 +61,7 @@ MStatus MayaReference::initialize()
 MStatus MayaReference::import(const UsdPrim& prim, MObject& parent)
 {
   Trace("MayaReferenceLogic::import");
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::import prim=%s\n", prim.GetPath().GetText());
   MStatus status;
   status = m_mayaReferenceLogic.LoadMayaReference(prim, parent);
 
@@ -68,12 +69,13 @@ MStatus MayaReference::import(const UsdPrim& prim, MObject& parent)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus MayaReference::tearDown(const SdfPath& prim)
+MStatus MayaReference::tearDown(const SdfPath& primPath)
 {
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::tearDown prim=%s\n", primPath.GetText());
   Trace("MayaReferenceLogic::tearDown");
   MObject mayaObject;
   MObjectHandle handle;
-  context()->getTransform(prim, handle);
+  context()->getTransform(primPath, handle);
   mayaObject = handle.object();
   m_mayaReferenceLogic.UnloadMayaReference(mayaObject);
   return MS::kSuccess;
@@ -81,6 +83,7 @@ MStatus MayaReference::tearDown(const SdfPath& prim)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReference::update(const UsdPrim& prim)
 {
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::update prim=%s\n", prim.GetPath().GetText());
   Trace("MayaReferenceLogic::update");
   MObjectHandle handle;
   if(!context()->getTransform(prim, handle))

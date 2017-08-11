@@ -19,6 +19,7 @@
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/Utils.h"
 #include "AL/usdmaya/Metadata.h"
+#include "AL/usdmaya/DebugCodes.h"
 
 #include "maya/MFnDagNode.h"
 #include "maya/MPxCommand.h"
@@ -357,6 +358,7 @@ MObject ProxyShape::makeUsdTransformChain(
     m_selectedPaths.push_back(usdPrim.GetPath());
   }
 
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::makeUsdTransformChain on %s\n", usdPrim.GetPath().GetText());
   MObject newNode = makeUsdTransformChain_internal(usdPrim, modifier, reason, modifier2, createCount);
   insertTransformRefs( { std::pair<SdfPath, MObject>(usdPrim.GetPath(), newNode) }, reason);
   return newNode;
@@ -641,6 +643,7 @@ void ProxyShape::removeUsdTransformChain(
 {
   Trace("ProxyShapeSelection::removeUsdTransformChain");
   SdfPath parentPrim = path;
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::removeUsdTransformChain %s\n", path.GetText());
   MObject parentTM = MObject::kNullObj;
   MObject object = MObject::kNullObj;
   while(!parentPrim.IsEmpty())

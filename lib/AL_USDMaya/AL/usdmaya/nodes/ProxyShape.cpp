@@ -520,6 +520,7 @@ void ProxyShape::onEditTargetChanged(UsdNotice::StageEditTargetChanged const& no
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& variantPrimsToSwitch)
 {
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::onPrimResync checking %s\n", primPath.GetText());
 
   UsdPrim resyncPrim = m_stage->GetPrimAtPath(primPath);
   if(!resyncPrim.IsValid())
@@ -585,10 +586,12 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   if(MFileIO::isOpeningFile())
     return;
 
+
   Trace("ProxyShape::onObjectsChanged");
   if (!sender || sender != m_stage)
       return;
 
+  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::onObjectsChanged called m_compositionHasChanged=%i\n", m_compositionHasChanged);
   // These paths are subtree-roots representing entire subtrees that may have
   // changed. In this case, we must dump all cached data below these points
   // and repopulate those trees.
@@ -693,6 +696,7 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
   if(MFileIO::isOpeningFile())
     return;
 
+  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::variantSelectionListener called\n");
   TF_FOR_ALL(itr, notice.GetChangeListMap())
   {
     TF_FOR_ALL(entryIter, itr->second.GetEntryList())
@@ -701,6 +705,10 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
       const SdfChangeList::Entry &entry = entryIter->second;
 
       Trace("variantSelectionListener, oldPath=" << entry.oldPath.GetString() << ", oldIdentifier=" << entry.oldIdentifier << ", path=" << path.GetText());
+      TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::variantSelectionListener oldPath=%s, oldIdentifier=%s, path=%s\n",
+                                     entry.oldPath.GetString().c_str(),
+                                     entry.oldIdentifier.c_str(),
+                                     path.GetText());
 
       MFnDagNode fn(thisMObject());
       MDagPath dag_path;
@@ -1054,6 +1062,7 @@ MStatus ProxyShape::computeOutputTime(const MPlug& plug, MDataBlock& dataBlock, 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::compute called\n");
   Trace("ProxyShape::compute " << plug.name().asChar());
   MTime currentTime;
   if(plug == m_outTime)
@@ -1176,6 +1185,7 @@ MBoundingBox ProxyShape::boundingBox() const
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::unloadMayaReferences()
 {
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::unloadMayaReferences called\n");
   MObjectArray references;
   for(auto it = m_requiredPaths.begin(), e = m_requiredPaths.end(); it != e; ++it)
   {
@@ -1193,14 +1203,13 @@ void ProxyShape::unloadMayaReferences()
           MObject temp = plugs[i].node();
           if(temp.hasFn(MFn::kReference))
           {
-            Trace("unloading reference: " << MFileIO::unloadReferenceByNode(temp));
-
             MString command = MString("referenceQuery -filename ") + MFnDependencyNode(temp).name();
             MString referenceFilename;
             MStatus returnStatus = MGlobal::executeCommand(command, referenceFilename);
             if (returnStatus != MStatus::kFailure)
             {
               Trace("Removing reference: " << referenceFilename);
+              TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::unloadMayaReferences removing %s\n", referenceFilename.asChar());
               MFileIO::removeReference(referenceFilename);
             }
           }
