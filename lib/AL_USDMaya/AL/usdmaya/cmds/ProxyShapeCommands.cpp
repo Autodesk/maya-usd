@@ -15,6 +15,7 @@
 //
 #include "AL/maya/CommandGuiHelper.h"
 #include "AL/usdmaya/Utils.h"
+#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
@@ -33,12 +34,6 @@
 #include <sstream>
 #include <algorithm>
 
-// printf debugging
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cerr << X << std::endl;
-#else
-# define Trace(X)
-#endif
 
 namespace AL {
 namespace usdmaya {
@@ -46,7 +41,7 @@ namespace cmds {
 //----------------------------------------------------------------------------------------------------------------------
 MSyntax ProxyShapeCommandBase::setUpCommonSyntax()
 {
-  Trace("ProxyShapeCommandBase::setUpCommonSyntax");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeCommandBase::setUpCommonSyntax\n");
   MSyntax syntax;
   syntax.useSelectionAsDefault(true);
   syntax.setObjectType(MSyntax::kSelectionList, 0, 1);
@@ -57,7 +52,7 @@ MSyntax ProxyShapeCommandBase::setUpCommonSyntax()
 //----------------------------------------------------------------------------------------------------------------------
 MArgDatabase ProxyShapeCommandBase::makeDatabase(const MArgList& args)
 {
-  Trace("ProxyShapeCommandBase::makeDatabase");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeCommandBase::makeDatabase\n");
   MStatus status;
   MArgDatabase database(syntax(), args, &status);
   if(!status)
@@ -71,7 +66,7 @@ MArgDatabase ProxyShapeCommandBase::makeDatabase(const MArgList& args)
 //----------------------------------------------------------------------------------------------------------------------
 MDagPath ProxyShapeCommandBase::getShapePath(const MArgDatabase& args)
 {
-  Trace("ProxyShapeCommandBase::getShapePath");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeCommandBase::getShapePath\n");
   MSelectionList sl;
   args.getObjects(sl);
   MDagPath path;
@@ -112,7 +107,7 @@ MDagPath ProxyShapeCommandBase::getShapePath(const MArgDatabase& args)
 //----------------------------------------------------------------------------------------------------------------------
 nodes::ProxyShape* ProxyShapeCommandBase::getShapeNode(const MArgDatabase& args)
 {
-  Trace("ProxyShapeCommandBase::getShapeNode");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeCommandBase::getShapeNode\n");
   MDagPath path;
   MSelectionList sl;
   args.getObjects(sl);
@@ -176,7 +171,7 @@ nodes::ProxyShape* ProxyShapeCommandBase::getShapeNode(const MArgDatabase& args)
 //----------------------------------------------------------------------------------------------------------------------
 UsdStageRefPtr ProxyShapeCommandBase::getShapeNodeStage(const MArgDatabase& args)
 {
-  Trace("ProxyShapeCommandBase::getShapeNodeStage");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeCommandBase::getShapeNodeStage\n");
   nodes::ProxyShape* node = getShapeNode(args);
   return node ? node->getUsdStage() : UsdStageRefPtr();
 }
@@ -213,7 +208,7 @@ bool ProxyShapeImport::isUndoable() const
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShapeImport::undoIt()
 {
-  Trace("ProxyShapeImport::undoIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeImport::undoIt\n");
   // undo parenting
   MFnDagNode fn;
   for(uint32_t i = 0; i < m_parentTransforms.length(); ++i)
@@ -228,7 +223,7 @@ MStatus ProxyShapeImport::undoIt()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShapeImport::redoIt()
 {
-  Trace("ProxyShapeImport::redoIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeImport::redoIt\n");
   MStatus status = m_modifier.doIt();
   if(status)
   {
@@ -250,7 +245,7 @@ MStatus ProxyShapeImport::redoIt()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShapeImport::doIt(const MArgList& args)
 {
-  Trace("ProxyShapeImport::doIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeImport::doIt\n");
   MStatus status;
   MArgDatabase database(syntax(), args, &status);
   AL_MAYA_COMMAND_HELP(database, g_helpText);
@@ -411,7 +406,7 @@ bool ProxyShapeFindLoadable::isUndoable() const
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
 {
-  Trace("ProxyShapeFindLoadable::doIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeFindLoadable::doIt\n");
   try
   {
     MArgDatabase db = makeDatabase(args);
@@ -447,7 +442,7 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       {
         result[i] = convert(it->GetString());
       }
-      Trace("all " << all.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("all %u\n", all.size());
     }
     else
     if(loaded && db.isFlagSet("-pp"))
@@ -467,8 +462,8 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       {
         result[i] = convert(it->GetString());
       }
-      Trace("loadableSet " << loadableSet.size());
-      Trace("loadedSet " << loadedSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %u\n", loadableSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadedSet %u\n", loadedSet.size());
     }
     else
     if(loaded)
@@ -480,7 +475,7 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       {
         result[i] = convert(it->GetString());
       }
-      Trace("loaded " << all.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loaded %u\n", all.size());
     }
     else
     if(unloaded && db.isFlagSet("-pp"))
@@ -507,9 +502,9 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       {
         result[i] = convert(it->GetString());
       }
-      Trace("all " << all.size());
-      Trace("loadableSet " << loadableSet.size());
-      Trace("loadedSet " << loadedSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("all %u\n", all.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %u\n", loadableSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadedSet %u\n", loadedSet.size());
     }
     else
     if(unloaded)
@@ -529,9 +524,9 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       {
         result[i] = convert(it->GetString());
       }
-      Trace("loadedSet " << loadedSet.size());
-      Trace("loadableSet " << loadableSet.size());
-      Trace("diffed " << diffed.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadedSet %u\n", loadedSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %u\n", loadableSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("diffed %u\n", diffed.size());
     }
     setResult(result);
   }
@@ -779,7 +774,7 @@ bool ProxyShapeResync::isUndoable() const
 
 MStatus ProxyShapeResync::doIt(const MArgList& args)
 {
-  Trace("ProxyShapeResync::doIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeResync::doIt\n");
   try
   {
     MArgDatabase db = makeDatabase(args);
@@ -811,7 +806,7 @@ MStatus ProxyShapeResync::doIt(const MArgList& args)
 
 MStatus ProxyShapeResync::redoIt()
 {
-  Trace("ProxyShapeResync::redoIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeResync::redoIt\n");
   if(m_resyncPrimPath == SdfPath::EmptyPath())
   {
     MGlobal::displayError("ProxyShapeResync: PrimPath is empty. ");
@@ -851,7 +846,7 @@ bool InternalProxyShapeSelect::isUndoable() const
 //----------------------------------------------------------------------------------------------------------------------
 MStatus InternalProxyShapeSelect::doIt(const MArgList& args)
 {
-  Trace("InternalProxyShapeSelect::doIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("InternalProxyShapeSelect::doIt\n");
   try
   {
     MArgDatabase db = makeDatabase(args);
@@ -917,7 +912,7 @@ MStatus InternalProxyShapeSelect::doIt(const MArgList& args)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus InternalProxyShapeSelect::undoIt()
 {
-  Trace("InternalProxyShapeSelect::undoIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("InternalProxyShapeSelect::undoIt\n");
   m_proxy->selectionList() = m_previous;
   if(MGlobal::kInteractive == MGlobal::mayaState())
     MGlobal::executeCommand("refresh", false, false);
@@ -927,7 +922,7 @@ MStatus InternalProxyShapeSelect::undoIt()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus InternalProxyShapeSelect::redoIt()
 {
-  Trace("InternalProxyShapeSelect::redoIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("InternalProxyShapeSelect::redoIt\n");
   m_proxy->selectionList() = m_new;
   if(MGlobal::kInteractive == MGlobal::mayaState())
     MGlobal::executeCommand("refresh", false, false);
@@ -963,7 +958,7 @@ bool ProxyShapeSelect::isUndoable() const
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShapeSelect::doIt(const MArgList& args)
 {
-  Trace("ProxyShapeSelect::doIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeSelect::doIt\n");
   try
   {
     MArgDatabase db = makeDatabase(args);
@@ -1029,7 +1024,7 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShapeSelect::undoIt()
 {
-  Trace("ProxyShapeSelect::undoIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeSelect::undoIt\n");
   if(m_helper) m_helper->undoIt();
   if(MGlobal::kInteractive == MGlobal::mayaState())
     MGlobal::executeCommand("refresh", false, false);
@@ -1039,7 +1034,7 @@ MStatus ProxyShapeSelect::undoIt()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShapeSelect::redoIt()
 {
-  Trace("ProxyShapeSelect::redoIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeSelect::redoIt\n");
   if(m_helper) m_helper->doIt();
   if(MGlobal::kInteractive == MGlobal::mayaState())
     MGlobal::executeCommand("refresh", false, false);
@@ -1081,7 +1076,7 @@ bool ProxyShapePostSelect::isUndoable() const
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShapePostSelect::doIt(const MArgList& args)
 {
-  Trace("ProxyShapePostSelect::doIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapePostSelect::doIt\n");
   try
   {
     MArgDatabase db = makeDatabase(args);
@@ -1135,7 +1130,7 @@ bool ProxyShapeImportPrimPathAsMaya::isUndoable() const
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShapeImportPrimPathAsMaya::doIt(const MArgList& args)
 {
-  Trace("ProxyShapeImportPrimPathAsMaya::doIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeImportPrimPathAsMaya::doIt\n");
   try
   {
     MArgDatabase db = makeDatabase(args);
@@ -1277,7 +1272,7 @@ bool ProxyShapePrintRefCountState::isUndoable() const
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShapePrintRefCountState::doIt(const MArgList& args)
 {
-  Trace("ProxyShapePrintRefCountState::doIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapePrintRefCountState::doIt\n");
   try
   {
     MArgDatabase db = makeDatabase(args);

@@ -16,6 +16,7 @@
 #include "AL/maya/CommandGuiHelper.h"
 #include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/Utils.h"
+#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/cmds/LayerCommands.h"
 #include "AL/usdmaya/nodes/Layer.h"
 #include "AL/usdmaya/nodes/LayerVisitor.h"
@@ -37,12 +38,6 @@
 
 #include <sstream>
 
-// printf debugging
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cerr << X << std::endl;
-#else
-# define Trace(X)
-#endif
 namespace AL {
 namespace usdmaya {
 namespace cmds {
@@ -185,6 +180,7 @@ bool LayerGetLayers::isUndoable() const
 //----------------------------------------------------------------------------------------------------------------------
 MStatus LayerGetLayers::doIt(const MArgList& argList)
 {
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerGetLayers::doIt\n");
   try
   {
     MArgDatabase args = makeDatabase(argList);
@@ -358,7 +354,7 @@ bool LayerCreateLayer::isUndoable() const
 //----------------------------------------------------------------------------------------------------------------------
 MStatus LayerCreateLayer::doIt(const MArgList& argList)
 {
-  Trace("LayerCreateLayer::doIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCreateLayer::doIt\n");
   try
   {
     MArgDatabase args = makeDatabase(argList);
@@ -455,7 +451,7 @@ MStatus LayerCreateLayer::doIt(const MArgList& argList)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus LayerCreateLayer::undoIt()
 {
-  Trace("LayerCreateLayer::undoIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCreateLayer::undoIt\n");
 
   // first let's go remove the newly created layer handle from the root layer we added it to
   LAYER_HANDLE_CHECK(m_newLayer->getHandle());
@@ -473,7 +469,7 @@ MStatus LayerCreateLayer::undoIt()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus LayerCreateLayer::redoIt()
 {
-  Trace("LayerCreateLayer::redoIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCreateLayer::redoIt\n");
   UsdStageRefPtr childStage;
 
   SdfLayerRefPtr handle = SdfLayer::FindOrOpen(convert(m_filePath));
@@ -544,7 +540,7 @@ bool LayerCreateSubLayer::isUndoable() const
 //----------------------------------------------------------------------------------------------------------------------
 MStatus LayerCreateSubLayer::doIt(const MArgList& argList)
 {
-  Trace("LayerCreateSubLayer::doIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCreateSubLayer::doIt\n");
   try
   {
     MArgDatabase args = makeDatabase(argList);
@@ -599,7 +595,7 @@ MStatus LayerCreateSubLayer::doIt(const MArgList& argList)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus LayerCreateSubLayer::undoIt()
 {
-  Trace("LayerCreateSubLayer::undoIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCreateSubLayer::undoIt\n");
   m_parentLayer->removeSubLayer(m_newLayer);
 
   // first let's go remove the newly created layer handle from the root layer we added it to
@@ -623,7 +619,7 @@ MStatus LayerCreateSubLayer::undoIt()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus LayerCreateSubLayer::redoIt()
 {
-  Trace("LayerCreateSubLayer::redoIt");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCreateSubLayer::redoIt\n");
   UsdStageRefPtr childStage;
   SdfLayerHandle handle;
   if(!m_isOpening)
@@ -985,9 +981,10 @@ MStatus LayerCurrentEditTarget::doIt(const MArgList& argList)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus LayerCurrentEditTarget::redoIt()
 {
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCurrentEditTarget::redoIt\n");
   if(!isQuery)
   {
-    Trace("setting target: " << next.GetLayer()->GetDisplayName());
+    TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCurrentEditTarget::redoIt setting target: %s\n", next.GetLayer()->GetDisplayName().c_str());
     stage->SetEditTarget(next);
 
     if(m_usdLayer)
@@ -1025,9 +1022,10 @@ MStatus LayerCurrentEditTarget::redoIt()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus LayerCurrentEditTarget::undoIt()
 {
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCurrentEditTarget::undoIt\n");
   if(!isQuery)
   {
-    Trace("setting target: " << previous.GetLayer()->GetDisplayName());
+    TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCurrentEditTarget::undoIt setting target: %s\n", previous.GetLayer()->GetDisplayName().c_str());
     stage->SetEditTarget(previous);
     m_usdLayer->setHasBeenTheEditTarget(previouslyAnEditTarget);
   }
