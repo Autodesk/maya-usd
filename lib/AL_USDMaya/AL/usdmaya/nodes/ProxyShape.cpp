@@ -704,7 +704,6 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
       const SdfPath &path = entryIter->first;
       const SdfChangeList::Entry &entry = entryIter->second;
 
-      Trace("variantSelectionListener, oldPath=" << entry.oldPath.GetString() << ", oldIdentifier=" << entry.oldIdentifier << ", path=" << path.GetText());
       TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::variantSelectionListener oldPath=%s, oldIdentifier=%s, path=%s\n",
                                      entry.oldPath.GetString().c_str(),
                                      entry.oldIdentifier.c_str(),

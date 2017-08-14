@@ -33,11 +33,6 @@ IGNORE_USD_WARNINGS_PUSH
 #include <pxr/usd/usd/attribute.h>
 IGNORE_USD_WARNINGS_POP
 
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cout << X << std::endl;
-#else
-# define Trace(X)
-#endif
 
 namespace AL {
 namespace usdmaya {
@@ -60,7 +55,6 @@ MStatus MayaReference::initialize()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReference::import(const UsdPrim& prim, MObject& parent)
 {
-  Trace("MayaReferenceLogic::import");
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::import prim=%s\n", prim.GetPath().GetText());
   MStatus status;
   status = m_mayaReferenceLogic.LoadMayaReference(prim, parent);
@@ -72,7 +66,6 @@ MStatus MayaReference::import(const UsdPrim& prim, MObject& parent)
 MStatus MayaReference::tearDown(const SdfPath& primPath)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::tearDown prim=%s\n", primPath.GetText());
-  Trace("MayaReferenceLogic::tearDown");
   MObject mayaObject;
   MObjectHandle handle;
   context()->getTransform(primPath, handle);
@@ -84,7 +77,6 @@ MStatus MayaReference::tearDown(const SdfPath& primPath)
 MStatus MayaReference::update(const UsdPrim& prim)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::update prim=%s\n", prim.GetPath().GetText());
-  Trace("MayaReferenceLogic::update");
   MObjectHandle handle;
   if(!context()->getTransform(prim, handle))
   {
@@ -200,7 +192,7 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& parent) const
 {
-  Trace("MayaReferenceLogic::LoadMayaReference");
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::LoadMayaReference prim=%s\n", prim.GetPath().GetText());
   MFnDagNode fn;
   // Check to see if we have a valid Maya reference attribute
   UsdAttribute mayaReferenceAttribute = prim.GetAttribute(m_referenceName);
@@ -327,7 +319,7 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReferenceLogic::UnloadMayaReference(MObject& parent) const
 {
-  Trace("MayaReferenceLogic::UnloadMayaReference");
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::UnloadMayaReference\n");
   // going to create a temporary transform here
   MFnTransform fnt;
   MObject tempT = fnt.create();

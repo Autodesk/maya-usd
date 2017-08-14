@@ -52,13 +52,6 @@
 #include <map>
 #include <string>
 
-// printf debugging
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cout << X << std::endl;
-#else
-# define Trace(X)
-#endif
-
 namespace AL {
 namespace usdmaya {
 namespace cmds {
@@ -149,12 +142,12 @@ void huntForNativeNodes(
     fileio::translators::TranslatorManufacture& manufacture)
 {
   fileio::SchemaPrimsUtils utils(manufacture);
-  Trace("huntForNativeNodes::huntForNativeNodes");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("huntForNativeNodes::huntForNativeNodes\n");
   fileio::TransformIterator it(stage, proxyTransformPath);
   for(; !it.done(); it.next())
   {
     UsdPrim prim = it.prim();
-    Trace("huntForNativeNodes: " << prim.GetName().GetText());
+    TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("huntForNativeNodes: %s\n", prim.GetName().GetText());
     if(utils.isSchemaPrim(prim))
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::huntForNativeNodes found matching schema %s\n", prim.GetPath().GetText());
@@ -188,7 +181,7 @@ void huntForNativeNodes(
 MObject makeLayerNode(SdfLayerHandle layer, LayerToObjectMap& layerToObjectMap, nodes::ProxyShape* proxyShape)
 {
   LAYER_HANDLE_CHECK(layer);
-  Trace("ProxyShapePostLoadProcess::makeLayerNode " << layer->GetDisplayName());
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapePostLoadProcess::makeLayerNode %s\n", layer->GetDisplayName().c_str());
   MFnDependencyNode fn;
   MObject layerNode = fn.create(nodes::Layer::kTypeId);
 
@@ -223,7 +216,7 @@ MObject makeLayerNode(SdfLayerHandle layer, LayerToObjectMap& layerToObjectMap, 
 void buildLayerTree(MObject layerNode, const SdfLayerHandle& layer, LayerMap& layerMap, LayerToObjectMap& layersToObjects, MDGModifier& modifier, nodes::ProxyShape* proxyShape)
 {
   LAYER_HANDLE_CHECK(layer);
-  Trace("ProxyShapePostLoadProcess::buildLayerTree " << layer->GetDisplayName());
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapePostLoadProcess::buildLayerTree %s\n", layer->GetDisplayName().c_str());
   {
     // first attempt to create any sub layers that are connected to the input layer
     SdfSubLayerProxy subLayers = layer->GetSubLayerPaths();
@@ -364,7 +357,7 @@ void ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(
     ProxyShapePostLoadProcess::MObjectToPrim& objsToCreate)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims called\n");
-  Trace("ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims");
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims\n");
   AL_BEGIN_PROFILE_SECTION(CreateTransformChains);
   {
     objsToCreate.reserve(schemaPrims.size());
@@ -415,10 +408,6 @@ void ProxyShapePostLoadProcess::createSchemaPrims(
     const MObjectToPrim& objsToCreate)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createSchemaPrims called\n");
-  Trace("ProxyShapePostLoadProcess::createSchemaPrims");
-#if AL_ENABLE_TRACE
-  Trace("createSchemaPrims")
-#endif
   AL_BEGIN_PROFILE_SECTION(CreatePrims);
   {
     fileio::translators::TranslatorContextPtr context = proxy->context();
@@ -443,7 +432,6 @@ void ProxyShapePostLoadProcess::createSchemaPrims(
       }
       else
       {
-        Trace("Translator-createSchemaPrims: update prim: " << prim.GetPath().GetText());
         TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createSchemaPrims [update] prim=%s\n", prim.GetPath().GetText());
         if(translator && translator->update(prim).statusCode() == MStatus::kNotImplemented)
         {
@@ -462,8 +450,7 @@ void ProxyShapePostLoadProcess::connectSchemaPrims(
     nodes::ProxyShape* proxy,
     const MObjectToPrim& objsToCreate)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::connectSchemaPrims called\n");
-  Trace("ProxyShapePostLoadProcess::connectSchemaPrims");
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::connectSchemaPrims\n");
   fileio::translators::TranslatorContextPtr context = proxy->context();
   fileio::translators::TranslatorManufacture& translatorManufacture = proxy->translatorManufacture();
 
@@ -475,12 +462,11 @@ void ProxyShapePostLoadProcess::connectSchemaPrims(
   {
     MObject object = it->first;
     UsdPrim prim = it->second;
-    Trace(prim.GetPath().GetText());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::connectSchemaPrims prim=%s\n", prim.GetPath().GetText());
 
     fileio::translators::TranslatorRefPtr torBase = translatorManufacture.get(prim.GetTypeName());
     if(torBase)
     {
-      Trace("Translator-PostImport: postImport prim: " << prim.GetPath().GetText());
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::connectSchemaPrims [postImport] prim=%s\n", prim.GetPath().GetText());
       AL_BEGIN_PROFILE_SECTION(TranslatorBasePostImport);
       torBase->postImport(prim);
@@ -494,7 +480,6 @@ void ProxyShapePostLoadProcess::connectSchemaPrims(
 MStatus ProxyShapePostLoadProcess::initialise(nodes::ProxyShape* ptrNode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::initialise called\n");
-  Trace("ProxyShapePostLoadProcess::initialise");
 
   fileio::NodeFactory& factory = fileio::getNodeFactory();
   factory.setImportParams(&m_params);
