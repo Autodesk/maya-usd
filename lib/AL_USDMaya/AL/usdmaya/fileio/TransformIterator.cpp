@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/fileio/TransformIterator.h"
+#include "AL/usdmaya/DebugCodes.h"
 
 #include "maya/MFnDagNode.h"
 
@@ -23,13 +24,6 @@ namespace AL {
 namespace usdmaya {
 namespace fileio {
 
-// printf debugging
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cerr << X << std::endl;
-#else
-# define Trace(X)
-#endif
-
 
 //----------------------------------------------------------------------------------------------------------------------
 TransformIterator::TransformIterator(UsdStageRefPtr stage, const MDagPath& parentPath)
@@ -37,7 +31,7 @@ TransformIterator::TransformIterator(UsdStageRefPtr stage, const MDagPath& paren
     m_stage(stage),
     m_currentItem(0)
 {
-  Trace("TransformIterator::TransformIterator " << parentPath.fullPathName());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TransformIterator::TransformIterator %s\n", parentPath.fullPathName().asChar());
 
   m_primStack.reserve(128);
   UsdPrim psuedoPrim = stage->GetPseudoRoot();
@@ -66,7 +60,7 @@ TransformIterator::TransformIterator(const UsdPrim& usdStartPrim, const MDagPath
 //----------------------------------------------------------------------------------------------------------------------
 MDagPath TransformIterator::currentPath() const
 {
-  Trace("TransformIterator::currentPath");
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TransformIterator::currentPath\n");
   MDagPath p = m_parentPath;
   for(auto it = m_primStack.begin(); it != m_primStack.end(); ++it)
   {
@@ -84,7 +78,7 @@ MDagPath TransformIterator::currentPath() const
 //----------------------------------------------------------------------------------------------------------------------
 bool TransformIterator::next()
 {
-  Trace("TransformIterator::next");
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TransformIterator::next\n");
   if(done())
   {
     return false;
@@ -140,7 +134,7 @@ TransformIterator::StackRef::StackRef(const UsdPrim& prim)
     m_currentChild(-1),
     m_numChildren(0)
 {
-  Trace("TransformIterator::StackRef::StackRef");
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TransformIterator::StackRef::StackRef\n");
   if(prim)
   {
     auto begin = prim.GetChildren().begin();
