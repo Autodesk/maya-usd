@@ -536,7 +536,7 @@ MObject ProxyShape::makeUsdTransformChain(
   MFnDagNode fn;
   MObject parentNode = parentPath;
 
-  bool isTransform = usdPrim.HasAttribute(TfToken("xformOpOrder"));
+  bool isTransform = usdPrim.IsA<UsdGeomXformable>();
   bool isUsdTransform = true;
   MObject node;
   std::string transformType;
