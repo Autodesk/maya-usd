@@ -485,8 +485,12 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
       Trace("SchemaNodeRefDB::removeEntry primPath="<<path);
       PrimLookups::iterator node = std::lower_bound(m_primMapping.begin(), m_primMapping.end(), path, value_compare());
 
-      // remove nodes from map
-      m_primMapping.erase(node);
+      // The item might already have been removed by a translator...
+      if(node != m_primMapping.end() && node->path() == path){
+        // remove nodes from map
+        m_primMapping.erase(node);
+      }
+
       m_proxyShape->removeUsdTransformChain(path, modifier, nodes::ProxyShape::kRequired);
     }
 
