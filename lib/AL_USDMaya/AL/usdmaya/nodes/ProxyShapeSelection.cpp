@@ -182,7 +182,7 @@ void ProxyShape::printRefCounts() const
 //----------------------------------------------------------------------------------------------------------------------
 inline bool ProxyShape::TransformReference::decRef(const TransformReason reason)
 {
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::decRef %lu %lu \n%lu\n", m_selected, m_refCount, m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::decRef %lu %lu %lu\n", m_selected, m_refCount, m_required);
   switch(reason)
   {
   case kSelection: assert(m_selected); --m_selected; break;
@@ -198,7 +198,7 @@ inline bool ProxyShape::TransformReference::decRef(const TransformReason reason)
 //----------------------------------------------------------------------------------------------------------------------
 inline void ProxyShape::TransformReference::incRef(const TransformReason reason)
 {
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::incRef %lu %lu \n%lu\n", m_selected, m_refCount, m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::incRef %lu %lu %lu\n", m_selected, m_refCount, m_required);
   switch(reason)
   {
   case kSelection: ++m_selected; break;
@@ -211,7 +211,7 @@ inline void ProxyShape::TransformReference::incRef(const TransformReason reason)
 //----------------------------------------------------------------------------------------------------------------------
 inline void ProxyShape::TransformReference::checkIncRef(const TransformReason reason)
 {
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::checkIncRef %lu %lu \n%lu\n", m_selected, m_refCount, m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::checkIncRef %lu %lu %lu\n", m_selected, m_refCount, m_required);
   switch(reason)
   {
   case kSelection: ++m_selectedTemp; break;
@@ -222,7 +222,7 @@ inline void ProxyShape::TransformReference::checkIncRef(const TransformReason re
 //----------------------------------------------------------------------------------------------------------------------
 inline bool ProxyShape::TransformReference::checkRef(const TransformReason reason)
 {
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::checkRef %lu : %lu %lu \n%lu\n", m_selectedTemp, m_selected, m_refCount, m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::checkRef %lu : %lu %lu %lu\n", m_selectedTemp, m_selected, m_refCount, m_required);
   uint32_t sl = m_selected;
   uint32_t rc = m_refCount;
   uint32_t rq = m_required;

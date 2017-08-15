@@ -205,7 +205,7 @@ void TranslatorContext::registerItem(const UsdPrim& prim, MObjectHandle object)
   }
   else
   {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::registerItem primPath=%s primType=%s to MObject type %s", prim.GetPath().GetText(), iter->type().GetText(), object.object().apiTypeStr());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::registerItem primPath=%s primType=%s to MObject type %s\n", prim.GetPath().GetText(), iter->type().GetText(), object.object().apiTypeStr());
   }
 }
 
@@ -226,7 +226,7 @@ void TranslatorContext::insertItem(const UsdPrim& prim, MObjectHandle object)
   }
   else
   {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::insertItem primPath=%s primType=%s to MObject type %s", prim.GetPath().GetText(), iter->type().GetText(), object.object().apiTypeStr());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::insertItem primPath=%s primType=%s to MObject type %s\n", prim.GetPath().GetText(), iter->type().GetText(), object.object().apiTypeStr());
   }
 }
 
@@ -237,7 +237,7 @@ void TranslatorContext::removeItems(const SdfPath& path)
   auto it = find(path);
   if(it != m_primMapping.end() && it->path() == path)
   {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeItems path=%s", it->path().GetText());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeItems path=%s\n", it->path().GetText());
     MDGModifier modifier1;
     MDagModifier modifier2;
     MStatus status;

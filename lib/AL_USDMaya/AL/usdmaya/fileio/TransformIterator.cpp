@@ -78,7 +78,6 @@ MDagPath TransformIterator::currentPath() const
 //----------------------------------------------------------------------------------------------------------------------
 bool TransformIterator::next()
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TransformIterator::next\n");
   if(done())
   {
     return false;
@@ -134,7 +133,6 @@ TransformIterator::StackRef::StackRef(const UsdPrim& prim)
     m_currentChild(-1),
     m_numChildren(0)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TransformIterator::StackRef::StackRef\n");
   if(prim)
   {
     auto begin = prim.GetChildren().begin();

@@ -407,7 +407,7 @@ void ProxyShapePostLoadProcess::createSchemaPrims(
     nodes::ProxyShape* proxy,
     const MObjectToPrim& objsToCreate)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createSchemaPrims called\n");
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createSchemaPrims\n");
   AL_BEGIN_PROFILE_SECTION(CreatePrims);
   {
     fileio::translators::TranslatorContextPtr context = proxy->context();

@@ -522,6 +522,8 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& variantPrim
     return;
   }
 
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::onPrimResync begin:\n%s\n", context()->serialise().asChar());
+
   AL_BEGIN_PROFILE_SECTION(ObjectChanged);
   MFnDagNode fn(thisMObject());
   MDagPath dag_path;
@@ -544,6 +546,8 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& variantPrim
 
   // now perform any post-creation fix up
   cmds::ProxyShapePostLoadProcess::connectSchemaPrims(this, objsToCreate);
+
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::onPrimResync end:\n%s\n", context()->serialise().asChar());
 
   AL_END_PROFILE_SECTION();
 
@@ -580,8 +584,6 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   if(MFileIO::isOpeningFile())
     return;
 
-
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::onObjectsChanged\n");
   if (!sender || sender != m_stage)
       return;
 
@@ -690,7 +692,6 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
   if(MFileIO::isOpeningFile())
     return;
 
-  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::variantSelectionListener called\n");
   TF_FOR_ALL(itr, notice.GetChangeListMap())
   {
     TF_FOR_ALL(entryIter, itr->second.GetEntryList())
@@ -698,21 +699,15 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
       const SdfPath &path = entryIter->first;
       const SdfChangeList::Entry &entry = entryIter->second;
 
-      TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::variantSelectionListener oldPath=%s, oldIdentifier=%s, path=%s\n",
-                                     entry.oldPath.GetString().c_str(),
-                                     entry.oldIdentifier.c_str(),
-                                     path.GetText());
-
-      MFnDagNode fn(thisMObject());
-      MDagPath dag_path;
-      fn.getPath(dag_path);
-      dag_path.pop();
-
       TF_FOR_ALL(it, entry.infoChanged)
       {
         if (it->first == SdfFieldKeys->VariantSelection ||
             it->first == SdfFieldKeys->Active)
         {
+          TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::variantSelectionListener oldPath=%s, oldIdentifier=%s, path=%s\n",
+                                         entry.oldPath.GetString().c_str(),
+                                         entry.oldIdentifier.c_str(),
+                                         path.GetText());
           m_compositionHasChanged = true;
           m_changedPath = path;
           onPrePrimChanged(m_changedPath, m_variantSwitchedPrims);
