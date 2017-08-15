@@ -1,5 +1,23 @@
 # Release Notes
 
+### v0.21.1
+* Bug Fix: Fixed crash in prim resync command when passed an invalid prim path
+* Removed unused pxr directory
+* Various build improvements (docker/cmake)
+* Bug Fix: the maya reference update code was double-loading references when switching paths.
+
+### v0.21.0
+* Removed legacy TRA Array attributes from the proxy shape
+* Bug Fix: Fixed issue that could cause translator plugins to be uninitialised when proxy shape was first created
+* Updated to USD 0.8.0
+* Various cmake/build improvements
+
+### v0.20.1
+* Improvements to colour set export on mesh geometry
+* Bug Fix: Force parallel evaluation when running unit tests
+* Removed unused asset resolver config
+* Bug Fix: Improve selection between maya geometry and usd geometry
+
 ### v0.20.0
 * Hooked up display Guides + displayRenderGuides attributes to usdImaging
 * Added MEL command to provide a simple selection mechanism in USD imaging layer
