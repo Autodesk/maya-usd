@@ -32,12 +32,6 @@
 namespace AL {
 namespace usdmaya {
 
-// printf debugging
-#if 0
-# define Trace(X) std::cerr << X << std::endl;
-#else
-# define Trace(X)
-#endif
 
 //----------------------------------------------------------------------------------------------------------------------
 MCallbackId Global::m_preSave;
@@ -50,7 +44,6 @@ MCallbackId Global::m_fileNew;
 static void onFileNew(void*)
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("onFileNew\n");
-  Trace("onFileNew");
   // These should both clear the caches, however they don't actually do anything of the sort. Puzzled.
   UsdUtilsStageCache::Get().Clear();
   StageCache::Clear();
@@ -60,14 +53,12 @@ static void onFileNew(void*)
 static void preFileOpen(void*)
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("preFileOpen\n");
-  Trace("preFileOpen");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 static void postFileOpen(void*)
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("postFileOpen\n");
-  Trace("postFileOpen");
 
   MFnDependencyNode fn;
   {
@@ -134,7 +125,6 @@ static void postFileOpen(void*)
 static void preFileSave(void*)
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("preFileSave\n");
-  Trace("preFileSave");
 
   // currently, if we have selected a shape in the usd proxy shape, a series of transforms will have been created.
   // Ideally we don't want these transient nodes to be stored in the Maya file, so make sure we unselect prior to a file
@@ -147,7 +137,6 @@ static void preFileSave(void*)
 static void postFileSave(void*)
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("postFileSave\n");
-  Trace("postFileSave");
 }
 
 //----------------------------------------------------------------------------------------------------------------------

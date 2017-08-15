@@ -15,6 +15,7 @@
 //
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/Utils.h"
+#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/Layer.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 
@@ -65,12 +66,6 @@ MObject Layer::m_nameOnLoad = MObject::kNullObj;
 MObject Layer::m_serialized = MObject::kNullObj;
 MObject Layer::m_hasBeenEditTarget = MObject::kNullObj;
 
-// printf debugging
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cerr << X << std::endl;
-#else
-# define Trace(X)
-#endif
 
 //----------------------------------------------------------------------------------------------------------------------
 MString Layer::toMayaNodeName(std::string name)
@@ -86,7 +81,7 @@ MString Layer::toMayaNodeName(std::string name)
 //----------------------------------------------------------------------------------------------------------------------
 void Layer::init(ProxyShape* shape, SdfLayerRefPtr handle)
 {
-  Trace("Layer::init " << handle->GetIdentifier());
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::init %s\n", handle->GetIdentifier().c_str());
   m_shape = shape;
   m_handle = handle;
 
@@ -100,7 +95,7 @@ void Layer::init(ProxyShape* shape, SdfLayerRefPtr handle)
 //----------------------------------------------------------------------------------------------------------------------
 void Layer::postConstructor()
 {
-  Trace("Layer::postConstructor");
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::postConstructor\n");
 
   MObject nodeRef = thisMObject();
   MPlug displayNamePlug(nodeRef, m_displayName);
@@ -120,7 +115,7 @@ void Layer::postConstructor()
 //----------------------------------------------------------------------------------------------------------------------
 std::vector<Layer*> Layer::getChildLayers()
 {
-  Trace("Layer::getChildLayers");
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::getChildLayers\n");
   MPlug plug(thisMObject(), m_childLayers);
   std::vector<Layer*> layers;
 
@@ -191,7 +186,7 @@ std::vector<Layer*> Layer::getChildLayers()
 //----------------------------------------------------------------------------------------------------------------------
 std::vector<Layer*> Layer::getSubLayers()
 {
-  Trace("Layer::getSubLayers");
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::getSubLayers\n");
   MPlug plug(thisMObject(), m_subLayers);
   std::vector<Layer*> layers;
 
@@ -260,7 +255,7 @@ std::vector<Layer*> Layer::getSubLayers()
 //----------------------------------------------------------------------------------------------------------------------
 void Layer::buildSubLayers(MDGModifier* pmodifier)
 {
-  Trace("Layer::buildSubLayers");
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::buildSubLayers\n");
   if(m_shape && m_handle)
   {
     MDGModifier modifier;
@@ -364,7 +359,7 @@ bool Layer::removeChildLayer(Layer* childLayer)
 //----------------------------------------------------------------------------------------------------------------------
 void Layer::addChildLayer(Layer* childLayer, MDGModifier* modifier)
 {
-  Trace("Layer::addChildlLayer");
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::addChildlLayer\n");
   if(childLayer)
   {
     MPlug plug(thisMObject(), m_childLayers);
@@ -393,7 +388,7 @@ void Layer::addChildLayer(Layer* childLayer, MDGModifier* modifier)
 //----------------------------------------------------------------------------------------------------------------------
 void Layer::addSubLayer(Layer* subLayer, MDGModifier* pmodifier)
 {
-  Trace("Layer::addSubLayer");
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::addSubLayer\n");
   if(subLayer)
   {
     MPlug plug(thisMObject(), m_subLayers);
@@ -422,7 +417,7 @@ void Layer::addSubLayer(Layer* subLayer, MDGModifier* pmodifier)
 //----------------------------------------------------------------------------------------------------------------------
 MPlug Layer::parentLayerPlug()
 {
-  Trace("Layer::parentLayerPlug");
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::parentLayerPlug\n");
 
   if(m_parentLayer != MObject::kNullObj)
   {
@@ -434,7 +429,7 @@ MPlug Layer::parentLayerPlug()
 //----------------------------------------------------------------------------------------------------------------------
 Layer* Layer::getParentLayer()
 {
-  Trace("Layer::getParentLayer");
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::getParentLayer\n");
   MPlug plug = parentLayerPlug();
   MPlugArray connections;
   if(plug.connectedTo(connections, true, true))
@@ -453,7 +448,7 @@ Layer* Layer::getParentLayer()
 Layer* Layer::findLayer(SdfLayerHandle handle)
 {
   LAYER_HANDLE_CHECK(handle);
-  Trace("Layer::findLayer: " << handle->GetIdentifier());
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::findLayer: %s\n", handle->GetIdentifier().c_str());
   LAYER_HANDLE_CHECK(m_handle);
   if(m_handle == handle)
   {
@@ -475,7 +470,7 @@ Layer* Layer::findLayer(SdfLayerHandle handle)
 Layer* Layer::findSubLayer(SdfLayerHandle handle)
 {
   LAYER_HANDLE_CHECK(handle);
-  Trace("Layer::findSubLayer: " << handle->GetIdentifier());
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::findSubLayer: %s\n", handle->GetIdentifier().c_str());
   LAYER_HANDLE_CHECK(m_handle);
   if(m_handle == handle)
   {
@@ -501,7 +496,7 @@ Layer* Layer::findSubLayer(SdfLayerHandle handle)
 Layer* Layer::findChildLayer(SdfLayerHandle handle)
 {
   LAYER_HANDLE_CHECK(handle);
-  Trace("Layer::findChildLayer: " << handle->GetIdentifier());
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::findChildLayer: %s\n", handle->GetIdentifier().c_str());
   LAYER_HANDLE_CHECK(m_handle);
   if(m_handle == handle)
   {
@@ -526,7 +521,7 @@ Layer* Layer::findChildLayer(SdfLayerHandle handle)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Layer::initialise()
 {
-  Trace("Layer::initialise");
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::initialise\n");
   try
   {
     setNodeType(kTypeName);
@@ -575,7 +570,7 @@ MStatus Layer::initialise()
 //----------------------------------------------------------------------------------------------------------------------
 bool Layer::getInternalValueInContext(const MPlug& plug, MDataHandle& dataHandle, MDGContext& ctx)
 {
-  Trace("Layer::getInternalValueInContext " << plug.name());
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::getInternalValueInContext %s\n", plug.name().asChar());
   if(!m_handle)
     return false;
 
@@ -695,7 +690,7 @@ bool Layer::getInternalValueInContext(const MPlug& plug, MDataHandle& dataHandle
 //----------------------------------------------------------------------------------------------------------------------
 bool Layer::setInternalValueInContext(const MPlug& plug, const MDataHandle& dataHandle, MDGContext& ctx)
 {
-  Trace("Layer::setInternalValueInContext " << plug.name());
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::setInternalValueInContext %s\n", plug.name().asChar());
   if(!m_handle)
     return false;
 
@@ -789,16 +784,16 @@ void Layer::setHasBeenTheEditTarget(bool value)
 //----------------------------------------------------------------------------------------------------------------------
 void Layer::setLayerAndClearAttribute(SdfLayerHandle handle)
 {
-  Trace("Layer::setLayerAndClearAttribute");
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::setLayerAndClearAttribute\n");
   m_handle = handle;
   if(m_handle)
   {
-    Trace(" - handle valid");
+    TF_DEBUG(ALUSDMAYA_LAYERS).Msg(" - handle valid\n");
     const MString serializedLayer = serializedPlug().asString();
-    Trace("data\n" << serializedLayer.asChar());
+    TF_DEBUG(ALUSDMAYA_LAYERS).Msg("data\n%s\n", serializedLayer.asChar());
     if(serializedLayer.length())
     {
-      Trace("importing");
+      TF_DEBUG(ALUSDMAYA_LAYERS).Msg("importing\n");
       if(!m_handle->ImportFromString(convert(serializedLayer)))
       {
         MGlobal::displayError(MString("Failed to import serialized layer: ") + serializedLayer);
@@ -811,7 +806,7 @@ void Layer::setLayerAndClearAttribute(SdfLayerHandle handle)
 //----------------------------------------------------------------------------------------------------------------------
 void Layer::populateSerialisationAttributes()
 {
-  Trace("Layer::populateSerialisationAttributes: " << m_handle->GetDisplayName() << " " << hasBeenTheEditTarget());
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::populateSerialisationAttributes: %s %b", m_handle->GetDisplayName().c_str(), hasBeenTheEditTarget());
   if(hasBeenTheEditTarget() && m_handle)
   {
     nameOnLoadPlug().setValue(realPathPlug().asString());
@@ -819,7 +814,7 @@ void Layer::populateSerialisationAttributes()
     std::string temp;
     m_handle->ExportToString(&temp);
     serializedPlug().setValue(convert(temp));
-    Trace("Layer::populateSerialisationAttributes -> contents\n" << temp);
+    TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::populateSerialisationAttributes -> contents\n%s\n", temp.c_str());
   }
 }
 

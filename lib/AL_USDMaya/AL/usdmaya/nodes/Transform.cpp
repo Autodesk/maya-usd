@@ -15,6 +15,7 @@
 //
 #include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/TypeIDs.h"
+#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
@@ -33,12 +34,6 @@
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdUtils/stageCache.h"
 
-// printf debugging
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cerr << X << std::endl;
-#else
-# define Trace(X)
-#endif
 
 namespace AL {
 namespace usdmaya {
@@ -74,14 +69,14 @@ Transform::~Transform()
 //----------------------------------------------------------------------------------------------------------------------
 MPxTransformationMatrix* Transform::createTransformationMatrix()
 {
-  Trace("Transform::createTransformationMatrix");
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::createTransformationMatrix\n");
   return new TransformationMatrix;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Transform::connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc)
 {
-  Trace("Transform::connectionMade " << plug.name());
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::connectionMade %s\n", plug.name().asChar());
   if(plug == m_inStageData)
   {
     {
@@ -115,7 +110,7 @@ MStatus Transform::connectionMade(const MPlug& plug, const MPlug& otherPlug, boo
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Transform::connectionBroken(const MPlug& plug, const MPlug& otherPlug, bool asSrc)
 {
-  Trace("Transform::connectionBroken");
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::connectionBroken\n");
   if(plug == m_inStageData)
   {
     transform()->setPrim(UsdPrim());
@@ -127,7 +122,7 @@ MStatus Transform::connectionBroken(const MPlug& plug, const MPlug& otherPlug, b
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Transform::initialise()
 {
-  Trace("Transform::initialise");
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::initialise\n");
   const char* const errorString = "Transform::initialise";
   try
   {
@@ -182,7 +177,7 @@ MStatus Transform::initialise()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Transform::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
-  Trace("Transform::compute " << plug.name());
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::compute %s\n", plug.name().asChar());
   if(plug == m_time)
   {
     updateTransform(dataBlock);
@@ -201,7 +196,7 @@ MStatus Transform::compute(const MPlug& plug, MDataBlock& dataBlock)
 //----------------------------------------------------------------------------------------------------------------------
 void Transform::updateTransform(MDataBlock& dataBlock)
 {
-  Trace("Transform::updateTransform");
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::updateTransform\n");
 
   // compute updated time value
   MTime theTime = (inputTimeValue(dataBlock, m_time) - inputTimeValue(dataBlock, m_timeOffset)) * inputDoubleValue(dataBlock, m_timeScalar);
@@ -265,7 +260,7 @@ void Transform::updateTransform(MDataBlock& dataBlock)
 //
 MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& handle, const MDGContext& context)
 {
-  Trace("Transform::validateAndSetValue " << plug.name());
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::validateAndSetValue %s\n", plug.name().asChar());
 
   if (plug.isNull())
       return MS::kFailure;
@@ -374,7 +369,7 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
 //----------------------------------------------------------------------------------------------------------------------
 UsdPrim Transform::getUsdPrim(MDataBlock& dataBlock) const
 {
-  Trace("Transform::getUsdPrim");
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::getUsdPrim\n");
   UsdPrim usdPrim;
   StageData* outData = inputDataValue<StageData>(dataBlock, m_outStageData);
   if(outData && outData->stage)
@@ -389,7 +384,7 @@ UsdPrim Transform::getUsdPrim(MDataBlock& dataBlock) const
 //----------------------------------------------------------------------------------------------------------------------
 bool Transform::isStageValid() const
 {
-  Trace("Transform::isStageValid");
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::isStageValid\n");
   MDataBlock dataBlock = const_cast<Transform*>(this)->forceCache();
   StageData* outData = inputDataValue<StageData>(dataBlock, m_outStageData);
   return outData && outData->stage;

@@ -15,6 +15,7 @@
 //
 #include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/TypeIDs.h"
+#include "AL/usdmaya/DebugCodes.h"
 #include "maya/MSceneMessage.h"
 #include "maya/MTypeId.h"
 #include "maya/MString.h"
@@ -24,11 +25,6 @@ namespace usdmaya {
 const MTypeId StageData::kTypeId(AL_USDMAYA_STAGEDATA);
 const MString StageData::kName("AL_usdmaya_StageData");
 
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cerr << X << std::endl;
-#else
-# define Trace(X)
-#endif
 
 //----------------------------------------------------------------------------------------------------------------------
 static void _cleanUp(void* gdPtr)
@@ -58,14 +54,14 @@ void StageData::copy(const MPxData& data)
 StageData::StageData()
 {
   m_exitCallbackId = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, _cleanUp, this);
-  Trace("StageData::StageData() created: " << this);
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("StageData::StageData() created: %p\n", this);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 StageData::~StageData()
 {
   MSceneMessage::removeCallback(m_exitCallbackId);
-  Trace("StageData::StageData() deleted: " << this);
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("StageData::StageData() deleted: %p\n", this);
 }
 
 
