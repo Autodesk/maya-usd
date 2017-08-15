@@ -1,9 +1,9 @@
 # Release Notes
 
-### v0.21.1
+### v0.22.0
 * Bug Fix: Fixed crash in prim resync command when passed an invalid prim path
 * Removed unused pxr directory
-* Various build improvements (docker/cmake)
+* Bug Fix: Schemas generation
 * Bug Fix: the maya reference update code was double-loading references when switching paths.
 
 ### v0.21.0
