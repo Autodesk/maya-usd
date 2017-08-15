@@ -40,12 +40,6 @@ namespace AL {
 namespace usdmaya {
 namespace fileio {
 
-// printf debugging
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cout << X << std::endl;
-#else
-# define Trace(X)
-#endif
 
 /// the prim typename tokens
 const TfToken ALSchemaType("ALType");
@@ -104,7 +98,6 @@ bool importSchemaPrim(  const UsdPrim& prim,
 {
   if(torBase)
   {
-    Trace("Translator-Import: import prim: " << prim.GetPath().GetText());
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("SchemaPrims::importSchemaPrim import %s\n", prim.GetPath().GetText());
     if(torBase->import(prim, parent) != MS::kSuccess)
     {
@@ -114,7 +107,7 @@ bool importSchemaPrim(  const UsdPrim& prim,
   }
   else
   {
-    Trace("Failed to find a translator for '" << prim.GetName() << "' type: '" << prim.GetTypeName() << "'");
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("SchemaPrims::importSchemaPrim Failed to find a translator for %s[%s]\n", prim.GetPath().GetText(), prim.GetTypeName().GetText());
     return false;
   }
   if(context)
