@@ -1,5 +1,8 @@
 # Release Notes
 
+### v0.22.1
+* Bug Fix: Fixed playblast issue that caused drift in caches when using animated film offsets on the camera
+
 ### v0.22.0
 * Bug Fix: Fixed crash in prim resync command when passed an invalid prim path
 * Removed unused pxr directory
