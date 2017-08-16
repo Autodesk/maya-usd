@@ -90,6 +90,7 @@ static const char* const g_simpleRig =
 "    def ALMayaReference \"rig\""
 "    {\n"
 "      asset mayaReference = \"/tmp/AL_USDMayaTests_cube.ma\"\n"
+"      string mayaNamespace = \"cube\"\n"
 "    }\n"
 "}\n";
 
@@ -179,11 +180,13 @@ TEST(TranslatorContext, TranslatorContext)
       {
         AL::usdmaya::fileio::translators::MObjectHandleArray handles;
         context->getMObjects(SdfPath("/root/rig"), handles);
+        ASSERT_EQ(handles.size(), 1);
         EXPECT_TRUE(handles[0].object() == obj);
       }
       {
         AL::usdmaya::fileio::translators::MObjectHandleArray handles;
         context->getMObjects(prim, handles);
+        ASSERT_EQ(handles.size(), 1);
         EXPECT_TRUE(handles[0].object() == obj);
       }
       context->removeItems(prim);
@@ -212,6 +215,7 @@ TEST(TranslatorContext, TranslatorContext)
       {
         AL::usdmaya::fileio::translators::MObjectHandleArray handles;
         context->getMObjects(SdfPath("/root/rig"), handles);
+        ASSERT_EQ(handles.size(), 1);
         EXPECT_TRUE(handles[0].object() == obj);
       }
       token = context->getTypeForPath(SdfPath("/root/rig"));

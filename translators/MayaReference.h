@@ -15,6 +15,7 @@
 //
 #pragma once
 
+#include "maya/MFnReference.h"
 #include "AL/usdmaya/Common.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
@@ -38,8 +39,12 @@ public:
   MStatus update(const UsdPrim& prim, MObject parent) const;
 
 private:
+  MStatus connectReferenceAssociatedNode(MFnDagNode& dagNode, MFnReference& refNode) const;
+
   static const TfToken m_namespaceName;
   static const TfToken m_referenceName;
+
+  static const char* const m_primNSAttr;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
