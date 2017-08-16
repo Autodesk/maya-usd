@@ -1,5 +1,3 @@
-include(SchemasMacros)
-
 if(NOT USD_SCHEMA_PATH)
     # PXR_CMAKE_DIR should be defined in pxrConfig.cmake
     set(USD_SCHEMA_PATH ${PXR_CMAKE_DIR}/share/usd/plugins/usd/resources/schema.usda)

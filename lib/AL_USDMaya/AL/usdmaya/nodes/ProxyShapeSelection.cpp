@@ -258,7 +258,6 @@ inline ProxyShape::TransformReference::TransformReference(const MObject& node, c
 void ProxyShape::makeTransformReference(const SdfPath& path, const MObject& node, TransformReason reason)
 {
   Trace("ProxyShapeSelection::makeTransformReference " << path.GetText());
-  assert(!isRequiredPath(path));
 
   SdfPath tempPath = path;
   MDagPath dagPath;
@@ -783,7 +782,6 @@ void ProxyShape::insertTransformRefs(const std::vector<std::pair<SdfPath, MObjec
 {
   for(auto iter : removedRefs)
   {
-    MObjectHandle handle(iter.second);
     makeTransformReference(iter.first, iter.second, reason);
   }
 }

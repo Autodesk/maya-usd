@@ -60,7 +60,7 @@ namespace nodes {
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialiseTranslatorContext()
 {
-  serializedTrCtxPlug().setValue(m_schemaNodeDB.context()->serialise());
+  serializedTrCtxPlug().setValue(context()->serialise());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -68,7 +68,7 @@ void ProxyShape::deserialiseTranslatorContext()
 {
   MString value;
   serializedTrCtxPlug().getValue(value);
-  m_schemaNodeDB.context()->deserialise(value);
+  context()->deserialise(value);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -95,7 +95,6 @@ static void beforeSaveScene(void* clientData)
 
     proxyShape->serialiseTranslatorContext();
     proxyShape->serialiseTransformRefs();
-    proxyShape->serialiseSchemaPrims();
 
     // prior to saving, serialize any modified layers
     MFnDependencyNode fn;
@@ -132,12 +131,6 @@ MObject ProxyShape::m_serializedSessionLayer = MObject::kNullObj;
 MObject ProxyShape::m_serializedArCtx = MObject::kNullObj;
 MObject ProxyShape::m_serializedTrCtx = MObject::kNullObj;
 MObject ProxyShape::m_unloaded = MObject::kNullObj;
-MObject ProxyShape::m_drivenPrimPaths = MObject::kNullObj;
-MObject ProxyShape::m_drivenTranslate = MObject::kNullObj;
-MObject ProxyShape::m_drivenScale = MObject::kNullObj;
-MObject ProxyShape::m_drivenRotate = MObject::kNullObj;
-MObject ProxyShape::m_drivenRotateOrder = MObject::kNullObj;
-MObject ProxyShape::m_drivenVisibility = MObject::kNullObj;
 MObject ProxyShape::m_inDrivenTransformsData = MObject::kNullObj;
 MObject ProxyShape::m_ambient = MObject::kNullObj;
 MObject ProxyShape::m_diffuse = MObject::kNullObj;
@@ -145,7 +138,6 @@ MObject ProxyShape::m_specular = MObject::kNullObj;
 MObject ProxyShape::m_emission = MObject::kNullObj;
 MObject ProxyShape::m_shininess = MObject::kNullObj;
 MObject ProxyShape::m_serializedRefCounts = MObject::kNullObj;
-MObject ProxyShape::m_serializedSchemaPrims = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 Layer* ProxyShape::getLayer()
@@ -392,7 +384,9 @@ bool ProxyShape::getRenderAttris(void* pattribs, const MHWRender::MFrameContext&
 
 //----------------------------------------------------------------------------------------------------------------------
 ProxyShape::ProxyShape()
-  : MPxSurfaceShape(), maya::NodeHelper(), m_schemaNodeDB(this)
+  : MPxSurfaceShape(), maya::NodeHelper(),
+    m_context(fileio::translators::TranslatorContext::create(this)),
+    m_translatorManufacture(context())
 {
   Trace("ProxyShape::ProxyShape");
   m_beforeSaveSceneId = MSceneMessage::addCallback(MSceneMessage::kBeforeSave, beforeSaveScene, this);
@@ -479,12 +473,6 @@ MStatus ProxyShape::initialise()
     m_layers = addMessageAttr("layers", "lys", kWritable | kReadable | kConnectable | kHidden);
 
     addFrame("USD Driven Transforms");
-    m_drivenPrimPaths = addStringAttr("drivenPrimPaths", "drvpp", kReadable | kWritable | kArray);
-    m_drivenRotate = addAngle3Attr("drivenRotate", "drvr", 0, 0, 0, kReadable | kWritable | kInternal | kArray | kConnectable | kKeyable);
-    m_drivenRotateOrder = addEnumAttr("drivenRotateOrder", "drvro", kReadable | kWritable | kInternal | kArray | kConnectable | kKeyable, rotate_order_strings, rotate_order_values);
-    m_drivenScale = addFloat3Attr("drivenScale", "drvs", 1.0f, 1.0f, 1.0f, kReadable | kWritable | kInternal | kArray | kConnectable | kKeyable);
-    m_drivenTranslate = addDistance3Attr("drivenTranslate", "drvt", 0, 0, 0, kReadable | kWritable | kInternal | kArray | kConnectable | kKeyable);
-    m_drivenVisibility = addBoolAttr("drivenVisibility", "drvv", true, kReadable | kWritable | kInternal | kArray | kConnectable | kKeyable);
     m_inDrivenTransformsData = addDataAttr("inDrivenTransformsData", "idrvtd", DrivenTransformsData::kTypeId, kWritable | kArray | kConnectable);
 
     addFrame("OpenGL Display");
@@ -495,7 +483,6 @@ MStatus ProxyShape::initialise()
     m_shininess = addFloatAttr("shininess", "shi", 5.0f, kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance);
 
     m_serializedRefCounts = addStringAttr("serializedRefCounts", "strcs", kReadable | kWritable | kStorable | kHidden);
-    m_serializedSchemaPrims = addStringAttr("serializedSchemaPrims", "ssp", kReadable | kWritable | kStorable | kHidden);
 
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, m_outTime), errorString);
@@ -533,31 +520,35 @@ void ProxyShape::onEditTargetChanged(UsdNotice::StageEditTargetChanged const& no
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& variantPrimsToSwitch)
 {
+
+  UsdPrim resyncPrim = m_stage->GetPrimAtPath(primPath);
+  if(!resyncPrim.IsValid())
+  {
+    return;
+  }
+
   AL_BEGIN_PROFILE_SECTION(ObjectChanged);
   MFnDagNode fn(thisMObject());
   MDagPath dag_path;
   fn.getPath(dag_path);
   dag_path.pop();
 
-  auto primsToSwitch = huntForNativeNodesUnderPrim(dag_path, primPath, m_schemaNodeDB.translatorManufacture());
+  auto primsToSwitch = huntForNativeNodesUnderPrim(dag_path, primPath, translatorManufacture());
 
-  nodes::SchemaNodeRefDB& schemaNodeDB = schemaDB();
-  schemaNodeDB.lock();
-  schemaNodeDB.removeEntries(variantPrimsToSwitch);
+  context()->removeEntries(variantPrimsToSwitch);
   m_variantSwitchedPrims.clear();
 
   cleanupTransformRefs();
 
   MObjectToPrim objsToCreate = filterUpdatablePrims(primsToSwitch);
-  schemaNodeDB.context()->updatePrimTypes();
+  context()->updatePrimTypes();
 
   cmds::ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(this, primsToSwitch, dag_path, objsToCreate);
 
-  cmds::ProxyShapePostLoadProcess::createSchemaPrims(&schemaNodeDB, objsToCreate);
-  schemaNodeDB.unlock();
+  cmds::ProxyShapePostLoadProcess::createSchemaPrims(this, objsToCreate);
 
   // now perform any post-creation fix up
-  cmds::ProxyShapePostLoadProcess::connectSchemaPrims(&schemaNodeDB, objsToCreate);
+  cmds::ProxyShapePostLoadProcess::connectSchemaPrims(this, objsToCreate);
 
   AL_END_PROFILE_SECTION();
 
@@ -569,11 +560,11 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& variantPrim
 ProxyShape::MObjectToPrim ProxyShape::filterUpdatablePrims(std::vector<UsdPrim>& variantPrimsToSwitch)
 {
   MObjectToPrim objsToCreate;
-  fileio::SchemaPrimsUtils schemaPrimUtils(schemaDB().translatorManufacture());
-  auto manufacture = schemaDB().translatorManufacture();
+  fileio::SchemaPrimsUtils schemaPrimUtils(translatorManufacture());
+  auto manufacture = translatorManufacture();
   for(auto it = variantPrimsToSwitch.begin(); it != variantPrimsToSwitch.end(); )
   {
-    TfToken type = schemaDB().context()->getTypeForPath(it->GetPath());
+    TfToken type = context()->getTypeForPath(it->GetPath());
     fileio::translators::TranslatorRefPtr translator = manufacture.get(type);
     if(type == it->GetTypeName() && translator && translator->supportsUpdate() && translator->needsTransformParent())
     {
@@ -605,9 +596,9 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   {
     m_compositionHasChanged = false;
 
-    onPrimResync(m_variantChangePath, m_variantSwitchedPrims);
+    onPrimResync(m_changedPath, m_variantSwitchedPrims);
     m_variantSwitchedPrims.clear();
-    m_variantChangePath = SdfPath();
+    m_changedPath = SdfPath();
 
     std::stringstream strstr;
     strstr << "Breakdown for Variant Switch:\n";
@@ -662,6 +653,7 @@ std::vector<UsdPrim> ProxyShape::huntForNativeNodesUnderPrim(
     SdfPath startPath,
     fileio::translators::TranslatorManufacture& manufacture)
 {
+
   Trace("ProxyShape::huntForNativeNodesUnderPrim");
   std::vector<UsdPrim> prims;
   fileio::SchemaPrimsUtils utils(manufacture);
@@ -688,8 +680,7 @@ std::vector<UsdPrim> ProxyShape::huntForNativeNodesUnderPrim(
 void ProxyShape::onPrePrimChanged(const SdfPath& path, SdfPathVector& outPathVector)
 {
   Trace("ProxyShape::onPrePrimChanged");
-  nodes::SchemaNodeRefDB& db = schemaDB();
-  db.preRemoveEntry(path, outPathVector);
+  context()->preRemoveEntry(path, outPathVector);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -722,8 +713,8 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
             it->first == SdfFieldKeys->Active)
         {
           m_compositionHasChanged = true;
-          m_variantChangePath = path;
-          onPrePrimChanged(m_variantChangePath, m_variantSwitchedPrims);
+          m_changedPath = path;
+          onPrePrimChanged(m_changedPath, m_variantSwitchedPrims);
         }
       }
     }
@@ -1220,473 +1211,6 @@ void ProxyShape::unloadMayaReferences()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool ProxyShape::initPrim(const uint32_t index, MDGContext& ctx)
-{
-  MStatus status;
-  MPlug plug(thisMObject(), m_drivenPrimPaths);
-  MPlug element(plug.elementByLogicalIndex(index, &status));
-  if(!status)
-  {
-    std::cout << "element " << index << " not found" << std::endl;
-    return false;
-  }
-
-  MString path = element.asString();
-
-  if(m_stage)
-  {
-    if(m_paths.size() >= index)
-    {
-      m_paths.resize(index + 1);
-      m_prims.resize(index + 1);
-      drivenTranslatePlug().setNumElements(index + 1);
-      drivenScalePlug().setNumElements(index + 1);
-      drivenRotatePlug().setNumElements(index + 1);
-      drivenRotateOrderPlug().setNumElements(index + 1);
-    }
-    Trace("ProxyShape::setNumElements" << plug.name());
-    m_paths[index] = SdfPath(path.asChar());
-    m_prims[index] = m_stage->GetPrimAtPath(m_paths[index]);
-    if(m_prims[index])
-    {
-      UsdGeomXform xform(m_prims[index]);
-      bool resetsXformStack = false;
-      std::vector<UsdGeomXformOp> xformops = xform.GetOrderedXformOps(&resetsXformStack);
-      if(!xformops.empty() && xformops.back().GetOpType() == UsdGeomXformOp::TypeTransform)
-      {
-        xformops.erase(xformops.end() - 1);
-        xform.SetXformOpOrder(xformops, resetsXformStack);
-      }
-    }
-    return !!m_prims[index];
-  }
-  return false;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-bool ProxyShape::getInternalValueInContext(const MPlug& plug, MDataHandle& dataHandle, MDGContext& ctx)
-{
-  Trace("TRSArrayDriver::getInternalValueInContext " << plug.name());
-
-  bool resetsXformStack = false;
-  if(plug.array() == m_drivenVisibility)
-  {
-    Trace("ProxyShape::setInternalValueInContext visibility");
-    uint32_t index = plug.logicalIndex();
-    if(m_prims.size() <= index || !m_prims[index])
-    {
-      if(!initPrim(index, ctx))
-      {
-        return 0;
-      }
-    }
-    UsdPrim prim = m_prims[index];
-    if(prim)
-    {
-      UsdGeomXform xform(prim);
-      TfToken token;
-      UsdAttribute attr = xform.GetVisibilityAttr();
-      attr.Get(&token);
-      dataHandle.set(token == UsdGeomTokens->inherited);
-      return true;
-    }
-  }
-  else
-  if(plug.array() == m_drivenScale)
-  {
-    uint32_t index = plug.logicalIndex();
-    Trace("TRSArrayDriver::getInternalValueInContext scale " << index);
-    if(m_prims.size() <= index || !m_prims[index])
-    {
-      if(!initPrim(index, ctx))
-      {
-        return 0;
-      }
-    }
-    UsdPrim prim = m_prims[index];
-    if(prim)
-    {
-      MVector scale(1.0, 1.0, 1.0);
-      UsdGeomXform xform(prim);
-      std::vector<UsdGeomXformOp> xformops = xform.GetOrderedXformOps(&resetsXformStack);
-      for(auto& it : xformops)
-      {
-        if(it.GetOpType() == UsdGeomXformOp::TypeScale)
-        {
-          TransformationMatrix::readVector(scale, it);
-          break;
-        }
-      }
-      dataHandle.set(scale);
-    }
-  }
-  if(plug.array() == m_drivenScale)
-  {
-    uint32_t index = plug.logicalIndex();
-    Trace("TRSArrayDriver::getInternalValueInContext scale " << index);
-    if(m_prims.size() <= index || !m_prims[index])
-    {
-      if(!initPrim(index, ctx))
-      {
-        return 0;
-      }
-    }
-    UsdPrim prim = m_prims[index];
-    if(prim)
-    {
-      MVector scale(1.0, 1.0, 1.0);
-      UsdGeomXform xform(prim);
-      std::vector<UsdGeomXformOp> xformops = xform.GetOrderedXformOps(&resetsXformStack);
-      for(auto& it : xformops)
-      {
-        if(it.GetOpType() == UsdGeomXformOp::TypeScale)
-        {
-          TransformationMatrix::readVector(scale, it);
-          break;
-        }
-      }
-      dataHandle.set(scale);
-    }
-  }
-  else
-  if(plug.array() == m_drivenTranslate)
-  {
-    Trace("TRSArrayDriver::getInternalValueInContext translate");
-    uint32_t index = plug.logicalIndex();
-    if(m_prims.size() <= index || !m_prims[index])
-    {
-      if(!initPrim(index, ctx))
-      {
-        return 0;
-      }
-    }
-    UsdPrim prim = m_prims[index];
-    if(prim)
-    {
-      MVector translate(0.0, 0.0, 0.0);
-      UsdGeomXform xform(prim);
-      std::vector<UsdGeomXformOp> xformops = xform.GetOrderedXformOps(&resetsXformStack);
-      for(auto& it : xformops)
-      {
-        if(it.GetOpType() == UsdGeomXformOp::TypeTranslate)
-        {
-          TransformationMatrix::readVector(translate, it);
-          break;
-        }
-      }
-      dataHandle.set(translate);
-    }
-  }
-  else
-  if(plug.array() == m_drivenRotate)
-  {
-    Trace("TRSArrayDriver::getInternalValueInContext rotate");
-    uint32_t index = plug.logicalIndex();
-    if(m_prims.size() <= index || !m_prims[index])
-    {
-      if(!initPrim(index, ctx))
-      {
-        return 0;
-      }
-    }
-    UsdPrim prim = m_prims[index];
-    const double degToRad = 3.141592654 / 180.0;
-    MVector rotation(0, 0, 0);
-    if(prim)
-    {
-      bool done = false;
-      UsdGeomXform xform(prim);
-      std::vector<UsdGeomXformOp> xformops = xform.GetOrderedXformOps(&resetsXformStack);
-      for(auto& it : xformops)
-      {
-        switch(it.GetOpType())
-        {
-        case UsdGeomXformOp::TypeRotateX:
-          {
-            rotation.x = TransformationMatrix::readDouble(it);
-            done = true;
-          }
-          break;
-        case UsdGeomXformOp::TypeRotateY:
-          {
-            rotation.y = TransformationMatrix::readDouble(it);
-            done = true;
-          }
-          break;
-        case UsdGeomXformOp::TypeRotateZ:
-          {
-            rotation.z = TransformationMatrix::readDouble(it);
-            done = true;
-          }
-          break;
-        case UsdGeomXformOp::TypeRotateXYZ:
-        case UsdGeomXformOp::TypeRotateYZX:
-        case UsdGeomXformOp::TypeRotateZXY:
-        case UsdGeomXformOp::TypeRotateXZY:
-        case UsdGeomXformOp::TypeRotateYXZ:
-        case UsdGeomXformOp::TypeRotateZYX:
-          {
-            TransformationMatrix::readVector(rotation, it);
-            done = true;
-          }
-          break;
-        default: break;
-        }
-        if(done) break;
-      }
-      dataHandle.set(rotation * degToRad);
-    }
-  }
-  else
-  if(plug.array() == m_drivenRotateOrder)
-  {
-    Trace("TRSArrayDriver::getInternalValueInContext rotateOrder");
-    uint32_t index = plug.logicalIndex();
-    if(m_prims.size() <= index || !m_prims[index])
-    {
-      if(!initPrim(index, ctx))
-      {
-        return 0;
-      }
-    }
-    UsdPrim prim = m_prims[index];
-    if(prim)
-    {
-      int32_t rotateOrder = -1;
-      UsdGeomXform xform(prim);
-      std::vector<UsdGeomXformOp> xformops = xform.GetOrderedXformOps(&resetsXformStack);
-      for(auto it = xformops.end(), end = xformops.end(); it != end && rotateOrder == -1; ++it)
-      {
-        switch(it->GetOpType())
-        {
-        case UsdGeomXformOp::TypeRotateX:
-        case UsdGeomXformOp::TypeRotateY:
-        case UsdGeomXformOp::TypeRotateZ:
-        case UsdGeomXformOp::TypeRotateXYZ:
-          rotateOrder = 0;
-          break;
-        case UsdGeomXformOp::TypeRotateYZX:
-          rotateOrder = 1;
-          break;
-        case UsdGeomXformOp::TypeRotateZXY:
-          rotateOrder = 2;
-          break;
-        case UsdGeomXformOp::TypeRotateXZY:
-          rotateOrder = 3;
-          break;
-        case UsdGeomXformOp::TypeRotateYXZ:
-          rotateOrder = 4;
-          break;
-        case UsdGeomXformOp::TypeRotateZYX:
-          rotateOrder = 5;
-          break;
-        default: break;
-        }
-      }
-      dataHandle.set(std::max(rotateOrder, 0));
-    }
-  }
-  else
-    return false;
-
-  return true;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-UsdGeomXformOp addTranslateOp(UsdGeomXform& xform, std::vector<UsdGeomXformOp>& ops)
-{
-  UsdGeomXformOp translateOp = xform.AddTranslateOp();
-  ops.insert(ops.begin(), translateOp);
-  xform.SetXformOpOrder(ops, xform.GetResetXformStack());
-  return translateOp;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-UsdGeomXformOp addScaleOp(UsdGeomXform& xform, std::vector<UsdGeomXformOp>& ops)
-{
-  UsdGeomXformOp scaleOp = xform.AddScaleOp();
-
-  auto it = ops.end();
-  while(ops.begin() != it)
-  {
-    --it;
-    std::string attrName = it->GetBaseName();
-    if(it->IsInverseOp())
-      attrName += "INV";
-
-    // if we find somewhere to insert it
-    auto type = xformOpToEnum(attrName);
-    if(type < kScale)
-    {
-      ops.insert(it + 1, scaleOp);
-      xform.SetXformOpOrder(ops, xform.GetResetXformStack());
-      return scaleOp;
-    }
-  }
-
-  // otherwise if we get here, just insert at the start of the array
-  ops.insert(ops.begin(), scaleOp);
-  xform.SetXformOpOrder(ops, xform.GetResetXformStack());
-  return scaleOp;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-UsdGeomXformOp addRotateOp(UsdGeomXform& xform, std::vector<UsdGeomXformOp>& ops)
-{
-  UsdGeomXformOp rotateOp = xform.AddRotateXYZOp();
-
-  auto it = ops.begin();
-  while(ops.end() != it)
-  {
-    std::string attrName = it->GetBaseName();
-    if(it->IsInverseOp())
-      attrName += "INV";
-
-    // if we find somewhere to insert it
-    auto type = xformOpToEnum(attrName);
-    if(type > kRotate)
-    {
-      ops.insert(it, rotateOp);
-      xform.SetXformOpOrder(ops, xform.GetResetXformStack());
-      return rotateOp;
-    }
-    ++it;
-  }
-
-  ops.insert(ops.end(), rotateOp);
-  xform.SetXformOpOrder(ops, xform.GetResetXformStack());
-  return rotateOp;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-bool ProxyShape::setInternalValueInContext(const MPlug& plug, const MDataHandle& dataHandle, MDGContext& ctx)
-{
-  Trace("ProxyShape::setInternalValueInContext " << plug.name());
-  if(plug.array() == m_drivenVisibility)
-  {
-    Trace("ProxyShape::setInternalValueInContext visibility");
-    uint32_t index = plug.logicalIndex();
-    if(m_prims.size() <= index || !m_prims[index])
-    {
-      if(!initPrim(index, ctx))
-      {
-        return 0;
-      }
-    }
-    UsdPrim prim = m_prims[index];
-    if(prim)
-    {
-      UsdGeomXform xform(prim);
-      UsdAttribute attr = xform.GetVisibilityAttr();
-      attr.Set(dataHandle.asBool() ? UsdGeomTokens->inherited : UsdGeomTokens->invisible);
-      return true;
-    }
-  }
-  else
-  if(plug.array() == m_drivenTranslate)
-  {
-    uint32_t index = plug.logicalIndex();
-    if(m_prims.size() <= index || !m_prims[index])
-    {
-      if(!initPrim(index, ctx))
-      {
-        return 0;
-      }
-    }
-    UsdPrim prim = m_prims[index];
-    bool resetsXformStack = false;
-    UsdGeomXform xform(prim);
-    std::vector<UsdGeomXformOp> xformops = xform.GetOrderedXformOps(&resetsXformStack);
-    if(!xformops.empty())
-    {
-      if(xformops[0].GetOpType() == UsdGeomXformOp::TypeTranslate)
-      {
-        TransformationMatrix::pushVector(dataHandle.asVector(), xformops[0]);
-        return true;
-      }
-    }
-
-    UsdGeomXformOp translateOp = addTranslateOp(xform, xformops);
-    TransformationMatrix::pushVector(dataHandle.asVector(), translateOp);
-    return true;
-  }
-  else
-  if(plug.array() == m_drivenRotate)
-  {
-    uint32_t index = plug.logicalIndex();
-    if(m_prims.size() <= index || !m_prims[index])
-    {
-      if(!initPrim(index, ctx))
-      {
-        return 0;
-      }
-    }
-    UsdPrim prim = m_prims[index];
-    bool resetsXformStack = false;
-    UsdGeomXform xform(prim);
-    std::vector<UsdGeomXformOp> xformops = xform.GetOrderedXformOps(&resetsXformStack);
-    for(auto& it : xformops)
-    {
-      switch(it.GetOpType())
-      {
-      case UsdGeomXformOp::TypeRotateX:
-        {
-          const double radToDeg = 180.0 / 3.141592654;
-          MVector rotation = dataHandle.asVector() * radToDeg;
-          TransformationMatrix::pushDouble(rotation.x, it);
-          return true;
-        }
-        break;
-
-      case UsdGeomXformOp::TypeRotateY:
-        {
-          const double radToDeg = 180.0 / 3.141592654;
-          MVector rotation = dataHandle.asVector() * radToDeg;
-          TransformationMatrix::pushDouble(rotation.y, it);
-          return true;
-        }
-        break;
-
-      case UsdGeomXformOp::TypeRotateZ:
-        {
-          const double radToDeg = 180.0 / 3.141592654;
-          MVector rotation = dataHandle.asVector() * radToDeg;
-          TransformationMatrix::pushDouble(rotation.z, it);
-          return true;
-        }
-        break;
-
-      case UsdGeomXformOp::TypeRotateXYZ:
-      case UsdGeomXformOp::TypeRotateXZY:
-      case UsdGeomXformOp::TypeRotateYXZ:
-      case UsdGeomXformOp::TypeRotateYZX:
-      case UsdGeomXformOp::TypeRotateZXY:
-      case UsdGeomXformOp::TypeRotateZYX:
-        {
-          const double radToDeg = 180.0 / 3.141592654;
-          MVector rotation = dataHandle.asVector() * radToDeg;
-          TransformationMatrix::pushVector(rotation, it);
-          return true;
-        }
-        break;
-      default: break;
-      }
-    }
-
-
-    UsdGeomXformOp rotateOp = addRotateOp(xform, xformops);
-    TransformationMatrix::pushVector(dataHandle.asVector(), rotateOp);
-    return true;
-  }
-  else
-  if(plug.array() == m_drivenRotateOrder)
-  {
-    MGlobal::displayError("I'm not sure how to handle changing rotation orders right now. Please bother robb.");
-  }
-  return false;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::updateDrivenPrimPaths(uint32_t drivenIndex, std::vector<SdfPath>& drivenPaths,
                                        std::vector<UsdPrim>& drivenPrims, const DrivenTransforms& drivenTransforms)
 {
@@ -1892,19 +1416,6 @@ void ProxyShape::deserialiseTransformRefs()
   }
 
   serializedRefCountsPlug().setString("");
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::serialiseSchemaPrims()
-{
-  serializedSchemaPrimsPlug().setString(m_schemaNodeDB.serialize());
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::deserialiseSchemaPrims()
-{
-  m_schemaNodeDB.deserialize(serializedSchemaPrimsPlug().asString());
-  serializedSchemaPrimsPlug().setString("");
 }
 
 //----------------------------------------------------------------------------------------------------------------------

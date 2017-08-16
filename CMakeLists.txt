@@ -59,27 +59,6 @@ string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
-# copy pxr_setup_python to add namespace package definition
-function(al_setup_python)
-    get_property(pxrPythonModules GLOBAL PROPERTY PXR_PYTHON_MODULES)
-
-    # A new list where each python module is quoted
-    set(converted "")
-    foreach(module ${pxrPythonModules})
-        list(APPEND converted "'${module}'")
-    endforeach()
-
-    # Join these with a ', '
-    string(REPLACE ";" ", " pyModulesStr "${converted}")
-
-    # Install a pxr __init__.py with an appropriate __all__
-    _get_install_dir(lib/python/pxr installPrefix)
-    install(CODE
-        "file(WRITE \"${CMAKE_INSTALL_PREFIX}/${installPrefix}/__init__.py\" \"try:\n\t__import__('pkg_resources').declare_namespace(__name__)\nexcept:\n\tpass\nfrom pkgutil import extend_path\n__path__ = extend_path(__path__, __name__)\n__all__ = [${pyModulesStr}]\n\")"
-    )
-
-endfunction()
-
 option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
 
@@ -101,9 +80,6 @@ if(BUILD_USDMAYA_TRANSLATORS)
     add_subdirectory(translators)
 endif()
 add_subdirectory(tests)
-
-al_setup_python()
-pxr_setup_plugins()
 
 get_property(LIBRARY_LOCATION GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION)
 get_property(PYTHON_LIBRARY_LOCATION GLOBAL PROPERTY GLOBAL_PYTHON_LIBRARY_LOCATION)

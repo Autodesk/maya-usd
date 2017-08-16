@@ -85,8 +85,14 @@ public:
   /// \param  subLayer the layer to remove
   bool removeSubLayer(Layer* subLayer);
 
+  /// \brief  removes a child layer from this layer
+  /// \param  childLayer the layer to remove
   bool removeChildLayer(Layer* childLayer);
 
+  /// \brief  adds a new child layer to this layer
+  /// \param  childLayer the new layer to add as a child layer of this one
+  /// \param  modifier optional modifier to use to build up undo/redo. This method does not call do it on the modifier.
+  ///         If no modifier is specified, then the connections are made immediately.
   void addChildLayer(Layer* childLayer, MDGModifier* modifier = 0);
 
   /// \brief  returns the parent layer (or NULL)
@@ -176,6 +182,7 @@ public:
     { return m_shape; }
 
   // ----------------  API FOR UNIT TESTING ONLY -------------------------
+  /// \brief  Internal function for unit tests only
   inline void testing_clearHandle()
     { m_handle = SdfLayerRefPtr(); }
   // ---------------------------------------------------------------------

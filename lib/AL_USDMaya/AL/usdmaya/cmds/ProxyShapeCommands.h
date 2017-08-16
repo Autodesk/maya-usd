@@ -195,14 +195,13 @@ private:
 class ProxyShapeResync
   : public ProxyShapeCommandBase
 {
-public:
-  AL_MAYA_DECLARE_COMMAND();
   SdfPath m_resyncPrimPath;
   UsdPrim m_resyncPrim;
   nodes::ProxyShape* m_shapeNode;
   bool m_runPrePrimChanged;
   bool m_runPostPrimChanged;
-
+public:
+  AL_MAYA_DECLARE_COMMAND();
 private:
   bool isUndoable() const override;
   MStatus doIt(const MArgList& args) override;

@@ -80,7 +80,6 @@ static void postFileOpen(void*)
         proxy->findExcludedGeometry();
         proxy->constructGLImagingEngine();
         proxy->deserialiseTransformRefs();
-        proxy->deserialiseSchemaPrims();
         auto layer = proxy->getLayer();
         if(layer)
         {
