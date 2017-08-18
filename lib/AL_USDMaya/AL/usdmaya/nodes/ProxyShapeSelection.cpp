@@ -352,7 +352,7 @@ MObject ProxyShape::makeUsdTransformChain(
     if(std::find(m_selectedPaths.begin(), m_selectedPaths.end(), usdPrim.GetPath()) != m_selectedPaths.end())
     {
       TransformReferenceMap::iterator previous = m_requiredPaths.find(usdPrim.GetPath());
-      return previous->second.m_node;
+      return previous->second.node();
     }
     m_selectedPaths.push_back(usdPrim.GetPath());
   }
@@ -382,7 +382,7 @@ MObject ProxyShape::makeUsdTransformChain(
   // If this path has been found.
   if(iter != m_requiredPaths.end())
   {
-    MObject nodeToReturn = iter->second.m_node;
+    MObject nodeToReturn = iter->second.node();
     switch(reason)
     {
     case kSelection:
@@ -595,7 +595,7 @@ void ProxyShape::makeUsdTransformsInternal(const UsdPrim& usdPrim, const MObject
     }
     else
     {
-      makeUsdTransformsInternal(prim, check->second.m_node, modifier, reason, modifier2);
+      makeUsdTransformsInternal(prim, check->second.node(), modifier, reason, modifier2);
     }
   }
 }
@@ -621,7 +621,7 @@ void ProxyShape::removeUsdTransformChain_internal(
 
     if(it->second.checkRef(reason))
     {
-      MObject object = it->second.m_node;
+      MObject object = it->second.node();
       if(object != MObject::kNullObj)
       {
         modifier.reparentNode(object);
@@ -652,7 +652,7 @@ void ProxyShape::removeUsdTransformChain(
     }
     if(it->second.decRef(reason))
     {
-      MObject object = it->second.m_node;
+      MObject object = it->second.node();
       if(object != MObject::kNullObj)
       {
         modifier.reparentNode(object);
@@ -703,7 +703,7 @@ void ProxyShape::removeUsdTransformChain(
 
     if(it->second.decRef(reason))
     {
-      MObject object = it->second.m_node;
+      MObject object = it->second.node();
       if(object != MObject::kNullObj)
       {
         modifier.reparentNode(object);
@@ -740,10 +740,8 @@ void ProxyShape::removeUsdTransformsInternal(
   if(it->second.decRef(reason))
   {
     // work around for Maya's love of deleting the parent transforms of custom transform nodes :(
-    MFnTransform tm;
-    tm.create();
-    tm.addChild(it->second.m_node);
-    modifier.deleteNode(it->second.m_node);
+    modifier.reparentNode(it->second.node());
+    modifier.deleteNode(it->second.node());
     m_requiredPaths.erase(it);
   }
 }
@@ -892,7 +890,7 @@ bool ProxyShape::removeAllSelectedNodes(SelectionUndoHelper& helper)
     for(auto value = toRemove.begin(), e = toRemove.end(); value != e; ++value)
     {
       // reparent the custom transform under world prior to deleting
-      MObject temp = (*value)->second.m_node;
+      MObject temp = (*value)->second.node();
       helper.m_modifier1.reparentNode(temp);
 
       // now we can delete (without accidentally nuking all parent transforms in the chain)
@@ -996,7 +994,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
       for(auto iter : helper.m_previousPaths)
       {
         auto temp = m_requiredPaths.find(iter);
-        MObject object = temp->second.m_node;
+        MObject object = temp->second.node();
         if(!std::binary_search(keepPrims.begin(), keepPrims.end(), iter))
         {
           auto prim = stage->GetPrimAtPath(iter);
@@ -1091,7 +1089,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
         for(auto prim : prims)
         {
           auto temp = m_requiredPaths.find(prim.GetPath());
-          MObject object = temp->second.m_node;
+          MObject object = temp->second.node();
 
           m_selectedPaths.erase(std::find(m_selectedPaths.begin(), m_selectedPaths.end(), prim.GetPath()));
 
@@ -1153,7 +1151,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
       for(auto prim : removePrims)
       {
         auto temp = m_requiredPaths.find(prim.GetPath());
-        MObject object = temp->second.m_node;
+        MObject object = temp->second.node();
 
         m_selectedPaths.erase(std::find(m_selectedPaths.begin(), m_selectedPaths.end(), prim.GetPath()));
 

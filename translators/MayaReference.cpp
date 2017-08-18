@@ -20,14 +20,19 @@
 #include "maya/MDGModifier.h"
 #include "maya/MNodeClass.h"
 #include "maya/MPlug.h"
+#include "maya/MFnStringData.h"
+#include "maya/MFnTransform.h"
+#include "maya/MFnTypedAttribute.h"
 #include "maya/MFnTransform.h"
 #include "maya/MFnCamera.h"
 #include "maya/MFileIO.h"
 #include "maya/MItDag.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
+#include "AL/maya/DgNodeHelper.h"
 #include "AL/usd/schemas/MayaReference.h"
 #include "AL/usdmaya/DebugCodes.h"
+#include "AL/usdmaya/Utils.h"
 
 IGNORE_USD_WARNINGS_PUSH
 #include <pxr/usd/usd/attribute.h>
@@ -70,7 +75,7 @@ MStatus MayaReference::import(const UsdPrim& prim, MObject& parent)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReference::tearDown(const SdfPath& prim)
 {
-  Trace("MayaReferenceLogic::tearDown");
+  Trace("MayaReferenceLogic::tearDown " << prim.GetString());
   MObject mayaObject;
   MObjectHandle handle;
   context()->getTransform(prim, handle);
@@ -78,6 +83,7 @@ MStatus MayaReference::tearDown(const SdfPath& prim)
   m_mayaReferenceLogic.UnloadMayaReference(mayaObject);
   return MS::kSuccess;
 }
+
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReference::update(const UsdPrim& prim)
 {
@@ -187,7 +193,8 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
               MString s = MFileIO::loadReferenceByNode(temp, &status);
             }
           }
-          else{
+          else
+          {
             TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s unloadReferenceByNode\n", prim.GetPath().GetText());
             MString s = MFileIO::unloadReferenceByNode(temp, &status);
           }
@@ -201,12 +208,14 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& parent) const
 {
-  Trace("MayaReferenceLogic::LoadMayaReference");
+  Trace("MayaReferenceLogic::LoadMayaReference " << parent.apiTypeStr());
+  const TfToken maya_associatedReferenceNode("maya_associatedReferenceNode");
   MFnDagNode fn;
-  // Check to see if we have a valid Maya reference attribute
-  UsdAttribute mayaReferenceAttribute = prim.GetAttribute(m_referenceName);
+  MStatus status;
 
   SdfAssetPath mayaReferenceAssetPath;
+  // Check to see if we have a valid Maya reference attribute
+  UsdAttribute mayaReferenceAttribute = prim.GetAttribute(m_referenceName);
   mayaReferenceAttribute.Get(&mayaReferenceAssetPath);
   MString mayaReferencePath(mayaReferenceAssetPath.GetResolvedPath().c_str());
 
@@ -246,10 +255,11 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
                              MString(" -groupName \"") + tempNodeForReference +
                              MString("\" -namespace \"") + rigNamespaceM +
                              MString("\" \"") + mayaReferencePath + MString("\"");
+
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::LoadMayaReference prim=%s execute \"%s\"\n",
                                       prim.GetPath().GetText(),
                                       referenceCommand.asChar());
-  MStatus status = MGlobal::executeCommand(referenceCommand, createdNodes);
+  status = MGlobal::executeCommand(referenceCommand, createdNodes);
   AL_MAYA_CHECK_ERROR(status, MString("failed to create maya reference: ") + referenceCommand);
   if(createdNodes.length() != 2){
     MGlobal::displayError(MString("Expected to get exactly 2 results from the reference command: ") + referenceCommand);
@@ -300,6 +310,11 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
 
   MFnDependencyNode refDependNode(referenceObject);
 
+  {
+    UsdAttribute attr = prim.CreateAttribute(maya_associatedReferenceNode, SdfValueTypeNames->String, true);
+    attr.Set<std::string>(std::string(refDependNode.name().asChar(), refDependNode.name().length()));
+  }
+
   MDGModifier dgMod;
   MPlug srcPlug = parentDag.findPlug("message");
   // This message attribute is used to connect specific nodes that may be associated with this reference (i.e. group,
@@ -319,7 +334,7 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
     AL_MAYA_CHECK_ERROR(status, MString("failed to execute connect maya reference plug: ") + status.errorString());
   }
 
-  //Delete the temporary node
+  // Delete the temporary node
   MGlobal::deleteNode(tempReferenceGroupObject);
 
   return MS::kSuccess;
