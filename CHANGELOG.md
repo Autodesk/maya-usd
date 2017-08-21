@@ -1,5 +1,8 @@
 # Release Notes
 
+### v0.23.1
+* Bug Fix: Maya 2016 build.
+
 ### v0.22.1
 * Bug Fix: Fixed playblast issue that caused drift in caches when using animated film offsets on the camera
 
