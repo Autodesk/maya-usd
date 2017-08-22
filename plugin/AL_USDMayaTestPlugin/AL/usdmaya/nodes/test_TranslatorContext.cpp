@@ -89,7 +89,7 @@ static const char* const g_simpleRig =
 "{\n"
 "    def ALMayaReference \"rig\""
 "    {\n"
-"      asset mayaReference = \"/tmp/AL_usdmaya_test_cube.ma\"\n"
+"      asset mayaReference = \"/tmp/AL_USDMayaTests_cube.ma\"\n"
 "    }\n"
 "}\n";
 
@@ -115,11 +115,11 @@ TEST(TranslatorContext, TranslatorContext)
   // pCube1, pCubeShape1, polyCube1
   MFileIO::newFile(true);
   MGlobal::executeCommand("polyCube -w 1 -h 1 -d 1 -sd 1 -sh 1 -sw 1", false, false);
-  MFileIO::saveAs("/tmp/AL_usdmaya_test_cube.ma", 0, true);
+  MFileIO::saveAs("/tmp/AL_USDMayaTests_cube.ma", 0, true);
   MFileIO::newFile(true);
 
   {
-    std::ofstream os("/tmp/AL_usdmaya_simpleRig.usda");
+    std::ofstream os("/tmp/AL_USDMayaTests_simpleRig.usda");
     os << g_simpleRig;
   }
 
@@ -134,7 +134,7 @@ TEST(TranslatorContext, TranslatorContext)
     AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
 
     // force the stage to load
-    proxy->filePathPlug().setString("/tmp/AL_usdmaya_simpleRig.usda");
+    proxy->filePathPlug().setString("/tmp/AL_USDMayaTests_simpleRig.usda");
 
     auto stage = proxy->getUsdStage();
 
