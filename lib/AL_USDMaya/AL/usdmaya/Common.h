@@ -96,10 +96,6 @@ class TransformationMatrix;
 }
 }
 
-#ifndef AL_ENABLE_TRACE
-# define AL_ENABLE_TRACE 0
-#endif
-
 #define IGNORE_USD_WARNINGS_PUSH \
   _Pragma ("GCC diagnostic push") \
   _Pragma ("GCC diagnostic ignored \"-Wunused-local-typedefs\"")
