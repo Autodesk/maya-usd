@@ -1,5 +1,8 @@
 # Release Notes
 
+### v0.23.2
+* Consolidated debug traces to use TF_DEBUG, see developers documentation for available flags.
+
 ### v0.23.1
 * Bug Fix: Maya 2016 build.
 

@@ -450,5 +450,14 @@ To help understand what happens we use TF_DEBUG quite extensively and one can tu
 export TF_DEBUG="ALUSDMAYA* -ALUSDMAYA_EVALUATION -ALUSDMAYA_COMMANDS"
 ```
 
+Existing TF_DEBUG flags are:
+* ALUSDMAYA_TRANSLATORS
+* ALUSDMAYA_EVENTS
+* ALUSDMAYA_EVALUATION
+* ALUSDMAYA_COMMANDS
+* ALUSDMAYA_LAYERS
+* ALUSDMAYA_DRAW
+* ALUSDMAYA_SELECTION
+
 ##  running in batch mode
 @todo add doc
