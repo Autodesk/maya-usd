@@ -8,8 +8,11 @@
 - It has been tested  on CentOS 6.6
 
 ## Supported Maya Versions 
-+ maya-2016 - have done limited testing (via docker). Selection probably broken. Does it work in VP1?
-+ maya-2017 - Update 3 recommended for viewport selection fixes
++ maya-2016
+  - have done limited testing (via docker). Selection probably broken. Does it work in VP1?
+  - USD built with PXR_MAYA_TBB_BUG_WORKAROUND turned on might be needed if deadlocks happen
++ maya-2017
+  - Update 3 recommended for viewport selection fixes
 
 ## Using Cmake
 

@@ -21,7 +21,7 @@ add_custom_target(run_mayaplugin_tests
     DEPENDS AL_USDMayaTestPlugin ${SCHEMAS_PACKAGE} ${TRANSLATORS_PACKAGE}
 )
 
-if(MAYA_API_VERSION STRGREATER 2017 AND MAYA_API_VERSION STRLESS 2018)
+if(MAYA_API_VERSION STRLESS 2018)
     add_custom_target(maya_tests DEPENDS run_mayaplugin_tests)
     add_custom_target(unit_tests DEPENDS maya_tests)
 else()

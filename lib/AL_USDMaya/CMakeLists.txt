@@ -142,6 +142,15 @@ list(APPEND AL_usdmaya_public_headers
         ${AL_usdmaya_fileio_translators_headers}
 )
 
+# For maya versions above 2016, we can use cmake import targets.
+if(${MAYA_API_VERSION} STRLESS 2017)
+    find_library(QTGUI_LIBRARY
+        QtGui
+        HINTS
+            ${MAYA_Foundation_LIBRARY}
+    )
+endif()
+
 add_library(${LIBRARY_NAME}
     SHARED
         ${AL_usdmaya_public_headers}
@@ -162,9 +171,8 @@ target_include_directories(
     ${LIBRARY_NAME}
     PUBLIC
     ${PXR_INCLUDE_DIRS}
+    ${MAYA_INCLUDE_DIRS}
 )
-
-set(MAYA_QT_LIBRARIES ${Qt_LIBRARIES})
 
 target_link_libraries(${LIBRARY_NAME}
     ar 
@@ -188,9 +196,22 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMayaUI_LIBRARY}
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_OpenMayaRender_LIBRARY}
-    ${MAYA_QT_LIBRARIES}
-    Qt5::Gui
 )
+
+if(${MAYA_API_VERSION} STRGREATER 2017)
+    target_link_libraries(${LIBRARY_NAME}
+        Qt5::Gui
+    )
+else()
+    target_include_directories(${LIBRARY_NAME}
+        PUBLIC
+        $ENV{MAYA_LOCATION}/include/Qt
+    )
+    target_link_libraries(${LIBRARY_NAME}
+        ${QT_QTGUI_LIBRARY}
+    )
+endif()
+
 install(TARGETS ${LIBRARY_NAME}
     LIBRARY
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib

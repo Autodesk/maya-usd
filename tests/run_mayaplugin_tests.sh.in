@@ -8,7 +8,10 @@ $PXR_PLUGINPATH
 
 export LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/src/schemas/AL/usd/schemas:\
 ${CMAKE_BINARY_DIR}/src/translators:\
+$MAYA_LOCATION\\lib:\
 $LD_LIBRARY_PATH
+
+export PATH=$MAYA_LOCATION/bin:$PATH
 
 export MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/test_plugin/AL_USDMayaTestPlugin:$MAYA_PLUG_IN_PATH
 

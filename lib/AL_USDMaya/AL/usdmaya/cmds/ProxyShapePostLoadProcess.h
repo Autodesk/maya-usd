@@ -76,7 +76,7 @@ public:
   /// \param  objsToCreate the mapping returned from createTranformChainsForSchemaPrims
   static void createSchemaPrims(
       nodes::ProxyShape* proxy,
-      const MObjectToPrim& objsToCreate);
+      const std::vector<UsdPrim>& objsToCreate);
 
   /// \brief  called once all plugin nodes have been created, and will request that each plugin translator performs
   ///         the postImport fixup to safely make any connections between Maya nodes
@@ -84,7 +84,11 @@ public:
   /// \param  objsToCreate the mapping returned from createTranformChainsForSchemaPrims
   static void connectSchemaPrims(
       nodes::ProxyShape* proxy,
-      const MObjectToPrim& objsToCreate);
+      const std::vector<UsdPrim>& objsToCreate);
+
+  static void updateSchemaPrims(
+      nodes::ProxyShape* proxy,
+      const std::vector<UsdPrim>& objsToCreate);
 
 private:
   static fileio::ImporterParams m_params;
