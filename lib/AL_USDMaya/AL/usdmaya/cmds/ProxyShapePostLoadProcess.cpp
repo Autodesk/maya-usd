@@ -356,8 +356,7 @@ void ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(
     const MDagPath& proxyTransformPath,
     ProxyShapePostLoadProcess::MObjectToPrim& objsToCreate)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims called\n");
-  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims\n");
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims\n");
   AL_BEGIN_PROFILE_SECTION(CreateTransformChains);
   {
     objsToCreate.reserve(schemaPrims.size());
