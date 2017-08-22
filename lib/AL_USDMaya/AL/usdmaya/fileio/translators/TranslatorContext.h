@@ -314,7 +314,6 @@ private:
       UsdPrim& primPath,
       const MObject& primObj);
 
-
   inline PrimLookups::iterator find(const SdfPath& path)
   {
     PrimLookups::iterator end = m_primMapping.end();

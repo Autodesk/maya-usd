@@ -348,7 +348,7 @@ public:
       const auto it = m_requiredPaths.find(path);
       if(it != m_requiredPaths.end())
       {
-        return it->second.m_node;
+        return it->second.node();
       }
       return MObject::kNullObj;
     }
@@ -438,7 +438,20 @@ public:
   void destroyTransformReferences()
     { m_requiredPaths.clear(); }
 
-  MObjectToPrim filterUpdatablePrims(std::vector<UsdPrim>& variantPrimsToSwitch);
+  /// \brief  Internal method. Used to filter out a set of paths into groups that need to be created, deleted, or updating.
+  /// \param  previousPrims the previous list of prims underneath a prim in the process of a variant change
+  /// \param  newPrimSet the list of prims found under neath the prim after the variant change. Prims that can be
+  ///         updated will be removed from this list, leaving only the prims that need to be created.
+  /// \param  transformsToCreate of the new nodes that can be created, if they are a DAG node (i.e. require a transform),
+  ///         then this list will contain those nodes
+  /// \param  updatablePrimSet a returned list of prims that can be updated
+  /// \param  removedPrimSet a returned set of paths for objects that need to be deleted.
+  void filterPrims(
+      const SdfPathVector& previousPrims,
+      std::vector<UsdPrim>& newPrimSet,
+      std::vector<UsdPrim>& transformsToCreate,
+      std::vector<UsdPrim>& updatablePrimSet,
+      SdfPathVector& removedPrimSet);
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Plug-in Translator node methods
@@ -612,11 +625,10 @@ private:
 
   struct TransformReference
   {
-    friend class ProxyShape;
     TransformReference(const MObject& node, const TransformReason reason);
     TransformReference(MObject mayaNode, Transform* node, uint32_t r, uint32_t s, uint32_t rc);
-    MObject m_node;
     Transform* m_transform;
+    MObject node() const { return m_node; }
 
     bool decRef(const TransformReason reason);
     void incRef(const TransformReason reason);
@@ -637,6 +649,7 @@ private:
     void prepSelect()
       { m_selectedTemp = m_selected; }
   private:
+    MObject m_node;
     // ref counting values
     struct
     {
@@ -675,7 +688,11 @@ private:
   MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
   MStatus setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& plugs) override;
   bool isBounded() const override;
+  #if MAYA_API_VERSION < 201700
+  MPxNode::SchedulingType schedulingType() const override { return kSerialize; }
+  #else
   MPxNode::SchedulingType schedulingType() const override { return kSerial; }
+  #endif
   MStatus preEvaluation(const MDGContext & context, const MEvaluationNode& evaluationNode) override;
 
   //--------------------------------------------------------------------------------------------------------------------

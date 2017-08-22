@@ -512,7 +512,7 @@ void ProxyShape::onEditTargetChanged(UsdNotice::StageEditTargetChanged const& no
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& variantPrimsToSwitch)
+void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& previousPrims)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::onPrimResync checking %s\n", primPath.GetText());
 
@@ -530,22 +530,62 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& variantPrim
   fn.getPath(dag_path);
   dag_path.pop();
 
-  auto primsToSwitch = huntForNativeNodesUnderPrim(dag_path, primPath, translatorManufacture());
+  // find the new set of prims
+  std::vector<UsdPrim> newPrimSet = huntForNativeNodesUnderPrim(dag_path, primPath, translatorManufacture());
+  std::vector<UsdPrim> updatablePrimSet;
+  std::vector<UsdPrim> transformsToCreate;
 
-  context()->removeEntries(variantPrimsToSwitch);
+  SdfPathVector removedPrimSet;
+  filterPrims(previousPrims, newPrimSet, transformsToCreate, updatablePrimSet, removedPrimSet);
   m_variantSwitchedPrims.clear();
+
+#if AL_ENABLE_TRACE
+  std::cout << "new prims" << std::endl;
+  for(auto it : newPrimSet)
+  {
+    std::cout << it.GetPath().GetText() << std::endl;
+  }
+  std::cout << "new transforms" << std::endl;
+  for(auto it : transformsToCreate)
+  {
+    std::cout << it.GetPath().GetText() << std::endl;
+  }
+  std::cout << "updateable prims" << std::endl;
+  for(auto it : updatablePrimSet)
+  {
+    std::cout << it.GetPath().GetText() << std::endl;
+  }
+  std::cout << "removed prims" << std::endl;
+  for(auto it : removedPrimSet)
+  {
+    std::cout << it.GetText() << std::endl;
+  }
+#endif
+
+  cmds::ProxyShapePostLoadProcess::MObjectToPrim objsToCreate;
+  if(!transformsToCreate.empty())
+    cmds::ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(this, transformsToCreate, dag_path, objsToCreate);
+
+  if(!newPrimSet.empty())
+    cmds::ProxyShapePostLoadProcess::createSchemaPrims(this, newPrimSet);
+
+  if(!updatablePrimSet.empty())
+    cmds::ProxyShapePostLoadProcess::updateSchemaPrims(this, updatablePrimSet);
+
+  context()->removeEntries(removedPrimSet);
 
   cleanupTransformRefs();
 
-  MObjectToPrim objsToCreate = filterUpdatablePrims(primsToSwitch);
   context()->updatePrimTypes();
 
-  cmds::ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(this, primsToSwitch, dag_path, objsToCreate);
-
-  cmds::ProxyShapePostLoadProcess::createSchemaPrims(this, objsToCreate);
-
   // now perform any post-creation fix up
-  cmds::ProxyShapePostLoadProcess::connectSchemaPrims(this, objsToCreate);
+  if(!newPrimSet.empty())
+    cmds::ProxyShapePostLoadProcess::connectSchemaPrims(this, newPrimSet);
+
+  //cmds::ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(this, primsToSwitch, dag_path, objsToCreate);
+  if(!updatablePrimSet.empty())
+    cmds::ProxyShapePostLoadProcess::connectSchemaPrims(this, updatablePrimSet);
+
 
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::onPrimResync end:\n%s\n", context()->serialise().asChar());
 
@@ -556,26 +596,82 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& variantPrim
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-ProxyShape::MObjectToPrim ProxyShape::filterUpdatablePrims(std::vector<UsdPrim>& variantPrimsToSwitch)
+void ProxyShape::filterPrims(
+    const SdfPathVector& previousPrims,
+    std::vector<UsdPrim>& newPrimSet,
+    std::vector<UsdPrim>& transformsToCreate,
+    std::vector<UsdPrim>& updatablePrimSet,
+    SdfPathVector& removedPrimSet)
 {
+  // copy over original prims
+  removedPrimSet.assign(previousPrims.begin(), previousPrims.end());
+
+  // to see if no prims are found
+  TfToken nullToken;
+
   MObjectToPrim objsToCreate;
   fileio::SchemaPrimsUtils schemaPrimUtils(translatorManufacture());
   auto manufacture = translatorManufacture();
-  for(auto it = variantPrimsToSwitch.begin(); it != variantPrimsToSwitch.end(); )
+  for(auto it = newPrimSet.begin(); it != newPrimSet.end(); )
   {
-    TfToken type = context()->getTypeForPath(it->GetPath());
-    fileio::translators::TranslatorRefPtr translator = manufacture.get(type);
-    if(type == it->GetTypeName() && translator && translator->supportsUpdate() && translator->needsTransformParent())
+    UsdPrim prim = *it;
+    auto lastIt = it;
+    ++it;
+
+    SdfPath path = prim.GetPath();
+
+    // check previous prim type (if it exists at all?)
+    TfToken type = context()->getTypeForPath(path);
+    TfToken newType = prim.GetTypeName();
+    fileio::translators::TranslatorRefPtr translator = manufacture.get(newType);
+
+    if(nullToken == type)
     {
-      objsToCreate.push_back(std::pair<MObject, UsdPrim>(findRequiredPath(it->GetPath()), *it));
-      variantPrimsToSwitch.erase(it);
+      // all good, prim will remain in the new set (we have no entry for it)
+      if(translator->needsTransformParent())
+      {
+        transformsToCreate.push_back(prim);
+      }
     }
     else
     {
-      ++it;
+      // if the type remains the same, and the type supports update
+      if(translator->supportsUpdate())
+      {
+        if(type == prim.GetTypeName())
+        {
+          // add to updatable prim list
+          updatablePrimSet.push_back(prim);
+
+          // locate the path and delete from the removed set (we do not want to delete this prim!
+          auto iter = std::lower_bound(removedPrimSet.begin(), removedPrimSet.end(), path, [](const SdfPath& a, const SdfPath& b){ return b < a; } );
+          if(iter != removedPrimSet.end() && *iter == path)
+          {
+            removedPrimSet.erase(iter);
+            it = newPrimSet.erase(lastIt);
+          }
+        }
+      }
+      else
+      {
+        // should always be the case?
+        if(translator)
+        {
+          // if we need a transform, make a note of it now
+          if(translator->needsTransformParent())
+          {
+            transformsToCreate.push_back(prim);
+          }
+        }
+        else
+        {
+          // we should be able to delete this prim from the set??
+          // We shouldn't really get here however!
+          it = newPrimSet.erase(lastIt);
+        }
+      }
     }
   }
-  return objsToCreate;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1177,7 +1273,7 @@ void ProxyShape::unloadMayaReferences()
   for(auto it = m_requiredPaths.begin(), e = m_requiredPaths.end(); it != e; ++it)
   {
     MStatus status;
-    MFnDependencyNode fn(it->second.m_node, &status);
+    MFnDependencyNode fn(it->second.node(), &status);
     if(status)
     {
       MPlug plug = fn.findPlug("message", &status);
@@ -1354,7 +1450,7 @@ void ProxyShape::serialiseTransformRefs()
   std::ostringstream oss;
   for(auto iter : m_requiredPaths)
   {
-    MFnDagNode fn(iter.second.m_node);
+    MFnDagNode fn(iter.second.node());
     MDagPath path;
     fn.getPath(path);
     oss << path.fullPathName() << " "

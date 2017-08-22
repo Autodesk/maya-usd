@@ -1,32 +1,71 @@
+set(
+    resources_install_path
+    ${CMAKE_INSTALL_PREFIX}/share/usd/plugins/${SCHEMAS_PACKAGE}/resources
+)
+
+set(
+    library_install_path
+    ${CMAKE_INSTALL_PREFIX}/lib
+)
+
+set(
+    bindings_install_path
+    ${CMAKE_INSTALL_PREFIX}/lib/python/${SCHEMAS_PYTHON_PATH}
+)
+
+# Bake library name
+configure_file (
+    ./plugInfo.json.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/plugInfo.json
+    @ONLY
+)
+
+list(APPEND DEPENDANT_LIBRARIES ${PYTHON_LIBRARIES} usd)
+
+####################################################################################################
+# Schemas generation and validation
+####################################################################################################
+
+if(VALIDATE_GENERATED_SCHEMAS)
+
+# Bake library name, tokens prefix and usd schemas path
 if(NOT USD_SCHEMA_PATH)
-    # PXR_CMAKE_DIR should be defined in pxrConfig.cmake
-    set(USD_SCHEMA_PATH ${PXR_CMAKE_DIR}/share/usd/plugins/usd/resources/schema.usda)
+    set(USD_SCHEMA_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../../usd/schema.usda)
+endif()
+configure_file (
+    ./schema.usda.in
+    ./schema.usda
+)
+
+# https://github.com/PixarAnimationStudios/USD/issues/158
+if(NOT USD_CODEGEN_TEMPLATES_PATH)
+    set(USD_CODEGEN_TEMPLATES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../../codegenTemplates)
 endif()
 
-configure_file (
-  "${CMAKE_CURRENT_SOURCE_DIR}/schema.usda.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/schema.usda"
-)
-
-configure_file (
-  "${CMAKE_CURRENT_SOURCE_DIR}/plugInfo.json.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json"
-  @ONLY
-)
-
 execute_process(
-  COMMAND
-    usdGenSchema ${CMAKE_CURRENT_BINARY_DIR}/schema.usda ${CMAKE_CURRENT_BINARY_DIR}
-  WORKING_DIRECTORY
-    ${CMAKE_CURRENT_SOURCE_DIR}/
+    COMMAND
+        usdGenSchema
+            -t ${USD_CODEGEN_TEMPLATES_PATH}
+            -v
+            ${CMAKE_CURRENT_BINARY_DIR}/schema.usda
+            .
+    WORKING_DIRECTORY
+        ${CMAKE_CURRENT_SOURCE_DIR}
+    RESULT_VARIABLE
+        usdgen_res
 )
 
-list(APPEND DEPENDANT_LIBRARIES ${PYTHON_LIBRARIES} usd )
+if(usdgen_res)
+    message(FATAL_ERROR "Schemas generation failed")
+endif()
+
+endif()
 
 ####################################################################################################
 # Usd plugin
 ####################################################################################################
 
+# Bake python module path
 configure_file (
   "${CMAKE_CURRENT_SOURCE_DIR}/ModuleDeps.cpp.in"
   "${CMAKE_CURRENT_BINARY_DIR}/ModuleDeps.cpp"
@@ -34,9 +73,9 @@ configure_file (
 
 add_library(${SCHEMAS_PACKAGE}
     SHARED
-    ${CMAKE_CURRENT_BINARY_DIR}/MayaReference.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/HostDrivenTransformInfo.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/tokens.cpp
+    MayaReference.cpp
+    HostDrivenTransformInfo.cpp
+    tokens.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/ModuleDeps.cpp
 )
 
@@ -50,56 +89,24 @@ target_link_libraries(${SCHEMAS_PACKAGE} ${DEPENDANT_LIBRARIES})
 install(
     TARGETS ${SCHEMAS_PACKAGE}
     LIBRARY
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-)
-
-# Copy the generated files resources in a hierarchy replicating the insallation hierarchy.
-# TODO: use install prefix variable.
-get_target_property( LIBRARY_LOCATION
-  ${SCHEMAS_PACKAGE}
-  LOCATION
-  )
-
-get_filename_component(LIBRARY_LOCATION
-  ${LIBRARY_LOCATION}
-  DIRECTORY
-  )
-
-configure_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
-    ${CMAKE_CURRENT_BINARY_DIR}/share/usd/plugins/${SCHEMAS_PACKAGE}/resources/plugInfo.json
-    )
-
-file(
-    COPY
-    ${CMAKE_CURRENT_BINARY_DIR}/generatedSchema.usda
-    DESTINATION
-    ${CMAKE_CURRENT_BINARY_DIR}/share/usd/plugins/${SCHEMAS_PACKAGE}/resources
-    )
-
-# Setup the actual plugInfo.json.
-set(LIBRARY_LOCATION "../../../../lib")
-configure_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
-    ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
-    )
-
-
-configure_file (
-  "${CMAKE_CURRENT_SOURCE_DIR}/module.cpp.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/module.cpp"
+    DESTINATION ${library_install_path}
 )
 
 ####################################################################################################
 # Python bindings
 ####################################################################################################
 
+configure_file (
+  "${CMAKE_CURRENT_SOURCE_DIR}/module.cpp.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/module.cpp"
+)
+
 add_library(${SCHEMAS_PYTHON_PACKAGE}
     SHARED
     ${CMAKE_CURRENT_BINARY_DIR}/module.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/wrapMayaReference.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/wrapHostDrivenTransformInfo.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/wrapTokens.cpp
+    wrapMayaReference.cpp
+    wrapHostDrivenTransformInfo.cpp
+    wrapTokens.cpp
 )
 
 set_target_properties(${SCHEMAS_PYTHON_PACKAGE}
@@ -116,7 +123,7 @@ target_link_libraries(${SCHEMAS_PYTHON_PACKAGE} ${SCHEMAS_PACKAGE} ${DEPENDANT_L
 
 install(TARGETS ${SCHEMAS_PYTHON_PACKAGE}
     LIBRARY
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${SCHEMAS_PYTHON_PATH}
+    DESTINATION ${bindings_install_path}
 )
 
 ####################################################################################################
@@ -166,10 +173,10 @@ install(
 
 install(
     FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/MayaReference.h
-        ${CMAKE_CURRENT_BINARY_DIR}/HostDrivenTransformInfo.h
-        ${CMAKE_CURRENT_BINARY_DIR}/api.h
-        ${CMAKE_CURRENT_BINARY_DIR}/tokens.h
+        MayaReference.h
+        HostDrivenTransformInfo.h
+        api.h
+        tokens.h
     DESTINATION
         ${CMAKE_INSTALL_PREFIX}/include/AL/usd/schemas
 )
@@ -178,14 +185,27 @@ install(
 # Install usd plugin resources
 ####################################################################################################
 
-install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/usd/plugins/${SCHEMAS_PACKAGE}/resources
+file(RELATIVE_PATH
+    SCHEMAS_LIBRARY_DIR
+    ${resources_install_path}/..
+    ${library_install_path}
+
+)
+
+# Bake relative path
+configure_file(
+    ./plugInfo.json
+    .
 )
 
 install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/generatedSchema.usda 
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/usd/plugins/${SCHEMAS_PACKAGE}/resources
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
+    DESTINATION ${resources_install_path}
+)
+
+install(
+    FILES generatedSchema.usda 
+    DESTINATION ${resources_install_path}
 )
 
 ####################################################################################################

@@ -147,7 +147,6 @@ TEST(ProxyShape, basicProxyShapeSetUp)
     EXPECT_TRUE(rootPrim);
     EXPECT_TRUE(SdfPath("/") == rootPrim.GetPath());
 
-    std::cout << "setting edit target" << std::endl;
     stage->SetEditTarget(session);
 
     // lets grab a prim, and then modify it a bit (this should leave us with a modification in the session layer)

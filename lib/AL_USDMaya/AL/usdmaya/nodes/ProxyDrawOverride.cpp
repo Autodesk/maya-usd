@@ -53,6 +53,7 @@ public:
   UsdPrim m_rootPrim;
   UsdImagingGLHdEngine* m_engine = 0;
   ProxyShape* m_shape = 0;
+  MDagPath m_objPath;
 };
 }
 
@@ -115,6 +116,7 @@ MUserData* ProxyDrawOverride::prepareForDraw(
   RenderUserData* data = new RenderUserData;
 
   data->m_shape = (ProxyShape*)fn.userNode();
+  data->m_objPath = objPath;
 
   auto engine = data->m_shape->engine();
   if(!engine)
@@ -129,24 +131,6 @@ MUserData* ProxyDrawOverride::prepareForDraw(
   {
     return NULL;
   }
-
-  MMatrix viewproj = frameContext.getMatrix(MHWRender::MFrameContext::kViewProjMtx);
-
-  int originX, originY, width, height;
-  frameContext.getViewportDimensions(originX, originY, width, height);
-
-  // For reasons unknown, the third row of this returned value, is half what maya uses when rendering.
-  //
-  // GfMatrix4d mm(frameContext.getMatrix(MHWRender::MFrameContext::kProjectionMtx).matrix);
-  GfMatrix4d mm;
-  glGetDoublev(GL_PROJECTION_MATRIX, (double*)&mm);
-
-  engine->SetCameraState(
-      GfMatrix4d(frameContext.getMatrix(MHWRender::MFrameContext::kViewMtx).matrix),
-      mm,
-      GfVec4d(originX, originY, width, height));
-
-  engine->SetRootTransform(GfMatrix4d(objPath.inclusiveMatrix().matrix));
 
   data->m_params.showGuides = data->m_shape->displayGuidesPlug().asBool();
   data->m_params.showRender = data->m_shape->displayRenderGuidesPlug().asBool();
@@ -354,6 +338,17 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
 
     ptr->m_engine->SetLightingState(lights, material, GfVec4f(0.05f));
     glDepthFunc(GL_LESS);
+
+    int originX, originY, width, height;
+    context.getViewportDimensions(originX, originY, width, height);
+
+    ptr->m_engine->SetCameraState(
+        GfMatrix4d(context.getMatrix(MHWRender::MFrameContext::kViewMtx).matrix),
+        GfMatrix4d(context.getMatrix(MHWRender::MFrameContext::kProjectionMtx).matrix),
+        GfVec4d(originX, originY, width, height));
+
+    ptr->m_engine->SetRootTransform(GfMatrix4d(ptr->m_objPath.inclusiveMatrix().matrix));
+
     ptr->m_engine->Render(ptr->m_rootPrim, ptr->m_params);
 
     auto view = M3dView::active3dView();

@@ -402,10 +402,6 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
     {
       preUnloadPrim(prim, node.object());
     }
-    else
-    {
-      //TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("invalid path found! " << node.m_object.object());
-    }
   }
 }
 
@@ -483,11 +479,16 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
     // remove the prims that died
     for(auto path : pathsToErase)
     {
-      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries removing entry %s\n", path.GetText());
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries primPath=%s\n", path.GetText());
       PrimLookups::iterator node = std::lower_bound(m_primMapping.begin(), m_primMapping.end(), path, value_compare());
 
-      // remove nodes from map
-      m_primMapping.erase(node);
+      // The item might already have been removed by a translator...
+      if(node != m_primMapping.end() && node->path() == path)
+      {
+        // remove nodes from map
+        m_primMapping.erase(node);
+      }
+      
       m_proxyShape->removeUsdTransformChain(path, modifier, nodes::ProxyShape::kRequired);
     }
 
