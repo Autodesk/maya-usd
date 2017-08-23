@@ -288,6 +288,9 @@ public:
   /// Serialised reference counts to rebuild the transform reference information
   AL_DECL_ATTRIBUTE(serializedRefCounts);
 
+  /// The path list joined by ",", that will be used as a mask when doing UsdStage::OpenMask()
+  AL_DECL_ATTRIBUTE(populationMaskIncludePaths);
+
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Output Attributes
   //--------------------------------------------------------------------------------------------------------------------
@@ -711,6 +714,8 @@ private:
 
   UsdPrim getUsdPrim(MDataBlock& dataBlock) const;
   SdfPathVector getExcludePrimPaths() const;
+  UsdStagePopulationMask constructStagePopulationMask(const MString &paths) const;
+  SdfPathVector getPrimPathsFromCommaJoinedString(const MString &paths) const;
   bool isStageValid() const;
   bool primHasExcludedParent(UsdPrim prim);
   bool initPrim(const uint32_t index, MDGContext& ctx);

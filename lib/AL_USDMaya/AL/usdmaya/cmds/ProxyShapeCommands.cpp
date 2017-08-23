@@ -196,8 +196,8 @@ MSyntax ProxyShapeImport::createSyntax()
   syntax.addFlag("-fp", "-fullpaths", MSyntax::kBoolean);
   syntax.makeFlagMultiUse("-arp");
 
-  syntax.addFlag("-spm", "-stagePopulationMask ", MSyntax::kString);
-  syntax.makeFlagMultiUse("-spm");
+  syntax.addFlag("-pmi", "-populationMaskInclude", MSyntax::kString);
+  syntax.makeFlagMultiUse("-pmi");
 
   syntax.addFlag("-h", "-help", MSyntax::kNoArg);
   return syntax;
@@ -278,7 +278,8 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   MString sessionLayerSerialized;
   MString primPath;
   MString excludePrimPath;
-  MStringArray populationMaskList;
+
+  MString populationMaskIncludePath;
   bool connectToTime = true;
   bool unloaded = false;
 
@@ -293,7 +294,7 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   bool hasPrimPath = database.isFlagSet("-pp");
   bool hasExclPrimPath = database.isFlagSet("-epp");
   bool hasSession = database.isFlagSet("-s");
-  unsigned int stagePopulationMaskCount = database.numberOfFlagUses("-spm");
+  unsigned int stagePopulationMaskIncludeCount = database.numberOfFlagUses("-pmi");
 
   if(hasName) {
     database.getFlagArgument("-n", 0, name);
@@ -311,17 +312,27 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
     database.getFlagArgument("-s", 0, sessionLayerSerialized);
   }
 
-  if(stagePopulationMaskCount)
+  if(stagePopulationMaskIncludeCount)
   {
     MArgList maskList;
     MString mask;
-    for(unsigned int i=0; i<stagePopulationMaskCount; ++i)
+    MStringArray populationMaskList;
+    for(unsigned int i=0; i<stagePopulationMaskIncludeCount; ++i)
     {
-      database.getFlagArgumentList("-spm", i, maskList);
+      database.getFlagArgumentList("-pmi", i, maskList);
       maskList.get(0, mask);
       if(mask.length())
       {
         populationMaskList.append(mask);
+      }
+    }
+    unsigned int realMaskCount = populationMaskList.length();
+    for(unsigned int m=0; m<realMaskCount; ++m)
+    {
+      populationMaskIncludePath += populationMaskList[m];
+      if(m != realMaskCount - 1)
+      {
+        populationMaskIncludePath += ",";
       }
     }
   }
@@ -366,6 +377,7 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   if(hasPrimPath) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::primPath()), primPath);
   if(hasExclPrimPath) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::excludePrimPaths()), excludePrimPath);
   if(unloaded) m_modifier.newPlugValueBool(MPlug(m_shape, nodes::ProxyShape::unloaded()), unloaded);
+  if(populationMaskIncludePath.length()) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::populationMaskIncludePaths()), populationMaskIncludePath);
 
   std::string arCtxStr("ARconfigGoesHere");
   m_modifier.newPlugValueString(
