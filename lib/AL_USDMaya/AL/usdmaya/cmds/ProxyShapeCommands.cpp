@@ -195,6 +195,10 @@ MSyntax ProxyShapeImport::createSyntax()
   syntax.addFlag("-ul",    "-unloaded", MSyntax::kBoolean);
   syntax.addFlag("-fp", "-fullpaths", MSyntax::kBoolean);
   syntax.makeFlagMultiUse("-arp");
+
+  syntax.addFlag("-spm", "-stagePopulationMask ", MSyntax::kString);
+  syntax.makeFlagMultiUse("-spm");
+
   syntax.addFlag("-h", "-help", MSyntax::kNoArg);
   return syntax;
 }
@@ -274,6 +278,7 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   MString sessionLayerSerialized;
   MString primPath;
   MString excludePrimPath;
+  MStringArray populationMaskList;
   bool connectToTime = true;
   bool unloaded = false;
 
@@ -288,6 +293,8 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   bool hasPrimPath = database.isFlagSet("-pp");
   bool hasExclPrimPath = database.isFlagSet("-epp");
   bool hasSession = database.isFlagSet("-s");
+  unsigned int stagePopulationMaskCount = database.numberOfFlagUses("-spm");
+
   if(hasName) {
     database.getFlagArgument("-n", 0, name);
   }
@@ -302,6 +309,21 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   }
   if(hasSession){
     database.getFlagArgument("-s", 0, sessionLayerSerialized);
+  }
+
+  if(stagePopulationMaskCount)
+  {
+    MArgList maskList;
+    MString mask;
+    for(unsigned int i=0; i<stagePopulationMaskCount; ++i)
+    {
+      database.getFlagArgumentList("-spm", i, maskList);
+      maskList.get(0, mask);
+      if(mask.length())
+      {
+        populationMaskList.append(mask);
+      }
+    }
   }
 
   // TODO - AssetResolver config - just take string arg and store it in arCtxStr
