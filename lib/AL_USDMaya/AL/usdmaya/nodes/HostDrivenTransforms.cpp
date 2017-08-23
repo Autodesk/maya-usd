@@ -129,17 +129,17 @@ MStatus HostDrivenTransforms::initialise()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void HostDrivenTransforms::updatePrimPaths(DrivenTransforms& drivenTransforms)
+void HostDrivenTransforms::updatePrimPaths(proxy::DrivenTransforms& drivenTransforms)
 {
   if (drivenTransforms.transformCount() < m_primPaths.size())
   {
     drivenTransforms.initTransform(m_primPaths.size() - 1);
   }
-  drivenTransforms.m_drivenPrimPaths = m_primPaths;
+  drivenTransforms.setDrivenPrimPaths(m_primPaths);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void HostDrivenTransforms::updateMatrix(MDataBlock& dataBlock, DrivenTransforms& drivenTransforms)
+void HostDrivenTransforms::updateMatrix(MDataBlock& dataBlock, proxy::DrivenTransforms& drivenTransforms)
 {
   MIntArray rotIndices;
   MIntArray rotOrdIndices;
@@ -179,8 +179,7 @@ void HostDrivenTransforms::updateMatrix(MDataBlock& dataBlock, DrivenTransforms&
     drivenTransforms.initTransform(maxIndex);
   }
   auto last = std::unique(transformIndices.begin(), transformIndices.end());
-  drivenTransforms.m_dirtyMatrices.clear();
-  drivenTransforms.m_dirtyMatrices.reserve(std::distance(transformIndices.begin(), last));
+  drivenTransforms.matricesReserve(std::distance(transformIndices.begin(), last));
 
   MArrayDataHandle rotateArray = dataBlock.inputArrayValue(m_drivenRotate);
   MArrayDataHandle rotateOrderArray = dataBlock.inputArrayValue(m_drivenRotateOrder);
@@ -215,30 +214,31 @@ void HostDrivenTransforms::updateMatrix(MDataBlock& dataBlock, DrivenTransforms&
     transformMatrix.setRotateOrientation(eulRot, MSpace::kTransform, false);
     transformMatrix.translateTo(trsVal);
 
-    drivenTransforms.m_drivenMatrix[idx] = transformMatrix.asMatrix();
-    drivenTransforms.m_dirtyMatrices.emplace_back(idx);
+
+    drivenTransforms.setMatrix(transformMatrix.asMatrix(), idx);
+    drivenTransforms.dirtyMatrix(idx);
     TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("HostDrivenTransforms::updateMatrix %d %d %d %d  %d %d %d %d  %d %d %d %d  %d %d %d %d\n",
-      drivenTransforms.m_drivenMatrix[idx][0][0],
-      drivenTransforms.m_drivenMatrix[idx][0][1],
-      drivenTransforms.m_drivenMatrix[idx][0][2],
-      drivenTransforms.m_drivenMatrix[idx][0][3],
-      drivenTransforms.m_drivenMatrix[idx][1][0],
-      drivenTransforms.m_drivenMatrix[idx][1][1],
-      drivenTransforms.m_drivenMatrix[idx][1][2],
-      drivenTransforms.m_drivenMatrix[idx][1][3],
-      drivenTransforms.m_drivenMatrix[idx][2][0],
-      drivenTransforms.m_drivenMatrix[idx][2][1],
-      drivenTransforms.m_drivenMatrix[idx][2][2],
-      drivenTransforms.m_drivenMatrix[idx][2][3],
-      drivenTransforms.m_drivenMatrix[idx][3][0],
-      drivenTransforms.m_drivenMatrix[idx][3][1],
-      drivenTransforms.m_drivenMatrix[idx][3][2],
-      drivenTransforms.m_drivenMatrix[idx][3][3]);
+        drivenTransforms.drivenMatrices()[idx][0][0],
+        drivenTransforms.drivenMatrices()[idx][0][1],
+        drivenTransforms.drivenMatrices()[idx][0][2],
+        drivenTransforms.drivenMatrices()[idx][0][3],
+        drivenTransforms.drivenMatrices()[idx][1][0],
+        drivenTransforms.drivenMatrices()[idx][1][1],
+        drivenTransforms.drivenMatrices()[idx][1][2],
+        drivenTransforms.drivenMatrices()[idx][1][3],
+        drivenTransforms.drivenMatrices()[idx][2][0],
+        drivenTransforms.drivenMatrices()[idx][2][1],
+        drivenTransforms.drivenMatrices()[idx][2][2],
+        drivenTransforms.drivenMatrices()[idx][2][3],
+        drivenTransforms.drivenMatrices()[idx][3][0],
+        drivenTransforms.drivenMatrices()[idx][3][1],
+        drivenTransforms.drivenMatrices()[idx][3][2],
+        drivenTransforms.drivenMatrices()[idx][3][3]);
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void HostDrivenTransforms::updateVisibility(MDataBlock& dataBlock, DrivenTransforms& drivenTransforms)
+void HostDrivenTransforms::updateVisibility(MDataBlock& dataBlock, proxy::DrivenTransforms& drivenTransforms)
 {
   MIntArray visibilityIndices;
   uint32_t visibilityCnt = drivenVisibilityPlug().getExistingArrayAttributeIndices(visibilityIndices);
@@ -249,16 +249,14 @@ void HostDrivenTransforms::updateVisibility(MDataBlock& dataBlock, DrivenTransfo
   {
     drivenTransforms.initTransform(maxIndex);
   }
-  drivenTransforms.m_drivenVisibility.clear();
-  drivenTransforms.m_drivenVisibility.reserve(visibilityCnt);
+  drivenTransforms.visibilityReserve(visibilityCnt);
   MArrayDataHandle visibilityArray = dataBlock.inputArrayValue(m_drivenVisibility);
   for (uint32_t i = 0; i < visibilityCnt; ++i)
   {
     int32_t idx = visibilityIndices[i];
     if (visibilityArray.jumpToElement(idx))
     {
-      drivenTransforms.m_drivenVisibility[idx] = visibilityArray.inputValue().asBool();
-      drivenTransforms.m_dirtyVisibilities.emplace_back(idx);
+      drivenTransforms.dirtyVisibility(idx, visibilityArray.inputValue().asBool());
     }
   }
 }
@@ -275,7 +273,7 @@ MStatus HostDrivenTransforms::compute(const MPlug& plug, MDataBlock& dataBlock)
     {
       return MS::kFailure;
     }
-    DrivenTransforms& drivenTransforms = drvTransData->m_drivenTransforms;
+    proxy::DrivenTransforms& drivenTransforms = drvTransData->m_drivenTransforms;
     updatePrimPaths(drivenTransforms);
     updateMatrix(dataBlock, drivenTransforms);
     updateVisibility(dataBlock, drivenTransforms);
@@ -300,7 +298,7 @@ bool HostDrivenTransforms::getInternalValueInContext(const MPlug& plug, MDataHan
     {
       m_primPaths.resize(index + 1);
     }
-    dataHandle.set(MString(m_primPaths[index].c_str(), m_primPaths[index].length()));
+    dataHandle.set(MString(m_primPaths[index].GetText()));
   }
   return false;
 }
@@ -316,7 +314,7 @@ bool HostDrivenTransforms::setInternalValueInContext(const MPlug& plug, const MD
     {
       m_primPaths.resize(index + 1);
     }
-    m_primPaths[index] = convert(dataHandle.asString());
+    m_primPaths[index] = SdfPath(dataHandle.asString().asChar());
   }
   return false;
 }

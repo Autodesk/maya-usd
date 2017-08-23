@@ -722,10 +722,6 @@ private:
   void onEditTargetChanged(UsdNotice::StageEditTargetChanged const& notice, UsdStageWeakPtr const& sender);
   static void onAttributeChanged(MNodeMessage::AttributeMessage, MPlug&, MPlug&, void*);
   void validateTransforms();
-  void updateDrivenPrimPaths(uint32_t drivenIndex, std::vector<SdfPath>& drivenPaths,
-                             std::vector<UsdPrim>& drivenPrims, const DrivenTransforms& drivenTransforms);
-  void updateDrivenTransforms(std::vector<UsdPrim>& drivenPrims, const DrivenTransforms& drivenTransforms, const MTime&);
-  void updateDrivenVisibility(std::vector<UsdPrim>& drivenPrims, const DrivenTransforms& drivenTransforms, const MTime&);
 
 
 private:

@@ -21,14 +21,8 @@
 namespace AL {
 namespace usdmaya {
 
-void DrivenTransforms::initTransform(uint32_t index)
-{
-  uint32_t newSZ = index + 1;
-  m_drivenPrimPaths.resize(newSZ);
-  m_drivenMatrix.resize(newSZ, MMatrix::identity);
-  m_drivenVisibility.resize(newSZ, true);
-}
 
+//----------------------------------------------------------------------------------------------------------------------
 const MTypeId DrivenTransformsData::kTypeId(AL_USDMAYA_DRIVENTRANSFORMS_DATA);
 const MString DrivenTransformsData::kName("AL_usdmaya_DrivenTransformsData");
 
@@ -41,7 +35,6 @@ void* DrivenTransformsData::creator()
 //----------------------------------------------------------------------------------------------------------------------
 DrivenTransformsData::DrivenTransformsData()
 {
-
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -52,10 +45,10 @@ DrivenTransformsData::~DrivenTransformsData()
 //----------------------------------------------------------------------------------------------------------------------
 void DrivenTransformsData::copy(const MPxData& data)
 {
-  const DrivenTransformsData* transformsData = dynamic_cast<const DrivenTransformsData*>(&data);
+  const DrivenTransformsData* transformsData = static_cast<const DrivenTransformsData*>(&data);
   if (transformsData)
   {
-    this->m_drivenTransforms = transformsData->m_drivenTransforms;
+    m_drivenTransforms = transformsData->m_drivenTransforms;
   }
 }
 

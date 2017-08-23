@@ -16,6 +16,7 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/nodes/test_ActiveInactive.cpp
         AL/usdmaya/nodes/test_HostDrivenTransforms.cpp
         AL/usdmaya/nodes/test_Layer.cpp
+        AL/usdmaya/nodes/test_PrimFilter.cpp
         AL/usdmaya/nodes/test_ProxyShape.cpp
         AL/usdmaya/nodes/test_TransformMatrix.cpp
         AL/usdmaya/nodes/test_TranslatorContext.cpp

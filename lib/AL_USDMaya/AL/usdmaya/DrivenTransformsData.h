@@ -15,32 +15,26 @@
 //
 #pragma once
 
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/prim.h"
+
 #include "AL/usdmaya/Common.h"
+#include "AL/usdmaya/nodes/proxy/DrivenTransforms.h"
 #include "maya/MPxData.h"
 #include "maya/MVector.h"
 #include "maya/MMatrix.h"
 
 #include <vector>
 #include <string>
-#include <memory>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
 namespace usdmaya {
 
-
-struct DrivenTransforms
-{
-  inline size_t transformCount() const
-    { return m_drivenPrimPaths.size(); }
-  void initTransform(uint32_t index);
-
-  std::vector<std::string> m_drivenPrimPaths;
-  std::vector<MMatrix> m_drivenMatrix;
-  std::vector<bool> m_drivenVisibility;
-  std::vector<int32_t> m_dirtyMatrices;
-  std::vector<int32_t> m_dirtyVisibilities;
-};
-
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  The driven transform data passed through the DG
+//----------------------------------------------------------------------------------------------------------------------
 class DrivenTransformsData
   : public MPxData
 {
@@ -62,7 +56,7 @@ public:
   static const MString kName;
 
   /// the structure of driven transform
-  DrivenTransforms m_drivenTransforms;
+  nodes::proxy::DrivenTransforms m_drivenTransforms;
 
 private:
   void copy(const MPxData& data) override;

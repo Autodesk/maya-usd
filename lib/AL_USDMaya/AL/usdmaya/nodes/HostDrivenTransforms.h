@@ -100,11 +100,11 @@ private:
   bool setInternalValueInContext(const MPlug& plug, const MDataHandle& dataHandle, MDGContext& ctx) override;
   MPxNode::SchedulingType schedulingType() const override { return kParallel; }
 
-  void updatePrimPaths(DrivenTransforms& drivenTransforms);
-  void updateMatrix(MDataBlock& dataBlock, DrivenTransforms& drivenTransforms);
-  void updateVisibility(MDataBlock& dataBlock, DrivenTransforms& drivenTransforms);
+  void updatePrimPaths(proxy::DrivenTransforms& drivenTransforms);
+  void updateMatrix(MDataBlock& dataBlock, proxy::DrivenTransforms& drivenTransforms);
+  void updateVisibility(MDataBlock& dataBlock, proxy::DrivenTransforms& drivenTransforms);
 
-  std::vector<std::string>  m_primPaths;
+  SdfPathVector m_primPaths;
 };
 //----------------------------------------------------------------------------------------------------------------------
 }// nodes
