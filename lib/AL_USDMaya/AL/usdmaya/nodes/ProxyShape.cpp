@@ -235,6 +235,7 @@ SdfPathVector ProxyShape::getExcludePrimPaths() const
 
 UsdStagePopulationMask ProxyShape::constructStagePopulationMask(const MString &paths) const
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::constructStagePopulationMask(%s)\n", paths.asChar());
   UsdStagePopulationMask mask;
   SdfPathVector list = getPrimPathsFromCommaJoinedString(paths);
   if(list.empty())
@@ -244,6 +245,7 @@ UsdStagePopulationMask ProxyShape::constructStagePopulationMask(const MString &p
 
   for(const SdfPath &path : list)
   {
+    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape: Add include to mask:(%s)\n", path.GetString().c_str());
     mask.Add(path);
   }
   return mask;
