@@ -197,7 +197,6 @@ MSyntax ProxyShapeImport::createSyntax()
   syntax.makeFlagMultiUse("-arp");
 
   syntax.addFlag("-pmi", "-populationMaskInclude", MSyntax::kString);
-  syntax.makeFlagMultiUse("-pmi");
 
   syntax.addFlag("-h", "-help", MSyntax::kNoArg);
   return syntax;
@@ -294,7 +293,7 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   bool hasPrimPath = database.isFlagSet("-pp");
   bool hasExclPrimPath = database.isFlagSet("-epp");
   bool hasSession = database.isFlagSet("-s");
-  unsigned int stagePopulationMaskIncludeCount = database.numberOfFlagUses("-pmi");
+  bool hasStagePopulationMaskInclude = database.isFlagSet("-pmi");
 
   if(hasName) {
     database.getFlagArgument("-n", 0, name);
@@ -311,30 +310,9 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   if(hasSession){
     database.getFlagArgument("-s", 0, sessionLayerSerialized);
   }
-
-  if(stagePopulationMaskIncludeCount)
+  if(hasStagePopulationMaskInclude)
   {
-    MArgList maskList;
-    MString mask;
-    MStringArray populationMaskList;
-    for(unsigned int i=0; i<stagePopulationMaskIncludeCount; ++i)
-    {
-      database.getFlagArgumentList("-pmi", i, maskList);
-      maskList.get(0, mask);
-      if(mask.length())
-      {
-        populationMaskList.append(mask);
-      }
-    }
-    unsigned int realMaskCount = populationMaskList.length();
-    for(unsigned int m=0; m<realMaskCount; ++m)
-    {
-      populationMaskIncludePath += populationMaskList[m];
-      if(m != realMaskCount - 1)
-      {
-        populationMaskIncludePath += ",";
-      }
-    }
+    database.getFlagArgument("-pmi", 0, populationMaskIncludePath);
   }
 
   // TODO - AssetResolver config - just take string arg and store it in arCtxStr
@@ -377,7 +355,7 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   if(hasPrimPath) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::primPath()), primPath);
   if(hasExclPrimPath) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::excludePrimPaths()), excludePrimPath);
   if(unloaded) m_modifier.newPlugValueBool(MPlug(m_shape, nodes::ProxyShape::unloaded()), unloaded);
-  if(populationMaskIncludePath.length()) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::populationMaskIncludePaths()), populationMaskIncludePath);
+  if(hasStagePopulationMaskInclude) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::populationMaskIncludePaths()), populationMaskIncludePath);
 
   std::string arCtxStr("ARconfigGoesHere");
   m_modifier.newPlugValueString(
