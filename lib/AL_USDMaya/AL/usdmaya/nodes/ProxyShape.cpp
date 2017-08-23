@@ -245,7 +245,7 @@ UsdStagePopulationMask ProxyShape::constructStagePopulationMask(const MString &p
 
   for(const SdfPath &path : list)
   {
-    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape: Add include to mask:(%s)\n", path.GetString().c_str());
+    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape: Add include to mask:(%s)\n", path.GetString());
     mask.Add(path);
   }
   return mask;
