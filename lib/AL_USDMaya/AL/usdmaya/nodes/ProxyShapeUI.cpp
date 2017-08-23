@@ -274,7 +274,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
   M3dView view = selectInfo.view();
 
-  MSelectionMask objectsMask(MSelectionMask::kSelectObjectsMask);
+  MSelectionMask objectsMask(ProxyShape::s_selectionMaskName);
 
   // selectable() takes MSelectionMask&, not const MSelectionMask.  :(.
   if(!selectInfo.selectable(objectsMask))
@@ -472,7 +472,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
             MSelectionList sl;
             sl.add(nodes[i]);
             const double* d = it->second.worldSpaceHitPoint.GetArray();
-            selectInfo.addSelection(sl, MPoint(it->second.worldSpaceHitPoint.GetArray()), selectionList, worldSpaceSelectPoints, objectsMask, false);
+            selectInfo.addSelection(sl, MPoint(d[0], d[1], d[2], 1.0), selectionList, worldSpaceSelectPoints, objectsMask, false);
           }
         }
       }
@@ -507,7 +507,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
             MSelectionList sl;
             sl.add(nodes[i]);
             const double* d = it->second.worldSpaceHitPoint.GetArray();
-            selectInfo.addSelection(sl, MPoint(it->second.worldSpaceHitPoint.GetArray()), selectionList, worldSpaceSelectPoints, objectsMask, false);
+            selectInfo.addSelection(sl, MPoint(d[0], d[1], d[2], 1.0), selectionList, worldSpaceSelectPoints, objectsMask, false);
           }
         }
       }
@@ -586,7 +586,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
             MSelectionList sl;
             sl.add(nodes[i]);
             const double* d = it->second.worldSpaceHitPoint.GetArray();
-            selectInfo.addSelection(sl, MPoint(it->second.worldSpaceHitPoint.GetArray()), selectionList, worldSpaceSelectPoints, objectsMask, false);
+            selectInfo.addSelection(sl, MPoint(d[0], d[1], d[2], 1.0), selectionList, worldSpaceSelectPoints, objectsMask, false);
           }
         }
 

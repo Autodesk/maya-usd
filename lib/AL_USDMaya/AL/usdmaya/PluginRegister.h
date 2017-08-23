@@ -64,6 +64,28 @@ MStatus registerPlugin(AFnPlugin& plugin)
   }
 
   MStatus status;
+
+  // gpuCachePluginMain used as an example.
+  if (MGlobal::kInteractive == MGlobal::mayaState()) {
+    const auto otherPriority = MSelectionMask::getSelectionTypePriority("polymesh");
+    if (!MSelectionMask::registerSelectionType(AL::usdmaya::nodes::ProxyShape::s_selectionMaskName, otherPriority)) {
+      status.perror("Error registering selection mask!");
+      return MS::kFailure;
+    }
+
+    MString cmd = "addSelectTypeItem(\"Surface\",\"";
+    cmd += AL::usdmaya::nodes::ProxyShape::s_selectionMaskName;
+    cmd += "\",\"";
+    cmd += "AL Proxy Shape";
+    cmd += "\")";
+
+    status = MGlobal::executeCommand(cmd);
+    if (!status) {
+      status.perror("Error adding al_ProxyShape selection type!");
+      return status;
+    }
+  }
+
   AL_REGISTER_DATA(plugin, AL::usdmaya::StageData);
   AL_REGISTER_DATA(plugin, AL::usdmaya::DrivenTransformsData);
   AL_REGISTER_COMMAND(plugin, AL::maya::CommandGuiListGen);
@@ -117,6 +139,25 @@ template<typename AFnPlugin>
 MStatus unregisterPlugin(AFnPlugin& plugin)
 {
   MStatus status;
+
+  // gpuCachePluginMain used as an example.
+  if (MGlobal::kInteractive == MGlobal::mayaState()) {
+    MString cmd = "deleteSelectTypeItem(\"Surface\",\"";
+    cmd += AL::usdmaya::nodes::ProxyShape::s_selectionMaskName;
+    cmd += "\")";
+
+    status = MGlobal::executeCommand(cmd);
+    if (!status) {
+      status.perror("Error removing al_ProxyShape selection type!");
+      return status;
+    }
+
+    if (!MSelectionMask::deregisterSelectionType(AL::usdmaya::nodes::ProxyShape::s_selectionMaskName)) {
+      status.perror("Error deregistering selection mask!");
+      return MS::kFailure;
+    }
+  }
+
   AL_UNREGISTER_COMMAND(plugin, AL::maya::CommandGuiListGen);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::InternalProxyShapeSelect);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePostSelect);

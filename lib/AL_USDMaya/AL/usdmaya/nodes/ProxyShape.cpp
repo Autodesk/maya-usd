@@ -57,6 +57,8 @@ namespace AL {
 namespace usdmaya {
 namespace nodes {
 
+const char* ProxyShape::s_selectionMaskName = "al_ProxyShape";
+
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialiseTranslatorContext()
 {
