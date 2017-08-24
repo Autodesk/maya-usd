@@ -293,7 +293,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
   glGetDoublev(GL_PROJECTION_MATRIX, projectionMatrix[0]);
   view.endSelect();
 
-  ProxyShape* proxyShape = (ProxyShape*)surfaceShape();
+  auto* proxyShape = static_cast<ProxyShape*>(surfaceShape());
   auto engine = proxyShape->engine();
   proxyShape->m_pleaseIgnoreSelection = true;
 
@@ -317,7 +317,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
   // play nicely with maya geometry). The second method doesn't work with undo, but does play
   // nicely with maya geometry.
   const int selectionMode = MGlobal::optionVarIntValue("AL_usdmaya_selectMode");
-  if(selectionMode)
+  if(1 == selectionMode)
   {
     if(hitSelected)
     {
@@ -437,7 +437,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     case MGlobal::kReplaceList:
       {
         MString command;
-        if(proxyShape->selectedPaths().size())
+        if(!proxyShape->selectedPaths().empty() && paths.empty())
         {
           command = "AL_usdmaya_ProxyShapeSelect -i -cl ";
           MFnDependencyNode fn(proxyShape->thisMObject());
@@ -446,10 +446,10 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
           command += "\";";
         }
 
-        if(paths.size())
+        if(!paths.empty())
         {
-          command += "AL_usdmaya_ProxyShapeSelect -i -a ";
-          for(auto it : paths)
+          command += "AL_usdmaya_ProxyShapeSelect -i -r ";
+          for(const auto& it : paths)
           {
             command += " -pp \"";
             command += it.GetText();
@@ -461,7 +461,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
           command += "\"";
         }
 
-        if(command.length())
+        if(command.length() > 0)
         {
           MStringArray nodes;
           MGlobal::executeCommand(command, nodes, false, true);

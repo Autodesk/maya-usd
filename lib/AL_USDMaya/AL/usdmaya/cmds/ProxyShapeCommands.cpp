@@ -1030,12 +1030,18 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
       delete m_helper;
       m_helper = 0;
     }
+    return _redoIt(isInternal);
   }
   catch(const MStatus& status)
   {
     return status;
   }
-  return redoIt();
+  catch(...)
+  {
+    MStatus status = MS::kFailure;
+    status.perror("(ProxyShapeSelect::doIt) Unknown internal failure!");
+    return status;
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1051,9 +1057,15 @@ MStatus ProxyShapeSelect::undoIt()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShapeSelect::redoIt()
 {
+  return _redoIt(false);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus ProxyShapeSelect::_redoIt(bool isInternal)
+{
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeSelect::redoIt\n");
   if(m_helper) m_helper->doIt();
-  if(MGlobal::kInteractive == MGlobal::mayaState())
+  if(MGlobal::kInteractive == MGlobal::mayaState() && !isInternal)
     MGlobal::executeCommandOnIdle("refresh", false);
 
   return MS::kSuccess;
