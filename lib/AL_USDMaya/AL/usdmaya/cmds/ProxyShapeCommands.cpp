@@ -1341,6 +1341,10 @@ AL_usdmaya_ProxyShapeImport Overview:
 
        -excludePrimPath "/do/not/show/this/prim"
 
+    If you want to exclude some prims from being read when stage is opened, use the -pmi/-populationMaskInclude flag, e.g.
+
+       -populationMaskInclude "/only/show/this/prim1,/only/show/this/prim2"
+
     The command will return a string array containing the names of all instances of the created node. (There will be
     more than one instance if more than one transform was selected or passed into the command.)  By default, the will
     be the shortest-unique names; if -fp/-fullpaths is given, then they will be full path names.
