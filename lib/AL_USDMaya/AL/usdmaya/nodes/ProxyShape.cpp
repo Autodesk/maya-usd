@@ -928,6 +928,9 @@ void ProxyShape::reloadStage(MPlug& plug)
           m_stage = UsdStage::OpenMasked(rootLayer, mask, loadOperation);
         }
 
+        // Expand the mask, since we do not really want to mask the possible relation targets.
+        m_stage->ExpandPopulationMask();
+
         AL_END_PROFILE_SECTION();
       }
       else
