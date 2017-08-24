@@ -240,12 +240,13 @@ UsdStagePopulationMask ProxyShape::constructStagePopulationMask(const MString &p
   SdfPathVector list = getPrimPathsFromCommaJoinedString(paths);
   if(list.empty())
   {
+    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape: No mask specified, will mask none.\n");
     return UsdStagePopulationMask::All();
   }
 
   for(const SdfPath &path : list)
   {
-    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape: Add include to mask:(%s)\n", path.GetString());
+    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape: Add include to mask:(%s)\n", path.GetString().c_str());
     mask.Add(path);
   }
   return mask;
