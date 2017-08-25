@@ -28,8 +28,6 @@
 
 TEST(ProxyShapeImport, populationMaskInclude)
 {
-  MFileIO::newFile(true);
-
   auto  constructTestUSDFile = [] ()
   {
     const std::string temp_bootstrap_path = "/tmp/AL_USDMayaTests_proxyShapeImportTests.usda";
@@ -55,12 +53,13 @@ TEST(ProxyShapeImport, populationMaskInclude)
     return MString(temp_bootstrap_path.c_str());
   };
 
-  auto constructTestCommand = [] (const MString &bootstrap_path, const MString &testFlags)
+  auto constructMaskTestCommand = [] (const MString &bootstrap_path, const MString &mask)
   {
     MString cmd = "AL_usdmaya_ProxyShapeImport -file \"";
     cmd += bootstrap_path;
-    cmd += "\" ";
-    cmd += testFlags;
+    cmd += "\" -populationMaskInclude \"";
+    cmd += mask;
+    cmd += "\"";
     return cmd;
   };
 
@@ -87,7 +86,8 @@ TEST(ProxyShapeImport, populationMaskInclude)
   MString bootstrap_path = constructTestUSDFile();
 
   // Test no mask:
-  MGlobal::executeCommand(constructTestCommand(bootstrap_path, ""), false, true);
+  MFileIO::newFile(true);
+  MGlobal::executeCommand(constructMaskTestCommand(bootstrap_path, ""), false, true);
   auto stage = getStageFromCache();
   ASSERT_TRUE(stage);
   assertSdfPathIsValid(stage, "/root");
@@ -97,8 +97,8 @@ TEST(ProxyShapeImport, populationMaskInclude)
   assertSdfPathIsValid(stage, "/root/material");
 
   // Test single mask:
-  MString mask = "-populationMaskInclude \"/root/hip2\"";
-  MGlobal::executeCommand(constructTestCommand(bootstrap_path, mask), false, true);
+  MFileIO::newFile(true);
+  MGlobal::executeCommand(constructMaskTestCommand(bootstrap_path, "/root/hip2"), false, true);
   stage = getStageFromCache();
   ASSERT_TRUE(stage);
   assertSdfPathIsValid(stage, "/root");
@@ -107,8 +107,9 @@ TEST(ProxyShapeImport, populationMaskInclude)
   assertSdfPathIsInvalid(stage, "/root/hip3/knee");
   assertSdfPathIsInvalid(stage, "/root/material");
 
-  mask = "-populationMaskInclude \"/root/hip2/knee,/root/hip3\"";
-  MGlobal::executeCommand(constructTestCommand(bootstrap_path, mask), false, true);
+  // Test multiple  masks:
+  MFileIO::newFile(true);
+  MGlobal::executeCommand(constructMaskTestCommand(bootstrap_path, "/root/hip2/knee,/root/hip3"), false, true);
   stage = getStageFromCache();
   ASSERT_TRUE(stage);
   assertSdfPathIsValid(stage, "/root");
@@ -118,7 +119,8 @@ TEST(ProxyShapeImport, populationMaskInclude)
   assertSdfPathIsInvalid(stage, "/root/material");
 
   // Test relation expansion:
-  mask = "-populationMaskInclude \"/root/hip1\"";
+  MFileIO::newFile(true);
+  MGlobal::executeCommand(constructMaskTestCommand(bootstrap_path, "/root/hip1"), false, true);
   stage = getStageFromCache();
   ASSERT_TRUE(stage);
   assertSdfPathIsValid(stage, "/root");
