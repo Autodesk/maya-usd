@@ -38,13 +38,13 @@ TEST(ProxyShapeImport, populationMaskInclude)
     UsdGeomXform root = UsdGeomXform::Define(stage, SdfPath("/root"));
 
     UsdPrim leg1 = stage->DefinePrim(SdfPath("/root/hip1"), TfToken("xform"));
-    UsdGeomXform knee1 = UsdGeomXform::Define(stage, SdfPath("/root/hip1/knee1"));
+    UsdGeomXform::Define(stage, SdfPath("/root/hip1/knee1"));
 
-    UsdGeomXform leg2 = UsdGeomXform::Define(stage, SdfPath("/root/hip2"));
-    UsdGeomXform knee2 = UsdGeomXform::Define(stage, SdfPath("/root/hip2/knee1"));
+    UsdGeomXform::Define(stage, SdfPath("/root/hip2"));
+    UsdGeomXform::Define(stage, SdfPath("/root/hip2/knee1"));
 
-    UsdGeomXform rtoe2 = UsdGeomXform::Define(stage, SdfPath("/root/hip3"));
-    UsdGeomXform rtoe2 = UsdGeomXform::Define(stage, SdfPath("/root/hip3/knee1"));
+    UsdGeomXform::Define(stage, SdfPath("/root/hip3"));
+    UsdGeomXform::Define(stage, SdfPath("/root/hip3/knee1"));
 
     SdfPath materialPath = SdfPath("/root/material");
     UsdPrim material = stage->DefinePrim(materialPath, TfToken("xform"));
@@ -69,7 +69,7 @@ TEST(ProxyShapeImport, populationMaskInclude)
     auto usdStageCache = AL::usdmaya::StageCache::Get();
     if(usdStageCache.IsEmpty())
     {
-      return nullptr;
+      return UsdStageRefPtr();
     }
     return usdStageCache.GetAllStages()[0];
   };
@@ -99,7 +99,7 @@ TEST(ProxyShapeImport, populationMaskInclude)
   // Test single mask:
   MString mask = "-populationMaskInclude \"/root/hip2\"";
   MGlobal::executeCommand(constructTestCommand(bootstrap_path, mask), false, true);
-  auto stage = getStageFromCache();
+  stage = getStageFromCache();
   ASSERT_TRUE(stage);
   assertSdfPathIsValid(stage, "/root");
   assertSdfPathIsInvalid(stage, "/root/hip1/knee1");
@@ -109,7 +109,7 @@ TEST(ProxyShapeImport, populationMaskInclude)
 
   mask = "-populationMaskInclude \"/root/hip2/knee1,/root/hip3\"";
   MGlobal::executeCommand(constructTestCommand(bootstrap_path, mask), false, true);
-  auto stage = getStageFromCache();
+  stage = getStageFromCache();
   ASSERT_TRUE(stage);
   assertSdfPathIsValid(stage, "/root");
   assertSdfPathIsInvalid(stage, "/root/hip1/knee1");
@@ -119,7 +119,7 @@ TEST(ProxyShapeImport, populationMaskInclude)
 
   // Test relation expansion:
   mask = "-populationMaskInclude \"/root/hip1\"";
-  auto stage = getStageFromCache();
+  stage = getStageFromCache();
   ASSERT_TRUE(stage);
   assertSdfPathIsValid(stage, "/root");
   assertSdfPathIsValid(stage, "/root/hip1/knee1");
