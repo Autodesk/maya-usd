@@ -13,7 +13,7 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/commands/test_LayerCommands.cpp
         AL/usdmaya/commands/test_ProxyShapeSelect.cpp
         AL/usdmaya/commands/test_InternalProxySelection.cpp
-        AL/usdmaya/commands/test_InternalProxyImport.cpp
+        AL/usdmaya/commands/test_ProxyShapeImport.cpp
         AL/usdmaya/nodes/test_ActiveInactive.cpp
         AL/usdmaya/nodes/test_HostDrivenTransforms.cpp
         AL/usdmaya/nodes/test_Layer.cpp
