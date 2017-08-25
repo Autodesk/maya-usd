@@ -1087,6 +1087,28 @@ MSyntax ProxyShapePostSelect::createSyntax()
 MStatus ProxyShapePostSelect::redoIt()
 {
   m_proxy->setChangedSelectionState(false);
+  MSelectionList sl;
+  MGlobal::getActiveSelectionList(sl);
+  MString command;
+  MFnDependencyNode depNode(m_proxy->thisMObject());
+  for (const auto& path : m_proxy->selectedPaths()) {
+    auto obj = m_proxy->findRequiredPath(path);
+    if (obj != MObject::kNullObj) {
+      MFnDagNode dagNode(obj);
+      MDagPath dg;
+      dagNode.getPath(dg);
+      if (!sl.hasItem(dg)) {
+        command += "AL_usdmaya_ProxyShapeSelect -i -d -pp \"";
+        command += path.GetText();
+        command += "\" \"";
+        command += depNode.name();
+        command += "\";";
+      }
+    }
+  }
+  if (command.length() > 0) {
+    MGlobal::executeCommand(command, false, false);
+  }
   return MS::kSuccess;
 }
 
