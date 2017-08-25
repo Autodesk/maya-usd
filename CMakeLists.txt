@@ -83,7 +83,6 @@ if(BUILD_USDMAYA_SCHEMAS)
         add_subdirectory(translators)
     endif()
 endif()
-add_subdirectory(tests)
 
 get_property(LIBRARY_LOCATION GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION)
 get_property(PYTHON_LIBRARY_LOCATION GLOBAL PROPERTY GLOBAL_PYTHON_LIBRARY_LOCATION)

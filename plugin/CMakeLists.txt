@@ -1,1 +1,2 @@
 add_subdirectory(AL_USDMayaPlugin)
+add_subdirectory(AL_USDMayaTestPlugin)
