@@ -63,6 +63,11 @@ MStatus registerPlugin(AFnPlugin& plugin)
     MGlobal::setOptionVarValue("AL_usdmaya_selectMode", 0);
   }
 
+  if(!MGlobal::optionVarExists("AL_usdmaya_selectResolution"))
+  {
+    MGlobal::setOptionVarValue("AL_usdmaya_selectResolution", 10);
+  }
+
   MStatus status;
 
   // gpuCachePluginMain used as an example.

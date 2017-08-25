@@ -303,20 +303,25 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
   SdfPathVector rootPath;
   rootPath.push_back(root.GetPath());
 
+  int resolution = 10;
+  MGlobal::getOptionVarValue("AL_usdmaya_selectResolution", resolution);
+  if (resolution < 10) { resolution = 10; }
+  if (resolution > 1024) { resolution = 1024; }
+
   bool hitSelected = engine->TestIntersectionBatch(
           GfMatrix4d(viewMatrix.matrix),
           GfMatrix4d(projectionMatrix.matrix),
           worldToLocalSpace,
           rootPath,
           params,
-          10,
+          resolution,
           ProxyShapeSelectionHelper::path_ting,
           &hitBatch);
 
   auto selected = false;
 
   auto addSelection = [&hitBatch, &selectInfo, &selectionList,
-      &worldSpaceSelectPoints, &objectsMask, &selected] (const MString& command) {
+      &worldSpaceSelectPoints, &objectsMask, &selected, proxyShape] (const MString& command) {
       selected = true;
       MStringArray nodes;
       MGlobal::executeCommand(command, nodes, false, true);
@@ -330,10 +335,16 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
       uint32_t i = 0;
       for(auto it = hitBatch.begin(), e = hitBatch.end(); it != e; ++it, ++i)
       {
-        MSelectionList sl;
-        sl.add(nodes[i]);
-        const double* d = it->second.worldSpaceHitPoint.GetArray();
-        selectInfo.addSelection(sl, MPoint(d[0], d[1], d[2], 1.0), selectionList, worldSpaceSelectPoints, objectsMask, false);
+        auto obj = proxyShape->findRequiredPath(it->first);
+        if (obj != MObject::kNullObj) {
+          MSelectionList sl;
+          MFnDagNode dagNode(obj);
+          MDagPath dg;
+          dagNode.getPath(dg);
+          sl.add(dg);
+          const double* d = it->second.worldSpaceHitPoint.GetArray();
+          selectInfo.addSelection(sl, MPoint(d[0], d[1], d[2], 1.0), selectionList, worldSpaceSelectPoints, objectsMask, false);
+        }
       }
   };
 
