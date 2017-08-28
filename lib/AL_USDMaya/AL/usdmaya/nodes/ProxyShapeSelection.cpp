@@ -31,6 +31,21 @@
 namespace AL {
 namespace usdmaya {
 namespace nodes {
+namespace {
+inline void addObjToSelectionList(MSelectionList& list, const MObject& object)
+{
+  if(object.hasFn(MFn::kDagNode))
+  {
+    MFnDagNode dgNode(object);
+    MDagPath dg; dgNode.getPath(dg);
+    list.add(dg, MObject::kNullObj, true);
+  }
+  else
+  {
+    list.add(object, true);
+  }
+};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 /// I have to handle the case where maya commands are issued (e.g. select -cl) that will remove our transform nodes
@@ -1037,7 +1052,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
         MString pathName;
         MObject object = makeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection, &helper.m_modifier2, &hasNodesToCreate, &pathName);
         newlySelectedPaths.append(pathName);
-        helper.m_newSelection.add(object, true);
+        addObjToSelectionList(helper.m_newSelection, object);
         helper.m_insertedRefs.emplace_back(prim.GetPath(), object);
       }
 
@@ -1053,7 +1068,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
         }
         else
         {
-          helper.m_newSelection.add(object, true);
+          addObjToSelectionList(helper.m_newSelection, object);
           m_selectedPaths.push_back(iter);
         }
       }
@@ -1097,7 +1112,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
         MString pathName;
         MObject object = makeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection, &helper.m_modifier2, &hasNodesToCreate, &pathName);
         newlySelectedPaths.append(pathName);
-        helper.m_newSelection.add(object, true);
+        addObjToSelectionList(helper.m_newSelection, object);
         helper.m_insertedRefs.emplace_back(prim.GetPath(), object);
       }
     }
@@ -1227,7 +1242,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
         MString pathName;
         MObject object = makeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection, &helper.m_modifier2, &hasNodesToCreate, &pathName);
         newlySelectedPaths.append(pathName);
-        helper.m_newSelection.add(object, true);
+        addObjToSelectionList(helper.m_newSelection, object);
         helper.m_insertedRefs.emplace_back(prim.GetPath(), object);
       }
       helper.m_paths = m_selectedPaths;
