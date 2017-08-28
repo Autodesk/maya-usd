@@ -67,9 +67,10 @@ pxr_plugin(${PXR_PACKAGE}
         plugin.cpp
 )
 
-add_test(TestAL_USDMaya
-    ${CMAKE_CURRENT_SOURCE_DIR}/run_mayaplugin_tests.sh
-        ${CMAKE_INSTALL_PREFIX}
-        $<TARGET_FILE_DIR:usd>
-        ${CMAKE_CURRENT_SOURCE_DIR}
+add_test(
+    NAME TestAL_USDMaya
+    COMMAND
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_mayaplugin_tests.sh
+            ${CMAKE_INSTALL_PREFIX}
+            ${CMAKE_CURRENT_SOURCE_DIR}
 )
