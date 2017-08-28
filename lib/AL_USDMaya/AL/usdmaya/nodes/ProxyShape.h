@@ -288,6 +288,9 @@ public:
   /// Serialised reference counts to rebuild the transform reference information
   AL_DECL_ATTRIBUTE(serializedRefCounts);
 
+  /// The path list joined by ",", that will be used as a mask when doing UsdStage::OpenMask()
+  AL_DECL_ATTRIBUTE(populationMaskIncludePaths);
+
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Output Attributes
   //--------------------------------------------------------------------------------------------------------------------
@@ -297,6 +300,7 @@ public:
 
   /// inStageData  --->  inStageDataCached  --->  outStageData
   AL_DECL_ATTRIBUTE(outStageData);
+
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Public Utils
@@ -452,6 +456,45 @@ public:
       std::vector<UsdPrim>& transformsToCreate,
       std::vector<UsdPrim>& updatablePrimSet,
       SdfPathVector& removedPrimSet);
+
+  /// \brief  a method that is used within testing only. Returns the current reference count state for the path
+  /// \param  path the prim path to test
+  /// \param  selected the returned selected reference count
+  /// \param  required the returned required reference count
+  /// \param  refCount the returned refCount reference count
+  void getCounts(SdfPath path, uint32_t& selected, uint32_t& required, uint32_t& refCount)
+  {
+    auto it = m_requiredPaths.find(path);
+    if(it != m_requiredPaths.end())
+    {
+      selected = it->second.selected();
+      required = it->second.required();
+      refCount = it->second.refCount();
+    }
+  }
+
+  /// \brief  Tests to see if a given MObject is currently selected in the proxy shape. If the specified MObject is
+  ///         selected, then the path will be filled with the corresponding usd prim path.
+  /// \param  obj the input MObject to see if it's selected.
+  /// \param  path the returned prim path (if the node is found)
+  /// \return true if the maya node is currently selected
+  bool isSelectedMObject(MObject obj, SdfPath& path)
+  {
+    for(auto it : m_requiredPaths)
+    {
+      if(obj == it.second.node())
+      {
+        auto iter = std::find(m_selectedPaths.cbegin(), m_selectedPaths.cend(), it.first);
+        if(iter != m_selectedPaths.cend())
+        {
+          return true;
+        }
+        path = it.first;
+        break;
+      }
+    }
+    return false;
+  }
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Plug-in Translator node methods
@@ -668,6 +711,7 @@ private:
   typedef std::map<SdfPath, TransformReference>  TransformReferenceMap;
   TransformReferenceMap m_requiredPaths;
 
+
   /// it is possible to end up with some invalid data in here as a result of a variant switch. When it looks as though a
   /// schema prim is going to change type, in cases where a payload fails to resolve, we can end up with null prims in the
   /// stage. As a result, it's corresponding transform ref can fail to load.
@@ -711,6 +755,8 @@ private:
 
   UsdPrim getUsdPrim(MDataBlock& dataBlock) const;
   SdfPathVector getExcludePrimPaths() const;
+  UsdStagePopulationMask constructStagePopulationMask(const MString &paths) const;
+  SdfPathVector getPrimPathsFromCommaJoinedString(const MString &paths) const;
   bool isStageValid() const;
   bool primHasExcludedParent(UsdPrim prim);
   bool initPrim(const uint32_t index, MDGContext& ctx);

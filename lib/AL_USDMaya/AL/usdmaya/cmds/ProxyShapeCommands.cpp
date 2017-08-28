@@ -195,6 +195,9 @@ MSyntax ProxyShapeImport::createSyntax()
   syntax.addFlag("-ul",    "-unloaded", MSyntax::kBoolean);
   syntax.addFlag("-fp", "-fullpaths", MSyntax::kBoolean);
   syntax.makeFlagMultiUse("-arp");
+
+  syntax.addFlag("-pmi", "-populationMaskInclude", MSyntax::kString);
+
   syntax.addFlag("-h", "-help", MSyntax::kNoArg);
   return syntax;
 }
@@ -274,6 +277,8 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   MString sessionLayerSerialized;
   MString primPath;
   MString excludePrimPath;
+
+  MString populationMaskIncludePath;
   bool connectToTime = true;
   bool unloaded = false;
 
@@ -288,6 +293,8 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   bool hasPrimPath = database.isFlagSet("-pp");
   bool hasExclPrimPath = database.isFlagSet("-epp");
   bool hasSession = database.isFlagSet("-s");
+  bool hasStagePopulationMaskInclude = database.isFlagSet("-pmi");
+
   if(hasName) {
     database.getFlagArgument("-n", 0, name);
   }
@@ -302,6 +309,10 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   }
   if(hasSession){
     database.getFlagArgument("-s", 0, sessionLayerSerialized);
+  }
+  if(hasStagePopulationMaskInclude)
+  {
+    database.getFlagArgument("-pmi", 0, populationMaskIncludePath);
   }
 
   // TODO - AssetResolver config - just take string arg and store it in arCtxStr
@@ -344,6 +355,7 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   if(hasPrimPath) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::primPath()), primPath);
   if(hasExclPrimPath) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::excludePrimPaths()), excludePrimPath);
   if(unloaded) m_modifier.newPlugValueBool(MPlug(m_shape, nodes::ProxyShape::unloaded()), unloaded);
+  if(hasStagePopulationMaskInclude) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::populationMaskIncludePaths()), populationMaskIncludePath);
 
   std::string arCtxStr("ARconfigGoesHere");
   m_modifier.newPlugValueString(
@@ -1328,6 +1340,10 @@ AL_usdmaya_ProxyShapeImport Overview:
     flag, e.g.
 
        -excludePrimPath "/do/not/show/this/prim"
+
+    If you want to exclude some prims from being read when stage is opened, use the -pmi/-populationMaskInclude flag, e.g.
+
+       -populationMaskInclude "/only/show/this/prim1,/only/show/this/prim2"
 
     The command will return a string array containing the names of all instances of the created node. (There will be
     more than one instance if more than one transform was selected or passed into the command.)  By default, the will

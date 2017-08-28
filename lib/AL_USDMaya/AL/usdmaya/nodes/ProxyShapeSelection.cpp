@@ -31,6 +31,21 @@
 namespace AL {
 namespace usdmaya {
 namespace nodes {
+namespace {
+inline void addObjToSelectionList(MSelectionList& list, const MObject& object)
+{
+  if(object.hasFn(MFn::kDagNode))
+  {
+    MFnDagNode dgNode(object);
+    MDagPath dg; dgNode.getPath(dg);
+    list.add(dg, MObject::kNullObj, true);
+  }
+  else
+  {
+    list.add(object, true);
+  }
+};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 /// I have to handle the case where maya commands are issued (e.g. select -cl) that will remove our transform nodes
@@ -42,7 +57,7 @@ namespace nodes {
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onSelectionChanged(void* ptr)
 {
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::onSelectionChanged %b\n", MGlobal::isUndoing());
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::onSelectionChanged %d\n", MGlobal::isUndoing());
 
   const int selectionMode = MGlobal::optionVarIntValue("AL_usdmaya_selectMode");
   if(selectionMode)
@@ -62,40 +77,26 @@ void ProxyShape::onSelectionChanged(void* ptr)
     MSelectionList sl;
     MGlobal::getActiveSelectionList(sl);
 
-    std::set<SdfPath> selectedSet;
     std::vector<SdfPath> unselectedSet;
     MFnDagNode fnDag;
+
+    // now attempt to find any items that have been selected via maya (e.g. by clicking on the parent node in the outliner)
+    bool hasNewItems = false;
+    MString precommand = "AL_usdmaya_ProxyShapeSelect -i -a";
     for(uint32_t i = 0; i < sl.length(); ++i)
     {
-      MDagPath mayaPath;
-      sl.getDagPath(i, mayaPath);
-
-      if(mayaPath.node().hasFn(MFn::kPluginTransformNode))
+      MObject obj;
+      sl.getDependNode(i, obj);
+      SdfPath path;
+      if(!proxy->isSelectedMObject(obj, path))
       {
-        fnDag.setObject(mayaPath);
-
-        if(fnDag.typeId() == AL_USDMAYA_TRANSFORM)
-        {
-          Transform* nodePtr = (Transform*)fnDag.userNode();
-          UsdPrim prim = nodePtr->transform()->prim();
-          if(prim.GetStage() == stage)
-          {
-            selectedSet.insert(prim.GetPath());
-          }
-        }
-      }
-    }
-    for(auto selected : proxy->selectedPaths())
-    {
-      if(!selectedSet.count(selected))
-      {
-        TF_DEBUG(ALUSDMAYA_SELECTION).Msg("  onSelectionChanged %s\n", selected.GetText());
-        unselectedSet.push_back(selected);
+        precommand += " -pp \"";
+        precommand += path.GetText();
+        precommand += "\"";
+        hasNewItems = true;
       }
     }
 
-    if(!unselectedSet.empty())
-    {
       struct compare_length {
         bool operator() (const SdfPath& a, const SdfPath& b) const {
            return a.GetString().size() > b.GetString().size();
@@ -118,9 +119,26 @@ void ProxyShape::onSelectionChanged(void* ptr)
       command += fnDag.name().asChar();
       command += "\"";
 
+      if(hasNewItems)
+      {
+        precommand += " \"";
+        precommand += fnDag.name().asChar();
+        precommand += "\";";
+        if(!unselectedSet.empty())
+        {
+          command = precommand + command;
+        }
+        else
+        {
+          command = precommand;
+        }
+      }
+
+      if(unselectedSet.empty() && !hasNewItems)
+      {
       proxy->m_pleaseIgnoreSelection = true;
       MGlobal::executeCommand(command, false, true);
-    }
+      }
   }
   else
   {
@@ -141,18 +159,49 @@ void ProxyShape::onSelectionChanged(void* ptr)
     MGlobal::getActiveSelectionList(sl, false);
 
     bool hasItems = false;
+    bool hasNewItems = false;
+    MString precommand = "AL_usdmaya_ProxyShapeSelect -i -a";
     MString command = "AL_usdmaya_ProxyShapeSelect -i -d";
+
+    // maya bug work around.
+    auto hasObject = [] (MSelectionList sl, MObject node)
+    {
+      for(uint32_t i = 0; i < sl.length(); ++i)
+      {
+        MObject obj;
+        sl.getDependNode(i, obj);
+        if(node == obj)
+          return true;
+      }
+      return false;
+    };
 
     for(auto selected : proxy->selectedPaths())
     {
       MObject obj = proxy->findRequiredPath(selected);
       MFnDependencyNode fn(obj);
-      if(!sl.hasItem(obj))
+      if(!hasObject(sl, obj))
       {
         hasItems = true;
         command += " -pp \"";
         command += selected.GetText();
         command += "\"";
+      }
+    }
+
+    // now attempt to find any items that have been selected via maya (e.g. by clicking on the parent node in the outliner)
+    for(uint32_t i = 0; i < sl.length(); ++i)
+    {
+      MObject obj;
+      sl.getDependNode(i, obj);
+      MFnDependencyNode fn(obj);
+      SdfPath path;
+      if(!proxy->isSelectedMObject(obj, path))
+      {
+        precommand += " -pp \"";
+        precommand += path.GetText();
+        precommand += "\"";
+        hasNewItems = true;
       }
     }
 
@@ -162,8 +211,27 @@ void ProxyShape::onSelectionChanged(void* ptr)
       command += " \"";
       command += fnDag.name().asChar();
       command += "\"";
+      if(hasNewItems)
+      {
+        precommand += " \"";
+        precommand += fnDag.name().asChar();
+        precommand += "\";";
+        command = precommand + command;
+      }
       proxy->m_pleaseIgnoreSelection = true;
       MGlobal::executeCommand(command, false, true);
+      proxy->m_pleaseIgnoreSelection = false;
+    }
+    else
+    if(hasNewItems)
+    {
+      MFnDagNode fnDag(proxy->thisMObject());
+      precommand += " \"";
+      precommand += fnDag.name().asChar();
+      precommand += "\";";
+
+      proxy->m_pleaseIgnoreSelection = true;
+      MGlobal::executeCommand(precommand, false, true);
       proxy->m_pleaseIgnoreSelection = false;
     }
   }
@@ -435,7 +503,7 @@ MObject ProxyShape::makeUsdTransformChain(
     }
     if(resultingPath)
     {
-      MFnDagNode fn;
+      MFnDagNode fn(nodeToReturn);
       MDagPath path;
       fn.getPath(path);
       *resultingPath = path.fullPathName();
@@ -790,7 +858,7 @@ SelectionUndoHelper::SelectionUndoHelper(nodes::ProxyShape* proxy, SdfPathVector
 //----------------------------------------------------------------------------------------------------------------------
 void SelectionUndoHelper::doIt()
 {
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::SelectionUndoHelper::doIt %lu\n%lu%n", m_insertedRefs.size(), m_removedRefs.size());
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::SelectionUndoHelper::doIt %lu %lu\n", m_insertedRefs.size(), m_removedRefs.size());
   m_proxy->m_pleaseIgnoreSelection = true;
   m_modifier1.doIt();
   m_modifier2.doIt();
@@ -807,7 +875,7 @@ void SelectionUndoHelper::doIt()
 //----------------------------------------------------------------------------------------------------------------------
 void SelectionUndoHelper::undoIt()
 {
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::SelectionUndoHelper::undoIt %lu\n%lu%n", m_insertedRefs.size(), m_removedRefs.size());
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::SelectionUndoHelper::undoIt %lu %lu\n", m_insertedRefs.size(), m_removedRefs.size());
   m_proxy->m_pleaseIgnoreSelection = true;
   m_modifier2.undoIt();
   m_modifier1.undoIt();
@@ -984,7 +1052,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
         MString pathName;
         MObject object = makeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection, &helper.m_modifier2, &hasNodesToCreate, &pathName);
         newlySelectedPaths.append(pathName);
-        helper.m_newSelection.add(object, true);
+        addObjToSelectionList(helper.m_newSelection, object);
         helper.m_insertedRefs.emplace_back(prim.GetPath(), object);
       }
 
@@ -1000,7 +1068,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
         }
         else
         {
-          helper.m_newSelection.add(object, true);
+          addObjToSelectionList(helper.m_newSelection, object);
           m_selectedPaths.push_back(iter);
         }
       }
@@ -1044,7 +1112,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
         MString pathName;
         MObject object = makeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection, &helper.m_modifier2, &hasNodesToCreate, &pathName);
         newlySelectedPaths.append(pathName);
-        helper.m_newSelection.add(object, true);
+        addObjToSelectionList(helper.m_newSelection, object);
         helper.m_insertedRefs.emplace_back(prim.GetPath(), object);
       }
     }
@@ -1174,7 +1242,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
         MString pathName;
         MObject object = makeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection, &helper.m_modifier2, &hasNodesToCreate, &pathName);
         newlySelectedPaths.append(pathName);
-        helper.m_newSelection.add(object, true);
+        addObjToSelectionList(helper.m_newSelection, object);
         helper.m_insertedRefs.emplace_back(prim.GetPath(), object);
       }
       helper.m_paths = m_selectedPaths;

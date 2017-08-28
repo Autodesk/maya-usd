@@ -21,6 +21,9 @@
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
+#include <pxr/base/plug/registry.h>
+#include <pxr/base/tf/getenv.h>
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdUtils/stageCache.h>
 
 #include "maya/MGlobal.h"
@@ -28,6 +31,10 @@
 #include "maya/MItDependencyNodes.h"
 
 #include <iostream>
+
+#ifndef AL_USDMAYA_LOCATION_NAME
+  #define AL_USDMAYA_LOCATION_NAME "AL_USDMAYA_LOCATION"
+#endif
 
 namespace AL {
 namespace usdmaya {
@@ -148,6 +155,11 @@ void Global::onPluginLoad()
   m_postSave = MSceneMessage::addCallback(MSceneMessage::kAfterSave, postFileSave);
   m_preOpen = MSceneMessage::addCallback(MSceneMessage::kBeforeOpen, preFileOpen);
   m_postOpen = MSceneMessage::addCallback(MSceneMessage::kAfterOpen, postFileOpen);
+
+  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Registering USD plugins\n");
+  // Let USD know about the additional plugins
+  std::string pluginLocation(TfStringCatPaths(TfGetenv(AL_USDMAYA_LOCATION_NAME), "share/usd/plugins"));
+  PlugRegistry::GetInstance().RegisterPlugins(pluginLocation);
 
   // For callback initialization for stage cache callback, it will be done via proxy node attribute change.
 }

@@ -67,6 +67,13 @@ option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
 option(VALIDATE_GENERATED_SCHEMAS "Generate schemas code and compare." OFF)
 
+set(AL_USDMAYA_LOCATION_NAME
+    "AL_USDMAYA_LOCATION"
+    CACHE
+    STRING
+    "Name of the environment variable used to store AL_USDMaya installation location"
+)
+
 add_subdirectory(lib)
 add_subdirectory(plugin)
 if(BUILD_USDMAYA_SCHEMAS)
@@ -83,7 +90,6 @@ if(BUILD_USDMAYA_SCHEMAS)
         add_subdirectory(translators)
     endif()
 endif()
-add_subdirectory(tests)
 
 get_property(LIBRARY_LOCATION GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION)
 get_property(PYTHON_LIBRARY_LOCATION GLOBAL PROPERTY GLOBAL_PYTHON_LIBRARY_LOCATION)

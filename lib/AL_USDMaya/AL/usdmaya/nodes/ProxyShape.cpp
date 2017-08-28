@@ -113,6 +113,7 @@ AL_MAYA_DEFINE_NODE(ProxyShape, AL_USDMAYA_PROXYSHAPE, AL_usdmaya);
 MObject ProxyShape::m_filePath = MObject::kNullObj;
 MObject ProxyShape::m_primPath = MObject::kNullObj;
 MObject ProxyShape::m_excludePrimPaths = MObject::kNullObj;
+MObject ProxyShape::m_populationMaskIncludePaths = MObject::kNullObj;
 MObject ProxyShape::m_time = MObject::kNullObj;
 MObject ProxyShape::m_timeOffset = MObject::kNullObj;
 MObject ProxyShape::m_timeScalar = MObject::kNullObj;
@@ -229,9 +230,31 @@ SdfPathVector ProxyShape::getExcludePrimPaths() const
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::getExcludePrimPaths\n");
 
-  SdfPathVector result;
-
   MString paths = excludePrimPathsPlug().asString();
+  return getPrimPathsFromCommaJoinedString(paths);
+}
+
+UsdStagePopulationMask ProxyShape::constructStagePopulationMask(const MString &paths) const
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::constructStagePopulationMask(%s)\n", paths.asChar());
+  UsdStagePopulationMask mask;
+  SdfPathVector list = getPrimPathsFromCommaJoinedString(paths);
+  if(list.empty())
+  {
+    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape: No mask specified, will mask none.\n");
+    return UsdStagePopulationMask::All();
+  }
+
+  for(const SdfPath &path : list)
+  {
+    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape: Add include to mask:(%s)\n", path.GetString().c_str());
+    mask.Add(path);
+  }
+  return mask;
+}
+SdfPathVector ProxyShape::getPrimPathsFromCommaJoinedString(const MString &paths) const
+{
+  SdfPathVector result;
   if(paths.length())
   {
     const char* begin = paths.asChar();
@@ -247,7 +270,6 @@ SdfPathVector ProxyShape::getExcludePrimPaths() const
   }
   return result;
 }
-
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::constructGLImagingEngine()
 {
@@ -450,8 +472,11 @@ MStatus ProxyShape::initialise()
 
     m_serializedArCtx = addStringAttr("serializedArCtx", "arcd", kCached|kReadable|kWritable|kStorable|kHidden);
     m_filePath = addFilePathAttr("filePath", "fp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance, kLoad, "USD Files (*.usd*) (*.usd*);;Alembic Files (*.abc)");
+
     m_primPath = addStringAttr("primPath", "pp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance);
     m_excludePrimPaths = addStringAttr("excludePrimPaths", "epp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance);
+    m_populationMaskIncludePaths = addStringAttr("populationMaskIncludePaths", "pmi", kCached | kReadable | kWritable | kStorable | kAffectsAppearance);
+
     m_complexity = addInt32Attr("complexity", "cplx", 0, kCached | kConnectable | kReadable | kWritable | kAffectsAppearance | kKeyable | kStorable);
     setMinMax(m_complexity, 0, 8, 0, 4);
     m_outStageData = addDataAttr("outStageData", "od", StageData::kTypeId, kInternal | kReadable | kWritable | kAffectsAppearance);
@@ -485,6 +510,7 @@ MStatus ProxyShape::initialise()
     AL_MAYA_CHECK_ERROR(attributeAffects(m_filePath, m_outStageData), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_primPath, m_outStageData), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_inDrivenTransformsData, m_outStageData), errorString);
+    AL_MAYA_CHECK_ERROR(attributeAffects(m_populationMaskIncludePaths, m_outStageData), errorString);
   }
   catch (const MStatus& status)
   {
@@ -538,28 +564,28 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& previousPri
   proxy::PrimFilter filter(previousPrims, newPrimSet, this);
   m_variantSwitchedPrims.clear();
 
-#if AL_ENABLE_TRACE
-  std::cout << "new prims" << std::endl;
-  for(auto it : newPrimSet)
-  {
-    std::cout << it.GetPath().GetText() << std::endl;
+  if(TfDebug::IsEnabled(ALUSDMAYA_TRANSLATORS)){
+    std::cout << "new prims" << std::endl;
+    for(auto it : newPrimSet)
+    {
+      std::cout << it.GetPath().GetText() << std::endl;
+    }
+    std::cout << "new transforms" << std::endl;
+    for(auto it : transformsToCreate)
+    {
+      std::cout << it.GetPath().GetText() << std::endl;
+    }
+    std::cout << "updateable prims" << std::endl;
+    for(auto it : updatablePrimSet)
+    {
+      std::cout << it.GetPath().GetText() << std::endl;
+    }
+    std::cout << "removed prims" << std::endl;
+    for(auto it : removedPrimSet)
+    {
+      std::cout << it.GetText() << std::endl;
+    }
   }
-  std::cout << "new transforms" << std::endl;
-  for(auto it : transformsToCreate)
-  {
-    std::cout << it.GetPath().GetText() << std::endl;
-  }
-  std::cout << "updateable prims" << std::endl;
-  for(auto it : updatablePrimSet)
-  {
-    std::cout << it.GetPath().GetText() << std::endl;
-  }
-  std::cout << "removed prims" << std::endl;
-  for(auto it : removedPrimSet)
-  {
-    std::cout << it.GetText() << std::endl;
-  }
-#endif
 
   cmds::ProxyShapePostLoadProcess::MObjectToPrim objsToCreate;
   if(!filter.transformsToCreate().empty())
@@ -747,6 +773,9 @@ void ProxyShape::reloadStage(MPlug& plug)
   const MString serializedSessionLayer = inputStringValue(dataBlock, m_serializedSessionLayer);
   const MString serializedArCtx = inputStringValue(dataBlock, m_serializedArCtx);
 
+  const MString populationMaskIncludePaths = inputStringValue(dataBlock, m_populationMaskIncludePaths);
+  UsdStagePopulationMask mask = constructStagePopulationMask(populationMaskIncludePaths);
+
   // TODO initialise the context using the serialised attribute
 
   // let the usd stage cache deal with caching the usd stage data
@@ -811,13 +840,16 @@ void ProxyShape::reloadStage(MPlug& plug)
         if (sessionLayer)
         {
           TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage is called with extra session layer.\n");
-          m_stage = UsdStage::Open(rootLayer, sessionLayer, loadOperation);
+          m_stage = UsdStage::OpenMasked(rootLayer, sessionLayer, mask, loadOperation);
         }
         else
         {
           TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage is called without any session layer.\n");
-          m_stage = UsdStage::Open(rootLayer, loadOperation);
+          m_stage = UsdStage::OpenMasked(rootLayer, mask, loadOperation);
         }
+
+        // Expand the mask, since we do not really want to mask the possible relation targets.
+        m_stage->ExpandPopulationMask();
 
         AL_END_PROFILE_SECTION();
       }

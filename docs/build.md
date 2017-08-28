@@ -2,7 +2,7 @@
 
 ## Build Requirements
 - This project is buildable, for now only on Linux
-- usd-0.7.5 built with ptex-2.0.40 (<2.0.41)
+- USD-0.8.0 built with ptex-2.0.40 (<2.0.41)
 - Qt-5.6.1
 - [google test framework](https://github.com/google/googletest) (>1.8.0) to build and run the tests
 - It has been tested  on CentOS 6.6
@@ -86,6 +86,11 @@ AL_USDMaya is made of several plugins:
 - libAL_USDMaya.so, libAL_USDMayaSchemas.so, libAL_USDMayaTranslators.so (usd plugins): they need to be setup properly (using PXR_PLUGINPATH) for them to register types used by AL_USDMaya.
 - python bindings are also available, they have to be added to PYTHONPATH.
 See the docker scripts for a configuration example.
+
+### Additional `MayaReference` translator
+
+To be able to use the additional `MayaReference` translator, an environment variable has to be set to the path where AL_USDMaya has been installed. By default, the environment variable's name is `AL_USDMAYA_LOCATION`.
+This environment name can be configured when maya is built by setting the AL_USDMAYA_LOCATION_NAME cmake variable to the name you want.
 
 ### A note on VP2
 If you need to use VP2, it won't work with the current ProxyShape implementation unless you set Legacy Profile - can to this via env vars, options etc.

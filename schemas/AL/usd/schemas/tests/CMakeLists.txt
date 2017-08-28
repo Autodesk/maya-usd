@@ -25,4 +25,4 @@ target_link_libraries(testMayaSchemas
 
 install(TARGETS testMayaSchemas DESTINATION bin)
 
-add_test(TestMayaSchemas testMayaSchemas)
+add_test(TestAdditionalSchemas testMayaSchemas)
