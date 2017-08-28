@@ -503,7 +503,7 @@ MObject ProxyShape::makeUsdTransformChain(
     }
     if(resultingPath)
     {
-      MFnDagNode fn;
+      MFnDagNode fn(nodeToReturn);
       MDagPath path;
       fn.getPath(path);
       *resultingPath = path.fullPathName();

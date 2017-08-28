@@ -97,8 +97,13 @@ TEST(ProxyShapeSelect, selectNode)
 
   // select a single path
   MGlobal::executeCommand("select -cl;");
-  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip1/knee1/ankle1/ltoe1\" \"AL_usdmaya_ProxyShape1\"", false, true);
+  MStringArray results;
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip1/knee1/ankle1/ltoe1\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
   MSelectionList sl;
+
+  EXPECT_EQ(1, results.length());
+  EXPECT_EQ(MString("|transform1|root|hip1|knee1|ankle1|ltoe1"), results[0]);
+  results.clear();
 
   // make sure the path is contained in the selected paths (for hydra selection)
   EXPECT_EQ(1, proxy->selectedPaths().size());
@@ -138,7 +143,11 @@ TEST(ProxyShapeSelect, selectNode)
   // So now we have a single item selected. Let's see if we can replace this selection list
   // with two other paths. The previous selection should be removed, the two additional paths
   // should be selected
-  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip2/knee2/ankle2/ltoe2\" -pp \"/root/hip2/knee2/ankle2/rtoe2\" \"AL_usdmaya_ProxyShape1\"", false, true);
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip2/knee2/ankle2/ltoe2\" -pp \"/root/hip2/knee2/ankle2/rtoe2\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
+  EXPECT_EQ(2, results.length());
+  EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|ltoe2"), results[0]);
+  EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|rtoe2"), results[1]);
+  results.clear();
 
   EXPECT_EQ(2, proxy->selectedPaths().size());
   EXPECT_EQ(SdfPath("/root/hip2/knee2/ankle2/ltoe2"), proxy->selectedPaths()[0]);
@@ -190,7 +199,8 @@ TEST(ProxyShapeSelect, selectNode)
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/ltoe2"), SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
   // now attempt to clear the selection list
-  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -cl \"AL_usdmaya_ProxyShape1\"", false, true);
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -cl \"AL_usdmaya_ProxyShape1\"", results, false, true);
+  EXPECT_EQ(0, results.length());
 
   EXPECT_EQ(0, proxy->selectedPaths().size());
   EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root")));
@@ -244,7 +254,10 @@ TEST(ProxyShapeSelect, selectNode)
   // So now we have a single item selected. Let's see if we can replace this selection list
   // with two other paths. The previous selection should be removed, the two additional paths
   // should be selected
-  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -a -pp \"/root/hip2/knee2/ankle2/ltoe2\" \"AL_usdmaya_ProxyShape1\"", false, true);
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -a -pp \"/root/hip2/knee2/ankle2/ltoe2\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
+  EXPECT_EQ(1, results.length());
+  EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|ltoe2"), results[0]);
+  results.clear();
 
   EXPECT_EQ(1, proxy->selectedPaths().size());
   EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
@@ -255,7 +268,10 @@ TEST(ProxyShapeSelect, selectNode)
   EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/ltoe2")});
 
-  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -a -pp \"/root/hip2/knee2/ankle2/rtoe2\" \"AL_usdmaya_ProxyShape1\"", false, true);
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -a -pp \"/root/hip2/knee2/ankle2/rtoe2\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
+  EXPECT_EQ(1, results.length());
+  EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|rtoe2"), results[0]);
+  results.clear();
 
   EXPECT_EQ(2, proxy->selectedPaths().size());
   EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
@@ -332,7 +348,9 @@ TEST(ProxyShapeSelect, selectNode)
   EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/ltoe2"), SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
-  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -d -pp \"/root/hip2/knee2/ankle2/ltoe2\" \"AL_usdmaya_ProxyShape1\"", false, true);
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -d -pp \"/root/hip2/knee2/ankle2/ltoe2\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
+  EXPECT_EQ(0, results.length());
+  results.clear();
 
   EXPECT_EQ(1, proxy->selectedPaths().size());
   EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
@@ -347,7 +365,9 @@ TEST(ProxyShapeSelect, selectNode)
   EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
-  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -d -pp \"/root/hip2/knee2/ankle2/rtoe2\" \"AL_usdmaya_ProxyShape1\"", false, true);
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -d -pp \"/root/hip2/knee2/ankle2/rtoe2\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
+  EXPECT_EQ(0, results.length());
+  results.clear();
 
   EXPECT_EQ(0, proxy->selectedPaths().size());
   EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root")));
@@ -424,7 +444,11 @@ TEST(ProxyShapeSelect, selectNode)
   MGlobal::getActiveSelectionList(sl);
   EXPECT_EQ(0, sl.length());
 
-  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -tgl -pp \"/root/hip2/knee2/ankle2/rtoe2\" -pp \"/root/hip2/knee2/ankle2/ltoe2\" \"AL_usdmaya_ProxyShape1\"", false, true);
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -tgl -pp \"/root/hip2/knee2/ankle2/rtoe2\" -pp \"/root/hip2/knee2/ankle2/ltoe2\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
+  EXPECT_EQ(2, results.length());
+  EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|rtoe2"), results[0]);
+  EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|ltoe2"), results[1]);
+  results.clear();
 
   EXPECT_EQ(2, proxy->selectedPaths().size());
   EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
@@ -439,7 +463,9 @@ TEST(ProxyShapeSelect, selectNode)
   EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/ltoe2"), SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
-  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -tgl -pp \"/root/hip2/knee2/ankle2/rtoe2\" -pp \"/root/hip2/knee2/ankle2/ltoe2\" \"AL_usdmaya_ProxyShape1\"", false, true);
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -tgl -pp \"/root/hip2/knee2/ankle2/rtoe2\" -pp \"/root/hip2/knee2/ankle2/ltoe2\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
+  EXPECT_EQ(0, results.length());
+  results.clear();
 
   EXPECT_EQ(0, proxy->selectedPaths().size());
   EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root")));
@@ -770,15 +796,3 @@ TEST(ProxyShapeSelect, selectSamePathTwiceViaMaya)
   EXPECT_EQ(0, required);
   EXPECT_EQ(0, refCount);
 }
-
-
-
-
-
-
-
-
-
-
-
-
