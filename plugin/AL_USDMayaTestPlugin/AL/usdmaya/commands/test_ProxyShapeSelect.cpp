@@ -516,5 +516,269 @@ TEST(ProxyShapeSelect, selectNode)
   EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   MGlobal::getActiveSelectionList(sl);
   EXPECT_EQ(0, sl.length());
-
 }
+
+// make sure we can select a parent transform of a node that is already selected
+TEST(ProxyShapeSelect, selectParent)
+{
+  MFileIO::newFile(true);
+  auto constructTransformChain = [] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomXform root = UsdGeomXform::Define(stage, SdfPath("/root"));
+    UsdGeomXform leg1 = UsdGeomXform::Define(stage, SdfPath("/root/hip1"));
+    UsdGeomXform knee1 = UsdGeomXform::Define(stage, SdfPath("/root/hip1/knee1"));
+    UsdGeomXform ankle1 = UsdGeomXform::Define(stage, SdfPath("/root/hip1/knee1/ankle1"));
+    UsdGeomXform rtoe1 = UsdGeomXform::Define(stage, SdfPath("/root/hip1/knee1/ankle1/ltoe1"));
+    return stage;
+  };
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_selectParent.usda";
+  std::string sessionLayerContents;
+
+  // generate some data for the proxy shape
+  {
+    auto stage = constructTransformChain();
+    stage->Export(temp_path, false);
+  }
+
+  MFnDagNode fn;
+  MObject xform = fn.create("transform");
+  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+  MString shapeName = fn.name();
+
+  AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+  // force the stage to load
+  proxy->filePathPlug().setString(temp_path.c_str());
+
+  // select a single path
+  MGlobal::executeCommand("select -cl;");
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip1/knee1/ankle1/ltoe1\" \"AL_usdmaya_ProxyShape1\"", false, true);
+  MSelectionList sl;
+  MGlobal::getActiveSelectionList(sl);
+  EXPECT_EQ(1, sl.length());
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip1/knee1/ankle1\" \"AL_usdmaya_ProxyShape1\"", false, true);
+  sl.clear();
+  MGlobal::getActiveSelectionList(sl);
+  EXPECT_EQ(1, sl.length());
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+}
+
+// make sure we can select a parent transform of a node that is already selected (via the maya select command)
+TEST(ProxyShapeSelect, selectParentViaMaya)
+{
+  MFileIO::newFile(true);
+  auto constructTransformChain = [] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomXform root = UsdGeomXform::Define(stage, SdfPath("/root"));
+    UsdGeomXform leg1 = UsdGeomXform::Define(stage, SdfPath("/root/hip1"));
+    UsdGeomXform knee1 = UsdGeomXform::Define(stage, SdfPath("/root/hip1/knee1"));
+    UsdGeomXform ankle1 = UsdGeomXform::Define(stage, SdfPath("/root/hip1/knee1/ankle1"));
+    UsdGeomXform rtoe1 = UsdGeomXform::Define(stage, SdfPath("/root/hip1/knee1/ankle1/ltoe1"));
+    return stage;
+  };
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_selectParent.usda";
+  std::string sessionLayerContents;
+
+  // generate some data for the proxy shape
+  {
+    auto stage = constructTransformChain();
+    stage->Export(temp_path, false);
+  }
+
+  MFnDagNode fn;
+  MObject xform = fn.create("transform");
+  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+  MString shapeName = fn.name();
+
+  AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+  // force the stage to load
+  proxy->filePathPlug().setString(temp_path.c_str());
+
+  // select a single path
+  MGlobal::executeCommand("select -cl;");
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip1/knee1/ankle1/ltoe1\" \"AL_usdmaya_ProxyShape1\"", false, true);
+  MSelectionList sl;
+  MGlobal::getActiveSelectionList(sl);
+  EXPECT_EQ(1, sl.length());
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+
+  MGlobal::executeCommand("select -r \"ankle1\"", false, true);
+  sl.clear();
+  MGlobal::getActiveSelectionList(sl);
+  EXPECT_EQ(1, sl.length());
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+}
+
+// make sure we can select a parent transform of a node that is already selected (via the maya select command)
+TEST(ProxyShapeSelect, selectSamePathTwice)
+{
+  MFileIO::newFile(true);
+  auto constructTransformChain = [] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomXform root = UsdGeomXform::Define(stage, SdfPath("/root"));
+    UsdGeomXform leg1 = UsdGeomXform::Define(stage, SdfPath("/root/hip1"));
+    UsdGeomXform knee1 = UsdGeomXform::Define(stage, SdfPath("/root/hip1/knee1"));
+    UsdGeomXform ankle1 = UsdGeomXform::Define(stage, SdfPath("/root/hip1/knee1/ankle1"));
+    UsdGeomXform rtoe1 = UsdGeomXform::Define(stage, SdfPath("/root/hip1/knee1/ankle1/ltoe1"));
+    return stage;
+  };
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_selectParent.usda";
+  std::string sessionLayerContents;
+
+  // generate some data for the proxy shape
+  {
+    auto stage = constructTransformChain();
+    stage->Export(temp_path, false);
+  }
+
+  MFnDagNode fn;
+  MObject xform = fn.create("transform");
+  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+  MString shapeName = fn.name();
+
+  AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+  // force the stage to load
+  proxy->filePathPlug().setString(temp_path.c_str());
+
+  // select a single path
+  MGlobal::executeCommand("select -cl;");
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip1/knee1/ankle1/ltoe1\" \"AL_usdmaya_ProxyShape1\"", false, true);
+  MSelectionList sl;
+  MGlobal::getActiveSelectionList(sl);
+  EXPECT_EQ(1, sl.length());
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+
+  uint32_t selected = 0, required = 0, refCount = 0;
+  proxy->getCounts(SdfPath("/root/hip1/knee1/ankle1/ltoe1"), selected, required, refCount);
+  EXPECT_EQ(1, selected);
+  EXPECT_EQ(0, required);
+  EXPECT_EQ(0, refCount);
+
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip1/knee1/ankle1/ltoe1\" \"AL_usdmaya_ProxyShape1\"", false, true);
+  sl.clear();
+  MGlobal::getActiveSelectionList(sl);
+  EXPECT_EQ(1, sl.length());
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+
+  selected = 0, required = 0, refCount = 0;
+  proxy->getCounts(SdfPath("/root/hip1/knee1/ankle1/ltoe1"), selected, required, refCount);
+  EXPECT_EQ(1, selected);
+  EXPECT_EQ(0, required);
+  EXPECT_EQ(0, refCount);
+}
+
+
+// make sure we can select a parent transform of a node that is already selected (via the maya select command)
+TEST(ProxyShapeSelect, selectSamePathTwiceViaMaya)
+{
+  MFileIO::newFile(true);
+  auto constructTransformChain = [] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomXform root = UsdGeomXform::Define(stage, SdfPath("/root"));
+    UsdGeomXform leg1 = UsdGeomXform::Define(stage, SdfPath("/root/hip1"));
+    UsdGeomXform knee1 = UsdGeomXform::Define(stage, SdfPath("/root/hip1/knee1"));
+    UsdGeomXform ankle1 = UsdGeomXform::Define(stage, SdfPath("/root/hip1/knee1/ankle1"));
+    UsdGeomXform rtoe1 = UsdGeomXform::Define(stage, SdfPath("/root/hip1/knee1/ankle1/ltoe1"));
+    return stage;
+  };
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_selectParent.usda";
+  std::string sessionLayerContents;
+
+  // generate some data for the proxy shape
+  {
+    auto stage = constructTransformChain();
+    stage->Export(temp_path, false);
+  }
+
+  MFnDagNode fn;
+  MObject xform = fn.create("transform");
+  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+  MString shapeName = fn.name();
+
+  AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+  // force the stage to load
+  proxy->filePathPlug().setString(temp_path.c_str());
+
+  // select a single path
+  MGlobal::executeCommand("select -cl;");
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip1/knee1/ankle1/ltoe1\" \"AL_usdmaya_ProxyShape1\"", false, true);
+  MSelectionList sl;
+  MGlobal::getActiveSelectionList(sl);
+  EXPECT_EQ(1, sl.length());
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+
+  uint32_t selected = 0, required = 0, refCount = 0;
+  proxy->getCounts(SdfPath("/root/hip1/knee1/ankle1/ltoe1"), selected, required, refCount);
+  EXPECT_EQ(1, selected);
+  EXPECT_EQ(0, required);
+  EXPECT_EQ(0, refCount);
+
+  MGlobal::executeCommand("select -r \"|transform1|root|hip1|knee1|ankle1|ltoe1\"", false, true);
+  sl.clear();
+  MGlobal::getActiveSelectionList(sl);
+  EXPECT_EQ(1, sl.length());
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+
+  selected = 0, required = 0, refCount = 0;
+  proxy->getCounts(SdfPath("/root/hip1/knee1/ankle1/ltoe1"), selected, required, refCount);
+  EXPECT_EQ(1, selected);
+  EXPECT_EQ(0, required);
+  EXPECT_EQ(0, refCount);
+}
+
+
+
+
+
+
+
+
+
+
+
+
