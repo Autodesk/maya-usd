@@ -43,7 +43,6 @@ namespace cmds {
 struct CompareLayerHandle;
 class LayerCommandBase;
 class LayerConstructTree;
-class LayerCreateSubLayer;
 class LayerCurrentEditTarget;
 class LayerExport;
 class LayerGetLayers;

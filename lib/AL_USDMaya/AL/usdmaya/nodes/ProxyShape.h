@@ -213,6 +213,7 @@ class ProxyShape
 {
   friend class SelectionUndoHelper;
   friend class ProxyShapeUI;
+  friend class StageReloadGuard;
 public:
 
   /// \brief  a mapping between a maya transform (or MObject::kNullObj), and the prim that exists at that location
@@ -229,24 +230,6 @@ public:
   /// \name   Type Info & Registration
   //--------------------------------------------------------------------------------------------------------------------
   AL_MAYA_DECLARE_NODE();
-
-  //--------------------------------------------------------------------------------------------------------------------
-  /// \name   Layers API
-  //--------------------------------------------------------------------------------------------------------------------
-
-  /// \brief  Locate the maya node associated with the specified layer
-  /// \param  handle the usd layer to locate
-  /// \return a pointer to the maya node that references the layer, or NULL if the layer was not found
-  Layer* findLayer(SdfLayerHandle handle);
-
-  /// \brief  Locate the name of the maya node associated with the specified layer
-  /// \param  handle the usd layer name to locate
-  /// \return the name of the maya node that references the layer, or and empty string if the layer was not found
-  MString findLayerMayaName(SdfLayerHandle handle);
-
-  /// \brief  return the node that represents the root layer
-  /// \return the root layer, or NULL if stage is invalid
-  Layer* getLayer();
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Input Attributes
@@ -636,6 +619,13 @@ public:
   /// \param[in] changedPaths are child paths that existed previously and may not be existing now.
   void onPrimResync(SdfPath primPath, const SdfPathVector& changedPaths);
 
+
+  // \brief Serialize information unique to this shape
+  void serializeThis();
+
+  // \brief Serialize all layers in proxyShapes to layerManager attributes; called before saving
+  static void serializeAll();
+
   /// \brief This function starts the prim changed process within the proxyshape
   /// \param[in] changePath is point at which the scene is going to be modified.
   inline void primChangedAtPath(const SdfPath& changePath)
@@ -676,6 +666,8 @@ public:
   /// \return A constant SelectableDB owned by the ProxyShape
   const AL::usdmaya::SelectabilityDB& selectabilityDB() const
     { return const_cast<ProxyShape*>(this)->selectabilityDB(); }
+
+  void reloadStage();
 
 
 private:
@@ -763,6 +755,15 @@ private:
     };
   };
 
+  // Simple RAII guard for setting / unsetting m_reloading
+  struct ProxyShapeStageReloadGuard
+  {
+    ProxyShapeStageReloadGuard(std::atomic<bool>& theBool);
+    ~ProxyShapeStageReloadGuard();
+
+    std::atomic<bool>& m_theBool;
+  };
+  friend class ProxyShapeStageReloadGuard;
 
   /// if the USD stage contains a maya reference et-al, then we have a set of *REQUIRED* AL::usdmaya::nodes::Transform nodes.
   /// If we then later create a USD transform node (because we're bringing in all of them, or just a selection of them),
@@ -821,7 +822,6 @@ private:
   bool primHasExcludedParent(UsdPrim prim);
   bool initPrim(const uint32_t index, MDGContext& ctx);
 
-  void reloadStage(MPlug& plug);
   void layerIdChanged(SdfNotice::LayerIdentifierDidChange const& notice, UsdStageWeakPtr const& sender);
   void onObjectsChanged(UsdNotice::ObjectsChanged const&, UsdStageWeakPtr const& sender);
   void variantSelectionListener(SdfNotice::LayersDidChange const& notice, UsdStageWeakPtr const& sender);
@@ -859,7 +859,6 @@ private:
   TfNotice::Key m_editTargetChanged;
 
   mutable std::map<UsdTimeCode, MBoundingBox> m_boundingBoxCache;
-  MCallbackId m_beforeSaveSceneId;
   MCallbackId m_attributeChanged;
   MCallbackId m_onSelectionChanged;
   SdfPathVector m_excludedGeometry;
@@ -879,6 +878,7 @@ private:
   UsdImagingGLHdEngine* m_engine = 0;
 
   uint32_t m_engineRefCount = 0;
+  std::atomic<bool> m_reloading;
   bool m_compositionHasChanged = false;
   bool m_drivenTransformsDirty = false;
   bool m_pleaseIgnoreSelection = false;

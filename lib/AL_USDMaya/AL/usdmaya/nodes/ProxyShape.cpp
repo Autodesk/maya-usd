@@ -31,8 +31,8 @@
 #include "AL/usdmaya/cmds/ProxyShapePostLoadProcess.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
+#include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
-#include "AL/usdmaya/nodes/Layer.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
@@ -53,9 +53,50 @@
 #include <algorithm>
 #include <iterator>
 
+namespace {
+  // Originally had this as a private function on ProxyShape, which makes more sense...
+  // however, that meant that ProxyShape.h needed to include LayerManager.h, which in
+  // turn triggered inclusion of Xlib.h... Xlib.h has a "#define Bool int", which then
+  // messed with usage of "SdfValueTypeNames->Bool" (lame!)
+  // For now, skirting the issue by just making this func in an anonymous namespace here...
+
+  void trackEditTargetLayer(
+      AL::usdmaya::nodes::ProxyShape* proxy,
+      AL::usdmaya::nodes::LayerManager* layerManager=nullptr)
+  {
+    TF_DEBUG(ALUSDMAYA_LAYERS).Msg("ProxyShape::trackEditTargetLayer");
+    if(!proxy)
+    {
+      std::cerr << "Error - ProxyShape::trackEditTargetLayer pass null proxy" << std::endl;
+      return;
+    }
+    auto stage = proxy->getUsdStage();
+    if(!stage) return;
+    auto currentTargetLayer = stage->GetEditTarget().GetLayer();
+    if(currentTargetLayer->IsDirty())
+    {
+      if(!layerManager) layerManager = AL::usdmaya::nodes::LayerManager::findOrCreateManager();
+      layerManager->addLayer(currentTargetLayer);
+    }
+  }
+}
+
 namespace AL {
 namespace usdmaya {
 namespace nodes {
+
+//----------------------------------------------------------------------------------------------------------------------
+ProxyShape::ProxyShapeStageReloadGuard::ProxyShapeStageReloadGuard(std::atomic<bool>& theBool)
+ : m_theBool(theBool)
+{
+  m_theBool = true;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+ProxyShape::ProxyShapeStageReloadGuard::~ProxyShapeStageReloadGuard()
+{
+  m_theBool = false;
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialiseTranslatorContext()
@@ -80,40 +121,7 @@ static std::string resolvePath(const std::string& filePath)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-static void beforeSaveScene(void* clientData)
-{
-  ProxyShape* proxyShape =  static_cast<ProxyShape *>(clientData);
-  UsdStageRefPtr stage = proxyShape->getUsdStage();
-
-  if(stage)
-  {
-    std::string serializeSessionLayerStr;
-    stage->GetSessionLayer()->ExportToString(&serializeSessionLayerStr);
-
-    MPlug serializeSessionLayerPlug(proxyShape->thisMObject(), proxyShape->serializedSessionLayer());
-    serializeSessionLayerPlug.setValue(convert(serializeSessionLayerStr));
-
-    proxyShape->serialiseTranslatorContext();
-    proxyShape->serialiseTransformRefs();
-
-    // prior to saving, serialize any modified layers
-    MFnDependencyNode fn;
-    MItDependencyNodes iter(MFn::kPluginDependNode);
-    for(; !iter.isDone(); iter.next())
-    {
-      fn.setObject(iter.item());
-      if(fn.typeId() == Layer::kTypeId)
-      {
-        TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("serialising layer: %s\n", fn.name().asChar());
-        Layer* layerPtr = (Layer*)fn.userNode();
-        layerPtr->populateSerialisationAttributes();
-      }
-    }
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-AL_MAYA_DEFINE_NODE(ProxyShape, AL_USDMAYA_PROXYSHAPE, AL_usdmaya);
+ AL_MAYA_DEFINE_NODE(ProxyShape, AL_USDMAYA_PROXYSHAPE, AL_usdmaya);
 
 MObject ProxyShape::m_filePath = MObject::kNullObj;
 MObject ProxyShape::m_primPath = MObject::kNullObj;
@@ -145,76 +153,6 @@ MObject ProxyShape::m_transformRotate = MObject::kNullObj;
 MObject ProxyShape::m_transformScale = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
-Layer* ProxyShape::getLayer()
-{
-  MPlug plug(thisMObject(), m_layers);
-  MFnDependencyNode fn;
-
-  MPlugArray plugs;
-  if(plug.connectedTo(plugs, true, true))
-  {
-    if(plugs.length())
-    {
-      if(plugs[0].node().apiType() == MFn::kPluginDependNode)
-      {
-        if(fn.setObject(plugs[0].node()))
-        {
-          if(fn.typeId() == Layer::kTypeId)
-          {
-            return (Layer*)fn.userNode();
-          }
-          else
-          {
-            MGlobal::displayError(MString("Invalid connection found on attribute") + plug.name());
-          }
-        }
-        else
-        {
-          MGlobal::displayError(MString("Invalid connection found on attribute") + plug.name());
-        }
-      }
-      else
-      {
-        MGlobal::displayError(MString("Invalid connection found on attribute") + plug.name());
-      }
-    }
-  }
-  return 0;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-Layer* ProxyShape::findLayer(SdfLayerHandle handle)
-{
-  LAYER_HANDLE_CHECK(handle);
-  if(handle)
-  {
-    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::findLayer: %s\n", handle->GetIdentifier().c_str());
-    Layer* layer = getLayer();
-    if(layer)
-    {
-      return layer->findLayer(handle);
-    }
-  }
-  // we shouldn't really be able to get here!
-  return 0;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-MString ProxyShape::findLayerMayaName(SdfLayerHandle handle)
-{
-  LAYER_HANDLE_CHECK(handle);
-  if(handle)
-  {
-    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::findLayerMayaName: %s\n", handle->GetIdentifier().c_str());
-    Layer* node = findLayer(handle);
-    if(node)
-    {
-      MFnDependencyNode fn(node->thisMObject());
-      return fn.name();
-    }
-  }
-  return MString();
-}
 
 //----------------------------------------------------------------------------------------------------------------------
 UsdPrim ProxyShape::getUsdPrim(MDataBlock& dataBlock) const
@@ -411,10 +349,10 @@ bool ProxyShape::getRenderAttris(void* pattribs, const MHWRender::MFrameContext&
 ProxyShape::ProxyShape()
   : MPxSurfaceShape(), maya::NodeHelper(),
     m_context(fileio::translators::TranslatorContext::create(this)),
-    m_translatorManufacture(context())
+    m_translatorManufacture(context()),
+    m_reloading(false)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::ProxyShape\n");
-  m_beforeSaveSceneId = MSceneMessage::addCallback(MSceneMessage::kBeforeSave, beforeSaveScene, this);
   m_onSelectionChanged = MEventMessage::addEventCallback(MString("SelectionChanged"), onSelectionChanged, this);
 
   TfWeakPtr<ProxyShape> me(this);
@@ -519,7 +457,6 @@ ProxyShape::ProxyShape()
 ProxyShape::~ProxyShape()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::~ProxyShape\n");
-  MSceneMessage::removeCallback(m_beforeSaveSceneId);
   MNodeMessage::removeCallback(m_attributeChanged);
   MEventMessage::removeCallback(m_onSelectionChanged);
   TfNotice::Revoke(m_variantChangedNoticeKey);
@@ -638,13 +575,7 @@ void ProxyShape::onEditTargetChanged(UsdNotice::StageEditTargetChanged const& no
   if (!sender || sender != m_stage)
       return;
 
-  const UsdEditTarget& target = m_stage->GetEditTarget();
-  const SdfLayerHandle& layer = target.GetLayer();
-  auto layerNode = findLayer(layer);
-  if(layerNode)
-  {
-    layerNode->setHasBeenTheEditTarget(true);
-  }
+  trackEditTargetLayer(this);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -729,9 +660,76 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& previousPri
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::serializeThis()
+{
+  UsdStageRefPtr stage = getUsdStage();
+
+  if(stage)
+  {
+    // Serialize our own session layer - LayerManager will handle all other layers
+    std::string serializeSessionLayerStr;
+    stage->GetSessionLayer()->ExportToString(&serializeSessionLayerStr);
+    serializedSessionLayerPlug().setValue(convert(serializeSessionLayerStr));
+
+    serialiseTranslatorContext();
+    serialiseTransformRefs();
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::serializeAll()
+{
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("ProxyShape::serializeAll\n");
+  const char* errorString = "ProxyShape::serializeAll";
+  // Now iterate over all proxyShapes...
+  MFnDependencyNode fn;
+  LayerManager* layerManager = nullptr;
+  {
+    MItDependencyNodes iter(MFn::kPluginShape);
+    for(; !iter.isDone(); iter.next())
+    {
+      MObject mobj = iter.item();
+      fn.setObject(mobj);
+      if(fn.typeId() != ProxyShape::kTypeId) continue;
+
+      if (layerManager == nullptr)
+      {
+        layerManager = LayerManager::findOrCreateManager();
+      }
+
+      auto proxyShape = static_cast<ProxyShape *>(fn.userNode());
+      if(proxyShape == nullptr)
+      {
+        MGlobal::displayError(MString("ProxyShape had no mpx data: ") + fn.name());
+        continue;
+      }
+
+      proxyShape->serializeThis();
+
+      UsdStageRefPtr stage = proxyShape->getUsdStage();
+
+      if(!stage)
+      {
+        MGlobal::displayError(MString("Could not get stage for proxyShape: ") + fn.name());
+        continue;
+      }
+
+      // Then add in the current edit target
+      trackEditTargetLayer(proxyShape, layerManager);
+    }
+
+    // Bail if no proxyShapes were found...
+    if(!layerManager) return;
+
+    // Now that all layers are added, serialize to attributes
+    AL_MAYA_CHECK_ERROR_RETURN(layerManager->populateSerialisationAttributes(), errorString);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdStageWeakPtr const& sender)
 {
-  if(MFileIO::isOpeningFile())
+  if(MFileIO::isReadingFile())
     return;
 
   if (!sender || sender != m_stage)
@@ -926,7 +924,7 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
 // selection change happened.  If so, we trigger a ProxyShapePostLoadProcess() which will regenerate the alTransform
 // nodes based on the contents of the new variant selection.
 {
-  if(MFileIO::isOpeningFile())
+  if(MFileIO::isReadingFile())
   {
     return;
   }
@@ -962,11 +960,22 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::reloadStage(MPlug& plug)
+void ProxyShape::reloadStage()
 {
+  // A reload can potentially trigger another reload of the same stage:
+  //    - we edit the path attribute of a ProxyShape
+  //    - this trigers a this call (reloadStage)
+  //    - the reloadStage causes an ALMayaReference node to get created
+  //    - the ALMayaReference causes a maya reference to get created / loaded
+  //    - the maya reference load trips our global postFileRead callback
+  //    - this calls reloadStage on all proxyShapes in the scene...
+  //    - ...including this one
+  // To guard against re-entering this function, we guard with m_reloading
+  if (m_reloading) return;
+
+  ProxyShapeStageReloadGuard reloadGuard(m_reloading);
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::reloadStage\n");
 
-  maya::Profiler::clearAll();
   AL_BEGIN_PROFILE_SECTION(ReloadStage);
   MDataBlock dataBlock = forceCache();
   m_stage = UsdStageRefPtr();
@@ -1008,24 +1017,18 @@ void ProxyShape::reloadStage(MPlug& plug)
 
   if (isValidPath)
   {
-    AL_BEGIN_PROFILE_SECTION(OpeningUsdStage);
-      AL_BEGIN_PROFILE_SECTION(OpeningSessionLayer);
+    MStatus status;
 
-        SdfLayerRefPtr sessionLayer;
+    AL_BEGIN_PROFILE_SECTION(OpeningUsdStage);
+      SdfLayerRefPtr sessionLayer;
+      AL_BEGIN_PROFILE_SECTION(OpeningSessionLayer);
         {
           sessionLayer = SdfLayer::CreateAnonymous();
           if(serializedSessionLayer.length() != 0)
           {
             sessionLayer->ImportFromString(convert(serializedSessionLayer));
-
-            auto layer = getLayer();
-            if(layer)
-            {
-              layer->setLayerAndClearAttribute(sessionLayer);
-            }
           }
         }
-
       AL_END_PROFILE_SECTION();
 
       AL_BEGIN_PROFILE_SECTION(OpenRootLayer);
@@ -1096,7 +1099,7 @@ void ProxyShape::reloadStage(MPlug& plug)
     m_path = rootPath;
   }
 
-  if(m_stage && !MFileIO::isOpeningFile())
+  if(m_stage && !MFileIO::isReadingFile())
   {
     AL_BEGIN_PROFILE_SECTION(PostLoadProcess);
       // execute the post load process to import any custom prims
@@ -1249,9 +1252,10 @@ void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& p
   ProxyShape* proxy = (ProxyShape*)clientData;
   if(msg & MNodeMessage::kAttributeSet)
   {
-    if(plug == m_filePath)
+    // Delay stage creation if opening a file, because we haven't created the LayerManager node yet
+    if(plug == m_filePath && !MFileIO::isReadingFile())
     {
-      proxy->reloadStage(plug);
+      proxy->reloadStage();
     }
     else
     if(plug == m_primPath)

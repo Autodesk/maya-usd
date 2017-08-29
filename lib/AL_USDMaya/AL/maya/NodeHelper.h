@@ -60,12 +60,20 @@ namespace maya {
 /// \endcode
 /// \ingroup mayagui
 //----------------------------------------------------------------------------------------------------------------------
-#define AL_DECL_ATTRIBUTE(XX) \
+
+// For children of multi-attribute, a generic XXPlug() method
+// isn't very helpful, as we need to attach to a specific indexed
+// element plug of the parent array... and defining it just
+// creates a confusing name
+#define AL_DECL_MULTI_CHILD_ATTRIBUTE(XX) \
   private: \
   static MObject m_##XX; \
   public: \
-  MPlug XX##Plug() const { return MPlug( thisMObject(), m_##XX ); } \
   static const MObject& XX () { return m_##XX; }
+
+#define AL_DECL_ATTRIBUTE(XX) \
+  AL_DECL_MULTI_CHILD_ATTRIBUTE(XX) \
+  MPlug XX##Plug() const { return MPlug( thisMObject(), m_##XX ); } \
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  This is a little helper object designed to reduce the amount of boilerplate GUI code you need to jump through

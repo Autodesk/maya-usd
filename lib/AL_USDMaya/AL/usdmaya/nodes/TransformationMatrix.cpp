@@ -139,9 +139,9 @@ void TransformationMatrix::setPrim(const UsdPrim& prim)
     m_rotatePivotFromUsd = MPoint(0, 0, 0);
     m_rotatePivotTranslationFromUsd = MVector(0, 0, 0);
     m_rotateOrientationFromUsd = MQuaternion(0, 0, 0, 1.0);
-    //if(MFileIO::isOpeningFile())
+    //if(MFileIO::isReadingFile())
     {
-      initialiseToPrim(!MFileIO::isOpeningFile());
+      initialiseToPrim(!MFileIO::isReadingFile());
     }
   }
 
