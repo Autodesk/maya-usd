@@ -29,5 +29,5 @@ cd $TMP_DIR &&\
             ..
       make -j ${BUILD_PROCS} install
       ctest -V
-
-rm -rf $TMP_DIR
+    cd ..
+    rm -rf build
