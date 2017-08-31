@@ -8,7 +8,7 @@ namespace nodes {
 namespace proxy {
 
 //----------------------------------------------------------------------------------------------------------------------
-PrimFilter::PrimFilter(const SdfPathVector& previousPrims, const std::vector<UsdPrim>& newPrimSet, nodes::ProxyShape* proxy)
+PrimFilter::PrimFilter(const SdfPathVector& previousPrims, const std::vector<UsdPrim>& newPrimSet, PrimFilterInterface* proxy)
   : m_newPrimSet(newPrimSet), m_transformsToCreate(), m_updatablePrimSet(), m_removedPrimSet()
 {
   // copy over original prims
@@ -18,9 +18,6 @@ PrimFilter::PrimFilter(const SdfPathVector& previousPrims, const std::vector<Usd
   // to see if no prims are found
   TfToken nullToken;
 
-  auto manufacture = proxy->translatorManufacture();
-  auto context = proxy->context();
-  fileio::SchemaPrimsUtils schemaPrimUtils(manufacture);
   for(auto it = m_newPrimSet.begin(); it != m_newPrimSet.end(); )
   {
     UsdPrim prim = *it;
@@ -30,29 +27,28 @@ PrimFilter::PrimFilter(const SdfPathVector& previousPrims, const std::vector<Usd
     SdfPath path = prim.GetPath();
 
     // check previous prim type (if it exists at all?)
-    TfToken type = context->getTypeForPath(path);
+    TfToken type = proxy->getTypeForPath(path);
     TfToken newType = prim.GetTypeName();
-    fileio::translators::TranslatorRefPtr translator = manufacture.get(newType);
+
+    bool supportsUpdate = false;
+    bool requiresParent = false;
+    proxy->getTypeInfo(newType, supportsUpdate, requiresParent);
 
     if(nullToken == type)
     {
-      std::cout << "not found" << std::endl;
       // all good, prim will remain in the new set (we have no entry for it)
-      if(translator->needsTransformParent())
+      if(requiresParent)
       {
         m_transformsToCreate.push_back(prim);
       }
     }
     else
     {
-      std::cout << "found" << std::endl;
       // if the type remains the same, and the type supports update
-      if(translator->supportsUpdate())
+      if(supportsUpdate)
       {
-        std::cout << "supports update" << std::endl;
         if(type == prim.GetTypeName())
         {
-          std::cout << "prim remains the same" << std::endl;
           // add to updatable prim list
           m_updatablePrimSet.push_back(prim);
 
@@ -60,7 +56,6 @@ PrimFilter::PrimFilter(const SdfPathVector& previousPrims, const std::vector<Usd
           auto iter = std::lower_bound(m_removedPrimSet.begin(), m_removedPrimSet.end(), path, [](const SdfPath& a, const SdfPath& b){ return b < a; } );
           if(iter != removedPrimSet().end() && *iter == path)
           {
-            std::cout << "removing from removed set" << std::endl;
             m_removedPrimSet.erase(iter);
             it = m_newPrimSet.erase(lastIt);
           }
@@ -68,20 +63,10 @@ PrimFilter::PrimFilter(const SdfPathVector& previousPrims, const std::vector<Usd
       }
       else
       {
-        // should always be the case?
-        if(translator)
+        // if we need a transform, make a note of it now
+        if(requiresParent)
         {
-          // if we need a transform, make a note of it now
-          if(translator->needsTransformParent())
-          {
-            m_transformsToCreate.push_back(prim);
-          }
-        }
-        else
-        {
-          // we should be able to delete this prim from the set??
-          // We shouldn't really get here however!
-          it = m_newPrimSet.erase(lastIt);
+          m_transformsToCreate.push_back(prim);
         }
       }
     }

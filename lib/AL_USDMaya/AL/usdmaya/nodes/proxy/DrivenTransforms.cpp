@@ -9,21 +9,20 @@ namespace nodes {
 namespace proxy {
 
 //----------------------------------------------------------------------------------------------------------------------
-void DrivenTransforms::initTransform(uint32_t index)
+void DrivenTransforms::initTransforms(const size_t primPathCount)
 {
-  uint32_t newSZ = index + 1;
-  m_drivenPrimPaths.resize(newSZ);
-  m_drivenMatrix.resize(newSZ, MMatrix::identity);
-  m_drivenVisibility.resize(newSZ, true);
+  m_drivenPrimPaths.resize(primPathCount);
+  m_drivenMatrix.resize(primPathCount, MMatrix::identity);
+  m_drivenVisibility.resize(primPathCount, true);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void DrivenTransforms::updateDrivenPrimPaths(
-    uint32_t drivenIndex,
-    std::vector<SdfPath>& drivenPaths,
+bool DrivenTransforms::constructDrivenPrimsArray(
+    SdfPathVector& drivenPaths,
     std::vector<UsdPrim>& drivenPrims,
     UsdStageRefPtr stage)
 {
+  bool result = true;
   uint32_t cnt = m_drivenPrimPaths.size();
   if (drivenPaths.size() < cnt)
   {
@@ -32,15 +31,18 @@ void DrivenTransforms::updateDrivenPrimPaths(
   }
   for (uint32_t idx = 0; idx < cnt; ++idx)
   {
-    drivenPaths[idx] = SdfPath(m_drivenPrimPaths[idx]);
-    drivenPrims[idx] = stage->GetPrimAtPath(drivenPaths[idx]);
+    auto path = m_drivenPrimPaths[idx];
+    drivenPaths[idx] = path;
+    drivenPrims[idx] = stage->GetPrimAtPath(path);
     if (!drivenPrims[idx].IsValid())
     {
       MString warningMsg;
-      warningMsg.format("Driven Prim [^1s] at Host [^2s] is not valid.", MString("") + idx, MString("") + drivenIndex);
+      warningMsg.format("Driven Prim [^1s] is not valid.", MString("") + idx);
       MGlobal::displayWarning(warningMsg);
+      result = false;
     }
   }
+  return result;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -49,6 +51,7 @@ void DrivenTransforms::updateDrivenTransforms(std::vector<UsdPrim>& drivenPrims,
   for (uint32_t i = 0, cnt = m_dirtyMatrices.size(); i < cnt; ++i)
   {
     int32_t idx = m_dirtyMatrices[i];
+    // [RB] This seems redundant? Why not just prevent invalid data from entering the structure?
     if (idx >= drivenPrims.size())
     {
       continue;
@@ -104,6 +107,7 @@ void DrivenTransforms::updateDrivenVisibility(std::vector<UsdPrim>& drivenPrims,
   for (uint32_t i = 0, cnt = m_dirtyVisibilities.size(); i < cnt; ++i)
   {
     int32_t idx = m_dirtyVisibilities[i];
+    // [RB] This seems redundant? Why not just prevent invalid data from entering the structure?
     if (idx >= drivenPrims.size())
     {
       continue;
@@ -115,6 +119,10 @@ void DrivenTransforms::updateDrivenVisibility(std::vector<UsdPrim>& drivenPrims,
     }
     UsdGeomXform xform(usdPrim);
     UsdAttribute attr = xform.GetVisibilityAttr();
+    if(!attr)
+    {
+      attr = xform.CreateVisibilityAttr();
+    }
     attr.Set(m_drivenVisibility[idx] ? UsdGeomTokens->inherited : UsdGeomTokens->invisible, currentTime.as(MTime::uiUnit()));
   }
   m_dirtyVisibilities.clear();

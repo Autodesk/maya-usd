@@ -20,6 +20,7 @@
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
+#include "AL/usdmaya/nodes/proxy/PrimFilter.h"
 
 #include "maya/MPxSurfaceShape.h"
 #include "maya/MEventMessage.h"
@@ -179,6 +180,7 @@ private:
 class ProxyShape
   : public MPxSurfaceShape,
     public maya::NodeHelper,
+    public proxy::PrimFilterInterface,
     public TfWeakBase
 {
   friend class SelectionUndoHelper;
@@ -769,6 +771,19 @@ private:
   static void onAttributeChanged(MNodeMessage::AttributeMessage, MPlug&, MPlug&, void*);
   void validateTransforms();
 
+
+  TfToken getTypeForPath(const SdfPath& path) override
+    { return context()->getTypeForPath(path); }
+
+  void getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent) override
+    {
+      auto translator = m_translatorManufacture.get(type);
+      if(translator)
+      {
+        supportsUpdate = translator->supportsUpdate();
+        requiresParent = translator->needsTransformParent();
+      }
+    }
 
 private:
   SelectionList m_selectionList;

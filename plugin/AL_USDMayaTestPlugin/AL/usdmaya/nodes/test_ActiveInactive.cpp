@@ -416,7 +416,6 @@ TEST(ActiveInactive, disable)
     EXPECT_FALSE(bool(sl.add("AL_usdmaya_test_cube:polyCube1")));
     EXPECT_EQ(0, sl.length());
 
-    std::cout << 1 << std::endl;
     // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
@@ -427,7 +426,6 @@ TEST(ActiveInactive, disable)
     EXPECT_EQ(3, sl.length());
     sl.clear();
 
-    std::cout << 2 << std::endl;
     // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a false -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
@@ -447,8 +445,6 @@ TEST(ActiveInactive, disable)
     EXPECT_EQ(3, sl.length());
     sl.clear();
   }
-
-  std::cout << 3 << std::endl;
 
   MFileIO::newFile(true);
 
@@ -477,7 +473,6 @@ TEST(ActiveInactive, disable)
     EXPECT_EQ(3, sl.length());
     sl.clear();
 
-    std::cout << 4 << std::endl;
     // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a false -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
@@ -506,7 +501,6 @@ TEST(ActiveInactive, disable)
     EXPECT_EQ(0, sl.length());
   }
 
-  std::cout << 5 << std::endl;
   MFileIO::newFile(true);
 
   {
@@ -534,7 +528,6 @@ TEST(ActiveInactive, disable)
     EXPECT_EQ(3, sl.length());
     sl.clear();
 
-    std::cout << 6 << std::endl;
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/root"));
     if(prim)
     {
@@ -567,7 +560,6 @@ TEST(ActiveInactive, disable)
         EXPECT_EQ(3, sl.length());
         sl.clear();
 
-        std::cout << 7 << std::endl;
         // should be able to set the variant back to a sphere
         EXPECT_TRUE(actualSet.SetVariantSelection("cube"));
 
@@ -580,11 +572,9 @@ TEST(ActiveInactive, disable)
         EXPECT_TRUE(bool(sl.add("dave:polyCube1")));
         EXPECT_EQ(3, sl.length());
         sl.clear();
-        std::cout << 7.1 << std::endl;
 
         // should be able to set the variant back to a sphere
         EXPECT_TRUE(actualSet.SetVariantSelection("fredcube"));
-        std::cout << 7.2 << std::endl;
 
         // sphere should not be there, but the cube should be
         EXPECT_FALSE(bool(sl.add("dave:pSphere1")));
@@ -613,11 +603,9 @@ TEST(ActiveInactive, disable)
         EXPECT_FALSE(bool(sl.add("fred:polyCube1")));
         EXPECT_EQ(3, sl.length());
         sl.clear();
-        std::cout << 7.3 << std::endl;
 
         // should be able to set the variant back to a sphere
         EXPECT_TRUE(actualSet.SetVariantSelection("cache"));
-        std::cout << 7.4 << std::endl;
 
         // sphere should not be there, but the cube should be
         EXPECT_FALSE(bool(sl.add("dave:pSphere1")));
@@ -637,7 +625,6 @@ TEST(ActiveInactive, disable)
           MItDependencyNodes iter(MFn::kPluginTransformNode);
           EXPECT_TRUE(iter.isDone());
         }
-        std::cout << 8 << std::endl;
 
         // Now when we set the variant back to a maya reference, we should be in a situation where the
         // transform chain has re-appeared, and the correct reference has been imported into the scene
@@ -665,7 +652,6 @@ TEST(ActiveInactive, disable)
     }
   }
 
-  std::cout << 9 << std::endl;
   MFileIO::newFile(true);
 
   // * load an active reference
@@ -714,7 +700,6 @@ TEST(ActiveInactive, disable)
       MFileIO::newFile(true);
     }
 
-    std::cout << 10 << std::endl;
     MFileIO::open("/tmp/AL_usdmaya_inactive_prim.ma", 0, true);
 
     MFnDagNode fn;

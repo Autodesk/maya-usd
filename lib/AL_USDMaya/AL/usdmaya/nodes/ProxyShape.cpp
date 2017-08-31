@@ -566,22 +566,22 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& previousPri
 
   if(TfDebug::IsEnabled(ALUSDMAYA_TRANSLATORS)){
     std::cout << "new prims" << std::endl;
-    for(auto it : newPrimSet)
+    for(auto it : filter.newPrimSet())
     {
       std::cout << it.GetPath().GetText() << std::endl;
     }
     std::cout << "new transforms" << std::endl;
-    for(auto it : transformsToCreate)
+    for(auto it : filter.transformsToCreate())
     {
       std::cout << it.GetPath().GetText() << std::endl;
     }
     std::cout << "updateable prims" << std::endl;
-    for(auto it : updatablePrimSet)
+    for(auto it : filter.updatablePrimSet())
     {
       std::cout << it.GetPath().GetText() << std::endl;
     }
     std::cout << "removed prims" << std::endl;
-    for(auto it : removedPrimSet)
+    for(auto it : filter.removedPrimSet())
     {
       std::cout << it.GetText() << std::endl;
     }
@@ -1277,7 +1277,7 @@ MStatus ProxyShape::computeDrivenAttributes(const MPlug& plug, MDataBlock& dataB
 
     if (!drivenTransforms.drivenPrimPaths().empty())
     {
-      drivenTransforms.updateDrivenPrimPaths(elemIdx, drivenPaths, drivenPrims, m_stage);
+      drivenTransforms.constructDrivenPrimsArray(drivenPaths, drivenPrims, m_stage);
     }
     if (!drivenTransforms.dirtyMatrices().empty())
     {

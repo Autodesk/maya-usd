@@ -35,6 +35,25 @@
 
 #include <fstream>
 
+struct MockPrimFilterInterface : public AL::usdmaya::nodes::proxy::PrimFilterInterface
+{
+  SdfPathVector paths;
+
+  TfToken getTypeForPath(const SdfPath& path) override
+  {
+    if(std::find(paths.begin(), paths.end(), path) != paths.end())
+    {
+      return TfToken("ALMayaReference");
+    }
+    return TfToken("");
+  }
+
+  void getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent) override
+  {
+    supportsUpdate = true;
+    requiresParent = true;
+  }
+};
 
 static const char* const g_removedPaths =
 "#usda 1.0\n"
@@ -124,8 +143,10 @@ TEST(PrimFilter, removedPaths)
     EXPECT_TRUE(root);
   }
 
+  MockPrimFilterInterface mockInterface;
+
   /// if nothing changes, the filter should give us the same list back as updatable prims
-  if(0)
+  if(1)
   {
     const SdfPathVector previous = {
       SdfPath("/root"),
@@ -140,13 +161,14 @@ TEST(PrimFilter, removedPaths)
       SdfPath("/root/hip2/knee2/ankle2/ltoe2"),
       SdfPath("/root/hip2/knee2/ankle2/rtoe2")
     };
+    mockInterface.paths = previous;
     std::vector<UsdPrim> prims;
     for(auto it : previous)
     {
       prims.emplace_back(stage->GetPrimAtPath(it));
     }
 
-    AL::usdmaya::nodes::proxy::PrimFilter filter(previous, prims, proxy);
+    AL::usdmaya::nodes::proxy::PrimFilter filter(previous, prims, &mockInterface);
 
     std::cout << "new prims" << std::endl;
     for(auto it : filter.newPrimSet())
@@ -187,6 +209,7 @@ TEST(PrimFilter, removedPaths)
       SdfPath("/root/hip2/knee2"),
       SdfPath("/root/hip2/knee2/ankle2"),
     };
+    mockInterface.paths = previous;
     std::vector<UsdPrim> prims;
     for(auto it : previous)
     {
@@ -197,7 +220,7 @@ TEST(PrimFilter, removedPaths)
     prims.emplace_back(stage->GetPrimAtPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
     prims.emplace_back(stage->GetPrimAtPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
 
-    AL::usdmaya::nodes::proxy::PrimFilter filter(previous, prims, proxy);
+    AL::usdmaya::nodes::proxy::PrimFilter filter(previous, prims, &mockInterface);
     EXPECT_TRUE(filter.removedPrimSet().empty());
     EXPECT_TRUE(filter.newPrimSet().size() == 4);
     EXPECT_TRUE(filter.newPrimSet()[0].GetPath() == SdfPath("/root/hip1/knee1/ankle1/ltoe1"));
@@ -205,7 +228,7 @@ TEST(PrimFilter, removedPaths)
     EXPECT_TRUE(filter.newPrimSet()[2].GetPath() == SdfPath("/root/hip2/knee2/ankle2/ltoe2"));
     EXPECT_TRUE(filter.newPrimSet()[3].GetPath() == SdfPath("/root/hip2/knee2/ankle2/rtoe2"));
     EXPECT_TRUE(filter.updatablePrimSet().size() == previous.size());
-    EXPECT_TRUE(filter.transformsToCreate().size() == 4);
+    EXPECT_EQ(4, filter.transformsToCreate().size());
     EXPECT_TRUE(filter.transformsToCreate()[0].GetPath() == SdfPath("/root/hip1/knee1/ankle1/ltoe1"));
     EXPECT_TRUE(filter.transformsToCreate()[1].GetPath() == SdfPath("/root/hip1/knee1/ankle1/rtoe1"));
     EXPECT_TRUE(filter.transformsToCreate()[2].GetPath() == SdfPath("/root/hip2/knee2/ankle2/ltoe2"));
@@ -227,6 +250,7 @@ TEST(PrimFilter, removedPaths)
       SdfPath("/root/hip2/knee2/ankle2/ltoe2"),
       SdfPath("/root/hip2/knee2/ankle2/rtoe2")
     };
+    mockInterface.paths = previous;
     std::vector<UsdPrim> prims;
     for(auto it : previous)
     {
@@ -236,10 +260,10 @@ TEST(PrimFilter, removedPaths)
     previous.emplace_back(SdfPath("/root/hip2/knee2/ankle2/rtoe3"));
     previous.emplace_back(SdfPath("/root/hip2/knee2/ankle2/rtoe4"));
 
-    AL::usdmaya::nodes::proxy::PrimFilter filter(previous, prims, proxy);
+    AL::usdmaya::nodes::proxy::PrimFilter filter(previous, prims, &mockInterface);
     EXPECT_TRUE(filter.removedPrimSet().size() == 2);
-    EXPECT_TRUE(filter.removedPrimSet()[0] == SdfPath("/root/hip2/knee2/ankle2/rtoe3"));
-    EXPECT_TRUE(filter.removedPrimSet()[1] == SdfPath("/root/hip2/knee2/ankle2/rtoe4"));
+    EXPECT_TRUE(filter.removedPrimSet()[0] == SdfPath("/root/hip2/knee2/ankle2/rtoe4"));
+    EXPECT_TRUE(filter.removedPrimSet()[1] == SdfPath("/root/hip2/knee2/ankle2/rtoe3"));
     EXPECT_TRUE(filter.newPrimSet().empty());
     EXPECT_TRUE(filter.updatablePrimSet().size() == (previous.size() - 2));
     EXPECT_TRUE(filter.transformsToCreate().empty());

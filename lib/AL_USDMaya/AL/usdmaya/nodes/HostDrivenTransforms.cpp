@@ -133,7 +133,7 @@ void HostDrivenTransforms::updatePrimPaths(proxy::DrivenTransforms& drivenTransf
 {
   if (drivenTransforms.transformCount() < m_primPaths.size())
   {
-    drivenTransforms.initTransform(m_primPaths.size() - 1);
+    drivenTransforms.initTransforms(m_primPaths.size());
   }
   drivenTransforms.setDrivenPrimPaths(m_primPaths);
 }
@@ -176,10 +176,9 @@ void HostDrivenTransforms::updateMatrix(MDataBlock& dataBlock, proxy::DrivenTran
   int32_t maxIndex = transformIndices[transformIndices.size() - 1];
   if (drivenTransforms.transformCount() <= maxIndex)
   {
-    drivenTransforms.initTransform(maxIndex);
+    drivenTransforms.initTransforms(maxIndex + 1);
   }
   auto last = std::unique(transformIndices.begin(), transformIndices.end());
-  drivenTransforms.matricesReserve(std::distance(transformIndices.begin(), last));
 
   MArrayDataHandle rotateArray = dataBlock.inputArrayValue(m_drivenRotate);
   MArrayDataHandle rotateOrderArray = dataBlock.inputArrayValue(m_drivenRotateOrder);
@@ -214,9 +213,7 @@ void HostDrivenTransforms::updateMatrix(MDataBlock& dataBlock, proxy::DrivenTran
     transformMatrix.setRotateOrientation(eulRot, MSpace::kTransform, false);
     transformMatrix.translateTo(trsVal);
 
-
-    drivenTransforms.setMatrix(transformMatrix.asMatrix(), idx);
-    drivenTransforms.dirtyMatrix(idx);
+    drivenTransforms.dirtyMatrix(idx, transformMatrix.asMatrix());
     TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("HostDrivenTransforms::updateMatrix %d %d %d %d  %d %d %d %d  %d %d %d %d  %d %d %d %d\n",
         drivenTransforms.drivenMatrices()[idx][0][0],
         drivenTransforms.drivenMatrices()[idx][0][1],
@@ -247,9 +244,9 @@ void HostDrivenTransforms::updateVisibility(MDataBlock& dataBlock, proxy::Driven
   int32_t maxIndex = visibilityIndices[visibilityCnt - 1];
   if (drivenTransforms.transformCount() <= maxIndex)
   {
-    drivenTransforms.initTransform(maxIndex);
+    drivenTransforms.initTransforms(maxIndex + 1);
   }
-  drivenTransforms.visibilityReserve(visibilityCnt);
+
   MArrayDataHandle visibilityArray = dataBlock.inputArrayValue(m_drivenVisibility);
   for (uint32_t i = 0; i < visibilityCnt; ++i)
   {

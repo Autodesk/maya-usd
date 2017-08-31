@@ -27,6 +27,26 @@ namespace nodes {
 namespace proxy {
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief  The prim filter needs to know about some state provided in the proxy shape node. In order to maintain a
+///         separation between the filter and the proxy (so that it's easy to test!), this class acts as a bridge between
+///         the two.
+//----------------------------------------------------------------------------------------------------------------------
+struct PrimFilterInterface
+{
+  /// \brief  Given a path to a prim, this method will return some type information for the prim found at that path,
+  ///         which the proxy shape has previously cached (i.e. the old state of the prim prior to a variant switch).
+  ///         If the proxy shape is aware of the prim, and the returned info is valid, true will be returned. If the
+  ///         proxy shape is unaware of the prim (i.e. a variant switch has created it), then false will be returned.
+  /// \param  path the path to the prim we are querying
+  /// \param  info the returned type information in the current cache
+  /// \return true if the prim is known about, and the info structure contains valid information. False if the prim is
+  ///         an unknown type
+  virtual TfToken getTypeForPath(const SdfPath& path) = 0;
+
+  virtual void getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent) = 0;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
 /// \brief  A class to filter the prims during a variant switch
 //----------------------------------------------------------------------------------------------------------------------
 class PrimFilter
@@ -37,7 +57,7 @@ public:
   /// \param  previousPrims the previous set of prims that existed in the stage
   /// \param  newPrimSet the new set of prims that have been created
   /// \param  proxy the proxy shape
-  PrimFilter(const SdfPathVector& previousPrims, const std::vector<UsdPrim>& newPrimSet, nodes::ProxyShape* proxy);
+  PrimFilter(const SdfPathVector& previousPrims, const std::vector<UsdPrim>& newPrimSet, PrimFilterInterface* proxy);
 
   /// \brief  returns the set of prims to create
   inline const std::vector<UsdPrim>& newPrimSet() const
