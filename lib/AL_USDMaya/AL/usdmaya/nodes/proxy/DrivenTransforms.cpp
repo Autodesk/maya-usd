@@ -18,21 +18,15 @@ void DrivenTransforms::initTransforms(const size_t primPathCount)
 
 //----------------------------------------------------------------------------------------------------------------------
 bool DrivenTransforms::constructDrivenPrimsArray(
-    SdfPathVector& drivenPaths,
     std::vector<UsdPrim>& drivenPrims,
     UsdStageRefPtr stage)
 {
+  drivenPrims.resize(transformCount());
   bool result = true;
   uint32_t cnt = m_drivenPrimPaths.size();
-  if (drivenPaths.size() < cnt)
-  {
-    drivenPaths.resize(cnt);
-    drivenPrims.resize(cnt);
-  }
   for (uint32_t idx = 0; idx < cnt; ++idx)
   {
     auto path = m_drivenPrimPaths[idx];
-    drivenPaths[idx] = path;
     drivenPrims[idx] = stage->GetPrimAtPath(path);
     if (!drivenPrims[idx].IsValid())
     {

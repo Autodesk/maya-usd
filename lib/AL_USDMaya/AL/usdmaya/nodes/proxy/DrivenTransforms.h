@@ -66,10 +66,9 @@ public:
     { m_drivenPrimPaths = primPaths; }
 
   /// \brief  update the driven prim paths
-  /// \param  drivenPaths the returned array of driven paths that were updated
   /// \param  drivenPrims the returned array of driven prims that were updated
   /// \param  stage the usd stage that contains the prims
-  bool constructDrivenPrimsArray(SdfPathVector& drivenPaths, std::vector<UsdPrim>& drivenPrims, UsdStageRefPtr stage);
+  bool constructDrivenPrimsArray(std::vector<UsdPrim>& drivenPrims, UsdStageRefPtr stage);
 
   /// \brief  update the driven transforms
   /// \param  drivenPrims the driven prims to update

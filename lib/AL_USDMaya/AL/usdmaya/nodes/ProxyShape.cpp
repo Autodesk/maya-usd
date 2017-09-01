@@ -1267,25 +1267,20 @@ MStatus ProxyShape::computeDrivenAttributes(const MPlug& plug, MDataBlock& dataB
     DrivenTransformsData* dtData = static_cast<DrivenTransformsData*>(dtHandle.asPluginData());
     if (!dtData)
       continue;
+
     proxy::DrivenTransforms& drivenTransforms = dtData->m_drivenTransforms;
-    if (elemIdx >= m_drivenPaths.size())
-    {
-      m_drivenPaths.resize(elemIdx + 1);
-      m_drivenPrims.resize(elemIdx + 1);
-    }
-    std::vector<SdfPath>& drivenPaths = m_drivenPaths[elemIdx];
-    std::vector<UsdPrim>& drivenPrims = m_drivenPrims[elemIdx];
 
     if (!drivenTransforms.drivenPrimPaths().empty())
     {
-      if(!drivenTransforms.constructDrivenPrimsArray(drivenPaths, drivenPrims, m_stage))
+      std::vector<UsdPrim> drivenPrims;
+      if(!drivenTransforms.constructDrivenPrimsArray(drivenPrims, m_stage))
       {
         MString command("failed to construct driven prim paths on block: ");
         MGlobal::displayError(command + elemIdx);
       }
-    }
 
-    drivenTransforms.update(drivenPrims, currentTime);
+      drivenTransforms.update(drivenPrims, currentTime);
+    }
   }
   return dataBlock.setClean(plug);
 }

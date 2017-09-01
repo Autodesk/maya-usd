@@ -790,8 +790,6 @@ private:
   SdfPathVector m_selectedPaths;
   std::vector<SdfPath> m_paths;
   std::vector<UsdPrim> m_prims;
-  std::vector<std::vector<SdfPath>> m_drivenPaths;
-  std::vector<std::vector<UsdPrim>> m_drivenPrims;
   TfNotice::Key m_objectsChangedNoticeKey;
   TfNotice::Key m_variantChangedNoticeKey;
   TfNotice::Key m_editTargetChanged;

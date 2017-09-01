@@ -133,12 +133,10 @@ TEST(ProxyShape, DrivenTransforms)
     }
 
     // test to make sure that constructDrivenPrimsArray correctly initialises the returned arrays of paths and prims
-    std::vector<SdfPath> drivenPaths2;
     std::vector<UsdPrim> drivenPrims;
-    dt.constructDrivenPrimsArray(drivenPaths2, drivenPrims, stage);
+    dt.constructDrivenPrimsArray(drivenPrims, stage);
     for(size_t i = 0; i < drivenPaths.size(); ++i)
     {
-      EXPECT_EQ(drivenPaths[i].GetString(), drivenPaths2[i].GetString());
       EXPECT_TRUE(drivenPrims[i].IsValid());
       EXPECT_EQ(drivenPaths[i].GetString(), drivenPrims[i].GetPath().GetString());
     }
