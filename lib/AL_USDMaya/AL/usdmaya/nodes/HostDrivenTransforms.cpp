@@ -141,7 +141,7 @@ void HostDrivenTransforms::updateMatrices(MDataBlock& dataBlock, proxy::DrivenTr
 
   // construct the indices of the items that have changed
   std::vector<int32_t> transformIndices;
-  transformIndices.reserve(primCnt);
+  transformIndices.reserve(primCnt << 2);
   if(rotCnt)
   {
     int32_t* const ptr = &rotIndices[0];
@@ -337,6 +337,7 @@ bool HostDrivenTransforms::setInternalValueInContext(const MPlug& plug, const MD
   return false;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 } // nodes
 } // usdmaya
 } // AL

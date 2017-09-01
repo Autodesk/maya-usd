@@ -100,12 +100,16 @@ private:
   bool setInternalValueInContext(const MPlug& plug, const MDataHandle& dataHandle, MDGContext& ctx) override;
   MPxNode::SchedulingType schedulingType() const override { return kParallel; }
 
+  //--------------------------------------------------------------------------------------------------------------------
+  /// \name   Node Internals
+  //--------------------------------------------------------------------------------------------------------------------
   void updatePrimPaths(proxy::DrivenTransforms& drivenTransforms);
   void updateMatrices(MDataBlock& dataBlock, proxy::DrivenTransforms& drivenTransforms);
   void updateVisibility(MDataBlock& dataBlock, proxy::DrivenTransforms& drivenTransforms);
 
   SdfPathVector m_primPaths;
 };
+
 //----------------------------------------------------------------------------------------------------------------------
 }// nodes
 } // usdmaya
