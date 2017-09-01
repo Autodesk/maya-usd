@@ -539,28 +539,28 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& previousPri
   filterPrims(previousPrims, newPrimSet, transformsToCreate, updatablePrimSet, removedPrimSet);
   m_variantSwitchedPrims.clear();
 
-#if AL_ENABLE_TRACE
-  std::cout << "new prims" << std::endl;
-  for(auto it : newPrimSet)
-  {
-    std::cout << it.GetPath().GetText() << std::endl;
+  if(TfDebug::IsEnabled(ALUSDMAYA_TRANSLATORS)){
+    std::cout << "new prims" << std::endl;
+    for(auto it : newPrimSet)
+    {
+      std::cout << it.GetPath().GetText() << std::endl;
+    }
+    std::cout << "new transforms" << std::endl;
+    for(auto it : transformsToCreate)
+    {
+      std::cout << it.GetPath().GetText() << std::endl;
+    }
+    std::cout << "updateable prims" << std::endl;
+    for(auto it : updatablePrimSet)
+    {
+      std::cout << it.GetPath().GetText() << std::endl;
+    }
+    std::cout << "removed prims" << std::endl;
+    for(auto it : removedPrimSet)
+    {
+      std::cout << it.GetText() << std::endl;
+    }
   }
-  std::cout << "new transforms" << std::endl;
-  for(auto it : transformsToCreate)
-  {
-    std::cout << it.GetPath().GetText() << std::endl;
-  }
-  std::cout << "updateable prims" << std::endl;
-  for(auto it : updatablePrimSet)
-  {
-    std::cout << it.GetPath().GetText() << std::endl;
-  }
-  std::cout << "removed prims" << std::endl;
-  for(auto it : removedPrimSet)
-  {
-    std::cout << it.GetText() << std::endl;
-  }
-#endif
 
   cmds::ProxyShapePostLoadProcess::MObjectToPrim objsToCreate;
   if(!transformsToCreate.empty())
