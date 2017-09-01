@@ -43,6 +43,11 @@ struct PrimFilterInterface
   ///         an unknown type
   virtual TfToken getTypeForPath(const SdfPath& path) = 0;
 
+  /// \brief  for a specific type, this method should return whether it supports update, and if that type requires a
+  ///         DAG path to be created.
+  /// \param  type the type to query
+  /// \param  supportsUpdate returned value that indicates if the type in question can be updated
+  /// \param  requiresParent returned value that indicates whether the type in question needs a DAG path to be created
   virtual void getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent) = 0;
 };
 

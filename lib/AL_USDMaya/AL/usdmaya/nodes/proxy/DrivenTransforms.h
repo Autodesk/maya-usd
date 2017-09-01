@@ -34,14 +34,22 @@ namespace nodes {
 namespace proxy {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  A class that encapsulates the driven transforms data within a proxy shape
+/// \brief  This class maintains a set of prim paths to transform prims, and a cache of their matrix and visibility
+///         states. It also maintains a set of indices that describe the dirty states of those attributes that have been
+///         dirtied. If the number of transforms has changed, initTransforms should be called to initialise the internal
+///         memory storage. setDrivenPrimPaths should be called to specify the prim paths. Whenever you need to specify
+///         a change to the matrix or visibility values, call either dirtyVisibility or dirtyMatrix, and specify the
+///         index of the prim to modify.
+///         Within the compute method of the node, constructDrivenPrimsArray should be called to construct the array
+///         of prims to update, which can then be passed to the update method to set the dirty values on the prim
+///         attributes.
 //----------------------------------------------------------------------------------------------------------------------
 class DrivenTransforms
 {
 public:
 
   /// \brief  ctor
-  DrivenTransforms()
+  inline DrivenTransforms()
     : m_drivenPrimPaths(), m_drivenMatrix(), m_drivenVisibility(), m_dirtyMatrices(), m_dirtyVisibilities() {}
 
   /// \brief  returns the number of transforms
@@ -52,26 +60,26 @@ public:
   /// \param  primPathCount the number of transforms to be driven
   void initTransforms(const size_t primPathCount);
 
+  /// \brief  set the driven prim paths on the host driven transforms
+  /// \param  primPaths the prim paths to set on the proxy
+  inline void setDrivenPrimPaths(const SdfPathVector& primPaths)
+    { m_drivenPrimPaths = primPaths; }
+
   /// \brief  update the driven prim paths
   /// \param  drivenPaths the returned array of driven paths that were updated
   /// \param  drivenPrims the returned array of driven prims that were updated
   /// \param  stage the usd stage that contains the prims
   bool constructDrivenPrimsArray(SdfPathVector& drivenPaths, std::vector<UsdPrim>& drivenPrims, UsdStageRefPtr stage);
 
-  /// \brief  update the driven prim visibility
+  /// \brief  update the driven transforms
   /// \param  drivenPrims the driven prims to update
   /// \param  currentTime the current time
-  void updateDrivenVisibility(std::vector<UsdPrim>& drivenPrims, const MTime& currentTime);
-
-  /// \brief  update the driven prim transforms
-  /// \param  drivenPrims the driven prims to update
-  /// \param  currentTime the current time
-  void updateDrivenTransforms(std::vector<UsdPrim>& drivenPrims, const MTime& currentTime);
+  void update(std::vector<UsdPrim>& drivenPrims, const MTime& currentTime);
 
   /// \brief  dirties the visibility for the specified prim index
   /// \param  primIndex the index of the prim
   /// \param  newValue the new visibility value
-  void dirtyVisibility(int32_t primIndex, bool newValue)
+  inline void dirtyVisibility(const int32_t primIndex, bool newValue)
     {
       m_drivenVisibility[primIndex] = newValue;
       m_dirtyVisibilities.push_back(primIndex);
@@ -79,59 +87,41 @@ public:
 
   /// \brief  dirties the matrix for the specified prim index
   /// \param  primIndex the index of the prim
-  void dirtyMatrix(int32_t primIndex, const MMatrix& newValue)
+  /// \param  newValue the new matrix value
+  inline void dirtyMatrix(const int32_t primIndex, const MMatrix& newValue)
     {
       m_drivenMatrix[primIndex] = newValue;
       m_dirtyMatrices.push_back(primIndex);
     }
 
-  /// \brief  set the driven prim paths on the host driven transforms
-  /// \param  primPaths the prim paths to set on the proxy
-  void setDrivenPrimPaths(const SdfPathVector& primPaths)
-    { m_drivenPrimPaths = primPaths; }
-
-  /// \brief  reserve the dirtied visibility array
-  /// \param  visibilityCount the number of items in the dirty visibility array to reserve
-  void visibilityReserve(uint32_t visibilityCount)
-    {
-      m_dirtyVisibilities.clear();
-      m_dirtyVisibilities.resize(visibilityCount);
-    }
-
-  /// \brief  reserve the dirtied matrix array
-  /// \param  matrixCount the number of items in the dirty matrix array to reserve
-  void matricesReserve(uint32_t matrixCount)
-    {
-      m_dirtyMatrices.clear();
-      m_dirtyMatrices.resize(matrixCount);
-    }
-
   /// \brief  returns the paths of the driven transforms
   /// \return the driven transforms
-  const SdfPathVector& drivenPrimPaths() const
+  inline const SdfPathVector& drivenPrimPaths() const
     { return m_drivenPrimPaths; }
 
   /// \brief  returns the matrices that have been dirtied
   /// \return returns the indices of the prims that have dirtied matrix params
-  const std::vector<int32_t>& dirtyMatrices() const
+  inline const std::vector<int32_t>& dirtyMatrices() const
     { return m_dirtyMatrices; }
 
   /// \brief  returns the visibilities that have been dirtied
   /// \return returns the indices of the prims that have dirtied visibility params
-  const std::vector<int32_t>& dirtyVisibilities() const
+  inline const std::vector<int32_t>& dirtyVisibilities() const
     { return m_dirtyVisibilities; }
 
   /// \brief  returns the visibilities that have been dirtied
-  /// \return returns the indices of the prims that have dirtied visibility params
-  const std::vector<MMatrix>& drivenMatrices() const
+  /// \return returns the current matrix values of the driven transforms
+  inline const std::vector<MMatrix>& drivenMatrices() const
     { return m_drivenMatrix; }
 
   /// \brief  returns the visibilities that have been dirtied
-  /// \return returns the indices of the prims that have dirtied visibility params
-  const std::vector<bool>& drivenVisibilities() const
+  /// \return returns the current visibility statuses of the driven transforms
+  inline const std::vector<bool>& drivenVisibilities() const
     { return m_drivenVisibility; }
 
-
+private:
+  void updateDrivenVisibility(std::vector<UsdPrim>& drivenPrims, const MTime& currentTime);
+  void updateDrivenTransforms(std::vector<UsdPrim>& drivenPrims, const MTime& currentTime);
 private:
   SdfPathVector m_drivenPrimPaths;
   std::vector<MMatrix> m_drivenMatrix;

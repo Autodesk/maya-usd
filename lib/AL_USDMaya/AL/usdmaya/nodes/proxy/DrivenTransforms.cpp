@@ -129,6 +129,19 @@ void DrivenTransforms::updateDrivenVisibility(std::vector<UsdPrim>& drivenPrims,
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void DrivenTransforms::update(std::vector<UsdPrim>& drivenPrims, const MTime& currentTime)
+{
+  if (!dirtyMatrices().empty())
+  {
+    updateDrivenTransforms(drivenPrims, currentTime);
+  }
+  if (!dirtyVisibilities().empty())
+  {
+    updateDrivenVisibility(drivenPrims, currentTime);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 } // proxy
 } // nodes
 } // usdmaya

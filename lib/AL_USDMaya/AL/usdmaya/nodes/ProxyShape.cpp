@@ -1257,6 +1257,7 @@ MStatus ProxyShape::computeDrivenAttributes(const MPlug& plug, MDataBlock& dataB
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::computeDrivenAttributes\n");
   m_drivenTransformsDirty = false;
+
   MArrayDataHandle drvTransArray = dataBlock.inputArrayValue(m_inDrivenTransformsData);
   uint32_t elemCnt = drvTransArray.elementCount();
   for (uint32_t elemIdx = 0; elemIdx < elemCnt; ++elemIdx)
@@ -1277,16 +1278,14 @@ MStatus ProxyShape::computeDrivenAttributes(const MPlug& plug, MDataBlock& dataB
 
     if (!drivenTransforms.drivenPrimPaths().empty())
     {
-      drivenTransforms.constructDrivenPrimsArray(drivenPaths, drivenPrims, m_stage);
+      if(!drivenTransforms.constructDrivenPrimsArray(drivenPaths, drivenPrims, m_stage))
+      {
+        MString command("failed to construct driven prim paths on block: ");
+        MGlobal::displayError(command + elemIdx);
+      }
     }
-    if (!drivenTransforms.dirtyMatrices().empty())
-    {
-      drivenTransforms.updateDrivenTransforms(drivenPrims, currentTime);
-    }
-    if (!drivenTransforms.dirtyVisibilities().empty())
-    {
-      drivenTransforms.updateDrivenVisibility(drivenPrims, currentTime);
-    }
+
+    drivenTransforms.update(drivenPrims, currentTime);
   }
   return dataBlock.setClean(plug);
 }

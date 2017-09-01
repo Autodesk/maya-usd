@@ -56,11 +56,10 @@ static const char* const g_drivenData =
 "}\n";
 
 //  DrivenTransforms();
-//  inline size_t transformCount() const;
+//  size_t transformCount() const;
 //  void initTransform(uint32_t index);
 //  void constructDrivenPrimsArray(SdfPathVector& drivenPaths, std::vector<UsdPrim>& drivenPrims, UsdStageRefPtr stage);
-//  void updateDrivenVisibility(std::vector<UsdPrim>& drivenPrims, const MTime& currentTime);
-//  void updateDrivenTransforms(std::vector<UsdPrim>& drivenPrims, const MTime& currentTime);
+//  void update(std::vector<UsdPrim>& drivenPrims, const MTime& currentTime);
 //  void dirtyVisibility(int32_t primIndex, bool newValue);
 //  void dirtyMatrix(int32_t primIndex, MMatrix newValue);
 //  void setDrivenPrimPaths(const SdfPathVector& primPaths);
@@ -169,7 +168,7 @@ TEST(ProxyShape, DrivenTransforms)
 
     // test to make sure that updateDrivenVisibility adds a keyframe value in the visibility data for
     MTime time(10.0f, MTime::uiUnit());
-    dt.updateDrivenVisibility(drivenPrims, time);
+    dt.update(drivenPrims, time);
 
     for(size_t i = 0; i < drivenPrims.size(); ++i)
     {
@@ -214,7 +213,7 @@ TEST(ProxyShape, DrivenTransforms)
     }
 
     // test to make sure that updateDrivenVisibility adds a keyframe value in the visibility data for
-    dt.updateDrivenTransforms(drivenPrims, time);
+    dt.update(drivenPrims, time);
 
     for(size_t i = 0; i < drivenPrims.size(); ++i)
     {
