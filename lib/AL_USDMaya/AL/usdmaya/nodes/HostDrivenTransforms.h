@@ -101,7 +101,7 @@ private:
   MPxNode::SchedulingType schedulingType() const override { return kParallel; }
 
   void updatePrimPaths(proxy::DrivenTransforms& drivenTransforms);
-  void updateMatrix(MDataBlock& dataBlock, proxy::DrivenTransforms& drivenTransforms);
+  void updateMatrices(MDataBlock& dataBlock, proxy::DrivenTransforms& drivenTransforms);
   void updateVisibility(MDataBlock& dataBlock, proxy::DrivenTransforms& drivenTransforms);
 
   SdfPathVector m_primPaths;
