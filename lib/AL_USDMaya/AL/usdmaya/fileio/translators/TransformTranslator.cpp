@@ -40,12 +40,6 @@
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
-// printf debugging
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cerr << X << std::endl;
-#else
-# define Trace(X)
-#endif
 namespace AL {
 namespace usdmaya {
 namespace fileio {

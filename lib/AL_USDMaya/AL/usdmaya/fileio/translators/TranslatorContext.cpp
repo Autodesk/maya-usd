@@ -15,6 +15,7 @@
 //
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
+#include "AL/usdmaya/DebugCodes.h"
 #include "maya/MSelectionList.h"
 #include "maya/MFnDagNode.h"
 
@@ -23,11 +24,6 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cerr << X << std::endl;
-#else
-# define Trace(X)
-#endif
 
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorContext::~TranslatorContext()
@@ -43,12 +39,12 @@ UsdStageRefPtr TranslatorContext::getUsdStage() const
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::validatePrims()
 {
-  Trace("** VALIDATE PRIMS **");
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::validatePrims ** VALIDATE PRIMS **\n");
   for(auto it : m_primMapping)
   {
     if(it.objectHandle().isValid() && it.objectHandle().isAlive())
     {
-      Trace("** VALID HANDLE DETECTED **" << it.path());
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::validatePrims ** VALID HANDLE DETECTED %s **\n", it.path().GetText());
     }
   }
 }
@@ -56,13 +52,13 @@ void TranslatorContext::validatePrims()
 //----------------------------------------------------------------------------------------------------------------------
 bool TranslatorContext::getTransform(const SdfPath& path, MObjectHandle& object)
 {
-  Trace("gettingTransform: " << path.GetText());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getTransform %s\n", path.GetText());
   auto it = find(path);
   if(it != m_primMapping.end())
   {
     if(!it->objectHandle().isValid())
     {
-      Trace("TranslatorContext::getTransform - invalid handle");
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getTransform - invalid handle\n");
       return false;
     }
     object = it->object();
@@ -98,7 +94,7 @@ void TranslatorContext::updatePrimTypes()
 //----------------------------------------------------------------------------------------------------------------------
 bool TranslatorContext::getMObject(const SdfPath& path, MObjectHandle& object, MTypeId typeId)
 {
-  Trace("getMObject: " << path.GetText());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getMObject %s\n", path.GetText());
   auto it = find(path);
   if(it != m_primMapping.end())
   {
@@ -108,7 +104,7 @@ bool TranslatorContext::getMObject(const SdfPath& path, MObjectHandle& object, M
       for(auto temp : it->createdNodes())
       {
         MFnDependencyNode fn(temp.object());
-        Trace("getting: " << fn.typeName());
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getMObject getting %s\n", fn.typeName().asChar());
         if(fn.typeId() == typeId)
         {
           object = temp;
@@ -124,7 +120,7 @@ bool TranslatorContext::getMObject(const SdfPath& path, MObjectHandle& object, M
     {
       if(!it->createdNodes().empty())
       {
-        Trace("getting anything: " << path.GetString());
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getMObject getting anything %s\n", path.GetString().c_str());
         object = it->createdNodes()[0];
 
         if(!object.isAlive())
@@ -141,7 +137,7 @@ bool TranslatorContext::getMObject(const SdfPath& path, MObjectHandle& object, M
 //----------------------------------------------------------------------------------------------------------------------
 bool TranslatorContext::getMObject(const SdfPath& path, MObjectHandle& object, MFn::Type type)
 {
-  Trace("getMObject: " << path.GetText());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getMObject: %s\n", path.GetText());
   auto it = find(path);
   if(it != m_primMapping.end())
   {
@@ -150,7 +146,7 @@ bool TranslatorContext::getMObject(const SdfPath& path, MObjectHandle& object, M
     {
       for(auto temp : it->createdNodes())
       {
-        Trace("getting: " << temp.object().apiTypeStr());
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getMObject getting: %s\n", temp.object().apiTypeStr());
         if(temp.object().apiType() == type)
         {
           object = temp;
@@ -166,7 +162,7 @@ bool TranslatorContext::getMObject(const SdfPath& path, MObjectHandle& object, M
     {
       if(!it->createdNodes().empty())
       {
-        Trace("getting anything: " << path.GetString());
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getMObject getting anything: %s\n", path.GetString().c_str());
         object = it->createdNodes()[0];
 
         if(!object.isAlive())
@@ -183,7 +179,7 @@ bool TranslatorContext::getMObject(const SdfPath& path, MObjectHandle& object, M
 //----------------------------------------------------------------------------------------------------------------------
 bool TranslatorContext::getMObjects(const SdfPath& path, MObjectHandleArray& returned)
 {
-  Trace("getMObjects: " << path.GetText());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getMObjects: %s\n", path.GetText());
   auto it = find(path);
   if(it != m_primMapping.end())
   {
@@ -196,7 +192,7 @@ bool TranslatorContext::getMObjects(const SdfPath& path, MObjectHandleArray& ret
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::registerItem(const UsdPrim& prim, MObjectHandle object)
 {
-  Trace("registerItem: " << prim.GetPath().GetText() << " " << prim.GetTypeName().GetString());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::registerItem adding entry %s[%s]\n", prim.GetPath().GetText(), object.object().apiTypeStr());
   auto iter = findLocation(prim.GetPath());
   if(iter == m_primMapping.end() || iter->path() != prim.GetPath())
   {
@@ -205,18 +201,18 @@ void TranslatorContext::registerItem(const UsdPrim& prim, MObjectHandle object)
 
   if(object.object() == MObject::kNullObj)
   {
-    Trace("TranslatorContext::registerItem primPath=" << prim.GetPath().GetText() << " primType=" << iter->type().GetText() << " to null MObject");
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::registerItem primPath=%s primType=%s to null MObject\n", prim.GetPath().GetText(), iter->type().GetText());
   }
   else
   {
-    Trace("TranslatorContext::registerItem primPath=" << prim.GetPath().GetText() << " primType=" << iter->type().GetText() << " to MObject type " << object.object().apiTypeStr());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::registerItem primPath=%s primType=%s to MObject type %s\n", prim.GetPath().GetText(), iter->type().GetText(), object.object().apiTypeStr());
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::insertItem(const UsdPrim& prim, MObjectHandle object)
 {
-  Trace("insertItem: " << prim.GetPath().GetText() << " " << object.object().apiTypeStr());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::insertItem adding entry %s[%s]\n", prim.GetPath().GetText(), object.object().apiTypeStr());
   auto iter = findLocation(prim.GetPath());
   if(iter == m_primMapping.end() || iter->path() != prim.GetPath())
   {
@@ -226,22 +222,22 @@ void TranslatorContext::insertItem(const UsdPrim& prim, MObjectHandle object)
 
   if(object.object() == MObject::kNullObj)
   {
-    Trace("TranslatorContext::insertItem primPath=" << prim.GetPath().GetText() << " primType=" << iter->type().GetText() << " to null object");
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::insertItem primPath=%s primType=%s to null MObject\n", prim.GetPath().GetText(), iter->type().GetText());
   }
   else
   {
-    Trace("TranslatorContext::insertItem primPath=" << prim.GetPath().GetText() << " primType=" << iter->type().GetText() << " to object type " << object.object().apiTypeStr());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::insertItem primPath=%s primType=%s to MObject type %s\n", prim.GetPath().GetText(), iter->type().GetText(), object.object().apiTypeStr());
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::removeItems(const SdfPath& path)
 {
-  Trace("removeItems: " << path.GetText());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeItems primPath=%s\n", path.GetText());
   auto it = find(path);
   if(it != m_primMapping.end() && it->path() == path)
   {
-    Trace("TranslatorContext::removeItems primPath="<<path.GetText())
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeItems path=%s\n", it->path().GetText());
     MDGModifier modifier1;
     MDagModifier modifier2;
     MStatus status;
@@ -369,7 +365,7 @@ void TranslatorContext::deserialise(const MString& string)
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& itemsToRemove, bool callPreUnload)
 {
-  Trace("TranslatorContext::preRemoveEntry primPath=" << primPath);
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preRemoveEntry primPath=%s\n", primPath.GetText());
   PrimLookups::iterator end = m_primMapping.end();
   PrimLookups::iterator range_begin = std::lower_bound(m_primMapping.begin(), end, primPath, value_compare());
   PrimLookups::iterator range_end = range_begin;
@@ -412,7 +408,7 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
 {
-  Trace("TranslatorContext::removeEntries");
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries\n");
   auto stage = m_proxyShape->getUsdStage();
 
   PrimLookups::iterator begin = m_primMapping.begin();
@@ -427,6 +423,7 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
     auto path = *iter;
     PrimLookups::iterator node = std::lower_bound(begin, end, path, value_compare());
 
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries checking %s\n", iter->GetText());
     auto prim = stage->GetPrimAtPath(*iter);
     TfToken type = getTypeForPath(path);
 
@@ -436,6 +433,7 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
       fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().get(type);
       if(translator)
       {
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries %s prim is not valid anymore will be tear down\n", path.GetText());
         unloadPrim(path, node->object());
         pathsToErase.push_back(*iter);
       }
@@ -446,6 +444,7 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
       TfToken primType = prim.GetTypeName();
       if(type != primType)
       {
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries %s prim is valid but changed type: it will be tear down\n", path.GetText());
         // type has changed, update the prim type and unload the old prim
         unloadPrim(path, node->object());
         pathsToErase.push_back(path);
@@ -457,12 +456,14 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
         {
           if(!translator->supportsInactive() || !translator->supportsUpdate())
           {
+            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries %s prim is valid but doesnt support inactive or update so will be tear down\n", path.GetText());
             unloadPrim(path, node->object());
             pathsToErase.push_back(*iter);
           }
         }
         else
         {
+          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries %s prim is valid but no translator found update so will be tear down\n", path.GetText());
           unloadPrim(path, node->object());
           pathsToErase.push_back(*iter);
         }
@@ -478,7 +479,7 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
     // remove the prims that died
     for(auto path : pathsToErase)
     {
-      Trace("TranslatorContext::removeEntry primPath="<<path);
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries primPath=%s\n", path.GetText());
       PrimLookups::iterator node = std::lower_bound(m_primMapping.begin(), m_primMapping.end(), path, value_compare());
 
       // The item might already have been removed by a translator...
@@ -498,7 +499,6 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
 {
-  Trace("SchemaNodeRefDB::preUnloadPrim");
   assert(m_proxyShape);
   auto stage = m_proxyShape->getUsdStage();
   if(stage)
@@ -508,7 +508,7 @@ void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
     fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().get(type);
     if(translator)
     {
-      Trace("Translator-VariantSwitch: preTearDown prim: " << prim.GetPath().GetText() << " " << type);
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim [preTearDown] prim=%s\n", prim.GetPath().GetText());
       translator->preTearDown(prim);
     }
     else
@@ -525,7 +525,7 @@ void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
 {
-  Trace("SchemaNodeRefDB::unloadPrim");
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::unloadPrim\n");
   assert(m_proxyShape);
   auto stage = m_proxyShape->getUsdStage();
   if(stage)
@@ -536,7 +536,7 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
     fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().get(type);
     if(translator)
     {
-      Trace("Translator-VariantSwitch: tearDown prim: " << path.GetText() << " " << type);
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::unloadPrim [tearDown] prim=%s\n", path.GetText());
       MStatus status = translator->tearDown(path);
       switch(status.statusCode())
       {

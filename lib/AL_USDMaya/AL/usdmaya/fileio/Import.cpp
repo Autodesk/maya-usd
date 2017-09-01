@@ -16,6 +16,7 @@
 #include "AL/maya/CodeTimings.h"
 #include "AL/maya/DgNodeHelper.h"
 #include "AL/usdmaya/Utils.h"
+#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/fileio/Import.h"
 #include "AL/usdmaya/fileio/NodeFactory.h"
@@ -55,12 +56,6 @@ namespace AL {
 namespace usdmaya {
 namespace fileio {
 
-// printf debugging
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cerr << X << std::endl;
-#else
-# define Trace(X)
-#endif
 
 AL_MAYA_DEFINE_COMMAND(ImportCommand, AL_usdmaya);
 
@@ -131,7 +126,7 @@ void Import::doImport()
           if(!ttype.empty()){
             transformType = ttype.c_str();
           }
-          Trace("createParentTransform prim="<<prim.GetPath()<<" transformType="<<transformType)
+          TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("Import::doImport::createParentTransform prim=%s transformType=%s\n", prim.GetPath().GetText(), transformType);
           MObject obj = factory.createNode(prim, transformType, parent);
           it.append(obj);
           return obj;

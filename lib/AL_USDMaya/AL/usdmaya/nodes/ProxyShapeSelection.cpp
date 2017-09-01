@@ -19,6 +19,7 @@
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/Utils.h"
 #include "AL/usdmaya/Metadata.h"
+#include "AL/usdmaya/DebugCodes.h"
 
 #include "maya/MFnDagNode.h"
 #include "maya/MPxCommand.h"
@@ -26,12 +27,6 @@
 #include <set>
 #include <algorithm>
 
-// printf debugging
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cout << X << std::endl;
-#else
-# define Trace(X)
-#endif
 
 namespace AL {
 namespace usdmaya {
@@ -47,7 +42,7 @@ namespace nodes {
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onSelectionChanged(void* ptr)
 {
-  Trace("ProxyShapeSelection::onSelectionChanged " << MGlobal::isUndoing());
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::onSelectionChanged %b\n", MGlobal::isUndoing());
 
   const int selectionMode = MGlobal::optionVarIntValue("AL_usdmaya_selectMode");
   if(selectionMode)
@@ -94,7 +89,7 @@ void ProxyShape::onSelectionChanged(void* ptr)
     {
       if(!selectedSet.count(selected))
       {
-        Trace("  onSelectionChanged " << selected.GetText());
+        TF_DEBUG(ALUSDMAYA_SELECTION).Msg("  onSelectionChanged %s\n", selected.GetText());
         unselectedSet.push_back(selected);
       }
     }
@@ -187,7 +182,7 @@ void ProxyShape::printRefCounts() const
 //----------------------------------------------------------------------------------------------------------------------
 inline bool ProxyShape::TransformReference::decRef(const TransformReason reason)
 {
-  Trace("ProxyShapeSelection::TransformReference::decRef " << m_selected << " " << m_refCount << " " << m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::decRef %lu %lu %lu\n", m_selected, m_refCount, m_required);
   switch(reason)
   {
   case kSelection: assert(m_selected); --m_selected; break;
@@ -203,7 +198,7 @@ inline bool ProxyShape::TransformReference::decRef(const TransformReason reason)
 //----------------------------------------------------------------------------------------------------------------------
 inline void ProxyShape::TransformReference::incRef(const TransformReason reason)
 {
-  Trace("ProxyShapeSelection::TransformReference::incRef " << m_selected << " " << m_refCount << " " << m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::incRef %lu %lu %lu\n", m_selected, m_refCount, m_required);
   switch(reason)
   {
   case kSelection: ++m_selected; break;
@@ -216,7 +211,7 @@ inline void ProxyShape::TransformReference::incRef(const TransformReason reason)
 //----------------------------------------------------------------------------------------------------------------------
 inline void ProxyShape::TransformReference::checkIncRef(const TransformReason reason)
 {
-  Trace("ProxyShapeSelection::TransformReference::checkIncRef " << m_selected << " " << m_refCount << " " << m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::checkIncRef %lu %lu %lu\n", m_selected, m_refCount, m_required);
   switch(reason)
   {
   case kSelection: ++m_selectedTemp; break;
@@ -227,7 +222,7 @@ inline void ProxyShape::TransformReference::checkIncRef(const TransformReason re
 //----------------------------------------------------------------------------------------------------------------------
 inline bool ProxyShape::TransformReference::checkRef(const TransformReason reason)
 {
-  Trace("ProxyShapeSelection::TransformReference::checkRef " << m_selectedTemp << " : " << m_selected << " " << m_refCount << " " << m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::checkRef %lu : %lu %lu %lu\n", m_selectedTemp, m_selected, m_refCount, m_required);
   uint32_t sl = m_selected;
   uint32_t rc = m_refCount;
   uint32_t rq = m_required;
@@ -257,7 +252,7 @@ inline ProxyShape::TransformReference::TransformReference(const MObject& node, c
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::makeTransformReference(const SdfPath& path, const MObject& node, TransformReason reason)
 {
-  Trace("ProxyShapeSelection::makeTransformReference " << path.GetText());
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeTransformReference %s\n", path.GetText());
 
   SdfPath tempPath = path;
   MDagPath dagPath;
@@ -321,7 +316,7 @@ MObject ProxyShape::makeUsdTransformChain_internal(
     uint32_t* createCount,
     MString* resultingPath)
 {
-  Trace("ProxyShapeSelection::makeUsdTransformChain_internal");
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChain_internal\n");
 
   const MPlug outTimeAttr = outTimePlug();
   const MPlug outStageAttr = outStageDataPlug();
@@ -357,6 +352,7 @@ MObject ProxyShape::makeUsdTransformChain(
     m_selectedPaths.push_back(usdPrim.GetPath());
   }
 
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::makeUsdTransformChain on %s\n", usdPrim.GetPath().GetText());
   MObject newNode = makeUsdTransformChain_internal(usdPrim, modifier, reason, modifier2, createCount);
   insertTransformRefs( { std::pair<SdfPath, MObject>(usdPrim.GetPath(), newNode) }, reason);
   return newNode;
@@ -374,7 +370,7 @@ MObject ProxyShape::makeUsdTransformChain(
     uint32_t* createCount,
     MString* resultingPath)
 {
-  Trace("ProxyShapeSelection::makeUsdTransformChainB " << usdPrim.GetPath().GetText());
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChainB %s\n", usdPrim.GetPath().GetText());
 
   SdfPath path = usdPrim.GetPath();
   auto iter = m_requiredPaths.find(path);
@@ -477,12 +473,12 @@ MObject ProxyShape::makeUsdTransformChain(
     node = modifier.createNode(convert(transformType), parentNode);
     isTransform = false;
     isUsdTransform = false;
-    Trace("ProxyShape::makeUsdTransformChain created transformType = " << transformType << " name = " << usdPrim.GetName().GetString())
+    TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::makeUsdTransformChain created transformType=%s name=%s\n", transformType.c_str(), usdPrim.GetName().GetText());
   }
   else
   {
     node = modifier.createNode(Transform::kTypeId, parentNode);
-    Trace("ProxyShape::makeUsdTransformChain created transformType = AL_usdmaya_Transform name = "<<usdPrim.GetName().GetString())
+    TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::makeUsdTransformChain created transformType = AL_usdmaya_Transform name=%s\n", usdPrim.GetName().GetText());
   }
 
   fn.setObject(node);
@@ -540,7 +536,7 @@ MObject ProxyShape::makeUsdTransformChain(
 //----------------------------------------------------------------------------------------------------------------------
 MObject ProxyShape::makeUsdTransforms(const UsdPrim& usdPrim, MDagModifier& modifier, TransformReason reason, MDGModifier* modifier2)
 {
-  Trace("ProxyShapeSelection::makeUsdTransforms");
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransforms\n");
 
   // Ok, so let's go wondering up the transform chain making sure we have all of those transforms created.
   MObject node = makeUsdTransformChain(usdPrim, modifier, reason, modifier2, 0);
@@ -557,7 +553,7 @@ MObject ProxyShape::makeUsdTransforms(const UsdPrim& usdPrim, MDagModifier& modi
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::makeUsdTransformsInternal(const UsdPrim& usdPrim, const MObject& parentNode, MDagModifier& modifier, TransformReason reason, MDGModifier* modifier2)
 {
-  Trace("ProxyShapeSelection::makeUsdTransformsInternal");
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformsInternal\n");
   MFnDagNode fn;
 
   MPlug outStageAttr = outStageDataPlug();
@@ -607,7 +603,7 @@ void ProxyShape::removeUsdTransformChain_internal(
     MDagModifier& modifier,
     TransformReason reason)
 {
-  Trace("ProxyShapeSelection::removeUsdTransformChain");
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeUsdTransformChain\n");
   UsdPrim parentPrim = usdPrim;
   MObject parentTM = MObject::kNullObj;
   MObject object = MObject::kNullObj;
@@ -639,8 +635,9 @@ void ProxyShape::removeUsdTransformChain(
     MDagModifier& modifier,
     TransformReason reason)
 {
-  Trace("ProxyShapeSelection::removeUsdTransformChain");
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeUsdTransformChain\n");
   SdfPath parentPrim = path;
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::removeUsdTransformChain %s\n", path.GetText());
   MObject parentTM = MObject::kNullObj;
   MObject object = MObject::kNullObj;
   while(!parentPrim.IsEmpty())
@@ -671,7 +668,7 @@ void ProxyShape::removeUsdTransformChain(
     MDagModifier& modifier,
     TransformReason reason)
 {
-  Trace("ProxyShapeSelection::removeUsdTransformChain");
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeUsdTransformChain\n");
   if(!usdPrim)
   {
     return;
@@ -723,7 +720,7 @@ void ProxyShape::removeUsdTransformsInternal(
     MDagModifier& modifier,
     TransformReason reason)
 {
-  Trace("ProxyShapeSelection::removeUsdTransformsInternal " << usdPrim.GetPath().GetText());
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeUsdTransformsInternal %s\n", usdPrim.GetPath().GetText());
   // can we find the prim in the current set?
   auto it = m_requiredPaths.find(usdPrim.GetPath());
   if(it == m_requiredPaths.end())
@@ -752,7 +749,7 @@ void ProxyShape::removeUsdTransforms(
     MDagModifier& modifier,
     TransformReason reason)
 {
-  Trace("ProxyShapeSelection::removeUsdTransforms");
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeUsdTransforms\n");
 
   // can we find the prim in the current set?
   auto it = m_requiredPaths.find(usdPrim.GetPath());
@@ -793,7 +790,7 @@ SelectionUndoHelper::SelectionUndoHelper(nodes::ProxyShape* proxy, SdfPathVector
 //----------------------------------------------------------------------------------------------------------------------
 void SelectionUndoHelper::doIt()
 {
-  Trace("ProxyShapeSelection::SelectionUndoHelper::doIt " << m_insertedRefs.size() << " " << m_removedRefs.size());
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::SelectionUndoHelper::doIt %lu\n%lu%n", m_insertedRefs.size(), m_removedRefs.size());
   m_proxy->m_pleaseIgnoreSelection = true;
   m_modifier1.doIt();
   m_modifier2.doIt();
@@ -810,7 +807,7 @@ void SelectionUndoHelper::doIt()
 //----------------------------------------------------------------------------------------------------------------------
 void SelectionUndoHelper::undoIt()
 {
-  Trace("ProxyShapeSelection::SelectionUndoHelper::undoIt " << m_insertedRefs.size() << " " << m_removedRefs.size());
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::SelectionUndoHelper::undoIt %lu\n%lu%n", m_insertedRefs.size(), m_removedRefs.size());
   m_proxy->m_pleaseIgnoreSelection = true;
   m_modifier2.undoIt();
   m_modifier1.undoIt();
@@ -827,7 +824,7 @@ void SelectionUndoHelper::undoIt()
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::removeTransformRefs(const std::vector<std::pair<SdfPath, MObject>>& removedRefs, TransformReason reason)
 {
-  Trace("ProxyShapeSelection::removeTransformRefs " << removedRefs.size());
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeTransformRefs %lu\n", removedRefs.size());
   for(auto iter : removedRefs)
   {
     UsdPrim parentPrim = m_stage->GetPrimAtPath(iter.first);
@@ -854,7 +851,7 @@ void ProxyShape::removeTransformRefs(const std::vector<std::pair<SdfPath, MObjec
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyShape::removeAllSelectedNodes(SelectionUndoHelper& helper)
 {
-  Trace("ProxyShapeSelection::removeAllSelectedNodes " << m_selectedPaths.size());
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeAllSelectedNodes %lu\n", m_selectedPaths.size());
 
   std::vector<TransformReferenceMap::iterator> toRemove;
 
@@ -917,7 +914,7 @@ bool ProxyShape::removeAllSelectedNodes(SelectionUndoHelper& helper)
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyShape::doSelect(SelectionUndoHelper& helper)
 {
-  Trace("ProxyShapeSelection::doSelect");
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::doSelect\n");
   auto stage = m_stage;
   if(!stage)
     return false;

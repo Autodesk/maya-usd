@@ -25,12 +25,6 @@
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
-// printf debugging
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cerr << X << std::endl;
-#else
-# define Trace(X)
-#endif
 
 namespace AL {
 namespace usdmaya {

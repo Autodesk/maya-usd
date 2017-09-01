@@ -16,6 +16,7 @@
 #include "pxr/imaging/glf/glew.h"
 #include "AL/usdmaya/nodes/ProxyDrawOverride.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
+#include "AL/usdmaya/DebugCodes.h"
 
 
 #include "pxr/base/tf/envSetting.h"
@@ -26,12 +27,6 @@
 #include "maya/MPoint.h"
 #include "maya/M3dView.h"
 
-// printf debugging
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cerr << X << std::endl;
-#else
-# define Trace(X)
-#endif
 
 namespace AL {
 namespace usdmaya {
@@ -70,7 +65,7 @@ MString ProxyDrawOverride::kDrawRegistrantId("pxrUsd");
 ProxyDrawOverride::ProxyDrawOverride(const MObject& obj)
   : MHWRender::MPxDrawOverride(obj, draw)
 {
-  Trace("ProxyDrawOverride::ProxyDrawOverride");
+  TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::ProxyDrawOverride\n");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -81,7 +76,7 @@ ProxyDrawOverride::~ProxyDrawOverride()
 //----------------------------------------------------------------------------------------------------------------------
 MHWRender::MPxDrawOverride* ProxyDrawOverride::creator(const MObject& obj)
 {
-  Trace("ProxyDrawOverride::creator");
+  TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::creator\n");
   return new ProxyDrawOverride(obj);
 }
 
@@ -90,7 +85,7 @@ bool ProxyDrawOverride::isBounded(
     const MDagPath& objPath,
     const MDagPath& cameraPath) const
 {
-  Trace("ProxyDrawOverride::isBounded");
+  TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::isBounded\n");
   return true;
 }
 
@@ -99,7 +94,7 @@ MBoundingBox ProxyDrawOverride::boundingBox(
     const MDagPath& objPath,
     const MDagPath& cameraPath) const
 {
-  Trace("ProxyDrawOverride::boundingBox");
+  TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::boundingBox\n");
   ProxyShape* pShape = getShape(objPath);
   if (!pShape)
   {
@@ -115,7 +110,7 @@ MUserData* ProxyDrawOverride::prepareForDraw(
     const MHWRender::MFrameContext& frameContext,
     MUserData* userData)
 {
-  Trace("ProxyDrawOverride::prepareForDraw");
+  TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::prepareForDraw\n");
   MFnDagNode fn(objPath);
 
   RenderUserData* data = new RenderUserData;
@@ -148,7 +143,7 @@ MUserData* ProxyDrawOverride::prepareForDraw(
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUserData* data)
 {
-  Trace("ProxyDrawOverride::draw");
+  TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::draw\n");
   float clearCol[4];
   glGetFloatv(GL_COLOR_CLEAR_VALUE, clearCol);
 
@@ -389,7 +384,7 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
 //----------------------------------------------------------------------------------------------------------------------
 ProxyShape* ProxyDrawOverride::getShape(const MDagPath& objPath)
 {
-  Trace("ProxyDrawOverride::getShape");
+  TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::getShape\n");
   MObject obj = objPath.node();
   MFnDependencyNode dnNode(obj);
   if(obj.apiType() != MFn::kPluginShape)

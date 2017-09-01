@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/Utils.h"
+#include "AL/usdmaya/DebugCodes.h"
 
 #include "maya/MMatrix.h"
 #include "maya/MEulerRotation.h"
@@ -31,12 +32,6 @@
 
 #include <algorithm>
 
-// printf debugging
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cerr << X << std::endl;
-#else
-# define Trace(X)
-#endif
 namespace AL {
 namespace usdmaya {
 
@@ -118,7 +113,7 @@ MString mapUsdPrimToMayaNode(const UsdPrim& usdPrim, const MObject& mayaObject, 
   VtValue mayaPathValue(mayaElementPath);
   usdPrim.SetCustomDataByKey(mayaPathAttributeName, mayaPathValue);
 
-  Trace( " Capturing the path for prim: '" << usdPrim.GetName() << "' mayaObject '" << mayaElementPath << "'" );
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("Capturing the path for prim=%s mayaObject=%s\n", usdPrim.GetName().GetText(), mayaElementPath.c_str());
 
   //restore the edit target
   stage->SetEditTarget(previousTarget);

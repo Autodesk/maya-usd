@@ -15,6 +15,7 @@
 //
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/Utils.h"
+#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/HostDrivenTransforms.h"
 #include "AL/maya/Common.h"
 
@@ -26,12 +27,6 @@
 
 #include <algorithm>
 
-// printf debugging
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cout << X << std::endl;
-#else
-# define Trace(X)
-#endif
 
 namespace AL {
 namespace usdmaya {
@@ -52,13 +47,13 @@ MObject HostDrivenTransforms::m_drivenVisibility = MObject::kNullObj;
 HostDrivenTransforms::HostDrivenTransforms()
   : MPxNode()
 {
-  Trace("HostDrivenTransforms::HostDrivenTransforms");
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("HostDrivenTransforms::HostDrivenTransforms\n");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 HostDrivenTransforms::~HostDrivenTransforms()
 {
-  Trace("HostDrivenTransforms::~HostDrivenTransforms");
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("HostDrivenTransforms::~HostDrivenTransforms\n");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -88,7 +83,7 @@ static const int16_t rotate_order_values[] =
 //----------------------------------------------------------------------------------------------------------------------
 MStatus HostDrivenTransforms::initialise()
 {
-  Trace("HostDrivenTransforms::initialise");
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("HostDrivenTransforms::initialise\n");
   const char* errorString = "HostDrivenTransforms::initialize";
   try
   {
@@ -222,23 +217,23 @@ void HostDrivenTransforms::updateMatrix(MDataBlock& dataBlock, DrivenTransforms&
 
     drivenTransforms.m_drivenMatrix[idx] = transformMatrix.asMatrix();
     drivenTransforms.m_dirtyMatrices.emplace_back(idx);
-    Trace("HostDrivenTransforms::updateMatrix "
-        << drivenTransforms.m_drivenMatrix[idx][0][0] << " "
-        << drivenTransforms.m_drivenMatrix[idx][0][1] << " "
-        << drivenTransforms.m_drivenMatrix[idx][0][2] << " "
-        << drivenTransforms.m_drivenMatrix[idx][0][3] << " "
-        << drivenTransforms.m_drivenMatrix[idx][1][0] << " "
-        << drivenTransforms.m_drivenMatrix[idx][1][1] << " "
-        << drivenTransforms.m_drivenMatrix[idx][1][2] << " "
-        << drivenTransforms.m_drivenMatrix[idx][1][3] << " "
-        << drivenTransforms.m_drivenMatrix[idx][2][0] << " "
-        << drivenTransforms.m_drivenMatrix[idx][2][1] << " "
-        << drivenTransforms.m_drivenMatrix[idx][2][2] << " "
-        << drivenTransforms.m_drivenMatrix[idx][2][3] << " "
-        << drivenTransforms.m_drivenMatrix[idx][3][0] << " "
-        << drivenTransforms.m_drivenMatrix[idx][3][1] << " "
-        << drivenTransforms.m_drivenMatrix[idx][3][2] << " "
-        << drivenTransforms.m_drivenMatrix[idx][3][3]);
+    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("HostDrivenTransforms::updateMatrix %d %d %d %d  %d %d %d %d  %d %d %d %d  %d %d %d %d\n",
+      drivenTransforms.m_drivenMatrix[idx][0][0],
+      drivenTransforms.m_drivenMatrix[idx][0][1],
+      drivenTransforms.m_drivenMatrix[idx][0][2],
+      drivenTransforms.m_drivenMatrix[idx][0][3],
+      drivenTransforms.m_drivenMatrix[idx][1][0],
+      drivenTransforms.m_drivenMatrix[idx][1][1],
+      drivenTransforms.m_drivenMatrix[idx][1][2],
+      drivenTransforms.m_drivenMatrix[idx][1][3],
+      drivenTransforms.m_drivenMatrix[idx][2][0],
+      drivenTransforms.m_drivenMatrix[idx][2][1],
+      drivenTransforms.m_drivenMatrix[idx][2][2],
+      drivenTransforms.m_drivenMatrix[idx][2][3],
+      drivenTransforms.m_drivenMatrix[idx][3][0],
+      drivenTransforms.m_drivenMatrix[idx][3][1],
+      drivenTransforms.m_drivenMatrix[idx][3][2],
+      drivenTransforms.m_drivenMatrix[idx][3][3]);
   }
 }
 
@@ -271,7 +266,7 @@ void HostDrivenTransforms::updateVisibility(MDataBlock& dataBlock, DrivenTransfo
 //----------------------------------------------------------------------------------------------------------------------
 MStatus HostDrivenTransforms::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
-  Trace("HostDrivenTransforms::compute " << plug.name().asChar());
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("HostDrivenTransforms::compute %s\n", plug.name().asChar());
   if (plug == m_outDrivenTransformsData)
   {
     MObject data;
@@ -297,7 +292,7 @@ MStatus HostDrivenTransforms::compute(const MPlug& plug, MDataBlock& dataBlock)
 //----------------------------------------------------------------------------------------------------------------------
 bool HostDrivenTransforms::getInternalValueInContext(const MPlug& plug, MDataHandle& dataHandle, MDGContext& ctx)
 {
-  Trace("HostDrivenTransforms::getInternalValueInContext " << plug.name());
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("HostDrivenTransforms::getInternalValueInContext %s\n", plug.name().asChar());
   if (plug.array() == m_drivenPrimPaths)
   {
     uint32_t index = plug.logicalIndex();
@@ -313,7 +308,7 @@ bool HostDrivenTransforms::getInternalValueInContext(const MPlug& plug, MDataHan
 //----------------------------------------------------------------------------------------------------------------------
 bool HostDrivenTransforms::setInternalValueInContext(const MPlug& plug, const MDataHandle& dataHandle, MDGContext& ctx)
 {
-  Trace("HostDrivenTransforms::setInternalValueInContext " << plug.name());
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("HostDrivenTransforms::setInternalValueInContext %s\n", plug.name().asChar());
   if (plug.array() == m_drivenPrimPaths)
   {
     uint32_t index = plug.logicalIndex();

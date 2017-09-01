@@ -15,6 +15,7 @@
 //
 #include "AL/maya/CommandGuiHelper.h"
 #include "AL/usdmaya/Utils.h"
+#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/cmds/UnloadPrim.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
@@ -35,12 +36,6 @@
 #include <pxr/usd/usd/modelAPI.h>
 #include <pxr/usd/usd/variantSets.h>
 
-// printf debugging
-#if 0 || AL_ENABLE_TRACE
-# define Trace(X) std::cerr << X << std::endl;
-#else
-# define Trace(X)
-#endif
 
 namespace AL {
 namespace usdmaya {
@@ -72,7 +67,7 @@ MStatus ChangeVariant::doIt(const MArgList& args)
 {
   try
   {
-    Trace("ChangeVariant::doIt");
+    TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ChangeVariant::doIt\n");
     MStatus status;
     MArgDatabase database = makeDatabase(args);
 
@@ -116,7 +111,7 @@ MStatus ChangeVariant::doIt(const MArgList& args)
       }
     }
   }
-  catch(MStatus status)
+  catch(MStatus& status)
   {
     std::cout << "Error" << std::endl;
   }
@@ -148,7 +143,7 @@ MStatus ActivatePrim::doIt(const MArgList& args)
 {
   try
   {
-    Trace("ActivatePrim::doIt");
+    TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ActivatePrim::doIt\n");
     MStatus status;
     MArgDatabase database = makeDatabase(args);
 
