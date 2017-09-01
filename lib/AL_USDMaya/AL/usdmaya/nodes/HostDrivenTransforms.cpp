@@ -22,6 +22,8 @@
 #include "maya/MGlobal.h"
 #include "maya/MFnUnitAttribute.h"
 #include "maya/MFnTypedAttribute.h"
+#include "maya/MEulerRotation.h"
+#include "maya/MMatrix.h"
 #include "maya/MFnPluginData.h"
 
 #include <algorithm>
@@ -232,22 +234,22 @@ void HostDrivenTransforms::updateMatrices(MDataBlock& dataBlock, proxy::DrivenTr
       drivenTransforms.dirtyMatrix(primIndex, matrix);
 
       TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("HostDrivenTransforms::updateMatrix %d %d %d %d  %d %d %d %d  %d %d %d %d  %d %d %d %d\n",
-          drivenTransforms.drivenMatrices()[idx][0][0],
-          drivenTransforms.drivenMatrices()[idx][0][1],
-          drivenTransforms.drivenMatrices()[idx][0][2],
-          drivenTransforms.drivenMatrices()[idx][0][3],
-          drivenTransforms.drivenMatrices()[idx][1][0],
-          drivenTransforms.drivenMatrices()[idx][1][1],
-          drivenTransforms.drivenMatrices()[idx][1][2],
-          drivenTransforms.drivenMatrices()[idx][1][3],
-          drivenTransforms.drivenMatrices()[idx][2][0],
-          drivenTransforms.drivenMatrices()[idx][2][1],
-          drivenTransforms.drivenMatrices()[idx][2][2],
-          drivenTransforms.drivenMatrices()[idx][2][3],
-          drivenTransforms.drivenMatrices()[idx][3][0],
-          drivenTransforms.drivenMatrices()[idx][3][1],
-          drivenTransforms.drivenMatrices()[idx][3][2],
-          drivenTransforms.drivenMatrices()[idx][3][3]);
+          drivenTransforms.drivenMatrices()[primIndex][0][0],
+          drivenTransforms.drivenMatrices()[primIndex][0][1],
+          drivenTransforms.drivenMatrices()[primIndex][0][2],
+          drivenTransforms.drivenMatrices()[primIndex][0][3],
+          drivenTransforms.drivenMatrices()[primIndex][1][0],
+          drivenTransforms.drivenMatrices()[primIndex][1][1],
+          drivenTransforms.drivenMatrices()[primIndex][1][2],
+          drivenTransforms.drivenMatrices()[primIndex][1][3],
+          drivenTransforms.drivenMatrices()[primIndex][2][0],
+          drivenTransforms.drivenMatrices()[primIndex][2][1],
+          drivenTransforms.drivenMatrices()[primIndex][2][2],
+          drivenTransforms.drivenMatrices()[primIndex][2][3],
+          drivenTransforms.drivenMatrices()[primIndex][3][0],
+          drivenTransforms.drivenMatrices()[primIndex][3][1],
+          drivenTransforms.drivenMatrices()[primIndex][3][2],
+          drivenTransforms.drivenMatrices()[primIndex][3][3]);
     }
   }
 }
