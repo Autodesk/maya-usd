@@ -144,7 +144,7 @@ TEST(ProxyShape, DrivenTransforms)
     // make sure nothing has happened to the dirty visibility array in the previous code
     EXPECT_TRUE(dt.dirtyVisibilities().empty());
 
-    // Make sure that when we dirty visibility with index 3, that the correct dirty flags are set
+    // make sure that when we dirty visibility with index 3, that the correct dirty flags are set
     dt.dirtyVisibility(3, false);
 
     // we should now have an index is the visibility array
@@ -164,7 +164,7 @@ TEST(ProxyShape, DrivenTransforms)
       }
     }
 
-    // test to make sure that updateDrivenVisibility adds a keyframe value in the visibility data for
+    // test to make sure that a dirtyied visibility will correctly set a keyframe on the visibility attribute when updated.
     MTime time(10.0f, MTime::uiUnit());
     dt.update(drivenPrims, time);
 
@@ -186,10 +186,10 @@ TEST(ProxyShape, DrivenTransforms)
       }
     }
 
-    // After the visibilites have been updated, the dirtyVisibilities should have been cleared.
+    // after the visibilites have been updated, the dirtyVisibilities should have been cleared.
     EXPECT_EQ(0, dt.dirtyVisibilities().size());
 
-    //  Check to see that dirtyMatrix initialises the correct indices and transform values in the DrivenTransforms object
+    // check to see that dirtyMatrix initialises the correct indices and transform values in the DrivenTransforms object
     MMatrix matrixValue = MMatrix::identity;
     matrixValue[3][0] = 3.0;
     dt.dirtyMatrix(2, matrixValue);

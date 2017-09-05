@@ -110,7 +110,6 @@ TEST(PrimFilter, removedPaths)
   MFileIO::newFile(true);
 
   const std::string temp_path = "/tmp/AL_USDMayaTests_removedPaths.usda";
-  std::string sessionLayerContents;
 
   // generate some data for the proxy shape
   {
@@ -146,7 +145,6 @@ TEST(PrimFilter, removedPaths)
   MockPrimFilterInterface mockInterface;
 
   /// if nothing changes, the filter should give us the same list back as updatable prims
-  if(1)
   {
     const SdfPathVector previous = {
       SdfPath("/root"),
@@ -169,27 +167,6 @@ TEST(PrimFilter, removedPaths)
     }
 
     AL::usdmaya::nodes::proxy::PrimFilter filter(previous, prims, &mockInterface);
-
-    std::cout << "new prims" << std::endl;
-    for(auto it : filter.newPrimSet())
-    {
-      std::cout << it.GetPath().GetText() << std::endl;
-    }
-    std::cout << "new transforms" << std::endl;
-    for(auto it : filter.transformsToCreate())
-    {
-      std::cout << it.GetPath().GetText() << std::endl;
-    }
-    std::cout << "updateable prims" << std::endl;
-    for(auto it : filter.updatablePrimSet())
-    {
-      std::cout << it.GetPath().GetText() << std::endl;
-    }
-    std::cout << "removed prims" << std::endl;
-    for(auto it : filter.removedPrimSet())
-    {
-      std::cout << it.GetText() << std::endl;
-    }
 
     EXPECT_TRUE(filter.removedPrimSet().empty());
     EXPECT_TRUE(filter.newPrimSet().empty());
