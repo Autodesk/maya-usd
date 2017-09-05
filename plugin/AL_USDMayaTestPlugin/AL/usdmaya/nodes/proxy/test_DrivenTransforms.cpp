@@ -57,7 +57,7 @@ static const char* const g_drivenData =
 
 //  DrivenTransforms();
 //  size_t transformCount() const;
-//  void initTransform(uint32_t index);
+//  void resizeDrivenTransforms(uint32_t index);
 //  void constructDrivenPrimsArray(SdfPathVector& drivenPaths, std::vector<UsdPrim>& drivenPrims, UsdStageRefPtr stage);
 //  void update(std::vector<UsdPrim>& drivenPrims, const MTime& currentTime);
 //  void dirtyVisibility(int32_t primIndex, bool newValue);
@@ -113,7 +113,7 @@ TEST(ProxyShape, DrivenTransforms)
     };
 
     // initialising the transforms should result in prim paths being allocated,
-    dt.initTransforms(drivenPaths.size());
+    dt.resizeDrivenTransforms(drivenPaths.size());
     EXPECT_EQ(drivenPaths.size(), dt.drivenPrimPaths().size());
     EXPECT_EQ(drivenPaths.size(), dt.drivenVisibilities().size());
     EXPECT_EQ(drivenPaths.size(), dt.drivenMatrices().size());
@@ -130,15 +130,6 @@ TEST(ProxyShape, DrivenTransforms)
     for(size_t i = 0; i < drivenPaths.size(); ++i)
     {
       EXPECT_EQ(drivenPaths[i].GetString(), dt.drivenPrimPaths()[i].GetString());
-    }
-
-    // test to make sure that constructDrivenPrimsArray correctly initialises the returned arrays of paths and prims
-    std::vector<UsdPrim> drivenPrims;
-    dt.constructDrivenPrimsArray(drivenPrims, stage);
-    for(size_t i = 0; i < drivenPaths.size(); ++i)
-    {
-      EXPECT_TRUE(drivenPrims[i].IsValid());
-      EXPECT_EQ(drivenPaths[i].GetString(), drivenPrims[i].GetPath().GetString());
     }
 
     // make sure nothing has happened to the dirty visibility array in the previous code
@@ -166,11 +157,11 @@ TEST(ProxyShape, DrivenTransforms)
 
     // test to make sure that a dirtyied visibility will correctly set a keyframe on the visibility attribute when updated.
     MTime time(10.0f, MTime::uiUnit());
-    dt.update(drivenPrims, time);
+    dt.update(stage, time);
 
-    for(size_t i = 0; i < drivenPrims.size(); ++i)
+    for(size_t i = 0; i < drivenPaths.size(); ++i)
     {
-      UsdGeomXform xform(drivenPrims[i]);
+      UsdGeomXform xform(stage->GetPrimAtPath(drivenPaths[i]));
       UsdAttribute attr = xform.GetVisibilityAttr();
 
       if(i != 3)
@@ -211,11 +202,11 @@ TEST(ProxyShape, DrivenTransforms)
     }
 
     // test to make sure that updateDrivenVisibility adds a keyframe value in the visibility data for
-    dt.update(drivenPrims, time);
+    dt.update(stage, time);
 
-    for(size_t i = 0; i < drivenPrims.size(); ++i)
+    for(size_t i = 0; i < drivenPaths.size(); ++i)
     {
-      UsdGeomXform xform(drivenPrims[i]);
+      UsdGeomXform xform(stage->GetPrimAtPath(drivenPaths[i]));
       bool resetsXformStack;
       std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 

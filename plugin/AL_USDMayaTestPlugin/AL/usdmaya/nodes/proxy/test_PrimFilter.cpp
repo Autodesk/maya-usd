@@ -41,17 +41,18 @@ struct MockPrimFilterInterface : public AL::usdmaya::nodes::proxy::PrimFilterInt
 
   TfToken getTypeForPath(const SdfPath& path) override
   {
-    if(std::find(paths.begin(), paths.end(), path) != paths.end())
+    if(std::find(paths.cbegin(), paths.cend(), path) != paths.cend())
     {
       return TfToken("ALMayaReference");
     }
     return TfToken("");
   }
 
-  void getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent) override
+  bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent) override
   {
     supportsUpdate = true;
     requiresParent = true;
+    return true;
   }
 };
 

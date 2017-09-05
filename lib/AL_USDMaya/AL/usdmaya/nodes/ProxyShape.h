@@ -773,9 +773,9 @@ private:
 
 
   TfToken getTypeForPath(const SdfPath& path) override
-    { return context()->getTypeForPath(path); }
+    { return m_context->getTypeForPath(path); }
 
-  void getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent) override
+  bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent) override
     {
       auto translator = m_translatorManufacture.get(type);
       if(translator)
@@ -783,6 +783,7 @@ private:
         supportsUpdate = translator->supportsUpdate();
         requiresParent = translator->needsTransformParent();
       }
+      return translator != 0;
     }
 
 private:

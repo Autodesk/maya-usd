@@ -1272,14 +1272,11 @@ MStatus ProxyShape::computeDrivenAttributes(const MPlug& plug, MDataBlock& dataB
 
     if (!drivenTransforms.drivenPrimPaths().empty())
     {
-      std::vector<UsdPrim> drivenPrims;
-      if(!drivenTransforms.constructDrivenPrimsArray(drivenPrims, m_stage))
+      if(!drivenTransforms.update(m_stage, currentTime))
       {
-        MString command("failed to construct driven prim paths on block: ");
+        MString command("failed to update driven prims on block: ");
         MGlobal::displayError(command + elemIdx);
       }
-
-      drivenTransforms.update(drivenPrims, currentTime);
     }
   }
   return dataBlock.setClean(plug);

@@ -56,24 +56,20 @@ public:
   inline size_t transformCount() const
     { return m_drivenPrimPaths.size(); }
 
-  /// \brief  initialise the transform at the specified index
+  /// \brief  resizes the driven transform internals to hold the specified number of prims
   /// \param  primPathCount the number of transforms to be driven
-  void initTransforms(const size_t primPathCount);
+  void resizeDrivenTransforms(const size_t primPathCount);
 
   /// \brief  set the driven prim paths on the host driven transforms
   /// \param  primPaths the prim paths to set on the proxy
   inline void setDrivenPrimPaths(const SdfPathVector& primPaths)
     { m_drivenPrimPaths = primPaths; }
 
-  /// \brief  update the driven prim paths
-  /// \param  drivenPrims the returned array of driven prims that were updated
-  /// \param  stage the usd stage that contains the prims
-  bool constructDrivenPrimsArray(std::vector<UsdPrim>& drivenPrims, UsdStageRefPtr stage);
-
   /// \brief  update the driven transforms
-  /// \param  drivenPrims the driven prims to update
+  /// \param  stage the stage to extract the prims from
   /// \param  currentTime the current time
-  void update(std::vector<UsdPrim>& drivenPrims, const MTime& currentTime);
+  ///
+  bool update(UsdStageRefPtr stage, const MTime& currentTime);
 
   /// \brief  dirties the visibility for the specified prim index
   /// \param  primIndex the index of the prim

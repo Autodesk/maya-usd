@@ -9,34 +9,11 @@ namespace nodes {
 namespace proxy {
 
 //----------------------------------------------------------------------------------------------------------------------
-void DrivenTransforms::initTransforms(const size_t primPathCount)
+void DrivenTransforms::resizeDrivenTransforms(const size_t primPathCount)
 {
   m_drivenPrimPaths.resize(primPathCount);
   m_drivenMatrix.resize(primPathCount, MMatrix::identity);
   m_drivenVisibility.resize(primPathCount, true);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-bool DrivenTransforms::constructDrivenPrimsArray(
-    std::vector<UsdPrim>& drivenPrims,
-    UsdStageRefPtr stage)
-{
-  drivenPrims.resize(transformCount());
-  bool result = true;
-  uint32_t cnt = m_drivenPrimPaths.size();
-  for (uint32_t idx = 0; idx < cnt; ++idx)
-  {
-    auto path = m_drivenPrimPaths[idx];
-    drivenPrims[idx] = stage->GetPrimAtPath(path);
-    if (!drivenPrims[idx].IsValid())
-    {
-      MString warningMsg;
-      warningMsg.format("Driven Prim [^1s] is not valid.", MString("") + idx);
-      MGlobal::displayWarning(warningMsg);
-      result = false;
-    }
-  }
-  return result;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -123,8 +100,25 @@ void DrivenTransforms::updateDrivenVisibility(std::vector<UsdPrim>& drivenPrims,
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void DrivenTransforms::update(std::vector<UsdPrim>& drivenPrims, const MTime& currentTime)
+bool DrivenTransforms::update(UsdStageRefPtr stage, const MTime& currentTime)
 {
+  std::vector<UsdPrim> drivenPrims;
+  drivenPrims.resize(transformCount());
+  bool result = true;
+  uint32_t cnt = m_drivenPrimPaths.size();
+  for (uint32_t idx = 0; idx < cnt; ++idx)
+  {
+    auto path = m_drivenPrimPaths[idx];
+    drivenPrims[idx] = stage->GetPrimAtPath(path);
+    if (!drivenPrims[idx].IsValid())
+    {
+      MString warningMsg;
+      warningMsg.format("Driven Prim [^1s] is not valid.", MString("") + idx);
+      MGlobal::displayWarning(warningMsg);
+      result = false;
+    }
+  }
+
   if (!dirtyMatrices().empty())
   {
     updateDrivenTransforms(drivenPrims, currentTime);
@@ -133,6 +127,7 @@ void DrivenTransforms::update(std::vector<UsdPrim>& drivenPrims, const MTime& cu
   {
     updateDrivenVisibility(drivenPrims, currentTime);
   }
+  return result;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

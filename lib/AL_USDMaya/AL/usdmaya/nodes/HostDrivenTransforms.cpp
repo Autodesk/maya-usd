@@ -115,11 +115,11 @@ MStatus HostDrivenTransforms::initialise()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void HostDrivenTransforms::updatePrimPaths(proxy::DrivenTransforms& drivenTransforms)
+void HostDrivenTransforms::resizeDrivenTransforms(proxy::DrivenTransforms& drivenTransforms)
 {
   if (drivenTransforms.transformCount() < m_primPaths.size())
   {
-    drivenTransforms.initTransforms(m_primPaths.size());
+    drivenTransforms.resizeDrivenTransforms(m_primPaths.size());
   }
   drivenTransforms.setDrivenPrimPaths(m_primPaths);
 }
@@ -175,7 +175,7 @@ void HostDrivenTransforms::updateMatrices(MDataBlock& dataBlock, proxy::DrivenTr
     const int32_t maxIndex = *(last - 1);
     if (drivenTransforms.transformCount() <= maxIndex)
     {
-      drivenTransforms.initTransforms(maxIndex + 1);
+      drivenTransforms.resizeDrivenTransforms(maxIndex + 1);
     }
 
     MArrayDataHandle rotateArray = dataBlock.inputArrayValue(m_drivenRotate);
@@ -264,7 +264,7 @@ void HostDrivenTransforms::updateVisibility(MDataBlock& dataBlock, proxy::Driven
     const int32_t maxIndex = visibilityIndices[visibilityCnt - 1];
     if (drivenTransforms.transformCount() <= maxIndex)
     {
-      drivenTransforms.initTransforms(maxIndex + 1);
+      drivenTransforms.resizeDrivenTransforms(maxIndex + 1);
     }
 
     MArrayDataHandle visibilityArray = dataBlock.inputArrayValue(m_drivenVisibility);
@@ -292,7 +292,7 @@ MStatus HostDrivenTransforms::compute(const MPlug& plug, MDataBlock& dataBlock)
       return MS::kFailure;
     }
     proxy::DrivenTransforms& drivenTransforms = drvTransData->m_drivenTransforms;
-    updatePrimPaths(drivenTransforms);
+    resizeDrivenTransforms(drivenTransforms);
     updateMatrices(dataBlock, drivenTransforms);
     updateVisibility(dataBlock, drivenTransforms);
     MStatus status = outputDataValue(dataBlock, m_outDrivenTransformsData, drvTransData);

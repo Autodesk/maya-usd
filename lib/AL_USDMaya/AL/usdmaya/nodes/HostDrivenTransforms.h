@@ -103,7 +103,7 @@ private:
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Node Internals
   //--------------------------------------------------------------------------------------------------------------------
-  void updatePrimPaths(proxy::DrivenTransforms& drivenTransforms);
+  void resizeDrivenTransforms(proxy::DrivenTransforms& drivenTransforms);
   void updateMatrices(MDataBlock& dataBlock, proxy::DrivenTransforms& drivenTransforms);
   void updateVisibility(MDataBlock& dataBlock, proxy::DrivenTransforms& drivenTransforms);
 
