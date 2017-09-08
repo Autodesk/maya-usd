@@ -812,7 +812,10 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
 // nodes based on the contents of the new variant selection.
 {
   if(MFileIO::isOpeningFile())
+  {
     return;
+  }
+
 
   TF_FOR_ALL(itr, notice.GetChangeListMap())
   {
@@ -830,9 +833,16 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
                                          entry.oldPath.GetString().c_str(),
                                          entry.oldIdentifier.c_str(),
                                          path.GetText());
+
+          if(!m_compositionHasChanged)
+          {
+            TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::Already in a composition change state. Ignoring \n");
+            m_changedPath = path;
+          }
+
           m_compositionHasChanged = true;
-          m_changedPath = path;
-          onPrePrimChanged(m_changedPath, m_variantSwitchedPrims);
+
+          onPrePrimChanged(path, m_variantSwitchedPrims);
         }
       }
     }
