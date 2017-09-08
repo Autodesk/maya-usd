@@ -157,7 +157,7 @@ MStatus UnitTestHarness::doIt(const MArgList& args)
 
   ::testing::InitGoogleTest(&argc, argv);
   int error_code = -1;
-  if(RUN_ALL_TESTS() == 0)
+  if(RUN_ALL_TESTS() == 0 && ::testing::UnitTest::GetInstance()->test_to_run_count() > 0)
   {
     error_code = 0;
   }
