@@ -77,9 +77,22 @@ static void preFileRead(void*)
 static void postFileRead(void*)
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("postFileRead\n");
-  --readDepth;
 
-  if (readDepth != 0) return;
+  // If the plugin is loaded as the result of a "requires" statment when opening a scene,
+  // it's possible for postFileRead to be called without preFileRead having been... so,
+  // make sure we don't decrement past 0!
+  size_t oldReadDepth = readDepth.fetch_sub(1);
+  if (ARCH_UNLIKELY(oldReadDepth == 0))
+  {
+    // Assume we got here because we didn't call preFileRead - do the increment that it
+    // missed
+    readDepth++;
+    oldReadDepth++;
+  }
+
+  // oldReadDepth is the value BEFORE we decremented (with fetch_sub), so should be 1
+  // if we're now "done"
+  if (oldReadDepth != 1) return;
 
   nodes::LayerManager* layerManager = nodes::LayerManager::findManager();
   if (layerManager)
