@@ -87,6 +87,11 @@ AL_USDMaya is made of several plugins:
 - python bindings are also available, they have to be added to PYTHONPATH.
 See the docker scripts for a configuration example.
 
+### Additional `MayaReference` translator
+
+To be able to use the additional `MayaReference` translator, an environment variable has to be set to the path where AL_USDMaya has been installed. By default, the environment variable's name is `AL_USDMAYA_LOCATION`.
+This environment name can be configured when maya is built by setting the AL_USDMAYA_LOCATION_NAME cmake variable to the name you want.
+
 ### A note on VP2
 If you need to use VP2, it won't work with the current ProxyShape implementation unless you set Legacy Profile - can to this via env vars, options etc.
 e.g you can also use the following MEL code to switch the Maya preferences to use the Viewport 2.0 based OpenGL Legacy Mode profile:

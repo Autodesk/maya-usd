@@ -164,6 +164,8 @@ MStatus UnitTestHarness::doIt(const MArgList& args)
   delete [] argv;
   setResult(error_code);
 
+  cleanTemporaryFiles();
+
   if(MGlobal::kInteractive == MGlobal::mayaState())
     MGlobal::executeCommand("refresh -suspend false");
 
@@ -180,3 +182,19 @@ MStatus UnitTestHarness::doIt(const MArgList& args)
   return MS::kSuccess;
 }
 
+//------------------------------------------------------------------------------
+void UnitTestHarness::cleanTemporaryFiles() const
+{
+  MString cmd(
+      "import glob;"
+      "import os;"
+      "[os.remove(x) for x in glob.glob('/tmp/AL_USDMayaTests*.usda')];"
+      "[os.remove(x) for x in glob.glob('/tmp/AL_USDMayaTests*.ma')]"
+      );
+
+  MStatus stat = MGlobal::executePythonCommand(cmd);
+
+  if(stat != MStatus::kSuccess) {
+    MGlobal::displayWarning("Unable to remove temporary test files");
+  }
+}

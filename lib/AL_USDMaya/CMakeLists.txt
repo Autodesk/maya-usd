@@ -166,6 +166,8 @@ set_target_properties(${LIBRARY_NAME}
         "MFB_PACKAGE_NAME=${LIBRARY_NAME};MFB_ALT_PACKAGE_NAME=${LIBRARY_NAME};MFB_PACKAGE_MODULE=usdmaya"
 )
 
+add_definitions(-DAL_USDMAYA_LOCATION_NAME="${AL_USDMAYA_LOCATION_NAME}")
+
 # AL_USDMayaGL
 target_include_directories(
     ${LIBRARY_NAME}

@@ -1,3 +1,10 @@
+IF(DEFINED NO_TESTS AND NO_TESTS)
+  message("Skipping building of test plugin.")
+  return()
+ENDIF()
+
+find_package(GTest REQUIRED)
+
 set(PXR_PACKAGE AL_USDMayaTestPlugin)
 
 list(APPEND AL_maya_test_headers
@@ -53,10 +60,17 @@ pxr_plugin(${PXR_PACKAGE}
     INCLUDE_DIRS
         ${GTEST_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
-        "../../../lib/AL_USDMaya"
+        "../../lib/AL_USDMaya"
 
     CPPFILES
         ${AL_maya_test_source}
         plugin.cpp
 )
 
+add_test(
+    NAME TestAL_USDMaya
+    COMMAND
+        ${CMAKE_CURRENT_SOURCE_DIR}/run_mayaplugin_tests.sh
+            ${CMAKE_INSTALL_PREFIX}
+            ${CMAKE_CURRENT_SOURCE_DIR}
+)
