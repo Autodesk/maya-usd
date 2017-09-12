@@ -1,5 +1,8 @@
 # Release Notes
 
+### v0.23.3
+* Prevent viewport refresh at end of animation export that can cause a VP2 crash.
+
 ### v0.23.2
 * Consolidated debug traces to use TF_DEBUG, see developers documentation for available flags.
 
