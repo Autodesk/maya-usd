@@ -310,7 +310,7 @@ TEST(Layer, addRemoveSublayersLayers)
     AL::usdmaya::nodes::Layer* m_newLayer = (AL::usdmaya::nodes::Layer*)fnl.userNode();
 
 
-    auto newLayer = SdfLayer::CreateNew("/tmp/AL_usdmaya_Tests_new_layer.usda");
+    auto newLayer = SdfLayer::CreateNew("/tmp/AL_USDMayaTests_new_layer.usda");
 
     auto layer = root->getHandle();
     layer->GetSubLayerPaths().push_back(newLayer->GetIdentifier());

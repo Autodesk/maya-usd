@@ -516,7 +516,7 @@ void Export::doExport()
     m_impl->setAnimationFrame(m_params.m_minFrame, m_params.m_maxFrame);
 
     // return user to their original frame
-    MGlobal::viewFrame(oldCurTime);
+    MAnimControl::setCurrentTime(oldCurTime);
   }
 
   m_impl->doExport(m_params.m_fileName.asChar(), m_params.m_filterSample);

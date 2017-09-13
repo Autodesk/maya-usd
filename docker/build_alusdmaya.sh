@@ -8,6 +8,8 @@ mkdir -p $TMP_DIR
 # TODO: use a zipped version of AL_USDMaya to have a more consistant run
 #----------------------------------------------
 
+export PATH=$MAYA_LOCATION/bin:$PATH
+
 cd $TMP_DIR &&\
   cd AL_USDMaya &&\
     rm -Rf build &&\
@@ -27,5 +29,5 @@ cd $TMP_DIR &&\
             ..
       make -j ${BUILD_PROCS} install
       ctest -V
-
-rm -rf $TMP_DIR
+    cd ..
+    rm -rf build
