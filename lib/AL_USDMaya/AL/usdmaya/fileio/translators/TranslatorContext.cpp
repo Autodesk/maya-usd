@@ -83,6 +83,7 @@ void TranslatorContext::updatePrimTypes()
     if(it->type() != prim.GetTypeName())
     {
       it->type() = prim.GetTypeName();
+      ++it;
     }
     else
     {

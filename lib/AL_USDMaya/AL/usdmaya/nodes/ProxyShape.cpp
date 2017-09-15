@@ -34,6 +34,7 @@
 #include "AL/usdmaya/nodes/Layer.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
+#include "AL/usdmaya/nodes/proxy/PrimFilter.h"
 
 #include "maya/MFileIO.h"
 #include "maya/MFnPluginData.h"
@@ -521,6 +522,7 @@ MStatus ProxyShape::initialise()
 
   return MS::kSuccess;
 }
+
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onEditTargetChanged(UsdNotice::StageEditTargetChanged const& notice, UsdStageWeakPtr const& sender)
 {
@@ -558,59 +560,56 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& previousPri
 
   // find the new set of prims
   std::vector<UsdPrim> newPrimSet = huntForNativeNodesUnderPrim(dag_path, primPath, translatorManufacture());
-  std::vector<UsdPrim> updatablePrimSet;
-  std::vector<UsdPrim> transformsToCreate;
 
-  SdfPathVector removedPrimSet;
-  filterPrims(previousPrims, newPrimSet, transformsToCreate, updatablePrimSet, removedPrimSet);
+  proxy::PrimFilter filter(previousPrims, newPrimSet, this);
   m_variantSwitchedPrims.clear();
 
   if(TfDebug::IsEnabled(ALUSDMAYA_TRANSLATORS)){
     std::cout << "new prims" << std::endl;
-    for(auto it : newPrimSet)
+    for(auto it : filter.newPrimSet())
     {
       std::cout << it.GetPath().GetText() << std::endl;
     }
     std::cout << "new transforms" << std::endl;
-    for(auto it : transformsToCreate)
+    for(auto it : filter.transformsToCreate())
     {
       std::cout << it.GetPath().GetText() << std::endl;
     }
     std::cout << "updateable prims" << std::endl;
-    for(auto it : updatablePrimSet)
+    for(auto it : filter.updatablePrimSet())
     {
       std::cout << it.GetPath().GetText() << std::endl;
     }
     std::cout << "removed prims" << std::endl;
-    for(auto it : removedPrimSet)
+    for(auto it : filter.removedPrimSet())
     {
       std::cout << it.GetText() << std::endl;
     }
   }
 
   cmds::ProxyShapePostLoadProcess::MObjectToPrim objsToCreate;
-  if(!transformsToCreate.empty())
-    cmds::ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(this, transformsToCreate, dag_path, objsToCreate);
+  if(!filter.transformsToCreate().empty())
+    cmds::ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(this, filter.transformsToCreate(), dag_path, objsToCreate);
 
-  if(!newPrimSet.empty())
-    cmds::ProxyShapePostLoadProcess::createSchemaPrims(this, newPrimSet);
+  if(!filter.newPrimSet().empty())
+    cmds::ProxyShapePostLoadProcess::createSchemaPrims(this, filter.newPrimSet());
 
-  if(!updatablePrimSet.empty())
-    cmds::ProxyShapePostLoadProcess::updateSchemaPrims(this, updatablePrimSet);
+  if(!filter.updatablePrimSet().empty())
+    cmds::ProxyShapePostLoadProcess::updateSchemaPrims(this, filter.updatablePrimSet());
 
-  context()->removeEntries(removedPrimSet);
+  context()->removeEntries(filter.removedPrimSet());
 
   cleanupTransformRefs();
 
   context()->updatePrimTypes();
 
   // now perform any post-creation fix up
-  if(!newPrimSet.empty())
-    cmds::ProxyShapePostLoadProcess::connectSchemaPrims(this, newPrimSet);
+  if(!filter.newPrimSet().empty())
+    cmds::ProxyShapePostLoadProcess::connectSchemaPrims(this, filter.newPrimSet());
 
   //cmds::ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(this, primsToSwitch, dag_path, objsToCreate);
-  if(!updatablePrimSet.empty())
-    cmds::ProxyShapePostLoadProcess::connectSchemaPrims(this, updatablePrimSet);
+  if(!filter.updatablePrimSet().empty())
+    cmds::ProxyShapePostLoadProcess::connectSchemaPrims(this, filter.updatablePrimSet());
 
 
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::onPrimResync end:\n%s\n", context()->serialise().asChar());
@@ -619,85 +618,6 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& previousPri
 
   validateTransforms();
   constructGLImagingEngine();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::filterPrims(
-    const SdfPathVector& previousPrims,
-    std::vector<UsdPrim>& newPrimSet,
-    std::vector<UsdPrim>& transformsToCreate,
-    std::vector<UsdPrim>& updatablePrimSet,
-    SdfPathVector& removedPrimSet)
-{
-  // copy over original prims
-  removedPrimSet.assign(previousPrims.begin(), previousPrims.end());
-
-  // to see if no prims are found
-  TfToken nullToken;
-
-  MObjectToPrim objsToCreate;
-  fileio::SchemaPrimsUtils schemaPrimUtils(translatorManufacture());
-  auto manufacture = translatorManufacture();
-  for(auto it = newPrimSet.begin(); it != newPrimSet.end(); )
-  {
-    UsdPrim prim = *it;
-    auto lastIt = it;
-    ++it;
-
-    SdfPath path = prim.GetPath();
-
-    // check previous prim type (if it exists at all?)
-    TfToken type = context()->getTypeForPath(path);
-    TfToken newType = prim.GetTypeName();
-    fileio::translators::TranslatorRefPtr translator = manufacture.get(newType);
-
-    if(nullToken == type)
-    {
-      // all good, prim will remain in the new set (we have no entry for it)
-      if(translator->needsTransformParent())
-      {
-        transformsToCreate.push_back(prim);
-      }
-    }
-    else
-    {
-      // if the type remains the same, and the type supports update
-      if(translator->supportsUpdate())
-      {
-        if(type == prim.GetTypeName())
-        {
-          // add to updatable prim list
-          updatablePrimSet.push_back(prim);
-
-          // locate the path and delete from the removed set (we do not want to delete this prim!
-          auto iter = std::lower_bound(removedPrimSet.begin(), removedPrimSet.end(), path, [](const SdfPath& a, const SdfPath& b){ return b < a; } );
-          if(iter != removedPrimSet.end() && *iter == path)
-          {
-            removedPrimSet.erase(iter);
-            it = newPrimSet.erase(lastIt);
-          }
-        }
-      }
-      else
-      {
-        // should always be the case?
-        if(translator)
-        {
-          // if we need a transform, make a note of it now
-          if(translator->needsTransformParent())
-          {
-            transformsToCreate.push_back(prim);
-          }
-        }
-        else
-        {
-          // we should be able to delete this prim from the set??
-          // We shouldn't really get here however!
-          it = newPrimSet.erase(lastIt);
-        }
-      }
-    }
-  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -725,7 +645,6 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     strstr << "Breakdown for Variant Switch:\n";
     maya::Profiler::printReport(strstr);
   }
-
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1344,112 +1263,11 @@ void ProxyShape::unloadMayaReferences()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::updateDrivenPrimPaths(uint32_t drivenIndex, std::vector<SdfPath>& drivenPaths,
-                                       std::vector<UsdPrim>& drivenPrims, const DrivenTransforms& drivenTransforms)
-{
-  uint32_t cnt = drivenTransforms.m_drivenPrimPaths.size();
-  if (drivenPaths.size() < cnt)
-  {
-    drivenPaths.resize(cnt);
-    drivenPrims.resize(cnt);
-  }
-  for (uint32_t idx = 0; idx < cnt; ++idx)
-  {
-    drivenPaths[idx] = SdfPath(drivenTransforms.m_drivenPrimPaths[idx]);
-    drivenPrims[idx] = m_stage->GetPrimAtPath(drivenPaths[idx]);
-    if (!drivenPrims[idx].IsValid())
-    {
-      MString warningMsg;
-      warningMsg.format("Driven Prim [^1s] at Host [^2s] is not valid.", MString("") + idx, MString("") + drivenIndex);
-      MGlobal::displayWarning(warningMsg);
-    }
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::updateDrivenTransforms(std::vector<UsdPrim>& drivenPrims,
-                                        const DrivenTransforms& drivenTransforms,
-                                        const MTime& currentTime)
-{
-  for (uint32_t i = 0, cnt = drivenTransforms.m_dirtyMatrices.size(); i < cnt; ++i)
-  {
-    int32_t idx = drivenTransforms.m_dirtyMatrices[i];
-    if (idx >= drivenPrims.size())
-    {
-      continue;
-    }
-    UsdPrim& usdPrim = drivenPrims[idx];
-    if (!usdPrim.IsValid())
-    {
-      continue;
-    }
-    UsdGeomXform xform(usdPrim);
-    bool resetsXformStack = false;
-    std::vector<UsdGeomXformOp> xformops = xform.GetOrderedXformOps(&resetsXformStack);
-    bool pushed = false;
-    for (auto& it : xformops)
-    {
-      if (it.GetOpType() == UsdGeomXformOp::TypeTransform)
-      {
-        TransformationMatrix::pushMatrix(drivenTransforms.m_drivenMatrix[idx], it, currentTime.as(MTime::uiUnit()));
-        pushed = true;
-        break;
-      }
-    }
-    if (!pushed)
-    {
-      UsdGeomXformOp xformop = xform.AddTransformOp();
-      TransformationMatrix::pushMatrix(drivenTransforms.m_drivenMatrix[idx], xformop, currentTime.as(MTime::uiUnit()));
-    }
-    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::updateDrivenTransforms %d %d %d %d  %d %d %d %d  %d %d %d %d  %d %d %d %d\n",
-      drivenTransforms.m_drivenMatrix[idx][0][0],
-      drivenTransforms.m_drivenMatrix[idx][0][1],
-      drivenTransforms.m_drivenMatrix[idx][0][2],
-      drivenTransforms.m_drivenMatrix[idx][0][3],
-      drivenTransforms.m_drivenMatrix[idx][1][0],
-      drivenTransforms.m_drivenMatrix[idx][1][1],
-      drivenTransforms.m_drivenMatrix[idx][1][2],
-      drivenTransforms.m_drivenMatrix[idx][1][3],
-      drivenTransforms.m_drivenMatrix[idx][2][0],
-      drivenTransforms.m_drivenMatrix[idx][2][1],
-      drivenTransforms.m_drivenMatrix[idx][2][2],
-      drivenTransforms.m_drivenMatrix[idx][2][3],
-      drivenTransforms.m_drivenMatrix[idx][3][0],
-      drivenTransforms.m_drivenMatrix[idx][3][1],
-      drivenTransforms.m_drivenMatrix[idx][3][2],
-      drivenTransforms.m_drivenMatrix[idx][3][3]);
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::updateDrivenVisibility(std::vector<UsdPrim>& drivenPrims,
-                                        const DrivenTransforms& drivenTransforms,
-                                        const MTime& currentTime)
-{
-  for (uint32_t i = 0, cnt = drivenTransforms.m_dirtyVisibilities.size(); i < cnt; ++i)
-  {
-    int32_t idx = drivenTransforms.m_dirtyVisibilities[i];
-    if (idx >= drivenPrims.size())
-    {
-      continue;
-    }
-    UsdPrim& usdPrim = drivenPrims[idx];
-    if (!usdPrim)
-    {
-      continue;
-    }
-    UsdGeomXform xform(usdPrim);
-    UsdAttribute attr = xform.GetVisibilityAttr();
-    attr.Set(drivenTransforms.m_drivenVisibility[idx] ? UsdGeomTokens->inherited : UsdGeomTokens->invisible,
-            currentTime.as(MTime::uiUnit()));
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShape::computeDrivenAttributes(const MPlug& plug, MDataBlock& dataBlock, const MTime& currentTime)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::computeDrivenAttributes\n");
   m_drivenTransformsDirty = false;
+
   MArrayDataHandle drvTransArray = dataBlock.inputArrayValue(m_inDrivenTransformsData);
   uint32_t elemCnt = drvTransArray.elementCount();
   for (uint32_t elemIdx = 0; elemIdx < elemCnt; ++elemIdx)
@@ -1459,28 +1277,16 @@ MStatus ProxyShape::computeDrivenAttributes(const MPlug& plug, MDataBlock& dataB
     DrivenTransformsData* dtData = static_cast<DrivenTransformsData*>(dtHandle.asPluginData());
     if (!dtData)
       continue;
-    DrivenTransforms& drivenTransforms = dtData->m_drivenTransforms;
-    if (elemIdx >= m_drivenPaths.size())
-    {
-      m_drivenPaths.resize(elemIdx + 1);
-      m_drivenPrims.resize(elemIdx + 1);
-    }
-    std::vector<SdfPath>& drivenPaths = m_drivenPaths[elemIdx];
-    std::vector<UsdPrim>& drivenPrims = m_drivenPrims[elemIdx];
 
-    if (!drivenTransforms.m_drivenPrimPaths.empty())
+    proxy::DrivenTransforms& drivenTransforms = dtData->m_drivenTransforms;
+
+    if (!drivenTransforms.drivenPrimPaths().empty())
     {
-      updateDrivenPrimPaths(elemIdx, drivenPaths, drivenPrims, drivenTransforms);
-    }
-    if (!drivenTransforms.m_dirtyMatrices.empty())
-    {
-      updateDrivenTransforms(drivenPrims, drivenTransforms, currentTime);
-      drivenTransforms.m_dirtyMatrices.clear();
-    }
-    if (!drivenTransforms.m_dirtyVisibilities.empty())
-    {
-      updateDrivenVisibility(drivenPrims, drivenTransforms, currentTime);
-      drivenTransforms.m_dirtyVisibilities.clear();
+      if(!drivenTransforms.update(m_stage, currentTime))
+      {
+        MString command("failed to update driven prims on block: ");
+        MGlobal::displayError(command + elemIdx);
+      }
     }
   }
   return dataBlock.setClean(plug);

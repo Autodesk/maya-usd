@@ -99,13 +99,16 @@ TEST(HostDrivenTransforms, basicDrivenTransforms)
       UsdGeomXform xform(prim);
       bool resetsXformStack = false;
       std::vector<UsdGeomXformOp> xformops = xform.GetOrderedXformOps(&resetsXformStack);
-      EXPECT_TRUE(xformops.size() == 1);
-      UsdGeomXformOp xop = xformops[0];
-      GfMatrix4d matrix = xop.GetOpTransform(0);
-      GfVec3d translate = matrix.ExtractTranslation();
-      EXPECT_DOUBLE_EQ(translate[0], 1.0);
-      EXPECT_DOUBLE_EQ(translate[1], 2.0);
-      EXPECT_DOUBLE_EQ(translate[2], 3.0);
+      EXPECT_EQ(1, xformops.size());
+      if(!xformops.empty())
+      {
+        UsdGeomXformOp xop = xformops[0];
+        GfMatrix4d matrix = xop.GetOpTransform(0);
+        GfVec3d translate = matrix.ExtractTranslation();
+        EXPECT_DOUBLE_EQ(translate[0], 1.0);
+        EXPECT_DOUBLE_EQ(translate[1], 2.0);
+        EXPECT_DOUBLE_EQ(translate[2], 3.0);
+      }
     }
   }
 }

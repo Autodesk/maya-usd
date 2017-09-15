@@ -131,6 +131,8 @@ list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/ProxyShapeUI.cpp
         AL/usdmaya/nodes/Transform.cpp
         AL/usdmaya/nodes/TransformationMatrix.cpp
+        AL/usdmaya/nodes/proxy/DrivenTransforms.cpp
+        AL/usdmaya/nodes/proxy/PrimFilter.cpp
 )
 
 list(APPEND AL_usdmaya_public_headers

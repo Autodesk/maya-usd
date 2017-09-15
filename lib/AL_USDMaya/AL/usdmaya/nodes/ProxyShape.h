@@ -20,6 +20,7 @@
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
+#include "AL/usdmaya/nodes/proxy/PrimFilter.h"
 
 #include "maya/MPxSurfaceShape.h"
 #include "maya/MEventMessage.h"
@@ -179,6 +180,7 @@ private:
 class ProxyShape
   : public MPxSurfaceShape,
     public maya::NodeHelper,
+    public proxy::PrimFilterInterface,
     public TfWeakBase
 {
   friend class SelectionUndoHelper;
@@ -768,19 +770,27 @@ private:
   void onEditTargetChanged(UsdNotice::StageEditTargetChanged const& notice, UsdStageWeakPtr const& sender);
   static void onAttributeChanged(MNodeMessage::AttributeMessage, MPlug&, MPlug&, void*);
   void validateTransforms();
-  void updateDrivenPrimPaths(uint32_t drivenIndex, std::vector<SdfPath>& drivenPaths,
-                             std::vector<UsdPrim>& drivenPrims, const DrivenTransforms& drivenTransforms);
-  void updateDrivenTransforms(std::vector<UsdPrim>& drivenPrims, const DrivenTransforms& drivenTransforms, const MTime&);
-  void updateDrivenVisibility(std::vector<UsdPrim>& drivenPrims, const DrivenTransforms& drivenTransforms, const MTime&);
 
+
+  TfToken getTypeForPath(const SdfPath& path) override
+    { return m_context->getTypeForPath(path); }
+
+  bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent) override
+    {
+      auto translator = m_translatorManufacture.get(type);
+      if(translator)
+      {
+        supportsUpdate = translator->supportsUpdate();
+        requiresParent = translator->needsTransformParent();
+      }
+      return translator != 0;
+    }
 
 private:
   SelectionList m_selectionList;
   SdfPathVector m_selectedPaths;
   std::vector<SdfPath> m_paths;
   std::vector<UsdPrim> m_prims;
-  std::vector<std::vector<SdfPath>> m_drivenPaths;
-  std::vector<std::vector<UsdPrim>> m_drivenPrims;
   TfNotice::Key m_objectsChangedNoticeKey;
   TfNotice::Key m_variantChangedNoticeKey;
   TfNotice::Key m_editTargetChanged;

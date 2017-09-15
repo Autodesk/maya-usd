@@ -27,6 +27,8 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/nodes/test_ProxyShape.cpp
         AL/usdmaya/nodes/test_TransformMatrix.cpp
         AL/usdmaya/nodes/test_TranslatorContext.cpp
+        AL/usdmaya/nodes/proxy/test_DrivenTransforms.cpp
+        AL/usdmaya/nodes/proxy/test_PrimFilter.cpp
         test_maya_MenuBuilder.cpp
         test_maya_NodeHelper.cpp
         test_translators_AnimationTranslator.cpp

@@ -22,8 +22,9 @@
 #include "maya/MGlobal.h"
 #include "maya/MFnUnitAttribute.h"
 #include "maya/MFnTypedAttribute.h"
+#include "maya/MEulerRotation.h"
+#include "maya/MMatrix.h"
 #include "maya/MFnPluginData.h"
-#include "maya/MPxTransformationMatrix.h"
 
 #include <algorithm>
 
@@ -89,28 +90,13 @@ MStatus HostDrivenTransforms::initialise()
   {
     setNodeType(kTypeName);
     addFrame("Driven Transforms");
-    m_outDrivenTransformsData = addDataAttr("outDrivenTransformsData", "odrvtd",
-                                            DrivenTransformsData::kTypeId,
-                                            kReadable | kConnectable);
-
-    m_drivenPrimPaths = addStringAttr("drivenPrimPaths", "drvpp",
-                                      kInternal | kWritable | kArray | kStorable);
-
-    m_drivenRotate = addAngle3Attr("drivenRotate", "drvr", 0, 0, 0,
-                                   kWritable | kArray | kConnectable | kKeyable);
-
-    m_drivenRotateOrder = addEnumAttr("drivenRotateOrder", "drvro",
-                                      kWritable | kArray | kConnectable | kKeyable,
-                                      rotate_order_strings, rotate_order_values);
-
-    m_drivenScale = addFloat3Attr("drivenScale", "drvs", 1.0f, 1.0f, 1.0f,
-                                  kWritable | kArray | kConnectable | kKeyable);
-
-    m_drivenTranslate = addDistance3Attr("drivenTranslate", "drvt", 0, 0, 0,
-                                         kWritable | kArray | kConnectable | kKeyable);
-
-    m_drivenVisibility = addBoolAttr("drivenVisibility", "drvv", true,
-                                     kWritable | kArray | kConnectable | kKeyable);
+    m_outDrivenTransformsData = addDataAttr("outDrivenTransformsData", "odrvtd", DrivenTransformsData::kTypeId, kReadable | kConnectable);
+    m_drivenPrimPaths = addStringAttr("drivenPrimPaths", "drvpp", kInternal | kWritable | kArray | kStorable);
+    m_drivenRotate = addAngle3Attr("drivenRotate", "drvr", 0, 0, 0, kWritable | kArray | kConnectable | kKeyable);
+    m_drivenRotateOrder = addEnumAttr("drivenRotateOrder", "drvro", kWritable | kArray | kConnectable | kKeyable, rotate_order_strings, rotate_order_values);
+    m_drivenScale = addFloat3Attr("drivenScale", "drvs", 1.0f, 1.0f, 1.0f, kWritable | kArray | kConnectable | kKeyable);
+    m_drivenTranslate = addDistance3Attr("drivenTranslate", "drvt", 0, 0, 0, kWritable | kArray | kConnectable | kKeyable);
+    m_drivenVisibility = addBoolAttr("drivenVisibility", "drvv", true, kWritable | kArray | kConnectable | kKeyable);
 
     AL_MAYA_CHECK_ERROR(attributeAffects(m_drivenPrimPaths, m_outDrivenTransformsData), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_drivenRotate, m_outDrivenTransformsData), errorString);
@@ -129,136 +115,166 @@ MStatus HostDrivenTransforms::initialise()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void HostDrivenTransforms::updatePrimPaths(DrivenTransforms& drivenTransforms)
+void HostDrivenTransforms::resizeDrivenTransforms(proxy::DrivenTransforms& drivenTransforms)
 {
   if (drivenTransforms.transformCount() < m_primPaths.size())
   {
-    drivenTransforms.initTransform(m_primPaths.size() - 1);
+    drivenTransforms.resizeDrivenTransforms(m_primPaths.size());
   }
-  drivenTransforms.m_drivenPrimPaths = m_primPaths;
+  drivenTransforms.setDrivenPrimPaths(m_primPaths);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void HostDrivenTransforms::updateMatrix(MDataBlock& dataBlock, DrivenTransforms& drivenTransforms)
+void HostDrivenTransforms::updateMatrices(MDataBlock& dataBlock, proxy::DrivenTransforms& drivenTransforms)
 {
   MIntArray rotIndices;
   MIntArray rotOrdIndices;
   MIntArray scaleIndices;
   MIntArray translateIndices;
   MIntArray primPathsIndices;
-  uint32_t rotCnt = drivenRotatePlug().getExistingArrayAttributeIndices(rotIndices);
-  uint32_t rotOrdCnt = drivenRotateOrderPlug().getExistingArrayAttributeIndices(rotOrdIndices);
-  uint32_t scaleCnt = drivenScalePlug().getExistingArrayAttributeIndices(scaleIndices);
-  uint32_t translateCnt = drivenTranslatePlug().getExistingArrayAttributeIndices(translateIndices);
-  uint32_t primCnt = drivenPrimPathsPlug().getExistingArrayAttributeIndices(primPathsIndices);
+
+  const uint32_t rotCnt = drivenRotatePlug().getExistingArrayAttributeIndices(rotIndices);
+  const uint32_t rotOrdCnt = drivenRotateOrderPlug().getExistingArrayAttributeIndices(rotOrdIndices);
+  const uint32_t scaleCnt = drivenScalePlug().getExistingArrayAttributeIndices(scaleIndices);
+  const uint32_t translateCnt = drivenTranslatePlug().getExistingArrayAttributeIndices(translateIndices);
+  const uint32_t primCnt = drivenPrimPathsPlug().getExistingArrayAttributeIndices(primPathsIndices);
+
+  // construct the indices of the items that have changed
   std::vector<int32_t> transformIndices;
-  transformIndices.reserve(primCnt);
-  for (uint32_t i = 0; i < rotCnt; ++i)
+  transformIndices.reserve(primCnt << 2);
+  if(rotCnt)
   {
-    transformIndices.emplace_back(rotIndices[i]);
+    int32_t* const ptr = &rotIndices[0];
+    transformIndices.insert(transformIndices.end(), ptr, ptr + rotCnt);
   }
-  for (uint32_t i = 0; i < rotOrdCnt; ++i)
+  if(rotOrdCnt)
   {
-    transformIndices.emplace_back(rotOrdIndices[i]);
+    int32_t* const ptr = &rotOrdIndices[0];
+    transformIndices.insert(transformIndices.end(), ptr, ptr + rotOrdCnt);
   }
-  for (uint32_t i = 0; i < scaleCnt; ++i)
+  if(scaleCnt)
   {
-    transformIndices.emplace_back(scaleIndices[i]);
+    int32_t* const ptr = &scaleIndices[0];
+    transformIndices.insert(transformIndices.end(), ptr, ptr + scaleCnt);
   }
-  for (uint32_t i = 0; i < translateCnt; ++i)
+  if(translateCnt)
   {
-    transformIndices.emplace_back(translateIndices[i]);
+    int32_t* const ptr = &translateIndices[0];
+    transformIndices.insert(transformIndices.end(), ptr, ptr + translateCnt);
   }
-  if (transformIndices.empty())
-    return;
 
-  std::sort(transformIndices.begin(), transformIndices.end());
-  int32_t maxIndex = transformIndices[transformIndices.size() - 1];
-  if (drivenTransforms.transformCount() <= maxIndex)
+  if (!transformIndices.empty())
   {
-    drivenTransforms.initTransform(maxIndex);
-  }
-  auto last = std::unique(transformIndices.begin(), transformIndices.end());
-  drivenTransforms.m_dirtyMatrices.clear();
-  drivenTransforms.m_dirtyMatrices.reserve(std::distance(transformIndices.begin(), last));
+    // sort indices
+    std::sort(transformIndices.begin(), transformIndices.end());
 
-  MArrayDataHandle rotateArray = dataBlock.inputArrayValue(m_drivenRotate);
-  MArrayDataHandle rotateOrderArray = dataBlock.inputArrayValue(m_drivenRotateOrder);
-  MArrayDataHandle scaleArray = dataBlock.inputArrayValue(m_drivenScale);
-  MArrayDataHandle translateArray = dataBlock.inputArrayValue(m_drivenTranslate);
-  for (auto iter = transformIndices.begin(); iter != last; ++iter)
-  {
-    int32_t idx = *iter;
-    MVector rotVal(0.0, 0.0, 0.0);
-    int32_t rotOrdVal = 0;
-    MVector sclVal(1.0, 1.0, 1.0);
-    MVector trsVal(0.0, 0.0, 0.0);
-    if (rotateArray.jumpToElement(idx))
-    {
-      rotVal = rotateArray.inputValue().asVector();
-    }
-    if (rotateOrderArray.jumpToElement(idx))
-    {
-      rotOrdVal = rotateOrderArray.inputValue().asInt();
-    }
-    if (scaleArray.jumpToElement(idx))
-    {
-      sclVal = scaleArray.inputValue().asFloatVector();
-    }
-    if (translateArray.jumpToElement(idx))
-    {
-      trsVal = translateArray.inputValue().asVector();
-    }
-    MEulerRotation eulRot(rotVal, (MEulerRotation::RotationOrder) rotOrdVal);
-    MPxTransformationMatrix transformMatrix;
-    transformMatrix.scaleTo(sclVal);
-    transformMatrix.setRotateOrientation(eulRot, MSpace::kTransform, false);
-    transformMatrix.translateTo(trsVal);
+    // prune duplicates
+    auto last = std::unique(transformIndices.begin(), transformIndices.end());
 
-    drivenTransforms.m_drivenMatrix[idx] = transformMatrix.asMatrix();
-    drivenTransforms.m_dirtyMatrices.emplace_back(idx);
-    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("HostDrivenTransforms::updateMatrix %d %d %d %d  %d %d %d %d  %d %d %d %d  %d %d %d %d\n",
-      drivenTransforms.m_drivenMatrix[idx][0][0],
-      drivenTransforms.m_drivenMatrix[idx][0][1],
-      drivenTransforms.m_drivenMatrix[idx][0][2],
-      drivenTransforms.m_drivenMatrix[idx][0][3],
-      drivenTransforms.m_drivenMatrix[idx][1][0],
-      drivenTransforms.m_drivenMatrix[idx][1][1],
-      drivenTransforms.m_drivenMatrix[idx][1][2],
-      drivenTransforms.m_drivenMatrix[idx][1][3],
-      drivenTransforms.m_drivenMatrix[idx][2][0],
-      drivenTransforms.m_drivenMatrix[idx][2][1],
-      drivenTransforms.m_drivenMatrix[idx][2][2],
-      drivenTransforms.m_drivenMatrix[idx][2][3],
-      drivenTransforms.m_drivenMatrix[idx][3][0],
-      drivenTransforms.m_drivenMatrix[idx][3][1],
-      drivenTransforms.m_drivenMatrix[idx][3][2],
-      drivenTransforms.m_drivenMatrix[idx][3][3]);
+    // determine highest index
+    const int32_t maxIndex = *(last - 1);
+    if (drivenTransforms.transformCount() <= maxIndex)
+    {
+      drivenTransforms.resizeDrivenTransforms(maxIndex + 1);
+    }
+
+    MArrayDataHandle rotateArray = dataBlock.inputArrayValue(m_drivenRotate);
+    MArrayDataHandle rotateOrderArray = dataBlock.inputArrayValue(m_drivenRotateOrder);
+    MArrayDataHandle scaleArray = dataBlock.inputArrayValue(m_drivenScale);
+    MArrayDataHandle translateArray = dataBlock.inputArrayValue(m_drivenTranslate);
+
+    for (auto iter = transformIndices.begin(); iter != last; ++iter)
+    {
+      const int32_t primIndex = *iter;
+      MMatrix matrix = MMatrix::identity;
+
+      // if we have a rotation value, insert the rotation into the matrix
+      if (rotateArray.jumpToElement(primIndex))
+      {
+        // check for potential rotation order change
+        int32_t rotOrdVal = 0;
+        if (rotateOrderArray.jumpToElement(primIndex))
+        {
+          rotOrdVal = rotateOrderArray.inputValue().asInt();
+        }
+        MVector rotVal = rotateArray.inputValue().asVector();
+        MEulerRotation eulRot(rotVal, (MEulerRotation::RotationOrder) rotOrdVal);
+        matrix = eulRot.asMatrix();
+      }
+
+      // if we have a scale value, scale the x/y/z axes of the matrix
+      if (scaleArray.jumpToElement(primIndex))
+      {
+        MVector sclVal = scaleArray.inputValue().asFloatVector();
+        double* const x = matrix[0];
+        double* const y = matrix[1];
+        double* const z = matrix[2];
+        x[0] *= sclVal.x;
+        x[1] *= sclVal.x;
+        x[2] *= sclVal.x;
+        y[0] *= sclVal.y;
+        y[1] *= sclVal.y;
+        y[2] *= sclVal.y;
+        z[0] *= sclVal.z;
+        z[1] *= sclVal.z;
+        z[2] *= sclVal.z;
+      }
+
+      // if we have a translation, assign the translate value here
+      if (translateArray.jumpToElement(primIndex))
+      {
+        double* const w = matrix[3];
+        MVector trsVal = translateArray.inputValue().asVector();
+        w[0] = trsVal.x;
+        w[1] = trsVal.y;
+        w[2] = trsVal.z;
+      }
+
+      // assign the matrix
+      drivenTransforms.dirtyMatrix(primIndex, matrix);
+
+      TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("HostDrivenTransforms::updateMatrix %d %d %d %d  %d %d %d %d  %d %d %d %d  %d %d %d %d\n",
+          drivenTransforms.drivenMatrices()[primIndex][0][0],
+          drivenTransforms.drivenMatrices()[primIndex][0][1],
+          drivenTransforms.drivenMatrices()[primIndex][0][2],
+          drivenTransforms.drivenMatrices()[primIndex][0][3],
+          drivenTransforms.drivenMatrices()[primIndex][1][0],
+          drivenTransforms.drivenMatrices()[primIndex][1][1],
+          drivenTransforms.drivenMatrices()[primIndex][1][2],
+          drivenTransforms.drivenMatrices()[primIndex][1][3],
+          drivenTransforms.drivenMatrices()[primIndex][2][0],
+          drivenTransforms.drivenMatrices()[primIndex][2][1],
+          drivenTransforms.drivenMatrices()[primIndex][2][2],
+          drivenTransforms.drivenMatrices()[primIndex][2][3],
+          drivenTransforms.drivenMatrices()[primIndex][3][0],
+          drivenTransforms.drivenMatrices()[primIndex][3][1],
+          drivenTransforms.drivenMatrices()[primIndex][3][2],
+          drivenTransforms.drivenMatrices()[primIndex][3][3]);
+    }
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void HostDrivenTransforms::updateVisibility(MDataBlock& dataBlock, DrivenTransforms& drivenTransforms)
+void HostDrivenTransforms::updateVisibility(MDataBlock& dataBlock, proxy::DrivenTransforms& drivenTransforms)
 {
   MIntArray visibilityIndices;
-  uint32_t visibilityCnt = drivenVisibilityPlug().getExistingArrayAttributeIndices(visibilityIndices);
-  if (visibilityCnt == 0)
-    return;
-  int32_t maxIndex = visibilityIndices[visibilityCnt - 1];
-  if (drivenTransforms.transformCount() <= maxIndex)
+  const uint32_t visibilityCnt = drivenVisibilityPlug().getExistingArrayAttributeIndices(visibilityIndices);
+  if (visibilityCnt)
   {
-    drivenTransforms.initTransform(maxIndex);
-  }
-  drivenTransforms.m_drivenVisibility.clear();
-  drivenTransforms.m_drivenVisibility.reserve(visibilityCnt);
-  MArrayDataHandle visibilityArray = dataBlock.inputArrayValue(m_drivenVisibility);
-  for (uint32_t i = 0; i < visibilityCnt; ++i)
-  {
-    int32_t idx = visibilityIndices[i];
-    if (visibilityArray.jumpToElement(idx))
+    const int32_t maxIndex = visibilityIndices[visibilityCnt - 1];
+    if (drivenTransforms.transformCount() <= maxIndex)
     {
-      drivenTransforms.m_drivenVisibility[idx] = visibilityArray.inputValue().asBool();
-      drivenTransforms.m_dirtyVisibilities.emplace_back(idx);
+      drivenTransforms.resizeDrivenTransforms(maxIndex + 1);
+    }
+
+    MArrayDataHandle visibilityArray = dataBlock.inputArrayValue(m_drivenVisibility);
+    for (uint32_t i = 0; i < visibilityCnt; ++i)
+    {
+      const int32_t primIndex = visibilityIndices[i];
+      if (visibilityArray.jumpToElement(primIndex))
+      {
+        drivenTransforms.dirtyVisibility(primIndex, visibilityArray.inputValue().asBool());
+      }
     }
   }
 }
@@ -275,9 +291,9 @@ MStatus HostDrivenTransforms::compute(const MPlug& plug, MDataBlock& dataBlock)
     {
       return MS::kFailure;
     }
-    DrivenTransforms& drivenTransforms = drvTransData->m_drivenTransforms;
-    updatePrimPaths(drivenTransforms);
-    updateMatrix(dataBlock, drivenTransforms);
+    proxy::DrivenTransforms& drivenTransforms = drvTransData->m_drivenTransforms;
+    resizeDrivenTransforms(drivenTransforms);
+    updateMatrices(dataBlock, drivenTransforms);
     updateVisibility(dataBlock, drivenTransforms);
     MStatus status = outputDataValue(dataBlock, m_outDrivenTransformsData, drvTransData);
     if (!status)
@@ -295,12 +311,12 @@ bool HostDrivenTransforms::getInternalValueInContext(const MPlug& plug, MDataHan
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("HostDrivenTransforms::getInternalValueInContext %s\n", plug.name().asChar());
   if (plug.array() == m_drivenPrimPaths)
   {
-    uint32_t index = plug.logicalIndex();
+    const uint32_t index = plug.logicalIndex();
     if (m_primPaths.size() <= index)
     {
       m_primPaths.resize(index + 1);
     }
-    dataHandle.set(MString(m_primPaths[index].c_str(), m_primPaths[index].length()));
+    dataHandle.set(MString(m_primPaths[index].GetText()));
   }
   return false;
 }
@@ -311,16 +327,17 @@ bool HostDrivenTransforms::setInternalValueInContext(const MPlug& plug, const MD
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("HostDrivenTransforms::setInternalValueInContext %s\n", plug.name().asChar());
   if (plug.array() == m_drivenPrimPaths)
   {
-    uint32_t index = plug.logicalIndex();
+    const uint32_t index = plug.logicalIndex();
     if (m_primPaths.size() <= index)
     {
       m_primPaths.resize(index + 1);
     }
-    m_primPaths[index] = convert(dataHandle.asString());
+    m_primPaths[index] = SdfPath(dataHandle.asString().asChar());
   }
   return false;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 } // nodes
 } // usdmaya
 } // AL
