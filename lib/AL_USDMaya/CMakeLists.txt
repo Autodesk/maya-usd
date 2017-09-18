@@ -121,6 +121,10 @@ list(APPEND AL_usdmaya_nodes_headers
         AL/usdmaya/nodes/Transform.h
         AL/usdmaya/nodes/TransformationMatrix.h
 )
+list(APPEND AL_usdmaya_nodes_proxy_headers
+        AL/usdmaya/nodes/proxy/DrivenTransforms.h
+        AL/usdmaya/nodes/proxy/PrimFilter.h
+)
 list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/HostDrivenTransforms.cpp
         AL/usdmaya/nodes/Layer.cpp
@@ -290,6 +294,10 @@ install( FILES
 install( FILES
             ${AL_usdmaya_nodes_headers}
         DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/usdmaya/nodes
+)
+install( FILES
+            ${AL_usdmaya_nodes_proxy_headers}
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/usdmaya/nodes/proxy
 )
 install( FILES
             ${AL_usdmaya_tests_headers}
