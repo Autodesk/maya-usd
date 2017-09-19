@@ -99,6 +99,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   // generate the menu GUI + option boxes
   AL::usdmaya::cmds::constructLayerCommandGuis();
   AL::usdmaya::cmds::constructProxyShapeCommandGuis();
+  AL::usdmaya::cmds::constructDebugCommandGuis();
 
   CHECK_MSTATUS(AL::maya::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
 
