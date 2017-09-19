@@ -350,18 +350,11 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
       for(auto it = hitBatch.begin(), e = hitBatch.end(); it != e; ++it)
       {
         const UsdImagingGLEngine::HitInfo& hit = it->second;
-        std::string pathStr = it->first.GetText();
-
-        // I'm not entirely sure about this, but it would appear that the returned string here has the variant name
-        // tacked onto the end?
-        size_t dot_location = pathStr.find_last_of('.');
-        if(dot_location != std::string::npos)
-        {
-          pathStr = pathStr.substr(0, dot_location);
-        }
+        auto engine = proxyShape->engine();
+        auto path = engine->GetPrimPathFromInstanceIndex(it->first, hit.hitInstanceIndex);
 
         command += " -pp \"";
-        command += pathStr.c_str();
+        command += path.GetText();
         command += "\"";
       }
 
@@ -406,19 +399,11 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     for(auto it = hitBatch.begin(), e = hitBatch.end(); it != e; ++it)
     {
       const UsdImagingGLEngine::HitInfo& hit = it->second;
-      std::string pathStr = it->first.GetText();
-
       ++count;
       worldSpacePoint += hit.worldSpaceHitPoint;
-
-      // I'm not entirely sure about this, but it would appear that the returned string here has the variant name
-      // tacked onto the end?
-      size_t dot_location = pathStr.find_last_of('.');
-      if(dot_location != std::string::npos)
-      {
-        pathStr = pathStr.substr(0, dot_location);
-      }
-      paths.push_back(SdfPath(pathStr));
+      auto engine = proxyShape->engine();
+      auto path = engine->GetPrimPathFromInstanceIndex(it->first, hit.hitInstanceIndex);
+      paths.push_back(path);
     }
 
     worldSpacePoint /= double(count);
