@@ -21,6 +21,7 @@
 #include "AL/usdmaya/Global.h"
 #include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/DrivenTransformsData.h"
+#include "AL/usdmaya/cmds/DebugCommands.h"
 #include "AL/usdmaya/cmds/LayerCommands.h"
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
 #include "AL/usdmaya/cmds/UnloadPrim.h"
@@ -84,6 +85,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeSelect);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePostSelect);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::InternalProxyShapeSelect);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::UsdDebugCommand);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
   AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
@@ -134,6 +136,7 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeResync);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImportPrimPathAsMaya);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePrintRefCountState);
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::UsdDebugCommand);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
   AL_UNREGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);

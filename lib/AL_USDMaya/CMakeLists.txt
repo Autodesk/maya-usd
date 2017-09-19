@@ -50,12 +50,14 @@ list(APPEND AL_usdmaya_source
 )
 
 list(APPEND AL_usdmaya_cmds_headers
+        AL/usdmaya/cmds/DebugCommands.h
         AL/usdmaya/cmds/LayerCommands.h
         AL/usdmaya/cmds/ProxyShapeCommands.h
         AL/usdmaya/cmds/ProxyShapePostLoadProcess.h
         AL/usdmaya/cmds/UnloadPrim.h
 )
 list(APPEND AL_usdmaya_cmds_source
+        AL/usdmaya/cmds/DebugCommands.cpp
         AL/usdmaya/cmds/LayerCommands.cpp
         AL/usdmaya/cmds/ProxyShapeCommands.cpp
         AL/usdmaya/cmds/ProxyShapePostLoadProcess.cpp
