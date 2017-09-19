@@ -27,7 +27,7 @@ namespace usdmaya {
 namespace cmds {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  Given some selected proxy shape node, return the layer names
+/// \brief  A command that allows you to query and modify the current status of the TfDebug symbols.
 /// \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
 class UsdDebugCommand
