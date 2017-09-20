@@ -35,6 +35,7 @@
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
+#include "AL/usdmaya/Version.h"
 
 #include "maya/MFileIO.h"
 #include "maya/MFnPluginData.h"
@@ -134,6 +135,7 @@ MObject ProxyShape::m_specular = MObject::kNullObj;
 MObject ProxyShape::m_emission = MObject::kNullObj;
 MObject ProxyShape::m_shininess = MObject::kNullObj;
 MObject ProxyShape::m_serializedRefCounts = MObject::kNullObj;
+MObject ProxyShape::m_version = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 Layer* ProxyShape::getLayer()
@@ -503,6 +505,11 @@ MStatus ProxyShape::initialise()
     m_shininess = addFloatAttr("shininess", "shi", 5.0f, kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance);
 
     m_serializedRefCounts = addStringAttr("serializedRefCounts", "strcs", kReadable | kWritable | kStorable | kHidden);
+
+    m_version = addStringAttr(
+        "version", "vrs", getVersion().c_str(),
+        kReadable | kStorable | kHidden
+        );
 
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, m_outTime), errorString);

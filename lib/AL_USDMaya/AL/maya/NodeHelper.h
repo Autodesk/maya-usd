@@ -564,6 +564,15 @@ public:
   /// \return the MObject for the attribute
   static MObject addStringAttr(const char* longName, const char* shortName, uint32_t flags, bool forceShow = false);
 
+  /// \brief  add a new string attribute to this node type.
+  /// \param  longName  long name for the attribute
+  /// \param  shortName  short name for the attribute
+  /// \param  defaultValue  default value for the attribute
+  /// \param  flags  a bitfield containing a mask of the AttributeFlags enumeration. Describes if the attribute is an input/output/etc
+  /// \param  forceShow  force attribute to be shown.  Used in case attribute is not writable but needs to be shown i.e. read-only.
+  /// \return the MObject for the attribute
+  static MObject addStringAttr(const char* longName, const char* shortName, const char* defaultValue, uint32_t flags, bool forceShow = false);
+
   /// \brief  add a new file path attribute to this node type.
   /// \param  longName  long name for the attribute
   /// \param  shortName  short name for the attribute

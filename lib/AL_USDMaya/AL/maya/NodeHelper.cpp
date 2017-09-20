@@ -24,6 +24,7 @@
 #include "maya/MFnCompoundAttribute.h"
 #include "maya/MFnEnumAttribute.h"
 #include "maya/MFnDependencyNode.h"
+#include "maya/MFnStringData.h"
 #include "maya/MGlobal.h"
 #include "maya/MMatrix.h"
 #include "maya/MVector.h"
@@ -165,6 +166,12 @@ MObject NodeHelper::addEnumAttr(const char* longName, const char* shortName, uin
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addStringAttr(const char* longName, const char* shortName, uint32_t flags, bool forceShow)
 {
+  return addStringAttr(longName, shortName, "", flags, forceShow);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MObject NodeHelper::addStringAttr(const char* longName, const char* shortName, const char* defaultValue, uint32_t flags, bool forceShow)
+{
   if(m_internal)
   {
     Frame& frame = *m_internal->m_frames.begin();
@@ -176,7 +183,9 @@ MObject NodeHelper::addStringAttr(const char* longName, const char* shortName, u
   }
 
   MFnTypedAttribute fn;
-  MObject attribute = fn.create(longName, shortName, MFnData::kString);
+  MFnStringData stringData;
+  MStatus stat;
+  MObject attribute = fn.create(longName, shortName, MFnData::kString, stringData.create(MString(defaultValue), &stat));
   MStatus status = applyAttributeFlags(fn, flags);
   if(!status)
     throw status;
