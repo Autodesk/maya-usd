@@ -1,3 +1,11 @@
+## v0.23.7 (2017-09-15)
+### Fixed
+* bug where enabling/disabling certain prims could cause an infinite loop.
+
+## v0.23.6 (2017-09-12)
+### Fixed
++ Bug where if the variant selection is called twice before it gets processed
+
 ## v0.23.5
 * Prevent viewport refresh at end of animation export that can cause a VP2 crash.
 
