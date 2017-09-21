@@ -100,9 +100,12 @@ public:
   /// \brief  We support the legacy and VP2 core profile rendering.
   /// \return MHWRender::kOpenGL | MHWRender::kOpenGLCoreProfile
   MHWRender::DrawAPI supportedDrawAPIs() const override
-  {
-    return MHWRender::kOpenGL | MHWRender::kOpenGLCoreProfile;
-  }
+    { return MHWRender::kOpenGL | MHWRender::kOpenGLCoreProfile; }
+
+  /// \brief  ensure this draw override participates in post fx
+  /// \return false
+  bool excludedFromPostEffects() const override
+    { return false; }
 };
 
 //----------------------------------------------------------------------------------------------------------------------
