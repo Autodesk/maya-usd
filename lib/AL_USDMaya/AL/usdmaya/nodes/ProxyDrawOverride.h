@@ -102,10 +102,12 @@ public:
   MHWRender::DrawAPI supportedDrawAPIs() const override
     { return MHWRender::kOpenGL | MHWRender::kOpenGLCoreProfile; }
 
+#if MAYA_API_VERSION >= 201700
   /// \brief  ensure this draw override participates in post fx
   /// \return false
   bool excludedFromPostEffects() const override
     { return false; }
+#endif
 };
 
 //----------------------------------------------------------------------------------------------------------------------

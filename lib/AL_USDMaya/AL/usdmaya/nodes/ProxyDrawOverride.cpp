@@ -62,7 +62,11 @@ MString ProxyDrawOverride::kDrawRegistrantId("pxrUsd");
 
 //----------------------------------------------------------------------------------------------------------------------
 ProxyDrawOverride::ProxyDrawOverride(const MObject& obj)
+#if MAYA_API_VERSION >= 201700
   : MHWRender::MPxDrawOverride(obj, draw, true)
+#else
+  : MHWRender::MPxDrawOverride(obj, draw)
+#endif
 {
   TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::ProxyDrawOverride\n");
 }
