@@ -187,7 +187,7 @@ MStatus LayerGetLayers::doIt(const MArgList& argList)
     AL_MAYA_COMMAND_HELP(args, g_helpText);
 
     nodes::ProxyShape* proxyShape = getShapeNode(args);
-    UsdStageRefPtr stage = proxyShape->getUsdStage();
+    UsdStageRefPtr stage = proxyShape->usdStage();
     MStringArray results;
 
     auto push = [](MStringArray& results, const MString& newLayer)
@@ -385,7 +385,7 @@ MStatus LayerCreateLayer::doIt(const MArgList& argList)
 
     if(m_parentLayerName.length() > 0)
     {
-      UsdStageRefPtr stage = m_shape->getUsdStage();
+      UsdStageRefPtr stage = m_shape->usdStage();
 
       if(!stage)
       {
@@ -414,7 +414,7 @@ MStatus LayerCreateLayer::doIt(const MArgList& argList)
     else
     if(layer == MObject::kNullObj)
     {
-      UsdStageRefPtr stage = m_shape->getUsdStage();
+      UsdStageRefPtr stage = m_shape->usdStage();
       if(!stage)
       {
         MGlobal::displayError("no valid stage found on the proxy shape");
@@ -564,7 +564,7 @@ MStatus LayerCreateSubLayer::doIt(const MArgList& argList)
     if(layer == MObject::kNullObj)
     {
       nodes::ProxyShape* proxyNode = getShapeNode(args);
-      UsdStageRefPtr stage = proxyNode->getUsdStage();
+      UsdStageRefPtr stage = proxyNode->usdStage();
       if(!stage)
       {
         MGlobal::displayError("no valid stage found on the proxy shape");
@@ -884,7 +884,7 @@ MStatus LayerCurrentEditTarget::doIt(const MArgList& argList)
           if(fnDep.typeId() == nodes::ProxyShape::kTypeId)
           {
             nodes::ProxyShape* usdProxy = (nodes::ProxyShape*)fnDep.userNode();
-            stage = usdProxy->getUsdStage();
+            stage = usdProxy->usdStage();
           }
         }
       }

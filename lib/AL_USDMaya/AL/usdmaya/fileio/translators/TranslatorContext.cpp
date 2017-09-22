@@ -33,7 +33,7 @@ TranslatorContext::~TranslatorContext()
 //----------------------------------------------------------------------------------------------------------------------
 UsdStageRefPtr TranslatorContext::getUsdStage() const
 {
-  return m_proxyShape->getUsdStage();
+  return m_proxyShape->usdStage();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -70,7 +70,7 @@ bool TranslatorContext::getTransform(const SdfPath& path, MObjectHandle& object)
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::updatePrimTypes()
 {
-  auto stage = m_proxyShape->getUsdStage();
+  auto stage = m_proxyShape->usdStage();
   for(auto it = m_primMapping.begin(); it != m_primMapping.end(); )
   {
     SdfPath path(it->path());
@@ -387,7 +387,7 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
     }
   }
 
-  auto stage = m_proxyShape->getUsdStage();
+  auto stage = m_proxyShape->usdStage();
 
   // run the preTearDown stage on each prim. We will walk over the prims in the reverse order here (which will guarentee
   // the the itemsToRemove will be ordered such that the child prims will be destroyed before their parents).
@@ -410,7 +410,7 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
 void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries\n");
-  auto stage = m_proxyShape->getUsdStage();
+  auto stage = m_proxyShape->usdStage();
 
   PrimLookups::iterator begin = m_primMapping.begin();
   PrimLookups::iterator end = m_primMapping.end();
@@ -528,7 +528,7 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::unloadPrim\n");
   assert(m_proxyShape);
-  auto stage = m_proxyShape->getUsdStage();
+  auto stage = m_proxyShape->usdStage();
   if(stage)
   {
     MDagModifier modifier;

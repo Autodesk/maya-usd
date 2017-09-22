@@ -1084,7 +1084,6 @@ UsdStageRefPtr ProxyShape::getUsdStage() const
   MPlug plug(thisMObject(), m_outStageData);
   MObject data;
   plug.getValue(data);
-  plug.getValue(data);
   MFnPluginData fnData(data);
   StageData* outData = static_cast<StageData*>(fnData.data());
   if(outData)

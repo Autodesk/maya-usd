@@ -86,7 +86,7 @@ void Layer::init(ProxyShape* shape, SdfLayerRefPtr handle)
   m_handle = handle;
 
   // If this layer is the current edit target, flag this as true, so that we know to serialize the layer on file save
-  if(shape->getUsdStage()->GetEditTarget().GetLayer() == handle)
+  if(shape->usdStage()->GetEditTarget().GetLayer() == handle)
   {
     hasBeenEditTargetPlug().setValue(true);
   }
@@ -575,7 +575,7 @@ bool Layer::getInternalValueInContext(const MPlug& plug, MDataHandle& dataHandle
     return false;
 
   // something has gone terribly wrong if these are null, yet the handle remains valid.
-  assert(m_shape && m_shape->getUsdStage());
+  assert(m_shape && m_shape->usdStage());
 
   if(plug == m_displayName)
   {
@@ -695,7 +695,7 @@ bool Layer::setInternalValueInContext(const MPlug& plug, const MDataHandle& data
     return false;
 
   // something has gone terribly wrong if these are null, yet the handle remains valid.
-  assert(m_shape && m_shape->getUsdStage());
+  assert(m_shape && m_shape->usdStage());
 
   if(plug == m_comment)
   {
@@ -705,7 +705,7 @@ bool Layer::setInternalValueInContext(const MPlug& plug, const MDataHandle& data
   if(plug == m_defaultPrim)
   {
     SdfPath primPath(convert(dataHandle.asString()));
-    UsdPrim prim = m_shape->getUsdStage()->GetPrimAtPath(primPath);
+    UsdPrim prim = m_shape->usdStage()->GetPrimAtPath(primPath);
     if(prim)
     {
       m_handle->SetDefaultPrim(prim.GetName());

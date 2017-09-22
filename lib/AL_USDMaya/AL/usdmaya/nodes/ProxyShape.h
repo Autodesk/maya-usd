@@ -308,9 +308,15 @@ public:
   /// \name   Public Utils
   //--------------------------------------------------------------------------------------------------------------------
 
-  /// \brief  provides access to the UsdStage that this proxy shape is currently representing
+  /// \brief  provides access to the UsdStage that this proxy shape is currently representing. This will cause a compute
+  ///         on the output stage.
   /// \return the proxy shape
   UsdStageRefPtr getUsdStage() const;
+
+  /// \brief  provides access to the UsdStage that this proxy shape is currently representing
+  /// \return the proxy shape
+  UsdStageRefPtr usdStage() const
+    { return m_stage; }
 
   /// \brief  gets hold of the attributes on this node that control the rendering in some way
   /// \param  attribs the returned set of render attributes (should be of type: UsdImagingGLEngine::RenderParams*. Hiding
