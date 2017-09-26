@@ -372,7 +372,7 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
       ptr->m_engine->RenderBatch(combined, params);
     }
 
-    // HACK (michaelq): Maya doesn't restore this ONE buffer binding after our override is done so we have to do it for them.
+    // HACK: Maya doesn't restore this ONE buffer binding after our override is done so we have to do it for them.
     glBindBufferBase(GL_UNIFORM_BUFFER, 4, uboBinding);
 
     stateManager->setDepthStencilState(previousDepthState);
