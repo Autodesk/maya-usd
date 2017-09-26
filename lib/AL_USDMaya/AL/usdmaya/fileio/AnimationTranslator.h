@@ -145,6 +145,16 @@ struct AnimationTranslator
       m_scaledAnimatedPlugs.emplace(plug, ScaledPair{ attribute, scale });
   }
 
+  /// \brief  add a transform plug to the animation translator (if the plug is animated)
+  /// \param  plug the maya attribute to test
+  /// \param  attribute the corresponding maya attribute to write the anim data into if the plug is animated
+  ///         attribute can't be handled by generic DgNodeTranslator
+  inline void forceAddPlug(const MPlug& plug, const UsdAttribute& attribute)
+  {
+    if(m_animatedPlugs.find(plug) == m_animatedPlugs.end())
+      m_animatedPlugs.emplace(plug, attribute);
+  }
+
   /// \brief  add a mesh to the animation translator
   /// \param  path the path to the animated maya mesh
   /// \param  attribute the corresponding maya attribute to write the anim data into if the plug is animated

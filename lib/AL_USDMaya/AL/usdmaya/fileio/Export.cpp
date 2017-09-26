@@ -21,8 +21,10 @@
 #include "AL/usdmaya/fileio/translators/MeshTranslator.h"
 #include "AL/usdmaya/fileio/translators/NurbsCurveTranslator.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
+#include "AL/usdmaya/TransformOperation.h"
 
 #include "maya/MAnimControl.h"
+#include "maya/MAnimUtil.h"
 #include "maya/MArgDatabase.h"
 #include "maya/MDagPath.h"
 #include "maya/MFnCamera.h"
@@ -262,6 +264,7 @@ static MObject g_transform_rotateAttr = MObject::kNullObj;
 static MObject g_transform_translateAttr = MObject::kNullObj;
 static MObject g_handle_startJointAttr = MObject::kNullObj;
 static MObject g_effector_handleAttr = MObject::kNullObj;
+static MObject g_geomConstraint_targetAttr = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 Export::Export(const ExporterParams& params)
@@ -272,10 +275,12 @@ Export::Export(const ExporterParams& params)
     MNodeClass nct("transform");
     MNodeClass nch("ikHandle");
     MNodeClass nce("ikEffector");
+    MNodeClass ngc("geometryConstraint");
     g_transform_rotateAttr = nct.attribute("r");
     g_transform_translateAttr = nct.attribute("t");
     g_handle_startJointAttr = nch.attribute("hsj");
     g_effector_handleAttr = nce.attribute("hp");
+    g_geomConstraint_targetAttr = ngc.attribute("tg");
   }
 
   if(m_impl->setStage(UsdStage::CreateNew(m_params.m_fileName.asChar())))
@@ -339,6 +344,64 @@ UsdPrim Export::exportCamera(MDagPath path, const SdfPath& usdPath)
   translators::CameraTranslator::copyAttributes(cameraObject, prim, m_params);
 
   return camera.GetPrim();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void Export::exportGeometryConstraint(MDagPath constraintPath, const SdfPath& usdPath)
+{
+  auto animTranslator = m_params.m_animTranslator;
+  if(!animTranslator)
+  {
+    return;
+  }
+
+  MPlug plug(constraintPath.node(), g_geomConstraint_targetAttr);
+  std::cout << "check target" << plug.name() << std::endl;
+  for(uint32_t i = 0, n = plug.numElements(); i < n; ++i)
+  {
+    std::cout << "check target" << std::endl;
+    MPlug geom = plug.elementByLogicalIndex(i).child(0);
+    MPlugArray connected;
+    geom.connectedTo(connected, true, true);
+    std::cout << "connected.length()" << connected.length() << std::endl;
+    if(connected.length())
+    {
+      MPlug inputGeom = connected[0];
+      std::cout << "is_animated " << MAnimUtil::isAnimated(inputGeom.node(), true) << std::endl;
+      //if(MAnimUtil::isAnimated(inputGeom.node(), true))
+      {
+        auto stage = m_impl->stage();
+
+        // move to the constrained node
+        constraintPath.pop();
+
+        SdfPath newPath = usdPath.GetParentPath();
+        std::cout << "newPath " << newPath.GetText() << std::endl;
+
+        UsdPrim prim = stage->GetPrimAtPath(newPath);
+        if(prim)
+        {
+          UsdGeomXform xform(prim);
+          bool reset;
+          std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&reset);
+          for(auto op : ops)
+          {
+            const TransformOperation thisOp = xformOpToEnum(op.GetBaseName());
+            if(thisOp == kTranslate)
+            {
+              animTranslator->forceAddPlug(MPlug(constraintPath.node(), g_transform_translateAttr), op.GetAttr());
+              break;
+            }
+          }
+          return;
+        }
+        else
+        {
+          std::cout << "prim not valid" << std::endl;
+        }
+      }
+    }
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -479,6 +542,11 @@ void Export::exportSceneHierarchy(MDagPath rootPath)
       if(transformPath.node().hasFn(MFn::kIkEffector))
       {
         exportIkChain(transformPath, usdPath);
+      }
+      else
+      if(transformPath.node().hasFn(MFn::kGeometryConstraint))
+      {
+        exportGeometryConstraint(transformPath, usdPath);
       }
 
       UsdPrim transformPrim;
