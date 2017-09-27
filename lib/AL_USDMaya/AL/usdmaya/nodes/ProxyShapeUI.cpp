@@ -320,8 +320,22 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
   auto selected = false;
 
+  auto removeVariantFromPath = [] (const SdfPath& path) -> SdfPath {
+      std::string pathStr = path.GetText();
+
+      // I'm not entirely sure about this, but it would appear that the returned string here has the variant name
+      // tacked onto the end?
+      size_t dot_location = pathStr.find_last_of('.');
+      if(dot_location != std::string::npos) {
+        pathStr = pathStr.substr(0, dot_location);
+      }
+
+      return SdfPath(pathStr);
+  };
+
   auto addSelection = [&hitBatch, &selectInfo, &selectionList,
-      &worldSpaceSelectPoints, &objectsMask, &selected, proxyShape] (const MString& command) {
+      &worldSpaceSelectPoints, &objectsMask, &selected, proxyShape,
+      &removeVariantFromPath] (const MString& command) {
       selected = true;
       MStringArray nodes;
       MGlobal::executeCommand(command, nodes, false, true);
@@ -335,7 +349,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
       uint32_t i = 0;
       for(auto it = hitBatch.begin(), e = hitBatch.end(); it != e; ++it, ++i)
       {
-        auto obj = proxyShape->findRequiredPath(it->first);
+        auto obj = proxyShape->findRequiredPath(removeVariantFromPath(it->first));
         if (obj != MObject::kNullObj) {
           MSelectionList sl;
           MFnDagNode dagNode(obj);
@@ -443,24 +457,17 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     if (!hitBatch.empty()) {
       paths.reserve(hitBatch.size());
 
-      auto addHit = [&engine, &paths](const UsdImagingGLEngine::HitBatch::const_reference& it) {
-          const UsdImagingGLEngine::HitInfo& hit = it.second;
-          auto path = engine->GetPrimPathFromInstanceIndex(it->first, hit.hitInstanceIndex);
-          if(path.IsEmpty())
-          {
-            {
-            std::string pathStr = it.first.GetText();
-            size_t dot_location = pathStr.find_last_of('.');
-            if(dot_location != std::string::npos)
-            {
-              pathStr = pathStr.substr(0, dot_location);
-            }
-            paths.push_back(SdfPath(pathStr));
-          }
-          else
-          {
-            paths.push_back(path);
-          }
+      auto addHit = [&engine, &paths, &removeVariantFromPath](const UsdImagingGLEngine::HitBatch::const_reference& it) {
+        auto path = engine->GetPrimPathFromInstanceIndex(it.first,
+            it.second.hitInstanceIndex);
+        if(path.IsEmpty())
+        {
+          paths.push_back(removeVariantFromPath(it.first));
+        }
+        else
+        {
+          paths.push_back(path);
+        }
       };
 
       // Do to the inaccuracies in the selection method in gl engine
@@ -623,8 +630,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
           addSelection(selectcommand);
         }
 
-        if(hasDeletedItems)
-        {
+        if(hasDeletedItems) {
           MGlobal::executeCommandOnIdle(deselectcommand, false);
         }
       }
