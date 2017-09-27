@@ -1,3 +1,7 @@
+## v0.23.8 (2017-09-28)
+### New features
+* ProxyShape will now call ConfigureResolverForAsset with the USD file path that is being open, which is similar to what usdview does. 
+
 ## v0.23.7 (2017-09-15)
 ### Fixed
 * bug where enabling/disabling certain prims could cause an infinite loop.
