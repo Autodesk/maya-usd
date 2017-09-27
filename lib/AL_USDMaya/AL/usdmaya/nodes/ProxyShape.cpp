@@ -252,6 +252,8 @@ UsdStagePopulationMask ProxyShape::constructStagePopulationMask(const MString &p
   }
   return mask;
 }
+
+//----------------------------------------------------------------------------------------------------------------------
 SdfPathVector ProxyShape::getPrimPathsFromCommaJoinedString(const MString &paths) const
 {
   SdfPathVector result;
@@ -270,6 +272,7 @@ SdfPathVector ProxyShape::getPrimPathsFromCommaJoinedString(const MString &paths
   }
   return result;
 }
+
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::constructGLImagingEngine()
 {
@@ -296,7 +299,6 @@ void ProxyShape::constructGLImagingEngine()
     }
   }
 }
-
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShape::setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& plugs)
