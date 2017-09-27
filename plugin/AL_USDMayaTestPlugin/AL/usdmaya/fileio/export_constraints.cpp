@@ -138,7 +138,6 @@ TEST(export_constraint, constraints)
     for(auto op : ops)
     {
       auto attr = op.GetAttr();
-      std::cout << *iter << " " << attr.GetBaseName() << attr.GetNumTimeSamples() << std::endl;
       EXPECT_EQ(50, attr.GetNumTimeSamples());
     }
     ++iter;

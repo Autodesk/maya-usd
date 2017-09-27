@@ -24,6 +24,7 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/fileio/export_blendshape.cpp
         AL/usdmaya/fileio/export_ik.cpp
         AL/usdmaya/fileio/export_constraints.cpp
+        AL/usdmaya/fileio/export_nonlinear.cpp
         AL/usdmaya/nodes/test_ActiveInactive.cpp
         AL/usdmaya/nodes/test_HostDrivenTransforms.cpp
         AL/usdmaya/nodes/test_Layer.cpp
