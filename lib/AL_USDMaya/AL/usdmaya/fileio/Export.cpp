@@ -356,19 +356,18 @@ void Export::exportGeometryConstraint(MDagPath constraintPath, const SdfPath& us
   }
 
   MPlug plug(constraintPath.node(), g_geomConstraint_targetAttr);
-  std::cout << "check target" << plug.name() << std::endl;
   for(uint32_t i = 0, n = plug.numElements(); i < n; ++i)
   {
-    std::cout << "check target" << std::endl;
     MPlug geom = plug.elementByLogicalIndex(i).child(0);
     MPlugArray connected;
     geom.connectedTo(connected, true, true);
-    std::cout << "connected.length()" << connected.length() << std::endl;
     if(connected.length())
     {
       MPlug inputGeom = connected[0];
-      std::cout << "is_animated " << MAnimUtil::isAnimated(inputGeom.node(), true) << std::endl;
-      //if(MAnimUtil::isAnimated(inputGeom.node(), true))
+      MFnDagNode fn(inputGeom.node());
+      MDagPath geomPath;
+      fn.getPath(geomPath);
+      if(AnimationTranslator::isAnimatedMesh(geomPath))
       {
         auto stage = m_impl->stage();
 
@@ -376,7 +375,6 @@ void Export::exportGeometryConstraint(MDagPath constraintPath, const SdfPath& us
         constraintPath.pop();
 
         SdfPath newPath = usdPath.GetParentPath();
-        std::cout << "newPath " << newPath.GetText() << std::endl;
 
         UsdPrim prim = stage->GetPrimAtPath(newPath);
         if(prim)
@@ -568,7 +566,7 @@ void Export::exportSceneHierarchy(MDagPath rootPath)
           shapePath.extendToShapeDirectlyBelow(j);
 
           bool shapeNotYetExported = !m_impl->contains(shapePath.node());
-          if(shapeNotYetExported)
+          if(!shapeNotYetExported)
           {
             // We have an instanced shape!
             std::cout << "encountered shape instance " << shapePath.fullPathName().asChar() << std::endl;
