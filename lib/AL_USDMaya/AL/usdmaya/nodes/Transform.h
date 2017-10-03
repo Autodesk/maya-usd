@@ -136,6 +136,11 @@ private:
   MStatus connectionBroken(const MPlug &plug, const MPlug &otherPlug, bool asSrc) override;
   MStatus compute(const MPlug &plug, MDataBlock &datablock) override;
   void postConstructor() override;
+  MBoundingBox boundingBox() const override;
+  bool isBounded() const override
+    { return true; }
+  bool treatAsTransform() const override
+    { return false; }
 
   //--------------------------------------------------------------------------------------------------------------------
   /// utils
