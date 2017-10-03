@@ -14,7 +14,7 @@ select -r "blendshape.vtx[2]";
 move -r -0.2 0.2 0.2;
 select -r "blendshape";
 select -add "baseCube";
-$deformer = `blendShape -automatic`;
+$deformer = `blendShape`;
 }
 )";
 
@@ -26,7 +26,7 @@ select -r "blendshape.vtx[2]";
 move -r -0.2 0.2 0.2;
 select -r "blendshape";
 select -add "baseCube";
-$deformer = `blendShape -automatic`;
+$deformer = `blendShape`;
 currentTime 1;
 setKeyframe ($deformer[0] + "." + "blendshape" );
 currentTime 50;
@@ -54,11 +54,11 @@ TEST(export_blendshape, non_animated_mesh)
   "Use_Timeline_Range=0;"
   "Frame_Min=1;"
   "Frame_Max=50;"
-  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/usdmaya_blendshape.usda\";";
+  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_blendshape.usda\";";
 
   MGlobal::executeCommand(command);
 
-  UsdStageRefPtr stage = UsdStage::Open("/tmp/usdmaya_blendshape.usda");
+  UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_blendshape.usda");
   EXPECT_TRUE(stage);
 
   UsdPrim prim = stage->GetPrimAtPath(SdfPath("/baseCube"));
@@ -87,11 +87,11 @@ TEST(export_blendshape, animated_mesh)
   "Use_Timeline_Range=0;"
   "Frame_Min=1;"
   "Frame_Max=50;"
-  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/usdmaya_anim_blendshape.usda\";";
+  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_anim_blendshape.usda\";";
 
   MGlobal::executeCommand(command);
 
-  UsdStageRefPtr stage = UsdStage::Open("/tmp/usdmaya_anim_blendshape.usda");
+  UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_anim_blendshape.usda");
   EXPECT_TRUE(stage);
 
   UsdPrim prim = stage->GetPrimAtPath(SdfPath("/baseCube"));

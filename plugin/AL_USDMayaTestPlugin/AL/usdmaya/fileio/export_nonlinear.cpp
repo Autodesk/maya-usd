@@ -42,11 +42,11 @@ TEST(export_nonlinear, nonanimated)
   "Use_Timeline_Range=0;"
   "Frame_Min=1;"
   "Frame_Max=50;"
-  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/usdmaya_nonlinear.usda\";";
+  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_nonlinear.usda\";";
 
   MGlobal::executeCommand(command);
 
-  UsdStageRefPtr stage = UsdStage::Open("/tmp/usdmaya_nonlinear.usda");
+  UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_nonlinear.usda");
   EXPECT_TRUE(stage);
 
   {
@@ -77,11 +77,11 @@ TEST(export_nonlinear, animated)
   "Use_Timeline_Range=0;"
   "Frame_Min=1;"
   "Frame_Max=50;"
-  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/usdmaya_nonlinear_animated.usda\";";
+  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_nonlinear_animated.usda\";";
 
   MGlobal::executeCommand(command);
 
-  UsdStageRefPtr stage = UsdStage::Open("/tmp/usdmaya_nonlinear_animated.usda");
+  UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_nonlinear_animated.usda");
   EXPECT_TRUE(stage);
 
   {

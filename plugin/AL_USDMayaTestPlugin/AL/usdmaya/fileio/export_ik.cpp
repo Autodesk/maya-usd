@@ -55,11 +55,11 @@ TEST(export_ik, ikchain)
   "Use_Timeline_Range=0;"
   "Frame_Min=1;"
   "Frame_Max=50;"
-  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/usdmaya_ikchain.usda\";";
+  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_ikchain.usda\";";
 
   MGlobal::executeCommand(command);
 
-  UsdStageRefPtr stage = UsdStage::Open("/tmp/usdmaya_ikchain.usda");
+  UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_ikchain.usda");
   EXPECT_TRUE(stage);
 
   {
