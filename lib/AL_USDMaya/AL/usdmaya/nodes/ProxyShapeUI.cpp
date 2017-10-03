@@ -333,6 +333,17 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
       return SdfPath(pathStr);
   };
 
+  auto getHitPath = [&engine, &removeVariantFromPath] (const UsdImagingGLEngine::HitBatch::const_reference& it) -> SdfPath {
+      const UsdImagingGLEngine::HitInfo& hit = it.second;
+      auto path = engine->GetPrimPathFromInstanceIndex(it.first, hit.hitInstanceIndex);
+      if (!path.IsEmpty())
+      {
+        return path;
+      }
+      return removeVariantFromPath(it.first);
+  };
+
+
   auto addSelection = [&hitBatch, &selectInfo, &selectionList,
       &worldSpaceSelectPoints, &objectsMask, &selected, proxyShape,
       &removeVariantFromPath] (const MString& command) {
@@ -399,20 +410,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
       for(auto it = hitBatch.begin(), e = hitBatch.end(); it != e; ++it)
       {
-        const UsdImagingGLEngine::HitInfo& hit = it->second;
-        auto engine = proxyShape->engine();
-        auto path = engine->GetPrimPathFromInstanceIndex(it->first, hit.hitInstanceIndex);
-        if(path.IsEmpty())
-        {
-          std::string pathStr = it->first.GetText();
-          size_t dot_location = pathStr.find_last_of('.');
-          if(dot_location != std::string::npos)
-          {
-            pathStr = pathStr.substr(0, dot_location);
-          }
-          path = SdfPath(pathStr);
-        }
-
+        auto path = getHitPath(*it);
         command += " -pp \"";
         command += path.GetText();
         command += "\"";
@@ -457,17 +455,8 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     if (!hitBatch.empty()) {
       paths.reserve(hitBatch.size());
 
-      auto addHit = [&engine, &paths, &removeVariantFromPath](const UsdImagingGLEngine::HitBatch::const_reference& it) {
-        auto path = engine->GetPrimPathFromInstanceIndex(it.first,
-            it.second.hitInstanceIndex);
-        if(path.IsEmpty())
-        {
-          paths.push_back(removeVariantFromPath(it.first));
-        }
-        else
-        {
-          paths.push_back(path);
-        }
+      auto addHit = [&engine, &paths, &getHitPath](const UsdImagingGLEngine::HitBatch::const_reference& it) {
+        paths.push_back(getHitPath(it));
       };
 
       // Do to the inaccuracies in the selection method in gl engine
