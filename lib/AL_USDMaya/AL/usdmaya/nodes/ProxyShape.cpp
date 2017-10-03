@@ -35,6 +35,7 @@
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
+#include "AL/usdmaya/Version.h"
 
 #include "maya/MFileIO.h"
 #include "maya/MFnPluginData.h"
@@ -134,6 +135,7 @@ MObject ProxyShape::m_specular = MObject::kNullObj;
 MObject ProxyShape::m_emission = MObject::kNullObj;
 MObject ProxyShape::m_shininess = MObject::kNullObj;
 MObject ProxyShape::m_serializedRefCounts = MObject::kNullObj;
+MObject ProxyShape::m_version = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 Layer* ProxyShape::getLayer()
@@ -504,6 +506,11 @@ MStatus ProxyShape::initialise()
 
     m_serializedRefCounts = addStringAttr("serializedRefCounts", "strcs", kReadable | kWritable | kStorable | kHidden);
 
+    m_version = addStringAttr(
+        "version", "vrs", getVersion().c_str(),
+        kReadable | kStorable | kHidden
+        );
+
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeScalar, m_outTime), errorString);
@@ -836,7 +843,11 @@ void ProxyShape::reloadStage(MPlug& plug)
       AL_END_PROFILE_SECTION();
 
       AL_BEGIN_PROFILE_SECTION(OpenRootLayer);
-        SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString);
+
+      // Initialise the asset resolver
+      pxr::ArGetResolver().ConfigureResolverForAsset(fileString);
+
+      SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString);
       AL_END_PROFILE_SECTION();
 
       if(rootLayer)

@@ -293,6 +293,9 @@ public:
   /// The path list joined by ",", that will be used as a mask when doing UsdStage::OpenMask()
   AL_DECL_ATTRIBUTE(populationMaskIncludePaths);
 
+  /// Version of the plugin at the time of creation (read-only)
+  AL_DECL_ATTRIBUTE(version);
+
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Output Attributes
   //--------------------------------------------------------------------------------------------------------------------

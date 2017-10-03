@@ -1,3 +1,10 @@
+## v0.23.9 (2017-09-20)
+### Added
+* Added missing header files from nodes/proxy directory into released package
+* AL_usdmaya_UsdDebugCommand to allow you to modify and query the TfDebug notifications
+* Added a new Debug GUI that lets you enable/disable which TfDebug notices are output to the command prompt
+* ProxyShape now calls ConfigureResolverForAsset with the USD file path that is being open, which is similar to what usdview does.
+
 ## v0.23.7 (2017-09-15)
 ### Fixed
 * bug where enabling/disabling certain prims could cause an infinite loop.
