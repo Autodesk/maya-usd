@@ -352,6 +352,16 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
         const UsdImagingGLEngine::HitInfo& hit = it->second;
         auto engine = proxyShape->engine();
         auto path = engine->GetPrimPathFromInstanceIndex(it->first, hit.hitInstanceIndex);
+        if(path.IsEmpty())
+        {
+          std::string pathStr = it->first.GetText();
+          size_t dot_location = pathStr.find_last_of('.');
+          if(dot_location != std::string::npos)
+          {
+            pathStr = pathStr.substr(0, dot_location);
+          }
+          path = SdfPath(pathStr);
+        }
 
         command += " -pp \"";
         command += path.GetText();
@@ -403,7 +413,20 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
       worldSpacePoint += hit.worldSpaceHitPoint;
       auto engine = proxyShape->engine();
       auto path = engine->GetPrimPathFromInstanceIndex(it->first, hit.hitInstanceIndex);
-      paths.push_back(path);
+      if(path.IsEmpty())
+      {
+        std::string pathStr = it->first.GetText();
+        size_t dot_location = pathStr.find_last_of('.');
+        if(dot_location != std::string::npos)
+        {
+          pathStr = pathStr.substr(0, dot_location);
+        }
+        paths.push_back(SdfPath(pathStr));
+      }
+      else
+      {
+        paths.push_back(path);
+      }
     }
 
     worldSpacePoint /= double(count);
