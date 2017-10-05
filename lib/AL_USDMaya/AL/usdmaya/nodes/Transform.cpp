@@ -45,7 +45,6 @@ AL_MAYA_DEFINE_NODE(Transform, AL_USDMAYA_TRANSFORM, AL_usdmaya);
 //----------------------------------------------------------------------------------------------------------------------
 MObject Transform::m_primPath = MObject::kNullObj;
 MObject Transform::m_inStageData = MObject::kNullObj;
-MObject Transform::m_outStageData = MObject::kNullObj;
 MObject Transform::m_time = MObject::kNullObj;
 MObject Transform::m_timeOffset = MObject::kNullObj;
 MObject Transform::m_timeScalar = MObject::kNullObj;
@@ -132,7 +131,6 @@ MStatus Transform::initialise()
     addFrame("USD Prim Information");
     m_primPath = addStringAttr("primPath", "pp", kReadable | kWritable | kStorable | kConnectable | kAffectsWorldSpace, true);
     m_inStageData = addDataAttr("inStageData", "isd", StageData::kTypeId, kWritable | kStorable | kConnectable | kHidden | kAffectsWorldSpace);
-    m_outStageData = addDataAttr("outStageData", "osd", StageData::kTypeId, kReadable | kStorable | kConnectable | kHidden | kAffectsWorldSpace);
 
     addFrame("USD Timing Information");
     m_time = addTimeAttr("time", "tm", MTime(0.0), kKeyable | kConnectable | kReadable | kWritable | kStorable | kAffectsWorldSpace);
@@ -158,9 +156,6 @@ MStatus Transform::initialise()
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, translate), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, matrix), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, worldMatrix), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_primPath, m_outStageData), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_inStageData, m_outStageData), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_readAnimatedValues, m_outStageData), errorString);
   }
   catch(const MStatus& status)
   {
@@ -371,30 +366,6 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
   }
 
   return MPxTransform::validateAndSetValue(plug, handle, context);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-UsdPrim Transform::getUsdPrim(MDataBlock& dataBlock) const
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::getUsdPrim\n");
-  UsdPrim usdPrim;
-  StageData* outData = inputDataValue<StageData>(dataBlock, m_outStageData);
-  if(outData && outData->stage)
-  {
-    usdPrim = (outData->primPath.IsEmpty()) ?
-               outData->stage->GetPseudoRoot() :
-               outData->stage->GetPrimAtPath(outData->primPath);
-  }
-  return usdPrim;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-bool Transform::isStageValid() const
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::isStageValid\n");
-  MDataBlock dataBlock = const_cast<Transform*>(this)->forceCache();
-  StageData* outData = inputDataValue<StageData>(dataBlock, m_outStageData);
-  return outData && outData->stage;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
