@@ -380,7 +380,7 @@ public:
 
   /// \brief  Is this transform writing back onto the USD prim
   inline bool pushToPrimEnabled() const
-    { return (kPushToPrimEnabled & m_flags) != 0; }
+    { return (kPushToPrimEnabled & m_flags) != 0 && m_prim; }
 
   /// \brief  Is this prim writing back to a matrix (true) or to components (false)
   inline bool pushPrimToMatrix() const
