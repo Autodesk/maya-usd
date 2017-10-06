@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #pragma once
+#include <AL/usdmaya/SelectabilityDB.h>
 #include "AL/usdmaya/Common.h"
 #include "AL/maya/NodeHelper.h"
 #include "AL/usdmaya/DrivenTransformsData.h"
@@ -21,8 +22,6 @@
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
-#include "AL/usdmaya/SelectableDB.h"
-
 #include "maya/MPxSurfaceShape.h"
 #include "maya/MEventMessage.h"
 #include "maya/MNodeMessage.h"
@@ -187,12 +186,11 @@ struct  HierarchyIterationLogic
   std::function<void()> postIteration;
 };
 
-struct FindSelectablePrimsLogic : public HierarchyIterationLogic
+struct FindUnselectablePrimsLogic : public HierarchyIterationLogic
 {
-  SdfPathVector newSelectables;
-  SdfPathVector removeSelectables;
+  SdfPathVector newUnselectables;
+  SdfPathVector removeUnselectables;
 };
-
 
 typedef const HierarchyIterationLogic*  HierarchyIterationLogics[2];
 
@@ -665,34 +663,15 @@ public:
   inline void setChangedSelectionState(bool v)
     { m_hasChangedSelection = v; }
 
-  /// \brief Checks to see if a passed in path is Selectable. This takes into account
-  ///        the selection restriction flag
-  /// \param[in] path which will be checked to see if it is selectable
-  /// \return true if the path is selectable
-  bool isPathSelectable(const SdfPath& path) const;
-
-  /// \brief Returns if the selection is restricted
-  /// \return true if the restricted selection is enabled
-  bool isSelectionRestricted() const
-    {return m_isRestrictedSelectionEnabled; }
-
-  /// \brief Enables the restriction of the selectable paths
-  void restrictSelection()
-    { m_isRestrictedSelectionEnabled = true; }
-
-  /// \brief Disables the restriction of the selectable paths
-  void unrestrictSelection()
-    { m_isRestrictedSelectionEnabled = false; }
-
   /// \brief Returns the SelectionDatabase owned by the ProxyShape
   /// \return ASelectableDB owned by the ProxyShape
-  AL::usdmaya::SelectableDB& selectableDB()
-    { return m_selectableDB; }
+  AL::usdmaya::SelectabilityDB& selectabilityDB()
+    { return m_selectabilityDB; }
 
   /// \brief Returns the SelectionDatabase owned by the ProxyShape
   /// \return A constant SelectableDB owned by the ProxyShape
-  const AL::usdmaya::SelectableDB& selectableDB() const
-    { return const_cast<ProxyShape*>(this)->selectableDB(); }
+  const AL::usdmaya::SelectabilityDB& selectableDB() const
+    { return const_cast<ProxyShape*>(this)->selectabilityDB(); }
 
 private:
   static void onSelectionChanged(void* ptr);
@@ -857,11 +836,11 @@ private:
     }
 
 private:
-  AL::usdmaya::SelectableDB m_selectableDB;
+  AL::usdmaya::SelectabilityDB m_selectabilityDB;
   HierarchyIterationLogics m_hierarchyIterationLogics;
   HierarchyIterationLogic m_findExcludedPrims;
   SelectionList m_selectionList;
-  FindSelectablePrimsLogic m_findSelectablePrims;
+  FindUnselectablePrimsLogic m_findUnselectablePrims;
   SdfPathVector m_selectedPaths;
   std::vector<SdfPath> m_paths;
   std::vector<UsdPrim> m_prims;
@@ -888,7 +867,6 @@ private:
   bool m_drivenTransformsDirty = false;
   bool m_pleaseIgnoreSelection = false;
   bool m_hasChangedSelection = false;
-  bool m_isRestrictedSelectionEnabled = false; //< If the restrictable selection is true, then the SelectableDB determines what prims are selectable or not.
 };
 
 //----------------------------------------------------------------------------------------------------------------------

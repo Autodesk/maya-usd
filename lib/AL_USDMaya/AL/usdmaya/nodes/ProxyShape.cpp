@@ -445,42 +445,44 @@ ProxyShape::ProxyShape()
     constructExcludedPrims();
   };
 
+  m_findUnselectablePrims.preIteration = [this]() {
 
-  m_findSelectablePrims.preIteration = [this]() {
-    m_findSelectablePrims.newSelectables.clear();
-    m_findSelectablePrims.removeSelectables.clear();
   };
-  m_findSelectablePrims.iteration = [this]
-                                    (const fileio::TransformIterator& transformIterator,const UsdPrim& prim) {
-    TfToken seletablePropertyToken;
-    bool hasSelectability = prim.GetMetadata<TfToken>(Metadata::selectability, &seletablePropertyToken);
-    if(hasSelectability)
+  m_findUnselectablePrims.iteration = [this]
+                                    (const fileio::TransformIterator& transformIterator, const UsdPrim& prim) {
+
+    TfToken selectabilityPropertyToken;
+    if(prim.GetMetadata<TfToken>(Metadata::selectability, &selectabilityPropertyToken))
     {
+
       //Check if this prim is unselectable
-      if(seletablePropertyToken == Metadata::selectable)
+      if(selectabilityPropertyToken == Metadata::unselectable)
       {
-        m_findSelectablePrims.newSelectables.push_back(prim.GetPath());
+        m_findUnselectablePrims.newUnselectables.push_back(prim.GetPath());
       }
-      else if(m_selectableDB.isPathSelectable(prim.GetPath()) && seletablePropertyToken != Metadata::selectable)
+      else if(m_selectabilityDB.isPathUnselectable(prim.GetPath()) && selectabilityPropertyToken != Metadata::unselectable)
       {
-        m_findSelectablePrims.removeSelectables.push_back(prim.GetPath());
+        m_findUnselectablePrims.removeUnselectables.push_back(prim.GetPath());
       }
     }
   };
-  m_findSelectablePrims.postIteration = [this]() {
-    if(m_findSelectablePrims.removeSelectables.size() > 0)
+  m_findUnselectablePrims.postIteration = [this]() {
+    if(m_findUnselectablePrims.removeUnselectables.size() > 0)
     {
-      m_selectableDB.removePathsAsSelectable(m_findSelectablePrims.removeSelectables);
+      m_selectabilityDB.removePathsAsUnselectable(m_findUnselectablePrims.removeUnselectables);
     }
 
-    if(m_findSelectablePrims.newSelectables.size() > 0)
+    if(m_findUnselectablePrims.newUnselectables.size() > 0)
     {
-      m_selectableDB.addPathsAsSelectable(m_findSelectablePrims.newSelectables);
+      m_selectabilityDB.addPathsAsUnselectable(m_findUnselectablePrims.newUnselectables);
     }
+
+    m_findUnselectablePrims.newUnselectables.clear();
+    m_findUnselectablePrims.removeUnselectables.clear();
   };
 
   m_hierarchyIterationLogics[0] = &m_findExcludedPrims;
-  m_hierarchyIterationLogics[1] = &m_findSelectablePrims;
+  m_hierarchyIterationLogics[1] = &m_findUnselectablePrims;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -717,30 +719,25 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     maya::Profiler::printReport(strstr);
   }
 
-  SdfPathVector newSelectables;
-  SdfPathVector removeSelectables;
-  auto recordSelectablePrims = [&newSelectables, &removeSelectables, this] (const SdfPath& objectPath, const UsdPrim& prim){
+  SdfPathVector newUnselectables;
+  SdfPathVector removeUnselectables;
+  auto recordSelectablePrims = [&newUnselectables, &removeUnselectables, this] (const SdfPath& objectPath, const UsdPrim& prim){
     if(!prim.IsValid())
     {
       return;
     }
 
-    for( auto entry : prim.GetAllAuthoredMetadata() )
-    {
-      std::cout << "e " << entry.first << " v: " << entry.second << std::endl;
-    }
-
-    TfToken selectablePropertyValue;
-    if(prim.GetMetadata(Metadata::selectability, &selectablePropertyValue))
+    TfToken unselectablePropertyValue;
+    if(prim.GetMetadata(Metadata::selectability, &unselectablePropertyValue))
     {
       //Check if this prim is unselectable
-      if(selectablePropertyValue == Metadata::selectable)
+      if(unselectablePropertyValue == Metadata::unselectable)
       {
-        newSelectables.push_back(prim.GetPath());
+        newUnselectables.push_back(prim.GetPath());
       }
-      else if(m_selectableDB.isPathSelectable(prim.GetPath()) && selectablePropertyValue != Metadata::selectable)
+      else if(m_selectabilityDB.isPathUnselectable(prim.GetPath()) && unselectablePropertyValue != Metadata::unselectable)
       {
-        removeSelectables.push_back(prim.GetPath());
+        removeUnselectables.push_back(prim.GetPath());
       }
     }
   };
@@ -767,14 +764,14 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     recordSelectablePrims(path, changedPrim);
   }
 
-  if(!removeSelectables.empty())
+  if(!removeUnselectables.empty())
   {
-    m_selectableDB.removePathsAsSelectable(removeSelectables);
+    m_selectabilityDB.removePathsAsUnselectable(removeUnselectables);
   }
 
-  if(!newSelectables.empty())
+  if(!newUnselectables.empty())
   {
-    m_selectableDB.addPathsAsSelectable(newSelectables);
+    m_selectabilityDB.addPathsAsUnselectable(newUnselectables);
   }
 }
 
@@ -1198,7 +1195,7 @@ void ProxyShape::findSelectablePrims()
   if(!m_stage)
     return;
 
-  m_findSelectablePrims.preIteration();
+  m_findUnselectablePrims.preIteration();
 
   MDagPath m_parentPath;
   for(fileio::TransformIterator it(m_stage, m_parentPath); !it.done(); it.next())
@@ -1207,10 +1204,10 @@ void ProxyShape::findSelectablePrims()
     if(!prim.IsValid())
       continue;
 
-    m_findSelectablePrims.iteration(it, prim);
+    m_findUnselectablePrims.iteration(it, prim);
   }
 
-  m_findSelectablePrims.postIteration();
+  m_findUnselectablePrims.postIteration();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1555,16 +1552,6 @@ void ProxyShape::cleanupTransformRefs()
     }
   }
 }
-
-bool ProxyShape::isPathSelectable(const SdfPath& path) const
-{
-  if(m_isRestrictedSelectionEnabled)
-  {
-    return m_selectableDB.isPathSelectable(path);
-  }
-  return true;
-}
-
 
 //----------------------------------------------------------------------------------------------------------------------
 } // nodes

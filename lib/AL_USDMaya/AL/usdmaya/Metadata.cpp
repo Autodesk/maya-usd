@@ -23,7 +23,7 @@ const TfToken Metadata::transformType("al_usdmaya_transformType");
 const TfToken Metadata::excludeFromProxyShape("al_usdmaya_excludeFromProxyShape");
 const TfToken Metadata::importAsNative("al_usdmaya_importAsNative");
 
-const TfToken Metadata::selectability("AL_usdmaya_selectable");
+const TfToken Metadata::selectability("al_usdmaya_selectability");
 const TfToken Metadata::selectable("selectable");
 const TfToken Metadata::unselectable("unselectable");
 

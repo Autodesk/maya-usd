@@ -13,49 +13,49 @@ namespace usdmaya {
 ///---------------------------------------------------------------------------------------------------------------------
 /// \brief  Logic that stores a sorted list of paths which represent Selectable points in the USD hierarchy
 ///---------------------------------------------------------------------------------------------------------------------
-class SelectableDB {
+class SelectabilityDB {
 public:
 
   ///-------------------------------------------------------------------------------------------------------------------
-  /// \brief  Determines this path is selectable
-  /// \param  path that you want to determine if it's selectable
+  /// \brief  Determines this path is unselectable
+  /// \param  path that you want to determine if it's unselectable
   ///-------------------------------------------------------------------------------------------------------------------
-  bool isPathSelectable(const SdfPath& path) const;
+  bool isPathUnselectable(const SdfPath& path) const;
 
   ///-------------------------------------------------------------------------------------------------------------------
   /// \brief  Adds a list of paths to the selectable list
-  /// \param  paths which will be added as selectable. All children paths will be also selectable
+  /// \param  paths which will be added as selectable. All children paths will be also unselectable
   ///-------------------------------------------------------------------------------------------------------------------
-  void addPathsAsSelectable(const SdfPathVector& paths);
+  void addPathsAsUnselectable(const SdfPathVector& paths);
 
   ///-------------------------------------------------------------------------------------------------------------------
-  /// \brief  Adds a path to the selectable list
-  /// \param  paths which will be added as selectable. All children paths will be also selectable
+  /// \brief  Adds a path to the unselectable list
+  /// \param  paths which will be added as unselectable. All children paths will be also unselectable
   ///-------------------------------------------------------------------------------------------------------------------
-  void addPathAsSelectable(const SdfPath& path);
+  void addPathAsUnselectable(const SdfPath& path);
 
   ///-------------------------------------------------------------------------------------------------------------------
-  /// \brief  Gets the currently explictly tracked seletable paths
+  /// \brief  Gets the currently explictly tracked unseletable paths
   ///-------------------------------------------------------------------------------------------------------------------
-  inline const SdfPathVector& getSelectablePaths() const { return m_selectablePaths; }
+  inline const SdfPathVector& getUnselectablePaths() const { return m_unselectablePaths; }
 
   ///-------------------------------------------------------------------------------------------------------------------
   /// \brief  Removes a list of paths from the selectable list if the exist.
   ///-------------------------------------------------------------------------------------------------------------------
-  void removePathsAsSelectable(const SdfPathVector& paths);
+  void removePathsAsUnselectable(const SdfPathVector& paths);
 
   ///-------------------------------------------------------------------------------------------------------------------
   /// \brief  Remove a path from the selectable list if the exist.
   ///-------------------------------------------------------------------------------------------------------------------
-  void removePathAsSelectable(const SdfPath& path);
+  void removePathAsUnselectable(const SdfPath& path);
 
 private:
-  inline void sort(){std::sort(m_selectablePaths.begin(), m_selectablePaths.end());}
-  bool addSelectablePath(const SdfPath& path);
-  bool removeSelectablePath(const SdfPath& path);
+  inline void sort(){std::sort(m_unselectablePaths.begin(), m_unselectablePaths.end());}
+  bool addUnselectablePath(const SdfPath& path);
+  bool removeUnselectablePath(const SdfPath& path);
 
 private:
-  SdfPathVector m_selectablePaths;
+  SdfPathVector m_unselectablePaths;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

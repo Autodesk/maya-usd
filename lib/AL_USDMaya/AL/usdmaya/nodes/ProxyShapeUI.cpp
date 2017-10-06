@@ -302,13 +302,12 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
   UsdImagingGLEngine::HitBatch hitBatch;
   SdfPathVector rootPath;
   rootPath.push_back(root.GetPath());
-  const SdfPathVector& allowedSelectionPaths = proxyShape->isSelectionRestricted() ? proxyShape->m_selectableDB.getSelectablePaths() : rootPath;
 
   bool hitSelected = engine->TestIntersectionBatch(
           GfMatrix4d(viewMatrix.matrix),
           GfMatrix4d(projectionMatrix.matrix),
           worldToLocalSpace,
-          allowedSelectionPaths,
+          rootPath,
           params,
           5,
           ProxyShapeSelectionHelper::path_ting,

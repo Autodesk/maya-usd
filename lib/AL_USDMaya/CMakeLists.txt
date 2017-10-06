@@ -35,7 +35,7 @@ list(APPEND AL_usdmaya_headers
         AL/usdmaya/Utils.h
         AL/usdmaya/DebugCodes.h
         AL/usdmaya/Metadata.h
-        AL/usdmaya/SelectableDB.h
+        AL/usdmaya/SelectabilityDB.h
 )
 
 list(APPEND AL_usdmaya_source
@@ -48,7 +48,7 @@ list(APPEND AL_usdmaya_source
         AL/usdmaya/Utils.cpp
         AL/usdmaya/DebugCodes.cpp
         AL/usdmaya/Metadata.cpp
-        AL/usdmaya/SelectableDB.cpp
+        AL/usdmaya/SelectabilityDB.cpp
 )
 
 list(APPEND AL_usdmaya_cmds_headers

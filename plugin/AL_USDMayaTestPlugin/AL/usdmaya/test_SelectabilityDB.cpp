@@ -14,26 +14,26 @@
 // limitations under the License.
 //
 
-#include "AL/usdmaya/SelectableDB.h"
+#include <AL/usdmaya/SelectabilityDB.h>
 #include <gtest/gtest.h>
 using namespace AL::usdmaya;
 
-TEST(SelectableDB, makingParentPathsSelectable)
+TEST(SelectabilityDB, makingParentPathsSelectable)
 {
   SdfPath rootPath      ("/A");
   SdfPath childPath     ("/A/B");
   SdfPath grandchildPath("/A/B/C");
 
-  SelectableDB selectable;
+  SelectabilityDB selectableDB;
   // Test that adding a single and multiple path works.
   {
-    selectable.addPathAsSelectable(childPath);
-    const SdfPathVector& selectablePaths = selectable.getSelectablePaths();
+    selectableDB.addPathAsUnselectable(childPath);
+    const SdfPathVector& selectablePaths = selectableDB.getUnselectablePaths();
 
     ASSERT_TRUE(selectablePaths.size() == 1);
     EXPECT_TRUE(selectablePaths[0] == childPath);
 
-    selectable.addPathAsSelectable(grandchildPath);
+    selectableDB.addPathAsUnselectable(grandchildPath);
 
     ASSERT_TRUE(selectablePaths.size() == 2);
     EXPECT_TRUE(selectablePaths[1] == grandchildPath);
@@ -44,49 +44,47 @@ TEST(SelectableDB, makingParentPathsSelectable)
  */
 // void SelectableDB::addPathAsSelectable(const SdfPath& path)
 
-TEST(SelectableDB, selectedPaths)
+TEST(SelectabilityDB, selectedPaths)
 {
   SdfPath rootPath        ("/A");
   SdfPath childPath       ("/A/B");
   SdfPath grandchildPath  ("/A/B/C");
   SdfPath secondChildPath ("/A/D");
 
-  SelectableDB selectable;
+  SelectabilityDB selectableDB;
   // Test that adding a single and multiple path works.
   {
-    //
-    selectable.addPathAsSelectable(childPath);
+    selectableDB.addPathAsUnselectable(childPath);
     //Test that all the paths that are expected to be selectable are.
-    EXPECT_TRUE(selectable.isPathSelectable(childPath));
-    EXPECT_TRUE(selectable.isPathSelectable(grandchildPath));
+    EXPECT_TRUE(selectableDB.isPathUnselectable(childPath));
+    EXPECT_TRUE(selectableDB.isPathUnselectable(grandchildPath));
 
-    EXPECT_FALSE(selectable.isPathSelectable(rootPath));
-    EXPECT_FALSE(selectable.isPathSelectable(secondChildPath));
+    EXPECT_FALSE(selectableDB.isPathUnselectable(rootPath));
+    EXPECT_FALSE(selectableDB.isPathUnselectable(secondChildPath));
   }
 }
 /*
- * Test that using SelectableDB's removal API is working
+ * Test that using UnselectableDB's removal API is working
  */
-// void SelectableDB::addPathAsSelectable(const SdfPath& path)
-// void SelectableDB::removePathAsSelectable(const SdfPath& path)
-TEST(SelectableDB, removePaths)
+// void SelectableDB::addPathAsUnselectable(const SdfPath& path)
+// void SelectableDB::removePathAsUnselectable(const SdfPath& path)
+TEST(SelectabilityDB, removePaths)
 {
   SdfPath rootPath        ("/A");
   SdfPath childPath       ("/A/B");
   SdfPath grandchildPath  ("/A/B/C");
   SdfPath secondChildPath ("/A/D");
 
-  SelectableDB selectable;
+  SelectabilityDB selectable;
   // Test that removing selectable paths from the SelectionDB works.
   {
     //
-    selectable.addPathAsSelectable(childPath);
-    const SdfPathVector& selectablePaths = selectable.getSelectablePaths();
-    EXPECT_TRUE(selectablePaths.size() == 1);
-    selectable.addPathAsSelectable(grandchildPath);
-    EXPECT_TRUE(selectablePaths.size() == 2);
-
-    selectable.removePathAsSelectable(childPath);
-    EXPECT_TRUE(selectablePaths.size() == 1);
+    selectable.addPathAsUnselectable(childPath);
+    const SdfPathVector& unselectablePaths = selectable.getUnselectablePaths();
+    EXPECT_TRUE(unselectablePaths.size() == 1);
+    selectable.addPathAsUnselectable(grandchildPath);
+    EXPECT_TRUE(unselectablePaths.size() == 2);
+    selectable.removePathAsUnselectable(childPath);
+    EXPECT_TRUE(unselectablePaths.size() == 1);
   }
 }

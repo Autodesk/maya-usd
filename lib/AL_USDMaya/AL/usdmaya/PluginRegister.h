@@ -85,7 +85,6 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ActivatePrim);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeSelect);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePostSelect);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ConfigureSelectionDatabase);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::InternalProxyShapeSelect);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::UsdDebugCommand);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
@@ -120,7 +119,6 @@ template<typename AFnPlugin>
 MStatus unregisterPlugin(AFnPlugin& plugin)
 {
   MStatus status;
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ConfigureSelectionDatabase);
   AL_UNREGISTER_COMMAND(plugin, AL::maya::CommandGuiListGen);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::InternalProxyShapeSelect);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePostSelect);

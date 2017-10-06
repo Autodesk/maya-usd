@@ -32,21 +32,6 @@ namespace cmds {
 ///         are selectable or not.
 /// \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
-class ConfigureSelectionDatabase
-  : public ProxyShapeCommandBase
-{
-private:
-  nodes::ProxyShape* m_proxy;
-  bool m_hasRequestedRestriction = false;
-  bool m_printSelection = false;
-public:
-  AL_MAYA_DECLARE_COMMAND();
-private:
-  bool isUndoable() const override;
-  MStatus doIt(const MArgList& args) override;
-  MStatus undoIt() override;
-  MStatus redoIt() override;
-};
 
 //----------------------------------------------------------------------------------------------------------------------
 } // cmds

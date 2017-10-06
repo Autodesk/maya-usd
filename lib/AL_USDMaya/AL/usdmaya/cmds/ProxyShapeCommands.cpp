@@ -993,7 +993,12 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
         MArgList args;
         db.getFlagArgumentList("-pp", i, args);
         MString pathString = args.asString(0);
-        paths.push_back(SdfPath(convert(pathString)));
+
+        SdfPath path(convert(pathString));
+        if(!proxy->selectabilityDB().isPathUnselectable(path))
+        {
+          paths.push_back(SdfPath(convert(pathString)));
+        }
       }
 
       if(db.isFlagSet("-tgl"))
