@@ -127,8 +127,6 @@ private:
 
   MStatus validateAndSetValue(const MPlug& plug, const MDataHandle& handle, const MDGContext& context) override;
   MPxTransformationMatrix* createTransformationMatrix() override;
-  MStatus connectionMade(const MPlug &plug, const MPlug &otherPlug, bool asSrc) override;
-  MStatus connectionBroken(const MPlug &plug, const MPlug &otherPlug, bool asSrc) override;
   MStatus compute(const MPlug &plug, MDataBlock &datablock) override;
   void postConstructor() override;
 

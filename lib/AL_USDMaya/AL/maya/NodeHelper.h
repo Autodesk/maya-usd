@@ -481,6 +481,33 @@ public:
   /// \return MS::kSuccess if all went well
   static MStatus outputDataValue(MDataBlock& dataBlock, const MObject& attribute, MPxData* value);
 
+  /// \brief  get an output data value from the dataBlock from the specified attribute
+  /// \param  dataBlock the data block to get the value from
+  /// \param  attribute the handle to the attribute to get an MPxData for
+  /// \return the value
+  /// \note   If the value could not be queried, and error will be logged to std::cerr
+  ///         Useful when you want to modify something on the underlying MPxData, without
+  ///         creating / setting an entirely new instance of the MPxData
+  static MPxData* outputDataValue(MDataBlock& dataBlock, const MObject& attribute);
+
+  /// \brief  get an output data value from the dataBlock from the specified attribute
+  /// \param  dataBlock the data block to get the value from
+  /// \param  attribute the handle to the attribute to get an MPxData subclass for
+  /// \return the value
+  /// \note   If the value could not be queried, and error will be logged to std::cerr
+  ///         Useful when you want to modify something on the underlying MPxData subclass, without
+  ///         creating / setting an entirely new instance of the MPxData subclass
+  template<typename MPxDataType>
+  static MPxDataType* outputDataValue(MDataBlock& dataBlock, const MObject& attribute)
+  {
+    MPxData* data = NodeHelper::outputDataValue(dataBlock, attribute);
+    if(data)
+    {
+      return dynamic_cast<MPxDataType*>(data);
+    }
+    return 0;
+  }
+
   /// \brief  helper method to create new data objects of the specified data type
   /// \param  dataTypeId the MTypeId of the plugin data object to create
   /// \param  data the returned handle to the created data object, usually passed to MDataHandle::set, or MPlug::setValue.

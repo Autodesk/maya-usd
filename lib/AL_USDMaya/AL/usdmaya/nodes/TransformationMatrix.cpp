@@ -116,7 +116,7 @@ void TransformationMatrix::setPrim(const UsdPrim& prim)
     m_xform = UsdGeomXform();
   }
   m_time = UsdTimeCode(UsdTimeCode::Default());
-  m_flags = 0;
+  m_flags &= kPreservationMask;
   m_scaleTweak = MVector(0, 0, 0);
   m_rotationTweak = MEulerRotation(0, 0, 0);
   m_translationTweak = MVector(0, 0, 0);
@@ -1015,12 +1015,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
   }
 
   // if some animation keys are found on the transform ops, assume we have a read only viewer of the transform data.
-  if(m_flags & (
-      kAnimatedScale |
-      kAnimatedRotation |
-      kAnimatedTranslation |
-      kAnimatedMatrix |
-      kAnimatedShear))
+  if(m_flags & kAnimationMask)
   {
     m_flags &= ~kPushToPrimEnabled;
     m_flags |= kReadAnimatedValues;
