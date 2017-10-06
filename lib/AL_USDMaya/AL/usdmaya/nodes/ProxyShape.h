@@ -307,6 +307,9 @@ public:
   /// Version of the plugin at the time of creation (read-only)
   AL_DECL_ATTRIBUTE(version);
 
+  /// Force the outStageData to be marked dirty (write-only)
+  AL_DECL_ATTRIBUTE(stageDataDirty);
+
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Output Attributes
   //--------------------------------------------------------------------------------------------------------------------

@@ -151,6 +151,7 @@ MObject ProxyShape::m_version = MObject::kNullObj;
 MObject ProxyShape::m_transformTranslate = MObject::kNullObj;
 MObject ProxyShape::m_transformRotate = MObject::kNullObj;
 MObject ProxyShape::m_transformScale = MObject::kNullObj;
+MObject ProxyShape::m_stageDataDirty = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -549,6 +550,8 @@ MStatus ProxyShape::initialise()
     m_transformRotate = nc.attribute("r");
     m_transformScale = nc.attribute("s");
 
+    m_stageDataDirty = addBoolAttr("stageDataDirty", "sdd", false, kWritable | kAffectsAppearance | kInternal);
+
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeScalar, m_outTime), errorString);
@@ -556,6 +559,7 @@ MStatus ProxyShape::initialise()
     AL_MAYA_CHECK_ERROR(attributeAffects(m_primPath, m_outStageData), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_inDrivenTransformsData, m_outStageData), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_populationMaskIncludePaths, m_outStageData), errorString);
+    AL_MAYA_CHECK_ERROR(attributeAffects(m_stageDataDirty, m_outStageData), errorString);
   }
   catch (const MStatus& status)
   {
@@ -1118,6 +1122,8 @@ void ProxyShape::reloadStage()
     maya::Profiler::printReport(strstr);
     MGlobal::displayInfo(convert(strstr.str()));
   }
+
+  stageDataDirtyPlug().setValue(True);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
