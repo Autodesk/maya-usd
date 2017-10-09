@@ -3,6 +3,12 @@
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
 )
 
+class "ALModelAPI" (
+    doc = "Data used to import a maya reference."
+)
+{
+}
+
 class ALMayaReference "ALMayaReference" (
     doc = "Data used to import a maya reference."
 )
