@@ -29,23 +29,15 @@ list(APPEND DEPENDANT_LIBRARIES ${PYTHON_LIBRARIES} usd)
 if(VALIDATE_GENERATED_SCHEMAS)
 
 # Bake library name, tokens prefix and usd schemas path
-if(NOT USD_SCHEMA_PATH)
-    set(USD_SCHEMA_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../../usd/schema.usda)
-endif()
+set(USD_SCHEMA_PATH usd/schema.usda)
 configure_file (
     ./schema.usda.in
     ./schema.usda
 )
 
-# https://github.com/PixarAnimationStudios/USD/issues/158
-if(NOT USD_CODEGEN_TEMPLATES_PATH)
-    set(USD_CODEGEN_TEMPLATES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../../codegenTemplates)
-endif()
-
 execute_process(
     COMMAND
         usdGenSchema
-            -t ${USD_CODEGEN_TEMPLATES_PATH}
             -v
             ${CMAKE_CURRENT_BINARY_DIR}/schema.usda
             .
