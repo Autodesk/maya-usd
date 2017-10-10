@@ -14,9 +14,44 @@ over "GLOBAL" (
         string libraryPath        = "."
         string libraryPrefix      = "AL_usd_"#This AL_ is here to get around that the Jinja template doesn't generate a template that supports namespaces. If we had a AL namespace then I could remove this AL.
         string tokensPrefix       = "@SCHEMAS_TOKENS_PREFIX@"
+        dictionary libraryTokens = {
+            dictionary selectability = {
+                string value = "al_usdmaya_selectability"
+                string doc = """Stores the state of the prims selectability"""
+            }
+            dictionary selectability_unselectable = {
+                string value = "unselectable"
+                string doc = """State which makes the Prim unselectable"""
+            }
+            dictionary selectability_selectable = {
+                string value = "selectable"
+                string doc = """State which makes the Prim selectable"""
+            }
+            dictionary selectability_inherited = {
+                string value = "inherited"
+                string doc = """State which makes the Prim inherit it's selectability"""
+            }
+        }
     }
-) {
+) {}
+###################################################################################################
+
+class "ALModelAPI"
+(
+doc = "Data used to import a maya reference."
+  inherits = </ModelAPI>
+  customData = {
+        string className = "ModelAPI"
+        string fileName = "ModelAPI"
+        string extraIncludes = """
+#include "./tokens.h"
+"""
+      }
+)
+{
+
 }
+
 ###################################################################################################
 
 class ALMayaReference "ALMayaReference"(

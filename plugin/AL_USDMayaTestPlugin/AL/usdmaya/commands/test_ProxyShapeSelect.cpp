@@ -796,3 +796,4 @@ TEST(ProxyShapeSelect, selectSamePathTwiceViaMaya)
   EXPECT_EQ(0, required);
   EXPECT_EQ(0, refCount);
 }
+

@@ -38,6 +38,16 @@ struct Metadata
 
   /// MetaData token that controls whether a prim will be imported as Maya geometry
   static const TfToken importAsNative;
+
+  /// Name of the property that determines if the prim is selectable or not
+  static const TfToken selectability;
+
+  /// Value used in the selectibility property that tags the prim as selectable
+  static const TfToken selectable;
+
+  /// Value used in the selectibility property that tags the prim as unselectable
+  static const TfToken unselectable;
+
 };
 
 //----------------------------------------------------------------------------------------------------------------------

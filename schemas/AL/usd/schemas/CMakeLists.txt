@@ -73,6 +73,7 @@ configure_file (
 
 add_library(${SCHEMAS_PACKAGE}
     SHARED
+    ModelAPI.cpp
     MayaReference.cpp
     HostDrivenTransformInfo.cpp
     tokens.cpp
@@ -104,6 +105,7 @@ configure_file (
 add_library(${SCHEMAS_PYTHON_PACKAGE}
     SHARED
     ${CMAKE_CURRENT_BINARY_DIR}/module.cpp
+    wrapModelAPI.cpp
     wrapMayaReference.cpp
     wrapHostDrivenTransformInfo.cpp
     wrapTokens.cpp
@@ -173,6 +175,7 @@ install(
 
 install(
     FILES
+        ModelAPI.h
         MayaReference.h
         HostDrivenTransformInfo.h
         api.h

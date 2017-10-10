@@ -1136,6 +1136,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
         if(alreadySelected)
         {
           auto prim = stage->GetPrimAtPath(path);
+
           if(prim)
           {
             prims.push_back(prim);
@@ -1203,7 +1204,9 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
           if(alreadySelected)
             removePrims.push_back(prim);
           else
+          {
             insertPrims.push_back(prim);
+          }
         }
       }
 

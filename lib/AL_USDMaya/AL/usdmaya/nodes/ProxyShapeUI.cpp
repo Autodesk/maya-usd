@@ -298,15 +298,16 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
   proxyShape->m_pleaseIgnoreSelection = true;
 
   UsdPrim root = proxyShape->getUsdStage()->GetPseudoRoot();
-  SdfPathVector enablePaths;
-  enablePaths.push_back(root.GetPath());
+
   UsdImagingGLEngine::HitBatch hitBatch;
+  SdfPathVector rootPath;
+  rootPath.push_back(root.GetPath());
 
   bool hitSelected = engine->TestIntersectionBatch(
           GfMatrix4d(viewMatrix.matrix),
           GfMatrix4d(projectionMatrix.matrix),
           worldToLocalSpace,
-          enablePaths,
+          rootPath,
           params,
           5,
           ProxyShapeSelectionHelper::path_ting,
@@ -479,8 +480,6 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
     case MGlobal::kAddToList:
       {
-
-
         MString command;
         if(paths.size())
         {

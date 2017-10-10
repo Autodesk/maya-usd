@@ -13,21 +13,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "Metadata.h"
+#pragma once
+#include "AL/usdmaya/fileio/ImportParams.h"
+#include "maya/MPxCommand.h"
+#include "maya/MSelectionList.h"
 
+#include "pxr/pxr.h"
+#include "pxr/usd/usd/stage.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
 namespace usdmaya {
-
-const TfToken Metadata::transformType("al_usdmaya_transformType");
-const TfToken Metadata::excludeFromProxyShape("al_usdmaya_excludeFromProxyShape");
-const TfToken Metadata::importAsNative("al_usdmaya_importAsNative");
-
-const TfToken Metadata::selectability("al_usdmaya_selectability");
-const TfToken Metadata::selectable("selectable");
-const TfToken Metadata::unselectable("unselectable");
+namespace cmds {
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief  Modifies the SelectDatabase owned by the ProxyShape. These modifications typically affects if prims are
+///         are selectable or not.
+/// \ingroup commands
+//----------------------------------------------------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------------------------------------------------
+} // cmds
 } // usdmaya
 } // AL
 //----------------------------------------------------------------------------------------------------------------------
+
+
+

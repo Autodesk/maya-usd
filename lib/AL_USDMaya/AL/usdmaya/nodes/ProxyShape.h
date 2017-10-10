@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #pragma once
+#include <AL/usdmaya/SelectabilityDB.h>
 #include "AL/usdmaya/Common.h"
 #include "AL/maya/NodeHelper.h"
 #include "AL/usdmaya/DrivenTransformsData.h"
@@ -21,7 +22,6 @@
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
-
 #include "maya/MPxSurfaceShape.h"
 #include "maya/MEventMessage.h"
 #include "maya/MNodeMessage.h"
@@ -37,6 +37,7 @@
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/sdf/notice.h"
 #include <stack>
+#include <functional>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -170,6 +171,29 @@ public:
 private:
   SdfPathVector m_selected;
 };
+
+//typedef functions
+struct  HierarchyIterationLogic
+{
+  HierarchyIterationLogic():
+      preIteration(nullptr),
+      iteration(nullptr),
+      postIteration(nullptr)
+  {}
+
+  std::function<void()> preIteration;
+  std::function<void(const fileio::TransformIterator& transformIterator,const UsdPrim& prim)> iteration;
+  std::function<void()> postIteration;
+};
+
+struct FindUnselectablePrimsLogic : public HierarchyIterationLogic
+{
+  SdfPathVector newUnselectables;
+  SdfPathVector removeUnselectables;
+};
+
+typedef const HierarchyIterationLogic*  HierarchyIterationLogics[2];
+
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A custom proxy shape node that attaches itself to a USD file, and then renders it.
@@ -511,8 +535,19 @@ public:
   /// \brief  deserialises the translator context
   void deserialiseTranslatorContext();
 
+  /// \brief aggregates logic that needs to iterate through the hierarchy looking for properties/metdata on prims
+  void findTaggedPrims();
+
+  void findTaggedPrims(const HierarchyIterationLogics& iterationLogics);
+
   /// \brief  searches for the excluded geometry
   void findExcludedGeometry();
+
+  /// \brief searches for paths which are selectable
+  void findSelectablePrims();
+
+  //// \brief iterates the prim hierarchy calling pre/iterate/post like functions that are stored in the passed in objects
+  void iteratePrimHierarchy();
 
   /// \brief  returns the plugin translator registry assigned to this shape
   /// \return the translator registry
@@ -628,11 +663,22 @@ public:
   inline void setChangedSelectionState(bool v)
     { m_hasChangedSelection = v; }
 
+  /// \brief Returns the SelectionDatabase owned by the ProxyShape
+  /// \return ASelectableDB owned by the ProxyShape
+  AL::usdmaya::SelectabilityDB& selectabilityDB()
+    { return m_selectabilityDB; }
+
+  /// \brief Returns the SelectionDatabase owned by the ProxyShape
+  /// \return A constant SelectableDB owned by the ProxyShape
+  const AL::usdmaya::SelectabilityDB& selectableDB() const
+    { return const_cast<ProxyShape*>(this)->selectabilityDB(); }
+
 private:
   static void onSelectionChanged(void* ptr);
   bool removeAllSelectedNodes(SelectionUndoHelper& helper);
   void removeTransformRefs(const std::vector<std::pair<SdfPath, MObject>>& removedRefs, TransformReason reason);
   void insertTransformRefs(const std::vector<std::pair<SdfPath, MObject>>& removedRefs, TransformReason reason);
+
   void constructExcludedPrims();
 
   MObject makeUsdTransformChain_internal(
@@ -790,7 +836,11 @@ private:
     }
 
 private:
+  AL::usdmaya::SelectabilityDB m_selectabilityDB;
+  HierarchyIterationLogics m_hierarchyIterationLogics;
+  HierarchyIterationLogic m_findExcludedPrims;
   SelectionList m_selectionList;
+  FindUnselectablePrimsLogic m_findUnselectablePrims;
   SdfPathVector m_selectedPaths;
   std::vector<SdfPath> m_paths;
   std::vector<UsdPrim> m_prims;
@@ -811,6 +861,7 @@ private:
   SdfPath m_changedPath;
   SdfPathVector m_variantSwitchedPrims;
   UsdImagingGLHdEngine* m_engine = 0;
+
   uint32_t m_engineRefCount = 0;
   bool m_compositionHasChanged = false;
   bool m_drivenTransformsDirty = false;

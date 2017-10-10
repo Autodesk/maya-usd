@@ -49,6 +49,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     (rotateOrderAttributes) \
     (scaleAttributeIndices) \
     (scaleAttributes) \
+    ((selectability, "al_usdmaya_selectability")) \
+    ((selectability_inherited, "inherited")) \
+    ((selectability_selectable, "selectable")) \
+    ((selectability_unselectable, "unselectable")) \
     (targetTransforms) \
     (transformSourceNodes) \
     (translateAttributeIndices) \
@@ -85,6 +89,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>rotateOrderAttributes</b> - AL_usd_HostDrivenTransformInfo
 /// \li <b>scaleAttributeIndices</b> - AL_usd_HostDrivenTransformInfo
 /// \li <b>scaleAttributes</b> - AL_usd_HostDrivenTransformInfo
+/// \li <b>selectability</b> - Stores the state of the prims selectability
+/// \li <b>selectability_inherited</b> - State which makes the Prim inherit it's selectability
+/// \li <b>selectability_selectable</b> - State which makes the Prim selectable
+/// \li <b>selectability_unselectable</b> - State which makes the Prim unselectable
 /// \li <b>targetTransforms</b> - AL_usd_HostDrivenTransformInfo
 /// \li <b>transformSourceNodes</b> - AL_usd_HostDrivenTransformInfo
 /// \li <b>translateAttributeIndices</b> - AL_usd_HostDrivenTransformInfo

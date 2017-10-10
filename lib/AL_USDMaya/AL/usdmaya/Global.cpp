@@ -79,7 +79,7 @@ static void postFileOpen(void*)
         nodes::ProxyShape* proxy = (nodes::ProxyShape*)fn.userNode();
         auto stage = proxy->getUsdStage();
         proxy->deserialiseTranslatorContext();
-        proxy->findExcludedGeometry();
+        proxy->findTaggedPrims();
         proxy->constructGLImagingEngine();
         proxy->deserialiseTransformRefs();
         auto layer = proxy->getLayer();
