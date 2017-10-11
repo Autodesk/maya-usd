@@ -90,55 +90,58 @@ void ProxyShape::onSelectionChanged(void* ptr)
       SdfPath path;
       if(!proxy->isSelectedMObject(obj, path))
       {
-        precommand += " -pp \"";
-        precommand += path.GetText();
-        precommand += "\"";
-        hasNewItems = true;
+        if(path.IsAbsolutePath())
+        {
+          precommand += " -pp \"";
+          precommand += path.GetText();
+          precommand += "\"";
+          hasNewItems = true;
+        }
       }
     }
 
-      struct compare_length {
-        bool operator() (const SdfPath& a, const SdfPath& b) const {
-           return a.GetString().size() > b.GetString().size();
-        }
-      };
-      std::sort(unselectedSet.begin(), unselectedSet.end(), compare_length());
-
-      // construct command to unselect the nodes (specifying the internal flag to ensure the selection list is not modified)
-      MString command = "AL_usdmaya_ProxyShapeSelect -i -d";
-      for(auto removed : unselectedSet)
-      {
-        command += " -pp \"";
-        command += removed.GetText();
-        command += "\"";
+    struct compare_length {
+      bool operator() (const SdfPath& a, const SdfPath& b) const {
+         return a.GetString().size() > b.GetString().size();
       }
+    };
+    std::sort(unselectedSet.begin(), unselectedSet.end(), compare_length());
 
-      fnDag.setObject(proxy->thisMObject());
-
-      command += " \"";
-      command += fnDag.name().asChar();
+    // construct command to unselect the nodes (specifying the internal flag to ensure the selection list is not modified)
+    MString command = "AL_usdmaya_ProxyShapeSelect -i -d";
+    for(auto removed : unselectedSet)
+    {
+      command += " -pp \"";
+      command += removed.GetText();
       command += "\"";
+    }
 
-      if(hasNewItems)
+    fnDag.setObject(proxy->thisMObject());
+
+    command += " \"";
+    command += fnDag.name().asChar();
+    command += "\"";
+
+    if(hasNewItems)
+    {
+      precommand += " \"";
+      precommand += fnDag.name().asChar();
+      precommand += "\";";
+      if(!unselectedSet.empty())
       {
-        precommand += " \"";
-        precommand += fnDag.name().asChar();
-        precommand += "\";";
-        if(!unselectedSet.empty())
-        {
-          command = precommand + command;
-        }
-        else
-        {
-          command = precommand;
-        }
+        command = precommand + command;
       }
-
-      if(unselectedSet.empty() && !hasNewItems)
+      else
       {
+        command = precommand;
+      }
+    }
+
+    if(unselectedSet.empty() && !hasNewItems)
+    {
       proxy->m_pleaseIgnoreSelection = true;
       MGlobal::executeCommand(command, false, true);
-      }
+    }
   }
   else
   {
@@ -198,10 +201,13 @@ void ProxyShape::onSelectionChanged(void* ptr)
       SdfPath path;
       if(!proxy->isSelectedMObject(obj, path))
       {
-        precommand += " -pp \"";
-        precommand += path.GetText();
-        precommand += "\"";
-        hasNewItems = true;
+        if(path.IsAbsolutePath())
+        {
+          precommand += " -pp \"";
+          precommand += path.GetText();
+          precommand += "\"";
+          hasNewItems = true;
+        }
       }
     }
 
@@ -229,7 +235,6 @@ void ProxyShape::onSelectionChanged(void* ptr)
       precommand += " \"";
       precommand += fnDag.name().asChar();
       precommand += "\";";
-
       proxy->m_pleaseIgnoreSelection = true;
       MGlobal::executeCommand(precommand, false, true);
       proxy->m_pleaseIgnoreSelection = false;
