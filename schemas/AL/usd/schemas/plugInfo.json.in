@@ -29,6 +29,14 @@
                         "default": "", 
                         "documentation": "A custom maya transform type name to use instead of the built-in AL_usdmaya_Transform node type", 
                         "type": "string"
+                    },
+                    "al_usdmaya_selectability": {
+                        "appliesTo": [
+                            "prims"
+                        ], 
+                        "default": "", 
+                        "documentation": "Stores the state of the prims selectability", 
+                        "type": "token"
                     }
                 }, 
                 "Types": {

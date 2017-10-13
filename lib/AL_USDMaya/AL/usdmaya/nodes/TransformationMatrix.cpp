@@ -1364,7 +1364,8 @@ MStatus TransformationMatrix::setScalePivot(const MPoint& sp, MSpace::Space spac
   }
   if(pushToPrimEnabled())
   {
-    if(primHasScalePivot())
+    // Do not insert a scale pivot op if the input prim has a generic pivot.
+    if(primHasScalePivot() || primHasPivot())
     {
     }
     else
@@ -1451,7 +1452,8 @@ MStatus TransformationMatrix::setRotatePivot(const MPoint& pivot, MSpace::Space 
   }
   if(pushToPrimEnabled())
   {
-    if(primHasRotatePivot())
+    // Do not insert a rotate pivot op if the input prim has a generic pivot.
+    if(primHasRotatePivot() || primHasPivot())
     {
     }
     else

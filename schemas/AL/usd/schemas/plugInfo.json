@@ -22,6 +22,14 @@
                         "documentation": "Set to true if you need this prim to be imported as maya geometry instead of via the proxyShape", 
                         "type": "bool"
                     }, 
+                    "al_usdmaya_selectability": {
+                        "appliesTo": [
+                            "prims"
+                        ], 
+                        "default": "", 
+                        "documentation": "Stores the state of the prims selectability", 
+                        "type": "token"
+                    }, 
                     "al_usdmaya_transformType": {
                         "appliesTo": [
                             "prims"
