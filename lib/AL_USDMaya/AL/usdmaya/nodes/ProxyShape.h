@@ -664,14 +664,15 @@ public:
     { m_hasChangedSelection = v; }
 
   /// \brief Returns the SelectionDatabase owned by the ProxyShape
-  /// \return ASelectableDB owned by the ProxyShape
+  /// \return A SelectableDB owned by the ProxyShape
   AL::usdmaya::SelectabilityDB& selectabilityDB()
     { return m_selectabilityDB; }
 
   /// \brief Returns the SelectionDatabase owned by the ProxyShape
   /// \return A constant SelectableDB owned by the ProxyShape
-  const AL::usdmaya::SelectabilityDB& selectableDB() const
+  const AL::usdmaya::SelectabilityDB& selectabilityDB() const
     { return const_cast<ProxyShape*>(this)->selectabilityDB(); }
+
 
 private:
   static void onSelectionChanged(void* ptr);
