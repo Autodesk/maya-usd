@@ -995,9 +995,10 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
         MString pathString = args.asString(0);
 
         SdfPath path(convert(pathString));
-        if(!proxy->selectabilityDB().isPathUnselectable(path))
+
+        if(!proxy->selectabilityDB().isPathUnselectable(path) && path.IsAbsolutePath())
         {
-          paths.push_back(SdfPath(convert(pathString)));
+          paths.push_back(path);
         }
       }
 
