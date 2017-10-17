@@ -1054,7 +1054,8 @@ MStatus ProxyShapeSelect::redoIt()
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeSelect::redoIt\n");
   if(m_helper) m_helper->doIt();
   if(MGlobal::kInteractive == MGlobal::mayaState())
-    MGlobal::executeCommand("refresh", false, false);
+    MGlobal::executeCommandOnIdle("refresh", false);
+
   return MS::kSuccess;
 }
 
