@@ -43,12 +43,14 @@
 #include "maya/MHWGeometryUtilities.h"
 #include "maya/MItDependencyNodes.h"
 #include "maya/MPlugArray.h"
+#include "maya/MNodeClass.h"
 
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/usd/stageCacheContext.h"
 
+#include <algorithm>
 
 namespace AL {
 namespace usdmaya {
@@ -137,6 +139,9 @@ MObject ProxyShape::m_emission = MObject::kNullObj;
 MObject ProxyShape::m_shininess = MObject::kNullObj;
 MObject ProxyShape::m_serializedRefCounts = MObject::kNullObj;
 MObject ProxyShape::m_version = MObject::kNullObj;
+MObject ProxyShape::m_transformTranslate = MObject::kNullObj;
+MObject ProxyShape::m_transformRotate = MObject::kNullObj;
+MObject ProxyShape::m_transformScale = MObject::kNullObj;
 
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -481,8 +486,31 @@ ProxyShape::ProxyShape()
     m_findUnselectablePrims.removeUnselectables.clear();
   };
 
+  m_findLockedPrims.preIteration = [this]() {
+  };
+  m_findLockedPrims.iteration = [this] ( const fileio::TransformIterator& transformIterator,
+                                         const UsdPrim& prim)
+  {
+    TfToken lockPropertyToken;
+    if (prim.GetMetadata<TfToken>(Metadata::locked, & lockPropertyToken))
+    {
+      if (lockPropertyToken == Metadata::lockTransform)
+      {
+        m_findLockedPrims.lockTransforms.push_back(prim.GetPath());
+      }
+      else if (lockPropertyToken == Metadata::lockInherited)
+      {
+        m_findLockedPrims.lockInheriteds.push_back(prim.GetPath());
+      }
+    }
+  };
+  m_findLockedPrims.postIteration = [this]() {
+    constructLockPrims();
+  };
+
   m_hierarchyIterationLogics[0] = &m_findExcludedPrims;
   m_hierarchyIterationLogics[1] = &m_findUnselectablePrims;
+  m_hierarchyIterationLogics[2] = &m_findLockedPrims;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -576,6 +604,11 @@ MStatus ProxyShape::initialise()
         "version", "vrs", getVersion().c_str(),
         kReadable | kStorable | kHidden
         );
+
+    MNodeClass nc("transform");
+    m_transformTranslate = nc.attribute("t");
+    m_transformRotate = nc.attribute("r");
+    m_transformScale = nc.attribute("s");
 
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, m_outTime), errorString);
@@ -840,6 +873,7 @@ std::vector<UsdPrim> ProxyShape::huntForNativeNodesUnderPrim(
     }
   }
   findExcludedGeometry();
+  findLockedPrims();
   return prims;
 }
 
@@ -1056,6 +1090,77 @@ void ProxyShape::constructExcludedPrims()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
+{
+  MObjectHandle objHdl;
+  MStatus status;
+  context()->getMObject(path, objHdl, MFn::kTransform);
+  if (objHdl.isValid())
+  {
+    MFnDependencyNode transDG(objHdl.object(), &status);
+    CHECK_MSTATUS(status);
+
+    MPlug plug = transDG.findPlug(m_transformTranslate, true, &status);
+    CHECK_MSTATUS(status);
+    status = plug.setLocked(true);
+    CHECK_MSTATUS(status);
+
+    plug = transDG.findPlug(m_transformRotate, true, &status);
+    CHECK_MSTATUS(status);
+    status = plug.setLocked(true);
+    CHECK_MSTATUS(status);
+
+    plug = transDG.findPlug(m_transformScale, true, &status);
+    CHECK_MSTATUS(status);
+    status = plug.setLocked(true);
+    CHECK_MSTATUS(status);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::constructLockPrims()
+{
+  SdfPathVector& lockTransforms = m_findLockedPrims.lockTransforms;
+  SdfPathVector& lockInheriteds = m_findLockedPrims.lockInheriteds;
+
+  // add inherited lock prims according to their parents
+  for (auto inherited : lockInheriteds)
+  {
+    SdfPath parentPath = inherited.GetParentPath();
+    if (parentPath.IsEmpty())
+      continue;
+    if (std::find(lockTransforms.begin(), lockTransforms.end(), parentPath) != lockTransforms.end())
+    {
+      lockTransforms.emplace_back(inherited);
+    }
+  }
+  std::sort(lockTransforms.begin(), lockTransforms.end());
+
+  // find out prims need be unlocked
+  m_unlockTransformPrims.clear();
+  for (auto transform : m_lockTransformPrims)
+  {
+    if (!std::binary_search(lockTransforms.begin(), lockTransforms.end(), transform))
+    {
+      m_unlockTransformPrims.emplace_back(transform);
+    }
+  }
+  m_lockTransformPrims = lockTransforms;
+  lockTransforms.clear();
+  lockInheriteds.clear();
+
+  MStatus status;
+  for (auto lock : m_lockTransformPrims)
+  {
+    lockTransformAttribute(lock, false);
+  }
+  for (auto unlock : m_unlockTransformPrims)
+  {
+    lockTransformAttribute(unlock, true);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug&, void* clientData)
 {
   const SdfPath rootPath(std::string("/"));
@@ -1208,6 +1313,24 @@ void ProxyShape::findSelectablePrims()
   }
 
   m_findUnselectablePrims.postIteration();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::findLockedPrims()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::findLockedPrims\n");
+  if (!m_stage)
+    return;
+  m_findLockedPrims.preIteration();
+  MDagPath m_parentPath;
+  for(fileio::TransformIterator it(m_stage, m_parentPath); !it.done(); it.next())
+  {
+    const UsdPrim& prim = it.prim();
+    if (!prim.IsValid())
+      continue;
+    m_findLockedPrims.iteration(it, prim);
+  }
+  m_findLockedPrims.postIteration();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

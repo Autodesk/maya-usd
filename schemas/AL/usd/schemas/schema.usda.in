@@ -31,6 +31,18 @@ over "GLOBAL" (
                 string value = "inherited"
                 string doc = """State which makes the Prim inherit it's selectability"""
             }
+            dictionary lock = {
+                string value = "al_usdmaya_lock"
+                string doc = """Stores the lock state of corresponding Maya objects of the prims"""
+            }
+            dictionary lock_transform = {
+                string value = "transform"
+                string doc = """State which makes transform attributes of Maya objects locked"""
+            }
+            dictionary lock_inherited = {
+                string value = "inherited"
+                string doc = """State which makes the Prim inherit it's lock"""
+            }
         }
     }
 ) {}
