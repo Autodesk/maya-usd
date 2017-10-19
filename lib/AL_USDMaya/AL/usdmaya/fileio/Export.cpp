@@ -155,12 +155,6 @@ struct Export::Impl
     return m_stage;
   }
 
-  inline void closeStage()
-  {
-    if(m_stage)
-      m_stage->Close();
-  }
-
   inline UsdStageRefPtr stage()
   {
     return m_stage;
@@ -261,7 +255,6 @@ Export::Export(const ExporterParams& params)
   if(m_impl->setStage(UsdStage::CreateNew(m_params.m_fileName.asChar())))
   {
     doExport();
-    m_impl->closeStage();
   }
 }
 

@@ -47,7 +47,7 @@ TEST(ProxyShapeImport, populationMaskInclude)
     SdfPath materialPath = SdfPath("/root/material");
     UsdPrim material = stage->DefinePrim(materialPath, TfToken("xform"));
     auto relation = leg1.CreateRelationship(TfToken("material"), true);
-    relation.AppendTarget(materialPath);
+    relation.AddTarget(materialPath);
 
     stage->Export(temp_bootstrap_path, false);
     return MString(temp_bootstrap_path.c_str());
