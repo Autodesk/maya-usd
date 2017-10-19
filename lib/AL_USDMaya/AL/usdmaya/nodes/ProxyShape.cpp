@@ -1102,17 +1102,17 @@ void ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
 
     MPlug plug = transDG.findPlug(m_transformTranslate, true, &status);
     CHECK_MSTATUS(status);
-    status = plug.setLocked(true);
+    status = plug.setLocked(lock);
     CHECK_MSTATUS(status);
 
     plug = transDG.findPlug(m_transformRotate, true, &status);
     CHECK_MSTATUS(status);
-    status = plug.setLocked(true);
+    status = plug.setLocked(lock);
     CHECK_MSTATUS(status);
 
     plug = transDG.findPlug(m_transformScale, true, &status);
     CHECK_MSTATUS(status);
-    status = plug.setLocked(true);
+    status = plug.setLocked(lock);
     CHECK_MSTATUS(status);
   }
 }
