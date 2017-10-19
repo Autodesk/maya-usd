@@ -47,7 +47,7 @@ public:
 
   /// \brief  copy the input stage data into this node
   /// \param  aDatum the data to copy
-  void copy(const MPxData& aDatum);
+  void copy(const MPxData& aDatum) override;
 
   /// the type id of the stage data
   static const MTypeId kTypeId;
