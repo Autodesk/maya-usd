@@ -57,7 +57,10 @@ public:
 
 private:
   void exportSceneHierarchy(MDagPath path);
+  void exportShapesCommonProc(MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath);
+  void exportShapesOnlyUVProc(MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath);
   UsdPrim exportMesh(MDagPath path, const SdfPath& usdPath);
+  UsdPrim exportMeshUV(MDagPath path, const SdfPath& usdPath);
   UsdPrim exportNurbsCurve(MDagPath path, const SdfPath& usdPath);
   UsdPrim exportAssembly(MDagPath path, const SdfPath& usdPath);
   UsdPrim exportPluginLocatorNode(MDagPath path, const SdfPath& usdPath);

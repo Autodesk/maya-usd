@@ -1558,6 +1558,21 @@ UsdPrim MeshTranslator::exportObject(UsdStageRefPtr stage, MDagPath path, const 
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+UsdPrim MeshTranslator::exportUV(UsdStageRefPtr stage, MDagPath path, const SdfPath& usdPath, const ExporterParams& params)
+{
+  UsdPrim overPrim = stage->OverridePrim(usdPath);
+  MStatus status;
+  MFnMesh fnMesh(path, &status);
+  AL_MAYA_CHECK_ERROR2(status, MString("unable to attach function set to mesh") + path.fullPathName());
+  if (status)
+  {
+    UsdGeomMesh mesh(overPrim);
+    copyUvSetData(mesh, fnMesh);
+  }
+  return overPrim;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MStatus MeshTranslator::registerType()
 {
   return MS::kSuccess;
