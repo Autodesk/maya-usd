@@ -1558,7 +1558,7 @@ UsdPrim MeshTranslator::exportObject(UsdStageRefPtr stage, MDagPath path, const 
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UsdPrim MeshTranslator::exportUV(UsdStageRefPtr stage, MDagPath path, const SdfPath& usdPath, const ExporterParams& params)
+UsdPrim MeshTranslator::exportUV(UsdStageRefPtr stage, MDagPath path, const SdfPath& usdPath)
 {
   UsdPrim overPrim = stage->OverridePrim(usdPath);
   MStatus status;

@@ -274,7 +274,7 @@ UsdPrim Export::exportMesh(MDagPath path, const SdfPath& usdPath)
 //----------------------------------------------------------------------------------------------------------------------
 UsdPrim Export::exportMeshUV(MDagPath path, const SdfPath& usdPath)
 {
-  return translators::MeshTranslator::exportUV(m_impl->stage(), path, usdPath, m_params);
+  return translators::MeshTranslator::exportUV(m_impl->stage(), path, usdPath);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
