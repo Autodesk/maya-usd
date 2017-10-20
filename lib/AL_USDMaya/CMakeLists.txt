@@ -118,7 +118,6 @@ list(APPEND AL_usdmaya_fileio_translators_source
 )
 
 list(APPEND AL_usdmaya_nodes_headers
-        AL/usdmaya/nodes/HostDrivenTransforms.h
         AL/usdmaya/nodes/Layer.h
         AL/usdmaya/nodes/LayerVisitor.h
         AL/usdmaya/nodes/ProxyDrawOverride.h
@@ -132,7 +131,6 @@ list(APPEND AL_usdmaya_nodes_proxy_headers
         AL/usdmaya/nodes/proxy/PrimFilter.h
 )
 list(APPEND AL_usdmaya_nodes_source
-        AL/usdmaya/nodes/HostDrivenTransforms.cpp
         AL/usdmaya/nodes/Layer.cpp
         AL/usdmaya/nodes/LayerVisitor.cpp
         AL/usdmaya/nodes/ProxyDrawOverride.cpp

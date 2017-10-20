@@ -43,23 +43,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define AL_USDMAYASCHEMAS_TOKENS \
     (mayaNamespace) \
     (mayaReference) \
-    (rotateAttributeIndices) \
-    (rotateAttributes) \
-    (rotateOrderAttributeIndices) \
-    (rotateOrderAttributes) \
-    (scaleAttributeIndices) \
-    (scaleAttributes) \
     ((selectability, "al_usdmaya_selectability")) \
     ((selectability_inherited, "inherited")) \
     ((selectability_selectable, "selectable")) \
-    ((selectability_unselectable, "unselectable")) \
-    (targetTransforms) \
-    (transformSourceNodes) \
-    (translateAttributeIndices) \
-    (translateAttributes) \
-    (visibilityAttributeIndices) \
-    (visibilityAttributes) \
-    (visibilitySourceNodes)
+    ((selectability_unselectable, "unselectable"))
 
 /// \anchor AL_USDMayaSchemasTokens
 ///
@@ -83,23 +70,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// The tokens are:
 /// \li <b>mayaNamespace</b> - AL_usd_MayaReference
 /// \li <b>mayaReference</b> - AL_usd_MayaReference
-/// \li <b>rotateAttributeIndices</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>rotateAttributes</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>rotateOrderAttributeIndices</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>rotateOrderAttributes</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>scaleAttributeIndices</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>scaleAttributes</b> - AL_usd_HostDrivenTransformInfo
 /// \li <b>selectability</b> - Stores the state of the prims selectability
 /// \li <b>selectability_inherited</b> - State which makes the Prim inherit it's selectability
 /// \li <b>selectability_selectable</b> - State which makes the Prim selectable
 /// \li <b>selectability_unselectable</b> - State which makes the Prim unselectable
-/// \li <b>targetTransforms</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>transformSourceNodes</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>translateAttributeIndices</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>translateAttributes</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>visibilityAttributeIndices</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>visibilityAttributes</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>visibilitySourceNodes</b> - AL_usd_HostDrivenTransformInfo
 TF_DECLARE_PUBLIC_TOKENS(AL_USDMayaSchemasTokens, AL_USDMAYASCHEMAS_API, AL_USDMAYASCHEMAS_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
