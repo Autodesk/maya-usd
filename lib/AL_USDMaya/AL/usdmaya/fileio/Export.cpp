@@ -167,7 +167,7 @@ struct Export::Impl
     m_stage->SetEndTimeCode(maxFrame);
   }
 
-  void setDefaultPrimIfOnlyOneRoot()
+  void setDefaultPrimIfOnlyOneRoot(SdfPath defaultPrim)
   {
     UsdPrim psuedo = m_stage->GetPseudoRoot();
     auto children = psuedo.GetChildren();
@@ -182,6 +182,10 @@ struct Export::Impl
         // set that prim as the default prim.
         m_stage->SetDefaultPrim(*first);
       }
+    }
+    if (!m_stage->HasDefaultPrim() and !defaultPrim.IsEmpty())
+    {
+      m_stage->SetDefaultPrim(m_stage->GetPrimAtPath(defaultPrim));
     }
   }
 
@@ -229,9 +233,9 @@ struct Export::Impl
     }
   }
 
-  void doExport(const char* const filename, bool toFilter = false)
+  void doExport(const char* const filename, bool toFilter = false, SdfPath defaultPrim = SdfPath())
   {
-    setDefaultPrimIfOnlyOneRoot();
+    setDefaultPrimIfOnlyOneRoot(defaultPrim);
     if (toFilter)
     {
       filterSample();
@@ -274,7 +278,7 @@ UsdPrim Export::exportMesh(MDagPath path, const SdfPath& usdPath)
 //----------------------------------------------------------------------------------------------------------------------
 UsdPrim Export::exportMeshUV(MDagPath path, const SdfPath& usdPath)
 {
-  return translators::MeshTranslator::exportUV(m_impl->stage(), path, usdPath);
+  return translators::MeshTranslator::exportUV(m_impl->stage(), path, usdPath, m_params);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -395,7 +399,7 @@ void Export::exportShapesOnlyUVProc(MDagPath shapePath, MFnTransform& fnTransfor
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void Export::exportSceneHierarchy(MDagPath rootPath)
+void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
 {
   MDagPath parentPath = rootPath;
   parentPath.pop();
@@ -464,6 +468,11 @@ void Export::exportSceneHierarchy(MDagPath rootPath)
       if(!status)
       {
         usdPath = makeUsdPath(parentPath, transformPath);
+      }
+      // for UV only exporting, record first prim as default
+      if (m_params.m_meshUV && defaultPrim.IsEmpty())
+      {
+        defaultPrim = usdPath;
       }
 
       // how many shapes are directly under this transform path?
@@ -535,6 +544,7 @@ void Export::doExport()
 
   MObjectArray objects;
   const MSelectionList& sl = m_params.m_nodes;
+  SdfPath defaultPrim;
   for(uint32_t i = 0, n = sl.length(); i < n; ++i)
   {
     MDagPath path;
@@ -542,13 +552,13 @@ void Export::doExport()
     {
       if(path.node().hasFn(MFn::kTransform))
       {
-        exportSceneHierarchy(path);
+        exportSceneHierarchy(path, defaultPrim);
       }
       else
       if(path.node().hasFn(MFn::kShape))
       {
         path.pop();
-        exportSceneHierarchy(path);
+        exportSceneHierarchy(path, defaultPrim);
       }
     }
     else
@@ -568,7 +578,7 @@ void Export::doExport()
     MAnimControl::setCurrentTime(oldCurTime);
   }
 
-  m_impl->doExport(m_params.m_fileName.asChar(), m_params.m_filterSample);
+  m_impl->doExport(m_params.m_fileName.asChar(), m_params.m_filterSample, defaultPrim);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -616,6 +626,10 @@ MStatus ExportCommand::doIt(const MArgList& args)
   if(argData.isFlagSet("muv", &status))
   {
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("muv", 0, m_params.m_meshUV), "ALUSDExport: Unable to fetch \"meshUV\" argument");
+  }
+  if(argData.isFlagSet("luv", &status))
+  {
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("luv", 0, m_params.m_leftHandedUV), "ALUSDExport: Unable to fetch \"m_leftHanded\" argument");
   }
   if(argData.isFlagSet("as", &status))
   {
@@ -715,6 +729,8 @@ MSyntax ExportCommand::createSyntax()
   status = syntax.addFlag("-m" , "-meshes", MSyntax::kBoolean);
   AL_MAYA_CHECK_ERROR2(status, errorString);
   status = syntax.addFlag("-muv" , "-meshUV", MSyntax::kBoolean);
+  AL_MAYA_CHECK_ERROR2(status, errorString);
+  status = syntax.addFlag("-luv" , "-leftHandedUV", MSyntax::kBoolean);
   AL_MAYA_CHECK_ERROR2(status, errorString);
   status = syntax.addFlag("-nc" , "-nurbsCurves", MSyntax::kBoolean);
   AL_MAYA_CHECK_ERROR2(status, errorString);

@@ -773,7 +773,19 @@ static void applyGlimpseSubdivParams(const UsdPrim& from, MFnMesh& fnMesh)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-static void applyPrimVars(const UsdGeomMesh& mesh, MFnMesh& fnMesh, const MIntArray& counts, const MIntArray& connects)
+static void reverseIndices(VtArray<int32_t>& indices, const MIntArray& counts)
+{
+  auto iter = indices.begin();
+  for (uint32_t i = 0, len = counts.length(); i < len; ++i)
+  {
+    int32_t cnt = counts[i];
+    std::reverse(iter, iter + cnt);
+    iter += cnt;
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void applyPrimVars(const UsdGeomMesh& mesh, MFnMesh& fnMesh, const MIntArray& counts, const MIntArray& connects, const bool leftHanded)
 {
   MFloatArray u, v;
   MIntArray indices;
@@ -815,6 +827,10 @@ static void applyPrimVars(const UsdGeomMesh& mesh, MFnMesh& fnMesh, const MIntAr
               {
                 VtIntArray usdindices;
                 primvar.GetIndices(&usdindices);
+                if (leftHanded)
+                {
+                  reverseIndices(usdindices, counts);
+                }
                 indices = MIntArray(usdindices.cdata(), usdindices.size());
                 if(!fnMesh.assignUVs(counts, indices, uv_set))
                 {
@@ -1050,7 +1066,7 @@ void zipUVs(const float* u, const float* v, float* uv, const size_t count)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-static void copyUvSetData(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
+static void copyUvSetData(UsdGeomMesh& mesh, const MFnMesh& fnMesh, const bool leftHanded)
 {
   UsdPrim prim = mesh.GetPrim();
   MStringArray uvSetNames;
@@ -1089,6 +1105,10 @@ static void copyUvSetData(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
             VtArray<int32_t> uvIndices;
             int32_t* ptr = &uvIds[0];
             uvIndices.assign(ptr, ptr + uvIds.length());
+            if (leftHanded)
+            {
+              reverseIndices(uvIndices, uvCounts);
+            }
 
             uvSet.SetIndices(uvIndices);
           }
@@ -1531,7 +1551,7 @@ UsdPrim MeshTranslator::exportObject(UsdStageRefPtr stage, MDagPath path, const 
     copyVertexData(fnMesh, pointsAttr);
     copyFaceConnectsAndPolyCounts(mesh, fnMesh);
     copyInvisibleHoles(mesh, fnMesh);
-    copyUvSetData(mesh, fnMesh);
+    copyUvSetData(mesh, fnMesh, false);
 
     if(params.m_useAnimalSchema)
     {
@@ -1558,7 +1578,7 @@ UsdPrim MeshTranslator::exportObject(UsdStageRefPtr stage, MDagPath path, const 
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UsdPrim MeshTranslator::exportUV(UsdStageRefPtr stage, MDagPath path, const SdfPath& usdPath)
+UsdPrim MeshTranslator::exportUV(UsdStageRefPtr stage, MDagPath path, const SdfPath& usdPath, const ExporterParams& params)
 {
   UsdPrim overPrim = stage->OverridePrim(usdPath);
   MStatus status;
@@ -1567,7 +1587,7 @@ UsdPrim MeshTranslator::exportUV(UsdStageRefPtr stage, MDagPath path, const SdfP
   if (status)
   {
     UsdGeomMesh mesh(overPrim);
-    copyUvSetData(mesh, fnMesh);
+    copyUvSetData(mesh, fnMesh, params.m_leftHandedUV);
   }
   return overPrim;
 }
@@ -1593,6 +1613,7 @@ MObject MeshTranslator::createNode(const UsdPrim& from, MObject parent, const ch
   MFloatPointArray points;
   MVectorArray normals;
   MIntArray counts, connects;
+
   gatherFaceConnectsAndVertices(mesh, points, normals, counts, connects, leftHanded);
 
   MObject polyShape = fnMesh.create(points.length(), counts.length(), points, counts, connects, parent);
@@ -1629,7 +1650,7 @@ MObject MeshTranslator::createNode(const UsdPrim& from, MObject parent, const ch
   applyGlimpseSubdivParams(from, fnMesh);
   applyDefaultMaterialOnShape(polyShape);
   applyAnimalColourSets(from, fnMesh, counts);
-  applyPrimVars(mesh, fnMesh, counts, connects);
+  applyPrimVars(mesh, fnMesh, counts, connects, leftHanded);
 
   return polyShape;
 }

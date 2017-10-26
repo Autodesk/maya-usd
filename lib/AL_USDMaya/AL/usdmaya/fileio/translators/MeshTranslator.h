@@ -71,8 +71,9 @@ public:
   /// \param  stage  the stage in which to override the prim
   /// \param  mayaPath  the path to the maya curve to export
   /// \param  usdPath  the usd path where the prim should be created
+  /// \param  params  the export options
   /// \return the overridden usd prim
-  static UsdPrim exportUV(UsdStageRefPtr stage, MDagPath mayaPath, const SdfPath& usdPath);
+  static UsdPrim exportUV(UsdStageRefPtr stage, MDagPath mayaPath, const SdfPath& usdPath, const ExporterParams& params);
 
   /// \brief  import the dynamic attribute import that we are expected to see some extra subdiv animal logic only data
   ///         exported with our meshes.

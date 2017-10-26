@@ -56,7 +56,7 @@ public:
   ~Export();
 
 private:
-  void exportSceneHierarchy(MDagPath path);
+  void exportSceneHierarchy(MDagPath path, SdfPath& defaultPrim);
   void exportShapesCommonProc(MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath);
   void exportShapesOnlyUVProc(MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath);
   UsdPrim exportMesh(MDagPath path, const SdfPath& usdPath);
