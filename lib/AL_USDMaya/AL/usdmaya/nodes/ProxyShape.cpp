@@ -51,6 +51,7 @@
 #include "pxr/usd/usd/stageCacheContext.h"
 
 #include <algorithm>
+#include <iterator>
 
 namespace AL {
 namespace usdmaya {
@@ -487,6 +488,8 @@ ProxyShape::ProxyShape()
   };
 
   m_findLockedPrims.preIteration = [this]() {
+    this->m_lockTransformPrims.clear();
+    this->m_lockInheritedPrims.clear();
   };
   m_findLockedPrims.iteration = [this] ( const fileio::TransformIterator& transformIterator,
                                          const UsdPrim& prim)
@@ -496,11 +499,11 @@ ProxyShape::ProxyShape()
     {
       if (lockPropertyToken == Metadata::lockTransform)
       {
-        m_findLockedPrims.lockTransforms.push_back(prim.GetPath());
+        this->m_lockTransformPrims.insert(prim.GetPath());
       }
       else if (lockPropertyToken == Metadata::lockInherited)
       {
-        m_findLockedPrims.lockInheriteds.push_back(prim.GetPath());
+        this->m_lockInheritedPrims.insert(prim.GetPath());
       }
     }
   };
@@ -775,11 +778,38 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     }
   };
 
+  SdfPathSet lockTransformPrims;
+  SdfPathSet lockInheritedPrims;
+  SdfPathSet nolockPrims;
+  auto recordPrimsLockStatus = [&lockTransformPrims, &lockInheritedPrims, &nolockPrims] (const SdfPath& objectPath, const UsdPrim& prim) {
+    if (!prim.IsValid())
+    {
+      return;
+    }
+    TfToken lockPropertyValue;
+    if (prim.GetMetadata(Metadata::locked, &lockPropertyValue))
+    {
+      if (lockPropertyValue == Metadata::lockTransform)
+      {
+        lockTransformPrims.insert(objectPath);
+      }
+      else if (lockPropertyValue == Metadata::lockInherited)
+      {
+        lockInheritedPrims.insert(objectPath);
+      }
+      else
+      {
+        nolockPrims.insert(objectPath);
+      }
+    }
+  };
+
   const SdfPathVector& resyncedPaths = notice.GetResyncedPaths();
   for(const SdfPath& path : resyncedPaths)
   {
     UsdPrim newPrim = m_stage->GetPrimAtPath(path);
     recordSelectablePrims(path, newPrim);
+    recordPrimsLockStatus(path, newPrim);
   }
 
   const SdfPathVector& changedInfoOnlyPaths = notice.GetChangedInfoOnlyPaths();
@@ -795,6 +825,7 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
       changedPrim = m_stage->GetPrimAtPath(path);
     }
     recordSelectablePrims(path, changedPrim);
+    recordPrimsLockStatus(path, changedPrim);
   }
 
   if(!removeUnselectables.empty())
@@ -805,6 +836,12 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   if(!newUnselectables.empty())
   {
     m_selectabilityDB.addPathsAsUnselectable(newUnselectables);
+  }
+
+  bool lockChanged = updateLockPrims(lockTransformPrims, lockInheritedPrims, nolockPrims);
+  if (lockChanged)
+  {
+    constructLockPrims();
   }
 }
 
@@ -873,7 +910,6 @@ std::vector<UsdPrim> ProxyShape::huntForNativeNodesUnderPrim(
     }
   }
   findExcludedGeometry();
-  findLockedPrims();
   return prims;
 }
 
@@ -1083,6 +1119,35 @@ void ProxyShape::reloadStage(MPlug& plug)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+bool ProxyShape::updateLockPrims(const SdfPathSet& lockTransformPrims, const SdfPathSet& lockInheritedPrims,
+                                 const SdfPathSet& nolockPrims)
+{
+  bool lockChanged = false;
+  for (auto lock : lockTransformPrims)
+  {
+    auto inserted = m_lockTransformPrims.insert(lock);
+    lockChanged |= inserted.second;
+    auto erased = m_lockInheritedPrims.erase(lock);
+    lockChanged |= erased;
+  }
+  for (auto inherited : lockInheritedPrims)
+  {
+    auto erased = m_lockTransformPrims.erase(inherited);
+    lockChanged |= erased;
+    auto inserted = m_lockInheritedPrims.insert(inherited);
+    lockChanged |= inserted.second;
+  }
+  for (auto nolock : nolockPrims)
+  {
+    auto erased = m_lockTransformPrims.erase(nolock);
+    lockChanged |= erased;
+    erased = m_lockInheritedPrims.erase(nolock);
+    lockChanged |= erased;
+  }
+  return lockChanged;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::constructExcludedPrims()
 {
   m_excludedGeometry = getExcludePrimPaths();
@@ -1097,66 +1162,47 @@ void ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
   context()->getMObject(path, objHdl, MFn::kTransform);
   if (objHdl.isValid())
   {
-    MFnDependencyNode transDG(objHdl.object(), &status);
-    CHECK_MSTATUS(status);
-
-    MPlug plug = transDG.findPlug(m_transformTranslate, true, &status);
-    CHECK_MSTATUS(status);
-    status = plug.setLocked(lock);
-    CHECK_MSTATUS(status);
-
-    plug = transDG.findPlug(m_transformRotate, true, &status);
-    CHECK_MSTATUS(status);
-    status = plug.setLocked(lock);
-    CHECK_MSTATUS(status);
-
-    plug = transDG.findPlug(m_transformScale, true, &status);
-    CHECK_MSTATUS(status);
-    status = plug.setLocked(lock);
-    CHECK_MSTATUS(status);
+    MObject object = objHdl.object();
+    MPlug(object, m_transformTranslate).setLocked(lock);
+    MPlug(object, m_transformRotate).setLocked(lock);
+    MPlug(object, m_transformScale).setLocked(lock);
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::constructLockPrims()
 {
-  SdfPathVector& lockTransforms = m_findLockedPrims.lockTransforms;
-  SdfPathVector& lockInheriteds = m_findLockedPrims.lockInheriteds;
+  SdfPathSet primsNeedLock = m_lockTransformPrims;
 
-  // add inherited lock prims according to their parents
-  for (auto inherited : lockInheriteds)
+  // add inherited lock prims if their parents are already in.
+  for (auto inherited : m_lockInheritedPrims)
   {
-    SdfPath parentPath = inherited.GetParentPath();
+    const SdfPath parentPath = inherited.GetParentPath();
     if (parentPath.IsEmpty())
       continue;
-    if (std::find(lockTransforms.begin(), lockTransforms.end(), parentPath) != lockTransforms.end())
+    auto parentIter = primsNeedLock.lower_bound(parentPath);
+    if (parentIter != primsNeedLock.end() and *parentIter == parentPath)
     {
-      lockTransforms.emplace_back(inherited);
+      auto lowerIter = std::lower_bound(parentIter, primsNeedLock.end(), inherited);
+      primsNeedLock.insert(lowerIter, inherited);
     }
   }
-  std::sort(lockTransforms.begin(), lockTransforms.end());
 
-  // find out prims need be unlocked
-  m_unlockTransformPrims.clear();
-  for (auto transform : m_lockTransformPrims)
-  {
-    if (!std::binary_search(lockTransforms.begin(), lockTransforms.end(), transform))
-    {
-      m_unlockTransformPrims.emplace_back(transform);
-    }
-  }
-  m_lockTransformPrims = lockTransforms;
-  lockTransforms.clear();
-  lockInheriteds.clear();
+  SdfPathVector primsToLock;
+  SdfPathVector primsToUnlock;
+  std::set_difference(primsNeedLock.begin(), primsNeedLock.end(), m_currentLockedPrims.begin(),
+                      m_currentLockedPrims.end(), std::back_inserter(primsToLock));
+  std::set_difference(m_currentLockedPrims.begin(), m_currentLockedPrims.end(), primsNeedLock.begin(),
+                      primsNeedLock.end(), std::back_inserter(primsToUnlock));
+  m_currentLockedPrims = primsNeedLock;
 
-  MStatus status;
-  for (auto lock : m_lockTransformPrims)
+  for (auto lock : primsToLock)
   {
-    lockTransformAttribute(lock, false);
+    lockTransformAttribute(lock, true);
   }
-  for (auto unlock : m_unlockTransformPrims)
+  for (auto unlock : primsToUnlock)
   {
-    lockTransformAttribute(unlock, true);
+    lockTransformAttribute(unlock, false);
   }
 }
 

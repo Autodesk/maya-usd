@@ -194,8 +194,6 @@ struct FindUnselectablePrimsLogic : public HierarchyIterationLogic
 
 struct FindLockedPrimsLogic : public HierarchyIterationLogic
 {
-  SdfPathVector lockTransforms;
-  SdfPathVector lockInheriteds;
 };
 
 typedef const HierarchyIterationLogic*  HierarchyIterationLogics[3];
@@ -690,8 +688,10 @@ private:
   void insertTransformRefs(const std::vector<std::pair<SdfPath, MObject>>& removedRefs, TransformReason reason);
 
   void constructExcludedPrims();
+  bool updateLockPrims(const SdfPathSet& lockTransformPrims, const SdfPathSet& lockInheritedPrims,
+                       const SdfPathSet& nolockPrims);
   void constructLockPrims();
-  void lockTransformAttribute(const SdfPath& path, const bool lock);
+  void lockTransformAttribute(const SdfPath& path, bool lock);
 
   MObject makeUsdTransformChain_internal(
       const UsdPrim& usdPrim,
@@ -867,8 +867,9 @@ private:
   MCallbackId m_onSelectionChanged;
   SdfPathVector m_excludedGeometry;
   SdfPathVector m_excludedTaggedGeometry;
-  SdfPathVector m_lockTransformPrims;
-  SdfPathVector m_unlockTransformPrims;
+  SdfPathSet m_lockTransformPrims;
+  SdfPathSet m_lockInheritedPrims;
+  SdfPathSet m_currentLockedPrims;
   static MObject m_transformTranslate;
   static MObject m_transformRotate;
   static MObject m_transformScale;
