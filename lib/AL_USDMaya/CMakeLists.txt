@@ -237,6 +237,7 @@ add_library(${PYTHON_LIBRARY_NAME}
     SHARED
     AL/usdmaya/module.cpp
     AL/usdmaya/wrapStageCache.cpp
+    AL/usdmaya/nodes/wrapProxyShape.cpp
 )
 
 set_target_properties(${PYTHON_LIBRARY_NAME}
