@@ -30,7 +30,7 @@ TEST(ProxyShapeImport, populationMaskInclude)
 {
   auto  constructTestUSDFile = [] ()
   {
-    const std::string temp_bootstrap_path = "/tmp/AL_USDMayaTests_proxyShapeImportTests.usda";
+    const std::string temp_bootstrap_path = "/tmp/AL_USDMayaTests_populationMaskInclude.usda";
 
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     UsdGeomXform root = UsdGeomXform::Define(stage, SdfPath("/root"));
@@ -127,4 +127,79 @@ TEST(ProxyShapeImport, populationMaskInclude)
   assertSdfPathIsValid(stage, "/root/hip1/knee");
   assertSdfPathIsInvalid(stage, "/root/hip2/knee");
   assertSdfPathIsValid(stage, "/root/material");
+}
+
+TEST(ProxyShapeImport, lockMetaData)
+{
+  auto  constructTestUSDFile = [] ()
+  {
+    const std::string temp_bootstrap_path = "/tmp/AL_USDMayaTests_lockMetaData.usda";
+
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomXform root = UsdGeomXform::Define(stage, SdfPath("/root"));
+
+    UsdPrim geo = stage->DefinePrim(SdfPath("/root/geo"), TfToken("xform"));
+    const TfToken lockMetadata("al_usdmaya_lock");
+    geo.SetMetadata(lockMetadata, TfToken("transform"));
+
+    UsdPrim cam = stage->DefinePrim(SdfPath("/root/geo/cam"), TfToken("Camera"));
+    cam.SetMetadata(lockMetadata, TfToken("inherited"));
+
+    stage->Export(temp_bootstrap_path, false);
+    return MString(temp_bootstrap_path.c_str());
+  };
+
+  auto constructLockMetaDataTestCommand = [] (const MString &bootstrap_path, const MString &mask)
+  {
+    MString cmd = "AL_usdmaya_ProxyShapeImport -file \"";
+    cmd += bootstrap_path;
+    cmd += "\"";
+    return cmd;
+  };
+
+  auto getStageFromCache = [] ()
+  {
+    auto usdStageCache = AL::usdmaya::StageCache::Get();
+    if(usdStageCache.IsEmpty())
+    {
+      return UsdStageRefPtr();
+    }
+    return usdStageCache.GetAllStages()[0];
+  };
+
+  auto assertSdfPathIsValid = [] (UsdStageRefPtr usdStage, const std::string &path)
+  {
+    EXPECT_TRUE(usdStage->GetPrimAtPath(SdfPath(path)).IsValid());
+  };
+
+  MString bootstrap_path = constructTestUSDFile();
+  MFileIO::newFile(true);
+  MGlobal::executeCommand(constructLockMetaDataTestCommand(bootstrap_path, ""), false, true);
+  auto stage = getStageFromCache();
+  ASSERT_TRUE(stage);
+  assertSdfPathIsValid(stage, "/root");
+  assertSdfPathIsValid(stage, "/root/geo");
+  assertSdfPathIsValid(stage, "/root/geo/cam");
+  UsdPrim geoPrim = stage->GetPrimAtPath(SdfPath("/root/geo"));
+
+  MSelectionList sl;
+  MObject camObj;
+  sl.add("cam");
+  sl.getDependNode(0, camObj);
+  ASSERT_FALSE(camObj.isNull());
+  ASSERT_FALSE(MPlug(camObj, AL::usdmaya::nodes::Transform::pushToPrim()).asBool());
+  MFnDependencyNode camDG(camObj);
+  MPlug tPlug = camDG.findPlug("t");
+  MPlug rPlug = camDG.findPlug("r");
+  MPlug sPlug = camDG.findPlug("s");
+  ASSERT_TRUE(tPlug.isLocked());
+  ASSERT_TRUE(rPlug.isLocked());
+  ASSERT_TRUE(sPlug.isLocked());
+
+  MStatus status = MGlobal::executeCommand("setAttr cam.t 5 5 5");
+  ASSERT_TRUE(status == MStatus::kFailure);
+  status = MGlobal::executeCommand("setAttr cam.r 5 5 5");
+  ASSERT_TRUE(status == MStatus::kFailure);
+  status = MGlobal::executeCommand("setAttr cam.s 5 5 5");
+  ASSERT_TRUE(status == MStatus::kFailure);
 }

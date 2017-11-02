@@ -144,7 +144,6 @@ MObject ProxyShape::m_transformTranslate = MObject::kNullObj;
 MObject ProxyShape::m_transformRotate = MObject::kNullObj;
 MObject ProxyShape::m_transformScale = MObject::kNullObj;
 
-
 //----------------------------------------------------------------------------------------------------------------------
 Layer* ProxyShape::getLayer()
 {
@@ -1155,18 +1154,48 @@ void ProxyShape::constructExcludedPrims()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
+bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
 {
-  MObjectHandle objHdl;
-  MStatus status;
-  context()->getMObject(path, objHdl, MFn::kTransform);
-  if (objHdl.isValid())
+  UsdPrim prim = m_stage->GetPrimAtPath(path);
+  VtValue mayaPath = prim.GetCustomDataByKey(TfToken("MayaPath"));
+  MObject lockObject;
+  if (not mayaPath.IsEmpty())
   {
-    MObject object = objHdl.object();
-    MPlug(object, m_transformTranslate).setLocked(lock);
-    MPlug(object, m_transformRotate).setLocked(lock);
-    MPlug(object, m_transformScale).setLocked(lock);
+    MString pathStr = convert(mayaPath.Get<std::string>());
+    MSelectionList sl;
+    MObject selObj;
+    if (sl.add(pathStr) == MStatus::kSuccess)
+    {
+      sl.getDependNode(0, selObj);
+    }
+    if (!selObj.isNull() and selObj.hasFn(MFn::kTransform))
+    {
+      lockObject = selObj;
+    }
   }
+  else
+  {
+    std::vector<MObjectHandle> objHdls;
+    context()->getMObjects(path, objHdls);
+    for (auto objHdl : objHdls)
+    {
+      if (objHdl.isValid() and objHdl.object().hasFn(MFn::kTransform))
+      {
+        lockObject == objHdl.object();
+        break;
+      }
+    }
+  }
+  if (lockObject.isNull())
+    return false;
+  MPlug(lockObject, m_transformTranslate).setLocked(lock);
+  MPlug(lockObject, m_transformRotate).setLocked(lock);
+  MPlug(lockObject, m_transformScale).setLocked(lock);
+  if (lock and MFnDependencyNode(lockObject).typeId() == AL_USDMAYA_TRANSFORM)
+  {
+    MStatus pushToPrim = MPlug(lockObject, Transform::pushToPrim()).setBool(false);
+  }
+  return true;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1180,8 +1209,8 @@ void ProxyShape::constructLockPrims()
     const SdfPath parentPath = inherited.GetParentPath();
     if (parentPath.IsEmpty())
       continue;
-    auto parentIter = primsNeedLock.lower_bound(parentPath);
-    if (parentIter != primsNeedLock.end() and *parentIter == parentPath)
+    auto parentIter = primsNeedLock.find(parentPath);
+    if (parentIter != primsNeedLock.end())
     {
       auto lowerIter = std::lower_bound(parentIter, primsNeedLock.end(), inherited);
       primsNeedLock.insert(lowerIter, inherited);
@@ -1194,15 +1223,20 @@ void ProxyShape::constructLockPrims()
                       m_currentLockedPrims.end(), std::back_inserter(primsToLock));
   std::set_difference(m_currentLockedPrims.begin(), m_currentLockedPrims.end(), primsNeedLock.begin(),
                       primsNeedLock.end(), std::back_inserter(primsToUnlock));
-  m_currentLockedPrims = primsNeedLock;
 
   for (auto lock : primsToLock)
   {
-    lockTransformAttribute(lock, true);
+    if (lockTransformAttribute(lock, true))
+    {
+      m_currentLockedPrims.insert(lock);
+    }
   }
   for (auto unlock : primsToUnlock)
   {
-    lockTransformAttribute(unlock, false);
+    if (lockTransformAttribute(unlock, false))
+    {
+      m_currentLockedPrims.erase(unlock);
+    }
   }
 }
 

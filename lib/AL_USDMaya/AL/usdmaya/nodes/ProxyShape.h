@@ -691,7 +691,7 @@ private:
   bool updateLockPrims(const SdfPathSet& lockTransformPrims, const SdfPathSet& lockInheritedPrims,
                        const SdfPathSet& nolockPrims);
   void constructLockPrims();
-  void lockTransformAttribute(const SdfPath& path, bool lock);
+  bool lockTransformAttribute(const SdfPath& path, bool lock);
 
   MObject makeUsdTransformChain_internal(
       const UsdPrim& usdPrim,
