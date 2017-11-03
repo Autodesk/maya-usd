@@ -370,18 +370,15 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
   PrimLookups::iterator end = m_primMapping.end();
   PrimLookups::iterator range_begin = std::lower_bound(m_primMapping.begin(), end, primPath, value_compare());
   PrimLookups::iterator range_end = range_begin;
-  const std::string& pathBeingRemoved = primPath.GetString();
-  const std::size_t length = pathBeingRemoved.size();
   for(; range_end != end; ++range_end)
   {
     // due to the joys of sorting, any child prims of this prim being destroyed should appear next to each
     // other (one would assume); So if compare does not find a match (the value is something other than zero),
     // we are no longer in the same prim root
 
-    const char* const parentPath = pathBeingRemoved.c_str();
-    const char* const childPath = range_end->path().GetText();
+    const SdfPath& childPath = range_end->path();
 
-    if(strncmp(parentPath, childPath, length))
+    if(!range_end->path().HasPrefix(primPath))
     {
       break;
     }
@@ -392,7 +389,7 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
   // run the preTearDown stage on each prim. We will walk over the prims in the reverse order here (which will guarentee
   // the the itemsToRemove will be ordered such that the child prims will be destroyed before their parents).
   auto iter = range_end;
-  itemsToRemove.reserve(range_end - range_begin);
+  itemsToRemove.reserve(itemsToRemove.size() + range_end - range_begin);
   while(iter != range_begin)
   {
     --iter;
