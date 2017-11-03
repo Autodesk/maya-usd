@@ -889,19 +889,11 @@ bool DgNodeTranslator::attributeHandled(const UsdAttribute& usdAttr)
 
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus DgNodeTranslator::copyValueIfUSDAttributeExist(const MPlug& plug, UsdPrim& prim)
+MStatus DgNodeTranslator::convertSpecialValueToUSDAttribute(const MPlug& plug, UsdAttribute& usdAttr)
 {
-  TfToken attributeName = TfToken(plug.partialName(false, false, false, false, false, true).asChar());
-  if(!prim.HasAttribute(attributeName))
-  {
-    return MS::kFailure;
-  }
-
-  UsdAttribute usdAttr = prim.GetAttribute(attributeName);
-
   // now we start some hard-coded special attribute mapping, no better way found:
-  // interpolateBoundary: This property comes from alembic, in maya it is boolean value,
-  if(usdAttr.GetName() == TfToken("interpolateBoundary"))
+  // interpolateBoundary: This property comes from alembic, in maya it is boolean value:
+  if(usdAttr.GetName() == UsdGeomTokens->interpolateBoundary)
   {
     if(plug.asBool())
       usdAttr.Set(UsdGeomTokens->edgeAndCorner);
@@ -910,7 +902,6 @@ MStatus DgNodeTranslator::copyValueIfUSDAttributeExist(const MPlug& plug, UsdPri
 
     return MS::kSuccess;
   }
-
 
   return MS::kFailure;
 }
@@ -931,13 +922,20 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
     bool isDynamic = plug.isDynamic();
     if(isDynamic)
     {
-      // first test if the attribute happen to already exist in the usd prim and we have a mapping rule for it:
-      if(copyValueIfUSDAttributeExist(plug, prim))
+      TfToken attributeName = TfToken(plug.partialName(false, false, false, false, false, true).asChar());
+      // first test if the attribute happen to come with the prim by nature and we have a mapping rule for it:
+      if(prim.HasAttribute(attributeName))
       {
-        continue;
+        UsdAttribute usdAttr = prim.GetAttribute(attributeName);
+        // if the conversion works, we are done:
+        if(convertSpecialValueToUSDAttribute(plug, usdAttr))
+        {
+          continue;
+        }
+        // if not, then we count on CreateAttribute codes below since that will return the USDAttribute if
+        // already exists and hopefully the type conversions below will work.
       }
 
-      TfToken attributeName = TfToken(plug.partialName(false, false, false, false, false, true).asChar());
       bool isArray = plug.isArray();
       switch(attribute.apiType())
       {
