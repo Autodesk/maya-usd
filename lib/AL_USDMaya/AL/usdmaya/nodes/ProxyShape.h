@@ -670,7 +670,7 @@ public:
   const AL::usdmaya::SelectabilityDB& selectabilityDB() const
     { return const_cast<ProxyShape*>(this)->selectabilityDB(); }
 
-  void reloadStage();
+  void loadStage();
 
 
 private:

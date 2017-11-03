@@ -964,21 +964,21 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::reloadStage()
+void ProxyShape::loadStage()
 {
   // A reload can potentially trigger another reload of the same stage:
   //    - we edit the path attribute of a ProxyShape
-  //    - this trigers a this call (reloadStage)
-  //    - the reloadStage causes an ALMayaReference node to get created
+  //    - this trigers a this call (loadStage)
+  //    - the loadStage causes an ALMayaReference node to get created
   //    - the ALMayaReference causes a maya reference to get created / loaded
   //    - the maya reference load trips our global postFileRead callback
-  //    - this calls reloadStage on all proxyShapes in the scene...
+  //    - this calls loadStage on all proxyShapes in the scene...
   //    - ...including this one
   // To guard against re-entering this function, we guard with m_reloading
   if (m_reloading) return;
 
   ProxyShapeStageReloadGuard reloadGuard(m_reloading);
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::reloadStage\n");
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::loadStage\n");
 
   AL_BEGIN_PROFILE_SECTION(ReloadStage);
   MDataBlock dataBlock = forceCache();
@@ -1008,7 +1008,7 @@ void ProxyShape::reloadStage()
     fileString.assign(file.asChar(), file.length());
   }
 
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage called for the usd file: %s\n", fileString.c_str());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage called for the usd file: %s\n", fileString.c_str());
 
   // Check path validity
   // Don't try to create a stage for a non-existent file. Some processes
@@ -1053,12 +1053,12 @@ void ProxyShape::reloadStage()
 
         if (sessionLayer)
         {
-          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage is called with extra session layer.\n");
+          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage is called with extra session layer.\n");
           m_stage = UsdStage::OpenMasked(rootLayer, sessionLayer, mask, loadOperation);
         }
         else
         {
-          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage is called without any session layer.\n");
+          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage is called without any session layer.\n");
           m_stage = UsdStage::OpenMasked(rootLayer, mask, loadOperation);
         }
 
@@ -1072,7 +1072,7 @@ void ProxyShape::reloadStage()
         // file path not valid
         if(file.length())
         {
-          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage failed to open the usd file: %s.\n", file.asChar());
+          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage failed to open the usd file: %s.\n", file.asChar());
           MGlobal::displayWarning(MString("Failed to open usd file \"") + file + "\"");
         }
       }
@@ -1261,7 +1261,7 @@ void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& p
     // Delay stage creation if opening a file, because we haven't created the LayerManager node yet
     if(plug == m_filePath && !MFileIO::isReadingFile())
     {
-      proxy->reloadStage();
+      proxy->loadStage();
     }
     else
     if(plug == m_primPath)

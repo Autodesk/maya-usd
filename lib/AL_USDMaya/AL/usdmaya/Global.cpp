@@ -111,7 +111,7 @@ static void postFileRead(void*)
       {
         // execute a pull on each proxy shape to ensure that each one has a valid USD stage!
         nodes::ProxyShape* proxy = (nodes::ProxyShape*)fn.userNode();
-        proxy->reloadStage();
+        proxy->loadStage();
         auto stage = proxy->getUsdStage();
         proxy->deserialiseTranslatorContext();
         proxy->findTaggedPrims();
