@@ -86,19 +86,6 @@ namespace usdmaya {
 namespace nodes {
 
 //----------------------------------------------------------------------------------------------------------------------
-ProxyShape::ProxyShapeStageReloadGuard::ProxyShapeStageReloadGuard(std::atomic<bool>& theBool)
- : m_theBool(theBool)
-{
-  m_theBool = true;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-ProxyShape::ProxyShapeStageReloadGuard::~ProxyShapeStageReloadGuard()
-{
-  m_theBool = false;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialiseTranslatorContext()
 {
   serializedTrCtxPlug().setValue(context()->serialise());
@@ -152,6 +139,8 @@ MObject ProxyShape::m_transformTranslate = MObject::kNullObj;
 MObject ProxyShape::m_transformRotate = MObject::kNullObj;
 MObject ProxyShape::m_transformScale = MObject::kNullObj;
 MObject ProxyShape::m_stageDataDirty = MObject::kNullObj;
+
+std::vector<MObjectHandle> ProxyShape::m_unloadedProxyShapes;
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -350,8 +339,7 @@ bool ProxyShape::getRenderAttris(void* pattribs, const MHWRender::MFrameContext&
 ProxyShape::ProxyShape()
   : MPxSurfaceShape(), maya::NodeHelper(),
     m_context(fileio::translators::TranslatorContext::create(this)),
-    m_translatorManufacture(context()),
-    m_reloading(false)
+    m_translatorManufacture(context())
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::ProxyShape\n");
   m_onSelectionChanged = MEventMessage::addEventCallback(MString("SelectionChanged"), onSelectionChanged, this);
@@ -966,21 +954,9 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::loadStage()
 {
-  // A reload can potentially trigger another reload of the same stage:
-  //    - we edit the path attribute of a ProxyShape
-  //    - this trigers a this call (loadStage)
-  //    - the loadStage causes an ALMayaReference node to get created
-  //    - the ALMayaReference causes a maya reference to get created / loaded
-  //    - the maya reference load trips our global postFileRead callback
-  //    - this calls loadStage on all proxyShapes in the scene...
-  //    - ...including this one
-  // To guard against re-entering this function, we guard with m_reloading
-  if (m_reloading) return;
-
-  ProxyShapeStageReloadGuard reloadGuard(m_reloading);
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::loadStage\n");
 
-  AL_BEGIN_PROFILE_SECTION(ReloadStage);
+  AL_BEGIN_PROFILE_SECTION(LoadStage);
   MDataBlock dataBlock = forceCache();
   m_stage = UsdStageRefPtr();
 
@@ -1259,9 +1235,16 @@ void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& p
   if(msg & MNodeMessage::kAttributeSet)
   {
     // Delay stage creation if opening a file, because we haven't created the LayerManager node yet
-    if(plug == m_filePath && !MFileIO::isReadingFile())
+    if(plug == m_filePath)
     {
-      proxy->loadStage();
+      if (MFileIO::isReadingFile())
+      {
+        m_unloadedProxyShapes.push_back(MObjectHandle(proxy->thisMObject()));
+      }
+      else
+      {
+        proxy->loadStage();
+      }
     }
     else
     if(plug == m_primPath)

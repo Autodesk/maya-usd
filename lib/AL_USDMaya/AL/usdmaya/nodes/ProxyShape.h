@@ -28,6 +28,7 @@
 #include "maya/MPxDrawOverride.h"
 #include "maya/MEvaluationNode.h"
 #include "maya/MDagModifier.h"
+#include "maya/MObjectArray.h"
 #include "maya/MSelectionList.h"
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
@@ -629,6 +630,11 @@ public:
   // \brief Serialize all layers in proxyShapes to layerManager attributes; called before saving
   static void serializeAll();
 
+  static inline std::vector<MObjectHandle>& GetUnloadedProxyShapes()
+  {
+    return m_unloadedProxyShapes;
+  }
+
   /// \brief This function starts the prim changed process within the proxyshape
   /// \param[in] changePath is point at which the scene is going to be modified.
   inline void primChangedAtPath(const SdfPath& changePath)
@@ -758,16 +764,6 @@ private:
     };
   };
 
-  // Simple RAII guard for setting / unsetting m_reloading
-  struct ProxyShapeStageReloadGuard
-  {
-    ProxyShapeStageReloadGuard(std::atomic<bool>& theBool);
-    ~ProxyShapeStageReloadGuard();
-
-    std::atomic<bool>& m_theBool;
-  };
-  friend class ProxyShapeStageReloadGuard;
-
   /// if the USD stage contains a maya reference et-al, then we have a set of *REQUIRED* AL::usdmaya::nodes::Transform nodes.
   /// If we then later create a USD transform node (because we're bringing in all of them, or just a selection of them),
   /// then we must make sure that we don't end up duplicating paths. This map is use to store a LUT of the paths that
@@ -848,6 +844,8 @@ private:
     }
 
 private:
+  static std::vector<MObjectHandle> m_unloadedProxyShapes;
+
   AL::usdmaya::SelectabilityDB m_selectabilityDB;
   HierarchyIterationLogics m_hierarchyIterationLogics;
   HierarchyIterationLogic m_findExcludedPrims;
@@ -881,7 +879,6 @@ private:
   UsdImagingGLHdEngine* m_engine = 0;
 
   uint32_t m_engineRefCount = 0;
-  std::atomic<bool> m_reloading;
   bool m_compositionHasChanged = false;
   bool m_drivenTransformsDirty = false;
   bool m_pleaseIgnoreSelection = false;

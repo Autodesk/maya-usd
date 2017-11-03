@@ -22,6 +22,7 @@
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
 #include <pxr/base/plug/registry.h>
+#include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/getenv.h>
 #include <pxr/base/tf/stackTrace.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -103,22 +104,31 @@ static void postFileRead(void*)
 
   MFnDependencyNode fn;
   {
-    MItDependencyNodes iter(MFn::kPluginShape);
-    for(; !iter.isDone(); iter.next())
+    std::vector<MObjectHandle>& unloadedProxies = nodes::ProxyShape::GetUnloadedProxyShapes();
+    unsigned int numUnloadedProxies = unloadedProxies.size();
+    for(unsigned int i = 0; i < numUnloadedProxies; ++i)
     {
-      fn.setObject(iter.item());
-      if(fn.typeId() == nodes::ProxyShape::kTypeId)
+      if(!(unloadedProxies[i].isValid() && unloadedProxies[i].isAlive()))
       {
-        // execute a pull on each proxy shape to ensure that each one has a valid USD stage!
-        nodes::ProxyShape* proxy = (nodes::ProxyShape*)fn.userNode();
-        proxy->loadStage();
-        auto stage = proxy->getUsdStage();
-        proxy->deserialiseTranslatorContext();
-        proxy->findTaggedPrims();
-        proxy->constructGLImagingEngine();
-        proxy->deserialiseTransformRefs();
+        continue;
       }
+      fn.setObject(unloadedProxies[i].object());
+      if(fn.typeId() != nodes::ProxyShape::kTypeId)
+      {
+        TF_CODING_ERROR("ProxyShape::m_unloadedProxyShapes had a non-Proxy-Shape mobject");
+        continue;
+      }
+
+      // execute a pull on each proxy shape to ensure that each one has a valid USD stage!
+      nodes::ProxyShape* proxy = (nodes::ProxyShape*)fn.userNode();
+      proxy->loadStage();
+      auto stage = proxy->getUsdStage();
+      proxy->deserialiseTranslatorContext();
+      proxy->findTaggedPrims();
+      proxy->constructGLImagingEngine();
+      proxy->deserialiseTransformRefs();
     }
+    unloadedProxies.clear();
   }
   {
     MItDependencyNodes iter(MFn::kPluginTransformNode);
