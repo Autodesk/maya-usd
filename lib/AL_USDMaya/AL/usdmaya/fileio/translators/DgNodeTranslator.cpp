@@ -886,6 +886,34 @@ bool DgNodeTranslator::attributeHandled(const UsdAttribute& usdAttr)
   return false;
 }
 
+
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus DgNodeTranslator::copyValueIfUSDAttributeExist(const MPlug& plug, UsdPrim& prim)
+{
+  TfToken attributeName = TfToken(plug.partialName(false, false, false, false, false, true).asChar());
+  if(!prim.HasAttribute(attributeName))
+  {
+    return MS::kFailure;
+  }
+
+  UsdAttribute usdAttr = prim.GetAttribute(attributeName);
+
+  // now we start some hard-coded special attribute mapping, no better way found:
+  // interpolateBoundary: This property comes from alembic, in maya it is boolean value,
+  if(usdAttr.GetName() == TfToken("interpolateBoundary"))
+  {
+    if(plug.asBool())
+      usdAttr.Set(UsdGeomTokens->edgeAndCorner);
+    else
+      usdAttr.Set(UsdGeomTokens->edgeOnly);
+
+    return MS::kSuccess;
+  }
+
+
+  return MS::kFailure;
+}
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
 {
@@ -903,6 +931,13 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
     bool isDynamic = plug.isDynamic();
     if(isDynamic)
     {
+      // first test if the attribute happen to already exist in the usd prim and we have a mapping rule for it:
+      if(copyValueIfUSDAttributeExist(plug, prim))
+      {
+        continue;
+      }
+
+      TfToken attributeName = TfToken(plug.partialName(false, false, false, false, false, true).asChar());
       bool isArray = plug.isArray();
       switch(attribute.apiType())
       {
@@ -910,7 +945,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
         {
           if(!isArray)
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Double2);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double2);
             GfVec2d m;
             getVec2(node, attribute, (double*)&m);
             usdAttr.Set(m);
@@ -918,7 +953,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
           }
           else
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Double2Array);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double2Array);
             VtArray<GfVec2d> m;
             m.resize(plug.numElements());
             getVec2Array(node, attribute, (double*)m.data(), m.size());
@@ -932,7 +967,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
         {
           if(!isArray)
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Float2);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Float2);
             GfVec2f m;
             getVec2(node, attribute, (float*)&m);
             usdAttr.Set(m);
@@ -940,7 +975,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
           }
           else
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Float2Array);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Float2Array);
             VtArray<GfVec2f> m;
             m.resize(plug.numElements());
             getVec2Array(node, attribute, (float*)m.data(), m.size());
@@ -955,7 +990,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
         {
           if(!isArray)
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Int2);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int2);
             GfVec2i m;
             getVec2(node, attribute, (int32_t*)&m);
             usdAttr.Set(m);
@@ -963,7 +998,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
           }
           else
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Int2Array);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int2Array);
             VtArray<GfVec2i> m;
             m.resize(plug.numElements());
             getVec2Array(node, attribute, (int32_t*)m.data(), m.size());
@@ -977,7 +1012,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
         {
           if(!isArray)
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Double3);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double3);
             GfVec3d m;
             getVec3(node, attribute, (double*)&m);
             usdAttr.Set(m);
@@ -985,7 +1020,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
           }
           else
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Double3Array);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double3Array);
             VtArray<GfVec3d> m;
             m.resize(plug.numElements());
             getVec3Array(node, attribute, (double*)m.data(), m.size());
@@ -999,7 +1034,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
         {
           if(!isArray)
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Float3);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Float3);
             GfVec3f m;
             getVec3(node, attribute, (float*)&m);
             usdAttr.Set(m);
@@ -1007,7 +1042,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
           }
           else
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Float3Array);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Float3Array);
             VtArray<GfVec3f> m;
             m.resize(plug.numElements());
             getVec3Array(node, attribute, (float*)m.data(), m.size());
@@ -1022,7 +1057,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
         {
           if(!isArray)
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Int3);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int3);
             GfVec3i m;
             getVec3(node, attribute, (int32_t*)&m);
             usdAttr.Set(m);
@@ -1030,7 +1065,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
           }
           else
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Int3Array);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int3Array);
             VtArray<GfVec3i> m;
             m.resize(plug.numElements());
             getVec3Array(node, attribute, (int32_t*)m.data(), m.size());
@@ -1044,7 +1079,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
         {
           if(!isArray)
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Double4);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double4);
             GfVec4d m;
             getVec4(node, attribute, (double*)&m);
             usdAttr.Set(m);
@@ -1052,7 +1087,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
           }
           else
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Double4Array);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double4Array);
             VtArray<GfVec4d> m;
             m.resize(plug.numElements());
             getVec4Array(node, attribute, (double*)m.data(), m.size());
@@ -1071,7 +1106,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
             {
               if(!isArray)
               {
-                UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Bool);
+                UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Bool);
                 bool value;
                 getBool(node, attribute, value);
                 usdAttr.Set(value);
@@ -1079,7 +1114,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
               }
               else
               {
-                UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->BoolArray);
+                UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->BoolArray);
                 VtArray<bool> m;
                 m.resize(plug.numElements());
                 getUsdBoolArray(node, attribute, m);
@@ -1093,7 +1128,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
             {
               if(!isArray)
               {
-                UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Float);
+                UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Float);
                 float value;
                 getFloat(node, attribute, value);
                 usdAttr.Set(value);
@@ -1101,7 +1136,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
               }
               else
               {
-                UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->FloatArray);
+                UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->FloatArray);
                 VtArray<float> m;
                 m.resize(plug.numElements());
                 getFloatArray(node, attribute, (float*)m.data(), m.size());
@@ -1115,7 +1150,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
             {
               if(!isArray)
               {
-                UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Double);
+                UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double);
                 double value;
                 getDouble(node, attribute, value);
                 usdAttr.Set(value);
@@ -1123,7 +1158,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
               }
               else
               {
-                UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->DoubleArray);
+                UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->DoubleArray);
                 VtArray<double> m;
                 m.resize(plug.numElements());
                 getDoubleArray(node, attribute, (double*)m.data(), m.size());
@@ -1138,7 +1173,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
             {
               if(!isArray)
               {
-                UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Int);
+                UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int);
                 int32_t value;
                 getInt32(node, attribute, value);
                 usdAttr.Set(value);
@@ -1146,7 +1181,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
               }
               else
               {
-                UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->IntArray);
+                UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->IntArray);
                 VtArray<int> m;
                 m.resize(plug.numElements());
                 getInt32Array(node, attribute, (int32_t*)m.data(), m.size());
@@ -1160,7 +1195,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
             {
               if(!isArray)
               {
-                UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Int64);
+                UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int64);
                 int64_t value;
                 getInt64(node, attribute, value);
                 usdAttr.Set(value);
@@ -1168,7 +1203,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
               }
               else
               {
-                UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Int64Array);
+                UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int64Array);
                 VtArray<int64_t> m;
                 m.resize(plug.numElements());
                 getInt64Array(node, attribute, (int64_t*)m.data(), m.size());
@@ -1183,7 +1218,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
             {
               if(!isArray)
               {
-                UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->UChar);
+                UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->UChar);
                 int16_t value;
                 getInt16(node, attribute, value);
                 usdAttr.Set(uint8_t(value));
@@ -1191,7 +1226,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
               }
               else
               {
-                UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->UCharArray);
+                UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->UCharArray);
                 VtArray<uint8_t> m;
                 m.resize(plug.numElements());
                 getInt8Array(node, attribute, (int8_t*)m.data(), m.size());
@@ -1214,7 +1249,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
         {
           if(!isArray)
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Double);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double);
             double value;
             getDouble(node, attribute, value);
             usdAttr.Set(value);
@@ -1222,7 +1257,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
           }
           else
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->DoubleArray);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->DoubleArray);
             VtArray<double> value;
             value.resize(plug.numElements());
             getDoubleArray(node, attribute, (double*)value.data(), value.size());
@@ -1236,7 +1271,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
         {
           if(!isArray)
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Float);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Float);
             float value;
             getFloat(node, attribute, value);
             usdAttr.Set(value);
@@ -1244,7 +1279,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
           }
           else
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->FloatArray);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->FloatArray);
             VtArray<float> value;
             value.resize(plug.numElements());
             getFloatArray(node, attribute, (float*)value.data(), value.size());
@@ -1258,7 +1293,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
         {
           if(!isArray)
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Double);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double);
             double value;
             getDouble(node, attribute, value);
             usdAttr.Set(value);
@@ -1266,7 +1301,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
           }
           else
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->DoubleArray);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->DoubleArray);
             VtArray<double> value;
             value.resize(plug.numElements());
             getDoubleArray(node, attribute, (double*)value.data(), value.size());
@@ -1280,7 +1315,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
         {
           if(!isArray)
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Float);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Float);
             float value;
             getFloat(node, attribute, value);
             usdAttr.Set(value);
@@ -1288,7 +1323,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
           }
           else
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->FloatArray);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->FloatArray);
             VtArray<float> value;
             value.resize(plug.numElements());
             getFloatArray(node, attribute, (float*)value.data(), value.size());
@@ -1302,7 +1337,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
         {
           if(!isArray)
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Double);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double);
             double value;
             getDouble(node, attribute, value);
             usdAttr.Set(value);
@@ -1310,7 +1345,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
           }
           else
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->DoubleArray);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->DoubleArray);
             VtArray<double> value;
             value.resize(plug.numElements());
             getDoubleArray(node, attribute, (double*)value.data(), value.size());
@@ -1324,7 +1359,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
         {
           if(!isArray)
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Int);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int);
             int32_t value;
             getInt32(node, attribute, value);
             usdAttr.Set(value);
@@ -1332,7 +1367,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
           }
           else
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->IntArray);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->IntArray);
             VtArray<int> m;
             m.resize(plug.numElements());
             getInt32Array(node, attribute, (int32_t*)m.data(), m.size());
@@ -1353,7 +1388,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
             {
               if(!isArray)
               {
-                UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->String);
+                UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->String);
                 std::string value;
                 getString(node, attribute, value);
                 usdAttr.Set(value);
@@ -1361,7 +1396,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
               }
               else
               {
-                UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->StringArray);
+                UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->StringArray);
                 VtArray<std::string> value;
                 value.resize(plug.numElements());
                 getStringArray(node, attribute, (std::string*)value.data(), value.size());
@@ -1374,7 +1409,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
           case MFnData::kMatrixArray:
             {
               MFnMatrixArrayData fnData(plug.asMObject());
-              UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Matrix4dArray);
+              UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Matrix4dArray);
               VtArray<GfMatrix4d> m;
               m.assign((const GfMatrix4d*)&fnData.array()[0], ((const GfMatrix4d*)&fnData.array()[0]) + fnData.array().length());
               usdAttr.Set(m);
@@ -1418,7 +1453,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
                   {
                     if(!isArray)
                     {
-                      UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Matrix2d);
+                      UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Matrix2d);
                       GfMatrix2d value;
                       getMatrix2x2(node, attribute, (double*)&value);
                       usdAttr.Set(value);
@@ -1426,7 +1461,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
                     }
                     else
                     {
-                      UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Matrix2dArray);
+                      UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Matrix2dArray);
                       VtArray<GfMatrix2d> value;
                       value.resize(plug.numElements());
                       getMatrix2x2Array(node, attribute, (double*)value.data(), plug.numElements());
@@ -1474,7 +1509,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
                   {
                     if(!isArray)
                     {
-                      UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Matrix3d);
+                      UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Matrix3d);
                       GfMatrix3d value;
                       getMatrix3x3(node, attribute, (double*)&value);
                       usdAttr.Set(value);
@@ -1482,7 +1517,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
                     }
                     else
                     {
-                      UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Matrix3dArray);
+                      UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Matrix3dArray);
                       VtArray<GfMatrix3d> value;
                       value.resize(plug.numElements());
                       getMatrix3x3Array(node, attribute, (double*)value.data(), plug.numElements());
@@ -1521,7 +1556,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
                     {
                       if(!isArray)
                       {
-                        UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Int4);
+                        UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int4);
                         GfVec4i value;
                         getVec4(node, attribute, (int32_t*)&value);
                         usdAttr.Set(value);
@@ -1529,7 +1564,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
                       }
                       else
                       {
-                        UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Int4Array);
+                        UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int4Array);
                         VtArray<GfVec4i> value;
                         value.resize(plug.numElements());
                         getVec4Array(node, attribute, (int32_t*)value.data(), value.size());
@@ -1543,7 +1578,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
                     {
                       if(!isArray)
                       {
-                        UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Float4);
+                        UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Float4);
                         GfVec4f value;
                         getVec4(node, attribute, (float*)&value);
                         usdAttr.Set(value);
@@ -1551,7 +1586,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
                       }
                       else
                       {
-                        UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Float4Array);
+                        UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Float4Array);
                         VtArray<GfVec4f> value;
                         value.resize(plug.numElements());
                         getVec4Array(node, attribute, (float*)value.data(), value.size());
@@ -1565,7 +1600,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
                     {
                       if(!isArray)
                       {
-                        UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Double4);
+                        UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double4);
                         GfVec4d value;
                         getVec4(node, attribute, (double*)&value);
                         usdAttr.Set(value);
@@ -1573,7 +1608,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
                       }
                       else
                       {
-                        UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Double4Array);
+                        UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double4Array);
                         VtArray<GfVec4d> value;
                         value.resize(plug.numElements());
                         getVec4Array(node, attribute, (double*)value.data(), value.size());
@@ -1597,7 +1632,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
         {
           if(!isArray)
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Matrix4d);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Matrix4d);
             GfMatrix4d m;
             getMatrix4x4(node, attribute, (double*)&m);
             usdAttr.Set(m);
@@ -1605,7 +1640,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
           }
           else
           {
-            UsdAttribute usdAttr = prim.CreateAttribute(TfToken(plug.partialName(false, false, false, false, false, true).asChar()), SdfValueTypeNames->Matrix4dArray);
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Matrix4dArray);
             VtArray<GfMatrix4d> value;
             value.resize(plug.numElements());
             getMatrix4x4Array(node, attribute, (double*)value.data(), value.size());

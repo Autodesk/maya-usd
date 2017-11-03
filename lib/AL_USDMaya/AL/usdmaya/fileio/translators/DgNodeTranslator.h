@@ -327,6 +327,12 @@ public:
   /// \param  scale a scaling factor to apply to provide support for
   /// \param  timeCode the timecode to use when setting the data
   static void copySimpleValue(const MPlug& plug, UsdAttribute& usdAttr, float scale, const UsdTimeCode& timeCode);
+
+  /// \brief  get value from the plug specified and set it to the corresponding attribute on the prim if the attribute exist.
+  /// \param  plug the pLug to copy the attributes value from
+  /// \param  prim the USD prim to set the attribute value to
+  /// \return MS::kSuccess if attribute exists in UsdPrim
+  static MStatus copyValueIfUSDAttributeExist(const MPlug& plug, UsdPrim& prim);
 };
 
 //----------------------------------------------------------------------------------------------------------------------
