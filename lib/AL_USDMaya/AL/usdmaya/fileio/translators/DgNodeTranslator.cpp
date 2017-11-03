@@ -891,8 +891,8 @@ bool DgNodeTranslator::attributeHandled(const UsdAttribute& usdAttr)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeTranslator::convertSpecialValueToUSDAttribute(const MPlug& plug, UsdAttribute& usdAttr)
 {
-  // now we start some hard-coded special attribute mapping, no better way found:
-  // interpolateBoundary: This property comes from alembic, in maya it is boolean value:
+  // now we start some hard-coded special attribute value type conversion, no better way found:
+  // interpolateBoundary: This property comes from alembic, in maya it is boolean type:
   if(usdAttr.GetName() == UsdGeomTokens->interpolateBoundary)
   {
     if(plug.asBool())
@@ -902,7 +902,7 @@ MStatus DgNodeTranslator::convertSpecialValueToUSDAttribute(const MPlug& plug, U
 
     return MS::kSuccess;
   }
-
+  // more special type conversion rules might come here..
   return MS::kFailure;
 }
 //----------------------------------------------------------------------------------------------------------------------
