@@ -330,8 +330,7 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
                                       prim.GetPath().GetText(),
                                       referenceCommand.asChar());
   status = MGlobal::executeCommand(referenceCommand, createdNodes);
-  AL_MAYA_CHECK_ERROR(status, MString("failed to create maya reference: ") + referenceCommand
-                                      + " : " + status.errorString());
+  AL_MAYA_CHECK_ERROR(status, MString("failed to create maya reference: ") + referenceCommand);
 
   if (createdNodes.length() != 1)
   {
@@ -371,7 +370,7 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
     refDependNode.setLocked(false);
     status = refDependNode.addAttribute(primNSAttr);
     refDependNode.setLocked(true);
-    AL_MAYA_CHECK_ERROR(status, MString("failed to add usdPrimPath attr to reference node: ") + status.errorString());
+    AL_MAYA_CHECK_ERROR(status, "failed to add usdPrimPath attr to reference node");
   }
   else if (status == MS::kFailure)
   {
@@ -383,9 +382,9 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
   {
       MDGModifier attrMod;
       status = attrMod.newPlugValueString(MPlug(referenceObject, primNSAttr), rigNamespaceM);
-      AL_MAYA_CHECK_ERROR(status, MString("failed to set usdPrimPath attr on reference node: ") + status.errorString());
+      AL_MAYA_CHECK_ERROR(status, "failed to set usdPrimPath attr on reference node");
       status = attrMod.doIt();
-      AL_MAYA_CHECK_ERROR(status, MString("failed to execute reference attr modifier: ") + status.errorString());
+      AL_MAYA_CHECK_ERROR(status, "failed to execute reference attr modifier");
   }
 
   return MS::kSuccess;
@@ -413,7 +412,7 @@ MStatus MayaReferenceLogic::UnloadMayaReference(MObject& parent) const
         if(temp.hasFn(MFn::kReference))
         {
           MFileIO::unloadReferenceByNode(temp, &status);
-          AL_MAYA_CHECK_ERROR(status, MString("failed to unload maya reference: ") + status.errorString());
+          AL_MAYA_CHECK_ERROR(status, "failed to unload maya reference");
         }
       }
     }
@@ -445,7 +444,7 @@ MStatus MayaReferenceLogic::connectReferenceAssociatedNode(MFnDagNode& dagNode, 
   {
     MDGModifier dgMod;
     result = dgMod.connect(srcPlug, destPlug);
-    AL_MAYA_CHECK_ERROR(result, MString("failed to connect maya reference plug: ") + result.errorString());
+    AL_MAYA_CHECK_ERROR(result, "failed to connect maya reference plug");
     result = dgMod.doIt();
   }
   return result;
