@@ -36,7 +36,7 @@ class MayaReferenceLogic
 public:
   MStatus LoadMayaReference(const UsdPrim& prim, MObject& parent) const;
   MStatus UnloadMayaReference(MObject& parent) const;
-  MStatus update(const UsdPrim& prim, MObject parent) const;
+  MStatus update(const UsdPrim& prim, MObject parent, MObject refNode=MObject::kNullObj) const;
 
 private:
   MStatus connectReferenceAssociatedNode(MFnDagNode& dagNode, MFnReference& refNode) const;

@@ -159,7 +159,7 @@ MStatus MayaReference::update(const UsdPrim& prim)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
+MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent, MObject refNode) const
 {
   // Check to see if we have a valid Maya reference attribute
   UsdAttribute mayaReferenceAttribute = prim.GetAttribute(m_referenceName);
@@ -179,97 +179,107 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
   MFnDependencyNode fnParent(parent, &status);
   if(status)
   {
-    MPlug messagePlug = fnParent.findPlug("message", &status);
     if(status)
     {
-      MPlugArray referencePlugs;
-      messagePlug.connectedTo(referencePlugs, false, true);
-      
-      MString command, filepath;
-
-      for(uint32_t i = 0, n = referencePlugs.length(); i < n; ++i)
+      if (!refNode.isNull())
       {
-        MObject temp = referencePlugs[i].node();
-        if(temp.hasFn(MFn::kReference))
+        if (!refNode.hasFn(MFn::kReference))
         {
-          MFnReference fnReference(temp);
-          command = MString("referenceQuery -f \"") + fnReference.name() + "\"";
-          MGlobal::executeCommand(command, filepath);
-          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update referenceNode=%s prim=%s execute \"%s\"=%s\n",
-#if MAYA_API_VERSION < 201700
-                                              fnReference.name().asChar(),
-#else
-                                              fnReference.absoluteName().asChar(),
-#endif
-                                              prim.GetPath().GetText(),
-                                              command.asChar(),
-                                              filepath.asChar());
-
-          if(!rigNamespace.empty())
+          MFnDependencyNode tempMfn(refNode, &status);
+          AL_MAYA_CHECK_ERROR(status, "MayaReferenceLogic::update given refNode was not a dependency node");
+          MGlobal::displayError("MayaReferenceLogic::update given refNode was not a reference: " + tempMfn.name());
+          return MStatus::kFailure;
+        }
+      }
+      else
+      {
+        MPlug messagePlug = fnParent.findPlug("message", &status);
+        MPlugArray referencePlugs;
+        messagePlug.connectedTo(referencePlugs, false, true);
+        for(uint32_t i = 0, n = referencePlugs.length(); i < n; ++i)
+        {
+          MObject temp = referencePlugs[i].node();
+          if(temp.hasFn(MFn::kReference))
           {
-            // check to see if the namespace has changed
-            MString refNamespace = fnReference.associatedNamespace(true);
-            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s, namespace was: %s\n",
-                                                prim.GetPath().GetText(),
-                                                refNamespace.asChar());
-            if(refNamespace != rigNamespace.c_str())
-            {
-              MString filepath;
-              command = MString("referenceQuery -f \"") + fnReference.name() + "\"";
-              command = "file -e -ns \"";
-              command += rigNamespace.c_str();
-              command += "\" \"";
-              command += filepath;
-              command += "\"";
-              TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s execute %s\n",
-                                                  prim.GetPath().GetText(),
-                                                  command.asChar());
-              if(!MGlobal::executeCommand(command))
-              {
-                MGlobal::displayError(MString("Failed to update reference with new namespace: ") + mayaReferencePath);
-              }
-            }
+            refNode = temp;
           }
-          
-          if(prim.IsActive())
+        }
+      }
+
+      MString command, filepath;
+      MFnReference fnReference(refNode);
+      command = MString("referenceQuery -f \"") + fnReference.name() + "\"";
+      MGlobal::executeCommand(command, filepath);
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update referenceNode=%s prim=%s execute \"%s\"=%s\n",
+#if MAYA_API_VERSION < 201700
+                                          fnReference.name().asChar(),
+#else
+                                          fnReference.absoluteName().asChar(),
+#endif
+                                          prim.GetPath().GetText(),
+                                          command.asChar(),
+                                          filepath.asChar());
+
+      if(!rigNamespace.empty())
+      {
+        // check to see if the namespace has changed
+        MString refNamespace = fnReference.associatedNamespace(true);
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s, namespace was: %s\n",
+                                            prim.GetPath().GetText(),
+                                            refNamespace.asChar());
+        if(refNamespace != rigNamespace.c_str())
+        {
+          command = MString("referenceQuery -f \"") + fnReference.name() + "\"";
+          command = "file -e -ns \"";
+          command += rigNamespace.c_str();
+          command += "\" \"";
+          command += filepath;
+          command += "\"";
+          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s execute %s\n",
+                                              prim.GetPath().GetText(),
+                                              command.asChar());
+          if(!MGlobal::executeCommand(command))
           {
-            if(mayaReferencePath.length() != 0 && filepath != mayaReferencePath)
-            {
-              command = "file -loadReference \"";
-              command += fnReference.name();
-              command += "\" \"";
-              command += mayaReferencePath;
-              command += "\"";
-              TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s execute %s\n",
-                                                  prim.GetPath().GetText(),
-                                                  command.asChar());
-              if(!MGlobal::executeCommand(command))
-              {
-                MGlobal::displayError(MString("Failed to update reference with new path: ") + mayaReferencePath);
-              }
-            }
-            else
-            {
-              // Check to see if reference is already loaded - if so, don't need to do anything!
-              if (fnReference.isLoaded())
-              {
-                TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s already loaded with correct path\n", prim.GetPath().GetText());
-              }
-              else
-              {
-                TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s loadReferenceByNode\n", prim.GetPath().GetText());
-                MString s = MFileIO::loadReferenceByNode(temp, &status);
-              }
-            }
+            MGlobal::displayError(MString("Failed to update reference with new namespace: ") + mayaReferencePath);
+          }
+        }
+      }
+
+      if(prim.IsActive())
+      {
+        if(mayaReferencePath.length() != 0 && filepath != mayaReferencePath)
+        {
+          command = "file -loadReference \"";
+          command += fnReference.name();
+          command += "\" \"";
+          command += mayaReferencePath;
+          command += "\"";
+          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s execute %s\n",
+                                              prim.GetPath().GetText(),
+                                              command.asChar());
+          status = MGlobal::executeCommand(command);
+          AL_MAYA_CHECK_ERROR(status, MString("Failed to update reference with new path: ") + mayaReferencePath);
+        }
+        else
+        {
+          // Check to see if reference is already loaded - if so, don't need to do anything!
+          if (fnReference.isLoaded())
+          {
+            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s already loaded with correct path\n", prim.GetPath().GetText());
           }
           else
           {
-            // Can unconditionally unload, as unloading an already unloaded reference
-            // won't do anything, and won't error
-            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s unloadReferenceByNode\n", prim.GetPath().GetText());
-            MString s = MFileIO::unloadReferenceByNode(temp, &status);
+            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s loadReferenceByNode\n", prim.GetPath().GetText());
+            MString s = MFileIO::loadReferenceByNode(refNode, &status);
           }
         }
+      }
+      else
+      {
+        // Can unconditionally unload, as unloading an already unloaded reference
+        // won't do anything, and won't error
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s unloadReferenceByNode\n", prim.GetPath().GetText());
+        MString s = MFileIO::unloadReferenceByNode(refNode, &status);
       }
     }
   }
@@ -319,8 +329,7 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
 
   MObject referenceObject;
 
-  // Check to see if we already have a reference matching the prim's filename
-  // and namespace.
+  // Check to see if we already have a reference matching the prim's namespace.
   for (MItDependencyNodes refIter(MFn::kReference); !refIter.isDone(); refIter.next())
   {
     referenceObject = refIter.item();
@@ -334,48 +343,15 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
         continue;
       }
 
-      // Test the namespace first, since... it's shorter (and we don't need MEL).
+      // Test the namespace
       if (primNSPlug.asString() == rigNamespaceM)
       {
-        MString refQuery = MString("referenceQuery -filename \"") + tempRefFn.name() + "\"";
-        MString refFilePath;
-        status = MGlobal::executeCommand(refQuery, refFilePath);
-        AL_MAYA_CHECK_ERROR(status, MString("reference query failed: ") + refQuery);
+        // We found one with the same namespace - run an update instead of a load
 
-        if (refFilePath.length() > 0)
-        {
-          // Strip off stupid copy number string if necessary.
-          int stripIndex = refFilePath.index('{');
-          if (stripIndex != -1)
-          {
-            refFilePath = refFilePath.substring(0, stripIndex - 1);
-          }
-
-          if (refFilePath == mayaReferencePath)
-          {
-            if (tempRefFn.isLoaded())
-            {
-              // This likely means more than one prim is using the same
-              // reference path and namespace, which is probably accidental and
-              // almost definitely undesirable.
-              MGlobal::displayWarning(MString("Reference path and namespace of MayaReference prim \"") + prim.GetPath().GetText()
-                                      + "\" shadow existing loaded reference " + tempRefFn.name());
-              status = MS::kFailure;
-            }
-            else
-            {
-              // Reconnect the reference node's `associatedNode` attr before
-              // loading it, since the previous connection will be gone.
-              connectReferenceAssociatedNode(parentDag, tempRefFn);
-              MFileIO::loadReferenceByNode(referenceObject, &status);
-            }
-            return status;
-          }
-        }
-        else
-        {
-          MGlobal::displayWarning(MString("Empty reference path on node ") + tempRefFn.name());
-        }
+        // Reconnect the reference node's `associatedNode` attr before
+        // loading it, since the previous connection may be gone.
+        connectReferenceAssociatedNode(parentDag, tempRefFn);
+        return update(prim, parent, referenceObject);
       }
     }
   }
