@@ -39,6 +39,72 @@ IGNORE_USD_WARNINGS_PUSH
 IGNORE_USD_WARNINGS_POP
 
 
+namespace {
+  // If the given source and destArrayPlug are already connected, returns the index they are
+  // connected at; otherwise, returns the lowest index in the destArray that does not already
+  // have a connection
+  MStatus connectedOrFirstAvailableIndex(
+      MPlug srcPlug,
+      MPlug destArrayPlug,
+      unsigned int& foundIndex,
+      bool& wasConnected)
+  {
+    // Want to find the lowest unconnected (as dest) open logical index... so we add to
+    // a list, then sort
+    MStatus status;
+    foundIndex = 0;
+    wasConnected = false;
+    unsigned int numConnected = destArrayPlug.numConnectedElements(&status);
+    AL_MAYA_CHECK_ERROR(status, MString("failed to get numConnectedElements on ") + destArrayPlug.name());
+    if (numConnected > 0)
+    {
+      std::vector<unsigned int> usedLogicalIndices;
+      usedLogicalIndices.reserve(numConnected);
+      MPlug elemPlug;
+      MPlug elemSrcPlug;
+      for (unsigned int connectedI = 0; connectedI < numConnected; ++connectedI)
+      {
+        elemPlug = destArrayPlug.connectionByPhysicalIndex(connectedI, &status);
+        AL_MAYA_CHECK_ERROR(status, MString("failed to get connection ") + connectedI + " on "+ destArrayPlug.name());
+        elemSrcPlug = elemPlug.source(&status);
+        AL_MAYA_CHECK_ERROR(status, MString("failed to get source for ") + elemPlug.name());
+        if (!elemSrcPlug.isNull())
+        {
+          if (elemSrcPlug == srcPlug)
+          {
+            foundIndex = elemPlug.logicalIndex();
+            wasConnected = true;
+            return status;
+          }
+          usedLogicalIndices.push_back(elemPlug.logicalIndex());
+        }
+      }
+      if (!usedLogicalIndices.empty())
+      {
+        std::sort(usedLogicalIndices.begin(), usedLogicalIndices.end());
+        // after sorting, since we assume no repeated indices, if the number of
+        // elements = value of last element + 1, then we know it's tightly packed...
+        if (usedLogicalIndices.size() - 1 == usedLogicalIndices.back())
+        {
+          foundIndex = usedLogicalIndices.size();
+        }
+        else
+        {
+          // If it's not tightly packed, just iterate through from start until we
+          // find an element whose index != it's value
+          for (foundIndex = 0;
+              foundIndex < usedLogicalIndices.size();
+              ++foundIndex)
+          {
+            if (usedLogicalIndices[foundIndex] != foundIndex) break;
+          }
+        }
+      }
+    }
+    return status;
+  }
+}
+
 namespace AL {
 namespace usdmaya {
 namespace fileio {
@@ -432,14 +498,20 @@ MStatus MayaReferenceLogic::connectReferenceAssociatedNode(MFnDagNode& dagNode, 
      > lifespan as the reference, and will be deleted along with the reference
      > if it is removed.
    */
+  MStatus result;
   MPlug destArrayPlug = refNode.findPlug("associatedNode");
+  bool wasConnected = false;
+  unsigned int destIndex = 0;
+  result = connectedOrFirstAvailableIndex(srcPlug, destArrayPlug, destIndex, wasConnected);
+  AL_MAYA_CHECK_ERROR(result, MString("failed to calculate first available dest index for ") + destArrayPlug.name());
+  if (wasConnected)
+  {
+    // If it's already connected, abort, we're done
+    return result;
+  }
+  MPlug destPlug = destArrayPlug.elementByLogicalIndex(destIndex);
 
-  // Resize the array before making any connections
-  uint32_t len = destArrayPlug.numElements();
-  destArrayPlug.setNumElements(len + 1);
-  MPlug destPlug = destArrayPlug.elementByLogicalIndex(len);
-
-  MStatus result = MS::kFailure;
+  result = MS::kFailure;
   if (!srcPlug.isNull() && !destPlug.isNull())
   {
     MDGModifier dgMod;
