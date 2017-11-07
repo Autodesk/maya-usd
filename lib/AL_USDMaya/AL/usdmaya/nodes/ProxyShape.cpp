@@ -1099,9 +1099,9 @@ void ProxyShape::reloadStage(MPlug& plug)
   if(m_stage && !MFileIO::isOpeningFile())
   {
     AL_BEGIN_PROFILE_SECTION(PostLoadProcess);
-      findTaggedPrims();
       // execute the post load process to import any custom prims
       cmds::ProxyShapePostLoadProcess::initialise(this);
+      findTaggedPrims();
 
     AL_END_PROFILE_SECTION();
   }
@@ -1218,7 +1218,9 @@ void ProxyShape::constructLockPrims()
   }
 
   SdfPathVector primsToLock;
+  primsToLock.reserve(primsNeedLock.size());
   SdfPathVector primsToUnlock;
+  primsToUnlock.reserve(m_currentLockedPrims.size());
   std::set_difference(primsNeedLock.begin(), primsNeedLock.end(), m_currentLockedPrims.begin(),
                       m_currentLockedPrims.end(), std::back_inserter(primsToLock));
   std::set_difference(m_currentLockedPrims.begin(), m_currentLockedPrims.end(), primsNeedLock.begin(),
@@ -1393,24 +1395,6 @@ void ProxyShape::findSelectablePrims()
   }
 
   m_findUnselectablePrims.postIteration();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::findLockedPrims()
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::findLockedPrims\n");
-  if (!m_stage)
-    return;
-  m_findLockedPrims.preIteration();
-  MDagPath m_parentPath;
-  for(fileio::TransformIterator it(m_stage, m_parentPath); !it.done(); it.next())
-  {
-    const UsdPrim& prim = it.prim();
-    if (!prim.IsValid())
-      continue;
-    m_findLockedPrims.iteration(it, prim);
-  }
-  m_findLockedPrims.postIteration();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

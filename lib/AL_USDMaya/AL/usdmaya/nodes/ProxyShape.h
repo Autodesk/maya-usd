@@ -550,9 +550,6 @@ public:
   /// \brief searches for paths which are selectable
   void findSelectablePrims();
 
-  /// \brief searches for paths which are locked
-  void findLockedPrims();
-
   //// \brief iterates the prim hierarchy calling pre/iterate/post like functions that are stored in the passed in objects
   void iteratePrimHierarchy();
 
