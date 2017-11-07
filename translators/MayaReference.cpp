@@ -119,7 +119,7 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
       MPlugArray referencePlugs;
       messagePlug.connectedTo(referencePlugs, false, true);
       
-      MString result, command, filepath;
+      MString command, filepath;
 
       for(uint32_t i = 0, n = referencePlugs.length(); i < n; ++i)
       {
@@ -138,18 +138,18 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
                                               prim.GetPath().GetText(),
                                               command.asChar(),
                                               filepath.asChar());
-          
+
           if(!rigNamespace.empty())
           {
             // check to see if the namespace has changed
-            command = MString("file -q -ns \"") + filepath + "\"";
-            MGlobal::executeCommand(command, result);
-            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s execute \"%s\"=%s\n",
+            MString refNamespace = fnReference.associatedNamespace(true);
+            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s, namespace was: %s\n",
                                                 prim.GetPath().GetText(),
-                                                command.asChar(),
-                                                result.asChar());
-            if(result != rigNamespace.c_str())
+                                                refNamespace.asChar());
+            if(refNamespace != rigNamespace.c_str())
             {
+              MString filepath;
+              command = MString("referenceQuery -f \"") + fnReference.name() + "\"";
               command = "file -e -ns \"";
               command += rigNamespace.c_str();
               command += "\" \"";
