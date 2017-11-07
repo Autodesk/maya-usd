@@ -126,7 +126,7 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
         MObject temp = referencePlugs[i].node();
         if(temp.hasFn(MFn::kReference))
         {
-          MFnDependencyNode fnReference(temp);
+          MFnReference fnReference(temp);
           command = MString("referenceQuery -f \"") + fnReference.name() + "\"";
           MGlobal::executeCommand(command, filepath);
           TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update referenceNode=%s prim=%s execute \"%s\"=%s\n",
@@ -184,12 +184,22 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
             }
             else
             {
-              TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s loadReferenceByNode\n", prim.GetPath().GetText());
-              MString s = MFileIO::loadReferenceByNode(temp, &status);
+              // Check to see if reference is already loaded - if so, don't need to do anything!
+              if (fnReference.isLoaded())
+              {
+                TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s already loaded with correct path\n", prim.GetPath().GetText());
+              }
+              else
+              {
+                TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s loadReferenceByNode\n", prim.GetPath().GetText());
+                MString s = MFileIO::loadReferenceByNode(temp, &status);
+              }
             }
           }
           else
           {
+            // Can unconditionally unload, as unloading an already unloaded reference
+            // won't do anything, and won't error
             TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s unloadReferenceByNode\n", prim.GetPath().GetText());
             MString s = MFileIO::unloadReferenceByNode(temp, &status);
           }
