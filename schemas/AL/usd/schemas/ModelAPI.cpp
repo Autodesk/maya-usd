@@ -137,5 +137,36 @@ TfToken AL_usd_ModelAPI::GetSelectabilityValue() const
   return selectabilityValue;
 }
 
+void AL_usd_ModelAPI::SetLock(const TfToken& lock)
+{
+  if (!GetPrim().IsValid())
+  {
+    return;
+  }
+  if (lock == AL_USDMayaSchemasTokens->lock_transform)
+  {
+    GetPrim().SetMetadata(AL_USDMayaSchemasTokens->lock, AL_USDMayaSchemasTokens->lock_transform);
+  }
+  else if (lock == AL_USDMayaSchemasTokens->lock_inherited)
+  {
+    GetPrim().SetMetadata(AL_USDMayaSchemasTokens->lock, AL_USDMayaSchemasTokens->lock_inherited);
+  }
+  else if (lock == TfToken())
+  {
+    GetPrim().SetMetadata(AL_USDMayaSchemasTokens->lock, TfToken());
+  }
+}
+
+TfToken AL_usd_ModelAPI::GetLock() const
+{
+  if (!GetPrim().HasMetadata(AL_USDMayaSchemasTokens->lock))
+  {
+    return TfToken();
+  }
+  TfToken lockValue;
+  GetPrim().GetMetadata<TfToken>(AL_USDMayaSchemasTokens->lock, &lockValue);
+  return lockValue;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
