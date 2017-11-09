@@ -517,12 +517,12 @@ public:
     {
       if(obj == it.second.node())
       {
+        path = it.first;
         auto iter = std::find(m_selectedPaths.cbegin(), m_selectedPaths.cend(), it.first);
         if(iter != m_selectedPaths.cend())
         {
           return true;
         }
-        path = it.first;
         break;
       }
     }
