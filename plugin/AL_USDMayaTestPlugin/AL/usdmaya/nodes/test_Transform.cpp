@@ -15,6 +15,7 @@
 //
 #include "test_usdmaya.h"
 #include "AL/usdmaya/nodes/Transform.h"
+#include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "maya/MFileIO.h"
 #include "maya/MFnDagNode.h"
 #include "maya/MFnTransform.h"
@@ -25,6 +26,7 @@
 #include "pxr/usd/usd/stage.h"
 
 using AL::usdmaya::nodes::Transform;
+using AL::usdmaya::nodes::TransformationMatrix;
 
 TEST(Transform, noInputStage)
 {
@@ -35,9 +37,12 @@ TEST(Transform, noInputStage)
   MObject xform = dagFn.create(Transform::kTypeId);
   MFnTransform transFn(xform);
   Transform* ptrXform = (Transform*)transFn.userNode();
+  TransformationMatrix* ptrMatrix = ptrXform->transform();
 
   MPlug pushToPrimPlug = ptrXform->pushToPrimPlug();
   EXPECT_EQ(false, pushToPrimPlug.asBool());
+  EXPECT_EQ(false, ptrMatrix->pushToPrimEnabled());
+  EXPECT_EQ(false, ptrMatrix->pushToPrimAvailable());
 
   auto checkTranslation = [&](double x, double y, double z) {
     MVector transOut = transFn.getTranslation(MSpace::kObject, &status);
@@ -61,6 +66,8 @@ TEST(Transform, noInputStage)
 
   pushToPrimPlug.setBool(true);
   EXPECT_EQ(true, pushToPrimPlug.asBool());
+  EXPECT_EQ(true, ptrMatrix->pushToPrimEnabled());
+  EXPECT_EQ(false, ptrMatrix->pushToPrimAvailable());
 
   setAndCheckTranslation(4.0, 5.0, 6.0);
 }
