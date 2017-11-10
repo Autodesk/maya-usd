@@ -21,6 +21,7 @@
 
 #include "AL/usdmaya/Utils.h"
 
+#include "maya/MBoundingBox.h"
 #include "maya/MFnDependencyNode.h"
 #include "maya/MSelectionList.h"
 
@@ -35,8 +36,30 @@
 
 using AL::usdmaya::nodes::ProxyShape;
 using boost::python::reference_existing_object;
+using boost::python::object;
 
 namespace {
+  struct MBoundingBoxConverter
+  {
+    // to-python conversion of const PxrUsdMayaXformOpClassification.
+    static PyObject* convert(const MBoundingBox& bbox)
+    {
+        TfPyLock lock;
+        object OpenMaya = boost::python::import("maya.OpenMaya");
+        // Considered grabbing the raw pointer to the MBoundingBox
+        // from the swig wrapper, but this seems sketchy, so I'm
+        // just re-constructing "in python"
+        object PyMBoundingBox = OpenMaya.attr("MBoundingBox");
+        object PyMPoint = OpenMaya.attr("MPoint");
+        MPoint min = bbox.min();
+        MPoint max = bbox.max();
+        object pyMin = PyMPoint(min.x, min.y, min.z, min.w);
+        object pyMax = PyMPoint(max.x, max.y, max.z, max.w);
+        object pyBbox = PyMBoundingBox(pyMin, pyMax);
+        return boost::python::incref(pyBbox.ptr());
+    }
+  };
+
   bool isProxyShape(MObject mobj)
   {
     MStatus status;
@@ -112,11 +135,15 @@ namespace {
 
 void wrapProxyShape()
 {
-  boost::python::class_<ProxyShape, boost::noncopyable>(
+
+  boost::python::scope s = boost::python::class_<ProxyShape, boost::noncopyable>(
       "ProxyShape", boost::python::no_init)
     .def("getByName", getProxyShapeByName,
         boost::python::return_value_policy<reference_existing_object>())
         .staticmethod("getByName")
-    .def("getUsdStage", &AL::usdmaya::nodes::ProxyShape::getUsdStage)
+    .def("getUsdStage", &ProxyShape::getUsdStage)
+    .def("boundingBox", &ProxyShape::boundingBox)
     ;
+
+    boost::python::to_python_converter<MBoundingBox, MBoundingBoxConverter>();
 }
