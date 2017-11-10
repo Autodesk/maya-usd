@@ -578,7 +578,7 @@ MObject ProxyShape::makeUsdTransformChain(
 
     if(modifier2)
     {
-      modifier2->newPlugValueBool(MPlug(node, Transform::pushToPrim()), true);
+      modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), true);
     }
 
     if(!isTransform)
@@ -598,7 +598,7 @@ MObject ProxyShape::makeUsdTransformChain(
     }
 
     // set the primitive path
-    fileio::translators::DgNodeTranslator::setString(node, Transform::primPath(), path.GetText());
+    modifier.newPlugValueString(ptrNode->primPathPlug(), path.GetText());
   }
   TransformReference ref(node, reason);
   ref.checkIncRef(reason);
@@ -651,11 +651,11 @@ void ProxyShape::makeUsdTransformsInternal(const UsdPrim& usdPrim, const MObject
 
       if(modifier2)
       {
-        modifier2->newPlugValueBool(MPlug(node, Transform::pushToPrim()), true);
+        modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), true);
       }
 
       // set the primitive path
-      fileio::translators::DgNodeTranslator::setString(node, Transform::primPath(), prim.GetPath().GetText());
+      modifier.newPlugValueString(ptrNode->primPathPlug(), prim.GetPath().GetText());
       TransformReference transformRef(node, reason);
       transformRef.incRef(reason);
       m_requiredPaths.emplace(prim.GetPath(), transformRef);

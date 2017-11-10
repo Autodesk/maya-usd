@@ -351,6 +351,11 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
     }
     else
     {
+      if (path.length() > 0)
+      {
+        TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Could not set '%s' to '%s' - could not retrieve stage\n",
+            plug.name().asChar(), path.asChar());
+      }
       transform()->setPrim(UsdPrim());
     }
     return MS::kSuccess;
