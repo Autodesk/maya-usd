@@ -22,9 +22,13 @@
 #include "AL/usdmaya/Utils.h"
 
 #include "maya/MBoundingBox.h"
+#include "maya/MFnDagNode.h"
 #include "maya/MFnDependencyNode.h"
+#include "maya/MDagModifier.h"
+#include "maya/MDGModifier.h"
 #include "maya/MSelectionList.h"
 
+#include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include <memory>
@@ -42,6 +46,8 @@ namespace {
   struct MBoundingBoxConverter
   {
     // to-python conversion of const PxrUsdMayaXformOpClassification.
+    // Decided NOT to register this using boost::python::to_python_converter,
+    // in case pxr registers one at some point
     static PyObject* convert(const MBoundingBox& bbox)
     {
         TfPyLock lock;
@@ -60,90 +66,295 @@ namespace {
     }
   };
 
-  bool isProxyShape(MObject mobj)
+  object MobjToName(const MObject& mobj, MString description)
   {
     MStatus status;
-    MFnDependencyNode mfnDep(mobj, &status);
-    if (!status)
+    TfPyLock lock;
+    if (mobj.isNull())
     {
-      return false;
+      return object(); //None
     }
-    return mfnDep.typeId() == ProxyShape::kTypeId;
+
+    if (mobj.hasFn(MFn::kDagNode))
+    {
+      MFnDagNode requiredDagNode(mobj, &status);
+      if (!status) {
+        MGlobal::displayError(
+            MString("Error converting MObject to dagNode: ")
+            + description);
+        return object(); //None
+      }
+      return boost::python::str(requiredDagNode.fullPathName().asChar());
+    }
+    else if (mobj.hasFn(MFn::kDependencyNode))
+    {
+      MFnDependencyNode requiredDepNode(mobj, &status);
+      if (!status) {
+        MGlobal::displayError(
+            MString("Error converting MObject to dependNode: ")
+            + description);
+        return object(); //None
+      }
+      return boost::python::str(requiredDepNode.name().asChar());
+    }
+    else
+    {
+      MGlobal::displayError(
+          MString("MObject did not appear to be a dependency node: ")
+          + description);
+      return object(); //None
+    }
   }
 
-  ProxyShape* getProxyShapeByName(std::string name)
+  struct PyProxyShape
   {
-    MStatus status;
-    MSelectionList sel;
-    status = sel.add(AL::usdmaya::convert(name));
-    if (!status)
+    static PyObject* boundingBox(const ProxyShape& proxyShape)
     {
-      return nullptr;
-    }
-    MDagPath dag;
-    status = sel.getDagPath(0, dag);
-    if (!status)
-    {
-      return nullptr;
+      return MBoundingBoxConverter::convert(proxyShape.boundingBox());
     }
 
-    MObject proxyMObj = dag.node();
-    if (!isProxyShape(proxyMObj))
+    static object findRequiredPath(
+        const ProxyShape& proxyShape, const SdfPath& path)
     {
-      // Try extending to shapes below...
-      if (!dag.hasFn(MFn::kTransform))
+      MObject obj = proxyShape.findRequiredPath(path);
+      MString desc = MString("from SdfPath '") + path.GetText() + "'";
+      return MobjToName(obj, desc);
+    }
+
+    static bool isProxyShape(MObject mobj)
+    {
+      MStatus status;
+      MFnDependencyNode mfnDep(mobj, &status);
+      if (!status)
+      {
+        return false;
+      }
+      return mfnDep.typeId() == ProxyShape::kTypeId;
+    }
+
+    static ProxyShape* getProxyShapeByName(std::string name)
+    {
+      MStatus status;
+      MSelectionList sel;
+      status = sel.add(AL::usdmaya::convert(name));
+      if (!status)
+      {
+        return nullptr;
+      }
+      MDagPath dag;
+      status = sel.getDagPath(0, dag);
+      if (!status)
       {
         return nullptr;
       }
 
-      bool foundProxy = false;
-      unsigned int numShapes;
-      if (!dag.numberOfShapesDirectlyBelow(numShapes))
+      MObject proxyMObj = dag.node();
+      if (!isProxyShape(proxyMObj))
       {
-        return nullptr;
-      }
-      for (int i = 0; i < numShapes; ++i)
-      {
-        dag.extendToShapeDirectlyBelow(i);
-        if (isProxyShape(dag.node()))
+        // Try extending to shapes below...
+        if (!dag.hasFn(MFn::kTransform))
         {
-          foundProxy = true;
-          proxyMObj = dag.node();
-          break;
+          return nullptr;
         }
-        dag.pop();
+
+        bool foundProxy = false;
+        unsigned int numShapes;
+        if (!dag.numberOfShapesDirectlyBelow(numShapes))
+        {
+          return nullptr;
+        }
+        for (int i = 0; i < numShapes; ++i)
+        {
+          dag.extendToShapeDirectlyBelow(i);
+          if (isProxyShape(dag.node()))
+          {
+            foundProxy = true;
+            proxyMObj = dag.node();
+            break;
+          }
+          dag.pop();
+        }
+        if (!foundProxy)
+        {
+          return nullptr;
+        }
       }
-      if (!foundProxy)
+
+      MFnDependencyNode mfnDep(proxyMObj, &status);
+      if (!status)
       {
         return nullptr;
       }
+      auto proxyShapePtr = static_cast<ProxyShape*>(mfnDep.userNode(&status));
+      if (!status)
+      {
+        return nullptr;
+      }
+      return proxyShapePtr;
     }
 
-    MFnDependencyNode mfnDep(proxyMObj, &status);
-    if (!status)
+    static object makeUsdTransformChain(
+          ProxyShape& proxyShape,
+          const UsdPrim& usdPrim,
+          ProxyShape::TransformReason reason=ProxyShape::kRequested,
+          bool pushToPrim=false,
+          bool returnCreateCount=false)
     {
-      return nullptr;
+      // Note - this current doesn't support undo, but right now, neither
+      // does the AL_usdmaya_ProxyShapeImportAllTransforms command
+      MDagModifier modifier;
+      MDGModifier modifier2;
+      uint32_t createCount = 0;
+
+      MDGModifier* mod2Ptr = nullptr;
+      if (pushToPrim)
+      {
+        mod2Ptr = &modifier2;
+      }
+      MObject resultObj = proxyShape.makeUsdTransformChain(
+          usdPrim,
+          modifier,
+          reason,
+          mod2Ptr,
+          &createCount);
+      modifier.doIt();
+      if (pushToPrim)
+      {
+        modifier2.doIt();
+      }
+      MString objDesc("maya transform chain root for '");
+      objDesc += usdPrim.GetPath().GetText();
+      objDesc += "'";
+      object resultPyObj = MobjToName(resultObj, objDesc);
+      if (returnCreateCount)
+      {
+        return boost::python::make_tuple(resultPyObj, createCount);
+      }
+      return resultPyObj;
     }
-    auto proxyShapePtr = static_cast<ProxyShape*>(mfnDep.userNode(&status));
-    if (!status)
+
+    static object makeUsdTransforms(
+        ProxyShape& proxyShape,
+        const UsdPrim& usdPrim,
+        ProxyShape::TransformReason reason=ProxyShape::kRequested,
+        bool pushToPrim=false)
     {
-      return nullptr;
+      MDagModifier modifier;
+      MDGModifier modifier2;
+
+      MDGModifier* mod2Ptr = nullptr;
+      if (pushToPrim)
+      {
+        mod2Ptr = &modifier2;
+      }
+
+      MObject resultObj = proxyShape.makeUsdTransforms(
+          usdPrim,
+          modifier,
+          reason,
+          mod2Ptr);
+      modifier.doIt();
+      if (pushToPrim)
+      {
+        modifier2.doIt();
+      }
+      MString objDesc("maya transform for '");
+      objDesc += usdPrim.GetPath().GetText();
+      objDesc += "'";
+      return MobjToName(resultObj, objDesc);
     }
-    return proxyShapePtr;
-  }
+
+    static void removeUsdTransformChain(
+        ProxyShape& proxyShape,
+        const UsdPrim& usdPrim,
+        ProxyShape::TransformReason reason=ProxyShape::kRequested)
+    {
+      MDagModifier modifier;
+      proxyShape.removeUsdTransformChain(
+          usdPrim,
+          modifier,
+          reason);
+      modifier.doIt();
+    }
+
+    static void removeUsdTransformChain(
+        ProxyShape& proxyShape,
+        const SdfPath& path,
+        ProxyShape::TransformReason reason=ProxyShape::kRequested)
+    {
+      MDagModifier modifier;
+      proxyShape.removeUsdTransformChain(
+          path,
+          modifier,
+          reason);
+      modifier.doIt();
+    }
+
+    static void removeUsdTransforms(
+        ProxyShape& proxyShape,
+        const UsdPrim& usdPrim,
+        ProxyShape::TransformReason reason=ProxyShape::kRequested)
+    {
+      MDagModifier modifier;
+      proxyShape.removeUsdTransforms(
+          usdPrim,
+          modifier,
+          reason);
+      modifier.doIt();
+    }
+  };
 }
 
 void wrapProxyShape()
 {
+  void (*removeUsdTransformChain_prim)(ProxyShape& proxyShape,
+      const UsdPrim& usdPrim, ProxyShape::TransformReason) = PyProxyShape::removeUsdTransformChain;
 
-  boost::python::scope s = boost::python::class_<ProxyShape, boost::noncopyable>(
-      "ProxyShape", boost::python::no_init)
-    .def("getByName", getProxyShapeByName,
+  void (*removeUsdTransformChain_path)(ProxyShape& proxyShape,
+      const SdfPath& path, ProxyShape::TransformReason) = PyProxyShape::removeUsdTransformChain;
+
+
+  boost::python::class_<ProxyShape, boost::noncopyable>
+      proxyShapeCls("ProxyShape", boost::python::no_init);
+
+  boost::python::scope proxyShapeScope = proxyShapeCls;
+
+  boost::python::enum_<ProxyShape::TransformReason>("TransformReason")
+      .value("kSelection", ProxyShape::kSelection)
+      .value("kRequested", ProxyShape::kRequested)
+      .value("kRequired", ProxyShape::kRequired)
+  ;
+
+  proxyShapeCls
+    .def("getByName", PyProxyShape::getProxyShapeByName,
         boost::python::return_value_policy<reference_existing_object>())
         .staticmethod("getByName")
     .def("getUsdStage", &ProxyShape::getUsdStage)
-    .def("boundingBox", &ProxyShape::boundingBox)
+    .def("boundingBox", PyProxyShape::boundingBox)
+    .def("isRequiredPath", &ProxyShape::isRequiredPath)
+    .def("findRequiredPath", PyProxyShape::findRequiredPath)
+    .def("makeUsdTransformChain", PyProxyShape::makeUsdTransformChain,
+        (boost::python::arg("usdPrim"),
+         boost::python::arg("reason")=ProxyShape::kRequested,
+         boost::python::arg("pushToPrim")=false,
+         boost::python::arg("returnCreateCount")=false))
+    .def("makeUsdTransforms", PyProxyShape::makeUsdTransforms,
+        (boost::python::arg("usdPrim"),
+         boost::python::arg("reason")=ProxyShape::kRequested,
+         boost::python::arg("pushToPrim")=false))
+    .def("removeUsdTransformChain", removeUsdTransformChain_prim,
+        (boost::python::arg("usdPrim"),
+         boost::python::arg("reason")=ProxyShape::kRequested))
+    .def("removeUsdTransformChain", removeUsdTransformChain_path,
+        (boost::python::arg("path"),
+         boost::python::arg("reason")=ProxyShape::kRequested))
+    .def("removeUsdTransforms", PyProxyShape::removeUsdTransforms,
+        (boost::python::arg("usdPrim"),
+         boost::python::arg("reason")=ProxyShape::kRequested))
+    .def("destroyTransformReferences", &ProxyShape::destroyTransformReferences)
     ;
 
-    boost::python::to_python_converter<MBoundingBox, MBoundingBoxConverter>();
+    // Decided NOT to register this using boost::python::to_python_converter,
+    // in case pxr registers one at some point
+//    boost::python::to_python_converter<MBoundingBox, MBoundingBoxConverter>();
 }
