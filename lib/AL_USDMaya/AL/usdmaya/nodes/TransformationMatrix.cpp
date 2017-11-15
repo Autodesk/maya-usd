@@ -545,14 +545,14 @@ double TransformationMatrix::readDouble(const UsdGeomXformOp& op, UsdTimeCode ti
   default:
     break;
   }
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::readDouble %d\n%s\n", result, op.GetOpName().GetText());
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::readDouble %f\n%s\n", result, op.GetOpName().GetText());
   return result;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::pushDouble(const double value, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushDouble %d\n%s\n", value, op.GetOpName().GetText());
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushDouble %f\n%s\n", value, op.GetOpName().GetText());
   UsdDataType attr_type = getAttributeType(op.GetTypeName());
   switch(attr_type)
   {
@@ -1030,7 +1030,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::updateToTime %d\n", time.GetValue());
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::updateToTime %f\n", time.GetValue());
   // if not yet initialized, do not execute this code! (It will crash!).
   if(!m_prim)
   {
