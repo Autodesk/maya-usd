@@ -1939,38 +1939,33 @@ void TransformationMatrix::enableReadAnimatedValues(bool enabled)
   // of nothing. This will call my code that will magically construct the transform ops in the right order.
   if(enabled)
   {
-    const MVector nullVec(0, 0, 0);
-    const MVector oneVec(1.0, 1.0, 1.0);
-    const MPoint nullPoint(0, 0, 0);
-    const MQuaternion nullQuat(0, 0, 0, 1.0);
-
     if(!pushPrimToMatrix())
     {
-      if(primHasTranslation() || translation() != nullVec)
-        translateBy(nullVec);
+      if(primHasTranslation() || translation() != MVector::zero)
+        translateBy(MVector::zero);
 
-      if(primHasScale() || scale() != oneVec)
-        scaleBy(oneVec);
+      if(primHasScale() || scale() != MVector::one)
+        scaleBy(MVector::one);
 
-      if(primHasShear() || shear() != nullVec)
-        shearBy(nullVec);
+      if(primHasShear() || shear() != MVector::zero)
+        shearBy(MVector::zero);
 
-      if(primHasScalePivot() || scalePivot() != nullPoint)
+      if(primHasScalePivot() || scalePivot() != MPoint::origin)
         setScalePivot(scalePivot(), MSpace::kTransform, false);
 
-      if(primHasScalePivot() || scalePivot() != nullPoint)
+      if(primHasScalePivot() || scalePivot() != MPoint::origin)
         setScalePivotTranslation(scalePivotTranslation(), MSpace::kTransform);
 
-      if(primHasRotatePivot() || rotatePivot() != nullPoint)
+      if(primHasRotatePivot() || rotatePivot() != MPoint::origin)
         setRotatePivot(rotatePivot(), MSpace::kTransform, false);
 
-      if(primHasRotatePivotTranslate() || rotatePivotTranslation() != nullVec)
+      if(primHasRotatePivotTranslate() || rotatePivotTranslation() != MVector::zero)
         setRotatePivotTranslation(rotatePivotTranslation(), MSpace::kTransform);
 
-      if(primHasRotation() || rotation() != nullQuat)
-        rotateBy(nullQuat);
+      if(primHasRotation() || rotation() != MQuaternion::identity)
+        rotateBy(MQuaternion::identity);
 
-      if(primHasRotateAxes() || rotateOrientation() != nullQuat)
+      if(primHasRotateAxes() || rotateOrientation() != MQuaternion::identity)
         setRotateOrientation(rotateOrientation(), MSpace::kTransform, false);
     }
     else
@@ -2005,38 +2000,33 @@ void TransformationMatrix::enablePushToPrim(bool enabled)
   // of nothing. This will call my code that will magically construct the transform ops in the right order.
   if(enabled && getTimeCode() == UsdTimeCode::Default())
   {
-    const MVector nullVec(0, 0, 0);
-    const MVector oneVec(1.0, 1.0, 1.0);
-    const MPoint nullPoint(0, 0, 0);
-    const MQuaternion nullQuat(0, 0, 0, 1.0);
-
     if(!pushPrimToMatrix())
     {
-      if(primHasTranslation() || translation() != nullVec)
-        translateBy(nullVec);
+      if(primHasTranslation() || translation() != MVector::zero)
+        translateBy(MVector::zero);
 
-      if(primHasScale() || scale() != oneVec)
-        scaleBy(oneVec);
+      if(primHasScale() || scale() != MVector::one)
+        scaleBy(MVector::one);
 
-      if(primHasShear() || shear() != nullVec)
-        shearBy(nullVec);
+      if(primHasShear() || shear() != MVector::zero)
+        shearBy(MVector::zero);
 
-      if(primHasScalePivot() || scalePivot() != nullPoint)
+      if(primHasScalePivot() || scalePivot() != MPoint::origin)
         setScalePivot(scalePivot(), MSpace::kTransform, false);
 
-      if(primHasScalePivotTranslate() || scalePivotTranslation() != nullPoint)
+      if(primHasScalePivotTranslate() || scalePivotTranslation() != MPoint::origin)
         setScalePivotTranslation(scalePivotTranslation(), MSpace::kTransform);
 
-      if(primHasRotatePivot() || rotatePivot() != nullPoint)
+      if(primHasRotatePivot() || rotatePivot() != MPoint::origin)
         setRotatePivot(rotatePivot(), MSpace::kTransform, false);
 
-      if(primHasRotatePivotTranslate() || rotatePivotTranslation() != nullVec)
+      if(primHasRotatePivotTranslate() || rotatePivotTranslation() != MVector::zero)
         setRotatePivotTranslation(rotatePivotTranslation(), MSpace::kTransform);
 
-      if(primHasRotation() || rotation() != nullQuat)
-        rotateBy(nullQuat);
+      if(primHasRotation() || rotation() != MQuaternion::identity)
+        rotateBy(MQuaternion::identity);
 
-      if(primHasRotateAxes() || rotateOrientation() != nullQuat)
+      if(primHasRotateAxes() || rotateOrientation() != MQuaternion::identity)
         setRotateOrientation(rotateOrientation(), MSpace::kTransform, false);
     }
     else
