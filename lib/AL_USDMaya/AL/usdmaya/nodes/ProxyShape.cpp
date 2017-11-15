@@ -238,6 +238,7 @@ SdfPathVector ProxyShape::getExcludePrimPaths() const
   return getPrimPathsFromCommaJoinedString(paths);
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 UsdStagePopulationMask ProxyShape::constructStagePopulationMask(const MString &paths) const
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::constructStagePopulationMask(%s)\n", paths.asChar());
@@ -256,6 +257,8 @@ UsdStagePopulationMask ProxyShape::constructStagePopulationMask(const MString &p
   }
   return mask;
 }
+
+//----------------------------------------------------------------------------------------------------------------------
 SdfPathVector ProxyShape::getPrimPathsFromCommaJoinedString(const MString &paths) const
 {
   SdfPathVector result;
@@ -274,6 +277,7 @@ SdfPathVector ProxyShape::getPrimPathsFromCommaJoinedString(const MString &paths
   }
   return result;
 }
+
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::constructGLImagingEngine()
 {
@@ -490,8 +494,8 @@ ProxyShape::~ProxyShape()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::~ProxyShape\n");
   MSceneMessage::removeCallback(m_beforeSaveSceneId);
-  MNodeMessage::removeCallback(m_attributeChanged);
   MEventMessage::removeCallback(m_onSelectionChanged);
+  removeAttributeChangedCallback();
   TfNotice::Revoke(m_variantChangedNoticeKey);
   TfNotice::Revoke(m_objectsChangedNoticeKey);
   TfNotice::Revoke(m_editTargetChanged);
@@ -1102,12 +1106,32 @@ void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& p
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::removeAttributeChangedCallback()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::removeAttributeChangedCallback\n");
+  if(m_attributeChanged != -1)
+  {
+    MMessage::removeCallback(m_attributeChanged);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::addAttributeChangedCallback()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::addAttributeChangedCallback\n");
+  if(m_attributeChanged != -1)
+  {
+    MObject obj = thisMObject();
+    m_attributeChanged = MNodeMessage::addAttributeChangedCallback(obj, onAttributeChanged, (void*)this);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::postConstructor()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::postConstructor\n");
   setRenderable(true);
-  MObject obj = thisMObject();
-  m_attributeChanged = MNodeMessage::addAttributeChangedCallback(obj, onAttributeChanged, (void*)this);
+  addAttributeChangedCallback();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -674,7 +674,21 @@ public:
     { return const_cast<ProxyShape*>(this)->selectabilityDB(); }
 
 
+  /// \brief  adds the attribute changed callback to the proxy shape
+  void addAttributeChangedCallback();
+
+  /// \brief  removes the attribute changed callback from the proxy shape
+  void removeAttributeChangedCallback();
+
+  /// \brief  used to reload the stage after file open
+  void reloadStage()
+    {
+      MPlug plug = filePathPlug();
+      reloadStage(plug);
+    }
+
 private:
+
   static void onSelectionChanged(void* ptr);
   bool removeAllSelectedNodes(SelectionUndoHelper& helper);
   void removeTransformRefs(const std::vector<std::pair<SdfPath, MObject>>& removedRefs, TransformReason reason);
@@ -850,9 +864,9 @@ private:
   TfNotice::Key m_editTargetChanged;
 
   mutable std::map<UsdTimeCode, MBoundingBox> m_boundingBoxCache;
-  MCallbackId m_beforeSaveSceneId;
-  MCallbackId m_attributeChanged;
-  MCallbackId m_onSelectionChanged;
+  MCallbackId m_beforeSaveSceneId = -1;
+  MCallbackId m_attributeChanged = -1;
+  MCallbackId m_onSelectionChanged = -1;
   SdfPathVector m_excludedGeometry;
   SdfPathVector m_excludedTaggedGeometry;
   UsdStageRefPtr m_stage;
