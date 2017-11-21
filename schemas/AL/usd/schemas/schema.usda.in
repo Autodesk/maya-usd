@@ -71,33 +71,3 @@ class ALMayaReference "ALMayaReference"(
   )
 }
 
-###################################################################################################
-
-class ALHostDrivenTransformInfo "ALHostDrivenTransformInfo" (
-  doc = "Connection info for transforms"
-  inherits = </Typed>
-  customData = {
-    string className = "HostDrivenTransformInfo"
-    string fileName = "HostDrivenTransformInfo"
-  }
-)
-{
-  rel targetTransforms;
-  uniform string[] transformSourceNodes;
-
-  uniform string[] scaleAttributes;
-  uniform int[]    scaleAttributeIndices;
-
-  uniform string[] rotateAttributes;
-  uniform int[]    rotateAttributeIndices;
-
-  uniform string[] translateAttributes;
-  uniform int[]    translateAttributeIndices;
-
-  uniform string[] rotateOrderAttributes;
-  uniform int[]    rotateOrderAttributeIndices;
-
-  uniform string[] visibilitySourceNodes;
-  uniform string[] visibilityAttributes;
-  uniform int[]    visibilityAttributeIndices;
-}
