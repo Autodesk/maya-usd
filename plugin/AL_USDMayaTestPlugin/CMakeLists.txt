@@ -13,6 +13,7 @@ list(APPEND AL_maya_test_headers
         AL/maya/tests/NodeHelperUnitTest.h
         test_usdmaya.h
 )
+
 list(APPEND AL_maya_test_source
 		AL/UnitTestHarness.cpp
         AL/maya/tests/CommandGuiHelperTest.cpp
@@ -30,6 +31,7 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/nodes/proxy/test_DrivenTransforms.cpp
         AL/usdmaya/nodes/proxy/test_PrimFilter.cpp
         AL/usdmaya/test_SelectabilityDB.cpp
+        test_maya_Event.cpp
         test_maya_MenuBuilder.cpp
         test_maya_NodeHelper.cpp
         test_translators_AnimationTranslator.cpp

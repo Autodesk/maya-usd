@@ -12,7 +12,10 @@ list(APPEND AL_maya_headers
         AL/maya/MenuBuilder.h
         AL/maya/NodeHelper.h
         AL/maya/SIMD.h
+        AL/events/Events.h
+        AL/events/EventManager.h
 )
+
 list(APPEND AL_maya_source
         AL/maya/CodeTimings.cpp
         AL/maya/CommandGuiHelper.cpp
@@ -20,6 +23,7 @@ list(APPEND AL_maya_source
         AL/maya/FileTranslatorOptions.cpp
         AL/maya/MenuBuilder.cpp
         AL/maya/NodeHelper.cpp
+        AL/events/EventManager.cpp
 )
 
 list(APPEND AL_usdmaya_headers
