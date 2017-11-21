@@ -1,3 +1,44 @@
+## v0.24.5 (2017-11-06)
+
+### Fixed
+
+* Remove leftover file
+
+## v0.24.4 (2017-10-18)
+
+### Changed
+
+* Update to USD-0.8.1
+
+## v0.24.3 (2017-10-18)
+
+### Fixed
+
+In same cases when there was geometry in VP2 behind some maya objects, some maya objects wouldn't be selected
+
+## v0.24.2 (2017-10-17)
+
+### Fixed
+
+* Fix for [#24](https://github.com/AnimalLogic/AL_USDMaya/issues/24). This is really to avoid poping objects while selecting and does not represent a long term solution.
+Selecting maya nodes that were outside of the proxyshape were causing a "Root path must be absolute (<>) " error.
+
+## v0.24.1 (2017-10-10)
+
+### Added
+
+SelectionDB that stores all the paths that are selectable.
+
+### Changed
+
+Move all the selection commands into a different cpp file.
+
+## v0.24.0 (2017-10-09)
+
+### Fixed
+
+* Update test_PrimFilter to not rely on external files
+
 ## v0.23.9 (2017-09-20)
 ### Added
 * Added missing header files from nodes/proxy directory into released package
