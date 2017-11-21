@@ -186,7 +186,7 @@ global proc AL_usdmaya_debug_gui()
         columnLayout;
       }
       $state = `AL_usdmaya_UsdDebugCommand -st $ii`;
-      $command = "if(#1) AL_usdmaya_UsdDebugCommand -en \"" + $ii + "\"; else AL_usdmaya_UsdDebugCommand -ds \"" + $ii + "\" print(\"moo\");";
+      $command = "if(#1) AL_usdmaya_UsdDebugCommand -en \"" + $ii + "\"; else AL_usdmaya_UsdDebugCommand -ds \"" + $ii + "\";";
       $cb = `checkBox -l $ii -v $state -cc $command`;
     }
     showWindow;
