@@ -147,7 +147,20 @@ public:
 
   /// \brief retrieves the container containing all the Maya listeners
   /// \return ListenerContainer containing all the listeners
-  ListenerContainer& listeners(){return m_mayaListeners;}
+  const ListenerContainer& listeners(){return m_mayaListeners;}
+
+  bool isMayaCallbackRegistered(AL::usdmaya::events::MayaEventType event)
+  {
+    if(event >= AL::usdmaya::events::kSceneMessageLast)
+    {
+      return false;
+    }
+    return m_mayaCallbacks[event] != MCallbackId();
+  }
+
+  /// \brief retrieves the container containing all the Maya listeners
+  /// \return ListenerContainer containing all the listeners
+  const MayaCallbackIDContainer& mayaCallbackIDs(){return m_mayaCallbacks;}
 
 private:
   bool registerMayaCallback(MayaEventType eventType);
