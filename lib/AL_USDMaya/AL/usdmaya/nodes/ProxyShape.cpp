@@ -1159,7 +1159,7 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
   UsdPrim prim = m_stage->GetPrimAtPath(path);
   VtValue mayaPath = prim.GetCustomDataByKey(TfToken("MayaPath"));
   MObject lockObject;
-  if (not mayaPath.IsEmpty())
+  if (!mayaPath.IsEmpty())
   {
     MString pathStr = convert(mayaPath.Get<std::string>());
     MSelectionList sl;
@@ -1168,7 +1168,7 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
     {
       sl.getDependNode(0, selObj);
     }
-    if (!selObj.isNull() and selObj.hasFn(MFn::kTransform))
+    if (selObj.hasFn(MFn::kTransform))
     {
       lockObject = selObj;
     }
@@ -1179,7 +1179,7 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
     context()->getMObjects(path, objHdls);
     for (auto objHdl : objHdls)
     {
-      if (objHdl.isValid() and objHdl.object().hasFn(MFn::kTransform))
+      if (objHdl.isValid() && objHdl.object().hasFn(MFn::kTransform))
       {
         lockObject == objHdl.object();
         break;
@@ -1191,9 +1191,9 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
   MPlug(lockObject, m_transformTranslate).setLocked(lock);
   MPlug(lockObject, m_transformRotate).setLocked(lock);
   MPlug(lockObject, m_transformScale).setLocked(lock);
-  if (lock and MFnDependencyNode(lockObject).typeId() == AL_USDMAYA_TRANSFORM)
+  if (lock && MFnDependencyNode(lockObject).typeId() == AL_USDMAYA_TRANSFORM)
   {
-    MStatus pushToPrim = MPlug(lockObject, Transform::pushToPrim()).setBool(false);
+    MPlug(lockObject, Transform::pushToPrim()).setBool(false);
   }
   return true;
 }
