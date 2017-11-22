@@ -94,7 +94,7 @@ MSceneMessage::Message EventToMayaEvent(MayaEventType internalEvent)
 /// \brief Converts Maya's event type into supported event type
 /// \return The corresponding supported Event type, else MayaEventType::kSceneMessageLast
 //----------------------------------------------------------------------------------------------------------------------
-MayaEventType EventToMayaEvent(MSceneMessage::Message mayaEvent)
+MayaEventType eventToMayaEvent(MSceneMessage::Message mayaEvent)
 {
   switch(mayaEvent)
   {

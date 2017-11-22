@@ -38,13 +38,13 @@ typedef uintptr_t EventID;
 typedef std::unique_ptr<Listener> ListenerPtr;
 typedef std::vector<ListenerPtr> Listeners;
 typedef std::array<Listeners, MayaEventType::kSceneMessageLast> ListenerContainer;
+typedef std::array<MCallbackId, MayaEventType::kSceneMessageLast> MayaCallbackIDContainer;
 
 /*
  * \brief Objects of this class contain all the data needed to allow callbacks to happen
  */
 struct Listener
 {
-
   UserData userData = nullptr;  ///< data which is returned back to the user which registered this even and data
   Callback callback = nullptr;  ///< called when the event is triggerd
 
@@ -71,15 +71,17 @@ class MayaEventManager
 public:
   explicit MayaEventManager();
 
-  /// \brief Stores and orders the registered Maya callbacks. Internally creates a Listener type
-  ///        and passes it to the corresponding register fnction
+  /// \brief Creates an event which listens to the specified Maya event,
+  ///   obeying the passed in order weight.
+  ///   Internally this method creates a Listener type
+  ///   and passes this object onto the register function.
   /// \param event corresponding internal maya event
   /// \param callback function which will be called
   /// \param userData data which is returned to the user when the callback is triggered
   /// \param tag string to help classify the type of listener
   /// \param isPython true if the specified command should be executed as pythong
   /// \param command the string that will be executed when the callback happens
-  /// \return the identifier of the created listener
+  /// \return the identifier of the created listener, or 0 if nothing was registered
   EventID registerCallback(MayaEventType event,
                            const Callback& callback,
                            uint32_t weight,
@@ -92,7 +94,7 @@ public:
   /// \brief Stores and orders the registered Maya callbacks
   /// \param eventType corresponding internal Maya event
   /// \param eventListener object which is executed when the corresponding Maya event triggers
-  /// \return the identifier of the created listener
+  /// \return the identifier of the created listener, or 0 if nothing was registered
   EventID registerCallback(MayaEventType eventType, const Listener& eventListener);
 
   /// \brief Remove the corresponding EventID
@@ -113,11 +115,11 @@ public:
   ListenerContainer& listeners(){return m_mayaListeners;}
 
 private:
-  MCallbackId registerMayaCallback(MayaEventType eventType);
+  bool registerMayaCallback(MayaEventType eventType);
   bool deregisterMayaCallback(MayaEventType eventType);
 private:
   ListenerContainer m_mayaListeners;
-  std::array<MCallbackId, MayaEventType::kSceneMessageLast> m_mayaCallbacks;
+  MayaCallbackIDContainer m_mayaCallbacks;
 
 };
 
