@@ -61,6 +61,29 @@ static void onMayaCommand(void* userData)
   }
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+EventID MayaEventManager::registerLast(MayaEventType eventType,
+    const Callback& callback,
+    void* userData,
+    const char* tag,
+    bool isPython,
+    const char* command)
+{
+  return registerCallback(eventType, callback, AL::usdmaya::events::kPlaceLast, userData, tag, isPython, command);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+EventID MayaEventManager::registerFirst(MayaEventType eventType,
+    const Callback& callback,
+    void* userData,
+    const char* tag,
+    bool isPython,
+    const char* command)
+{
+  return registerCallback(eventType, callback, AL::usdmaya::events::kPlaceFirst, userData, tag, isPython, command);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 EventID MayaEventManager::registerCallback(MayaEventType eventType,
     const Callback& callback,
     uint32_t weight,
@@ -94,7 +117,26 @@ EventID MayaEventManager::registerCallback(MayaEventType eventType, const Listen
   // Retrive the pointer location as the ID
   EventID id = (EventID)newEvent.get();
 
-  listeners.push_back(std::move(newEvent));
+  if(newEvent->weight & AL::usdmaya::events::kPlaceLast)
+  {
+    if(!listeners.empty())
+    {
+      // If the weight is tagged to place last, make it +1 more than the element at the end of the vector
+      newEvent->weight = listeners.back()->weight + 1;
+    }
+    listeners.push_back(std::move(newEvent));
+  }
+  else if(newEvent->weight & AL::usdmaya::events::kPlaceFirst)
+  {
+    // If the weight is tagged as the first place, then push it directly to the front and give it a light weight
+    newEvent->weight = 0;
+    listeners.insert(listeners.begin(), std::move(newEvent));
+  }
+  else
+  {
+    listeners.push_back(std::move(newEvent));
+  }
+
   // Start the Maya callback if the recently Maya listener has been added
   if(listeners.size() == 1)
   {

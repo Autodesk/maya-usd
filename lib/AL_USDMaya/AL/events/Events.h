@@ -134,6 +134,14 @@ MayaEventType eventToMayaEvent(MSceneMessage::Message mayaEvent)
   return kSceneMessageLast;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  Flags to help in the ordering of the Listeners
+//----------------------------------------------------------------------------------------------------------------------
+enum ListenerOrder : uint32_t
+{
+  kPlaceLast = 1 << 30,
+  kPlaceFirst = 1 << 29,
+};
 
 // C++ standard had an "oversight" for make_unique. This is copied from Herb Sutter's blog
 // See: https://herbsutter.com/gotw/_102/
