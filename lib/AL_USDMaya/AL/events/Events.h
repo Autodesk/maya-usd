@@ -16,7 +16,9 @@
 
 #pragma once
 #include <functional>
+#include <map>
 #include "maya/MGlobal.h"
+
 
 namespace AL {
 namespace usdmaya {
@@ -40,7 +42,7 @@ enum MayaEventType
   kBeforeLoadReference, ///< called prior to file reference loaded
   kAfterLoadReference, ///< called after to file reference loaded
   kBeforeCreateReference, ///< called prior to file reference created
-  kAfterCreateReference, ///< called after to file reference created
+  kAfterCreateReference, ///< called after to file re)ference created
   kMayaInitialized, ///< called after maya has been initialised
   kMayaExiting, ///< called prior to maya exiting
   kSceneMessageLast
@@ -50,43 +52,35 @@ enum MayaEventType
 /// \brief Converts supported event type into Maya's event type
 /// \return The corresponding Maya event type, else MSceneMessage::kLast
 //----------------------------------------------------------------------------------------------------------------------
-MSceneMessage::Message EventToMayaEvent(MayaEventType internalEvent)
+MSceneMessage::Message eventToMayaEvent(MayaEventType internalEvent)
 {
-  switch(internalEvent)
+  static std::array<MSceneMessage::Message, MayaEventType::kSceneMessageLast> eventToMayaEventTable =
+    {
+      MSceneMessage::kBeforeNew,
+      MSceneMessage::kAfterNew,
+      MSceneMessage::kBeforeOpen,
+      MSceneMessage::kAfterOpen,
+      MSceneMessage::kBeforeSave,
+      MSceneMessage::kAfterSave,
+      MSceneMessage::kBeforeReference,
+      MSceneMessage::kAfterReference,
+      MSceneMessage::kBeforeUnloadReference,
+      MSceneMessage::kAfterUnloadReference,
+      MSceneMessage::kBeforeLoadReference,
+      MSceneMessage::kAfterLoadReference,
+      MSceneMessage::kBeforeCreateReference,
+      MSceneMessage::kAfterCreateReference,
+      MSceneMessage::kMayaInitialized,
+      MSceneMessage::kMayaExiting,
+
+      MSceneMessage::kLast
+    };
+
+  if(internalEvent < eventToMayaEventTable.size())
   {
-    case(kBeforeNew):
-	return MSceneMessage::kBeforeNew;
-    case(kAfterNew):
-	return MSceneMessage::kAfterNew;
-    case(kBeforeOpen):
-	return MSceneMessage::kBeforeOpen;
-    case(kAfterOpen):
-	return MSceneMessage::kAfterOpen;
-      case(kBeforeSave):
-	return MSceneMessage::kBeforeSave;
-      case(kAfterSave):
-	return MSceneMessage::kAfterSave;
-      case(kBeforeReference):
-	return MSceneMessage::kBeforeReference;
-      case(kAfterReference):
-	return MSceneMessage::kAfterReference;
-      case(kBeforeUnloadReference):
-	return MSceneMessage::kBeforeUnloadReference;
-      case(kAfterUnloadReference):
-	return MSceneMessage::kAfterUnloadReference;
-      case(kBeforeLoadReference):
-	return MSceneMessage::kBeforeLoadReference;
-      case(kAfterLoadReference):
-	return MSceneMessage::kAfterLoadReference;
-      case(kBeforeCreateReference):
-	return MSceneMessage::kBeforeCreateReference;
-      case(kAfterCreateReference):
-	return MSceneMessage::kAfterCreateReference;
-      case(kMayaInitialized):
-	return MSceneMessage::kMayaInitialized;
-      case(kMayaExiting):
-	return MSceneMessage::kMayaExiting;
+    return eventToMayaEventTable[internalEvent];
   }
+
   return MSceneMessage::kLast;
 }
 
@@ -96,41 +90,32 @@ MSceneMessage::Message EventToMayaEvent(MayaEventType internalEvent)
 //----------------------------------------------------------------------------------------------------------------------
 MayaEventType eventToMayaEvent(MSceneMessage::Message mayaEvent)
 {
-  switch(mayaEvent)
+  typedef std::pair<MSceneMessage::Message, MayaEventType> MapEntry;
+  static std::map<MSceneMessage::Message, MayaEventType> mayaEventToEventTable =
+    {
+      MapEntry(MSceneMessage::kBeforeNew, kBeforeNew),
+      MapEntry(MSceneMessage::kAfterNew, kAfterNew),
+      MapEntry(MSceneMessage::kBeforeOpen, kBeforeOpen),
+      MapEntry(MSceneMessage::kAfterOpen, kAfterOpen),
+      MapEntry(MSceneMessage::kBeforeSave, kBeforeSave),
+      MapEntry(MSceneMessage::kAfterSave, kAfterSave),
+      MapEntry(MSceneMessage::kBeforeReference, kBeforeReference),
+      MapEntry(MSceneMessage::kAfterReference, kAfterReference),
+      MapEntry(MSceneMessage::kBeforeUnloadReference, kBeforeUnloadReference),
+      MapEntry(MSceneMessage::kAfterUnloadReference, kAfterUnloadReference),
+      MapEntry(MSceneMessage::kBeforeLoadReference, kBeforeLoadReference),
+      MapEntry(MSceneMessage::kAfterLoadReference, kAfterLoadReference),
+      MapEntry(MSceneMessage::kBeforeCreateReference, kBeforeCreateReference),
+      MapEntry(MSceneMessage::kAfterCreateReference, kAfterCreateReference),
+      MapEntry(MSceneMessage::kMayaInitialized, kMayaInitialized),
+      MapEntry(MSceneMessage::kMayaExiting, kMayaExiting)
+    };
+
+  if(mayaEventToEventTable.find(mayaEvent) != mayaEventToEventTable.end())
   {
-    case(MSceneMessage::kBeforeNew):
-        return kBeforeNew;
-    case(MSceneMessage::kAfterNew):
-        return kAfterNew;
-    case(MSceneMessage::kBeforeOpen):
-        return kBeforeOpen;
-    case(MSceneMessage::kAfterOpen):
-        return kAfterOpen;
-      case(MSceneMessage::kBeforeSave):
-        return kBeforeSave;
-      case(MSceneMessage::kAfterSave):
-        return kAfterSave;
-      case(MSceneMessage::kBeforeReference):
-        return kBeforeReference;
-      case(MSceneMessage::kAfterReference):
-        return kAfterReference;
-      case(MSceneMessage::kBeforeUnloadReference):
-        return kBeforeUnloadReference;
-      case(MSceneMessage::kAfterUnloadReference):
-        return kAfterUnloadReference;
-      case(MSceneMessage::kBeforeLoadReference):
-        return kBeforeLoadReference;
-      case(MSceneMessage::kAfterLoadReference):
-        return kAfterLoadReference;
-      case(MSceneMessage::kBeforeCreateReference):
-        return kBeforeCreateReference;
-      case(MSceneMessage::kAfterCreateReference):
-        return kAfterCreateReference;
-      case(MSceneMessage::kMayaInitialized):
-        return kMayaInitialized;
-      case(MSceneMessage::kMayaExiting):
-        return kMayaExiting;
+    return mayaEventToEventTable[mayaEvent];
   }
+
   return kSceneMessageLast;
 }
 
