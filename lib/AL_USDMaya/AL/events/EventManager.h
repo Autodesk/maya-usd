@@ -114,6 +114,7 @@ public:
 
 private:
   MCallbackId registerMayaCallback(MayaEventType eventType);
+  bool deregisterMayaCallback(MayaEventType eventType);
 private:
   ListenerContainer m_mayaListeners;
   std::array<MCallbackId, MayaEventType::kSceneMessageLast> m_mayaCallbacks;

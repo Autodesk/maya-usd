@@ -110,6 +110,27 @@ MCallbackId MayaEventManager::registerMayaCallback(MayaEventType eventType)
   return MSceneMessage::addCallback(mayaEvent, onMayaCommand, &m_mayaListeners[eventType], &status);
 }
 
+bool MayaEventManager::deregisterMayaCallback(AL::usdmaya::events::MayaEventType event)
+{
+  MCallbackId callbackID = m_mayaCallbacks[event];
+  MStatus status = MSceneMessage::removeCallback(callbackID);
+  MStatus::MStatusCode statusCode = status.statusCode();
+
+  if(statusCode != MStatus::kSuccess)
+  {
+    switch(statusCode)
+    {
+      case MStatus::kFailure:
+        std::cout << "Callback has already been removed" << std::endl;
+        return false;
+      case MStatus::kInvalidParameter:
+        std::cout << "An invalid callback id was specfied" << std::endl;
+        return false;
+    }
+  }
+  return true;
+}
+
 bool MayaEventManager::deregister(AL::usdmaya::events::MayaEventType event, EventID id)
 {
   auto eventComparison = [id](const ListenerPtr& listener){
@@ -124,40 +145,25 @@ bool MayaEventManager::deregister(AL::usdmaya::events::MayaEventType event, Even
     return false;
   }
 
-  m_mayaListeners[event].erase(foundListener);
-
-  if(m_mayaListeners[event].size() == 0)
+  // There will be no listeners soon, deregister for the Maya Event
+  if(m_mayaListeners[event].size() == 1)
   {
-    MCallbackId callbackID = m_mayaCallbacks[event];
-    MStatus status = MSceneMessage::removeCallback(callbackID);
-    MStatus::MStatusCode statusCode = status.statusCode();
-
-    if(statusCode != MStatus::kSuccess)
-    {
-      switch(statusCode)
-      {
-        case MStatus::kFailure:
-          std::cout << "Callback has already been removed" << std::endl;
-          return false;
-        case MStatus::kInvalidParameter:
-          std::cout << "An invalid callback id was specfied" << std::endl;
-          return false;
-      }
-    }
+    deregisterMayaCallback(event);
   }
+  m_mayaListeners[event].erase(foundListener);
   return true;
 }
 
 bool MayaEventManager::deregister(EventID id)
 {
-  for(size_t i = 0; i < m_mayaListeners.size(); ++i)
+
+  for(size_t i = 0; i < MayaEventType::kSceneMessageLast; ++i)
   {
     auto endItr = m_mayaListeners[i].end();
     auto foundListener = endItr;
     for(auto it=m_mayaListeners[i].begin(); it < endItr; ++it)
     {
-      EventID listenerID = (EventID)&(*it);
-
+      EventID listenerID = (EventID)(*it).get();
       if(listenerID == id)
       {
         foundListener = it;
@@ -166,11 +172,16 @@ bool MayaEventManager::deregister(EventID id)
 
     if(foundListener != m_mayaListeners[i].end())
     {
+      if(m_mayaListeners[i].size() == 1)
+      {
+        deregisterMayaCallback((MayaEventType)i);
+      }
+
       m_mayaListeners[i].erase(foundListener);
+
       return true;
     }
   }
-  //for(auto& listener : m_mayaListeners)
   return false;
-
 }
+

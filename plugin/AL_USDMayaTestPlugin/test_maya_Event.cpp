@@ -21,15 +21,55 @@
 using namespace AL::usdmaya::events;
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  Test that the event ordering is working correctly
+/// \brief  Test that the Register is working correctly
 //----------------------------------------------------------------------------------------------------------------------
-TEST(maya_Event, event_ordering)
+TEST(maya_Event, registerEvent)
 {
   MFileIO::newFile(true);
-  std::cout << "Listener Ordering " << std::endl;
+  MayaEventManager ev;
+  MayaEventType testEvent = MayaEventType::kAfterNew;
+  auto& listeners = ev.listeners();
+  Listener l;
+  l.callback = [](UserData* che){std::cout << "I'm registered!" << std::endl;};
+  EventID id = ev.registerCallback(MayaEventType::kAfterNew, l);
+  EXPECT_EQ(listeners[testEvent].size(), 1);
+  std::cout << "REgister " << listeners[testEvent].size() << std::endl;
+  ev.deregister(id);
+  std::cout << "DeREgister " << listeners[testEvent].size() << std::endl;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  Test that the Deregister is working correctly
+//----------------------------------------------------------------------------------------------------------------------
+//TEST(maya_Event, deregisterEvent)
+//{
+//  MFileIO::newFile(true);
+//  MayaEventManager ev;
+//  Listener l;
+//  l.callback = [](UserData* che){std::cout << "I'm registered!" << std::endl;};
+//  auto& listeners = ev.listeners();
+//  MayaEventType testEvent = MayaEventType::kAfterNew;
+//
+//  EventID id = ev.registerCallback(testEvent, l);
+//  EXPECT_EQ(listeners[testEvent].size(), 1);
+//
+//  ev.deregister(testEvent, id);
+//  EXPECT_EQ(listeners[testEvent].size(), 0);
+//
+//  id = ev.registerCallback(testEvent, l);
+//  ev.deregister(id);
+//  EXPECT_EQ(listeners[testEvent].size(), 0);
+//  std::cout << "Deregister " << listeners[testEvent].size() << std::endl;
+//}
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  Test that the event ordering is working correctly
+//----------------------------------------------------------------------------------------------------------------------
+TEST(maya_Event, eventOrdering)
+{
+  MFileIO::newFile(true);
   MayaEventManager ev;
   Listener first, middle, last;
-
   first.callback = [](UserData* che){std::cout << "First callback " << std::endl;};
   first.weight = 0;
 
