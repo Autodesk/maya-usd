@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 #include <array>
+#include "maya/MMessage.h"
 #include "maya/MSceneMessage.h"
 
 #include "AL/events/Events.h"
@@ -33,7 +34,7 @@ namespace events {
 class Listener;
 
 typedef void* UserData;
-typedef std::function<void(UserData)> Callback;
+typedef MMessage::MBasicFunction Callback;
 typedef uintptr_t EventID;
 typedef std::unique_ptr<Listener> ListenerPtr;
 typedef std::vector<ListenerPtr> Listeners;
