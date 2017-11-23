@@ -71,9 +71,7 @@ MSceneMessage::Message eventToMayaEvent(MayaEventType internalEvent)
       MSceneMessage::kBeforeCreateReference,
       MSceneMessage::kAfterCreateReference,
       MSceneMessage::kMayaInitialized,
-      MSceneMessage::kMayaExiting,
-
-      MSceneMessage::kLast
+      MSceneMessage::kMayaExiting
     };
 
   if(internalEvent < eventToMayaEventTable.size())
