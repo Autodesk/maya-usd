@@ -78,17 +78,18 @@ public:
   /// \param event corresponding internal maya event
   /// \param callback function which will be called
   /// \param userData data which is returned to the user when the callback is triggered
-  /// \param tag string to help classify the type of listener
-  /// \param isPython true if the specified command should be executed as pythong
+  /// \param isPython true if the specified command should be executed as python
   /// \param command the string that will be executed when the callback happens
+  /// \param weight the priority order for when this event is run, the lower the number the higher the priority
+  /// \param tag string to help classify the type of listener
   /// \return the identifier of the created listener, or 0 if nothing was registered
   EventID registerCallback(MayaEventType event,
-    const Callback& callback,
-    uint32_t weight,
-    void* userData = nullptr,
-    const char* tag = "",
-    bool isPython = false,
-    const char* command = "");
+      const Callback& callback,
+      void* userData = nullptr,
+      bool isPython = false,
+      const char* command = "",
+      uint32_t weight = AL::usdmaya::events::kPlaceLast,
+      const char* tag = "");
 
   /// \brief Creates an event which listens to the specified Maya event,
   ///   adding the event to current last position.
@@ -98,15 +99,15 @@ public:
   /// \param callback function which will be called
   /// \param userData data which is returned to the user when the callback is triggered
   /// \param tag string to help classify the type of listener
-  /// \param isPython true if the specified command should be executed as pythong
+  /// \param isPython true if the specified command should be executed as python
   /// \param command the string that will be executed when the callback happens
   /// \return the identifier of the created listener, or 0 if nothing was registered
   EventID registerLast(MayaEventType event,
-    const Callback& callback,
-    void* userData = nullptr,
-    const char* tag = "",
-    bool isPython = false,
-    const char* command = "");
+      const Callback& callback,
+      void* userData = nullptr,
+      bool isPython = false,
+      const char* command = "",
+      const char* tag = "");
 
   /// \brief Creates an event which listens to the specified Maya event,
   ///   adding the event to current last position.
@@ -116,15 +117,15 @@ public:
   /// \param callback function which will be called
   /// \param userData data which is returned to the user when the callback is triggered
   /// \param tag string to help classify the type of listener
-  /// \param isPython true if the specified command should be executed as pythong
+  /// \param isPython true if the specified command should be executed as python
   /// \param command the string that will be executed when the callback happens
   /// \return the identifier of the created listener, or 0 if nothing was registered
   EventID registerFirst(MayaEventType event,
-    const Callback& callback,
-    void* userData = nullptr,
-    const char* tag = "",
-    bool isPython = false,
-    const char* command = "");
+      const Callback& callback,
+      void* userData = nullptr,
+      bool isPython = false,
+      const char* command = "",
+      const char* tag = "");
 
   /// \brief Stores and orders the registered Maya callbacks
   /// \param eventType corresponding internal Maya event

@@ -62,35 +62,35 @@ static void onMayaCommand(void* userData)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-EventID MayaEventManager::registerLast(MayaEventType eventType,
+EventID MayaEventManager::registerLast(MayaEventType event,
     const Callback& callback,
     void* userData,
-    const char* tag,
     bool isPython,
-    const char* command)
+    const char* command,
+    const char* tag)
 {
-  return registerCallback(eventType, callback, AL::usdmaya::events::kPlaceLast, userData, tag, isPython, command);
+  return registerCallback(event, callback, userData, isPython, command, AL::usdmaya::events::kPlaceLast, tag);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-EventID MayaEventManager::registerFirst(MayaEventType eventType,
+EventID MayaEventManager::registerFirst(MayaEventType event,
     const Callback& callback,
     void* userData,
-    const char* tag,
     bool isPython,
-    const char* command)
+    const char* command,
+    const char* tag)
 {
-  return registerCallback(eventType, callback, AL::usdmaya::events::kPlaceFirst, userData, tag, isPython, command);
+  return registerCallback(event, callback, userData, isPython, command, AL::usdmaya::events::kPlaceFirst, tag);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-EventID MayaEventManager::registerCallback(MayaEventType eventType,
-    const Callback& callback,
-    uint32_t weight,
-    void* userData,
-    const char* tag,
-    bool isPython,
-    const char* command)
+EventID MayaEventManager::registerCallback(MayaEventType event,
+     const Callback& callback,
+     void* userData,
+     bool isPython,
+     const char* command,
+     uint32_t weight,
+     const char* tag)
 {
   Listener eventListener;
   eventListener.userData = userData;
@@ -100,7 +100,7 @@ EventID MayaEventManager::registerCallback(MayaEventType eventType,
   eventListener.weight = weight;
   eventListener.isPython = isPython;
 
-  return registerCallback(eventType, eventListener);
+  return registerCallback(event, eventListener);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
