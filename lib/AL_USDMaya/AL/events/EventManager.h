@@ -33,7 +33,7 @@ namespace events {
 class Listener;
 
 typedef void* UserData;
-typedef std::function<void(UserData*)> Callback;
+typedef std::function<void(UserData)> Callback;
 typedef uintptr_t EventID;
 typedef std::unique_ptr<Listener> ListenerPtr;
 typedef std::vector<ListenerPtr> Listeners;

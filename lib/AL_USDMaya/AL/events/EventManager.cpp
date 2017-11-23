@@ -45,7 +45,7 @@ static void onMayaCommand(void* userData)
   {
     if(l->callback)
     {
-      l->callback(&l->userData);
+      l->callback(l->userData);
     }
     else
     {
