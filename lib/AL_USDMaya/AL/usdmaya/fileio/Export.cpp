@@ -388,11 +388,6 @@ void Export::exportShapesOnlyUVProc(MDagPath shapePath, MFnTransform& fnTransfor
     exportMeshUV(shapePath, usdPath);
   }
   else
-  if (shapePath.node().hasFn(MFn::kNurbsCurve) and m_params.m_nurbsCurves)
-  {
-    m_impl->stage()->OverridePrim(usdPath);
-  }
-  else
   {
     m_impl->stage()->OverridePrim(usdPath);
   }
@@ -433,7 +428,6 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
     exportTransformFunc =
           [this] (MDagPath transformPath, MFnTransform& fnTransform, SdfPath& usdPath)
     {
-      std::cout << "GeomXForm export called " << transformPath.fullPathName() << std::endl;
       m_impl->stage()->OverridePrim(usdPath);
     };
   }
