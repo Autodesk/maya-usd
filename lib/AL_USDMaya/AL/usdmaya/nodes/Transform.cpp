@@ -59,6 +59,7 @@ MObject Transform::m_readAnimatedValues = MObject::kNullObj;
 //----------------------------------------------------------------------------------------------------------------------
 void Transform::postConstructor()
 {
+  transform()->setMObject(thisMObject());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -263,7 +264,13 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::validateAndSetValue %s\n", plug.name().asChar());
 
   if (plug.isNull())
-      return MS::kFailure;
+    return MS::kFailure;
+
+  if (plug.isLocked())
+    return MS::kSuccess;
+
+  if (plug.isChild() && plug.parent().isLocked())
+    return MS::kSuccess;
 
   // If the time values are changed, store the new values, and then update the transform
   if (plug == m_time || plug == m_timeOffset || plug == m_timeScalar)

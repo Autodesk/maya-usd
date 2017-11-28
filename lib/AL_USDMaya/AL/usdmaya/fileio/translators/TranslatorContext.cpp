@@ -276,7 +276,7 @@ void TranslatorContext::removeItems(const SdfPath& path)
       }
       else
       {
-        MGlobal::displayError(MString("invalid MObject found at path \"") + path.GetText() + MString("\""));
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("Invalid MObject was registered with the primPath \"%s\"\n", path.GetText());
       }
     }
     nodes.clear();

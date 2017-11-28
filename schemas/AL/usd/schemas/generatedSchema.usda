@@ -21,22 +21,3 @@ class ALMayaReference "ALMayaReference" (
     )
 }
 
-class ALHostDrivenTransformInfo "ALHostDrivenTransformInfo" (
-    doc = "Connection info for transforms"
-)
-{
-    uniform int[] rotateAttributeIndices
-    uniform string[] rotateAttributes
-    uniform int[] rotateOrderAttributeIndices
-    uniform string[] rotateOrderAttributes
-    uniform int[] scaleAttributeIndices
-    uniform string[] scaleAttributes
-    rel targetTransforms
-    uniform string[] transformSourceNodes
-    uniform int[] translateAttributeIndices
-    uniform string[] translateAttributes
-    uniform int[] visibilityAttributeIndices
-    uniform string[] visibilityAttributes
-    uniform string[] visibilitySourceNodes
-}
-

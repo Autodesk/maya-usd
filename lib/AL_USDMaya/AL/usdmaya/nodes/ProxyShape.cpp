@@ -43,12 +43,15 @@
 #include "maya/MHWGeometryUtilities.h"
 #include "maya/MItDependencyNodes.h"
 #include "maya/MPlugArray.h"
+#include "maya/MNodeClass.h"
 
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/usd/stageCacheContext.h"
 
+#include <algorithm>
+#include <iterator>
 
 namespace AL {
 namespace usdmaya {
@@ -137,7 +140,9 @@ MObject ProxyShape::m_emission = MObject::kNullObj;
 MObject ProxyShape::m_shininess = MObject::kNullObj;
 MObject ProxyShape::m_serializedRefCounts = MObject::kNullObj;
 MObject ProxyShape::m_version = MObject::kNullObj;
-
+MObject ProxyShape::m_transformTranslate = MObject::kNullObj;
+MObject ProxyShape::m_transformRotate = MObject::kNullObj;
+MObject ProxyShape::m_transformScale = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 Layer* ProxyShape::getLayer()
@@ -481,8 +486,33 @@ ProxyShape::ProxyShape()
     m_findUnselectablePrims.removeUnselectables.clear();
   };
 
+  m_findLockedPrims.preIteration = [this]() {
+    this->m_lockTransformPrims.clear();
+    this->m_lockInheritedPrims.clear();
+  };
+  m_findLockedPrims.iteration = [this] ( const fileio::TransformIterator& transformIterator,
+                                         const UsdPrim& prim)
+  {
+    TfToken lockPropertyToken;
+    if (prim.GetMetadata<TfToken>(Metadata::locked, & lockPropertyToken))
+    {
+      if (lockPropertyToken == Metadata::lockTransform)
+      {
+        this->m_lockTransformPrims.insert(prim.GetPath());
+      }
+      else if (lockPropertyToken == Metadata::lockInherited)
+      {
+        this->m_lockInheritedPrims.insert(prim.GetPath());
+      }
+    }
+  };
+  m_findLockedPrims.postIteration = [this]() {
+    constructLockPrims();
+  };
+
   m_hierarchyIterationLogics[0] = &m_findExcludedPrims;
   m_hierarchyIterationLogics[1] = &m_findUnselectablePrims;
+  m_hierarchyIterationLogics[2] = &m_findLockedPrims;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -576,6 +606,11 @@ MStatus ProxyShape::initialise()
         "version", "vrs", getVersion().c_str(),
         kReadable | kStorable | kHidden
         );
+
+    MNodeClass nc("transform");
+    m_transformTranslate = nc.attribute("t");
+    m_transformRotate = nc.attribute("r");
+    m_transformScale = nc.attribute("s");
 
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, m_outTime), errorString);
@@ -742,11 +777,38 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     }
   };
 
+  SdfPathSet lockTransformPrims;
+  SdfPathSet lockInheritedPrims;
+  SdfPathSet nolockPrims;
+  auto recordPrimsLockStatus = [&lockTransformPrims, &lockInheritedPrims, &nolockPrims] (const SdfPath& objectPath, const UsdPrim& prim) {
+    if (!prim.IsValid())
+    {
+      return;
+    }
+    TfToken lockPropertyValue;
+    if (prim.GetMetadata(Metadata::locked, &lockPropertyValue))
+    {
+      if (lockPropertyValue == Metadata::lockTransform)
+      {
+        lockTransformPrims.insert(objectPath);
+      }
+      else if (lockPropertyValue == Metadata::lockInherited)
+      {
+        lockInheritedPrims.insert(objectPath);
+      }
+      else
+      {
+        nolockPrims.insert(objectPath);
+      }
+    }
+  };
+
   const SdfPathVector& resyncedPaths = notice.GetResyncedPaths();
   for(const SdfPath& path : resyncedPaths)
   {
     UsdPrim newPrim = m_stage->GetPrimAtPath(path);
     recordSelectablePrims(path, newPrim);
+    recordPrimsLockStatus(path, newPrim);
   }
 
   const SdfPathVector& changedInfoOnlyPaths = notice.GetChangedInfoOnlyPaths();
@@ -762,6 +824,7 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
       changedPrim = m_stage->GetPrimAtPath(path);
     }
     recordSelectablePrims(path, changedPrim);
+    recordPrimsLockStatus(path, changedPrim);
   }
 
   if(!removeUnselectables.empty())
@@ -772,6 +835,12 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   if(!newUnselectables.empty())
   {
     m_selectabilityDB.addPathsAsUnselectable(newUnselectables);
+  }
+
+  bool lockChanged = updateLockPrims(lockTransformPrims, lockInheritedPrims, nolockPrims);
+  if (lockChanged)
+  {
+    constructLockPrims();
   }
 }
 
@@ -1030,9 +1099,9 @@ void ProxyShape::reloadStage(MPlug& plug)
   if(m_stage && !MFileIO::isOpeningFile())
   {
     AL_BEGIN_PROFILE_SECTION(PostLoadProcess);
-      findTaggedPrims();
       // execute the post load process to import any custom prims
       cmds::ProxyShapePostLoadProcess::initialise(this);
+      findTaggedPrims();
 
     AL_END_PROFILE_SECTION();
   }
@@ -1049,10 +1118,128 @@ void ProxyShape::reloadStage(MPlug& plug)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+bool ProxyShape::updateLockPrims(const SdfPathSet& lockTransformPrims, const SdfPathSet& lockInheritedPrims,
+                                 const SdfPathSet& nolockPrims)
+{
+  bool lockChanged = false;
+  for (auto lock : lockTransformPrims)
+  {
+    auto inserted = m_lockTransformPrims.insert(lock);
+    lockChanged |= inserted.second;
+    auto erased = m_lockInheritedPrims.erase(lock);
+    lockChanged |= erased;
+  }
+  for (auto inherited : lockInheritedPrims)
+  {
+    auto erased = m_lockTransformPrims.erase(inherited);
+    lockChanged |= erased;
+    auto inserted = m_lockInheritedPrims.insert(inherited);
+    lockChanged |= inserted.second;
+  }
+  for (auto nolock : nolockPrims)
+  {
+    auto erased = m_lockTransformPrims.erase(nolock);
+    lockChanged |= erased;
+    erased = m_lockInheritedPrims.erase(nolock);
+    lockChanged |= erased;
+  }
+  return lockChanged;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::constructExcludedPrims()
 {
   m_excludedGeometry = getExcludePrimPaths();
   constructGLImagingEngine();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
+{
+  UsdPrim prim = m_stage->GetPrimAtPath(path);
+  VtValue mayaPath = prim.GetCustomDataByKey(TfToken("MayaPath"));
+  MObject lockObject;
+  if (!mayaPath.IsEmpty())
+  {
+    MString pathStr = convert(mayaPath.Get<std::string>());
+    MSelectionList sl;
+    MObject selObj;
+    if (sl.add(pathStr) == MStatus::kSuccess)
+    {
+      sl.getDependNode(0, selObj);
+    }
+    if (selObj.hasFn(MFn::kTransform))
+    {
+      lockObject = selObj;
+    }
+  }
+  else
+  {
+    std::vector<MObjectHandle> objHdls;
+    context()->getMObjects(path, objHdls);
+    for (auto objHdl : objHdls)
+    {
+      if (objHdl.isValid() && objHdl.object().hasFn(MFn::kTransform))
+      {
+        lockObject == objHdl.object();
+        break;
+      }
+    }
+  }
+  if (lockObject.isNull())
+    return false;
+  MPlug(lockObject, m_transformTranslate).setLocked(lock);
+  MPlug(lockObject, m_transformRotate).setLocked(lock);
+  MPlug(lockObject, m_transformScale).setLocked(lock);
+  if (lock && MFnDependencyNode(lockObject).typeId() == AL_USDMAYA_TRANSFORM)
+  {
+    MPlug(lockObject, Transform::pushToPrim()).setBool(false);
+  }
+  return true;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::constructLockPrims()
+{
+  SdfPathSet primsNeedLock = m_lockTransformPrims;
+
+  // add inherited lock prims if their parents are already in.
+  for (auto inherited : m_lockInheritedPrims)
+  {
+    const SdfPath parentPath = inherited.GetParentPath();
+    if (parentPath.IsEmpty())
+      continue;
+    auto parentIter = primsNeedLock.find(parentPath);
+    if (parentIter != primsNeedLock.end())
+    {
+      auto lowerIter = std::lower_bound(parentIter, primsNeedLock.end(), inherited);
+      primsNeedLock.insert(lowerIter, inherited);
+    }
+  }
+
+  SdfPathVector primsToLock;
+  primsToLock.reserve(primsNeedLock.size());
+  SdfPathVector primsToUnlock;
+  primsToUnlock.reserve(m_currentLockedPrims.size());
+  std::set_difference(primsNeedLock.begin(), primsNeedLock.end(), m_currentLockedPrims.begin(),
+                      m_currentLockedPrims.end(), std::back_inserter(primsToLock));
+  std::set_difference(m_currentLockedPrims.begin(), m_currentLockedPrims.end(), primsNeedLock.begin(),
+                      primsNeedLock.end(), std::back_inserter(primsToUnlock));
+
+  for (auto lock : primsToLock)
+  {
+    if (lockTransformAttribute(lock, true))
+    {
+      m_currentLockedPrims.insert(lock);
+    }
+  }
+  for (auto unlock : primsToUnlock)
+  {
+    if (lockTransformAttribute(unlock, false))
+    {
+      m_currentLockedPrims.erase(unlock);
+    }
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -192,7 +192,11 @@ struct FindUnselectablePrimsLogic : public HierarchyIterationLogic
   SdfPathVector removeUnselectables;
 };
 
-typedef const HierarchyIterationLogic*  HierarchyIterationLogics[2];
+struct FindLockedPrimsLogic : public HierarchyIterationLogic
+{
+};
+
+typedef const HierarchyIterationLogic*  HierarchyIterationLogics[3];
 
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -681,6 +685,10 @@ private:
   void insertTransformRefs(const std::vector<std::pair<SdfPath, MObject>>& removedRefs, TransformReason reason);
 
   void constructExcludedPrims();
+  bool updateLockPrims(const SdfPathSet& lockTransformPrims, const SdfPathSet& lockInheritedPrims,
+                       const SdfPathSet& nolockPrims);
+  void constructLockPrims();
+  bool lockTransformAttribute(const SdfPath& path, bool lock);
 
   MObject makeUsdTransformChain_internal(
       const UsdPrim& usdPrim,
@@ -843,6 +851,7 @@ private:
   SelectionList m_selectionList;
   FindUnselectablePrimsLogic m_findUnselectablePrims;
   SdfPathVector m_selectedPaths;
+  FindLockedPrimsLogic m_findLockedPrims;
   std::vector<SdfPath> m_paths;
   std::vector<UsdPrim> m_prims;
   TfNotice::Key m_objectsChangedNoticeKey;
@@ -855,6 +864,12 @@ private:
   MCallbackId m_onSelectionChanged;
   SdfPathVector m_excludedGeometry;
   SdfPathVector m_excludedTaggedGeometry;
+  SdfPathSet m_lockTransformPrims;
+  SdfPathSet m_lockInheritedPrims;
+  SdfPathSet m_currentLockedPrims;
+  static MObject m_transformTranslate;
+  static MObject m_transformRotate;
+  static MObject m_transformScale;
   UsdStageRefPtr m_stage;
   SdfPath m_path;
   fileio::translators::TranslatorContextPtr m_context;
