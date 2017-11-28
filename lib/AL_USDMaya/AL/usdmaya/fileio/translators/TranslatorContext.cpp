@@ -276,8 +276,6 @@ void TranslatorContext::removeItems(const SdfPath& path)
       }
       else
       {
-        // Since we registered some prims with invalid MObject deliberately to keep them staying in translator context,
-        // here we just log that information in TF_DEBUG instead of MGloal::displayError():
         TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("Invalid MObject was registered with the primPath \"%s\"\n", path.GetText());
       }
     }
