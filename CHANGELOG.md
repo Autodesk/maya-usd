@@ -1,3 +1,21 @@
+## v0.25.0 (2017-11-28)
+
+### Added
+
+* New metadata and logic to lock transform and disable pushToPrim.
+* A boolean option "meshUV" or "muv" in AL_usdmaya_ExportCommand to indicate only export mesh uv data to a scene hierarchy with empty over prims.
+* A boolean option "leftHandedUV" or "luv" in AL_usdmaya_ExportCommand to indicate whether to adjust uv indices orientation. This option only works with "meshUV"
+
+### Changed
+
+* Add special rules for some Maya-USD attribute type mismatches so the maya attribute values transfer correctly to USD prim, e.g. interpolateBoundary attribute on mesh.
+* When translate, rotate, scale attributes are locked, TransformationMatrix blocks any changes of these attributes.
+* In mesh import, leftHanded flag retrieved from USD will also decide if uv indices need be adjusted.
+
+### Removed
+
+* Host Driven Transforms
+
 ## v0.24.5 (2017-11-06)
 
 ### Fixed
