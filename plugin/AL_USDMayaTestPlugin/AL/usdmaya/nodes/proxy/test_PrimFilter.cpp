@@ -48,10 +48,9 @@ struct MockPrimFilterInterface : public AL::usdmaya::nodes::proxy::PrimFilterInt
     return TfToken("");
   }
 
-  bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& supportsInactive, bool& requiresParent) override
+  bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent) override
   {
     supportsUpdate = true;
-    supportsInactive = true;
     requiresParent = true;
     return true;
   }

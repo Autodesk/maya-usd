@@ -836,13 +836,12 @@ private:
   TfToken getTypeForPath(const SdfPath& path) override
     { return m_context->getTypeForPath(path); }
 
-  bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& supportsInactive, bool& requiresParent) override
+  bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent) override
     {
       auto translator = m_translatorManufacture.get(type);
       if(translator)
       {
         supportsUpdate = translator->supportsUpdate();
-        supportsInactive = translator->supportsInactive();
         requiresParent = translator->needsTransformParent();
       }
       return translator != 0;

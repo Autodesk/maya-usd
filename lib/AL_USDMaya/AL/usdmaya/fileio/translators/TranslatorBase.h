@@ -133,11 +133,6 @@ public:
   virtual bool supportsUpdate() const
     { return false; }
 
-  /// \brief  override this method and return true if the translator supports inactive prims
-  /// \return true if your plugin supports items when the prims are inactive, false otherwise.
-  virtual bool supportsInactive() const
-    { return false; }
-
   /// \brief  Optionally override this method to copy the attribute values from the prim onto the Maya nodes you have
   ///         created.
   /// \param  prim  the prim
