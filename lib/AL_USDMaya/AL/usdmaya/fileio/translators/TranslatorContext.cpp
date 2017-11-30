@@ -418,6 +418,7 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
   auto stage = m_proxyShape->getUsdStage();
 
   MDagModifier modifier;
+  MStatus status;
 
   // so now we need to unload the prims (itemsToRemove is reverse sorted so we won't nuke parents before children)
   auto iter = itemsToRemove.begin();
@@ -441,7 +442,7 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
     ++iter;
   }
   status = modifier.doIt();
-  AL_MAYA_CHECK_ERROR(status, "failed to remove translator prims.");
+  AL_MAYA_CHECK_ERROR2(status, "failed to remove translator prims.");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
