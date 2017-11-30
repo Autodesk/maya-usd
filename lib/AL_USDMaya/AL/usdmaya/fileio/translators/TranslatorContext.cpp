@@ -250,8 +250,9 @@ void TranslatorContext::removeItems(const SdfPath& path)
     {
       if(nodes[j].isAlive() && nodes[j].isValid())
       {
+        // Need to reparent nodes first to avoid transform getting deleted and triggering ancestor deletion
+        // rather than just deleting directly.
         MObject obj = nodes[j].object();
-        MFnDependencyNode fn(obj);
         if(obj.hasFn(MFn::kTransform))
         {
           hasDagNodes = true;
@@ -261,11 +262,11 @@ void TranslatorContext::removeItems(const SdfPath& path)
         else
         if(obj.hasFn(MFn::kDagNode))
         {
-          MObject temp = fn.create("transform");
           hasDagNodes = true;
+          MFnDependencyNode fn(obj);
+          MObject temp = fn.create("transform");
           modifier2.reparentNode(obj, temp);
-          status = modifier2.deleteNode(obj);
-          status = modifier2.deleteNode(temp);
+          status = modifier2.deleteNode(temp);  // will also delete obj
         }
         else
         {
