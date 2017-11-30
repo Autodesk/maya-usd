@@ -37,13 +37,16 @@
 
 struct MockPrimFilterInterface : public AL::usdmaya::nodes::proxy::PrimFilterInterface
 {
-  SdfPathVector paths;
+  SdfPathVector refPaths;
+  SdfPathVector cameraPaths;
 
   TfToken getTypeForPath(const SdfPath& path) override
   {
-    if(std::find(paths.cbegin(), paths.cend(), path) != paths.cend())
-    {
+    if(std::find(refPaths.cbegin(), refPaths.cend(), path) != refPaths.cend()) {
       return TfToken("Xform");
+    }
+    if (std::find(cameraPaths.cbegin(), cameraPaths.cend(), path) != cameraPaths.cend()){
+      return TfToken("Camera");
     }
     return TfToken("");
   }
@@ -61,6 +64,9 @@ static const char* const g_removedPaths =
 "\n"
 "def Xform \"root\"\n"
 "{\n"
+"    def Camera \"cam\"\n"
+"    {"
+"    }"
 "    def Xform \"hip1\"\n"
 "    {\n"
 "        def  Xform \"knee1\"\n"
@@ -149,7 +155,7 @@ TEST(PrimFilter, removedPaths)
       SdfPath("/root/hip2/knee2/ankle2/ltoe2"),
       SdfPath("/root/hip2/knee2/ankle2/rtoe2")
     };
-    mockInterface.paths = previous;
+    mockInterface.refPaths = previous;
     std::vector<UsdPrim> prims;
     for(auto it : previous)
     {
@@ -176,7 +182,7 @@ TEST(PrimFilter, removedPaths)
       SdfPath("/root/hip2/knee2"),
       SdfPath("/root/hip2/knee2/ankle2"),
     };
-    mockInterface.paths = previous;
+    mockInterface.refPaths = previous;
     std::vector<UsdPrim> prims;
     for(auto it : previous)
     {
@@ -217,7 +223,7 @@ TEST(PrimFilter, removedPaths)
       SdfPath("/root/hip2/knee2/ankle2/ltoe2"),
       SdfPath("/root/hip2/knee2/ankle2/rtoe2")
     };
-    mockInterface.paths = previous;
+    mockInterface.refPaths = previous;
     std::vector<UsdPrim> prims;
     for(auto it : previous)
     {
@@ -234,5 +240,24 @@ TEST(PrimFilter, removedPaths)
     EXPECT_TRUE(filter.newPrimSet().empty());
     EXPECT_TRUE(filter.updatablePrimSet().size() == (previous.size() - 2));
     EXPECT_TRUE(filter.transformsToCreate().empty());
+
+  /// Check to make sure that prim type changes are correctly handled.
+  {
+    SdfPathVector previous = {
+      SdfPath("/root/cam"),  // was a maya reference camera rig
+    };
+    mockInterface.refPaths = previous;
+    std::vector<UsdPrim> prims;
+    for(auto it : previous)
+    {
+      prims.emplace_back(stage->GetPrimAtPath(it));
+    }
+
+    AL::usdmaya::nodes::proxy::PrimFilter filter(previous, prims, &mockInterface);
+    EXPECT_TRUE(filter.removedPrimSet().size() == 1);
+    EXPECT_TRUE(filter.removedPrimSet()[0] == SdfPath("/root/cam"));
+    EXPECT_TRUE(filter.newPrimSet().size() == 1);
+    EXPECT_TRUE(filter.updatablePrimSet().empty());
+    EXPECT_TRUE(filter.transformsToCreate().size() == 1);
   }
 }
