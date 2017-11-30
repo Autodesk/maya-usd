@@ -24,6 +24,7 @@
 #include "maya/MGlobal.h"
 #include "maya/MPlug.h"
 #include "maya/MFnDependencyNode.h"
+#include "maya/MDGModifier.h"
 #include "maya/MMatrixArray.h"
 #include "maya/MFnMatrixData.h"
 #include "maya/MFnMatrixArrayData.h"
@@ -137,11 +138,22 @@ MStatus DgNodeTranslator::setFloatAttrAnim(const MObject node, const MObject att
     return MS::kFailure;
   }
 
-  const char* const errorString = "anim bool error";
+  const char* const errorString = "DgNodeTranslator::setFloatAttrAnim";
   MStatus status;
 
   MPlug plug(node, attr);
+  MPlug srcPlug;
   MFnAnimCurve fnCurve;
+  MDGModifier dgmod;
+
+  srcPlug = plug.source(&status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+  if(!srcPlug.isNull())
+  {
+    std::cout << "[DgNodeTranslator::setFloatAttrAnim] disconnecting curve! = " << srcPlug.name().asChar() << std::endl;
+    dgmod.disconnect(srcPlug, plug);
+    dgmod.doIt();
+  }
   fnCurve.create(plug, NULL, &status);
   AL_MAYA_CHECK_ERROR(status, errorString);
 
@@ -168,7 +180,7 @@ MStatus DgNodeTranslator::setFloatAttrAnim(const MObject node, const MObject att
       }
       default:
       {
-        std::cout << "[DgNodeTranslator::setAnimValue] OTHER ANIM CURVE TYPE! = " << fnCurve.animCurveType() << std::endl;
+        std::cout << "[DgNodeTranslator::setFloatAttrAnim] OTHER ANIM CURVE TYPE! = " << fnCurve.animCurveType() << std::endl;
         break;
       }
     }
