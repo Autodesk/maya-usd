@@ -48,9 +48,10 @@ struct MockPrimFilterInterface : public AL::usdmaya::nodes::proxy::PrimFilterInt
     return TfToken("");
   }
 
-  bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent) override
+  bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& supportsInactive, bool& requiresParent) override
   {
     supportsUpdate = true;
+    supportsInactive = true;
     requiresParent = true;
     return true;
   }
@@ -165,7 +166,7 @@ TEST(PrimFilter, removedPaths)
   }
 
   /// if we aquire a few additional prims, those prims should remain in the newPrimSet (and transformToCreate set);
-  /// the previous set should all appear in the
+  /// the previous set should all appear in the updatablePrimSet
   {
     const SdfPathVector previous = {
       SdfPath("/root"),

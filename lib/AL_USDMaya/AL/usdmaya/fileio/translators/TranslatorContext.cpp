@@ -429,52 +429,10 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
     auto path = *iter;
     PrimLookups::iterator node = std::lower_bound(begin, end, path, value_compare());
 
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries checking %s\n", iter->GetText());
-    auto prim = stage->GetPrimAtPath(*iter);
-    TfToken type = getTypeForPath(path);
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries removing: %s\n", iter->GetText());
+    unloadPrim(path, node->object());
+    pathsToErase.push_back(*iter);
 
-    // if the prim is no longer there, let's kill it
-    if(!prim)
-    {
-      fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().get(type);
-      if(translator)
-      {
-        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries %s prim is not valid anymore will be tear down\n", path.GetText());
-        unloadPrim(path, node->object());
-        pathsToErase.push_back(*iter);
-      }
-    }
-    else
-    {
-      // so we have the prim, let's check the type to see whether that has changed
-      TfToken primType = prim.GetTypeName();
-      if(type != primType)
-      {
-        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries %s prim is valid but changed type: it will be tear down\n", path.GetText());
-        // type has changed, update the prim type and unload the old prim
-        unloadPrim(path, node->object());
-        pathsToErase.push_back(path);
-      }
-      else
-      {
-        fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().get(type);
-        if(translator)
-        {
-          if(!translator->supportsInactive() || !translator->supportsUpdate())
-          {
-            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries %s prim is valid but doesnt support inactive or update so will be tear down\n", path.GetText());
-            unloadPrim(path, node->object());
-            pathsToErase.push_back(*iter);
-          }
-        }
-        else
-        {
-          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries %s prim is valid but no translator found update so will be tear down\n", path.GetText());
-          unloadPrim(path, node->object());
-          pathsToErase.push_back(*iter);
-        }
-      }
-    }
     ++iter;
   }
 
@@ -485,7 +443,7 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
     // remove the prims that died
     for(auto path : pathsToErase)
     {
-      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries primPath=%s\n", path.GetText());
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries pathsToErase primPath=%s\n", path.GetText());
       PrimLookups::iterator node = std::lower_bound(m_primMapping.begin(), m_primMapping.end(), path, value_compare());
 
       // The item might already have been removed by a translator...
@@ -494,7 +452,7 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
         // remove nodes from map
         m_primMapping.erase(node);
       }
-      
+
       m_proxyShape->removeUsdTransformChain(path, modifier, nodes::ProxyShape::kRequired);
     }
 
@@ -519,7 +477,8 @@ void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
     }
     else
     {
-      MGlobal::displayError(MString("could not find usd translator plugin instance for prim: ") + prim.GetPath().GetText());
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim [preTearDown] prim=%s\n. Could not find usd translator plugin instance for prim!", prim.GetPath().GetText());
+      MGlobal::displayError(MString("TranslatorContext::preUnloadPrim could not find usd translator plugin instance for prim: ") + prim.GetPath().GetText() + " type: " + type.GetText());
     }
   }
   else
@@ -566,7 +525,7 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
     }
     else
     {
-      MGlobal::displayError(MString("could not find usd translator plugin instance for prim: ") + path.GetText());
+      MGlobal::displayError(MString("could not find usd translator plugin instance for prim: ") + path.GetText() + " type: " + type.GetText());
     }
     modifier.doIt();
   }

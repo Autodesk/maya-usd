@@ -49,7 +49,7 @@ struct PrimFilterInterface
   /// \param  supportsUpdate returned value that indicates if the type in question can be updated
   /// \param  requiresParent returned value that indicates whether the type in question needs a DAG path to be created
   /// \return returns false if the type is unknown, true otherwise
-  virtual bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent) = 0;
+  virtual bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& supportsInactive, bool& requiresParent) = 0;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
