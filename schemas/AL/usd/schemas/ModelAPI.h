@@ -133,7 +133,7 @@ public:
 
 
     void SetSelectability(const TfToken& selectability);
-    TfToken GetSelectabilityValue() const;
+    TfToken GetSelectability() const;
 
     void SetLock(const TfToken& lock);
     TfToken GetLock() const;

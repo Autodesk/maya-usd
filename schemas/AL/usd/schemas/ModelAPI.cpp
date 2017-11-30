@@ -126,7 +126,7 @@ void AL_usd_ModelAPI::SetSelectability(const TfToken& selectability)
   }
 }
 
-TfToken AL_usd_ModelAPI::GetSelectabilityValue() const
+TfToken AL_usd_ModelAPI::GetSelectability() const
 {
   if(!GetPrim().HasMetadata(AL_USDMayaSchemasTokens->selectability))
   {

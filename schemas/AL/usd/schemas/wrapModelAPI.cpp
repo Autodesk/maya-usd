@@ -110,7 +110,7 @@ WRAP_CUSTOM {
     typedef AL_usd_ModelAPI This;
     _class
       .def("SetSelectability", &This::SetSelectability, (arg("selectability")))
-      .def("GetSelectabilityValue", &This::GetSelectabilityValue)
+      .def("GetSelectability", &This::GetSelectability)
     ;
 }
 }
