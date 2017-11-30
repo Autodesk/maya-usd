@@ -376,7 +376,6 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
     // due to the joys of sorting, any child prims of this prim being destroyed should appear next to each
     // other (one would assume); So if compare does not find a match (the value is something other than zero),
     // we are no longer in the same prim root
-
     const SdfPath& childPath = range_end->path();
 
     if(!range_end->path().HasPrefix(primPath))
@@ -395,11 +394,19 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
   {
     --iter;
     PrimLookup& node = *iter;
-    itemsToRemove.push_back(node.path());
-    auto prim = stage->GetPrimAtPath(node.path());
-    if(prim && callPreUnload)
+
+    if(std::find(itemsToRemove.begin(), itemsToRemove.end(), node.path()) != itemsToRemove.end()){
+      // Same exact path has already been processed and added to the list of itemsToRemove.
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preRemoveEntry skipping path thats already in "
+                                          "itemsToRemove. primPath=%s\n", primPath.GetText());
+    }
+    else
     {
-      preUnloadPrim(prim, node.object());
+      itemsToRemove.push_back(node.path());
+      auto prim = stage->GetPrimAtPath(node.path());
+      if (prim && callPreUnload) {
+        preUnloadPrim(prim, node.object());
+      }
     }
   }
 }
