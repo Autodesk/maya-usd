@@ -417,47 +417,31 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries\n");
   auto stage = m_proxyShape->getUsdStage();
 
-  PrimLookups::iterator begin = m_primMapping.begin();
-  PrimLookups::iterator end = m_primMapping.end();
+  MDagModifier modifier;
 
-  SdfPathVector pathsToErase;
-
-  // so now we need to unload the prims from (range_end - 1) to temp (in that order, otherwise we'll nuke parents before children)
+  // so now we need to unload the prims (itemsToRemove is reverse sorted so we won't nuke parents before children)
   auto iter = itemsToRemove.begin();
   while(iter != itemsToRemove.end())
   {
     auto path = *iter;
-    PrimLookups::iterator node = std::lower_bound(begin, end, path, value_compare());
+    auto node = std::lower_bound(m_primMapping.begin(), m_primMapping.end(), path, value_compare());
 
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries removing: %s\n", iter->GetText());
     unloadPrim(path, node->object());
-    pathsToErase.push_back(*iter);
+
+    // The item might already have been removed by a translator...
+    if(node != m_primMapping.end() && node->path() == path)
+    {
+      // remove nodes from map
+      m_primMapping.erase(node);
+    }
+
+    m_proxyShape->removeUsdTransformChain(path, modifier, nodes::ProxyShape::kRequired);
 
     ++iter;
   }
-
-  if(!pathsToErase.empty())
-  {
-    MDagModifier modifier;
-
-    // remove the prims that died
-    for(auto path : pathsToErase)
-    {
-      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries pathsToErase primPath=%s\n", path.GetText());
-      PrimLookups::iterator node = std::lower_bound(m_primMapping.begin(), m_primMapping.end(), path, value_compare());
-
-      // The item might already have been removed by a translator...
-      if(node != m_primMapping.end() && node->path() == path)
-      {
-        // remove nodes from map
-        m_primMapping.erase(node);
-      }
-
-      m_proxyShape->removeUsdTransformChain(path, modifier, nodes::ProxyShape::kRequired);
-    }
-
-    modifier.doIt();
-  }
+  status = modifier.doIt();
+  AL_MAYA_CHECK_ERROR(status, "failed to remove translator prims.");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
