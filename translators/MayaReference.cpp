@@ -240,7 +240,7 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent, MObject 
                                               command.asChar());
           if(!MGlobal::executeCommand(command))
           {
-            MGlobal::displayError(MString("Failed to update reference with new namespace: ") + mayaReferencePath);
+            MGlobal::displayError(MString("Failed to update reference with new namespace. refNS:" + refNamespace + "rigNs: " + rigNamespace.c_str() + ": ") + mayaReferencePath);
           }
         }
       }
