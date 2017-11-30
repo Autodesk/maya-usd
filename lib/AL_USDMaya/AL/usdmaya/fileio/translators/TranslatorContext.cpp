@@ -555,8 +555,6 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
           );
         break;
       }
-
-      m_proxyShape->removeUsdTransformChain(path, modifier, nodes::ProxyShape::kRequired);
     }
     else
     {
