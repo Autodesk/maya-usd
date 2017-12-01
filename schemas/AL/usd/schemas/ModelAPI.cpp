@@ -147,9 +147,9 @@ void AL_usd_ModelAPI::SetLock(const TfToken& lock)
   {
     GetPrim().SetMetadata(AL_USDMayaSchemasTokens->lock, AL_USDMayaSchemasTokens->lock_transform);
   }
-  else if (lock == AL_USDMayaSchemasTokens->lock_inherited)
+  else if (lock == AL_USDMayaSchemasTokens->lock_none)
   {
-    GetPrim().SetMetadata(AL_USDMayaSchemasTokens->lock, AL_USDMayaSchemasTokens->lock_inherited);
+    GetPrim().SetMetadata(AL_USDMayaSchemasTokens->lock, AL_USDMayaSchemasTokens->lock_none);
   }
   else if (lock == TfToken())
   {

@@ -143,7 +143,6 @@ TEST(ProxyShapeImport, lockMetaData)
     geo.SetMetadata(lockMetadata, TfToken("transform"));
 
     UsdPrim cam = stage->DefinePrim(SdfPath("/root/geo/cam"), TfToken("Camera"));
-    cam.SetMetadata(lockMetadata, TfToken("inherited"));
 
     stage->Export(temp_bootstrap_path, false);
     return MString(temp_bootstrap_path.c_str());
