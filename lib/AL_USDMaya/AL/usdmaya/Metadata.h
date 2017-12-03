@@ -54,6 +54,9 @@ struct Metadata
   /// Value used in the lock property that tags transform (including children) attributes are locked
   static const TfToken lockTransform;
 
+  /// Value used in the lock property that tags prim inherits its parent state
+  static const TfToken lockInherited;
+
   /// Value used in the lock property that tags prim unlock regardless of its parent state
   static const TfToken lockNone;
 };

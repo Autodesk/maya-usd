@@ -39,9 +39,13 @@ over "GLOBAL" (
                 string value = "transform"
                 string doc = """State which makes transform attributes of Maya objects (including children) locked"""
             }
+            dictionary lock_inherited = {
+                string value = "inherited"
+                string doc = """State which makes the Prim inherit its parent's lock state"""
+            }
             dictionary lock_none = {
                 string value = "none"
-                string doc = """State which makes the Prim unlock regardless of its parent state"""
+                string doc = """State which makes the Prim unlocked regardless of its parent's state"""
             }
         }
     }

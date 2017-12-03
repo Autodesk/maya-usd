@@ -42,6 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \hideinitializer
 #define AL_USDMAYASCHEMAS_TOKENS \
     ((lock, "al_usdmaya_lock")) \
+    ((lock_inherited, "inherited")) \
     ((lock_none, "none")) \
     ((lock_transform, "transform")) \
     (mayaNamespace) \
@@ -72,7 +73,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// The tokens are:
 /// \li <b>lock</b> - Stores the lock state of corresponding Maya objects of the prims
-/// \li <b>lock_none</b> - State which makes the Prim unlock regardless of its parent state
+/// \li <b>lock_inherited</b> - State which makes the Prim inherit its parent's lock state
+/// \li <b>lock_none</b> - State which makes the Prim unlocked regardless of its parent's state
 /// \li <b>lock_transform</b> - State which makes transform attributes of Maya objects (including children) locked
 /// \li <b>mayaNamespace</b> - AL_usd_MayaReference
 /// \li <b>mayaReference</b> - AL_usd_MayaReference

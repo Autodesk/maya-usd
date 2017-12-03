@@ -500,7 +500,7 @@ ProxyShape::ProxyShape()
       {
         this->m_lockTransformPrims.insert(prim.GetPath());
       }
-      else if (lockPropertyToken != Metadata::lockNone)
+      else if (lockPropertyToken == Metadata::lockInherited)
       {
         this->m_lockInheritedPrims.insert(prim.GetPath());
       }
@@ -797,13 +797,13 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
       {
         lockTransformPrims.insert(objectPath);
       }
+      else if (lockPropertyValue == Metadata::lockInherited)
+      {
+        lockInheritedPrims.insert(objectPath);
+      }
       else if (lockPropertyValue == Metadata::lockNone)
       {
         nolockPrims.insert(objectPath);
-      }
-      else
-      {
-        lockInheritedPrims.insert(objectPath);
       }
     }
     else
