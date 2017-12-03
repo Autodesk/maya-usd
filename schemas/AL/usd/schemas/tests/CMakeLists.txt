@@ -10,6 +10,7 @@ enable_testing()
 add_executable(testMayaSchemas
     main.cpp
     testMayaSchemas.cpp
+    testModelAPI.cpp  
     )
 
 target_include_directories(testMayaSchemas

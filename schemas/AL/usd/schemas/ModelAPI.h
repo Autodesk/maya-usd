@@ -134,10 +134,14 @@ public:
 
     void SetSelectability(const TfToken& selectability);
     TfToken GetSelectability() const;
+    TfToken ComputeSelectabilty() const;
 
     void SetLock(const TfToken& lock);
     TfToken GetLock() const;
     TfToken ComputeLock() const;
+private:
+    typedef std::function<bool(const UsdPrim&, TfToken&)> ComputeLogic;
+    TfToken ComputeHierarchical(const UsdPrim& prim, const ComputeLogic& logic) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
