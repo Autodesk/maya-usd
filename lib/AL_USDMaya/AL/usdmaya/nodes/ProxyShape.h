@@ -686,7 +686,7 @@ private:
 
   void constructExcludedPrims();
   bool updateLockPrims(const SdfPathSet& lockTransformPrims, const SdfPathSet& lockInheritedPrims,
-                       const SdfPathSet& nolockPrims);
+                       const SdfPathSet& unlockedPrims);
   void constructLockPrims();
   bool lockTransformAttribute(const SdfPath& path, bool lock);
 

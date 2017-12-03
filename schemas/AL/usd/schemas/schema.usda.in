@@ -43,8 +43,8 @@ over "GLOBAL" (
                 string value = "inherited"
                 string doc = """State which makes the Prim inherit its parent's lock state"""
             }
-            dictionary lock_none = {
-                string value = "none"
+            dictionary lock_unlocked = {
+                string value = "unlocked"
                 string doc = """State which makes the Prim unlocked regardless of its parent's state"""
             }
         }

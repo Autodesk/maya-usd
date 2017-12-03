@@ -3,7 +3,7 @@
 By defining al_usdmaya_lock metadata of a prim, we want to lock transform (translate, rotate, scale) attributes of those Maya objects derived from the prim. Except for locking attributes, "pushToPrim" attribute on AL::usdmaya::nodes::Transform will also be disabled to ensure transform values not being changed by user manipulation in Maya.
 
 ## Metadata
-al_usdmaya_lock is a token type metadata. It allows 3 options: "transform", "inherited" and "none". When importing following USD example into Maya through AL_usdmaya_ProxyShapeImport command, translated AL_usdmaya_Transform node "geo" will have locked translate, rotate, scale attributes and "pushToPrim" attribute is turned off. This also applies to AL_usdmaya_Transform node "cam", since its lock state is set to "inherited"from its parent "geo". "accessory" explicitly sets al_usdmaya_lock to "none". Thus lock chain breaks here. If a prim doesn't set this metadata, by default its lock behaviour is "inherited".
+al_usdmaya_lock is a token type metadata. It allows 3 options: "transform", "inherited" and "unlocked". When importing following USD example into Maya through AL_usdmaya_ProxyShapeImport command, translated AL_usdmaya_Transform node "geo" will have locked translate, rotate, scale attributes and "pushToPrim" attribute is turned off. This also applies to AL_usdmaya_Transform node "cam", since its lock state is set to "inherited"from its parent "geo". "accessory" explicitly sets al_usdmaya_lock to "none". Thus lock chain breaks here. If a prim doesn't set this metadata, by default its lock behaviour is "inherited".
 
 ```
 #usda 1.0
@@ -23,7 +23,7 @@ def Xform "root"
         )
         {
             def Xform "accessory" (
-                al_usdmaya_lock = "none"
+                al_usdmaya_lock = "unlocked"
             )
             {
             }

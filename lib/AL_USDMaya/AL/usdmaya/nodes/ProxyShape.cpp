@@ -784,8 +784,8 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
 
   SdfPathSet lockTransformPrims;
   SdfPathSet lockInheritedPrims;
-  SdfPathSet nolockPrims;
-  auto recordPrimsLockStatus = [&lockTransformPrims, &lockInheritedPrims, &nolockPrims] (const SdfPath& objectPath, const UsdPrim& prim) {
+  SdfPathSet unlockedPrims;
+  auto recordPrimsLockStatus = [&lockTransformPrims, &lockInheritedPrims, &unlockedPrims] (const SdfPath& objectPath, const UsdPrim& prim) {
     if (!prim.IsValid())
     {
       return;
@@ -801,9 +801,9 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
       {
         lockInheritedPrims.insert(objectPath);
       }
-      else if (lockPropertyValue == Metadata::lockNone)
+      else if (lockPropertyValue == Metadata::lockUnlocked)
       {
-        nolockPrims.insert(objectPath);
+        unlockedPrims.insert(objectPath);
       }
     }
     else
@@ -846,7 +846,7 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     m_selectabilityDB.addPathsAsUnselectable(newUnselectables);
   }
 
-  bool lockChanged = updateLockPrims(lockTransformPrims, lockInheritedPrims, nolockPrims);
+  bool lockChanged = updateLockPrims(lockTransformPrims, lockInheritedPrims, unlockedPrims);
   if (lockChanged)
   {
     constructLockPrims();
@@ -1128,7 +1128,7 @@ void ProxyShape::reloadStage(MPlug& plug)
 
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyShape::updateLockPrims(const SdfPathSet& lockTransformPrims, const SdfPathSet& lockInheritedPrims,
-                                 const SdfPathSet& nolockPrims)
+                                 const SdfPathSet& unlockedPrims)
 {
   bool lockChanged = false;
   for (auto lock : lockTransformPrims)
@@ -1145,11 +1145,11 @@ bool ProxyShape::updateLockPrims(const SdfPathSet& lockTransformPrims, const Sdf
     auto inserted = m_lockInheritedPrims.insert(inherited);
     lockChanged |= inserted.second;
   }
-  for (auto nolock : nolockPrims)
+  for (auto unlocked : unlockedPrims)
   {
-    auto erased = m_lockTransformPrims.erase(nolock);
+    auto erased = m_lockTransformPrims.erase(unlocked);
     lockChanged |= erased;
-    erased = m_lockInheritedPrims.erase(nolock);
+    erased = m_lockInheritedPrims.erase(unlocked);
     lockChanged |= erased;
   }
   return lockChanged;
