@@ -578,8 +578,6 @@ MStatus ProxyShapePostLoadProcess::initialise(nodes::ProxyShape* ptrNode)
   // now perform any post-creation fix up
   connectSchemaPrims(ptrNode, schemaPrims);
 
-  // hunt for geometry that can be hidden
-  ptrNode->findExcludedGeometry();
   return MS::kSuccess;
 }
 

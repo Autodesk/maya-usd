@@ -17,6 +17,7 @@ list(APPEND AL_maya_test_source
 		AL/UnitTestHarness.cpp
         AL/maya/tests/CommandGuiHelperTest.cpp
         AL/maya/tests/NodeHelperUnitTest.cpp
+        AL/usdmaya/commands/test_ExportCommands.cpp
         AL/usdmaya/commands/test_LayerCommands.cpp
         AL/usdmaya/commands/test_ProxyShapeSelect.cpp
         AL/usdmaya/commands/test_InternalProxySelection.cpp

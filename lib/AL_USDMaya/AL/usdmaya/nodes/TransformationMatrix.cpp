@@ -1031,7 +1031,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
 void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::updateToTime %d\n", time.GetValue());
-  // if not yet intiaialised, do not execute this code! (It will crash!).
+  // if not yet initialized, do not execute this code! (It will crash!).
   if(!m_prim)
   {
     return;
@@ -1139,6 +1139,8 @@ void TransformationMatrix::insertTranslateOp()
 MStatus TransformationMatrix::translateTo(const MVector& vector, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::translateTo %f %f %f\n", vector.x, vector.y, vector.z);
+  if(isTranslateLocked())
+    return MS::kSuccess;
   MStatus status = MPxTransformationMatrix::translateTo(vector, space);
   if(status)
   {
@@ -1165,6 +1167,8 @@ MStatus TransformationMatrix::translateTo(const MVector& vector, MSpace::Space s
 MStatus TransformationMatrix::translateBy(const MVector& vector, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::translateBy %f %f %f\n", vector.x, vector.y, vector.z);
+  if(isTranslateLocked())
+    return MS::kSuccess;
   MStatus status = MPxTransformationMatrix::translateBy(vector, space);
   if(status)
   {
@@ -1213,6 +1217,8 @@ void TransformationMatrix::insertScaleOp()
 MStatus TransformationMatrix::scaleTo(const MVector& scale, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::scaleTo %f %f %f\n", scale.x, scale.y, scale.z);
+  if(isScaleLocked())
+    return MStatus::kSuccess;
   MStatus status = MPxTransformationMatrix::scaleTo(scale, space);
   if(status)
   {
@@ -1239,6 +1245,8 @@ MStatus TransformationMatrix::scaleTo(const MVector& scale, MSpace::Space space)
 MStatus TransformationMatrix::scaleBy(const MVector& scale, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::scaleBy %f %f %f\n", scale.x, scale.y, scale.z);
+  if(isScaleLocked())
+    return MStatus::kSuccess;
   MStatus status = MPxTransformationMatrix::scaleBy(scale, space);
   if(status)
   {
@@ -1557,6 +1565,8 @@ void TransformationMatrix::insertRotateOp()
 MStatus TransformationMatrix::rotateTo(const MQuaternion &q, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::rotateTo %f %f %f %f\n", q.x, q.y, q.z, q.w);
+  if(isRotateLocked())
+    return MS::kSuccess;
   MStatus status = MPxTransformationMatrix::rotateTo(q, space);
   if(status)
   {
@@ -1583,6 +1593,8 @@ MStatus TransformationMatrix::rotateTo(const MQuaternion &q, MSpace::Space space
 MStatus TransformationMatrix::rotateBy(const MQuaternion &q, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::rotateBy %f %f %f %f\n", q.x, q.y, q.z, q.w);
+  if(isRotateLocked())
+    return MS::kSuccess;
   MStatus status = MPxTransformationMatrix::rotateBy(q, space);
   if(status)
   {
@@ -1609,6 +1621,8 @@ MStatus TransformationMatrix::rotateBy(const MQuaternion &q, MSpace::Space space
 MStatus TransformationMatrix::rotateTo(const MEulerRotation &e, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::rotateTo %f %f %f\n", e.x, e.y, e.z);
+  if(isRotateLocked())
+    return MS::kSuccess;
   MStatus status = MPxTransformationMatrix::rotateTo(e, space);
   if(status)
   {
@@ -1635,6 +1649,8 @@ MStatus TransformationMatrix::rotateTo(const MEulerRotation &e, MSpace::Space sp
 MStatus TransformationMatrix::rotateBy(const MEulerRotation &e, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::rotateBy %f %f %f\n", e.x, e.y, e.z);
+  if(isRotateLocked())
+    return MS::kSuccess;
   MStatus status = MPxTransformationMatrix::rotateBy(e, space);
   if(status)
   {

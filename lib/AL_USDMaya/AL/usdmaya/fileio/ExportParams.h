@@ -41,6 +41,8 @@ struct ExporterParams
   double m_maxFrame=1.0; ///< the end frame of the animation export
   bool m_selected = false; ///< are we exporting selected objects (true) or all objects (false)
   bool m_meshes = true; ///< if true, export meshes
+  bool m_meshUV = false; ///< if true, export a scene hierarchy with all empty prims marked "over", only meshes UV will be filled in.
+  bool m_leftHandedUV = false; /// if true, UV indices retrieved from Maya will be adjusted to left-handed orientation, it only works with m_meshUV.
   bool m_nurbsCurves = true; ///< if true export nurbs curves
   bool m_dynamicAttributes = true; ///< if true export any dynamic attributes found on the nodes we are exporting
   bool m_duplicateInstances = true; ///< if true, instances will be exported as duplicates. As of 23/01/17, nothing will be exported if set to false.

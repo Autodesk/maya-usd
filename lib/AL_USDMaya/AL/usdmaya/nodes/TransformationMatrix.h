@@ -17,6 +17,7 @@
 #include "AL/usdmaya/TransformOperation.h"
 
 #include "maya/MPxTransformationMatrix.h"
+#include "maya/MPxTransform.h"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xform.h"
@@ -42,6 +43,7 @@ class TransformationMatrix
   UsdTimeCode m_time;
   std::vector<UsdGeomXformOp> m_xformops;
   std::vector<TransformOperation> m_orderedOps;
+  MObject m_transformNode;
 
   // tweak values. These are applied on top of the USD transform values to produce the final result.
   MVector m_scaleTweak;
@@ -130,6 +132,44 @@ class TransformationMatrix
   bool internal_pushMatrix(const MMatrix& result, UsdGeomXformOp& op) { return pushMatrix(result, op, getTimeCode()); }
 
 public:
+
+  /// \brief  sets the MObject for the transform
+  /// \param  object the MObject for the custom transform node
+  void setMObject(const MObject object)
+    { m_transformNode = object; }
+
+  /// \brief  checks to see whether the transform attribute is locked
+  /// \return true if the translate attribute is locked
+  bool isTranslateLocked()
+    {
+      MPlug plug(m_transformNode, MPxTransform::translate);
+      return plug.isLocked() ||
+             plug.child(0).isLocked() ||
+             plug.child(1).isLocked() ||
+             plug.child(2).isLocked();
+    }
+
+  /// \brief  checks to see whether the rotate attribute is locked
+  /// \return true if the rotate attribute is locked
+  bool isRotateLocked()
+    {
+      MPlug plug(m_transformNode, MPxTransform::rotate);
+      return plug.isLocked() ||
+             plug.child(0).isLocked() ||
+             plug.child(1).isLocked() ||
+             plug.child(2).isLocked();
+    }
+
+  /// \brief  checks to see whether the scale attribute is locked
+  /// \return true if the scale attribute is locked
+  bool isScaleLocked()
+    {
+      MPlug plug(m_transformNode, MPxTransform::scale);
+      return plug.isLocked() ||
+             plug.child(0).isLocked() ||
+             plug.child(1).isLocked() ||
+             plug.child(2).isLocked();
+    }
 
   /// \brief  helper method. Reads a vector from the transform op specified at the requested timecode
   /// \param  result the returned result
