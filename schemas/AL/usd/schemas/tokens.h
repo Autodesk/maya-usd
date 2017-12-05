@@ -35,27 +35,17 @@
 
 #include "pxr/pxr.h"
 #include "./api.h"
-#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/token.h"
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \hideinitializer
-#define AL_USDMAYASCHEMAS_TOKENS \
-    ((lock, "al_usdmaya_lock")) \
-    ((lock_inherited, "inherited")) \
-    ((lock_transform, "transform")) \
-    ((lock_unlocked, "unlocked")) \
-    (mayaNamespace) \
-    (mayaReference) \
-    ((selectability, "al_usdmaya_selectability")) \
-    ((selectability_inherited, "inherited")) \
-    ((selectability_selectable, "selectable")) \
-    ((selectability_unselectable, "unselectable"))
 
-/// \anchor AL_USDMayaSchemasTokens
+/// \class AL_USDMayaSchemasTokensType
 ///
-/// <b>AL_USDMayaSchemasTokens</b> provides static, efficient TfToken's for
-/// use in all public USD API
+/// \link AL_USDMayaSchemasTokens \endlink provides static, efficient
+/// \link TfToken TfTokens\endlink for use in all public USD API.
 ///
 /// These tokens are auto-generated from the module's schema, representing
 /// property names, for when you need to fetch an attribute or relationship
@@ -63,26 +53,64 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// manner, and allow the compiler to verify that you spelled the name
 /// correctly.
 ///
-/// AL_USDMayaSchemasTokens also contains all of the \em allowedTokens values declared
-/// for schema builtin attributes of 'token' scene description type.
+/// AL_USDMayaSchemasTokens also contains all of the \em allowedTokens values
+/// declared for schema builtin attributes of 'token' scene description type.
 /// Use AL_USDMayaSchemasTokens like so:
 ///
 /// \code
-///     gprim.GetVisibilityAttr().Set(AL_USDMayaSchemasTokens->invisible);
+///     gprim.GetMyTokenValuedAttr().Set(AL_USDMayaSchemasTokens->lock);
 /// \endcode
+struct AL_USDMayaSchemasTokensType {
+    AL_USDMAYASCHEMAS_API AL_USDMayaSchemasTokensType();
+    /// \brief "al_usdmaya_lock"
+    /// 
+    /// Stores the lock state of corresponding Maya objects of the prims
+    const TfToken lock;
+    /// \brief "inherited"
+    /// 
+    /// State which makes the Prim inherit its parent's lock state
+    const TfToken lock_inherited;
+    /// \brief "transform"
+    /// 
+    /// State which makes transform attributes of Maya objects (including children) locked
+    const TfToken lock_transform;
+    /// \brief "unlocked"
+    /// 
+    /// State which makes the Prim unlocked regardless of its parent's state
+    const TfToken lock_unlocked;
+    /// \brief "mayaNamespace"
+    /// 
+    /// AL_usd_MayaReference
+    const TfToken mayaNamespace;
+    /// \brief "mayaReference"
+    /// 
+    /// AL_usd_MayaReference
+    const TfToken mayaReference;
+    /// \brief "al_usdmaya_selectability"
+    /// 
+    /// Stores the state of the prims selectability
+    const TfToken selectability;
+    /// \brief "inherited"
+    /// 
+    /// State which makes the Prim inherit it's selectability
+    const TfToken selectability_inherited;
+    /// \brief "selectable"
+    /// 
+    /// State which makes the Prim selectable
+    const TfToken selectability_selectable;
+    /// \brief "unselectable"
+    /// 
+    /// State which makes the Prim unselectable
+    const TfToken selectability_unselectable;
+    /// A vector of all of the tokens listed above.
+    const std::vector<TfToken> allTokens;
+};
+
+/// \var AL_USDMayaSchemasTokens
 ///
-/// The tokens are:
-/// \li <b>lock</b> - Stores the lock state of corresponding Maya objects of the prims
-/// \li <b>lock_inherited</b> - State which makes the Prim inherit its parent's lock state
-/// \li <b>lock_transform</b> - State which makes transform attributes of Maya objects (including children) locked
-/// \li <b>lock_unlocked</b> - State which makes the Prim unlocked regardless of its parent's state
-/// \li <b>mayaNamespace</b> - AL_usd_MayaReference
-/// \li <b>mayaReference</b> - AL_usd_MayaReference
-/// \li <b>selectability</b> - Stores the state of the prims selectability
-/// \li <b>selectability_inherited</b> - State which makes the Prim inherit it's selectability
-/// \li <b>selectability_selectable</b> - State which makes the Prim selectable
-/// \li <b>selectability_unselectable</b> - State which makes the Prim unselectable
-TF_DECLARE_PUBLIC_TOKENS(AL_USDMayaSchemasTokens, AL_USDMAYASCHEMAS_API, AL_USDMAYASCHEMAS_TOKENS);
+/// A global variable with static, efficient \link TfToken TfTokens\endlink
+/// for use in all public USD API.  \sa AL_USDMayaSchemasTokensType
+extern AL_USDMAYASCHEMAS_API TfStaticData<AL_USDMayaSchemasTokensType> AL_USDMayaSchemasTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
