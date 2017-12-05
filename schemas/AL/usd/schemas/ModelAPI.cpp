@@ -217,7 +217,7 @@ TfToken AL_usd_ModelAPI::GetLock() const
   return lockValue;
 }
 
-static TfToken _ComputeLock(const UsdPrim& prim)
+static TfToken ComputeLock(const UsdPrim& prim)
 {
   TfToken localLock;
   if (!prim.HasMetadata(AL_USDMayaSchemasTokens->lock))
@@ -234,7 +234,7 @@ static TfToken _ComputeLock(const UsdPrim& prim)
   }
   if (UsdPrim parent = prim.GetParent())
   {
-    return _ComputeLock(parent);
+    return ComputeLock(parent);
   }
   return AL_USDMayaSchemasTokens->lock_inherited;
 }
@@ -243,7 +243,7 @@ TfToken AL_usd_ModelAPI::ComputeLock() const
 {
   if (!GetPrim())
     return TfToken();
-  return _ComputeLock(GetPrim());
+  return pxr::ComputeLock(GetPrim());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
