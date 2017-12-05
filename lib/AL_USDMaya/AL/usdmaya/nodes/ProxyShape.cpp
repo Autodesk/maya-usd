@@ -729,6 +729,18 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& previousPri
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::resync(const SdfPath& primPath)
+{
+  m_compositionHasChanged = true;
+  m_changedPath = primPath;
+  SdfPathVector outPathVector;
+  SdfPathVector changedPaths;
+
+  onPrePrimChanged(primPath, outPathVector);
+  onPrimResync(primPath, changedPaths);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdStageWeakPtr const& sender)
 {
   if(MFileIO::isOpeningFile())
@@ -950,7 +962,7 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
                                          path.GetText());
           if(!m_compositionHasChanged)
           {
-            TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::Already in a composition change state. Ignoring \n");
+            TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::Not yet in a composition change state. Recording path. \n");
             m_changedPath = path;
           }
           m_compositionHasChanged = true;

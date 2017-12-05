@@ -636,6 +636,14 @@ public:
   /// \param[in] changedPaths are child paths that existed previously and may not be existing now.
   void onPrimResync(SdfPath primPath, const SdfPathVector& changedPaths);
 
+  /// \brief Preps translators for change, and then re-ceates and updates the maya prim hierarchy below the
+  ///        specified primPath as if a variant change occurred.
+  /// \param[in] primPath of the point in the hierarchy that is potentially undergoing structural changes
+  void resync(const SdfPath& primPath);
+
+  // \brief Serialize information unique to this shape
+  void serializeThis();
+
   /// \brief This function starts the prim changed process within the proxyshape
   /// \param[in] changePath is point at which the scene is going to be modified.
   inline void primChangedAtPath(const SdfPath& changePath)

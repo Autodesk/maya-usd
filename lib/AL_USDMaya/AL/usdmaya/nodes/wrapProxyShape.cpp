@@ -330,6 +330,8 @@ void wrapProxyShape()
         boost::python::return_value_policy<reference_existing_object>())
         .staticmethod("getByName")
     .def("getUsdStage", &ProxyShape::getUsdStage)
+    .def("resync", &ProxyShape::resync,
+         (boost::python::arg("path")))
     .def("boundingBox", PyProxyShape::boundingBox)
     .def("isRequiredPath", &ProxyShape::isRequiredPath)
     .def("findRequiredPath", PyProxyShape::findRequiredPath)
