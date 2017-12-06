@@ -9,6 +9,7 @@ Run the following commands in Maya's script editor with the AL_USDMaya plugin lo
 ***
 
 Create a proxy shape pointing to our test file
+
 ```
 cmds.AL_usdmaya_ProxyShapeImport(file="<PATH_TO_ASSETS_FOLDER?/lock_hierarchy.usda")
 ```
