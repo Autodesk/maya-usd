@@ -257,7 +257,7 @@ EventID MayaEventManager::generateEventId(MayaEventType eventType)
   }
 
   // push the eventtype to the front of the bits, and the count to the back
-  return EventID((EventID)eventType << 48 | (count+1));
+  return EventID((EventID)eventType << (ID_TOTAL_BITS-ID_MAYAEVENTTYPE_BITS) | (count+1));
 }
 
 //----------------------------------------------------------------------------------------------------------------------

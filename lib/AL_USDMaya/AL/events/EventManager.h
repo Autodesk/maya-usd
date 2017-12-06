@@ -75,6 +75,10 @@ inline bool operator==(const EventID& lhs2, const Listener& rhs)
 inline bool operator!=(const EventID& lhs2, const Listener& rhs)
   { return lhs2 != rhs.id; }
 
+#define ID_TOTAL_BITS 64
+#define ID_MAYAEVENTTYPE_BITS 16
+#define ID_COUNT 48
+
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief Stores and orders the registered Event objects and executes these Events when the wanted Maya callbacks are triggered.
 //----------------------------------------------------------------------------------------------------------------------
@@ -184,7 +188,7 @@ private:
 
   inline MayaEventType getEventTypeFromID(EventID eventId) const
   {
-    return (MayaEventType)(eventId >> 48);
+    return (MayaEventType)(eventId >> (ID_TOTAL_BITS-ID_MAYAEVENTTYPE_BITS));
   }
 
   inline uint64_t getCountFromID(EventID eventId) const
