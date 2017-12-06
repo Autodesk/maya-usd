@@ -43,19 +43,19 @@ static void onMayaCommand(void* userData)
 
   for(const auto& l : listeners)
   {
-    if(l->callback)
+    if(l.callback)
     {
-      l->callback(l->userData);
+      l.callback(l.userData);
     }
     else
     {
-      if(l->isPython)
+      if(l.isPython)
       {
-        MGlobal::executePythonCommand(l->command);
+        MGlobal::executePythonCommand(l.command);
       }
       else
       {
-        MGlobal::executeCommand(l->command);
+        MGlobal::executeCommand(l.command);
       }
     }
   }
@@ -112,29 +112,28 @@ EventID MayaEventManager::registerCallback(MayaEventType eventType, const Listen
   }
 
   Listeners& listeners = m_mayaListeners[eventType];
-  ListenerPtr newEvent = make_unique<Listener>(eventListener);
-
+  Listener newListener = eventListener;
   // Retrieve the pointer location as the ID
-  EventID id = (EventID)newEvent.get();
+  newListener.id = generateEventId(eventType);
 
-  if(newEvent->weight & AL::usdmaya::events::kPlaceLast)
+  if(newListener.weight & AL::usdmaya::events::kPlaceLast)
   {
     if(!listeners.empty())
     {
       // If the weight is tagged to place last, make it +1 more than the element at the end of the vector
-      newEvent->weight = listeners.back()->weight + 1;
+      newListener.weight = listeners.back().weight + 1;
     }
-    listeners.push_back(std::move(newEvent));
+    listeners.push_back(newListener);
   }
-  else if(newEvent->weight & AL::usdmaya::events::kPlaceFirst)
+  else if(newListener.weight & AL::usdmaya::events::kPlaceFirst)
   {
     // If the weight is tagged as the first place, then push it directly to the front and give it a light weight
-    newEvent->weight = 0;
-    listeners.insert(listeners.begin(), std::move(newEvent));
+    newListener.weight = 0;
+    listeners.insert(listeners.begin(), newListener);
   }
   else
   {
-    listeners.push_back(std::move(newEvent));
+    listeners.push_back(newListener);
   }
 
   // Start the Maya callback if the recently Maya listener has been added
@@ -143,9 +142,9 @@ EventID MayaEventManager::registerCallback(MayaEventType eventType, const Listen
     registerMayaCallback(eventType);
   }
 
-  std::sort(listeners.begin(), listeners.end(), [](const ListenerPtr& a, const ListenerPtr& b) { return a->weight < b->weight; });
+  std::sort(listeners.begin(), listeners.end(), [](const ListenerEntry& a, const ListenerEntry& b) { return a.weight < b.weight; });
 
-  return id;
+  return newListener.id;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -210,14 +209,20 @@ bool MayaEventManager::deregisterMayaCallback(AL::usdmaya::events::MayaEventType
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool MayaEventManager::deregister(AL::usdmaya::events::MayaEventType event, EventID id)
+bool MayaEventManager::deregister(EventID id)
 {
-  auto eventComparison = [id](const ListenerPtr& listener){
-    Listener* event = listener.get();
-    EventID listenerID = (EventID)event;
-    return (listenerID == id);
+  MayaEventType eventType = getEventTypeFromID(id);
+  if(eventType >= AL::usdmaya::events::kSceneMessageLast)
+  {
+    return false;
+  }
+
+
+  auto eventComparison = [id](const ListenerEntry& listener){
+    return listener.id == id;
   };
-  auto& mayaListeners = m_mayaListeners[event];
+
+  auto& mayaListeners = m_mayaListeners[eventType];
   auto foundListener = std::find_if(mayaListeners.begin(), mayaListeners.end(), eventComparison);
 
   if(foundListener == mayaListeners.end())
@@ -228,43 +233,30 @@ bool MayaEventManager::deregister(AL::usdmaya::events::MayaEventType event, Even
   // There will be no listeners soon, deregister for the Maya Event
   if(mayaListeners.size() == 1)
   {
-    deregisterMayaCallback(event);
+    deregisterMayaCallback(eventType);
   }
   mayaListeners.erase(foundListener);
   return true;
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-bool MayaEventManager::deregister(EventID id)
+EventID MayaEventManager::generateEventId(MayaEventType eventType)
 {
-
-  for(size_t i = 0; i < MayaEventType::kSceneMessageLast; ++i)
+  // Find the the listener with the largest count
+  uint64_t count = 1;
+  if(m_mayaListeners[eventType].size() != 0)
   {
-    auto& mayaListener = m_mayaListeners[i];
-    auto endItr = mayaListener.end();
-    auto foundListener = endItr;
-    for(auto it=mayaListener.begin(); it < endItr; ++it)
+    for(const Listener& listener : m_mayaListeners[eventType])
     {
-      EventID listenerID = (EventID)(*it).get();
-      if(listenerID == id)
+      uint64_t listenersCount = getCountFromID(listener.id);
+      if(listenersCount > count)
       {
-        foundListener = it;
+        count = listenersCount;
       }
-    }
-
-    if(foundListener != mayaListener.end())
-    {
-      if(mayaListener.size() == 1)
-      {
-        deregisterMayaCallback((MayaEventType)i);
-      }
-
-      mayaListener.erase(foundListener);
-
-      return true;
     }
   }
-  return false;
+
+  // push the eventtype to the front of the bits, and the count to the back
+  return EventID((EventID)eventType << 48 | (count+1));
 }
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -42,7 +42,7 @@ enum MayaEventType
   kBeforeLoadReference, ///< called prior to file reference loaded
   kAfterLoadReference, ///< called after to file reference loaded
   kBeforeCreateReference, ///< called prior to file reference created
-  kAfterCreateReference, ///< called after to file re)ference created
+  kAfterCreateReference, ///< called after to file reference created
   kMayaInitialized, ///< called after maya has been initialised
   kMayaExiting, ///< called prior to maya exiting
   kSceneMessageLast

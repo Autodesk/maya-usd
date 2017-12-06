@@ -50,10 +50,9 @@ TEST(maya_Event, invalidRegisteredEvent)
   auto& listeners = ev.listeners();
   Listener l;
   l.callback = [](void*){std::cout << "I shouldn't be registered!" << std::endl;};
+
   EventID id = ev.registerCallback(testEvent, l);
   EXPECT_EQ(id, 0);
-  EXPECT_EQ(listeners[testEvent].size(), 0);
-  ev.deregister(id);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -72,7 +71,7 @@ TEST(maya_Event, testRegisterLast)
   EventID last = ev.registerLast(testEvent, l.callback);
 
   EXPECT_EQ(listeners[testEvent].size(), 3);
-  EXPECT_EQ((EventID)listeners[testEvent].back().get(), last);
+  EXPECT_EQ(listeners[testEvent].back().id, last);
 
   ev.deregister(last);
   ev.deregister(second);
@@ -94,9 +93,10 @@ TEST(maya_Event, testRegisterFirst)
   EventID second = ev.registerCallback(testEvent, l);
   EventID actuallyImFirst = ev.registerFirst(testEvent, l.callback);
 
-  EXPECT_EQ(listeners[testEvent].size(), 3);
+  const Listener& sl = listeners[testEvent][0];
 
-  EXPECT_EQ((EventID)listeners[testEvent].front().get(), actuallyImFirst);
+  EXPECT_EQ(listeners[testEvent].size(), 3);
+  EXPECT_EQ(sl, actuallyImFirst);
 
   ev.deregister(second);
   ev.deregister(first);
@@ -119,7 +119,7 @@ TEST(maya_Event, simpleDeregisterEvent)
   EXPECT_TRUE(ev.isMayaCallbackRegistered(testEvent));
   EXPECT_EQ(listeners[testEvent].size(), 1);
 
-  EXPECT_TRUE(ev.deregister(testEvent, id));
+  EXPECT_TRUE(ev.deregister(id));
   EXPECT_FALSE(ev.isMayaCallbackRegistered(testEvent));
   EXPECT_EQ(listeners[testEvent].size(), 0);
 }
@@ -164,13 +164,13 @@ TEST(maya_Event, eventOrdering)
   EXPECT_EQ(listeners[testEvent].size(), 3);
 
   // check they are ordered correctly
-  EXPECT_EQ(firstCallback, (EventID)listeners[testEvent][0].get());
-  EXPECT_EQ(middleCallback, (EventID)listeners[testEvent][1].get());
-  EXPECT_EQ(lastCallback, (EventID)listeners[testEvent][2].get());
+  EXPECT_EQ(listeners[testEvent][0], firstCallback);
+  EXPECT_EQ(listeners[testEvent][1], middleCallback);
+  EXPECT_EQ(listeners[testEvent][2], lastCallback);
 
-  ev.deregister(testEvent, lastCallback);
-  ev.deregister(testEvent, middleCallback);
-  ev.deregister(testEvent, firstCallback);
+  ev.deregister(lastCallback);
+  ev.deregister(middleCallback);
+  ev.deregister(firstCallback);
   EXPECT_EQ(listeners[testEvent].size(), 0);
 }
 
@@ -199,5 +199,5 @@ TEST(maya_Event, userDataIsWorking)
   EventID id = ev.registerCallback(testEvent, callback, (void*)d);
   MFileIO::newFile(true);
   EXPECT_EQ(d->name, "changed");
-  EXPECT_TRUE(ev.deregister(testEvent, id));
+  EXPECT_TRUE(ev.deregister(id));
 }

@@ -35,9 +35,9 @@ class Listener;
 
 typedef void* UserData;
 typedef MMessage::MBasicFunction Callback;
-typedef uintptr_t EventID;
-typedef std::unique_ptr<Listener> ListenerPtr;
-typedef std::vector<ListenerPtr> Listeners;
+typedef uint64_t EventID;
+typedef Listener ListenerEntry;
+typedef std::vector<ListenerEntry> Listeners;
 typedef std::array<Listeners, MayaEventType::kSceneMessageLast> ListenerContainer;
 typedef std::array<MCallbackId, MayaEventType::kSceneMessageLast> MayaCallbackIDContainer;
 
@@ -47,10 +47,12 @@ typedef std::array<MCallbackId, MayaEventType::kSceneMessageLast> MayaCallbackID
 struct Listener
 {
   UserData userData = nullptr;  ///< data which is returned back to the user which registered this even and data
-  Callback callback = nullptr;  ///< called when the event is triggerd
+  Callback callback = nullptr;  ///< called when the event is triggered
 
   MString command;              ///< Python or Mel command to call on callback
   MString tag;                  ///< tag or category of the event purpose
+
+  EventID id;                   ///< the id generated for the event
 
   struct
   {
@@ -58,10 +60,20 @@ struct Listener
     uint32_t isPython : 1;      ///< if true (and the C++ fuction pointer is NULL), the command string will be treated as python, otherwise MEL
   };
 
-  bool operator < (const Listener& event) const
+  inline bool operator < (const Listener& event) const
     { return weight < event.weight; }
+
+  inline bool operator==(const EventID& rhs) const
+    { return id == rhs; }
+  inline bool operator!=(const EventID& rhs) const
+    { return id != rhs; }
 };
 
+// For comparison between and EventID and a listener
+inline bool operator==(const EventID& lhs2, const Listener& rhs)
+  { return lhs2 == rhs.id; }
+inline bool operator!=(const EventID& lhs2, const Listener& rhs)
+  { return lhs2 != rhs.id; }
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief Stores and orders the registered Event objects and executes these Events when the wanted Maya callbacks are triggered.
@@ -134,11 +146,11 @@ public:
   /// \return the identifier of the created listener, or 0 if nothing was registered
   EventID registerCallback(MayaEventType eventType, const Listener& eventListener);
 
-  /// \brief Remove the corresponding EventID
-  /// \param event internal type of the event
-  /// \param id unique identifier of the Listener that was returned when it was registered
-  /// \return true if an event was deregistered
-  bool deregister(AL::usdmaya::events::MayaEventType event, EventID id);
+//  /// \brief Remove the corresponding EventID
+//  /// \param event internal type of the event
+//  /// \param id unique identifier of the Listener that was returned when it was registered
+//  /// \return true if an event was deregistered
+//  bool deregister(AL::usdmaya::events::MayaEventType event, EventID id);
 
   /// \brief Remove the corresponding EventID. More costly than the deregister
   ///        method where the MayaEventType is passed, since it has to search for the corresponding ID
@@ -164,9 +176,23 @@ public:
   /// \return ListenerContainer containing all the listeners
   const MayaCallbackIDContainer& mayaCallbackIDs(){return m_mayaCallbacks;}
 
+
 private:
   bool registerMayaCallback(MayaEventType eventType);
   bool deregisterMayaCallback(MayaEventType eventType);
+  EventID generateEventId(MayaEventType eventType);
+
+  inline MayaEventType getEventTypeFromID(EventID eventId) const
+  {
+    return (MayaEventType)(eventId >> 48);
+  }
+
+  inline uint64_t getCountFromID(EventID eventId) const
+  {
+    // Mask out the top 16 bits since they are
+    return (eventId & 0x3ffffffffffff);
+  }
+
 private:
   ListenerContainer m_mayaListeners;
   MayaCallbackIDContainer m_mayaCallbacks;
