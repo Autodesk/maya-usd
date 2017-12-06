@@ -82,36 +82,48 @@ MSceneMessage::Message eventToMayaEvent(MayaEventType internalEvent)
   return MSceneMessage::kLast;
 }
 
+typedef std::pair<MSceneMessage::Message, MayaEventType> Entry;
+bool operator<(const Entry &ar, const MSceneMessage::Message &br)
+{
+  return ar.first < br;
+}
+
+
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief Converts Maya's event type into supported event type
 /// \return The corresponding supported Event type, else MayaEventType::kSceneMessageLast
 //----------------------------------------------------------------------------------------------------------------------
 MayaEventType eventToMayaEvent(MSceneMessage::Message mayaEvent)
 {
-  typedef std::pair<MSceneMessage::Message, MayaEventType> MapEntry;
-  static std::map<MSceneMessage::Message, MayaEventType> mayaEventToEventTable =
+
+  // Insert new Maya events into the correct order.
+  static std::array<Entry, 16> eventToMayaEventTable =
     {
-      MapEntry(MSceneMessage::kBeforeNew, kBeforeNew),
-      MapEntry(MSceneMessage::kAfterNew, kAfterNew),
-      MapEntry(MSceneMessage::kBeforeOpen, kBeforeOpen),
-      MapEntry(MSceneMessage::kAfterOpen, kAfterOpen),
-      MapEntry(MSceneMessage::kBeforeSave, kBeforeSave),
-      MapEntry(MSceneMessage::kAfterSave, kAfterSave),
-      MapEntry(MSceneMessage::kBeforeReference, kBeforeReference),
-      MapEntry(MSceneMessage::kAfterReference, kAfterReference),
-      MapEntry(MSceneMessage::kBeforeUnloadReference, kBeforeUnloadReference),
-      MapEntry(MSceneMessage::kAfterUnloadReference, kAfterUnloadReference),
-      MapEntry(MSceneMessage::kBeforeLoadReference, kBeforeLoadReference),
-      MapEntry(MSceneMessage::kAfterLoadReference, kAfterLoadReference),
-      MapEntry(MSceneMessage::kBeforeCreateReference, kBeforeCreateReference),
-      MapEntry(MSceneMessage::kAfterCreateReference, kAfterCreateReference),
-      MapEntry(MSceneMessage::kMayaInitialized, kMayaInitialized),
-      MapEntry(MSceneMessage::kMayaExiting, kMayaExiting)
+      Entry(MSceneMessage::kBeforeNew, kBeforeNew),
+      Entry(MSceneMessage::kAfterNew, kAfterNew),
+      Entry(MSceneMessage::kBeforeOpen, kBeforeOpen),
+      Entry(MSceneMessage::kAfterOpen, kAfterOpen),
+      Entry(MSceneMessage::kBeforeSave, kBeforeSave),
+      Entry(MSceneMessage::kAfterSave, kAfterSave),
+      Entry(MSceneMessage::kBeforeReference, kBeforeReference),
+      Entry(MSceneMessage::kAfterReference, kAfterReference),
+      Entry(MSceneMessage::kBeforeUnloadReference, kBeforeUnloadReference),
+      Entry(MSceneMessage::kAfterUnloadReference, kAfterUnloadReference),
+      Entry(MSceneMessage::kMayaInitialized, kMayaInitialized),
+      Entry(MSceneMessage::kMayaExiting, kMayaExiting),
+      Entry(MSceneMessage::kBeforeLoadReference, kBeforeLoadReference),
+      Entry(MSceneMessage::kAfterLoadReference, kAfterLoadReference),
+      Entry(MSceneMessage::kBeforeCreateReference, kBeforeCreateReference),
+      Entry(MSceneMessage::kAfterCreateReference, kAfterCreateReference)
     };
 
-  if(mayaEventToEventTable.find(mayaEvent) != mayaEventToEventTable.end())
+  auto entry = std::lower_bound(eventToMayaEventTable.begin(),
+                                eventToMayaEventTable.end(),
+                                mayaEvent);
+
+  if(entry != eventToMayaEventTable.end())
   {
-    return mayaEventToEventTable[mayaEvent];
+    return entry->second;
   }
 
   return kSceneMessageLast;
