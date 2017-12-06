@@ -14,7 +14,7 @@ Create a proxy shape pointing to our test file
 cmds.AL_usdmaya_ProxyShapeImport(file="<PATH_TO_ASSETS_FOLDER?/lock_hierarchy.usda")
 ```
 
-You should notice that "transA" and "camB" have their transform attributes locked and "pushToPrim" attributes disabled. Their descendants "transC" and "camD" are unlocked by metadata defined on "transC". And "transE" and "camF" are unlocked due to "inherited" by default.
+You should notice that "transA" and "camB" have their transform attributes locked and "pushToPrim" attributes disabled. Their descendants "transC" and "camD" are unlocked by "unlocked" metadata defined on "transC". And "transE" and "camF" are unlocked due to "inherited" by default.
 
 ![Lock](LockPrims.png)
 
@@ -31,7 +31,7 @@ transC = stage.GetPrimAtPath('/transA/camB/transC')
 transCApi = schemas.ModelAPI(transC)
 transCApi.SetLock("inherited")
 ```
-"tranC" and "camD" are locked now because they inherits lock from ancestors. 
+"tranC" and "camD" are locked now because they inherit lock from ancestors. 
 
 ***
 
