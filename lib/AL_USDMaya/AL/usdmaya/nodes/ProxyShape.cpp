@@ -731,13 +731,16 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& previousPri
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::resync(const SdfPath& primPath)
 {
-  m_compositionHasChanged = true;
-  m_changedPath = primPath;
-  SdfPathVector outPathVector;
-  SdfPathVector changedPaths;
+  // FIMXE: This method was needed to call update() on all translators in the maya scene. Since then some new
+  // locking and selectability functionality has been added to onObjectsChanged(). I would want to call the logic in
+  // that method to handle this resyncing but it would need to be refactored.
 
-  onPrePrimChanged(primPath, outPathVector);
-  onPrimResync(primPath, changedPaths);
+  SdfPathVector existingSchemaPrims;
+
+  // populates list of prims from prim mapping that will change under the path to resync.
+  onPrePrimChanged(primPath, existingSchemaPrims);
+
+  onPrimResync(primPath, existingSchemaPrims);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
