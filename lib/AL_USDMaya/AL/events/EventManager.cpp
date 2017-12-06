@@ -113,7 +113,8 @@ EventID MayaEventManager::registerCallback(MayaEventType eventType, const Listen
 
   Listeners& listeners = m_mayaListeners[eventType];
   Listener newListener = eventListener;
-  // Retrieve the pointer location as the ID
+
+  // Generate and ID that would be currently unique
   newListener.id = generateEventId(eventType);
 
   if(newListener.weight & AL::usdmaya::events::kPlaceLast)
