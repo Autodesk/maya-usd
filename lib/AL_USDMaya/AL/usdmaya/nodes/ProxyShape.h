@@ -641,9 +641,6 @@ public:
   /// \param[in] primPath of the point in the hierarchy that is potentially undergoing structural changes
   void resync(const SdfPath& primPath);
 
-  // \brief Serialize information unique to this shape
-  void serializeThis();
-
   /// \brief This function starts the prim changed process within the proxyshape
   /// \param[in] changePath is point at which the scene is going to be modified.
   inline void primChangedAtPath(const SdfPath& changePath)
