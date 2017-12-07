@@ -70,6 +70,8 @@ void deleteLayerManager(MObject& mobj)
 //  static void* conditionalCreator();
 TEST(LayerManager, conditionalCreator)
 {
+  MFileIO::newFile(true);
+
   MObjectArray managers;
 
   // Before we start, should no LayerManagers
@@ -100,8 +102,6 @@ TEST(LayerManager, conditionalCreator)
   createLayerManager();
   getLayerManagers(managers);
   EXPECT_EQ(managers.length(), 1);
-
-  MFileIO::newFile(true);
 }
 
 //  static MObject findNode();
@@ -110,6 +110,8 @@ TEST(LayerManager, conditionalCreator)
 //  static MObject findOrCreateManager();
 TEST(LayerManager, findNode)
 {
+  MFileIO::newFile(true);
+
   MObjectArray managers;
   MObject result;
 
@@ -175,8 +177,6 @@ TEST(LayerManager, findNode)
   ASSERT_TRUE(managerPtr);
   ASSERT_EQ(AL::usdmaya::nodes::LayerManager::findManager(), managerPtr);
   ASSERT_EQ(AL::usdmaya::nodes::LayerManager::findOrCreateManager(), managerPtr);
-
-  MFileIO::newFile(true);
 }
 
 // std::pair<size_t, bool> addLayer(SdfLayerRefPtr layer);
@@ -186,6 +186,8 @@ TEST(LayerManager, findNode)
 // void getLayerIdentifiers(MStringArray& outputNames);
 TEST(LayerManager, addRemoveLayer)
 {
+  MFileIO::newFile(true);
+
   auto* manager = AL::usdmaya::nodes::LayerManager::findOrCreateManager();
   ASSERT_TRUE(manager);
 
@@ -417,7 +419,4 @@ TEST(LayerManager, simpleSaveRestore)
 //    EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::reference(temp_ma_path));
 //    confirmLayerEditsPresent();
 //  }
-
-  MFileIO::newFile(true);
-
 }
