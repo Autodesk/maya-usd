@@ -979,7 +979,7 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
     {
       throw MS::kFailure;
     }
-    SdfPathVector paths;
+    nodes::SelectionUndoHelper::SdfPathHashSet paths;
 
     MGlobal::ListAdjustment mode = MGlobal::kAddToList;
     if(db.isFlagSet("-cl"))
@@ -998,7 +998,7 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
 
         if(!proxy->selectabilityDB().isPathUnselectable(path) && path.IsAbsolutePath())
         {
-          paths.push_back(path);
+          paths.insert(path);
         }
       }
 
