@@ -234,13 +234,14 @@ void TranslatorContext::insertItem(const UsdPrim& prim, MObjectHandle object)
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::removeItems(const SdfPath& path)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeItems primPath=%s\n", path.GetText());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeItems remove under primPath=%s\n", path.GetText());
   auto it = find(path);
   if(it != m_primMapping.end() && it->path() == path)
   {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeItems path=%s\n", it->path().GetText());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeItems removing path=%s\n", it->path().GetText());
     MDGModifier modifier1;
     MDagModifier modifier2;
+    MObjectHandleArray tempXforms;
     MStatus status;
     bool hasDagNodes = false;
     bool hasDependNodes = false;
@@ -258,21 +259,26 @@ void TranslatorContext::removeItems(const SdfPath& path)
           hasDagNodes = true;
           modifier2.reparentNode(obj);
           status = modifier2.deleteNode(obj);
+          AL_MAYA_CHECK_ERROR2(status, "failed to delete transform node");
         }
         else
         if(obj.hasFn(MFn::kDagNode))
         {
           hasDagNodes = true;
-          MFnDependencyNode fn(obj);
-          MObject temp = fn.create("transform");
+          MObject temp = modifier2.createNode("transform");
+          MObjectHandle tempHandle(temp);
+          tempXforms.push_back(temp);
           modifier2.reparentNode(obj, temp);
-          status = modifier2.deleteNode(temp);  // will also delete obj
+          modifier2.doIt();  // removing this caused crashes
+          modifier2.deleteNode(obj);
+          status = modifier2.doIt();
+          AL_MAYA_CHECK_ERROR2(status, "failed to delete dag node");
         }
         else
         {
           hasDependNodes = true;
           status = modifier1.deleteNode(obj);
-          AL_MAYA_CHECK_ERROR2(status, MString("failed to delete node "));
+          AL_MAYA_CHECK_ERROR2(status, MString("failed to delete node"));
         }
       }
       else
@@ -285,12 +291,18 @@ void TranslatorContext::removeItems(const SdfPath& path)
     if(hasDependNodes)
     {
       status = modifier1.doIt();
-      AL_MAYA_CHECK_ERROR2(status, "failed to delete node");
+      AL_MAYA_CHECK_ERROR2(status, "failed to delete dg nodes");
     }
     if(hasDagNodes)
     {
+      for (int i = 0; i < tempXforms.size(); ++i){
+        // Check if these xforms have already been deleted automatically when we deleted their child shape.
+        if(tempXforms[i].isAlive() && tempXforms[i].isValid()){
+          modifier2.deleteNode(tempXforms[i].object());
+        }
+      }
       status = modifier2.doIt();
-      AL_MAYA_CHECK_ERROR2(status, "failed to delete node");
+      AL_MAYA_CHECK_ERROR2(status, "failed to delete dag nodes");
     }
     m_primMapping.erase(it);
   }
