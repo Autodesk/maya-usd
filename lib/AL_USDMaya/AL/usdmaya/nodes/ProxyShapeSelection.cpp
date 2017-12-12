@@ -855,7 +855,7 @@ void ProxyShape::insertTransformRefs(const std::vector<std::pair<SdfPath, MObjec
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-SelectionUndoHelper::SelectionUndoHelper(nodes::ProxyShape* proxy, SdfPathHashSet paths, MGlobal::ListAdjustment mode, bool internal)
+SelectionUndoHelper::SelectionUndoHelper(nodes::ProxyShape* proxy, const SdfPathHashSet& paths, MGlobal::ListAdjustment mode, bool internal)
   : m_proxy(proxy), m_paths(paths), m_mode(mode), m_modifier1(), m_modifier2(), m_insertedRefs(), m_removedRefs(), m_internal(internal)
 {
 }
@@ -985,7 +985,7 @@ bool ProxyShape::removeAllSelectedNodes(SelectionUndoHelper& helper)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool ProxyShape::doSelect(SelectionUndoHelper& helper)
+bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orderedPaths)
 {
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::doSelect\n");
   auto stage = m_stage;
@@ -1018,7 +1018,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
     {
       std::vector<SdfPath> keepPrims;
       std::vector<UsdPrim> insertPrims;
-      for(auto path : helper.m_paths)
+      for(auto path : orderedPaths)
       {
         bool alreadySelected = m_selectedPaths.count(path) > 0;
 
@@ -1078,7 +1078,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
   case MGlobal::kAddToList:
     {
       std::vector<UsdPrim> prims;
-      for(auto path : helper.m_paths)
+      for(auto path : orderedPaths)
       {
         bool alreadySelected = m_selectedPaths.count(path) > 0;
 
@@ -1110,6 +1110,13 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
   case MGlobal::kRemoveFromList:
     {
       std::vector<UsdPrim> prims;
+
+      // We use helper.m_paths, not orderedPaths here, because
+      // if mode was MGlobal::kReplaceList at start, but helper.m_paths
+      // was empty, we switch mode to kRemoveFromList, and
+      // changed helper.m_paths to previousPaths.  This is fine, though
+      // because we only need order so we can get right order for
+      // newlySelectedPaths - which is not altered in this branch
       for(auto path : helper.m_paths)
       {
         bool alreadySelected = m_selectedPaths.count(path) > 0;
@@ -1167,7 +1174,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
     {
       std::vector<UsdPrim> removePrims;
       std::vector<UsdPrim> insertPrims;
-      for(auto path : helper.m_paths)
+      for(auto path : orderedPaths)
       {
         bool alreadySelected = m_selectedPaths.count(path) > 0;
 

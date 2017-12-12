@@ -74,7 +74,7 @@ struct SelectionUndoHelper
   /// \param  paths the USD paths to be selected / toggled / unselected
   /// \param  mode the selection mode (add, remove, xor, etc)
   /// \param  internal if the internal flag is set, then modifications to Maya's selection list will NOT occur.
-  SelectionUndoHelper(nodes::ProxyShape* proxy, SdfPathHashSet paths, MGlobal::ListAdjustment mode, bool internal = false);
+  SelectionUndoHelper(nodes::ProxyShape* proxy, const SdfPathHashSet& paths, MGlobal::ListAdjustment mode, bool internal = false);
 
   /// \brief  performs the selection changes
   void doIt();
@@ -572,8 +572,14 @@ public:
   /// \brief  Performs a selection operation on this node. Intended for use by the ProxyShapeSelect command only
   /// \param  helper provides the arguments to the selection system, and stores the internal proxy shape state
   ///         changes that need to be done/undone
+  /// \param  orderedPaths provides the original (deduplicated) input paths, in order; provided just so that the
+  ///         selection commands will return results in the same order they were provided - this is useful so that, if
+  ///         the user does, ie, "AL_usdmaya_ProxyShapeSelect -pp /foo/bar -pp /some/thing -proxy myProxyShape",
+  //          they will get as the result of the command, ["|proxyRoot|foo|bar", "|proxyRoot|some|thing"], and be able
+  //          to know what input SdfPath corresponds to what ouptut maya path
+  SdfPathVector m_pathsOrdered;
   /// \return true if the operation succeeded
-  bool doSelect(SelectionUndoHelper& helper);
+  bool doSelect(SelectionUndoHelper& helper, const SdfPathVector& orderedPaths);
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   UsdImaging
