@@ -20,7 +20,7 @@ You should notice that "transA" and "camB" have their transform attributes locke
 
 ***
 
-Now lets lock "transC" and "camD" through ModelAPI.
+Now let's lock "transC" and "camD" through ModelAPI.
 
 ``` 
 from AL import usdmaya
@@ -35,7 +35,7 @@ transCApi.SetLock("inherited")
 
 ***
 
-Now lets unlock all nodes under "transA" hierarchy
+Now let's unlock all nodes under "transA" hierarchy
 
 ```
 transAApi = schemas.ModelAPI(transA)
