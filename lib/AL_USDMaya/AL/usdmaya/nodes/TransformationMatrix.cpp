@@ -1146,7 +1146,7 @@ MStatus TransformationMatrix::translateTo(const MVector& vector, MSpace::Space s
   {
     m_translationTweak = MPxTransformationMatrix::translationValue - m_translationFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     // if the prim does not contain a translation, make sure we insert a transform op for that.
     if(primHasTranslation())
@@ -1174,7 +1174,7 @@ MStatus TransformationMatrix::translateBy(const MVector& vector, MSpace::Space s
   {
     m_translationTweak = MPxTransformationMatrix::translationValue - m_translationFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     // if the prim does not contain a translation, make sure we insert a transform op for that.
     if(primHasTranslation())
@@ -1224,7 +1224,7 @@ MStatus TransformationMatrix::scaleTo(const MVector& scale, MSpace::Space space)
   {
     m_scaleTweak = MPxTransformationMatrix::scaleValue - m_scaleFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasScale())
     {
@@ -1252,7 +1252,7 @@ MStatus TransformationMatrix::scaleBy(const MVector& scale, MSpace::Space space)
   {
     m_scaleTweak = MPxTransformationMatrix::scaleValue - m_scaleFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasScale())
     {
@@ -1295,7 +1295,7 @@ MStatus TransformationMatrix::shearTo(const MVector& shear, MSpace::Space space)
   {
     m_scaleTweak = MPxTransformationMatrix::shearValue - m_shearFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasShear())
     {
@@ -1321,7 +1321,7 @@ MStatus TransformationMatrix::shearBy(const MVector& shear, MSpace::Space space)
   {
     m_scaleTweak = MPxTransformationMatrix::shearValue - m_shearFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasShear())
     {
@@ -1370,7 +1370,7 @@ MStatus TransformationMatrix::setScalePivot(const MPoint& sp, MSpace::Space spac
   {
     m_scalePivotTweak = MPxTransformationMatrix::scalePivotValue - m_scalePivotFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     // Do not insert a scale pivot op if the input prim has a generic pivot.
     if(primHasScalePivot() || primHasPivot())
@@ -1410,7 +1410,7 @@ MStatus TransformationMatrix::setScalePivotTranslation(const MVector& sp, MSpace
   {
     m_scalePivotTranslationTweak = MPxTransformationMatrix::scalePivotTranslationValue - m_scalePivotTranslationFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasScalePivotTranslate())
     {
@@ -1458,7 +1458,7 @@ MStatus TransformationMatrix::setRotatePivot(const MPoint& pivot, MSpace::Space 
   {
     m_rotatePivotTweak = MPxTransformationMatrix::rotatePivotValue - m_rotatePivotFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     // Do not insert a rotate pivot op if the input prim has a generic pivot.
     if(primHasRotatePivot() || primHasPivot())
@@ -1499,7 +1499,7 @@ MStatus TransformationMatrix::setRotatePivotTranslation(const MVector &vector, M
   {
     m_rotatePivotTranslationTweak = MPxTransformationMatrix::rotatePivotTranslationValue - m_rotatePivotTranslationFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasRotatePivotTranslate())
     {
@@ -1574,7 +1574,7 @@ MStatus TransformationMatrix::rotateTo(const MQuaternion &q, MSpace::Space space
     m_rotationTweak.y = MPxTransformationMatrix::rotationValue.y - m_rotationFromUsd.y;
     m_rotationTweak.z = MPxTransformationMatrix::rotationValue.z - m_rotationFromUsd.z;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasRotation())
     {
@@ -1602,7 +1602,7 @@ MStatus TransformationMatrix::rotateBy(const MQuaternion &q, MSpace::Space space
     m_rotationTweak.y = MPxTransformationMatrix::rotationValue.y - m_rotationFromUsd.y;
     m_rotationTweak.z = MPxTransformationMatrix::rotationValue.z - m_rotationFromUsd.z;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasRotation())
     {
@@ -1630,7 +1630,7 @@ MStatus TransformationMatrix::rotateTo(const MEulerRotation &e, MSpace::Space sp
     m_rotationTweak.y = MPxTransformationMatrix::rotationValue.y - m_rotationFromUsd.y;
     m_rotationTweak.z = MPxTransformationMatrix::rotationValue.z - m_rotationFromUsd.z;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasRotation())
     {
@@ -1658,7 +1658,7 @@ MStatus TransformationMatrix::rotateBy(const MEulerRotation &e, MSpace::Space sp
     m_rotationTweak.y = MPxTransformationMatrix::rotationValue.y - m_rotationFromUsd.y;
     m_rotationTweak.z = MPxTransformationMatrix::rotationValue.z - m_rotationFromUsd.z;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasRotation())
     {
@@ -1707,7 +1707,7 @@ MStatus TransformationMatrix::setRotateOrientation(const MQuaternion &q, MSpace:
   {
     m_rotateOrientationFromUsd = MPxTransformationMatrix::rotateOrientationValue * m_rotateOrientationTweak.inverse();
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasRotateAxes())
     {
@@ -1731,7 +1731,7 @@ MStatus TransformationMatrix::setRotateOrientation(const MEulerRotation& euler, 
   {
     m_rotateOrientationFromUsd = MPxTransformationMatrix::rotateOrientationValue * m_rotateOrientationTweak.inverse();
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasRotateAxes())
     {
