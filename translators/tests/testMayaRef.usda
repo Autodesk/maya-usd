@@ -3,6 +3,7 @@
 def ALMayaReference "mayaRefPrim"
 {
     asset mayaReference = @./cube.ma@
+    string mayaNamespace = "cube"
 }
 
 def ALMayaReference "otherCube"

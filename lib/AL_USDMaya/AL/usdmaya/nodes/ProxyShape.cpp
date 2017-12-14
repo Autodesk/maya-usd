@@ -40,6 +40,7 @@
 
 #include "maya/MFileIO.h"
 #include "maya/MFnPluginData.h"
+#include "maya/MFnReference.h"
 #include "maya/MHWGeometryUtilities.h"
 #include "maya/MItDependencyNodes.h"
 #include "maya/MPlugArray.h"
@@ -1614,14 +1615,13 @@ void ProxyShape::unloadMayaReferences()
           MObject temp = plugs[i].node();
           if(temp.hasFn(MFn::kReference))
           {
-            MString command = MString("referenceQuery -filename ") + MFnDependencyNode(temp).name();
-            MString referenceFilename;
-            MStatus returnStatus = MGlobal::executeCommand(command, referenceFilename);
-            if (returnStatus != MStatus::kFailure)
-            {
-              TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::unloadMayaReferences removing %s\n", referenceFilename.asChar());
-              MFileIO::removeReference(referenceFilename);
-            }
+            MFnReference mfnRef(temp);
+            MString referenceFilename = mfnRef.fileName(
+                true /*resolvedName*/,
+                true /*includePath*/,
+                true /*includeCopyNumber*/);
+            TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::unloadMayaReferences unloading %s\n", referenceFilename.asChar());
+            MFileIO::unloadReferenceByNode(temp);
           }
         }
       }
