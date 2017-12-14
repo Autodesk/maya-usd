@@ -60,7 +60,6 @@
 
 #include <algorithm>
 #include <iterator>
-#include <boost/filesystem/path.hpp>
 
 namespace AL {
 namespace usdmaya {
@@ -106,20 +105,32 @@ static std::string resolvePath(const std::string& filePath)
   return resolver.Resolve(filePath);
 }
 
+static size_t getLastSlashIndex(const std::string& filePath)
+{
+  size_t slashIndex = filePath.find_last_of("/");
+  if (slashIndex == std::string::npos)
+    slashIndex = filePath.find_last_of("\\");
+
+  return slashIndex;
+}
+
 static std::string resolveRelativePathWithCurrentMayaScenePath(const std::string& filePath)
 {
-  std::string currentFile = MFileIO::currentFile().asChar();
-  if(currentFile.empty())
+  if (filePath.length() < 3)
     return filePath;
 
-  boost::filesystem::path mayaScenePath(currentFile);
-  mayaScenePath.remove_filename();
+  std::string currentFile = MFileIO::currentFile().asChar();
+  if (currentFile.empty())
+    return filePath;
 
+  size_t slashIndex = getLastSlashIndex(currentFile);
+  if (slashIndex == std::string::npos)
+    return filePath;
 
-  boost::filesystem::path usdPath(currentFile);
-  usdPath = usdPath.filename();
-  mayaScenePath /= usdPath;
-  return mayaScenePath.string();
+  std::string dirName = currentFile.substr(0, slashIndex+1);
+  std::string fileName = filePath.substr(2);
+
+  return (dirName + fileName);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
