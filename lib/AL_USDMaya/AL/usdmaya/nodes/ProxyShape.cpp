@@ -48,6 +48,7 @@
 #include "maya/MItDependencyNodes.h"
 #include "maya/MPlugArray.h"
 #include "maya/MNodeClass.h"
+#include "maya/MFileIO.h"
 #include "maya/MCommandResult.h"
 
 #include "pxr/base/arch/systemInfo.h"
@@ -59,6 +60,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <boost/filesystem/path.hpp>
 
 namespace AL {
 namespace usdmaya {
@@ -102,6 +104,22 @@ static std::string resolvePath(const std::string& filePath)
   ArResolver& resolver = ArGetResolver();
 
   return resolver.Resolve(filePath);
+}
+
+static std::string resolveRelativePathWithCurrentMayaScenePath(const std::string& filePath)
+{
+  std::string currentFile = MFileIO::currentFile().asChar();
+  if(currentFile.empty())
+    return filePath;
+
+  boost::filesystem::path mayaScenePath(currentFile);
+  mayaScenePath.remove_filename();
+
+
+  boost::filesystem::path usdPath(currentFile);
+  usdPath = usdPath.filename();
+  mayaScenePath /= usdPath;
+  return mayaScenePath.string();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1133,9 +1151,17 @@ void ProxyShape::loadStage()
   // let the usd stage cache deal with caching the usd stage data
   std::string fileString = TfStringTrimRight(file.asChar());
 
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage original USD file path is %s\n", fileString.c_str());
+
   if (not TfStringStartsWith(fileString, "./"))
   {
     fileString = resolvePath(fileString);
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the USD file path to %s\n", fileString.c_str());
+  }
+  else
+  {
+    fileString = resolveRelativePathWithCurrentMayaScenePath(fileString);
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the relative USD file path to %s\n", fileString.c_str());
   }
 
   // Fall back on checking if path is just a standard absolute path
