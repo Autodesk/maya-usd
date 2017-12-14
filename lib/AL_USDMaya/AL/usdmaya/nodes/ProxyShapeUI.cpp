@@ -230,11 +230,6 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
 
   SdfPathVector paths(shape->selectedPaths().cbegin(), shape->selectedPaths().cend());
   engine->SetSelected(paths);
-//  engine->ClearSelected();
-//  for (auto& path : paths)
-//  {
-//    engine->AddSelected(path, UsdImagingDelegate::ALL_INSTANCES);
-//  }
   engine->SetSelectionColor(GfVec4f(1.0f, 2.0f/3.0f, 0.0f, 1.0f));
   engine->Render(shape->getRootPrim(), params);
 
