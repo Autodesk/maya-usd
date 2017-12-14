@@ -4,7 +4,8 @@
         usdGenSchema.
     """
     subLayers = [
-        @@USD_SCHEMA_PATH@@
+        @@USD_SCHEMA_PATH@@,
+        @@USDGEOM_SCHEMA_PATH@@,
     ]
 ) 
 
@@ -72,7 +73,7 @@ doc = "Data used to import a maya reference."
 
 class ALMayaReference "ALMayaReference"(
   doc = "Data used to import a maya reference."
-  inherits = </Typed>
+  inherits = </Xformable>
   customData = {
         string className = "MayaReference"
         string fileName = "MayaReference"
