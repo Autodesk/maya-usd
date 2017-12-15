@@ -56,6 +56,7 @@ MSyntax UnitTestHarness::createSyntax()
   syn.addFlag("-rp", "-repeat", MSyntax::kLong);
   syn.addFlag("-std", "-stack_trace_depth", MSyntax::kLong);
   syn.addFlag("-tof", "-throw_on_failure");
+  syn.addFlag("-ktf", "-keep_temp_files");
   return syn;
 }
 
@@ -164,7 +165,10 @@ MStatus UnitTestHarness::doIt(const MArgList& args)
   delete [] argv;
   setResult(error_code);
 
-  cleanTemporaryFiles();
+  if(!database.isFlagSet("-ktf"))
+  {
+    cleanTemporaryFiles();
+  }
 
   if(MGlobal::kInteractive == MGlobal::mayaState())
     MGlobal::executeCommand("refresh -suspend false");
