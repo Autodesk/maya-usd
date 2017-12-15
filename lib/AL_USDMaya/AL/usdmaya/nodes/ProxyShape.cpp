@@ -114,23 +114,35 @@ static size_t getLastSlashIndex(const std::string& filePath)
   return slashIndex;
 }
 
+static std::string getMayaSceneFileDir()
+{
+  std::string currentFile = MFileIO::currentFile().asChar();
+  size_t filePathSize = currentFile.size();
+  if(filePathSize < 4)
+    return "";
+
+  // If scene is untitled, the maya file will be MayaWorkspaceDir/untitled :
+  std::string ext = currentFile.substr(filePathSize-3);
+  if (ext != ".ma" && ext != ".mb")
+    return "";
+
+  size_t slashIndex = getLastSlashIndex(currentFile);
+  if (slashIndex == std::string::npos)
+   return "";
+
+  return currentFile.substr(0, slashIndex+1);
+}
 static std::string resolveRelativePathWithCurrentMayaScenePath(const std::string& filePath)
 {
   if (filePath.length() < 3)
     return filePath;
 
-  std::string currentFile = MFileIO::currentFile().asChar();
-  if (currentFile.empty())
+  std::string currentFileDir = getMayaSceneFileDir();
+  if(currentFileDir.empty())
     return filePath;
 
-  size_t slashIndex = getLastSlashIndex(currentFile);
-  if (slashIndex == std::string::npos)
-    return filePath;
-
-  std::string dirName = currentFile.substr(0, slashIndex+1);
   std::string fileName = filePath.substr(2);
-
-  return (dirName + fileName);
+  return (currentFileDir + fileName);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
