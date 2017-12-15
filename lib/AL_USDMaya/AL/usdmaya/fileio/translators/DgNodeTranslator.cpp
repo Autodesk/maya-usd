@@ -23,6 +23,7 @@
 #include "maya/MStatus.h"
 #include "maya/MGlobal.h"
 #include "maya/MPlug.h"
+#include "maya/MPlugArray.h"
 #include "maya/MFnDependencyNode.h"
 #include "maya/MDGModifier.h"
 #include "maya/MMatrixArray.h"
