@@ -132,6 +132,7 @@ static std::string getMayaSceneFileDir()
 
   return currentFile.substr(0, slashIndex+1);
 }
+
 static std::string resolveRelativePathWithCurrentMayaScenePath(const std::string& filePath)
 {
   if (filePath.length() < 3)
