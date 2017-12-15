@@ -545,14 +545,14 @@ double TransformationMatrix::readDouble(const UsdGeomXformOp& op, UsdTimeCode ti
   default:
     break;
   }
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::readDouble %d\n%s\n", result, op.GetOpName().GetText());
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::readDouble %f\n%s\n", result, op.GetOpName().GetText());
   return result;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::pushDouble(const double value, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushDouble %d\n%s\n", value, op.GetOpName().GetText());
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushDouble %f\n%s\n", value, op.GetOpName().GetText());
   UsdDataType attr_type = getAttributeType(op.GetTypeName());
   switch(attr_type)
   {
@@ -1030,7 +1030,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::updateToTime %d\n", time.GetValue());
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::updateToTime %f\n", time.GetValue());
   // if not yet initialized, do not execute this code! (It will crash!).
   if(!m_prim)
   {
@@ -1939,38 +1939,33 @@ void TransformationMatrix::enableReadAnimatedValues(bool enabled)
   // of nothing. This will call my code that will magically construct the transform ops in the right order.
   if(enabled)
   {
-    const MVector nullVec(0, 0, 0);
-    const MVector oneVec(1.0, 1.0, 1.0);
-    const MPoint nullPoint(0, 0, 0);
-    const MQuaternion nullQuat(0, 0, 0, 1.0);
-
     if(!pushPrimToMatrix())
     {
-      if(primHasTranslation() || translation() != nullVec)
-        translateBy(nullVec);
+      if(primHasTranslation() || translation() != MVector::zero)
+        translateBy(MVector::zero);
 
-      if(primHasScale() || scale() != oneVec)
-        scaleBy(oneVec);
+      if(primHasScale() || scale() != MVector::one)
+        scaleBy(MVector::one);
 
-      if(primHasShear() || shear() != nullVec)
-        shearBy(nullVec);
+      if(primHasShear() || shear() != MVector::zero)
+        shearBy(MVector::zero);
 
-      if(primHasScalePivot() || scalePivot() != nullPoint)
+      if(primHasScalePivot() || scalePivot() != MPoint::origin)
         setScalePivot(scalePivot(), MSpace::kTransform, false);
 
-      if(primHasScalePivot() || scalePivot() != nullPoint)
+      if(primHasScalePivot() || scalePivot() != MPoint::origin)
         setScalePivotTranslation(scalePivotTranslation(), MSpace::kTransform);
 
-      if(primHasRotatePivot() || rotatePivot() != nullPoint)
+      if(primHasRotatePivot() || rotatePivot() != MPoint::origin)
         setRotatePivot(rotatePivot(), MSpace::kTransform, false);
 
-      if(primHasRotatePivotTranslate() || rotatePivotTranslation() != nullVec)
+      if(primHasRotatePivotTranslate() || rotatePivotTranslation() != MVector::zero)
         setRotatePivotTranslation(rotatePivotTranslation(), MSpace::kTransform);
 
-      if(primHasRotation() || rotation() != nullQuat)
-        rotateBy(nullQuat);
+      if(primHasRotation() || rotation() != MQuaternion::identity)
+        rotateBy(MQuaternion::identity);
 
-      if(primHasRotateAxes() || rotateOrientation() != nullQuat)
+      if(primHasRotateAxes() || rotateOrientation() != MQuaternion::identity)
         setRotateOrientation(rotateOrientation(), MSpace::kTransform, false);
     }
     else
@@ -2005,38 +2000,33 @@ void TransformationMatrix::enablePushToPrim(bool enabled)
   // of nothing. This will call my code that will magically construct the transform ops in the right order.
   if(enabled && getTimeCode() == UsdTimeCode::Default())
   {
-    const MVector nullVec(0, 0, 0);
-    const MVector oneVec(1.0, 1.0, 1.0);
-    const MPoint nullPoint(0, 0, 0);
-    const MQuaternion nullQuat(0, 0, 0, 1.0);
-
     if(!pushPrimToMatrix())
     {
-      if(primHasTranslation() || translation() != nullVec)
-        translateBy(nullVec);
+      if(primHasTranslation() || translation() != MVector::zero)
+        translateBy(MVector::zero);
 
-      if(primHasScale() || scale() != oneVec)
-        scaleBy(oneVec);
+      if(primHasScale() || scale() != MVector::one)
+        scaleBy(MVector::one);
 
-      if(primHasShear() || shear() != nullVec)
-        shearBy(nullVec);
+      if(primHasShear() || shear() != MVector::zero)
+        shearBy(MVector::zero);
 
-      if(primHasScalePivot() || scalePivot() != nullPoint)
+      if(primHasScalePivot() || scalePivot() != MPoint::origin)
         setScalePivot(scalePivot(), MSpace::kTransform, false);
 
-      if(primHasScalePivotTranslate() || scalePivotTranslation() != nullPoint)
+      if(primHasScalePivotTranslate() || scalePivotTranslation() != MPoint::origin)
         setScalePivotTranslation(scalePivotTranslation(), MSpace::kTransform);
 
-      if(primHasRotatePivot() || rotatePivot() != nullPoint)
+      if(primHasRotatePivot() || rotatePivot() != MPoint::origin)
         setRotatePivot(rotatePivot(), MSpace::kTransform, false);
 
-      if(primHasRotatePivotTranslate() || rotatePivotTranslation() != nullVec)
+      if(primHasRotatePivotTranslate() || rotatePivotTranslation() != MVector::zero)
         setRotatePivotTranslation(rotatePivotTranslation(), MSpace::kTransform);
 
-      if(primHasRotation() || rotation() != nullQuat)
-        rotateBy(nullQuat);
+      if(primHasRotation() || rotation() != MQuaternion::identity)
+        rotateBy(MQuaternion::identity);
 
-      if(primHasRotateAxes() || rotateOrientation() != nullQuat)
+      if(primHasRotateAxes() || rotateOrientation() != MQuaternion::identity)
         setRotateOrientation(rotateOrientation(), MSpace::kTransform, false);
     }
     else

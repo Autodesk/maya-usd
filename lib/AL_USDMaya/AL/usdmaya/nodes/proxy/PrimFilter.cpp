@@ -15,9 +15,6 @@ PrimFilter::PrimFilter(const SdfPathVector& previousPrims, const std::vector<Usd
   m_removedPrimSet.assign(previousPrims.begin(), previousPrims.end());
   std::sort(m_removedPrimSet.begin(), m_removedPrimSet.end(),  [](const SdfPath& a, const SdfPath& b){ return b < a; } );
 
-  // to see if no prims are found
-  TfToken nullToken;
-
   for(auto it = m_newPrimSet.begin(); it != m_newPrimSet.end(); )
   {
     UsdPrim prim = *it;
@@ -34,41 +31,23 @@ PrimFilter::PrimFilter(const SdfPathVector& previousPrims, const std::vector<Usd
     bool requiresParent = false;
     proxy->getTypeInfo(newType, supportsUpdate, requiresParent);
 
-    if(nullToken == type)
+    // if the type remains the same, and the type supports update
+    if(supportsUpdate && type == newType)
     {
-      // all good, prim will remain in the new set (we have no entry for it)
-      if(requiresParent)
+      // locate the path and delete from the removed set (we do not want to delete this prim!
+      auto iter = std::lower_bound(m_removedPrimSet.begin(), m_removedPrimSet.end(), path, [](const SdfPath& a, const SdfPath& b){ return b < a; } );
+      if(iter != removedPrimSet().end() && *iter == path)
       {
-        m_transformsToCreate.push_back(prim);
+        m_removedPrimSet.erase(iter);
+        it = m_newPrimSet.erase(lastIt);
+        m_updatablePrimSet.push_back(prim);
+        requiresParent = false;
       }
     }
-    else
+    // if we need a transform, make a note of it now
+    if(requiresParent)
     {
-      // if the type remains the same, and the type supports update
-      if(supportsUpdate)
-      {
-        if(type == prim.GetTypeName())
-        {
-          // add to updatable prim list
-          m_updatablePrimSet.push_back(prim);
-
-          // locate the path and delete from the removed set (we do not want to delete this prim!
-          auto iter = std::lower_bound(m_removedPrimSet.begin(), m_removedPrimSet.end(), path, [](const SdfPath& a, const SdfPath& b){ return b < a; } );
-          if(iter != removedPrimSet().end() && *iter == path)
-          {
-            m_removedPrimSet.erase(iter);
-            it = m_newPrimSet.erase(lastIt);
-          }
-        }
-      }
-      else
-      {
-        // if we need a transform, make a note of it now
-        if(requiresParent)
-        {
-          m_transformsToCreate.push_back(prim);
-        }
-      }
+      m_transformsToCreate.push_back(prim);
     }
   }
 }

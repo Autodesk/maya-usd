@@ -20,7 +20,10 @@
 #include "AL/usdmaya/fileio/NodeFactory.h"
 #include "AL/usdmaya/fileio/translators/CameraTranslator.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
+#include "AL/usdmaya/StageCache.h"
 
+
+#include "maya/MFileIO.h"
 #include "maya/MFnDagNode.h"
 #include "maya/MDagModifier.h"
 
@@ -152,5 +155,68 @@ TEST(translators_CameraTranslator, animated_io)
 
     EXPECT_EQ(MStatus(MS::kSuccess), mod.undoIt());
   }
+}
+
+TEST(translators_CameraTranslator, cameraShapeName)
+{
+  auto constructTestUSDFile = []() {
+    const std::string temp_bootstrap_path = "/tmp/AL_USDMayaTests_camShapeName.usda";
+
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomXform root = UsdGeomXform::Define(stage, SdfPath("/root"));
+    UsdPrim geo = stage->DefinePrim(SdfPath("/root/geo"), TfToken("xform"));
+    UsdPrim cam = stage->DefinePrim(SdfPath("/root/geo/cam"), TfToken("Camera"));
+
+    stage->Export(temp_bootstrap_path, false);
+    return MString(temp_bootstrap_path.c_str());
+  };
+
+  auto constructCamTestCommand = [] (const MString& bootstrap_path)
+  {
+    MString cmd = "AL_usdmaya_ProxyShapeImport -file \"";
+    cmd += bootstrap_path;
+    cmd += "\"";
+    return cmd;
+  };
+
+  auto getStageFromCache = [] ()
+  {
+    auto usdStageCache = AL::usdmaya::StageCache::Get();
+    if(usdStageCache.IsEmpty())
+    {
+      return UsdStageRefPtr();
+    }
+    return usdStageCache.GetAllStages()[0];
+  };
+
+  auto assertSdfPathIsValid = [] (UsdStageRefPtr usdStage, const std::string &path)
+  {
+    EXPECT_TRUE(usdStage->GetPrimAtPath(SdfPath(path)).IsValid());
+  };
+
+  MString bootstrap_path = constructTestUSDFile();
+  MFileIO::newFile(true);
+  MGlobal::executeCommand(constructCamTestCommand(bootstrap_path), false, true);
+  auto stage = getStageFromCache();
+  ASSERT_TRUE(stage);
+  assertSdfPathIsValid(stage, "/root");
+  assertSdfPathIsValid(stage, "/root/geo");
+  assertSdfPathIsValid(stage, "/root/geo/cam");
+  UsdPrim camPrim = stage->GetPrimAtPath(SdfPath("/root/geo/cam"));
+  ASSERT_TRUE(camPrim .IsValid());
+  ASSERT_EQ("Camera", camPrim.GetTypeName());
+
+  MSelectionList sl;
+  MObject camObj;
+  sl.add("cam");
+  sl.getDependNode(0, camObj);
+  ASSERT_FALSE(camObj.isNull());
+  MFnDagNode camDag(camObj);
+  ASSERT_EQ(MString("AL_usdmaya_Transform"), camDag.typeName());
+  ASSERT_EQ(MString("cam"), camDag.name());
+  ASSERT_EQ(1, camDag.childCount());
+  MFnDagNode shapeDag(camDag.child(0));
+  ASSERT_EQ(MString("camera"), shapeDag.typeName());
+  ASSERT_EQ(MString("camShape"), shapeDag.name());
 }
 
