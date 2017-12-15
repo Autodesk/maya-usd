@@ -143,17 +143,17 @@ void TransformationMatrix::setPrim(const UsdPrim& prim)
     {
       initialiseToPrim(!MFileIO::isOpeningFile());
     }
-  }
 
-  MPxTransformationMatrix::scaleValue = m_scaleFromUsd;
-  MPxTransformationMatrix::rotationValue = m_rotationFromUsd;
-  MPxTransformationMatrix::translationValue = m_translationFromUsd;
-  MPxTransformationMatrix::shearValue = m_shearFromUsd;
-  MPxTransformationMatrix::scalePivotValue = m_scalePivotFromUsd;
-  MPxTransformationMatrix::scalePivotTranslationValue = m_scalePivotTranslationFromUsd;
-  MPxTransformationMatrix::rotatePivotValue = m_rotatePivotFromUsd;
-  MPxTransformationMatrix::rotatePivotTranslationValue = m_rotatePivotTranslationFromUsd;
-  MPxTransformationMatrix::rotateOrientationValue = m_rotateOrientationFromUsd;
+    MPxTransformationMatrix::scaleValue = m_scaleFromUsd;
+    MPxTransformationMatrix::rotationValue = m_rotationFromUsd;
+    MPxTransformationMatrix::translationValue = m_translationFromUsd;
+    MPxTransformationMatrix::shearValue = m_shearFromUsd;
+    MPxTransformationMatrix::scalePivotValue = m_scalePivotFromUsd;
+    MPxTransformationMatrix::scalePivotTranslationValue = m_scalePivotTranslationFromUsd;
+    MPxTransformationMatrix::rotatePivotValue = m_rotatePivotFromUsd;
+    MPxTransformationMatrix::rotatePivotTranslationValue = m_rotatePivotTranslationFromUsd;
+    MPxTransformationMatrix::rotateOrientationValue = m_rotateOrientationFromUsd;
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
