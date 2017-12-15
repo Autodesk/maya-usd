@@ -43,16 +43,17 @@ IGNORE_USD_WARNINGS_POP
 static MPlug getPlugSource(const MPlug &plug, MStatus *status)
 {
   // MPlug::source() is a new API since Maya 2016-ex2.
-  if (MAYA_API_VERSION > 201649)
+#if MAYA_API_VERSION > 201649
     return plug.source(status);
-
+#else
   MPlugArray sourcePlugArray;
-  plug.connectedTo(sourcePlugArray, false, true, status);
+  plug.connectedTo(sourcePlugArray, true, false, status);
 
   if (sourcePlugArray.length())
     return sourcePlugArray[0];
 
   return MPlug();
+#endif
 }
 
 namespace {
