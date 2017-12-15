@@ -1130,6 +1130,24 @@ TEST(ProxyShape, findExcludedGeometry)
   AL_USDMAYA_UNTESTED;
 }
 
+// void findExcludedGeometry();
+TEST(ProxyShape, relativePathSupport)
+{
+  const MString emptyScene = MString(AL_USDMAYA_TEST_DATA) + "/empty_scene/empty_scene.ma";
+  MStatus stat = MFileIO::open(emptyScene, NULL, true);
+  EXPECT_EQ(MStatus(MS::kSuccess), stat);
+
+  const MString bootstrapPath =  MString(AL_USDMAYA_TEST_DATA) + "/empty_scene/bootstrap.usda";
+  UsdStageCache &cache = AL::usdmaya::StageCache::Get();
+  std::vector<UsdStageRefPtr> stages = cache.GetAllStages();
+  EXPECT_TRUE(not stages.empty());
+
+  UsdStageRefPtr stage = stages[0];
+  EXPECT_TRUE(stage);
+
+  std::string realPath = stage->GetRootLayer()->GetRealPath();
+  EXPECT_EQ(realPath, bootstrapPath);
+}
 //
 // funcs that aren't easily testable:
 //
