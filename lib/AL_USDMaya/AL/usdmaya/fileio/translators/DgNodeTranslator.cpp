@@ -146,7 +146,7 @@ MStatus DgNodeTranslator::setFloatAttrAnim(const MObject node, const MObject att
   MFnAnimCurve fnCurve;
   MDGModifier dgmod;
 
-  srcPlug = plug.source(&status);
+  srcPlug = getPlugSource(plug, &status);
   AL_MAYA_CHECK_ERROR(status, errorString);
   if(!srcPlug.isNull())
   {
@@ -2613,6 +2613,22 @@ void DgNodeTranslator::copyAttributeValue(const MPlug& plug, UsdAttribute& usdAt
 
   default: break;
   }
+}
+
+MPlug DgNodeTranslator::getPlugSource(const MPlug &plug, MStatus *status)
+{
+  // MPlug::source() is a new API since Maya 2016-ex2.
+#if MAYA_API_VERSION > 201649
+    return plug.source(status);
+#else
+  MPlugArray sourcePlugArray;
+  plug.connectedTo(sourcePlugArray, true, false, status);
+
+  if (sourcePlugArray.length())
+    return sourcePlugArray[0];
+
+  return MPlug();
+#endif
 }
 
 //----------------------------------------------------------------------------------------------------------------------
