@@ -40,6 +40,21 @@ IGNORE_USD_WARNINGS_PUSH
 IGNORE_USD_WARNINGS_POP
 
 
+static MPlug getPlugSource(const MPlug &plug, MStatus *status)
+{
+  // MPlug::source() is a new API since Maya 2016-ex2.
+  if (MAYA_API_VERSION > 201649)
+    return plug.source(status);
+
+  MPlugArray sourcePlugArray;
+  plug.connectedTo(sourcePlugArray, false, true, status);
+
+  if (sourcePlugArray.length())
+    return sourcePlugArray[0];
+
+  return MPlug();
+}
+
 namespace {
   // If the given source and destArrayPlug are already connected, returns the index they are
   // connected at; otherwise, returns the lowest index in the destArray that does not already
@@ -67,7 +82,7 @@ namespace {
       {
         elemPlug = destArrayPlug.connectionByPhysicalIndex(connectedI, &status);
         AL_MAYA_CHECK_ERROR(status, MString("failed to get connection ") + connectedI + " on "+ destArrayPlug.name());
-        elemSrcPlug = elemPlug.source(&status);
+        elemSrcPlug = getPlugSource(elemPlug, &status);
         AL_MAYA_CHECK_ERROR(status, MString("failed to get source for ") + elemPlug.name());
         if (!elemSrcPlug.isNull())
         {
