@@ -217,6 +217,7 @@ class ProxyShapeSelect
 {
   nodes::SelectionUndoHelper* m_helper;
 public:
+  ProxyShapeSelect () : m_helper(0) {}
   ~ProxyShapeSelect() { delete m_helper; }
   AL_MAYA_DECLARE_COMMAND();
 private:
