@@ -22,6 +22,7 @@
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
+#include "AL/usdmaya/EventHandler.h"
 #include "maya/MPxSurfaceShape.h"
 #include "maya/MEventMessage.h"
 #include "maya/MNodeMessage.h"
@@ -198,6 +199,8 @@ struct FindLockedPrimsLogic : public HierarchyIterationLogic
 
 typedef const HierarchyIterationLogic*  HierarchyIterationLogics[3];
 
+extern EventId kPreClearStageCache;
+extern EventId kPostClearStageCache;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A custom proxy shape node that attaches itself to a USD file, and then renders it.
@@ -209,11 +212,168 @@ class ProxyShape
   : public MPxSurfaceShape,
     public maya::NodeHelper,
     public proxy::PrimFilterInterface,
+    public MayaNodeEvents,
     public TfWeakBase
 {
   friend class SelectionUndoHelper;
   friend class ProxyShapeUI;
 public:
+
+  /*
+
+  EventId kPreStageLoaded;
+  EventId kPostStageLoaded;
+  EventId kConstructGLEngine;
+  EventId kDestroyGLEngine;
+  EventId kPreSelectionChanged;
+  EventId kPostSelectionChanged;
+  EventId kPreVariantChanged;
+  EventId kPostVariantChanged;
+  EventId kPreSerialiseContext;
+  EventId kPostSerialiseContext;
+  EventId kPreDeserialiseContext;
+  EventId kPostDeserialiseContext;
+  EventId kPreSerialiseTransformRefs;
+  EventId kPostSerialiseTransformRefs;
+  EventId kPreDeserialiseTransformRefs;
+  EventId kPostDeserialiseTransformRefs;
+  EventId kEditTargetChanged;
+
+  CallbackId kPreStageLoadedCB;
+  CallbackId kPostStageLoadedCB;
+  CallbackId kConstructGLEngineCB;
+  CallbackId kDestroyGLEngineCB;
+  CallbackId kPreSelectionChangedCB;
+  CallbackId kPostSelectionChangedCB;
+  CallbackId kPreVariantChangedCB;
+  CallbackId kPostVariantChangedCB;
+  CallbackId kPreSerialiseContextCB;
+  CallbackId kPostSerialiseContextCB;
+  CallbackId kPreDeserialiseContextCB;
+  CallbackId kPostDeserialiseContextCB;
+  CallbackId kPreSerialiseTransformRefsCB;
+  CallbackId kPostSerialiseTransformRefsCB;
+  CallbackId kPreDeserialiseTransformRefsCB;
+  CallbackId kPostDeserialiseTransformRefsCB;
+  CallbackId kEditTargetChangedCB;
+
+  static void kPreStageLoadedCBfunc(void* userData, ProxyShape* shape) { std::cout << "kPreStageLoaded" << std::endl; }
+  static void kPostStageLoadedCBfunc(void* userData, ProxyShape* shape) { std::cout << "kPostStageLoaded" << std::endl; }
+  static void kConstructGLEngineCBfunc(void* userData, ProxyShape* shape) { std::cout << "kConstructGLEngine" << std::endl; }
+  static void kDestroyGLEngineCBfunc(void* userData, ProxyShape* shape) { std::cout << "kDestroyGLEngine" << std::endl; }
+  static void kPreSelectionChangedCBfunc(void* userData, ProxyShape* shape) { std::cout << "kPreSelectionChanged" << std::endl; }
+  static void kPostSelectionChangedCBfunc(void* userData, ProxyShape* shape) { std::cout << "kPostSelectionChanged" << std::endl; }
+  static void kPreVariantChangedCBfunc(void* userData, ProxyShape* shape) { std::cout << "kPreVariantChanged" << std::endl; }
+  static void kPostVariantChangedCBfunc(void* userData, ProxyShape* shape) { std::cout << "kPostVariantChanged" << std::endl; }
+  static void kPreSerialiseContextCBfunc(void* userData, ProxyShape* shape) { std::cout << "kPreSerialiseContext" << std::endl; }
+  static void kPostSerialiseContextCBfunc(void* userData, ProxyShape* shape) { std::cout << "kPostSerialiseContext" << std::endl; }
+  static void kPreDeserialiseContextCBfunc(void* userData, ProxyShape* shape) { std::cout << "kPreDeserialiseContext" << std::endl; }
+  static void kPostDeserialiseContextCBfunc(void* userData, ProxyShape* shape) { std::cout << "kPostDeserialiseContext" << std::endl; }
+  static void kPreSerialiseTransformRefsCBfunc(void* userData, ProxyShape* shape) { std::cout << "kPreSerialiseTransformRefs" << std::endl; }
+  static void kPostSerialiseTransformRefsCBfunc(void* userData, ProxyShape* shape) { std::cout << "kPostSerialiseTransformRefs" << std::endl; }
+  static void kPreDeserialiseTransformRefsCBfunc(void* userData, ProxyShape* shape) { std::cout << "kPreDeserialiseTransformRefs" << std::endl; }
+  static void kPostDeserialiseTransformRefsCBfunc(void* userData, ProxyShape* shape) { std::cout << "kPostDeserialiseTransformRefs" << std::endl; }
+  static void kEditTargetChangedCBfunc(void* userData, ProxyShape* shape) { std::cout << "kEditTargetChanged" << std::endl; }
+
+*/
+  void registerEvents()
+  {
+    registerEvent("PreStageLoaded");
+    registerEvent("PostStageLoaded");
+    registerEvent("ConstructGLEngine");
+    registerEvent("DestroyGLEngine");
+    registerEvent("PreSelectionChanged");
+    registerEvent("PostSelectionChanged");
+    registerEvent("PreVariantChanged");
+    registerEvent("PostVariantChanged");
+    registerEvent("PreSerialiseContext");
+    registerEvent("PostSerialiseContext");
+    registerEvent("PreDeserialiseContext");
+    registerEvent("PostDeserialiseContext");
+    registerEvent("PreSerialiseTransformRefs");
+    registerEvent("PostSerialiseTransformRefs");
+    registerEvent("PreDeserialiseTransformRefs");
+    registerEvent("PostDeserialiseTransformRefs");
+    registerEvent("EditTargetChanged");
+    /*
+    kPreStageLoaded = g_eventRegistrar.registerEventDispatcher("PreStageLoaded", this, 0);
+    kPostStageLoaded = g_eventRegistrar.registerEventDispatcher("PostStageLoaded", this, 0);
+    kConstructGLEngine = g_eventRegistrar.registerEventDispatcher("ConstructGLEngine", this, 0);
+    kDestroyGLEngine = g_eventRegistrar.registerEventDispatcher("DestroyGLEngine", this, 0);
+    kPreSelectionChanged = g_eventRegistrar.registerEventDispatcher("PreSelectionChanged", this, 0);
+    kPostSelectionChanged = g_eventRegistrar.registerEventDispatcher("PostSelectionChanged", this, 0);
+    kPreVariantChanged = g_eventRegistrar.registerEventDispatcher("PreVariantChanged", this, 0);
+    kPostVariantChanged = g_eventRegistrar.registerEventDispatcher("PostVariantChanged", this, 0);
+    kPreSerialiseContext = g_eventRegistrar.registerEventDispatcher("PreSerialiseContext", this, 0);
+    kPostSerialiseContext = g_eventRegistrar.registerEventDispatcher("PostSerialiseContext", this, 0);
+    kPreDeserialiseContext = g_eventRegistrar.registerEventDispatcher("PreDeserialiseContext", this, 0);
+    kPostDeserialiseContext = g_eventRegistrar.registerEventDispatcher("PostDeserialiseContext", this, 0);
+    kPreSerialiseTransformRefs = g_eventRegistrar.registerEventDispatcher("PreSerialiseTransformRefs", this, 0);
+    kPostSerialiseTransformRefs = g_eventRegistrar.registerEventDispatcher("PostSerialiseTransformRefs", this, 0);
+    kPreDeserialiseTransformRefs = g_eventRegistrar.registerEventDispatcher("PreDeserialiseTransformRefs", this, 0);
+    kPostDeserialiseTransformRefs = g_eventRegistrar.registerEventDispatcher("PostDeserialiseTransformRefs", this, 0);
+    kEditTargetChanged = g_eventRegistrar.registerEventDispatcher("EditTargetChanged", this, 0);
+
+    kPreStageLoadedCB = g_eventRegistrar.registerEventCallback(kPreStageLoaded, "PreStageLoaded", kPreStageLoadedCBfunc, 1000, 0);
+    kPostStageLoadedCB = g_eventRegistrar.registerEventCallback(kPostStageLoaded, "PostStageLoaded", kPostStageLoadedCBfunc, 1000, 0);
+    kConstructGLEngineCB = g_eventRegistrar.registerEventCallback(kConstructGLEngine, "ConstructGLEngine", kConstructGLEngineCBfunc, 1000, 0);
+    kDestroyGLEngineCB = g_eventRegistrar.registerEventCallback(kDestroyGLEngine, "DestroyGLEngine", kDestroyGLEngineCBfunc, 1000, 0);
+    kPreSelectionChangedCB = g_eventRegistrar.registerEventCallback(kPreSelectionChanged, "PreSelectionChanged", kPreSelectionChangedCBfunc, 1000, 0);
+    kPostSelectionChangedCB = g_eventRegistrar.registerEventCallback(kPostSelectionChanged, "PostSelectionChanged", kPostSelectionChangedCBfunc, 1000, 0);
+    kPreVariantChangedCB = g_eventRegistrar.registerEventCallback(kPreVariantChanged, "PreVariantChanged", kPreVariantChangedCBfunc, 1000, 0);
+    kPostVariantChangedCB = g_eventRegistrar.registerEventCallback(kPostVariantChanged, "PostVariantChanged", kPostVariantChangedCBfunc, 1000, 0);
+    kPreSerialiseContextCB = g_eventRegistrar.registerEventCallback(kPreSerialiseContext, "PreSerialiseContext", kPreSerialiseContextCBfunc, 1000, 0);
+    kPostSerialiseContextCB = g_eventRegistrar.registerEventCallback(kPostSerialiseContext, "PostSerialiseContext", kPostSerialiseContextCBfunc, 1000, 0);
+    kPreDeserialiseContextCB = g_eventRegistrar.registerEventCallback(kPreDeserialiseContext, "PreDeserialiseContext", kPreDeserialiseContextCBfunc, 1000, 0);
+    kPostDeserialiseContextCB = g_eventRegistrar.registerEventCallback(kPostDeserialiseContext, "PostDeserialiseContext", kPostDeserialiseContextCBfunc, 1000, 0);
+    kPreSerialiseTransformRefsCB = g_eventRegistrar.registerEventCallback(kPreSerialiseTransformRefs, "PreSerialiseTransformRefs", kPreSerialiseContextCBfunc, 1000, 0);
+    kPostSerialiseTransformRefsCB = g_eventRegistrar.registerEventCallback(kPostSerialiseTransformRefs, "PostSerialiseTransformRefs", kPostSerialiseContextCBfunc, 1000, 0);
+    kPreDeserialiseTransformRefsCB = g_eventRegistrar.registerEventCallback(kPreDeserialiseTransformRefs, "PreDeserialiseTransformRefs", kPreDeserialiseContextCBfunc, 1000, 0);
+    kPostDeserialiseTransformRefsCB = g_eventRegistrar.registerEventCallback(kPostDeserialiseTransformRefs, "PostDeserialiseTransformRefs", kPostDeserialiseContextCBfunc, 1000, 0);
+    kEditTargetChangedCB = g_eventRegistrar.registerEventCallback(kEditTargetChanged, "EditTargetChanged", kEditTargetChangedCBfunc, 1000, 0);
+    */
+  }
+
+  void unregisterEvents()
+  {
+    /*
+    g_eventRegistrar.unregisterEventCallback(kPreStageLoadedCB);
+    g_eventRegistrar.unregisterEventCallback(kPostStageLoadedCB);
+    g_eventRegistrar.unregisterEventCallback(kConstructGLEngineCB);
+    g_eventRegistrar.unregisterEventCallback(kDestroyGLEngineCB);
+    g_eventRegistrar.unregisterEventCallback(kPreSelectionChangedCB);
+    g_eventRegistrar.unregisterEventCallback(kPostSelectionChangedCB);
+    g_eventRegistrar.unregisterEventCallback(kPreVariantChangedCB);
+    g_eventRegistrar.unregisterEventCallback(kPostVariantChangedCB);
+    g_eventRegistrar.unregisterEventCallback(kPreSerialiseContextCB);
+    g_eventRegistrar.unregisterEventCallback(kPostSerialiseContextCB);
+    g_eventRegistrar.unregisterEventCallback(kPreDeserialiseContextCB);
+    g_eventRegistrar.unregisterEventCallback(kPostDeserialiseContextCB);
+    g_eventRegistrar.unregisterEventCallback(kPreSerialiseTransformRefsCB);
+    g_eventRegistrar.unregisterEventCallback(kPostSerialiseTransformRefsCB);
+    g_eventRegistrar.unregisterEventCallback(kPreDeserialiseTransformRefsCB);
+    g_eventRegistrar.unregisterEventCallback(kPostDeserialiseTransformRefsCB);
+    g_eventRegistrar.unregisterEventCallback(kEditTargetChangedCB);
+
+    g_eventRegistrar.unregisterEventDispatcher(kPreStageLoaded);
+    g_eventRegistrar.unregisterEventDispatcher(kPostStageLoaded);
+    g_eventRegistrar.unregisterEventDispatcher(kConstructGLEngine);
+    g_eventRegistrar.unregisterEventDispatcher(kDestroyGLEngine);
+    g_eventRegistrar.unregisterEventDispatcher(kPreSelectionChanged);
+    g_eventRegistrar.unregisterEventDispatcher(kPostSelectionChanged);
+    g_eventRegistrar.unregisterEventDispatcher(kPreVariantChanged);
+    g_eventRegistrar.unregisterEventDispatcher(kPostVariantChanged);
+    g_eventRegistrar.unregisterEventDispatcher(kPreSerialiseContext);
+    g_eventRegistrar.unregisterEventDispatcher(kPostSerialiseContext);
+    g_eventRegistrar.unregisterEventDispatcher(kPreDeserialiseContext);
+    g_eventRegistrar.unregisterEventDispatcher(kPostDeserialiseContext);
+    g_eventRegistrar.unregisterEventDispatcher(kPreSerialiseTransformRefs);
+    g_eventRegistrar.unregisterEventDispatcher(kPostSerialiseTransformRefs);
+    g_eventRegistrar.unregisterEventDispatcher(kPreDeserialiseTransformRefs);
+    g_eventRegistrar.unregisterEventDispatcher(kPostDeserialiseTransformRefs);
+    g_eventRegistrar.unregisterEventDispatcher(kEditTargetChanged);
+    */
+  }
 
   /// \brief  a mapping between a maya transform (or MObject::kNullObj), and the prim that exists at that location
   ///         in the DAG graph.

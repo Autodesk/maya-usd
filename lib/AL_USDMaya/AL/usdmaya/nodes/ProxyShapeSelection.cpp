@@ -32,6 +32,7 @@ namespace AL {
 namespace usdmaya {
 namespace nodes {
 namespace {
+typedef void (*proxy_function_prototype)(void* userData, AL::usdmaya::nodes::ProxyShape* proxyInstance);
 inline void addObjToSelectionList(MSelectionList& list, const MObject& object)
 {
   if(object.hasFn(MFn::kDagNode))
@@ -1260,7 +1261,11 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper)
 
   if(newlySelectedPaths.length())
   {
+    triggerEvent("PreSelectionChanged");
+
     MPxCommand::setResult(newlySelectedPaths);
+
+    triggerEvent("PostSelectionChanged");
   }
 
   m_pleaseIgnoreSelection = false;

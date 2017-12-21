@@ -41,6 +41,7 @@ list(APPEND AL_usdmaya_headers
 list(APPEND AL_usdmaya_source
         AL/usdmaya/AttributeType.cpp
         AL/usdmaya/DrivenTransformsData.cpp
+        AL/usdmaya/EventHandler.cpp
         AL/usdmaya/Global.cpp
         AL/usdmaya/StageCache.cpp
         AL/usdmaya/StageData.cpp
@@ -53,6 +54,7 @@ list(APPEND AL_usdmaya_source
 
 list(APPEND AL_usdmaya_cmds_headers
         AL/usdmaya/cmds/DebugCommands.h
+        AL/usdmaya/cmds/EventCommand.h
         AL/usdmaya/cmds/LayerCommands.h
         AL/usdmaya/cmds/ProxyShapeCommands.h
         AL/usdmaya/cmds/ProxyShapeSelectCommands.h
@@ -61,6 +63,7 @@ list(APPEND AL_usdmaya_cmds_headers
 )
 list(APPEND AL_usdmaya_cmds_source
         AL/usdmaya/cmds/DebugCommands.cpp
+        AL/usdmaya/cmds/EventCommand.cpp
         AL/usdmaya/cmds/LayerCommands.cpp
         AL/usdmaya/cmds/ProxyShapeCommands.cpp
         AL/usdmaya/cmds/ProxyShapeSelectCommands.cpp

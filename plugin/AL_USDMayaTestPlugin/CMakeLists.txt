@@ -30,6 +30,7 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/nodes/test_ProxyShapeSelectabilityDB.cpp
         AL/usdmaya/nodes/proxy/test_DrivenTransforms.cpp
         AL/usdmaya/nodes/proxy/test_PrimFilter.cpp
+        AL/usdmaya/test_EventHandler.cpp
         AL/usdmaya/test_SelectabilityDB.cpp
         test_maya_MenuBuilder.cpp
         test_maya_NodeHelper.cpp
