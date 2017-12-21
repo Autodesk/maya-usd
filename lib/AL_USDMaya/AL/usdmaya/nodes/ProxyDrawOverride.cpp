@@ -352,8 +352,8 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
     ptr->m_engine->Render(ptr->m_rootPrim, ptr->m_params);
 
     auto view = M3dView::active3dView();
-    const SdfPathVector& paths1 = ptr->m_shape->selectedPaths();
-    const SdfPathVector& paths2 = ptr->m_shape->selectionList().paths();
+    const auto& paths1 = ptr->m_shape->selectedPaths();
+    const auto& paths2 = ptr->m_shape->selectionList().paths();
     SdfPathVector combined;
     combined.reserve(paths1.size() + paths2.size());
     combined.insert(combined.end(), paths1.begin(), paths1.end());

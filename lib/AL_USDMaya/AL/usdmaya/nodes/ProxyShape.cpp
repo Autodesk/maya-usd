@@ -40,6 +40,7 @@
 
 #include "maya/MFileIO.h"
 #include "maya/MFnPluginData.h"
+#include "maya/MFnReference.h"
 #include "maya/MHWGeometryUtilities.h"
 #include "maya/MItDependencyNodes.h"
 #include "maya/MPlugArray.h"
@@ -440,7 +441,7 @@ ProxyShape::ProxyShape()
 
   TfWeakPtr<ProxyShape> me(this);
 
-  m_variantChangedNoticeKey = TfNotice::Register(me, &ProxyShape::variantSelectionListener, m_stage);
+  m_variantChangedNoticeKey = TfNotice::Register(me, &ProxyShape::variantSelectionListener);
   m_objectsChangedNoticeKey = TfNotice::Register(me, &ProxyShape::onObjectsChanged, m_stage);
   m_editTargetChanged = TfNotice::Register(me, &ProxyShape::onEditTargetChanged, m_stage);
 
@@ -678,7 +679,7 @@ void ProxyShape::onEditTargetChanged(UsdNotice::StageEditTargetChanged const& no
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& previousPrims)
+void ProxyShape::onPrimResync(SdfPath primPath, SdfPathVector& previousPrims)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::onPrimResync checking %s\n", primPath.GetText());
 
@@ -700,7 +701,7 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& previousPri
   std::vector<UsdPrim> newPrimSet = huntForNativeNodesUnderPrim(dag_path, primPath, translatorManufacture());
 
   proxy::PrimFilter filter(previousPrims, newPrimSet, this);
-  m_variantSwitchedPrims.clear();
+  previousPrims.clear();
 
   if(TfDebug::IsEnabled(ALUSDMAYA_TRANSLATORS)){
     std::cout << "new prims" << std::endl;
@@ -954,7 +955,7 @@ void ProxyShape::onPrePrimChanged(const SdfPath& path, SdfPathVector& outPathVec
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& notice, UsdStageWeakPtr const& sender)
+void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& notice)
 // In order to detect changes to the variant selection we listen on the SdfNotice::LayersDidChange global notice which is
 // sent to indicate that layer contents have changed.  We are then able to access the change list to check if a variant
 // selection change happened.  If so, we trigger a ProxyShapePostLoadProcess() which will regenerate the alTransform
@@ -980,10 +981,11 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
         {
           triggerEvent("PreVariantChangedCB");
 
-          TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::variantSelectionListener oldPath=%s, oldIdentifier=%s, path=%s\n",
+          TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::variantSelectionListener oldPath=%s, oldIdentifier=%s, path=%s, layer=%s\n",
                                          entry.oldPath.GetString().c_str(),
                                          entry.oldIdentifier.c_str(),
-                                         path.GetText());
+                                         path.GetText(),
+                                         itr->first->GetIdentifier().c_str());
           if(!m_compositionHasChanged)
           {
             TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::Already in a composition change state. Ignoring \n");
@@ -1500,7 +1502,6 @@ UsdStageRefPtr ProxyShape::getUsdStage() const
   MPlug plug(thisMObject(), m_outStageData);
   MObject data;
   plug.getValue(data);
-  plug.getValue(data);
   MFnPluginData fnData(data);
   StageData* outData = static_cast<StageData*>(fnData.data());
   if(outData)
@@ -1663,14 +1664,13 @@ void ProxyShape::unloadMayaReferences()
           MObject temp = plugs[i].node();
           if(temp.hasFn(MFn::kReference))
           {
-            MString command = MString("referenceQuery -filename ") + MFnDependencyNode(temp).name();
-            MString referenceFilename;
-            MStatus returnStatus = MGlobal::executeCommand(command, referenceFilename);
-            if (returnStatus != MStatus::kFailure)
-            {
-              TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::unloadMayaReferences removing %s\n", referenceFilename.asChar());
-              MFileIO::removeReference(referenceFilename);
-            }
+            MFnReference mfnRef(temp);
+            MString referenceFilename = mfnRef.fileName(
+                true /*resolvedName*/,
+                true /*includePath*/,
+                true /*includeCopyNumber*/);
+            TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::unloadMayaReferences unloading %s\n", referenceFilename.asChar());
+            MFileIO::unloadReferenceByNode(temp);
           }
         }
       }

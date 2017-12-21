@@ -378,13 +378,17 @@ public:
   inline bool readAnimatedValues() const
     { return (kReadAnimatedValues & m_flags) != 0; }
 
-  /// \brief  Is this transform writing back onto the USD prim
+  /// \brief  Is this transform set to write back onto the USD prim
   inline bool pushToPrimEnabled() const
     { return (kPushToPrimEnabled & m_flags) != 0; }
 
   /// \brief  Is this prim writing back to a matrix (true) or to components (false)
   inline bool pushPrimToMatrix() const
     { return (kPushPrimToMatrix & m_flags) != 0; }
+
+  /// \brief  Is this transform set to write back onto the USD prim, and is it currently possible?
+  inline bool pushToPrimAvailable() const
+    { return pushToPrimEnabled() && m_prim.IsValid(); }
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name  Convert To-From USD primitive
