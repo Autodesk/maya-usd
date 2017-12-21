@@ -2,29 +2,18 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(AL_USDMaya)
 
-# AL_USDMAYA uses pxrConfig.cmake exported targets
-# Grab USD_CONFIG_FILE either as a cmake define or an environment variable
-if(NOT USD_CONFIG_FILE)
-    if(NOT DEFINED ENV{USD_CONFIG_FILE})
-        message(FATAL_ERROR "Please set USD_CONFIG_FILE to the path to pxrConfig.cmake")
-    else()
-        set(USD_CONFIG_FILE $ENV{USD_CONFIG_FILE})
-    endif()
-endif()
-if(NOT EXISTS ${USD_CONFIG_FILE})
-    message( FATAL_ERROR "pxrConfig.cmake is needed, please set USD_CONFIG_FILE to a valid path")
-else()
-    include(${USD_CONFIG_FILE})
-endif()
-
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
-
 #set cmake modules - ";" separated not ":"!
 list(APPEND CMAKE_MODULE_PATH
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules
 )
+
+# AL_USDMAYA uses pxrConfig.cmake exported targets
+# find_package(USD) can use either ${USD_ROOT}, or ${USD_CONFIG_FILE} (which should be ${USD_ROOT}/pxrConfig.cmake)
+# to find USD, defined as either Cmake var or env var
+find_package(USD REQUIRED)
+include(${USD_CONFIG_FILE})
 
 # to get PYTHON_EXECUTABLE
 find_package(PythonInterp)
