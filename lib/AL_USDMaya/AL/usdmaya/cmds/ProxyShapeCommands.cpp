@@ -279,7 +279,7 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
 
   MString populationMaskIncludePath;
   bool connectToTime = true;
-  bool unloaded = false;
+  bool unloaded = database.isFlagSet("-ul");
 
   // extract command args
   if(!database.isFlagSet("-f") || !database.getFlagArgument("-f", 0, filePath))
@@ -979,7 +979,8 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
     {
       throw MS::kFailure;
     }
-    SdfPathVector paths;
+    SdfPathVector orderedPaths;
+    nodes::SelectionUndoHelper::SdfPathHashSet unorderedPaths;
 
     MGlobal::ListAdjustment mode = MGlobal::kAddToList;
     if(db.isFlagSet("-cl"))
@@ -998,7 +999,10 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
 
         if(!proxy->selectabilityDB().isPathUnselectable(path) && path.IsAbsolutePath())
         {
-          paths.push_back(path);
+          auto insertResult = unorderedPaths.insert(path);
+          if (insertResult.second) {
+            orderedPaths.push_back(path);
+          }
         }
       }
 
@@ -1024,8 +1028,8 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
     }
     const bool isInternal = db.isFlagSet("-i");
 
-    m_helper = new nodes::SelectionUndoHelper(proxy, paths, mode, isInternal);
-    if(!proxy->doSelect(*m_helper))
+    m_helper = new nodes::SelectionUndoHelper(proxy, unorderedPaths, mode, isInternal);
+    if(!proxy->doSelect(*m_helper, orderedPaths))
     {
       delete m_helper;
       m_helper = 0;

@@ -20,7 +20,7 @@ configure_file (
     @ONLY
 )
 
-list(APPEND DEPENDANT_LIBRARIES ${PYTHON_LIBRARIES} usd)
+list(APPEND DEPENDANT_LIBRARIES ${PYTHON_LIBRARIES} usd usdGeom)
 
 ####################################################################################################
 # Schemas generation and validation
@@ -30,6 +30,7 @@ if(VALIDATE_GENERATED_SCHEMAS)
 
 # Bake library name, tokens prefix and usd schemas path
 set(USD_SCHEMA_PATH usd/schema.usda)
+set(USDGEOM_SCHEMA_PATH usdGeom/schema.usda)
 configure_file (
     ./schema.usda.in
     ./schema.usda

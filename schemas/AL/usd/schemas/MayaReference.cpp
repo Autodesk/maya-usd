@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<AL_usd_MayaReference,
-        TfType::Bases< UsdTyped > >();
+        TfType::Bases< UsdGeomXformable > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
@@ -153,7 +153,7 @@ AL_usd_MayaReference::GetSchemaAttributeNames(bool includeInherited)
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
-            UsdTyped::GetSchemaAttributeNames(true),
+            UsdGeomXformable::GetSchemaAttributeNames(true),
             localNames);
 
     if (includeInherited)

@@ -67,12 +67,14 @@ namespace nodes {
 //----------------------------------------------------------------------------------------------------------------------
 struct SelectionUndoHelper
 {
+  typedef TfHashSet<SdfPath, SdfPath::Hash> SdfPathHashSet;
+
   /// \brief  Construct with the arguments to select / deselect nodes on a proxy shape
   /// \param  proxy pointer to the maya node on which the selection operation will be performed.
   /// \param  paths the USD paths to be selected / toggled / unselected
   /// \param  mode the selection mode (add, remove, xor, etc)
   /// \param  internal if the internal flag is set, then modifications to Maya's selection list will NOT occur.
-  SelectionUndoHelper(nodes::ProxyShape* proxy, SdfPathVector paths, MGlobal::ListAdjustment mode, bool internal = false);
+  SelectionUndoHelper(nodes::ProxyShape* proxy, const SdfPathHashSet& paths, MGlobal::ListAdjustment mode, bool internal = false);
 
   /// \brief  performs the selection changes
   void doIt();
@@ -83,8 +85,8 @@ struct SelectionUndoHelper
 private:
   friend class ProxyShape;
   nodes::ProxyShape* m_proxy;
-  SdfPathVector m_paths;
-  SdfPathVector m_previousPaths;
+  SdfPathHashSet m_paths;
+  SdfPathHashSet m_previousPaths;
   MGlobal::ListAdjustment m_mode;
   MDagModifier m_modifier1;
   MDagModifier m_modifier2;
@@ -102,6 +104,7 @@ private:
 class SelectionList
 {
 public:
+  typedef TfHashSet<SdfPath, SdfPath::Hash> SdfPathHashSet;
 
   /// \brief  default ctor
   SelectionList() = default;
@@ -121,17 +124,14 @@ public:
   /// \param  path to add
   inline void add(SdfPath path)
     {
-      if(std::find(m_selected.begin(), m_selected.end(), path) == m_selected.end())
-      {
-        m_selected.push_back(path);
-      }
+      m_selected.insert(path);
     }
 
   /// \brief  removes the path from the selection
   /// \param  path to remove
   inline void remove(SdfPath path)
     {
-      auto it = std::find(m_selected.begin(), m_selected.end(), path);
+      auto it = m_selected.find(path);
       if(it != m_selected.end())
       {
         m_selected.erase(it);
@@ -142,25 +142,21 @@ public:
   /// \param  path to toggle
   inline void toggle(SdfPath path)
     {
-      auto it = std::find(m_selected.begin(), m_selected.end(), path);
-      if(it == m_selected.end())
+      auto insertResult = m_selected.insert(path);
+      if (!insertResult.second)
       {
-        m_selected.push_back(path);
-      }
-      else
-      {
-        m_selected.erase(it);
+        m_selected.erase(insertResult.first);
       }
     }
 
   /// \brief  toggles the path in the selection
   /// \param  path to toggle
   inline bool isSelected(const SdfPath& path) const
-    { return std::find(m_selected.begin(), m_selected.end(), path) != m_selected.end(); }
+    { return m_selected.count(path) > 0; }
 
   /// \brief  the paths in the selection list
   /// \return the selected paths
-  inline const SdfPathVector& paths() const
+  inline const SdfPathHashSet& paths() const
     { return m_selected; }
 
   /// \brief  the paths in the selection list
@@ -169,7 +165,7 @@ public:
     { return m_selected.size(); }
 
 private:
-  SdfPathVector m_selected;
+  SdfPathHashSet m_selected;
 };
 
 //typedef functions
@@ -214,6 +210,8 @@ class ProxyShape
   friend class SelectionUndoHelper;
   friend class ProxyShapeUI;
 public:
+
+  typedef TfHashSet<SdfPath, SdfPath::Hash> SdfPathHashSet;
 
   /// \brief  a mapping between a maya transform (or MObject::kNullObj), and the prim that exists at that location
   ///         in the DAG graph.
@@ -517,8 +515,7 @@ public:
     {
       if(obj == it.second.node())
       {
-        auto iter = std::find(m_selectedPaths.cbegin(), m_selectedPaths.cend(), it.first);
-        if(iter != m_selectedPaths.cend())
+        if(m_selectedPaths.count(it.first) > 0)
         {
           return true;
         }
@@ -569,14 +566,20 @@ public:
 
   /// \brief  returns the paths of the selected items within the proxy shape
   /// \return the paths of the selected prims
-  SdfPathVector& selectedPaths()
+  SdfPathHashSet& selectedPaths()
     { return m_selectedPaths; }
 
   /// \brief  Performs a selection operation on this node. Intended for use by the ProxyShapeSelect command only
   /// \param  helper provides the arguments to the selection system, and stores the internal proxy shape state
   ///         changes that need to be done/undone
+  /// \param  orderedPaths provides the original (deduplicated) input paths, in order; provided just so that the
+  ///         selection commands will return results in the same order they were provided - this is useful so that, if
+  ///         the user does, ie, "AL_usdmaya_ProxyShapeSelect -pp /foo/bar -pp /some/thing -proxy myProxyShape",
+  //          they will get as the result of the command, ["|proxyRoot|foo|bar", "|proxyRoot|some|thing"], and be able
+  //          to know what input SdfPath corresponds to what ouptut maya path
+  SdfPathVector m_pathsOrdered;
   /// \return true if the operation succeeded
-  bool doSelect(SelectionUndoHelper& helper);
+  bool doSelect(SelectionUndoHelper& helper, const SdfPathVector& orderedPaths);
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   UsdImaging
@@ -634,7 +637,7 @@ public:
   /// \brief Re-Creates and updates the maya prim hierarchy starting from the specified primpath
   /// \param[in] primPath of the point in the hierarchy that is potentially undergoing structural changes
   /// \param[in] changedPaths are child paths that existed previously and may not be existing now.
-  void onPrimResync(SdfPath primPath, const SdfPathVector& changedPaths);
+  void onPrimResync(SdfPath primPath, SdfPathVector& changedPaths);
 
   /// \brief This function starts the prim changed process within the proxyshape
   /// \param[in] changePath is point at which the scene is going to be modified.
@@ -838,7 +841,7 @@ private:
   void reloadStage(MPlug& plug);
   void layerIdChanged(SdfNotice::LayerIdentifierDidChange const& notice, UsdStageWeakPtr const& sender);
   void onObjectsChanged(UsdNotice::ObjectsChanged const&, UsdStageWeakPtr const& sender);
-  void variantSelectionListener(SdfNotice::LayersDidChange const& notice, UsdStageWeakPtr const& sender);
+  void variantSelectionListener(SdfNotice::LayersDidChange const& notice);
   void onEditTargetChanged(UsdNotice::StageEditTargetChanged const& notice, UsdStageWeakPtr const& sender);
   static void onAttributeChanged(MNodeMessage::AttributeMessage, MPlug&, MPlug&, void*);
   void validateTransforms();
@@ -864,7 +867,7 @@ private:
   HierarchyIterationLogic m_findExcludedPrims;
   SelectionList m_selectionList;
   FindUnselectablePrimsLogic m_findUnselectablePrims;
-  SdfPathVector m_selectedPaths;
+  SdfPathHashSet m_selectedPaths;
   FindLockedPrimsLogic m_findLockedPrims;
   std::vector<SdfPath> m_paths;
   std::vector<UsdPrim> m_prims;

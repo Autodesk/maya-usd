@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "./api.h"
-#include "pxr/usd/usd/typed.h"
+#include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "./tokens.h"
@@ -54,7 +54,7 @@ class SdfAssetPath;
 ///
 /// Data used to import a maya reference.
 ///
-class AL_usd_MayaReference : public UsdTyped
+class AL_usd_MayaReference : public UsdGeomXformable
 {
 public:
     /// Compile-time constant indicating whether or not this class corresponds
@@ -68,7 +68,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit AL_usd_MayaReference(const UsdPrim& prim=UsdPrim())
-        : UsdTyped(prim)
+        : UsdGeomXformable(prim)
     {
     }
 
@@ -76,7 +76,7 @@ public:
     /// Should be preferred over AL_usd_MayaReference(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit AL_usd_MayaReference(const UsdSchemaBase& schemaObj)
-        : UsdTyped(schemaObj)
+        : UsdGeomXformable(schemaObj)
     {
     }
 
