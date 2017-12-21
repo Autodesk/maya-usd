@@ -295,9 +295,11 @@ void TranslatorContext::removeItems(const SdfPath& path)
     }
     if(hasDagNodes)
     {
-      for (int i = 0; i < tempXforms.size(); ++i){
+      for (int i = 0; i < tempXforms.size(); ++i)
+      {
         // Check if these xforms have already been deleted automatically when we deleted their child shape.
-        if(tempXforms[i].isAlive() && tempXforms[i].isValid()){
+        if(tempXforms[i].isAlive() && tempXforms[i].isValid())
+        {
           modifier2.deleteNode(tempXforms[i].object());
         }
       }
@@ -407,7 +409,8 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
     --iter;
     PrimLookup& node = *iter;
 
-    if(std::find(itemsToRemove.begin(), itemsToRemove.end(), node.path()) != itemsToRemove.end()){
+    if(std::find(itemsToRemove.begin(), itemsToRemove.end(), node.path()) != itemsToRemove.end())
+    {
       // Same exact path has already been processed and added to the list of itemsToRemove.
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preRemoveEntry skipping path thats already in "
                                           "itemsToRemove. primPath=%s\n", primPath.GetText());
@@ -416,7 +419,8 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
     {
       itemsToRemove.push_back(node.path());
       auto prim = stage->GetPrimAtPath(node.path());
-      if (prim && callPreUnload) {
+      if (prim && callPreUnload)
+      {
         preUnloadPrim(prim, node.object());
       }
     }

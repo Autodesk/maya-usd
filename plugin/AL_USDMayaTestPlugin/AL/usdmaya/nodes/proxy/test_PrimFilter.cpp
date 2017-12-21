@@ -42,10 +42,12 @@ struct MockPrimFilterInterface : public AL::usdmaya::nodes::proxy::PrimFilterInt
 
   TfToken getTypeForPath(const SdfPath& path) override
   {
-    if(std::find(refPaths.cbegin(), refPaths.cend(), path) != refPaths.cend()) {
+    if(std::find(refPaths.cbegin(), refPaths.cend(), path) != refPaths.cend())
+    {
       return TfToken("Xform");
     }
-    if (std::find(cameraPaths.cbegin(), cameraPaths.cend(), path) != cameraPaths.cend()){
+    if (std::find(cameraPaths.cbegin(), cameraPaths.cend(), path) != cameraPaths.cend())
+    {
       return TfToken("Camera");
     }
     return TfToken("");
