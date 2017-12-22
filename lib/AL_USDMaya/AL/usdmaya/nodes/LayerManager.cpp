@@ -42,6 +42,11 @@ namespace {
   // Global mutex protecting _findNode / findOrCreateNode.
   // Recursive because we need to get the mutex inside of conditionalCreator,
   // but that may be triggered by the node creation inside of findOrCreateNode.
+
+  // Note on layerManager / multithreading:
+  // I don't know that layerManager will be used in a multihreaded manenr... but I also don't know it COULDN'T be.
+  // (I haven't really looked into the way maya's new multi-threaded node evaluation works, for instance.) This is
+  // essentially a globally shared resource, so I figured better be safe...
   static std::recursive_mutex _findNodeMutex;
 
 
