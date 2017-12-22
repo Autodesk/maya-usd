@@ -8,7 +8,7 @@
 - It has been tested  on CentOS 6.6
 
 ## Supported Maya Versions 
-+ maya-2016
++ maya-2016 extension 2
   - have done limited testing (via docker). Selection probably broken. Does it work in VP1?
   - USD built with PXR_MAYA_TBB_BUG_WORKAROUND turned on might be needed if deadlocks happen
 + maya-2017

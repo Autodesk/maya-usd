@@ -137,6 +137,7 @@ public:
 
     void SetLock(const TfToken& lock);
     TfToken GetLock() const;
+    TfToken ComputeLock() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
