@@ -230,7 +230,8 @@ public:
   /// \param  commandFlag   the flag for the command
   /// \param  label   human readable GUI label for the option
   /// \param  generateList   The C++ command to build up a list of text strings for the GUI to display
-  void addListOption(const char* commandFlag, const char* label, GenerateListFn generateList);
+  /// \param  isMandatory   If true, our commandFlag is actually a mandatory argument, not a option / flag
+  void addListOption(const char* commandFlag, const char* label, GenerateListFn generateList, bool isMandatory=false);
 
   /// \brief  add an enum option value to the GUI
   /// \param  commandFlag   the flag for the command

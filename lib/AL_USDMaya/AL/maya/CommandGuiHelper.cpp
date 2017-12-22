@@ -314,7 +314,7 @@ void CommandGuiHelper::addBoolOption(const char* commandFlag, const char* label,
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CommandGuiHelper::addListOption(const char* commandFlag, const char* label, GenerateListFn generateList)
+void CommandGuiHelper::addListOption(const char* commandFlag, const char* label, GenerateListFn generateList, bool isMandatory)
 {
   const std::string optionVar = m_commandName + "_" + commandFlag;
   const std::string getOptionVar = std::string("`optionVar -q -sl \"") + optionVar + "\"`";
@@ -336,7 +336,11 @@ void CommandGuiHelper::addListOption(const char* commandFlag, const char* label,
 
   //
   m_execute << "  global string $" << optionVar << "_sl;"
-            << "  $str += \" -" << commandFlag << " $" << optionVar << "_sl \";\n";
+            << "  $str += \" ";
+  if (!isMandatory) {
+    m_execute << "-" << commandFlag << " ";
+  }
+  m_execute << "$" << optionVar << "_sl \";\n";
 }
 
 //----------------------------------------------------------------------------------------------------------------------

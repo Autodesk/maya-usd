@@ -668,10 +668,7 @@ AL_MAYA_DEFINE_COMMAND(LayerSave, AL_usdmaya);
 MSyntax LayerSave::createSyntax()
 {
   MSyntax syn = setUpCommonSyntax();
-  // TODO: -l is currently required, convert to an arg... but need
-  // to create a "CommandGuiHelper::addListArgument" function to
-  // replace current addListOption usage
-  syn.addFlag("-l", "-layer", MSyntax::kString);
+  syn.addArg(MSyntax::kString); // Layer name
   syn.addFlag("-f", "-filename", MSyntax::kString);
   syn.addFlag("-s", "-string", MSyntax::kNoArg);
   syn.addFlag("-h", "-help", MSyntax::kNoArg);
@@ -692,12 +689,7 @@ MStatus LayerSave::doIt(const MArgList& argList)
     MArgDatabase args = makeDatabase(argList);
     AL_MAYA_COMMAND_HELP(args, g_helpText);
 
-    MString layerName;
-    if(args.isFlagSet("-l"))
-    {
-      args.getFlagArgument("-l", 0, layerName);
-    }
-
+    MString layerName = args.commandArgumentString(0);
     if(layerName.length() == 0)
     {
       MGlobal::displayError("LayerSave: you need to specify a layer name that you wish to save");
@@ -802,7 +794,7 @@ AL_MAYA_DEFINE_COMMAND(LayerSetMuted, AL_usdmaya);
 MSyntax LayerSetMuted::createSyntax()
 {
   MSyntax syn = setUpCommonSyntax();
-  syn.addArg(MSyntax::kString);
+  syn.addArg(MSyntax::kString); // Layer name
   syn.addFlag("-h", "-help", MSyntax::kNoArg);
   syn.addFlag("-m", "-muted", MSyntax::kBoolean);
   return syn;
@@ -894,7 +886,7 @@ void constructLayerCommandGuis()
 {
   {
     maya::CommandGuiHelper saveLayer("AL_usdmaya_LayerSave", "Save Layer", "Save Layer", "USD/Layers/Save Layer", false);
-    saveLayer.addListOption("l", "Layer to Save", (AL::maya::GenerateListFn)buildLayerList);
+    saveLayer.addListOption("l", "Layer to Save", (AL::maya::GenerateListFn)buildLayerList, /*isMandatory=*/true);
     saveLayer.addFilePathOption("f", "USD File Path", maya::CommandGuiHelper::kSave, "USDA files (*.usda) (*.usda);;USDC files (*.usdc) (*.usdc);;Alembic Files (*.abc) (*.abc);;All Files (*) (*)", maya::CommandGuiHelper::kStringMustHaveValue);
   }
 
@@ -1036,17 +1028,17 @@ LayerSave Overview:
   This command allows you to export/save a single layer to a file. In the simplest case, you
   specify the layer name to save, e.g.
 
-     LayerSave -l "identifier/for/myscene_root.usda";
+     LayerSave "identifier/for/myscene_root.usda";
 
   If you wish to export that layer and return it as a text string, use the -string/-s flag. The following
   command will return the usd file contents as a string.
 
-     LayerSave -s -l "identifier/for/myscene_root.usda";
+     LayerSave -s "identifier/for/myscene_root.usda";
 
   If you wish to export that layer as a new file, you can also specify the filepath with the -f/-filename
   flag, e.g.
 
-     LayerSave -f "/scratch/stuff/newlayer.usda" -l "identifier/for/myscene_root.usda";
+     LayerSave -f "/scratch/stuff/newlayer.usda" "identifier/for/myscene_root.usda";
 
   In addition, you are also able to flatten a given layer using the -flatten option. When using this
   option, the specified layer will be written out as a new file, and that file will contain ALL of the
@@ -1054,11 +1046,11 @@ LayerSave Overview:
   Note: when using the -flatten option, you must specify the -s or -f flags (to write to a string,
   or export as a file)
 
-     LayerSave -flatten -f "/scratch/stuff/phatlayer.usda" -l "identifier/for/myscene_root.usda";
+     LayerSave -flatten -f "/scratch/stuff/phatlayer.usda" "identifier/for/myscene_root.usda";
 
   or to return a string
 
-     LayerSave -flatten -s -l "identifier/for/myscene_root.usda";
+     LayerSave -flatten -s "identifier/for/myscene_root.usda";
 
 )";
 
