@@ -559,7 +559,6 @@ ProxyShape::~ProxyShape()
     m_engine->InvalidateBuffers();
     delete m_engine;
   }
-  unregisterEvents();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
