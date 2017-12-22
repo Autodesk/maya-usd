@@ -196,12 +196,25 @@ MStatus LayerGetLayers::doIt(const MArgList& argList)
     else
     if(args.isFlagSet("-m"))
     {
-      // TODO: figure out what to do with "-identifiers" flag. Unlike other
-      // options here, this formerally returned identifiers, not display names...
       const std::vector<std::string>& layers = stage->GetMutedLayers();
       for(auto it = layers.begin(); it != layers.end(); ++it)
       {
-        results.append(convert(*it));
+        if(useIdentifiers)
+        {
+          results.append(convert(*it));
+        }
+        else
+        {
+          // Need to convert from identifier to display name...
+          auto layer = SdfLayer::Find(*it);
+          if (!layer)
+          {
+            // If we failed to grab the layer from it's identifier, something went wrong...
+            MGlobal::displayError(MString("Could not find muted layer from identifier: ") + convert(*it));
+            return MS::kFailure;
+          }
+          results.append(convert(layer->GetDisplayName()));
+        }
       }
     }
     else
