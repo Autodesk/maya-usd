@@ -121,25 +121,6 @@ nodes::ProxyShape* LayerCommandBase::getShapeNode(const MArgDatabase& args)
   return 0;
 }
 
-////----------------------------------------------------------------------------------------------------------------------
-//MObject LayerCommandBase::getSelectedNode(const MArgDatabase& args, const MTypeId typeId)
-//{
-//  MSelectionList sl;
-//  args.getObjects(sl);
-//
-//
-//  MFnDependencyNode fn;
-//  MObject obj;
-//  for(uint32_t i = 0; i < sl.length(); ++i)
-//  {
-//    sl.getDependNode(i, obj);
-//    fn.setObject(obj);
-//    if(fn.typeId() == typeId)
-//      return obj;
-//  }
-//  return MObject::kNullObj;
-//}
-
 //----------------------------------------------------------------------------------------------------------------------
 UsdStageRefPtr LayerCommandBase::getShapeNodeStage(const MArgDatabase& args)
 {
