@@ -436,8 +436,8 @@ public:
   /// \brief  will destroy all of the AL_usdmaya_Transform nodes from the prim specified, up to the root (unless any
   ///         of those transform nodes are in use by another imported prim).
   /// \param  usdPrim the leaf node in the chain of transforms we wish to remove
-  /// \param  modifier will store the changes as this path is constructed.
-  /// \param  reason  the reason why this path is being generated.
+  /// \param  modifier will store the changes as this path is removed.
+  /// \param  reason  the reason why this path is being removed.
   /// \todo   The mode ProxyShape::kSelection will cause the possibility of instability in the selection system.
   ///         This mode will be removed at a future date
   void removeUsdTransformChain(
@@ -448,8 +448,8 @@ public:
   /// \brief  will destroy all of the AL_usdmaya_Transform nodes from the prim specified, up to the root (unless any
   ///         of those transform nodes are in use by another imported prim).
   /// \param  path the leaf node in the chain of transforms we wish to remove
-  /// \param  modifier will store the changes as this path is constructed.
-  /// \param  reason  the reason why this path is being generated.
+  /// \param  modifier will store the changes as this path is removed.
+  /// \param  reason  the reason why this path is being removed.
   void removeUsdTransformChain(
       const SdfPath& path,
       MDagModifier& modifier,

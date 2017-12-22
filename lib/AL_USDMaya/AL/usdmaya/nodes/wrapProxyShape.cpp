@@ -66,6 +66,11 @@ namespace {
     }
   };
 
+  //----------------------------------------------------------------------------------------------------------------------
+  /// \brief  Helper func to convert mobj for a dag or depend node into it's a python string for it's name
+  /// \param  mobj an MObject for a dependency graph node
+  /// \param  description A string used in error messages to describe what this node was
+  /// \return a boost::python::object holding the string name for the node
   object MobjToName(const MObject& mobj, MString description)
   {
     MStatus status;
@@ -108,11 +113,20 @@ namespace {
 
   struct PyProxyShape
   {
+
+    //------------------------------------------------------------------------------------------------------------------
+    /// \brief  Returns a python bounding box for the given proxy shape
+    ///
+    /// Used because we opted NOT to register auto-conversion of c++ MBoundingBoxes to python MBoundingBoxes,
+    /// with boost::python::to_python_converter, as if pixar ever does so in the future, the double registration would
+    /// be a problem
     static PyObject* boundingBox(const ProxyShape& proxyShape)
     {
       return MBoundingBoxConverter::convert(proxyShape.boundingBox());
     }
 
+    //------------------------------------------------------------------------------------------------------------------
+    /// \brief  Python-wrappable version of ProxyShape::findRequiredPath
     static object findRequiredPath(
         const ProxyShape& proxyShape, const SdfPath& path)
     {
@@ -121,6 +135,8 @@ namespace {
       return MobjToName(obj, desc);
     }
 
+    //------------------------------------------------------------------------------------------------------------------
+    /// \brief  Utility method, for better readability, that returns whether given MObject is a ProxyShape
     static bool isProxyShape(MObject mobj)
     {
       MStatus status;
@@ -132,6 +148,15 @@ namespace {
       return mfnDep.typeId() == ProxyShape::kTypeId;
     }
 
+    //------------------------------------------------------------------------------------------------------------------
+    /// \brief  Given a name, returns a pointer to a ProxyShape with that name
+    ///
+    /// Used because we don't allow direct calling of the python ProxyShape's
+    /// constructor, so we need function we can wrap to get an existing
+    /// instance.
+    /// The name can point to the proxyShape directly, or to it's parent
+    /// transform. If no match is found, a nullptr is returned (and thus
+    /// None will be returned in python).
     static ProxyShape* getProxyShapeByName(std::string name)
     {
       MStatus status;
@@ -193,6 +218,18 @@ namespace {
       return proxyShapePtr;
     }
 
+    //------------------------------------------------------------------------------------------------------------------
+    /// \brief  Python-wrappable version of ProxyShape::makeUsdTransformChain
+    /// \param  proxyShape the ProxyShape we're making transforms for
+    /// \param  usdPrim  the leaf of the prim we wish to create (same as for ProxyShape::makeUsdTransformChain)
+    /// \param  reason  the reason why this path is being generated. (same as for ProxyShape::makeUsdTransformChain)
+    /// \param  pushToPrim boolean controlling whether or not to set pushToPrim to true; in the wrapped function, this
+    ///         is essentially controlled by whether or not the modifier2 param is passed.
+    /// \param  returnCreateCount boolean controlling whether the return result includes the transforms that were
+    ///         created
+    /// \return if returnCreateCount is false, then will return the string name of the parent transform node for the
+    ///         usdPrim; if returnCreateCount is true, the return will be a 2-tuple, the first item of which is the
+    ///         name of the parent transform node, and the second is the number of transforms created
     static object makeUsdTransformChain(
           ProxyShape& proxyShape,
           const UsdPrim& usdPrim,
@@ -233,6 +270,15 @@ namespace {
       return resultPyObj;
     }
 
+    //------------------------------------------------------------------------------------------------------------------
+    /// \brief  Python-wrappable version of ProxyShape::makeUsdTransforms
+    /// \param  proxyShape the ProxyShape we're making transforms for
+    /// \param  usdPrim the root for the transforms to be created (same as for ProxyShape::makeUsdTransforms)
+    /// \param  reason the reason for creating the transforms (use with selection, etc). (same as for
+    ///         ProxyShape::makeUsdTransforms)
+    /// \param  pushToPrim boolean controlling whether or not to set pushToPrim to true; in the wrapped function, this
+    ///         is essentially controlled by whether or not the modifier2 param is passed.
+    /// \return the string name of the parent transform node for the usdPrim
     static object makeUsdTransforms(
         ProxyShape& proxyShape,
         const UsdPrim& usdPrim,
@@ -264,6 +310,12 @@ namespace {
       return MobjToName(resultObj, objDesc);
     }
 
+    //------------------------------------------------------------------------------------------------------------------
+    /// \brief  Python-wrappable version of ProxyShape::removeUsdTransformChain (that takes a UsdPrim object)
+    /// \param  proxyShape the ProxyShape we're removing transforms from
+    /// \param  usdPrim the leaf node in the chain of transforms we wish to remove (same as for
+    ///         ProxyShape::removeUsdTransformChain)
+    /// \param  reason  the reason why this path is being removed. (same as for ProxyShape::removeUsdTransformChain)
     static void removeUsdTransformChain(
         ProxyShape& proxyShape,
         const UsdPrim& usdPrim,
@@ -277,6 +329,12 @@ namespace {
       modifier.doIt();
     }
 
+    //------------------------------------------------------------------------------------------------------------------
+    /// \brief  Python-wrappable version of ProxyShape::removeUsdTransformChain (that takes an SdfPath)
+    /// \param  proxyShape the ProxyShape we're removing transforms from
+    /// \param  path the leaf node in the chain of transforms we wish to remove (same as for
+    ///         ProxyShape::removeUsdTransformChain)
+    /// \param  reason  the reason why this path is being removed. (same as for ProxyShape::removeUsdTransformChain)
     static void removeUsdTransformChain(
         ProxyShape& proxyShape,
         const SdfPath& path,
@@ -290,6 +348,14 @@ namespace {
       modifier.doIt();
     }
 
+    //------------------------------------------------------------------------------------------------------------------
+    /// \brief  Python-wrappable version of ProxyShape::removeUsdTransforms
+    /// \param  proxyShape the ProxyShape we're removing transforms from
+    /// \param  path all AL_usdmaya_Transform nodes found underneath this path will be destroyed (unless those nodes are
+    ///         required for another purpose). (same as for ProxyShape::removeUsdTransforms)
+    /// \param  reason Are we deleting selected transforms, or those that are required, or requested? (same as for
+    ///         ProxyShape::removeUsdTransforms)
+    (same as for ProxyShape::removeUsdTransforms)
     static void removeUsdTransforms(
         ProxyShape& proxyShape,
         const UsdPrim& usdPrim,
