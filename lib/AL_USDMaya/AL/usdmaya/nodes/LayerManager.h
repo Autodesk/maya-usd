@@ -37,7 +37,7 @@ namespace nodes {
 
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  The layer node stores a reference to an SdfLayer.
+/// \brief  The layer manager node handles serialization and deserialization of all layers used by all ProxyShapes
 /// \ingroup nodes
 //----------------------------------------------------------------------------------------------------------------------
 class LayerManager

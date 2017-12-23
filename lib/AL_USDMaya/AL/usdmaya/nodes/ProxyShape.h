@@ -625,7 +625,7 @@ public:
 
 
   // \brief Serialize information unique to this shape
-  void serializeThis();
+  void serialize();
 
   // \brief Serialize all layers in proxyShapes to layerManager attributes; called before saving
   static void serializeAll();

@@ -343,7 +343,7 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
     outputStringValue(dataBlock, m_primPath, path);
     SdfPath primPath(path.asChar());
     StageData* data = inputDataValue<StageData>(dataBlock, m_inStageData);
-    if (data && data-> stage)
+    if (data && data->stage)
     {
       UsdPrim usdPrim = data->stage->GetPrimAtPath(primPath);
       transform()->setPrim(usdPrim);

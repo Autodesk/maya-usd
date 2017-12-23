@@ -116,6 +116,9 @@ void TransformationMatrix::setPrim(const UsdPrim& prim)
     m_xform = UsdGeomXform();
   }
   m_time = UsdTimeCode(UsdTimeCode::Default());
+  // Most of these flags are calculated based on reading the usd prim; however, a few are driven
+  // "externally" (ie, from attributes on the controlling transform node), and should NOT be reset
+  // when we're re-initializing
   m_flags &= kPreservationMask;
   m_scaleTweak = MVector(0, 0, 0);
   m_rotationTweak = MEulerRotation(0, 0, 0);

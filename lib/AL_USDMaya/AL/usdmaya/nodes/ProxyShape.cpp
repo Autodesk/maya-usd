@@ -75,7 +75,17 @@ namespace {
     auto currentTargetLayer = stage->GetEditTarget().GetLayer();
     if(currentTargetLayer->IsDirty())
     {
-      if(!layerManager) layerManager = AL::usdmaya::nodes::LayerManager::findOrCreateManager();
+      if(!layerManager)
+      {
+        layerManager = AL::usdmaya::nodes::LayerManager::findOrCreateManager();
+        // findOrCreateManager SHOULD always return a result, but we check anyway,
+        // to avoid any potential crash...
+        if(!layerManager)
+        {
+          std::cerr << "Error creating / finding a layerManager node!" << std::endl;
+          return;
+        }
+      }
       layerManager->addLayer(currentTargetLayer);
     }
   }
@@ -652,7 +662,7 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& previousPri
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::serializeThis()
+void ProxyShape::serialize()
 {
   UsdStageRefPtr stage = getUsdStage();
 
@@ -675,6 +685,8 @@ void ProxyShape::serializeAll()
   const char* errorString = "ProxyShape::serializeAll";
   // Now iterate over all proxyShapes...
   MFnDependencyNode fn;
+
+  // Don't create a layerManager unless we find at least one proxy shape
   LayerManager* layerManager = nullptr;
   {
     MItDependencyNodes iter(MFn::kPluginShape);
@@ -696,7 +708,7 @@ void ProxyShape::serializeAll()
         continue;
       }
 
-      proxyShape->serializeThis();
+      proxyShape->serialize();
 
       UsdStageRefPtr stage = proxyShape->getUsdStage();
 
