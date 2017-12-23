@@ -103,7 +103,7 @@ namespace {
         }
       }
     }
-    return status;
+    return dgmod.doIt();
   }
 }
 

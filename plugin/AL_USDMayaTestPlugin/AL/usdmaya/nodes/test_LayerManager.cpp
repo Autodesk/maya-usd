@@ -20,8 +20,10 @@
 #include "maya/MFileIO.h"
 #include "maya/MFnDagNode.h"
 #include "maya/MFnDependencyNode.h"
+#include "maya/MFnMessageAttribute.h"
 #include "maya/MGlobal.h"
 #include "maya/MItDependencyNodes.h"
+#include "maya/MSelectionList.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usd/usdaFileFormat.h"
@@ -251,6 +253,137 @@ TEST(LayerManager, addRemoveLayer)
   }
 }
 
+// MStatus populateSerialisationAttributes();
+// clearSerialisationAttributes();
+// disconnectCompoundArrayPlug(MPlug arrayPlug)
+TEST(LayerManager, populateClearSerializationAttributes)
+{
+  constexpr auto LAYER_CONTENTS = R"ESC(#usda 1.0
+
+def Scope "blabla"
+{
+    def Xform "wassup"
+    {
+    }
+}
+
+)ESC";
+
+  MStatus status;
+
+  MFileIO::newFile(true);
+
+  // Make a manager, and add a layer to be managed by it
+  auto *manager = AL::usdmaya::nodes::LayerManager::findOrCreateManager();
+  ASSERT_TRUE(manager);
+
+  ASSERT_EQ(0, manager->layersPlug().numConnectedElements());
+  ASSERT_EQ(0, manager->layersPlug().evaluateNumElements());
+
+  auto realLayer = SdfLayer::New(
+      SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id),
+      "/my/silly/layer.usda");
+  realLayer->ImportFromString(LAYER_CONTENTS);
+
+  ASSERT_TRUE(manager->addLayer(realLayer));
+
+  // Make a dummy message attribute on the persp node that we can use
+  // to make connections to
+  MObject perspNode;
+  MObject destMsgAttr1;
+  MObject destMsgAttr2;
+  MPlug destMsgPlug1;
+  MPlug destMsgPlug2;
+  {
+    MSelectionList sel;
+    sel.add("persp");
+    ASSERT_TRUE(sel.getDependNode(0, perspNode));
+
+    MFnMessageAttribute mfnMsgAttr;
+    destMsgAttr1 = mfnMsgAttr.create("myMessageAttr1", "myMsgAttr1", &status);
+    ASSERT_TRUE(status);
+    destMsgAttr2 = mfnMsgAttr.create("myMessageAttr2", "myMsgAttr2", &status);
+    ASSERT_TRUE(status);
+
+    MDGModifier dgMod;
+    ASSERT_TRUE(dgMod.addAttribute(perspNode, destMsgAttr1));
+    ASSERT_TRUE(dgMod.addAttribute(perspNode, destMsgAttr2));
+    ASSERT_TRUE(dgMod.doIt());
+
+    MFnDependencyNode perspMFn(perspNode, &status);
+    ASSERT_TRUE(status);
+    destMsgPlug1 = perspMFn.findPlug(destMsgAttr1, false, &status);
+    ASSERT_TRUE(status);
+    destMsgPlug2 = perspMFn.findPlug(destMsgAttr2, false, &status);
+    ASSERT_TRUE(status);
+  }
+
+  auto makeConnections = [&] () {
+    MDGModifier dgMod;
+    MPlug layerPlug0 = manager->layersPlug().elementByLogicalIndex(0, &status);
+    ASSERT_TRUE(status);
+    MPlug layerPlug1 = manager->layersPlug().elementByLogicalIndex(1, &status);
+    ASSERT_TRUE(status);
+    ASSERT_TRUE(dgMod.connect(layerPlug0, destMsgPlug1));
+    ASSERT_TRUE(dgMod.connect(layerPlug1, destMsgPlug2));
+    ASSERT_TRUE(dgMod.doIt());
+  };
+
+  auto assertLayersPopulated = [&] () {
+    ASSERT_EQ(0, manager->layersPlug().numConnectedElements());
+    ASSERT_EQ(1, manager->layersPlug().evaluateNumElements());
+    MPlug layersPlug0 = manager->layersPlug().elementByPhysicalIndex(0, &status);
+    ASSERT_TRUE(status);
+    ASSERT_EQ(0, layersPlug0.logicalIndex(&status));
+    ASSERT_TRUE(status);
+    // lame that MPlug.child(MObject&) won't accept const MObject&... so make a temp non-const one
+    MObject tempNonConst;
+    tempNonConst = manager->identifier();
+    MPlug idPlug = layersPlug0.child(tempNonConst, &status);
+    ASSERT_TRUE(status);
+    tempNonConst = manager->serialized();
+    MPlug serializedPlug = layersPlug0.child(tempNonConst, &status);
+    ASSERT_TRUE(status);
+    tempNonConst = manager->anonymous();
+    MPlug anonymousPlug = layersPlug0.child(tempNonConst, &status);
+    ASSERT_TRUE(status);
+
+    ASSERT_EQ(MString(realLayer->GetIdentifier().c_str()), idPlug.asString(&status));
+    ASSERT_TRUE(status);
+    ASSERT_EQ(MString(LAYER_CONTENTS), serializedPlug.asString(&status));
+    ASSERT_TRUE(status);
+    ASSERT_FALSE(anonymousPlug.asBool(&status));
+    ASSERT_TRUE(status);
+  };
+
+  // Now try making dummy connections to the layers attribute
+  ASSERT_EQ(0, manager->layersPlug().numConnectedElements());
+  ASSERT_EQ(0, manager->layersPlug().evaluateNumElements());
+  { SCOPED_TRACE(""); makeConnections(); }
+  ASSERT_EQ(2, manager->layersPlug().numConnectedElements());
+  ASSERT_EQ(2, manager->layersPlug().evaluateNumElements());
+
+
+  // Then make sure clearSerialisationAttributes wipes them out
+  manager->clearSerialisationAttributes();
+  ASSERT_EQ(0, manager->layersPlug().numConnectedElements());
+  ASSERT_EQ(0, manager->layersPlug().evaluateNumElements());
+
+  // Now, populate, we should have one layer plug
+  manager->populateSerialisationAttributes();
+  { SCOPED_TRACE(""); assertLayersPopulated(); }
+
+  // Try clearing, then making connections, then re-populating
+  manager->clearSerialisationAttributes();
+  ASSERT_EQ(0, manager->layersPlug().numConnectedElements());
+  ASSERT_EQ(0, manager->layersPlug().evaluateNumElements());
+  { SCOPED_TRACE(""); makeConnections(); }
+  ASSERT_EQ(2, manager->layersPlug().numConnectedElements());
+  ASSERT_EQ(2, manager->layersPlug().evaluateNumElements());
+  manager->populateSerialisationAttributes();
+  { SCOPED_TRACE(""); assertLayersPopulated(); }
+}
+
 TEST(LayerManager, simpleSaveRestore)
 {
   MFileIO::newFile(true);
@@ -296,7 +429,7 @@ TEST(LayerManager, simpleSaveRestore)
     ASSERT_FALSE(layerManagerNode.isNull());
     MStringArray result;
     MGlobal::executeCommand(MString("ls -type " ) + AL::usdmaya::nodes::LayerManager::kTypeName,
-        result);
+                            result);
     EXPECT_EQ(result.length(), 1);
 
     // ...however, it's layers attribute should be empty (only used during serialization / deserialization!)
@@ -383,7 +516,7 @@ TEST(LayerManager, simpleSaveRestore)
     EXPECT_TRUE(AL::usdmaya::nodes::LayerManager::findNode().isNull());
     MStringArray result;
     MGlobal::executeCommand(MString("ls -type " ) + AL::usdmaya::nodes::LayerManager::kTypeName,
-        result);
+                            result);
     EXPECT_EQ(result.length(), 0);
   }
 
