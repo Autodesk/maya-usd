@@ -34,6 +34,10 @@
 #include <sstream>
 #include <algorithm>
 
+namespace {
+    typedef void (AL::usdmaya::nodes::SelectionList::*SelectionListModifierFunc)(SdfPath);
+}
+
 namespace AL {
 namespace usdmaya {
 namespace cmds {
@@ -299,9 +303,17 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   }
   if(hasPrimPath) {
     database.getFlagArgument("-pp", 0, primPath);
+    if (!SdfPath(primPath.asChar()).IsPrimPath()) {
+      MGlobal::displayError(MString("Invalid primPath: ") + primPath);
+      return MS::kFailure;
+    }
   }
   if(hasExclPrimPath) {
     database.getFlagArgument("-epp", 0, excludePrimPath);
+    if (!SdfPath(excludePrimPath.asChar()).IsPrimPath()) {
+      MGlobal::displayError(MString("Invalid excludePrimPath: ") + excludePrimPath);
+      return MS::kFailure;
+    }
   }
   if(database.isFlagSet("-ctt")) {
     database.getFlagArgument("-ctt", 0, connectToTime);
@@ -436,6 +448,10 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       MString pathString;
       db.getFlagArgument("-pp", 0, pathString);
       path = SdfPath(convert(pathString));
+      if (!path.IsPrimPath()) {
+        MGlobal::displayError(MString("Invalid primPath: ") + path.GetText());
+        return MS::kFailure;
+      }
     }
     else
     {
@@ -643,7 +659,7 @@ MStatus ProxyShapeImportAllTransforms::doIt(const MArgList& args)
       UsdPrim prim = stage->GetPrimAtPath(usdPath);
       if(!prim)
       {
-        MGlobal::displayError("The prim path specified could not be found in the USD stage");
+        MGlobal::displayError(MString("The prim path specified could not be found in the USD stage: ") + primPath);
         throw MS::kFailure;
       }
       else
@@ -742,7 +758,7 @@ MStatus ProxyShapeRemoveAllTransforms::doIt(const MArgList& args)
       UsdPrim prim = stage->GetPrimAtPath(usdPath);
       if(!prim)
       {
-        MGlobal::displayError("The prim path specified could not be found in the USD stage");
+        MGlobal::displayError(MString("The prim path specified could not be found in the USD stage: ") + primPath);
         throw MS::kFailure;
       }
       else
@@ -796,9 +812,13 @@ MStatus ProxyShapeResync::doIt(const MArgList& args)
     {
       MString pathString;
       db.getFlagArgument("-pp", 0, pathString);
+      SdfPath primPath = SdfPath(convert(pathString));
+      if (!primPath.IsPrimPath()) {
+        MGlobal::displayError(MString("Invalid primPath: ") + pathString);
+        return MS::kFailure;
+      }
 
       UsdStageRefPtr stage = m_shapeNode->getUsdStage();
-      SdfPath primPath = SdfPath(convert(pathString));
       UsdPrim prim = stage->GetPrimAtPath(primPath);
 
       if(prim.IsValid())
@@ -873,28 +893,17 @@ MStatus InternalProxyShapeSelect::doIt(const MArgList& args)
     }
     else
     {
+      SelectionListModifierFunc selListModiferFunc;
       if(db.isFlagSet("-d"))
       {
         m_new = m_previous;
-        for(uint32_t i = 0, n = db.numberOfFlagUses("-pp"); i < n; ++i)
-        {
-          MArgList args;
-          db.getFlagArgumentList("-pp", i, args);
-          MString pathString = args.asString(0);
-          m_new.remove(SdfPath(convert(pathString)));
-        }
+        selListModiferFunc = &nodes::SelectionList::remove;
       }
       else
       if(db.isFlagSet("-tgl"))
       {
         m_new = m_previous;
-        for(uint32_t i = 0, n = db.numberOfFlagUses("-pp"); i < n; ++i)
-        {
-          MArgList args;
-          db.getFlagArgumentList("-pp", i, args);
-          MString pathString = args.asString(0);
-          m_new.toggle(SdfPath(convert(pathString)));
-        }
+        selListModiferFunc = &nodes::SelectionList::toggle;
       }
       else
       {
@@ -903,13 +912,20 @@ MStatus InternalProxyShapeSelect::doIt(const MArgList& args)
           m_new = m_previous;
         }
 
-        for(uint32_t i = 0, n = db.numberOfFlagUses("-pp"); i < n; ++i)
-        {
-          MArgList args;
-          db.getFlagArgumentList("-pp", i, args);
-          MString pathString = args.asString(0);
-          m_new.add(SdfPath(convert(pathString)));
+        selListModiferFunc = &nodes::SelectionList::add;
+      }
+
+      for(uint32_t i = 0, n = db.numberOfFlagUses("-pp"); i < n; ++i)
+      {
+        MArgList args;
+        db.getFlagArgumentList("-pp", i, args);
+        MString pathString = args.asString(0);
+        SdfPath path(convert(pathString));
+        if (!path.IsPrimPath()) {
+          MGlobal::displayError(MString("Invalid primPath: ") + pathString);
+          return MS::kFailure;
         }
+        (m_new.*selListModiferFunc)(path);
       }
     }
   }
@@ -1166,6 +1182,10 @@ MStatus ProxyShapeImportPrimPathAsMaya::doIt(const MArgList& args)
       MString pathString;
       db.getFlagArgument("-pp", 0, pathString);
       m_path = SdfPath(convert(pathString));
+      if (!m_path.IsPrimPath()) {
+        MGlobal::displayError(MString("Invalid primPath: ") + pathString);
+        return MS::kFailure;
+      }
     }
 
     m_asProxyShape = false;

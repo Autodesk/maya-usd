@@ -515,11 +515,11 @@ public:
     {
       if(obj == it.second.node())
       {
+        path = it.first;
         if(m_selectedPaths.count(it.first) > 0)
         {
           return true;
         }
-        path = it.first;
         break;
       }
     }
