@@ -1,0 +1,28 @@
+{
+    "archiverecorder": {
+        "active": 1
+    },
+    "arkuriresolver": {
+        "active": 1,
+        "order": 40
+    },
+    "diagnosticrecorder": {
+        "active": 1
+    },
+    "filesystemresolver": {
+        "active": 1,
+        "order": 20
+    },
+    "lookuptablerecorder": {
+        "active": 1
+    },
+    "lookuptableresolver": {
+        "active": 1,
+        "filepath": "${REZ_AL_USD_PROTO_TOPOX_ROOT}/config/assets.json",
+        "order": 30
+    },
+    "repositorypathresolver": {
+        "active": 1,
+        "order": 10
+    }
+}
