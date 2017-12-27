@@ -1133,6 +1133,9 @@ TEST(ProxyShape, findExcludedGeometry)
 // void resolveRelativePathWithinMayaContext();
 TEST(ProxyShape, relativePathSupport)
 {
+  // Test the relative USD bootstrap file path support:
+  // If the proxy shape is not referenced, the relative file path will be resolved using the current
+  // maya scene directory:
   const MString emptyScene = MString(AL_USDMAYA_TEST_DATA) + "/empty_scene/empty_scene.ma";
   MStatus stat = MFileIO::open(emptyScene, NULL, true);
   EXPECT_EQ(MStatus(MS::kSuccess), stat);
@@ -1148,6 +1151,7 @@ TEST(ProxyShape, relativePathSupport)
   std::string realPath = stage->GetRootLayer()->GetRealPath();
   EXPECT_EQ(realPath, bootstrapPath);
 
+  // If the proxy shape is referenced, the relative path should be resolved using  the reference file path.
   const MString referenceEmptyScene = MString(AL_USDMAYA_TEST_DATA) + "/referenceEmptyScene.ma";
   stat = MFileIO::open(referenceEmptyScene, NULL, true);
   EXPECT_EQ(MStatus(MS::kSuccess), stat);
