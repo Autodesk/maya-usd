@@ -105,47 +105,49 @@ static std::string resolvePath(const std::string& filePath)
   return resolver.Resolve(filePath);
 }
 
-static size_t getLastSlashIndex(const std::string& filePath)
+static std::string getDir(const std::string &fullFilePath)
 {
-  size_t slashIndex = filePath.find_last_of("/");
-  if (slashIndex == std::string::npos)
-    slashIndex = filePath.find_last_of("\\");
+  size_t slashIndex = fullFilePath.find_last_of("/");
 
-  return slashIndex;
+  if (slashIndex == std::string::npos)
+    slashIndex = fullFilePath.find_last_of("\\");
+
+  if (slashIndex == std::string::npos)
+    return "";
+
+  return fullFilePath.substr(0, slashIndex+1);
 }
 
 static std::string getMayaReferencedFileDir(const MObject &proxyShapeNode)
 {
+  // Can not use MFnDependencyNode(proxyShapeNode).isFromReferencedFile() to test if it is reference node or not,
+  // which always return false even the proxyShape node is referenced...
+
   MStatus stat;
-  MFnDependencyNode nodeFn(proxyShapeNode, &stat);
-  if(!stat)
-    return "";
-
-  if(!nodeFn.isFromReferencedFile(&stat) || !stat)
-    return "";
-
   MFnReference refFn;
   MItDependencyNodes dgIter(MFn::kReference, &stat);
   for (; !dgIter.isDone(); dgIter.next())
   {
-    refFn.setObject(dgIter.thisNode());
+    MObject cRefNode = dgIter.thisNode();
+    refFn.setObject(cRefNode);
     if(refFn.containsNodeExactly(proxyShapeNode, &stat))
     {
-      MString refFilePath = refFn.fileName(true, true, false, &stat);
+      // According to Maya API document, the second argument is 'includePath' and set it to true to include the file path.
+      // However, I have to set it to false to return the full file path otherwise I get a file name only...
+      MString refFilePath = refFn.fileName(true, false, false, &stat);
       if(!refFilePath.length())
         return "";
 
       std::string referencedFilePath = refFilePath.asChar();
-      size_t slashIndex = getLastSlashIndex(referencedFilePath);
-      if (slashIndex == std::string::npos)
-        return "";
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("getMayaReferencedFileDir: The reference file that contains the proxyShape node is : %s\n", referencedFilePath.c_str());
 
-      return referencedFilePath.substr(0, slashIndex+1);
+      return getDir(referencedFilePath);
     }
   }
 
   return "";
 }
+
 static std::string getMayaSceneFileDir()
 {
   std::string currentFile = MFileIO::currentFile().asChar();
@@ -158,11 +160,7 @@ static std::string getMayaSceneFileDir()
   if (ext != ".ma" && ext != ".mb")
     return "";
 
-  size_t slashIndex = getLastSlashIndex(currentFile);
-  if (slashIndex == std::string::npos)
-   return "";
-
-  return currentFile.substr(0, slashIndex+1);
+  return getDir(currentFile);
 }
 
 static std::string resolveRelativePathWithinMayaContext(const MObject &proxyShape, const std::string& filePath)
