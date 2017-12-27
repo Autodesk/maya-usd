@@ -1130,7 +1130,7 @@ TEST(ProxyShape, findExcludedGeometry)
   AL_USDMAYA_UNTESTED;
 }
 
-// void resolveRelativePathWithCurrentMayaScenePath();
+// void resolveRelativePathWithinMayaContext();
 TEST(ProxyShape, relativePathSupport)
 {
   const MString emptyScene = MString(AL_USDMAYA_TEST_DATA) + "/empty_scene/empty_scene.ma";
@@ -1147,7 +1147,19 @@ TEST(ProxyShape, relativePathSupport)
 
   std::string realPath = stage->GetRootLayer()->GetRealPath();
   EXPECT_EQ(realPath, bootstrapPath);
+
+  const MString referenceEmptyScene = MString(AL_USDMAYA_TEST_DATA) + "/referenceEmptyScene.ma";
+  stat = MFileIO::open(referenceEmptyScene, NULL, true);
+  EXPECT_EQ(MStatus(MS::kSuccess), stat);
+  stages = cache.GetAllStages();
+  EXPECT_TRUE(not stages.empty());
+  stage = stages[0];
+  EXPECT_TRUE(stage);
+
+  realPath = stage->GetRootLayer()->GetRealPath();
+  EXPECT_EQ(realPath, bootstrapPath);
 }
+
 //
 // funcs that aren't easily testable:
 //
