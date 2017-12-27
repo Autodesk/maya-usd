@@ -114,6 +114,34 @@ static size_t getLastSlashIndex(const std::string& filePath)
   return slashIndex;
 }
 
+static std::string getMayaReferencedFileDir(const MObject &proxyShapeNode)
+{
+  MStatus stat;
+  MFnDependencyNode nodeFn(proxyShapeNode, &stat);
+  if(!stat)
+    return "";
+
+  if(!nodeFn.isFromReferencedFile(&stat) || !stat)
+    return "";
+
+  MFnReference refFn;
+  MItDependencyNodes dgIter(MFn::kReference, &stat);
+  for (; !dgIter.isDone(); dgIter.next())
+  {
+    refFn.setObject(dgIter.thisNode());
+    if(refFn.containsNodeExactly(proxyShapeNode, &stat))
+    {
+      std::string referencedFilePath = refFn.fileName(true, true, false, &stat);
+      size_t slashIndex = getLastSlashIndex(referencedFilePath);
+      if (slashIndex == std::string::npos)
+        return "";
+
+      return referencedFilePath.substr(0, slashIndex+1);
+    }
+  }
+
+  return "";
+}
 static std::string getMayaSceneFileDir()
 {
   std::string currentFile = MFileIO::currentFile().asChar();
@@ -133,12 +161,15 @@ static std::string getMayaSceneFileDir()
   return currentFile.substr(0, slashIndex+1);
 }
 
-static std::string resolveRelativePathWithCurrentMayaScenePath(const std::string& filePath)
+static std::string resolveRelativePathWithinMayaContext(const MObject &proxyShape, const std::string& filePath)
 {
   if (filePath.length() < 3)
     return filePath;
 
-  std::string currentFileDir = getMayaSceneFileDir();
+  std::string currentFileDir = getMayaReferencedFileDir(proxyShape);
+  if(currentFileDir.empty())
+    currentFileDir = getMayaSceneFileDir();
+
   if(currentFileDir.empty())
     return filePath;
 
@@ -1184,7 +1215,7 @@ void ProxyShape::loadStage()
   }
   else
   {
-    fileString = resolveRelativePathWithCurrentMayaScenePath(fileString);
+    fileString = resolveRelativePathWithinMayaContext(thisMObject(), fileString);
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the relative USD file path to %s\n", fileString.c_str());
   }
 
