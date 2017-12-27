@@ -131,7 +131,11 @@ static std::string getMayaReferencedFileDir(const MObject &proxyShapeNode)
     refFn.setObject(dgIter.thisNode());
     if(refFn.containsNodeExactly(proxyShapeNode, &stat))
     {
-      std::string referencedFilePath = refFn.fileName(true, true, false, &stat);
+      MString refFilePath = refFn.fileName(true, true, false, &stat);
+      if(!refFilePath.length())
+        return "";
+
+      std::string referencedFilePath = refFilePath.asChar();
       size_t slashIndex = getLastSlashIndex(referencedFilePath);
       if (slashIndex == std::string::npos)
         return "";
