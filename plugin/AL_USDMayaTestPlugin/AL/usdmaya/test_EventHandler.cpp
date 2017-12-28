@@ -74,7 +74,7 @@ TEST(EventDispatcher, EventDispatcher)
   EventDispatcher info("eventName", 42, &associated, 23);
   EXPECT_EQ(info.name(), "eventName");
   EXPECT_EQ(info.eventId(), 42);
-  EXPECT_EQ(info.parentEventId(), 23);
+  EXPECT_EQ(info.parentCallbackId(), 23);
   EXPECT_EQ(info.associatedData(), &associated);
 
 
@@ -244,7 +244,7 @@ TEST(EventScheduler, registerEvent)
   auto eventInfo = registrar.event(id1);
   EXPECT_TRUE(eventInfo != nullptr);
   EXPECT_EQ(eventInfo->eventId(), 1);
-  EXPECT_EQ(eventInfo->parentEventId(), 0);
+  EXPECT_EQ(eventInfo->parentCallbackId(), 0);
   EXPECT_EQ(eventInfo->associatedData(), &associated);
 
   // This should fail to register a new event (since the name is not unique)
@@ -258,7 +258,7 @@ TEST(EventScheduler, registerEvent)
   eventInfo = registrar.event(id3);
   EXPECT_TRUE(eventInfo != nullptr);
   EXPECT_EQ(eventInfo->eventId(), 2);
-  EXPECT_EQ(eventInfo->parentEventId(), 0);
+  EXPECT_EQ(eventInfo->parentCallbackId(), 0);
   EXPECT_EQ(eventInfo->associatedData(), &associated2);
 
   EXPECT_TRUE(registrar.unregisterEvent(id1));
@@ -283,7 +283,7 @@ TEST(EventScheduler, registerChildEvent)
   auto parentEventInfo = registrar.event(id1);
   EXPECT_TRUE(parentEventInfo != nullptr);
   EXPECT_EQ(parentEventInfo->eventId(), 1);
-  EXPECT_EQ(parentEventInfo->parentEventId(), 0);
+  EXPECT_EQ(parentEventInfo->parentCallbackId(), 0);
   EXPECT_EQ(parentEventInfo->associatedData(), &associated);
 
   int value;
@@ -294,7 +294,7 @@ TEST(EventScheduler, registerChildEvent)
   auto eventInfo = registrar.event(id2);
   EXPECT_TRUE(eventInfo != nullptr);
   EXPECT_EQ(eventInfo->eventId(), 2);
-  EXPECT_EQ(eventInfo->parentEventId(), callbackId);
+  EXPECT_EQ(eventInfo->parentCallbackId(), callbackId);
   EXPECT_EQ(eventInfo->associatedData(), &associated);
 
   EXPECT_TRUE(registrar.unregisterEvent(id2));
@@ -325,7 +325,7 @@ TEST(EventScheduler, registerCallback)
   auto parentEventInfo = registrar.event(id1);
   EXPECT_TRUE(parentEventInfo != nullptr);
   EXPECT_EQ(parentEventInfo->eventId(), 1);
-  EXPECT_EQ(parentEventInfo->parentEventId(), 0);
+  EXPECT_EQ(parentEventInfo->parentCallbackId(), 0);
   EXPECT_EQ(parentEventInfo->associatedData(), &associated);
 
   int value;
@@ -336,7 +336,7 @@ TEST(EventScheduler, registerCallback)
   auto eventInfo = registrar.event(id2);
   EXPECT_TRUE(eventInfo != nullptr);
   EXPECT_EQ(eventInfo->eventId(), 2);
-  EXPECT_EQ(eventInfo->parentEventId(), callbackId);
+  EXPECT_EQ(eventInfo->parentCallbackId(), callbackId);
   EXPECT_EQ(eventInfo->associatedData(), &associated);
 
   EXPECT_TRUE(registrar.unregisterEvent(id2));
@@ -350,10 +350,596 @@ TEST(EventScheduler, registerCallback)
   EXPECT_TRUE(registrar.unregisterEvent(id1));
   parentEventInfo = registrar.event(id1);
   EXPECT_TRUE(parentEventInfo == nullptr);
-
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+static const char* const runBasicNodeEventTest =  R"(
+
+proc int runBasicNodeEventTest(string $eventName)
+{
+  file -f -new;
+
+  $proxyTm = `createNode "transform"`;
+  $proxy = `createNode -p $proxyTm "AL_usdmaya_ProxyShape"`;
+
+  // generate something we can test to ensure the callback runs
+  $tm = `createNode "transform"`;
+  $cmd = ("select -r " + $tm + "; move -r 5 0 0;");
+
+  // attach a callback to the proxy shape and check to make sure the expected callback ids are sane
+  int $cb[] = `AL_usdmaya_Callback -mne $proxy $eventName "perch" 10000 $cmd`;
+  if(size($cb) != 2) return -1;
+
+  {
+    // check that we can query the same callback from the proxy
+    int $cb2[] = `AL_usdmaya_ListCallbacks $eventName $proxy`;
+    if(size($cb2) != 2) return -1;
+    for($i = 0; $i < 2; ++$i)
+    {
+      if($cb[$i] != $cb2[$i])
+        return -1;
+    }
+  }
+
+  // undo the AL_usdmaya_Callback call to make sure the callback is removed
+  undo;
+  if(size(`AL_usdmaya_ListCallbacks $eventName $proxy`) != 0)
+    return -1;
+
+  // redo the AL_usdmaya_Callback call to make sure the same callback is reinserted
+  redo;
+  if(size(`AL_usdmaya_ListCallbacks $eventName $proxy`) != 2)
+    return -1;
+
+  // check to make sure the meta data of the callback is correct
+  if(`AL_usdmaya_CallbackQuery -c $cb[0] $cb[1]` != $cmd)
+      return -1;
+
+  int $eventId = `AL_usdmaya_EventQuery -e $eventName $proxy`;
+  if(`AL_usdmaya_CallbackQuery -e $cb[0] $cb[1]` != $eventId)
+      return -1;
+
+  if(`AL_usdmaya_CallbackQuery -w $cb[0] $cb[1]` != 10000)
+      return -1;
+
+  if(`AL_usdmaya_CallbackQuery -et $cb[0] $cb[1]` != "perch")
+      return -1;
+
+  // attempt to register a callback with the same tag: this should fail!
+  $cb2 = `AL_usdmaya_Callback -mne $proxy $eventName "perch" 10000 $cmd`;
+  if(size($cb2) != 2) return -1;
+  if($cb2[0] != 0 || $cb2[1] != 0) return -1;
+
+  // trigger the event, and see if the translation has changed on the transform
+  AL_usdmaya_TriggerEvent -n $proxy $eventName;
+
+  float $pos[] = `getAttr ($tm + ".t")`;
+  if($pos[0] != 5.0)
+    return -1;
+
+  // delete the callback with the delete callbacks command
+  AL_usdmaya_DeleteCallbacks $cb;
+
+  // make sure the callback has been deleted
+  {
+    int $cb2[] = `AL_usdmaya_ListCallbacks $eventName $proxy`;
+    if(size($cb2) != 0)
+       return -1;
+  }
+
+  // undo the deletion, and make sure the callback has been restored
+  undo;
+  {
+    int $cb2[] = `AL_usdmaya_ListCallbacks $eventName $proxy`;
+    if(size($cb2) != 2) return -1;
+    for($i = 0; $i < 2; ++$i)
+    {
+      if($cb[$i] != $cb2[$i])
+        return -1;
+    }
+  }
+
+  // redo the deletion
+  redo;
+  {
+    int $cb2[] = `AL_usdmaya_ListCallbacks $eventName $proxy`;
+    if(size($cb2) != 0) return -1;
+  }
+  undo;
+
+  // delete the callback via the callback command
+  AL_usdmaya_Callback -de $cb[0] $cb[1];
+
+  // make sure the callback has been deleted
+  {
+    int $cb2[] = `AL_usdmaya_ListCallbacks $eventName $proxy`;
+    if(size($cb2) != 0)
+       return -1;
+  }
+
+  // undo the deletion, and make sure the callback has been restored
+  undo;
+  {
+    int $cb2[] = `AL_usdmaya_ListCallbacks $eventName $proxy`;
+    if(size($cb2) != 2) return -1;
+    for($i = 0; $i < 2; ++$i)
+    {
+      if($cb[$i] != $cb2[$i])
+        return -1;
+    }
+  }
+  // redo the deletion
+  redo;
+  {
+    int $cb2[] = `AL_usdmaya_ListCallbacks $eventName $proxy`;
+    if(size($cb2) != 0) return -1;
+  }
+
+  // delete the old nodes
+  delete $tm;
+  delete $proxy;
+  delete $proxyTm;
+
+  return 0;
+}
+runBasicNodeEventTest("PreStageLoaded");
+
+)";
 
 
 //----------------------------------------------------------------------------------------------------------------------
+static const char* const runBasicGlobalEventTest =  R"(
+
+proc int runBasicGlobalEventTest()
+{
+  file -f -new;
+  // generate something we can test to ensure the callback runs
+  $tm = `createNode "transform"`;
+  $cmd = ("select -r " + $tm + "; move -r 5 0 0;");
+
+  // see what events we have before adding a dynamic event
+  string $eventsBefore[] = `AL_usdmaya_ListEvents`;
+  print $eventsBefore;
+
+  // the name of our new event
+  string $eventName = "BasicGlobalEvent";
+
+  // generate the new event
+  AL_usdmaya_Event $eventName;
+  int $eventId = `AL_usdmaya_EventQuery -e $eventName`;
+  if($eventId == 0)
+    return -1;
+
+  // see whether the new event has been registered on the node
+  string $eventsAfter[] = `AL_usdmaya_ListEvents`;
+  print $eventsAfter;
+  if(size($eventsBefore) == size($eventsAfter))
+  {
+    return -1;
+  }
+  {
+    $found = false;
+    for($s in $eventsAfter)
+    {
+      if($s == $eventName)
+      {
+        $found = true;
+        break;
+      }
+    }
+    if(!$found)
+      return -1;
+  }
+
+  // undo previous command, events should be the same as before
+  undo;
+  $eventsAfter = `AL_usdmaya_ListEvents`;
+  if(size($eventsBefore) != size($eventsAfter))
+  {
+    return -1;
+  }
+
+  // redo to make sure it's now there again
+  redo;
+  $eventsAfter = `AL_usdmaya_ListEvents`;
+  if(size($eventsBefore) == size($eventsAfter))
+  {
+    return -1;
+  }
+
+  {
+    $found = false;
+    for($s in $eventsAfter)
+    {
+      if($s == $eventName)
+      {
+        $found = true;
+        break;
+      }
+    }
+    if(!$found)
+      return -1;
+  }
+
+  // assign a callback to it, and make sure it can be triggered
+  int $cb[] = `AL_usdmaya_Callback -me $eventName "guppy" 10000 $cmd`;
+  if(size($cb) != 2) return -1;
+
+  {
+    // check that we can query the same callback from the proxy
+    int $cb2[] = `AL_usdmaya_ListCallbacks $eventName`;
+    if(size($cb2) != 2) return -1;
+    for($i = 0; $i < 2; ++$i)
+    {
+      if($cb[$i] != $cb2[$i])
+        return -1;
+    }
+  }
+
+  // undo the AL_usdmaya_Callback call to make sure the callback is removed
+  undo;
+  if(size(`AL_usdmaya_ListCallbacks $eventName`) != 0)
+    return -1;
+
+  // redo the AL_usdmaya_Callback call to make sure the same callback is reinserted
+  redo;
+  if(size(`AL_usdmaya_ListCallbacks $eventName`) != 2)
+    return -1;
+
+  // check to make sure the meta data of the callback is correct
+  if(`AL_usdmaya_CallbackQuery -c $cb[0] $cb[1]` != $cmd)
+      return -1;
+
+  if(`AL_usdmaya_CallbackQuery -e $cb[0] $cb[1]` != $eventId)
+      return -1;
+
+  if(`AL_usdmaya_CallbackQuery -w $cb[0] $cb[1]` != 10000)
+      return -1;
+
+  if(`AL_usdmaya_CallbackQuery -et $cb[0] $cb[1]` != "guppy")
+      return -1;
+
+  // attempt to register a callback with the same tag: this should fail!
+  $cb2 = `AL_usdmaya_Callback -me $eventName "guppy" 10000 $cmd`;
+  if(size($cb2) != 2) return -1;
+  if($cb2[0] != 0 || $cb2[1] != 0) return -1;
+
+  // trigger the event, and see if the translation has changed on the transform
+  AL_usdmaya_TriggerEvent $eventName;
+
+  float $pos[] = `getAttr ($tm + ".t")`;
+  if($pos[0] != 5.0)
+    return -1;
+
+  // delete the callback with the delete callbacks command
+  AL_usdmaya_DeleteCallbacks $cb;
+
+  AL_usdmaya_Event -d $eventName;
+
+  // delete the old nodes
+  delete $tm;
+
+  return 0;
+}
+runBasicGlobalEventTest;
+
+)";
 
 
+//----------------------------------------------------------------------------------------------------------------------
+static const char* const runDynamicNodeEventTest =  R"(
+
+proc int runDynamicNodeEventTest()
+{
+  file -f -new;
+  $proxyTm = `createNode "transform"`;
+  $proxy = `createNode -p $proxyTm "AL_usdmaya_ProxyShape"`;
+
+  // generate something we can test to ensure the callback runs
+  $tm = `createNode "transform"`;
+  $cmd = ("select -r " + $tm + "; move -r 5 0 0;");
+
+  // see what events we have before adding a dynamic event
+  string $eventsBefore[] = `AL_usdmaya_ListEvents $proxy`;
+
+  // the name of our new event
+  string $eventName = "DynamicEvent";
+
+  // generate the new event
+  AL_usdmaya_Event $eventName $proxy;
+  int $eventId = `AL_usdmaya_EventQuery -e $eventName $proxy`;
+  if($eventId == 0)
+    return -1;
+
+
+  // see whether the new event has been registered on the node
+  string $eventsAfter[] = `AL_usdmaya_ListEvents $proxy`;
+  if(size($eventsBefore) == size($eventsAfter))
+  {
+    return -1;
+  }
+  {
+    $found = false;
+    for($s in $eventsAfter)
+    {
+      if($s == $eventName)
+      {
+        $found = true;
+        break;
+      }
+    }
+    if(!$found)
+      return -1;
+  }
+
+  // undo previous command, events should be the same as before
+  undo;
+  $eventsAfter = `AL_usdmaya_ListEvents $proxy`;
+  if(size($eventsBefore) != size($eventsAfter))
+  {
+    return -1;
+  }
+
+  // redo to make sure it's now there again
+  redo;
+  string $eventsAfter[] = `AL_usdmaya_ListEvents $proxy`;
+  if(size($eventsBefore) == size($eventsAfter))
+  {
+    return -1;
+  }
+  {
+    $found = false;
+    for($s in $eventsAfter)
+    {
+      if($s == $eventName)
+      {
+        $found = true;
+        break;
+      }
+    }
+    if(!$found)
+      return -1;
+  }
+
+  // assign a callback to it, and make sure it can be triggered
+  int $cb[] = `AL_usdmaya_Callback -mne $proxy $eventName "tuna" 10000 $cmd`;
+  if(size($cb) != 2) return -1;
+
+  {
+    // check that we can query the same callback from the proxy
+    int $cb2[] = `AL_usdmaya_ListCallbacks $eventName $proxy`;
+    if(size($cb2) != 2) return -1;
+    for($i = 0; $i < 2; ++$i)
+    {
+      if($cb[$i] != $cb2[$i])
+        return -1;
+    }
+  }
+
+  // undo the AL_usdmaya_Callback call to make sure the callback is removed
+  undo;
+  if(size(`AL_usdmaya_ListCallbacks $eventName $proxy`) != 0)
+    return -1;
+
+  // redo the AL_usdmaya_Callback call to make sure the same callback is reinserted
+  redo;
+  if(size(`AL_usdmaya_ListCallbacks $eventName $proxy`) != 2)
+    return -1;
+
+  // check to make sure the meta data of the callback is correct
+  if(`AL_usdmaya_CallbackQuery -c $cb[0] $cb[1]` != $cmd)
+      return -1;
+
+  if(`AL_usdmaya_CallbackQuery -e $cb[0] $cb[1]` != $eventId)
+      return -1;
+
+  if(`AL_usdmaya_CallbackQuery -w $cb[0] $cb[1]` != 10000)
+      return -1;
+
+  if(`AL_usdmaya_CallbackQuery -et $cb[0] $cb[1]` != "tuna")
+      return -1;
+
+  // attempt to register a callback with the same tag: this should fail!
+  $cb2 = `AL_usdmaya_Callback -mne $proxy $eventName "tuna" 10000 $cmd`;
+  if(size($cb2) != 2) return -1;
+  if($cb2[0] != 0 || $cb2[1] != 0) return -1;
+
+  // trigger the event, and see if the translation has changed on the transform
+  AL_usdmaya_TriggerEvent -n $proxy $eventName;
+
+  float $pos[] = `getAttr ($tm + ".t")`;
+  if($pos[0] != 5.0)
+    return -1;
+
+  // delete the callback with the delete callbacks command
+  AL_usdmaya_DeleteCallbacks $cb;
+
+  // delete the old nodes
+  delete $tm;
+  delete $proxy;
+  delete $proxyTm;
+
+  return 0;
+}
+runDynamicNodeEventTest;
+
+)";
+
+//----------------------------------------------------------------------------------------------------------------------
+static const char* const runParentNodeCallbackTest =  R"(
+
+proc int runParentNodeCallbackTest()
+{
+  file -f -new;
+  $proxyTm = `createNode "transform"`;
+  $proxy = `createNode -p $proxyTm "AL_usdmaya_ProxyShape"`;
+
+  // generate something we can test to ensure the callback runs
+  $tm = `createNode "transform"`;
+  $childCommand = ("select -r " + $tm + "; move -r 5 0 0;");
+
+  // the name of our new event
+  string $mainEventName = "DynamicNodeEvent";
+  string $childEventName = "ChildNodeEvent";
+
+  // generate a high level event
+  AL_usdmaya_Event $mainEventName $proxy;
+
+  // generate a callback command that triggers the child event
+  string $parentCommand = "AL_usdmaya_TriggerEvent -n " + $proxy + " " + $childEventName + ";";
+
+  // assign a callback to it, and make sure it can be triggered
+  int $parentCB[] = `AL_usdmaya_Callback -mne $proxy $mainEventName "salmon" 10000 $parentCommand`;
+
+  // generate the new event, setting the callback as a
+  AL_usdmaya_Event -p $parentCB[0] $parentCB[1] $childEventName $proxy;
+
+  // assign a callback to it, and make sure it can be triggered
+  int $childCB[] = `AL_usdmaya_Callback -mne $proxy $childEventName "gurnard" 10000 $childCommand`;
+
+  // make sure the parent CB is correctly reported
+  {
+    int $cb[] = `AL_usdmaya_EventQuery -p $childEventName $proxy`;
+    if(size($cb) != 2 ||
+       $cb[0] != $parentCB[0] ||
+       $cb[1] != $parentCB[1])
+    {
+      return -1;
+    }
+  }
+
+  // trigger the main event, and see if it inturn runs the child callback (via the parent callback)
+  AL_usdmaya_TriggerEvent -n $proxy $mainEventName;
+
+  float $pos[] = `getAttr ($tm + ".t")`;
+  if($pos[0] != 5.0)
+    return -1;
+
+  // delete the callback with the delete callbacks command
+  AL_usdmaya_DeleteCallbacks $childCB;
+  AL_usdmaya_DeleteCallbacks $parentCB;
+  AL_usdmaya_Event -d $childEventName $proxy;
+  AL_usdmaya_Event -d $mainEventName $proxy;
+
+  // delete the old nodes
+  delete $tm;
+  delete $proxy;
+  delete $proxyTm;
+
+  return 0;
+}
+runParentNodeCallbackTest;
+
+)";
+
+//----------------------------------------------------------------------------------------------------------------------
+static const char* const runParentGlobalCallbackTest =  R"(
+
+proc int runParentGlobalCallbackTest()
+{
+  file -f -new;
+  // generate something we can test to ensure the callback runs
+  $tm = `createNode "transform"`;
+  $childCommand = ("select -r " + $tm + "; move -r 5 0 0;");
+
+  // the name of our new event
+  string $mainEventName = "DynamicGlobalEvent";
+  string $childEventName = "ChildGlobalEvent";
+
+  // generate a high level event
+  AL_usdmaya_Event $mainEventName;
+
+  // generate a callback command that triggers the child event
+  string $parentCommand = "AL_usdmaya_TriggerEvent " + $childEventName + ";";
+
+  // assign a callback to it, and make sure it can be triggered
+  int $parentCB[] = `AL_usdmaya_Callback -me $mainEventName "whitebait" 10000 $parentCommand`;
+
+  // generate the new event, setting the callback as a
+  AL_usdmaya_Event -p $parentCB[0] $parentCB[1] $childEventName;
+
+  // assign a callback to it, and make sure it can be triggered
+  int $childCB[] = `AL_usdmaya_Callback -me $childEventName "carp" 10000 $childCommand`;
+
+  // make sure the parent CB is correctly reported
+  {
+    int $cb[] = `AL_usdmaya_EventQuery -p $childEventName`;
+    if(size($cb) != 2 ||
+       $cb[0] != $parentCB[0] ||
+       $cb[1] != $parentCB[1])
+    {
+      return -1;
+    }
+  }
+
+  // trigger the main event, and see if it inturn runs the child callback (via the parent callback)
+  AL_usdmaya_TriggerEvent $mainEventName;
+
+  float $pos[] = `getAttr ($tm + ".t")`;
+  if($pos[0] != 5.0)
+    return -1;
+
+  // delete the callback with the delete callbacks command
+  AL_usdmaya_DeleteCallbacks $childCB;
+  AL_usdmaya_DeleteCallbacks $parentCB;
+  AL_usdmaya_Event -d $childEventName;
+  AL_usdmaya_Event -d $mainEventName;
+
+  // delete the old nodes
+  delete $tm;
+
+  return 0;
+}
+runParentGlobalCallbackTest;
+
+)";
+
+//----------------------------------------------------------------------------------------------------------------------
+TEST(EventCommand, runBasicNodeEventTest)
+{
+  MGlobal::executeCommand("undoInfo -st on;");
+  int result = -1;
+  EXPECT_TRUE(MGlobal::executeCommand(runBasicNodeEventTest, result, false, true) == MS::kSuccess);
+  EXPECT_TRUE(result == 0);
+  MGlobal::executeCommand("undoInfo -st off;");
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TEST(EventCommand, runBasicGlobalEventTest)
+{
+  MGlobal::executeCommand("undoInfo -st on;");
+  int result = -1;
+  EXPECT_TRUE(MGlobal::executeCommand(runBasicGlobalEventTest, result, false, true) == MS::kSuccess);
+  EXPECT_TRUE(result == 0);
+  MGlobal::executeCommand("undoInfo -st off;");
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TEST(EventCommand, runDynamicNodeEventTest)
+{
+  MGlobal::executeCommand("undoInfo -st on;");
+  int result = -1;
+  EXPECT_TRUE(MGlobal::executeCommand(runDynamicNodeEventTest, result, false, true) == MS::kSuccess);
+  EXPECT_TRUE(result == 0);
+  MGlobal::executeCommand("undoInfo -st off;");
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TEST(EventCommand, runParentNodeCallbackTest)
+{
+  MGlobal::executeCommand("undoInfo -st on;");
+  int result = -1;
+  EXPECT_TRUE(MGlobal::executeCommand(runParentNodeCallbackTest, result, false, true) == MS::kSuccess);
+  EXPECT_TRUE(result == 0);
+  MGlobal::executeCommand("undoInfo -st off;");
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TEST(EventCommand, runParentGlobalCallbackTest)
+{
+  MGlobal::executeCommand("undoInfo -st on;");
+  int result = -1;
+  EXPECT_TRUE(MGlobal::executeCommand(runParentGlobalCallbackTest, result, false, true) == MS::kSuccess);
+  EXPECT_TRUE(result == 0);
+  MGlobal::executeCommand("undoInfo -st off;");
+}

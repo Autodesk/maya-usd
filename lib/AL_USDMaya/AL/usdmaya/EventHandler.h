@@ -217,8 +217,8 @@ public:
       const char* const name,
       EventId eventId,
       const void* associatedData = 0,
-      CallbackId parentEvent = 0)
-    : m_name(name), m_callbacks(), m_associatedData(associatedData), m_eventId(eventId), m_parentEvent(parentEvent)
+      CallbackId parentCallback = 0)
+    : m_name(name), m_callbacks(), m_associatedData(associatedData), m_eventId(eventId), m_parentCallback(parentCallback)
     {}
 
   /// \brief  move ctor
@@ -227,7 +227,7 @@ public:
         m_callbacks(std::move(rhs.m_callbacks)),
         m_associatedData(rhs.m_associatedData),
         m_eventId(rhs.m_eventId),
-        m_parentEvent(rhs.m_parentEvent)
+        m_parentCallback(rhs.m_parentCallback)
     {}
 
   /// \brief  move assignment
@@ -237,7 +237,7 @@ public:
       m_callbacks = std::move(rhs.m_callbacks);
       m_associatedData = rhs.m_associatedData;
       m_eventId = rhs.m_eventId;
-      m_parentEvent = rhs.m_parentEvent;
+      m_parentCallback = rhs.m_parentCallback;
       return *this;
     }
 
@@ -310,8 +310,8 @@ public:
 
   /// \brief  returns the event id
   /// \return the event id
-  CallbackId parentEventId() const
-    { return m_parentEvent; }
+  CallbackId parentCallbackId() const
+    { return m_parentCallback; }
 
   /// \brief  This method dispatches the event to all callbacks. It is important that you provide a
   ///         function binding interface to pass the stored callback args to the callback signiture of your
@@ -467,7 +467,7 @@ private:
   std::string m_name;
   Callbacks m_callbacks;
   const void* m_associatedData;
-  CallbackId m_parentEvent;
+  CallbackId m_parentCallback;
   EventId m_eventId;
 };
 typedef std::vector<EventDispatcher> EventDispatchers;
@@ -490,8 +490,8 @@ public:
   /// \brief  register a new event
   /// \param  eventName the name of event to register
   /// \param  associatedData an associated data pointer for this event [optional]
-  /// \param  parentEvent if this event is triggered by a child
-  EventId registerEvent(const char* eventName, const void* associatedData = 0, const CallbackId parentEvent = 0);
+  /// \param  parentCallback if this event is triggered by a callback
+  EventId registerEvent(const char* eventName, const void* associatedData = 0, const CallbackId parentCallback = 0);
 
   /// \brief  unregister an event handler
   /// \param  eventId the event to unregister

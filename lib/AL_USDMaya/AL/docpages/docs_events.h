@@ -126,7 +126,7 @@ MStatus initializePlugin(MObject obj)
 MStatus uninitializePlugin(MObject obj)
 {
   // unregister the callback
-  AL::usdmaya::EventScheduler::getScheduler().unregisterCallback(g_mySimpleEvent);
+  AL::usdmaya::EventScheduler::getScheduler().unregisterCallback(g_myCallbackId);
 
   // unregister the event
   AL::usdmaya::EventScheduler::getScheduler().unregisterEvent(g_mySimpleEvent);
@@ -402,7 +402,6 @@ proc printNodeCallbackInfo(string $eventName, string $node)
 
 // find out info about the OnSomethingHappened event
 printNodeCallbackInfo("PreThingHappened", $node);
-
 \endcode
 
 If you wish to delete a callback, then you can do it in one of two ways:
@@ -429,5 +428,127 @@ AL_usdmaya_TriggerEvent "AnEventDefinedInMEL" $node;
 AL_usdmaya_Event -d "AnEventDefinedInMEL" $node;
 
 \endcode
+
+\subsection parentEventsC Parent / Child events in C++
+
+As an optional part of the events system, it is possible to provide additional information to an event that describes
+a parent/child relationship between callbacks and events. Child events themselves are not triggered automatically (that
+task is something that needs to be done manually), and child events can only be parented to a callback.
+
+\code
+
+#include "AL/usdmaya/EventHandler.h"
+
+// a global identifier for the event we have created
+AL::usdmaya::EventId g_mySimpleEvent1 = 0;
+AL::usdmaya::EventId g_mySimpleEvent2 = 0;
+
+class ParentEventExample
+   : public MPxCommand
+{
+public:
+  static void* creator() { return new ParentEventExample; }
+
+  MStatus doIt(const MArgList& args)
+  {
+    // ask the scheduler to trigger any callbacks registered against our event
+    AL::usdmaya::EventScheduler::getScheduler().triggerEvent(g_mySimpleEvent1);
+
+    return MS::kSuccess;
+  }
+};
+
+AL::usdmaya::CallbackId g_myCallbackId1 = 0;
+AL::usdmaya::CallbackId g_myCallbackId2 = 0;
+
+void myCallbackFunction1(void* userData)
+{
+  MGlobal::displayInfo("I am a callback that will trigger an event!\n");
+
+  AL::usdmaya::EventScheduler::getScheduler().triggerEvent(g_mySimpleEvent2);
+}
+
+void myCallbackFunction2(void* userData)
+{
+  MGlobal::displayInfo("I am the child callback!\n");
+}
+
+
+MStatus initializePlugin(MObject obj)
+{
+  // to access the global scheduler
+  auto& scheduler = AL::usdmaya::EventScheduler::getScheduler();
+
+  // lets register a simple event
+  g_mySimpleEvent1 = scheduler.registerEvent("OnParentThingHappened");
+
+  // make sure the event registered correctly
+  if(g_mySimpleEvent1 == 0)
+  {
+    std::cout << "event failed to register (name is in use!)" << std::endl;
+  }
+
+  // Simply as an example, we may wish to register a C callback on the event!
+  g_myCallbackId1 = scheduler.registerCallback(
+    g_mySimpleEvent1,                 ///< the event Id we wish to have our callback triggered on
+    "myToolName_myCallbackFunction1", ///< a unique tag to identify the who owns the callback, and its purpose
+    myCallbackFunction1,              ///< the C function we wish to execute
+    10000,                            ///< a weight value for the callback. Smaller values are executed first, larger last
+    nullptr);                         ///< an optional userData pointer
+
+  // make sure the callback registered correctly
+  if(g_myCallbackId1 == 0)
+  {
+    std::cout << "callback failed to register (tag is in use, or event id is invalid)" << std::endl;
+  }
+
+  // lets register a simple event
+  g_mySimpleEvent2 = scheduler.registerEvent("OnChildThingHappened", g_myCallbackId1);
+
+  // make sure the event registered correctly
+  if(g_mySimpleEvent2 == 0)
+  {
+    std::cout << "event failed to register (name is in use!)" << std::endl;
+  }
+
+  // Simply as an example, we may wish to register a C callback on the event!
+  g_myCallbackId2 = scheduler.registerCallback(
+    g_mySimpleEvent2,                 ///< the event Id we wish to have our callback triggered on
+    "myToolName_myCallbackFunction2", ///< a unique tag to identify the who owns the callback, and its purpose
+    myCallbackFunction2,              ///< the C function we wish to execute
+    10000,                            ///< a weight value for the callback. Smaller values are executed first, larger last
+    nullptr);                         ///< an optional userData pointer
+
+  // make sure the callback registered correctly
+  if(g_myCallbackId2 == 0)
+  {
+    std::cout << "callback failed to register (tag is in use, or event id is invalid)" << std::endl;
+  }
+
+  MFnPlugin fn(obj);
+  fn.registerCommand("parentEventExample", ParentEventExample::creator);
+  return MS::kSuccess;
+}
+
+MStatus uninitializePlugin(MObject obj)
+{
+  // unregister the callback
+  AL::usdmaya::EventScheduler::getScheduler().unregisterCallback(g_myCallbackId2);
+  AL::usdmaya::EventScheduler::getScheduler().unregisterCallback(g_myCallbackId1);
+
+  // unregister the event
+  AL::usdmaya::EventScheduler::getScheduler().unregisterEvent(g_mySimpleEvent2);
+  AL::usdmaya::EventScheduler::getScheduler().unregisterEvent(g_mySimpleEvent1);
+
+  MFnPlugin fn(obj);
+  fn.unregisterCommand("parentEventExample");
+
+  return MS::kSuccess;
+}
+\endcode
+
+\subsection parentEventsM Parent / Child events in MEL
+
+
 
 */

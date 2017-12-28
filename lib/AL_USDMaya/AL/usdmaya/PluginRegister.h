@@ -94,6 +94,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::DeleteCallbacks);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::CallbackQuery);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::Event);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventQuery);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
   AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
@@ -151,6 +152,7 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::DeleteCallbacks);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::CallbackQuery);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::Event);
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventQuery);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::UsdDebugCommand);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);

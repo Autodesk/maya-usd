@@ -57,7 +57,7 @@ struct Listener
   struct
   {
     uint32_t weight : 31;       ///< order weight of this event
-    uint32_t isPython : 1;      ///< if true (and the C++ fuction pointer is NULL), the command string will be treated as python, otherwise MEL
+    uint32_t isPython : 1;      ///< if true (and the C++ function pointer is NULL), the command string will be treated as python, otherwise MEL
   };
 
   inline bool operator < (const Listener& event) const

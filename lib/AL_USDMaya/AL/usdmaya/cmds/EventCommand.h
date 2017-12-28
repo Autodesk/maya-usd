@@ -60,6 +60,19 @@ private:
 };
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief   A command that allows you to query information about an event
+/// \ingroup commands
+//----------------------------------------------------------------------------------------------------------------------
+class EventQuery
+  : public MPxCommand
+{
+public:
+  AL_MAYA_DECLARE_COMMAND();
+private:
+  MStatus doIt(const MArgList& args) override;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
 /// \brief   A command that allows you to create / delete callbacks assigned to a specific event within AL_usdmaya
 /// \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------

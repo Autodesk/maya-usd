@@ -41,7 +41,7 @@ MSyntax Event::createSyntax()
   syn.addFlag("-d", "-delete");
   syn.addFlag("-p", "-parent", MSyntax::kLong, MSyntax::kLong);
   syn.addArg(MSyntax::kString);
-  syn.useSelectionAsDefault(true);
+  syn.useSelectionAsDefault(false);
   syn.setObjectType(MSyntax::kSelectionList, 0, 1);
   return syn;
 }
@@ -444,7 +444,7 @@ bool ListEvents::isUndoable() const
 MSyntax ListEvents::createSyntax()
 {
   MSyntax syntax;
-  syntax.useSelectionAsDefault(true);
+  syntax.useSelectionAsDefault(false);
   syntax.setObjectType(MSyntax::kSelectionList, 0, 1);
   return syntax;
 }
@@ -668,7 +668,7 @@ MSyntax ListCallbacks::createSyntax()
 {
   MSyntax syntax;
   syntax.addArg(MSyntax::kString);
-  syntax.useSelectionAsDefault(true);
+  syntax.useSelectionAsDefault(false);
   syntax.setObjectType(MSyntax::kSelectionList, 0, 1);
   return syntax;
 }
@@ -749,6 +749,98 @@ MStatus ListCallbacks::doIt(const MArgList& args)
   return status;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
+AL_MAYA_DEFINE_COMMAND(EventQuery, AL_usdmaya);
+
+//----------------------------------------------------------------------------------------------------------------------
+MSyntax EventQuery::createSyntax()
+{
+  MSyntax syntax;
+  syntax.addFlag("-h", "-help");
+  syntax.addFlag("-e", "-eventId");
+  syntax.addFlag("-p", "-parentId");
+  syntax.addArg(MSyntax::kString);
+  syntax.useSelectionAsDefault(false);
+  syntax.setObjectType(MSyntax::kSelectionList, 0, 1);
+  return syntax;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus EventQuery::doIt(const MArgList& args)
+{
+  MStatus status = MS::kSuccess;
+  MStringArray eventNames;
+  try
+  {
+    MArgDatabase database(syntax(), args, &status);
+    if(!status)
+      return status;
+    AL_MAYA_COMMAND_HELP(database, g_helpText);
+
+    MString eventName;
+    if(!database.getCommandArgument(0, eventName))
+    {
+      return MS::kFailure;
+    }
+
+    EventDispatcher* dispatcher = 0;
+
+    MSelectionList items;
+    status = database.getObjects(items);
+    if(status && items.length())
+    {
+      MObject obj;
+      items.getDependNode(0, obj);
+      MayaNodeEvents* handler = dynamic_cast<MayaNodeEvents*>(MFnDependencyNode(obj).userNode());
+      if(handler)
+      {
+        EventId eventId = handler->getId(eventName.asChar());
+        dispatcher = handler->scheduler()->event(eventId);
+      }
+    }
+    else
+    {
+      dispatcher = EventScheduler::getScheduler().event(eventName.asChar());
+    }
+
+    if(dispatcher)
+    {
+      if(database.isFlagSet("-p"))
+      {
+        union
+        {
+          CallbackId id;
+          int asInt[2];
+        };
+        id = dispatcher->parentCallbackId();
+        appendToResult(asInt[0]);
+        appendToResult(asInt[1]);
+      }
+      else
+      if(database.isFlagSet("-e"))
+      {
+        EventId eventId = dispatcher->eventId();
+        setResult(eventId);
+      }
+      else
+      {
+        MGlobal::displayError("AL_usdmaya_EventQuery: no flag specified");
+        return MS::kFailure;
+      }
+    }
+    else
+    {
+      MGlobal::displayError("AL_usdmaya_EventQuery: invalid event specified");
+      return MS::kFailure;
+    }
+  }
+  catch(...)
+  {
+    return MS::kFailure;
+  }
+  return MS::kSuccess;
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
@@ -767,7 +859,7 @@ MSyntax CallbackQuery::createSyntax()
   syntax.addFlag("-h", "-help");
   syntax.addFlag("-e", "-eventId");
   syntax.addFlag("-u", "-userData");
-  syntax.addFlag("-tag", "-tag");
+  syntax.addFlag("-et", "-eventTag");
   syntax.addFlag("-ty", "-type");
   syntax.addFlag("-w", "-weight");
   syntax.addFlag("-c", "-command");
@@ -822,7 +914,7 @@ MStatus CallbackQuery::doIt(const MArgList& args)
         setResult(int(id));
       }
       else
-      if(database.isFlagSet("-tag"))
+      if(database.isFlagSet("-et"))
       {
         setResult(event->tag().c_str());
       }
@@ -939,6 +1031,12 @@ Parent Events
 
     // set up the child event
     AL_usdmaya_Event -p $cb[0] $cb[1] "childEventName";
+)";
+
+//----------------------------------------------------------------------------------------------------------------------
+const char* const EventQuery::g_helpText =  R"(
+    AL_usdmaya_CallbackQuery Overview:
+
 )";
 
 //----------------------------------------------------------------------------------------------------------------------

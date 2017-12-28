@@ -196,14 +196,14 @@ bool EventDispatcher::unregisterCallback(CallbackId callbackId, Callback& info)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-EventId EventScheduler::registerEvent(const char* eventName, const void* associatedData, CallbackId parentEvent)
+EventId EventScheduler::registerEvent(const char* eventName, const void* associatedData, CallbackId parentCallback)
 {
   auto insertLocation = m_registeredEvents.end();
   EventId unusedId = 1;
   for(auto& it : m_registeredEvents)
   {
     if(it.name() == eventName &&
-       it.parentEventId() == parentEvent &&
+       it.parentCallbackId() == parentCallback &&
        it.associatedData() == associatedData)
     {
       MGlobal::displayError(MString("The event \"") + MString(eventName) + " has already been registered");
@@ -218,7 +218,7 @@ EventId EventScheduler::registerEvent(const char* eventName, const void* associa
       break;
     }
   }
-  m_registeredEvents.emplace(insertLocation, eventName, unusedId, associatedData, parentEvent);
+  m_registeredEvents.emplace(insertLocation, eventName, unusedId, associatedData, parentCallback);
   return unusedId;
 }
 
@@ -260,7 +260,7 @@ EventDispatcher* EventScheduler::event(EventId eventId)
   {
     if(it->eventId() == eventId)
     {
-      return &(*it);
+      return m_registeredEvents.data() + (it - m_registeredEvents.begin());
     }
   }
   return nullptr;
@@ -274,7 +274,7 @@ const EventDispatcher* EventScheduler::event(EventId eventId) const
   {
     if(it->eventId() == eventId)
     {
-      return &(*it);
+      return m_registeredEvents.data() + (it - m_registeredEvents.begin());
     }
   }
   return nullptr;
@@ -287,7 +287,7 @@ EventDispatcher* EventScheduler::event(const char* const eventName)
   {
     if(it->name() == eventName)
     {
-      return &(*it);
+      return m_registeredEvents.data() + (it - m_registeredEvents.begin());
     }
   }
   return nullptr;
@@ -300,7 +300,7 @@ const EventDispatcher* EventScheduler::event(const char* const eventName) const
   {
     if(it->name() == eventName)
     {
-      return &(*it);
+      return m_registeredEvents.data() + (it - m_registeredEvents.begin());
     }
   }
   return nullptr;

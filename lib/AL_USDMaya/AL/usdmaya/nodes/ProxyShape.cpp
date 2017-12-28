@@ -59,8 +59,6 @@ namespace usdmaya {
 namespace nodes {
 typedef void (*proxy_function_prototype)(void* userData, AL::usdmaya::nodes::ProxyShape* proxyInstance);
 
-EventScheduler g_eventRegistrar;
-
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialiseTranslatorContext()
 {
@@ -431,7 +429,7 @@ bool ProxyShape::getRenderAttris(void* pattribs, const MHWRender::MFrameContext&
 
 //----------------------------------------------------------------------------------------------------------------------
 ProxyShape::ProxyShape()
-  : MPxSurfaceShape(), maya::NodeHelper(), MayaNodeEvents(&g_eventRegistrar),
+  : MPxSurfaceShape(), maya::NodeHelper(), MayaNodeEvents(&EventScheduler::getScheduler()),
     m_context(fileio::translators::TranslatorContext::create(this)),
     m_translatorManufacture(context())
 {
