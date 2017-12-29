@@ -751,6 +751,82 @@ MStatus ListCallbacks::doIt(const MArgList& args)
 
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
+AL_MAYA_DEFINE_COMMAND(EventLookup, AL_usdmaya);
+
+//----------------------------------------------------------------------------------------------------------------------
+MSyntax EventLookup::createSyntax()
+{
+  MSyntax syntax;
+  syntax.addFlag("-h", "-help");
+  syntax.addFlag("-n", "-name");
+  syntax.addFlag("-nd", "-node");
+  syntax.addArg(MSyntax::kLong);
+  return syntax;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus EventLookup::doIt(const MArgList& args)
+{
+  MStatus status = MS::kSuccess;
+  MStringArray eventNames;
+  try
+  {
+    MArgDatabase database(syntax(), args, &status);
+    if(!status)
+      return status;
+    AL_MAYA_COMMAND_HELP(database, g_helpText);
+
+    int eventId = 0;
+    if(!database.getCommandArgument(0, eventId))
+    {
+      return MS::kFailure;
+    }
+
+    EventDispatcher* dispatcher = EventScheduler::getScheduler().event(eventId);
+    if(dispatcher)
+    {
+      if(database.isFlagSet("-n"))
+      {
+        setResult(dispatcher->name().c_str());
+      }
+      else
+      if(database.isFlagSet("-nd"))
+      {
+        MString nodeName = "";
+        MayaNodeEvents* node = (MayaNodeEvents*)dispatcher->associatedData();
+        if(node)
+        {
+          MPxNode* mpxNode = dynamic_cast<MPxNode*>(node);
+          if(mpxNode)
+          {
+            MFnDependencyNode fn(mpxNode->thisMObject());
+            nodeName = fn.name();
+          }
+        }
+        setResult(nodeName);
+      }
+      else
+      {
+        MGlobal::displayError("AL_usdmaya_EventLookup: no flag specified");
+        return MS::kFailure;
+      }
+    }
+    else
+    {
+      MGlobal::displayError("AL_usdmaya_EventLookup: invalid event specified");
+      return MS::kFailure;
+    }
+  }
+  catch(...)
+  {
+    return MS::kFailure;
+  }
+  return MS::kSuccess;
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 AL_MAYA_DEFINE_COMMAND(EventQuery, AL_usdmaya);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -864,6 +940,7 @@ MSyntax CallbackQuery::createSyntax()
   syntax.addFlag("-w", "-weight");
   syntax.addFlag("-c", "-command");
   syntax.addFlag("-fp", "-functionPointer");
+  syntax.addFlag("-ce", "-childEvents");
   syntax.addArg(MSyntax::kLong);
   syntax.addArg(MSyntax::kLong);
   return syntax;
@@ -908,6 +985,20 @@ MStatus CallbackQuery::doIt(const MArgList& args)
         return text;
       };
 
+      if(database.isFlagSet("-ce"))
+      {
+        MIntArray events;
+        const EventScheduler& scheduler = EventScheduler::getScheduler();
+        for(auto& e : scheduler.registeredEvents())
+        {
+          if(e.parentCallbackId() == asCb)
+          {
+            events.append(e.eventId());
+          }
+        }
+        setResult(events);
+      }
+      else
       if(database.isFlagSet("-e"))
       {
         EventId id = event->eventId();
@@ -1035,13 +1126,36 @@ Parent Events
 
 //----------------------------------------------------------------------------------------------------------------------
 const char* const EventQuery::g_helpText =  R"(
-    AL_usdmaya_CallbackQuery Overview:
+    AL_usdmaya_EventQuery Overview:
+
+)";
+
+//----------------------------------------------------------------------------------------------------------------------
+const char* const EventLookup::g_helpText =  R"(
+    AL_usdmaya_EventLookup Overview:
 
 )";
 
 //----------------------------------------------------------------------------------------------------------------------
 const char* const CallbackQuery::g_helpText =  R"(
     AL_usdmaya_CallbackQuery Overview:
+
+    Given the 2 integer identifier for a callback, this command can return some information about that callback. e.g.
+
+      // print the internal 16bit event ID
+      AL_usdmaya_CallbackQuery -eventId $cb[0] $cb[1];
+
+      // print the textual tag for the callback
+      AL_usdmaya_CallbackQuery -eventTag $cb[0] $cb[1];
+
+      // prints 'Python', 'MEL' or 'C'
+      AL_usdmaya_CallbackQuery -type $cb[0] $cb[1];
+
+      // returns the weight for the callback
+      AL_usdmaya_CallbackQuery -weight $cb[0] $cb[1];
+
+      // if the type is Python or MEL, returns the code attached to the callback
+      AL_usdmaya_CallbackQuery -command $cb[0] $cb[1];
 
 )";
 

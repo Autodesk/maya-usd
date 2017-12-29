@@ -499,7 +499,6 @@ proc int runBasicGlobalEventTest()
 
   // see what events we have before adding a dynamic event
   string $eventsBefore[] = `AL_usdmaya_ListEvents`;
-  print $eventsBefore;
 
   // the name of our new event
   string $eventName = "BasicGlobalEvent";
@@ -512,7 +511,6 @@ proc int runBasicGlobalEventTest()
 
   // see whether the new event has been registered on the node
   string $eventsAfter[] = `AL_usdmaya_ListEvents`;
-  print $eventsAfter;
   if(size($eventsBefore) == size($eventsAfter))
   {
     return -1;
@@ -894,8 +892,42 @@ runParentGlobalCallbackTest;
 
 )";
 
+
 //----------------------------------------------------------------------------------------------------------------------
-TEST(EventCommand, runBasicNodeEventTest)
+static const char* const runEventLookupTest =  R"(
+
+proc int runEventLookupTest()
+{
+  $proxyTm = `createNode "transform"`;
+  $proxy = `createNode -p $proxyTm "AL_usdmaya_ProxyShape"`;
+
+  // the name of our new event
+  string $eventName = "LookupEvent";
+
+  // generate the new event
+  AL_usdmaya_Event $eventName $proxy;
+  int $eventId = `AL_usdmaya_EventQuery -e $eventName $proxy`;
+  if($eventId == 0)
+    return -1;
+
+  if(`AL_usdmaya_EventLookup -name $eventId` != $eventName)
+    return -1;
+
+  if(`AL_usdmaya_EventLookup -node $eventId` != $proxy)
+    return -1;
+
+  delete $proxy;
+  delete $proxyTm;
+
+  return 0;
+}
+
+runEventLookupTest;
+
+)";
+
+//----------------------------------------------------------------------------------------------------------------------
+TEST(EventCommands, runBasicNodeEventTest)
 {
   MGlobal::executeCommand("undoInfo -st on;");
   int result = -1;
@@ -905,7 +937,7 @@ TEST(EventCommand, runBasicNodeEventTest)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TEST(EventCommand, runBasicGlobalEventTest)
+TEST(EventCommands, runBasicGlobalEventTest)
 {
   MGlobal::executeCommand("undoInfo -st on;");
   int result = -1;
@@ -915,7 +947,7 @@ TEST(EventCommand, runBasicGlobalEventTest)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TEST(EventCommand, runDynamicNodeEventTest)
+TEST(EventCommands, runDynamicNodeEventTest)
 {
   MGlobal::executeCommand("undoInfo -st on;");
   int result = -1;
@@ -925,7 +957,7 @@ TEST(EventCommand, runDynamicNodeEventTest)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TEST(EventCommand, runParentNodeCallbackTest)
+TEST(EventCommands, runParentNodeCallbackTest)
 {
   MGlobal::executeCommand("undoInfo -st on;");
   int result = -1;
@@ -935,11 +967,21 @@ TEST(EventCommand, runParentNodeCallbackTest)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TEST(EventCommand, runParentGlobalCallbackTest)
+TEST(EventCommands, runParentGlobalCallbackTest)
 {
   MGlobal::executeCommand("undoInfo -st on;");
   int result = -1;
   EXPECT_TRUE(MGlobal::executeCommand(runParentGlobalCallbackTest, result, false, true) == MS::kSuccess);
+  EXPECT_TRUE(result == 0);
+  MGlobal::executeCommand("undoInfo -st off;");
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TEST(EventCommands, runEventLookupTest)
+{
+  MGlobal::executeCommand("undoInfo -st on;");
+  int result = -1;
+  EXPECT_TRUE(MGlobal::executeCommand(runEventLookupTest, result, false, true) == MS::kSuccess);
   EXPECT_TRUE(result == 0);
   MGlobal::executeCommand("undoInfo -st off;");
 }
