@@ -892,7 +892,6 @@ runParentGlobalCallbackTest;
 
 )";
 
-
 //----------------------------------------------------------------------------------------------------------------------
 static const char* const runEventLookupTest =  R"(
 

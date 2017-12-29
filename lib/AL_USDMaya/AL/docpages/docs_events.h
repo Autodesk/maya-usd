@@ -549,6 +549,87 @@ MStatus uninitializePlugin(MObject obj)
 
 \subsection parentEventsM Parent / Child events in MEL
 
+To set up a parent/child relationship between callbacks in MEL or python, use the -p flag
+when creating the child event. A simple example follows:
+
+\code
+
+// the names of our events
+string $mainEventName = "ParentEvent";
+string $childEventName = "ChildEvent";
+
+// generate a high level event
+AL_usdmaya_Event $mainEventName;
+
+// generate a callback command that triggers the child event
+string $parentCommand = "AL_usdmaya_TriggerEvent " + $childEventName + ";";
+
+// assign a callback to it, and make sure it can be triggered
+int $parentCB[] = `AL_usdmaya_Callback -me $mainEventName "parentEvent" 10000 $parentCommand`;
+
+// generate a child event, and pass the identifier of the parent callback that will trigger the
+// child event.
+AL_usdmaya_Event -p $parentCB[0] $parentCB[1] $childEventName;
+
+// a simple child command that creates a sphere
+string $childCommand = "sphere;";
+
+// assign a callback to it, and make sure it can be triggered
+int $childCB[] = `AL_usdmaya_Callback -me $childEventName "childEvent" 10000 $childCommand`;
+
+// trigger the main event, which will in turn trigger the child event
+AL_usdmaya_TriggerEvent $mainEventName;
+
+\endcode
+
+If you wish to determine the parent callback of a given event, you can query that information
+via the AL_usdmaya_EventQuery command with the -p / -parent flag:
+
+\code
+
+// query the parent callback to the child event
+int $parentCallback[] = `AL_usdmaya_EventQuery -p $childEventName`;
+
+// quickly check to see whether the event has a callback or not
+if(size($parentCallback))
+{
+  print ("parent callback of " + $childEventName + " has ID [" + $parentCallback[0] + ", " + $parentCallback[1] + "]\n");
+}
+else
+{
+  print ($childEventName + " does not have a parent callback\");
+}
+\endcode
+
+similarly, given a callback you can determine the child event ID's via the AL_usdmaya_CallbackQuery command and the
+-ce / -childEvents flag:
+
+\code
+// query the parent callback to the child event
+int $childEventIds[] = `AL_usdmaya_CallbackQuery -ce $mainEventName $parentCallback[0] $parentCallback[1]`;
+
+// quickly check to see whether the event has a callback or not
+for($event in $childEventIds)
+{
+  print ("eventID " + $event + " is a child of callback " +  $parentCallback[0] + " " + $parentCallback[1] + "\n");
+}
+\endcode
+
+If you wish to convert the event ID back into the text name (and possibly get the associated node) you the
+AL_usdmaya_EventLookup command
+
+\code
+// query the parent callback to the child event
+int $childEventIds[] = `AL_usdmaya_CallbackQuery -ce $mainEventName $parentCallback[0] $parentCallback[1]`;
+
+// quickly check to see whether the event has a callback or not
+for($event in $childEventIds)
+{
+  print ("eventID " + $event + " is a child of callback " +  $parentCallback[0] + " " + $parentCallback[1] + "\n");
+  print ("  - eventName  " + `AL_usdmaya_EventLookup -name $event` + "\n");
+  print ("  - owningNode " + `AL_usdmaya_EventLookup -node $event` + "\n");
+}
+\endcode
 
 
 */
