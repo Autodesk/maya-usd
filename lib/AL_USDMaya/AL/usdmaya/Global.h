@@ -15,6 +15,7 @@
 //
 #pragma once
 #include "AL/usdmaya/Common.h"
+#include "AL/events/EventManager.h"
 #include "maya/MSceneMessage.h"
 
 namespace AL {
@@ -36,11 +37,11 @@ public:
   static void onPluginUnload();
 
 private:
-  static MCallbackId m_preSave;  ///< callback prior to saving the scene (so we can store the session layer)
-  static MCallbackId m_postSave; ///< callback after saving
-  static MCallbackId m_preOpen;  ///< callback executed before opening a maya file
-  static MCallbackId m_postOpen; ///< callback executed after opening a maya file - needed to re-hook up the UsdPrims
-  static MCallbackId m_fileNew;  ///< callback used to flush the USD caches after a file new
+  static events::EventID m_preSave;  ///< callback prior to saving the scene (so we can store the session layer)
+  static events::EventID m_postSave; ///< callback after saving
+  static events::EventID m_preOpen;  ///< callback executed before opening a maya file
+  static events::EventID m_postOpen; ///< callback executed after opening a maya file - needed to re-hook up the UsdPrims
+  static events::EventID m_fileNew;  ///< callback used to flush the USD caches after a file new
 };
 
 } // usdmaya

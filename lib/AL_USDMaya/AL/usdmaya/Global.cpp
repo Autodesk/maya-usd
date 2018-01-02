@@ -41,11 +41,11 @@ namespace usdmaya {
 
 
 //----------------------------------------------------------------------------------------------------------------------
-MCallbackId Global::m_preSave;
-MCallbackId Global::m_postSave;
-MCallbackId Global::m_preOpen;
-MCallbackId Global::m_postOpen;
-MCallbackId Global::m_fileNew;
+events::EventID Global::m_preSave;
+events::EventID Global::m_postSave;
+events::EventID Global::m_preOpen;
+events::EventID Global::m_postOpen;
+events::EventID Global::m_fileNew;
 
 //----------------------------------------------------------------------------------------------------------------------
 static void onFileNew(void*)
@@ -167,11 +167,13 @@ static void postFileSave(void*)
 void Global::onPluginLoad()
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Registering callbacks\n");
-  m_fileNew = MSceneMessage::addCallback(MSceneMessage::kAfterNew, onFileNew);
-  m_preSave = MSceneMessage::addCallback(MSceneMessage::kBeforeSave, preFileSave);
-  m_postSave = MSceneMessage::addCallback(MSceneMessage::kAfterSave, postFileSave);
-  m_preOpen = MSceneMessage::addCallback(MSceneMessage::kBeforeOpen, preFileOpen);
-  m_postOpen = MSceneMessage::addCallback(MSceneMessage::kAfterOpen, postFileOpen);
+
+  auto& manager = events::MayaEventManager::instance();
+  m_fileNew = manager.registerCallback(events::MayaEventType::kAfterNew, onFileNew, "usdmaya_onFileNew", 0x1000);
+  m_preSave = manager.registerCallback(events::MayaEventType::kBeforeSave, preFileSave, "usdmaya_preFileSave", 0x1000);
+  m_postSave = manager.registerCallback(events::MayaEventType::kAfterSave, postFileSave, "usdmaya_postFileSave", 0x1000);
+  m_preOpen = manager.registerCallback(events::MayaEventType::kBeforeOpen, preFileOpen, "usdmaya_preFileOpen", 0x1000);
+  m_postOpen = manager.registerCallback(events::MayaEventType::kAfterOpen, postFileOpen, "usdmaya_postFileOpen", 0x1000);
 
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Registering USD plugins\n");
   // Let USD know about the additional plugins
@@ -185,11 +187,12 @@ void Global::onPluginLoad()
 void Global::onPluginUnload()
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Removing callbacks\n");
-  MSceneMessage::removeCallback(m_fileNew);
-  MSceneMessage::removeCallback(m_preSave);
-  MSceneMessage::removeCallback(m_postSave);
-  MSceneMessage::removeCallback(m_preOpen);
-  MSceneMessage::removeCallback(m_postOpen);
+  auto& manager = events::MayaEventManager::instance();
+  manager.unregisterCallback(m_fileNew);
+  manager.unregisterCallback(m_preSave);
+  manager.unregisterCallback(m_postSave);
+  manager.unregisterCallback(m_preOpen);
+  manager.unregisterCallback(m_postOpen);
   StageCache::removeCallbacks();
 }
 

@@ -20,22 +20,54 @@
 
 using namespace AL::usdmaya::events;
 
+static bool g_called = 0;
+static void callback_test(void*){ g_called = true; };
+
+static int g_orderTest = 0;
+static bool g_orderFailed = false;
+static void callback_order_test(void* userData)
+{
+  if(*(const int*)userData != g_orderTest)
+    g_orderFailed = true;
+  ++g_orderTest;
+};
+
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Test that the Register is working correctly
 //----------------------------------------------------------------------------------------------------------------------
 TEST(maya_Event, registerEvent)
 {
+  int userData = 0;
+
   MFileIO::newFile(true);
+
   MayaEventManager ev;
-  MayaEventType testEvent = MayaEventType::kAfterNew;
-  auto& listeners = ev.listeners();
-  Listener l;
-  l.callback = [](void*){std::cout << "I'm registered!" << std::endl;};
-  EventID id = ev.registerCallback(testEvent, l);
+  auto callback = ev.registerCallback(
+    MayaEventType::kAfterNew,
+    callback_test,
+    "I'm a tag",
+    1234,
+    &userData);
+
   const MayaCallbackIDContainer& mayaIDs = ev.mayaCallbackIDs();
-  EXPECT_TRUE(ev.isMayaCallbackRegistered(testEvent));
-  EXPECT_EQ(listeners[testEvent].size(), 1);
-  ev.deregister(id);
+  auto& listeners = ev.listeners();
+  EXPECT_TRUE(ev.isMayaCallbackRegistered(MayaEventType::kAfterNew));
+  auto& callbacks = listeners[size_t(MayaEventType::kAfterNew)];
+  ASSERT_EQ(callbacks.size(), 1);
+  EXPECT_EQ(&userData, callbacks[0].userData);
+  EXPECT_EQ(callback_test, callbacks[0].callback);
+  EXPECT_EQ(MString(""), callbacks[0].command);
+  EXPECT_EQ(MString("I'm a tag"), callbacks[0].tag);
+  EXPECT_EQ(callback, callbacks[0].id);
+  EXPECT_EQ(1234, callbacks[0].weight);
+  EXPECT_EQ(0, callbacks[0].isPython);
+
+  MFileIO::newFile(true);
+
+  EXPECT_TRUE(g_called);
+  g_called = false;
+
+  ev.unregisterCallback(callback);
 }
 
 
@@ -47,81 +79,40 @@ TEST(maya_Event, invalidRegisteredEvent)
   MFileIO::newFile(true);
   MayaEventManager ev;
   MayaEventType testEvent = MayaEventType::kSceneMessageLast; // Invalid event
-  auto& listeners = ev.listeners();
-  Listener l;
-  l.callback = [](void*){std::cout << "I shouldn't be registered!" << std::endl;};
 
-  EventID id = ev.registerCallback(testEvent, l);
+  auto id = ev.registerCallback(
+    testEvent,
+    callback_test,
+    "I'm a tag",
+    1234,
+    0);
+
   EXPECT_EQ(id, 0);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-/// \brief  Test registerLast method is working
-//----------------------------------------------------------------------------------------------------------------------
-TEST(maya_Event, testRegisterLast)
-{
-  MFileIO::newFile(true);
-  MayaEventManager ev;
-  MayaEventType testEvent = MayaEventType::kAfterNew;
-  auto& listeners = ev.listeners();
-  Listener l;
-  l.callback = [](void*){};
-  EventID first = ev.registerCallback(testEvent, l);
-  EventID second = ev.registerCallback(testEvent, l);
-  EventID last = ev.registerLast(testEvent, l.callback);
-
-  EXPECT_EQ(listeners[testEvent].size(), 3);
-  EXPECT_EQ(listeners[testEvent].back().id, last);
-
-  ev.deregister(last);
-  ev.deregister(second);
-  ev.deregister(first);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-/// \brief  Test registerFirst method is working
-//----------------------------------------------------------------------------------------------------------------------
-TEST(maya_Event, testRegisterFirst)
-{
-  MFileIO::newFile(true);
-  MayaEventManager ev;
-  MayaEventType testEvent = MayaEventType::kAfterNew;
-  auto& listeners = ev.listeners();
-  Listener l;
-  l.callback = [](void*){};
-  EventID first = ev.registerCallback(testEvent, l);
-  EventID second = ev.registerCallback(testEvent, l);
-  EventID actuallyImFirst = ev.registerFirst(testEvent, l.callback);
-
-  const Listener& sl = listeners[testEvent][0];
-
-  EXPECT_EQ(listeners[testEvent].size(), 3);
-  EXPECT_EQ(sl, actuallyImFirst);
-
-  ev.deregister(second);
-  ev.deregister(first);
-  ev.deregister(actuallyImFirst);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Test that a simple Deregister is working correctly
 //----------------------------------------------------------------------------------------------------------------------
-TEST(maya_Event, simpleDeregisterEvent)
+TEST(maya_Event, simpleUnregisterEvent)
 {
   MFileIO::newFile(true);
   MayaEventManager ev;
-  Listener l;
-  l.callback = [](void*){std::cout << "I'm registered!" << std::endl;};
   auto& listeners = ev.listeners();
   MayaEventType testEvent = MayaEventType::kAfterNew;
+  auto id = ev.registerCallback(
+    testEvent,
+    callback_test,
+    "I'm a tag",
+    1234,
+    0);
 
-  EventID id = ev.registerCallback(testEvent, l);
+
   EXPECT_TRUE(ev.isMayaCallbackRegistered(testEvent));
-  EXPECT_EQ(listeners[testEvent].size(), 1);
+  EXPECT_EQ(listeners[size_t(testEvent)].size(), 1);
 
-  EXPECT_TRUE(ev.deregister(id));
+  EXPECT_TRUE(ev.unregisterCallback(id));
   EXPECT_FALSE(ev.isMayaCallbackRegistered(testEvent));
-  EXPECT_EQ(listeners[testEvent].size(), 0);
+  EXPECT_EQ(listeners[size_t(testEvent)].size(), 0);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -131,8 +122,10 @@ TEST(maya_Event, invalidDeregisteredEvent)
 {
   MFileIO::newFile(true);
   MayaEventManager ev;
-  MayaEventType testEvent = MayaEventType::kSceneMessageLast; // Invalid event
-  EXPECT_FALSE(ev.deregister(testEvent));
+  auto invalidEventType = MayaEventManager::makeEventId(MayaEventType::kSceneMessageLast, 22);
+  auto invalidCallbackId = MayaEventManager::makeEventId(MayaEventType::kAfterOpen, 22);
+  EXPECT_FALSE(ev.unregisterCallback(invalidEventType));
+  EXPECT_FALSE(ev.unregisterCallback(invalidCallbackId));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -142,36 +135,50 @@ TEST(maya_Event, eventOrdering)
 {
   MFileIO::newFile(true);
   MayaEventManager ev;
-  Listener first, middle, last;
-  first.callback = [](void*){std::cout << "First callback " << std::endl;};
-  first.weight = 0;
+  MayaEventType testEvent = MayaEventType::kAfterNew;
 
-  middle.command = "print 'middle'";
-  middle.isPython = true;
-  middle.weight = 1;
+  int firstInt = 0;
+  int secondInt = 1;
+  int thirdInt = 2;
 
-  last.command = "print \"last\"";
-  last.weight = 2;
-  MayaEventType testEvent = AL::usdmaya::events::kAfterNew;
+  auto middleCallback = ev.registerCallback(
+    testEvent,
+    callback_order_test,
+    "middle",
+    22,
+    &secondInt);
 
-  EventID middleCallback = ev.registerCallback(testEvent, middle);
-  EventID lastCallback = ev.registerCallback(testEvent, last);
-  EventID firstCallback = ev.registerCallback(testEvent, first);
+  auto lastCallback = ev.registerCallback(
+    testEvent,
+    callback_order_test,
+    "last",
+    33,
+    &thirdInt);
 
-  MFileIO::newFile(true);
+  auto firstCallback = ev.registerCallback(
+    testEvent,
+    callback_order_test,
+    "first",
+    11,
+    &firstInt);
 
   auto& listeners = ev.listeners();
-  EXPECT_EQ(listeners[testEvent].size(), 3);
+  EXPECT_EQ(listeners[size_t(testEvent)].size(), 3);
 
   // check they are ordered correctly
-  EXPECT_EQ(listeners[testEvent][0], firstCallback);
-  EXPECT_EQ(listeners[testEvent][1], middleCallback);
-  EXPECT_EQ(listeners[testEvent][2], lastCallback);
+  EXPECT_EQ(listeners[size_t(testEvent)][0], firstCallback);
+  EXPECT_EQ(listeners[size_t(testEvent)][1], middleCallback);
+  EXPECT_EQ(listeners[size_t(testEvent)][2], lastCallback);
 
-  ev.deregister(lastCallback);
-  ev.deregister(middleCallback);
-  ev.deregister(firstCallback);
-  EXPECT_EQ(listeners[testEvent].size(), 0);
+  // make sure the callbacks are triggered in the correct order
+  MFileIO::newFile(true);
+  EXPECT_FALSE(g_orderFailed);
+  EXPECT_EQ(3, g_orderTest);
+
+  ev.unregisterCallback(lastCallback);
+  ev.unregisterCallback(middleCallback);
+  ev.unregisterCallback(firstCallback);
+  EXPECT_EQ(listeners[size_t(testEvent)].size(), 0);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -188,7 +195,7 @@ TEST(maya_Event, userDataIsWorking)
 
   SomeUserData* d = new SomeUserData();
 
-  MayaEventType testEvent = AL::usdmaya::events::kAfterNew;
+  MayaEventType testEvent = MayaEventType::kAfterNew;
   AL::usdmaya::events::Callback callback = [](void* userData)
       {
         SomeUserData* data = static_cast<SomeUserData*>(userData);
@@ -196,8 +203,14 @@ TEST(maya_Event, userDataIsWorking)
       };
 
   MayaEventManager ev;
-  EventID id = ev.registerCallback(testEvent, callback, (void*)d);
+  auto id = ev.registerCallback(
+    testEvent,
+    callback,
+    "tag",
+    1000,
+    d);
+
   MFileIO::newFile(true);
   EXPECT_EQ(d->name, "changed");
-  EXPECT_TRUE(ev.deregister(id));
+  EXPECT_TRUE(ev.unregisterCallback(id));
 }

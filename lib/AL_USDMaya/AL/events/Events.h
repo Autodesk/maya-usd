@@ -27,7 +27,7 @@ namespace events {
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Event types which are supported by the Event Manager.
 //----------------------------------------------------------------------------------------------------------------------
-enum MayaEventType
+enum class MayaEventType
 {
   kBeforeNew, ///< called prior to file new
   kAfterNew, ///< called after to file new
@@ -52,9 +52,9 @@ enum MayaEventType
 /// \brief Converts supported event type into Maya's event type
 /// \return The corresponding Maya event type, else MSceneMessage::kLast
 //----------------------------------------------------------------------------------------------------------------------
-MSceneMessage::Message eventToMayaEvent(MayaEventType internalEvent)
+inline MSceneMessage::Message eventToMayaEvent(MayaEventType internalEvent)
 {
-  static std::array<MSceneMessage::Message, MayaEventType::kSceneMessageLast> eventToMayaEventTable =
+  static std::array<MSceneMessage::Message, size_t(MayaEventType::kSceneMessageLast)> eventToMayaEventTable =
     {
       MSceneMessage::kBeforeNew,
       MSceneMessage::kAfterNew,
@@ -74,16 +74,16 @@ MSceneMessage::Message eventToMayaEvent(MayaEventType internalEvent)
       MSceneMessage::kMayaExiting
     };
 
-  if(internalEvent < eventToMayaEventTable.size())
+  if(size_t(internalEvent) < eventToMayaEventTable.size())
   {
-    return eventToMayaEventTable[internalEvent];
+    return eventToMayaEventTable[size_t(internalEvent)];
   }
 
   return MSceneMessage::kLast;
 }
 
 typedef std::pair<MSceneMessage::Message, MayaEventType> Entry;
-bool operator<(const Entry &ar, const MSceneMessage::Message &br)
+inline bool operator<(const Entry &ar, const MSceneMessage::Message br)
 {
   return ar.first < br;
 }
@@ -93,28 +93,27 @@ bool operator<(const Entry &ar, const MSceneMessage::Message &br)
 /// \brief Converts Maya's event type into supported event type
 /// \return The corresponding supported Event type, else MayaEventType::kSceneMessageLast
 //----------------------------------------------------------------------------------------------------------------------
-MayaEventType eventToMayaEvent(MSceneMessage::Message mayaEvent)
+inline MayaEventType eventToMayaEvent(MSceneMessage::Message mayaEvent)
 {
-
   // Insert new Maya events into the correct order.
   static std::array<Entry, 16> eventToMayaEventTable =
     {
-      Entry(MSceneMessage::kBeforeNew, kBeforeNew),
-      Entry(MSceneMessage::kAfterNew, kAfterNew),
-      Entry(MSceneMessage::kBeforeOpen, kBeforeOpen),
-      Entry(MSceneMessage::kAfterOpen, kAfterOpen),
-      Entry(MSceneMessage::kBeforeSave, kBeforeSave),
-      Entry(MSceneMessage::kAfterSave, kAfterSave),
-      Entry(MSceneMessage::kBeforeReference, kBeforeReference),
-      Entry(MSceneMessage::kAfterReference, kAfterReference),
-      Entry(MSceneMessage::kBeforeUnloadReference, kBeforeUnloadReference),
-      Entry(MSceneMessage::kAfterUnloadReference, kAfterUnloadReference),
-      Entry(MSceneMessage::kMayaInitialized, kMayaInitialized),
-      Entry(MSceneMessage::kMayaExiting, kMayaExiting),
-      Entry(MSceneMessage::kBeforeLoadReference, kBeforeLoadReference),
-      Entry(MSceneMessage::kAfterLoadReference, kAfterLoadReference),
-      Entry(MSceneMessage::kBeforeCreateReference, kBeforeCreateReference),
-      Entry(MSceneMessage::kAfterCreateReference, kAfterCreateReference)
+      Entry(MSceneMessage::kBeforeNew, MayaEventType::kBeforeNew),
+      Entry(MSceneMessage::kAfterNew, MayaEventType::kAfterNew),
+      Entry(MSceneMessage::kBeforeOpen, MayaEventType::kBeforeOpen),
+      Entry(MSceneMessage::kAfterOpen, MayaEventType::kAfterOpen),
+      Entry(MSceneMessage::kBeforeSave, MayaEventType::kBeforeSave),
+      Entry(MSceneMessage::kAfterSave, MayaEventType::kAfterSave),
+      Entry(MSceneMessage::kBeforeReference, MayaEventType::kBeforeReference),
+      Entry(MSceneMessage::kAfterReference, MayaEventType::kAfterReference),
+      Entry(MSceneMessage::kBeforeUnloadReference, MayaEventType::kBeforeUnloadReference),
+      Entry(MSceneMessage::kAfterUnloadReference, MayaEventType::kAfterUnloadReference),
+      Entry(MSceneMessage::kMayaInitialized, MayaEventType::kMayaInitialized),
+      Entry(MSceneMessage::kMayaExiting, MayaEventType::kMayaExiting),
+      Entry(MSceneMessage::kBeforeLoadReference, MayaEventType::kBeforeLoadReference),
+      Entry(MSceneMessage::kAfterLoadReference, MayaEventType::kAfterLoadReference),
+      Entry(MSceneMessage::kBeforeCreateReference, MayaEventType::kBeforeCreateReference),
+      Entry(MSceneMessage::kAfterCreateReference, MayaEventType::kAfterCreateReference)
     };
 
   auto entry = std::lower_bound(eventToMayaEventTable.begin(),
@@ -126,24 +125,7 @@ MayaEventType eventToMayaEvent(MSceneMessage::Message mayaEvent)
     return entry->second;
   }
 
-  return kSceneMessageLast;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-/// \brief  Flags to help in the ordering of the Listeners
-//----------------------------------------------------------------------------------------------------------------------
-enum ListenerOrder : uint32_t
-{
-  kPlaceLast = 1 << 30,
-  kPlaceFirst = 1 << 29,
-};
-
-// C++ standard had an "oversight" for make_unique. This is copied from Herb Sutter's blog
-// See: https://herbsutter.com/gotw/_102/
-template <typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args &&... args)
-{
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+  return MayaEventType::kSceneMessageLast;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

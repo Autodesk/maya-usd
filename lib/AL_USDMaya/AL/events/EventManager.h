@@ -38,8 +38,8 @@ typedef MMessage::MBasicFunction Callback;
 typedef uint64_t EventID;
 typedef Listener ListenerEntry;
 typedef std::vector<ListenerEntry> Listeners;
-typedef std::array<Listeners, MayaEventType::kSceneMessageLast> ListenerContainer;
-typedef std::array<MCallbackId, MayaEventType::kSceneMessageLast> MayaCallbackIDContainer;
+typedef std::array<Listeners, size_t(MayaEventType::kSceneMessageLast)> ListenerContainer;
+typedef std::array<MCallbackId, size_t(MayaEventType::kSceneMessageLast)> MayaCallbackIDContainer;
 
 /*
  * \brief Objects of this class contain all the data needed to allow callbacks to happen
@@ -61,6 +61,10 @@ struct Listener
   };
 
   inline bool operator < (const Listener& event) const
+    { return weight < event.weight; }
+  inline bool operator < (const uint32_t weight) const
+    { return this->weight < weight; }
+  friend bool operator < (const uint32_t weight, const Listener& event)
     { return weight < event.weight; }
 
   inline bool operator==(const EventID& rhs) const
@@ -86,6 +90,8 @@ class MayaEventManager
 {
 
 public:
+  static MayaEventManager& instance();
+
   explicit MayaEventManager();
 
   /// \brief Creates an event which listens to the specified Maya event,
@@ -101,97 +107,51 @@ public:
   /// \param tag string to help classify the type of listener
   /// \return the identifier of the created listener, or 0 if nothing was registered
   EventID registerCallback(MayaEventType event,
-      const Callback& callback,
+      const Callback callback,
+      const char* tag,
+      uint32_t weight,
       void* userData = nullptr,
       bool isPython = false,
-      const char* command = "",
-      uint32_t weight = AL::usdmaya::events::kPlaceLast,
-      const char* tag = "");
-
-  /// \brief Creates an event which listens to the specified Maya event,
-  ///   adding the event to current last position.
-  ///   Internally this method creates a Listener type
-  ///   and passes this object onto the register function.
-  /// \param event corresponding internal maya event
-  /// \param callback function which will be called
-  /// \param userData data which is returned to the user when the callback is triggered
-  /// \param tag string to help classify the type of listener
-  /// \param isPython true if the specified command should be executed as python
-  /// \param command the string that will be executed when the callback happens
-  /// \return the identifier of the created listener, or 0 if nothing was registered
-  EventID registerLast(MayaEventType event,
-      const Callback& callback,
-      void* userData = nullptr,
-      bool isPython = false,
-      const char* command = "",
-      const char* tag = "");
-
-  /// \brief Creates an event which listens to the specified Maya event,
-  ///   adding the event to current last position.
-  ///   Internally this method creates a Listener type
-  ///   and passes this object onto the register function.
-  /// \param event corresponding internal maya event
-  /// \param callback function which will be called
-  /// \param userData data which is returned to the user when the callback is triggered
-  /// \param tag string to help classify the type of listener
-  /// \param isPython true if the specified command should be executed as python
-  /// \param command the string that will be executed when the callback happens
-  /// \return the identifier of the created listener, or 0 if nothing was registered
-  EventID registerFirst(MayaEventType event,
-      const Callback& callback,
-      void* userData = nullptr,
-      bool isPython = false,
-      const char* command = "",
-      const char* tag = "");
-
-  /// \brief Stores and orders the registered Maya callbacks
-  /// \param eventType corresponding internal Maya event
-  /// \param eventListener object which is executed when the corresponding Maya event triggers
-  /// \return the identifier of the created listener, or 0 if nothing was registered
-  EventID registerCallback(MayaEventType eventType, const Listener& eventListener);
-
-//  /// \brief Remove the corresponding EventID
-//  /// \param event internal type of the event
-//  /// \param id unique identifier of the Listener that was returned when it was registered
-//  /// \return true if an event was deregistered
-//  bool deregister(AL::usdmaya::events::MayaEventType event, EventID id);
+      const char* command = "");
 
   /// \brief Remove the corresponding EventID. More costly than the deregister
   ///        method where the MayaEventType is passed, since it has to search for the corresponding ID
   ///        in all the available events.
   /// \param id internal type of the event
   /// \return true if an event was deregistered
-  bool deregister(EventID id);
+  bool unregisterCallback(EventID id);
 
   /// \brief retrieves the container containing all the Maya listeners
   /// \return ListenerContainer containing all the listeners
   const ListenerContainer& listeners(){return m_mayaListeners;}
 
-  bool isMayaCallbackRegistered(AL::usdmaya::events::MayaEventType event)
+  bool isMayaCallbackRegistered(MayaEventType event)
   {
-    if(event >= AL::usdmaya::events::kSceneMessageLast)
+    if(event >= MayaEventType::kSceneMessageLast)
     {
       return false;
     }
-    return m_mayaCallbacks[event] != MCallbackId();
+    return m_mayaCallbacks[size_t(event)] != MCallbackId();
   }
 
   /// \brief retrieves the container containing all the Maya listeners
   /// \return ListenerContainer containing all the listeners
   const MayaCallbackIDContainer& mayaCallbackIDs(){return m_mayaCallbacks;}
 
+  /// \brief  internal utility function to generate a 64bit callback id
+  static EventID makeEventId(const MayaEventType eventType, uint64_t idPart);
 
 private:
   bool registerMayaCallback(MayaEventType eventType);
-  bool deregisterMayaCallback(MayaEventType eventType);
+  bool unregisterMayaCallback(MayaEventType eventType);
   EventID generateEventId(MayaEventType eventType);
 
-  inline MayaEventType getEventTypeFromID(EventID eventId) const
+  inline static MayaEventType getEventTypeFromID(const EventID eventId)
   {
     return (MayaEventType)(eventId >> (ID_TOTAL_BITS-ID_MAYAEVENTTYPE_BITS));
   }
 
-  inline uint64_t getCountFromID(EventID eventId) const
+  inline static uint64_t getCountFromID(const EventID eventId)
   {
     // Mask out the top 16 bits since they are
     return (eventId & 0x3ffffffffffff);
