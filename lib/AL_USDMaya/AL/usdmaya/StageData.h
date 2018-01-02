@@ -15,9 +15,9 @@
 //
 #pragma once
 #include "AL/usdmaya/Common.h"
+#include "AL/events/EventManager.h"
 
 #include "maya/MPxGeometryData.h"
-#include "maya/MMessage.h"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
@@ -64,7 +64,7 @@ public:
 private:
   MTypeId typeId() const override;
   MString name() const override;
-  MCallbackId m_exitCallbackId;
+  events::EventID m_exitCallbackId;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

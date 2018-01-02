@@ -17,7 +17,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stageCache.h"
 
-#include "maya/MSceneMessage.h"
+#include "AL/events/EventManager.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -44,8 +44,8 @@ public:
   /// \brief  deletes the callbacks constructed to manage the stage cache
   static void removeCallbacks();
 private:
-  static MCallbackId beforeNewCallbackId;
-  static MCallbackId beforeLoadCallbackId;
+  static events::EventID g_beforeNewCallbackId;
+  static events::EventID g_beforeLoadCallbackId;
 };
 
 } // usdmaya

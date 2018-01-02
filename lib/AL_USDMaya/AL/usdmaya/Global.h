@@ -16,7 +16,6 @@
 #pragma once
 #include "AL/usdmaya/Common.h"
 #include "AL/events/EventManager.h"
-#include "maya/MSceneMessage.h"
 
 namespace AL {
 namespace usdmaya {

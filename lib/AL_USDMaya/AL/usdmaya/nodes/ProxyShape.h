@@ -23,6 +23,7 @@
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
 #include "AL/usdmaya/EventHandler.h"
+#include "AL/events/EventManager.h"
 #include "maya/MPxSurfaceShape.h"
 #include "maya/MEventMessage.h"
 #include "maya/MNodeMessage.h"
@@ -901,7 +902,7 @@ private:
   TfNotice::Key m_editTargetChanged;
 
   mutable std::map<UsdTimeCode, MBoundingBox> m_boundingBoxCache;
-  MCallbackId m_beforeSaveSceneId = -1;
+  events::EventID m_beforeSaveSceneId = -1;
   MCallbackId m_attributeChanged = -1;
   MCallbackId m_onSelectionChanged = -1;
   SdfPathVector m_excludedGeometry;

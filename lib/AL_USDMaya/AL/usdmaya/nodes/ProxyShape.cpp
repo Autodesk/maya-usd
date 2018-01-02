@@ -434,7 +434,12 @@ ProxyShape::ProxyShape()
     m_translatorManufacture(context())
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::ProxyShape\n");
-  m_beforeSaveSceneId = MSceneMessage::addCallback(MSceneMessage::kBeforeSave, beforeSaveScene, this);
+  m_beforeSaveSceneId = events::MayaEventManager::instance().registerCallback(
+      events::MayaEventType::kBeforeSave,
+      beforeSaveScene,
+      "ProxyShape_PreSceneSave",
+      0x10000,
+      this);
   m_onSelectionChanged = MEventMessage::addEventCallback(MString("SelectionChanged"), onSelectionChanged, this);
 
   TfWeakPtr<ProxyShape> me(this);
@@ -545,7 +550,7 @@ ProxyShape::ProxyShape()
 ProxyShape::~ProxyShape()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::~ProxyShape\n");
-  MSceneMessage::removeCallback(m_beforeSaveSceneId);
+  events::MayaEventManager::instance().unregisterCallback(m_beforeSaveSceneId);
   MEventMessage::removeCallback(m_onSelectionChanged);
   removeAttributeChangedCallback();
   TfNotice::Revoke(m_variantChangedNoticeKey);

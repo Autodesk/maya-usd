@@ -16,7 +16,7 @@
 #include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/DebugCodes.h"
-#include "maya/MSceneMessage.h"
+
 #include "maya/MTypeId.h"
 #include "maya/MString.h"
 namespace AL {
@@ -53,14 +53,15 @@ void StageData::copy(const MPxData& data)
 //----------------------------------------------------------------------------------------------------------------------
 StageData::StageData()
 {
-  m_exitCallbackId = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, _cleanUp, this);
+  m_exitCallbackId = events::MayaEventManager::instance().registerCallback(
+      events::MayaEventType::kMayaExiting, _cleanUp, "DestroyStageDataOnExit", 0x10000);
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("StageData::StageData() created: %p\n", this);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 StageData::~StageData()
 {
-  MSceneMessage::removeCallback(m_exitCallbackId);
+  events::MayaEventManager::instance().unregisterCallback(m_exitCallbackId);
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("StageData::StageData() deleted: %p\n", this);
 }
 
