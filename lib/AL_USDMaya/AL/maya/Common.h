@@ -130,23 +130,6 @@ class ProfilerSectionTag;
   } }
 
 /// \brief  Given the status, validates that the status is ok. If not, an error is logged using the specified error
-///         message. If an error occurs, a null MObject is returned.
-/// \ingroup   mayautils
-#define AL_MAYA_CHECK_ERROR_RETURN_NULL_MOBJECT(status, ErrorString) { \
-  MStatus _status_##__LINE__ = status; \
-  if (!_status_##__LINE__) \
-  { \
-    MString maya_error_string = __FILE__ ":"; \
-    maya_error_string += __LINE__; \
-    maya_error_string += " "; \
-    maya_error_string += _status_##__LINE__.errorString(); \
-    maya_error_string += " : "; \
-    maya_error_string += ErrorString; \
-    MGlobal::displayError(maya_error_string); \
-    return MObject::kNullObj; \
-  } }
-
-/// \brief  Given the status, validates that the status is ok. If not, an error is logged using the specified error
 ///         message. If an error occurs, then a "continue" statement is issued (and so should be used in loops).
 /// \ingroup   mayautils
 #define AL_MAYA_CHECK_ERROR_CONTINUE(status, ErrorString) { \
@@ -178,6 +161,23 @@ class ProfilerSectionTag;
     maya_error_string += ErrorString; \
     MGlobal::displayError(maya_error_string); \
     return; \
+  } }
+
+/// \brief  Given the status, validates that the status is ok. If not, an error is logged using the specified error
+///         message. If an error occurs, a null MObject is returned.
+/// \ingroup   mayautils
+#define AL_MAYA_CHECK_ERROR_RETURN_NULL_MOBJECT(status, ErrorString) { \
+  MStatus _status_##__LINE__ = status; \
+  if (!_status_##__LINE__) \
+  { \
+    MString maya_error_string = __FILE__ ":"; \
+    maya_error_string += __LINE__; \
+    maya_error_string += " "; \
+    maya_error_string += _status_##__LINE__.errorString(); \
+    maya_error_string += " : "; \
+    maya_error_string += ErrorString; \
+    MGlobal::displayError(maya_error_string); \
+    return MObject::kNullObj; \
   } }
 
 /// \ingroup   mayautils
