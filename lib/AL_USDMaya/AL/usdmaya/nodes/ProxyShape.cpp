@@ -40,6 +40,7 @@
 
 #include "maya/MFileIO.h"
 #include "maya/MFnPluginData.h"
+#include "maya/MFnReference.h"
 #include "maya/MHWGeometryUtilities.h"
 #include "maya/MItDependencyNodes.h"
 #include "maya/MPlugArray.h"
@@ -356,7 +357,7 @@ ProxyShape::ProxyShape()
 
   TfWeakPtr<ProxyShape> me(this);
 
-  m_variantChangedNoticeKey = TfNotice::Register(me, &ProxyShape::variantSelectionListener, m_stage);
+  m_variantChangedNoticeKey = TfNotice::Register(me, &ProxyShape::variantSelectionListener);
   m_objectsChangedNoticeKey = TfNotice::Register(me, &ProxyShape::onObjectsChanged, m_stage);
   m_editTargetChanged = TfNotice::Register(me, &ProxyShape::onEditTargetChanged, m_stage);
 
@@ -442,6 +443,11 @@ ProxyShape::ProxyShape()
         this->m_lockInheritedPrims.insert(prim.GetPath());
       }
     }
+    else
+    {
+      this->m_lockInheritedPrims.insert(prim.GetPath());
+    }
+
   };
   m_findLockedPrims.postIteration = [this]() {
     constructLockPrims();
@@ -581,7 +587,7 @@ void ProxyShape::onEditTargetChanged(UsdNotice::StageEditTargetChanged const& no
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& previousPrims)
+void ProxyShape::onPrimResync(SdfPath primPath, SdfPathVector& previousPrims)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::onPrimResync checking %s\n", primPath.GetText());
 
@@ -599,46 +605,47 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& previousPri
   fn.getPath(dag_path);
   dag_path.pop();
 
-  // find the new set of prims
+  // find the new set of schema translator prims
   std::vector<UsdPrim> newPrimSet = huntForNativeNodesUnderPrim(dag_path, primPath, translatorManufacture());
 
   proxy::PrimFilter filter(previousPrims, newPrimSet, this);
-  m_variantSwitchedPrims.clear();
+  previousPrims.clear();
 
   if(TfDebug::IsEnabled(ALUSDMAYA_TRANSLATORS)){
-    std::cout << "new prims" << std::endl;
+    std::cout << "new prims:" << std::endl;
     for(auto it : filter.newPrimSet())
     {
       std::cout << it.GetPath().GetText() << std::endl;
     }
-    std::cout << "new transforms" << std::endl;
+    std::cout << "new transforms:" << std::endl;
     for(auto it : filter.transformsToCreate())
     {
       std::cout << it.GetPath().GetText() << std::endl;
     }
-    std::cout << "updateable prims" << std::endl;
+    std::cout << "updateable prims:" << std::endl;
     for(auto it : filter.updatablePrimSet())
     {
       std::cout << it.GetPath().GetText() << std::endl;
     }
-    std::cout << "removed prims" << std::endl;
+    std::cout << "removed prims:" << std::endl;
     for(auto it : filter.removedPrimSet())
     {
       std::cout << it.GetText() << std::endl;
     }
   }
 
+  // create transforms first to increment ref counts and avoid deleting/recreating ones that will stay
   cmds::ProxyShapePostLoadProcess::MObjectToPrim objsToCreate;
   if(!filter.transformsToCreate().empty())
     cmds::ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(this, filter.transformsToCreate(), dag_path, objsToCreate);
+
+  context()->removeEntries(filter.removedPrimSet());
 
   if(!filter.newPrimSet().empty())
     cmds::ProxyShapePostLoadProcess::createSchemaPrims(this, filter.newPrimSet());
 
   if(!filter.updatablePrimSet().empty())
     cmds::ProxyShapePostLoadProcess::updateSchemaPrims(this, filter.updatablePrimSet());
-
-  context()->removeEntries(filter.removedPrimSet());
 
   cleanupTransformRefs();
 
@@ -648,7 +655,6 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& previousPri
   if(!filter.newPrimSet().empty())
     cmds::ProxyShapePostLoadProcess::connectSchemaPrims(this, filter.newPrimSet());
 
-  //cmds::ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(this, primsToSwitch, dag_path, objsToCreate);
   if(!filter.updatablePrimSet().empty())
     cmds::ProxyShapePostLoadProcess::connectSchemaPrims(this, filter.updatablePrimSet());
 
@@ -659,6 +665,21 @@ void ProxyShape::onPrimResync(SdfPath primPath, const SdfPathVector& previousPri
 
   validateTransforms();
   constructGLImagingEngine();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::resync(const SdfPath& primPath)
+{
+  // FIMXE: This method was needed to call update() on all translators in the maya scene. Since then some new
+  // locking and selectability functionality has been added to onObjectsChanged(). I would want to call the logic in
+  // that method to handle this resyncing but it would need to be refactored.
+
+  SdfPathVector existingSchemaPrims;
+
+  // populates list of prims from prim mapping that will change under the path to resync.
+  onPrePrimChanged(primPath, existingSchemaPrims);
+
+  onPrimResync(primPath, existingSchemaPrims);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -781,8 +802,8 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
 
   SdfPathSet lockTransformPrims;
   SdfPathSet lockInheritedPrims;
-  SdfPathSet nolockPrims;
-  auto recordPrimsLockStatus = [&lockTransformPrims, &lockInheritedPrims, &nolockPrims] (const SdfPath& objectPath, const UsdPrim& prim) {
+  SdfPathSet unlockedPrims;
+  auto recordPrimsLockStatus = [&lockTransformPrims, &lockInheritedPrims, &unlockedPrims] (const SdfPath& objectPath, const UsdPrim& prim) {
     if (!prim.IsValid())
     {
       return;
@@ -798,10 +819,14 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
       {
         lockInheritedPrims.insert(objectPath);
       }
-      else
+      else if (lockPropertyValue == Metadata::lockUnlocked)
       {
-        nolockPrims.insert(objectPath);
+        unlockedPrims.insert(objectPath);
       }
+    }
+    else
+    {
+      lockInheritedPrims.insert(objectPath);
     }
   };
 
@@ -839,7 +864,7 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     m_selectabilityDB.addPathsAsUnselectable(newUnselectables);
   }
 
-  bool lockChanged = updateLockPrims(lockTransformPrims, lockInheritedPrims, nolockPrims);
+  bool lockChanged = updateLockPrims(lockTransformPrims, lockInheritedPrims, unlockedPrims);
   if (lockChanged)
   {
     constructLockPrims();
@@ -922,7 +947,7 @@ void ProxyShape::onPrePrimChanged(const SdfPath& path, SdfPathVector& outPathVec
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& notice, UsdStageWeakPtr const& sender)
+void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& notice)
 // In order to detect changes to the variant selection we listen on the SdfNotice::LayersDidChange global notice which is
 // sent to indicate that layer contents have changed.  We are then able to access the change list to check if a variant
 // selection change happened.  If so, we trigger a ProxyShapePostLoadProcess() which will regenerate the alTransform
@@ -946,13 +971,14 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
         if (it->first == SdfFieldKeys->VariantSelection ||
             it->first == SdfFieldKeys->Active)
         {
-          TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::variantSelectionListener oldPath=%s, oldIdentifier=%s, path=%s\n",
+          TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::variantSelectionListener oldPath=%s, oldIdentifier=%s, path=%s, layer=%s\n",
                                          entry.oldPath.GetString().c_str(),
                                          entry.oldIdentifier.c_str(),
-                                         path.GetText());
+                                         path.GetText(),
+                                         itr->first->GetIdentifier().c_str());
           if(!m_compositionHasChanged)
           {
-            TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::Already in a composition change state. Ignoring \n");
+            TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::Not yet in a composition change state. Recording path. \n");
             m_changedPath = path;
           }
           m_compositionHasChanged = true;
@@ -1116,7 +1142,7 @@ void ProxyShape::loadStage()
 
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyShape::updateLockPrims(const SdfPathSet& lockTransformPrims, const SdfPathSet& lockInheritedPrims,
-                                 const SdfPathSet& nolockPrims)
+                                 const SdfPathSet& unlockedPrims)
 {
   bool lockChanged = false;
   for (auto lock : lockTransformPrims)
@@ -1133,11 +1159,11 @@ bool ProxyShape::updateLockPrims(const SdfPathSet& lockTransformPrims, const Sdf
     auto inserted = m_lockInheritedPrims.insert(inherited);
     lockChanged |= inserted.second;
   }
-  for (auto nolock : nolockPrims)
+  for (auto unlocked : unlockedPrims)
   {
-    auto erased = m_lockTransformPrims.erase(nolock);
+    auto erased = m_lockTransformPrims.erase(unlocked);
     lockChanged |= erased;
-    erased = m_lockInheritedPrims.erase(nolock);
+    erased = m_lockInheritedPrims.erase(unlocked);
     lockChanged |= erased;
   }
   return lockChanged;
@@ -1447,7 +1473,6 @@ UsdStageRefPtr ProxyShape::getUsdStage() const
   MPlug plug(thisMObject(), m_outStageData);
   MObject data;
   plug.getValue(data);
-  plug.getValue(data);
   MFnPluginData fnData(data);
   StageData* outData = static_cast<StageData*>(fnData.data());
   if(outData)
@@ -1610,14 +1635,13 @@ void ProxyShape::unloadMayaReferences()
           MObject temp = plugs[i].node();
           if(temp.hasFn(MFn::kReference))
           {
-            MString command = MString("referenceQuery -filename ") + MFnDependencyNode(temp).name();
-            MString referenceFilename;
-            MStatus returnStatus = MGlobal::executeCommand(command, referenceFilename);
-            if (returnStatus != MStatus::kFailure)
-            {
-              TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::unloadMayaReferences removing %s\n", referenceFilename.asChar());
-              MFileIO::removeReference(referenceFilename);
-            }
+            MFnReference mfnRef(temp);
+            MString referenceFilename = mfnRef.fileName(
+                true /*resolvedName*/,
+                true /*includePath*/,
+                true /*includeCopyNumber*/);
+            TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::unloadMayaReferences unloading %s\n", referenceFilename.asChar());
+            MFileIO::unloadReferenceByNode(temp);
           }
         }
       }

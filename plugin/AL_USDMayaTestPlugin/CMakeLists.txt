@@ -25,6 +25,7 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/nodes/test_ActiveInactive.cpp
         AL/usdmaya/nodes/test_LayerManager.cpp
         AL/usdmaya/nodes/test_ProxyShape.cpp
+        AL/usdmaya/nodes/test_Transform.cpp
         AL/usdmaya/nodes/test_TransformMatrix.cpp
         AL/usdmaya/nodes/test_TranslatorContext.cpp
         AL/usdmaya/nodes/test_ProxyShapeSelectabilityDB.cpp

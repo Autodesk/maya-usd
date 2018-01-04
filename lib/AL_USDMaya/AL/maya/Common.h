@@ -110,7 +110,7 @@ class ProfilerSectionTag;
     maya_error_string += " : "; \
     maya_error_string += ErrorString; \
     MGlobal::displayError(maya_error_string); \
-    return status; \
+    return _status_##__LINE__; \
   } }
 
 /// \brief  Given the status, validates that the status is ok. If not, an error is logged using the specified error

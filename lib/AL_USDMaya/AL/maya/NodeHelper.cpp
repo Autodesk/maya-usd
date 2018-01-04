@@ -1507,7 +1507,7 @@ MStatus NodeHelper::outputEulerValue(MDataBlock& dataBlock, const MObject& attri
   }
   else
   {
-    report_set_error(attribute, MFloatVector, status);
+    report_set_error(attribute, MEulerRotation, status);
   }
   return status;
 }
@@ -1541,7 +1541,7 @@ MStatus NodeHelper::outputColourValue(MDataBlock& dataBlock, const MObject& attr
   }
   else
   {
-    report_set_error(attribute, MFloatVector, status);
+    report_set_error(attribute, MColor, status);
   }
   return status;
 }
@@ -1575,7 +1575,7 @@ MStatus NodeHelper::outputTimeValue(MDataBlock& dataBlock, const MObject& attrib
   }
   else
   {
-    report_set_error(attribute, MString, status);
+    report_set_error(attribute, MTime, status);
   }
   return status;
 }
@@ -1592,7 +1592,7 @@ MStatus NodeHelper::outputDataValue(MDataBlock& dataBlock, const MObject& attrib
   }
   else
   {
-    report_set_error(attribute, MString, status);
+    report_set_error(attribute, MPxData, status);
   }
   return status;
 }

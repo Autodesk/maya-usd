@@ -4,7 +4,8 @@
         usdGenSchema.
     """
     subLayers = [
-        @@USD_SCHEMA_PATH@@
+        @@USD_SCHEMA_PATH@@,
+        @@USDGEOM_SCHEMA_PATH@@,
     ]
 ) 
 
@@ -37,11 +38,15 @@ over "GLOBAL" (
             }
             dictionary lock_transform = {
                 string value = "transform"
-                string doc = """State which makes transform attributes of Maya objects locked"""
+                string doc = """State which makes transform attributes of Maya objects (including children) locked"""
             }
             dictionary lock_inherited = {
                 string value = "inherited"
-                string doc = """State which makes the Prim inherit it's lock"""
+                string doc = """State which makes the Prim inherit its parent's lock state"""
+            }
+            dictionary lock_unlocked = {
+                string value = "unlocked"
+                string doc = """State which makes the Prim unlocked regardless of its parent's state"""
             }
         }
     }
@@ -68,7 +73,7 @@ doc = "Data used to import a maya reference."
 
 class ALMayaReference "ALMayaReference"(
   doc = "Data used to import a maya reference."
-  inherits = </Typed>
+  inherits = </Xformable>
   customData = {
         string className = "MayaReference"
         string fileName = "MayaReference"

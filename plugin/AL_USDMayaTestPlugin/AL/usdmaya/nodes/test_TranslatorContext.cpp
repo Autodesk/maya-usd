@@ -90,6 +90,7 @@ static const char* const g_simpleRig =
 "    def ALMayaReference \"rig\""
 "    {\n"
 "      asset mayaReference = \"/tmp/AL_USDMayaTests_cube.ma\"\n"
+"      string mayaNamespace = \"cube\"\n"
 "    }\n"
 "}\n";
 
@@ -179,11 +180,13 @@ TEST(TranslatorContext, TranslatorContext)
       {
         AL::usdmaya::fileio::translators::MObjectHandleArray handles;
         context->getMObjects(SdfPath("/root/rig"), handles);
+        ASSERT_EQ(handles.size(), 1);
         EXPECT_TRUE(handles[0].object() == obj);
       }
       {
         AL::usdmaya::fileio::translators::MObjectHandleArray handles;
         context->getMObjects(prim, handles);
+        ASSERT_EQ(handles.size(), 1);
         EXPECT_TRUE(handles[0].object() == obj);
       }
       context->removeItems(prim);
@@ -212,6 +215,7 @@ TEST(TranslatorContext, TranslatorContext)
       {
         AL::usdmaya::fileio::translators::MObjectHandleArray handles;
         context->getMObjects(SdfPath("/root/rig"), handles);
+        ASSERT_EQ(handles.size(), 1);
         EXPECT_TRUE(handles[0].object() == obj);
       }
       token = context->getTypeForPath(SdfPath("/root/rig"));
@@ -222,6 +226,31 @@ TEST(TranslatorContext, TranslatorContext)
         EXPECT_TRUE(handle.object() == rigObj);
       }
       context->removeItems(SdfPath("/root/rig"));
+    }
+
+    {
+      obj = fnd.create("polyCube");
+      context->registerItem(prim, transformHandle);
+      context->insertItem(prim, obj);
+      MString text = context->serialise();
+      context->clearPrimMappings();
+      context->deserialise(text);
+
+      SdfPathVector itemsToRemove;
+      context->preRemoveEntry(SdfPath("/root/rig"), itemsToRemove);
+      ASSERT_EQ(itemsToRemove.size(), 1);
+      // preRemoveEntry is often called multiple times before changes are handled.
+      context->preRemoveEntry(SdfPath("/root"), itemsToRemove);
+      // Make sure prims have not been added twice
+      ASSERT_EQ(itemsToRemove.size(), 1);
+
+      context->removeEntries(itemsToRemove);
+
+      // context's prim mapping should be empty and it should not find type or transform
+      token = context->getTypeForPath(SdfPath("/root/rig"));
+      EXPECT_TRUE(TfToken("") == token);
+      MObjectHandle handle;
+      EXPECT_FALSE(context->getTransform(SdfPath("/root/rig"), handle));
     }
   }
 }
