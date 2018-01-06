@@ -112,6 +112,131 @@ namespace usdmaya {
 namespace nodes {
 
 //----------------------------------------------------------------------------------------------------------------------
+bool LayerDatabase::addLayer(SdfLayerRefPtr layer, const std::string& identifier)
+{
+  auto insertLayerResult = m_layerToIds.emplace(std::piecewise_construct,
+      std::forward_as_tuple(layer),
+      std::forward_as_tuple());
+  auto& idsForLayer = insertLayerResult.first->second;
+
+  _addLayer(layer, layer->GetIdentifier(), idsForLayer);
+  if (identifier != layer->GetIdentifier() && !identifier.empty())
+  {
+    _addLayer(layer, identifier, idsForLayer);
+  }
+  return insertLayerResult.second;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool LayerDatabase::removeLayer(SdfLayerRefPtr layer)
+{
+  auto foundLayerAndIds = m_layerToIds.find(layer);
+  if (foundLayerAndIds == m_layerToIds.end()) return false;
+
+  for (std::string& oldId : foundLayerAndIds->second)
+  {
+    auto oldIdPosition = m_idToLayer.find(oldId);
+#ifdef DEBUG
+    assert (oldIdPosition != m_idToLayer.end())
+#else
+    if (oldIdPosition == m_idToLayer.end())
+    {
+      MGlobal::displayError(MString("Error - layer '") + convert(layer->GetIdentifier())
+          + "' could be found indexed by layer, but not by identifier '"
+          + convert(oldId) + "'");
+    }
+    else
+#endif // DEBUG
+    {
+      m_idToLayer.erase(oldIdPosition);
+    }
+  }
+  m_layerToIds.erase(foundLayerAndIds);
+  return true;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+SdfLayerHandle LayerDatabase::findLayer(std::string identifier) const
+{
+  auto foundIdAndLayer = m_idToLayer.find(identifier);
+  if(foundIdAndLayer != m_idToLayer.end())
+  {
+    return foundIdAndLayer->second;
+  }
+  return SdfLayerHandle();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void LayerDatabase::_addLayer(SdfLayerRefPtr layer, const std::string& identifier,
+    std::vector<std::string>& idsForLayer)
+{
+  // Try to insert into m_idToLayer...
+  auto insertIdResult = m_idToLayer.emplace(identifier, layer);
+  if (!insertIdResult.second)
+  {
+    // We've seen this identifier before...
+    if (insertIdResult.first->second == layer)
+    {
+      // ...and it was referring to the same layer. Nothing to do!
+      return;
+    }
+
+    // If it was pointing to a DIFFERENT layer, we need to first remove
+    // this id from the set of ids for the OLD layer...
+    SdfLayerRefPtr oldLayer = insertIdResult.first->second;
+    auto oldLayerAndIds = m_layerToIds.find(oldLayer);
+#ifdef DEBUG
+    assert (oldLayerIds != m_layerToIds.end())
+#else
+    if (oldLayerAndIds == m_layerToIds.end())
+    {
+      // The layer didn't exist in the opposite direction - this should
+      // never happen, but don't want to crash if it does
+      MGlobal::displayError(MString("Error - layer '") + convert(identifier)
+          + "' could be found indexed by identifier, but not by layer");
+    }
+    else
+#endif // DEBUG
+    {
+      auto& oldLayerIds = oldLayerAndIds->second;
+      if (oldLayerIds.size() <= 1)
+      {
+        // This was the ONLY identifier for the layer - so delete
+        // the layer entirely!
+        m_layerToIds.erase(oldLayerAndIds);
+      }
+      else
+      {
+        auto idLocation = std::find(oldLayerIds.begin(), oldLayerIds.end(),
+            identifier);
+#ifdef DEBUG
+        assert (idLocation != oldLayerIds.end())
+#else
+        if(idLocation == oldLayerIds.end())
+        {
+          MGlobal::displayError(MString("Error - layer '") + convert(identifier)
+              + "' could be found indexed by identifier, but was not in layer's list of identifiers");
+        }
+        else
+#endif
+        {
+          oldLayerIds.erase(idLocation);
+        }
+      }
+    }
+
+    // Ok, we've cleaned up the OLD layer - now make the id point to our
+    // NEW layer
+    insertIdResult.first->second = layer;
+  }
+
+  // Ok, we've now added the layer to m_idToLayer, and cleaned up
+  // any potential old entries from m_layerToIds. Now we just need
+  // to add the identifier to idsForLayer (which should be == m_layerToIds[layer])
+  idsForLayer.push_back(identifier);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 AL_MAYA_DEFINE_NODE(LayerManager, AL_USDMAYA_LAYERMANAGER, AL_usdmaya);
 
 // serialization
@@ -119,15 +244,6 @@ MObject LayerManager::m_layers = MObject::kNullObj;
 MObject LayerManager::m_identifier = MObject::kNullObj;
 MObject LayerManager::m_serialized = MObject::kNullObj;
 MObject LayerManager::m_anonymous = MObject::kNullObj;
-
-//----------------------------------------------------------------------------------------------------------------------
-const LayerManager::layer_identifier::result_type&
-LayerManager::layer_identifier::operator()(
-    const SdfLayerRefPtr& layer) const
-{
-    static std::string emptyString;
-    return layer ? layer->GetIdentifier() : emptyString;
-}
 
 //----------------------------------------------------------------------------------------------------------------------
 void* LayerManager::conditionalCreator()
@@ -227,41 +343,33 @@ LayerManager* LayerManager::findOrCreateManager()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool LayerManager::addLayer(SdfLayerRefPtr layer)
+bool LayerManager::addLayer(SdfLayerRefPtr layer, const std::string& identifier)
 {
   boost::unique_lock<boost::shared_mutex> lock(m_layersMutex);
-  _LayersByLayer& byLayer = m_layerList.get<by_layer>();
-  return byLayer.insert(layer).second;
+  return m_layerDatabase.addLayer(layer, identifier);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 bool LayerManager::removeLayer(SdfLayerRefPtr layer)
 {
   boost::unique_lock<boost::shared_mutex> lock(m_layersMutex);
-  _LayersByLayer& byLayer = m_layerList.get<by_layer>();
-  return byLayer.erase(layer) > 0;
+  return m_layerDatabase.removeLayer(layer);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 SdfLayerHandle LayerManager::findLayer(std::string identifier)
 {
   boost::shared_lock_guard<boost::shared_mutex> lock(m_layersMutex);
-  _LayersByIdentifier& byIdentifier = m_layerList.get<by_identifier>();
-  auto findResult = byIdentifier.find(identifier);
-  if(findResult != byIdentifier.end())
-  {
-    return *findResult;
-  }
-  return SdfLayerHandle();
+  return m_layerDatabase.findLayer(identifier);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void LayerManager::getLayerIdentifiers(MStringArray& outputNames)
 {
   outputNames.clear();
-  for(const auto& layer : m_layerList)
+  for(const auto& layerAndIds : m_layerDatabase)
   {
-    outputNames.append(layer->GetIdentifier().c_str());
+    outputNames.append(layerAndIds.first->GetIdentifier().c_str());
   }
 }
 
@@ -284,11 +392,12 @@ MStatus LayerManager::populateSerialisationAttributes()
   AL_MAYA_CHECK_ERROR(status, errorString);
   {
     boost::shared_lock_guard<boost::shared_mutex> lock(m_layersMutex);
-    MArrayDataBuilder builder(&dataBlock, layers(), m_layerList.size(), &status);
+    MArrayDataBuilder builder(&dataBlock, layers(), m_layerDatabase.size(), &status);
     AL_MAYA_CHECK_ERROR(status, errorString);
     std::string temp;
-    for (const auto& layer : m_layerList)
+    for (const auto& layerAndIds : m_layerDatabase)
     {
+      auto& layer = layerAndIds.first;
       MDataHandle layersElemHandle = builder.addLast(&status);
       AL_MAYA_CHECK_ERROR(status, errorString);
       MDataHandle idHandle = layersElemHandle.child(m_identifier);
@@ -431,7 +540,7 @@ void LayerManager::loadAllLayers()
       continue;
     }
     TF_DEBUG(ALUSDMAYA_LAYERS).Msg("...layer import succeeded!");
-    addLayer(layer);
+    addLayer(layer, identifierVal);
   }
 }
 

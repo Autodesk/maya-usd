@@ -21,10 +21,6 @@
 
 #include "maya/MPxLocatorNode.h"
 
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/random_access_index.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-
 #include <map>
 #include <set>
 #include <boost/thread.hpp>
@@ -35,6 +31,59 @@ namespace AL {
 namespace usdmaya {
 namespace nodes {
 
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  Stores layers, in a way that they may be looked up by the layer ref ptr, or by identifier
+///         Also, unlike boost::multi_index, we can have multiple identifiers per layer
+/// \ingroup nodes
+//----------------------------------------------------------------------------------------------------------------------
+class LayerDatabase {
+public:
+  typedef std::map<SdfLayerRefPtr, std::vector<std::string>> LayerToIdsMap;
+  typedef std::map<std::string, SdfLayerRefPtr> IdToLayerMap;
+
+  /// \brief  Add the given layer to the set of layers in this LayerDatabase, if not already present,
+  ///         and optionally add an extra identifier as a key to it
+  /// \param  layer What layer to add to this database
+  /// \param  identifer Extra identifier to add as a key to this layer; note that the "canonical" identifier,
+  ///         as returned by layer.GetIdentifier(), is ALWAYS added as an identifier key for this layer so this
+  ///         is intended as a way to provide a second identifier for the same layer (or third or more, if you
+  ///         call it repeatedly). This is useful both because multiple identifiers may resolve to the same
+  ///         underlying layer (especially when considering asset resolution), and for serializing and deserializing
+  ///         anonymous layers, the "canonical" identifier will change every time it is serialized and deserialized
+  ///         (and it can be necessary to refer to the layer both by it's "old" and "new" ids). If this is
+  ///         an empty string, it is ignored.
+  /// \return bool which is true if the layer was actually added to the set of layers managed by this node
+  ///         (ie, if it wasn't already managed)
+  bool addLayer(SdfLayerRefPtr layer, const std::string& identifier=std::string(""));
+
+  /// \brief  Remove the given layer to the list of layers managed by this node, if present.
+  /// \return bool which is true if the layer was actually removed from the set of layers managed by this node
+  ///         (ie, if was previously managed)
+  bool removeLayer(SdfLayerRefPtr layer);
+
+  /// \brief  Find the layer in the set of layers managed by this node, by identifier
+  /// \return The found layer handle in the layer list managed by this node (invalid if not found)
+  SdfLayerHandle findLayer(std::string identifier) const;
+
+  LayerToIdsMap::size_type size() const { return m_layerToIds.size(); }
+
+  // Iterator interface
+  typedef LayerToIdsMap::iterator iterator;
+  typedef LayerToIdsMap::const_iterator const_iterator;
+  iterator begin() { return m_layerToIds.begin(); }
+  const_iterator begin() const { return m_layerToIds.cbegin(); }
+  const_iterator cbegin() const { return m_layerToIds.cbegin(); }
+  iterator end() { return m_layerToIds.end(); }
+  const_iterator end() const { return m_layerToIds.cend(); }
+  const_iterator cend() const { return m_layerToIds.cend(); }
+
+private:
+  void _addLayer(SdfLayerRefPtr layer, const std::string& identifier,
+      std::vector<std::string>& idsForLayer);
+
+  LayerToIdsMap m_layerToIds;
+  IdToLayerMap m_idToLayer;
+};
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  The layer manager node handles serialization and deserialization of all layers used by all ProxyShapes
@@ -71,13 +120,22 @@ public:
   //--------------------------------------------------------------------------------------------------------------------
 
   /// \brief  Add the given layer to the list of layers managed by this node, if not already present.
+  /// \param  layer What layer to add to this LayerManager
+  /// \param  identifer Extra identifier to add as a key to this layer; note that the "canonical" identifier,
+  ///         as returned by layer.GetIdentifier(), is ALWAYS added as an identifier key for this layer so this
+  ///         is intended as a way to provide a second identifier for the same layer (or third or more, if you
+  ///         call it repeatedly). This is useful both because multiple identifiers may resolve to the same
+  ///         underlying layer (especially when considering asset resolution), and for serializing and deserializing
+  ///         anonymous layers, the "canonical" identifier will change every time it is serialized and deserialized
+  ///         (and it can be necessary to refer to the layer both by it's "old" and "new" ids). If this is
+  ///         an empty string, it is ignored.
   /// \return bool which is true if the layer was actually added to the list of layers managed by this node
   ///         (ie, if it wasn't already managed)
-  bool addLayer(SdfLayerRefPtr layer);
+  bool addLayer(SdfLayerRefPtr layer, const std::string& identifier=std::string(""));
 
   /// \brief  Remove the given layer to the list of layers managed by this node, if present.
-  /// \return bool which is true if the layer was actually removed from the list of layers managed by this node (ie, if
-  //          was previously managed)
+  /// \return bool which is true if the layer was actually removed from the list of layers managed by this node
+  ///         (ie, if it was previously managed)
   bool removeLayer(SdfLayerRefPtr layer);
 
   /// \brief  Find the layer in the list of layers managed by this node, by identifier
@@ -85,7 +143,8 @@ public:
   SdfLayerHandle findLayer(std::string identifier);
 
   /// \brief  Store a list of the managed layers' identifiers in the given MStringArray
-  /// \param  outputNames The array to hold the identifier names; will be cleared before being filled
+  /// \param  outputNames The array to hold the identifier names; will be cleared before being filled.
+  ///         No guarantees are made about the order in which the layer identifiers will be returned.
   void getLayerIdentifiers(MStringArray& outputNames);
 
   /// \brief  Ensures that the layers attribute will be filled out with serialized versions of all tracked layers.
@@ -129,47 +188,7 @@ public:
 private:
   static MObject _findNode();
 
-  // This code modified slightly from sdf/layerRegistry.h
-
-  // Index tags.
-  struct by_position {};
-  struct by_layer {};
-  struct by_identifier {};
-
-  // Key Extractors.
-  struct layer_identifier {
-      typedef std::string result_type;
-      const result_type& operator()(const SdfLayerRefPtr& layer) const;
-  };
-
-  // List of layers, with indices by layer and identifier
-  typedef boost::multi_index::multi_index_container<
-      SdfLayerRefPtr,
-      boost::multi_index::indexed_by<
-        // Layer<->Layer, one-to-one. Duplicate layer handles cannot be
-        // inserted into the container.
-        boost::multi_index::hashed_unique<
-          boost::multi_index::tag<by_layer>,
-          boost::multi_index::identity<SdfLayerRefPtr>,
-          TfHash
-          >,
-
-        // Layer<->Identifier, one-to-many. The identifier is the path
-        // passed in to CreateNew/FindOrOpen, and may be any path form
-        // resolvable to a single real path.
-        boost::multi_index::hashed_non_unique<
-          boost::multi_index::tag<by_identifier>,
-          layer_identifier
-          >
-      >
-  > _Layers;
-
-  // Layer index.
-  typedef _Layers::index<by_layer>::type _LayersByLayer;
-  // Identifier index.
-  typedef _Layers::index<by_identifier>::type _LayersByIdentifier;
-
-  _Layers m_layerList;
+  LayerDatabase m_layerDatabase;
 
   // Note on layerManager / multithreading:
   // I don't know that layerManager will be used in a multihreaded manenr... but I also don't know it COULDN'T be.

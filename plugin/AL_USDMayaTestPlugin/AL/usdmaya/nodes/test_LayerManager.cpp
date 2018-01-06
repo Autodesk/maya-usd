@@ -213,7 +213,7 @@ TEST(LayerManager, addRemoveLayer)
     ASSERT_FALSE(manager->findLayer(realLayer->GetIdentifier()));
     manager->getLayerIdentifiers(layerIds);
     ASSERT_EQ(layerIds.length(), 1);
-    ASSERT_EQ(layerIds[0], MString(anonLayer->GetIdentifier().c_str()));
+    ASSERT_EQ(MString(anonLayer->GetIdentifier().c_str()), layerIds[0]);
   }
 
   // try adding a "real" layer
@@ -225,8 +225,17 @@ TEST(LayerManager, addRemoveLayer)
     ASSERT_EQ(manager->findLayer(realLayer->GetIdentifier()), realLayer);
     manager->getLayerIdentifiers(layerIds);
     ASSERT_EQ(layerIds.length(), 2);
-    ASSERT_EQ(layerIds[0], MString(anonLayer->GetIdentifier().c_str()));
-    ASSERT_EQ(layerIds[1], MString(realLayer->GetIdentifier().c_str()));
+    // since there's ony two items, and they may be returned in arbitrary
+    // order, just check both orderings
+    if (MString(anonLayer->GetIdentifier().c_str()) == layerIds[0])
+    {
+      ASSERT_EQ(MString(realLayer->GetIdentifier().c_str()), layerIds[1]);
+    }
+    else
+    {
+      ASSERT_EQ(MString(realLayer->GetIdentifier().c_str()), layerIds[0]);
+      ASSERT_EQ(MString(anonLayer->GetIdentifier().c_str()), layerIds[1]);
+    }
   }
 
   // try removing an anonymous layer
@@ -238,7 +247,7 @@ TEST(LayerManager, addRemoveLayer)
     ASSERT_EQ(manager->findLayer(realLayer->GetIdentifier()), realLayer);
     manager->getLayerIdentifiers(layerIds);
     ASSERT_EQ(layerIds.length(), 1);
-    ASSERT_EQ(layerIds[0], MString(realLayer->GetIdentifier().c_str()));
+    ASSERT_EQ(MString(realLayer->GetIdentifier().c_str()), layerIds[0]);
   }
 
   // try removing a "real" layer
