@@ -311,18 +311,31 @@ MObject LayerManager::_findNode()
 
 //----------------------------------------------------------------------------------------------------------------------
 // TODO: make it take an optional MDGModifier
-MObject LayerManager::findOrCreateNode()
+MObject LayerManager::findOrCreateNode(MDGModifier* dgmod, bool* wasCreated)
 {
   TF_DEBUG(ALUSDMAYA_LAYERS).Msg("LayerManager::findOrCreateNode\n");
   std::lock_guard<std::recursive_mutex> lock(_findNodeMutex);
   MObject theManager = _findNode();
-  if (!theManager.isNull())
-    return theManager;
 
-  MDGModifier modifier;
-  MObject node = modifier.createNode(kTypeId);
-  modifier.doIt();
-  return node;
+  if (!theManager.isNull())
+  {
+    if (wasCreated) *wasCreated = false;
+    return theManager;
+  }
+
+  if (wasCreated) *wasCreated = true;
+
+  if (dgmod)
+  {
+    return dgmod->createNode(kTypeId);
+  }
+  else
+  {
+    MDGModifier modifier;
+    MObject node = modifier.createNode(kTypeId);
+    modifier.doIt();
+    return node;
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -337,9 +350,10 @@ LayerManager* LayerManager::findManager()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-LayerManager* LayerManager::findOrCreateManager()
+LayerManager* LayerManager::findOrCreateManager(MDGModifier* dgmod, bool* wasCreated)
 {
-  return static_cast<LayerManager*>(MFnDependencyNode(findOrCreateNode()).userNode());
+  return static_cast<LayerManager*>(MFnDependencyNode(findOrCreateNode(dgmod,
+      wasCreated)).userNode());
 }
 
 //----------------------------------------------------------------------------------------------------------------------

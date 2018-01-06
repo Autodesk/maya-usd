@@ -104,16 +104,24 @@ public:
   static MObject findNode();
 
   /// \brief  Either find the already-existing non-referenced LayerManager node in the scene, or make one
+  /// \param dgmod An optional dgmodifier to create the node, if necessary. Note that if one is passed in,
+  ///              createNode might be called on it, but doIt never will be, so the layer manager node
+  ///              may not be added to the scene graph yet
+  /// \param wasCreated If given, whether a new layer manager had to be created is stored here.
   /// \return the found-or-created LayerManager node
-  static MObject findOrCreateNode();
+  static MObject findOrCreateNode(MDGModifier* dgmod=nullptr, bool* wasCreated=nullptr);
 
   /// \brief  Find the already-existing non-referenced LayerManager node in the scene, or return a nullptr
   /// \return the found LayerManager, or a nullptr
   static LayerManager* findManager();
 
   /// \brief  Either find the already-existing non-referenced LayerManager in the scene, or make one
+  /// \param dgmod An optional dgmodifier to create the node, if necessary. Note that if one is passed in,
+  ///              createNode might be called on it, but doIt never will be, so the layer manager node
+  ///              may not be added to the scene graph yet
+  /// \param wasCreated If given, whether a new layer manager had to be created is stored here.
   /// \return the found-or-created LayerManager
-  static LayerManager* findOrCreateManager();
+  static LayerManager* findOrCreateManager(MDGModifier* dgmod=nullptr, bool* wasCreated=nullptr);
 
   //--------------------------------------------------------------------------------------------------------------------
   /// Methods to handle the saving and restoring of layer data
