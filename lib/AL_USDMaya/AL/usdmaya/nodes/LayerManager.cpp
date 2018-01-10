@@ -534,6 +534,10 @@ void LayerManager::loadAllLayers()
         }
       }
     }
+
+    // Don't print the entirety of layers > ~1MB
+    constexpr int MAX_LAYER_CHARS=1000000;
+
     TF_DEBUG(ALUSDMAYA_LAYERS).Msg(
         "################################################\n"
         "Importing layer:\n"
@@ -541,19 +545,22 @@ void LayerManager::loadAllLayers()
         "new identifier: %s\n"
         "format: %s\n"
         "################################################\n"
-        "%s\n"
+        "%.*s\n%s"
         "################################################\n",
         identifierVal.c_str(),
         layer->GetIdentifier().c_str(),
         layer->GetFileFormat()->GetFormatId().GetText(),
-        serializedVal.c_str());
+        MAX_LAYER_CHARS,
+        serializedVal.c_str(),
+        serializedVal.length() > MAX_LAYER_CHARS ? "<truncated>\n" : ""
+        );
     if(!layer->ImportFromString(serializedVal))
     {
-      TF_DEBUG(ALUSDMAYA_LAYERS).Msg("...layer import failed!");
+      TF_DEBUG(ALUSDMAYA_LAYERS).Msg("...layer import failed!\n");
       MGlobal::displayError(MString("Failed to import serialized layer: ") + serializedVal.c_str());
       continue;
     }
-    TF_DEBUG(ALUSDMAYA_LAYERS).Msg("...layer import succeeded!");
+    TF_DEBUG(ALUSDMAYA_LAYERS).Msg("...layer import succeeded!\n");
     addLayer(layer, identifierVal);
   }
 }
