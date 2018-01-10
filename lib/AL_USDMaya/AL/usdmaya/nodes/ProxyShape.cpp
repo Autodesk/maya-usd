@@ -135,6 +135,7 @@ MObject ProxyShape::m_displayGuides = MObject::kNullObj;
 MObject ProxyShape::m_displayRenderGuides = MObject::kNullObj;
 MObject ProxyShape::m_layers = MObject::kNullObj;
 MObject ProxyShape::m_serializedSessionLayer = MObject::kNullObj;
+MObject ProxyShape::m_sessionLayerName = MObject::kNullObj;
 MObject ProxyShape::m_serializedArCtx = MObject::kNullObj;
 MObject ProxyShape::m_serializedTrCtx = MObject::kNullObj;
 MObject ProxyShape::m_unloaded = MObject::kNullObj;
@@ -509,6 +510,7 @@ MStatus ProxyShape::initialise()
     setNodeType(kTypeName);
     addFrame("USD Proxy Shape Node");
     m_serializedSessionLayer = addStringAttr("serializedSessionLayer", "ssl", kCached|kReadable|kWritable|kStorable|kHidden);
+    m_sessionLayerName = addStringAttr("sessionLayerName", "sln", kCached|kReadable|kWritable|kStorable|kHidden);
 
     m_serializedArCtx = addStringAttr("serializedArCtx", "arcd", kCached|kReadable|kWritable|kStorable|kHidden);
     m_filePath = addFilePathAttr("filePath", "fp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance, kLoad, "USD Files (*.usd*) (*.usd*);;Alembic Files (*.abc)");
@@ -683,16 +685,26 @@ void ProxyShape::resync(const SdfPath& primPath)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::serialize()
+void ProxyShape::serialize(UsdStageRefPtr stage, LayerManager* layerManager)
 {
-  UsdStageRefPtr stage = getUsdStage();
-
   if(stage)
   {
-    // Serialize our own session layer - LayerManager will handle all other layers
-    std::string serializeSessionLayerStr;
-    stage->GetSessionLayer()->ExportToString(&serializeSessionLayerStr);
-    serializedSessionLayerPlug().setValue(convert(serializeSessionLayerStr));
+    if (layerManager)
+    {
+      // Make sure the sessionLayer is always serialized (even if it's never an edit target)
+      auto sessionLayer = stage->GetSessionLayer();
+      layerManager->addLayer(sessionLayer);
+      // ...and store the name for the (anonymous) session layer so we can find it!
+      sessionLayerNamePlug().setValue(convert(sessionLayer->GetIdentifier()));
+
+      // Then add in the current edit target
+      trackEditTargetLayer(this, layerManager);
+    }
+    else
+    {
+      MGlobal::displayError("ProxyShape::serialize was passed a nullptr for the layerManager");
+    }
+    // Make sure our session layer is added to the layer manager to get it serialized.
 
     serialiseTranslatorContext();
     serialiseTransformRefs();
@@ -722,14 +734,18 @@ void ProxyShape::serializeAll()
         layerManager = LayerManager::findOrCreateManager();
       }
 
+      if(!layerManager)
+      {
+        MGlobal::displayError(MString("Error creating layerManager"));
+        continue;
+      }
+
       auto proxyShape = static_cast<ProxyShape *>(fn.userNode());
       if(proxyShape == nullptr)
       {
         MGlobal::displayError(MString("ProxyShape had no mpx data: ") + fn.name());
         continue;
       }
-
-      proxyShape->serialize();
 
       UsdStageRefPtr stage = proxyShape->getUsdStage();
 
@@ -739,8 +755,7 @@ void ProxyShape::serializeAll()
         continue;
       }
 
-      // Then add in the current edit target
-      trackEditTargetLayer(proxyShape, layerManager);
+      proxyShape->serialize(stage, layerManager);
     }
 
     // Bail if no proxyShapes were found...
@@ -1000,7 +1015,7 @@ void ProxyShape::loadStage()
 
   // Get input attr values
   const MString file = inputStringValue(dataBlock, m_filePath);
-  const MString serializedSessionLayer = inputStringValue(dataBlock, m_serializedSessionLayer);
+  const MString sessionLayerName = inputStringValue(dataBlock, m_sessionLayerName);
   const MString serializedArCtx = inputStringValue(dataBlock, m_serializedArCtx);
 
   const MString populationMaskIncludePaths = inputStringValue(dataBlock, m_populationMaskIncludePaths);
@@ -1036,15 +1051,29 @@ void ProxyShape::loadStage()
   if (isValidPath)
   {
     MStatus status;
+    SdfLayerRefPtr sessionLayer;
 
     AL_BEGIN_PROFILE_SECTION(OpeningUsdStage);
-      SdfLayerRefPtr sessionLayer;
       AL_BEGIN_PROFILE_SECTION(OpeningSessionLayer);
         {
-          sessionLayer = SdfLayer::CreateAnonymous();
-          if(serializedSessionLayer.length() != 0)
+          // Grab the session layer from the layer manager
+          if(sessionLayerName.length() > 0)
           {
-            sessionLayer->ImportFromString(convert(serializedSessionLayer));
+            auto layerManager = AL::usdmaya::nodes::LayerManager::findManager();
+            if(layerManager)
+            {
+              sessionLayer = layerManager->findLayer(convert(sessionLayerName));
+              if(!sessionLayer)
+              {
+                MGlobal::displayError(MString("ProxyShape \"") + name() + "\" had a serialized session layer"
+                    " named \"" + sessionLayerName + "\", but no matching layer could be found in the layerManager");
+              }
+            }
+            else
+            {
+              MGlobal::displayError(MString("ProxyShape \"") + name() + "\" had a serialized session layer,"
+                  " but no layerManager node was found");
+            }
           }
         }
       AL_END_PROFILE_SECTION();
@@ -1137,7 +1166,7 @@ void ProxyShape::loadStage()
     MGlobal::displayInfo(convert(strstr.str()));
   }
 
-  stageDataDirtyPlug().setValue(True);
+  stageDataDirtyPlug().setValue(true);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

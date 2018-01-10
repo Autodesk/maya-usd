@@ -46,6 +46,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdImagingGLHdEngine;
 
+// Note: you MUST forward declare LayerManager, and not include LayerManager.h;
+// The reason is that LayerManager.h includes MPxLocatorNode.h, which on Linux,
+// ends up bringing in Xlib.h, which has this unfortunate macro:
+//
+//    #define Bool int
+//
+// This, in turn, will cause problems if you try to use SdfValueTypeNames->Bool,
+// as in test_usdmaya_AttributeType.cpp
+class LayerManager;
+
 PXR_NAMESPACE_CLOSE_SCOPE;
 
 namespace AL {
@@ -265,9 +275,11 @@ public:
   /// Connection to any layer DG nodes
   AL_DECL_ATTRIBUTE(layers);
 
-  /// serialised session layer
-  // TODO reset if the usd file path is updated via the ui
+  /// serialised session layer (obsolete / deprecated)
   AL_DECL_ATTRIBUTE(serializedSessionLayer);
+
+  /// name of serialized session layer (on the LayerManager)
+  AL_DECL_ATTRIBUTE(sessionLayerName);
 
   /// serialised asset resolver context
   // @note currently not used
@@ -633,7 +645,7 @@ public:
 
 
   // \brief Serialize information unique to this shape
-  void serialize();
+  void serialize(UsdStageRefPtr stage, LayerManager* layerManager);
 
   // \brief Serialize all layers in proxyShapes to layerManager attributes; called before saving
   static void serializeAll();

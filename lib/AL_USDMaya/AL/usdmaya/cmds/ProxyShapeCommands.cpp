@@ -18,6 +18,7 @@
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
+#include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 
@@ -361,8 +362,23 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
     }
   }
 
+  // initialize the session layer, if given
+  if(hasSession)
+  {
+    auto sessionLayer = SdfLayer::CreateAnonymous();
+    sessionLayer->ImportFromString(convert(sessionLayerSerialized));
+    auto layerManager = nodes::LayerManager::findOrCreateManager(&m_modifier);
+    if (!layerManager)
+    {
+      MGlobal::displayError(MString("Unknown error getting/creating LayerManager node"));
+      return MS::kFailure;
+    }
+    layerManager->addLayer(sessionLayer);
+    m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::sessionLayerName()),
+        convert(sessionLayer->GetIdentifier()));
+  }
+
   // intialise the params
-  if(hasSession) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::serializedSessionLayer()), sessionLayerSerialized);
   if(hasPrimPath) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::primPath()), primPath);
   if(hasExclPrimPath) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::excludePrimPaths()), excludePrimPath);
   if(unloaded) m_modifier.newPlugValueBool(MPlug(m_shape, nodes::ProxyShape::unloaded()), unloaded);
