@@ -1075,6 +1075,18 @@ void ProxyShape::loadStage()
                   " but no layerManager node was found");
             }
           }
+
+          // If we still have no sessionLayer, but there's data in serializedSessionLayer, then
+          // assume we're reading an "old" file, and read it for backwards compatibility.
+          if(!sessionLayer)
+          {
+            const MString serializedSessionLayer = inputStringValue(dataBlock, m_serializedSessionLayer);
+            if(serializedSessionLayer.length() != 0)
+            {
+              sessionLayer = SdfLayer::CreateAnonymous();
+              sessionLayer->ImportFromString(convert(serializedSessionLayer));
+            }
+          }
         }
       AL_END_PROFILE_SECTION();
 
