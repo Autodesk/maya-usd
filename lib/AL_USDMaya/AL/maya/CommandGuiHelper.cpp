@@ -322,7 +322,9 @@ void CommandGuiHelper::addListOption(const char* commandFlag, const char* label,
   m_global << "global proc " << optionVar << "_handle(string $sl) {\n"
            "  global string $" << optionVar << "_sl; $" << optionVar << "_sl = $sl;\n}\n";
 
-  m_controls << "  optionMenu -h 20 -cc \"" <<  optionVar << "_handle #1\" " << optionVar << ";\n";
+  // Use `optionMenu -q -value` instead of "#1" because there's no good way to do string-escaping
+  // with "#1"
+  m_controls << "  optionMenu -h 20 -cc \"" <<  optionVar << "_handle `optionMenu -q -value " << optionVar << "`\" " << optionVar << ";\n";
 
   // add label
   m_labels << "  text -al \"right\" -h 20 -w 160 -l \"" << label << ":\";\n";
