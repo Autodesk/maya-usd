@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "AL/maya/CommandGuiHelper.h"
+#include "AL/maya/Common.h"
 #include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/Utils.h"
 #include "AL/usdmaya/DebugCodes.h"
@@ -21,6 +22,7 @@
 #include "AL/usdmaya/nodes/Layer.h"
 #include "AL/usdmaya/nodes/LayerVisitor.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
+#include "AL/usdmaya/nodes/Transform.h"
 
 #include "maya/MArgDatabase.h"
 #include "maya/MDagPath.h"
@@ -37,6 +39,78 @@
 #include "pxr/usd/sdf/listOp.h"
 
 #include <sstream>
+
+namespace {
+  AL::usdmaya::nodes::ProxyShape* getProxyShapeFromSel(const MSelectionList& sl)
+  {
+    auto getShapePtr = [](const MObject& mobj, MFnDagNode& fnDag)
+        ->AL::usdmaya::nodes::ProxyShape*
+    {
+      if(mobj.hasFn(MFn::kPluginShape))
+      {
+        fnDag.setObject(mobj);
+        if(fnDag.typeId() == AL::usdmaya::nodes::ProxyShape::kTypeId)
+        {
+          return (AL::usdmaya::nodes::ProxyShape*)fnDag.userNode();
+        }
+      }
+      return nullptr;
+    };
+
+    AL::usdmaya::nodes::ProxyShape* foundShape = nullptr;
+
+    MDagPath path;
+    for(uint32_t i = 0; i < sl.length(); ++i)
+    {
+      MStatus status = sl.getDagPath(i, path);
+      if(!status) continue;
+
+      MFnDagNode fn(path);
+
+      if(path.node().hasFn(MFn::kTransform))
+      {
+        if(fn.typeId() == AL::usdmaya::nodes::Transform::kTypeId)
+        {
+          auto transform = (AL::usdmaya::nodes::Transform*)fn.userNode();
+          if(transform)
+          {
+            MPlug sourcePlug = transform->inStageDataPlug().source();
+            foundShape = getShapePtr(sourcePlug.node(), fn);
+            if (foundShape) return foundShape;
+          }
+          else
+          {
+            MGlobal::displayError(MString("Error getting Transform pointer for ")
+                + fn.partialPathName());
+            return nullptr;
+          }
+          // If we have an AL_usdmaya_ProxyShapeTransform, but it wasn't hooked
+          // up to a ProxyShape, just continue to the next selection item
+          continue;
+        }
+        else
+        {
+          // If it's a "normal" xform, search all shapes directly below
+          unsigned int numShapes;
+          AL_MAYA_CHECK_ERROR_RETURN_VAL(path.numberOfShapesDirectlyBelow(numShapes),
+              nullptr, "Error getting number of shapes beneath " + path.partialPathName());
+          for(unsigned int i = 0; i < numShapes; path.pop(), ++i)
+          {
+            path.extendToShapeDirectlyBelow(i);
+            foundShape = getShapePtr(path.node(), fn);
+            if(foundShape) return foundShape;
+          }
+        }
+      }
+      else
+      {
+        foundShape = getShapePtr(path.node(), fn);
+        if(foundShape) return foundShape;
+      }
+    }
+    return nullptr;
+  }
+}
 
 namespace AL {
 namespace usdmaya {
@@ -68,24 +142,9 @@ nodes::ProxyShape* LayerCommandBase::getShapeNode(const MArgDatabase& args)
   MSelectionList sl;
   args.getObjects(sl);
 
-  for(uint32_t i = 0; i < sl.length(); ++i)
-  {
-    MStatus status = sl.getDagPath(i, path);
+  nodes::ProxyShape* foundShape = getProxyShapeFromSel(sl);
+  if(foundShape) return foundShape;
 
-    if(path.node().hasFn(MFn::kTransform))
-    {
-      path.extendToShape();
-    }
-
-    if(path.node().hasFn(MFn::kPluginShape))
-    {
-      MFnDagNode fn(path);
-      if(fn.typeId() == nodes::ProxyShape::kTypeId)
-      {
-        return (nodes::ProxyShape*)fn.userNode();
-      }
-    }
-  }
   sl.clear();
 
   {
@@ -95,24 +154,8 @@ nodes::ProxyShape* LayerCommandBase::getShapeNode(const MArgDatabase& args)
       if(args.getFlagArgument("-p", 0, proxyName))
       {
         sl.add(proxyName);
-        if(sl.length())
-        {
-          MStatus status = sl.getDagPath(0, path);
-
-          if(path.node().hasFn(MFn::kTransform))
-          {
-            path.extendToShape();
-          }
-
-          if(path.node().hasFn(MFn::kPluginShape))
-          {
-            MFnDagNode fn(path);
-            if(fn.typeId() == nodes::ProxyShape::kTypeId)
-            {
-              return (nodes::ProxyShape*)fn.userNode();
-            }
-          }
-        }
+        foundShape = getProxyShapeFromSel(sl);
+        if(foundShape) return foundShape;
       }
       MGlobal::displayError("Invalid ProxyShape specified/selected with -p flag");
     }
