@@ -15,6 +15,7 @@
 //
 #include "AL/maya/CommandGuiHelper.h"
 #include "AL/maya/MenuBuilder.h"
+#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/Utils.h"
 
 #include "maya/MGlobal.h"
@@ -162,9 +163,7 @@ CommandGuiHelper::CommandGuiHelper(const char* commandName, const char* windowTi
   MGlobal::executeCommand(MString(ui.str().data(), ui.str().length()));
 
   // if you want to validate the output code
-#if AL_USD_PRINT_UI_CODE
-  std::cout << ui.str() << std::endl;
-#endif
+  TF_DEBUG(ALUSDMAYA_GUIHELPER).Msg(ui.str() + "\n");
 
   // begin construction of the 6 utils functions for this dialog
   m_init << "global proc init_" << mycmd_optionGUI << "()\n{\n";
@@ -194,16 +193,17 @@ CommandGuiHelper::~CommandGuiHelper()
   m_controls << "}\n";
 
   // if you want to validate the output code
-#if AL_USD_PRINT_UI_CODE
-  std::cout << m_global.str() << std::endl;
-  std::cout << m_init.str() << std::endl;
-  std::cout << m_save.str() << std::endl;
-  std::cout << m_load.str() << std::endl;
-  std::cout << m_reset.str() << std::endl;
-  std::cout << m_execute.str() << std::endl;
-  std::cout << m_labels.str() << std::endl;
-  std::cout << m_controls.str() << std::endl;
-#endif
+  if (TfDebug::IsEnabled(ALUSDMAYA_GUIHELPER))
+  {
+    TfDebug::Helper().Msg(m_global.str() + "\n");
+    TfDebug::Helper().Msg(m_init.str() + "\n");
+    TfDebug::Helper().Msg(m_save.str() + "\n");
+    TfDebug::Helper().Msg(m_load.str() + "\n");
+    TfDebug::Helper().Msg(m_reset.str() + "\n");
+    TfDebug::Helper().Msg(m_execute.str() + "\n");
+    TfDebug::Helper().Msg(m_labels.str() + "\n");
+    TfDebug::Helper().Msg(m_controls.str() + "\n");
+  }
 
   static const char* const alFileDialogHandler =
     "global proc alFileDialogHandler(string $filter, string $control, int $mode)\n"
