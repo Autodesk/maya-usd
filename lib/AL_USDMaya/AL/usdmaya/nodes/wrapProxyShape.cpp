@@ -355,7 +355,6 @@ namespace {
     ///         required for another purpose). (same as for ProxyShape::removeUsdTransforms)
     /// \param  reason Are we deleting selected transforms, or those that are required, or requested? (same as for
     ///         ProxyShape::removeUsdTransforms)
-    (same as for ProxyShape::removeUsdTransforms)
     static void removeUsdTransforms(
         ProxyShape& proxyShape,
         const UsdPrim& usdPrim,
