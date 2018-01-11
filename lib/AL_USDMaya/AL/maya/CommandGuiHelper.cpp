@@ -121,7 +121,13 @@ CommandGuiHelper::CommandGuiHelper(const char* commandName, const char* windowTi
   std::ostringstream ui;
   ui << "global proc build_" << mycmd_optionGUI << "()\n"
         "{\n"
-        "  if(`window -q -ex \"" << mycmd_optionGUI << "\"`) return;\n"
+        "  if(`window -q -ex \"" << mycmd_optionGUI << "\"`)\n"
+        "  {\n"
+        "    if(`window -q -visible \"" << mycmd_optionGUI << "\"`) return;\n"
+        // If there was an error building the window, the window may exist, but not be shown.
+        // We assume that if it's not visible, there was an error, so we delete it and try again.
+        "    deleteUI \"" << mycmd_optionGUI << "\";\n"
+        "  }\n"
         "  $window = `window -title \"" << windowTitle << "\" -w 550 -h 350 \"" << mycmd_optionGUI << "\"`;\n"
         "  $menuBarLayout = `menuBarLayout`;\n"
         "    $menu = `menu -label \"Edit\"`;\n"
