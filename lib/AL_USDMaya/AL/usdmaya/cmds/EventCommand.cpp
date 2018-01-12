@@ -86,10 +86,10 @@ MStatus Event::doIt(const MArgList& argList)
       if(items.getDependNode(0, object))
       {
         MFnDependencyNode fn(object);
-        m_associatedData = dynamic_cast<MayaNodeEvents*>(fn.userNode());
+        m_associatedData = dynamic_cast<NodeEvents*>(fn.userNode());
         if(!m_associatedData)
         {
-          MGlobal::displayError(MString("AL_usdmaya_Event, specified node does not support the MayaNodeEvents interface: ") + fn.name());
+          MGlobal::displayError(MString("AL_usdmaya_Event, specified node does not support the NodeEvents interface: ") + fn.name());
           return MS::kFailure;
         }
         EventId id = m_associatedData->getId(m_eventName.asChar());
@@ -143,7 +143,7 @@ MStatus Event::redoIt()
     }
     else
     {
-      m_associatedData->registerEvent(m_eventName.asChar(), m_parentEvent);
+      m_associatedData->registerEvent(m_eventName.asChar(), kUserSpecifiedEventType, m_parentEvent);
     }
   }
   else
@@ -154,7 +154,7 @@ MStatus Event::redoIt()
     }
     else
     {
-      EventScheduler::getScheduler().registerEvent(m_eventName.asChar(), m_associatedData, m_parentEvent);
+      EventScheduler::getScheduler().registerEvent(m_eventName.asChar(), kUserSpecifiedEventType, m_associatedData, m_parentEvent);
     }
   }
   m_deleting = !m_deleting;
@@ -248,7 +248,7 @@ MStatus Callback::doIt(const MArgList& argList)
           MFnDependencyNode fn(node, &status);
           if(status)
           {
-            if(dynamic_cast<MayaNodeEvents*>(fn.userNode()))
+            if(dynamic_cast<NodeEvents*>(fn.userNode()))
             {
               setResult(true);
             }
@@ -330,10 +330,10 @@ MStatus Callback::doIt(const MArgList& argList)
         sl.getDependNode(0, nodeHandle);
         MFnDependencyNode fn(nodeHandle);
 
-        MayaNodeEvents* event = dynamic_cast<MayaNodeEvents*>(fn.userNode());
+        NodeEvents* event = dynamic_cast<NodeEvents*>(fn.userNode());
         if(!event)
         {
-          MGlobal::displayError(MString("specified node does not support the MayaNodeEvents interface: ") + nodeName);
+          MGlobal::displayError(MString("specified node does not support the NodeEvents interface: ") + nodeName);
         }
         else
         {
@@ -371,10 +371,10 @@ MStatus Callback::doIt(const MArgList& argList)
         sl.getDependNode(0, nodeHandle);
         MFnDependencyNode fn(nodeHandle);
 
-        MayaNodeEvents* event = dynamic_cast<MayaNodeEvents*>(fn.userNode());
+        NodeEvents* event = dynamic_cast<NodeEvents*>(fn.userNode());
         if(!event)
         {
-          MGlobal::displayError(MString("specified node does not support the MayaNodeEvents interface: ") + nodeName);
+          MGlobal::displayError(MString("specified node does not support the NodeEvents interface: ") + nodeName);
         }
         else
         {
@@ -480,7 +480,7 @@ MStatus ListEvents::doIt(const MArgList& args)
         MPxNode* ptr = fn.userNode();
         if(ptr)
         {
-          MayaNodeEvents* event = dynamic_cast<MayaNodeEvents*>(ptr);
+          NodeEvents* event = dynamic_cast<NodeEvents*>(ptr);
           if(event)
           {
             for(const auto& eventInfo : event->events())
@@ -559,7 +559,7 @@ MStatus TriggerEvent::doIt(const MArgList& args)
         MPxNode* ptr = fn.userNode();
         if(ptr)
         {
-          MayaNodeEvents* event = dynamic_cast<MayaNodeEvents*>(ptr);
+          NodeEvents* event = dynamic_cast<NodeEvents*>(ptr);
           if(event)
           {
             setResult(event->triggerEvent(eventName.asChar()));
@@ -701,7 +701,7 @@ MStatus ListCallbacks::doIt(const MArgList& args)
         MPxNode* ptr = fn.userNode();
         if(ptr)
         {
-          MayaNodeEvents* event = dynamic_cast<MayaNodeEvents*>(ptr);
+          NodeEvents* event = dynamic_cast<NodeEvents*>(ptr);
           if(event)
           {
             const auto it = event->scheduler()->event(eventName.asChar());
@@ -793,7 +793,7 @@ MStatus EventLookup::doIt(const MArgList& args)
       if(database.isFlagSet("-nd"))
       {
         MString nodeName = "";
-        MayaNodeEvents* node = (MayaNodeEvents*)dispatcher->associatedData();
+        NodeEvents* node = (NodeEvents*)dispatcher->associatedData();
         if(node)
         {
           MPxNode* mpxNode = dynamic_cast<MPxNode*>(node);
@@ -868,7 +868,7 @@ MStatus EventQuery::doIt(const MArgList& args)
     {
       MObject obj;
       items.getDependNode(0, obj);
-      MayaNodeEvents* handler = dynamic_cast<MayaNodeEvents*>(MFnDependencyNode(obj).userNode());
+      NodeEvents* handler = dynamic_cast<NodeEvents*>(MFnDependencyNode(obj).userNode());
       if(handler)
       {
         EventId eventId = handler->getId(eventName.asChar());
@@ -1089,7 +1089,7 @@ Node Events
 -----------
 
     As well as global events, it's also possible to attach an event to a Maya node. For this to work, the maya node
-in question must have been derived from the MayaNodeEvents class in C++. To register the event, specify the name of
+in question must have been derived from the NodeEvents class in C++. To register the event, specify the name of
 the event, and the node you wish to register the event on.
 
         AL_usdmaya_Event "eventName" "mayaNode";
@@ -1198,7 +1198,7 @@ Node Based Events
 -----------------
 
 In order for a node to be compatible with this event system, the C++ definition must have been derived from the
-AL::maya::MayaNodeEvents interface (so it is possible internally developed maya nodes can support events, but
+AL::maya::NodeEvents interface (so it is possible internally developed maya nodes can support events, but
 the standard Maya nodes types will not). To test whether a Maya node supports events, you may query support like so:
 
     AL_usdmaya_Callback -supportsEvents "nameOfNode"

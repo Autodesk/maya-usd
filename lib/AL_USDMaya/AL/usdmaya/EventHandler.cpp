@@ -22,10 +22,26 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace AL {
 namespace usdmaya {
 
-EventScheduler g_scheduler;
+EventScheduler* g_scheduler = 0;
+
+//----------------------------------------------------------------------------------------------------------------------
 EventScheduler& EventScheduler::getScheduler()
 {
-  return g_scheduler;
+  //assert(g_scheduler);
+  return *g_scheduler;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void EventScheduler::initScheduler(EventSystemBinding* system)
+{
+  g_scheduler = new EventScheduler(system);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void EventScheduler::freeScheduler()
+{
+  delete g_scheduler;
+  g_scheduler = 0;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -37,14 +53,13 @@ Callback::Callback(const char* const tag, const char* const commandText, uint32_
   m_callbackString = ptr;
   std::memcpy(ptr, commandText, len);
   m_weight = weight;
-  m_isPython = isPython ? 1 : 0;
-  m_isCFunction = 0;
+  m_functionType = isPython ? kPython : kMEL;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 Callback::~Callback()
 {
-  if(!m_isCFunction)
+  if(m_functionType != kCFunction)
   {
     delete [] m_callbackString;
   }
@@ -57,12 +72,12 @@ Callback EventDispatcher::buildCallbackInternal(
   uint32_t weight,
   void* userData)
 {
-  CallbackId newId = makeCallbackId(eventId(), 0);
+  CallbackId newId = makeCallbackId(eventId(), eventType(), 0);
   for(auto it = m_callbacks.begin(), e = m_callbacks.end(); it != e; ++it)
   {
     if(it->tag() == tag)
     {
-      MGlobal::displayError(MString("An attempt to register the same event tag twice occurred - ") + tag);
+      m_system->error("An attempt to register the same event tag twice occurred - \"%s\"", tag);
       return Callback();
     }
     newId = std::max(newId, it->callbackId());
@@ -77,7 +92,7 @@ CallbackId EventDispatcher::registerCallbackInternal(
   uint32_t weight,
   void* userData)
 {
-  CallbackId newId = makeCallbackId(eventId(), 0);
+  CallbackId newId = makeCallbackId(eventId(), eventType(), 0);
   auto insertLocation = m_callbacks.end();
   for(auto it = m_callbacks.begin(), e = m_callbacks.end(); it != e; ++it)
   {
@@ -88,7 +103,7 @@ CallbackId EventDispatcher::registerCallbackInternal(
 
     if(it->tag() == tag)
     {
-      MGlobal::displayError(MString("An attempt to register the same event tag twice occurred - ") + tag);
+      m_system->error("An attempt to register the same event tag twice occurred - \"%s\"", tag);
       return -1;
     }
     newId = std::max(newId, it->callbackId());
@@ -104,7 +119,7 @@ CallbackId EventDispatcher::registerCallback(
   uint32_t weight,
   bool isPython)
 {
-  CallbackId newId = makeCallbackId(eventId(), 0);
+  CallbackId newId = makeCallbackId(eventId(), eventType(), 0);
   auto insertLocation = m_callbacks.end();
   for(auto it = m_callbacks.begin(), e = m_callbacks.end(); it != e; ++it)
   {
@@ -115,7 +130,7 @@ CallbackId EventDispatcher::registerCallback(
 
     if(it->tag() == tag)
     {
-      MGlobal::displayError(MString("An attempt to register the same event tag twice occurred - ") + tag);
+      m_system->error("An attempt to register the same event tag twice occurred - \"%s\"", tag);
       return -1;
     }
     newId = std::max(newId, it->callbackId());
@@ -132,7 +147,7 @@ Callback EventDispatcher::buildCallback(
   uint32_t weight,
   bool isPython)
 {
-  CallbackId newId = makeCallbackId(eventId(), 0);
+  CallbackId newId = makeCallbackId(eventId(), eventType(), 0);
   for(auto it = m_callbacks.begin(), e = m_callbacks.end(); it != e; ++it)
   {
     if(it->tag() == tag)
@@ -159,7 +174,7 @@ void EventDispatcher::registerCallback(Callback& info)
 
     if(it->tag() == info.tag())
     {
-      MGlobal::displayError(MString("An attempt to register the same event tag twice occurred - ") + info.tag().c_str());
+      m_system->error("An attempt to register the same event tag twice occurred - \"%s\"", info.tag().c_str());
       return;
     }
   }
@@ -196,7 +211,7 @@ bool EventDispatcher::unregisterCallback(CallbackId callbackId, Callback& info)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-EventId EventScheduler::registerEvent(const char* eventName, const void* associatedData, CallbackId parentCallback)
+EventId EventScheduler::registerEvent(const char* eventName, EventType eventType, const void* associatedData, CallbackId parentCallback)
 {
   auto insertLocation = m_registeredEvents.end();
   EventId unusedId = 1;
@@ -206,7 +221,7 @@ EventId EventScheduler::registerEvent(const char* eventName, const void* associa
        it.parentCallbackId() == parentCallback &&
        it.associatedData() == associatedData)
     {
-      MGlobal::displayError(MString("The event \"") + MString(eventName) + " has already been registered");
+      m_system->error("The event \"%s\" has already been registered", eventName);
       return 0;
     }
   }
@@ -218,7 +233,8 @@ EventId EventScheduler::registerEvent(const char* eventName, const void* associa
       break;
     }
   }
-  m_registeredEvents.emplace(insertLocation, eventName, unusedId, associatedData, parentCallback);
+
+  m_registeredEvents.emplace(insertLocation, m_system, eventName, unusedId, eventType, associatedData, parentCallback);
   return unusedId;
 }
 
@@ -313,7 +329,16 @@ bool EventScheduler::unregisterCallback(CallbackId callbackId)
   EventDispatcher* eventInfo = event(eventId);
   if(eventInfo)
   {
-    return eventInfo->unregisterCallback(callbackId);
+    if(eventInfo->unregisterCallback(callbackId))
+    {
+      auto et = extractEventType(callbackId);
+      auto handler = m_customHandlers.find(et);
+      if(handler != m_customHandlers.end())
+      {
+        handler->second->onCallbackDestroyed(callbackId);
+      }
+      return true;
+    }
   }
   return false;
 }
@@ -325,7 +350,16 @@ bool EventScheduler::unregisterCallback(CallbackId callbackId, Callback& info)
   EventDispatcher* eventInfo = event(eventId);
   if(eventInfo)
   {
-    return eventInfo->unregisterCallback(callbackId, info);
+    if(eventInfo->unregisterCallback(callbackId, info))
+    {
+      auto et = extractEventType(callbackId);
+      auto handler = m_customHandlers.find(et);
+      if(handler != m_customHandlers.end())
+      {
+        handler->second->onCallbackDestroyed(callbackId);
+      }
+      return true;
+    }
   }
   return false;
 }

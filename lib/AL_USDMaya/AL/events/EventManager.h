@@ -21,150 +21,815 @@
 #include <utility>
 #include <vector>
 #include <array>
-#include "maya/MMessage.h"
+#include "maya/MCommandMessage.h"
+#include "maya/MDagMessage.h"
+#include "maya/MPaintMessage.h"
 #include "maya/MSceneMessage.h"
 
+#include "AL/usdmaya/EventHandler.h"
 #include "AL/events/Events.h"
-
 
 PXR_NAMESPACE_USING_DIRECTIVE
 namespace AL {
 namespace usdmaya {
-namespace events {
-class Listener;
 
-typedef void* UserData;
-typedef MMessage::MBasicFunction Callback;
-typedef uint64_t EventID;
-typedef Listener ListenerEntry;
-typedef std::vector<ListenerEntry> Listeners;
-typedef std::array<Listeners, size_t(MayaEventType::kSceneMessageLast)> ListenerContainer;
-typedef std::array<MCallbackId, size_t(MayaEventType::kSceneMessageLast)> MayaCallbackIDContainer;
-
-/*
- * \brief Objects of this class contain all the data needed to allow callbacks to happen
- */
-struct Listener
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  The MMessage derived class in which the callback is registered
+//----------------------------------------------------------------------------------------------------------------------
+enum class MayaMessageType
 {
-  UserData userData = nullptr;  ///< data which is returned back to the user which registered this even and data
-  Callback callback = nullptr;  ///< called when the event is triggered
-
-  MString command;              ///< Python or Mel command to call on callback
-  MString tag;                  ///< tag or category of the event purpose
-
-  EventID id;                   ///< the id generated for the event
-
-  struct
-  {
-    uint32_t weight : 31;       ///< order weight of this event
-    uint32_t isPython : 1;      ///< if true (and the C++ function pointer is NULL), the command string will be treated as python, otherwise MEL
-  };
-
-  inline bool operator < (const Listener& event) const
-    { return weight < event.weight; }
-  inline bool operator < (const uint32_t weight) const
-    { return this->weight < weight; }
-  friend bool operator < (const uint32_t weight, const Listener& event)
-    { return weight < event.weight; }
-
-  inline bool operator==(const EventID& rhs) const
-    { return id == rhs; }
-  inline bool operator!=(const EventID& rhs) const
-    { return id != rhs; }
+  kAnimMessage,
+  kCameraSetMessage,
+  kCommandMessage,
+  kConditionMessage,
+  kContainerMessage,
+  kDagMessage,
+  kDGMessage,
+  kEventMessage,
+  kLockMessage,
+  kModelMessage,
+  kNodeMessage,
+  kObjectSetMessage,
+  kPaintMessage,
+  kPolyMessage,
+  kSceneMessage,
+  kTimerMessage,
+  kUiMessage
 };
 
-// For comparison between and EventID and a listener
-inline bool operator==(const EventID& lhs2, const Listener& rhs)
-  { return lhs2 == rhs.id; }
-inline bool operator!=(const EventID& lhs2, const Listener& rhs)
-  { return lhs2 != rhs.id; }
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  An enum describing which of the standard maya callback functions are to be used
+//----------------------------------------------------------------------------------------------------------------------
+enum class MayaCallbackType
+{
+  kBasicFunction,
+  kElapsedTimeFunction,
+  kCheckFunction,
+  kCheckFileFunction,
+  kCheckPlugFunction,
+  kComponentFunction,
+  kNodeFunction,
+  kStringFunction,
+  kTwoStringFunction,
+  kThreeStringFunction,
+  kStringIntBoolIntFunction,
+  kStringIndexFunction,
+  kStateFunction,
+  kTimeFunction,
+  kPlugFunction,
+  kNodePlugFunction,
+  kNodeStringFunction,
+  kNodeStringBoolFunction,
+  kParentChildFunction,
+  kModifierFunction,
+  kStringArrayFunction,
+  kNodeModifierFunction,
+  kObjArrayFunction,
+  kNodeObjArrayFunction,
+  kStringNodeFunction,
+  kCameraLayerFunction,
+  kCameraLayerCameraFunction,
+  kConnFailFunction,
+  kPlugsDGModFunction,
+  kNodeUuidFunction,
+  kCheckNodeUuidFunction,
+  kObjectFileFunction,
+  kCheckObjectFileFunction,
+  kRenderTileFunction,
+  kMessageFunction,
+  kMessageFilterFunction,
+  kMessageParentChildFunction,
+  kPathObjectPlugColoursFunction,
+  kWorldMatrixModifiedFunction
+};
 
-#define ID_TOTAL_BITS 64
-#define ID_MAYAEVENTTYPE_BITS 16
-#define ID_COUNT 48
+//----------------------------------------------------------------------------------------------------------------------
+namespace AnimMessage {
+enum Type
+{
+  kAnimCurveEdited,
+  kAnimKeyFrameEdited,
+  kNodeAnimKeyframeEdited, ///< unsupported
+  kAnimKeyframeEditCheck,
+  kPreBakeResults,
+  kPostBakeResults,
+  kDisableImplicitControl
+};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+namespace CameraSetMessage {
+enum Type
+{
+  kCameraLayer,  ///< MCamerSetMessage::addCameraLayerCallback
+  kCameraChanged ///< MCamerSetMessage::addCameraChangedCallback
+};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+namespace CommandMessage {
+enum Type
+{
+  kCommand,  ///< MCommandMessage::addCommandCallback
+  kCommandOuptut, ///< MCommandMessage::addCommandOutputCallback
+  kCommandOutputFilter, ///< MCommandMessage::addCommandOutputFilterCallback
+  kProc ///< MCommandMessage::addProcCallback
+};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+namespace ConditionMessage {
+enum Type
+{
+  kCondition  ///< unsupported
+};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+namespace ContainerMessage {
+enum Type
+{
+  kPublishAttr, ///< MContainerMessage::addPublishAttrCallback
+  kBoundAttr ///< MContainerMessage::addBoundAttrCallback
+};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+namespace DagMessage {
+enum Type
+{
+  kParentAdded, ///< MDagMessage::addParentAddedCallback
+  kParentAddedDagPath, ///< MDagMessage::addParentAddedDagPathCallback  - unsupported
+  kParentRemoved, ///< MDagMessage::addParentRemovedCallback
+  kParentRemovedDagPath, ///< MDagMessage::addParentRemovedDagPathCallback  - unsupported
+  kChildAdded, ///< MDagMessage::addChildAddedCallback
+  kChildAddedDagPath, ///< MDagMessage::addChildAddedDagPathCallback  - unsupported
+  kChildRemoved, ///< MDagMessage::addChildRemovedCallback
+  kChildRemovedDagPath, ///< MDagMessage::addChildRemovedDagPathCallback  - unsupported
+  kChildReordered, ///< MDagMessage::addChildReorderedCallback
+  kChildReorderedDagPath, ///< MDagMessage::addChildReorderedDagPathCallback  - unsupported
+  kDag, ///< MDagMessage::addDagCallback  - unsupported
+  kDagDagPath, ///< MDagMessage::addDagDagPathCallback  - unsupported
+  kAllDagChanges, ///< MDagMessage::addAllDagChangesCallback
+  kAllDagChangesDagPath, ///< MDagMessage::addAllDagChangesDagPathCallback  - unsupported
+  kInstanceAdded, ///< MDagMessage::addInstanceAddedCallback
+  kInstanceAddedDagPath, ///< MDagMessage::addInstanceAddedDagPathCallback  - unsupported
+  kInstanceRemoved, ///< MDagMessage::addInstanceRemovedCallback
+  kInstanceRemovedDagPath, ///< MDagMessage::addInstanceRemovedDagPathCallback  - unsupported
+  kWorldMatrixModified, ///< MDagMessage::addWorldMatrixModifiedCallback  - unsupported
+};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+namespace DGMessage {
+enum Type
+{
+  kTimeChange, ///< DGMessage::addTimeChangeCallback
+  kDelayedTimeChange, ///< DGMessage::addDelayedTimeChangeCallback
+  kDelayedTimeChangeRunup, ///< DGMessage::addDelayedTimeChangeRunupCallback
+  kForceUpdate, ///< DGMessage::addForceUpdateCallback
+  kNodeAdded, ///< DGMessage::addNodeAddedCallback
+  kNodeRemoved, ///< DGMessage::addNodeRemovedCallback
+  kConnection, ///< DGMessage::addConnectionCallback
+  kPreConnection, ///< DGMessage::addPreConnectionCallback
+  kNodeChangeUuidCheck, ///< DGMessage::addNodeChangeUuidCheckCallback - unsupported
+};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+namespace EventMessage {
+enum Type
+{
+};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+namespace LockMessage {
+enum Type
+{
+};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+namespace ModelMessage {
+enum Type
+{
+  kCallback, ///< DGMessage::addCallback
+  kBeforeDuplicate, ///< DGMessage::addBeforeDuplicateCallback
+  kAfterDuplicate, ///< DGMessage::addAfterDuplicateCallback
+  kNodeAddedToModel, ///< DGMessage::addNodeAddedToModelCallback   - upsupported
+  kNodeRemovedFromModel, ///< DGMessage::addNodeRemovedFromModelCallback   - upsupported
+};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+namespace NodeMessage {
+enum Type
+{
+};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+namespace ObjectSetMessage {
+enum Type
+{
+};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+namespace PaintMessage {
+enum Type
+{
+  kVertexColor, ///< MPaintMessage::addVertexColorCallback
+};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+namespace PolyMessage {
+enum Type
+{
+};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+namespace SceneMessage {
+enum Type
+{
+  kSceneUpdate = MSceneMessage::kSceneUpdate,
+  kBeforeNew = MSceneMessage::kBeforeNew,
+  kAfterNew = MSceneMessage::kAfterNew,
+  kBeforeImport = MSceneMessage::kBeforeImport,
+  kAfterImport = MSceneMessage::kAfterImport,
+  kBeforeOpen = MSceneMessage::kBeforeOpen,
+  kAfterOpen = MSceneMessage::kAfterOpen,
+  kBeforeFileRead = MSceneMessage::kBeforeFileRead,
+  kAfterFileRead = MSceneMessage::kAfterFileRead,
+  kAfterSceneReadAndRecordEdits = MSceneMessage::kAfterSceneReadAndRecordEdits,
+  kBeforeExport = MSceneMessage::kBeforeExport,
+  kExportStarted = MSceneMessage::kExportStarted,
+  kAfterExport = MSceneMessage::kAfterExport,
+  kBeforeSave = MSceneMessage::kBeforeSave,
+  kAfterSave = MSceneMessage::kAfterSave,
+  kBeforeCreateReference = MSceneMessage::kBeforeCreateReference,
+  kBeforeLoadReferenceAndRecordEdits = MSceneMessage::kBeforeLoadReferenceAndRecordEdits,
+  kAfterCreateReference = MSceneMessage::kAfterCreateReference,
+  kAfterCreateReferenceAndRecordEdits = MSceneMessage::kAfterCreateReferenceAndRecordEdits,
+  kBeforeRemoveReference = MSceneMessage::kBeforeRemoveReference,
+  kAfterRemoveReference = MSceneMessage::kAfterRemoveReference,
+  kBeforeImportReference = MSceneMessage::kBeforeImportReference,
+  kAfterImportReference = MSceneMessage::kAfterImportReference,
+  kBeforeExportReference = MSceneMessage::kBeforeExportReference,
+  kAfterExportReference = MSceneMessage::kAfterExportReference,
+  kBeforeUnloadReference = MSceneMessage::kBeforeUnloadReference,
+  kAfterUnloadReference = MSceneMessage::kAfterUnloadReference,
+  kBeforeLoadReference = MSceneMessage::kBeforeLoadReference,
+  kBeforeCreateReferenceAndRecordEdits = MSceneMessage::kBeforeCreateReferenceAndRecordEdits,
+  kAfterLoadReference = MSceneMessage::kAfterLoadReference,
+  kAfterLoadReferenceAndRecordEdits = MSceneMessage::kAfterLoadReferenceAndRecordEdits,
+  kBeforeSoftwareRender = MSceneMessage::kBeforeSoftwareRender,
+  kAfterSoftwareRender = MSceneMessage::kAfterSoftwareRender,
+  kBeforeSoftwareFrameRender = MSceneMessage::kBeforeSoftwareFrameRender,
+  kAfterSoftwareFrameRender = MSceneMessage::kAfterSoftwareFrameRender,
+  kSoftwareRenderInterrupted = MSceneMessage::kSoftwareRenderInterrupted,
+  kMayaInitialized = MSceneMessage::kMayaInitialized,
+  kMayaExiting = MSceneMessage::kMayaExiting,
+  kBeforeNewCheck = MSceneMessage::kBeforeNewCheck,
+  kBeforeImportCheck = MSceneMessage::kBeforeImportCheck,
+  kBeforeOpenCheck = MSceneMessage::kBeforeOpenCheck,
+  kBeforeExportCheck = MSceneMessage::kBeforeExportCheck,
+  kBeforeSaveCheck = MSceneMessage::kBeforeSaveCheck,
+  kBeforeCreateReferenceCheck = MSceneMessage::kBeforeCreateReferenceCheck,
+  kBeforeLoadReferenceCheck = MSceneMessage::kBeforeLoadReferenceCheck,
+  kBeforePluginLoad = MSceneMessage::kBeforePluginLoad,
+  kAfterPluginLoad = MSceneMessage::kAfterPluginLoad,
+  kBeforePluginUnload = MSceneMessage::kBeforePluginUnload,
+  kAfterPluginUnload = MSceneMessage::kAfterPluginUnload,
+};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+namespace TimerMessage {
+enum Type
+{
+};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+namespace UiMessage {
+enum Type
+{
+};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  An interface that provides the event system with some utilities from the underlying DCC application.
+/// \ingroup events
+//----------------------------------------------------------------------------------------------------------------------
+class MayaEventHandler
+  : public CustomEventHandler
+{
+  typedef std::unordered_map<EventId, uint32_t> EventToMaya;
+public:
+
+  /// \brief  a structure to store some binding info for the MMessage event info
+  struct MayaCallbackInfo
+  {
+    EventId eventId; ///< the event id from the event scheduler
+    uint32_t refCount; ///< the ref count for this callback
+    MayaMessageType mayaMessageType; ///< the maya MMessage class that defines the message
+    MayaCallbackType mayaCallbackType; ///< the type of C callback function needed to execute the callback
+    uint32_t mmessageEnum; ///< the enum value from one of the MSceneMessage / MEventMessage etc classes.
+    MCallbackId mayaCallback; ///< the maya callback ID
+  };
+
+  /// \brief  constructor function
+  /// \param  scheduler the event scheduler
+  /// \param  eventType the event type
+  MayaEventHandler(EventScheduler* scheduler, EventType eventType);
+
+  /// \brief  returns the event type string
+  const char* eventTypeString() const override
+    { return "maya"; }
+
+  /// \brief  returns the event scheduler
+  EventScheduler* scheduler() const
+    { return m_scheduler; }
+
+  /// \brief
+  const MayaCallbackInfo* getEventInfo(const EventId event) const
+  {
+    const auto it = m_eventMapping.find(event);
+    if(it == m_eventMapping.end()) return 0;
+    return m_callbacks.data() + it->second;
+  }
+private:
+  void onCallbackCreated(const CallbackId callbackId) override;
+  void onCallbackDestroyed(const CallbackId callbackId) override;
+  bool registerEvent(
+      EventScheduler* scheduler,
+      const char* eventName,
+      EventType eventType,
+      MayaMessageType messageType,
+      MayaCallbackType callbackType,
+      uint32_t mmessageEnum);
+  void initEvent(MayaCallbackInfo& cbi);
+  void initAnimMessage(MayaCallbackInfo& cbi);
+  void initCameraSetMessage(MayaCallbackInfo& cbi);
+  void initCommandMessage(MayaCallbackInfo& cbi);
+  void initConditionMessage(MayaCallbackInfo& cbi);
+  void initContainerMessage(MayaCallbackInfo& cbi);
+  void initDagMessage(MayaCallbackInfo& cbi);
+  void initDGMessage(MayaCallbackInfo& cbi);
+  void initEventMessage(MayaCallbackInfo& cbi);
+  void initLockMessage(MayaCallbackInfo& cbi);
+  void initModelMessage(MayaCallbackInfo& cbi);
+  void initNodeMessage(MayaCallbackInfo& cbi);
+  void initObjectSetMessage(MayaCallbackInfo& cbi);
+  void initPaintMessage(MayaCallbackInfo& cbi);
+  void initPolyMessage(MayaCallbackInfo& cbi);
+  void initSceneMessage(MayaCallbackInfo& cbi);
+  void initTimerMessage(MayaCallbackInfo& cbi);
+  void initUiMessage(MayaCallbackInfo& cbi);
+  void registerAnimMessages(EventScheduler* scheduler, EventType eventType);
+  void registerCameraSetMessages(EventScheduler* scheduler, EventType eventType);
+  void registerCommandMessages(EventScheduler* scheduler, EventType eventType);
+  void registerConditionMessages(EventScheduler* scheduler, EventType eventType);
+  void registerContainerMessages(EventScheduler* scheduler, EventType eventType);
+  void registerDagMessages(EventScheduler* scheduler, EventType eventType);
+  void registerDGMessages(EventScheduler* scheduler, EventType eventType);
+  void registerEventMessages(EventScheduler* scheduler, EventType eventType);
+  void registerLockMessages(EventScheduler* scheduler, EventType eventType);
+  void registerModelMessages(EventScheduler* scheduler, EventType eventType);
+  void registerNodeMessages(EventScheduler* scheduler, EventType eventType);
+  void registerObjectSetMessages(EventScheduler* scheduler, EventType eventType);
+  void registerPaintMessages(EventScheduler* scheduler, EventType eventType);
+  void registerPolyMessages(EventScheduler* scheduler, EventType eventType);
+  void registerSceneMessages(EventScheduler* scheduler, EventType eventType);
+  void registerTimerMessages(EventScheduler* scheduler, EventType eventType);
+  void registerUiMessages(EventScheduler* scheduler, EventType eventType);
+  std::vector<MayaCallbackInfo> m_callbacks;
+  EventToMaya m_eventMapping;
+  EventScheduler* m_scheduler;
+};
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief Stores and orders the registered Event objects and executes these Events when the wanted Maya callbacks are triggered.
 //----------------------------------------------------------------------------------------------------------------------
 class MayaEventManager
 {
-
+  static MayaEventManager* g_instance;
 public:
-  static MayaEventManager& instance();
 
-  explicit MayaEventManager();
+  static MayaEventManager& instance() { return *g_instance; }
 
-  /// \brief Creates an event which listens to the specified Maya event,
-  ///   obeying the passed in order weight.
-  ///   Internally this method creates a Listener type
-  ///   and passes this object onto the register function.
-  /// \param event corresponding internal maya event
-  /// \param callback function which will be called
-  /// \param userData data which is returned to the user when the callback is triggered
-  /// \param isPython true if the specified command should be executed as python
-  /// \param command the string that will be executed when the callback happens
-  /// \param weight the priority order for when this event is run, the lower the number the higher the priority
-  /// \param tag string to help classify the type of listener
-  /// \return the identifier of the created listener, or 0 if nothing was registered
-  EventID registerCallback(MayaEventType event,
-      const Callback callback,
-      const char* tag,
-      uint32_t weight,
-      void* userData = nullptr,
-      bool isPython = false,
-      const char* command = "");
+  MayaEventManager(MayaEventHandler* mayaEvents)
+    : m_mayaEvents(mayaEvents) { g_instance = this; }
 
-  /// \brief Remove the corresponding EventID. More costly than the deregister
-  ///        method where the MayaEventType is passed, since it has to search for the corresponding ID
-  ///        in all the available events.
-  /// \param id internal type of the event
-  /// \return true if an event was deregistered
-  bool unregisterCallback(EventID id);
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MBasicFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kBasicFunction, eventName, tag, weight, userData); }
 
-  /// \brief retrieves the container containing all the Maya listeners
-  /// \return ListenerContainer containing all the listeners
-  const ListenerContainer& listeners(){return m_mayaListeners;}
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MElapsedTimeFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kElapsedTimeFunction, eventName, tag, weight, userData); }
 
-  bool isMayaCallbackRegistered(MayaEventType event)
-  {
-    if(event >= MayaEventType::kSceneMessageLast)
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MCheckFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kCheckFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MCheckFileFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kCheckFileFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MCheckPlugFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kCheckPlugFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MComponentFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kComponentFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MNodeFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kNodeFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MStringFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kStringFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MTwoStringFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kTwoStringFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MThreeStringFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kThreeStringFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MStringIntBoolIntFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kStringIntBoolIntFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MStringIndexFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kStringIndexFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MNodeStringBoolFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kNodeStringBoolFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MStateFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kStateFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MTimeFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kTimeFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MPlugFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kPlugFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MNodePlugFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kNodePlugFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MNodeStringFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kNodeStringFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MParentChildFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kParentChildFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MModifierFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kModifierFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MStringArrayFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kStringArrayFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MNodeModifierFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kNodeModifierFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MObjArray func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kObjArrayFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MNodeObjArray func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kNodeObjArrayFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MStringNode func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kStringNodeFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MCameraLayerFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kCameraLayerFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MCameraLayerCameraFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kCameraLayerCameraFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MConnFailFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kConnFailFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MPlugsDGModFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kPlugsDGModFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MNodeUuidFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kNodeUuidFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MCheckNodeUuidFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kCheckNodeUuidFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MObjectFileFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kObjectFileFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MCheckObjectFileFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kCheckObjectFileFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MMessage::MRenderTileFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kRenderTileFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MCommandMessage::MMessageFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kMessageFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MCommandMessage::MMessageFilterFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kMessageFilterFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MDagMessage::MMessageParentChildFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kMessageParentChildFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MDagMessage::MWorldMatrixModifiedFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kWorldMatrixModifiedFunction, eventName, tag, weight, userData); }
+
+  /// \brief  registers a C++ callback against a maya event
+  /// \param  func the C++ function
+  /// \param  eventName the event
+  /// \param  tag the unique tag for the callback
+  /// \param  weight the weight (lower weights at executed before higher weights)
+  /// \param  userData custom user data pointer
+  /// \return the callback id
+  CallbackId registerCallback(MPaintMessage::MPathObjectPlugColorsFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
+    { return registerCallbackInternal((void*)func, MayaCallbackType::kPathObjectPlugColoursFunction, eventName, tag, weight, userData); }
+
+  /// \brief  unregisters the callback id
+  /// \param  id the callback id to unregister
+  void unregisterCallback(CallbackId id)
     {
-      return false;
+      EventScheduler* scheduler = m_mayaEvents->scheduler();
+      scheduler->unregisterCallback(id);
     }
-    return m_mayaCallbacks[size_t(event)] != MCallbackId();
-  }
-
-  /// \brief retrieves the container containing all the Maya listeners
-  /// \return ListenerContainer containing all the listeners
-  const MayaCallbackIDContainer& mayaCallbackIDs(){return m_mayaCallbacks;}
-
-  /// \brief  internal utility function to generate a 64bit callback id
-  static EventID makeEventId(const MayaEventType eventType, uint64_t idPart);
 
 private:
-  bool registerMayaCallback(MayaEventType eventType);
-  bool unregisterMayaCallback(MayaEventType eventType);
-  EventID generateEventId(MayaEventType eventType);
-
-  inline static MayaEventType getEventTypeFromID(const EventID eventId)
-  {
-    return (MayaEventType)(eventId >> (ID_TOTAL_BITS-ID_MAYAEVENTTYPE_BITS));
-  }
-
-  inline static uint64_t getCountFromID(const EventID eventId)
-  {
-    // Mask out the top 16 bits since they are
-    return (eventId & 0x3ffffffffffff);
-  }
-
-private:
-  ListenerContainer m_mayaListeners;
-  MayaCallbackIDContainer m_mayaCallbacks;
-
+  CallbackId registerCallbackInternal(const void* func, MayaCallbackType type, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0);
+  MayaEventHandler* m_mayaEvents;
 };
 
+
 //----------------------------------------------------------------------------------------------------------------------
-} // events
 } // usdmaya
 } // AL
 //----------------------------------------------------------------------------------------------------------------------

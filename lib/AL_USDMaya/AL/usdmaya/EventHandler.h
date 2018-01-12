@@ -16,10 +16,12 @@
 #pragma once
 
 #include "AL/usdmaya/Common.h"
+/*
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 #include <maya/MMessage.h>
 #include <maya/MPxNode.h>
+*/
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -29,8 +31,32 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace AL {
 namespace usdmaya {
 
+constexpr uint64_t kNumEventIdBitMask  = 0xFFFFF00000000000ULL; ///< bit mask storing the event ID
+constexpr uint64_t kNumEventTypeMask   = 0x00000F0000000000ULL; ///< bit mask for the event type
+constexpr uint64_t kNumCallbackBitMask = 0x000000FFFFFFFFFFULL; ///< bit mask for the callbacks
+
+constexpr uint32_t kUserSpecifiedEventType = 0;
+constexpr uint32_t kSchemaEventType = 1;
+constexpr uint32_t kUSDMayaEventType = 2;
+constexpr uint32_t kMayaEventType = 3;
+
+/// \brief  an enum describing the callback type
 /// \ingroup events
-typedef uint16_t EventId;
+enum CallbackType
+{
+  kCFunction, ///< a c function callback
+  kPython, ///< a python callback
+  kMEL ///< MEL script callback
+};
+
+/// \ingroup events
+/// the default C++ function prototype for a callback
+typedef void (*defaultEventFunction)(void*);
+
+/// \ingroup events
+typedef uint32_t EventId;
+/// \ingroup events
+typedef uint32_t EventType;
 /// \ingroup events
 typedef uint64_t CallbackId;
 /// \ingroup events
@@ -42,14 +68,21 @@ typedef std::vector<CallbackId> CallbackIds;
 /// \ingroup events
 inline EventId extractEventId(CallbackId id)
 {
-  return id >> 48;
+  return (kNumEventIdBitMask & id) >> 44;
+}
+
+/// \brief  extracts the unique 48bit callback ID
+/// \ingroup events
+inline EventType extractEventType(CallbackId id)
+{
+  return (kNumEventTypeMask & id) >> 40;
 }
 
 /// \brief  extracts the unique 48bit callback ID
 /// \ingroup events
 inline CallbackId extractCallbackId(CallbackId id)
 {
-  return id & 0xFFFFFFFFFFFFULL;
+  return (kNumCallbackBitMask & id);
 }
 
 /// \brief  constructs a 64bit callback ID from a event ID and unique callback id
@@ -57,10 +90,118 @@ inline CallbackId extractCallbackId(CallbackId id)
 /// \param  id the callback id
 /// \return the combined callback ID
 /// \ingroup events
-inline CallbackId makeCallbackId(EventId event, CallbackId id)
+inline CallbackId makeCallbackId(EventId event, uint32_t type, CallbackId id)
 {
-  return (CallbackId(event) << 48) | id;
+  return (CallbackId(event) << 44) | (CallbackId(type) << 40) | id;
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  An interface that provides the event system with some utilities from the underlying DCC application.
+/// \ingroup events
+//----------------------------------------------------------------------------------------------------------------------
+class EventSystemBinding
+{
+public:
+
+  /// \brief  ctor
+  /// \param  eventTypeStrings the event types as text strings
+  /// \param  numberOfEventTypes the number of event types in the event strings
+  EventSystemBinding(const char* const eventTypeStrings[], size_t numberOfEventTypes)
+    : m_eventTypeStrings(eventTypeStrings), m_numberOfEventTypes(numberOfEventTypes) {}
+
+  /// \brief  the logging severity
+  enum Type
+  {
+    kInfo,
+    kWarning,
+    kError
+  };
+
+  /// \brief  log an info message
+  /// \param  text printf style text string
+  void info(const char* text, ...)
+  {
+    char buffer[1024];
+    va_list args;
+    va_start(args, text);
+    vsnprintf(buffer, 1024, text, args);
+    writeLog(kInfo, buffer);
+    va_end(args);
+  }
+
+  /// \brief  log an error message
+  /// \param  text printf style text string
+  void error(const char* text, ...)
+  {
+    char buffer[1024];
+    va_list args;
+    va_start(args, text);
+    vsnprintf(buffer, 1024, text, args);
+    writeLog(kError, buffer);
+    va_end(args);
+  }
+
+  /// \brief  log a warning message
+  /// \param  text printf style text string
+  void warning(const char* text, ...)
+  {
+    char buffer[1024];
+    va_list args;
+    va_start(args, text);
+    vsnprintf(buffer, 1024, text, args);
+    writeLog(kWarning, buffer);
+    va_end(args);
+  }
+
+  /// \brief  override to execute python code
+  /// \param  code the code to execute
+  /// \return true if executed correctly
+  virtual bool executePython(const char* const code) = 0;
+
+  /// \brief  override to execute MEL code
+  /// \param  code the code to execute
+  /// \return true if executed correctly
+  virtual bool executeMEL(const char* const code) = 0;
+
+  /// \brief  override to implement the logging system
+  /// \param  severity
+  /// \param  text the text to log
+  virtual void writeLog(Type severity, const char* const text) = 0;
+
+  /// \brief  returns the event type as a string
+  /// \param  eventType the eventType you want as a string
+  /// \return the eventType as a text string
+  const char* eventTypeString(EventType eventType) const
+    { return m_eventTypeStrings[eventType]; }
+
+  /// \brief  returns the total number of event types supported by the underlying system
+  /// \return the number of supported event types
+  size_t numberOfEventTypes() const
+    { return m_numberOfEventTypes; }
+
+private:
+  const char* const* m_eventTypeStrings;
+  size_t m_numberOfEventTypes;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  An interface that provides the event system with some utilities from the underlying DCC application.
+/// \ingroup events
+//----------------------------------------------------------------------------------------------------------------------
+class CustomEventHandler
+{
+public:
+
+  /// \brief  returns the event type as a string
+  /// \return the eventType as a text string
+  virtual const char* eventTypeString() const = 0;
+
+  /// \brief  override if you need to insert custom event handler
+  virtual void onCallbackCreated(const CallbackId callbackId) {}
+
+  /// \brief  override if you need to remove a custom event handler
+  virtual void onCallbackDestroyed(const CallbackId callbackId) {}
+};
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Stores the information required for a single callback.
@@ -74,6 +215,9 @@ public:
   /// \brief  construct an event structure associated with a C function callback
   /// \param  tag a unique identifier for this tag
   /// \param  functionPointer the pointer to the function for this callback
+  /// \param  weight the weight value assigned to this callback
+  /// \param  userData optional user data to assign
+  /// \param  callbackId the id for the callback
   template<typename func_type>
   Callback(
     const char* const tag,
@@ -85,19 +229,21 @@ public:
   {
     m_callback = (const void*)functionPointer;
     m_weight = weight;
-    m_isPython = 0;
-    m_isCFunction = 1;
+    m_functionType = kCFunction;
   }
 
   /// \brief  construct an event structure associated with a C function callback
   /// \param  tag a unique identifier for this tag
-  /// \param  functionPointer the pointer to the function for this callback
+  /// \param  commandText the pointer to the function for this callback
+  /// \param  weight the weight for the callback
+  /// \param  isPython true if the callback is python
+  /// \param  callbackId the callback ID for this event
   Callback(
     const char* const tag,
     const char* const commandText,
     uint32_t weight,
     bool isPython,
-    CallbackId eventId);
+    CallbackId callbackId);
 
   /// \brief  default ctor
   Callback()
@@ -105,8 +251,7 @@ public:
   {
     m_callback = 0;
     m_weight = 0;
-    m_isPython = 0;
-    m_isCFunction = 0;
+    m_functionType = 0;
   }
 
   /// \brief  move ctor
@@ -116,8 +261,7 @@ public:
   {
     m_callback = rhs.m_callback; rhs.m_callback = 0;
     m_weight = rhs.m_weight;
-    m_isPython = rhs.m_isPython;
-    m_isCFunction = rhs.m_isCFunction;
+    m_functionType = rhs.m_functionType;
   }
 
   /// \brief  move assignment
@@ -131,8 +275,7 @@ public:
       m_callback = rhs.m_callback;
       rhs.m_callback = 0;
       m_weight = rhs.m_weight;
-      m_isPython = rhs.m_isPython;
-      m_isCFunction = rhs.m_isCFunction;
+      m_functionType = rhs.m_functionType;
       return *this;
     }
 
@@ -151,7 +294,11 @@ public:
 
   /// \brief  returns the event id that triggers this callback
   EventId eventId() const
-    { return m_callbackId >> 48; }
+    { return extractEventId(m_callbackId); }
+
+  /// \brief  returns the type of event this system is storing (e.g. maya, usdmaya, etc)
+  EventType eventType() const
+    { return extractEventType(m_callbackId); }
 
   /// \brief  returns the tag assigned to this callback (so we know which tool/script created it)
   const std::string& tag() const
@@ -176,15 +323,15 @@ public:
 
   /// \returns true if this callback is python code
   bool isPythonCallback() const
-    { return (!m_isCFunction) && m_isPython; }
+    { return m_functionType == kPython; }
 
   /// \returns true if this callback is MEL code
   bool isMELCallback() const
-    { return (!m_isCFunction) && !m_isPython; }
+    { return m_functionType == kMEL; }
 
   /// \returns true if this callback is a C++ callback
   bool isCCallback() const
-    { return m_isCFunction; }
+    { return m_functionType == kCFunction; }
 
 private:
   std::string m_tag;
@@ -198,8 +345,7 @@ private:
   struct
   {
     uint32_t m_weight : 30; ///< the weighting value for the event
-    uint32_t m_isPython : 1; ///< if true (and the C++ function pointer is NULL), the command string will be treated as python, otherwise MEL
-    uint32_t m_isCFunction : 1; ///< true if the code is a C function
+    uint32_t m_functionType : 2; ///< the type of callback (e.g. C++, python, MEL)
   };
 };
 typedef std::vector<Callback> Callbacks;
@@ -214,30 +360,42 @@ public:
 
   /// \brief  default ctor
   EventDispatcher(
+      EventSystemBinding* system,
       const char* const name,
       EventId eventId,
+      EventType eventType,
       const void* associatedData = 0,
       CallbackId parentCallback = 0)
-    : m_name(name), m_callbacks(), m_associatedData(associatedData), m_eventId(eventId), m_parentCallback(parentCallback)
+    : m_system(system),
+      m_name(name),
+      m_callbacks(),
+      m_associatedData(associatedData),
+      m_parentCallback(parentCallback),
+      m_eventId(eventId),
+      m_eventType(eventType)
     {}
 
   /// \brief  move ctor
   EventDispatcher(EventDispatcher&& rhs)
-    : m_name(std::move(rhs.m_name)),
-        m_callbacks(std::move(rhs.m_callbacks)),
-        m_associatedData(rhs.m_associatedData),
-        m_eventId(rhs.m_eventId),
-        m_parentCallback(rhs.m_parentCallback)
+    : m_system(rhs.m_system),
+      m_name(std::move(rhs.m_name)),
+      m_callbacks(std::move(rhs.m_callbacks)),
+      m_associatedData(rhs.m_associatedData),
+      m_parentCallback(rhs.m_parentCallback),
+      m_eventId(rhs.m_eventId),
+      m_eventType(rhs.m_eventType)
     {}
 
   /// \brief  move assignment
   EventDispatcher& operator = (EventDispatcher&& rhs)
     {
+      m_system = rhs.m_system;
       m_name = std::move(rhs.m_name);
       m_callbacks = std::move(rhs.m_callbacks);
       m_associatedData = rhs.m_associatedData;
-      m_eventId = rhs.m_eventId;
       m_parentCallback = rhs.m_parentCallback;
+      m_eventId = rhs.m_eventId;
+      m_eventType = rhs.m_eventType;
       return *this;
     }
 
@@ -310,6 +468,11 @@ public:
 
   /// \brief  returns the event id
   /// \return the event id
+  EventType eventType() const
+    { return m_eventType; }
+
+  /// \brief  returns the event id
+  /// \return the event id
   CallbackId parentCallbackId() const
     { return m_parentCallback; }
 
@@ -358,27 +521,18 @@ public:
       else
       if(callback.isPythonCallback())
       {
-        if(!MGlobal::executePythonCommand(callback.callbackText(), false, true))
+        if(m_system->executePython(callback.callbackText()))
         {
-          MGlobal::displayError(
-              MString("The python callback of event name \"") +
-              MString(m_name.c_str()) +
-              MString("\" and tag \"") +
-              MString(callback.tag().c_str()) +
-              MString("failed to execute correctly"));
-
+          m_system->error("The python callback of event name \"%s\" and tag \"%s\" failed to execute correctly",
+              m_name.c_str(), callback.tag().c_str());
         }
       }
       else
       {
-        if(!MGlobal::executeCommand(callback.callbackText(), false, true))
+        if(m_system->executeMEL(callback.callbackText()))
         {
-          MGlobal::displayError(
-              MString("The MEL callback of event name \"") +
-              MString(m_name.c_str()) +
-              MString("\" and tag \"") +
-              MString(callback.tag().c_str()) +
-              MString("failed to execute correctly"));
+          m_system->error("The MEL callback of event name \"%s\" and tag \"%s\" failed to execute correctly",
+              m_name.c_str(), callback.tag().c_str());
         }
       }
     }
@@ -394,33 +548,24 @@ public:
     {
       if(callback.isCCallback())
       {
-        MMessage::MBasicFunction basic = (MMessage::MBasicFunction)callback.callback();
+        defaultEventFunction basic = (defaultEventFunction)callback.callback();
         basic(callback.userData());
       }
       else
       if(callback.isPythonCallback())
       {
-        if(!MGlobal::executePythonCommand(callback.callbackText(), false, true))
+        if(m_system->executePython(callback.callbackText()))
         {
-          MGlobal::displayError(
-              MString("The python callback of event name \"") +
-              MString(m_name.c_str()) +
-              MString("\" and tag \"") +
-              MString(callback.tag().c_str()) +
-              MString("failed to execute correctly"));
-
+          m_system->error("The python callback of event name \"%s\" and tag \"%s\" failed to execute correctly",
+              m_name.c_str(), callback.tag().c_str());
         }
       }
       else
       {
-        if(!MGlobal::executeCommand(callback.callbackText(), false, true))
+        if(m_system->executeMEL(callback.callbackText()))
         {
-          MGlobal::displayError(
-              MString("The MEL callback of event name \"") +
-              MString(m_name.c_str()) +
-              MString("\" and tag \"") +
-              MString(callback.tag().c_str()) +
-              MString("failed to execute correctly"));
+          m_system->error("The MEL callback of event name \"%s\" and tag \"%s\" failed to execute correctly",
+              m_name.c_str(), callback.tag().c_str());
         }
       }
     }
@@ -464,11 +609,13 @@ private:
     uint32_t weight,
     void* userData);
 private:
+  EventSystemBinding* m_system;
   std::string m_name;
   Callbacks m_callbacks;
   const void* m_associatedData;
   CallbackId m_parentCallback;
   EventId m_eventId;
+  EventType m_eventType;
 };
 typedef std::vector<EventDispatcher> EventDispatchers;
 
@@ -482,16 +629,29 @@ class EventScheduler
   friend class EventIterator;
 public:
 
+  static void initScheduler(EventSystemBinding* system);
   static EventScheduler& getScheduler();
+  static void freeScheduler();
 
-  EventScheduler() = default;
+  EventScheduler(EventSystemBinding* system)
+    : m_system(system), m_registeredEvents() {}
+
   ~EventScheduler() = default;
+
+  /// \brief  returns the event type as a string
+  /// \param  eventType
+  const char* eventTypeString(EventType eventType) const
+    { return m_system->eventTypeString(eventType); }
+
+  /// \brief  returns the total number of event types in use
+  size_t numberOfEventTypes() const
+    { return m_system->numberOfEventTypes(); }
 
   /// \brief  register a new event
   /// \param  eventName the name of event to register
   /// \param  associatedData an associated data pointer for this event [optional]
   /// \param  parentCallback if this event is triggered by a callback
-  EventId registerEvent(const char* eventName, const void* associatedData = 0, const CallbackId parentCallback = 0);
+  EventId registerEvent(const char* eventName, EventType eventType, const void* associatedData = 0, const CallbackId parentCallback = 0);
 
   /// \brief  unregister an event handler
   /// \param  eventId the event to unregister
@@ -585,7 +745,17 @@ public:
       EventDispatcher* eventInfo = event(eventId);
       if(eventInfo)
       {
-        return eventInfo->registerCallback(tag, functionPointer, weight, userData);
+        auto cb = eventInfo->registerCallback(tag, functionPointer, weight, userData);
+        if(cb)
+        {
+          auto et = extractEventType(cb);
+          auto handler = m_customHandlers.find(et);
+          if(handler != m_customHandlers.end())
+          {
+            handler->second->onCallbackCreated(cb);
+          }
+        }
+        return cb;
       }
       return 0;
     }
@@ -607,7 +777,17 @@ public:
     EventDispatcher* eventInfo = event(eventId);
     if(eventInfo)
     {
-      return eventInfo->registerCallback(tag, commandText, weight, isPython);
+      auto cb = eventInfo->registerCallback(tag, commandText, weight, isPython);
+      if(cb)
+      {
+        auto et = extractEventType(cb);
+        auto handler = m_customHandlers.find(et);
+        if(handler != m_customHandlers.end())
+        {
+          handler->second->onCallbackCreated(cb);
+        }
+      }
+      return cb;
     }
     return 0;
   }
@@ -708,7 +888,6 @@ public:
   /// \brief  unregister an event handler
   bool unregisterCallback(CallbackId callbackId, Callback& info);
 
-
   /// \brief  unregister an event handler
   CallbackId registerCallback(Callback& info)
   {
@@ -717,35 +896,56 @@ public:
     {
       CallbackId id = info.callbackId();
       eventInfo->registerCallback(info);
+      if(id)
+      {
+        auto et = extractEventType(id);
+        auto handler = m_customHandlers.find(et);
+        if(handler != m_customHandlers.end())
+        {
+          handler->second->onCallbackCreated(id);
+        }
+      }
       return id;
     }
     return 0;
   }
 
+  /// \brief  provides internal access to the registered events
+  /// \return the registered events
   const EventDispatchers& registeredEvents() const
     { return m_registeredEvents; }
 
+  /// \brief  find the callback structure for the specified ID
   Callback* findCallback(CallbackId callbackId);
 
+  void registerHandler(EventType type, CustomEventHandler* handler)
+  {
+    m_customHandlers[type] = handler;
+  }
+
 private:
+  EventSystemBinding* m_system;
   EventDispatchers m_registeredEvents;
+  std::unordered_map<EventType, CustomEventHandler*> m_customHandlers;
 };
 
-typedef void (*maya_node_dispatch_func)(void* userData, MPxNode* node);
+class NodeEvents;
+
+typedef void (*node_dispatch_func)(void* userData, NodeEvents* node);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  defines an interface that can be applied to custom nodes to allow them the ability to manage and dispatch
 ///         internal events.
 /// \ingroup events
 //----------------------------------------------------------------------------------------------------------------------
-class MayaNodeEvents
+class NodeEvents
 {
   typedef std::unordered_map<std::string, EventId> EventMap;
 public:
 
   /// \brief  ctor
   /// \param  registrar the event registrar
-  MayaNodeEvents(EventScheduler* const scheduler = &EventScheduler::getScheduler())
+  NodeEvents(EventScheduler* const scheduler = &EventScheduler::getScheduler())
     : m_scheduler(scheduler)
     {}
 
@@ -758,14 +958,14 @@ public:
     {
       return m_scheduler->triggerEvent(it->second,
           [this](void* userData, const void* callback) {
-              ((maya_node_dispatch_func)callback)(userData, dynamic_cast<MPxNode*>(this));
+              ((node_dispatch_func)callback)(userData, this);
           });
     }
     return false;
   }
 
   /// \brief  dtor
-  virtual ~MayaNodeEvents()
+  virtual ~NodeEvents()
   {
     for(auto event : m_events)
     {
@@ -799,9 +999,9 @@ public:
   /// \param  eventName the name of the event to register
   /// \param  parentId the callback id of the callback that triggers this event (or null)
   /// \return true if the event could be registered
-  bool registerEvent(const char* const eventName, const CallbackId parentId = 0)
+  bool registerEvent(const char* const eventName, EventType eventType, const CallbackId parentId = 0)
   {
-    EventId id = m_scheduler->registerEvent(eventName, this, parentId);
+    EventId id = m_scheduler->registerEvent(eventName, eventType, this, parentId);
     if(id)
     {
       m_events.emplace(eventName, id);

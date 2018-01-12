@@ -25,8 +25,8 @@
 namespace AL {
 namespace usdmaya {
 
-events::EventID StageCache::g_beforeNewCallbackId = 0;
-events::EventID StageCache::g_beforeLoadCallbackId = 0;
+CallbackId StageCache::g_beforeNewCallbackId = 0;
+CallbackId StageCache::g_beforeLoadCallbackId = 0;
 static EventId g_stageCacheCleared = 0;
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -45,18 +45,18 @@ UsdStageCache& StageCache::Get(bool forcePopulate)
   // IMPORTANT: At every NEW scene in Maya we clear the USD stage cache.
   if (g_beforeNewCallbackId == 0)
   {
-    g_beforeNewCallbackId = events::MayaEventManager::instance().registerCallback(
-        events::MayaEventType::kBeforeNew,
+    g_beforeNewCallbackId = MayaEventManager::instance().registerCallback(
         onMayaSceneUpdateCallback,
+        "BeforeNew",
         "ClearStageCacheOnFileNew",
         0x10000);
-    g_beforeLoadCallbackId = events::MayaEventManager::instance().registerCallback(
-        events::MayaEventType::kBeforeOpen,
+    g_beforeLoadCallbackId = MayaEventManager::instance().registerCallback(
         onMayaSceneUpdateCallback,
+        "BeforeOpen",
         "ClearStageCacheOnFileOpen",
         0x10000);
 
-    g_stageCacheCleared = EventScheduler::getScheduler().registerEvent("OnUsdStageCacheCleared");
+    g_stageCacheCleared = EventScheduler::getScheduler().registerEvent("OnUsdStageCacheCleared", kUSDMayaEventType);
   }
 
   return forcePopulate ? theCacheForcePopulate : theCache;
@@ -80,12 +80,12 @@ void StageCache::removeCallbacks()
   }
   if (g_beforeNewCallbackId)
   {
-    events::MayaEventManager::instance().unregisterCallback(g_beforeNewCallbackId);
+    MayaEventManager::instance().unregisterCallback(g_beforeNewCallbackId);
     g_beforeNewCallbackId = 0;
   }
   if (g_beforeLoadCallbackId)
   {
-    events::MayaEventManager::instance().unregisterCallback(g_beforeLoadCallbackId);
+    MayaEventManager::instance().unregisterCallback(g_beforeLoadCallbackId);
     g_beforeLoadCallbackId = 0;
   }
 }

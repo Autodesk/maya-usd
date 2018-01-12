@@ -44,8 +44,8 @@ public:
   /// \brief  deletes the callbacks constructed to manage the stage cache
   static void removeCallbacks();
 private:
-  static events::EventID g_beforeNewCallbackId;
-  static events::EventID g_beforeLoadCallbackId;
+  static CallbackId g_beforeNewCallbackId;
+  static CallbackId g_beforeLoadCallbackId;
 };
 
 } // usdmaya

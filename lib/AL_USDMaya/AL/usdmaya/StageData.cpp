@@ -53,15 +53,14 @@ void StageData::copy(const MPxData& data)
 //----------------------------------------------------------------------------------------------------------------------
 StageData::StageData()
 {
-  m_exitCallbackId = events::MayaEventManager::instance().registerCallback(
-      events::MayaEventType::kMayaExiting, _cleanUp, "DestroyStageDataOnExit", 0x10000);
+  m_exitCallbackId = MayaEventManager::instance().registerCallback(_cleanUp, "MayaExiting", "DestroyStageDataOnExit", 0x10000);
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("StageData::StageData() created: %p\n", this);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 StageData::~StageData()
 {
-  events::MayaEventManager::instance().unregisterCallback(m_exitCallbackId);
+  MayaEventManager::instance().unregisterCallback(m_exitCallbackId);
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("StageData::StageData() deleted: %p\n", this);
 }
 

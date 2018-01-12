@@ -1,8 +1,57 @@
 
 #include "AL/usdmaya/EventHandler.h"
+#include <maya/MGlobal.h>
 #include <gtest/gtest.h>
 using namespace AL;
 using namespace AL::usdmaya;
+
+//----------------------------------------------------------------------------------------------------------------------
+static const char* const eventTypeStrings[] =
+{
+  "custom",
+  "schema",
+  "coremaya",
+  "usdmaya"
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+class TestEventSystemBinding
+  : public EventSystemBinding
+{
+public:
+
+  TestEventSystemBinding()
+    : EventSystemBinding(eventTypeStrings, sizeof(eventTypeStrings) / sizeof(const char*)) {}
+
+  enum Type
+  {
+    kInfo,
+    kWarning,
+    kError
+  };
+
+  bool executePython(const char* const code) override
+  {
+    return MGlobal::executePythonCommand(code, false, true);
+  }
+
+  bool executeMEL(const char* const code) override
+  {
+    return MGlobal::executeCommand(code, false, true);
+  }
+
+  void writeLog(EventSystemBinding::Type severity, const char* const text) override
+  {
+    switch(severity)
+    {
+    case kInfo: MGlobal::displayInfo(text); break;
+    case kWarning: MGlobal::displayWarning(text); break;
+    case kError: MGlobal::displayError(text); break;
+    }
+  }
+};
+
+static TestEventSystemBinding g_eventSystem;
 
 //----------------------------------------------------------------------------------------------------------------------
 // EventInfo(const char* const tag, void* functionPointer, uint32_t weight,  void* userData, CallbackId eventId);
@@ -21,11 +70,11 @@ TEST(Callback, Callback)
 {
   // test C function initialisation
   int value;
-  Callback info1("tag", func, 1000, &value, makeCallbackId(1, 3));
-  Callback info2("tag", func, 1001, &value, makeCallbackId(2, 4));
+  Callback info1("tag", func, 1000, &value, makeCallbackId(1, 5, 3));
+  Callback info2("tag", func, 1001, &value, makeCallbackId(2, 5, 4));
 
   EXPECT_EQ(info1.tag(), "tag");
-  EXPECT_EQ(info1.callbackId(),  makeCallbackId(1, 3));
+  EXPECT_EQ(info1.callbackId(),  makeCallbackId(1, 5, 3));
   EXPECT_EQ(info1.eventId(), 1);
   EXPECT_TRUE(info1 < info2);
   EXPECT_FALSE(info2 < info1);
@@ -37,10 +86,10 @@ TEST(Callback, Callback)
   EXPECT_EQ(info1.weight(), 1000);
 
   // test python command
-  Callback info3("tag", "i am a command" , 1000, true, makeCallbackId(1, 3));
+  Callback info3("tag", "i am a command" , 1000, true, makeCallbackId(1, 5, 3));
 
   EXPECT_EQ(info3.tag(), "tag");
-  EXPECT_EQ(info3.callbackId(), (1ULL << 48 | 3));
+  EXPECT_EQ(info3.callbackId(), makeCallbackId(1, 5, 3));
   EXPECT_EQ(info3.eventId(), 1);
   EXPECT_TRUE(info3.userData() == nullptr);
   EXPECT_EQ(strcmp(info3.callbackText(), "i am a command"), 0);
@@ -50,7 +99,7 @@ TEST(Callback, Callback)
   EXPECT_EQ(info3.weight(), 1000);
 
   // test MEL command
-  Callback info4("tag", "i am a command" , 1000, false, makeCallbackId(1, 3));
+  Callback info4("tag", "i am a command" , 1000, false, makeCallbackId(1, 5, 3));
   EXPECT_FALSE(info4.isCCallback());
   EXPECT_TRUE(info4.isMELCallback());
   EXPECT_FALSE(info4.isPythonCallback());
@@ -71,7 +120,7 @@ TEST(Callback, Callback)
 TEST(EventDispatcher, EventDispatcher)
 {
   int associated;
-  EventDispatcher info("eventName", 42, &associated, 23);
+  EventDispatcher info(&g_eventSystem, "eventName", 42, kUserSpecifiedEventType, &associated, 23);
   EXPECT_EQ(info.name(), "eventName");
   EXPECT_EQ(info.eventId(), 42);
   EXPECT_EQ(info.parentCallbackId(), 23);
@@ -185,7 +234,7 @@ static void func_dispatch1(void* userData)
 TEST(EventDispatcher, triggerEvent1)
 {
   g_userData = 0;
-  EventDispatcher info("eventName", 42, nullptr, 23);
+  EventDispatcher info(&g_eventSystem, "eventName", 42, kUserSpecifiedEventType, nullptr, 23);
 
   int value;
   CallbackId id1 = info.registerCallback("tag", func_dispatch1, 1000, &value);
@@ -210,7 +259,7 @@ typedef void (*func_ptr_type)(void*, int);
 TEST(EventDispatcher, triggerEvent2)
 {
   g_userData = 0;
-  EventDispatcher info("eventName", 42, nullptr, 23);
+  EventDispatcher info(&g_eventSystem, "eventName", 42, kUserSpecifiedEventType, nullptr, 23);
 
   int value;
   CallbackId id1 = info.registerCallback("tag", func_dispatch2, 1000, &value);
@@ -237,9 +286,9 @@ TEST(EventDispatcher, triggerEvent2)
 // bool unregisterEvent(EventId eventId);
 TEST(EventScheduler, registerEvent)
 {
-  EventScheduler registrar;
+  EventScheduler registrar(&g_eventSystem);
   int associated;
-  EventId id1 = registrar.registerEvent("eventName", &associated, 0);
+  EventId id1 = registrar.registerEvent("eventName", kUserSpecifiedEventType, &associated, 0);
   EXPECT_TRUE(id1 != 0);
   auto eventInfo = registrar.event(id1);
   EXPECT_TRUE(eventInfo != nullptr);
@@ -248,12 +297,12 @@ TEST(EventScheduler, registerEvent)
   EXPECT_EQ(eventInfo->associatedData(), &associated);
 
   // This should fail to register a new event (since the name is not unique)
-  EventId id2 = registrar.registerEvent("eventName", &associated, 0);
+  EventId id2 = registrar.registerEvent("eventName", kUserSpecifiedEventType, &associated, 0);
   EXPECT_EQ(id2, 0);
 
   // We should be able to register a new event (since the associated data is different)
   int associated2;
-  EventId id3 = registrar.registerEvent("eventName", &associated2, 0);
+  EventId id3 = registrar.registerEvent("eventName", kUserSpecifiedEventType, &associated2, 0);
   EXPECT_TRUE(id3 != 0);
   eventInfo = registrar.event(id3);
   EXPECT_TRUE(eventInfo != nullptr);
@@ -276,9 +325,9 @@ TEST(EventScheduler, registerEvent)
 /// set up EventType2 as a child event of the ChildCallback
 TEST(EventScheduler, registerChildEvent)
 {
-  EventScheduler registrar;
+  EventScheduler registrar(&g_eventSystem);
   int associated;
-  EventId id1 = registrar.registerEvent("EventType1", &associated, 0);
+  EventId id1 = registrar.registerEvent("EventType1", kUserSpecifiedEventType, &associated, 0);
   EXPECT_TRUE(id1 != 0);
   auto parentEventInfo = registrar.event(id1);
   EXPECT_TRUE(parentEventInfo != nullptr);
@@ -289,7 +338,7 @@ TEST(EventScheduler, registerChildEvent)
   int value;
   CallbackId callbackId = parentEventInfo->registerCallback("ChildCallback", func_dispatch2, 1000, &value);
 
-  EventId id2 = registrar.registerEvent("EventType2", &associated, callbackId);
+  EventId id2 = registrar.registerEvent("EventType2", kUserSpecifiedEventType, &associated, callbackId);
   EXPECT_TRUE(id2 != 0);
   auto eventInfo = registrar.event(id2);
   EXPECT_TRUE(eventInfo != nullptr);
@@ -318,9 +367,9 @@ TEST(EventScheduler, registerChildEvent)
 //
 TEST(EventScheduler, registerCallback)
 {
-  EventScheduler registrar;
+  EventScheduler registrar(&g_eventSystem);
   int associated;
-  EventId id1 = registrar.registerEvent("EventType1", &associated, 0);
+  EventId id1 = registrar.registerEvent("EventType1", kUserSpecifiedEventType, &associated, 0);
   EXPECT_TRUE(id1 != 0);
   auto parentEventInfo = registrar.event(id1);
   EXPECT_TRUE(parentEventInfo != nullptr);
@@ -331,7 +380,7 @@ TEST(EventScheduler, registerCallback)
   int value;
   CallbackId callbackId = registrar.registerCallback(id1, "ChildCallback", func_dispatch2, 1000, &value);
 
-  EventId id2 = registrar.registerEvent("EventType2", &associated, callbackId);
+  EventId id2 = registrar.registerEvent("EventType2", kUserSpecifiedEventType, &associated, callbackId);
   EXPECT_TRUE(id2 != 0);
   auto eventInfo = registrar.event(id2);
   EXPECT_TRUE(eventInfo != nullptr);

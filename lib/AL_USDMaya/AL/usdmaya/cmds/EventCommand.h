@@ -47,7 +47,7 @@ class Event
   : public MPxCommand
 {
   MString m_eventName;
-  MayaNodeEvents* m_associatedData = 0;
+  NodeEvents* m_associatedData = 0;
   CallbackId m_parentEvent = 0;
   bool m_deleting = false;
 public:

@@ -39,13 +39,60 @@
 namespace AL {
 namespace usdmaya {
 
+//----------------------------------------------------------------------------------------------------------------------
+static const char* const eventTypeStrings[] =
+{
+  "custom",
+  "schema",
+  "coremaya",
+  "usdmaya"
+};
 
 //----------------------------------------------------------------------------------------------------------------------
-events::EventID Global::m_preSave;
-events::EventID Global::m_postSave;
-events::EventID Global::m_preOpen;
-events::EventID Global::m_postOpen;
-events::EventID Global::m_fileNew;
+class MayaEventSystemBinding
+  : public EventSystemBinding
+{
+public:
+
+  MayaEventSystemBinding()
+    : EventSystemBinding(eventTypeStrings, sizeof(eventTypeStrings) / sizeof(const char*)) {}
+
+  enum Type
+  {
+    kInfo,
+    kWarning,
+    kError
+  };
+
+  bool executePython(const char* const code) override
+  {
+    return MGlobal::executePythonCommand(code, false, true);
+  }
+
+  bool executeMEL(const char* const code) override
+  {
+    return MGlobal::executeCommand(code, false, true);
+  }
+
+  void writeLog(EventSystemBinding::Type severity, const char* const text) override
+  {
+    switch(severity)
+    {
+    case kInfo: MGlobal::displayInfo(text); break;
+    case kWarning: MGlobal::displayWarning(text); break;
+    case kError: MGlobal::displayError(text); break;
+    }
+  }
+};
+
+static MayaEventSystemBinding g_eventSystem;
+
+//----------------------------------------------------------------------------------------------------------------------
+CallbackId Global::m_preSave;
+CallbackId Global::m_postSave;
+CallbackId Global::m_preOpen;
+CallbackId Global::m_postOpen;
+CallbackId Global::m_fileNew;
 
 //----------------------------------------------------------------------------------------------------------------------
 static void onFileNew(void*)
@@ -168,13 +215,24 @@ void Global::onPluginLoad()
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Registering callbacks\n");
 
-  auto& manager = events::MayaEventManager::instance();
-  m_fileNew = manager.registerCallback(events::MayaEventType::kAfterNew, onFileNew, "usdmaya_onFileNew", 0x1000);
-  m_preSave = manager.registerCallback(events::MayaEventType::kBeforeSave, preFileSave, "usdmaya_preFileSave", 0x1000);
-  m_postSave = manager.registerCallback(events::MayaEventType::kAfterSave, postFileSave, "usdmaya_postFileSave", 0x1000);
-  m_preOpen = manager.registerCallback(events::MayaEventType::kBeforeOpen, preFileOpen, "usdmaya_preFileOpen", 0x1000);
-  m_postOpen = manager.registerCallback(events::MayaEventType::kAfterOpen, postFileOpen, "usdmaya_postFileOpen", 0x1000);
+  std::cout << 1 << std::endl;
 
+  EventScheduler::initScheduler(&g_eventSystem);
+  std::cout << 2 << std::endl;
+  auto ptr = new MayaEventHandler(&EventScheduler::getScheduler(), kMayaEventType);
+
+  std::cout << 3 << std::endl;
+  new MayaEventManager(ptr);
+  std::cout << 4 << std::endl;
+
+  auto& manager = MayaEventManager::instance();
+  m_fileNew = manager.registerCallback(onFileNew, "AfterNew", "usdmaya_onFileNew", 0x1000);
+  m_preSave = manager.registerCallback(preFileSave, "BeforeSave", "usdmaya_preFileSave", 0x1000);
+  m_postSave = manager.registerCallback(postFileSave, "AfterSave", "usdmaya_postFileSave", 0x1000);
+  m_preOpen = manager.registerCallback(preFileOpen, "BeforeOpen", "usdmaya_preFileOpen", 0x1000);
+  m_postOpen = manager.registerCallback(postFileOpen, "AfterOpen", "usdmaya_postFileOpen", 0x1000);
+
+  std::cout << 5 << std::endl;
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Registering USD plugins\n");
   // Let USD know about the additional plugins
   std::string pluginLocation(TfStringCatPaths(TfGetenv(AL_USDMAYA_LOCATION_NAME), "share/usd/plugins"));
@@ -187,13 +245,15 @@ void Global::onPluginLoad()
 void Global::onPluginUnload()
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Removing callbacks\n");
-  auto& manager = events::MayaEventManager::instance();
+  auto& manager = MayaEventManager::instance();
   manager.unregisterCallback(m_fileNew);
   manager.unregisterCallback(m_preSave);
   manager.unregisterCallback(m_postSave);
   manager.unregisterCallback(m_preOpen);
   manager.unregisterCallback(m_postOpen);
   StageCache::removeCallbacks();
+
+  EventScheduler::freeScheduler();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

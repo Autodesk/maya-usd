@@ -209,7 +209,7 @@ class ProxyShape
   : public MPxSurfaceShape,
     public maya::NodeHelper,
     public proxy::PrimFilterInterface,
-    public MayaNodeEvents,
+    public NodeEvents,
     public TfWeakBase
 {
   friend class SelectionUndoHelper;
@@ -218,23 +218,23 @@ public:
 
   void registerEvents()
   {
-    registerEvent("PreStageLoaded");
-    registerEvent("PostStageLoaded");
-    registerEvent("ConstructGLEngine");
-    registerEvent("DestroyGLEngine");
-    registerEvent("PreSelectionChanged");
-    registerEvent("PostSelectionChanged");
-    registerEvent("PreVariantChanged");
-    registerEvent("PostVariantChanged");
-    registerEvent("PreSerialiseContext");
-    registerEvent("PostSerialiseContext");
-    registerEvent("PreDeserialiseContext");
-    registerEvent("PostDeserialiseContext");
-    registerEvent("PreSerialiseTransformRefs");
-    registerEvent("PostSerialiseTransformRefs");
-    registerEvent("PreDeserialiseTransformRefs");
-    registerEvent("PostDeserialiseTransformRefs");
-    registerEvent("EditTargetChanged");
+    registerEvent("PreStageLoaded", kUSDMayaEventType);
+    registerEvent("PostStageLoaded", kUSDMayaEventType);
+    registerEvent("ConstructGLEngine", kUSDMayaEventType);
+    registerEvent("DestroyGLEngine", kUSDMayaEventType);
+    registerEvent("PreSelectionChanged", kUSDMayaEventType);
+    registerEvent("PostSelectionChanged", kUSDMayaEventType);
+    registerEvent("PreVariantChanged", kUSDMayaEventType);
+    registerEvent("PostVariantChanged", kUSDMayaEventType);
+    registerEvent("PreSerialiseContext", kUSDMayaEventType);
+    registerEvent("PostSerialiseContext", kUSDMayaEventType);
+    registerEvent("PreDeserialiseContext", kUSDMayaEventType);
+    registerEvent("PostDeserialiseContext", kUSDMayaEventType);
+    registerEvent("PreSerialiseTransformRefs", kUSDMayaEventType);
+    registerEvent("PostSerialiseTransformRefs", kUSDMayaEventType);
+    registerEvent("PreDeserialiseTransformRefs", kUSDMayaEventType);
+    registerEvent("PostDeserialiseTransformRefs", kUSDMayaEventType);
+    registerEvent("EditTargetChanged", kUSDMayaEventType);
   }
 
   typedef TfHashSet<SdfPath, SdfPath::Hash> SdfPathHashSet;
@@ -902,7 +902,7 @@ private:
   TfNotice::Key m_editTargetChanged;
 
   mutable std::map<UsdTimeCode, MBoundingBox> m_boundingBoxCache;
-  events::EventID m_beforeSaveSceneId = -1;
+  CallbackId m_beforeSaveSceneId = -1;
   MCallbackId m_attributeChanged = -1;
   MCallbackId m_onSelectionChanged = -1;
   SdfPathVector m_excludedGeometry;

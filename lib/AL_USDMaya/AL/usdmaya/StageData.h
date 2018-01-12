@@ -64,7 +64,7 @@ public:
 private:
   MTypeId typeId() const override;
   MString name() const override;
-  events::EventID m_exitCallbackId;
+  CallbackId m_exitCallbackId;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

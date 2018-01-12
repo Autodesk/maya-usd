@@ -36,11 +36,11 @@ public:
   static void onPluginUnload();
 
 private:
-  static events::EventID m_preSave;  ///< callback prior to saving the scene (so we can store the session layer)
-  static events::EventID m_postSave; ///< callback after saving
-  static events::EventID m_preOpen;  ///< callback executed before opening a maya file
-  static events::EventID m_postOpen; ///< callback executed after opening a maya file - needed to re-hook up the UsdPrims
-  static events::EventID m_fileNew;  ///< callback used to flush the USD caches after a file new
+  static CallbackId m_preSave;  ///< callback prior to saving the scene (so we can store the session layer)
+  static CallbackId m_postSave; ///< callback after saving
+  static CallbackId m_preOpen;  ///< callback executed before opening a maya file
+  static CallbackId m_postOpen; ///< callback executed after opening a maya file - needed to re-hook up the UsdPrims
+  static CallbackId m_fileNew;  ///< callback used to flush the USD caches after a file new
 };
 
 } // usdmaya
