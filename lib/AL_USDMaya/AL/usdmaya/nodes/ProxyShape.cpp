@@ -54,44 +54,6 @@
 #include <algorithm>
 #include <iterator>
 
-namespace {
-  // Originally had this as a private function on ProxyShape, which makes more sense...
-  // however, that meant that ProxyShape.h needed to include LayerManager.h, which in
-  // turn triggered inclusion of Xlib.h... Xlib.h has a "#define Bool int", which then
-  // messed with usage of "SdfValueTypeNames->Bool" (lame!)
-  // For now, skirting the issue by just making this func in an anonymous namespace here...
-
-  void trackEditTargetLayer(
-      AL::usdmaya::nodes::ProxyShape* proxy,
-      AL::usdmaya::nodes::LayerManager* layerManager=nullptr)
-  {
-    TF_DEBUG(ALUSDMAYA_LAYERS).Msg("ProxyShape::trackEditTargetLayer");
-    if(!proxy)
-    {
-      std::cerr << "Error - ProxyShape::trackEditTargetLayer pass null proxy" << std::endl;
-      return;
-    }
-    auto stage = proxy->getUsdStage();
-    if(!stage) return;
-    auto currentTargetLayer = stage->GetEditTarget().GetLayer();
-    if(currentTargetLayer->IsDirty())
-    {
-      if(!layerManager)
-      {
-        layerManager = AL::usdmaya::nodes::LayerManager::findOrCreateManager();
-        // findOrCreateManager SHOULD always return a result, but we check anyway,
-        // to avoid any potential crash...
-        if(!layerManager)
-        {
-          std::cerr << "Error creating / finding a layerManager node!" << std::endl;
-          return;
-        }
-      }
-      layerManager->addLayer(currentTargetLayer);
-    }
-  }
-}
-
 namespace AL {
 namespace usdmaya {
 namespace nodes {
@@ -585,7 +547,31 @@ void ProxyShape::onEditTargetChanged(UsdNotice::StageEditTargetChanged const& no
   if (!sender || sender != m_stage)
       return;
 
-  trackEditTargetLayer(this);
+  trackEditTargetLayer();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::trackEditTargetLayer(LayerManager* layerManager)
+{
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("ProxyShape::trackEditTargetLayer");
+  auto stage = getUsdStage();
+  if(!stage) return;
+  auto currentTargetLayer = stage->GetEditTarget().GetLayer();
+  if(currentTargetLayer->IsDirty())
+  {
+    if(!layerManager)
+    {
+      layerManager = LayerManager::findOrCreateManager();
+      // findOrCreateManager SHOULD always return a result, but we check anyway,
+      // to avoid any potential crash...
+      if(!layerManager)
+      {
+        std::cerr << "Error creating / finding a layerManager node!" << std::endl;
+        return;
+      }
+    }
+    layerManager->addLayer(currentTargetLayer);
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -698,7 +684,7 @@ void ProxyShape::serialize(UsdStageRefPtr stage, LayerManager* layerManager)
       sessionLayerNamePlug().setValue(convert(sessionLayer->GetIdentifier()));
 
       // Then add in the current edit target
-      trackEditTargetLayer(this, layerManager);
+      trackEditTargetLayer(layerManager);
     }
     else
     {
@@ -1059,7 +1045,7 @@ void ProxyShape::loadStage()
           // Grab the session layer from the layer manager
           if(sessionLayerName.length() > 0)
           {
-            auto layerManager = AL::usdmaya::nodes::LayerManager::findManager();
+            auto layerManager = LayerManager::findManager();
             if(layerManager)
             {
               sessionLayer = layerManager->findLayer(convert(sessionLayerName));
