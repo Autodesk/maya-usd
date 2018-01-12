@@ -131,6 +131,11 @@ public:
   /// \brief  dtor - auto generates, and executes the GUI code.
   ~CommandGuiHelper();
 
+  /// \brief  add some text to the execute command, unconditionally
+  ///         Useful if, ie, you always want to set a non-default command flag
+  /// \param  toAdd   extra flags / text to add to the execution command
+  void addExecuteText(const char* toAdd);
+
   /// \brief  add a boolean option value to the GUI
   /// \param  commandFlag   the flag for the command
   /// \param  label   human readable GUI label for the option

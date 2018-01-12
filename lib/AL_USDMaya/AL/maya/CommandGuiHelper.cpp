@@ -236,6 +236,35 @@ CommandGuiHelper::~CommandGuiHelper()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void CommandGuiHelper::addExecuteText(const char* toAdd)
+{
+  // TODO: write a proper string encoder for MEL (tricky, because can't represent
+  // all 256 character-bytes using mel string literals - would have to resort to
+  // calling out to python for a truly string rerpr encoder.
+  // (note that even mel's builtin "encodeString" command doesn't actually always
+  // return a mel string that will evaluate to the input - ie, it will return
+  // "\004", but that isn't a valid mel escape sequence, and will just result in "004"
+
+  // for now, just check to make sure we have printable characters... only need to
+  // implement a full MEL-string-encoder if we really have a need...
+  m_execute << "    $str += \"";
+
+  for(size_t i = 0; toAdd[i] != '\0'; ++i)
+  {
+    if(toAdd[i] < 32 || toAdd[i] > 126)
+    {
+      // Just throwing, if we ever need to use a string with weird chars, need to
+      // update this function...
+      throw std::logic_error("CommandGuiHelper::addExecuteText may only be called with normal printable characters");
+    }
+    else if (toAdd[i] == '"') m_execute << "\\\"";
+    else if (toAdd[i] == '\\') m_execute << "\\\\";
+    else m_execute << toAdd[i];
+  }
+  m_execute << "\";\n";
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void CommandGuiHelper::addFlagOption(const char* commandFlag, const char* label, const bool defaultVal, bool persist)
 {
   const std::string optionVar = m_commandName + "_" + commandFlag;

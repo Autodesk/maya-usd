@@ -609,10 +609,8 @@ MStatus LayerCurrentEditTarget::doIt(const MArgList& argList)
           layerName2 = getLayerId(next.GetLayer());
         }
         else
-        if(args.isFlagSet("-l"))
+        if(layerName.length() > 0)
         {
-          MString layerName;
-          args.getFlagArgument("-l", 0, layerName);
           layerName2 = convert(layerName);
           SdfLayerHandleVector layers = stage->GetUsedLayers();
           for(auto it = layers.begin(); it != layers.end(); ++it)
@@ -913,7 +911,7 @@ MStatus LayerSetMuted::redoIt()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStringArray buildLayerList(const MString&)
+MStringArray buildEditedLayersList(const MString&)
 {
   MStringArray result;
   nodes::LayerManager* layerManager = nodes::LayerManager::findManager();
@@ -925,11 +923,42 @@ MStringArray buildLayerList(const MString&)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+MStringArray buildProxyLayersList(const MString&)
+{
+  MStringArray result;
+  MSelectionList sl;
+  AL_MAYA_CHECK_ERROR_RETURN_VAL(MGlobal::getActiveSelectionList(sl), result,
+      "Error building layer list");
+
+  nodes::ProxyShape* foundShape = getProxyShapeFromSel(sl);
+  if (!foundShape)
+  {
+    MGlobal::displayError("No proxy shape selected");
+    return result;
+  }
+
+  auto stage = foundShape->getUsdStage();
+  if (!stage)
+  {
+    MGlobal::displayError(MString("Proxy shape '") + foundShape->name() + "' had no usd stage");
+    return result;
+  }
+
+  auto usedLayers = stage->GetUsedLayers();
+
+  for(auto& layer : usedLayers)
+  {
+    result.append(layer->GetIdentifier().c_str());
+  }
+  return result;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void constructLayerCommandGuis()
 {
   {
     maya::CommandGuiHelper saveLayer("AL_usdmaya_LayerSave", "Save Layer", "Save Layer", "USD/Layers/Save Layer", false);
-    saveLayer.addListOption("l", "Layer to Save", (AL::maya::GenerateListFn)buildLayerList, /*isMandatory=*/true);
+    saveLayer.addListOption("l", "Layer to Save", (AL::maya::GenerateListFn)buildEditedLayersList, /*isMandatory=*/true);
     saveLayer.addFilePathOption("f", "USD File Path", maya::CommandGuiHelper::kSave, "USDA files (*.usda) (*.usda);;USDC files (*.usdc) (*.usdc);;Alembic Files (*.abc) (*.abc);;All Files (*) (*)", maya::CommandGuiHelper::kStringMustHaveValue);
   }
 
@@ -940,7 +969,9 @@ void constructLayerCommandGuis()
 
   {
     maya::CommandGuiHelper setEditTarget("AL_usdmaya_LayerCurrentEditTarget", "Set Current Edit Target", "Set", "USD/Layers/Set Current Edit Target", false);
-    setEditTarget.addListOption("l", "USD Layer", (AL::maya::GenerateListFn)buildLayerList);
+    // we build our layer list using identifiers, so make sure the command is told to expect identifiers
+    setEditTarget.addExecuteText(" -fid ");
+    setEditTarget.addListOption("l", "USD Layer", (AL::maya::GenerateListFn)buildProxyLayersList);
   }
 }
 
