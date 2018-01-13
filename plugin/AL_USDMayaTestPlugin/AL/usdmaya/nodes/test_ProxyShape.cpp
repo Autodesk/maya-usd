@@ -26,9 +26,10 @@
 #include "maya/MFileIO.h"
 #include "maya/MStringArray.h"
 
-#include "pxr/usd/usd/stage.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
@@ -943,6 +944,88 @@ TEST(ProxyShape, basicTransformChainOperations2)
         EXPECT_TRUE(it.isDone());
       }
     }
+  }
+}
+
+// Make sure that if we make a brand new layer, make it the edit target, then
+// change it away, then save, the layer is saved
+TEST(ProxyShape, editTargetChangeAndSave)
+{
+  constexpr auto mayaAsciiPath = "/tmp/AL_USDMayaTests_editTargetChangeAndSave.ma";
+  const SdfPath dirtiestPrimPath = SdfPath("/world/dirtiestPrim");
+
+  MFileIO::newFile(true);
+  auto constructTransformChain = [] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+
+    UsdGeomXform root = UsdGeomXform::Define(stage, SdfPath("/world"));
+    return stage;
+  };
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_ProxyShape_editTargetChangeAndSave.usda";
+
+  // generate some data for the proxy shape
+  {
+    auto stage = constructTransformChain();
+    stage->Export(temp_path, false);
+  }
+
+  MString shapeName;
+  {
+    MFnDagNode fn;
+    MObject xform = fn.create("transform");
+    MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+    shapeName = fn.name();
+
+    AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+    // force the stage to load
+    proxy->filePathPlug().setString(temp_path.c_str());
+
+    auto stage = proxy->getUsdStage();
+
+    auto newLayer = SdfLayer::New(SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id),
+        "/tmp/AL_USDMayaTests_fresh_layer.usda");
+
+    stage->GetSessionLayer()->InsertSubLayerPath(newLayer->GetIdentifier());
+    // At the time newLayer is made the edit target, it shouldn't be dirty!
+    stage->SetEditTarget(newLayer);
+    // Now make edits to the stage, which should go to newLayer, making it dirty...
+    stage->DefinePrim(dirtiestPrimPath);
+    // Now change edit target away again
+    stage->SetEditTarget(stage->GetRootLayer());
+
+    // save the maya file
+    EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs(mayaAsciiPath));
+  }
+
+  {
+    // reopen - the stage should have the world's dirtiest prim!
+    EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::open(mayaAsciiPath, NULL, true));
+
+    MSelectionList sl;
+    EXPECT_EQ(MStatus(MS::kSuccess), sl.add(shapeName));
+    MObject shape;
+    EXPECT_EQ(MStatus(MS::kSuccess), sl.getDependNode(0, shape));
+    MStatus status;
+    MFnDagNode fn(shape, &status);
+    EXPECT_EQ(MStatus(MS::kSuccess), status);
+
+    // grab ptr to proxy
+    AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+    // force the stage to load
+    EXPECT_EQ(MString(temp_path.c_str()), proxy->filePathPlug().asString());
+
+    auto stage = proxy->getUsdStage();
+
+    // stage should be valid
+    ASSERT_TRUE(stage);
+
+    // world's dirtiest prim should exist!
+    auto dirtyPrim = stage->GetPrimAtPath(dirtiestPrimPath);
+    ASSERT_TRUE(dirtyPrim.IsValid());
   }
 }
 

@@ -555,9 +555,24 @@ void ProxyShape::trackEditTargetLayer(LayerManager* layerManager)
 {
   TF_DEBUG(ALUSDMAYA_LAYERS).Msg("ProxyShape::trackEditTargetLayer");
   auto stage = getUsdStage();
-  if(!stage) return;
-  auto currentTargetLayer = stage->GetEditTarget().GetLayer();
-  if(currentTargetLayer->IsDirty())
+  if(!stage)
+  {
+    TF_DEBUG(ALUSDMAYA_LAYERS).Msg(" - no stage\n");
+    return;
+  }
+
+  auto prevTargetLayer = m_prevTargetLayer;
+  m_prevTargetLayer = stage->GetEditTarget().GetLayer();
+
+  if(!prevTargetLayer)
+  {
+    TF_DEBUG(ALUSDMAYA_LAYERS).Msg(" - no prev target layer\n");
+    return;
+  }
+
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg(" - prev target layer: %s\n",
+      prevTargetLayer->GetIdentifier().c_str());
+  if(prevTargetLayer->IsDirty())
   {
     if(!layerManager)
     {
@@ -570,7 +585,7 @@ void ProxyShape::trackEditTargetLayer(LayerManager* layerManager)
         return;
       }
     }
-    layerManager->addLayer(currentTargetLayer);
+    layerManager->addLayer(prevTargetLayer);
   }
 }
 
@@ -997,6 +1012,8 @@ void ProxyShape::loadStage()
 
   AL_BEGIN_PROFILE_SECTION(LoadStage);
   MDataBlock dataBlock = forceCache();
+  // in case there was already a stage in m_stage, check to see if it's edit target has been altered
+  trackEditTargetLayer();
   m_stage = UsdStageRefPtr();
 
   // Get input attr values
@@ -1105,6 +1122,9 @@ void ProxyShape::loadStage()
 
         // Expand the mask, since we do not really want to mask the possible relation targets.
         m_stage->ExpandPopulationMask();
+
+        // Save the initial edit target
+        trackEditTargetLayer();
 
         AL_END_PROFILE_SECTION();
       }
