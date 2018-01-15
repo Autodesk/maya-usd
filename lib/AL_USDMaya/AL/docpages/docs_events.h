@@ -7,6 +7,8 @@ The AL_USDMaya event system attempts to provide a more robust event system for M
 short comings of the MMessage/scriptJob approach. This system is employed within AL_USDMaya to expose programming hooks
 that can be used to execute your own code during the internal processes of AL_USDMaya <i>(e.g. before/after a variant switch)</i>
 
+\section events_Motivation Events Motivation
+
 \subsection MMessage Why not use scriptJob / MMessage?
 
 Maya already has its own event management system, which are exposed via the MMessage <i>(and derived classes)</i> in the API,
@@ -54,6 +56,73 @@ callbacks, and more importantly any ideas in how to track down the code that con
 \li \b Node \b Event : an event that is bound to a specific maya node
 \li \b Global \b Event : an event that is not bound to any particular node
 
+\section events_CoreSystem Core Event API
+
+\subsection event_specialisation Implementing the System Backend
+
+The event system itself is defined in such as a way as to allow you to provide a custom backend when initialising the
+event system. The primary reason for this is to allow a repurposing of the event system into different DCC contexts
+(e.g. Maya, Houdini, etc). Within the usdmaya plugin, this backend binding is provided in the class MayaEventSystemBinding
+defined within AL/usdmaya/Global.cpp. The main purpose of this binding is to connect the event system to the underlying
+logging and scripting capability of the DCC app.
+
+\code
+#include "AL/maya/EventHandler.h"
+
+// indices into the eventTypeStrings array
+constexpr uint32_t kUserSpecifiedEventType = 0;
+constexpr uint32_t kSchemaEventType = 1;
+constexpr uint32_t kUSDMayaEventType = 2;
+constexpr uint32_t kMayaEventType = 3;
+
+// the type strings for the events
+static const char* const eventTypeStrings[] =
+{
+  "custom",
+  "schema",
+  "maya",
+  "usdmaya"
+};
+
+// this binds the event system to the logging and scripting API of the DCC context
+class MayaEventSystemBinding
+  : public AL::maya::EventSystemBinding
+{
+public:
+
+  MayaEventSystemBinding()
+    : EventSystemBinding(eventTypeStrings, sizeof(eventTypeStrings) / sizeof(const char*)) {}
+
+  bool executePython(const char* const code) override
+  {
+    return MGlobal::executePythonCommand(code, false, true);
+  }
+
+  bool executeMEL(const char* const code) override
+  {
+    return MGlobal::executeCommand(code, false, true);
+  }
+
+  void writeLog(AL::maya::EventSystemBinding::Type severity, const char* const text) override
+  {
+    switch(severity)
+    {
+    case kInfo: MGlobal::displayInfo(text); break;
+    case kWarning: MGlobal::displayWarning(text); break;
+    case kError: MGlobal::displayError(text); break;
+    }
+  }
+};
+
+// provide and instance of the backed DCC binding
+static MayaEventSystemBinding g_eventSystem;
+
+void initEventSystem()
+{
+  // when you need to initialise the event system, simple pass a pointer to the backend DCC system.
+  AL::maya::EventScheduler::initScheduler(&g_eventSystem);
+}
+\endcode
 
 \subsection globalEventsC Global Events in C++
 
@@ -61,10 +130,10 @@ The following code sample provides a simple example of how the C++ api works in 
 
 \code
 
-#include "AL/usdmaya/EventHandler.h"
+#include "AL/maya/EventHandler.h"
 
 // a global identifier for the event we have created
-AL::usdmaya::EventId g_mySimpleEvent = 0;
+AL::maya::EventId g_mySimpleEvent = 0;
 
 class SimpleEventExample
    : public MPxCommand
@@ -75,13 +144,13 @@ public:
   MStatus doIt(const MArgList& args)
   {
     // ask the scheduler to trigger any callbacks registered against our event
-    AL::usdmaya::EventScheduler::getScheduler().triggerEvent(g_mySimpleEvent);
+    AL::maya::EventScheduler::getScheduler().triggerEvent(g_mySimpleEvent);
 
     return MS::kSuccess;
   }
 };
 
-AL::usdmaya::CallbackId g_myCallbackId = 0;
+AL::maya::CallbackId g_myCallbackId = 0;
 
 void myCallbackFunction(void* userData)
 {
@@ -91,11 +160,14 @@ void myCallbackFunction(void* userData)
 
 MStatus initializePlugin(MObject obj)
 {
-  // to access the global scheduler
-  auto& scheduler = AL::usdmaya::EventScheduler::getScheduler();
+  // init the scheduler - this step is only required if you are not using the usdmaya plugin
+  AL::maya::EventScheduler::initScheduler(&g_eventSystem);
 
-  // lets register a simple event
-  g_mySimpleEvent = scheduler.registerEvent("OnSomethingHappened");
+  // to access the global scheduler
+  auto& scheduler = AL::maya::EventScheduler::getScheduler();
+
+  // lets register a simple event named "OnSomethingHappened" that is of the type kUserSpecifiedEventType
+  g_mySimpleEvent = scheduler.registerEvent("OnSomethingHappened", kUserSpecifiedEventType);
 
   // make sure the event registered correctly
   if(g_mySimpleEvent == 0)
@@ -126,13 +198,15 @@ MStatus initializePlugin(MObject obj)
 MStatus uninitializePlugin(MObject obj)
 {
   // unregister the callback
-  AL::usdmaya::EventScheduler::getScheduler().unregisterCallback(g_myCallbackId);
+  AL::maya::EventScheduler::getScheduler().unregisterCallback(g_myCallbackId);
 
   // unregister the event
-  AL::usdmaya::EventScheduler::getScheduler().unregisterEvent(g_mySimpleEvent);
+  AL::maya::EventScheduler::getScheduler().unregisterEvent(g_mySimpleEvent);
 
   MFnPlugin fn(obj);
   fn.unregisterCommand("simpleEventExample");
+
+  maya::EventScheduler::freeScheduler();
 
   return MS::kSuccess;
 }
@@ -264,20 +338,20 @@ A simple example of setting a node up with the events system would look like so:
 
 \code
 
-#include "AL/usdmaya/EventHandler.h"
+#include "AL/maya/EventHandler.h"
 
 // To make use of the node events, ensure you derive a node from the MayaNodeEvents class.
 class MyMayaNode
   : public MPxNode,
-    public AL::usdmaya::nodes::MayaNodeEvents
+    public AL::maya::NodeEvents
 {
 public:
 
   MyMayaNode()
   {
     // simply call registerEvent() for each event you wish to register
-    registerEvent("PreThingHappened");
-    registerEvent("PostThingHappened");
+    registerEvent("PreThingHappened", kUserSpecifiedEventType);
+    registerEvent("PostThingHappened", kUserSpecifiedEventType);
   }
 
   ~MyMayaNode()
@@ -437,11 +511,11 @@ task is something that needs to be done manually), and child events can only be 
 
 \code
 
-#include "AL/usdmaya/EventHandler.h"
+#include "AL/maya/EventHandler.h"
 
 // a global identifier for the event we have created
-AL::usdmaya::EventId g_mySimpleEvent1 = 0;
-AL::usdmaya::EventId g_mySimpleEvent2 = 0;
+AL::maya::EventId g_mySimpleEvent1 = 0;
+AL::maya::EventId g_mySimpleEvent2 = 0;
 
 class ParentEventExample
    : public MPxCommand
@@ -452,20 +526,20 @@ public:
   MStatus doIt(const MArgList& args)
   {
     // ask the scheduler to trigger any callbacks registered against our event
-    AL::usdmaya::EventScheduler::getScheduler().triggerEvent(g_mySimpleEvent1);
+    AL::maya::EventScheduler::getScheduler().triggerEvent(g_mySimpleEvent1);
 
     return MS::kSuccess;
   }
 };
 
-AL::usdmaya::CallbackId g_myCallbackId1 = 0;
-AL::usdmaya::CallbackId g_myCallbackId2 = 0;
+AL::maya::CallbackId g_myCallbackId1 = 0;
+AL::maya::CallbackId g_myCallbackId2 = 0;
 
 void myCallbackFunction1(void* userData)
 {
   MGlobal::displayInfo("I am a callback that will trigger an event!\n");
 
-  AL::usdmaya::EventScheduler::getScheduler().triggerEvent(g_mySimpleEvent2);
+  AL::maya::EventScheduler::getScheduler().triggerEvent(g_mySimpleEvent2);
 }
 
 void myCallbackFunction2(void* userData)
@@ -476,11 +550,14 @@ void myCallbackFunction2(void* userData)
 
 MStatus initializePlugin(MObject obj)
 {
+  // init the scheduler - this step is only required if you are not using the usdmaya plugin
+  AL::maya::EventScheduler::initScheduler(&g_eventSystem);
+
   // to access the global scheduler
-  auto& scheduler = AL::usdmaya::EventScheduler::getScheduler();
+  auto& scheduler = AL::maya::EventScheduler::getScheduler();
 
   // lets register a simple event
-  g_mySimpleEvent1 = scheduler.registerEvent("OnParentThingHappened");
+  g_mySimpleEvent1 = scheduler.registerEvent("OnParentThingHappened", kUserSpecifiedEventType);
 
   // make sure the event registered correctly
   if(g_mySimpleEvent1 == 0)
@@ -503,7 +580,7 @@ MStatus initializePlugin(MObject obj)
   }
 
   // lets register a simple event
-  g_mySimpleEvent2 = scheduler.registerEvent("OnChildThingHappened", g_myCallbackId1);
+  g_mySimpleEvent2 = scheduler.registerEvent("OnChildThingHappened", kUserSpecifiedEventType, g_myCallbackId1);
 
   // make sure the event registered correctly
   if(g_mySimpleEvent2 == 0)
@@ -533,12 +610,12 @@ MStatus initializePlugin(MObject obj)
 MStatus uninitializePlugin(MObject obj)
 {
   // unregister the callback
-  AL::usdmaya::EventScheduler::getScheduler().unregisterCallback(g_myCallbackId2);
-  AL::usdmaya::EventScheduler::getScheduler().unregisterCallback(g_myCallbackId1);
+  AL::maya::EventScheduler::getScheduler().unregisterCallback(g_myCallbackId2);
+  AL::maya::EventScheduler::getScheduler().unregisterCallback(g_myCallbackId1);
 
   // unregister the event
-  AL::usdmaya::EventScheduler::getScheduler().unregisterEvent(g_mySimpleEvent2);
-  AL::usdmaya::EventScheduler::getScheduler().unregisterEvent(g_mySimpleEvent1);
+  AL::maya::EventScheduler::getScheduler().unregisterEvent(g_mySimpleEvent2);
+  AL::maya::EventScheduler::getScheduler().unregisterEvent(g_mySimpleEvent1);
 
   MFnPlugin fn(obj);
   fn.unregisterCommand("parentEventExample");
@@ -630,6 +707,104 @@ for($event in $childEventIds)
   print ("  - owningNode " + `AL_usdmaya_EventLookup -node $event` + "\n");
 }
 \endcode
+
+\section events_MayaEvents Maya Event System
+
+As a direct replacement to MMessage (and related classes) the class AL::maya::MayaEventManager provides an interface
+to register your own C++ callback functions. All of the static methods AL::maya::MayaEventManager::registerCallback take
+the following arguments:
+
+\li func - the C++ function pointer
+\li eventName - the name of the the event (see list below)
+\li tag - a unique a tag string to identify the creator of the callback
+\li weight - the event weight (lowest weights are executed first, highest last, all usdmaya weights are 0x1000)
+\li userData - an optional user data pointer
+
+The following params can be provided as the eventName param, and the corresponding function pointer type they expect
+
+\li "AnimCurveEdited" - AL::maya::MayaCallbackType::kObjArrayFunction
+\li "AnimKeyFrameEdited" - AL::maya::MayaCallbackType::kObjArrayFunction
+\li "AnimKeyframeEditCheck" - AL::maya::MayaCallbackType::kCheckPlugFunction
+\li "PreBakeResults" - AL::maya::MayaCallbackType::kPlugsDGModFunction
+\li "PostBakeResults" - AL::maya::MayaCallbackType::kPlugsDGModFunction
+\li "DisableImplicitControl" - AL::maya::MayaCallbackType::kPlugsDGModFunction
+\li "CameraLayer" - AL::maya::MayaCallbackType::kCameraLayerFunction
+\li "CameraChanged" - AL::maya::MayaCallbackType::kCameraLayerFunction
+\li "Command" - AL::maya::MayaCallbackType::kStringFunction
+\li "CommandOuptut" - AL::maya::MayaCallbackType::kMessageFunction
+\li "CommandOutputFilter" - AL::maya::MayaCallbackType::kMessageFilterFunction
+\li "Proc" - AL::maya::MayaCallbackType::kStringIntBoolIntFunction
+\li "PublishAttr" - AL::maya::MayaCallbackType::kNodeStringBoolFunction
+\li "BoundAttr" - AL::maya::MayaCallbackType::kNodeStringBoolFunction
+\li "ParentAdded" - AL::maya::MayaCallbackType::kParentChildFunction
+\li "ParentRemoved" - AL::maya::MayaCallbackType::kParentChildFunction
+\li "ChildAdded" - AL::maya::MayaCallbackType::kParentChildFunction
+\li "ChildRemoved" - AL::maya::MayaCallbackType::kParentChildFunction
+\li "ChildReordered" - AL::maya::MayaCallbackType::kParentChildFunction
+\li "AllDagChanges" - AL::maya::MayaCallbackType::kMessageParentChildFunction
+\li "InstanceAdded" - AL::maya::MayaCallbackType::kParentChildFunction
+\li "InstanceRemoved" - AL::maya::MayaCallbackType::kParentChildFunction
+\li "TimeChange" - AL::maya::MayaCallbackType::kTimeFunction
+\li "DelayedTimeChange" - AL::maya::MayaCallbackType::kTimeFunction
+\li "DelayedTimeChangeRunup" - AL::maya::MayaCallbackType::kTimeFunction
+\li "ForceUpdate" - AL::maya::MayaCallbackType::kTimeFunction
+\li "NodeAdded" - AL::maya::MayaCallbackType::kNodeFunction
+\li "NodeRemoved" - AL::maya::MayaCallbackType::kNodeFunction
+\li "Connection" - AL::maya::MayaCallbackType::kPlugFunction
+\li "PreConnection" - AL::maya::MayaCallbackType::kPlugFunction
+\li "Callback" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeDuplicate" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterDuplicate" - AL::maya::MayaCallbackType::kBasicFunction
+\li "VertexColor" - AL::maya::MayaCallbackType::kPathObjectPlugColoursFunction
+\li "SceneUpdate" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeNew" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterNew" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeImport" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterImport" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeOpen" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterOpen" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeFileRead" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterFileRead" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterSceneReadAndRecordEdits" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeExport" - AL::maya::MayaCallbackType::kBasicFunction
+\li "ExportStarted" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterExport" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeSave" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterSave" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeCreateReference" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeLoadReferenceAndRecordEdits" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterCreateReference" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterCreateReferenceAndRecordEdits" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeRemoveReference" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterRemoveReference" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeImportReference" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterImportReference" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeExportReference" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterExportReference" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeUnloadReference" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterUnloadReference" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeLoadReference" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeCreateReferenceAndRecordEdits" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterLoadReference" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterLoadReferenceAndRecordEdits" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeSoftwareRender" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterSoftwareRender" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeSoftwareFrameRender" - AL::maya::MayaCallbackType::kBasicFunction
+\li "AfterSoftwareFrameRender" - AL::maya::MayaCallbackType::kBasicFunction
+\li "SoftwareRenderInterrupted" - AL::maya::MayaCallbackType::kBasicFunction
+\li "MayaInitialized" - AL::maya::MayaCallbackType::kBasicFunction
+\li "MayaExiting" - AL::maya::MayaCallbackType::kBasicFunction
+\li "BeforeNewCheck" - AL::maya::MayaCallbackType::kCheckFunction
+\li "BeforeImportCheck" - AL::maya::MayaCallbackType::kCheckFunction
+\li "BeforeOpenCheck" - AL::maya::MayaCallbackType::kCheckFunction
+\li "BeforeExportCheck" - AL::maya::MayaCallbackType::kCheckFunction
+\li "BeforeSaveCheck" - AL::maya::MayaCallbackType::kCheckFunction
+\li "BeforeCreateReferenceCheck" - AL::maya::MayaCallbackType::kCheckFunction
+\li "BeforeLoadReferenceCheck" - AL::maya::MayaCallbackType::kCheckFunction
+\li "BeforePluginLoad" - AL::maya::MayaCallbackType::kStringArrayFunction
+\li "AfterPluginLoad" - AL::maya::MayaCallbackType::kStringArrayFunction
+\li "BeforePluginUnload" - AL::maya::MayaCallbackType::kStringArrayFunction
+\li "AfterPluginUnload" - AL::maya::MayaCallbackType::kStringArrayFunction
 
 
 */

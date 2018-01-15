@@ -991,7 +991,7 @@ public:
   /// \param  eventName the name of the event to register
   /// \param  parentId the callback id of the callback that triggers this event (or null)
   /// \return true if the event could be registered
-  bool registerEvent(const char* const eventName, EventType eventType, const CallbackId parentId = 0)
+  bool registerEvent(const char* const eventName, const EventType eventType, const CallbackId parentId = 0)
   {
     EventId id = m_scheduler->registerEvent(eventName, eventType, this, parentId);
     if(id)

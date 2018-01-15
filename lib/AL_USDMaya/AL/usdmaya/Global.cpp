@@ -57,13 +57,6 @@ public:
   MayaEventSystemBinding()
     : EventSystemBinding(eventTypeStrings, sizeof(eventTypeStrings) / sizeof(const char*)) {}
 
-  enum Type
-  {
-    kInfo,
-    kWarning,
-    kError
-  };
-
   bool executePython(const char* const code) override
   {
     return MGlobal::executePythonCommand(code, false, true);
