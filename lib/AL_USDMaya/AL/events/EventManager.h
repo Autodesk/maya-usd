@@ -38,23 +38,23 @@ namespace usdmaya {
 //----------------------------------------------------------------------------------------------------------------------
 enum class MayaMessageType
 {
-  kAnimMessage,
-  kCameraSetMessage,
-  kCommandMessage,
-  kConditionMessage,
-  kContainerMessage,
-  kDagMessage,
-  kDGMessage,
-  kEventMessage,
-  kLockMessage,
-  kModelMessage,
-  kNodeMessage,
-  kObjectSetMessage,
-  kPaintMessage,
-  kPolyMessage,
-  kSceneMessage,
-  kTimerMessage,
-  kUiMessage
+  kAnimMessage, ///< messages from the MAnimMessage class
+  kCameraSetMessage, ///< messages from the MCameraSetMessage class
+  kCommandMessage, ///< messages from the MCommandMessage class
+  kConditionMessage, ///< messages from the MConditionMessage class
+  kContainerMessage, ///< messages from the MContainerMessage class
+  kDagMessage, ///< messages from the MDagMessage class
+  kDGMessage, ///< messages from the MDGMessage class
+  kEventMessage, ///< messages from the MEventMessage class
+  kLockMessage, ///< messages from the MLockMessage class
+  kModelMessage, ///< messages from the MModelMessage class
+  kNodeMessage, ///< messages from the MNodeMessage class
+  kObjectSetMessage, ///< messages from the MObjectSetMessage class
+  kPaintMessage, ///< messages from the MPaintMessage class
+  kPolyMessage, ///< messages from the MPolyMessage class
+  kSceneMessage, ///< messages from the MSceneMessage class
+  kTimerMessage, ///< messages from the MTimerMessage class
+  kUiMessage ///< messages from the MUiMessage class
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -62,45 +62,45 @@ enum class MayaMessageType
 //----------------------------------------------------------------------------------------------------------------------
 enum class MayaCallbackType
 {
-  kBasicFunction,
-  kElapsedTimeFunction,
-  kCheckFunction,
-  kCheckFileFunction,
-  kCheckPlugFunction,
-  kComponentFunction,
-  kNodeFunction,
-  kStringFunction,
-  kTwoStringFunction,
-  kThreeStringFunction,
-  kStringIntBoolIntFunction,
-  kStringIndexFunction,
-  kStateFunction,
-  kTimeFunction,
-  kPlugFunction,
-  kNodePlugFunction,
-  kNodeStringFunction,
-  kNodeStringBoolFunction,
-  kParentChildFunction,
-  kModifierFunction,
-  kStringArrayFunction,
-  kNodeModifierFunction,
-  kObjArrayFunction,
-  kNodeObjArrayFunction,
-  kStringNodeFunction,
-  kCameraLayerFunction,
-  kCameraLayerCameraFunction,
-  kConnFailFunction,
-  kPlugsDGModFunction,
-  kNodeUuidFunction,
-  kCheckNodeUuidFunction,
-  kObjectFileFunction,
-  kCheckObjectFileFunction,
-  kRenderTileFunction,
-  kMessageFunction,
-  kMessageFilterFunction,
-  kMessageParentChildFunction,
-  kPathObjectPlugColoursFunction,
-  kWorldMatrixModifiedFunction
+  kBasicFunction, ///< \code typedef void (*MBasicFunction) (void* userData) \endcode
+  kElapsedTimeFunction, ///< \code typedef void (*MElapsedTimeFunction) (float elapsedTime, float lastTime, void* userData); \endcode
+  kCheckFunction, ///< \code typedef void (*MCheckFunction) (bool* retCode, void* userData); \endcode
+  kCheckFileFunction, ///< \code typedef void (*MCheckFileFunction) (bool* retCode, MFileObject& file, void* userData); \endcode
+  kCheckPlugFunction, ///< \code typedef void (*MCheckPlugFunction) (bool* retCode, MPlug& plug, void* userData); \endcode
+  kComponentFunction, ///< \code typedef void (*MComponentFunction) (MUintArray componentIds[], unsigned int count, void* userData); \endcode
+  kNodeFunction, ///< \code typedef void (*MNodeFunction) (MObject& node, void* userData); \endcode
+  kStringFunction, ///< \code typedef void (*MStringFunction) (const MString& str, void* userData); \endcode
+  kTwoStringFunction, ///< \code typedef void (*MTwoStringFunction) (const MString& str1, const MString& str2, void* userData); \endcode
+  kThreeStringFunction, ///< \code typedef void (*MThreeStringFunction) (const MString& str1, const MString& str2, const MString& str2, void* userData); \endcode
+  kStringIntBoolIntFunction, ///< \code typedef void (*MStringIntBoolIntFunction) (const MString& str, unsigned index, bool flag, unsigned type, void* userData); \endcode
+  kStringIndexFunction, ///< \code typedef void (*MStringIndexFunction) (const MString& str, unsigned int index, void* userData); \endcode
+  kStateFunction, ///< \code typedef void (*MStateFunction) (bool state, void* userData); \endcode
+  kTimeFunction, ///< \code typedef void (*MTimeFunction) (MTime& time, void* userData); \endcode
+  kPlugFunction, ///< \code typedef void (*MPlugFunction) (MPlug& srcPlug, MPlug& destPlug, bool made, void* userData); \endcode
+  kNodePlugFunction, ///< \code typedef void (*MNodePlugFunction) (MObject& node, MPlug& plug, void* userData); \endcode
+  kNodeStringFunction, ///< \code typedef void (*MNodeStringFunction) (MObject& node, const MString& str, void* userData); \endcode
+  kNodeStringBoolFunction, ///< \code typedef void (*MNodeStringBoolFunction) (MObject& node, const MString& str, bool flag, void* userData); \endcode
+  kParentChildFunction, ///< \code typedef void (*MParentChildFunction) (MDagPath& child, MDagPath& parent, void* userData); \endcode
+  kModifierFunction, ///< \code typedef void (*MModifierFunction) (MDGModifier& modifier, void* userData); \endcode
+  kStringArrayFunction, ///< \code typedef void (*MStringArrayFunction) (const MStringArray& strs, void* userData); \endcode
+  kNodeModifierFunction, ///< \code typedef void (*MNodeModifierFunction) (MObject& node, MDGModifier& modifier, void* userData); \endcode
+  kObjArrayFunction, ///< \code typedef void (*MObjArray) (MObjectArray& objects, void* userData); \endcode
+  kNodeObjArrayFunction, ///< \code typedef void (*MNodeObjArray) (MObject& node, MObjectArray& objects, void* userData); \endcode
+  kStringNodeFunction, ///< \code typedef void (*MStringNode) (const MString& str, MObject& node, void* userData); \endcode
+  kCameraLayerFunction, ///< \code typedef void (*MCameraLayerFunction) (MObject& cameraSetNode, unsigned multiIndex, bool added, void* userData); \endcode
+  kCameraLayerCameraFunction, ///< \code typedef void (*MCameraLayerCameraFunction) (MObject& cameraSetNode, unsigned multiIndex, MObject& oldCamera, MObject& newCamera, void* userData); \endcode
+  kConnFailFunction, ///< \code typedef void (*MConnFailFunction) (MPlug& srcPlug, MPlug& destPlug, const MString& srcPlugName, const MString& dstPlugName, void* userData); \endcode
+  kPlugsDGModFunction, ///< \code typedef void (*MPlugsDGModFunction) (MPlugArray& plugs, MDGModifier& modifier, void* userData); \endcode
+  kNodeUuidFunction, ///< \code typedef void (*MNodeUuidFunction) (MObject& node, const MUuid& uuid, void* userData); \endcode
+  kCheckNodeUuidFunction, ///< \code typedef Action (*MCheckNodeUuidFunction) (bool doAction, MObject& node, MUuid& uuid, void* userData); \endcode
+  kObjectFileFunction, ///< \code typedef void (*MObjectFileFunction) (const MObject& object, const MFileObject& file, void* userData); \endcode
+  kCheckObjectFileFunction, ///< \code typedef void (*MCheckObjectFileFunction) (bool* retCode, const MObject& referenceNode, MFileObject& file, void* userData); \endcode
+  kRenderTileFunction, ///< \code typedef void (*MRenderTileFunction) (int originX, int originY, int tileMaxX, int tileMaxY, void* userData); \endcode
+  kMessageFunction, ///< \code typedef void (*MMessageFunction) (const MString& message, MCommandMessage::MessageType messageType, void* userData); \endcode
+  kMessageFilterFunction, ///< \code typedef void (*MMessageFilterFunction) (const MString& message, MCommandMessage::MessageType messageType, bool& filterOutput, void* userData); \endcode
+  kMessageParentChildFunction, ///< \code typedef void (*MMessageParentChildFunction) (MDagMessage::DagMessage msgType, MDagPath& child, MDagPath& parent, void* userData); \endcode
+  kPathObjectPlugColoursFunction, ///< \code typedef void (*MPathObjectPlugColorsFunction) (MDagPath& path, MObject& object, MPlug& plug, MColorArray& colors, void* userData); \endcode
+  kWorldMatrixModifiedFunction ///< \code typedef void (*MWorldMatrixModifiedFunction) (MObject& transformNode, MDagMessage::MatrixModifiedFlags& modified, void* userData); \endcode
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -323,6 +323,8 @@ enum Type
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  An interface that provides the event system with some utilities from the underlying DCC application.
+///         This class is responsible for keeping track of the number of maya events registered, and creating/destroying
+///         the MMessage callbacks.
 /// \ingroup events
 //----------------------------------------------------------------------------------------------------------------------
 class MayaEventHandler
@@ -347,21 +349,60 @@ public:
   /// \param  eventType the event type
   MayaEventHandler(EventScheduler* scheduler, EventType eventType);
 
+  /// \brief  dtor
+  ~MayaEventHandler();
+
   /// \brief  returns the event type string
+  /// \return "maya"
   const char* eventTypeString() const override
     { return "maya"; }
 
   /// \brief  returns the event scheduler
+  /// \return the event scheduler used for these maya events
   EventScheduler* scheduler() const
     { return m_scheduler; }
 
-  /// \brief
+  /// \brief  queries the maya event information for the specified maya event
+  /// \param  event the event ID
+  /// \return a pointer to the maya event information (or null for an invalid event)
   const MayaCallbackInfo* getEventInfo(const EventId event) const
   {
     const auto it = m_eventMapping.find(event);
     if(it == m_eventMapping.end()) return 0;
     return m_callbacks.data() + it->second;
   }
+
+  /// \brief  queries whether the event has an associated MCallbackId (indicating the callback is active with maya)
+  /// \param  event the event to query
+  /// \return true if callback is active with maya, false otherwise
+  bool isMayaCallbackRegistered(const EventId event) const
+  {
+    const MayaCallbackInfo* cbi = getEventInfo(event);
+    return cbi ? cbi->refCount != 0 : false;
+  }
+
+  /// \brief  queries the maya event information for the specified maya event
+  /// \param  event the event ID
+  /// \return a pointer to the maya event information (or null for an invalid event)
+  const MayaCallbackInfo* getEventInfo(const char* const eventName) const
+  {
+    const EventDispatcher* const dispatcher = m_scheduler->event(eventName);
+    if(dispatcher)
+    {
+      return getEventInfo(dispatcher->eventId());
+    }
+    return 0;
+  }
+
+  /// \brief  queries whether the event has an associated MCallbackId (indicating the callback is active with maya)
+  /// \param  event the event to query
+  /// \return true if callback is active with maya, false otherwise
+  bool isMayaCallbackRegistered(const char* const eventName) const
+  {
+    const MayaCallbackInfo* cbi = getEventInfo(eventName);
+    return cbi ? cbi->refCount != 0 : false;
+  }
+
 private:
   void onCallbackCreated(const CallbackId callbackId) override;
   void onCallbackDestroyed(const CallbackId callbackId) override;
@@ -413,15 +454,22 @@ private:
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief Stores and orders the registered Event objects and executes these Events when the wanted Maya callbacks are triggered.
+/// \brief  A class that replaces the MMessage (and derived message classes) in order to provide a level of scheduling
+///         and debugability across multiple plugins, which is not possible in the standard maya API. Effectively the
+///         class wraps the core EventScheduler API to provide a little bit of additional type safety on the callback
+///         type provided.
 //----------------------------------------------------------------------------------------------------------------------
 class MayaEventManager
 {
   static MayaEventManager* g_instance;
 public:
 
-  static MayaEventManager& instance() { return *g_instance; }
+  /// \brief  returns the global maya event manager instance
+  static MayaEventManager& instance()
+    { return *g_instance; }
 
+  /// \brief  constructor
+  /// \param  mayaEvents the custom event handler
   MayaEventManager(MayaEventHandler* mayaEvents)
     : m_mayaEvents(mayaEvents) { g_instance = this; }
 
@@ -817,11 +865,16 @@ public:
 
   /// \brief  unregisters the callback id
   /// \param  id the callback id to unregister
-  void unregisterCallback(CallbackId id)
+  bool unregisterCallback(CallbackId id)
     {
       EventScheduler* scheduler = m_mayaEvents->scheduler();
-      scheduler->unregisterCallback(id);
+      return scheduler->unregisterCallback(id);
     }
+
+  /// \brief  returns the custom maya event handler
+  /// \return the event handler in charge of registering and unregistering maya events
+  MayaEventHandler* mayaEventsHandler() const
+    { return m_mayaEvents; }
 
 private:
   CallbackId registerCallbackInternal(const void* func, MayaCallbackType type, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0);

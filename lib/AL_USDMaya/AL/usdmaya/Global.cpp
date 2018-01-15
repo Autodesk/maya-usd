@@ -215,15 +215,9 @@ void Global::onPluginLoad()
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Registering callbacks\n");
 
-  std::cout << 1 << std::endl;
-
   EventScheduler::initScheduler(&g_eventSystem);
-  std::cout << 2 << std::endl;
   auto ptr = new MayaEventHandler(&EventScheduler::getScheduler(), kMayaEventType);
-
-  std::cout << 3 << std::endl;
   new MayaEventManager(ptr);
-  std::cout << 4 << std::endl;
 
   auto& manager = MayaEventManager::instance();
   m_fileNew = manager.registerCallback(onFileNew, "AfterNew", "usdmaya_onFileNew", 0x1000);
@@ -232,7 +226,6 @@ void Global::onPluginLoad()
   m_preOpen = manager.registerCallback(preFileOpen, "BeforeOpen", "usdmaya_preFileOpen", 0x1000);
   m_postOpen = manager.registerCallback(postFileOpen, "AfterOpen", "usdmaya_postFileOpen", 0x1000);
 
-  std::cout << 5 << std::endl;
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Registering USD plugins\n");
   // Let USD know about the additional plugins
   std::string pluginLocation(TfStringCatPaths(TfGetenv(AL_USDMAYA_LOCATION_NAME), "share/usd/plugins"));

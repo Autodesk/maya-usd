@@ -1190,6 +1190,21 @@ CallbackId MayaEventManager::registerCallbackInternal(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+MayaEventHandler::~MayaEventHandler()
+{
+  for(auto& r : m_callbacks)
+  {
+    if(r.refCount)
+    {
+      MMessage::removeCallback(r.mayaCallback);
+      r.mayaCallback = 0;
+      r.refCount = 0;
+    }
+    m_scheduler->unregisterEvent(r.eventId);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MayaEventManager* MayaEventManager::g_instance = 0;
 
 
