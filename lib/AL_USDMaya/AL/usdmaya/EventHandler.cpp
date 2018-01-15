@@ -75,7 +75,8 @@ Callback EventDispatcher::buildCallbackInternal(
   CallbackId newId = makeCallbackId(eventId(), eventType(), 0);
   for(auto it = m_callbacks.begin(), e = m_callbacks.end(); it != e; ++it)
   {
-    if(it->tag() == tag)
+    if(it->tag() == tag &&
+       it->userData() == userData)
     {
       m_system->error("An attempt to register the same event tag twice occurred - \"%s\"", tag);
       return Callback();
@@ -101,7 +102,8 @@ CallbackId EventDispatcher::registerCallbackInternal(
       insertLocation = it;
     }
 
-    if(it->tag() == tag)
+    if(it->tag() == tag &&
+       it->userData() == userData)
     {
       m_system->error("An attempt to register the same event tag twice occurred - \"%s\"", tag);
       return -1;
@@ -172,7 +174,8 @@ void EventDispatcher::registerCallback(Callback& info)
       insertLocation = it;
     }
 
-    if(it->tag() == info.tag())
+    if(it->tag() == info.tag() &&
+       it->userData() == info.userData())
     {
       m_system->error("An attempt to register the same event tag twice occurred - \"%s\"", info.tag().c_str());
       return;
