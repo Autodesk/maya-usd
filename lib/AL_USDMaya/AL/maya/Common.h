@@ -180,6 +180,23 @@ class ProfilerSectionTag;
     return MObject::kNullObj; \
   } }
 
+/// \brief  Given the status, validates that the status is ok. If not, an error is logged using the specified error
+///         message. If an error occurs, then exit immediately, returning the given value.
+/// \ingroup   mayautils
+#define AL_MAYA_CHECK_ERROR_RETURN_VAL(status, returnVal, ErrorString) { \
+  MStatus _status_##__LINE__ = status; \
+  if (!_status_##__LINE__) \
+  { \
+    MString maya_error_string = __FILE__ ":"; \
+    maya_error_string += __LINE__; \
+    maya_error_string += " "; \
+    maya_error_string += _status_##__LINE__.errorString(); \
+    maya_error_string += " : "; \
+    maya_error_string += ErrorString; \
+    MGlobal::displayError(maya_error_string); \
+    return returnVal; \
+  } }
+
 /// \ingroup   mayautils
 /// \brief  utility macro to check that an SdfLayerHandle is actually valid.
 #define LAYER_HANDLE_CHECK(X) \
