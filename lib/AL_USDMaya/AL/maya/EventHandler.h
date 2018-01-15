@@ -15,21 +15,13 @@
 //
 #pragma once
 
-#include "AL/usdmaya/Common.h"
-/*
-#include <maya/MGlobal.h>
-#include <maya/MString.h>
-#include <maya/MMessage.h>
-#include <maya/MPxNode.h>
-*/
+#include "AL/maya/Common.h"
 #include <string>
 #include <vector>
 #include <unordered_map>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace AL {
-namespace usdmaya {
+namespace maya {
 
 constexpr uint64_t kNumEventIdBitMask  = 0xFFFFF00000000000ULL; ///< bit mask storing the event ID
 constexpr uint64_t kNumEventTypeMask   = 0x00000F0000000000ULL; ///< bit mask for the event type
@@ -636,7 +628,7 @@ public:
   EventScheduler(EventSystemBinding* system)
     : m_system(system), m_registeredEvents() {}
 
-  ~EventScheduler() = default;
+  ~EventScheduler();
 
   /// \brief  returns the event type as a string
   /// \param  eventType

@@ -20,7 +20,7 @@
 
 #include "pxr/pxr.h"
 
-#include "AL/usdmaya/EventHandler.h"
+#include "AL/maya/EventHandler.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -35,8 +35,8 @@ namespace cmds {
 struct BaseCallbackCommand
 {
   MStatus redoItImplementation();
-  std::vector<CallbackId> m_callbacksToDelete;
-  Callbacks m_callbacksToInsert;
+  std::vector<maya::CallbackId> m_callbacksToDelete;
+  maya::Callbacks m_callbacksToInsert;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -47,8 +47,8 @@ class Event
   : public MPxCommand
 {
   MString m_eventName;
-  NodeEvents* m_associatedData = 0;
-  CallbackId m_parentEvent = 0;
+  maya::NodeEvents* m_associatedData = 0;
+  maya::CallbackId m_parentEvent = 0;
   bool m_deleting = false;
 public:
   AL_MAYA_DECLARE_COMMAND();

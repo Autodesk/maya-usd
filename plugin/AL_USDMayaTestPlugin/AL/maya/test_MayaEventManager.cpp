@@ -15,11 +15,11 @@
 //
 #include "test_usdmaya.h"
 
-#include "AL/events/EventManager.h"
+#include "AL/maya/MayaEventManager.h"
 #include "maya/MFileIO.h"
 
 
-using namespace AL::usdmaya;
+using namespace AL::maya;
 
 static bool g_called = 0;
 static void callback_test(void*){ g_called = true; };
@@ -62,7 +62,7 @@ TEST(maya_Event, registerEvent)
 
   EXPECT_EQ(priorRefCount + 1, info->refCount);
   EXPECT_EQ(&userData, callbackInfo->userData());
-  EXPECT_EQ(callback_test, callbackInfo->callback());
+  EXPECT_EQ((void*)(callback_test), callbackInfo->callback());
   EXPECT_EQ(std::string(""), std::string(callbackInfo->callbackText()));
   EXPECT_EQ(std::string("I'm a tag"), std::string(callbackInfo->tag()));
   EXPECT_EQ(callback, callbackInfo->callbackId());

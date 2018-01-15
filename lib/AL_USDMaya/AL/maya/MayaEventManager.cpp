@@ -13,13 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "EventManager.h"
+#include "AL/maya/MayaEventManager.h"
 
 #include <string>
-#include <utility>
 #include <vector>
 #include <algorithm>
-#include <memory>
 #include <maya/MGlobal.h>
 #include <maya/MAnimMessage.h>
 #include <maya/MCameraSetMessage.h>
@@ -45,12 +43,9 @@
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
 #include <pxr/pxr.h>
-#include "AL/events/Events.h"
-
-PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
-namespace usdmaya {
+namespace maya {
 
 //----------------------------------------------------------------------------------------------------------------------
 static void bindBasicFunction(void* ptr)

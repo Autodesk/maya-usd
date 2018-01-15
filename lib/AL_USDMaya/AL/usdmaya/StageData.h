@@ -15,7 +15,7 @@
 //
 #pragma once
 #include "AL/usdmaya/Common.h"
-#include "AL/events/EventManager.h"
+#include "AL/maya/MayaEventManager.h"
 
 #include "maya/MPxGeometryData.h"
 
@@ -64,7 +64,7 @@ public:
 private:
   MTypeId typeId() const override;
   MString name() const override;
-  CallbackId m_exitCallbackId;
+  maya::CallbackId m_exitCallbackId;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

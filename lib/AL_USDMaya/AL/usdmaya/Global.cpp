@@ -50,7 +50,7 @@ static const char* const eventTypeStrings[] =
 
 //----------------------------------------------------------------------------------------------------------------------
 class MayaEventSystemBinding
-  : public EventSystemBinding
+  : public maya::EventSystemBinding
 {
 public:
 
@@ -88,11 +88,11 @@ public:
 static MayaEventSystemBinding g_eventSystem;
 
 //----------------------------------------------------------------------------------------------------------------------
-CallbackId Global::m_preSave;
-CallbackId Global::m_postSave;
-CallbackId Global::m_preOpen;
-CallbackId Global::m_postOpen;
-CallbackId Global::m_fileNew;
+maya::CallbackId Global::m_preSave;
+maya::CallbackId Global::m_postSave;
+maya::CallbackId Global::m_preOpen;
+maya::CallbackId Global::m_postOpen;
+maya::CallbackId Global::m_fileNew;
 
 //----------------------------------------------------------------------------------------------------------------------
 static void onFileNew(void*)
@@ -215,11 +215,11 @@ void Global::onPluginLoad()
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Registering callbacks\n");
 
-  EventScheduler::initScheduler(&g_eventSystem);
-  auto ptr = new MayaEventHandler(&EventScheduler::getScheduler(), kMayaEventType);
-  new MayaEventManager(ptr);
+  maya::EventScheduler::initScheduler(&g_eventSystem);
+  auto ptr = new maya::MayaEventHandler(&maya::EventScheduler::getScheduler(), maya::kMayaEventType);
+  new maya::MayaEventManager(ptr);
 
-  auto& manager = MayaEventManager::instance();
+  auto& manager = maya::MayaEventManager::instance();
   m_fileNew = manager.registerCallback(onFileNew, "AfterNew", "usdmaya_onFileNew", 0x1000);
   m_preSave = manager.registerCallback(preFileSave, "BeforeSave", "usdmaya_preFileSave", 0x1000);
   m_postSave = manager.registerCallback(postFileSave, "AfterSave", "usdmaya_postFileSave", 0x1000);
@@ -238,7 +238,7 @@ void Global::onPluginLoad()
 void Global::onPluginUnload()
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Removing callbacks\n");
-  auto& manager = MayaEventManager::instance();
+  auto& manager = maya::MayaEventManager::instance();
   manager.unregisterCallback(m_fileNew);
   manager.unregisterCallback(m_preSave);
   manager.unregisterCallback(m_postSave);
@@ -246,7 +246,8 @@ void Global::onPluginUnload()
   manager.unregisterCallback(m_postOpen);
   StageCache::removeCallbacks();
 
-  EventScheduler::freeScheduler();
+  maya::MayaEventManager::freeInstance();
+  maya::EventScheduler::freeScheduler();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -15,23 +15,17 @@
 //
 #pragma once
 
-#include <pxr/pxr.h>
 #include <string>
-#include <memory>
-#include <utility>
 #include <vector>
-#include <array>
 #include "maya/MCommandMessage.h"
 #include "maya/MDagMessage.h"
 #include "maya/MPaintMessage.h"
 #include "maya/MSceneMessage.h"
 
-#include "AL/usdmaya/EventHandler.h"
-#include "AL/events/Events.h"
+#include "AL/maya/EventHandler.h"
 
-PXR_NAMESPACE_USING_DIRECTIVE
 namespace AL {
-namespace usdmaya {
+namespace maya {
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  The MMessage derived class in which the callback is registered
@@ -468,6 +462,10 @@ public:
   static MayaEventManager& instance()
     { return *g_instance; }
 
+  /// \brief  returns the global maya event manager instance
+  static void freeInstance()
+    { delete g_instance; g_instance = 0; }
+
   /// \brief  constructor
   /// \param  mayaEvents the custom event handler
   MayaEventManager(MayaEventHandler* mayaEvents)
@@ -883,7 +881,7 @@ private:
 
 
 //----------------------------------------------------------------------------------------------------------------------
-} // usdmaya
+} // maya
 } // AL
 //----------------------------------------------------------------------------------------------------------------------
 

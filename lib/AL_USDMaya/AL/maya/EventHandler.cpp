@@ -13,14 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usdmaya/EventHandler.h"
 #include <cstring>
+#include "AL/maya/EventHandler.h"
 #include "maya/MGlobal.h"
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace AL {
-namespace usdmaya {
+namespace maya {
 
 EventScheduler* g_scheduler = 0;
 
@@ -42,6 +40,15 @@ void EventScheduler::freeScheduler()
 {
   delete g_scheduler;
   g_scheduler = 0;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+EventScheduler::~EventScheduler()
+{
+  for(auto it : m_customHandlers)
+  {
+    delete it.second;
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -381,6 +388,6 @@ Callback* EventScheduler::findCallback(CallbackId callbackId)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-} // usdmaya
+} // maya
 } // AL
 //----------------------------------------------------------------------------------------------------------------------

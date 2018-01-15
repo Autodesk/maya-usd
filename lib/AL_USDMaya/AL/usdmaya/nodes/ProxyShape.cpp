@@ -429,12 +429,12 @@ bool ProxyShape::getRenderAttris(void* pattribs, const MHWRender::MFrameContext&
 
 //----------------------------------------------------------------------------------------------------------------------
 ProxyShape::ProxyShape()
-  : MPxSurfaceShape(), maya::NodeHelper(), NodeEvents(&EventScheduler::getScheduler()),
+  : MPxSurfaceShape(), maya::NodeHelper(), maya::NodeEvents(&maya::EventScheduler::getScheduler()),
     m_context(fileio::translators::TranslatorContext::create(this)),
     m_translatorManufacture(context())
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::ProxyShape\n");
-  m_beforeSaveSceneId = MayaEventManager::instance().registerCallback(
+  m_beforeSaveSceneId = maya::MayaEventManager::instance().registerCallback(
       beforeSaveScene,
       "BeforeSave",
       "ProxyShape_PreSceneSave",
@@ -550,7 +550,7 @@ ProxyShape::ProxyShape()
 ProxyShape::~ProxyShape()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::~ProxyShape\n");
-  MayaEventManager::instance().unregisterCallback(m_beforeSaveSceneId);
+  maya::MayaEventManager::instance().unregisterCallback(m_beforeSaveSceneId);
   MEventMessage::removeCallback(m_onSelectionChanged);
   removeAttributeChangedCallback();
   TfNotice::Revoke(m_variantChangedNoticeKey);
