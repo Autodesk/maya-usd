@@ -138,13 +138,13 @@ public:
   ///         (and it can be necessary to refer to the layer both by it's "old" and "new" ids). If this is
   ///         an empty string, it is ignored.
   /// \return bool which is true if the layer was actually added to the list of layers managed by this node
-  ///         (ie, if it wasn't already managed)
-  bool addLayer(SdfLayerRefPtr layer, const std::string& identifier=std::string(""));
+  ///         (ie, if it wasn't already managed, and the given layer handle was valid)
+  bool addLayer(SdfLayerHandle layer, const std::string& identifier=std::string(""));
 
   /// \brief  Remove the given layer to the list of layers managed by this node, if present.
   /// \return bool which is true if the layer was actually removed from the list of layers managed by this node
-  ///         (ie, if it was previously managed)
-  bool removeLayer(SdfLayerRefPtr layer);
+  ///         (ie, if it was previously managed, and the given layer handle was valid)
+  bool removeLayer(SdfLayerHandle layer);
 
   /// \brief  Find the layer in the list of layers managed by this node, by identifier
   /// \return The found layer handle in the layer list managed by this node (invalid if not found)

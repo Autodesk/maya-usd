@@ -357,17 +357,29 @@ LayerManager* LayerManager::findOrCreateManager(MDGModifier* dgmod, bool* wasCre
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool LayerManager::addLayer(SdfLayerRefPtr layer, const std::string& identifier)
+bool LayerManager::addLayer(SdfLayerHandle layer, const std::string& identifier)
 {
+  SdfLayerRefPtr layerRef(layer);
+  if (!layerRef)
+  {
+    MGlobal::displayError("LayerManager::addLayer - given layer is no longer valid");
+    return false;
+  }
   boost::unique_lock<boost::shared_mutex> lock(m_layersMutex);
-  return m_layerDatabase.addLayer(layer, identifier);
+  return m_layerDatabase.addLayer(layerRef, identifier);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool LayerManager::removeLayer(SdfLayerRefPtr layer)
+bool LayerManager::removeLayer(SdfLayerHandle layer)
 {
+  SdfLayerRefPtr layerRef(layer);
+  if (!layerRef)
+  {
+    MGlobal::displayError("LayerManager::removeLayer - given layer is no longer valid");
+    return false;
+  }
   boost::unique_lock<boost::shared_mutex> lock(m_layersMutex);
-  return m_layerDatabase.removeLayer(layer);
+  return m_layerDatabase.removeLayer(layerRef);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
