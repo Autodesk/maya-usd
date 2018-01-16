@@ -1809,6 +1809,28 @@ void ProxyShape::cleanupTransformRefs()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::registerEvents()
+{
+  registerEvent("PreStageLoaded", maya::kUSDMayaEventType);
+  registerEvent("PostStageLoaded", maya::kUSDMayaEventType);
+  registerEvent("ConstructGLEngine", maya::kUSDMayaEventType);
+  registerEvent("DestroyGLEngine", maya::kUSDMayaEventType);
+  registerEvent("PreSelectionChanged", maya::kUSDMayaEventType);
+  registerEvent("PostSelectionChanged", maya::kUSDMayaEventType);
+  registerEvent("PreVariantChanged", maya::kUSDMayaEventType);
+  registerEvent("PostVariantChanged", maya::kUSDMayaEventType);
+  registerEvent("PreSerialiseContext", maya::kUSDMayaEventType);
+  registerEvent("PostSerialiseContext", maya::kUSDMayaEventType);
+  registerEvent("PreDeserialiseContext", maya::kUSDMayaEventType);
+  registerEvent("PostDeserialiseContext", maya::kUSDMayaEventType);
+  registerEvent("PreSerialiseTransformRefs", maya::kUSDMayaEventType);
+  registerEvent("PostSerialiseTransformRefs", maya::kUSDMayaEventType);
+  registerEvent("PreDeserialiseTransformRefs", maya::kUSDMayaEventType);
+  registerEvent("PostDeserialiseTransformRefs", maya::kUSDMayaEventType);
+  registerEvent("EditTargetChanged", maya::kUSDMayaEventType);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 } // nodes
 } // usdmaya
 } // AL

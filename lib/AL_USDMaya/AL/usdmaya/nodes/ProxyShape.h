@@ -69,6 +69,7 @@ namespace nodes {
 //----------------------------------------------------------------------------------------------------------------------
 struct SelectionUndoHelper
 {
+  /// a hash set of SdfPaths
   typedef TfHashSet<SdfPath, SdfPath::Hash> SdfPathHashSet;
 
   /// \brief  Construct with the arguments to select / deselect nodes on a proxy shape
@@ -106,6 +107,7 @@ private:
 class SelectionList
 {
 public:
+  /// a hash set of SdfPaths
   typedef TfHashSet<SdfPath, SdfPath::Hash> SdfPathHashSet;
 
   /// \brief  default ctor
@@ -170,27 +172,44 @@ private:
   SdfPathHashSet m_selected;
 };
 
-//typedef functions
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  A class that provides the logic behind a hierarchy traversal through a UsdStage
+//----------------------------------------------------------------------------------------------------------------------
 struct  HierarchyIterationLogic
 {
+  /// \brief  ctor
   HierarchyIterationLogic():
       preIteration(nullptr),
       iteration(nullptr),
       postIteration(nullptr)
   {}
 
+  /// \brief  provide a method to be called prior to iteration of the UsdStage hierarchy
   std::function<void()> preIteration;
+
+  /// \brief  a visitor method that is called on each of the UsdPrims in the stage hierarchy
   std::function<void(const fileio::TransformIterator& transformIterator,const UsdPrim& prim)> iteration;
+
+  /// \brief  provide a method to be called after iteration of the UsdStage hierarchy
   std::function<void()> postIteration;
 };
 
-struct FindUnselectablePrimsLogic : public HierarchyIterationLogic
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  implements the logic that constructs a list of objects that need to be added or removed from the selectable
+///         list of prims within a UsdStage
+//----------------------------------------------------------------------------------------------------------------------
+struct FindUnselectablePrimsLogic
+  : public HierarchyIterationLogic
 {
-  SdfPathVector newUnselectables;
-  SdfPathVector removeUnselectables;
+  SdfPathVector newUnselectables; ///< items that need to be made unselectable
+  SdfPathVector removeUnselectables; ///< items that are unselectable, but need to be made selectable
 };
 
-struct FindLockedPrimsLogic : public HierarchyIterationLogic
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  implements the logic required when searching for locked prims within a UsdStage
+//----------------------------------------------------------------------------------------------------------------------
+struct FindLockedPrimsLogic
+  : public HierarchyIterationLogic
 {
 };
 
@@ -216,27 +235,10 @@ class ProxyShape
   friend class ProxyShapeUI;
 public:
 
-  void registerEvents()
-  {
-    registerEvent("PreStageLoaded", maya::kUSDMayaEventType);
-    registerEvent("PostStageLoaded", maya::kUSDMayaEventType);
-    registerEvent("ConstructGLEngine", maya::kUSDMayaEventType);
-    registerEvent("DestroyGLEngine", maya::kUSDMayaEventType);
-    registerEvent("PreSelectionChanged", maya::kUSDMayaEventType);
-    registerEvent("PostSelectionChanged", maya::kUSDMayaEventType);
-    registerEvent("PreVariantChanged", maya::kUSDMayaEventType);
-    registerEvent("PostVariantChanged", maya::kUSDMayaEventType);
-    registerEvent("PreSerialiseContext", maya::kUSDMayaEventType);
-    registerEvent("PostSerialiseContext", maya::kUSDMayaEventType);
-    registerEvent("PreDeserialiseContext", maya::kUSDMayaEventType);
-    registerEvent("PostDeserialiseContext", maya::kUSDMayaEventType);
-    registerEvent("PreSerialiseTransformRefs", maya::kUSDMayaEventType);
-    registerEvent("PostSerialiseTransformRefs", maya::kUSDMayaEventType);
-    registerEvent("PreDeserialiseTransformRefs", maya::kUSDMayaEventType);
-    registerEvent("PostDeserialiseTransformRefs", maya::kUSDMayaEventType);
-    registerEvent("EditTargetChanged", maya::kUSDMayaEventType);
-  }
+  /// a method that registers all of the events in the ProxyShape
+  void registerEvents();
 
+  /// a set of SdfPaths
   typedef TfHashSet<SdfPath, SdfPath::Hash> SdfPathHashSet;
 
   /// \brief  a mapping between a maya transform (or MObject::kNullObj), and the prim that exists at that location
@@ -603,7 +605,6 @@ public:
   ///         the user does, ie, "AL_usdmaya_ProxyShapeSelect -pp /foo/bar -pp /some/thing -proxy myProxyShape",
   //          they will get as the result of the command, ["|proxyRoot|foo|bar", "|proxyRoot|some|thing"], and be able
   //          to know what input SdfPath corresponds to what ouptut maya path
-  SdfPathVector m_pathsOrdered;
   /// \return true if the operation succeeded
   bool doSelect(SelectionUndoHelper& helper, const SdfPathVector& orderedPaths);
 
@@ -888,6 +889,7 @@ private:
     }
 
 private:
+  SdfPathVector m_pathsOrdered;
   AL::usdmaya::SelectabilityDB m_selectabilityDB;
   HierarchyIterationLogics m_hierarchyIterationLogics;
   HierarchyIterationLogic m_findExcludedPrims;

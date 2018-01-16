@@ -989,6 +989,8 @@ public:
 
   /// \brief  A method that allows you to register a custom event handler. This handler can then be used to bind
   ///         in additional messages from 3rd party systems (e.g. MMessage events, or Usd notifications)
+  /// \param  type the type of event this handler processes
+  /// \param  handler the custom handler object that will process these event types
   void registerHandler(EventType type, CustomEventHandler* handler)
     { m_customHandlers[type] = handler; }
 

@@ -38,7 +38,6 @@ struct PrimFilterInterface
   ///         If the proxy shape is aware of the prim, and the returned info is valid, true will be returned. If the
   ///         proxy shape is unaware of the prim (i.e. a variant switch has created it), then false will be returned.
   /// \param  path the path to the prim we are querying
-  /// \param  info the returned type information in the current cache
   /// \return true if the prim is known about, and the info structure contains valid information. False if the prim is
   ///         an unknown type
   virtual TfToken getTypeForPath(const SdfPath& path) = 0;
