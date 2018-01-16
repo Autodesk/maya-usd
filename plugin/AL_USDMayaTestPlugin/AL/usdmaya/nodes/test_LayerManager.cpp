@@ -357,9 +357,9 @@ def Scope "blabla"
     MPlug anonymousPlug = layersPlug0.child(tempNonConst, &status);
     ASSERT_TRUE(status);
 
-    ASSERT_EQ(MString(realLayer->GetIdentifier().c_str()), idPlug.asString(&status));
+    ASSERT_EQ(MString(realLayer->GetIdentifier().c_str()), idPlug.asString(MDGContext::fsNormal, &status));
     ASSERT_TRUE(status);
-    ASSERT_EQ(MString(LAYER_CONTENTS), serializedPlug.asString(&status));
+    ASSERT_EQ(MString(LAYER_CONTENTS), serializedPlug.asString(MDGContext::fsNormal, &status));
     ASSERT_TRUE(status);
     ASSERT_FALSE(anonymousPlug.asBool(&status));
     ASSERT_TRUE(status);
