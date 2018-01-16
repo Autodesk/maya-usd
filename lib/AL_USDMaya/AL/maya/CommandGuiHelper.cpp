@@ -248,14 +248,35 @@ void CommandGuiHelper::addExecuteText(const char* toAdd)
   // for now, just check to make sure we have printable characters... only need to
   // implement a full MEL-string-encoder if we really have a need...
   m_execute << "    $str += \"";
+  bool printedError = false;
 
   for(size_t i = 0; toAdd[i] != '\0'; ++i)
   {
     if(toAdd[i] < 32 || toAdd[i] > 126)
     {
+      if (toAdd[i] == '\b') m_execute << "\\b";
+      else if (toAdd[i] == '\t') m_execute << "\\t";
+      else if (toAdd[i] == '\n') m_execute << "\\n";
+      else if (toAdd[i] == '\r') m_execute << "\\r";
       // Just throwing, if we ever need to use a string with weird chars, need to
       // update this function...
-      throw std::logic_error("CommandGuiHelper::addExecuteText may only be called with normal printable characters");
+      else if (!printedError)
+      {
+        // Make our own stream (instead of steaming straigt to cerr)
+        // both because we also want to output to maya, and
+        // because we need to set a flag (ie, std::hex)
+        std::ostringstream err;
+        err << "CommandGuiHelper::addExecuteText encountered bad character at index ";
+        err << i;
+        err << ": 0x";
+        err << std::hex;
+        // if you just reinterpret_cast as uint8_t, it still treats as a char
+        err << static_cast<int>(reinterpret_cast<const unsigned char*>(toAdd)[i]);
+        std::string errStr = err.str();
+        MGlobal::displayError(errStr.c_str());
+        std::cerr << errStr;
+        printedError = true;
+      }
     }
     else if (toAdd[i] == '"') m_execute << "\\\"";
     else if (toAdd[i] == '\\') m_execute << "\\\\";
