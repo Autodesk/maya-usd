@@ -177,7 +177,16 @@ MStatus BaseCallbackCommand::redoItImplementation()
   {
     if(!maya::EventScheduler::getScheduler().unregisterCallback(m_callbacksToDelete[i], callbacksToInsert[i]))
     {
-      //MGlobal::displayError(MString("failed to unregister callback with ID: ") + MString(m_callbacksToDelete[i]));
+      union {
+        int32_t asInt[2];
+        maya::CallbackId asCb;
+      };
+      asCb = m_callbacksToDelete[i];
+      MString errorString = "failed to unregister callback with ID: ";
+      errorString += asInt[0];
+      errorString += ' ';
+      errorString += asInt[1];
+      MGlobal::displayError(errorString);
     }
   }
 

@@ -79,7 +79,7 @@ Callback EventDispatcher::buildCallbackInternal(
   uint32_t weight,
   void* userData)
 {
-  CallbackId newId = makeCallbackId(eventId(), eventType(), 0);
+  CallbackId newId = makeCallbackId(eventId(), eventType(), InvalidCallbackId);
   for(auto it = m_callbacks.begin(), e = m_callbacks.end(); it != e; ++it)
   {
     if(it->tag() == tag &&
@@ -100,7 +100,7 @@ CallbackId EventDispatcher::registerCallbackInternal(
   uint32_t weight,
   void* userData)
 {
-  CallbackId newId = makeCallbackId(eventId(), eventType(), 0);
+  CallbackId newId = makeCallbackId(eventId(), eventType(), InvalidCallbackId);
   auto insertLocation = m_callbacks.end();
   for(auto it = m_callbacks.begin(), e = m_callbacks.end(); it != e; ++it)
   {
@@ -113,7 +113,7 @@ CallbackId EventDispatcher::registerCallbackInternal(
        it->userData() == userData)
     {
       m_system->error("An attempt to register the same event tag twice occurred - \"%s\"", tag);
-      return -1;
+      return InvalidCallbackId;
     }
     newId = std::max(newId, it->callbackId());
   }
@@ -128,7 +128,7 @@ CallbackId EventDispatcher::registerCallback(
   uint32_t weight,
   bool isPython)
 {
-  CallbackId newId = makeCallbackId(eventId(), eventType(), 0);
+  CallbackId newId = makeCallbackId(eventId(), eventType(), InvalidCallbackId);
   auto insertLocation = m_callbacks.end();
   for(auto it = m_callbacks.begin(), e = m_callbacks.end(); it != e; ++it)
   {
@@ -140,7 +140,7 @@ CallbackId EventDispatcher::registerCallback(
     if(it->tag() == tag)
     {
       m_system->error("An attempt to register the same event tag twice occurred - \"%s\"", tag);
-      return -1;
+      return InvalidCallbackId;
     }
     newId = std::max(newId, it->callbackId());
   }
@@ -156,7 +156,7 @@ Callback EventDispatcher::buildCallback(
   uint32_t weight,
   bool isPython)
 {
-  CallbackId newId = makeCallbackId(eventId(), eventType(), 0);
+  CallbackId newId = makeCallbackId(eventId(), eventType(), InvalidCallbackId);
   for(auto it = m_callbacks.begin(), e = m_callbacks.end(); it != e; ++it)
   {
     if(it->tag() == tag)

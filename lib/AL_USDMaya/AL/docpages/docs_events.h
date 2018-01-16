@@ -52,7 +52,7 @@ callbacks, and more importantly any ideas in how to track down the code that con
 \subsection terminology Some Terminology
 
 \li \b Event : An event is a point in code that can trigger multiple callbacks
-\li \b Callback : This is a small bit of code that the user can execute when a specific event is triggered
+\li \b Callback : This is a small bit of code that the user can bind to a specific event, to be executed when it is triggered
 \li \b Node \b Event : an event that is bound to a specific maya node
 \li \b Global \b Event : an event that is not bound to any particular node
 
@@ -213,7 +213,7 @@ MStatus uninitializePlugin(MObject obj)
 \endcode
 
 It should be noted that once this plugin have been loaded, there are a number of MEL commands exposed that allow you
-to interact with that event in MEL/python script. Frstly we can get a list of the global events registered:
+to interact with that event in MEL/python script. Firstly we can get a list of the global events registered:
 
 \code
 print `AL_usdmaya_ListEvents`;
@@ -333,7 +333,7 @@ AL_usdmaya_Event -d "AnEventDefinedInMEL";
 
 \subsection nodeEventsC Node Events in C++
 
-To make use of the maya node events, you're node should derive from the AL::usdmaya::nodes::MayaNodeEvents class.
+To make use of the maya node events, your node should derive from the AL::usdmaya::nodes::MayaNodeEvents class.
 A simple example of setting a node up with the events system would look like so:
 
 \code
@@ -423,9 +423,8 @@ AL_usdmaya_TriggerEvent "PreThingHappened" $node;
 \endcode
 
 
-You will notice that the callback id's are returned as an array. This is simply because the C++ Callback ID's are 64bit,
-however sadly MEL does not support 64bit integer values, so the callbacks are returned as a pair of 32bit integers.
-These pair of callback values can be used to query some information about the callback using the command AL_usdmaya_CallbackQuery
+As with the Global Events, these pair of callback values can be used to query some information about the callback using the
+command AL_usdmaya_CallbackQuery
 
 \code
 // print the tag for the callback

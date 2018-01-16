@@ -109,7 +109,6 @@ static void preFileOpen(void*)
       fn.setObject(iter.item());
       if(fn.typeId() == nodes::ProxyShape::kTypeId)
       {
-        // execute a pull on each proxy shape to ensure that each one has a valid USD stage!
         nodes::ProxyShape* proxy = (nodes::ProxyShape*)fn.userNode();
         proxy->removeAttributeChangedCallback();
       }
@@ -130,7 +129,6 @@ static void postFileOpen(void*)
       fn.setObject(iter.item());
       if(fn.typeId() == nodes::ProxyShape::kTypeId)
       {
-        // execute a pull on each proxy shape to ensure that each one has a valid USD stage!
         nodes::ProxyShape* proxy = (nodes::ProxyShape*)fn.userNode();
         proxy->reloadStage();
         proxy->constructGLImagingEngine();

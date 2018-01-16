@@ -23,9 +23,13 @@
 namespace AL {
 namespace maya {
 
-constexpr uint64_t kNumEventIdBitMask  = 0xFFFFF00000000000ULL; ///< bit mask storing the event ID
-constexpr uint64_t kNumEventTypeMask   = 0x00000F0000000000ULL; ///< bit mask for the event type
-constexpr uint64_t kNumCallbackBitMask = 0x000000FFFFFFFFFFULL; ///< bit mask for the callbacks
+constexpr uint64_t kNumEventIdBits = 20; ///< number of bits for the event ID
+constexpr uint64_t kNumEventTypeBits = 4; ///< number of bits for the event Type
+constexpr uint64_t kNumCallbackIdBits = 40; ///< number of bits for the callback ID
+
+constexpr uint64_t kNumEventIdBitMask  = 0xFFFFFFFFFFFFFFFFULL << (kNumEventTypeBits + kNumCallbackIdBits); ///< bit mask storing the event ID
+constexpr uint64_t kNumCallbackBitMask = (0xFFFFFFFFFFFFFFFFULL) >> (kNumEventIdBits + kNumEventTypeBits); ///< bit mask for the callbacks
+constexpr uint64_t kNumEventTypeMask   = (0xFFFFFFFFFFFFFFFFULL) ^ (kNumEventIdBitMask | kNumCallbackBitMask); ///< bit mask for the event type
 
 constexpr uint32_t kUserSpecifiedEventType = 0;
 constexpr uint32_t kSchemaEventType = 1;
@@ -70,7 +74,7 @@ typedef std::vector<CallbackId> CallbackIds;
 /// \ingroup events
 inline EventId extractEventId(CallbackId id)
 {
-  return (kNumEventIdBitMask & id) >> 44;
+  return (kNumEventIdBitMask & id) >> (kNumEventTypeBits + kNumCallbackIdBits);
 }
 
 /// \brief  extracts the 4bit event type from the calback id
@@ -78,7 +82,7 @@ inline EventId extractEventId(CallbackId id)
 /// \ingroup events
 inline EventType extractEventType(CallbackId id)
 {
-  return (kNumEventTypeMask & id) >> 40;
+  return (kNumEventTypeMask & id) >> kNumCallbackIdBits;
 }
 
 /// \brief  extracts the unique 40bit callback ID (which is an instance id of the specified event)
@@ -97,8 +101,16 @@ inline CallbackId extractCallbackId(CallbackId id)
 /// \ingroup events
 inline CallbackId makeCallbackId(EventId event, uint32_t type, CallbackId id)
 {
-  return (CallbackId(event) << 44) | (CallbackId(type) << 40) | id;
+  return (CallbackId(event) << (kNumEventTypeBits + kNumCallbackIdBits)) | (CallbackId(type) << kNumCallbackIdBits) | id;
 }
+
+/// \brief  the invalid callback ID
+/// \ingroup events
+constexpr CallbackId InvalidCallbackId = 0;
+
+/// \brief  the invalid callback ID
+/// \ingroup events
+constexpr EventId InvalidEventId = 0;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  An interface that provides the event system with some utilities from the underlying DCC application.
@@ -256,7 +268,7 @@ public:
   Callback()
     : m_tag(), m_userData(nullptr), m_callbackId(0)
   {
-    m_callback = 0;
+    m_callback = nullptr;
     m_weight = 0;
     m_functionType = 0;
   }
@@ -266,7 +278,8 @@ public:
   Callback(Callback&& rhs)
     : m_tag(std::move(rhs.m_tag)), m_userData(rhs.m_userData), m_callbackId(rhs.m_callbackId)
   {
-    m_callback = rhs.m_callback; rhs.m_callback = 0;
+    m_callback = rhs.m_callback;
+    rhs.m_callback = nullptr;
     m_weight = rhs.m_weight;
     m_functionType = rhs.m_functionType;
   }
@@ -280,7 +293,7 @@ public:
       m_userData = rhs.m_userData;
       m_callbackId = rhs.m_callbackId;
       m_callback = rhs.m_callback;
-      rhs.m_callback = 0;
+      rhs.m_callback = nullptr;
       m_weight = rhs.m_weight;
       m_functionType = rhs.m_functionType;
       return *this;
@@ -816,7 +829,7 @@ public:
         }
         return cb;
       }
-      return 0;
+      return InvalidCallbackId;
     }
 
   /// \brief  register a new event callback (in python or MEL)
@@ -848,7 +861,7 @@ public:
       }
       return cb;
     }
-    return 0;
+    return InvalidCallbackId;
   }
 
   /// \brief  register a new event callback
@@ -974,7 +987,7 @@ public:
       }
       return id;
     }
-    return 0;
+    return InvalidCallbackId;
   }
 
   /// \brief  provides internal access to the registered events
@@ -1061,7 +1074,7 @@ public:
     {
       return it->second;
     }
-    return 0;
+    return InvalidEventId;
   }
 
   /// \brief  returns the internal event map
@@ -1081,7 +1094,7 @@ public:
     {
       m_events.emplace(eventName, id);
     }
-    return id != 0;
+    return id != InvalidEventId;
   }
 
   /// \brief  unregisters an event from this node
