@@ -1,3 +1,15 @@
+## v0.??.? (????-??-??)
+
+### Added
+
+
+### Changed
+
+* Using -muted/-m flag with AL_usdmaya_LayerGetLayers now returns layer display names by default, and identifiers if
+  the -identifiers/-id flag is set.  This makes it more in line with all the other flags for the command (and more
+  flexible), but is a change in behavior - previously, the muted layers would ALWAYS be returned as identifier.
+
+
 ## v0.25.0 (2017-11-28)
 
 ### Added

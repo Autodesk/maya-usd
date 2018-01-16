@@ -1598,6 +1598,20 @@ MStatus NodeHelper::outputDataValue(MDataBlock& dataBlock, const MObject& attrib
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+MPxData* NodeHelper::outputDataValue(MDataBlock& dataBlock, const MObject& attribute)
+{
+  MStatus status;
+  MDataHandle outDataHandle = dataBlock.outputValue(attribute, &status);
+  if(status)
+  {
+    return outDataHandle.asPluginData();
+  }
+  report_get_error(attribute, MPxData, status);
+  return 0;
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
 MPxData* NodeHelper::createData(const MTypeId& dataTypeId, MObject& data)
 {
   MStatus status;

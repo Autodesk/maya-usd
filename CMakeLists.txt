@@ -53,6 +53,7 @@ include_directories(${PXR_INCLUDE_DIRS})
 # is the rationale for listing them here.
 find_package(Boost COMPONENTS
                 python
+                thread
                 REQUIRED
 )
 

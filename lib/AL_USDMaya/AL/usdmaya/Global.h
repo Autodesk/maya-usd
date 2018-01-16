@@ -38,8 +38,8 @@ public:
 private:
   static MCallbackId m_preSave;  ///< callback prior to saving the scene (so we can store the session layer)
   static MCallbackId m_postSave; ///< callback after saving
-  static MCallbackId m_preOpen;  ///< callback executed before opening a maya file
-  static MCallbackId m_postOpen; ///< callback executed after opening a maya file - needed to re-hook up the UsdPrims
+  static MCallbackId m_preRead;  ///< callback executed before opening a maya file
+  static MCallbackId m_postRead; ///< callback executed after opening a maya file - needed to re-hook up the UsdPrims
   static MCallbackId m_fileNew;  ///< callback used to flush the USD caches after a file new
 };
 
