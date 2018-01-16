@@ -434,8 +434,8 @@ public:
   /// \brief  will destroy all of the AL_usdmaya_Transform nodes from the prim specified, up to the root (unless any
   ///         of those transform nodes are in use by another imported prim).
   /// \param  usdPrim the leaf node in the chain of transforms we wish to remove
-  /// \param  modifier will store the changes as this path is constructed.
-  /// \param  reason  the reason why this path is being generated.
+  /// \param  modifier will store the changes as this path is removed.
+  /// \param  reason  the reason why this path is being removed.
   /// \todo   The mode ProxyShape::kSelection will cause the possibility of instability in the selection system.
   ///         This mode will be removed at a future date
   void removeUsdTransformChain(
@@ -446,8 +446,8 @@ public:
   /// \brief  will destroy all of the AL_usdmaya_Transform nodes from the prim specified, up to the root (unless any
   ///         of those transform nodes are in use by another imported prim).
   /// \param  path the leaf node in the chain of transforms we wish to remove
-  /// \param  modifier will store the changes as this path is constructed.
-  /// \param  reason  the reason why this path is being generated.
+  /// \param  modifier will store the changes as this path is removed.
+  /// \param  reason  the reason why this path is being removed.
   void removeUsdTransformChain(
       const SdfPath& path,
       MDagModifier& modifier,
@@ -515,11 +515,11 @@ public:
     {
       if(obj == it.second.node())
       {
+        path = it.first;
         if(m_selectedPaths.count(it.first) > 0)
         {
           return true;
         }
-        path = it.first;
         break;
       }
     }
@@ -638,6 +638,11 @@ public:
   /// \param[in] primPath of the point in the hierarchy that is potentially undergoing structural changes
   /// \param[in] changedPaths are child paths that existed previously and may not be existing now.
   void onPrimResync(SdfPath primPath, SdfPathVector& changedPaths);
+
+  /// \brief Preps translators for change, and then re-ceates and updates the maya prim hierarchy below the
+  ///        specified primPath as if a variant change occurred.
+  /// \param[in] primPath of the point in the hierarchy that is potentially undergoing structural changes
+  void resync(const SdfPath& primPath);
 
   /// \brief This function starts the prim changed process within the proxyshape
   /// \param[in] changePath is point at which the scene is going to be modified.

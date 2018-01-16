@@ -148,7 +148,7 @@ if(${listCount} STRGREATER 1)
       string(REPLACE ";" "/" currentPath "${currentPath}")
       file(WRITE
         ${CMAKE_BINARY_DIR}/${currentPath}/__init__.py
-        "try:\n\t__import__('pkg_resources').declare_namespace(__name__)\nexcept:\n\tpass\n"
+        "try:\n\t__import__('pkg_resources').declare_namespace(__name__)\nexcept:\n\tfrom pkgutil import extend_path\n\t__path__ = extend_path(__path__, __name__)\n"
       )
     endforeach(i)
 endif()

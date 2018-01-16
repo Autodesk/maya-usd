@@ -676,46 +676,47 @@ void ProxyShape::onPrimResync(SdfPath primPath, SdfPathVector& previousPrims)
   fn.getPath(dag_path);
   dag_path.pop();
 
-  // find the new set of prims
+  // find the new set of schema translator prims
   std::vector<UsdPrim> newPrimSet = huntForNativeNodesUnderPrim(dag_path, primPath, translatorManufacture());
 
   proxy::PrimFilter filter(previousPrims, newPrimSet, this);
   previousPrims.clear();
 
   if(TfDebug::IsEnabled(ALUSDMAYA_TRANSLATORS)){
-    std::cout << "new prims" << std::endl;
+    std::cout << "new prims:" << std::endl;
     for(auto it : filter.newPrimSet())
     {
       std::cout << it.GetPath().GetText() << std::endl;
     }
-    std::cout << "new transforms" << std::endl;
+    std::cout << "new transforms:" << std::endl;
     for(auto it : filter.transformsToCreate())
     {
       std::cout << it.GetPath().GetText() << std::endl;
     }
-    std::cout << "updateable prims" << std::endl;
+    std::cout << "updateable prims:" << std::endl;
     for(auto it : filter.updatablePrimSet())
     {
       std::cout << it.GetPath().GetText() << std::endl;
     }
-    std::cout << "removed prims" << std::endl;
+    std::cout << "removed prims:" << std::endl;
     for(auto it : filter.removedPrimSet())
     {
       std::cout << it.GetText() << std::endl;
     }
   }
 
+  // create transforms first to increment ref counts and avoid deleting/recreating ones that will stay
   cmds::ProxyShapePostLoadProcess::MObjectToPrim objsToCreate;
   if(!filter.transformsToCreate().empty())
     cmds::ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(this, filter.transformsToCreate(), dag_path, objsToCreate);
+
+  context()->removeEntries(filter.removedPrimSet());
 
   if(!filter.newPrimSet().empty())
     cmds::ProxyShapePostLoadProcess::createSchemaPrims(this, filter.newPrimSet());
 
   if(!filter.updatablePrimSet().empty())
     cmds::ProxyShapePostLoadProcess::updateSchemaPrims(this, filter.updatablePrimSet());
-
-  context()->removeEntries(filter.removedPrimSet());
 
   cleanupTransformRefs();
 
@@ -725,7 +726,6 @@ void ProxyShape::onPrimResync(SdfPath primPath, SdfPathVector& previousPrims)
   if(!filter.newPrimSet().empty())
     cmds::ProxyShapePostLoadProcess::connectSchemaPrims(this, filter.newPrimSet());
 
-  //cmds::ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(this, primsToSwitch, dag_path, objsToCreate);
   if(!filter.updatablePrimSet().empty())
     cmds::ProxyShapePostLoadProcess::connectSchemaPrims(this, filter.updatablePrimSet());
 
@@ -736,6 +736,21 @@ void ProxyShape::onPrimResync(SdfPath primPath, SdfPathVector& previousPrims)
 
   validateTransforms();
   constructGLImagingEngine();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::resync(const SdfPath& primPath)
+{
+  // FIMXE: This method was needed to call update() on all translators in the maya scene. Since then some new
+  // locking and selectability functionality has been added to onObjectsChanged(). I would want to call the logic in
+  // that method to handle this resyncing but it would need to be refactored.
+
+  SdfPathVector existingSchemaPrims;
+
+  // populates list of prims from prim mapping that will change under the path to resync.
+  onPrePrimChanged(primPath, existingSchemaPrims);
+
+  onPrimResync(primPath, existingSchemaPrims);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -965,7 +980,7 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
                                          itr->first->GetIdentifier().c_str());
           if(!m_compositionHasChanged)
           {
-            TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::Already in a composition change state. Ignoring \n");
+            TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::Not yet in a composition change state. Recording path. \n");
             m_changedPath = path;
           }
           m_compositionHasChanged = true;

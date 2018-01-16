@@ -62,8 +62,6 @@ public:
   MStatus update(const UsdPrim& path) override;
   bool supportsUpdate() const override 
     { return true; }
-  bool supportsInactive() const override
-    { return true; }
   
 private:
   MayaReferenceLogic m_mayaReferenceLogic;
