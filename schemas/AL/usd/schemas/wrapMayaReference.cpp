@@ -69,7 +69,7 @@ void wrapAL_usd_MayaReference()
 {
     typedef AL_usd_MayaReference This;
 
-    class_<This, bases<UsdTyped> >
+    class_<This, bases<UsdGeomXformable> >
         cls("MayaReference");
 
     cls

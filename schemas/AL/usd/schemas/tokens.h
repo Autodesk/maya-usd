@@ -41,21 +41,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \hideinitializer
 #define AL_USDMAYASCHEMAS_TOKENS \
+    ((lock, "al_usdmaya_lock")) \
+    ((lock_inherited, "inherited")) \
+    ((lock_transform, "transform")) \
+    ((lock_unlocked, "unlocked")) \
     (mayaNamespace) \
     (mayaReference) \
-    (rotateAttributeIndices) \
-    (rotateAttributes) \
-    (rotateOrderAttributeIndices) \
-    (rotateOrderAttributes) \
-    (scaleAttributeIndices) \
-    (scaleAttributes) \
-    (targetTransforms) \
-    (transformSourceNodes) \
-    (translateAttributeIndices) \
-    (translateAttributes) \
-    (visibilityAttributeIndices) \
-    (visibilityAttributes) \
-    (visibilitySourceNodes)
+    ((selectability, "al_usdmaya_selectability")) \
+    ((selectability_inherited, "inherited")) \
+    ((selectability_selectable, "selectable")) \
+    ((selectability_unselectable, "unselectable"))
 
 /// \anchor AL_USDMayaSchemasTokens
 ///
@@ -77,21 +72,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \endcode
 ///
 /// The tokens are:
+/// \li <b>lock</b> - Stores the lock state of corresponding Maya objects of the prims
+/// \li <b>lock_inherited</b> - State which makes the Prim inherit its parent's lock state
+/// \li <b>lock_transform</b> - State which makes transform attributes of Maya objects (including children) locked
+/// \li <b>lock_unlocked</b> - State which makes the Prim unlocked regardless of its parent's state
 /// \li <b>mayaNamespace</b> - AL_usd_MayaReference
 /// \li <b>mayaReference</b> - AL_usd_MayaReference
-/// \li <b>rotateAttributeIndices</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>rotateAttributes</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>rotateOrderAttributeIndices</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>rotateOrderAttributes</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>scaleAttributeIndices</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>scaleAttributes</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>targetTransforms</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>transformSourceNodes</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>translateAttributeIndices</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>translateAttributes</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>visibilityAttributeIndices</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>visibilityAttributes</b> - AL_usd_HostDrivenTransformInfo
-/// \li <b>visibilitySourceNodes</b> - AL_usd_HostDrivenTransformInfo
+/// \li <b>selectability</b> - Stores the state of the prims selectability
+/// \li <b>selectability_inherited</b> - State which makes the Prim inherit it's selectability
+/// \li <b>selectability_selectable</b> - State which makes the Prim selectable
+/// \li <b>selectability_unselectable</b> - State which makes the Prim unselectable
 TF_DECLARE_PUBLIC_TOKENS(AL_USDMayaSchemasTokens, AL_USDMAYASCHEMAS_API, AL_USDMAYASCHEMAS_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE

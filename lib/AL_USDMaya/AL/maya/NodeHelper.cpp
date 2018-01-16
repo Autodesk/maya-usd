@@ -24,6 +24,7 @@
 #include "maya/MFnCompoundAttribute.h"
 #include "maya/MFnEnumAttribute.h"
 #include "maya/MFnDependencyNode.h"
+#include "maya/MFnStringData.h"
 #include "maya/MGlobal.h"
 #include "maya/MMatrix.h"
 #include "maya/MVector.h"
@@ -165,6 +166,12 @@ MObject NodeHelper::addEnumAttr(const char* longName, const char* shortName, uin
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addStringAttr(const char* longName, const char* shortName, uint32_t flags, bool forceShow)
 {
+  return addStringAttr(longName, shortName, "", flags, forceShow);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MObject NodeHelper::addStringAttr(const char* longName, const char* shortName, const char* defaultValue, uint32_t flags, bool forceShow)
+{
   if(m_internal)
   {
     Frame& frame = *m_internal->m_frames.begin();
@@ -176,7 +183,9 @@ MObject NodeHelper::addStringAttr(const char* longName, const char* shortName, u
   }
 
   MFnTypedAttribute fn;
-  MObject attribute = fn.create(longName, shortName, MFnData::kString);
+  MFnStringData stringData;
+  MStatus stat;
+  MObject attribute = fn.create(longName, shortName, MFnData::kString, stringData.create(MString(defaultValue), &stat));
   MStatus status = applyAttributeFlags(fn, flags);
   if(!status)
     throw status;
@@ -1498,7 +1507,7 @@ MStatus NodeHelper::outputEulerValue(MDataBlock& dataBlock, const MObject& attri
   }
   else
   {
-    report_set_error(attribute, MFloatVector, status);
+    report_set_error(attribute, MEulerRotation, status);
   }
   return status;
 }
@@ -1532,7 +1541,7 @@ MStatus NodeHelper::outputColourValue(MDataBlock& dataBlock, const MObject& attr
   }
   else
   {
-    report_set_error(attribute, MFloatVector, status);
+    report_set_error(attribute, MColor, status);
   }
   return status;
 }
@@ -1566,7 +1575,7 @@ MStatus NodeHelper::outputTimeValue(MDataBlock& dataBlock, const MObject& attrib
   }
   else
   {
-    report_set_error(attribute, MString, status);
+    report_set_error(attribute, MTime, status);
   }
   return status;
 }
@@ -1583,7 +1592,7 @@ MStatus NodeHelper::outputDataValue(MDataBlock& dataBlock, const MObject& attrib
   }
   else
   {
-    report_set_error(attribute, MString, status);
+    report_set_error(attribute, MPxData, status);
   }
   return status;
 }

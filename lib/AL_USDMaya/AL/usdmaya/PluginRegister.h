@@ -24,6 +24,7 @@
 #include "AL/usdmaya/cmds/DebugCommands.h"
 #include "AL/usdmaya/cmds/LayerCommands.h"
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
+#include "AL/usdmaya/cmds/ProxyShapeSelectCommands.h"
 #include "AL/usdmaya/cmds/UnloadPrim.h"
 #include "AL/usdmaya/fileio/Export.h"
 #include "AL/usdmaya/fileio/ExportTranslator.h"
@@ -35,7 +36,6 @@
 #include "AL/usdmaya/nodes/ProxyShapeUI.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
-#include "AL/usdmaya/nodes/HostDrivenTransforms.h"
 
 #include "maya/MDrawRegistry.h"
 #include "maya/MGlobal.h"
@@ -94,7 +94,6 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_SHAPE_NODE(plugin, AL::usdmaya::nodes::ProxyShape, AL::usdmaya::nodes::ProxyShapeUI, AL::usdmaya::nodes::ProxyDrawOverride);
   AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Transform, AL::usdmaya::nodes::TransformationMatrix);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::Layer);
-  AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::HostDrivenTransforms);
 
   // generate the menu GUI + option boxes
   AL::usdmaya::cmds::constructLayerCommandGuis();
@@ -146,7 +145,6 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::ProxyShape);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Transform);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Layer);
-  AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::HostDrivenTransforms);
   AL_UNREGISTER_DATA(plugin, AL::usdmaya::DrivenTransformsData);
   AL_UNREGISTER_DATA(plugin, AL::usdmaya::StageData);
 

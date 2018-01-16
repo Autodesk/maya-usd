@@ -26,7 +26,7 @@
 #include "maya/MFnTransform.h"
 #include "maya/MFnCamera.h"
 #include "maya/MFileIO.h"
-#include "maya/MItDag.h"
+#include "maya/MItDependencyNodes.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
 #include "AL/maya/DgNodeHelper.h"
@@ -39,6 +39,72 @@ IGNORE_USD_WARNINGS_PUSH
 IGNORE_USD_WARNINGS_POP
 
 
+namespace {
+  // If the given source and destArrayPlug are already connected, returns the index they are
+  // connected at; otherwise, returns the lowest index in the destArray that does not already
+  // have a connection
+  MStatus connectedOrFirstAvailableIndex(
+      MPlug srcPlug,
+      MPlug destArrayPlug,
+      unsigned int& foundIndex,
+      bool& wasConnected)
+  {
+    // Want to find the lowest unconnected (as dest) open logical index... so we add to
+    // a list, then sort
+    MStatus status;
+    foundIndex = 0;
+    wasConnected = false;
+    unsigned int numConnected = destArrayPlug.numConnectedElements(&status);
+    AL_MAYA_CHECK_ERROR(status, MString("failed to get numConnectedElements on ") + destArrayPlug.name());
+    if (numConnected > 0)
+    {
+      std::vector<unsigned int> usedLogicalIndices;
+      usedLogicalIndices.reserve(numConnected);
+      MPlug elemPlug;
+      MPlug elemSrcPlug;
+      for (unsigned int connectedI = 0; connectedI < numConnected; ++connectedI)
+      {
+        elemPlug = destArrayPlug.connectionByPhysicalIndex(connectedI, &status);
+        AL_MAYA_CHECK_ERROR(status, MString("failed to get connection ") + connectedI + " on "+ destArrayPlug.name());
+        elemSrcPlug = elemPlug.source(&status);
+        AL_MAYA_CHECK_ERROR(status, MString("failed to get source for ") + elemPlug.name());
+        if (!elemSrcPlug.isNull())
+        {
+          if (elemSrcPlug == srcPlug)
+          {
+            foundIndex = elemPlug.logicalIndex();
+            wasConnected = true;
+            return status;
+          }
+          usedLogicalIndices.push_back(elemPlug.logicalIndex());
+        }
+      }
+      if (!usedLogicalIndices.empty())
+      {
+        std::sort(usedLogicalIndices.begin(), usedLogicalIndices.end());
+        // after sorting, since we assume no repeated indices, if the number of
+        // elements = value of last element + 1, then we know it's tightly packed...
+        if (usedLogicalIndices.size() - 1 == usedLogicalIndices.back())
+        {
+          foundIndex = usedLogicalIndices.size();
+        }
+        else
+        {
+          // If it's not tightly packed, just iterate through from start until we
+          // find an element whose index != it's value
+          for (foundIndex = 0;
+              foundIndex < usedLogicalIndices.size();
+              ++foundIndex)
+          {
+            if (usedLogicalIndices[foundIndex] != foundIndex) break;
+          }
+        }
+      }
+    }
+    return status;
+  }
+}
+
 namespace AL {
 namespace usdmaya {
 namespace fileio {
@@ -49,6 +115,7 @@ AL_USDMAYA_DEFINE_TRANSLATOR(MayaReference, AL_usd_MayaReference)
 //----------------------------------------------------------------------------------------------------------------------
 const TfToken MayaReferenceLogic::m_namespaceName = TfToken("mayaNamespace");
 const TfToken MayaReferenceLogic::m_referenceName = TfToken("mayaReference");
+const char* const MayaReferenceLogic::m_primNSAttr = "usdPrimNamespace";
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReference::initialize()
@@ -92,7 +159,7 @@ MStatus MayaReference::update(const UsdPrim& prim)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
+MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent, MObject refNode) const
 {
   // Check to see if we have a valid Maya reference attribute
   UsdAttribute mayaReferenceAttribute = prim.GetAttribute(m_referenceName);
@@ -112,88 +179,107 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
   MFnDependencyNode fnParent(parent, &status);
   if(status)
   {
-    MPlug messagePlug = fnParent.findPlug("message", &status);
     if(status)
     {
-      MPlugArray referencePlugs;
-      messagePlug.connectedTo(referencePlugs, false, true);
-      
-      MString result, command, filepath;
-      
-      // Now we can unload and remove all references.
-      for(uint32_t i = 0, n = referencePlugs.length(); i < n; ++i)
+      if (!refNode.isNull())
       {
-        MObject temp = referencePlugs[i].node();
-        if(temp.hasFn(MFn::kReference))
+        if (!refNode.hasFn(MFn::kReference))
         {
-          MFnDependencyNode fnReference(temp);
-          command = MString("referenceQuery -f \"") + fnReference.name() + "\"";
-          MGlobal::executeCommand(command, filepath);
-          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update referenceNode=%s prim=%s execute \"%s\"=%s\n",
-#if MAYA_API_VERSION < 201700
-                                              fnReference.name().asChar(),
-#else
-                                              fnReference.absoluteName().asChar(),
-#endif
-                                              prim.GetPath().GetText(),
-                                              command.asChar(),
-                                              filepath.asChar());
-          
-          if(!rigNamespace.empty())
+          MFnDependencyNode tempMfn(refNode, &status);
+          AL_MAYA_CHECK_ERROR(status, "MayaReferenceLogic::update given refNode was not a dependency node");
+          MGlobal::displayError("MayaReferenceLogic::update given refNode was not a reference: " + tempMfn.name());
+          return MStatus::kFailure;
+        }
+      }
+      else
+      {
+        MPlug messagePlug = fnParent.findPlug("message", &status);
+        MPlugArray referencePlugs;
+        messagePlug.connectedTo(referencePlugs, false, true);
+        for(uint32_t i = 0, n = referencePlugs.length(); i < n; ++i)
+        {
+          MObject temp = referencePlugs[i].node();
+          if(temp.hasFn(MFn::kReference))
           {
-            // check to see if the namespace has changed
-            command = MString("file -q -ns \"") + filepath + "\"";
-            MGlobal::executeCommand(command, result);
-            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s execute \"%s\"=%s\n",
-                                                prim.GetPath().GetText(),
-                                                command.asChar(),
-                                                result.asChar());
-            if(result != rigNamespace.c_str())
-            {
-              command = "file -e -ns \"";
-              command += rigNamespace.c_str();
-              command += "\" \"";
-              command += filepath;
-              command += "\"";
-              TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s execute %s\n",
-                                                  prim.GetPath().GetText(),
-                                                  command.asChar());
-              if(!MGlobal::executeCommand(command))
-              {
-                MGlobal::displayError(MString("Failed to update reference with new namespace: ") + mayaReferencePath);
-              }
-            }
+            refNode = temp;
           }
-          
-          if(prim.IsActive())
+        }
+      }
+
+      MString command, filepath;
+      MFnReference fnReference(refNode);
+      command = MString("referenceQuery -f \"") + fnReference.name() + "\"";
+      MGlobal::executeCommand(command, filepath);
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update referenceNode=%s prim=%s execute \"%s\"=%s\n",
+#if MAYA_API_VERSION < 201700
+                                          fnReference.name().asChar(),
+#else
+                                          fnReference.absoluteName().asChar(),
+#endif
+                                          prim.GetPath().GetText(),
+                                          command.asChar(),
+                                          filepath.asChar());
+
+      if(!rigNamespace.empty())
+      {
+        // check to see if the namespace has changed
+        MString refNamespace = fnReference.associatedNamespace(true);
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s, namespace was: %s\n",
+                                            prim.GetPath().GetText(),
+                                            refNamespace.asChar());
+        if(refNamespace != rigNamespace.c_str())
+        {
+          command = MString("referenceQuery -f \"") + fnReference.name() + "\"";
+          command = "file -e -ns \"";
+          command += rigNamespace.c_str();
+          command += "\" \"";
+          command += filepath;
+          command += "\"";
+          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s execute %s\n",
+                                              prim.GetPath().GetText(),
+                                              command.asChar());
+          if(!MGlobal::executeCommand(command))
           {
-            if(mayaReferencePath.length() != 0 && filepath != mayaReferencePath)
-            {
-              command = "file -loadReference \"";
-              command += fnReference.name();
-              command += "\" \"";
-              command += mayaReferencePath;
-              command += "\"";
-              TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s execute %s\n",
-                                                  prim.GetPath().GetText(),
-                                                  command.asChar());
-              if(!MGlobal::executeCommand(command))
-              {
-                MGlobal::displayError(MString("Failed to update reference with new path: ") + mayaReferencePath);
-              }
-            }
-            else
-            {
-              TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s loadReferenceByNode\n", prim.GetPath().GetText());
-              MString s = MFileIO::loadReferenceByNode(temp, &status);
-            }
+            MGlobal::displayError(MString("Failed to update reference with new namespace. refNS:" + refNamespace + "rigNs: " + rigNamespace.c_str() + ": ") + mayaReferencePath);
+          }
+        }
+      }
+
+      if(prim.IsActive())
+      {
+        if(mayaReferencePath.length() != 0 && filepath != mayaReferencePath)
+        {
+          command = "file -loadReference \"";
+          command += fnReference.name();
+          command += "\" \"";
+          command += mayaReferencePath;
+          command += "\"";
+          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s execute %s\n",
+                                              prim.GetPath().GetText(),
+                                              command.asChar());
+          status = MGlobal::executeCommand(command);
+          AL_MAYA_CHECK_ERROR(status, MString("Failed to update reference with new path: ") + mayaReferencePath);
+        }
+        else
+        {
+          // Check to see if reference is already loaded - if so, don't need to do anything!
+          if (fnReference.isLoaded())
+          {
+            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s already loaded with correct path\n", prim.GetPath().GetText());
           }
           else
           {
-            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s unloadReferenceByNode\n", prim.GetPath().GetText());
-            MString s = MFileIO::unloadReferenceByNode(temp, &status);
+            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s loadReferenceByNode\n", prim.GetPath().GetText());
+            MString s = MFileIO::loadReferenceByNode(refNode, &status);
           }
         }
+      }
+      else
+      {
+        // Can unconditionally unload, as unloading an already unloaded reference
+        // won't do anything, and won't error
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s unloadReferenceByNode\n", prim.GetPath().GetText());
+        MString s = MFileIO::unloadReferenceByNode(refNode, &status);
       }
     }
   }
@@ -205,7 +291,6 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::LoadMayaReference prim=%s\n", prim.GetPath().GetText());
   const TfToken maya_associatedReferenceNode("maya_associatedReferenceNode");
-  MFnDagNode fn;
   MStatus status;
 
   SdfAssetPath mayaReferenceAssetPath;
@@ -230,107 +315,119 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
   std::string rigNamespace;
   if(UsdAttribute rigNamespaceAttribute = prim.GetAttribute(m_namespaceName))
   {
-    rigNamespaceAttribute.Get<std::string>(&rigNamespace);
+    if (!rigNamespaceAttribute.Get<std::string>(&rigNamespace))
+    {
+        MGlobal::displayError(MString("Cannot load reference: Missing namespace on prim ") + MString(prim.GetPath().GetText()));
+        return MS::kFailure;
+    }
   }
 
-  //Create a temp-group which will be used to import the reference contents into.
   MString rigNamespaceM(rigNamespace.c_str(), rigNamespace.size());
-  MString tempNodeForReference = MString("__temp_reference_group_") + rigNamespaceM;
 
-  // Create unloaded reference
+  MFnDagNode parentDag(parent, &status);
+  AL_MAYA_CHECK_ERROR(status, "failed to attach function set to parent transform for reference.");
+
+  MObject referenceObject;
+
+  // Check to see if we already have a reference matching the prim's namespace.
+  for (MItDependencyNodes refIter(MFn::kReference); !refIter.isDone(); refIter.next())
+  {
+    referenceObject = refIter.item();
+    MFnReference tempRefFn(referenceObject);
+    if (!tempRefFn.isFromReferencedFile())
+    {
+      MPlug primNSPlug = tempRefFn.findPlug(MString(m_primNSAttr), true, &status);
+      if (status == MS::kInvalidParameter)
+      {
+        // No prim NS attribute. These aren't the droids we're looking for.
+        continue;
+      }
+
+      // Test the namespace
+      if (primNSPlug.asString() == rigNamespaceM)
+      {
+        // We found one with the same namespace - run an update instead of a load
+
+        // Reconnect the reference node's `associatedNode` attr before
+        // loading it, since the previous connection may be gone.
+        connectReferenceAssociatedNode(parentDag, tempRefFn);
+        return update(prim, parent, referenceObject);
+      }
+    }
+  }
+
+  // Need to create new reference (initially unloaded).
   MStringArray createdNodes;
   MString referenceCommand = MString("file"
                                      " -reference"
                                      " -returnNewNodes"
-                                     " -groupReference"
                                      " -deferReference true"
                                      " -mergeNamespacesOnClash false"
                                      " -ignoreVersion"
-                                     " -options \"v=0;\"") +
-                             MString(" -groupName \"") + tempNodeForReference +
-                             MString("\" -namespace \"") + rigNamespaceM +
-                             MString("\" \"") + mayaReferencePath + MString("\"");
+                                     " -options \"v=0;\""
+                                     " -namespace \"") + rigNamespaceM +
+                                     "\" \"" + mayaReferencePath + "\"";
 
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::LoadMayaReference prim=%s execute \"%s\"\n",
                                       prim.GetPath().GetText(),
                                       referenceCommand.asChar());
   status = MGlobal::executeCommand(referenceCommand, createdNodes);
   AL_MAYA_CHECK_ERROR(status, MString("failed to create maya reference: ") + referenceCommand);
-  if(createdNodes.length() != 2){
-    MGlobal::displayError(MString("Expected to get exactly 2 results from the reference command: ") + referenceCommand);
+
+  if (createdNodes.length() != 1)
+  {
+    MGlobal::displayError(MString("Expected to exactly 1 node result from reference command: ") + referenceCommand);
     return MS::kFailure;
   }
-  // Retrieve created nodes
-  MString refNode = createdNodes[0];
-  tempNodeForReference = createdNodes[1];
 
+  // Retrieve created reference node
+  MString refNode = createdNodes[0];
   MSelectionList selectionList;
   selectionList.add(refNode);
-  selectionList.add(tempNodeForReference);
-
-  MObject referenceObject;
-  MObject tempReferenceGroupObject;
   selectionList.getDependNode(0, referenceObject);
-  selectionList.getDependNode(1, tempReferenceGroupObject);
+
+  // Connect prim transform's message to reference's `associatedNode` attribute,
+  // so that the referenced nodes end up under the prim transform when loaded.
+  MFnReference refDependNode(referenceObject);
+  connectReferenceAssociatedNode(parentDag, refDependNode);
 
   // Now load the reference to properly trigger the kAfterReferenceLoad callback
-  referenceCommand = MString("file -loadReference \"") + refNode + MString("\"");
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::LoadMayaReference prim=%s execute \"%s\"\n",
-                                      prim.GetPath().GetText(),
-                                      referenceCommand.asChar());
-  status = MGlobal::executeCommand(referenceCommand);
+  MFileIO::loadReferenceByNode(referenceObject, &status);
   AL_MAYA_CHECK_ERROR(status, MString("failed to load reference: ") + referenceCommand);
-
-  //Iterate through the group which houses all the items brought in by the reference.
-  MFnDagNode tempReferenceGroupDag(tempReferenceGroupObject);
-  
-  MDagPath path;
-  MFnDagNode parentDag(parent, &status);
-  AL_MAYA_CHECK_ERROR(status, "failed to attach function set to parent transform for reference.");
-  parentDag.getPath(path);
-
-  //Loop through the children reparenting to the correct parent node
-  while(tempReferenceGroupDag.childCount(&status))
-  {
-    MObject child = tempReferenceGroupDag.child(0, &status);
-    AL_MAYA_CHECK_ERROR(status, "Failed to locate child on temp transform node");
-    MDagPath p;
-    MFnDagNode a(child);
-    a.getPath(p);
-    parentDag.addChild(child, MFnDagNode::kNextPos, false);//, MFnDagNode::kNextPos, /*keepExistingParents=*/false);
-    AL_MAYA_CHECK_ERROR(status, "Failed to add child to prim path node");
-  }
-
-  // Connect parent node message to reference node associatedNode
-
-  MFnDependencyNode refDependNode(referenceObject);
 
   {
     UsdAttribute attr = prim.CreateAttribute(maya_associatedReferenceNode, SdfValueTypeNames->String, true);
     attr.Set<std::string>(std::string(refDependNode.name().asChar(), refDependNode.name().length()));
   }
 
-  MDGModifier dgMod;
-  MPlug srcPlug = parentDag.findPlug("message");
-  // This message attribute is used to connect specific nodes that may be associated with this reference (i.e. group,
-  // locator, annotation). Use of this connection indicates that the associated nodes have the same lifespan as the
-  // reference, and will be deleted along with the reference if it is removed.
-  MPlug destArrayPlug = refDependNode.findPlug("associatedNode");
-
-  // make sure we- resize the array before making any connections
-  uint32_t len = destArrayPlug.numElements();
-  destArrayPlug.setNumElements(len + 1);
-  MPlug destPlug = destArrayPlug.elementByLogicalIndex(len);
-  if (!srcPlug.isNull() && !destPlug.isNull())
+  // Add attribute to the reference node to track the namespace the prim was
+  // trying to use, since the actual namespace might be different.
+  MObject primNSAttr = refDependNode.attribute(MString(m_primNSAttr), &status);
+  if (status == MS::kInvalidParameter)
   {
-    MStatus status = dgMod.connect(srcPlug, destPlug);
-    AL_MAYA_CHECK_ERROR(status, MString("failed to connect maya reference plug: ") + status.errorString());
-    status = dgMod.doIt();
-    AL_MAYA_CHECK_ERROR(status, MString("failed to execute connect maya reference plug: ") + status.errorString());
+    // Need to create the attribute
+    MFnTypedAttribute fnAttr;
+    primNSAttr = fnAttr.create(m_primNSAttr, "upns", MFnData::kString);
+    // Temporarily unlock reference node (will be locked by default).
+    refDependNode.setLocked(false);
+    status = refDependNode.addAttribute(primNSAttr);
+    refDependNode.setLocked(true);
+    AL_MAYA_CHECK_ERROR(status, "failed to add usdPrimPath attr to reference node");
+  }
+  else if (status == MS::kFailure)
+  {
+    // Something very wrong. Deal with this later
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("failed to query usdPrimNamespace attribute\n");
   }
 
-  // Delete the temporary node
-  MGlobal::deleteNode(tempReferenceGroupObject);
+  if (status == MS::kSuccess)
+  {
+      MDGModifier attrMod;
+      status = attrMod.newPlugValueString(MPlug(referenceObject, primNSAttr), rigNamespaceM);
+      AL_MAYA_CHECK_ERROR(status, "failed to set usdPrimPath attr on reference node");
+      status = attrMod.doIt();
+      AL_MAYA_CHECK_ERROR(status, "failed to execute reference attr modifier");
+  }
 
   return MS::kSuccess;
 }
@@ -339,9 +436,6 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
 MStatus MayaReferenceLogic::UnloadMayaReference(MObject& parent) const
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::UnloadMayaReference\n");
-  // going to create a temporary transform here
-  MFnTransform fnt;
-  MObject tempT = fnt.create();
 
   MStatus status;
   MFnDependencyNode fnParent(parent, &status);
@@ -352,61 +446,56 @@ MStatus MayaReferenceLogic::UnloadMayaReference(MObject& parent) const
     {
       MPlugArray referencePlugs;
       messagePlug.connectedTo(referencePlugs, false, true);
-      {
-        // One major problem when removing a reference from a scene is that it rather nastily will decide to 
-        // destroy the associated node (which in this case happens to be a custom transform we've created to 
-        // keep track of the prim path. 
-        // To work around this problem, I need to re-parent anything under that transform under a temporary
-        // node in order for me to safely remove the reference. 
-        MFnTransform rigFn(parent);
-        for(uint32_t i = 0; i < rigFn.childCount(); )
-        {
-          MObject c = rigFn.child(i);
-          MFnDependencyNode fnc(c);
-
-          // we need to skip transform nodes (we created them, not the reference, so please don't delete them!)
-          if(fnc.typeId() != nodes::Transform::kTypeId)
-          {
-            status = fnt.addChild(c);
-            AL_MAYA_CHECK_ERROR(status, "failed to add child transform to temp node");
-          }
-          else
-          {
-            ++i;
-          }
-        }
-
-        MPlug newMessagePlug = fnt.findPlug("message");
-
-        // create 2 modifiers, one to disconnect, one to connect.
-        MDGModifier diconnectMod, connectMod;
-        for(uint32_t j = 0; j < referencePlugs.length(); ++j)
-        {
-          diconnectMod.disconnect(messagePlug, referencePlugs[j]);
-          connectMod.connect(newMessagePlug, referencePlugs[j]);
-        }
-        status = diconnectMod.doIt();
-        AL_MAYA_CHECK_ERROR(status, "failed to disconnect plugs from reference node");
-        status = connectMod.doIt();
-        AL_MAYA_CHECK_ERROR(status, "failed to disconnect plugs to temp transform: ");
-      }
       
-      // Now we can unload and remove all references.
+      // Unload the connected references.
       for(uint32_t i = 0; i < referencePlugs.length(); ++i)
       {
         MObject temp = referencePlugs[i].node();
         if(temp.hasFn(MFn::kReference))
         {
-          MString s = MFileIO::unloadReferenceByNode(temp, &status);
-          AL_MAYA_CHECK_ERROR(status, "failed to unload maya reference: ");
-
-          status = MGlobal::executeCommand(MString("file -rr \"") + s + "\"");
-          AL_MAYA_CHECK_ERROR(status, "failed to remove maya reference: ");
+          MFileIO::unloadReferenceByNode(temp, &status);
+          AL_MAYA_CHECK_ERROR(status, "failed to unload maya reference");
         }
       }
     }
   }
   return status;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus MayaReferenceLogic::connectReferenceAssociatedNode(MFnDagNode& dagNode, MFnReference& refNode) const
+{
+  MPlug srcPlug = dagNode.findPlug("message");
+  /*
+     From the Maya docs:
+     > This message attribute is used to connect specific nodes that may be
+     > associated with this reference (i.e. group, locator, annotation). Use of
+     > this connection indicates that the associated nodes have the same
+     > lifespan as the reference, and will be deleted along with the reference
+     > if it is removed.
+   */
+  MStatus result;
+  MPlug destArrayPlug = refNode.findPlug("associatedNode");
+  bool wasConnected = false;
+  unsigned int destIndex = 0;
+  result = connectedOrFirstAvailableIndex(srcPlug, destArrayPlug, destIndex, wasConnected);
+  AL_MAYA_CHECK_ERROR(result, MString("failed to calculate first available dest index for ") + destArrayPlug.name());
+  if (wasConnected)
+  {
+    // If it's already connected, abort, we're done
+    return result;
+  }
+  MPlug destPlug = destArrayPlug.elementByLogicalIndex(destIndex);
+
+  result = MS::kFailure;
+  if (!srcPlug.isNull() && !destPlug.isNull())
+  {
+    MDGModifier dgMod;
+    result = dgMod.connect(srcPlug, destPlug);
+    AL_MAYA_CHECK_ERROR(result, "failed to connect maya reference plug");
+    result = dgMod.doIt();
+  }
+  return result;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
