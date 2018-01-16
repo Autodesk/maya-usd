@@ -361,7 +361,7 @@ def Scope "blabla"
     ASSERT_TRUE(status);
     ASSERT_EQ(MString(LAYER_CONTENTS), serializedPlug.asString(MDGContext::fsNormal, &status));
     ASSERT_TRUE(status);
-    ASSERT_FALSE(anonymousPlug.asBool(&status));
+    ASSERT_FALSE(anonymousPlug.asBool(MDGContext::fsNormal, &status));
     ASSERT_TRUE(status);
   };
 
