@@ -1325,6 +1325,7 @@ void ProxyShape::removeAttributeChangedCallback()
   if(m_attributeChanged != -1)
   {
     MMessage::removeCallback(m_attributeChanged);
+    m_attributeChanged = -1;
   }
 }
 
@@ -1332,7 +1333,7 @@ void ProxyShape::removeAttributeChangedCallback()
 void ProxyShape::addAttributeChangedCallback()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::addAttributeChangedCallback\n");
-  if(m_attributeChanged != -1)
+  if(m_attributeChanged == -1)
   {
     MObject obj = thisMObject();
     m_attributeChanged = MNodeMessage::addAttributeChangedCallback(obj, onAttributeChanged, (void*)this);
