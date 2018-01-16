@@ -116,7 +116,10 @@ void TransformationMatrix::setPrim(const UsdPrim& prim)
     m_xform = UsdGeomXform();
   }
   m_time = UsdTimeCode(UsdTimeCode::Default());
-  m_flags = 0;
+  // Most of these flags are calculated based on reading the usd prim; however, a few are driven
+  // "externally" (ie, from attributes on the controlling transform node), and should NOT be reset
+  // when we're re-initializing
+  m_flags &= kPreservationMask;
   m_scaleTweak = MVector(0, 0, 0);
   m_rotationTweak = MEulerRotation(0, 0, 0);
   m_translationTweak = MVector(0, 0, 0);
@@ -139,9 +142,9 @@ void TransformationMatrix::setPrim(const UsdPrim& prim)
     m_rotatePivotFromUsd = MPoint(0, 0, 0);
     m_rotatePivotTranslationFromUsd = MVector(0, 0, 0);
     m_rotateOrientationFromUsd = MQuaternion(0, 0, 0, 1.0);
-    //if(MFileIO::isOpeningFile())
+    //if(MFileIO::isReadingFile())
     {
-      initialiseToPrim(!MFileIO::isOpeningFile());
+      initialiseToPrim(!MFileIO::isReadingFile());
     }
 
     MPxTransformationMatrix::scaleValue = m_scaleFromUsd;
@@ -1015,12 +1018,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
   }
 
   // if some animation keys are found on the transform ops, assume we have a read only viewer of the transform data.
-  if(m_flags & (
-      kAnimatedScale |
-      kAnimatedRotation |
-      kAnimatedTranslation |
-      kAnimatedMatrix |
-      kAnimatedShear))
+  if(m_flags & kAnimationMask)
   {
     m_flags &= ~kPushToPrimEnabled;
     m_flags |= kReadAnimatedValues;
