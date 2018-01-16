@@ -38,6 +38,27 @@ struct Metadata
 
   /// MetaData token that controls whether a prim will be imported as Maya geometry
   static const TfToken importAsNative;
+
+  /// Name of the property that determines if the prim is selectable or not
+  static const TfToken selectability;
+
+  /// Value used in the selectibility property that tags the prim as selectable
+  static const TfToken selectable;
+
+  /// Value used in the selectibility property that tags the prim as unselectable
+  static const TfToken unselectable;
+
+  /// Name of the property that determines if attributes on corresponding Maya object of the prim are locked or not.
+  static const TfToken locked;
+
+  /// Value used in the lock property that tags transform (including children) attributes are locked
+  static const TfToken lockTransform;
+
+  /// Value used in the lock property that tags prim inherits its parent state
+  static const TfToken lockInherited;
+
+  /// Value used in the lock property that tags prim unlocked regardless of its parent state
+  static const TfToken lockUnlocked;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -23,6 +23,15 @@ const TfToken Metadata::transformType("al_usdmaya_transformType");
 const TfToken Metadata::excludeFromProxyShape("al_usdmaya_excludeFromProxyShape");
 const TfToken Metadata::importAsNative("al_usdmaya_importAsNative");
 
+const TfToken Metadata::selectability("al_usdmaya_selectability");
+const TfToken Metadata::selectable("selectable");
+const TfToken Metadata::unselectable("unselectable");
+
+const TfToken Metadata::locked("al_usdmaya_lock");
+const TfToken Metadata::lockTransform("transform");
+const TfToken Metadata::lockInherited("inherited");
+const TfToken Metadata::lockUnlocked("unlocked");
+
 //----------------------------------------------------------------------------------------------------------------------
 } // usdmaya
 } // AL

@@ -116,7 +116,10 @@ void TransformationMatrix::setPrim(const UsdPrim& prim)
     m_xform = UsdGeomXform();
   }
   m_time = UsdTimeCode(UsdTimeCode::Default());
-  m_flags = 0;
+  // Most of these flags are calculated based on reading the usd prim; however, a few are driven
+  // "externally" (ie, from attributes on the controlling transform node), and should NOT be reset
+  // when we're re-initializing
+  m_flags &= kPreservationMask;
   m_scaleTweak = MVector(0, 0, 0);
   m_rotationTweak = MEulerRotation(0, 0, 0);
   m_translationTweak = MVector(0, 0, 0);
@@ -139,21 +142,21 @@ void TransformationMatrix::setPrim(const UsdPrim& prim)
     m_rotatePivotFromUsd = MPoint(0, 0, 0);
     m_rotatePivotTranslationFromUsd = MVector(0, 0, 0);
     m_rotateOrientationFromUsd = MQuaternion(0, 0, 0, 1.0);
-    //if(MFileIO::isOpeningFile())
+    //if(MFileIO::isReadingFile())
     {
-      initialiseToPrim(!MFileIO::isOpeningFile());
+      initialiseToPrim(!MFileIO::isReadingFile());
     }
-  }
 
-  MPxTransformationMatrix::scaleValue = m_scaleFromUsd;
-  MPxTransformationMatrix::rotationValue = m_rotationFromUsd;
-  MPxTransformationMatrix::translationValue = m_translationFromUsd;
-  MPxTransformationMatrix::shearValue = m_shearFromUsd;
-  MPxTransformationMatrix::scalePivotValue = m_scalePivotFromUsd;
-  MPxTransformationMatrix::scalePivotTranslationValue = m_scalePivotTranslationFromUsd;
-  MPxTransformationMatrix::rotatePivotValue = m_rotatePivotFromUsd;
-  MPxTransformationMatrix::rotatePivotTranslationValue = m_rotatePivotTranslationFromUsd;
-  MPxTransformationMatrix::rotateOrientationValue = m_rotateOrientationFromUsd;
+    MPxTransformationMatrix::scaleValue = m_scaleFromUsd;
+    MPxTransformationMatrix::rotationValue = m_rotationFromUsd;
+    MPxTransformationMatrix::translationValue = m_translationFromUsd;
+    MPxTransformationMatrix::shearValue = m_shearFromUsd;
+    MPxTransformationMatrix::scalePivotValue = m_scalePivotFromUsd;
+    MPxTransformationMatrix::scalePivotTranslationValue = m_scalePivotTranslationFromUsd;
+    MPxTransformationMatrix::rotatePivotValue = m_rotatePivotFromUsd;
+    MPxTransformationMatrix::rotatePivotTranslationValue = m_rotatePivotTranslationFromUsd;
+    MPxTransformationMatrix::rotateOrientationValue = m_rotateOrientationFromUsd;
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -545,14 +548,14 @@ double TransformationMatrix::readDouble(const UsdGeomXformOp& op, UsdTimeCode ti
   default:
     break;
   }
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::readDouble %d\n%s\n", result, op.GetOpName().GetText());
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::readDouble %f\n%s\n", result, op.GetOpName().GetText());
   return result;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::pushDouble(const double value, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushDouble %d\n%s\n", value, op.GetOpName().GetText());
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushDouble %f\n%s\n", value, op.GetOpName().GetText());
   UsdDataType attr_type = getAttributeType(op.GetTypeName());
   switch(attr_type)
   {
@@ -1015,12 +1018,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
   }
 
   // if some animation keys are found on the transform ops, assume we have a read only viewer of the transform data.
-  if(m_flags & (
-      kAnimatedScale |
-      kAnimatedRotation |
-      kAnimatedTranslation |
-      kAnimatedMatrix |
-      kAnimatedShear))
+  if(m_flags & kAnimationMask)
   {
     m_flags &= ~kPushToPrimEnabled;
     m_flags |= kReadAnimatedValues;
@@ -1030,8 +1028,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::updateToTime %d\n", time.GetValue());
-  // if not yet intiaialised, do not execute this code! (It will crash!).
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::updateToTime %f\n", time.GetValue());
+  // if not yet initialized, do not execute this code! (It will crash!).
   if(!m_prim)
   {
     return;
@@ -1139,12 +1137,14 @@ void TransformationMatrix::insertTranslateOp()
 MStatus TransformationMatrix::translateTo(const MVector& vector, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::translateTo %f %f %f\n", vector.x, vector.y, vector.z);
+  if(isTranslateLocked())
+    return MS::kSuccess;
   MStatus status = MPxTransformationMatrix::translateTo(vector, space);
   if(status)
   {
     m_translationTweak = MPxTransformationMatrix::translationValue - m_translationFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     // if the prim does not contain a translation, make sure we insert a transform op for that.
     if(primHasTranslation())
@@ -1165,12 +1165,14 @@ MStatus TransformationMatrix::translateTo(const MVector& vector, MSpace::Space s
 MStatus TransformationMatrix::translateBy(const MVector& vector, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::translateBy %f %f %f\n", vector.x, vector.y, vector.z);
+  if(isTranslateLocked())
+    return MS::kSuccess;
   MStatus status = MPxTransformationMatrix::translateBy(vector, space);
   if(status)
   {
     m_translationTweak = MPxTransformationMatrix::translationValue - m_translationFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     // if the prim does not contain a translation, make sure we insert a transform op for that.
     if(primHasTranslation())
@@ -1213,12 +1215,14 @@ void TransformationMatrix::insertScaleOp()
 MStatus TransformationMatrix::scaleTo(const MVector& scale, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::scaleTo %f %f %f\n", scale.x, scale.y, scale.z);
+  if(isScaleLocked())
+    return MStatus::kSuccess;
   MStatus status = MPxTransformationMatrix::scaleTo(scale, space);
   if(status)
   {
     m_scaleTweak = MPxTransformationMatrix::scaleValue - m_scaleFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasScale())
     {
@@ -1239,12 +1243,14 @@ MStatus TransformationMatrix::scaleTo(const MVector& scale, MSpace::Space space)
 MStatus TransformationMatrix::scaleBy(const MVector& scale, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::scaleBy %f %f %f\n", scale.x, scale.y, scale.z);
+  if(isScaleLocked())
+    return MStatus::kSuccess;
   MStatus status = MPxTransformationMatrix::scaleBy(scale, space);
   if(status)
   {
     m_scaleTweak = MPxTransformationMatrix::scaleValue - m_scaleFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasScale())
     {
@@ -1287,7 +1293,7 @@ MStatus TransformationMatrix::shearTo(const MVector& shear, MSpace::Space space)
   {
     m_scaleTweak = MPxTransformationMatrix::shearValue - m_shearFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasShear())
     {
@@ -1313,7 +1319,7 @@ MStatus TransformationMatrix::shearBy(const MVector& shear, MSpace::Space space)
   {
     m_scaleTweak = MPxTransformationMatrix::shearValue - m_shearFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasShear())
     {
@@ -1362,9 +1368,10 @@ MStatus TransformationMatrix::setScalePivot(const MPoint& sp, MSpace::Space spac
   {
     m_scalePivotTweak = MPxTransformationMatrix::scalePivotValue - m_scalePivotFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
-    if(primHasScalePivot())
+    // Do not insert a scale pivot op if the input prim has a generic pivot.
+    if(primHasScalePivot() || primHasPivot())
     {
     }
     else
@@ -1401,7 +1408,7 @@ MStatus TransformationMatrix::setScalePivotTranslation(const MVector& sp, MSpace
   {
     m_scalePivotTranslationTweak = MPxTransformationMatrix::scalePivotTranslationValue - m_scalePivotTranslationFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasScalePivotTranslate())
     {
@@ -1449,9 +1456,10 @@ MStatus TransformationMatrix::setRotatePivot(const MPoint& pivot, MSpace::Space 
   {
     m_rotatePivotTweak = MPxTransformationMatrix::rotatePivotValue - m_rotatePivotFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
-    if(primHasRotatePivot())
+    // Do not insert a rotate pivot op if the input prim has a generic pivot.
+    if(primHasRotatePivot() || primHasPivot())
     {
     }
     else
@@ -1489,7 +1497,7 @@ MStatus TransformationMatrix::setRotatePivotTranslation(const MVector &vector, M
   {
     m_rotatePivotTranslationTweak = MPxTransformationMatrix::rotatePivotTranslationValue - m_rotatePivotTranslationFromUsd;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasRotatePivotTranslate())
     {
@@ -1555,6 +1563,8 @@ void TransformationMatrix::insertRotateOp()
 MStatus TransformationMatrix::rotateTo(const MQuaternion &q, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::rotateTo %f %f %f %f\n", q.x, q.y, q.z, q.w);
+  if(isRotateLocked())
+    return MS::kSuccess;
   MStatus status = MPxTransformationMatrix::rotateTo(q, space);
   if(status)
   {
@@ -1562,7 +1572,7 @@ MStatus TransformationMatrix::rotateTo(const MQuaternion &q, MSpace::Space space
     m_rotationTweak.y = MPxTransformationMatrix::rotationValue.y - m_rotationFromUsd.y;
     m_rotationTweak.z = MPxTransformationMatrix::rotationValue.z - m_rotationFromUsd.z;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasRotation())
     {
@@ -1581,6 +1591,8 @@ MStatus TransformationMatrix::rotateTo(const MQuaternion &q, MSpace::Space space
 MStatus TransformationMatrix::rotateBy(const MQuaternion &q, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::rotateBy %f %f %f %f\n", q.x, q.y, q.z, q.w);
+  if(isRotateLocked())
+    return MS::kSuccess;
   MStatus status = MPxTransformationMatrix::rotateBy(q, space);
   if(status)
   {
@@ -1588,7 +1600,7 @@ MStatus TransformationMatrix::rotateBy(const MQuaternion &q, MSpace::Space space
     m_rotationTweak.y = MPxTransformationMatrix::rotationValue.y - m_rotationFromUsd.y;
     m_rotationTweak.z = MPxTransformationMatrix::rotationValue.z - m_rotationFromUsd.z;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasRotation())
     {
@@ -1607,6 +1619,8 @@ MStatus TransformationMatrix::rotateBy(const MQuaternion &q, MSpace::Space space
 MStatus TransformationMatrix::rotateTo(const MEulerRotation &e, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::rotateTo %f %f %f\n", e.x, e.y, e.z);
+  if(isRotateLocked())
+    return MS::kSuccess;
   MStatus status = MPxTransformationMatrix::rotateTo(e, space);
   if(status)
   {
@@ -1614,7 +1628,7 @@ MStatus TransformationMatrix::rotateTo(const MEulerRotation &e, MSpace::Space sp
     m_rotationTweak.y = MPxTransformationMatrix::rotationValue.y - m_rotationFromUsd.y;
     m_rotationTweak.z = MPxTransformationMatrix::rotationValue.z - m_rotationFromUsd.z;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasRotation())
     {
@@ -1633,6 +1647,8 @@ MStatus TransformationMatrix::rotateTo(const MEulerRotation &e, MSpace::Space sp
 MStatus TransformationMatrix::rotateBy(const MEulerRotation &e, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::rotateBy %f %f %f\n", e.x, e.y, e.z);
+  if(isRotateLocked())
+    return MS::kSuccess;
   MStatus status = MPxTransformationMatrix::rotateBy(e, space);
   if(status)
   {
@@ -1640,7 +1656,7 @@ MStatus TransformationMatrix::rotateBy(const MEulerRotation &e, MSpace::Space sp
     m_rotationTweak.y = MPxTransformationMatrix::rotationValue.y - m_rotationFromUsd.y;
     m_rotationTweak.z = MPxTransformationMatrix::rotationValue.z - m_rotationFromUsd.z;
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasRotation())
     {
@@ -1689,7 +1705,7 @@ MStatus TransformationMatrix::setRotateOrientation(const MQuaternion &q, MSpace:
   {
     m_rotateOrientationFromUsd = MPxTransformationMatrix::rotateOrientationValue * m_rotateOrientationTweak.inverse();
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasRotateAxes())
     {
@@ -1713,7 +1729,7 @@ MStatus TransformationMatrix::setRotateOrientation(const MEulerRotation& euler, 
   {
     m_rotateOrientationFromUsd = MPxTransformationMatrix::rotateOrientationValue * m_rotateOrientationTweak.inverse();
   }
-  if(pushToPrimEnabled())
+  if(pushToPrimAvailable())
   {
     if(primHasRotateAxes())
     {
@@ -1921,38 +1937,33 @@ void TransformationMatrix::enableReadAnimatedValues(bool enabled)
   // of nothing. This will call my code that will magically construct the transform ops in the right order.
   if(enabled)
   {
-    const MVector nullVec(0, 0, 0);
-    const MVector oneVec(1.0, 1.0, 1.0);
-    const MPoint nullPoint(0, 0, 0);
-    const MQuaternion nullQuat(0, 0, 0, 1.0);
-
     if(!pushPrimToMatrix())
     {
-      if(primHasTranslation() || translation() != nullVec)
-        translateBy(nullVec);
+      if(primHasTranslation() || translation() != MVector::zero)
+        translateBy(MVector::zero);
 
-      if(primHasScale() || scale() != oneVec)
-        scaleBy(oneVec);
+      if(primHasScale() || scale() != MVector::one)
+        scaleBy(MVector::one);
 
-      if(primHasShear() || shear() != nullVec)
-        shearBy(nullVec);
+      if(primHasShear() || shear() != MVector::zero)
+        shearBy(MVector::zero);
 
-      if(primHasScalePivot() || scalePivot() != nullPoint)
+      if(primHasScalePivot() || scalePivot() != MPoint::origin)
         setScalePivot(scalePivot(), MSpace::kTransform, false);
 
-      if(primHasScalePivot() || scalePivot() != nullPoint)
+      if(primHasScalePivot() || scalePivot() != MPoint::origin)
         setScalePivotTranslation(scalePivotTranslation(), MSpace::kTransform);
 
-      if(primHasRotatePivot() || rotatePivot() != nullPoint)
+      if(primHasRotatePivot() || rotatePivot() != MPoint::origin)
         setRotatePivot(rotatePivot(), MSpace::kTransform, false);
 
-      if(primHasRotatePivotTranslate() || rotatePivotTranslation() != nullVec)
+      if(primHasRotatePivotTranslate() || rotatePivotTranslation() != MVector::zero)
         setRotatePivotTranslation(rotatePivotTranslation(), MSpace::kTransform);
 
-      if(primHasRotation() || rotation() != nullQuat)
-        rotateBy(nullQuat);
+      if(primHasRotation() || rotation() != MQuaternion::identity)
+        rotateBy(MQuaternion::identity);
 
-      if(primHasRotateAxes() || rotateOrientation() != nullQuat)
+      if(primHasRotateAxes() || rotateOrientation() != MQuaternion::identity)
         setRotateOrientation(rotateOrientation(), MSpace::kTransform, false);
     }
     else
@@ -1987,38 +1998,33 @@ void TransformationMatrix::enablePushToPrim(bool enabled)
   // of nothing. This will call my code that will magically construct the transform ops in the right order.
   if(enabled && getTimeCode() == UsdTimeCode::Default())
   {
-    const MVector nullVec(0, 0, 0);
-    const MVector oneVec(1.0, 1.0, 1.0);
-    const MPoint nullPoint(0, 0, 0);
-    const MQuaternion nullQuat(0, 0, 0, 1.0);
-
     if(!pushPrimToMatrix())
     {
-      if(primHasTranslation() || translation() != nullVec)
-        translateBy(nullVec);
+      if(primHasTranslation() || translation() != MVector::zero)
+        translateBy(MVector::zero);
 
-      if(primHasScale() || scale() != oneVec)
-        scaleBy(oneVec);
+      if(primHasScale() || scale() != MVector::one)
+        scaleBy(MVector::one);
 
-      if(primHasShear() || shear() != nullVec)
-        shearBy(nullVec);
+      if(primHasShear() || shear() != MVector::zero)
+        shearBy(MVector::zero);
 
-      if(primHasScalePivot() || scalePivot() != nullPoint)
+      if(primHasScalePivot() || scalePivot() != MPoint::origin)
         setScalePivot(scalePivot(), MSpace::kTransform, false);
 
-      if(primHasScalePivotTranslate() || scalePivotTranslation() != nullPoint)
+      if(primHasScalePivotTranslate() || scalePivotTranslation() != MPoint::origin)
         setScalePivotTranslation(scalePivotTranslation(), MSpace::kTransform);
 
-      if(primHasRotatePivot() || rotatePivot() != nullPoint)
+      if(primHasRotatePivot() || rotatePivot() != MPoint::origin)
         setRotatePivot(rotatePivot(), MSpace::kTransform, false);
 
-      if(primHasRotatePivotTranslate() || rotatePivotTranslation() != nullVec)
+      if(primHasRotatePivotTranslate() || rotatePivotTranslation() != MVector::zero)
         setRotatePivotTranslation(rotatePivotTranslation(), MSpace::kTransform);
 
-      if(primHasRotation() || rotation() != nullQuat)
-        rotateBy(nullQuat);
+      if(primHasRotation() || rotation() != MQuaternion::identity)
+        rotateBy(MQuaternion::identity);
 
-      if(primHasRotateAxes() || rotateOrientation() != nullQuat)
+      if(primHasRotateAxes() || rotateOrientation() != MQuaternion::identity)
         setRotateOrientation(rotateOrientation(), MSpace::kTransform, false);
     }
     else

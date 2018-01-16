@@ -35,6 +35,7 @@ list(APPEND AL_usdmaya_headers
         AL/usdmaya/Utils.h
         AL/usdmaya/DebugCodes.h
         AL/usdmaya/Metadata.h
+        AL/usdmaya/SelectabilityDB.h
 )
 
 list(APPEND AL_usdmaya_source
@@ -47,12 +48,14 @@ list(APPEND AL_usdmaya_source
         AL/usdmaya/Utils.cpp
         AL/usdmaya/DebugCodes.cpp
         AL/usdmaya/Metadata.cpp
+        AL/usdmaya/SelectabilityDB.cpp
 )
 
 list(APPEND AL_usdmaya_cmds_headers
         AL/usdmaya/cmds/DebugCommands.h
         AL/usdmaya/cmds/LayerCommands.h
         AL/usdmaya/cmds/ProxyShapeCommands.h
+        AL/usdmaya/cmds/ProxyShapeSelectCommands.h
         AL/usdmaya/cmds/ProxyShapePostLoadProcess.h
         AL/usdmaya/cmds/UnloadPrim.h
 )
@@ -60,6 +63,7 @@ list(APPEND AL_usdmaya_cmds_source
         AL/usdmaya/cmds/DebugCommands.cpp
         AL/usdmaya/cmds/LayerCommands.cpp
         AL/usdmaya/cmds/ProxyShapeCommands.cpp
+        AL/usdmaya/cmds/ProxyShapeSelectCommands.cpp
         AL/usdmaya/cmds/ProxyShapePostLoadProcess.cpp
         AL/usdmaya/cmds/UnloadPrim.cpp
 )
@@ -114,9 +118,8 @@ list(APPEND AL_usdmaya_fileio_translators_source
 )
 
 list(APPEND AL_usdmaya_nodes_headers
-        AL/usdmaya/nodes/HostDrivenTransforms.h
         AL/usdmaya/nodes/Layer.h
-        AL/usdmaya/nodes/LayerVisitor.h
+        AL/usdmaya/nodes/LayerManager.h
         AL/usdmaya/nodes/ProxyDrawOverride.h
         AL/usdmaya/nodes/ProxyShape.h
         AL/usdmaya/nodes/ProxyShapeUI.h
@@ -128,9 +131,8 @@ list(APPEND AL_usdmaya_nodes_proxy_headers
         AL/usdmaya/nodes/proxy/PrimFilter.h
 )
 list(APPEND AL_usdmaya_nodes_source
-        AL/usdmaya/nodes/HostDrivenTransforms.cpp
         AL/usdmaya/nodes/Layer.cpp
-        AL/usdmaya/nodes/LayerVisitor.cpp
+        AL/usdmaya/nodes/LayerManager.cpp
         AL/usdmaya/nodes/ProxyDrawOverride.cpp
         AL/usdmaya/nodes/ProxyShape.cpp
         AL/usdmaya/nodes/ProxyShapeSelection.cpp
@@ -200,6 +202,7 @@ target_link_libraries(${LIBRARY_NAME}
     rt
     ${PYTHON_LIBRARIES}
     ${Boost_PYTHON_LIBRARY}
+    ${Boost_THREAD_LIBRARY}
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
     ${MAYA_OpenMayaFX_LIBRARY}
@@ -235,6 +238,8 @@ add_library(${PYTHON_LIBRARY_NAME}
     SHARED
     AL/usdmaya/module.cpp
     AL/usdmaya/wrapStageCache.cpp
+    AL/usdmaya/nodes/wrapLayerManager.cpp
+    AL/usdmaya/nodes/wrapProxyShape.cpp
 )
 
 set_target_properties(${PYTHON_LIBRARY_NAME}

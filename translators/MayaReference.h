@@ -15,6 +15,7 @@
 //
 #pragma once
 
+#include "maya/MFnReference.h"
 #include "AL/usdmaya/Common.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
@@ -35,11 +36,15 @@ class MayaReferenceLogic
 public:
   MStatus LoadMayaReference(const UsdPrim& prim, MObject& parent) const;
   MStatus UnloadMayaReference(MObject& parent) const;
-  MStatus update(const UsdPrim& prim, MObject parent) const;
+  MStatus update(const UsdPrim& prim, MObject parent, MObject refNode=MObject::kNullObj) const;
 
 private:
+  MStatus connectReferenceAssociatedNode(MFnDagNode& dagNode, MFnReference& refNode) const;
+
   static const TfToken m_namespaceName;
   static const TfToken m_referenceName;
+
+  static const char* const m_primNSAttr;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -56,8 +61,6 @@ public:
   MStatus tearDown(const SdfPath& path) override;
   MStatus update(const UsdPrim& path) override;
   bool supportsUpdate() const override 
-    { return true; }
-  bool supportsInactive() const override
     { return true; }
   
 private:

@@ -31,7 +31,7 @@ TransformIterator::TransformIterator(UsdStageRefPtr stage, const MDagPath& paren
     m_stage(stage),
     m_currentItem(0)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TransformIterator::TransformIterator %s\n", parentPath.fullPathName().asChar());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TransformIterator::TransformIterator parent path: %s\n", parentPath.fullPathName().asChar());
 
   m_primStack.reserve(128);
   UsdPrim psuedoPrim = stage->GetPseudoRoot();
@@ -146,7 +146,7 @@ TransformIterator::StackRef::StackRef(const UsdPrim& prim)
   }
   else
   {
-    std::cout << "null prim" << std::endl;
+    std::cout << "StackRef::StackRef initialized with null prim" << std::endl;
   }
 }
 
