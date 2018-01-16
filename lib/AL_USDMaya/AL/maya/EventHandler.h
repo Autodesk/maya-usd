@@ -46,31 +46,43 @@ enum CallbackType
 typedef void (*defaultEventFunction)(void*);
 
 /// \ingroup events
+/// \brief  A value to represent and event
 typedef uint32_t EventId;
 /// \ingroup events
+/// \brief  A value used to describe the type of an event (e.g. does the event come from maya, usdmaya, or is a custom user defined event?)
 typedef uint32_t EventType;
 /// \ingroup events
+/// \brief  An identifier used to represent a callback. Within the 64bit value 3 pieces of information are encoded:
+/// \li The event id, which can be extracted with the extractEventId() method
+/// \li The event type, which can be extracted with the extractEventType() method
+/// \li The callback id, which can be extracted with the extractCallbackId() method
+/// The 3 fields are used to uniquely define a callback within the event system
 typedef uint64_t CallbackId;
 /// \ingroup events
+/// \brief  an array of event IDs
 typedef std::vector<EventId> EventIds;
 /// \ingroup events
+/// \brief  an array of callback IDs
 typedef std::vector<CallbackId> CallbackIds;
 
 /// \brief  extracts the event ID from a callback ID
+/// \param  id the callback id from which you wish to extract the event id from
 /// \ingroup events
 inline EventId extractEventId(CallbackId id)
 {
   return (kNumEventIdBitMask & id) >> 44;
 }
 
-/// \brief  extracts the unique 48bit callback ID
+/// \brief  extracts the 4bit event type from the calback id
+/// \param  id the callback id from which you wish to extract the event type from
 /// \ingroup events
 inline EventType extractEventType(CallbackId id)
 {
   return (kNumEventTypeMask & id) >> 40;
 }
 
-/// \brief  extracts the unique 48bit callback ID
+/// \brief  extracts the unique 40bit callback ID (which is an instance id of the specified event)
+/// \param  id the callback id from which you wish to extract the callback id from
 /// \ingroup events
 inline CallbackId extractCallbackId(CallbackId id)
 {
@@ -79,6 +91,7 @@ inline CallbackId extractCallbackId(CallbackId id)
 
 /// \brief  constructs a 64bit callback ID from a event ID and unique callback id
 /// \param  event the event id
+/// \param  type the event type
 /// \param  id the callback id
 /// \return the combined callback ID
 /// \ingroup events
@@ -189,9 +202,11 @@ public:
   virtual const char* eventTypeString() const = 0;
 
   /// \brief  override if you need to insert custom event handler
+  /// \param  callbackId the ID of the callback that has been created
   virtual void onCallbackCreated(const CallbackId callbackId) {}
 
   /// \brief  override if you need to remove a custom event handler
+  /// \param  callbackId the ID of the callback that has been destroyed
   virtual void onCallbackDestroyed(const CallbackId callbackId) {}
 };
 
@@ -343,7 +358,7 @@ private:
 typedef std::vector<Callback> Callbacks;
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief
+/// \brief  A class that manages a single event, and all the callbacks registered against that specific event
 /// \ingroup events
 //----------------------------------------------------------------------------------------------------------------------
 class EventDispatcher
@@ -351,6 +366,12 @@ class EventDispatcher
 public:
 
   /// \brief  default ctor
+  /// \param  system the DCC specific backend services for the event system
+  /// \param  name the name of the event
+  /// \param  eventId the unique identifier for the event
+  /// \param  eventType the type of the event (e.g. maya, usdmaya, or custom)
+  /// \param  associatedData a user data pointer to the objct instance that can trigger the event
+  /// \param  parentCallback the parent callback ID that triggers the event
   EventDispatcher(
       EventSystemBinding* system,
       const char* const name,
@@ -368,6 +389,7 @@ public:
     {}
 
   /// \brief  move ctor
+  /// \param  rhs the event dispatcher to move
   EventDispatcher(EventDispatcher&& rhs)
     : m_system(rhs.m_system),
       m_name(std::move(rhs.m_name)),
@@ -379,6 +401,8 @@ public:
     {}
 
   /// \brief  move assignment
+  /// \param  rhs the event dispatcher to move
+  /// \return *this
   EventDispatcher& operator = (EventDispatcher&& rhs)
     {
       m_system = rhs.m_system;
@@ -392,16 +416,21 @@ public:
     }
 
   /// \brief  returns the name of the registered event
+  /// \return the event name
   const std::string& name() const
     { return m_name; }
 
   /// \brief  returns the array of registered callbacks against this event
+  /// \return const reference to the current callbacks on the event
   const Callbacks& callbacks() const
     { return m_callbacks; }
 
   /// \brief  construct an event structure associated with a C function callback
   /// \param  tag a unique identifier for this tag
   /// \param  functionPointer the pointer to the function for this callback
+  /// \param  weight the user specified weight for the callback. Lower weighted callbacks are triggered before weighted ones.
+  /// \param  userData a user defined object associated with the callback
+  /// \return the unique callback ID, or zero if creation failed
   template<typename func_type>
   CallbackId registerCallback(
     const char* const tag,
@@ -413,6 +442,9 @@ public:
   /// \brief  construct an event structure associated with a C function callback
   /// \param  tag a unique identifier for this tag
   /// \param  functionPointer the pointer to the function for this callback
+  /// \param  weight the user specified weight for the callback. Lower weighted callbacks are triggered before weighted ones.
+  /// \param  userData a user defined object associated with the callback
+  /// \return the unique callback ID, or zero if creation failed
   template<typename func_type>
   Callback buildCallback(
     const char* const tag,
@@ -423,16 +455,26 @@ public:
 
   /// \brief  construct an event structure associated with a C function callback
   /// \param  tag a unique identifier for this tag
-  /// \param  functionPointer the pointer to the function for this callback
+  /// \param  commandText the code to execute on the callback
+  /// \param  weight the user specified weight for the callback. Lower weighted callbacks are triggered before weighted ones.
+  /// \param  isPython true if the callback is python, false for MEL
+  /// \return the unique callback ID, or zero if creation failed
   CallbackId registerCallback(
     const char* const tag,
     const char* const commandText,
     uint32_t weight,
     bool isPython);
 
-  /// \brief  construct an event structure associated with a C function callback
+  /// \brief  construct an event structure associated with a C function callback. The new callback will not yet have been
+  ///         registered, so you will need to pass the returned callback object to the registerCallback method to perform
+  ///         the final registration step. This method is provided in order to simplify the doIt/undoIt/redoIt mechanisms
+  ///         within maya.
   /// \param  tag a unique identifier for this tag
-  /// \param  functionPointer the pointer to the function for this callback
+  /// \param  commandText the code to execute on the callback
+  /// \param  weight the user specified weight for the callback. Lower weighted callbacks are triggered before weighted ones.
+  /// \param  isPython true if the callback is python, false for MEL
+  /// \return a structure that contains all of the required callback information, which can be inserted into the event dispatcher
+  ///         at a later time with the registerCallback method.
   Callback buildCallback(
     const char* const tag,
     const char* const commandText,
@@ -442,15 +484,18 @@ public:
   /// \brief  registers a new event with the system (method used when undo/redo is needed).
   ///         The event callback structure passed into this function will be moved into the event handler
   ///         (so the event will become invalidated afterwards). Please do not use this function!!
+  /// \param  info the callback to insert into the dispatcher. Once inserted, the info structure is invalidated
   void registerCallback(Callback& info);
 
   /// \brief  unregister a registered  event
   /// \param  callbackId the event to unregister
+  /// \return true if the callback could be removed, false if the callbackId is unknown.
   bool unregisterCallback(CallbackId callbackId);
 
   /// \brief  unregister a registered  event
   /// \param  callbackId the event to unregister
   /// \param  returnedInfo the returned event info (used to undo insertion of events)
+  /// \return true if the callback could be removed, false if the callbackId is unknown.
   bool unregisterCallback(CallbackId callbackId, Callback& returnedInfo);
 
   /// \brief  returns the event id
@@ -458,13 +503,13 @@ public:
   EventId eventId() const
     { return m_eventId; }
 
-  /// \brief  returns the event id
-  /// \return the event id
+  /// \brief  returns the event type
+  /// \return the event type
   EventType eventType() const
     { return m_eventType; }
 
-  /// \brief  returns the event id
-  /// \return the event id
+  /// \brief  returns the parent callback id that triggers this event
+  /// \return the parent callback id that triggers this event
   CallbackId parentCallbackId() const
     { return m_parentCallback; }
 
@@ -501,6 +546,7 @@ public:
   ///   eventThing.dispatchEvent( ProxyShapeFunctionBinder{ proxy } );
   /// }
   /// \endcode
+  /// \param  binder a function object that binds the call to the underlying function pointer
   template<typename FunctionBinder>
   void triggerEvent(FunctionBinder binder)
   {
@@ -564,18 +610,26 @@ public:
   }
 
   /// \brief  used to sort the events based on their ID
+  /// \param  eventId the event id to compare to
+  /// \return true if the event ID of this event  is lower than the comparison event
   bool operator < (const EventId eventId) const
     { return m_eventId < eventId; }
 
   /// \brief  used to sort the events based on their ID
-  friend bool operator < (const EventId eventId, const EventDispatcher& info)
-    { return eventId < info.m_eventId; }
+  /// \param  eventId the event id to compare to
+  /// \param  dispatcher the event dispatcher to compare the event id too
+  /// \return true if the event ID is lower than the event id within the comparison event
+  friend bool operator < (const EventId eventId, const EventDispatcher& dispatcher)
+    { return eventId < dispatcher.m_eventId; }
 
   /// \brief  returns the data pointer associated with this event
+  /// \return returns the data pointer associated with this event
   const void* associatedData() const
     { return m_associatedData; }
 
-  /// \brief  utility function to locate a callback node
+  /// \brief  utility function to locate a specific callback. If found, a pointer to the callback data will be returned.
+  ///         If not found then nullptr is returned
+  /// \param  id the id
   Callback* findCallback(CallbackId id)
     {
       for(size_t i = 0, n = m_callbacks.size(); i < n; ++i)
@@ -621,26 +675,39 @@ class EventScheduler
   friend class EventIterator;
 public:
 
+  /// \brief  initialises the default event scheduler.
+  /// \param  system the binding to the back end DCC services
   static void initScheduler(EventSystemBinding* system);
+
+  /// \brief  returns the default scheduler
+  /// \return the default scheduler
   static EventScheduler& getScheduler();
+
+  /// \brief  destroys the internal default scheduler
   static void freeScheduler();
 
+  /// \brief  ctor
+  /// \param  system The object that provides a binding to the underlying DCC system utilities
   EventScheduler(EventSystemBinding* system)
     : m_system(system), m_registeredEvents() {}
 
+  /// \brief  dtor
   ~EventScheduler();
 
   /// \brief  returns the event type as a string
-  /// \param  eventType
+  /// \param  eventType the type of event to query the name of
+  /// \return a text string name for the specified event type
   const char* eventTypeString(EventType eventType) const
     { return m_system->eventTypeString(eventType); }
 
   /// \brief  returns the total number of event types in use
+  /// \return the number of event types
   size_t numberOfEventTypes() const
     { return m_system->numberOfEventTypes(); }
 
   /// \brief  register a new event
   /// \param  eventName the name of event to register
+  /// \param  eventType the type of event being registered (e.g. maya, usdmaya, custom, etc)
   /// \param  associatedData an associated data pointer for this event [optional]
   /// \param  parentCallback if this event is triggered by a callback
   EventId registerEvent(const char* eventName, EventType eventType, const void* associatedData = 0, const CallbackId parentCallback = 0);
@@ -666,12 +733,12 @@ public:
   const EventDispatcher* event(EventId eventId) const;
 
   /// \brief  returns a pointer to the requested event id
-  /// \param  eventId the event id
+  /// \param  eventName the name of the event
   /// \return the registered callbacks for the specified event
   EventDispatcher* event(const char* eventName);
 
   /// \brief  returns a pointer to the requested event id
-  /// \param  eventId the event id
+  /// \param  eventName the name of the event
   /// \return the registered callbacks for the specified event
   const EventDispatcher* event(const char* eventName) const;
 
@@ -706,7 +773,7 @@ public:
   }
 
   /// \brief  dispatches an event using the standard void (*func)(void* userData) signature
-  /// \param  eventId the event to dispatch
+  /// \param  eventName the name of the event to dispatch
   /// \return true if the event is valid
   bool triggerEvent(const char* const eventName)
   {
@@ -810,7 +877,7 @@ public:
   /// \brief  register a new event callback (in python or MEL)
   /// \param  eventId the event id
   /// \param  tag the tag for the callback
-  /// \param  commandText
+  /// \param  commandText the code to execute when the callback is triggered
   /// \param  weight the weight for the callback (determines the ordering)
   /// \param  isPython true if the callback is python, false if MEL
   /// \return the callback id for the newly registered callback
@@ -830,7 +897,7 @@ public:
   }
 
   /// \brief  register a new event callback
-  /// \param  eventId the event id
+  /// \param  eventName the name of the even
   /// \param  tag the tag for the callback
   /// \param  functionPointer the function pointer to call
   /// \param  weight the weight for the callback (determines the ordering)
@@ -853,9 +920,9 @@ public:
     }
 
   /// \brief  register a new event callback (in python or MEL)
-  /// \param  eventId the event id
+  /// \param  eventName the name of the even
   /// \param  tag the tag for the callback
-  /// \param  commandText
+  /// \param  commandText the code to execute when the callback is triggered
   /// \param  weight the weight for the callback (determines the ordering)
   /// \param  isPython true if the callback is python, false if MEL
   /// \return the callback id for the newly registered callback
@@ -875,12 +942,20 @@ public:
   }
 
   /// \brief  unregister an event handler
+  /// \param  callbackId the id of the callback to destroy
+  /// \return true if the callback is removed, false if the id was invalid
   bool unregisterCallback(CallbackId callbackId);
 
-  /// \brief  unregister an event handler
+  /// \brief  unregister an event handler, and move the callback information into the info structure provided.
+  /// \param  callbackId the id of the callback to destroy
+  /// \param  info a structure that will store the data removed from the event scheduler.
+  /// \return true if the callback is removed, false if the id was invalid. If false is removed, no modifications to info would have occurred.
   bool unregisterCallback(CallbackId callbackId, Callback& info);
 
-  /// \brief  unregister an event handler
+  /// \brief  Move the callback information from the info structure into the event system. Once this function has been called,
+  ///         the contents of info will be null.
+  /// \param  info the data to move into the event scheduler
+  /// \return the callback id
   CallbackId registerCallback(Callback& info)
   {
     EventDispatcher* eventInfo = event(info.eventId());
@@ -908,12 +983,14 @@ public:
     { return m_registeredEvents; }
 
   /// \brief  find the callback structure for the specified ID
+  /// \param  callbackId the id of the callback to locate
+  /// \return a pointer to the callback information, or nullptr if not found
   Callback* findCallback(CallbackId callbackId);
 
+  /// \brief  A method that allows you to register a custom event handler. This handler can then be used to bind
+  ///         in additional messages from 3rd party systems (e.g. MMessage events, or Usd notifications)
   void registerHandler(EventType type, CustomEventHandler* handler)
-  {
-    m_customHandlers[type] = handler;
-  }
+    { m_customHandlers[type] = handler; }
 
 private:
   EventSystemBinding* m_system;
@@ -923,6 +1000,7 @@ private:
 
 class NodeEvents;
 
+/// the default node event callback type
 typedef void (*node_dispatch_func)(void* userData, NodeEvents* node);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -936,13 +1014,14 @@ class NodeEvents
 public:
 
   /// \brief  ctor
-  /// \param  registrar the event registrar
+  /// \param  scheduler the event scheduler
   NodeEvents(EventScheduler* const scheduler = &EventScheduler::getScheduler())
     : m_scheduler(scheduler)
     {}
 
   /// \brief  trigger the event of the given name
   /// \param  eventName the name of the event to trigger on this node
+  /// \return true if the events triggered correctly
   bool triggerEvent(const char* const eventName)
   {
     auto it = m_events.find(eventName);
@@ -965,7 +1044,8 @@ public:
     }
   }
 
-  /// \brief  returns the event registrar
+  /// \brief  returns the event scheduler associated with this node events structure
+  /// \return the associated event scheduler.
   EventScheduler* scheduler() const
     { return m_scheduler; }
 
@@ -989,6 +1069,7 @@ public:
 
   /// \brief  registers an event on this node
   /// \param  eventName the name of the event to register
+  /// \param  eventType the type of event to register
   /// \param  parentId the callback id of the callback that triggers this event (or null)
   /// \return true if the event could be registered
   bool registerEvent(const char* const eventName, const EventType eventType, const CallbackId parentId = 0)
@@ -1001,10 +1082,9 @@ public:
     return id != 0;
   }
 
-  /// \brief  registers an event on this node
-  /// \param  eventName the name of the event to register
-  /// \param  parentId the callback id of the callback that triggers this event (or null)
-  /// \return true if the event could be registered
+  /// \brief  unregisters an event from this node
+  /// \param  eventName the name of the event to remove
+  /// \return true if the event could be removed
   bool unregisterEvent(const char* const eventName)
   {
     auto it = m_events.find(eventName);

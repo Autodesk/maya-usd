@@ -1,6 +1,6 @@
 /**
  *
-\defgroup  events  USDMaya Event System
+\defgroup  events  Core Event System
 \ingroup  mayautils
 \brief
 The AL_USDMaya event system attempts to provide a more robust event system for Maya that works around some of the
@@ -38,8 +38,8 @@ shot node will be created, and it will be added to the set of nodes to ignore at
 
 If however we registered scriptJob2 first, we'd end up with the set being created first, and then we'd create our shot
 settings node <i>(which would not be part of the set)</i>. Now who knows which is the right way around in this context
-<i>(it is after all an illustrative example!)</i>, but the important take home message is that there can be behavioural
-changes when scriptJobs and MMessages are registered in different orders.
+<i>(it is after all an illustrative example!)</i>, but the important take home message here, is that there can be
+behavioural changes when scriptJobs and MMessages are registered in differing orders.
 
 This is often a problem in most studios, since it's likely that those two scriptJobs <i>(or MMessage events)</i> are
 actually located in different plug-ins, and therefore small bugs can be introduced if the events are accidentally
@@ -707,104 +707,6 @@ for($event in $childEventIds)
   print ("  - owningNode " + `AL_usdmaya_EventLookup -node $event` + "\n");
 }
 \endcode
-
-\section events_MayaEvents Maya Event System
-
-As a direct replacement to MMessage (and related classes) the class AL::maya::MayaEventManager provides an interface
-to register your own C++ callback functions. All of the static methods AL::maya::MayaEventManager::registerCallback take
-the following arguments:
-
-\li func - the C++ function pointer
-\li eventName - the name of the the event (see list below)
-\li tag - a unique a tag string to identify the creator of the callback
-\li weight - the event weight (lowest weights are executed first, highest last, all usdmaya weights are 0x1000)
-\li userData - an optional user data pointer
-
-The following params can be provided as the eventName param, and the corresponding function pointer type they expect
-
-\li "AnimCurveEdited" - AL::maya::MayaCallbackType::kObjArrayFunction
-\li "AnimKeyFrameEdited" - AL::maya::MayaCallbackType::kObjArrayFunction
-\li "AnimKeyframeEditCheck" - AL::maya::MayaCallbackType::kCheckPlugFunction
-\li "PreBakeResults" - AL::maya::MayaCallbackType::kPlugsDGModFunction
-\li "PostBakeResults" - AL::maya::MayaCallbackType::kPlugsDGModFunction
-\li "DisableImplicitControl" - AL::maya::MayaCallbackType::kPlugsDGModFunction
-\li "CameraLayer" - AL::maya::MayaCallbackType::kCameraLayerFunction
-\li "CameraChanged" - AL::maya::MayaCallbackType::kCameraLayerFunction
-\li "Command" - AL::maya::MayaCallbackType::kStringFunction
-\li "CommandOuptut" - AL::maya::MayaCallbackType::kMessageFunction
-\li "CommandOutputFilter" - AL::maya::MayaCallbackType::kMessageFilterFunction
-\li "Proc" - AL::maya::MayaCallbackType::kStringIntBoolIntFunction
-\li "PublishAttr" - AL::maya::MayaCallbackType::kNodeStringBoolFunction
-\li "BoundAttr" - AL::maya::MayaCallbackType::kNodeStringBoolFunction
-\li "ParentAdded" - AL::maya::MayaCallbackType::kParentChildFunction
-\li "ParentRemoved" - AL::maya::MayaCallbackType::kParentChildFunction
-\li "ChildAdded" - AL::maya::MayaCallbackType::kParentChildFunction
-\li "ChildRemoved" - AL::maya::MayaCallbackType::kParentChildFunction
-\li "ChildReordered" - AL::maya::MayaCallbackType::kParentChildFunction
-\li "AllDagChanges" - AL::maya::MayaCallbackType::kMessageParentChildFunction
-\li "InstanceAdded" - AL::maya::MayaCallbackType::kParentChildFunction
-\li "InstanceRemoved" - AL::maya::MayaCallbackType::kParentChildFunction
-\li "TimeChange" - AL::maya::MayaCallbackType::kTimeFunction
-\li "DelayedTimeChange" - AL::maya::MayaCallbackType::kTimeFunction
-\li "DelayedTimeChangeRunup" - AL::maya::MayaCallbackType::kTimeFunction
-\li "ForceUpdate" - AL::maya::MayaCallbackType::kTimeFunction
-\li "NodeAdded" - AL::maya::MayaCallbackType::kNodeFunction
-\li "NodeRemoved" - AL::maya::MayaCallbackType::kNodeFunction
-\li "Connection" - AL::maya::MayaCallbackType::kPlugFunction
-\li "PreConnection" - AL::maya::MayaCallbackType::kPlugFunction
-\li "Callback" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeDuplicate" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterDuplicate" - AL::maya::MayaCallbackType::kBasicFunction
-\li "VertexColor" - AL::maya::MayaCallbackType::kPathObjectPlugColoursFunction
-\li "SceneUpdate" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeNew" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterNew" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeImport" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterImport" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeOpen" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterOpen" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeFileRead" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterFileRead" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterSceneReadAndRecordEdits" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeExport" - AL::maya::MayaCallbackType::kBasicFunction
-\li "ExportStarted" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterExport" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeSave" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterSave" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeCreateReference" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeLoadReferenceAndRecordEdits" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterCreateReference" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterCreateReferenceAndRecordEdits" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeRemoveReference" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterRemoveReference" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeImportReference" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterImportReference" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeExportReference" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterExportReference" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeUnloadReference" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterUnloadReference" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeLoadReference" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeCreateReferenceAndRecordEdits" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterLoadReference" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterLoadReferenceAndRecordEdits" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeSoftwareRender" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterSoftwareRender" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeSoftwareFrameRender" - AL::maya::MayaCallbackType::kBasicFunction
-\li "AfterSoftwareFrameRender" - AL::maya::MayaCallbackType::kBasicFunction
-\li "SoftwareRenderInterrupted" - AL::maya::MayaCallbackType::kBasicFunction
-\li "MayaInitialized" - AL::maya::MayaCallbackType::kBasicFunction
-\li "MayaExiting" - AL::maya::MayaCallbackType::kBasicFunction
-\li "BeforeNewCheck" - AL::maya::MayaCallbackType::kCheckFunction
-\li "BeforeImportCheck" - AL::maya::MayaCallbackType::kCheckFunction
-\li "BeforeOpenCheck" - AL::maya::MayaCallbackType::kCheckFunction
-\li "BeforeExportCheck" - AL::maya::MayaCallbackType::kCheckFunction
-\li "BeforeSaveCheck" - AL::maya::MayaCallbackType::kCheckFunction
-\li "BeforeCreateReferenceCheck" - AL::maya::MayaCallbackType::kCheckFunction
-\li "BeforeLoadReferenceCheck" - AL::maya::MayaCallbackType::kCheckFunction
-\li "BeforePluginLoad" - AL::maya::MayaCallbackType::kStringArrayFunction
-\li "AfterPluginLoad" - AL::maya::MayaCallbackType::kStringArrayFunction
-\li "BeforePluginUnload" - AL::maya::MayaCallbackType::kStringArrayFunction
-\li "AfterPluginUnload" - AL::maya::MayaCallbackType::kStringArrayFunction
 
 
 */

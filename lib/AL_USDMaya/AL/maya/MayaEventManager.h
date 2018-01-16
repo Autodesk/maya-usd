@@ -29,6 +29,7 @@ namespace maya {
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  The MMessage derived class in which the callback is registered
+/// \ingroup mayaevents
 //----------------------------------------------------------------------------------------------------------------------
 enum class MayaMessageType
 {
@@ -52,68 +53,75 @@ enum class MayaMessageType
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  An enum describing which of the standard maya callback functions are to be used
+/// \brief  An enum describing which of the standard maya callback functions are to be used for a given callback. This
+///         is primarily used as a runtime check to ensure the function prototype you are binding to a given event is
+///         of the correct type.
+/// \ingroup mayaevents
 //----------------------------------------------------------------------------------------------------------------------
 enum class MayaCallbackType
 {
-  kBasicFunction, ///< \code typedef void (*MBasicFunction) (void* userData) \endcode
-  kElapsedTimeFunction, ///< \code typedef void (*MElapsedTimeFunction) (float elapsedTime, float lastTime, void* userData); \endcode
-  kCheckFunction, ///< \code typedef void (*MCheckFunction) (bool* retCode, void* userData); \endcode
-  kCheckFileFunction, ///< \code typedef void (*MCheckFileFunction) (bool* retCode, MFileObject& file, void* userData); \endcode
-  kCheckPlugFunction, ///< \code typedef void (*MCheckPlugFunction) (bool* retCode, MPlug& plug, void* userData); \endcode
-  kComponentFunction, ///< \code typedef void (*MComponentFunction) (MUintArray componentIds[], unsigned int count, void* userData); \endcode
-  kNodeFunction, ///< \code typedef void (*MNodeFunction) (MObject& node, void* userData); \endcode
-  kStringFunction, ///< \code typedef void (*MStringFunction) (const MString& str, void* userData); \endcode
-  kTwoStringFunction, ///< \code typedef void (*MTwoStringFunction) (const MString& str1, const MString& str2, void* userData); \endcode
-  kThreeStringFunction, ///< \code typedef void (*MThreeStringFunction) (const MString& str1, const MString& str2, const MString& str2, void* userData); \endcode
-  kStringIntBoolIntFunction, ///< \code typedef void (*MStringIntBoolIntFunction) (const MString& str, unsigned index, bool flag, unsigned type, void* userData); \endcode
-  kStringIndexFunction, ///< \code typedef void (*MStringIndexFunction) (const MString& str, unsigned int index, void* userData); \endcode
-  kStateFunction, ///< \code typedef void (*MStateFunction) (bool state, void* userData); \endcode
-  kTimeFunction, ///< \code typedef void (*MTimeFunction) (MTime& time, void* userData); \endcode
-  kPlugFunction, ///< \code typedef void (*MPlugFunction) (MPlug& srcPlug, MPlug& destPlug, bool made, void* userData); \endcode
-  kNodePlugFunction, ///< \code typedef void (*MNodePlugFunction) (MObject& node, MPlug& plug, void* userData); \endcode
-  kNodeStringFunction, ///< \code typedef void (*MNodeStringFunction) (MObject& node, const MString& str, void* userData); \endcode
-  kNodeStringBoolFunction, ///< \code typedef void (*MNodeStringBoolFunction) (MObject& node, const MString& str, bool flag, void* userData); \endcode
-  kParentChildFunction, ///< \code typedef void (*MParentChildFunction) (MDagPath& child, MDagPath& parent, void* userData); \endcode
-  kModifierFunction, ///< \code typedef void (*MModifierFunction) (MDGModifier& modifier, void* userData); \endcode
-  kStringArrayFunction, ///< \code typedef void (*MStringArrayFunction) (const MStringArray& strs, void* userData); \endcode
-  kNodeModifierFunction, ///< \code typedef void (*MNodeModifierFunction) (MObject& node, MDGModifier& modifier, void* userData); \endcode
-  kObjArrayFunction, ///< \code typedef void (*MObjArray) (MObjectArray& objects, void* userData); \endcode
-  kNodeObjArrayFunction, ///< \code typedef void (*MNodeObjArray) (MObject& node, MObjectArray& objects, void* userData); \endcode
-  kStringNodeFunction, ///< \code typedef void (*MStringNode) (const MString& str, MObject& node, void* userData); \endcode
-  kCameraLayerFunction, ///< \code typedef void (*MCameraLayerFunction) (MObject& cameraSetNode, unsigned multiIndex, bool added, void* userData); \endcode
-  kCameraLayerCameraFunction, ///< \code typedef void (*MCameraLayerCameraFunction) (MObject& cameraSetNode, unsigned multiIndex, MObject& oldCamera, MObject& newCamera, void* userData); \endcode
-  kConnFailFunction, ///< \code typedef void (*MConnFailFunction) (MPlug& srcPlug, MPlug& destPlug, const MString& srcPlugName, const MString& dstPlugName, void* userData); \endcode
-  kPlugsDGModFunction, ///< \code typedef void (*MPlugsDGModFunction) (MPlugArray& plugs, MDGModifier& modifier, void* userData); \endcode
-  kNodeUuidFunction, ///< \code typedef void (*MNodeUuidFunction) (MObject& node, const MUuid& uuid, void* userData); \endcode
-  kCheckNodeUuidFunction, ///< \code typedef Action (*MCheckNodeUuidFunction) (bool doAction, MObject& node, MUuid& uuid, void* userData); \endcode
-  kObjectFileFunction, ///< \code typedef void (*MObjectFileFunction) (const MObject& object, const MFileObject& file, void* userData); \endcode
-  kCheckObjectFileFunction, ///< \code typedef void (*MCheckObjectFileFunction) (bool* retCode, const MObject& referenceNode, MFileObject& file, void* userData); \endcode
-  kRenderTileFunction, ///< \code typedef void (*MRenderTileFunction) (int originX, int originY, int tileMaxX, int tileMaxY, void* userData); \endcode
-  kMessageFunction, ///< \code typedef void (*MMessageFunction) (const MString& message, MCommandMessage::MessageType messageType, void* userData); \endcode
-  kMessageFilterFunction, ///< \code typedef void (*MMessageFilterFunction) (const MString& message, MCommandMessage::MessageType messageType, bool& filterOutput, void* userData); \endcode
-  kMessageParentChildFunction, ///< \code typedef void (*MMessageParentChildFunction) (MDagMessage::DagMessage msgType, MDagPath& child, MDagPath& parent, void* userData); \endcode
-  kPathObjectPlugColoursFunction, ///< \code typedef void (*MPathObjectPlugColorsFunction) (MDagPath& path, MObject& object, MPlug& plug, MColorArray& colors, void* userData); \endcode
-  kWorldMatrixModifiedFunction ///< \code typedef void (*MWorldMatrixModifiedFunction) (MObject& transformNode, MDagMessage::MatrixModifiedFlags& modified, void* userData); \endcode
+  kBasicFunction, ///< \brief describes the maya callback type \b MMessage::MBasicFunction \code typedef void (*MBasicFunction) (void* userData) \endcode
+  kElapsedTimeFunction, ///< \brief describes the maya callback type \b MMessage::MElapsedTimeFunction \code typedef void (*MElapsedTimeFunction) (float elapsedTime, float lastTime, void* userData); \endcode
+  kCheckFunction, ///< \brief describes the maya callback type \b MMessage::MCheckFunction \code typedef void (*MCheckFunction) (bool* retCode, void* userData); \endcode
+  kCheckFileFunction, ///< \brief describes the maya callback type \b MMessage::MCheckFileFunction \code typedef void (*MCheckFileFunction) (bool* retCode, MFileObject& file, void* userData); \endcode
+  kCheckPlugFunction, ///< \brief describes the maya callback type \b MMessage::MCheckPlugFunction \code typedef void (*MCheckPlugFunction) (bool* retCode, MPlug& plug, void* userData); \endcode
+  kComponentFunction, ///< \brief describes the maya callback type \b MMessage::MComponentFunction \code typedef void (*MComponentFunction) (MUintArray componentIds[], unsigned int count, void* userData); \endcode
+  kNodeFunction, ///< \brief describes the maya callback type \b MMessage::MNodeFunction \code typedef void (*MNodeFunction) (MObject& node, void* userData); \endcode
+  kStringFunction, ///< \brief describes the maya callback type \b MMessage::MStringFunction \code typedef void (*MStringFunction) (const MString& str, void* userData); \endcode
+  kTwoStringFunction, ///< \brief describes the maya callback type \b MMessage::MTwoStringFunction \code typedef void (*MTwoStringFunction) (const MString& str1, const MString& str2, void* userData); \endcode
+  kThreeStringFunction, ///< \brief describes the maya callback type \b MMessage::MThreeStringFunction \code typedef void (*MThreeStringFunction) (const MString& str1, const MString& str2, const MString& str2, void* userData); \endcode
+  kStringIntBoolIntFunction, ///< \brief describes the maya callback type \b MMessage::MStringIntBoolIntFunction \code typedef void (*MStringIntBoolIntFunction) (const MString& str, unsigned index, bool flag, unsigned type, void* userData); \endcode
+  kStringIndexFunction, ///< \brief describes the maya callback type \b MMessage::MStringIndexFunction \code typedef void (*MStringIndexFunction) (const MString& str, unsigned int index, void* userData); \endcode
+  kStateFunction, ///< \brief describes the maya callback type \b MMessage::MStateFunction \code typedef void (*MStateFunction) (bool state, void* userData); \endcode
+  kTimeFunction, ///< \brief describes the maya callback type \b MMessage::MTimeFunction \code typedef void (*MTimeFunction) (MTime& time, void* userData); \endcode
+  kPlugFunction, ///< \brief describes the maya callback type \b MMessage::MPlugFunction \code typedef void (*MPlugFunction) (MPlug& srcPlug, MPlug& destPlug, bool made, void* userData); \endcode
+  kNodePlugFunction, ///< \brief describes the maya callback type \b MMessage::MNodePlugFunction \code typedef void (*MNodePlugFunction) (MObject& node, MPlug& plug, void* userData); \endcode
+  kNodeStringFunction, ///< \brief describes the maya callback type \b MMessage::MNodeStringFunction \code typedef void (*MNodeStringFunction) (MObject& node, const MString& str, void* userData); \endcode
+  kNodeStringBoolFunction, ///< \brief describes the maya callback type \b MMessage::MNodeStringBoolFunction \code typedef void (*MNodeStringBoolFunction) (MObject& node, const MString& str, bool flag, void* userData); \endcode
+  kParentChildFunction, ///< \brief describes the maya callback type \b MMessage::MParentChildFunction \code typedef void (*MParentChildFunction) (MDagPath& child, MDagPath& parent, void* userData); \endcode
+  kModifierFunction, ///< \brief describes the maya callback type \b MMessage::MModifierFunction \code typedef void (*MModifierFunction) (MDGModifier& modifier, void* userData); \endcode
+  kStringArrayFunction, ///< \brief describes the maya callback type \b MMessage::MStringArrayFunction \code typedef void (*MStringArrayFunction) (const MStringArray& strs, void* userData); \endcode
+  kNodeModifierFunction, ///< \brief describes the maya callback type \b MMessage::MNodeModifierFunction \code typedef void (*MNodeModifierFunction) (MObject& node, MDGModifier& modifier, void* userData); \endcode
+  kObjArrayFunction, ///< \brief describes the maya callback type \b MMessage::MObjArray \code typedef void (*MObjArray) (MObjectArray& objects, void* userData); \endcode
+  kNodeObjArrayFunction, ///< \brief describes the maya callback type \b MMessage::MNodeObjArray \code typedef void (*MNodeObjArray) (MObject& node, MObjectArray& objects, void* userData); \endcode
+  kStringNodeFunction, ///< \brief describes the maya callback type \b MMessage::MStringNode \code typedef void (*MStringNode) (const MString& str, MObject& node, void* userData); \endcode
+  kCameraLayerFunction, ///< \brief describes the maya callback type \b MMessage::MCameraLayerFunction \code typedef void (*MCameraLayerFunction) (MObject& cameraSetNode, unsigned multiIndex, bool added, void* userData); \endcode
+  kCameraLayerCameraFunction, ///< \brief describes the maya callback type \b MMessage::MCameraLayerCameraFunction \code typedef void (*MCameraLayerCameraFunction) (MObject& cameraSetNode, unsigned multiIndex, MObject& oldCamera, MObject& newCamera, void* userData); \endcode
+  kConnFailFunction, ///< \brief describes the maya callback type \b MMessage::MConnFailFunction \code typedef void (*MConnFailFunction) (MPlug& srcPlug, MPlug& destPlug, const MString& srcPlugName, const MString& dstPlugName, void* userData); \endcode
+  kPlugsDGModFunction, ///< \brief describes the maya callback type \b MMessage::MPlugsDGModFunction \code typedef void (*MPlugsDGModFunction) (MPlugArray& plugs, MDGModifier& modifier, void* userData); \endcode
+  kNodeUuidFunction, ///< \brief describes the maya callback type \b MMessage::MNodeUuidFunction \code typedef void (*MNodeUuidFunction) (MObject& node, const MUuid& uuid, void* userData); \endcode
+  kCheckNodeUuidFunction, ///< \brief describes the maya callback type \b MMessage::MCheckNodeUuidFunction \code typedef Action (*MCheckNodeUuidFunction) (bool doAction, MObject& node, MUuid& uuid, void* userData); \endcode
+  kObjectFileFunction, ///< \brief describes the maya callback type \b MMessage::MObjectFileFunction \code typedef void (*MObjectFileFunction) (const MObject& object, const MFileObject& file, void* userData); \endcode
+  kCheckObjectFileFunction, ///< \brief describes the maya callback type \b MMessage::MCheckObjectFileFunction \code typedef void (*MCheckObjectFileFunction) (bool* retCode, const MObject& referenceNode, MFileObject& file, void* userData); \endcode
+  kRenderTileFunction, ///< \brief describes the maya callback type \b MMessage::MRenderTileFunction \code typedef void (*MRenderTileFunction) (int originX, int originY, int tileMaxX, int tileMaxY, void* userData); \endcode
+  kMessageFunction, ///< \brief describes the maya callback type \b MMessage::MMessageFunction \code typedef void (*MMessageFunction) (const MString& message, MCommandMessage::MessageType messageType, void* userData); \endcode
+  kMessageFilterFunction, ///< \brief describes the maya callback type \b MMessage::MMessageFilterFunction \code typedef void (*MMessageFilterFunction) (const MString& message, MCommandMessage::MessageType messageType, bool& filterOutput, void* userData); \endcode
+  kMessageParentChildFunction, ///< \brief describes the maya callback type \b MMessage::MMessageParentChildFunction \code typedef void (*MMessageParentChildFunction) (MDagMessage::DagMessage msgType, MDagPath& child, MDagPath& parent, void* userData); \endcode
+  kPathObjectPlugColoursFunction, ///< \brief describes the maya callback type \b MMessage::MPathObjectPlugColorsFunction \code typedef void (*MPathObjectPlugColorsFunction) (MDagPath& path, MObject& object, MPlug& plug, MColorArray& colors, void* userData); \endcode
+  kWorldMatrixModifiedFunction ///< \brief describes the maya callback type \b MMessage::MWorldMatrixModifiedFunction \code typedef void (*MWorldMatrixModifiedFunction) (MObject& transformNode, MDagMessage::MatrixModifiedFlags& modified, void* userData); \endcode
 };
 
 //----------------------------------------------------------------------------------------------------------------------
 namespace AnimMessage {
-enum Type
+/// \ingroup mayaevents
+/// \brief  Maya events defined in the \b MAnimMessage class
+enum AnimMessage
 {
-  kAnimCurveEdited,
-  kAnimKeyFrameEdited,
-  kNodeAnimKeyframeEdited, ///< unsupported
-  kAnimKeyframeEditCheck,
-  kPreBakeResults,
-  kPostBakeResults,
-  kDisableImplicitControl
+  kAnimCurveEdited, ///< MAnimMessage::addAnimCurveEditedCallback
+  kAnimKeyFrameEdited, ///< MAnimMessage::addAnimKeyframeEditedCallback
+  kNodeAnimKeyframeEdited, ///< MAnimMessage::addNodeAnimKeyframeEditedCallback - \b unsupported
+  kAnimKeyframeEditCheck, ///< MAnimMessage::addAnimKeyframeEditCheckCallback
+  kPreBakeResults, ///< MAnimMessage::addPreBakeResultsCallback
+  kPostBakeResults, ///< MAnimMessage::addPostBakeResultsCallback
+  kDisableImplicitControl ///< MAnimMessage::addDisableImplicitControlCallback
 };
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 namespace CameraSetMessage {
-enum Type
+/// \ingroup mayaevents
+/// \brief  Maya events defined in the \b MCameraSetMessage class
+enum CameraSetMessage
 {
   kCameraLayer,  ///< MCamerSetMessage::addCameraLayerCallback
   kCameraChanged ///< MCamerSetMessage::addCameraChangedCallback
@@ -122,7 +130,9 @@ enum Type
 
 //----------------------------------------------------------------------------------------------------------------------
 namespace CommandMessage {
-enum Type
+/// \ingroup mayaevents
+/// \brief  Maya events defined in the \b MCommandMessage class
+enum CommandMessage
 {
   kCommand,  ///< MCommandMessage::addCommandCallback
   kCommandOuptut, ///< MCommandMessage::addCommandOutputCallback
@@ -133,7 +143,9 @@ enum Type
 
 //----------------------------------------------------------------------------------------------------------------------
 namespace ConditionMessage {
-enum Type
+/// \ingroup mayaevents
+/// \brief  Maya events defined in the \b MConditionMessage class
+enum ConditionMessage
 {
   kCondition  ///< unsupported
 };
@@ -141,7 +153,9 @@ enum Type
 
 //----------------------------------------------------------------------------------------------------------------------
 namespace ContainerMessage {
-enum Type
+/// \ingroup mayaevents
+/// \brief  Maya events defined in the \b MContainerMessage class
+enum ContainerMessage
 {
   kPublishAttr, ///< MContainerMessage::addPublishAttrCallback
   kBoundAttr ///< MContainerMessage::addBoundAttrCallback
@@ -150,33 +164,37 @@ enum Type
 
 //----------------------------------------------------------------------------------------------------------------------
 namespace DagMessage {
-enum Type
+/// \ingroup mayaevents
+/// \brief  Maya events defined in the \b MDagMessage class
+enum DagMessage
 {
   kParentAdded, ///< MDagMessage::addParentAddedCallback
-  kParentAddedDagPath, ///< MDagMessage::addParentAddedDagPathCallback  - unsupported
+  kParentAddedDagPath, ///< MDagMessage::addParentAddedDagPathCallback  - \b unsupported
   kParentRemoved, ///< MDagMessage::addParentRemovedCallback
-  kParentRemovedDagPath, ///< MDagMessage::addParentRemovedDagPathCallback  - unsupported
+  kParentRemovedDagPath, ///< MDagMessage::addParentRemovedDagPathCallback  - \b unsupported
   kChildAdded, ///< MDagMessage::addChildAddedCallback
-  kChildAddedDagPath, ///< MDagMessage::addChildAddedDagPathCallback  - unsupported
+  kChildAddedDagPath, ///< MDagMessage::addChildAddedDagPathCallback  - \b unsupported
   kChildRemoved, ///< MDagMessage::addChildRemovedCallback
-  kChildRemovedDagPath, ///< MDagMessage::addChildRemovedDagPathCallback  - unsupported
+  kChildRemovedDagPath, ///< MDagMessage::addChildRemovedDagPathCallback  - \b unsupported
   kChildReordered, ///< MDagMessage::addChildReorderedCallback
-  kChildReorderedDagPath, ///< MDagMessage::addChildReorderedDagPathCallback  - unsupported
-  kDag, ///< MDagMessage::addDagCallback  - unsupported
-  kDagDagPath, ///< MDagMessage::addDagDagPathCallback  - unsupported
+  kChildReorderedDagPath, ///< MDagMessage::addChildReorderedDagPathCallback  - \b unsupported
+  kDag, ///< MDagMessage::addDagCallback  - \b unsupported
+  kDagDagPath, ///< MDagMessage::addDagDagPathCallback  - \b unsupported
   kAllDagChanges, ///< MDagMessage::addAllDagChangesCallback
-  kAllDagChangesDagPath, ///< MDagMessage::addAllDagChangesDagPathCallback  - unsupported
+  kAllDagChangesDagPath, ///< MDagMessage::addAllDagChangesDagPathCallback  - \b unsupported
   kInstanceAdded, ///< MDagMessage::addInstanceAddedCallback
-  kInstanceAddedDagPath, ///< MDagMessage::addInstanceAddedDagPathCallback  - unsupported
+  kInstanceAddedDagPath, ///< MDagMessage::addInstanceAddedDagPathCallback  - \b unsupported
   kInstanceRemoved, ///< MDagMessage::addInstanceRemovedCallback
-  kInstanceRemovedDagPath, ///< MDagMessage::addInstanceRemovedDagPathCallback  - unsupported
-  kWorldMatrixModified, ///< MDagMessage::addWorldMatrixModifiedCallback  - unsupported
+  kInstanceRemovedDagPath, ///< MDagMessage::addInstanceRemovedDagPathCallback  - \b unsupported
+  kWorldMatrixModified, ///< MDagMessage::addWorldMatrixModifiedCallback  - \b unsupported
 };
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 namespace DGMessage {
-enum Type
+/// \ingroup mayaevents
+/// \brief  Maya events defined in the \b MDGMessage class
+enum DGMessage
 {
   kTimeChange, ///< DGMessage::addTimeChangeCallback
   kDelayedTimeChange, ///< DGMessage::addDelayedTimeChangeCallback
@@ -186,53 +204,65 @@ enum Type
   kNodeRemoved, ///< DGMessage::addNodeRemovedCallback
   kConnection, ///< DGMessage::addConnectionCallback
   kPreConnection, ///< DGMessage::addPreConnectionCallback
-  kNodeChangeUuidCheck, ///< DGMessage::addNodeChangeUuidCheckCallback - unsupported
+  kNodeChangeUuidCheck, ///< DGMessage::addNodeChangeUuidCheckCallback  - \b unsupported
 };
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 namespace EventMessage {
-enum Type
+/// \ingroup mayaevents
+/// \brief  Maya events defined in the \b MEventMessage class
+enum EventMessage
 {
 };
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 namespace LockMessage {
-enum Type
+/// \ingroup mayaevents
+/// \brief  Maya events defined in the \b MLockMessage class
+enum LockMessage
 {
 };
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 namespace ModelMessage {
-enum Type
+/// \ingroup mayaevents
+/// \brief  Maya events defined in the \b MModelMessage class
+enum ModelMessage
 {
-  kCallback, ///< DGMessage::addCallback
-  kBeforeDuplicate, ///< DGMessage::addBeforeDuplicateCallback
-  kAfterDuplicate, ///< DGMessage::addAfterDuplicateCallback
-  kNodeAddedToModel, ///< DGMessage::addNodeAddedToModelCallback   - upsupported
-  kNodeRemovedFromModel, ///< DGMessage::addNodeRemovedFromModelCallback   - upsupported
+  kCallback, ///< MModelMessage::addCallback
+  kBeforeDuplicate, ///< MModelMessage::addBeforeDuplicateCallback
+  kAfterDuplicate, ///< MModelMessage::addAfterDuplicateCallback
+  kNodeAddedToModel, ///< MModelMessage::addNodeAddedToModelCallback   - \b upsupported
+  kNodeRemovedFromModel, ///< MModelMessage::addNodeRemovedFromModelCallback   - \b upsupported
 };
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 namespace NodeMessage {
-enum Type
+/// \ingroup mayaevents
+/// \brief  Maya events defined in the \b MNodeMessage class
+enum NodeMessage
 {
 };
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 namespace ObjectSetMessage {
-enum Type
+/// \ingroup mayaevents
+/// \brief  Maya events defined in the \b MObjectSetMessage class
+enum ObjectSetMessage
 {
 };
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 namespace PaintMessage {
-enum Type
+/// \ingroup mayaevents
+/// \brief  Maya events defined in the \b MPaintMessage class
+enum PaintMessage
 {
   kVertexColor, ///< MPaintMessage::addVertexColorCallback
 };
@@ -240,77 +270,85 @@ enum Type
 
 //----------------------------------------------------------------------------------------------------------------------
 namespace PolyMessage {
-enum Type
+/// \ingroup mayaevents
+/// \brief  Maya events defined in the \b MPolyMessage class
+enum PolyMessage
 {
 };
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 namespace SceneMessage {
-enum Type
+/// \ingroup mayaevents
+/// \brief  Maya events defined in the \b MSceneMessage class
+enum SceneMessage
 {
-  kSceneUpdate = MSceneMessage::kSceneUpdate,
-  kBeforeNew = MSceneMessage::kBeforeNew,
-  kAfterNew = MSceneMessage::kAfterNew,
-  kBeforeImport = MSceneMessage::kBeforeImport,
-  kAfterImport = MSceneMessage::kAfterImport,
-  kBeforeOpen = MSceneMessage::kBeforeOpen,
-  kAfterOpen = MSceneMessage::kAfterOpen,
-  kBeforeFileRead = MSceneMessage::kBeforeFileRead,
-  kAfterFileRead = MSceneMessage::kAfterFileRead,
-  kAfterSceneReadAndRecordEdits = MSceneMessage::kAfterSceneReadAndRecordEdits,
-  kBeforeExport = MSceneMessage::kBeforeExport,
-  kExportStarted = MSceneMessage::kExportStarted,
-  kAfterExport = MSceneMessage::kAfterExport,
-  kBeforeSave = MSceneMessage::kBeforeSave,
-  kAfterSave = MSceneMessage::kAfterSave,
-  kBeforeCreateReference = MSceneMessage::kBeforeCreateReference,
-  kBeforeLoadReferenceAndRecordEdits = MSceneMessage::kBeforeLoadReferenceAndRecordEdits,
-  kAfterCreateReference = MSceneMessage::kAfterCreateReference,
-  kAfterCreateReferenceAndRecordEdits = MSceneMessage::kAfterCreateReferenceAndRecordEdits,
-  kBeforeRemoveReference = MSceneMessage::kBeforeRemoveReference,
-  kAfterRemoveReference = MSceneMessage::kAfterRemoveReference,
-  kBeforeImportReference = MSceneMessage::kBeforeImportReference,
-  kAfterImportReference = MSceneMessage::kAfterImportReference,
-  kBeforeExportReference = MSceneMessage::kBeforeExportReference,
-  kAfterExportReference = MSceneMessage::kAfterExportReference,
-  kBeforeUnloadReference = MSceneMessage::kBeforeUnloadReference,
-  kAfterUnloadReference = MSceneMessage::kAfterUnloadReference,
-  kBeforeLoadReference = MSceneMessage::kBeforeLoadReference,
-  kBeforeCreateReferenceAndRecordEdits = MSceneMessage::kBeforeCreateReferenceAndRecordEdits,
-  kAfterLoadReference = MSceneMessage::kAfterLoadReference,
-  kAfterLoadReferenceAndRecordEdits = MSceneMessage::kAfterLoadReferenceAndRecordEdits,
-  kBeforeSoftwareRender = MSceneMessage::kBeforeSoftwareRender,
-  kAfterSoftwareRender = MSceneMessage::kAfterSoftwareRender,
-  kBeforeSoftwareFrameRender = MSceneMessage::kBeforeSoftwareFrameRender,
-  kAfterSoftwareFrameRender = MSceneMessage::kAfterSoftwareFrameRender,
-  kSoftwareRenderInterrupted = MSceneMessage::kSoftwareRenderInterrupted,
-  kMayaInitialized = MSceneMessage::kMayaInitialized,
-  kMayaExiting = MSceneMessage::kMayaExiting,
-  kBeforeNewCheck = MSceneMessage::kBeforeNewCheck,
-  kBeforeImportCheck = MSceneMessage::kBeforeImportCheck,
-  kBeforeOpenCheck = MSceneMessage::kBeforeOpenCheck,
-  kBeforeExportCheck = MSceneMessage::kBeforeExportCheck,
-  kBeforeSaveCheck = MSceneMessage::kBeforeSaveCheck,
-  kBeforeCreateReferenceCheck = MSceneMessage::kBeforeCreateReferenceCheck,
-  kBeforeLoadReferenceCheck = MSceneMessage::kBeforeLoadReferenceCheck,
-  kBeforePluginLoad = MSceneMessage::kBeforePluginLoad,
-  kAfterPluginLoad = MSceneMessage::kAfterPluginLoad,
-  kBeforePluginUnload = MSceneMessage::kBeforePluginUnload,
-  kAfterPluginUnload = MSceneMessage::kAfterPluginUnload,
+  kSceneUpdate = MSceneMessage::kSceneUpdate, ///< MSceneMessage::addCallback(MSceneMessage::kSceneUpdate)
+  kBeforeNew = MSceneMessage::kBeforeNew, ///< MSceneMessage::addCallback(MSceneMessage::kBeforeNew)
+  kAfterNew = MSceneMessage::kAfterNew, ///< MSceneMessage::addCallback(MSceneMessage::kAfterNew)
+  kBeforeImport = MSceneMessage::kBeforeImport, ///< MSceneMessage::addCallback(MSceneMessage::kBeforeImport)
+  kAfterImport = MSceneMessage::kAfterImport, ///< MSceneMessage::addCallback(MSceneMessage::kAfterImport)
+  kBeforeOpen = MSceneMessage::kBeforeOpen, ///< MSceneMessage::addCallback(MSceneMessage::kBeforeOpen)
+  kAfterOpen = MSceneMessage::kAfterOpen, ///< MSceneMessage::addCallback(MSceneMessage::kAfterOpen)
+  kBeforeFileRead = MSceneMessage::kBeforeFileRead, ///< MSceneMessage::addCallback(MSceneMessage::kBeforeFileRead)
+  kAfterFileRead = MSceneMessage::kAfterFileRead, ///< MSceneMessage::addCallback(MSceneMessage::kAfterFileRead)
+  kAfterSceneReadAndRecordEdits = MSceneMessage::kAfterSceneReadAndRecordEdits, ///< MSceneMessage::addCallback(MSceneMessage::kAfterSceneReadAndRecordEdits)
+  kBeforeExport = MSceneMessage::kBeforeExport, ///< MSceneMessage::addCallback(MSceneMessage::kBeforeExport)
+  kExportStarted = MSceneMessage::kExportStarted, ///< MSceneMessage::addCallback(MSceneMessage::kExportStarted)
+  kAfterExport = MSceneMessage::kAfterExport, ///< MSceneMessage::addCallback(MSceneMessage::kAfterExport)
+  kBeforeSave = MSceneMessage::kBeforeSave, ///< MSceneMessage::addCallback(MSceneMessage::kBeforeSave)
+  kAfterSave = MSceneMessage::kAfterSave, ///< MSceneMessage::addCallback(MSceneMessage::kAfterSave)
+  kBeforeCreateReference = MSceneMessage::kBeforeCreateReference, ///< MSceneMessage::addCallback(MSceneMessage::kBeforeCreateReference)
+  kBeforeLoadReferenceAndRecordEdits = MSceneMessage::kBeforeLoadReferenceAndRecordEdits, ///< MSceneMessage::addCallback(MSceneMessage::kBeforeLoadReferenceAndRecordEdits)
+  kAfterCreateReference = MSceneMessage::kAfterCreateReference, ///< MSceneMessage::addCallback(MSceneMessage::kAfterCreateReference)
+  kAfterCreateReferenceAndRecordEdits = MSceneMessage::kAfterCreateReferenceAndRecordEdits, ///< MSceneMessage::addCallback(MSceneMessage::kAfterCreateReferenceAndRecordEdits)
+  kBeforeRemoveReference = MSceneMessage::kBeforeRemoveReference, ///< MSceneMessage::addCallback(MSceneMessage::kBeforeRemoveReference)
+  kAfterRemoveReference = MSceneMessage::kAfterRemoveReference, ///< MSceneMessage::addCallback(MSceneMessage::kAfterRemoveReference)
+  kBeforeImportReference = MSceneMessage::kBeforeImportReference, ///< MSceneMessage::addCallback(MSceneMessage::kBeforeImportReference)
+  kAfterImportReference = MSceneMessage::kAfterImportReference, ///< MSceneMessage::addCallback(MSceneMessage::kAfterImportReference)
+  kBeforeExportReference = MSceneMessage::kBeforeExportReference, ///< MSceneMessage::addCallback(MSceneMessage::kBeforeExportReference)
+  kAfterExportReference = MSceneMessage::kAfterExportReference, ///< MSceneMessage::addCallback(MSceneMessage::kAfterExportReference)
+  kBeforeUnloadReference = MSceneMessage::kBeforeUnloadReference, ///< MSceneMessage::addCallback(MSceneMessage::kBeforeUnloadReference)
+  kAfterUnloadReference = MSceneMessage::kAfterUnloadReference, ///< MSceneMessage::addCallback(MSceneMessage::kAfterUnloadReference)
+  kBeforeLoadReference = MSceneMessage::kBeforeLoadReference, ///< MSceneMessage::addCallback(MSceneMessage::kBeforeLoadReference)
+  kBeforeCreateReferenceAndRecordEdits = MSceneMessage::kBeforeCreateReferenceAndRecordEdits, ///< MSceneMessage::addCallback(MSceneMessage::kBeforeCreateReferenceAndRecordEdits)
+  kAfterLoadReference = MSceneMessage::kAfterLoadReference, ///< MSceneMessage::addCallback(MSceneMessage::kAfterLoadReference)
+  kAfterLoadReferenceAndRecordEdits = MSceneMessage::kAfterLoadReferenceAndRecordEdits, ///< MSceneMessage::addCallback(MSceneMessage::kAfterLoadReferenceAndRecordEdits)
+  kBeforeSoftwareRender = MSceneMessage::kBeforeSoftwareRender, ///< MSceneMessage::addCallback(MSceneMessage::kBeforeSoftwareRender)
+  kAfterSoftwareRender = MSceneMessage::kAfterSoftwareRender, ///< MSceneMessage::addCallback(MSceneMessage::kAfterSoftwareRender)
+  kBeforeSoftwareFrameRender = MSceneMessage::kBeforeSoftwareFrameRender, ///< MSceneMessage::addCallback(MSceneMessage::kBeforeSoftwareFrameRender)
+  kAfterSoftwareFrameRender = MSceneMessage::kAfterSoftwareFrameRender, ///< MSceneMessage::addCallback(MSceneMessage::kAfterSoftwareFrameRender)
+  kSoftwareRenderInterrupted = MSceneMessage::kSoftwareRenderInterrupted, ///< MSceneMessage::addCallback(MSceneMessage::kSoftwareRenderInterrupted)
+  kMayaInitialized = MSceneMessage::kMayaInitialized, ///< MSceneMessage::addCallback(MSceneMessage::kMayaInitialized)
+  kMayaExiting = MSceneMessage::kMayaExiting, ///< MSceneMessage::addCallback(MSceneMessage::kMayaExiting)
+  kBeforeNewCheck = MSceneMessage::kBeforeNewCheck, ///< MSceneMessage::addCheckCallback(MSceneMessage::kBeforeNewCheck)
+  kBeforeImportCheck = MSceneMessage::kBeforeImportCheck, ///< MSceneMessage::addCheckCallback(MSceneMessage::kBeforeImportCheck)
+  kBeforeOpenCheck = MSceneMessage::kBeforeOpenCheck, ///< MSceneMessage::addCheckCallback(MSceneMessage::kBeforeOpenCheck)
+  kBeforeExportCheck = MSceneMessage::kBeforeExportCheck, ///< MSceneMessage::addCheckCallback(MSceneMessage::kBeforeExportCheck)
+  kBeforeSaveCheck = MSceneMessage::kBeforeSaveCheck, ///< MSceneMessage::addCheckCallback(MSceneMessage::kBeforeSaveCheck)
+  kBeforeCreateReferenceCheck = MSceneMessage::kBeforeCreateReferenceCheck, ///< MSceneMessage::addCheckCallback(MSceneMessage::kBeforeCreateReferenceCheck)
+  kBeforeLoadReferenceCheck = MSceneMessage::kBeforeLoadReferenceCheck, ///< MSceneMessage::addCheckCallback(MSceneMessage::kBeforeLoadReferenceCheck)
+  kBeforePluginLoad = MSceneMessage::kBeforePluginLoad, ///< MSceneMessage::addStringArrayCallback(MSceneMessage::kBeforePluginLoad)
+  kAfterPluginLoad = MSceneMessage::kAfterPluginLoad, ///< MSceneMessage::addStringArrayCallback(MSceneMessage::kAfterPluginLoad)
+  kBeforePluginUnload = MSceneMessage::kBeforePluginUnload, ///< MSceneMessage::addStringArrayCallback(MSceneMessage::kBeforePluginUnload)
+  kAfterPluginUnload = MSceneMessage::kAfterPluginUnload, ///< MSceneMessage::addStringArrayCallback(MSceneMessage::kAfterPluginUnload)
 };
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 namespace TimerMessage {
-enum Type
+/// \ingroup mayaevents
+/// \brief  Maya events defined in the \b MTimerMessage class
+enum TimerMessage
 {
 };
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 namespace UiMessage {
-enum Type
+/// \ingroup mayaevents
+/// \brief  Maya events defined in the \b MUiMessage class
+enum UiMessage
 {
 };
 }
@@ -319,7 +357,7 @@ enum Type
 /// \brief  An interface that provides the event system with some utilities from the underlying DCC application.
 ///         This class is responsible for keeping track of the number of maya events registered, and creating/destroying
 ///         the MMessage callbacks.
-/// \ingroup events
+/// \ingroup mayaevents
 //----------------------------------------------------------------------------------------------------------------------
 class MayaEventHandler
   : public CustomEventHandler
@@ -376,7 +414,7 @@ public:
   }
 
   /// \brief  queries the maya event information for the specified maya event
-  /// \param  event the event ID
+  /// \param  eventName the event name
   /// \return a pointer to the maya event information (or null for an invalid event)
   const MayaCallbackInfo* getEventInfo(const char* const eventName) const
   {
@@ -389,7 +427,7 @@ public:
   }
 
   /// \brief  queries whether the event has an associated MCallbackId (indicating the callback is active with maya)
-  /// \param  event the event to query
+  /// \param  eventName the event to query
   /// \return true if callback is active with maya, false otherwise
   bool isMayaCallbackRegistered(const char* const eventName) const
   {
@@ -452,6 +490,7 @@ private:
 ///         and debugability across multiple plugins, which is not possible in the standard maya API. Effectively the
 ///         class wraps the core EventScheduler API to provide a little bit of additional type safety on the callback
 ///         type provided.
+/// \ingroup mayaevents
 //----------------------------------------------------------------------------------------------------------------------
 class MayaEventManager
 {
