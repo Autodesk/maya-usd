@@ -35,6 +35,26 @@ public:
   /// \brief  uninitialise the global state
   static void onPluginUnload();
 
+  /// pre save callback
+  static maya::CallbackId preSave()
+    { return m_preSave; }
+
+  /// post save callback
+  static maya::CallbackId postSave()
+    { return m_postSave; }
+
+  /// pre open callback
+  static maya::CallbackId preOpen()
+    { return m_preOpen; }
+
+  /// post open callback
+  static maya::CallbackId postOpen()
+    { return m_postOpen; }
+
+  /// callback used to flush the USD caches after a file new
+  static maya::CallbackId fileNew()
+    { return m_fileNew; }
+
 private:
   static maya::CallbackId m_preSave;  ///< callback prior to saving the scene (so we can store the session layer)
   static maya::CallbackId m_postSave; ///< callback after saving

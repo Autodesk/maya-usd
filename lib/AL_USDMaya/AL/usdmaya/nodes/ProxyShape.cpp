@@ -23,6 +23,7 @@
 #include "AL/maya/CodeTimings.h"
 
 #include "AL/usdmaya/DebugCodes.h"
+#include "AL/usdmaya/Global.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/StageData.h"
@@ -1819,14 +1820,14 @@ void ProxyShape::registerEvents()
   registerEvent("PostSelectionChanged", maya::kUSDMayaEventType);
   registerEvent("PreVariantChanged", maya::kUSDMayaEventType);
   registerEvent("PostVariantChanged", maya::kUSDMayaEventType);
-  registerEvent("PreSerialiseContext", maya::kUSDMayaEventType);
-  registerEvent("PostSerialiseContext", maya::kUSDMayaEventType);
-  registerEvent("PreDeserialiseContext", maya::kUSDMayaEventType);
-  registerEvent("PostDeserialiseContext", maya::kUSDMayaEventType);
-  registerEvent("PreSerialiseTransformRefs", maya::kUSDMayaEventType);
-  registerEvent("PostSerialiseTransformRefs", maya::kUSDMayaEventType);
-  registerEvent("PreDeserialiseTransformRefs", maya::kUSDMayaEventType);
-  registerEvent("PostDeserialiseTransformRefs", maya::kUSDMayaEventType);
+  registerEvent("PreSerialiseContext", maya::kUSDMayaEventType, m_beforeSaveSceneId);
+  registerEvent("PostSerialiseContext", maya::kUSDMayaEventType, m_beforeSaveSceneId);
+  registerEvent("PreDeserialiseContext", maya::kUSDMayaEventType, Global::postOpen());
+  registerEvent("PostDeserialiseContext", maya::kUSDMayaEventType, Global::postOpen());
+  registerEvent("PreSerialiseTransformRefs", maya::kUSDMayaEventType, m_beforeSaveSceneId);
+  registerEvent("PostSerialiseTransformRefs", maya::kUSDMayaEventType, m_beforeSaveSceneId);
+  registerEvent("PreDeserialiseTransformRefs", maya::kUSDMayaEventType, Global::postOpen());
+  registerEvent("PostDeserialiseTransformRefs", maya::kUSDMayaEventType, Global::postOpen());
   registerEvent("EditTargetChanged", maya::kUSDMayaEventType);
 }
 
