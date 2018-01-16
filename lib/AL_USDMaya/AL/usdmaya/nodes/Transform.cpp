@@ -324,15 +324,19 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
     if (data && data->stage)
     {
       MString path = inputStringValue(dataBlock, m_primPath);
-      SdfPath primPath(path.asChar());
-      UsdPrim usdPrim = data->stage->GetPrimAtPath(primPath);
+      SdfPath primPath;
+      UsdPrim usdPrim;
+      if(path.length())
+      {
+        primPath = SdfPath(path.asChar());
+        usdPrim = data->stage->GetPrimAtPath(primPath);
+      }
       transform()->setPrim(usdPrim);
     }
     else
     {
       transform()->setPrim(UsdPrim());
     }
-//    updateTransform(dataBlock);
     return MS::kSuccess;
   }
   else
@@ -341,13 +345,20 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
     MDataBlock dataBlock = forceCache(*(MDGContext *)&context);
     MString path = handle.asString();
     outputStringValue(dataBlock, m_primPath, path);
-    SdfPath primPath(path.asChar());
+
     StageData* data = inputDataValue<StageData>(dataBlock, m_inStageData);
     if (data && data->stage)
     {
-      UsdPrim usdPrim = data->stage->GetPrimAtPath(primPath);
+      SdfPath primPath;
+      UsdPrim usdPrim;
+      if(path.length())
+      {
+        primPath = SdfPath(path.asChar());
+        usdPrim = UsdPrim(data->stage->GetPrimAtPath(primPath));
+      }
       transform()->setPrim(usdPrim);
-      updateTransform(dataBlock);
+      if(usdPrim)
+        updateTransform(dataBlock);
     }
     else
     {
