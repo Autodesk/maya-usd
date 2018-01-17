@@ -25,7 +25,6 @@
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
 
-#include "AL/usdmaya/nodes/Layer.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 
@@ -174,173 +173,6 @@ void huntForNativeNodes(
         postCallBacks.push_back(importCallback);
       }
     }
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-MObject makeLayerNode(SdfLayerHandle layer, LayerToObjectMap& layerToObjectMap, nodes::ProxyShape* proxyShape)
-{
-  LAYER_HANDLE_CHECK(layer);
-  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapePostLoadProcess::makeLayerNode %s\n", layer->GetDisplayName().c_str());
-  MFnDependencyNode fn;
-  MObject layerNode = fn.create(nodes::Layer::kTypeId);
-
-
-  UsdStageRefPtr stage = proxyShape->getUsdStage();
-  MString layerName;
-
-  if(!layer->IsAnonymous())
-  {
-    layerName = nodes::Layer::toMayaNodeName(layer->GetDisplayName());
-  }
-  else if(stage->GetSessionLayer() == layer)
-  {
-    layerName = MString("session_layer_usda");
-  }
-  else
-  {
-    layerName =  AL::usdmaya::convert(layer->GetIdentifier()); // Assuming Anonymous' layer, use identifier because it has no display name.
-  }
-
-  fn.setName(layerName);
-
-  // construct map from sdf layer, to the maya node for that layer
-  layerToObjectMap.insert(std::make_pair(layer, layerNode));
-
-  nodes::Layer* layerObject = (nodes::Layer*)fn.userNode();
-  layerObject->init(proxyShape, layer);
-  return layerNode;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void buildLayerTree(MObject layerNode, const SdfLayerHandle& layer, LayerMap& layerMap, LayerToObjectMap& layersToObjects, MDGModifier& modifier, nodes::ProxyShape* proxyShape)
-{
-  LAYER_HANDLE_CHECK(layer);
-  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapePostLoadProcess::buildLayerTree %s\n", layer->GetDisplayName().c_str());
-  {
-    // first attempt to create any sub layers that are connected to the input layer
-    SdfSubLayerProxy subLayers = layer->GetSubLayerPaths();
-
-    if(!subLayers.empty())
-    {
-      MPlug subLayersPlug(layerNode, nodes::Layer::subLayers());
-      subLayersPlug.setNumElements(subLayers.size());
-      uint32_t currChild = 0;
-
-      // build up nodes for each of the sub layers
-      for(auto it = subLayers.begin(); it != subLayers.end(); ++it, ++currChild)
-      {
-        const std::string& name = *it;
-        SdfLayerHandle subLayerHandle = SdfLayer::Find(name);
-        if(subLayerHandle)
-        {
-          // construct the node
-          MObject newLayer = makeLayerNode(subLayerHandle, layersToObjects, proxyShape);
-
-          // connect to its parent layer
-          MPlug plug(newLayer, nodes::Layer::parentLayer());
-          if(!modifier.connect(subLayersPlug.elementByLogicalIndex(currChild), plug))
-          {
-            std::cerr << "Error: connection not made to sublayer " << subLayerHandle->GetDisplayName() << std::endl;
-          }
-
-          // recurse because sublayers can themselves contain sublayers.
-          buildLayerTree(newLayer, subLayerHandle, layerMap, layersToObjects, modifier, proxyShape);
-        }
-      }
-    }
-  }
-
-  auto iter = layerMap.find(layer);
-
-  // figure out how many child layers we have on this layer
-  MPlug childLayersPlug(layerNode, nodes::Layer::childLayers());
-  uint32_t numElements = childLayersPlug.numElements();
-  uint32_t count = numElements;
-  for(auto it = iter->second.begin(); it != iter->second.end(); ++it)
-  {
-    if(layersToObjects.find(*it) == layersToObjects.end())
-    {
-      ++numElements;
-    }
-  }
-
-  // resize for fun.
-  childLayersPlug.setNumElements(numElements);
-
-  // create the remaining child layers
-  for(auto it = iter->second.begin(); it != iter->second.end(); ++it)
-  {
-    if(layersToObjects.find(*it) == layersToObjects.end())
-    {
-      MObject newLayer = makeLayerNode(*it, layersToObjects, proxyShape);
-      MPlug plug(newLayer, nodes::Layer::parentLayer());
-      modifier.connect(childLayersPlug.elementByLogicalIndex(count++), plug);
-
-      buildLayerTree(newLayer, *it, layerMap, layersToObjects, modifier, proxyShape);
-    }
-
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void constructLayers(MObject proxyNode, nodes::ProxyShape* shape, UsdStageRefPtr stage, bool include_assets = false)
-{
-  if(!stage)
-    return;
-
-  if(!shape)
-    return;
-
-  LayerMap layerMap;
-  SdfLayerHandleVector layers = stage->GetUsedLayers();
-  SdfLayerHandle previous;
-  SdfLayerHandle first;
-  SdfLayerHandleVector layerStack = stage->GetLayerStack(true);
-
-
-  for(auto it = layerStack.begin(); it != layerStack.end(); ++it)
-  {
-    SdfLayerHandle handle = *it;
-    if(handle)
-    {
-      if(!previous)
-      {
-        first = handle;
-      }
-
-      // first see whether previous exists in the map.
-      // If it does add this handle as a child of the previous
-      {
-        auto iter = layerMap.find(previous);
-        if(iter != layerMap.end())
-        {
-          iter->second.insert(handle);
-        }
-      }
-
-      // now build the tree from this layer
-      buildTree(handle, layerMap, layers);
-      previous = handle;
-    }
-  }
-
-  MDGModifier modifier;
-  if(first)
-  {
-    LayerToObjectMap layersToObjects;
-    MObject layerNode = makeLayerNode(first, layersToObjects, shape);
-
-    // connect highest level layer to the proxy shape.
-    modifier.connect(proxyNode, nodes::ProxyShape::layers(), layerNode, nodes::Layer::proxyShape());
-
-    // now prcoess the rest of the nodes.
-    buildLayerTree(layerNode, first, layerMap, layersToObjects, modifier, shape);
-  }
-
-  if(!modifier.doIt())
-  {
-    std::cout << "Failed to connect layers to proxy shape" << std::endl;
   }
 }
 
@@ -559,7 +391,6 @@ MStatus ProxyShapePostLoadProcess::initialise(nodes::ProxyShape* ptrNode)
   if(stage)
   {
     huntForNativeNodes(proxyTransformPath, schemaPrims, callBacks, stage, ptrNode->translatorManufacture());
-    constructLayers(fn.object(), ptrNode, stage);
   }
   else
   {
@@ -578,8 +409,6 @@ MStatus ProxyShapePostLoadProcess::initialise(nodes::ProxyShape* ptrNode)
   // now perform any post-creation fix up
   connectSchemaPrims(ptrNode, schemaPrims);
 
-  // hunt for geometry that can be hidden
-  ptrNode->findExcludedGeometry();
   return MS::kSuccess;
 }
 

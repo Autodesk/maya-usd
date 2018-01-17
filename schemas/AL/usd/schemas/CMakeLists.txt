@@ -20,7 +20,7 @@ configure_file (
     @ONLY
 )
 
-list(APPEND DEPENDANT_LIBRARIES ${PYTHON_LIBRARIES} usd)
+list(APPEND DEPENDANT_LIBRARIES ${PYTHON_LIBRARIES} usd usdGeom)
 
 ####################################################################################################
 # Schemas generation and validation
@@ -29,23 +29,16 @@ list(APPEND DEPENDANT_LIBRARIES ${PYTHON_LIBRARIES} usd)
 if(VALIDATE_GENERATED_SCHEMAS)
 
 # Bake library name, tokens prefix and usd schemas path
-if(NOT USD_SCHEMA_PATH)
-    set(USD_SCHEMA_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../../usd/schema.usda)
-endif()
+set(USD_SCHEMA_PATH usd/schema.usda)
+set(USDGEOM_SCHEMA_PATH usdGeom/schema.usda)
 configure_file (
     ./schema.usda.in
     ./schema.usda
 )
 
-# https://github.com/PixarAnimationStudios/USD/issues/158
-if(NOT USD_CODEGEN_TEMPLATES_PATH)
-    set(USD_CODEGEN_TEMPLATES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../../codegenTemplates)
-endif()
-
 execute_process(
     COMMAND
         usdGenSchema
-            -t ${USD_CODEGEN_TEMPLATES_PATH}
             -v
             ${CMAKE_CURRENT_BINARY_DIR}/schema.usda
             .
@@ -73,8 +66,8 @@ configure_file (
 
 add_library(${SCHEMAS_PACKAGE}
     SHARED
+    ModelAPI.cpp
     MayaReference.cpp
-    HostDrivenTransformInfo.cpp
     tokens.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/ModuleDeps.cpp
 )
@@ -104,8 +97,8 @@ configure_file (
 add_library(${SCHEMAS_PYTHON_PACKAGE}
     SHARED
     ${CMAKE_CURRENT_BINARY_DIR}/module.cpp
+    wrapModelAPI.cpp
     wrapMayaReference.cpp
-    wrapHostDrivenTransformInfo.cpp
     wrapTokens.cpp
 )
 
@@ -155,7 +148,7 @@ if(${listCount} STRGREATER 1)
       string(REPLACE ";" "/" currentPath "${currentPath}")
       file(WRITE
         ${CMAKE_BINARY_DIR}/${currentPath}/__init__.py
-        "try:\n\t__import__('pkg_resources').declare_namespace(__name__)\nexcept:\n\tpass\n"
+        "try:\n\t__import__('pkg_resources').declare_namespace(__name__)\nexcept:\n\tfrom pkgutil import extend_path\n\t__path__ = extend_path(__path__, __name__)\n"
       )
     endforeach(i)
 endif()
@@ -173,8 +166,8 @@ install(
 
 install(
     FILES
+        ModelAPI.h
         MayaReference.h
-        HostDrivenTransformInfo.h
         api.h
         tokens.h
     DESTINATION

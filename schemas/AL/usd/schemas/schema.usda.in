@@ -4,7 +4,8 @@
         usdGenSchema.
     """
     subLayers = [
-        @@USD_SCHEMA_PATH@@
+        @@USD_SCHEMA_PATH@@,
+        @@USDGEOM_SCHEMA_PATH@@,
     ]
 ) 
 
@@ -14,14 +15,65 @@ over "GLOBAL" (
         string libraryPath        = "."
         string libraryPrefix      = "AL_usd_"#This AL_ is here to get around that the Jinja template doesn't generate a template that supports namespaces. If we had a AL namespace then I could remove this AL.
         string tokensPrefix       = "@SCHEMAS_TOKENS_PREFIX@"
+        dictionary libraryTokens = {
+            dictionary selectability = {
+                string value = "al_usdmaya_selectability"
+                string doc = """Stores the state of the prims selectability"""
+            }
+            dictionary selectability_unselectable = {
+                string value = "unselectable"
+                string doc = """State which makes the Prim unselectable"""
+            }
+            dictionary selectability_selectable = {
+                string value = "selectable"
+                string doc = """State which makes the Prim selectable"""
+            }
+            dictionary selectability_inherited = {
+                string value = "inherited"
+                string doc = """State which makes the Prim inherit it's selectability"""
+            }
+            dictionary lock = {
+                string value = "al_usdmaya_lock"
+                string doc = """Stores the lock state of corresponding Maya objects of the prims"""
+            }
+            dictionary lock_transform = {
+                string value = "transform"
+                string doc = """State which makes transform attributes of Maya objects (including children) locked"""
+            }
+            dictionary lock_inherited = {
+                string value = "inherited"
+                string doc = """State which makes the Prim inherit its parent's lock state"""
+            }
+            dictionary lock_unlocked = {
+                string value = "unlocked"
+                string doc = """State which makes the Prim unlocked regardless of its parent's state"""
+            }
+        }
     }
-) {
+) {}
+###################################################################################################
+
+class "ALModelAPI"
+(
+doc = "Data used to import a maya reference."
+  inherits = </ModelAPI>
+  customData = {
+        string className = "ModelAPI"
+        string fileName = "ModelAPI"
+        string extraIncludes = """
+#include "./tokens.h"
+"""
+      }
+)
+{
+
 }
+
 ###################################################################################################
 
 class ALMayaReference "ALMayaReference"(
   doc = "Data used to import a maya reference."
-  inherits = </Typed>
+  inherits = </Xformable>
   customData = {
         string className = "MayaReference"
         string fileName = "MayaReference"
@@ -36,33 +88,3 @@ class ALMayaReference "ALMayaReference"(
   )
 }
 
-###################################################################################################
-
-class ALHostDrivenTransformInfo "ALHostDrivenTransformInfo" (
-  doc = "Connection info for transforms"
-  inherits = </Typed>
-  customData = {
-    string className = "HostDrivenTransformInfo"
-    string fileName = "HostDrivenTransformInfo"
-  }
-)
-{
-  rel targetTransforms;
-  uniform string[] transformSourceNodes;
-
-  uniform string[] scaleAttributes;
-  uniform int[]    scaleAttributeIndices;
-
-  uniform string[] rotateAttributes;
-  uniform int[]    rotateAttributeIndices;
-
-  uniform string[] translateAttributes;
-  uniform int[]    translateAttributeIndices;
-
-  uniform string[] rotateOrderAttributes;
-  uniform int[]    rotateOrderAttributeIndices;
-
-  uniform string[] visibilitySourceNodes;
-  uniform string[] visibilityAttributes;
-  uniform int[]    visibilityAttributeIndices;
-}

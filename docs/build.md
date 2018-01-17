@@ -2,13 +2,13 @@
 
 ## Build Requirements
 - This project is buildable, for now only on Linux
-- USD-0.8.0 built with ptex-2.0.40 (<2.0.41)
+- USD-0.8.1 built with ptex-2.0.40 (<2.0.41)
 - Qt-5.6.1
 - [google test framework](https://github.com/google/googletest) (>1.8.0) to build and run the tests
 - It has been tested  on CentOS 6.6
 
 ## Supported Maya Versions 
-+ maya-2016
++ maya-2016 extension 2
   - have done limited testing (via docker). Selection probably broken. Does it work in VP1?
   - USD built with PXR_MAYA_TBB_BUG_WORKAROUND turned on might be needed if deadlocks happen
 + maya-2017

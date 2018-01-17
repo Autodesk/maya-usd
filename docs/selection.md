@@ -10,7 +10,21 @@ The commands support Undo/Redo.
 
 @todo: document new Selection API introduced in commit 3a6d7a664a72cb57abbcf6f1f4fa781d4167e9c9, how to use it, how to switch etc.. 
 
+## Selectability
+Selectability can be configured on a per-prim basis by setting the selectability metadata via AL.usd.schemas.ModelAPI schema. By default everything is selectable, and only the prims tagged as 'unselectable' and their children won't be selectable.
 
+```
+from pxr import Usd
+from AL.usd import schemas
+
+stage = Usd.Stage.CreateInMemory()
+prim = stage.DefinePrim("/DontSelectMe")
+
+alUsdModelShot = schemas.ModelAPI(prim)
+alUsdModelShot.SetSelectability(schemas.Tokens.selectability_unselectable)
+```
+
+## Commands
 ### AL_usdmaya_InternalProxyShapeSelect Overview
 
 This command is a simpler version of the AL_usdmaya_ProxyShapeSelect command. 

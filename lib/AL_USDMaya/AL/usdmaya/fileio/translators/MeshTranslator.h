@@ -61,11 +61,19 @@ public:
 
   /// \brief  exports a mesh to the USD file and returns the created prim
   /// \param  stage  the stage in which to create the prim
-  /// \param  mayaPath  the path to the maya curve to export
+  /// \param  mayaPath  the path to the maya mesh to export
   /// \param  usdPath  the usd path where the prim should be created
   /// \param  params  the export options
   /// \return the newly created usd prim
   static UsdPrim exportObject(UsdStageRefPtr stage, MDagPath mayaPath, const SdfPath& usdPath, const ExporterParams& params);
+
+  /// \brief  exports only UV of a mesh to the USD file and returns the overridden prim
+  /// \param  stage  the stage in which to override the prim
+  /// \param  mayaPath  the path to the maya curve to export
+  /// \param  usdPath  the usd path where the prim should be created
+  /// \param  params  the export options
+  /// \return the overridden usd prim
+  static UsdPrim exportUV(UsdStageRefPtr stage, MDagPath mayaPath, const SdfPath& usdPath, const ExporterParams& params);
 
   /// \brief  import the dynamic attribute import that we are expected to see some extra subdiv animal logic only data
   ///         exported with our meshes.

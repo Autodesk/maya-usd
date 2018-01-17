@@ -17,6 +17,7 @@
 #include "AL/usdmaya/TransformOperation.h"
 
 #include "maya/MPxTransformationMatrix.h"
+#include "maya/MPxTransform.h"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xform.h"
@@ -42,6 +43,7 @@ class TransformationMatrix
   UsdTimeCode m_time;
   std::vector<UsdGeomXformOp> m_xformops;
   std::vector<TransformOperation> m_orderedOps;
+  MObject m_transformNode;
 
   // tweak values. These are applied on top of the USD transform values to produce the final result.
   MVector m_scaleTweak;
@@ -111,7 +113,12 @@ class TransformationMatrix
     kPushPrimToMatrix = 1 << 30,
     kReadAnimatedValues = 1 << 31,
 
-    kAnimationMask = kAnimatedShear | kAnimatedScale | kAnimatedRotation | kAnimatedTranslation | kAnimatedMatrix
+    kAnimationMask = kAnimatedShear | kAnimatedScale | kAnimatedRotation | kAnimatedTranslation | kAnimatedMatrix,
+
+    // Most of these flags are calculated based on reading the usd prim; however, a few are driven
+    // "externally" (ie, from attributes on the controlling transform node), and should NOT be reset
+    // when we're re-initializing (ie, in setPrim)
+    kPreservationMask = kPushToPrimEnabled | kReadAnimatedValues
   };
   uint32_t m_flags = 0;
 
@@ -130,6 +137,44 @@ class TransformationMatrix
   bool internal_pushMatrix(const MMatrix& result, UsdGeomXformOp& op) { return pushMatrix(result, op, getTimeCode()); }
 
 public:
+
+  /// \brief  sets the MObject for the transform
+  /// \param  object the MObject for the custom transform node
+  void setMObject(const MObject object)
+    { m_transformNode = object; }
+
+  /// \brief  checks to see whether the transform attribute is locked
+  /// \return true if the translate attribute is locked
+  bool isTranslateLocked()
+    {
+      MPlug plug(m_transformNode, MPxTransform::translate);
+      return plug.isLocked() ||
+             plug.child(0).isLocked() ||
+             plug.child(1).isLocked() ||
+             plug.child(2).isLocked();
+    }
+
+  /// \brief  checks to see whether the rotate attribute is locked
+  /// \return true if the rotate attribute is locked
+  bool isRotateLocked()
+    {
+      MPlug plug(m_transformNode, MPxTransform::rotate);
+      return plug.isLocked() ||
+             plug.child(0).isLocked() ||
+             plug.child(1).isLocked() ||
+             plug.child(2).isLocked();
+    }
+
+  /// \brief  checks to see whether the scale attribute is locked
+  /// \return true if the scale attribute is locked
+  bool isScaleLocked()
+    {
+      MPlug plug(m_transformNode, MPxTransform::scale);
+      return plug.isLocked() ||
+             plug.child(0).isLocked() ||
+             plug.child(1).isLocked() ||
+             plug.child(2).isLocked();
+    }
 
   /// \brief  helper method. Reads a vector from the transform op specified at the requested timecode
   /// \param  result the returned result
@@ -338,13 +383,17 @@ public:
   inline bool readAnimatedValues() const
     { return (kReadAnimatedValues & m_flags) != 0; }
 
-  /// \brief  Is this transform writing back onto the USD prim
+  /// \brief  Is this transform set to write back onto the USD prim
   inline bool pushToPrimEnabled() const
     { return (kPushToPrimEnabled & m_flags) != 0; }
 
   /// \brief  Is this prim writing back to a matrix (true) or to components (false)
   inline bool pushPrimToMatrix() const
     { return (kPushPrimToMatrix & m_flags) != 0; }
+
+  /// \brief  Is this transform set to write back onto the USD prim, and is it currently possible?
+  inline bool pushToPrimAvailable() const
+    { return pushToPrimEnabled() && m_prim.IsValid(); }
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name  Convert To-From USD primitive

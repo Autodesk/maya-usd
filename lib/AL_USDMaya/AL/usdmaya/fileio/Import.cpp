@@ -185,7 +185,6 @@ void Import::doImport()
       }
     }
 
-    stage->Close();
     m_success = true;
   }
   else

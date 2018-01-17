@@ -6,6 +6,10 @@
 AL_USD Maya has it's own Transform Node defined [here](https://github.com/AnimalLogic/AL_USDMaya/blob/master/lib/AL_USDMaya/AL/usdmaya/nodes/Transform.h) which allows USD to drive Maya Transforms and vice versa.
 This inherits from Maya's MPxTransform node and passes every attribute change to USD, then delegates to the base class functionality to behave like a normal transform.
 This allows us to drive Maya Transforms from USD, and vice-versa (there is a "pushToPrim" boolean attribute which will make maya the "driver" of the Transform Attribute. 
+
+> As USD's transform stack representation is more flexible than maya's one, the current implementation of transformations has some
+> limitations. A more robust implementation is needed to encompass as much use cases as possible and reject non translatable cases.
+> @elron79 has submitted an interesting [solution](https://github.com/PixarAnimationStudios/USD/pull/287) for that.
  
 ### Implementing your own nodes
 
