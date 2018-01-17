@@ -26,6 +26,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+/// \brief  operator to compare MPlugs with < operator
 struct compare_MPlug
 {
   bool operator () (const MPlug& a, const MPlug& b) const
@@ -34,6 +35,7 @@ struct compare_MPlug
   }
 };
 
+/// \brief  operator to compare MDagPaths with < operator
 struct compare_MDagPath
 {
   bool operator () (const MDagPath& a, const MDagPath& b) const
@@ -46,10 +48,11 @@ namespace AL {
 namespace usdmaya {
 namespace fileio {
 
+/// \brief  an attribute that has a scaling on it (due to unit differences)
 struct ScaledPair
 {
-  UsdAttribute attr;
-  float scale;
+  UsdAttribute attr; ///< the attribute to export
+  float scale; ///< the scale to apply
 };
 
 typedef std::map<MPlug, UsdAttribute, compare_MPlug> PlugAttrVector;
@@ -134,7 +137,7 @@ struct AnimationTranslator
       m_animatedTransformPlugs.emplace(plug, attribute);
   }
 
-  /// \brief  add a transform plug to the animation translator (if the plug is animated)
+  /// \brief  add a scaled plug to the animation translator (if the plug is animated)
   /// \param  plug the maya attribute to test
   /// \param  attribute the corresponding maya attribute to write the anim data into if the plug is animated
   ///         attribute can't be handled by generic DgNodeTranslator
@@ -145,7 +148,7 @@ struct AnimationTranslator
       m_scaledAnimatedPlugs.emplace(plug, ScaledPair{ attribute, scale });
   }
 
-  /// \brief  add a transform plug to the animation translator (if the plug is animated)
+  /// \brief  add an animated plug to the animation translator (if the plug is animated)
   /// \param  plug the maya attribute to test
   /// \param  attribute the corresponding maya attribute to write the anim data into if the plug is animated
   ///         attribute can't be handled by generic DgNodeTranslator
