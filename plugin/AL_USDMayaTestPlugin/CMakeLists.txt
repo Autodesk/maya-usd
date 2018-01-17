@@ -17,6 +17,7 @@ list(APPEND AL_maya_test_source
 		AL/UnitTestHarness.cpp
         AL/maya/tests/CommandGuiHelperTest.cpp
         AL/maya/tests/NodeHelperUnitTest.cpp
+        AL/usdmaya/commands/test_ExportCommands.cpp
         AL/usdmaya/commands/test_LayerCommands.cpp
         AL/usdmaya/commands/test_ProxyShapeSelect.cpp
         AL/usdmaya/commands/test_InternalProxySelection.cpp
@@ -27,13 +28,15 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/fileio/export_lattice.cpp
         AL/usdmaya/fileio/export_nonlinear.cpp
         AL/usdmaya/nodes/test_ActiveInactive.cpp
-        AL/usdmaya/nodes/test_HostDrivenTransforms.cpp
-        AL/usdmaya/nodes/test_Layer.cpp
+        AL/usdmaya/nodes/test_LayerManager.cpp
         AL/usdmaya/nodes/test_ProxyShape.cpp
+        AL/usdmaya/nodes/test_Transform.cpp
         AL/usdmaya/nodes/test_TransformMatrix.cpp
         AL/usdmaya/nodes/test_TranslatorContext.cpp
+        AL/usdmaya/nodes/test_ProxyShapeSelectabilityDB.cpp
         AL/usdmaya/nodes/proxy/test_DrivenTransforms.cpp
         AL/usdmaya/nodes/proxy/test_PrimFilter.cpp
+        AL/usdmaya/test_SelectabilityDB.cpp
         test_maya_MenuBuilder.cpp
         test_maya_NodeHelper.cpp
         test_translators_AnimationTranslator.cpp

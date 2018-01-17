@@ -228,7 +228,7 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
 
   #endif
 
-  auto paths = shape->selectedPaths();
+  SdfPathVector paths(shape->selectedPaths().cbegin(), shape->selectedPaths().cend());
   engine->SetSelected(paths);
   engine->SetSelectionColor(GfVec4f(1.0f, 2.0f/3.0f, 0.0f, 1.0f));
   engine->Render(shape->getRootPrim(), params);
@@ -242,6 +242,7 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
     engine->RenderBatch(paths, params);
     glDepthFunc(GL_LESS);
   }
+
 
   glClearColor(clearCol[0], clearCol[1], clearCol[2], clearCol[3]);
   glPopClientAttrib();
@@ -298,15 +299,16 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
   proxyShape->m_pleaseIgnoreSelection = true;
 
   UsdPrim root = proxyShape->getUsdStage()->GetPseudoRoot();
-  SdfPathVector enablePaths;
-  enablePaths.push_back(root.GetPath());
+
   UsdImagingGLEngine::HitBatch hitBatch;
+  SdfPathVector rootPath;
+  rootPath.push_back(root.GetPath());
 
   bool hitSelected = engine->TestIntersectionBatch(
           GfMatrix4d(viewMatrix.matrix),
           GfMatrix4d(projectionMatrix.matrix),
           worldToLocalSpace,
-          enablePaths,
+          rootPath,
           params,
           5,
           ProxyShapeSelectionHelper::path_ting,
@@ -479,8 +481,6 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
     case MGlobal::kAddToList:
       {
-
-
         MString command;
         if(paths.size())
         {
@@ -536,7 +536,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
     case MGlobal::kXORWithList:
       {
-        SdfPathVector& slpaths = proxyShape->selectedPaths();
+        auto& slpaths = proxyShape->selectedPaths();
         bool hasSelectedItems = false;
         bool hasDeletedItems = false;
 

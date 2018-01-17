@@ -8,8 +8,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
     std::vector<TfToken> reqs;
-    reqs.reserve(1);
+    reqs.reserve(5);
     reqs.push_back(TfToken("usd"));
+    reqs.push_back(TfToken("usdGeom"));
     TfScriptModuleLoader::GetInstance().
         RegisterLibrary(TfToken("@SCHEMAS_PACKAGE@"), TfToken("@SCHEMAS_PYTHON_MODULE@"), reqs);
 }

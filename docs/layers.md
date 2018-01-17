@@ -14,7 +14,6 @@ Normally, the default Edit Target in USD will be the Root Layer of the scene, al
 #### Commands 
 There are a number of layer-related commands available, all are available via MEL, and some from the USD->Layers dropdow in the UI.
 + AL_usdmaya_LayerSave
-+ AL_usdmaya_LayerCreateSubLayer
 + AL_usdmaya_LayerCreateLayer
 + AL_usdmaya_LayerCurrentEditTarget
 + AL_usdmaya_LayerGetLayers

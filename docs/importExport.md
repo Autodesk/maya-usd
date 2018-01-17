@@ -66,12 +66,14 @@ AL_usdmaya_ExportCommand -f "<path/to/out/file.usd>" -fs
 
 
 ## Mesh Export
-For meshes we export:
+For meshes normally we export:
 1. Topology and Point Positions
 2. Indexed UVs 
 3. Colour Sets (by default RGBA and faceVarying)
 4. Subdivision Edge and Vertex Creases
 5. Dynamic Attributes
+
+An option "meshUV" indicates AL_usdmaya_ExportCommand to only export Indexed UVs and leave other part of USD hierarchy as empty "over" prims. Under this mode, "leftHandedUV" is used to adjust UV indices orientation.
 
 **Use Animal Schema**
 The "Use_Animal_Schema" option when exporting was originally intended to export mesh data in a way which was easier for our inhouse Renderer to consume.

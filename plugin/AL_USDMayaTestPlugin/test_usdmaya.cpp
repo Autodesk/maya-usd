@@ -33,6 +33,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 void comparePlugs(const MPlug& plugA, const MPlug& plugB, bool usdTesting)
 {
+  SCOPED_TRACE(MString("plugA: ") + plugA.name() + " - plugB: " + plugB.name());
   EXPECT_EQ(plugA.isArray(), plugB.isArray());
   EXPECT_EQ(plugA.isElement(), plugB.isElement());
   EXPECT_EQ(plugA.isCompound(), plugB.isCompound());
