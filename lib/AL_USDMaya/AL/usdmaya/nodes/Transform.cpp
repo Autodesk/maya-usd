@@ -396,30 +396,6 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UsdPrim Transform::getUsdPrim(MDataBlock& dataBlock) const
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::getUsdPrim\n");
-  UsdPrim usdPrim;
-  StageData* outData = inputDataValue<StageData>(dataBlock, m_inStageData);
-  if(outData && outData->stage)
-  {
-    usdPrim = (outData->primPath.IsEmpty()) ?
-               outData->stage->GetPseudoRoot() :
-               outData->stage->GetPrimAtPath(outData->primPath);
-  }
-  return usdPrim;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-bool Transform::isStageValid() const
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::isStageValid\n");
-  MDataBlock dataBlock = const_cast<Transform*>(this)->forceCache();
-  StageData* outData = inputDataValue<StageData>(dataBlock, m_outStageData);
-  return outData && outData->stage;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 } // nodes
 } // usdmaya
 } // AL
