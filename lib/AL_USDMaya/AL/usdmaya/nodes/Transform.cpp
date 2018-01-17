@@ -279,6 +279,7 @@ MBoundingBox Transform::boundingBox() const
     const MVector maxBound(minMax[0], minMax[1], minMax[2]);
     return MBoundingBox(minBound, maxBound);
   }
+  return MPxTransform::boundingBox();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
