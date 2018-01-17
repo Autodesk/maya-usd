@@ -96,7 +96,7 @@ struct AnimationTranslator
     if(m_animatedPlugs.find(plug) != m_animatedPlugs.end())
       return;
     if(isAnimated(plug, assumeExpressionIsAnimated))
-      m_animatedPlugs.emplace(std::make_pair(plug, attribute));
+      m_animatedPlugs.emplace(plug, attribute);
   }
 
   /// \brief  add a plug to the animation translator (if the plug is animated)
@@ -110,7 +110,7 @@ struct AnimationTranslator
     if(m_scaledAnimatedPlugs.find(plug) != m_scaledAnimatedPlugs.end())
       return;
     if(isAnimated(plug, assumeExpressionIsAnimated))
-      m_scaledAnimatedPlugs.emplace(std::make_pair(plug, ScaledPair{attribute, scale}));
+      m_scaledAnimatedPlugs.emplace(plug, ScaledPair{attribute, scale});
   }
 
   /// \brief  add a transform plug to the animation translator (if the plug is animated)
