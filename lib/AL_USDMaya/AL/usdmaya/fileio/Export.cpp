@@ -399,7 +399,7 @@ void Export::exportGeometryConstraint(MDagPath constraintPath, const SdfPath& us
         }
         else
         {
-          std::cout << "prim not valid" << std::endl;
+          std::cout << "prim not valid " << newPath.GetText() << std::endl;
         }
       }
     }
@@ -575,7 +575,6 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
   std::function<void(MDagPath, MFnTransform&, SdfPath&)> exportTransformFunc =
       [this] (MDagPath transformPath, MFnTransform& fnTransform, SdfPath& usdPath)
   {
-    std::cout << "GeomXForm export called " << transformPath.fullPathName() << std::endl;
     UsdGeomXform xform = UsdGeomXform::Define(m_impl->stage(), usdPath);
     UsdPrim transformPrim = xform.GetPrim();
     this->copyTransformParams(transformPrim, fnTransform);
@@ -644,6 +643,16 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
         defaultPrim = usdPath;
       }
 
+      if(transformPath.node().hasFn(MFn::kIkEffector))
+      {
+        exportIkChain(transformPath, usdPath);
+      }
+      else
+      if(transformPath.node().hasFn(MFn::kGeometryConstraint))
+      {
+        exportGeometryConstraint(transformPath, usdPath);
+      }
+
       // how many shapes are directly under this transform path?
       uint32_t numShapes;
       transformPath.numberOfShapesDirectlyBelow(numShapes);
@@ -660,12 +669,6 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
           shapePath.extendToShapeDirectlyBelow(j);
 
           bool shapeNotYetExported = !m_impl->contains(shapePath.node());
-          if(!shapeNotYetExported)
-          {
-            // We have an instanced shape!
-            std::cout << "encountered shape instance " << shapePath.fullPathName().asChar() << std::endl;
-          }
-
           if(shapeNotYetExported || m_params.m_duplicateInstances)
           {
             // if the path has a child shape, process the shape now

@@ -162,6 +162,7 @@ void TransformationMatrix::setPrim(const UsdPrim& prim)
 //----------------------------------------------------------------------------------------------------------------------
 bool TransformationMatrix::readVector(MVector& result, const UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::readVector\n");
   const SdfValueTypeName vtn = op.GetTypeName();
   UsdDataType attr_type = getAttributeType(vtn);
   switch(attr_type)
@@ -302,6 +303,7 @@ bool TransformationMatrix::pushShear(const MVector& result, UsdGeomXformOp& op, 
 //----------------------------------------------------------------------------------------------------------------------
 bool TransformationMatrix::readShear(MVector& result, const UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::readShear\n");
   const SdfValueTypeName vtn = op.GetTypeName();
   UsdDataType attr_type = getAttributeType(vtn);
   switch(attr_type)
@@ -330,6 +332,7 @@ bool TransformationMatrix::readShear(MVector& result, const UsdGeomXformOp& op, 
 //----------------------------------------------------------------------------------------------------------------------
 bool TransformationMatrix::readPoint(MPoint& result, const UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::readPoint\n");
   const SdfValueTypeName vtn = op.GetTypeName();
   UsdDataType attr_type = getAttributeType(vtn);
   switch(attr_type)
@@ -497,6 +500,7 @@ bool TransformationMatrix::pushPoint(const MPoint& result, UsdGeomXformOp& op, U
 //----------------------------------------------------------------------------------------------------------------------
 double TransformationMatrix::readDouble(const UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::readDouble\n");
   double result = 0;
   UsdDataType attr_type = getAttributeType(op.GetTypeName());
   switch(attr_type)
@@ -1125,6 +1129,7 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::insertTranslateOp()
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::insertTranslateOp\n");
   // generate our translate op, and insert into the correct stack location
   UsdGeomXformOp op = m_xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("translate"));
   m_xformops.insert(m_xformops.begin(), op);
@@ -1199,6 +1204,7 @@ MStatus TransformationMatrix::translateBy(const MVector& vector, MSpace::Space s
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::insertScaleOp()
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::insertScaleOp\n");
   // generate our translate op, and insert into the correct stack location
   UsdGeomXformOp op = m_xform.AddScaleOp(UsdGeomXformOp::PrecisionFloat, TfToken("scale"));
 
@@ -1272,6 +1278,7 @@ MStatus TransformationMatrix::scaleBy(const MVector& scale, MSpace::Space space)
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::insertShearOp()
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::insertShearOp\n");
   // generate our translate op, and insert into the correct stack location
   UsdGeomXformOp op = m_xform.AddTransformOp(UsdGeomXformOp::PrecisionDouble, TfToken("shear"));
 
@@ -1339,6 +1346,7 @@ MStatus TransformationMatrix::shearBy(const MVector& shear, MSpace::Space space)
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::insertScalePivotOp()
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::insertScalePivotOp\n");
   // generate our translate op, and insert into the correct stack location
   UsdGeomXformOp op = m_xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivot"));
   UsdGeomXformOp opinv = m_xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivot"), true);
@@ -1387,6 +1395,7 @@ MStatus TransformationMatrix::setScalePivot(const MPoint& sp, MSpace::Space spac
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::insertScalePivotTranslationOp()
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::insertScalePivotTranslationOp\n");
   // generate our translate op, and insert into the correct stack location
   UsdGeomXformOp op = m_xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivotTranslate"));
 
@@ -1426,6 +1435,7 @@ MStatus TransformationMatrix::setScalePivotTranslation(const MVector& sp, MSpace
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::insertRotatePivotOp()
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::insertRotatePivotOp\n");
   // generate our translate op, and insert into the correct stack location
   UsdGeomXformOp op = m_xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivot"));
   UsdGeomXformOp opinv = m_xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivot"), true);
@@ -1924,6 +1934,7 @@ MMatrix TransformationMatrix::asMatrix(double percent) const
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::enableReadAnimatedValues(bool enabled)
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::enableReadAnimatedValues\n");
   if(enabled) m_flags |= kReadAnimatedValues;
   else m_flags &= ~kReadAnimatedValues;
 
@@ -1985,6 +1996,7 @@ void TransformationMatrix::enableReadAnimatedValues(bool enabled)
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::enablePushToPrim(bool enabled)
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::enablePushToPrim\n");
   if(enabled) m_flags |= kPushToPrimEnabled;
   else m_flags &= ~kPushToPrimEnabled;
 
