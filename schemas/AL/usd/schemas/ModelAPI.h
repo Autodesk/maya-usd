@@ -134,6 +134,10 @@ public:
 
     void SetSelectability(const TfToken& selectability);
     TfToken GetSelectabilityValue() const;
+
+    void SetLock(const TfToken& lock);
+    TfToken GetLock() const;
+    TfToken ComputeLock() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

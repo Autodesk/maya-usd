@@ -1,3 +1,74 @@
+## v0.??.? (????-??-??)
+
+### Added
+
+
+### Changed
+
+* Using -muted/-m flag with AL_usdmaya_LayerGetLayers now returns layer display names by default, and identifiers if
+  the -identifiers/-id flag is set.  This makes it more in line with all the other flags for the command (and more
+  flexible), but is a change in behavior - previously, the muted layers would ALWAYS be returned as identifier.
+
+
+## v0.25.0 (2017-11-28)
+
+### Added
+
+* New metadata and logic to lock transform and disable pushToPrim.
+* A boolean option "meshUV" or "muv" in AL_usdmaya_ExportCommand to indicate only export mesh uv data to a scene hierarchy with empty over prims.
+* A boolean option "leftHandedUV" or "luv" in AL_usdmaya_ExportCommand to indicate whether to adjust uv indices orientation. This option only works with "meshUV"
+
+### Changed
+
+* Add special rules for some Maya-USD attribute type mismatches so the maya attribute values transfer correctly to USD prim, e.g. interpolateBoundary attribute on mesh.
+* When translate, rotate, scale attributes are locked, TransformationMatrix blocks any changes of these attributes.
+* In mesh import, leftHanded flag retrieved from USD will also decide if uv indices need be adjusted.
+
+### Removed
+
+* Host Driven Transforms
+
+## v0.24.5 (2017-11-06)
+
+### Fixed
+
+* Remove leftover file
+
+## v0.24.4 (2017-10-18)
+
+### Changed
+
+* Update to USD-0.8.1
+
+## v0.24.3 (2017-10-18)
+
+### Fixed
+
+In same cases when there was geometry in VP2 behind some maya objects, some maya objects wouldn't be selected
+
+## v0.24.2 (2017-10-17)
+
+### Fixed
+
+* Fix for [#24](https://github.com/AnimalLogic/AL_USDMaya/issues/24). This is really to avoid poping objects while selecting and does not represent a long term solution.
+Selecting maya nodes that were outside of the proxyshape were causing a "Root path must be absolute (<>) " error.
+
+## v0.24.1 (2017-10-10)
+
+### Added
+
+SelectionDB that stores all the paths that are selectable.
+
+### Changed
+
+Move all the selection commands into a different cpp file.
+
+## v0.24.0 (2017-10-09)
+
+### Fixed
+
+* Update test_PrimFilter to not rely on external files
+
 ## v0.23.9 (2017-09-20)
 ### Added
 * Added missing header files from nodes/proxy directory into released package

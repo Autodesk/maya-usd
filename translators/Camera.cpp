@@ -174,7 +174,8 @@ MStatus CameraTranslator::import(const UsdPrim& prim, MObject& parent)
   
   MStatus status;
   MFnDagNode fn;
-  MObject to = fn.create("camera", parent, &status);
+  MString name(prim.GetName().GetText() + MString("Shape"));
+  MObject to = fn.create("camera", name, parent, &status);
   context()->insertItem(prim, to);
   
   // F-Stop

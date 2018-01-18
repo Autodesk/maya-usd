@@ -16,7 +16,7 @@
 #include "test_usdmaya.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
-#include "AL/usdmaya/nodes/Layer.h"
+#include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/Utils.h"
 #include "maya/MFnTransform.h"
@@ -58,7 +58,6 @@ TEST(LayerCommands, layerCreateLayerTests)
     auto stage = proxyShape->getUsdStage();
 
     SdfLayerHandle layer = stage->GetRootLayer();
-    AL::usdmaya::nodes::Layer* root = proxyShape->findLayer(layer);
 
     MStatus result = MGlobal::executeCommand("ls -type \"AL_usdmaya_Layer\"", true);
     EXPECT_EQ(result, MStatus::kSuccess);
@@ -77,9 +76,12 @@ TEST(LayerCommands, layerCreateLayerTests)
     SdfLayerHandle expectedLayer = SdfLayer::Find(testLayer);
     EXPECT_TRUE(expectedLayer);
 
-    // Check that it is a child of the right layer
-    AL::usdmaya::nodes::Layer* refoundExpectedLayer = root->findChildLayer(expectedLayer);
+    // Check that we can refind the layer
+    AL::usdmaya::nodes::LayerManager* layerManager = AL::usdmaya::nodes::LayerManager::findManager();
+    EXPECT_TRUE(layerManager);
+    SdfLayerHandle refoundExpectedLayer = layerManager->findLayer(expectedLayer->GetIdentifier());
     EXPECT_TRUE(refoundExpectedLayer);
+    EXPECT_EQ(refoundExpectedLayer, expectedLayer);
   }
 }
 

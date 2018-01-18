@@ -17,14 +17,20 @@ list(APPEND AL_maya_test_source
 		AL/UnitTestHarness.cpp
         AL/maya/tests/CommandGuiHelperTest.cpp
         AL/maya/tests/NodeHelperUnitTest.cpp
+        AL/usdmaya/commands/test_ExportCommands.cpp
         AL/usdmaya/commands/test_LayerCommands.cpp
         AL/usdmaya/commands/test_ProxyShapeSelect.cpp
         AL/usdmaya/commands/test_InternalProxySelection.cpp
         AL/usdmaya/commands/test_ProxyShapeImport.cpp
+        AL/usdmaya/fileio/export_blendshape.cpp
+        AL/usdmaya/fileio/export_constraints.cpp
+        AL/usdmaya/fileio/export_ik.cpp
+        AL/usdmaya/fileio/export_lattice.cpp
+        AL/usdmaya/fileio/export_nonlinear.cpp
         AL/usdmaya/nodes/test_ActiveInactive.cpp
-        AL/usdmaya/nodes/test_HostDrivenTransforms.cpp
-        AL/usdmaya/nodes/test_Layer.cpp
+        AL/usdmaya/nodes/test_LayerManager.cpp
         AL/usdmaya/nodes/test_ProxyShape.cpp
+        AL/usdmaya/nodes/test_Transform.cpp
         AL/usdmaya/nodes/test_TransformMatrix.cpp
         AL/usdmaya/nodes/test_TranslatorContext.cpp
         AL/usdmaya/nodes/test_ProxyShapeSelectabilityDB.cpp

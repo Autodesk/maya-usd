@@ -51,7 +51,6 @@ namespace nodes {
 ///
 ///         Finally we have the following outputs:
 ///          \li \b outTime = (time - timeOffset) * timeScalar
-///          \li \b outStageData - pass through from inStageData
 ///
 ///
 /// \todo   General todo list, and other quirks....
@@ -104,7 +103,6 @@ public:
   //--------------------------------------------------------------------------------------------------------------------
   // Output Attributes
   //--------------------------------------------------------------------------------------------------------------------
-  AL_DECL_ATTRIBUTE(outStageData);
   AL_DECL_ATTRIBUTE(outTime);
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -115,11 +113,6 @@ public:
   /// \return the transformation matrix
   inline TransformationMatrix* transform() const
     { return reinterpret_cast<TransformationMatrix*>(transformationMatrixPtr()); }
-
-  /// \brief  query the usd prim that this transform represents, from the specified data block
-  /// \param  dataBlock data block to pull the prim information from
-  /// \return the USD prim this transform represents
-  UsdPrim getUsdPrim(MDataBlock& dataBlock) const;
 
   /// \brief  Enable parallel evaluation
   /// \return MPxNode::kParallel
@@ -134,17 +127,19 @@ private:
 
   MStatus validateAndSetValue(const MPlug& plug, const MDataHandle& handle, const MDGContext& context) override;
   MPxTransformationMatrix* createTransformationMatrix() override;
-  MStatus connectionMade(const MPlug &plug, const MPlug &otherPlug, bool asSrc) override;
-  MStatus connectionBroken(const MPlug &plug, const MPlug &otherPlug, bool asSrc) override;
   MStatus compute(const MPlug &plug, MDataBlock &datablock) override;
   void postConstructor() override;
+  MBoundingBox boundingBox() const override;
+  bool isBounded() const override
+    { return true; }
+  bool treatAsTransform() const override
+    { return false; }
 
   //--------------------------------------------------------------------------------------------------------------------
   /// utils
   //--------------------------------------------------------------------------------------------------------------------
 
   void updateTransform(MDataBlock& dataBlock);
-  bool isStageValid() const;
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name Input Attributes
@@ -213,17 +208,10 @@ private:
   /// \name Output Attributes
   //--------------------------------------------------------------------------------------------------------------------
 
-  /// \var    MPlug outStageDataPlug() const;
-  /// \brief  access the outStageData attribute plug on this node instance
-  ///         outStageData - output stage passed through the node
-  /// \return the plug to the outStageData attribute
   /// \var    MPlug outTimePlug() const;
   /// \brief  access the outTime attribute plug on this node instance
   ///         outTime = (time - timeOffset) * timeScalar
   /// \return the plug to the outTime attribute
-  /// \var    static MObject outStageData();
-  /// \brief  access the outStageData attribute handle
-  /// \return the outStageData attribute
   /// \var    static MObject outTime();
   /// \brief  access the outTime attribute handle
   /// \return the outTime attribute

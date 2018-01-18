@@ -236,6 +236,56 @@ CommandGuiHelper::~CommandGuiHelper()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void CommandGuiHelper::addExecuteText(const char* toAdd)
+{
+  // TODO: write a proper string encoder for MEL (tricky, because can't represent
+  // all 256 character-bytes using mel string literals - would have to resort to
+  // calling out to python for a truly string rerpr encoder.
+  // (note that even mel's builtin "encodeString" command doesn't actually always
+  // return a mel string that will evaluate to the input - ie, it will return
+  // "\004", but that isn't a valid mel escape sequence, and will just result in "004"
+
+  // for now, just check to make sure we have printable characters... only need to
+  // implement a full MEL-string-encoder if we really have a need...
+  m_execute << "    $str += \"";
+  bool printedError = false;
+
+  for(size_t i = 0; toAdd[i] != '\0'; ++i)
+  {
+    if(toAdd[i] < 32 || toAdd[i] > 126)
+    {
+      if (toAdd[i] == '\b') m_execute << "\\b";
+      else if (toAdd[i] == '\t') m_execute << "\\t";
+      else if (toAdd[i] == '\n') m_execute << "\\n";
+      else if (toAdd[i] == '\r') m_execute << "\\r";
+      // Just throwing, if we ever need to use a string with weird chars, need to
+      // update this function...
+      else if (!printedError)
+      {
+        // Make our own stream (instead of steaming straigt to cerr)
+        // both because we also want to output to maya, and
+        // because we need to set a flag (ie, std::hex)
+        std::ostringstream err;
+        err << "CommandGuiHelper::addExecuteText encountered bad character at index ";
+        err << i;
+        err << ": 0x";
+        err << std::hex;
+        // if you just reinterpret_cast as uint8_t, it still treats as a char
+        err << static_cast<int>(reinterpret_cast<const unsigned char*>(toAdd)[i]);
+        std::string errStr = err.str();
+        MGlobal::displayError(errStr.c_str());
+        std::cerr << errStr;
+        printedError = true;
+      }
+    }
+    else if (toAdd[i] == '"') m_execute << "\\\"";
+    else if (toAdd[i] == '\\') m_execute << "\\\\";
+    else m_execute << toAdd[i];
+  }
+  m_execute << "\";\n";
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void CommandGuiHelper::addFlagOption(const char* commandFlag, const char* label, const bool defaultVal, bool persist)
 {
   const std::string optionVar = m_commandName + "_" + commandFlag;
@@ -314,7 +364,7 @@ void CommandGuiHelper::addBoolOption(const char* commandFlag, const char* label,
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CommandGuiHelper::addListOption(const char* commandFlag, const char* label, GenerateListFn generateList)
+void CommandGuiHelper::addListOption(const char* commandFlag, const char* label, GenerateListFn generateList, bool isMandatory)
 {
   const std::string optionVar = m_commandName + "_" + commandFlag;
   const std::string getOptionVar = std::string("`optionVar -q -sl \"") + optionVar + "\"`";
@@ -336,7 +386,11 @@ void CommandGuiHelper::addListOption(const char* commandFlag, const char* label,
 
   //
   m_execute << "  global string $" << optionVar << "_sl;"
-            << "  $str += \" -" << commandFlag << " $" << optionVar << "_sl \";\n";
+            << "  $str += \" ";
+  if (!isMandatory) {
+    m_execute << "-" << commandFlag << " ";
+  }
+  m_execute << "$" << optionVar << "_sl \";\n";
 }
 
 //----------------------------------------------------------------------------------------------------------------------

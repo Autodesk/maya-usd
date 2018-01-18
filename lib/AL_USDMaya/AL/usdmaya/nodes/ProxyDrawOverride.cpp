@@ -27,7 +27,6 @@
 #include "maya/MPoint.h"
 #include "maya/M3dView.h"
 
-
 namespace AL {
 namespace usdmaya {
 namespace nodes {
@@ -63,7 +62,11 @@ MString ProxyDrawOverride::kDrawRegistrantId("pxrUsd");
 
 //----------------------------------------------------------------------------------------------------------------------
 ProxyDrawOverride::ProxyDrawOverride(const MObject& obj)
+#if MAYA_API_VERSION >= 201700
+  : MHWRender::MPxDrawOverride(obj, draw, true)
+#else
   : MHWRender::MPxDrawOverride(obj, draw)
+#endif
 {
   TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::ProxyDrawOverride\n");
 }
@@ -144,6 +147,7 @@ MUserData* ProxyDrawOverride::prepareForDraw(
 void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUserData* data)
 {
   TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::draw\n");
+
   float clearCol[4];
   glGetFloatv(GL_COLOR_CLEAR_VALUE, clearCol);
 
@@ -195,6 +199,7 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
           light.SetPosition(GfVec4f(fp.x, fp.y, fp.z, 1.0f));
         }
       }
+
       if(hasDirection)
       {
         GfVec3f dir(direction.x, direction.y, direction.z);
@@ -247,14 +252,15 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
             {
               MFloatArray fa;
               lightParam->getParameter(paramNames[i], fa);
+              light.SetSpotFalloff(fa[0]);
             }
             break;
           case MHWRender::MLightParameterInformation::kCosConeAngle:
             {
               MFloatArray fa;
               lightParam->getParameter(paramNames[i], fa);
+              fa[0] = acos(fa[0]) * 57.295779506f;
               light.SetSpotCutoff(fa[0]);
-              light.SetSpotFalloff(fa[1]);
             }
             break;
           case MHWRender::MLightParameterInformation::kStartShadowParameters:
@@ -352,8 +358,8 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
     ptr->m_engine->Render(ptr->m_rootPrim, ptr->m_params);
 
     auto view = M3dView::active3dView();
-    const SdfPathVector& paths1 = ptr->m_shape->selectedPaths();
-    const SdfPathVector& paths2 = ptr->m_shape->selectionList().paths();
+    const auto& paths1 = ptr->m_shape->selectedPaths();
+    const auto& paths2 = ptr->m_shape->selectionList().paths();
     SdfPathVector combined;
     combined.reserve(paths1.size() + paths2.size());
     combined.insert(combined.end(), paths1.begin(), paths1.end());
@@ -372,7 +378,7 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
       ptr->m_engine->RenderBatch(combined, params);
     }
 
-    // HACK (michaelq): Maya doesn't restore this ONE buffer binding after our override is done so we have to do it for them.
+    // HACK: Maya doesn't restore this ONE buffer binding after our override is done so we have to do it for them.
     glBindBufferBase(GL_UNIFORM_BUFFER, 4, uboBinding);
 
     stateManager->setDepthStencilState(previousDepthState);

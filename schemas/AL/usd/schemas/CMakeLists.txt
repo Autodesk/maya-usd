@@ -20,7 +20,7 @@ configure_file (
     @ONLY
 )
 
-list(APPEND DEPENDANT_LIBRARIES ${PYTHON_LIBRARIES} usd)
+list(APPEND DEPENDANT_LIBRARIES ${PYTHON_LIBRARIES} usd usdGeom)
 
 ####################################################################################################
 # Schemas generation and validation
@@ -30,6 +30,7 @@ if(VALIDATE_GENERATED_SCHEMAS)
 
 # Bake library name, tokens prefix and usd schemas path
 set(USD_SCHEMA_PATH usd/schema.usda)
+set(USDGEOM_SCHEMA_PATH usdGeom/schema.usda)
 configure_file (
     ./schema.usda.in
     ./schema.usda
@@ -67,7 +68,6 @@ add_library(${SCHEMAS_PACKAGE}
     SHARED
     ModelAPI.cpp
     MayaReference.cpp
-    HostDrivenTransformInfo.cpp
     tokens.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/ModuleDeps.cpp
 )
@@ -99,7 +99,6 @@ add_library(${SCHEMAS_PYTHON_PACKAGE}
     ${CMAKE_CURRENT_BINARY_DIR}/module.cpp
     wrapModelAPI.cpp
     wrapMayaReference.cpp
-    wrapHostDrivenTransformInfo.cpp
     wrapTokens.cpp
 )
 
@@ -149,7 +148,7 @@ if(${listCount} STRGREATER 1)
       string(REPLACE ";" "/" currentPath "${currentPath}")
       file(WRITE
         ${CMAKE_BINARY_DIR}/${currentPath}/__init__.py
-        "try:\n\t__import__('pkg_resources').declare_namespace(__name__)\nexcept:\n\tpass\n"
+        "try:\n\t__import__('pkg_resources').declare_namespace(__name__)\nexcept:\n\tfrom pkgutil import extend_path\n\t__path__ = extend_path(__path__, __name__)\n"
       )
     endforeach(i)
 endif()
@@ -169,7 +168,6 @@ install(
     FILES
         ModelAPI.h
         MayaReference.h
-        HostDrivenTransformInfo.h
         api.h
         tokens.h
     DESTINATION
