@@ -1257,6 +1257,12 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::lockTransformAttribute\n");
 
   UsdPrim prim = m_stage->GetPrimAtPath(path);
+  if(!prim.IsValid())
+  {
+    TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute prim path not valid '%s'\n", prim.GetPath());
+    return false;
+  }
+
   VtValue mayaPath = prim.GetCustomDataByKey(TfToken("MayaPath"));
   MObject lockObject;
   if (!mayaPath.IsEmpty())
