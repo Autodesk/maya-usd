@@ -211,7 +211,6 @@ void ProxyShape::constructGLImagingEngine()
   }
 }
 
-
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShape::setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& plugs)
 {

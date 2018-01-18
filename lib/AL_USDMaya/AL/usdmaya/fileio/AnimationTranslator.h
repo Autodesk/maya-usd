@@ -18,7 +18,7 @@
 
 #include "maya/MPlug.h"
 #include "maya/MDagPath.h"
-#include <vector>
+#include <map>
 #include <utility>
 
 #include "pxr/pxr.h"
@@ -26,16 +26,38 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+/// \brief  operator to compare MPlugs with < operator
+struct compare_MPlug
+{
+  bool operator () (const MPlug& a, const MPlug& b) const
+  {
+    return strcmp(a.name().asChar(), b.name().asChar()) < 0;;
+  }
+};
+
+/// \brief  operator to compare MDagPaths with < operator
+struct compare_MDagPath
+{
+  bool operator () (const MDagPath& a, const MDagPath& b) const
+  {
+    return strcmp(a.fullPathName().asChar(), b.fullPathName().asChar()) < 0;;
+  }
+};
+
 namespace AL {
 namespace usdmaya {
 namespace fileio {
 
-typedef std::pair<MPlug, UsdAttribute> PlugAttrPair;
-typedef std::vector<PlugAttrPair> PlugAttrVector;
-typedef std::pair<MDagPath, UsdAttribute> MeshAttrPair;
-typedef std::vector<MeshAttrPair> MeshAttrVector;
-typedef std::pair<PlugAttrPair, float> PlugAttrScaledPair;
-typedef std::vector<PlugAttrScaledPair> PlugAttrScaledVector;
+/// \brief  an attribute that has a scaling on it (due to unit differences)
+struct ScaledPair
+{
+  UsdAttribute attr; ///< the attribute to export
+  float scale; ///< the scale to apply
+};
+
+typedef std::map<MPlug, UsdAttribute, compare_MPlug> PlugAttrVector;
+typedef std::map<MDagPath, UsdAttribute, compare_MDagPath> MeshAttrVector;
+typedef std::map<MPlug, ScaledPair, compare_MPlug> PlugAttrScaledVector;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A utility class to help with exporting animated plugs from maya
@@ -71,8 +93,10 @@ struct AnimationTranslator
   ///         static (false).
   inline void addPlug(const MPlug& plug, const UsdAttribute& attribute, const bool assumeExpressionIsAnimated)
   {
+    if(m_animatedPlugs.find(plug) != m_animatedPlugs.end())
+      return;
     if(isAnimated(plug, assumeExpressionIsAnimated))
-      m_animatedPlugs.emplace_back(std::make_pair(plug, attribute));
+      m_animatedPlugs.emplace(plug, attribute);
   }
 
   /// \brief  add a plug to the animation translator (if the plug is animated)
@@ -83,8 +107,10 @@ struct AnimationTranslator
   ///         static (false).
   inline void addPlug(const MPlug& plug, const UsdAttribute& attribute, const float scale, const bool assumeExpressionIsAnimated)
   {
+    if(m_scaledAnimatedPlugs.find(plug) != m_scaledAnimatedPlugs.end())
+      return;
     if(isAnimated(plug, assumeExpressionIsAnimated))
-      m_scaledAnimatedPlugs.emplace_back(std::make_pair(std::make_pair(plug, attribute), scale));
+      m_scaledAnimatedPlugs.emplace(plug, ScaledPair{attribute, scale});
   }
 
   /// \brief  add a transform plug to the animation translator (if the plug is animated)
@@ -95,8 +121,41 @@ struct AnimationTranslator
   ///         static (false).
   inline void addTransformPlug(const MPlug& plug, const UsdAttribute& attribute, const bool assumeExpressionIsAnimated)
   {
+    if(m_animatedTransformPlugs.find(plug) != m_animatedTransformPlugs.end())
+      return;
     if (isAnimated(plug, assumeExpressionIsAnimated))
-      m_animatedTransformPlugs.emplace_back(plug, attribute);
+      m_animatedTransformPlugs.emplace(plug, attribute);
+  }
+
+  /// \brief  add a transform plug to the animation translator (if the plug is animated)
+  /// \param  plug the maya attribute to test
+  /// \param  attribute the corresponding maya attribute to write the anim data into if the plug is animated
+  ///         attribute can't be handled by generic DgNodeTranslator
+  inline void forceAddTransformPlug(const MPlug& plug, const UsdAttribute& attribute)
+  {
+    if(m_animatedTransformPlugs.find(plug) == m_animatedTransformPlugs.end())
+      m_animatedTransformPlugs.emplace(plug, attribute);
+  }
+
+  /// \brief  add a scaled plug to the animation translator (if the plug is animated)
+  /// \param  plug the maya attribute to test
+  /// \param  attribute the corresponding maya attribute to write the anim data into if the plug is animated
+  ///         attribute can't be handled by generic DgNodeTranslator
+  /// \param  scale a scale to apply to convert units if needed
+  inline void forceAddPlug(const MPlug& plug, const UsdAttribute& attribute, const float scale)
+  {
+    if(m_scaledAnimatedPlugs.find(plug) == m_scaledAnimatedPlugs.end())
+      m_scaledAnimatedPlugs.emplace(plug, ScaledPair{ attribute, scale });
+  }
+
+  /// \brief  add an animated plug to the animation translator (if the plug is animated)
+  /// \param  plug the maya attribute to test
+  /// \param  attribute the corresponding maya attribute to write the anim data into if the plug is animated
+  ///         attribute can't be handled by generic DgNodeTranslator
+  inline void forceAddPlug(const MPlug& plug, const UsdAttribute& attribute)
+  {
+    if(m_animatedPlugs.find(plug) == m_animatedPlugs.end())
+      m_animatedPlugs.emplace(plug, attribute);
   }
 
   /// \brief  add a mesh to the animation translator
@@ -104,7 +163,8 @@ struct AnimationTranslator
   /// \param  attribute the corresponding maya attribute to write the anim data into if the plug is animated
   inline void addMesh(const MDagPath& path, const UsdAttribute& attribute)
   {
-    m_animatedMeshes.emplace_back(path, attribute);
+    if(m_animatedMeshes.find(path) == m_animatedMeshes.end())
+      m_animatedMeshes.emplace(path, attribute);
   }
 
   /// \brief  After the scene has been exported, call this method to export the animation data on various attributes
