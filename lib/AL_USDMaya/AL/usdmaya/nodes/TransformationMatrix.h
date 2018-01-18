@@ -113,7 +113,12 @@ class TransformationMatrix
     kPushPrimToMatrix = 1 << 30,
     kReadAnimatedValues = 1 << 31,
 
-    kAnimationMask = kAnimatedShear | kAnimatedScale | kAnimatedRotation | kAnimatedTranslation | kAnimatedMatrix
+    kAnimationMask = kAnimatedShear | kAnimatedScale | kAnimatedRotation | kAnimatedTranslation | kAnimatedMatrix,
+
+    // Most of these flags are calculated based on reading the usd prim; however, a few are driven
+    // "externally" (ie, from attributes on the controlling transform node), and should NOT be reset
+    // when we're re-initializing (ie, in setPrim)
+    kPreservationMask = kPushToPrimEnabled | kReadAnimatedValues
   };
   uint32_t m_flags = 0;
 

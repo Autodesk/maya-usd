@@ -19,6 +19,7 @@
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
+#include "maya/MBoundingBox.h"
 #include "maya/MDataBlock.h"
 #include "maya/MEvaluationNodeIterator.h"
 #include "maya/MGlobal.h"
@@ -32,6 +33,7 @@
 #include "pxr/usd/usd/stageCacheContext.h"
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdUtils/stageCache.h"
 
 
@@ -45,7 +47,6 @@ AL_MAYA_DEFINE_NODE(Transform, AL_USDMAYA_TRANSFORM, AL_usdmaya);
 //----------------------------------------------------------------------------------------------------------------------
 MObject Transform::m_primPath = MObject::kNullObj;
 MObject Transform::m_inStageData = MObject::kNullObj;
-MObject Transform::m_outStageData = MObject::kNullObj;
 MObject Transform::m_time = MObject::kNullObj;
 MObject Transform::m_timeOffset = MObject::kNullObj;
 MObject Transform::m_timeScalar = MObject::kNullObj;
@@ -75,52 +76,6 @@ MPxTransformationMatrix* Transform::createTransformationMatrix()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus Transform::connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc)
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::connectionMade %s\n", plug.name().asChar());
-  if(plug == m_inStageData)
-  {
-    {
-      StageData* data = dynamic_cast<StageData*>(otherPlug.asMDataHandle().asPluginData());
-      if(data && data->stage)
-      {
-        MDataBlock dataBlock = forceCache();
-        MString path = inputStringValue(dataBlock, m_primPath);
-        SdfPath primPath(path.asChar());
-        UsdPrim usdPrim = data->stage->GetPrimAtPath(primPath);
-        transform()->setPrim(usdPrim);
-        outputBoolValue(dataBlock, m_pushToPrim, transform()->pushToPrimEnabled());
-        outputBoolValue(dataBlock, m_readAnimatedValues, transform()->readAnimatedValues());
-        dirtyMatrix();
-      }
-      else
-      {
-        if(data && !data->stage)
-        {
-          MGlobal::displayWarning(MString("[Transform] usd stage not found"));
-        }
-        transform()->setPrim(UsdPrim());
-        dirtyMatrix();
-      }
-    }
-    return MS::kSuccess;
-  }
-  return MS::kUnknownParameter;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-MStatus Transform::connectionBroken(const MPlug& plug, const MPlug& otherPlug, bool asSrc)
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::connectionBroken\n");
-  if(plug == m_inStageData)
-  {
-    transform()->setPrim(UsdPrim());
-    return MS::kSuccess;
-  }
-  return MS::kUnknownParameter;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 MStatus Transform::initialise()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::initialise\n");
@@ -132,7 +87,6 @@ MStatus Transform::initialise()
     addFrame("USD Prim Information");
     m_primPath = addStringAttr("primPath", "pp", kReadable | kWritable | kStorable | kConnectable | kAffectsWorldSpace, true);
     m_inStageData = addDataAttr("inStageData", "isd", StageData::kTypeId, kWritable | kStorable | kConnectable | kHidden | kAffectsWorldSpace);
-    m_outStageData = addDataAttr("outStageData", "osd", StageData::kTypeId, kReadable | kStorable | kConnectable | kHidden | kAffectsWorldSpace);
 
     addFrame("USD Timing Information");
     m_time = addTimeAttr("time", "tm", MTime(0.0), kKeyable | kConnectable | kReadable | kWritable | kStorable | kAffectsWorldSpace);
@@ -152,15 +106,13 @@ MStatus Transform::initialise()
     mustCallValidateAndSet(m_pushToPrim);
     mustCallValidateAndSet(m_primPath);
     mustCallValidateAndSet(m_readAnimatedValues);
+    mustCallValidateAndSet(m_inStageData);
 
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, rotate), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, scale), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, translate), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, matrix), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, worldMatrix), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_primPath, m_outStageData), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_inStageData, m_outStageData), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_readAnimatedValues, m_outStageData), errorString);
   }
   catch(const MStatus& status)
   {
@@ -191,6 +143,27 @@ MStatus Transform::compute(const MPlug& plug, MDataBlock& dataBlock)
     outputTimeValue(dataBlock, m_outTime, theTime);
     return MS::kSuccess;
   }
+  else
+  if(plug == m_inStageData)
+  {
+    // This should only be computed if there's no connection, so set it to an empty stage
+    // create new stage data
+    MObject data;
+    StageData* usdStageData = createData<StageData>(StageData::kTypeId, data);
+    if(!usdStageData)
+    {
+      return MS::kFailure;
+    }
+
+    // set the cached output value, and flush
+    MStatus status = outputDataValue(dataBlock, m_inStageData, usdStageData);
+    if(!status)
+    {
+      return MS::kFailure;
+    }
+    return status;
+  }
+
   return MPxTransform::compute(plug, dataBlock);
 }
 
@@ -203,9 +176,11 @@ void Transform::updateTransform(MDataBlock& dataBlock)
   MTime theTime = (inputTimeValue(dataBlock, m_time) - inputTimeValue(dataBlock, m_timeOffset)) * inputDoubleValue(dataBlock, m_timeScalar);
   outputTimeValue(dataBlock, m_outTime, theTime);
 
+  UsdTimeCode usdTime(theTime.as(MTime::uiUnit()));
+
   // update the transformation matrix to the values at the specified time
   TransformationMatrix* m = transform();
-  m->updateToTime(UsdTimeCode(theTime.as(MTime::uiUnit())));
+  m->updateToTime(usdTime);
 
   // if translation animation is present, update the translate attribute (or just flag it as clean if no animation exists)
   if(m->hasAnimatedTranslation())
@@ -250,6 +225,33 @@ void Transform::updateTransform(MDataBlock& dataBlock)
     dataBlock.setClean(MPxTransform::rotate);
     dataBlock.setClean(MPxTransform::translate);
   }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MBoundingBox Transform::boundingBox() const
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::boundingBox\n");
+  MTime theTime;
+  outTimePlug().getValue(theTime);
+  UsdTimeCode usdTime(theTime.as(MTime::uiUnit()));
+
+  // grab prim from the dataBlock
+  UsdPrim prim  = transform()->prim();
+
+  // check for a geometry type underneath this transform
+  if(prim && prim.GetTypeName() == "Mesh")
+  {
+    UsdGeomMesh geom(prim);
+    const TfToken token("default");
+    const GfBBox3d box = geom.ComputeLocalBound(usdTime, token);
+    const GfRange3d range = box.GetRange();
+    const GfVec3d minMin = range.GetMin();
+    const GfVec3d minMax = range.GetMax();
+    const MVector minBound(minMin[0], minMin[1], minMin[2]);
+    const MVector maxBound(minMax[0], minMax[1], minMax[2]);
+    return MBoundingBox(minBound, maxBound);
+  }
+  return MPxTransform::boundingBox();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -346,6 +348,25 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
     return MS::kSuccess;
   }
   else
+  if(plug == m_inStageData)
+  {
+    MDataBlock dataBlock = forceCache(*(MDGContext *)&context);
+    StageData* data = inputDataValue<StageData>(dataBlock, m_inStageData);
+    if (data && data->stage)
+    {
+      MString path = inputStringValue(dataBlock, m_primPath);
+      SdfPath primPath(path.asChar());
+      UsdPrim usdPrim = data->stage->GetPrimAtPath(primPath);
+      transform()->setPrim(usdPrim);
+    }
+    else
+    {
+      transform()->setPrim(UsdPrim());
+    }
+//    updateTransform(dataBlock);
+    return MS::kSuccess;
+  }
+  else
   if(plug == m_primPath)
   {
     MDataBlock dataBlock = forceCache(*(MDGContext *)&context);
@@ -353,48 +374,25 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
     outputStringValue(dataBlock, m_primPath, path);
     SdfPath primPath(path.asChar());
     StageData* data = inputDataValue<StageData>(dataBlock, m_inStageData);
-    if(data)
+    if (data && data->stage)
     {
       UsdPrim usdPrim = data->stage->GetPrimAtPath(primPath);
       transform()->setPrim(usdPrim);
-      outputBoolValue(dataBlock, m_pushToPrim, transform()->pushToPrimEnabled());
-      outputBoolValue(dataBlock, m_readAnimatedValues, transform()->readAnimatedValues());
       updateTransform(dataBlock);
     }
     else
     {
+      if (path.length() > 0)
+      {
+        TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Could not set '%s' to '%s' - could not retrieve stage\n",
+            plug.name().asChar(), path.asChar());
+      }
       transform()->setPrim(UsdPrim());
-      outputBoolValue(dataBlock, m_pushToPrim, transform()->pushToPrimEnabled());
-      outputBoolValue(dataBlock, m_readAnimatedValues, transform()->readAnimatedValues());
     }
     return MS::kSuccess;
   }
 
   return MPxTransform::validateAndSetValue(plug, handle, context);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-UsdPrim Transform::getUsdPrim(MDataBlock& dataBlock) const
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::getUsdPrim\n");
-  UsdPrim usdPrim;
-  StageData* outData = inputDataValue<StageData>(dataBlock, m_outStageData);
-  if(outData && outData->stage)
-  {
-    usdPrim = (outData->primPath.IsEmpty()) ?
-               outData->stage->GetPseudoRoot() :
-               outData->stage->GetPrimAtPath(outData->primPath);
-  }
-  return usdPrim;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-bool Transform::isStageValid() const
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::isStageValid\n");
-  MDataBlock dataBlock = const_cast<Transform*>(this)->forceCache();
-  StageData* outData = inputDataValue<StageData>(dataBlock, m_outStageData);
-  return outData && outData->stage;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

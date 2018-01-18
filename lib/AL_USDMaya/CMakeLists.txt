@@ -119,7 +119,7 @@ list(APPEND AL_usdmaya_fileio_translators_source
 
 list(APPEND AL_usdmaya_nodes_headers
         AL/usdmaya/nodes/Layer.h
-        AL/usdmaya/nodes/LayerVisitor.h
+        AL/usdmaya/nodes/LayerManager.h
         AL/usdmaya/nodes/ProxyDrawOverride.h
         AL/usdmaya/nodes/ProxyShape.h
         AL/usdmaya/nodes/ProxyShapeUI.h
@@ -132,7 +132,7 @@ list(APPEND AL_usdmaya_nodes_proxy_headers
 )
 list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/Layer.cpp
-        AL/usdmaya/nodes/LayerVisitor.cpp
+        AL/usdmaya/nodes/LayerManager.cpp
         AL/usdmaya/nodes/ProxyDrawOverride.cpp
         AL/usdmaya/nodes/ProxyShape.cpp
         AL/usdmaya/nodes/ProxyShapeSelection.cpp
@@ -202,6 +202,7 @@ target_link_libraries(${LIBRARY_NAME}
     rt
     ${PYTHON_LIBRARIES}
     ${Boost_PYTHON_LIBRARY}
+    ${Boost_THREAD_LIBRARY}
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
     ${MAYA_OpenMayaFX_LIBRARY}
@@ -237,6 +238,7 @@ add_library(${PYTHON_LIBRARY_NAME}
     SHARED
     AL/usdmaya/module.cpp
     AL/usdmaya/wrapStageCache.cpp
+    AL/usdmaya/nodes/wrapLayerManager.cpp
     AL/usdmaya/nodes/wrapProxyShape.cpp
 )
 

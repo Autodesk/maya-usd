@@ -14,13 +14,14 @@
 // limitations under the License.
 //
 #include "AL/maya/CommandGuiHelper.h"
+#include "AL/maya/Common.h"
 #include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/Utils.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/cmds/LayerCommands.h"
-#include "AL/usdmaya/nodes/Layer.h"
-#include "AL/usdmaya/nodes/LayerVisitor.h"
+#include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
+#include "AL/usdmaya/nodes/Transform.h"
 
 #include "maya/MArgDatabase.h"
 #include "maya/MDagPath.h"
@@ -38,6 +39,78 @@
 
 #include <sstream>
 
+namespace {
+  AL::usdmaya::nodes::ProxyShape* getProxyShapeFromSel(const MSelectionList& sl)
+  {
+    auto getShapePtr = [](const MObject& mobj, MFnDagNode& fnDag)
+        ->AL::usdmaya::nodes::ProxyShape*
+    {
+      if(mobj.hasFn(MFn::kPluginShape))
+      {
+        fnDag.setObject(mobj);
+        if(fnDag.typeId() == AL::usdmaya::nodes::ProxyShape::kTypeId)
+        {
+          return (AL::usdmaya::nodes::ProxyShape*)fnDag.userNode();
+        }
+      }
+      return nullptr;
+    };
+
+    AL::usdmaya::nodes::ProxyShape* foundShape = nullptr;
+
+    MDagPath path;
+    for(uint32_t i = 0; i < sl.length(); ++i)
+    {
+      MStatus status = sl.getDagPath(i, path);
+      if(!status) continue;
+
+      MFnDagNode fn(path);
+
+      if(path.node().hasFn(MFn::kTransform))
+      {
+        if(fn.typeId() == AL::usdmaya::nodes::Transform::kTypeId)
+        {
+          auto transform = (AL::usdmaya::nodes::Transform*)fn.userNode();
+          if(transform)
+          {
+            MPlug sourcePlug = transform->inStageDataPlug().source();
+            foundShape = getShapePtr(sourcePlug.node(), fn);
+            if (foundShape) return foundShape;
+          }
+          else
+          {
+            MGlobal::displayError(MString("Error getting Transform pointer for ")
+                + fn.partialPathName());
+            return nullptr;
+          }
+          // If we have an AL_usdmaya_ProxyShapeTransform, but it wasn't hooked
+          // up to a ProxyShape, just continue to the next selection item
+          continue;
+        }
+        else
+        {
+          // If it's a "normal" xform, search all shapes directly below
+          unsigned int numShapes;
+          AL_MAYA_CHECK_ERROR_RETURN_VAL(path.numberOfShapesDirectlyBelow(numShapes),
+              nullptr, "Error getting number of shapes beneath " + path.partialPathName());
+          for(unsigned int i = 0; i < numShapes; path.pop(), ++i)
+          {
+            path.extendToShapeDirectlyBelow(i);
+            foundShape = getShapePtr(path.node(), fn);
+            if(foundShape) return foundShape;
+          }
+        }
+      }
+      else
+      {
+        foundShape = getShapePtr(path.node(), fn);
+        if(foundShape) return foundShape;
+      }
+    }
+    return nullptr;
+  }
+}
+
 namespace AL {
 namespace usdmaya {
 namespace cmds {
@@ -45,8 +118,6 @@ namespace cmds {
 MSyntax LayerCommandBase::setUpCommonSyntax()
 {
   MSyntax syntax;
-  syntax.useSelectionAsDefault(true);
-  syntax.setObjectType(MSyntax::kSelectionList, 0, 1);
   syntax.addFlag("-p", "-proxy", MSyntax::kString);
   return syntax;
 }
@@ -68,24 +139,9 @@ nodes::ProxyShape* LayerCommandBase::getShapeNode(const MArgDatabase& args)
   MSelectionList sl;
   args.getObjects(sl);
 
-  for(uint32_t i = 0; i < sl.length(); ++i)
-  {
-    MStatus status = sl.getDagPath(i, path);
+  nodes::ProxyShape* foundShape = getProxyShapeFromSel(sl);
+  if(foundShape) return foundShape;
 
-    if(path.node().hasFn(MFn::kTransform))
-    {
-      path.extendToShape();
-    }
-
-    if(path.node().hasFn(MFn::kPluginShape))
-    {
-      MFnDagNode fn(path);
-      if(fn.typeId() == nodes::ProxyShape::kTypeId)
-      {
-        return (nodes::ProxyShape*)fn.userNode();
-      }
-    }
-  }
   sl.clear();
 
   {
@@ -95,24 +151,8 @@ nodes::ProxyShape* LayerCommandBase::getShapeNode(const MArgDatabase& args)
       if(args.getFlagArgument("-p", 0, proxyName))
       {
         sl.add(proxyName);
-        if(sl.length())
-        {
-          MStatus status = sl.getDagPath(0, path);
-
-          if(path.node().hasFn(MFn::kTransform))
-          {
-            path.extendToShape();
-          }
-
-          if(path.node().hasFn(MFn::kPluginShape))
-          {
-            MFnDagNode fn(path);
-            if(fn.typeId() == nodes::ProxyShape::kTypeId)
-            {
-              return (nodes::ProxyShape*)fn.userNode();
-            }
-          }
-        }
+        foundShape = getProxyShapeFromSel(sl);
+        if(foundShape) return foundShape;
       }
       MGlobal::displayError("Invalid ProxyShape specified/selected with -p flag");
     }
@@ -122,25 +162,6 @@ nodes::ProxyShape* LayerCommandBase::getShapeNode(const MArgDatabase& args)
 
   throw MS::kFailure;
   return 0;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-MObject LayerCommandBase::getSelectedNode(const MArgDatabase& args, const MTypeId typeId)
-{
-  MSelectionList sl;
-  args.getObjects(sl);
-
-
-  MFnDependencyNode fn;
-  MObject obj;
-  for(uint32_t i = 0; i < sl.length(); ++i)
-  {
-    sl.getDependNode(i, obj);
-    fn.setObject(obj);
-    if(fn.typeId() == typeId)
-      return obj;
-  }
-  return MObject::kNullObj;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -160,14 +181,15 @@ AL_MAYA_DEFINE_COMMAND(LayerGetLayers, AL_usdmaya);
 MSyntax LayerGetLayers::createSyntax()
 {
   MSyntax syn = setUpCommonSyntax();
+  syn.useSelectionAsDefault(true);
+  syn.setObjectType(MSyntax::kSelectionList, 0, 1);
   syn.addFlag("-h", "-help", MSyntax::kNoArg);
   syn.addFlag("-u", "-used", MSyntax::kNoArg);
   syn.addFlag("-m", "-muted", MSyntax::kNoArg);
   syn.addFlag("-s", "-stack", MSyntax::kNoArg);
   syn.addFlag("-sl", "-sessionLayer", MSyntax::kNoArg);
   syn.addFlag("-rl", "-rootLayer", MSyntax::kNoArg);
-  syn.addFlag("-mn", "-mayaNames", MSyntax::kNoArg);
-  syn.addFlag("-hi", "-hierarchy", MSyntax::kNoArg);
+  syn.addFlag("-id", "-identifiers", MSyntax::kNoArg);
   return syn;
 }
 
@@ -199,14 +221,14 @@ MStatus LayerGetLayers::doIt(const MArgList& argList)
       results.append(newLayer);
     };
 
-    const bool useMayaNames = args.isFlagSet("-mn");
+    const bool useIdentifiers = args.isFlagSet("-id");
     if(args.isFlagSet("-rl"))
     {
 
       SdfLayerHandle rootLayer = stage->GetRootLayer();
-      if(useMayaNames)
+      if(useIdentifiers)
       {
-        setResult(proxyShape->findLayerMayaName(rootLayer));
+        setResult(convert(rootLayer->GetIdentifier()));
       }
       else
       {
@@ -217,15 +239,25 @@ MStatus LayerGetLayers::doIt(const MArgList& argList)
     else
     if(args.isFlagSet("-m"))
     {
-      if(useMayaNames)
-      {
-        MGlobal::displayError("Cannot query many names on muted layers (they layers haven't been imported into Maya)");
-        return MS::kFailure;
-      }
       const std::vector<std::string>& layers = stage->GetMutedLayers();
       for(auto it = layers.begin(); it != layers.end(); ++it)
       {
-        results.append(convert(*it));
+        if(useIdentifiers)
+        {
+          results.append(convert(*it));
+        }
+        else
+        {
+          // Need to convert from identifier to display name...
+          auto layer = SdfLayer::Find(*it);
+          if (!layer)
+          {
+            // If we failed to grab the layer from it's identifier, something went wrong...
+            MGlobal::displayError(MString("Could not find muted layer from identifier: ") + convert(*it));
+            return MS::kFailure;
+          }
+          results.append(convert(layer->GetDisplayName()));
+        }
       }
     }
     else
@@ -235,9 +267,9 @@ MStatus LayerGetLayers::doIt(const MArgList& argList)
       SdfLayerHandleVector layerStack = stage->GetLayerStack(includeSessionLayer);
       for(auto it = layerStack.begin(); it != layerStack.end(); ++it)
       {
-        if(useMayaNames)
+        if(useIdentifiers)
         {
-          results.append(proxyShape->findLayerMayaName(*it));
+          results.append(convert((*it)->GetIdentifier()));
         }
         else
         {
@@ -258,9 +290,9 @@ MStatus LayerGetLayers::doIt(const MArgList& argList)
           if(sessionLayer == *it)
             continue;
         }
-        if(useMayaNames)
+        if(useIdentifiers)
         {
-          results.append(proxyShape->findLayerMayaName(*it));
+          results.append(convert((*it)->GetIdentifier()));
         }
         else
         {
@@ -272,53 +304,14 @@ MStatus LayerGetLayers::doIt(const MArgList& argList)
     if(args.isFlagSet("-sl"))
     {
       SdfLayerHandle sessionLayer = stage->GetSessionLayer();
-      if(useMayaNames)
+      if(useIdentifiers)
       {
-        setResult(proxyShape->findLayerMayaName(sessionLayer));
+        setResult(convert(sessionLayer->GetIdentifier()));
       }
       else
       {
         setResult(convert(sessionLayer->GetDisplayName()));
       }
-      return MS::kSuccess;
-    }
-    else
-    if(args.isFlagSet("-hi"))
-    {
-      class HierarchyBuilder : public nodes::LayerVisitor
-      {
-      public:
-        HierarchyBuilder(nodes::ProxyShape* shape, bool mayaNames)
-        : nodes::LayerVisitor(shape), m_mayaNames(mayaNames) {}
-
-        void onVisit()
-        {
-          nodes::Layer* layer = thisLayer();
-          MString item;
-          for(uint32_t i = 1; i < depth(); ++i)
-          {
-            item += "  ";
-          }
-          if(m_mayaNames)
-          {
-            MFnDependencyNode fn(layer->thisMObject());
-            item += fn.name();
-          }
-          else
-          {
-            LAYER_HANDLE_CHECK(layer->getHandle());
-            item += convert(layer->getHandle()->GetDisplayName());
-          }
-          result.append(item);
-        }
-
-        MStringArray result;
-        bool m_mayaNames;
-      };
-
-      HierarchyBuilder builder(proxyShape, useMayaNames);
-      builder.visitAll();
-      setResult(builder.result);
       return MS::kSuccess;
     }
     setResult(results);
@@ -340,7 +333,6 @@ MSyntax LayerCreateLayer::createSyntax()
 {
   MSyntax syn = setUpCommonSyntax();
   syn.addFlag("-o", "-open", MSyntax::kString);
-  syn.addFlag("-pa", "-parent", MSyntax::kString);
   syn.addFlag("-h", "-help", MSyntax::kNoArg);
   return syn;
 }
@@ -367,15 +359,6 @@ MStatus LayerCreateLayer::doIt(const MArgList& argList)
       args.getFlagArgument("-o", 0, m_filePath);
     }
 
-    if(args.isFlagSet("-pa"))
-    {
-      // extract remaining args
-      args.getFlagArgument("-pa", 0, m_parentLayerName);
-    }
-
-    // Determine the Parent node
-    MObject layer = getSelectedNode(args, nodes::Layer::kTypeId);
-
     m_shape = getShapeNode(args);
 
     if(!m_shape)
@@ -383,57 +366,13 @@ MStatus LayerCreateLayer::doIt(const MArgList& argList)
       throw MS::kFailure;
     }
 
-    if(m_parentLayerName.length() > 0)
+    UsdStageRefPtr stage = m_shape->getUsdStage();
+    if(!stage)
     {
-      UsdStageRefPtr stage = m_shape->usdStage();
-
-      if(!stage)
-      {
-        MGlobal::displayError("no valid stage found on the proxy shape");
-        throw MS::kFailure;
-      }
-
-      m_rootLayer = SdfLayer::Find(convert(m_parentLayerName));
-      if(!m_rootLayer)
-      {
-        std::stringstream ss("LayerCreateLayer:", std::ios_base::app | std::ios_base::out);
-        ss << "Unable to find the parent layer within USD, with identifier '" << m_parentLayerName << "'" << std::endl;
-        MGlobal::displayError(ss.str().c_str());
-        throw MS::kFailure;
-      }
-
-      m_parentLayer = m_shape->findLayer(m_rootLayer);
-      if(!m_parentLayer)
-      {
-        std::stringstream ss("LayerCreateLayer:", std::ios_base::app | std::ios_base::out);
-        ss << "Unable to find the parent layer within Maya, with identifier '" << m_parentLayerName << "'" << std::endl;
-        MGlobal::displayError(ss.str().c_str());
-        throw MS::kFailure;
-      }
+      MGlobal::displayError("no valid stage found on the proxy shape");
+      throw MS::kFailure;
     }
-    else
-    if(layer == MObject::kNullObj)
-    {
-      UsdStageRefPtr stage = m_shape->usdStage();
-      if(!stage)
-      {
-        MGlobal::displayError("no valid stage found on the proxy shape");
-        throw MS::kFailure;
-      }
-      m_rootLayer = stage->GetRootLayer();
-      m_parentLayer = m_shape->findLayer(m_rootLayer);
-      if(!m_parentLayer)
-      {
-        MGlobal::displayError("LayerCreateLayer:Catastrophic failure when trying to retrieve the RootLayer");
-        throw MS::kFailure;
-      }
-    }
-    else
-    {
-      MFnDependencyNode fn(layer);
-      m_parentLayer = (nodes::Layer*)fn.userNode();
-      m_rootLayer = m_parentLayer->getHandle();
-    }
+    m_rootLayer = stage->GetRootLayer();
   }
   catch(const MStatus& status)
   {
@@ -454,14 +393,13 @@ MStatus LayerCreateLayer::undoIt()
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCreateLayer::undoIt\n");
 
   // first let's go remove the newly created layer handle from the root layer we added it to
-  LAYER_HANDLE_CHECK(m_newLayer->getHandle());
-  SdfLayerHandle handle = m_newLayer->getHandle();
+  LAYER_HANDLE_CHECK(m_newLayer);
 
-  // delete the Layer node
-  MDGModifier mod;
-  mod.deleteNode(m_layerNode);
-  mod.doIt();
-
+  if(m_layerWasInserted)
+  {
+    auto manager = AL::usdmaya::nodes::LayerManager::findOrCreateManager();
+    manager->removeLayer(m_newLayer);
+  }
   // lots more to do here!
   return MS::kSuccess;
 }
@@ -472,190 +410,30 @@ MStatus LayerCreateLayer::redoIt()
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCreateLayer::redoIt\n");
   UsdStageRefPtr childStage;
 
-  SdfLayerRefPtr handle = SdfLayer::FindOrOpen(convert(m_filePath));
-
-  if(!handle)
+  if(m_filePath.length() > 0)
   {
-    MGlobal::displayError(MString("LayerCreateLayer:unable to open layer \"") + m_filePath + "\"");
-    return MS::kFailure;
-  }
-
-  MSelectionList sl;
-  MString mayaLayerNodeName = AL::usdmaya::nodes::Layer::toMayaNodeName(handle->GetDisplayName());
-
-  MStatus status = sl.add(mayaLayerNodeName);
-
-  uint32_t selectionLength =  sl.length(&status);
-
-  MObject selectedLayer = MObject::kNullObj;
-  if(selectionLength)
-  {
-    sl.getDependNode(0, selectedLayer);
-    if(selectedLayer.apiType() == MFn::kPluginDependNode)
+    m_newLayer = SdfLayer::FindOrOpen(convert(m_filePath));
+    if(!m_newLayer)
     {
-      sl.getDependNode(0, selectedLayer);
-      MGlobal::displayInfo("LayerCreateLayer: There exists a maya layer for this node already. Not creating a new layer.");
-      return MS::kSuccess;
-    }
-  }
-
-  // construct the new layer node
-  MFnDependencyNode fn;
-  m_layerNode = fn.create(nodes::Layer::kTypeId);
-  fn.setName(nodes::Layer::toMayaNodeName(handle->GetDisplayName()));
-  m_newLayer = (nodes::Layer*)fn.userNode();
-
-  m_newLayer->init(m_shape, handle);
-  m_parentLayer->addChildLayer(m_newLayer);
-
-  std::stringstream ss("LayerCreateLayer:", std::ios_base::app | std::ios_base::out);
-  MGlobal::displayInfo(ss.str().c_str());
-  return MS::kSuccess;
-}
-
-
-
-//----------------------------------------------------------------------------------------------------------------------
-// LayerCreateSubLayer
-//----------------------------------------------------------------------------------------------------------------------
-
-AL_MAYA_DEFINE_COMMAND(LayerCreateSubLayer, AL_usdmaya);
-
-//----------------------------------------------------------------------------------------------------------------------
-MSyntax LayerCreateSubLayer::createSyntax()
-{
-  MSyntax syn = setUpCommonSyntax();
-  syn.addFlag("-o", "-open", MSyntax::kString);
-  syn.addFlag("-c", "-create", MSyntax::kString);
-  syn.addFlag("-h", "-help", MSyntax::kNoArg);
-  return syn;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-bool LayerCreateSubLayer::isUndoable() const
-{
-  return true;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-MStatus LayerCreateSubLayer::doIt(const MArgList& argList)
-{
-  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCreateSubLayer::doIt\n");
-  try
-  {
-    MArgDatabase args = makeDatabase(argList);
-    AL_MAYA_COMMAND_HELP(args, g_helpText);
-
-    if(args.isFlagSet("-c"))
-    {
-      // extract remaining args
-      args.getFlagArgument("-c", 0, m_filePath);
-      m_isOpening = false;
-    }
-    else
-    if(args.isFlagSet("-o"))
-    {
-      // extract remaining args
-      args.getFlagArgument("-o", 0, m_filePath);
-      m_isOpening = true;
-    }
-
-    MObject layer = getSelectedNode(args, nodes::Layer::kTypeId);
-    if(layer == MObject::kNullObj)
-    {
-      nodes::ProxyShape* proxyNode = getShapeNode(args);
-      UsdStageRefPtr stage = proxyNode->usdStage();
-      if(!stage)
-      {
-        MGlobal::displayError("no valid stage found on the proxy shape");
-        throw MS::kFailure;
-      }
-      m_rootLayer = stage->GetEditTarget().GetLayer();
-      m_parentLayer = proxyNode->findLayer(m_rootLayer);
-      if(!m_parentLayer)
-      {
-        MGlobal::displayError("Catastrophic failure when trying to retrieve the edit target");
-        throw MS::kFailure;
-      }
-    }
-    else
-    {
-      MFnDependencyNode fn(layer);
-      m_parentLayer = (nodes::Layer*)fn.userNode();
-      m_rootLayer = m_parentLayer->getHandle();
-    }
-  }
-  catch(const MStatus& status)
-  {
-    return status;
-  }
-  return redoIt();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-MStatus LayerCreateSubLayer::undoIt()
-{
-  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCreateSubLayer::undoIt\n");
-  m_parentLayer->removeSubLayer(m_newLayer);
-
-  // first let's go remove the newly created layer handle from the root layer we added it to
-  LAYER_HANDLE_CHECK(m_newLayer->getHandle());
-  SdfLayerHandle handle = m_newLayer->getHandle();
-  SdfSubLayerProxy proxy = m_rootLayer->GetSubLayerPaths();
-
-  // remove the layer, and save the original layer to reflect the changes.
-  proxy.Remove(handle->GetIdentifier());
-  m_rootLayer->Save();
-
-  // delete the Layer node
-  MDGModifier mod;
-  mod.deleteNode(m_layerNode);
-  mod.doIt();
-
-  // lots more to do here!
-  return MS::kSuccess;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-MStatus LayerCreateSubLayer::redoIt()
-{
-  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCreateSubLayer::redoIt\n");
-  UsdStageRefPtr childStage;
-  SdfLayerHandle handle;
-  if(!m_isOpening)
-  {
-    childStage = UsdStage::CreateNew(convert(m_filePath));
-    if(!childStage)
-    {
-      handle = childStage->GetRootLayer();
-      if(!handle)
-      {
-        return MS::kFailure;
-      }
-      else
-      {
-        handle->Save();
-      }
+      MGlobal::displayError(MString("LayerCreateLayer:unable to open layer \"") + m_filePath + "\"");
+      return MS::kFailure;
     }
   }
   else
   {
-    handle = SdfLayer::FindOrOpen(convert(m_filePath));
-    if(!handle)
+    m_newLayer = SdfLayer::CreateAnonymous();
+    if(!m_newLayer)
     {
-      MGlobal::displayError(MString("unable to open layer \"") + m_filePath + "\"");
+      MGlobal::displayError("LayerCreateLayer:unable to create anonymous layer");
       return MS::kFailure;
     }
   }
-  // construct the new layer node
-  MFnDependencyNode fn;
-  m_layerNode = fn.create(nodes::Layer::kTypeId);
-  m_newLayer = (nodes::Layer*)fn.userNode();
-  m_rootLayer->GetSubLayerPaths().push_back(handle->GetIdentifier());
-  m_rootLayer->Save();
-  m_newLayer->init(m_shape, handle);
-  m_parentLayer->addSubLayer(m_newLayer);
-  fn.setName(nodes::Layer::toMayaNodeName(handle->GetDisplayName()));
+
+  auto manager = AL::usdmaya::nodes::LayerManager::findOrCreateManager();
+  m_layerWasInserted = manager->addLayer(m_newLayer);
+
+  std::stringstream ss("LayerCreateLayer:", std::ios_base::app | std::ios_base::out);
+  MGlobal::displayInfo(ss.str().c_str());
   return MS::kSuccess;
 }
 
@@ -669,6 +447,8 @@ AL_MAYA_DEFINE_COMMAND(LayerCurrentEditTarget, AL_usdmaya);
 MSyntax LayerCurrentEditTarget::createSyntax()
 {
   MSyntax syn = setUpCommonSyntax();
+  syn.useSelectionAsDefault(true);
+  syn.setObjectType(MSyntax::kSelectionList, 0, 1);
   syn.enableQuery(true);
   syn.addFlag("-l", "-layer", MSyntax::kString);
   syn.addFlag("-sp", "-sourcePath",   MSyntax::kString);
@@ -795,106 +575,22 @@ MStatus LayerCurrentEditTarget::doIt(const MArgList& argList)
       }
 
       isQuery = false;
-      MObject selectedLayer = MObject::kNullObj;
-      // if the layer has been manually specified
-      MString layerName;
-      if(args.isFlagSet("-l") && args.getFlagArgument("-l", 0, layerName))
-      {
-        MString mayaLayerName = AL::usdmaya::nodes::Layer::toMayaNodeName(convert(layerName));
 
-        MSelectionList sl;
-        MStatus status = sl.add(mayaLayerName);
-        uint32_t selectionLength =  sl.length(&status);
-
-        if(selectionLength)
-        {
-          sl.getDependNode(0, selectedLayer);
-          if(selectedLayer.apiType() == MFn::kPluginDependNode)
-          {
-            MFnDependencyNode fnDep(selectedLayer);
-            if(fnDep.typeId() != nodes::Layer::kTypeId)
-            {
-              selectedLayer = MObject::kNullObj;
-            }
-          }
-          else
-          {
-            selectedLayer = MObject::kNullObj;
-          }
-        }
-      }
-
-      if(selectedLayer == MObject::kNullObj)
-      {
-        selectedLayer = getSelectedNode(args, nodes::Layer::kTypeId);
-      }
-
-      SdfLayerHandle foundLayer = nullptr;
-      // check to see if a layer is selected.
-      if(selectedLayer != MObject::kNullObj)
-      {
-        MFnDependencyNode fnLayer(selectedLayer);
-        m_usdLayer = (nodes::Layer*)fnLayer.userNode();
-        LAYER_HANDLE_CHECK(m_usdLayer->getHandle());
-        foundLayer = m_usdLayer->getHandle();
-        previouslyAnEditTarget = m_usdLayer->hasBeenTheEditTarget();
-
-        MObject proxyNode = MObject::kNullObj;
-        MObject temp = selectedLayer;
-        while(proxyNode == MObject::kNullObj)
-        {
-          MPlug parentLayerPlug(temp, nodes::Layer::parentLayer());
-          MPlug parentShapePlug(temp, nodes::Layer::proxyShape());
-
-          // yay! we've found the proxy shape
-          if(parentShapePlug.isConnected())
-          {
-            MPlugArray plugs;
-            parentShapePlug.connectedTo(plugs, true, true);
-            if(plugs.length())
-            {
-              proxyNode = plugs[0].node();
-            }
-            break;
-          }
-          if(parentLayerPlug.isConnected())
-          {
-            MPlugArray plugs;
-            parentLayerPlug.connectedTo(plugs, true, true);
-            if(plugs.length())
-            {
-              temp = plugs[0].node();
-            }
-            else
-            {
-              MGlobal::displayError("upstream proxy shape could not be found");
-              return MS::kFailure;
-            }
-          }
-        }
-
-        if(proxyNode == MObject::kNullObj)
-        {
-          MGlobal::displayError("upstream proxy shape could not be found");
-          return MS::kFailure;
-        }
-        MFnDependencyNode fnDep(proxyNode);
-        if(proxyNode.hasFn(MFn::kPluginShape))
-        {
-          if(fnDep.typeId() == nodes::ProxyShape::kTypeId)
-          {
-            nodes::ProxyShape* usdProxy = (nodes::ProxyShape*)fnDep.userNode();
-            stage = usdProxy->usdStage();
-          }
-        }
-      }
-      else
-      {
-        stage = getShapeNodeStage(args);
-      }
-
+      stage = getShapeNodeStage(args);
       if(stage)
       {
+        // if the layer has been manually specified
+        MString layerName;
+        SdfLayerHandle foundLayer = nullptr;
+        if(args.isFlagSet("-l") && args.getFlagArgument("-l", 0, layerName))
+        {
+          nodes::LayerManager* layerManager = nodes::LayerManager::findManager();
+          if(layerManager)
+          {
+            foundLayer = layerManager->findLayer(layerName.asChar());
+          }
+        }
+
         previous = stage->GetEditTarget();
         isQuery = false;
         std::string layerName2;
@@ -913,10 +609,8 @@ MStatus LayerCurrentEditTarget::doIt(const MArgList& argList)
           layerName2 = getLayerId(next.GetLayer());
         }
         else
-        if(args.isFlagSet("-l"))
+        if(layerName.length() > 0)
         {
-          MString layerName;
-          args.getFlagArgument("-l", 0, layerName);
           layerName2 = convert(layerName);
           SdfLayerHandleVector layers = stage->GetUsedLayers();
           for(auto it = layers.begin(); it != layers.end(); ++it)
@@ -986,34 +680,9 @@ MStatus LayerCurrentEditTarget::redoIt()
   {
     TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCurrentEditTarget::redoIt setting target: %s\n", next.GetLayer()->GetDisplayName().c_str());
     stage->SetEditTarget(next);
-
-    if(m_usdLayer)
-    {
-      m_usdLayer->setHasBeenTheEditTarget(true);
-    }
   }
   else
   {
-    // there are cases now where the layer may not have a name, so we need to hunt for the layer.
-    // This is going to be safer in the long run anyway :)
-    MItDependencyNodes it(MFn::kPluginDependNode);
-    for(; !it.isDone(); it.next())
-    {
-      MFnDependencyNode fn(it.item());
-      if(fn.typeId() == nodes::Layer::kTypeId)
-      {
-        nodes::Layer* layer = (nodes::Layer*)fn.userNode();
-        if(layer)
-        {
-          if(previous.GetLayer() == layer->getHandle())
-          {
-            setResult(fn.name());
-            return MS::kSuccess;
-          }
-        }
-      }
-    }
-
     setResult(convert(previous.GetLayer()->GetDisplayName()));
   }
   return MS::kSuccess;
@@ -1027,7 +696,6 @@ MStatus LayerCurrentEditTarget::undoIt()
   {
     TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCurrentEditTarget::undoIt setting target: %s\n", previous.GetLayer()->GetDisplayName().c_str());
     stage->SetEditTarget(previous);
-    m_usdLayer->setHasBeenTheEditTarget(previouslyAnEditTarget);
   }
   return MS::kSuccess;
 }
@@ -1041,7 +709,7 @@ AL_MAYA_DEFINE_COMMAND(LayerSave, AL_usdmaya);
 MSyntax LayerSave::createSyntax()
 {
   MSyntax syn = setUpCommonSyntax();
-  syn.addFlag("-l", "-layer", MSyntax::kString);
+  syn.addArg(MSyntax::kString); // Layer name
   syn.addFlag("-f", "-filename", MSyntax::kString);
   syn.addFlag("-s", "-string", MSyntax::kNoArg);
   syn.addFlag("-h", "-help", MSyntax::kNoArg);
@@ -1062,48 +730,26 @@ MStatus LayerSave::doIt(const MArgList& argList)
     MArgDatabase args = makeDatabase(argList);
     AL_MAYA_COMMAND_HELP(args, g_helpText);
 
-
-    MObject layerNode = MObject::kNullObj;
-    // if the layer has been manually specified
-    if(args.isFlagSet("-l"))
+    MString layerName = args.commandArgumentString(0);
+    if(layerName.length() == 0)
     {
-      MString layerName;
-      if(args.getFlagArgument("-l", 0, layerName))
-      {
-        MSelectionList sl;
-        sl.add(layerName);
-        if(sl.length())
-        {
-          sl.getDependNode(0, layerNode);
-          if(layerNode.apiType() == MFn::kPluginDependNode)
-          {
-            MFnDependencyNode fnDep(layerNode);
-            if(fnDep.typeId() != nodes::Layer::kTypeId)
-            {
-              layerNode = MObject::kNullObj;
-            }
-          }
-          else
-            layerNode = MObject::kNullObj;
-        }
-      }
-    }
-
-    if(layerNode == MObject::kNullObj)
-    {
-      layerNode = getSelectedNode(args, nodes::Layer::kTypeId);
-    }
-
-    if(layerNode == MObject::kNullObj)
-    {
-      MGlobal::displayError("LayerSave: you need to specify an Layer node that you wish to save");
+      MGlobal::displayError("LayerSave: you need to specify a layer name that you wish to save");
       throw MS::kFailure;
     }
 
-    MFnDependencyNode fn(layerNode);
-    nodes::Layer* layer = (nodes::Layer*)fn.userNode();
-    LAYER_HANDLE_CHECK(layer->getHandle());
-    SdfLayerHandle handle = layer->getHandle();
+    SdfLayerHandle handle;
+    nodes::LayerManager* layerManager = nodes::LayerManager::findManager();
+    if(layerManager)
+    {
+      handle = layerManager->findLayer(layerName.asChar());
+    }
+    else
+    {
+      MGlobal::displayError("LayerSave: no layer manager in scene (so no layers)");
+      throw MS::kFailure;
+    }
+
+    LAYER_HANDLE_CHECK(handle);
     if(handle)
     {
       bool flatten = args.isFlagSet("-fl");
@@ -1168,7 +814,8 @@ MStatus LayerSave::doIt(const MArgList& argList)
     }
     else
     {
-      MGlobal::displayError("LayerSave: No valid layer handle found");
+      MGlobal::displayError(MString("LayerSave: Could not find layer named '")
+          + layerName + "'");
       throw MS::kFailure;
     }
   }
@@ -1188,6 +835,7 @@ AL_MAYA_DEFINE_COMMAND(LayerSetMuted, AL_usdmaya);
 MSyntax LayerSetMuted::createSyntax()
 {
   MSyntax syn = setUpCommonSyntax();
+  syn.addArg(MSyntax::kString); // Layer name
   syn.addFlag("-h", "-help", MSyntax::kNoArg);
   syn.addFlag("-m", "-muted", MSyntax::kBoolean);
   return syn;
@@ -1207,10 +855,10 @@ MStatus LayerSetMuted::doIt(const MArgList& argList)
     MArgDatabase args = makeDatabase(argList);
     AL_MAYA_COMMAND_HELP(args, g_helpText);
 
-    MObject layerNode = getSelectedNode(args, nodes::Layer::kTypeId);
-    if(layerNode == MObject::kNullObj)
+    MString layerName = args.commandArgumentString(0);
+    if(layerName.length() == 0)
     {
-      MGlobal::displayError("LayerSetMuted: you need to specify an Layer node that you wish to mute/unmute");
+      MGlobal::displayError("LayerSetMuted: you need to specify a layer name that you wish to set muted");
       throw MS::kFailure;
     }
 
@@ -1220,10 +868,17 @@ MStatus LayerSetMuted::doIt(const MArgList& argList)
       throw MS::kFailure;
     }
 
-    MFnDependencyNode fn(layerNode);
-    nodes::Layer* layer = (nodes::Layer*)fn.userNode();
-    LAYER_HANDLE_CHECK(layer->getHandle());
-    m_layer = layer->getHandle();
+    nodes::LayerManager* layerManager = nodes::LayerManager::findManager();
+    if(layerManager)
+    {
+      m_layer = layerManager->findLayer(layerName.asChar());
+    }
+    else
+    {
+      MGlobal::displayError("LayerSave: no layer manager in scene (so no layers)");
+      throw MS::kFailure;
+    }
+    LAYER_HANDLE_CHECK(m_layer);
     if(!m_layer)
     {
       MGlobal::displayError("LayerSetMuted: no valid USD layer found on the node");
@@ -1256,17 +911,44 @@ MStatus LayerSetMuted::redoIt()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStringArray buildLayerList(const MString&)
+MStringArray buildEditedLayersList(const MString&)
 {
   MStringArray result;
-  MItDependencyNodes it(MFn::kPluginDependNode);
-  for(; !it.isDone(); it.next())
+  nodes::LayerManager* layerManager = nodes::LayerManager::findManager();
+  if(layerManager)
   {
-    MFnDependencyNode fn(it.item());
-    if(fn.typeId() == nodes::Layer::kTypeId)
-    {
-      result.append(fn.name());
-    }
+    layerManager->getLayerIdentifiers(result);
+  }
+  return result;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStringArray buildProxyLayersList(const MString&)
+{
+  MStringArray result;
+  MSelectionList sl;
+  AL_MAYA_CHECK_ERROR_RETURN_VAL(MGlobal::getActiveSelectionList(sl), result,
+      "Error building layer list");
+
+  nodes::ProxyShape* foundShape = getProxyShapeFromSel(sl);
+  if (!foundShape)
+  {
+    MGlobal::displayError("No proxy shape selected");
+    return result;
+  }
+
+  auto stage = foundShape->getUsdStage();
+  if (!stage)
+  {
+    MGlobal::displayError(MString("Proxy shape '") + foundShape->name() + "' had no usd stage");
+    return result;
+  }
+
+  auto usedLayers = stage->GetUsedLayers();
+
+  for(auto& layer : usedLayers)
+  {
+    result.append(layer->GetIdentifier().c_str());
   }
   return result;
 }
@@ -1276,14 +958,8 @@ void constructLayerCommandGuis()
 {
   {
     maya::CommandGuiHelper saveLayer("AL_usdmaya_LayerSave", "Save Layer", "Save Layer", "USD/Layers/Save Layer", false);
-    saveLayer.addListOption("l", "Layer to Save", (AL::maya::GenerateListFn)buildLayerList);
+    saveLayer.addListOption("l", "Layer to Save", (AL::maya::GenerateListFn)buildEditedLayersList, /*isMandatory=*/true);
     saveLayer.addFilePathOption("f", "USD File Path", maya::CommandGuiHelper::kSave, "USDA files (*.usda) (*.usda);;USDC files (*.usdc) (*.usdc);;Alembic Files (*.abc) (*.abc);;All Files (*) (*)", maya::CommandGuiHelper::kStringMustHaveValue);
-  }
-
-  {
-    maya::CommandGuiHelper createSubLayer("AL_usdmaya_LayerCreateSubLayer", "Create Sub Layer on current layer", "Create", "USD/Layers/Create Sub Layer", false);
-    createSubLayer.addFilePathOption("create", "Create New Layer", maya::CommandGuiHelper::kSave, "USD files (*.usd*) (*.usd*);; Alembic Files (*.abc) (*.abc);;All Files (*) (*)", maya::CommandGuiHelper::kStringOptional);
-    createSubLayer.addFilePathOption("open", "Open Existing Layer", maya::CommandGuiHelper::kLoad, "USD files (*.usd*) (*.usd*);; Alembic Files (*.abc) (*.abc);;All Files (*) (*)", maya::CommandGuiHelper::kStringOptional);
   }
 
   {
@@ -1293,7 +969,9 @@ void constructLayerCommandGuis()
 
   {
     maya::CommandGuiHelper setEditTarget("AL_usdmaya_LayerCurrentEditTarget", "Set Current Edit Target", "Set", "USD/Layers/Set Current Edit Target", false);
-    setEditTarget.addListOption("l", "USD Layer", (AL::maya::GenerateListFn)buildLayerList);
+    // we build our layer list using identifiers, so make sure the command is told to expect identifiers
+    setEditTarget.addExecuteText(" -fid ");
+    setEditTarget.addListOption("l", "USD Layer", (AL::maya::GenerateListFn)buildProxyLayersList);
   }
 }
 
@@ -1305,23 +983,19 @@ LayerCreateLayer Overview:
 
   This command provides a way to create new layers in Maya. The Layer identifier passed into the -o will attempt to find the layer, 
   and if it doesn't exist then it is created. If a layer is created, it will create a AL::usdmaya::nodes::Layer which will contain a SdfLayerRefPtr 
-  to the layer opened with -o. This layer can also be parented under an existing layer by passing in the identifier into -pa.
+  to the layer opened with -o.
    
   This command is currently used in our pipeline to create layers on the fly. These layers may then be targeted by an EditTarget for edits
   and these edits are saved into the maya scene file. 
 
-  If the -pa(parent) is the identifier of the layer in USD. If a corresponding Sdf.Layer cannot 
-  be found the command will return a failure, once the Sdf.Layer is found it will try find the reciprocal layer in Maya,
-  if this layer can't be found the command will return a failure.
-
-If no identifier is passed, the stage's root layer is used as the parent.
+  If no identifier is passed, the stage's root layer is used as the parent.
 
   Examples:
     To create a layer in maya and implicitly parent it to Maya's root layer representation
       AL_usdmaya_LayerCreateLayer -o "path/to/layer.usda" -p "ProxyShape1"
 
     To create a layer and parent it to a layer existing
-      AL_usdmaya_LayerCreateLayer -o "path/to/layer.usda" -pa "exisiting/layers/identifier.usda" -p "ProxyShape1"
+      AL_usdmaya_LayerCreateLayer -o "path/to/layer.usda" -p "ProxyShape1"
 )";
 
 const char* const LayerGetLayers::g_helpText = R"(
@@ -1331,8 +1005,8 @@ LayerGetLayers Overview:
   There are 4 main types of layer that you can query:
 
     1. Muted layers: These layers are effectively disabled (muted in USD speak).
-    2. Used layers: These are the current layers in use by the proxy shape node. This can
-       either be queried as a flattened list, or as a hierarchy.
+    2. Used layers: These are the current layers in use by the proxy shape node, as a
+       flattened list.
     3. Session Layers: This is the highest level layer, used to store changes made for
        your session, e.g. visibility changes, wireframe display mode, etc.
     4. Layer Stack: This is a stack of layers that can be set as edit targets. This implicitly
@@ -1342,9 +1016,10 @@ LayerGetLayers Overview:
   An ProxyShape node must either be selected when running this command, or it must be
   specified as the final argument to this command.
 
-  By default, the command will return the USD layer display names (e.g. "myLayer.udsa"). If you
-  wish to return the names of the maya nodes that are currently mirroring them, add the flag
-  "-mayaNames" to any of the following examples:
+  By default, the command will return the USD layer display names (e.g. "myLayer.udsa",
+  "myAnonymousTag", "resolve-result.usda"). If you wish to return the raw identifier names
+  of the layers ("/full/path/to/myLayer.usda", "anon:0x1655cc0:myAnonymousTag",
+  "asset://unresolved/asset/path.usda"), add the flag "-identifiers" to any of the following examples:
 
 Examples:
 
@@ -1355,10 +1030,6 @@ Examples:
   To query the used layers as a flattened list:
 
       LayerGetLayers -used "ProxyShape1";
-
-  To query the used layers as a hierarchy:
-
-      LayerGetLayers -hierarchy "ProxyShape1";
 
   To query the usd layer stack (without the session layer):
 
@@ -1375,49 +1046,6 @@ Examples:
   To query the usd root layer on its own:
 
       LayerGetLayers -rootLayer "ProxyShape1";
-)";
-
-//----------------------------------------------------------------------------------------------------------------------
-const char* const LayerCreateSubLayer::g_helpText = R"(
-LayerCreateSubLayer Overview:
-
-  Given a USD layer, this command will allow you to create a new sub-layer on that layer. If you
-  specify an ProxyShape, either by selecting it, or by specifying its name as the last
-  argument to this command, then the sub-layer will be created to that proxy nodes' current edit
-  target.
-
-  Alternatively, if you select a USD layer (or specify the maya node as the last param to this command),
-  then the sublayer will be added under the specified layer.
-
-  To query or set the current edit target, use the LayerCurrentEditTarget command (for example,
-  you might want to set your newly created sub layer to be the edit target, or you might want to
-  query/control where the sub-layer will be created).
-
-  You will always need to specify a filepath to the USD file for your sublayer. You can do this either
-  with the -create/-c option (which will create a new usda file for you layer), or via the -open/-o
-  flag to open an existing layer. If -create is used, and the file already exists, an error will
-  be generated. If -open/-o is specified, and the file does not exist, an error will be generated.
-
-  This command is undoable.
-
-Examples:
-
-  To create a new sub-layer on the current edit target of a ProxyShape:
-
-    LayerCreateSubLayer -c "/my/file/path.usda"  "ProxyShape1"; // create new usd file
-    LayerCreateSubLayer -o "/my/file/path.usda"  "ProxyShape1"; // open existing usd file
-
-  To create a new sub-layer on the a specified Layer node:
-
-    LayerCreateSubLayer -c "/my/file/path.usda"  "Layer1"; // create new usd file
-    LayerCreateSubLayer -o "/my/file/path.usda"  "Layer1"; // open existing usd file
-
-Possible Problems:
-
-  Currently no checking is performed to see if there are circular references. I have no idea what
-  would happen if you were to attempt to add a parent layer as a sub layer of one of its children.
-  Bad things I'd imagine!
-
 )";
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1442,21 +1070,16 @@ LayerCurrentEditTarget Overview:
 
   1. Select a ProxyShape, and specify the name of the layer to set via the "-layer" flag:
 
-     LayerCurrentEditTarget -l "Layer1";
+     LayerCurrentEditTarget -l "identifier/for/layer.usda";
 
   2. Specify the name of the layer via the "-layer" flag, and specify the ProxyShape name:
 
-     LayerCurrentEditTarget -l "Layer1" "ProxyShape1";
+     LayerCurrentEditTarget -l "identifier/for/layer.usda" "ProxyShape1";
 
   3. Specify name of the layer as well as specifying parameters to the EditTargets mapping function
-     LayerCurrentEditTarget -tp "/shot_zda01_020/environment" -sp "/ShotSetRoot" -l "Layer1" "ProxyShape1"
+     LayerCurrentEditTarget -tp "/shot_zda01_020/environment" -sp "/ShotSetRoot" -l "identifier/for/layer.usda" "ProxyShape1"
 
-
-  4. Select the Layer in maya, and run the command:
-
-     LayerCurrentEditTarget;
-
-  5. Specify the layer name as an identifier:
+  4. Specify the layer name as an identifier:
      LayerCurrentEditTarget -l "anon:0x136d9050" -fid -proxy "ProxyShape1"
 
 
@@ -1476,25 +1099,20 @@ LayerCurrentEditTarget Overview:
 const char* const LayerSave::g_helpText = R"(
 LayerSave Overview:
 
-  This command allows you to export/save a single layer to a file. In the simplest case, if you select
-  an Layer node, you can simply execute:
+  This command allows you to export/save a single layer to a file. In the simplest case, you
+  specify the layer name to save, e.g.
 
-     LayerSave;
-
-  This will save that layer to disk (using the existing file path set on the node). Alternatively you
-  can also specify the layer name to save, e.g.
-
-     LayerSave "myscene_root_usda";
+     LayerSave "identifier/for/myscene_root.usda";
 
   If you wish to export that layer and return it as a text string, use the -string/-s flag. The following
   command will return the usd file contents as a string.
 
-     LayerSave -s "myscene_root_usda";
+     LayerSave -s "identifier/for/myscene_root.usda";
 
   If you wish to export that layer as a new file, you can also specify the filepath with the -f/-filename
   flag, e.g.
 
-     LayerSave -f "/scratch/stuff/newlayer.usda" "myscene_root_usda";
+     LayerSave -f "/scratch/stuff/newlayer.usda" "identifier/for/myscene_root.usda";
 
   In addition, you are also able to flatten a given layer using the -flatten option. When using this
   option, the specified layer will be written out as a new file, and that file will contain ALL of the
@@ -1502,11 +1120,11 @@ LayerSave Overview:
   Note: when using the -flatten option, you must specify the -s or -f flags (to write to a string,
   or export as a file)
 
-     LayerSave -flatten -f "/scratch/stuff/phatlayer.usda" "myscene_root_usda";
+     LayerSave -flatten -f "/scratch/stuff/phatlayer.usda" "identifier/for/myscene_root.usda";
 
   or to return a string
 
-     LayerSave -flatten -s "myscene_root_usda";
+     LayerSave -flatten -s "identifier/for/myscene_root.usda";
 
 )";
 
@@ -1514,15 +1132,10 @@ LayerSave Overview:
 const char* const LayerSetMuted::g_helpText = R"(
 LayerSetMuted Overview:
 
-  This command allows you to mute or unmute a specified layer. If you have a layer selected:
+  This command allows you to mute or unmute a specified layer:
 
-     LayerSetMuted -m true;  //< mutes the currently selected layer
-     LayerSetMuted -m false;  //< unmutes the currently selected layer
-
-  You can also specify the layer if you wish:
-
-     LayerSetMuted -m true "Layer1";  //< mutes the layer 'Layer1'
-     LayerSetMuted -m false "Layer1";  //< unmutes the layer 'Layer1'
+     LayerSetMuted -m true "identifier/for/layer.usda";  //< mutes the layer 'layer.usda'
+     LayerSetMuted -m false "identifier/for/layer.usda";  //< unmutes the layer 'layer.usda'
 
   This command is undoable, but it will probably crash right now.
 )";

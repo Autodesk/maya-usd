@@ -16,6 +16,7 @@
 #include "pxr/base/tf/pyModule.h"
 
 TF_WRAP_MODULE {
-    TF_WRAP(StageCache);
+    TF_WRAP(LayerManager);
     TF_WRAP(ProxyShape);
+    TF_WRAP(StageCache);
 }
