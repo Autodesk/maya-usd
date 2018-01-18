@@ -876,6 +876,7 @@ void SelectionUndoHelper::doIt()
     MGlobal::setActiveSelectionList(m_newSelection, MGlobal::kReplaceList);
   }
   m_proxy->m_pleaseIgnoreSelection = false;
+  m_proxy->constructLockPrims();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -893,6 +894,7 @@ void SelectionUndoHelper::undoIt()
     MGlobal::setActiveSelectionList(m_previousSelection, MGlobal::kReplaceList);
   }
   m_proxy->m_pleaseIgnoreSelection = false;
+  m_proxy->constructLockPrims();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1244,7 +1246,6 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
   }
 
   m_pleaseIgnoreSelection = false;
-
   return true;
 }
 

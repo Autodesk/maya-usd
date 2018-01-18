@@ -819,7 +819,7 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
 
   SdfPathVector newUnselectables;
   SdfPathVector removeUnselectables;
-  auto recordSelectablePrims = [&newUnselectables, &removeUnselectables, this] (const SdfPath& objectPath, const UsdPrim& prim){
+  auto recordSelectablePrims = [&newUnselectables, &removeUnselectables, this](const UsdPrim& prim){
     if(!prim.IsValid())
     {
       return;
@@ -843,7 +843,7 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   SdfPathSet lockTransformPrims;
   SdfPathSet lockInheritedPrims;
   SdfPathSet unlockedPrims;
-  auto recordPrimsLockStatus = [&lockTransformPrims, &lockInheritedPrims, &unlockedPrims] (const SdfPath& objectPath, const UsdPrim& prim) {
+  auto recordPrimsLockStatus = [&lockTransformPrims, &lockInheritedPrims, &unlockedPrims](const UsdPrim& prim) {
     if (!prim.IsValid())
     {
       return;
@@ -853,20 +853,20 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     {
       if (lockPropertyValue == Metadata::lockTransform)
       {
-        lockTransformPrims.insert(objectPath);
+        lockTransformPrims.insert(prim.GetPath());
       }
       else if (lockPropertyValue == Metadata::lockInherited)
       {
-        lockInheritedPrims.insert(objectPath);
+        lockInheritedPrims.insert(prim.GetPath());
       }
       else if (lockPropertyValue == Metadata::lockUnlocked)
       {
-        unlockedPrims.insert(objectPath);
+        unlockedPrims.insert(prim.GetPath());
       }
     }
     else
     {
-      lockInheritedPrims.insert(objectPath);
+      lockInheritedPrims.insert(prim.GetPath());
     }
   };
 
@@ -874,8 +874,8 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   for(const SdfPath& path : resyncedPaths)
   {
     UsdPrim newPrim = m_stage->GetPrimAtPath(path);
-    recordSelectablePrims(path, newPrim);
-    recordPrimsLockStatus(path, newPrim);
+    recordSelectablePrims(newPrim);
+    recordPrimsLockStatus(newPrim);
   }
 
   const SdfPathVector& changedInfoOnlyPaths = notice.GetChangedInfoOnlyPaths();
@@ -890,8 +890,8 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     {
       changedPrim = m_stage->GetPrimAtPath(path);
     }
-    recordSelectablePrims(path, changedPrim);
-    recordPrimsLockStatus(path, changedPrim);
+    recordSelectablePrims(changedPrim);
+    recordPrimsLockStatus(changedPrim);
   }
 
   if(!removeUnselectables.empty())
@@ -1259,9 +1259,10 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
   UsdPrim prim = m_stage->GetPrimAtPath(path);
   if(!prim.IsValid())
   {
-    TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute prim path not valid '%s'\n", prim.GetPath());
+    TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute prim path not valid '%s'\n", prim.GetPath().GetString().c_str());
     return false;
   }
+
 
   VtValue mayaPath = prim.GetCustomDataByKey(TfToken("MayaPath"));
   MObject lockObject;
@@ -1309,7 +1310,7 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
   {
     MPlug(lockObject, Transform::pushToPrim()).setBool(false);
   }
-
+  TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute Setting lock for '%s'\n", prim.GetPath().GetString().c_str());
   return true;
 }
 
@@ -1333,16 +1334,12 @@ void ProxyShape::constructLockPrims()
     }
   }
 
-  SdfPathVector primsToLock;
-  primsToLock.reserve(primsNeedLock.size());
   SdfPathVector primsToUnlock;
   primsToUnlock.reserve(m_currentLockedPrims.size());
-  std::set_difference(primsNeedLock.begin(), primsNeedLock.end(), m_currentLockedPrims.begin(),
-                      m_currentLockedPrims.end(), std::back_inserter(primsToLock));
   std::set_difference(m_currentLockedPrims.begin(), m_currentLockedPrims.end(), primsNeedLock.begin(),
                       primsNeedLock.end(), std::back_inserter(primsToUnlock));
 
-  for (auto lock : primsToLock)
+  for (auto lock : primsNeedLock)
   {
     if (lockTransformAttribute(lock, true))
     {
