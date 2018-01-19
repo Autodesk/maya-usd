@@ -75,6 +75,25 @@ static void preFileRead(void*)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+static void disableAttributeChangedCallbacks()
+{
+  MFnDependencyNode fn;
+  {
+    MItDependencyNodes iter(MFn::kPluginShape);
+    for(; !iter.isDone(); iter.next())
+    {
+      fn.setObject(iter.item());
+      if(fn.typeId() == nodes::ProxyShape::kTypeId)
+      {
+        // execute a pull on each proxy shape to ensure that each one has a valid USD stage!
+        nodes::ProxyShape* proxy = (nodes::ProxyShape*)fn.userNode();
+        proxy->removeAttributeChangedCallback();
+      }
+    }
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 static void postFileRead(void*)
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("postFileRead\n");
@@ -89,11 +108,15 @@ static void postFileRead(void*)
     // missed
     readDepth++;
     oldReadDepth++;
+    disableAttributeChangedCallbacks();
   }
 
   // oldReadDepth is the value BEFORE we decremented (with fetch_sub), so should be 1
   // if we're now "done"
-  if (oldReadDepth != 1) return;
+  if (oldReadDepth != 1)
+  {
+    return;
+  }
 
   nodes::LayerManager* layerManager = nodes::LayerManager::findManager();
   if (layerManager)
@@ -125,8 +148,9 @@ static void postFileRead(void*)
       auto stage = proxy->getUsdStage();
       proxy->deserialiseTranslatorContext();
       proxy->findTaggedPrims();
-      proxy->constructGLImagingEngine();
       proxy->deserialiseTransformRefs();
+      proxy->constructGLImagingEngine();
+      proxy->addAttributeChangedCallback();
     }
     unloadedProxies.clear();
   }
