@@ -147,6 +147,46 @@ static const char* const g_duplicateTransformNames =
 "  }\n"
 "}\n";
 
+static const char* const g_variantSwitchPrimTypes =
+"#usda 1.0\n"
+"\n"
+"def Xform \"root\"\n"
+"{\n"
+"    def Xform \"switchable\"(\n"
+"        variants = {\n"
+"            string option = \"camera\"\n"
+"        }\n"
+"        add variantSets = \"option\"\n"
+"    )\n"
+"    {\n"
+"        variantSet \"option\" = {\n"
+"            \"camera\" {\n"
+"                def  Xform \"top\"\n"
+"                {\n"
+"                    def  Camera \"cam\"\n"
+"                    {\n"
+"                    }\n"
+"                }\n"
+"            }\n"
+"            \"mayaReference\" {\n"
+"                def  ALMayaReference \"top\"\n"
+"                {\n"
+"                    asset mayaReference = @/tmp/AL_USDMayaTests_camera.ma@\n"
+"                    string mayaNamespace = \"cam_ns\"\n"
+"                }\n"
+"            }\n"
+"            \"no_translator\" {\n"
+"                def  Xform \"top\"\n"
+"                {\n"
+"                    def  Xform \"cam\"\n"
+"                    {\n"
+"                    }\n"
+"                }\n"
+"            }\n"
+"        }\n"
+"    }\n"
+"}\n";
+
 TEST(ActiveInactive, duplicateTransformNames)
 {
   MFileIO::newFile(true);
@@ -735,3 +775,99 @@ TEST(ActiveInactive, disable)
   }
 }
 
+TEST(ActiveInactive, variantChange)
+{
+  MFileIO::newFile(true);
+
+  // camera1, camera1Shape
+  MFileIO::newFile(true);
+  MGlobal::executeCommand("camera", false, false);
+  MGlobal::executeCommand("group -name camera_rigg_top camera1", false, false);
+  MFileIO::saveAs("/tmp/AL_USDMayaTests_camera.ma", 0, true);
+  MFileIO::newFile(true);
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_variant.usda";
+  // generate some data for the proxy shape
+  {
+    std::ofstream os(temp_path);
+    os << g_variantSwitchPrimTypes;
+  }
+
+  MString shapeName;
+
+  MFnDagNode fn;
+  MObject xform = fn.create("transform");
+  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+  shapeName = fn.name();
+
+  AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+  // force the stage to load
+  proxy->filePathPlug().setString(temp_path.c_str());
+
+  auto stage = proxy->getUsdStage();
+
+  {
+    // stage should be valid
+    EXPECT_TRUE(stage);
+
+    // should be composed of two layers
+    SdfLayerHandle session = stage->GetSessionLayer();
+    SdfLayerHandle root = stage->GetRootLayer();
+    EXPECT_TRUE(session);
+    EXPECT_TRUE(root);
+  }
+  // activate the prim or it wont be in the scene yet.
+  MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/switchable/top/cam\" \"AL_usdmaya_ProxyShape1\"", false, false);
+
+  // camera variant is the default
+
+  MSelectionList sl;
+  EXPECT_TRUE(bool(sl.add("root")));
+  EXPECT_TRUE(bool(sl.add("switchable")));
+  EXPECT_TRUE(bool(sl.add("switchable|top")));
+  EXPECT_TRUE(bool(sl.add("cam")));
+  EXPECT_EQ(4, sl.length());
+  sl.clear();
+
+  UsdPrim prim = stage->GetPrimAtPath(SdfPath("/root/switchable"));
+  if(prim)
+  {
+    UsdVariantSet optionSet = prim.GetVariantSet("option");
+    if(optionSet) {
+      EXPECT_TRUE(optionSet.SetVariantSelection("mayaReference"));
+
+      // make sure the translator was able to clear off transforms from past variant
+      EXPECT_TRUE(bool(sl.add("root")));
+      EXPECT_TRUE(bool(sl.add("switchable|top")));
+      EXPECT_FALSE(bool(sl.add("cam")));
+      EXPECT_TRUE(bool(sl.add("cam_ns:camera_rigg_top")));
+      EXPECT_TRUE(bool(sl.add("cam_ns:camera1")));
+      EXPECT_TRUE(bool(sl.add("cam_ns:cameraShape1")));
+      EXPECT_EQ(5, sl.length());
+      sl.clear();
+
+      // make sure we can switch back
+      EXPECT_TRUE(optionSet.SetVariantSelection("camera"));
+
+      EXPECT_TRUE(bool(sl.add("root")));
+      EXPECT_TRUE(bool(sl.add("switchable")));
+      EXPECT_TRUE(bool(sl.add("switchable|top")));
+      EXPECT_TRUE(bool(sl.add("cam")));
+      EXPECT_EQ(4, sl.length());
+      sl.clear();
+
+      EXPECT_TRUE(optionSet.SetVariantSelection("no_translator"));
+
+      // no translators so there should be no transforms in maya until they are selected
+      EXPECT_FALSE(bool(sl.add("root")));
+      EXPECT_FALSE(bool(sl.add("switchable|top")));
+      EXPECT_FALSE(bool(sl.add("cam")));
+      EXPECT_FALSE(bool(sl.add("cam_ns:camera_rigg_top")));
+      EXPECT_FALSE(bool(sl.add("cam_ns:camera1")));
+      EXPECT_FALSE(bool(sl.add("cam_ns:cameraShape1")));
+      EXPECT_EQ(0, sl.length());
+      sl.clear();
+    }
+  }
+}

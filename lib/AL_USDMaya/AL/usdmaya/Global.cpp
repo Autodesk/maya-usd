@@ -16,13 +16,15 @@
 #include "AL/usdmaya/Global.h"
 #include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/DebugCodes.h"
-#include "AL/usdmaya/nodes/Layer.h"
+#include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
 #include <pxr/base/plug/registry.h>
+#include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/getenv.h>
+#include <pxr/base/tf/stackTrace.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdUtils/stageCache.h>
 
@@ -35,6 +37,15 @@
 #ifndef AL_USDMAYA_LOCATION_NAME
   #define AL_USDMAYA_LOCATION_NAME "AL_USDMAYA_LOCATION"
 #endif
+
+namespace {
+  // Keep track of how many levels "deep" in file reads we are - because
+  // a file open can can trigger a reference load, which can trigger a
+  // a sub-reference load, etc... we only want to run postFileRead after
+  // once per top-level file read operation (ie, once per open, or once
+  // per import, or once per reference).
+  std::atomic<size_t> readDepth;
+}
 
 namespace AL {
 namespace usdmaya {
@@ -83,8 +94,8 @@ static MayaEventSystemBinding g_eventSystem;
 //----------------------------------------------------------------------------------------------------------------------
 maya::CallbackId Global::m_preSave;
 maya::CallbackId Global::m_postSave;
-maya::CallbackId Global::m_preOpen;
-maya::CallbackId Global::m_postOpen;
+maya::CallbackId Global::m_preRead;
+maya::CallbackId Global::m_postRead;
 maya::CallbackId Global::m_fileNew;
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -97,76 +108,86 @@ static void onFileNew(void*)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-static void preFileOpen(void*)
+static void preFileRead(void*)
 {
-  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("preFileOpen\n");
+  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("preFileRead\n");
 
-  MFnDependencyNode fn;
+  if(!readDepth)
   {
-    MItDependencyNodes iter(MFn::kPluginShape);
-    for(; !iter.isDone(); iter.next())
+    MFnDependencyNode fn;
     {
-      fn.setObject(iter.item());
-      if(fn.typeId() == nodes::ProxyShape::kTypeId)
+      MItDependencyNodes iter(MFn::kPluginShape);
+      for(; !iter.isDone(); iter.next())
       {
-        nodes::ProxyShape* proxy = (nodes::ProxyShape*)fn.userNode();
-        proxy->removeAttributeChangedCallback();
+        fn.setObject(iter.item());
+        if(fn.typeId() == nodes::ProxyShape::kTypeId)
+        {
+          nodes::ProxyShape* proxy = (nodes::ProxyShape*)fn.userNode();
+          proxy->removeAttributeChangedCallback();
+        }
       }
     }
   }
+
+  ++readDepth;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-static void postFileOpen(void*)
+static void postFileRead(void*)
 {
-  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("postFileOpen\n");
+  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("postFileRead\n");
+
+  // If the plugin is loaded as the result of a "requires" statment when opening a scene,
+  // it's possible for postFileRead to be called without preFileRead having been... so,
+  // make sure we don't decrement past 0!
+  size_t oldReadDepth = readDepth.fetch_sub(1);
+  if (ARCH_UNLIKELY(oldReadDepth == 0))
+  {
+    // Assume we got here because we didn't call preFileRead - do the increment that it
+    // missed
+    readDepth++;
+    oldReadDepth++;
+  }
+
+  // oldReadDepth is the value BEFORE we decremented (with fetch_sub), so should be 1
+  // if we're now "done"
+  if (oldReadDepth != 1) return;
+
+  nodes::LayerManager* layerManager = nodes::LayerManager::findManager();
+  if (layerManager)
+  {
+    layerManager->loadAllLayers();
+    AL_MAYA_CHECK_ERROR2(layerManager->clearSerialisationAttributes(), "postFileRead");
+  }
 
   MFnDependencyNode fn;
   {
-    MItDependencyNodes iter(MFn::kPluginShape);
-    for(; !iter.isDone(); iter.next())
+    std::vector<MObjectHandle>& unloadedProxies = nodes::ProxyShape::GetUnloadedProxyShapes();
+    unsigned int numUnloadedProxies = unloadedProxies.size();
+    for(unsigned int i = 0; i < numUnloadedProxies; ++i)
     {
-      fn.setObject(iter.item());
-      if(fn.typeId() == nodes::ProxyShape::kTypeId)
+      if(!(unloadedProxies[i].isValid() && unloadedProxies[i].isAlive()))
       {
-        nodes::ProxyShape* proxy = (nodes::ProxyShape*)fn.userNode();
-        proxy->reloadStage();
-        proxy->constructGLImagingEngine();
-        auto stage = proxy->getUsdStage();
-        proxy->deserialiseTranslatorContext();
-        proxy->findTaggedPrims();
-        proxy->deserialiseTransformRefs();
-        auto layer = proxy->getLayer();
-        if(layer)
-        {
-          layer->setLayerAndClearAttribute(stage->GetSessionLayer());
-        }
-        proxy->addAttributeChangedCallback();
+        continue;
       }
-    }
-  }
-  {
-    MItDependencyNodes iter(MFn::kPluginDependNode);
-    for(; !iter.isDone(); iter.next())
-    {
-      fn.setObject(iter.item());
-      if(fn.typeId() == nodes::Layer::kTypeId)
+      fn.setObject(unloadedProxies[i].object());
+      if(fn.typeId() != nodes::ProxyShape::kTypeId)
       {
-        // now go and fix up each of the layer nodes in the scene
-        nodes::Layer* layerPtr = (nodes::Layer*)fn.userNode();
-        MPlug plug = layerPtr->nameOnLoadPlug();
-        MString path = plug.asString();
-        if(path.length() && path.substring(0, 3) != "anon")
-        {
-          SdfLayerHandle layer = SdfLayer::FindOrOpen(path.asChar());
-          LAYER_HANDLE_CHECK(layer);
-          layerPtr->setLayerAndClearAttribute(layer);
-        }
-        else
-        {
-        }
+        TF_CODING_ERROR("ProxyShape::m_unloadedProxyShapes had a non-Proxy-Shape mobject");
+        continue;
       }
+
+      // execute a pull on each proxy shape to ensure that each one has a valid USD stage!
+      nodes::ProxyShape* proxy = (nodes::ProxyShape*)fn.userNode();
+      proxy->loadStage();
+      auto stage = proxy->getUsdStage();
+      proxy->deserialiseTranslatorContext();
+      proxy->findTaggedPrims();
+      proxy->constructGLImagingEngine();
+      proxy->deserialiseTransformRefs();
+      proxy->addAttributeChangedCallback();
     }
+    unloadedProxies.clear();
   }
   {
     MItDependencyNodes iter(MFn::kPluginTransformNode);
@@ -184,7 +205,7 @@ static void postFileOpen(void*)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-static void preFileSave(void*)
+static void _preFileSave()
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("preFileSave\n");
 
@@ -193,12 +214,50 @@ static void preFileSave(void*)
   // save (which should call another set of callbacks and delete those transient nodes. This should leave us with just
   // those AL::usdmaya::nodes::Transform nodes that are created because they are required, or have been requested).
   MGlobal::clearSelectionList();
+
+  nodes::ProxyShape::serializeAll();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void preFileSave(void*)
+{
+  // This is a file-save callback, so we want to be EXTRA careful not to crash out, and
+  // lose their work right when they need it most!
+  // ...except if we're in a debug build, in which case just crash the mofo, so we
+  // notice!
+#ifndef DEBUG
+  try
+  {
+#endif
+    _preFileSave();
+#ifndef DEBUG
+  }
+  catch (const std::exception& e)
+  {
+    MString msg("Caught unhandled exception inside of al_usdmaya save callback: ");
+    msg += e.what();
+    MGlobal::displayError(msg);
+    std::cerr << msg.asChar();
+    TfPrintStackTrace(std::cerr, "Unhandled error in al_usdmaya save callback:");
+  }
+  catch (...)
+  {
+    MGlobal::displayError("Caught unknown exception inside of al_usdmaya save callback");
+    TfPrintStackTrace(std::cerr, "Unknown error in al_usdmaya save callback:");
+  }
+#endif
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 static void postFileSave(void*)
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("postFileSave\n");
+
+  nodes::LayerManager* layerManager = nodes::LayerManager::findManager();
+  if (layerManager)
+  {
+    AL_MAYA_CHECK_ERROR2(layerManager->clearSerialisationAttributes(), "postFileSave");
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -214,8 +273,8 @@ void Global::onPluginLoad()
   m_fileNew = manager.registerCallback(onFileNew, "AfterNew", "usdmaya_onFileNew", 0x1000);
   m_preSave = manager.registerCallback(preFileSave, "BeforeSave", "usdmaya_preFileSave", 0x1000);
   m_postSave = manager.registerCallback(postFileSave, "AfterSave", "usdmaya_postFileSave", 0x1000);
-  m_preOpen = manager.registerCallback(preFileOpen, "BeforeOpen", "usdmaya_preFileOpen", 0x1000);
-  m_postOpen = manager.registerCallback(postFileOpen, "AfterOpen", "usdmaya_postFileOpen", 0x1000);
+  m_preRead = manager.registerCallback(preFileRead, "BeforeFileRead", "usdmaya_preFileRead", 0x1000);
+  m_postRead = manager.registerCallback(postFileRead, "AfterFileRead", "usdmaya_postFileRead", 0x1000);
 
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Registering USD plugins\n");
   // Let USD know about the additional plugins
@@ -233,8 +292,8 @@ void Global::onPluginUnload()
   manager.unregisterCallback(m_fileNew);
   manager.unregisterCallback(m_preSave);
   manager.unregisterCallback(m_postSave);
-  manager.unregisterCallback(m_preOpen);
-  manager.unregisterCallback(m_postOpen);
+  manager.unregisterCallback(m_preRead);
+  manager.unregisterCallback(m_postRead);
   StageCache::removeCallbacks();
 
   maya::MayaEventManager::freeInstance();

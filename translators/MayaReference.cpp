@@ -208,7 +208,7 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent, MObject 
 
       MString command, filepath;
       MFnReference fnReference(refNode);
-      command = MString("referenceQuery -f \"") + fnReference.name() + "\"";
+      command = MString("referenceQuery -f -withoutCopyNumber \"") + fnReference.name() + "\"";
       MGlobal::executeCommand(command, filepath);
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update referenceNode=%s prim=%s execute \"%s\"=%s\n",
 #if MAYA_API_VERSION < 201700
@@ -229,7 +229,6 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent, MObject 
                                             refNamespace.asChar());
         if(refNamespace != rigNamespace.c_str())
         {
-          command = MString("referenceQuery -f \"") + fnReference.name() + "\"";
           command = "file -e -ns \"";
           command += rigNamespace.c_str();
           command += "\" \"";
@@ -240,7 +239,7 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent, MObject 
                                               command.asChar());
           if(!MGlobal::executeCommand(command))
           {
-            MGlobal::displayError(MString("Failed to update reference with new namespace: ") + mayaReferencePath);
+            MGlobal::displayError(MString("Failed to update reference with new namespace. refNS:" + refNamespace + "rigNs: " + rigNamespace.c_str() + ": ") + mayaReferencePath);
           }
         }
       }

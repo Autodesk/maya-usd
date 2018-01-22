@@ -44,12 +44,12 @@ public:
     { return m_postSave; }
 
   /// pre open callback
-  static maya::CallbackId preOpen()
-    { return m_preOpen; }
+  static maya::CallbackId preRead()
+    { return m_preRead; }
 
   /// post open callback
-  static maya::CallbackId postOpen()
-    { return m_postOpen; }
+  static maya::CallbackId postRead()
+    { return m_postRead; }
 
   /// callback used to flush the USD caches after a file new
   static maya::CallbackId fileNew()
@@ -58,8 +58,8 @@ public:
 private:
   static maya::CallbackId m_preSave;  ///< callback prior to saving the scene (so we can store the session layer)
   static maya::CallbackId m_postSave; ///< callback after saving
-  static maya::CallbackId m_preOpen;  ///< callback executed before opening a maya file
-  static maya::CallbackId m_postOpen; ///< callback executed after opening a maya file - needed to re-hook up the UsdPrims
+  static maya::CallbackId m_preRead;  ///< callback executed before opening a maya file
+  static maya::CallbackId m_postRead; ///< callback executed after opening a maya file - needed to re-hook up the UsdPrims
   static maya::CallbackId m_fileNew;  ///< callback used to flush the USD caches after a file new
 };
 

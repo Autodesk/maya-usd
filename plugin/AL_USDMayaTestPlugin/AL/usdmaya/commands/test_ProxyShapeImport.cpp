@@ -18,6 +18,8 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/StageCache.h"
+#include "AL/usdmaya/Utils.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "maya/MFnTransform.h"
 #include "maya/MSelectionList.h"
 #include "maya/MGlobal.h"
@@ -201,4 +203,77 @@ TEST(ProxyShapeImport, lockMetaData)
   ASSERT_TRUE(status == MStatus::kFailure);
   status = MGlobal::executeCommand("setAttr cam.s 5 5 5");
   ASSERT_TRUE(status == MStatus::kFailure);
+}
+
+TEST(ProxyShapeImport, sessionLayer)
+{
+  constexpr double EPSILON = 1e-5;
+  constexpr auto SESSION_LAYER_CONTENTS = R"ESC(#sdf 1.4.32
+over "root" {
+  float3 xformOp:translate = (1.2, 2.3, 3.4)
+  uniform token[] xformOpOrder = ["xformOp:translate"]
+})ESC";
+
+  MFileIO::newFile(true);
+  auto constructTransformChain = [] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomXform root = UsdGeomXform::Define(stage, SdfPath("/root"));
+    return stage;
+  };
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_ImportCommands_sessionLayer.usda";
+
+  // generate our usda
+  {
+    auto stage = constructTransformChain();
+    stage->Export(temp_path, false);
+  }
+
+  // Bring it in with no session layer, assert that no translate x
+  MFileIO::newFile(true);
+  {
+    MString importCmd;
+    importCmd.format(MString("AL_usdmaya_ProxyShapeImport -file \"^1s\""), AL::usdmaya::convert(temp_path));
+    MGlobal::executeCommand(importCmd);
+    MGlobal::executeCommand("AL_usdmaya_ProxyShapeImportAllTransforms AL_usdmaya_ProxyShape1;");
+
+    MSelectionList sel;
+    sel.add("root");
+    MObject rootObj;
+    sel.getDependNode(0, rootObj);
+    ASSERT_FALSE(rootObj.isNull());
+    MFnTransform rootFn(rootObj);
+
+    MVector translation = rootFn.getTranslation(MSpace::kObject);
+    EXPECT_EQ(0.0, translation.x);
+    EXPECT_EQ(0.0, translation.y);
+    EXPECT_EQ(0.0, translation.z);
+  }
+
+  // Now repeat, but bring in with a session layer that sets a tx
+   MFileIO::newFile(true);
+   {
+     MString importCmd;
+
+     // First do a janky mel-encode of our session layer string...
+     std::string encodedString1 = TfStringReplace(SESSION_LAYER_CONTENTS, "\"", "\\\"");
+     std::string encodedString2 = TfStringReplace(encodedString1, "\n", "\\n");
+     importCmd.format(MString("AL_usdmaya_ProxyShapeImport -file \"^1s\" -s \"^2s\""),
+         AL::usdmaya::convert(temp_path), AL::usdmaya::convert(encodedString2));
+     MGlobal::executeCommand(importCmd);
+     MGlobal::executeCommand("AL_usdmaya_ProxyShapeImportAllTransforms AL_usdmaya_ProxyShape1;");
+
+     MSelectionList sel;
+     sel.add("root");
+     MObject rootObj;
+     sel.getDependNode(0, rootObj);
+     ASSERT_FALSE(rootObj.isNull());
+     MFnTransform rootFn(rootObj);
+
+     MVector translation = rootFn.getTranslation(MSpace::kObject);
+     EXPECT_NEAR(1.2, translation.x, EPSILON);
+     EXPECT_NEAR(2.3, translation.y, EPSILON);
+     EXPECT_NEAR(3.4, translation.z, EPSILON);
+   }
 }

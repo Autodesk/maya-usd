@@ -33,7 +33,7 @@ TranslatorContext::~TranslatorContext()
 //----------------------------------------------------------------------------------------------------------------------
 UsdStageRefPtr TranslatorContext::getUsdStage() const
 {
-  return m_proxyShape->getUsdStage();
+  return m_proxyShape->usdStage();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -70,7 +70,7 @@ bool TranslatorContext::getTransform(const SdfPath& path, MObjectHandle& object)
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::updatePrimTypes()
 {
-  auto stage = m_proxyShape->getUsdStage();
+  auto stage = m_proxyShape->usdStage();
   for(auto it = m_primMapping.begin(); it != m_primMapping.end(); )
   {
     SdfPath path(it->path());
@@ -234,13 +234,14 @@ void TranslatorContext::insertItem(const UsdPrim& prim, MObjectHandle object)
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::removeItems(const SdfPath& path)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeItems primPath=%s\n", path.GetText());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeItems remove under primPath=%s\n", path.GetText());
   auto it = find(path);
   if(it != m_primMapping.end() && it->path() == path)
   {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeItems path=%s\n", it->path().GetText());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeItems removing path=%s\n", it->path().GetText());
     MDGModifier modifier1;
     MDagModifier modifier2;
+    MObjectHandleArray tempXforms;
     MStatus status;
     bool hasDagNodes = false;
     bool hasDependNodes = false;
@@ -250,28 +251,34 @@ void TranslatorContext::removeItems(const SdfPath& path)
     {
       if(nodes[j].isAlive() && nodes[j].isValid())
       {
+        // Need to reparent nodes first to avoid transform getting deleted and triggering ancestor deletion
+        // rather than just deleting directly.
         MObject obj = nodes[j].object();
-        MFnDependencyNode fn(obj);
         if(obj.hasFn(MFn::kTransform))
         {
           hasDagNodes = true;
           modifier2.reparentNode(obj);
           status = modifier2.deleteNode(obj);
+          AL_MAYA_CHECK_ERROR2(status, "failed to delete transform node");
         }
         else
         if(obj.hasFn(MFn::kDagNode))
         {
-          MObject temp = fn.create("transform");
           hasDagNodes = true;
+          MObject temp = modifier2.createNode("transform");
+          MObjectHandle tempHandle(temp);
+          tempXforms.push_back(temp);
           modifier2.reparentNode(obj, temp);
-          status = modifier2.deleteNode(obj);
-          status = modifier2.deleteNode(temp);
+          modifier2.doIt();  // removing this caused crashes
+          modifier2.deleteNode(obj);
+          status = modifier2.doIt();
+          AL_MAYA_CHECK_ERROR2(status, "failed to delete dag node");
         }
         else
         {
           hasDependNodes = true;
           status = modifier1.deleteNode(obj);
-          AL_MAYA_CHECK_ERROR2(status, MString("failed to delete node "));
+          AL_MAYA_CHECK_ERROR2(status, MString("failed to delete node"));
         }
       }
       else
@@ -284,12 +291,20 @@ void TranslatorContext::removeItems(const SdfPath& path)
     if(hasDependNodes)
     {
       status = modifier1.doIt();
-      AL_MAYA_CHECK_ERROR2(status, "failed to delete node");
+      AL_MAYA_CHECK_ERROR2(status, "failed to delete dg nodes");
     }
     if(hasDagNodes)
     {
+      for (int i = 0; i < tempXforms.size(); ++i)
+      {
+        // Check if these xforms have already been deleted automatically when we deleted their child shape.
+        if(tempXforms[i].isAlive() && tempXforms[i].isValid())
+        {
+          modifier2.deleteNode(tempXforms[i].object());
+        }
+      }
       status = modifier2.doIt();
-      AL_MAYA_CHECK_ERROR2(status, "failed to delete node");
+      AL_MAYA_CHECK_ERROR2(status, "failed to delete dag nodes");
     }
     m_primMapping.erase(it);
   }
@@ -375,7 +390,6 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
     // due to the joys of sorting, any child prims of this prim being destroyed should appear next to each
     // other (one would assume); So if compare does not find a match (the value is something other than zero),
     // we are no longer in the same prim root
-
     const SdfPath& childPath = range_end->path();
 
     if(!range_end->path().HasPrefix(primPath))
@@ -384,7 +398,7 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
     }
   }
 
-  auto stage = m_proxyShape->getUsdStage();
+  auto stage = m_proxyShape->usdStage();
 
   // run the preTearDown stage on each prim. We will walk over the prims in the reverse order here (which will guarentee
   // the the itemsToRemove will be ordered such that the child prims will be destroyed before their parents).
@@ -394,11 +408,21 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
   {
     --iter;
     PrimLookup& node = *iter;
-    itemsToRemove.push_back(node.path());
-    auto prim = stage->GetPrimAtPath(node.path());
-    if(prim && callPreUnload)
+
+    if(std::find(itemsToRemove.begin(), itemsToRemove.end(), node.path()) != itemsToRemove.end())
     {
-      preUnloadPrim(prim, node.object());
+      // Same exact path has already been processed and added to the list of itemsToRemove.
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preRemoveEntry skipping path thats already in "
+                                          "itemsToRemove. primPath=%s\n", primPath.GetText());
+    }
+    else
+    {
+      itemsToRemove.push_back(node.path());
+      auto prim = stage->GetPrimAtPath(node.path());
+      if (prim && callPreUnload)
+      {
+        preUnloadPrim(prim, node.object());
+      }
     }
   }
 }
@@ -407,91 +431,34 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
 void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries\n");
-  auto stage = m_proxyShape->getUsdStage();
+  auto stage = m_proxyShape->usdStage();
 
-  PrimLookups::iterator begin = m_primMapping.begin();
-  PrimLookups::iterator end = m_primMapping.end();
+  MDagModifier modifier;
+  MStatus status;
 
-  SdfPathVector pathsToErase;
-
-  // so now we need to unload the prims from (range_end - 1) to temp (in that order, otherwise we'll nuke parents before children)
+  // so now we need to unload the prims (itemsToRemove is reverse sorted so we won't nuke parents before children)
   auto iter = itemsToRemove.begin();
   while(iter != itemsToRemove.end())
   {
     auto path = *iter;
-    PrimLookups::iterator node = std::lower_bound(begin, end, path, value_compare());
+    auto node = std::lower_bound(m_primMapping.begin(), m_primMapping.end(), path, value_compare());
 
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries checking %s\n", iter->GetText());
-    auto prim = stage->GetPrimAtPath(*iter);
-    TfToken type = getTypeForPath(path);
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries removing: %s\n", iter->GetText());
+    unloadPrim(path, node->object());
 
-    // if the prim is no longer there, let's kill it
-    if(!prim)
+    // The item might already have been removed by a translator...
+    if(node != m_primMapping.end() && node->path() == path)
     {
-      fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().get(type);
-      if(translator)
-      {
-        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries %s prim is not valid anymore will be tear down\n", path.GetText());
-        unloadPrim(path, node->object());
-        pathsToErase.push_back(*iter);
-      }
+      // remove nodes from map
+      m_primMapping.erase(node);
     }
-    else
-    {
-      // so we have the prim, let's check the type to see whether that has changed
-      TfToken primType = prim.GetTypeName();
-      if(type != primType)
-      {
-        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries %s prim is valid but changed type: it will be tear down\n", path.GetText());
-        // type has changed, update the prim type and unload the old prim
-        unloadPrim(path, node->object());
-        pathsToErase.push_back(path);
-      }
-      else
-      {
-        fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().get(type);
-        if(translator)
-        {
-          if(!translator->supportsInactive() || !translator->supportsUpdate())
-          {
-            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries %s prim is valid but doesnt support inactive or update so will be tear down\n", path.GetText());
-            unloadPrim(path, node->object());
-            pathsToErase.push_back(*iter);
-          }
-        }
-        else
-        {
-          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries %s prim is valid but no translator found update so will be tear down\n", path.GetText());
-          unloadPrim(path, node->object());
-          pathsToErase.push_back(*iter);
-        }
-      }
-    }
+
+    m_proxyShape->removeUsdTransformChain(path, modifier, nodes::ProxyShape::kRequired);
+
     ++iter;
   }
-
-  if(!pathsToErase.empty())
-  {
-    MDagModifier modifier;
-
-    // remove the prims that died
-    for(auto path : pathsToErase)
-    {
-      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries primPath=%s\n", path.GetText());
-      PrimLookups::iterator node = std::lower_bound(m_primMapping.begin(), m_primMapping.end(), path, value_compare());
-
-      // The item might already have been removed by a translator...
-      if(node != m_primMapping.end() && node->path() == path)
-      {
-        // remove nodes from map
-        m_primMapping.erase(node);
-      }
-      
-      m_proxyShape->removeUsdTransformChain(path, modifier, nodes::ProxyShape::kRequired);
-    }
-
-    modifier.doIt();
-  }
+  status = modifier.doIt();
+  AL_MAYA_CHECK_ERROR2(status, "failed to remove translator prims.");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -511,7 +478,8 @@ void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
     }
     else
     {
-      MGlobal::displayError(MString("could not find usd translator plugin instance for prim: ") + prim.GetPath().GetText());
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim [preTearDown] prim=%s\n. Could not find usd translator plugin instance for prim!", prim.GetPath().GetText());
+      MGlobal::displayError(MString("TranslatorContext::preUnloadPrim could not find usd translator plugin instance for prim: ") + prim.GetPath().GetText() + " type: " + type.GetText());
     }
   }
   else
@@ -525,7 +493,7 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::unloadPrim\n");
   assert(m_proxyShape);
-  auto stage = m_proxyShape->getUsdStage();
+  auto stage = m_proxyShape->usdStage();
   if(stage)
   {
     MDagModifier modifier;
@@ -555,12 +523,10 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
           );
         break;
       }
-
-      m_proxyShape->removeUsdTransformChain(path, modifier, nodes::ProxyShape::kRequired);
     }
     else
     {
-      MGlobal::displayError(MString("could not find usd translator plugin instance for prim: ") + path.GetText());
+      MGlobal::displayError(MString("could not find usd translator plugin instance for prim: ") + path.GetText() + " type: " + type.GetText());
     }
     modifier.doIt();
   }

@@ -66,6 +66,8 @@ private:
   UsdPrim exportPluginLocatorNode(MDagPath path, const SdfPath& usdPath);
   UsdPrim exportPluginShape(MDagPath path, const SdfPath& usdPath);
   UsdPrim exportCamera(MDagPath path, const SdfPath& usdPath);
+  void exportIkChain(MDagPath effectorPath, const SdfPath& usdPath);
+  void exportGeometryConstraint(MDagPath effectorPath, const SdfPath& usdPath);
   void copyTransformParams(UsdPrim prim, MFnTransform& fnTransform);
 
   struct Impl;

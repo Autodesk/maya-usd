@@ -129,13 +129,8 @@ public:
     { return MStatus::kNotImplemented; }
 
   /// \brief  override this method and return true if the translator supports update
-  /// \return true if you plugin supports update, false otherwise.
+  /// \return true if your plugin supports update, false otherwise.
   virtual bool supportsUpdate() const
-    { return false; }
-
-  /// \brief  override this method and return true if the translator supports update
-  /// \return true if you plugin supports update, false otherwise.
-  virtual bool supportsInactive() const
     { return false; }
 
   /// \brief  Optionally override this method to copy the attribute values from the prim onto the Maya nodes you have
