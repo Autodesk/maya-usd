@@ -14,9 +14,11 @@
 // limitations under the License.
 //
 #pragma once
+#include "AL/maya/EventHandler.h"
+#include "AL/maya/NodeHelper.h"
+#include "AL/maya/MayaEventManager.h"
 #include <AL/usdmaya/SelectabilityDB.h>
 #include "AL/usdmaya/Common.h"
-#include "AL/maya/NodeHelper.h"
 #include "AL/usdmaya/DrivenTransformsData.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
@@ -78,6 +80,7 @@ namespace nodes {
 //----------------------------------------------------------------------------------------------------------------------
 struct SelectionUndoHelper
 {
+  /// a hash set of SdfPaths
   typedef TfHashSet<SdfPath, SdfPath::Hash> SdfPathHashSet;
 
   /// \brief  Construct with the arguments to select / deselect nodes on a proxy shape
@@ -115,6 +118,7 @@ private:
 class SelectionList
 {
 public:
+  /// a hash set of SdfPaths
   typedef TfHashSet<SdfPath, SdfPath::Hash> SdfPathHashSet;
 
   /// \brief  default ctor
@@ -179,32 +183,51 @@ private:
   SdfPathHashSet m_selected;
 };
 
-//typedef functions
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  A class that provides the logic behind a hierarchy traversal through a UsdStage
+//----------------------------------------------------------------------------------------------------------------------
 struct  HierarchyIterationLogic
 {
+  /// \brief  ctor
   HierarchyIterationLogic():
       preIteration(nullptr),
       iteration(nullptr),
       postIteration(nullptr)
   {}
 
+  /// \brief  provide a method to be called prior to iteration of the UsdStage hierarchy
   std::function<void()> preIteration;
+
+  /// \brief  a visitor method that is called on each of the UsdPrims in the stage hierarchy
   std::function<void(const fileio::TransformIterator& transformIterator,const UsdPrim& prim)> iteration;
+
+  /// \brief  provide a method to be called after iteration of the UsdStage hierarchy
   std::function<void()> postIteration;
 };
 
-struct FindUnselectablePrimsLogic : public HierarchyIterationLogic
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  implements the logic that constructs a list of objects that need to be added or removed from the selectable
+///         list of prims within a UsdStage
+//----------------------------------------------------------------------------------------------------------------------
+struct FindUnselectablePrimsLogic
+  : public HierarchyIterationLogic
 {
-  SdfPathVector newUnselectables;
-  SdfPathVector removeUnselectables;
+  SdfPathVector newUnselectables; ///< items that need to be made unselectable
+  SdfPathVector removeUnselectables; ///< items that are unselectable, but need to be made selectable
 };
 
-struct FindLockedPrimsLogic : public HierarchyIterationLogic
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  implements the logic required when searching for locked prims within a UsdStage
+//----------------------------------------------------------------------------------------------------------------------
+struct FindLockedPrimsLogic
+  : public HierarchyIterationLogic
 {
 };
 
 typedef const HierarchyIterationLogic*  HierarchyIterationLogics[3];
 
+extern maya::EventId kPreClearStageCache;
+extern maya::EventId kPostClearStageCache;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A custom proxy shape node that attaches itself to a USD file, and then renders it.
@@ -216,6 +239,7 @@ class ProxyShape
   : public MPxSurfaceShape,
     public maya::NodeHelper,
     public proxy::PrimFilterInterface,
+    public maya::NodeEvents,
     public TfWeakBase
 {
   friend class SelectionUndoHelper;
@@ -223,6 +247,10 @@ class ProxyShape
   friend class StageReloadGuard;
 public:
 
+  /// a method that registers all of the events in the ProxyShape
+  void registerEvents();
+
+  /// a set of SdfPaths
   typedef TfHashSet<SdfPath, SdfPath::Hash> SdfPathHashSet;
 
   /// \brief  a mapping between a maya transform (or MObject::kNullObj), and the prim that exists at that location
@@ -582,7 +610,6 @@ public:
   ///         the user does, ie, "AL_usdmaya_ProxyShapeSelect -pp /foo/bar -pp /some/thing -proxy myProxyShape",
   //          they will get as the result of the command, ["|proxyRoot|foo|bar", "|proxyRoot|some|thing"], and be able
   //          to know what input SdfPath corresponds to what ouptut maya path
-  SdfPathVector m_pathsOrdered;
   /// \return true if the operation succeeded
   bool doSelect(SelectionUndoHelper& helper, const SdfPathVector& orderedPaths);
 
@@ -878,6 +905,7 @@ private:
     }
 
 private:
+  SdfPathVector m_pathsOrdered;
   static std::vector<MObjectHandle> m_unloadedProxyShapes;
 
   AL::usdmaya::SelectabilityDB m_selectabilityDB;
@@ -894,7 +922,7 @@ private:
   TfNotice::Key m_editTargetChanged;
 
   mutable std::map<UsdTimeCode, MBoundingBox> m_boundingBoxCache;
-  MCallbackId m_beforeSaveSceneId = -1;
+  maya::CallbackId m_beforeSaveSceneId = -1;
   MCallbackId m_attributeChanged = -1;
   MCallbackId m_onSelectionChanged = -1;
   SdfPathVector m_excludedGeometry;

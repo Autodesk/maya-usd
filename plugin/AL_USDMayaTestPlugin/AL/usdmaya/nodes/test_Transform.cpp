@@ -40,9 +40,9 @@ TEST(Transform, noInputStage)
   TransformationMatrix* ptrMatrix = ptrXform->transform();
 
   MPlug pushToPrimPlug = ptrXform->pushToPrimPlug();
-  EXPECT_EQ(false, pushToPrimPlug.asBool());
-  EXPECT_EQ(false, ptrMatrix->pushToPrimEnabled());
-  EXPECT_EQ(false, ptrMatrix->pushToPrimAvailable());
+  EXPECT_FALSE(pushToPrimPlug.asBool());
+  EXPECT_FALSE(ptrMatrix->pushToPrimEnabled());
+  EXPECT_FALSE(ptrMatrix->pushToPrimAvailable());
 
   auto checkTranslation = [&](double x, double y, double z) {
     MVector transOut = transFn.getTranslation(MSpace::kObject, &status);
@@ -65,9 +65,9 @@ TEST(Transform, noInputStage)
   setAndCheckTranslation(1.0, 2.0, 3.0);
 
   pushToPrimPlug.setBool(true);
-  EXPECT_EQ(true, pushToPrimPlug.asBool());
-  EXPECT_EQ(true, ptrMatrix->pushToPrimEnabled());
-  EXPECT_EQ(false, ptrMatrix->pushToPrimAvailable());
+  EXPECT_TRUE(pushToPrimPlug.asBool());
+  EXPECT_TRUE(ptrMatrix->pushToPrimEnabled());
+  EXPECT_FALSE(ptrMatrix->pushToPrimAvailable());
 
   setAndCheckTranslation(4.0, 5.0, 6.0);
 }

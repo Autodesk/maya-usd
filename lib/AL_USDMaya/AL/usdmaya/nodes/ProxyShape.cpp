@@ -23,6 +23,7 @@
 #include "AL/maya/CodeTimings.h"
 
 #include "AL/usdmaya/DebugCodes.h"
+#include "AL/usdmaya/Global.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/StageData.h"
@@ -57,19 +58,28 @@
 namespace AL {
 namespace usdmaya {
 namespace nodes {
+typedef void (*proxy_function_prototype)(void* userData, AL::usdmaya::nodes::ProxyShape* proxyInstance);
 
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialiseTranslatorContext()
 {
+  triggerEvent("PreSerialiseContext");
+
   serializedTrCtxPlug().setValue(context()->serialise());
+
+  triggerEvent("PostSerialiseContext");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::deserialiseTranslatorContext()
 {
+  triggerEvent("PreDeserialiseContext");
+
   MString value;
   serializedTrCtxPlug().getValue(value);
   context()->deserialise(value);
+
+  triggerEvent("PostDeserialiseContext");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -193,9 +203,13 @@ void ProxyShape::constructGLImagingEngine()
   {
     if(m_stage)
     {
+      // function prototype of callback we wish to register
+      typedef void (*proxy_function_prototype)(void*, AL::usdmaya::nodes::ProxyShape*);
+
       // delete previous instance
       if(m_engine)
       {
+        triggerEvent("DestroyGLEngine");
         m_engine->InvalidateBuffers();
         delete m_engine;
       }
@@ -207,6 +221,8 @@ void ProxyShape::constructGLImagingEngine()
       excludedGeometryPaths.insert(excludedGeometryPaths.end(), m_excludedGeometry.begin(), m_excludedGeometry.end());
 
       m_engine = new UsdImagingGLHdEngine(m_path, excludedGeometryPaths);
+
+      triggerEvent("ConstructGLEngine");
     }
   }
 }
@@ -314,7 +330,7 @@ bool ProxyShape::getRenderAttris(void* pattribs, const MHWRender::MFrameContext&
 
 //----------------------------------------------------------------------------------------------------------------------
 ProxyShape::ProxyShape()
-  : MPxSurfaceShape(), maya::NodeHelper(),
+  : MPxSurfaceShape(), maya::NodeHelper(), maya::NodeEvents(&maya::EventScheduler::getScheduler()),
     m_context(fileio::translators::TranslatorContext::create(this)),
     m_translatorManufacture(context())
 {
@@ -327,6 +343,7 @@ ProxyShape::ProxyShape()
   m_objectsChangedNoticeKey = TfNotice::Register(me, &ProxyShape::onObjectsChanged, m_stage);
   m_editTargetChanged = TfNotice::Register(me, &ProxyShape::onEditTargetChanged, m_stage);
 
+  registerEvents();
 
   m_findExcludedPrims.preIteration = [this]() {
     m_excludedTaggedGeometry.clear();
@@ -428,7 +445,6 @@ ProxyShape::ProxyShape()
 ProxyShape::~ProxyShape()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::~ProxyShape\n");
-  MSceneMessage::removeCallback(m_beforeSaveSceneId);
   MNodeMessage::removeCallback(m_attributeChanged);
   MEventMessage::removeCallback(m_onSelectionChanged);
   removeAttributeChangedCallback();
@@ -437,6 +453,7 @@ ProxyShape::~ProxyShape()
   TfNotice::Revoke(m_editTargetChanged);
   if(m_engine)
   {
+    triggerEvent("DestroyGLEngine");
     m_engine->InvalidateBuffers();
     delete m_engine;
   }
@@ -592,6 +609,7 @@ void ProxyShape::trackEditTargetLayer(LayerManager* layerManager)
     }
     layerManager->addLayer(prevTargetLayer);
   }
+  triggerEvent("EditTargetChanged");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -992,6 +1010,8 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
         if (it->first == SdfFieldKeys->VariantSelection ||
             it->first == SdfFieldKeys->Active)
         {
+          triggerEvent("PreVariantChangedCB");
+
           TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::variantSelectionListener oldPath=%s, oldIdentifier=%s, path=%s, layer=%s\n",
                                          entry.oldPath.GetString().c_str(),
                                          entry.oldIdentifier.c_str(),
@@ -1004,6 +1024,8 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
           }
           m_compositionHasChanged = true;
           onPrePrimChanged(path, m_variantSwitchedPrims);
+
+          triggerEvent("PostVariantChangedCB");
         }
       }
     }
@@ -1755,6 +1777,8 @@ MStatus ProxyShape::computeDrivenAttributes(const MPlug& plug, MDataBlock& dataB
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialiseTransformRefs()
 {
+  triggerEvent("PreSerialiseTransformRefs");
+
   std::ostringstream oss;
   for(auto iter : m_requiredPaths)
   {
@@ -1768,11 +1792,15 @@ void ProxyShape::serialiseTransformRefs()
         << uint32_t(iter.second.refCount()) << ";";
   }
   serializedRefCountsPlug().setString(oss.str().c_str());
+
+  triggerEvent("PostSerialiseTransformRefs");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::deserialiseTransformRefs()
 {
+  triggerEvent("PreDeserialiseTransformRefs");
+
   MString str = serializedRefCountsPlug().asString();
   MStringArray strs;
   str.split(';', strs);
@@ -1815,6 +1843,8 @@ void ProxyShape::deserialiseTransformRefs()
   }
 
   serializedRefCountsPlug().setString("");
+
+  triggerEvent("PostDeserialiseTransformRefs");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1840,6 +1870,28 @@ void ProxyShape::cleanupTransformRefs()
       ++it;
     }
   }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::registerEvents()
+{
+  registerEvent("PreStageLoaded", maya::kUSDMayaEventType);
+  registerEvent("PostStageLoaded", maya::kUSDMayaEventType);
+  registerEvent("ConstructGLEngine", maya::kUSDMayaEventType);
+  registerEvent("DestroyGLEngine", maya::kUSDMayaEventType);
+  registerEvent("PreSelectionChanged", maya::kUSDMayaEventType);
+  registerEvent("PostSelectionChanged", maya::kUSDMayaEventType);
+  registerEvent("PreVariantChanged", maya::kUSDMayaEventType);
+  registerEvent("PostVariantChanged", maya::kUSDMayaEventType);
+  registerEvent("PreSerialiseContext", maya::kUSDMayaEventType, Global::postSave());
+  registerEvent("PostSerialiseContext", maya::kUSDMayaEventType, Global::postSave());
+  registerEvent("PreDeserialiseContext", maya::kUSDMayaEventType, Global::postRead());
+  registerEvent("PostDeserialiseContext", maya::kUSDMayaEventType, Global::postRead());
+  registerEvent("PreSerialiseTransformRefs", maya::kUSDMayaEventType, Global::postSave());
+  registerEvent("PostSerialiseTransformRefs", maya::kUSDMayaEventType, Global::postSave());
+  registerEvent("PreDeserialiseTransformRefs", maya::kUSDMayaEventType, Global::postRead());
+  registerEvent("PostDeserialiseTransformRefs", maya::kUSDMayaEventType, Global::postRead());
+  registerEvent("EditTargetChanged", maya::kUSDMayaEventType);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
