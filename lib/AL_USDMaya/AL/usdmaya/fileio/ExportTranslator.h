@@ -25,7 +25,7 @@ namespace fileio {
 ///         AnimalLogic pipeline).
 /// \ingroup   fileio
 //----------------------------------------------------------------------------------------------------------------------
-AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "*.usda", "*.usdc;*.usda;*.usd;*.usdt");
+AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "usda", "*.usdc;*.usda;*.usd;*.usdt");
 
   /// \fn     void* creator()
   /// \brief  creates an instance of the file translator

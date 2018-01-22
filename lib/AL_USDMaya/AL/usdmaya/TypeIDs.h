@@ -27,6 +27,7 @@ const MTypeId AL_USDMAYA_LAYER                      (0x00112A23);
 const MTypeId AL_USDMAYA_STAGEDATA                  (0x00112A24);
 const MTypeId AL_USDMAYA_DRIVENTRANSFORMS           (0x00112A25);
 const MTypeId AL_USDMAYA_DRIVENTRANSFORMS_DATA      (0x00112A26);
+const MTypeId AL_USDMAYA_LAYERMANAGER               (0x00112A27);
 
 }  // namespace usdmaya
 }  // namespace AL

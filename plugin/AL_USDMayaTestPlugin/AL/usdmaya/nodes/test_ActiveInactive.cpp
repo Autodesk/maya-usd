@@ -45,6 +45,7 @@ static const char* const g_inactive =
 "    )\n"
 "    {\n"
 "      asset mayaReference = \"/tmp/AL_USDMayaTests_cube.ma\"\n"
+"      string mayaNamespace = \"cube\"\n"
 "    }\n"
 "}\n";
 
@@ -56,6 +57,7 @@ static const char* const g_active =
 "    def ALMayaReference \"rig\"\n"
 "    {\n"
 "      asset mayaReference = \"/tmp/AL_USDMayaTests_cube.ma\"\n"
+"      string mayaNamespace = \"cube\"\n"
 "    }\n"
 "}\n";
 
@@ -114,6 +116,7 @@ static const char* const g_customTransformType =
 "    )\n"
 "    {\n"
 "      asset mayaReference = \"/tmp/AL_USDMayaTests_cube.ma\"\n"
+"      string mayaNamespace = \"cube\"\n"
 "    }\n"
 "}\n";
 
@@ -129,6 +132,7 @@ static const char* const g_duplicateTransformNames =
 "    )\n"
 "    {\n"
 "      asset mayaReference = \"/tmp/AL_USDMayaTests_cube.ma\"\n"
+"      string mayaNamespace = \"cube\"\n"
 "    }\n"
 "  }\n"
 "  def Xform \"two\"\n"
@@ -138,8 +142,49 @@ static const char* const g_duplicateTransformNames =
 "    )\n"
 "    {\n"
 "      asset mayaReference = \"/tmp/AL_USDMayaTests_sphere.ma\"\n"
+"      string mayaNamespace = \"cube\"\n"
 "    }\n"
 "  }\n"
+"}\n";
+
+static const char* const g_variantSwitchPrimTypes =
+"#usda 1.0\n"
+"\n"
+"def Xform \"root\"\n"
+"{\n"
+"    def Xform \"switchable\"(\n"
+"        variants = {\n"
+"            string option = \"camera\"\n"
+"        }\n"
+"        add variantSets = \"option\"\n"
+"    )\n"
+"    {\n"
+"        variantSet \"option\" = {\n"
+"            \"camera\" {\n"
+"                def  Xform \"top\"\n"
+"                {\n"
+"                    def  Camera \"cam\"\n"
+"                    {\n"
+"                    }\n"
+"                }\n"
+"            }\n"
+"            \"mayaReference\" {\n"
+"                def  ALMayaReference \"top\"\n"
+"                {\n"
+"                    asset mayaReference = @/tmp/AL_USDMayaTests_camera.ma@\n"
+"                    string mayaNamespace = \"cam_ns\"\n"
+"                }\n"
+"            }\n"
+"            \"no_translator\" {\n"
+"                def  Xform \"top\"\n"
+"                {\n"
+"                    def  Xform \"cam\"\n"
+"                    {\n"
+"                    }\n"
+"                }\n"
+"            }\n"
+"        }\n"
+"    }\n"
 "}\n";
 
 TEST(ActiveInactive, duplicateTransformNames)
@@ -254,9 +299,9 @@ TEST(ActiveInactive, customTransformType)
 
     // should not be able to select the items in the reference file
     MSelectionList sl;
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(3, sl.length());
     sl.clear();
 
@@ -270,9 +315,9 @@ TEST(ActiveInactive, customTransformType)
     // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a false -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(0, sl.length());
 
     MFileIO::saveAs("/tmp/AL_USDMayaTests_customTransformTypeInactive.ma", 0, true);
@@ -281,9 +326,9 @@ TEST(ActiveInactive, customTransformType)
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
     // should now be able to select the items in the reference file
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(3, sl.length());
     sl.clear();
   }
@@ -303,24 +348,24 @@ TEST(ActiveInactive, customTransformType)
 
     // should not be able to select the items in the reference file
     MSelectionList sl;
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(3, sl.length());
     sl.clear();
 
     // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a false -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(0, sl.length());
 
     // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(3, sl.length());
     sl.clear();
   }
@@ -340,24 +385,24 @@ TEST(ActiveInactive, customTransformType)
 
     // should not be able to select the items in the reference file
     MSelectionList sl;
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(0, sl.length());
 
     // deactivate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(3, sl.length());
     sl.clear();
 
     // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a false -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(0, sl.length());
   }
 }
@@ -411,18 +456,18 @@ TEST(ActiveInactive, disable)
 
     // should not be able to select the items in the reference file
     MSelectionList sl;
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(0, sl.length());
 
     // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
     // should now be able to select the items in the reference file
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(3, sl.length());
     sl.clear();
 
@@ -430,18 +475,18 @@ TEST(ActiveInactive, disable)
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a false -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
     // should now be able to select the items in the reference file
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(0, sl.length());
 
     // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
     // should now be able to select the items in the reference file
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(3, sl.length());
     sl.clear();
   }
@@ -467,27 +512,27 @@ TEST(ActiveInactive, disable)
 
     // should be able to select the items in the reference file
     MSelectionList sl;
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(3, sl.length());
     sl.clear();
 
     // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a false -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(0, sl.length());
 
     // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
     // should now be able to select the items in the reference file
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(3, sl.length());
     sl.clear();
 
@@ -495,9 +540,9 @@ TEST(ActiveInactive, disable)
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a false -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
     // should now be able to select the items in the reference file
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(0, sl.length());
   }
 
@@ -680,9 +725,9 @@ TEST(ActiveInactive, disable)
 
       // should not be able to select the items in the reference file
       MSelectionList sl;
-      EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-      EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-      EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+      EXPECT_TRUE(bool(sl.add("cube:pCube1")));
+      EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
+      EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
       EXPECT_EQ(3, sl.length());
       sl.clear();
 
@@ -690,9 +735,9 @@ TEST(ActiveInactive, disable)
       MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a false -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
       // should now be able to select the items in the reference file
-      EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-      EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-      EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+      EXPECT_FALSE(bool(sl.add("cube:pCube1")));
+      EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
+      EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
       EXPECT_EQ(0, sl.length());
 
       MFileIO::saveAs("/tmp/AL_USDMayaTests_inactive_prim.ma", 0, true);
@@ -714,19 +759,115 @@ TEST(ActiveInactive, disable)
     AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
     EXPECT_TRUE(proxy != 0);
 
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_FALSE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCube1")));
+    EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(0, sl.length());
 
     // activate the prim, this should ensure the
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCube1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:pCubeShape1")));
-    EXPECT_TRUE(bool(sl.add("AL_USDMayaTests_cube:polyCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCube1")));
+    EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
+    EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(3, sl.length());
     sl.clear();
   }
 }
 
+TEST(ActiveInactive, variantChange)
+{
+  MFileIO::newFile(true);
+
+  // camera1, camera1Shape
+  MFileIO::newFile(true);
+  MGlobal::executeCommand("camera", false, false);
+  MGlobal::executeCommand("group -name camera_rigg_top camera1", false, false);
+  MFileIO::saveAs("/tmp/AL_USDMayaTests_camera.ma", 0, true);
+  MFileIO::newFile(true);
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_variant.usda";
+  // generate some data for the proxy shape
+  {
+    std::ofstream os(temp_path);
+    os << g_variantSwitchPrimTypes;
+  }
+
+  MString shapeName;
+
+  MFnDagNode fn;
+  MObject xform = fn.create("transform");
+  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+  shapeName = fn.name();
+
+  AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+  // force the stage to load
+  proxy->filePathPlug().setString(temp_path.c_str());
+
+  auto stage = proxy->getUsdStage();
+
+  {
+    // stage should be valid
+    EXPECT_TRUE(stage);
+
+    // should be composed of two layers
+    SdfLayerHandle session = stage->GetSessionLayer();
+    SdfLayerHandle root = stage->GetRootLayer();
+    EXPECT_TRUE(session);
+    EXPECT_TRUE(root);
+  }
+  // activate the prim or it wont be in the scene yet.
+  MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/switchable/top/cam\" \"AL_usdmaya_ProxyShape1\"", false, false);
+
+  // camera variant is the default
+
+  MSelectionList sl;
+  EXPECT_TRUE(bool(sl.add("root")));
+  EXPECT_TRUE(bool(sl.add("switchable")));
+  EXPECT_TRUE(bool(sl.add("switchable|top")));
+  EXPECT_TRUE(bool(sl.add("cam")));
+  EXPECT_EQ(4, sl.length());
+  sl.clear();
+
+  UsdPrim prim = stage->GetPrimAtPath(SdfPath("/root/switchable"));
+  if(prim)
+  {
+    UsdVariantSet optionSet = prim.GetVariantSet("option");
+    if(optionSet) {
+      EXPECT_TRUE(optionSet.SetVariantSelection("mayaReference"));
+
+      // make sure the translator was able to clear off transforms from past variant
+      EXPECT_TRUE(bool(sl.add("root")));
+      EXPECT_TRUE(bool(sl.add("switchable|top")));
+      EXPECT_FALSE(bool(sl.add("cam")));
+      EXPECT_TRUE(bool(sl.add("cam_ns:camera_rigg_top")));
+      EXPECT_TRUE(bool(sl.add("cam_ns:camera1")));
+      EXPECT_TRUE(bool(sl.add("cam_ns:cameraShape1")));
+      EXPECT_EQ(5, sl.length());
+      sl.clear();
+
+      // make sure we can switch back
+      EXPECT_TRUE(optionSet.SetVariantSelection("camera"));
+
+      EXPECT_TRUE(bool(sl.add("root")));
+      EXPECT_TRUE(bool(sl.add("switchable")));
+      EXPECT_TRUE(bool(sl.add("switchable|top")));
+      EXPECT_TRUE(bool(sl.add("cam")));
+      EXPECT_EQ(4, sl.length());
+      sl.clear();
+
+      EXPECT_TRUE(optionSet.SetVariantSelection("no_translator"));
+
+      // no translators so there should be no transforms in maya until they are selected
+      EXPECT_FALSE(bool(sl.add("root")));
+      EXPECT_FALSE(bool(sl.add("switchable|top")));
+      EXPECT_FALSE(bool(sl.add("cam")));
+      EXPECT_FALSE(bool(sl.add("cam_ns:camera_rigg_top")));
+      EXPECT_FALSE(bool(sl.add("cam_ns:camera1")));
+      EXPECT_FALSE(bool(sl.add("cam_ns:cameraShape1")));
+      EXPECT_EQ(0, sl.length());
+      sl.clear();
+    }
+  }
+}

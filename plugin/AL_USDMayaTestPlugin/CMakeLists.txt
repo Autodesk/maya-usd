@@ -22,9 +22,15 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/commands/test_ProxyShapeSelect.cpp
         AL/usdmaya/commands/test_InternalProxySelection.cpp
         AL/usdmaya/commands/test_ProxyShapeImport.cpp
+        AL/usdmaya/fileio/export_blendshape.cpp
+        AL/usdmaya/fileio/export_constraints.cpp
+        AL/usdmaya/fileio/export_ik.cpp
+        AL/usdmaya/fileio/export_lattice.cpp
+        AL/usdmaya/fileio/export_nonlinear.cpp
         AL/usdmaya/nodes/test_ActiveInactive.cpp
-        AL/usdmaya/nodes/test_Layer.cpp
+        AL/usdmaya/nodes/test_LayerManager.cpp
         AL/usdmaya/nodes/test_ProxyShape.cpp
+        AL/usdmaya/nodes/test_Transform.cpp
         AL/usdmaya/nodes/test_TransformMatrix.cpp
         AL/usdmaya/nodes/test_TranslatorContext.cpp
         AL/usdmaya/nodes/test_ProxyShapeSelectabilityDB.cpp

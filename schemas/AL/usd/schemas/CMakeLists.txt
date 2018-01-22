@@ -20,7 +20,7 @@ configure_file (
     @ONLY
 )
 
-list(APPEND DEPENDANT_LIBRARIES ${PYTHON_LIBRARIES} usd)
+list(APPEND DEPENDANT_LIBRARIES ${PYTHON_LIBRARIES} usd usdGeom)
 
 ####################################################################################################
 # Schemas generation and validation
@@ -30,6 +30,7 @@ if(VALIDATE_GENERATED_SCHEMAS)
 
 # Bake library name, tokens prefix and usd schemas path
 set(USD_SCHEMA_PATH usd/schema.usda)
+set(USDGEOM_SCHEMA_PATH usdGeom/schema.usda)
 configure_file (
     ./schema.usda.in
     ./schema.usda
@@ -147,7 +148,7 @@ if(${listCount} STRGREATER 1)
       string(REPLACE ";" "/" currentPath "${currentPath}")
       file(WRITE
         ${CMAKE_BINARY_DIR}/${currentPath}/__init__.py
-        "try:\n\t__import__('pkg_resources').declare_namespace(__name__)\nexcept:\n\tpass\n"
+        "try:\n\t__import__('pkg_resources').declare_namespace(__name__)\nexcept:\n\tfrom pkgutil import extend_path\n\t__path__ = extend_path(__path__, __name__)\n"
       )
     endforeach(i)
 endif()
