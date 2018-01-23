@@ -131,13 +131,29 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-
+    /// Set the Selectability of the prim
     void SetSelectability(const TfToken& selectability);
-    TfToken GetSelectabilityValue() const;
+
+    /// Get the current Selectability value on the current prim. If you want to
+    /// determine the current selectability
+    TfToken GetSelectability() const;
+
+    /// Compute this Prims selectability value by looking at it own and it's
+    /// through it's ancestor Prims to determine the hierarhical value.
+    ///
+    /// If one of the ancestors is found to be 'unselectable' then the 'unselectable'
+    /// value is returned and the search stops.
+    ///
+    /// If no selectability value is found in the hierarchy, then the 'inherited' value
+    /// is returned and should be considered 'selectable'.
+    TfToken ComputeSelectabilty() const;
 
     void SetLock(const TfToken& lock);
     TfToken GetLock() const;
     TfToken ComputeLock() const;
+private:
+    typedef std::function<bool(const UsdPrim&, TfToken&)> ComputeLogic;
+    TfToken ComputeHierarchical(const UsdPrim& prim, const ComputeLogic& logic) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
