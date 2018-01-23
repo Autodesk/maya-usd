@@ -36,7 +36,6 @@
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdUtils/stageCache.h"
 
-
 namespace AL {
 namespace usdmaya {
 namespace nodes {
@@ -61,6 +60,11 @@ MObject Transform::m_readAnimatedValues = MObject::kNullObj;
 void Transform::postConstructor()
 {
   transform()->setMObject(thisMObject());
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+Transform::Transform()
+{
 }
 
 //----------------------------------------------------------------------------------------------------------------------

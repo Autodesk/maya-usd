@@ -148,11 +148,6 @@ TEST(ProxyShapeImport, lockMetaData)
     UsdPrim cam = stage->DefinePrim(SdfPath("/root/geo/cam"), TfToken("Camera"));
 
     stage->Export(temp_bootstrap_path, false);
-    std::string text;
-    stage->ExportToString(&text);
-
-    std::cout << text << std::endl;
-
     return MString(temp_bootstrap_path.c_str());
   };
 
@@ -175,22 +170,12 @@ TEST(ProxyShapeImport, lockMetaData)
 
   // force the stage to load
   proxy->filePathPlug().setString(temp_bootstrap_path.c_str());
-  proxy->loadStage();
 
   auto assertSdfPathIsValid = [] (UsdStageRefPtr usdStage, const std::string &path)
   {
     EXPECT_TRUE(usdStage->GetPrimAtPath(SdfPath(path)).IsValid());
   };
 
-  MItDependencyNodes it;
-  for(; !it.isDone(); it.next())
-  {
-    MFnDependencyNode fn(it.item());
-    std::cout << fn.name() << std::endl;
-  }
-
-  MString bootstrap_path = constructTestUSDFile();
-  MGlobal::executeCommand(constructLockMetaDataTestCommand(bootstrap_path, ""), false, true);
   auto stage = proxy->getUsdStage();
   ASSERT_TRUE(stage);
   assertSdfPathIsValid(stage, "/root");
@@ -198,26 +183,40 @@ TEST(ProxyShapeImport, lockMetaData)
   assertSdfPathIsValid(stage, "/root/geo/cam");
   UsdPrim geoPrim = stage->GetPrimAtPath(SdfPath("/root/geo"));
 
+  MStatus status;
   MSelectionList sl;
   MObject camObj;
-  EXPECT_TRUE(sl.add("|transform1|root|geo|cam") == MS::kSuccess);
+  EXPECT_TRUE(sl.add("cam") == MS::kSuccess);
   EXPECT_TRUE(sl.getDependNode(0, camObj) == MS::kSuccess);
   ASSERT_FALSE(camObj.isNull());
-  EXPECT_FALSE(MPlug(camObj, AL::usdmaya::nodes::Transform::pushToPrim()).asBool());
-  MFnDependencyNode camDG(camObj);
-  MPlug tPlug = camDG.findPlug("t");
-  MPlug rPlug = camDG.findPlug("r");
-  MPlug sPlug = camDG.findPlug("s");
+
+  MFnDependencyNode fndd(camObj);
+  MUuid iid = fndd.uuid();
+
+  MPlug pushToPlugPrim(camObj, AL::usdmaya::nodes::Transform::pushToPrim());
+  EXPECT_FALSE(pushToPlugPrim.asBool());
+
+  MFnDependencyNode camDG(camObj, &status);
+  EXPECT_TRUE(status == MS::kSuccess);
+
+  MPlug tPlug = camDG.findPlug("t", &status);
+  EXPECT_TRUE(status == MS::kSuccess);
+
+  MPlug rPlug = camDG.findPlug("r", &status);
+  EXPECT_TRUE(status == MS::kSuccess);
+
+  MPlug sPlug = camDG.findPlug("s", &status);
+  EXPECT_TRUE(status == MS::kSuccess);
   EXPECT_TRUE(tPlug.isLocked());
   EXPECT_TRUE(rPlug.isLocked());
   EXPECT_TRUE(sPlug.isLocked());
 
-  MStatus status = MGlobal::executeCommand("setAttr cam.t 5 5 5");
-  EXPECT_TRUE(status == MStatus::kFailure);
+  status = MGlobal::executeCommand("setAttr cam.t 5 5 5");
+  EXPECT_TRUE(status != MStatus::kSuccess);
   status = MGlobal::executeCommand("setAttr cam.r 5 5 5");
-  EXPECT_TRUE(status == MStatus::kFailure);
+  EXPECT_TRUE(status != MStatus::kSuccess);
   status = MGlobal::executeCommand("setAttr cam.s 5 5 5");
-  EXPECT_TRUE(status == MStatus::kFailure);
+  EXPECT_TRUE(status != MStatus::kSuccess);
 }
 
 TEST(ProxyShapeImport, sessionLayer)
