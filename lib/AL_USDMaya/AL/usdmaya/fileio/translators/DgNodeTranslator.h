@@ -336,12 +336,6 @@ public:
   /// \param  usdAttr the USDAttribute to set the attribute value to
   /// \return MS::kSuccess if the conversion success based on certain rules.
   static MStatus convertSpecialValueToUSDAttribute(const MPlug& plug, UsdAttribute& usdAttr);
-
-  /// \brief  get the source MPlug that is connecting to the MPlug "plug" and controlling it.
-  /// \param  plug the MPlug to get the source MPlug for.
-  /// \param  status A pointer to MStatus to check the retrieve is successful or not.
-  /// \return plug The source MPlug.
-  static MPlug getPlugSource(const MPlug &plug, MStatus *status);
 };
 
 //----------------------------------------------------------------------------------------------------------------------

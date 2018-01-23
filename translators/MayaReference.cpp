@@ -39,6 +39,7 @@ IGNORE_USD_WARNINGS_PUSH
 #include <pxr/usd/usd/attribute.h>
 IGNORE_USD_WARNINGS_POP
 
+
 namespace {
   // If the given source and destArrayPlug are already connected, returns the index they are
   // connected at; otherwise, returns the lowest index in the destArray that does not already
@@ -66,7 +67,7 @@ namespace {
       {
         elemPlug = destArrayPlug.connectionByPhysicalIndex(connectedI, &status);
         AL_MAYA_CHECK_ERROR(status, MString("failed to get connection ") + connectedI + " on "+ destArrayPlug.name());
-        elemSrcPlug = AL::usdmaya::fileio::translators::DgNodeTranslator::getPlugSource(elemPlug, &status);
+        elemSrcPlug = elemPlug.source(&status);
         AL_MAYA_CHECK_ERROR(status, MString("failed to get source for ") + elemPlug.name());
         if (!elemSrcPlug.isNull())
         {
