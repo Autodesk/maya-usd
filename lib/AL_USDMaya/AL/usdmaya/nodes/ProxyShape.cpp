@@ -159,9 +159,8 @@ static std::string getMayaSceneFileDir()
   constexpr char ma_ext[] = ".ma";
   constexpr char mb_ext[] = ".mb";
   auto ext_start = currentFile.end() - 3;
-  auto ext_end = currentFile.end();
-  if(std::equal(ma_ext, ma_ext + 3, ext_start, ext_end) ||
-     std::equal(mb_ext, mb_ext + 3, ext_start, ext_end))
+  if(std::equal(ma_ext, ma_ext + 3, ext_start) ||
+     std::equal(mb_ext, mb_ext + 3, ext_start))
     return getDir(currentFile);
 
   return std::string();
