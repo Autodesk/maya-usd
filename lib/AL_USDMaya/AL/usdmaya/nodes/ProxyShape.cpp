@@ -20,6 +20,23 @@
   #include "pxr/usdImaging/usdImaging/hdEngine.h"
 #endif
 
+#if (__cplusplus >= 201703L)
+# include <filesystem>
+#else
+# include <boost/filesystem.hpp>
+#endif
+
+namespace AL {
+namespace filesystem {
+#if (__cplusplus >= 201703L)
+typedef std::filesystem::path path;
+#else
+typedef ALboost::filesystem::path path;
+#endif
+}
+}
+
+#include "AL/maya/CodeTimings.h"
 #include "AL/usdmaya/CodeTimings.h"
 #include "AL/usdmaya/utils/Utils.h"
 
@@ -107,15 +124,7 @@ static std::string resolvePath(const std::string& filePath)
 
 static std::string getDir(const std::string &fullFilePath)
 {
-  size_t slashIndex = fullFilePath.find_last_of('/');
-
-  if (slashIndex == std::string::npos)
-    slashIndex = fullFilePath.find_last_of('\\');
-
-  if (slashIndex == std::string::npos)
-    return std::string();
-
-  return fullFilePath.substr(0, slashIndex+1);
+  return AL::filesystem::path(fullFilePath).parent_path().string();
 }
 
 static std::string getMayaReferencedFileDir(const MObject &proxyShapeNode)
