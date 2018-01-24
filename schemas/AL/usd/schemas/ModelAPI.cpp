@@ -126,22 +126,6 @@ void AL_usd_ModelAPI::SetSelectability(const TfToken& selectability)
   }
 }
 
-TfToken AL_usd_ModelAPI::GetSelectability() const
-{
-  if (!GetPrim().IsValid())
-  {
-    return TfToken();
-  }
-
-  if(!GetPrim().HasMetadata(AL_USDMayaSchemasTokens->selectability))
-  {
-    return AL_USDMayaSchemasTokens->selectability_inherited;
-  }
-  TfToken selectabilityValue;
-  GetPrim().GetMetadata<TfToken>(AL_USDMayaSchemasTokens->selectability, &selectabilityValue);
-  return selectabilityValue;
-}
-
 TfToken AL_usd_ModelAPI::ComputeHierarchical(const UsdPrim& prim,
                                              const ComputeLogic& logic) const
 {
@@ -182,6 +166,22 @@ TfToken AL_usd_ModelAPI::ComputeSelectabilty() const
   TfToken foundValue = ComputeHierarchical(GetPrim(), determineSelectability);
 
   return foundValue;
+}
+
+TfToken AL_usd_ModelAPI::GetSelectability() const
+{
+  if (!GetPrim().IsValid())
+  {
+    return TfToken();
+  }
+
+  if(!GetPrim().HasMetadata(AL_USDMayaSchemasTokens->selectability))
+  {
+    return AL_USDMayaSchemasTokens->selectability_inherited;
+  }
+  TfToken selectabilityValue;
+  GetPrim().GetMetadata<TfToken>(AL_USDMayaSchemasTokens->selectability, &selectabilityValue);
+  return selectabilityValue;
 }
 
 void AL_usd_ModelAPI::SetLock(const TfToken& lock)

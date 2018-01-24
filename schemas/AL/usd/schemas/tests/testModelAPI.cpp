@@ -92,3 +92,4 @@ TEST(testModelAPI, testComputeLock)
   v = inheritedModel.ComputeLock();
   ASSERT_TRUE(v == AL_USDMayaSchemasTokens->lock_inherited);
 }
+
