@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "AL/maya/FileTranslatorOptions.h"
+#include "AL/usdmaya/DebugCodes.h"
 #include "maya/MGlobal.h"
 
 namespace AL {
@@ -456,9 +457,7 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
             "  return $result;\n}\n";
 
 
-  #if AL_USD_PRINT_UI_CODE
-  std::cout << m_code.asChar() << std::endl;
-  #endif
+  TF_DEBUG(PXR_NS::ALUSDMAYA_GUIHELPER).Msg((m_code + "\n").asChar());
 
   return MGlobal::executeCommand(m_code, false, false);
 }
