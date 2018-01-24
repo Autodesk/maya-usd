@@ -7,3 +7,4 @@ export PYTHONPATH=$AL_USDMAYA_LOCATION/lib/python:$2/python:$PYTHONPATH
 export PATH=$MAYA_LOCATION/bin:$PATH
 
 $AL_USDMAYA_LOCATION/bin/testMayaSchemas
+

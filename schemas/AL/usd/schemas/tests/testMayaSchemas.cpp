@@ -36,7 +36,6 @@ TEST(testMayaSchemas, testMayaReferenceAttributes)
   primOut.CreateAttribute(
       TfToken("mayaNamespace"),
       SdfValueTypeNames->String).Set(mayaNamespace);
-  ASSERT_TRUE(primOut.GetAttributes().size() == 2);
 
   auto stageIn = UsdStage::Open(stageOut->Flatten());
   auto primIn = stageIn->GetPrimAtPath(primPath);
