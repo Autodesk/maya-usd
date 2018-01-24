@@ -187,8 +187,8 @@ static std::string resolveRelativePathWithinMayaContext(const MObject &proxyShap
   if(currentFileDir.empty())
     return relativeFilePath;
 
-  boost::filesystem::path canonicalPath = boost::filesystem::canonical(relativeFilePath, currentFileDir);
-  return canonicalPath.string();
+  AL::filesystem::path path = boost::filesystem::canonical(relativeFilePath, currentFileDir);
+  return path.string();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
