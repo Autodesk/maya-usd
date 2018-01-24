@@ -107,13 +107,13 @@ static std::string resolvePath(const std::string& filePath)
 
 static std::string getDir(const std::string &fullFilePath)
 {
-  size_t slashIndex = fullFilePath.find_last_of("/");
+  size_t slashIndex = fullFilePath.find_last_of('/');
 
   if (slashIndex == std::string::npos)
-    slashIndex = fullFilePath.find_last_of("\\");
+    slashIndex = fullFilePath.find_last_of('\\');
 
   if (slashIndex == std::string::npos)
-    return "";
+    return std::string();
 
   return fullFilePath.substr(0, slashIndex+1);
 }
@@ -136,7 +136,7 @@ static std::string getMayaReferencedFileDir(const MObject &proxyShapeNode)
       // However, I have to set it to false to return the full file path otherwise I get a file name only...
       MString refFilePath = refFn.fileName(true, false, false, &stat);
       if(!refFilePath.length())
-        return "";
+        return std::string();
 
       std::string referencedFilePath = refFilePath.asChar();
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("getMayaReferencedFileDir: The reference file that contains the proxyShape node is : %s\n", referencedFilePath.c_str());
@@ -145,7 +145,7 @@ static std::string getMayaReferencedFileDir(const MObject &proxyShapeNode)
     }
   }
 
-  return "";
+  return std::string();
 }
 
 static std::string getMayaSceneFileDir()
@@ -153,12 +153,12 @@ static std::string getMayaSceneFileDir()
   std::string currentFile = MFileIO::currentFile().asChar();
   size_t filePathSize = currentFile.size();
   if(filePathSize < 4)
-    return "";
+    return std::string();
 
   // If scene is untitled, the maya file will be MayaWorkspaceDir/untitled :
   std::string ext = currentFile.substr(filePathSize-3);
   if (ext != ".ma" && ext != ".mb")
-    return "";
+    return std::string();
 
   return getDir(currentFile);
 }
