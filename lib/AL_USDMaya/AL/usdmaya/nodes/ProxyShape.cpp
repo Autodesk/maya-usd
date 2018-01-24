@@ -150,17 +150,21 @@ static std::string getMayaReferencedFileDir(const MObject &proxyShapeNode)
 
 static std::string getMayaSceneFileDir()
 {
-  std::string currentFile = MFileIO::currentFile().asChar();
+  std::string currentFile = convert(MFileIO::currentFile());
   size_t filePathSize = currentFile.size();
   if(filePathSize < 4)
     return std::string();
 
   // If scene is untitled, the maya file will be MayaWorkspaceDir/untitled :
-  std::string ext = currentFile.substr(filePathSize-3);
-  if (ext != ".ma" && ext != ".mb")
-    return std::string();
+  constexpr char ma_ext[] = ".ma";
+  constexpr char mb_ext[] = ".mb";
+  auto ext_start = currentFile.end() - 3;
+  auto ext_end = currentFile.end();
+  if(std::equal(ma_ext, ma_ext + 3, ext_start, ext_end) ||
+     std::equal(mb_ext, mb_ext + 3, ext_start, ext_end))
+    return getDir(currentFile);
 
-  return getDir(currentFile);
+  return std::string();
 }
 
 static std::string resolveRelativePathWithinMayaContext(const MObject &proxyShape, const std::string& filePath)
