@@ -30,7 +30,7 @@ public:
 
   ///-------------------------------------------------------------------------------------------------------------------
   /// \brief  Adds a path to the unselectable list
-  /// \param  paths which will be added as unselectable. All children paths will be also unselectable
+  /// \param  path which will be added as unselectable. All children paths will be also unselectable
   ///-------------------------------------------------------------------------------------------------------------------
   void addPathAsUnselectable(const SdfPath& path);
 
@@ -41,11 +41,13 @@ public:
 
   ///-------------------------------------------------------------------------------------------------------------------
   /// \brief  Removes a list of paths from the selectable list if the exist.
+  /// \param  paths the paths to remove from the selectable list
   ///-------------------------------------------------------------------------------------------------------------------
   void removePathsAsUnselectable(const SdfPathVector& paths);
 
   ///-------------------------------------------------------------------------------------------------------------------
   /// \brief  Remove a path from the selectable list if the exist.
+  /// \param  path the path to remove from the selectable list
   ///-------------------------------------------------------------------------------------------------------------------
   void removePathAsUnselectable(const SdfPath& path);
 

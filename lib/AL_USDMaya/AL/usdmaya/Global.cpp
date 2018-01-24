@@ -50,13 +50,53 @@ namespace {
 namespace AL {
 namespace usdmaya {
 
+//----------------------------------------------------------------------------------------------------------------------
+static const char* const eventTypeStrings[] =
+{
+  "custom",
+  "schema",
+  "coremaya",
+  "usdmaya"
+};
 
 //----------------------------------------------------------------------------------------------------------------------
-MCallbackId Global::m_preSave;
-MCallbackId Global::m_postSave;
-MCallbackId Global::m_preRead;
-MCallbackId Global::m_postRead;
-MCallbackId Global::m_fileNew;
+class MayaEventSystemBinding
+  : public maya::EventSystemBinding
+{
+public:
+
+  MayaEventSystemBinding()
+    : EventSystemBinding(eventTypeStrings, sizeof(eventTypeStrings) / sizeof(const char*)) {}
+
+  bool executePython(const char* const code) override
+  {
+    return MGlobal::executePythonCommand(code, false, true);
+  }
+
+  bool executeMEL(const char* const code) override
+  {
+    return MGlobal::executeCommand(code, false, true);
+  }
+
+  void writeLog(EventSystemBinding::Type severity, const char* const text) override
+  {
+    switch(severity)
+    {
+    case kInfo: MGlobal::displayInfo(text); break;
+    case kWarning: MGlobal::displayWarning(text); break;
+    case kError: MGlobal::displayError(text); break;
+    }
+  }
+};
+
+static MayaEventSystemBinding g_eventSystem;
+
+//----------------------------------------------------------------------------------------------------------------------
+maya::CallbackId Global::m_preSave;
+maya::CallbackId Global::m_postSave;
+maya::CallbackId Global::m_preRead;
+maya::CallbackId Global::m_postRead;
+maya::CallbackId Global::m_fileNew;
 
 //----------------------------------------------------------------------------------------------------------------------
 static void onFileNew(void*)
@@ -71,6 +111,24 @@ static void onFileNew(void*)
 static void preFileRead(void*)
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("preFileRead\n");
+
+  if(!readDepth)
+  {
+    MFnDependencyNode fn;
+    {
+      MItDependencyNodes iter(MFn::kPluginShape);
+      for(; !iter.isDone(); iter.next())
+      {
+        fn.setObject(iter.item());
+        if(fn.typeId() == nodes::ProxyShape::kTypeId)
+        {
+          nodes::ProxyShape* proxy = (nodes::ProxyShape*)fn.userNode();
+          proxy->removeAttributeChangedCallback();
+        }
+      }
+    }
+  }
+
   ++readDepth;
 }
 
@@ -229,11 +287,17 @@ static void postFileSave(void*)
 void Global::onPluginLoad()
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Registering callbacks\n");
-  m_fileNew = MSceneMessage::addCallback(MSceneMessage::kAfterNew, onFileNew);
-  m_preSave = MSceneMessage::addCallback(MSceneMessage::kBeforeSave, preFileSave);
-  m_postSave = MSceneMessage::addCallback(MSceneMessage::kAfterSave, postFileSave);
-  m_preRead = MSceneMessage::addCallback(MSceneMessage::kBeforeFileRead, preFileRead);
-  m_postRead = MSceneMessage::addCallback(MSceneMessage::kAfterFileRead, postFileRead);
+
+  maya::EventScheduler::initScheduler(&g_eventSystem);
+  auto ptr = new maya::MayaEventHandler(&maya::EventScheduler::getScheduler(), maya::kMayaEventType);
+  new maya::MayaEventManager(ptr);
+
+  auto& manager = maya::MayaEventManager::instance();
+  m_fileNew = manager.registerCallback(onFileNew, "AfterNew", "usdmaya_onFileNew", 0x1000);
+  m_preSave = manager.registerCallback(preFileSave, "BeforeSave", "usdmaya_preFileSave", 0x1000);
+  m_postSave = manager.registerCallback(postFileSave, "AfterSave", "usdmaya_postFileSave", 0x1000);
+  m_preRead = manager.registerCallback(preFileRead, "BeforeFileRead", "usdmaya_preFileRead", 0x1000);
+  m_postRead = manager.registerCallback(postFileRead, "AfterFileRead", "usdmaya_postFileRead", 0x1000);
 
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Registering USD plugins\n");
   // Let USD know about the additional plugins
@@ -247,12 +311,16 @@ void Global::onPluginLoad()
 void Global::onPluginUnload()
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Removing callbacks\n");
-  MSceneMessage::removeCallback(m_fileNew);
-  MSceneMessage::removeCallback(m_preSave);
-  MSceneMessage::removeCallback(m_postSave);
-  MSceneMessage::removeCallback(m_preRead);
-  MSceneMessage::removeCallback(m_postRead);
+  auto& manager = maya::MayaEventManager::instance();
+  manager.unregisterCallback(m_fileNew);
+  manager.unregisterCallback(m_preSave);
+  manager.unregisterCallback(m_postSave);
+  manager.unregisterCallback(m_preRead);
+  manager.unregisterCallback(m_postRead);
   StageCache::removeCallbacks();
+
+  maya::MayaEventManager::freeInstance();
+  maya::EventScheduler::freeScheduler();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

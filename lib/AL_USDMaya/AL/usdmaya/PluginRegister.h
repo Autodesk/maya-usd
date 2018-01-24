@@ -22,6 +22,7 @@
 #include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/DrivenTransformsData.h"
 #include "AL/usdmaya/cmds/DebugCommands.h"
+#include "AL/usdmaya/cmds/EventCommand.h"
 #include "AL/usdmaya/cmds/LayerCommands.h"
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
 #include "AL/usdmaya/cmds/ProxyShapeSelectCommands.h"
@@ -86,6 +87,15 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePostSelect);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::InternalProxyShapeSelect);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::UsdDebugCommand);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListEvents);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListCallbacks);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::Callback);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::TriggerEvent);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::DeleteCallbacks);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::CallbackQuery);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::Event);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventQuery);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventLookup);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
   AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
@@ -151,6 +161,15 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeResync);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImportPrimPathAsMaya);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePrintRefCountState);
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::Callback);
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListCallbacks);
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListEvents);
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::TriggerEvent);
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::DeleteCallbacks);
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::CallbackQuery);
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::Event);
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventQuery);
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventLookup);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::UsdDebugCommand);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);

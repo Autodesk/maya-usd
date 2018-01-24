@@ -15,7 +15,7 @@
 //
 #pragma once
 #include "AL/usdmaya/Common.h"
-#include "maya/MSceneMessage.h"
+#include "AL/maya/MayaEventManager.h"
 
 namespace AL {
 namespace usdmaya {
@@ -35,12 +35,32 @@ public:
   /// \brief  uninitialise the global state
   static void onPluginUnload();
 
+  /// pre save callback
+  static maya::CallbackId preSave()
+    { return m_preSave; }
+
+  /// post save callback
+  static maya::CallbackId postSave()
+    { return m_postSave; }
+
+  /// pre open callback
+  static maya::CallbackId preRead()
+    { return m_preRead; }
+
+  /// post open callback
+  static maya::CallbackId postRead()
+    { return m_postRead; }
+
+  /// callback used to flush the USD caches after a file new
+  static maya::CallbackId fileNew()
+    { return m_fileNew; }
+
 private:
-  static MCallbackId m_preSave;  ///< callback prior to saving the scene (so we can store the session layer)
-  static MCallbackId m_postSave; ///< callback after saving
-  static MCallbackId m_preRead;  ///< callback executed before opening a maya file
-  static MCallbackId m_postRead; ///< callback executed after opening a maya file - needed to re-hook up the UsdPrims
-  static MCallbackId m_fileNew;  ///< callback used to flush the USD caches after a file new
+  static maya::CallbackId m_preSave;  ///< callback prior to saving the scene (so we can store the session layer)
+  static maya::CallbackId m_postSave; ///< callback after saving
+  static maya::CallbackId m_preRead;  ///< callback executed before opening a maya file
+  static maya::CallbackId m_postRead; ///< callback executed after opening a maya file - needed to re-hook up the UsdPrims
+  static maya::CallbackId m_fileNew;  ///< callback used to flush the USD caches after a file new
 };
 
 } // usdmaya

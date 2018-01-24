@@ -284,7 +284,6 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
 
   MString populationMaskIncludePath;
   bool connectToTime = true;
-  bool unloaded = database.isFlagSet("-ul");
 
   // extract command args
   if(!database.isFlagSet("-f") || !database.getFlagArgument("-f", 0, filePath))
@@ -381,7 +380,14 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   // intialise the params
   if(hasPrimPath) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::primPath()), primPath);
   if(hasExclPrimPath) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::excludePrimPaths()), excludePrimPath);
-  if(unloaded) m_modifier.newPlugValueBool(MPlug(m_shape, nodes::ProxyShape::unloaded()), unloaded);
+  if(database.isFlagSet("-ul"))
+  {
+    bool unloaded;
+    database.getFlagArgument("-ul", 0, unloaded);
+    m_modifier.newPlugValueBool(MPlug(m_shape, nodes::ProxyShape::unloaded()), unloaded);
+  }
+
+
   if(hasStagePopulationMaskInclude) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::populationMaskIncludePaths()), populationMaskIncludePath);
 
   std::string arCtxStr("ARconfigGoesHere");
