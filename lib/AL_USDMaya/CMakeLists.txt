@@ -187,6 +187,7 @@ target_link_libraries(${LIBRARY_NAME}
     ${PYTHON_LIBRARIES}
     ${Boost_PYTHON_LIBRARY}
     ${Boost_THREAD_LIBRARY}
+    ${Boost_FILESYSTEM_LIBRARY}
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
     ${MAYA_OpenMayaFX_LIBRARY}
