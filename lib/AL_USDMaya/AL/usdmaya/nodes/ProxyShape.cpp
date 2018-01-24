@@ -175,20 +175,20 @@ static std::string getMayaSceneFileDir()
   return std::string();
 }
 
-static std::string resolveRelativePathWithinMayaContext(const MObject &proxyShape, const std::string& filePath)
+static std::string resolveRelativePathWithinMayaContext(const MObject &proxyShape, const std::string& relativeFilePath)
 {
-  if (filePath.length() < 3)
-    return filePath;
+  if (relativeFilePath.length() < 3)
+    return relativeFilePath;
 
   std::string currentFileDir = getMayaReferencedFileDir(proxyShape);
   if(currentFileDir.empty())
     currentFileDir = getMayaSceneFileDir();
 
   if(currentFileDir.empty())
-    return filePath;
+    return relativeFilePath;
 
-  std::string fileName = filePath.substr(2);
-  return (currentFileDir + fileName);
+  boost::filesystem::path canonicalPath = boost::filesystem::canonical(relativeFilePath, currentFileDir);
+  return canonicalPath.string();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
