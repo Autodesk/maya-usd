@@ -27,6 +27,7 @@
 #include "maya/MDagModifier.h"
 #include "maya/MFileIO.h"
 #include "maya/MStringArray.h"
+#include "maya/MCommonSystemUtils.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/usd/attribute.h"
@@ -34,6 +35,9 @@
 #include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
+
+#include <iostream>
+#include <fstream>
 
 // UsdStageRefPtr ProxyShape::getUsdStage() const;
 // UsdPrim ProxyShape::getRootPrim()
@@ -1130,38 +1134,110 @@ TEST(ProxyShape, findExcludedGeometry)
   AL_USDMAYA_UNTESTED;
 }
 
+
+namespace
+{
+
+bool prepareBootstrapUSDA(MString &dirString, MString &bootstrapFullPath)
+{
+  constexpr char *tmpDir = "/tmp/usdMayaEmptyScene";
+
+  MStatus stats = MCommonSystemUtils::makeDirectory(tmpDir);
+  if(!stats)
+    return false;
+
+  constexpr char *content = "#usda 1.0";
+  dirString = tmpDir;
+  bootstrapFullPath = (dirString + "/bootstrap.usda");
+
+  std::ofstream fileObj;
+  fileObj.open(bootstrapFullPath.asChar(), std::ios::out);
+  if (fileObj.is_open())
+  {
+    fileObj << content;
+    fileObj.close();
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+void checkStageAndRootLayer(UsdStageRefPtr stage, const MString &expectedPath)
+{
+  ASSERT_TRUE(stage);
+
+  SdfLayerHandle root = stage->GetRootLayer();
+  EXPECT_TRUE(root);
+
+  // make sure path is correct
+  EXPECT_EQ(expectedPath.asChar(), root->GetRealPath());
+}
+}
+
+
 // void resolveRelativePathWithinMayaContext();
 TEST(ProxyShape, relativePathSupport)
 {
   // Test the relative USD bootstrap file path support:
   // If the proxy shape is not referenced, the relative file path will be resolved using the current
   // maya scene directory:
-  const MString emptyScene = MString(AL_USDMAYA_TEST_DATA) + "/empty_scene/empty_scene.ma";
-  MStatus stat = MFileIO::open(emptyScene, NULL, true);
-  EXPECT_EQ(MStatus(MS::kSuccess), stat);
 
-  const std::string bootstrapPath{std::string(AL_USDMAYA_TEST_DATA) + "/empty_scene/bootstrap.usda"};
+  MString tempDirString, bootstrapFullPath;
+  EXPECT_TRUE(prepareBootstrapUSDA(tempDirString, bootstrapFullPath));
+
+
+  MFileIO::newFile(true);
+  MStatus status;
+
+  MFnDagNode fn;
+  MObject xform = fn.create("transform");
+  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+  MString shapeName = fn.name();
+
+
+  // Test it right away:
+  AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+  // force the stage to load
+  proxy->filePathPlug().setString(bootstrapFullPath);
+  auto stage = proxy->getUsdStage();
+
+  checkStageAndRootLayer(stage, bootstrapFullPath);
+
+  MString mayaFileName = tempDirString + "/emptyscene.ma";
+  EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs(mayaFileName));
+
+
+  // Now, reopen maya scene and test again:
+  MFileIO::newFile(true);
+  MFileIO::open(mayaFileName, NULL, true);
+
   UsdStageCache &cache = AL::usdmaya::StageCache::Get();
   std::vector<UsdStageRefPtr> stages = cache.GetAllStages();
   EXPECT_TRUE(not stages.empty());
 
-  UsdStageRefPtr stage = stages[0];
-  EXPECT_TRUE(stage);
+  stage = stages[0];
+  checkStageAndRootLayer(stage, bootstrapFullPath);
 
-  std::string realPath = stage->GetRootLayer()->GetRealPath();
-  EXPECT_EQ(realPath, bootstrapPath);
 
-  // If the proxy shape is referenced, the relative path should be resolved using  the reference file path.
-  const MString referenceEmptyScene = MString(AL_USDMAYA_TEST_DATA) + "/referenceEmptyScene.ma";
-  stat = MFileIO::open(referenceEmptyScene, NULL, true);
-  EXPECT_EQ(MStatus(MS::kSuccess), stat);
+  // Now try reference it!
+  MFileIO::newFile(true);
+  EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::reference(mayaFileName, false, false, "ref"));
+
+  MString outerFileName = "/tmp/usdMayaTestRefEmptyScene.ma";
+  EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs(outerFileName));
+
+  // Now, reopen maya scene and test again:
+  MFileIO::newFile(true);
+  MFileIO::open(outerFileName, NULL, true);
+
+  cache = AL::usdmaya::StageCache::Get();
   stages = cache.GetAllStages();
   EXPECT_TRUE(not stages.empty());
-  stage = stages[0];
-  EXPECT_TRUE(stage);
 
-  realPath = stage->GetRootLayer()->GetRealPath();
-  EXPECT_EQ(realPath, bootstrapPath);
+  stage = stages[0];
+  checkStageAndRootLayer(stage, bootstrapFullPath);
 }
 
 //
