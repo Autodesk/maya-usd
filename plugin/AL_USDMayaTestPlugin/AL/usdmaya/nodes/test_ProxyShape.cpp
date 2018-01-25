@@ -1190,8 +1190,6 @@ TEST(ProxyShape, relativePathSupport)
   MFnDagNode fn;
   MObject xform = fn.create("transform");
   MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
-  MString shapeName = fn.name();
-
 
   // Test it right away:
   AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
