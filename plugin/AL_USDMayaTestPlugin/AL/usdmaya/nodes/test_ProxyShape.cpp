@@ -1140,14 +1140,13 @@ namespace
 
 bool prepareBootstrapUSDA(MString &dirString, MString &bootstrapFullPath)
 {
-  constexpr char *tmpDir = "/tmp/usdMayaEmptyScene";
+  dirString = "/tmp/usdMayaEmptyScene";
 
-  MStatus stats = MCommonSystemUtils::makeDirectory(tmpDir);
+  MStatus stats = MCommonSystemUtils::makeDirectory(dirString);
   if(!stats)
     return false;
 
-  constexpr char *content = "#usda 1.0";
-  dirString = tmpDir;
+  constexpr char content[] = "#usda 1.0";
   bootstrapFullPath = (dirString + "/bootstrap.usda");
 
   std::ofstream fileObj;
@@ -1172,7 +1171,7 @@ void checkStageAndRootLayer(UsdStageRefPtr stage, const MString &expectedPath)
   EXPECT_TRUE(root);
 
   // make sure path is correct
-  EXPECT_EQ(expectedPath.asChar(), root->GetRealPath());
+  EXPECT_EQ(root->GetRealPath(), expectedPath.asChar());
 }
 }
 
@@ -1180,14 +1179,11 @@ void checkStageAndRootLayer(UsdStageRefPtr stage, const MString &expectedPath)
 // void resolveRelativePathWithinMayaContext();
 TEST(ProxyShape, relativePathSupport)
 {
-  // Test the relative USD bootstrap file path support:
-  // If the proxy shape is not referenced, the relative file path will be resolved using the current
-  // maya scene directory:
-
   MString tempDirString, bootstrapFullPath;
   EXPECT_TRUE(prepareBootstrapUSDA(tempDirString, bootstrapFullPath));
 
 
+  // Test the relative USD bootstrap file path support:
   MFileIO::newFile(true);
   MStatus status;
 
@@ -1206,7 +1202,7 @@ TEST(ProxyShape, relativePathSupport)
   checkStageAndRootLayer(stage, bootstrapFullPath);
 
   MString mayaFileName = tempDirString + "/emptyscene.ma";
-  EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs(mayaFileName));
+  EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs(mayaFileName, NULL, true));
 
 
   // Now, reopen maya scene and test again:
@@ -1221,12 +1217,13 @@ TEST(ProxyShape, relativePathSupport)
   checkStageAndRootLayer(stage, bootstrapFullPath);
 
 
-  // Now try reference it!
+  // If the proxy shape is not referenced, the relative file path will be resolved using the referenced
+  // maya scene directory:
   MFileIO::newFile(true);
   EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::reference(mayaFileName, false, false, "ref"));
 
   MString outerFileName = "/tmp/usdMayaTestRefEmptyScene.ma";
-  EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs(outerFileName));
+  EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs(outerFileName, NULL, true));
 
   // Now, reopen maya scene and test again:
   MFileIO::newFile(true);
