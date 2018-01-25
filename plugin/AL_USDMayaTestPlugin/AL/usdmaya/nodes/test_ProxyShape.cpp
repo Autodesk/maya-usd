@@ -1190,11 +1190,16 @@ TEST(ProxyShape, relativePathSupport)
   MFnDagNode fn;
   MObject xform = fn.create("transform");
   MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+  MString shapeName = fn.name();
+
 
   // Test it right away:
   AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
   // force the stage to load
   proxy->filePathPlug().setString("./bootstrap.usda");
+
+  // Before testing we need to save the maya scene first, since the relative path is resolved
+  // primarily with current maya scene directory.
   MString mayaFileName = tempDirString + "/emptyscene.ma";
   EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs(mayaFileName, NULL, true));
 
