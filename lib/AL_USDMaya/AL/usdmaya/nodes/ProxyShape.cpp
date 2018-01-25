@@ -1334,12 +1334,16 @@ void ProxyShape::constructLockPrims()
     }
   }
 
+  SdfPathVector primsToLock;
+  primsToLock.reserve(primsNeedLock.size());
   SdfPathVector primsToUnlock;
   primsToUnlock.reserve(m_currentLockedPrims.size());
+  std::set_difference(primsNeedLock.begin(), primsNeedLock.end(), m_currentLockedPrims.begin(),
+                      m_currentLockedPrims.end(), std::back_inserter(primsToLock));
   std::set_difference(m_currentLockedPrims.begin(), m_currentLockedPrims.end(), primsNeedLock.begin(),
                       primsNeedLock.end(), std::back_inserter(primsToUnlock));
 
-  for (auto lock : primsNeedLock)
+  for (auto lock : primsToLock)
   {
     if (lockTransformAttribute(lock, true))
     {
