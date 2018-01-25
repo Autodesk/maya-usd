@@ -1190,17 +1190,11 @@ TEST(ProxyShape, relativePathSupport)
   MFnDagNode fn;
   MObject xform = fn.create("transform");
   MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
-  MString shapeName = fn.name();
-
 
   // Test it right away:
   AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
   // force the stage to load
-  proxy->filePathPlug().setString(bootstrapFullPath);
-  auto stage = proxy->getUsdStage();
-
-  checkStageAndRootLayer(stage, bootstrapFullPath);
-
+  proxy->filePathPlug().setString("./bootstrap.usda");
   MString mayaFileName = tempDirString + "/emptyscene.ma";
   EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs(mayaFileName, NULL, true));
 
@@ -1213,7 +1207,7 @@ TEST(ProxyShape, relativePathSupport)
   std::vector<UsdStageRefPtr> stages = cache.GetAllStages();
   EXPECT_TRUE(not stages.empty());
 
-  stage = stages[0];
+  auto stage = stages[0];
   checkStageAndRootLayer(stage, bootstrapFullPath);
 
 
