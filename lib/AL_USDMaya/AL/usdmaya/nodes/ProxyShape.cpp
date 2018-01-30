@@ -1222,7 +1222,8 @@ void ProxyShape::loadStage()
 
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage original USD file path is %s\n", fileString.c_str());
 
-  if (not TfStringStartsWith(fileString, "./"))
+  AL::filesystem::path filestringPath (fileString);
+  if(filestringPath.is_absolute())
   {
     fileString = resolvePath(fileString);
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the USD file path to %s\n", fileString.c_str());
