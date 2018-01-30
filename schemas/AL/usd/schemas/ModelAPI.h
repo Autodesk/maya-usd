@@ -148,8 +148,20 @@ public:
     /// is returned and should be considered 'selectable'.
     TfToken ComputeSelectabilty() const;
 
+    /// Set the al_usdmaya_lock metadata of the prim.
     void SetLock(const TfToken& lock);
+
+    /// Get the current value of prim's al_usdmaya_lock metadata. If no value
+    /// defined on the prim, "inherited" is returned by default.
     TfToken GetLock() const;
+
+    /// Compute current prim's lock value by inspecting its own metadata and
+    /// walking up the prim hierarchy recursively.
+    ///
+    /// If a prim is found to be "inherited", this API keeps searching its
+    /// parent prim's metadata till it's either "transform" or "unlocked" and
+    /// returns with that value. If the whole hierarchy defining "inherited",
+    /// "inherited" is returned and should be considered as "unlocked".
     TfToken ComputeLock() const;
 private:
     typedef std::function<bool(const UsdPrim&, TfToken&)> ComputeLogic;

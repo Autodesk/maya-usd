@@ -34,7 +34,6 @@ TEST(testModelAPI, testComputeSelectability)
   AL_usd_ModelAPI unselectableParent = AL_usd_ModelAPI(stageOut->GetPrimAtPath(expectedUnselectableParent));
   unselectableParent.SetSelectability(AL_USDMayaSchemasTokens->selectability_unselectable);
   v = unselectableParent.ComputeSelectabilty();
-  std::cout << "Token " << v << std::endl;
 
   ASSERT_TRUE(v == AL_USDMayaSchemasTokens->selectability_unselectable);
 
@@ -53,4 +52,44 @@ TEST(testModelAPI, testComputeSelectability)
   ASSERT_TRUE(v != AL_USDMayaSchemasTokens->selectability_unselectable);
 }
 
+/// \brief  Test that the compute lock is computing the correct value
+TEST(testModelAPI, testComputeLock)
+{
+  SdfPath expectedLocked("/A");
+  SdfPath expectedInheritedLocked("/A/B");
+  SdfPath expectedUnlocked("/A/B/C");
+  SdfPath expectedInheritedUnlocked("/A/B/C/D");
+  SdfPath expectedInherited("/E/F");
+
+  auto stageOut = UsdStage::CreateInMemory();
+  stageOut->DefinePrim(SdfPath(expectedInheritedUnlocked));
+  stageOut->DefinePrim(SdfPath(expectedInherited));
+
+  TfToken v;
+  AL_usd_ModelAPI lockedModel = AL_usd_ModelAPI(stageOut->GetPrimAtPath(expectedLocked));
+  lockedModel.SetLock(AL_USDMayaSchemasTokens->lock_transform);
+  v = lockedModel.ComputeLock();
+  ASSERT_TRUE(v == AL_USDMayaSchemasTokens->lock_transform);
+
+  // Check if a child of locked prim inherits lock by default
+  AL_usd_ModelAPI inheritedLockedModel = AL_usd_ModelAPI(stageOut->GetPrimAtPath(expectedInheritedLocked));
+  v = inheritedLockedModel.ComputeLock();
+  ASSERT_TRUE(v == AL_USDMayaSchemasTokens->lock_transform);
+
+  // Check if the unlocked state in the hierarchy computed correctly
+  AL_usd_ModelAPI unlockedModel = AL_usd_ModelAPI(stageOut->GetPrimAtPath(expectedUnlocked));
+  lockedModel.SetLock(AL_USDMayaSchemasTokens->lock_unlocked);
+  v = unlockedModel.ComputeLock();
+  ASSERT_TRUE(v == AL_USDMayaSchemasTokens->lock_unlocked);
+
+  // Check if a child of unlocked prim inherits unlocked by default
+  AL_usd_ModelAPI inheritedUnlockedModel = AL_usd_ModelAPI(stageOut->GetPrimAtPath(expectedInheritedUnlocked));
+  v = inheritedUnlockedModel.ComputeLock();
+  ASSERT_TRUE(v == AL_USDMayaSchemasTokens->lock_unlocked);
+
+  // Check if lock along prim hierarchy is computed to "inherited" by default
+  AL_usd_ModelAPI inheritedModel = AL_usd_ModelAPI(stageOut->GetPrimAtPath(expectedInherited));
+  v = inheritedModel.ComputeLock();
+  ASSERT_TRUE(v == AL_USDMayaSchemasTokens->lock_inherited);
+}
 

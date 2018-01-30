@@ -23,6 +23,8 @@
 
 #include "maya/MFileIO.h"
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 namespace AL {
 namespace usdmaya {
 namespace nodes {
@@ -82,7 +84,6 @@ TransformationMatrix::TransformationMatrix(const UsdPrim& prim)
     m_rotatePivotTweak(0, 0, 0),
     m_rotatePivotTranslationTweak(0, 0, 0),
     m_rotateOrientationTweak(0, 0, 0, 1.0),
-
     m_scaleFromUsd(1.0, 1.0, 1.0),
     m_rotationFromUsd(0, 0, 0),
     m_translationFromUsd(0, 0, 0),
@@ -1144,11 +1145,13 @@ MStatus TransformationMatrix::translateTo(const MVector& vector, MSpace::Space s
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::translateTo %f %f %f\n", vector.x, vector.y, vector.z);
   if(isTranslateLocked())
     return MS::kSuccess;
+
   MStatus status = MPxTransformationMatrix::translateTo(vector, space);
   if(status)
   {
     m_translationTweak = MPxTransformationMatrix::translationValue - m_translationFromUsd;
   }
+
   if(pushToPrimAvailable())
   {
     // if the prim does not contain a translation, make sure we insert a transform op for that.
@@ -1172,6 +1175,7 @@ MStatus TransformationMatrix::translateBy(const MVector& vector, MSpace::Space s
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::translateBy %f %f %f\n", vector.x, vector.y, vector.z);
   if(isTranslateLocked())
     return MS::kSuccess;
+
   MStatus status = MPxTransformationMatrix::translateBy(vector, space);
   if(status)
   {

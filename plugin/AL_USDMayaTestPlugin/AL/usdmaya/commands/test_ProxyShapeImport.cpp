@@ -133,9 +133,10 @@ TEST(ProxyShapeImport, populationMaskInclude)
 
 TEST(ProxyShapeImport, lockMetaData)
 {
-  auto  constructTestUSDFile = [] ()
+  MFileIO::newFile(true);
+  const std::string temp_bootstrap_path = "/tmp/AL___USDMayaTests_lockMetaData.usda";
+  auto  constructTestUSDFile = [temp_bootstrap_path] ()
   {
-    const std::string temp_bootstrap_path = "/tmp/AL_USDMayaTests_lockMetaData.usda";
 
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     UsdGeomXform root = UsdGeomXform::Define(stage, SdfPath("/root"));
@@ -158,51 +159,64 @@ TEST(ProxyShapeImport, lockMetaData)
     return cmd;
   };
 
-  auto getStageFromCache = [] ()
-  {
-    auto usdStageCache = AL::usdmaya::StageCache::Get();
-    if(usdStageCache.IsEmpty())
-    {
-      return UsdStageRefPtr();
-    }
-    return usdStageCache.GetAllStages()[0];
-  };
+  constructTestUSDFile();
+
+  MFileIO::newFile(true);
+  MFnDagNode fn;
+  MObject xform = fn.create("transform");
+  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+
+  AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+  // force the stage to load
+  proxy->filePathPlug().setString(temp_bootstrap_path.c_str());
 
   auto assertSdfPathIsValid = [] (UsdStageRefPtr usdStage, const std::string &path)
   {
     EXPECT_TRUE(usdStage->GetPrimAtPath(SdfPath(path)).IsValid());
   };
 
-  MString bootstrap_path = constructTestUSDFile();
-  MFileIO::newFile(true);
-  MGlobal::executeCommand(constructLockMetaDataTestCommand(bootstrap_path, ""), false, true);
-  auto stage = getStageFromCache();
+  auto stage = proxy->getUsdStage();
   ASSERT_TRUE(stage);
   assertSdfPathIsValid(stage, "/root");
   assertSdfPathIsValid(stage, "/root/geo");
   assertSdfPathIsValid(stage, "/root/geo/cam");
   UsdPrim geoPrim = stage->GetPrimAtPath(SdfPath("/root/geo"));
 
+  MStatus status;
   MSelectionList sl;
   MObject camObj;
-  sl.add("cam");
-  sl.getDependNode(0, camObj);
+  EXPECT_TRUE(sl.add("cam") == MS::kSuccess);
+  EXPECT_TRUE(sl.getDependNode(0, camObj) == MS::kSuccess);
   ASSERT_FALSE(camObj.isNull());
-  ASSERT_FALSE(MPlug(camObj, AL::usdmaya::nodes::Transform::pushToPrim()).asBool());
-  MFnDependencyNode camDG(camObj);
-  MPlug tPlug = camDG.findPlug("t");
-  MPlug rPlug = camDG.findPlug("r");
-  MPlug sPlug = camDG.findPlug("s");
-  ASSERT_TRUE(tPlug.isLocked());
-  ASSERT_TRUE(rPlug.isLocked());
-  ASSERT_TRUE(sPlug.isLocked());
 
-  MStatus status = MGlobal::executeCommand("setAttr cam.t 5 5 5");
-  ASSERT_TRUE(status == MStatus::kFailure);
+  MFnDependencyNode fndd(camObj);
+  MUuid iid = fndd.uuid();
+
+  MPlug pushToPlugPrim(camObj, AL::usdmaya::nodes::Transform::pushToPrim());
+  EXPECT_FALSE(pushToPlugPrim.asBool());
+
+  MFnDependencyNode camDG(camObj, &status);
+  EXPECT_TRUE(status == MS::kSuccess);
+
+  MPlug tPlug = camDG.findPlug("t", &status);
+  EXPECT_TRUE(status == MS::kSuccess);
+
+  MPlug rPlug = camDG.findPlug("r", &status);
+  EXPECT_TRUE(status == MS::kSuccess);
+
+  MPlug sPlug = camDG.findPlug("s", &status);
+  EXPECT_TRUE(status == MS::kSuccess);
+  EXPECT_TRUE(tPlug.isLocked());
+  EXPECT_TRUE(rPlug.isLocked());
+  EXPECT_TRUE(sPlug.isLocked());
+
+  status = MGlobal::executeCommand("setAttr cam.t 5 5 5");
+  EXPECT_TRUE(status != MStatus::kSuccess);
   status = MGlobal::executeCommand("setAttr cam.r 5 5 5");
-  ASSERT_TRUE(status == MStatus::kFailure);
+  EXPECT_TRUE(status != MStatus::kSuccess);
   status = MGlobal::executeCommand("setAttr cam.s 5 5 5");
-  ASSERT_TRUE(status == MStatus::kFailure);
+  EXPECT_TRUE(status != MStatus::kSuccess);
 }
 
 TEST(ProxyShapeImport, sessionLayer)

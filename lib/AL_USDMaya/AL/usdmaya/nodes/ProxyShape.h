@@ -738,6 +738,7 @@ public:
   /// \brief  removes the attribute changed callback from the proxy shape
   void removeAttributeChangedCallback();
 
+  void constructLockPrims();
 private:
 
   static void onSelectionChanged(void* ptr);
@@ -748,7 +749,6 @@ private:
   void constructExcludedPrims();
   bool updateLockPrims(const SdfPathSet& lockTransformPrims, const SdfPathSet& lockInheritedPrims,
                        const SdfPathSet& unlockedPrims);
-  void constructLockPrims();
   bool lockTransformAttribute(const SdfPath& path, bool lock);
 
   MObject makeUsdTransformChain_internal(

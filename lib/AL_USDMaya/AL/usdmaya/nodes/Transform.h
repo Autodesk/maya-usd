@@ -81,7 +81,8 @@ class Transform
 {
 public:
 
-    ~Transform();
+  Transform();
+  ~Transform();
 
   //--------------------------------------------------------------------------------------------------------------------
   // Type Info & Registration
