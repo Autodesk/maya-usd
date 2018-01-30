@@ -31,7 +31,7 @@ namespace filesystem {
 #if (__cplusplus >= 201703L)
 typedef std::filesystem::path path;
 #else
-typedef ALboost::filesystem::path path;
+typedef boost::filesystem::path path;
 #endif
 }
 }
