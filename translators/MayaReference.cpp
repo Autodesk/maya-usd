@@ -394,8 +394,9 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
   // Now load the reference to properly trigger the kAfterReferenceLoad callback
   MFileIO::loadReferenceByNode(referenceObject, &status);
   AL_MAYA_CHECK_ERROR(status, MString("failed to load reference: ") + referenceCommand);
-
   {
+    // To avoid the error that USD complains about editing to same layer simultaneously from different threads,
+    // we record it as custom data instead of creating an attribute.
     VtValue value(std::string(refDependNode.name().asChar(), refDependNode.name().length()));
     prim.SetCustomDataByKey(maya_associatedReferenceNode, value);
   }
