@@ -396,8 +396,8 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
   AL_MAYA_CHECK_ERROR(status, MString("failed to load reference: ") + referenceCommand);
 
   {
-    UsdAttribute attr = prim.CreateAttribute(maya_associatedReferenceNode, SdfValueTypeNames->String, true);
-    attr.Set<std::string>(std::string(refDependNode.name().asChar(), refDependNode.name().length()));
+    VtValue value(std::string(refDependNode.name().asChar(), refDependNode.name().length()));
+    prim.SetCustomDataByKey(maya_associatedReferenceNode, value);
   }
 
   // Add attribute to the reference node to track the namespace the prim was
