@@ -14,10 +14,10 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
-
+#include <AL/usdmaya/ForwardDeclares.h>
 #include "maya/MSelectionList.h"
 #include "maya/MString.h"
+#include "AL/usd/utils/ForwardDeclares.h"
 
 namespace AL {
 namespace usdmaya {

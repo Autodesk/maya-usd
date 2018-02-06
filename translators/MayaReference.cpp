@@ -29,10 +29,11 @@
 #include "maya/MItDependencyNodes.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
-#include "AL/maya/DgNodeHelper.h"
+#include "AL/usdmaya/utils/DgNodeHelper.h"
 #include "AL/usd/schemas/MayaReference.h"
 #include "AL/usdmaya/DebugCodes.h"
-#include "AL/usdmaya/Utils.h"
+
+#include "AL/usdmaya/utils/Utils.h"
 
 IGNORE_USD_WARNINGS_PUSH
 #include <pxr/usd/usd/attribute.h>

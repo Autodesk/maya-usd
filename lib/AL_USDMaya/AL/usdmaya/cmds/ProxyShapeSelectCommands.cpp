@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/CommandGuiHelper.h"
-#include "AL/usdmaya/Utils.h"
+#include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
@@ -35,6 +34,7 @@
 
 #include <AL/usdmaya/cmds/ProxyShapeSelectCommands.h>
 #include <AL/usdmaya/SelectabilityDB.h>
+#include "AL/usdmaya/utils/Utils.h"
 
 namespace AL {
 namespace usdmaya {

@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
+#include <AL/usdmaya/ForwardDeclares.h>
 #include "maya/MPxData.h"
 #include "maya/MGlobal.h"
 #include "maya/MObject.h"
@@ -29,6 +29,7 @@
 
 #include <vector>
 #include <string>
+#include "AL/usd/utils/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

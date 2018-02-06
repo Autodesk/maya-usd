@@ -67,7 +67,7 @@ defined within AL/usdmaya/Global.cpp. The main purpose of this binding is to con
 logging and scripting capability of the DCC app.
 
 \code
-#include "AL/maya/EventHandler.h"
+#include "AL/event/EventHandler.h"
 
 // indices into the eventTypeStrings array
 constexpr uint32_t kUserSpecifiedEventType = 0;
@@ -120,7 +120,7 @@ static MayaEventSystemBinding g_eventSystem;
 void initEventSystem()
 {
   // when you need to initialise the event system, simple pass a pointer to the backend DCC system.
-  AL::maya::EventScheduler::initScheduler(&g_eventSystem);
+  AL::event::EventScheduler::initScheduler(&g_eventSystem);
 }
 \endcode
 
@@ -130,10 +130,10 @@ The following code sample provides a simple example of how the C++ api works in 
 
 \code
 
-#include "AL/maya/EventHandler.h"
+#include "AL/event/EventHandler.h"
 
 // a global identifier for the event we have created
-AL::maya::EventId g_mySimpleEvent = 0;
+AL::event::EventId g_mySimpleEvent = 0;
 
 class SimpleEventExample
    : public MPxCommand
@@ -144,13 +144,13 @@ public:
   MStatus doIt(const MArgList& args)
   {
     // ask the scheduler to trigger any callbacks registered against our event
-    AL::maya::EventScheduler::getScheduler().triggerEvent(g_mySimpleEvent);
+    AL::event::EventScheduler::getScheduler().triggerEvent(g_mySimpleEvent);
 
     return MS::kSuccess;
   }
 };
 
-AL::maya::CallbackId g_myCallbackId = 0;
+AL::maya::event::CallbackId g_myCallbackId = 0;
 
 void myCallbackFunction(void* userData)
 {
@@ -161,10 +161,10 @@ void myCallbackFunction(void* userData)
 MStatus initializePlugin(MObject obj)
 {
   // init the scheduler - this step is only required if you are not using the usdmaya plugin
-  AL::maya::EventScheduler::initScheduler(&g_eventSystem);
+  AL::event::EventScheduler::initScheduler(&g_eventSystem);
 
   // to access the global scheduler
-  auto& scheduler = AL::maya::EventScheduler::getScheduler();
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
 
   // lets register a simple event named "OnSomethingHappened" that is of the type kUserSpecifiedEventType
   g_mySimpleEvent = scheduler.registerEvent("OnSomethingHappened", kUserSpecifiedEventType);
@@ -198,10 +198,10 @@ MStatus initializePlugin(MObject obj)
 MStatus uninitializePlugin(MObject obj)
 {
   // unregister the callback
-  AL::maya::EventScheduler::getScheduler().unregisterCallback(g_myCallbackId);
+  AL::event::EventScheduler::getScheduler().unregisterCallback(g_myCallbackId);
 
   // unregister the event
-  AL::maya::EventScheduler::getScheduler().unregisterEvent(g_mySimpleEvent);
+  AL::event::EventScheduler::getScheduler().unregisterEvent(g_mySimpleEvent);
 
   MFnPlugin fn(obj);
   fn.unregisterCommand("simpleEventExample");
@@ -338,7 +338,7 @@ A simple example of setting a node up with the events system would look like so:
 
 \code
 
-#include "AL/maya/EventHandler.h"
+#include "AL/event/EventHandler.h"
 
 // To make use of the node events, ensure you derive a node from the MayaNodeEvents class.
 class MyMayaNode
@@ -510,11 +510,11 @@ task is something that needs to be done manually), and child events can only be 
 
 \code
 
-#include "AL/maya/EventHandler.h"
+#include "AL/event/EventHandler.h"
 
 // a global identifier for the event we have created
-AL::maya::EventId g_mySimpleEvent1 = 0;
-AL::maya::EventId g_mySimpleEvent2 = 0;
+AL::event::EventId g_mySimpleEvent1 = 0;
+AL::event::EventId g_mySimpleEvent2 = 0;
 
 class ParentEventExample
    : public MPxCommand
@@ -525,20 +525,20 @@ public:
   MStatus doIt(const MArgList& args)
   {
     // ask the scheduler to trigger any callbacks registered against our event
-    AL::maya::EventScheduler::getScheduler().triggerEvent(g_mySimpleEvent1);
+    AL::event::EventScheduler::getScheduler().triggerEvent(g_mySimpleEvent1);
 
     return MS::kSuccess;
   }
 };
 
-AL::maya::CallbackId g_myCallbackId1 = 0;
-AL::maya::CallbackId g_myCallbackId2 = 0;
+AL::maya::event::CallbackId g_myCallbackId1 = 0;
+AL::maya::event::CallbackId g_myCallbackId2 = 0;
 
 void myCallbackFunction1(void* userData)
 {
   MGlobal::displayInfo("I am a callback that will trigger an event!\n");
 
-  AL::maya::EventScheduler::getScheduler().triggerEvent(g_mySimpleEvent2);
+  AL::event::EventScheduler::getScheduler().triggerEvent(g_mySimpleEvent2);
 }
 
 void myCallbackFunction2(void* userData)
@@ -550,10 +550,10 @@ void myCallbackFunction2(void* userData)
 MStatus initializePlugin(MObject obj)
 {
   // init the scheduler - this step is only required if you are not using the usdmaya plugin
-  AL::maya::EventScheduler::initScheduler(&g_eventSystem);
+  AL::event::EventScheduler::initScheduler(&g_eventSystem);
 
   // to access the global scheduler
-  auto& scheduler = AL::maya::EventScheduler::getScheduler();
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
 
   // lets register a simple event
   g_mySimpleEvent1 = scheduler.registerEvent("OnParentThingHappened", kUserSpecifiedEventType);
@@ -609,12 +609,12 @@ MStatus initializePlugin(MObject obj)
 MStatus uninitializePlugin(MObject obj)
 {
   // unregister the callback
-  AL::maya::EventScheduler::getScheduler().unregisterCallback(g_myCallbackId2);
-  AL::maya::EventScheduler::getScheduler().unregisterCallback(g_myCallbackId1);
+  AL::event::EventScheduler::getScheduler().unregisterCallback(g_myCallbackId2);
+  AL::event::EventScheduler::getScheduler().unregisterCallback(g_myCallbackId1);
 
   // unregister the event
-  AL::maya::EventScheduler::getScheduler().unregisterEvent(g_mySimpleEvent2);
-  AL::maya::EventScheduler::getScheduler().unregisterEvent(g_mySimpleEvent1);
+  AL::event::EventScheduler::getScheduler().unregisterEvent(g_mySimpleEvent2);
+  AL::event::EventScheduler::getScheduler().unregisterEvent(g_mySimpleEvent1);
 
   MFnPlugin fn(obj);
   fn.unregisterCommand("parentEventExample");

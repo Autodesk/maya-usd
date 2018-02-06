@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/CommandGuiHelper.h"
-#include "AL/usdmaya/Utils.h"
+#include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
@@ -34,6 +33,7 @@
 
 #include <sstream>
 #include <algorithm>
+#include "AL/usdmaya/utils/Utils.h"
 
 namespace {
     typedef void (AL::usdmaya::nodes::SelectionList::*SelectionListModifierFunc)(SdfPath);
@@ -365,7 +365,8 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   if(hasSession)
   {
     auto sessionLayer = SdfLayer::CreateAnonymous();
-    sessionLayer->ImportFromString(convert(sessionLayerSerialized));
+
+    sessionLayer->ImportFromString(AL::maya::utils::convert(sessionLayerSerialized));
     auto layerManager = nodes::LayerManager::findOrCreateManager(&m_modifier);
     if (!layerManager)
     {
@@ -374,7 +375,7 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
     }
     layerManager->addLayer(sessionLayer);
     m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::sessionLayerName()),
-        convert(sessionLayer->GetIdentifier()));
+                                  AL::maya::utils::convert(sessionLayer->GetIdentifier()));
   }
 
   // intialise the params
@@ -469,7 +470,7 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
     {
       MString pathString;
       db.getFlagArgument("-pp", 0, pathString);
-      path = SdfPath(convert(pathString));
+      path = SdfPath(AL::maya::utils::convert(pathString));
       if (!path.IsPrimPath()) {
         MGlobal::displayError(MString("Invalid primPath: ") + path.GetText());
         return MS::kFailure;
@@ -489,7 +490,7 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       uint32_t i = 0;
       for(auto it = all.begin(); it != all.end(); ++it, ++i)
       {
-        result[i] = convert(it->GetString());
+        result[i] = AL::maya::utils::convert(it->GetString());
       }
       TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("all %u\n", all.size());
     }
@@ -509,7 +510,7 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       uint32_t i = 0;
       for(auto it = intersected.begin(); it != intersected.end(); ++it, ++i)
       {
-        result[i] = convert(it->GetString());
+        result[i] = AL::maya::utils::convert(it->GetString());
       }
       TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %u\n", loadableSet.size());
       TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadedSet %u\n", loadedSet.size());
@@ -522,7 +523,7 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       uint32_t i = 0;
       for(auto it = all.begin(); it != all.end(); ++it, ++i)
       {
-        result[i] = convert(it->GetString());
+        result[i] = AL::maya::utils::convert(it->GetString());
       }
       TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loaded %u\n", all.size());
     }
@@ -549,7 +550,7 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       uint32_t i = 0;
       for(auto it = intersected.begin(); it != intersected.end(); ++it, ++i)
       {
-        result[i] = convert(it->GetString());
+        result[i] = AL::maya::utils::convert(it->GetString());
       }
       TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("all %u\n", all.size());
       TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %u\n", loadableSet.size());
@@ -571,7 +572,7 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       uint32_t i = 0;
       for(auto it = diffed.begin(); it != diffed.end(); ++it, ++i)
       {
-        result[i] = convert(it->GetString());
+        result[i] = AL::maya::utils::convert(it->GetString());
       }
       TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadedSet %u\n", loadedSet.size());
       TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %u\n", loadableSet.size());
@@ -677,7 +678,7 @@ MStatus ProxyShapeImportAllTransforms::doIt(const MArgList& args)
 
     if(primPath.length())
     {
-      SdfPath usdPath(convert(primPath));
+      SdfPath usdPath(AL::maya::utils::convert(primPath));
       UsdPrim prim = stage->GetPrimAtPath(usdPath);
       if(!prim)
       {
@@ -776,7 +777,7 @@ MStatus ProxyShapeRemoveAllTransforms::doIt(const MArgList& args)
 
     if(primPath.length())
     {
-      SdfPath usdPath(convert(primPath));
+      SdfPath usdPath(AL::maya::utils::convert(primPath));
       UsdPrim prim = stage->GetPrimAtPath(usdPath);
       if(!prim)
       {
@@ -834,7 +835,7 @@ MStatus ProxyShapeResync::doIt(const MArgList& args)
     {
       MString pathString;
       db.getFlagArgument("-pp", 0, pathString);
-      SdfPath primPath = SdfPath(convert(pathString));
+      SdfPath primPath = SdfPath(AL::maya::utils::convert(pathString));
       if (!primPath.IsPrimPath()) {
         MGlobal::displayError(MString("Invalid primPath: ") + pathString);
         return MS::kFailure;
@@ -942,7 +943,7 @@ MStatus InternalProxyShapeSelect::doIt(const MArgList& args)
         MArgList args;
         db.getFlagArgumentList("-pp", i, args);
         MString pathString = args.asString(0);
-        SdfPath path(convert(pathString));
+        SdfPath path(AL::maya::utils::convert(pathString));
         if (!path.IsPrimPath()) {
           MGlobal::displayError(MString("Invalid primPath: ") + pathString);
           return MS::kFailure;
@@ -1033,7 +1034,7 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
         db.getFlagArgumentList("-pp", i, args);
         MString pathString = args.asString(0);
 
-        SdfPath path(convert(pathString));
+        SdfPath path(AL::maya::utils::convert(pathString));
 
         if(!proxy->selectabilityDB().isPathUnselectable(path) && path.IsAbsolutePath())
         {
@@ -1203,7 +1204,7 @@ MStatus ProxyShapeImportPrimPathAsMaya::doIt(const MArgList& args)
     {
       MString pathString;
       db.getFlagArgument("-pp", 0, pathString);
-      m_path = SdfPath(convert(pathString));
+      m_path = SdfPath(AL::maya::utils::convert(pathString));
       if (!m_path.IsPrimPath()) {
         MGlobal::displayError(MString("Invalid primPath: ") + pathString);
         return MS::kFailure;
@@ -1282,18 +1283,18 @@ MStatus ProxyShapeImportPrimPathAsMaya::undoIt()
 void constructProxyShapeCommandGuis()
 {
   {
-    maya::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImport", "Proxy Shape Import", "Import", "USD/Proxy Shape/Import", false);
-    commandGui.addFilePathOption("file", "File Path", maya::CommandGuiHelper::kLoad, "USD all (*.usdc *.usda *.usd);;USD crate (*.usdc) (*.usdc);;USD Ascii (*.usda) (*.usda);;USD (*.usd) (*.usd)", maya::CommandGuiHelper::kStringMustHaveValue);
-    commandGui.addStringOption("primPath", "USD Prim Path", "", false, maya::CommandGuiHelper::kStringOptional);
-    commandGui.addStringOption("excludePrimPath", "Exclude Prim Path", "", false, maya::CommandGuiHelper::kStringOptional);
-    commandGui.addStringOption("name", "Proxy Shape Node Name", "", false, maya::CommandGuiHelper::kStringOptional);
+    AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImport", "Proxy Shape Import", "Import", "USD/Proxy Shape/Import", false);
+    commandGui.addFilePathOption("file", "File Path", AL::maya::utils::CommandGuiHelper::kLoad, "USD all (*.usdc *.usda *.usd);;USD crate (*.usdc) (*.usdc);;USD Ascii (*.usda) (*.usda);;USD (*.usd) (*.usd)", AL::maya::utils::CommandGuiHelper::kStringMustHaveValue);
+    commandGui.addStringOption("primPath", "USD Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
+    commandGui.addStringOption("excludePrimPath", "Exclude Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
+    commandGui.addStringOption("name", "Proxy Shape Node Name", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
     commandGui.addBoolOption("connectToTime", "Connect to Time", true, true);
     commandGui.addBoolOption("unloaded", "Opens the layer with payloads unloaded.", false, true);
   }
 
   {
-    maya::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImportPrimPathAsMaya", "Import Prim Path as Maya", "Import", "USD/Proxy Shape/Import Prim Path as Maya", true);
-    commandGui.addStringOption("primPath", "USD Prim Path", "", false, maya::CommandGuiHelper::kStringMustHaveValue);
+    AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImportPrimPathAsMaya", "Import Prim Path as Maya", "Import", "USD/Proxy Shape/Import Prim Path as Maya", true);
+    commandGui.addStringOption("primPath", "USD Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringMustHaveValue);
     commandGui.addFlagOption("asProxy", "Import Subsection as a Proxy Node", false, true);
     commandGui.addFlagOption("anim", "Import Animations", true, true);
     commandGui.addBoolOption("meshes", "Import Meshes", true, true);
@@ -1302,17 +1303,17 @@ void constructProxyShapeCommandGuis()
   }
 
   {
-    maya::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImportAllTransforms", "Import All Transforms", "Import", "USD/Proxy Shape/Import Transforms as Transforms", true);
+    AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImportAllTransforms", "Import All Transforms", "Import", "USD/Proxy Shape/Import Transforms as Transforms", true);
     commandGui.addBoolOption("pushToPrim", "Push to Prim", false, true);
   }
 
   {
-    maya::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeRemoveAllTransforms", "Remove All Transforms", "Remove", "USD/Proxy Shape/Remove all Transforms", true);
+    AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeRemoveAllTransforms", "Remove All Transforms", "Remove", "USD/Proxy Shape/Remove all Transforms", true);
   }
 
   {
-    maya::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeResync", "Resync at Prim path", "", "Resync and reload prim at passed in primpath", false);
-    commandGui.addStringOption("primPath", "USD Prim Path", "", false, maya::CommandGuiHelper::kStringMustHaveValue);
+    AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeResync", "Resync at Prim path", "", "Resync and reload prim at passed in primpath", false);
+    commandGui.addStringOption("primPath", "USD Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringMustHaveValue);
   }
 }
 

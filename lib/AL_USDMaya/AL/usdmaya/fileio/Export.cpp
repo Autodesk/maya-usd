@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usdmaya/Utils.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/fileio/Export.h"
 #include "AL/usdmaya/fileio/NodeFactory.h"
@@ -51,6 +50,8 @@
 
 #include <unordered_set>
 #include <algorithm>
+#include "AL/usdmaya/utils/Utils.h"
+#include "AL/maya/utils/MObjectMap.h"
 #include <functional>
 
 namespace AL {
@@ -130,18 +131,18 @@ struct Export::Impl
 {
   inline bool contains(const MFnDependencyNode& fn)
   {
-    #if AL_MAYA_ENABLE_SIMD
+    #if AL_UTILS_ENABLE_SIMD
     union
     {
       __m128i sse;
-      guid uuid;
+      AL::maya::utils::guid uuid;
     };
     fn.uuid().get(uuid.uuid);
     bool contains = m_nodeMap.find(sse) != m_nodeMap.end();
     if(!contains)
       m_nodeMap.insert(std::make_pair(sse, fn.object()));
     #else
-    guid uuid;
+    AL::maya::utils::guid uuid;
     fn.uuid().get(uuid.uuid);
     bool contains = m_nodeMap.find(uuid) != m_nodeMap.end();
     if(!contains)
@@ -251,10 +252,10 @@ struct Export::Impl
   }
 
 private:
-  #if AL_MAYA_ENABLE_SIMD
+  #if AL_UTILS_ENABLE_SIMD
   std::map<i128, MObject, guid_compare> m_nodeMap;
   #else
-  std::map<guid, MObject, guid_compare> m_nodeMap;
+  std::map<AL::maya::utils::guid, MObject, AL::maya::utils::guid_compare> m_nodeMap;
   #endif
   UsdStageRefPtr m_stage;
 };

@@ -15,7 +15,8 @@
 //
 #pragma once
 #include "maya/MPxCommand.h"
-#include "AL/usdmaya/Common.h"
+
+#include "AL/usd/utils/ForwardDeclares.h"
 
 class UnitTestHarness : public MPxCommand
 {

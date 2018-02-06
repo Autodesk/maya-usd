@@ -14,14 +14,13 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
-
 #include "maya/MDagPath.h"
 #include "maya/MString.h"
 #include "maya/MStringArray.h"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/layer.h"
+#include "AL/usd/utils/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

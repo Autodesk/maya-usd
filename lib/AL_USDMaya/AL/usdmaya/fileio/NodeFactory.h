@@ -14,9 +14,13 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
+#include <AL/usdmaya/ForwardDeclares.h>
 #include <string>
 #include <unordered_map>
+#include "AL/maya/utils/ForwardDeclares.h"
+#include "AL/usd/utils/ForwardDeclares.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
 namespace usdmaya {
@@ -68,4 +72,3 @@ void freeNodeFactory();
 } // usdmaya
 } // AL
 //----------------------------------------------------------------------------------------------------------------------
-

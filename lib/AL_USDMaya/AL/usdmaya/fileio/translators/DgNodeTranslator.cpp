@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/NodeHelper.h"
-#include "AL/maya/SIMD.h"
+#include "AL/maya/utils/NodeHelper.h"
+#include "AL/usdmaya/utils/SIMD.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
@@ -294,7 +294,7 @@ MStatus DgNodeTranslator::addDynamicAttribute(MObject node, const UsdAttribute& 
   const UsdDataType dataType = getAttributeType(usdAttr);
   MObject attribute = MObject::kNullObj;
   const char* attrName = usdAttr.GetName().GetString().c_str();
-  const uint32_t flags = (isArray ? maya::NodeHelper::kArray : 0) | maya::NodeHelper::kReadable | maya::NodeHelper::kWritable | maya::NodeHelper::kStorable | maya::NodeHelper::kConnectable;
+  const uint32_t flags = (isArray ? AL::maya::utils::NodeHelper::kArray : 0) | AL::maya::utils::NodeHelper::kReadable | AL::maya::utils::NodeHelper::kWritable | AL::maya::utils::NodeHelper::kStorable | AL::maya::utils::NodeHelper::kConnectable;
   switch(dataType)
   {
   case UsdDataType::kAsset:
@@ -305,136 +305,136 @@ MStatus DgNodeTranslator::addDynamicAttribute(MObject node, const UsdAttribute& 
 
   case UsdDataType::kBool:
     {
-      maya::NodeHelper::addBoolAttr(node, attrName, attrName, false, flags, &attribute);
+      AL::maya::utils::NodeHelper::addBoolAttr(node, attrName, attrName, false, flags, &attribute);
     }
     break;
 
   case UsdDataType::kUChar:
     {
-      maya::NodeHelper::addInt8Attr(node, attrName, attrName, 0, flags, &attribute);
+      AL::maya::utils::NodeHelper::addInt8Attr(node, attrName, attrName, 0, flags, &attribute);
     }
     break;
 
   case UsdDataType::kInt:
   case UsdDataType::kUInt:
     {
-      maya::NodeHelper::addInt32Attr(node, attrName, attrName, 0, flags, &attribute);
+      AL::maya::utils::NodeHelper::addInt32Attr(node, attrName, attrName, 0, flags, &attribute);
     }
     break;
 
   case UsdDataType::kInt64:
   case UsdDataType::kUInt64:
     {
-      maya::NodeHelper::addInt64Attr(node, attrName, attrName, 0, flags, &attribute);
+      AL::maya::utils::NodeHelper::addInt64Attr(node, attrName, attrName, 0, flags, &attribute);
     }
     break;
 
   case UsdDataType::kHalf:
   case UsdDataType::kFloat:
     {
-      maya::NodeHelper::addFloatAttr(node, attrName, attrName, 0, flags, &attribute);
+      AL::maya::utils::NodeHelper::addFloatAttr(node, attrName, attrName, 0, flags, &attribute);
     }
     break;
 
   case UsdDataType::kDouble:
     {
-      maya::NodeHelper::addDoubleAttr(node, attrName, attrName, 0, flags, &attribute);
+      AL::maya::utils::NodeHelper::addDoubleAttr(node, attrName, attrName, 0, flags, &attribute);
     }
     break;
 
   case UsdDataType::kString:
     {
-      maya::NodeHelper::addStringAttr(node, attrName, attrName, flags, true, &attribute);
+      AL::maya::utils::NodeHelper::addStringAttr(node, attrName, attrName, flags, true, &attribute);
     }
     break;
 
   case UsdDataType::kMatrix2d:
     {
       const float defValue[2][2] = {{0, 0}, {0, 0}};
-      maya::NodeHelper::addMatrix2x2Attr(node, attrName, attrName, defValue, flags, &attribute);
+      AL::maya::utils::NodeHelper::addMatrix2x2Attr(node, attrName, attrName, defValue, flags, &attribute);
     }
     break;
 
   case UsdDataType::kMatrix3d:
     {
       const float defValue[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-      maya::NodeHelper::addMatrix3x3Attr(node, attrName, attrName, defValue, flags, &attribute);
+      AL::maya::utils::NodeHelper::addMatrix3x3Attr(node, attrName, attrName, defValue, flags, &attribute);
     }
     break;
 
   case UsdDataType::kMatrix4d:
     {
-      maya::NodeHelper::addMatrixAttr(node, attrName, attrName, MMatrix(), flags, &attribute);
+      AL::maya::utils::NodeHelper::addMatrixAttr(node, attrName, attrName, MMatrix(), flags, &attribute);
     }
     break;
 
   case UsdDataType::kQuatd:
     {
-      maya::NodeHelper::addVec4dAttr(node, attrName, attrName, flags, &attribute);
+      AL::maya::utils::NodeHelper::addVec4dAttr(node, attrName, attrName, flags, &attribute);
     }
     break;
 
   case UsdDataType::kQuatf:
   case UsdDataType::kQuath:
     {
-      maya::NodeHelper::addVec4fAttr(node, attrName, attrName, flags, &attribute);
+      AL::maya::utils::NodeHelper::addVec4fAttr(node, attrName, attrName, flags, &attribute);
     }
     break;
 
   case UsdDataType::kVec2d:
     {
-      maya::NodeHelper::addVec2dAttr(node, attrName, attrName, flags, &attribute);
+      AL::maya::utils::NodeHelper::addVec2dAttr(node, attrName, attrName, flags, &attribute);
     }
     break;
 
   case UsdDataType::kVec2f:
   case UsdDataType::kVec2h:
     {
-      maya::NodeHelper::addVec2fAttr(node, attrName, attrName, flags, &attribute);
+      AL::maya::utils::NodeHelper::addVec2fAttr(node, attrName, attrName, flags, &attribute);
     }
     break;
 
   case UsdDataType::kVec2i:
     {
-      maya::NodeHelper::addVec2iAttr(node, attrName, attrName, flags, &attribute);
+      AL::maya::utils::NodeHelper::addVec2iAttr(node, attrName, attrName, flags, &attribute);
     }
     break;
 
   case UsdDataType::kVec3d:
     {
-      maya::NodeHelper::addVec3dAttr(node, attrName, attrName, flags, &attribute);
+      AL::maya::utils::NodeHelper::addVec3dAttr(node, attrName, attrName, flags, &attribute);
     }
     break;
 
   case UsdDataType::kVec3f:
   case UsdDataType::kVec3h:
     {
-      maya::NodeHelper::addVec3fAttr(node, attrName, attrName, flags, &attribute);
+      AL::maya::utils::NodeHelper::addVec3fAttr(node, attrName, attrName, flags, &attribute);
     }
     break;
 
   case UsdDataType::kVec3i:
     {
-      maya::NodeHelper::addVec3iAttr(node, attrName, attrName, flags, &attribute);
+      AL::maya::utils::NodeHelper::addVec3iAttr(node, attrName, attrName, flags, &attribute);
     }
     break;
 
   case UsdDataType::kVec4d:
     {
-      maya::NodeHelper::addVec4dAttr(node, attrName, attrName, flags, &attribute);
+      AL::maya::utils::NodeHelper::addVec4dAttr(node, attrName, attrName, flags, &attribute);
     }
     break;
 
   case UsdDataType::kVec4f:
   case UsdDataType::kVec4h:
     {
-      maya::NodeHelper::addVec4fAttr(node, attrName, attrName, flags, &attribute);
+      AL::maya::utils::NodeHelper::addVec4fAttr(node, attrName, attrName, flags, &attribute);
     }
     break;
 
   case UsdDataType::kVec4i:
     {
-      maya::NodeHelper::addVec4iAttr(node, attrName, attrName, flags, &attribute);
+      AL::maya::utils::NodeHelper::addVec4iAttr(node, attrName, attrName, flags, &attribute);
     }
     break;
 

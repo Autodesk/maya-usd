@@ -18,7 +18,6 @@
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/StageCache.h"
-#include "AL/usdmaya/Utils.h"
 #include "maya/MFnTransform.h"
 #include "maya/MSelectionList.h"
 #include "maya/MGlobal.h"
@@ -34,6 +33,7 @@
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 #include "pxr/usd/sdf/layer.h"
 #include <functional>
+#include "AL/usdmaya/utils/Utils.h"
 
 //  Layer();
 //  void init(ProxyShape* shape, SdfLayerHandle handle);
@@ -65,7 +65,7 @@ TEST(LayerCommands, layerCreateLayerTests)
     SdfLayerRefPtr handle = SdfLayer::FindOrOpen(testLayer); // hold a strong reference to it.
 
     std::stringstream ss;
-    ss << "AL_usdmaya_LayerCreateLayer -o \"" << testLayer  <<  "\" -p \"" << AL::usdmaya::convert(proxyShape->name()) << "\"" << std::endl;
+    ss << "AL_usdmaya_LayerCreateLayer -o \"" << testLayer  <<  "\" -p \"" << AL::maya::utils::convert(proxyShape->name()) << "\"" << std::endl;
     result = MGlobal::executeCommand(ss.str().c_str(), true);
     EXPECT_EQ(result, MStatus::kSuccess);
 

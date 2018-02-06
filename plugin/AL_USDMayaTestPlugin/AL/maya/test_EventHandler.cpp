@@ -1,9 +1,10 @@
 
-#include "AL/maya/EventHandler.h"
+#include "AL/event/EventHandler.h"
 #include <maya/MGlobal.h>
 #include <gtest/gtest.h>
+
 using namespace AL;
-using namespace AL::maya;
+using namespace AL::event;
 
 //----------------------------------------------------------------------------------------------------------------------
 static const char* const eventTypeStrings[] =

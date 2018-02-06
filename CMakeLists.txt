@@ -36,6 +36,7 @@ include(CXXDefaults)
 add_definitions(${_PXR_CXX_DEFINITIONS})
 
 find_package(Maya REQUIRED)
+
 include_directories(${MAYA_INCLUDE_DIRS})
 
 if(${MAYA_API_VERSION} STRGREATER 2017)
@@ -75,8 +76,20 @@ set(AL_USDMAYA_LOCATION_NAME
     "Name of the environment variable used to store AL_USDMaya installation location"
 )
 
+# Build all the utils
+set(UTILS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/utils)
+set(USDUTILS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/usdutils)
+set(MAYAUTILS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/mayautils)
+set(USDMAYAUTILS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/usdmayautils)
+
+add_subdirectory(utils)
+add_subdirectory(usdutils)
+add_subdirectory(mayautils)
+add_subdirectory(usdmayautils)
+
 add_subdirectory(lib)
 add_subdirectory(plugin)
+
 if(BUILD_USDMAYA_SCHEMAS)
     message(STATUS "Building AL_USDMayaSchemas")
     set(SCHEMAS_PYTHON_MODULE AL.usd.maya.schemas)

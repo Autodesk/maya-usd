@@ -15,8 +15,8 @@
 //
 #pragma once
 
-#include "AL/usdmaya/Common.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
+#include "AL/usd/utils/ForwardDeclares.h"
 
 IGNORE_USD_WARNINGS_PUSH
 #include "pxr/usd/usd/stage.h"

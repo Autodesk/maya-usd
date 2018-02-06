@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #pragma once
+#include <AL/usdmaya/ForwardDeclares.h>
 #include "AL/usdmaya/fileio/ImportParams.h"
-
 #include "maya/MPxCommand.h"
 
 #include "pxr/pxr.h"

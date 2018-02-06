@@ -16,8 +16,8 @@
 #pragma once
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
-#include "AL/maya/CommandGuiHelper.h"
-#include "AL/maya/MenuBuilder.h"
+#include "AL/maya/utils/CommandGuiHelper.h"
+#include "AL/maya/utils/MenuBuilder.h"
 #include "AL/usdmaya/Global.h"
 #include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/DrivenTransformsData.h"
@@ -68,7 +68,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   MStatus status;
   AL_REGISTER_DATA(plugin, AL::usdmaya::StageData);
   AL_REGISTER_DATA(plugin, AL::usdmaya::DrivenTransformsData);
-  AL_REGISTER_COMMAND(plugin, AL::maya::CommandGuiListGen);
+  AL_REGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCreateLayer);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerGetLayers);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCurrentEditTarget);
@@ -126,7 +126,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL::usdmaya::cmds::constructProxyShapeCommandGuis();
   AL::usdmaya::cmds::constructDebugCommandGuis();
 
-  CHECK_MSTATUS(AL::maya::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
+  CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
 
   AL::usdmaya::Global::onPluginLoad();
   return status;
@@ -143,7 +143,7 @@ template<typename AFnPlugin>
 MStatus unregisterPlugin(AFnPlugin& plugin)
 {
   MStatus status;
-  AL_UNREGISTER_COMMAND(plugin, AL::maya::CommandGuiListGen);
+  AL_UNREGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::InternalProxyShapeSelect);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePostSelect);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeSelect);

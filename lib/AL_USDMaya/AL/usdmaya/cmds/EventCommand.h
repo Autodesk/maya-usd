@@ -14,13 +14,10 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
-
 #include "maya/MPxCommand.h"
-
 #include "pxr/pxr.h"
-
-#include "AL/maya/EventHandler.h"
+#include "AL/event/EventHandler.h"
+#include "AL/maya/utils/MayaHelperMacros.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -31,7 +28,7 @@ namespace cmds {
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  The base class for all commands that need to create/delete callbacks in some way. Fill m_callbacksToDelete
 ///         with the CallbackIds you want to delete, and fill the m_callbacksToInsert array with the callbacks returned
-///         from AL::maya::EventScheduler::buildCallback. Within the undo/redo implementation of a mel command, simply
+///         from AL::AL::event::EventScheduler::buildCallback. Within the undo/redo implementation of a mel command, simply
 ///         call redoItImplementation. This method will destroy the callbacks requested, and insert the created callbacks.
 ///         Once called, the values of the m_callbacksToDelete and m_callbacksToInsert will be swapped, therefore calling
 ///         redoItImplementation again will undo the previous action.
@@ -42,9 +39,9 @@ struct BaseCallbackCommand
   /// call within both the undo and redo methods
   MStatus redoItImplementation();
   /// the callback ids that need to be deleted
-  std::vector<maya::CallbackId> m_callbacksToDelete;
+  std::vector<AL::event::CallbackId> m_callbacksToDelete;
   /// the callback structures generated from EventScheduler::buildCallback
-  maya::Callbacks m_callbacksToInsert;
+  AL::event::Callbacks m_callbacksToInsert;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -55,8 +52,8 @@ class Event
   : public MPxCommand
 {
   MString m_eventName;
-  maya::NodeEvents* m_associatedData = 0;
-  maya::CallbackId m_parentEvent = 0;
+  AL::event::NodeEvents* m_associatedData = 0;
+  AL::event::CallbackId m_parentEvent = 0;
   bool m_deleting = false;
 public:
   AL_MAYA_DECLARE_COMMAND();

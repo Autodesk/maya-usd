@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usdmaya/Utils.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/fileio/NodeFactory.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
@@ -35,6 +34,7 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/schemaBase.h"
+#include "AL/usdmaya/utils/Utils.h"
 
 namespace AL {
 namespace usdmaya {

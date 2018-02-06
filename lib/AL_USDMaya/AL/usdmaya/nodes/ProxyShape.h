@@ -14,11 +14,11 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/maya/EventHandler.h"
-#include "AL/maya/NodeHelper.h"
-#include "AL/maya/MayaEventManager.h"
+#include <AL/usdmaya/ForwardDeclares.h>
+#include "AL/maya/utils/NodeHelper.h"
+#include "AL/event/EventHandler.h"
+#include "AL/maya/event/MayaEventManager.h"
 #include <AL/usdmaya/SelectabilityDB.h>
-#include "AL/usdmaya/Common.h"
 #include "AL/usdmaya/DrivenTransformsData.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
@@ -41,6 +41,7 @@
 #include "pxr/usd/sdf/notice.h"
 #include <stack>
 #include <functional>
+#include "AL/usd/utils/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -226,8 +227,8 @@ struct FindLockedPrimsLogic
 
 typedef const HierarchyIterationLogic*  HierarchyIterationLogics[3];
 
-extern maya::EventId kPreClearStageCache;
-extern maya::EventId kPostClearStageCache;
+extern AL::event::EventId kPreClearStageCache;
+extern AL::event::EventId kPostClearStageCache;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A custom proxy shape node that attaches itself to a USD file, and then renders it.
@@ -237,9 +238,9 @@ extern maya::EventId kPostClearStageCache;
 //----------------------------------------------------------------------------------------------------------------------
 class ProxyShape
   : public MPxSurfaceShape,
-    public maya::NodeHelper,
+    public AL::maya::utils::NodeHelper,
     public proxy::PrimFilterInterface,
-    public maya::NodeEvents,
+    public AL::event::NodeEvents,
     public TfWeakBase
 {
   friend class SelectionUndoHelper;
@@ -922,7 +923,7 @@ private:
   TfNotice::Key m_editTargetChanged;
 
   mutable std::map<UsdTimeCode, MBoundingBox> m_boundingBoxCache;
-  maya::CallbackId m_beforeSaveSceneId = -1;
+  AL::event::CallbackId m_beforeSaveSceneId = -1;
   MCallbackId m_attributeChanged = -1;
   MCallbackId m_onSelectionChanged = -1;
   SdfPathVector m_excludedGeometry;

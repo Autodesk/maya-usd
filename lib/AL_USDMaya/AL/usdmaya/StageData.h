@@ -14,13 +14,12 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
-#include "AL/maya/MayaEventManager.h"
-
+#include "AL/maya/event/MayaEventManager.h"
 #include "maya/MPxGeometryData.h"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
+#include "AL/usd/utils/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -64,7 +63,7 @@ public:
 private:
   MTypeId typeId() const override;
   MString name() const override;
-  maya::CallbackId m_exitCallbackId;
+  AL::event::CallbackId m_exitCallbackId;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

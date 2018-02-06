@@ -20,7 +20,8 @@
   #include "pxr/usdImaging/usdImaging/hdEngine.h"
 #endif
 
-#include "AL/maya/CodeTimings.h"
+#include "AL/usdmaya/CodeTimings.h"
+#include "AL/usdmaya/utils/Utils.h"
 
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/Global.h"
@@ -28,7 +29,7 @@
 #include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/TypeIDs.h"
-#include "AL/usdmaya/Utils.h"
+
 #include "AL/usdmaya/cmds/ProxyShapePostLoadProcess.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
@@ -330,7 +331,7 @@ bool ProxyShape::getRenderAttris(void* pattribs, const MHWRender::MFrameContext&
 
 //----------------------------------------------------------------------------------------------------------------------
 ProxyShape::ProxyShape()
-  : MPxSurfaceShape(), maya::NodeHelper(), maya::NodeEvents(&maya::EventScheduler::getScheduler()),
+  : MPxSurfaceShape(), AL::maya::utils::NodeHelper(), AL::event::NodeEvents(&AL::event::EventScheduler::getScheduler()),
     m_context(fileio::translators::TranslatorContext::create(this)),
     m_translatorManufacture(context())
 {
@@ -719,7 +720,7 @@ void ProxyShape::serialize(UsdStageRefPtr stage, LayerManager* layerManager)
       auto sessionLayer = stage->GetSessionLayer();
       layerManager->addLayer(sessionLayer);
       // ...and store the name for the (anonymous) session layer so we can find it!
-      sessionLayerNamePlug().setValue(convert(sessionLayer->GetIdentifier()));
+      sessionLayerNamePlug().setValue(AL::maya::utils::convert(sessionLayer->GetIdentifier()));
 
       // Then add in the current edit target
       trackEditTargetLayer(layerManager);
@@ -814,7 +815,7 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
 
     std::stringstream strstr;
     strstr << "Breakdown for Variant Switch:\n";
-    maya::Profiler::printReport(strstr);
+    AL::usdmaya::Profiler::printReport(strstr);
   }
 
   SdfPathVector newUnselectables;
@@ -1093,7 +1094,7 @@ void ProxyShape::loadStage()
             auto layerManager = LayerManager::findManager();
             if(layerManager)
             {
-              sessionLayer = layerManager->findLayer(convert(sessionLayerName));
+              sessionLayer = layerManager->findLayer(AL::maya::utils::convert(sessionLayerName));
               if(!sessionLayer)
               {
                 MGlobal::displayError(MString("ProxyShape \"") + name() + "\" had a serialized session layer"
@@ -1115,7 +1116,7 @@ void ProxyShape::loadStage()
             if(serializedSessionLayer.length() != 0)
             {
               sessionLayer = SdfLayer::CreateAnonymous();
-              sessionLayer->ImportFromString(convert(serializedSessionLayer));
+              sessionLayer->ImportFromString(AL::maya::utils::convert(serializedSessionLayer));
             }
           }
         }
@@ -1180,7 +1181,7 @@ void ProxyShape::loadStage()
   MString primPathStr = inputStringValue(dataBlock, m_primPath);
   if (primPathStr.length())
   {
-    m_path = SdfPath(convert(primPathStr));
+    m_path = SdfPath(AL::maya::utils::convert(primPathStr));
     UsdPrim prim = m_stage->GetPrimAtPath(m_path);
     if(!prim)
     {
@@ -1208,8 +1209,8 @@ void ProxyShape::loadStage()
   {
     std::stringstream strstr;
     strstr << "Breakdown for file: " << file << std::endl;
-    maya::Profiler::printReport(strstr);
-    MGlobal::displayInfo(convert(strstr.str()));
+    AL::usdmaya::Profiler::printReport(strstr);
+    MGlobal::displayInfo(AL::maya::utils::convert(strstr.str()));
   }
 
   stageDataDirtyPlug().setValue(true);
@@ -1268,7 +1269,7 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
   MObject lockObject;
   if (!mayaPath.IsEmpty())
   {
-    MString pathStr = convert(mayaPath.Get<std::string>());
+    MString pathStr = AL::maya::utils::convert(mayaPath.Get<std::string>());
     MSelectionList sl;
     MObject selObj;
     if (sl.add(pathStr) == MStatus::kSuccess)
@@ -1390,7 +1391,7 @@ void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& p
         MString primPathStr = plug.asString();
         if (primPathStr.length())
         {
-          proxy->m_path = SdfPath(convert(primPathStr));
+          proxy->m_path = SdfPath(AL::maya::utils::convert(primPathStr));
           UsdPrim prim = proxy->m_stage->GetPrimAtPath(proxy->m_path);
           if(!prim)
           {
@@ -1897,23 +1898,23 @@ void ProxyShape::cleanupTransformRefs()
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::registerEvents()
 {
-  registerEvent("PreStageLoaded", maya::kUSDMayaEventType);
-  registerEvent("PostStageLoaded", maya::kUSDMayaEventType);
-  registerEvent("ConstructGLEngine", maya::kUSDMayaEventType);
-  registerEvent("DestroyGLEngine", maya::kUSDMayaEventType);
-  registerEvent("PreSelectionChanged", maya::kUSDMayaEventType);
-  registerEvent("PostSelectionChanged", maya::kUSDMayaEventType);
-  registerEvent("PreVariantChanged", maya::kUSDMayaEventType);
-  registerEvent("PostVariantChanged", maya::kUSDMayaEventType);
-  registerEvent("PreSerialiseContext", maya::kUSDMayaEventType, Global::postSave());
-  registerEvent("PostSerialiseContext", maya::kUSDMayaEventType, Global::postSave());
-  registerEvent("PreDeserialiseContext", maya::kUSDMayaEventType, Global::postRead());
-  registerEvent("PostDeserialiseContext", maya::kUSDMayaEventType, Global::postRead());
-  registerEvent("PreSerialiseTransformRefs", maya::kUSDMayaEventType, Global::postSave());
-  registerEvent("PostSerialiseTransformRefs", maya::kUSDMayaEventType, Global::postSave());
-  registerEvent("PreDeserialiseTransformRefs", maya::kUSDMayaEventType, Global::postRead());
-  registerEvent("PostDeserialiseTransformRefs", maya::kUSDMayaEventType, Global::postRead());
-  registerEvent("EditTargetChanged", maya::kUSDMayaEventType);
+  registerEvent("PreStageLoaded", AL::event::kUSDMayaEventType);
+  registerEvent("PostStageLoaded", AL::event::kUSDMayaEventType);
+  registerEvent("ConstructGLEngine", AL::event::kUSDMayaEventType);
+  registerEvent("DestroyGLEngine", AL::event::kUSDMayaEventType);
+  registerEvent("PreSelectionChanged", AL::event::kUSDMayaEventType);
+  registerEvent("PostSelectionChanged", AL::event::kUSDMayaEventType);
+  registerEvent("PreVariantChanged", AL::event::kUSDMayaEventType);
+  registerEvent("PostVariantChanged", AL::event::kUSDMayaEventType);
+  registerEvent("PreSerialiseContext", AL::event::kUSDMayaEventType, Global::postSave());
+  registerEvent("PostSerialiseContext", AL::event::kUSDMayaEventType, Global::postSave());
+  registerEvent("PreDeserialiseContext", AL::event::kUSDMayaEventType, Global::postRead());
+  registerEvent("PostDeserialiseContext", AL::event::kUSDMayaEventType, Global::postRead());
+  registerEvent("PreSerialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postSave());
+  registerEvent("PostSerialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postSave());
+  registerEvent("PreDeserialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postRead());
+  registerEvent("PostDeserialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postRead());
+  registerEvent("EditTargetChanged", AL::event::kUSDMayaEventType);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

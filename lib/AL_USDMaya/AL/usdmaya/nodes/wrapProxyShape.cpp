@@ -14,12 +14,11 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/nodes/ProxyShape.h"
+#include "AL/maya/utils/Utils.h"
 
 #include <boost/python/args.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python.hpp>
-
-#include "AL/usdmaya/Utils.h"
 
 #include "maya/MBoundingBox.h"
 #include "maya/MFnDagNode.h"
@@ -32,11 +31,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include <memory>
-
-//using namespace std;
-//using namespace boost::python;
-//using namespace boost;
-
 
 using AL::usdmaya::nodes::ProxyShape;
 using boost::python::reference_existing_object;
@@ -161,7 +155,7 @@ namespace {
     {
       MStatus status;
       MSelectionList sel;
-      status = sel.add(AL::usdmaya::convert(name));
+      status = sel.add(AL::maya::utils::convert(name));
       if (!status)
       {
         return nullptr;

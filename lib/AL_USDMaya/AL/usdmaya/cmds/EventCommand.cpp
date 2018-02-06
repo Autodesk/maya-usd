@@ -16,7 +16,7 @@
 #include "AL/usdmaya/cmds/EventCommand.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
-#include "AL/maya/MenuBuilder.h"
+#include "AL/maya/utils/MenuBuilder.h"
 
 #include "pxr/base/tf/debug.h"
 
@@ -69,7 +69,7 @@ MStatus Event::doIt(const MArgList& argList)
     {
       union {
         int asInt[2];
-        maya::CallbackId asId;
+        AL::event::CallbackId asId;
       };
       db.getFlagArgument("-p", 0, asInt[0]);
       db.getFlagArgument("-p", 1, asInt[1]);
@@ -86,13 +86,13 @@ MStatus Event::doIt(const MArgList& argList)
       if(items.getDependNode(0, object))
       {
         MFnDependencyNode fn(object);
-        m_associatedData = dynamic_cast<maya::NodeEvents*>(fn.userNode());
+        m_associatedData = dynamic_cast<AL::event::NodeEvents*>(fn.userNode());
         if(!m_associatedData)
         {
           MGlobal::displayError(MString("AL_usdmaya_Event, specified node does not support the NodeEvents interface: ") + fn.name());
           return MS::kFailure;
         }
-        maya::EventId id = m_associatedData->getId(m_eventName.asChar());
+        AL::event::EventId id = m_associatedData->getId(m_eventName.asChar());
         if(m_deleting && !id)
         {
           MGlobal::displayError(MString("AL_usdmaya_Event, cannot delete an event that doesn't exist: ") + fn.name());
@@ -112,7 +112,7 @@ MStatus Event::doIt(const MArgList& argList)
     }
     else
     {
-      auto event = maya::EventScheduler::getScheduler().event(m_eventName.asChar());
+      auto event = AL::event::EventScheduler::getScheduler().event(m_eventName.asChar());
       if(m_deleting && !event)
       {
         MGlobal::displayError(MString("AL_usdmaya_Event, cannot delete an event that doesn't exist: ") + m_eventName);
@@ -143,18 +143,18 @@ MStatus Event::redoIt()
     }
     else
     {
-      m_associatedData->registerEvent(m_eventName.asChar(), maya::kUserSpecifiedEventType, m_parentEvent);
+      m_associatedData->registerEvent(m_eventName.asChar(), AL::event::kUserSpecifiedEventType, m_parentEvent);
     }
   }
   else
   {
     if(m_deleting)
     {
-      maya::EventScheduler::getScheduler().unregisterEvent(m_eventName.asChar());
+      AL::event::EventScheduler::getScheduler().unregisterEvent(m_eventName.asChar());
     }
     else
     {
-      maya::EventScheduler::getScheduler().registerEvent(m_eventName.asChar(), maya::kUserSpecifiedEventType, m_associatedData, m_parentEvent);
+      AL::event::EventScheduler::getScheduler().registerEvent(m_eventName.asChar(), AL::event::kUserSpecifiedEventType, m_associatedData, m_parentEvent);
     }
   }
   m_deleting = !m_deleting;
@@ -170,16 +170,16 @@ MStatus Event::undoIt()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus BaseCallbackCommand::redoItImplementation()
 {
-  maya::CallbackIds callbacksToDelete(m_callbacksToInsert.size());
-  maya::Callbacks callbacksToInsert(m_callbacksToDelete.size());
+  AL::event::CallbackIds callbacksToDelete(m_callbacksToInsert.size());
+  AL::event::Callbacks callbacksToInsert(m_callbacksToDelete.size());
 
   for(size_t i = 0, n = m_callbacksToDelete.size(); i < n; ++i)
   {
-    if(!maya::EventScheduler::getScheduler().unregisterCallback(m_callbacksToDelete[i], callbacksToInsert[i]))
+    if(!AL::event::EventScheduler::getScheduler().unregisterCallback(m_callbacksToDelete[i], callbacksToInsert[i]))
     {
       union {
         int32_t asInt[2];
-        maya::CallbackId asCb;
+        AL::event::CallbackId asCb;
       };
       asCb = m_callbacksToDelete[i];
       MString errorString = "failed to unregister callback with ID: ";
@@ -192,7 +192,7 @@ MStatus BaseCallbackCommand::redoItImplementation()
 
   for(size_t i = 0, n = m_callbacksToInsert.size(); i < n; ++i)
   {
-    callbacksToDelete[i] = maya::EventScheduler::getScheduler().registerCallback(m_callbacksToInsert[i]);
+    callbacksToDelete[i] = AL::event::EventScheduler::getScheduler().registerCallback(m_callbacksToInsert[i]);
     if(!callbacksToDelete[i])
     {
       MGlobal::displayError(MString("failed to register callback with tag: ") + m_callbacksToInsert[i].tag().c_str());
@@ -257,7 +257,7 @@ MStatus Callback::doIt(const MArgList& argList)
           MFnDependencyNode fn(node, &status);
           if(status)
           {
-            if(dynamic_cast<maya::NodeEvents*>(fn.userNode()))
+            if(dynamic_cast<AL::event::NodeEvents*>(fn.userNode()))
             {
               setResult(true);
             }
@@ -280,7 +280,7 @@ MStatus Callback::doIt(const MArgList& argList)
     }
 
     MIntArray returnedIds;
-    auto storeId = [&returnedIds] (const maya::CallbackId id)
+    auto storeId = [&returnedIds] (const AL::event::CallbackId id)
     {
       const int* const ptr = (const int*)&id;
       returnedIds.append(ptr[0]);
@@ -296,7 +296,7 @@ MStatus Callback::doIt(const MArgList& argList)
       unsigned weight = args.asInt(2);
       MString commandText = args.asString(3);
 
-      auto cb = maya::EventScheduler::getScheduler().buildCallback(eventName.asChar(), tag.asChar(), commandText.asChar(), weight, true);
+      auto cb = AL::event::EventScheduler::getScheduler().buildCallback(eventName.asChar(), tag.asChar(), commandText.asChar(), weight, true);
       if(cb.callbackId())
       {
         m_callbacksToInsert.push_back(std::move(cb));
@@ -313,7 +313,7 @@ MStatus Callback::doIt(const MArgList& argList)
       unsigned weight = args.asInt(2);
       MString commandText = args.asString(3);
 
-      auto cb = maya::EventScheduler::getScheduler().buildCallback(eventName.asChar(), tag.asChar(), commandText.asChar(), weight, false);
+      auto cb = AL::event::EventScheduler::getScheduler().buildCallback(eventName.asChar(), tag.asChar(), commandText.asChar(), weight, false);
       if(cb.callbackId())
       {
         m_callbacksToInsert.push_back(std::move(cb));
@@ -339,14 +339,14 @@ MStatus Callback::doIt(const MArgList& argList)
         sl.getDependNode(0, nodeHandle);
         MFnDependencyNode fn(nodeHandle);
 
-        maya::NodeEvents* event = dynamic_cast<maya::NodeEvents*>(fn.userNode());
+        AL::event::NodeEvents* event = dynamic_cast<AL::event::NodeEvents*>(fn.userNode());
         if(!event)
         {
           MGlobal::displayError(MString("specified node does not support the NodeEvents interface: ") + nodeName);
         }
         else
         {
-          maya::EventId eventId = event->getId(eventName.asChar());
+          AL::event::EventId eventId = event->getId(eventName.asChar());
           if(eventId)
           {
             auto* scheduler = event->scheduler();
@@ -380,14 +380,14 @@ MStatus Callback::doIt(const MArgList& argList)
         sl.getDependNode(0, nodeHandle);
         MFnDependencyNode fn(nodeHandle);
 
-        maya::NodeEvents* event = dynamic_cast<maya::NodeEvents*>(fn.userNode());
+        AL::event::NodeEvents* event = dynamic_cast<AL::event::NodeEvents*>(fn.userNode());
         if(!event)
         {
           MGlobal::displayError(MString("specified node does not support the NodeEvents interface: ") + nodeName);
         }
         else
         {
-          maya::EventId eventId = event->getId(eventName.asChar());
+          AL::event::EventId eventId = event->getId(eventName.asChar());
           if(eventId)
           {
             auto* scheduler = event->scheduler();
@@ -410,7 +410,7 @@ MStatus Callback::doIt(const MArgList& argList)
       db.getFlagArgumentList("de", i, args);
       union {
         int asInt[2];
-        maya::CallbackId asId;
+        AL::event::CallbackId asId;
       };
       asInt[0] = args.asInt(0);
       asInt[1] = args.asInt(1);
@@ -489,7 +489,7 @@ MStatus ListEvents::doIt(const MArgList& args)
         MPxNode* ptr = fn.userNode();
         if(ptr)
         {
-          maya::NodeEvents* event = dynamic_cast<maya::NodeEvents*>(ptr);
+          AL::event::NodeEvents* event = dynamic_cast<AL::event::NodeEvents*>(ptr);
           if(event)
           {
             for(const auto& eventInfo : event->events())
@@ -502,7 +502,7 @@ MStatus ListEvents::doIt(const MArgList& args)
     }
     else
     {
-      for(auto& it : maya::EventScheduler::getScheduler().registeredEvents())
+      for(auto& it : AL::event::EventScheduler::getScheduler().registeredEvents())
       {
         if(!it.associatedData())
         {
@@ -568,7 +568,7 @@ MStatus TriggerEvent::doIt(const MArgList& args)
         MPxNode* ptr = fn.userNode();
         if(ptr)
         {
-          maya::NodeEvents* event = dynamic_cast<maya::NodeEvents*>(ptr);
+          AL::event::NodeEvents* event = dynamic_cast<AL::event::NodeEvents*>(ptr);
           if(event)
           {
             setResult(event->triggerEvent(eventName.asChar()));
@@ -593,7 +593,7 @@ MStatus TriggerEvent::doIt(const MArgList& args)
     }
     else
     {
-      setResult(maya::EventScheduler::getScheduler().triggerEvent(eventName.asChar()));
+      setResult(AL::event::EventScheduler::getScheduler().triggerEvent(eventName.asChar()));
     }
   }
   catch(const MStatus&)
@@ -632,7 +632,7 @@ MStatus DeleteCallbacks::doIt(const MArgList& args)
       union
       {
         int asint[2];
-        maya::CallbackId asid;
+        AL::event::CallbackId asid;
       };
       for(uint32_t j = 0, m = items.length(); j < m; j += 2)
       {
@@ -710,7 +710,7 @@ MStatus ListCallbacks::doIt(const MArgList& args)
         MPxNode* ptr = fn.userNode();
         if(ptr)
         {
-          maya::NodeEvents* event = dynamic_cast<maya::NodeEvents*>(ptr);
+          AL::event::NodeEvents* event = dynamic_cast<AL::event::NodeEvents*>(ptr);
           if(event)
           {
             const auto it = event->scheduler()->event(eventName.asChar());
@@ -720,7 +720,7 @@ MStatus ListCallbacks::doIt(const MArgList& args)
               {
                 union {
                   int ii[2];
-                  maya::CallbackId id;
+                  AL::event::CallbackId id;
                 };
                 id = eventInfo.callbackId();
                 callbacks.append(ii[0]);
@@ -735,14 +735,14 @@ MStatus ListCallbacks::doIt(const MArgList& args)
     else
     {
       MIntArray callbacks;
-      auto eventHandler = maya::EventScheduler::getScheduler().event(eventName.asChar());
+      auto eventHandler = AL::event::EventScheduler::getScheduler().event(eventName.asChar());
       if(eventHandler)
       {
         for(const auto& eventInfo : eventHandler->callbacks())
         {
           union {
             int ii[2];
-            maya::CallbackId id;
+            AL::event::CallbackId id;
           };
           id = eventInfo.callbackId();
           callbacks.append(ii[0]);
@@ -791,7 +791,7 @@ MStatus EventLookup::doIt(const MArgList& args)
       return MS::kFailure;
     }
 
-    maya::EventDispatcher* dispatcher = maya::EventScheduler::getScheduler().event(eventId);
+    AL::event::EventDispatcher* dispatcher = AL::event::EventScheduler::getScheduler().event(eventId);
     if(dispatcher)
     {
       if(database.isFlagSet("-n"))
@@ -802,7 +802,7 @@ MStatus EventLookup::doIt(const MArgList& args)
       if(database.isFlagSet("-nd"))
       {
         MString nodeName = "";
-        maya::NodeEvents* node = (maya::NodeEvents*)dispatcher->associatedData();
+        AL::event::NodeEvents* node = (AL::event::NodeEvents*)dispatcher->associatedData();
         if(node)
         {
           MPxNode* mpxNode = dynamic_cast<MPxNode*>(node);
@@ -869,7 +869,7 @@ MStatus EventQuery::doIt(const MArgList& args)
       return MS::kFailure;
     }
 
-    maya::EventDispatcher* dispatcher = 0;
+    AL::event::EventDispatcher* dispatcher = 0;
 
     MSelectionList items;
     status = database.getObjects(items);
@@ -877,16 +877,16 @@ MStatus EventQuery::doIt(const MArgList& args)
     {
       MObject obj;
       items.getDependNode(0, obj);
-      maya::NodeEvents* handler = dynamic_cast<maya::NodeEvents*>(MFnDependencyNode(obj).userNode());
+      AL::event::NodeEvents* handler = dynamic_cast<AL::event::NodeEvents*>(MFnDependencyNode(obj).userNode());
       if(handler)
       {
-        maya::EventId eventId = handler->getId(eventName.asChar());
+        AL::event::EventId eventId = handler->getId(eventName.asChar());
         dispatcher = handler->scheduler()->event(eventId);
       }
     }
     else
     {
-      dispatcher = maya::EventScheduler::getScheduler().event(eventName.asChar());
+      dispatcher = AL::event::EventScheduler::getScheduler().event(eventName.asChar());
     }
 
     if(dispatcher)
@@ -895,7 +895,7 @@ MStatus EventQuery::doIt(const MArgList& args)
       {
         union
         {
-          maya::CallbackId id;
+          AL::event::CallbackId id;
           int asInt[2];
         };
         id = dispatcher->parentCallbackId();
@@ -905,7 +905,7 @@ MStatus EventQuery::doIt(const MArgList& args)
       else
       if(database.isFlagSet("-e"))
       {
-        maya::EventId eventId = dispatcher->eventId();
+        AL::event::EventId eventId = dispatcher->eventId();
         setResult(eventId);
       }
       else
@@ -969,7 +969,7 @@ MStatus CallbackQuery::doIt(const MArgList& args)
 
     union {
       int asint[2];
-      maya::CallbackId asCb;
+      AL::event::CallbackId asCb;
     };
 
     if(!database.getCommandArgument(0, asint[0]) ||
@@ -978,7 +978,7 @@ MStatus CallbackQuery::doIt(const MArgList& args)
       return MS::kFailure;
     }
 
-    auto event = maya::EventScheduler::getScheduler().findCallback(asCb);
+    auto event = AL::event::EventScheduler::getScheduler().findCallback(asCb);
     if(event)
     {
       auto writeHex = [](const uint8_t b[8])
@@ -997,7 +997,7 @@ MStatus CallbackQuery::doIt(const MArgList& args)
       if(database.isFlagSet("-ce"))
       {
         MIntArray events;
-        const maya::EventScheduler& scheduler = maya::EventScheduler::getScheduler();
+        const AL::event::EventScheduler& scheduler = AL::event::EventScheduler::getScheduler();
         for(auto& e : scheduler.registeredEvents())
         {
           if(e.parentCallbackId() == asCb)
@@ -1010,7 +1010,7 @@ MStatus CallbackQuery::doIt(const MArgList& args)
       else
       if(database.isFlagSet("-e"))
       {
-        maya::EventId id = event->eventId();
+        AL::event::EventId id = event->eventId();
         setResult(int(id));
       }
       else
@@ -1207,7 +1207,7 @@ Node Based Events
 -----------------
 
 In order for a node to be compatible with this event system, the C++ definition must have been derived from the
-AL::maya::NodeEvents interface (so it is possible internally developed maya nodes can support events, but
+AL::AL::event::NodeEvents interface (so it is possible internally developed maya nodes can support events, but
 the standard Maya nodes types will not). To test whether a Maya node supports events, you may query support like so:
 
     AL_usdmaya_Callback -supportsEvents "nameOfNode"

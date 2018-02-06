@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/CodeTimings.h"
-#include "AL/usdmaya/Utils.h"
+#include "AL/usdmaya/CodeTimings.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/DebugCodes.h"
@@ -50,6 +49,7 @@
 
 #include <map>
 #include <string>
+#include "AL/usdmaya/utils/Utils.h"
 
 namespace AL {
 namespace usdmaya {

@@ -17,7 +17,6 @@
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "AL/usdmaya/TypeIDs.h"
-#include "AL/usdmaya/Utils.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/DebugCodes.h"
 
@@ -26,6 +25,7 @@
 
 #include <set>
 #include <algorithm>
+#include "AL/usdmaya/utils/Utils.h"
 
 
 namespace AL {
@@ -544,7 +544,7 @@ MObject ProxyShape::makeUsdTransformChain(
   bool hasMetadata = usdPrim.GetMetadata(Metadata::transformType, &transformType);
   if(hasMetadata && !transformType.empty())
   {
-    node = modifier.createNode(convert(transformType), parentNode);
+    node = modifier.createNode(AL::maya::utils::convert(transformType), parentNode);
     isTransform = false;
     isUsdTransform = false;
     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::makeUsdTransformChain created transformType=%s name=%s\n", transformType.c_str(), usdPrim.GetName().GetText());
@@ -556,7 +556,7 @@ MObject ProxyShape::makeUsdTransformChain(
   }
 
   fn.setObject(node);
-  fn.setName(convert(usdPrim.GetName().GetString()));
+  fn.setName(AL::maya::utils::convert(usdPrim.GetName().GetString()));
 
   //Retrieve the proxy shapes transform path which will be used in the UsdPrim->MayaNode mapping in the case where there is delayed node creation.
   MFnDagNode shapeFn(thisMObject());
@@ -564,9 +564,9 @@ MObject ProxyShape::makeUsdTransformChain(
   MDagPath mayaPath;
   MDagPath::getAPathTo(shapeParent, mayaPath);
   if(resultingPath)
-    *resultingPath = mapUsdPrimToMayaNode(usdPrim, node, &mayaPath);
+    *resultingPath = AL::usdmaya::utils::mapUsdPrimToMayaNode(usdPrim, node, &mayaPath);
   else
-    mapUsdPrimToMayaNode(usdPrim, node, &mayaPath);
+    AL::usdmaya::utils::mapUsdPrimToMayaNode(usdPrim, node, &mayaPath);
 
   if(isUsdTransform)
   {
@@ -643,7 +643,7 @@ void ProxyShape::makeUsdTransformsInternal(const UsdPrim& usdPrim, const MObject
       UsdPrim prim = *it;
       MObject node = modifier.createNode(Transform::kTypeId, parentNode);
       fn.setObject(node);
-      fn.setName(convert(prim.GetName().GetString()));
+      fn.setName(AL::maya::utils::convert(prim.GetName().GetString()));
       Transform* ptrNode = (Transform*)fn.userNode();
       MPlug inStageData = ptrNode->inStageDataPlug();
       MPlug inTime = ptrNode->timePlug();

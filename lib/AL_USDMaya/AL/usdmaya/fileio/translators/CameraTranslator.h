@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #pragma once
+#include <AL/usdmaya/ForwardDeclares.h>
 #include "AL/usdmaya/fileio/translators/DagNodeTranslator.h"
 
 namespace AL {
