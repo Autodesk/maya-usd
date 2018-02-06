@@ -60,6 +60,9 @@ enum class UsdDataType : uint32_t
   kToken,
   kAsset,
   kFrame4d,
+  kColor3h,
+  kColor3f,
+  kColor3d,
   kUnknown
 };
 
