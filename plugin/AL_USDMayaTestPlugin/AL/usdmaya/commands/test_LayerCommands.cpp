@@ -85,3 +85,33 @@ TEST(LayerCommands, layerCreateLayerTests)
   }
 }
 
+// Test that I can successfully create and add a sublayer to the RootLayer
+TEST(LayerCommands, addSubLayer)
+{
+  MFileIO::newFile(true);
+  MString shapeName;
+  const std::string temp_path = "/tmp/AL_USDMayaTests_addSubLayer.usda";
+
+  std::function<UsdStageRefPtr()>  constructTransformChain = [] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    return stage;
+  };
+
+  AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(constructTransformChain, temp_path);
+
+  EXPECT_EQ(proxyShape->getUsdStage()->GetLayerStack().size(), 2); //Session layer and RootLayer
+
+  // Add anonymous layer to the sublayers
+  MGlobal::executeCommand("AL_usdmaya_LayerCreateLayer -s -o \"\" -p \"AL_usdmaya_ProxyShape1\"");
+  EXPECT_EQ(proxyShape->getUsdStage()->GetLayerStack().size(), 3); // With added anonymous layer
+
+  const MString testLayer = MString(AL_USDMAYA_TEST_DATA) + MString("/root.usda");
+  MString c;
+  c.format(MString("AL_usdmaya_LayerCreateLayer -s -o \"^1s\" -p \"AL_usdmaya_ProxyShape1\""), testLayer);
+
+  MGlobal::executeCommand(c);
+  EXPECT_EQ(proxyShape->getUsdStage()->GetLayerStack().size(), 4); // With added named layer
+}
+
+

@@ -90,9 +90,10 @@ class LayerCreateLayer
 {
   UsdStageRefPtr m_stage;
   SdfLayerHandle m_rootLayer;
-  SdfLayerHandle m_newLayer;
+  SdfLayerRefPtr m_newLayer;
   MString m_filePath;
   nodes::ProxyShape* m_shape;
+  bool m_addSublayer = false;
   bool m_layerWasInserted;
 
 public:

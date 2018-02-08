@@ -683,8 +683,11 @@ void randomAnimatedNode(MObject node, const char* const attributeNames[], const 
 
 AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(std::function<UsdStageRefPtr()> buildUsdStage, const std::string tempPath)
 {
-  UsdStageRefPtr stage = buildUsdStage();
-  stage->Export(tempPath, false);
+  if(buildUsdStage != nullptr)
+  {
+    UsdStageRefPtr stage = buildUsdStage();
+    stage->Export(tempPath, false);
+  }
 
   MFnDagNode fn;
   MObject xform = fn.create("transform");

@@ -332,7 +332,10 @@ AL_MAYA_DEFINE_COMMAND(LayerCreateLayer, AL_usdmaya);
 MSyntax LayerCreateLayer::createSyntax()
 {
   MSyntax syn = setUpCommonSyntax();
+  syn.useSelectionAsDefault(true);
+  syn.setObjectType(MSyntax::kSelectionList, 0, 1);
   syn.addFlag("-o", "-open", MSyntax::kString);
+  syn.addFlag("-s", "-sublayer", MSyntax::kNoArg);
   syn.addFlag("-h", "-help", MSyntax::kNoArg);
   return syn;
 }
@@ -359,6 +362,11 @@ MStatus LayerCreateLayer::doIt(const MArgList& argList)
       args.getFlagArgument("-o", 0, m_filePath);
     }
 
+    if(args.isFlagSet("-s"))
+    {
+      m_addSublayer = true;
+    }
+
     m_shape = getShapeNode(args);
 
     if(!m_shape)
@@ -366,13 +374,13 @@ MStatus LayerCreateLayer::doIt(const MArgList& argList)
       throw MS::kFailure;
     }
 
-    UsdStageRefPtr stage = m_shape->getUsdStage();
-    if(!stage)
+    m_stage = m_shape->getUsdStage();
+    if(!m_stage)
     {
       MGlobal::displayError("no valid stage found on the proxy shape");
       throw MS::kFailure;
     }
-    m_rootLayer = stage->GetRootLayer();
+    m_rootLayer = m_stage->GetRootLayer();
   }
   catch(const MStatus& status)
   {
@@ -400,6 +408,14 @@ MStatus LayerCreateLayer::undoIt()
     auto manager = AL::usdmaya::nodes::LayerManager::findOrCreateManager();
     manager->removeLayer(m_newLayer);
   }
+
+  if(m_addSublayer)
+  {
+    TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCreateLayer::Undo'ing '%s', removing from sublayers \n", m_newLayer->GetIdentifier().c_str());
+    SdfSubLayerProxy paths = m_stage->GetRootLayer()->GetSubLayerPaths();
+    paths.Remove(m_newLayer->GetIdentifier());
+  }
+
   // lots more to do here!
   return MS::kSuccess;
 }
@@ -412,7 +428,8 @@ MStatus LayerCreateLayer::redoIt()
 
   if(m_filePath.length() > 0)
   {
-    m_newLayer = SdfLayer::FindOrOpen(convert(m_filePath));
+    std::string filePath = convert(m_filePath);
+    m_newLayer = SdfLayer::FindOrOpen(filePath);
     if(!m_newLayer)
     {
       MGlobal::displayError(MString("LayerCreateLayer:unable to open layer \"") + m_filePath + "\"");
@@ -431,6 +448,13 @@ MStatus LayerCreateLayer::redoIt()
 
   auto manager = AL::usdmaya::nodes::LayerManager::findOrCreateManager();
   m_layerWasInserted = manager->addLayer(m_newLayer);
+
+  if(m_addSublayer)
+  {
+    TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCreateLayer::Adding '%s' to sublayers\n", m_newLayer->GetIdentifier().c_str());
+    SdfSubLayerProxy paths = m_stage->GetRootLayer()->GetSubLayerPaths();
+    paths.push_back(m_newLayer->GetIdentifier());
+  }
 
   std::stringstream ss("LayerCreateLayer:", std::ios_base::app | std::ios_base::out);
   MGlobal::displayInfo(ss.str().c_str());
@@ -964,6 +988,7 @@ void constructLayerCommandGuis()
 
   {
     maya::CommandGuiHelper createLayer("AL_usdmaya_LayerCreateLayer", "Create Layer on current layer", "Create", "USD/Layers/Create Sub Layer", false);
+    createLayer.addExecuteText(" -s ");
     createLayer.addFilePathOption("open", "Find or Open Existing Layer", maya::CommandGuiHelper::kLoad, "USD files (*.usd*) (*.usd*);; Alembic Files (*.abc) (*.abc);;All Files (*) (*)", maya::CommandGuiHelper::kStringOptional);
   }
 
