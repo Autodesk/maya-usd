@@ -15,6 +15,7 @@
 //
 #include "AL/maya/CommandGuiHelper.h"
 #include "AL/maya/MenuBuilder.h"
+#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/Utils.h"
 
 #include "maya/MGlobal.h"
@@ -120,7 +121,13 @@ CommandGuiHelper::CommandGuiHelper(const char* commandName, const char* windowTi
   std::ostringstream ui;
   ui << "global proc build_" << mycmd_optionGUI << "()\n"
         "{\n"
-        "  if(`window -q -ex \"" << mycmd_optionGUI << "\"`) return;\n"
+        "  if(`window -q -ex \"" << mycmd_optionGUI << "\"`)\n"
+        "  {\n"
+        "    if(`window -q -visible \"" << mycmd_optionGUI << "\"`) return;\n"
+        // If there was an error building the window, the window may exist, but not be shown.
+        // We assume that if it's not visible, there was an error, so we delete it and try again.
+        "    deleteUI \"" << mycmd_optionGUI << "\";\n"
+        "  }\n"
         "  $window = `window -title \"" << windowTitle << "\" -w 550 -h 350 \"" << mycmd_optionGUI << "\"`;\n"
         "  $menuBarLayout = `menuBarLayout`;\n"
         "    $menu = `menu -label \"Edit\"`;\n"
@@ -162,9 +169,7 @@ CommandGuiHelper::CommandGuiHelper(const char* commandName, const char* windowTi
   MGlobal::executeCommand(MString(ui.str().data(), ui.str().length()));
 
   // if you want to validate the output code
-#if AL_USD_PRINT_UI_CODE
-  std::cout << ui.str() << std::endl;
-#endif
+  TF_DEBUG(ALUSDMAYA_GUIHELPER).Msg(ui.str() + "\n");
 
   // begin construction of the 6 utils functions for this dialog
   m_init << "global proc init_" << mycmd_optionGUI << "()\n{\n";
@@ -194,16 +199,17 @@ CommandGuiHelper::~CommandGuiHelper()
   m_controls << "}\n";
 
   // if you want to validate the output code
-#if AL_USD_PRINT_UI_CODE
-  std::cout << m_global.str() << std::endl;
-  std::cout << m_init.str() << std::endl;
-  std::cout << m_save.str() << std::endl;
-  std::cout << m_load.str() << std::endl;
-  std::cout << m_reset.str() << std::endl;
-  std::cout << m_execute.str() << std::endl;
-  std::cout << m_labels.str() << std::endl;
-  std::cout << m_controls.str() << std::endl;
-#endif
+  if (TfDebug::IsEnabled(ALUSDMAYA_GUIHELPER))
+  {
+    TfDebug::Helper().Msg(m_global.str() + "\n");
+    TfDebug::Helper().Msg(m_init.str() + "\n");
+    TfDebug::Helper().Msg(m_save.str() + "\n");
+    TfDebug::Helper().Msg(m_load.str() + "\n");
+    TfDebug::Helper().Msg(m_reset.str() + "\n");
+    TfDebug::Helper().Msg(m_execute.str() + "\n");
+    TfDebug::Helper().Msg(m_labels.str() + "\n");
+    TfDebug::Helper().Msg(m_controls.str() + "\n");
+  }
 
   static const char* const alFileDialogHandler =
     "global proc alFileDialogHandler(string $filter, string $control, int $mode)\n"
@@ -233,6 +239,56 @@ CommandGuiHelper::~CommandGuiHelper()
   MGlobal::executeCommand(MString(m_execute.str().data(), m_execute.str().size()));
   MGlobal::executeCommand(MString(m_labels.str().data(), m_labels.str().size()));
   MGlobal::executeCommand(MString(m_controls.str().data(), m_controls.str().size()));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CommandGuiHelper::addExecuteText(const char* toAdd)
+{
+  // TODO: write a proper string encoder for MEL (tricky, because can't represent
+  // all 256 character-bytes using mel string literals - would have to resort to
+  // calling out to python for a truly string rerpr encoder.
+  // (note that even mel's builtin "encodeString" command doesn't actually always
+  // return a mel string that will evaluate to the input - ie, it will return
+  // "\004", but that isn't a valid mel escape sequence, and will just result in "004"
+
+  // for now, just check to make sure we have printable characters... only need to
+  // implement a full MEL-string-encoder if we really have a need...
+  m_execute << "    $str += \"";
+  bool printedError = false;
+
+  for(size_t i = 0; toAdd[i] != '\0'; ++i)
+  {
+    if(toAdd[i] < 32 || toAdd[i] > 126)
+    {
+      if (toAdd[i] == '\b') m_execute << "\\b";
+      else if (toAdd[i] == '\t') m_execute << "\\t";
+      else if (toAdd[i] == '\n') m_execute << "\\n";
+      else if (toAdd[i] == '\r') m_execute << "\\r";
+      // Just throwing, if we ever need to use a string with weird chars, need to
+      // update this function...
+      else if (!printedError)
+      {
+        // Make our own stream (instead of steaming straigt to cerr)
+        // both because we also want to output to maya, and
+        // because we need to set a flag (ie, std::hex)
+        std::ostringstream err;
+        err << "CommandGuiHelper::addExecuteText encountered bad character at index ";
+        err << i;
+        err << ": 0x";
+        err << std::hex;
+        // if you just reinterpret_cast as uint8_t, it still treats as a char
+        err << static_cast<int>(reinterpret_cast<const unsigned char*>(toAdd)[i]);
+        std::string errStr = err.str();
+        MGlobal::displayError(errStr.c_str());
+        std::cerr << errStr;
+        printedError = true;
+      }
+    }
+    else if (toAdd[i] == '"') m_execute << "\\\"";
+    else if (toAdd[i] == '\\') m_execute << "\\\\";
+    else m_execute << toAdd[i];
+  }
+  m_execute << "\";\n";
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -314,7 +370,7 @@ void CommandGuiHelper::addBoolOption(const char* commandFlag, const char* label,
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CommandGuiHelper::addListOption(const char* commandFlag, const char* label, GenerateListFn generateList)
+void CommandGuiHelper::addListOption(const char* commandFlag, const char* label, GenerateListFn generateList, bool isMandatory)
 {
   const std::string optionVar = m_commandName + "_" + commandFlag;
   const std::string getOptionVar = std::string("`optionVar -q -sl \"") + optionVar + "\"`";
@@ -322,7 +378,9 @@ void CommandGuiHelper::addListOption(const char* commandFlag, const char* label,
   m_global << "global proc " << optionVar << "_handle(string $sl) {\n"
            "  global string $" << optionVar << "_sl; $" << optionVar << "_sl = $sl;\n}\n";
 
-  m_controls << "  optionMenu -h 20 -cc \"" <<  optionVar << "_handle #1\" " << optionVar << ";\n";
+  // Use `optionMenu -q -value` instead of "#1" because there's no good way to do string-escaping
+  // with "#1"
+  m_controls << "  optionMenu -h 20 -cc \"" <<  optionVar << "_handle `optionMenu -q -value " << optionVar << "`\" " << optionVar << ";\n";
 
   // add label
   m_labels << "  text -al \"right\" -h 20 -w 160 -l \"" << label << ":\";\n";
@@ -336,7 +394,11 @@ void CommandGuiHelper::addListOption(const char* commandFlag, const char* label,
 
   //
   m_execute << "  global string $" << optionVar << "_sl;"
-            << "  $str += \" -" << commandFlag << " $" << optionVar << "_sl \";\n";
+            << "  $str += \" ";
+  if (!isMandatory) {
+    m_execute << "-" << commandFlag << " ";
+  }
+  m_execute << "$" << optionVar << "_sl \";\n";
 }
 
 //----------------------------------------------------------------------------------------------------------------------

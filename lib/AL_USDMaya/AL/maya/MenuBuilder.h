@@ -15,6 +15,7 @@
 //
 #pragma once
 #include "AL/maya/Common.h"
+#include "AL/usdmaya/DebugCodes.h"
 
 #include "maya/MStatus.h"
 #include "maya/MString.h"
@@ -167,10 +168,11 @@ public:
     MGlobal::executeCommand(initGUI.str().c_str());
     MGlobal::executeCommand(exitGUI.str().c_str());
 
-    #if AL_USD_PRINT_UI_CODE
-    std::cout << initGUI.str() << std::endl;
-    std::cout << exitGUI.str() << std::endl;
-    #endif
+    if (TfDebug::IsEnabled(PXR_NS::ALUSDMAYA_GUIHELPER))
+    {
+      TfDebug::Helper().Msg(initGUI.str() + "\n");
+      TfDebug::Helper().Msg(exitGUI.str() + "\n");
+    }
 
     return fnPlugin.registerUI(ui_init, ui_exit);
   }

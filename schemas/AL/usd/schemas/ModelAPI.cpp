@@ -126,8 +126,55 @@ void AL_usd_ModelAPI::SetSelectability(const TfToken& selectability)
   }
 }
 
-TfToken AL_usd_ModelAPI::GetSelectabilityValue() const
+TfToken AL_usd_ModelAPI::ComputeHierarchical(const UsdPrim& prim,
+                                             const ComputeLogic& logic) const
 {
+  TfToken value;
+  bool keepLooking = logic(prim, value);
+
+  if(keepLooking)
+  {
+    if (UsdPrim parent = prim.GetParent())
+    {
+      return ComputeHierarchical(parent, logic);
+    }
+  }
+
+  return value;
+}
+
+TfToken AL_usd_ModelAPI::ComputeSelectabilty() const
+{
+  if (!GetPrim().IsValid())
+  {
+    return TfToken();
+  }
+
+  ComputeLogic determineSelectability = [](const UsdPrim& prim, TfToken & outValue)
+  {
+    AL_usd_ModelAPI modelApi(prim);
+    if (modelApi.GetSelectability() == AL_USDMayaSchemasTokens->selectability_unselectable)
+    {
+      outValue = AL_USDMayaSchemasTokens->selectability_unselectable;
+      return false;
+    }
+
+    outValue = AL_USDMayaSchemasTokens->selectability_inherited;
+    return true;
+  };
+
+  TfToken foundValue = ComputeHierarchical(GetPrim(), determineSelectability);
+
+  return foundValue;
+}
+
+TfToken AL_usd_ModelAPI::GetSelectability() const
+{
+  if (!GetPrim().IsValid())
+  {
+    return TfToken();
+  }
+
   if(!GetPrim().HasMetadata(AL_USDMayaSchemasTokens->selectability))
   {
     return AL_USDMayaSchemasTokens->selectability_inherited;
@@ -139,7 +186,7 @@ TfToken AL_usd_ModelAPI::GetSelectabilityValue() const
 
 void AL_usd_ModelAPI::SetLock(const TfToken& lock)
 {
-  if (!GetPrim().IsValid())
+  if (!GetPrim())
   {
     return;
   }
@@ -151,21 +198,46 @@ void AL_usd_ModelAPI::SetLock(const TfToken& lock)
   {
     GetPrim().SetMetadata(AL_USDMayaSchemasTokens->lock, AL_USDMayaSchemasTokens->lock_inherited);
   }
-  else if (lock == TfToken())
+  else if (lock == AL_USDMayaSchemasTokens->lock_unlocked)
   {
-    GetPrim().SetMetadata(AL_USDMayaSchemasTokens->lock, TfToken());
+    GetPrim().SetMetadata(AL_USDMayaSchemasTokens->lock, AL_USDMayaSchemasTokens->lock_unlocked);
   }
 }
 
 TfToken AL_usd_ModelAPI::GetLock() const
 {
+  if (!GetPrim())
+    return TfToken();
   if (!GetPrim().HasMetadata(AL_USDMayaSchemasTokens->lock))
   {
-    return TfToken();
+    return AL_USDMayaSchemasTokens->lock_inherited;
   }
   TfToken lockValue;
   GetPrim().GetMetadata<TfToken>(AL_USDMayaSchemasTokens->lock, &lockValue);
   return lockValue;
+}
+
+TfToken AL_usd_ModelAPI::ComputeLock() const
+{
+  if (!GetPrim())
+    return TfToken();
+  ComputeLogic determineLock = [](const UsdPrim& prim, TfToken& outValue)
+  {
+    if (!prim.HasMetadata(AL_USDMayaSchemasTokens->lock))
+    {
+      outValue = AL_USDMayaSchemasTokens->lock_inherited;
+      return true;
+    }
+    prim.GetMetadata<TfToken>(AL_USDMayaSchemasTokens->lock, &outValue);
+    if (outValue != AL_USDMayaSchemasTokens->lock_inherited)
+    {
+      return false;
+    }
+    return true;
+  };
+
+  TfToken foundValue = ComputeHierarchical(GetPrim(), determineLock);
+  return foundValue;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

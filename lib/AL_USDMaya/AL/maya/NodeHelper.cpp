@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "AL/maya/NodeHelper.h"
+#include "AL/usdmaya/DebugCodes.h"
 
 #include "maya/MPxNode.h"
 #include "maya/MFnNumericAttribute.h"
@@ -1066,9 +1067,7 @@ void NodeHelper::generateAETemplate()
   oss << " editorTemplate -endScrollLayout;\n";
   oss << "}\n";
 
-#if AL_USD_PRINT_UI_CODE
-  std::cout << oss.str() << std::endl;
-#endif
+  TF_DEBUG(PXR_NS::ALUSDMAYA_GUIHELPER).Msg(oss.str() + "\n");
 
   // run our script (AE template command will now exist in memory)
   MGlobal::executeCommand(MString(oss.str().c_str(), oss.str().size()));
@@ -1507,7 +1506,7 @@ MStatus NodeHelper::outputEulerValue(MDataBlock& dataBlock, const MObject& attri
   }
   else
   {
-    report_set_error(attribute, MFloatVector, status);
+    report_set_error(attribute, MEulerRotation, status);
   }
   return status;
 }
@@ -1541,7 +1540,7 @@ MStatus NodeHelper::outputColourValue(MDataBlock& dataBlock, const MObject& attr
   }
   else
   {
-    report_set_error(attribute, MFloatVector, status);
+    report_set_error(attribute, MColor, status);
   }
   return status;
 }
@@ -1575,7 +1574,7 @@ MStatus NodeHelper::outputTimeValue(MDataBlock& dataBlock, const MObject& attrib
   }
   else
   {
-    report_set_error(attribute, MString, status);
+    report_set_error(attribute, MTime, status);
   }
   return status;
 }
@@ -1592,10 +1591,24 @@ MStatus NodeHelper::outputDataValue(MDataBlock& dataBlock, const MObject& attrib
   }
   else
   {
-    report_set_error(attribute, MString, status);
+    report_set_error(attribute, MPxData, status);
   }
   return status;
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+MPxData* NodeHelper::outputDataValue(MDataBlock& dataBlock, const MObject& attribute)
+{
+  MStatus status;
+  MDataHandle outDataHandle = dataBlock.outputValue(attribute, &status);
+  if(status)
+  {
+    return outDataHandle.asPluginData();
+  }
+  report_get_error(attribute, MPxData, status);
+  return 0;
+}
+
 
 //----------------------------------------------------------------------------------------------------------------------
 MPxData* NodeHelper::createData(const MTypeId& dataTypeId, MObject& data)

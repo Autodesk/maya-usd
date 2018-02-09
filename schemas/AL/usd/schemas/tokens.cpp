@@ -25,6 +25,32 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(AL_USDMayaSchemasTokens, AL_USDMAYASCHEMAS_TOKENS);
+AL_USDMayaSchemasTokensType::AL_USDMayaSchemasTokensType() :
+    lock("al_usdmaya_lock", TfToken::Immortal),
+    lock_inherited("inherited", TfToken::Immortal),
+    lock_transform("transform", TfToken::Immortal),
+    lock_unlocked("unlocked", TfToken::Immortal),
+    mayaNamespace("mayaNamespace", TfToken::Immortal),
+    mayaReference("mayaReference", TfToken::Immortal),
+    selectability("al_usdmaya_selectability", TfToken::Immortal),
+    selectability_inherited("inherited", TfToken::Immortal),
+    selectability_selectable("selectable", TfToken::Immortal),
+    selectability_unselectable("unselectable", TfToken::Immortal),
+    allTokens({
+        lock,
+        lock_inherited,
+        lock_transform,
+        lock_unlocked,
+        mayaNamespace,
+        mayaReference,
+        selectability,
+        selectability_inherited,
+        selectability_selectable,
+        selectability_unselectable
+    })
+{
+}
+
+TfStaticData<AL_USDMayaSchemasTokensType> AL_USDMayaSchemasTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE

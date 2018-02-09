@@ -22,13 +22,56 @@
 // language governing permissions and limitations under the Apache License.
 //
 // GENERATED FILE.  DO NOT EDIT.
+#include <boost/python/class.hpp>
 #include "./tokens.h"
-#include "pxr/base/tf/pyStaticTokens.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace {
+
+// Helper to return a static token as a string.  We wrap tokens as Python
+// strings and for some reason simply wrapping the token using def_readonly
+// bypasses to-Python conversion, leading to the error that there's no
+// Python type for the C++ TfToken type.  So we wrap this functor instead.
+class _WrapStaticToken {
+public:
+    _WrapStaticToken(const TfToken* token) : _token(token) { }
+
+    std::string operator()() const
+    {
+        return _token->GetString();
+    }
+
+private:
+    const TfToken* _token;
+};
+
+template <typename T>
+void
+_AddToken(T& cls, const char* name, const TfToken& token)
+{
+    cls.add_static_property(name,
+                            boost::python::make_function(
+                                _WrapStaticToken(&token),
+                                boost::python::return_value_policy<
+                                    boost::python::return_by_value>(),
+                                boost::mpl::vector1<std::string>()));
+}
+
+} // anonymous
+
 void wrapAL_USDMayaSchemasTokens()
 {
-    TF_PY_WRAP_PUBLIC_TOKENS("Tokens", AL_USDMayaSchemasTokens,
-                             AL_USDMAYASCHEMAS_TOKENS);
+    boost::python::class_<AL_USDMayaSchemasTokensType, boost::noncopyable>
+        cls("Tokens", boost::python::no_init);
+    _AddToken(cls, "lock", AL_USDMayaSchemasTokens->lock);
+    _AddToken(cls, "lock_inherited", AL_USDMayaSchemasTokens->lock_inherited);
+    _AddToken(cls, "lock_transform", AL_USDMayaSchemasTokens->lock_transform);
+    _AddToken(cls, "lock_unlocked", AL_USDMayaSchemasTokens->lock_unlocked);
+    _AddToken(cls, "mayaNamespace", AL_USDMayaSchemasTokens->mayaNamespace);
+    _AddToken(cls, "mayaReference", AL_USDMayaSchemasTokens->mayaReference);
+    _AddToken(cls, "selectability", AL_USDMayaSchemasTokens->selectability);
+    _AddToken(cls, "selectability_inherited", AL_USDMayaSchemasTokens->selectability_inherited);
+    _AddToken(cls, "selectability_selectable", AL_USDMayaSchemasTokens->selectability_selectable);
+    _AddToken(cls, "selectability_unselectable", AL_USDMayaSchemasTokens->selectability_unselectable);
 }

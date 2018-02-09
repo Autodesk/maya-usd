@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "AL/maya/Common.h"
+#include "AL/maya/EventHandler.h"
 #include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/DebugCodes.h"
 
@@ -24,8 +25,9 @@
 namespace AL {
 namespace usdmaya {
 
-MCallbackId StageCache::beforeNewCallbackId = 0;
-MCallbackId StageCache::beforeLoadCallbackId = 0;
+maya::CallbackId StageCache::g_beforeNewCallbackId = 0;
+maya::CallbackId StageCache::g_beforeLoadCallbackId = 0;
+static maya::EventId g_stageCacheCleared = 0;
 
 //----------------------------------------------------------------------------------------------------------------------
 static void onMayaSceneUpdateCallback(void* clientData)
@@ -41,10 +43,20 @@ UsdStageCache& StageCache::Get(bool forcePopulate)
   static UsdStageCache theCache;
 
   // IMPORTANT: At every NEW scene in Maya we clear the USD stage cache.
-  if (beforeNewCallbackId == 0)
+  if (g_beforeNewCallbackId == 0)
   {
-    beforeNewCallbackId = MSceneMessage::addCallback(MSceneMessage::kBeforeNew, onMayaSceneUpdateCallback);
-    beforeLoadCallbackId = MSceneMessage::addCallback(MSceneMessage::kBeforeOpen, onMayaSceneUpdateCallback);
+    g_beforeNewCallbackId = maya::MayaEventManager::instance().registerCallback(
+        onMayaSceneUpdateCallback,
+        "BeforeNew",
+        "ClearStageCacheOnFileNew",
+        0x10000);
+    g_beforeLoadCallbackId = maya::MayaEventManager::instance().registerCallback(
+        onMayaSceneUpdateCallback,
+        "BeforeOpen",
+        "ClearStageCacheOnFileOpen",
+        0x10000);
+
+    g_stageCacheCleared = maya::EventScheduler::getScheduler().registerEvent("OnUsdStageCacheCleared", maya::kUSDMayaEventType);
   }
 
   return forcePopulate ? theCacheForcePopulate : theCache;
@@ -55,19 +67,26 @@ void StageCache::Clear()
 {
   StageCache::Get(true).Clear();
   StageCache::Get(false).Clear();
+  maya::EventScheduler::getScheduler().triggerEvent(g_stageCacheCleared);
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 void StageCache::removeCallbacks()
 {
-  if (beforeNewCallbackId)
+  if (g_stageCacheCleared)
   {
-    MSceneMessage::removeCallback(beforeNewCallbackId);
-    beforeNewCallbackId = 0;
+    maya::EventScheduler::getScheduler().unregisterEvent(g_stageCacheCleared);
+    g_stageCacheCleared = 0;
   }
-  if (beforeLoadCallbackId)
+  if (g_beforeNewCallbackId)
   {
-    MSceneMessage::removeCallback(beforeLoadCallbackId);
-    beforeLoadCallbackId = 0;
+    maya::MayaEventManager::instance().unregisterCallback(g_beforeNewCallbackId);
+    g_beforeNewCallbackId = 0;
+  }
+  if (g_beforeLoadCallbackId)
+  {
+    maya::MayaEventManager::instance().unregisterCallback(g_beforeLoadCallbackId);
+    g_beforeLoadCallbackId = 0;
   }
 }
 //----------------------------------------------------------------------------------------------------------------------

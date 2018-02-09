@@ -30,6 +30,7 @@ const TfToken Metadata::unselectable("unselectable");
 const TfToken Metadata::locked("al_usdmaya_lock");
 const TfToken Metadata::lockTransform("transform");
 const TfToken Metadata::lockInherited("inherited");
+const TfToken Metadata::lockUnlocked("unlocked");
 
 //----------------------------------------------------------------------------------------------------------------------
 } // usdmaya

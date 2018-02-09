@@ -93,7 +93,7 @@ MStatus ChangeVariant::doIt(const MArgList& args)
     nodes::ProxyShape* proxy = getShapeNode(database);
     if(proxy)
     {
-      auto stage = proxy->getUsdStage();
+      auto stage = proxy->usdStage();
       if(stage)
       {
         UsdPrim prim = stage->GetPrimAtPath(SdfPath(convert(pp)));
@@ -167,7 +167,7 @@ MStatus ActivatePrim::doIt(const MArgList& args)
     nodes::ProxyShape* proxy = getShapeNode(database);
     if(proxy)
     {
-      auto stage = proxy->getUsdStage();
+      auto stage = proxy->usdStage();
       if(stage)
       {
         UsdPrim prim = stage->GetPrimAtPath(SdfPath(convert(pp)));

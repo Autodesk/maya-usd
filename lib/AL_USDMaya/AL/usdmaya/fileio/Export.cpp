@@ -21,8 +21,10 @@
 #include "AL/usdmaya/fileio/translators/MeshTranslator.h"
 #include "AL/usdmaya/fileio/translators/NurbsCurveTranslator.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
+#include "AL/usdmaya/TransformOperation.h"
 
 #include "maya/MAnimControl.h"
+#include "maya/MAnimUtil.h"
 #include "maya/MArgDatabase.h"
 #include "maya/MDagPath.h"
 #include "maya/MFnCamera.h"
@@ -33,6 +35,7 @@
 #include "maya/MNodeClass.h"
 #include "maya/MObjectArray.h"
 #include "maya/MPlug.h"
+#include "maya/MPlugArray.h"
 #include "maya/MSelectionList.h"
 #include "maya/MUuid.h"
 
@@ -56,11 +59,13 @@ namespace fileio {
 
 AL_MAYA_DEFINE_COMMAND(ExportCommand, AL_usdmaya);
 
+//----------------------------------------------------------------------------------------------------------------------
 static inline std::string toString(const MString& str)
 {
   return std::string(str.asChar(), str.length());
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 static unsigned int mayaDagPathToSdfPath(char* dagPathBuffer, unsigned int dagPathSize)
 {
   char* writer = dagPathBuffer;
@@ -93,6 +98,7 @@ static unsigned int mayaDagPathToSdfPath(char* dagPathBuffer, unsigned int dagPa
   return writer - dagPathBuffer;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 static inline SdfPath makeUsdPath(const MDagPath& rootPath, const MDagPath& path)
 {
   // if the rootPath is empty, we can just use the entire path
@@ -253,10 +259,29 @@ private:
   UsdStageRefPtr m_stage;
 };
 
+static MObject g_transform_rotateAttr = MObject::kNullObj;
+static MObject g_transform_translateAttr = MObject::kNullObj;
+static MObject g_handle_startJointAttr = MObject::kNullObj;
+static MObject g_effector_handleAttr = MObject::kNullObj;
+static MObject g_geomConstraint_targetAttr = MObject::kNullObj;
+
 //----------------------------------------------------------------------------------------------------------------------
 Export::Export(const ExporterParams& params)
   : m_params(params), m_impl(new Export::Impl)
 {
+  if(g_transform_rotateAttr == MObject::kNullObj)
+  {
+    MNodeClass nct("transform");
+    MNodeClass nch("ikHandle");
+    MNodeClass nce("ikEffector");
+    MNodeClass ngc("geometryConstraint");
+    g_transform_rotateAttr = nct.attribute("r");
+    g_transform_translateAttr = nct.attribute("t");
+    g_handle_startJointAttr = nch.attribute("hsj");
+    g_effector_handleAttr = nce.attribute("hp");
+    g_geomConstraint_targetAttr = ngc.attribute("tg");
+  }
+
   if(m_impl->setStage(UsdStage::CreateNew(m_params.m_fileName.asChar())))
   {
     doExport();
@@ -323,6 +348,145 @@ UsdPrim Export::exportCamera(MDagPath path, const SdfPath& usdPath)
   translators::CameraTranslator::copyAttributes(cameraObject, prim, m_params);
 
   return camera.GetPrim();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void Export::exportGeometryConstraint(MDagPath constraintPath, const SdfPath& usdPath)
+{
+  auto animTranslator = m_params.m_animTranslator;
+  if(!animTranslator)
+  {
+    return;
+  }
+
+  MPlug plug(constraintPath.node(), g_geomConstraint_targetAttr);
+  for(uint32_t i = 0, n = plug.numElements(); i < n; ++i)
+  {
+    MPlug geom = plug.elementByLogicalIndex(i).child(0);
+    MPlugArray connected;
+    geom.connectedTo(connected, true, true);
+    if(connected.length())
+    {
+      MPlug inputGeom = connected[0];
+      MFnDagNode fn(inputGeom.node());
+      MDagPath geomPath;
+      fn.getPath(geomPath);
+      if(AnimationTranslator::isAnimatedMesh(geomPath))
+      {
+        auto stage = m_impl->stage();
+
+        // move to the constrained node
+        constraintPath.pop();
+
+        SdfPath newPath = usdPath.GetParentPath();
+
+        UsdPrim prim = stage->GetPrimAtPath(newPath);
+        if(prim)
+        {
+          UsdGeomXform xform(prim);
+          bool reset;
+          std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&reset);
+          for(auto op : ops)
+          {
+            const TransformOperation thisOp = xformOpToEnum(op.GetBaseName());
+            if(thisOp == kTranslate)
+            {
+              animTranslator->forceAddPlug(MPlug(constraintPath.node(), g_transform_translateAttr), op.GetAttr());
+              break;
+            }
+          }
+          return;
+        }
+        else
+        {
+          std::cout << "prim not valid " << newPath.GetText() << std::endl;
+        }
+      }
+    }
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void Export::exportIkChain(MDagPath effectorPath, const SdfPath& usdPath)
+{
+  auto animTranslator = m_params.m_animTranslator;
+  if(!animTranslator)
+  {
+    return;
+  }
+
+  MPlug hp(effectorPath.node(), g_effector_handleAttr);
+  hp = hp.elementByLogicalIndex(0);
+  MPlugArray connected;
+  hp.connectedTo(connected, true, true);
+  if(connected.length())
+  {
+    // grab the handle node
+    MObject handleObj = connected[0].node();
+
+    MPlug translatePlug(handleObj, g_transform_translateAttr);
+
+    // if the translation values on the ikHandle is animated, then we can assume the rotation values on the
+    // joint chain between the effector and the start joint will also be animated
+    bool handleIsAnimated = AnimationTranslator::isAnimated(translatePlug, true);
+    if(handleIsAnimated)
+    {
+      // locate the start joint in the chain
+      MPlug startJoint(handleObj, g_handle_startJointAttr);
+      MPlugArray connected;
+      startJoint.connectedTo(connected, true, true);
+      if(connected.length())
+      {
+        // this will be the top chain in the system
+        MObject startNode = connected[0].node();
+
+        auto stage = m_impl->stage();
+        SdfPath newPath = usdPath;
+
+        UsdPrim prim;
+        // now step up from the effector to the start joint and output the rotations
+        do
+        {
+          // no point handling the effector
+          effectorPath.pop();
+          newPath = newPath.GetParentPath();
+
+          prim = stage->GetPrimAtPath(newPath);
+          if(prim)
+          {
+            UsdGeomXform xform(prim);
+            MPlug rotatePlug(effectorPath.node(), g_transform_rotateAttr);
+            bool reset;
+            std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&reset);
+            for(auto op : ops)
+            {
+              const float radToDeg = 180.0f / 3.141592654f;
+              bool added = false;
+              switch(op.GetOpType())
+              {
+              case UsdGeomXformOp::TypeRotateXYZ:
+              case UsdGeomXformOp::TypeRotateXZY:
+              case UsdGeomXformOp::TypeRotateYXZ:
+              case UsdGeomXformOp::TypeRotateYZX:
+              case UsdGeomXformOp::TypeRotateZXY:
+              case UsdGeomXformOp::TypeRotateZYX:
+                added = true;
+                animTranslator->forceAddPlug(rotatePlug, op.GetAttr(), radToDeg);
+                break;
+              }
+              if(added) break;
+            }
+          }
+          else
+          {
+            std::cout << "prim not valid" << std::endl;
+          }
+        }
+        while(effectorPath.node() != startNode);
+      }
+    }
+  }
+  return;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -411,7 +575,6 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
   std::function<void(MDagPath, MFnTransform&, SdfPath&)> exportTransformFunc =
       [this] (MDagPath transformPath, MFnTransform& fnTransform, SdfPath& usdPath)
   {
-    std::cout << "GeomXForm export called " << transformPath.fullPathName() << std::endl;
     UsdGeomXform xform = UsdGeomXform::Define(m_impl->stage(), usdPath);
     UsdPrim transformPrim = xform.GetPrim();
     this->copyTransformParams(transformPrim, fnTransform);
@@ -463,10 +626,31 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
       {
         usdPath = makeUsdPath(parentPath, transformPath);
       }
+
+      if(transformPath.node().hasFn(MFn::kIkEffector))
+      {
+        exportIkChain(transformPath, usdPath);
+      }
+      else
+      if(transformPath.node().hasFn(MFn::kGeometryConstraint))
+      {
+        exportGeometryConstraint(transformPath, usdPath);
+      }
+
       // for UV only exporting, record first prim as default
       if (m_params.m_meshUV && defaultPrim.IsEmpty())
       {
         defaultPrim = usdPath;
+      }
+
+      if(transformPath.node().hasFn(MFn::kIkEffector))
+      {
+        exportIkChain(transformPath, usdPath);
+      }
+      else
+      if(transformPath.node().hasFn(MFn::kGeometryConstraint))
+      {
+        exportGeometryConstraint(transformPath, usdPath);
       }
 
       // how many shapes are directly under this transform path?
@@ -485,12 +669,6 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
           shapePath.extendToShapeDirectlyBelow(j);
 
           bool shapeNotYetExported = !m_impl->contains(shapePath.node());
-          if(shapeNotYetExported)
-          {
-            // We have an instanced shape!
-            std::cout << "encountered shape instance " << shapePath.fullPathName().asChar() << std::endl;
-          }
-
           if(shapeNotYetExported || m_params.m_duplicateInstances)
           {
             // if the path has a child shape, process the shape now
@@ -746,6 +924,7 @@ MSyntax ExportCommand::createSyntax()
   return syntax;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 const char* const ExportCommand::g_helpText = R"(
 ExportCommand Overview:
 

@@ -33,8 +33,6 @@ include(ProjectDefaults)
 include(Public)
 include(CXXDefaults)
 
-add_definitions(-DPXR_PYTHON_SUPPORT_ENABLED)
-
 add_definitions(${_PXR_CXX_DEFINITIONS})
 
 find_package(Maya REQUIRED)
@@ -53,6 +51,7 @@ include_directories(${PXR_INCLUDE_DIRS})
 # is the rationale for listing them here.
 find_package(Boost COMPONENTS
                 python
+                thread
                 REQUIRED
 )
 

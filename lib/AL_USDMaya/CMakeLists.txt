@@ -7,52 +7,58 @@ list(APPEND AL_maya_headers
         AL/maya/CommandGuiHelper.h
         AL/maya/Common.h
         AL/maya/DgNodeHelper.h
+        AL/maya/EventHandler.h
         AL/maya/FileTranslatorBase.h
         AL/maya/FileTranslatorOptions.h
+        AL/maya/MayaEventManager.h
         AL/maya/MenuBuilder.h
         AL/maya/NodeHelper.h
         AL/maya/SIMD.h
 )
+
 list(APPEND AL_maya_source
         AL/maya/CodeTimings.cpp
         AL/maya/CommandGuiHelper.cpp
         AL/maya/DgNodeHelper.cpp
+        AL/maya/EventHandler.cpp
         AL/maya/FileTranslatorOptions.cpp
         AL/maya/MenuBuilder.cpp
         AL/maya/NodeHelper.cpp
+        AL/maya/MayaEventManager.cpp
 )
 
 list(APPEND AL_usdmaya_headers
         AL/usdmaya/AttributeType.h
         AL/usdmaya/Common.h
+        AL/usdmaya/DebugCodes.h
         AL/usdmaya/DrivenTransformsData.h
         AL/usdmaya/Global.h
+        AL/usdmaya/Metadata.h
         AL/usdmaya/PluginRegister.h
+        AL/usdmaya/SelectabilityDB.h
         AL/usdmaya/StageCache.h
         AL/usdmaya/StageData.h
         AL/usdmaya/TransformOperation.h
         AL/usdmaya/TypeIDs.h
         AL/usdmaya/Utils.h
-        AL/usdmaya/DebugCodes.h
-        AL/usdmaya/Metadata.h
-        AL/usdmaya/SelectabilityDB.h
 )
 
 list(APPEND AL_usdmaya_source
         AL/usdmaya/AttributeType.cpp
+        AL/usdmaya/DebugCodes.cpp
         AL/usdmaya/DrivenTransformsData.cpp
         AL/usdmaya/Global.cpp
+        AL/usdmaya/Metadata.cpp
+        AL/usdmaya/SelectabilityDB.cpp
         AL/usdmaya/StageCache.cpp
         AL/usdmaya/StageData.cpp
         AL/usdmaya/TransformOperation.cpp
         AL/usdmaya/Utils.cpp
-        AL/usdmaya/DebugCodes.cpp
-        AL/usdmaya/Metadata.cpp
-        AL/usdmaya/SelectabilityDB.cpp
 )
 
 list(APPEND AL_usdmaya_cmds_headers
         AL/usdmaya/cmds/DebugCommands.h
+        AL/usdmaya/cmds/EventCommand.h
         AL/usdmaya/cmds/LayerCommands.h
         AL/usdmaya/cmds/ProxyShapeCommands.h
         AL/usdmaya/cmds/ProxyShapeSelectCommands.h
@@ -61,6 +67,7 @@ list(APPEND AL_usdmaya_cmds_headers
 )
 list(APPEND AL_usdmaya_cmds_source
         AL/usdmaya/cmds/DebugCommands.cpp
+        AL/usdmaya/cmds/EventCommand.cpp
         AL/usdmaya/cmds/LayerCommands.cpp
         AL/usdmaya/cmds/ProxyShapeCommands.cpp
         AL/usdmaya/cmds/ProxyShapeSelectCommands.cpp
@@ -119,7 +126,7 @@ list(APPEND AL_usdmaya_fileio_translators_source
 
 list(APPEND AL_usdmaya_nodes_headers
         AL/usdmaya/nodes/Layer.h
-        AL/usdmaya/nodes/LayerVisitor.h
+        AL/usdmaya/nodes/LayerManager.h
         AL/usdmaya/nodes/ProxyDrawOverride.h
         AL/usdmaya/nodes/ProxyShape.h
         AL/usdmaya/nodes/ProxyShapeUI.h
@@ -132,7 +139,7 @@ list(APPEND AL_usdmaya_nodes_proxy_headers
 )
 list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/Layer.cpp
-        AL/usdmaya/nodes/LayerVisitor.cpp
+        AL/usdmaya/nodes/LayerManager.cpp
         AL/usdmaya/nodes/ProxyDrawOverride.cpp
         AL/usdmaya/nodes/ProxyShape.cpp
         AL/usdmaya/nodes/ProxyShapeSelection.cpp
@@ -202,6 +209,7 @@ target_link_libraries(${LIBRARY_NAME}
     rt
     ${PYTHON_LIBRARIES}
     ${Boost_PYTHON_LIBRARY}
+    ${Boost_THREAD_LIBRARY}
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
     ${MAYA_OpenMayaFX_LIBRARY}
@@ -237,6 +245,8 @@ add_library(${PYTHON_LIBRARY_NAME}
     SHARED
     AL/usdmaya/module.cpp
     AL/usdmaya/wrapStageCache.cpp
+    AL/usdmaya/nodes/wrapLayerManager.cpp
+    AL/usdmaya/nodes/wrapProxyShape.cpp
 )
 
 set_target_properties(${PYTHON_LIBRARY_NAME}
