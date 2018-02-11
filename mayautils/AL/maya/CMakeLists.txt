@@ -49,7 +49,7 @@ target_include_directories(${MAYAUTILS_LIBRARY_NAME}
     )
 
 target_link_libraries(${MAYAUTILS_LIBRARY_NAME}
-  AL_Utils
+  AL_EventSystem
   ${MAYA_Foundation_LIBRARY}
   ${MAYA_OpenMaya_LIBRARY}
   ${MAYA_OpenMayaAnim_LIBRARY}

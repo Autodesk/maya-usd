@@ -166,7 +166,7 @@ target_include_directories(
 )
 
 target_link_libraries(${LIBRARY_NAME}
-    AL_Utils
+    AL_EventSystem
     AL_USDMayaUtils
     AL_MayaUtils
     AL_USDUtils
