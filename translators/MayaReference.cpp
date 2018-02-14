@@ -397,7 +397,7 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
   {
     // To avoid the error that USD complains about editing to same layer simultaneously from different threads,
     // we record it as custom data instead of creating an attribute.
-    VtValue value(std::string(refDependNode.name().asChar(), refDependNode.name().length()));
+    VtValue value(convert(refDependNode.name()));
     prim.SetCustomDataByKey(maya_associatedReferenceNode, value);
   }
 
