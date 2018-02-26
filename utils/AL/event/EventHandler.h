@@ -572,7 +572,7 @@ public:
       else
       if(callback.isPythonCallback())
       {
-        if(m_system->executePython(callback.callbackText()))
+        if(!m_system->executePython(callback.callbackText()))
         {
           m_system->error("The python callback of event name \"%s\" and tag \"%s\" failed to execute correctly",
               m_name.c_str(), callback.tag().c_str());
@@ -580,7 +580,7 @@ public:
       }
       else
       {
-        if(m_system->executeMEL(callback.callbackText()))
+        if(!m_system->executeMEL(callback.callbackText()))
         {
           m_system->error("The MEL callback of event name \"%s\" and tag \"%s\" failed to execute correctly",
               m_name.c_str(), callback.tag().c_str());
@@ -605,7 +605,7 @@ public:
       else
       if(callback.isPythonCallback())
       {
-        if(m_system->executePython(callback.callbackText()))
+        if(!m_system->executePython(callback.callbackText()))
         {
           m_system->error("The python callback of event name \"%s\" and tag \"%s\" failed to execute correctly",
               m_name.c_str(), callback.tag().c_str());
@@ -613,7 +613,7 @@ public:
       }
       else
       {
-        if(m_system->executeMEL(callback.callbackText()))
+        if(!m_system->executeMEL(callback.callbackText()))
         {
           m_system->error("The MEL callback of event name \"%s\" and tag \"%s\" failed to execute correctly",
               m_name.c_str(), callback.tag().c_str());
