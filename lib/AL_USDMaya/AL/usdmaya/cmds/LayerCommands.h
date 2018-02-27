@@ -175,6 +175,7 @@ private:
   MStatus redoIt() override;
 };
 
+
 /// \brief  function called on startup to generate the menu & option boxes for the layer commands
 /// \ingroup commands
 void constructLayerCommandGuis();

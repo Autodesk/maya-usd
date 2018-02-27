@@ -18,6 +18,7 @@
 #include <vector>
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/sdf/path.h"
+#include "AL/usd/utils/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -62,7 +63,7 @@ public:
   /// \param  previousPrims the previous set of prims that existed in the stage
   /// \param  newPrimSet the new set of prims that have been created
   /// \param  proxy the proxy shape
-  PrimFilter(const SdfPathVector& previousPrims, const std::vector<UsdPrim>& newPrimSet, PrimFilterInterface* proxy);
+  PrimFilter(const SdfPathVector& previousPrims, const UsdPrimVector& newPrimSet, PrimFilterInterface* proxy);
 
   /// \brief  returns the set of prims to create
   inline const std::vector<UsdPrim>& newPrimSet() const

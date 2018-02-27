@@ -432,14 +432,14 @@ MStatus LayerCreateLayer::redoIt()
     std::string filePath = AL::maya::utils::convert(m_filePath);
     m_newLayer = SdfLayer::FindOrOpen(filePath);
     if(!m_newLayer)
-  {
-    MGlobal::displayError(MString("LayerCreateLayer:unable to open layer \"") + m_filePath + "\"");
-    return MS::kFailure;
-  }
-
-    }
-    else
     {
+      MGlobal::displayError(MString("LayerCreateLayer:unable to open layer \"") + m_filePath + "\"");
+      return MS::kFailure;
+    }
+
+  }
+  else
+  {
     m_newLayer = SdfLayer::CreateAnonymous();
     if(!m_newLayer)
     {
@@ -1001,6 +1001,8 @@ void constructLayerCommandGuis()
     setEditTarget.addListOption("l", "USD Layer", (AL::maya::utils::GenerateListFn)buildProxyLayersList);
   }
 }
+
+
 
 //----------------------------------------------------------------------------------------------------------------------
 // Documentation strings.

@@ -36,6 +36,7 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/nodes/proxy/test_DrivenTransforms.cpp
         AL/usdmaya/nodes/proxy/test_PrimFilter.cpp
         AL/usdmaya/test_SelectabilityDB.cpp
+        AL/usdmaya/commands/test_TranslateCommand.cpp
         test_translators_AnimationTranslator.cpp
         test_translators_CameraTranslator.cpp
         test_translators_DgTranslator.cpp

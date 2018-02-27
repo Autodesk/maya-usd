@@ -11,7 +11,6 @@ set(MAYAUTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib)
 ####################################################################################################
 
 add_definitions(-DAL_MAYAUTILS_DEBUG=0)
-
 list(APPEND maya_utils_headers
     utils/CommandGuiHelper.h
     utils/FileTranslatorBase.h

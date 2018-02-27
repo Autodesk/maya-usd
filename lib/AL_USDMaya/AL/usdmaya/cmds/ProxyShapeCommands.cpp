@@ -1279,6 +1279,77 @@ MStatus ProxyShapeImportPrimPathAsMaya::undoIt()
   return m_modifier.undoIt();
 }
 
+
+//----------------------------------------------------------------------------------------------------------------------
+
+AL_MAYA_DEFINE_COMMAND(TranslatePrim, AL_usdmaya);
+
+//----------------------------------------------------------------------------------------------------------------------
+
+MSyntax TranslatePrim::createSyntax()
+{
+  MSyntax syntax = setUpCommonSyntax();
+  syntax.addFlag("-ip", "-importPaths", MSyntax::kString);
+  syntax.addFlag("-tp", "-teardownPaths", MSyntax::kString);
+  syntax.addFlag("-fi", "-forceImport", MSyntax::kNoArg);
+  return syntax;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus TranslatePrim::doIt(const MArgList& args)
+{
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("TranslatePrim::doIt\n");
+  try
+  {
+    MArgDatabase db = makeDatabase(args);
+    AL_MAYA_COMMAND_HELP(db, g_helpText);
+    m_proxy = getShapeNode(db);
+
+    if(db.isFlagSet("-ip"))
+    {
+      MString pathsCsv;
+      db.getFlagArgument("-ip", 0, pathsCsv);
+      m_importPaths = m_proxy->getPrimPathsFromCommaJoinedString(pathsCsv);
+    }
+
+    if(db.isFlagSet("-tp"))
+    {
+      MString pathsCsv;
+      db.getFlagArgument("-tp", 0, pathsCsv);
+      m_teardownPaths = m_proxy->getPrimPathsFromCommaJoinedString(pathsCsv);
+    }
+
+    // change the translator context to force import
+    if(db.isFlagSet("-fi"))
+    {
+      tp.setForcePrimImport(true);
+    }
+  }
+  catch(const MStatus& status)
+  {
+    return status;
+  }
+
+  return redoIt();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool TranslatePrim::isUndoable() const
+{
+  return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus TranslatePrim::redoIt()
+{
+  MDagPath parentTransform = m_proxy->parentTransform();
+
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("TranslatePrim::redoIt\n");
+  m_proxy->translatePrimPathsIntoMaya(m_importPaths, m_teardownPaths, tp);
+  return MStatus::kSuccess;
+}
+
+
 //----------------------------------------------------------------------------------------------------------------------
 void constructProxyShapeCommandGuis()
 {
@@ -1314,6 +1385,12 @@ void constructProxyShapeCommandGuis()
   {
     AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeResync", "Resync at Prim path", "", "Resync and reload prim at passed in primpath", false);
     commandGui.addStringOption("primPath", "USD Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringMustHaveValue);
+  }
+
+  {
+    AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_TranslatePrim", "Translate a Prim at path", "", "Run the translator to either import or teardown the Prims at the paths", false);
+    commandGui.addStringOption("importPath", "USD Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
+    commandGui.addStringOption("teardownPath", "USD Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
   }
 }
 
@@ -1356,6 +1433,7 @@ MStatus ProxyShapePrintRefCountState::doIt(const MArgList& args)
   }
   return MS::kSuccess;
 }
+
 
 //----------------------------------------------------------------------------------------------------------------------
 // Documentation strings.
@@ -1583,8 +1661,26 @@ AL_usdmaya_ProxyShapeResync Overview:
     AL_usdmaya_ProxyShapeResync -p "ProxyShape1" -pp "/some/prim/path"
 
 )";
+//----------------------------------------------------------------------------------------------------------------------
+const char* const TranslatePrim::g_helpText = R"(
+TranslatePrim Overview:
 
+  Used to manually execute a translator for a prim at the specified path typically so you can force an import or a tearDown of a prim:
 
+    AL_usdmaya_TranslatePrim -ip "/MyPrim";  //< Run the Prim's translator's import
+    AL_usdmaya_TranslatePrim -tp "/MyPrim";  //< Run the Prim's translator's tearDown
+
+    AL_usdmaya_TranslatePrim -ip "/MyPrim,/YourPrim";  //< Run the Prim's translator's import on multiple Prims
+    AL_usdmaya_TranslatePrim -tp "/MyPrim,/YourPrim";  //< Run the Prim's translator's tearDown on multiple Prims
+
+  Some prims such as the Mesh typed prims are not imported by default, so you will need to pass in a flag that forces the import:
+
+    AL_usdmaya_TranslatePrim -fi -ip "/MyMesh";  //< Run the Prim's translator's import
+
+  The ForceImport(-fi) flag will forces the import of the available translator. Used for translators who don't import when
+  their corresponding prim type is brought into the scene.
+
+)";
 //----------------------------------------------------------------------------------------------------------------------
 } // cmds
 } // usdmaya

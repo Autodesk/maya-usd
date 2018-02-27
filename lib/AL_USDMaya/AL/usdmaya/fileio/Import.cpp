@@ -139,6 +139,7 @@ void Import::doImport()
       // fallback in cases where either the node is NOT an assembly, or the attempt to load the
       // assembly failed.
       {
+
         if(prim.GetTypeName() == "Mesh")
         {
           AL_BEGIN_PROFILE_SECTION(ImportingMesh);

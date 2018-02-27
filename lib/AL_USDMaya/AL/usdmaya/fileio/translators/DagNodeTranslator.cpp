@@ -48,13 +48,19 @@ MStatus DagNodeTranslator::registerType()
   m_visible = fn.attribute("v", &status);
   AL_MAYA_CHECK_ERROR(status, errorString);
 
+  DagNodeTranslator::initialiseDefaultShadingGroup(m_initialShadingGroup);
+
+  return MS::kSuccess;
+}
+
+void DagNodeTranslator::initialiseDefaultShadingGroup(MObject& target)
+{
   MSelectionList sl;
   MGlobal::selectByName("initialShadingGroup", MGlobal::kReplaceList);
   MGlobal::getActiveSelectionList(sl);
 
-  sl.getDependNode(0, m_initialShadingGroup);
-
-  return MS::kSuccess;
+  MObject shadingGroup;
+  sl.getDependNode(0, target);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

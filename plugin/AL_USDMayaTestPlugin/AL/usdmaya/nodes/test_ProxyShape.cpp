@@ -18,6 +18,8 @@
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/StageCache.h"
+#include "AL/usdmaya/fileio/translators/TranslatorContext.h"
+
 #include "maya/MFnTransform.h"
 #include "maya/MSelectionList.h"
 #include "maya/MGlobal.h"
@@ -1027,6 +1029,55 @@ TEST(ProxyShape, editTargetChangeAndSave)
     auto dirtyPrim = stage->GetPrimAtPath(dirtiestPrimPath);
     ASSERT_TRUE(dirtyPrim.IsValid());
   }
+}
+
+// Test translating a Mesh Prim via the command
+TEST(ManualTranslate, importMeshPrim)
+{
+  AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMesh();
+
+  AL::usdmaya::fileio::translators::TranslatorParameters param;
+  param.setForcePrimImport(true);
+
+  SdfPathVector importPaths;
+  SdfPath meshPath("/pSphere1");
+  importPaths.push_back(meshPath);
+  proxyShape->translatePrimPathsIntoMaya(importPaths, SdfPathVector(), param);
+
+  // Select the shape, if it's there, it worked
+  MObjectHandle translatedObject;
+  MStatus s = MGlobal::selectByName("pSphere1Shape");
+  ASSERT_TRUE( s.statusCode() == MStatus::kSuccess);
+}
+
+//// Test translating a Mesh Prim via the command
+TEST(ManualTranslate, roundtripMeshPrim)
+{
+  AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMesh();
+  SdfPath meshPath("/pSphere1");
+
+  AL::usdmaya::fileio::translators::TranslatorParameters tp;
+  tp.setForcePrimImport(true);
+
+  // Import Mesh, test that it actually got imported
+  SdfPathVector importPaths;
+  importPaths.push_back(meshPath);
+  proxyShape->translatePrimPathsIntoMaya(importPaths, SdfPathVector(), tp);
+  MStatus s = MGlobal::selectByName("pSphere1Shape");
+  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+
+  // Tear down Mesh
+  SdfPathVector teardownPaths;
+  teardownPaths.push_back(meshPath);
+  proxyShape->translatePrimPathsIntoMaya(SdfPathVector(), teardownPaths, tp);
+  MFileIO::saveAs("/tmp/cats2.ma");
+  s = MGlobal::selectByName("pSphere1Shape");
+  ASSERT_FALSE(s.statusCode() == MStatus::kSuccess);
+
+  // Import Mesh, test that it actually got imported
+  proxyShape->translatePrimPathsIntoMaya(importPaths, SdfPathVector(), tp);
+  s = MGlobal::selectByName("pSphere1Shape");
+  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
 }
 
 // void destroyTransformReferences()

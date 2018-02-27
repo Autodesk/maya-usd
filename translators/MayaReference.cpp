@@ -130,7 +130,7 @@ MStatus MayaReference::import(const UsdPrim& prim, MObject& parent)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::import prim=%s\n", prim.GetPath().GetText());
   MStatus status;
-  status = m_mayaReferenceLogic.LoadMayaReference(prim, parent);
+  status = m_mayaReferenceLogic.LoadMayaReference(prim, parent, context());
 
   return status;
 }
@@ -287,7 +287,7 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent, MObject 
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& parent) const
+MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& parent, TranslatorContextPtr context) const
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::LoadMayaReference prim=%s\n", prim.GetPath().GetText());
   const TfToken maya_associatedReferenceNode("maya_associatedReferenceNode");
@@ -422,13 +422,14 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
 
   if (status == MS::kSuccess)
   {
-      MDGModifier attrMod;
-      status = attrMod.newPlugValueString(MPlug(referenceObject, primNSAttr), rigNamespaceM);
-      AL_MAYA_CHECK_ERROR(status, "failed to set usdPrimPath attr on reference node");
-      status = attrMod.doIt();
-      AL_MAYA_CHECK_ERROR(status, "failed to execute reference attr modifier");
+    MDGModifier attrMod;
+    status = attrMod.newPlugValueString(MPlug(referenceObject, primNSAttr), rigNamespaceM);
+    AL_MAYA_CHECK_ERROR(status, "failed to set usdPrimPath attr on reference node");
+    status = attrMod.doIt();
+    AL_MAYA_CHECK_ERROR(status, "failed to execute reference attr modifier");
   }
 
+  context->insertItem(prim, parent);
   return MS::kSuccess;
 }
 

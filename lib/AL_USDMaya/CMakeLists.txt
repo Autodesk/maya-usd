@@ -132,6 +132,7 @@ list(APPEND AL_usdmaya_public_headers
         ${AL_usdmaya_fileio_translators_headers}
 )
 
+
 # For maya versions above 2016, we can use cmake import targets.
 if(${MAYA_API_VERSION} STRLESS 2017)
     find_library(QTGUI_LIBRARY

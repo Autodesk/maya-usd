@@ -133,6 +133,12 @@ public:
   virtual bool supportsUpdate() const
     { return false; }
 
+  /// \brief If a translator is importableByDefault=true, it will always be automatically imported on ProxyShape
+  /// initialisation.
+  /// \return returns true if the Translator doesn't automatically import the Prim.
+  virtual bool importableByDefault() const
+    { return true; }
+
   /// \brief  Optionally override this method to copy the attribute values from the prim onto the Maya nodes you have
   ///         created.
   /// \param  prim  the prim
@@ -173,10 +179,25 @@ public:
   /// \return a handle to the newly created plugin translator
   static RefPtr manufacture(const std::string& primType, TranslatorContextPtr context) = delete;
 
+  /// \brief  Internal method used to create a new instance of a plugin translator
+  /// \param  primType the type of translator to manufacture
+  /// \param  context the translation context
+  /// \return a handle to the newly created plugin translator
+  virtual MStatus preTearDown(UsdPrim& prim)
+    {
+      m_isTearingDown = true;
+      return MS::kSuccess;
+    }
+
   /// \brief  return the usd stage associated with this context
   /// \return the usd stage
   UsdStageRefPtr getUsdStage() const
     { return context()->getUsdStage(); }
+
+  /// \brief If the translator has had pretearDown called on it then this will return true.
+  /// \return true if this prim has had the pretearDown called on it.
+  bool isTearingDown() const
+    { return true; }
 
 protected:
 
@@ -192,6 +213,7 @@ protected:
     { m_context = context; }
 
 private:
+  bool m_isTearingDown = false;
 
   TfType m_translatedType;
   TranslatorContextPtr m_context;

@@ -34,7 +34,8 @@ namespace translators {
 class MayaReferenceLogic
 {
 public:
-  MStatus LoadMayaReference(const UsdPrim& prim, MObject& parent) const;
+
+  MStatus LoadMayaReference(const UsdPrim& prim, MObject& parent, TranslatorContextPtr context) const;
   MStatus UnloadMayaReference(MObject& parent) const;
   MStatus update(const UsdPrim& prim, MObject parent, MObject refNode=MObject::kNullObj) const;
 
