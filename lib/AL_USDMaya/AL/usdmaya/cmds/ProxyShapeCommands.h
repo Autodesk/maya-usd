@@ -80,6 +80,7 @@ class ProxyShapeImport
   MDagModifier m_modifier2;
   MObjectArray m_parentTransforms;
   MObject m_shape;
+  MString m_proxy_name;
 public:
   AL_MAYA_DECLARE_COMMAND();
 private:

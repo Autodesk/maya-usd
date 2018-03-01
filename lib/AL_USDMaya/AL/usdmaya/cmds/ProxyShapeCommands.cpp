@@ -246,6 +246,33 @@ MStatus ProxyShapeImport::redoIt()
       }
     }
   }
+
+  // set the name of the node
+  MFnDependencyNode fnShape(m_shape);
+  MFnDagNode dagFnShape(m_shape);
+
+  // if lots of TM's have been specified as parents, just name the shape explicitly
+  if(m_parentTransforms.length())
+  {
+    if(m_proxy_name.length())
+    {
+      fnShape.setName(m_proxy_name + "Shape");
+    }
+  }
+  else
+  {
+    MFnDependencyNode fnTransform(dagFnShape.parent(0));
+    fnShape.setName(fnTransform.name() + "Shape");
+    if(m_proxy_name.length())
+    {
+      fnTransform.setName(m_proxy_name);
+    }
+    else
+    {
+      fnTransform.setName("AL_usdmaya_Proxy");
+    }
+  }
+
   return status;
 }
 
@@ -276,7 +303,6 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
     }
   }
 
-  MString name;
   MString filePath;
   MString sessionLayerSerialized;
   MString primPath;
@@ -292,14 +318,13 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
     return MS::kFailure;
   }
   bool hasName = database.isFlagSet("-n");
-  bool hasParents = m_parentTransforms.length() != 0;
   bool hasPrimPath = database.isFlagSet("-pp");
   bool hasExclPrimPath = database.isFlagSet("-epp");
   bool hasSession = database.isFlagSet("-s");
   bool hasStagePopulationMaskInclude = database.isFlagSet("-pmi");
 
   if(hasName) {
-    database.getFlagArgument("-n", 0, name);
+    database.getFlagArgument("-n", 0, m_proxy_name);
   }
   if(hasPrimPath) {
     database.getFlagArgument("-pp", 0, primPath);
@@ -343,23 +368,6 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
 
   // create the shape node
   m_shape = m_modifier.createNode(nodes::ProxyShape::kTypeId, firstParent);
-
-  // set the name of the node
-  if(hasName)
-  {
-    // if lots of TM's have been specified as parents, just name the shape explicitly
-    if(m_parentTransforms.length())
-    {
-      MFnDependencyNode fnShape(m_shape);
-      fnShape.setName(name);
-    }
-    else
-    if(!hasParents)
-    {
-      MFnDependencyNode fnTransform(firstParent);
-      fnTransform.setName(name);
-    }
-  }
 
   // initialize the session layer, if given
   if(hasSession)
