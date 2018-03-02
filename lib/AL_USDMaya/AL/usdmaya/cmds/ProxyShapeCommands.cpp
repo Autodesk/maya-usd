@@ -248,8 +248,7 @@ MStatus ProxyShapeImport::redoIt()
   }
 
   // set the name of the node
-  MFnDependencyNode fnShape(m_shape);
-  MFnDagNode dagFnShape(m_shape);
+  MFnDagNode fnShape(m_shape);
 
   // if lots of TM's have been specified as parents, just name the shape explicitly
   if(m_parentTransforms.length())
@@ -261,7 +260,7 @@ MStatus ProxyShapeImport::redoIt()
   }
   else
   {
-    MFnDependencyNode fnTransform(dagFnShape.parent(0));
+    MFnDependencyNode fnTransform(fnShape.parent(0));
     fnShape.setName(fnTransform.name() + "Shape");
     if(m_proxy_name.length())
     {
