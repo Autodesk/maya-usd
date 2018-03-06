@@ -36,7 +36,6 @@ typedef boost::filesystem::path path;
 }
 }
 
-#include "AL/maya/CodeTimings.h"
 #include "AL/usdmaya/CodeTimings.h"
 #include "AL/usdmaya/utils/Utils.h"
 
@@ -159,7 +158,7 @@ static std::string getMayaReferencedFileDir(const MObject &proxyShapeNode)
 
 static std::string getMayaSceneFileDir()
 {
-  std::string currentFile = convert(MFileIO::currentFile());
+  std::string currentFile = AL::maya::utils::convert(MFileIO::currentFile());
   size_t filePathSize = currentFile.size();
   if(filePathSize < 4)
     return std::string();
