@@ -195,16 +195,9 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMayaRender_LIBRARY}
 )
 
-if(CMAKE_COMPILER_IS_GNUCC)
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.3)
-        target_link_libraries(${LIBRARY_NAME}
-                            ${Boost_FILESYSTEM_LIBRARY})
-    endif()
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5)
-        target_link_libraries(${LIBRARY_NAME}
-                            ${Boost_FILESYSTEM_LIBRARY})
-    endif()
+if(NEED_BOOST_FILESYSTEM)
+    target_link_libraries(${LIBRARY_NAME}
+                        ${Boost_FILESYSTEM_LIBRARY})
 endif()
 
 
