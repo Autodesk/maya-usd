@@ -187,7 +187,6 @@ target_link_libraries(${LIBRARY_NAME}
     ${PYTHON_LIBRARIES}
     ${Boost_PYTHON_LIBRARY}
     ${Boost_THREAD_LIBRARY}
-    ${Boost_FILESYSTEM_LIBRARY}
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
     ${MAYA_OpenMayaFX_LIBRARY}
@@ -195,6 +194,12 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_OpenMayaRender_LIBRARY}
 )
+
+if(CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.3)
+    target_link_libraries(${LIBRARY_NAME}
+                        ${Boost_FILESYSTEM_LIBRARY}
+                        )
+endif()
 
 if(${MAYA_API_VERSION} STRGREATER 2017)
     target_link_libraries(${LIBRARY_NAME}
