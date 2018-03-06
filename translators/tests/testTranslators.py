@@ -161,7 +161,7 @@ class testTranslator(unittest.TestCase):
         self._importStageWithSphere()
              
         # force the import
-        mc.AL_usdmaya_TranslatePrim(ip="/pSphere1", fi=True, proxy="AL_usdmaya_ProxyShape1")
+        mc.AL_usdmaya_TranslatePrim(ip="/pSphere1", fi=True, proxy="AL_usdmaya_Proxy")
      
         self.assertTrue(len(mc.ls('pSphere1')))
         self.assertEqual(len(mc.ls(type='mesh')), 1)
@@ -186,19 +186,19 @@ class testTranslator(unittest.TestCase):
             
     
         # force the import
-        mc.AL_usdmaya_TranslatePrim(ip="/parent/pSphere1", fi=True, proxy="AL_usdmaya_ProxyShape1")
+        mc.AL_usdmaya_TranslatePrim(ip="/parent/pSphere1", fi=True, proxy="AL_usdmaya_Proxy")
         self.assertEqual(len(mc.ls('pSphere1')), 1)
         self.assertEqual(len(mc.ls(type='mesh')), 1)
         self.assertEqual(len(mc.ls('parent')), 1)
     
         # force the teardown 
-        mc.AL_usdmaya_TranslatePrim(tp="/parent/pSphere1", fi=True, proxy="AL_usdmaya_ProxyShape1")
+        mc.AL_usdmaya_TranslatePrim(tp="/parent/pSphere1", fi=True, proxy="AL_usdmaya_Proxy")
         self.assertEqual(len(mc.ls('pSphere1')), 0)
         self.assertEqual(len(mc.ls(type='mesh')), 0)
         self.assertEqual(len(mc.ls('parent')), 0)
     
         # force the import
-        mc.AL_usdmaya_TranslatePrim(ip="/parent/pSphere1", fi=True, proxy="AL_usdmaya_ProxyShape1")
+        mc.AL_usdmaya_TranslatePrim(ip="/parent/pSphere1", fi=True, proxy="AL_usdmaya_Proxy")
         self.assertEqual(len(mc.ls('pSphere1')), 1)
         self.assertEqual(len(mc.ls(type='mesh')), 1)
         self.assertEqual(len(mc.ls('parent')), 1)
@@ -211,7 +211,7 @@ class testTranslator(unittest.TestCase):
               
         # force the import
         stage = self._importStageWithSphere()
-        mc.AL_usdmaya_TranslatePrim(ip="/pSphere1", fi=True, proxy="AL_usdmaya_ProxyShape1")
+        mc.AL_usdmaya_TranslatePrim(ip="/pSphere1", fi=True, proxy="AL_usdmaya_Proxy")
      
         stage.SetEditTarget(stage.GetSessionLayer())
       
@@ -221,7 +221,7 @@ class testTranslator(unittest.TestCase):
         mc.delete()
       
         preSession = stage.GetEditTarget().GetLayer().ExportToString();
-        mc.AL_usdmaya_TranslatePrim(tp="/pSphere1", proxy="AL_usdmaya_ProxyShape1")
+        mc.AL_usdmaya_TranslatePrim(tp="/pSphere1", proxy="AL_usdmaya_Proxy")
         postSession = stage.GetEditTarget().GetLayer().ExportToString()
               
         # Introspect the layer to determine if data has been written
@@ -247,7 +247,7 @@ class testTranslator(unittest.TestCase):
 #  
 #         # the MeshA should now be in the scene
 #         variantSet.SetVariantSelection("ShowMeshA")
-#         mc.AL_usdmaya_TranslatePrim(ip="/TestVariantSwitch/MeshA", fi=True, proxy="AL_usdmaya_ProxyShape1") # force the import
+#         mc.AL_usdmaya_TranslatePrim(ip="/TestVariantSwitch/MeshA", fi=True, proxy="AL_usdmaya_Proxy") # force the import
 #         self.assertEqual(len(mc.ls('MeshA')), 1)
 #         self.assertEqual(len(mc.ls('MeshB')), 0)
 #         self.assertEqual(len(mc.ls(type='mesh')), 1)
@@ -264,15 +264,15 @@ class testTranslator(unittest.TestCase):
 #         # the MeshB should now be in the scene
 #         variantSet.SetVariantSelection("ShowMeshB")
 #         #print stage.ExportToString()
-#         mc.AL_usdmaya_TranslatePrim(ip="/TestVariantSwitch/MeshB", fi=True, proxy="AL_usdmaya_ProxyShape1") # force the import
+#         mc.AL_usdmaya_TranslatePrim(ip="/TestVariantSwitch/MeshB", fi=True, proxy="AL_usdmaya_Proxy") # force the import
 #         self.assertEqual(len(mc.ls('MeshA')), 0)
 #         self.assertEqual(len(mc.ls('MeshB')), 1)
 #         self.assertEqual(len(mc.ls(type='mesh')), 1)
 #  
 #         # the MeshA and MeshB should be in the scene
 #         variantSet.SetVariantSelection("ShowMeshAnB")
-#         mc.AL_usdmaya_TranslatePrim(ip="/TestVariantSwitch/MeshB", fi=True, proxy="AL_usdmaya_ProxyShape1") # force the import
-#         mc.AL_usdmaya_TranslatePrim(ip="/TestVariantSwitch/MeshA", fi=True, proxy="AL_usdmaya_ProxyShape1") # force the import
+#         mc.AL_usdmaya_TranslatePrim(ip="/TestVariantSwitch/MeshB", fi=True, proxy="AL_usdmaya_Proxy") # force the import
+#         mc.AL_usdmaya_TranslatePrim(ip="/TestVariantSwitch/MeshA", fi=True, proxy="AL_usdmaya_Proxy") # force the import
 #  
 #         self.assertEqual(len(mc.ls('MeshA')), 1)
 #         self.assertEqual(len(mc.ls('MeshB')), 1)
