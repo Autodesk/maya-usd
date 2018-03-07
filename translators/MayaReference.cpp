@@ -430,7 +430,6 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
     AL_MAYA_CHECK_ERROR(status, "failed to execute reference attr modifier");
   }
 
-  context->insertItem(prim, parent);
   return MS::kSuccess;
 }
 

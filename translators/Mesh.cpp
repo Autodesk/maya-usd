@@ -50,6 +50,8 @@ MStatus Mesh::initialize()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Mesh::import(const UsdPrim& prim, MObject& parent)
 {
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("Mesh::import prim=%s\n", prim.GetPath().GetText());
+
   const AL::usdmaya::nodes::ProxyShape* proxyShape = context()->getProxyShape();
 
   const UsdGeomMesh mesh(prim);
