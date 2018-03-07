@@ -2,7 +2,7 @@
 
 ## Build Requirements
 - This project is buildable, for now only on Linux
-- USD-0.8.2 built with ptex-2.0.40 (<2.0.41)
+- USD-0.8.3 built with ptex-2.0.40 (<2.0.41)
 - Qt-5.6.1
 - [google test framework](https://github.com/google/googletest) (>1.8.0) to build and run the tests
 - It has been tested  on CentOS 6.6

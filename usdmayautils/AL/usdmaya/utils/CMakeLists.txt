@@ -41,8 +41,6 @@ target_link_libraries(${USDMAYA_UTILS_LIBRARY_NAME}
   usd
   usdGeom
   usdUtils
-  usdImaging
-  usdImagingGL
   vt
   rt
   ${Boost_PYTHON_LIBRARY}
