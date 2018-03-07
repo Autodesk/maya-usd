@@ -1,12 +1,14 @@
 # Building
 
 ## Build Requirements
-- This project is buildable on a variety of Linux platforms
+- This project is buildable on a variety of Linux platforms (It has been tested extensively on CentOS 6.6)
 - There is a windows branch which is a bit out of date (https://github.com/AnimalLogic/AL_USDMaya/tree/windows_build_dev) which we should merge
 - Currently building against USD-0.8.3 built with ptex-2.0.40 (<2.0.41)
 - Qt-5.6.1
 - [google test framework](https://github.com/google/googletest) (>1.8.0) to build and run the tests
-- It has been tested extensively on CentOS 6.6
+- GLEW: Maya (certainly up to 2018) uses a very old build of GLEW. We've found that both to use the latest OpenGL 4x features that Hydra exploits, and for stability reasons, you should use a newer version (e.g GLEW 2.0). We've had to LD_PRELOAD GLEW 2.0 to make this happen. 
+
+
 
 ## Supported Maya Versions 
 + maya-2016 extension 2
