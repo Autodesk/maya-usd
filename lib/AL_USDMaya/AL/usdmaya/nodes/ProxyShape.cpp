@@ -73,6 +73,7 @@ typedef boost::filesystem::path path;
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/usd/stageCacheContext.h"
+#include "pxr/usd/usd/notice.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/meshAdapter.h"
 #include "pxr/usd/usdUtils/stageCache.h"
@@ -1056,16 +1057,16 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     }
   };
 
-  const SdfPathVector& resyncedPaths = notice.GetResyncedPaths();
-  for(const SdfPath& path : resyncedPaths)
+  const UsdNotice::ObjectsChanged::PathRange resyncedPaths = notice.GetResyncedPaths();
+  for(auto path : resyncedPaths)
   {
     UsdPrim newPrim = m_stage->GetPrimAtPath(path);
     recordSelectablePrims(newPrim);
     recordPrimsLockStatus(newPrim);
   }
 
-  const SdfPathVector& changedInfoOnlyPaths = notice.GetChangedInfoOnlyPaths();
-  for(const SdfPath& path : changedInfoOnlyPaths)
+  const UsdNotice::ObjectsChanged::PathRange changedInfoOnlyPaths = notice.GetChangedInfoOnlyPaths();
+  for(auto path : changedInfoOnlyPaths)
   {
     UsdPrim changedPrim;
     if(path.IsPropertyPath())
