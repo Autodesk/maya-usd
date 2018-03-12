@@ -14,8 +14,9 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
 #include "maya/MSceneMessage.h"
+#include "AL/usd/utils/ForwardDeclares.h"
+#include "AL/event/EventHandler.h"
 
 namespace AL {
 namespace usdmaya {
@@ -35,16 +36,36 @@ public:
   /// \brief  uninitialise the global state
   static void onPluginUnload();
 
+  /// pre save callback
+  static AL::event::CallbackId preSave()
+    { return m_preSave; }
+
+  /// post save callback
+  static AL::event::CallbackId postSave()
+    { return m_postSave; }
+
+  /// pre open callback
+  static AL::event::CallbackId preRead()
+    { return m_preRead; }
+
+  /// post open callback
+  static AL::event::CallbackId postRead()
+    { return m_postRead; }
+
+  /// callback used to flush the USD caches after a file new
+  static AL::event::CallbackId fileNew()
+    { return m_fileNew; }
+
 private:
-  static MCallbackId m_preSave;  ///< callback prior to saving the scene (so we can store the session layer)
-  static MCallbackId m_postSave; ///< callback after saving
-  static MCallbackId m_preOpen;  ///< callback executed before opening a maya file
-  static MCallbackId m_postOpen; ///< callback executed after opening a maya file - needed to re-hook up the UsdPrims
-  static MCallbackId m_fileNew;  ///< callback used to flush the USD caches after a file new
+  static AL::event::CallbackId m_preSave;  ///< callback prior to saving the scene (so we can store the session layer)
+  static AL::event::CallbackId m_postSave; ///< callback after saving
+  static AL::event::CallbackId m_preRead;  ///< callback executed before opening a maya file
+  static AL::event::CallbackId m_postRead; ///< callback executed after opening a maya file - needed to re-hook up the UsdPrims
+  static AL::event::CallbackId m_fileNew;  ///< callback used to flush the USD caches after a file new
 };
 
-} // usdmaya
 //----------------------------------------------------------------------------------------------------------------------
+} // usdmaya
 } // al
 //----------------------------------------------------------------------------------------------------------------------
 

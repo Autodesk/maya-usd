@@ -18,7 +18,6 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 
-#include "AL/usdmaya/Common.h"
 #include "AL/usdmaya/nodes/proxy/DrivenTransforms.h"
 #include "maya/MPxData.h"
 #include "maya/MVector.h"
@@ -26,6 +25,7 @@
 
 #include <vector>
 #include <string>
+#include "AL/usd/utils/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

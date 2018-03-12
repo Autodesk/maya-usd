@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #pragma once
+#include <AL/usdmaya/ForwardDeclares.h>
 #include "AL/usdmaya/fileio/ImportParams.h"
-
 #include "maya/MPxCommand.h"
 
 #include "pxr/pxr.h"
@@ -86,9 +86,12 @@ public:
       nodes::ProxyShape* proxy,
       const std::vector<UsdPrim>& objsToCreate);
 
+  /// \brief  updates the list of UsdPrims after a variant switch (but when the nodes have not changed)
+  /// \param  proxy the proxy shape to update
+  /// \param  objsToUpdate the list of prims to be updated
   static void updateSchemaPrims(
       nodes::ProxyShape* proxy,
-      const std::vector<UsdPrim>& objsToCreate);
+      const std::vector<UsdPrim>& objsToUpdate);
 
 private:
   static fileio::ImporterParams m_params;

@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
-
+#include "AL/usdmaya/ForwardDeclares.h"
+#include "AL/maya/utils/MayaHelperMacros.h"
 #include "maya/MDGModifier.h"
 #include "maya/MObject.h"
 #include "maya/MPxCommand.h"
@@ -24,11 +24,10 @@
 #include "pxr/usd/usd/stage.h"
 #include <functional>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace AL {
 namespace usdmaya {
 namespace cmds {
+
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Helper class
 /// \ingroup commands
@@ -58,11 +57,11 @@ public:
   /// \return the new data base
   MArgDatabase makeDatabase(const MArgList& args);
 
-  /// \brief  hunt for the first node of the specified type found in the selection list object args
-  /// \param  args the pre-parsed argument data base
-  /// \param  typeId the typeId of the object type that may appear as one of the selected objects
-  /// \return the MObject of the node if found
-  MObject getSelectedNode(const MArgDatabase& args, const MTypeId typeId);
+//  /// \brief  hunt for the first node of the specified type found in the selection list object args
+//  /// \param  args the pre-parsed argument data base
+//  /// \param  typeId the typeId of the object type that may appear as one of the selected objects
+//  /// \return the MObject of the node if found
+//  MObject getSelectedNode(const MArgDatabase& args, const MTypeId typeId);
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -80,32 +79,6 @@ private:
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  Given some selected proxy shape node, create a new sub layer for the current edit target
-/// \ingroup commands
-//----------------------------------------------------------------------------------------------------------------------
-class LayerCreateSubLayer
-  : public LayerCommandBase
-{
-  UsdStageRefPtr m_stage;
-  SdfLayerHandle m_rootLayer;
-  MString m_layerName;
-  MString m_filePath;
-  MObject m_layerNode;
-  nodes::Layer* m_newLayer;
-  nodes::Layer* m_parentLayer;
-  nodes::ProxyShape* m_shape;
-  bool m_isOpening;
-
-public:
-  AL_MAYA_DECLARE_COMMAND();
-private:
-  bool isUndoable() const override;
-  MStatus undoIt() override;
-  MStatus redoIt() override;
-  MStatus doIt(const MArgList& args) override;
-};
-
-//----------------------------------------------------------------------------------------------------------------------
 /// \brief  Given some selected or passed in proxy shape node, create a layer in maya parented to the layer
 ///  matching the identifier passed in, else parents to the rootlayer.
 /// \ingroup commands
@@ -116,13 +89,11 @@ class LayerCreateLayer
 {
   UsdStageRefPtr m_stage;
   SdfLayerHandle m_rootLayer;
-  MString m_layerName;
+  SdfLayerRefPtr m_newLayer;
   MString m_filePath;
-  MObject m_layerNode;
-  nodes::Layer* m_newLayer;
-  MString m_parentLayerName;
-  nodes::Layer* m_parentLayer;
   nodes::ProxyShape* m_shape;
+  bool m_addSublayer = false;
+  bool m_layerWasInserted;
 
 public:
   AL_MAYA_DECLARE_COMMAND();
@@ -168,11 +139,10 @@ private:
 class LayerCurrentEditTarget
   : public LayerCommandBase
 {
-  LayerCurrentEditTarget(): m_usdLayer(nullptr){}
+  LayerCurrentEditTarget() {}
   UsdEditTarget previous;
   UsdEditTarget next;
   UsdStageRefPtr stage;
-  nodes::Layer* m_usdLayer;
   bool isQuery;
   bool previouslyAnEditTarget;
   std::function<std::string(SdfLayerHandle)> getLayerId;

@@ -14,13 +14,14 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 
 #include "maya/MPxCommand.h"
 
 #include "pxr/pxr.h"
 #include <pxr/base/tf/token.h>
+#include "AL/usdmaya/utils/ForwardDeclares.h"
+#include "AL/maya/utils/MayaHelperMacros.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -16,9 +16,8 @@
 #include "test_usdmaya.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
-#include "AL/usdmaya/nodes/Layer.h"
+#include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/StageCache.h"
-#include "AL/usdmaya/Utils.h"
 #include "maya/MFnTransform.h"
 #include "maya/MSelectionList.h"
 #include "maya/MGlobal.h"
@@ -34,6 +33,7 @@
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 #include "pxr/usd/sdf/layer.h"
 #include <functional>
+#include "AL/usdmaya/utils/Utils.h"
 
 //  Layer();
 //  void init(ProxyShape* shape, SdfLayerHandle handle);
@@ -58,7 +58,6 @@ TEST(LayerCommands, layerCreateLayerTests)
     auto stage = proxyShape->getUsdStage();
 
     SdfLayerHandle layer = stage->GetRootLayer();
-    AL::usdmaya::nodes::Layer* root = proxyShape->findLayer(layer);
 
     MStatus result = MGlobal::executeCommand("ls -type \"AL_usdmaya_Layer\"", true);
     EXPECT_EQ(result, MStatus::kSuccess);
@@ -66,7 +65,7 @@ TEST(LayerCommands, layerCreateLayerTests)
     SdfLayerRefPtr handle = SdfLayer::FindOrOpen(testLayer); // hold a strong reference to it.
 
     std::stringstream ss;
-    ss << "AL_usdmaya_LayerCreateLayer -o \"" << testLayer  <<  "\" -p \"" << AL::usdmaya::convert(proxyShape->name()) << "\"" << std::endl;
+    ss << "AL_usdmaya_LayerCreateLayer -o \"" << testLayer  <<  "\" -p \"" << AL::maya::utils::convert(proxyShape->name()) << "\"" << std::endl;
     result = MGlobal::executeCommand(ss.str().c_str(), true);
     EXPECT_EQ(result, MStatus::kSuccess);
 
@@ -77,9 +76,42 @@ TEST(LayerCommands, layerCreateLayerTests)
     SdfLayerHandle expectedLayer = SdfLayer::Find(testLayer);
     EXPECT_TRUE(expectedLayer);
 
-    // Check that it is a child of the right layer
-    AL::usdmaya::nodes::Layer* refoundExpectedLayer = root->findChildLayer(expectedLayer);
+    // Check that we can refind the layer
+    AL::usdmaya::nodes::LayerManager* layerManager = AL::usdmaya::nodes::LayerManager::findManager();
+    EXPECT_TRUE(layerManager);
+    SdfLayerHandle refoundExpectedLayer = layerManager->findLayer(expectedLayer->GetIdentifier());
     EXPECT_TRUE(refoundExpectedLayer);
+    EXPECT_EQ(refoundExpectedLayer, expectedLayer);
   }
 }
+
+// Test that I can successfully create and add a sublayer to the RootLayer
+TEST(LayerCommands, addSubLayer)
+{
+  MFileIO::newFile(true);
+  MString shapeName;
+  const std::string temp_path = "/tmp/AL_USDMayaTests_addSubLayer.usda";
+
+  std::function<UsdStageRefPtr()>  constructTransformChain = [] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    return stage;
+  };
+
+  AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(constructTransformChain, temp_path);
+
+  EXPECT_EQ(proxyShape->getUsdStage()->GetLayerStack().size(), 2); //Session layer and RootLayer
+
+  // Add anonymous layer to the sublayers
+  MGlobal::executeCommand("AL_usdmaya_LayerCreateLayer -s -o \"\" -p \"AL_usdmaya_ProxyShape1\"");
+  EXPECT_EQ(proxyShape->getUsdStage()->GetLayerStack().size(), 3); // With added anonymous layer
+
+  const MString testLayer = MString(AL_USDMAYA_TEST_DATA) + MString("/root.usda");
+  MString c;
+  c.format(MString("AL_usdmaya_LayerCreateLayer -s -o \"^1s\" -p \"AL_usdmaya_ProxyShape1\""), testLayer);
+
+  MGlobal::executeCommand(c);
+  EXPECT_EQ(proxyShape->getUsdStage()->GetLayerStack().size(), 4); // With added named layer
+}
+
 

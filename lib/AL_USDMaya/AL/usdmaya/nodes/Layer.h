@@ -14,15 +14,16 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
-#include "AL/maya/NodeHelper.h"
+#include <AL/usdmaya/ForwardDeclares.h>
+#include "AL/maya/utils/NodeHelper.h"
+#include "AL/maya/utils/MayaHelperMacros.h"
+#include "AL/usdmaya/utils/ForwardDeclares.h"
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
-
 #include "maya/MPxLocatorNode.h"
-
 #include <map>
 #include <set>
+
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -32,111 +33,18 @@ namespace nodes {
 
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  The layer node stores a reference to an SdfLayer.
+/// \brief  The layer node stores a reference to an SdfLayer. Obsolete. LayerManager now used instead.
 /// \ingroup nodes
 //----------------------------------------------------------------------------------------------------------------------
 class Layer
   : public MPxNode,
-    public maya::NodeHelper
+    public AL::maya::utils::NodeHelper
 {
 public:
 
   /// \brief  ctor
   inline Layer()
-    : MPxNode(), NodeHelper(), m_handle(), m_shape(0) {}
-
-  /// \brief  Called within the proxy shape to initialise the layer to the specified proxy shape and layer handle.
-  /// \param  shape the proxy shape
-  /// \param  handle the layer to initialise this node to
-  void init(ProxyShape* shape, SdfLayerRefPtr handle);
-
-  /// \brief  get access to the internal layer handle this node represents
-  /// \return the layer handle for this node
-  inline SdfLayerHandle getHandle()
-    { return m_handle; }
-
-  /// \brief  convert a usd display name into something maya can use as a node name
-  /// \param  name the name of a usd prim
-  /// \return the maya node name for that prim
-  static MString toMayaNodeName(std::string name);
-
-  //--------------------------------------------------------------------------------------------------------------------
-  /// Methods to work with sublayers
-  //--------------------------------------------------------------------------------------------------------------------
-
-  /// \brief  returns an array of all the sub layers connected to this layer
-  std::vector<Layer*> getSubLayers();
-
-  /// \brief  returns an array of all the child layers connected to this layer (assets essentially)
-  std::vector<Layer*> getChildLayers();
-
-  /// \brief  constructs the sub layers after a proxy shape has loaded.
-  /// \param  pmodifier pointer to a modifier that will record the nodes added (primarily if you need to keep hold of
-  ///         information for undo later). doIt() will NOT have been called prior to the function returning.
-  void buildSubLayers(MDGModifier* pmodifier = 0);
-
-  /// \brief  adds a new sub layer to this layer
-  /// \param  subLayer the new layer to add as a sub layer of this one
-  /// \param  pmodifier optional modifier to use to build up undo/redo. This method does not call do it on the modifier.
-  ///         If no modifier is specified, then the connections are made immediately.
-  void addSubLayer(Layer* subLayer, MDGModifier* pmodifier = 0);
-
-  /// \brief  removes a sub layer from this layer
-  /// \param  subLayer the layer to remove
-  bool removeSubLayer(Layer* subLayer);
-
-  /// \brief  removes a child layer from this layer
-  /// \param  childLayer the layer to remove
-  bool removeChildLayer(Layer* childLayer);
-
-  /// \brief  adds a new child layer to this layer
-  /// \param  childLayer the new layer to add as a child layer of this one
-  /// \param  modifier optional modifier to use to build up undo/redo. This method does not call do it on the modifier.
-  ///         If no modifier is specified, then the connections are made immediately.
-  void addChildLayer(Layer* childLayer, MDGModifier* modifier = 0);
-
-  /// \brief  returns the parent layer (or NULL)
-  /// \return the parent layer (or null)
-  Layer* getParentLayer();
-
-  /// \brief  returns the plug to the parent layer message attribute
-  MPlug parentLayerPlug();
-
-  /// \brief  locate a layer within usdmaya's recorded sublayers and referenced layers
-  /// \param  handle the handle to the layer to locate
-  /// \return a pointer to the layer if found, NULL otherwise.
-  Layer* findLayer(SdfLayerHandle handle);
-  //----------------------------------------------------------------------------------------------------------------------
-  /// \brief  locate a layer within usdmaya's recorded sublayers
-  /// \param  handle the handle to the layer to locate
-  /// \return a pointer to the layer if found, NULL otherwise.
-  Layer* findSubLayer(SdfLayerHandle handle);
-  //----------------------------------------------------------------------------------------------------------------------
-  /// \brief  locate a layer within usdmaya's recorded childlayers
-  /// \param  handle the handle to the layer to locate
-  /// \return a pointer to the layer if found, NULL otherwise.
-  Layer* findChildLayer(SdfLayerHandle handle);
-  //--------------------------------------------------------------------------------------------------------------------
-  /// Methods to handle the saving and restoring of layer data
-  //--------------------------------------------------------------------------------------------------------------------
-
-  /// \brief  return true if this layer has been set as the edit target at some point during the proxy having been loaded
-  ///         into maya.
-  bool hasBeenTheEditTarget() const;
-
-  /// \brief  Sets a flag that indicates whether this layer has been set as the edit target.
-  /// \param  value
-  void setHasBeenTheEditTarget(bool value);
-
-  /// \brief  If the 'serialized' string attribute has data, then this method will initialize the layer specified to
-  ///         the contents of the serialized attribute. This is primarily a mechanism for storing edits when the
-  ///         maya scene is saved.
-  /// \param  handle the handle to initialize
-  void setLayerAndClearAttribute(SdfLayerHandle handle);
-
-  /// \brief  If the 'hasBeenTheEditTarget' flag is true, this method will copy the contents of the layer this node
-  ///         is referencing, into the 'serialized' attribute prior to saving the Maya file.
-  void populateSerialisationAttributes();
+    : MPxNode(), NodeHelper() {}
 
   //--------------------------------------------------------------------------------------------------------------------
   /// Type Info & Registration
@@ -176,29 +84,7 @@ public:
   AL_DECL_ATTRIBUTE(nameOnLoad);
   AL_DECL_ATTRIBUTE(hasBeenEditTarget);
 
-  /// \brief  return a pointer to the proxy shape that owns this node
-  /// \return the proxy shape
-  ProxyShape* getProxyShape() const
-    { return m_shape; }
-
-  // ----------------  API FOR UNIT TESTING ONLY -------------------------
-  /// \brief  Internal function for unit tests only
-  inline void testing_clearHandle()
-    { m_handle = SdfLayerRefPtr(); }
-  // ---------------------------------------------------------------------
-
 private:
-  SdfLayerRefPtr m_handle; ///< reference to the USD layer
-  ProxyShape* m_shape; ///< reference to the proxy shape
-
-  //--------------------------------------------------------------------------------------------------------------------
-  /// MPxNode overrides
-  //--------------------------------------------------------------------------------------------------------------------
-
-  void postConstructor() override;
-  bool getInternalValueInContext(const MPlug& plug, MDataHandle& dataHandle, MDGContext& ctx) override;
-  bool setInternalValueInContext(const MPlug& plug, const MDataHandle& dataHandle, MDGContext& ctx) override;
-
 
   /// \var    static MObject comment();
   /// \brief  access the comment attribute handle

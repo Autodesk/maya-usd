@@ -10,6 +10,7 @@ enable_testing()
 add_executable(testMayaSchemas
     main.cpp
     testMayaSchemas.cpp
+    testModelAPI.cpp  
     )
 
 target_include_directories(testMayaSchemas
@@ -25,4 +26,8 @@ target_link_libraries(testMayaSchemas
 
 install(TARGETS testMayaSchemas DESTINATION bin)
 
-add_test(TestAdditionalSchemas testMayaSchemas)
+add_test(
+    NAME TestAdditionalSchemas 
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMAND RunTests.sh ${CMAKE_INSTALL_PREFIX} $<TARGET_FILE_DIR:usd>
+)

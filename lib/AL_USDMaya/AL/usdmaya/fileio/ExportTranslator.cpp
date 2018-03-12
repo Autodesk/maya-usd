@@ -30,7 +30,7 @@ namespace usdmaya {
 namespace fileio {
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus ExportTranslator::writer(const MFileObject& file, const maya::OptionsParser& options, FileAccessMode mode)
+MStatus ExportTranslator::writer(const MFileObject& file, const AL::maya::utils::OptionsParser& options, FileAccessMode mode)
 {
   static const std::unordered_set<std::string> ignoredNodes
   {

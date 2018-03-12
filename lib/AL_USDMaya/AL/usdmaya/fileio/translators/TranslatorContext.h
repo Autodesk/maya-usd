@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
+#include <AL/usdmaya/ForwardDeclares.h>
 #include "maya/MPxData.h"
 #include "maya/MGlobal.h"
 #include "maya/MObject.h"
@@ -24,9 +24,12 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/usd/usd/prim.h"
+#include "pxr/base/tf/debug.h"
+#include "AL/usdmaya/DebugCodes.h"
 
 #include <vector>
 #include <string>
+#include "AL/usd/utils/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -169,6 +172,7 @@ public:
     {
       return it->type();
     }
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getTypeForPath did not find item in mapping.%s\n", path.GetText());
     return TfToken();
   }
 
@@ -251,18 +255,18 @@ public:
     MObject object() const
       { return objectHandle().object(); }
 
-    /// \brief  the
-    /// \return the maya node for this reference
+    /// \brief  get the prim type
+    /// \return the type stored for this prim
     TfToken type() const
       { return m_type; }
 
-    /// \brief  the
-    /// \return the maya node for this reference
+    /// \brief  get created maya nodes
+    /// \return the created maya nodes for this prim translator
     MObjectHandleArray& createdNodes()
       { return m_createdNodes; }
 
-    /// \brief  the
-    /// \return the maya node for this reference
+    /// \brief  get created maya nodes
+    /// \return the created maya nodes for this prim translator
     const MObjectHandleArray& createdNodes() const
       { return m_createdNodes; }
 

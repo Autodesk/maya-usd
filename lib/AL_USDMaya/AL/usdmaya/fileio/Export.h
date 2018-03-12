@@ -14,12 +14,13 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
 
 #include "maya/MPxCommand.h"
 
 #include "pxr/pxr.h"
+#include "AL/usdmaya/utils/ForwardDeclares.h"
+#include "AL/maya/utils/MayaHelperMacros.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -66,6 +67,8 @@ private:
   UsdPrim exportPluginLocatorNode(MDagPath path, const SdfPath& usdPath);
   UsdPrim exportPluginShape(MDagPath path, const SdfPath& usdPath);
   UsdPrim exportCamera(MDagPath path, const SdfPath& usdPath);
+  void exportIkChain(MDagPath effectorPath, const SdfPath& usdPath);
+  void exportGeometryConstraint(MDagPath effectorPath, const SdfPath& usdPath);
   void copyTransformParams(UsdPrim prim, MFnTransform& fnTransform);
 
   struct Impl;

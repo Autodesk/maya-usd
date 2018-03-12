@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/SIMD.h"
-#include "AL/usdmaya/Utils.h"
+#include "AL/usdmaya/utils/SIMD.h"
+#include "AL/usdmaya/utils/Utils.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
@@ -69,7 +69,7 @@ static void doubleToFloat(float* output, const double* const input, size_t count
 constexpr auto _alusd_colour = "alusd_colour_";
 
 //----------------------------------------------------------------------------------------------------------------------
-#if AL_MAYA_ENABLE_SIMD
+#if AL_UTILS_ENABLE_SIMD
 #if defined(__AVX2__)
 static void convert3Dto4d_avx(f256 a, f256 b, f256 c, float* const output)
 {
@@ -151,7 +151,7 @@ static void convert3Dto4d(const float* const c, float* const output, uint32_t co
 //----------------------------------------------------------------------------------------------------------------------
 void convert3DArrayTo4DArray(const float* const input, float* const output, size_t count)
 {
-#if AL_MAYA_ENABLE_SIMD
+#if AL_UTILS_ENABLE_SIMD
 # if defined(__AVX2__) && ENABLE_SOME_AVX_ROUTINES
   size_t count8 = count >> 3;
   bool count4 = (count & 0x4) != 0;
@@ -204,7 +204,7 @@ void convert3DArrayTo4DArray(const float* const input, float* const output, size
 //----------------------------------------------------------------------------------------------------------------------
 void convertFloatVec3ArrayToDoubleVec3Array(const float* const input, double* const output, size_t count)
 {
-#if AL_MAYA_ENABLE_SIMD
+#if AL_UTILS_ENABLE_SIMD
   const f128* const input128 = (const f128*)input;
   d128* const output128 = (d128*)output;
   const size_t count4 = count >> 2;
@@ -247,7 +247,7 @@ void convertFloatVec3ArrayToDoubleVec3Array(const float* const input, double* co
 //----------------------------------------------------------------------------------------------------------------------
 void generateIncrementingIndices(MIntArray& indices, const size_t count)
 {
-#if AL_MAYA_ENABLE_SIMD
+#if AL_UTILS_ENABLE_SIMD
 # if defined(__AVX2__) && ENABLE_SOME_AVX_ROUTINES
   const size_t padding = count & 0x7ULL;
   const size_t total = count + (padding ? (8 - padding) : 0);
@@ -380,7 +380,7 @@ static void applyHoleFaces(const UsdGeomMesh& mesh, MFnMesh& fnMesh)
 //----------------------------------------------------------------------------------------------------------------------
 void unzipUVs(const float* const uv, float* const u, float* const v, const size_t count)
 {
-#if AL_MAYA_ENABLE_SIMD
+#if AL_UTILS_ENABLE_SIMD
 
 #ifdef __AVX2__
   const size_t count8 = count & ~7ULL;
@@ -943,7 +943,7 @@ static void copyFaceConnectsAndPolyCounts(UsdGeomMesh& mesh, const MFnMesh& fnMe
 //----------------------------------------------------------------------------------------------------------------------
 bool isUvSetDataSparse(const int32_t* uvCounts, const uint32_t count)
 {
-#if AL_MAYA_ENABLE_SIMD
+#if AL_UTILS_ENABLE_SIMD
 # if defined(__AVX2__) && ENABLE_SOME_AVX_ROUTINES
   const i256* counts = (const __m256i*)&uvCounts[0];
   const i256 zero = zero8i();
@@ -988,7 +988,7 @@ bool isUvSetDataSparse(const int32_t* uvCounts, const uint32_t count)
 //----------------------------------------------------------------------------------------------------------------------
 void zipUVs(const float* u, const float* v, float* uv, const size_t count)
 {
-#if AL_MAYA_ENABLE_SIMD
+#if AL_UTILS_ENABLE_SIMD
 # ifdef __AVX2__
 
   uint32_t uvCount8 = count & ~7U;
@@ -1125,7 +1125,7 @@ static void copyUvSetData(UsdGeomMesh& mesh, const MFnMesh& fnMesh, const bool l
 //----------------------------------------------------------------------------------------------------------------------
 void interleaveIndexedUvData(float* output, const float* u, const float* v, const int32_t* indices, const uint32_t numIndices)
 {
-#if AL_MAYA_ENABLE_SIMD
+#if AL_UTILS_ENABLE_SIMD
 
 #if defined(__AVX2__) && ENABLE_SOME_AVX_ROUTINES
 

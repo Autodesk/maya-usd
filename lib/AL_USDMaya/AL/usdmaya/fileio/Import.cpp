@@ -13,9 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/CodeTimings.h"
-#include "AL/maya/DgNodeHelper.h"
-#include "AL/usdmaya/Utils.h"
+#include "AL/usdmaya/CodeTimings.h"
+
+#include "AL/usdmaya/utils/DgNodeHelper.h"
+#include "AL/usdmaya/utils/Utils.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/fileio/Import.h"
@@ -74,7 +75,7 @@ Import::~Import()
 //----------------------------------------------------------------------------------------------------------------------
 void Import::doImport()
 {
-  maya::Profiler::clearAll();
+  AL::usdmaya::Profiler::clearAll();
   AL_BEGIN_PROFILE_SECTION(doImport);
 
   translators::TranslatorContextPtr context = translators::TranslatorContext::create(nullptr);
@@ -196,8 +197,8 @@ void Import::doImport()
 
   std::stringstream strstr;
   strstr << "Breakdown for file: " << m_params.m_fileName << std::endl;
-  maya::Profiler::printReport(strstr);
-  MGlobal::displayInfo(convert(strstr.str()));
+  AL::usdmaya::Profiler::printReport(strstr);
+  MGlobal::displayInfo(AL::maya::utils::convert(strstr.str()));
 }
 
 //----------------------------------------------------------------------------------------------------------------------

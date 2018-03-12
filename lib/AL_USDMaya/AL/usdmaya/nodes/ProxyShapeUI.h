@@ -14,10 +14,8 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
-// warning: This file must be included before the maya api files.
-// Maya #defines 'Bool' which causes a lot of problems with the 'Bool' typename in sdf
 #include "maya/MPxSurfaceShapeUI.h"
+#include "AL/usd/utils/ForwardDeclares.h"
 
 namespace AL {
 namespace usdmaya {

@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
+#include "AL/maya/utils/Utils.h"
 #include "test_usdmaya.h"
-#include "AL/usdmaya/Utils.h"
 #include "maya/MGlobal.h"
 #include "maya/MFileIO.h"
 
@@ -25,7 +26,7 @@ TEST(ExportCommands, exportUV)
   const std::string temp_path = "/tmp/AL_USDMayaTests_exportUV.usda";
   MGlobal::executeCommand(MString("createNode transform -n geo;polyCube -n cube -cuv 2;parent cube geo;select geo"), false, true);
   MString exportCmd;
-  exportCmd.format(MString("AL_usdmaya_ExportCommand -f \"^1s\" -sl 1 -muv 1 -luv 1"), AL::usdmaya::convert(temp_path));
+  exportCmd.format(MString("AL_usdmaya_ExportCommand -f \"^1s\" -sl 1 -muv 1 -luv 1"), AL::maya::utils::convert(temp_path));
   MGlobal::executeCommand(exportCmd, true);
 
   UsdStageRefPtr stage = UsdStage::Open(temp_path);

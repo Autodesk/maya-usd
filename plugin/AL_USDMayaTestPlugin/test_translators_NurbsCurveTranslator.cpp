@@ -19,8 +19,6 @@
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/NodeFactory.h"
 #include "AL/usdmaya/fileio/translators/NurbsCurveTranslator.h"
-#include "AL/usdmaya/Utils.h"
-
 #include "maya/MDagModifier.h"
 #include "maya/MDoubleArray.h"
 #include "maya/MFnDagNode.h"
@@ -30,6 +28,7 @@
 
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/camera.h"
+#include "AL/usdmaya/utils/Utils.h"
 
 using AL::usdmaya::fileio::ExporterParams;
 using AL::usdmaya::fileio::ImporterParams;
@@ -43,7 +42,7 @@ inline SdfPath makeUsdPath(const MDagPath& rootPath, const MDagPath& path)
   const uint32_t rootPathLength = rootPath.length();
   if(!rootPathLength)
   {
-    std::string fpn = AL::usdmaya::convert(path.fullPathName());
+    std::string fpn = AL::maya::utils::convert(path.fullPathName());
     std::replace_if(fpn.begin(), fpn.end(), [](char c) { return c == '|'; }, '/');
     return SdfPath(fpn);
   }
@@ -56,7 +55,7 @@ inline SdfPath makeUsdPath(const MDagPath& rootPath, const MDagPath& path)
   // trim off the root path from the object we are exporting
   newPathString = pathString.substring(rootPathString.length(), pathString.length());
 
-  std::string fpn = AL::usdmaya::convert(newPathString);
+  std::string fpn = AL::maya::utils::convert(newPathString);
   std::replace_if(fpn.begin(), fpn.end(), [](char c) { return c == '|'; }, '/');
   return SdfPath(fpn);
 }

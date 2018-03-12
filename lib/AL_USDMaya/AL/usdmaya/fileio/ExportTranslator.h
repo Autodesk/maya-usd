@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/maya/FileTranslatorBase.h"
+#include "AL/maya/utils/FileTranslatorBase.h"
 
 namespace AL {
 namespace usdmaya {
@@ -25,7 +25,7 @@ namespace fileio {
 ///         AnimalLogic pipeline).
 /// \ingroup   fileio
 //----------------------------------------------------------------------------------------------------------------------
-AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "*.usda", "*.usdc;*.usda;*.usd;*.usdt");
+AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "usda", "*.usdc;*.usda;*.usd;*.usdt");
 
   /// \fn     void* creator()
   /// \brief  creates an instance of the file translator
@@ -53,7 +53,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "*.
   /// \brief  provide a method to specify the export options
   /// \param  options a set of options that are constructed and later used for option parsing
   /// \return MS::kSuccess if ok
-  static MStatus specifyOptions(maya::FileTranslatorOptions& options)
+  static MStatus specifyOptions(AL::maya::utils::FileTranslatorOptions& options)
   {
     ExporterParams defaultValues;
     if(!options.addFrame("AL USD Exporter Options")) return MS::kFailure;
@@ -72,7 +72,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "*.
   }
 
 private:
-  MStatus writer(const MFileObject& file, const maya::OptionsParser& options, FileAccessMode mode);
+  MStatus writer(const MFileObject& file, const AL::maya::utils::OptionsParser& options, FileAccessMode mode);
 
 AL_MAYA_TRANSLATOR_END();
 

@@ -15,7 +15,7 @@
 //
 #include "test_usdmaya.h"
 
-#include "AL/maya/NodeHelper.h"
+#include "AL/maya/utils/NodeHelper.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/translators/MeshTranslator.h"
 

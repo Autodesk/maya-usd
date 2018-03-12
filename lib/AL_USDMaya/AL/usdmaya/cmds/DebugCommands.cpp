@@ -15,7 +15,7 @@
 //
 #include "AL/usdmaya/cmds/DebugCommands.h"
 #include "AL/usdmaya/DebugCodes.h"
-#include "AL/maya/MenuBuilder.h"
+#include "AL/maya/utils/MenuBuilder.h"
 
 #include "pxr/base/tf/debug.h"
 
@@ -186,7 +186,7 @@ global proc AL_usdmaya_debug_gui()
         columnLayout;
       }
       $state = `AL_usdmaya_UsdDebugCommand -st $ii`;
-      $command = "if(#1) AL_usdmaya_UsdDebugCommand -en \"" + $ii + "\"; else AL_usdmaya_UsdDebugCommand -ds \"" + $ii + "\" print(\"moo\");";
+      $command = "if(#1) AL_usdmaya_UsdDebugCommand -en \"" + $ii + "\"; else AL_usdmaya_UsdDebugCommand -ds \"" + $ii + "\";";
       $cb = `checkBox -l $ii -v $state -cc $command`;
     }
     showWindow;
@@ -198,7 +198,7 @@ global proc AL_usdmaya_debug_gui()
 void constructDebugCommandGuis()
 {
   MGlobal::executeCommand(g_usdmaya_debug_gui);
-  maya::MenuBuilder::addEntry("USD/Debug/TfDebug Options", "AL_usdmaya_debug_gui");
+  AL::maya::utils::MenuBuilder::addEntry("USD/Debug/TfDebug Options", "AL_usdmaya_debug_gui");
 }
 
 const char* const UsdDebugCommand::g_helpText =  R"(

@@ -65,6 +65,11 @@ public:
     /// a non-empty typeName.
     static const bool IsConcrete = false;
 
+    /// Compile-time constant indicating whether or not this class inherits from
+    /// UsdTyped. Types which inherit from UsdTyped can impart a typename on a
+    /// UsdPrim.
+    static const bool IsTyped = false;
+
     /// Construct a AL_usd_ModelAPI on UsdPrim \p prim .
     /// Equivalent to AL_usd_ModelAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
@@ -131,12 +136,41 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-
+    /// Set the Selectability of the prim
     void SetSelectability(const TfToken& selectability);
-    TfToken GetSelectabilityValue() const;
 
+    /// Get the current Selectability value on the current prim. If you want to
+    /// determine the current selectability
+    TfToken GetSelectability() const;
+
+    /// Compute this Prims selectability value by looking at it own and it's
+    /// through it's ancestor Prims to determine the hierarhical value.
+    ///
+    /// If one of the ancestors is found to be 'unselectable' then the 'unselectable'
+    /// value is returned and the search stops.
+    ///
+    /// If no selectability value is found in the hierarchy, then the 'inherited' value
+    /// is returned and should be considered 'selectable'.
+    TfToken ComputeSelectabilty() const;
+
+    /// Set the al_usdmaya_lock metadata of the prim.
     void SetLock(const TfToken& lock);
+
+    /// Get the current value of prim's al_usdmaya_lock metadata. If no value
+    /// defined on the prim, "inherited" is returned by default.
     TfToken GetLock() const;
+
+    /// Compute current prim's lock value by inspecting its own metadata and
+    /// walking up the prim hierarchy recursively.
+    ///
+    /// If a prim is found to be "inherited", this API keeps searching its
+    /// parent prim's metadata till it's either "transform" or "unlocked" and
+    /// returns with that value. If the whole hierarchy defining "inherited",
+    /// "inherited" is returned and should be considered as "unlocked".
+    TfToken ComputeLock() const;
+private:
+    typedef std::function<bool(const UsdPrim&, TfToken&)> ComputeLogic;
+    TfToken ComputeHierarchical(const UsdPrim& prim, const ComputeLogic& logic) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

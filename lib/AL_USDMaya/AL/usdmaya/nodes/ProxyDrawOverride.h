@@ -14,11 +14,13 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
 #include "maya/MPxDrawOverride.h"
+#include "AL/usdmaya/ForwardDeclares.h"
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/version.h"
+
+#include "AL/usd/utils/ForwardDeclares.h"
 #if (USD_IMAGING_API_VERSION >= 7)
 # include "pxr/usdImaging/usdImagingGL/hdEngine.h"
 #else
@@ -100,9 +102,14 @@ public:
   /// \brief  We support the legacy and VP2 core profile rendering.
   /// \return MHWRender::kOpenGL | MHWRender::kOpenGLCoreProfile
   MHWRender::DrawAPI supportedDrawAPIs() const override
-  {
-    return MHWRender::kOpenGL | MHWRender::kOpenGLCoreProfile;
-  }
+    { return MHWRender::kOpenGL | MHWRender::kOpenGLCoreProfile; }
+
+#if MAYA_API_VERSION >= 201700
+  /// \brief  ensure this draw override participates in post fx
+  /// \return false
+  bool excludedFromPostEffects() const override
+    { return false; }
+#endif
 };
 
 //----------------------------------------------------------------------------------------------------------------------

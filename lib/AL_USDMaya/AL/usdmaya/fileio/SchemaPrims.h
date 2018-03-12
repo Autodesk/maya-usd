@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 
@@ -23,6 +22,8 @@
 
 #include <unordered_set>
 #include <string>
+#include "AL/maya/utils/ForwardDeclares.h"
+#include "AL/usd/utils/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -15,7 +15,6 @@
 //
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
 #include "AL/usdmaya/AttributeType.h"
-#include "AL/usdmaya/Utils.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/nodes/Transform.h"
@@ -39,6 +38,7 @@
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include "AL/usdmaya/utils/Utils.h"
 
 namespace AL {
 namespace usdmaya {
@@ -508,7 +508,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
 
             double S[3], T[3];
             MEulerRotation R;
-            matrixToSRT(value, S, R, T);
+            AL::usdmaya::utils::matrixToSRT(value, S, R, T);
             MVector rotVector = R.asVector();
             AL_MAYA_CHECK_ERROR2(setAngle(to, m_rotationX, MAngle(rotVector.x, MAngle::kRadians)), xformError);
             AL_MAYA_CHECK_ERROR2(setAngle(to, m_rotationY, MAngle(rotVector.y, MAngle::kRadians)), xformError);

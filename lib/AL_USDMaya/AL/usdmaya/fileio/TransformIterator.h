@@ -14,8 +14,6 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
-
 #include "maya/MObject.h"
 #include "maya/MDagPath.h"
 
@@ -24,6 +22,7 @@
 #include "pxr/usd/usd/prim.h"
 
 #include <vector>
+#include "AL/usd/utils/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

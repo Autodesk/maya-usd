@@ -8,10 +8,18 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/base/plug/registry.h"
+#include "pxr/base/plug/plugin.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+//TF_DECLARE_WEAK_PTRS(PlugPlugin);
 
-/// \brief  Validates the schemas plugin can be loaded and used.
+/// Validates the schemas plugin has been registered
+TEST(testMayaSchemas, verifyPlugin)
+{
+  PlugPluginPtr plug = PlugRegistry::GetInstance().GetPluginWithName("AL_USDMayaSchemas");
+  EXPECT_TRUE(!plug.IsInvalid());
+}
 
 TEST(testMayaSchemas, testMayaReferenceAttributes)
 {
@@ -28,7 +36,6 @@ TEST(testMayaSchemas, testMayaReferenceAttributes)
   primOut.CreateAttribute(
       TfToken("mayaNamespace"),
       SdfValueTypeNames->String).Set(mayaNamespace);
-  ASSERT_TRUE(primOut.GetAttributes().size() == 2);
 
   auto stageIn = UsdStage::Open(stageOut->Flatten());
   auto primIn = stageIn->GetPrimAtPath(primPath);

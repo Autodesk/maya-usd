@@ -1,4 +1,4 @@
-FROM usd-docker/usd:latest-centos6-mayalatest
+FROM knockout:5000/usd-docker/usd:latest-centos6-maya2017
 
 LABEL alusdmaya.version="0.20.2" maintainer="Animal Logic"
 

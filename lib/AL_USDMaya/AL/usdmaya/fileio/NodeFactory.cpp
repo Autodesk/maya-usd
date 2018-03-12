@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usdmaya/Utils.h"
 #include "AL/usdmaya/AttributeType.h"
 #include "AL/usdmaya/fileio/Import.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
@@ -28,6 +27,7 @@
 #include "maya/MObject.h"
 #include "maya/MString.h"
 #include "maya/MFnDependencyNode.h"
+#include "AL/usdmaya/utils/Utils.h"
 
 namespace AL {
 namespace usdmaya {
@@ -101,11 +101,11 @@ MObject NodeFactory::createNode(const UsdPrim& from, const char* const nodeType,
 
       // Write in the shapes parent transform node's path instead of the shape.
       // This was done because we want the xform to be selected when chosen through the outliner instead of the shape.
-      mapUsdPrimToMayaNode(from, parent);
+      AL::usdmaya::utils::mapUsdPrimToMayaNode(from, parent);
     }
     else
     {
-      mapUsdPrimToMayaNode(from, obj);
+      AL::usdmaya::utils::mapUsdPrimToMayaNode(from, obj);
     }
     newNodeName = fn.setName(nodeName);
 

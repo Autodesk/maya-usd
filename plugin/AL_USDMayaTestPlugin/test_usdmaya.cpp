@@ -33,6 +33,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 void comparePlugs(const MPlug& plugA, const MPlug& plugB, bool usdTesting)
 {
+  SCOPED_TRACE(MString("plugA: ") + plugA.name() + " - plugB: " + plugB.name());
   EXPECT_EQ(plugA.isArray(), plugB.isArray());
   EXPECT_EQ(plugA.isElement(), plugB.isElement());
   EXPECT_EQ(plugA.isCompound(), plugB.isCompound());
@@ -682,8 +683,11 @@ void randomAnimatedNode(MObject node, const char* const attributeNames[], const 
 
 AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(std::function<UsdStageRefPtr()> buildUsdStage, const std::string tempPath)
 {
-  UsdStageRefPtr stage = buildUsdStage();
-  stage->Export(tempPath, false);
+  if(buildUsdStage != nullptr)
+  {
+    UsdStageRefPtr stage = buildUsdStage();
+    stage->Export(tempPath, false);
+  }
 
   MFnDagNode fn;
   MObject xform = fn.create("transform");

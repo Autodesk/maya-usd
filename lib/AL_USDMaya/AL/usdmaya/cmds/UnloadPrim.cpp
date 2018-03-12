@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/CommandGuiHelper.h"
-#include "AL/usdmaya/Utils.h"
+#include "AL/maya/utils/CommandGuiHelper.h"
+#include "AL/usdmaya/utils/Utils.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/cmds/UnloadPrim.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
@@ -93,16 +93,16 @@ MStatus ChangeVariant::doIt(const MArgList& args)
     nodes::ProxyShape* proxy = getShapeNode(database);
     if(proxy)
     {
-      auto stage = proxy->getUsdStage();
+      auto stage = proxy->usdStage();
       if(stage)
       {
-        UsdPrim prim = stage->GetPrimAtPath(SdfPath(convert(pp)));
+        UsdPrim prim = stage->GetPrimAtPath(SdfPath(AL::maya::utils::convert(pp)));
         if(prim)
         {
-          UsdVariantSet actualSet = prim.GetVariantSet(convert(vset));
+          UsdVariantSet actualSet = prim.GetVariantSet(AL::maya::utils::convert(vset));
           if(actualSet)
           {
-            if(!actualSet.SetVariantSelection(convert(variant)))
+            if(!actualSet.SetVariantSelection(AL::maya::utils::convert(variant)))
             {
               MGlobal::displayError("could not switch variant");
             }
@@ -167,10 +167,10 @@ MStatus ActivatePrim::doIt(const MArgList& args)
     nodes::ProxyShape* proxy = getShapeNode(database);
     if(proxy)
     {
-      auto stage = proxy->getUsdStage();
+      auto stage = proxy->usdStage();
       if(stage)
       {
-        UsdPrim prim = stage->GetPrimAtPath(SdfPath(convert(pp)));
+        UsdPrim prim = stage->GetPrimAtPath(SdfPath(AL::maya::utils::convert(pp)));
         if(prim)
         {
           prim.SetActive(active);
