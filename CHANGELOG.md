@@ -4,7 +4,7 @@
 + Mesh Translation: Add support for glimpse user data attributes during import / export
 + Added a Translate command "AL_usdmaya_TranslatePrim" that allows you to selectively run the Translator for a set of Prim Paths to either Import or Teardown the prim. Tutorial on the way! 
 + preTearDown writes Meshes Translated to Maya to EditTarget 
-+ Library Refactor: Refactored to seperate code into multiple libraries: see change [DeveloperDocumentation](README.md#Developer-Documentation)
++ Library Refactor: Refactored to seperate code into multiple libraries: see change [DeveloperDocumentation](README.md#developer-documentation)
 
 
 ### Changed
