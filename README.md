@@ -40,11 +40,26 @@ The important parts:
 
 | Location  | Description |
 | ------------- | --------------- |
-| lib           | The real code  |
-| plugin        | maya plugin entry point | 
+| lib           | The AL_USDMaya Library  |
+| plugin        | maya plugin and test plugin| 
 | samples       | mixed bag of test inputs |
 | schemas       | Schemas - Maya specific schemas for which we have translators |
 | translators   | Reference Schema Translator Plugins | 
+| tutorials   | a few tutorials|
+| utils | For now just contains the event System (AL_EventSystem) | 
+| mayautils | a library of code which depends on Maya only  (AL_MayaUtils) |
+| usdutils | a library of code which depends on USD only| 
+| usdmayautils | a library of code which depends on USD and Maya  (AL_USDMayaUtils) |
+
+## Libraries 
+
+| Package | Library  | Folder Hierarchy | Namespaces | Major Dependencies
+| ------------- | ------------- | ------------- | ------------- |  ------------- | 
+| AL_EventSystem | AL_EventSystem.so  | utils/AL/event  | AL::event |  | 
+| AL_MayaUtils | AL_MayaUtils.so  | mayautils/AL/maya/utils  | AL::maya:utils |  Maya
+| AL_USDUtils | AL_USDUtils.so  | usdutils/AL/usd/utils  | AL::usd::utils | USD
+| AL_USDMayaUtils | AL_USDMayaUtils.so  | usdmaya/AL/usdmaya/utils  | AL::usdmaya::utils | USD, Maya
+
 
 ### The code 
 Best to have a look [here](https://animallogic.github.io/AL_USDMaya/modules.html) but a quick summary here:
