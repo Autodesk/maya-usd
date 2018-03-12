@@ -1125,7 +1125,7 @@ void ProxyShape::loadStage()
       AL_BEGIN_PROFILE_SECTION(OpenRootLayer);
 
       // Initialise the asset resolver
-      pxr::ArGetResolver().ConfigureResolverForAsset(fileString);
+      PXR_NS::ArGetResolver().ConfigureResolverForAsset(fileString);
 
       SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString);
       AL_END_PROFILE_SECTION();
