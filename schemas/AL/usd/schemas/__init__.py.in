@@ -1,4 +1,4 @@
-import @SCHEMAS_PYTHON_PACKAGE@
+from . import @SCHEMAS_PYTHON_PACKAGE@
 from pxr import Tf
 Tf.PrepareModule(@SCHEMAS_PYTHON_PACKAGE@, locals())
 del Tf
