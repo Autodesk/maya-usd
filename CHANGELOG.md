@@ -11,6 +11,7 @@
 
 + Tests: TranslatorContext.TranslatorContext was failing because there was an extra insert into the context in the MayaReference import. Also there was a filter on the tests which needed to be nuked!
 + Docs: Small update to build.md
++ Mesh Translation: updated glimpse subdivision attribute handling
 + Store maya_associatedReferenceNode in custom data This is to stop USD from complaining about: "Error in 'pxrInternal_v0_8__pxrReserved__::UsdStage::_HandleLayersDidChange' at line 3355 in file stage.cpp : 'Detected usd threading violation.  Concurrent changes to layer(s) composed in stage 0x185f5a50 rooted at @usdfile.usda@.  (serial=6, lastSerial=12).'
 + Updated AL_usdmaya_LayerCreateLayer command to add layers to Sublayers
 + Proxy Shape and transform nodes names now match
