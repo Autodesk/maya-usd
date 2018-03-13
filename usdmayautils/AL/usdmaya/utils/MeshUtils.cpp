@@ -675,17 +675,38 @@ void applyAnimalEdgeCreases(const UsdPrim& from, MFnMesh& fnMesh)
 //----------------------------------------------------------------------------------------------------------------------
 void applyGlimpseSubdivParams(const UsdPrim& from, MFnMesh& fnMesh)
 {
-  static const TfToken glimpse_gSubdiv("glimpse_gSubdiv");
-  static const TfToken glimpse_gSubdivKeepUvBoundary("glimpse_gSubdivKeepUvBoundary");
-  static const TfToken glimpse_gSubdivLevel("glimpse_gSubdivLevel");
-  static const TfToken glimpse_gSubdivMode("glimpse_gSubdivMode");
-  static const TfToken glimpse_gSubdivPrimSizeMult("glimpse_gSubdivPrimSizeMult");
+  // TODO: ideally, this should be coming from the ALGlimpseMeshAPI
+  // and not be setting the attribute names directly
+  static const TfToken glimpse_gSubdiv("glimpse:subdiv:enabled");
+  static const TfToken glimpse_gSubdivKeepUvBoundary("glimpse:subdiv:keepUvBoundary");
+  static const TfToken glimpse_gSubdivLevel("glimpse:subdiv:level");
+  static const TfToken glimpse_gSubdivMode("glimpse:subdiv:mode");
+  static const TfToken glimpse_gSubdivPrimSizeMult("glimpse:subdiv:primSizeMult");
+  static const TfToken glimpse_gSubdivEdgeLengthMultiplier("glimpse:subdiv:edgeLengthMultiplier");
+
+  static const TfToken primvar_gSubdiv("isSubdiv");
+  static const TfToken primvar_gSubdivLevel("subdivLevel");
+
+  const UsdGeomMesh mesh(from);
 
   UsdAttribute glimpse_gSubdiv_attr = from.GetAttribute(glimpse_gSubdiv);
   UsdAttribute glimpse_gSubdivKeepUvBoundary_attr = from.GetAttribute(glimpse_gSubdivKeepUvBoundary);
   UsdAttribute glimpse_gSubdivLevel_attr = from.GetAttribute(glimpse_gSubdivLevel);
   UsdAttribute glimpse_gSubdivMode_attr = from.GetAttribute(glimpse_gSubdivMode);
   UsdAttribute glimpse_gSubdivPrimSizeMult_attr = from.GetAttribute(glimpse_gSubdivPrimSizeMult);
+  UsdAttribute glimpse_gSubdivEdgeLengthMultiplier_attr = from.GetAttribute(glimpse_gSubdivEdgeLengthMultiplier);
+
+  // if the mesh is coming from alembic the glimpse subdivision
+  // attributes are stored as primvars
+  if (!glimpse_gSubdiv_attr && mesh.HasPrimvar(primvar_gSubdiv))
+  {
+    glimpse_gSubdiv_attr = mesh.GetPrimvar(primvar_gSubdiv);
+  }
+
+  if (!glimpse_gSubdivLevel_attr && mesh.HasPrimvar(primvar_gSubdivLevel))
+  {
+    glimpse_gSubdivLevel_attr = mesh.GetPrimvar(primvar_gSubdivLevel);
+  }
 
   MStatus status;
   if(glimpse_gSubdiv_attr)
@@ -717,7 +738,7 @@ void applyGlimpseSubdivParams(const UsdPrim& from, MFnMesh& fnMesh)
     {
       int32_t value;
       glimpse_gSubdivLevel_attr.Get(&value);
-      plug.setBool(value);
+      plug.setInt(value);
     }
   }
 
@@ -728,7 +749,7 @@ void applyGlimpseSubdivParams(const UsdPrim& from, MFnMesh& fnMesh)
     {
       int32_t value;
       glimpse_gSubdivMode_attr.Get(&value);
-      plug.setBool(value);
+      plug.setInt(value);
     }
   }
 
@@ -739,7 +760,18 @@ void applyGlimpseSubdivParams(const UsdPrim& from, MFnMesh& fnMesh)
     {
       float value;
       glimpse_gSubdivPrimSizeMult_attr.Get(&value);
-      plug.setBool(value);
+      plug.setFloat(value);
+    }
+  }
+
+  if(glimpse_gSubdivEdgeLengthMultiplier_attr)
+  {
+    MPlug plug = fnMesh.findPlug("gSubdivEdgeLengthMultiplier", &status);
+    if(status)
+    {
+      float value;
+      glimpse_gSubdivEdgeLengthMultiplier_attr.Get(&value);
+      plug.setFloat(value);
     }
   }
 }
@@ -1260,6 +1292,7 @@ void copyGlimpseTesselationAttributes(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
   int32_t subdLevel = -1;
   float subdivPrimSizeMult = 1.0f;
   bool keepUvBoundary = false;
+  float subdEdgeLengthMult = 1.0f;
 
   plug = fnMesh.findPlug("gSubdiv", &status); // render as subdivision surfaces
   if (status) plug.getValue(renderAsSubd);
@@ -1280,19 +1313,27 @@ void copyGlimpseTesselationAttributes(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
   plug = fnMesh.findPlug("gSubdivKeepUvBoundary", &status); // render as subdivision surfaces
   if (status) plug.getValue(keepUvBoundary);
 
+  plug = fnMesh.findPlug("gSubdivEdgeLengthMultiplier", &status);
+  if (status) plug.getValue(subdEdgeLengthMult);
+
   UsdPrim prim = mesh.GetPrim();
 
-  static const TfToken token_gSubdiv("glimpse_gSubdiv");
-  static const TfToken token_gSubdivMode("glimpse_gSubdivMode");
-  static const TfToken token_gSubdivLevel("glimpse_gSubdivLevel");
-  static const TfToken token_gSubdivPrimSizeMult("glimpse_gSubdivPrimSizeMult");
-  static const TfToken token_gSubdivKeepUvBoundary("glimpse_gSubdivKeepUvBoundary");
+  // TODO: ideally this would be using the ALGlimpseSubdivAPI to create / set
+  // these attributes. However, it seems from the docs that getting / setting
+  // mesh attributes for custom data is a known issue
+  static const TfToken token_gSubdiv("glimpse:subdiv:enabled");
+  static const TfToken token_gSubdivMode("glimpse:subdiv:mode");
+  static const TfToken token_gSubdivLevel("glimpse:subdiv:level");
+  static const TfToken token_gSubdivPrimSizeMult("glimpse:subdiv:primSizeMult");
+  static const TfToken token_gSubdivKeepUvBoundary("glimpse:subdiv:keepUvBoundary");
+  static const TfToken token_gSubdivEdgeLengthMultiplier("glimpse:subdiv:edgeLengthMultiplier");
 
-  prim.CreateAttribute(token_gSubdiv, SdfValueTypeNames->Bool).Set(renderAsSubd);
-  prim.CreateAttribute(token_gSubdivMode, SdfValueTypeNames->Int).Set(subdMode);
-  prim.CreateAttribute(token_gSubdivLevel, SdfValueTypeNames->Int).Set(subdLevel);
-  prim.CreateAttribute(token_gSubdivPrimSizeMult, SdfValueTypeNames->Float).Set(subdivPrimSizeMult);
-  prim.CreateAttribute(token_gSubdivKeepUvBoundary, SdfValueTypeNames->Bool).Set(keepUvBoundary);
+  prim.CreateAttribute(token_gSubdiv, SdfValueTypeNames->Bool, false).Set(renderAsSubd);
+  prim.CreateAttribute(token_gSubdivMode, SdfValueTypeNames->Int, false).Set(subdMode);
+  prim.CreateAttribute(token_gSubdivLevel, SdfValueTypeNames->Int, false).Set(subdLevel);
+  prim.CreateAttribute(token_gSubdivPrimSizeMult, SdfValueTypeNames->Float, false).Set(subdivPrimSizeMult);
+  prim.CreateAttribute(token_gSubdivKeepUvBoundary, SdfValueTypeNames->Bool, false).Set(keepUvBoundary);
+  prim.CreateAttribute(token_gSubdivEdgeLengthMultiplier, SdfValueTypeNames->Float, false).Set(subdEdgeLengthMult);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
