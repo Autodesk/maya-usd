@@ -935,6 +935,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
     if(isDynamic)
     {
       TfToken attributeName = TfToken(plug.partialName(false, false, false, false, false, true).asChar());
+
       // first test if the attribute happen to come with the prim by nature and we have a mapping rule for it:
       if(prim.HasAttribute(attributeName))
       {

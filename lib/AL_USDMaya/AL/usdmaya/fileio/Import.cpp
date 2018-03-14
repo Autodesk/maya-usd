@@ -140,6 +140,7 @@ void Import::doImport()
       // assembly failed.
       {
 
+
         if(prim.GetTypeName() == "Mesh")
         {
           AL_BEGIN_PROFILE_SECTION(ImportingMesh);

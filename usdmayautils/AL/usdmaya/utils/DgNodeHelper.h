@@ -18,6 +18,7 @@
 #include "maya/MAngle.h"
 #include "maya/MDistance.h"
 #include "maya/MTime.h"
+#include "maya/MDoubleArray.h"
 
 #include <string>
 #include <vector>
@@ -757,6 +758,14 @@ public:
   /// \return MS::kSuccess if all ok
   static MStatus setFloatArray(MObject node, MObject attr, const float* values, size_t count);
 
+  /// \brief  sets the values onto a kFloatArray attribute
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
+  static MStatus setFloatArray(const MObject& node, const MObject& attr, const VtArray<float>& values);
+
   /// \brief  sets all values on a double array attribute on the specified node
   /// \param  node the node on which the attribute exists
   /// \param  attr the handle to the array attribute
@@ -771,6 +780,22 @@ public:
   /// \param  count the number of elements in the values array
   /// \return MS::kSuccess if all ok
   static MStatus setDoubleArray(MObject node, MObject attr, const double* values, size_t count);
+
+  /// \brief  sets the values onto a kDoubleArray attribute
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
+  static MStatus setDoubleArray(const MObject& node, const MObject& attr, const VtArray<double>& values);
+
+  /// \brief  sets the value for a MFnNumericData::kDoubleArray type attribute
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
+  static MStatus setDoubleArray(MObject node, MObject attr, const double* values);
 
   static MStatus setVec2Array(MObject node, MObject attr, const GfHalf* values, size_t count);
   static MStatus setVec2Array(MObject node, MObject attr, const float* values, size_t count);

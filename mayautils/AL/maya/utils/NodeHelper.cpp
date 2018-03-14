@@ -38,6 +38,7 @@
 #include "maya/MDataHandle.h"
 #include "maya/MFnPluginData.h"
 #include "maya/MTime.h"
+#include "maya/MFnDoubleArrayData.h"
 
 #include <sstream>
 #include <cassert>
@@ -373,6 +374,45 @@ MObject NodeHelper::addAngleAttr(const char* longName, const char* shortName, co
   MStatus status = applyAttributeFlags(fn, flags);
   if(!status)
     throw status;
+  return attribute;
+}
+//----------------------------------------------------------------------------------------------------------------------
+
+MObject NodeHelper::addFloatArrayAttr(const MObject& node, const char* longName, const char* shortName, uint32_t flags)
+{
+  if(m_internal)
+  {
+    Frame& frame = *m_internal->m_frames.begin();
+    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
+    {
+      frame.m_attributes.push_back(longName);
+      frame.m_attributeTypes.push_back(Frame::kNormal);
+    }
+  }
+
+  MStatus status;
+  MFnTypedAttribute fnAttr;
+  MString ln (longName);
+  MString sn (shortName);
+
+  MObject attribute = fnAttr.create(ln, sn, MFnData::kFloatArray, MObject::kNullObj, &status);
+
+  if(status != MS::kSuccess)
+  {
+    MGlobal::displayWarning("addFloatArrayAttr:Failed to create attribute");
+  }
+  applyAttributeFlags(fnAttr, flags);
+
+  MFnDependencyNode fn(node, &status);
+  if(!status)
+  {
+    throw status;
+  }
+
+  status = fn.addAttribute(attribute);
+  if(status != MS::kSuccess)
+    MGlobal::displayWarning(MString("addFloatArrayAttr::addAttribute: ") + MString(status.errorString()));
+
   return attribute;
 }
 
@@ -777,6 +817,46 @@ MObject NodeHelper::addVec2dAttr(const char* longName, const char* shortName, ui
   return attribute;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+MObject NodeHelper::addDoubleArrayAttr(const MObject& node, const char* longName, const char* shortName, uint32_t flags)
+{
+  if(m_internal)
+  {
+    Frame& frame = *m_internal->m_frames.begin();
+    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
+    {
+      frame.m_attributes.push_back(longName);
+      frame.m_attributeTypes.push_back(Frame::kNormal);
+    }
+  }
+
+  MStatus status;
+  MFnTypedAttribute fnAttr;
+  MString ln (longName);
+  MString sn (shortName);
+
+  MObject attribute = fnAttr.create(ln, sn, MFnData::kDoubleArray, MObject::kNullObj, &status);
+
+  if(status != MS::kSuccess)
+  {
+    MGlobal::displayWarning("addDoubleArrayAttr:Failed to create attribute");
+  }
+
+  applyAttributeFlags(fnAttr, flags);
+
+  MFnDependencyNode fn(node, &status);
+  if(!status)
+  {
+    throw status;
+  }
+
+  status = fn.addAttribute(attribute);
+
+  if(status != MS::kSuccess)
+    MGlobal::displayWarning(MString("addDoubleArrayAttr::addAttribute: ") + MString(status.errorString()));
+
+  return attribute;
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addVec3fAttr(const char* longName, const char* shortName, uint32_t flags)

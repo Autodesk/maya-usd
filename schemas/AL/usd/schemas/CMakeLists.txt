@@ -39,7 +39,6 @@ configure_file (
 execute_process(
     COMMAND
         usdGenSchema
-            -v
             ${CMAKE_CURRENT_BINARY_DIR}/schema.usda
             .
     WORKING_DIRECTORY

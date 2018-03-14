@@ -33,6 +33,9 @@
 #include "maya/MFnMatrixAttribute.h"
 #include "maya/MFnTypedAttribute.h"
 #include "maya/MFnCompoundAttribute.h"
+#include "maya/MFnDoubleArrayData.h"
+#include "maya/MFnFloatArrayData.h"
+#include "maya/MFloatArray.h"
 
 #include <unordered_map>
 #include <cstring>
@@ -331,6 +334,29 @@ MStatus DgNodeHelper::setFloatArray(MObject node, MObject attribute, const float
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+MStatus DgNodeHelper::setFloatArray(const MObject& node, const MObject& attr, const VtArray<float>& values)
+{
+  MPlug plug(node, attr);
+  if(!plug)
+  {
+    return MS::kFailure;
+  }
+
+  MFloatArray fa;
+  for(uint32_t i = 0; i < values.size(); ++i)
+  {
+    fa.append(values[i]);
+  }
+
+  MStatus s;
+  MFnFloatArrayData fnDouble;
+  MObject dao = fnDouble.create(fa, &s);
+  plug.setValue(dao);
+
+  return MS::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setDoubleArray(MObject node, MObject attribute, const double* const values, const size_t count)
 {
   MPlug plug(node, attribute);
@@ -343,6 +369,28 @@ MStatus DgNodeHelper::setDoubleArray(MObject node, MObject attribute, const doub
   {
     plug.elementByLogicalIndex(i).setDouble(values[i]);
   }
+
+  return MS::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus DgNodeHelper::setDoubleArray(const MObject& node, const MObject& attribute, const VtArray<double>& values)
+{
+  MPlug plug(node, attribute);
+  if(!plug)
+  {
+    return MS::kFailure;
+  }
+  MDoubleArray da;
+  for(uint32_t i = 0; i < values.size(); ++i)
+  {
+    da.append(values[i]);
+  }
+
+  MStatus s;
+  MFnDoubleArrayData fnDouble;
+  MObject dao = fnDouble.create(da, &s);
+  plug.setValue(dao);
 
   return MS::kSuccess;
 }

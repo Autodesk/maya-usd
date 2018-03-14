@@ -690,6 +690,7 @@ public:
   /// \return the MObject for the attribute
   static MObject addAngleAttr(const char* longName, const char* shortName, const MAngle& defaultValue, uint32_t flags);
 
+
   /// \brief  add a new boolean attribute to this node type.
   /// \param  longName  long name for the attribute
   /// \param  shortName  short name for the attribute
@@ -847,6 +848,22 @@ public:
   /// \param  flags  a bitfield containing a mask of the AttributeFlags enumeration. Describes if the attribute is an input/output/etc
   /// \return the MObject for the attribute
   static MObject addVec2dAttr(const char* longName, const char* shortName, uint32_t flags);
+
+  /// \brief  add a new double attribute to this node type.
+  /// \param  longName  long name for the attribute
+  /// \param  shortName  short name for the attribute
+  /// \param  defaultValue  the default value for the attribute
+  /// \param  flags  a bitfield containing a mask of the AttributeFlags enumeration. Describes if the attribute is an input/output/etc
+  /// \return the MObject for the attribute
+  static MObject addFloatArrayAttr(const MObject& node, const char* longName, const char* shortName, uint32_t flags);
+
+  /// \brief  add a new DoubleArray attribute to this node type.
+  /// \param  node which the attribute will be added
+  /// \param  longName  long name for the attribute
+  /// \param  shortName  short name for the attribute
+  /// \param  flags  a bitfield containing a mask of the AttributeFlags enumeration. Describes if the attribute is an input/output/etc
+  /// \return the MObject for the attribute
+  static MObject addDoubleArrayAttr(const MObject& node, const char* longName, const char* shortName, uint32_t flags);
 
   /// \brief  add a new 3D vector attribute to this node type.
   /// \param  longName  long name for the attribute
