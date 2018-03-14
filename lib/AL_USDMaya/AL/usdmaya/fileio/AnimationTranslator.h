@@ -18,7 +18,10 @@
 
 #include "maya/MPlug.h"
 #include "maya/MDagPath.h"
+#include <vector>
+#include <array>
 #include <map>
+
 #include <utility>
 
 #include "pxr/pxr.h"
@@ -71,6 +74,10 @@ struct AnimationTranslator
   /// \param  assumeExpressionIsAnimated if we encounter an expression, assume that the attribute is animated (true) or
   ///         static (false).
   /// \return true if the attribute was found to be animated
+  /// This test only covers the situation that your attribute is actually animated by some types of nodes, e.g. animCurves
+  /// or expression, or source attribute's full-name match a certain string.
+  /// But in reality the control network might be really complicated and heavily customized thus it might go far beyond the
+  /// situation we can cover here.
   static bool isAnimated(const MObject& node, const MObject& attr, const bool assumeExpressionIsAnimated = true)
     { return isAnimated(MPlug(node, attr), assumeExpressionIsAnimated); }
 
@@ -79,11 +86,18 @@ struct AnimationTranslator
   /// \param  assumeExpressionIsAnimated if we encounter an expression, assume that the attribute is animated (true) or
   ///         static (false).
   /// \return true if the attribute was found to be animated
+  /// This test only covers the situation that your attribute is actually animated by some types of nodes, e.g. animCurves
+  /// or expression, or source attribute's full-name match a certain string.
+  /// But in reality the control network might be really complicated and heavily customized thus it might go far beyond the
+  /// situations we can cover here.
   static bool isAnimated(MPlug attr, bool assumeExpressionIsAnimated = true);
 
   /// \brief  returns true if the mesh is animated
   /// \param  mesh the mesh to test
   /// \return true if the mesh was found to be animated
+  /// This test only covers the situation that your node / upstream nodes are actually animated by animCurves.
+  /// But in reality the control network might be really complicated and heavily customized thus it might go far beyond the
+  /// situations we can cover here.
   static bool isAnimatedMesh(const MDagPath& mesh);
 
   /// \brief  add a plug to the animation translator (if the plug is animated)
@@ -170,12 +184,17 @@ struct AnimationTranslator
   /// \brief  After the scene has been exported, call this method to export the animation data on various attributes
   /// \param  params the export options
   void exportAnimation(const ExporterParams& params);
-
+private:
+  static bool considerToBeAnimation(const std::string &fullAttributeName);
+  static bool considerToBeAnimation(const MFn::Type nodeType);
 private:
   PlugAttrVector m_animatedPlugs;
   PlugAttrScaledVector m_scaledAnimatedPlugs;
   PlugAttrVector m_animatedTransformPlugs;
   MeshAttrVector m_animatedMeshes;
+
+  const static std::array<std::string, 1> s_attributeFullNamesConsiderToBeAnimation;
+  const static std::array<MFn::Type, 4> s_nodeTypesConsiderToBeAnimation;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

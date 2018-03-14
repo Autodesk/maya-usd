@@ -12,6 +12,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+#include <algorithm>
+#include <iterator>
 
 #include "AL/usdmaya/utils/MeshUtils.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
@@ -30,6 +33,40 @@
 namespace AL {
 namespace usdmaya {
 namespace fileio {
+
+const std::array<std::string, 1> AnimationTranslator::s_attributeFullNamesConsiderToBeAnimation {
+    // If source attribute is "worldMatrix", the plug we are testing are very likely be driven by the node
+    // that the source attribute belongs to, and this node itself might be driven by its parent nodes in terms
+    // of the transformation.
+    "worldMatrix"
+};
+
+const std::array<MFn::Type, 4> AnimationTranslator::s_nodeTypesConsiderToBeAnimation {
+    MFn::kAnimCurveTimeToAngular,  //79
+    MFn::kAnimCurveTimeToDistance,  //80
+    MFn::kAnimCurveTimeToTime,   //81
+    MFn::kAnimCurveTimeToUnitless  //82
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+template<class Container, class ValueType >
+bool _contains(const Container &container, const ValueType &value)
+{
+  auto end = container.cend();
+  auto first = std::lower_bound(container.cbegin(), end, value);
+  return first != end && !(value < *first);
+}
+
+bool AnimationTranslator::considerToBeAnimation(const std::string &fullAttributeName)
+{
+  return _contains<std::array<std::string, 1>, std::string>(s_attributeFullNamesConsiderToBeAnimation, fullAttributeName);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool AnimationTranslator::considerToBeAnimation(const MFn::Type nodeType)
+{
+  return _contains<std::array<MFn::Type, 4>, MFn::Type>(s_nodeTypesConsiderToBeAnimation, nodeType);
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 bool AnimationTranslator::isAnimated(MPlug attr, const bool assumeExpressionIsAnimated)
@@ -73,15 +110,14 @@ bool AnimationTranslator::isAnimated(MPlug attr, const bool assumeExpressionIsAn
     }
 
     // test to see if we are directly connected to an animation curve
+    // or we have some special source attributes.
     int32_t i = 0, n = plugs.length();
     for(; i < n; ++i)
     {
+      // Test if we have animCurves:
       MObject connectedNode = plugs[i].node();
       const MFn::Type connectedNodeType = connectedNode.apiType();
-      if(connectedNodeType == MFn::kAnimCurveTimeToAngular ||
-         connectedNodeType == MFn::kAnimCurveTimeToDistance ||
-         connectedNodeType == MFn::kAnimCurveTimeToTime ||
-         connectedNodeType == MFn::kAnimCurveTimeToUnitless)
+      if(considerToBeAnimation(connectedNodeType))
       {
         // I could use some slightly better heuristics here.
         // If there are 2 or more keyframes on this curve, assume its value changes.
@@ -122,6 +158,12 @@ bool AnimationTranslator::isAnimated(MPlug attr, const bool assumeExpressionIsAn
 
   for(; !iter.isDone(); iter.next())
   {
+    // Test we have some special source attributes:
+    if(considerToBeAnimation(iter.thisPlug().partialName(false, false, false, false, false, true).asChar()))
+    {
+      return true;
+    }
+
     MObject currNode = iter.thisPlug().node();
     if(currNode.hasFn(MFn::kTime))
     {

@@ -127,6 +127,10 @@ UsdDataType getAttributeType(const SdfValueTypeName& typeName)
 //----------------------------------------------------------------------------------------------------------------------
 UsdDataType getAttributeType(const UsdAttribute& usdAttr)
 {
+  if(!usdAttr.IsValid())
+  {
+    return  UsdDataType::kUnknown;
+  }
   const SdfValueTypeName typeName = usdAttr.GetTypeName();
   const auto it = usdTypeHashToEnum.find(typeName.GetHash());
   if(it == usdTypeHashToEnum.end())

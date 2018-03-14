@@ -36,7 +36,7 @@ using AL::usdmaya::fileio::AnimationTranslator;
 namespace
 {
 MPlug m_outTime;
-
+MFnDependencyNode time1Fn;
 void setUp()
 {
   AL_OUTPUT_TEST_NAME("test_translators_AnimationTranslator");
@@ -45,8 +45,8 @@ void setUp()
   MObject obj;
   MGlobal::getActiveSelectionList(sl);
   sl.getDependNode(0, obj);
-  MFnDependencyNode fn(obj);
-  m_outTime = fn.findPlug("outTime");
+  time1Fn.setObject(obj);
+  m_outTime = time1Fn.findPlug("outTime");
 }
 
 void tearDown()
@@ -334,3 +334,117 @@ TEST(translators_AnimationTranslator, expressionDrivenIndirectPlugNoTimeInput)
   mod.deleteNode(expression);
   mod.doIt();
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+TEST(translators_AnimationTranslator, considerToBeAnimationForNodeType)
+{
+  MFileIO::newFile(true);
+  setUp();
+  MStatus status;
+
+  MFnDependencyNode animCurveTUFN;
+  MObject animCurveTU = animCurveTUFN.create("animCurveTU", &status);
+  EXPECT_EQ(MStatus(MS::kSuccess), status);
+
+  MFnDependencyNode animCurveTAFN;
+  MObject animCurveTA = animCurveTAFN.create("animCurveTA", &status);
+  EXPECT_EQ(MStatus(MS::kSuccess), status);
+
+  MFnDependencyNode animCurveTLFN;
+  MObject animCurveTL = animCurveTLFN.create("animCurveTL", &status);
+  EXPECT_EQ(MStatus(MS::kSuccess), status);
+
+  MFnDependencyNode animCurveTTFN;
+  MObject animCurveTT = animCurveTTFN.create("animCurveTT", &status);
+  EXPECT_EQ(MStatus(MS::kSuccess), status);
+
+  MFnDependencyNode transformFN;
+  MObject transform = transformFN.create("transform", &status);
+  EXPECT_EQ(MStatus(MS::kSuccess), status);
+
+
+  MDGModifier mod;
+
+  EXPECT_FALSE(AnimationTranslator::isAnimated(transformFN.findPlug("translateX"), false));
+  EXPECT_EQ(MStatus(MS::kSuccess),
+            mod.connect(animCurveTUFN.findPlug("output"),
+                        transformFN.findPlug("translateX")));
+  EXPECT_EQ(MStatus(MS::kSuccess), mod.doIt());
+  EXPECT_FALSE(AnimationTranslator::isAnimated(transformFN.findPlug("translateX"), true));
+
+
+  EXPECT_FALSE(AnimationTranslator::isAnimated(transformFN.findPlug("rotateX"), false));
+  EXPECT_EQ(MStatus(MS::kSuccess),
+            mod.connect(animCurveTAFN.findPlug("output"),
+                        transformFN.findPlug("rotateX")));
+  EXPECT_EQ(MStatus(MS::kSuccess), mod.doIt());
+  EXPECT_FALSE(AnimationTranslator::isAnimated(transformFN.findPlug("rotateX"), true));
+
+
+  EXPECT_FALSE(AnimationTranslator::isAnimated(time1Fn.findPlug("enableTimewarp"), false));
+  EXPECT_EQ(MStatus(MS::kSuccess),
+            mod.connect(animCurveTLFN.findPlug("output"),
+                        time1Fn.findPlug("enableTimewarp")));
+  EXPECT_EQ(MStatus(MS::kSuccess), mod.doIt());
+  EXPECT_FALSE(AnimationTranslator::isAnimated(time1Fn.findPlug("enableTimewarp"), true));
+
+
+  EXPECT_FALSE(AnimationTranslator::isAnimated(m_outTime, false));
+  EXPECT_EQ(MStatus(MS::kSuccess),
+            mod.connect(animCurveTTFN.findPlug("output"),
+                        m_outTime));
+  EXPECT_EQ(MStatus(MS::kSuccess), mod.doIt());
+  EXPECT_FALSE(AnimationTranslator::isAnimated(m_outTime, true));
+
+
+  mod.deleteNode(transform);
+  mod.deleteNode(animCurveTU);
+  mod.deleteNode(animCurveTL);
+  mod.deleteNode(animCurveTT);
+  mod.deleteNode(animCurveTA);
+
+  mod.doIt();
+}
+
+TEST(translators_AnimationTranslator, considerToBeAnimationForAttributeName)
+{
+  MFileIO::newFile(true);
+  setUp();
+  MStatus status;
+
+  MFnDependencyNode transform1FN;
+  MObject transform1 = transform1FN.create("transform", &status);
+  EXPECT_EQ(MStatus(MS::kSuccess), status);
+
+  MFnDependencyNode matrixToScalarFn;
+  MObject matrixToScalar = matrixToScalarFn.create("pointMatrixMult", &status);
+  EXPECT_EQ(MStatus(MS::kSuccess), status);
+
+  MFnDependencyNode transform2FN;
+  MObject transform2 = transform2FN.create("transform", &status);
+  EXPECT_EQ(MStatus(MS::kSuccess), status);
+
+  MDGModifier mod;
+  EXPECT_FALSE(AnimationTranslator::isAnimated(transform2FN.findPlug("translateX"), false));
+
+  MPlug worldMatrixPlug = transform1FN.findPlug("worldMatrix");
+
+  EXPECT_EQ(MStatus(MS::kSuccess),
+            mod.connect(worldMatrixPlug.elementByLogicalIndex(0),
+                        matrixToScalarFn.findPlug("inMatrix")));
+  EXPECT_EQ(MStatus(MS::kSuccess),
+            mod.connect(matrixToScalarFn.findPlug("output"),
+                        transform2FN.findPlug("translate")));
+  EXPECT_EQ(MStatus(MS::kSuccess), mod.doIt());
+  EXPECT_FALSE(AnimationTranslator::isAnimated(transform2FN.findPlug("translateX"), true));
+
+
+  mod.deleteNode(transform1);
+  mod.deleteNode(matrixToScalar);
+  mod.deleteNode(transform2);
+  mod.doIt();
+}
+
+
+
+
