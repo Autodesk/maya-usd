@@ -101,6 +101,13 @@ struct AnimationTranslator
   /// situations we can cover here.
   static bool isAnimatedMesh(const MDagPath& mesh);
 
+  /// \brief  returns true if the transform node is animated
+  /// \param  transformNode the transform node to test
+  /// \return true if the transform was found to be animated
+  /// It roughly tests a list of common transform attributes, translate, rotate, rotateOrder and scale,
+  /// if any of those attributes is connected as destination, we take the transform node as animated.
+  /// This test will be performed recursively up to parent hierarchies, unless the inheritsTransform
+  /// attribute is turned off.
   static bool isAnimatedTransform(const MObject& transformNode);
 
   /// \brief  add a plug to the animation translator (if the plug is animated)
