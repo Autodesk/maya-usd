@@ -242,11 +242,6 @@ bool AnimationTranslator::areTransformAttributesConnected(const MFnDependencyNod
   return false;
 }
 
-bool AnimationTranslator::isNotWorld(const MObject &node)
-{
-  return !node.hasFn(MFn::kWorld);
-}
-
 bool AnimationTranslator::isAnimatedTransform(const MObject& transformNode)
 {
   if(!transformNode.hasFn(MFn::kTransform))

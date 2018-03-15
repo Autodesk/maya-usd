@@ -191,7 +191,6 @@ private:
   static bool considerToBeAnimation(const MFn::Type nodeType);
   static bool inheritTransform(const MFnDependencyNode &fn);
   static bool areTransformAttributesConnected(const MFnDependencyNode &fn);
-  static bool isNotWorld(const MObject &node);
 private:
   PlugAttrVector m_animatedPlugs;
   PlugAttrScaledVector m_scaledAnimatedPlugs;
