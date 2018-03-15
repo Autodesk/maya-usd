@@ -617,7 +617,7 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
     if (animTranslator) animTranslator->addTransformPlug(MPlug(from, m_visible), visibleAttr, true);
   }
 
-  if(translation != defaultTranslation || transformAnimated)
+  if(transformAnimated || translation != defaultTranslation)
   {
     UsdGeomXformOp op = xformSchema.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("translate"));
     op.Set(translation);
@@ -638,7 +638,7 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
     if(animTranslator) animTranslator->addPlug(MPlug(from, m_rotatePivot), op.GetAttr(), true);
   }
 
-  if(rotation != defaultRotation || transformAnimated)
+  if(transformAnimated || rotation != defaultRotation)
   {
     const float radToDeg = 180.0f / 3.141592654f;
     rotation *= radToDeg;
@@ -738,7 +738,7 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
     op.Set(shearMatrix);
   }
 
-  if(scale != defaultScale || transformAnimated)
+  if(transformAnimated || scale != defaultScale)
   {
     UsdGeomXformOp op = xformSchema.AddScaleOp(UsdGeomXformOp::PrecisionFloat, TfToken("scale"));
     op.Set(scale);
