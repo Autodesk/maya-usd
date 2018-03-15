@@ -34,8 +34,6 @@ namespace AL {
 namespace usdmaya {
 namespace fileio {
 
-static MString INHERITS_TRANSFORM_ATTR {"inheritsTransform"};
-
 const std::array<MFn::Type, 4> AnimationTranslator::s_nodeTypesConsiderToBeAnimation {
     MFn::kAnimCurveTimeToAngular,  //79
     MFn::kAnimCurveTimeToDistance,  //80
