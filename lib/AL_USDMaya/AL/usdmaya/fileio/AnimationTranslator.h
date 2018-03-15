@@ -233,7 +233,10 @@ private:
 class AnimationCheckTransformAttributesScope
 {
 public:
-  ~AnimationCheckTransformAttributesScope(){AnimationCheckTransformAttributes::destruct();}
+  AnimationCheckTransformAttributesScope(bool destructAttributes):m_destruct(destructAttributes){}
+  ~AnimationCheckTransformAttributesScope(){if(m_destruct){AnimationCheckTransformAttributes::destruct();}}
+private:
+  bool m_destruct;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

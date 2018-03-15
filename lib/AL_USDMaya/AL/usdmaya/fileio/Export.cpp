@@ -707,7 +707,7 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
 //----------------------------------------------------------------------------------------------------------------------
 void Export::doExport()
 {
-  AnimationCheckTransformAttributesScope scope;
+  AnimationCheckTransformAttributesScope scope{true};
 
   // make sure the node factory has been initialised as least once prior to use
   getNodeFactory();

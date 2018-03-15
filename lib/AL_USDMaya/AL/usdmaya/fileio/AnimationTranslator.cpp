@@ -242,10 +242,14 @@ bool AnimationTranslator::isAnimatedTransform(const MObject& transformNode)
   MDagPath currPath;
   fnNode.getPath(currPath);
 
-  // For better testing:
+  // IN case isAnimatedTransform is called directly somewhere else:
   AnimationCheckTransformAttributes *attrs = AnimationCheckTransformAttributes::getInstance();
-  if(!attrs->isInitialised())
+  bool attrsInitialised = attrs->isInitialised();
+  if(!attrsInitialised)
+  {
     attrs->initialise(transformNode);
+  }
+  AnimationCheckTransformAttributesScope scope(attrsInitialised);
 
   bool transformAttributeConnected = areTransformAttributesConnected(currPath);
   if(!inheritTransform(currPath) && !transformAttributeConnected)
