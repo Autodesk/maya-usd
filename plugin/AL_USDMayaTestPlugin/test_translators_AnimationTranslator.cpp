@@ -406,42 +406,68 @@ TEST(translators_AnimationTranslator, considerToBeAnimationForNodeType)
   mod.doIt();
 }
 
-TEST(translators_AnimationTranslator, considerToBeAnimationForAttributeName)
+TEST(translators_AnimationTranslator, isAnimatedTransform)
 {
   MFileIO::newFile(true);
   setUp();
   MStatus status;
 
-  MFnDependencyNode transform1FN;
-  MObject transform1 = transform1FN.create("transform", &status);
+  MFnDagNode transformFN;
+  MObject root = transformFN.create("transform", MObject::kNullObj, &status);
   EXPECT_EQ(MStatus(MS::kSuccess), status);
 
-  MFnDependencyNode matrixToScalarFn;
-  MObject matrixToScalar = matrixToScalarFn.create("pointMatrixMult", &status);
+  MObject parent = transformFN.create("transform", root, &status);
   EXPECT_EQ(MStatus(MS::kSuccess), status);
 
-  MFnDependencyNode transform2FN;
-  MObject transform2 = transform2FN.create("transform", &status);
+  MObject child = transformFN.create("transform", parent, &status);
   EXPECT_EQ(MStatus(MS::kSuccess), status);
+
+  MObject master = transformFN.create("transform", MObject::kNullObj, &status);
+  EXPECT_EQ(MStatus(MS::kSuccess), status);
+
+  EXPECT_FALSE(AnimationTranslator::isAnimatedTransform(child));
+
+  transformFN.setObject(master);
+  MPlug sourceTx = transformFN.findPlug("translateX");
+  MPlug sourceR = transformFN.findPlug("rotate");
+  MPlug sourceSz = transformFN.findPlug("scaleZ");
+  MPlug suorceRO = transformFN.findPlug("rotateOrder");
 
   MDGModifier mod;
-  EXPECT_FALSE(AnimationTranslator::isAnimated(transform2FN.findPlug("translateX"), false));
+  transformFN.setObject(child);
+  MPlug targetTx = transformFN.findPlug("translateX");
 
-  MPlug worldMatrixPlug = transform1FN.findPlug("worldMatrix");
+  EXPECT_EQ(MStatus(MS::kSuccess), mod.connect(sourceTx,targetTx));
+  mod.doIt();
+  EXPECT_TRUE(AnimationTranslator::isAnimatedTransform(child));
+  mod.undoIt();
+  EXPECT_FALSE(AnimationTranslator::isAnimatedTransform(child));
 
-  EXPECT_EQ(MStatus(MS::kSuccess),
-            mod.connect(worldMatrixPlug.elementByLogicalIndex(0),
-                        matrixToScalarFn.findPlug("inMatrix")));
-  EXPECT_EQ(MStatus(MS::kSuccess),
-            mod.connect(matrixToScalarFn.findPlug("output"),
-                        transform2FN.findPlug("translate")));
-  EXPECT_EQ(MStatus(MS::kSuccess), mod.doIt());
-  EXPECT_FALSE(AnimationTranslator::isAnimated(transform2FN.findPlug("translateX"), true));
+  transformFN.setObject(parent);
+  MPlug targetR = transformFN.findPlug("rotate");
+  EXPECT_EQ(MStatus(MS::kSuccess), mod.connect(sourceR, targetR));
+  mod.doIt();
+  EXPECT_TRUE(AnimationTranslator::isAnimatedTransform(child));
+  mod.undoIt();
+  EXPECT_FALSE(AnimationTranslator::isAnimatedTransform(child));
 
+  transformFN.setObject(root);
+  MPlug targetSz = transformFN.findPlug("scaleZ");
+  EXPECT_EQ(MStatus(MS::kSuccess), mod.connect(sourceSz, targetSz));
+  mod.doIt();
+  EXPECT_TRUE(AnimationTranslator::isAnimatedTransform(child));
+  mod.undoIt();
+  EXPECT_FALSE(AnimationTranslator::isAnimatedTransform(child));
 
-  mod.deleteNode(transform1);
-  mod.deleteNode(matrixToScalar);
-  mod.deleteNode(transform2);
+  MPlug targetRO = transformFN.findPlug("rotateOrder");
+  EXPECT_EQ(MStatus(MS::kSuccess), mod.connect(suorceRO, targetRO));
+  mod.doIt();
+  EXPECT_TRUE(AnimationTranslator::isAnimatedTransform(child));
+  mod.undoIt();
+  EXPECT_FALSE(AnimationTranslator::isAnimatedTransform(child));
+
+  mod.deleteNode(root);
+  mod.deleteNode(master);
   mod.doIt();
 }
 
