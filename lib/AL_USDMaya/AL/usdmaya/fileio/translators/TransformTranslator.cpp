@@ -554,6 +554,12 @@ bool animationCheck(AnimationTranslator* animTranslator, MPlug plug)
   return animTranslator->isAnimated(plug, true);
 }
 
+bool transformAnimationCheck(AnimationTranslator* animTranslator, const MObject &transformNode)
+{
+  if(!animTranslator) return false;
+  return animTranslator->isAnimatedTransform(transformNode);
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, const ExporterParams& params)
 {
@@ -607,7 +613,8 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
     if (animTranslator) animTranslator->addTransformPlug(MPlug(from, m_visible), visibleAttr, true);
   }
 
-  if(translation != defaultTranslation || animationCheck(animTranslator, MPlug(from, m_translation)))
+  bool transformAnimated = transformAnimationCheck(animTranslator, from);
+  if(translation != defaultTranslation || transformAnimated)
   {
     UsdGeomXformOp op = xformSchema.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("translate"));
     op.Set(translation);
@@ -628,7 +635,7 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
     if(animTranslator) animTranslator->addPlug(MPlug(from, m_rotatePivot), op.GetAttr(), true);
   }
 
-  if(rotation != defaultRotation || animationCheck(animTranslator, MPlug(from, m_rotation)))
+  if(rotation != defaultRotation || transformAnimated)
   {
     const float radToDeg = 180.0f / 3.141592654f;
     rotation *= radToDeg;
@@ -728,7 +735,7 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
     op.Set(shearMatrix);
   }
 
-  if(scale != defaultScale || animationCheck(animTranslator, MPlug(from, m_scale)))
+  if(scale != defaultScale || transformAnimated)
   {
     UsdGeomXformOp op = xformSchema.AddScaleOp(UsdGeomXformOp::PrecisionFloat, TfToken("scale"));
     op.Set(scale);
