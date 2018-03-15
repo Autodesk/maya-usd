@@ -604,6 +604,10 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
 
   AnimationTranslator* animTranslator = params.m_animTranslator;
 
+  // Check if transform attributes are considiered animated,
+  // if true, we consider translation, rotation, rotateOrder and scale attributes are animated:
+  bool transformAnimated = transformAnimationCheck(animTranslator, from);
+
   xformSchema.SetResetXformStack(!inheritsTransform);
 
   if (visible != defaultVisible || animationCheck(animTranslator, MPlug(from, m_visible)))
@@ -613,7 +617,6 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
     if (animTranslator) animTranslator->addTransformPlug(MPlug(from, m_visible), visibleAttr, true);
   }
 
-  bool transformAnimated = transformAnimationCheck(animTranslator, from);
   if(translation != defaultTranslation || transformAnimated)
   {
     UsdGeomXformOp op = xformSchema.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("translate"));
