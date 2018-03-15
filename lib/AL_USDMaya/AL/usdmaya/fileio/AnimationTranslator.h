@@ -17,6 +17,7 @@
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
 
 #include "maya/MPlug.h"
+#include "maya/MString.h"
 #include "maya/MDagPath.h"
 #include <vector>
 #include <array>
@@ -188,16 +189,16 @@ struct AnimationTranslator
   void exportAnimation(const ExporterParams& params);
 private:
   static bool considerToBeAnimation(const MFn::Type nodeType);
-  bool inheritTransform(const MFnDependencyNode &fn) const;
-  bool areTransformAttributesConnected(const MFnDependencyNode &fn) const;
-  bool isNotWorld(const MObject &node) const;
+  static bool inheritTransform(const MFnDependencyNode &fn);
+  static bool areTransformAttributesConnected(const MFnDependencyNode &fn);
+  static bool isNotWorld(const MObject &node);
 private:
   PlugAttrVector m_animatedPlugs;
   PlugAttrScaledVector m_scaledAnimatedPlugs;
   PlugAttrVector m_animatedTransformPlugs;
   MeshAttrVector m_animatedMeshes;
 
-  const static std::array<std::string, 1> s_transformAttributesConsiderToBeAnimation;
+  const static std::array<MString, 13> s_transformAttributesConsiderToBeAnimation;
   const static std::array<MFn::Type, 4> s_nodeTypesConsiderToBeAnimation;
 };
 

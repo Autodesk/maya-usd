@@ -34,7 +34,7 @@ namespace AL {
 namespace usdmaya {
 namespace fileio {
 
-static MString INHERITS_TRANSFORM_ATTR = "inheritsTransform";
+static MString INHERITS_TRANSFORM_ATTR {"inheritsTransform"};
 
 const std::array<MFn::Type, 4> AnimationTranslator::s_nodeTypesConsiderToBeAnimation {
     MFn::kAnimCurveTimeToAngular,  //79
@@ -43,7 +43,7 @@ const std::array<MFn::Type, 4> AnimationTranslator::s_nodeTypesConsiderToBeAnima
     MFn::kAnimCurveTimeToUnitless  //82
 };
 
-const std::array<std::string, 13> AnimationTranslator::s_transformAttributesConsiderToBeAnimation {
+const std::array<MString, 13> AnimationTranslator::s_transformAttributesConsiderToBeAnimation {
     // If any of these attributes are connected as destination, we consider the transform node to be animated.
     "translate",
     "translateX",
@@ -220,7 +220,7 @@ bool AnimationTranslator::isAnimatedMesh(const MDagPath& mesh)
   return false;
 }
 //----------------------------------------------------------------------------------------------------------------------
-bool AnimationTranslator::inheritTransform(const MFnDependencyNode &fn) const
+bool AnimationTranslator::inheritTransform(const MFnDependencyNode &fn)
 {
   MStatus status;
   MPlug inheritTransformPlug = fn.findPlug(INHERITS_TRANSFORM_ATTR, true, &status);
@@ -230,7 +230,7 @@ bool AnimationTranslator::inheritTransform(const MFnDependencyNode &fn) const
   return inheritTransformPlug.asBool();
 }
 
-bool AnimationTranslator::areTransformAttributesConnected(const MFnDependencyNode &fn) const
+bool AnimationTranslator::areTransformAttributesConnected(const MFnDependencyNode &fn)
 {
   MStatus status;
   for(const auto& attributeName: AnimationTranslator::s_transformAttributesConsiderToBeAnimation)
@@ -242,7 +242,7 @@ bool AnimationTranslator::areTransformAttributesConnected(const MFnDependencyNod
   return false;
 }
 
-bool AnimationTranslator::isNotWorld(const MObject &node) const
+bool AnimationTranslator::isNotWorld(const MObject &node)
 {
   return !node.hasFn(MFn::kWorld);
 }
