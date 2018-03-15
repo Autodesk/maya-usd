@@ -253,28 +253,25 @@ bool AnimationTranslator::isAnimatedTransform(const MObject& transformNode)
     return false;
 
   MStatus status;
-  MFnDependencyNode fn(transformNode, &status);
+  MFnDagNode fnNode(transformNode, &status);
   if (!status)
     return false;
 
-  if(!inheritTransform(fn) && !areTransformAttributesConnected(fn))
+  if(!inheritTransform(fnNode) && !areTransformAttributesConnected(fnNode))
     return false;
 
-  if(areTransformAttributesConnected(fn))
+  if(areTransformAttributesConnected(fnNode))
     return true;
 
-  bool isAnimated = false;
-  MObject currNode(transformNode);
-  MFnDagNode fnNode(transformNode);
-  MObject currParent = fnNode.parent(0);
-  while(isNotWorld(currParent) && inheritTransform(fnNode))
+  MDagPath currPath;
+  fnNode.getPath(currPath);
+
+  while(currPath.pop() == MStatus::kSuccess && inheritTransform(fnNode))
   {
     if(areTransformAttributesConnected(fnNode))
       return true;
 
-    currNode = currParent;
-    fnNode.setObject(currNode);
-    currParent = fnNode.parent(0);
+    fnNode.setObject(currPath);
   }
 
   return false;
