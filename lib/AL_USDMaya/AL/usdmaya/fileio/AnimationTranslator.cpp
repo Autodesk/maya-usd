@@ -43,27 +43,6 @@ const std::array<MFn::Type, 4> AnimationTranslator::s_nodeTypesConsiderToBeAnima
     MFn::kAnimCurveTimeToUnitless  //82
 };
 
-const std::array<MString, 13> AnimationTranslator::s_transformAttributesConsiderToBeAnimation {
-    // If any of these attributes are connected as destination, we consider the transform node to be animated.
-    "translate",
-    "translateX",
-    "translateY",
-    "translateZ",
-
-    "rotate",
-    "rotateX",
-    "rotateY",
-    "rotateZ",
-
-    "scale",
-    "scaleX",
-    "scaleY",
-    "scaleZ",
-
-    "rotateOrder"
-};
-
-
 //----------------------------------------------------------------------------------------------------------------------
 template<class Container, class ValueType >
 bool _contains(const Container &container, const ValueType &value)
@@ -220,22 +199,27 @@ bool AnimationTranslator::isAnimatedMesh(const MDagPath& mesh)
   return false;
 }
 //----------------------------------------------------------------------------------------------------------------------
-bool AnimationTranslator::inheritTransform(const MFnDependencyNode &fn)
+bool AnimationTranslator::inheritTransform(const MDagPath &path)
 {
   MStatus status;
-  MPlug inheritTransformPlug = fn.findPlug(INHERITS_TRANSFORM_ATTR, true, &status);
+  const MObject transformNode = path.node();
   if(!status)
     return false;
 
+  MPlug inheritTransformPlug (transformNode, AnimationCheckTransformAttributes::getInstance()->inheritTransformAttribute());
   return inheritTransformPlug.asBool();
 }
 
-bool AnimationTranslator::areTransformAttributesConnected(const MFnDependencyNode &fn)
+bool AnimationTranslator::areTransformAttributesConnected(const MDagPath &path)
 {
   MStatus status;
-  for(const auto& attributeName: AnimationTranslator::s_transformAttributesConsiderToBeAnimation)
+  const MObject transformNode = path.node(&status);
+  if(!status)
+    return false;
+
+  for(const auto& attributeObject: *AnimationCheckTransformAttributes::getInstance())
   {
-    const MPlug inheritTransformPlug = fn.findPlug(attributeName, true, &status);
+    const MPlug inheritTransformPlug(transformNode, attributeObject.object());
     if(inheritTransformPlug.isDestination(&status))
       return true;
   }
@@ -252,21 +236,21 @@ bool AnimationTranslator::isAnimatedTransform(const MObject& transformNode)
   if (!status)
     return false;
 
-  if(!inheritTransform(fnNode) && !areTransformAttributesConnected(fnNode))
-    return false;
-
-  if(areTransformAttributesConnected(fnNode))
-    return true;
-
   MDagPath currPath;
   fnNode.getPath(currPath);
 
-  while(currPath.pop() == MStatus::kSuccess && inheritTransform(fnNode))
-  {
-    if(areTransformAttributesConnected(fnNode))
-      return true;
+  bool transformAttributeConnected = areTransformAttributesConnected(currPath);
+  if(!inheritTransform(currPath) && !transformAttributeConnected)
+    return false;
 
-    fnNode.setObject(currPath);
+  if(transformAttributeConnected)
+    return true;
+
+
+  while(currPath.pop() == MStatus::kSuccess && inheritTransform(currPath))
+  {
+    if(areTransformAttributesConnected(currPath))
+      return true;
   }
 
   return false;
@@ -318,6 +302,81 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
       }
     }
   }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+AnimationCheckTransformAttributes *AnimationCheckTransformAttributes::s_instance = NULL;
+
+AnimationCheckTransformAttributes *AnimationCheckTransformAttributes::getInstance()
+{
+  if(!s_instance)
+    s_instance = new AnimationCheckTransformAttributes();
+
+  return s_instance;
+}
+
+void AnimationCheckTransformAttributes::destruct()
+{
+  if(s_instance)
+  {
+    delete s_instance;
+    s_instance = NULL;
+  }
+}
+
+#define _initAttribute(index, attributeName) \
+  plug = fn.findPlug(attributeName, &status); \
+  if(status) { m_commonTransformAttributes[0] = plug.attribute(&status);} \
+  if(status != MS::kSuccess) { m_initialised = false; return false; }
+
+bool AnimationCheckTransformAttributes::initialise(const MObject &transformNode)
+{
+  if(!transformNode.hasFn(MFn::kTransform))
+  {
+    m_initialised = false;
+    return false;
+  }
+
+  MStatus status;
+  MFnDependencyNode fn(transformNode);
+  MPlug plug;
+
+  _initAttribute(0, "translate")
+  _initAttribute(1, "translateX")
+  _initAttribute(2, "translateY")
+  _initAttribute(3, "translateZ")
+  _initAttribute(4, "rotate")
+  _initAttribute(5, "rotateX")
+  _initAttribute(6, "rotateY")
+  _initAttribute(7, "rotateZ")
+  _initAttribute(8, "scale")
+  _initAttribute(9, "scaleX")
+  _initAttribute(10, "scaleY")
+  _initAttribute(11, "scaleZ")
+  _initAttribute(12, "rotateOrder")
+
+  plug = fn.findPlug("inheritsTransform", &status);
+  if(status)
+  {
+    m_inheritTransformAttribute = plug.attribute(&status);
+  }
+  if(status != MS::kSuccess)
+  {
+    m_initialised = false;
+    return false;
+  }
+
+  m_initialised = true;
+  return true;
+}
+
+bool AnimationCheckTransformAttributes::isValid()const
+{
+  for(int i=0; i<ATTR_COUNT; ++i) {
+    if(m_commonTransformAttributes[i].isValid())
+      return false;
+  }
+  return true;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

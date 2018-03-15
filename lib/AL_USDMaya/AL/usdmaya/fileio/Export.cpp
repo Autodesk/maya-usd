@@ -707,6 +707,8 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
 //----------------------------------------------------------------------------------------------------------------------
 void Export::doExport()
 {
+  AnimationCheckTransformAttributesScope scope;
+
   // make sure the node factory has been initialised as least once prior to use
   getNodeFactory();
 
@@ -720,6 +722,7 @@ void Export::doExport()
   MObjectArray objects;
   const MSelectionList& sl = m_params.m_nodes;
   SdfPath defaultPrim;
+
   for(uint32_t i = 0, n = sl.length(); i < n; ++i)
   {
     MDagPath path;
@@ -727,12 +730,20 @@ void Export::doExport()
     {
       if(path.node().hasFn(MFn::kTransform))
       {
+        if(!AnimationCheckTransformAttributes::getInstance()->isInitialised())
+        {
+          AnimationCheckTransformAttributes::getInstance()->initialise(path.node());
+        }
         exportSceneHierarchy(path, defaultPrim);
       }
       else
       if(path.node().hasFn(MFn::kShape))
       {
         path.pop();
+        if(!AnimationCheckTransformAttributes::getInstance()->isInitialised())
+        {
+          AnimationCheckTransformAttributes::getInstance()->initialise(path.node());
+        }
         exportSceneHierarchy(path, defaultPrim);
       }
     }

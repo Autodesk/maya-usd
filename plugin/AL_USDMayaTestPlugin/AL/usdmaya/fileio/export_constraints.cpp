@@ -106,11 +106,11 @@ TEST(export_constraint, constraints)
   "Use_Timeline_Range=0;"
   "Frame_Min=1;"
   "Frame_Max=50;"
-  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_constraints.usda\";";
+  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/usr/tmp/AL_USDMayaTests_constraints.usda\";";
 
   MGlobal::executeCommand(command);
 
-  UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_constraints.usda");
+  UsdStageRefPtr stage = UsdStage::Open("/usr/tmp/AL_USDMayaTests_constraints.usda");
   EXPECT_TRUE(stage);
 
   const char* const paths[] = {
