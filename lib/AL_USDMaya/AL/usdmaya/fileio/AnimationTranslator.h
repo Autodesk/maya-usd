@@ -100,6 +100,8 @@ struct AnimationTranslator
   /// situations we can cover here.
   static bool isAnimatedMesh(const MDagPath& mesh);
 
+  static bool isAnimatedTransform(const MObject& transformNode);
+
   /// \brief  add a plug to the animation translator (if the plug is animated)
   /// \param  plug the maya attribute to test
   /// \param  attribute the corresponding maya attribute to write the anim data into if the plug is animated
@@ -185,15 +187,17 @@ struct AnimationTranslator
   /// \param  params the export options
   void exportAnimation(const ExporterParams& params);
 private:
-  static bool considerToBeAnimation(const std::string &fullAttributeName);
   static bool considerToBeAnimation(const MFn::Type nodeType);
+  bool inheritTransform(const MFnDependencyNode &fn) const;
+  bool areTransformAttributesConnected(const MFnDependencyNode &fn) const;
+  bool isNotWorld(const MObject &node) const;
 private:
   PlugAttrVector m_animatedPlugs;
   PlugAttrScaledVector m_scaledAnimatedPlugs;
   PlugAttrVector m_animatedTransformPlugs;
   MeshAttrVector m_animatedMeshes;
 
-  const static std::array<std::string, 1> s_attributeFullNamesConsiderToBeAnimation;
+  const static std::array<std::string, 1> s_transformAttributesConsiderToBeAnimation;
   const static std::array<MFn::Type, 4> s_nodeTypesConsiderToBeAnimation;
 };
 

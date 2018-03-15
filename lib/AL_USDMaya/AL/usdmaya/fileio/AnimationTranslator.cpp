@@ -34,12 +34,7 @@ namespace AL {
 namespace usdmaya {
 namespace fileio {
 
-const std::array<std::string, 1> AnimationTranslator::s_attributeFullNamesConsiderToBeAnimation {
-    // If source attribute is "worldMatrix", the plug we are testing are very likely be driven by the node
-    // that the source attribute belongs to, and this node itself might be driven by its parent nodes in terms
-    // of the transformation.
-    "worldMatrix"
-};
+static MString INHERITS_TRANSFORM_ATTR = "inheritsTransform";
 
 const std::array<MFn::Type, 4> AnimationTranslator::s_nodeTypesConsiderToBeAnimation {
     MFn::kAnimCurveTimeToAngular,  //79
@@ -48,6 +43,27 @@ const std::array<MFn::Type, 4> AnimationTranslator::s_nodeTypesConsiderToBeAnima
     MFn::kAnimCurveTimeToUnitless  //82
 };
 
+const std::array<std::string, 13> AnimationTranslator::s_transformAttributesConsiderToBeAnimation {
+    // If any of these attributes are connected as destination, we consider the transform node to be animated.
+    "translate",
+    "translateX",
+    "translateY",
+    "translateZ",
+
+    "rotate",
+    "rotateX",
+    "rotateY",
+    "rotateZ",
+
+    "scale",
+    "scaleX",
+    "scaleY",
+    "scaleZ",
+
+    "rotateOrder"
+};
+
+
 //----------------------------------------------------------------------------------------------------------------------
 template<class Container, class ValueType >
 bool _contains(const Container &container, const ValueType &value)
@@ -55,11 +71,6 @@ bool _contains(const Container &container, const ValueType &value)
   auto end = container.cend();
   auto first = std::lower_bound(container.cbegin(), end, value);
   return first != end && !(value < *first);
-}
-
-bool AnimationTranslator::considerToBeAnimation(const std::string &fullAttributeName)
-{
-  return _contains<std::array<std::string, 1>, std::string>(s_attributeFullNamesConsiderToBeAnimation, fullAttributeName);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -158,12 +169,6 @@ bool AnimationTranslator::isAnimated(MPlug attr, const bool assumeExpressionIsAn
 
   for(; !iter.isDone(); iter.next())
   {
-    // Test we have some special source attributes:
-    if(considerToBeAnimation(iter.thisPlug().partialName(false, false, false, false, false, true).asChar()))
-    {
-      return true;
-    }
-
     MObject currNode = iter.thisPlug().node();
     if(currNode.hasFn(MFn::kTime))
     {
@@ -212,6 +217,66 @@ bool AnimationTranslator::isAnimatedMesh(const MDagPath& mesh)
       return true;
     }
   }
+  return false;
+}
+//----------------------------------------------------------------------------------------------------------------------
+bool AnimationTranslator::inheritTransform(const MFnDependencyNode &fn) const
+{
+  MStatus status;
+  MPlug inheritTransformPlug = fn.findPlug(INHERITS_TRANSFORM_ATTR, true, &status);
+  if(!status)
+    return false;
+
+  return inheritTransformPlug.asBool();
+}
+
+bool AnimationTranslator::areTransformAttributesConnected(const MFnDependencyNode &fn) const
+{
+  MStatus status;
+  for(const auto& attributeName: AnimationTranslator::s_transformAttributesConsiderToBeAnimation)
+  {
+    const MPlug inheritTransformPlug = fn.findPlug(attributeName, true, &status);
+    if(inheritTransformPlug.isDestination(&status))
+      return true;
+  }
+  return false;
+}
+
+bool AnimationTranslator::isNotWorld(const MObject &node) const
+{
+  return !node.hasFn(MFn::kWorld);
+}
+
+bool AnimationTranslator::isAnimatedTransform(const MObject& transformNode)
+{
+  if(!transformNode.hasFn(MFn::kTransform))
+    return false;
+
+  MStatus status;
+  MFnDependencyNode fn(transformNode, &status);
+  if (!status)
+    return false;
+
+  if(!inheritTransform(fn) && !areTransformAttributesConnected(fn))
+    return false;
+
+  if(areTransformAttributesConnected(fn))
+    return true;
+
+  bool isAnimated = false;
+  MObject currNode(transformNode);
+  MFnDagNode fnNode(transformNode);
+  MObject currParent = fnNode.parent(0);
+  while(isNotWorld(currParent) && inheritTransform(fnNode))
+  {
+    if(areTransformAttributesConnected(fnNode))
+      return true;
+
+    currNode = currParent;
+    fnNode.setObject(currNode);
+    currParent = fnNode.parent(0);
+  }
+
   return false;
 }
 
