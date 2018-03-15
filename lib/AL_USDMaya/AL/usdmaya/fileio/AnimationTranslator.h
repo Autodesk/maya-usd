@@ -217,7 +217,6 @@ public:
   static AnimationCheckTransformAttributes *getInstance();
   static void destruct();
   bool initialise(const MObject &transformNode);
-  bool isValid()const;
   inline std::array<MObjectHandle, ATTR_COUNT>::iterator begin() {return m_commonTransformAttributes.begin();}
   inline std::array<MObjectHandle, ATTR_COUNT>::iterator end() {return m_commonTransformAttributes.end();}
   inline bool isInitialised()const {return m_initialised;}

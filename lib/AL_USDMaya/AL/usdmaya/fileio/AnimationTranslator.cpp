@@ -217,11 +217,14 @@ bool AnimationTranslator::areTransformAttributesConnected(const MDagPath &path)
   if(!status)
     return false;
 
+  int index = 0;
   for(const auto& attributeObject: *AnimationCheckTransformAttributes::getInstance())
   {
-    const MPlug inheritTransformPlug(transformNode, attributeObject.object());
-    if(inheritTransformPlug.isDestination(&status))
+    const MPlug plug(transformNode, attributeObject.object());
+    if(plug.isDestination(&status))
       return true;
+
+    index++;
   }
   return false;
 }
@@ -238,6 +241,11 @@ bool AnimationTranslator::isAnimatedTransform(const MObject& transformNode)
 
   MDagPath currPath;
   fnNode.getPath(currPath);
+
+  // For better testing:
+  AnimationCheckTransformAttributes *attrs = AnimationCheckTransformAttributes::getInstance();
+  if(!attrs->isInitialised())
+    attrs->initialise(transformNode);
 
   bool transformAttributeConnected = areTransformAttributesConnected(currPath);
   if(!inheritTransform(currPath) && !transformAttributeConnected)
@@ -326,7 +334,7 @@ void AnimationCheckTransformAttributes::destruct()
 
 #define _initAttribute(index, attributeName) \
   plug = fn.findPlug(attributeName, &status); \
-  if(status) { m_commonTransformAttributes[0] = plug.attribute(&status);} \
+  if(status) { m_commonTransformAttributes[index] = plug.attribute(&status);} \
   if(status != MS::kSuccess) { m_initialised = false; return false; }
 
 bool AnimationCheckTransformAttributes::initialise(const MObject &transformNode)
@@ -367,15 +375,6 @@ bool AnimationCheckTransformAttributes::initialise(const MObject &transformNode)
   }
 
   m_initialised = true;
-  return true;
-}
-
-bool AnimationCheckTransformAttributes::isValid()const
-{
-  for(int i=0; i<ATTR_COUNT; ++i) {
-    if(m_commonTransformAttributes[i].isValid())
-      return false;
-  }
   return true;
 }
 
