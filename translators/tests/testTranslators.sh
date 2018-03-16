@@ -7,4 +7,4 @@ export LD_LIBRARY_PATH=$AL_USDMAYA_LOCATION/lib:$USD_LIBRARY_PATH:$LD_LIBRARY_PA
 export PYTHONPATH=$AL_USDMAYA_LOCATION/lib/python:$USD_LIBRARY_PATH/python:$PYTHONPATH
 export PATH=$MAYA_LOCATION/bin:$PATH
 
-mayapy testTranslators.py
+mayapy testTranslators.py 

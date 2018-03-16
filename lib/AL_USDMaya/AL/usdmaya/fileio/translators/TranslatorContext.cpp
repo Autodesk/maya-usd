@@ -493,7 +493,12 @@ void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
     if(translator)
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim [preTearDown] prim=%s\n", prim.GetPath().GetText());
-      translator->preTearDown(prim);
+
+      // call pretearDown if it hasn't been called before
+      if(!translator->isTearingDown())
+      {
+        translator->preTearDown(prim);
+      }
     }
     else
     {
@@ -524,7 +529,7 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::unloadPrim [tearDown] prim=%s\n", path.GetText());
 
       // call pretearDown if it hasn't been called before
-      if(translator->isTearingDown())
+      if(!translator->isTearingDown())
       {
         UsdPrim prim = stage->GetPrimAtPath(path);
         if(prim)

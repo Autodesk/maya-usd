@@ -39,6 +39,9 @@ public:
     { return false; } // Turned off supportsUpdate to get tearDown working correctly
   bool importableByDefault() const override
     { return false; }
+
+private:
+  void writeEdits(UsdPrim& prim);
 };
 
 //----------------------------------------------------------------------------------------------------------------------

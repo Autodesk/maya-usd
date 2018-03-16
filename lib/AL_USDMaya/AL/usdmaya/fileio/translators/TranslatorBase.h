@@ -197,7 +197,7 @@ public:
   /// \brief If the translator has had pretearDown called on it then this will return true.
   /// \return true if this prim has had the pretearDown called on it.
   bool isTearingDown() const
-    { return true; }
+    { return m_isTearingDown; }
 
 protected:
 

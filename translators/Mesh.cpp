@@ -23,6 +23,7 @@
 #include "maya/MIntArray.h"
 #include "maya/MFnMesh.h"
 #include "maya/MFnSet.h"
+#include "maya/MFileIO.h"
 
 #include "AL/usdmaya/utils/MeshUtils.h"
 
@@ -121,6 +122,7 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent)
 MStatus Mesh::tearDown(const SdfPath& path)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MeshTranslator::tearDown prim=%s\n", path.GetText());
+
   context()->removeItems(path);
   context()->removeExcludedGeometry(path);
   return MS::kSuccess;
@@ -135,14 +137,34 @@ MStatus Mesh::update(const UsdPrim& path)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Mesh::preTearDown(UsdPrim& prim)
 {
-
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MeshTranslator::preTearDown prim=%s\n", prim.GetPath().GetText());
   TranslatorBase::preTearDown(prim);
+
+  /* TODO
+   * This block was put in since writeEdits modifies USD and thus triggers the OnObjectsChanged callback which will then tearDown
+   * the this Mesh prim. The writeEdits method will then continue attempting to copy maya mesh data to USD but will end up crashing
+   * since the maya mesh has now been removed by the tearDown.
+   *
+   * I have tried turning off the TfNotice but I get the 'Detected usd threading violation. Concurrent changes to layer(s) composed'
+   * error.
+   *
+   * This crash and error seems to be happening mainly when switching out a variant that contains a Mesh, and that Mesh has been
+   * force translated into Maya.
+   */
+  TfNotice::Block block;
+  writeEdits(prim);
+
+  return MS::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+ void Mesh::writeEdits(UsdPrim& prim)
+{
 
   if(!prim.IsValid())
   {
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("Mesh::preTearDown prim invalid\n");
-    return MS::kFailure;
+    return;
   }
 
   // Write the overrides back to the path it was imported at
@@ -160,20 +182,18 @@ MStatus Mesh::preTearDown(UsdPrim& prim)
     MStatus status;
     MFnMesh fnMesh(path, &status);
     AL_MAYA_CHECK_ERROR2(status, MString("unable to attach function set to mesh") + path.fullPathName());
+
     if(status)
     {
       UsdAttribute pointsAttr = geomPrim.GetPointsAttr();
-
-      AL::usdmaya::utils::copyVertexData(fnMesh, pointsAttr);
       AL::usdmaya::utils::copyFaceConnectsAndPolyCounts(geomPrim, fnMesh);
+      AL::usdmaya::utils::copyVertexData(fnMesh, pointsAttr);
       AL::usdmaya::utils::copyInvisibleHoles(geomPrim, fnMesh);
       //TODO: Control the Handness of the UV's
       AL::usdmaya::utils::copyUvSetData(geomPrim, fnMesh, false);
-
       AL::usdmaya::utils::copyColourSetData(geomPrim, fnMesh);
       AL::usdmaya::utils::copyCreaseVertices(geomPrim, fnMesh);
       AL::usdmaya::utils::copyCreaseEdges(geomPrim, fnMesh);
-
       //TODO: Control the copying of dynamicAttributes
       DgNodeTranslator::copyDynamicAttributes(obj.object(), prim);
     }
@@ -183,7 +203,6 @@ MStatus Mesh::preTearDown(UsdPrim& prim)
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("Unable to find the corresponding Maya Handle at prim path '%s'\n", prim.GetPath().GetText());
   }
 
-  return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

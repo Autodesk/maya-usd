@@ -1635,6 +1635,7 @@ void copyVertexData(const MFnMesh& fnMesh, const UsdAttribute& pointsAttr, UsdTi
   if(status)
   {
     memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
+
     pointsAttr.Set(points, time);
   }
   else
