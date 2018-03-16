@@ -12,7 +12,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
+
+#include "AL/usdmaya/utils/MeshUtils.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
@@ -214,7 +215,7 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
       }
       for(auto it = startMesh; it != endMesh; ++it)
       {
-        translators::MeshTranslator::copyVertexData(MFnMesh(it->first), it->second, timeCode);
+        AL::usdmaya::utils::copyVertexData(MFnMesh(it->first), it->second, timeCode);
       }
     }
   }

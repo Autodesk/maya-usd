@@ -95,7 +95,8 @@ void TranslatorContext::updatePrimTypes()
 //----------------------------------------------------------------------------------------------------------------------
 bool TranslatorContext::getMObject(const SdfPath& path, MObjectHandle& object, MTypeId typeId)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getMObject %s\n", path.GetText());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getMObject '%s' \n", path.GetText());
+
   auto it = find(path);
   if(it != m_primMapping.end())
   {
@@ -138,7 +139,8 @@ bool TranslatorContext::getMObject(const SdfPath& path, MObjectHandle& object, M
 //----------------------------------------------------------------------------------------------------------------------
 bool TranslatorContext::getMObject(const SdfPath& path, MObjectHandle& object, MFn::Type type)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getMObject: %s\n", path.GetText());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getMObject '%s' \n", path.GetText());
+
   auto it = find(path);
   if(it != m_primMapping.end())
   {
@@ -283,7 +285,7 @@ void TranslatorContext::removeItems(const SdfPath& path)
       }
       else
       {
-        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("Invalid MObject was registered with the primPath \"%s\"\n", path.GetText());
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeItems Invalid MObject was registered with the primPath \"%s\"\n", path.GetText());
       }
     }
     nodes.clear();
@@ -328,7 +330,18 @@ MString getNodeName(MObject obj)
 //----------------------------------------------------------------------------------------------------------------------
 MString TranslatorContext::serialise() const
 {
+
   std::ostringstream oss;
+  for(auto& path : m_excludedGeometry)
+  {
+    oss << path.GetString() << ",";
+  }
+
+  m_proxyShape->excludedTranslatedGeometryPlug().setString(MString(oss.str().c_str()));
+
+  oss.str("");
+  oss.clear();
+
   for(auto it : m_primMapping)
   {
     oss << it.path() << "=" << it.type().GetText() << ",";
@@ -376,12 +389,16 @@ void TranslatorContext::deserialise(const MString& string)
 
     m_primMapping.push_back(lookup);
   }
+
+  SdfPathVector vec = m_proxyShape->getPrimPathsFromCommaJoinedString(m_proxyShape->excludedTranslatedGeometryPlug().asString());
+  m_excludedGeometry.insert(vec.begin(), vec.end());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& itemsToRemove, bool callPreUnload)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preRemoveEntry primPath=%s\n", primPath.GetText());
+
   PrimLookups::iterator end = m_primMapping.end();
   PrimLookups::iterator range_begin = std::lower_bound(m_primMapping.begin(), end, primPath, value_compare());
   PrimLookups::iterator range_end = range_begin;
@@ -425,6 +442,8 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
       }
     }
   }
+
+
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -503,6 +522,21 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
     if(translator)
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::unloadPrim [tearDown] prim=%s\n", path.GetText());
+
+      // call pretearDown if it hasn't been called before
+      if(translator->isTearingDown())
+      {
+        UsdPrim prim = stage->GetPrimAtPath(path);
+        if(prim)
+        {
+          translator->preTearDown(prim);
+        }
+        else
+        {
+          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preTearDown was skipped because the path '%s' was invalid\n", path.GetText());
+        }
+      }
+
       MStatus status = translator->tearDown(path);
       switch(status.statusCode())
       {

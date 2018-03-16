@@ -1,3 +1,54 @@
+## v0.27.0 (2018-03-12)
+
+### Added 
++ Mesh Translation: Add support for glimpse user data attributes during import / export
++ Added a Translate command "AL_usdmaya_TranslatePrim" that allows you to selectively run the Translator for a set of Prim Paths to either Import or Teardown the prim. Tutorial on the way! 
++ preTearDown writes Meshes Translated to Maya to EditTarget 
++ Library Refactor: Refactored to seperate code into multiple libraries: see change [DeveloperDocumentation](README.md#developer-documentation)
+
+
+### Changed
+
++ Tests: TranslatorContext.TranslatorContext was failing because there was an extra insert into the context in the MayaReference import. Also there was a filter on the tests which needed to be nuked!
++ Docs: Small update to build.md
++ Mesh Translation: updated glimpse subdivision attribute handling
++ Store maya_associatedReferenceNode in custom data This is to stop USD from complaining about: "Error in 'pxrInternal_v0_8__pxrReserved__::UsdStage::_HandleLayersDidChange' at line 3355 in file stage.cpp : 'Detected usd threading violation.  Concurrent changes to layer(s) composed in stage 0x185f5a50 rooted at @usdfile.usda@.  (serial=6, lastSerial=12).'
++ Updated AL_usdmaya_LayerCreateLayer command to add layers to Sublayers
++ Proxy Shape and transform nodes names now match
++ Update to USD-0.8.3
+
+
+### Known Bugs/Limitations:
++ Variant Switch with Maya Meshes causes a crash
++ AL_usdmaya_TranslatePrim generates multiple copies of meshes
++ AL_usdmaya_ProxyShapeImportPrimPathAsMaya not using new Mesh Translation functionality
+
+
+
+## v0.26.1 (2018-03-02)
+
+### Added
+
+* Doxygen comments, tutorial and unit test for ModelAPI::GetLock(), ModelAPI::SetLock() and ModelAPI::ComputeLock().
+
+
+### Changed
+
+Change default lock behaviour of al_usdmaya_lock metadata. "transform" will lock current prim and all its children.
+-GetSelectabilityValue method is now called GetSelectability
+-Implementation of ComputeLock() is modified to reuse common code structure.
+-Library name AL_Utils -> AL_EventSystem
+
+
+### Fixed
+
+- Issue with the ProxyShapeIimport command not loading payloads correctly.
+- AL_USDMayaSchema's pixar plugin was not being loaded during it's tests
+* Blocked the usd stage being reloaded when the filePath changes, when loading a maya file. This ensures all proxy shape attributes are initialised prior to reloading the stage.
+- Crash when moving a locked prim
+- Locking not working on maya hierarchies that appear and disappear on selection
+- "Error : No proxyShape specified/selected " when attempting to add a sublayer via the UI
+
 ## v0.26.0 (2018-02-09)
 
 ### Added

@@ -64,6 +64,8 @@ public:
   /// \return MS::kSuccess if ok
   MStatus applyDefaultMaterialOnShape(MObject shape);
 
+  static void initialiseDefaultShadingGroup(MObject& target);
+
 protected:
   /// an MObject handle to the initial shading group, which can be assigned to newly imported geometry so that
   /// default shading is applied to the shading group
@@ -71,6 +73,8 @@ protected:
 
   /// the visibility attribute common to all dag nodes
   static MObject m_visible;
+
+
 };
 
 //----------------------------------------------------------------------------------------------------------------------

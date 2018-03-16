@@ -252,7 +252,7 @@ over "root" {
     MString importCmd;
     importCmd.format(MString("AL_usdmaya_ProxyShapeImport -file \"^1s\""), AL::maya::utils::convert(temp_path));
     MGlobal::executeCommand(importCmd);
-    MGlobal::executeCommand("AL_usdmaya_ProxyShapeImportAllTransforms AL_usdmaya_ProxyShape1;");
+    MGlobal::executeCommand("AL_usdmaya_ProxyShapeImportAllTransforms AL_usdmaya_Proxy;");
 
     MSelectionList sel;
     sel.add("root");
@@ -278,7 +278,7 @@ over "root" {
      importCmd.format(MString("AL_usdmaya_ProxyShapeImport -file \"^1s\" -s \"^2s\""),
          AL::maya::utils::convert(temp_path), AL::maya::utils::convert(encodedString2));
      MGlobal::executeCommand(importCmd);
-     MGlobal::executeCommand("AL_usdmaya_ProxyShapeImportAllTransforms AL_usdmaya_ProxyShape1;");
+     MGlobal::executeCommand("AL_usdmaya_ProxyShapeImportAllTransforms AL_usdmaya_Proxy;");
 
      MSelectionList sel;
      sel.add("root");

@@ -266,6 +266,8 @@ inline bool ProxyShape::TransformReference::decRef(const TransformReason reason)
     assert(0);
     break;
   }
+
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::decRefEnd %lu %lu %lu\n", m_selected, m_refCount, m_required);
   return !m_required && !m_selected && !m_refCount;
 }
 
@@ -280,6 +282,8 @@ inline void ProxyShape::TransformReference::incRef(const TransformReason reason)
   case kRequired: ++m_required; break;
   default: assert(0); break;
   }
+
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::incRefEnd %lu %lu %lu\n", m_selected, m_refCount, m_required);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -444,7 +448,7 @@ MObject ProxyShape::makeUsdTransformChain(
     uint32_t* createCount,
     MString* resultingPath)
 {
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChainB %s\n", usdPrim.GetPath().GetText());
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChain %s\n", usdPrim.GetPath().GetText());
 
   SdfPath path = usdPrim.GetPath();
   auto iter = m_requiredPaths.find(path);
@@ -713,9 +717,10 @@ void ProxyShape::removeUsdTransformChain(
 {
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeUsdTransformChain\n");
   SdfPath parentPrim = path;
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::removeUsdTransformChain %s\n", path.GetText());
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::removeUsdTransformChain %s\n", path.GetText());
   MObject parentTM = MObject::kNullObj;
   MObject object = MObject::kNullObj;
+
   while(!parentPrim.IsEmpty())
   {
     auto it = m_requiredPaths.find(parentPrim);
@@ -723,14 +728,22 @@ void ProxyShape::removeUsdTransformChain(
     {
       return;
     }
+
     if(it->second.decRef(reason))
     {
       MObject object = it->second.node();
       if(object != MObject::kNullObj)
       {
-        modifier.reparentNode(object);
-        modifier.deleteNode(object);
+        MObjectHandle h = object;
+
+        // The Xform of the shape may have already been deleted when the shape was deleted
+        if(h.isAlive() && h.isValid())
+        {
+          modifier.reparentNode(object);
+          modifier.deleteNode(object);
+        }
       }
+
       m_currentLockedPrims.erase(parentPrim);
       m_requiredPaths.erase(it);
     }

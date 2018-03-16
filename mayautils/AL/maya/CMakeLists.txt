@@ -10,8 +10,7 @@ set(MAYAUTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib)
 # Source 
 ####################################################################################################
 
-add_definitions(-DAL_MAYAUTILS_DEBUG=1)
-
+add_definitions(-DAL_MAYAUTILS_DEBUG=0)
 list(APPEND maya_utils_headers
     utils/CommandGuiHelper.h
     utils/FileTranslatorBase.h
@@ -49,7 +48,7 @@ target_include_directories(${MAYAUTILS_LIBRARY_NAME}
     )
 
 target_link_libraries(${MAYAUTILS_LIBRARY_NAME}
-  AL_Utils
+  AL_EventSystem
   ${MAYA_Foundation_LIBRARY}
   ${MAYA_OpenMaya_LIBRARY}
   ${MAYA_OpenMayaAnim_LIBRARY}

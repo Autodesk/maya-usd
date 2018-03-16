@@ -740,7 +740,7 @@ TEST(ActiveInactive, disable)
       EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
       EXPECT_EQ(0, sl.length());
 
-      MFileIO::saveAs("/tmp/AL_USDMayaTests_inactive_prim.ma", 0, true);
+      EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs("/tmp/AL_USDMayaTests_inactive_prim.ma", 0, true));
 
       MFileIO::newFile(true);
     }

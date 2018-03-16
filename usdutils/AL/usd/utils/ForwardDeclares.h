@@ -16,6 +16,7 @@
 #pragma once
 
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/prim.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -29,6 +30,8 @@ class UsdPrim;
 class UsdGeomCamera;
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+typedef std::vector<PXR_NS::UsdPrim> UsdPrimVector;
 
 #define IGNORE_USD_WARNINGS_PUSH \
   _Pragma ("GCC diagnostic push") \

@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "AL/event/EventHandler.h"
 #include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/DebugCodes.h"

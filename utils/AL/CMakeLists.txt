@@ -2,8 +2,8 @@
 # Setup 
 ####################################################################################################
 
-set(UTILS_LIBRARY_NAME "AL_Utils")
-set(UTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
+set(EVENTS_LIBRARY_NAME "AL_EventSystem")
+set(EVENTS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
 
 # The list that will be populated with sources, sources will be the ones compiled into the library
 list(APPEND utils_source)
@@ -19,18 +19,18 @@ add_subdirectory(event)
 # Utils Library
 ####################################################################################################
 
-add_library(${UTILS_LIBRARY_NAME}
+add_library(${EVENTS_LIBRARY_NAME}
     SHARED
         ${utils_source}
 )
 
-target_include_directories(${UTILS_LIBRARY_NAME}
+target_include_directories(${EVENTS_LIBRARY_NAME}
     PUBLIC 
-    ${UTILS_INCLUDE_LOCATION}
+    ${EVENTS_INCLUDE_LOCATION}
 )
 
 # install the library
-install(TARGETS ${UTILS_LIBRARY_NAME}
+install(TARGETS ${EVENTS_LIBRARY_NAME}
     LIBRARY
-    DESTINATION ${UTILS_LIBRARY_LOCATION}
+    DESTINATION ${EVENTS_LIBRARY_LOCATION}
 )

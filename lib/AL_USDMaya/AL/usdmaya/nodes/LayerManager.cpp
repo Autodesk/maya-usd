@@ -138,7 +138,7 @@ bool LayerDatabase::removeLayer(SdfLayerRefPtr layer)
   {
     auto oldIdPosition = m_idToLayer.find(oldId);
 #ifdef DEBUG
-    assert (oldIdPosition != m_idToLayer.end())
+    assert (oldIdPosition != m_idToLayer.end());
 #else
     if (oldIdPosition == m_idToLayer.end())
     {
@@ -187,7 +187,7 @@ void LayerDatabase::_addLayer(SdfLayerRefPtr layer, const std::string& identifie
     SdfLayerRefPtr oldLayer = insertIdResult.first->second;
     auto oldLayerAndIds = m_layerToIds.find(oldLayer);
 #ifdef DEBUG
-    assert (oldLayerIds != m_layerToIds.end())
+    assert (oldLayerAndIds != m_layerToIds.end());
 #else
     if (oldLayerAndIds == m_layerToIds.end())
     {
@@ -211,7 +211,7 @@ void LayerDatabase::_addLayer(SdfLayerRefPtr layer, const std::string& identifie
         auto idLocation = std::find(oldLayerIds.begin(), oldLayerIds.end(),
             identifier);
 #ifdef DEBUG
-        assert (idLocation != oldLayerIds.end())
+        assert (idLocation != oldLayerIds.end());
 #else
         if(idLocation == oldLayerIds.end())
         {

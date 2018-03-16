@@ -123,6 +123,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::Event);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventQuery);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventLookup);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::TranslatePrim);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
   AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
@@ -154,7 +155,6 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL::usdmaya::cmds::constructDebugCommandGuis();
 
   CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
-
   AL::usdmaya::Global::onPluginLoad();
   return status;
 }
@@ -219,6 +219,7 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::UsdDebugCommand);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::TranslatePrim);
   AL_UNREGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
   AL_UNREGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ExportTranslator);
   AL_UNREGISTER_DRAW_OVERRIDE(plugin, AL::usdmaya::nodes::ProxyDrawOverride);

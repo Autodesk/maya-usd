@@ -20,6 +20,22 @@
   #include "pxr/usdImaging/usdImaging/hdEngine.h"
 #endif
 
+#if (__cplusplus >= 201703L)
+# include <filesystem>
+#else
+# include <boost/filesystem.hpp>
+#endif
+
+namespace AL {
+namespace filesystem {
+#if (__cplusplus >= 201703L)
+typedef std::filesystem::path path;
+#else
+typedef boost::filesystem::path path;
+#endif
+}
+}
+
 #include "AL/usdmaya/CodeTimings.h"
 #include "AL/usdmaya/utils/Utils.h"
 
@@ -39,6 +55,7 @@
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
 #include "AL/usdmaya/Version.h"
+#include "AL/usd/utils/ForwardDeclares.h"
 
 #include "maya/MFileIO.h"
 #include "maya/MFnPluginData.h"
@@ -47,12 +64,15 @@
 #include "maya/MItDependencyNodes.h"
 #include "maya/MPlugArray.h"
 #include "maya/MNodeClass.h"
+#include "maya/MFileIO.h"
 #include "maya/MCommandResult.h"
 
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/usd/stageCacheContext.h"
+#include "pxr/usdImaging/usdImaging/primAdapter.h"
+#include "pxr/usdImaging/usdImaging/meshAdapter.h"
 
 #include <algorithm>
 #include <iterator>
@@ -63,6 +83,15 @@ namespace nodes {
 typedef void (*proxy_function_prototype)(void* userData, AL::usdmaya::nodes::ProxyShape* proxyInstance);
 
 const char* ProxyShape::s_selectionMaskName = "al_ProxyShape";
+
+MDagPath ProxyShape::parentTransform()
+{
+  MFnDagNode fn(thisMObject());
+  MDagPath proxyTransformPath;
+  fn.getPath(proxyTransformPath);
+  proxyTransformPath.pop();
+  return proxyTransformPath;
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialiseTranslatorContext()
@@ -94,6 +123,75 @@ static std::string resolvePath(const std::string& filePath)
   return resolver.Resolve(filePath);
 }
 
+static std::string getDir(const std::string &fullFilePath)
+{
+  return AL::filesystem::path(fullFilePath).parent_path().string();
+}
+
+static std::string getMayaReferencedFileDir(const MObject &proxyShapeNode)
+{
+  // Can not use MFnDependencyNode(proxyShapeNode).isFromReferencedFile() to test if it is reference node or not,
+  // which always return false even the proxyShape node is referenced...
+
+  MStatus stat;
+  MFnReference refFn;
+  MItDependencyNodes dgIter(MFn::kReference, &stat);
+  for (; !dgIter.isDone(); dgIter.next())
+  {
+    MObject cRefNode = dgIter.thisNode();
+    refFn.setObject(cRefNode);
+    if(refFn.containsNodeExactly(proxyShapeNode, &stat))
+    {
+      // According to Maya API document, the second argument is 'includePath' and set it to true to include the file path.
+      // However, I have to set it to false to return the full file path otherwise I get a file name only...
+      MString refFilePath = refFn.fileName(true, false, false, &stat);
+      if(!refFilePath.length())
+        return std::string();
+
+      std::string referencedFilePath = refFilePath.asChar();
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("getMayaReferencedFileDir: The reference file that contains the proxyShape node is : %s\n", referencedFilePath.c_str());
+
+      return getDir(referencedFilePath);
+    }
+  }
+
+  return std::string();
+}
+
+static std::string getMayaSceneFileDir()
+{
+  std::string currentFile = AL::maya::utils::convert(MFileIO::currentFile());
+  size_t filePathSize = currentFile.size();
+  if(filePathSize < 4)
+    return std::string();
+
+  // If scene is untitled, the maya file will be MayaWorkspaceDir/untitled :
+  constexpr char ma_ext[] = ".ma";
+  constexpr char mb_ext[] = ".mb";
+  auto ext_start = currentFile.end() - 3;
+  if(std::equal(ma_ext, ma_ext + 3, ext_start) ||
+     std::equal(mb_ext, mb_ext + 3, ext_start))
+    return getDir(currentFile);
+
+  return std::string();
+}
+
+static std::string resolveRelativePathWithinMayaContext(const MObject &proxyShape, const std::string& relativeFilePath)
+{
+  if (relativeFilePath.length() < 3)
+    return relativeFilePath;
+
+  std::string currentFileDir = getMayaReferencedFileDir(proxyShape);
+  if(currentFileDir.empty())
+    currentFileDir = getMayaSceneFileDir();
+
+  if(currentFileDir.empty())
+    return relativeFilePath;
+
+  AL::filesystem::path path = boost::filesystem::canonical(relativeFilePath, currentFileDir);
+  return path.string();
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 AL_MAYA_DEFINE_NODE(ProxyShape, AL_USDMAYA_PROXYSHAPE, AL_usdmaya);
 
@@ -101,6 +199,7 @@ MObject ProxyShape::m_filePath = MObject::kNullObj;
 MObject ProxyShape::m_primPath = MObject::kNullObj;
 MObject ProxyShape::m_excludePrimPaths = MObject::kNullObj;
 MObject ProxyShape::m_populationMaskIncludePaths = MObject::kNullObj;
+MObject ProxyShape::m_excludedTranslatedGeometry = MObject::kNullObj;
 MObject ProxyShape::m_time = MObject::kNullObj;
 MObject ProxyShape::m_timeOffset = MObject::kNullObj;
 MObject ProxyShape::m_timeScalar = MObject::kNullObj;
@@ -178,6 +277,108 @@ UsdStagePopulationMask ProxyShape::constructStagePopulationMask(const MString &p
   return mask;
 }
 
+void ProxyShape::translatePrimPathsIntoMaya(
+    const SdfPathVector& importPaths,
+    const SdfPathVector& teardownPaths,
+    const fileio::translators::TranslatorParameters& param)
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimPathsIntoMaya ImportSize='%d' TearDownSize='%d' \n",
+                                     importPaths.size(),
+                                     teardownPaths.size());
+
+  //Resolve SdfPathSet to UsdPrimVector
+  UsdPrimVector importPrims;
+  for(const SdfPath& path : importPaths)
+  {
+    UsdPrim prim = m_stage->GetPrimAtPath(path);
+    if(prim.IsValid())
+    {
+      importPrims.push_back(prim);
+    }
+    else
+    {
+      TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimPathsIntoMaya Path for import '%s' resolves to an invalid prim\n", path.GetString().c_str());
+    }
+  }
+
+  translatePrimsIntoMaya(importPrims, teardownPaths, param);
+}
+
+void ProxyShape::translatePrimsIntoMaya(
+    const UsdPrimVector& importPrims,
+    const SdfPathVector& teardownPrims,
+    const fileio::translators::TranslatorParameters& param)
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimsIntoMaya ImportSize='%d' TearDownSize='%d' \n", importPrims.size(), teardownPrims.size());
+
+  proxy::PrimFilter filter(teardownPrims, importPrims, this);
+  if(TfDebug::IsEnabled(ALUSDMAYA_TRANSLATORS))
+  {
+    std::cout << "new prims" << std::endl;
+    for(auto it : filter.newPrimSet())
+    {
+      std::cout << it.GetPath().GetText() << std::endl;
+    }
+    std::cout << "new transforms" << std::endl;
+    for(auto it : filter.transformsToCreate())
+    {
+      std::cout << it.GetPath().GetText() << std::endl;
+    }
+    std::cout << "updateable prims" << std::endl;
+    for(auto it : filter.updatablePrimSet())
+    {
+      std::cout << it.GetPath().GetText() << std::endl;
+    }
+    std::cout << "removed prims" << std::endl;
+    for(auto it : filter.removedPrimSet())
+    {
+      std::cout << it.GetText() << std::endl;
+    }
+  }
+
+  cmds::ProxyShapePostLoadProcess::MObjectToPrim objsToCreate;
+  if(!filter.transformsToCreate().empty())
+  {
+    cmds::ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(
+        this,
+        filter.transformsToCreate(),
+        parentTransform(),
+        objsToCreate);
+  }
+
+  context()->removeEntries(filter.removedPrimSet());
+
+  if(!filter.newPrimSet().empty())
+  {
+    cmds::ProxyShapePostLoadProcess::createSchemaPrims(this, filter.newPrimSet(), param);
+  }
+
+  if(!filter.updatablePrimSet().empty())
+  {
+    cmds::ProxyShapePostLoadProcess::updateSchemaPrims(this, filter.updatablePrimSet());
+  }
+
+  cleanupTransformRefs();
+
+  context()->updatePrimTypes();
+
+  // now perform any post-creation fix up
+  if(!filter.newPrimSet().empty())
+  {
+    cmds::ProxyShapePostLoadProcess::connectSchemaPrims(this, filter.newPrimSet());
+  }
+
+  if(!filter.updatablePrimSet().empty())
+  {
+    cmds::ProxyShapePostLoadProcess::connectSchemaPrims(this, filter.updatablePrimSet());
+  }
+
+  if(context()->isExcludedGeometryDirty())
+  {
+    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimsIntoMaya excluded geometry has been modified, reconstructing imaging engine \n");
+    constructGLImagingEngine();
+  }
+}
 //----------------------------------------------------------------------------------------------------------------------
 SdfPathVector ProxyShape::getPrimPathsFromCommaJoinedString(const MString &paths) const
 {
@@ -193,6 +394,7 @@ SdfPathVector ProxyShape::getPrimPathsFromCommaJoinedString(const MString &paths
       begin = iter + 1;
       iter = std::find(begin, end, ',');
     }
+
     result.push_back(SdfPath(std::string(begin, end)));
   }
   return result;
@@ -217,11 +419,15 @@ void ProxyShape::constructGLImagingEngine()
         delete m_engine;
       }
 
+      const SdfPathSet& translatedGeo = m_context->excludedGeometry();
       // combine the excluded paths
       SdfPathVector excludedGeometryPaths;
-      excludedGeometryPaths.reserve(m_excludedTaggedGeometry.size() + m_excludedGeometry.size());
+      excludedGeometryPaths.reserve(m_excludedTaggedGeometry.size() + m_excludedGeometry.size() + translatedGeo.size());
       excludedGeometryPaths.assign(m_excludedTaggedGeometry.begin(), m_excludedTaggedGeometry.end());
       excludedGeometryPaths.insert(excludedGeometryPaths.end(), m_excludedGeometry.begin(), m_excludedGeometry.end());
+      excludedGeometryPaths.insert(excludedGeometryPaths.end(),
+                                   translatedGeo.begin(),
+                                   translatedGeo.end());
 
       m_engine = new UsdImagingGLHdEngine(m_path, excludedGeometryPaths);
 
@@ -505,6 +711,7 @@ MStatus ProxyShape::initialise()
     m_primPath = addStringAttr("primPath", "pp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance);
     m_excludePrimPaths = addStringAttr("excludePrimPaths", "epp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance);
     m_populationMaskIncludePaths = addStringAttr("populationMaskIncludePaths", "pmi", kCached | kReadable | kWritable | kStorable | kAffectsAppearance);
+    m_excludedTranslatedGeometry = addStringAttr("excludedTranslatedGeometry", "etg", kCached | kReadable | kWritable | kStorable | kAffectsAppearance);
 
     m_complexity = addInt32Attr("complexity", "cplx", 0, kCached | kConnectable | kReadable | kWritable | kAffectsAppearance | kKeyable | kStorable);
     setMinMax(m_complexity, 0, 8, 0, 4);
@@ -630,63 +837,17 @@ void ProxyShape::onPrimResync(SdfPath primPath, SdfPathVector& previousPrims)
 
   AL_BEGIN_PROFILE_SECTION(ObjectChanged);
   MFnDagNode fn(thisMObject());
-  MDagPath dag_path;
-  fn.getPath(dag_path);
-  dag_path.pop();
+  MDagPath proxyTransformPath;
+  fn.getPath(proxyTransformPath);
+  proxyTransformPath.pop();
 
-  // find the new set of schema translator prims
-  std::vector<UsdPrim> newPrimSet = huntForNativeNodesUnderPrim(dag_path, primPath, translatorManufacture());
+  // find the new set of prims
+  UsdPrimVector newPrimSet = huntForNativeNodesUnderPrim(proxyTransformPath, primPath, translatorManufacture());
 
-  proxy::PrimFilter filter(previousPrims, newPrimSet, this);
+  // Remove prims that have disappeared and translate in new prims
+  translatePrimsIntoMaya(newPrimSet, previousPrims);
+
   previousPrims.clear();
-
-  if(TfDebug::IsEnabled(ALUSDMAYA_TRANSLATORS)){
-    std::cout << "new prims:" << std::endl;
-    for(auto it : filter.newPrimSet())
-    {
-      std::cout << it.GetPath().GetText() << std::endl;
-    }
-    std::cout << "new transforms:" << std::endl;
-    for(auto it : filter.transformsToCreate())
-    {
-      std::cout << it.GetPath().GetText() << std::endl;
-    }
-    std::cout << "updateable prims:" << std::endl;
-    for(auto it : filter.updatablePrimSet())
-    {
-      std::cout << it.GetPath().GetText() << std::endl;
-    }
-    std::cout << "removed prims:" << std::endl;
-    for(auto it : filter.removedPrimSet())
-    {
-      std::cout << it.GetText() << std::endl;
-    }
-  }
-
-  // create transforms first to increment ref counts and avoid deleting/recreating ones that will stay
-  cmds::ProxyShapePostLoadProcess::MObjectToPrim objsToCreate;
-  if(!filter.transformsToCreate().empty())
-    cmds::ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(this, filter.transformsToCreate(), dag_path, objsToCreate);
-
-  context()->removeEntries(filter.removedPrimSet());
-
-  if(!filter.newPrimSet().empty())
-    cmds::ProxyShapePostLoadProcess::createSchemaPrims(this, filter.newPrimSet());
-
-  if(!filter.updatablePrimSet().empty())
-    cmds::ProxyShapePostLoadProcess::updateSchemaPrims(this, filter.updatablePrimSet());
-
-  cleanupTransformRefs();
-
-  context()->updatePrimTypes();
-
-  // now perform any post-creation fix up
-  if(!filter.newPrimSet().empty())
-    cmds::ProxyShapePostLoadProcess::connectSchemaPrims(this, filter.newPrimSet());
-
-  if(!filter.updatablePrimSet().empty())
-    cmds::ProxyShapePostLoadProcess::connectSchemaPrims(this, filter.updatablePrimSet());
-
 
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::onPrimResync end:\n%s\n", context()->serialise().asChar());
 
@@ -973,7 +1134,8 @@ std::vector<UsdPrim> ProxyShape::huntForNativeNodesUnderPrim(
       continue;
     }
 
-    if(utils.isSchemaPrim(prim))
+    fileio::translators::TranslatorRefPtr trans = utils.isSchemaPrim(prim);
+    if(trans && trans->importableByDefault())
     {
       prims.push_back(prim);
     }
@@ -1000,7 +1162,6 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
   {
     return;
   }
-
 
   TF_FOR_ALL(itr, notice.GetChangeListMap())
   {
@@ -1060,9 +1221,18 @@ void ProxyShape::loadStage()
   // let the usd stage cache deal with caching the usd stage data
   std::string fileString = TfStringTrimRight(file.asChar());
 
-  if (not TfStringStartsWith(fileString, "./"))
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage original USD file path is %s\n", fileString.c_str());
+
+  AL::filesystem::path filestringPath (fileString);
+  if(filestringPath.is_absolute())
   {
     fileString = resolvePath(fileString);
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the USD file path to %s\n", fileString.c_str());
+  }
+  else
+  {
+    fileString = resolveRelativePathWithinMayaContext(thisMObject(), fileString);
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the relative USD file path to %s\n", fileString.c_str());
   }
 
   // Fall back on checking if path is just a standard absolute path
@@ -1201,7 +1371,6 @@ void ProxyShape::loadStage()
       // execute the post load process to import any custom prims
       cmds::ProxyShapePostLoadProcess::initialise(this);
       findTaggedPrims();
-
     AL_END_PROFILE_SECTION();
   }
 

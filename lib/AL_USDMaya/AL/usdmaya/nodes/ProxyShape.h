@@ -229,7 +229,6 @@ typedef const HierarchyIterationLogic*  HierarchyIterationLogics[3];
 
 extern AL::event::EventId kPreClearStageCache;
 extern AL::event::EventId kPostClearStageCache;
-
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A custom proxy shape node that attaches itself to a USD file, and then renders it.
 ///         The stage is held internally as a member variable, and it will be composed based on a change to the
@@ -247,6 +246,9 @@ class ProxyShape
   friend class ProxyShapeUI;
   friend class StageReloadGuard;
 public:
+
+  // returns the shape's parent transform
+  MDagPath parentTransform();
 
   /// a method that registers all of the events in the ProxyShape
   void registerEvents();
@@ -350,6 +352,9 @@ public:
 
   /// Force the outStageData to be marked dirty (write-only)
   AL_DECL_ATTRIBUTE(stageDataDirty);
+
+  /// Excluded geometry that has been explicitly translated
+  AL_DECL_ATTRIBUTE(excludedTranslatedGeometry);
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Output Attributes
@@ -592,7 +597,7 @@ public:
 
   /// \brief  returns the plugin translator context assigned to this shape
   /// \return the translator context
-  fileio::translators::TranslatorContextPtr& context()
+  inline fileio::translators::TranslatorContextPtr& context()
     { return m_context; }
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -741,6 +746,33 @@ public:
   void removeAttributeChangedCallback();
 
   void constructLockPrims();
+
+  /// \brief Translates prims at the specified paths, the operation conducted by the translator depends on
+  ///        which list you populate.
+  /// \param importPaths paths you wish to import
+  /// \param teardownPaths paths you wish to teardown
+  /// \param param are params which direct the translation of the prims
+  void translatePrimPathsIntoMaya(
+      const SdfPathVector& importPaths,
+      const SdfPathVector& teardownPaths,
+      const fileio::translators::TranslatorParameters& param = fileio::translators::TranslatorParameters());
+
+  /// \brief Translates prims at the specified paths, the operation conducted by the translator depends on
+  ///        which list you populate.
+  /// \param importPaths paths you wish to import
+  /// \param teardownPaths paths you wish to teardown
+  /// \param param are flags which direct the translation of the prims
+  void translatePrimsIntoMaya(
+      const UsdPrimVector& importPrims,
+      const SdfPathVector& teardownPrims,
+      const fileio::translators::TranslatorParameters& param = fileio::translators::TranslatorParameters());
+
+  /// \brief Breaks a comma separated string up into a SdfPath Vector
+  /// \param importPaths paths you wish to import
+  /// \param teardownPaths paths you wish to teardown
+  /// \param param are flags which direct the translation of the prims
+  SdfPathVector getPrimPathsFromCommaJoinedString(const MString &paths) const;
+
 private:
 
   static void onSelectionChanged(void* ptr);
@@ -878,7 +910,7 @@ private:
   UsdPrim getUsdPrim(MDataBlock& dataBlock) const;
   SdfPathVector getExcludePrimPaths() const;
   UsdStagePopulationMask constructStagePopulationMask(const MString &paths) const;
-  SdfPathVector getPrimPathsFromCommaJoinedString(const MString &paths) const;
+
   bool isStageValid() const;
   bool primHasExcludedParent(UsdPrim prim);
   bool initPrim(const uint32_t index, MDGContext& ctx);

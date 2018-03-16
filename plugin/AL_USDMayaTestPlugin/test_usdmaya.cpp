@@ -26,6 +26,7 @@
 #include "maya/MFnTypedAttribute.h"
 #include "maya/MFnUnitAttribute.h"
 #include "maya/MGlobal.h"
+#include "maya/MFileIO.h"
 #include "maya/MMatrix.h"
 #include "maya/MFnAnimCurve.h"
 #include "maya/MFnDagNode.h"
@@ -681,7 +682,7 @@ void randomAnimatedNode(MObject node, const char* const attributeNames[], const 
   }
 }
 
-AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(std::function<UsdStageRefPtr()> buildUsdStage, const std::string tempPath)
+AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(std::function<UsdStageRefPtr()> buildUsdStage, const std::string& tempPath)
 {
   if(buildUsdStage != nullptr)
   {
@@ -696,3 +697,31 @@ AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(std::function<UsdStageRefPt
   proxy->filePathPlug().setString(tempPath.c_str());
   return proxy;
 }
+
+AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(const std::string& rootLayerPath)
+{
+  MFnDagNode fn;
+  MObject xform = fn.create("transform");
+  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+  AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+  proxy->filePathPlug().setString(rootLayerPath.c_str());
+  return proxy;
+}
+
+AL::usdmaya::nodes::ProxyShape* SetupProxyShapeWithMesh()
+{
+  MFileIO::newFile(true);
+  MGlobal::executeCommand("polySphere");
+  MString scene("/tmp/test_SceneWithMesh.usda");
+  MString command;
+  command.format("file -force -typ \"AL usdmaya export\" -pr -ea \"^1s\"", scene.asChar());
+
+  MGlobal::executeCommand(command, true);
+
+  //clear scene then create ProxyShape
+  MFileIO::newFile(true);
+  AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(scene.asChar());
+  return proxyShape;
+}
+
+
