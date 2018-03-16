@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
+#include "AL/maya/utils/Utils.h"
 #include "AL/usdmaya/utils/MeshUtils.h"
 
 #include "maya/MItMeshPolygon.h"
@@ -22,6 +22,18 @@
 namespace AL {
 namespace usdmaya {
 namespace utils {
+
+enum GlimpseUserDataTypes
+{
+  kInt = 2,
+  kFloat = 4,
+  kInt2 = 7,
+  kInt3 = 8,
+  kVector = 13,
+  kColor = 15,
+  kString = 16,
+  kMatrix = 17
+};
 
 void floatToDouble(double* output, const float* const input, size_t count)
 {
@@ -777,6 +789,124 @@ void applyGlimpseSubdivParams(const UsdPrim& from, MFnMesh& fnMesh)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void applyGlimpseUserDataParams(const UsdPrim &from, MFnMesh &fnMesh)
+{
+  // TODO: glimpse user data can be set on any DAG node, push up to DagNodeTranslator?
+  // TODO: a schema, similar to that of primvars, should be used
+  static const std::string glimpse_namespace("glimpse:userData");
+
+  MStatus status;
+  MPlug plug = fnMesh.findPlug("gUserData", &status);
+  if(!status)
+  {
+    return;
+  }
+
+  auto applyUserData = [](MPlug& elemPlug, const std::string& name, int type, const std::string& value)
+  {
+    MPlug namePlug = elemPlug.child(0);
+    MPlug typePlug = elemPlug.child(1);
+    MPlug valuePlug = elemPlug.child(2);
+
+    namePlug.setValue(AL::maya::utils::convert(name));
+    typePlug.setValue(type);
+    valuePlug.setValue(AL::maya::utils::convert(value));
+  };
+
+  unsigned int logicalIndex = 0;
+  std::vector<UsdProperty> userDataProperties = from.GetPropertiesInNamespace(glimpse_namespace);
+  for(auto &userDataProperty : userDataProperties) {
+    if (UsdAttribute attr = userDataProperty.As<UsdAttribute>())
+    {
+      SdfValueTypeName typeName = attr.GetTypeName();
+      if(typeName == SdfValueTypeNames->Int)
+      {
+        int value;
+        attr.Get(&value);
+
+        MPlug elementPlug = plug.elementByLogicalIndex(logicalIndex++);
+        applyUserData(elementPlug, attr.GetBaseName().GetString(), GlimpseUserDataTypes::kInt, std::to_string(value));
+      }
+      else if(typeName == SdfValueTypeNames->Int2)
+      {
+        GfVec2i vec;
+        attr.Get(&vec);
+
+        std::stringstream ss;
+        ss << vec[0] << ' ' << vec[1];
+
+        MPlug elementPlug = plug.elementByLogicalIndex(logicalIndex++);
+        applyUserData(elementPlug, attr.GetBaseName().GetString(), GlimpseUserDataTypes::kInt2, ss.str());
+      }
+      else if(typeName == SdfValueTypeNames->Int3)
+      {
+        GfVec3i vec;
+        attr.Get(&vec);
+
+        std::stringstream ss;
+        ss << vec[0] << ' ' << vec[1] << ' ' << vec[2];
+
+        MPlug elementPlug = plug.elementByLogicalIndex(logicalIndex++);
+        applyUserData(elementPlug, attr.GetBaseName().GetString(), GlimpseUserDataTypes::kInt3, ss.str());
+      }
+      else if(typeName == SdfValueTypeNames->Float)
+      {
+        float value;
+        attr.Get(&value);
+
+        MPlug elementPlug = plug.elementByLogicalIndex(logicalIndex++);
+        applyUserData(elementPlug, attr.GetBaseName().GetString(), GlimpseUserDataTypes::kFloat,
+                      std::to_string(value));
+      }
+      else if(typeName == SdfValueTypeNames->String)
+      {
+        std::string value;
+        attr.Get(&value);
+
+        MPlug elementPlug = plug.elementByLogicalIndex(logicalIndex++);
+        applyUserData(elementPlug, attr.GetBaseName().GetString(), GlimpseUserDataTypes::kString, value);
+      }
+      else if(typeName == SdfValueTypeNames->Vector3f)
+      {
+        GfVec3f vec;
+        attr.Get(&vec);
+
+        std::stringstream ss;
+        ss << vec[0] << ' ' << vec[1] << ' ' << vec[2];
+
+        MPlug elementPlug = plug.elementByLogicalIndex(logicalIndex++);
+        applyUserData(elementPlug, attr.GetBaseName().GetString(), GlimpseUserDataTypes::kVector, ss.str());
+      }
+      else if(typeName == SdfValueTypeNames->Color3f)
+      {
+        GfVec3f vec;
+        attr.Get(&vec);
+
+        std::stringstream ss;
+        ss << vec[0] << ' ' << vec[1] << ' ' << vec[2];
+
+        MPlug elementPlug = plug.elementByLogicalIndex(logicalIndex++);
+        applyUserData(elementPlug, attr.GetBaseName().GetString(), GlimpseUserDataTypes::kColor, ss.str());
+      }
+      else if(typeName == SdfValueTypeNames->Matrix4d)
+      {
+        GfMatrix4d matrix;
+        attr.Get(&matrix);
+
+        std::stringstream ss;
+        ss << matrix[0][0] << ' ' << matrix[0][1] << ' ' << matrix[0][2] << ' ';
+        ss << matrix[1][0] << ' ' << matrix[1][1] << ' ' << matrix[1][2] << ' ';
+        ss << matrix[2][0] << ' ' << matrix[2][1] << ' ' << matrix[2][2] << ' ';
+        ss << matrix[3][0] << ' ' << matrix[3][1] << ' ' << matrix[3][2];
+
+        MPlug elementPlug = plug.elementByLogicalIndex(logicalIndex++);
+        applyUserData(elementPlug, attr.GetBaseName().GetString(), GlimpseUserDataTypes::kMatrix, ss.str());
+      }
+    }
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void applyPrimVars(const UsdGeomMesh& mesh, MFnMesh& fnMesh, const MIntArray& counts, const MIntArray& connects)
 {
   MFloatArray u, v;
@@ -1511,6 +1641,165 @@ void copyVertexData(const MFnMesh& fnMesh, const UsdAttribute& pointsAttr, UsdTi
   {
     MGlobal::displayError(MString("Unable to access mesh vertices on mesh: ") + fnMesh.fullPathName());
   }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void copyGlimpseUserDataAttributes(UsdGeomMesh &mesh, const MFnMesh &fnMesh)
+{
+  // TODO: glimpse user data can be set on any DAG node, push up to DagNodeTranslator?
+  static const std::string glimpse_namespace("glimpse:userData:");
+
+  MStatus status;
+  MPlug plug;
+
+  MString name;
+  int type = 0;
+  MString value;
+
+  UsdPrim prim = mesh.GetPrim();
+
+  auto allInts = [](const MStringArray& tokens) -> bool
+  {
+    auto length = tokens.length();
+    for(int i = 0; i < length; i++)
+    {
+      if (!tokens[i].isInt())
+      {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  auto allFloats = [](const MStringArray& tokens) -> bool
+  {
+    auto length = tokens.length();
+    for(int i = 0; i < length; i++)
+    {
+      if (!tokens[i].isFloat())
+      {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  auto copyUserData = [&](const MString& name, int type, const MString& value)
+  {
+    std::stringstream ss;
+    ss << glimpse_namespace << name.asChar();
+
+    TfToken nameToken(ss.str());
+
+    MStringArray tokens;
+    value.split(' ', tokens);
+
+    switch(type)
+    {
+      case GlimpseUserDataTypes::kInt:
+      {
+        // int
+        prim.CreateAttribute(nameToken, SdfValueTypeNames->Int, false).Set(value.asInt());
+      }
+        break;
+      case GlimpseUserDataTypes::kInt2:
+      {
+        // int2
+        if(tokens.length() == 2 && allInts(tokens))
+        {
+          GfVec2i vec(tokens[0].asInt(), tokens[1].asInt());
+          prim.CreateAttribute(nameToken, SdfValueTypeNames->Int2, false).Set(vec);
+        }
+      }
+        break;
+      case GlimpseUserDataTypes::kInt3:
+      {
+        // int3
+        if(tokens.length() == 3 && allInts(tokens))
+        {
+          GfVec3i vec(tokens[0].asInt(), tokens[1].asInt(), tokens[2].asInt());
+          prim.CreateAttribute(nameToken, SdfValueTypeNames->Int3, false).Set(vec);
+        }
+      }
+        break;
+      case GlimpseUserDataTypes::kFloat:
+      {
+        // float
+        prim.CreateAttribute(nameToken, SdfValueTypeNames->Float, false).Set(value.asFloat());
+      }
+        break;
+      case GlimpseUserDataTypes::kVector:
+      {
+        // vector
+        if(tokens.length() == 3 && allFloats(tokens))
+        {
+          GfVec3f vec(tokens[0].asFloat(), tokens[1].asFloat(), tokens[2].asFloat());
+          prim.CreateAttribute(nameToken, SdfValueTypeNames->Vector3f, false).Set(vec);
+        }
+      }
+        break;
+      case GlimpseUserDataTypes::kColor:
+      {
+        // color
+        if(tokens.length() == 3 && allFloats(tokens))
+        {
+          GfVec3f vec(tokens[0].asFloat(), tokens[1].asFloat(), tokens[2].asFloat());
+          prim.CreateAttribute(nameToken, SdfValueTypeNames->Color3f, false).Set(vec);
+        }
+      }
+        break;
+      case GlimpseUserDataTypes::kString:
+      {
+        // string
+        prim.CreateAttribute(nameToken, SdfValueTypeNames->String, false).Set(AL::maya::utils::convert(value));
+      }
+        break;
+      case GlimpseUserDataTypes::kMatrix:
+      {
+        // matrix
+        // the value stored for this entry is a 4x3
+        if(tokens.length() == 12 && allFloats(tokens))
+        {
+          double components[4][4] =
+            {
+              {tokens[0].asDouble(), tokens[1].asDouble(), tokens[2].asDouble(),   0.0},
+              {tokens[3].asDouble(), tokens[4].asDouble(), tokens[5].asDouble(),   0.0},
+              {tokens[6].asDouble(), tokens[7].asDouble(), tokens[8].asDouble(),   0.0},
+              {tokens[9].asDouble(), tokens[10].asDouble(), tokens[11].asDouble(), 1.0}
+            };
+
+          // TODO: not sure why but SdfValueTypeNames does not have a defined type for Matrix4f only Matrix4d
+          GfMatrix4d matrix(components);
+          prim.CreateAttribute(nameToken, SdfValueTypeNames->Matrix4d, false).Set(matrix);
+        }
+      }
+        break;
+      default:
+        // unsupported user data type
+        break;
+    }
+  };
+
+  plug = fnMesh.findPlug("gUserData");
+  if(status && plug.isCompound() && plug.isArray())
+  {
+    for(int i = 0; i < plug.numElements(); i++)
+    {
+      MPlug compoundPlug = plug[i];
+
+      MPlug namePlug = compoundPlug.child(0);
+      MPlug typePlug = compoundPlug.child(1);
+      MPlug valuePlug = compoundPlug.child(2);
+
+      namePlug.getValue(name);
+      typePlug.getValue(type);
+      valuePlug.getValue(value);
+
+      copyUserData(name, type, value);
+    }
+  }
+
 }
 //----------------------------------------------------------------------------------------------------------------------
 } // utils

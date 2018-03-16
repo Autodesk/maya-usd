@@ -57,12 +57,14 @@ extern void applyAnimalVertexCreases(const UsdPrim& from, MFnMesh& fnMesh);
 extern bool applyEdgeCreases(const UsdGeomMesh& from, MFnMesh& fnMesh);
 extern void applyAnimalEdgeCreases(const UsdPrim& from, MFnMesh& fnMesh);
 extern void applyGlimpseSubdivParams(const UsdPrim& from, MFnMesh& fnMesh);
+extern void applyGlimpseUserDataParams(const UsdPrim& from, MFnMesh& fnMesh);
 extern void applyPrimVars(const UsdGeomMesh& mesh, MFnMesh& fnMesh, const MIntArray& counts, const MIntArray& connects);
 
 extern void copyAnimalFaceColours(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
 extern void copyAnimalCreaseEdges(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
 extern void copyAnimalCreaseVertices(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
 extern void copyGlimpseTesselationAttributes(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
+extern void copyGlimpseUserDataAttributes(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
 
 extern void copyCreaseEdges(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
 extern void copyVertexData(const MFnMesh& fnMesh, const UsdAttribute& pointsAttr, UsdTimeCode time = UsdTimeCode::Default());
