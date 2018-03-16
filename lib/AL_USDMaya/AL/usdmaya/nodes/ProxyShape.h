@@ -259,6 +259,7 @@ public:
   /// \brief  a mapping between a maya transform (or MObject::kNullObj), and the prim that exists at that location
   ///         in the DAG graph.
   typedef std::vector<std::pair<MObject, UsdPrim> > MObjectToPrim;
+  static const char* s_selectionMaskName;
 
   /// \brief  ctor
   ProxyShape();

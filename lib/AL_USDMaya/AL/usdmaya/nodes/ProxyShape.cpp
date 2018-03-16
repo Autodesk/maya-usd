@@ -82,6 +82,8 @@ namespace usdmaya {
 namespace nodes {
 typedef void (*proxy_function_prototype)(void* userData, AL::usdmaya::nodes::ProxyShape* proxyInstance);
 
+const char* ProxyShape::s_selectionMaskName = "al_ProxyShape";
+
 MDagPath ProxyShape::parentTransform()
 {
   MFnDagNode fn(thisMObject());

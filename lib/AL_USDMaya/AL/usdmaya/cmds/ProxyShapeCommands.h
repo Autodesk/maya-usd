@@ -226,6 +226,7 @@ private:
   MStatus doIt(const MArgList& args) override;
   MStatus undoIt() override;
   MStatus redoIt() override;
+  MStatus _redoIt(bool isInternal);
 };
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -1080,12 +1080,18 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
       delete m_helper;
       m_helper = 0;
     }
+    return _redoIt(isInternal);
   }
   catch(const MStatus& status)
   {
     return status;
   }
-  return redoIt();
+  catch(...)
+  {
+    MStatus status = MS::kFailure;
+    status.perror("(ProxyShapeSelect::doIt) Unknown internal failure!");
+    return status;
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1101,9 +1107,15 @@ MStatus ProxyShapeSelect::undoIt()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShapeSelect::redoIt()
 {
+  return _redoIt(false);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus ProxyShapeSelect::_redoIt(bool isInternal)
+{
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeSelect::redoIt\n");
   if(m_helper) m_helper->doIt();
-  if(MGlobal::kInteractive == MGlobal::mayaState())
+  if(MGlobal::kInteractive == MGlobal::mayaState() && !isInternal)
     MGlobal::executeCommandOnIdle("refresh", false);
 
   return MS::kSuccess;
@@ -1125,6 +1137,28 @@ MSyntax ProxyShapePostSelect::createSyntax()
 MStatus ProxyShapePostSelect::redoIt()
 {
   m_proxy->setChangedSelectionState(false);
+  MSelectionList sl;
+  MGlobal::getActiveSelectionList(sl);
+  MString command;
+  MFnDependencyNode depNode(m_proxy->thisMObject());
+  for (const auto& path : m_proxy->selectedPaths()) {
+    auto obj = m_proxy->findRequiredPath(path);
+    if (obj != MObject::kNullObj) {
+      MFnDagNode dagNode(obj);
+      MDagPath dg;
+      dagNode.getPath(dg);
+      if (!sl.hasItem(dg)) {
+        command += "AL_usdmaya_ProxyShapeSelect -i -d -pp \"";
+        command += path.GetText();
+        command += "\" \"";
+        command += depNode.name();
+        command += "\";";
+      }
+    }
+  }
+  if (command.length() > 0) {
+    MGlobal::executeCommand(command, false, false);
+  }
   return MS::kSuccess;
 }
 
