@@ -1214,11 +1214,6 @@ MSyntax ProxyShapeImportPrimPathAsMaya::createSyntax()
   MSyntax syntax = setUpCommonSyntax();
   syntax.addFlag("-pp", "-primPath", MSyntax::kString);
   syntax.addFlag("-ap", "-asProxy", MSyntax::kNoArg);
-  syntax.addFlag("-a", "-anim", MSyntax::kNoArg);
-  syntax.addFlag("-da", "-dynamicAttribute", MSyntax::kBoolean);
-  syntax.addFlag("-m", "-meshes", MSyntax::kBoolean);
-  syntax.addFlag("-nc", "-nurbsCurves", MSyntax::kBoolean);
-  syntax.addFlag("-sa", "-sceneAssembly", MSyntax::kBoolean);
   syntax.addFlag("-h", "-help", MSyntax::kNoArg);
   return syntax;
 }
@@ -1255,26 +1250,6 @@ MStatus ProxyShapeImportPrimPathAsMaya::doIt(const MArgList& args)
     m_asProxyShape = false;
     if(db.isFlagSet("-ap")) {
       m_asProxyShape = true;
-    }
-
-    // check anim flags
-    if(db.isFlagSet("-a")) {
-      db.getFlagArgument("-a", 0, m_importParams.m_animations);
-    }
-
-    // check mesh flags
-    if(db.isFlagSet("-m")) {
-      db.getFlagArgument("-m", 0, m_importParams.m_meshes);
-    }
-
-    // check dynamic attr flags
-    if(db.isFlagSet("-da")) {
-      db.getFlagArgument("-da", 0, m_importParams.m_dynamicAttributes);
-    }
-
-    // check nurbs curve flag
-    if(db.isFlagSet("-nc")) {
-      db.getFlagArgument("-nc", 0, m_importParams.m_nurbsCurves);
     }
 
     nodes::ProxyShape* shapeNode = getShapeNode(db);
@@ -1405,13 +1380,9 @@ void constructProxyShapeCommandGuis()
   }
 
   {
-    AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImportPrimPathAsMaya", "Import Prim Path as Maya", "Import", "USD/Proxy Shape/Import Prim Path as Maya", true);
+    AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImportPrimPathAsMaya", "Import Prim Path as Maya xforms", "Import", "USD/Proxy Shape/Import Prim Path as Maya", true);
     commandGui.addStringOption("primPath", "USD Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringMustHaveValue);
     commandGui.addFlagOption("asProxy", "Import Subsection as a Proxy Node", false, true);
-    commandGui.addFlagOption("anim", "Import Animations", true, true);
-    commandGui.addBoolOption("meshes", "Import Meshes", true, true);
-    commandGui.addBoolOption("nurbsCurves", "Import Nurbs Curves", true, true);
-    commandGui.addBoolOption("dynamicAttribute", "Import Dynamic Attributes", true, true);
   }
 
   {
@@ -1585,13 +1556,8 @@ AL_usdmaya_ProxyShapeRemoveAllTransforms Overview:
 const char* const ProxyShapeImportPrimPathAsMaya::g_helpText = R"(
 AL_usdmaya_ProxyShapeImportPrimPathAsMaya Overview:
 
-  This command is a little bit interesting, and probably bug ridden. The following command:
-
+  Imports the following path as a hierarchy of transforms:
     AL_usdmaya_ProxyShapeImportPrimPathAsMaya "ProxyShape1" -pp "/some/prim/path";
-
-  Will disable the rendering of the prim path "/some/prim/path" on the "ProxyShape1" node,
-  and will run an import process to bring in all of the transforms/geometry/etc found under
-  "/some/prim/path", as native maya transform and mesh nodes.
 
   Adding in the -ap/-asProxy flag will build a transform hierarchy of Transform nodes to the
   specified prim, and then create a new ProxyShape to represent all of that geometry underneath
@@ -1718,9 +1684,8 @@ TranslatePrim Overview:
 
     AL_usdmaya_TranslatePrim -fi -ip "/MyMesh";  //< Run the Prim's translator's import
 
-  The ForceImport(-fi) flag will forces the import of the available translator. Used for translators who don't import when
+  The ForceImport(-fi) flag will forces the import of the available translator. Used for translators who don't import automatically when
   their corresponding prim type is brought into the scene.
-
 )";
 //----------------------------------------------------------------------------------------------------------------------
 } // cmds

@@ -33,7 +33,45 @@ TEST(TranslateCommand, translateMeshPrim)
   MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
   MStatus s = MGlobal::selectByName("pSphere1Shape");
-  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+  EXPECT_TRUE(s.statusCode() == MStatus::kSuccess);
+}
+
+TEST(TranslateCommand, translateMultipleMeshPrims)
+/*
+ * Test translating Mesh Prims multiple times via the command
+ */
+{
+  AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMultipleMeshes();
+  MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1,/pSphere2,/pSphere3\" \"AL_usdmaya_ProxyShape1\"", false, false);
+  MStatus s;
+
+  s = MGlobal::selectByName("pSphere1Shape");
+  EXPECT_TRUE(s.statusCode() == MStatus::kSuccess);
+
+  s = MGlobal::selectByName("pSphere2Shape");
+  EXPECT_TRUE(s.statusCode() == MStatus::kSuccess);
+
+  s = MGlobal::selectByName("pSphere3Shape");
+  EXPECT_TRUE(s.statusCode() == MStatus::kSuccess);
+}
+
+TEST(TranslateCommand, translateMultipleTimes)
+{
+  AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMultipleMeshes();
+  MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1\" \"AL_usdmaya_ProxyShape1\"",
+                          false,
+                          false);
+
+  MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1\" \"AL_usdmaya_ProxyShape1\"",
+                          false,
+                          false);
+
+  MStatus s;
+  s = MGlobal::selectByName("pSphere1Shape");
+  EXPECT_TRUE(s.statusCode() == MStatus::kSuccess);
+
+  s = MGlobal::selectByName("pSphere1Shape1");
+  EXPECT_FALSE(s.statusCode() == MStatus::kSuccess);
 }
 
 TEST(TranslateCommand, roundTripMeshPrim)

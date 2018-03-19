@@ -197,8 +197,8 @@ extern void randomAnimatedValue(MPlug plug, double startFrame, double endFrame);
   /// \return AL::usdmaya::nodes::ProxyShape
 extern AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(std::function<UsdStageRefPtr()> buildUsdStage, const std::string& tempPath);
 
-
-/// \brief  Creates a ProxyShape with the contents generated from the buildUsdStage function object. It will export it into the specified temp_location and
+/// \brief  Creates a ProxyShape with the contents generated from the buildUsdStage function object.
+//          It will export it into the specified temp_location and
 ///         feed this temp-file into a ProxyShape
 /// \param[in] rootLayerPath function that will populate a USDStage and return a UsdStageRefPtr
 /// \return AL::usdmaya::nodes::ProxyShape
@@ -207,4 +207,8 @@ extern AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(const std::string& r
 /// \brief  Creates a ProxyShape with the a single root node Mesh typed prim that contains geometry that represents a sphere.
 /// \return AL::usdmaya::nodes::ProxyShape
 AL::usdmaya::nodes::ProxyShape* SetupProxyShapeWithMesh();
+
+/// \brief  Creates a ProxyShape with multiple root node Mesh typed prim that contains geometry that represents a sphere.
+/// \return AL::usdmaya::nodes::ProxyShape
+extern AL::usdmaya::nodes::ProxyShape* SetupProxyShapeWithMultipleMeshes();
 

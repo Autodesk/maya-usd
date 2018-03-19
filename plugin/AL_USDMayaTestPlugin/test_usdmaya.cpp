@@ -724,4 +724,22 @@ AL::usdmaya::nodes::ProxyShape* SetupProxyShapeWithMesh()
   return proxyShape;
 }
 
+AL::usdmaya::nodes::ProxyShape* SetupProxyShapeWithMultipleMeshes()
+{
+  MFileIO::newFile(true);
+  MGlobal::executeCommand("polySphere"); // pSphere1
+  MGlobal::executeCommand("polySphere"); // pSphere2
+  MGlobal::executeCommand("polySphere"); // pSphere3
+  MString scene("/tmp/test_SceneWithMultipleMeshs.usda");
+  MString command;
+  command.format("file -force -typ \"AL usdmaya export\" -pr -ea \"^1s\"", scene.asChar());
+
+  MGlobal::executeCommand(command, true);
+
+  //clear scene then create ProxyShape
+  MFileIO::newFile(true);
+  AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(scene.asChar());
+  return proxyShape;
+}
+
 
