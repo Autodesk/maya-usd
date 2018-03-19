@@ -1,3 +1,15 @@
+## v0.27.2 
+merged https://github.com/AnimalLogic/AL_USDMaya/pull/68 allow for custom pxr namespace
+merged https://github.com/AnimalLogic/AL_USDMaya/pull/42 Fixes several issues with selection in the maya viewport
+
+
+## v0.27.1 (2018-03-10)
+
+### Added
++ Mesh Translation: Glimpse subdivision params
+
+
+
 ## v0.27.0 (2018-03-12)
 
 ### Added 
