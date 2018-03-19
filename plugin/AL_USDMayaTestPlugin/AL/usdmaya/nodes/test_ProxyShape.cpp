@@ -109,6 +109,7 @@ TEST(ProxyShape, basicProxyShapeSetUp)
 
     stage->SetEditTarget(session);
 
+
     // lets grab a prim, and then modify it a bit (this should leave us with a modification in the session layer)
     UsdPrim rtoe1Prim = stage->GetPrimAtPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1"));
     EXPECT_TRUE(rtoe1Prim);
@@ -122,7 +123,7 @@ TEST(ProxyShape, basicProxyShapeSetUp)
     std::vector<UsdGeomXformOp> ordered;
     ordered.push_back(scaleOp);
     rtoe1Geom.SetXformOpOrder(ordered);
-
+    
     EXPECT_TRUE(session->ExportToString(&sessionLayerContents));
     EXPECT_FALSE(sessionLayerContents.empty());
 
@@ -147,7 +148,7 @@ TEST(ProxyShape, basicProxyShapeSetUp)
 
     {
       // please don't crash if I pass a valid layer, that isn't in any way involved in the composed stage
-      SdfLayerRefPtr temp = SdfLayer::CreateNew("hello_dave.usda");
+      SdfLayerRefPtr temp = SdfLayer::CreateNew("/tmp/AL_USDMayaTests_hello_dave.usda");
       EXPECT_EQ(nullptr, layerManager->findLayer(temp->GetIdentifier()));
     }
 
