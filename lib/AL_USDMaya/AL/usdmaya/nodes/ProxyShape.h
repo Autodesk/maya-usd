@@ -356,6 +356,9 @@ public:
   /// Excluded geometry that has been explicitly translated
   AL_DECL_ATTRIBUTE(excludedTranslatedGeometry);
 
+  /// Hydra renderer plugin used for rendering (not storable)
+  AL_DECL_ATTRIBUTE(rendererPlugin);
+
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Output Attributes
   //--------------------------------------------------------------------------------------------------------------------
@@ -981,6 +984,7 @@ private:
   bool m_drivenTransformsDirty = false;
   bool m_pleaseIgnoreSelection = false;
   bool m_hasChangedSelection = false;
+  static TfTokenVector m_rendererPlugins;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
