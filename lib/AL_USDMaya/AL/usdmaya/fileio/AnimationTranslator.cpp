@@ -42,18 +42,11 @@ const std::array<MFn::Type, 4> AnimationTranslator::s_nodeTypesConsiderToBeAnima
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-template<class Container, class ValueType >
-bool _contains(const Container &container, const ValueType &value)
-{
-  auto end = container.cend();
-  auto first = std::lower_bound(container.cbegin(), end, value);
-  return first != end && !(value < *first);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 bool AnimationTranslator::considerToBeAnimation(const MFn::Type nodeType)
 {
-  return _contains<std::array<MFn::Type, 4>, MFn::Type>(s_nodeTypesConsiderToBeAnimation, nodeType);
+  auto end = s_nodeTypesConsiderToBeAnimation.cend();
+  auto first = std::lower_bound(s_nodeTypesConsiderToBeAnimation.cbegin(), end, nodeType);
+  return first != end && !(nodeType < *first);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
