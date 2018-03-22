@@ -1477,7 +1477,7 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
     {
       if (objHdl.isValid() && objHdl.object().hasFn(MFn::kTransform))
       {
-        lockObject == objHdl.object();
+        lockObject = objHdl.object();
         break;
       }
     }

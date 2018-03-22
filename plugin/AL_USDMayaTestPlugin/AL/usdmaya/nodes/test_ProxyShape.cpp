@@ -148,7 +148,7 @@ TEST(ProxyShape, basicProxyShapeSetUp)
 
     {
       // please don't crash if I pass a valid layer, that isn't in any way involved in the composed stage
-      SdfLayerRefPtr temp = SdfLayer::CreateNew("/tmp/AL_USDMayaTests_hello_dave.usda");
+      SdfLayerRefPtr temp = SdfLayer::CreateNew("/tmp/AL_USDMayaTests_basicLayerSetup.usda");
       EXPECT_EQ(nullptr, layerManager->findLayer(temp->GetIdentifier()));
     }
 

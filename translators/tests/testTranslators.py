@@ -233,7 +233,7 @@ class testTranslator(unittest.TestCase):
 ## Commented since there is a crash when out of a variant that contains a mesh into a variant that contains a different mesh.
 ## Possibly because we are changing the Session Layer in the preTearDown of the Mesh.cpp while in a variantSetChanged callback.
     def testMeshTranslator_variantswitch(self):
-        mc.AL_usdmaya_ProxyShapeImport(file='/fast/AL_USDMaya/src/translators/tests/testMeshVariants.usda')
+        mc.AL_usdmaya_ProxyShapeImport(file='./testMeshVariants.usda')
         self.assertTrue(Tf.Type.Unknown != Tf.Type.FindByName('AL::usdmaya::fileio::translators::Mesh'))
     
         # test initial state has no meshes
