@@ -44,6 +44,7 @@ MStatus ExportTranslator::writer(const MFileObject& file, const AL::maya::utils:
   params.m_dynamicAttributes = options.getBool(kDynamicAttributes);
   params.m_duplicateInstances = options.getBool(kDuplicateInstances);
   params.m_meshes = options.getBool(kMeshes);
+  params.m_meshNormals = options.getBool(kMeshNormals);
   params.m_nurbsCurves = options.getBool(kNurbsCurves);
   params.m_useAnimalSchema = options.getBool(kUseAnimalSchema);
   params.m_mergeTransforms = options.getBool(kMergeTransforms);

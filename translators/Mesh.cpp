@@ -89,14 +89,8 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent)
   fnDag.setName(std::string(prim.GetName().GetString() + std::string("Shape")).c_str());
 
   AL::usdmaya::utils::applyHoleFaces(mesh, fnMesh);
-  if(!AL::usdmaya::utils::applyVertexCreases(mesh, fnMesh))
-  {
-    AL::usdmaya::utils::applyAnimalVertexCreases(prim, fnMesh);
-  }
-  if(!AL::usdmaya::utils::applyEdgeCreases(mesh, fnMesh))
-  {
-    AL::usdmaya::utils::applyAnimalEdgeCreases(prim, fnMesh);
-  }
+  AL::usdmaya::utils::applyVertexCreases(mesh, fnMesh);
+  AL::usdmaya::utils::applyEdgeCreases(mesh, fnMesh);
   AL::usdmaya::utils::applyGlimpseSubdivParams(prim, fnMesh);
 
   MObject initialShadingGroup;
@@ -106,8 +100,6 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent)
   MFnSet fn(initialShadingGroup, &status);
   AL_MAYA_CHECK_ERROR(status, "Unable to attach MfnSet to initialShadingGroup");
   fn.addMember(polyShape);
-
-  AL::usdmaya::utils::applyAnimalColourSets(prim, fnMesh, counts);
   AL::usdmaya::utils::applyPrimVars(mesh, fnMesh, counts, connects);
   context()->addExcludedGeometry(prim.GetPath());
 
@@ -186,16 +178,46 @@ MStatus Mesh::preTearDown(UsdPrim& prim)
 
     if(status)
     {
-      UsdAttribute pointsAttr = geomPrim.GetPointsAttr();
-      AL::usdmaya::utils::copyFaceConnectsAndPolyCounts(geomPrim, fnMesh);
-      AL::usdmaya::utils::copyVertexData(fnMesh, pointsAttr);
-      AL::usdmaya::utils::copyInvisibleHoles(geomPrim, fnMesh);
-      //TODO: Control the Handness of the UV's
-      AL::usdmaya::utils::copyUvSetData(geomPrim, fnMesh, false);
-      AL::usdmaya::utils::copyColourSetData(geomPrim, fnMesh);
-      AL::usdmaya::utils::copyCreaseVertices(geomPrim, fnMesh);
-      AL::usdmaya::utils::copyCreaseEdges(geomPrim, fnMesh);
-      //TODO: Control the copying of dynamicAttributes
+      const uint32_t dif_geom = AL::usdmaya::utils::diffGeom(geomPrim, fnMesh, UsdTimeCode::Default(), AL::usdmaya::utils::kAllComponents);
+      const uint32_t dif_mesh = AL::usdmaya::utils::diffFaceVertices(geomPrim, fnMesh, UsdTimeCode::Default(), AL::usdmaya::utils::kAllComponents);
+
+      if(dif_geom & AL::usdmaya::utils::kPoints)
+      {
+        UsdAttribute pointsAttr = geomPrim.GetPointsAttr();
+        AL::usdmaya::utils::copyVertexData(fnMesh, pointsAttr);
+      }
+
+      if(dif_geom & AL::usdmaya::utils::kNormals)
+      {
+        UsdAttribute normalsAttr = geomPrim.GetNormalsAttr();
+        AL::usdmaya::utils::copyNormalData(fnMesh, normalsAttr);
+      }
+
+      if(dif_mesh & (AL::usdmaya::utils::kFaceVertexIndices | AL::usdmaya::utils::kFaceVertexCounts))
+      {
+        AL::usdmaya::utils::copyFaceConnectsAndPolyCounts(geomPrim, fnMesh, dif_mesh);
+      }
+
+      if(dif_mesh & AL::usdmaya::utils::kHoleIndices)
+      {
+        AL::usdmaya::utils::copyInvisibleHoles(geomPrim, fnMesh);
+      }
+
+      if(dif_mesh & (AL::usdmaya::utils::kCornerIndices | AL::usdmaya::utils::kCornerSharpness))
+      {
+        AL::usdmaya::utils::copyCreaseVertices(geomPrim, fnMesh);
+      }
+
+      if(dif_mesh & (AL::usdmaya::utils::kCreaseIndices | AL::usdmaya::utils::kCreaseWeights | AL::usdmaya::utils::kCreaseLengths))
+      {
+        AL::usdmaya::utils::copyCreaseEdges(geomPrim, fnMesh);
+      }
+
+
+      AL::usdmaya::utils::copyUvSetData(geomPrim, fnMesh, false, true);
+
+      AL::usdmaya::utils::copyColourSetData(geomPrim, fnMesh, true);
+
       DgNodeTranslator::copyDynamicAttributes(obj.object(), prim);
     }
   }

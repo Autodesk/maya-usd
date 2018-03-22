@@ -60,6 +60,8 @@ public:
   /// \param  time the timecode to use when setting the data
   static void copyVertexData(const MFnMesh& fnMesh, const UsdAttribute& pointsAttr, UsdTimeCode time = UsdTimeCode::Default());
 
+  static void copyNormalData(const MFnMesh& fnMesh, const UsdAttribute& pointsAttr, UsdTimeCode time = UsdTimeCode::Default());
+
   /// \brief  exports a mesh to the USD file and returns the created prim
   /// \param  stage  the stage in which to create the prim
   /// \param  mayaPath  the path to the maya mesh to export

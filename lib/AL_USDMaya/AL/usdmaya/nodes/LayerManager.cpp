@@ -164,6 +164,8 @@ SdfLayerHandle LayerDatabase::findLayer(std::string identifier) const
   {
     return foundIdAndLayer->second;
   }
+
+
   return SdfLayerHandle();
 }
 

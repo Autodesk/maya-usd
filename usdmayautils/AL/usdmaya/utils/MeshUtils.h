@@ -51,27 +51,20 @@ extern void convertFloatVec3ArrayToDoubleVec3Array(const float* const input, dou
 extern void generateIncrementingIndices(MIntArray& indices, const size_t count);
 extern void applyHoleFaces(const UsdGeomMesh& mesh, MFnMesh& fnMesh);
 extern void unzipUVs(const float* const uv, float* const u, float* const v, const size_t count);
-extern void applyAnimalColourSets(const UsdPrim& from, MFnMesh& fnMesh, const MIntArray& counts);
-extern bool applyVertexCreases(const UsdGeomMesh& from, MFnMesh& fnMesh);
-extern void applyAnimalVertexCreases(const UsdPrim& from, MFnMesh& fnMesh);
 extern bool applyEdgeCreases(const UsdGeomMesh& from, MFnMesh& fnMesh);
-extern void applyAnimalEdgeCreases(const UsdPrim& from, MFnMesh& fnMesh);
 extern void applyGlimpseSubdivParams(const UsdPrim& from, MFnMesh& fnMesh);
 extern void applyGlimpseUserDataParams(const UsdPrim& from, MFnMesh& fnMesh);
 extern void applyPrimVars(const UsdGeomMesh& mesh, MFnMesh& fnMesh, const MIntArray& counts, const MIntArray& connects);
-
-extern void copyAnimalFaceColours(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
-extern void copyAnimalCreaseEdges(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
-extern void copyAnimalCreaseVertices(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
+extern bool applyVertexCreases(const UsdGeomMesh& from, MFnMesh& fnMesh);
 extern void copyGlimpseTesselationAttributes(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
-extern void copyGlimpseUserDataAttributes(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
-
-extern void copyCreaseEdges(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
+extern void copyAnimalFaceColours(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
+extern void copyCreaseEdges(UsdGeomMesh& mesh, const MFnMesh& fnMesh, uint32_t mask = 0xFFFFFFFF);
 extern void copyVertexData(const MFnMesh& fnMesh, const UsdAttribute& pointsAttr, UsdTimeCode time = UsdTimeCode::Default());
-extern void copyCreaseVertices(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
-extern void copyFaceConnectsAndPolyCounts(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
-extern void copyUvSetData(UsdGeomMesh& mesh, const MFnMesh& fnMesh, const bool leftHanded);
-extern void copyColourSetData(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
+extern void copyNormalData(const MFnMesh& fnMesh, const UsdAttribute& normalsAttr, UsdTimeCode time = UsdTimeCode::Default());
+extern void copyCreaseVertices(UsdGeomMesh& mesh, const MFnMesh& fnMesh, uint32_t mask = 0xFFFFFFFF);
+extern void copyFaceConnectsAndPolyCounts(UsdGeomMesh& mesh, const MFnMesh& fnMesh, uint32_t mask = 0xFFFFFFFF);
+extern void copyUvSetData(UsdGeomMesh& mesh, const MFnMesh& fnMesh, const bool leftHanded, bool performDiff = false);
+extern void copyColourSetData(UsdGeomMesh& mesh, MFnMesh& fnMesh, bool performDiff = false);
 extern void copyInvisibleHoles(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
 extern bool isUvSetDataSparse(const int32_t* uvCounts, const uint32_t count);
 extern void zipUVs(const float* u, const float* v, float* uv, const size_t count);

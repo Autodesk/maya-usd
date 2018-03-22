@@ -54,16 +54,9 @@ namespace translators {
 //----------------------------------------------------------------------------------------------------------------------
 bool MeshTranslator::attributeHandled(const UsdAttribute& usdAttr)
 {
-  const char* alusd_prefix = "alusd_";
   const std::string& str = usdAttr.GetName().GetString();
-  if(!std::strncmp(alusd_prefix, str.c_str(), 6))
-  {
-    return true;
-  }
-
-  const char* const glimpse_prefix = "glimpse";
-  const std::string& nmsp = usdAttr.GetNamespace();
-  if(!std::strncmp(glimpse_prefix, nmsp.c_str(), 7))
+  const char* glimpse_prefix = "glimpse_";
+  if(!std::strncmp(glimpse_prefix, str.c_str(), 8))
   {
     return true;
   }
@@ -78,6 +71,23 @@ bool MeshTranslator::attributeHandled(const UsdAttribute& usdAttr)
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
 
+//----------------------------------------------------------------------------------------------------------------------
+void MeshTranslator::copyNormalData(const MFnMesh& fnMesh, const UsdAttribute& normalsAttr, UsdTimeCode time)
+{
+  MStatus status;
+  const uint32_t numNormals = fnMesh.numNormals();
+  VtArray<GfVec3f> normals(numNormals);
+  const float* normalsData = fnMesh.getRawNormals(&status);
+  if(status)
+  {
+    memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
+    normalsAttr.Set(normals, time);
+  }
+  else
+  {
+    MGlobal::displayError(MString("Unable to access mesh normals on mesh: ") + fnMesh.fullPathName());
+  }
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 UsdPrim MeshTranslator::exportObject(UsdStageRefPtr stage, MDagPath path, const SdfPath& usdPath, const ExporterParams& params)
@@ -97,26 +107,16 @@ UsdPrim MeshTranslator::exportObject(UsdStageRefPtr stage, MDagPath path, const 
     {
       params.m_animTranslator->addMesh(path, pointsAttr);
     }
-
+    
     AL::usdmaya::utils::copyVertexData(fnMesh, pointsAttr);
     AL::usdmaya::utils::copyFaceConnectsAndPolyCounts(mesh, fnMesh);
     AL::usdmaya::utils::copyInvisibleHoles(mesh, fnMesh);
     AL::usdmaya::utils::copyUvSetData(mesh, fnMesh, params.m_leftHandedUV);
-
-    if(params.m_useAnimalSchema)
-    {
-      AL::usdmaya::utils::copyAnimalFaceColours(mesh, fnMesh);
-      AL::usdmaya::utils::copyAnimalCreaseVertices(mesh, fnMesh);
-      AL::usdmaya::utils::copyAnimalCreaseEdges(mesh, fnMesh);
-      AL::usdmaya::utils::copyGlimpseTesselationAttributes(mesh, fnMesh);
-      AL::usdmaya::utils::copyGlimpseUserDataAttributes(mesh, fnMesh);
-    }
-    else
-    {
-      AL::usdmaya::utils::copyColourSetData(mesh, fnMesh);
-      AL::usdmaya::utils::copyCreaseVertices(mesh, fnMesh);
-      AL::usdmaya::utils::copyCreaseEdges(mesh, fnMesh);
-    }
+    AL::usdmaya::utils::copyNormalData(fnMesh, mesh.GetNormalsAttr());
+    AL::usdmaya::utils::copyGlimpseTesselationAttributes(mesh, fnMesh);
+    AL::usdmaya::utils::copyColourSetData(mesh, fnMesh);
+    AL::usdmaya::utils::copyCreaseVertices(mesh, fnMesh);
+    AL::usdmaya::utils::copyCreaseEdges(mesh, fnMesh);
 
     // pick up any additional attributes attached to the mesh node (these will be added alongside the transform attributes)
     if(params.m_dynamicAttributes)
@@ -184,24 +184,17 @@ MObject MeshTranslator::createNode(const UsdPrim& from, MObject parent, const ch
     if (fnMesh.setFaceVertexNormals(normals, normalsFaceIds, connects) != MS::kSuccess)
     {
     }
-   }
+  }
 
   MFnDagNode fnDag(polyShape);
   fnDag.setName(std::string(from.GetName().GetString() + std::string("Shape")).c_str());
 
   AL::usdmaya::utils::applyHoleFaces(mesh, fnMesh);
-  if(!AL::usdmaya::utils::applyVertexCreases(mesh, fnMesh))
-  {
-    AL::usdmaya::utils::applyAnimalVertexCreases(from, fnMesh);
-  }
-  if(!AL::usdmaya::utils::applyEdgeCreases(mesh, fnMesh))
-  {
-    AL::usdmaya::utils::applyAnimalEdgeCreases(from, fnMesh);
-  }
+  AL::usdmaya::utils::applyVertexCreases(mesh, fnMesh);
+  AL::usdmaya::utils::applyEdgeCreases(mesh, fnMesh);
   AL::usdmaya::utils::applyGlimpseSubdivParams(from, fnMesh);
   AL::usdmaya::utils::applyGlimpseUserDataParams(from, fnMesh);
   applyDefaultMaterialOnShape(polyShape);
-  AL::usdmaya::utils::applyAnimalColourSets(from, fnMesh, counts);
   AL::usdmaya::utils::applyPrimVars(mesh, fnMesh, counts, connects);
 
   return polyShape;

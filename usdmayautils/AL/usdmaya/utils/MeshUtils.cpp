@@ -434,55 +434,6 @@ void unzipUVs(const float* const uv, float* const u, float* const v, const size_
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void applyAnimalColourSets(const UsdPrim& from, MFnMesh& fnMesh, const MIntArray& counts)
-{
-  std::vector<UsdAttribute> colour_sets;
-
-  std::vector<UsdAttribute> attributes = from.GetAttributes();
-  for(uint32_t i = 0, n = attributes.size(); i < n; ++i)
-  {
-    const UsdAttribute& attribute = attributes[i];
-    if(attribute.IsCustom())
-    {
-      const std::string& attrName = attribute.GetName().GetString();
-      if(!strncmp(_alusd_colour, attrName.c_str(), strlen(_alusd_colour)))
-      {
-        colour_sets.push_back(attribute);
-      }
-    }
-  }
-
-  for(auto it = colour_sets.begin(); it != colour_sets.end(); ++it)
-  {
-    UsdAttribute attribute = *it;
-    if(attribute)
-    {
-      std::string setName = attribute.GetName().GetString().substr(strlen(_alusd_colour));
-      MString colourSetName(setName.c_str(), setName.size());
-      if(fnMesh.createColorSet(colourSetName))
-      {
-        if(fnMesh.setCurrentColorSetName(colourSetName))
-        {
-          VtArray<GfVec4f> colours;
-          attribute.Get(&colours);
-
-          MIntArray faceIds;
-          generateIncrementingIndices(faceIds, fnMesh.numPolygons());
-
-          MColorArray faceColours((const MColor*)colours.cdata(), colours.size());
-          fnMesh.setFaceColors(faceColours, faceIds);
-        }
-      }
-    }
-  }
-
-  if(!colour_sets.empty())
-  {
-    fnMesh.setDisplayColors(true);
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 bool applyVertexCreases(const UsdGeomMesh& from, MFnMesh& fnMesh)
 {
   UsdAttribute cornerIndices = from.GetCornerIndicesAttr();
@@ -506,29 +457,6 @@ bool applyVertexCreases(const UsdGeomMesh& from, MFnMesh& fnMesh)
     return true;
   }
   return false;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void applyAnimalVertexCreases(const UsdPrim& from, MFnMesh& fnMesh)
-{
-  static const TfToken alusd_crease_vertices_data("alusd_crease_vertices_data");
-  static const TfToken alusd_crease_vertices_ids("alusd_crease_vertices_ids");
-
-  UsdAttribute creases = from.GetAttribute(alusd_crease_vertices_data);
-  UsdAttribute vertices = from.GetAttribute(alusd_crease_vertices_ids);
-  if(creases && vertices)
-  {
-    VtArray<double> creaseValues;
-    VtArray<int32_t> vertexIdValues;
-    creases.Get(&creaseValues);
-    vertices.Get(&vertexIdValues);
-    MUintArray vertexIds((const uint32_t*)vertexIdValues.cdata(), vertexIdValues.size());
-    MDoubleArray creaseData(creaseValues.cdata(), creaseValues.size());
-    if(!fnMesh.setCreaseVertices(vertexIds, creaseData))
-    {
-      std::cerr << "Unable to set crease vertices on mesh " << fnMesh.name().asChar() << std::endl;
-    }
-  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -618,71 +546,6 @@ bool applyEdgeCreases(const UsdGeomMesh& from, MFnMesh& fnMesh)
     return true;
   }
   return false;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void applyAnimalEdgeCreases(const UsdPrim& from, MFnMesh& fnMesh)
-{
-  static const TfToken alusd_crease_edges_data("alusd_crease_edges_data");
-  static const TfToken alusd_crease_edges_ids("alusd_crease_edges_ids");
-
-  UsdAttribute creases = from.GetAttribute(alusd_crease_edges_data);
-  UsdAttribute edges = from.GetAttribute(alusd_crease_edges_ids);
-  if(creases && edges)
-  {
-    VtArray<double> creaseValues;
-    VtArray<int32_t> edgesIdValues;
-    creases.Get(&creaseValues);
-    edges.Get(&edgesIdValues);
-
-    MUintArray creaseEdgeIds;
-    creaseEdgeIds.setLength(creaseValues.size());
-    MIntArray edgeIds;
-    MDoubleArray createValues(creaseValues.cdata(), creaseValues.size());
-    MObject temp = fnMesh.object();
-    MItMeshVertex iter(temp);
-    for(size_t i = 0, k = 0; i < edgesIdValues.size(); i += 2, ++k)
-    {
-      const int32_t vertexIndex0 = edgesIdValues[i];
-      const int32_t vertexIndex1 = edgesIdValues[i + 1];
-      int prev;
-      if(!iter.setIndex(vertexIndex0, prev))
-      {
-        std::cout << "could not set index on vertex iterator" << std::endl;
-      }
-
-      if(iter.getConnectedEdges(edgeIds))
-      {
-        bool found = false;
-        for(uint32_t j = 0; j < edgeIds.length(); ++j)
-        {
-          int2 edgeVerts;
-          fnMesh.getEdgeVertices(edgeIds[j], edgeVerts);
-
-          if((vertexIndex0 == edgeVerts[0] && vertexIndex1 == edgeVerts[1]) ||
-             (vertexIndex1 == edgeVerts[0] && vertexIndex0 == edgeVerts[1]))
-          {
-            found = true;
-            creaseEdgeIds[k] = edgeIds[j];
-            break;
-          }
-        }
-        if(!found)
-        {
-          std::cout << "could not find matching edge" << std::endl;
-        }
-      }
-      else
-      {
-        std::cout << "could not access connected edges" << std::endl;
-      }
-    }
-
-    if(!fnMesh.setCreaseEdges(creaseEdgeIds, createValues))
-    {
-      std::cerr << "Unable to set crease edges on mesh " << fnMesh.name().asChar() << std::endl;
-    }
-  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1020,16 +883,23 @@ void applyPrimVars(const UsdGeomMesh& mesh, MFnMesh& fnMesh, const MIntArray& co
 
 
 //----------------------------------------------------------------------------------------------------------------------
-void copyFaceConnectsAndPolyCounts(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
+void copyFaceConnectsAndPolyCounts(UsdGeomMesh& mesh, const MFnMesh& fnMesh, uint32_t mask)
 {
   MIntArray faceConnects, polyCounts;
   fnMesh.getVertices(polyCounts, faceConnects);
-  VtArray<int32_t> faceVertexCounts(polyCounts.length());
-  VtArray<int32_t> faceVertexIndices(faceConnects.length());
-  memcpy((int32_t*)faceVertexCounts.data(), &polyCounts[0], sizeof(uint32_t) * polyCounts.length());
-  memcpy((int32_t*)faceVertexIndices.data(), &faceConnects[0], sizeof(uint32_t) * faceConnects.length());
-  mesh.GetFaceVertexCountsAttr().Set(faceVertexCounts);
-  mesh.GetFaceVertexIndicesAttr().Set(faceVertexIndices);
+  if(mask & kFaceVertexCounts)
+  {
+    VtArray<int32_t> faceVertexCounts(polyCounts.length());
+    memcpy((int32_t*)faceVertexCounts.data(), &polyCounts[0], sizeof(uint32_t) * polyCounts.length());
+    mesh.GetFaceVertexCountsAttr().Set(faceVertexCounts);
+  }
+
+  if(mask & kFaceVertexIndices)
+  {
+    VtArray<int32_t> faceVertexIndices(faceConnects.length());
+    memcpy((int32_t*)faceVertexIndices.data(), &faceConnects[0], sizeof(uint32_t) * faceConnects.length());
+    mesh.GetFaceVertexIndicesAttr().Set(faceVertexIndices);
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1172,57 +1042,110 @@ static void reverseIndices(VtArray<int32_t>& indices, const MIntArray& counts)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void copyUvSetData(UsdGeomMesh& mesh, const MFnMesh& fnMesh, const bool leftHanded)
+void copyUvSetData(UsdGeomMesh& mesh, const MFnMesh& fnMesh, const bool leftHanded, bool performDiff)
 {
   UsdPrim prim = mesh.GetPrim();
   MStringArray uvSetNames;
-  MStatus status = fnMesh.getUVSetNames(uvSetNames);
-  if(status == MS::kSuccess && uvSetNames.length() > 0)
+  usdmaya::utils::PrimVarDiffReport diff_report;
+  if(performDiff)
   {
-    VtArray<GfVec2f> uvValues;
-    MFloatArray uValues, vValues;
-    MIntArray uvCounts, uvIds;
+    uvSetNames = usdmaya::utils::hasNewUvSet(mesh, fnMesh, diff_report);
+    if(diff_report.empty() && uvSetNames.length() == 0)
+      return;
+  }
+  else
+  {
+    MStatus status = fnMesh.getUVSetNames(uvSetNames);
+    if(!status || uvSetNames.length() == 0)
+      return;
+  }
 
-    for (uint32_t i = 0; i < uvSetNames.length(); i++)
+  VtArray<GfVec2f> uvValues;
+  MFloatArray uValues, vValues;
+  MIntArray uvCounts, uvIds;
+
+  for (uint32_t i = 0; i < uvSetNames.length(); i++)
+  {
+    // Initialize the VtArray to the max possible size (facevarying)
+    if(fnMesh.getAssignedUVs(uvCounts, uvIds, &uvSetNames[i]))
     {
-      // Initialize the VtArray to the max possible size (facevarying)
-      if(fnMesh.getAssignedUVs(uvCounts, uvIds, &uvSetNames[i]))
+      int32_t* ptr = &uvCounts[0];
+      if(!isUvSetDataSparse(ptr, uvCounts.length()))
       {
-       int32_t* ptr = &uvCounts[0];
-       if(!isUvSetDataSparse(ptr, uvCounts.length()))
-       {
-         if(fnMesh.getUVs(uValues, vValues, &uvSetNames[i]))
-         {
-           uvValues.resize(uValues.length());
-           if (uvSetNames[i] == "map1")
-           {
-             uvSetNames[i] = "st";
-           }
+        if(fnMesh.getUVs(uValues, vValues, &uvSetNames[i]))
+        {
+          uvValues.resize(uValues.length());
+          if (uvSetNames[i] == "map1")
+          {
+            uvSetNames[i] = "st";
+          }
 
-           float* uptr = &uValues[0];
-           float* vptr = &vValues[0];
-           float* uvptr = (float*)uvValues.data();
-           zipUVs(uptr, vptr, uvptr, vValues.length());
+          float* uptr = &uValues[0];
+          float* vptr = &vValues[0];
+          float* uvptr = (float*)uvValues.data();
+          zipUVs(uptr, vptr, uvptr, vValues.length());
 
-           /// \todo   Ideally I'd want some form of interpolation scheme such as UsdGeomTokens->faceVaryingIndexed
-           UsdGeomPrimvar uvSet = mesh.CreatePrimvar(TfToken(uvSetNames[i].asChar()), SdfValueTypeNames->Float2Array, UsdGeomTokens->faceVarying);
-           uvSet.Set(uvValues);
+          /// \todo   Ideally I'd want some form of interpolation scheme such as UsdGeomTokens->faceVaryingIndexed
+          UsdGeomPrimvar uvSet = mesh.CreatePrimvar(TfToken(uvSetNames[i].asChar()), SdfValueTypeNames->Float2Array, UsdGeomTokens->faceVarying);
+          uvSet.Set(uvValues);
 
-           VtArray<int32_t> uvIndices;
-           int32_t* ptr = &uvIds[0];
-           uvIndices.assign(ptr, ptr + uvIds.length());
-           if (leftHanded)
-           {
-             reverseIndices(uvIndices, uvCounts);
-           }
+          VtArray<int32_t> uvIndices;
+          int32_t* ptr = &uvIds[0];
+          uvIndices.assign(ptr, ptr + uvIds.length());
+          if (leftHanded)
+          {
+            reverseIndices(uvIndices, uvCounts);
+          }
 
-           uvSet.SetIndices(uvIndices);
-         }
-       }
-       else
-       {
-         // What to do here then....
-       }
+          uvSet.SetIndices(uvIndices);
+        }
+      }
+      else
+      {
+        // What to do here then....
+      }
+    }
+  }
+
+  for (uint32_t i = 0; i < diff_report.size(); i++)
+  {
+    // Initialize the VtArray to the max possible size (facevarying)
+    if(fnMesh.getAssignedUVs(uvCounts, uvIds, &diff_report[i].setName()))
+    {
+      int32_t* ptr = &uvCounts[0];
+      if(!isUvSetDataSparse(ptr, uvCounts.length()))
+      {
+        if(fnMesh.getUVs(uValues, vValues, &diff_report[i].setName()))
+        {
+          uvValues.resize(uValues.length());
+
+          /// \todo   Ideally I'd want some form of interpolation scheme such as UsdGeomTokens->faceVaryingIndexed
+          const UsdGeomPrimvar& uvSet = diff_report[i].primVar();
+          if(diff_report[i].dataHasChanged())
+          {
+            float* uptr = &uValues[0];
+            float* vptr = &vValues[0];
+            float* uvptr = (float*)uvValues.data();
+            zipUVs(uptr, vptr, uvptr, vValues.length());
+            uvSet.Set(uvValues);
+          }
+
+          if(diff_report[i].indicesHaveChanged())
+          {
+            VtArray<int32_t> uvIndices;
+            int32_t* ptr = &uvIds[0];
+            uvIndices.assign(ptr, ptr + uvIds.length());
+            if (leftHanded)
+            {
+              reverseIndices(uvIndices, uvCounts);
+            }
+            uvSet.SetIndices(uvIndices);
+          }
+        }
+      }
+      else
+      {
+        // What to do here then....
       }
     }
   }
@@ -1350,17 +1273,29 @@ void interleaveIndexedUvData(float* output, const float* u, const float* v, cons
 // Writes out faceVarying values only
 // Have a special case for "displayColor" which write as RGB
 // @todo: needs refactoring to handle face/vert/faceVarying correctly, allow separate RGB/A to be written etc.
-void copyColourSetData(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
+void copyColourSetData(UsdGeomMesh& mesh, MFnMesh& fnMesh, bool performDiff)
 {
   UsdPrim prim = mesh.GetPrim();
   MStringArray colourSetNames;
-  MStatus status = fnMesh.getColorSetNames(colourSetNames);
-  if(status == MS::kSuccess && colourSetNames.length())
+  usdmaya::utils::PrimVarDiffReport diff_report;
+  if(performDiff)
   {
-    VtArray<GfVec4f> colourValues;
-    MColorArray colours;
-    MIntArray uvCounts, uvIds;
+    colourSetNames = usdmaya::utils::hasNewColourSet(mesh, fnMesh, diff_report);
+    if(diff_report.empty() && colourSetNames.length() == 0)
+      return;
+  }
+  else
+  {
+    MStatus status = fnMesh.getColorSetNames(colourSetNames);
+    if(!status || colourSetNames.length() == 0)
+      return;
+  }
 
+  VtArray<GfVec4f> colourValues;
+  MColorArray colours;
+
+  if(colourSetNames.length())
+  {
     for (uint32_t i = 0; i < colourSetNames.length(); i++)
     {
       MColor defaultColour(1, 0, 0);
@@ -1395,6 +1330,40 @@ void copyColourSetData(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
       }
     }
   }
+
+  for (uint32_t i = 0; i < diff_report.size(); i++)
+  {
+    MColor defaultColour(1, 0, 0);
+
+    //If we're writing displayColor which is part of the GPrim Schema, we need to force to Vec3.
+    if(colourSetNames[i] ==  "displayColor")
+    {
+      if(fnMesh.getColors(colours, &diff_report[i].setName()))
+      {
+        VtArray<GfVec3f> colourValues;
+        colourValues.resize(colours.length());
+        for (uint32_t j = 0; j < colours.length(); j++) {
+          colourValues[j] = GfVec3f(colours[j].r, colours[j].g, colours[j].b);
+        }
+        UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(diff_report[i].setName().asChar()), SdfValueTypeNames->Float3Array, UsdGeomTokens->faceVarying);
+        colourSet.Set(colourValues);
+      }
+    }
+    else
+    {
+      //@todo: This code is duplicated - refactor to handle RGB/Vec3, RGBA/Vec4, RGB/Vec3 + A/Vec1 etc
+      if(fnMesh.getColors(colours, &diff_report[i].setName()))
+      {
+        colourValues.resize(colours.length());
+        float* to = (float*)colourValues.data();
+        const float* from = &colours[0].r;
+        memcpy(to, from, sizeof(float) * 4 * colours.length());
+
+        UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(diff_report[i].setName().asChar()), SdfValueTypeNames->Float4Array, UsdGeomTokens->faceVarying);
+        colourSet.Set(colourValues);
+      }
+    }
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1407,7 +1376,7 @@ void copyInvisibleHoles(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
   {
     VtArray<int32_t> subdHoles(count);
     uint32_t* ptr = &mayaHoles[0];
-    memcpy((int32_t*)subdHoles.data(), ptr, count);
+    memcpy((int32_t*)subdHoles.data(), ptr, count * sizeof(uint32_t));
     mesh.GetHoleIndicesAttr().Set(subdHoles);
   }
 }
@@ -1415,40 +1384,6 @@ void copyInvisibleHoles(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
 //----------------------------------------------------------------------------------------------------------------------
 void copyGlimpseTesselationAttributes(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
 {
-  MStatus status;
-  MPlug plug;
-
-  bool renderAsSubd = true;
-  int32_t subdMode = 0;
-  int32_t subdLevel = -1;
-  float subdivPrimSizeMult = 1.0f;
-  bool keepUvBoundary = false;
-  float subdEdgeLengthMult = 1.0f;
-
-  plug = fnMesh.findPlug("gSubdiv", &status); // render as subdivision surfaces
-  if (status) plug.getValue(renderAsSubd);
-
-  plug = fnMesh.findPlug("gSubdivMode", &status);
-  if (status) plug.getValue(subdMode);
-
-  plug = fnMesh.findPlug("gSubdivLevel", &status);
-  if (status)
-  {
-    plug.getValue(subdLevel);
-    subdLevel = std::max(subdLevel, -1);
-  }
-
-  plug = fnMesh.findPlug("gSubdivPrimSizeMult", &status);
-  if (status) plug.getValue(subdivPrimSizeMult);
-
-  plug = fnMesh.findPlug("gSubdivKeepUvBoundary", &status); // render as subdivision surfaces
-  if (status) plug.getValue(keepUvBoundary);
-
-  plug = fnMesh.findPlug("gSubdivEdgeLengthMultiplier", &status);
-  if (status) plug.getValue(subdEdgeLengthMult);
-
-  UsdPrim prim = mesh.GetPrim();
-
   // TODO: ideally this would be using the ALGlimpseSubdivAPI to create / set
   // these attributes. However, it seems from the docs that getting / setting
   // mesh attributes for custom data is a known issue
@@ -1459,62 +1394,85 @@ void copyGlimpseTesselationAttributes(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
   static const TfToken token_gSubdivKeepUvBoundary("glimpse:subdiv:keepUvBoundary");
   static const TfToken token_gSubdivEdgeLengthMultiplier("glimpse:subdiv:edgeLengthMultiplier");
 
-  prim.CreateAttribute(token_gSubdiv, SdfValueTypeNames->Bool, false).Set(renderAsSubd);
-  prim.CreateAttribute(token_gSubdivMode, SdfValueTypeNames->Int, false).Set(subdMode);
-  prim.CreateAttribute(token_gSubdivLevel, SdfValueTypeNames->Int, false).Set(subdLevel);
-  prim.CreateAttribute(token_gSubdivPrimSizeMult, SdfValueTypeNames->Float, false).Set(subdivPrimSizeMult);
-  prim.CreateAttribute(token_gSubdivKeepUvBoundary, SdfValueTypeNames->Bool, false).Set(keepUvBoundary);
-  prim.CreateAttribute(token_gSubdivEdgeLengthMultiplier, SdfValueTypeNames->Float, false).Set(subdEdgeLengthMult);
-}
+  MStatus status;
 
-//----------------------------------------------------------------------------------------------------------------------
-void copyAnimalCreaseVertices(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
-{
-  MUintArray vertIds;
-  MDoubleArray creaseData;
-  MStatus status = fnMesh.getCreaseVertices(vertIds, creaseData);
-  if(status)
+  UsdPrim prim = mesh.GetPrim();
+  MPlug plug = fnMesh.findPlug("gSubdiv", &status); // render as subdivision surfaces
+  if (status)
   {
-    UsdPrim prim = mesh.GetPrim();
-    if(creaseData.length())
-    {
-      UsdAttribute creases = prim.CreateAttribute(TfToken("alusd_crease_vertices_data"), SdfValueTypeNames->DoubleArray);
-      VtArray<double> usdCreaseValues;
-      double* ptr = &creaseData[0];
-      usdCreaseValues.assign(ptr, ptr + creaseData.length());
-      creases.Set(usdCreaseValues);
-    }
+    bool renderAsSubd = true;
+    plug.getValue(renderAsSubd);
+    prim.CreateAttribute(token_gSubdiv, SdfValueTypeNames->Bool).Set(renderAsSubd);
+  }
 
-    if(vertIds.length())
-    {
-      UsdAttribute creases = prim.CreateAttribute(TfToken("alusd_crease_vertices_ids"), SdfValueTypeNames->IntArray);
-      VtArray<int32_t> usdCreaseIndices;
-      int32_t* ptr = (int32_t*)&vertIds[0];
-      usdCreaseIndices.assign(ptr, ptr + vertIds.length());
-      creases.Set(usdCreaseIndices);
-    }
+  plug = fnMesh.findPlug("gSubdivMode", &status);
+  if (status)
+  {
+    int32_t subdMode = 0;
+    plug.getValue(subdMode);
+    prim.CreateAttribute(token_gSubdivMode, SdfValueTypeNames->Int).Set(subdMode);
+  }
+
+  plug = fnMesh.findPlug("gSubdivLevel", &status);
+  if (status)
+  {
+    int32_t subdLevel = -1;
+    plug.getValue(subdLevel);
+    subdLevel = std::max(subdLevel, -1);
+    prim.CreateAttribute(token_gSubdivLevel, SdfValueTypeNames->Int).Set(subdLevel);
+  }
+
+  plug = fnMesh.findPlug("gSubdivPrimSizeMult", &status);
+  if (status)
+  {
+    float subdivPrimSizeMult = 1.0f;
+    plug.getValue(subdivPrimSizeMult);
+    prim.CreateAttribute(token_gSubdivPrimSizeMult, SdfValueTypeNames->Float).Set(subdivPrimSizeMult);
+  }
+
+  plug = fnMesh.findPlug("gSubdivKeepUvBoundary", &status); // render as subdivision surfaces
+  if (status)
+  {
+    bool keepUvBoundary = true;
+    plug.getValue(keepUvBoundary);
+    prim.CreateAttribute(token_gSubdivKeepUvBoundary, SdfValueTypeNames->Bool, false).Set(keepUvBoundary);
+  }
+
+  plug = fnMesh.findPlug("gSubdivEdgeLengthMultiplier", &status);
+  if (status)
+  {
+    float subdEdgeLengthMult = 1.0f;
+    plug.getValue(subdEdgeLengthMult);
+    prim.CreateAttribute(token_gSubdivEdgeLengthMultiplier, SdfValueTypeNames->Float, false).Set(subdEdgeLengthMult);
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void copyCreaseVertices(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
+void copyCreaseVertices(UsdGeomMesh& mesh, const MFnMesh& fnMesh, uint32_t mask)
 {
   MUintArray vertIds;
   MDoubleArray creaseData;
   MStatus status = fnMesh.getCreaseVertices(vertIds, creaseData);
   if(status && creaseData.length() && vertIds.length())
   {
-    VtArray<int> subdCornerIndices(vertIds.length());
-    VtArray<float> subdCornerSharpnesses(creaseData.length());
-    AL::usdmaya::utils::doubleToFloat(subdCornerSharpnesses.data(), &creaseData[0], creaseData.length());
-    memcpy(subdCornerIndices.data(), (uint32_t*)&vertIds[0], vertIds.length() * sizeof(int32_t));
-    mesh.GetCornerIndicesAttr().Set(subdCornerIndices);
-    mesh.GetCornerSharpnessesAttr().Set(subdCornerSharpnesses);
+    if(mask & kCornerSharpness)
+    {
+      VtArray<float> subdCornerSharpnesses(creaseData.length());
+      AL::usdmaya::utils::doubleToFloat(subdCornerSharpnesses.data(), &creaseData[0], creaseData.length());
+      mesh.GetCornerSharpnessesAttr().Set(subdCornerSharpnesses);
+    }
+
+    if(mask & kCornerIndices)
+    {
+      VtArray<int> subdCornerIndices(vertIds.length());
+      memcpy(subdCornerIndices.data(), &vertIds[0], vertIds.length() * sizeof(int32_t));
+      mesh.GetCornerIndicesAttr().Set(subdCornerIndices);
+    }
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void copyAnimalCreaseEdges(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
+void copyCreaseEdges(UsdGeomMesh& mesh, const MFnMesh& fnMesh, const uint32_t mask)
 {
   MUintArray edgeIds;
   MDoubleArray creaseData;
@@ -1522,41 +1480,8 @@ void copyAnimalCreaseEdges(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
   if (status && edgeIds.length() && creaseData.length())
   {
     UsdPrim prim = mesh.GetPrim();
-    {
-      UsdAttribute creases = prim.CreateAttribute(TfToken("alusd_crease_edges_data"), SdfValueTypeNames->DoubleArray);
-      VtArray<double> usdCreaseValues;
-      usdCreaseValues.resize(creaseData.length());
-      memcpy((double*)usdCreaseValues.data(), (double*)&creaseData[0], creaseData.length() * sizeof(double));
-      creases.Set(usdCreaseValues);
-    }
 
-    {
-      UsdAttribute creases = prim.CreateAttribute(TfToken("alusd_crease_edges_ids"), SdfValueTypeNames->IntArray);
-      VtArray<int32_t> usdCreaseIndices;
-      usdCreaseIndices.resize(edgeIds.length() * 2);
-
-      for(uint32_t i = 0, j = 0; i < edgeIds.length(); ++i, j += 2)
-      {
-        int2 vertexIds;
-        fnMesh.getEdgeVertices(edgeIds[i], vertexIds);
-        usdCreaseIndices[j] = vertexIds[0];
-        usdCreaseIndices[j + 1] = vertexIds[1];
-      }
-
-      creases.Set(usdCreaseIndices);
-    }
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void copyCreaseEdges(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
-{
-  MUintArray edgeIds;
-  MDoubleArray creaseData;
-  MStatus status = fnMesh.getCreaseEdges(edgeIds, creaseData);
-  if (status && edgeIds.length() && creaseData.length())
-  {
-    UsdPrim prim = mesh.GetPrim();
+    if(mask & kCreaseWeights)
     {
       VtArray<float> usdCreaseValues;
       usdCreaseValues.resize(creaseData.length());
@@ -1564,6 +1489,7 @@ void copyCreaseEdges(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
       mesh.GetCreaseSharpnessesAttr().Set(usdCreaseValues);
     }
 
+    if(mask & kCreaseIndices)
     {
       UsdAttribute creases = mesh.GetCreaseIndicesAttr();
       VtArray<int32_t> usdCreaseIndices;
@@ -1583,6 +1509,7 @@ void copyCreaseEdges(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
     // Note: In the original USD maya bridge, they actually attempt to merge creases.
     // I'm not doing that at all (to be honest their approach looks to be questionable as to whether it would actually
     // work all that well, if at all).
+    if(mask & kCreaseLengths)
     {
       UsdAttribute creasesLengths = mesh.GetCreaseLengthsAttr();
       VtArray<int32_t> lengths;
@@ -1640,6 +1567,24 @@ void copyVertexData(const MFnMesh& fnMesh, const UsdAttribute& pointsAttr, UsdTi
   else
   {
     MGlobal::displayError(MString("Unable to access mesh vertices on mesh: ") + fnMesh.fullPathName());
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void copyNormalData(const MFnMesh& fnMesh, const UsdAttribute& normalsAttr, UsdTimeCode time)
+{
+  MStatus status;
+  const uint32_t numNormals = fnMesh.numNormals();
+  VtArray<GfVec3f> normals(numNormals);
+  const float* normalsData = fnMesh.getRawNormals(&status);
+  if(status)
+  {
+    memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
+    normalsAttr.Set(normals, time);
+  }
+  else
+  {
+    MGlobal::displayError(MString("Unable to access mesh normals on mesh: ") + fnMesh.fullPathName());
   }
 }
 
