@@ -34,6 +34,7 @@
 #include "pxr/usd/usd/variantSets.h"
 
 #include <fstream>
+#include <stdio.h>
 
 static const char* const g_inactive =
 "#usda 1.0\n"
@@ -187,22 +188,48 @@ static const char* const g_variantSwitchPrimTypes =
 "    }\n"
 "}\n";
 
-TEST(ActiveInactive, duplicateTransformNames)
+class ActiveInactive : public testing::Test
 {
-  MFileIO::newFile(true);
+public:
+  static void SetUpTestCase()
+  {
+   // pCube1, pCubeShape1, polyCube1
+   MFileIO::newFile(true);
+   MGlobal::executeCommand("polyCube -w 1 -h 1 -d 1 -sd 1 -sh 1 -sw 1", false, false);
+   MFileIO::saveAs(m_cubeMayaReference, 0, true);
 
-  // Prep us a maya reference file to use!
+   // pSphere1, pSphereShape1, polySphere1
+   MFileIO::newFile(true);
+   MGlobal::executeCommand("polySphere", false, false);
+   MFileIO::saveAs(m_sphereMayaReference, 0, true);
+  }
 
-  // pCube1, pCubeShape1, polyCube1
-  MGlobal::executeCommand("polyCube -w 1 -h 1 -d 1 -sd 1 -sh 1 -sw 1", false, false);
-  MFileIO::saveAs("/tmp/AL_USDMayaTests_cube.ma", 0, true);
-  MFileIO::newFile(true);
+  static void TearDownTestCase()
+  {
+    // cleanup files
+    remove(m_cubeMayaReference);
+    remove(m_sphereMayaReference);
+  }
 
-  // pSphere1, pSphereShape1, polySphere1
-  MGlobal::executeCommand("polySphere", false, false);
-  MFileIO::saveAs("/tmp/AL_USDMayaTests_sphere.ma", 0, true);
-  MFileIO::newFile(true);
+protected:
+  virtual void SetUp()
+  {
+    // Clear the scene before the best
+    MFileIO::newFile(true);
+  }
 
+  virtual void TearDown()
+  {
+    // empty
+  }
+
+private:
+  static constexpr auto m_cubeMayaReference = "/tmp/AL_USDMayaTests_cube.ma";
+  static constexpr auto m_sphereMayaReference = "/tmp/AL_USDMayaTests_sphere.ma";
+};
+
+TEST_F(ActiveInactive, duplicateTransformNames)
+{
   // output a couple of usda files for testing (active and inactive)
   {
     std::ofstream os("/tmp/AL_USDMayaTests_duplicateTransformNames.usda");
@@ -263,17 +290,8 @@ TEST(ActiveInactive, duplicateTransformNames)
 }
 
 
-TEST(ActiveInactive, customTransformType)
+TEST_F(ActiveInactive, customTransformType)
 {
-  MFileIO::newFile(true);
-
-  // Prep us a maya reference file to use!
-
-  // pCube1, pCubeShape1, polyCube1
-  MGlobal::executeCommand("polyCube -w 1 -h 1 -d 1 -sd 1 -sh 1 -sw 1", false, false);
-  MFileIO::saveAs("/tmp/AL_USDMayaTests_cube.ma", 0, true);
-  MFileIO::newFile(true);
-
   // output a couple of usda files for testing (active and inactive)
   {
     std::ofstream os("/tmp/AL_USDMayaTests_customTransformType.usda");
@@ -407,22 +425,8 @@ TEST(ActiveInactive, customTransformType)
   }
 }
 
-TEST(ActiveInactive, disable)
+TEST_F(ActiveInactive, disable)
 {
-  MFileIO::newFile(true);
-
-  // Prep us a maya reference file to use!
-
-  // pCube1, pCubeShape1, polyCube1
-  MGlobal::executeCommand("polyCube -w 1 -h 1 -d 1 -sd 1 -sh 1 -sw 1", false, false);
-  MFileIO::saveAs("/tmp/AL_USDMayaTests_cube.ma", 0, true);
-  MFileIO::newFile(true);
-
-  // pSphere1, pSphereShape1, polySphere1
-  MGlobal::executeCommand("polySphere", false, false);
-  MFileIO::saveAs("/tmp/AL_USDMayaTests_sphere.ma", 0, true);
-  MFileIO::newFile(true);
-
   // output a couple of usda files for testing (active and inactive)
   {
     std::ofstream os("/tmp/AL_USDMayaTests_activePrim.usda");
@@ -775,10 +779,8 @@ TEST(ActiveInactive, disable)
   }
 }
 
-TEST(ActiveInactive, variantChange)
+TEST_F(ActiveInactive, variantChange)
 {
-  MFileIO::newFile(true);
-
   // camera1, camera1Shape
   MFileIO::newFile(true);
   MGlobal::executeCommand("camera", false, false);
