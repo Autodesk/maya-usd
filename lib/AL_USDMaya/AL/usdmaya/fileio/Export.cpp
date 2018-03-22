@@ -474,6 +474,8 @@ void Export::exportIkChain(MDagPath effectorPath, const SdfPath& usdPath)
                 added = true;
                 animTranslator->forceAddPlug(rotatePlug, op.GetAttr(), radToDeg);
                 break;
+              default:
+                break;
               }
               if(added) break;
             }

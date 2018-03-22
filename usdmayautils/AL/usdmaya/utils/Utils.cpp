@@ -54,18 +54,17 @@ void matrixToSRT(GfMatrix4d& value, double S[3], MEulerRotation& R, double T[3])
   double scaleX = xAxis.length();
   double scaleY = yAxis.length();
   double scaleZ = zAxis.length();
-  S[0] = scaleX;
-  S[1] = scaleY;
-  S[2] = scaleZ;
   bool isNegated = ((xAxis ^ yAxis) * zAxis) < 0.0;
+  if(isNegated)
+  {
+    scaleZ = -scaleZ;
+  }
   xAxis /= scaleX;
   yAxis /= scaleY;
   zAxis /= scaleZ;
-  if(isNegated)
-  {
-    zAxis = -zAxis;
-    scaleZ = -scaleZ;
-  }
+  S[0] = scaleX;
+  S[1] = scaleY;
+  S[2] = scaleZ;
   matrix[0][0] = xAxis.x;
   matrix[0][1] = xAxis.y;
   matrix[0][2] = xAxis.z;

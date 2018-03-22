@@ -28,6 +28,7 @@
 #include <immintrin.h>
 #endif
 #include "pxr/base/gf/half.h"
+#include "pxr/base/gf/ilmbase_half.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -35,7 +36,7 @@ namespace AL {
 namespace usd {
 namespace utils {
 
-#if __F16C__
+#ifdef __F16C__
 
 /// converts 8xhalf to 8xfloat
 inline void half2float_8f(const GfHalf input[8], float out[8])

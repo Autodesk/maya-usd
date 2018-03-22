@@ -458,10 +458,7 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
             "    $result = 0;\n  }\n"
             "  return $result;\n}\n";
 
-  if (AL_MAYAUTILS_DEBUG)
-  {
-    std::cout << (m_code + "\n").asChar() << std::endl;
-  }
+  //TF_DEBUG(ALUSDMAYA_GUIHELPER).Msg("%s\n", m_code.asChar());
 
   return MGlobal::executeCommand(m_code, false, false);
 }

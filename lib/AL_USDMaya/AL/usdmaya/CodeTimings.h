@@ -218,28 +218,32 @@ private:
 
   static inline timespec timeDiff(const timespec startTime, const timespec endTime)
   {
+    timespec ts;
     if (endTime.tv_nsec < startTime.tv_nsec)
     {
-      return (timespec) {
-          tv_sec: endTime.tv_sec - 1 - startTime.tv_sec,
-          tv_nsec: 1000000000 + endTime.tv_nsec - startTime.tv_nsec
-        };
+      ts.tv_sec = endTime.tv_sec - 1 - startTime.tv_sec;
+      ts.tv_nsec =  1000000000 + endTime.tv_nsec - startTime.tv_nsec;
     }
-    return (timespec) {
-        tv_sec: endTime.tv_sec - startTime.tv_sec,
-        tv_nsec: endTime.tv_nsec - startTime.tv_nsec
-      };
+    else
+    {
+      ts.tv_sec = endTime.tv_sec - startTime.tv_sec;
+      ts.tv_nsec =  endTime.tv_nsec - startTime.tv_nsec;
+    }
+    return ts;
   }
   static inline timespec timeAdd(timespec t1, timespec t2)
   {
-      int32_t sec = t2.tv_sec + t1.tv_sec;
-      int32_t nsec = t2.tv_nsec + t1.tv_nsec;
-      if (nsec >= 1000000000)
-      {
-          nsec -= 1000000000;
-          sec++;
-      }
-      return (timespec){ tv_sec: sec, tv_nsec: nsec };
+    timespec ts;
+    int32_t sec = t2.tv_sec + t1.tv_sec;
+    int32_t nsec = t2.tv_nsec + t1.tv_nsec;
+    if (nsec >= 1000000000)
+    {
+      nsec -= 1000000000;
+      sec++;
+    }
+    ts.tv_sec = sec;
+    ts.tv_nsec = nsec;
+    return ts;
   }
 
   static ProfilerSectionStackNode m_timeStack[MAX_TIMESTAMP_STACK_SIZE];

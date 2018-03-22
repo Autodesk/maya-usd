@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/utils/DgNodeHelper.h"
-#include "AL/usdmaya/utils/SIMD.h"
+#include "AL/usd/utils/SIMD.h"
 
 #include "AL/maya/utils/NodeHelper.h"
 #include "AL/maya/utils/MayaHelperMacros.h"

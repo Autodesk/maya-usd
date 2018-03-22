@@ -521,6 +521,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
           command += " \"";
           command += fn.name();
           command += "\"";
+
         }
 
         if(command.length() > 0) {

@@ -181,6 +181,7 @@ TEST(TranslatorContext, TranslatorContext)
         AL::usdmaya::fileio::translators::MObjectHandleArray handles;
         context->getMObjects(SdfPath("/root/rig"), handles);
         ASSERT_EQ(handles.size(), 1);
+
         EXPECT_TRUE(handles[0].object() == obj);
       }
       {

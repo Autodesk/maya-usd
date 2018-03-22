@@ -15,13 +15,14 @@ list(APPEND usdmaya_utils_headers
     Utils.h
     ForwardDeclares.h
     MeshUtils.h
-    SIMD.h
+    DiffPrimVar.h
 )
 
 list(APPEND usdmaya_utils_source
     DgNodeHelper.cpp
     Utils.cpp
     MeshUtils.cpp
+    DiffPrimVar.cpp
 )
 
 add_library(${USDMAYA_UTILS_LIBRARY_NAME}

@@ -209,6 +209,9 @@ class CustomEventHandler
 {
 public:
 
+  /// \brief  dtor
+  virtual ~CustomEventHandler() {}
+
   /// \brief  returns the event type as a string
   /// \return the eventType as a text string
   virtual const char* eventTypeString() const = 0;

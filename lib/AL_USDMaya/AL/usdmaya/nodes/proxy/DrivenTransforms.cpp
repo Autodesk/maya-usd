@@ -51,7 +51,7 @@ void DrivenTransforms::updateDrivenTransforms(std::vector<UsdPrim>& drivenPrims,
       nodes::TransformationMatrix::pushMatrix(m_drivenMatrix[idx], xformop, currentTime.as(MTime::uiUnit()));
     }
 
-    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::updateDrivenTransforms %d %d %d %d  %d %d %d %d  %d %d %d %d  %d %d %d %d\n",
+    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::updateDrivenTransforms %lf %lf %lf %lf  %lf %lf %lf %lf  %lf %lf %lf %lf  %lf %lf %lf %lf\n",
         m_drivenMatrix[idx][0][0],
         m_drivenMatrix[idx][0][1],
         m_drivenMatrix[idx][0][2],

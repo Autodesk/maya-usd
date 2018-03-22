@@ -25,6 +25,7 @@
 #include "maya/MFnSet.h"
 #include "maya/MFileIO.h"
 
+#include "AL/usdmaya/utils/DiffPrimVar.h"
 #include "AL/usdmaya/utils/MeshUtils.h"
 
 #include "AL/usdmaya/DebugCodes.h"

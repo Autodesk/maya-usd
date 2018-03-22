@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/utils/Utils.h"
-#include "AL/usdmaya/utils/SIMD.h"
+#include "AL/usd/utils/SIMD.h"
+#include "AL/usdmaya/utils/Utils.h"
 #include "AL/usdmaya/utils/MeshUtils.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
@@ -37,10 +37,6 @@
 #include "maya/MUintArray.h"
 #include "maya/MVector.h"
 #include "maya/MVectorArray.h"
-#include "maya/MFnCompoundAttribute.h"
-#include "maya/MFnNumericAttribute.h"
-#include "maya/MFnTypedAttribute.h"
-#include "maya/MFnEnumAttribute.h"
 
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -89,7 +85,6 @@ UsdPrim MeshTranslator::exportObject(UsdStageRefPtr stage, MDagPath path, const 
   if(!params.m_meshes)
     return UsdPrim();
 
-  UsdTimeCode usdTime;
   UsdGeomMesh mesh = UsdGeomMesh::Define(stage, usdPath);
 
   MStatus status;

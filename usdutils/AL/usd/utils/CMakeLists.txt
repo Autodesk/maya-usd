@@ -13,11 +13,14 @@ set(USDUTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib)
 list(APPEND usdutils_headers
     DebugCodes.h
     ALHalf.h
+    DiffCore.h
     ForwardDeclares.h
+    SIMD.h
 )
 
 list(APPEND usdutils_source
     DebugCodes.cpp
+    DiffCore.cpp
 )
 
 add_library(${USDUTILS_LIBRARY_NAME}

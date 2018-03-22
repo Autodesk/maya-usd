@@ -15,6 +15,7 @@
 //
 #include "AL/maya/utils/Utils.h"
 #include "AL/usdmaya/utils/MeshUtils.h"
+#include "AL/usdmaya/utils/DiffPrimVar.h"
 
 #include "maya/MItMeshPolygon.h"
 #include "maya/MGlobal.h"
@@ -1591,9 +1592,7 @@ void copyCreaseEdges(UsdGeomMesh& mesh, const MFnMesh& fnMesh)
     }
   }
 }
-
 //----------------------------------------------------------------------------------------------------------------------
-
 // Loops through each Colour Set in the mesh writing out a set of non-indexed Colour Values in RGBA format,
 // Renames Mayacolours sets, prefixing with "alusd_colour_"
 // Writes out per-Face values only
@@ -1800,8 +1799,8 @@ void copyGlimpseUserDataAttributes(UsdGeomMesh &mesh, const MFnMesh &fnMesh)
       copyUserData(name, type, value);
     }
   }
-
 }
+
 //----------------------------------------------------------------------------------------------------------------------
 } // utils
 } // usdmaya

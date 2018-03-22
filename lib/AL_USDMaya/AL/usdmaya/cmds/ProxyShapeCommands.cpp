@@ -499,7 +499,7 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       {
         result[i] = AL::maya::utils::convert(it->GetString());
       }
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("all %u\n", all.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("all %zu\n", all.size());
     }
     else
     if(loaded && db.isFlagSet("-pp"))
@@ -519,8 +519,8 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       {
         result[i] = AL::maya::utils::convert(it->GetString());
       }
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %u\n", loadableSet.size());
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadedSet %u\n", loadedSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %zu\n", loadableSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadedSet %zu\n", loadedSet.size());
     }
     else
     if(loaded)
@@ -532,7 +532,7 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       {
         result[i] = AL::maya::utils::convert(it->GetString());
       }
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loaded %u\n", all.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loaded %zu\n", all.size());
     }
     else
     if(unloaded && db.isFlagSet("-pp"))
@@ -559,9 +559,9 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       {
         result[i] = AL::maya::utils::convert(it->GetString());
       }
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("all %u\n", all.size());
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %u\n", loadableSet.size());
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadedSet %u\n", loadedSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("all %zu\n", all.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %zu\n", loadableSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadedSet %zu\n", loadedSet.size());
     }
     else
     if(unloaded)
@@ -581,9 +581,9 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       {
         result[i] = AL::maya::utils::convert(it->GetString());
       }
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadedSet %u\n", loadedSet.size());
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %u\n", loadableSet.size());
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("diffed %u\n", diffed.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadedSet %zu\n", loadedSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %zu\n", loadableSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("diffed %zu\n", diffed.size());
     }
     setResult(result);
   }

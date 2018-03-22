@@ -297,7 +297,7 @@ void ProxyShapePostLoadProcess::updateSchemaPrims(
       MObject object = proxy->findRequiredPath(prim.GetPath());
 
       fileio::translators::TranslatorRefPtr translator = translatorManufacture.get(prim.GetTypeName());
-      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::updateSchemaPrims: hasEntry(%s, %s)=%b\n", prim.GetPath().GetText(), prim.GetTypeName().GetText(), context->hasEntry(prim.GetPath(), prim.GetTypeName()));
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::updateSchemaPrims: hasEntry(%s, %s)=%d\n", prim.GetPath().GetText(), prim.GetTypeName().GetText(), context->hasEntry(prim.GetPath(), prim.GetTypeName()));
 
       if(!context->hasEntry(prim.GetPath(), prim.GetTypeName()))
       {
