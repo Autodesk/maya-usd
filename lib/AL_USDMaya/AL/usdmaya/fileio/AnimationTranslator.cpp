@@ -208,14 +208,11 @@ bool AnimationTranslator::areTransformAttributesConnected(const MDagPath &path)
   if(!status)
     return false;
 
-  int index = 0;
   for(const auto& attributeObject: *AnimationCheckTransformAttributes::getInstance())
   {
     const MPlug plug(transformNode, attributeObject.object());
     if(plug.isDestination(&status))
       return true;
-
-    index++;
   }
   return false;
 }
@@ -243,11 +240,11 @@ bool AnimationTranslator::isAnimatedTransform(const MObject& transformNode)
   AnimationCheckTransformAttributesScope scope(!attrsInitialised);
 
   bool transformAttributeConnected = areTransformAttributesConnected(currPath);
-  if(!inheritTransform(currPath) && !transformAttributeConnected)
-    return false;
-
   if(transformAttributeConnected)
     return true;
+
+  if(!inheritTransform(currPath) && !transformAttributeConnected)
+    return false;
 
 
   while(currPath.pop() == MStatus::kSuccess && inheritTransform(currPath))
