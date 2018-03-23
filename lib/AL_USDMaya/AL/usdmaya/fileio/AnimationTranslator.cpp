@@ -240,7 +240,7 @@ bool AnimationTranslator::isAnimatedTransform(const MObject& transformNode)
   {
     attrs->initialise(transformNode);
   }
-  AnimationCheckTransformAttributesScope scope(attrsInitialised);
+  AnimationCheckTransformAttributesScope scope(!attrsInitialised);
 
   bool transformAttributeConnected = areTransformAttributesConnected(currPath);
   if(!inheritTransform(currPath) && !transformAttributeConnected)

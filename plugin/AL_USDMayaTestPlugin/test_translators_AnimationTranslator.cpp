@@ -466,8 +466,10 @@ TEST(translators_AnimationTranslator, isAnimatedTransform)
   mod.undoIt();
   EXPECT_FALSE(AnimationTranslator::isAnimatedTransform(child));
 
-  mod.deleteNode(root);
   mod.deleteNode(master);
+  mod.deleteNode(child);
+  mod.deleteNode(parent);
+  mod.deleteNode(root);
   mod.doIt();
 }
 
