@@ -1,14 +1,30 @@
-## v0.27.2 
-merged https://github.com/AnimalLogic/AL_USDMaya/pull/68 allow for custom pxr namespace
-merged https://github.com/AnimalLogic/AL_USDMaya/pull/42 Fixes several issues with selection in the maya viewport
-
-
-## v0.27.1 (2018-03-10)
+## v0.27.1 (2018-03-23)
 
 ### Added
-+ Mesh Translation: Glimpse subdivision params
 
+- Updated existing command to add layer to the RootLayers sublayer stack
+- Support relative path as usd file path, which will be resolved using current maya file path. It does nothing if current maya file path is none.
+- Renamed glimpse subdivision related tokens (from glimpse_name to glimpse:subdiv:name)
+- Nurb Curve widths now are imported and exported from AL_USDMaya's ImportCommand
+- rendererPlugin attribute to ProxyShape
+- Mesh Translation tutorial
 
+### Changed
+
+- Built using USD-0.8.3
+- Library name AL_Utils -> AL_EventSystem
+- Use custom data to store maya_associatedReferenceNode instead of attribute on the prim when import maya reference.
+- AL_usdmaya_ProxyShapeImportPrimPathAsMaya, removed the parameters which weren't used.
+- Allow for custom pxr namespace - https://github.com/AnimalLogic/AL_USDMaya/pull/68
+
+### Fixed
+
+- "Error : No proxyShape specified/selected " when attempting to add a sublayer via the UI
+- The MPLug::source()  error in Maya 2016, the API is only available since Maya 2016 ex2.
+- Failing unit test
+- AL_usdmaya_TranslatePrim now ignores translation to an already translated prim
+- Crash fix for MeshTranslator crash when variant switching
+- Fixes several issues with selection in the maya viewport - https://github.com/AnimalLogic/AL_USDMaya/pull/42
 
 ## v0.27.0 (2018-03-12)
 
