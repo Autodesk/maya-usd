@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/fileio/ExportParams.h"
+#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/translators/NurbsCurveTranslator.h"
 #include "AL/maya/utils/NodeHelper.h"
@@ -28,6 +29,7 @@
 #include "maya/MFnFloatArrayData.h"
 
 #include "pxr/usd/usdGeom/nurbsCurves.h"
+#include "pxr/base/tf/debug.h"
 
 namespace AL {
 namespace usdmaya {
@@ -174,6 +176,9 @@ UsdPrim NurbsCurveTranslator::exportObject(UsdStageRefPtr stage, MDagPath path, 
 {
   if(!params.m_nurbsCurves)
     return UsdPrim();
+
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::Starting to export Nurbs for path '%s'\n", usdPath.GetText());
+
   UsdGeomNurbsCurves nurbs = UsdGeomNurbsCurves::Define(stage, usdPath);
 
   MFnNurbsCurve fnCurve(path);
@@ -231,13 +236,18 @@ UsdPrim NurbsCurveTranslator::exportObject(UsdStageRefPtr stage, MDagPath path, 
   }
   else if( fnCurve.hasAttribute("width") )
   {
-    MPlug widthPlug = fnCurve.findPlug("width");
+    widthPlug = fnCurve.findPlug("width");
     widthPlug.getValue(width);
     fnDouble.setObject(width);
+  }
+  else
+  {
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::No width/s attribute found for path '%s' \n", usdPath.GetText());
   }
 
   if(!width.isNull() && !widthPlug.isNull())
   {
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::Exporting width/s for path '%s' \n", usdPath.GetText());
     VtArray<float> widths;
 
     if(width.apiType() == MFn::kDoubleArrayData)
