@@ -214,30 +214,17 @@ class AnimationCheckTransformAttributes
 {
 #define ATTR_COUNT 13
 public:
-  static AnimationCheckTransformAttributes *getInstance();
-  static void destruct();
-  bool initialise(const MObject &transformNode);
+  AnimationCheckTransformAttributes();
   inline std::array<MObjectHandle, ATTR_COUNT>::iterator begin() {return m_commonTransformAttributes.begin();}
   inline std::array<MObjectHandle, ATTR_COUNT>::iterator end() {return m_commonTransformAttributes.end();}
-  inline bool isInitialised()const {return m_initialised;}
   inline MObject inheritTransformAttribute()const {return m_inheritTransformAttribute.object();}
+
 private:
-  AnimationCheckTransformAttributes():m_initialised(false){}
   std::array<MObjectHandle, ATTR_COUNT> m_commonTransformAttributes;
   MObjectHandle m_inheritTransformAttribute;
-  bool m_initialised;
-
-  static AnimationCheckTransformAttributes *s_instance;
 };
 
-class AnimationCheckTransformAttributesScope
-{
-public:
-  AnimationCheckTransformAttributesScope(bool destructAttributes):m_destruct(destructAttributes){}
-  ~AnimationCheckTransformAttributesScope(){if(m_destruct){AnimationCheckTransformAttributes::destruct();}}
-private:
-  bool m_destruct;
-};
+extern AnimationCheckTransformAttributes g_AnimationCheckTransformAttributes;
 
 //----------------------------------------------------------------------------------------------------------------------
 } // fileio

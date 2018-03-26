@@ -29,6 +29,7 @@
 #include "maya/MGlobal.h"
 #include "maya/MFnMesh.h"
 #include "maya/MAnimUtil.h"
+#include "maya/MNodeClass.h"
 
 namespace AL {
 namespace usdmaya {
@@ -197,7 +198,7 @@ bool AnimationTranslator::inheritTransform(const MDagPath &path)
   if(!status)
     return false;
 
-  MPlug inheritTransformPlug (transformNode, AnimationCheckTransformAttributes::getInstance()->inheritTransformAttribute());
+  MPlug inheritTransformPlug (transformNode, g_AnimationCheckTransformAttributes.inheritTransformAttribute());
   return inheritTransformPlug.asBool();
 }
 
@@ -208,7 +209,7 @@ bool AnimationTranslator::areTransformAttributesConnected(const MDagPath &path)
   if(!status)
     return false;
 
-  for(const auto& attributeObject: *AnimationCheckTransformAttributes::getInstance())
+  for(const auto& attributeObject: g_AnimationCheckTransformAttributes)
   {
     const MPlug plug(transformNode, attributeObject.object());
     if(plug.isDestination(&status))
@@ -229,15 +230,6 @@ bool AnimationTranslator::isAnimatedTransform(const MObject& transformNode)
 
   MDagPath currPath;
   fnNode.getPath(currPath);
-
-  // IN case isAnimatedTransform is called directly somewhere else:
-  AnimationCheckTransformAttributes *attrs = AnimationCheckTransformAttributes::getInstance();
-  bool attrsInitialised = attrs->isInitialised();
-  if(!attrsInitialised)
-  {
-    attrs->initialise(transformNode);
-  }
-  AnimationCheckTransformAttributesScope scope(!attrsInitialised);
 
   bool transformAttributeConnected = areTransformAttributesConnected(currPath);
   if(transformAttributeConnected)
@@ -305,69 +297,27 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-AnimationCheckTransformAttributes *AnimationCheckTransformAttributes::s_instance = NULL;
+AnimationCheckTransformAttributes g_AnimationCheckTransformAttributes;
 
-AnimationCheckTransformAttributes *AnimationCheckTransformAttributes::getInstance()
+
+AnimationCheckTransformAttributes::AnimationCheckTransformAttributes()
 {
-  if(!s_instance)
-    s_instance = new AnimationCheckTransformAttributes();
+  MNodeClass transformNodeClass("transform");
+  m_commonTransformAttributes[0] = transformNodeClass.attribute("translate");
+  m_commonTransformAttributes[1] = transformNodeClass.attribute("translateX");
+  m_commonTransformAttributes[2] = transformNodeClass.attribute("translateY");
+  m_commonTransformAttributes[3] = transformNodeClass.attribute("translateZ");
+  m_commonTransformAttributes[4] = transformNodeClass.attribute("rotate");
+  m_commonTransformAttributes[5] = transformNodeClass.attribute("rotateX");
+  m_commonTransformAttributes[6] = transformNodeClass.attribute("rotateY");
+  m_commonTransformAttributes[7] = transformNodeClass.attribute("rotateZ");
+  m_commonTransformAttributes[8] = transformNodeClass.attribute("scale");
+  m_commonTransformAttributes[9] = transformNodeClass.attribute("scaleX");
+  m_commonTransformAttributes[10] = transformNodeClass.attribute("scaleY");
+  m_commonTransformAttributes[11] = transformNodeClass.attribute("scaleZ");
+  m_commonTransformAttributes[12] = transformNodeClass.attribute("rotateOrder");
 
-  return s_instance;
-}
-
-void AnimationCheckTransformAttributes::destruct()
-{
-  if(s_instance)
-  {
-    delete s_instance;
-    s_instance = NULL;
-  }
-}
-
-#define _initAttribute(index, attributeName) \
-  plug = fn.findPlug(attributeName, &status); \
-  if(status) { m_commonTransformAttributes[index] = plug.attribute(&status);} \
-  if(status != MS::kSuccess) { m_initialised = false; return false; }
-
-bool AnimationCheckTransformAttributes::initialise(const MObject &transformNode)
-{
-  if(!transformNode.hasFn(MFn::kTransform))
-  {
-    m_initialised = false;
-    return false;
-  }
-
-  MStatus status;
-  MFnDependencyNode fn(transformNode);
-  MPlug plug;
-
-  _initAttribute(0, "translate")
-  _initAttribute(1, "translateX")
-  _initAttribute(2, "translateY")
-  _initAttribute(3, "translateZ")
-  _initAttribute(4, "rotate")
-  _initAttribute(5, "rotateX")
-  _initAttribute(6, "rotateY")
-  _initAttribute(7, "rotateZ")
-  _initAttribute(8, "scale")
-  _initAttribute(9, "scaleX")
-  _initAttribute(10, "scaleY")
-  _initAttribute(11, "scaleZ")
-  _initAttribute(12, "rotateOrder")
-
-  plug = fn.findPlug("inheritsTransform", &status);
-  if(status)
-  {
-    m_inheritTransformAttribute = plug.attribute(&status);
-  }
-  if(status != MS::kSuccess)
-  {
-    m_initialised = false;
-    return false;
-  }
-
-  m_initialised = true;
-  return true;
+  m_inheritTransformAttribute = transformNodeClass.attribute("rotateOrder");
 }
 
 //----------------------------------------------------------------------------------------------------------------------

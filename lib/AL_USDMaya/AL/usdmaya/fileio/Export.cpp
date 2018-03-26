@@ -707,8 +707,6 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
 //----------------------------------------------------------------------------------------------------------------------
 void Export::doExport()
 {
-  AnimationCheckTransformAttributesScope scope{true};
-
   // make sure the node factory has been initialised as least once prior to use
   getNodeFactory();
 
@@ -730,20 +728,12 @@ void Export::doExport()
     {
       if(path.node().hasFn(MFn::kTransform))
       {
-        if(!AnimationCheckTransformAttributes::getInstance()->isInitialised())
-        {
-          AnimationCheckTransformAttributes::getInstance()->initialise(path.node());
-        }
         exportSceneHierarchy(path, defaultPrim);
       }
       else
       if(path.node().hasFn(MFn::kShape))
       {
         path.pop();
-        if(!AnimationCheckTransformAttributes::getInstance()->isInitialised())
-        {
-          AnimationCheckTransformAttributes::getInstance()->initialise(path.node());
-        }
         exportSceneHierarchy(path, defaultPrim);
       }
     }
