@@ -117,17 +117,11 @@ struct AnimationTranslator
   /// \param  attribute the corresponding maya attribute to write the anim data into if the plug is animated
   /// \param  assumeExpressionIsAnimated if we encounter an expression, assume that the attribute is animated (true) or
   ///         static (false).
-  /// \param  assumIsAnimated It is a indicator that we already did the isAnimated() check beforehand and we do not want to do it again.
-  inline void addPlug(const MPlug& plug,
-                      const UsdAttribute& attribute,
-                      const bool assumeExpressionIsAnimated,
-                      const bool assumIsAnimated = false)
+  inline void addPlug(const MPlug& plug, const UsdAttribute& attribute, const bool assumeExpressionIsAnimated)
   {
     if(m_animatedPlugs.find(plug) != m_animatedPlugs.end())
       return;
-
-    // assumIsAnimated: isAnimated() check is already done, we don't not want to perform it again:
-    if(assumIsAnimated || isAnimated(plug, assumeExpressionIsAnimated))
+    if(isAnimated(plug, assumeExpressionIsAnimated))
       m_animatedPlugs.emplace(plug, attribute);
   }
 
@@ -137,18 +131,11 @@ struct AnimationTranslator
   /// \param  scale a scale to apply to convert units if needed
   /// \param  assumeExpressionIsAnimated if we encounter an expression, assume that the attribute is animated (true) or
   ///         static (false).
-  /// \param  assumIsAnimated It is a indicator that we already did the isAnimated() check beforehand and we do not want to do it again.
-  inline void addPlug(const MPlug& plug,
-                      const UsdAttribute& attribute,
-                      const float scale,
-                      const bool assumeExpressionIsAnimated,
-                      const bool assumIsAnimated = false)
+  inline void addPlug(const MPlug& plug, const UsdAttribute& attribute, const float scale, const bool assumeExpressionIsAnimated)
   {
     if(m_scaledAnimatedPlugs.find(plug) != m_scaledAnimatedPlugs.end())
       return;
-
-    // assumIsAnimated: isAnimated() check is already done, we don't not want to perform it again:
-    if(assumIsAnimated || isAnimated(plug, assumeExpressionIsAnimated))
+    if(isAnimated(plug, assumeExpressionIsAnimated))
       m_scaledAnimatedPlugs.emplace(plug, ScaledPair{attribute, scale});
   }
 
