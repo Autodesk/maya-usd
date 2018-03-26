@@ -191,7 +191,7 @@ void convert3DArrayTo4DArray(const float* const input, float* const output, size
 void gatherFaceConnectsAndVertices(const UsdGeomMesh& mesh, MFloatPointArray& points,
   MVectorArray &normals, MIntArray& counts, MIntArray& connects, const bool leftHanded)
 {
-  static const UsdTimeCode timeCode = UsdTimeCode::Default();
+  static const UsdTimeCode timeCode = UsdTimeCode::EarliestTime();
 
   VtArray<GfVec3f> pointData;
   VtArray<GfVec3f> normalsData;
@@ -228,7 +228,6 @@ void gatherFaceConnectsAndVertices(const UsdGeomMesh& mesh, MFloatPointArray& po
     }
   }
 
-  mesh.GetPointsAttr().Get(&pointData, UsdTimeCode::Default());
   mesh.GetPointsAttr().Get(&pointData, timeCode);
   if(mesh.GetNormalsAttr().HasAuthoredValueOpinion())
   {
@@ -797,7 +796,7 @@ void applyPrimVars(const UsdGeomMesh& mesh, MFnMesh& fnMesh, const MIntArray& co
     primvar.GetDeclarationInfo(&name, &typeName, &interpolation, &elementSize);
     VtValue vtValue;
 
-    if (primvar.Get(&vtValue, UsdTimeCode::Default()))
+    if (primvar.Get(&vtValue, UsdTimeCode::EarliestTime()))
     {
       if (vtValue.IsHolding<VtArray<GfVec2f> >())
       {
