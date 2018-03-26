@@ -1,3 +1,10 @@
+## v0.27.2 (2018-03-27)
+
+### Added
+
+- Internal AL build fixes
+- Small fix to nurb width import
+
 ## v0.27.1 (2018-03-23)
 
 ### Added
