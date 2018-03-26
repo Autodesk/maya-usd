@@ -1075,7 +1075,6 @@ TEST(ManualTranslate, roundtripMeshPrim)
   SdfPathVector teardownPaths;
   teardownPaths.push_back(meshPath);
   proxyShape->translatePrimPathsIntoMaya(SdfPathVector(), teardownPaths, tp);
-  MFileIO::saveAs("/tmp/cats2.ma");
   s = MGlobal::selectByName("pSphere1Shape");
   ASSERT_FALSE(s.statusCode() == MStatus::kSuccess);
 
