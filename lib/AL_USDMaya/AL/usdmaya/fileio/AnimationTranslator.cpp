@@ -302,22 +302,21 @@ AnimationCheckTransformAttributes g_AnimationCheckTransformAttributes;
 
 AnimationCheckTransformAttributes::AnimationCheckTransformAttributes()
 {
-  MNodeClass transformNodeClass("transform");
-  m_commonTransformAttributes[0] = transformNodeClass.attribute("translate");
-  m_commonTransformAttributes[1] = transformNodeClass.attribute("translateX");
-  m_commonTransformAttributes[2] = transformNodeClass.attribute("translateY");
-  m_commonTransformAttributes[3] = transformNodeClass.attribute("translateZ");
-  m_commonTransformAttributes[4] = transformNodeClass.attribute("rotate");
-  m_commonTransformAttributes[5] = transformNodeClass.attribute("rotateX");
-  m_commonTransformAttributes[6] = transformNodeClass.attribute("rotateY");
-  m_commonTransformAttributes[7] = transformNodeClass.attribute("rotateZ");
-  m_commonTransformAttributes[8] = transformNodeClass.attribute("scale");
-  m_commonTransformAttributes[9] = transformNodeClass.attribute("scaleX");
-  m_commonTransformAttributes[10] = transformNodeClass.attribute("scaleY");
-  m_commonTransformAttributes[11] = transformNodeClass.attribute("scaleZ");
-  m_commonTransformAttributes[12] = transformNodeClass.attribute("rotateOrder");
+  m_commonTransformAttributes[0] = MPxTransform::translate;
+  m_commonTransformAttributes[1] = MPxTransform::translateX;
+  m_commonTransformAttributes[2] = MPxTransform::translateY;
+  m_commonTransformAttributes[3] = MPxTransform::translateZ;
+  m_commonTransformAttributes[4] = MPxTransform::rotate;
+  m_commonTransformAttributes[5] = MPxTransform::rotateX;
+  m_commonTransformAttributes[6] = MPxTransform::rotateY;
+  m_commonTransformAttributes[7] = MPxTransform::rotateZ;
+  m_commonTransformAttributes[8] = MPxTransform::scale;
+  m_commonTransformAttributes[9] = MPxTransform::scaleX;
+  m_commonTransformAttributes[10] = MPxTransform::scaleY;
+  m_commonTransformAttributes[11] = MPxTransform::scaleZ;
+  m_commonTransformAttributes[12] = MPxTransform::rotateOrder;
 
-  m_inheritTransformAttribute = transformNodeClass.attribute("rotateOrder");
+  m_inheritTransformAttribute = MPxTransform::inheritsTransform;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
