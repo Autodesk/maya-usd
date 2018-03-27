@@ -621,6 +621,8 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
   bool inheritsTransform;
   bool visible;
 
+  const float radToDeg = 57.295779506f;
+
   getBool(from, m_inheritsTransform, inheritsTransform);
   getBool(from, m_visible, visible);
   getVec3(from, m_scale, (float*)&scale);
@@ -683,18 +685,16 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
 
   if(transformAnimated || rotation != defaultRotation)
   {
-    const float radToDeg = 57.295779506f;
     rotation *= radToDeg;
-    UsdAttribute rotateAttr = addRotateOp(xformSchema, "rotate",rotateOrder, rotation);
+    UsdAttribute rotateAttr = addRotateOp(xformSchema, "rotate", rotateOrder, rotation);
     if(transformAnimated && animTranslator) animTranslator->forceAddPlug(MPlug(from, m_rotation), rotateAttr, radToDeg);
   }
 
   plugAnimated = animationCheck(animTranslator, MPlug(from, m_rotateAxis));
   if(plugAnimated || rotateAxis != defaultRotateAxis)
   {
-    const float radToDeg = 57.295779506f;
     rotateAxis *= radToDeg;
-    UsdAttribute rotateAxisAttr = addRotateOp(xformSchema, "rotateAxis", UsdGeomXformOp::PrecisionFloat, rotation);
+    UsdAttribute rotateAxisAttr = addRotateOp(xformSchema, "rotateAxis", MEulerRotation::kXYZ, rotateAxis);
     if(plugAnimated && animTranslator) animTranslator->forceAddPlug(MPlug(from, m_rotateAxis), rotateAxisAttr, radToDeg);
   }
 
