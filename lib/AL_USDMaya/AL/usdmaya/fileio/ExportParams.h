@@ -53,6 +53,7 @@ struct ExporterParams
   bool m_filterSample = false; ///< if true, duplicate sample of attribute will be filtered out
   bool m_useAnimalSchema = (USE_AL_DEFAULT) ? true : false; ///< if true, the data exported will be designed to fit with Animal Logics internal needs. If false, the original pxr schema will be used.
   AnimationTranslator* m_animTranslator = 0; ///< the animation translator to help exporting the animation data
+  bool m_extensiveAnimationCheck = true; ///< if true, extensive animation check will be performed on transform nodes.
 };
 
 //----------------------------------------------------------------------------------------------------------------------

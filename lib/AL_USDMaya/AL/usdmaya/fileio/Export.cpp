@@ -825,6 +825,10 @@ MStatus ExportCommand::doIt(const MArgList& args)
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("fr", 1, m_params.m_maxFrame), "ALUSDExport: Unable to fetch \"frame range\" argument");
     m_params.m_animation = true;
   }
+  if(argData.isFlagSet("eac", &status))
+  {
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("eac", 0, m_params.m_extensiveAnimationCheck), "ALUSDExport: Unable to fetch \"extensive animation check\" argument");
+  }
   else
   if(argData.isFlagSet("ani", &status))
   {
@@ -921,6 +925,8 @@ MSyntax ExportCommand::createSyntax()
   status = syntax.addFlag("-fr", "-frameRange", MSyntax::kDouble, MSyntax::kDouble);
   AL_MAYA_CHECK_ERROR2(status, errorString);
   status = syntax.addFlag("-fs", "-filterSample", MSyntax::kBoolean);
+  AL_MAYA_CHECK_ERROR2(status, errorString);
+  status = syntax.addFlag("-eac", "-extensiveAnimationCheck", MSyntax::kBoolean);
   AL_MAYA_CHECK_ERROR2(status, errorString);
   syntax.enableQuery(false);
   syntax.enableEdit(false);
