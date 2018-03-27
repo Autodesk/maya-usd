@@ -35,7 +35,7 @@ namespace AL {
 namespace usdmaya {
 namespace fileio {
 
-const std::array<MFn::Type, 4> AnimationTranslator::s_nodeTypesConsiderToBeAnimation {
+const static std::array<MFn::Type, 4> g_nodeTypesConsiderToBeAnimation {
     MFn::kAnimCurveTimeToAngular,  //79
     MFn::kAnimCurveTimeToDistance,  //80
     MFn::kAnimCurveTimeToTime,   //81
@@ -45,8 +45,8 @@ const std::array<MFn::Type, 4> AnimationTranslator::s_nodeTypesConsiderToBeAnima
 //----------------------------------------------------------------------------------------------------------------------
 bool AnimationTranslator::considerToBeAnimation(const MFn::Type nodeType)
 {
-  auto end = s_nodeTypesConsiderToBeAnimation.cend();
-  auto first = std::lower_bound(s_nodeTypesConsiderToBeAnimation.cbegin(), end, nodeType);
+  auto end = g_nodeTypesConsiderToBeAnimation.cend();
+  auto first = std::lower_bound(g_nodeTypesConsiderToBeAnimation.cbegin(), end, nodeType);
   return first != end && !(nodeType < *first);
 }
 
@@ -190,11 +190,12 @@ bool AnimationTranslator::isAnimatedMesh(const MDagPath& mesh)
   }
   return false;
 }
+
 //----------------------------------------------------------------------------------------------------------------------
 bool AnimationTranslator::inheritTransform(const MDagPath &path)
 {
   MStatus status;
-  const MObject transformNode = path.node();
+  const MObject transformNode = path.node(&status);
   if(!status)
     return false;
 
@@ -202,6 +203,7 @@ bool AnimationTranslator::inheritTransform(const MDagPath &path)
   return inheritTransformPlug.asBool();
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 bool AnimationTranslator::areTransformAttributesConnected(const MDagPath &path)
 {
   MStatus status;
@@ -218,6 +220,7 @@ bool AnimationTranslator::areTransformAttributesConnected(const MDagPath &path)
   return false;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 bool AnimationTranslator::isAnimatedTransform(const MObject& transformNode)
 {
   if(!transformNode.hasFn(MFn::kTransform))
@@ -300,6 +303,7 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
 AnimationCheckTransformAttributes g_AnimationCheckTransformAttributes;
 
 
+//----------------------------------------------------------------------------------------------------------------------
 AnimationCheckTransformAttributes::AnimationCheckTransformAttributes()
 {
   MNodeClass transformNodeClass("transform");

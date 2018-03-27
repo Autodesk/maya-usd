@@ -205,18 +205,21 @@ private:
   PlugAttrScaledVector m_scaledAnimatedPlugs;
   PlugAttrVector m_animatedTransformPlugs;
   MeshAttrVector m_animatedMeshes;
-
-  const static std::array<MFn::Type, 4> s_nodeTypesConsiderToBeAnimation;
 };
 
 
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  A utility class to provide static transform attributes for testing if a transform node is animated or not.
+/// \ingroup   fileio
+//----------------------------------------------------------------------------------------------------------------------
 class AnimationCheckTransformAttributes
 {
-#define ATTR_COUNT 13
+private:
+  constexpr int transformAttributesCount {13};
 public:
   AnimationCheckTransformAttributes();
-  inline std::array<MObjectHandle, ATTR_COUNT>::iterator begin() {return m_commonTransformAttributes.begin();}
-  inline std::array<MObjectHandle, ATTR_COUNT>::iterator end() {return m_commonTransformAttributes.end();}
+  inline std::array<MObjectHandle, transformAttributesCount>::iterator begin() {return m_commonTransformAttributes.begin();}
+  inline std::array<MObjectHandle, transformAttributesCount>::iterator end() {return m_commonTransformAttributes.end();}
   inline MObject inheritTransformAttribute()const {return m_inheritTransformAttribute.object();}
 
 private:
