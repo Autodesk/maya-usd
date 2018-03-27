@@ -48,9 +48,9 @@ const static AnimationCheckTransformAttributes g_AnimationCheckTransformAttribut
 //----------------------------------------------------------------------------------------------------------------------
 bool AnimationTranslator::considerToBeAnimation(const MFn::Type nodeType)
 {
-  auto end = g_nodeTypesConsiderToBeAnimation.cend();
-  auto first = std::lower_bound(g_nodeTypesConsiderToBeAnimation.cbegin(), end, nodeType);
-  return first != end && !(nodeType < *first);
+  return std::binary_search(g_nodeTypesConsiderToBeAnimation.cbegin(),
+                            g_nodeTypesConsiderToBeAnimation.cend(),
+                            nodeType);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
