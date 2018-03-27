@@ -61,3 +61,79 @@ TEST(ExportCommands, exportUV)
     ASSERT_FLOAT_EQ(uv[1], faceUV[1]);
   }
 }
+
+TEST(ExportCommands, extensiveAnimationCheck)
+{
+  MFileIO::newFile(true);
+  MStatus status;
+
+  MFnDagNode transformFN;
+  MObject parent = transformFN.create("transform", MObject::kNullObj, &status);
+  EXPECT_EQ(MStatus(MS::kSuccess), status);
+
+  MObject child = transformFN.create("transform", parent, &status);
+  EXPECT_EQ(MStatus(MS::kSuccess), status);
+
+  MObject master = transformFN.create("transform", MObject::kNullObj, &status);
+  EXPECT_EQ(MStatus(MS::kSuccess), status);
+
+  transformFN.setObject(master);
+  MPlug sourceTx = transformFN.findPlug("translateX");
+
+  MDGModifier mod;
+  transformFN.setObject(parent);
+  MPlug targetTx = transformFN.findPlug("translateX");
+
+  EXPECT_EQ(MStatus(MS::kSuccess), mod.connect(sourceTx,targetTx));
+  mod.doIt();
+
+  transformFN.setObject(child);
+  MString name = transformFN.name(&status);
+
+  MSelectionList sel;
+  sel.add(transformFN.dagPath(&status));
+  MGlobal::setActiveSelectionList(sel);
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_extensiveAnimationCheck.usda";
+  MString exportCmd;
+
+  exportCmd.format(MString("AL_usdmaya_ExportCommand -f \"^1s\" -sl 1 -animation 1 -frameRange 1 10"), AL::maya::utils::convert(temp_path));
+  MGlobal::executeCommand(exportCmd, true);
+
+  auto testResult = [temp_path, name] (bool expectAnimation)
+  {
+    UsdStageRefPtr stage = UsdStage::Open(temp_path);
+    EXPECT_TRUE(stage);
+
+    UsdPrim prim = stage->GetPrimAtPath(SdfPath(name.asChar()));
+    UsdGeomXform transform(prim);
+
+    bool resetsXformStack;
+    std::vector<UsdGeomXformOp> ops = transform.GetOrderedXformOps(&resetsXformStack);
+    if(expectAnimation)
+    {
+      EXPECT_FALSE(ops.empty());
+      for(auto op : ops)
+      {
+        auto attr = op.GetAttr();
+        EXPECT_EQ(10, attr.GetNumTimeSamples());
+      }
+    }
+    else
+    {
+      EXPECT_TRUE(ops.empty());
+    }
+  };
+
+  testResult(true);
+
+  exportCmd.format(MString("AL_usdmaya_ExportCommand -f \"^1s\" -sl 1 -animation 1 -extensiveAnimationCheck 0 -frameRange 1 10"), AL::maya::utils::convert(temp_path));
+  MGlobal::executeCommand(exportCmd, true);
+  testResult(false);
+
+
+  mod.deleteNode(master);
+  mod.deleteNode(child);
+  mod.deleteNode(parent);
+  mod.doIt();
+}
