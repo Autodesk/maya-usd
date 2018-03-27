@@ -215,19 +215,17 @@ private:
 class AnimationCheckTransformAttributes
 {
 private:
-  constexpr int transformAttributesCount {13};
+  constexpr static int transformAttributesCount {13};
 public:
   AnimationCheckTransformAttributes();
-  inline std::array<MObjectHandle, transformAttributesCount>::iterator begin() {return m_commonTransformAttributes.begin();}
-  inline std::array<MObjectHandle, transformAttributesCount>::iterator end() {return m_commonTransformAttributes.end();}
+  inline std::array<MObject, transformAttributesCount>::iterator begin() {return m_commonTransformAttributes.begin();}
+  inline std::array<MObject, transformAttributesCount>::iterator end() {return m_commonTransformAttributes.end();}
   inline MObject inheritTransformAttribute()const {return m_inheritTransformAttribute.object();}
 
 private:
-  std::array<MObjectHandle, ATTR_COUNT> m_commonTransformAttributes;
-  MObjectHandle m_inheritTransformAttribute;
+  std::array<MObject, transformAttributesCount> m_commonTransformAttributes;
+  MObject m_inheritTransformAttribute;
 };
-
-extern AnimationCheckTransformAttributes g_AnimationCheckTransformAttributes;
 
 //----------------------------------------------------------------------------------------------------------------------
 } // fileio

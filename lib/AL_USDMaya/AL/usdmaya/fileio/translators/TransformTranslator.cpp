@@ -554,12 +554,6 @@ bool animationCheck(AnimationTranslator* animTranslator, MPlug plug)
   return animTranslator->isAnimated(plug, true);
 }
 
-bool transformAnimationCheck(AnimationTranslator* animTranslator, const MObject &transformNode)
-{
-  if(!animTranslator) return false;
-  return animTranslator->isAnimatedTransform(transformNode);
-}
-
 //----------------------------------------------------------------------------------------------------------------------
 MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, const ExporterParams& params)
 {
@@ -606,7 +600,7 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
 
   // Check if transform attributes are considiered animated,
   // if true, we consider translation, rotation, rotateOrder and scale attributes are animated:
-  bool transformAnimated = transformAnimationCheck(animTranslator, from);
+  bool transformAnimated =  animTranslator->isAnimatedTransform(from);
 
   xformSchema.SetResetXformStack(!inheritsTransform);
 

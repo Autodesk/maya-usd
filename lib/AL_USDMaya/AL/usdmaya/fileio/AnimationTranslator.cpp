@@ -43,6 +43,9 @@ const static std::array<MFn::Type, 4> g_nodeTypesConsiderToBeAnimation {
 };
 
 //----------------------------------------------------------------------------------------------------------------------
+const static AnimationCheckTransformAttributes g_AnimationCheckTransformAttributes;
+
+//----------------------------------------------------------------------------------------------------------------------
 bool AnimationTranslator::considerToBeAnimation(const MFn::Type nodeType)
 {
   auto end = g_nodeTypesConsiderToBeAnimation.cend();
@@ -213,7 +216,7 @@ bool AnimationTranslator::areTransformAttributesConnected(const MDagPath &path)
 
   for(const auto& attributeObject: g_AnimationCheckTransformAttributes)
   {
-    const MPlug plug(transformNode, attributeObject.object());
+    const MPlug plug(transformNode, attributeObject);
     if(plug.isDestination(&status))
       return true;
   }
@@ -298,10 +301,6 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
     }
   }
 }
-
-//----------------------------------------------------------------------------------------------------------------------
-AnimationCheckTransformAttributes g_AnimationCheckTransformAttributes;
-
 
 //----------------------------------------------------------------------------------------------------------------------
 AnimationCheckTransformAttributes::AnimationCheckTransformAttributes()
