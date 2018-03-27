@@ -359,6 +359,9 @@ public:
   /// Hydra renderer plugin used for rendering (not storable)
   AL_DECL_ATTRIBUTE(rendererPlugin);
 
+  /// Cache ID of the currently loaded stage)
+  AL_DECL_ATTRIBUTE(stageCacheId);
+
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Output Attributes
   //--------------------------------------------------------------------------------------------------------------------

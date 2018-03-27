@@ -75,6 +75,7 @@ typedef boost::filesystem::path path;
 #include "pxr/usd/usd/stageCacheContext.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/meshAdapter.h"
+#include "pxr/usd/usdUtils/stageCache.h"
 
 #include <algorithm>
 #include <iterator>
@@ -229,10 +230,12 @@ MObject ProxyShape::m_transformRotate = MObject::kNullObj;
 MObject ProxyShape::m_transformScale = MObject::kNullObj;
 MObject ProxyShape::m_stageDataDirty = MObject::kNullObj;
 MObject ProxyShape::m_rendererPlugin = MObject::kNullObj;
+MObject ProxyShape::m_stageCacheId = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 std::vector<MObjectHandle> ProxyShape::m_unloadedProxyShapes;
 TfTokenVector ProxyShape::m_rendererPlugins;
+int m_stageCacheId;
 //----------------------------------------------------------------------------------------------------------------------
 UsdPrim ProxyShape::getUsdPrim(MDataBlock& dataBlock) const
 {
@@ -768,6 +771,8 @@ MStatus ProxyShape::initialise()
         pluginIds[i] = i;
     }
     m_rendererPlugin = addEnumAttr("rendererPlugin", "rp", kCached | kReadable | kWritable | kAffectsAppearance, pluginNames.data(), pluginIds.data());
+
+    m_stageCacheId = addInt32Attr("stageCacheId", "stcid", -1, kCached | kConnectable | kReadable | kAffectsAppearance  );
 
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, m_outTime), errorString);
@@ -1340,6 +1345,14 @@ void ProxyShape::loadStage()
 
         // Expand the mask, since we do not really want to mask the possible relation targets.
         m_stage->ExpandPopulationMask();
+
+        // @todo: do we want to make this part optional somehow?
+        UsdStageCache& stageCache = UsdUtilsStageCache::Get();
+        UsdStageCache::Id stageId = stageCache.Insert(m_stage);
+        outputInt32Value(dataBlock, m_stageCacheId, stageId.ToLongInt() );
+
+        //@todo: do we need to clear cache on new scene?
+
 
         // Save the initial edit target
         trackEditTargetLayer();
