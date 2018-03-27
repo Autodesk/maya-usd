@@ -218,9 +218,9 @@ private:
   constexpr static int transformAttributesCount {13};
 public:
   AnimationCheckTransformAttributes();
-  inline std::array<MObject, transformAttributesCount>::iterator begin() {return m_commonTransformAttributes.begin();}
-  inline std::array<MObject, transformAttributesCount>::iterator end() {return m_commonTransformAttributes.end();}
-  inline MObject inheritTransformAttribute()const {return m_inheritTransformAttribute.object();}
+  inline std::array<MObject, transformAttributesCount>::const_iterator begin() const {return m_commonTransformAttributes.cbegin();}
+  inline std::array<MObject, transformAttributesCount>::const_iterator end() const {return m_commonTransformAttributes.cend();}
+  inline MObject inheritTransformAttribute()const {return m_inheritTransformAttribute;}
 
 private:
   std::array<MObject, transformAttributesCount> m_commonTransformAttributes;

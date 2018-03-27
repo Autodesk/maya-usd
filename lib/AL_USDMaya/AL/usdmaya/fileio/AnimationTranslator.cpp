@@ -214,7 +214,7 @@ bool AnimationTranslator::areTransformAttributesConnected(const MDagPath &path)
   if(!status)
     return false;
 
-  for(const auto& attributeObject: g_AnimationCheckTransformAttributes)
+  for(const auto &attributeObject: g_AnimationCheckTransformAttributes)
   {
     const MPlug plug(transformNode, attributeObject);
     if(plug.isDestination(&status))

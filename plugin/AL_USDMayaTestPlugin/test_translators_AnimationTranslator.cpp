@@ -36,7 +36,6 @@ using AL::usdmaya::fileio::AnimationTranslator;
 namespace
 {
 MPlug m_outTime;
-MFnDependencyNode time1Fn;
 void setUp()
 {
   AL_OUTPUT_TEST_NAME("test_translators_AnimationTranslator");
@@ -45,7 +44,7 @@ void setUp()
   MObject obj;
   MGlobal::getActiveSelectionList(sl);
   sl.getDependNode(0, obj);
-  time1Fn.setObject(obj);
+  MFnDependencyNode time1Fn(obj);
   m_outTime = time1Fn.findPlug("outTime");
 }
 
@@ -380,7 +379,7 @@ TEST(translators_AnimationTranslator, considerToBeAnimationForNodeType)
   EXPECT_EQ(MStatus(MS::kSuccess), mod.doIt());
   EXPECT_FALSE(AnimationTranslator::isAnimated(transformFN.findPlug("rotateX"), true));
 
-
+  MFnDependencyNode time1Fn(m_outTime.node());
   EXPECT_FALSE(AnimationTranslator::isAnimated(time1Fn.findPlug("enableTimewarp"), false));
   EXPECT_EQ(MStatus(MS::kSuccess),
             mod.connect(animCurveTLFN.findPlug("output"),
