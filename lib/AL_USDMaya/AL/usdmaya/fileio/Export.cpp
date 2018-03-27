@@ -819,19 +819,20 @@ MStatus ExportCommand::doIt(const MArgList& args)
   {
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("nc", 0, m_params.m_nurbsCurves), "ALUSDExport: Unable to fetch \"nurbs curves\" argument");
   }
+
   if(argData.isFlagSet("fr", &status))
   {
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("fr", 0, m_params.m_minFrame), "ALUSDExport: Unable to fetch \"frame range\" argument");
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("fr", 1, m_params.m_maxFrame), "ALUSDExport: Unable to fetch \"frame range\" argument");
     m_params.m_animation = true;
   }
-  else
-  if(argData.isFlagSet("ani", &status))
+  else if(argData.isFlagSet("ani", &status))
   {
     m_params.m_animation = true;
     m_params.m_minFrame = MAnimControl::minTime().value();
     m_params.m_maxFrame = MAnimControl::maxTime().value();
   }
+
   if (argData.isFlagSet("fs", &status))
   {
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("fs", 0, m_params.m_filterSample), "ALUSDExport: Unable to fetch \"filter sample\" argument");

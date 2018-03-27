@@ -71,29 +71,29 @@ TEST(ExportCommands, extensiveAnimationCheck)
   MFnDagNode transformFN;
   MObject parent = transformFN.create("transform", MObject::kNullObj, &status);
   EXPECT_EQ(MStatus(MS::kSuccess), status);
+  transformFN.setObject(parent);
+  MPlug targetTx = transformFN.findPlug("translateX");
 
   MObject child = transformFN.create("transform", parent, &status);
   EXPECT_EQ(MStatus(MS::kSuccess), status);
+  transformFN.setObject(child);
+  const char *name = "theTransform";
+  transformFN.setName(name, false, &status);
+  EXPECT_EQ(MStatus(MS::kSuccess), status);
+  child = transformFN.object();
 
   MObject master = transformFN.create("transform", MObject::kNullObj, &status);
   EXPECT_EQ(MStatus(MS::kSuccess), status);
-
   transformFN.setObject(master);
   MPlug sourceTx = transformFN.findPlug("translateX");
 
   MDGModifier mod;
-  transformFN.setObject(parent);
-  MPlug targetTx = transformFN.findPlug("translateX");
-
   EXPECT_EQ(MStatus(MS::kSuccess), mod.connect(sourceTx,targetTx));
   mod.doIt();
 
-  transformFN.setObject(child);
-  MString name = transformFN.name(&status);
-
   MSelectionList sel;
-  sel.add(transformFN.dagPath(&status));
-  MGlobal::setActiveSelectionList(sel);
+  EXPECT_EQ(MStatus(MS::kSuccess), sel.add(name));
+  EXPECT_EQ(MStatus(MS::kSuccess), MGlobal::setActiveSelectionList(sel));
 
   const std::string temp_path = "/tmp/AL_USDMayaTests_extensiveAnimationCheck.usda";
   MString exportCmd;
@@ -103,7 +103,9 @@ TEST(ExportCommands, extensiveAnimationCheck)
     UsdStageRefPtr stage = UsdStage::Open(temp_path);
     EXPECT_TRUE(stage);
 
-    UsdPrim prim = stage->GetPrimAtPath(SdfPath(name.asChar()));
+    std::string pathString = "/";
+    pathString += name;
+    UsdPrim prim = stage->GetPrimAtPath(SdfPath(pathString));
     EXPECT_TRUE(prim.IsValid());
 
     UsdGeomXform transform(prim);
@@ -125,15 +127,15 @@ TEST(ExportCommands, extensiveAnimationCheck)
     }
   };
 
+  // Test default behavior:
   exportCmd.format(MString("AL_usdmaya_ExportCommand -f \"^1s\" -sl 1 -frameRange 1 10"), AL::maya::utils::convert(temp_path));
   MGlobal::executeCommand(exportCmd, true);
-
   expectAnimation(true);
 
+  // Test turning off the extensiveAnimationCheck:
   exportCmd.format(MString("AL_usdmaya_ExportCommand -f \"^1s\" -sl 1 -extensiveAnimationCheck 0 -frameRange 1 10"), AL::maya::utils::convert(temp_path));
   MGlobal::executeCommand(exportCmd, true);
   expectAnimation(false);
-
 
   mod.deleteNode(master);
   mod.deleteNode(child);

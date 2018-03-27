@@ -199,10 +199,13 @@ bool AnimationTranslator::inheritTransform(const MDagPath &path)
 {
   MStatus status;
   const MObject transformNode = path.node(&status);
-  if(!status)
+  if(status != MS::kSuccess)
     return false;
 
   MPlug inheritTransformPlug (transformNode, g_AnimationCheckTransformAttributes.inheritTransformAttribute());
+  if(inheritTransformPlug.isNull())
+    return false;
+
   return inheritTransformPlug.asBool();
 }
 
@@ -231,18 +234,18 @@ bool AnimationTranslator::isAnimatedTransform(const MObject& transformNode)
 
   MStatus status;
   MFnDagNode fnNode(transformNode, &status);
-  if (!status)
+  if (status != MS::kSuccess)
     return false;
 
   MDagPath currPath;
   fnNode.getPath(currPath);
 
   bool transformAttributeConnected = areTransformAttributesConnected(currPath);
+
   if(transformAttributeConnected)
     return true;
-
-  if(!inheritTransform(currPath) && !transformAttributeConnected)
-    return false;
+  else if(!inheritTransform(currPath))
+      return false;
 
 
   while(currPath.pop() == MStatus::kSuccess && inheritTransform(currPath))
@@ -320,7 +323,7 @@ AnimationCheckTransformAttributes::AnimationCheckTransformAttributes()
   m_commonTransformAttributes[11] = transformNodeClass.attribute("scaleZ");
   m_commonTransformAttributes[12] = transformNodeClass.attribute("rotateOrder");
 
-  m_inheritTransformAttribute = transformNodeClass.attribute("rotateOrder");
+  m_inheritTransformAttribute = transformNodeClass.attribute("inheritsTransform");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
