@@ -125,12 +125,12 @@ TEST(ExportCommands, extensiveAnimationCheck)
     }
   };
 
-  exportCmd.format(MString("AL_usdmaya_ExportCommand -f \"^1s\" -sl 1 -animation 1 -frameRange 1 10"), AL::maya::utils::convert(temp_path));
+  exportCmd.format(MString("AL_usdmaya_ExportCommand -f \"^1s\" -sl 1 -frameRange 1 10"), AL::maya::utils::convert(temp_path));
   MGlobal::executeCommand(exportCmd, true);
 
   expectAnimation(true);
 
-  exportCmd.format(MString("AL_usdmaya_ExportCommand -f \"^1s\" -sl 1 -animation 1 -extensiveAnimationCheck 0 -frameRange 1 10"), AL::maya::utils::convert(temp_path));
+  exportCmd.format(MString("AL_usdmaya_ExportCommand -f \"^1s\" -sl 1 -extensiveAnimationCheck 0 -frameRange 1 10"), AL::maya::utils::convert(temp_path));
   MGlobal::executeCommand(exportCmd, true);
   expectAnimation(false);
 

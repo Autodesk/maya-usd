@@ -825,10 +825,6 @@ MStatus ExportCommand::doIt(const MArgList& args)
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("fr", 1, m_params.m_maxFrame), "ALUSDExport: Unable to fetch \"frame range\" argument");
     m_params.m_animation = true;
   }
-  if(argData.isFlagSet("eac", &status))
-  {
-    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("eac", 0, m_params.m_extensiveAnimationCheck), "ALUSDExport: Unable to fetch \"extensive animation check\" argument");
-  }
   else
   if(argData.isFlagSet("ani", &status))
   {
@@ -839,6 +835,10 @@ MStatus ExportCommand::doIt(const MArgList& args)
   if (argData.isFlagSet("fs", &status))
   {
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("fs", 0, m_params.m_filterSample), "ALUSDExport: Unable to fetch \"filter sample\" argument");
+  }
+  if(argData.isFlagSet("eac", &status))
+  {
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("eac", 0, m_params.m_extensiveAnimationCheck), "ALUSDExport: Unable to fetch \"extensive animation check\" argument");
   }
 
   if(m_params.m_animation)
