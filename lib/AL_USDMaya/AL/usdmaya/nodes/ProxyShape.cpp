@@ -16,10 +16,8 @@
 #include "pxr/usdImaging/usdImaging/version.h"
 #if (USD_IMAGING_API_VERSION >= 7)
   #include "pxr/usdImaging/usdImagingGL/hdEngine.h"
-  #include "pxr/usdImaging/usdImagingGL/gl.h"
 #else
   #include "pxr/usdImaging/usdImaging/hdEngine.h"
-  #include "pxr/usdImaging/usdImaging/gl.h"
 #endif
 
 #if (__cplusplus >= 201703L)
@@ -229,13 +227,11 @@ MObject ProxyShape::m_transformTranslate = MObject::kNullObj;
 MObject ProxyShape::m_transformRotate = MObject::kNullObj;
 MObject ProxyShape::m_transformScale = MObject::kNullObj;
 MObject ProxyShape::m_stageDataDirty = MObject::kNullObj;
-MObject ProxyShape::m_rendererPlugin = MObject::kNullObj;
 MObject ProxyShape::m_stageCacheId = MObject::kNullObj;
 MObject ProxyShape::m_assetResolverConfig = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 std::vector<MObjectHandle> ProxyShape::m_unloadedProxyShapes;
-TfTokenVector ProxyShape::m_rendererPlugins;
 int m_stageCacheId;
 //----------------------------------------------------------------------------------------------------------------------
 UsdPrim ProxyShape::getUsdPrim(MDataBlock& dataBlock) const
@@ -437,6 +433,12 @@ void ProxyShape::constructGLImagingEngine()
                                    translatedGeo.end());
 
       m_engine = new UsdImagingGLHdEngine(m_path, excludedGeometryPaths);
+      // set renderer plugin based on layerManager setting
+      LayerManager* manager = LayerManager::findManager();
+      if(manager && m_engine)
+      {
+        manager->changeRendererPlugin(this, true);
+      }
 
       triggerEvent("ConstructGLEngine");
     }
@@ -759,23 +761,7 @@ MStatus ProxyShape::initialise()
 
     m_stageDataDirty = addBoolAttr("stageDataDirty", "sdd", false, kWritable | kAffectsAppearance | kInternal);
 
-    // Create dummy imaging engine to get renderer names
-    UsdImagingGL imagingEngine(SdfPath(), {});
-    m_rendererPlugins = imagingEngine.GetRendererPlugins();
-    std::vector<std::string> pluginDesc(m_rendererPlugins.size());
-    std::vector<const char*> pluginNames(m_rendererPlugins.size() + 1, nullptr);
-    std::vector<int16_t> pluginIds(m_rendererPlugins.size() + 1, -1);
-    for (size_t i = 0; i < m_rendererPlugins.size(); ++i)
-    {
-        pluginDesc[i] = imagingEngine.GetRendererPluginDesc(m_rendererPlugins[i]);
-        pluginNames[i] = pluginDesc[i].data();
-        pluginIds[i] = i;
-    }
-    m_rendererPlugin = addEnumAttr("rendererPlugin", "rp", kCached | kReadable | kWritable | kAffectsAppearance, pluginNames.data(), pluginIds.data());
-
-    m_stageCacheId = addInt32Attr("stageCacheId", "stcid", -1, kCached | kConnectable | kReadable  );
-
-    m_assetResolverConfig = addStringAttr("assetResolverConfig", "arc", kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance);
+    m_stageCacheId = addInt32Attr("stageCacheId", "stcid", -1, kCached | kConnectable | kReadable | kAffectsAppearance  );
 
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, m_outTime), errorString);
@@ -1613,36 +1599,6 @@ void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& p
           proxy->m_path = rootPath;
         }
         proxy->constructGLImagingEngine();
-      }
-    }
-    else
-    if(plug == m_excludePrimPaths)
-    {
-      if(proxy->m_stage)
-      {
-        proxy->constructExcludedPrims();
-      }
-    }
-    else
-    if(plug == m_rendererPlugin)
-    {
-      short rendererId = plug.asShort();
-      if (rendererId < m_rendererPlugins.size() && proxy->m_engine)
-      {
-        TfToken plugin = m_rendererPlugins[rendererId];
-        if (!proxy->m_engine->SetRendererPlugin(plugin))
-        {
-          MString message("failed to set renderer plugin: ");
-          MString data(plugin.data());
-          MGlobal::displayError(message + data);
-        }
-      }
-      else
-      {
-        MString message("failed to set renderer plugin: ");
-        MString data;
-        data.set(rendererId);
-        MGlobal::displayError(message + data);
       }
     }
   }

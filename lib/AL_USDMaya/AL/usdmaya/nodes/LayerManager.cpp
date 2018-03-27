@@ -23,6 +23,14 @@
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/textFileFormat.h"
 #include "pxr/usd/usd/usdaFileFormat.h"
+#include "pxr/usdImaging/usdImaging/version.h"
+#if (USD_IMAGING_API_VERSION >= 7)
+  #include "pxr/usdImaging/usdImagingGL/gl.h"
+  #include "pxr/usdImaging/usdImagingGL/hdEngine.h"
+#else
+  #include "pxr/usdImaging/usdImaging/gl.h"
+  #include "pxr/usdImaging/usdImaging/hdEngine.h"
+#endif
 
 #include "maya/MBoundingBox.h"
 #include "maya/MGlobal.h"
@@ -111,6 +119,11 @@ namespace {
 namespace AL {
 namespace usdmaya {
 namespace nodes {
+
+LayerManager::~LayerManager()
+{
+  removeAttributeChangedCallback();
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 bool LayerDatabase::addLayer(SdfLayerRefPtr layer, const std::string& identifier)
@@ -247,6 +260,10 @@ MObject LayerManager::m_layers = MObject::kNullObj;
 MObject LayerManager::m_identifier = MObject::kNullObj;
 MObject LayerManager::m_serialized = MObject::kNullObj;
 MObject LayerManager::m_anonymous = MObject::kNullObj;
+MObject LayerManager::m_rendererPlugin = MObject::kNullObj;
+
+TfTokenVector LayerManager::m_rendererPluginsTokens;
+MStringArray LayerManager::m_rendererPluginsNames;
 
 //----------------------------------------------------------------------------------------------------------------------
 void* LayerManager::conditionalCreator()
@@ -270,6 +287,7 @@ MStatus LayerManager::initialise()
   try
   {
     setNodeType(kTypeName);
+    addFrame("USD Layer Manager Node");
 
     addFrame("Serialization infos");
 
@@ -280,6 +298,30 @@ MStatus LayerManager::initialise()
     m_layers = addCompoundAttr("layers", "lyr",
         kCached | kReadable | kWritable | kStorable | kConnectable | kHidden | kArray | kUsesArrayDataBuilder,
         {m_identifier, m_serialized, m_anonymous});
+
+    // Create dummy imaging engine to get renderer names
+    UsdImagingGL imagingEngine(SdfPath(), {});
+    m_rendererPluginsTokens = imagingEngine.GetRendererPlugins();
+    const size_t numTokens = m_rendererPluginsTokens.size();
+    m_rendererPluginsNames = MStringArray(numTokens, MString());
+
+    // as it's not clear what is the liftime of strings returned from HdEngine::GetRendererPluginDesc
+    // we store them in array to populate enum attribute also we store array of MString names for menu items
+    std::vector<std::string> pluginNames(numTokens);
+    std::vector<const char*> enumNames(numTokens + 1, nullptr);
+    std::vector<int16_t> enumIds(numTokens + 1, -1);
+    for (size_t i = 0; i < numTokens; ++i)
+    {
+      pluginNames[i] = imagingEngine.GetRendererPluginDesc(m_rendererPluginsTokens[i]);
+      m_rendererPluginsNames[i] = MString(pluginNames[i].data(), pluginNames[i].size());
+      enumNames[i] = pluginNames[i].data();
+      enumIds[i] = i;
+    }
+
+    m_rendererPlugin = addEnumAttr(
+      "rendererPlugin", "rp", kCached | kReadable | kWritable , enumNames.data(), enumIds.data()
+    );
+
   }
   catch(const MStatus& status)
   {
@@ -287,6 +329,60 @@ MStatus LayerManager::initialise()
   }
   generateAETemplate();
   return MS::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void LayerManager::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug&, void* clientData)
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("LayerManager::onAttributeChanged\n");
+  LayerManager* manager = static_cast<LayerManager*>(clientData);
+  assert(manager);
+  if(plug == m_rendererPlugin)
+  {
+    // Find all proxy shapes and change renderer plugin
+    MFnDependencyNode fn;
+    MItDependencyNodes iter(MFn::kPluginShape);
+    for(; !iter.isDone(); iter.next())
+    {
+      fn.setObject(iter.item());
+      if(fn.typeId() == ProxyShape::kTypeId)
+      {
+        ProxyShape* proxy = static_cast<ProxyShape*>(fn.userNode());
+        manager->changeRendererPlugin(proxy);
+      }
+    }
+    //! We need to refresh viewport to changes take effect
+    MGlobal::executeCommandOnIdle("refresh -force");
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void LayerManager::removeAttributeChangedCallback()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("LayerManager::removeAttributeChangedCallback\n");
+  if(m_attributeChanged != -1)
+  {
+    MMessage::removeCallback(m_attributeChanged);
+    m_attributeChanged = -1;
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void LayerManager::addAttributeChangedCallback()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("LayerManager::addAttributeChangedCallback\n");
+  if(m_attributeChanged == -1)
+  {
+    MObject obj = thisMObject();
+    m_attributeChanged = MNodeMessage::addAttributeChangedCallback(obj, onAttributeChanged, (void*)this);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void LayerManager::postConstructor()
+{
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("LayerManager::postConstructor\n");
+  addAttributeChangedCallback();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -581,6 +677,68 @@ void LayerManager::loadAllLayers()
     addLayer(layer, identifierVal);
   }
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void LayerManager::changeRendererPlugin(ProxyShape* proxy, bool creation)
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("LayerManager::changeRendererPlugin\n");
+  assert(proxy);
+  if (proxy->engine())
+  {
+    MPlug plug(thisMObject(), m_rendererPlugin);
+    short rendererId = plug.asShort();
+    if (rendererId < m_rendererPluginsTokens.size())
+    {
+      // Skip redundant renderer changes on ProxyShape creation
+      if (rendererId == 0 && creation)
+        return;
+      
+      TfToken plugin = m_rendererPluginsTokens[rendererId];
+      if (!proxy->engine()->SetRendererPlugin(plugin))
+      {
+        MString data(plugin.data());
+        MGlobal::displayError(MString("Failed to set renderer plugin: ") + data);
+      }
+    }
+    else
+    {
+      MString data;
+      data.set(rendererId);
+      MGlobal::displayError(MString("Invalid renderer plugin index: ") + data);
+    }
+  }
+}
+
+size_t LayerManager::getRendererPluginIndex() const
+{
+  MPlug plug(thisMObject(), m_rendererPlugin);
+  return plug.asShort();
+}
+
+bool LayerManager::setRendererPlugin(const MString& pluginName)
+{
+  int index = m_rendererPluginsNames.indexOf(pluginName);
+  if (index >= 0)
+  {
+    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("LayerManager::setRendererPlugin\n");
+    MPlug plug(thisMObject(), m_rendererPlugin);
+    plug.setShort(index);
+    return true;
+  }
+  else
+  {
+    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Failed to set renderer plugin!\n");
+    MGlobal::displayError(MString("Failed to set renderer plugin: ") + pluginName);
+  }
+  return false;
+}
+
+MStringArray LayerManager::getRendererPluginList()
+{
+  return m_rendererPluginsNames;
+}
+
 
 //----------------------------------------------------------------------------------------------------------------------
 } // nodes
