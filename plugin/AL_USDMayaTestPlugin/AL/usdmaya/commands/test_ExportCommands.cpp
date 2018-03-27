@@ -18,6 +18,7 @@
 #include "test_usdmaya.h"
 #include "maya/MGlobal.h"
 #include "maya/MFileIO.h"
+#include "maya/MFnDagNode.h"
 
 TEST(ExportCommands, exportUV)
 {
@@ -97,15 +98,14 @@ TEST(ExportCommands, extensiveAnimationCheck)
   const std::string temp_path = "/tmp/AL_USDMayaTests_extensiveAnimationCheck.usda";
   MString exportCmd;
 
-  exportCmd.format(MString("AL_usdmaya_ExportCommand -f \"^1s\" -sl 1 -animation 1 -frameRange 1 10"), AL::maya::utils::convert(temp_path));
-  MGlobal::executeCommand(exportCmd, true);
-
-  auto testResult = [temp_path, name] (bool expectAnimation)
+  auto expectAnimation = [temp_path, name] (bool expectAnimation)
   {
     UsdStageRefPtr stage = UsdStage::Open(temp_path);
     EXPECT_TRUE(stage);
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath(name.asChar()));
+    EXPECT_TRUE(prim.IsValid());
+
     UsdGeomXform transform(prim);
 
     bool resetsXformStack;
@@ -125,11 +125,14 @@ TEST(ExportCommands, extensiveAnimationCheck)
     }
   };
 
-  testResult(true);
+  exportCmd.format(MString("AL_usdmaya_ExportCommand -f \"^1s\" -sl 1 -animation 1 -frameRange 1 10"), AL::maya::utils::convert(temp_path));
+  MGlobal::executeCommand(exportCmd, true);
+
+  expectAnimation(true);
 
   exportCmd.format(MString("AL_usdmaya_ExportCommand -f \"^1s\" -sl 1 -animation 1 -extensiveAnimationCheck 0 -frameRange 1 10"), AL::maya::utils::convert(temp_path));
   MGlobal::executeCommand(exportCmd, true);
-  testResult(false);
+  expectAnimation(false);
 
 
   mod.deleteNode(master);
