@@ -66,7 +66,9 @@ AL_usdmaya_ExportCommand -f "<path/to/out/file.usd>" -fs
 
 By default the exporter performs an extensive animation check on node like transform, if any of common attributes like translate, rotate, scale and rotateOrder is connected as target, we take it as animated.
 Use -aec/-extensiveAnimationCheck 0 to turn off this behavior:
+```
 AL_usdmaya_ExportCommand -f "<path/to/out/file.usd>" -ani -eac 0;
+```
 
 ## Mesh Export
 For meshes normally we export:
