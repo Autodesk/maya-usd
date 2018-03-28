@@ -214,7 +214,7 @@ bool AnimationTranslator::areTransformAttributesConnected(const MDagPath &path)
 {
   MStatus status;
   const MObject transformNode = path.node(&status);
-  if(!status)
+  if(status != MS::kSuccess)
     return false;
 
   for(const auto &attributeObject: g_AnimationCheckTransformAttributes)

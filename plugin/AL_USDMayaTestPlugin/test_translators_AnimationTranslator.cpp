@@ -396,11 +396,11 @@ TEST(translators_AnimationTranslator, considerToBeAnimationForNodeType)
   EXPECT_FALSE(AnimationTranslator::isAnimated(m_outTime, true));
 
 
-  mod.deleteNode(transform);
   mod.deleteNode(animCurveTU);
   mod.deleteNode(animCurveTL);
   mod.deleteNode(animCurveTT);
   mod.deleteNode(animCurveTA);
+  mod.deleteNode(transform);
 
   mod.doIt();
 }
