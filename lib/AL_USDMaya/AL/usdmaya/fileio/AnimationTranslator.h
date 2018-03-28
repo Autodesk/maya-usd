@@ -223,6 +223,7 @@ public:
   inline MObject inheritTransformAttribute()const {return m_inheritTransformAttribute;}
 
 private:
+  MStatus initialise();
   std::array<MObject, transformAttributesCount> m_commonTransformAttributes;
   MObject m_inheritTransformAttribute;
 };

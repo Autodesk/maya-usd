@@ -197,9 +197,12 @@ bool AnimationTranslator::isAnimatedMesh(const MDagPath& mesh)
 //----------------------------------------------------------------------------------------------------------------------
 bool AnimationTranslator::inheritTransform(const MDagPath &path)
 {
+  if(!path.isValid())
+    return false;
+
   MStatus status;
   const MObject transformNode = path.node(&status);
-  if(status != MS::kSuccess)
+  if(status != MS::kSuccess || !transformNode.hasFn(MFn::kTransform))
     return false;
 
   MPlug inheritTransformPlug (transformNode, g_AnimationCheckTransformAttributes.inheritTransformAttribute());
@@ -308,22 +311,47 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
 //----------------------------------------------------------------------------------------------------------------------
 AnimationCheckTransformAttributes::AnimationCheckTransformAttributes()
 {
+  if(initialise() != MS::kSuccess)
+  {
+    std::cerr << "Unable to initialize common transform attributes for animation test." << std::endl;
+  }
+}
+MStatus AnimationCheckTransformAttributes::initialise()
+{
   MNodeClass transformNodeClass("transform");
-  m_commonTransformAttributes[0] = transformNodeClass.attribute("translate");
-  m_commonTransformAttributes[1] = transformNodeClass.attribute("translateX");
-  m_commonTransformAttributes[2] = transformNodeClass.attribute("translateY");
-  m_commonTransformAttributes[3] = transformNodeClass.attribute("translateZ");
-  m_commonTransformAttributes[4] = transformNodeClass.attribute("rotate");
-  m_commonTransformAttributes[5] = transformNodeClass.attribute("rotateX");
-  m_commonTransformAttributes[6] = transformNodeClass.attribute("rotateY");
-  m_commonTransformAttributes[7] = transformNodeClass.attribute("rotateZ");
-  m_commonTransformAttributes[8] = transformNodeClass.attribute("scale");
-  m_commonTransformAttributes[9] = transformNodeClass.attribute("scaleX");
-  m_commonTransformAttributes[10] = transformNodeClass.attribute("scaleY");
-  m_commonTransformAttributes[11] = transformNodeClass.attribute("scaleZ");
-  m_commonTransformAttributes[12] = transformNodeClass.attribute("rotateOrder");
+  MStatus status;
+  const char* const errorString = "Unable to extract attribute for Transform class.";
+  m_commonTransformAttributes[0] = transformNodeClass.attribute("translate", &status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+  m_commonTransformAttributes[1] = transformNodeClass.attribute("translateX", &status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+  m_commonTransformAttributes[2] = transformNodeClass.attribute("translateY", &status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+  m_commonTransformAttributes[3] = transformNodeClass.attribute("translateZ", &status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+  m_commonTransformAttributes[4] = transformNodeClass.attribute("rotate", &status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+  m_commonTransformAttributes[5] = transformNodeClass.attribute("rotateX", &status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+  m_commonTransformAttributes[6] = transformNodeClass.attribute("rotateY", &status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+  m_commonTransformAttributes[7] = transformNodeClass.attribute("rotateZ", &status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+  m_commonTransformAttributes[8] = transformNodeClass.attribute("scale", &status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+  m_commonTransformAttributes[9] = transformNodeClass.attribute("scaleX", &status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+  m_commonTransformAttributes[10] = transformNodeClass.attribute("scaleY", &status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+  m_commonTransformAttributes[11] = transformNodeClass.attribute("scaleZ", &status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+  m_commonTransformAttributes[12] = transformNodeClass.attribute("rotateOrder", &status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
 
-  m_inheritTransformAttribute = transformNodeClass.attribute("inheritsTransform");
+  m_inheritTransformAttribute = transformNodeClass.attribute("inheritsTransform", &status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+
+  return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
