@@ -66,48 +66,18 @@ TEST(ExportCommands, exportUV)
 TEST(ExportCommands, extensiveAnimationCheck)
 {
   MFileIO::newFile(true);
-  MStatus status;
-
-  MFnDagNode transformFN;
-  MObject parent = transformFN.create("transform", MObject::kNullObj, &status);
-  EXPECT_EQ(MStatus(MS::kSuccess), status);
-  transformFN.setObject(parent);
-  MPlug targetTx = transformFN.findPlug("translateX");
-  MDagPath parentPath = transformFN.dagPath(&status);
-
-  MObject child = transformFN.create("transform", parent, &status);
-  EXPECT_EQ(MStatus(MS::kSuccess), status);
-  transformFN.setObject(child);
-  const char *name = "theTransform";
-  transformFN.setName(name, false, &status);
-  EXPECT_EQ(MStatus(MS::kSuccess), status);
-  MDagPath childPath = transformFN.dagPath(&status);
-
-  MObject master = transformFN.create("transform", MObject::kNullObj, &status);
-  EXPECT_EQ(MStatus(MS::kSuccess), status);
-  transformFN.setObject(master);
-  MPlug sourceTx = transformFN.findPlug("translateX");
-  MDagPath masterPath = transformFN.dagPath(&status);
-
-  MDGModifier mod;
-  EXPECT_EQ(MStatus(MS::kSuccess), mod.connect(sourceTx,targetTx));
-  mod.doIt();
-
-  MSelectionList sel;
-  EXPECT_EQ(MStatus(MS::kSuccess), sel.add(name));
-  EXPECT_EQ(MStatus(MS::kSuccess), MGlobal::setActiveSelectionList(sel));
+  MGlobal::executeCommand(MString("createNode transform -n parent;polyCube -n child;parent child parent;"), false, true);
+  MGlobal::executeCommand(MString("createNode transform -n master;connectAttr master.tx parent.tx;select child;"), false, true);
 
   const std::string temp_path = "/tmp/AL_USDMayaTests_extensiveAnimationCheck.usda";
   MString exportCmd;
 
-  auto expectAnimation = [temp_path, name] (bool expectAnimation)
+  auto expectAnimation = [temp_path] (bool expectAnimation)
   {
     UsdStageRefPtr stage = UsdStage::Open(temp_path);
     EXPECT_TRUE(stage);
 
-    std::string pathString = "/";
-    pathString += name;
-    UsdPrim prim = stage->GetPrimAtPath(SdfPath(pathString));
+    UsdPrim prim = stage->GetPrimAtPath(SdfPath("/child"));
     EXPECT_TRUE(prim.IsValid());
 
     UsdGeomXform transform(prim);
@@ -138,9 +108,4 @@ TEST(ExportCommands, extensiveAnimationCheck)
   exportCmd.format(MString("AL_usdmaya_ExportCommand -f \"^1s\" -sl 1 -extensiveAnimationCheck 0 -frameRange 1 10"), AL::maya::utils::convert(temp_path));
   MGlobal::executeCommand(exportCmd, true);
   expectAnimation(false);
-
-  mod.deleteNode(masterPath.node());
-  mod.deleteNode(childPath.node());
-  mod.deleteNode(parentPath.node());
-  mod.doIt();
 }
