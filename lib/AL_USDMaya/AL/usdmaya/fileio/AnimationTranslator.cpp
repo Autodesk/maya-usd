@@ -309,6 +309,8 @@ AnimationCheckTransformAttributes::AnimationCheckTransformAttributes()
     std::cerr << "Unable to initialize common transform attributes for animation test." << std::endl;
   }
 }
+
+//----------------------------------------------------------------------------------------------------------------------
 MStatus AnimationCheckTransformAttributes::initialise()
 {
   MNodeClass transformNodeClass("transform");
