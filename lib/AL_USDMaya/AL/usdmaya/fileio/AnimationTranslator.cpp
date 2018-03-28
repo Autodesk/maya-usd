@@ -197,18 +197,12 @@ bool AnimationTranslator::isAnimatedMesh(const MDagPath& mesh)
 //----------------------------------------------------------------------------------------------------------------------
 bool AnimationTranslator::inheritTransform(const MDagPath &path)
 {
-  if(!path.isValid())
-    return false;
-
   MStatus status;
   const MObject transformNode = path.node(&status);
-  if(status != MS::kSuccess || !transformNode.hasFn(MFn::kTransform))
+  if(status != MS::kSuccess)
     return false;
 
   MPlug inheritTransformPlug (transformNode, g_AnimationCheckTransformAttributes.inheritTransformAttribute());
-  if(inheritTransformPlug.isNull())
-    return false;
-
   return inheritTransformPlug.asBool();
 }
 
@@ -250,8 +244,7 @@ bool AnimationTranslator::isAnimatedTransform(const MObject& transformNode)
   else if(!inheritTransform(currPath))
       return false;
 
-
-  while(currPath.pop() == MStatus::kSuccess && inheritTransform(currPath))
+  while(currPath.pop() == MStatus::kSuccess && currPath.hasFn(MFn::kTransform) && inheritTransform(currPath))
   {
     if(areTransformAttributesConnected(currPath))
       return true;
