@@ -73,6 +73,7 @@ TEST(ExportCommands, extensiveAnimationCheck)
   EXPECT_EQ(MStatus(MS::kSuccess), status);
   transformFN.setObject(parent);
   MPlug targetTx = transformFN.findPlug("translateX");
+  MDagPath parentPath = transformFN.dagPath(&status);
 
   MObject child = transformFN.create("transform", parent, &status);
   EXPECT_EQ(MStatus(MS::kSuccess), status);
@@ -80,12 +81,13 @@ TEST(ExportCommands, extensiveAnimationCheck)
   const char *name = "theTransform";
   transformFN.setName(name, false, &status);
   EXPECT_EQ(MStatus(MS::kSuccess), status);
-  child = transformFN.object();
+  MDagPath childPath = transformFN.dagPath(&status);
 
   MObject master = transformFN.create("transform", MObject::kNullObj, &status);
   EXPECT_EQ(MStatus(MS::kSuccess), status);
   transformFN.setObject(master);
   MPlug sourceTx = transformFN.findPlug("translateX");
+  MDagPath masterPath = transformFN.dagPath(&status);
 
   MDGModifier mod;
   EXPECT_EQ(MStatus(MS::kSuccess), mod.connect(sourceTx,targetTx));
@@ -137,8 +139,8 @@ TEST(ExportCommands, extensiveAnimationCheck)
   MGlobal::executeCommand(exportCmd, true);
   expectAnimation(false);
 
-  mod.deleteNode(master);
-  mod.deleteNode(child);
-  mod.deleteNode(parent);
+  mod.deleteNode(masterPath.node());
+  mod.deleteNode(childPath.node());
+  mod.deleteNode(parentPath.node());
   mod.doIt();
 }
