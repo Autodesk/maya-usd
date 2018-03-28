@@ -31,12 +31,6 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-class UsdImagingGLHdEngine;
-
-PXR_NAMESPACE_CLOSE_SCOPE;
-
 namespace AL {
 namespace usdmaya {
 namespace nodes {
@@ -190,11 +184,13 @@ public:
   AL_USDMAYA_PUBLIC
   void loadAllLayers();
 
-  /// \brief  Change current renderer plugin based on provided name
+  /// \brief  Set current renderer plugin based on provided name
   bool setRendererPlugin(const MString& pluginName);
 
+  /// \brief  Change current renderer plugin for provided ProxyShape
   void changeRendererPlugin(ProxyShape* proxy, bool creation=false);
   
+  /// \brief  Get current renderer plugin index
   size_t getRendererPluginIndex() const;
 
   static MStringArray getRendererPluginList();

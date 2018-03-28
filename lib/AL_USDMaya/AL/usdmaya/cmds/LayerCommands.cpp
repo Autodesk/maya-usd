@@ -937,6 +937,59 @@ MStatus LayerSetMuted::redoIt()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief  Get / Set renderer plugin settings
+//----------------------------------------------------------------------------------------------------------------------
+AL_MAYA_DEFINE_COMMAND(ManageRenderer, AL_usdmaya);
+
+//----------------------------------------------------------------------------------------------------------------------
+MArgDatabase ManageRenderer::makeDatabase(const MArgList& args)
+{
+  MStatus status;
+  MArgDatabase database(createSyntax(), args, &status);
+  if(!status)
+    throw status;
+  return database;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MSyntax ManageRenderer::createSyntax()
+{
+  MSyntax syn;
+  syn.addFlag("-h", "-help", MSyntax::kNoArg);
+  syn.addFlag("-sp", "-setPlugin", MSyntax::kString);
+  return syn;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool ManageRenderer::isUndoable() const
+{
+  return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus ManageRenderer::doIt(const MArgList& argList)
+{
+  try
+  {
+    MArgDatabase args = makeDatabase(argList);
+    AL_MAYA_COMMAND_HELP(args, g_helpText);
+
+    if(args.isFlagSet("-sp"))
+    {
+      MString name;
+      args.getFlagArgument("-sp", 0, name);
+      bool result = nodes::LayerManager::findOrCreateManager()->setRendererPlugin(name);
+      setResult(result);
+    }
+  }
+  catch(const MStatus& status)
+  {
+    return status;
+  }
+  return MS::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MStringArray buildEditedLayersList(const MString&)
 {
   MStringArray result;
@@ -980,6 +1033,12 @@ MStringArray buildProxyLayersList(const MString&)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+MStringArray buildRendererPluginsList(const MString&)
+{
+  return AL::usdmaya::nodes::LayerManager::getRendererPluginList();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void constructLayerCommandGuis()
 {
   {
@@ -999,6 +1058,15 @@ void constructLayerCommandGuis()
     // we build our layer list using identifiers, so make sure the command is told to expect identifiers
     setEditTarget.addExecuteText(" -fid ");
     setEditTarget.addListOption("l", "USD Layer", (AL::maya::utils::GenerateListFn)buildProxyLayersList);
+  }
+
+  /// It makes little sense to add this menu when there's just one option
+  if (AL::usdmaya::nodes::LayerManager::getRendererPluginList().length() > 1)
+  {
+    {
+      AL::maya::utils::CommandGuiHelper manageRenderer("AL_usdmaya_ManageRenderer", "Hydra Renderer Plugin", "Set", "USD/Renderer", false);
+      manageRenderer.addListOption("sp", "Plugin Name", (AL::maya::utils::GenerateListFn)buildRendererPluginsList);
+    }
   }
 }
 
@@ -1167,6 +1235,16 @@ LayerSetMuted Overview:
      LayerSetMuted -m false "identifier/for/layer.usda";  //< unmutes the layer 'layer.usda'
 
   This command is undoable, but it will probably crash right now.
+)";
+
+//----------------------------------------------------------------------------------------------------------------------
+const char* const ManageRenderer::g_helpText = R"(
+ManageRenderer Overview:
+
+  This command allows you to manage global renderer settings:
+
+     ManageRenderer -sp "Glimpse";  //< sets current renderer to glimpse
+     ManageRenderer -sp "GL";  //< sets current renderer to Hydra GL
 )";
 
 //----------------------------------------------------------------------------------------------------------------------

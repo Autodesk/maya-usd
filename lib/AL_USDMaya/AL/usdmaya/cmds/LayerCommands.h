@@ -179,6 +179,21 @@ private:
   MStatus redoIt() override;
 };
 
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  Get / Set renderer plugin settings
+/// \ingroup commands
+//----------------------------------------------------------------------------------------------------------------------
+class ManageRenderer
+  : public MPxCommand
+{
+  MArgDatabase makeDatabase(const MArgList& args);
+public:
+  AL_MAYA_DECLARE_COMMAND();
+private:
+  bool isUndoable() const override;
+  MStatus doIt(const MArgList& args) override;
+};
+
 
 /// \brief  function called on startup to generate the menu & option boxes for the layer commands
 /// \ingroup commands

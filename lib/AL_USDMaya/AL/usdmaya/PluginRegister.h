@@ -101,6 +101,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCurrentEditTarget);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerSave);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerSetMuted);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ManageRenderer);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImport);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeFindLoadable);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImportAllTransforms);
