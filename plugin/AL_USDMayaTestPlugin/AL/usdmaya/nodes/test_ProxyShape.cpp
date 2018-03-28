@@ -159,11 +159,11 @@ TEST(ProxyShape, basicProxyShapeSetUp)
 
   // inspect the sdf layer cache to make sure that has been cleared!
   {
-    UsdStageCache& layerCache = AL::usdmaya::StageCache::Get(true);
+    UsdStageCache& layerCache = AL::usdmaya::StageCache::Get();
     EXPECT_EQ(size_t(0), layerCache.Size());
   }
   {
-    UsdStageCache& layerCache = AL::usdmaya::StageCache::Get(false);
+    UsdStageCache& layerCache = AL::usdmaya::StageCache::Get();
     EXPECT_EQ(size_t(0), layerCache.Size());
   }
 

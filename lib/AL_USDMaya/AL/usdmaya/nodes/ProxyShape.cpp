@@ -1346,13 +1346,8 @@ void ProxyShape::loadStage()
         // Expand the mask, since we do not really want to mask the possible relation targets.
         m_stage->ExpandPopulationMask();
 
-        // @todo: do we want to make this part optional somehow?
-        UsdStageCache& stageCache = UsdUtilsStageCache::Get();
-        UsdStageCache::Id stageId = stageCache.Insert(m_stage);
-        outputInt32Value(dataBlock, m_stageCacheId, stageId.ToLongInt() );
-
-        //@todo: do we need to clear cache on new scene?
-
+        UsdStageCache::Id stageId = StageCache::Get().Insert(m_stage);
+        outputInt32Value(dataBlock, m_stageCacheId, stageId.ToLongInt());
 
         // Save the initial edit target
         trackEditTargetLayer();

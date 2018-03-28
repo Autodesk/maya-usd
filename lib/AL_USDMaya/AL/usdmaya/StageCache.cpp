@@ -20,6 +20,8 @@
 #include "maya/MGlobal.h"
 
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdUtils/stageCache.h"
+
 #include "AL/maya/utils/ForwardDeclares.h"
 
 namespace AL {
@@ -37,10 +39,8 @@ static void onMayaSceneUpdateCallback(void* clientData)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UsdStageCache& StageCache::Get(bool forcePopulate)
+UsdStageCache& StageCache::Get()
 {
-  static UsdStageCache theCacheForcePopulate;
-  static UsdStageCache theCache;
 
   // IMPORTANT: At every NEW scene in Maya we clear the USD stage cache.
   if (g_beforeNewCallbackId == 0)
@@ -58,15 +58,13 @@ UsdStageCache& StageCache::Get(bool forcePopulate)
 
     g_stageCacheCleared = AL::event::EventScheduler::getScheduler().registerEvent("OnUsdStageCacheCleared", AL::event::kUSDMayaEventType);
   }
-
-  return forcePopulate ? theCacheForcePopulate : theCache;
+  return UsdUtilsStageCache::Get();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void StageCache::Clear()
 {
-  StageCache::Get(true).Clear();
-  StageCache::Get(false).Clear();
+  UsdUtilsStageCache::Get().Clear();
   AL::event::EventScheduler::getScheduler().triggerEvent(g_stageCacheCleared);
 }
 
