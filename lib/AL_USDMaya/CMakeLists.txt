@@ -182,7 +182,6 @@ target_link_libraries(${LIBRARY_NAME}
     usdUtils
     usdImaging
     usdImagingGL
-    usdUtils
     vt
     rt
     ${PYTHON_LIBRARIES}
