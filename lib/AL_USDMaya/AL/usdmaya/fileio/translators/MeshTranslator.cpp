@@ -165,7 +165,12 @@ MObject MeshTranslator::createNode(const UsdPrim& from, MObject parent, const ch
   MVectorArray normals;
   MIntArray counts, connects;
 
-  AL::usdmaya::utils::gatherFaceConnectsAndVertices(mesh, points, normals, counts, connects, leftHanded);
+  UsdTimeCode timeCode = params.m_forceDefaultRead ?
+                         UsdTimeCode::Default() : UsdTimeCode::EarliestTime();
+  AL::usdmaya::utils::gatherFaceConnectsAndVertices(mesh, points, normals, counts, connects,
+                                                      leftHanded,
+                                                      timeCode);
+
 
   MObject polyShape = fnMesh.create(points.length(), counts.length(), points, counts, connects, parent);
 

@@ -82,7 +82,11 @@ public:
   /// \return a new context
   AL_USDMAYA_PUBLIC
   static RefPtr create(nodes::ProxyShape* proxyShape)
-    { return TfCreateRefPtr(new This(proxyShape)); }
+    {
+      RefPtr res = TfCreateRefPtr(new This(proxyShape));
+      res->setForceDefaultRead(false);
+      return res;
+    }
 
   /// \brief  return the proxy shape associated with this context
   /// \return the proxy shape
@@ -457,10 +461,21 @@ private:
   // true to make all translators that default to not importing Prims to always import Prims via the translators
   bool m_forcePrimImport;
 
-
   // list of geometry that has been request to be excluded during the translation
   SdfPathSet m_excludedGeometry;
   bool m_isExcludedGeometryDirty;
+
+public:
+  void setForceDefaultRead(bool forceDefaultRead)
+  { m_forceDefaultRead = forceDefaultRead; }
+
+  bool getForceDefaultRead()
+  { return m_forceDefaultRead; }
+
+private:
+  // If true, will explicitly read default attribute values.
+  bool m_forceDefaultRead;
+
 };
 
 typedef TfRefPtr<TranslatorContext> TranslatorContextPtr;

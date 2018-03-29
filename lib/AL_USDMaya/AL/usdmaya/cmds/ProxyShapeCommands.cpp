@@ -1310,6 +1310,7 @@ MSyntax TranslatePrim::createSyntax()
   syntax.addFlag("-ip", "-importPaths", MSyntax::kString);
   syntax.addFlag("-tp", "-teardownPaths", MSyntax::kString);
   syntax.addFlag("-fi", "-forceImport", MSyntax::kNoArg);
+  syntax.addFlag("-fd", "-forceDefault", MSyntax::kNoArg);
   return syntax;
 }
 
@@ -1341,6 +1342,12 @@ MStatus TranslatePrim::doIt(const MArgList& args)
     if(db.isFlagSet("-fi"))
     {
       tp.setForcePrimImport(true);
+    }
+
+    // change the translator context to read default value
+    if(db.isFlagSet("-fd"))
+    {
+      m_proxy->context()->setForceDefaultRead(true);
     }
   }
   catch(const MStatus& status)

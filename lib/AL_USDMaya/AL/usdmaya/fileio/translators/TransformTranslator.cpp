@@ -16,6 +16,7 @@
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
 #include "AL/usdmaya/AttributeType.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
+#include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/nodes/Transform.h"
 
@@ -239,7 +240,8 @@ bool TransformTranslator::getAnimationVariables(TransformOperation opIt, MObject
 //----------------------------------------------------------------------------------------------------------------------
 MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, const ImporterParams& params)
 {
-  static const UsdTimeCode usdTime = UsdTimeCode::EarliestTime();
+  static const UsdTimeCode usdTime = params.m_forceDefaultRead ?
+                                     UsdTimeCode::Default() : UsdTimeCode::EarliestTime();
   const char* const xformError = "ALUSDImport: error creating transform node";
   AL_MAYA_CHECK_ERROR2(DagNodeTranslator::copyAttributes(from, to, params), xformError);
 

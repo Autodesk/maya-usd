@@ -36,6 +36,43 @@ TEST(TranslateCommand, translateMeshPrim)
   EXPECT_TRUE(s.statusCode() == MStatus::kSuccess);
 }
 
+TEST(TranslateCommand, forceDefaultRead)
+/*
+ * Import a prim authored with one time sample only (no default value).
+ * We expect to get an empty mesh with the "fd" flag because there's no default value. 
+ */
+{
+  MString importCommand = "AL_usdmaya_ProxyShapeImport -f \"" +
+                          MString(AL_USDMAYA_TEST_DATA) +
+                          "/cube.usda\"";
+
+  // With "-fd" flag
+  MFileIO::newFile(true);
+  MStatus s;
+
+  s = MGlobal::executeCommand(importCommand);
+  EXPECT_TRUE(s == MStatus::kSuccess);
+  s = MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -fd -ip \"/cube\" \"AL_usdmaya_ProxyShape\"");
+  EXPECT_TRUE(s == MStatus::kSuccess);
+  
+  MIntArray ia;
+  s = MGlobal::executeCommand("polyEvaluate -v cubeShape", ia, false, false);
+  EXPECT_TRUE(s == MStatus::kSuccess);
+  EXPECT_TRUE(ia[0] == 0);
+
+  // Without "-fd" flag
+   MFileIO::newFile(true);
+
+  s = MGlobal::executeCommand(importCommand);
+  EXPECT_TRUE(s == MStatus::kSuccess);
+  s = MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/cube\" \"AL_usdmaya_ProxyShape\"");
+  EXPECT_TRUE(s == MStatus::kSuccess);
+
+  s = MGlobal::executeCommand("polyEvaluate -v cubeShape", ia, false, false);
+  EXPECT_TRUE(s == MStatus::kSuccess);
+  EXPECT_TRUE(ia[0] == 8);
+}
+
 TEST(TranslateCommand, translateMultipleMeshPrims)
 /*
  * Test translating Mesh Prims multiple times via the command

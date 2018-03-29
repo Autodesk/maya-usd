@@ -65,7 +65,12 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent)
   MFloatPointArray points;
   MVectorArray normals;
   MIntArray counts, connects;
-  AL::usdmaya::utils::gatherFaceConnectsAndVertices(mesh, points, normals, counts, connects, leftHanded);
+
+  UsdTimeCode timeCode = context()->getForceDefaultRead() ?
+                         UsdTimeCode::Default() : UsdTimeCode::EarliestTime();
+  AL::usdmaya::utils::gatherFaceConnectsAndVertices(mesh, points, normals, counts, connects,
+                                                    leftHanded,
+                                                    timeCode);
 
   MObject polyShape = fnMesh.create(points.length(), counts.length(), points, counts, connects, parent);
 
@@ -103,9 +108,9 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent)
   }
   fnDag.setName(dagName);
 
-  AL::usdmaya::utils::applyHoleFaces(mesh, fnMesh);
-  AL::usdmaya::utils::applyVertexCreases(mesh, fnMesh);
-  AL::usdmaya::utils::applyEdgeCreases(mesh, fnMesh);
+  AL::usdmaya::utils::applyHoleFaces(mesh, fnMesh, timeCode);
+  AL::usdmaya::utils::applyVertexCreases(mesh, fnMesh, timeCode);
+  AL::usdmaya::utils::applyEdgeCreases(mesh, fnMesh, timeCode);
   AL::usdmaya::utils::applyGlimpseSubdivParams(prim, fnMesh);
 
   MObject initialShadingGroup;
@@ -115,7 +120,7 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent)
   MFnSet fn(initialShadingGroup, &status);
   AL_MAYA_CHECK_ERROR(status, "Unable to attach MfnSet to initialShadingGroup");
   fn.addMember(polyShape);
-  AL::usdmaya::utils::applyPrimVars(mesh, fnMesh, counts, connects);
+  AL::usdmaya::utils::applyPrimVars(mesh, fnMesh, counts, connects, timeCode);
   context()->addExcludedGeometry(prim.GetPath());
 
   MFnDagNode mayaNode(parent);

@@ -272,6 +272,12 @@ void ProxyShapePostLoadProcess::createSchemaPrims(
     fileio::translators::TranslatorContextPtr context = proxy->context();
     fileio::translators::TranslatorManufacture& translatorManufacture = proxy->translatorManufacture();
 
+    if(context->getForceDefaultRead())
+    {
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createSchemaPrims,"
+                                          " will read default values\n");
+    }
+
     auto it = objsToCreate.begin();
     const auto end = objsToCreate.end();
     for(; it != end; ++it)

@@ -189,10 +189,9 @@ void convert3DArrayTo4DArray(const float* const input, float* const output, size
 
 //----------------------------------------------------------------------------------------------------------------------
 void gatherFaceConnectsAndVertices(const UsdGeomMesh& mesh, MFloatPointArray& points,
-  MVectorArray &normals, MIntArray& counts, MIntArray& connects, const bool leftHanded)
+  MVectorArray &normals, MIntArray& counts, MIntArray& connects, const bool leftHanded,
+  UsdTimeCode timeCode)
 {
-  static const UsdTimeCode timeCode = UsdTimeCode::EarliestTime();
-
   VtArray<GfVec3f> pointData;
   VtArray<GfVec3f> normalsData;
   VtArray<int> faceVertexCounts;
@@ -360,11 +359,11 @@ void generateIncrementingIndices(MIntArray& indices, const size_t count)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void applyHoleFaces(const UsdGeomMesh& mesh, MFnMesh& fnMesh)
+void applyHoleFaces(const UsdGeomMesh& mesh, MFnMesh& fnMesh, UsdTimeCode timeCode)
 {
   // Set Holes
   VtArray<int> holeIndices;
-  mesh.GetHoleIndicesAttr().Get(&holeIndices);
+  mesh.GetHoleIndicesAttr().Get(&holeIndices, timeCode);
   if(holeIndices.size())
   {
     MUintArray mayaHoleIndices((const uint32_t*)holeIndices.cdata(), holeIndices.size());
@@ -444,7 +443,7 @@ void unzipUVs(const float* const uv, float* const u, float* const v, const size_
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool applyVertexCreases(const UsdGeomMesh& from, MFnMesh& fnMesh)
+bool applyVertexCreases(const UsdGeomMesh& from, MFnMesh& fnMesh, UsdTimeCode timeCode)
 {
   UsdAttribute cornerIndices = from.GetCornerIndicesAttr();
   UsdAttribute cornerSharpness = from.GetCornerSharpnessesAttr();
@@ -453,8 +452,8 @@ bool applyVertexCreases(const UsdGeomMesh& from, MFnMesh& fnMesh)
   {
     VtArray<int32_t> vertexIdValues;
     VtArray<float> creaseValues;
-    cornerIndices.Get(&vertexIdValues);
-    cornerSharpness.Get(&creaseValues);
+    cornerIndices.Get(&vertexIdValues, timeCode);
+    cornerSharpness.Get(&creaseValues, timeCode);
 
     MUintArray vertexIds((const uint32_t*)vertexIdValues.cdata(), vertexIdValues.size());
     MDoubleArray creaseData;
@@ -470,7 +469,7 @@ bool applyVertexCreases(const UsdGeomMesh& from, MFnMesh& fnMesh)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool applyEdgeCreases(const UsdGeomMesh& from, MFnMesh& fnMesh)
+bool applyEdgeCreases(const UsdGeomMesh& from, MFnMesh& fnMesh, UsdTimeCode timeCode)
 {
   UsdAttribute creaseIndices = from.GetCreaseIndicesAttr();
   UsdAttribute creaseLengths = from.GetCreaseLengthsAttr();
@@ -483,9 +482,9 @@ bool applyEdgeCreases(const UsdGeomMesh& from, MFnMesh& fnMesh)
     VtArray<int32_t> indices, lengths;
     VtArray<float> sharpness;
 
-    creaseIndices.Get(&indices);
-    creaseLengths.Get(&lengths);
-    creaseSharpness.Get(&sharpness);
+    creaseIndices.Get(&indices, timeCode);
+    creaseLengths.Get(&lengths, timeCode);
+    creaseSharpness.Get(&sharpness, timeCode);
 
     // expand data into vertex pair + single sharpness value
     MUintArray edgesIdValues;
@@ -781,7 +780,8 @@ void applyGlimpseUserDataParams(const UsdPrim &from, MFnMesh &fnMesh)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void applyPrimVars(const UsdGeomMesh& mesh, MFnMesh& fnMesh, const MIntArray& counts, const MIntArray& connects)
+void applyPrimVars(const UsdGeomMesh& mesh, MFnMesh& fnMesh, const MIntArray& counts, const MIntArray& connects,
+UsdTimeCode timeCode)
 {
   MFloatArray u, v;
   MIntArray indices;
@@ -796,7 +796,7 @@ void applyPrimVars(const UsdGeomMesh& mesh, MFnMesh& fnMesh, const MIntArray& co
     primvar.GetDeclarationInfo(&name, &typeName, &interpolation, &elementSize);
     VtValue vtValue;
 
-    if (primvar.Get(&vtValue, UsdTimeCode::EarliestTime()))
+    if (primvar.Get(&vtValue, timeCode))
     {
       if (vtValue.IsHolding<VtArray<GfVec2f> >())
       {
