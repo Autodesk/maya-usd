@@ -193,7 +193,7 @@ public:
   /// \brief  Get current renderer plugin index
   size_t getRendererPluginIndex() const;
 
-  static MStringArray getRendererPluginList();
+  static const MStringArray& getRendererPluginList() { return m_rendererPluginsNames; }
 
   //--------------------------------------------------------------------------------------------------------------------
   /// Type Info & Registration

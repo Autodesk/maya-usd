@@ -679,7 +679,6 @@ void LayerManager::loadAllLayers()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-
 void LayerManager::changeRendererPlugin(ProxyShape* proxy, bool creation)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("LayerManager::changeRendererPlugin\n");
@@ -710,12 +709,14 @@ void LayerManager::changeRendererPlugin(ProxyShape* proxy, bool creation)
   }
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 size_t LayerManager::getRendererPluginIndex() const
 {
   MPlug plug(thisMObject(), m_rendererPlugin);
   return plug.asShort();
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 bool LayerManager::setRendererPlugin(const MString& pluginName)
 {
   int index = m_rendererPluginsNames.indexOf(pluginName);
@@ -732,11 +733,6 @@ bool LayerManager::setRendererPlugin(const MString& pluginName)
     MGlobal::displayError(MString("Failed to set renderer plugin: ") + pluginName);
   }
   return false;
-}
-
-MStringArray LayerManager::getRendererPluginList()
-{
-  return m_rendererPluginsNames;
 }
 
 
