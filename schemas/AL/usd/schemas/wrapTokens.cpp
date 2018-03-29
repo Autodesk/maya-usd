@@ -70,6 +70,8 @@ void wrapAL_USDMayaSchemasTokens()
     _AddToken(cls, "lock_unlocked", AL_USDMayaSchemasTokens->lock_unlocked);
     _AddToken(cls, "mayaNamespace", AL_USDMayaSchemasTokens->mayaNamespace);
     _AddToken(cls, "mayaReference", AL_USDMayaSchemasTokens->mayaReference);
+    _AddToken(cls, "mergedTransform", AL_USDMayaSchemasTokens->mergedTransform);
+    _AddToken(cls, "mergedTransform_unmerged", AL_USDMayaSchemasTokens->mergedTransform_unmerged);
     _AddToken(cls, "selectability", AL_USDMayaSchemasTokens->selectability);
     _AddToken(cls, "selectability_inherited", AL_USDMayaSchemasTokens->selectability_inherited);
     _AddToken(cls, "selectability_selectable", AL_USDMayaSchemasTokens->selectability_selectable);

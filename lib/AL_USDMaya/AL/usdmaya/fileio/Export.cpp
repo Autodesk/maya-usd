@@ -21,6 +21,7 @@
 #include "AL/usdmaya/fileio/translators/NurbsCurveTranslator.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
 #include "AL/usdmaya/TransformOperation.h"
+#include "AL/usdmaya/Metadata.h"
 
 #include "maya/MAnimControl.h"
 #include "maya/MAnimUtil.h"
@@ -544,7 +545,10 @@ void Export::exportShapesCommonProc(MDagPath shapePath, MFnTransform& fnTransfor
     transformPrim = xform.GetPrim();
   }
 
-  copyTransformParams(transformPrim, fnTransform);
+  if(m_params.m_mergeTransforms)
+  {
+    copyTransformParams(transformPrim, fnTransform);
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -659,6 +663,14 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
       // how many shapes are directly under this transform path?
       uint32_t numShapes;
       transformPath.numberOfShapesDirectlyBelow(numShapes);
+
+      if(!m_params.m_mergeTransforms)
+      {
+        exportTransformFunc(transformPath, fnTransform, usdPath);
+        UsdPrim prim = m_impl->stage()->GetPrimAtPath(usdPath);
+        prim.SetMetadata<TfToken>(AL::usdmaya::Metadata::mergedTransform, AL::usdmaya::Metadata::unmerged);
+      }
+
       if(numShapes)
       {
         // This is a slight annoyance about the way that USD has no concept of
@@ -670,6 +682,12 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
         {
           MDagPath shapePath = transformPath;
           shapePath.extendToShapeDirectlyBelow(j);
+
+          if(!m_params.m_mergeTransforms)
+          {
+            fnTransform.setObject(shapePath);
+            usdPath = makeUsdPath(parentPath, shapePath);
+          }
 
           bool shapeNotYetExported = !m_impl->contains(shapePath.node());
           if(shapeNotYetExported || m_params.m_duplicateInstances)
@@ -691,7 +709,10 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
       }
       else
       {
-        exportTransformFunc(transformPath, fnTransform, usdPath);
+        if(m_params.m_mergeTransforms)
+        {
+          exportTransformFunc(transformPath, fnTransform, usdPath);
+        }
       }
     }
     else

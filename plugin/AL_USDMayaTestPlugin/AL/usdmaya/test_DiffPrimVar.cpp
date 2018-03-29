@@ -35,7 +35,7 @@ TEST(DiffPrimVar, diffGeomVerts)
   ASSERT_TRUE(MGlobal::executeCommand("polySphere  -r 1 -sx 20 -sy 20 -ax 0 1 0 -cuv 2 -ch 1", result) == MS::kSuccess);
 
   const char* const exportCommand =
-  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=0;Animation=0;"
+  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=1;Animation=0;"
   "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/AL_USDMayaTests_diffPrimVarVerts.usda\";";
 
   ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
@@ -92,7 +92,7 @@ TEST(DiffPrimVar, diffGeomNormals)
   ASSERT_TRUE(MGlobal::executeCommand("polySphere  -r 1 -sx 20 -sy 20 -ax 0 1 0 -cuv 2 -ch 1", result) == MS::kSuccess);
 
   const char* const exportCommand =
-  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=0;Animation=0;"
+  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=1;Animation=0;"
   "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/AL_USDMayaTests_diffPrimVarNormals.usda\";";
 
   ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
@@ -151,7 +151,7 @@ TEST(DiffPrimVar, diffFaceVertices)
   ASSERT_TRUE(MGlobal::executeCommand("polySphere  -r 1 -sx 20 -sy 20 -ax 0 1 0 -cuv 2 -ch 1", result) == MS::kSuccess);
 
   const char* const exportCommand =
-  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=0;Animation=0;"
+  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=1;Animation=0;"
   "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/AL_USDMayaTests_diffFaceVertices.usda\";";
 
   ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
@@ -253,7 +253,7 @@ TEST(DiffPrimVar, diffHoles1)
   }
 
   const char* const exportCommand =
-  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=0;Animation=0;"
+  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=1;Animation=0;"
   "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/AL_USDMayaTests_diffHoles1.usda\";";
   ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
 
@@ -299,7 +299,7 @@ TEST(DiffPrimVar, diffCreaseEdges)
   ASSERT_TRUE(MGlobal::executeCommand("polyCrease -ch true -value 0.96 -vertexValue 0.96 pCube1.e[2]") == MS::kSuccess);
 
   const char* const exportCommand =
-  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=0;Animation=0;"
+  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=1;Animation=0;"
   "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/AL_USDMayaTests_diffCreaseEdges.usda\";";
 
   ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
@@ -383,7 +383,7 @@ TEST(DiffPrimVar, diffCreaseVertices)
   ASSERT_TRUE(MGlobal::executeCommand("polyCrease -ch true -value 0.96 -vertexValue 0.96 pCube1.vtx[2]") == MS::kSuccess);
 
   const char* const exportCommand =
-  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=0;Animation=0;"
+  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=1;Animation=0;"
   "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/aaAL_USDMayaTests_diffCreaseVertices.usda\";";
 
   ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
@@ -464,7 +464,7 @@ TEST(DiffPrimVar, diffUvSetNames)
   ASSERT_TRUE(result.length() == 1);
 
   const char* const exportCommand =
-  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=0;Animation=0;"
+  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=1;Animation=0;"
   "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/AL_USDMayaTests_diffUvSetNames.usda\";";
 
   ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
@@ -590,7 +590,7 @@ TEST(DiffPrimVar, diffColourSetNames)
     fn.setColors(colours, &setName);
 
     const char* const exportCommand =
-    "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=0;Animation=0;"
+    "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=1;Animation=0;"
     "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/AL_USDMayaTests_diffColourSetNames.usda\";";
 
     ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
@@ -682,7 +682,7 @@ TEST(DiffPrimVar, diffHoles2)
   }
 
   const char* const exportCommand =
-  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=0;Animation=0;"
+  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Use_Animal_Schema=0;Merge_Transforms=1;Animation=0;"
   "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/aaAL_USDMaya_diffHoles.usda\";";
 
   ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);

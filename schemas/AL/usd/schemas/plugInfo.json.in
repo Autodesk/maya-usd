@@ -37,6 +37,14 @@
                         "default": "", 
                         "documentation": "Stores the state of the prims selectability", 
                         "type": "token"
+                    },
+                    "al_usdmaya_mergedTransform": {
+                    	"appliesTo": [
+                    		"prims"
+                    	],
+                    	"default": "",
+                    	"documentation": "Stores the state of the prims merge status",
+                    	"type": "token"
                     }, 
                     "al_usdmaya_transformType": {
                         "appliesTo": [

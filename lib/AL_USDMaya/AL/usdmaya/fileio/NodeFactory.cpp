@@ -82,7 +82,7 @@ NodeFactory::~NodeFactory()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MObject NodeFactory::createNode(const UsdPrim& from, const char* const nodeType, MObject parent)
+MObject NodeFactory::createNode(const UsdPrim& from, const char* const nodeType, MObject parent, bool parentUnmerged)
 {
   std::unordered_map<std::string, translators::DgNodeTranslator*>::iterator it = m_builders.find(nodeType);
   if(it == m_builders.end()) return MObject::kNullObj;
@@ -97,8 +97,10 @@ MObject NodeFactory::createNode(const UsdPrim& from, const char* const nodeType,
     nodeName = from.GetName().GetText();
     if(obj.hasFn(MFn::kShape))
     {
-      nodeName += "Shape";
-
+      if(!parentUnmerged)
+      {
+        nodeName += "Shape";
+      }
       // Write in the shapes parent transform node's path instead of the shape.
       // This was done because we want the xform to be selected when chosen through the outliner instead of the shape.
       AL::usdmaya::utils::mapUsdPrimToMayaNode(from, parent);

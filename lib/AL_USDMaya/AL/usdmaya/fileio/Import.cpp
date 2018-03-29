@@ -138,16 +138,31 @@ void Import::doImport()
       const UsdPrim& prim = it.prim();
       // fallback in cases where either the node is NOT an assembly, or the attempt to load the
       // assembly failed.
+      bool parentUnmerged = false;
+      TfToken val;
+      if(prim.GetParent().GetMetadata(AL::usdmaya::Metadata::mergedTransform, &val))
       {
+        parentUnmerged = (val == AL::usdmaya::Metadata::unmerged);
+      }
 
-
+      {
         if(prim.GetTypeName() == "Mesh")
         {
           AL_BEGIN_PROFILE_SECTION(ImportingMesh);
-          MObject obj = createParentTransform(prim, it);
+          MObject obj;
+
+          if(!parentUnmerged)
+          {
+            obj = createParentTransform(prim, it);
+          }
+          else
+          {
+            obj = it.parent();
+          }
+
           if(m_params.m_meshes)
           {
-            MObject mesh = factory.createNode(prim, "mesh", obj);
+            MObject mesh = factory.createNode(prim, "mesh", obj, parentUnmerged);
             MFnTransform fnP(obj);
             fnP.addChild(mesh, MFnTransform::kNextPos, true);
           }
@@ -160,7 +175,7 @@ void Import::doImport()
           MObject obj = createParentTransform(prim, it);
           if(m_params.m_nurbsCurves)
           {
-            MObject mesh = factory.createNode(prim, "nurbsCurve", obj);
+            MObject mesh = factory.createNode(prim, "nurbsCurve", obj, parentUnmerged);
             MFnTransform fnP(obj);
             fnP.addChild(mesh, MFnTransform::kNextPos, true);
           }

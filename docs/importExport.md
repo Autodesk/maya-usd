@@ -64,6 +64,38 @@ The exporter can remove samples that contain the same data for adjacent samples
 AL_usdmaya_ExportCommand -f "<path/to/out/file.usd>" -fs
 ```
 
+The default behaviour of AL_USDMaya is to merge transforms and child shape nodes into a single Mesh on export,
+which can be explicitly set:
+```
+AL_usdmaya_ExportCommand -f "<path/to/out/file.usd>" -mergeTransforms 1
+```
+If given the following maya heirarchy
+```
+--pSphere1
+ --pSphere1Shape
+ ```
+this will be collapsed when exported as so:
+```
+def Mesh "pSphere1"
+{
+}
+```
+ 
+By disabling the flag, transforms and child shape nodes can be exported separately, mirroring the Maya heirarchy:
+```
+AL_usdmaya_ExportCommand -f "<path/to/out/file.usd>" -mergeTransforms 0
+```
+Resulting in the following exported heirarchy, with some added metadata:
+```
+def Xform "pSphere1" (
+  al_usdmaya_mergedTransform = "unmerged"
+)
+{
+  def Mesh "foofoo"
+  {
+  }
+}
+
 By default the exporter performs an extensive animation check on node like transform, if any of common attributes like translate, rotate, scale and rotateOrder is connected as target, we take it as animated.
 Use -aec/-extensiveAnimationCheck 0 to turn off this behavior:
 ```
