@@ -1,3 +1,20 @@
+## v0.27.3 (2018-03-29)
+
+### Added
+
+- Add -eac/-extensiveAnimationCheck option to AL_usdmaya_ExportCommand
+- Add isAnimatedTransform() to AnimationTranslator to perform extensive animation check on transform nodes.
+
+### Changed
+
+- Updated Inactive/Active tests
+- By default AL_usdmaya_ExportCommand will perform extensive animation check.
++ Changed the signature of StageCache::Get(bool forcePopulate) to remove forcePopulate as it doesn't exist in the USDUtilsCache. Also affects Python bindings
+
+### Fixed
+
+* Mesh surface normals were not importing correctly
+
 ## v0.27.2 (2018-03-27)
 
 ### Added
