@@ -229,8 +229,10 @@ void gatherFaceConnectsAndVertices(const UsdGeomMesh& mesh, MFloatPointArray& po
 
   mesh.GetPointsAttr().Get(&pointData, UsdTimeCode::Default());
   mesh.GetPointsAttr().Get(&pointData, timeCode);
-  mesh.GetNormalsAttr().Get(&normalsData, timeCode);
-
+  if(mesh.GetNormalsAttr().HasAuthoredValueOpinion())
+  {
+    mesh.GetNormalsAttr().Get(&normalsData, timeCode);
+  }
   points.setLength(pointData.size());
   convert3DArrayTo4DArray((const float*)pointData.cdata(), &points[0].x, pointData.size());
 
@@ -238,11 +240,11 @@ void gatherFaceConnectsAndVertices(const UsdGeomMesh& mesh, MFloatPointArray& po
   memcpy(&connects[0], (const int32_t*)faceVertexIndices.cdata(), sizeof(int32_t) * faceVertexIndices.size());
 
   normals.setLength(normalsData.size());
-  if(leftHanded and normalsData.size())
+  if(leftHanded && normalsData.size())
   {
     int32_t index = 0;
     double* const optr = &normals[0].x;
-    const double* const iptr = (const double*)normalsData.cdata();
+    const float* const iptr = (const float*)normalsData.cdata();
     for(auto faceVertexCount: faceVertexCounts)
     {
       for(int32_t i = index, j = index + faceVertexCount - 1; i < index + faceVertexCount; i++, j--)
@@ -256,7 +258,14 @@ void gatherFaceConnectsAndVertices(const UsdGeomMesh& mesh, MFloatPointArray& po
   }
   else
   {
-    memcpy(&normals[0], &normalsData[0], sizeof(double) * 3 * normalsData.size());
+    double* const optr = &normals[0].x;
+    const float* const iptr = (const float*)normalsData.cdata();
+    for(size_t i = 0, n = normalsData.size() * 3; i < n; i += 3)
+    {
+      optr[i + 0] = iptr[i + 0];
+      optr[i + 1] = iptr[i + 1];
+      optr[i + 2] = iptr[i + 2];
+    }
   }
 }
 //----------------------------------------------------------------------------------------------------------------------

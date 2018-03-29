@@ -172,18 +172,22 @@ MObject MeshTranslator::createNode(const UsdPrim& from, MObject parent, const ch
   MIntArray normalsFaceIds;
   normalsFaceIds.setLength(connects.length());
   int32_t* normalsFaceIdsPtr = &normalsFaceIds[0];
-  if (normals.length() == fnMesh.numFaceVertices())
+  if(normals.length())
   {
-    for(uint32_t i = 0, k = 0, n = counts.length(); i < n; i++)
+    MIntArray normalsFaceIds;
+    normalsFaceIds.setLength(connects.length());
+    int32_t* normalsFaceIdsPtr = &normalsFaceIds[0];
+    if (normals.length() == fnMesh.numFaceVertices())
     {
-      for(uint32_t j = 0, m = counts[i]; j < m; j++, ++k)
+      for (uint32_t i = 0, k = 0, n = counts.length(); i < n; i++)
       {
-        normalsFaceIdsPtr[k] = k;
+        for (uint32_t j = 0, m = counts[i]; j < m; j++, ++k)
+        {
+          normalsFaceIdsPtr[k] = i;
+        }
       }
     }
-    if (fnMesh.setFaceVertexNormals(normals, normalsFaceIds, connects) != MS::kSuccess)
-    {
-    }
+    fnMesh.setFaceVertexNormals(normals, normalsFaceIds, connects);
   }
 
   MFnDagNode fnDag(polyShape);
