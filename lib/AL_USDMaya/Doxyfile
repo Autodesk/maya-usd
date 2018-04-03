@@ -139,14 +139,6 @@ SHORT_NAMES            = NO
 
 JAVADOC_AUTOBRIEF      = NO
 
-# If the QT_AUTOBRIEF tag is set to YES then Doxygen will
-# interpret the first line (until the first dot) of a Qt-style
-# comment as the brief description. If set to NO, the comments
-# will behave just like regular Qt-style comments (thus requiring
-# an explicit \brief command for a brief description.)
-
-QT_AUTOBRIEF           = NO
-
 # The MULTILINE_CPP_IS_BRIEF tag can be set to YES to make Doxygen
 # treat a multi-line C++ special comment block (i.e. a block of //! or ///
 # comments) as a brief description. This used to be the default behaviour.
@@ -884,59 +876,6 @@ BINARY_TOC             = NO
 # to the contents of the HTML help documentation and to the tree view.
 
 TOC_EXPAND             = NO
-
-# If the GENERATE_QHP tag is set to YES and both QHP_NAMESPACE and QHP_VIRTUAL_FOLDER
-# are set, an additional index file will be generated that can be used as input for
-# Qt's qhelpgenerator to generate a Qt Compressed Help (.qch) of the generated
-# HTML documentation.
-
-GENERATE_QHP           = NO
-
-# If the QHG_LOCATION tag is specified, the QCH_FILE tag can
-# be used to specify the file name of the resulting .qch file.
-# The path specified is relative to the HTML output folder.
-
-QCH_FILE               =
-
-# The QHP_NAMESPACE tag specifies the namespace to use when generating
-# Qt Help Project output. For more information please see
-# http://doc.trolltech.com/qthelpproject.html#namespace
-
-QHP_NAMESPACE          =
-
-# The QHP_VIRTUAL_FOLDER tag specifies the namespace to use when generating
-# Qt Help Project output. For more information please see
-# http://doc.trolltech.com/qthelpproject.html#virtual-folders
-
-QHP_VIRTUAL_FOLDER     = doc
-
-# If QHP_CUST_FILTER_NAME is set, it specifies the name of a custom filter to add.
-# For more information please see
-# http://doc.trolltech.com/qthelpproject.html#custom-filters
-
-QHP_CUST_FILTER_NAME   =
-
-# The QHP_CUST_FILT_ATTRS tag specifies the list of the attributes of the custom filter to add.For more information please see
-# <a href="http://doc.trolltech.com/qthelpproject.html#custom-filters">Qt Help Project / Custom Filters</a>.
-
-QHP_CUST_FILTER_ATTRS  =
-
-# The QHP_SECT_FILTER_ATTRS tag specifies the list of the attributes this project's
-# filter section matches.
-# <a href="http://doc.trolltech.com/qthelpproject.html#filter-attributes">Qt Help Project / Filter Attributes</a>.
-
-QHP_SECT_FILTER_ATTRS  =
-
-# If the GENERATE_QHP tag is set to YES, the QHG_LOCATION tag can
-# be used to specify the location of Qt's qhelpgenerator.
-# If non-empty doxygen will try to run qhelpgenerator on the generated
-# .qhp file.
-
-QHG_LOCATION           =
-
-# The DISABLE_INDEX tag can be used to turn on/off the condensed index at
-# top of each HTML page. The value NO (the default) enables the index and
-# the value YES disables it.
 
 DISABLE_INDEX          = NO
 

@@ -133,16 +133,6 @@ list(APPEND AL_usdmaya_public_headers
         ${AL_usdmaya_fileio_translators_headers}
 )
 
-
-# For maya versions above 2016, we can use cmake import targets.
-if(${MAYA_API_VERSION} STRLESS 2017)
-    find_library(QTGUI_LIBRARY
-        QtGui
-        HINTS
-            ${MAYA_Foundation_LIBRARY}
-    )
-endif()
-
 add_library(${LIBRARY_NAME}
     SHARED
         ${AL_usdmaya_public_headers}
@@ -201,23 +191,10 @@ if(NEED_BOOST_FILESYSTEM)
                         ${Boost_FILESYSTEM_LIBRARY})
 endif()
 
-
-if(${MAYA_API_VERSION} STRGREATER 2017)
-    target_link_libraries(${LIBRARY_NAME}
-        Qt5::Gui
-    )
-else()
-    target_include_directories(${LIBRARY_NAME}
-        PUBLIC
-        $ENV{MAYA_LOCATION}/include/Qt
-    )
-    target_link_libraries(${LIBRARY_NAME}
-        ${QT_QTGUI_LIBRARY}
-    )
-endif()
-
 install(TARGETS ${LIBRARY_NAME}
     LIBRARY
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    RUNTIME
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
 
@@ -250,6 +227,8 @@ _plugInfo_subst(${LIBRARY_NAME} plugInfo.json)
 
 install(TARGETS ${PYTHON_LIBRARY_NAME}
     LIBRARY
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${arDirPath}
+    RUNTIME
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${arDirPath}
 )
 set_target_properties(${PYTHON_LIBRARY_LOCATION}

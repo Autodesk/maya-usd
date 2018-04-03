@@ -28,12 +28,6 @@ find_package(Maya REQUIRED)
 
 include_directories(${MAYA_INCLUDE_DIRS})
 
-if(${MAYA_API_VERSION} STRGREATER 2017)
-    find_package(Qt5Gui REQUIRED)
-else()
-    find_package(Qt4 REQUIRED QtGui)
-endif()
-
 include_directories(${PXR_INCLUDE_DIRS})
 
 # FindBoost is particularly buggy, and doesn't like custom boost locations.
