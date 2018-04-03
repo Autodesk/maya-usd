@@ -70,6 +70,8 @@ install( FILES ${maya_event_headers}
 install(TARGETS ${MAYAUTILS_LIBRARY_NAME}
     LIBRARY
     DESTINATION ${MAYAUTILS_LIBRARY_LOCATION}
+    RUNTIME
+    DESTINATION ${MAYAUTILS_LIBRARY_LOCATION}
 )
 
 add_subdirectory(tests)

@@ -81,6 +81,8 @@ install(
     TARGETS ${SCHEMAS_PACKAGE}
     LIBRARY
     DESTINATION ${library_install_path}
+    RUNTIME
+    DESTINATION ${library_install_path}
 )
 
 ####################################################################################################
@@ -114,6 +116,8 @@ target_link_libraries(${SCHEMAS_PYTHON_PACKAGE} ${SCHEMAS_PACKAGE} ${DEPENDANT_L
 
 install(TARGETS ${SCHEMAS_PYTHON_PACKAGE}
     LIBRARY
+    DESTINATION ${bindings_install_path}
+    RUNTIME
     DESTINATION ${bindings_install_path}
 )
 
