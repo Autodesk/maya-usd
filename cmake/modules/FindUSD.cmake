@@ -16,9 +16,15 @@ find_path(USD_INCLUDE_DIR pxr/pxr.h
           PATHS ${USD_ROOT}/include
           DOC "USD Include directory")
 
-find_path(USD_LIBRARY_DIR libusd.so
-          PATHS ${USD_ROOT}/lib
-          DOC "USD Librarires directory")
+if(WIN32)
+    find_path(USD_LIBRARY_DIR libusd.dll
+            PATHS ${USD_ROOT}/lib
+            DOC "USD Librarires directory")
+elseif(UNIX)
+    find_path(USD_LIBRARY_DIR libusd.so
+            PATHS ${USD_ROOT}/lib
+            DOC "USD Librarires directory")
+endif()
 
 find_file(USD_GENSCHEMA
           names usdGenSchema
