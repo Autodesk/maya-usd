@@ -39,11 +39,18 @@ find_package(Boost COMPONENTS
                 REQUIRED
 )
 
-set(CMAKE_CXX_FLAGS
-    -std=c++11
-    -msse3
-    "${_PXR_CXX_WARNING_FLAGS}"
-)
+if(WIN32)
+    set(CMAKE_CXX_FLAGS
+        -std=c++11
+        "${_PXR_CXX_FLAGS}"
+    )
+else()
+    set(CMAKE_CXX_FLAGS
+        -std=c++11
+        -msse3
+        "${_PXR_CXX_FLAGS}"
+    )
+endif()
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
