@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "./Api.h"
 
 #include "maya/MVectorArray.h"
 #include "maya/MFloatPointArray.h"
@@ -43,32 +44,58 @@ namespace AL {
 namespace usdmaya {
 namespace utils {
 
-extern void floatToDouble(double* output, const float* const input, size_t count);
-extern void doubleToFloat(float* output, const double* const input, size_t count);
-extern void convert3DArrayTo4DArray(const float* const input, float* const output, size_t count);
-extern void gatherFaceConnectsAndVertices(const UsdGeomMesh& mesh, MFloatPointArray& points, MVectorArray &normals, MIntArray& counts, MIntArray& connects, const bool leftHanded);
-extern void convertFloatVec3ArrayToDoubleVec3Array(const float* const input, double* const output, size_t count);
-extern void generateIncrementingIndices(MIntArray& indices, const size_t count);
-extern void applyHoleFaces(const UsdGeomMesh& mesh, MFnMesh& fnMesh);
-extern void unzipUVs(const float* const uv, float* const u, float* const v, const size_t count);
-extern bool applyEdgeCreases(const UsdGeomMesh& from, MFnMesh& fnMesh);
-extern void applyGlimpseSubdivParams(const UsdPrim& from, MFnMesh& fnMesh);
-extern void applyGlimpseUserDataParams(const UsdPrim& from, MFnMesh& fnMesh);
-extern void applyPrimVars(const UsdGeomMesh& mesh, MFnMesh& fnMesh, const MIntArray& counts, const MIntArray& connects);
-extern bool applyVertexCreases(const UsdGeomMesh& from, MFnMesh& fnMesh);
-extern void copyGlimpseTesselationAttributes(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
-extern void copyAnimalFaceColours(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
-extern void copyCreaseEdges(UsdGeomMesh& mesh, const MFnMesh& fnMesh, uint32_t mask = 0xFFFFFFFF);
-extern void copyVertexData(const MFnMesh& fnMesh, const UsdAttribute& pointsAttr, UsdTimeCode time = UsdTimeCode::Default());
-extern void copyNormalData(const MFnMesh& fnMesh, const UsdAttribute& normalsAttr, UsdTimeCode time = UsdTimeCode::Default());
-extern void copyCreaseVertices(UsdGeomMesh& mesh, const MFnMesh& fnMesh, uint32_t mask = 0xFFFFFFFF);
-extern void copyFaceConnectsAndPolyCounts(UsdGeomMesh& mesh, const MFnMesh& fnMesh, uint32_t mask = 0xFFFFFFFF);
-extern void copyUvSetData(UsdGeomMesh& mesh, const MFnMesh& fnMesh, const bool leftHanded, bool performDiff = false);
-extern void copyColourSetData(UsdGeomMesh& mesh, MFnMesh& fnMesh, bool performDiff = false);
-extern void copyInvisibleHoles(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
-extern bool isUvSetDataSparse(const int32_t* uvCounts, const uint32_t count);
-extern void zipUVs(const float* u, const float* v, float* uv, const size_t count);
-extern void interleaveIndexedUvData(float* output, const float* u, const float* v, const int32_t* indices, const uint32_t numIndices);
+AL_USDMAYA_UTILS_PUBLIC
+void floatToDouble(double* output, const float* const input, size_t count);
+AL_USDMAYA_UTILS_PUBLIC
+void doubleToFloat(float* output, const double* const input, size_t count);
+AL_USDMAYA_UTILS_PUBLIC
+void convert3DArrayTo4DArray(const float* const input, float* const output, size_t count);
+AL_USDMAYA_UTILS_PUBLIC
+void gatherFaceConnectsAndVertices(const UsdGeomMesh& mesh, MFloatPointArray& points, MVectorArray &normals, MIntArray& counts, MIntArray& connects, const bool leftHanded);
+AL_USDMAYA_UTILS_PUBLIC
+void convertFloatVec3ArrayToDoubleVec3Array(const float* const input, double* const output, size_t count);
+AL_USDMAYA_UTILS_PUBLIC
+void generateIncrementingIndices(MIntArray& indices, const size_t count);
+AL_USDMAYA_UTILS_PUBLIC
+void applyHoleFaces(const UsdGeomMesh& mesh, MFnMesh& fnMesh);
+AL_USDMAYA_UTILS_PUBLIC
+void unzipUVs(const float* const uv, float* const u, float* const v, const size_t count);
+AL_USDMAYA_UTILS_PUBLIC
+bool applyEdgeCreases(const UsdGeomMesh& from, MFnMesh& fnMesh);
+AL_USDMAYA_UTILS_PUBLIC
+void applyGlimpseSubdivParams(const UsdPrim& from, MFnMesh& fnMesh);
+AL_USDMAYA_UTILS_PUBLIC
+void applyGlimpseUserDataParams(const UsdPrim& from, MFnMesh& fnMesh);
+AL_USDMAYA_UTILS_PUBLIC
+void applyPrimVars(const UsdGeomMesh& mesh, MFnMesh& fnMesh, const MIntArray& counts, const MIntArray& connects);
+AL_USDMAYA_UTILS_PUBLIC
+bool applyVertexCreases(const UsdGeomMesh& from, MFnMesh& fnMesh);
+AL_USDMAYA_UTILS_PUBLIC
+void copyGlimpseTesselationAttributes(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
+AL_USDMAYA_UTILS_PUBLIC
+void copyAnimalFaceColours(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
+AL_USDMAYA_UTILS_PUBLIC
+void copyCreaseEdges(UsdGeomMesh& mesh, const MFnMesh& fnMesh, uint32_t mask = 0xFFFFFFFF);
+AL_USDMAYA_UTILS_PUBLIC
+void copyVertexData(const MFnMesh& fnMesh, const UsdAttribute& pointsAttr, UsdTimeCode time = UsdTimeCode::Default());
+AL_USDMAYA_UTILS_PUBLIC
+void copyNormalData(const MFnMesh& fnMesh, const UsdAttribute& normalsAttr, UsdTimeCode time = UsdTimeCode::Default());
+AL_USDMAYA_UTILS_PUBLIC
+void copyCreaseVertices(UsdGeomMesh& mesh, const MFnMesh& fnMesh, uint32_t mask = 0xFFFFFFFF);
+AL_USDMAYA_UTILS_PUBLIC
+void copyFaceConnectsAndPolyCounts(UsdGeomMesh& mesh, const MFnMesh& fnMesh, uint32_t mask = 0xFFFFFFFF);
+AL_USDMAYA_UTILS_PUBLIC
+void copyUvSetData(UsdGeomMesh& mesh, const MFnMesh& fnMesh, const bool leftHanded, bool performDiff = false);
+AL_USDMAYA_UTILS_PUBLIC
+void copyColourSetData(UsdGeomMesh& mesh, MFnMesh& fnMesh, bool performDiff = false);
+AL_USDMAYA_UTILS_PUBLIC
+void copyInvisibleHoles(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
+AL_USDMAYA_UTILS_PUBLIC
+bool isUvSetDataSparse(const int32_t* uvCounts, const uint32_t count);
+AL_USDMAYA_UTILS_PUBLIC
+void zipUVs(const float* u, const float* v, float* uv, const size_t count);
+AL_USDMAYA_UTILS_PUBLIC
+void interleaveIndexedUvData(float* output, const float* u, const float* v, const int32_t* indices, const uint32_t numIndices);
 
 //----------------------------------------------------------------------------------------------------------------------
 } // utils

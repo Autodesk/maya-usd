@@ -2,6 +2,7 @@
 # Event Source
 ####################################################################################################
 list(APPEND utils_event_headers
+    Api.h
     EventHandler.h
 )
 

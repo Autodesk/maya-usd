@@ -158,10 +158,12 @@ public:
     // --(BEGIN CUSTOM CODE)--
 
     /// Set the Selectability of the prim
+    AL_USDMAYASCHEMAS_API
     void SetSelectability(const TfToken& selectability);
 
     /// Get the current Selectability value on the current prim. If you want to
     /// determine the current selectability
+    AL_USDMAYASCHEMAS_API
     TfToken GetSelectability() const;
 
     /// Compute this Prims selectability value by looking at it own and it's
@@ -172,13 +174,16 @@ public:
     ///
     /// If no selectability value is found in the hierarchy, then the 'inherited' value
     /// is returned and should be considered 'selectable'.
+    AL_USDMAYASCHEMAS_API
     TfToken ComputeSelectabilty() const;
 
     /// Set the al_usdmaya_lock metadata of the prim.
+    AL_USDMAYASCHEMAS_API
     void SetLock(const TfToken& lock);
 
     /// Get the current value of prim's al_usdmaya_lock metadata. If no value
     /// defined on the prim, "inherited" is returned by default.
+    AL_USDMAYASCHEMAS_API
     TfToken GetLock() const;
 
     /// Compute current prim's lock value by inspecting its own metadata and
@@ -188,6 +193,7 @@ public:
     /// parent prim's metadata till it's either "transform" or "unlocked" and
     /// returns with that value. If the whole hierarchy defining "inherited",
     /// "inherited" is returned and should be considered as "unlocked".
+    AL_USDMAYASCHEMAS_API
     TfToken ComputeLock() const;
 private:
     typedef std::function<bool(const UsdPrim&, TfToken&)> ComputeLogic;

@@ -11,6 +11,7 @@ set(MAYA_UTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib)
 ####################################################################################################
 
 list(APPEND usdmaya_utils_headers
+    Api.h
     DgNodeHelper.h
     Utils.h
     ForwardDeclares.h
@@ -30,6 +31,11 @@ add_library(${USDMAYA_UTILS_LIBRARY_NAME}
         ${usdmaya_utils_source}
 )
 
+target_compile_definitions(${USDMAYA_UTILS_LIBRARY_NAME}
+    PRIVATE
+        AL_USDMAYA_UTILS_EXPORT
+)
+
 target_link_libraries(${USDMAYA_UTILS_LIBRARY_NAME}
   AL_USDUtils
   AL_MayaUtils
@@ -43,7 +49,6 @@ target_link_libraries(${USDMAYA_UTILS_LIBRARY_NAME}
   usdGeom
   usdUtils
   vt
-  rt
   ${Boost_PYTHON_LIBRARY}
   ${PYTHON_LIBRARIES}
   ${MAYA_Foundation_LIBRARY}

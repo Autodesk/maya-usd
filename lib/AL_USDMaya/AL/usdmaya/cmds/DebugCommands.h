@@ -14,10 +14,14 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "../Api.h"
+
 #include "maya/MPxCommand.h"
 
 #include "pxr/pxr.h"
 #include "AL/usdmaya/utils/ForwardDeclares.h"
+#include "AL/maya/utils/Api.h"
 #include "AL/maya/utils/MayaHelperMacros.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -42,7 +46,8 @@ private:
 };
 
 /// builds the GUI for the TfDebug notices
-extern void constructDebugCommandGuis();
+AL_USDMAYA_PUBLIC
+void constructDebugCommandGuis();
 
 } // cmds
 } // usdmaya

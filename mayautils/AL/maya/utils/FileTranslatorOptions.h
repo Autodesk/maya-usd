@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "./Api.h"
+
 #include "maya/MString.h"
 
 #include <map>
@@ -36,15 +39,18 @@ class OptionsParser
 public:
 
   /// \brief  ctor
+  AL_MAYA_UTILS_PUBLIC
   OptionsParser();
 
   /// \brief  dtor
+  AL_MAYA_UTILS_PUBLIC
   ~OptionsParser();
 
   /// \brief  Given a string containing a semi-colon separated list of options passed to a file translator plugin,
   ///         this function will parse and extract all of the option values.
   /// \param  optionString the option string to parse
   /// \return MS::kSuccess if the parsing was successful, false otherwise.
+  AL_MAYA_UTILS_PUBLIC
   MStatus parse(const MString& optionString);
 
   /// \brief  Given the text name of an option, returns the boolean value for that option.
@@ -109,6 +115,7 @@ private:
     kString
   };
 
+  AL_MAYA_UTILS_PUBLIC
   static const MString kNullString;
   struct OptionValue
   {
@@ -167,6 +174,7 @@ public:
 
   /// \brief  ctor
   /// \param  fileTranslatorName the name of the file translator
+  AL_MAYA_UTILS_PUBLIC
   FileTranslatorOptions(const char* fileTranslatorName);
 
   /// \name   High Level Layout
@@ -176,6 +184,7 @@ public:
   /// \brief  add a new frame layout under which to group a set of controls. There must be at least 1 frame created
   ///         before you create any options (otherwise the controls will not have a location in which to live)
   /// \param  frameName the name of the high level frame to add into the GUI
+  AL_MAYA_UTILS_PUBLIC
   bool addFrame(const char* frameName);
 
   /// \name   Add Exporter Options
@@ -186,24 +195,28 @@ public:
   /// \param  optionName the name of the option
   /// \param  defaultValue the default value for the option
   /// \return true if the option was successfully added. False if the option is a duplicate
+  AL_MAYA_UTILS_PUBLIC
   bool addBool(const char* optionName, bool defaultValue = false);
 
   /// \brief  Add an integer value to the translator options
   /// \param  optionName the name of the option
   /// \param  defaultValue the default value for the option
   /// \return true if the option was successfully added. False if the option is a duplicate
+  AL_MAYA_UTILS_PUBLIC
   bool addInt(const char* optionName, int defaultValue = 0);
 
   /// \brief  Add a float value to the translator options
   /// \param  optionName the name of the option
   /// \param  defaultValue the default value for the option
   /// \return true if the option was successfully added. False if the option is a duplicate
+  AL_MAYA_UTILS_PUBLIC
   bool addFloat(const char* optionName, float defaultValue = 0.0f);
 
   /// \brief  Add a string value to the translator options
   /// \param  optionName the name of the option
   /// \param  defaultValue the default value for the option
   /// \return true if the option was successfully added. False if the option is a duplicate
+  AL_MAYA_UTILS_PUBLIC
   bool addString(const char* optionName, const char* const defaultValue = "");
 
   /// \brief  For a given boolean option (the controller), if enabled the 'controlled' option will be editable. If
@@ -215,6 +228,7 @@ public:
   ///         if false, controlled will be enabled when controller is enabled.
   /// \return true if the visibility relationship could be created. May return false if the controller or
   ///         controlled options are invalid.
+  AL_MAYA_UTILS_PUBLIC
   bool boolControlsVisibility(const char* controller, const char* controlled, bool invertBehaviour = false);
 
   /// \name   MEL script code generation
@@ -228,6 +242,7 @@ public:
   /// \param  defaultOptionString the returned default option string for the file translator (which can be used
   ///         when registering your file translator with the MFnPlugin)
   /// \return MS::kSuccess if ok
+  AL_MAYA_UTILS_PUBLIC
   MStatus generateScript(OptionsParser& optionParser, MString& defaultOptionString);
 
 protected:

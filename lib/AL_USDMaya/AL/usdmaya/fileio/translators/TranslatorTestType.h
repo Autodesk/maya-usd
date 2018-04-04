@@ -15,6 +15,8 @@
 //
 #pragma once
 
+#include "../../Api.h"
+
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/typed.h"
 #include "pxr/usd/usd/prim.h"
@@ -40,12 +42,14 @@ public:
   /// to a concrete instantiable prim type in scene description.  If this is
   /// true, GetStaticPrimDefinition() will return a valid prim definition with
   /// a non-empty typeName.
+  AL_USDMAYA_PUBLIC
   static const bool IsConcrete = true;
 
   /// Construct a TranslatorTestType on UsdPrim \p prim .
   /// Equivalent to TranslatorTestType::Get(prim.GetStage(), prim.GetPath())
   /// for a \em valid \p prim, but will not immediately throw an error for
   /// an invalid \p prim
+  AL_USDMAYA_PUBLIC
   explicit TranslatorTestType(const UsdPrim& prim=UsdPrim())
       : UsdTyped(prim)
   {
@@ -54,17 +58,20 @@ public:
   /// Construct a TranslatorTestType on the prim held by \p schemaObj .
   /// Should be preferred over TranslatorTestType(schemaObj.GetPrim()),
   /// as it preserves SchemaBase state.
+  AL_USDMAYA_PUBLIC
   explicit TranslatorTestType(const UsdSchemaBase& schemaObj)
       : UsdTyped(schemaObj)
   {
   }
 
   /// Destructor.
+  AL_USDMAYA_PUBLIC
   virtual ~TranslatorTestType();
 
   /// Return a vector of names of all pre-declared attributes for this schema
   /// class and all its ancestor classes.  Does not include attributes that
   /// may be authored by custom/extended methods of the schemas involved.
+  AL_USDMAYA_PUBLIC
   static const TfTokenVector &
   GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -77,6 +84,7 @@ public:
   /// TranslatorTestType(stage->GetPrimAtPath(path));
   /// \endcode
   ///
+  AL_USDMAYA_PUBLIC
   static TranslatorTestType Get(const UsdStagePtr &stage, const SdfPath &path);
 
   /// \brief Attempt to ensure a \a UsdPrim adhering to this schema at \p path
@@ -101,6 +109,7 @@ public:
   /// specify this schema class, in case a stronger typeName opinion overrides
   /// the opinion at the current EditTarget.
   ///
+  AL_USDMAYA_PUBLIC
   static TranslatorTestType Define(const UsdStagePtr &stage, const SdfPath &path);
 
 private:

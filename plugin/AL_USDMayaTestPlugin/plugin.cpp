@@ -13,12 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
+#include "./Api.h"
+
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
 #include <maya/MStatus.h>
 #include "AL/usdmaya/PluginRegister.h" 
 #include "AL/UnitTestHarness.h"
 
+AL_USDMAYATEST_PLUGIN_PUBLIC
 MStatus initializePlugin(MObject obj)
 {
   MFnPlugin plugin(obj, "Animal Logic", "1.0", "Any");
@@ -26,6 +30,7 @@ MStatus initializePlugin(MObject obj)
   return AL::usdmaya::registerPlugin(plugin);
 }
 
+AL_USDMAYATEST_PLUGIN_PUBLIC
 MStatus uninitializePlugin(MObject obj)
 {
   MFnPlugin plugin(obj);

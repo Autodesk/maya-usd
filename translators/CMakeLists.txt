@@ -16,6 +16,11 @@ add_library(${TRANSLATORS_PACKAGE}
     Mesh.cpp
 )
 
+target_compile_definitions(${TRANSLATORS_PACKAGE}
+  PRIVATE
+    AL_MAYA_MACROS_EXPORT
+)
+
 # Copy the plugin metadata file in a hierarchy replicating the install hierarchy.
 # The file will be used by the unittests.
 get_target_property(LIBRARY_LOCATION

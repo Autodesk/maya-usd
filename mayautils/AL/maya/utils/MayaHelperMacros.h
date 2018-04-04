@@ -138,9 +138,13 @@
 # define AL_MAYA_COMMAND_HELP(database, __helpText)
 #else
 # define AL_MAYA_DECLARE_COMMAND() \
+    AL_MAYA_MACROS_PUBLIC \
     static const char* const g_helpText; \
+    AL_MAYA_MACROS_PUBLIC \
     static void* creator(); \
+    AL_MAYA_MACROS_PUBLIC \
     static MSyntax createSyntax(); \
+    AL_MAYA_MACROS_PUBLIC \
     static const MString kName;
 
 # define AL_MAYA_DEFINE_COMMAND(COMMAND, NAMESPACE) \
@@ -148,9 +152,13 @@
     const MString COMMAND :: kName(#NAMESPACE "_" #COMMAND);
 
 # define AL_MAYA_DECLARE_NODE() \
+    AL_MAYA_MACROS_PUBLIC \
     static void* creator(); \
+    AL_MAYA_MACROS_PUBLIC \
     static MStatus initialise(); \
+    AL_MAYA_MACROS_PUBLIC \
     static const MString kTypeName; \
+    AL_MAYA_MACROS_PUBLIC \
     static const MTypeId kTypeId;
 
 # define AL_MAYA_DEFINE_NODE(NODE, TYPEID, NAMESPACE) \

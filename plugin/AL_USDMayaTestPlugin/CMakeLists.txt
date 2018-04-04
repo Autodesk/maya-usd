@@ -55,8 +55,16 @@ list(APPEND AL_maya_test_source
 
 add_definitions(-DAL_USDMAYA_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data")
 
+<<<<<<< HEAD
 add_definitions(
     -DAL_USDMAYA_UNITTEST
+=======
+target_compile_definitions(${PXR_PACKAGE}
+PRIVATE
+    AL_USDMAYA_UNITTEST
+    AL_USDMAYATEST_PLUGIN_EXPORT
+    AL_USDMAYA_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data"
+>>>>>>> 7454c64a... Visibility
 )
 
 pxr_plugin(${PXR_PACKAGE}

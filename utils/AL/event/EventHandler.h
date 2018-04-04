@@ -15,6 +15,8 @@
 //
 #pragma once
 
+#include "./Api.h"
+
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -123,6 +125,7 @@ public:
   /// \brief  ctor
   /// \param  eventTypeStrings the event types as text strings
   /// \param  numberOfEventTypes the number of event types in the event strings
+  AL_EVENT_PUBLIC
   EventSystemBinding(const char* const eventTypeStrings[], size_t numberOfEventTypes)
     : m_eventTypeStrings(eventTypeStrings), m_numberOfEventTypes(numberOfEventTypes) {}
 
@@ -260,6 +263,7 @@ public:
   /// \param  weight the weight for the callback
   /// \param  isPython true if the callback is python
   /// \param  callbackId the callback ID for this event
+  AL_EVENT_PUBLIC
   Callback(
     const char* const tag,
     const char* const commandText,
@@ -268,6 +272,7 @@ public:
     CallbackId callbackId);
 
   /// \brief  default ctor
+  AL_EVENT_PUBLIC
   Callback()
     : m_tag(), m_userData(nullptr), m_callbackId(0)
   {
@@ -278,6 +283,7 @@ public:
 
   /// \brief  move ctor
   /// \param  rhs the rvalue to move
+  AL_EVENT_PUBLIC
   Callback(Callback&& rhs)
     : m_tag(std::move(rhs.m_tag)), m_userData(rhs.m_userData), m_callbackId(rhs.m_callbackId)
   {
@@ -303,6 +309,7 @@ public:
     }
 
   /// \brief  dtor
+  AL_EVENT_PUBLIC
   ~Callback();
 
   /// \brief  less than comparison. Sorts so that the lowest weight is first
@@ -388,6 +395,7 @@ public:
   /// \param  eventType the type of the event (e.g. maya, usdmaya, or custom)
   /// \param  associatedData a user data pointer to the objct instance that can trigger the event
   /// \param  parentCallback the parent callback ID that triggers the event
+  AL_EVENT_PUBLIC
   EventDispatcher(
       EventSystemBinding* system,
       const char* const name,
@@ -406,6 +414,7 @@ public:
 
   /// \brief  move ctor
   /// \param  rhs the event dispatcher to move
+  AL_EVENT_PUBLIC
   EventDispatcher(EventDispatcher&& rhs)
     : m_system(rhs.m_system),
       m_name(std::move(rhs.m_name)),
@@ -419,6 +428,7 @@ public:
   /// \brief  move assignment
   /// \param  rhs the event dispatcher to move
   /// \return *this
+  AL_EVENT_PUBLIC
   EventDispatcher& operator = (EventDispatcher&& rhs)
     {
       m_system = rhs.m_system;
@@ -433,11 +443,13 @@ public:
 
   /// \brief  returns the name of the registered event
   /// \return the event name
+  AL_EVENT_PUBLIC
   const std::string& name() const
     { return m_name; }
 
   /// \brief  returns the array of registered callbacks against this event
   /// \return const reference to the current callbacks on the event
+  AL_EVENT_PUBLIC
   const Callbacks& callbacks() const
     { return m_callbacks; }
 
@@ -475,6 +487,7 @@ public:
   /// \param  weight the user specified weight for the callback. Lower weighted callbacks are triggered before weighted ones.
   /// \param  isPython true if the callback is python, false for MEL
   /// \return the unique callback ID, or zero if creation failed
+  AL_EVENT_PUBLIC
   CallbackId registerCallback(
     const char* const tag,
     const char* const commandText,
@@ -491,6 +504,7 @@ public:
   /// \param  isPython true if the callback is python, false for MEL
   /// \return a structure that contains all of the required callback information, which can be inserted into the event dispatcher
   ///         at a later time with the registerCallback method.
+  AL_EVENT_PUBLIC
   Callback buildCallback(
     const char* const tag,
     const char* const commandText,
@@ -501,31 +515,37 @@ public:
   ///         The event callback structure passed into this function will be moved into the event handler
   ///         (so the event will become invalidated afterwards). Please do not use this function!!
   /// \param  info the callback to insert into the dispatcher. Once inserted, the info structure is invalidated
+  AL_EVENT_PUBLIC
   void registerCallback(Callback& info);
 
   /// \brief  unregister a registered  event
   /// \param  callbackId the event to unregister
   /// \return true if the callback could be removed, false if the callbackId is unknown.
+  AL_EVENT_PUBLIC
   bool unregisterCallback(CallbackId callbackId);
 
   /// \brief  unregister a registered  event
   /// \param  callbackId the event to unregister
   /// \param  returnedInfo the returned event info (used to undo insertion of events)
   /// \return true if the callback could be removed, false if the callbackId is unknown.
+  AL_EVENT_PUBLIC
   bool unregisterCallback(CallbackId callbackId, Callback& returnedInfo);
 
   /// \brief  returns the event id
   /// \return the event id
+  AL_EVENT_PUBLIC
   EventId eventId() const
     { return m_eventId; }
 
   /// \brief  returns the event type
   /// \return the event type
+  AL_EVENT_PUBLIC
   EventType eventType() const
     { return m_eventType; }
 
   /// \brief  returns the parent callback id that triggers this event
   /// \return the parent callback id that triggers this event
+  AL_EVENT_PUBLIC
   CallbackId parentCallbackId() const
     { return m_parentCallback; }
 
@@ -596,6 +616,7 @@ public:
   /// \code
   /// void (*function_prototype)(void* userData);
   /// \endcode
+  AL_EVENT_PUBLIC
   void triggerEvent()
   {
     for(auto& callback : m_callbacks)
@@ -640,12 +661,14 @@ public:
 
   /// \brief  returns the data pointer associated with this event
   /// \return returns the data pointer associated with this event
+  AL_EVENT_PUBLIC
   const void* associatedData() const
     { return m_associatedData; }
 
   /// \brief  utility function to locate a specific callback. If found, a pointer to the callback data will be returned.
   ///         If not found then nullptr is returned
   /// \param  id the id
+  AL_EVENT_PUBLIC
   Callback* findCallback(CallbackId id)
     {
       for(size_t i = 0, n = m_callbacks.size(); i < n; ++i)
@@ -660,6 +683,7 @@ public:
     }
 
 private:
+  AL_EVENT_PUBLIC
   CallbackId registerCallbackInternal(
     const char* const tag,
     const void* functionPointer,
@@ -693,31 +717,38 @@ public:
 
   /// \brief  initialises the default event scheduler.
   /// \param  system the binding to the back end DCC services
+  AL_EVENT_PUBLIC
   static void initScheduler(EventSystemBinding* system);
 
   /// \brief  returns the default scheduler
   /// \return the default scheduler
+  AL_EVENT_PUBLIC
   static EventScheduler& getScheduler();
 
   /// \brief  destroys the internal default scheduler
+  AL_EVENT_PUBLIC
   static void freeScheduler();
 
   /// \brief  ctor
   /// \param  system The object that provides a binding to the underlying DCC system utilities
+  AL_EVENT_PUBLIC
   EventScheduler(EventSystemBinding* system)
     : m_system(system), m_registeredEvents() {}
 
   /// \brief  dtor
+  AL_EVENT_PUBLIC
   ~EventScheduler();
 
   /// \brief  returns the event type as a string
   /// \param  eventType the type of event to query the name of
   /// \return a text string name for the specified event type
+  AL_EVENT_PUBLIC
   const char* eventTypeString(EventType eventType) const
     { return m_system->eventTypeString(eventType); }
 
   /// \brief  returns the total number of event types in use
   /// \return the number of event types
+  AL_EVENT_PUBLIC
   size_t numberOfEventTypes() const
     { return m_system->numberOfEventTypes(); }
 
@@ -726,36 +757,43 @@ public:
   /// \param  eventType the type of event being registered (e.g. maya, usdmaya, custom, etc)
   /// \param  associatedData an associated data pointer for this event [optional]
   /// \param  parentCallback if this event is triggered by a callback
+  AL_EVENT_PUBLIC
   EventId registerEvent(const char* eventName, EventType eventType, const void* associatedData = 0, const CallbackId parentCallback = 0);
 
   /// \brief  unregister an event handler
   /// \param  eventId the event to unregister
   /// \return true if the event is a valid id
+  AL_EVENT_PUBLIC
   bool unregisterEvent(EventId eventId);
 
   /// \brief  unregister an event handler
   /// \param  eventId the event to unregister
   /// \return true if the event is a valid id
+  AL_EVENT_PUBLIC
   bool unregisterEvent(const char* const eventId);
 
   /// \brief  returns a pointer to the requested event id
   /// \param  eventId the event id
   /// \return the registered callbacks for the specified event
+  AL_EVENT_PUBLIC
   EventDispatcher* event(EventId eventId);
 
   /// \brief  returns a pointer to the requested event id
   /// \param  eventId the event id
   /// \return the registered callbacks for the specified event
+  AL_EVENT_PUBLIC
   const EventDispatcher* event(EventId eventId) const;
 
   /// \brief  returns a pointer to the requested event id
   /// \param  eventName the name of the event
   /// \return the registered callbacks for the specified event
+  AL_EVENT_PUBLIC
   EventDispatcher* event(const char* eventName);
 
   /// \brief  returns a pointer to the requested event id
   /// \param  eventName the name of the event
   /// \return the registered callbacks for the specified event
+  AL_EVENT_PUBLIC
   const EventDispatcher* event(const char* eventName) const;
 
   /// \brief  dispatches an event using a function binder
@@ -777,6 +815,7 @@ public:
   /// \brief  dispatches an event using the standard void (*func)(void* userData) signature
   /// \param  eventId the event to dispatch
   /// \return true if the event is valid
+  AL_EVENT_PUBLIC
   bool triggerEvent(EventId eventId)
   {
     EventDispatcher* e = event(eventId);
@@ -791,6 +830,7 @@ public:
   /// \brief  dispatches an event using the standard void (*func)(void* userData) signature
   /// \param  eventName the name of the event to dispatch
   /// \return true if the event is valid
+  AL_EVENT_PUBLIC
   bool triggerEvent(const char* const eventName)
   {
     EventDispatcher* e = event(eventName);
@@ -842,6 +882,7 @@ public:
   /// \param  weight the weight for the callback (determines the ordering)
   /// \param  isPython true if the callback is python, false if MEL
   /// \return the callback id for the newly registered callback
+  AL_EVENT_PUBLIC
   CallbackId registerCallback(
     const EventId eventId,
     const char* const tag,
@@ -897,6 +938,7 @@ public:
   /// \param  weight the weight for the callback (determines the ordering)
   /// \param  isPython true if the callback is python, false if MEL
   /// \return the callback id for the newly registered callback
+  AL_EVENT_PUBLIC
   Callback buildCallback(
     const EventId eventId,
     const char* const tag,
@@ -942,6 +984,7 @@ public:
   /// \param  weight the weight for the callback (determines the ordering)
   /// \param  isPython true if the callback is python, false if MEL
   /// \return the callback id for the newly registered callback
+  AL_EVENT_PUBLIC
   Callback buildCallback(
     const char* const eventName,
     const char* const tag,
@@ -960,18 +1003,21 @@ public:
   /// \brief  unregister an event handler
   /// \param  callbackId the id of the callback to destroy
   /// \return true if the callback is removed, false if the id was invalid
+  AL_EVENT_PUBLIC
   bool unregisterCallback(CallbackId callbackId);
 
   /// \brief  unregister an event handler, and move the callback information into the info structure provided.
   /// \param  callbackId the id of the callback to destroy
   /// \param  info a structure that will store the data removed from the event scheduler.
   /// \return true if the callback is removed, false if the id was invalid. If false is removed, no modifications to info would have occurred.
+  AL_EVENT_PUBLIC
   bool unregisterCallback(CallbackId callbackId, Callback& info);
 
   /// \brief  Move the callback information from the info structure into the event system. Once this function has been called,
   ///         the contents of info will be null.
   /// \param  info the data to move into the event scheduler
   /// \return the callback id
+  AL_EVENT_PUBLIC
   CallbackId registerCallback(Callback& info)
   {
     EventDispatcher* eventInfo = event(info.eventId());
@@ -995,18 +1041,21 @@ public:
 
   /// \brief  provides internal access to the registered events
   /// \return the registered events
+  AL_EVENT_PUBLIC
   const EventDispatchers& registeredEvents() const
     { return m_registeredEvents; }
 
   /// \brief  find the callback structure for the specified ID
   /// \param  callbackId the id of the callback to locate
   /// \return a pointer to the callback information, or nullptr if not found
+  AL_EVENT_PUBLIC
   Callback* findCallback(CallbackId callbackId);
 
   /// \brief  A method that allows you to register a custom event handler. This handler can then be used to bind
   ///         in additional messages from 3rd party systems (e.g. MMessage events, or Usd notifications)
   /// \param  type the type of event this handler processes
   /// \param  handler the custom handler object that will process these event types
+  AL_EVENT_PUBLIC
   void registerHandler(EventType type, CustomEventHandler* handler)
     { m_customHandlers[type] = handler; }
 
@@ -1033,6 +1082,7 @@ public:
 
   /// \brief  ctor
   /// \param  scheduler the event scheduler
+  AL_EVENT_PUBLIC
   NodeEvents(EventScheduler* const scheduler = &EventScheduler::getScheduler())
     : m_scheduler(scheduler)
     {}
@@ -1040,6 +1090,7 @@ public:
   /// \brief  trigger the event of the given name
   /// \param  eventName the name of the event to trigger on this node
   /// \return true if the events triggered correctly
+  AL_EVENT_PUBLIC
   bool triggerEvent(const char* const eventName)
   {
     auto it = m_events.find(eventName);
@@ -1054,6 +1105,7 @@ public:
   }
 
   /// \brief  dtor
+  AL_EVENT_PUBLIC
   virtual ~NodeEvents()
   {
     for(auto event : m_events)
@@ -1064,12 +1116,14 @@ public:
 
   /// \brief  returns the event scheduler associated with this node events structure
   /// \return the associated event scheduler.
+  AL_EVENT_PUBLIC
   EventScheduler* scheduler() const
     { return m_scheduler; }
 
   /// \brief  returns the event ID for the specified event name
   /// \param  eventName the name of the event
   /// \return the ID of the event (or zero)
+  AL_EVENT_PUBLIC
   EventId getId(const char* const eventName) const
   {
     const auto it = m_events.find(eventName);
@@ -1082,6 +1136,7 @@ public:
 
   /// \brief  returns the internal event map
   /// \return the event map
+  AL_EVENT_PUBLIC
   const EventMap& events() const
     { return m_events; }
 
@@ -1090,6 +1145,7 @@ public:
   /// \param  eventType the type of event to register
   /// \param  parentId the callback id of the callback that triggers this event (or null)
   /// \return true if the event could be registered
+  AL_EVENT_PUBLIC
   bool registerEvent(const char* const eventName, const EventType eventType, const CallbackId parentId = 0)
   {
     EventId id = m_scheduler->registerEvent(eventName, eventType, this, parentId);
@@ -1103,6 +1159,7 @@ public:
   /// \brief  unregisters an event from this node
   /// \param  eventName the name of the event to remove
   /// \return true if the event could be removed
+  AL_EVENT_PUBLIC
   bool unregisterEvent(const char* const eventName)
   {
     auto it = m_events.find(eventName);

@@ -15,6 +15,8 @@
 //
 #pragma once
 
+#include "../../Api.h"
+
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 
@@ -59,6 +61,7 @@ public:
 
   /// \brief  resizes the driven transform internals to hold the specified number of prims
   /// \param  primPathCount the number of transforms to be driven
+  AL_USDMAYA_PUBLIC
   void resizeDrivenTransforms(const size_t primPathCount);
 
   /// \brief  set the driven prim paths on the host driven transforms
@@ -70,6 +73,7 @@ public:
   /// \param  stage the stage to extract the prims from
   /// \param  currentTime the current time
   ///
+  AL_USDMAYA_PUBLIC
   bool update(UsdStageRefPtr stage, const MTime& currentTime);
 
   /// \brief  dirties the visibility for the specified prim index

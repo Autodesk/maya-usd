@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "../Api.h"
+
 #include "AL/maya/utils/FileTranslatorBase.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 
@@ -59,6 +62,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ImportTranslator, "AL usdmaya import", true, false, "*.
   }
 
 private:
+  AL_USDMAYA_PUBLIC
   MStatus reader(const MFileObject& file, const AL::maya::utils::OptionsParser& options, FileAccessMode mode);
   ImporterParams m_params;
 

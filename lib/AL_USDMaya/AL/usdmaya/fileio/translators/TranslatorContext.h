@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "../../Api.h"
+
 #include <AL/usdmaya/ForwardDeclares.h>
 #include "maya/MPxData.h"
 #include "maya/MGlobal.h"
@@ -77,16 +80,19 @@ public:
   /// \brief  construct a new context for the specified proxy shape node
   /// \param  proxyShape the proxy shape to associate the context with
   /// \return a new context
+  AL_USDMAYA_PUBLIC
   static RefPtr create(nodes::ProxyShape* proxyShape)
     { return TfCreateRefPtr(new This(proxyShape)); }
 
   /// \brief  return the proxy shape associated with this context
   /// \return the proxy shape
+  AL_USDMAYA_PUBLIC
   const nodes::ProxyShape* getProxyShape() const
     { return m_proxyShape; }
 
   /// \brief  return the usd stage associated with this context
   /// \return the usd stage
+  AL_USDMAYA_PUBLIC
   UsdStageRefPtr getUsdStage() const;
 
   /// \brief  given a USD prim, this will see whether a maya node exists for it. If it does, that will
@@ -94,6 +100,7 @@ public:
   /// \param  prim the usd prim
   /// \param  object the returned handle
   /// \return true if the prim exists
+  AL_USDMAYA_PUBLIC
   bool getTransform(const UsdPrim& prim, MObjectHandle& object)
     { return getTransform(prim.GetPath(), object); }
 
@@ -102,6 +109,7 @@ public:
   /// \param  path the usd prim path
   /// \param  object the returned handle
   /// \return true if the prim exists
+  AL_USDMAYA_PUBLIC
   bool getTransform(const SdfPath& path, MObjectHandle& object);
 
   /// \brief  given a USD prim, this will see whether a maya node exists for it. If it does, that will
@@ -113,6 +121,7 @@ public:
   ///         that is not known at compile time (e.g. a prim that creates a lambert, blinn, or phong based on
   ///         some enum attribute). Another alternative would be to query all of the maya nodes via getMObjects
   /// \return true if the prim exists
+  AL_USDMAYA_PUBLIC
   bool getMObject(const UsdPrim& prim, MObjectHandle& object, MTypeId type)
     { return getMObject(prim.GetPath(), object, type); }
 
@@ -125,6 +134,7 @@ public:
   ///         that is not known at compile time (e.g. a prim that creates a lambert, blinn, or phong based on
   ///         some enum attribute). Another alternative would be to query all of the maya nodes via getMObjects
   /// \return true if the prim exists
+  AL_USDMAYA_PUBLIC
   bool getMObject(const SdfPath& path, MObjectHandle& object, MTypeId type);
 
   /// \brief  given a USD prim, this will see whether a maya node exists for it. If it does, that will
@@ -136,6 +146,7 @@ public:
   ///         that is not known at compile time (e.g. a prim that creates a lambert, blinn, or phong based on
   ///         some enum attribute). Another alternative would be to query all of the maya nodes via getMObjects
   /// \return true if the prim exists
+  AL_USDMAYA_PUBLIC
   bool getMObject(const UsdPrim& prim, MObjectHandle& object, MFn::Type type)
     { return getMObject(prim.GetPath(), object, type); }
 
@@ -148,12 +159,14 @@ public:
   ///         that is not known at compile time (e.g. a prim that creates a lambert, blinn, or phong based on
   ///         some enum attribute). Another alternative would be to query all of the maya nodes via getMObjects
   /// \return true if the prim exists
+  AL_USDMAYA_PUBLIC
   bool getMObject(const SdfPath& path, MObjectHandle& object, MFn::Type type);
 
   /// \brief  returns all of the maya nodes that were created by the specific prim
   /// \param  prim the prim to query
   /// \param  returned the returned list of MObjects
   /// \return true if a reference to the prim was found
+  AL_USDMAYA_PUBLIC
   bool getMObjects(const UsdPrim& prim, MObjectHandleArray& returned)
     { return getMObjects(prim.GetPath(), returned); }
 
@@ -161,31 +174,37 @@ public:
   /// \param  path the path to the prim to query
   /// \param  returned the returned list of MObjects
   /// \return true if a reference to the prim was found
+  AL_USDMAYA_PUBLIC
   bool getMObjects(const SdfPath& path, MObjectHandleArray& returned);
 
   /// \brief  If within your custom translator plug-in you need to create any maya nodes, associate that maya
   ///         node with the prim path by calling this method
   /// \param  prim the prim you are currently importing in a translator
   /// \param  object the handle to the maya node you have created.
+  AL_USDMAYA_PUBLIC
   void insertItem(const UsdPrim& prim, MObjectHandle object);
 
   /// \brief  during a variant switch, if we lose a prim, then it's path will be passed into this method, and
   ///         all the maya nodes that were created for it will be nuked.
   /// \param  prim the usd prim that was removed due to a variant switch
+  AL_USDMAYA_PUBLIC
   void removeItems(const UsdPrim& prim)
     { removeItems(prim.GetPath()); }
 
   /// \brief  during a variant switch, if we lose a prim, then it's path will be passed into this method, and
   ///         all the maya nodes that were created for it will be nuked.
   /// \param  path path to the usd prim that was removed due to a variant switch
+  AL_USDMAYA_PUBLIC
   void removeItems(const SdfPath& path);
 
   /// \brief  dtor
+  AL_USDMAYA_PUBLIC
   ~TranslatorContext();
    
   /// \brief  given a path to a prim, return the prim type we are aware of at that path
   /// \param  path the prim path of a prim that was imported via a custom translator plug-in
   /// \return the type name for that prim
+  AL_USDMAYA_PUBLIC
   TfToken getTypeForPath(SdfPath path) const
   {
     const auto it = find(path);
@@ -199,6 +218,7 @@ public:
 
   /// \brief  this method is used after a variant switch to check to see if the prim types have changed in the
   ///         stage, and will update the internal state accordingly.
+  AL_USDMAYA_PUBLIC
   void updatePrimTypes();
 
   /// \brief  Internal method.
@@ -206,17 +226,21 @@ public:
   ///         node with the prim path by calling this method
   /// \param  prim the prim you are currently importing in a translator
   /// \param  object the handle to the maya node you have created.
+  AL_USDMAYA_PUBLIC
   void registerItem(const UsdPrim& prim, MObjectHandle object);
    
   /// \brief  serialises the content of the translator context to a text string.
   /// \return the translator context serialised into a string
+  AL_USDMAYA_PUBLIC
   MString serialise() const;
 
   /// \brief  deserialises the string back into the translator context
   /// \param  string the string to deserialised
+  AL_USDMAYA_PUBLIC
   void deserialise(const MString& string);
 
   /// \brief  debugging utility to help keep track of prims during a variant switch
+  AL_USDMAYA_PUBLIC
   void validatePrims();
 
   /// \brief  This method is used to determine whether this DB has an entry for the specified prim path and the given type.
@@ -224,6 +248,7 @@ public:
   /// \param  path the path to the prim to query
   /// \param  type the type of prim
   /// \return true if an entry is found that matches, false otherwise
+  AL_USDMAYA_PUBLIC
   bool hasEntry(const SdfPath& path, const TfToken& type)
   {
     auto it = find(path);
@@ -239,10 +264,12 @@ public:
   /// \param  primPath the path to the prim that triggered the variant switch
   /// \param  itemsToRemove the returned list of items that need to be removed
   /// \param callPreUnload true calling the preUnload on all the prims is needed.
+  AL_USDMAYA_PUBLIC
   void preRemoveEntry(const SdfPath& primPath, SdfPathVector& itemsToRemove, bool callPreUnload=true);
 
   /// \brief  call this to remove a prim from the DB (you do not need to lock/unlock here).
   /// \param  itemsToRemove the prims that need to be removed from the DB. tearDown will be called on each prim
+  AL_USDMAYA_PUBLIC
   void removeEntries(const SdfPathVector& itemsToRemove);
 
   /// \brief  An internal structure used to store a mapping between an SdfPath, the type of prim found at that location,
@@ -328,12 +355,14 @@ public:
   };
 
   /// \brief  This is used for testing only. Do not call.
+  AL_USDMAYA_PUBLIC
   void clearPrimMappings()
     { m_primMapping.clear(); }
 
   /// \brief  add geometry to the exclusion list
   /// \param  newPath the path to add as an excluded translator path
   /// \return true if the exclusion was added, false if it wasn't added since it might be already there
+  AL_USDMAYA_PUBLIC
   bool addExcludedGeometry(const SdfPath& newPath)
   {
     auto foundPath = m_excludedGeometry.find(newPath);
@@ -351,6 +380,7 @@ public:
   /// \brief  remove geometry from the exclusion list
   /// \param  newPath the path to add as an excluded translator path
   /// \return true if the exclusion was removed, false if it wasn't removed or it may have never existed
+  AL_USDMAYA_PUBLIC
   bool removeExcludedGeometry(const SdfPath& newPath)
   {
     auto foundPath = m_excludedGeometry.find(newPath);

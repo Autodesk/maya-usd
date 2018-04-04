@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "../Api.h"
+
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
 
 #include "maya/MPlug.h"
@@ -81,6 +84,7 @@ struct AnimationTranslator
   /// or expression, or source attribute's full-name match a certain string.
   /// But in reality the control network might be really complicated and heavily customized thus it might go far beyond the
   /// situation we can cover here.
+  AL_USDMAYA_PUBLIC
   static bool isAnimated(const MObject& node, const MObject& attr, const bool assumeExpressionIsAnimated = true)
     { return isAnimated(MPlug(node, attr), assumeExpressionIsAnimated); }
 
@@ -93,6 +97,7 @@ struct AnimationTranslator
   /// or expression, or source attribute's full-name match a certain string.
   /// But in reality the control network might be really complicated and heavily customized thus it might go far beyond the
   /// situations we can cover here.
+  AL_USDMAYA_PUBLIC
   static bool isAnimated(MPlug attr, bool assumeExpressionIsAnimated = true);
 
   /// \brief  returns true if the mesh is animated
@@ -101,6 +106,7 @@ struct AnimationTranslator
   /// This test only covers the situation that your node / upstream nodes are actually animated by animCurves.
   /// But in reality the control network might be really complicated and heavily customized thus it might go far beyond the
   /// situations we can cover here.
+  AL_USDMAYA_PUBLIC
   static bool isAnimatedMesh(const MDagPath& mesh);
 
   /// \brief  returns true if the transform node is animated
@@ -110,6 +116,7 @@ struct AnimationTranslator
   /// if any of those attributes is connected as destination, we take the transform node as animated.
   /// This test will be performed recursively up to parent hierarchies, unless the inheritsTransform
   /// attribute is turned off.
+  AL_USDMAYA_PUBLIC
   static bool isAnimatedTransform(const MObject& transformNode);
 
   /// \brief  add a plug to the animation translator (if the plug is animated)
@@ -195,6 +202,7 @@ struct AnimationTranslator
 
   /// \brief  After the scene has been exported, call this method to export the animation data on various attributes
   /// \param  params the export options
+  AL_USDMAYA_PUBLIC
   void exportAnimation(const ExporterParams& params);
 private:
   static bool considerToBeAnimation(const MFn::Type nodeType);
@@ -217,6 +225,7 @@ class AnimationCheckTransformAttributes
 private:
   constexpr static int transformAttributesCount {13};
 public:
+  AL_USDMAYA_PUBLIC
   AnimationCheckTransformAttributes();
   inline std::array<MObject, transformAttributesCount>::const_iterator begin() const {return m_commonTransformAttributes.cbegin();}
   inline std::array<MObject, transformAttributesCount>::const_iterator end() const {return m_commonTransformAttributes.cend();}

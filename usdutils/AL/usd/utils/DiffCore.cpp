@@ -960,7 +960,7 @@ bool compareUvArray(
 #else
   for(size_t i = 0; i < count; ++i)
   {
-    if(std::abs(u0 - n1[i]) > eps ||
+    if(std::abs(u0 - u1[i]) > eps ||
        std::abs(v0 - v1[i]) > eps)
       return false;
   }

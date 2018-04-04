@@ -15,6 +15,9 @@
 //
 
 #pragma once
+
+#include "./Api.h"
+
 #include "maya/MObject.h"
 #include "maya/MString.h"
 #include "maya/MFnDependencyNode.h"
@@ -43,6 +46,7 @@ namespace utils {
 /// \return returns the path name
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
 MString mapUsdPrimToMayaNode(const UsdPrim& usdPrim,
                              const MObject& mayaObject,
                              const MDagPath* const proxyShapeNode = nullptr);
@@ -55,6 +59,7 @@ MString mapUsdPrimToMayaNode(const UsdPrim& usdPrim,
 /// \param  T the returned translation values
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
 void matrixToSRT(GfMatrix4d& value,
                  double S[3],
                  MEulerRotation& R,

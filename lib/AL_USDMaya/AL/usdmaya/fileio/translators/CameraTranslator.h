@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "../../Api.h"
+
 #include <AL/usdmaya/ForwardDeclares.h>
 #include "AL/usdmaya/fileio/translators/DagNodeTranslator.h"
 
@@ -32,13 +35,16 @@ class CameraTranslator
 public:
 
   /// \brief  ctor
+  AL_USDMAYA_PUBLIC
   CameraTranslator() {}
 
   /// \brief  dtor
+  AL_USDMAYA_PUBLIC
   ~CameraTranslator() {}
 
   /// \brief  static type registration
   /// \return MS::kSuccess if ok
+  AL_USDMAYA_PUBLIC
   static MStatus registerType();
 
   /// \brief  Creates a new maya node of the given type and set attributes based on input prim
@@ -47,6 +53,7 @@ public:
   /// \param  nodeType the maya node type to create
   /// \param  params the importer params that determines what will be imported
   /// \return the newly created node
+  AL_USDMAYA_PUBLIC
   MObject createNode(const UsdPrim& from, MObject parent, const char* nodeType, const ImporterParams& params) override;
 
   /// \brief  helper method to copy attributes from the UsdPrim to the Maya node
@@ -54,6 +61,7 @@ public:
   /// \param  to the maya node to copy the data to
   /// \param  params the importer params to determine what to import
   /// \return MS::kSuccess if ok
+  AL_USDMAYA_PUBLIC
   MStatus copyAttributes(const UsdPrim& from, MObject to, const ImporterParams& params);
 
   /// \brief  Copies data from the maya node onto the usd primitive
@@ -61,6 +69,7 @@ public:
   /// \param  to the USD prim to copy the attributes to
   /// \param  params the exporter params to determine what should be exported
   /// \return MS::kSuccess if ok
+  AL_USDMAYA_PUBLIC
   static MStatus copyAttributes(const MObject& from, UsdPrim& to, const ExporterParams& params);
 
 private:

@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "./Api.h"
+
 #include "pxr/pxr.h"
 #include "AL/usdmaya/utils/ForwardDeclares.h"
 
@@ -72,6 +75,7 @@ enum class UsdDataType : uint32_t
 /// \return the attribute type
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_PUBLIC
 UsdDataType getAttributeType(const UsdAttribute& usdAttr);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -80,6 +84,7 @@ UsdDataType getAttributeType(const UsdAttribute& usdAttr);
 /// \return the attribute type
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_PUBLIC
 UsdDataType getAttributeType(const SdfValueTypeName& typeName);
 
 //----------------------------------------------------------------------------------------------------------------------

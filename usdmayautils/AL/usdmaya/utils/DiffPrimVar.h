@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "./Api.h"
+
 #include "AL/usd/utils/DiffCore.h"
 #include "maya/MFnMesh.h"
 #include "maya/MDoubleArray.h"
@@ -56,10 +59,12 @@ enum DiffComponents
 ///         and normals of the mesh, and if the components differ, a bitmask is constructed and returned
 ///         indicating which components have changed
 //----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
 uint32_t diffGeom(UsdGeomPointBased& geom, MFnMesh& mesh, UsdTimeCode timeCode, uint32_t exportMask = kAllComponents);
 
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
 uint32_t diffFaceVertices(UsdGeomMesh& geom, MFnMesh& mesh, UsdTimeCode timeCode, uint32_t exportMask = kAllComponents);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -74,6 +79,7 @@ public:
   /// \param  colourSet true if we should be extracting a colour set
   /// \param  indicesChanged true if the indices on the colour set have changed
   /// \param  valuesChanged true if the values on the colour set have changed
+  AL_USDMAYA_UTILS_PUBLIC
   PrimVarDiffEntry(const UsdGeomPrimvar& pv, const MString& setName, bool colourSet, bool indicesChanged, bool valuesChanged)
   : m_primVar(pv),
     m_setName(setName),
@@ -82,26 +88,32 @@ public:
             (valuesChanged ? kValuesChanged : 0)) {}
 
   /// \brief  returns the prim var we care about
+  AL_USDMAYA_UTILS_PUBLIC
   const UsdGeomPrimvar& primVar()
     { return m_primVar; }
 
   /// \brief  returns the name of the UV (or colour) set in maya
+  AL_USDMAYA_UTILS_PUBLIC
   const MString& setName() const
     { return m_setName; }
 
   /// \brief  returns true if this data should
+  AL_USDMAYA_UTILS_PUBLIC
   bool isColourSet() const
     { return (m_flags & kIsColourSet) != 0; }
 
   /// \brief  returns true if this is a uv set
+  AL_USDMAYA_UTILS_PUBLIC
   bool isUvSet() const
     { return !isColourSet(); }
 
   /// \brief  returns true if the set of indices has changed
+  AL_USDMAYA_UTILS_PUBLIC
   bool indicesHaveChanged() const
     { return (m_flags & kIndicesChanged) != 0; }
 
   /// \brief  returns true if the UV or colour data has changed
+  AL_USDMAYA_UTILS_PUBLIC
   bool dataHasChanged() const
     { return (m_flags & kValuesChanged) != 0; }
 
@@ -128,6 +140,7 @@ typedef std::vector<PrimVarDiffEntry> PrimVarDiffReport;
 /// \param  report the list of colour sets that have been modified
 /// \return an array of the names of colour sets that have been added in maya
 //----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
 MStringArray hasNewColourSet(UsdGeomMesh& geom, MFnMesh& mesh, PrimVarDiffReport& report);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -139,6 +152,7 @@ MStringArray hasNewColourSet(UsdGeomMesh& geom, MFnMesh& mesh, PrimVarDiffReport
 /// \param  report the list of uv sets that have been modified
 /// \return an array of the names of uv sets that have been added in maya
 //----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
 MStringArray hasNewUvSet(UsdGeomMesh& geom, const MFnMesh& mesh, PrimVarDiffReport& report);
 
 //----------------------------------------------------------------------------------------------------------------------
