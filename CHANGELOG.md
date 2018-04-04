@@ -1,3 +1,16 @@
+## v0.27.4 (2018-04-04)
+
+### Added
+
++ src/plugin/AL_USDMayaTestPlugin/AL/usdmaya/fileio/export_unmerged.cpp has been added, which tests the mergeTransforms parameter.
+
+### Changed
+
++ src/schemas/AL/usd/schemas/plugInfo.json.in had the metadata "al_usdmaya_mergedTransform" added.
++ src/plugin/AL_USDMayaTestPlugin/AL/usdmaya/test_DiffPrimVar.cpp had the export parameter mergeTransforms changed to 1 to revert to previous test behaviour.
++ fileio/Import.cpp will now check for the mergedTransform metadata on the parent transform, which prevents mesh import from creating the parent transform.
++ fileio/Export.cpp has re-enabled functionality for "mergeTransforms", which will export the Xform prim and then the children mesh prims separately when set to '0'. The parent transform will have the metadata "al_usdmaya_mergedTransform = unmerged" added to tag it as an unmerged node.
+
 ## v0.27.3 (2018-03-29)
 
 ### Added
