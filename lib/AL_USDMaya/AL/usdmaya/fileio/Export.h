@@ -57,12 +57,20 @@ public:
   ~Export();
 
 private:
+
+  enum ReferenceType
+  {
+    kNoReference,
+    kMeshReference,
+    kTransformReference,
+  };
+
   void exportSceneHierarchy(MDagPath path, SdfPath& defaultPrim);
-  void exportShapesCommonProc(MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath);
+  void exportShapesCommonProc(MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath, ReferenceType refType);
   void exportShapesOnlyUVProc(MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath);
-  UsdPrim exportMesh(MDagPath path, const SdfPath& usdPath);
+  UsdPrim exportMesh(MDagPath path, const SdfPath& usdPath, ReferenceType refType);
   UsdPrim exportMeshUV(MDagPath path, const SdfPath& usdPath);
-  UsdPrim exportNurbsCurve(MDagPath path, const SdfPath& usdPath);
+  UsdPrim exportNurbsCurve(MDagPath path, const SdfPath& usdPath, ReferenceType refType);
   UsdPrim exportAssembly(MDagPath path, const SdfPath& usdPath);
   UsdPrim exportPluginLocatorNode(MDagPath path, const SdfPath& usdPath);
   UsdPrim exportPluginShape(MDagPath path, const SdfPath& usdPath);
@@ -70,6 +78,9 @@ private:
   void exportIkChain(MDagPath effectorPath, const SdfPath& usdPath);
   void exportGeometryConstraint(MDagPath effectorPath, const SdfPath& usdPath);
   void copyTransformParams(UsdPrim prim, MFnTransform& fnTransform);
+  SdfPath makeMeshReferencePath(MDagPath path, const SdfPath& usdPath, ReferenceType refType);
+  void addReferences(MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath,
+                     const SdfPath& instancePath, ReferenceType refType);
 
   struct Impl;
   void doExport();

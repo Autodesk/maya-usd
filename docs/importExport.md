@@ -95,6 +95,42 @@ def Xform "pSphere1" (
   {
   }
 }
+```
+
+By disabling both "mergeTransforms" and "duplicateInstances", Maya instanced shapes can be exported and re-imported:
+```
+AL_usdmaya_ExportCommand -f "<path/to/out/file.usd>" -mergeTransforms 0 -duplicateInstances 0
+```
+Which will generate the following instanced structure within the exported USD file:
+```
+over "InstanceSources"
+{
+    def Xform "pSphere1"
+    {
+        def Mesh "pSphereShape1"
+        {
+        }
+    }
+}
+
+def Xform "pSphere1" (
+    al_usdmaya_mergedTransform = "unmerged"
+    instanceable = true
+    prepend references = </InstanceSources/pSphere1>
+)
+{
+}
+
+def Xform "pSphere2" (
+    al_usdmaya_mergedTransform = "unmerged"
+    instanceable = true
+    prepend references = </InstanceSources/pSphere1>
+)
+{
+    float3 xformOp:translate:translate = (0, 0, 5)
+    uniform token[] xformOpOrder = ["xformOp:translate:translate"]
+}
+```
 
 By default the exporter performs an extensive animation check on node like transform, if any of common attributes like translate, rotate, scale and rotateOrder is connected as target, we take it as animated.
 Use -aec/-extensiveAnimationCheck 0 to turn off this behavior:

@@ -20,7 +20,6 @@
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/fileio/Import.h"
-#include "AL/usdmaya/fileio/NodeFactory.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
@@ -140,7 +139,7 @@ void Import::doImport()
       // assembly failed.
       bool parentUnmerged = false;
       TfToken val;
-      if(prim.GetParent().GetMetadata(AL::usdmaya::Metadata::mergedTransform, &val))
+      if(prim.IsInMaster() || prim.GetParent().GetMetadata(AL::usdmaya::Metadata::mergedTransform, &val))
       {
         parentUnmerged = (val == AL::usdmaya::Metadata::unmerged);
       }
@@ -151,7 +150,7 @@ void Import::doImport()
           AL_BEGIN_PROFILE_SECTION(ImportingMesh);
           MObject obj;
 
-          if(!parentUnmerged)
+          if(!parentUnmerged && !prim.IsInMaster())
           {
             obj = createParentTransform(prim, it);
           }
@@ -162,7 +161,7 @@ void Import::doImport()
 
           if(m_params.m_meshes)
           {
-            MObject mesh = factory.createNode(prim, "mesh", obj, parentUnmerged);
+            MObject mesh = createMesh(factory, prim, "mesh", obj, parentUnmerged);
             MFnTransform fnP(obj);
             fnP.addChild(mesh, MFnTransform::kNextPos, true);
           }
@@ -172,10 +171,20 @@ void Import::doImport()
         if(prim.GetTypeName() == "NurbsCurves")
         {
           AL_BEGIN_PROFILE_SECTION(ImportingNurbsCurves);
-          MObject obj = createParentTransform(prim, it);
+          MObject obj;
+
+          if(!parentUnmerged && !prim.IsInMaster())
+          {
+            obj = createParentTransform(prim, it);
+          }
+          else
+          {
+            obj = it.parent();
+          }
+
           if(m_params.m_nurbsCurves)
           {
-            MObject mesh = factory.createNode(prim, "nurbsCurve", obj, parentUnmerged);
+            MObject mesh = createMesh(factory, prim, "nurbsCurve", obj, parentUnmerged);
             MFnTransform fnP(obj);
             fnP.addChild(mesh, MFnTransform::kNextPos, true);
           }
@@ -216,6 +225,31 @@ void Import::doImport()
   strstr << "Breakdown for file: " << m_params.m_fileName << std::endl;
   AL::usdmaya::Profiler::printReport(strstr);
   MGlobal::displayInfo(AL::maya::utils::convert(strstr.str()));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MObject Import::createMesh(NodeFactory& factory, const UsdPrim& prim, const char* const meshType, MObject parent,
+                           bool parentUnmerged)
+{
+  MObject mesh;
+  if (prim.IsInMaster())
+  {
+    const SdfPath& primPath = prim.GetPrimPath();
+    if (m_instanceObjects.find(primPath) != m_instanceObjects.end())
+    {
+      mesh = m_instanceObjects[primPath];
+    }
+    else
+    {
+      mesh = factory.createNode(prim, meshType, parent, true);
+      m_instanceObjects[primPath] = mesh;
+    }
+  }
+  else
+  {
+    mesh = factory.createNode(prim, meshType, parent, parentUnmerged);
+  }
+  return mesh;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
