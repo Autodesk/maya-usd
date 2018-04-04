@@ -1,11 +1,14 @@
 # Building
 
 ## Build Requirements
-- This project is buildable, for now only on Linux
-- USD-0.8.2 built with ptex-2.0.40 (<2.0.41)
+- This project is buildable on a variety of Linux platforms (It has been tested extensively on CentOS 6.6)
+- There is a windows branch which is a bit out of date (https://github.com/AnimalLogic/AL_USDMaya/tree/windows_build_dev) which we should merge
+- Currently building against USD-0.8.3 built with ptex-2.0.40 (<2.0.41)
 - Qt-5.6.1
 - [google test framework](https://github.com/google/googletest) (>1.8.0) to build and run the tests
-- It has been tested  on CentOS 6.6
+- GLEW: Maya (certainly up to 2018) uses a very old build of GLEW. We've found that both to use the latest OpenGL 4x features that Hydra exploits, and for stability reasons, you should use a newer version (e.g GLEW 2.0). We've had to LD_PRELOAD GLEW 2.0 to make this happen. 
+
+
 
 ## Supported Maya Versions 
 + maya-2016 extension 2
@@ -13,6 +16,8 @@
   - USD built with PXR_MAYA_TBB_BUG_WORKAROUND turned on might be needed if deadlocks happen
 + maya-2017
   - Update 3 recommended for viewport selection fixes
++ maya-2018
+  - working as far as we know
 
 ## Using Cmake
 
@@ -93,20 +98,8 @@ To be able to use the additional `MayaReference` translator, an environment vari
 This environment name can be configured when maya is built by setting the AL_USDMAYA_LOCATION_NAME cmake variable to the name you want.
 
 ### A note on VP2
-If you need to use VP2, it won't work with the current ProxyShape implementation unless you set Legacy Profile - can to this via env vars, options etc.
-e.g you can also use the following MEL code to switch the Maya preferences to use the Viewport 2.0 based OpenGL Legacy Mode profile:
-```
-optionVar -sv "vp2RenderingEngine" "OpenGL";
-```
-or env var:
-```
-MAYA_VP2_DEVICE_OVERRIDE=VirtualDeviceGL 
-```
-will force VP2 to use the "OpenGL -- Legacy" profile
 
-see [Autodesk docs](https://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2017/ENU/Maya/files/GUID-4928A912-DA6C-4734-863B-AB5959DA73C9-htm.html)
-
-For selection to work, also need to set
+For selection to work, you need to set
 ```
 MAYA_VP2_USE_VP1_SELECTION=1 
 ```

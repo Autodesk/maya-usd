@@ -16,8 +16,8 @@
 #pragma once
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
-#include "AL/maya/CommandGuiHelper.h"
-#include "AL/maya/MenuBuilder.h"
+#include "AL/maya/utils/CommandGuiHelper.h"
+#include "AL/maya/utils/MenuBuilder.h"
 #include "AL/usdmaya/Global.h"
 #include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/DrivenTransformsData.h"
@@ -65,10 +65,37 @@ MStatus registerPlugin(AFnPlugin& plugin)
     MGlobal::setOptionVarValue("AL_usdmaya_selectMode", 0);
   }
 
+  if(!MGlobal::optionVarExists("AL_usdmaya_selectResolution"))
+  {
+    MGlobal::setOptionVarValue("AL_usdmaya_selectResolution", 10);
+  }
+
   MStatus status;
+
+  // gpuCachePluginMain used as an example.
+  if (MGlobal::kInteractive == MGlobal::mayaState()) {
+    const auto otherPriority = MSelectionMask::getSelectionTypePriority("polymesh");
+    if (!MSelectionMask::registerSelectionType(AL::usdmaya::nodes::ProxyShape::s_selectionMaskName, otherPriority)) {
+      status.perror("Error registering selection mask!");
+      return MS::kFailure;
+    }
+
+    MString cmd = "addSelectTypeItem(\"Surface\",\"";
+    cmd += AL::usdmaya::nodes::ProxyShape::s_selectionMaskName;
+    cmd += "\",\"";
+    cmd += "AL Proxy Shape";
+    cmd += "\")";
+
+    status = MGlobal::executeCommand(cmd);
+    if (!status) {
+      status.perror("Error adding al_ProxyShape selection type!");
+      return status;
+    }
+  }
+
   AL_REGISTER_DATA(plugin, AL::usdmaya::StageData);
   AL_REGISTER_DATA(plugin, AL::usdmaya::DrivenTransformsData);
-  AL_REGISTER_COMMAND(plugin, AL::maya::CommandGuiListGen);
+  AL_REGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCreateLayer);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerGetLayers);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCurrentEditTarget);
@@ -96,6 +123,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::Event);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventQuery);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventLookup);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::TranslatePrim);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
   AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
@@ -126,8 +154,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL::usdmaya::cmds::constructProxyShapeCommandGuis();
   AL::usdmaya::cmds::constructDebugCommandGuis();
 
-  CHECK_MSTATUS(AL::maya::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
-
+  CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
   AL::usdmaya::Global::onPluginLoad();
   return status;
 }
@@ -143,7 +170,26 @@ template<typename AFnPlugin>
 MStatus unregisterPlugin(AFnPlugin& plugin)
 {
   MStatus status;
-  AL_UNREGISTER_COMMAND(plugin, AL::maya::CommandGuiListGen);
+
+  // gpuCachePluginMain used as an example.
+  if (MGlobal::kInteractive == MGlobal::mayaState()) {
+    MString cmd = "deleteSelectTypeItem(\"Surface\",\"";
+    cmd += AL::usdmaya::nodes::ProxyShape::s_selectionMaskName;
+    cmd += "\")";
+
+    status = MGlobal::executeCommand(cmd);
+    if (!status) {
+      status.perror("Error removing al_ProxyShape selection type!");
+      return status;
+    }
+
+    if (!MSelectionMask::deregisterSelectionType(AL::usdmaya::nodes::ProxyShape::s_selectionMaskName)) {
+      status.perror("Error deregistering selection mask!");
+      return MS::kFailure;
+    }
+  }
+
+  AL_UNREGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::InternalProxyShapeSelect);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePostSelect);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeSelect);
@@ -173,6 +219,7 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::UsdDebugCommand);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::TranslatePrim);
   AL_UNREGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
   AL_UNREGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ExportTranslator);
   AL_UNREGISTER_DRAW_OVERRIDE(plugin, AL::usdmaya::nodes::ProxyDrawOverride);

@@ -15,11 +15,12 @@
 //
 #include "test_usdmaya.h"
 
-#include "AL/maya/MayaEventManager.h"
+#include "AL/maya/event/MayaEventManager.h"
 #include "maya/MFileIO.h"
 
 
-using namespace AL::maya;
+using namespace AL::maya::event;
+using namespace AL::event;
 
 static bool g_called = 0;
 static void callback_test(void*){ g_called = true; };

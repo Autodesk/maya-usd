@@ -14,9 +14,10 @@
 // limitations under the License.
 //
 #pragma once
+#include "AL/usdmaya/ForwardDeclares.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
-
 #include "maya/MPxCommand.h"
+#include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
@@ -76,7 +77,8 @@ public:
   /// \param  objsToCreate the mapping returned from createTranformChainsForSchemaPrims
   static void createSchemaPrims(
       nodes::ProxyShape* proxy,
-      const std::vector<UsdPrim>& objsToCreate);
+      const std::vector<UsdPrim>& objsToCreate,
+      const fileio::translators::TranslatorParameters& param = fileio::translators::TranslatorParameters());
 
   /// \brief  called once all plugin nodes have been created, and will request that each plugin translator performs
   ///         the postImport fixup to safely make any connections between Maya nodes

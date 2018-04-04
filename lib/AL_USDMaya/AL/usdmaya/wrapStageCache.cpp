@@ -30,7 +30,6 @@ void wrapStageCache()
   boost::python::class_<AL::usdmaya::StageCache>("StageCache")
 
     .def("Get", &AL::usdmaya::StageCache::Get,
-       (boost::python::args("forcePopulate") = true),
        boost::python::return_value_policy<boost::python::reference_existing_object>())
     .staticmethod("Get")
     .def("Clear", &AL::usdmaya::StageCache::Clear)

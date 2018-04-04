@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
+#include <AL/usdmaya/ForwardDeclares.h>
 #include "maya/MPxData.h"
 #include "maya/MGlobal.h"
 #include "maya/MObject.h"
@@ -29,6 +29,7 @@
 
 #include <vector>
 #include <string>
+#include "AL/usd/utils/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -39,6 +40,27 @@ namespace fileio {
 namespace translators {
 
 typedef std::vector<MObjectHandle> MObjectHandleArray;
+
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief   Transient aggregate of values that aims to direct the Translation of Prims. Typically an object of this struct
+/// is created and used for a set group of prim path translations then it is destroyed.
+///
+/// \ingroup translators
+//----------------------------------------------------------------------------------------------------------------------
+struct TranslatorParameters
+{
+  /// \brief Flag that determines if all Prim schema types should be forced to be imported
+  inline void setForcePrimImport(bool forceImport)
+  { forcePrimImport = forceImport; }
+
+  /// \brief Retrieves the flag that determines if all the Prim schema types should be imported
+  inline bool forceTranslatorImport() const
+  { return forcePrimImport; }
+
+private:
+  bool forcePrimImport = false;
+};
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief   This class provides a context to store mappings between UsdPrims, and the Maya nodes that represent them.
@@ -309,6 +331,49 @@ public:
   void clearPrimMappings()
     { m_primMapping.clear(); }
 
+  /// \brief  add geometry to the exclusion list
+  /// \param  newPath the path to add as an excluded translator path
+  /// \return true if the exclusion was added, false if it wasn't added since it might be already there
+  bool addExcludedGeometry(const SdfPath& newPath)
+  {
+    auto foundPath = m_excludedGeometry.find(newPath);
+
+    if(foundPath != m_excludedGeometry.end())
+    {
+      return false;
+    }
+
+    m_excludedGeometry.insert(newPath);
+    m_isExcludedGeometryDirty = true;
+    return true;
+  }
+
+  /// \brief  remove geometry from the exclusion list
+  /// \param  newPath the path to add as an excluded translator path
+  /// \return true if the exclusion was removed, false if it wasn't removed or it may have never existed
+  bool removeExcludedGeometry(const SdfPath& newPath)
+  {
+    auto foundPath = m_excludedGeometry.find(newPath);
+
+    if(foundPath == m_excludedGeometry.end())
+    {
+      return false;
+    }
+    m_excludedGeometry.erase(newPath);
+    m_isExcludedGeometryDirty = true;
+    return true;
+  }
+
+  /// \brief  retrieve currently excluded translator geometries
+  /// \return  retrieve currently excluded translator geometries
+  inline const SdfPathSet& excludedGeometry()
+    {return m_excludedGeometry;}
+
+  /// \brief Retrieves if the the excluded geometry has been pushed to the renderer
+  /// \return true if the excluded list hasn't been pushed the the renderer yet
+  inline bool isExcludedGeometryDirty()
+    {return m_isExcludedGeometryDirty;}
+
 private:
   void unloadPrim(
       const SdfPath& primPath,
@@ -358,6 +423,14 @@ private:
   // map between a usd prim path and either a dag parent node or
   // a dependency node
   PrimLookups m_primMapping;
+
+  // true to make all translators that default to not importing Prims to always import Prims via the translators
+  bool m_forcePrimImport;
+
+
+  // list of geometry that has been request to be excluded during the translation
+  SdfPathSet m_excludedGeometry;
+  bool m_isExcludedGeometryDirty;
 };
 
 typedef TfRefPtr<TranslatorContext> TranslatorContextPtr;

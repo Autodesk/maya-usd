@@ -13,15 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/CommandGuiHelper.h"
+#include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/usdmaya/AttributeType.h"
 #include "AL/usdmaya/TypeIDs.h"
-#include "AL/usdmaya/Utils.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
 #include "maya/MFileIO.h"
+#include "AL/usdmaya/utils/Utils.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -1101,7 +1101,7 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
               GfMatrix4d matrix;
               op.Get<GfMatrix4d>(&matrix, getTimeCode());
               double T[3], S[3];
-              matrixToSRT(matrix, S, m_rotationFromUsd, T);
+              AL::usdmaya::utils::matrixToSRT(matrix, S, m_rotationFromUsd, T);
               m_scaleFromUsd.x = S[0];
               m_scaleFromUsd.y = S[1];
               m_scaleFromUsd.z = S[2];

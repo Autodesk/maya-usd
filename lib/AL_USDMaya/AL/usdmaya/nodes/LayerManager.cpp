@@ -14,10 +14,11 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/TypeIDs.h"
-#include "AL/usdmaya/Utils.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
+#include "AL/maya/utils/Utils.h"
+#include "AL/maya/utils/MayaHelperMacros.h"
 
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/textFileFormat.h"
@@ -137,13 +138,13 @@ bool LayerDatabase::removeLayer(SdfLayerRefPtr layer)
   {
     auto oldIdPosition = m_idToLayer.find(oldId);
 #ifdef DEBUG
-    assert (oldIdPosition != m_idToLayer.end())
+    assert (oldIdPosition != m_idToLayer.end());
 #else
     if (oldIdPosition == m_idToLayer.end())
     {
-      MGlobal::displayError(MString("Error - layer '") + convert(layer->GetIdentifier())
+      MGlobal::displayError(MString("Error - layer '") + AL::maya::utils::convert(layer->GetIdentifier())
           + "' could be found indexed by layer, but not by identifier '"
-          + convert(oldId) + "'");
+          + AL::maya::utils::convert(oldId) + "'");
     }
     else
 #endif // DEBUG
@@ -163,6 +164,8 @@ SdfLayerHandle LayerDatabase::findLayer(std::string identifier) const
   {
     return foundIdAndLayer->second;
   }
+
+
   return SdfLayerHandle();
 }
 
@@ -186,13 +189,13 @@ void LayerDatabase::_addLayer(SdfLayerRefPtr layer, const std::string& identifie
     SdfLayerRefPtr oldLayer = insertIdResult.first->second;
     auto oldLayerAndIds = m_layerToIds.find(oldLayer);
 #ifdef DEBUG
-    assert (oldLayerIds != m_layerToIds.end())
+    assert (oldLayerAndIds != m_layerToIds.end());
 #else
     if (oldLayerAndIds == m_layerToIds.end())
     {
       // The layer didn't exist in the opposite direction - this should
       // never happen, but don't want to crash if it does
-      MGlobal::displayError(MString("Error - layer '") + convert(identifier)
+      MGlobal::displayError(MString("Error - layer '") + AL::maya::utils::convert(identifier)
           + "' could be found indexed by identifier, but not by layer");
     }
     else
@@ -210,11 +213,11 @@ void LayerDatabase::_addLayer(SdfLayerRefPtr layer, const std::string& identifie
         auto idLocation = std::find(oldLayerIds.begin(), oldLayerIds.end(),
             identifier);
 #ifdef DEBUG
-        assert (idLocation != oldLayerIds.end())
+        assert (idLocation != oldLayerIds.end());
 #else
         if(idLocation == oldLayerIds.end())
         {
-          MGlobal::displayError(MString("Error - layer '") + convert(identifier)
+          MGlobal::displayError(MString("Error - layer '") + AL::maya::utils::convert(identifier)
               + "' could be found indexed by identifier, but was not in layer's list of identifiers");
         }
         else
@@ -427,10 +430,10 @@ MStatus LayerManager::populateSerialisationAttributes()
       MDataHandle layersElemHandle = builder.addLast(&status);
       AL_MAYA_CHECK_ERROR(status, errorString);
       MDataHandle idHandle = layersElemHandle.child(m_identifier);
-      idHandle.setString(convert(layer->GetIdentifier()));
+      idHandle.setString(AL::maya::utils::convert(layer->GetIdentifier()));
       MDataHandle serializedHandle = layersElemHandle.child(m_serialized);
       layer->ExportToString(&temp);
-      serializedHandle.setString(convert(temp));
+      serializedHandle.setString(AL::maya::utils::convert(temp));
       MDataHandle anonHandle = layersElemHandle.child(m_anonymous);
       anonHandle.setBool(layer->IsAnonymous());
     }

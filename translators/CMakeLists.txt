@@ -13,6 +13,7 @@ add_library(${TRANSLATORS_PACKAGE}
     SHARED
     Camera.cpp
     MayaReference.cpp
+    Mesh.cpp
 )
 
 # Copy the plugin metadata file in a hierarchy replicating the install hierarchy.

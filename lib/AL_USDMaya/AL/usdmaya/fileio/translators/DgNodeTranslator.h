@@ -14,9 +14,11 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
+#include <AL/usdmaya/ForwardDeclares.h>
 #include "AL/usdmaya/AttributeType.h"
-#include "AL/maya/DgNodeHelper.h"
+#include "AL/usdmaya/utils/DgNodeHelper.h"
+#include "AL/usdmaya/utils/ForwardDeclares.h"
+#include "AL/maya/utils/MayaHelperMacros.h"
 
 #include "maya/MPlug.h"
 #include "maya/MAngle.h"
@@ -43,9 +45,10 @@ namespace translators {
 /// \ingroup   translators
 //----------------------------------------------------------------------------------------------------------------------
 class DgNodeTranslator
-  : public maya::DgNodeHelper
+  : public usdmaya::utils::DgNodeHelper
 {
 public:
+
 
   /// \brief  static type registration
   /// \return MS::kSuccess if ok

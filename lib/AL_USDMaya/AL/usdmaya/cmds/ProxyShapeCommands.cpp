@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/CommandGuiHelper.h"
-#include "AL/usdmaya/Utils.h"
+#include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
@@ -34,6 +33,7 @@
 
 #include <sstream>
 #include <algorithm>
+#include "AL/usdmaya/utils/Utils.h"
 
 namespace {
     typedef void (AL::usdmaya::nodes::SelectionList::*SelectionListModifierFunc)(SdfPath);
@@ -246,6 +246,32 @@ MStatus ProxyShapeImport::redoIt()
       }
     }
   }
+
+  // set the name of the node
+  MFnDagNode fnShape(m_shape);
+
+  // if lots of TM's have been specified as parents, just name the shape explicitly
+  if(m_parentTransforms.length())
+  {
+    if(m_proxy_name.length())
+    {
+      fnShape.setName(m_proxy_name + "Shape");
+    }
+  }
+  else
+  {
+    MFnDependencyNode fnTransform(fnShape.parent(0));
+    fnShape.setName(fnTransform.name() + "Shape");
+    if(m_proxy_name.length())
+    {
+      fnTransform.setName(m_proxy_name);
+    }
+    else
+    {
+      fnTransform.setName("AL_usdmaya_Proxy");
+    }
+  }
+
   return status;
 }
 
@@ -276,7 +302,6 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
     }
   }
 
-  MString name;
   MString filePath;
   MString sessionLayerSerialized;
   MString primPath;
@@ -292,14 +317,13 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
     return MS::kFailure;
   }
   bool hasName = database.isFlagSet("-n");
-  bool hasParents = m_parentTransforms.length() != 0;
   bool hasPrimPath = database.isFlagSet("-pp");
   bool hasExclPrimPath = database.isFlagSet("-epp");
   bool hasSession = database.isFlagSet("-s");
   bool hasStagePopulationMaskInclude = database.isFlagSet("-pmi");
 
   if(hasName) {
-    database.getFlagArgument("-n", 0, name);
+    database.getFlagArgument("-n", 0, m_proxy_name);
   }
   if(hasPrimPath) {
     database.getFlagArgument("-pp", 0, primPath);
@@ -344,28 +368,12 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   // create the shape node
   m_shape = m_modifier.createNode(nodes::ProxyShape::kTypeId, firstParent);
 
-  // set the name of the node
-  if(hasName)
-  {
-    // if lots of TM's have been specified as parents, just name the shape explicitly
-    if(m_parentTransforms.length())
-    {
-      MFnDependencyNode fnShape(m_shape);
-      fnShape.setName(name);
-    }
-    else
-    if(!hasParents)
-    {
-      MFnDependencyNode fnTransform(firstParent);
-      fnTransform.setName(name);
-    }
-  }
-
   // initialize the session layer, if given
   if(hasSession)
   {
     auto sessionLayer = SdfLayer::CreateAnonymous();
-    sessionLayer->ImportFromString(convert(sessionLayerSerialized));
+
+    sessionLayer->ImportFromString(AL::maya::utils::convert(sessionLayerSerialized));
     auto layerManager = nodes::LayerManager::findOrCreateManager(&m_modifier);
     if (!layerManager)
     {
@@ -374,7 +382,7 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
     }
     layerManager->addLayer(sessionLayer);
     m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::sessionLayerName()),
-        convert(sessionLayer->GetIdentifier()));
+                                  AL::maya::utils::convert(sessionLayer->GetIdentifier()));
   }
 
   // intialise the params
@@ -469,7 +477,7 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
     {
       MString pathString;
       db.getFlagArgument("-pp", 0, pathString);
-      path = SdfPath(convert(pathString));
+      path = SdfPath(AL::maya::utils::convert(pathString));
       if (!path.IsPrimPath()) {
         MGlobal::displayError(MString("Invalid primPath: ") + path.GetText());
         return MS::kFailure;
@@ -489,9 +497,9 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       uint32_t i = 0;
       for(auto it = all.begin(); it != all.end(); ++it, ++i)
       {
-        result[i] = convert(it->GetString());
+        result[i] = AL::maya::utils::convert(it->GetString());
       }
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("all %u\n", all.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("all %zu\n", all.size());
     }
     else
     if(loaded && db.isFlagSet("-pp"))
@@ -509,10 +517,10 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       uint32_t i = 0;
       for(auto it = intersected.begin(); it != intersected.end(); ++it, ++i)
       {
-        result[i] = convert(it->GetString());
+        result[i] = AL::maya::utils::convert(it->GetString());
       }
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %u\n", loadableSet.size());
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadedSet %u\n", loadedSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %zu\n", loadableSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadedSet %zu\n", loadedSet.size());
     }
     else
     if(loaded)
@@ -522,9 +530,9 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       uint32_t i = 0;
       for(auto it = all.begin(); it != all.end(); ++it, ++i)
       {
-        result[i] = convert(it->GetString());
+        result[i] = AL::maya::utils::convert(it->GetString());
       }
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loaded %u\n", all.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loaded %zu\n", all.size());
     }
     else
     if(unloaded && db.isFlagSet("-pp"))
@@ -549,11 +557,11 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       uint32_t i = 0;
       for(auto it = intersected.begin(); it != intersected.end(); ++it, ++i)
       {
-        result[i] = convert(it->GetString());
+        result[i] = AL::maya::utils::convert(it->GetString());
       }
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("all %u\n", all.size());
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %u\n", loadableSet.size());
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadedSet %u\n", loadedSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("all %zu\n", all.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %zu\n", loadableSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadedSet %zu\n", loadedSet.size());
     }
     else
     if(unloaded)
@@ -571,11 +579,11 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
       uint32_t i = 0;
       for(auto it = diffed.begin(); it != diffed.end(); ++it, ++i)
       {
-        result[i] = convert(it->GetString());
+        result[i] = AL::maya::utils::convert(it->GetString());
       }
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadedSet %u\n", loadedSet.size());
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %u\n", loadableSet.size());
-      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("diffed %u\n", diffed.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadedSet %zu\n", loadedSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("loadableSet %zu\n", loadableSet.size());
+      TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("diffed %zu\n", diffed.size());
     }
     setResult(result);
   }
@@ -677,7 +685,7 @@ MStatus ProxyShapeImportAllTransforms::doIt(const MArgList& args)
 
     if(primPath.length())
     {
-      SdfPath usdPath(convert(primPath));
+      SdfPath usdPath(AL::maya::utils::convert(primPath));
       UsdPrim prim = stage->GetPrimAtPath(usdPath);
       if(!prim)
       {
@@ -776,7 +784,7 @@ MStatus ProxyShapeRemoveAllTransforms::doIt(const MArgList& args)
 
     if(primPath.length())
     {
-      SdfPath usdPath(convert(primPath));
+      SdfPath usdPath(AL::maya::utils::convert(primPath));
       UsdPrim prim = stage->GetPrimAtPath(usdPath);
       if(!prim)
       {
@@ -834,7 +842,7 @@ MStatus ProxyShapeResync::doIt(const MArgList& args)
     {
       MString pathString;
       db.getFlagArgument("-pp", 0, pathString);
-      SdfPath primPath = SdfPath(convert(pathString));
+      SdfPath primPath = SdfPath(AL::maya::utils::convert(pathString));
       if (!primPath.IsPrimPath()) {
         MGlobal::displayError(MString("Invalid primPath: ") + pathString);
         return MS::kFailure;
@@ -942,7 +950,7 @@ MStatus InternalProxyShapeSelect::doIt(const MArgList& args)
         MArgList args;
         db.getFlagArgumentList("-pp", i, args);
         MString pathString = args.asString(0);
-        SdfPath path(convert(pathString));
+        SdfPath path(AL::maya::utils::convert(pathString));
         if (!path.IsPrimPath()) {
           MGlobal::displayError(MString("Invalid primPath: ") + pathString);
           return MS::kFailure;
@@ -1033,7 +1041,7 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
         db.getFlagArgumentList("-pp", i, args);
         MString pathString = args.asString(0);
 
-        SdfPath path(convert(pathString));
+        SdfPath path(AL::maya::utils::convert(pathString));
 
         if(!proxy->selectabilityDB().isPathUnselectable(path) && path.IsAbsolutePath())
         {
@@ -1072,12 +1080,18 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
       delete m_helper;
       m_helper = 0;
     }
+    return _redoIt(isInternal);
   }
   catch(const MStatus& status)
   {
     return status;
   }
-  return redoIt();
+  catch(...)
+  {
+    MStatus status = MS::kFailure;
+    status.perror("(ProxyShapeSelect::doIt) Unknown internal failure!");
+    return status;
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1093,9 +1107,15 @@ MStatus ProxyShapeSelect::undoIt()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShapeSelect::redoIt()
 {
+  return _redoIt(false);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus ProxyShapeSelect::_redoIt(bool isInternal)
+{
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeSelect::redoIt\n");
   if(m_helper) m_helper->doIt();
-  if(MGlobal::kInteractive == MGlobal::mayaState())
+  if(MGlobal::kInteractive == MGlobal::mayaState() && !isInternal)
     MGlobal::executeCommandOnIdle("refresh", false);
 
   return MS::kSuccess;
@@ -1117,6 +1137,28 @@ MSyntax ProxyShapePostSelect::createSyntax()
 MStatus ProxyShapePostSelect::redoIt()
 {
   m_proxy->setChangedSelectionState(false);
+  MSelectionList sl;
+  MGlobal::getActiveSelectionList(sl);
+  MString command;
+  MFnDependencyNode depNode(m_proxy->thisMObject());
+  for (const auto& path : m_proxy->selectedPaths()) {
+    auto obj = m_proxy->findRequiredPath(path);
+    if (obj != MObject::kNullObj) {
+      MFnDagNode dagNode(obj);
+      MDagPath dg;
+      dagNode.getPath(dg);
+      if (!sl.hasItem(dg)) {
+        command += "AL_usdmaya_ProxyShapeSelect -i -d -pp \"";
+        command += path.GetText();
+        command += "\" \"";
+        command += depNode.name();
+        command += "\";";
+      }
+    }
+  }
+  if (command.length() > 0) {
+    MGlobal::executeCommand(command, false, false);
+  }
   return MS::kSuccess;
 }
 
@@ -1172,11 +1214,6 @@ MSyntax ProxyShapeImportPrimPathAsMaya::createSyntax()
   MSyntax syntax = setUpCommonSyntax();
   syntax.addFlag("-pp", "-primPath", MSyntax::kString);
   syntax.addFlag("-ap", "-asProxy", MSyntax::kNoArg);
-  syntax.addFlag("-a", "-anim", MSyntax::kNoArg);
-  syntax.addFlag("-da", "-dynamicAttribute", MSyntax::kBoolean);
-  syntax.addFlag("-m", "-meshes", MSyntax::kBoolean);
-  syntax.addFlag("-nc", "-nurbsCurves", MSyntax::kBoolean);
-  syntax.addFlag("-sa", "-sceneAssembly", MSyntax::kBoolean);
   syntax.addFlag("-h", "-help", MSyntax::kNoArg);
   return syntax;
 }
@@ -1203,7 +1240,7 @@ MStatus ProxyShapeImportPrimPathAsMaya::doIt(const MArgList& args)
     {
       MString pathString;
       db.getFlagArgument("-pp", 0, pathString);
-      m_path = SdfPath(convert(pathString));
+      m_path = SdfPath(AL::maya::utils::convert(pathString));
       if (!m_path.IsPrimPath()) {
         MGlobal::displayError(MString("Invalid primPath: ") + pathString);
         return MS::kFailure;
@@ -1213,26 +1250,6 @@ MStatus ProxyShapeImportPrimPathAsMaya::doIt(const MArgList& args)
     m_asProxyShape = false;
     if(db.isFlagSet("-ap")) {
       m_asProxyShape = true;
-    }
-
-    // check anim flags
-    if(db.isFlagSet("-a")) {
-      db.getFlagArgument("-a", 0, m_importParams.m_animations);
-    }
-
-    // check mesh flags
-    if(db.isFlagSet("-m")) {
-      db.getFlagArgument("-m", 0, m_importParams.m_meshes);
-    }
-
-    // check dynamic attr flags
-    if(db.isFlagSet("-da")) {
-      db.getFlagArgument("-da", 0, m_importParams.m_dynamicAttributes);
-    }
-
-    // check nurbs curve flag
-    if(db.isFlagSet("-nc")) {
-      db.getFlagArgument("-nc", 0, m_importParams.m_nurbsCurves);
     }
 
     nodes::ProxyShape* shapeNode = getShapeNode(db);
@@ -1278,41 +1295,114 @@ MStatus ProxyShapeImportPrimPathAsMaya::undoIt()
   return m_modifier.undoIt();
 }
 
+
+//----------------------------------------------------------------------------------------------------------------------
+
+AL_MAYA_DEFINE_COMMAND(TranslatePrim, AL_usdmaya);
+
+//----------------------------------------------------------------------------------------------------------------------
+
+MSyntax TranslatePrim::createSyntax()
+{
+  MSyntax syntax = setUpCommonSyntax();
+  syntax.addFlag("-ip", "-importPaths", MSyntax::kString);
+  syntax.addFlag("-tp", "-teardownPaths", MSyntax::kString);
+  syntax.addFlag("-fi", "-forceImport", MSyntax::kNoArg);
+  return syntax;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus TranslatePrim::doIt(const MArgList& args)
+{
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("TranslatePrim::doIt\n");
+  try
+  {
+    MArgDatabase db = makeDatabase(args);
+    AL_MAYA_COMMAND_HELP(db, g_helpText);
+    m_proxy = getShapeNode(db);
+
+    if(db.isFlagSet("-ip"))
+    {
+      MString pathsCsv;
+      db.getFlagArgument("-ip", 0, pathsCsv);
+      m_importPaths = m_proxy->getPrimPathsFromCommaJoinedString(pathsCsv);
+    }
+
+    if(db.isFlagSet("-tp"))
+    {
+      MString pathsCsv;
+      db.getFlagArgument("-tp", 0, pathsCsv);
+      m_teardownPaths = m_proxy->getPrimPathsFromCommaJoinedString(pathsCsv);
+    }
+
+    // change the translator context to force import
+    if(db.isFlagSet("-fi"))
+    {
+      tp.setForcePrimImport(true);
+    }
+  }
+  catch(const MStatus& status)
+  {
+    return status;
+  }
+
+  return redoIt();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool TranslatePrim::isUndoable() const
+{
+  return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus TranslatePrim::redoIt()
+{
+  MDagPath parentTransform = m_proxy->parentTransform();
+
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("TranslatePrim::redoIt\n");
+  m_proxy->translatePrimPathsIntoMaya(m_importPaths, m_teardownPaths, tp);
+  return MStatus::kSuccess;
+}
+
+
 //----------------------------------------------------------------------------------------------------------------------
 void constructProxyShapeCommandGuis()
 {
   {
-    maya::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImport", "Proxy Shape Import", "Import", "USD/Proxy Shape/Import", false);
-    commandGui.addFilePathOption("file", "File Path", maya::CommandGuiHelper::kLoad, "USD all (*.usdc *.usda *.usd);;USD crate (*.usdc) (*.usdc);;USD Ascii (*.usda) (*.usda);;USD (*.usd) (*.usd)", maya::CommandGuiHelper::kStringMustHaveValue);
-    commandGui.addStringOption("primPath", "USD Prim Path", "", false, maya::CommandGuiHelper::kStringOptional);
-    commandGui.addStringOption("excludePrimPath", "Exclude Prim Path", "", false, maya::CommandGuiHelper::kStringOptional);
-    commandGui.addStringOption("name", "Proxy Shape Node Name", "", false, maya::CommandGuiHelper::kStringOptional);
+    AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImport", "Proxy Shape Import", "Import", "USD/Proxy Shape/Import", false);
+    commandGui.addFilePathOption("file", "File Path", AL::maya::utils::CommandGuiHelper::kLoad, "USD all (*.usdc *.usda *.usd);;USD crate (*.usdc) (*.usdc);;USD Ascii (*.usda) (*.usda);;USD (*.usd) (*.usd)", AL::maya::utils::CommandGuiHelper::kStringMustHaveValue);
+    commandGui.addStringOption("primPath", "USD Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
+    commandGui.addStringOption("excludePrimPath", "Exclude Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
+    commandGui.addStringOption("name", "Proxy Shape Node Name", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
     commandGui.addBoolOption("connectToTime", "Connect to Time", true, true);
     commandGui.addBoolOption("unloaded", "Opens the layer with payloads unloaded.", false, true);
   }
 
   {
-    maya::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImportPrimPathAsMaya", "Import Prim Path as Maya", "Import", "USD/Proxy Shape/Import Prim Path as Maya", true);
-    commandGui.addStringOption("primPath", "USD Prim Path", "", false, maya::CommandGuiHelper::kStringMustHaveValue);
+    AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImportPrimPathAsMaya", "Import Prim Path as Maya xforms", "Import", "USD/Proxy Shape/Import Prim Path as Maya", true);
+    commandGui.addStringOption("primPath", "USD Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringMustHaveValue);
     commandGui.addFlagOption("asProxy", "Import Subsection as a Proxy Node", false, true);
-    commandGui.addFlagOption("anim", "Import Animations", true, true);
-    commandGui.addBoolOption("meshes", "Import Meshes", true, true);
-    commandGui.addBoolOption("nurbsCurves", "Import Nurbs Curves", true, true);
-    commandGui.addBoolOption("dynamicAttribute", "Import Dynamic Attributes", true, true);
   }
 
   {
-    maya::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImportAllTransforms", "Import All Transforms", "Import", "USD/Proxy Shape/Import Transforms as Transforms", true);
+    AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImportAllTransforms", "Import All Transforms", "Import", "USD/Proxy Shape/Import Transforms as Transforms", true);
     commandGui.addBoolOption("pushToPrim", "Push to Prim", false, true);
   }
 
   {
-    maya::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeRemoveAllTransforms", "Remove All Transforms", "Remove", "USD/Proxy Shape/Remove all Transforms", true);
+    AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeRemoveAllTransforms", "Remove All Transforms", "Remove", "USD/Proxy Shape/Remove all Transforms", true);
   }
 
   {
-    maya::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeResync", "Resync at Prim path", "", "Resync and reload prim at passed in primpath", false);
-    commandGui.addStringOption("primPath", "USD Prim Path", "", false, maya::CommandGuiHelper::kStringMustHaveValue);
+    AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeResync", "Resync at Prim path", "", "Resync and reload prim at passed in primpath", false);
+    commandGui.addStringOption("primPath", "USD Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringMustHaveValue);
+  }
+
+  {
+    AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_TranslatePrim", "Translate a Prim at path", "", "Run the translator to either import or teardown the Prims at the paths", false);
+    commandGui.addStringOption("importPath", "USD Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
+    commandGui.addStringOption("teardownPath", "USD Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
   }
 }
 
@@ -1355,6 +1445,7 @@ MStatus ProxyShapePrintRefCountState::doIt(const MArgList& args)
   }
   return MS::kSuccess;
 }
+
 
 //----------------------------------------------------------------------------------------------------------------------
 // Documentation strings.
@@ -1465,13 +1556,8 @@ AL_usdmaya_ProxyShapeRemoveAllTransforms Overview:
 const char* const ProxyShapeImportPrimPathAsMaya::g_helpText = R"(
 AL_usdmaya_ProxyShapeImportPrimPathAsMaya Overview:
 
-  This command is a little bit interesting, and probably bug ridden. The following command:
-
+  Imports the following path as a hierarchy of transforms:
     AL_usdmaya_ProxyShapeImportPrimPathAsMaya "ProxyShape1" -pp "/some/prim/path";
-
-  Will disable the rendering of the prim path "/some/prim/path" on the "ProxyShape1" node,
-  and will run an import process to bring in all of the transforms/geometry/etc found under
-  "/some/prim/path", as native maya transform and mesh nodes.
 
   Adding in the -ap/-asProxy flag will build a transform hierarchy of Transform nodes to the
   specified prim, and then create a new ProxyShape to represent all of that geometry underneath
@@ -1582,8 +1668,25 @@ AL_usdmaya_ProxyShapeResync Overview:
     AL_usdmaya_ProxyShapeResync -p "ProxyShape1" -pp "/some/prim/path"
 
 )";
+//----------------------------------------------------------------------------------------------------------------------
+const char* const TranslatePrim::g_helpText = R"(
+TranslatePrim Overview:
 
+  Used to manually execute a translator for a prim at the specified path typically so you can force an import or a tearDown of a prim:
 
+    AL_usdmaya_TranslatePrim -ip "/MyPrim";  //< Run the Prim's translator's import
+    AL_usdmaya_TranslatePrim -tp "/MyPrim";  //< Run the Prim's translator's tearDown
+
+    AL_usdmaya_TranslatePrim -ip "/MyPrim,/YourPrim";  //< Run the Prim's translator's import on multiple Prims
+    AL_usdmaya_TranslatePrim -tp "/MyPrim,/YourPrim";  //< Run the Prim's translator's tearDown on multiple Prims
+
+  Some prims such as the Mesh typed prims are not imported by default, so you will need to pass in a flag that forces the import:
+
+    AL_usdmaya_TranslatePrim -fi -ip "/MyMesh";  //< Run the Prim's translator's import
+
+  The ForceImport(-fi) flag will forces the import of the available translator. Used for translators who don't import automatically when
+  their corresponding prim type is brought into the scene.
+)";
 //----------------------------------------------------------------------------------------------------------------------
 } // cmds
 } // usdmaya

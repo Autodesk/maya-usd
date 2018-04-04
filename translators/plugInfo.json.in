@@ -8,8 +8,11 @@
                     },
                     "AL::usdmaya::fileio::translators::CameraTranslator": {
                         "bases": ["AL::usdmaya::fileio::translators::TranslatorBase"]
+                    },
+                    "AL::usdmaya::fileio::translators::Mesh": {
+                        "bases": ["AL::usdmaya::fileio::translators::TranslatorBase"]
                     }
-		}
+                }
             },
             "LibraryPath": "${LIBRARY_LOCATION}/@CMAKE_SHARED_LIBRARY_PREFIX@@TRANSLATORS_PACKAGE@@CMAKE_SHARED_LIBRARY_SUFFIX@",
             "Name": "@TRANSLATORS_PACKAGE@",

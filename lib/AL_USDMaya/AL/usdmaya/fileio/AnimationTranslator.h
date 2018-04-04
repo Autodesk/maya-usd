@@ -17,8 +17,14 @@
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
 
 #include "maya/MPlug.h"
+#include "maya/MString.h"
 #include "maya/MDagPath.h"
+#include "maya/MObjectHandle.h"
+
+#include <vector>
+#include <array>
 #include <map>
+
 #include <utility>
 
 #include "pxr/pxr.h"
@@ -71,6 +77,10 @@ struct AnimationTranslator
   /// \param  assumeExpressionIsAnimated if we encounter an expression, assume that the attribute is animated (true) or
   ///         static (false).
   /// \return true if the attribute was found to be animated
+  /// This test only covers the situation that your attribute is actually animated by some types of nodes, e.g. animCurves
+  /// or expression, or source attribute's full-name match a certain string.
+  /// But in reality the control network might be really complicated and heavily customized thus it might go far beyond the
+  /// situation we can cover here.
   static bool isAnimated(const MObject& node, const MObject& attr, const bool assumeExpressionIsAnimated = true)
     { return isAnimated(MPlug(node, attr), assumeExpressionIsAnimated); }
 
@@ -79,12 +89,28 @@ struct AnimationTranslator
   /// \param  assumeExpressionIsAnimated if we encounter an expression, assume that the attribute is animated (true) or
   ///         static (false).
   /// \return true if the attribute was found to be animated
+  /// This test only covers the situation that your attribute is actually animated by some types of nodes, e.g. animCurves
+  /// or expression, or source attribute's full-name match a certain string.
+  /// But in reality the control network might be really complicated and heavily customized thus it might go far beyond the
+  /// situations we can cover here.
   static bool isAnimated(MPlug attr, bool assumeExpressionIsAnimated = true);
 
   /// \brief  returns true if the mesh is animated
   /// \param  mesh the mesh to test
   /// \return true if the mesh was found to be animated
+  /// This test only covers the situation that your node / upstream nodes are actually animated by animCurves.
+  /// But in reality the control network might be really complicated and heavily customized thus it might go far beyond the
+  /// situations we can cover here.
   static bool isAnimatedMesh(const MDagPath& mesh);
+
+  /// \brief  returns true if the transform node is animated
+  /// \param  transformNode the transform node to test
+  /// \return true if the transform was found to be animated
+  /// It roughly tests a list of common transform attributes, translate, rotate, rotateOrder and scale,
+  /// if any of those attributes is connected as destination, we take the transform node as animated.
+  /// This test will be performed recursively up to parent hierarchies, unless the inheritsTransform
+  /// attribute is turned off.
+  static bool isAnimatedTransform(const MObject& transformNode);
 
   /// \brief  add a plug to the animation translator (if the plug is animated)
   /// \param  plug the maya attribute to test
@@ -170,12 +196,36 @@ struct AnimationTranslator
   /// \brief  After the scene has been exported, call this method to export the animation data on various attributes
   /// \param  params the export options
   void exportAnimation(const ExporterParams& params);
-
+private:
+  static bool considerToBeAnimation(const MFn::Type nodeType);
+  static bool inheritTransform(const MDagPath &path);
+  static bool areTransformAttributesConnected(const MDagPath &path);
 private:
   PlugAttrVector m_animatedPlugs;
   PlugAttrScaledVector m_scaledAnimatedPlugs;
   PlugAttrVector m_animatedTransformPlugs;
   MeshAttrVector m_animatedMeshes;
+};
+
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  A utility class to provide static transform attributes for testing if a transform node is animated or not.
+/// \ingroup   fileio
+//----------------------------------------------------------------------------------------------------------------------
+class AnimationCheckTransformAttributes
+{
+private:
+  constexpr static int transformAttributesCount {13};
+public:
+  AnimationCheckTransformAttributes();
+  inline std::array<MObject, transformAttributesCount>::const_iterator begin() const {return m_commonTransformAttributes.cbegin();}
+  inline std::array<MObject, transformAttributesCount>::const_iterator end() const {return m_commonTransformAttributes.cend();}
+  inline MObject inheritTransformAttribute()const {return m_inheritTransformAttribute;}
+
+private:
+  MStatus initialise();
+  std::array<MObject, transformAttributesCount> m_commonTransformAttributes;
+  MObject m_inheritTransformAttribute;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

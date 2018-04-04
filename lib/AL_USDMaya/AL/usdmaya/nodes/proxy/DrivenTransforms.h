@@ -18,13 +18,14 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 
-#include "AL/usdmaya/Common.h"
 #include "maya/MPxData.h"
 #include "maya/MVector.h"
 #include "maya/MMatrix.h"
 
 #include <vector>
 #include <string>
+#include "AL/maya/utils/ForwardDeclares.h"
+#include "AL/usd/utils/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/CommandGuiHelper.h"
-#include "AL/maya/Common.h"
+#include "AL/maya/utils/CommandGuiHelper.h"
+#include "AL/usdmaya/utils/Utils.h"
+#include "AL/maya/utils/MayaHelperMacros.h"
 #include "AL/usdmaya/StageCache.h"
-#include "AL/usdmaya/Utils.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/cmds/LayerCommands.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
@@ -38,6 +38,7 @@
 #include "pxr/usd/sdf/listOp.h"
 
 #include <sstream>
+#include "AL/usdmaya/utils/Utils.h"
 
 namespace {
   AL::usdmaya::nodes::ProxyShape* getProxyShapeFromSel(const MSelectionList& sl)
@@ -228,11 +229,11 @@ MStatus LayerGetLayers::doIt(const MArgList& argList)
       SdfLayerHandle rootLayer = stage->GetRootLayer();
       if(useIdentifiers)
       {
-        setResult(convert(rootLayer->GetIdentifier()));
+        setResult(AL::maya::utils::convert(rootLayer->GetIdentifier()));
       }
       else
       {
-        setResult(convert(rootLayer->GetDisplayName()));
+        setResult(AL::maya::utils::convert(rootLayer->GetDisplayName()));
       }
       return MS::kSuccess;
     }
@@ -244,7 +245,7 @@ MStatus LayerGetLayers::doIt(const MArgList& argList)
       {
         if(useIdentifiers)
         {
-          results.append(convert(*it));
+          results.append(AL::maya::utils::convert(*it));
         }
         else
         {
@@ -253,10 +254,10 @@ MStatus LayerGetLayers::doIt(const MArgList& argList)
           if (!layer)
           {
             // If we failed to grab the layer from it's identifier, something went wrong...
-            MGlobal::displayError(MString("Could not find muted layer from identifier: ") + convert(*it));
+            MGlobal::displayError(MString("Could not find muted layer from identifier: ") + AL::maya::utils::convert(*it));
             return MS::kFailure;
           }
-          results.append(convert(layer->GetDisplayName()));
+          results.append(AL::maya::utils::convert(layer->GetDisplayName()));
         }
       }
     }
@@ -269,11 +270,11 @@ MStatus LayerGetLayers::doIt(const MArgList& argList)
       {
         if(useIdentifiers)
         {
-          results.append(convert((*it)->GetIdentifier()));
+          results.append(AL::maya::utils::convert((*it)->GetIdentifier()));
         }
         else
         {
-          results.append(convert((*it)->GetDisplayName()));
+          results.append(AL::maya::utils::convert((*it)->GetDisplayName()));
         }
       }
     }
@@ -292,11 +293,11 @@ MStatus LayerGetLayers::doIt(const MArgList& argList)
         }
         if(useIdentifiers)
         {
-          results.append(convert((*it)->GetIdentifier()));
+          results.append(AL::maya::utils::convert((*it)->GetIdentifier()));
         }
         else
         {
-          results.append(convert((*it)->GetDisplayName()));
+          results.append(AL::maya::utils::convert((*it)->GetDisplayName()));
         }
       }
     }
@@ -306,11 +307,11 @@ MStatus LayerGetLayers::doIt(const MArgList& argList)
       SdfLayerHandle sessionLayer = stage->GetSessionLayer();
       if(useIdentifiers)
       {
-        setResult(convert(sessionLayer->GetIdentifier()));
+        setResult(AL::maya::utils::convert(sessionLayer->GetIdentifier()));
       }
       else
       {
-        setResult(convert(sessionLayer->GetDisplayName()));
+        setResult(AL::maya::utils::convert(sessionLayer->GetDisplayName()));
       }
       return MS::kSuccess;
     }
@@ -428,13 +429,14 @@ MStatus LayerCreateLayer::redoIt()
 
   if(m_filePath.length() > 0)
   {
-    std::string filePath = convert(m_filePath);
+    std::string filePath = AL::maya::utils::convert(m_filePath);
     m_newLayer = SdfLayer::FindOrOpen(filePath);
     if(!m_newLayer)
     {
       MGlobal::displayError(MString("LayerCreateLayer:unable to open layer \"") + m_filePath + "\"");
       return MS::kFailure;
     }
+
   }
   else
   {
@@ -635,7 +637,7 @@ MStatus LayerCurrentEditTarget::doIt(const MArgList& argList)
         else
         if(layerName.length() > 0)
         {
-          layerName2 = convert(layerName);
+          layerName2 = AL::maya::utils::convert(layerName);
           SdfLayerHandleVector layers = stage->GetUsedLayers();
           for(auto it = layers.begin(); it != layers.end(); ++it)
           {
@@ -677,7 +679,7 @@ MStatus LayerCurrentEditTarget::doIt(const MArgList& argList)
               return MS::kFailure;
             }
           }
-          MGlobal::displayError(MString("LayerCurrentEditTarget: no layer found on proxy node that matches the name \"") + convert(layerName2) + "\"");
+          MGlobal::displayError(MString("LayerCurrentEditTarget: no layer found on proxy node that matches the name \"") + AL::maya::utils::convert(layerName2) + "\"");
           return MS::kFailure;
         }
       }
@@ -707,7 +709,7 @@ MStatus LayerCurrentEditTarget::redoIt()
   }
   else
   {
-    setResult(convert(previous.GetLayer()->GetDisplayName()));
+    setResult(AL::maya::utils::convert(previous.GetLayer()->GetDisplayName()));
   }
   return MS::kSuccess;
 }
@@ -792,7 +794,7 @@ MStatus LayerSave::doIt(const MArgList& argList)
         {
           MString temp;
           args.getFlagArgument("-f", 0, temp);
-          outfilepath = convert(temp);
+          outfilepath = AL::maya::utils::convert(temp);
         }
 
         // make sure the user is not going to annihilate their own work.
@@ -813,7 +815,7 @@ MStatus LayerSave::doIt(const MArgList& argList)
           // just set the text string as the result of the command
           std::string temp;
           handle->ExportToString(&temp);
-          setResult(convert(temp));
+          setResult(AL::maya::utils::convert(temp));
         }
         else
         {
@@ -822,7 +824,7 @@ MStatus LayerSave::doIt(const MArgList& argList)
           {
             MString temp;
             args.getFlagArgument("-f", 0, temp);
-            const std::string filename = convert(temp);
+            const std::string filename = AL::maya::utils::convert(temp);
             bool result = handle->Export(filename);
             setResult(result);
             if(!result) MGlobal::displayError("LayerSave: could not export layer");
@@ -981,24 +983,26 @@ MStringArray buildProxyLayersList(const MString&)
 void constructLayerCommandGuis()
 {
   {
-    maya::CommandGuiHelper saveLayer("AL_usdmaya_LayerSave", "Save Layer", "Save Layer", "USD/Layers/Save Layer", false);
-    saveLayer.addListOption("l", "Layer to Save", (AL::maya::GenerateListFn)buildEditedLayersList, /*isMandatory=*/true);
-    saveLayer.addFilePathOption("f", "USD File Path", maya::CommandGuiHelper::kSave, "USDA files (*.usda) (*.usda);;USDC files (*.usdc) (*.usdc);;Alembic Files (*.abc) (*.abc);;All Files (*) (*)", maya::CommandGuiHelper::kStringMustHaveValue);
+    AL::maya::utils::CommandGuiHelper saveLayer("AL_usdmaya_LayerSave", "Save Layer", "Save Layer", "USD/Layers/Save Layer", false);
+    saveLayer.addListOption("l", "Layer to Save", (AL::maya::utils::GenerateListFn)buildEditedLayersList, /*isMandatory=*/true);
+    saveLayer.addFilePathOption("f", "USD File Path", AL::maya::utils::CommandGuiHelper::kSave, "USDA files (*.usda) (*.usda);;USDC files (*.usdc) (*.usdc);;Alembic Files (*.abc) (*.abc);;All Files (*) (*)", AL::maya::utils::CommandGuiHelper::kStringMustHaveValue);
   }
 
   {
-    maya::CommandGuiHelper createLayer("AL_usdmaya_LayerCreateLayer", "Create Layer on current layer", "Create", "USD/Layers/Create Sub Layer", false);
+    AL::maya::utils::CommandGuiHelper createLayer("AL_usdmaya_LayerCreateLayer", "Create Layer on current layer", "Create", "USD/Layers/Create Sub Layer", false);
     createLayer.addExecuteText(" -s ");
-    createLayer.addFilePathOption("open", "Find or Open Existing Layer", maya::CommandGuiHelper::kLoad, "USD files (*.usd*) (*.usd*);; Alembic Files (*.abc) (*.abc);;All Files (*) (*)", maya::CommandGuiHelper::kStringOptional);
+    createLayer.addFilePathOption("open", "Find or Open Existing Layer", AL::maya::utils::CommandGuiHelper::kLoad, "USD files (*.usd*) (*.usd*);; Alembic Files (*.abc) (*.abc);;All Files (*) (*)", AL::maya::utils::CommandGuiHelper::kStringOptional);
   }
 
   {
-    maya::CommandGuiHelper setEditTarget("AL_usdmaya_LayerCurrentEditTarget", "Set Current Edit Target", "Set", "USD/Layers/Set Current Edit Target", false);
+    AL::maya::utils::CommandGuiHelper setEditTarget("AL_usdmaya_LayerCurrentEditTarget", "Set Current Edit Target", "Set", "USD/Layers/Set Current Edit Target", false);
     // we build our layer list using identifiers, so make sure the command is told to expect identifiers
     setEditTarget.addExecuteText(" -fid ");
-    setEditTarget.addListOption("l", "USD Layer", (AL::maya::GenerateListFn)buildProxyLayersList);
+    setEditTarget.addListOption("l", "USD Layer", (AL::maya::utils::GenerateListFn)buildProxyLayersList);
   }
 }
+
+
 
 //----------------------------------------------------------------------------------------------------------------------
 // Documentation strings.

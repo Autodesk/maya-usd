@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/maya/FileTranslatorBase.h"
+#include "AL/maya/utils/FileTranslatorBase.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 
 namespace AL {
@@ -47,7 +47,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ImportTranslator, "AL usdmaya import", true, false, "*.
   /// \brief  provide a method to specify the import options
   /// \param  options a set of options that are constructed and later used for option parsing
   /// \return MS::kSuccess if ok
-  static MStatus specifyOptions(maya::FileTranslatorOptions& options)
+  static MStatus specifyOptions(AL::maya::utils::FileTranslatorOptions& options)
   {
     if(!options.addFrame("AL USD Importer Options")) return MS::kFailure;
       if(!options.addString(kParentPath, "")) return MS::kFailure;
@@ -59,7 +59,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ImportTranslator, "AL usdmaya import", true, false, "*.
   }
 
 private:
-  MStatus reader(const MFileObject& file, const maya::OptionsParser& options, FileAccessMode mode);
+  MStatus reader(const MFileObject& file, const AL::maya::utils::OptionsParser& options, FileAccessMode mode);
   ImporterParams m_params;
 
 AL_MAYA_TRANSLATOR_END();

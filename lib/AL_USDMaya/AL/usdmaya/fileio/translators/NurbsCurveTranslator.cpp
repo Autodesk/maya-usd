@@ -14,16 +14,22 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/fileio/ExportParams.h"
+#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/translators/NurbsCurveTranslator.h"
+#include "AL/maya/utils/NodeHelper.h"
 
 #include "maya/MDoubleArray.h"
+#include "maya/MFnDoubleArrayData.h"
 #include "maya/MDagPath.h"
 #include "maya/MFnNurbsCurve.h"
 #include "maya/MGlobal.h"
 #include "maya/MPointArray.h"
+#include "maya/MFnNumericAttribute.h"
+#include "maya/MFnFloatArrayData.h"
 
 #include "pxr/usd/usdGeom/nurbsCurves.h"
+#include "pxr/base/tf/debug.h"
 
 namespace AL {
 namespace usdmaya {
@@ -84,6 +90,7 @@ MObject NurbsCurveTranslator::createNode(const UsdPrim& from, MObject parent, co
 
   MPointArray controlVertices;
   MDoubleArray knotSequences;
+  MDoubleArray curveWidths;
 
   size_t currentPointIndex = 0;
   size_t currentKnotIndex = 0;
@@ -109,6 +116,55 @@ MObject NurbsCurveTranslator::createNode(const UsdPrim& from, MObject parent, co
     fnCurve.create(controlVertices, knotSequences, dataOrders[i] - 1, MFnNurbsCurve::kOpen, false, false, parent);
   }
 
+  if(UsdAttribute widthsAttr = xformSchema.GetWidthsAttr())
+  {
+    const char* name = nullptr;
+    if(params.m_useAnimalSchema)
+    {
+      // we currently use the 'width' attribute when trying to find the width value
+      name = "width";
+    }
+    else
+    {
+      name = widthsAttr.GetName().GetString().c_str();
+    }
+
+    const uint32_t flags =  AL::maya::utils::NodeHelper::kReadable |
+                            AL::maya::utils::NodeHelper::kWritable |
+                            AL::maya::utils::NodeHelper::kStorable |
+                            AL::maya::utils::NodeHelper::kDynamic;
+
+    VtArray<float> vt;
+    widthsAttr.Get(&vt);
+
+    if(vt.size() == 1)
+    {
+      float value = vt[0];
+      MObject objAttr;
+      AL::maya::utils::NodeHelper::addFloatAttr(fnCurve.object(), name, name, 0.f, flags, &objAttr);
+      if(!objAttr.isNull())
+      {
+        AL::usdmaya::utils::DgNodeHelper::setFloat(fnCurve.object(), objAttr, value);
+      }
+      else
+      {
+        std::cerr << "createNode:addFloatAttr returned an invalid object"<< std::endl;
+      }
+    }
+    else if(vt.size() > 1)
+    {
+      MObject objAttr = AL::maya::utils::NodeHelper::addFloatArrayAttr(fnCurve.object(), name, name, flags);
+      if(!objAttr.isNull())
+      {
+        AL::usdmaya::utils::DgNodeHelper::setFloatArray(fnCurve.object(), objAttr, vt);
+      }
+      else
+      {
+        std::cerr << "createNode:addFloatArrayAttr returned an invalid object"<< std::endl;
+      }
+    }
+  }
+
   MObject object = fnCurve.object();
   AL_MAYA_CHECK_ERROR_RETURN_NULL_MOBJECT(DagNodeTranslator::copyAttributes(from, object, params), "Failed to copy attributes");
 
@@ -120,6 +176,9 @@ UsdPrim NurbsCurveTranslator::exportObject(UsdStageRefPtr stage, MDagPath path, 
 {
   if(!params.m_nurbsCurves)
     return UsdPrim();
+
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::Starting to export Nurbs for path '%s'\n", usdPath.GetText());
+
   UsdGeomNurbsCurves nurbs = UsdGeomNurbsCurves::Define(stage, usdPath);
 
   MFnNurbsCurve fnCurve(path);
@@ -128,6 +187,7 @@ UsdPrim NurbsCurveTranslator::exportObject(UsdStageRefPtr stage, MDagPath path, 
   MDoubleArray knotSequences;
   fnCurve.getCVs(controlVertices);
   fnCurve.getKnots(knotSequences);
+
 
   VtArray<int32_t> dataCurveVertexCounts;
   VtArray<GfVec3f> dataPoints;
@@ -161,6 +221,51 @@ UsdPrim NurbsCurveTranslator::exportObject(UsdStageRefPtr stage, MDagPath path, 
   nurbs.GetOrderAttr().Set(dataOrders);
   nurbs.GetRangesAttr().Set(dataRanges);
   nurbs.GetKnotsAttr().Set(dataKnots);
+
+
+  MPlug widthPlug;
+  MObject width;
+  MFnDoubleArrayData fnDouble;
+
+  // Width of the NURB curve
+  if( fnCurve.hasAttribute("widths") )
+  {
+    widthPlug = fnCurve.findPlug("widths");
+    widthPlug.getValue(width);
+    fnDouble.setObject(width);
+  }
+  else if( fnCurve.hasAttribute("width") )
+  {
+    widthPlug = fnCurve.findPlug("width");
+    widthPlug.getValue(width);
+    fnDouble.setObject(width);
+  }
+  else
+  {
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::No width/s attribute found for path '%s' \n", usdPath.GetText());
+  }
+
+  if(!width.isNull() && !widthPlug.isNull())
+  {
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::Exporting width/s for path '%s' \n", usdPath.GetText());
+    VtArray<float> widths;
+
+    if(width.apiType() == MFn::kDoubleArrayData)
+    {
+      const uint32_t numElements = fnDouble.length();
+      widths.reserve(numElements);
+      for(uint32_t i = 0; i < numElements; ++i)
+      {
+        widths.push_back(fnDouble[i]);
+      }
+      nurbs.GetWidthsAttr().Set(widths);
+    }
+    else if(MFnNumericAttribute(width).unitType() == MFnNumericData::kDouble) // data can come in as a single value
+    {
+      widths.push_back(widthPlug.asFloat());
+      nurbs.GetWidthsAttr().Set(widths);
+    }
+  }
 
   return nurbs.GetPrim();
 }

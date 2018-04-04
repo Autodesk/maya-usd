@@ -13,9 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/CodeTimings.h"
-#include "AL/maya/DgNodeHelper.h"
-#include "AL/usdmaya/Utils.h"
+#include "AL/usdmaya/CodeTimings.h"
+
+#include "AL/usdmaya/utils/DgNodeHelper.h"
+#include "AL/usdmaya/utils/Utils.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/fileio/Import.h"
@@ -74,7 +75,7 @@ Import::~Import()
 //----------------------------------------------------------------------------------------------------------------------
 void Import::doImport()
 {
-  maya::Profiler::clearAll();
+  AL::usdmaya::Profiler::clearAll();
   AL_BEGIN_PROFILE_SECTION(doImport);
 
   translators::TranslatorContextPtr context = translators::TranslatorContext::create(nullptr);
@@ -137,14 +138,31 @@ void Import::doImport()
       const UsdPrim& prim = it.prim();
       // fallback in cases where either the node is NOT an assembly, or the attempt to load the
       // assembly failed.
+      bool parentUnmerged = false;
+      TfToken val;
+      if(prim.GetParent().GetMetadata(AL::usdmaya::Metadata::mergedTransform, &val))
+      {
+        parentUnmerged = (val == AL::usdmaya::Metadata::unmerged);
+      }
+
       {
         if(prim.GetTypeName() == "Mesh")
         {
           AL_BEGIN_PROFILE_SECTION(ImportingMesh);
-          MObject obj = createParentTransform(prim, it);
+          MObject obj;
+
+          if(!parentUnmerged)
+          {
+            obj = createParentTransform(prim, it);
+          }
+          else
+          {
+            obj = it.parent();
+          }
+
           if(m_params.m_meshes)
           {
-            MObject mesh = factory.createNode(prim, "mesh", obj);
+            MObject mesh = factory.createNode(prim, "mesh", obj, parentUnmerged);
             MFnTransform fnP(obj);
             fnP.addChild(mesh, MFnTransform::kNextPos, true);
           }
@@ -157,7 +175,7 @@ void Import::doImport()
           MObject obj = createParentTransform(prim, it);
           if(m_params.m_nurbsCurves)
           {
-            MObject mesh = factory.createNode(prim, "nurbsCurve", obj);
+            MObject mesh = factory.createNode(prim, "nurbsCurve", obj, parentUnmerged);
             MFnTransform fnP(obj);
             fnP.addChild(mesh, MFnTransform::kNextPos, true);
           }
@@ -196,8 +214,8 @@ void Import::doImport()
 
   std::stringstream strstr;
   strstr << "Breakdown for file: " << m_params.m_fileName << std::endl;
-  maya::Profiler::printReport(strstr);
-  MGlobal::displayInfo(convert(strstr.str()));
+  AL::usdmaya::Profiler::printReport(strstr);
+  MGlobal::displayInfo(AL::maya::utils::convert(strstr.str()));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -231,6 +249,11 @@ MStatus ImportCommand::doIt(const MArgList& args)
     {
       sl2.getDagPath(0, m_params.m_parentPath);
     }
+  }
+
+  if(argData.isFlagSet("-un", &status))
+  {
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("-un", 0, m_params.m_stageUnloaded), "ImportCommand: Unable to fetch \"unloaded\" argument")
   }
 
   if(argData.isFlagSet("-a", &status))
@@ -277,6 +300,7 @@ MSyntax ImportCommand::createSyntax()
   MSyntax syntax;
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-a", "-anim"), errorString);
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-f", "-file", MSyntax::kString), errorString);
+  AL_MAYA_CHECK_ERROR2(syntax.addFlag("-un", "-unloaded", MSyntax::kBoolean), errorString);
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-p", "-parent", MSyntax::kString), errorString);
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-da", "-dynamicAttribute", MSyntax::kBoolean), errorString);
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-m", "-meshes", MSyntax::kBoolean), errorString);

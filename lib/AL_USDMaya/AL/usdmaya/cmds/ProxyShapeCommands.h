@@ -80,6 +80,7 @@ class ProxyShapeImport
   MDagModifier m_modifier2;
   MObjectArray m_parentTransforms;
   MObject m_shape;
+  MString m_proxy_name;
 public:
   AL_MAYA_DECLARE_COMMAND();
 private:
@@ -225,6 +226,7 @@ private:
   MStatus doIt(const MArgList& args) override;
   MStatus undoIt() override;
   MStatus redoIt() override;
+  MStatus _redoIt(bool isInternal);
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -263,6 +265,29 @@ private:
   MStatus undoIt() override;
   MStatus redoIt() override;
 };
+
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  TranslatePrim
+/// \ingroup commands
+//----------------------------------------------------------------------------------------------------------------------
+class TranslatePrim
+  : public ProxyShapeCommandBase
+{
+  fileio::translators::TranslatorParameters tp;
+
+  nodes::ProxyShape* m_proxy;
+  SdfPathVector m_importPaths;
+  SdfPathVector m_teardownPaths;
+
+public:
+  AL_MAYA_DECLARE_COMMAND();
+private:
+  bool isUndoable() const override;
+  MStatus doIt(const MArgList& args) override;
+  MStatus redoIt() override;
+};
+
 
 /// \brief  This function will generate all of the MEL script menus, and the option boxes, for all of the proxy shape
 ///         commands.

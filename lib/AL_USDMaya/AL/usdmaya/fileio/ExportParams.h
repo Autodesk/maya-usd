@@ -14,10 +14,10 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
-
+#include <AL/usdmaya/ForwardDeclares.h>
 #include "maya/MSelectionList.h"
 #include "maya/MString.h"
+#include "AL/usd/utils/ForwardDeclares.h"
 
 namespace AL {
 namespace usdmaya {
@@ -42,6 +42,7 @@ struct ExporterParams
   bool m_selected = false; ///< are we exporting selected objects (true) or all objects (false)
   bool m_meshes = true; ///< if true, export meshes
   bool m_meshUV = false; ///< if true, export a scene hierarchy with all empty prims marked "over", only meshes UV will be filled in.
+  bool m_meshNormals = false; ///< if true normal vectors will be exported
   bool m_leftHandedUV = false; ///< if true, UV indices retrieved from Maya will be adjusted to left-handed orientation, it only works with m_meshUV.
   bool m_nurbsCurves = true; ///< if true export nurbs curves
   bool m_dynamicAttributes = true; ///< if true export any dynamic attributes found on the nodes we are exporting
@@ -52,6 +53,7 @@ struct ExporterParams
   bool m_filterSample = false; ///< if true, duplicate sample of attribute will be filtered out
   bool m_useAnimalSchema = (USE_AL_DEFAULT) ? true : false; ///< if true, the data exported will be designed to fit with Animal Logics internal needs. If false, the original pxr schema will be used.
   AnimationTranslator* m_animTranslator = 0; ///< the animation translator to help exporting the animation data
+  bool m_extensiveAnimationCheck = true; ///< if true, extensive animation check will be performed on transform nodes.
 };
 
 //----------------------------------------------------------------------------------------------------------------------

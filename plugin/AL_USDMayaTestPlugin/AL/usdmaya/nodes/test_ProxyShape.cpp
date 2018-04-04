@@ -18,6 +18,8 @@
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/StageCache.h"
+#include "AL/usdmaya/fileio/translators/TranslatorContext.h"
+
 #include "maya/MFnTransform.h"
 #include "maya/MSelectionList.h"
 #include "maya/MGlobal.h"
@@ -25,6 +27,7 @@
 #include "maya/MDagModifier.h"
 #include "maya/MFileIO.h"
 #include "maya/MStringArray.h"
+#include "maya/MCommonSystemUtils.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/usd/attribute.h"
@@ -32,6 +35,9 @@
 #include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
+
+#include <iostream>
+#include <fstream>
 
 // UsdStageRefPtr ProxyShape::getUsdStage() const;
 // UsdPrim ProxyShape::getRootPrim()
@@ -103,6 +109,7 @@ TEST(ProxyShape, basicProxyShapeSetUp)
 
     stage->SetEditTarget(session);
 
+
     // lets grab a prim, and then modify it a bit (this should leave us with a modification in the session layer)
     UsdPrim rtoe1Prim = stage->GetPrimAtPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1"));
     EXPECT_TRUE(rtoe1Prim);
@@ -116,7 +123,7 @@ TEST(ProxyShape, basicProxyShapeSetUp)
     std::vector<UsdGeomXformOp> ordered;
     ordered.push_back(scaleOp);
     rtoe1Geom.SetXformOpOrder(ordered);
-
+    
     EXPECT_TRUE(session->ExportToString(&sessionLayerContents));
     EXPECT_FALSE(sessionLayerContents.empty());
 
@@ -141,7 +148,7 @@ TEST(ProxyShape, basicProxyShapeSetUp)
 
     {
       // please don't crash if I pass a valid layer, that isn't in any way involved in the composed stage
-      SdfLayerRefPtr temp = SdfLayer::CreateNew("hello_dave.usda");
+      SdfLayerRefPtr temp = SdfLayer::CreateNew("/tmp/AL_USDMayaTests_basicLayerSetup.usda");
       EXPECT_EQ(nullptr, layerManager->findLayer(temp->GetIdentifier()));
     }
 
@@ -152,11 +159,11 @@ TEST(ProxyShape, basicProxyShapeSetUp)
 
   // inspect the sdf layer cache to make sure that has been cleared!
   {
-    UsdStageCache& layerCache = AL::usdmaya::StageCache::Get(true);
+    UsdStageCache& layerCache = AL::usdmaya::StageCache::Get();
     EXPECT_EQ(size_t(0), layerCache.Size());
   }
   {
-    UsdStageCache& layerCache = AL::usdmaya::StageCache::Get(false);
+    UsdStageCache& layerCache = AL::usdmaya::StageCache::Get();
     EXPECT_EQ(size_t(0), layerCache.Size());
   }
 
@@ -1029,6 +1036,54 @@ TEST(ProxyShape, editTargetChangeAndSave)
   }
 }
 
+// Test translating a Mesh Prim via the command
+TEST(ManualTranslate, importMeshPrim)
+{
+  AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMesh();
+
+  AL::usdmaya::fileio::translators::TranslatorParameters param;
+  param.setForcePrimImport(true);
+
+  SdfPathVector importPaths;
+  SdfPath meshPath("/pSphere1");
+  importPaths.push_back(meshPath);
+  proxyShape->translatePrimPathsIntoMaya(importPaths, SdfPathVector(), param);
+
+  // Select the shape, if it's there, it worked
+  MObjectHandle translatedObject;
+  MStatus s = MGlobal::selectByName("pSphere1Shape");
+  ASSERT_TRUE( s.statusCode() == MStatus::kSuccess);
+}
+
+//// Test translating a Mesh Prim via the command
+TEST(ManualTranslate, roundtripMeshPrim)
+{
+  AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMesh();
+  SdfPath meshPath("/pSphere1");
+
+  AL::usdmaya::fileio::translators::TranslatorParameters tp;
+  tp.setForcePrimImport(true);
+
+  // Import Mesh, test that it actually got imported
+  SdfPathVector importPaths;
+  importPaths.push_back(meshPath);
+  proxyShape->translatePrimPathsIntoMaya(importPaths, SdfPathVector(), tp);
+  MStatus s = MGlobal::selectByName("pSphere1Shape");
+  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+
+  // Tear down Mesh
+  SdfPathVector teardownPaths;
+  teardownPaths.push_back(meshPath);
+  proxyShape->translatePrimPathsIntoMaya(SdfPathVector(), teardownPaths, tp);
+  s = MGlobal::selectByName("pSphere1Shape");
+  ASSERT_FALSE(s.statusCode() == MStatus::kSuccess);
+
+  // Import Mesh, test that it actually got imported
+  proxyShape->translatePrimPathsIntoMaya(importPaths, SdfPathVector(), tp);
+  s = MGlobal::selectByName("pSphere1Shape");
+  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+}
+
 // void destroyTransformReferences()
 TEST(ProxyShape, destroyTransformReferences)
 {
@@ -1077,6 +1132,106 @@ TEST(ProxyShape, selectedPaths)
 TEST(ProxyShape, findExcludedGeometry)
 {
   AL_USDMAYA_UNTESTED;
+}
+
+
+namespace
+{
+
+bool prepareBootstrapUSDA(MString &dirString, MString &bootstrapFullPath)
+{
+  dirString = "/tmp/usdMayaEmptyScene";
+
+  MStatus stats = MCommonSystemUtils::makeDirectory(dirString);
+  if(!stats)
+    return false;
+
+  constexpr char content[] = "#usda 1.0";
+  bootstrapFullPath = (dirString + "/bootstrap.usda");
+
+  std::ofstream fileObj;
+  fileObj.open(bootstrapFullPath.asChar(), std::ios::out);
+  if (fileObj.is_open())
+  {
+    fileObj << content;
+    fileObj.close();
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+void checkStageAndRootLayer(UsdStageRefPtr stage, const MString &expectedPath)
+{
+  ASSERT_TRUE(stage);
+
+  SdfLayerHandle root = stage->GetRootLayer();
+  EXPECT_TRUE(root);
+
+  // make sure path is correct
+  EXPECT_EQ(root->GetRealPath(), expectedPath.asChar());
+}
+}
+
+
+// void resolveRelativePathWithinMayaContext();
+TEST(ProxyShape, relativePathSupport)
+{
+  MString tempDirString, bootstrapFullPath;
+  EXPECT_TRUE(prepareBootstrapUSDA(tempDirString, bootstrapFullPath));
+
+
+  // Test the relative USD bootstrap file path support:
+  MFileIO::newFile(true);
+  MStatus status;
+
+  MFnDagNode fn;
+  MObject xform = fn.create("transform");
+  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+
+  // Test it right away:
+  AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+  // force the stage to load
+  proxy->filePathPlug().setString("./bootstrap.usda");
+
+  // Before testing we need to save the maya scene first, since the relative path is resolved
+  // primarily with current maya scene directory.
+  MString mayaFileName = tempDirString + "/emptyscene.ma";
+  EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs(mayaFileName, NULL, true));
+
+
+  // Now, reopen maya scene and test again:
+  MFileIO::newFile(true);
+  MFileIO::open(mayaFileName, NULL, true);
+
+  UsdStageCache &cache = AL::usdmaya::StageCache::Get();
+  std::vector<UsdStageRefPtr> stages = cache.GetAllStages();
+  EXPECT_TRUE(not stages.empty());
+
+  auto stage = stages[0];
+  checkStageAndRootLayer(stage, bootstrapFullPath);
+
+
+  // If the proxy shape is not referenced, the relative file path will be resolved using the referenced
+  // maya scene directory:
+  MFileIO::newFile(true);
+  EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::reference(mayaFileName, false, false, "ref"));
+
+  MString outerFileName = "/tmp/usdMayaTestRefEmptyScene.ma";
+  EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs(outerFileName, NULL, true));
+
+  // Now, reopen maya scene and test again:
+  MFileIO::newFile(true);
+  MFileIO::open(outerFileName, NULL, true);
+
+  cache = AL::usdmaya::StageCache::Get();
+  stages = cache.GetAllStages();
+  EXPECT_TRUE(not stages.empty());
+
+  stage = stages[0];
+  checkStageAndRootLayer(stage, bootstrapFullPath);
 }
 
 //

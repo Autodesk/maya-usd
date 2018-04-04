@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #pragma once
+#include "AL/maya/utils/MayaHelperMacros.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
 

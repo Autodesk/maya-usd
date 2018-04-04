@@ -14,9 +14,8 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
-
 #include "pxr/pxr.h"
+#include "AL/usdmaya/utils/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -61,6 +60,9 @@ enum class UsdDataType : uint32_t
   kToken,
   kAsset,
   kFrame4d,
+  kColor3h,
+  kColor3f,
+  kColor3d,
   kUnknown
 };
 

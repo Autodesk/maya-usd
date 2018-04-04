@@ -14,7 +14,7 @@ Run the following commands in Maya's script editor with the AL_USDMaya plugin lo
 
 Create a proxy shape pointing to our test file
 ```
-cmds.AL_usdmaya_ProxyShapeImport(file="<PATH_TO_ASSETS_FOLDER?/selectable_world.usda")
+cmds.AL_usdmaya_ProxyShapeImport(file="<PATH_TO_ASSETS_FOLDER_IN_THIS_DIRECTORY>/selectable_world.usda")
 ```
 
 You should notice that the Sphere and the Cone are selectable, but the Cube and the Cylinder can't be selected.
@@ -23,7 +23,7 @@ You should notice that the Sphere and the Cone are selectable, but the Cube and 
 
 ***
 
-Now lets change the the selectability of the Cube so it and it's child can be selectable.
+Now lets change the selectability of the Cube so it and it's child can be selectable.
 
 ```
 from AL import usdmaya

@@ -18,13 +18,15 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/StageCache.h"
-#include "AL/usdmaya/Utils.h"
+#include "AL/maya/utils/Utils.h"
+
 #include "pxr/base/tf/stringUtils.h"
 #include "maya/MFnTransform.h"
 #include "maya/MSelectionList.h"
 #include "maya/MGlobal.h"
 #include "maya/MItDependencyNodes.h"
 #include "maya/MFileIO.h"
+#include "maya/MUuid.h"
 
 #include <functional>
 
@@ -248,9 +250,9 @@ over "root" {
   MFileIO::newFile(true);
   {
     MString importCmd;
-    importCmd.format(MString("AL_usdmaya_ProxyShapeImport -file \"^1s\""), AL::usdmaya::convert(temp_path));
+    importCmd.format(MString("AL_usdmaya_ProxyShapeImport -file \"^1s\""), AL::maya::utils::convert(temp_path));
     MGlobal::executeCommand(importCmd);
-    MGlobal::executeCommand("AL_usdmaya_ProxyShapeImportAllTransforms AL_usdmaya_ProxyShape1;");
+    MGlobal::executeCommand("AL_usdmaya_ProxyShapeImportAllTransforms AL_usdmaya_Proxy;");
 
     MSelectionList sel;
     sel.add("root");
@@ -274,9 +276,9 @@ over "root" {
      std::string encodedString1 = TfStringReplace(SESSION_LAYER_CONTENTS, "\"", "\\\"");
      std::string encodedString2 = TfStringReplace(encodedString1, "\n", "\\n");
      importCmd.format(MString("AL_usdmaya_ProxyShapeImport -file \"^1s\" -s \"^2s\""),
-         AL::usdmaya::convert(temp_path), AL::usdmaya::convert(encodedString2));
+         AL::maya::utils::convert(temp_path), AL::maya::utils::convert(encodedString2));
      MGlobal::executeCommand(importCmd);
-     MGlobal::executeCommand("AL_usdmaya_ProxyShapeImportAllTransforms AL_usdmaya_ProxyShape1;");
+     MGlobal::executeCommand("AL_usdmaya_ProxyShapeImportAllTransforms AL_usdmaya_Proxy;");
 
      MSelectionList sel;
      sel.add("root");

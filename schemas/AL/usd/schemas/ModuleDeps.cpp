@@ -10,6 +10,7 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
     std::vector<TfToken> reqs;
     reqs.reserve(1);
     reqs.push_back(TfToken("usd"));
+    reqs.push_back(TfToken("usdGeom"));
     TfScriptModuleLoader::GetInstance().
         RegisterLibrary(TfToken("AL_USDMayaSchemas"), TfToken("AL.usd.schemas.opensource"), reqs);
 }

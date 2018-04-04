@@ -14,12 +14,12 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
-#include "AL/maya/NodeHelper.h"
+#include "AL/maya/utils/NodeHelper.h"
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
 
 #include "maya/MPxLocatorNode.h"
+#include "AL/maya/utils/MayaHelperMacros.h"
 
 #include <map>
 #include <set>
@@ -91,7 +91,7 @@ private:
 //----------------------------------------------------------------------------------------------------------------------
 class LayerManager
   : public MPxNode,
-    public maya::NodeHelper
+    public AL::maya::utils::NodeHelper
 {
 public:
 

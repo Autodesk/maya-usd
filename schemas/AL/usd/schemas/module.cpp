@@ -8,4 +8,5 @@ TF_WRAP_MODULE
     TF_WRAP(AL_usd_MayaReference);
     TF_WRAP(AL_usd_HostDrivenTransformInfo);
     TF_WRAP(AL_usd_ModelAPI);
+    TF_WRAP(AL_usd_Mesh);
 }

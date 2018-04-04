@@ -11,7 +11,7 @@ boiler plate aspects of the Maya API. These include:
 \li \b MPxFileTranslator : automatic generation of export / import GUIs, and option parsing
 \li \b Menus
 
-\section almaya_commandgui AL::maya::CommandGuiHelper
+\section almaya_commandgui AL::maya::utils::CommandGuiHelper
 
 Typically within Maya most MEL commands end up being exposed to the user via a fairly standard pattern, where by you have a menu item
 on a menu somewhere, along with an option box that allows you to configure some preferences that are stored between Maya sessions.
@@ -27,13 +27,13 @@ them.
     //   * "Import" as a text label on the OK button
     //   * A menu item called "Import" found under the USD/Proxy Shape/ menu
     //
-    maya::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImport", "Proxy Shape Import", "Import", "USD/Proxy Shape/Import", true);
+    AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImport", "Proxy Shape Import", "Import", "USD/Proxy Shape/Import", true);
 
     // and now we need to add GUI items for each of the flags to the actual command
-    commandGui.addFilePathOption("file", "File Path", maya::CommandGuiHelper::kLoad, "USD Ascii (*.usd) (*.usd)", maya::CommandGuiHelper::kStringMustHaveValue);
-    commandGui.addStringOption("primPath", "USD Prim Path", "", false, maya::CommandGuiHelper::kStringOptional);
-    commandGui.addStringOption("excludePrimPath", "Exclude Prim Path", "", false, maya::CommandGuiHelper::kStringOptional);
-    commandGui.addStringOption("name", "Proxy Shape Node Name", "", false, maya::CommandGuiHelper::kStringOptional);
+    commandGui.addFilePathOption("file", "File Path", AL::maya::utils::CommandGuiHelper::kLoad, "USD Ascii (*.usd) (*.usd)", AL::maya::utils::CommandGuiHelper::kStringMustHaveValue);
+    commandGui.addStringOption("primPath", "USD Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
+    commandGui.addStringOption("excludePrimPath", "Exclude Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
+    commandGui.addStringOption("name", "Proxy Shape Node Name", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
     commandGui.addBoolOption("connectToTime", "Connect to Time", true, true);
     commandGui.addBoolOption("unloaded", "Opens the layer with payloads unloaded.", false, true);
 \endcode

@@ -16,8 +16,8 @@
 #pragma once
 
 #include "maya/MFnReference.h"
-#include "AL/usdmaya/Common.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
+#include "AL/usdmaya/utils/ForwardDeclares.h"
 
 IGNORE_USD_WARNINGS_PUSH
 #include "pxr/usd/usd/stage.h"
@@ -34,7 +34,8 @@ namespace translators {
 class MayaReferenceLogic
 {
 public:
-  MStatus LoadMayaReference(const UsdPrim& prim, MObject& parent) const;
+
+  MStatus LoadMayaReference(const UsdPrim& prim, MObject& parent, TranslatorContextPtr context) const;
   MStatus UnloadMayaReference(MObject& parent) const;
   MStatus update(const UsdPrim& prim, MObject parent, MObject refNode=MObject::kNullObj) const;
 

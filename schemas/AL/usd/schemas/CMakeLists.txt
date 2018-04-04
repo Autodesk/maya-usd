@@ -39,7 +39,6 @@ configure_file (
 execute_process(
     COMMAND
         usdGenSchema
-            -v
             ${CMAKE_CURRENT_BINARY_DIR}/schema.usda
             .
     WORKING_DIRECTORY
@@ -47,7 +46,6 @@ execute_process(
     RESULT_VARIABLE
         usdgen_res
 )
-
 if(usdgen_res)
     message(FATAL_ERROR "Schemas generation failed")
 endif()

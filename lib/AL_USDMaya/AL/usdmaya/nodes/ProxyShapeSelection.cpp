@@ -17,7 +17,6 @@
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "AL/usdmaya/TypeIDs.h"
-#include "AL/usdmaya/Utils.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/DebugCodes.h"
 
@@ -26,6 +25,7 @@
 
 #include <set>
 #include <algorithm>
+#include "AL/usdmaya/utils/Utils.h"
 
 
 namespace AL {
@@ -266,6 +266,8 @@ inline bool ProxyShape::TransformReference::decRef(const TransformReason reason)
     assert(0);
     break;
   }
+
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::decRefEnd %lu %lu %lu\n", m_selected, m_refCount, m_required);
   return !m_required && !m_selected && !m_refCount;
 }
 
@@ -280,6 +282,8 @@ inline void ProxyShape::TransformReference::incRef(const TransformReason reason)
   case kRequired: ++m_required; break;
   default: assert(0); break;
   }
+
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::incRefEnd %lu %lu %lu\n", m_selected, m_refCount, m_required);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -444,7 +448,7 @@ MObject ProxyShape::makeUsdTransformChain(
     uint32_t* createCount,
     MString* resultingPath)
 {
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChainB %s\n", usdPrim.GetPath().GetText());
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChain %s\n", usdPrim.GetPath().GetText());
 
   SdfPath path = usdPrim.GetPath();
   auto iter = m_requiredPaths.find(path);
@@ -544,7 +548,7 @@ MObject ProxyShape::makeUsdTransformChain(
   bool hasMetadata = usdPrim.GetMetadata(Metadata::transformType, &transformType);
   if(hasMetadata && !transformType.empty())
   {
-    node = modifier.createNode(convert(transformType), parentNode);
+    node = modifier.createNode(AL::maya::utils::convert(transformType), parentNode);
     isTransform = false;
     isUsdTransform = false;
     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::makeUsdTransformChain created transformType=%s name=%s\n", transformType.c_str(), usdPrim.GetName().GetText());
@@ -556,7 +560,7 @@ MObject ProxyShape::makeUsdTransformChain(
   }
 
   fn.setObject(node);
-  fn.setName(convert(usdPrim.GetName().GetString()));
+  fn.setName(AL::maya::utils::convert(usdPrim.GetName().GetString()));
 
   //Retrieve the proxy shapes transform path which will be used in the UsdPrim->MayaNode mapping in the case where there is delayed node creation.
   MFnDagNode shapeFn(thisMObject());
@@ -564,9 +568,9 @@ MObject ProxyShape::makeUsdTransformChain(
   MDagPath mayaPath;
   MDagPath::getAPathTo(shapeParent, mayaPath);
   if(resultingPath)
-    *resultingPath = mapUsdPrimToMayaNode(usdPrim, node, &mayaPath);
+    *resultingPath = AL::usdmaya::utils::mapUsdPrimToMayaNode(usdPrim, node, &mayaPath);
   else
-    mapUsdPrimToMayaNode(usdPrim, node, &mayaPath);
+    AL::usdmaya::utils::mapUsdPrimToMayaNode(usdPrim, node, &mayaPath);
 
   if(isUsdTransform)
   {
@@ -643,7 +647,7 @@ void ProxyShape::makeUsdTransformsInternal(const UsdPrim& usdPrim, const MObject
       UsdPrim prim = *it;
       MObject node = modifier.createNode(Transform::kTypeId, parentNode);
       fn.setObject(node);
-      fn.setName(convert(prim.GetName().GetString()));
+      fn.setName(AL::maya::utils::convert(prim.GetName().GetString()));
       Transform* ptrNode = (Transform*)fn.userNode();
       MPlug inStageData = ptrNode->inStageDataPlug();
       MPlug inTime = ptrNode->timePlug();
@@ -713,9 +717,10 @@ void ProxyShape::removeUsdTransformChain(
 {
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeUsdTransformChain\n");
   SdfPath parentPrim = path;
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::removeUsdTransformChain %s\n", path.GetText());
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::removeUsdTransformChain %s\n", path.GetText());
   MObject parentTM = MObject::kNullObj;
   MObject object = MObject::kNullObj;
+
   while(!parentPrim.IsEmpty())
   {
     auto it = m_requiredPaths.find(parentPrim);
@@ -723,14 +728,22 @@ void ProxyShape::removeUsdTransformChain(
     {
       return;
     }
+
     if(it->second.decRef(reason))
     {
       MObject object = it->second.node();
       if(object != MObject::kNullObj)
       {
-        modifier.reparentNode(object);
-        modifier.deleteNode(object);
+        MObjectHandle h = object;
+
+        // The Xform of the shape may have already been deleted when the shape was deleted
+        if(h.isAlive() && h.isValid())
+        {
+          modifier.reparentNode(object);
+          modifier.deleteNode(object);
+        }
       }
+
       m_currentLockedPrims.erase(parentPrim);
       m_requiredPaths.erase(it);
     }

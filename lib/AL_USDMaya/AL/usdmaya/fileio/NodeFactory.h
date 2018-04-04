@@ -14,9 +14,13 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
+#include <AL/usdmaya/ForwardDeclares.h>
 #include <string>
 #include <unordered_map>
+#include "AL/maya/utils/ForwardDeclares.h"
+#include "AL/usd/utils/ForwardDeclares.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
 namespace usdmaya {
@@ -39,7 +43,7 @@ struct NodeFactory
   /// \param  from the prim we are copying the data from
   /// \param  nodeType can be one of "transform", "mesh", "nurbsCurve", or "camera".
   /// \param  parent the parent transform for the Maya data
-  MObject createNode(const UsdPrim& from, const char* const nodeType, MObject parent);
+  MObject createNode(const UsdPrim& from, const char* const nodeType, MObject parent, bool parentUnmerged = false);
 
   /// \brief  Some of the translators rely on import settings specified in the import params. Prior to use of this factory,
   ///         you should set the import params for it to use.
@@ -68,4 +72,3 @@ void freeNodeFactory();
 } // usdmaya
 } // AL
 //----------------------------------------------------------------------------------------------------------------------
-

@@ -112,6 +112,16 @@ public:
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
+    /// Mark this schema class as applied to the prim at \p path in the 
+    /// current EditTarget. This information is stored in the apiSchemas
+    /// metadata on prims.  
+    ///
+    /// \sa UsdPrim::GetAppliedSchemas()
+    ///
+    AL_USDMAYASCHEMAS_API
+    static AL_usd_ModelAPI 
+    Apply(const UsdStagePtr &stage, const SdfPath &path);
+
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;

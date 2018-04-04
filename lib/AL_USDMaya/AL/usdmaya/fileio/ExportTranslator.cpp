@@ -30,7 +30,7 @@ namespace usdmaya {
 namespace fileio {
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus ExportTranslator::writer(const MFileObject& file, const maya::OptionsParser& options, FileAccessMode mode)
+MStatus ExportTranslator::writer(const MFileObject& file, const AL::maya::utils::OptionsParser& options, FileAccessMode mode)
 {
   static const std::unordered_set<std::string> ignoredNodes
   {
@@ -44,6 +44,7 @@ MStatus ExportTranslator::writer(const MFileObject& file, const maya::OptionsPar
   params.m_dynamicAttributes = options.getBool(kDynamicAttributes);
   params.m_duplicateInstances = options.getBool(kDuplicateInstances);
   params.m_meshes = options.getBool(kMeshes);
+  params.m_meshNormals = options.getBool(kMeshNormals);
   params.m_nurbsCurves = options.getBool(kNurbsCurves);
   params.m_useAnimalSchema = options.getBool(kUseAnimalSchema);
   params.m_mergeTransforms = options.getBool(kMergeTransforms);

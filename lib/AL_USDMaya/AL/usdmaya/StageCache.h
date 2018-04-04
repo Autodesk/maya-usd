@@ -16,27 +16,25 @@
 #pragma once
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stageCache.h"
-
-#include "AL/maya/MayaEventManager.h"
+#include "AL/maya/event/MayaEventManager.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
 namespace usdmaya {
 
-/// \brief  Maintains a cache of all active stages within maya
+/// \brief  Maintains a cache of all active stages within the current process.
+///         It's really just a wrapper around USDUtilsStageCache with some extra callback handling
 /// \ingroup usdmaya
 class StageCache
 {
 public:
 
   /// \brief  Return the singleton stage cache for use by all USD clients within Maya.
-  ///         2 stage caches are maintained; 1 for stages that have been
-  ///         force-populated, and 1 for stages that have not been force-populated.
-  /// \param  forcePopulate determine which cache to return
   /// \return the cache requested
   /// \todo we need to offer a way of mapping from a specific ProxyShape to a specific stage
-  static UsdStageCache& Get(bool forcePopulate = true);
+  static UsdStageCache& Get();
+
 
   /// \brief  Clear the cache
   static void Clear();
@@ -44,8 +42,8 @@ public:
   /// \brief  deletes the callbacks constructed to manage the stage cache
   static void removeCallbacks();
 private:
-  static maya::CallbackId g_beforeNewCallbackId;
-  static maya::CallbackId g_beforeLoadCallbackId;
+  static AL::event::CallbackId g_beforeNewCallbackId;
+  static AL::event::CallbackId g_beforeLoadCallbackId;
 };
 
 } // usdmaya

@@ -15,7 +15,7 @@
 //
 #include "test_usdmaya.h"
 
-#include "AL/maya/NodeHelper.h"
+#include "AL/maya/utils/NodeHelper.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
 
@@ -50,7 +50,7 @@
 using AL::usdmaya::fileio::ImporterParams;
 using AL::usdmaya::fileio::ExporterParams;
 using AL::usdmaya::fileio::translators::DgNodeTranslator;
-using AL::maya::NodeHelper;
+using AL::maya::utils::NodeHelper;
 
 namespace {
 
@@ -120,21 +120,21 @@ MObject findAttribute(const char* name)
 /// \brief  A set of bit flags you can apply to an attribute
 enum AttributeFlags
 {
-  kCached = AL::maya::NodeHelper::kCached,
-  kReadable = AL::maya::NodeHelper::kReadable,
-  kWritable = AL::maya::NodeHelper::kWritable,
-  kStorable = AL::maya::NodeHelper::kStorable,
-  kAffectsAppearance = AL::maya::NodeHelper::kAffectsAppearance,
-  kKeyable = AL::maya::NodeHelper::kKeyable,
-  kConnectable = AL::maya::NodeHelper::kConnectable,
-  kArray = AL::maya::NodeHelper::kArray,
-  kColour = AL::maya::NodeHelper::kColour,
-  kHidden = AL::maya::NodeHelper::kHidden,
-  kInternal = AL::maya::NodeHelper::kInternal,
-  kAffectsWorldSpace = AL::maya::NodeHelper::kAffectsWorldSpace,
-  kUsesArrayDataBuilder = AL::maya::NodeHelper::kUsesArrayDataBuilder,
-  kDontAddToNode = AL::maya::NodeHelper::kDontAddToNode,
-  kDynamic = AL::maya::NodeHelper::kDynamic
+  kCached = NodeHelper::kCached,
+  kReadable = NodeHelper::kReadable,
+  kWritable = NodeHelper::kWritable,
+  kStorable = NodeHelper::kStorable,
+  kAffectsAppearance = NodeHelper::kAffectsAppearance,
+  kKeyable = NodeHelper::kKeyable,
+  kConnectable = NodeHelper::kConnectable,
+  kArray = NodeHelper::kArray,
+  kColour = NodeHelper::kColour,
+  kHidden = NodeHelper::kHidden,
+  kInternal = NodeHelper::kInternal,
+  kAffectsWorldSpace = NodeHelper::kAffectsWorldSpace,
+  kUsesArrayDataBuilder = NodeHelper::kUsesArrayDataBuilder,
+  kDontAddToNode = NodeHelper::kDontAddToNode,
+  kDynamic = NodeHelper::kDynamic
 };
 
 }

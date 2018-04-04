@@ -19,16 +19,9 @@
 #include <boost/python/def.hpp>
 #include <boost/python.hpp>
 
-#include "AL/usdmaya/Utils.h"
-
 #include "maya/MStringArray.h"
 
 #include <memory>
-
-//using namespace std;
-//using namespace boost::python;
-//using namespace boost;
-
 
 using AL::usdmaya::nodes::LayerManager;
 using boost::python::reference_existing_object;

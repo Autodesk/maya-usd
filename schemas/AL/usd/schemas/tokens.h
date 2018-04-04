@@ -86,6 +86,14 @@ struct AL_USDMayaSchemasTokensType {
     /// 
     /// AL_usd_MayaReference
     const TfToken mayaReference;
+    /// \brief "al_usdmaya_mergedTransform"
+    /// 
+    /// State which makes the prim merged
+    const TfToken mergedTransform;
+    /// \brief "unmerged"
+    /// 
+    /// State which makes the prim unmerged
+    const TfToken mergedTransform_unmerged;
     /// \brief "al_usdmaya_selectability"
     /// 
     /// Stores the state of the prims selectability

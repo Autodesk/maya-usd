@@ -15,10 +15,11 @@
 //
 #include "test_usdmaya.h"
 
-#include "AL/maya/NodeHelper.h"
+#include "AL/maya/utils/NodeHelper.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/translators/MeshTranslator.h"
-
+#include "AL/usdmaya/fileio/translators/DagNodeTranslator.h"
+#include "AL/usdmaya/utils/MeshUtils.h"
 
 using namespace AL::usdmaya::fileio::translators;
 //----------------------------------------------------------------------------------------------------------------------
@@ -34,7 +35,8 @@ TEST(translators_MeshTranslator, convert3DArrayTo4DArray)
   {
     input[i] = float(i);
   }
-  convert3DArrayTo4DArray(input.data(), output.data(), 39);
+
+  AL::usdmaya::utils::convert3DArrayTo4DArray(input.data(), output.data(), 39);
   for(uint32_t i = 0, j = 0; i < 39 * 3; i += 3, j += 4)
   {
     EXPECT_NEAR(input[i], output[j], 1e-5f);
@@ -54,7 +56,8 @@ TEST(translators_MeshTranslator, convertFloatVec3ArrayToDoubleVec3Array)
   {
     input[i] = float(i);
   }
-  convertFloatVec3ArrayToDoubleVec3Array(input.data(), output.data(), 39);
+
+  AL::usdmaya::utils::convertFloatVec3ArrayToDoubleVec3Array(input.data(), output.data(), 39);
   for(uint32_t i = 0; i < 39 * 3; i += 3)
   {
     EXPECT_NEAR(input[i], output[i], 1e-5f);
@@ -74,7 +77,7 @@ TEST(translators_MeshTranslator, zipunzipUVs)
     v.push_back(f + 1.0f);
   }
 
-  zipUVs(u.data(), v.data(), uv.data(), u.size());
+  AL::usdmaya::utils::zipUVs(u.data(), v.data(), uv.data(), u.size());
 
   f = 0;
   for(uint32_t i = 0; i < 78; i += 2, f += 2.0f)
@@ -84,7 +87,7 @@ TEST(translators_MeshTranslator, zipunzipUVs)
   }
 
   std::vector<float> u2(39), v2(39);
-  unzipUVs(uv.data(), u2.data(), v2.data(), u.size());
+  AL::usdmaya::utils::unzipUVs(uv.data(), u2.data(), v2.data(), u.size());
 
   for(uint32_t i = 0; i < 39; i++)
   {
@@ -106,7 +109,7 @@ TEST(translators_MeshTranslator, interleaveIndexedUvData)
     indices[i] = 38 - i;
   }
 
-  interleaveIndexedUvData(output.data(), u.data(), v.data(), indices.data(), numIndices);
+  AL::usdmaya::utils::interleaveIndexedUvData(output.data(), u.data(), v.data(), indices.data(), numIndices);
 
   for(uint32_t i = 0; i < 78; ++i)
   {
@@ -120,20 +123,21 @@ TEST(translators_MeshTranslator, isUvSetDataSparse)
   std::vector<int32_t> uvCounts;
   uvCounts.resize(35, 1);
 
-  EXPECT_TRUE(!isUvSetDataSparse(uvCounts.data(), uvCounts.size()));
+
+  EXPECT_TRUE(!AL::usdmaya::utils::isUvSetDataSparse(uvCounts.data(), uvCounts.size()));
 
   uvCounts[4] = 0;
-  EXPECT_TRUE(isUvSetDataSparse(uvCounts.data(), uvCounts.size()));
+  EXPECT_TRUE(AL::usdmaya::utils::isUvSetDataSparse(uvCounts.data(), uvCounts.size()));
   uvCounts[4] = 1;
   uvCounts[33] = 0;
 
-  EXPECT_TRUE(isUvSetDataSparse(uvCounts.data(), uvCounts.size()));
+  EXPECT_TRUE(AL::usdmaya::utils::isUvSetDataSparse(uvCounts.data(), uvCounts.size()));
 }
 
 TEST(translators_MeshTranslator, generateIncrementingIndices)
 {
   MIntArray indices;
-  generateIncrementingIndices(indices, 39);
+  AL::usdmaya::utils::generateIncrementingIndices(indices, 39);
 
   for(int32_t i = 0; i < 39; ++i)
   {

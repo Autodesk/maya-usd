@@ -2,29 +2,18 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(AL_USDMaya)
 
-# AL_USDMAYA uses pxrConfig.cmake exported targets
-# Grab USD_CONFIG_FILE either as a cmake define or an environment variable
-if(NOT USD_CONFIG_FILE)
-    if(NOT DEFINED ENV{USD_CONFIG_FILE})
-        message(FATAL_ERROR "Please set USD_CONFIG_FILE to the path to pxrConfig.cmake")
-    else()
-        set(USD_CONFIG_FILE $ENV{USD_CONFIG_FILE})
-    endif()
-endif()
-if(NOT EXISTS ${USD_CONFIG_FILE})
-    message( FATAL_ERROR "pxrConfig.cmake is needed, please set USD_CONFIG_FILE to a valid path")
-else()
-    include(${USD_CONFIG_FILE})
-endif()
-
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules")
-
 #set cmake modules - ";" separated not ":"!
 list(APPEND CMAKE_MODULE_PATH
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules
 )
+
+# AL_USDMAYA uses pxrConfig.cmake exported targets
+# find_package(USD) can use either ${USD_ROOT}, or ${USD_CONFIG_FILE} (which should be ${USD_ROOT}/pxrConfig.cmake)
+# to find USD, defined as either Cmake var or env var
+find_package(USD REQUIRED)
+include(${USD_CONFIG_FILE})
 
 # to get PYTHON_EXECUTABLE
 find_package(PythonInterp)
@@ -36,6 +25,7 @@ include(CXXDefaults)
 add_definitions(${_PXR_CXX_DEFINITIONS})
 
 find_package(Maya REQUIRED)
+
 include_directories(${MAYA_INCLUDE_DIRS})
 
 if(${MAYA_API_VERSION} STRGREATER 2017)
@@ -75,8 +65,20 @@ set(AL_USDMAYA_LOCATION_NAME
     "Name of the environment variable used to store AL_USDMaya installation location"
 )
 
+# Build all the utils
+set(EVENTS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/utils)
+set(USDUTILS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/usdutils)
+set(MAYAUTILS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/mayautils)
+set(USDMAYAUTILS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/usdmayautils)
+
+add_subdirectory(utils)
+add_subdirectory(usdutils)
+add_subdirectory(mayautils)
+add_subdirectory(usdmayautils)
+
 add_subdirectory(lib)
 add_subdirectory(plugin)
+
 if(BUILD_USDMAYA_SCHEMAS)
     message(STATUS "Building AL_USDMayaSchemas")
     set(SCHEMAS_PYTHON_MODULE AL.usd.maya.schemas)

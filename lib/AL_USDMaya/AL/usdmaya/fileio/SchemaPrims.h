@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 
@@ -23,6 +22,8 @@
 
 #include <unordered_set>
 #include <string>
+#include "AL/maya/utils/ForwardDeclares.h"
+#include "AL/usd/utils/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -41,6 +42,7 @@ extern const TfToken ALExcludedPrimSchema;
 /// \param  created the returned MObject of the created node (can be null)
 /// \param  context a custom context to use when importing the prim
 /// \param  translator the custom translator to use to import the prim
+/// \param  forceImport overrides the default import state of the translator and forces and import.
 /// \return true if the import succeeded, false otherwise
 /// \ingroup   fileio
 //----------------------------------------------------------------------------------------------------------------------
@@ -49,7 +51,8 @@ bool importSchemaPrim(
     MObject& parent,
     MObject* created = 0,
     translators::TranslatorContextPtr context = TfNullPtr,
-    const translators::TranslatorRefPtr translator = TfNullPtr);
+    const translators::TranslatorRefPtr translator = TfNullPtr,
+    const fileio::translators::TranslatorParameters& param = fileio::translators::TranslatorParameters());
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  utility function to determine whether the prim specified is of the given type
@@ -74,8 +77,8 @@ public:
 
   /// \brief  utility function to determine if a prim is one of our custom schema prims
   /// \param  prim the USD prim to test
-  /// \return return true if the prim is to be handled via custom translators
-  bool isSchemaPrim(const UsdPrim& prim);
+  /// \return the corresponding translator of the schema prim
+  fileio::translators::TranslatorRefPtr isSchemaPrim(const UsdPrim& prim);
 
   /// \brief  returns true if the prim specified requires a transform when importing custom nodes into the maya scene
   /// \param  prim the USD prim to check

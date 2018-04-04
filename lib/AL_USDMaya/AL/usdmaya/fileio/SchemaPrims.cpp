@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usdmaya/Utils.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/fileio/NodeFactory.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
@@ -35,6 +34,7 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/schemaBase.h"
+#include "AL/usdmaya/utils/Utils.h"
 
 namespace AL {
 namespace usdmaya {
@@ -90,18 +90,28 @@ bool isSchemaOfType(const UsdPrim& prim, const TfToken& typeToken)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool importSchemaPrim(  const UsdPrim& prim,
-                        MObject& parent,
-                        MObject* created,
-                        translators::TranslatorContextPtr context,
-                        const translators::TranslatorRefPtr torBase)
+bool importSchemaPrim(
+    const UsdPrim& prim,
+    MObject& parent,
+    MObject* created,
+    translators::TranslatorContextPtr context,
+    const translators::TranslatorRefPtr torBase,
+    const fileio::translators::TranslatorParameters& param)
 {
   if(torBase)
   {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("SchemaPrims::importSchemaPrim import %s\n", prim.GetPath().GetText());
-    if(torBase->import(prim, parent) != MS::kSuccess)
+    if(param.forceTranslatorImport() || torBase->importableByDefault())
     {
-      std::cerr << "Failed to import schema prim \"" << prim.GetPath().GetText() << "\"\n";
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("SchemaPrims::importSchemaPrim import %s\n", prim.GetPath().GetText());
+      if(torBase->import(prim, parent) != MS::kSuccess)
+      {
+        std::cerr << "Failed to import schema prim \"" << prim.GetPath().GetText() << "\"\n";
+        return false;
+      }
+    }
+    else
+    {
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("SchemaPrims::Skipping import of '%s' since it is not importable by default \n", prim.GetPath().GetText());
       return false;
     }
   }
@@ -110,6 +120,7 @@ bool importSchemaPrim(  const UsdPrim& prim,
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("SchemaPrims::importSchemaPrim Failed to find a translator for %s[%s]\n", prim.GetPath().GetText(), prim.GetTypeName().GetText());
     return false;
   }
+
   if(context)
     context->registerItem(prim, parent);
   return true;
@@ -130,14 +141,13 @@ bool SchemaPrimsUtils::needsTransformParent(const UsdPrim& prim)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool SchemaPrimsUtils::isSchemaPrim(const UsdPrim& prim)
+fileio::translators::TranslatorRefPtr SchemaPrimsUtils::isSchemaPrim(const UsdPrim& prim)
 {
   // the plugin system will return a null pointer if it doesn't know how to
   // translate this prim type
   fileio::translators::TranslatorRefPtr torBase = m_manufacture.get(prim.GetTypeName());
   return torBase;
 }
-
 
 //----------------------------------------------------------------------------------------------------------------------
 } // fileio

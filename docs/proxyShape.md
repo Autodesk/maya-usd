@@ -165,3 +165,29 @@ AL_usdmaya_ProxyShapeResync -p "ProxyShape1" -pp "/some/prim/path"
 ## Selection
 Selection-related commands are described [here](selection.md)
 
+## AL_usdmaya_TranslatePrim
+
+TranslatePrim Overview:
+
+Used to manually execute a translator for a prim at the specified path typically so you can force an import or a tearDown of a prim:
+```
+AL_usdmaya_TranslatePrim -ip "/MyPrim";  //< Run the Prim's translator's import
+```
+```
+AL_usdmaya_TranslatePrim -tp "/MyPrim";  //< Run the Prim's translator's tearDown
+```
+```
+AL_usdmaya_TranslatePrim -ip "/MyPrim,/YourPrim";  //< Run the Prim's translator's import on multiple Prims
+```
+```
+AL_usdmaya_TranslatePrim -tp "/MyPrim,/YourPrim";  //< Run the Prim's translator's tearDown on multiple Prims
+```
+
+Some prims such as the Mesh typed prims are not imported by default, so you will need to pass in a flag that forces the import:
+```
+AL_usdmaya_TranslatePrim -fi -ip "/MyMesh";  //< Run the Prim's translator's import
+```
+
+The ForceImport(-fi) flag will forces the import of the available translator. Used for translators who don't import when
+their corresponding prim type is brought into the scene.
+

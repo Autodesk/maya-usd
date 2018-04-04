@@ -1,3 +1,119 @@
+## v0.27.4 (2018-04-04)
+
+### Added
+
++ src/plugin/AL_USDMayaTestPlugin/AL/usdmaya/fileio/export_unmerged.cpp has been added, which tests the mergeTransforms parameter.
+
+### Changed
+
++ src/schemas/AL/usd/schemas/plugInfo.json.in had the metadata "al_usdmaya_mergedTransform" added.
++ src/plugin/AL_USDMayaTestPlugin/AL/usdmaya/test_DiffPrimVar.cpp had the export parameter mergeTransforms changed to 1 to revert to previous test behaviour.
++ fileio/Import.cpp will now check for the mergedTransform metadata on the parent transform, which prevents mesh import from creating the parent transform.
++ fileio/Export.cpp has re-enabled functionality for "mergeTransforms", which will export the Xform prim and then the children mesh prims separately when set to '0'. The parent transform will have the metadata "al_usdmaya_mergedTransform = unmerged" added to tag it as an unmerged node.
+
+## v0.27.3 (2018-03-29)
+
+### Added
+
+- Add -eac/-extensiveAnimationCheck option to AL_usdmaya_ExportCommand
+- Add isAnimatedTransform() to AnimationTranslator to perform extensive animation check on transform nodes.
+
+### Changed
+
+- Updated Inactive/Active tests
+- By default AL_usdmaya_ExportCommand will perform extensive animation check.
++ Changed the signature of StageCache::Get(bool forcePopulate) to remove forcePopulate as it doesn't exist in the USDUtilsCache. Also affects Python bindings
+
+### Fixed
+
+* Mesh surface normals were not importing correctly
+
+## v0.27.2 (2018-03-27)
+
+### Added
+
+- Internal AL build fixes
+- Small fix to nurb width import
+
+## v0.27.1 (2018-03-23)
+
+### Added
+
+- Updated existing command to add layer to the RootLayers sublayer stack
+- Support relative path as usd file path, which will be resolved using current maya file path. It does nothing if current maya file path is none.
+- Renamed glimpse subdivision related tokens (from glimpse_name to glimpse:subdiv:name)
+- Nurb Curve widths now are imported and exported from AL_USDMaya's ImportCommand
+- rendererPlugin attribute to ProxyShape
+- Mesh Translation tutorial
+
+### Changed
+
+- Built using USD-0.8.3
+- Library name AL_Utils -> AL_EventSystem
+- Use custom data to store maya_associatedReferenceNode instead of attribute on the prim when import maya reference.
+- AL_usdmaya_ProxyShapeImportPrimPathAsMaya, removed the parameters which weren't used.
+- Allow for custom pxr namespace - https://github.com/AnimalLogic/AL_USDMaya/pull/68
+
+### Fixed
+
+- "Error : No proxyShape specified/selected " when attempting to add a sublayer via the UI
+- The MPLug::source()  error in Maya 2016, the API is only available since Maya 2016 ex2.
+- Failing unit test
+- AL_usdmaya_TranslatePrim now ignores translation to an already translated prim
+- Crash fix for MeshTranslator crash when variant switching
+- Fixes several issues with selection in the maya viewport - https://github.com/AnimalLogic/AL_USDMaya/pull/42
+
+## v0.27.0 (2018-03-12)
+
+### Added 
++ Mesh Translation: Add support for glimpse user data attributes during import / export
++ Added a Translate command "AL_usdmaya_TranslatePrim" that allows you to selectively run the Translator for a set of Prim Paths to either Import or Teardown the prim. Tutorial on the way! 
++ preTearDown writes Meshes Translated to Maya to EditTarget 
++ Library Refactor: Refactored to seperate code into multiple libraries: see change [DeveloperDocumentation](README.md#developer-documentation)
+
+
+### Changed
+
++ Tests: TranslatorContext.TranslatorContext was failing because there was an extra insert into the context in the MayaReference import. Also there was a filter on the tests which needed to be nuked!
++ Docs: Small update to build.md
++ Mesh Translation: updated glimpse subdivision attribute handling
++ Store maya_associatedReferenceNode in custom data This is to stop USD from complaining about: "Error in 'pxrInternal_v0_8__pxrReserved__::UsdStage::_HandleLayersDidChange' at line 3355 in file stage.cpp : 'Detected usd threading violation.  Concurrent changes to layer(s) composed in stage 0x185f5a50 rooted at @usdfile.usda@.  (serial=6, lastSerial=12).'
++ Updated AL_usdmaya_LayerCreateLayer command to add layers to Sublayers
++ Proxy Shape and transform nodes names now match
++ Update to USD-0.8.3
+
+
+### Known Bugs/Limitations:
++ Variant Switch with Maya Meshes causes a crash
++ AL_usdmaya_TranslatePrim generates multiple copies of meshes
++ AL_usdmaya_ProxyShapeImportPrimPathAsMaya not using new Mesh Translation functionality
+
+
+
+## v0.26.1 (2018-03-02)
+
+### Added
+
+* Doxygen comments, tutorial and unit test for ModelAPI::GetLock(), ModelAPI::SetLock() and ModelAPI::ComputeLock().
+
+
+### Changed
+
+Change default lock behaviour of al_usdmaya_lock metadata. "transform" will lock current prim and all its children.
+-GetSelectabilityValue method is now called GetSelectability
+-Implementation of ComputeLock() is modified to reuse common code structure.
+-Library name AL_Utils -> AL_EventSystem
+
+
+### Fixed
+
+- Issue with the ProxyShapeIimport command not loading payloads correctly.
+- AL_USDMayaSchema's pixar plugin was not being loaded during it's tests
+* Blocked the usd stage being reloaded when the filePath changes, when loading a maya file. This ensures all proxy shape attributes are initialised prior to reloading the stage.
+- Crash when moving a locked prim
+- Locking not working on maya hierarchies that appear and disappear on selection
+- "Error : No proxyShape specified/selected " when attempting to add a sublayer via the UI
+
 ## v0.26.0 (2018-02-09)
 
 ### Added

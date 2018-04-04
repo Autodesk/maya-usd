@@ -24,7 +24,7 @@ namespace usdmaya {
 namespace fileio {
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus ImportTranslator::reader(const MFileObject& file, const maya::OptionsParser& options, FileAccessMode mode)
+MStatus ImportTranslator::reader(const MFileObject& file, const AL::maya::utils::OptionsParser& options, FileAccessMode mode)
 {
   MString parentPath = options.getString(kParentPath);
   m_params.m_parentPath = MDagPath();

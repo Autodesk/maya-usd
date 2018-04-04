@@ -421,13 +421,13 @@ TEST(LayerManager, simpleSaveRestore)
 
     // inspect the sdf layer cache to make sure that has been cleared!
     {
-      UsdStageCache& layerCache = AL::usdmaya::StageCache::Get(true);
+      UsdStageCache& layerCache = AL::usdmaya::StageCache::Get();
       EXPECT_EQ(size_t(0), layerCache.Size());
       auto layer = SdfLayer::Find(temp_path);
       EXPECT_FALSE(layer);
     }
     {
-      UsdStageCache& layerCache = AL::usdmaya::StageCache::Get(false);
+      UsdStageCache& layerCache = AL::usdmaya::StageCache::Get();
       EXPECT_EQ(size_t(0), layerCache.Size());
     }
   };

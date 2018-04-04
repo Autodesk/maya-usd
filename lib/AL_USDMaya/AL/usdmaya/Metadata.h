@@ -48,6 +48,9 @@ struct Metadata
   /// Value used in the selectibility property that tags the prim as unselectable
   static const TfToken unselectable;
 
+  static const TfToken mergedTransform;
+  static const TfToken unmerged;
+
   /// Name of the property that determines if attributes on corresponding Maya object of the prim are locked or not.
   static const TfToken locked;
 

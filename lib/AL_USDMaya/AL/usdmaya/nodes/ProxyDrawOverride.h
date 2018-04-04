@@ -14,11 +14,13 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
 #include "maya/MPxDrawOverride.h"
+#include "AL/usdmaya/ForwardDeclares.h"
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/version.h"
+
+#include "AL/usd/utils/ForwardDeclares.h"
 #if (USD_IMAGING_API_VERSION >= 7)
 # include "pxr/usdImaging/usdImagingGL/hdEngine.h"
 #else
