@@ -57,6 +57,8 @@ AL::event::CallbackId Global::m_postSave;
 AL::event::CallbackId Global::m_preRead;
 AL::event::CallbackId Global::m_postRead;
 AL::event::CallbackId Global::m_fileNew;
+AL::event::CallbackId Global::m_preExport;
+AL::event::CallbackId Global::m_postExport;
 
 //----------------------------------------------------------------------------------------------------------------------
 static void onFileNew(void*)
@@ -244,6 +246,18 @@ static void postFileSave(void*)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+static void preFileExport(void* p)
+{
+  preFileSave(p);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void postFileExport(void* p)
+{
+  postFileSave(p);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void Global::onPluginLoad()
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Registering callbacks\n");
@@ -254,6 +268,8 @@ void Global::onPluginLoad()
   m_postSave = manager.registerCallback(postFileSave, "AfterSave", "usdmaya_postFileSave", 0x1000);
   m_preRead = manager.registerCallback(preFileRead, "BeforeFileRead", "usdmaya_preFileRead", 0x1000);
   m_postRead = manager.registerCallback(postFileRead, "AfterFileRead", "usdmaya_postFileRead", 0x1000);
+  m_preExport = manager.registerCallback(preFileExport, "BeforeExport", "usdmaya_preFileExport", 0x1000);
+  m_postExport = manager.registerCallback(postFileExport, "AfterExport", "usdmaya_postFileExport", 0x1000);
 
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Registering USD plugins\n");
   // Let USD know about the additional plugins
@@ -273,6 +289,8 @@ void Global::onPluginUnload()
   manager.unregisterCallback(m_postSave);
   manager.unregisterCallback(m_preRead);
   manager.unregisterCallback(m_postRead);
+  manager.unregisterCallback(m_preExport);
+  manager.unregisterCallback(m_postExport);
   StageCache::removeCallbacks();
 
   AL::maya::event::MayaEventManager::freeInstance();
