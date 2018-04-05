@@ -1203,6 +1203,59 @@ MayaEventHandler::~MayaEventHandler()
 //----------------------------------------------------------------------------------------------------------------------
 MayaEventManager* MayaEventManager::g_instance = 0;
 
+//----------------------------------------------------------------------------------------------------------------------
+static const char* const eventTypeStrings[] =
+{
+  "custom",
+  "schema",
+  "coremaya",
+  "usdmaya"
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+class MayaEventSystemBinding
+  : public AL::event::EventSystemBinding
+{
+public:
+
+  MayaEventSystemBinding()
+    : EventSystemBinding(eventTypeStrings, sizeof(eventTypeStrings) / sizeof(const char*)) {}
+
+  bool executePython(const char* const code) override
+  {
+    return MGlobal::executePythonCommand(code, false, true);
+  }
+
+  bool executeMEL(const char* const code) override
+  {
+    return MGlobal::executeCommand(code, false, true);
+  }
+
+  void writeLog(EventSystemBinding::Type severity, const char* const text) override
+  {
+    switch(severity)
+    {
+    case kInfo: MGlobal::displayInfo(text); break;
+    case kWarning: MGlobal::displayWarning(text); break;
+    case kError: MGlobal::displayError(text); break;
+    }
+  }
+};
+
+static MayaEventSystemBinding g_eventSystem;
+
+//----------------------------------------------------------------------------------------------------------------------
+MayaEventManager& MayaEventManager::instance()
+{
+  if(!g_instance)
+  {
+    AL::event::EventScheduler::initScheduler(&g_eventSystem);
+    auto ptr = new AL::maya::event::MayaEventHandler(&AL::event::EventScheduler::getScheduler(), AL::event::kMayaEventType);
+    new AL::maya::event::MayaEventManager(ptr);
+  }
+  return *g_instance;
+}
+
 
 //----------------------------------------------------------------------------------------------------------------------
 } // event
