@@ -31,6 +31,7 @@
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/fileio/translators/DagNodeTranslator.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
+#include "AL/usdmaya/Metadata.h"
 #include "pxr/usd/usdGeom/mesh.h"
 
 #include "Mesh.h"
@@ -90,7 +91,17 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent)
   }
 
   MFnDagNode fnDag(polyShape);
-  fnDag.setName(std::string(prim.GetName().GetString() + std::string("Shape")).c_str());
+  bool parentUnmerged = false;
+  TfToken val;
+  if(prim.GetParent().GetMetadata(AL::usdmaya::Metadata::mergedTransform, &val))
+  {
+    parentUnmerged = (val == AL::usdmaya::Metadata::unmerged);
+  }
+  MString dagName = prim.GetName().GetString().c_str();
+  if(!parentUnmerged){
+    dagName += "Shape";
+  }
+  fnDag.setName(dagName);
 
   AL::usdmaya::utils::applyHoleFaces(mesh, fnMesh);
   AL::usdmaya::utils::applyVertexCreases(mesh, fnMesh);

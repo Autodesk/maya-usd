@@ -95,6 +95,24 @@ TEST(TranslateCommand, roundTripMeshPrim)
   ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
 }
 
+TEST(TranslateCommand, translateFromUnmergedFile){
+  MFileIO::newFile(true);
+
+  const MString command = MString("AL_usdmaya_ProxyShapeImport -file \"") + MString(AL_USDMAYA_TEST_DATA) + MString("/sphere.usda\"");
+  MGlobal::executeCommand(command);
+  MStatus s = MGlobal::selectByName("foofoo");
+  ASSERT_FALSE(s.statusCode() == MStatus::kSuccess);
+
+  MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1/foofoo\" \"AL_usdmaya_ProxyShape\"", false, false);
+  s = MGlobal::selectByName("foofoo");
+  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+
+  MGlobal::executeCommand("AL_usdmaya_TranslatePrim -tp \"/pSphere1/foofoo\" \"AL_usdmaya_ProxyShape\"", false, false);
+  s = MGlobal::selectByName("foofoo");
+  ASSERT_FALSE(s.statusCode() == MStatus::kSuccess);
+
+}
+
 TEST(TranslateCommand, translateMultiplePrimsFromUnmergedFile)
 /*
  * Test, in the UnMerged Case, the case where if there are multiple shape's that are siblings
@@ -135,4 +153,3 @@ TEST(TranslateCommand, translateMultiplePrimsFromUnmergedFile)
   s = MGlobal::selectByName("foofooforyou");
   ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
 }
-

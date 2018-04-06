@@ -187,6 +187,18 @@ void huntForNativeNodes(
 } // anon
 
 //----------------------------------------------------------------------------------------------------------------------
+bool parentNodeIsUnmerged(const UsdPrim & prim)
+{
+  bool parentUnmerged = false;
+  TfToken val;
+  if(prim.GetParent().IsValid() && prim.GetParent().GetMetadata(AL::usdmaya::Metadata::mergedTransform, &val))
+  {
+    parentUnmerged = (val == AL::usdmaya::Metadata::unmerged);
+  }
+  return parentUnmerged;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 fileio::ImporterParams ProxyShapePostLoadProcess::m_params;
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -215,9 +227,17 @@ void ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(
         SdfPath path = usdPrim.GetPath();
         TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims checking %s\n", path.GetText());
         MObject newpath = MObject::kNullObj;
+        bool parentUnmerged = parentNodeIsUnmerged(usdPrim);
         if(schemaPrimUtils.needsTransformParent(usdPrim))
         {
-          newpath = ptrNode->makeUsdTransformChain(usdPrim, modifier, nodes::ProxyShape::kRequired, &modifier2);
+          if(!parentUnmerged)
+          {
+            newpath = ptrNode->makeUsdTransformChain(usdPrim, modifier, nodes::ProxyShape::kRequired, &modifier2);
+          }
+          else
+          {
+            newpath = ptrNode->makeUsdTransformChain(usdPrim.GetParent(), modifier, nodes::ProxyShape::kRequired, &modifier2);
+          }
         }
         objsToCreate.push_back(std::make_pair(newpath, usdPrim));
       }
@@ -257,8 +277,16 @@ void ProxyShapePostLoadProcess::createSchemaPrims(
     for(; it != end; ++it)
     {
       UsdPrim prim = *it;
-
-      MObject object = proxy->findRequiredPath(prim.GetPath());
+      bool parentUnmerged = parentNodeIsUnmerged(prim);
+      MObject object;
+      if (parentUnmerged)
+      {
+        object = proxy->findRequiredPath(prim.GetParent().GetPath());
+      }
+      else
+      {
+        object = proxy->findRequiredPath(prim.GetPath());
+      }
 
       fileio::translators::TranslatorRefPtr translator = translatorManufacture.get(prim.GetTypeName());
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createSchemaPrims prim=%s\n", prim.GetPath().GetText());

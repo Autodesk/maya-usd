@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    defaultPrim = "pSphere1"
+)
+
+def Xform "pSphere1" (
+    al_usdmaya_mergedTransform = "unmerged"
+)
+{
+    def Mesh "foofoo"
+    {
+    }
+
+    def Mesh "foofooforyou"
+    {
+    }
+}
+
