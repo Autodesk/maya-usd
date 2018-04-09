@@ -28,6 +28,7 @@ list(APPEND AL_usdmaya_source
         AL/usdmaya/StageData.cpp
         AL/usdmaya/TransformOperation.cpp
         AL/usdmaya/CodeTimings.cpp
+        AL/usdmaya/moduleDeps.cpp
 )
 
 list(APPEND AL_usdmaya_cmds_headers

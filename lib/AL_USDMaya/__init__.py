@@ -14,11 +14,10 @@
 # limitations under the License.
 # 
 
-from . import _AL_USDMaya
+import _AL_USDMaya
 from pxr import Tf
-from pxr import Usd
 Tf.PrepareModule(_AL_USDMaya, locals())
-del _AL_USDMaya, Tf, Usd
+del _AL_USDMaya, Tf
 
 try:
     import __DOC

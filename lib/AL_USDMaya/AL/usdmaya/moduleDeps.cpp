@@ -14,12 +14,21 @@
 // limitations under the License.
 //
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/scriptModuleLoader.h"
+#include "pxr/base/tf/token.h"
 
-PXR_NAMESPACE_USING_DIRECTIVE
+#include <vector>
 
-TF_WRAP_MODULE {
-    TF_WRAP(LayerManager);
-    TF_WRAP(ProxyShape);
-    TF_WRAP(StageCache);
+PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
+    // List of direct dependencies for this library.
+    const std::vector<TfToken> reqs = {
+        TfToken("usd")
+    };
+    TfScriptModuleLoader::GetInstance().
+        RegisterLibrary(TfToken("AL_USDMaya"), TfToken("AL.usdmaya"), reqs);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
