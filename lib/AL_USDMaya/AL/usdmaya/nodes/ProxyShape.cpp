@@ -231,6 +231,7 @@ MObject ProxyShape::m_transformScale = MObject::kNullObj;
 MObject ProxyShape::m_stageDataDirty = MObject::kNullObj;
 MObject ProxyShape::m_rendererPlugin = MObject::kNullObj;
 MObject ProxyShape::m_stageCacheId = MObject::kNullObj;
+MObject ProxyShape::m_assetResolverConfig = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 std::vector<MObjectHandle> ProxyShape::m_unloadedProxyShapes;
