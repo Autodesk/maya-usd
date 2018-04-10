@@ -1,3 +1,14 @@
+## v0.27.5 (2018-04-10)
+
+### Added
+
++ Add assetResolverConfig string attribute to ProxyShape 
+
+### Changed
+
++ Built against USD-0.8.4
++ Move initialisation of maya event handler from AL_USDMaya library to mayaUtils library
+
 ## v0.27.4 (2018-04-04)
 
 ### Added
