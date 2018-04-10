@@ -73,7 +73,6 @@ typedef boost::filesystem::path path;
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/usd/stageCacheContext.h"
-#include "pxr/usd/usd/notice.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/meshAdapter.h"
 #include "pxr/usd/usdUtils/stageCache.h"
@@ -773,7 +772,9 @@ MStatus ProxyShape::initialise()
     }
     m_rendererPlugin = addEnumAttr("rendererPlugin", "rp", kCached | kReadable | kWritable | kAffectsAppearance, pluginNames.data(), pluginIds.data());
 
-    m_stageCacheId = addInt32Attr("stageCacheId", "stcid", -1, kCached | kConnectable | kReadable | kAffectsAppearance  );
+    m_stageCacheId = addInt32Attr("stageCacheId", "stcid", -1, kCached | kConnectable | kReadable  );
+
+    m_assetResolverConfig = addStringAttr("assetResolverConfig", "arc", kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance);
 
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, m_outTime), errorString);
@@ -783,6 +784,7 @@ MStatus ProxyShape::initialise()
     AL_MAYA_CHECK_ERROR(attributeAffects(m_inDrivenTransformsData, m_outStageData), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_populationMaskIncludePaths, m_outStageData), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_stageDataDirty, m_outStageData), errorString);
+    AL_MAYA_CHECK_ERROR(attributeAffects(m_assetResolverConfig, m_outStageData), errorString);
   }
   catch (const MStatus& status)
   {
@@ -1058,7 +1060,7 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   };
 
   const UsdNotice::ObjectsChanged::PathRange resyncedPaths = notice.GetResyncedPaths();
-  for(auto path : resyncedPaths)
+  for(const SdfPath& path : resyncedPaths)
   {
     UsdPrim newPrim = m_stage->GetPrimAtPath(path);
     recordSelectablePrims(newPrim);
@@ -1066,7 +1068,7 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   }
 
   const UsdNotice::ObjectsChanged::PathRange changedInfoOnlyPaths = notice.GetChangedInfoOnlyPaths();
-  for(auto path : changedInfoOnlyPaths)
+  for(const SdfPath& path : changedInfoOnlyPaths)
   {
     UsdPrim changedPrim;
     if(path.IsPropertyPath())
@@ -1319,8 +1321,18 @@ void ProxyShape::loadStage()
 
       AL_BEGIN_PROFILE_SECTION(OpenRootLayer);
 
-      // Initialise the asset resolver
-      PXR_NS::ArGetResolver().ConfigureResolverForAsset(fileString);
+      const MString assetResolverConfig = inputStringValue(dataBlock, m_assetResolverConfig);
+
+      if (assetResolverConfig.length()==0)
+      {
+        // Initialise the asset resolver with the filepath
+        PXR_NS::ArGetResolver().ConfigureResolverForAsset(fileString);
+      }
+      else
+      {
+        // Initialise the asset resolver with the resolverConfig string
+        PXR_NS::ArGetResolver().ConfigureResolverForAsset(assetResolverConfig.asChar());
+      }
 
       SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString);
       AL_END_PROFILE_SECTION();
@@ -1567,7 +1579,7 @@ void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& p
   if(msg & MNodeMessage::kAttributeSet)
   {
     // Delay stage creation if opening a file, because we haven't created the LayerManager node yet
-    if(plug == m_filePath)
+    if(plug == m_filePath || plug == m_assetResolverConfig)
     {
       if (MFileIO::isReadingFile())
       {
