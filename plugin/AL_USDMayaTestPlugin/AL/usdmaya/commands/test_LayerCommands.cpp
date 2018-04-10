@@ -111,7 +111,7 @@ TEST(LayerCommands, addSubLayer)
   c.format(MString("AL_usdmaya_LayerCreateLayer -s -o \"^1s\" -p \"AL_usdmaya_ProxyShape1\""), testLayer);
 
   MGlobal::executeCommand(c);
-  EXPECT_EQ(proxyShape->getUsdStage()->GetLayerStack().size(), 4); // With added named layer
+  EXPECT_EQ(proxyShape->getUsdStage()->GetLayerStack().size(), 5); // With added named layer
 }
 
 

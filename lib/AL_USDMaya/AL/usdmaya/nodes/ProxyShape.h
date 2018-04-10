@@ -362,6 +362,9 @@ public:
   /// Cache ID of the currently loaded stage)
   AL_DECL_ATTRIBUTE(stageCacheId);
 
+  /// A place to put a custom assetResolver Config string that's passed to the Resolver Context when stage is opened
+  AL_DECL_ATTRIBUTE(assetResolverConfig);
+
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Output Attributes
   //--------------------------------------------------------------------------------------------------------------------

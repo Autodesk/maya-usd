@@ -12,29 +12,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+#include "pxr/pxr.h"
+#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/scriptModuleLoader.h"
+#include "pxr/base/tf/token.h"
 
-#pragma once
+#include <vector>
 
-#include <string>
+PXR_NAMESPACE_OPEN_SCOPE
 
-#define xstr(a) stringify(a)
-#define stringify(a) #a
-
-#define AL_USDMAYA_VERSION_MAJOR 0
-#define AL_USDMAYA_VERSION_MINOR 27
-#define AL_USDMAYA_VERSION_PATCH 5
-
-#define AL_USDMAYA_VERSION_STR xstr(AL_USDMAYA_VERSION_MAJOR) "." \
-                               xstr(AL_USDMAYA_VERSION_MINOR) "." \
-                               xstr(AL_USDMAYA_VERSION_PATCH)
-
-namespace AL {
-namespace usdmaya {
-
-inline std::string getVersion()
-{
-    return AL_USDMAYA_VERSION_STR;
+TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
+    // List of direct dependencies for this library.
+    const std::vector<TfToken> reqs = {
+        TfToken("usd")
+    };
+    TfScriptModuleLoader::GetInstance().
+        RegisterLibrary(TfToken("AL_USDMaya"), TfToken("AL.usdmaya"), reqs);
 }
 
-} // namespace AL
-} // namespace usdmaya
+PXR_NAMESPACE_CLOSE_SCOPE

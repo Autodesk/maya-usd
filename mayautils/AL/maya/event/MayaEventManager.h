@@ -499,8 +499,7 @@ class MayaEventManager
 public:
 
   /// \brief  returns the global maya event manager instance
-  static MayaEventManager& instance()
-    { return *g_instance; }
+  static MayaEventManager& instance();
 
   /// \brief  returns the global maya event manager instance
   static void freeInstance()
