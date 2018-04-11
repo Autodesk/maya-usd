@@ -54,6 +54,7 @@
 #include <unordered_set>
 #include <algorithm>
 #include "AL/usdmaya/utils/Utils.h"
+#include "AL/usd/utils/SIMD.h"
 #include "AL/maya/utils/MObjectMap.h"
 #include <functional>
 
@@ -190,7 +191,7 @@ struct Export::Impl
       MDagPath dagPath;
       fn.getPath(dagPath);
       SdfPath instancePath = makeMasterPath(m_instancesPrim, dagPath);
-      m_instanceMap.emplace(uuid, instancePath);
+      m_instanceMap.emplace(sse, instancePath);
       return instancePath;
     }
     #else
@@ -330,8 +331,8 @@ struct Export::Impl
 
 private:
   #if AL_UTILS_ENABLE_SIMD
-  std::map<i128, MObject, guid_compare> m_nodeMap;
-  std::map<i128, SdfPath, guid_compare> m_instanceMap;
+  std::map<i128, MObject, AL::maya::utils::guid_compare> m_nodeMap;
+  std::map<i128, SdfPath, AL::maya::utils::guid_compare> m_instanceMap;
   #else
   std::map<AL::maya::utils::guid, MObject, AL::maya::utils::guid_compare> m_nodeMap;
   std::map<AL::maya::utils::guid, SdfPath, AL::maya::utils::guid_compare> m_instanceMap;
