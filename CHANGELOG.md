@@ -1,3 +1,12 @@
+## v0.27.6 (2018-04-13)
+
+### Added
+
++ New attribute "assetResolverConfig" on proxy shape
+* Export creates master geometry prim thus each instance could reference. If transform and mesh nodes are separated by turning off "mergeTransform" option, transform prim will be marked as "instanceable" and fully benefits from usd instancing feature.
+* Import detects shared master geometry prim, ensures maya transform nodes parenting the instancing shape.
+* Layer manager is now serialised on file export
+
 ## v0.27.5 (2018-04-10)
 
 ### Added
