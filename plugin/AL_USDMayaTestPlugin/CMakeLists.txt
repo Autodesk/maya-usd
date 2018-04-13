@@ -26,6 +26,7 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/fileio/export_blendshape.cpp
         AL/usdmaya/fileio/export_constraints.cpp
         AL/usdmaya/fileio/export_ik.cpp
+        AL/usdmaya/fileio/export_import_instancing.cpp
         AL/usdmaya/fileio/export_lattice.cpp
         AL/usdmaya/fileio/export_nonlinear.cpp
         AL/usdmaya/fileio/export_unmerged.cpp

@@ -62,6 +62,8 @@ private:
   static AL::event::CallbackId m_preRead;  ///< callback executed before opening a maya file
   static AL::event::CallbackId m_postRead; ///< callback executed after opening a maya file - needed to re-hook up the UsdPrims
   static AL::event::CallbackId m_fileNew;  ///< callback used to flush the USD caches after a file new
+  static AL::event::CallbackId m_preExport; ///< callback prior to exporting the scene (so we can store the session layer)
+  static AL::event::CallbackId m_postExport; ///< callback after exporting
 };
 
 //----------------------------------------------------------------------------------------------------------------------

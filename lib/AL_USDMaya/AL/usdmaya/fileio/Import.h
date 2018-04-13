@@ -15,11 +15,13 @@
 //
 #pragma once
 #include "AL/usdmaya/fileio/ImportParams.h"
+#include "AL/usdmaya/fileio/NodeFactory.h"
 
 #include "maya/MPxCommand.h"
 
 #include "pxr/pxr.h"
 #include <pxr/base/tf/token.h>
+#include <pxr/base/tf/hashmap.h>
 #include "AL/usdmaya/utils/ForwardDeclares.h"
 #include "AL/maya/utils/MayaHelperMacros.h"
 
@@ -52,8 +54,10 @@ public:
 
 private:
   void doImport();
-  MStatus importTansform(const UsdPrim& prim, const MDagPath& parent);
+  MObject createMesh(NodeFactory& factory, const UsdPrim& prim, const char* const meshType, MObject parent,
+                     bool parentUnmerged);
   const ImporterParams& m_params;
+  TfHashMap<SdfPath, MObject, SdfPath::Hash> m_instanceObjects;
   bool m_success;
 };
 

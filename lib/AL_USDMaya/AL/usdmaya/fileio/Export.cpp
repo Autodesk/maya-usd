@@ -27,6 +27,7 @@
 #include "maya/MAnimUtil.h"
 #include "maya/MArgDatabase.h"
 #include "maya/MDagPath.h"
+#include "maya/MFnDagNode.h"
 #include "maya/MFnCamera.h"
 #include "maya/MFnTransform.h"
 #include "maya/MGlobal.h"
@@ -46,12 +47,14 @@
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 #include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdGeom/nurbsCurves.h"
 #include "pxr/base/gf/transform.h"
 #include "pxr/usd/usdGeom/camera.h"
 
 #include <unordered_set>
 #include <algorithm>
 #include "AL/usdmaya/utils/Utils.h"
+#include "AL/usd/utils/SIMD.h"
 #include "AL/maya/utils/MObjectMap.h"
 #include <functional>
 
@@ -60,12 +63,6 @@ namespace usdmaya {
 namespace fileio {
 
 AL_MAYA_DEFINE_COMMAND(ExportCommand, AL_usdmaya);
-
-//----------------------------------------------------------------------------------------------------------------------
-static inline std::string toString(const MString& str)
-{
-  return std::string(str.asChar(), str.length());
-}
 
 //----------------------------------------------------------------------------------------------------------------------
 static unsigned int mayaDagPathToSdfPath(char* dagPathBuffer, unsigned int dagPathSize)
@@ -107,7 +104,7 @@ static inline SdfPath makeUsdPath(const MDagPath& rootPath, const MDagPath& path
   const uint32_t rootPathLength = rootPath.length();
   if(!rootPathLength)
   {
-    std::string fpn = toString(path.fullPathName());
+    std::string fpn = AL::maya::utils::convert(path.fullPathName());
     fpn.resize(mayaDagPathToSdfPath(&fpn[0], fpn.size()));
     return SdfPath(fpn);
   }
@@ -120,9 +117,30 @@ static inline SdfPath makeUsdPath(const MDagPath& rootPath, const MDagPath& path
   // trim off the root path from the object we are exporting
   newPathString = pathString.substring(rootPathString.length(), pathString.length());
 
-  std::string fpn = toString(newPathString);
+  std::string fpn = AL::maya::utils::convert(newPathString);
   fpn.resize(mayaDagPathToSdfPath(&fpn[0], fpn.size()));
   return SdfPath(fpn);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static inline MDagPath getParentPath(const MDagPath& dagPath)
+{
+  MFnDagNode dagNode(dagPath);
+  MFnDagNode parentNode(dagNode.parent(0));
+  MDagPath parentPath;
+  parentNode.getPath(parentPath);
+  return parentPath;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static inline SdfPath makeMasterPath(UsdPrim instancesPrim, const MDagPath& dagPath)
+{
+  MString fullPathName = dagPath.fullPathName();
+  std::string fullPath(fullPathName.asChar() + 1, fullPathName.length() - 1);
+  std::string usdPath = instancesPrim.GetPath().GetString() + '/' + fullPath;
+  std::replace(usdPath.begin(), usdPath.end(), '|', '_');
+  std::replace(usdPath.begin(), usdPath.end(), ':', '_');
+  return SdfPath(usdPath);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -157,6 +175,41 @@ struct Export::Impl
     MFnDependencyNode fn(obj);
     return contains(fn);
   }
+
+  inline SdfPath getMasterPath(const MFnDagNode& fn)
+  {
+    #if AL_UTILS_ENABLE_SIMD
+    union
+    {
+      __m128i sse;
+      AL::maya::utils::guid uuid;
+    };
+    fn.uuid().get(uuid.uuid);
+    auto iterInst = m_instanceMap.find(sse);
+    if (iterInst == m_instanceMap.end())
+    {
+      MDagPath dagPath;
+      fn.getPath(dagPath);
+      SdfPath instancePath = makeMasterPath(m_instancesPrim, dagPath);
+      m_instanceMap.emplace(sse, instancePath);
+      return instancePath;
+    }
+    #else
+    AL::maya::utils::guid uuid;
+    fn.uuid().get(uuid.uuid);
+    auto iterInst = m_instanceMap.find(uuid);
+    if (iterInst == m_instanceMap.end())
+    {
+      MDagPath dagPath;
+      fn.getPath(dagPath);
+      SdfPath instancePath = makeMasterPath(m_instancesPrim, dagPath);
+      m_instanceMap.emplace(uuid, instancePath);
+      return instancePath;
+    }
+    #endif
+    return iterInst->second;
+  }
+
 
   inline bool setStage(UsdStageRefPtr ptr)
   {
@@ -248,17 +301,44 @@ struct Export::Impl
     {
       filterSample();
     }
-    m_stage->Export(filename, false);
+    m_stage->GetRootLayer()->Save();
     m_nodeMap.clear();
+  }
+
+  inline UsdPrim instancesPrim()
+  {
+    return m_instancesPrim;
+  }
+
+  void createInstancesPrim()
+  {
+    m_instancesPrim = m_stage->OverridePrim(SdfPath("/InstanceSources"));
+  }
+
+  void processInstances()
+  {
+    if (!m_instancesPrim)
+      return;
+    if (!m_instancesPrim.GetAllChildren())
+    {
+      m_stage->RemovePrim(m_instancesPrim.GetPrimPath());
+    }
+    else
+    {
+      m_instancesPrim.SetSpecifier(SdfSpecifierOver);
+    }
   }
 
 private:
   #if AL_UTILS_ENABLE_SIMD
-  std::map<i128, MObject, guid_compare> m_nodeMap;
+  std::map<i128, MObject, AL::maya::utils::guid_compare> m_nodeMap;
+  std::map<i128, SdfPath, AL::maya::utils::guid_compare> m_instanceMap;
   #else
   std::map<AL::maya::utils::guid, MObject, AL::maya::utils::guid_compare> m_nodeMap;
+  std::map<AL::maya::utils::guid, SdfPath, AL::maya::utils::guid_compare> m_instanceMap;
   #endif
   UsdStageRefPtr m_stage;
+  UsdPrim m_instancesPrim;
 };
 
 static MObject g_transform_rotateAttr = MObject::kNullObj;
@@ -297,9 +377,10 @@ Export::~Export()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UsdPrim Export::exportMesh(MDagPath path, const SdfPath& usdPath)
+UsdPrim Export::exportMesh(MDagPath path, const SdfPath& usdPath, const ReferenceType refType)
 {
-  return translators::MeshTranslator::exportObject(m_impl->stage(), path, usdPath, m_params);
+  SdfPath meshPath = makeMeshReferencePath(path, usdPath, refType);
+  return translators::MeshTranslator::exportObject(m_impl->stage(), path, meshPath, m_params);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -309,9 +390,10 @@ UsdPrim Export::exportMeshUV(MDagPath path, const SdfPath& usdPath)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UsdPrim Export::exportNurbsCurve(MDagPath path, const SdfPath& usdPath)
+UsdPrim Export::exportNurbsCurve(MDagPath path, const SdfPath& usdPath, const ReferenceType refType)
 {
-  return translators::NurbsCurveTranslator::exportObject(m_impl->stage(), path, usdPath, m_params);
+  SdfPath curvePath = makeMeshReferencePath(path, usdPath, refType);
+  return translators::NurbsCurveTranslator::exportObject(m_impl->stage(), path, curvePath, m_params);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -504,17 +586,91 @@ void Export::copyTransformParams(UsdPrim prim, MFnTransform& fnTransform)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void Export::exportShapesCommonProc(MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath)
+SdfPath Export::makeMeshReferencePath(MDagPath path, const SdfPath& usdPath, ReferenceType refType)
+{
+  switch (refType)
+  {
+    case kNoReference:
+    {
+      return usdPath;
+    }
+    break;
+
+    case kMeshReference:
+    {
+      return makeMasterPath(m_impl->instancesPrim(), path);
+    }
+    break;
+
+    case kTransformReference:
+    {
+      UsdStageRefPtr stage = m_impl->stage();
+      SdfPath masterTransformPath = makeMasterPath(m_impl->instancesPrim(), getParentPath(path));
+      if (!stage->GetPrimAtPath(masterTransformPath))
+      {
+        UsdGeomXform::Define(stage, masterTransformPath);
+      }
+      TfToken shapeName(MFnDagNode(path).name().asChar());
+      return masterTransformPath.AppendChild(shapeName);
+    }
+    break;
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void Export::addReferences(MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath,
+                           const SdfPath& instancePath, ReferenceType refType)
+{
+  UsdStageRefPtr stage = m_impl->stage();
+  if (refType == kMeshReference)
+  {
+    if (shapePath.node().hasFn(MFn::kMesh))
+    {
+      UsdGeomMesh::Define(stage, usdPath);
+    }
+    else if (shapePath.node().hasFn(MFn::kNurbsCurve))
+    {
+      UsdGeomNurbsCurves::Define(stage, usdPath);
+    }
+  }
+  UsdPrim usdPrim = stage->GetPrimAtPath(usdPath);
+  if (usdPrim)
+  {
+    // usd only allows instanceable on transform prim
+    switch (refType)
+    {
+      case kTransformReference:
+      {
+        usdPrim.SetInstanceable(true);
+      }
+      break;
+
+      case kMeshReference:
+      {
+        copyTransformParams(usdPrim, fnTransform);
+      }
+      break;
+    }
+    usdPrim.GetReferences().AddReference(SdfReference("", instancePath));
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void Export::exportShapesCommonProc(MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath,
+                                    const ReferenceType refType)
 {
   UsdPrim transformPrim;
+  bool copyTransform= true;
   if(shapePath.node().hasFn(MFn::kMesh))
   {
-    transformPrim = exportMesh(shapePath, usdPath);
+    transformPrim = exportMesh(shapePath, usdPath, refType);
+    copyTransform = (refType == kNoReference);
   }
   else
   if (shapePath.node().hasFn(MFn::kNurbsCurve))
   {
-    transformPrim = exportNurbsCurve(shapePath, usdPath);
+    transformPrim = exportNurbsCurve(shapePath, usdPath, refType);
+    copyTransform = (refType == kNoReference);
   }
   else
   if (shapePath.node().hasFn(MFn::kAssembly))
@@ -545,7 +701,7 @@ void Export::exportShapesCommonProc(MDagPath shapePath, MFnTransform& fnTransfor
     transformPrim = xform.GetPrim();
   }
 
-  if(m_params.m_mergeTransforms)
+  if(m_params.m_mergeTransforms && copyTransform)
   {
     copyTransformParams(transformPrim, fnTransform);
   }
@@ -574,10 +730,10 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
   MItDag it(MItDag::kDepthFirst);
   it.reset(rootPath, MItDag::kDepthFirst, MFn::kTransform);
 
-  std::function<void(MDagPath, MFnTransform&, SdfPath&)> exportShapeProc =
-      [this] (MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath)
+  std::function<void(MDagPath, MFnTransform&, SdfPath&, ReferenceType)> exportShapeProc =
+      [this] (MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath, ReferenceType refType)
   {
-    this->exportShapesCommonProc(shapePath, fnTransform, usdPath);
+    this->exportShapesCommonProc(shapePath, fnTransform, usdPath, refType);
   };
   std::function<void(MDagPath, MFnTransform&, SdfPath&)> exportTransformFunc =
       [this] (MDagPath transformPath, MFnTransform& fnTransform, SdfPath& usdPath)
@@ -591,7 +747,7 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
   if (m_params.m_meshUV)
   {
     exportShapeProc =
-        [this](MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath)
+        [this] (MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath, ReferenceType refType)
     {
       this->exportShapesOnlyUVProc(shapePath, fnTransform, usdPath);
     };
@@ -678,32 +834,46 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
         // 1 transform, with 4 shapes parented underneath, it means we'll end up with
         // the transform data duplicated four times.
 
+        ReferenceType refType = kNoReference;
+
         for(uint32_t j = 0; j < numShapes; ++j)
         {
           MDagPath shapePath = transformPath;
           shapePath.extendToShapeDirectlyBelow(j);
+          MFnDagNode shapeDag(shapePath);
+          SdfPath shapeUsdPath = usdPath;
 
           if(!m_params.m_mergeTransforms)
           {
             fnTransform.setObject(shapePath);
-            usdPath = makeUsdPath(parentPath, shapePath);
+            shapeUsdPath = makeUsdPath(parentPath, shapePath);
           }
 
           bool shapeNotYetExported = !m_impl->contains(shapePath.node());
+          bool shapeInstanced = shapePath.isInstanced();
           if(shapeNotYetExported || m_params.m_duplicateInstances)
           {
             // if the path has a child shape, process the shape now
-            exportShapeProc(shapePath, fnTransform, usdPath);
+            if (!m_params.m_duplicateInstances && shapeInstanced)
+            {
+              refType = m_params.m_mergeTransforms ? kMeshReference : kTransformReference;
+            }
+            exportShapeProc(shapePath, fnTransform, shapeUsdPath, refType);
           }
           else
           {
-            // We have an instanced shape!
-            // How do we reference that in USD?
-            // What do we do about the additional transform information?
+            refType = m_params.m_mergeTransforms ? kMeshReference : kTransformReference;
+          }
 
-            // Possible answer:
-            // We can create the prim and copy all the addition transform information onto the prim.
-            // then we can inherit the Master prim.
+          if (refType == kMeshReference)
+          {
+            SdfPath instancePath = m_impl->getMasterPath(shapeDag);
+            addReferences(shapePath, fnTransform, shapeUsdPath, instancePath, refType);
+          }
+          else if (refType == kTransformReference)
+          {
+            SdfPath instancePath = m_impl->getMasterPath(MFnDagNode(shapeDag.parent(0)));
+            addReferences(shapePath, fnTransform, usdPath, instancePath, refType);
           }
         }
       }
@@ -736,6 +906,11 @@ void Export::doExport()
   {
     // try to ensure that we have some sort of consistent output for each run by forcing the export to the first frame
     MAnimControl::setCurrentTime(m_params.m_minFrame);
+  }
+
+  if(!m_params.m_duplicateInstances)
+  {
+    m_impl->createInstancesPrim();
   }
 
   MObjectArray objects;
@@ -775,6 +950,7 @@ void Export::doExport()
     MAnimControl::setCurrentTime(oldCurTime);
   }
 
+  m_impl->processInstances();
   m_impl->doExport(m_params.m_fileName.asChar(), m_params.m_filterSample, defaultPrim);
 }
 

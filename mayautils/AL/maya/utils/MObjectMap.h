@@ -42,7 +42,6 @@ struct guid
 {
   uint8_t uuid[16]; ///< the UUID for a Maya node
 };
-
 #if AL_UTILS_ENABLE_SIMD
 
 /// \brief  Less than comparison utility for sorting via 128bit guid.
@@ -139,7 +138,7 @@ struct MObjectMap
 
 private:
   #if AL_UTILS_ENABLE_SIMD
-  std::map<i128, MObject, maya::guid_compare> m_nodeMap;
+  std::map<i128, MObject, guid_compare> m_nodeMap;
   #else
   std::map<guid, MObject, guid_compare> m_nodeMap;
   #endif
