@@ -1035,6 +1035,20 @@ MStringArray buildProxyLayersList(const MString&)
 //----------------------------------------------------------------------------------------------------------------------
 MStringArray buildRendererPluginsList(const MString&)
 {
+  nodes::LayerManager* layerManager = nodes::LayerManager::findManager();
+  if(layerManager)
+  {
+    int index = layerManager->getRendererPluginIndex();
+    if (index > 0)
+    {
+      // swap items so current plugin is first and active in the list
+      MStringArray result = AL::usdmaya::nodes::LayerManager::getRendererPluginList();
+      MString temp = result[0];
+      result[0] = result[index];
+      result[index] = temp;
+      return result;
+    }
+  }
   return AL::usdmaya::nodes::LayerManager::getRendererPluginList();
 }
 

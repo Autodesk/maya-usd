@@ -118,6 +118,41 @@ void constructFilePathUi(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief  A little code generator that outputs the custom AE gui needed to handle string enum attributes.
+/// \param  nodeName type name of the node
+/// \param  attrName the name of the file path attribute
+//----------------------------------------------------------------------------------------------------------------------
+void constructStringEnumUi(
+    std::ostringstream& oss,
+    const std::string& nodeName,
+    const std::string& attrName,
+    const std::vector<std::string>& values)
+{
+  // generate code to create a static option menu for underlying string attribute
+  oss << "global proc AE" << nodeName << "Template_" << attrName << "New(string $anAttr) {\n";
+  oss << "  setUITemplate -pushTemplate attributeEditorTemplate;\n";
+  oss << "  rowLayout -numberOfColumns 2;\n";
+  oss << "    text -label \"" << beautifyAttrName(attrName) << "\";\n";
+  oss << "    optionMenu " << attrName << "OptionMenu;\n";
+  for (const auto& value : values)
+  {
+    oss << "      menuItem -label \"" << value << "\";\n";
+  }
+  oss << "  setParent ..;\n";
+  oss << "  AE" << nodeName << "Template_" << attrName << "Replace($anAttr);\n";
+  oss << "  setUITemplate -popTemplate;\n";
+  oss << "}\n";
+
+  // generate the method that will replace the value in the control when another node of the same type is selected
+  oss << "global proc AE" << nodeName << "Template_" << attrName << "Replace(string $anAttr) {\n";
+  // unfortunately connectControl for otionMenu expects that attribute is integer, so we need to wire this manually
+  // Note that external changes when template is visible will not be reflected. This can be improved if needed.
+  oss << "  optionMenu -edit -value `getAttr $anAttr` " << attrName << "OptionMenu;\n";
+  oss << "  optionMenu -edit -changeCommand (\"setAttr \"+$anAttr+\" -type \\\"string\\\" #1\") " << attrName << "OptionMenu;\n";
+  oss << "}\n";
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 NodeHelper::InternalData* NodeHelper::m_internal = 0;
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -183,6 +218,49 @@ MObject NodeHelper::addStringAttr(const char* longName, const char* shortName, c
     {
       frame.m_attributes.push_back(longName);
       frame.m_attributeTypes.push_back(Frame::kNormal);
+    }
+  }
+
+  MFnTypedAttribute fn;
+  MFnStringData stringData;
+  MStatus stat;
+  MObject attribute = fn.create(longName, shortName, MFnData::kString, stringData.create(MString(defaultValue), &stat));
+  MStatus status = applyAttributeFlags(fn, flags);
+  if(!status)
+    throw status;
+  return attribute;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MObject NodeHelper::addStringAttr(const char* longName, const char* shortName, const char* defaultValue, uint32_t flags, const char* const * strings)
+{
+  if(m_internal)
+  {
+    Frame& frame = *m_internal->m_frames.begin();
+    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
+    {
+      /// count number of strings
+      const char* const * arr = strings;
+      size_t size = 0;
+      while(*arr)
+      {
+        ++size;
+        ++arr;
+      }
+      
+      /// store string values
+      arr = strings;
+      std::vector<std::string> values(size);
+      size_t i = 0;
+      while(*arr)
+      {
+        values[i++] = *arr;
+        ++arr;
+      }
+
+      frame.m_attributes.push_back(longName);
+      frame.m_stringEnums.push_back(values);
+      frame.m_attributeTypes.push_back(Frame::kStringEnum);
     }
   }
 
@@ -1088,6 +1166,7 @@ void NodeHelper::generateAETemplate()
   for(; it != end; ++it)
   {
     size_t fileIndex = 0;
+    size_t stringEnumIndex = 0;
     for(size_t i = 0; i < it->m_attributes.size(); ++i)
     {
       switch(it->m_attributeTypes[i])
@@ -1098,6 +1177,9 @@ void NodeHelper::generateAETemplate()
       case Frame::kDirPath:
       case Frame::kMultiLoadFilePath:
         constructFilePathUi(oss, m_internal->m_typeBeingRegistered, it->m_attributes[i], it->m_fileFilters[fileIndex++], (FileMode)it->m_attributeTypes[i]);
+        break;
+      case Frame::kStringEnum:
+        constructStringEnumUi(oss, m_internal->m_typeBeingRegistered, it->m_attributes[i], it->m_stringEnums[stringEnumIndex++]);
         break;
       default:
         break;
@@ -1125,6 +1207,7 @@ void NodeHelper::generateAETemplate()
       case Frame::kDirPathWithFiles:
       case Frame::kDirPath:
       case Frame::kMultiLoadFilePath:
+      case Frame::kStringEnum:
         oss << "    editorTemplate -callCustom \"AE" << m_internal->m_typeBeingRegistered << "Template_" << it->m_attributes[i] << "New\" "
             << "\"AE" << m_internal->m_typeBeingRegistered << "Template_" << it->m_attributes[i] << "Replace\" \"" << it->m_attributes[i] << "\";\n";
         break;

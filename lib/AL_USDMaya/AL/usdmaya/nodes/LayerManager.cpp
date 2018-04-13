@@ -298,30 +298,27 @@ MStatus LayerManager::initialise()
     m_layers = addCompoundAttr("layers", "lyr",
         kCached | kReadable | kWritable | kStorable | kConnectable | kHidden | kArray | kUsesArrayDataBuilder,
         {m_identifier, m_serialized, m_anonymous});
-
+    
     // Create dummy imaging engine to get renderer names
     UsdImagingGL imagingEngine(SdfPath(), {});
     m_rendererPluginsTokens = imagingEngine.GetRendererPlugins();
     const size_t numTokens = m_rendererPluginsTokens.size();
     m_rendererPluginsNames = MStringArray(numTokens, MString());
 
-    // as it's not clear what is the liftime of strings returned from HdEngine::GetRendererPluginDesc
-    // we store them in array to populate enum attribute also we store array of MString names for menu items
+    // as it's not clear what is the lifetime of strings returned from HdEngine::GetRendererPluginDesc
+    // we store them in array to populate options menu items
     std::vector<std::string> pluginNames(numTokens);
     std::vector<const char*> enumNames(numTokens + 1, nullptr);
-    std::vector<int16_t> enumIds(numTokens + 1, -1);
     for (size_t i = 0; i < numTokens; ++i)
     {
       pluginNames[i] = imagingEngine.GetRendererPluginDesc(m_rendererPluginsTokens[i]);
       m_rendererPluginsNames[i] = MString(pluginNames[i].data(), pluginNames[i].size());
       enumNames[i] = pluginNames[i].data();
-      enumIds[i] = i;
     }
-
-    m_rendererPlugin = addEnumAttr(
-      "rendererPlugin", "rp", kCached | kReadable | kWritable , enumNames.data(), enumIds.data()
+    
+    m_rendererPlugin = addStringAttr(
+      "rendererPlugin", "rp", "GL", kCached | kReadable | kWritable | kStorable, enumNames.data()
     );
-
   }
   catch(const MStatus& status)
   {
@@ -685,9 +682,8 @@ void LayerManager::changeRendererPlugin(ProxyShape* proxy, bool creation)
   assert(proxy);
   if (proxy->engine())
   {
-    MPlug plug(thisMObject(), m_rendererPlugin);
-    short rendererId = plug.asShort();
-    if (rendererId < m_rendererPluginsTokens.size())
+    int rendererId = getRendererPluginIndex();
+    if (rendererId >= 0 && rendererId < m_rendererPluginsTokens.size())
     {
       // Skip redundant renderer changes on ProxyShape creation
       if (rendererId == 0 && creation)
@@ -702,18 +698,20 @@ void LayerManager::changeRendererPlugin(ProxyShape* proxy, bool creation)
     }
     else
     {
-      MString data;
-      data.set(rendererId);
-      MGlobal::displayError(MString("Invalid renderer plugin index: ") + data);
+      MPlug plug(thisMObject(), m_rendererPlugin);
+      MString pluginName = plug.asString();
+      if (pluginName.length())
+        MGlobal::displayError(MString("Invalid renderer plugin: ") + pluginName);
     }
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-size_t LayerManager::getRendererPluginIndex() const
+int LayerManager::getRendererPluginIndex() const
 {
   MPlug plug(thisMObject(), m_rendererPlugin);
-  return plug.asShort();
+  MString pluginName = plug.asString();
+  return m_rendererPluginsNames.indexOf(pluginName);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -724,7 +722,7 @@ bool LayerManager::setRendererPlugin(const MString& pluginName)
   {
     TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("LayerManager::setRendererPlugin\n");
     MPlug plug(thisMObject(), m_rendererPlugin);
-    plug.setShort(index);
+    plug.setString(pluginName);
     return true;
   }
   else

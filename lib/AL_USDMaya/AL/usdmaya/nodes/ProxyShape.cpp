@@ -761,7 +761,9 @@ MStatus ProxyShape::initialise()
 
     m_stageDataDirty = addBoolAttr("stageDataDirty", "sdd", false, kWritable | kAffectsAppearance | kInternal);
 
-    m_stageCacheId = addInt32Attr("stageCacheId", "stcid", -1, kCached | kConnectable | kReadable | kAffectsAppearance  );
+    m_stageCacheId = addInt32Attr("stageCacheId", "stcid", -1, kCached | kConnectable | kReadable  );
+
+    m_assetResolverConfig = addStringAttr("assetResolverConfig", "arc", kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance);
 
     AL_MAYA_CHECK_ERROR(attributeAffects(m_time, m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, m_outTime), errorString);

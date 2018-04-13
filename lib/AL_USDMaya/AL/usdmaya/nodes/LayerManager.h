@@ -191,7 +191,7 @@ public:
   void changeRendererPlugin(ProxyShape* proxy, bool creation=false);
   
   /// \brief  Get current renderer plugin index
-  size_t getRendererPluginIndex() const;
+  int getRendererPluginIndex() const;
 
   static const MStringArray& getRendererPluginList() { return m_rendererPluginsNames; }
 
