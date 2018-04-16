@@ -218,14 +218,12 @@ class NodeHelper
       kDirPath = 3,
       kMultiLoadFilePath = 4,
       kNormal = 5,
-      kHidden = 6,
-      kStringEnum = 7
+      kHidden = 6
     };
     std::string m_title;
     std::vector<AttributeUiType> m_attributeTypes;
     std::vector<std::string> m_attributes;
     std::vector<std::string> m_fileFilters;
-    std::vector<std::vector<std::string>> m_stringEnums;
   };
 
   struct InternalData
@@ -657,15 +655,6 @@ public:
   /// \return the MObject for the attribute
   AL_MAYA_UTILS_PUBLIC
   static MObject addStringAttr(const char* longName, const char* shortName, const char* defaultValue, uint32_t flags, bool forceShow = false);
-
-  /// \brief  add a new string attribute to this node type
-  /// \param  longName  long name for the attribute
-  /// \param  shortName  short name for the attribute
-  /// \param  defaultValue  default value for the attribute
-  /// \param  flags  a bitfield containing a mask of the AttributeFlags enumeration. Describes if the attribute is an input/output/etc
-  /// \param  strings an array of text strings for the values. This last item in this array must be NULL
-  /// \return the MObject for the attribute
-  static MObject addStringAttr(const char* longName, const char* shortName, const char* defaultValue, uint32_t flags, const char* const* strings);
 
   /// \brief  add a new file path attribute to this node type.
   /// \param  longName  long name for the attribute
