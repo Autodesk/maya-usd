@@ -260,6 +260,7 @@ MObject LayerManager::m_layers = MObject::kNullObj;
 MObject LayerManager::m_identifier = MObject::kNullObj;
 MObject LayerManager::m_serialized = MObject::kNullObj;
 MObject LayerManager::m_anonymous = MObject::kNullObj;
+MObject LayerManager::m_rendererPluginName = MObject::kNullObj;
 MObject LayerManager::m_rendererPlugin = MObject::kNullObj;
 
 TfTokenVector LayerManager::m_rendererPluginsTokens;
@@ -299,7 +300,8 @@ MStatus LayerManager::initialise()
         kCached | kReadable | kWritable | kStorable | kConnectable | kHidden | kArray | kUsesArrayDataBuilder,
         {m_identifier, m_serialized, m_anonymous});
     
-    // Create dummy imaging engine to get renderer names
+    // hydra renderer plugin discovery
+    // create dummy imaging engine to get renderer names
     UsdImagingGL imagingEngine(SdfPath(), {});
     m_rendererPluginsTokens = imagingEngine.GetRendererPlugins();
     const size_t numTokens = m_rendererPluginsTokens.size();
@@ -309,16 +311,21 @@ MStatus LayerManager::initialise()
     // we store them in array to populate options menu items
     std::vector<std::string> pluginNames(numTokens);
     std::vector<const char*> enumNames(numTokens + 1, nullptr);
+    std::vector<int16_t> enumValues(numTokens, -1);
     for (size_t i = 0; i < numTokens; ++i)
     {
       pluginNames[i] = imagingEngine.GetRendererPluginDesc(m_rendererPluginsTokens[i]);
       m_rendererPluginsNames[i] = MString(pluginNames[i].data(), pluginNames[i].size());
       enumNames[i] = pluginNames[i].data();
+      enumValues[i] = i;
     }
     
-    m_rendererPlugin = addStringAttr(
-      "rendererPlugin", "rp", "GL", kCached | kReadable | kWritable | kStorable, enumNames.data()
+    m_rendererPluginName = addStringAttr(
+      "rendererPluginName", "rpn", "GL", kCached | kReadable | kWritable | kStorable | kHidden);
+    m_rendererPlugin = addEnumAttr(
+      "rendererPlugin", "rp", kInternal | kReadable | kWritable, enumNames.data(), enumValues.data()
     );
+
   }
   catch(const MStatus& status)
   {
@@ -334,7 +341,7 @@ void LayerManager::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug&
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("LayerManager::onAttributeChanged\n");
   LayerManager* manager = static_cast<LayerManager*>(clientData);
   assert(manager);
-  if(plug == m_rendererPlugin)
+  if(plug == m_rendererPluginName)
   {
     // Find all proxy shapes and change renderer plugin
     MFnDependencyNode fn;
@@ -380,6 +387,36 @@ void LayerManager::postConstructor()
 {
   TF_DEBUG(ALUSDMAYA_LAYERS).Msg("LayerManager::postConstructor\n");
   addAttributeChangedCallback();
+}
+
+bool LayerManager::setInternalValueInContext(const MPlug& plug, const MDataHandle& dataHandle, MDGContext& ctx)
+{
+  if (plug == m_rendererPlugin)
+  {
+    short index = dataHandle.asShort();
+    if (index >= 0 && index < m_rendererPluginsNames.length())
+    {
+      MPlug plug(thisMObject(), m_rendererPluginName);
+      plug.setString(m_rendererPluginsNames[index]);
+      return true;
+    }
+  }
+  return MPxNode::setInternalValueInContext(plug, dataHandle, ctx);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool LayerManager::getInternalValueInContext(const MPlug& plug, MDataHandle& dataHandle, MDGContext& ctx)
+{
+  if (plug == m_rendererPlugin)
+  {
+    int index = getRendererPluginIndex();
+    if (index >= 0)
+    {
+      dataHandle.set((short)index);
+      return true;
+    }
+  }
+  return MPxNode::getInternalValueInContext(plug, dataHandle, ctx);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -683,12 +720,13 @@ void LayerManager::changeRendererPlugin(ProxyShape* proxy, bool creation)
   if (proxy->engine())
   {
     int rendererId = getRendererPluginIndex();
-    if (rendererId >= 0 && rendererId < m_rendererPluginsTokens.size())
+    if (rendererId >= 0)
     {
       // Skip redundant renderer changes on ProxyShape creation
       if (rendererId == 0 && creation)
         return;
       
+      assert(rendererId < m_rendererPluginsTokens.size());
       TfToken plugin = m_rendererPluginsTokens[rendererId];
       if (!proxy->engine()->SetRendererPlugin(plugin))
       {
@@ -698,7 +736,7 @@ void LayerManager::changeRendererPlugin(ProxyShape* proxy, bool creation)
     }
     else
     {
-      MPlug plug(thisMObject(), m_rendererPlugin);
+      MPlug plug(thisMObject(), m_rendererPluginName);
       MString pluginName = plug.asString();
       if (pluginName.length())
         MGlobal::displayError(MString("Invalid renderer plugin: ") + pluginName);
@@ -709,7 +747,7 @@ void LayerManager::changeRendererPlugin(ProxyShape* proxy, bool creation)
 //----------------------------------------------------------------------------------------------------------------------
 int LayerManager::getRendererPluginIndex() const
 {
-  MPlug plug(thisMObject(), m_rendererPlugin);
+  MPlug plug(thisMObject(), m_rendererPluginName);
   MString pluginName = plug.asString();
   return m_rendererPluginsNames.indexOf(pluginName);
 }
@@ -721,7 +759,7 @@ bool LayerManager::setRendererPlugin(const MString& pluginName)
   if (index >= 0)
   {
     TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("LayerManager::setRendererPlugin\n");
-    MPlug plug(thisMObject(), m_rendererPlugin);
+    MPlug plug(thisMObject(), m_rendererPluginName);
     plug.setString(pluginName);
     return true;
   }

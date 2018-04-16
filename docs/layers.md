@@ -78,6 +78,6 @@ We use this system to implement our Shotbased-Set Overrides workflow - we import
 
 #### Hydra Renderer Plugin
 
-Layer manager defines Hydra renderer plugin that is used by all Proxy shapes for rendering. It can be set directly (`AL_usdmaya_LayerManger.renderPlugin`) or with command (`AL_usdmaya_ManageRenderer -setPlugin "Glimpse"`).
+Layer manager defines Hydra renderer plugin that is used by all Proxy shapes for rendering. It can be set directly (`AL_usdmaya_LayerManger.rendererPluginName`) or with command (`AL_usdmaya_ManageRenderer -setPlugin "Glimpse"`).
 List of available renderers is based on plugins discovered by USD. If there is more than one renderer plugin available a new menu entry USD > Renderer is added.
 

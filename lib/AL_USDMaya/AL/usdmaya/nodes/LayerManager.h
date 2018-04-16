@@ -193,6 +193,7 @@ public:
   /// \brief  Get current renderer plugin index
   int getRendererPluginIndex() const;
 
+  /// \brief  Get list of available Hydra renderer plugin names
   static const MStringArray& getRendererPluginList() { return m_rendererPluginsNames; }
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -225,17 +226,19 @@ public:
   AL_DECL_MULTI_CHILD_ATTRIBUTE(serialized);
   AL_DECL_MULTI_CHILD_ATTRIBUTE(anonymous);
 
-  /// Hydra renderer plugin used for rendering (not storable)
+  /// Hydra renderer plugin name used for rendering (storable)
+  AL_DECL_ATTRIBUTE(rendererPluginName);
+  /// Hydra renderer plugin index used for UI (internal)
   AL_DECL_ATTRIBUTE(rendererPlugin);
 
 private:
   static MObject _findNode();
   static void onAttributeChanged(MNodeMessage::AttributeMessage, MPlug&, MPlug&, void*);
 
-  /// \brief  adds the attribute changed callback to the proxy shape
+  /// \brief  adds the attribute changed callback to manager
   void addAttributeChangedCallback();
 
-  /// \brief  removes the attribute changed callback from the proxy shape
+  /// \brief  removes the attribute changed callback from manager
   void removeAttributeChangedCallback();
 
   LayerDatabase m_layerDatabase;
@@ -255,6 +258,10 @@ private:
 
   void postConstructor() override;
 
+  bool setInternalValueInContext(const MPlug& plug, const MDataHandle& dataHandle, MDGContext& ctx) override;
+  
+  bool getInternalValueInContext(const MPlug& plug, MDataHandle& dataHandle, MDGContext& ctx) override;
+  
   /// \var    static MObject layers();
   /// \brief  access the layers attribute handle
   /// \return the handle to the layers attribute
