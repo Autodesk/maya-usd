@@ -250,25 +250,28 @@ MStatus ProxyShapeImport::redoIt()
   // set the name of the node
   MFnDagNode fnShape(m_shape);
 
-  // if lots of TM's have been specified as parents, just name the shape explicitly
-  if(m_parentTransforms.length())
+  if(m_createdParent)
   {
-    if(m_proxy_name.length())
+    // if lots of TM's have been specified as parents, just name the shape explicitly
+    if(m_parentTransforms.length())
     {
-      fnShape.setName(m_proxy_name + "Shape");
-    }
-  }
-  else
-  {
-    MFnDependencyNode fnTransform(fnShape.parent(0));
-    fnShape.setName(fnTransform.name() + "Shape");
-    if(m_proxy_name.length())
-    {
-      fnTransform.setName(m_proxy_name);
+      if(m_proxy_name.length())
+      {
+        fnShape.setName(m_proxy_name + "Shape");
+      }
     }
     else
     {
-      fnTransform.setName("AL_usdmaya_Proxy");
+      MFnDependencyNode fnTransform(fnShape.parent(0));
+      fnShape.setName(fnTransform.name() + "Shape");
+      if(m_proxy_name.length())
+      {
+        fnTransform.setName(m_proxy_name);
+      }
+      else
+      {
+        fnTransform.setName("AL_usdmaya_Proxy");
+      }
     }
   }
 
@@ -296,6 +299,7 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
         items.getDependNode(i, node);
         if(node.hasFn(MFn::kTransform))
         {
+          m_createdParent = false;
           m_parentTransforms.append(node);
         }
       }
@@ -406,17 +410,13 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
 
   if(connectToTime)
   {
-    MSelectionList temp;
     MSelectionList sl;
-    MGlobal::getActiveSelectionList(temp, true);
-    MGlobal::selectByName("time1");
-    MGlobal::getActiveSelectionList(sl);
-    MGlobal::setActiveSelectionList(temp);
+    sl.add("time1");
     MObject time1;
     sl.getDependNode(0, time1);
     MFnDependencyNode fnTime(time1);
     MPlug outTime = fnTime.findPlug("outTime");
-    m_modifier.connect(outTime, MPlug(m_shape, nodes::ProxyShape::time()));
+    m_modifier2.connect(outTime, MPlug(m_shape, nodes::ProxyShape::time()));
   }
   status = redoIt();
   CHECK_MSTATUS_AND_RETURN_IT(status);
