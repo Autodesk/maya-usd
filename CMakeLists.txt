@@ -102,3 +102,6 @@ install(FILES ${PROJECT_BINARY_DIR}/ALUsdMayaConfig.cmake
   DESTINATION ${CMAKE_INSTALL_PREFIX}
   COMPONENT dev
 )
+
+install(CODE "message(STATUS \"POST INSTALL: Compiling python/pyc for ${CMAKE_INSTALL_PREFIX} ... \")")
+install(CODE "execute_process(COMMAND python -m compileall ${CMAKE_INSTALL_PREFIX} )")

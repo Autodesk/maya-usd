@@ -126,6 +126,8 @@ configure_file (
   ${CMAKE_BINARY_DIR}/${SCHEMAS_PYTHON_PATH}/__init__.py
 )
 
+install(CODE "execute_process(COMMAND python -m compileall ${CMAKE_BINARY_DIR}/${currentPath}/__init__.py )")
+
 string(REPLACE "/" ";" folderHierarchy "${SCHEMAS_PYTHON_PATH}")
 
 list(LENGTH folderHierarchy listCount)
@@ -157,6 +159,9 @@ install(
     DESTINATION
         ${CMAKE_INSTALL_PREFIX}/lib/python
 )
+
+install(CODE "message(STATUS \"POST INSTALL: Compiling python/pyc for ${CMAKE_INSTALL_PREFIX}/lib/python ... \")")
+install(CODE "execute_process(COMMAND python -m compileall ${CMAKE_INSTALL_PREFIX}/lib/python )")
 
 ####################################################################################################
 # Install public headers
