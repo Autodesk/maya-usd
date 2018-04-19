@@ -195,7 +195,7 @@ extern void randomAnimatedValue(MPlug plug, double startFrame, double endFrame);
   /// \param[in] buildUsdStage function that will populate a USDStage and return a UsdStageRefPtr
   /// \param[in] tempPath to where the contents of the populated stage is written out to. This file is then read into the ProxyShape.
   /// \return AL::usdmaya::nodes::ProxyShape
-extern AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(std::function<UsdStageRefPtr()> buildUsdStage, const std::string& tempPath);
+extern AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(std::function<UsdStageRefPtr()> buildUsdStage, const std::string& tempPath, MObject* shapeParent=nullptr);
 
 /// \brief  Creates a ProxyShape with the contents generated from the buildUsdStage function object.
 //          It will export it into the specified temp_location and

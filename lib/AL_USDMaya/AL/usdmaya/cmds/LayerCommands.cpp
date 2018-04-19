@@ -60,10 +60,11 @@ namespace {
     AL::usdmaya::nodes::ProxyShape* foundShape = nullptr;
 
     MDagPath path;
-    for(uint32_t i = 0; i < sl.length(); ++i)
+    const uint32_t selLength = sl.length();
+    for(uint32_t i = 0; i < selLength ; ++i)
     {
       MStatus status = sl.getDagPath(i, path);
-      if(!status) continue;
+      if(status != MS::kSuccess) continue;
 
       MFnDagNode fn(path);
 
@@ -136,12 +137,31 @@ MArgDatabase LayerCommandBase::makeDatabase(const MArgList& args)
 //----------------------------------------------------------------------------------------------------------------------
 nodes::ProxyShape* LayerCommandBase::getShapeNode(const MArgDatabase& args)
 {
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCommandBase::getShapeNode\n");
   MDagPath path;
   MSelectionList sl;
   args.getObjects(sl);
 
-  nodes::ProxyShape* foundShape = getProxyShapeFromSel(sl);
-  if(foundShape) return foundShape;
+  const uint32_t selLength = sl.length();
+  for(uint32_t i = 0; i < selLength; ++i)
+  {
+    MStatus status = sl.getDagPath(i, path);
+    if(status != MS::kSuccess) continue;
+
+    if(path.node().hasFn(MFn::kTransform))
+    {
+      path.extendToShape();
+    }
+
+    if(path.node().hasFn(MFn::kPluginShape))
+    {
+      MFnDagNode fn(path);
+      if(fn.typeId() == nodes::ProxyShape::kTypeId)
+      {
+        return (nodes::ProxyShape*)fn.userNode();
+      }
+    }
+  }
 
   sl.clear();
 
@@ -152,8 +172,26 @@ nodes::ProxyShape* LayerCommandBase::getShapeNode(const MArgDatabase& args)
       if(args.getFlagArgument("-p", 0, proxyName))
       {
         sl.add(proxyName);
-        foundShape = getProxyShapeFromSel(sl);
-        if(foundShape) return foundShape;
+        if(sl.length())
+        {
+          MStatus status = sl.getDagPath(0, path);
+          if(status == MS::kSuccess)
+          {
+            if(path.node().hasFn(MFn::kTransform))
+            {
+              path.extendToShape();
+            }
+
+            if(path.node().hasFn(MFn::kPluginShape))
+            {
+              MFnDagNode fn(path);
+              if(fn.typeId() == nodes::ProxyShape::kTypeId)
+              {
+                return (nodes::ProxyShape*)fn.userNode();
+              }
+            }
+          }
+        }
       }
       MGlobal::displayError("Invalid ProxyShape specified/selected with -p flag");
     }
@@ -892,7 +930,7 @@ MStatus LayerSetMuted::doIt(const MArgList& argList)
     }
     else
     {
-      MGlobal::displayError("LayerSave: no layer manager in scene (so no layers)");
+      MGlobal::displayError("LayerSetMuted: no layer manager in scene (so no layers)");
       throw MS::kFailure;
     }
     LAYER_HANDLE_CHECK(m_layer);
@@ -926,7 +964,6 @@ MStatus LayerSetMuted::redoIt()
     m_layer->SetMuted(m_muted);
   return MS::kSuccess;
 }
-
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Get / Set renderer plugin settings
 //----------------------------------------------------------------------------------------------------------------------
@@ -981,6 +1018,100 @@ MStatus ManageRenderer::doIt(const MArgList& argList)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief Retrieves all the layers that have been set as the EditTarget from any Stage during this session.
+//----------------------------------------------------------------------------------------------------------------------
+AL_MAYA_DEFINE_COMMAND(LayerManager, AL_usdmaya);
+
+//----------------------------------------------------------------------------------------------------------------------
+bool LayerManager::isUndoable() const
+{
+  return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MSyntax LayerManager::createSyntax()
+{
+  MSyntax syn = setUpCommonSyntax();
+  syn.useSelectionAsDefault(true);
+  syn.setObjectType(MSyntax::kSelectionList, 0);
+  syn.addFlag("-dal", "-dirtyallLayers", MSyntax::kNoArg);
+  syn.addFlag("-dso", "-dirtysessiononly", MSyntax::kNoArg);
+  syn.addFlag("-dlo", "-dirtyedittargetlayersonly", MSyntax::kNoArg);
+  return syn;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus LayerManager::doIt(const MArgList& argList)
+{
+  try
+  {
+    MArgDatabase args = makeDatabase(argList);
+    AL_MAYA_COMMAND_HELP(args, g_helpText);
+
+    nodes::LayerManager* layerManager = nodes::LayerManager::findManager();
+
+    auto shouldRecord = [&](const MString& currId)
+    {
+      if(args.isFlagSet("-dso"))
+      {
+        UsdStageRefPtr stage = getShapeNodeStage(args);
+        std::string shapesSessionId = stage->GetSessionLayer()->GetIdentifier();
+        if(std::strcmp(currId.asChar(), shapesSessionId.c_str()) != 0)
+        {
+          // only return the dirty session layer for the selected stage
+          return false;
+        }
+      }
+      else if(args.isFlagSet("-dlo"))
+      {
+        std::string displayName = SdfLayer::GetDisplayNameFromIdentifier(currId.asChar());
+        std::size_t found = displayName.find("session");
+        if(found != std::string::npos)
+        {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    MStringArray results;
+    if(layerManager)
+    {
+      MStringArray identifiers;
+      layerManager->getLayerIdentifiers(identifiers);
+
+      for(int x = 0; x < identifiers.length(); ++x)
+      {
+        MString currId = identifiers[x];
+
+        if(!shouldRecord(currId))
+        {
+          continue;
+        }
+
+        SdfLayerHandle l = layerManager->findLayer(currId.asChar());
+        if(l)
+        {
+          std::string str;
+          l->ExportToString(&str);
+
+          // Write the results in adjacent pairs(id,contents, id,contents)
+          results.append(currId);
+          results.append(AL::maya::utils::convert(str));
+        }
+      }
+    }
+    setResult(results);
+  }
+  catch(const MStatus& status)
+  {
+    return status;
+  }
+
+  return MS::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MStringArray buildEditedLayersList(const MString&)
 {
   MStringArray result;
@@ -1024,26 +1155,6 @@ MStringArray buildProxyLayersList(const MString&)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStringArray buildRendererPluginsList(const MString&)
-{
-  nodes::LayerManager* layerManager = nodes::LayerManager::findManager();
-  if(layerManager)
-  {
-    int index = layerManager->getRendererPluginIndex();
-    if (index > 0)
-    {
-      // swap items so current plugin is first and active in the list
-      MStringArray result = AL::usdmaya::nodes::LayerManager::getRendererPluginList();
-      MString temp = result[0];
-      result[0] = result[index];
-      result[index] = temp;
-      return result;
-    }
-  }
-  return AL::usdmaya::nodes::LayerManager::getRendererPluginList();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 void constructLayerCommandGuis()
 {
   {
@@ -1063,15 +1174,6 @@ void constructLayerCommandGuis()
     // we build our layer list using identifiers, so make sure the command is told to expect identifiers
     setEditTarget.addExecuteText(" -fid ");
     setEditTarget.addListOption("l", "USD Layer", (AL::maya::utils::GenerateListFn)buildProxyLayersList);
-  }
-
-  /// It makes little sense to add this menu when there's just one option
-  if (AL::usdmaya::nodes::LayerManager::getRendererPluginList().length() > 1)
-  {
-    {
-      AL::maya::utils::CommandGuiHelper manageRenderer("AL_usdmaya_ManageRenderer", "Hydra Renderer Plugin", "Set", "USD/Renderer", false);
-      manageRenderer.addListOption("sp", "Plugin Name", (AL::maya::utils::GenerateListFn)buildRendererPluginsList);
-    }
   }
 }
 
@@ -1240,6 +1342,23 @@ LayerSetMuted Overview:
      LayerSetMuted -m false "identifier/for/layer.usda";  //< unmutes the layer 'layer.usda'
 
   This command is undoable, but it will probably crash right now.
+)";
+
+//----------------------------------------------------------------------------------------------------------------------
+const char* const LayerManager::g_helpText = R"(
+LayerManager Command Overview:
+  This command retrieves all the layers that have been set as the EditTarget from any Stage during this session.
+
+  Returns a StringArray in the format of [LayerIdentifier_A,LayerContents_A, LayerIdentifier_B,LayerContents_B]
+
+  Retrieves all Layers that have been set as the EditTarget and have been modified:
+  LayerManager -dall "ProxyShape1"
+
+  Retrieves the SessionLayer that has been modified for the passed in ProxyShape's stage:
+  LayerManager -dso "ProxyShape1"
+
+  Retrieves all Layers, except SessionLayers, that have been set as the EditTarget and have been modified:
+  LayerManager -dlo "ProxyShape1"
 )";
 
 //----------------------------------------------------------------------------------------------------------------------
