@@ -8,7 +8,7 @@ Represent Maya data in Maya, and USD data in USD -  for example, we use AL_USDMa
 Pixar's [USDMaya plugin](https://graphics.pixar.com/usd/docs/Maya-USD-Plugins.html) was originally designed for quite a specific (Set Dressing) workflow using Maya's Scene Assembly Feature. Maya is our most important DCC app, and while, like in the Pixar plugin, we try and avoid representing most of our data (particularly large and complex things) in the Maya native data model, we do use it as the hub of our Scene Building and artist workflow - our Layout Artists, Animators, Set Dressers and Lighters work mostly in Maya, so it made sense to try and implement something that was more tailored to the way we work at Animal Logic. We played with the idea of modifying/forking the existing Pixar USDMaya, but in the end we diverged so much that it didn't make sense. In the end, we think the two plugins complement each other.
 
 ## Contact
-Email us at **usdmaya@al.com.au**. We may set up a google group or some other forum/mailing list as the need arises.
+We have a google group for discussion and technical assistance: https://groups.google.com/forum/#!forum/al_usdmaya-discussion. For CLAs or to contact us directly, use email  **usdmaya@al.com.au**.
 
 
 ## Detailed Documentation
