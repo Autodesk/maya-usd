@@ -16,6 +16,7 @@
 #include "AL/usd/utils/ForwardDeclares.h"
 #include "AL/usd/utils/SIMD.h"
 #include "AL/usd/utils/ALHalf.h"
+#include "AL/usd/utils/DiffCore.h"
 PXR_NAMESPACE_USING_DIRECTIVE
 #include <algorithm>
 #include <cmath>
@@ -492,7 +493,7 @@ bool compareArray(
     const float* const input1,
     const size_t count0,
     const size_t count1,
-    const float eps = 1e-5f)
+    const float eps)
 {
   if(count0 != count1)
   {

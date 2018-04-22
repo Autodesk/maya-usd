@@ -59,7 +59,7 @@ class ImportCommand;
 class ImportTranslator;
 struct ImporterParams;
 struct NativeTranslatorRegistry;
-class NodeFactory;
+struct NodeFactory;
 class TransformIterator;
 namespace translators {
   class DagNodeTranslator;
