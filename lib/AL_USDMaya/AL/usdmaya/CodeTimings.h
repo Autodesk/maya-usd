@@ -20,6 +20,7 @@
 #include <ctime>
 #include <cassert>
 #include <stdint.h>
+#include <time.h>
 
 namespace AL {
 namespace usdmaya {
