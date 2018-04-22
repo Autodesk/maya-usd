@@ -142,12 +142,16 @@ add_library(${LIBRARY_NAME}
         ${AL_usdmaya_fileio_translators_source}
         ${AL_usdmaya_nodes_source}
 )
-set_target_properties(${LIBRARY_NAME}
-    PROPERTIES COMPILE_DEFINITIONS 
-        "MFB_PACKAGE_NAME=${LIBRARY_NAME};MFB_ALT_PACKAGE_NAME=${LIBRARY_NAME};MFB_PACKAGE_MODULE=usdmaya"
-)
 
-add_definitions(-DAL_USDMAYA_LOCATION_NAME="${AL_USDMAYA_LOCATION_NAME}")
+target_compile_definitions(${LIBRARY_NAME}
+    PRIVATE
+        AL_MAYA_MACROS_EXPORT
+        AL_USDMAYA_EXPORT
+        MFB_PACKAGE_NAME="${LIBRARY_NAME}"
+        MFB_ALT_PACKAGE_NAME="${LIBRARY_NAME}"
+        MFB_PACKAGE_MODULE=usdmaya
+        AL_USDMAYA_LOCATION_NAME="${AL_USDMAYA_LOCATION_NAME}"
+)
 
 # AL_USDMayaGL
 target_include_directories(
@@ -174,8 +178,6 @@ target_link_libraries(${LIBRARY_NAME}
     usdImaging
     usdImagingGL
     vt
-    rt
-    ${PYTHON_LIBRARIES}
     ${Boost_PYTHON_LIBRARY}
     ${Boost_THREAD_LIBRARY}
     ${MAYA_Foundation_LIBRARY}
@@ -200,8 +202,9 @@ install(TARGETS ${LIBRARY_NAME}
 
 set_property(GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 
-set(PYTHON_LIBRARY_NAME _${LIBRARY_NAME})
 # python bindings
+set(PYTHON_LIBRARY_NAME _${LIBRARY_NAME})
+
 add_library(${PYTHON_LIBRARY_NAME}
     SHARED
     AL/usdmaya/module.cpp
@@ -210,14 +213,23 @@ add_library(${PYTHON_LIBRARY_NAME}
     AL/usdmaya/nodes/wrapProxyShape.cpp
 )
 
-set_target_properties(${PYTHON_LIBRARY_NAME}
-    PROPERTIES COMPILE_DEFINITIONS 
-        "MFB_PACKAGE_NAME=${LIBRARY_NAME};MFB_ALT_PACKAGE_NAME=${LIBRARY_NAME};MFB_PACKAGE_MODULE=usdmaya"
+target_compile_definitions(${PYTHON_LIBRARY_NAME}
+    PRIVATE
+        MFB_PACKAGE_NAME=${LIBRARY_NAME}
+        MFB_ALT_PACKAGE_NAME=${LIBRARY_NAME}
+        MFB_PACKAGE_MODULE=usdmaya
 )
 set_target_properties(${PYTHON_LIBRARY_NAME} 
     PROPERTIES 
         PREFIX ""
 )
+if(MSVC)
+set_target_properties(${PYTHON_LIBRARY_NAME}
+    PROPERTIES
+        SUFFIX ".pyd"
+)
+endif()
+
 target_link_libraries(${PYTHON_LIBRARY_NAME}
     ${LIBRARY_NAME}
 )

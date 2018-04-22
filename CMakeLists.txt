@@ -36,8 +36,12 @@ include_directories(${PXR_INCLUDE_DIRS})
 find_package(Boost COMPONENTS
                 python
                 thread
+                chrono
+                filesystem
                 REQUIRED
 )
+
+set(NEED_BOOST_FILESYSTEM ON)
 
 if(WIN32)
     set(CMAKE_CXX_FLAGS
