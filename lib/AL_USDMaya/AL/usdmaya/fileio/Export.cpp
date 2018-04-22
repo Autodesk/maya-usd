@@ -244,7 +244,7 @@ struct Export::Impl
         m_stage->SetDefaultPrim(*first);
       }
     }
-    if (!m_stage->HasDefaultPrim() and !defaultPrim.IsEmpty())
+    if (!m_stage->HasDefaultPrim() && !defaultPrim.IsEmpty())
     {
       m_stage->SetDefaultPrim(m_stage->GetPrimAtPath(defaultPrim));
     }

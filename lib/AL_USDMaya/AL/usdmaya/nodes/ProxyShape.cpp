@@ -577,7 +577,7 @@ ProxyShape::ProxyShape()
     }
 
     // If prim has exclusion tag or is a descendent of a prim with it, create as Maya geo
-    if (excludeGeo or primHasExcludedParent(prim))
+    if (excludeGeo || primHasExcludedParent(prim))
     {
       VtValue schemaName(fileio::ALExcludedPrimSchema.GetString());
       prim.SetCustomDataByKey(fileio::ALSchemaType, schemaName);
@@ -1903,7 +1903,7 @@ MBoundingBox ProxyShape::boundingBox() const
     UsdGeomImageable imageablePrim(prim);
     bool showGuides = inputBoolValue(dataBlock, m_displayGuides);
     bool showRenderGuides = inputBoolValue(dataBlock, m_displayRenderGuides);
-    if (showGuides and showRenderGuides)
+    if (showGuides && showRenderGuides)
     {
       allBox = imageablePrim.ComputeUntransformedBound(
             currTime,
@@ -1913,7 +1913,7 @@ MBoundingBox ProxyShape::boundingBox() const
             UsdGeomTokens->render);
     }
     else
-    if (showGuides and not showRenderGuides)
+    if (showGuides && !showRenderGuides)
     {
       allBox = imageablePrim.ComputeUntransformedBound(
             currTime,
@@ -1921,7 +1921,7 @@ MBoundingBox ProxyShape::boundingBox() const
             UsdGeomTokens->proxy,
             UsdGeomTokens->guide);
     }
-    else if (not showGuides and showRenderGuides)
+    else if (!showGuides && showRenderGuides)
     {
       allBox = imageablePrim.ComputeUntransformedBound(
             currTime,

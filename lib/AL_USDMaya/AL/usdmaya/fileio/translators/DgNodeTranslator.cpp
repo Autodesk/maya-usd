@@ -133,7 +133,7 @@ MStatus DgNodeTranslator::setAngleAnim(const MObject node, const MObject attr, c
 
 MStatus DgNodeTranslator::setFloatAttrAnim(const MObject node, const MObject attr, UsdAttribute usdAttr, double conversionFactor)
 {
-  if (not usdAttr.GetNumTimeSamples())
+  if (!usdAttr.GetNumTimeSamples())
   {
     return MS::kFailure;
   }

@@ -91,7 +91,7 @@ MStatus CameraTranslator::copyAttributes(const UsdPrim& from, MObject to, const 
   AL_MAYA_CHECK_ERROR(setBool(to, m_orthographic, isOrthographic), errorString);
 
   // Horizontal film aperture
-  if (not setFloatAttrAnim(to, m_horizontalFilmAperture, usdCamera.GetHorizontalApertureAttr(), mm_to_inches))
+  if (!setFloatAttrAnim(to, m_horizontalFilmAperture, usdCamera.GetHorizontalApertureAttr(), mm_to_inches))
   {
       float horizontalAperture;
       usdCamera.GetHorizontalApertureAttr().Get(&horizontalAperture);
@@ -99,7 +99,7 @@ MStatus CameraTranslator::copyAttributes(const UsdPrim& from, MObject to, const 
   }
 
   // Vertical film aperture
-  if (not setFloatAttrAnim(to, m_verticalFilmAperture, usdCamera.GetVerticalApertureAttr(), mm_to_inches))
+  if (!setFloatAttrAnim(to, m_verticalFilmAperture, usdCamera.GetVerticalApertureAttr(), mm_to_inches))
   {
       float verticalAperture;
       usdCamera.GetVerticalApertureAttr().Get(&verticalAperture);
@@ -107,7 +107,7 @@ MStatus CameraTranslator::copyAttributes(const UsdPrim& from, MObject to, const 
   }
 
   // Horizontal film aperture offset
-  if (not setFloatAttrAnim(to, m_horizontalFilmApertureOffset, usdCamera.GetHorizontalApertureOffsetAttr(), mm_to_inches))
+  if (!setFloatAttrAnim(to, m_horizontalFilmApertureOffset, usdCamera.GetHorizontalApertureOffsetAttr(), mm_to_inches))
   {
       float horizontalApertureOffset;
       usdCamera.GetHorizontalApertureOffsetAttr().Get(&horizontalApertureOffset);
@@ -115,7 +115,7 @@ MStatus CameraTranslator::copyAttributes(const UsdPrim& from, MObject to, const 
   }
 
   // Vertical film aperture offset
-  if (not setFloatAttrAnim(to, m_verticalFilmApertureOffset, usdCamera.GetVerticalApertureOffsetAttr(), mm_to_inches))
+  if (!setFloatAttrAnim(to, m_verticalFilmApertureOffset, usdCamera.GetVerticalApertureOffsetAttr(), mm_to_inches))
   {
       float verticalApertureOffset;
       usdCamera.GetVerticalApertureOffsetAttr().Get(&verticalApertureOffset);
@@ -123,7 +123,7 @@ MStatus CameraTranslator::copyAttributes(const UsdPrim& from, MObject to, const 
   }
 
   // Focal length
-  if (not setFloatAttrAnim(to, m_focalLength, usdCamera.GetFocalLengthAttr()))
+  if (!setFloatAttrAnim(to, m_focalLength, usdCamera.GetFocalLengthAttr()))
   {
       float focalLength;
       usdCamera.GetFocalLengthAttr().Get(&focalLength);
@@ -138,7 +138,7 @@ MStatus CameraTranslator::copyAttributes(const UsdPrim& from, MObject to, const 
   AL_MAYA_CHECK_ERROR(setDistance(to, m_farDistance, MDistance(clippingRange[1], MDistance::kCentimeters)), errorString);
 
   // F-Stop
-  if (not setFloatAttrAnim(to, m_fstop, usdCamera.GetFStopAttr()))
+  if (!setFloatAttrAnim(to, m_fstop, usdCamera.GetFStopAttr()))
   {
     float fstop;
     usdCamera.GetFStopAttr().Get(&fstop);

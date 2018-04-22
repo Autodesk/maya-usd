@@ -313,7 +313,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
             default: break;
           }
 
-          if (not attr.isNull())
+          if (!attr.isNull())
           {
             setAngleAnim(to, attr, op);
           }

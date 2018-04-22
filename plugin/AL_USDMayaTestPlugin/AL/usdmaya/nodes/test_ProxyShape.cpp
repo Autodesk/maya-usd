@@ -1208,7 +1208,7 @@ TEST(ProxyShape, relativePathSupport)
 
   UsdStageCache &cache = AL::usdmaya::StageCache::Get();
   std::vector<UsdStageRefPtr> stages = cache.GetAllStages();
-  EXPECT_TRUE(not stages.empty());
+  EXPECT_TRUE(!stages.empty());
 
   auto stage = stages[0];
   checkStageAndRootLayer(stage, bootstrapFullPath);
@@ -1228,7 +1228,7 @@ TEST(ProxyShape, relativePathSupport)
 
   cache = AL::usdmaya::StageCache::Get();
   stages = cache.GetAllStages();
-  EXPECT_TRUE(not stages.empty());
+  EXPECT_TRUE(!stages.empty());
 
   stage = stages[0];
   checkStageAndRootLayer(stage, bootstrapFullPath);

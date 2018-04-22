@@ -58,7 +58,7 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent)
 
   const UsdGeomMesh mesh(prim);
   TfToken orientation;
-  bool leftHanded = (mesh.GetOrientationAttr().Get(&orientation) and orientation == UsdGeomTokens->leftHanded);
+  bool leftHanded = (mesh.GetOrientationAttr().Get(&orientation) && orientation == UsdGeomTokens->leftHanded);
 
   MFnMesh fnMesh;
   MFloatPointArray points;
