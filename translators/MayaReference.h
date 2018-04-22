@@ -19,9 +19,7 @@
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/utils/ForwardDeclares.h"
 
-IGNORE_USD_WARNINGS_PUSH
 #include "pxr/usd/usd/stage.h"
-IGNORE_USD_WARNINGS_POP
 
 namespace AL {
 namespace usdmaya {
