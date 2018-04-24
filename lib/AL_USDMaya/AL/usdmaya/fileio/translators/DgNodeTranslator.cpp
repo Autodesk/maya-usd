@@ -130,7 +130,6 @@ MStatus DgNodeTranslator::setAngleAnim(const MObject node, const MObject attr, c
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-
 MStatus DgNodeTranslator::setFloatAttrAnim(const MObject node, const MObject attr, UsdAttribute usdAttr, double conversionFactor)
 {
   if (!usdAttr.GetNumTimeSamples())
@@ -184,6 +183,51 @@ MStatus DgNodeTranslator::setFloatAttrAnim(const MObject node, const MObject att
         break;
       }
     }
+  }
+
+  return MS::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus DgNodeTranslator::setVisAttrAnim(const MObject node, const MObject attr, const UsdAttribute &usdAttr)
+{
+  if (not usdAttr.GetNumTimeSamples())
+  {
+    return MS::kFailure;
+  }
+
+  const char* const errorString = "DgNodeTranslator::setVisAttrAnim";
+  MStatus status;
+
+  MPlug plug(node, attr);
+  MPlug srcPlug;
+  MFnAnimCurve fnCurve;
+  MDGModifier dgmod;
+
+  srcPlug = plug.source(&status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+  if(!srcPlug.isNull())
+  {
+    std::cout << "[DgNodeTranslator::setVisAttrAnim] disconnecting curve! = " << srcPlug.name().asChar() << std::endl;
+    dgmod.disconnect(srcPlug, plug);
+    dgmod.doIt();
+  }
+  fnCurve.create(plug, NULL, &status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+
+  std::vector<double> times;
+  usdAttr.GetTimeSamples(&times);
+
+  TfToken value;
+  for(auto const& timeValue: times)
+  {
+    const bool retValue = usdAttr.Get<TfToken>(&value, timeValue);
+    if(!retValue) continue;
+
+    MTime tm(timeValue, MTime::kFilm);
+
+    fnCurve.addKey(tm, (value == UsdGeomTokens->invisible) ? 0 : 1, MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
+    AL_MAYA_CHECK_ERROR(status, errorString);
   }
 
   return MS::kSuccess;

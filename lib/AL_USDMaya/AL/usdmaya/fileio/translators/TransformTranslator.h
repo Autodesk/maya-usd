@@ -109,6 +109,7 @@ private:
   static MObject m_rotatePivotTranslate;
   static MObject m_selectHandle;
   static MObject m_transMinusRotatePivot;
+  static MObject m_visibility;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

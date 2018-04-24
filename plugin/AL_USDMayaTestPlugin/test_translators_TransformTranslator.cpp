@@ -111,7 +111,8 @@ TEST(translators_TranformTranslator, animated_io)
         "shear",
         "inheritsTransform",
         "translate",
-        "rotateOrder"
+        "rotateOrder",
+        "visibility"
     };
     const uint32_t numAttributes = sizeof(attributeNames) / sizeof(const char* const);
 
