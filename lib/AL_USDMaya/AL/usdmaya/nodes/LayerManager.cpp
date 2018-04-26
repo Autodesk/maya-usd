@@ -271,6 +271,8 @@ MStatus LayerManager::initialise()
   {
     setNodeType(kTypeName);
 
+    addFrame("Serialization infos");
+
     // add attributes to store the serialization info
     m_identifier = addStringAttr("identifier", "id", kCached | kReadable | kStorable | kHidden);
     m_serialized = addStringAttr("serialized", "szd", kCached | kReadable | kStorable | kHidden);
