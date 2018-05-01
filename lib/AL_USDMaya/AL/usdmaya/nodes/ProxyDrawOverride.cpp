@@ -135,8 +135,6 @@ MUserData* ProxyDrawOverride::prepareForDraw(
     return NULL;
   }
 
-  data->m_params.showGuides = data->m_shape->displayGuidesPlug().asBool();
-  data->m_params.showRender = data->m_shape->displayRenderGuidesPlug().asBool();
   data->m_rootPrim = data->m_shape->getRootPrim();
   data->m_engine = engine;
 
