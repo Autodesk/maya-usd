@@ -25,6 +25,11 @@ add_library(${EVENTS_LIBRARY_NAME}
         ${utils_source}
 )
 
+target_compile_definitions(${EVENTS_LIBRARY_NAME}
+    PRIVATE
+        AL_EVENT_EXPORT
+)
+
 target_include_directories(${EVENTS_LIBRARY_NAME}
     PUBLIC 
     ${EVENTS_INCLUDE_LOCATION}
@@ -33,5 +38,7 @@ target_include_directories(${EVENTS_LIBRARY_NAME}
 # install the library
 install(TARGETS ${EVENTS_LIBRARY_NAME}
     LIBRARY
+    DESTINATION ${EVENTS_LIBRARY_LOCATION}
+    RUNTIME
     DESTINATION ${EVENTS_LIBRARY_LOCATION}
 )

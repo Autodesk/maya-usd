@@ -158,7 +158,7 @@ MObject MeshTranslator::createNode(const UsdPrim& from, MObject parent, const ch
   const UsdGeomMesh mesh(from);
 
   TfToken orientation;
-  bool leftHanded = (mesh.GetOrientationAttr().Get(&orientation) and orientation == UsdGeomTokens->leftHanded);
+  bool leftHanded = (mesh.GetOrientationAttr().Get(&orientation) && orientation == UsdGeomTokens->leftHanded);
 
   MFnMesh fnMesh;
   MFloatPointArray points;

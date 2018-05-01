@@ -37,13 +37,8 @@ class TranslatorTestPlugin
   : public TranslatorBase
 {
 public:
-  typedef TranslatorTestPlugin This;
-  typedef TfRefPtr<This> RefPtr;
-  typedef TfWeakPtr<This> Ptr;
 
-  virtual ~TranslatorTestPlugin() {}
-
-  static RefPtr create(TranslatorContextPtr context);
+  AL_USDMAYA_DECLARE_TRANSLATOR(TranslatorTestPlugin);
 
   MStatus initialize() override;
   MStatus import(const UsdPrim& prim, MObject& parent) override;

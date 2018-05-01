@@ -19,6 +19,8 @@
 #include <boost/python/def.hpp>
 #include <boost/python.hpp>
 
+#include <pxr/base/tf/refPtr.h>
+
 #include "maya/MStringArray.h"
 
 #include <memory>
@@ -70,7 +72,7 @@ namespace {
 void wrapLayerManager()
 {
   boost::python::class_<LayerManager, boost::noncopyable>("LayerManager", boost::python::no_init)
-    .def("find", LayerManager::findManager,
+    .def("find", &LayerManager::findManager,
         boost::python::return_value_policy<reference_existing_object>())
         .staticmethod("find")
     .def("findOrCreate", PyLayerManager::findOrCreate,
@@ -84,3 +86,5 @@ void wrapLayerManager()
     .def("getLayerIdentifiers", PyLayerManager::getLayerIdentifiers)
     ;
 }
+
+TF_REFPTR_CONST_VOLATILE_GET(LayerManager)

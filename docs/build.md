@@ -2,8 +2,8 @@
 
 ## Build Requirements
 - This project is buildable on a variety of Linux platforms (It has been tested extensively on CentOS 6.6)
+- Experimental Windows build support.
 - USD-0.8.4 built with ptex-2.0.40 (<2.0.41)
-- Qt-5.6.1
 - [google test framework](https://github.com/google/googletest) (>1.8.0) to build and run the tests
 - GLEW: Maya (certainly up to 2018) uses a very old build of GLEW. We've found that both to use the latest OpenGL 4x features that Hydra exploits, and for stability reasons, you should use a newer version (e.g GLEW 2.0). We've had to LD_PRELOAD GLEW 2.0 to make this happen. 
 

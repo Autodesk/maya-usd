@@ -15,6 +15,8 @@
 //
 #pragma once
 
+#include "../../Api.h"
+
 #include <vector>
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/sdf/path.h"
@@ -63,7 +65,8 @@ public:
   /// \param  previousPrims the previous set of prims that existed in the stage
   /// \param  newPrimSet the new set of prims that have been created
   /// \param  proxy the proxy shape
-  PrimFilter(const SdfPathVector& previousPrims, const UsdPrimVector& newPrimSet, PrimFilterInterface* proxy);
+  AL_USDMAYA_PUBLIC
+  PrimFilter(const SdfPathVector& previousPrims, const AL::usd::utils::UsdPrimVector& newPrimSet, PrimFilterInterface* proxy);
 
   /// \brief  returns the set of prims to create
   inline const std::vector<UsdPrim>& newPrimSet() const

@@ -11,6 +11,7 @@ set(USDUTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib)
 ####################################################################################################
 
 list(APPEND usdutils_headers
+    Api.h
     DebugCodes.h
     ALHalf.h
     DiffCore.h
@@ -26,6 +27,11 @@ list(APPEND usdutils_source
 add_library(${USDUTILS_LIBRARY_NAME}
     SHARED
         ${usdutils_source}
+)
+
+target_compile_definitions(${USDUTILS_LIBRARY_NAME}
+    PRIVATE
+        AL_USD_UTILS_EXPORT
 )
 
 target_include_directories(${USDUTILS_LIBRARY_NAME} 
@@ -53,5 +59,7 @@ install( FILES ${usdutils_headers}
 # install the library
 install(TARGETS ${USDUTILS_LIBRARY_NAME}
     LIBRARY
+    DESTINATION ${USDUTILS_LIBRARY_LOCATION}
+    RUNTIME
     DESTINATION ${USDUTILS_LIBRARY_LOCATION}
 )

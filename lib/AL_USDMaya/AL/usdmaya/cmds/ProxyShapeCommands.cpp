@@ -425,11 +425,13 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   MDagPathArray dagPaths;
   MStringArray stringNames;
   CHECK_MSTATUS_AND_RETURN_IT(dagNode.getAllPaths(dagPaths));
-  auto getName = database.isFlagSet("-fp") ?
-    [](const MDagPath& dagPath) { return dagPath.fullPathName(); } :
-    [](const MDagPath& dagPath) { return dagPath.partialPathName(); };
-  for (int i = 0; i < dagPaths.length(); ++i) {
-    stringNames.append(getName(dagPaths[i]));
+  std::function<MString(const MDagPath&)> getFullPath =
+      [&](const MDagPath& dagPath) { return dagPath.fullPathName(); };
+  std::function<MString(const MDagPath&)> getPartialPath =
+      [&](const MDagPath& dagPath) { return dagPath.partialPathName(); };
+  auto getPath = database.isFlagSet("-fp") ? getFullPath : getPartialPath;
+  for(size_t i = 0; i< dagPaths.length(); i++) {
+    stringNames.append(getPath(dagPaths[i]));
   }
   clearResult();
   setResult(stringNames);

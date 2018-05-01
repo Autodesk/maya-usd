@@ -640,7 +640,7 @@ void randomAnimatedNode(MObject node, const char* const attributeNames[], const 
     EXPECT_EQ(MStatus(MS::kSuccess), status);
 
     // If value is not keyable, set it to be a random value
-    if (not plug.isKeyable())
+    if (!plug.isKeyable())
     {
       randomPlug(plug);
       continue;

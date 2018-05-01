@@ -15,6 +15,9 @@
 //
 #pragma once
 
+#include "../../Api.h"
+#include "AL/maya/utils/Api.h"
+
 #include "maya/MDagPath.h"
 
 #include "pxr/base/tf/refBase.h"
@@ -161,15 +164,18 @@ public:
   typedef TfRefPtr<This> RefPtr;
 
   /// \brief  dtor
+  AL_USDMAYA_PUBLIC
   virtual ~TranslatorBase()
     {}
 
   /// \brief  returns the translated prim type
+  AL_USDMAYA_PUBLIC
   virtual TfType getTranslatedType() const override
     { return m_translatedType; }
 
   /// \brief  returns the context currently being used to translate the USD prims. The context can be used to add
   ///         references to prims you have created in your translator plugins (see:
+  AL_USDMAYA_PUBLIC
   virtual TranslatorContextPtr context() const
     { return m_context; }
 
@@ -177,12 +183,14 @@ public:
   /// \param  primType the type of translator to manufacture
   /// \param  context the translation context
   /// \return a handle to the newly created plugin translator
+  AL_USDMAYA_PUBLIC
   static RefPtr manufacture(const std::string& primType, TranslatorContextPtr context) = delete;
 
   /// \brief  Internal method used to create a new instance of a plugin translator
   /// \param  primType the type of translator to manufacture
   /// \param  context the translation context
   /// \return a handle to the newly created plugin translator
+  AL_USDMAYA_PUBLIC
   virtual MStatus preTearDown(UsdPrim& prim)
     {
       m_isTearingDown = true;
@@ -191,11 +199,13 @@ public:
 
   /// \brief  return the usd stage associated with this context
   /// \return the usd stage
+  AL_USDMAYA_PUBLIC
   UsdStageRefPtr getUsdStage() const
     { return context()->getUsdStage(); }
 
   /// \brief If the translator has had pretearDown called on it then this will return true.
   /// \return true if this prim has had the pretearDown called on it.
+  AL_USDMAYA_PUBLIC
   bool isTearingDown() const
     { return m_isTearingDown; }
 
@@ -233,11 +243,13 @@ public:
   /// \brief  constructs a registry of translator plugins that are currently registered within usd maya. This construction
   ///         should only happen once per-proxy shape.
   /// \param  context the translator context for this registry
+  AL_USDMAYA_PUBLIC
   TranslatorManufacture(TranslatorContextPtr context);
 
   /// \brief  returns a translator for the specified prim type.
   /// \param  type_name the scheman name
   /// \return returns the requested translator type
+  AL_USDMAYA_PUBLIC
   RefPtr get(const TfToken type_name);
 
 private:
@@ -255,6 +267,7 @@ public:
   /// \brief  overridden by the TranslatorFactory to create a new translator for a given type
   /// \param  ctx the current translator context
   /// \return the plugin translator
+  AL_USDMAYA_PUBLIC
   virtual TfRefPtr<TranslatorBase> create(TranslatorContextPtr ctx) const = 0;
 };
 
@@ -281,7 +294,9 @@ public:
 typedef PlugClass This;                                                         \
 typedef TfRefPtr<This> RefPtr;                                                  \
 typedef TfWeakPtr<This> Ptr;                                                    \
+AL_MAYA_MACROS_PUBLIC                                                           \
 static RefPtr create(TranslatorContextPtr context);
+
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a macro to define a plug-in translator
@@ -291,7 +306,7 @@ static RefPtr create(TranslatorContextPtr context);
 TfRefPtr<PlugClass>                                                             \
 PlugClass::create(TranslatorContextPtr context) {                               \
   TfType const &type = TfType::Find<TranslatedType>();                          \
-  if(not type.IsUnknown()) {                                                    \
+  if(!type.IsUnknown()) {                                                    \
     TfRefPtr<PlugClass> plugin = TfCreateRefPtr(new This());                    \
     plugin->setTranslatedType(type);                                            \
     plugin->setContext(context);                                                \
@@ -304,7 +319,7 @@ PlugClass::create(TranslatorContextPtr context) {                               
       typeid(TranslatedType).name());                                           \
     return TfNullPtr;                                                           \
   }                                                                             \
-}                                                                               \
+}                                                                             \
                                                                                 \
 TF_REGISTRY_FUNCTION(TfType)                                                    \
 {                                                                               \

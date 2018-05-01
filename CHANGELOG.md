@@ -1,3 +1,9 @@
+## v0.27.7 (2018-08-01)
+
+### Added
+
++ Experimental Windows support. It has been tested on Windows 7 with Visual Studio 2015 and Maya 2017.
+
 ## v0.27.6 (2018-04-13)
 
 ### Added

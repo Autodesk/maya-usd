@@ -213,7 +213,7 @@ void gatherFaceConnectsAndVertices(const UsdGeomMesh& mesh, MFloatPointArray& po
     {
       int32_t* start = index;
       int32_t* end = index + (faceVertexCount - 1);
-      if(start < indexMax and end < indexMax)
+      if(start < indexMax && end < indexMax)
       {
         std::reverse(start, end + 1);
         index += faceVertexCount;

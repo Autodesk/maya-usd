@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "../Api.h"
+
 #include "maya/MPxDrawOverride.h"
 #include "AL/usdmaya/ForwardDeclares.h"
 
@@ -53,6 +56,7 @@ public:
   /// \brief  static creator method
   /// \param  obj the handle to pass to the constructor
   /// \return the new draw override instance
+  AL_USDMAYA_PUBLIC
   static MHWRender::MPxDrawOverride* creator(const MObject& obj);
 
   /// \brief  Called by Maya to determine if the drawable object is bounded or not.
@@ -84,19 +88,23 @@ public:
       MUserData* oldData) override;
 
   /// \brief  draw classification string for this override
+  AL_USDMAYA_PUBLIC
   static MString kDrawDbClassification;
 
   /// \brief  draw registration id for this override
+  AL_USDMAYA_PUBLIC
   static MString kDrawRegistrantId;
 
   /// \brief  The draw callback, performs the actual rendering for the draw override.
   /// \param  context the current draw context
   /// \param  data the user data generated om the prepareForDraw method
+  AL_USDMAYA_PUBLIC
   static void draw(const MHWRender::MDrawContext& context, const MUserData* data);
 
   /// \brief  utility function to get a pointer to the proxy shape node given the specified path
   /// \param  objPath the path to the shape you wish to query
   /// \return returns a pointer to the proxy shape node at the path (or null if not found)
+  AL_USDMAYA_PUBLIC
   static ProxyShape* getShape(const MDagPath& objPath);
 
   /// \brief  We support the legacy and VP2 core profile rendering.

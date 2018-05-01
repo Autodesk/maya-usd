@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "./Api.h"
+
 #include "maya/MStatus.h"
 #include "maya/MString.h"
 #include "maya/MGlobal.h"
@@ -88,6 +91,7 @@ public:
     inline void print_indent(std::ostream& os, int indent) const
       { for(int i = 0; i <= indent; ++i) os << "  "; }
 
+    AL_MAYA_UTILS_PUBLIC
     void generate(std::ostringstream& os, std::ostringstream& kill, const char* prefix, int indent = 0) const;
 
     const std::string& name() const { return m_name; }
@@ -115,6 +119,7 @@ public:
   /// \param  hasCheckbox if true, the menu item will have a check box. If false, only a menu item will exist.
   /// \param  defaultCheckBoxValue If the checkbox has been enabled, this will determine whether it is on or off by default
   /// \return pointer to the menu item added
+  AL_MAYA_UTILS_PUBLIC
   static MenuItem* addEntry(const char* menuItemPath, const char* command, bool hasCheckbox = false, bool defaultCheckBoxValue = false);
 
   /// \brief  add an entry to the menu
@@ -122,6 +127,7 @@ public:
   /// \param  command the MEL command to execute when the item is clicked.
   /// \param  optionBoxCommand the MEL command to execute when the option box of the menu is clicked.
   /// \return true if the item was added successfully
+  AL_MAYA_UTILS_PUBLIC
   static bool addEntry(const char* menuItemPath, const char* command, const char* optionBoxCommand);
 
   /// \brief  generates an init and exit script that intialises the GUI on plugin load/unload (via MFnPlugin::registerUI).
@@ -180,6 +186,7 @@ public:
   }
 
 private:
+  AL_MAYA_UTILS_PUBLIC
   static std::set<Menu> m_menus;
 };
 

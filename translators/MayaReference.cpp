@@ -35,9 +35,7 @@
 
 #include "AL/usdmaya/utils/Utils.h"
 
-IGNORE_USD_WARNINGS_PUSH
 #include <pxr/usd/usd/attribute.h>
-IGNORE_USD_WARNINGS_POP
 
 
 namespace {

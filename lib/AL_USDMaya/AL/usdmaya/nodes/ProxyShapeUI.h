@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "../Api.h"
+
 #include "maya/MPxSurfaceShapeUI.h"
 #include "AL/usd/utils/ForwardDeclares.h"
 
@@ -37,6 +40,7 @@ class ProxyShapeUI
   ~ProxyShapeUI();
 
   /// \brief  returns a new instance of this UI component
+  AL_USDMAYA_PUBLIC
   static void* creator();
 
   /// \brief  legacy VP1 rendering interface

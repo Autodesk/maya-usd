@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <functional>
-#include <unistd.h>
 
 #include <AL/usd/schemas/MayaReference.h>
 

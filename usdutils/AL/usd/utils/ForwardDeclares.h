@@ -31,11 +31,10 @@ class UsdGeomCamera;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-typedef std::vector<PXR_NS::UsdPrim> UsdPrimVector;
-
-#define IGNORE_USD_WARNINGS_PUSH \
-  _Pragma ("GCC diagnostic push") \
-  _Pragma ("GCC diagnostic ignored \"-Wunused-local-typedefs\"")
-
-#define IGNORE_USD_WARNINGS_POP \
-  _Pragma ("GCC diagnostic pop")
+namespace AL {
+namespace usd {
+namespace utils {
+  typedef std::vector<PXR_NS::UsdPrim> UsdPrimVector;
+}
+}
+}

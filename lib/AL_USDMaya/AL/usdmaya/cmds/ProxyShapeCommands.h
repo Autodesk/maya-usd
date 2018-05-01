@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "../Api.h"
+
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 
@@ -292,6 +295,7 @@ private:
 /// \brief  This function will generate all of the MEL script menus, and the option boxes, for all of the proxy shape
 ///         commands.
 /// \ingroup commands
+AL_USDMAYA_PUBLIC
 void constructProxyShapeCommandGuis();
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "./Api.h"
+
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/sdf/path.h"
@@ -20,18 +22,21 @@ public:
   /// \brief  Determines this path is unselectable
   /// \param  path that you want to determine if it's unselectable
   ///-------------------------------------------------------------------------------------------------------------------
+  AL_USDMAYA_PUBLIC
   bool isPathUnselectable(const SdfPath& path) const;
 
   ///-------------------------------------------------------------------------------------------------------------------
   /// \brief  Adds a list of paths to the selectable list
   /// \param  paths which will be added as selectable. All children paths will be also unselectable
   ///-------------------------------------------------------------------------------------------------------------------
+  AL_USDMAYA_PUBLIC
   void addPathsAsUnselectable(const SdfPathVector& paths);
 
   ///-------------------------------------------------------------------------------------------------------------------
   /// \brief  Adds a path to the unselectable list
   /// \param  path which will be added as unselectable. All children paths will be also unselectable
   ///-------------------------------------------------------------------------------------------------------------------
+  AL_USDMAYA_PUBLIC
   void addPathAsUnselectable(const SdfPath& path);
 
   ///-------------------------------------------------------------------------------------------------------------------
@@ -43,12 +48,14 @@ public:
   /// \brief  Removes a list of paths from the selectable list if the exist.
   /// \param  paths the paths to remove from the selectable list
   ///-------------------------------------------------------------------------------------------------------------------
+  AL_USDMAYA_PUBLIC
   void removePathsAsUnselectable(const SdfPathVector& paths);
 
   ///-------------------------------------------------------------------------------------------------------------------
   /// \brief  Remove a path from the selectable list if the exist.
   /// \param  path the path to remove from the selectable list
   ///-------------------------------------------------------------------------------------------------------------------
+  AL_USDMAYA_PUBLIC
   void removePathAsUnselectable(const SdfPath& path);
 
 private:

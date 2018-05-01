@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "../Api.h"
+
 #include "AL/maya/utils/FileTranslatorBase.h"
 
 namespace AL {
@@ -74,6 +77,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
   }
 
 private:
+  AL_USDMAYA_PUBLIC
   MStatus writer(const MFileObject& file, const AL::maya::utils::OptionsParser& options, FileAccessMode mode);
 
 AL_MAYA_TRANSLATOR_END();

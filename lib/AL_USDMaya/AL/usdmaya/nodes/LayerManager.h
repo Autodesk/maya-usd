@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "../Api.h"
+
 #include "AL/maya/utils/NodeHelper.h"
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
@@ -96,11 +99,13 @@ class LayerManager
 public:
 
   /// \brief  ctor
+  AL_USDMAYA_PUBLIC
   inline LayerManager()
     : MPxNode(), NodeHelper() {}
 
   /// \brief  Find the already-existing non-referenced LayerManager node in the scene, or return a null MObject
   /// \return the found LayerManager node, or a null MObject
+  AL_USDMAYA_PUBLIC
   static MObject findNode();
 
   /// \brief  Either find the already-existing non-referenced LayerManager node in the scene, or make one
@@ -109,10 +114,12 @@ public:
   ///              may not be added to the scene graph yet
   /// \param wasCreated If given, whether a new layer manager had to be created is stored here.
   /// \return the found-or-created LayerManager node
+  AL_USDMAYA_PUBLIC
   static MObject findOrCreateNode(MDGModifier* dgmod=nullptr, bool* wasCreated=nullptr);
 
   /// \brief  Find the already-existing non-referenced LayerManager node in the scene, or return a nullptr
   /// \return the found LayerManager, or a nullptr
+  AL_USDMAYA_PUBLIC
   static LayerManager* findManager();
 
   /// \brief  Either find the already-existing non-referenced LayerManager in the scene, or make one
@@ -121,6 +128,7 @@ public:
   ///              may not be added to the scene graph yet
   /// \param wasCreated If given, whether a new layer manager had to be created is stored here.
   /// \return the found-or-created LayerManager
+  AL_USDMAYA_PUBLIC
   static LayerManager* findOrCreateManager(MDGModifier* dgmod=nullptr, bool* wasCreated=nullptr);
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -139,29 +147,36 @@ public:
   ///         an empty string, it is ignored.
   /// \return bool which is true if the layer was actually added to the list of layers managed by this node
   ///         (ie, if it wasn't already managed, and the given layer handle was valid)
+  AL_USDMAYA_PUBLIC
   bool addLayer(SdfLayerHandle layer, const std::string& identifier=std::string(""));
 
   /// \brief  Remove the given layer to the list of layers managed by this node, if present.
   /// \return bool which is true if the layer was actually removed from the list of layers managed by this node
   ///         (ie, if it was previously managed, and the given layer handle was valid)
+  AL_USDMAYA_PUBLIC
   bool removeLayer(SdfLayerHandle layer);
 
   /// \brief  Find the layer in the list of layers managed by this node, by identifier
   /// \return The found layer handle in the layer list managed by this node (invalid if not found)
+  AL_USDMAYA_PUBLIC
   SdfLayerHandle findLayer(std::string identifier);
 
   /// \brief  Store a list of the managed layers' identifiers in the given MStringArray
   /// \param  outputNames The array to hold the identifier names; will be cleared before being filled.
   ///         No guarantees are made about the order in which the layer identifiers will be returned.
+  AL_USDMAYA_PUBLIC
   void getLayerIdentifiers(MStringArray& outputNames);
 
   /// \brief  Ensures that the layers attribute will be filled out with serialized versions of all tracked layers.
+  AL_USDMAYA_PUBLIC
   MStatus populateSerialisationAttributes();
 
   /// \brief  Clears the layers attribute.
+  AL_USDMAYA_PUBLIC
   MStatus clearSerialisationAttributes();
 
   /// \brief  For every serialized layer stored in attributes, loads them as sdf layers
+  AL_USDMAYA_PUBLIC
   void loadAllLayers();
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -170,6 +185,7 @@ public:
   AL_MAYA_DECLARE_NODE();
 
   /// \brief  Creates the node, but only if there is not a non-referenced one in the scene already.
+  AL_USDMAYA_PUBLIC
   static void* conditionalCreator();
 
   //--------------------------------------------------------------------------------------------------------------------

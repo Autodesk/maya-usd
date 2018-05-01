@@ -40,7 +40,7 @@ TranslatorTestType::~TranslatorTestType()
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorTestType TranslatorTestType::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
-  if (not stage)
+  if (!stage)
   {
     TF_CODING_ERROR("Invalid stage");
     return TranslatorTestType();
@@ -52,7 +52,7 @@ TranslatorTestType TranslatorTestType::Get(const UsdStagePtr &stage, const SdfPa
 TranslatorTestType TranslatorTestType::Define(const UsdStagePtr &stage, const SdfPath &path)
 {
   static TfToken usdPrimTypeName("AL::usdmaya::fileio::translators::TranslatorTestType");
-  if (not stage)
+  if (!stage)
   {
     TF_CODING_ERROR("Invalid stage");
     return TranslatorTestType();

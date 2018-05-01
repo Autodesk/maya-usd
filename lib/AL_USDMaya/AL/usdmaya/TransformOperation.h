@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "./Api.h"
+
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
@@ -55,6 +58,7 @@ enum TransformOperation : uint8_t
 /// \return the transform op enum
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_PUBLIC
 TransformOperation xformOpToEnum(const std::string& opName);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -66,6 +70,7 @@ TransformOperation xformOpToEnum(const std::string& opName);
 /// \return true if the type is compatible with maya
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_PUBLIC
 bool matchesMayaProfile(
     std::vector<UsdGeomXformOp>::const_iterator it,
     std::vector<UsdGeomXformOp>::const_iterator end,

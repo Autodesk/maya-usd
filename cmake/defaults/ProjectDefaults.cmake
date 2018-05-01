@@ -21,30 +21,13 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 #
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    # Set up the rpath such that libraries in lib and lib/python/pxr
-    # can both link properly.
-    if(CMAKE_INSTALL_RPATH)
-        set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:$ORIGIN:$ORIGIN/../../..:$ORIGIN/../../../lib:$ORIGIN/../lib")
-    else()
-        set(CMAKE_INSTALL_RPATH "$ORIGIN:$ORIGIN/../../..:$ORIGIN/../../../lib:$ORIGIN/../lib")
-    endif()
-elseif(APPLE)
+if(APPLE)
     set(OSX_ARCHITECTURES "x86_64" CACHE STRING "Build architectures for OSX")
     set(CMAKE_MACOSX_RPATH ON)
     set(CMAKE_SKIP_BUILD_RPATH FALSE)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
     set(CMAKE_DYLIB_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE STRING "install_name path for dylib.")
-    if(CMAKE_INSTALL_RPATH)
-        set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:${CMAKE_INSTALL_PREFIX}/lib"  CACHE STRING "rpaths separated by semicolons.")
-    else()
-        set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"  CACHE STRING "rpaths separated by semicolons.")
-    endif()
-    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
     list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
-    if("${isSystemDir}" STREQUAL "-1")
-        set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-    endif()
     message(WARNING "Building USD on Mac OSX is currently experimental.")
 elseif(WIN32)
     # Windows specific set up
@@ -62,5 +45,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-# Enable CTest
-enable_testing()
+if (PXR_BUILD_TESTS)
+    # Enable CTest
+    enable_testing()
+endif()

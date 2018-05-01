@@ -14,7 +14,11 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "../Api.h"
+
 #include "AL/usdmaya/ForwardDeclares.h"
+#include "AL/maya/utils/Api.h"
 #include "AL/maya/utils/MayaHelperMacros.h"
 #include "maya/MDGModifier.h"
 #include "maya/MObject.h"
@@ -178,6 +182,7 @@ private:
 
 /// \brief  function called on startup to generate the menu & option boxes for the layer commands
 /// \ingroup commands
+AL_USDMAYA_PUBLIC
 void constructLayerCommandGuis();
 
 //----------------------------------------------------------------------------------------------------------------------
