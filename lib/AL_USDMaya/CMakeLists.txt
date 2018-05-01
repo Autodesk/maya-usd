@@ -3,6 +3,7 @@ set(arDirPath AL/usdmaya)
 set(LIBRARY_NAME AL_USDMaya)
 
 list(APPEND AL_usdmaya_headers
+        AL/usdmaya/Api.h
         AL/usdmaya/AttributeType.h
         AL/usdmaya/DebugCodes.h
         AL/usdmaya/DrivenTransformsData.h
