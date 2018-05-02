@@ -655,6 +655,7 @@ void randomAnimatedNode(MObject node, const char* const attributeNames[], const 
         switch(unAttr.unitType())
         {
           case MFnNumericData::kDouble:
+          case MFnNumericData::kBoolean:
           {
             randomAnimatedValue(plug, startFrame, endFrame);
             break;

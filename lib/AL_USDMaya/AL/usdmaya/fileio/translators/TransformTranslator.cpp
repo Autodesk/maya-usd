@@ -64,6 +64,7 @@ MObject TransformTranslator::m_scalePivotTranslate = MObject::kNullObj;
 MObject TransformTranslator::m_rotatePivotTranslate = MObject::kNullObj;
 MObject TransformTranslator::m_selectHandle = MObject::kNullObj;
 MObject TransformTranslator::m_transMinusRotatePivot = MObject::kNullObj;
+MObject TransformTranslator::m_visibility = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus TransformTranslator::registerType()
@@ -126,6 +127,10 @@ MStatus TransformTranslator::registerType()
   AL_MAYA_CHECK_ERROR(status, errorString);
 
   m_inheritsTransform = nc.attribute("it", &status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+
+  MNodeClass dagNodeClass("dagNode");
+  m_visibility = dagNodeClass.attribute("visibility", &status);
   AL_MAYA_CHECK_ERROR(status, errorString);
 
   return MS::kSuccess;
@@ -528,6 +533,10 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
   AL_MAYA_CHECK_ERROR2(setBool(to, m_inheritsTransform, !resetsXformStack), xformError);
 
   processMetaData(from, to, params);
+  if (UsdAttribute myAttr = from.GetAttribute(UsdGeomTokens->visibility))
+  {
+    setVisAttrAnim(to, m_visibility, myAttr);
+  }
 
   return MS::kSuccess;
 }
@@ -663,8 +672,15 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
   if (plugAnimated || visible != defaultVisible)
   {
     UsdAttribute visibleAttr = xformSchema.GetVisibilityAttr();
-    visibleAttr.Set(visible ? UsdGeomTokens->inherited : UsdGeomTokens->invisible);
-    if (plugAnimated && animTranslator) animTranslator->forceAddTransformPlug(MPlug(from, m_visible), visibleAttr);
+
+    if (plugAnimated && animTranslator)
+    {
+      animTranslator->forceAddTransformPlug(MPlug(from, m_visible), visibleAttr);
+    }
+    else
+    {
+      visibleAttr.Set(visible ? UsdGeomTokens->inherited : UsdGeomTokens->invisible);
+    }
   }
 
   plugAnimated = transformAnimated || animationCheck(animTranslator, MPlug(from, m_translation));
@@ -759,12 +775,12 @@ void TransformTranslator::copyAttributeValue(const MPlug& plug, UsdAttribute& us
 {
   MObject node = plug.node();
   MObject attribute = plug.attribute();
-  static const TfToken visToken("visibility");
+  static const TfToken visToken = UsdGeomTokens->visibility;
   if (usdAttr.GetName() == visToken)
   {
     bool value;
     getBool(node, attribute, value);
-    usdAttr.Set(value ? UsdGeomTokens->inherited : UsdGeomTokens->invisible);
+    usdAttr.Set(value ? UsdGeomTokens->inherited : UsdGeomTokens->invisible, timeCode);
   }
 }
 

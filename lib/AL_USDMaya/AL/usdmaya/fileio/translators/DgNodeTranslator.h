@@ -121,6 +121,14 @@ public:
   AL_USDMAYA_PUBLIC
   static MStatus setFloatAttrAnim(MObject node, MObject attr, UsdAttribute usdAttr, double conversionFactor = 1.0);
 
+  /// \brief  creates animation curves in maya for the visibility attribute
+  /// \param  node the node instance the animated attribute belongs to
+  /// \param  attr the visibility attribute handle
+  /// \param  usdAttr the USD attribute that contains the keyframe data
+  /// \return MS::kSuccess on success, error code otherwise
+  AL_USDMAYA_PUBLIC
+  static MStatus setVisAttrAnim(const MObject node, const MObject attr, const UsdAttribute & usdAttr);
+
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Get array values from Maya
   //--------------------------------------------------------------------------------------------------------------------

@@ -119,6 +119,7 @@ void MenuBuilder::Menu::generate(std::ostringstream& os, std::ostringstream& kil
           nameWithNoSpaces[i] == '\n' ||
           nameWithNoSpaces[i] == '\r') nameWithNoSpaces[i] = '_';
     }
+    os << "if(`menu -exists " << nameWithNoSpaces << "`) return;\n";
     os << "menu -parent $gMainWindow -l \"" << m_name << "\" -aob 1 " << nameWithNoSpaces << ";\n";
     kill << nameWithNoSpaces << " ";
   }
