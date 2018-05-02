@@ -1,4 +1,11 @@
-## v0.27.7 (2018-08-01)
+## v0.27.8 (2018-05-02)
+
+### Changed
+
++ ExportCommand will now export time samples for the visibility attribute.
++ ImportCommand will now correctly import time samples for the visibility attribute.
+
+## v0.27.7 (2018-05-01)
 
 ### Added
 
