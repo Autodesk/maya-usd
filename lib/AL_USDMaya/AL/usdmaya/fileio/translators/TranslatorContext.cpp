@@ -496,12 +496,7 @@ void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
     if(translator)
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim [preTearDown] prim=%s\n", prim.GetPath().GetText());
-
-      // call pretearDown if it hasn't been called before
-      if(!translator->isTearingDown())
-      {
-        translator->preTearDown(prim);
-      }
+      translator->preTearDown(prim);
     }
     else
     {
@@ -531,18 +526,14 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::unloadPrim [tearDown] prim=%s\n", path.GetText());
 
-      // call pretearDown if it hasn't been called before
-      if(!translator->isTearingDown())
+      UsdPrim prim = stage->GetPrimAtPath(path);
+      if(prim)
       {
-        UsdPrim prim = stage->GetPrimAtPath(path);
-        if(prim)
-        {
-          translator->preTearDown(prim);
-        }
-        else
-        {
-          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preTearDown was skipped because the path '%s' was invalid\n", path.GetText());
-        }
+        translator->preTearDown(prim);
+      }
+      else
+      {
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preTearDown was skipped because the path '%s' was invalid\n", path.GetText());
       }
 
       MStatus status = translator->tearDown(path);

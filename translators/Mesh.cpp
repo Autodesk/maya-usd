@@ -184,7 +184,7 @@ MStatus Mesh::preTearDown(UsdPrim& prim)
   MObjectHandle obj;
   context()->getMObject(prim, obj, MFn::kInvalid);
 
-  if(obj.isValid())
+  if(obj.isValid() && prim.IsValid())
   {
     UsdGeomMesh geomPrim(prim);
 
@@ -203,14 +203,18 @@ MStatus Mesh::preTearDown(UsdPrim& prim)
 
       if(dif_geom & AL::usdmaya::utils::kPoints)
       {
-        UsdAttribute pointsAttr = geomPrim.GetPointsAttr();
-        AL::usdmaya::utils::copyVertexData(fnMesh, pointsAttr);
+        if(UsdAttribute pointsAttr = geomPrim.GetPointsAttr())
+        {
+          AL::usdmaya::utils::copyVertexData(fnMesh, pointsAttr);
+        }
       }
 
       if(dif_geom & AL::usdmaya::utils::kNormals)
       {
-        UsdAttribute normalsAttr = geomPrim.GetNormalsAttr();
-        AL::usdmaya::utils::copyNormalData(fnMesh, normalsAttr);
+        if(UsdAttribute normalsAttr = geomPrim.GetNormalsAttr())
+        {
+          AL::usdmaya::utils::copyNormalData(fnMesh, normalsAttr);
+        }
       }
 
       if(dif_mesh & (AL::usdmaya::utils::kFaceVertexIndices | AL::usdmaya::utils::kFaceVertexCounts))

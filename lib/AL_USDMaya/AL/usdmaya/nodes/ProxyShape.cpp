@@ -1172,6 +1172,7 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
 // selection change happened.  If so, we trigger a ProxyShapePostLoadProcess() which will regenerate the alTransform
 // nodes based on the contents of the new variant selection.
 {
+  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::variantSelectionListener\n");
   if(MFileIO::isReadingFile())
   {
     return;

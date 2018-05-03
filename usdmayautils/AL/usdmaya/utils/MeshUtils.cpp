@@ -901,14 +901,20 @@ void copyFaceConnectsAndPolyCounts(UsdGeomMesh& mesh, const MFnMesh& fnMesh, uin
   {
     VtArray<int32_t> faceVertexCounts(polyCounts.length());
     memcpy((int32_t*)faceVertexCounts.data(), &polyCounts[0], sizeof(uint32_t) * polyCounts.length());
-    mesh.GetFaceVertexCountsAttr().Set(faceVertexCounts);
+    if(UsdAttribute vertextCounts = mesh.GetFaceVertexCountsAttr())
+    {
+      vertextCounts.Set(faceVertexCounts);
+    }
   }
 
   if(mask & kFaceVertexIndices)
   {
     VtArray<int32_t> faceVertexIndices(faceConnects.length());
     memcpy((int32_t*)faceVertexIndices.data(), &faceConnects[0], sizeof(uint32_t) * faceConnects.length());
-    mesh.GetFaceVertexIndicesAttr().Set(faceVertexIndices);
+    if(UsdAttribute faceVertexIndicies = mesh.GetFaceVertexIndicesAttr())
+    {
+      faceVertexIndicies.Set(faceVertexIndices);
+    }
   }
 }
 

@@ -193,7 +193,6 @@ public:
   AL_USDMAYA_PUBLIC
   virtual MStatus preTearDown(UsdPrim& prim)
     {
-      m_isTearingDown = true;
       return MS::kSuccess;
     }
 
@@ -202,12 +201,6 @@ public:
   AL_USDMAYA_PUBLIC
   UsdStageRefPtr getUsdStage() const
     { return context()->getUsdStage(); }
-
-  /// \brief If the translator has had pretearDown called on it then this will return true.
-  /// \return true if this prim has had the pretearDown called on it.
-  AL_USDMAYA_PUBLIC
-  bool isTearingDown() const
-    { return m_isTearingDown; }
 
 protected:
 
@@ -223,8 +216,6 @@ protected:
     { m_context = context; }
 
 private:
-  bool m_isTearingDown = false;
-
   TfType m_translatedType;
   TranslatorContextPtr m_context;
 };
