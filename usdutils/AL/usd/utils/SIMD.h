@@ -341,7 +341,7 @@ inline i256 loadmask7i(const void* const ptr, const size_t count)
 
 inline d256 loadmask3d(const void* const ptr, const size_t count)
 {
-  // mask_offset = 7 - (count % 8)
+  // mask_offset = 3 - (count % 3)
   //
   // This gives us an index into the array of masks which we can pass into
   // _mm256_maskload_ps later on.
@@ -371,10 +371,10 @@ inline i128 cvtph4(const f128 a) { return _mm_cvtps_ph(a, _MM_FROUND_CUR_DIRECTI
 
 
 #ifdef __AVX__
-/// \brief  loads up to 7 floating point values from ptr, and sets the other elements to zero.
+/// \brief  loads up to 3 floating point values from ptr, and sets the other elements to zero.
 inline f128 loadmask3f(const void* const ptr, const size_t count)
 {
-  // mask_offset = 7 - (count % 8)
+  // mask_offset = 3 - (count % 3)
   //
   // This gives us an index into the array of masks which we can pass into
   // _mm256_maskload_ps later on.
@@ -387,7 +387,7 @@ inline f128 loadmask3f(const void* const ptr, const size_t count)
   return _mm_maskload_ps((const float*)ptr, loadmask);
 }
 #elif defined(__SSE__)
-/// \brief  loads up to 7 floating point values from ptr, and sets the other elements to zero.
+/// \brief  loads up to 3 floating point values from ptr, and sets the other elements to zero.
 inline f128 loadmask3f(const void* const ptr, size_t count)
 {
   alignas(16) float p[4] = {0};

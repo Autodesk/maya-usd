@@ -16,6 +16,7 @@ list(APPEND usdmaya_utils_headers
     Utils.h
     ForwardDeclares.h
     MeshUtils.h
+    NurbsCurveUtils.h
     DiffPrimVar.h
 )
 
@@ -23,6 +24,7 @@ list(APPEND usdmaya_utils_source
     DgNodeHelper.cpp
     Utils.cpp
     MeshUtils.cpp
+    NurbsCurveUtils.cpp
     DiffPrimVar.cpp
 )
 
