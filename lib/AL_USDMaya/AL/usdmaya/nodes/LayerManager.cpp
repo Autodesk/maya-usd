@@ -559,7 +559,7 @@ MStatus LayerManager::populateSerialisationAttributes()
   AL_MAYA_CHECK_ERROR(status, errorString);
   {
     boost::shared_lock_guard<boost::shared_mutex> lock(m_layersMutex);
-    MArrayDataBuilder builder(&dataBlock, layers(), m_layerDatabase.size(), &status);
+    MArrayDataBuilder builder(&dataBlock, layers(), m_layerDatabase.max_size(), &status);
     AL_MAYA_CHECK_ERROR(status, errorString);
     std::string temp;
     for (const auto& layerAndIds : m_layerDatabase)

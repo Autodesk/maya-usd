@@ -142,7 +142,30 @@ public:
   /// \return The found layer handle in the layer list managed by this node (invalid if not found or not dirty)
   SdfLayerHandle findLayer(std::string identifier) const;
 
-  LayerToIdsMap::size_type size() const { return m_layerToIds.size(); }
+  /// Because we may have an unknown number of non-dirty member layers which we're treating
+  /// as not-existing, we can't get a size without iterating over all the layers; we can,
+  /// however, do an empty/non-empty boolean check by seeing if begin() == end(); in the
+  /// worst case, when the LayerDatabase consists of nothing but non-dirty layers, begin()
+  /// will will still end up iterating through all the layers attempting to find a
+  /// non-dirty layer to start at, but the average case should be pretty fast
+  ///
+  /// We use the safe-bool idiom to avoid nasty automatic conversions, etc
+private:
+  typedef const LayerToIdsMap LayerDatabase::*_UnspecifiedBoolType;
+public:
+  operator _UnspecifiedBoolType() const {
+    return begin() == end() ? &LayerDatabase::m_layerToIds : nullptr;
+  }
+
+  /// \brief  Upper bound for the number of non-dirty layers in this object
+  ///         This is the count of all tracked layers, dirty-and-non-dirty;
+  ///         If it is zero, it can be guaranteed that there are no dirty
+  ///         layers, but if it is non-zero, we cannot guarantee that there
+  ///         are any non-dirty layers. Use boolean conversion above to test
+  ///         that.
+  size_t max_size() const {
+    return m_layerToIds.size();
+  }
 
   // Iterator interface - skips past non-dirty items
   typedef DirtyOnlyIterator<LayerToIdsMap::iterator> iterator;
