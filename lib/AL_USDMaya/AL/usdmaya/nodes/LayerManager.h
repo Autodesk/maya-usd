@@ -25,6 +25,7 @@
 #include "maya/MNodeMessage.h"
 #include "AL/maya/utils/MayaHelperMacros.h"
 
+#include <iterator>
 #include <map>
 #include <set>
 #include <boost/thread.hpp>
@@ -38,8 +39,78 @@ namespace nodes {
 class ProxyShape;
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief  Iterator wrapper for LayerToIdsMap that hides non-dirty items
+///         Implemented as a template to define const / non-const iterator at same time
+/// \ingroup nodes
+//----------------------------------------------------------------------------------------------------------------------
+template <typename WrappedIterator>
+class DirtyOnlyIterator
+//    : public std::iterator<std::forward_iterator_tag,
+//                           typename WrappedIterator::value_type>
+{
+public:
+  typedef typename WrappedIterator::value_type value_type;
+
+  DirtyOnlyIterator(WrappedIterator it, WrappedIterator end):
+    m_iter(it),
+    m_end(end)
+  {
+    _SetToNextDirty();
+  }
+
+  DirtyOnlyIterator(const DirtyOnlyIterator& other):
+    m_iter(other.m_iter),
+    m_end(other.m_end)
+  {
+    _SetToNextDirty();
+  }
+
+  DirtyOnlyIterator& operator++() {
+    ++m_iter;
+    _SetToNextDirty();
+    return *this;
+  }
+
+  DirtyOnlyIterator operator++(int) {
+    WrappedIterator tmp(*this);
+    operator++();
+    return tmp;
+  }
+
+  bool operator==(const DirtyOnlyIterator& rhs) const {
+    // You could argue we should check m_end too,
+    // but all we really care about is whether we're pointed
+    // at the same place, and it's faster...
+    return m_iter == rhs.m_iter;
+  }
+
+  bool operator!=(const DirtyOnlyIterator& rhs) const {
+    return m_iter != rhs.m_iter;
+  }
+
+  value_type& operator*() { return *m_iter; }
+
+private:
+  void _SetToNextDirty()
+  {
+    while (m_iter != m_end && !m_iter->first->IsDirty())
+    {
+      ++m_iter;
+    }
+  }
+
+  WrappedIterator m_iter;
+  WrappedIterator m_end;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
 /// \brief  Stores layers, in a way that they may be looked up by the layer ref ptr, or by identifier
 ///         Also, unlike boost::multi_index, we can have multiple identifiers per layer
+///         You can add non-dirty layers to the database, but the query operations will "hide" them -
+///         ie, iteration will skip by them, and findLayer will return an invalid ptr if it's not dirty
+///         We allow adding non-dirty items because if we want to guarantee we always have all the latest
+///         items, we need to deal with the situation where the current edit target starts out not
+///         dirty... and it's easiest to just add it then filter it if it's not dirty
 /// \ingroup nodes
 //----------------------------------------------------------------------------------------------------------------------
 class LayerDatabase {
@@ -68,20 +139,38 @@ public:
   bool removeLayer(SdfLayerRefPtr layer);
 
   /// \brief  Find the layer in the set of layers managed by this node, by identifier
-  /// \return The found layer handle in the layer list managed by this node (invalid if not found)
+  /// \return The found layer handle in the layer list managed by this node (invalid if not found or not dirty)
   SdfLayerHandle findLayer(std::string identifier) const;
 
   LayerToIdsMap::size_type size() const { return m_layerToIds.size(); }
 
-  // Iterator interface
-  typedef LayerToIdsMap::iterator iterator;
-  typedef LayerToIdsMap::const_iterator const_iterator;
-  iterator begin() { return m_layerToIds.begin(); }
-  const_iterator begin() const { return m_layerToIds.cbegin(); }
-  const_iterator cbegin() const { return m_layerToIds.cbegin(); }
-  iterator end() { return m_layerToIds.end(); }
-  const_iterator end() const { return m_layerToIds.cend(); }
-  const_iterator cend() const { return m_layerToIds.cend(); }
+  // Iterator interface - skips past non-dirty items
+  typedef DirtyOnlyIterator<LayerToIdsMap::iterator> iterator;
+  typedef DirtyOnlyIterator<LayerToIdsMap::const_iterator> const_iterator;
+  iterator begin()
+  {
+    return iterator(m_layerToIds.begin(), m_layerToIds.end());
+  }
+  const_iterator begin() const
+  {
+    return const_iterator(m_layerToIds.cbegin(), m_layerToIds.cend());
+  }
+  const_iterator cbegin() const
+  {
+    return const_iterator(m_layerToIds.cbegin(), m_layerToIds.cend());
+  }
+  iterator end()
+  {
+    return iterator(m_layerToIds.end(), m_layerToIds.end());
+  }
+  const_iterator end() const
+  {
+    return const_iterator(m_layerToIds.cend(), m_layerToIds.cend());
+  }
+  const_iterator cend() const
+  {
+    return const_iterator(m_layerToIds.cend(), m_layerToIds.cend());
+  }
 
 private:
   void _addLayer(SdfLayerRefPtr layer, const std::string& identifier,
@@ -93,6 +182,7 @@ private:
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  The layer manager node handles serialization and deserialization of all layers used by all ProxyShapes
+///         It may temporarily contain non-dirty layers, but those will be filtered out by query operations.
 /// \ingroup nodes
 //----------------------------------------------------------------------------------------------------------------------
 class LayerManager
