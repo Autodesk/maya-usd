@@ -66,7 +66,7 @@ def GetLayoutLayer():
     return workingLayer
     
 def SetCurrentEditTarget():
-    maya.cmds.AL_usdmaya_LayerCurrentEditTarget('AL_usdmaya_ProxyShape1', layer=GetLayoutLayer().identifier, findByIdentifier=True)
+    maya.cmds.AL_usdmaya_LayerCurrentEditTarget('shot', layer=GetLayoutLayer().identifier, findByIdentifier=True)
 
 def OpenOutliner():
     import usdqt.app

@@ -62,8 +62,8 @@ def _AddCueRigAndCacheVariants(stage):
     animModel = Usd.ModelAPI(UsdGeom.Xform.Define(stage, '/World/anim'))
     animModel.SetKind(Kind.Tokens.group)
     
-    animVariant = animModel.GetPrim().GetVariantSets().AppendVariantSet('animVariant')
-    animVariant.AppendVariant('rig')
+    animVariant = animModel.GetPrim().GetVariantSets().AddVariantSet('animVariant')
+    animVariant.AddVariant('rig')
     animVariant.SetVariantSelection('rig')
     with animVariant.GetVariantEditContext():
         # Creating maya rig for CueBall
@@ -71,7 +71,7 @@ def _AddCueRigAndCacheVariants(stage):
         cueBallRig.CreateMayaNamespaceAttr().Set('cueball_rig')
         cueBallRig.CreateMayaReferenceAttr().Set(os.path.join(ASSET_BASE, 'Ball/Ball_rig.ma'))
     
-    animVariant.AppendVariant('cache')
+    animVariant.AddVariant('cache')
     animVariant.SetVariantSelection('cache')
     with animVariant.GetVariantEditContext():
         # Creating cache layer and bring in as payload
