@@ -799,26 +799,20 @@ void ProxyShape::onEditTargetChanged(UsdNotice::StageEditTargetChanged const& no
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::trackEditTargetLayer(LayerManager* layerManager)
 {
-  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("ProxyShape::trackEditTargetLayer");
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("ProxyShape::trackEditTargetLayer\n");
   auto stage = getUsdStage();
+
   if(!stage)
   {
     TF_DEBUG(ALUSDMAYA_LAYERS).Msg(" - no stage\n");
     return;
   }
 
-  auto prevTargetLayer = m_prevTargetLayer;
-  m_prevTargetLayer = stage->GetEditTarget().GetLayer();
+  auto currTargetLayer = stage->GetEditTarget().GetLayer();
 
-  if(!prevTargetLayer)
-  {
-    TF_DEBUG(ALUSDMAYA_LAYERS).Msg(" - no prev target layer\n");
-    return;
-  }
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg(" - curr target layer: %s\n", currTargetLayer->GetIdentifier().c_str());
 
-  TF_DEBUG(ALUSDMAYA_LAYERS).Msg(" - prev target layer: %s\n",
-      prevTargetLayer->GetIdentifier().c_str());
-  if(prevTargetLayer->IsDirty())
+  if (m_prevEditTarget != currTargetLayer)
   {
     if(!layerManager)
     {
@@ -831,9 +825,19 @@ void ProxyShape::trackEditTargetLayer(LayerManager* layerManager)
         return;
       }
     }
-    layerManager->addLayer(prevTargetLayer);
+
+    if (m_prevEditTarget && !m_prevEditTarget->IsDirty())
+    {
+      // If the old edit target still isn't dirty, and we're switching to a new
+      // edit target, we can remove it from the layer manager
+      layerManager->removeLayer(m_prevEditTarget);
+    }
+
+    layerManager->addLayer(currTargetLayer);
+    m_prevEditTarget = currTargetLayer;
+
+    triggerEvent("EditTargetChanged");
   }
-  triggerEvent("EditTargetChanged");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1172,7 +1176,6 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
 // selection change happened.  If so, we trigger a ProxyShapePostLoadProcess() which will regenerate the alTransform
 // nodes based on the contents of the new variant selection.
 {
-  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::variantSelectionListener\n");
   if(MFileIO::isReadingFile())
   {
     return;
