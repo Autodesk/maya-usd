@@ -11,6 +11,9 @@
                     },
                     "AL::usdmaya::fileio::translators::Mesh": {
                         "bases": ["AL::usdmaya::fileio::translators::TranslatorBase"]
+                    },
+                    "AL::usdmaya::fileio::translators::NurbsCurve": {
+                        "bases": ["AL::usdmaya::fileio::translators::TranslatorBase"]
                     }
                 }
             },

@@ -156,6 +156,14 @@ bool compareArray3Dto4D(
     const float eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
+bool compareArrayFloat3DtoDouble4D(
+    const float* const input3d,
+    const double* const input4d,
+    const size_t count3d,
+    const size_t count4d,
+    const float eps = 1e-5f);
+
+//----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
 /// \param  input0 the first input array to test
 /// \param  input1 the second input array to test

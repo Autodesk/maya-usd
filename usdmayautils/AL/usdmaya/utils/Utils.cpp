@@ -128,6 +128,17 @@ MString mapUsdPrimToMayaNode(const UsdPrim& usdPrim,
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void convertDoubleVec4ArrayToFloatVec3Array(const double* const input, float* const output, size_t count)
+{
+  for(size_t i = 0; i < count; ++i)
+  {
+    output[i * 3] = float(input[i * 4]);
+    output[i * 3 + 1] = float(input[i * 4 + 1]);
+    output[i * 3 + 2] = float(input[i * 4 + 2]);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 } // utils
 } // usdmaya
 } // AL

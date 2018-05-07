@@ -278,6 +278,97 @@ class testTranslator(unittest.TestCase):
         variantSet.SetVariantSelection("")
         self.assertEqual(len(mc.ls(type='mesh')), 0)
 
+    def testNurbsCurve_TranslatorExists(self):
+        """
+        Test that the NurbsCurve Translator exists
+        """
+        self.assertTrue(Tf.Type.Unknown != Tf.Type.FindByName('AL::usdmaya::fileio::translators::NurbsCurve'))
+
+    def testNurbsCurve_TranslateOff(self):
+        """
+        Test that by default that the the mesh isn't imported
+        """
+        stage = self._importStageWithNurbsCircle()
+        self.assertEqual(len(mc.ls('nurbsCircle1')), 0)
+        self.assertEqual(len(mc.ls(type='nurbsCurve')), 0)
+
+    def testNurbsCurve_testTranslateOn(self):
+        """
+        Test that by default that the the mesh is imported
+        """
+        # setup scene with sphere
+        self._importStageWithNurbsCircle()
+
+        # force the import
+        mc.AL_usdmaya_TranslatePrim(ip="/nurbsCircle1", fi=True, proxy="AL_usdmaya_Proxy")
+
+        self.assertEqual(len(mc.ls('nurbsCircle1')), 1)
+        self.assertEqual(len(mc.ls(type='nurbsCurve')), 1)
+
+    def testNurbsCurve_TranslateRoundTrip(self):
+        """
+        Test that Translating->TearingDown->Translating roundtrip works
+        """
+        # setup scene with nurbs circle
+        # Create nurbs circle in Maya and export a .usda file
+        mc.CreateNURBSCircle()
+        mc.group( 'nurbsCircle1', name='parent' )
+        mc.select("parent")
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="test_NurbsCurveTranslator_", delete=True)
+        mc.file(tempFile.name, exportSelected=True, force=True, type="AL usdmaya export")
+
+        # clear scene
+        mc.file(f=True, new=True)
+        mc.AL_usdmaya_ProxyShapeImport(file=tempFile.name)
+
+        # force the import
+        mc.AL_usdmaya_TranslatePrim(ip="/parent/nurbsCircle1", fi=True, proxy="AL_usdmaya_Proxy")
+        self.assertEqual(len(mc.ls('nurbsCircle1')), 1)
+        self.assertEqual(len(mc.ls(type='nurbsCurve')), 1)
+        self.assertEqual(len(mc.ls('parent')), 1)
+
+        # force the teardown
+        mc.AL_usdmaya_TranslatePrim(tp="/parent/nurbsCircle1", fi=True, proxy="AL_usdmaya_Proxy")
+        self.assertEqual(len(mc.ls('nurbsCircle1')), 0)
+        self.assertEqual(len(mc.ls(type='nurbsCurve')), 0)
+        self.assertEqual(len(mc.ls('parent')), 0)
+
+        # force the import
+        mc.AL_usdmaya_TranslatePrim(ip="/parent/nurbsCircle1", fi=True, proxy="AL_usdmaya_Proxy")
+        self.assertEqual(len(mc.ls('nurbsCircle1')), 1)
+        self.assertEqual(len(mc.ls(type='nurbsCurve')), 1)
+        self.assertEqual(len(mc.ls('parent')), 1)
+
+    def testNurbsCurve_PretearDownEditTargetWrite(self):
+        """
+        Simple test to determine if the edit target gets written to preteardown
+        """
+
+        # force the import
+        stage = self._importStageWithNurbsCircle()
+        mc.AL_usdmaya_TranslatePrim(ip="/nurbsCircle1", fi=True, proxy="AL_usdmaya_Proxy")
+
+        stage.SetEditTarget(stage.GetSessionLayer())
+
+        # Delete a control vertex
+        mc.select("nurbsCircle1.cv[6]", r=True)
+        mc.delete()
+
+        preSession = stage.GetEditTarget().GetLayer().ExportToString();
+        mc.AL_usdmaya_TranslatePrim(tp="/nurbsCircle1", proxy="AL_usdmaya_Proxy")
+        postSession = stage.GetEditTarget().GetLayer().ExportToString()
+
+        # Ensure data has been written
+        sessionStage = Usd.Stage.Open(stage.GetEditTarget().GetLayer())
+        sessionNurbCircle = sessionStage.GetPrimAtPath("/nurbsCircle1")
+
+        self.assertTrue(sessionNurbCircle.IsValid())
+        cvcAttr = sessionNurbCircle.GetAttribute("curveVertexCounts")
+        self.assertTrue(cvcAttr.IsValid())
+        self.assertEqual(len(cvcAttr.Get()), 1)
+        self.assertEqual(cvcAttr.Get()[0], 10)
+
+
 # Utilities
     def _getStage(self):
         from AL import usdmaya
@@ -301,6 +392,18 @@ class testTranslator(unittest.TestCase):
         tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="test_MeshTranslator_", delete=True)
         mc.file(tempFile.name, exportSelected=True, force=True, type="AL usdmaya export")
          
+        # clear scene
+        mc.file(f=True, new=True)
+        mc.AL_usdmaya_ProxyShapeImport(file=tempFile.name)
+        return self._getStage()
+
+    def _importStageWithNurbsCircle(self):
+        # Create nurbs circle in Maya and export a .usda file
+        mc.CreateNURBSCircle()
+        mc.select("nurbsCircle1")
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="test_NurbsCurveTranslator_", delete=True)
+        mc.file(tempFile.name, exportSelected=True, force=True, type="AL usdmaya export")
+
         # clear scene
         mc.file(f=True, new=True)
         mc.AL_usdmaya_ProxyShapeImport(file=tempFile.name)

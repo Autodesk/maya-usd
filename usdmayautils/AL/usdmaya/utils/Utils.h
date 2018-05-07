@@ -25,6 +25,7 @@
 #include <string>
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/token.h"
 #include "AL/maya/utils/ForwardDeclares.h"
 #include "AL/usd/utils/ForwardDeclares.h"
 #include "AL/maya/utils/Utils.h"
@@ -64,6 +65,25 @@ void matrixToSRT(GfMatrix4d& value,
                  double S[3],
                  MEulerRotation& R,
                  double T[3]);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  a simple method to convert double vec4 array to float vec3 array
+/// \param  the input double vec4 array
+/// \param  the output float vec3 array
+/// \param  count number of elements
+//----------------------------------------------------------------------------------------------------------------------
+void convertDoubleVec4ArrayToFloatVec3Array(const double* const input, float* const output, size_t count);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  convert string types
+/// \param  str the USD TfToken to convert to an MString
+/// \return the MString
+/// \ingroup usdmaya
+//----------------------------------------------------------------------------------------------------------------------
+inline MString convert(const TfToken& token)
+{
+  return MString(token.GetText(), token.size());
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 }// utils

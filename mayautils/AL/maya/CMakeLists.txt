@@ -44,7 +44,6 @@ add_library(${MAYAUTILS_LIBRARY_NAME}
 
 target_compile_definitions(${MAYAUTILS_LIBRARY_NAME}
     PRIVATE
-        AL_MAYAUTILS_DEBUG
         AL_MAYA_EVENTS_EXPORT
         AL_MAYA_UTILS_EXPORT
         AL_MAYA_MACROS_EXPORT

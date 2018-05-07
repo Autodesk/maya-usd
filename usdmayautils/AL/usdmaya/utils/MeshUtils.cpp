@@ -16,6 +16,7 @@
 #include "AL/maya/utils/Utils.h"
 #include "AL/usdmaya/utils/MeshUtils.h"
 #include "AL/usdmaya/utils/DiffPrimVar.h"
+#include "AL/usdmaya/utils/Utils.h"
 
 #include "maya/MItMeshPolygon.h"
 #include "maya/MGlobal.h"
@@ -268,6 +269,7 @@ void gatherFaceConnectsAndVertices(const UsdGeomMesh& mesh, MFloatPointArray& po
     }
   }
 }
+
 //----------------------------------------------------------------------------------------------------------------------
 void convertFloatVec3ArrayToDoubleVec3Array(const float* const input, double* const output, size_t count)
 {
@@ -804,7 +806,7 @@ void applyPrimVars(const UsdGeomMesh& mesh, MFnMesh& fnMesh, const MIntArray& co
         v.setLength(rawVal.size());
         unzipUVs((const float*)rawVal.cdata(), &u[0], &v[0], rawVal.size());
 
-        MString uvSetName(name.GetText());
+        MString uvSetName = AL::usdmaya::utils::convert(name);
         MString* uv_set = &uvSetName;
         if (uvSetName == "st")
         {
@@ -868,7 +870,7 @@ void applyPrimVars(const UsdGeomMesh& mesh, MFnMesh& fnMesh, const MIntArray& co
       else
       if (vtValue.IsHolding<VtArray<GfVec4f> >())
       {
-        MString colourSetName(name.GetText());
+        MString colourSetName = AL::usdmaya::utils::convert(name);
         if(fnMesh.createColorSet(colourSetName))
         {
           const VtArray<GfVec4f> rawVal = vtValue.Get<VtArray<GfVec4f> >();

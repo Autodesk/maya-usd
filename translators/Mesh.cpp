@@ -160,7 +160,7 @@ MStatus Mesh::preTearDown(UsdPrim& prim)
 
   if(!prim.IsValid())
   {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("Mesh::preTearDown prim invalid\n");
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("Mesh::writeEdits prim invalid\n");
     return;
   }
 

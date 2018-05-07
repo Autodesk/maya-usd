@@ -993,6 +993,42 @@ bool compareArray3Dto4D(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+bool compareArrayFloat3DtoDouble4D(
+    const float* const input3d,
+    const double* const input4d,
+    const size_t count3d,
+    const size_t count4d,
+    const float eps)
+{
+  if (count3d != count4d)
+  {
+    return false;
+  }
+#ifdef __AVX2__
+  const f128 eps4 = splatf4f(eps);
+  for (size_t i = 0; i < count3d; ++i)
+  {
+    const f128 float3d = loadmask3f(input3d + i * 3, 3);
+    const d256 double4d = loadmask3d(input4d + i * 4, 3);
+    const f128 float4d = cvt4d_to_4f(double4d);
+    const f128 diff = abs4f(sub4f(float3d, float4d));
+    const f128 cmp = cmpgt4f(diff, eps4);
+    if(movemask4f(cmp))
+      return false;
+  }
+#else
+  for (size_t i = 0, j = 0, n = count3d * 3; i < n; i +=3, j += 4)
+  {
+    if (std::abs(input3d[i + 0] - input4d[j + 0]) > eps ||
+        std::abs(input3d[i + 1] - input4d[j + 1]) > eps ||
+        std::abs(input3d[i + 2] - input4d[j + 2]) > eps)
+      return false;
+  }
+  return true;
+#endif
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 bool compareRGBAArray(
     const float r,
     const float g,
