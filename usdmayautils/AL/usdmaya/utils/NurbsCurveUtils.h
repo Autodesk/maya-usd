@@ -31,39 +31,49 @@ namespace AL {
 namespace usdmaya {
 namespace utils {
 
-  extern void convert3DFloatArrayTo4DDoubleArray(const float* const input, double* const output, size_t count);
-  extern void copyPoints(const MFnNurbsCurve& fnCurve, const UsdAttribute& pointsAttr,
+AL_USDMAYA_UTILS_PUBLIC
+void convert3DFloatArrayTo4DDoubleArray(const float* const input, double* const output, size_t count);
+AL_USDMAYA_UTILS_PUBLIC
+void copyPoints(const MFnNurbsCurve& fnCurve, const UsdAttribute& pointsAttr,
                          UsdTimeCode time = UsdTimeCode::Default());
-  extern void copyCurveVertexCounts(const MFnNurbsCurve& fnCurve, const UsdAttribute& countsAttr,
+AL_USDMAYA_UTILS_PUBLIC
+void copyCurveVertexCounts(const MFnNurbsCurve& fnCurve, const UsdAttribute& countsAttr,
                                     UsdTimeCode time = UsdTimeCode::Default());
-  extern void copyKnots(const MFnNurbsCurve& fnCurve, const UsdAttribute& knotsAttr,
+AL_USDMAYA_UTILS_PUBLIC
+void copyKnots(const MFnNurbsCurve& fnCurve, const UsdAttribute& knotsAttr,
                         UsdTimeCode time = UsdTimeCode::Default());
-  extern void copyRanges(const MFnNurbsCurve& fnCurve, const UsdAttribute& rangesAttr,
+AL_USDMAYA_UTILS_PUBLIC
+void copyRanges(const MFnNurbsCurve& fnCurve, const UsdAttribute& rangesAttr,
                          UsdTimeCode time = UsdTimeCode::Default());
-  extern void copyOrder(const MFnNurbsCurve& fnCurve, const UsdAttribute& orderAttr,
+AL_USDMAYA_UTILS_PUBLIC
+void copyOrder(const MFnNurbsCurve& fnCurve, const UsdAttribute& orderAttr,
                         UsdTimeCode time = UsdTimeCode::Default());
-  extern void copyWidths(const MObject& widthObj, const MPlug& widthPlug, const MFnDoubleArrayData& widthArray,
+AL_USDMAYA_UTILS_PUBLIC
+void copyWidths(const MObject& widthObj, const MPlug& widthPlug, const MFnDoubleArrayData& widthArray,
                          const UsdAttribute& widthsAttr, UsdTimeCode time = UsdTimeCode::Default());
-  extern bool getMayaCurveWidth(const MFnNurbsCurve& fnCurve, MObject& object, MPlug& plug, MFnDoubleArrayData& array);
-  extern bool createMayaCurves(MFnNurbsCurve& fnCurve, MObject& parent, const UsdGeomNurbsCurves& usdCurves,
+AL_USDMAYA_UTILS_PUBLIC
+bool getMayaCurveWidth(const MFnNurbsCurve& fnCurve, MObject& object, MPlug& plug, MFnDoubleArrayData& array);
+AL_USDMAYA_UTILS_PUBLIC
+bool createMayaCurves(MFnNurbsCurve& fnCurve, MObject& parent, const UsdGeomNurbsCurves& usdCurves,
                                bool animalSchema, bool parentUnmerged);
 
   //----------------------------------------------------------------------------------------------------------------------
   /// \brief  a set of bit flags that identify which nurbs curves components have changed
   //----------------------------------------------------------------------------------------------------------------------
-  enum DiffNurbsCurve
-  {
-    kCurvePoints = 1 << 0,
-    kCurveVertexCounts = 1 << 1,
-    kKnots = 1 << 2,
-    kRanges = 1 << 3,
-    kOrder = 1 << 4,
-    kWidths = 1 << 5,
-    kAllNurbsCurveComponents = 0xFFFFFFFF
-  };
+enum DiffNurbsCurve
+{
+  kCurvePoints = 1 << 0,
+  kCurveVertexCounts = 1 << 1,
+  kKnots = 1 << 2,
+  kRanges = 1 << 3,
+  kOrder = 1 << 4,
+  kWidths = 1 << 5,
+  kAllNurbsCurveComponents = 0xFFFFFFFF
+};
 
-  uint32_t diffNurbsCurve(UsdGeomNurbsCurves& usdCurves, MFnNurbsCurve& fnCurve, UsdTimeCode timeCode,
-                          uint32_t exportMask = AL::usdmaya::utils::kAllNurbsCurveComponents);
+AL_USDMAYA_UTILS_PUBLIC
+uint32_t diffNurbsCurve(UsdGeomNurbsCurves& usdCurves, MFnNurbsCurve& fnCurve, UsdTimeCode timeCode,
+                        uint32_t exportMask = AL::usdmaya::utils::kAllNurbsCurveComponents);
 
 //----------------------------------------------------------------------------------------------------------------------
 } // utils
