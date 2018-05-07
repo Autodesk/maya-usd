@@ -1,3 +1,17 @@
+## v0.27.10 (2018-05-07)
+
+### Added
+
++ A new plugin translator (translator/NurbsCurve.cpp) to translate prim between USD and Maya, and write back editing result to USD prim.
+
+### Changed
+
++ Existing static nurbs curve translator re-uses common utils code.
+
+### Fixed
+
++ Windows build
+
 ## v0.27.8 (2018-05-02)
 
 ### Changed
@@ -10,6 +24,10 @@
 ### Added
 
 + Experimental Windows support. It has been tested on Windows 7 with Visual Studio 2015 and Maya 2017.
+
+### Removed
+
++ Qt dependency (Thanks to Sebastien Dalgo from Autodesk)
 
 ## v0.27.6 (2018-04-13)
 

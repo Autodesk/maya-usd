@@ -156,6 +156,7 @@ bool compareArray3Dto4D(
     const float eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
+AL_USD_UTILS_PUBLIC
 bool compareArrayFloat3DtoDouble4D(
     const float* const input3d,
     const double* const input4d,
