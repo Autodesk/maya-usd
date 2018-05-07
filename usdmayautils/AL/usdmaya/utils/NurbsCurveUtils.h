@@ -35,27 +35,27 @@ AL_USDMAYA_UTILS_PUBLIC
 void convert3DFloatArrayTo4DDoubleArray(const float* const input, double* const output, size_t count);
 AL_USDMAYA_UTILS_PUBLIC
 void copyPoints(const MFnNurbsCurve& fnCurve, const UsdAttribute& pointsAttr,
-                         UsdTimeCode time = UsdTimeCode::Default());
+                UsdTimeCode time = UsdTimeCode::Default());
 AL_USDMAYA_UTILS_PUBLIC
 void copyCurveVertexCounts(const MFnNurbsCurve& fnCurve, const UsdAttribute& countsAttr,
-                                    UsdTimeCode time = UsdTimeCode::Default());
+                           UsdTimeCode time = UsdTimeCode::Default());
 AL_USDMAYA_UTILS_PUBLIC
 void copyKnots(const MFnNurbsCurve& fnCurve, const UsdAttribute& knotsAttr,
-                        UsdTimeCode time = UsdTimeCode::Default());
+               UsdTimeCode time = UsdTimeCode::Default());
 AL_USDMAYA_UTILS_PUBLIC
 void copyRanges(const MFnNurbsCurve& fnCurve, const UsdAttribute& rangesAttr,
-                         UsdTimeCode time = UsdTimeCode::Default());
+                UsdTimeCode time = UsdTimeCode::Default());
 AL_USDMAYA_UTILS_PUBLIC
 void copyOrder(const MFnNurbsCurve& fnCurve, const UsdAttribute& orderAttr,
-                        UsdTimeCode time = UsdTimeCode::Default());
+               UsdTimeCode time = UsdTimeCode::Default());
 AL_USDMAYA_UTILS_PUBLIC
 void copyWidths(const MObject& widthObj, const MPlug& widthPlug, const MFnDoubleArrayData& widthArray,
-                         const UsdAttribute& widthsAttr, UsdTimeCode time = UsdTimeCode::Default());
+                const UsdAttribute& widthsAttr, UsdTimeCode time = UsdTimeCode::Default());
 AL_USDMAYA_UTILS_PUBLIC
 bool getMayaCurveWidth(const MFnNurbsCurve& fnCurve, MObject& object, MPlug& plug, MFnDoubleArrayData& array);
 AL_USDMAYA_UTILS_PUBLIC
 bool createMayaCurves(MFnNurbsCurve& fnCurve, MObject& parent, const UsdGeomNurbsCurves& usdCurves,
-                               bool animalSchema, bool parentUnmerged);
+                      bool animalSchema, bool parentUnmerged);
 
   //----------------------------------------------------------------------------------------------------------------------
   /// \brief  a set of bit flags that identify which nurbs curves components have changed
