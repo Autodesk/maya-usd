@@ -191,7 +191,7 @@ MStatus DgNodeTranslator::setFloatAttrAnim(const MObject node, const MObject att
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeTranslator::setVisAttrAnim(const MObject node, const MObject attr, const UsdAttribute &usdAttr)
 {
-  if (not usdAttr.GetNumTimeSamples())
+  if (!usdAttr.GetNumTimeSamples())
   {
     return MS::kFailure;
   }
