@@ -32,6 +32,11 @@ target_include_directories(${PXR_PACKAGE}
 if(MSVC)
     set_target_properties(${PXR_PACKAGE} PROPERTIES SUFFIX ".mll")
 else()
+    # This puts the paths into RUNPATH instead of RPATH.
+    # They are the same except that RPATH is searched before LD_LIBRARY_PATH whereas RUNPATH is searched after.
+    # Using RUNPATH will give users the ability to override a shared library.
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
+
     set(rpath "$ORIGIN:$ORIGIN/../lib")
     if (CMAKE_INSTALL_RPATH)
         set(rpath "${CMAKE_INSTALL_RPATH}:${rpath}")
@@ -50,3 +55,6 @@ install(TARGETS
     RUNTIME
         DESTINATION plugin
 )
+if(MSVC)
+    install(FILES $<TARGET_PDB_FILE:${PXR_PACKAGE}> DESTINATION plugin OPTIONAL)
+endif()

@@ -79,6 +79,10 @@ typedef boost::filesystem::path path;
 #include <algorithm>
 #include <iterator>
 
+#if defined(WANT_UFE_BUILD)
+#include "ufe/path.h"
+#endif
+
 namespace AL {
 namespace usdmaya {
 namespace nodes {
@@ -2199,6 +2203,21 @@ MSelectionMask ProxyShape::getShapeSelectionMask() const
   MSelectionMask::SelectionType selType = MSelectionMask::kSelectMeshes;
   return MSelectionMask(selType);
 }
+
+#if defined(WANT_UFE_BUILD)
+//----------------------------------------------------------------------------------------------------------------------
+Ufe::Path ProxyShape::ufePath() const
+{
+    //Build a path segment to proxyShape
+    MDagPath thisPath;
+    MDagPath::getAPathTo(thisMObject(), thisPath);
+
+    // MDagPath does not include |world to its full path naem
+    MString fullpath = "|world" + thisPath.fullPathName();
+
+    return Ufe::Path(Ufe::PathSegment(fullpath.asChar(), MAYA_UFE_RUNTIME_ID, MAYA_UFE_SEPARATOR));
+}
+#endif
 
 //----------------------------------------------------------------------------------------------------------------------
 } // nodes

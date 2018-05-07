@@ -30,5 +30,12 @@ const MTypeId AL_USDMAYA_DRIVENTRANSFORMS_DATA      (0x00112A26);
 const MTypeId AL_USDMAYA_LAYERMANAGER               (0x00112A27);
 const MTypeId AL_USDMAYA_RENDERERMANAGER            (0x00112A28);
 
+#if defined(WANT_UFE_BUILD)
+const int MAYA_UFE_RUNTIME_ID(1);
+const char MAYA_UFE_SEPARATOR('|');
+const int USD_UFE_RUNTIME_ID(2);
+const char USD_UFE_SEPARATOR('/');
+#endif
+
 }  // namespace usdmaya
 }  // namespace AL
