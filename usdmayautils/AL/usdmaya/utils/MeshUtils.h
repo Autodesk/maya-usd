@@ -51,25 +51,33 @@ void doubleToFloat(float* output, const double* const input, size_t count);
 AL_USDMAYA_UTILS_PUBLIC
 void convert3DArrayTo4DArray(const float* const input, float* const output, size_t count);
 AL_USDMAYA_UTILS_PUBLIC
-void gatherFaceConnectsAndVertices(const UsdGeomMesh& mesh, MFloatPointArray& points, MVectorArray &normals, MIntArray& counts, MIntArray& connects, const bool leftHanded);
+void gatherFaceConnectsAndVertices(const UsdGeomMesh& mesh,
+                                   MFloatPointArray& points, MVectorArray &normals,
+                                   MIntArray& counts, MIntArray& connects,
+                                   const bool leftHanded,
+                                   UsdTimeCode timeCode = UsdTimeCode::EarliestTime());
 AL_USDMAYA_UTILS_PUBLIC
 void convertFloatVec3ArrayToDoubleVec3Array(const float* const input, double* const output, size_t count);
 AL_USDMAYA_UTILS_PUBLIC
 void generateIncrementingIndices(MIntArray& indices, const size_t count);
 AL_USDMAYA_UTILS_PUBLIC
-void applyHoleFaces(const UsdGeomMesh& mesh, MFnMesh& fnMesh);
+void applyHoleFaces(const UsdGeomMesh& mesh, MFnMesh& fnMesh,
+                    UsdTimeCode timeCode = UsdTimeCode::EarliestTime());
 AL_USDMAYA_UTILS_PUBLIC
 void unzipUVs(const float* const uv, float* const u, float* const v, const size_t count);
 AL_USDMAYA_UTILS_PUBLIC
-bool applyEdgeCreases(const UsdGeomMesh& from, MFnMesh& fnMesh);
+bool applyEdgeCreases(const UsdGeomMesh& from, MFnMesh& fnMesh,
+                      UsdTimeCode timeCode = UsdTimeCode::EarliestTime());
 AL_USDMAYA_UTILS_PUBLIC
 void applyGlimpseSubdivParams(const UsdPrim& from, MFnMesh& fnMesh);
 AL_USDMAYA_UTILS_PUBLIC
 void applyGlimpseUserDataParams(const UsdPrim& from, MFnMesh& fnMesh);
 AL_USDMAYA_UTILS_PUBLIC
-void applyPrimVars(const UsdGeomMesh& mesh, MFnMesh& fnMesh, const MIntArray& counts, const MIntArray& connects);
+void applyPrimVars(const UsdGeomMesh& mesh, MFnMesh& fnMesh, const MIntArray& counts, const MIntArray& connects,
+                   UsdTimeCode timeCode = UsdTimeCode::EarliestTime());
 AL_USDMAYA_UTILS_PUBLIC
-bool applyVertexCreases(const UsdGeomMesh& from, MFnMesh& fnMesh);
+bool applyVertexCreases(const UsdGeomMesh& from, MFnMesh& fnMesh,
+                        UsdTimeCode timeCode = UsdTimeCode::EarliestTime());
 AL_USDMAYA_UTILS_PUBLIC
 void copyGlimpseTesselationAttributes(UsdGeomMesh& mesh, const MFnMesh& fnMesh);
 AL_USDMAYA_UTILS_PUBLIC
