@@ -111,7 +111,7 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent)
   MDagPath mayaDagPath;
   mayaNode.getPath(mayaDagPath);
 
-  context()->insertItem(prim, parent);
+  context()->insertItem(prim, polyShape);
   return MStatus::kSuccess;
 }
 
@@ -157,7 +157,7 @@ MStatus Mesh::preTearDown(UsdPrim& prim)
 //----------------------------------------------------------------------------------------------------------------------
  void Mesh::writeEdits(UsdPrim& prim)
 {
-
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MeshTranslator::writing edits to prim='%s'\n", prim.GetPath().GetText());
   if(!prim.IsValid())
   {
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("Mesh::writeEdits prim invalid\n");
@@ -178,7 +178,7 @@ MStatus Mesh::preTearDown(UsdPrim& prim)
 
     MStatus status;
     MFnMesh fnMesh(path, &status);
-    AL_MAYA_CHECK_ERROR2(status, MString("unable to attach function set to mesh") + path.fullPathName());
+    AL_MAYA_CHECK_ERROR2(status, MString("unable to attach function set to mesh: ") + path.fullPathName());
 
     if(status)
     {

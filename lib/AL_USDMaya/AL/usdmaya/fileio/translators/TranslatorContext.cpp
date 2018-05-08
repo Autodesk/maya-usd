@@ -463,7 +463,10 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
     auto node = std::lower_bound(m_primMapping.begin(), m_primMapping.end(), path, value_compare());
 
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries removing: %s\n", iter->GetText());
-    unloadPrim(path, node->object());
+    if(node->objectHandle().isValid() && node->objectHandle().isAlive())
+    {
+      unloadPrim(path, node->object());
+    }
 
     // The item might already have been removed by a translator...
     if(node != m_primMapping.end() && node->path() == path)

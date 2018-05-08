@@ -95,3 +95,44 @@ TEST(TranslateCommand, roundTripMeshPrim)
   ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
 }
 
+TEST(TranslateCommand, translateMultiplePrimsFromUnmergedFile)
+/*
+ * Test, in the UnMerged Case, the case where if there are multiple shape's that are siblings
+ * that if one of the shape's get "tearDown" called on it, that the other sibling survives
+ */
+{
+  MFileIO::newFile(true);
+  MStatus s;
+  MString command;
+  command.format(MString("AL_usdmaya_ProxyShapeImport -file \"^1s\""), (MString(AL_USDMAYA_TEST_DATA) + MString("/sphere2.usda")));
+  MGlobal::executeCommand(command, false, false);
+
+  MString importCommand("AL_usdmaya_TranslatePrim -fi -ip \"^1s\" \"AL_usdmaya_ProxyShape\"");
+  MString teardownCommand("AL_usdmaya_TranslatePrim -tp \"^1s\" \"AL_usdmaya_ProxyShape\"");
+
+	// import foofoo and verify it made it into maya
+  MString importMesh1 = importCommand;
+  importMesh1.format(importCommand, MString("/pSphere1/foofoo"));
+  MGlobal::executeCommand(importMesh1, false, false);
+  s = MGlobal::selectByName("foofoo");
+  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+
+  // import foofooforyou and verify it made it into maya
+  MString importMesh2;
+  importMesh2.format(importCommand, MString("/pSphere1/foofooforyou"));
+  MGlobal::executeCommand(importMesh2, false, false);
+  s = MGlobal::selectByName("foofooforyou");
+  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+
+  MGlobal::clearSelectionList();
+
+  // Teardown foofoo and verify that foofooforyou is still there
+  MString tearDownMesh1;
+  tearDownMesh1.format(teardownCommand, MString("/pSphere1/foofoo"));
+  MGlobal::executeCommand(tearDownMesh1, false, false);
+  s = MGlobal::selectByName("foofoo");
+  ASSERT_FALSE(s.statusCode() == MStatus::kSuccess);
+  s = MGlobal::selectByName("foofooforyou");
+  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+}
+

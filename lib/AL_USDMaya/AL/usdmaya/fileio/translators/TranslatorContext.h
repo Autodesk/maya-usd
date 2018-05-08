@@ -301,7 +301,7 @@ public:
     /// \brief  get the maya object of the node
     /// \return the maya node for this reference
     MObject object() const
-      { return objectHandle().object(); }
+      { return m_object.object(); }
 
     /// \brief  get the prim type
     /// \return the type stored for this prim
