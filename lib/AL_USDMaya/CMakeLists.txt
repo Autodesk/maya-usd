@@ -4,7 +4,6 @@ set(LIBRARY_NAME AL_USDMaya)
 
 list(APPEND AL_usdmaya_headers
         AL/usdmaya/Api.h
-        AL/usdmaya/AttributeType.h
         AL/usdmaya/DebugCodes.h
         AL/usdmaya/DrivenTransformsData.h
         AL/usdmaya/Metadata.h
@@ -19,7 +18,6 @@ list(APPEND AL_usdmaya_headers
 )
 
 list(APPEND AL_usdmaya_source
-        AL/usdmaya/AttributeType.cpp
         AL/usdmaya/DebugCodes.cpp
         AL/usdmaya/DrivenTransformsData.cpp
         AL/usdmaya/Global.cpp

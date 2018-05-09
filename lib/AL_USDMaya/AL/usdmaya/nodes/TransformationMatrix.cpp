@@ -14,13 +14,13 @@
 // limitations under the License.
 //
 #include "AL/maya/utils/CommandGuiHelper.h"
-#include "AL/usdmaya/AttributeType.h"
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
 #include "maya/MFileIO.h"
+#include "AL/usdmaya/utils/AttributeType.h"
 #include "AL/usdmaya/utils/Utils.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -28,6 +28,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace AL {
 namespace usdmaya {
 namespace nodes {
+
+using AL::usdmaya::utils::UsdDataType;
 
 //----------------------------------------------------------------------------------------------------------------------
 const MTypeId TransformationMatrix::kTypeId(AL_USDMAYA_TRANSFORMATION_MATRIX);
@@ -165,7 +167,7 @@ bool TransformationMatrix::readVector(MVector& result, const UsdGeomXformOp& op,
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::readVector\n");
   const SdfValueTypeName vtn = op.GetTypeName();
-  UsdDataType attr_type = getAttributeType(vtn);
+  UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
   {
   case UsdDataType::kVec3d:
@@ -237,7 +239,7 @@ bool TransformationMatrix::pushVector(const MVector& result, UsdGeomXformOp& op,
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushVector %f %f %f\n%s\n", result.x, result.y, result.z, op.GetOpName().GetText());
   const SdfValueTypeName vtn = op.GetTypeName();
-  UsdDataType attr_type = getAttributeType(vtn);
+  UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
 
   switch(attr_type)
   {
@@ -281,7 +283,7 @@ bool TransformationMatrix::pushShear(const MVector& result, UsdGeomXformOp& op, 
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushShear %f %f %f\n%s\n", result.x, result.y, result.z, op.GetOpName().GetText());
   const SdfValueTypeName vtn = op.GetTypeName();
-  UsdDataType attr_type = getAttributeType(vtn);
+  UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
   {
   case UsdDataType::kMatrix4d:
@@ -306,7 +308,7 @@ bool TransformationMatrix::readShear(MVector& result, const UsdGeomXformOp& op, 
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::readShear\n");
   const SdfValueTypeName vtn = op.GetTypeName();
-  UsdDataType attr_type = getAttributeType(vtn);
+  UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
   {
   case UsdDataType::kMatrix4d:
@@ -335,7 +337,7 @@ bool TransformationMatrix::readPoint(MPoint& result, const UsdGeomXformOp& op, U
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::readPoint\n");
   const SdfValueTypeName vtn = op.GetTypeName();
-  UsdDataType attr_type = getAttributeType(vtn);
+  UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
   {
   case UsdDataType::kVec3d:
@@ -407,7 +409,7 @@ bool TransformationMatrix::readMatrix(MMatrix& result, const UsdGeomXformOp& op,
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::readMatrix\n");
   const SdfValueTypeName vtn = op.GetTypeName();
-  UsdDataType attr_type = getAttributeType(vtn);
+  UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
   {
   case UsdDataType::kMatrix4d:
@@ -434,7 +436,7 @@ bool TransformationMatrix::pushMatrix(const MMatrix& result, UsdGeomXformOp& op,
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushMatrix\n");
   const SdfValueTypeName vtn = op.GetTypeName();
-  UsdDataType attr_type = getAttributeType(vtn);
+  UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
   {
   case UsdDataType::kMatrix4d:
@@ -460,7 +462,7 @@ bool TransformationMatrix::pushPoint(const MPoint& result, UsdGeomXformOp& op, U
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushPoint %f %f %f\n%s\n", result.x, result.y, result.z, op.GetOpName().GetText());
   const SdfValueTypeName vtn = op.GetTypeName();
-  UsdDataType attr_type = getAttributeType(vtn);
+  UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
   {
   case UsdDataType::kVec3d:
@@ -503,7 +505,7 @@ double TransformationMatrix::readDouble(const UsdGeomXformOp& op, UsdTimeCode ti
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::readDouble\n");
   double result = 0;
-  UsdDataType attr_type = getAttributeType(op.GetTypeName());
+  UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(op.GetTypeName());
   switch(attr_type)
   {
   case UsdDataType::kHalf:
@@ -561,7 +563,7 @@ double TransformationMatrix::readDouble(const UsdGeomXformOp& op, UsdTimeCode ti
 void TransformationMatrix::pushDouble(const double value, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushDouble %f\n%s\n", value, op.GetOpName().GetText());
-  UsdDataType attr_type = getAttributeType(op.GetTypeName());
+  UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(op.GetTypeName());
   switch(attr_type)
   {
   case UsdDataType::kHalf:

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usdmaya/AttributeType.h"
+#include "AL/usdmaya/utils/AttributeType.h"
 #include "AL/usdmaya/fileio/Import.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/NodeFactory.h"

@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
-#include "AL/usdmaya/AttributeType.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
@@ -39,12 +38,17 @@
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include "AL/usdmaya/utils/AttributeType.h"
+#include "AL/usdmaya/utils/DgNodeHelper.h"
 #include "AL/usdmaya/utils/Utils.h"
 
 namespace AL {
 namespace usdmaya {
 namespace fileio {
 namespace translators {
+
+using AL::usdmaya::utils::UsdDataType;
+
 //----------------------------------------------------------------------------------------------------------------------
 MObject TransformTranslator::m_inheritsTransform = MObject::kNullObj;
 MObject TransformTranslator::m_scale = MObject::kNullObj;
@@ -258,7 +262,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
       const UsdGeomXformOp& op = *it;
       const SdfValueTypeName vtn = op.GetTypeName();
 
-      UsdDataType attr_type = getAttributeType(vtn);
+      UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
 
       // Import animation (if we have time samples)
       if (op.GetNumTimeSamples())
@@ -499,7 +503,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
     {
       const UsdGeomXformOp& op = *it;
       const SdfValueTypeName vtn = op.GetTypeName();
-      UsdDataType attr_type = getAttributeType(vtn);
+      UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
       if(attr_type == UsdDataType::kMatrix4d)
       {
         switch(op.GetOpType())
@@ -537,7 +541,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
   processMetaData(from, to, params);
   if (UsdAttribute myAttr = from.GetAttribute(UsdGeomTokens->visibility))
   {
-    setVisAttrAnim(to, m_visibility, myAttr);
+    DgNodeHelper::setVisAttrAnim(to, m_visibility, myAttr);
   }
 
   return MS::kSuccess;

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usdmaya/AttributeType.h"
+#include "AL/usdmaya/utils/AttributeType.h"
 #include <unordered_map>
 
 #include "pxr/usd/sdf/types.h"
@@ -21,6 +21,7 @@
 
 namespace AL {
 namespace usdmaya {
+namespace utils {
 
 //----------------------------------------------------------------------------------------------------------------------
 static const std::unordered_map<size_t, UsdDataType> usdTypeHashToEnum
@@ -141,6 +142,7 @@ UsdDataType getAttributeType(const UsdAttribute& usdAttr)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+} // utils
 } // usdmaya
 } // AL
 //----------------------------------------------------------------------------------------------------------------------
