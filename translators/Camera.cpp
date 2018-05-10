@@ -36,11 +36,7 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
-MayaFnTypeId CameraMayaTypes[] = {
-  MayaFnTypeId(MFn::kCamera, MNodeClass("camera").typeId().id())
-};
-
-AL_USDMAYA_DEFINE_TRANSLATOR(Camera, UsdGeomCamera, CameraMayaTypes)
+AL_USDMAYA_DEFINE_TRANSLATOR(Camera, UsdGeomCamera)
 
 //----------------------------------------------------------------------------------------------------------------------
 MObject Camera::m_orthographic;

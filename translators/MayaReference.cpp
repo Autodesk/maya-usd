@@ -109,11 +109,7 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
-MayaFnTypeId MayaReferenceMayaTypes[] = {
-  MayaFnTypeId()
-};
-
-AL_USDMAYA_DEFINE_TRANSLATOR(MayaReference, AL_usd_MayaReference, MayaReferenceMayaTypes)
+AL_USDMAYA_DEFINE_TRANSLATOR(MayaReference, AL_usd_MayaReference)
 
 //----------------------------------------------------------------------------------------------------------------------
 const TfToken MayaReferenceLogic::m_namespaceName = TfToken("mayaNamespace");

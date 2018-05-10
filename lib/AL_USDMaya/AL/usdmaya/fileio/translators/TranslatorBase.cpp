@@ -48,24 +48,19 @@ TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
         // over the derived types just to be sure...
         keepGoing = true;
         if (auto* factory = t.GetFactory<TranslatorFactoryBase>())
+        {
           if (TranslatorRefPtr ptr = factory->create(context))
           {
             m_translatorsMap.emplace(ptr->getTranslatedType().GetTypeName(), ptr);
-            for (auto& mayaType : ptr->supportedMayaTypes())
-            {
-              if (mayaType.isValid())
-              {
-                m_mayaMap.emplace(mayaType, ptr);
-              }
-            }
           }
+        }
       }
     }
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TranslatorRefPtr TranslatorManufacture::get(const TfToken type_name)
+TranslatorManufacture::RefPtr TranslatorManufacture::get(const TfToken type_name)
 {
   TfType type = TfType::FindDerivedByName<UsdSchemaBase>(type_name);
   std::string typeName(type.GetTypeName());
@@ -78,13 +73,23 @@ TranslatorRefPtr TranslatorManufacture::get(const TfToken type_name)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TranslatorRefPtrVector TranslatorManufacture::get(const MayaFnTypeId maya_type)
+TranslatorManufacture::RefPtr TranslatorManufacture::get(const MObject& mayaObject)
 {
-  auto range = m_mayaMap.equal_range(maya_type);
-  TranslatorRefPtrVector refPtrVector;
-  std::transform(range.first, range.second, std::back_inserter(refPtrVector),
-                 [](const std::pair<MayaFnTypeId, TranslatorRefPtr>& kv) {return kv.second;});
-  return refPtrVector;
+  TranslatorManufacture::RefPtr base;
+  TranslatorManufacture::RefPtr derived;
+  for(auto& it : m_translatorsMap)
+  {
+    ExportFlag mode = it.second->canExport(mayaObject);
+    switch(mode)
+    {
+    case ExportFlag::kNotSupported: break;
+    case ExportFlag::kFallbackSupport: base = it.second; break;
+    case ExportFlag::kSupported: derived = it.second; break;
+    default:
+      break;
+    }
+  }
+  return derived ? derived : base;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

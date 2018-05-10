@@ -646,19 +646,13 @@ void Export::exportShapesCommonProc(MDagPath shapePath, MFnTransform& fnTransfor
   UsdPrim transformPrim;
   bool copyTransform = true;
   MFnDagNode dgNode(shapePath);
-  translators::MayaFnTypeId mayaType(shapePath.apiType(), dgNode.typeId().id());
-  translators::TranslatorRefPtrVector translatorPtrVector = m_translatorManufacture.get(mayaType);
-  if (!translatorPtrVector.empty())
+
+  translators::TranslatorManufacture::RefPtr translatorPtr = m_translatorManufacture.get(shapePath.node());
+  if (translatorPtr)
   {
-    for (auto &translatorPtr : translatorPtrVector)
-    {
-      if (translatorPtr->claimMayaObjectExporting(shapePath.node()))
-      {
-        SdfPath meshPath = determineUsdPath(shapePath, usdPath, refType);
-        transformPrim = translatorPtr->exportObject(m_impl->stage(), shapePath, meshPath, m_params);
-        copyTransform = (refType == kNoReference);
-      }
-    }
+    SdfPath meshPath = determineUsdPath(shapePath, usdPath, refType);
+    transformPrim = translatorPtr->exportObject(m_impl->stage(), shapePath, meshPath, m_params);
+    copyTransform = (refType == kNoReference);
   }
   else // no translator register for this Maya type
   {

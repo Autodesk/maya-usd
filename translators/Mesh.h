@@ -44,13 +44,16 @@ private:
   bool importableByDefault() const override
     { return false; }
 
+  ExportFlag canExport(const MObject& obj) override
+    { return obj.hasFn(MFn::kMesh) ? ExportFlag::kFallbackSupport : ExportFlag::kNotSupported; }
+
 private:
   enum WriteOptions
   {
     kPerformDiff = 1 << 0,
     kDynamicAttributes = 1 << 1
   };
-  void writeEdits(MDagPath& dagPath, UsdGeomMesh& geomPrim, uint32_t options);
+  void writeEdits(MDagPath& dagPath, UsdGeomMesh& geomPrim, uint32_t options = kDynamicAttributes);
 };
 
 //----------------------------------------------------------------------------------------------------------------------

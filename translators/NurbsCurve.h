@@ -43,6 +43,9 @@ private:
   bool importableByDefault() const override
   { return false; }
 
+  ExportFlag canExport(const MObject& obj) override
+    { return obj.hasFn(MFn::kNurbsCurve) ? ExportFlag::kFallbackSupport : ExportFlag::kNotSupported; }
+
 private:
   void writeEdits(UsdGeomNurbsCurves& nurbsCurvesPrim, MFnNurbsCurve& fnCurve, bool writeAll);
 

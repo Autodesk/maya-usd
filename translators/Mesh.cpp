@@ -43,11 +43,7 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
-MayaFnTypeId MeshMayaTypes[] = {
-  MayaFnTypeId(MFn::kMesh, MNodeClass("mesh").typeId().id())
-};
-
-AL_USDMAYA_DEFINE_TRANSLATOR(Mesh, PXR_NS::UsdGeomMesh, MeshMayaTypes)
+AL_USDMAYA_DEFINE_TRANSLATOR(Mesh, PXR_NS::UsdGeomMesh)
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Mesh::initialize()

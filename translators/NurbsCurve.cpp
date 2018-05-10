@@ -40,11 +40,7 @@ namespace translators {
 //----------------------------------------------------------------------------------------------------------------------
 MObject NurbsCurve::m_visible = MObject::kNullObj;
 
-MayaFnTypeId NurbsCurveMayaTypes[] = {
-  MayaFnTypeId(MFn::kNurbsCurve, MNodeClass("nurbsCurve").typeId().id())
-};
-
-AL_USDMAYA_DEFINE_TRANSLATOR(NurbsCurve, PXR_NS::UsdGeomNurbsCurves, NurbsCurveMayaTypes)
+AL_USDMAYA_DEFINE_TRANSLATOR(NurbsCurve, PXR_NS::UsdGeomNurbsCurves)
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus NurbsCurve::initialize()
