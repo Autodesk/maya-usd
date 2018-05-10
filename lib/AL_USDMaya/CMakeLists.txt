@@ -77,11 +77,8 @@ list(APPEND AL_usdmaya_fileio_source
 )
 
 list(APPEND AL_usdmaya_fileio_translators_headers
-        AL/usdmaya/fileio/translators/CameraTranslator.h
         AL/usdmaya/fileio/translators/DagNodeTranslator.h
         AL/usdmaya/fileio/translators/DgNodeTranslator.h
-        AL/usdmaya/fileio/translators/MeshTranslator.h
-        AL/usdmaya/fileio/translators/NurbsCurveTranslator.h
         AL/usdmaya/fileio/translators/TransformTranslator.h
         AL/usdmaya/fileio/translators/TranslatorBase.h
         AL/usdmaya/fileio/translators/TranslatorContext.h
@@ -90,11 +87,8 @@ list(APPEND AL_usdmaya_fileio_translators_headers
 )
 
 list(APPEND AL_usdmaya_fileio_translators_source
-        AL/usdmaya/fileio/translators/CameraTranslator.cpp
         AL/usdmaya/fileio/translators/DagNodeTranslator.cpp
         AL/usdmaya/fileio/translators/DgNodeTranslator.cpp
-        AL/usdmaya/fileio/translators/MeshTranslator.cpp
-        AL/usdmaya/fileio/translators/NurbsCurveTranslator.cpp
         AL/usdmaya/fileio/translators/TransformTranslator.cpp
         AL/usdmaya/fileio/translators/TranslatorBase.cpp
         AL/usdmaya/fileio/translators/TranslatorContext.cpp

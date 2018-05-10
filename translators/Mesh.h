@@ -17,6 +17,7 @@
 #pragma once
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
+
 namespace AL{
 namespace usdmaya{
 namespace fileio{
@@ -31,7 +32,9 @@ public:
   AL_USDMAYA_DECLARE_TRANSLATOR(Mesh);
 private:
   MStatus initialize() override;
-  MStatus import(const UsdPrim& prim, MObject& parent) override;
+  MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
+  UsdPrim exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath,
+                       const ExporterParams& params) override;
   MStatus tearDown(const SdfPath& path) override;
   MStatus update(const UsdPrim& path) override;
   MStatus preTearDown(UsdPrim& prim) override;
@@ -40,7 +43,9 @@ private:
     { return false; } // Turned off supportsUpdate to get tearDown working correctly
   bool importableByDefault() const override
     { return false; }
-  void writeEdits(UsdPrim& prim);
+
+private:
+  void writeEdits(MDagPath& dagPath, UsdGeomMesh& geomPrim, bool leftHandedUV=false, bool dynamicAttributes=true);
 };
 
 //----------------------------------------------------------------------------------------------------------------------

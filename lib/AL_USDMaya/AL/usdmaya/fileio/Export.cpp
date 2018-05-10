@@ -16,9 +16,6 @@
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/fileio/Export.h"
 #include "AL/usdmaya/fileio/NodeFactory.h"
-#include "AL/usdmaya/fileio/translators/CameraTranslator.h"
-#include "AL/usdmaya/fileio/translators/MeshTranslator.h"
-#include "AL/usdmaya/fileio/translators/NurbsCurveTranslator.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
 #include "AL/usdmaya/TransformOperation.h"
 #include "AL/usdmaya/Metadata.h"
@@ -27,8 +24,9 @@
 #include "maya/MAnimUtil.h"
 #include "maya/MArgDatabase.h"
 #include "maya/MDagPath.h"
-#include "maya/MFnDagNode.h"
 #include "maya/MFnCamera.h"
+#include "maya/MFnDagNode.h"
+#include "maya/MFnMesh.h"
 #include "maya/MFnTransform.h"
 #include "maya/MGlobal.h"
 #include "maya/MItDag.h"
@@ -54,6 +52,7 @@
 #include <unordered_set>
 #include <algorithm>
 #include "AL/usdmaya/utils/Utils.h"
+#include "AL/usdmaya/utils/MeshUtils.h"
 #include "AL/usd/utils/SIMD.h"
 #include "AL/maya/utils/MObjectMap.h"
 #include <functional>
@@ -349,7 +348,9 @@ static MObject g_geomConstraint_targetAttr = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 Export::Export(const ExporterParams& params)
-  : m_params(params), m_impl(new Export::Impl)
+  : m_params(params),
+    m_impl(new Export::Impl),
+    m_translatorManufacture(nullptr)
 {
   if(g_transform_rotateAttr == MObject::kNullObj)
   {
@@ -377,23 +378,19 @@ Export::~Export()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UsdPrim Export::exportMesh(MDagPath path, const SdfPath& usdPath, const ReferenceType refType)
-{
-  SdfPath meshPath = makeMeshReferencePath(path, usdPath, refType);
-  return translators::MeshTranslator::exportObject(m_impl->stage(), path, meshPath, m_params);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 UsdPrim Export::exportMeshUV(MDagPath path, const SdfPath& usdPath)
 {
-  return translators::MeshTranslator::exportUV(m_impl->stage(), path, usdPath, m_params);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-UsdPrim Export::exportNurbsCurve(MDagPath path, const SdfPath& usdPath, const ReferenceType refType)
-{
-  SdfPath curvePath = makeMeshReferencePath(path, usdPath, refType);
-  return translators::NurbsCurveTranslator::exportObject(m_impl->stage(), path, curvePath, m_params);
+  UsdPrim overPrim = m_impl->stage()->OverridePrim(usdPath);
+  MStatus status;
+  MFnMesh fnMesh(path, &status);
+  AL_MAYA_CHECK_ERROR2(status, MString("unable to attach function set to mesh") + path.fullPathName());
+  if (status == MStatus::kSuccess)
+  {
+    UsdGeomMesh mesh(overPrim);
+    AL::usdmaya::utils::MeshExportContext context(path, mesh, UsdTimeCode::Default(), false);
+    context.copyUvSetData(m_params.m_leftHandedUV);
+  }
+  return overPrim;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -415,23 +412,6 @@ UsdPrim Export::exportPluginShape(MDagPath path, const SdfPath& usdPath)
 {
   UsdGeomXform mesh = UsdGeomXform::Define(m_impl->stage(), usdPath);
   return mesh.GetPrim();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-UsdPrim Export::exportCamera(MDagPath path, const SdfPath& usdPath)
-{
-  UsdGeomCamera camera = UsdGeomCamera::Define(m_impl->stage(), usdPath);
-  UsdPrim prim = camera.GetPrim();
-
-  MStatus status;
-  MFnCamera fnCamera(path, &status);
-  AL_MAYA_CHECK_ERROR2(status, "Export: Failed to create cast into a MFnCamera.");
-
-  MObject cameraObject = fnCamera.object(&status);
-  AL_MAYA_CHECK_ERROR2(status, "Export: Failed to retrieve object.");
-  translators::CameraTranslator::copyAttributes(cameraObject, prim, m_params);
-
-  return camera.GetPrim();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -586,7 +566,7 @@ void Export::copyTransformParams(UsdPrim prim, MFnTransform& fnTransform)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-SdfPath Export::makeMeshReferencePath(MDagPath path, const SdfPath& usdPath, ReferenceType refType)
+SdfPath Export::determineUsdPath(MDagPath path, const SdfPath& usdPath, ReferenceType refType)
 {
   switch (refType)
   {
@@ -596,7 +576,7 @@ SdfPath Export::makeMeshReferencePath(MDagPath path, const SdfPath& usdPath, Ref
     }
     break;
 
-    case kMeshReference:
+    case kShapeReference:
     {
       return makeMasterPath(m_impl->instancesPrim(), path);
     }
@@ -623,7 +603,7 @@ void Export::addReferences(MDagPath shapePath, MFnTransform& fnTransform, SdfPat
                            const SdfPath& instancePath, ReferenceType refType)
 {
   UsdStageRefPtr stage = m_impl->stage();
-  if (refType == kMeshReference)
+  if (refType == kShapeReference)
   {
     if (shapePath.node().hasFn(MFn::kMesh))
     {
@@ -646,7 +626,7 @@ void Export::addReferences(MDagPath shapePath, MFnTransform& fnTransform, SdfPat
       }
       break;
 
-    case kMeshReference:
+    case kShapeReference:
       {
         copyTransformParams(usdPrim, fnTransform);
       }
@@ -664,37 +644,38 @@ void Export::exportShapesCommonProc(MDagPath shapePath, MFnTransform& fnTransfor
                                     const ReferenceType refType)
 {
   UsdPrim transformPrim;
-  bool copyTransform= true;
-  if(shapePath.node().hasFn(MFn::kMesh))
+  bool copyTransform = true;
+  MFnDagNode dgNode(shapePath);
+  translators::MayaFnTypeId mayaType(shapePath.apiType(), dgNode.typeId().id());
+  translators::TranslatorRefPtrVector translatorPtrVector = m_translatorManufacture.get(mayaType);
+  if (!translatorPtrVector.empty())
   {
-    transformPrim = exportMesh(shapePath, usdPath, refType);
-    copyTransform = (refType == kNoReference);
+    for (auto &translatorPtr : translatorPtrVector)
+    {
+      if (translatorPtr->claimMayaObjectExporting(shapePath.node()))
+      {
+        SdfPath meshPath = determineUsdPath(shapePath, usdPath, refType);
+        transformPrim = translatorPtr->exportObject(m_impl->stage(), shapePath, meshPath, m_params);
+        copyTransform = (refType == kNoReference);
+      }
+    }
   }
-  else
-  if (shapePath.node().hasFn(MFn::kNurbsCurve))
+  else // no translator register for this Maya type
   {
-    transformPrim = exportNurbsCurve(shapePath, usdPath, refType);
-    copyTransform = (refType == kNoReference);
-  }
-  else
-  if (shapePath.node().hasFn(MFn::kAssembly))
-  {
-    transformPrim = exportAssembly(shapePath, usdPath);
-  }
-  else
-  if (shapePath.node().hasFn(MFn::kPluginLocatorNode))
-  {
-    transformPrim = exportPluginLocatorNode(shapePath, usdPath);
-  }
-  else
-  if (shapePath.node().hasFn(MFn::kPluginShape))
-  {
-    transformPrim = exportPluginShape(shapePath, usdPath);
-  }
-  else
-  if (shapePath.node().hasFn(MFn::kCamera))
-  {
-    transformPrim = exportCamera(shapePath, usdPath);
+    if (shapePath.node().hasFn(MFn::kAssembly))
+    {
+      transformPrim = exportAssembly(shapePath, usdPath);
+    }
+    else
+    if (shapePath.node().hasFn(MFn::kPluginLocatorNode))
+    {
+      transformPrim = exportPluginLocatorNode(shapePath, usdPath);
+    }
+    else
+    if (shapePath.node().hasFn(MFn::kPluginShape))
+    {
+      transformPrim = exportPluginShape(shapePath, usdPath);
+    }
   }
 
   // if we haven't created a transform for this shape (possible if we chose not to export it)
@@ -794,16 +775,6 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
         usdPath = makeUsdPath(parentPath, transformPath);
       }
 
-      if(transformPath.node().hasFn(MFn::kIkEffector))
-      {
-        exportIkChain(transformPath, usdPath);
-      }
-      else
-      if(transformPath.node().hasFn(MFn::kGeometryConstraint))
-      {
-        exportGeometryConstraint(transformPath, usdPath);
-      }
-
       // for UV only exporting, record first prim as default
       if (m_params.m_meshUV && defaultPrim.IsEmpty())
       {
@@ -860,16 +831,16 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
             // if the path has a child shape, process the shape now
             if (!m_params.m_duplicateInstances && shapeInstanced)
             {
-              refType = m_params.m_mergeTransforms ? kMeshReference : kTransformReference;
+              refType = m_params.m_mergeTransforms ? kShapeReference : kTransformReference;
             }
             exportShapeProc(shapePath, fnTransform, shapeUsdPath, refType);
           }
           else
           {
-            refType = m_params.m_mergeTransforms ? kMeshReference : kTransformReference;
+            refType = m_params.m_mergeTransforms ? kShapeReference : kTransformReference;
           }
 
-          if (refType == kMeshReference)
+          if (refType == kShapeReference)
           {
             SdfPath instancePath = m_impl->getMasterPath(shapeDag);
             addReferences(shapePath, fnTransform, shapeUsdPath, instancePath, refType);

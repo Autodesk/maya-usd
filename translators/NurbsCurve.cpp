@@ -40,7 +40,11 @@ namespace translators {
 //----------------------------------------------------------------------------------------------------------------------
 MObject NurbsCurve::m_visible = MObject::kNullObj;
 
-AL_USDMAYA_DEFINE_TRANSLATOR(NurbsCurve, PXR_NS::UsdGeomNurbsCurves)
+MayaFnTypeId NurbsCurveMayaTypes[] = {
+  MayaFnTypeId(MFn::kNurbsCurve, MNodeClass("nurbsCurve").typeId().id())
+};
+
+AL_USDMAYA_DEFINE_TRANSLATOR(NurbsCurve, PXR_NS::UsdGeomNurbsCurves, NurbsCurveMayaTypes)
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus NurbsCurve::initialize()
@@ -56,7 +60,7 @@ MStatus NurbsCurve::initialize()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus NurbsCurve::import(const UsdPrim& prim, MObject& parent)
+MStatus NurbsCurve::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("NurbsCurve::import prim=%s\n", prim.GetPath().GetText());
 
@@ -77,6 +81,7 @@ MStatus NurbsCurve::import(const UsdPrim& prim, MObject& parent)
 
   // replicate of DagNodeTranslator::copyAttributes
   MObject object = fnCurve.object();
+  createdObj = object;
   const UsdGeomXform xformSchema(prim);
   DgNodeTranslator::copyBool(object, m_visible, xformSchema.GetVisibilityAttr());
   // pick up any additional attributes attached to the mesh node (these will be added alongside the transform attributes)
@@ -89,13 +94,28 @@ MStatus NurbsCurve::import(const UsdPrim& prim, MObject& parent)
     }
   }
 
-  context()->addExcludedGeometry(prim.GetPath());
-  MFnDagNode mayaNode(parent);
-  MDagPath mayaDagPath;
-  mayaNode.getPath(mayaDagPath);
-  context()->insertItem(prim, parent);
-
+  TranslatorContextPtr ctx = context();
+  if (ctx)
+  {
+    ctx->addExcludedGeometry(prim.GetPath());
+    ctx->insertItem(prim, parent);
+  }
   return MStatus::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+UsdPrim NurbsCurve::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath,
+                                 const ExporterParams& params)
+{
+  if(!params.m_nurbsCurves)
+      return UsdPrim();
+
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::Starting to export Nurbs for path '%s'\n", usdPath.GetText());
+
+  UsdGeomNurbsCurves nurbs = UsdGeomNurbsCurves::Define(stage, usdPath);
+  MFnNurbsCurve fnCurve(dagPath);
+  writeEdits(nurbs, fnCurve, true);
+  return nurbs.GetPrim();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -132,17 +152,10 @@ MStatus NurbsCurve::preTearDown(UsdPrim& prim)
    * force translated into Maya.
    */
   TfNotice::Block block;
-  writeEdits(prim);
-  return MStatus::kSuccess;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void NurbsCurve::writeEdits(UsdPrim& prim)
-{
   if(!prim.IsValid())
   {
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("NurbsCurve writeEdits prim invalid\n");
-    return;
+    return MStatus::kFailure;
   }
   // Write the overrides back to the path it was imported at
   MObjectHandle obj;
@@ -161,39 +174,62 @@ void NurbsCurve::writeEdits(UsdPrim& prim)
 
     if (status)
     {
-      const uint32_t diff_curves = AL::usdmaya::utils::diffNurbsCurve(nurbsCurves, fnCurve, UsdTimeCode::Default(),
-                                                                      AL::usdmaya::utils::kAllNurbsCurveComponents);
-      if (diff_curves & AL::usdmaya::utils::kCurvePoints)
-      {
-        AL::usdmaya::utils::copyPoints(fnCurve, nurbsCurves.GetPointsAttr());
-      }
-      if (diff_curves & AL::usdmaya::utils::kCurveVertexCounts)
-      {
-        AL::usdmaya::utils::copyCurveVertexCounts(fnCurve, nurbsCurves.GetCurveVertexCountsAttr());
-      }
-      if (diff_curves & AL::usdmaya::utils::kKnots)
-      {
-        UsdAttribute knotsAttr = nurbsCurves.GetKnotsAttr();
-        AL::usdmaya::utils::copyKnots(fnCurve, knotsAttr);
-      }
-      if (diff_curves & AL::usdmaya::utils::kRanges)
-      {
-        UsdAttribute rangeAttr = nurbsCurves.GetRangesAttr();
-        AL::usdmaya::utils::copyRanges(fnCurve, rangeAttr);
-      }
-      if (diff_curves & AL::usdmaya::utils::kOrder)
-      {
-        AL::usdmaya::utils::copyOrder(fnCurve, nurbsCurves.GetOrderAttr());
-      }
-      if (diff_curves & AL::usdmaya::utils::kWidths)
-      {
-        MObject widthObj;
-        MPlug widthPlug;
-        MFnDoubleArrayData widthArray;
-        AL::usdmaya::utils::getMayaCurveWidth(fnCurve, widthObj, widthPlug, widthArray);
-        AL::usdmaya::utils::copyWidths(widthObj, widthPlug, widthArray, nurbsCurves.GetWidthsAttr());
-      }
+      writeEdits(nurbsCurves, fnCurve, false);
     }
+  }
+
+  return MStatus::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void NurbsCurve::writeEdits(UsdGeomNurbsCurves& nurbsCurvesPrim, MFnNurbsCurve& fnCurve, bool writeAll)
+{
+  uint32_t diff_curves = AL::usdmaya::utils::kAllNurbsCurveComponents;
+  bool performDiff = !writeAll;
+  if(performDiff)
+  {
+    diff_curves = AL::usdmaya::utils::diffNurbsCurve(nurbsCurvesPrim, fnCurve, UsdTimeCode::Default(),
+                                                     AL::usdmaya::utils::kAllNurbsCurveComponents);
+  }
+
+  if(diff_curves & AL::usdmaya::utils::kCurvePoints)
+  {
+    AL::usdmaya::utils::copyPoints(fnCurve, nurbsCurvesPrim.GetPointsAttr());
+  }
+  if(diff_curves & AL::usdmaya::utils::kCurveVertexCounts)
+  {
+    AL::usdmaya::utils::copyCurveVertexCounts(fnCurve, nurbsCurvesPrim.GetCurveVertexCountsAttr());
+  }
+  if(diff_curves & AL::usdmaya::utils::kKnots)
+  {
+    UsdAttribute knotsAttr = nurbsCurvesPrim.GetKnotsAttr();
+    AL::usdmaya::utils::copyKnots(fnCurve, knotsAttr);
+  }
+  if(diff_curves & AL::usdmaya::utils::kRanges)
+  {
+    UsdAttribute rangeAttr = nurbsCurvesPrim.GetRangesAttr();
+    AL::usdmaya::utils::copyRanges(fnCurve, rangeAttr);
+  }
+  if(diff_curves & AL::usdmaya::utils::kOrder)
+  {
+    AL::usdmaya::utils::copyOrder(fnCurve, nurbsCurvesPrim.GetOrderAttr());
+  }
+  if(diff_curves & AL::usdmaya::utils::kWidths)
+  {
+    MObject widthObj;
+    MPlug widthPlug;
+    MFnDoubleArrayData widthArray;
+    if(!AL::usdmaya::utils::getMayaCurveWidth(fnCurve, widthObj, widthPlug, widthArray))
+    {
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::No width/s attribute found for path '%s' \n",
+                                          nurbsCurvesPrim.GetPath().GetText());
+    }
+    if(!widthObj.isNull() && !widthPlug.isNull())
+    {
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::Exporting width/s for path '%s' \n",
+                                          nurbsCurvesPrim.GetPath().GetText());
+    }
+    AL::usdmaya::utils::copyWidths(widthObj, widthPlug, widthArray, nurbsCurvesPrim.GetWidthsAttr());
   }
 }
 

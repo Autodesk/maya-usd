@@ -16,6 +16,7 @@
 #pragma once
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/NodeFactory.h"
+#include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
 #include "maya/MPxCommand.h"
 
@@ -55,10 +56,10 @@ public:
 
 private:
   void doImport();
-  MObject createMesh(NodeFactory& factory, const UsdPrim& prim, const char* const meshType, MObject parent,
-                     bool parentUnmerged);
+  MObject createShape(translators::TranslatorRefPtr translator, const UsdPrim& prim, MObject parent, bool parentUnmerged);
   const ImporterParams& m_params;
   TfHashMap<SdfPath, MObject, SdfPath::Hash> m_instanceObjects;
+  TfToken::HashSet m_nonImportablePrims;
   bool m_success;
 };
 

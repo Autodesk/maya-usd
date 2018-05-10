@@ -15,12 +15,17 @@
 //
 #include "AL/usdmaya/fileio/translators/TranslatorTestPlugin.h"
 
+#include "maya/MFn.h"
+
 namespace AL {
 namespace usdmaya {
 namespace fileio {
 namespace translators {
 
-AL_USDMAYA_DEFINE_TRANSLATOR(TranslatorTestPlugin, TranslatorTestType);
+//MayaFnTypeId ;
+
+AL_USDMAYA_DEFINE_TRANSLATOR(TranslatorTestPlugin, TranslatorTestType,
+                             {MayaFnTypeId::kInvalidType});
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus TranslatorTestPlugin::initialize()
@@ -29,7 +34,7 @@ MStatus TranslatorTestPlugin::initialize()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus TranslatorTestPlugin::import(const UsdPrim& prim, MObject& parent)
+MStatus TranslatorTestPlugin::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 {
   return MStatus::kSuccess;
 }

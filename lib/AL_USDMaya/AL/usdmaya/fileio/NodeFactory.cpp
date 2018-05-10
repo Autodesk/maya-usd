@@ -17,11 +17,8 @@
 #include "AL/usdmaya/fileio/Import.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/NodeFactory.h"
-#include "AL/usdmaya/fileio/translators/CameraTranslator.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
 #include "AL/usdmaya/fileio/translators/DagNodeTranslator.h"
-#include "AL/usdmaya/fileio/translators/MeshTranslator.h"
-#include "AL/usdmaya/fileio/translators/NurbsCurveTranslator.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
 
 #include "maya/MObject.h"
@@ -59,15 +56,9 @@ NodeFactory::NodeFactory()
   translators::DgNodeTranslator::registerType();
   translators::DagNodeTranslator::registerType();
   translators::TransformTranslator::registerType();
-  translators::MeshTranslator::registerType();
-  translators::NurbsCurveTranslator::registerType();
-  translators::CameraTranslator::registerType();
   m_builders.insert(std::make_pair("node", new translators::DgNodeTranslator));
   m_builders.insert(std::make_pair("dagNode", new translators::DagNodeTranslator));
   m_builders.insert(std::make_pair("transform", new translators::TransformTranslator));
-  m_builders.insert(std::make_pair("mesh", new translators::MeshTranslator));
-  m_builders.insert(std::make_pair("nurbsCurve", new translators::NurbsCurveTranslator));
-  m_builders.insert(std::make_pair("camera", new translators::CameraTranslator));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -87,14 +78,20 @@ MObject NodeFactory::createNode(const UsdPrim& from, const char* const nodeType,
   std::unordered_map<std::string, translators::DgNodeTranslator*>::iterator it = m_builders.find(nodeType);
   if(it == m_builders.end()) return MObject::kNullObj;
   MObject obj = it->second->createNode(from, parent, nodeType, *m_params);
+  setupNode(from, obj, parent, parentUnmerged);
+  return obj;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void NodeFactory::setupNode(const UsdPrim& from, MObject obj, MObject parent, bool parentUnmerged)
+{
   if(obj != MObject::kNullObj)
   {
     MFnDependencyNode fn(obj);
 
-    MString nodeName;
+    MString nodeName = AL::usdmaya::utils::convert(from.GetName());
     MString newNodeName;
 
-    nodeName = from.GetName().GetText();
     if(obj.hasFn(MFn::kShape))
     {
       if(!parentUnmerged)
@@ -117,7 +114,6 @@ MObject NodeFactory::createNode(const UsdPrim& from, const char* const nodeType,
       fileio::translators::DgNodeTranslator::addStringValue(obj, "alusd_originalName", newNodeName.asChar());
     }
   }
-  return obj;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -42,7 +42,7 @@ public:
 
 private:
   MStatus initialize() override;
-  MStatus import(const UsdPrim& prim, MObject& parent) override;
+  MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
   MStatus postImport(const UsdPrim& prim) override;
   MStatus preTearDown(UsdPrim& path) override;
   MStatus tearDown(const SdfPath& path) override;

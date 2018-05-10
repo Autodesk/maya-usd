@@ -109,7 +109,9 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
-AL_USDMAYA_DEFINE_TRANSLATOR(MayaReference, AL_usd_MayaReference)
+MayaFnTypeId MayaReferenceMayaTypes[] = {};
+
+AL_USDMAYA_DEFINE_TRANSLATOR(MayaReference, AL_usd_MayaReference, MayaReferenceMayaTypes)
 
 //----------------------------------------------------------------------------------------------------------------------
 const TfToken MayaReferenceLogic::m_namespaceName = TfToken("mayaNamespace");
@@ -124,7 +126,7 @@ MStatus MayaReference::initialize()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus MayaReference::import(const UsdPrim& prim, MObject& parent)
+MStatus MayaReference::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::import prim=%s\n", prim.GetPath().GetText());
   MStatus status;

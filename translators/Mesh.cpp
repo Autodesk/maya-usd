@@ -24,12 +24,14 @@
 #include "maya/MFnMesh.h"
 #include "maya/MFnSet.h"
 #include "maya/MFileIO.h"
+#include "maya/MNodeClass.h"
 
 #include "AL/usdmaya/utils/DiffPrimVar.h"
 #include "AL/usdmaya/utils/MeshUtils.h"
 
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/fileio/translators/DagNodeTranslator.h"
+#include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/Metadata.h"
 #include "pxr/usd/usdGeom/mesh.h"
@@ -41,7 +43,11 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
-AL_USDMAYA_DEFINE_TRANSLATOR(Mesh, PXR_NS::UsdGeomMesh)
+MayaFnTypeId MeshMayaTypes[] = {
+  MayaFnTypeId(MFn::kMesh, MNodeClass("mesh").typeId().id())
+};
+
+AL_USDMAYA_DEFINE_TRANSLATOR(Mesh, PXR_NS::UsdGeomMesh, MeshMayaTypes)
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Mesh::initialize()
@@ -51,14 +57,15 @@ MStatus Mesh::initialize()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus Mesh::import(const UsdPrim& prim, MObject& parent)
+MStatus Mesh::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("Mesh::import prim=%s\n", prim.GetPath().GetText());
 
   const UsdGeomMesh mesh(prim);
-  
-  UsdTimeCode timeCode = context()->getForceDefaultRead() ? UsdTimeCode::Default() : UsdTimeCode::EarliestTime();
-  
+
+  TranslatorContextPtr ctx = context();
+  UsdTimeCode timeCode = (ctx && ctx->getForceDefaultRead()) ? UsdTimeCode::Default() : UsdTimeCode::EarliestTime();
+
   bool parentUnmerged = false;
   TfToken val;
   if(prim.GetParent().GetMetadata(AL::usdmaya::Metadata::mergedTransform, &val))
@@ -70,7 +77,7 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent)
   {
     dagName += "Shape";
   }
-  
+
   AL::usdmaya::utils::MeshImportContext importContext(mesh, parent, dagName, timeCode);
   importContext.applyVertexNormals();
   importContext.applyHoleFaces();
@@ -87,14 +94,37 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent)
   
   fn.addMember(importContext.getPolyShape());
   importContext.applyPrimVars();
-  context()->addExcludedGeometry(prim.GetPath());
 
-  MFnDagNode mayaNode(parent);
-  MDagPath mayaDagPath;
-  mayaNode.getPath(mayaDagPath);
-
-  context()->insertItem(prim, importContext.getPolyShape());
+  if (ctx)
+  {
+    ctx->addExcludedGeometry(prim.GetPath());
+    ctx->insertItem(prim, importContext.getPolyShape());
+  }
   return MStatus::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+UsdPrim Mesh::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath, const ExporterParams& params)
+{
+  if(!params.m_meshes)
+    return UsdPrim();
+
+  UsdGeomMesh mesh = UsdGeomMesh::Define(stage, usdPath);
+
+  MStatus status;
+  MFnMesh fnMesh(dagPath, &status);
+  AL_MAYA_CHECK_ERROR2(status, MString("unable to attach function set to mesh") + dagPath.fullPathName());
+  if(status)
+  {
+    UsdAttribute pointsAttr = mesh.GetPointsAttr();
+    if (params.m_animTranslator && AnimationTranslator::isAnimatedMesh(dagPath))
+    {
+      params.m_animTranslator->addMesh(dagPath, pointsAttr);
+    }
+
+    writeEdits(dagPath, mesh, params.m_leftHandedUV, params.m_dynamicAttributes);
+  }
+  return mesh.GetPrim();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -116,7 +146,12 @@ MStatus Mesh::update(const UsdPrim& path)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Mesh::preTearDown(UsdPrim& prim)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MeshTranslator::preTearDown prim=%s\n", prim.GetPath().GetText());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MeshTranslator::preTearDown prim=%s\n", prim.GetPath().GetText());\
+  if(!prim.IsValid())
+  {
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("Mesh::preTearDown prim invalid\n");
+    return MS::kFailure;
+  }
   TranslatorBase::preTearDown(prim);
 
   /* TODO
@@ -131,60 +166,54 @@ MStatus Mesh::preTearDown(UsdPrim& prim)
    * force translated into Maya.
    */
   TfNotice::Block block;
-  writeEdits(prim);
-
-  return MS::kSuccess;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void Mesh::writeEdits(UsdPrim& prim)
-{
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MeshTranslator::writing edits to prim='%s'\n", prim.GetPath().GetText());
-  if(!prim.IsValid())
-  {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("Mesh::writeEdits prim invalid\n");
-    return;
-  }
-
   // Write the overrides back to the path it was imported at
   MObjectHandle obj;
   context()->getMObject(prim, obj, MFn::kInvalid);
-
-  if(obj.isValid() && prim.IsValid())
+  if(obj.isValid())
   {
-    UsdGeomMesh geomPrim(prim);
-
     MFnDagNode fn(obj.object());
     MDagPath path;
     fn.getPath(path);
-
     MStatus status;
     MFnMesh fnMesh(path, &status);
-    AL_MAYA_CHECK_ERROR2(status, MString("unable to attach function set to mesh: ") + path.fullPathName());
+    AL_MAYA_CHECK_ERROR(status, MString("unable to attach function set to mesh: ") + path.fullPathName());
 
-    if(status)
-    {
-      AL::usdmaya::utils::MeshExportContext context(path, geomPrim, true);
-      if(context)
-      {
-        context.copyVertexData(UsdTimeCode::Default());
-        context.copyGlimpseTesselationAttributes();
-        context.copyNormalData(UsdTimeCode::Default());
-        context.copyFaceConnectsAndPolyCounts();
-        context.copyInvisibleHoles();
-        context.copyCreaseVertices();
-        context.copyCreaseEdges();
-        context.copyUvSetData();
-        context.copyColourSetData();
-        DgNodeTranslator::copyDynamicAttributes(obj.object(), prim);
-      }
-    }
+    UsdGeomMesh geomPrim(prim);
+    writeEdits(path, geomPrim, false);
   }
   else
   {
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("Unable to find the corresponding Maya Handle at prim path '%s'\n", prim.GetPath().GetText());
+    return MS::kFailure;
+  }
+  return MS::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void Mesh::writeEdits(MDagPath& dagPath, UsdGeomMesh& geomPrim, bool leftHandedUV, bool dynamicAttributes)
+{
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MeshTranslator::writing edits to prim='%s'\n", geomPrim.GetPath().GetText());
+  UsdTimeCode t = UsdTimeCode::Default();
+  AL::usdmaya::utils::MeshExportContext context(dagPath, geomPrim, t, true);
+  if(context)
+  {
+    context.copyVertexData(t);
+    context.copyGlimpseTesselationAttributes();
+    context.copyNormalData(t);
+    context.copyFaceConnectsAndPolyCounts();
+    context.copyInvisibleHoles();
+    context.copyCreaseVertices();
+    context.copyCreaseEdges();
+    context.copyUvSetData(false);
+    context.copyColourSetData();
+    if(dynamicAttributes)
+    {
+      UsdPrim prim = geomPrim.GetPrim();
+      DgNodeTranslator::copyDynamicAttributes(dagPath.node(), prim);
+    }
   }
 }
+
 
 //----------------------------------------------------------------------------------------------------------------------
 } // namespace translators

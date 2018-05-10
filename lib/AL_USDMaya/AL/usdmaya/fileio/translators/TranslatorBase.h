@@ -28,7 +28,9 @@
 
 #include <iostream>
 #include <unordered_map>
+#include <functional>
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
+#include "AL/usdmaya/fileio/ExportParams.h"
 
 namespace AL {
 namespace usdmaya {
@@ -68,6 +70,37 @@ namespace translators {
 ///         Do not inherit from this class directly - use the TranslatorBase instead.
 /// \ingroup   translators
 //----------------------------------------------------------------------------------------------------------------------
+struct MayaFnTypeId
+{
+  uint32_t m_mfn;
+  uint32_t m_typeid;
+  MayaFnTypeId(uint32_t fn, uint32_t type)
+    : m_mfn(fn)
+    , m_typeid(type)
+  {}
+
+  MayaFnTypeId()
+    : MayaFnTypeId(0, 0)
+  {}
+
+  bool isValid() const { return m_mfn > MFn::kInvalid && m_mfn < MFn::kLast; }
+
+  bool operator==(const MayaFnTypeId& rhs) const
+  {
+    return (m_mfn == rhs.m_mfn) && (m_typeid == rhs.m_typeid);
+  }
+
+  static const MayaFnTypeId kInvalidType;
+};
+
+struct HashMayaFnTypeId
+{
+  uint64_t operator()(const MayaFnTypeId& m) const
+  {
+    return (uint64_t(m.m_mfn) << 32) | m.m_typeid;
+  }
+};
+
 class TranslatorAbstract
   : public TfRefBase, public TfWeakBase
 {
@@ -82,6 +115,10 @@ public:
   /// \brief  Override to specify the schema type of the prim that this translator plugin is responsible for.
   /// \return the custom schema type associated with this prim
   virtual TfType getTranslatedType() const = 0;
+
+  /// \brief  Override to specify the types of Maya objects that this translator plugin is responsible for
+  /// \return the vector contains all supported Maya types
+  virtual const std::vector<MayaFnTypeId>& supportedMayaTypes() const = 0;
 
   /// \brief  if the custom node type you are importing requires a parent transform (e.g. you are importing a shape node),
   ///         then this method should return true. If however you do not need a parent transform (e.g. you are importing
@@ -103,9 +140,17 @@ public:
   /// \param  parent a handle to an MObject that represents an AL_usd_Transform node. You should parent your DAG
   ///         objects under this node. If the prim you are importing is NOT a DAG object (e.g. surface shader, etc),
   ///         then you can ignore this parameter.
+  /// \param  output a handle to an MObject created in the importing process
   /// \return MS::kSuccess if all ok
-  virtual MStatus import(const UsdPrim& prim, MObject& parent)
+  virtual MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
     { return MS::kSuccess; }
+
+  /// \brief returns whether export this Maya object
+  virtual bool claimMayaObjectExporting(MObject obj) const
+    { return true; }
+
+  virtual UsdPrim exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath, const ExporterParams& params)
+    { return UsdPrim(); }
 
   /// \brief  If your node needs to set up any relationships after import (for example, adding the node to a set, or
   ///         making attribute connections), then all of that work should be performed here.
@@ -173,6 +218,10 @@ public:
   TfType getTranslatedType() const override
     { return m_translatedType; }
 
+  AL_USDMAYA_PUBLIC
+  virtual const std::vector<MayaFnTypeId>& supportedMayaTypes() const override
+    { return m_mayaTypes; }
+
   /// \brief  returns the context currently being used to translate the USD prims. The context can be used to add
   ///         references to prims you have created in your translator plugins (see:
   AL_USDMAYA_PUBLIC
@@ -208,6 +257,12 @@ protected:
   virtual void setTranslatedType(const TfType& translatedType)
     { m_translatedType = translatedType; }
 
+  /// \brief  internal method. Used within AL_USDMAYA_DEFINE_TRANSLATOR macro to add the Maya type of the node we
+  ///         translate.
+  /// \param  mayaType the combined Maya fn and typeid
+  virtual void addMayaType(const MayaFnTypeId& mayaType)
+    { m_mayaTypes.emplace_back(mayaType); }
+
   /// \brief  internal method. Used within AL_USDMAYA_DEFINE_TRANSLATOR macro to set the translation context
   /// \param  context the internal context
   virtual void setContext(const TranslatorContextPtr context)
@@ -215,10 +270,12 @@ protected:
 
 private:
   TfType m_translatedType;
+  std::vector<MayaFnTypeId> m_mayaTypes;
   TranslatorContextPtr m_context;
 };
 
 typedef TfRefPtr<TranslatorBase> TranslatorRefPtr;
+typedef std::vector<TranslatorRefPtr> TranslatorRefPtrVector;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Forms a registry of all plug-in translator types registered
@@ -228,6 +285,7 @@ class TranslatorManufacture
 {
 public:
   typedef TfRefPtr<TranslatorBase> RefPtr; ///< handle to a plug-in translator
+  typedef std::vector<RefPtr> RefPtrVector;
 
   /// \brief  constructs a registry of translator plugins that are currently registered within usd maya. This construction
   ///         should only happen once per-proxy shape.
@@ -241,8 +299,14 @@ public:
   AL_USDMAYA_PUBLIC
   RefPtr get(const TfToken type_name);
 
+  /// \brief  returns a translator for the specified maya type.
+  /// \param  maya_type the maya fn or type id
+  /// \return returns the requested translator type
+  RefPtrVector get(const MayaFnTypeId maya_type);
+
 private:
   std::unordered_map<std::string, TranslatorRefPtr> m_translatorsMap;
+  std::unordered_multimap<MayaFnTypeId, TranslatorRefPtr, HashMayaFnTypeId> m_mayaMap;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -291,13 +355,17 @@ static RefPtr create(TranslatorContextPtr context);
 /// \brief  a macro to define a plug-in translator
 /// \ingroup   translators
 //----------------------------------------------------------------------------------------------------------------------
-#define AL_USDMAYA_DEFINE_TRANSLATOR(PlugClass, TranslatedType)                 \
+#define AL_USDMAYA_DEFINE_TRANSLATOR(PlugClass, TranslatedType, MayaTypes)      \
 TfRefPtr<PlugClass>                                                             \
 PlugClass::create(TranslatorContextPtr context) {                               \
   TfType const &type = TfType::Find<TranslatedType>();                          \
-  if(!type.IsUnknown()) {                                                    \
+  if(!type.IsUnknown()) {                                                       \
     TfRefPtr<PlugClass> plugin = TfCreateRefPtr(new This());                    \
     plugin->setTranslatedType(type);                                            \
+    for (auto& mayaType : MayaTypes)                                            \
+    {                                                                           \
+      plugin->addMayaType(mayaType);                                            \
+    }                                                                           \
     plugin->setContext(context);                                                \
     if(!plugin->initialize()) return TfRefPtr<PlugClass>();                     \
     return plugin;                                                              \
@@ -308,7 +376,7 @@ PlugClass::create(TranslatorContextPtr context) {                               
       typeid(TranslatedType).name());                                           \
     return TfNullPtr;                                                           \
   }                                                                             \
-}                                                                             \
+}                                                                               \
                                                                                 \
 TF_REGISTRY_FUNCTION(TfType)                                                    \
 {                                                                               \

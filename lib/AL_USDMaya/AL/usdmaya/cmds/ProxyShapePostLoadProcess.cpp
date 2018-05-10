@@ -300,7 +300,8 @@ void ProxyShapePostLoadProcess::createSchemaPrims(
       //if(!context->hasEntry(prim.GetPath(), prim.GetTypeName()))
       {
         AL_BEGIN_PROFILE_SECTION(SchemaPrims);
-        if(!fileio::importSchemaPrim(prim, object, 0, context, translator, param))
+        MObject created;
+        if(!fileio::importSchemaPrim(prim, object, created, context, translator, param))
         {
           std::cerr << "Error: unable to load schema prim node: '" << prim.GetName().GetString() << "' that has type: '" << prim.GetTypeName() << "'" << std::endl;
         }
@@ -337,7 +338,8 @@ void ProxyShapePostLoadProcess::updateSchemaPrims(
       {
         TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createSchemaPrims prim=%s hasEntry=false\n", prim.GetPath().GetText());
         AL_BEGIN_PROFILE_SECTION(SchemaPrims);
-        fileio::importSchemaPrim(prim, object, 0, context, translator);
+        MObject created;
+        fileio::importSchemaPrim(prim, object, created, context, translator);
         AL_END_PROFILE_SECTION();
       }
       else

@@ -26,6 +26,8 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
+const MayaFnTypeId MayaFnTypeId::kInvalidType = MayaFnTypeId(0, 0);
+
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
 {
@@ -49,7 +51,16 @@ TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
         keepGoing = true;
         if (auto* factory = t.GetFactory<TranslatorFactoryBase>())
           if (TranslatorRefPtr ptr = factory->create(context))
+          {
             m_translatorsMap.emplace(ptr->getTranslatedType().GetTypeName(), ptr);
+            for (auto& mayaType : ptr->supportedMayaTypes())
+            {
+              if (mayaType.isValid())
+              {
+                m_mayaMap.emplace(mayaType, ptr);
+              }
+            }
+          }
       }
     }
   }
@@ -66,6 +77,16 @@ TranslatorRefPtr TranslatorManufacture::get(const TfToken type_name)
     return m_translatorsMap[typeName];
   }
   return TfNullPtr;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TranslatorRefPtrVector TranslatorManufacture::get(const MayaFnTypeId maya_type)
+{
+  auto range = m_mayaMap.equal_range(maya_type);
+  TranslatorRefPtrVector refPtrVector;
+  std::transform(range.first, range.second, std::back_inserter(refPtrVector),
+                 [](const std::pair<MayaFnTypeId, TranslatorRefPtr>& kv) {return kv.second;});
+  return refPtrVector;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -19,7 +19,7 @@
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/NodeFactory.h"
-#include "AL/usdmaya/fileio/translators/NurbsCurveTranslator.h"
+#include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
 #include "maya/MDagModifier.h"
 #include "maya/MDoubleArray.h"
@@ -37,7 +37,6 @@
 
 using AL::usdmaya::fileio::ExporterParams;
 using AL::usdmaya::fileio::ImporterParams;
-using AL::usdmaya::fileio::translators::NurbsCurveTranslator;
 
 #ifndef USE_AL_DEFAULT
  #define USE_AL_DEFAULT 0
@@ -106,10 +105,19 @@ MObject createNurbStage(bool useSingleWidth=false)
   ImporterParams ip;
   ip.m_nurbsCurves = true;
 
-  NurbsCurveTranslator x;
-  MObject translatedNode = x.createNode(nurb.GetPrim(), parent, "nurbsCurve", ip);
-
-  return translatedNode;
+  UsdPrim prim = nurb.GetPrim();
+  AL::usdmaya::fileio::translators::TranslatorManufacture manufacture(nullptr);
+  AL::usdmaya::fileio::translators::TranslatorRefPtr translator = manufacture.get(prim.GetTypeName());
+  if (translator)
+  {
+    MObject createdNode;
+    translator->import(prim, parent, createdNode);
+    return createdNode;
+  }
+  else
+  {
+    return MObject::kNullObj;
+  }
 };
 
 //----------------------------------------------------------------------------------------------------------------------

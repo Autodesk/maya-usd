@@ -31,7 +31,9 @@ public:
   AL_USDMAYA_DECLARE_TRANSLATOR(NurbsCurve);
 private:
   MStatus initialize() override;
-  MStatus import(const UsdPrim& prim, MObject& parent) override;
+  MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
+  UsdPrim exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath,
+                       const ExporterParams& params) override;
   MStatus tearDown(const SdfPath& path) override;
   MStatus update(const UsdPrim& prim) override;
   MStatus preTearDown(UsdPrim& prim) override;
@@ -40,7 +42,10 @@ private:
   { return false; }
   bool importableByDefault() const override
   { return false; }
-  void writeEdits(UsdPrim& prim);
+
+private:
+  void writeEdits(UsdGeomNurbsCurves& nurbsCurvesPrim, MFnNurbsCurve& fnCurve, bool writeAll);
+
   static MObject m_visible;
 };
 

@@ -20,7 +20,6 @@
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
-#include "AL/usdmaya/fileio/translators/MeshTranslator.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
 
 #include "maya/MItDependencyGraph.h"
