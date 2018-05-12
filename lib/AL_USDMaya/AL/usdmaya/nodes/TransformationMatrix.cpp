@@ -14,13 +14,14 @@
 // limitations under the License.
 //
 #include "AL/maya/utils/CommandGuiHelper.h"
+#include "AL/usdmaya/utils/AttributeType.h"
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
 #include "maya/MFileIO.h"
-#include "AL/usdmaya/utils/AttributeType.h"
+#include "maya/MViewport2Renderer.h"
 #include "AL/usdmaya/utils/Utils.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -1887,6 +1888,23 @@ void TransformationMatrix::pushToPrim()
       {
       }
       break;
+    }
+  }
+
+  // Anytime we update the xform, we need to tell the proxy shape that it
+  // needs to redraw itself
+  if (!m_transformNode.isNull())
+  {
+    MStatus status;
+    MFnDependencyNode mfn(m_transformNode, &status);
+    if (status && mfn.typeId() == Transform::kTypeId)
+    {
+      auto xform = static_cast<Transform*>(mfn.userNode());
+      MObject proxy = xform->getProxyShape();
+      if (!proxy.isNull())
+      {
+        MHWRender::MRenderer::setGeometryDrawDirty(proxy);
+      }
     }
   }
 }

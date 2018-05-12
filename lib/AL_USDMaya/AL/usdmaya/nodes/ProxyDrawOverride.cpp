@@ -41,7 +41,7 @@ public:
 
   // Constructor to use when shape is drawn but no bounding box.
   RenderUserData()
-    : MUserData(true)
+    : MUserData(false)
     {}
 
   // Make sure everything gets freed!
@@ -63,7 +63,7 @@ MString ProxyDrawOverride::kDrawRegistrantId("pxrUsd");
 //----------------------------------------------------------------------------------------------------------------------
 ProxyDrawOverride::ProxyDrawOverride(const MObject& obj)
 #if MAYA_API_VERSION >= 201700
-  : MHWRender::MPxDrawOverride(obj, draw, true)
+  : MHWRender::MPxDrawOverride(obj, draw, false)
 #else
   : MHWRender::MPxDrawOverride(obj, draw)
 #endif
