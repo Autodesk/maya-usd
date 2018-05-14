@@ -62,6 +62,11 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
 option(VALIDATE_GENERATED_SCHEMAS "Generate schemas code and compare." OFF)
+option(SKIP_USDMAYA_TESTS "Build tests" OFF)
+
+if(NOT SKIP_USDMAYA_TESTS)
+    enable_testing()
+endif()
 
 set(AL_USDMAYA_LOCATION_NAME
     "AL_USDMAYA_LOCATION"

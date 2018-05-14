@@ -1,8 +1,3 @@
-IF(DEFINED NO_TESTS AND NO_TESTS)
-  message("Skipping building of test plugin.")
-  return()
-ENDIF()
-
 find_package(GTest REQUIRED)
 
 set(PXR_PACKAGE AL_USDMayaTestPlugin)

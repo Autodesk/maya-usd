@@ -82,4 +82,6 @@ install(TARGETS ${MAYAUTILS_LIBRARY_NAME}
     DESTINATION ${MAYAUTILS_LIBRARY_LOCATION}
 )
 
-add_subdirectory(tests)
+if(NOT SKIP_USDMAYA_TESTS)
+  add_subdirectory(tests)
+endif()

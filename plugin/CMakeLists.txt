@@ -1,2 +1,4 @@
 add_subdirectory(AL_USDMayaPlugin)
-add_subdirectory(AL_USDMayaTestPlugin)
+if(NOT SKIP_USDMAYA_TESTS)
+  add_subdirectory(AL_USDMayaTestPlugin)
+endif()

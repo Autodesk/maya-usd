@@ -1,11 +1,9 @@
-IF(DEFINED NO_TESTS AND NO_TESTS)
+IF(SKIP_USDMAYA_TESTS)
   message("Skipping test building.")
   return()
 ENDIF()
 
 find_package(GTest REQUIRED)
-
-enable_testing()
 
 add_executable(testMayaSchemas
     main.cpp
