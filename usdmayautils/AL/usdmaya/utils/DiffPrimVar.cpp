@@ -77,8 +77,8 @@ uint32_t diffFaceVertices(UsdGeomMesh& geom, MFnMesh& mesh, UsdTimeCode timeCode
 
   if(exportMask & (kFaceVertexCounts | kFaceVertexIndices))
   {
-    const int numPolygons = mesh.numPolygons();
-    const int numFaceVerts = mesh.numFaceVertices();
+    const uint32_t numPolygons = uint32_t(mesh.numPolygons());
+    const uint32_t numFaceVerts = uint32_t(mesh.numFaceVertices());
 
     VtArray<int> faceVertexCounts;
     VtArray<int> faceVertexIndices;
@@ -524,7 +524,7 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void UvSetBuilder::constructNewlyAddedSets(MStringArray& setNames, const std::vector<UsdGeomPrimvar>& primvars)
 {
-  for(int i = 0; i < setNames.length(); )
+  for(uint32_t i = 0; i < setNames.length(); )
   {
     for(auto it = primvars.begin(), end = primvars.end(); it != end; ++it)
     {
@@ -702,7 +702,7 @@ TfToken guessUVInterpolationTypeExtended(
     for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
     {
       const uint32_t numVerts = faceCounts[i];
-      uint32_t index = indices[offset];
+      int32_t index = indices[offset];
       for(uint32_t j = 1; j < numVerts; ++j)
       {
         if(index != indices[offset + j])
@@ -787,7 +787,7 @@ uniform_test:
     for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
     {
       const uint32_t numVerts = faceCounts[i];
-      const uint32_t index = indices[offset];
+      const int32_t index = indices[offset];
 
       // extract UV for first vertex in face
       const float u0 = u[index];
@@ -860,7 +860,7 @@ TfToken guessVec3InterpolationTypeExtended(
     for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
     {
       const uint32_t numVerts = faceCounts[i];
-      uint32_t index = indices[offset];
+      int32_t index = indices[offset];
       for(uint32_t j = 1; j < numVerts; ++j)
       {
         if(index != indices[offset + j])
@@ -954,7 +954,7 @@ uniform_test:
     for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
     {
       const uint32_t numVerts = faceCounts[i];
-      const uint32_t index = indices[offset];
+      const int32_t index = indices[offset];
 
       #if defined(__SSE__)
 
@@ -1046,7 +1046,7 @@ TfToken guessVec3InterpolationTypeExtended(
     for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
     {
       const uint32_t numVerts = faceCounts[i];
-      uint32_t index = indices[offset];
+      int32_t index = indices[offset];
       for(uint32_t j = 1; j < numVerts; ++j)
       {
         if(index != indices[offset + j])
@@ -1121,7 +1121,7 @@ uniform_test:
     for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
     {
       const uint32_t numVerts = faceCounts[i];
-      const uint32_t index = indices[offset];
+      const int32_t index = indices[offset];
 
       // extract UV for first vertex in face
       const double x0 = xyz[3 * index];
@@ -1194,7 +1194,7 @@ TfToken guessVec4InterpolationTypeExtended(
     for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
     {
       const uint32_t numVerts = faceCounts[i];
-      uint32_t index = indices[offset];
+      int32_t index = indices[offset];
       for(uint32_t j = 1; j < numVerts; ++j)
       {
         if(index != indices[offset + j])
@@ -1282,7 +1282,7 @@ uniform_test:
     for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
     {
       const uint32_t numVerts = faceCounts[i];
-      const uint32_t index = indices[offset];
+      const int32_t index = indices[offset];
 
       // extract UV for first vertex in face
       #if defined(__SSE__)
@@ -1375,7 +1375,7 @@ TfToken guessVec4InterpolationTypeExtended(
     for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
     {
       const uint32_t numVerts = faceCounts[i];
-      uint32_t index = indices[offset];
+      int32_t index = indices[offset];
       for(uint32_t j = 1; j < numVerts; ++j)
       {
         if(index != indices[offset + j])
@@ -1474,7 +1474,7 @@ uniform_test:
     for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
     {
       const uint32_t numVerts = faceCounts[i];
-      const uint32_t index = indices[offset];
+      const int32_t index = indices[offset];
 
       // extract for first vertex in face
       #if defined(__AVX__)
@@ -1628,7 +1628,7 @@ uniform_test:
     #if defined(__SSE__)
 
     const f128 rgba0 = loadu4f(rgba + 4 * offset);
-    for(uint32_t j = 1; j < numPointsInFace; ++j)
+    for(int32_t j = 1; j < numPointsInFace; ++j)
     {
       const f128 rgba1 = loadu4f(rgba + 4 * (offset + j));
       const f128 cmp = cmpne4f(rgba0, rgba1);
@@ -1639,7 +1639,7 @@ uniform_test:
     #else
 
     const float* rgba0 = rgba + 4 * offset;
-    for(uint32_t j = 1; j < numPointsInFace; ++j)
+    for(int32_t j = 1; j < numPointsInFace; ++j)
     {
       const float* rgba1 = rgba + 4 * (offset + j);
       if(rgba0[0] != rgba1[0] ||

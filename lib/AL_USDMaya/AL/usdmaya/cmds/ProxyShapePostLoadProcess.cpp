@@ -187,7 +187,7 @@ void huntForNativeNodes(
 } // anon
 
 //----------------------------------------------------------------------------------------------------------------------
-bool parentNodeIsUnmerged(const UsdPrim & prim)
+static bool parentNodeIsUnmerged(const UsdPrim & prim)
 {
   bool parentUnmerged = false;
   TfToken val;

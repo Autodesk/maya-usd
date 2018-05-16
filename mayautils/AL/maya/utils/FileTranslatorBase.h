@@ -178,7 +178,7 @@ public:
 
 private:
 
-  MStatus reader(const MFileObject &file, const MString &optionsString, const FileAccessMode mode) override
+  MStatus reader(const MFileObject &file, const MString &optionsString, FileAccessMode mode) override
     {
       MStatus status = m_optionParser.parse(optionsString);
       if(MS::kSuccess == status)
@@ -189,7 +189,7 @@ private:
       return status;
     }
 
-  MStatus writer(const MFileObject &file, const MString &optionsString, const FileAccessMode mode) override
+  MStatus writer(const MFileObject &file, const MString &optionsString, FileAccessMode mode) override
     {
       MStatus status = m_optionParser.parse(optionsString);
       if(MS::kSuccess == status)

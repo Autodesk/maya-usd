@@ -227,6 +227,7 @@ public:
   /// \param  enumValues a null terminated list of strings for each enum entry
   /// \param  defaultValue the default value for the option
   /// \return true if the option was successfully added. False if the option is a duplicate
+  AL_MAYA_UTILS_PUBLIC
   bool addEnum(const char* optionName, const char* const enumValues[], int defaultValue = 0);
 
   /// \brief  For a given boolean option (the controller), if enabled the 'controlled' option will be editable. If

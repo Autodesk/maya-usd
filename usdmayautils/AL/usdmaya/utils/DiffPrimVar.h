@@ -89,6 +89,7 @@ public:
       TfToken interpolation)
   : m_primVar(pv),
     m_setName(setName),
+    m_indicesToExtract(),
     m_flags((colourSet ? kIsColourSet : 0) |
             (indicesChanged ? kIndicesChanged : 0) |
             (valuesChanged ? kValuesChanged : 0))
@@ -116,10 +117,10 @@ public:
       std::vector<uint32_t>&& elements)
   : m_primVar(pv),
     m_setName(setName),
+    m_indicesToExtract(elements),
     m_flags((colourSet ? kIsColourSet : 0) |
             (indicesChanged ? kIndicesChanged : 0) |
-            (valuesChanged ? kValuesChanged : 0)),
-    m_indicesToExtract(elements)
+            (valuesChanged ? kValuesChanged : 0))
   {
     if(interpolation == UsdGeomTokens->constant) m_flags |= kConstant;
     else if(interpolation == UsdGeomTokens->vertex) m_flags |= kVertex;
@@ -143,6 +144,7 @@ public:
       bool valuesChanged)
   : m_primVar(pv),
     m_setName(setName),
+    m_indicesToExtract(),
     m_flags((colourSet ? kIsColourSet : 0) |
             (indicesChanged ? kIndicesChanged : 0) |
             (valuesChanged ? kValuesChanged : 0))

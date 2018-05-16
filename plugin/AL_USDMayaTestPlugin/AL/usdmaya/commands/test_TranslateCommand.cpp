@@ -30,6 +30,7 @@ TEST(TranslateCommand, translateMeshPrim)
  */
 {
   AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMesh();
+  ASSERT_TRUE(proxyShape != 0);
   MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
   MStatus s = MGlobal::selectByName("pSphere1Shape");
@@ -79,6 +80,7 @@ TEST(TranslateCommand, translateMultipleMeshPrims)
  */
 {
   AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMultipleMeshes();
+  ASSERT_TRUE(proxyShape != 0);
   MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1,/pSphere2,/pSphere3\" \"AL_usdmaya_ProxyShape1\"", false, false);
   MStatus s;
 
@@ -95,6 +97,7 @@ TEST(TranslateCommand, translateMultipleMeshPrims)
 TEST(TranslateCommand, translateMultipleTimes)
 {
   AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMultipleMeshes();
+  ASSERT_TRUE(proxyShape != 0);
   MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1\" \"AL_usdmaya_ProxyShape1\"",
                           false,
                           false);
@@ -117,6 +120,7 @@ TEST(TranslateCommand, roundTripMeshPrim)
  */
 {
   AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMesh();
+  ASSERT_TRUE(proxyShape != 0);
 
   MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1\" \"AL_usdmaya_ProxyShape1\"", false, false);
   MStatus s = MGlobal::selectByName("pSphere1Shape");
@@ -153,9 +157,7 @@ TEST(TranslateCommand, translateFromUnmergedFile)
   s = MGlobal::selectByName("pSphere1");
   
   /// TODO: This test needs to pass prior to release!!
-  #if 0
   EXPECT_FALSE(s == MStatus::kSuccess);
-  #endif
 }
 
 TEST(TranslateCommand, translateMultiplePrimsFromUnmergedFile)

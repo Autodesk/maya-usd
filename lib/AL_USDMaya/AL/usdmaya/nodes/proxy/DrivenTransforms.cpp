@@ -21,7 +21,7 @@ void DrivenTransforms::updateDrivenTransforms(std::vector<UsdPrim>& drivenPrims,
 {
   for (uint32_t i = 0, cnt = m_dirtyMatrices.size(); i < cnt; ++i)
   {
-    int32_t idx = m_dirtyMatrices[i];
+    uint32_t idx = uint32_t(m_dirtyMatrices[i]);
     // [RB] This seems redundant? Why not just prevent invalid data from entering the structure?
     if (idx >= drivenPrims.size())
     {
@@ -77,7 +77,7 @@ void DrivenTransforms::updateDrivenVisibility(std::vector<UsdPrim>& drivenPrims,
 {
   for (uint32_t i = 0, cnt = m_dirtyVisibilities.size(); i < cnt; ++i)
   {
-    int32_t idx = m_dirtyVisibilities[i];
+    uint32_t idx = uint32_t(m_dirtyVisibilities[i]);
     // [RB] This seems redundant? Why not just prevent invalid data from entering the structure?
     if (idx >= drivenPrims.size())
     {

@@ -233,6 +233,7 @@ void TranslatorContext::insertItem(const UsdPrim& prim, MObjectHandle object)
   }
 }
 
+
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::removeItems(const SdfPath& path)
 {
@@ -409,7 +410,7 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
     // we are no longer in the same prim root
     const SdfPath& childPath = range_end->path();
 
-    if(!range_end->path().HasPrefix(primPath))
+    if(!childPath.HasPrefix(primPath))
     {
       break;
     }

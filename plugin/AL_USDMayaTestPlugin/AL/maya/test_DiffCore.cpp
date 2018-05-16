@@ -48,7 +48,7 @@ TEST(DataDiff, vec2AreAllTheSame)
 TEST(DataDiff, vec3AreAllTheSame)
 {
   std::vector<float> a(8 * 3 + 4 * 3 + 3);
-  for(int i = 0; i < a.size(); i += 3)
+  for(uint32_t i = 0; i < a.size(); i += 3)
   {
     a[i] = 2;
     a[i + 1] = 3;
@@ -82,7 +82,7 @@ TEST(DataDiff, vec3AreAllTheSame)
 TEST(DataDiff, vec4AreAllTheSame)
 {
   std::vector<float> a(8 * 4 + 4);
-  for(int i = 0; i < a.size(); i += 4)
+  for(uint32_t i = 0; i < a.size(); i += 4)
   {
     a[i] = 2;
     a[i + 1] = 3;
@@ -142,7 +142,7 @@ TEST(DataDiff, vec2AreAllTheSameDouble)
 TEST(DataDiff, vec3AreAllTheSameDouble)
 {
   std::vector<double> a(8 * 3 + 4 * 3 + 3);
-  for(int i = 0; i < a.size(); i += 3)
+  for(uint32_t i = 0; i < a.size(); i += 3)
   {
     a[i] = 2;
     a[i + 1] = 3;
@@ -176,7 +176,7 @@ TEST(DataDiff, vec3AreAllTheSameDouble)
 TEST(DataDiff, vec4AreAllTheSameDouble)
 {
   std::vector<double> a(8 * 4 + 4);
-  for(int i = 0; i < a.size(); i += 4)
+  for(uint32_t i = 0; i < a.size(); i += 4)
   {
     a[i] = 2;
     a[i + 1] = 3;

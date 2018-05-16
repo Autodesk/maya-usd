@@ -615,6 +615,7 @@ SdfPath Export::makeMeshReferencePath(MDagPath path, const SdfPath& usdPath, Ref
     }
     break;
   }
+  return SdfPath();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -639,16 +640,19 @@ void Export::addReferences(MDagPath shapePath, MFnTransform& fnTransform, SdfPat
     // usd only allows instanceable on transform prim
     switch (refType)
     {
-      case kTransformReference:
+    case kTransformReference:
       {
         usdPrim.SetInstanceable(true);
       }
       break;
 
-      case kMeshReference:
+    case kMeshReference:
       {
         copyTransformParams(usdPrim, fnTransform);
       }
+      break;
+
+    default:
       break;
     }
     usdPrim.GetReferences().AddReference(SdfReference("", instancePath));

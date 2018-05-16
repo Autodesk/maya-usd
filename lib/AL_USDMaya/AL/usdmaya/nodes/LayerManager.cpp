@@ -364,10 +364,10 @@ void LayerManager::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug&
 void LayerManager::removeAttributeChangedCallback()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("LayerManager::removeAttributeChangedCallback\n");
-  if(m_attributeChanged != -1)
+  if(m_attributeChanged != 0)
   {
     MMessage::removeCallback(m_attributeChanged);
-    m_attributeChanged = -1;
+    m_attributeChanged = 0;
   }
 }
 
@@ -375,7 +375,7 @@ void LayerManager::removeAttributeChangedCallback()
 void LayerManager::addAttributeChangedCallback()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("LayerManager::addAttributeChangedCallback\n");
-  if(m_attributeChanged == -1)
+  if(m_attributeChanged == 0)
   {
     MObject obj = thisMObject();
     m_attributeChanged = MNodeMessage::addAttributeChangedCallback(obj, onAttributeChanged, (void*)this);
@@ -389,12 +389,13 @@ void LayerManager::postConstructor()
   addAttributeChangedCallback();
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 bool LayerManager::setInternalValueInContext(const MPlug& plug, const MDataHandle& dataHandle, MDGContext& ctx)
 {
   if (plug == m_rendererPlugin)
   {
-    short index = dataHandle.asShort();
-    if (index >= 0 && index < m_rendererPluginsNames.length())
+    int16_t index = dataHandle.asShort();
+    if (index >= 0 && uint16_t(index) < uint16_t(m_rendererPluginsNames.length()))
     {
       MPlug plug(thisMObject(), m_rendererPluginName);
       plug.setString(m_rendererPluginsNames[index]);

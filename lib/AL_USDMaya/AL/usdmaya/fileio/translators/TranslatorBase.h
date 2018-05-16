@@ -170,13 +170,13 @@ public:
 
   /// \brief  returns the translated prim type
   AL_USDMAYA_PUBLIC
-  virtual TfType getTranslatedType() const override
+  TfType getTranslatedType() const override
     { return m_translatedType; }
 
   /// \brief  returns the context currently being used to translate the USD prims. The context can be used to add
   ///         references to prims you have created in your translator plugins (see:
   AL_USDMAYA_PUBLIC
-  virtual TranslatorContextPtr context() const
+  TranslatorContextPtr context() const
     { return m_context; }
 
   /// \brief  Internal method used to create a new instance of a plugin translator
@@ -191,10 +191,8 @@ public:
   /// \param  context the translation context
   /// \return a handle to the newly created plugin translator
   AL_USDMAYA_PUBLIC
-  virtual MStatus preTearDown(UsdPrim& prim)
-    {
-      return MS::kSuccess;
-    }
+  MStatus preTearDown(UsdPrim& prim) override
+    { return MS::kSuccess; }
 
   /// \brief  return the usd stage associated with this context
   /// \return the usd stage
@@ -273,7 +271,7 @@ public:
   /// \brief  creates a new translator for a given type T
   /// \param  ctx the current translator context
   /// \return the plugin translator associated with type T
-  virtual TfRefPtr<TranslatorBase> create(TranslatorContextPtr ctx) const
+  TfRefPtr<TranslatorBase> create(TranslatorContextPtr ctx) const override
     { return T::create(ctx); }
 };
 

@@ -1014,8 +1014,8 @@ private:
 
   mutable std::map<UsdTimeCode, MBoundingBox> m_boundingBoxCache;
   AL::event::CallbackId m_beforeSaveSceneId = -1;
-  MCallbackId m_attributeChanged = -1;
-  MCallbackId m_onSelectionChanged = -1;
+  MCallbackId m_attributeChanged = 0;
+  MCallbackId m_onSelectionChanged = 0;
   SdfPathVector m_excludedGeometry;
   SdfPathVector m_excludedTaggedGeometry;
   SdfPathSet m_lockTransformPrims;

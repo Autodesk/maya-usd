@@ -727,9 +727,8 @@ void ProxyShape::removeUsdTransformChain(
     if(it == m_requiredPaths.end())
     {
       TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape -- %s path has not been found\n", path.GetText());
-      return;
     }
-
+    else
     if(it->second.decRef(reason))
     {
       MObject object = it->second.node();
@@ -1168,7 +1167,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
           m_selectedPaths.erase(prim.GetPath());
 
           removeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection);
-          for(int i = 0; i < helper.m_newSelection.length(); ++i)
+          for(uint32_t i = 0; i < helper.m_newSelection.length(); ++i)
           {
             MObject obj;
             helper.m_newSelection.getDependNode(i, object);
@@ -1224,7 +1223,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
         m_selectedPaths.erase(prim.GetPath());
 
         removeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection);
-        for(int i = 0; i < helper.m_newSelection.length(); ++i)
+        for(uint32_t i = 0; i < helper.m_newSelection.length(); ++i)
         {
           MObject obj;
           helper.m_newSelection.getDependNode(i, object);

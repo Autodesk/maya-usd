@@ -53,7 +53,7 @@ void comparePlugs(const MPlug& plugA, const MPlug& plugB, bool usdTesting)
       if(plugA.isArray())
       {
         EXPECT_EQ(plugA.numElements(), plugB.numElements());
-        for(int i = 0; i < plugA.numElements(); ++i)
+        for(uint32_t i = 0; i < plugA.numElements(); ++i)
         {
           EXPECT_NEAR(plugA.elementByLogicalIndex(i).asDouble(), plugB.elementByLogicalIndex(i).asDouble(), 1e-5f);
         }

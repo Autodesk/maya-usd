@@ -285,7 +285,7 @@ void ProxyShape::translatePrimPathsIntoMaya(
     const SdfPathVector& teardownPaths,
     const fileio::translators::TranslatorParameters& param)
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimPathsIntoMaya ImportSize='%d' TearDownSize='%d' \n",
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimPathsIntoMaya ImportSize='%zd' TearDownSize='%zd' \n",
                                      importPaths.size(),
                                      teardownPaths.size());
 
@@ -312,7 +312,7 @@ void ProxyShape::translatePrimsIntoMaya(
     const SdfPathVector& teardownPrims,
     const fileio::translators::TranslatorParameters& param)
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimsIntoMaya ImportSize='%d' TearDownSize='%d' \n", importPrims.size(), teardownPrims.size());
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimsIntoMaya ImportSize='%zd' TearDownSize='%zd' \n", importPrims.size(), teardownPrims.size());
 
   proxy::PrimFilter filter(teardownPrims, importPrims, this);
   if(TfDebug::IsEnabled(ALUSDMAYA_TRANSLATORS))
@@ -1423,23 +1423,23 @@ bool ProxyShape::updateLockPrims(const SdfPathSet& lockTransformPrims, const Sdf
   for (auto lock : lockTransformPrims)
   {
     auto inserted = m_lockTransformPrims.insert(lock);
-    lockChanged |= inserted.second;
+    lockChanged = lockChanged || inserted.second;
     auto erased = m_lockInheritedPrims.erase(lock);
-    lockChanged |= erased;
+    lockChanged = lockChanged || erased;
   }
   for (auto inherited : lockInheritedPrims)
   {
     auto erased = m_lockTransformPrims.erase(inherited);
-    lockChanged |= erased;
+    lockChanged = lockChanged || erased;
     auto inserted = m_lockInheritedPrims.insert(inherited);
-    lockChanged |= inserted.second;
+    lockChanged = lockChanged || inserted.second;
   }
   for (auto unlocked : unlockedPrims)
   {
     auto erased = m_lockTransformPrims.erase(unlocked);
-    lockChanged |= erased;
+    lockChanged = lockChanged || erased;
     erased = m_lockInheritedPrims.erase(unlocked);
-    lockChanged |= erased;
+    lockChanged = lockChanged || erased;
   }
   return lockChanged;
 }
@@ -1611,10 +1611,10 @@ void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& p
 void ProxyShape::removeAttributeChangedCallback()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::removeAttributeChangedCallback\n");
-  if(m_attributeChanged != -1)
+  if(m_attributeChanged != 0)
   {
     MMessage::removeCallback(m_attributeChanged);
-    m_attributeChanged = -1;
+    m_attributeChanged = 0;
   }
 }
 
@@ -1622,7 +1622,7 @@ void ProxyShape::removeAttributeChangedCallback()
 void ProxyShape::addAttributeChangedCallback()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::addAttributeChangedCallback\n");
-  if(m_attributeChanged == -1)
+  if(m_attributeChanged == 0)
   {
     MObject obj = thisMObject();
     m_attributeChanged = MNodeMessage::addAttributeChangedCallback(obj, onAttributeChanged, (void*)this);
@@ -1839,6 +1839,7 @@ MBoundingBox ProxyShape::boundingBox() const
 
   // This would seem to be superfluous? unless it is actually forcing a DG pull?
   MDataHandle outDataHandle = dataBlock.inputValue(m_outStageData, &status);
+  (void)outDataHandle;
   CHECK_MSTATUS_AND_RETURN(status, MBoundingBox() );
 
   // XXX:aluk
@@ -2063,7 +2064,7 @@ void ProxyShape::deserialiseTransformRefs()
 
 //----------------------------------------------------------------------------------------------------------------------
 ProxyShape::TransformReference::TransformReference(MObject mayaNode, Transform* node, uint32_t r, uint32_t s, uint32_t rc)
-  : m_node(mayaNode), m_transform(node)
+  : m_transform(node), m_node(mayaNode)
 {
   m_required = r;
   m_selected = s;

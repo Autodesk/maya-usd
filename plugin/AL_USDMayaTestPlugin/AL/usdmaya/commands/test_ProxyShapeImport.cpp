@@ -153,14 +153,6 @@ TEST(ProxyShapeImport, lockMetaData)
     return MString(temp_bootstrap_path.c_str());
   };
 
-  auto constructLockMetaDataTestCommand = [] (const MString& bootstrap_path, const MString& mask)
-  {
-    MString cmd = "AL_usdmaya_ProxyShapeImport -file \"";
-    cmd += bootstrap_path;
-    cmd += "\"";
-    return cmd;
-  };
-
   constructTestUSDFile();
 
   MFileIO::newFile(true);

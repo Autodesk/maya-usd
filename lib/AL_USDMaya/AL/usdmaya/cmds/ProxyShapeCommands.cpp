@@ -119,18 +119,20 @@ nodes::ProxyShape* ProxyShapeCommandBase::getShapeNode(const MArgDatabase& args)
   for(uint32_t i = 0; i < sl.length(); ++i)
   {
     MStatus status = sl.getDagPath(i, path);
-
-    if(path.node().hasFn(MFn::kTransform))
+    if(status)
     {
-      path.extendToShape();
-    }
-
-    if(path.node().hasFn(MFn::kPluginShape))
-    {
-      MFnDagNode fn(path);
-      if(fn.typeId() == nodes::ProxyShape::kTypeId)
+      if(path.node().hasFn(MFn::kTransform))
       {
-        return (nodes::ProxyShape*)fn.userNode();
+        path.extendToShape();
+      }
+
+      if(path.node().hasFn(MFn::kPluginShape))
+      {
+        MFnDagNode fn(path);
+        if(fn.typeId() == nodes::ProxyShape::kTypeId)
+        {
+          return (nodes::ProxyShape*)fn.userNode();
+        }
       }
     }
   }
@@ -146,18 +148,20 @@ nodes::ProxyShape* ProxyShapeCommandBase::getShapeNode(const MArgDatabase& args)
         if(sl.length())
         {
           MStatus status = sl.getDagPath(0, path);
-
-          if(path.node().hasFn(MFn::kTransform))
+          if(status)
           {
-            path.extendToShape();
-          }
-
-          if(path.node().hasFn(MFn::kPluginShape))
-          {
-            MFnDagNode fn(path);
-            if(fn.typeId() == nodes::ProxyShape::kTypeId)
+            if(path.node().hasFn(MFn::kTransform))
             {
-              return (nodes::ProxyShape*)fn.userNode();
+              path.extendToShape();
+            }
+
+            if(path.node().hasFn(MFn::kPluginShape))
+            {
+              MFnDagNode fn(path);
+              if(fn.typeId() == nodes::ProxyShape::kTypeId)
+              {
+                return (nodes::ProxyShape*)fn.userNode();
+              }
             }
           }
         }
@@ -710,7 +714,7 @@ MStatus ProxyShapeImportAllTransforms::doIt(const MArgList& args)
       }
     }
   }
-  catch(const MStatus& status)
+  catch(const MStatus&)
   {
     return MS::kFailure;
   }
@@ -807,7 +811,7 @@ MStatus ProxyShapeRemoveAllTransforms::doIt(const MArgList& args)
       }
     }
   }
-  catch(const MStatus& status)
+  catch(const MStatus&)
   {
     return MS::kFailure;
   }

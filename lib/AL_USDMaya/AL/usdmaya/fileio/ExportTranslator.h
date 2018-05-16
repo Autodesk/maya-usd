@@ -62,7 +62,10 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
   static constexpr const char* const kFilterSample = "Filter Sample"; ///< export filter sample option name
   static constexpr const char* const kExportAtWhichTime = "Export At Which Time";
 
+  AL_USDMAYA_PUBLIC
   static const char* const compactionLevels[];
+
+  AL_USDMAYA_PUBLIC
   static const char* const timelineLevel[];
 
   /// \brief  provide a method to specify the export options

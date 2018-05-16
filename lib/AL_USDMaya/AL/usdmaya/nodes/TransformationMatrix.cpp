@@ -441,7 +441,7 @@ bool TransformationMatrix::pushMatrix(const MMatrix& result, UsdGeomXformOp& op,
   {
   case UsdDataType::kMatrix4d:
     {
-      GfMatrix4d value = *(const GfMatrix4d*)(&result);
+      const GfMatrix4d& value = *(const GfMatrix4d*)(&result);
       const bool retValue = op.Set<GfMatrix4d>(value, timeCode);
       if (!retValue)
       {

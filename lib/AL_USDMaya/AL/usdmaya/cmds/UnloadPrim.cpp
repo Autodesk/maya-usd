@@ -111,7 +111,7 @@ MStatus ChangeVariant::doIt(const MArgList& args)
       }
     }
   }
-  catch(MStatus& status)
+  catch(MStatus&)
   {
     std::cout << "Error" << std::endl;
   }
@@ -182,7 +182,7 @@ MStatus ActivatePrim::doIt(const MArgList& args)
       }
     }
   }
-  catch(MStatus status)
+  catch(MStatus)
   {
     std::cout << "Error" << std::endl;
   }

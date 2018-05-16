@@ -620,7 +620,6 @@ UsdAttribute addRotateOp(const UsdGeomXform &xformSchema,
 //----------------------------------------------------------------------------------------------------------------------
 MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, const ExporterParams& params)
 {
-  static const UsdTimeCode usdTime = UsdTimeCode::EarliestTime();
   UsdGeomXform xformSchema(to);
   GfVec3f scale;
   GfVec3f shear;

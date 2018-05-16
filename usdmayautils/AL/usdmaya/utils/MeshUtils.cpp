@@ -280,7 +280,7 @@ void MeshImportContext::gatherFaceConnectsAndVertices()
       normals.setLength(connects.length());
       for(uint32_t i = 0, k = 0, nf = counts.length(); i < nf; ++i)
       {
-        int nv = counts[i];
+        uint32_t nv = counts[i];
         for(uint32_t j = 0; j < nv; ++j)
         {
           normals[k + j] = MVector(iptr[3 * i], iptr[3 * i + 1], iptr[3 * i + 2]);
@@ -653,7 +653,7 @@ void MeshImportContext::applyGlimpseSubdivParams()
   MStatus status;
   if(glimpse_gSubdiv_attr)
   {
-    MPlug plug = fnMesh.findPlug("gSubdiv", &status);
+    MPlug plug = fnMesh.findPlug("gSubdiv", true, &status);
     if(status)
     {
       bool value;
@@ -664,7 +664,7 @@ void MeshImportContext::applyGlimpseSubdivParams()
 
   if(glimpse_gSubdivKeepUvBoundary_attr)
   {
-    MPlug plug = fnMesh.findPlug("gSubdivKeepUvBoundary", &status);
+    MPlug plug = fnMesh.findPlug("gSubdivKeepUvBoundary", true, &status);
     if(status)
     {
       bool value;
@@ -675,7 +675,7 @@ void MeshImportContext::applyGlimpseSubdivParams()
 
   if(glimpse_gSubdivLevel_attr)
   {
-    MPlug plug = fnMesh.findPlug("gSubdivLevel", &status);
+    MPlug plug = fnMesh.findPlug("gSubdivLevel", true, &status);
     if(status)
     {
       int32_t value;
@@ -686,7 +686,7 @@ void MeshImportContext::applyGlimpseSubdivParams()
 
   if(glimpse_gSubdivMode_attr)
   {
-    MPlug plug = fnMesh.findPlug("gSubdivMode", &status);
+    MPlug plug = fnMesh.findPlug("gSubdivMode", true, &status);
     if(status)
     {
       int32_t value;
@@ -697,7 +697,7 @@ void MeshImportContext::applyGlimpseSubdivParams()
 
   if(glimpse_gSubdivPrimSizeMult_attr)
   {
-    MPlug plug = fnMesh.findPlug("gSubdivPrimSizeMult", &status);
+    MPlug plug = fnMesh.findPlug("gSubdivPrimSizeMult", true, &status);
     if(status)
     {
       float value;
@@ -708,7 +708,7 @@ void MeshImportContext::applyGlimpseSubdivParams()
 
   if(glimpse_gSubdivEdgeLengthMultiplier_attr)
   {
-    MPlug plug = fnMesh.findPlug("gSubdivEdgeLengthMultiplier", &status);
+    MPlug plug = fnMesh.findPlug("gSubdivEdgeLengthMultiplier", true, &status);
     if(status)
     {
       float value;
@@ -726,7 +726,7 @@ void MeshImportContext::applyGlimpseUserDataParams()
   static const std::string glimpse_namespace("glimpse:userData");
 
   MStatus status;
-  MPlug plug = fnMesh.findPlug("gUserData", &status);
+  MPlug plug = fnMesh.findPlug("gUserData", true, &status);
   if(!status)
   {
     return;
@@ -930,7 +930,7 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
             if (interpolation == UsdGeomTokens->uniform)
             {
               mayaIndices.setLength(connects.length());
-              for(int i = 0, j = 0; i < counts.length(); ++i)
+              for(uint32_t i = 0, j = 0; i < counts.length(); ++i)
               {
                 for(int k = 0; k < counts[i]; ++k)
                 {
@@ -970,7 +970,11 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
         fnMesh.setDisplayColors(true);
 
         MStatus s;
+        #if MAYA_API_VERSION >= 201800
+        colourSetName = fnMesh.createColorSetWithName(colourSetName, nullptr, nullptr, &s);
+        #else
         colourSetName = fnMesh.createColorSetWithName(colourSetName, nullptr, &s);
+        #endif
         if(s)
         {
           s = fnMesh.setCurrentColorSetName(colourSetName);
@@ -1062,7 +1066,7 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
             if (interpolation == UsdGeomTokens->constant)
             {
               colours.setLength(fnMesh.numFaceVertices());
-              for(int i = 1; i < colours.length(); ++i)
+              for(uint32_t i = 1; i < colours.length(); ++i)
               {
                 colours[i] = colours[0];
               }
@@ -1087,7 +1091,7 @@ MeshExportContext::MeshExportContext(
     UsdTimeCode timeCode,
     bool performDiff,
     CompactionLevel compactionLevel)
-  : fnMesh(), faceCounts(), faceConnects(), m_timeCode(timeCode), mesh(mesh), performDiff(performDiff), compaction(compactionLevel)
+  : fnMesh(), faceCounts(), faceConnects(), m_timeCode(timeCode), mesh(mesh), compaction(compactionLevel), performDiff(performDiff)
 {
   MStatus status = fnMesh.setObject(path);
   valid = (status == MS::kSuccess);
@@ -1112,17 +1116,17 @@ MeshExportContext::MeshExportContext(
 //----------------------------------------------------------------------------------------------------------------------
 void MeshExportContext::copyFaceConnectsAndPolyCounts()
 {
-  if(diffMesh & kFaceVertexCounts)
+  if((diffMesh & kFaceVertexCounts) && faceCounts.length())
   {
-    VtArray<int32_t> faceVertexCounts(polyCounts.length());
-    memcpy((int32_t*)faceVertexCounts.data(), &polyCounts[0], sizeof(uint32_t) * polyCounts.length());
+    VtArray<int32_t> faceVertexCounts(faceCounts.length());
+    memcpy((int32_t*)faceVertexCounts.data(), &faceCounts[0], sizeof(uint32_t) * faceCounts.length());
     if(UsdAttribute vertextCounts = mesh.GetFaceVertexCountsAttr())
     {
       vertextCounts.Set(faceVertexCounts);
     }
   }
 
-  if(diffMesh & kFaceVertexIndices)
+  if((diffMesh & kFaceVertexIndices) && faceConnects.length())
   {
     VtArray<int32_t> faceVertexIndices(faceConnects.length());
     memcpy((int32_t*)faceVertexIndices.data(), &faceConnects[0], sizeof(uint32_t) * faceConnects.length());
@@ -1868,7 +1872,7 @@ void MeshExportContext::copyGlimpseTesselationAttributes()
   MStatus status;
 
   UsdPrim prim = mesh.GetPrim();
-  MPlug plug = fnMesh.findPlug("gSubdiv", &status); // render as subdivision surfaces
+  MPlug plug = fnMesh.findPlug("gSubdiv", true, &status); // render as subdivision surfaces
   if (status)
   {
     bool renderAsSubd = true;
@@ -1876,7 +1880,7 @@ void MeshExportContext::copyGlimpseTesselationAttributes()
     prim.CreateAttribute(token_gSubdiv, SdfValueTypeNames->Bool).Set(renderAsSubd);
   }
 
-  plug = fnMesh.findPlug("gSubdivMode", &status);
+  plug = fnMesh.findPlug("gSubdivMode", true, &status);
   if (status)
   {
     int32_t subdMode = 0;
@@ -1884,7 +1888,7 @@ void MeshExportContext::copyGlimpseTesselationAttributes()
     prim.CreateAttribute(token_gSubdivMode, SdfValueTypeNames->Int).Set(subdMode);
   }
 
-  plug = fnMesh.findPlug("gSubdivLevel", &status);
+  plug = fnMesh.findPlug("gSubdivLevel", true, &status);
   if (status)
   {
     int32_t subdLevel = -1;
@@ -1893,7 +1897,7 @@ void MeshExportContext::copyGlimpseTesselationAttributes()
     prim.CreateAttribute(token_gSubdivLevel, SdfValueTypeNames->Int).Set(subdLevel);
   }
 
-  plug = fnMesh.findPlug("gSubdivPrimSizeMult", &status);
+  plug = fnMesh.findPlug("gSubdivPrimSizeMult", true, &status);
   if (status)
   {
     float subdivPrimSizeMult = 1.0f;
@@ -1901,7 +1905,7 @@ void MeshExportContext::copyGlimpseTesselationAttributes()
     prim.CreateAttribute(token_gSubdivPrimSizeMult, SdfValueTypeNames->Float).Set(subdivPrimSizeMult);
   }
 
-  plug = fnMesh.findPlug("gSubdivKeepUvBoundary", &status); // render as subdivision surfaces
+  plug = fnMesh.findPlug("gSubdivKeepUvBoundary", true, &status); // render as subdivision surfaces
   if (status)
   {
     bool keepUvBoundary = true;
@@ -1909,7 +1913,7 @@ void MeshExportContext::copyGlimpseTesselationAttributes()
     prim.CreateAttribute(token_gSubdivKeepUvBoundary, SdfValueTypeNames->Bool, false).Set(keepUvBoundary);
   }
 
-  plug = fnMesh.findPlug("gSubdivEdgeLengthMultiplier", &status);
+  plug = fnMesh.findPlug("gSubdivEdgeLengthMultiplier", true, &status);
   if (status)
   {
     float subdEdgeLengthMult = 1.0f;
@@ -2104,7 +2108,7 @@ void MeshExportContext::copyGlimpseUserDataAttributes()
   auto allInts = [](const MStringArray& tokens) -> bool
   {
     auto length = tokens.length();
-    for(int i = 0; i < length; i++)
+    for(uint32_t i = 0; i < length; i++)
     {
       if (!tokens[i].isInt())
       {
@@ -2117,7 +2121,7 @@ void MeshExportContext::copyGlimpseUserDataAttributes()
   auto allFloats = [](const MStringArray& tokens) -> bool
   {
     auto length = tokens.length();
-    for(int i = 0; i < length; i++)
+    for(uint32_t i = 0; i < length; i++)
     {
       if (!tokens[i].isFloat())
       {
@@ -2232,10 +2236,10 @@ void MeshExportContext::copyGlimpseUserDataAttributes()
     }
   };
 
-  plug = fnMesh.findPlug("gUserData");
+  plug = fnMesh.findPlug("gUserData", true);
   if(status && plug.isCompound() && plug.isArray())
   {
-    for(int i = 0; i < plug.numElements(); i++)
+    for(uint32_t i = 0; i < plug.numElements(); i++)
     {
       MPlug compoundPlug = plug[i];
 

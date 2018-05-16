@@ -216,7 +216,7 @@ TEST(DiffPrimVar, diffFaceVertices)
     "setAttr \"polyExtrudeFace1.localTranslate\" -type double3 0 0 0.078999;\n"
     "select -r pSphere1.f[399] pSphere1.f[401] pSphere1.f[402];\n"
     "doDelete;\n";
-    ASSERT_TRUE(MGlobal::executeCommand(removeFacesCommand) == MS::kSuccess);
+    ASSERT_TRUE(MGlobal::executeCommand(removeFacesCommand2) == MS::kSuccess);
 
     sl.clear();
     EXPECT_TRUE(sl.add("pSphereShape1")  == MS::kSuccess);
@@ -541,7 +541,6 @@ TEST(DiffPrimVar, diffUvSetNames)
 
     MIntArray uvCounts, mayaUvIndices;
     EXPECT_TRUE(fn.getAssignedUVs(uvCounts, mayaUvIndices, &name) == MS::kSuccess);
-    int temp = mayaUvIndices[4];
     mayaUvIndices[4] = 0;
 
     EXPECT_TRUE(fn.assignUVs(uvCounts, mayaUvIndices, &name) == MS::kSuccess);
@@ -586,7 +585,7 @@ TEST(DiffPrimVar, diffColourSetNames)
     MString setName = "firstSet";
     fn.createColorSetWithName(setName);
     colours.setLength(fn.numFaceVertices());
-    for(int i = 0; i < colours.length(); ++i)
+    for(uint32_t i = 0; i < colours.length(); ++i)
     {
       colours[i] = MColor(0, 0, 0, 1);
     }

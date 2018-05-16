@@ -213,15 +213,6 @@ MStatus LayerGetLayers::doIt(const MArgList& argList)
     UsdStageRefPtr stage = proxyShape->usdStage();
     MStringArray results;
 
-    auto push = [](MStringArray& results, const MString& newLayer)
-    {
-      for(uint32_t i = 0; i < results.length(); ++i)
-      {
-        if(results[i] == newLayer) return;
-      }
-      results.append(newLayer);
-    };
-
     const bool useIdentifiers = args.isFlagSet("-id");
     if(args.isFlagSet("-rl"))
     {

@@ -119,7 +119,7 @@ bool getMayaCurveWidth(const MFnNurbsCurve& fnCurve, MObject& object, MPlug& plu
 {
   // Width of the NURB curve
   MStatus status;
-  MPlug wPlug = fnCurve.findPlug("widths", &status);
+  MPlug wPlug = fnCurve.findPlug("widths", true, &status);
   if (status == MStatus::kSuccess)
   {
     wPlug.getValue(object);
@@ -127,7 +127,7 @@ bool getMayaCurveWidth(const MFnNurbsCurve& fnCurve, MObject& object, MPlug& plu
     return true;
   }
   // "widths" not founded, try "width"
-  wPlug = fnCurve.findPlug("width", &status);
+  wPlug = fnCurve.findPlug("width", true, &status);
   if (status == MStatus::kSuccess)
   {
     plug.getValue(object);

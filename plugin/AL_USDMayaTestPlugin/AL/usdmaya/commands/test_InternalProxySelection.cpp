@@ -48,33 +48,6 @@ TEST(InternalProxyShapeSelect, selectNode)
     return stage;
   };
 
-  auto compareNodes = [] (const SdfPathVector& paths)
-  {
-    MSelectionList sl;
-    MGlobal::getActiveSelectionList(sl);
-    EXPECT_EQ(sl.length(), paths.size());
-    for(uint32_t i = 0; i < sl.length(); ++i)
-    {
-      MObject obj;
-      sl.getDependNode(i, obj);
-      MFnDependencyNode fn(obj);
-      MStatus status;
-      MPlug plug = fn.findPlug("primPath", &status);
-      EXPECT_EQ(MStatus(MS::kSuccess), status);
-      MString pathName = plug.asString();
-      bool found = false;
-      for(uint32_t j = 0; j < paths.size(); ++j)
-      {
-        if(pathName == paths[j].GetText())
-        {
-          found = true;
-          break;
-        }
-      }
-      EXPECT_TRUE(found);
-    }
-  };
-
   const std::string temp_path = "/tmp/AL_USDMayaTests_internalSelectNode.usda";
   std::string sessionLayerContents;
 

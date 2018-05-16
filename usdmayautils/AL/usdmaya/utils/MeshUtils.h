@@ -138,6 +138,7 @@ private:
   MObject polyShape; ///< the handle to the created mesh shape
   UsdTimeCode m_timeCode; ///< the time at which to import the mesh
   bool leftHanded; ///< if true, the data in the mesh file is left handed
+  AL_USDMAYA_UTILS_PUBLIC
   void gatherFaceConnectsAndVertices();
 public:
 

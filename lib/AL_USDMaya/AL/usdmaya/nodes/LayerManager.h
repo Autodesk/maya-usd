@@ -242,7 +242,7 @@ private:
   void removeAttributeChangedCallback();
 
   LayerDatabase m_layerDatabase;
-  MCallbackId m_attributeChanged = -1;
+  MCallbackId m_attributeChanged = 0;
 
   // Note on layerManager / multithreading:
   // I don't know that layerManager will be used in a multihreaded manenr... but I also don't know it COULDN'T be.
