@@ -47,7 +47,6 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
-using AL::usdmaya::utils::UsdDataType;
 
 //----------------------------------------------------------------------------------------------------------------------
 MObject TransformTranslator::m_inheritsTransform = MObject::kNullObj;
@@ -262,12 +261,12 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
       const UsdGeomXformOp& op = *it;
       const SdfValueTypeName vtn = op.GetTypeName();
 
-      UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
+      utils::UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
 
       // Import animation (if we have time samples)
       if (op.GetNumTimeSamples())
       {
-        if(attr_type == UsdDataType::kVec3f || attr_type == UsdDataType::kVec3d)
+        if(attr_type == utils::UsdDataType::kVec3f || attr_type == utils::UsdDataType::kVec3d)
         {
           MObject obj;
           double conversionFactor = 1.0;
@@ -284,7 +283,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
             AL_MAYA_CHECK_ERROR2(setInt32(to, m_rotateOrder, uint32_t(convertRotationOrder(op.GetOpType()))), xformError);
           }
 
-          if (attr_type == UsdDataType::kVec3f)
+          if (attr_type == utils::UsdDataType::kVec3f)
           {
               AL_MAYA_CHECK_ERROR2(setVec3Anim<GfVec3f>(to, obj, op, conversionFactor), xformError);
           }
@@ -293,7 +292,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
             AL_MAYA_CHECK_ERROR2(setVec3Anim<GfVec3d>(to, obj, op, conversionFactor), xformError);
           }
         }
-        else if(attr_type == UsdDataType::kFloat)
+        else if(attr_type == utils::UsdDataType::kFloat)
         {
           MObject attr;
 
@@ -329,7 +328,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
             setAngleAnim(to, attr, op);
           }
         }
-        else if(attr_type == UsdDataType::kMatrix4d)
+        else if(attr_type == utils::UsdDataType::kMatrix4d)
         {
           if(*opIt == kShear)
           {
@@ -344,7 +343,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
       // Else if static
       const float degToRad = 3.141592654f / 180.0f;
 
-      if(attr_type == UsdDataType::kVec3f)
+      if(attr_type == utils::UsdDataType::kVec3f)
       {
         GfVec3f value(0);
 
@@ -380,7 +379,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
         }
       }
       else
-      if(attr_type == UsdDataType::kVec3d)
+      if(attr_type == utils::UsdDataType::kVec3d)
       {
         GfVec3d value(0);
 
@@ -415,7 +414,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
         }
       }
       else
-      if(attr_type == UsdDataType::kFloat)
+      if(attr_type == utils::UsdDataType::kFloat)
       {
         float value = 0;
 
@@ -476,7 +475,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
         }
       }
       else
-      if(attr_type == UsdDataType::kMatrix4d)
+      if(attr_type == utils::UsdDataType::kMatrix4d)
       {
         if(*opIt == kShear)
         {
@@ -503,8 +502,8 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
     {
       const UsdGeomXformOp& op = *it;
       const SdfValueTypeName vtn = op.GetTypeName();
-      UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
-      if(attr_type == UsdDataType::kMatrix4d)
+      utils::UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
+      if(attr_type == utils::UsdDataType::kMatrix4d)
       {
         switch(op.GetOpType())
         {
