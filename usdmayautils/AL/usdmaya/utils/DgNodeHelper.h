@@ -745,6 +745,7 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
+  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getUsdBoolArray(const MObject& node, const MObject& attr, VtArray<bool>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -752,6 +753,7 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
+  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getUsdInt8Array(const MObject& node, const MObject& attr, VtArray<int8_t>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -759,6 +761,7 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
+  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getUsdInt16Array(const MObject& node, const MObject& attr, VtArray<int16_t>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -766,6 +769,7 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
+  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getUsdInt32Array(const MObject& node, const MObject& attr, VtArray<int32_t>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -773,6 +777,7 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
+  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getUsdInt64Array(const MObject& node, const MObject& attr, VtArray<int64_t>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -780,6 +785,7 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
+  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getUsdHalfArray(const MObject& node, const MObject& attr, VtArray<GfHalf>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -787,6 +793,7 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
+  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getUsdFloatArray(const MObject& node, const MObject& attr, VtArray<float>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -794,6 +801,7 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
+  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getUsdDoubleArray(const MObject& node, const MObject& attr, VtArray<double>& values);
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -1095,7 +1103,6 @@ public:
   /// \param  conversionFactor a scaling factor to apply to the source key frames on import.
   /// \return MS::kSuccess on success, error code otherwise
   template<typename T>
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus setVec3Anim(MObject node, MObject attr, const UsdGeomXformOp op, double conversionFactor = 1.0);
 
   /// \brief  creates animation curves to animate the specified angle attribute
