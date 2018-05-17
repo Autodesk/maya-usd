@@ -201,6 +201,7 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerGetLayers);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerSave);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerSetMuted);
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ManageRenderer);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImport);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeFindLoadable);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImportAllTransforms);
