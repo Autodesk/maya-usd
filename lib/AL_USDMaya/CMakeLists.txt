@@ -114,6 +114,7 @@ list(APPEND AL_usdmaya_nodes_proxy_headers
 list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/Layer.cpp
         AL/usdmaya/nodes/LayerManager.cpp
+        AL/usdmaya/nodes/LayerManagerRenderer.cpp
         AL/usdmaya/nodes/ProxyDrawOverride.cpp
         AL/usdmaya/nodes/ProxyShape.cpp
         AL/usdmaya/nodes/ProxyShapeSelection.cpp

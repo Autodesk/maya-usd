@@ -297,6 +297,13 @@ public:
   AL_USDMAYA_PUBLIC
   void loadAllLayers();
 
+  //--------------------------------------------------------------------------------------------------------------------
+  /// Methods to handle renderer plugin
+  //--------------------------------------------------------------------------------------------------------------------
+
+  /// \brief  Set current renderer for all proxy shapes
+  void onRendererChanged();
+
   /// \brief  Set current renderer plugin based on provided name
   bool setRendererPlugin(const MString& pluginName);
 

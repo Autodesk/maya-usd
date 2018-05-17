@@ -347,22 +347,7 @@ void LayerManager::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug&
   LayerManager* manager = static_cast<LayerManager*>(clientData);
   assert(manager);
   if(plug == m_rendererPluginName)
-  {
-    // Find all proxy shapes and change renderer plugin
-    MFnDependencyNode fn;
-    MItDependencyNodes iter(MFn::kPluginShape);
-    for(; !iter.isDone(); iter.next())
-    {
-      fn.setObject(iter.item());
-      if(fn.typeId() == ProxyShape::kTypeId)
-      {
-        ProxyShape* proxy = static_cast<ProxyShape*>(fn.userNode());
-        manager->changeRendererPlugin(proxy);
-      }
-    }
-    //! We need to refresh viewport to changes take effect
-    MGlobal::executeCommandOnIdle("refresh -force");
-  }
+    manager->onRendererChanged();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -717,66 +702,6 @@ void LayerManager::loadAllLayers()
     addLayer(layer, identifierVal);
   }
 }
-
-//----------------------------------------------------------------------------------------------------------------------
-void LayerManager::changeRendererPlugin(ProxyShape* proxy, bool creation)
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("LayerManager::changeRendererPlugin\n");
-  assert(proxy);
-  if (proxy->engine())
-  {
-    int rendererId = getRendererPluginIndex();
-    if (rendererId >= 0)
-    {
-      // Skip redundant renderer changes on ProxyShape creation
-      if (rendererId == 0 && creation)
-        return;
-      
-      assert(rendererId < m_rendererPluginsTokens.size());
-      TfToken plugin = m_rendererPluginsTokens[rendererId];
-      if (!proxy->engine()->SetRendererPlugin(plugin))
-      {
-        MString data(plugin.data());
-        MGlobal::displayError(MString("Failed to set renderer plugin: ") + data);
-      }
-    }
-    else
-    {
-      MPlug plug(thisMObject(), m_rendererPluginName);
-      MString pluginName = plug.asString();
-      if (pluginName.length())
-        MGlobal::displayError(MString("Invalid renderer plugin: ") + pluginName);
-    }
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-int LayerManager::getRendererPluginIndex() const
-{
-  MPlug plug(thisMObject(), m_rendererPluginName);
-  MString pluginName = plug.asString();
-  return m_rendererPluginsNames.indexOf(pluginName);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-bool LayerManager::setRendererPlugin(const MString& pluginName)
-{
-  int index = m_rendererPluginsNames.indexOf(pluginName);
-  if (index >= 0)
-  {
-    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("LayerManager::setRendererPlugin\n");
-    MPlug plug(thisMObject(), m_rendererPluginName);
-    plug.setString(pluginName);
-    return true;
-  }
-  else
-  {
-    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Failed to set renderer plugin!\n");
-    MGlobal::displayError(MString("Failed to set renderer plugin: ") + pluginName);
-  }
-  return false;
-}
-
 
 //----------------------------------------------------------------------------------------------------------------------
 } // nodes
