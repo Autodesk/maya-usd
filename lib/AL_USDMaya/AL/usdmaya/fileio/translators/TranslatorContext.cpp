@@ -77,7 +77,7 @@ void TranslatorContext::updatePrimTypes()
     UsdPrim prim = stage->GetPrimAtPath(path);
     if(!prim)
     {
-      m_primMapping.erase(it++);
+      it = m_primMapping.erase(it);
     }
     else
     if(it->type() != prim.GetTypeName())
