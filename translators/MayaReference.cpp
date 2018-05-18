@@ -219,30 +219,6 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent, MObject 
                                           command.asChar(),
                                           filepath.asChar());
 
-      if(!rigNamespace.empty())
-      {
-        // check to see if the namespace has changed
-        MString refNamespace = fnReference.associatedNamespace(true);
-        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s, namespace was: %s\n",
-                                            prim.GetPath().GetText(),
-                                            refNamespace.asChar());
-        if(refNamespace != rigNamespace.c_str())
-        {
-          command = "file -e -ns \"";
-          command += rigNamespace.c_str();
-          command += "\" \"";
-          command += filepath;
-          command += "\"";
-          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s execute %s\n",
-                                              prim.GetPath().GetText(),
-                                              command.asChar());
-          if(!MGlobal::executeCommand(command))
-          {
-            MGlobal::displayError(MString("Failed to update reference with new namespace. refNS:" + refNamespace + "rigNs: " + rigNamespace.c_str() + ": ") + mayaReferencePath);
-          }
-        }
-      }
-
       if(prim.IsActive())
       {
         if(mayaReferencePath.length() != 0 && filepath != mayaReferencePath)
@@ -269,6 +245,30 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent, MObject 
           {
             TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s loadReferenceByNode\n", prim.GetPath().GetText());
             MString s = MFileIO::loadReferenceByNode(refNode, &status);
+          }
+
+          if(!rigNamespace.empty())
+          {
+            // check to see if the namespace has changed
+            MString refNamespace = fnReference.associatedNamespace(true);
+            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s, namespace was: %s\n",
+                                                prim.GetPath().GetText(),
+                                                refNamespace.asChar());
+            if(refNamespace != rigNamespace.c_str())
+            {
+              command = "file -e -ns \"";
+              command += rigNamespace.c_str();
+              command += "\" \"";
+              command += filepath;
+              command += "\"";
+              TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update prim=%s execute %s\n",
+                                                  prim.GetPath().GetText(),
+                                                  command.asChar());
+              if(!MGlobal::executeCommand(command))
+              {
+                MGlobal::displayError(MString("Failed to update reference with new namespace. refNS:" + refNamespace + "rigNs: " + rigNamespace.c_str() + ": ") + mayaReferencePath);
+              }
+            }
           }
         }
       }
