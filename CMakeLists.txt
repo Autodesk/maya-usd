@@ -33,11 +33,19 @@ include_directories(${PXR_INCLUDE_DIRS})
 # FindBoost is particularly buggy, and doesn't like custom boost locations.
 # Adding specific components forces calls to _Boost_find_library, which
 # is the rationale for listing them here.
+set(Boost_FIND_COMPONENTS
+     python
+     thread
+     filesystem
+)
+if(WIN32)
+    list(APPEND Boost_FIND_COMPONENTS
+        chrono
+    )
+endif()
+
 find_package(Boost COMPONENTS
-                python
-                thread
-                chrono
-                filesystem
+                ${Boost_FIND_COMPONENTS}
                 REQUIRED
 )
 
