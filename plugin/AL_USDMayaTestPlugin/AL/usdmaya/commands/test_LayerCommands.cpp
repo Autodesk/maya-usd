@@ -49,7 +49,7 @@ TEST(LayerCommands, layerCreateLayerTests)
   MFileIO::newFile(true);
   MString shapeName;
   {
-    const std::string temp_path = "/tmp/AL_USDMayaTests_layerCreateLayerTests.usda";
+    const std::string temp_path = buildTempPath("AL_USDMayaTests_layerCreateLayerTests.usda");
     const std::string testLayer = std::string(AL_USDMAYA_TEST_DATA) + "/root.usda";
     AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(constructTransformChain, temp_path);
     // force the stage to load
@@ -95,7 +95,7 @@ TEST(LayerCommands, addSubLayer)
 {
   MFileIO::newFile(true);
   MString shapeName;
-  const std::string temp_path = "/tmp/AL_USDMayaTests_addSubLayer.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_addSubLayer.usda");
 
   std::function<UsdStageRefPtr()>  constructTransformChain = [] ()
   {

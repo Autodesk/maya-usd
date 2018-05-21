@@ -81,7 +81,7 @@ TEST(ProxyShape, DrivenTransforms)
   EXPECT_TRUE(dt.drivenMatrices().empty());
   EXPECT_EQ(0, dt.transformCount());
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_proxy_DrivenTransforms.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_proxy_DrivenTransforms.usda");
   std::string sessionLayerContents;
 
   // generate some data for the proxy shape

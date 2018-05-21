@@ -403,8 +403,8 @@ TEST(LayerManager, simpleSaveRestore)
   const TfToken fooToken("foo");
   const SdfPath fooPath = hipPath.AppendProperty(fooToken); // ie, /root/hip1.foo
   const float fooValue = 5.86;
-  const std::string temp_path = "/tmp/AL_USDMayaTests_LayerManager_simpleSaveRestore.usda";
-  const MString temp_ma_path = "/tmp/AL_USDMayaTests_LayerManager_simpleSaveRestore.ma";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_LayerManager_simpleSaveRestore.usda");
+  const MString temp_ma_path = buildTempPath("AL_USDMayaTests_LayerManager_simpleSaveRestore.ma");
 
   MString shapeName;
 

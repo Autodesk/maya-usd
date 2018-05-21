@@ -31,7 +31,10 @@ TEST(export_import_instancing, usd_instancing_roundtrip)
 {
   MFileIO::newFile(true);
   MGlobal::executeCommand(generateInstances);
-  const char* command =
+
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_instances.usda");
+
+  MString command =
   "file -force -options "
   "\"Dynamic_Attributes=1;"
   "Meshes=1;"
@@ -42,10 +45,12 @@ TEST(export_import_instancing, usd_instancing_roundtrip)
   "Use_Timeline_Range=0;"
   "Frame_Min=1;"
   "Frame_Max=50;"
-  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/AL_USDMayaTests_instances.usda\";";
+  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"";
+  command += temp_path.c_str();
+  command += "\";";
   MGlobal::executeCommand(command);
 
-  UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_instances.usda");
+  UsdStageRefPtr stage = UsdStage::Open(temp_path);
   EXPECT_TRUE(stage);
   UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pSphere1"));
   EXPECT_TRUE(prim.IsValid() && prim.IsInstance() && prim.IsA<UsdGeomXform>());
@@ -78,7 +83,9 @@ TEST(export_import_instancing, usd_instancing_roundtrip)
   MFileIO::newFile(true);
   command =
   "file -type \"AL usdmaya import\""
-  "-i \"/tmp/AL_USDMayaTests_instances.usda\"";
+  "-i \"";
+  command += temp_path.c_str();
+  command += "\"";
   MGlobal::executeCommand(command);
   MSelectionList sl;
   sl.add("pSphereShape1");

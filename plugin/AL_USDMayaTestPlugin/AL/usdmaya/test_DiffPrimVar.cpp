@@ -16,6 +16,7 @@
 
 #include "AL/usdmaya/utils/DiffPrimVar.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
+#include "test_usdmaya.h"
 #include "maya/MFnMesh.h"
 #include "maya/MSelectionList.h"
 #include "maya/MFileIO.h"
@@ -37,9 +38,11 @@ TEST(DiffPrimVar, diffGeomVerts)
   MStringArray result;
   ASSERT_TRUE(MGlobal::executeCommand("polySphere  -r 1 -sx 20 -sy 20 -ax 0 1 0 -cuv 2 -ch 1", result) == MS::kSuccess);
 
-  const char* const exportCommand =
+  const MString temp_path = buildTempPath("AL_USDMayaTests_diffPrimVarVerts.usda");
+
+  const MString exportCommand =
   "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Merge_Transforms=1;Animation=0;"
-  "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/AL_USDMayaTests_diffPrimVarVerts.usda\";";
+  "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"" + temp_path + "\";";
 
   ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
   ASSERT_TRUE(result.length() == 2);
@@ -60,7 +63,7 @@ TEST(DiffPrimVar, diffGeomVerts)
     AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fnd.userNode();
 
     // force the stage to load
-    proxy->filePathPlug().setString("/tmp/AL_USDMayaTests_diffPrimVarVerts.usda");
+    proxy->filePathPlug().setString(temp_path);
 
     auto stage = proxy->getUsdStage();
     MString path = MString("/") + result[0];
@@ -94,9 +97,11 @@ TEST(DiffPrimVar, diffGeomNormals)
   MStringArray result;
   ASSERT_TRUE(MGlobal::executeCommand("polySphere  -r 1 -sx 20 -sy 20 -ax 0 1 0 -cuv 2 -ch 1", result) == MS::kSuccess);
 
-  const char* const exportCommand =
+  const MString temp_path = buildTempPath("AL_USDMayaTests_diffPrimVarNormals.usda");
+
+  const MString exportCommand =
   "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Merge_Transforms=1;Animation=0;"
-  "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/AL_USDMayaTests_diffPrimVarNormals.usda\";";
+  "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"" + temp_path + "\";";
 
   ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
   ASSERT_TRUE(result.length() == 2);
@@ -117,7 +122,7 @@ TEST(DiffPrimVar, diffGeomNormals)
     AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fnd.userNode();
 
     // force the stage to load
-    proxy->filePathPlug().setString("/tmp/AL_USDMayaTests_diffPrimVarNormals.usda");
+    proxy->filePathPlug().setString(temp_path);
 
     auto stage = proxy->getUsdStage();
     MString path = MString("/") + result[0];
@@ -153,9 +158,11 @@ TEST(DiffPrimVar, diffFaceVertices)
   MStringArray result;
   ASSERT_TRUE(MGlobal::executeCommand("polySphere  -r 1 -sx 20 -sy 20 -ax 0 1 0 -cuv 2 -ch 1", result) == MS::kSuccess);
 
-  const char* const exportCommand =
+  const MString temp_path = buildTempPath("AL_USDMayaTests_diffFaceVertices.usda");
+
+  const MString exportCommand =
   "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Merge_Transforms=1;Animation=0;"
-  "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/AL_USDMayaTests_diffFaceVertices.usda\";";
+  "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"" + temp_path + "\";";
 
   ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
   ASSERT_TRUE(result.length() == 2);
@@ -178,7 +185,7 @@ TEST(DiffPrimVar, diffFaceVertices)
     AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fnd.userNode();
 
     // force the stage to load
-    proxy->filePathPlug().setString("/tmp/AL_USDMayaTests_diffFaceVertices.usda");
+    proxy->filePathPlug().setString(temp_path);
 
     auto stage = proxy->getUsdStage();
     MString path = MString("/") + result[0];
@@ -255,9 +262,12 @@ TEST(DiffPrimVar, diffHoles1)
     ASSERT_TRUE(fn.setInvisibleFaces(invisbleFaces) == MS::kSuccess);
   }
 
-  const char* const exportCommand =
+  const MString temp_path = buildTempPath("AL_USDMayaTests_diffHoles1.usda");
+
+  const MString exportCommand =
   "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Merge_Transforms=1;Animation=0;"
-  "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/AL_USDMayaTests_diffHoles1.usda\";";
+  "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"" + temp_path + "\";";
+
   ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
 
   {
@@ -268,7 +278,7 @@ TEST(DiffPrimVar, diffHoles1)
     AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fnd.userNode();
 
     // force the stage to load
-    proxy->filePathPlug().setString("/tmp/AL_USDMayaTests_diffHoles1.usda");
+    proxy->filePathPlug().setString(temp_path);
 
     auto stage = proxy->getUsdStage();
     MString path = MString("/") + result[0];
@@ -301,9 +311,11 @@ TEST(DiffPrimVar, diffCreaseEdges)
 
   ASSERT_TRUE(MGlobal::executeCommand("polyCrease -ch true -value 0.96 -vertexValue 0.96 pCube1.e[2]") == MS::kSuccess);
 
-  const char* const exportCommand =
+  const MString temp_path = buildTempPath("AL_USDMayaTests_diffCreaseEdges.usda");
+
+  const MString exportCommand =
   "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Merge_Transforms=1;Animation=0;"
-  "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/AL_USDMayaTests_diffCreaseEdges.usda\";";
+  "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"" + temp_path + "\";";
 
   ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
 
@@ -327,7 +339,7 @@ TEST(DiffPrimVar, diffCreaseEdges)
     AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fnd.userNode();
 
     // force the stage to load
-    proxy->filePathPlug().setString("/tmp/AL_USDMayaTests_diffCreaseEdges.usda");
+    proxy->filePathPlug().setString(temp_path);
 
     auto stage = proxy->getUsdStage();
     MString path = MString("/") + result[0];
@@ -385,9 +397,11 @@ TEST(DiffPrimVar, diffCreaseVertices)
 
   ASSERT_TRUE(MGlobal::executeCommand("polyCrease -ch true -value 0.96 -vertexValue 0.96 pCube1.vtx[2]") == MS::kSuccess);
 
-  const char* const exportCommand =
+  const MString temp_path = buildTempPath("AL_USDMayaTests_diffCreaseVertices.usda");
+
+  const MString exportCommand =
   "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Merge_Transforms=1;Animation=0;"
-  "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/aaAL_USDMayaTests_diffCreaseVertices.usda\";";
+  "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"" + temp_path + "\";";
 
   ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
 
@@ -410,7 +424,7 @@ TEST(DiffPrimVar, diffCreaseVertices)
     AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fnd.userNode();
 
     // force the stage to load
-    proxy->filePathPlug().setString("/tmp/aaAL_USDMayaTests_diffCreaseVertices.usda");
+    proxy->filePathPlug().setString(temp_path);
 
     auto stage = proxy->getUsdStage();
     MString path = MString("/") + result[0];
@@ -465,9 +479,11 @@ TEST(DiffPrimVar, diffUvSetNames)
   ASSERT_TRUE(MGlobal::executeCommand("polyCube -w 1 -h 1 -d 1 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -cuv 2 -ch 0", result) == MS::kSuccess);
   ASSERT_TRUE(result.length() == 1);
 
-  const char* const exportCommand =
+  const MString temp_path = buildTempPath("AL_USDMayaTests_diffUvSetNames.usda");
+
+  const MString exportCommand =
   "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Merge_Transforms=1;Animation=0;"
-  "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/AL_USDMayaTests_diffUvSetNames.usda\";";
+  "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"" + temp_path + "\";";
 
   ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
 
@@ -478,7 +494,7 @@ TEST(DiffPrimVar, diffUvSetNames)
   AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fnd.userNode();
 
   // force the stage to load
-  proxy->filePathPlug().setString("/tmp/AL_USDMayaTests_diffUvSetNames.usda");
+  proxy->filePathPlug().setString(temp_path);
 
   auto stage = proxy->getUsdStage();
   MString path = MString("/") + result[0];
@@ -590,9 +606,11 @@ TEST(DiffPrimVar, diffColourSetNames)
     }
     fn.setColors(colours, &setName);
 
-    const char* const exportCommand =
+    const MString temp_path = buildTempPath("AL_USDMayaTests_diffColourSetNames.usda");
+
+    const MString exportCommand =
     "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Merge_Transforms=1;Animation=0;"
-    "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/AL_USDMayaTests_diffColourSetNames.usda\";";
+    "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"" + temp_path + "\";";
 
     ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
 
@@ -603,7 +621,7 @@ TEST(DiffPrimVar, diffColourSetNames)
     AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fnd.userNode();
 
     // force the stage to load
-    proxy->filePathPlug().setString("/tmp/AL_USDMayaTests_diffColourSetNames.usda");
+    proxy->filePathPlug().setString(temp_path);
 
     auto stage = proxy->getUsdStage();
     MString path = MString("/") + result[0];
@@ -679,12 +697,13 @@ TEST(DiffPrimVar, diffHoles2)
     loopCounts.append(3);
     ASSERT_TRUE(fn.addHoles(0, points, loopCounts) == MS::kSuccess);
 
-    MFileIO::saveAs("/tmp/aaShit.mb", 0, true);
   }
 
-  const char* const exportCommand =
+  const MString temp_path = buildTempPath("AL_USDMaya_diffHoles.usda");
+
+  const MString exportCommand =
   "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Merge_Transforms=1;Animation=0;"
-  "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"/tmp/aaAL_USDMaya_diffHoles.usda\";";
+  "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"" + temp_path + "\";";
 
   ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
 
@@ -725,7 +744,7 @@ TEST(DiffPrimVar, diffHoles2)
     AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fnd.userNode();
 
     // force the stage to load
-    proxy->filePathPlug().setString("/tmp/aaAL_USDMaya_diffHoles.usda");
+    proxy->filePathPlug().setString(temp_path);
 
     auto stage = proxy->getUsdStage();
     MString path = MString("/") + result[0];

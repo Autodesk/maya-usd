@@ -179,14 +179,17 @@ TEST(translators_MeshTranslator, constantUvExport)
   "polyEditUV -pu 0.5 -pv 0.5 -su 0 -sv 0;";
   MGlobal::executeCommand(command);
 
+  const MString temp_path = buildTempPath("AL_USDMayaTests_constantUV.usda");
+  const MString temp_path2 = buildTempPath("AL_USDMayaTests_constantUV2.usda");
+
   // select the cube, and export (this should compact the UV coordinates)
   MGlobal::executeCommand(
-    "select -r pCube1;"
+    MString("select -r pCube1;"
     "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
-    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_constantUV.usda\";");
+    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + temp_path + "\";");
 
   {
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_constantUV.usda");
+    UsdStageRefPtr stage = UsdStage::Open(temp_path.asChar());
     ASSERT_TRUE(stage);
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
@@ -207,17 +210,17 @@ TEST(translators_MeshTranslator, constantUvExport)
   // re-import the file
   command =
   "file -import -type \"AL usdmaya import\" -ignoreVersion -ra true -mergeNamespacesOnClash false -namespace \"cube1\" -options \"Parent_Path=;Import_Meshes=1;Import_Curves=1;"
-  "Import_Animations=1;Import_Dynamic_Attributes=1;\" -pr \"/tmp/AL_USDMayaTests_constantUV.usda\"";
+  "Import_Animations=1;Import_Dynamic_Attributes=1;\" -pr \"" + temp_path + "\"";
   MGlobal::executeCommand(command);
 
   // export once more
   MGlobal::executeCommand(
-    "select -r pCube1;"
+    MString("select -r pCube1;"
     "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
-    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_constantUV2.usda\";");
+    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + temp_path2 + "\";");
 
   {
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_constantUV2.usda");
+    UsdStageRefPtr stage = UsdStage::Open(temp_path2.asChar());
     ASSERT_TRUE(stage);
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
@@ -250,15 +253,18 @@ TEST(translators_MeshTranslator, vertexUvExport)
   "select -r pCube1";
   MGlobal::executeCommand(command);
 
+  const MString temp_path = buildTempPath("AL_USDMayaTests_vertexUV.usda");
+  const MString temp_path2 = buildTempPath("AL_USDMayaTests_vertexUV2.usda");
+
   // select the cube, and export (this should compact the UV coordinates)
   MGlobal::executeCommand(
-    "select -r pCube1;"
+    MString("select -r pCube1;"
     "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
-    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_vertexUV.usda\";");
+    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + temp_path + "\";");
 
   const GfVec2f expected[] = {{0.f, 0.f}, {0.f, 0.f}, {0.f, 1.f}, {0.f, 1.f}, {1.f, 1.f}, {1.f, 1.f}, {1.f, 0.f}, {1.f, 0.f}};
   {
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_vertexUV.usda");
+    UsdStageRefPtr stage = UsdStage::Open(temp_path.asChar());
     ASSERT_TRUE(stage);
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
@@ -284,18 +290,18 @@ TEST(translators_MeshTranslator, vertexUvExport)
 
   // re-import the file
   command =
-  "file -import -type \"AL usdmaya import\" -ignoreVersion -ra true -mergeNamespacesOnClash false -namespace \"cube1\" -options \"Parent_Path=;Import_Meshes=1;Import_Curves=1;"
-  "Import_Animations=1;Import_Dynamic_Attributes=1;\" -pr \"/tmp/AL_USDMayaTests_vertexUV.usda\"";
+  MString("file -import -type \"AL usdmaya import\" -ignoreVersion -ra true -mergeNamespacesOnClash false -namespace \"cube1\" -options \"Parent_Path=;Import_Meshes=1;Import_Curves=1;"
+  "Import_Animations=1;Import_Dynamic_Attributes=1;\" -pr \"") + temp_path + "\"";
   MGlobal::executeCommand(command);
 
   // export once more
   MGlobal::executeCommand(
-    "select -r pCube1;"
+    MString("select -r pCube1;"
     "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
-    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_vertexUV2.usda\";");
+    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + temp_path2 + "\";");
 
   {
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_vertexUV2.usda");
+    UsdStageRefPtr stage = UsdStage::Open(temp_path2.asChar());
     ASSERT_TRUE(stage);
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
@@ -330,11 +336,14 @@ TEST(translators_MeshTranslator, faceVaryingUvExport)
   "select -r pCube1;";
   MGlobal::executeCommand(command);
 
+  const MString temp_path = buildTempPath("AL_USDMayaTests_faceVaryingUV.usda");
+  const MString temp_path2 = buildTempPath("AL_USDMayaTests_faceVaryingUV2.usda");
+
   // select the cube, and export (this should compact the UV coordinates)
   MGlobal::executeCommand(
-    "select -r pCube1;"
+    MString("select -r pCube1;"
     "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
-    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_faceVaryingUV.usda\";");
+    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + temp_path + "\";");
 
   const GfVec2f expected[] = {
      {0, 0},
@@ -364,7 +373,7 @@ TEST(translators_MeshTranslator, faceVaryingUvExport)
   const int expectedIndices[] = {0, 1, 3, 2, 4, 5, 7, 6, 8, 9, 11, 10, 12, 13, 15, 14, 16, 17, 19, 18, 20, 21, 23, 22};
 
   {
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_faceVaryingUV.usda");
+    UsdStageRefPtr stage = UsdStage::Open(temp_path.asChar());
     ASSERT_TRUE(stage);
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
@@ -398,18 +407,18 @@ TEST(translators_MeshTranslator, faceVaryingUvExport)
 
   // re-import the file
   command =
-  "file -import -type \"AL usdmaya import\" -ignoreVersion -ra true -mergeNamespacesOnClash false -namespace \"cube1\" -options \"Parent_Path=;Import_Meshes=1;Import_Curves=1;"
-  "Import_Animations=1;Import_Dynamic_Attributes=1;\" -pr \"/tmp/AL_USDMayaTests_faceVaryingUV.usda\"";
+  MString("file -import -type \"AL usdmaya import\" -ignoreVersion -ra true -mergeNamespacesOnClash false -namespace \"cube1\" -options \"Parent_Path=;Import_Meshes=1;Import_Curves=1;"
+  "Import_Animations=1;Import_Dynamic_Attributes=1;\" -pr \"") + temp_path + "\"";
   MGlobal::executeCommand(command);
 
   // export once more
   MGlobal::executeCommand(
-    "select -r pCube1;"
+    MString("select -r pCube1;"
     "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
-    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_faceVaryingUV2.usda\";");
+    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + temp_path2 + "\";");
 
   {
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_faceVaryingUV.usda");
+    UsdStageRefPtr stage = UsdStage::Open(temp_path2.asChar());
     ASSERT_TRUE(stage);
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
@@ -469,16 +478,19 @@ TEST(translators_MeshTranslator, uniformUvExport)
   }
   fn.setUVs(u, v);
 
+  const MString temp_path = buildTempPath("AL_USDMayaTests_uniformUV.usda");
+  const MString temp_path2 = buildTempPath("AL_USDMayaTests_uniformUV2.usda");
+
   // select the cube, and export (this should compact the UV coordinates)
   MGlobal::executeCommand(
-    "select -r pCube1;"
+    MString("select -r pCube1;"
     "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
-    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_uniformUV.usda\";");
+    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + temp_path + "\";");
 
   const GfVec2f expected[] = {{0.1f, 0.1f}, {0.2f, 0.2f}, {0.3f, 0.3f}, {0.4f, 0.4f}, {0.5f, 0.5f}, {0.6f, 0.6f}};
 
   {
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_uniformUV.usda");
+    UsdStageRefPtr stage = UsdStage::Open(temp_path.asChar());
     ASSERT_TRUE(stage);
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
@@ -504,19 +516,19 @@ TEST(translators_MeshTranslator, uniformUvExport)
 
   // re-import the file
   command =
-  "file -import -type \"AL usdmaya import\" -ignoreVersion -ra true -mergeNamespacesOnClash false -namespace \"cube1\" -options \"Parent_Path=;Import_Meshes=1;Import_Curves=1;"
-  "Import_Animations=1;Import_Dynamic_Attributes=1;\" -pr \"/tmp/AL_USDMayaTests_uniformUV.usda\"";
+  MString("file -import -type \"AL usdmaya import\" -ignoreVersion -ra true -mergeNamespacesOnClash false -namespace \"cube1\" -options \"Parent_Path=;Import_Meshes=1;Import_Curves=1;"
+  "Import_Animations=1;Import_Dynamic_Attributes=1;\" -pr \"") + temp_path + "\"";
   MGlobal::executeCommand(command);
 
   // export once more
   MGlobal::executeCommand(
-    "select -r pCube1;"
+    MString("select -r pCube1;"
     "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
-    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_uniformUV2.usda\";");
+    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + temp_path2 + "\";");
 
   // and check that everything still matches
   {
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_uniformUV2.usda");
+    UsdStageRefPtr stage = UsdStage::Open(temp_path2.asChar());
     ASSERT_TRUE(stage);
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
@@ -579,15 +591,17 @@ TEST(translators_MeshTranslator, constantColourExport)
   fn.setColors(colours, &name);
 
 
+  const MString temp_path = buildTempPath("AL_USDMayaTests_exportConstColour.usda");
+  const MString temp_path2 = buildTempPath("AL_USDMayaTests_exportConstColour2.usda");
 
   // export once more
   MGlobal::executeCommand(
-    "select -r pCube1;"
+    MString("select -r pCube1;"
     "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
-    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_exportConstColour.usda\";");
+    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + temp_path + "\";");
 
   {
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_exportConstColour.usda");
+    UsdStageRefPtr stage = UsdStage::Open(temp_path.asChar());
     ASSERT_TRUE(stage);
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
@@ -611,18 +625,18 @@ TEST(translators_MeshTranslator, constantColourExport)
 
   // re-import the file
   command =
-  "file -import -type \"AL usdmaya import\" -ignoreVersion -ra true -mergeNamespacesOnClash false -namespace \"cube1\" -options \"Parent_Path=;Import_Meshes=1;Import_Curves=1;"
-  "Import_Animations=1;Import_Dynamic_Attributes=1;\" -pr \"/tmp/AL_USDMayaTests_exportConstColour.usda\"";
+  MString("file -import -type \"AL usdmaya import\" -ignoreVersion -ra true -mergeNamespacesOnClash false -namespace \"cube1\" -options \"Parent_Path=;Import_Meshes=1;Import_Curves=1;"
+  "Import_Animations=1;Import_Dynamic_Attributes=1;\" -pr \"") + temp_path + "\"";
   MGlobal::executeCommand(command);
 
   // export once more
   MGlobal::executeCommand(
-    "select -r pCube1;"
+    MString("select -r pCube1;"
     "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
-    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_exportConstColour2.usda\";");
+    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + temp_path2 + "\";");
 
   {
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_exportConstColour2.usda");
+    UsdStageRefPtr stage = UsdStage::Open(temp_path2.asChar());
     ASSERT_TRUE(stage);
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
@@ -673,14 +687,17 @@ TEST(translators_MeshTranslator, vertexColourExport)
     fn.setColors(colours, &name);
   }
 
+  const MString temp_path = buildTempPath("AL_USDMayaTests_exportVertexColour.usda");
+  const MString temp_path2 = buildTempPath("AL_USDMayaTests_exportVertexColour2.usda");
+
   // export once more
   MGlobal::executeCommand(
-    "select -r pCube1;"
+    MString("select -r pCube1;"
     "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
-    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_exportVertexColour.usda\";");
+    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + temp_path + "\";");
 
   {
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_exportVertexColour.usda");
+    UsdStageRefPtr stage = UsdStage::Open(temp_path.asChar());
     ASSERT_TRUE(stage);
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
@@ -708,18 +725,18 @@ TEST(translators_MeshTranslator, vertexColourExport)
 
   // re-import the file
   command =
-  "file -import -type \"AL usdmaya import\" -ignoreVersion -ra true -mergeNamespacesOnClash false -namespace \"cube1\" -options \"Parent_Path=;Import_Meshes=1;Import_Curves=1;"
-  "Import_Animations=1;Import_Dynamic_Attributes=1;\" -pr \"/tmp/AL_USDMayaTests_exportVertexColour.usda\"";
+  MString("file -import -type \"AL usdmaya import\" -ignoreVersion -ra true -mergeNamespacesOnClash false -namespace \"cube1\" -options \"Parent_Path=;Import_Meshes=1;Import_Curves=1;"
+  "Import_Animations=1;Import_Dynamic_Attributes=1;\" -pr \"") + temp_path + "\"";
   MGlobal::executeCommand(command);
 
   // export once more
   MGlobal::executeCommand(
-    "select -r pCube1;"
+    MString("select -r pCube1;"
     "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
-    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_exportVertexColour2.usda\";");
+    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + temp_path2 + "\";");
 
   {
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_exportVertexColour2.usda");
+    UsdStageRefPtr stage = UsdStage::Open(temp_path2.asChar());
     ASSERT_TRUE(stage);
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
@@ -777,14 +794,17 @@ TEST(translators_MeshTranslator, uniformColourExport)
     fn.setColors(colours, &name);
   }
 
+  const MString temp_path = buildTempPath("AL_USDMayaTests_exportUniformColour.usda");
+  const MString temp_path2 = buildTempPath("AL_USDMayaTests_exportUniformColour2.usda");
+
   // export once more
   MGlobal::executeCommand(
-    "select -r pCube1;"
+    MString("select -r pCube1;"
     "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
-    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_exportUniformColour.usda\";");
+    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + temp_path + "\";");
 
   {
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_exportUniformColour.usda");
+    UsdStageRefPtr stage = UsdStage::Open(temp_path.asChar());
     ASSERT_TRUE(stage);
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
@@ -812,18 +832,18 @@ TEST(translators_MeshTranslator, uniformColourExport)
 
   // re-import the file
   command =
-  "file -import -type \"AL usdmaya import\" -ignoreVersion -ra true -mergeNamespacesOnClash false -namespace \"cube1\" -options \"Parent_Path=;Import_Meshes=1;Import_Curves=1;"
-  "Import_Animations=1;Import_Dynamic_Attributes=1;\" -pr \"/tmp/AL_USDMayaTests_exportUniformColour.usda\"";
+  MString("file -import -type \"AL usdmaya import\" -ignoreVersion -ra true -mergeNamespacesOnClash false -namespace \"cube1\" -options \"Parent_Path=;Import_Meshes=1;Import_Curves=1;"
+  "Import_Animations=1;Import_Dynamic_Attributes=1;\" -pr \"") + temp_path + "\"";
   MGlobal::executeCommand(command);
 
   // export once more
   MGlobal::executeCommand(
-    "select -r pCube1;"
+    MString("select -r pCube1;"
     "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
-    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_exportUniformColour2.usda\";");
+    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + temp_path2 + "\";");
 
   {
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_exportUniformColour2.usda");
+    UsdStageRefPtr stage = UsdStage::Open(temp_path2.asChar());
     ASSERT_TRUE(stage);
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
@@ -878,14 +898,17 @@ TEST(translators_MeshTranslator, faceVaryingColourExport)
     fn.setColors(colours, &name);
   }
 
+  const MString temp_path = buildTempPath("AL_USDMayaTests_exportFaceVaryingColour.usda");
+  const MString temp_path2 = buildTempPath("AL_USDMayaTests_exportFaceVaryingColour2.usda");
+
   // export once more
   MGlobal::executeCommand(
-    "select -r pCube1;"
+    MString("select -r pCube1;"
     "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
-    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_exportFaceVaryingColour.usda\";");
+    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + temp_path + "\";");
 
   {
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_exportFaceVaryingColour.usda");
+    UsdStageRefPtr stage = UsdStage::Open(temp_path.asChar());
     ASSERT_TRUE(stage);
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
@@ -913,18 +936,18 @@ TEST(translators_MeshTranslator, faceVaryingColourExport)
 
   // re-import the file
   command =
-  "file -import -type \"AL usdmaya import\" -ignoreVersion -ra true -mergeNamespacesOnClash false -namespace \"cube1\" -options \"Parent_Path=;Import_Meshes=1;Import_Curves=1;"
-  "Import_Animations=1;Import_Dynamic_Attributes=1;\" -pr \"/tmp/AL_USDMayaTests_exportFaceVaryingColour.usda\"";
+  MString("file -import -type \"AL usdmaya import\" -ignoreVersion -ra true -mergeNamespacesOnClash false -namespace \"cube1\" -options \"Parent_Path=;Import_Meshes=1;Import_Curves=1;"
+  "Import_Animations=1;Import_Dynamic_Attributes=1;\" -pr \"") + temp_path + "\"";
   MGlobal::executeCommand(command);
 
   // export once more
   MGlobal::executeCommand(
-    "select -r pCube1;"
+    MString("select -r pCube1;"
     "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
-    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_exportFaceVaryingColour2.usda\";");
+    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + temp_path2 + "\";");
 
   {
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_exportFaceVaryingColour2.usda");
+    UsdStageRefPtr stage = UsdStage::Open(temp_path2.asChar());
     ASSERT_TRUE(stage);
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
