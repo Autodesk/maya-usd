@@ -13,6 +13,193 @@ static inline double randDouble()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+TEST(DataDiff, vec2AreAllTheSame)
+{
+  std::vector<float> a(16 + 4 + 2);
+  for(int i = 0; i < 22; i += 2)
+  {
+    a[i] = 2;
+    a[i + 1] = 3;
+  }
+  a.push_back(0);
+  a.push_back(0);
+
+  EXPECT_TRUE(AL::usd::utils::vec2AreAllTheSame(a.data(), 8));
+  EXPECT_TRUE(AL::usd::utils::vec2AreAllTheSame(a.data(), 10));
+  EXPECT_TRUE(AL::usd::utils::vec2AreAllTheSame(a.data(), 11));
+  a[2] = 4;
+  EXPECT_FALSE(AL::usd::utils::vec2AreAllTheSame(a.data(), 8));
+  EXPECT_FALSE(AL::usd::utils::vec2AreAllTheSame(a.data(), 10));
+  EXPECT_FALSE(AL::usd::utils::vec2AreAllTheSame(a.data(), 11));
+
+  a[2] = 2;
+  a[16] = 4;
+  EXPECT_TRUE(AL::usd::utils::vec2AreAllTheSame(a.data(), 8));
+  EXPECT_FALSE(AL::usd::utils::vec2AreAllTheSame(a.data(), 10));
+  EXPECT_FALSE(AL::usd::utils::vec2AreAllTheSame(a.data(), 11));
+  a[16] = 2;
+  a[20] = 4;
+  EXPECT_TRUE(AL::usd::utils::vec2AreAllTheSame(a.data(), 8));
+  EXPECT_TRUE(AL::usd::utils::vec2AreAllTheSame(a.data(), 10));
+  EXPECT_FALSE(AL::usd::utils::vec2AreAllTheSame(a.data(), 11));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TEST(DataDiff, vec3AreAllTheSame)
+{
+  std::vector<float> a(8 * 3 + 4 * 3 + 3);
+  for(int i = 0; i < a.size(); i += 3)
+  {
+    a[i] = 2;
+    a[i + 1] = 3;
+    a[i + 2] = 4;
+  }
+  a.push_back(0);
+  a.push_back(0);
+  a.push_back(0);
+
+  EXPECT_TRUE(AL::usd::utils::vec3AreAllTheSame(a.data(), 8));
+  EXPECT_TRUE(AL::usd::utils::vec3AreAllTheSame(a.data(), 12));
+  EXPECT_TRUE(AL::usd::utils::vec3AreAllTheSame(a.data(), 13));
+  a[3] = 4;
+  EXPECT_FALSE(AL::usd::utils::vec3AreAllTheSame(a.data(), 8));
+  EXPECT_FALSE(AL::usd::utils::vec3AreAllTheSame(a.data(), 12));
+  EXPECT_FALSE(AL::usd::utils::vec3AreAllTheSame(a.data(), 13));
+
+  a[3] = 2;
+  a[24] = 4;
+  EXPECT_TRUE(AL::usd::utils::vec3AreAllTheSame(a.data(), 8));
+  EXPECT_FALSE(AL::usd::utils::vec3AreAllTheSame(a.data(), 12));
+  EXPECT_FALSE(AL::usd::utils::vec3AreAllTheSame(a.data(), 13));
+  a[24] = 2;
+  a[36] = 4;
+  EXPECT_TRUE(AL::usd::utils::vec3AreAllTheSame(a.data(), 8));
+  EXPECT_TRUE(AL::usd::utils::vec3AreAllTheSame(a.data(), 12));
+  EXPECT_FALSE(AL::usd::utils::vec3AreAllTheSame(a.data(), 13));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TEST(DataDiff, vec4AreAllTheSame)
+{
+  std::vector<float> a(8 * 4 + 4);
+  for(int i = 0; i < a.size(); i += 4)
+  {
+    a[i] = 2;
+    a[i + 1] = 3;
+    a[i + 2] = 4;
+    a[i + 3] = 5;
+  }
+  a.push_back(0);
+  a.push_back(0);
+  a.push_back(0);
+  a.push_back(0);
+
+  EXPECT_TRUE(AL::usd::utils::vec4AreAllTheSame(a.data(), 8));
+  EXPECT_TRUE(AL::usd::utils::vec4AreAllTheSame(a.data(), 9));
+  a[4] = 4;
+  EXPECT_FALSE(AL::usd::utils::vec4AreAllTheSame(a.data(), 8));
+  EXPECT_FALSE(AL::usd::utils::vec4AreAllTheSame(a.data(), 9));
+  a[4] = 2;
+  a[32] = 3;
+  EXPECT_TRUE(AL::usd::utils::vec4AreAllTheSame(a.data(), 8));
+  EXPECT_FALSE(AL::usd::utils::vec4AreAllTheSame(a.data(), 9));
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+TEST(DataDiff, vec2AreAllTheSameDouble)
+{
+  std::vector<double> a(16 + 4 + 2);
+  for(int i = 0; i < 22; i += 2)
+  {
+    a[i] = 2;
+    a[i + 1] = 3;
+  }
+  a.push_back(0);
+  a.push_back(0);
+
+  EXPECT_TRUE(AL::usd::utils::vec2AreAllTheSame(a.data(), 8));
+  EXPECT_TRUE(AL::usd::utils::vec2AreAllTheSame(a.data(), 10));
+  EXPECT_TRUE(AL::usd::utils::vec2AreAllTheSame(a.data(), 11));
+  a[2] = 4;
+  EXPECT_FALSE(AL::usd::utils::vec2AreAllTheSame(a.data(), 8));
+  EXPECT_FALSE(AL::usd::utils::vec2AreAllTheSame(a.data(), 10));
+  EXPECT_FALSE(AL::usd::utils::vec2AreAllTheSame(a.data(), 11));
+
+  a[2] = 2;
+  a[16] = 4;
+  EXPECT_TRUE(AL::usd::utils::vec2AreAllTheSame(a.data(), 8));
+  EXPECT_FALSE(AL::usd::utils::vec2AreAllTheSame(a.data(), 10));
+  EXPECT_FALSE(AL::usd::utils::vec2AreAllTheSame(a.data(), 11));
+  a[16] = 2;
+  a[20] = 4;
+  EXPECT_TRUE(AL::usd::utils::vec2AreAllTheSame(a.data(), 8));
+  EXPECT_TRUE(AL::usd::utils::vec2AreAllTheSame(a.data(), 10));
+  EXPECT_FALSE(AL::usd::utils::vec2AreAllTheSame(a.data(), 11));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TEST(DataDiff, vec3AreAllTheSameDouble)
+{
+  std::vector<double> a(8 * 3 + 4 * 3 + 3);
+  for(int i = 0; i < a.size(); i += 3)
+  {
+    a[i] = 2;
+    a[i + 1] = 3;
+    a[i + 2] = 4;
+  }
+  a.push_back(0);
+  a.push_back(0);
+  a.push_back(0);
+
+  EXPECT_TRUE(AL::usd::utils::vec3AreAllTheSame(a.data(), 8));
+  EXPECT_TRUE(AL::usd::utils::vec3AreAllTheSame(a.data(), 12));
+  EXPECT_TRUE(AL::usd::utils::vec3AreAllTheSame(a.data(), 13));
+  a[3] = 4;
+  EXPECT_FALSE(AL::usd::utils::vec3AreAllTheSame(a.data(), 8));
+  EXPECT_FALSE(AL::usd::utils::vec3AreAllTheSame(a.data(), 12));
+  EXPECT_FALSE(AL::usd::utils::vec3AreAllTheSame(a.data(), 13));
+
+  a[3] = 2;
+  a[24] = 4;
+  EXPECT_TRUE(AL::usd::utils::vec3AreAllTheSame(a.data(), 8));
+  EXPECT_FALSE(AL::usd::utils::vec3AreAllTheSame(a.data(), 12));
+  EXPECT_FALSE(AL::usd::utils::vec3AreAllTheSame(a.data(), 13));
+  a[24] = 2;
+  a[36] = 4;
+  EXPECT_TRUE(AL::usd::utils::vec3AreAllTheSame(a.data(), 8));
+  EXPECT_TRUE(AL::usd::utils::vec3AreAllTheSame(a.data(), 12));
+  EXPECT_FALSE(AL::usd::utils::vec3AreAllTheSame(a.data(), 13));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TEST(DataDiff, vec4AreAllTheSameDouble)
+{
+  std::vector<double> a(8 * 4 + 4);
+  for(int i = 0; i < a.size(); i += 4)
+  {
+    a[i] = 2;
+    a[i + 1] = 3;
+    a[i + 2] = 4;
+    a[i + 3] = 5;
+  }
+  a.push_back(0);
+  a.push_back(0);
+  a.push_back(0);
+  a.push_back(0);
+
+  EXPECT_TRUE(AL::usd::utils::vec4AreAllTheSame(a.data(), 8));
+  EXPECT_TRUE(AL::usd::utils::vec4AreAllTheSame(a.data(), 9));
+  a[4] = 4;
+  EXPECT_FALSE(AL::usd::utils::vec4AreAllTheSame(a.data(), 8));
+  EXPECT_FALSE(AL::usd::utils::vec4AreAllTheSame(a.data(), 9));
+  a[4] = 2;
+  a[32] = 3;
+  EXPECT_TRUE(AL::usd::utils::vec4AreAllTheSame(a.data(), 8));
+  EXPECT_FALSE(AL::usd::utils::vec4AreAllTheSame(a.data(), 9));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 TEST(DataDiff, compareHalfFloatArray)
 {
   std::vector<float> a(47);

@@ -46,8 +46,7 @@ struct ImporterParams
   bool m_nurbsCurves = true; ///< true to import nurbs curves, false to ignore nurbs curves on import
   bool m_dynamicAttributes = true; ///< if true, attributes in the USD file marked as 'custom' will be imported as dynamic attributes.
   bool m_stageUnloaded = true; ///< if true, the USD stage will be opened with the UsdStage::LoadNone flag. If false the stage will be loaded with the UsdStage::LoadAll flag
-  bool m_useAnimalSchema = (USE_AL_DEFAULT) ? true : false; ///< if true, the data exported will be designed to fit with Animal Logics internal needs. If false, the original pxr schema will be used.
-  bool m_forceDefaultRead = false; ///< true to explicitly read USD attributes' default values
+  bool m_forceDefaultRead = false; ///< true to explicit read default values
   SdfLayerRefPtr m_rootLayer; ///< \todo  Remove?
   SdfLayerRefPtr m_sessionLayer; ///< \todo  Remove?
 };

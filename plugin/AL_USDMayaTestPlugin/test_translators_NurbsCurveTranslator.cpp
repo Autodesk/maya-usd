@@ -127,13 +127,7 @@ TEST(translators_NurbsCurveTranslator, test_width)
   MFnNurbsCurve nurbs(nurbObj);
 
   ImporterParams ip;
-  const char* plugName = "widths";
-
-  if(ip.m_useAnimalSchema)
-  {
-    // if we are in AL, then test with width
-    plugName = "width";
-  }
+  const char* plugName = "width";
 
   MStatus s2;
   MPlug widthsPlug = nurbs.findPlug(plugName, &s2);
@@ -154,16 +148,8 @@ TEST(translators_NurbsCurveTranslator, test_widths)
   ASSERT_TRUE(!nurbObj.isNull());
   MFnNurbsCurve nurbs(nurbObj);
 
-
-  bool usedALSchema  = (USE_AL_DEFAULT) ? true : false;
-  const char* plugName = "widths";
-
-  if(usedALSchema)
-  {
-    // if we are in AL, then test with width
-    plugName = "width";
-  }
-
+  const char* plugName = "width";
+  
   MStatus s2;
   MPlug widthsPlug = nurbs.findPlug(plugName, &s2);
   ASSERT_EQ(s2, MS::kSuccess);

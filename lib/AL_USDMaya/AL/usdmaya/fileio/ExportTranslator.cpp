@@ -30,6 +30,24 @@ namespace usdmaya {
 namespace fileio {
 
 //----------------------------------------------------------------------------------------------------------------------
+const char* const ExportTranslator::compactionLevels[] = {
+    "None",
+    "Basic",
+    "Medium",
+    "Extensive",
+    0
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+const char* const ExportTranslator::timelineLevel[] = {
+    "Default Time",
+    "Earliest Time",
+    "Current Time",
+    0
+};
+
+
+//----------------------------------------------------------------------------------------------------------------------
 MStatus ExportTranslator::writer(const MFileObject& file, const AL::maya::utils::OptionsParser& options, FileAccessMode mode)
 {
   static const std::unordered_set<std::string> ignoredNodes
@@ -44,13 +62,23 @@ MStatus ExportTranslator::writer(const MFileObject& file, const AL::maya::utils:
   params.m_dynamicAttributes = options.getBool(kDynamicAttributes);
   params.m_duplicateInstances = options.getBool(kDuplicateInstances);
   params.m_meshes = options.getBool(kMeshes);
+  params.m_meshConnects = options.getBool(kMeshConnects);
+  params.m_meshPoints = options.getBool(kMeshPoints);
   params.m_meshNormals = options.getBool(kMeshNormals);
+  params.m_meshVertexCreases = options.getBool(kMeshVertexCreases);
+  params.m_meshEdgeCreases = options.getBool(kMeshEdgeCreases);
+  params.m_meshUvs = options.getBool(kMeshUvs);
+  params.m_meshColours = options.getBool(kMeshColours);
+  params.m_meshHoles = options.getBool(kMeshHoles);
+  params.m_compactionLevel = options.getInt(kCompactionLevel);
   params.m_nurbsCurves = options.getBool(kNurbsCurves);
-  params.m_useAnimalSchema = options.getBool(kUseAnimalSchema);
   params.m_mergeTransforms = options.getBool(kMergeTransforms);
   params.m_fileName = file.fullName();
   params.m_selected = mode == MPxFileTranslator::kExportActiveAccessMode;
   params.m_animation = options.getBool(kAnimation);
+  params.m_exportAtWhichTime = options.getInt(kExportAtWhichTime);
+  
+
   if(params.m_animation)
   {
     if(options.getBool(kUseTimelineRange))
@@ -86,6 +114,19 @@ MStatus ExportTranslator::writer(const MFileObject& file, const AL::maya::utils:
       it.prune();
       it.next();
     }
+  }
+  
+  switch(params.m_exportAtWhichTime)
+  {
+  case 0:
+    params.m_timeCode = UsdTimeCode::Default();
+    break;
+  case 1:
+    params.m_timeCode = UsdTimeCode::EarliestTime();
+    break;
+  case 2:
+    params.m_timeCode = UsdTimeCode(params.m_minFrame);
+    break;
   }
 
   Export exporter(params);

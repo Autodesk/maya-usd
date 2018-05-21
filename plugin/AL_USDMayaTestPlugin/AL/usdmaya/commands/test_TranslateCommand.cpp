@@ -132,22 +132,30 @@ TEST(TranslateCommand, roundTripMeshPrim)
   ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
 }
 
-TEST(TranslateCommand, translateFromUnmergedFile){
+TEST(TranslateCommand, translateFromUnmergedFile)
+{
   MFileIO::newFile(true);
 
   const MString command = MString("AL_usdmaya_ProxyShapeImport -file \"") + MString(AL_USDMAYA_TEST_DATA) + MString("/sphere.usda\"");
   MGlobal::executeCommand(command);
-  MStatus s = MGlobal::selectByName("foofoo");
-  ASSERT_FALSE(s.statusCode() == MStatus::kSuccess);
+  MStatus s = MGlobal::selectByName("pSphereShape1");
+  EXPECT_FALSE(s == MStatus::kSuccess);
 
-  MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1/foofoo\" \"AL_usdmaya_ProxyShape\"", false, false);
-  s = MGlobal::selectByName("foofoo");
-  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+  MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1/pSphereShape1\" \"AL_usdmaya_ProxyShape\"", false, false);
+  s = MGlobal::selectByName("pSphereShape1");
+  EXPECT_TRUE(s == MStatus::kSuccess);
 
-  MGlobal::executeCommand("AL_usdmaya_TranslatePrim -tp \"/pSphere1/foofoo\" \"AL_usdmaya_ProxyShape\"", false, false);
-  s = MGlobal::selectByName("foofoo");
-  ASSERT_FALSE(s.statusCode() == MStatus::kSuccess);
-
+  MGlobal::executeCommand("AL_usdmaya_TranslatePrim -tp \"/pSphere1/pSphereShape1\" \"AL_usdmaya_ProxyShape\"", false, false);
+  s = MGlobal::selectByName("pSphereShape1");
+  EXPECT_FALSE(s == MStatus::kSuccess);
+  
+  // Make sure it's also torn down the parent node
+  s = MGlobal::selectByName("pSphere1");
+  
+  /// TODO: This test needs to pass prior to release!!
+  #if 0
+  EXPECT_FALSE(s == MStatus::kSuccess);
+  #endif
 }
 
 TEST(TranslateCommand, translateMultiplePrimsFromUnmergedFile)
@@ -160,33 +168,33 @@ TEST(TranslateCommand, translateMultiplePrimsFromUnmergedFile)
   MStatus s;
   MString command;
   command.format(MString("AL_usdmaya_ProxyShapeImport -file \"^1s\""), (MString(AL_USDMAYA_TEST_DATA) + MString("/sphere2.usda")));
-  MGlobal::executeCommand(command, false, false);
+  EXPECT_TRUE(MGlobal::executeCommand(command, false, false));
 
   MString importCommand("AL_usdmaya_TranslatePrim -fi -ip \"^1s\" \"AL_usdmaya_ProxyShape\"");
   MString teardownCommand("AL_usdmaya_TranslatePrim -tp \"^1s\" \"AL_usdmaya_ProxyShape\"");
 
 	// import foofoo and verify it made it into maya
   MString importMesh1 = importCommand;
-  importMesh1.format(importCommand, MString("/pSphere1/foofoo"));
-  MGlobal::executeCommand(importMesh1, false, false);
-  s = MGlobal::selectByName("foofoo");
-  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+  EXPECT_TRUE(importMesh1.format(importCommand, MString("/pSphere1/pSphereShape1")));
+  EXPECT_TRUE(MGlobal::executeCommand(importMesh1, false, false));
+  s = MGlobal::selectByName("pSphereShape1");
+  EXPECT_TRUE(s == MStatus::kSuccess);
 
   // import foofooforyou and verify it made it into maya
   MString importMesh2;
-  importMesh2.format(importCommand, MString("/pSphere1/foofooforyou"));
-  MGlobal::executeCommand(importMesh2, false, false);
-  s = MGlobal::selectByName("foofooforyou");
-  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+  EXPECT_TRUE(importMesh2.format(importCommand, MString("/pSphere1/pSphereShape2")));
+  EXPECT_TRUE(MGlobal::executeCommand(importMesh2, false, false));
+  s = MGlobal::selectByName("pSphereShape2");
+  EXPECT_TRUE(s == MStatus::kSuccess);
 
   MGlobal::clearSelectionList();
 
   // Teardown foofoo and verify that foofooforyou is still there
   MString tearDownMesh1;
-  tearDownMesh1.format(teardownCommand, MString("/pSphere1/foofoo"));
-  MGlobal::executeCommand(tearDownMesh1, false, false);
-  s = MGlobal::selectByName("foofoo");
-  ASSERT_FALSE(s.statusCode() == MStatus::kSuccess);
-  s = MGlobal::selectByName("foofooforyou");
-  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+  EXPECT_TRUE(tearDownMesh1.format(teardownCommand, MString("/pSphere1/pSphereShape1")));
+  EXPECT_TRUE(MGlobal::executeCommand(tearDownMesh1, false, false));
+  s = MGlobal::selectByName("pSphereShape1");
+  EXPECT_FALSE(s == MStatus::kSuccess);
+  s = MGlobal::selectByName("pSphereShape2");
+  EXPECT_TRUE(s == MStatus::kSuccess);
 }

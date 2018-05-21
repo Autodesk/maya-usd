@@ -726,6 +726,7 @@ void ProxyShape::removeUsdTransformChain(
     auto it = m_requiredPaths.find(parentPrim);
     if(it == m_requiredPaths.end())
     {
+      TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape -- %s path has not been found\n", path.GetText());
       return;
     }
 

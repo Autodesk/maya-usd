@@ -295,7 +295,9 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
       }
       for(auto it = startMesh; it != endMesh; ++it)
       {
-        AL::usdmaya::utils::copyVertexData(MFnMesh(it->first), it->second, timeCode);
+        UsdGeomMesh mesh(it->second.GetPrim());
+        AL::usdmaya::utils::MeshExportContext context(it->first, mesh, timeCode);
+        context.copyVertexData(timeCode);
       }
     }
   }

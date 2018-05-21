@@ -18,14 +18,13 @@
 #include "maya/MSelectionList.h"
 #include "maya/MString.h"
 #include "AL/usd/utils/ForwardDeclares.h"
+#include "pxr/usd/usd/timeCode.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
 namespace usdmaya {
 namespace fileio {
-
-#ifndef USE_AL_DEFAULT
- #define USE_AL_DEFAULT 0
-#endif
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  parameters for the exporter. These parameters are constructed by any command or file translator that wishes
@@ -41,8 +40,15 @@ struct ExporterParams
   double m_maxFrame=1.0; ///< the end frame of the animation export
   bool m_selected = false; ///< are we exporting selected objects (true) or all objects (false)
   bool m_meshes = true; ///< if true, export meshes
+  bool m_meshPoints = true; ///< if true mesh vertices will be exported
+  bool m_meshConnects = true; ///< if true face connects and counts will be exported
+  bool m_meshNormals = true; ///< if true normal vectors will be exported
+  bool m_meshVertexCreases = true; ///< if true vertex creases will be exported
+  bool m_meshEdgeCreases = true; ///< if true edge creases will be exported
+  bool m_meshUvs = true; ///< if true UV coordinates will be exported
+  bool m_meshColours = true; ///< if true colour sets will be exported
+  bool m_meshHoles = true; ///< if true polygonal holes will be exported
   bool m_meshUV = false; ///< if true, export a scene hierarchy with all empty prims marked "over", only meshes UV will be filled in.
-  bool m_meshNormals = false; ///< if true normal vectors will be exported
   bool m_leftHandedUV = false; ///< if true, UV indices retrieved from Maya will be adjusted to left-handed orientation, it only works with m_meshUV.
   bool m_nurbsCurves = true; ///< if true export nurbs curves
   bool m_dynamicAttributes = true; ///< if true export any dynamic attributes found on the nodes we are exporting
@@ -51,9 +57,11 @@ struct ExporterParams
   bool m_animation = false; ///< if true, animation will be exported.
   bool m_useTimelineRange = false; ///< if true, then the export uses Maya's timeline range.
   bool m_filterSample = false; ///< if true, duplicate sample of attribute will be filtered out
-  bool m_useAnimalSchema = (USE_AL_DEFAULT) ? true : false; ///< if true, the data exported will be designed to fit with Animal Logics internal needs. If false, the original pxr schema will be used.
+  int m_compactionLevel = 3; ///< by default apply the strongest level of data compaction
   AnimationTranslator* m_animTranslator = 0; ///< the animation translator to help exporting the animation data
   bool m_extensiveAnimationCheck = true; ///< if true, extensive animation check will be performed on transform nodes.
+  int m_exportAtWhichTime = 0; ///< controls where the data will be written to: 0 = default time, 1 = earliest time, 2 = current time
+  UsdTimeCode m_timeCode = UsdTimeCode::Default();
 };
 
 //----------------------------------------------------------------------------------------------------------------------

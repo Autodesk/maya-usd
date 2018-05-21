@@ -45,8 +45,9 @@ MStatus ImportTranslator::reader(const MFileObject& file, const AL::maya::utils:
   m_params.m_meshes = options.getBool(kMeshes);
   m_params.m_nurbsCurves = options.getBool(kNurbsCurves);
   m_params.m_animations = options.getBool(kAnimations);
-  m_params.m_animations = options.getBool(kAnimations);
-
+  m_params.m_stageUnloaded = options.getBool(kStageUnload);
+  m_params.m_forceDefaultRead = options.getBool(kReadDefaultValues);
+  
   Import importer(m_params);
 
   return importer ? MS::kSuccess : MS::kFailure; // done!

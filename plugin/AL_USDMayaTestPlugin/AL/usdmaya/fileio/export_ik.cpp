@@ -49,7 +49,6 @@ TEST(export_ik, ikchain)
   "Meshes=1;"
   "Nurbs_Curves=1;"
   "Duplicate_Instances=1;"
-  "Use_Animal_Schema=1;"
   "Merge_Transforms=1;"
   "Animation=1;"
   "Use_Timeline_Range=0;"

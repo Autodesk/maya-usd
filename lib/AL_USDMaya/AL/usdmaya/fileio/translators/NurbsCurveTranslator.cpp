@@ -61,7 +61,7 @@ MObject NurbsCurveTranslator::createNode(const UsdPrim& from, MObject parent, co
     parentUnmerged = (mtVal == AL::usdmaya::Metadata::unmerged);
   }
 
-  if (!AL::usdmaya::utils::createMayaCurves(fnCurve, parent, usdCurves, params.m_useAnimalSchema, parentUnmerged))
+  if (!AL::usdmaya::utils::createMayaCurves(fnCurve, parent, usdCurves, parentUnmerged))
   {
     return MObject::kNullObj;
   }

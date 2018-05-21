@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "AL/usd/utils/SIMD.h"
+#include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/utils/Utils.h"
 #include "AL/usdmaya/utils/MeshUtils.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
@@ -96,27 +97,49 @@ UsdPrim MeshTranslator::exportObject(UsdStageRefPtr stage, MDagPath path, const 
     return UsdPrim();
 
   UsdGeomMesh mesh = UsdGeomMesh::Define(stage, usdPath);
-
-  MStatus status;
-  MFnMesh fnMesh(path, &status);
-  AL_MAYA_CHECK_ERROR2(status, MString("unable to attach function set to mesh") + path.fullPathName());
-  if(status)
+  
+  AL::usdmaya::utils::MeshExportContext context(path, mesh, params.m_timeCode, false, (AL::usdmaya::utils::MeshExportContext::CompactionLevel)params.m_compactionLevel);
+  if(context)
   {
     UsdAttribute pointsAttr = mesh.GetPointsAttr();
     if (params.m_animTranslator && AnimationTranslator::isAnimatedMesh(path))
     {
       params.m_animTranslator->addMesh(path, pointsAttr);
     }
-    
-    AL::usdmaya::utils::copyVertexData(fnMesh, pointsAttr);
-    AL::usdmaya::utils::copyFaceConnectsAndPolyCounts(mesh, fnMesh);
-    AL::usdmaya::utils::copyInvisibleHoles(mesh, fnMesh);
-    AL::usdmaya::utils::copyUvSetData(mesh, fnMesh, params.m_leftHandedUV);
-    AL::usdmaya::utils::copyNormalData(fnMesh, mesh.GetNormalsAttr());
-    AL::usdmaya::utils::copyGlimpseTesselationAttributes(mesh, fnMesh);
-    AL::usdmaya::utils::copyColourSetData(mesh, fnMesh);
-    AL::usdmaya::utils::copyCreaseVertices(mesh, fnMesh);
-    AL::usdmaya::utils::copyCreaseEdges(mesh, fnMesh);
+
+    if(params.m_meshPoints)
+    {
+      context.copyVertexData(context.timeCode());
+    }
+    if(params.m_meshConnects)
+    {
+      context.copyFaceConnectsAndPolyCounts();
+    }
+    if(params.m_meshHoles)
+    {
+      context.copyInvisibleHoles();
+    }
+    if(params.m_meshUvs)
+    {
+      context.copyUvSetData(params.m_leftHandedUV);
+    }
+    if(params.m_meshNormals)
+    {
+      context.copyNormalData(context.timeCode());
+    }
+    context.copyGlimpseTesselationAttributes();
+    if(params.m_meshColours)
+    {
+      context.copyColourSetData();
+    }
+    if(params.m_meshVertexCreases)
+    {
+      context.copyCreaseVertices();
+    }
+    if(params.m_meshEdgeCreases)
+    {
+      context.copyCreaseEdges();
+    }
 
     // pick up any additional attributes attached to the mesh node (these will be added alongside the transform attributes)
     if(params.m_dynamicAttributes)
@@ -132,13 +155,11 @@ UsdPrim MeshTranslator::exportObject(UsdStageRefPtr stage, MDagPath path, const 
 UsdPrim MeshTranslator::exportUV(UsdStageRefPtr stage, MDagPath path, const SdfPath& usdPath, const ExporterParams& params)
 {
   UsdPrim overPrim = stage->OverridePrim(usdPath);
-  MStatus status;
-  MFnMesh fnMesh(path, &status);
-  AL_MAYA_CHECK_ERROR2(status, MString("unable to attach function set to mesh") + path.fullPathName());
-  if (status)
+  UsdGeomMesh mesh(overPrim);
+  AL::usdmaya::utils::MeshExportContext context(path, mesh, params.m_timeCode);
+  if (context)
   {
-    UsdGeomMesh mesh(overPrim);
-    AL::usdmaya::utils::copyUvSetData(mesh, fnMesh, params.m_leftHandedUV);
+    context.copyUvSetData(params.m_leftHandedUV);
   }
   return overPrim;
 }
@@ -156,62 +177,31 @@ MObject MeshTranslator::createNode(const UsdPrim& from, MObject parent, const ch
     return MObject::kNullObj;
 
   const UsdGeomMesh mesh(from);
-
-  TfToken orientation;
-  bool leftHanded = (mesh.GetOrientationAttr().Get(&orientation) && orientation == UsdGeomTokens->leftHanded);
-
-  MFnMesh fnMesh;
-  MFloatPointArray points;
-  MVectorArray normals;
-  MIntArray counts, connects;
-
-  UsdTimeCode timeCode = params.m_forceDefaultRead ?
-                         UsdTimeCode::Default() : UsdTimeCode::EarliestTime();
-
-  AL::usdmaya::utils::gatherFaceConnectsAndVertices(
-      mesh,
-      points,
-      normals,
-      counts,
-      connects,
-      leftHanded,
-      timeCode);
-
-  MObject polyShape = fnMesh.create(points.length(), counts.length(), points, counts, connects, parent);
-
-  MIntArray normalsFaceIds;
-  normalsFaceIds.setLength(connects.length());
-  int32_t* normalsFaceIdsPtr = &normalsFaceIds[0];
-  if(normals.length())
+  
+  bool parentUnmerged = false;
+  TfToken val;
+  if(from.GetParent().GetMetadata(AL::usdmaya::Metadata::mergedTransform, &val))
   {
-    MIntArray normalsFaceIds;
-    normalsFaceIds.setLength(connects.length());
-    int32_t* normalsFaceIdsPtr = &normalsFaceIds[0];
-    if (normals.length() == fnMesh.numFaceVertices())
-    {
-      for (uint32_t i = 0, k = 0, n = counts.length(); i < n; i++)
-      {
-        for (uint32_t j = 0, m = counts[i]; j < m; j++, ++k)
-        {
-          normalsFaceIdsPtr[k] = i;
-        }
-      }
-    }
-    fnMesh.setFaceVertexNormals(normals, normalsFaceIds, connects);
+    parentUnmerged = (val == AL::usdmaya::Metadata::unmerged);
   }
-
-  MFnDagNode fnDag(polyShape);
-  fnDag.setName(std::string(from.GetName().GetString() + std::string("Shape")).c_str());
-
-  AL::usdmaya::utils::applyHoleFaces(mesh, fnMesh);
-  AL::usdmaya::utils::applyVertexCreases(mesh, fnMesh);
-  AL::usdmaya::utils::applyEdgeCreases(mesh, fnMesh);
-  AL::usdmaya::utils::applyGlimpseSubdivParams(from, fnMesh);
-  AL::usdmaya::utils::applyGlimpseUserDataParams(from, fnMesh);
-  applyDefaultMaterialOnShape(polyShape);
-  AL::usdmaya::utils::applyPrimVars(mesh, fnMesh, counts, connects);
-
-  return polyShape;
+  MString dagName = from.GetName().GetString().c_str();
+  if(!parentUnmerged)
+  {
+    dagName += "Shape";
+  }
+  
+  UsdTimeCode timeCode = params.m_forceDefaultRead ? UsdTimeCode::Default() : UsdTimeCode::EarliestTime();
+  
+  AL::usdmaya::utils::MeshImportContext context(mesh, parent, dagName, timeCode);
+  context.applyVertexNormals();
+  context.applyHoleFaces();
+  context.applyVertexCreases();
+  context.applyEdgeCreases();
+  context.applyGlimpseSubdivParams();
+  context.applyGlimpseUserDataParams();
+  applyDefaultMaterialOnShape(context.getPolyShape());
+  context.applyPrimVars();
+  return context.getPolyShape();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

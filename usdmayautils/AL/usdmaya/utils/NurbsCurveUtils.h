@@ -32,34 +32,45 @@ namespace usdmaya {
 namespace utils {
 
 AL_USDMAYA_UTILS_PUBLIC
-void convert3DFloatArrayTo4DDoubleArray(const float* const input, double* const output, size_t count);
-AL_USDMAYA_UTILS_PUBLIC
-void copyPoints(const MFnNurbsCurve& fnCurve, const UsdAttribute& pointsAttr,
-                UsdTimeCode time = UsdTimeCode::Default());
-AL_USDMAYA_UTILS_PUBLIC
-void copyCurveVertexCounts(const MFnNurbsCurve& fnCurve, const UsdAttribute& countsAttr,
-                           UsdTimeCode time = UsdTimeCode::Default());
-AL_USDMAYA_UTILS_PUBLIC
-void copyKnots(const MFnNurbsCurve& fnCurve, const UsdAttribute& knotsAttr,
-               UsdTimeCode time = UsdTimeCode::Default());
-AL_USDMAYA_UTILS_PUBLIC
-void copyRanges(const MFnNurbsCurve& fnCurve, const UsdAttribute& rangesAttr,
-                UsdTimeCode time = UsdTimeCode::Default());
-AL_USDMAYA_UTILS_PUBLIC
-void copyOrder(const MFnNurbsCurve& fnCurve, const UsdAttribute& orderAttr,
-               UsdTimeCode time = UsdTimeCode::Default());
-AL_USDMAYA_UTILS_PUBLIC
-void copyWidths(const MObject& widthObj, const MPlug& widthPlug, const MFnDoubleArrayData& widthArray,
-                const UsdAttribute& widthsAttr, UsdTimeCode time = UsdTimeCode::Default());
-AL_USDMAYA_UTILS_PUBLIC
-bool getMayaCurveWidth(const MFnNurbsCurve& fnCurve, MObject& object, MPlug& plug, MFnDoubleArrayData& array);
-AL_USDMAYA_UTILS_PUBLIC
-bool createMayaCurves(MFnNurbsCurve& fnCurve, MObject& parent, const UsdGeomNurbsCurves& usdCurves,
-                      bool animalSchema, bool parentUnmerged);
+void copyPoints(const MFnNurbsCurve& fnCurve, const UsdAttribute& pointsAttr, UsdTimeCode time = UsdTimeCode::Default());
 
-  //----------------------------------------------------------------------------------------------------------------------
-  /// \brief  a set of bit flags that identify which nurbs curves components have changed
-  //----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+void copyCurveVertexCounts(const MFnNurbsCurve& fnCurve, const UsdAttribute& countsAttr, UsdTimeCode time = UsdTimeCode::Default());
+
+AL_USDMAYA_UTILS_PUBLIC
+void copyKnots(const MFnNurbsCurve& fnCurve, const UsdAttribute& knotsAttr, UsdTimeCode time = UsdTimeCode::Default());
+
+AL_USDMAYA_UTILS_PUBLIC
+void copyRanges(const MFnNurbsCurve& fnCurve, const UsdAttribute& rangesAttr, UsdTimeCode time = UsdTimeCode::Default());
+
+AL_USDMAYA_UTILS_PUBLIC
+void copyOrder(const MFnNurbsCurve& fnCurve, const UsdAttribute& orderAttr, UsdTimeCode time = UsdTimeCode::Default());
+
+AL_USDMAYA_UTILS_PUBLIC
+void copyWidths(
+  const MObject& widthObj, 
+  const MPlug& widthPlug,
+  const MFnDoubleArrayData& widthArray,
+  const UsdAttribute& widthsAttr,
+  UsdTimeCode time = UsdTimeCode::Default());
+   
+AL_USDMAYA_UTILS_PUBLIC
+bool getMayaCurveWidth(
+  const MFnNurbsCurve& fnCurve,
+  MObject& object,
+  MPlug& plug,
+  MFnDoubleArrayData& array);
+
+AL_USDMAYA_UTILS_PUBLIC
+bool createMayaCurves(
+  MFnNurbsCurve& fnCurve,
+  MObject& parent,
+  const UsdGeomNurbsCurves& usdCurves,
+  bool parentUnmerged);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  a set of bit flags that identify which nurbs curves components have changed
+//----------------------------------------------------------------------------------------------------------------------
 enum DiffNurbsCurve
 {
   kCurvePoints = 1 << 0,
@@ -72,8 +83,11 @@ enum DiffNurbsCurve
 };
 
 AL_USDMAYA_UTILS_PUBLIC
-uint32_t diffNurbsCurve(UsdGeomNurbsCurves& usdCurves, MFnNurbsCurve& fnCurve, UsdTimeCode timeCode,
-                        uint32_t exportMask = AL::usdmaya::utils::kAllNurbsCurveComponents);
+uint32_t diffNurbsCurve(
+  UsdGeomNurbsCurves& usdCurves,
+  MFnNurbsCurve& fnCurve,
+  UsdTimeCode timeCode,
+  uint32_t exportMask = AL::usdmaya::utils::kAllNurbsCurveComponents);
 
 //----------------------------------------------------------------------------------------------------------------------
 } // utils

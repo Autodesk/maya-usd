@@ -25,6 +25,7 @@
 #include "maya/MDoubleArray.h"
 #include "maya/MFnNumericAttribute.h"
 #include "maya/MPointArray.h"
+#include "maya/MGlobal.h"
 
 namespace AL {
 namespace usdmaya {
@@ -137,8 +138,7 @@ bool getMayaCurveWidth(const MFnNurbsCurve& fnCurve, MObject& object, MPlug& plu
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool createMayaCurves(MFnNurbsCurve& fnCurve, MObject& parent, const UsdGeomNurbsCurves& usdCurves, bool animalSchema,
-                      bool parentUnmerged)
+bool createMayaCurves(MFnNurbsCurve& fnCurve, MObject& parent, const UsdGeomNurbsCurves& usdCurves, bool parentUnmerged)
 {
   VtArray<int32_t> dataOrder;
   VtArray<int32_t> dataCurveVertexCounts;
@@ -193,8 +193,6 @@ bool createMayaCurves(MFnNurbsCurve& fnCurve, MObject& parent, const UsdGeomNurb
 
   if(UsdAttribute widthsAttr = usdCurves.GetWidthsAttr())
   {
-    // we currently use the 'width' attribute when trying to find the width value for animal schema
-    const char* name = animalSchema? "width" : widthsAttr.GetName().GetText();
     const uint32_t flags =  AL::maya::utils::NodeHelper::kReadable |
         AL::maya::utils::NodeHelper::kWritable |
         AL::maya::utils::NodeHelper::kStorable |
@@ -207,7 +205,7 @@ bool createMayaCurves(MFnNurbsCurve& fnCurve, MObject& parent, const UsdGeomNurb
     {
       float value = dataWidths[0];
       MObject objAttr;
-      AL::maya::utils::NodeHelper::addFloatAttr(fnCurve.object(), name, name, 0.f, flags, &objAttr);
+      AL::maya::utils::NodeHelper::addFloatAttr(fnCurve.object(), "width", "width", 0.f, flags, &objAttr);
       if(!objAttr.isNull())
       {
         AL::usdmaya::utils::DgNodeHelper::setFloat(fnCurve.object(), objAttr, value);
@@ -216,10 +214,11 @@ bool createMayaCurves(MFnNurbsCurve& fnCurve, MObject& parent, const UsdGeomNurb
       {
         std::cerr << "createNode:addFloatAttr returned an invalid object"<< std::endl;
       }
+      MGlobal::executeCommand(MString("aliasAttr widths ") + fnCurve.name() + ".width");
     }
     else if(dataWidths.size() > 1)
     {
-      MObject objAttr = AL::maya::utils::NodeHelper::addFloatArrayAttr(fnCurve.object(), name, name, flags);
+      MObject objAttr = AL::maya::utils::NodeHelper::addFloatArrayAttr(fnCurve.object(), "width", "width", flags);
       if(!objAttr.isNull())
       {
         AL::usdmaya::utils::DgNodeHelper::setFloatArray(fnCurve.object(), objAttr, dataWidths);
@@ -228,6 +227,7 @@ bool createMayaCurves(MFnNurbsCurve& fnCurve, MObject& parent, const UsdGeomNurb
       {
         std::cerr << "createNode:addFloatArrayAttr returned an invalid object"<< std::endl;
       }
+      MGlobal::executeCommand(MString("aliasAttr widths ") + fnCurve.name() + ".width");
     }
   }
 
@@ -242,8 +242,7 @@ bool createMayaCurves(MFnNurbsCurve& fnCurve, MObject& parent, const UsdGeomNurb
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-uint32_t diffNurbsCurve(UsdGeomNurbsCurves& usdCurves, MFnNurbsCurve& fnCurve, UsdTimeCode timeCode,
-                        uint32_t exportMask)
+uint32_t diffNurbsCurve(UsdGeomNurbsCurves& usdCurves, MFnNurbsCurve& fnCurve, UsdTimeCode timeCode, uint32_t exportMask)
 {
   uint32_t result = 0;
   if (exportMask & kCurvePoints)

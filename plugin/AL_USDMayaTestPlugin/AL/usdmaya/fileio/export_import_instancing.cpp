@@ -37,7 +37,6 @@ TEST(export_import_instancing, usd_instancing_roundtrip)
   "Meshes=1;"
   "Nurbs_Curves=1;"
   "Duplicate_Instances=0;"
-  "Use_Animal_Schema=1;"
   "Merge_Transforms=0;"
   "Animation=1;"
   "Use_Timeline_Range=0;"
