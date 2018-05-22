@@ -26,8 +26,6 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
-const MayaFnTypeId MayaFnTypeId::kInvalidType = MayaFnTypeId(0, 0);
-
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
 {

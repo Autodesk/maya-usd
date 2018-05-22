@@ -22,10 +22,11 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
-//MayaFnTypeId ;
+MayaFnTypeId TestPluginMayaTypes[] = {
+  MayaFnTypeId()
+};
 
-AL_USDMAYA_DEFINE_TRANSLATOR(TranslatorTestPlugin, TranslatorTestType,
-                             {MayaFnTypeId::kInvalidType});
+AL_USDMAYA_DEFINE_TRANSLATOR(TranslatorTestPlugin, TranslatorTestType, TestPluginMayaTypes);
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus TranslatorTestPlugin::initialize()

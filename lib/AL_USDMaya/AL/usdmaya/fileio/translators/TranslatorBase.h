@@ -89,8 +89,6 @@ struct MayaFnTypeId
   {
     return (m_mfn == rhs.m_mfn) && (m_typeid == rhs.m_typeid);
   }
-
-  static const MayaFnTypeId kInvalidType;
 };
 
 struct HashMayaFnTypeId

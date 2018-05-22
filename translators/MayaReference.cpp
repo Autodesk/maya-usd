@@ -109,7 +109,9 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
-MayaFnTypeId MayaReferenceMayaTypes[] = {};
+MayaFnTypeId MayaReferenceMayaTypes[] = {
+  MayaFnTypeId()
+};
 
 AL_USDMAYA_DEFINE_TRANSLATOR(MayaReference, AL_usd_MayaReference, MayaReferenceMayaTypes)
 
