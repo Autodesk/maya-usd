@@ -458,6 +458,7 @@ Existing TF_DEBUG flags are:
 * ALUSDMAYA_LAYERS
 * ALUSDMAYA_DRAW
 * ALUSDMAYA_SELECTION
+* ALUSDMAYA_RENDERER
 
 ##  running in batch mode
 @todo add doc

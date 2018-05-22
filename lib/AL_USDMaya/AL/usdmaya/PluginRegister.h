@@ -26,6 +26,7 @@
 #include "AL/usdmaya/cmds/LayerCommands.h"
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
 #include "AL/usdmaya/cmds/ProxyShapeSelectCommands.h"
+#include "AL/usdmaya/cmds/RendererCommands.h"
 #include "AL/usdmaya/cmds/UnloadPrim.h"
 #include "AL/usdmaya/fileio/Export.h"
 #include "AL/usdmaya/fileio/ExportTranslator.h"
@@ -36,6 +37,7 @@
 #include "AL/usdmaya/nodes/ProxyDrawOverride.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/ProxyShapeUI.h"
+#include "AL/usdmaya/nodes/RendererManager.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
@@ -133,6 +135,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_DRAW_OVERRIDE(plugin, AL::usdmaya::nodes::ProxyDrawOverride);
   AL_REGISTER_SHAPE_NODE(plugin, AL::usdmaya::nodes::ProxyShape, AL::usdmaya::nodes::ProxyShapeUI, AL::usdmaya::nodes::ProxyDrawOverride);
   AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Transform, AL::usdmaya::nodes::TransformationMatrix);
+  AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::Layer);
   // Since AL_MAYA_DECLARE_NODE / AL_MAYA_DEFINE_NODE declare/define "creator"
   // method, and AL_REGISTER_DEPEND_NODE registers "creator", in order to
@@ -155,6 +158,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL::usdmaya::cmds::constructLayerCommandGuis();
   AL::usdmaya::cmds::constructProxyShapeCommandGuis();
   AL::usdmaya::cmds::constructDebugCommandGuis();
+  AL::usdmaya::cmds::constructRendererCommandGuis();
 
   CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
   AL::usdmaya::Global::onPluginLoad();
@@ -229,6 +233,7 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_DRAW_OVERRIDE(plugin, AL::usdmaya::nodes::ProxyDrawOverride);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::ProxyShape);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Transform);
+  AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Layer);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::LayerManager);
   AL_UNREGISTER_DATA(plugin, AL::usdmaya::DrivenTransformsData);

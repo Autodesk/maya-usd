@@ -50,6 +50,7 @@ typedef boost::filesystem::path path;
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
+#include "AL/usdmaya/nodes/RendererManager.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
@@ -436,8 +437,8 @@ void ProxyShape::constructGLImagingEngine()
                                    translatedGeo.end());
 
       m_engine = new UsdImagingGLHdEngine(m_path, excludedGeometryPaths);
-      // set renderer plugin based on layerManager setting
-      LayerManager* manager = LayerManager::findManager();
+      // set renderer plugin based on RendererManager setting
+      RendererManager* manager = RendererManager::findManager();
       if(manager && m_engine)
       {
         manager->changeRendererPlugin(this, true);

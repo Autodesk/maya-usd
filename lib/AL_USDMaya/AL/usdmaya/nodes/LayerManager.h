@@ -298,25 +298,6 @@ public:
   void loadAllLayers();
 
   //--------------------------------------------------------------------------------------------------------------------
-  /// Methods to handle renderer plugin
-  //--------------------------------------------------------------------------------------------------------------------
-
-  /// \brief  Set current renderer for all proxy shapes
-  void onRendererChanged();
-
-  /// \brief  Set current renderer plugin based on provided name
-  bool setRendererPlugin(const MString& pluginName);
-
-  /// \brief  Change current renderer plugin for provided ProxyShape
-  void changeRendererPlugin(ProxyShape* proxy, bool creation=false);
-  
-  /// \brief  Get current renderer plugin index
-  int getRendererPluginIndex() const;
-
-  /// \brief  Get list of available Hydra renderer plugin names
-  static const MStringArray& getRendererPluginList() { return m_rendererPluginsNames; }
-
-  //--------------------------------------------------------------------------------------------------------------------
   /// Type Info & Registration
   //--------------------------------------------------------------------------------------------------------------------
   AL_MAYA_DECLARE_NODE();
@@ -346,42 +327,21 @@ public:
   AL_DECL_MULTI_CHILD_ATTRIBUTE(serialized);
   AL_DECL_MULTI_CHILD_ATTRIBUTE(anonymous);
 
-  /// Hydra renderer plugin name used for rendering (storable)
-  AL_DECL_ATTRIBUTE(rendererPluginName);
-  /// Hydra renderer plugin index used for UI (internal)
-  AL_DECL_ATTRIBUTE(rendererPlugin);
-
 private:
   static MObject _findNode();
-  static void onAttributeChanged(MNodeMessage::AttributeMessage, MPlug&, MPlug&, void*);
-
-  /// \brief  adds the attribute changed callback to manager
-  void addAttributeChangedCallback();
-
-  /// \brief  removes the attribute changed callback from manager
-  void removeAttributeChangedCallback();
 
   LayerDatabase m_layerDatabase;
-  MCallbackId m_attributeChanged = 0;
 
   // Note on layerManager / multithreading:
   // I don't know that layerManager will be used in a multihreaded manenr... but I also don't know it COULDN'T be.
   // (I haven't really looked into the way maya's new multi-threaded node evaluation works, for instance.) This is
   // essentially a globally shared resource, so I figured better be safe...
   boost::shared_mutex m_layersMutex;
-  static TfTokenVector m_rendererPluginsTokens;
-  static MStringArray m_rendererPluginsNames;
 
   //--------------------------------------------------------------------------------------------------------------------
   /// MPxNode overrides
   //--------------------------------------------------------------------------------------------------------------------
 
-  void postConstructor() override;
-
-  bool setInternalValueInContext(const MPlug& plug, const MDataHandle& dataHandle, MDGContext& ctx) override;
-  
-  bool getInternalValueInContext(const MPlug& plug, MDataHandle& dataHandle, MDGContext& ctx) override;
-  
   /// \var    static MObject layers();
   /// \brief  access the layers attribute handle
   /// \return the handle to the layers attribute
