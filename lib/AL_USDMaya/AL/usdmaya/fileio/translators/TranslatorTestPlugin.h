@@ -46,7 +46,7 @@ private:
   MStatus postImport(const UsdPrim& prim) override;
   MStatus preTearDown(UsdPrim& path) override;
   MStatus tearDown(const SdfPath& path) override;
-  virtual ExportFlag canExport(const MObject& obj)
+  ExportFlag canExport(const MObject& obj) override
     { return ExportFlag::kFallbackSupport; }
 };
 #endif
