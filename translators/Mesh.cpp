@@ -92,13 +92,14 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
   MFnSet fn(initialShadingGroup, &status);
   AL_MAYA_CHECK_ERROR(status, "Unable to attach MfnSet to initialShadingGroup");
   
-  fn.addMember(importContext.getPolyShape());
+  createdObj = importContext.getPolyShape();
+  fn.addMember(createdObj);
   importContext.applyPrimVars();
 
   if (ctx)
   {
     ctx->addExcludedGeometry(prim.GetPath());
-    ctx->insertItem(prim, importContext.getPolyShape());
+    ctx->insertItem(prim, createdObj);
   }
   return MStatus::kSuccess;
 }
@@ -121,8 +122,16 @@ UsdPrim Mesh::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath
     {
       params.m_animTranslator->addMesh(dagPath, pointsAttr);
     }
-
-    writeEdits(dagPath, mesh, params.m_leftHandedUV, params.m_dynamicAttributes);
+    uint32_t options = 0;
+    if(params.m_leftHandedUV)
+    {
+      options |= kLeftHandedUV;
+    }
+    if(params.m_dynamicAttributes)
+    {
+      options |= kDynamicAttributes;
+    }
+    writeEdits(dagPath, mesh, options);
   }
   return mesh.GetPrim();
 }
@@ -179,7 +188,7 @@ MStatus Mesh::preTearDown(UsdPrim& prim)
     AL_MAYA_CHECK_ERROR(status, MString("unable to attach function set to mesh: ") + path.fullPathName());
 
     UsdGeomMesh geomPrim(prim);
-    writeEdits(path, geomPrim, false);
+    writeEdits(path, geomPrim, kPerformDiff | kDynamicAttributes);
   }
   else
   {
@@ -190,11 +199,11 @@ MStatus Mesh::preTearDown(UsdPrim& prim)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void Mesh::writeEdits(MDagPath& dagPath, UsdGeomMesh& geomPrim, bool leftHandedUV, bool dynamicAttributes)
+void Mesh::writeEdits(MDagPath& dagPath, UsdGeomMesh& geomPrim, uint32_t options)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MeshTranslator::writing edits to prim='%s'\n", geomPrim.GetPath().GetText());
   UsdTimeCode t = UsdTimeCode::Default();
-  AL::usdmaya::utils::MeshExportContext context(dagPath, geomPrim, t, true);
+  AL::usdmaya::utils::MeshExportContext context(dagPath, geomPrim, t, options & kPerformDiff);
   if(context)
   {
     context.copyVertexData(t);
@@ -204,9 +213,9 @@ void Mesh::writeEdits(MDagPath& dagPath, UsdGeomMesh& geomPrim, bool leftHandedU
     context.copyInvisibleHoles();
     context.copyCreaseVertices();
     context.copyCreaseEdges();
-    context.copyUvSetData(false);
+    context.copyUvSetData(options & kLeftHandedUV);
     context.copyColourSetData();
-    if(dynamicAttributes)
+    if(options & kDynamicAttributes)
     {
       UsdPrim prim = geomPrim.GetPrim();
       DgNodeTranslator::copyDynamicAttributes(dagPath.node(), prim);
