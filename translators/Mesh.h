@@ -54,6 +54,7 @@ private:
     kDynamicAttributes = 1 << 1
   };
   void writeEdits(MDagPath& dagPath, UsdGeomMesh& geomPrim, uint32_t options = kDynamicAttributes);
+
 };
 
 //----------------------------------------------------------------------------------------------------------------------
