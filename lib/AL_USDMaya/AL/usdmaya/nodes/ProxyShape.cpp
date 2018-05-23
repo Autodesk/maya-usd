@@ -1607,6 +1607,14 @@ void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& p
         proxy->constructGLImagingEngine();
       }
     }
+    else
+    if(plug == m_excludePrimPaths)
+    {
+      if(proxy->m_stage)
+      {
+        proxy->constructExcludedPrims();
+      }
+    }
   }
 }
 
