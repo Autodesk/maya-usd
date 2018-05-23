@@ -33,7 +33,7 @@
 
 namespace {
 
-  static std::mutex _findNodeMutex;
+  static std::mutex s_findNodeMutex;
 
 }
 
@@ -102,7 +102,7 @@ MStatus RendererManager::initialise()
 //----------------------------------------------------------------------------------------------------------------------
 MObject RendererManager::findNode()
 {
-  std::lock_guard<std::mutex> lock(_findNodeMutex);
+  std::lock_guard<std::mutex> lock(s_findNodeMutex);
   return _findNode();
 }
 
@@ -127,7 +127,7 @@ MObject RendererManager::_findNode()
 MObject RendererManager::findOrCreateNode(MDGModifier* dgmod, bool* wasCreated)
 {
   TF_DEBUG(ALUSDMAYA_RENDERER).Msg("RendererManager::findOrCreateNode\n");
-  std::lock_guard<std::mutex> lock(_findNodeMutex);
+  std::lock_guard<std::mutex> lock(s_findNodeMutex);
   MObject theManager = _findNode();
 
   if (!theManager.isNull())
@@ -165,15 +165,14 @@ RendererManager* RendererManager::findManager()
 //----------------------------------------------------------------------------------------------------------------------
 RendererManager* RendererManager::findOrCreateManager(MDGModifier* dgmod, bool* wasCreated)
 {
-  return static_cast<RendererManager*>(MFnDependencyNode(findOrCreateNode(dgmod,
-      wasCreated)).userNode());
+  return static_cast<RendererManager*>(MFnDependencyNode(findOrCreateNode(dgmod, wasCreated)).userNode());
 }
 
 
 //----------------------------------------------------------------------------------------------------------------------
 void RendererManager::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug&, void* clientData)
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("RendererManager::onAttributeChanged\n");
+  TF_DEBUG(ALUSDMAYA_RENDERER).Msg("RendererManager::onAttributeChanged\n");
   RendererManager* manager = static_cast<RendererManager*>(clientData);
   assert(manager);
   if(plug == m_rendererPluginName)
@@ -183,19 +182,19 @@ void RendererManager::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPl
 //----------------------------------------------------------------------------------------------------------------------
 void RendererManager::removeAttributeChangedCallback()
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("RendererManager::removeAttributeChangedCallback\n");
-  if(m_attributeChanged != -1)
+  TF_DEBUG(ALUSDMAYA_RENDERER).Msg("RendererManager::removeAttributeChangedCallback\n");
+  if(m_attributeChanged != 0)
   {
     MMessage::removeCallback(m_attributeChanged);
-    m_attributeChanged = -1;
+    m_attributeChanged = 0;
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void RendererManager::addAttributeChangedCallback()
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("RendererManager::addAttributeChangedCallback\n");
-  if(m_attributeChanged == -1)
+  TF_DEBUG(ALUSDMAYA_RENDERER).Msg("RendererManager::addAttributeChangedCallback\n");
+  if(m_attributeChanged == 0)
   {
     MObject obj = thisMObject();
     m_attributeChanged = MNodeMessage::addAttributeChangedCallback(obj, onAttributeChanged, (void*)this);
@@ -262,7 +261,7 @@ void RendererManager::onRendererChanged()
 //----------------------------------------------------------------------------------------------------------------------
 void RendererManager::changeRendererPlugin(ProxyShape* proxy, bool creation)
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("RendererManager::changeRendererPlugin\n");
+  TF_DEBUG(ALUSDMAYA_RENDERER).Msg("RendererManager::changeRendererPlugin\n");
   assert(proxy);
   if (proxy->engine())
   {
@@ -305,14 +304,14 @@ bool RendererManager::setRendererPlugin(const MString& pluginName)
   int index = m_rendererPluginsNames.indexOf(pluginName);
   if (index >= 0)
   {
-    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("RendererManager::setRendererPlugin\n");
+    TF_DEBUG(ALUSDMAYA_RENDERER).Msg("RendererManager::setRendererPlugin\n");
     MPlug plug(thisMObject(), m_rendererPluginName);
     plug.setString(pluginName);
     return true;
   }
   else
   {
-    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Failed to set renderer plugin!\n");
+    TF_DEBUG(ALUSDMAYA_RENDERER).Msg("Failed to set renderer plugin!\n");
     MGlobal::displayError(MString("Failed to set renderer plugin: ") + pluginName);
   }
   return false;

@@ -133,6 +133,7 @@ ManageRenderer Overview:
 
   This command allows you to manage global renderer settings:
 
+     ManageRenderer -sp "Embree";  //< sets current renderer to Intel Embree
      ManageRenderer -sp "Glimpse";  //< sets current renderer to glimpse
      ManageRenderer -sp "GL";  //< sets current renderer to Hydra GL
 )";

@@ -119,7 +119,7 @@ private:
   /// \brief  removes the attribute changed callback from manager
   void removeAttributeChangedCallback();
 
-  MCallbackId m_attributeChanged = -1;
+  MCallbackId m_attributeChanged = 0;
 
   static TfTokenVector m_rendererPluginsTokens;
   static MStringArray m_rendererPluginsNames;
