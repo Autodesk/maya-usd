@@ -256,8 +256,11 @@ SdfPathVector ProxyShape::getExcludePrimPaths() const
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::getExcludePrimPaths\n");
 
-  MString paths = excludePrimPathsPlug().asString();
-  return getPrimPathsFromCommaJoinedString(paths);
+  SdfPathVector paths = getPrimPathsFromCommaJoinedString(excludePrimPathsPlug().asString());
+  SdfPathVector temp = getPrimPathsFromCommaJoinedString(excludedTranslatedGeometryPlug().asString());
+  paths.insert(paths.end(), temp.begin(), temp.end());
+
+  return paths;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1608,7 +1611,7 @@ void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& p
       }
     }
     else
-    if(plug == m_excludePrimPaths)
+    if(plug == m_excludePrimPaths || plug == m_excludedTranslatedGeometry)
     {
       if(proxy->m_stage)
       {
