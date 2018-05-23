@@ -429,7 +429,6 @@ TEST(DiffPrimVar, diffCreaseVertices)
 
     ASSERT_TRUE(MGlobal::executeCommand("polyCrease -ch true -value 0.96 -vertexValue 0.96 pCube1.vtx[3]") == MS::kSuccess);
 
-    MFileIO::saveAs("/scratch/wat.mb");
     sl.clear();
     EXPECT_TRUE(sl.add("pCubeShape1")  == MS::kSuccess);
 
