@@ -26,9 +26,5 @@ public:
   static MSyntax createSyntax();
   static const MString kName;
   MStatus doIt(const MArgList& args) override;
-
-private:
-  void cleanTemporaryFiles() const;
-
 };
 
