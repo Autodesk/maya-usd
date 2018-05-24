@@ -29,7 +29,6 @@ namespace translators {
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
 {
-  unsigned int translatorCount = 0;
   std::set<TfType> loadedTypes;
   std::set<TfType> derivedTypes;
 

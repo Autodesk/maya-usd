@@ -3,7 +3,8 @@ import tempfile
 import maya.standalone
 import maya.cmds as mc
 
-from pxr import Tf, Usd
+from pxr import Tf, Usd, UsdGeom, Gf
+import translatortestutils
 
 class testTranslator(unittest.TestCase):
     @classmethod
@@ -157,7 +158,7 @@ class testTranslator(unittest.TestCase):
         Test that by default that the the mesh is imported
         """
         # setup scene with sphere
-        self._importStageWithSphere()
+        translatortestutils.importStageWithSphere()
               
         # force the import
         mc.AL_usdmaya_TranslatePrim(ip="/pSphere1", fi=True, proxy="AL_usdmaya_Proxy")
@@ -209,7 +210,8 @@ class testTranslator(unittest.TestCase):
         """
                
         # force the import
-        stage = self._importStageWithSphere()
+        d = translatortestutils.importStageWithSphere()
+        stage = d.stage
         mc.AL_usdmaya_TranslatePrim(ip="/pSphere1", fi=True, proxy="AL_usdmaya_Proxy")
       
         stage.SetEditTarget(stage.GetSessionLayer())
@@ -230,16 +232,13 @@ class testTranslator(unittest.TestCase):
         self.assertTrue(sessionSphere.IsValid())
         self.assertTrue(sessionSphere.GetAttribute("faceVertexCounts"))
 
-## Commented since there is a crash when out of a variant that contains a mesh into a variant that contains a different mesh.
-## Possibly because we are changing the Session Layer in the preTearDown of the Mesh.cpp while in a variantSetChanged callback.
     def testMeshTranslator_variantswitch(self):
         mc.AL_usdmaya_ProxyShapeImport(file='./testMeshVariants.usda')
         self.assertTrue(Tf.Type.Unknown != Tf.Type.FindByName('AL::usdmaya::fileio::translators::Mesh'))
-    
         # test initial state has no meshes
         self.assertEqual(len(mc.ls(type='mesh')), 0)
     
-        stage = self._getStage()
+        stage = translatortestutils.getStage()
         stage.SetEditTarget(stage.GetSessionLayer())
          
         variantPrim = stage.GetPrimAtPath("/TestVariantSwitch")
@@ -269,7 +268,6 @@ class testTranslator(unittest.TestCase):
         mc.AL_usdmaya_TranslatePrim(ip="/TestVariantSwitch/MeshB", fi=True, proxy="AL_usdmaya_Proxy")
         mc.AL_usdmaya_TranslatePrim(ip="/TestVariantSwitch/MeshA", fi=True, proxy="AL_usdmaya_Proxy")
  
-      
         self.assertEqual(len(mc.ls('MeshA')), 1)
         self.assertEqual(len(mc.ls('MeshB')), 1)
         self.assertEqual(len(mc.ls(type='mesh')), 2)
@@ -288,7 +286,7 @@ class testTranslator(unittest.TestCase):
         """
         Test that by default that the the mesh isn't imported
         """
-        stage = self._importStageWithNurbsCircle()
+        stage = translatortestutils.importStageWithNurbsCircle()
         self.assertEqual(len(mc.ls('nurbsCircle1')), 0)
         self.assertEqual(len(mc.ls(type='nurbsCurve')), 0)
 
@@ -297,7 +295,7 @@ class testTranslator(unittest.TestCase):
         Test that by default that the the mesh is imported
         """
         # setup scene with sphere
-        self._importStageWithNurbsCircle()
+        translatortestutils.importStageWithNurbsCircle()
 
         # force the import
         mc.AL_usdmaya_TranslatePrim(ip="/nurbsCircle1", fi=True, proxy="AL_usdmaya_Proxy")
@@ -345,7 +343,7 @@ class testTranslator(unittest.TestCase):
         """
 
         # force the import
-        stage = self._importStageWithNurbsCircle()
+        stage = translatortestutils.importStageWithNurbsCircle()
         mc.AL_usdmaya_TranslatePrim(ip="/nurbsCircle1", fi=True, proxy="AL_usdmaya_Proxy")
 
         stage.SetEditTarget(stage.GetSessionLayer())
@@ -368,46 +366,39 @@ class testTranslator(unittest.TestCase):
         self.assertEqual(len(cvcAttr.Get()), 1)
         self.assertEqual(cvcAttr.Get()[0], 10)
 
+    def testMeshTranslator_multipleTranslations(self):
+        path = tempfile.NamedTemporaryFile(suffix=".usda", prefix="test_MeshTranslator_multipleTranslations_", delete=True)
 
-# Utilities
-    def _getStage(self):
-        from AL import usdmaya
-        stageCache = usdmaya.StageCache.Get()
-        stage = stageCache.GetAllStages()[0]
-        return stage
-    
-    def _importStageWithSphere(self):
-        """
-        Creates Scene
+        d = translatortestutils.importStageWithSphere('AL_usdmaya_Proxy')
+        sessionLayer = d.stage.GetSessionLayer()
+        d.stage.SetEditTarget(sessionLayer)
 
-        #usda1.0
-        def Mesh "pSphere1"()
-        {
-        }
-        """
+        spherePrimPath = "/"+d.sphereXformName
+        offsetAmount = Gf.Vec3f(0,0.25,0)
+        
+        vertPoint = '{}.vtx[0]'.format(d.sphereXformName)
+        
+        spherePrimMesh = UsdGeom.Mesh.Get(d.stage, spherePrimPath)  
 
-        # Create sphere in Maya and export a .usda file
-        mc.polySphere()
-        mc.select("pSphere1")
-        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="test_MeshTranslator_", delete=True)
-        mc.file(tempFile.name, exportSelected=True, force=True, type="AL usdmaya export")
-         
-        # clear scene
-        mc.file(f=True, new=True)
-        mc.AL_usdmaya_ProxyShapeImport(file=tempFile.name)
-        return self._getStage()
+        # Test import,modify,teardown a bunch of times
+        for i in xrange(3):
+            # Determine expected result
+            expectedPoint = spherePrimMesh.GetPointsAttr().Get()[0] + offsetAmount
 
-    def _importStageWithNurbsCircle(self):
-        # Create nurbs circle in Maya and export a .usda file
-        mc.CreateNURBSCircle()
-        mc.select("nurbsCircle1")
-        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="test_NurbsCurveTranslator_", delete=True)
-        mc.file(tempFile.name, exportSelected=True, force=True, type="AL usdmaya export")
+            # Translate the prim into maya for editing
+            mc.AL_usdmaya_TranslatePrim(forceImport=True, importPaths=spherePrimPath, proxy='AL_usdmaya_Proxy')
 
-        # clear scene
-        mc.file(f=True, new=True)
-        mc.AL_usdmaya_ProxyShapeImport(file=tempFile.name)
-        return self._getStage()
+            # Move the point
+            items = ['pSphere1.vtx[0]']
+            mc.move(offsetAmount[0], offsetAmount[1], offsetAmount[2], items, relative=True) # just affect the Y
+            mc.AL_usdmaya_TranslatePrim(teardownPaths=spherePrimPath, proxy='AL_usdmaya_Proxy')
+ 
+            actualPoint = spherePrimMesh.GetPointsAttr().Get()[0]
+            
+            # Confirm that the edit has come back as expected
+            self.assertAlmostEqual(actualPoint[0], expectedPoint[0])
+            self.assertAlmostEqual(actualPoint[1], expectedPoint[1])
+            self.assertAlmostEqual(actualPoint[2], expectedPoint[2])
 
 if __name__ == '__main__':
     unittest.main()

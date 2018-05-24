@@ -22,8 +22,10 @@
 #include "pxr/usd/usd/stage.h"
 
 #include "maya/MPxLocatorNode.h"
+#include "maya/MNodeMessage.h"
 #include "AL/maya/utils/MayaHelperMacros.h"
 
+#include <iterator>
 #include <map>
 #include <set>
 #include <boost/thread.hpp>
@@ -34,9 +36,81 @@ namespace AL {
 namespace usdmaya {
 namespace nodes {
 
+class ProxyShape;
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  Iterator wrapper for LayerToIdsMap that hides non-dirty items
+///         Implemented as a template to define const / non-const iterator at same time
+/// \ingroup nodes
+//----------------------------------------------------------------------------------------------------------------------
+template <typename WrappedIterator>
+class DirtyOnlyIterator
+//    : public std::iterator<std::forward_iterator_tag,
+//                           typename WrappedIterator::value_type>
+{
+public:
+  typedef typename WrappedIterator::value_type value_type;
+
+  DirtyOnlyIterator(WrappedIterator it, WrappedIterator end):
+    m_iter(it),
+    m_end(end)
+  {
+    SetToNextDirty();
+  }
+
+  DirtyOnlyIterator(const DirtyOnlyIterator& other):
+    m_iter(other.m_iter),
+    m_end(other.m_end)
+  {
+    SetToNextDirty();
+  }
+
+  DirtyOnlyIterator& operator++() {
+    ++m_iter;
+    SetToNextDirty();
+    return *this;
+  }
+
+  DirtyOnlyIterator operator++(int) {
+    WrappedIterator tmp(*this);
+    operator++();
+    return tmp;
+  }
+
+  bool operator==(const DirtyOnlyIterator& rhs) const {
+    // You could argue we should check m_end too,
+    // but all we really care about is whether we're pointed
+    // at the same place, and it's faster...
+    return m_iter == rhs.m_iter;
+  }
+
+  bool operator!=(const DirtyOnlyIterator& rhs) const {
+    return m_iter != rhs.m_iter;
+  }
+
+  value_type& operator*() { return *m_iter; }
+
+private:
+  void SetToNextDirty()
+  {
+    while (m_iter != m_end && !m_iter->first->IsDirty())
+    {
+      ++m_iter;
+    }
+  }
+
+  WrappedIterator m_iter;
+  WrappedIterator m_end;
+};
+
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Stores layers, in a way that they may be looked up by the layer ref ptr, or by identifier
 ///         Also, unlike boost::multi_index, we can have multiple identifiers per layer
+///         You can add non-dirty layers to the database, but the query operations will "hide" them -
+///         ie, iteration will skip by them, and findLayer will return an invalid ptr if it's not dirty
+///         We allow adding non-dirty items because if we want to guarantee we always have all the latest
+///         items, we need to deal with the situation where the current edit target starts out not
+///         dirty... and it's easiest to just add it then filter it if it's not dirty
 /// \ingroup nodes
 //----------------------------------------------------------------------------------------------------------------------
 class LayerDatabase {
@@ -65,20 +139,61 @@ public:
   bool removeLayer(SdfLayerRefPtr layer);
 
   /// \brief  Find the layer in the set of layers managed by this node, by identifier
-  /// \return The found layer handle in the layer list managed by this node (invalid if not found)
+  /// \return The found layer handle in the layer list managed by this node (invalid if not found or not dirty)
   SdfLayerHandle findLayer(std::string identifier) const;
 
-  LayerToIdsMap::size_type size() const { return m_layerToIds.size(); }
+  /// Because we may have an unknown number of non-dirty member layers which we're treating
+  /// as not-existing, we can't get a size without iterating over all the layers; we can,
+  /// however, do an empty/non-empty boolean check by seeing if begin() == end(); in the
+  /// worst case, when the LayerDatabase consists of nothing but non-dirty layers, begin()
+  /// will will still end up iterating through all the layers attempting to find a
+  /// non-dirty layer to start at, but the average case should be pretty fast
+  ///
+  /// We use the safe-bool idiom to avoid nasty automatic conversions, etc
+private:
+  typedef const LayerToIdsMap LayerDatabase::*_UnspecifiedBoolType;
+public:
+  operator _UnspecifiedBoolType() const {
+    return begin() == end() ? &LayerDatabase::m_layerToIds : nullptr;
+  }
 
-  // Iterator interface
-  typedef LayerToIdsMap::iterator iterator;
-  typedef LayerToIdsMap::const_iterator const_iterator;
-  iterator begin() { return m_layerToIds.begin(); }
-  const_iterator begin() const { return m_layerToIds.cbegin(); }
-  const_iterator cbegin() const { return m_layerToIds.cbegin(); }
-  iterator end() { return m_layerToIds.end(); }
-  const_iterator end() const { return m_layerToIds.cend(); }
-  const_iterator cend() const { return m_layerToIds.cend(); }
+  /// \brief  Upper bound for the number of non-dirty layers in this object
+  ///         This is the count of all tracked layers, dirty-and-non-dirty;
+  ///         If it is zero, it can be guaranteed that there are no dirty
+  ///         layers, but if it is non-zero, we cannot guarantee that there
+  ///         are any non-dirty layers. Use boolean conversion above to test
+  ///         that.
+  size_t max_size() const {
+    return m_layerToIds.size();
+  }
+
+  // Iterator interface - skips past non-dirty items
+  typedef DirtyOnlyIterator<LayerToIdsMap::iterator> iterator;
+  typedef DirtyOnlyIterator<LayerToIdsMap::const_iterator> const_iterator;
+  iterator begin()
+  {
+    return iterator(m_layerToIds.begin(), m_layerToIds.end());
+  }
+  const_iterator begin() const
+  {
+    return const_iterator(m_layerToIds.cbegin(), m_layerToIds.cend());
+  }
+  const_iterator cbegin() const
+  {
+    return const_iterator(m_layerToIds.cbegin(), m_layerToIds.cend());
+  }
+  iterator end()
+  {
+    return iterator(m_layerToIds.end(), m_layerToIds.end());
+  }
+  const_iterator end() const
+  {
+    return const_iterator(m_layerToIds.cend(), m_layerToIds.cend());
+  }
+  const_iterator cend() const
+  {
+    return const_iterator(m_layerToIds.cend(), m_layerToIds.cend());
+  }
 
 private:
   void _addLayer(SdfLayerRefPtr layer, const std::string& identifier,
@@ -90,6 +205,7 @@ private:
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  The layer manager node handles serialization and deserialization of all layers used by all ProxyShapes
+///         It may temporarily contain non-dirty layers, but those will be filtered out by query operations.
 /// \ingroup nodes
 //----------------------------------------------------------------------------------------------------------------------
 class LayerManager
@@ -102,6 +218,8 @@ public:
   AL_USDMAYA_PUBLIC
   inline LayerManager()
     : MPxNode(), NodeHelper() {}
+
+  ~LayerManager();
 
   /// \brief  Find the already-existing non-referenced LayerManager node in the scene, or return a null MObject
   /// \return the found LayerManager node, or a null MObject
@@ -179,6 +297,18 @@ public:
   AL_USDMAYA_PUBLIC
   void loadAllLayers();
 
+  /// \brief  Set current renderer plugin based on provided name
+  bool setRendererPlugin(const MString& pluginName);
+
+  /// \brief  Change current renderer plugin for provided ProxyShape
+  void changeRendererPlugin(ProxyShape* proxy, bool creation=false);
+  
+  /// \brief  Get current renderer plugin index
+  int getRendererPluginIndex() const;
+
+  /// \brief  Get list of available Hydra renderer plugin names
+  static const MStringArray& getRendererPluginList() { return m_rendererPluginsNames; }
+
   //--------------------------------------------------------------------------------------------------------------------
   /// Type Info & Registration
   //--------------------------------------------------------------------------------------------------------------------
@@ -209,21 +339,42 @@ public:
   AL_DECL_MULTI_CHILD_ATTRIBUTE(serialized);
   AL_DECL_MULTI_CHILD_ATTRIBUTE(anonymous);
 
+  /// Hydra renderer plugin name used for rendering (storable)
+  AL_DECL_ATTRIBUTE(rendererPluginName);
+  /// Hydra renderer plugin index used for UI (internal)
+  AL_DECL_ATTRIBUTE(rendererPlugin);
+
 private:
   static MObject _findNode();
+  static void onAttributeChanged(MNodeMessage::AttributeMessage, MPlug&, MPlug&, void*);
+
+  /// \brief  adds the attribute changed callback to manager
+  void addAttributeChangedCallback();
+
+  /// \brief  removes the attribute changed callback from manager
+  void removeAttributeChangedCallback();
 
   LayerDatabase m_layerDatabase;
+  MCallbackId m_attributeChanged = 0;
 
   // Note on layerManager / multithreading:
   // I don't know that layerManager will be used in a multihreaded manenr... but I also don't know it COULDN'T be.
   // (I haven't really looked into the way maya's new multi-threaded node evaluation works, for instance.) This is
   // essentially a globally shared resource, so I figured better be safe...
   boost::shared_mutex m_layersMutex;
+  static TfTokenVector m_rendererPluginsTokens;
+  static MStringArray m_rendererPluginsNames;
 
   //--------------------------------------------------------------------------------------------------------------------
   /// MPxNode overrides
   //--------------------------------------------------------------------------------------------------------------------
 
+  void postConstructor() override;
+
+  bool setInternalValueInContext(const MPlug& plug, const MDataHandle& dataHandle, MDGContext& ctx) override;
+  
+  bool getInternalValueInContext(const MPlug& plug, MDataHandle& dataHandle, MDGContext& ctx) override;
+  
   /// \var    static MObject layers();
   /// \brief  access the layers attribute handle
   /// \return the handle to the layers attribute

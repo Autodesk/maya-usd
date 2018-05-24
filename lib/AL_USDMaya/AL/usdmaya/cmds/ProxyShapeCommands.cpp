@@ -119,18 +119,20 @@ nodes::ProxyShape* ProxyShapeCommandBase::getShapeNode(const MArgDatabase& args)
   for(uint32_t i = 0; i < sl.length(); ++i)
   {
     MStatus status = sl.getDagPath(i, path);
-
-    if(path.node().hasFn(MFn::kTransform))
+    if(status)
     {
-      path.extendToShape();
-    }
-
-    if(path.node().hasFn(MFn::kPluginShape))
-    {
-      MFnDagNode fn(path);
-      if(fn.typeId() == nodes::ProxyShape::kTypeId)
+      if(path.node().hasFn(MFn::kTransform))
       {
-        return (nodes::ProxyShape*)fn.userNode();
+        path.extendToShape();
+      }
+
+      if(path.node().hasFn(MFn::kPluginShape))
+      {
+        MFnDagNode fn(path);
+        if(fn.typeId() == nodes::ProxyShape::kTypeId)
+        {
+          return (nodes::ProxyShape*)fn.userNode();
+        }
       }
     }
   }
@@ -146,18 +148,20 @@ nodes::ProxyShape* ProxyShapeCommandBase::getShapeNode(const MArgDatabase& args)
         if(sl.length())
         {
           MStatus status = sl.getDagPath(0, path);
-
-          if(path.node().hasFn(MFn::kTransform))
+          if(status)
           {
-            path.extendToShape();
-          }
-
-          if(path.node().hasFn(MFn::kPluginShape))
-          {
-            MFnDagNode fn(path);
-            if(fn.typeId() == nodes::ProxyShape::kTypeId)
+            if(path.node().hasFn(MFn::kTransform))
             {
-              return (nodes::ProxyShape*)fn.userNode();
+              path.extendToShape();
+            }
+
+            if(path.node().hasFn(MFn::kPluginShape))
+            {
+              MFnDagNode fn(path);
+              if(fn.typeId() == nodes::ProxyShape::kTypeId)
+              {
+                return (nodes::ProxyShape*)fn.userNode();
+              }
             }
           }
         }
@@ -250,25 +254,28 @@ MStatus ProxyShapeImport::redoIt()
   // set the name of the node
   MFnDagNode fnShape(m_shape);
 
-  // if lots of TM's have been specified as parents, just name the shape explicitly
-  if(m_parentTransforms.length())
+  if(m_createdParent)
   {
-    if(m_proxy_name.length())
+    // if lots of TM's have been specified as parents, just name the shape explicitly
+    if(m_parentTransforms.length())
     {
-      fnShape.setName(m_proxy_name + "Shape");
-    }
-  }
-  else
-  {
-    MFnDependencyNode fnTransform(fnShape.parent(0));
-    fnShape.setName(fnTransform.name() + "Shape");
-    if(m_proxy_name.length())
-    {
-      fnTransform.setName(m_proxy_name);
+      if(m_proxy_name.length())
+      {
+        fnShape.setName(m_proxy_name + "Shape");
+      }
     }
     else
     {
-      fnTransform.setName("AL_usdmaya_Proxy");
+      MFnDependencyNode fnTransform(fnShape.parent(0));
+      fnShape.setName(fnTransform.name() + "Shape");
+      if(m_proxy_name.length())
+      {
+        fnTransform.setName(m_proxy_name);
+      }
+      else
+      {
+        fnTransform.setName("AL_usdmaya_Proxy");
+      }
     }
   }
 
@@ -296,6 +303,7 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
         items.getDependNode(i, node);
         if(node.hasFn(MFn::kTransform))
         {
+          m_createdParent = false;
           m_parentTransforms.append(node);
         }
       }
@@ -406,17 +414,13 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
 
   if(connectToTime)
   {
-    MSelectionList temp;
     MSelectionList sl;
-    MGlobal::getActiveSelectionList(temp, true);
-    MGlobal::selectByName("time1");
-    MGlobal::getActiveSelectionList(sl);
-    MGlobal::setActiveSelectionList(temp);
+    sl.add("time1");
     MObject time1;
     sl.getDependNode(0, time1);
     MFnDependencyNode fnTime(time1);
     MPlug outTime = fnTime.findPlug("outTime");
-    m_modifier.connect(outTime, MPlug(m_shape, nodes::ProxyShape::time()));
+    m_modifier2.connect(outTime, MPlug(m_shape, nodes::ProxyShape::time()));
   }
   status = redoIt();
   CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -710,7 +714,7 @@ MStatus ProxyShapeImportAllTransforms::doIt(const MArgList& args)
       }
     }
   }
-  catch(const MStatus& status)
+  catch(const MStatus&)
   {
     return MS::kFailure;
   }
@@ -807,7 +811,7 @@ MStatus ProxyShapeRemoveAllTransforms::doIt(const MArgList& args)
       }
     }
   }
-  catch(const MStatus& status)
+  catch(const MStatus&)
   {
     return MS::kFailure;
   }
@@ -1310,6 +1314,7 @@ MSyntax TranslatePrim::createSyntax()
   syntax.addFlag("-ip", "-importPaths", MSyntax::kString);
   syntax.addFlag("-tp", "-teardownPaths", MSyntax::kString);
   syntax.addFlag("-fi", "-forceImport", MSyntax::kNoArg);
+  syntax.addFlag("-fd", "-forceDefault", MSyntax::kNoArg);
   return syntax;
 }
 
@@ -1341,6 +1346,12 @@ MStatus TranslatePrim::doIt(const MArgList& args)
     if(db.isFlagSet("-fi"))
     {
       tp.setForcePrimImport(true);
+    }
+
+    // change the translator context to read default value
+    if(db.isFlagSet("-fd"))
+    {
+      m_proxy->context()->setForceDefaultRead(true);
     }
   }
   catch(const MStatus& status)

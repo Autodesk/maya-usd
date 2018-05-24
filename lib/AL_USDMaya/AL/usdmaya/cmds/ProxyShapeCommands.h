@@ -84,6 +84,7 @@ class ProxyShapeImport
   MObjectArray m_parentTransforms;
   MObject m_shape;
   MString m_proxy_name;
+  bool m_createdParent = true;
 public:
   AL_MAYA_DECLARE_COMMAND();
 private:

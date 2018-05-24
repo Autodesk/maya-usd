@@ -742,10 +742,6 @@ void MayaEventHandler::registerCommandMessages(AL::event::EventScheduler* schedu
 //----------------------------------------------------------------------------------------------------------------------
 void MayaEventHandler::initConditionMessage(MayaCallbackInfo& cbi)
 {
-  switch(cbi.mmessageEnum)
-  {
-  default: break;
-  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -846,10 +842,6 @@ void MayaEventHandler::registerDGMessages(AL::event::EventScheduler* scheduler, 
 //----------------------------------------------------------------------------------------------------------------------
 void MayaEventHandler::initEventMessage(MayaCallbackInfo& cbi)
 {
-  switch(cbi.mmessageEnum)
-  {
-  default: break;
-  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -861,10 +853,6 @@ void MayaEventHandler::registerEventMessages(AL::event::EventScheduler* schedule
 //----------------------------------------------------------------------------------------------------------------------
 void MayaEventHandler::initLockMessage(MayaCallbackInfo& cbi)
 {
-  switch(cbi.mmessageEnum)
-  {
-  default: break;
-  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -897,10 +885,6 @@ void MayaEventHandler::registerModelMessages(AL::event::EventScheduler* schedule
 //----------------------------------------------------------------------------------------------------------------------
 void MayaEventHandler::initNodeMessage(MayaCallbackInfo& cbi)
 {
-  switch(cbi.mmessageEnum)
-  {
-  default: break;
-  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -911,10 +895,6 @@ void MayaEventHandler::registerNodeMessages(AL::event::EventScheduler* scheduler
 //----------------------------------------------------------------------------------------------------------------------
 void MayaEventHandler::initObjectSetMessage(MayaCallbackInfo& cbi)
 {
-  switch(cbi.mmessageEnum)
-  {
-  default: break;
-  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -941,10 +921,6 @@ void MayaEventHandler::registerPaintMessages(AL::event::EventScheduler* schedule
 //----------------------------------------------------------------------------------------------------------------------
 void MayaEventHandler::initPolyMessage(MayaCallbackInfo& cbi)
 {
-  switch(cbi.mmessageEnum)
-  {
-  default: break;
-  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1074,10 +1050,6 @@ void MayaEventHandler::registerSceneMessages(AL::event::EventScheduler* schedule
 //----------------------------------------------------------------------------------------------------------------------
 void MayaEventHandler::initTimerMessage(MayaCallbackInfo& cbi)
 {
-  switch(cbi.mmessageEnum)
-  {
-  default: break;
-  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1088,10 +1060,6 @@ void MayaEventHandler::registerTimerMessages(AL::event::EventScheduler* schedule
 //----------------------------------------------------------------------------------------------------------------------
 void MayaEventHandler::initUiMessage(MayaCallbackInfo& cbi)
 {
-  switch(cbi.mmessageEnum)
-  {
-  default: break;
-  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------

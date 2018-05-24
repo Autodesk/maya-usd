@@ -33,11 +33,19 @@ include_directories(${PXR_INCLUDE_DIRS})
 # FindBoost is particularly buggy, and doesn't like custom boost locations.
 # Adding specific components forces calls to _Boost_find_library, which
 # is the rationale for listing them here.
+set(Boost_FIND_COMPONENTS
+     python
+     thread
+     filesystem
+)
+if(WIN32)
+    list(APPEND Boost_FIND_COMPONENTS
+        chrono
+    )
+endif()
+
 find_package(Boost COMPONENTS
-                python
-                thread
-                chrono
-                filesystem
+                ${Boost_FIND_COMPONENTS}
                 REQUIRED
 )
 
@@ -62,6 +70,11 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
 option(VALIDATE_GENERATED_SCHEMAS "Generate schemas code and compare." OFF)
+option(SKIP_USDMAYA_TESTS "Build tests" OFF)
+
+if(NOT SKIP_USDMAYA_TESTS)
+    enable_testing()
+endif()
 
 set(AL_USDMAYA_LOCATION_NAME
     "AL_USDMAYA_LOCATION"

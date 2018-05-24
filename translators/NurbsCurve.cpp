@@ -70,7 +70,7 @@ MStatus NurbsCurve::import(const UsdPrim& prim, MObject& parent)
     parentUnmerged = (mtVal == AL::usdmaya::Metadata::unmerged);
   }
 
-  if (!AL::usdmaya::utils::createMayaCurves(fnCurve, parent, usdCurves, true, parentUnmerged))
+  if (!AL::usdmaya::utils::createMayaCurves(fnCurve, parent, usdCurves, parentUnmerged))
   {
     return MStatus::kFailure;
   }

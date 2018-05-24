@@ -16,10 +16,8 @@
 #include "pxr/usdImaging/usdImaging/version.h"
 #if (USD_IMAGING_API_VERSION >= 7)
   #include "pxr/usdImaging/usdImagingGL/hdEngine.h"
-  #include "pxr/usdImaging/usdImagingGL/gl.h"
 #else
   #include "pxr/usdImaging/usdImaging/hdEngine.h"
-  #include "pxr/usdImaging/usdImaging/gl.h"
 #endif
 
 #if (__cplusplus >= 201703L)
@@ -229,13 +227,11 @@ MObject ProxyShape::m_transformTranslate = MObject::kNullObj;
 MObject ProxyShape::m_transformRotate = MObject::kNullObj;
 MObject ProxyShape::m_transformScale = MObject::kNullObj;
 MObject ProxyShape::m_stageDataDirty = MObject::kNullObj;
-MObject ProxyShape::m_rendererPlugin = MObject::kNullObj;
 MObject ProxyShape::m_stageCacheId = MObject::kNullObj;
 MObject ProxyShape::m_assetResolverConfig = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 std::vector<MObjectHandle> ProxyShape::m_unloadedProxyShapes;
-TfTokenVector ProxyShape::m_rendererPlugins;
 int m_stageCacheId;
 //----------------------------------------------------------------------------------------------------------------------
 UsdPrim ProxyShape::getUsdPrim(MDataBlock& dataBlock) const
@@ -289,7 +285,7 @@ void ProxyShape::translatePrimPathsIntoMaya(
     const SdfPathVector& teardownPaths,
     const fileio::translators::TranslatorParameters& param)
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimPathsIntoMaya ImportSize='%d' TearDownSize='%d' \n",
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimPathsIntoMaya ImportSize='%zd' TearDownSize='%zd' \n",
                                      importPaths.size(),
                                      teardownPaths.size());
 
@@ -316,7 +312,7 @@ void ProxyShape::translatePrimsIntoMaya(
     const SdfPathVector& teardownPrims,
     const fileio::translators::TranslatorParameters& param)
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimsIntoMaya ImportSize='%d' TearDownSize='%d' \n", importPrims.size(), teardownPrims.size());
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimsIntoMaya ImportSize='%zd' TearDownSize='%zd' \n", importPrims.size(), teardownPrims.size());
 
   proxy::PrimFilter filter(teardownPrims, importPrims, this);
   if(TfDebug::IsEnabled(ALUSDMAYA_TRANSLATORS))
@@ -437,6 +433,12 @@ void ProxyShape::constructGLImagingEngine()
                                    translatedGeo.end());
 
       m_engine = new UsdImagingGLHdEngine(m_path, excludedGeometryPaths);
+      // set renderer plugin based on layerManager setting
+      LayerManager* manager = LayerManager::findManager();
+      if(manager && m_engine)
+      {
+        manager->changeRendererPlugin(this, true);
+      }
 
       triggerEvent("ConstructGLEngine");
     }
@@ -759,20 +761,6 @@ MStatus ProxyShape::initialise()
 
     m_stageDataDirty = addBoolAttr("stageDataDirty", "sdd", false, kWritable | kAffectsAppearance | kInternal);
 
-    // Create dummy imaging engine to get renderer names
-    UsdImagingGL imagingEngine(SdfPath(), {});
-    m_rendererPlugins = imagingEngine.GetRendererPlugins();
-    std::vector<std::string> pluginDesc(m_rendererPlugins.size());
-    std::vector<const char*> pluginNames(m_rendererPlugins.size() + 1, nullptr);
-    std::vector<int16_t> pluginIds(m_rendererPlugins.size() + 1, -1);
-    for (size_t i = 0; i < m_rendererPlugins.size(); ++i)
-    {
-        pluginDesc[i] = imagingEngine.GetRendererPluginDesc(m_rendererPlugins[i]);
-        pluginNames[i] = pluginDesc[i].data();
-        pluginIds[i] = i;
-    }
-    m_rendererPlugin = addEnumAttr("rendererPlugin", "rp", kCached | kReadable | kWritable | kAffectsAppearance, pluginNames.data(), pluginIds.data());
-
     m_stageCacheId = addInt32Attr("stageCacheId", "stcid", -1, kCached | kConnectable | kReadable  );
 
     m_assetResolverConfig = addStringAttr("assetResolverConfig", "arc", kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance);
@@ -811,26 +799,20 @@ void ProxyShape::onEditTargetChanged(UsdNotice::StageEditTargetChanged const& no
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::trackEditTargetLayer(LayerManager* layerManager)
 {
-  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("ProxyShape::trackEditTargetLayer");
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("ProxyShape::trackEditTargetLayer\n");
   auto stage = getUsdStage();
+
   if(!stage)
   {
     TF_DEBUG(ALUSDMAYA_LAYERS).Msg(" - no stage\n");
     return;
   }
 
-  auto prevTargetLayer = m_prevTargetLayer;
-  m_prevTargetLayer = stage->GetEditTarget().GetLayer();
+  auto currTargetLayer = stage->GetEditTarget().GetLayer();
 
-  if(!prevTargetLayer)
-  {
-    TF_DEBUG(ALUSDMAYA_LAYERS).Msg(" - no prev target layer\n");
-    return;
-  }
+  TF_DEBUG(ALUSDMAYA_LAYERS).Msg(" - curr target layer: %s\n", currTargetLayer->GetIdentifier().c_str());
 
-  TF_DEBUG(ALUSDMAYA_LAYERS).Msg(" - prev target layer: %s\n",
-      prevTargetLayer->GetIdentifier().c_str());
-  if(prevTargetLayer->IsDirty())
+  if (m_prevEditTarget != currTargetLayer)
   {
     if(!layerManager)
     {
@@ -843,9 +825,19 @@ void ProxyShape::trackEditTargetLayer(LayerManager* layerManager)
         return;
       }
     }
-    layerManager->addLayer(prevTargetLayer);
+
+    if (m_prevEditTarget && !m_prevEditTarget->IsDirty())
+    {
+      // If the old edit target still isn't dirty, and we're switching to a new
+      // edit target, we can remove it from the layer manager
+      layerManager->removeLayer(m_prevEditTarget);
+    }
+
+    layerManager->addLayer(currTargetLayer);
+    m_prevEditTarget = currTargetLayer;
+
+    triggerEvent("EditTargetChanged");
   }
-  triggerEvent("EditTargetChanged");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1434,23 +1426,23 @@ bool ProxyShape::updateLockPrims(const SdfPathSet& lockTransformPrims, const Sdf
   for (auto lock : lockTransformPrims)
   {
     auto inserted = m_lockTransformPrims.insert(lock);
-    lockChanged |= inserted.second;
+    lockChanged = lockChanged || inserted.second;
     auto erased = m_lockInheritedPrims.erase(lock);
-    lockChanged |= erased;
+    lockChanged = lockChanged || erased;
   }
   for (auto inherited : lockInheritedPrims)
   {
     auto erased = m_lockTransformPrims.erase(inherited);
-    lockChanged |= erased;
+    lockChanged = lockChanged || erased;
     auto inserted = m_lockInheritedPrims.insert(inherited);
-    lockChanged |= inserted.second;
+    lockChanged = lockChanged || inserted.second;
   }
   for (auto unlocked : unlockedPrims)
   {
     auto erased = m_lockTransformPrims.erase(unlocked);
-    lockChanged |= erased;
+    lockChanged = lockChanged || erased;
     erased = m_lockInheritedPrims.erase(unlocked);
-    lockChanged |= erased;
+    lockChanged = lockChanged || erased;
   }
   return lockChanged;
 }
@@ -1615,36 +1607,6 @@ void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& p
         proxy->constructGLImagingEngine();
       }
     }
-    else
-    if(plug == m_excludePrimPaths)
-    {
-      if(proxy->m_stage)
-      {
-        proxy->constructExcludedPrims();
-      }
-    }
-    else
-    if(plug == m_rendererPlugin)
-    {
-      short rendererId = plug.asShort();
-      if (rendererId < m_rendererPlugins.size() && proxy->m_engine)
-      {
-        TfToken plugin = m_rendererPlugins[rendererId];
-        if (!proxy->m_engine->SetRendererPlugin(plugin))
-        {
-          MString message("failed to set renderer plugin: ");
-          MString data(plugin.data());
-          MGlobal::displayError(message + data);
-        }
-      }
-      else
-      {
-        MString message("failed to set renderer plugin: ");
-        MString data;
-        data.set(rendererId);
-        MGlobal::displayError(message + data);
-      }
-    }
   }
 }
 
@@ -1652,10 +1614,10 @@ void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& p
 void ProxyShape::removeAttributeChangedCallback()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::removeAttributeChangedCallback\n");
-  if(m_attributeChanged != -1)
+  if(m_attributeChanged != 0)
   {
     MMessage::removeCallback(m_attributeChanged);
-    m_attributeChanged = -1;
+    m_attributeChanged = 0;
   }
 }
 
@@ -1663,7 +1625,7 @@ void ProxyShape::removeAttributeChangedCallback()
 void ProxyShape::addAttributeChangedCallback()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::addAttributeChangedCallback\n");
-  if(m_attributeChanged == -1)
+  if(m_attributeChanged == 0)
   {
     MObject obj = thisMObject();
     m_attributeChanged = MNodeMessage::addAttributeChangedCallback(obj, onAttributeChanged, (void*)this);
@@ -1880,6 +1842,7 @@ MBoundingBox ProxyShape::boundingBox() const
 
   // This would seem to be superfluous? unless it is actually forcing a DG pull?
   MDataHandle outDataHandle = dataBlock.inputValue(m_outStageData, &status);
+  (void)outDataHandle;
   CHECK_MSTATUS_AND_RETURN(status, MBoundingBox() );
 
   // XXX:aluk
@@ -2104,7 +2067,7 @@ void ProxyShape::deserialiseTransformRefs()
 
 //----------------------------------------------------------------------------------------------------------------------
 ProxyShape::TransformReference::TransformReference(MObject mayaNode, Transform* node, uint32_t r, uint32_t s, uint32_t rc)
-  : m_node(mayaNode), m_transform(node)
+  : m_transform(node), m_node(mayaNode)
 {
   m_required = r;
   m_selected = s;

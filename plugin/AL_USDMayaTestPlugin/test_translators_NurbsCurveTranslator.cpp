@@ -65,7 +65,7 @@ MObject createNurbStage(bool useSingleWidth=false)
                             {-3.9173129f, 43.33975f, 6.475575f},
                             {-5.2281976f, 42.145287f, 6.6371536f} };
   VtVec3fArray points = VtVec3fArray(5);
-  for(int i = 0 ; i< pointsa.size(); ++i)
+  for(uint32_t i = 0 ; i< pointsa.size(); ++i)
   {
     memcpy(&points[i], &pointsa[i], 3*sizeof(float));
   }
@@ -73,7 +73,7 @@ MObject createNurbStage(bool useSingleWidth=false)
   std::vector<std::array<double,2> > rangesa = {{0.,2.}};
   VtVec2dArray ranges = VtVec2dArray(2);
 
-  for(int i = 0 ; i< rangesa.size(); ++i)
+  for(uint32_t i = 0 ; i< rangesa.size(); ++i)
   {
     memcpy(&ranges[i], &rangesa[i], 2*sizeof(double));
   }
@@ -127,13 +127,7 @@ TEST(translators_NurbsCurveTranslator, test_width)
   MFnNurbsCurve nurbs(nurbObj);
 
   ImporterParams ip;
-  const char* plugName = "widths";
-
-  if(ip.m_useAnimalSchema)
-  {
-    // if we are in AL, then test with width
-    plugName = "width";
-  }
+  const char* plugName = "width";
 
   MStatus s2;
   MPlug widthsPlug = nurbs.findPlug(plugName, &s2);
@@ -154,16 +148,8 @@ TEST(translators_NurbsCurveTranslator, test_widths)
   ASSERT_TRUE(!nurbObj.isNull());
   MFnNurbsCurve nurbs(nurbObj);
 
-
-  bool usedALSchema  = (USE_AL_DEFAULT) ? true : false;
-  const char* plugName = "widths";
-
-  if(usedALSchema)
-  {
-    // if we are in AL, then test with width
-    plugName = "width";
-  }
-
+  const char* plugName = "width";
+  
   MStatus s2;
   MPlug widthsPlug = nurbs.findPlug(plugName, &s2);
   ASSERT_EQ(s2, MS::kSuccess);

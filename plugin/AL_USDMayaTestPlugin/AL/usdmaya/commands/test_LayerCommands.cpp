@@ -76,10 +76,15 @@ TEST(LayerCommands, layerCreateLayerTests)
     SdfLayerHandle expectedLayer = SdfLayer::Find(testLayer);
     EXPECT_TRUE(expectedLayer);
 
-    // Check that we can refind the layer
+    // Check that since the layer hasn't been modified, it's not in the layerManager
     AL::usdmaya::nodes::LayerManager* layerManager = AL::usdmaya::nodes::LayerManager::findManager();
     EXPECT_TRUE(layerManager);
     SdfLayerHandle refoundExpectedLayer = layerManager->findLayer(expectedLayer->GetIdentifier());
+    EXPECT_FALSE(refoundExpectedLayer);
+
+    // Then dirty it, and check that we can find it in the layerManager
+    expectedLayer->SetComment("SetLayerAsDirty");
+    refoundExpectedLayer = layerManager->findLayer(expectedLayer->GetIdentifier());
     EXPECT_TRUE(refoundExpectedLayer);
     EXPECT_EQ(refoundExpectedLayer, expectedLayer);
   }

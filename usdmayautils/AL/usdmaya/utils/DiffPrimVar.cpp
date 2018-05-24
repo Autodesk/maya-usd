@@ -77,8 +77,8 @@ uint32_t diffFaceVertices(UsdGeomMesh& geom, MFnMesh& mesh, UsdTimeCode timeCode
 
   if(exportMask & (kFaceVertexCounts | kFaceVertexIndices))
   {
-    const int numPolygons = mesh.numPolygons();
-    const int numFaceVerts = mesh.numFaceVertices();
+    const uint32_t numPolygons = uint32_t(mesh.numPolygons());
+    const uint32_t numFaceVerts = uint32_t(mesh.numFaceVertices());
 
     VtArray<int> faceVertexCounts;
     VtArray<int> faceVertexIndices;
@@ -255,313 +255,1411 @@ uint32_t diffFaceVertices(UsdGeomMesh& geom, MFnMesh& mesh, UsdTimeCode timeCode
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStringArray hasNewColourSet(UsdGeomMesh& geom, MFnMesh& mesh, PrimVarDiffReport& report)
+///
+//----------------------------------------------------------------------------------------------------------------------
+struct UsdColourSetDefinition
 {
-  const std::vector<UsdGeomPrimvar> primvars = geom.GetPrimvars();
+  UsdColourSetDefinition(const UsdGeomPrimvar& primvar)
+    : m_primVar(primvar)
+  {
+    primvar.GetDeclarationInfo(&m_name, &m_typeName, &m_interpolation, &m_elementSize);
+    m_mayaInterpolation = m_interpolation;
+  }
 
-  MStringArray existingSetNames;
-  std::vector<UsdGeomPrimvar> existingPrimVars;
+  void extractColourDataFromMaya(const MFnMesh& mesh, MString* mayaSetNamePtr)
+  {
+    MFnMesh::MColorRepresentation representation = mesh.getColorRepresentation(*mayaSetNamePtr);
+    isRGB = MFnMesh::kRGB == representation;
+    MIntArray faceCounts, pointIndices;
+    mesh.getVertices(faceCounts, pointIndices);
+    mesh.getColors(m_colours, mayaSetNamePtr);
+    m_mayaInterpolation = guessColourSetInterpolationTypeExtensive(
+        &m_colours[0].r,
+        m_colours.length(),
+        mesh.numVertices(),
+        pointIndices,
+        faceCounts,
+        m_indicesToExtract);
 
-  MStringArray setNames;
-  mesh.getColorSetNames(setNames);
-  for(int i = 0; i < setNames.length(); )
+    // if we have an array of colours, modify them now
+    if(!m_indicesToExtract.empty())
+    {
+      MColorArray newColours;
+      newColours.setLength(m_indicesToExtract.size());
+      MColor* optr = &newColours[0];
+      MColor* iptr = &m_colours[0];
+      auto indices = m_indicesToExtract.data();
+      for(size_t i = 0, n = m_indicesToExtract.size(); i < n; ++i)
+      {
+        optr[i] = iptr[indices[i]];
+      }
+    }
+    if(m_mayaInterpolation == UsdGeomTokens->constant)
+    {
+      m_colours.setLength(1);
+    }
+  }
+
+  UsdGeomPrimvar m_primVar;
+  TfToken m_name;
+  TfToken m_interpolation;
+  TfToken m_mayaInterpolation;
+  SdfValueTypeName m_typeName;
+  MColorArray m_colours;
+  MIntArray m_mayaUvCounts;
+  MIntArray m_mayaUvIndices;
+  std::vector<uint32_t> m_indicesToExtract;
+  int m_elementSize;
+  bool isRGB;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  a utility to construct the diff reports on a UV set.
+//----------------------------------------------------------------------------------------------------------------------
+class ColourSetBuilder
+{
+public:
+
+  std::vector<UsdColourSetDefinition> m_existingSetDefinitions;
+  MStringArray m_existingSetNames;
+
+  std::vector<TfToken> m_interpolations;
+  std::vector<TfToken> m_mayaInterpolation;
+
+  /// \brief  search through the list of Maya UV sets, and determine if a matching set exists in the prim vars
+  /// \param  setNames the list of Maya UV sets
+  /// \param  primvars the list of prim vars to search.
+  void constructNewlyAddedSets(MStringArray& setNames, const std::vector<UsdGeomPrimvar>& primvars);
+
+  /// \brief  reads the UV set data from the specified mesh
+  /// \param  mesh the mesh to extract the data from
+  void extractMayaData(const MFnMesh& mesh);
+
+  /// \brief  performs the diff between
+  void performDiffTest(PrimVarDiffReport& report);
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+void ColourSetBuilder::constructNewlyAddedSets(MStringArray& setNames, const std::vector<UsdGeomPrimvar>& primvars)
+{
+  for(int i = 0, n = setNames.length(); i < n; )
   {
     for(auto it = primvars.begin(), end = primvars.end(); it != end; ++it)
     {
-      const UsdGeomPrimvar& primvar = *it;
-      TfToken name, interpolation;
-      SdfValueTypeName typeName;
-      int elementSize;
-      primvar.GetDeclarationInfo(&name, &typeName, &interpolation, &elementSize);
-      if(name.GetString() == setNames[i].asChar())
+      UsdColourSetDefinition definition(*it);
+
+      if(definition.m_name.GetString() == setNames[i].asChar())
       {
-        existingSetNames.append(setNames[i]);
-        existingPrimVars.push_back(primvar);
+        m_existingSetNames.append(setNames[i]);
+        m_existingSetDefinitions.push_back(definition);
         setNames.remove(i);
         continue;
       }
     }
     ++i;
   }
+}
 
-  for(uint32_t i = 0; i < existingSetNames.length(); ++i)
+//----------------------------------------------------------------------------------------------------------------------
+void ColourSetBuilder::extractMayaData(const MFnMesh& mesh)
+{
+  for(uint32_t i = 0, n = m_existingSetDefinitions.size(); i < n; ++i)
   {
-    MColorArray colours;
-    mesh.getColors(colours, &existingSetNames[i]);
+    m_existingSetDefinitions[i].extractColourDataFromMaya(mesh, &m_existingSetNames[i]);
+  }
+}
 
-    const UsdGeomPrimvar& primvar = existingPrimVars[i];
-    TfToken name, interpolation;
-    SdfValueTypeName typeName;
-    int elementSize;
-    primvar.GetDeclarationInfo(&name, &typeName, &interpolation, &elementSize);
-
-    VtValue vtValue;
-    if (primvar.Get(&vtValue, UsdTimeCode::Default()))
+//----------------------------------------------------------------------------------------------------------------------
+void ColourSetBuilder::performDiffTest(PrimVarDiffReport& report)
+{
+  for(uint32_t i = 0, n = m_existingSetDefinitions.size(); i < n; ++i)
+  {
+    auto& definition = m_existingSetDefinitions[i];
+    if(definition.m_interpolation != definition.m_mayaInterpolation)
     {
-      if(interpolation == UsdGeomTokens->constant)
+      // if the interpolation value has changed from the original data, the entire set will need to be exported.
+      if(definition.m_indicesToExtract.empty())
       {
-        MGlobal::displayError("\"constant\" colour set data currently unsupported");
+        report.emplace_back(definition.m_primVar, m_existingSetNames[i], true, false, true, definition.m_mayaInterpolation);
       }
       else
-      if(interpolation == UsdGeomTokens->uniform)
       {
-        MGlobal::displayError("\"uniform\" colour set data currently unsupported");
+        report.emplace_back(definition.m_primVar, m_existingSetNames[i], true, false, true, definition.m_mayaInterpolation, std::move(definition.m_indicesToExtract));
       }
-      else
-      if(interpolation == UsdGeomTokens->varying)
+    }
+    else
+    {
+      VtValue vtValue;
+      if (definition.m_primVar.Get(&vtValue, UsdTimeCode::Default()))
       {
-        MGlobal::displayError("\"varying\" colour set data currently unsupported");
-      }
-      else
-      if(interpolation == UsdGeomTokens->vertex)
-      {
-        MGlobal::displayError("\"vertex\" colour set data currently unsupported");
-      }
-      else
-      if(interpolation == UsdGeomTokens->faceVarying)
-      {
-        bool col_indices_have_changed = false;
-        if(primvar.IsIndexed())
-        {
-          VtIntArray usdindices;
-          primvar.GetIndices(&usdindices);
-
-          const uint32_t numColourIndices = usdindices.size();
-          const uint32_t numMayaColourIndices = mesh.numFaceVertices();
-
-          // resize to the correct size
-          std::vector<int32_t> colourIndices(mesh.numFaceVertices());
-
-          MItMeshFaceVertex iter(mesh.object());
-          for(size_t j = 0; !iter.isDone(); iter.next(), ++j)
-          {
-            mesh.getColorIndex(iter.faceId(), iter.vertId(), colourIndices[j], &existingSetNames[i]);
-          }
-
-          if(!usd::utils::compareArray(colourIndices.data(), usdindices.cdata(), numMayaColourIndices, numColourIndices))
-          {
-            col_indices_have_changed = true;
-          }
-        }
-
-        if (vtValue.IsHolding<VtArray<GfVec4f> >())
-        {
-          const VtArray<GfVec4f> rawVal = vtValue.Get<VtArray<GfVec4f> >();
-          const uint32_t numColours = rawVal.size() * 4;
-          const uint32_t numMayaColours = colours.length() * 4;
-          if(numMayaColours != numColours)
-          {
-            report.emplace_back(primvar, existingSetNames[i], true, col_indices_have_changed, true);
-          }
-          else
-          if(numMayaColours && !usd::utils::compareArray((const float*)rawVal.cdata(), (const float*)&colours[0], numColours, numMayaColours))
-          {
-            report.emplace_back(primvar, existingSetNames[i], true, col_indices_have_changed, true);
-          }
-        }
-        else
         if (vtValue.IsHolding<VtArray<GfVec3f> >())
         {
           const VtArray<GfVec3f> rawVal = vtValue.Get<VtArray<GfVec3f> >();
-          const uint32_t numColours = rawVal.size();
-          const uint32_t numMayaColours = colours.length();
-          if(numMayaColours != numColours)
+          if(!usd::utils::compareArray(
+              (const double*)rawVal.cdata(),
+              &definition.m_colours[0].r,
+              rawVal.size(),
+              definition.m_colours.length()))
           {
-            report.emplace_back(primvar, existingSetNames[i], true, col_indices_have_changed, true);
+            report.emplace_back(definition.m_primVar, m_existingSetNames[i], false, false, true, definition.m_mayaInterpolation, std::move(definition.m_indicesToExtract));
           }
-          else
-          if(numMayaColours && !usd::utils::compareArray3Dto4D((const float*)rawVal.cdata(), (const float*)&colours[0], numColours, numMayaColours))
+        }
+        else
+        if (vtValue.IsHolding<VtArray<GfVec4f> >())
+        {
+          const VtArray<GfVec4f> rawVal = vtValue.Get<VtArray<GfVec4f> >();
+          if(!usd::utils::compareArray(
+              &definition.m_colours[0].r,
+              (const float*)rawVal.cdata(),
+              definition.m_colours.length() * 4,
+              rawVal.size() * 4))
           {
-            report.emplace_back(primvar, existingSetNames[i], true, col_indices_have_changed, true);
+            report.emplace_back(definition.m_primVar, m_existingSetNames[i], false, false, true, definition.m_mayaInterpolation, std::move(definition.m_indicesToExtract));
+          }
+        }
+        else
+        if (vtValue.IsHolding<VtArray<GfVec3d> >())
+        {
+          const VtArray<GfVec3d> rawVal = vtValue.Get<VtArray<GfVec3d> >();
+          if(!usd::utils::compareArray(
+              (const double*)rawVal.cdata(),
+              &definition.m_colours[0].r,
+              rawVal.size(),
+              definition.m_colours.length()))
+          {
+            report.emplace_back(definition.m_primVar, m_existingSetNames[i], false, false, true, definition.m_mayaInterpolation, std::move(definition.m_indicesToExtract));
+          }
+        }
+        else
+        if (vtValue.IsHolding<VtArray<GfVec4d> >())
+        {
+          const VtArray<GfVec4d> rawVal = vtValue.Get<VtArray<GfVec4d> >();
+          if(!usd::utils::compareArray(
+              &definition.m_colours[0].r,
+              (const float*)rawVal.cdata(),
+              definition.m_colours.length() * 4,
+              rawVal.size() * 4))
+          {
+            report.emplace_back(definition.m_primVar, m_existingSetNames[i], false, false, true, definition.m_mayaInterpolation, std::move(definition.m_indicesToExtract));
           }
         }
       }
     }
   }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStringArray hasNewColourSet(UsdGeomMesh& geom, MFnMesh& mesh, PrimVarDiffReport& report)
+{
+  const std::vector<UsdGeomPrimvar> primvars = geom.GetPrimvars();
+  MStringArray setNames;
+  mesh.getColorSetNames(setNames);
+
+  ColourSetBuilder builder;
+  builder.constructNewlyAddedSets(setNames, primvars);
+  builder.extractMayaData(mesh);
+  builder.performDiffTest(report);
   return setNames;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStringArray hasNewUvSet(UsdGeomMesh& geom, const MFnMesh& mesh, PrimVarDiffReport& report)
+//----------------------------------------------------------------------------------------------------------------------
+struct UsdUvSetDefinition
 {
-  const std::vector<UsdGeomPrimvar> primvars = geom.GetPrimvars();
+  UsdUvSetDefinition(const UsdGeomPrimvar& primvar)
+    : m_primVar(primvar)
+  {
+    primvar.GetDeclarationInfo(&m_name, &m_typeName, &m_interpolation, &m_elementSize);
+    m_mayaInterpolation = m_interpolation;
+  }
 
-  MStringArray existingSetNames;
-  MStringArray setNames;
-  mesh.getUVSetNames(setNames);
-  std::vector<UsdGeomPrimvar> existingPrimVars;
+  void extractUvDataFromMaya(const MFnMesh& mesh, MString* mayaSetNamePtr)
+  {
+    MIntArray pointIndices, faceCounts;
+    mesh.getVertices(faceCounts, pointIndices);
+    mesh.getUVs(m_u, m_v, mayaSetNamePtr);
+    mesh.getAssignedUVs(m_mayaUvCounts, m_mayaUvIndices, mayaSetNamePtr);
+    m_mayaInterpolation = guessUVInterpolationTypeExtensive(m_u, m_v, m_mayaUvIndices, pointIndices, m_mayaUvCounts, m_indicesToExtract);
+  }
 
-  for(int i = 0; i < setNames.length(); )
+  UsdGeomPrimvar m_primVar;
+  TfToken m_name;
+  TfToken m_interpolation;
+  TfToken m_mayaInterpolation;
+  SdfValueTypeName m_typeName;
+  MFloatArray m_u;
+  MFloatArray m_v;
+  MIntArray m_mayaUvCounts;
+  MIntArray m_mayaUvIndices;
+  std::vector<uint32_t> m_indicesToExtract;
+  int m_elementSize;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  a utility to construct the diff reports on a UV set.
+//----------------------------------------------------------------------------------------------------------------------
+class UvSetBuilder
+{
+public:
+
+  std::vector<UsdUvSetDefinition> m_existingSetDefinitions;
+  MStringArray m_existingSetNames;
+
+  std::vector<TfToken> m_interpolations;
+  std::vector<TfToken> m_mayaInterpolation;
+
+  /// \brief  search through the list of Maya UV sets, and determine if a matching set exists in the prim vars
+  /// \param  setNames the list of Maya UV sets
+  /// \param  primvars the list of prim vars to search.
+  void constructNewlyAddedSets(MStringArray& setNames, const std::vector<UsdGeomPrimvar>& primvars);
+
+  /// \brief  reads the UV set data from the specified mesh
+  /// \param  mesh the mesh to extract the data from
+  void extractMayaUvData(const MFnMesh& mesh);
+
+  /// \brief  performs the diff between
+  void performDiffTest(PrimVarDiffReport& report);
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+void UvSetBuilder::constructNewlyAddedSets(MStringArray& setNames, const std::vector<UsdGeomPrimvar>& primvars)
+{
+  for(uint32_t i = 0; i < setNames.length(); )
   {
     for(auto it = primvars.begin(), end = primvars.end(); it != end; ++it)
     {
-      const UsdGeomPrimvar& primvar = *it;
-      TfToken name, interpolation;
-      SdfValueTypeName typeName;
-      int elementSize;
-      primvar.GetDeclarationInfo(&name, &typeName, &interpolation, &elementSize);
+      UsdUvSetDefinition definition(*it);
+
       MString uvSetName = setNames[i];
       if (uvSetName == "map1")
       {
         uvSetName = "st";
       }
 
-      if(name.GetString() == uvSetName.asChar())
+      if(definition.m_name.GetString() == uvSetName.asChar())
       {
-        existingSetNames.append(setNames[i]);
-        existingPrimVars.push_back(primvar);
+        m_existingSetNames.append(setNames[i]);
+        m_existingSetDefinitions.push_back(definition);
         setNames.remove(i);
         continue;
       }
     }
     ++i;
   }
+}
 
-  for(uint32_t i = 0; i < existingSetNames.length(); ++i)
+//----------------------------------------------------------------------------------------------------------------------
+void UvSetBuilder::extractMayaUvData(const MFnMesh& mesh)
+{
+  for(uint32_t i = 0, n = m_existingSetDefinitions.size(); i < n; ++i)
   {
-    MFloatArray u;
-    MFloatArray v;
-    mesh.getUVs(u, v, &existingSetNames[i]);
+    m_existingSetDefinitions[i].extractUvDataFromMaya(mesh, &m_existingSetNames[i]);
+  }
+}
 
-    const UsdGeomPrimvar& primvar = existingPrimVars[i];
-    TfToken name, interpolation;
-    SdfValueTypeName typeName;
-    int elementSize;
-    primvar.GetDeclarationInfo(&name, &typeName, &interpolation, &elementSize);
-
-    if(interpolation == UsdGeomTokens->constant)
+//----------------------------------------------------------------------------------------------------------------------
+void UvSetBuilder::performDiffTest(PrimVarDiffReport& report)
+{
+  for(uint32_t i = 0, n = m_existingSetDefinitions.size(); i < n; ++i)
+  {
+    auto& definition = m_existingSetDefinitions[i];
+    if(definition.m_interpolation != definition.m_mayaInterpolation)
     {
-      VtValue vtValue;
-      if (primvar.Get(&vtValue, UsdTimeCode::Default()))
+      // if the interpolation value has changed from the original data, the entire set will need to be exported.
+      if(definition.m_indicesToExtract.empty())
       {
-        if (vtValue.IsHolding<VtArray<GfVec2f> >())
-        {
-          bool uvs_have_changed = false;
-          const VtArray<GfVec2f> rawVal = vtValue.Get<VtArray<GfVec2f> >();
-          if(rawVal.size() != 1)
-          {
-            uvs_have_changed = true;
-          }
-          else
-          if(!usd::utils::compareUvArray(rawVal[0][0], rawVal[0][1], (const float*)&u[0], (const float*)&v[0], u.length()))
-          {
-            uvs_have_changed = true;
-          }
-          if(uvs_have_changed)
-          {
-            report.emplace_back(primvar, existingSetNames[i], false, true, uvs_have_changed);
-          }
-        }
+        report.emplace_back(definition.m_primVar, m_existingSetNames[i], false, true, true, definition.m_mayaInterpolation);
+      }
+      else
+      {
+        report.emplace_back(definition.m_primVar, m_existingSetNames[i], false, true, true, definition.m_mayaInterpolation, std::move(definition.m_indicesToExtract));
       }
     }
     else
-    if(interpolation == UsdGeomTokens->uniform)
-    {
-      MIntArray uvCounts, mayaUvIndices;
-      if(mesh.getAssignedUVs(uvCounts, mayaUvIndices, &existingSetNames[i]))
-      {
-        bool indices_modified = false;
-        for(uint32_t i = 0, j = 0, npolys = uvCounts.length(); !indices_modified && i < npolys; ++i)
-        {
-          int index = mayaUvIndices[j];
-          int nverts = uvCounts[i];
-          for(uint32_t k = 1; k < nverts; ++k)
-          {
-            if(index != mayaUvIndices[j + k])
-            {
-              indices_modified = true;
-              break;
-            }
-          }
-          j += nverts;
-        }
-
-        if(indices_modified)
-        {
-          report.emplace_back(primvar, existingSetNames[i], false, true, true);
-        }
-        else
-        {
-          VtValue vtValue;
-          if (primvar.Get(&vtValue, UsdTimeCode::Default()))
-          {
-            const VtArray<GfVec2f> rawVal = vtValue.Get<VtArray<GfVec2f> >();
-            const uint32_t numUVs = rawVal.size();
-            const uint32_t numMayaUVs = u.length();
-            if(numMayaUVs != numUVs)
-            {
-              report.emplace_back(primvar, existingSetNames[i], false, false, true);
-            }
-            else
-            if(numMayaUVs && !usd::utils::compareUvArray((const float*)&u[0], (const float*)&v[0], (const float*)rawVal.cdata(), numUVs, numMayaUVs))
-            {
-              report.emplace_back(primvar, existingSetNames[i], false, false, true);
-            }
-          }
-        }
-      }
-    }
-    else
-    if(interpolation == UsdGeomTokens->varying)
-    {
-    }
-    else
-    if(interpolation == UsdGeomTokens->vertex)
-    {
-    }
-    else
-    if(interpolation == UsdGeomTokens->faceVarying)
     {
       VtValue vtValue;
-      if (primvar.Get(&vtValue, UsdTimeCode::Default()))
+      if (definition.m_primVar.Get(&vtValue, UsdTimeCode::Default()))
       {
         if (vtValue.IsHolding<VtArray<GfVec2f> >())
         {
-          bool uvs_have_changed = false;
-          bool uv_indices_have_changed = false;
-
           const VtArray<GfVec2f> rawVal = vtValue.Get<VtArray<GfVec2f> >();
-          const uint32_t numUVs = rawVal.size();
-          const uint32_t numMayaUVs = u.length();
-          if(numMayaUVs != numUVs)
+          if(definition.m_interpolation == UsdGeomTokens->constant)
           {
-            uvs_have_changed = true;
+            if(rawVal[0][0] != definition.m_u[0] || rawVal[0][1] != definition.m_v[0])
+            {
+              report.emplace_back(definition.m_primVar, m_existingSetNames[i], false, false, true, definition.m_mayaInterpolation);
+            }
           }
           else
-          if(numMayaUVs && !usd::utils::compareUvArray((const float*)&u[0], (const float*)&v[0], (const float*)rawVal.cdata(), numUVs, numMayaUVs))
-          {
-            uvs_have_changed = true;
-          }
-
-          MIntArray uvCounts, mayaUvIndices;
-          if(mesh.getAssignedUVs(uvCounts, mayaUvIndices, &existingSetNames[i]))
+          if(definition.m_interpolation == UsdGeomTokens->faceVarying)
           {
             VtIntArray usdindices;
-            primvar.GetIndices(&usdindices);
-
-            const uint32_t numUvIndices = usdindices.size();
-            const uint32_t numMayaUvIndices = mayaUvIndices.length();
-            if(numMayaUvIndices != numUvIndices)
+            definition.m_primVar.GetIndices(&usdindices);
+            bool uv_indices_have_changed = false;
+            bool data_has_changed = false;
+            if(!usd::utils::compareArray(
+                (const int32_t*)&definition.m_mayaUvIndices[0],
+                usdindices.cdata(),
+                definition.m_mayaUvIndices.length(),
+                usdindices.size()))
             {
               uv_indices_have_changed = true;
             }
-            else
-            if(numMayaUvIndices && !usd::utils::compareArray((const int32_t*)&mayaUvIndices[0], usdindices.cdata(), numMayaUvIndices, numUvIndices))
+
+            if(!usd::utils::compareUvArray(
+                (const float*)&definition.m_u[0],
+                (const float*)&definition.m_v[0],
+                (const float*)rawVal.cdata(),
+                rawVal.size(),
+                definition.m_u.length()))
             {
-              uv_indices_have_changed = true;
+              data_has_changed = true;
+            }
+            if(data_has_changed || uv_indices_have_changed)
+            {
+              report.emplace_back(definition.m_primVar, m_existingSetNames[i], false, uv_indices_have_changed, data_has_changed, definition.m_mayaInterpolation);
             }
           }
-
-          if(uvs_have_changed || uv_indices_have_changed)
+          else
           {
-            report.emplace_back(primvar, existingSetNames[i], false, uv_indices_have_changed, uvs_have_changed);
+            if(!usd::utils::compareUvArray(
+                (const float*)&definition.m_u[0],
+                (const float*)&definition.m_v[0],
+                (const float*)rawVal.cdata(),
+                rawVal.size(),
+                definition.m_u.length()))
+            {
+              if(definition.m_indicesToExtract.empty())
+              {
+                report.emplace_back(definition.m_primVar, m_existingSetNames[i], false, false, true, definition.m_mayaInterpolation);
+              }
+              else
+              {
+                report.emplace_back(definition.m_primVar, m_existingSetNames[i], false, false, true, definition.m_mayaInterpolation, std::move(definition.m_indicesToExtract));
+              }
+            }
           }
         }
       }
     }
   }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStringArray hasNewUvSet(UsdGeomMesh& geom, const MFnMesh& mesh, PrimVarDiffReport& report)
+{
+  const std::vector<UsdGeomPrimvar> primvars = geom.GetPrimvars();
+  MStringArray setNames;
+  mesh.getUVSetNames(setNames);
+
+  UvSetBuilder builder;
+  builder.constructNewlyAddedSets(setNames, primvars);
+  builder.extractMayaUvData(mesh);
+  builder.performDiffTest(report);
   return setNames;
 }
+
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessUVInterpolationType(
+    MFloatArray& u,
+    MFloatArray& v,
+    MIntArray& indices,
+    MIntArray& pointIndices)
+{
+  // if UV coords are all identical, we have a constant value
+  if(usd::utils::vec2AreAllTheSame(&u[0], &v[0], u.length()))
+  {
+    return UsdGeomTokens->constant;
+  }
+
+  // if the UV indices match the vertex indices, we have per-vertex assignment
+  if(usd::utils::compareArray(&indices[0], &pointIndices[0], indices.length(), pointIndices.length()))
+  {
+    return UsdGeomTokens->vertex;
+  }
+
+  return UsdGeomTokens->faceVarying;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessUVInterpolationTypeExtended(
+    MFloatArray& u,
+    MFloatArray& v,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts)
+{
+  TfToken type = guessUVInterpolationType(u, v, indices, pointIndices);
+  if(type != UsdGeomTokens->faceVarying)
+  {
+    return type;
+  }
+
+  // let's see whether we have a uniform UV set (based on the assumption that each face will have unique UV indices)
+  {
+    uint32_t offset = 0;
+    for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
+    {
+      const uint32_t numVerts = faceCounts[i];
+      int32_t index = indices[offset];
+      for(uint32_t j = 1; j < numVerts; ++j)
+      {
+        if(index != indices[offset + j])
+        {
+          goto face_varying;
+        }
+      }
+      offset += numVerts;
+    }
+    return UsdGeomTokens->uniform;
+  }
+
+face_varying:
+  return UsdGeomTokens->faceVarying;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessUVInterpolationTypeExtensive(
+    MFloatArray& u,
+    MFloatArray& v,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts,
+    std::vector<uint32_t>& indicesToExtract)
+{
+  // if UV coords are all identical, we have a constant value
+  if(usd::utils::vec2AreAllTheSame(&u[0], &v[0], u.length()))
+  {
+    return UsdGeomTokens->constant;
+  }
+
+  std::map<int32_t, int32_t> indicesMap;
+
+  // do an exhaustive test to see if the UV assignments are per-vertex
+  {
+    indicesMap.emplace(pointIndices[0], indices[0]);
+    for(uint32_t i = 1, n = pointIndices.length(); i < n; ++i)
+    {
+      auto index = pointIndices[i];
+      auto uvindex = indices[i];
+      auto it = indicesMap.find(index);
+
+      // if not found, insert new entry in map
+      if(it == indicesMap.end())
+      {
+        indicesMap.emplace(index, uvindex);
+      }
+      else
+      {
+        // if the UV index matches, we have the same assignment
+        if(uvindex != it->second)
+        {
+          // if not, check to see if the indices differ, but the values are the same
+          const float u0 = u[it->second];
+          const float v0 = v[it->second];
+          const float u1 = u[uvindex];
+          const float v1 = v[uvindex];
+          if(u0 != u1 || v0 != v1)
+          {
+            goto uniform_test;
+          }
+        }
+      }
+    }
+
+    std::vector<uint32_t> tempIndicesToExtract(indicesMap.size());
+    auto iter = indicesMap.begin();
+    for(size_t i = 0; i < tempIndicesToExtract.size(); ++i, ++iter)
+    {
+      tempIndicesToExtract[i] = iter->second;
+    }
+    std::swap(indicesToExtract, tempIndicesToExtract);
+
+    return UsdGeomTokens->vertex;
+  }
+
+uniform_test:
+
+  // An exhaustive test to see if we have per-face assignment of UVs
+  {
+    uint32_t offset = 0;
+    for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
+    {
+      const uint32_t numVerts = faceCounts[i];
+      const int32_t index = indices[offset];
+
+      // extract UV for first vertex in face
+      const float u0 = u[index];
+      const float v0 = v[index];
+
+      // process each face
+      for(uint32_t j = 1; j < numVerts; ++j)
+      {
+        const int32_t next_index = indices[offset + j];
+
+        // if the indices don't match
+        if(index != next_index)
+        {
+          // check the UV values directly
+          const float u1 = u[next_index];
+          const float v1 = v[next_index];
+          if(u0 != u1 || v0 != v1)
+          {
+            goto face_varying;
+          }
+        }
+      }
+      offset += numVerts;
+    }
+    return UsdGeomTokens->uniform;
+  }
+
+face_varying:
+  return UsdGeomTokens->faceVarying;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessVec3InterpolationType(
+    const float* xyz,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices)
+{
+  // if UV coords are all identical, we have a constant value
+  if(usd::utils::vec3AreAllTheSame(xyz, numElements))
+  {
+    return UsdGeomTokens->constant;
+  }
+
+  // if the UV indices match the vertex indices, we have per-vertex assignment
+  if(usd::utils::compareArray(&indices[0], &pointIndices[0], indices.length(), pointIndices.length()))
+  {
+    return UsdGeomTokens->vertex;
+  }
+  return UsdGeomTokens->faceVarying;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessVec3InterpolationTypeExtended(
+    const float* xyz,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts)
+{
+  TfToken type = guessVec3InterpolationType(xyz, numElements, indices, pointIndices);
+  if(type != UsdGeomTokens->faceVarying)
+  {
+    return type;
+  }
+
+  // let's see whether we have a uniform prim var set (based on the assumption that each face will have unique indices)
+  {
+    uint32_t offset = 0;
+    for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
+    {
+      const uint32_t numVerts = faceCounts[i];
+      int32_t index = indices[offset];
+      for(uint32_t j = 1; j < numVerts; ++j)
+      {
+        if(index != indices[offset + j])
+        {
+          goto face_varying;
+        }
+      }
+      offset += numVerts;
+    }
+    return UsdGeomTokens->uniform;
+  }
+
+face_varying:
+  return UsdGeomTokens->faceVarying;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessVec3InterpolationTypeExtensive(
+    const float* xyz,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts)
+{
+  // if prim vars are all identical, we have a constant value
+  if(usd::utils::vec3AreAllTheSame(xyz, numElements))
+  {
+    return UsdGeomTokens->constant;
+  }
+
+  // A little dirty. If running the tests via SSE, step back 1 element. We must not go beyond the end of a memory location
+  // in case we hit an non-mapped page (crash). On the assumption that all this data will come in a valid memory allocation,
+  // stepping back 4bytes will lead us into the allocation header (which we will ignore in our test)
+  #if defined(__SSE__)
+  --xyz;
+  #endif
+
+  std::unordered_map<int32_t, int32_t> indicesMap;
+
+  // do an exhaustive test to see if the prim var assignments are per-vertex
+  {
+    indicesMap.emplace(pointIndices[0], indices[0]);
+    for(uint32_t i = 1, n = pointIndices.length(); i < n; ++i)
+    {
+      auto index = pointIndices[i];
+      auto xyzindex = indices[i];
+      auto it = indicesMap.find(index);
+
+      // if not found, insert new entry in map
+      if(it == indicesMap.end())
+      {
+        indicesMap.emplace(index, xyzindex);
+      }
+      else
+      {
+        // if the index matches, we have the same assignment
+        if(xyzindex != it->second)
+        {
+          #if defined(__SSE__)
+
+          const f128 xyz0 = loadu4f(xyz + 3 * it->second);
+          const f128 xyz1 = loadu4f(xyz + 3 * xyzindex);
+          const f128 cmp = cmpne4f(xyz0, xyz1);
+          if(movemask4f(cmp) & 0xE)
+            goto uniform_test;
+
+          #else
+
+          // if not, check to see if the indices differ, but the values are the same
+          const float x0 = xyz[3 * it->second];
+          const float y0 = xyz[3 * it->second + 1];
+          const float z0 = xyz[3 * it->second + 2];
+          const float x1 = xyz[3 * xyzindex];
+          const float y1 = xyz[3 * xyzindex + 1];
+          const float z1 = xyz[3 * xyzindex + 2];
+          if(x0 != x1 || y0 != y1 || z0 != z1)
+            goto uniform_test;
+
+          #endif
+        }
+      }
+    }
+    return UsdGeomTokens->vertex;
+  }
+
+uniform_test:
+
+  // An exhaustive test to see if we have per-face assignment of prim vars
+  {
+    uint32_t offset = 0;
+    for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
+    {
+      const uint32_t numVerts = faceCounts[i];
+      const int32_t index = indices[offset];
+
+      #if defined(__SSE__)
+
+      const f128 xyz0 = loadu4f(xyz + 3 * index);
+
+      #else
+
+      // extract prim var for first vertex in face
+      const float x0 = xyz[3 * index];
+      const float y0 = xyz[3 * index + 1];
+      const float z0 = xyz[3 * index + 2];
+
+      #endif
+
+      // process each face
+      for(uint32_t j = 1; j < numVerts; ++j)
+      {
+        const int32_t next_index = indices[offset + j];
+
+        // if the indices don't match
+        if(index != next_index)
+        {
+          #if defined(__SSE__)
+
+          const f128 xyz1 = loadu4f(xyz + 3 * next_index);
+          const f128 cmp = cmpne4f(xyz0, xyz1);
+          if(movemask4f(cmp) & 0xE)
+            goto face_varying;
+
+          #else
+
+          // check the values directly
+          const float x1 = xyz[3 * next_index];
+          const float y1 = xyz[3 * next_index + 1];
+          const float z1 = xyz[3 * next_index + 2];
+          if(x0 != x1 || y0 != y1 || z0 != z1)
+            goto face_varying;
+
+          #endif
+        }
+      }
+      offset += numVerts;
+    }
+    return UsdGeomTokens->uniform;
+  }
+
+face_varying:
+  return UsdGeomTokens->faceVarying;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessVec3InterpolationType(
+    const double* xyz,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices)
+{
+  // if UV coords are all identical, we have a constant value
+  if(usd::utils::vec3AreAllTheSame(xyz, numElements))
+  {
+    return UsdGeomTokens->constant;
+  }
+
+  // if the UV indices match the vertex indices, we have per-vertex assignment
+  if(usd::utils::compareArray(&indices[0], &pointIndices[0], indices.length(), pointIndices.length()))
+  {
+    return UsdGeomTokens->vertex;
+  }
+  return UsdGeomTokens->faceVarying;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessVec3InterpolationTypeExtended(
+    const double* xyz,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts)
+{
+  TfToken type = guessVec3InterpolationType(xyz, numElements, indices, pointIndices);
+  if(type != UsdGeomTokens->faceVarying)
+  {
+    return type;
+  }
+
+  // let's see whether we have a uniform UV set (based on the assumption that each face will have unique UV indices)
+  {
+    uint32_t offset = 0;
+    for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
+    {
+      const uint32_t numVerts = faceCounts[i];
+      int32_t index = indices[offset];
+      for(uint32_t j = 1; j < numVerts; ++j)
+      {
+        if(index != indices[offset + j])
+        {
+          goto face_varying;
+        }
+      }
+      offset += numVerts;
+    }
+    return UsdGeomTokens->uniform;
+  }
+
+face_varying:
+  return UsdGeomTokens->faceVarying;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessVec3InterpolationTypeExtensive(
+    const double* xyz,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts)
+{
+  // if UV coords are all identical, we have a constant value
+  if(usd::utils::vec3AreAllTheSame(xyz, numElements))
+  {
+    return UsdGeomTokens->constant;
+  }
+
+  std::unordered_map<int32_t, int32_t> indicesMap;
+
+  // do an exhaustive test to see if the UV assignments are per-vertex
+  {
+    indicesMap.emplace(pointIndices[0], indices[0]);
+    for(uint32_t i = 1, n = pointIndices.length(); i < n; ++i)
+    {
+      auto index = pointIndices[i];
+      auto xyzindex = indices[i];
+      auto it = indicesMap.find(index);
+
+      // if not found, insert new entry in map
+      if(it == indicesMap.end())
+      {
+        indicesMap.emplace(index, xyzindex);
+      }
+      else
+      {
+        // if the UV index matches, we have the same assignment
+        if(xyzindex != it->second)
+        {
+          // if not, check to see if the indices differ, but the values are the same
+          const double x0 = xyz[3 * it->second];
+          const double y0 = xyz[3 * it->second + 1];
+          const double z0 = xyz[3 * it->second + 2];
+          const double x1 = xyz[3 * xyzindex];
+          const double y1 = xyz[3 * xyzindex + 1];
+          const double z1 = xyz[3 * xyzindex + 2];
+          if(x0 != x1 || y0 != y1 || z0 != z1)
+            goto uniform_test;
+        }
+      }
+    }
+    return UsdGeomTokens->vertex;
+  }
+
+uniform_test:
+
+  // An exhaustive test to see if we have per-face assignment of UVs
+  {
+    uint32_t offset = 0;
+    for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
+    {
+      const uint32_t numVerts = faceCounts[i];
+      const int32_t index = indices[offset];
+
+      // extract UV for first vertex in face
+      const double x0 = xyz[3 * index];
+      const double y0 = xyz[3 * index + 1];
+      const double z0 = xyz[3 * index + 2];
+
+      // process each face
+      for(uint32_t j = 1; j < numVerts; ++j)
+      {
+        const int32_t next_index = indices[offset + j];
+
+        // if the indices don't match
+        if(index != next_index)
+        {
+          // check the UV values directly
+          const double x1 = xyz[3 * next_index];
+          const double y1 = xyz[3 * next_index + 1];
+          const double z1 = xyz[3 * next_index + 2];
+          if(x0 != x1 || y0 != y1 || z0 != z1)
+            goto face_varying;
+        }
+      }
+      offset += numVerts;
+    }
+    return UsdGeomTokens->uniform;
+  }
+
+face_varying:
+  return UsdGeomTokens->faceVarying;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessVec4InterpolationType(
+    const float* xyzw,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices)
+{
+  // if UV coords are all identical, we have a constant value
+  if(usd::utils::vec4AreAllTheSame(xyzw, numElements))
+  {
+    return UsdGeomTokens->constant;
+  }
+
+  // if the UV indices match the vertex indices, we have per-vertex assignment
+  if(usd::utils::compareArray(&indices[0], &pointIndices[0], indices.length(), pointIndices.length()))
+  {
+    return UsdGeomTokens->vertex;
+  }
+  return UsdGeomTokens->faceVarying;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessVec4InterpolationTypeExtended(
+    const float* xyzw,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts)
+{
+  TfToken type = guessVec4InterpolationType(xyzw, numElements, indices, pointIndices);
+  if(type != UsdGeomTokens->faceVarying)
+  {
+    return type;
+  }
+
+  // let's see whether we have a uniform UV set (based on the assumption that each face will have unique indices)
+  {
+    uint32_t offset = 0;
+    for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
+    {
+      const uint32_t numVerts = faceCounts[i];
+      int32_t index = indices[offset];
+      for(uint32_t j = 1; j < numVerts; ++j)
+      {
+        if(index != indices[offset + j])
+        {
+          goto face_varying;
+        }
+      }
+      offset += numVerts;
+    }
+    return UsdGeomTokens->uniform;
+  }
+
+face_varying:
+  return UsdGeomTokens->faceVarying;
+}
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessVec4InterpolationTypeExtensive(
+    const float* xyzw,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts)
+{
+  // if prim vars are all identical, we have a constant value
+  if(usd::utils::vec4AreAllTheSame(xyzw, numElements))
+  {
+    return UsdGeomTokens->constant;
+  }
+
+  std::unordered_map<int32_t, int32_t> indicesMap;
+
+  // do an exhaustive test to see if the UV assignments are per-vertex
+  {
+    indicesMap.emplace(pointIndices[0], indices[0]);
+    for(uint32_t i = 1, n = pointIndices.length(); i < n; ++i)
+    {
+      auto index = pointIndices[i];
+      auto xyzwindex = indices[i];
+      auto it = indicesMap.find(index);
+
+      // if not found, insert new entry in map
+      if(it == indicesMap.end())
+      {
+        indicesMap.emplace(index, xyzwindex);
+      }
+      else
+      {
+        // if the index matches, we have the same assignment
+        if(xyzwindex != it->second)
+        {
+          #if defined(__SSE__)
+
+          const f128 xyzw0 = loadu4f(xyzw + 4 * it->second);
+          const f128 xyzw1 = loadu4f(xyzw + 4 * xyzwindex);
+          const f128 cmp = cmpne4f(xyzw0, xyzw1);
+          if(movemask4f(cmp))
+            goto uniform_test;
+
+          #else
+
+          // if not, check to see if the indices differ, but the values are the same
+          const float x0 = xyzw[4 * it->second];
+          const float y0 = xyzw[4 * it->second + 1];
+          const float z0 = xyzw[4 * it->second + 2];
+          const float w0 = xyzw[4 * it->second + 3];
+          const float x1 = xyzw[4 * xyzwindex];
+          const float y1 = xyzw[4 * xyzwindex + 1];
+          const float z1 = xyzw[4 * xyzwindex + 2];
+          const float w1 = xyzw[4 * xyzwindex + 3];
+          if(x0 != x1 || y0 != y1 || z0 != z1 || w0 != w1)
+            goto uniform_test;
+
+          #endif
+        }
+      }
+    }
+    return UsdGeomTokens->vertex;
+  }
+
+uniform_test:
+
+  // An exhaustive test to see if we have per-face assignment of UVs
+  {
+    uint32_t offset = 0;
+    for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
+    {
+      const uint32_t numVerts = faceCounts[i];
+      const int32_t index = indices[offset];
+
+      // extract UV for first vertex in face
+      #if defined(__SSE__)
+
+      const f128 xyzw0 = loadu4f(xyzw + 4 * index);
+
+      #else
+
+      const float x0 = xyzw[4 * index];
+      const float y0 = xyzw[4 * index + 1];
+      const float z0 = xyzw[4 * index + 2];
+      const float w0 = xyzw[4 * index + 3];
+
+      #endif
+
+      // process each face
+      for(uint32_t j = 1; j < numVerts; ++j)
+      {
+        const int32_t next_index = indices[offset + j];
+
+        // if the indices don't match
+        if(index != next_index)
+        {
+          #if defined(__SSE__)
+
+          const f128 xyzw1 = loadu4f(xyzw + 4 * next_index);
+          const f128 cmp = cmpne4f(xyzw0, xyzw1);
+          if(movemask4f(cmp))
+            goto face_varying;
+
+          #else
+          // check the UV values directly
+          const float x1 = xyzw[4 * next_index];
+          const float y1 = xyzw[4 * next_index + 1];
+          const float z1 = xyzw[4 * next_index + 2];
+          const float w1 = xyzw[4 * next_index + 3];
+          if(x0 != x1 || y0 != y1 || z0 != z1 || w0 != w1)
+            goto face_varying;
+
+          #endif
+        }
+      }
+      offset += numVerts;
+    }
+    return UsdGeomTokens->uniform;
+  }
+
+face_varying:
+  return UsdGeomTokens->faceVarying;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessVec4InterpolationType(
+    const double* xyzw,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices)
+{
+  // if UV coords are all identical, we have a constant value
+  if(usd::utils::vec4AreAllTheSame(xyzw, numElements))
+  {
+    return UsdGeomTokens->constant;
+  }
+
+  // if the UV indices match the vertex indices, we have per-vertex assignment
+  if(usd::utils::compareArray(&indices[0], &pointIndices[0], indices.length(), pointIndices.length()))
+  {
+    return UsdGeomTokens->vertex;
+  }
+  return UsdGeomTokens->faceVarying;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessVec4InterpolationTypeExtended(
+    const double* xyzw,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts)
+{
+  TfToken type = guessVec4InterpolationType(xyzw, numElements, indices, pointIndices);
+  if(type != UsdGeomTokens->faceVarying)
+  {
+    return type;
+  }
+
+  // let's see whether we have a uniform UV set (based on the assumption that each face will have unique UV indices)
+  {
+    uint32_t offset = 0;
+    for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
+    {
+      const uint32_t numVerts = faceCounts[i];
+      int32_t index = indices[offset];
+      for(uint32_t j = 1; j < numVerts; ++j)
+      {
+        if(index != indices[offset + j])
+        {
+          goto face_varying;
+        }
+      }
+      offset += numVerts;
+    }
+    return UsdGeomTokens->uniform;
+  }
+
+face_varying:
+  return UsdGeomTokens->faceVarying;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessVec4InterpolationTypeExtensive(
+    const double* xyzw,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts)
+{
+  // if prim vars are all identical, we have a constant value
+  if(usd::utils::vec4AreAllTheSame(xyzw, numElements))
+  {
+    return UsdGeomTokens->constant;
+  }
+
+  std::unordered_map<int32_t, int32_t> indicesMap;
+
+  // do an exhaustive test to see if the assignments are per-vertex
+  {
+    indicesMap.emplace(pointIndices[0], indices[0]);
+    for(uint32_t i = 1, n = pointIndices.length(); i < n; ++i)
+    {
+      auto index = pointIndices[i];
+      auto xyzindex = indices[i];
+      auto it = indicesMap.find(index);
+
+      // if not found, insert new entry in map
+      if(it == indicesMap.end())
+      {
+        indicesMap.emplace(index, xyzindex);
+      }
+      else
+      {
+        // if the index matches, we have the same assignment
+        if(xyzindex != it->second)
+        {
+          #if defined(__AVX__)
+
+          const d256 xyzw0 = loadu4d(xyzw + 4 * it->second);
+          const d256 xyzw1 = loadu4d(xyzw + 4 * xyzindex);
+          const d256 cmp = cmpne4d(xyzw0, xyzw1);
+          if(movemask4d(cmp))
+            goto uniform_test;
+
+          #elif defined(__SSE__)
+
+          const d128 xy0 = loadu2d(xyzw + 4 * it->second);
+          const d128 zw0 = loadu2d(xyzw + 4 * it->second + 2);
+          const d128 xy1 = loadu2d(xyzw + 4 * xyzindex);
+          const d128 zw1 = loadu2d(xyzw + 4 * xyzindex + 2);
+          const d128 cmp = or2d(cmpne2d(xy0, xy1), cmpne2d(zw0, zw1));
+          if(movemask2d(cmp))
+            goto uniform_test;
+
+          #else
+
+          // if not, check to see if the indices differ, but the values are the same
+          const double x0 = xyzw[4 * it->second];
+          const double y0 = xyzw[4 * it->second + 1];
+          const double z0 = xyzw[4 * it->second + 2];
+          const double w0 = xyzw[4 * it->second + 3];
+          const double x1 = xyzw[4 * xyzindex];
+          const double y1 = xyzw[4 * xyzindex + 1];
+          const double z1 = xyzw[4 * xyzindex + 2];
+          const double w1 = xyzw[4 * xyzindex + 3];
+          if(x0 != x1 || y0 != y1 || z0 != z1 || w0 != w1)
+            goto uniform_test;
+
+          #endif
+        }
+      }
+    }
+    return UsdGeomTokens->vertex;
+  }
+
+uniform_test:
+
+  // An exhaustive test to see if we have per-face assignment of UVs
+  {
+    uint32_t offset = 0;
+    for(uint32_t i = 0, n = faceCounts.length(); i < n; ++i)
+    {
+      const uint32_t numVerts = faceCounts[i];
+      const int32_t index = indices[offset];
+
+      // extract for first vertex in face
+      #if defined(__AVX__)
+
+      const d256 xyzw0 = loadu4d(xyzw + 4 * index);
+
+      #elif defined(__SSE__)
+
+      const d128 xy0 = loadu2d(xyzw + 4 * index);
+      const d128 zw0 = loadu2d(xyzw + 4 * index + 2);
+
+      #else
+
+      const double x0 = xyzw[4 * index];
+      const double y0 = xyzw[4 * index + 1];
+      const double z0 = xyzw[4 * index + 2];
+      const double w0 = xyzw[4 * index + 3];
+
+      #endif
+
+      // process each face
+      for(uint32_t j = 1; j < numVerts; ++j)
+      {
+        const int32_t next_index = indices[offset + j];
+
+        // if the indices don't match
+        if(index != next_index)
+        {
+          #if defined(__AVX__)
+
+          const d256 xyzw1 = loadu4d(xyzw + 4 * next_index);
+          const d256 cmp = cmpne4d(xyzw0, xyzw1);
+          if(movemask4d(cmp))
+            goto face_varying;
+
+          #elif defined(__SSE__)
+
+          const d128 xy1 = loadu2d(xyzw + 4 * next_index);
+          const d128 zw1 = loadu2d(xyzw + 4 * next_index + 2);
+          const d128 cmp = or2d(cmpne2d(xy0, xy1), cmpne2d(zw0, zw1));
+          if(movemask2d(cmp))
+            goto face_varying;
+
+          #else
+
+          // check the values directly
+          const double x1 = xyzw[4 * next_index];
+          const double y1 = xyzw[4 * next_index + 1];
+          const double z1 = xyzw[4 * next_index + 2];
+          const double w1 = xyzw[4 * next_index + 3];
+          if(x0 != x1 || y0 != y1 || z0 != z1 || w0 != w1)
+            goto face_varying;
+
+          #endif
+        }
+      }
+      offset += numVerts;
+    }
+    return UsdGeomTokens->uniform;
+  }
+
+face_varying:
+  return UsdGeomTokens->faceVarying;
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessColourSetInterpolationType(
+    const float* rgba,
+    const size_t numElements)
+{
+  // if prim vars are all identical, we have a constant value
+  if(usd::utils::vec4AreAllTheSame(rgba, numElements))
+  {
+    return UsdGeomTokens->constant;
+  }
+
+  return UsdGeomTokens->faceVarying;
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessColourSetInterpolationTypeExtensive(
+    const float* rgba,
+    const size_t numElements,
+    const size_t numPoints,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts,
+    std::vector<uint32_t>& indicesToExtract)
+{
+  // if prim vars are all identical, we have a constant value
+  if(usd::utils::vec4AreAllTheSame(rgba, numElements))
+  {
+    return UsdGeomTokens->constant;
+  }
+
+  // check for per-vertex assignment
+  std::vector<uint32_t> indicesMap;
+  indicesMap.resize(numPoints, -1);
+
+  {
+    for(uint32_t i = 0, n = pointIndices.length(); i < n; ++i)
+    {
+      auto index = pointIndices[i];
+      auto lastIndex = indicesMap[index];
+      if(lastIndex == -1)
+      {
+        indicesMap[index] = i;
+      }
+      else
+      {
+        #if defined(__SSE__)
+
+        const f128 rgba0 = loadu4f(rgba + 4 * lastIndex);
+        const f128 rgba1 = loadu4f(rgba + 4 * i);
+        const f128 cmp = cmpne4f(rgba0, rgba1);
+        if(movemask4f(cmp))
+          goto uniform_test;
+
+        #else
+
+        // if not, check to see if the indices differ, but the values are the same
+        const float x0 = rgba[4 * lastIndex + 0];
+        const float y0 = rgba[4 * lastIndex + 1];
+        const float z0 = rgba[4 * lastIndex + 2];
+        const float w0 = rgba[4 * lastIndex + 3];
+        const float x1 = rgba[4 * i + 0];
+        const float y1 = rgba[4 * i + 1];
+        const float z1 = rgba[4 * i + 2];
+        const float w1 = rgba[4 * i + 3];
+        if(x0 != x1 || y0 != y1 || z0 != z1 || w0 != w1)
+          goto uniform_test;
+
+        #endif
+      }
+    }
+    std::swap(indicesToExtract, indicesMap);
+    return UsdGeomTokens->vertex;
+  }
+
+uniform_test:
+
+  const uint32_t numFaces = faceCounts.length();
+  indicesMap.resize(numFaces);
+  uint32_t offset = 0;
+  for(uint32_t i = 0; i < numFaces; ++i)
+  {
+    indicesMap[i] = offset;
+
+    int numPointsInFace = faceCounts[i];
+    #if defined(__SSE__)
+
+    const f128 rgba0 = loadu4f(rgba + 4 * offset);
+    for(int32_t j = 1; j < numPointsInFace; ++j)
+    {
+      const f128 rgba1 = loadu4f(rgba + 4 * (offset + j));
+      const f128 cmp = cmpne4f(rgba0, rgba1);
+      if(movemask4f(cmp))
+        goto faceVarying;
+    }
+
+    #else
+
+    const float* rgba0 = rgba + 4 * offset;
+    for(int32_t j = 1; j < numPointsInFace; ++j)
+    {
+      const float* rgba1 = rgba + 4 * (offset + j);
+      if(rgba0[0] != rgba1[0] ||
+         rgba0[1] != rgba1[1] ||
+         rgba0[2] != rgba1[2] ||
+         rgba0[3] != rgba1[3])
+        goto faceVarying;
+    }
+
+    #endif
+
+    offset += numPointsInFace;
+  }
+  std::swap(indicesToExtract, indicesMap);
+  return UsdGeomTokens->uniform;
+
+faceVarying:
+  return UsdGeomTokens->faceVarying;
+}
+
 
 //----------------------------------------------------------------------------------------------------------------------
 } // utils

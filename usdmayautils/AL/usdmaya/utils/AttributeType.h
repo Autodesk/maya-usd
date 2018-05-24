@@ -24,6 +24,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
 namespace usdmaya {
+namespace utils {
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A generalized set of USD attribute types that enable switch statements (instead of the if/else approach
@@ -75,7 +76,7 @@ enum class UsdDataType : uint32_t
 /// \return the attribute type
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
-AL_USDMAYA_PUBLIC
+AL_USDMAYA_UTILS_PUBLIC
 UsdDataType getAttributeType(const UsdAttribute& usdAttr);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -84,10 +85,11 @@ UsdDataType getAttributeType(const UsdAttribute& usdAttr);
 /// \return the attribute type
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
-AL_USDMAYA_PUBLIC
+AL_USDMAYA_UTILS_PUBLIC
 UsdDataType getAttributeType(const SdfValueTypeName& typeName);
 
 //----------------------------------------------------------------------------------------------------------------------
+} // utils
 } // usdmaya
 } // AL
 //----------------------------------------------------------------------------------------------------------------------

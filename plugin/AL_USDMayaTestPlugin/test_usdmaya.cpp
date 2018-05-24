@@ -53,7 +53,7 @@ void comparePlugs(const MPlug& plugA, const MPlug& plugB, bool usdTesting)
       if(plugA.isArray())
       {
         EXPECT_EQ(plugA.numElements(), plugB.numElements());
-        for(int i = 0; i < plugA.numElements(); ++i)
+        for(uint32_t i = 0; i < plugA.numElements(); ++i)
         {
           EXPECT_NEAR(plugA.elementByLogicalIndex(i).asDouble(), plugB.elementByLogicalIndex(i).asDouble(), 1e-5f);
         }
@@ -683,7 +683,11 @@ void randomAnimatedNode(MObject node, const char* const attributeNames[], const 
   }
 }
 
-AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(std::function<UsdStageRefPtr()> buildUsdStage, const std::string& tempPath)
+AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(
+    std::function<UsdStageRefPtr()> buildUsdStage,
+    const std::string& tempPath,
+    MObject* shapeParent
+)
 {
   if(buildUsdStage != nullptr)
   {
@@ -694,6 +698,10 @@ AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(std::function<UsdStageRefPt
   MFnDagNode fn;
   MObject xform = fn.create("transform");
   MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+
+  if(shapeParent)
+    *shapeParent = shape;
+
   AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
   proxy->filePathPlug().setString(tempPath.c_str());
   return proxy;

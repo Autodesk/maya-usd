@@ -26,21 +26,129 @@ namespace usd {
 namespace utils {
 
 //----------------------------------------------------------------------------------------------------------------------
+bool vec2AreAllTheSame(const float* u, const float* v, size_t count)
+{
+  // if already at the end of the array, we're done
+  if(count <= 1)
+  {
+    return true;
+  }
+
+#ifdef __AVX2__
+
+  const f256 u8 = splat8f(u[0]);
+  const f256 v8 = splat8f(v[0]);
+
+  const size_t count8 = count & ~7ULL;
+  for(size_t i = 0; i < count8; i += 8)
+  {
+    const f256 uu = loadu8f(u + i);
+    const f256 vv = loadu8f(v + i);
+    const f256 cmpu = cmpne8f(uu, u8);
+    const f256 cmpv = cmpne8f(vv, v8);
+    if(movemask8f(or8f(cmpu, cmpv)))
+      return false;
+  }
+
+  for(size_t i = count8; i < count; ++i)
+  {
+    if(u[i] != u[0] || v[i] != v[0])
+      return false;
+  }
+  return true;
+
+#elif defined(__SSE__)
+
+  const f128 u4 = splat4f(u[0]);
+  const f128 v4 = splat4f(v[0]);
+
+  const size_t count4 = count & ~3ULL;
+  for(size_t i = 0; i < count4; i += 4)
+  {
+    const f128 uu = loadu4f(u + i);
+    const f128 vv = loadu4f(v + i);
+    const f128 cmpu = cmpne4f(uu, u4);
+    const f128 cmpv = cmpne4f(vv, v4);
+    if(movemask4f(or4f(cmpu, cmpv)))
+      return false;
+  }
+
+  for(size_t i = count4; i < count; ++i)
+  {
+    if(u[i] != u[0] || v[i] != v[0])
+      return false;
+  }
+  return true;
+#else
+  for(size_t i = 1; i < count; ++i)
+  {
+    if(u[0] != u[i] || v[0] != v[i])
+      return false;
+  }
+  return true;
+#endif
+
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 bool vec2AreAllTheSame(const float* array, size_t count)
 {
+  // if already at the end of the array, we're done
+  if(count <= 1)
+  {
+    return true;
+  }
 #ifdef __AVX2__
 
   const float x = array[0];
   const float y = array[1];
   const f256 xy = set8f(x, y, x, y, x, y, x, y);
-  const size_t count8 = count & ~3ULL;
-  for(size_t i = 0, n = count8 * 2; i < n; ++i)
+  size_t count4 = count & ~3ULL;
+  for(size_t i = 0, n = count4 * 2; i < n; i += 8)
   {
     const f256 temp = loadu8f(array + i);
     const f256 cmp = cmpne8f(temp, xy);
     if(movemask8f(cmp))
       return false;
   }
+  if(count & 2)
+  {
+    const f128 temp = loadu4f(array + count4 * 2);
+    const f128 cmp = cmpne4f(temp, cast4f(xy));
+    if(movemask4f(cmp))
+      return false;
+    count4 += 2;
+  }
+  if(count & 1)
+  {
+    const float nx = array[count4 * 2];
+    const float ny = array[count4 * 2 + 1];
+    if(nx != x || ny != y)
+      return false;
+  }
+  return true;
+
+#elif defined(__SSE__)
+
+  const float x = array[0];
+  const float y = array[1];
+  const f128 xy = set4f(x, y, x, y);
+  const size_t count2 = count & ~1ULL;
+  for(size_t i = 0, n = count2 * 2; i < n; i += 4)
+  {
+    const f128 temp = loadu4f(array + i);
+    const f128 cmp = cmpne4f(temp, xy);
+    if(movemask4f(cmp))
+      return false;
+  }
+  if(count & 1)
+  {
+    const float nx = array[count2 * 2];
+    const float ny = array[count2 * 2 + 1];
+    if(nx != x || ny != y)
+      return false;
+  }
+  return true;
 
 #else
   const float x = array[0];
@@ -59,7 +167,137 @@ bool vec2AreAllTheSame(const float* array, size_t count)
 //----------------------------------------------------------------------------------------------------------------------
 bool vec3AreAllTheSame(const float* array, size_t count)
 {
+  // if already at the end of the array, we're done
+  if(count <= 1)
+  {
+    return true;
+  }
 #ifdef __AVX2__
+
+  const float x = array[0];
+  const float y = array[1];
+  const float z = array[2];
+
+  // test the first 8 in the array
+  for(int32_t i = 3, n = 3 * std::min(size_t(8), count); i < n; i += 3)
+  {
+    if(x != array[i] ||
+       y != array[i + 1] ||
+       z != array[i + 2])
+      return false;
+  }
+  // if already at the end of the array, we're done
+  if(count <= 8)
+  {
+    return true;
+  }
+
+  // load 8 vec3s
+  const f256 first8[3] = {
+      loadu8f(array + 0),
+      loadu8f(array + 8),
+      loadu8f(array + 16)
+  };
+
+  // now test groups of 8 x 3D vectors
+  size_t count8 = count & ~7ULL;
+  for(int32_t i = 3 * 8, n = 3 * count8; i < n; i += 3 * 8)
+  {
+    const f256 a = loadu8f(array + i + 0);
+    const f256 b = loadu8f(array + i + 8);
+    const f256 c = loadu8f(array + i + 16);
+    const f256 cmpa = cmpne8f(first8[0], a);
+    const f256 cmpb = cmpne8f(first8[1], b);
+    const f256 cmpc = cmpne8f(first8[2], c);
+    const f256 cmp = or8f(or8f(cmpa, cmpb), cmpc);
+    if(movemask8f(cmp))
+      return false;
+  }
+
+  // now test a final group of 4 x 3D vectors
+  if(count & 4)
+  {
+    const f128 a = loadu4f(array + 3 * count8 + 0);
+    const f128 b = loadu4f(array + 3 * count8 + 4);
+    const f128 c = loadu4f(array + 3 * count8 + 8);
+    const f128 cmpa = cmpne4f(extract4f(first8[0], 0), a);
+    const f128 cmpb = cmpne4f(extract4f(first8[0], 1), b);
+    const f128 cmpc = cmpne4f(extract4f(first8[1], 0), c);
+    const f128 cmp = or4f(or4f(cmpa, cmpb), cmpc);
+    if(movemask4f(cmp))
+      return false;
+    count8 += 4;
+  }
+
+  // and now the remaining three
+  if(count & 3)
+  {
+    for(int i = 3 * count8, n = 3 * count; i < n; i += 3)
+    {
+      if(x != array[i] ||
+         y != array[i + 1] ||
+         z != array[i + 2])
+      {
+        return false;
+      }
+    }
+  }
+  return true;
+
+#elif defined(__SSE__)
+
+  const float x = array[0];
+  const float y = array[1];
+  const float z = array[2];
+
+  // test the first 8 in the array
+  for(int32_t i = 3, n = 3 * std::min(size_t(4), count); i < n; i += 3)
+  {
+    if(x != array[i] ||
+       y != array[i + 1] ||
+       z != array[i + 2])
+      return false;
+  }
+  // if already at the end of the array, we're done
+  if(count <= 4)
+  {
+    return true;
+  }
+
+  // load 8 vec3s
+  const f128 first4[3] = {
+      loadu4f(array + 0),
+      loadu4f(array + 4),
+      loadu4f(array + 8)
+  };
+
+  // now test groups of 8 x 3D vectors
+  const size_t count4 = count & ~3ULL;
+  for(int32_t i = 3 * 4, n = 3 * count4; i < n; i += 3 * 4)
+  {
+    const f128 a = loadu4f(array + i + 0);
+    const f128 b = loadu4f(array + i + 4);
+    const f128 c = loadu4f(array + i + 8);
+    const f128 cmpa = cmpne4f(first4[0], a);
+    const f128 cmpb = cmpne4f(first4[1], b);
+    const f128 cmpc = cmpne4f(first4[2], c);
+    const f128 cmp = or4f(or4f(cmpa, cmpb), cmpc);
+    if(movemask4f(cmp))
+      return false;
+  }
+
+  // and now the remaining three
+  if(count & 3)
+  {
+    for(int i = 3 * count4, n = 3 * count; i < n; i += 3)
+    {
+      if(x != array[i] || y != array[i + 1] || z != array[i + 2])
+      {
+        return false;
+      }
+    }
+  }
+  return true;
 #else
   const float x = array[0];
   const float y = array[1];
@@ -78,7 +316,45 @@ bool vec3AreAllTheSame(const float* array, size_t count)
 //----------------------------------------------------------------------------------------------------------------------
 bool vec4AreAllTheSame(const float* array, size_t count)
 {
+  // if already at the end of the array, we're done
+  if(count <= 1)
+  {
+    return true;
+  }
 #ifdef __AVX2__
+
+  const f128 first = load4f(array + 0);
+  const f256 pair = set8f(first, first);
+
+  const size_t count2 = count & ~1ULL;
+  for(size_t i = 0, n = count2 * 4; i < n; i += 8)
+  {
+    const f256 temp = loadu8f(array + i);
+    const f256 cmp = cmpne8f(temp, pair);
+    if(movemask8f(cmp))
+      return false;
+  }
+  if(count & 1)
+  {
+    const f128 temp = loadu4f(array + (count2 << 2));
+    const f128 cmp = cmpne4f(temp, cast4f(pair));
+    if(movemask4f(cmp))
+      return false;
+  }
+  return true;
+
+#elif defined(__SSE__)
+
+  const f128 first = load4f(array + 0);
+  for(size_t i = 4, n = count * 4; i < n; i += 4)
+  {
+    const f128 temp = loadu4f(array + i);
+    const f128 cmp = cmpne4f(temp, first);
+    if(movemask4f(cmp))
+      return false;
+  }
+  return true;
+
 #else
   const float x = array[0];
   const float y = array[1];
@@ -96,66 +372,47 @@ bool vec4AreAllTheSame(const float* array, size_t count)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool vec2AreAllTheSame(const GfHalf* array, size_t count)
-{
-#ifdef __AVX2__
-#else
-  const GfHalf x = array[0];
-  const GfHalf y = array[1];
-  for(size_t i = 2, n = count * 2; i < n; i += 2)
-  {
-    if(x != array[i] || y != array[i + 1])
-    {
-      return false;
-    }
-  }
-  return true;
-#endif
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-bool vec3AreAllTheSame(const GfHalf* array, size_t count)
-{
-#ifdef __AVX2__
-#else
-  const GfHalf x = array[0];
-  const GfHalf y = array[1];
-  const GfHalf z = array[2];
-  for(size_t i = 3, n = count * 3; i < n; i += 3)
-  {
-    if(x != array[i] || y != array[i + 1] || z != array[i + 2])
-    {
-      return false;
-    }
-  }
-  return true;
-#endif
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-bool vec4AreAllTheSame(const GfHalf* array, size_t count)
-{
-#ifdef __AVX2__
-#else
-  const GfHalf x = array[0];
-  const GfHalf y = array[1];
-  const GfHalf z = array[2];
-  const GfHalf w = array[3];
-  for(size_t i = 4, n = count * 4; i < n; i += 4)
-  {
-    if(x != array[i] || y != array[i + 1] || z != array[i + 2] || w != array[i + 3])
-    {
-      return false;
-    }
-  }
-  return true;
-#endif
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 bool vec2AreAllTheSame(const double* array, size_t count)
 {
+
+  // if already at the end of the array, we're done
+  if(count <= 1)
+  {
+    return true;
+  }
 #ifdef __AVX2__
+
+  const d128 xy = loadu2d(array);
+  const d256 xyxy = set4d(xy, xy);
+  const size_t count2 = count & ~1ULL;
+  for(size_t i = 0, n = count2 * 2; i < n; i += 4)
+  {
+    const d256 temp = loadu4d(array + i);
+    const d256 cmp = cmpne4d(temp, xyxy);
+    if(movemask4d(cmp))
+      return false;
+  }
+  if(count & 1)
+  {
+    const d128 temp = loadu2d(array + count2 * 2);
+    const d128 cmp = cmpne2d(temp, xy);
+    if(movemask2d(cmp))
+      return false;
+  }
+  return true;
+
+#elif defined(__SSE__)
+
+  const d128 xy = loadu2d(array);
+  for(size_t i = 2, n = count * 2; i < n; i += 2)
+  {
+    const d128 temp = loadu2d(array + i);
+    const d128 cmp = cmpne2d(temp, xy);
+    if(movemask2d(cmp))
+      return false;
+  }
+  return true;
+
 #else
   const double x = array[0];
   const double y = array[1];
@@ -173,7 +430,115 @@ bool vec2AreAllTheSame(const double* array, size_t count)
 //----------------------------------------------------------------------------------------------------------------------
 bool vec3AreAllTheSame(const double* array, size_t count)
 {
+
+  // if already at the end of the array, we're done
+  if(count <= 1)
+  {
+    return true;
+  }
 #ifdef __AVX2__
+
+  const double x = array[0];
+  const double y = array[1];
+  const double z = array[2];
+
+  // test the first 4 in the array
+  for(int32_t i = 3, n = 3 * std::min(size_t(4), count); i < n; i += 3)
+  {
+    if(x != array[i] ||
+       y != array[i + 1] ||
+       z != array[i + 2])
+      return false;
+  }
+  // if already at the end of the array, we're done
+  if(count <= 4)
+  {
+    return true;
+  }
+
+  // load 8 vec3s
+  const d256 first4[3] = {
+      loadu4d(array + 0),
+      loadu4d(array + 4),
+      loadu4d(array + 8)
+  };
+
+  // now test groups of 8 x 3D vectors
+  const size_t count4 = count & ~3ULL;
+  for(int32_t i = 3 * 4, n = 3 * count4; i < n; i += 3 * 4)
+  {
+    const d256 a = loadu4d(array + i + 0);
+    const d256 b = loadu4d(array + i + 4);
+    const d256 c = loadu4d(array + i + 8);
+    const d256 cmpa = cmpne4d(first4[0], a);
+    const d256 cmpb = cmpne4d(first4[1], b);
+    const d256 cmpc = cmpne4d(first4[2], c);
+    const d256 cmp = or4d(or4d(cmpa, cmpb), cmpc);
+    if(movemask4d(cmp))
+      return false;
+  }
+
+  // and now the remaining three
+  if(count & 3)
+  {
+    for(int i = 3 * count4, n = 3 * count; i < n; i += 3)
+    {
+      if(x != array[i] || y != array[i + 1] || z != array[i + 2])
+      {
+        return false;
+      }
+    }
+  }
+  return true;
+#elif defined(__SSE__)
+
+  const double x = array[0];
+  const double y = array[1];
+  const double z = array[2];
+
+  // test the first 2 in the array
+  if(x != array[3] ||
+     y != array[4] ||
+     z != array[5])
+    return false;
+
+  // if already at the end of the array, we're done
+  if(count <= 2)
+  {
+    return true;
+  }
+
+  // load 8 vec3s
+  const d128 first4[3] = {
+      loadu2d(array + 0),
+      loadu2d(array + 2),
+      loadu2d(array + 4)
+  };
+
+  // now test groups of 8 x 3D vectors
+  const size_t count2 = count & ~1ULL;
+  for(int32_t i = 3 * 2, n = 3 * count2; i < n; i += 3 * 2)
+  {
+    const d128 a = loadu2d(array + i + 0);
+    const d128 b = loadu2d(array + i + 2);
+    const d128 c = loadu2d(array + i + 4);
+    const d128 cmpa = cmpne2d(first4[0], a);
+    const d128 cmpb = cmpne2d(first4[1], b);
+    const d128 cmpc = cmpne2d(first4[2], c);
+    const d128 cmp = or2d(or2d(cmpa, cmpb), cmpc);
+    if(movemask2d(cmp))
+      return false;
+  }
+
+  // and now the remaining three
+  if(count & 1)
+  {
+    if(x != array[count2*3] || y != array[count2*3 + 1] || z != array[count2*3 + 2])
+    {
+      return false;
+    }
+  }
+  return true;
 #else
   const double x = array[0];
   const double y = array[1];
@@ -192,7 +557,35 @@ bool vec3AreAllTheSame(const double* array, size_t count)
 //----------------------------------------------------------------------------------------------------------------------
 bool vec4AreAllTheSame(const double* array, size_t count)
 {
+  // if already at the end of the array, we're done
+  if(count <= 1)
+  {
+    return true;
+  }
+
 #ifdef __AVX2__
+  const d256 first = loadu4d(array + 0);
+  for(size_t i = 4, n = count * 4; i < n; i += 4)
+  {
+    const d256 temp = loadu4d(array + i);
+    const d256 cmp = cmpne4d(temp, first);
+    if(movemask4d(cmp))
+      return false;
+  }
+  return true;
+#elif defined(__SSE__)
+  const d128 xy = loadu2d(array + 0);
+  const d128 zw = loadu2d(array + 2);
+  for(size_t i = 4, n = count * 4; i < n; i += 4)
+  {
+    const d128 tempxy = loadu2d(array + i);
+    const d128 tempzw = loadu2d(array + i + 2);
+    const d128 cmpxy = cmpne2d(tempxy, xy);
+    const d128 cmpzw = cmpne2d(tempzw, zw);
+    if(movemask2d(or2d(cmpxy, cmpzw)))
+      return false;
+  }
+  return true;
 #else
   const double x = array[0];
   const double y = array[1];

@@ -101,7 +101,7 @@ MStatus UsdDebugCommand::doIt(const MArgList& argList)
       setResult(state);
     }
   }
-  catch(const MStatus& s)
+  catch(const MStatus&)
   {
 
   }

@@ -75,3 +75,9 @@ Creating temporary layer, checking in etc .. how does it work?
 Working from an existing layer vs creating one from scratch
 
 We use this system to implement our Shotbased-Set Overrides workflow - we import a shot which contains a set (sublayer or reference?). We want to be able to override transforms and visibility in that set and save the changes as an override layer which is passed down our pipeline
+
+#### Hydra Renderer Plugin
+
+Layer manager defines Hydra renderer plugin that is used by all Proxy shapes for rendering. It can be set directly (`AL_usdmaya_LayerManger.rendererPluginName`) or with command (`AL_usdmaya_ManageRenderer -setPlugin "Glimpse"`).
+List of available renderers is based on plugins discovered by USD. If there is more than one renderer plugin available a new menu entry USD > Renderer is added.
+

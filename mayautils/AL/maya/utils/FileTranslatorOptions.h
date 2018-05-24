@@ -112,7 +112,8 @@ private:
     kBool,
     kInt,
     kFloat,
-    kString
+    kString,
+    kEnum
   };
 
   AL_MAYA_UTILS_PUBLIC
@@ -127,6 +128,7 @@ private:
       case kInt: m_int = m_defaultInt; break;
       case kFloat: m_float = m_defaultFloat; break;
       case kString: m_string = m_defaultString; break;
+      case kEnum: m_int = m_defaultInt; break;
       default: break;
       }
     }
@@ -138,7 +140,8 @@ private:
       case kBool: m_bool = str.asInt() ? true : false; break;
       case kInt: m_int = str.asInt(); break;
       case kFloat: m_float = str.asFloat(); break;
-      case kString: m_string = str.asChar(); break;  ///< More needed here!
+      case kString: m_string = str.asChar(); break;
+      case kEnum: m_int = str.asInt(); break;
       default: break;
       }
     }
@@ -219,6 +222,14 @@ public:
   AL_MAYA_UTILS_PUBLIC
   bool addString(const char* optionName, const char* const defaultValue = "");
 
+  /// \brief  Add an integer value to the translator options
+  /// \param  optionName the name of the option
+  /// \param  enumValues a null terminated list of strings for each enum entry
+  /// \param  defaultValue the default value for the option
+  /// \return true if the option was successfully added. False if the option is a duplicate
+  AL_MAYA_UTILS_PUBLIC
+  bool addEnum(const char* optionName, const char* const enumValues[], int defaultValue = 0);
+
   /// \brief  For a given boolean option (the controller), if enabled the 'controlled' option will be editable. If
   ///         the checkbox is uncecked, the controlled option will be disabled in the GUI. The invertBehaviour
   ///         param reverses this behaviour (i.e. if controller is true, controlled will be disabled).
@@ -253,6 +264,7 @@ protected:
   void generateIntGlobals(const MString& niceName, const MString& optionName, int defaultValue);
   void generateFloatGlobals(const MString& niceName, const MString& optionName, float defaultValue);
   void generateStringGlobals(const MString& niceName, const MString& optionName, MString defaultValue);
+  void generateEnumGlobals(const MString& niceName, const MString& optionName, const char* const enumVals[], int defaultValue);
 #endif
 private:
 #ifndef AL_GENERATING_DOCS
@@ -261,7 +273,8 @@ private:
     kBool,
     kInt,
     kFloat,
-    kString
+    kString,
+    kEnum
   };
   struct FrameLayout
   {
@@ -281,6 +294,21 @@ private:
         float defaultFloat;
         const char* defaultString;
       };
+      const char* const* enumValues;
+
+      Option() = default;
+      Option(const Option& opt)
+        : optionName(opt.optionName), niceName(opt.niceName), type(opt.type), enumValues(opt.enumValues)
+      {
+        switch(type)
+        {
+        case kBool: defaultBool = opt.defaultBool; break;
+        case kInt:
+        case kEnum: defaultInt = opt.defaultInt; break;
+        case kFloat: defaultFloat = opt.defaultFloat; break;
+        case kString: defaultString = opt.defaultString; break;
+        }
+      }
     };
     std::vector<Option> m_options;
   };

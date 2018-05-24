@@ -365,9 +365,6 @@ public:
   /// Excluded geometry that has been explicitly translated
   AL_DECL_ATTRIBUTE(excludedTranslatedGeometry);
 
-  /// Hydra renderer plugin used for rendering (not storable)
-  AL_DECL_ATTRIBUTE(rendererPlugin);
-
   /// Cache ID of the currently loaded stage)
   AL_DECL_ATTRIBUTE(stageCacheId);
 
@@ -1017,8 +1014,8 @@ private:
 
   mutable std::map<UsdTimeCode, MBoundingBox> m_boundingBoxCache;
   AL::event::CallbackId m_beforeSaveSceneId = -1;
-  MCallbackId m_attributeChanged = -1;
-  MCallbackId m_onSelectionChanged = -1;
+  MCallbackId m_attributeChanged = 0;
+  MCallbackId m_onSelectionChanged = 0;
   SdfPathVector m_excludedGeometry;
   SdfPathVector m_excludedTaggedGeometry;
   SdfPathSet m_lockTransformPrims;
@@ -1033,7 +1030,7 @@ private:
   fileio::translators::TranslatorManufacture m_translatorManufacture;
   SdfPath m_changedPath;
   SdfPathVector m_variantSwitchedPrims;
-  SdfLayerHandle m_prevTargetLayer;
+  SdfLayerHandle m_prevEditTarget;
   UsdImagingGLHdEngine* m_engine = 0;
 
   uint32_t m_engineRefCount = 0;
@@ -1041,7 +1038,6 @@ private:
   bool m_drivenTransformsDirty = false;
   bool m_pleaseIgnoreSelection = false;
   bool m_hasChangedSelection = false;
-  static TfTokenVector m_rendererPlugins;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -281,7 +281,6 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
   // If the time values are changed, store the new values, and then update the transform
   if (plug == m_time || plug == m_timeOffset || plug == m_timeScalar)
   {
-    MStatus status = MS::kSuccess;
     MDataBlock dataBlock = forceCache(*(MDGContext *)&context);
     if(plug == m_time)
     {

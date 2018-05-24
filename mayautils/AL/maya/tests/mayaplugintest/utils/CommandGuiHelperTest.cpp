@@ -397,7 +397,7 @@ bool test_CommandGuiHelper()
   result = MGlobal::executeCommand("init_polyCube_optionGUI;") && result;
   bool exists = false;
 
-  if(true == MGlobal::optionVarIntValue(polyCube_constructionHistory, &exists))
+  if(MGlobal::optionVarIntValue(polyCube_constructionHistory, &exists))
   {
     result = exists && result;
   }

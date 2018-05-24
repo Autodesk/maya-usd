@@ -32,7 +32,8 @@ see [code docs](https://animallogic.github.io/AL_USDMaya/classAL_1_1usdmaya_1_1n
 **Some additional facts:**
 + When additional things are imported, the proxyShape is the root node in maya under which other things will be parented.
 + You can create as many proxy shapes as you like in the maya scene.
-+ A proxyShape contains a handle to a live USD Stage. This stage, and the handle - are recreated on scene open/load 
++ A proxyShape contains a handle to a live USD Stage. This stage, and the handle - are recreated on scene open/load
++ You can define Hydra renderer plugin with AL_usdmaya_LayerManager.rendererPlugin. It affects rendering of all proxy shapes in the scene.
 
 **Prim Metadata**
 There is some metadata defined in (@todo add doxygen link)Metadata.h which if found on a prim, causes a specific behaviour for that prim:

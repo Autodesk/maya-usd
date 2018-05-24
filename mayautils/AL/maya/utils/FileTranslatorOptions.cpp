@@ -46,13 +46,14 @@ MStatus OptionsParser::parse(const MString& optionString)
 {
   MStatus status = MS::kSuccess;
   {
-    auto it = m_optionNameToValue.begin();
-    auto end = m_optionNameToValue.begin();
+    auto it = m_niceNameToValue.begin();
+    auto end = m_niceNameToValue.end();
     for(; it != end; ++it)
     {
       it->second->init();
     }
   }
+
   if (optionString.length() > 0)
   {
     int i, length;
@@ -140,6 +141,7 @@ bool FileTranslatorOptions::addBool(const char* niceName, bool defaultValue)
   option.niceName = niceName;
   option.type = kBool;
   option.defaultBool = defaultValue;
+  option.enumValues = 0;
   if(hasOption(option.optionName))
   {
     MGlobal::displayError("FileTranslatorOptions: cannot register the same option twice");
@@ -163,6 +165,7 @@ bool FileTranslatorOptions::addInt(const char* niceName, int defaultValue)
   option.niceName = niceName;
   option.type = kInt;
   option.defaultInt = defaultValue;
+  option.enumValues = 0;
   if(hasOption(option.optionName))
   {
     MGlobal::displayError("FileTranslatorOptions: cannot register the same option twice");
@@ -185,6 +188,7 @@ bool FileTranslatorOptions::addFloat(const char* niceName, float defaultValue)
   option.niceName = niceName;
   option.type = kFloat;
   option.defaultFloat = defaultValue;
+  option.enumValues = 0;
   if(hasOption(option.optionName))
   {
     MGlobal::displayError("FileTranslatorOptions: cannot register the same option twice");
@@ -207,6 +211,31 @@ bool FileTranslatorOptions::addString(const char* niceName, const char* const de
   option.niceName = niceName;
   option.type = kString;
   option.defaultString = defaultValue;
+  option.enumValues = 0;
+  if(hasOption(option.optionName))
+  {
+    MGlobal::displayError("FileTranslatorOptions: cannot register the same option twice");
+    return false;
+  }
+  frame.m_options.push_back(option);
+  return true;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool FileTranslatorOptions::addEnum(const char* niceName, const char* const enumValues[], const int defaultValue)
+{
+  if(m_frames.empty())
+    return false;
+
+  FrameLayout& frame = lastFrame();
+  FrameLayout::Option option;
+
+  option.optionName = niceNameToOptionString(niceName);
+  option.niceName = niceName;
+  option.type = kEnum;
+  option.defaultInt = defaultValue;
+  option.enumValues = enumValues;
+
   if(hasOption(option.optionName))
   {
     MGlobal::displayError("FileTranslatorOptions: cannot register the same option twice");
@@ -265,6 +294,27 @@ void FileTranslatorOptions::generateStringGlobals(const MString& niceName, const
   MString createCommand = MString("global proc create_") + controlName + "() {" + MString("textFieldGrp -l \"") + niceName + "\" " + controlName + ";}\n";
   MString postCommand = MString("global proc post_") + controlName + "(string $value){ eval (\"textFieldGrp -e -tx \" + $value + \" " + controlName + "\");}\n";
   MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + optionName + "=\" + `textFieldGrp -q -tx " + controlName + "` + \";\"; return $str;}\n";
+
+  m_code += createCommand;
+  m_code += postCommand;
+  m_code += buildCommand;
+  m_code += "\n";
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void FileTranslatorOptions::generateEnumGlobals(const MString& niceName, const MString& optionName, const char* const enumValues[], int defaultValue)
+{
+  MString controlName = m_translatorName + "_" + optionName;
+  MString createCommand = MString("global proc create_") + controlName + "() {" + MString("optionMenuGrp -l \"") + niceName + "\" " + controlName + ";";
+
+  for(int i = 0; enumValues && enumValues[i]; ++i)
+  {
+    createCommand += MString("menuItem -l \"") + enumValues[i] + "\";";
+  }
+
+  createCommand += "}\n";
+  MString postCommand = MString("global proc post_") + controlName + "(string $value){ int $v=$value; eval (\"optionMenuGrp -e -sl \" + ($v + 1) + \" " + controlName + "\");}\n";
+  MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + optionName + "=\" + (`optionMenuGrp -q -sl " + controlName + "` -1) + \";\"; return $str;}\n";
 
   m_code += createCommand;
   m_code += postCommand;
@@ -352,7 +402,7 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
       case kInt:
         {
           generateIntGlobals(ito->niceName, ito->optionName, ito->defaultInt);
-          defaultOptionString += ito->optionName + "=" + MString().set(ito->defaultInt) + ";";
+          defaultOptionString += ito->optionName + "=" + (MString() + ito->defaultInt) + ";";
 
           OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
           value->m_type = OptionsParser::kInt;
@@ -365,7 +415,7 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
       case kFloat:
         {
           generateFloatGlobals(ito->niceName, ito->optionName, ito->defaultFloat);
-          defaultOptionString += ito->optionName + "=" + MString().set(ito->defaultInt) + ";";
+          defaultOptionString += ito->optionName + "=" + (MString() + ito->defaultFloat) + ";";
 
           OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
           value->m_type = OptionsParser::kFloat;
@@ -383,6 +433,19 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
           OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
           value->m_type = OptionsParser::kString;
           value->m_defaultString = ito->defaultString;
+          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
+          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
+        }
+        break;
+
+      case kEnum:
+        {
+          generateEnumGlobals(ito->niceName, ito->optionName, ito->enumValues, ito->defaultInt);
+          defaultOptionString += ito->optionName + "=" + (MString() + ito->defaultInt) + ";";
+
+          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
+          value->m_type = OptionsParser::kEnum;
+          value->m_defaultInt = ito->defaultInt;
           optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
           optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
         }

@@ -153,7 +153,7 @@ find_path(MAYA_LIBRARY_DIR
 list(APPEND MAYA_INCLUDE_DIRS ${MAYA_INCLUDE_DIR})
 
 find_path(MAYA_DEVKIT_INC_DIR
-       GL/glext.h
+       footPrintNode/footPrintNode.cpp
     HINTS
         "${MAYA_DEVKIT_LOCATION}"
         "${MAYA_LOCATION}"

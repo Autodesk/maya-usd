@@ -615,6 +615,7 @@ SdfPath Export::makeMeshReferencePath(MDagPath path, const SdfPath& usdPath, Ref
     }
     break;
   }
+  return SdfPath();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -639,16 +640,19 @@ void Export::addReferences(MDagPath shapePath, MFnTransform& fnTransform, SdfPat
     // usd only allows instanceable on transform prim
     switch (refType)
     {
-      case kTransformReference:
+    case kTransformReference:
       {
         usdPrim.SetInstanceable(true);
       }
       break;
 
-      case kMeshReference:
+    case kMeshReference:
       {
         copyTransformParams(usdPrim, fnTransform);
       }
+      break;
+
+    default:
       break;
     }
     usdPrim.GetReferences().AddReference(SdfReference("", instancePath));
@@ -1004,10 +1008,6 @@ MStatus ExportCommand::doIt(const MArgList& args)
   {
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("luv", 0, m_params.m_leftHandedUV), "ALUSDExport: Unable to fetch \"m_leftHanded\" argument");
   }
-  if(argData.isFlagSet("as", &status))
-  {
-    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("uas", 0, m_params.m_useAnimalSchema), "ALUSDExport: Unable to fetch \"use animal schema\" argument");
-  }
   if(argData.isFlagSet("mt", &status))
   {
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("mt", 0, m_params.m_mergeTransforms), "ALUSDExport: Unable to fetch \"merge transforms\" argument");
@@ -1113,8 +1113,6 @@ MSyntax ExportCommand::createSyntax()
   status = syntax.addFlag("-nc" , "-nurbsCurves", MSyntax::kBoolean);
   AL_MAYA_CHECK_ERROR2(status, errorString);
   status = syntax.addFlag("-di" , "-duplicateInstances", MSyntax::kBoolean);
-  AL_MAYA_CHECK_ERROR2(status, errorString);
-  status = syntax.addFlag("-uas", "-useAnimalSchema", MSyntax::kBoolean);
   AL_MAYA_CHECK_ERROR2(status, errorString);
   status = syntax.addFlag("-mt", "-mergeTransforms", MSyntax::kBoolean);
   AL_MAYA_CHECK_ERROR2(status, errorString);

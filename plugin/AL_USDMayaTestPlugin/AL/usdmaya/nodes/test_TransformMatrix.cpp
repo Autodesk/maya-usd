@@ -532,7 +532,6 @@ TEST(Transform, primValuesPushedToUsdMatchMaya)
     UsdGeomXformOp& rotatePivotINV = ops[5];
     UsdGeomXformOp& scalePivotTranslate = ops[6];
     UsdGeomXformOp& scalePivot = ops[7];
-    UsdGeomXformOp& shear = ops[8];
     UsdGeomXformOp& scale = ops[9];
     UsdGeomXformOp& scalePivotINV = ops[10];
 

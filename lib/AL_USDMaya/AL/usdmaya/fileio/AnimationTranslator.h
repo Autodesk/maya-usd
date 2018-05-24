@@ -72,8 +72,10 @@ typedef std::map<MPlug, ScaledPair, compare_MPlug> PlugAttrScaledVector;
 /// \brief  A utility class to help with exporting animated plugs from maya
 /// \ingroup   fileio
 //----------------------------------------------------------------------------------------------------------------------
-struct AnimationTranslator
+class AnimationTranslator
 {
+public:
+
   /// \brief  returns true if the attribute is animated
   /// \param  node the node which contains the attribute to test
   /// \param  attr the attribute handle

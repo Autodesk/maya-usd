@@ -80,53 +80,146 @@ public:
   /// \param  indicesChanged true if the indices on the colour set have changed
   /// \param  valuesChanged true if the values on the colour set have changed
   AL_USDMAYA_UTILS_PUBLIC
-  PrimVarDiffEntry(const UsdGeomPrimvar& pv, const MString& setName, bool colourSet, bool indicesChanged, bool valuesChanged)
+  PrimVarDiffEntry(
+      const UsdGeomPrimvar& pv,
+      const MString& setName,
+      bool colourSet,
+      bool indicesChanged,
+      bool valuesChanged,
+      TfToken interpolation)
   : m_primVar(pv),
     m_setName(setName),
+    m_indicesToExtract(),
     m_flags((colourSet ? kIsColourSet : 0) |
             (indicesChanged ? kIndicesChanged : 0) |
-            (valuesChanged ? kValuesChanged : 0)) {}
+            (valuesChanged ? kValuesChanged : 0))
+  {
+    if(interpolation == UsdGeomTokens->constant) m_flags |= kConstant;
+    else if(interpolation == UsdGeomTokens->vertex) m_flags |= kVertex;
+    else if(interpolation == UsdGeomTokens->uniform) m_flags |= kUniform;
+    else { m_flags |= kFaceVarying; }
+  }
+
+  /// \brief  ctor
+  /// \param  pv the prim var to store a reference to
+  /// \param  setName the name of the uv (or colour) set to extract from maya
+  /// \param  colourSet true if we should be extracting a colour set
+  /// \param  indicesChanged true if the indices on the colour set have changed
+  /// \param  valuesChanged true if the values on the colour set have changed
+  AL_USDMAYA_UTILS_PUBLIC
+  PrimVarDiffEntry(
+      const UsdGeomPrimvar& pv,
+      const MString& setName,
+      bool colourSet,
+      bool indicesChanged,
+      bool valuesChanged,
+      TfToken interpolation,
+      std::vector<uint32_t>&& elements)
+  : m_primVar(pv),
+    m_setName(setName),
+    m_indicesToExtract(elements),
+    m_flags((colourSet ? kIsColourSet : 0) |
+            (indicesChanged ? kIndicesChanged : 0) |
+            (valuesChanged ? kValuesChanged : 0))
+  {
+    if(interpolation == UsdGeomTokens->constant) m_flags |= kConstant;
+    else if(interpolation == UsdGeomTokens->vertex) m_flags |= kVertex;
+    else if(interpolation == UsdGeomTokens->uniform) m_flags |= kUniform;
+    else { m_flags |= kFaceVarying; }
+  }
+
+
+  /// \brief  ctor
+  /// \param  pv the prim var to store a reference to
+  /// \param  setName the name of the uv (or colour) set to extract from maya
+  /// \param  colourSet true if we should be extracting a colour set
+  /// \param  indicesChanged true if the indices on the colour set have changed
+  /// \param  valuesChanged true if the values on the colour set have changed
+  AL_USDMAYA_UTILS_PUBLIC
+  PrimVarDiffEntry(
+      const UsdGeomPrimvar& pv,
+      const MString& setName,
+      bool colourSet,
+      bool indicesChanged,
+      bool valuesChanged)
+  : m_primVar(pv),
+    m_setName(setName),
+    m_indicesToExtract(),
+    m_flags((colourSet ? kIsColourSet : 0) |
+            (indicesChanged ? kIndicesChanged : 0) |
+            (valuesChanged ? kValuesChanged : 0))
+  {
+    m_flags |= kFaceVarying;
+  }
 
   /// \brief  returns the prim var we care about
-  AL_USDMAYA_UTILS_PUBLIC
-  const UsdGeomPrimvar& primVar()
+  UsdGeomPrimvar& primVar()
+    { return m_primVar; }
+
+  /// \brief  returns the prim var we care about
+  const UsdGeomPrimvar& primVar() const
     { return m_primVar; }
 
   /// \brief  returns the name of the UV (or colour) set in maya
-  AL_USDMAYA_UTILS_PUBLIC
   const MString& setName() const
     { return m_setName; }
 
   /// \brief  returns true if this data should
-  AL_USDMAYA_UTILS_PUBLIC
   bool isColourSet() const
     { return (m_flags & kIsColourSet) != 0; }
 
   /// \brief  returns true if this is a uv set
-  AL_USDMAYA_UTILS_PUBLIC
   bool isUvSet() const
     { return !isColourSet(); }
 
   /// \brief  returns true if the set of indices has changed
-  AL_USDMAYA_UTILS_PUBLIC
   bool indicesHaveChanged() const
     { return (m_flags & kIndicesChanged) != 0; }
 
   /// \brief  returns true if the UV or colour data has changed
-  AL_USDMAYA_UTILS_PUBLIC
   bool dataHasChanged() const
     { return (m_flags & kValuesChanged) != 0; }
+
+  /// \brief  returns true if the interpolation mode is constant
+  bool constantInterpolation() const
+    { return (m_flags & kConstant) != 0; }
+    
+  /// \brief  returns true if the interpolation mode is uniform
+  bool uniformInterpolation() const
+    { return (m_flags & kUniform) != 0; }
+
+  /// \brief  returns true if the interpolation mode is per vertex    
+  bool vertexInterpolation() const
+    { return (m_flags & kVertex) != 0; }
+    
+  /// \brief  returns true if the interpolation mode is face varying
+  bool faceVaryingInterpolation() const
+    { return (m_flags & kFaceVarying) != 0; }
+
+  /// \brief  returns the indices of the elements to extract to construct the final exported array
+  std::vector<uint32_t>& indicesToExtract()
+    { return m_indicesToExtract; }
+
+  /// \brief  returns the indices of the elements to extract to construct the final exported array
+  const std::vector<uint32_t>& indicesToExtract() const
+    { return m_indicesToExtract; }
 
 private:
   enum Flags
   {
     kIsColourSet = 1 << 0,
     kIndicesChanged = 1 << 1,
-    kValuesChanged = 1 << 2
+    kValuesChanged = 1 << 2,
+
+    kConstant = 1 << 28,
+    kUniform = 1 << 29,
+    kVertex = 1 << 30,
+    kFaceVarying = 1 << 31
   };
   UsdGeomPrimvar m_primVar;
   MString m_setName;
-  uint8_t m_flags;
+  std::vector<uint32_t> m_indicesToExtract;
+  uint32_t m_flags;
 };
 
 typedef std::vector<PrimVarDiffEntry> PrimVarDiffReport;
@@ -154,6 +247,295 @@ MStringArray hasNewColourSet(UsdGeomMesh& geom, MFnMesh& mesh, PrimVarDiffReport
 //----------------------------------------------------------------------------------------------------------------------
 AL_USDMAYA_UTILS_PUBLIC
 MStringArray hasNewUvSet(UsdGeomMesh& geom, const MFnMesh& mesh, PrimVarDiffReport& report);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  A fast method for quickly determining the Interpolation type. Determines if the interpolation type is
+///         constant, vertex, or faceVarying. This is mostly done by testing index values (instead of accounting for
+///         duplicates).
+/// \param  u the U components
+/// \param  v the V components
+/// \param  indices the UV indices
+/// \param  pointIndices the vertex indices
+/// \return UsdGeomTokens->constant, UsdGeomTokens->vertex, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessUVInterpolationType(
+    MFloatArray& u,
+    MFloatArray& v,
+    MIntArray& indices,
+    MIntArray& pointIndices);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  In addition to the interpolation checks performed by guessUVInterpolationTypeUV, this method also looks for
+///         UV per-face assignments (uniform).
+/// \param  u the U components
+/// \param  v the V components
+/// \param  indices the UV indices
+/// \param  pointIndices the vertex indices
+/// \param  faceCounts the face counts array for the mesh
+/// \return UsdGeomTokens->constant, UsdGeomTokens->vertex, UsdGeomTokens->uniform, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessUVInterpolationTypeExtended(
+    MFloatArray& u,
+    MFloatArray& v,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  This test performs the same function as guessUVInterpolationTypeExtendedUV, however the checks it performs
+///         are the against the actual UV data (so it accounts for duplicated UV values which may not have the same
+///         index)
+/// \param  u the U components
+/// \param  v the V components
+/// \param  indices the UV indices
+/// \param  pointIndices the vertex indices
+/// \param  faceCounts the face counts array for the mesh
+/// \return UsdGeomTokens->constant, UsdGeomTokens->vertex, UsdGeomTokens->uniform, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessUVInterpolationTypeExtensive(
+    MFloatArray& u,
+    MFloatArray& v,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts,
+    std::vector<uint32_t>& indicesToExtract);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  A fast method for quickly determining the Interpolation type. Determines if the interpolation type is
+///         constant, vertex, or faceVarying. This is mostly done by testing index values (instead of accounting for
+///         duplicates).
+/// \param  xyz the vec3 data
+/// \param  indices the prim var indices
+/// \param  pointIndices the vertex indices
+/// \return UsdGeomTokens->constant, UsdGeomTokens->vertex, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessVec3InterpolationType(
+    const float* xyz,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  In addition to the interpolation checks performed by guessUVInterpolationTypeUV, this method also looks for
+///         per-face assignments (uniform).
+/// \param  xyz the vec3 data
+/// \param  indices the prim var indices
+/// \param  pointIndices the vertex indices
+/// \param  faceCounts the face counts array for the mesh
+/// \return UsdGeomTokens->constant, UsdGeomTokens->vertex, UsdGeomTokens->uniform, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessVec3InterpolationTypeExtended(
+    const float* xyz,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  This test performs the same function as guessVec3InterpolationTypeExtended, however the checks it performs
+///         are the against the actual prim var values (so it accounts for duplicated values which may not have the same
+///         index)
+/// \param  xyz the vec3 data
+/// \param  indices the prim var indices
+/// \param  pointIndices the vertex indices
+/// \param  faceCounts the face counts array for the mesh
+/// \return UsdGeomTokens->constant, UsdGeomTokens->vertex, UsdGeomTokens->uniform, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessVec3InterpolationTypeExtensive(
+    const float* xyz,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  A fast method for quickly determining the Interpolation type. Determines if the interpolation type is
+///         constant, vertex, or faceVarying. This is mostly done by testing index values (instead of accounting for
+///         duplicates).
+/// \param  xyz the vec3 data
+/// \param  indices the prim var indices
+/// \param  pointIndices the vertex indices
+/// \return UsdGeomTokens->constant, UsdGeomTokens->vertex, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessVec3InterpolationType(
+    const double* xyz,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  In addition to the interpolation checks performed by guessVec3InterpolationType, this method also looks for
+///         per-face assignments (uniform).
+/// \param  xyz the vec3 data
+/// \param  indices the prim var indices
+/// \param  pointIndices the vertex indices
+/// \param  faceCounts the face counts array for the mesh
+/// \return UsdGeomTokens->constant, UsdGeomTokens->vertex, UsdGeomTokens->uniform, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessVec3InterpolationTypeExtended(
+    const double* xyz,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  This test performs the same function as guessVec3InterpolationTypeExtended, however the checks it performs
+///         are the against the actual prim var data (so it accounts for duplicated values which may not have the same
+///         index)
+/// \param  xyz the vec3 data
+/// \param  indices the prim var indices
+/// \param  pointIndices the vertex indices
+/// \param  faceCounts the face counts array for the mesh
+/// \return UsdGeomTokens->constant, UsdGeomTokens->vertex, UsdGeomTokens->uniform, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessVec3InterpolationTypeExtensive(
+    const double* xyz,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  A fast method for quickly determining the Interpolation type. Determines if the interpolation type is
+///         constant, vertex, or faceVarying. This is mostly done by testing index values (instead of accounting for
+///         duplicates).
+/// \param  xyzw the vec4 data
+/// \param  indices the prim var indices
+/// \param  pointIndices the vertex indices
+/// \return UsdGeomTokens->constant, UsdGeomTokens->vertex, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessVec4InterpolationType(
+    const float* xyzw,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  In addition to the interpolation checks performed by guessVec4InterpolationType, this method also looks for
+///         per-face assignments (uniform).
+/// \param  xyzw the vec4 data
+/// \param  indices the prim var indices
+/// \param  pointIndices the vertex indices
+/// \param  faceCounts the face counts array for the mesh
+/// \return UsdGeomTokens->constant, UsdGeomTokens->vertex, UsdGeomTokens->uniform, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessVec4InterpolationTypeExtended(
+    const float* xyzw,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  This test performs the same function as guessVec4InterpolationTypeExtended, however the checks it performs
+///         are the against the actual prim var data (so it accounts for duplicated values which may not have the same
+///         index)
+/// \param  xyzw the vec4 data
+/// \param  indices the prim var indices
+/// \param  pointIndices the vertex indices
+/// \param  faceCounts the face counts array for the mesh
+/// \return UsdGeomTokens->constant, UsdGeomTokens->vertex, UsdGeomTokens->uniform, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessVec4InterpolationTypeExtensive(
+    const float* xyzw,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  A fast method for quickly determining the Interpolation type. Determines if the interpolation type is
+///         constant, vertex, or faceVarying. This is mostly done by testing index values (instead of accounting for
+///         duplicates).
+/// \param  xyzw the vec4 data
+/// \param  indices the prim var indices
+/// \param  pointIndices the vertex indices
+/// \return UsdGeomTokens->constant, UsdGeomTokens->vertex, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessVec4InterpolationType(
+    const double* xyzw,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  In addition to the interpolation checks performed by guessVec4InterpolationType, this method also looks for
+///         per-face assignments (uniform).
+/// \param  xyzw the vec4 data
+/// \param  indices the prim var indices
+/// \param  pointIndices the vertex indices
+/// \param  faceCounts the face counts array for the mesh
+/// \return UsdGeomTokens->constant, UsdGeomTokens->vertex, UsdGeomTokens->uniform, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessVec4InterpolationTypeExtended(
+    const double* xyzw,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  This test performs the same function as guessVec4InterpolationTypeExtended, however the checks it performs
+///         are the against the actual prim var data (so it accounts for duplicated values which may not have the same
+///         index)
+/// \param  xyzw the vec4 data
+/// \param  indices the prim var indices
+/// \param  pointIndices the vertex indices
+/// \param  faceCounts the face counts array for the mesh
+/// \return UsdGeomTokens->constant, UsdGeomTokens->vertex, UsdGeomTokens->uniform, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessVec4InterpolationTypeExtensive(
+    const double* xyzw,
+    size_t numElements,
+    MIntArray& indices,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  performs a basic set of tests to determine the interpolation mode of the rgba prim var data. 
+/// \param  rgba the face varying colour array
+/// \param  numElements the number of RGBA colours in the rgba array
+/// \return UsdGeomTokens->constant, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessColourSetInterpolationType(
+    const float* rgba,
+    const size_t numElements);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  performs a more comprehensive set of tests to determine the interpolation mode for the rgba prim var data. 
+/// \param  rgba the face varying colour array
+/// \param  numElements the number of RGBA colours in the rgba array
+/// \param  numPoints the number of points 
+/// \param  pointIndices the point indices in the mesh
+/// \param  faceCounts the face counts for the mesh
+/// \param  indicesToExtract the resulting set of indices which will be later used to extract the correct data 
+/// \return UsdGeomTokens->constant, UsdGeomTokens->vertex, UsdGeomTokens->uniform, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessColourSetInterpolationTypeExtensive(
+    const float* rgba,
+    const size_t numElements,
+    const size_t numPoints,
+    MIntArray& pointIndices,
+    MIntArray& faceCounts,
+    std::vector<uint32_t>& indicesToExtract);
 
 //----------------------------------------------------------------------------------------------------------------------
 } // utils

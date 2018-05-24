@@ -1,8 +1,3 @@
-IF(DEFINED NO_TESTS AND NO_TESTS)
-  message("Skipping building of test plugin.")
-  return()
-ENDIF()
-
 find_package(GTest REQUIRED)
 
 set(PXR_PACKAGE AL_USDMayaTestPlugin)
@@ -24,6 +19,7 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/commands/test_ProxyShapeSelect.cpp
         AL/usdmaya/commands/test_InternalProxySelection.cpp
         AL/usdmaya/commands/test_ProxyShapeImport.cpp
+        AL/usdmaya/commands/test_LayerManagerCommands.cpp
         AL/usdmaya/fileio/export_blendshape.cpp
         AL/usdmaya/fileio/export_constraints.cpp
         AL/usdmaya/fileio/export_ik.cpp

@@ -30,10 +30,48 @@ TEST(TranslateCommand, translateMeshPrim)
  */
 {
   AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMesh();
+  ASSERT_TRUE(proxyShape != 0);
   MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
   MStatus s = MGlobal::selectByName("pSphere1Shape");
   EXPECT_TRUE(s.statusCode() == MStatus::kSuccess);
+}
+
+TEST(TranslateCommand, forceDefaultRead)
+/*
+ * Import a prim authored with one time sample only (no default value).
+ * We expect to get an empty mesh with the "fd" flag because there's no default value. 
+ */
+{
+  MString importCommand = "AL_usdmaya_ProxyShapeImport -f \"" +
+                          MString(AL_USDMAYA_TEST_DATA) +
+                          "/cube.usda\"";
+
+  // With "-fd" flag
+  MFileIO::newFile(true);
+  MStatus s;
+
+  s = MGlobal::executeCommand(importCommand);
+  EXPECT_TRUE(s == MStatus::kSuccess);
+  s = MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -fd -ip \"/cube\" \"AL_usdmaya_ProxyShape\"");
+  EXPECT_TRUE(s == MStatus::kSuccess);
+  
+  MIntArray ia;
+  s = MGlobal::executeCommand("polyEvaluate -v cubeShape", ia, false, false);
+  EXPECT_TRUE(s == MStatus::kSuccess);
+  EXPECT_TRUE(ia[0] == 0);
+
+  // Without "-fd" flag
+   MFileIO::newFile(true);
+
+  s = MGlobal::executeCommand(importCommand);
+  EXPECT_TRUE(s == MStatus::kSuccess);
+  s = MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/cube\" \"AL_usdmaya_ProxyShape\"");
+  EXPECT_TRUE(s == MStatus::kSuccess);
+
+  s = MGlobal::executeCommand("polyEvaluate -v cubeShape", ia, false, false);
+  EXPECT_TRUE(s == MStatus::kSuccess);
+  EXPECT_TRUE(ia[0] == 8);
 }
 
 TEST(TranslateCommand, translateMultipleMeshPrims)
@@ -42,6 +80,7 @@ TEST(TranslateCommand, translateMultipleMeshPrims)
  */
 {
   AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMultipleMeshes();
+  ASSERT_TRUE(proxyShape != 0);
   MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1,/pSphere2,/pSphere3\" \"AL_usdmaya_ProxyShape1\"", false, false);
   MStatus s;
 
@@ -58,6 +97,7 @@ TEST(TranslateCommand, translateMultipleMeshPrims)
 TEST(TranslateCommand, translateMultipleTimes)
 {
   AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMultipleMeshes();
+  ASSERT_TRUE(proxyShape != 0);
   MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1\" \"AL_usdmaya_ProxyShape1\"",
                           false,
                           false);
@@ -80,6 +120,7 @@ TEST(TranslateCommand, roundTripMeshPrim)
  */
 {
   AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMesh();
+  ASSERT_TRUE(proxyShape != 0);
 
   MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1\" \"AL_usdmaya_ProxyShape1\"", false, false);
   MStatus s = MGlobal::selectByName("pSphere1Shape");
@@ -95,3 +136,67 @@ TEST(TranslateCommand, roundTripMeshPrim)
   ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
 }
 
+TEST(TranslateCommand, translateFromUnmergedFile)
+{
+  MFileIO::newFile(true);
+
+  const MString command = MString("AL_usdmaya_ProxyShapeImport -file \"") + MString(AL_USDMAYA_TEST_DATA) + MString("/sphere.usda\"");
+  MGlobal::executeCommand(command);
+  MStatus s = MGlobal::selectByName("pSphereShape1");
+  EXPECT_FALSE(s == MStatus::kSuccess);
+
+  MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1/pSphereShape1\" \"AL_usdmaya_ProxyShape\"", false, false);
+  s = MGlobal::selectByName("pSphereShape1");
+  EXPECT_TRUE(s == MStatus::kSuccess);
+
+  MGlobal::executeCommand("AL_usdmaya_TranslatePrim -tp \"/pSphere1/pSphereShape1\" \"AL_usdmaya_ProxyShape\"", false, false);
+  s = MGlobal::selectByName("pSphereShape1");
+  EXPECT_FALSE(s == MStatus::kSuccess);
+  
+  // Make sure it's also torn down the parent node
+  s = MGlobal::selectByName("pSphere1");
+  
+  /// TODO: This test needs to pass prior to release!!
+  EXPECT_FALSE(s == MStatus::kSuccess);
+}
+
+TEST(TranslateCommand, translateMultiplePrimsFromUnmergedFile)
+/*
+ * Test, in the UnMerged Case, the case where if there are multiple shape's that are siblings
+ * that if one of the shape's get "tearDown" called on it, that the other sibling survives
+ */
+{
+  MFileIO::newFile(true);
+  MStatus s;
+  MString command;
+  command.format(MString("AL_usdmaya_ProxyShapeImport -file \"^1s\""), (MString(AL_USDMAYA_TEST_DATA) + MString("/sphere2.usda")));
+  EXPECT_TRUE(MGlobal::executeCommand(command, false, false));
+
+  MString importCommand("AL_usdmaya_TranslatePrim -fi -ip \"^1s\" \"AL_usdmaya_ProxyShape\"");
+  MString teardownCommand("AL_usdmaya_TranslatePrim -tp \"^1s\" \"AL_usdmaya_ProxyShape\"");
+
+	// import foofoo and verify it made it into maya
+  MString importMesh1 = importCommand;
+  EXPECT_TRUE(importMesh1.format(importCommand, MString("/pSphere1/pSphereShape1")));
+  EXPECT_TRUE(MGlobal::executeCommand(importMesh1, false, false));
+  s = MGlobal::selectByName("pSphereShape1");
+  EXPECT_TRUE(s == MStatus::kSuccess);
+
+  // import foofooforyou and verify it made it into maya
+  MString importMesh2;
+  EXPECT_TRUE(importMesh2.format(importCommand, MString("/pSphere1/pSphereShape2")));
+  EXPECT_TRUE(MGlobal::executeCommand(importMesh2, false, false));
+  s = MGlobal::selectByName("pSphereShape2");
+  EXPECT_TRUE(s == MStatus::kSuccess);
+
+  MGlobal::clearSelectionList();
+
+  // Teardown foofoo and verify that foofooforyou is still there
+  MString tearDownMesh1;
+  EXPECT_TRUE(tearDownMesh1.format(teardownCommand, MString("/pSphere1/pSphereShape1")));
+  EXPECT_TRUE(MGlobal::executeCommand(tearDownMesh1, false, false));
+  s = MGlobal::selectByName("pSphereShape1");
+  EXPECT_FALSE(s == MStatus::kSuccess);
+  s = MGlobal::selectByName("pSphereShape2");
+  EXPECT_TRUE(s == MStatus::kSuccess);
+}

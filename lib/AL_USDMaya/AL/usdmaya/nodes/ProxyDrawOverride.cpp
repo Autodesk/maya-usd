@@ -190,7 +190,7 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
         else
         {
           MFloatPoint fp(0,0,0);
-          for(int j = 0; j < positions.length(); ++j)
+          for(uint32_t j = 0; j < positions.length(); ++j)
           {
             fp += positions[j];
           }

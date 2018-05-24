@@ -310,6 +310,11 @@ MStatus ImportCommand::doIt(const MArgList& args)
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("-nc", 0, m_params.m_nurbsCurves), "ImportCommand: Unable to fetch \"nurbs curves\" argument");
   }
 
+  if(argData.isFlagSet("-fd", &status))
+  {
+    m_params.m_forceDefaultRead = true;
+  }
+
   return redoIt();
 }
 
@@ -339,6 +344,7 @@ MSyntax ImportCommand::createSyntax()
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-da", "-dynamicAttribute", MSyntax::kBoolean), errorString);
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-m", "-meshes", MSyntax::kBoolean), errorString);
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-nc", "-nurbsCurves", MSyntax::kBoolean), errorString);
+  AL_MAYA_CHECK_ERROR2(syntax.addFlag("-fd", "-forceDefaultRead", MSyntax::kNoArg), errorString);
   syntax.makeFlagMultiUse("-arp");
   syntax.enableQuery(false);
   syntax.enableEdit(false);

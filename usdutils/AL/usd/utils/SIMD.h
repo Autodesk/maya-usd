@@ -100,6 +100,8 @@ AL_DLL_HIDDEN inline i128 cmpgt16i8(const i128 a, const i128 b) { return _mm_cmp
 
 AL_DLL_HIDDEN inline f128 cmpgt4f(const f128 a, const f128 b) { return _mm_cmpgt_ps(a, b); }
 AL_DLL_HIDDEN inline d128 cmpgt2d(const d128 a, const d128 b) { return _mm_cmpgt_pd(a, b); }
+AL_DLL_HIDDEN inline f128 cmpne4f(const f128 a, const f128 b) { return _mm_cmpneq_ps(a, b); }
+AL_DLL_HIDDEN inline d128 cmpne2d(const d128 a, const d128 b) { return _mm_cmpneq_pd(a, b); }
 AL_DLL_HIDDEN inline i128 cmpeq8i16(const i128 a, const i128 b) { return _mm_cmpeq_epi16(a, b); }
 
 AL_DLL_HIDDEN inline f128 set4f(const float a, const float b, const float c, const float d) {return _mm_setr_ps(a, b, c, d); }
@@ -137,6 +139,7 @@ AL_DLL_HIDDEN inline f128 movelh4f(const f128 a, const f128 b) { return _mm_move
 AL_DLL_HIDDEN inline i128 movehl4i(const i128 a, const i128 b) { return cast4i(_mm_movehl_ps(cast4f(a), cast4f(b))); }
 AL_DLL_HIDDEN inline i128 movelh4i(const i128 a, const i128 b) { return cast4i(_mm_movelh_ps(cast4f(a), cast4f(b))); }
 
+AL_DLL_HIDDEN inline d128 or2d(const d128 a, const d128 b) { return _mm_or_pd(a, b); }
 AL_DLL_HIDDEN inline f128 or4f(const f128 a, const f128 b) { return _mm_or_ps(a, b); }
 AL_DLL_HIDDEN inline f128 and4f(const f128 a, const f128 b) { return _mm_and_ps(a, b); }
 AL_DLL_HIDDEN inline f128 andnot4f(const f128 a, const f128 b) { return _mm_andnot_ps(a, b); }
@@ -201,6 +204,7 @@ typedef __m256 f256;
 typedef __m256i i256;
 typedef __m256d d256;
 
+
 # define shuffle8f(a, b, W, Z, Y, X) _mm256_shuffle_ps(a, b, _MM_SHUFFLE(W, Z, Y, X))
 
 AL_DLL_HIDDEN inline f256 zero8f() { return _mm256_setzero_ps(); }
@@ -227,6 +231,11 @@ AL_DLL_HIDDEN inline i256 cmpeq8i(const i256 a, const i256 b) { return _mm256_cm
 template<uint8_t X, uint8_t Y>
 AL_DLL_HIDDEN inline f256 permute128f(const f256 a, const f256 b) { return _mm256_permute2f128_ps(a, b, X | (Y << 4)); }
 
+AL_DLL_HIDDEN inline d256 set4d(const d128 a, const d128 b) { return _mm256_insertf128_pd(_mm256_castpd128_pd256(a), b, 1); }
+AL_DLL_HIDDEN inline f256 set8f(const f128 a, const f128 b) { return _mm256_insertf128_ps(_mm256_castps128_ps256(a), b, 1); }
+AL_DLL_HIDDEN inline i256 set8i(const i128 a, const i128 b) { return _mm256_inserti128_si256(_mm256_castsi128_si256(a), b, 1); }
+
+AL_DLL_HIDDEN inline d256 set4d(const double a, const double b, const double c, const double d) { return _mm256_setr_pd(a, b, c, d); }
 AL_DLL_HIDDEN inline f256 set8f(const float a, const float b, const float c, const float d,
                                   const float e, const float f, const float g, const float h)
   {return _mm256_setr_ps(a,b,c,d,e,f,g,h); }
@@ -256,6 +265,7 @@ AL_DLL_HIDDEN inline d256 cvt4f_to_4d(const f128 reg) { return _mm256_cvtps_pd(r
 AL_DLL_HIDDEN inline f128 cvt4d_to_4f(const d256 reg) { return _mm256_cvtpd_ps(reg); }
 AL_DLL_HIDDEN inline i256 cvt4i32_to_4i64(const i128 reg) { return _mm256_cvtepi32_epi64(reg); }
 
+AL_DLL_HIDDEN inline d256 or4d(const d256 a, const d256 b) { return _mm256_or_pd(a, b); }
 AL_DLL_HIDDEN inline f256 or8f(const f256 a, const f256 b) { return _mm256_or_ps(a, b); }
 AL_DLL_HIDDEN inline f256 and8f(const f256 a, const f256 b) { return _mm256_and_ps(a, b); }
 AL_DLL_HIDDEN inline f256 andnot8f(const f256 a, const f256 b) { return _mm256_andnot_ps(a, b); }
@@ -308,6 +318,8 @@ AL_DLL_HIDDEN inline f256 set2f128(const f128 lo, const f128 hi) { return _mm256
 
 inline f256 cmpgt8f(const f256 a, const f256 b) { return _mm256_cmp_ps(a, b, _CMP_GT_OQ); }
 inline d256 cmpgt4d(const d256 a, const d256 b) { return _mm256_cmp_pd(a, b, _CMP_GT_OQ); }
+inline f256 cmpne8f(const f256 a, const f256 b) { return _mm256_cmp_ps(a, b, _CMP_NEQ_OQ); }
+inline d256 cmpne4d(const d256 a, const d256 b) { return _mm256_cmp_pd(a, b, _CMP_NEQ_OQ); }
 inline i256 cmpeq4i64(const i256 a, const i256 b) { return _mm256_cmpeq_epi64(a, b); }
 inline i256 cmpeq16i16(const i256 a, const i256 b) { return _mm256_cmpeq_epi16(a, b); }
 inline i256 cmpeq32i8(const i256 a, const i256 b) { return _mm256_cmpeq_epi8(a, b); }

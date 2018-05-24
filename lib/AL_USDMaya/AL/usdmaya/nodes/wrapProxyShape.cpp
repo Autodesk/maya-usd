@@ -183,7 +183,7 @@ namespace {
         {
           return nullptr;
         }
-        for (int i = 0; i < numShapes; ++i)
+        for (uint32_t i = 0; i < numShapes; ++i)
         {
           dag.extendToShapeDirectlyBelow(i);
           if (isProxyShape(dag.node()))

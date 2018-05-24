@@ -208,7 +208,8 @@ TEST(LayerManager, addRemoveLayer)
   {
     ASSERT_TRUE(manager->addLayer(anonLayer));
     ASSERT_FALSE(manager->addLayer(anonLayer));
-
+    //Dirty the anonymous layer so it can be found
+    anonLayer->SetComment("DirtyThisAnonLayer");
     ASSERT_EQ(manager->findLayer(anonLayer->GetIdentifier()), anonLayer);
     ASSERT_FALSE(manager->findLayer(realLayer->GetIdentifier()));
     manager->getLayerIdentifiers(layerIds);
@@ -220,7 +221,7 @@ TEST(LayerManager, addRemoveLayer)
   {
     ASSERT_TRUE(manager->addLayer(realLayer));
     ASSERT_FALSE(manager->addLayer(realLayer));
-
+    realLayer->SetComment("DirtyThisAnonLayer");
     ASSERT_EQ(manager->findLayer(anonLayer->GetIdentifier()), anonLayer);
     ASSERT_EQ(manager->findLayer(realLayer->GetIdentifier()), realLayer);
     manager->getLayerIdentifiers(layerIds);
@@ -520,13 +521,6 @@ TEST(LayerManager, simpleSaveRestore)
     auto fooLayerAttr = root->GetAttributeAtPath(fooPath);
     ASSERT_TRUE(fooLayerAttr);
     EXPECT_EQ(fooLayerAttr->GetDefaultValue(), fooValue);
-
-    // There shouldn't be a layer manager
-    EXPECT_TRUE(AL::usdmaya::nodes::LayerManager::findNode().isNull());
-    MStringArray result;
-    MGlobal::executeCommand(MString("ls -type " ) + AL::usdmaya::nodes::LayerManager::kTypeName,
-                            result);
-    EXPECT_EQ(result.length(), 0);
   }
 
   {

@@ -77,7 +77,7 @@ void TranslatorContext::updatePrimTypes()
     UsdPrim prim = stage->GetPrimAtPath(path);
     if(!prim)
     {
-      m_primMapping.erase(it++);
+      it = m_primMapping.erase(it);
     }
     else
     if(it->type() != prim.GetTypeName())
@@ -232,6 +232,7 @@ void TranslatorContext::insertItem(const UsdPrim& prim, MObjectHandle object)
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::insertItem primPath=%s primType=%s to MObject type %s\n", prim.GetPath().GetText(), iter->type().GetText(), object.object().apiTypeStr());
   }
 }
+
 
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::removeItems(const SdfPath& path)
@@ -409,7 +410,7 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
     // we are no longer in the same prim root
     const SdfPath& childPath = range_end->path();
 
-    if(!range_end->path().HasPrefix(primPath))
+    if(!childPath.HasPrefix(primPath))
     {
       break;
     }
@@ -463,7 +464,10 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
     auto node = std::lower_bound(m_primMapping.begin(), m_primMapping.end(), path, value_compare());
 
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries removing: %s\n", iter->GetText());
-    unloadPrim(path, node->object());
+    if(node->objectHandle().isValid() && node->objectHandle().isAlive())
+    {
+      unloadPrim(path, node->object());
+    }
 
     // The item might already have been removed by a translator...
     if(node != m_primMapping.end() && node->path() == path)
@@ -493,12 +497,7 @@ void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
     if(translator)
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim [preTearDown] prim=%s\n", prim.GetPath().GetText());
-
-      // call pretearDown if it hasn't been called before
-      if(!translator->isTearingDown())
-      {
-        translator->preTearDown(prim);
-      }
+      translator->preTearDown(prim);
     }
     else
     {
@@ -528,18 +527,14 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::unloadPrim [tearDown] prim=%s\n", path.GetText());
 
-      // call pretearDown if it hasn't been called before
-      if(!translator->isTearingDown())
+      UsdPrim prim = stage->GetPrimAtPath(path);
+      if(prim)
       {
-        UsdPrim prim = stage->GetPrimAtPath(path);
-        if(prim)
-        {
-          translator->preTearDown(prim);
-        }
-        else
-        {
-          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preTearDown was skipped because the path '%s' was invalid\n", path.GetText());
-        }
+        translator->preTearDown(prim);
+      }
+      else
+      {
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preTearDown was skipped because the path '%s' was invalid\n", path.GetText());
       }
 
       MStatus status = translator->tearDown(path);

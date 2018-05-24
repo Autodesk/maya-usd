@@ -4,7 +4,6 @@ set(LIBRARY_NAME AL_USDMaya)
 
 list(APPEND AL_usdmaya_headers
         AL/usdmaya/Api.h
-        AL/usdmaya/AttributeType.h
         AL/usdmaya/DebugCodes.h
         AL/usdmaya/DrivenTransformsData.h
         AL/usdmaya/Metadata.h
@@ -19,7 +18,6 @@ list(APPEND AL_usdmaya_headers
 )
 
 list(APPEND AL_usdmaya_source
-        AL/usdmaya/AttributeType.cpp
         AL/usdmaya/DebugCodes.cpp
         AL/usdmaya/DrivenTransformsData.cpp
         AL/usdmaya/Global.cpp
@@ -162,6 +160,17 @@ target_include_directories(
     ${MAYA_INCLUDE_DIRS}
 )
 
+set(Boost_LINK_LIBRARIES
+    ${Boost_PYTHON_LIBRARY}
+    ${Boost_THREAD_LIBRARY}
+)
+if(WIN32)
+    list(APPEND Boost_LINK_LIBRARIES
+        ${Boost_CHRONO_LIBRARY}
+    )
+endif()
+
+
 target_link_libraries(${LIBRARY_NAME}
     AL_EventSystem
     AL_USDMayaUtils
@@ -179,9 +188,7 @@ target_link_libraries(${LIBRARY_NAME}
     usdImaging
     usdImagingGL
     vt
-    ${Boost_PYTHON_LIBRARY}
-    ${Boost_THREAD_LIBRARY}
-    ${Boost_CHRONO_LIBRARY}
+    ${Boost_LINK_LIBRARIES}
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
     ${MAYA_OpenMayaFX_LIBRARY}

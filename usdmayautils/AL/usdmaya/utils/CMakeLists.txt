@@ -12,6 +12,7 @@ set(MAYA_UTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib)
 
 list(APPEND usdmaya_utils_headers
     Api.h
+    AttributeType.h
     DgNodeHelper.h
     Utils.h
     ForwardDeclares.h
@@ -21,6 +22,7 @@ list(APPEND usdmaya_utils_headers
 )
 
 list(APPEND usdmaya_utils_source
+    AttributeType.cpp
     DgNodeHelper.cpp
     Utils.cpp
     MeshUtils.cpp
