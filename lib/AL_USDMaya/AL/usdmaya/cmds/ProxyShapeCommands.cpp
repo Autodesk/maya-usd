@@ -893,6 +893,7 @@ AL_MAYA_DEFINE_COMMAND(InternalProxyShapeSelect, AL_usdmaya);
 MSyntax InternalProxyShapeSelect::createSyntax()
 {
   MSyntax syntax = setUpCommonSyntax();
+  syntax.useSelectionAsDefault(false);
   syntax.addFlag("-pp", "-primPath", MSyntax::kString);
   syntax.addFlag("-h", "-help", MSyntax::kNoArg);
   syntax.addFlag("-cl", "-clear", MSyntax::kNoArg);
