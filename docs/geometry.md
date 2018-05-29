@@ -9,27 +9,13 @@ When importing/exporting data from Maya, the mesh data is defined using an array
 _(one entry per face, defining how many vertices are contained in that face)_, and an array of vertex indices _(a flattened list 
 of all vertex indices)_. 
 
-The vertex indices may be defined using a right handed winding _(the default, no change needed)_, or a left handed  winding 
-_(all indices will need to be reversed when importing/exporting)_. Within Maya, all mesh geometry will always be right handed.
-Within USD, it is possible to use the following code to determine the winding:
+The following table describes the Maya and USD API calls that should be used to access mesh data.
 
-```c++
-bool isLeftHanded(const UsdGeomMesh& mesh)  
-{
-  TfToken orientation;
-  mesh.GetOrientationAttr().Get(&orientation);
-  return orientation == UsdGeomTokens->leftHanded;
-}
-```
-
-The following table describes the Maya and USD API calls that should be used to access mesh data, and whether the left handed 
-flag modifies the data:
-
-|  Data        | Maya API      | UsdGeomMesh | Left Handed Behaviour |
-|--------------|---------------|-------------|--------------------------|
-| Vertex Positions | MFnMesh::getRawPoints or MFnMesh::getPoints | UsdGeomPointBased::GetPointsAttr | Unmodified |
-| Vertex Counts    | First argument of MFnMesh::getVertices | UsdGeomMesh::GetFaceVertexCountsAttr | Unmodified |
-| Face Vertex Indices | Second argument of MFnMesh::getVertices | UsdGeomMesh::GetFaceVertexIndicesAttr | Flipped |
+|  Data        | Maya API      | UsdGeomMesh |
+|--------------|---------------|-------------|
+| Vertex Positions | MFnMesh::getRawPoints or MFnMesh::getPoints |
+| Vertex Counts    | First argument of MFnMesh::getVertices | 
+| Face Vertex Indices | Second argument of MFnMesh::getVertices | 
 
 
 # Mesh Geometry: Polygon Holes
@@ -40,7 +26,7 @@ via AL_USDMaya _(and the second method will likely cause errors in the exported 
 Within Maya the *performPolyHoleFace* command will tag a face as invisible _(You can also access this command via the 
 ```Edit Mesh -> Assign Invisible Faces``` menu item)_. This information can be queried from USD via
 ```UsdGeomMesh::GetHoleIndicesAttr()```. The data stored is merely an array of indices that indicate which faces are tagged
-as invisible. This data is unaffected by the ```UsdGeomTokens->leftHanded``` tag. 
+as invisible.  
 
 Maya also supports holes using the ```Mesh Tools -> Make Hole``` tool. Polygon holes created via this tool will not be exported 
 by AL_USDMaya _(and infact, are liable to lead to errors within the exported geometry data)_. 
@@ -55,26 +41,25 @@ crease indices.
 The following table describes the Maya and USD API calls that should be used to access the vertex crease information: 
 
 
-|  Data        | Maya API      | UsdGeomMesh | Left Handed Behaviour |
-|--------------|---------------|-------------|--------------------------|
-| Vertex Crease Indices | The vertexIds param of MFnMesh::getCreaseVertices | UsdGeomMesh::GetCornerIndicesAttr | Unmodified |
-| Vertex Crease Sharpness | The creaseData param of MFnMesh::getCreaseVertices | UsdGeomMesh::GetCornerSharpnessesAttr | Unmodified |
+|  Data        | Maya API      | UsdGeomMesh |
+|--------------|---------------|-------------|
+| Vertex Crease Indices | The vertexIds param of MFnMesh::getCreaseVertices | UsdGeomMesh::GetCornerIndicesAttr | 
+| Vertex Crease Sharpness | The creaseData param of MFnMesh::getCreaseVertices | UsdGeomMesh::GetCornerSharpnessesAttr | 
 
 
 # Mesh Geometry: Edge Creases
 
 Edge creases on mesh geometry are defined using pairs of vertex indices that describe the edges that have crease weights assigned. 
-This implies that the edge crease indices array will always be twice the length of the crease weights array. The use of vertex
-indices also means the left handed flag has no effect on the data stored within USD.    
+This implies that the edge crease indices array will always be twice the length of the crease weights array. 
 
 The following table describes the Maya and USD API calls that should be used to access the edge crease information: 
 
 
-|  Data        | Maya API      | UsdGeomMesh | Left Handed Behaviour |
-|--------------|---------------|-------------|--------------------------|
-| Edge Crease Indices | The edgeIds param of MFnMesh::getCreaseEdges | UsdGeomMesh::GetCreaseIndicesAttr | Unmodified |
-| Edge Crease Sharpness | The creaseData param of MFnMesh::getCreaseEdges | UsdGeomMesh::GetCornerSharpnessesAttr | Unmodified |
-| Edge Crease Lengths | _unsupported_ | UsdGeomMesh::GetCreaseLengthsAttr  | Unmodified |
+|  Data        | Maya API      | UsdGeomMesh | 
+|--------------|---------------|-------------|
+| Edge Crease Indices | The edgeIds param of MFnMesh::getCreaseEdges | UsdGeomMesh::GetCreaseIndicesAttr | 
+| Edge Crease Sharpness | The creaseData param of MFnMesh::getCreaseEdges | UsdGeomMesh::GetCornerSharpnessesAttr | 
+| Edge Crease Lengths | _unsupported_ | UsdGeomMesh::GetCreaseLengthsAttr  | 
 
 
 # Mesh Geometry: Vertex Normals
@@ -82,18 +67,18 @@ The following table describes the Maya and USD API calls that should be used to 
 Vertex Normals are exported using interpolation modes of either faceVarying, UsdGeomTokens->vertex, UsdGeomTokens->uniform, 
 or UsdGeomTokens->constant.
 
-|  Data        | Maya API      | UsdGeomMesh | Left Handed Behaviour |
-|--------------|---------------|-------------|--------------------------|
-| Vertex Normals | MFnMesh::getRawNormals | UsdGeomPointBased::GetNormalsAttr | flipped if interpolation mode is faceVarying, Unmodified otherwise |
+|  Data        | Maya API      | UsdGeomMesh |
+|--------------|---------------|-------------|
+| Vertex Normals | MFnMesh::getRawNormals | UsdGeomPointBased::GetNormalsAttr | 
 
 
 # Mesh Geometry: Prim Vars (UV coords)
 
-UV coordinates stored within UsdGeomPrimvar objects, are exported as arrays of GfVec2f's, with an optional set of indices. 
+UV coordinates stored within UsdGeomPrimvar objects, are exported as arrays of GfVec2f's with an optional set of indices. 
 The AL_USDMaya export has the ability to specify a compaction mode that at the lowest level, will simply copy the data 
 directly from Maya into USD _(i.e. an interpolation UsdGeomTokens->faceVarying, with indices)_. Additional modes exist 
 that add varying degrees of testing of the UV sets to decide whether they can be described using constant, uniform, 
-or vertex interpolation modes. It should be noted that higher compaction levels, may result in smaller USD files on disk, 
+or vertex interpolation modes. It should be noted that higher compaction levels may result in smaller USD files on disk, 
 but at the expense of an additional computational overhead at export time. 
 
 The following tables indicate the supported combinations of interpolation mode and primvar indices :  

@@ -19,4 +19,4 @@ Ideally, ongoing - but we can't provide any guarantees about our response time
 Ideally, quite often - but again, we can't provide any guarantees.
 
 ## Does it build for  Windows or Mac?
-At the moment the plugin only builds on Linux and Windows. As USD support for MacOS stabilises, others can contribute this functionality if they wish. We only use Linux internally at Animal Logic, however we do maintain a Windows build for those who wish to that platform.  
+At the moment the plugin only builds on Linux and Windows. As USD support for MacOS stabilises, others can contribute this functionality if they wish. We only use Linux internally at Animal Logic, however we do maintain a Windows build for those who wish to use that platform.  
