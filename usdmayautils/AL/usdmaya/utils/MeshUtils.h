@@ -137,7 +137,6 @@ private:
   const UsdGeomMesh& mesh; ///< the USD geometry being imported
   MObject polyShape; ///< the handle to the created mesh shape
   UsdTimeCode m_timeCode; ///< the time at which to import the mesh
-  bool leftHanded; ///< if true, the data in the mesh file is left handed
   AL_USDMAYA_UTILS_PUBLIC
   void gatherFaceConnectsAndVertices();
 public:
@@ -150,11 +149,12 @@ public:
   MeshImportContext(const UsdGeomMesh& mesh, MObject parent, MString dagName, UsdTimeCode timeCode = UsdTimeCode::EarliestTime())
     : mesh(mesh), m_timeCode(timeCode)
   {
-    TfToken orientation;
-    leftHanded = (mesh.GetOrientationAttr().Get(&orientation, timeCode) && orientation == UsdGeomTokens->leftHanded);
     gatherFaceConnectsAndVertices();
     polyShape = fnMesh.create(points.length(), counts.length(), points, counts, connects, parent);
+    TfToken orientation;
+    bool leftHanded = (mesh.GetOrientationAttr().Get(&orientation, timeCode) && orientation == UsdGeomTokens->leftHanded);
     fnMesh.setName(dagName);
+    fnMesh.findPlug("opposite", true).setBool(leftHanded);
   }
 
   /// \brief  reads the HoleIndices attribute from the usd geometry, and assigns those values as invisible faces on
@@ -254,7 +254,7 @@ public:
 
   /// \brief  copies the UV set data from maya into the usd prim
   AL_USDMAYA_UTILS_PUBLIC
-  void copyUvSetData(const bool leftHanded);
+  void copyUvSetData();
 
   /// \brief  copies the colour set data from maya into the usd prim.
   AL_USDMAYA_UTILS_PUBLIC

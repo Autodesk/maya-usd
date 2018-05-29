@@ -40,7 +40,7 @@ TEST(ExportCommands, exportUV)
   ASSERT_EQ(cubePrim.GetSpecifier(), SdfSpecifierOver);
 
   const uint32_t uvSZ = 24;
-  const GfVec2f faceUVs[4] = {GfVec2f(.0f, 1.0f), GfVec2f(1.0f, 1.0f), GfVec2f(1.0f, .0f), GfVec2f(.0f, .0f)};
+  const GfVec2f faceUVs[4] = {GfVec2f(0.0f, 0.0f), GfVec2f(1.0f, 0.0f), GfVec2f(1.0f, 1.0f), GfVec2f(0.0f, 1.0f)};
 
   UsdAttribute stAttr = cubePrim.GetAttribute(TfToken("primvars:st"));
   ASSERT_TRUE(stAttr.IsValid());
