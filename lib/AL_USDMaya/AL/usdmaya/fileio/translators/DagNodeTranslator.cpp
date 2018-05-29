@@ -53,6 +53,7 @@ MStatus DagNodeTranslator::registerType()
   return MS::kSuccess;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 void DagNodeTranslator::initialiseDefaultShadingGroup(MObject& target)
 {
   MSelectionList sl;
