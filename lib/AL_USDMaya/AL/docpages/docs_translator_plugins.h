@@ -380,7 +380,7 @@ in order to support variant switching!
 
 \b Importable \b by \b Default
 
-When a USD file is imported into a proxy shape node, if you \i always want that node to be imported immediately,
+When a USD file is imported into a proxy shape node, if you \a always want that node to be imported immediately,
 then you should return true from the importableByDefault method (which is the default). This will cause the
 translator to be run as soon as the matching prim type has been encountered. In some cases, you might not want
 those prims to be immediately imported. One example of this is with mesh data.

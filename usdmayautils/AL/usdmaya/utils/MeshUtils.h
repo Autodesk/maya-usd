@@ -145,6 +145,7 @@ public:
   /// \brief  constructs the import context for the specified mesh
   /// \param  mesh the usd geometry to import
   /// \param  parent the maya transform that will be the parent transform of the geometry being imported
+  /// \param  dagName the name for the new mesh node
   /// \param  timeCode the time code at which to gather the data from USD
   MeshImportContext(const UsdGeomMesh& mesh, MObject parent, MString dagName, UsdTimeCode timeCode = UsdTimeCode::EarliestTime())
     : mesh(mesh), m_timeCode(timeCode)
@@ -214,6 +215,9 @@ public:
   /// \brief  constructor
   /// \param  path the DAG path of the Maya mesh being exported
   /// \param  mesh an intialised USD prim into which the data should be copied
+  /// \param  timeCode the time where the mesh data should be written
+  /// \param  performDiff if true, perform a diff check to ensure only data that has changed gets written into USD
+  /// \param  compactionLevel the amount of processing we want to perform when computing interpolation modes
   AL_USDMAYA_UTILS_PUBLIC
   MeshExportContext(
     MDagPath path,
@@ -231,17 +235,16 @@ public:
   void copyCreaseEdges();
 
   /// \brief  copies the vertex data from maya into the usd prim.
-  /// \param  time the time code at which to extract the samples
+  /// \param  timeCode the time code at which to extract the samples
   AL_USDMAYA_UTILS_PUBLIC
   void copyVertexData(UsdTimeCode timeCode);
 
   /// \brief  copies the normal data from maya into the usd prim.
-  /// \param  time the time code at which to extract the samples
+  /// \param  timeCode the time code at which to extract the samples
   AL_USDMAYA_UTILS_PUBLIC
   void copyNormalData(UsdTimeCode timeCode);
 
   /// \brief  copies the vertex crease information from maya into the usd prim.
-  /// \param  mask the diff mask to determine which components to export
   AL_USDMAYA_UTILS_PUBLIC
   void copyCreaseVertices();
 
@@ -249,17 +252,11 @@ public:
   AL_USDMAYA_UTILS_PUBLIC
   void copyFaceConnectsAndPolyCounts();
 
-  /// \brief  copies the UV set data from maya into the usd prim.
-  /// \param  leftHanded if true, left hand indices will be used
-  /// \param  compressData if this is true, checks will be performed against the UV set to see if
-  ///         it is per-vertex, per-face, constant, or faceVarying. This may in some cases reduce the
-  ///         amount of data written into the USD file. If false, the data will be written out as faceVarying
+  /// \brief  copies the UV set data from maya into the usd prim
   AL_USDMAYA_UTILS_PUBLIC
   void copyUvSetData(const bool leftHanded);
 
   /// \brief  copies the colour set data from maya into the usd prim.
-  /// \param  performDiff if true, a diff will be performed against the usd prim, and only data that has
-  ///         changed will be exported
   AL_USDMAYA_UTILS_PUBLIC
   void copyColourSetData();
 

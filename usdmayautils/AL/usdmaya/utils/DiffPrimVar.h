@@ -79,7 +79,7 @@ public:
   /// \param  colourSet true if we should be extracting a colour set
   /// \param  indicesChanged true if the indices on the colour set have changed
   /// \param  valuesChanged true if the values on the colour set have changed
-  AL_USDMAYA_UTILS_PUBLIC
+  /// \param  interpolation the interpolation mode
   PrimVarDiffEntry(
       const UsdGeomPrimvar& pv,
       const MString& setName,
@@ -106,7 +106,8 @@ public:
   /// \param  colourSet true if we should be extracting a colour set
   /// \param  indicesChanged true if the indices on the colour set have changed
   /// \param  valuesChanged true if the values on the colour set have changed
-  AL_USDMAYA_UTILS_PUBLIC
+  /// \param  interpolation the interpolation mode
+  /// \param  elements a returned array of indices used to construct a new output array
   PrimVarDiffEntry(
       const UsdGeomPrimvar& pv,
       const MString& setName,
@@ -135,7 +136,6 @@ public:
   /// \param  colourSet true if we should be extracting a colour set
   /// \param  indicesChanged true if the indices on the colour set have changed
   /// \param  valuesChanged true if the values on the colour set have changed
-  AL_USDMAYA_UTILS_PUBLIC
   PrimVarDiffEntry(
       const UsdGeomPrimvar& pv,
       const MString& setName,

@@ -321,79 +321,68 @@ MStatus DgNodeHelper::setHalfArray(MObject node, MObject attribute, const GfHalf
 MStatus DgNodeHelper::setFloatArray(MObject node, MObject attribute, const float* const values, const size_t count)
 {
   MPlug plug(node, attribute);
-  if(!plug || !plug.isArray())
-    return MS::kFailure;
-
-  AL_MAYA_CHECK_ERROR(plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
-
-  for(size_t i = 0; i != count; ++i)
-  {
-    plug.elementByLogicalIndex(i).setFloat(values[i]);
-  }
-
-  return MS::kSuccess;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-MStatus DgNodeHelper::setFloatArray(const MObject& node, const MObject& attr, const VtArray<float>& values)
-{
-  MPlug plug(node, attr);
   if(!plug)
   {
-    return MS::kFailure;
   }
-
-  MFloatArray fa;
-  for(uint32_t i = 0; i < values.size(); ++i)
+  else
   {
-    fa.append(values[i]);
+    if(!plug.isArray())
+    {
+      MStatus status;
+      MFnFloatArrayData fn;
+      MFloatArray temp(values, count);
+      MObject obj = fn.create(temp, &status);
+      if(status)
+      {
+        plug.setValue(obj);
+        return MS::kSuccess;
+      }
+    }
+    else
+    {
+      AL_MAYA_CHECK_ERROR(plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+      for(size_t i = 0; i != count; ++i)
+      {
+        plug.elementByLogicalIndex(i).setFloat(values[i]);
+      }
+    }
+    return MS::kSuccess;
   }
-
-  MStatus s;
-  MFnFloatArrayData fnDouble;
-  MObject dao = fnDouble.create(fa, &s);
-  plug.setValue(dao);
-
-  return MS::kSuccess;
+  return MS::kFailure;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setDoubleArray(MObject node, MObject attribute, const double* const values, const size_t count)
 {
   MPlug plug(node, attribute);
-  if(!plug || !plug.isArray())
-    return MS::kFailure;
-
-  AL_MAYA_CHECK_ERROR(plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
-
-  for(size_t i = 0; i != count; ++i)
-  {
-    plug.elementByLogicalIndex(i).setDouble(values[i]);
-  }
-
-  return MS::kSuccess;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-MStatus DgNodeHelper::setDoubleArray(const MObject& node, const MObject& attribute, const VtArray<double>& values)
-{
-  MPlug plug(node, attribute);
   if(!plug)
   {
-    return MS::kFailure;
   }
-  MDoubleArray da;
-  for(uint32_t i = 0; i < values.size(); ++i)
+  else
   {
-    da.append(values[i]);
+    if(!plug.isArray())
+    {
+      MStatus status;
+      MFnDoubleArrayData fn;
+      MDoubleArray temp(values, count);
+      MObject obj = fn.create(temp, &status);
+      if(status)
+      {
+        plug.setValue(obj);
+        return MS::kSuccess;
+      }
+    }
+    else
+    {
+      AL_MAYA_CHECK_ERROR(plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+      for(size_t i = 0; i != count; ++i)
+      {
+        plug.elementByLogicalIndex(i).setDouble(values[i]);
+      }
+    }
+    return MS::kSuccess;
   }
-
-  MStatus s;
-  MFnDoubleArrayData fnDouble;
-  MObject dao = fnDouble.create(da, &s);
-  plug.setValue(dao);
-
-  return MS::kSuccess;
+  return MS::kFailure;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

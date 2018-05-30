@@ -40,6 +40,7 @@ public:
 
   AL_USDMAYA_DECLARE_TRANSLATOR(TranslatorTestPlugin);
 
+private:
   MStatus initialize() override;
   MStatus import(const UsdPrim& prim, MObject& parent) override;
   MStatus postImport(const UsdPrim& prim) override;

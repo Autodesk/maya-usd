@@ -186,10 +186,10 @@ public:
   AL_USDMAYA_PUBLIC
   static RefPtr manufacture(const std::string& primType, TranslatorContextPtr context) = delete;
 
-  /// \brief  Internal method used to create a new instance of a plugin translator
-  /// \param  primType the type of translator to manufacture
-  /// \param  context the translation context
-  /// \return a handle to the newly created plugin translator
+  /// \brief  This method will be called prior to the tear down process taking place. This is the last chance you have
+  ///         to do any serialisation whilst all of the existing nodes are available to query.
+  /// \param  prim the prim that may be modified or deleted as a result of a variant switch
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_PUBLIC
   MStatus preTearDown(UsdPrim& prim) override
     { return MS::kSuccess; }

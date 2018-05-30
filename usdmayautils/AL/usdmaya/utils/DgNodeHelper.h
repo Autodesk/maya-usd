@@ -87,7 +87,6 @@ public:
   ///         a handle queried via the MNodeClass interface, or a dynamically added attribute
   /// \param  values the returned array of values
   /// \return MS::kSuccess if ok
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getInt8Array(const MObject& node, const MObject& attr, std::vector<int8_t>& values);
 
   /// \brief  retrieve an array of 8 bit integer values from an attribute in Maya
@@ -106,7 +105,6 @@ public:
   ///         a handle queried via the MNodeClass interface, or a dynamically added attribute
   /// \param  values the returned array of values
   /// \return MS::kSuccess if ok
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getInt16Array(const MObject& node, const MObject& attr, std::vector<int16_t>& values);
 
   /// \brief  retrieve an array of 16 bit integer values from an attribute in Maya
@@ -125,7 +123,6 @@ public:
   ///         a handle queried via the MNodeClass interface, or a dynamically added attribute
   /// \param  values the returned array of values
   /// \return MS::kSuccess if ok
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getInt32Array(const MObject& node, const MObject& attr, std::vector<int32_t>& values);
 
   /// \brief  retrieve an array of 32 bit integer values from an attribute in Maya
@@ -144,7 +141,6 @@ public:
   ///         a handle queried via the MNodeClass interface, or a dynamically added attribute
   /// \param  values the returned array of values
   /// \return MS::kSuccess if ok
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getInt64Array(const MObject& node, const MObject& attr, std::vector<int64_t>& values);
 
   /// \brief  retrieve an array of 64 bit integer values from an attribute in Maya
@@ -163,7 +159,6 @@ public:
   ///         a handle queried via the MNodeClass interface, or a dynamically added attribute
   /// \param  values the returned array of values
   /// \return MS::kSuccess if ok
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getHalfArray(const MObject& node, const MObject& attr, std::vector<GfHalf>& values);
 
   /// \brief  retrieve an array of half values from an attribute in Maya
@@ -182,7 +177,6 @@ public:
   ///         a handle queried via the MNodeClass interface, or a dynamically added attribute
   /// \param  values the returned array of values
   /// \return MS::kSuccess if ok
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getFloatArray(const MObject& node, const MObject& attr, std::vector<float>& values);
 
   /// \brief  retrieve an array of float values from an attribute in Maya
@@ -201,7 +195,6 @@ public:
   ///         a handle queried via the MNodeClass interface, or a dynamically added attribute
   /// \param  values the returned array of values
   /// \return MS::kSuccess if ok
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getDoubleArray(const MObject& node, const MObject& attr, std::vector<double>& values);
 
   /// \brief  retrieve an array of double values from an attribute in Maya
@@ -455,7 +448,6 @@ public:
   /// \param  attr the handle to the attribute
   /// \param  value the returned value
   /// \return MS::kSuccess if all ok
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getHalf(MObject node, MObject attr, GfHalf& value)
   {
     float f;
@@ -753,7 +745,6 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getUsdInt8Array(const MObject& node, const MObject& attr, VtArray<int8_t>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -761,7 +752,6 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getUsdInt16Array(const MObject& node, const MObject& attr, VtArray<int16_t>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -769,7 +759,6 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getUsdInt32Array(const MObject& node, const MObject& attr, VtArray<int32_t>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -777,7 +766,6 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getUsdInt64Array(const MObject& node, const MObject& attr, VtArray<int64_t>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -785,7 +773,6 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getUsdHalfArray(const MObject& node, const MObject& attr, VtArray<GfHalf>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -793,7 +780,6 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getUsdFloatArray(const MObject& node, const MObject& attr, VtArray<float>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -801,7 +787,6 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus getUsdDoubleArray(const MObject& node, const MObject& attr, VtArray<double>& values);
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -830,7 +815,6 @@ public:
   /// \param  attr the handle to the array attribute
   /// \param  values the array values to set on the attribute
   /// \return MS::kSuccess if all ok
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus setInt8Array(const MObject& node, const MObject& attr, const std::vector<int8_t>& values);
 
   /// \brief  sets all values on a 8bit integer array attribute on the specified node
@@ -847,7 +831,6 @@ public:
   /// \param  attr the handle to the array attribute
   /// \param  values the array values to set on the attribute
   /// \return MS::kSuccess if all ok
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus setInt16Array(const MObject& node, const MObject& attr, const std::vector<int16_t>& values);
 
   /// \brief  sets all values on a 16bit integer array attribute on the specified node
@@ -864,7 +847,6 @@ public:
   /// \param  attr the handle to the array attribute
   /// \param  values the array values to set on the attribute
   /// \return MS::kSuccess if all ok
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus setInt32Array(const MObject& node, const MObject& attr, const std::vector<int32_t>& values);
 
   /// \brief  sets all values on a 32bit integer array attribute on the specified node
@@ -881,7 +863,6 @@ public:
   /// \param  attr the handle to the array attribute
   /// \param  values the array values to set on the attribute
   /// \return MS::kSuccess if all ok
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus setInt64Array(const MObject& node, const MObject& attr, const std::vector<int64_t>& values);
 
   /// \brief  sets all values on a 64bit integer array attribute on the specified node
@@ -898,7 +879,6 @@ public:
   /// \param  attr the handle to the array attribute
   /// \param  values the array values to set on the attribute
   /// \return MS::kSuccess if all ok
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus setHalfArray(const MObject& node, const MObject& attr, const std::vector<GfHalf>& values);
 
   /// \brief  sets all values on a float array attribute on the specified node (but convert from half float data)
@@ -915,7 +895,6 @@ public:
   /// \param  attr the handle to the array attribute
   /// \param  values the array values to set on the attribute
   /// \return MS::kSuccess if all ok
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus setFloatArray(const MObject& node, const MObject& attr, const std::vector<float>& values);
 
   /// \brief  sets all values on a float array attribute on the specified node
@@ -927,21 +906,11 @@ public:
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setFloatArray(MObject node, MObject attr, const float* values, size_t count);
 
-  /// \brief  sets the values onto a kFloatArray attribute
-  /// \param  node the node on which the attribute exists
-  /// \param  attr the handle to the array attribute
-  /// \param  values the array values to set on the attribute
-  /// \param  count the number of elements in the values array
-  /// \return MS::kSuccess if all ok
-  AL_USDMAYA_UTILS_PUBLIC
-  static MStatus setFloatArray(const MObject& node, const MObject& attr, const VtArray<float>& values);
-
   /// \brief  sets all values on a double array attribute on the specified node
   /// \param  node the node on which the attribute exists
   /// \param  attr the handle to the array attribute
   /// \param  values the array values to set on the attribute
   /// \return MS::kSuccess if all ok
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus setDoubleArray(const MObject& node, const MObject& attr, const std::vector<double>& values);
 
   /// \brief  sets all values on a double array attribute on the specified node
@@ -953,78 +922,231 @@ public:
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setDoubleArray(MObject node, MObject attr, const double* values, size_t count);
 
-  /// \brief  sets the values onto a kDoubleArray attribute
+  /// \brief  sets all values on a vec2 array attribute on the specified node (converts from half)
   /// \param  node the node on which the attribute exists
   /// \param  attr the handle to the array attribute
   /// \param  values the array values to set on the attribute
   /// \param  count the number of elements in the values array
   /// \return MS::kSuccess if all ok
-  AL_USDMAYA_UTILS_PUBLIC
-  static MStatus setDoubleArray(const MObject& node, const MObject& attr, const VtArray<double>& values);
-
-  /// \brief  sets the value for a MFnNumericData::kDoubleArray type attribute
-  /// \param  node the node on which the attribute exists
-  /// \param  attr the handle to the array attribute
-  /// \param  values the array values to set on the attribute
-  /// \param  count the number of elements in the values array
-  /// \return MS::kSuccess if all ok
-  AL_USDMAYA_UTILS_PUBLIC
-  static MStatus setDoubleArray(MObject node, MObject attr, const double* values);
-
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setVec2Array(MObject node, MObject attr, const GfHalf* values, size_t count);
+
+  /// \brief  sets all values on a vec2 array attribute on the specified node (converts from float)
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setVec2Array(MObject node, MObject attr, const float* values, size_t count);
+
+  /// \brief  sets all values on a vec2 array attribute on the specified node (converts from double)
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setVec2Array(MObject node, MObject attr, const double* values, size_t count);
+
+  /// \brief  sets all values on a vec2 array attribute on the specified node (converts from 32bit int)
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setVec2Array(MObject node, MObject attr, const int32_t* values, size_t count);
 
+  /// \brief  sets all values on a vec3 array attribute on the specified node (converts from half)
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setVec3Array(MObject node, MObject attr, const GfHalf* values, size_t count);
+
+  /// \brief  sets all values on a vec3 array attribute on the specified node (converts from float)
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setVec3Array(MObject node, MObject attr, const float* values, size_t count);
+
+  /// \brief  sets all values on a vec3 array attribute on the specified node (converts from double)
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setVec3Array(MObject node, MObject attr, const double* values, size_t count);
+
+  /// \brief  sets all values on a vec3 array attribute on the specified node (converts from 32bit int)
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setVec3Array(MObject node, MObject attr, const int32_t* values, size_t count);
 
+  /// \brief  sets all values on a vec4 array attribute on the specified node (converts from half)
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setVec4Array(MObject node, MObject attr, const GfHalf* values, size_t count);
+
+  /// \brief  sets all values on a vec4 array attribute on the specified node (converts from float)
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setVec4Array(MObject node, MObject attr, const float* values, size_t count);
+
+  /// \brief  sets all values on a vec4 array attribute on the specified node (converts from double)
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setVec4Array(MObject node, MObject attr, const double* values, size_t count);
+
+  /// \brief  sets all values on a vec4 array attribute on the specified node (converts from 32bit int)
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setVec4Array(MObject node, MObject attr, const int32_t* values, size_t count);
 
+  /// \brief  sets all values on a quat array attribute on the specified node (converts from half)
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setQuatArray(MObject node, MObject attr, const GfHalf* values, size_t count);
+
+  /// \brief  sets all values on a quat array attribute on the specified node (converts from float)
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setQuatArray(MObject node, MObject attr, const float* values, size_t count);
+
+  /// \brief  sets all values on a quat array attribute on the specified node (converts from double)
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setQuatArray(MObject node, MObject attr, const double* values, size_t count);
 
+  /// \brief  sets all values on a 2x2 matrix array attribute on the specified node
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setMatrix2x2Array(MObject node, MObject attr, const float* values, size_t count);
+
+  /// \brief  sets all values on a 2x2 matrix array attribute on the specified node
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setMatrix2x2Array(MObject node, MObject attr, const double* values, size_t count);
+
+  /// \brief  sets all values on a 3x3 matrix array attribute on the specified node
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setMatrix3x3Array(MObject node, MObject attr, const float* values, size_t count);
+
+  /// \brief  sets all values on a 3x3 matrix array attribute on the specified node
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setMatrix3x3Array(MObject node, MObject attr, const double* values, size_t count);
+
+  /// \brief  sets all values on a 4x4 matrix array attribute on the specified node
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setMatrix4x4Array(MObject node, MObject attr, const float* values, size_t count);
+
+  /// \brief  sets all values on a 4x4 matrix array attribute on the specified node
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setMatrix4x4Array(MObject node, MObject attr, const double* values, size_t count);
 
+  /// \brief  sets all values on a string array attribute on the specified node
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setStringArray(MObject node, MObject attr, const std::string* values, size_t count);
 
+  /// \brief  sets all values on a time array attribute on the specified node (converts from float)
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \param  unit the unit of the incoming data
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setTimeArray(MObject node, MObject attr, const float* values, size_t count, MTime::Unit unit);
+
+  /// \brief  sets all values on a angle array attribute on the specified node (converts from float)
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \param  unit the unit of the incoming data
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setAngleArray(MObject node, MObject attr, const float* values, size_t count, MAngle::Unit unit);
+
+  /// \brief  sets all values on a distance array attribute on the specified node (converts from float)
+  /// \param  node the node on which the attribute exists
+  /// \param  attr the handle to the array attribute
+  /// \param  values the array values to set on the attribute
+  /// \param  count the number of elements in the values array
+  /// \param  unit the unit of the incoming data
+  /// \return MS::kSuccess if all ok
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setDistanceArray(MObject node, MObject attr, const float* values, size_t count, MDistance::Unit unit);
 
@@ -1041,7 +1163,6 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus setUsdInt8Array(const MObject& node, const MObject& attr, const VtArray<int8_t>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -1049,7 +1170,6 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus setUsdInt16Array(const MObject& node, const MObject& attr, const VtArray<int16_t>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -1057,7 +1177,6 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus setUsdInt32Array(const MObject& node, const MObject& attr, const VtArray<int32_t>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -1065,7 +1184,6 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus setUsdInt64Array(const MObject& node, const MObject& attr, const VtArray<int64_t>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -1073,7 +1191,6 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus setUsdHalfArray(const MObject& node, const MObject& attr, const VtArray<GfHalf>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -1081,7 +1198,6 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus setUsdFloatArray(const MObject& node, const MObject& attr, const VtArray<float>& values);
 
   /// \name   get data from maya attribute, and store in the USD values array
@@ -1089,7 +1205,6 @@ public:
   /// \param  attr the attribute to get the data from
   /// \param  values the returned array data
   /// \return MS::kSuccess if succeeded
-  AL_USDMAYA_UTILS_PUBLIC
   static MStatus setUsdDoubleArray(const MObject& node, const MObject& attr, const VtArray<double>& values);
 
   //--------------------------------------------------------------------------------------------------------------------

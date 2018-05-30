@@ -75,6 +75,7 @@ public:
   ///         those nodes that should be imported into the Maya Scene.
   /// \param  proxy the proxy shape to create the schema prims on
   /// \param  objsToCreate the mapping returned from createTranformChainsForSchemaPrims
+  /// \param  param the translator plugin options
   static void createSchemaPrims(
       nodes::ProxyShape* proxy,
       const std::vector<UsdPrim>& objsToCreate,
