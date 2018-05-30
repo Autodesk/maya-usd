@@ -171,6 +171,7 @@ set(Boost_LINK_LIBRARIES
 if(WIN32)
     list(APPEND Boost_LINK_LIBRARIES
         ${Boost_CHRONO_LIBRARY}
+        ${Boost_DATE_TIME_LIBRARY}
     )
 endif()
 
