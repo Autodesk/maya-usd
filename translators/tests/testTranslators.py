@@ -1,21 +1,15 @@
 import unittest
 import tempfile
-import maya.standalone
 import maya.cmds as mc
 
 from pxr import Tf, Usd, UsdGeom, Gf
 import translatortestutils
 
-class testTranslator(unittest.TestCase):
+class TestTranslator(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        maya.standalone.initialize()
         mc.loadPlugin('AL_USDMayaPlugin')
             
-    @classmethod
-    def tearDownClass(cls):
-        maya.standalone.uninitialize()
-    
     @classmethod
     def tearDown(cls):
         mc.file(f=True, new=True)
@@ -400,5 +394,7 @@ class testTranslator(unittest.TestCase):
             self.assertAlmostEqual(actualPoint[1], expectedPoint[1])
             self.assertAlmostEqual(actualPoint[2], expectedPoint[2])
 
-if __name__ == '__main__':
-    unittest.main()
+tests = unittest.TestLoader().loadTestsFromTestCase(TestTranslator)
+result = unittest.TextTestRunner(verbosity=2).run(tests)
+
+mc.quit(exitCode=(not result.wasSuccessful()))
