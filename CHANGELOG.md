@@ -1,3 +1,40 @@
+## v0.28.1 (2018-06-06)
+
+### Added
+* Documentation for mesh export, interpolation modes, and diffing.
+* "-fd" flag added to the import command and the translate command
+* Support for prim var interpolation modes in the import/export code paths (currently UV sets only, colour sets & normals will be in a later PR).
+* Support for diffing all variations of the interpolation modes on prim vars.
+* Routines to determine the interpolation modes on vec2/vec3/vec4 types.
+-  AL_usdmaya_LayerManagerCommands to retrieve layers that have been modified and that have been the EditTarget.
+
+### Changed
++ Built using USD-0.8.5
++ ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims now checks all the prims' parents' metadata for their unmerged status. If found, the transform chain creation skips the current prim in place of its parent.
++ ProxyShapePostLoadProcess::createSchemaPrims now checks all the prims' parents' metadata for their unmerged status. If found, the schema prim import will instead take place under the parent node.
++ Mesh::import now checks the prim's parents' metadata for its unmerged status. If found, the created shape node will not have the appended "Shape" string.
+* Mesh attributes queries use EarliestTime timecode
+* Functions in DgNodeTranslator are moved to DgNodeHelper in AL_USDMayaUtils
+* AttributeType.h/.cpp are moved to AL_USDMayaUtils
+- LayerManager API has been updated so you can now inspect all layers that have been set as an EditTarget and are Dirty.
++ Updated endToEndMaya tutorial to work with latest USD API changes.
+* All hard coded /tmp paths in the unit tests, in favour of a linux/win32 solution.
+
+### Fixed
+
+- Fix for when tearing down a shape, that it's sibling shapes are left alone in Maya.
+* time1.outTime is now connected to proxy shape nodes when transforms are selected during creation.
+* Selected transforms are no longer renamed when importing a proxy shape.
+* Tests build restored.
+- Fix for Issue "meshTransform cannot execute twice" #82
+* Bug in the import/export of mesh normals
+* Normals export now correctly listen to the exporter options.
+* AL_usdmaya_plugin can be unloaded correctly.
+* Passing the time value into the nurbs, camera, and transform translators on export.
+
+### Removed
+* Removed the code that reversed polygon windings if the 'leftHanded' meta data flag was encountered. Instead, the 'opposite' flag is set on the maya mesh.
+
 ## v0.27.10 (2018-05-07)
 
 ### Added
