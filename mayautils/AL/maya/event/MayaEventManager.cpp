@@ -1179,6 +1179,7 @@ MayaEventManager* MayaEventManager::g_instance = 0;
 //----------------------------------------------------------------------------------------------------------------------
 static const char* const eventTypeStrings[] =
 {
+  "unknown",
   "custom",
   "schema",
   "coremaya",
