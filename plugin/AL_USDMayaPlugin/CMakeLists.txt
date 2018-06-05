@@ -32,11 +32,15 @@ target_include_directories(${PXR_PACKAGE}
 if(MSVC)
     set_target_properties(${PXR_PACKAGE} PROPERTIES SUFFIX ".mll")
 else()
+    set(rpath "$ORIGIN:$ORIGIN/../lib")
+    if (CMAKE_INSTALL_RPATH)
+        set(rpath "${CMAKE_INSTALL_RPATH}:${rpath}")
+    endif()
     set_target_properties(${PXR_PACKAGE}
         PROPERTIES
             PREFIX ""
-            INSTALL_RPATH "$ORIGIN:$ORIGIN/../lib"
-)
+            INSTALL_RPATH "${rpath}"
+    )
 endif()
 
 install(TARGETS
