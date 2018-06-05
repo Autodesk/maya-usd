@@ -222,4 +222,6 @@ install(
 
 ####################################################################################################
 
-add_subdirectory(tests)
+if(NOT SKIP_USDMAYA_TESTS)
+    add_subdirectory(tests)
+endif()
