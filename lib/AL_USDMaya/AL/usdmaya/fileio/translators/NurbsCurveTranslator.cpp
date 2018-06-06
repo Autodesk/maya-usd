@@ -83,11 +83,11 @@ UsdPrim NurbsCurveTranslator::exportObject(UsdStageRefPtr stage, MDagPath path, 
   UsdGeomNurbsCurves nurbs = UsdGeomNurbsCurves::Define(stage, usdPath);
   MFnNurbsCurve fnCurve(path);
 
-  AL::usdmaya::utils::copyPoints(fnCurve, nurbs.GetPointsAttr());
-  AL::usdmaya::utils::copyCurveVertexCounts(fnCurve, nurbs.GetCurveVertexCountsAttr());
-  AL::usdmaya::utils::copyKnots(fnCurve, nurbs.GetKnotsAttr());
-  AL::usdmaya::utils::copyRanges(fnCurve, nurbs.GetRangesAttr());
-  AL::usdmaya::utils::copyOrder(fnCurve, nurbs.GetOrderAttr());
+  AL::usdmaya::utils::copyPoints(fnCurve, nurbs.GetPointsAttr(), params.m_timeCode);
+  AL::usdmaya::utils::copyCurveVertexCounts(fnCurve, nurbs.GetCurveVertexCountsAttr(), params.m_timeCode);
+  AL::usdmaya::utils::copyKnots(fnCurve, nurbs.GetKnotsAttr(), params.m_timeCode);
+  AL::usdmaya::utils::copyRanges(fnCurve, nurbs.GetRangesAttr(), params.m_timeCode);
+  AL::usdmaya::utils::copyOrder(fnCurve, nurbs.GetOrderAttr(), params.m_timeCode);
 
   MObject widthObj;
   MPlug widthPlug;

@@ -15,6 +15,7 @@
 //
 #include <gtest/gtest.h>
 #include "AL/UnitTestHarness.h"
+#include "test_usdmaya.h"
 #include "maya/MSyntax.h"
 #include "maya/MArgDatabase.h"
 #include "maya/MGlobal.h"
@@ -197,11 +198,11 @@ MStatus UnitTestHarness::doIt(const MArgList& args)
 //------------------------------------------------------------------------------
 void UnitTestHarness::cleanTemporaryFiles() const
 {
+  const MString temp_path = buildTempPath("AL_USDMayaTests*.*");
   MString cmd(
       "import glob;"
       "import os;"
-      "[os.remove(x) for x in glob.glob('/tmp/AL_USDMayaTests*.usda')];"
-      "[os.remove(x) for x in glob.glob('/tmp/AL_USDMayaTests*.ma')]"
+      "[os.remove(x) for x in glob.glob('" + temp_path + "')];"
       );
 
   MStatus stat = MGlobal::executePythonCommand(cmd);

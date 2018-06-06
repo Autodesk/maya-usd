@@ -107,7 +107,7 @@ TEST(PrimFilter, removedPaths)
 {
   MFileIO::newFile(true);
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_removedPaths.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_removedPaths.usda");
 
   // generate some data for the proxy shape
   {

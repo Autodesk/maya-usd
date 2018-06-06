@@ -458,6 +458,43 @@ Existing TF_DEBUG flags are:
 * ALUSDMAYA_LAYERS
 * ALUSDMAYA_DRAW
 * ALUSDMAYA_SELECTION
+* ALUSDMAYA_RENDERER
+
+Within Maya itself, the MEL command AL_usdmaya_UsdDebugCommand allows you to list, disable, enable, and query the debug notices throughout USD and AL_USDMaya. 
+To query the list of available notices, simply execute:
+
+```c++   
+print `AL_usdmaya_UsdDebugCommand -ls`;
+```
+To enable a particular notice:
+
+```c++
+AL_usdmaya_UseDebugCommand -en "ALUSDMAYA_TRANSLATORS";
+```
+
+To query the state of a particular notice, use the -st flag:
+
+```c++
+if(`AL_usdmaya_UseDebugCommand -st "ALUSDMAYA_TRANSLATORS"`)
+	print "ALUSDMAYA_TRANSLATORS is enabled\n";
+else
+	print "ALUSDMAYA_TRANSLATORS is disabled\n";
+``` 
+To disable a particular notice:
+
+```c++
+AL_usdmaya_UseDebugCommand -ds "ALUSDMAYA_TRANSLATORS";
+```
+
+It should also be noted that the ```USD->Debug->TfDebug Options``` menu item will bring up a GUI that allows you to enable/disable all registered notices.
+
+If you wish to add additional notices for debugging C++, add the new entry within the DebugCodes.h and DebugCodes.cpp. It is then possible to format messages
+targeting that new flag using the standard printf formatting:
+
+```c++
+TF_DEBUG(ALUSDMAYA_MY_CUSTOM_FLAG).Msg("Hello world, this is an int %d, and this is a string \"$s\"\n", 42, "hellllllo!");
+``` 
+
 
 ##  running in batch mode
 @todo add doc

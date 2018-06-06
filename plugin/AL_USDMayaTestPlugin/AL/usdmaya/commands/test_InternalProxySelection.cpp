@@ -48,7 +48,7 @@ TEST(InternalProxyShapeSelect, selectNode)
     return stage;
   };
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_internalSelectNode.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_internalSelectNode.usda");
   std::string sessionLayerContents;
 
 

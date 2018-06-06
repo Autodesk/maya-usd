@@ -174,7 +174,7 @@ void Mesh::writeEdits(UsdPrim& prim)
         context.copyInvisibleHoles();
         context.copyCreaseVertices();
         context.copyCreaseEdges();
-        context.copyUvSetData(false);
+        context.copyUvSetData();
         context.copyColourSetData();
         DgNodeTranslator::copyDynamicAttributes(obj.object(), prim);
       }

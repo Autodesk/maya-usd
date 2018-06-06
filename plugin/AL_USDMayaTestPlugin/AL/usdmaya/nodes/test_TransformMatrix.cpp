@@ -86,7 +86,7 @@ TEST(Transform, hasAnimation)
   MFileIO::newFile(true);
 
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_transform_animations.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_transform_animations.usda");
   std::string sessionLayerContents;
 
   // generate some data for the proxy shape
@@ -243,7 +243,7 @@ TEST(Transform, primHas)
   MFileIO::newFile(true);
 
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_transform_primHas.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_transform_primHas.usda");
   std::string sessionLayerContents;
 
   // generate some data for the proxy shape
@@ -478,7 +478,7 @@ TEST(Transform, primValuesPushedToUsdMatchMaya)
   MFileIO::newFile(true);
 
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_transform_primValuesPushedToUsdMatchMaya.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_transform_primValuesPushedToUsdMatchMaya.usda");
   std::string sessionLayerContents;
 
   // generate some data for the proxy shape
@@ -780,7 +780,7 @@ TEST(Transform, animationValuesFromUsdAreCorrectlyRead)
   // Force it to 'parallel' for now.
   MGlobal::executeCommand(MString("evaluationManager -mode \"parallel\";"));
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_transform_animationValuesFromUsdAreCorrectlyRead.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_transform_animationValuesFromUsdAreCorrectlyRead.usda");
   std::string sessionLayerContents;
 
   // generate some data for the proxy shape
@@ -1065,7 +1065,7 @@ TEST(Transform, getTimeCode)
   // Force it to 'parallel' for now.
   MGlobal::executeCommand(MString("evaluationManager -mode \"parallel\";"));
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_transform_getTimeCode.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_transform_getTimeCode.usda");
   std::string sessionLayerContents;
 
   // generate some data for the proxy shape

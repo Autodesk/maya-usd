@@ -927,16 +927,16 @@ public:
   static MObject addVec2dAttr(const char* longName, const char* shortName, uint32_t flags);
 
   /// \brief  add a new double attribute to this node type.
+  /// \param  node the node to which the attribute will be added
   /// \param  longName  long name for the attribute
   /// \param  shortName  short name for the attribute
-  /// \param  defaultValue  the default value for the attribute
   /// \param  flags  a bitfield containing a mask of the AttributeFlags enumeration. Describes if the attribute is an input/output/etc
   /// \return the MObject for the attribute
   AL_MAYA_UTILS_PUBLIC
   static MObject addFloatArrayAttr(const MObject& node, const char* longName, const char* shortName, uint32_t flags);
 
   /// \brief  add a new DoubleArray attribute to this node type.
-  /// \param  node which the attribute will be added
+  /// \param  node the node to which the attribute will be added
   /// \param  longName  long name for the attribute
   /// \param  shortName  short name for the attribute
   /// \param  flags  a bitfield containing a mask of the AttributeFlags enumeration. Describes if the attribute is an input/output/etc

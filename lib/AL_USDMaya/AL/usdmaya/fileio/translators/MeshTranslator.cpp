@@ -121,7 +121,7 @@ UsdPrim MeshTranslator::exportObject(UsdStageRefPtr stage, MDagPath path, const 
     }
     if(params.m_meshUvs)
     {
-      context.copyUvSetData(params.m_leftHandedUV);
+      context.copyUvSetData();
     }
     if(params.m_meshNormals)
     {
@@ -159,7 +159,7 @@ UsdPrim MeshTranslator::exportUV(UsdStageRefPtr stage, MDagPath path, const SdfP
   AL::usdmaya::utils::MeshExportContext context(path, mesh, params.m_timeCode);
   if (context)
   {
-    context.copyUvSetData(params.m_leftHandedUV);
+    context.copyUvSetData();
   }
   return overPrim;
 }

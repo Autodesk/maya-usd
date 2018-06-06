@@ -964,58 +964,6 @@ MStatus LayerSetMuted::redoIt()
     m_layer->SetMuted(m_muted);
   return MS::kSuccess;
 }
-//----------------------------------------------------------------------------------------------------------------------
-/// \brief  Get / Set renderer plugin settings
-//----------------------------------------------------------------------------------------------------------------------
-AL_MAYA_DEFINE_COMMAND(ManageRenderer, AL_usdmaya);
-
-//----------------------------------------------------------------------------------------------------------------------
-MArgDatabase ManageRenderer::makeDatabase(const MArgList& args)
-{
-  MStatus status;
-  MArgDatabase database(createSyntax(), args, &status);
-  if(!status)
-    throw status;
-  return database;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-MSyntax ManageRenderer::createSyntax()
-{
-  MSyntax syn;
-  syn.addFlag("-h", "-help", MSyntax::kNoArg);
-  syn.addFlag("-sp", "-setPlugin", MSyntax::kString);
-  return syn;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-bool ManageRenderer::isUndoable() const
-{
-  return false;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-MStatus ManageRenderer::doIt(const MArgList& argList)
-{
-  try
-  {
-    MArgDatabase args = makeDatabase(argList);
-    AL_MAYA_COMMAND_HELP(args, g_helpText);
-
-    if(args.isFlagSet("-sp"))
-    {
-      MString name;
-      args.getFlagArgument("-sp", 0, name);
-      bool result = nodes::LayerManager::findOrCreateManager()->setRendererPlugin(name);
-      setResult(result);
-    }
-  }
-  catch(const MStatus& status)
-  {
-    return status;
-  }
-  return MS::kSuccess;
-}
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief Retrieves all the layers that have been set as the EditTarget from any Stage during this session.
@@ -1359,16 +1307,6 @@ LayerManager Command Overview:
 
   Retrieves all Layers, except SessionLayers, that have been set as the EditTarget and have been modified:
   LayerManager -dlo "ProxyShape1"
-)";
-
-//----------------------------------------------------------------------------------------------------------------------
-const char* const ManageRenderer::g_helpText = R"(
-ManageRenderer Overview:
-
-  This command allows you to manage global renderer settings:
-
-     ManageRenderer -sp "Glimpse";  //< sets current renderer to glimpse
-     ManageRenderer -sp "GL";  //< sets current renderer to Hydra GL
 )";
 
 //----------------------------------------------------------------------------------------------------------------------

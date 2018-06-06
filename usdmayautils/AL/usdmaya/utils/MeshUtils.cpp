@@ -205,28 +205,6 @@ void MeshImportContext::gatherFaceConnectsAndVertices()
   fvi.Get(&faceVertexIndices, m_timeCode);
   connects.setLength(faceVertexIndices.size());
 
-  if(leftHanded)
-  {
-    int32_t* index = static_cast<int32_t*>(faceVertexIndices.data());
-    int32_t* indexMax = index + faceVertexIndices.size();
-    for(auto faceVertexCount: faceVertexCounts)
-    {
-      int32_t* start = index;
-      int32_t* end = index + (faceVertexCount - 1);
-      if(start < indexMax && end < indexMax)
-      {
-        std::reverse(start, end + 1);
-        index += faceVertexCount;
-      }
-      else
-      {
-        faceVertexIndices.clear();
-        fvi.Get(&faceVertexIndices, m_timeCode);
-        break;
-      }
-    }
-  }
-
   mesh.GetPointsAttr().Get(&pointData, m_timeCode);
   if(mesh.GetNormalsAttr().HasAuthoredValueOpinion())
   {
@@ -245,32 +223,13 @@ void MeshImportContext::gatherFaceConnectsAndVertices()
        mesh.GetNormalsInterpolation() == UsdGeomTokens->varying)
     {
       normals.setLength(normalsData.size());
-      if(leftHanded && normalsData.size())
+      double* const optr = &normals[0].x;
+      const float* const iptr = (const float*)normalsData.cdata();
+      for(size_t i = 0, n = normalsData.size() * 3; i < n; i += 3)
       {
-        int32_t index = 0;
-        double* const optr = &normals[0].x;
-        const float* const iptr = (const float*)normalsData.cdata();
-        for(auto faceVertexCount: faceVertexCounts)
-        {
-          for(int32_t i = index, j = index + faceVertexCount - 1; i < index + faceVertexCount; i++, j--)
-          {
-            optr[3 * j] = iptr[3 * i];
-            optr[3 * j + 1] = iptr[3 * i + 1];
-            optr[3 * j + 2] = iptr[3 * i + 2];
-          }
-          index += faceVertexCount;
-        }
-      }
-      else
-      {
-        double* const optr = &normals[0].x;
-        const float* const iptr = (const float*)normalsData.cdata();
-        for(size_t i = 0, n = normalsData.size() * 3; i < n; i += 3)
-        {
-          optr[i + 0] = iptr[i + 0];
-          optr[i + 1] = iptr[i + 1];
-          optr[i + 2] = iptr[i + 2];
-        }
+        optr[i + 0] = iptr[i + 0];
+        optr[i + 1] = iptr[i + 1];
+        optr[i + 2] = iptr[i + 2];
       }
     }
     else
@@ -1101,6 +1060,11 @@ MeshExportContext::MeshExportContext(
     fnMesh.getVertices(faceCounts, faceConnects);
   }
 
+  if(fnMesh.findPlug("opposite", true).asBool())
+  {
+    mesh.CreateOrientationAttr().Set(UsdGeomTokens->leftHanded);
+  }
+
   if(performDiff)
   {
     diffGeom = utils::diffGeom(mesh, fnMesh, m_timeCode, kAllComponents);
@@ -1277,7 +1241,7 @@ static void reverseIndices(VtArray<int32_t>& indices, const MIntArray& counts)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void MeshExportContext::copyUvSetData(bool leftHanded)
+void MeshExportContext::copyUvSetData()
 {
   UsdPrim prim = mesh.GetPrim();
   MStringArray uvSetNames;
@@ -1407,11 +1371,6 @@ void MeshExportContext::copyUvSetData(bool leftHanded)
             VtArray<int32_t> uvIndices;
             int32_t* ptr = &uvIds[0];
             uvIndices.assign(ptr, ptr + uvIds.length());
-            if (leftHanded)
-            {
-              reverseIndices(uvIndices, uvCounts);
-            }
-
             uvSet.SetIndices(uvIndices, m_timeCode);
           }
         }
@@ -1501,10 +1460,6 @@ void MeshExportContext::copyUvSetData(bool leftHanded)
               VtArray<int32_t> uvIndices;
               int32_t* ptr = &uvIds[0];
               uvIndices.assign(ptr, ptr + uvIds.length());
-              if (leftHanded)
-              {
-                reverseIndices(uvIndices, uvCounts);
-              }
               uvSet.SetIndices(uvIndices, m_timeCode);
             }
           }

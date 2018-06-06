@@ -1,5 +1,6 @@
 
 #include "AL/event/EventHandler.h"
+#include <maya/MFileIO.h>
 #include <maya/MGlobal.h>
 #include <gtest/gtest.h>
 
@@ -978,6 +979,7 @@ runEventLookupTest;
 //----------------------------------------------------------------------------------------------------------------------
 TEST(EventCommands, runBasicNodeEventTest)
 {
+  MFileIO::newFile(true);
   MGlobal::executeCommand("undoInfo -st on;");
   int result = -1;
   EXPECT_TRUE(MGlobal::executeCommand(runBasicNodeEventTest, result, false, true) == MS::kSuccess);
@@ -988,6 +990,7 @@ TEST(EventCommands, runBasicNodeEventTest)
 //----------------------------------------------------------------------------------------------------------------------
 TEST(EventCommands, runBasicGlobalEventTest)
 {
+  MFileIO::newFile(true);
   MGlobal::executeCommand("undoInfo -st on;");
   int result = -1;
   EXPECT_TRUE(MGlobal::executeCommand(runBasicGlobalEventTest, result, false, true) == MS::kSuccess);
@@ -998,6 +1001,7 @@ TEST(EventCommands, runBasicGlobalEventTest)
 //----------------------------------------------------------------------------------------------------------------------
 TEST(EventCommands, runDynamicNodeEventTest)
 {
+  MFileIO::newFile(true);
   MGlobal::executeCommand("undoInfo -st on;");
   int result = -1;
   EXPECT_TRUE(MGlobal::executeCommand(runDynamicNodeEventTest, result, false, true) == MS::kSuccess);

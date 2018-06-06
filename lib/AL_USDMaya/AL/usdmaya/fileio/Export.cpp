@@ -1006,7 +1006,7 @@ MStatus ExportCommand::doIt(const MArgList& args)
   }
   if(argData.isFlagSet("luv", &status))
   {
-    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("luv", 0, m_params.m_leftHandedUV), "ALUSDExport: Unable to fetch \"m_leftHanded\" argument");
+    MGlobal::displayWarning("-luv flag is deprecated in AL_usdmaya_ExportCommand\n");
   }
   if(argData.isFlagSet("mt", &status))
   {

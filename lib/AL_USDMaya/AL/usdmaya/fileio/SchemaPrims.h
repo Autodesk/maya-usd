@@ -42,7 +42,7 @@ extern const TfToken ALExcludedPrimSchema;
 /// \param  created the returned MObject of the created node (can be null)
 /// \param  context a custom context to use when importing the prim
 /// \param  translator the custom translator to use to import the prim
-/// \param  forceImport overrides the default import state of the translator and forces and import.
+/// \param  param params controlling the import of the plugin translator nodes
 /// \return true if the import succeeded, false otherwise
 /// \ingroup   fileio
 //----------------------------------------------------------------------------------------------------------------------

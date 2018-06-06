@@ -43,6 +43,7 @@ const char* const ExportTranslator::timelineLevel[] = {
     "Default Time",
     "Earliest Time",
     "Current Time",
+    "Min Timeline Range",
     0
 };
 
@@ -125,6 +126,9 @@ MStatus ExportTranslator::writer(const MFileObject& file, const AL::maya::utils:
     params.m_timeCode = UsdTimeCode::EarliestTime();
     break;
   case 2:
+    params.m_timeCode = UsdTimeCode(MAnimControl::currentTime().value());
+    break;
+  case 3:
     params.m_timeCode = UsdTimeCode(params.m_minFrame);
     break;
   }

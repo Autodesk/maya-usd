@@ -13,40 +13,48 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #pragma once
-#include "AL/usdmaya/fileio/translators/TranslatorBase.h"
+
+#include "../Api.h"
+
+#include "AL/usdmaya/ForwardDeclares.h"
+#include "AL/maya/utils/Api.h"
+#include "AL/maya/utils/MayaHelperMacros.h"
+#include "maya/MDGModifier.h"
+#include "maya/MObject.h"
+#include "maya/MPxCommand.h"
+
+#include "pxr/pxr.h"
+#include "pxr/usd/usd/stage.h"
+#include <functional>
 
 namespace AL {
 namespace usdmaya {
-namespace fileio {
-namespace translators {
+namespace cmds {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief Class to translate a mesh in and out of maya.
+/// \brief  Get / Set renderer plugin settings
+/// \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
-class NurbsCurve : public TranslatorBase
+class ManageRenderer
+  : public MPxCommand
 {
+  MArgDatabase makeDatabase(const MArgList& args);
 public:
-  AL_USDMAYA_DECLARE_TRANSLATOR(NurbsCurve);
+  AL_MAYA_DECLARE_COMMAND();
 private:
-  MStatus initialize() override;
-  MStatus import(const UsdPrim& prim, MObject& parent) override;
-  MStatus tearDown(const SdfPath& path) override;
-  MStatus update(const UsdPrim& prim) override;
-  MStatus preTearDown(UsdPrim& prim) override;
-
-  bool supportsUpdate() const override
-  { return false; }
-  bool importableByDefault() const override
-  { return false; }
-  void writeEdits(UsdPrim& prim);
-  static MObject m_visible;
+  bool isUndoable() const override;
+  MStatus doIt(const MArgList& args) override;
 };
 
+
+/// \brief  function called on startup to generate the menu & option boxes for the layer commands
+/// \ingroup commands
+AL_USDMAYA_PUBLIC
+void constructRendererCommandGuis();
+
 //----------------------------------------------------------------------------------------------------------------------
-} // namespace translators
-} // namespace fileio
-} // namespace usdmaya
-} // namespace AL
+} // cmds
+} // usdmaya
+} // AL
 //----------------------------------------------------------------------------------------------------------------------

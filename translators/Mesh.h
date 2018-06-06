@@ -29,6 +29,7 @@ class Mesh : public TranslatorBase
 {
 public:
   AL_USDMAYA_DECLARE_TRANSLATOR(Mesh);
+private:
   MStatus initialize() override;
   MStatus import(const UsdPrim& prim, MObject& parent) override;
   MStatus tearDown(const SdfPath& path) override;
@@ -39,8 +40,6 @@ public:
     { return false; } // Turned off supportsUpdate to get tearDown working correctly
   bool importableByDefault() const override
     { return false; }
-
-private:
   void writeEdits(UsdPrim& prim);
 };
 

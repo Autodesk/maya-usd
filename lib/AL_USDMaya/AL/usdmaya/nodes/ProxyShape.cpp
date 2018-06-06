@@ -50,6 +50,7 @@ typedef boost::filesystem::path path;
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
+#include "AL/usdmaya/nodes/RendererManager.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
@@ -256,8 +257,11 @@ SdfPathVector ProxyShape::getExcludePrimPaths() const
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::getExcludePrimPaths\n");
 
-  MString paths = excludePrimPathsPlug().asString();
-  return getPrimPathsFromCommaJoinedString(paths);
+  SdfPathVector paths = getPrimPathsFromCommaJoinedString(excludePrimPathsPlug().asString());
+  SdfPathVector temp = getPrimPathsFromCommaJoinedString(excludedTranslatedGeometryPlug().asString());
+  paths.insert(paths.end(), temp.begin(), temp.end());
+
+  return paths;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -433,8 +437,8 @@ void ProxyShape::constructGLImagingEngine()
                                    translatedGeo.end());
 
       m_engine = new UsdImagingGLHdEngine(m_path, excludedGeometryPaths);
-      // set renderer plugin based on layerManager setting
-      LayerManager* manager = LayerManager::findManager();
+      // set renderer plugin based on RendererManager setting
+      RendererManager* manager = RendererManager::findManager();
       if(manager && m_engine)
       {
         manager->changeRendererPlugin(this, true);
@@ -1605,6 +1609,14 @@ void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& p
           proxy->m_path = rootPath;
         }
         proxy->constructGLImagingEngine();
+      }
+    }
+    else
+    if(plug == m_excludePrimPaths || plug == m_excludedTranslatedGeometry)
+    {
+      if(proxy->m_stage)
+      {
+        proxy->constructExcludedPrims();
       }
     }
   }

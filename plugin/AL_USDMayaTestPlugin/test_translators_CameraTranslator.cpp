@@ -160,7 +160,7 @@ TEST(translators_CameraTranslator, animated_io)
 TEST(translators_CameraTranslator, cameraShapeName)
 {
   auto constructTestUSDFile = []() {
-    const std::string temp_bootstrap_path = "/tmp/AL_USDMayaTests_camShapeName.usda";
+    const std::string temp_bootstrap_path = buildTempPath("AL_USDMayaTests_camShapeName.usda");
 
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     UsdGeomXform root = UsdGeomXform::Define(stage, SdfPath("/root"));

@@ -34,6 +34,7 @@ public:
   MStatus update(const UsdPrim& prim) override;
   MStatus tearDown(const SdfPath& primPath) override;
   bool supportsUpdate() const override;
+  bool importableByDefault() const override;
 
 private:
 
@@ -376,5 +377,25 @@ are deleted in a specific order, or you have some other book keeping exercise to
 
 It should be noted that whilst preTearDown and update are optional, tearDown is NOT. You must implement this method
 in order to support variant switching!
+
+\b Importable \b by \b Default
+
+When a USD file is imported into a proxy shape node, if you \a always want that node to be imported immediately,
+then you should return true from the importableByDefault method (which is the default). This will cause the
+translator to be run as soon as the matching prim type has been encountered. In some cases, you might not want
+those prims to be immediately imported. One example of this is with mesh data.
+
+If you are importing a very geometry heavy scene with a large number of dense meshes, you would want to keep
+those meshes within USD/Hydra for as long as possible for performance reasons. If you return false from
+importableByDefault, then that particular node type can only be manually imported by calling the AL_usdmaya_TranslatePrim
+command. This means that importing and displaying the data will be quick by default, however if you need to make
+modifications to that particular prim, you'll be able to selectively import the data when needed.
+
+\code
+bool PolyCubeNodeTranslator::importableByDefault() const
+{
+  return false;
+}
+\endcode
 
 */

@@ -196,15 +196,15 @@ MStatus CameraTranslator::copyAttributes(const MObject& from, UsdPrim& prim, con
   AL_MAYA_CHECK_ERROR(getDistance(from, m_focusDistance, focusDistance), errorString);
   AL_MAYA_CHECK_ERROR(getDouble(from, m_lensSqueezeRatio, squeezeRatio), errorString);
 
-  usdCamera.GetProjectionAttr().Set(isOrthographic ? UsdGeomTokens->orthographic : UsdGeomTokens->perspective);
-  usdCamera.GetHorizontalApertureAttr().Set(float(horizontalAperture * squeezeRatio * inches_to_mm));
-  usdCamera.GetVerticalApertureAttr().Set(float(verticalAperture * squeezeRatio * inches_to_mm));
-  usdCamera.GetHorizontalApertureOffsetAttr().Set(float(horizontalApertureOffset * squeezeRatio * inches_to_mm));
-  usdCamera.GetVerticalApertureOffsetAttr().Set(float(verticalApertureOffset * squeezeRatio * inches_to_mm));
-  usdCamera.GetFocalLengthAttr().Set(float(focalLength));
-  usdCamera.GetClippingRangeAttr().Set(GfVec2f(nearDistance.as(MDistance::kCentimeters), farDistance.as(MDistance::kCentimeters)));
-  usdCamera.GetFStopAttr().Set(float(fstop));
-  usdCamera.GetFocusDistanceAttr().Set(float(focusDistance.as(MDistance::kCentimeters)));
+  usdCamera.GetProjectionAttr().Set(isOrthographic ? UsdGeomTokens->orthographic : UsdGeomTokens->perspective, params.m_timeCode);
+  usdCamera.GetHorizontalApertureAttr().Set(float(horizontalAperture * squeezeRatio * inches_to_mm), params.m_timeCode);
+  usdCamera.GetVerticalApertureAttr().Set(float(verticalAperture * squeezeRatio * inches_to_mm), params.m_timeCode);
+  usdCamera.GetHorizontalApertureOffsetAttr().Set(float(horizontalApertureOffset * squeezeRatio * inches_to_mm), params.m_timeCode);
+  usdCamera.GetVerticalApertureOffsetAttr().Set(float(verticalApertureOffset * squeezeRatio * inches_to_mm), params.m_timeCode);
+  usdCamera.GetFocalLengthAttr().Set(float(focalLength), params.m_timeCode);
+  usdCamera.GetClippingRangeAttr().Set(GfVec2f(nearDistance.as(MDistance::kCentimeters), farDistance.as(MDistance::kCentimeters)), params.m_timeCode);
+  usdCamera.GetFStopAttr().Set(float(fstop), params.m_timeCode);
+  usdCamera.GetFocusDistanceAttr().Set(float(focusDistance.as(MDistance::kCentimeters)), params.m_timeCode);
 
   AnimationTranslator* animTranslator = params.m_animTranslator;
   if(animTranslator)

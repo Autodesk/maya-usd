@@ -75,7 +75,7 @@ TEST(ProxyShapeSelect, selectNode)
     }
   };
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_selectNode.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_selectNode.usda");
   std::string sessionLayerContents;
 
 
@@ -559,7 +559,7 @@ TEST(ProxyShapeSelect, selectParent)
     return stage;
   };
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_selectParent.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_selectParent.usda");
   std::string sessionLayerContents;
 
   // generate some data for the proxy shape
@@ -616,7 +616,7 @@ TEST(ProxyShapeSelect, selectParentViaMaya)
     return stage;
   };
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_selectParent.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_selectParent.usda");
   std::string sessionLayerContents;
 
   // generate some data for the proxy shape
@@ -673,7 +673,7 @@ TEST(ProxyShapeSelect, selectSamePathTwice)
     return stage;
   };
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_selectParent.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_selectParent.usda");
   std::string sessionLayerContents;
 
   // generate some data for the proxy shape
@@ -743,7 +743,7 @@ TEST(ProxyShapeSelect, selectSamePathTwiceViaMaya)
     return stage;
   };
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_selectParent.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_selectParent.usda");
   std::string sessionLayerContents;
 
   // generate some data for the proxy shape
@@ -838,7 +838,7 @@ TEST(ProxyShapeSelect, repeatedSelection)
     ASSERT_EQ(0, proxy->selectedPaths().size());
   };
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_repeatedSelection.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_repeatedSelection.usda");
 
   // generate some data for the proxy shape
   {

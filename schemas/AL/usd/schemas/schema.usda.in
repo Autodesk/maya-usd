@@ -67,6 +67,7 @@ class "ALModelAPI"
 doc = "Data used to import a maya reference."
   inherits = </ModelAPI>
   customData = {
+        string apiSchemaType = "nonApplied"
         string className = "ModelAPI"
         string fileName = "ModelAPI"
         string extraIncludes = """

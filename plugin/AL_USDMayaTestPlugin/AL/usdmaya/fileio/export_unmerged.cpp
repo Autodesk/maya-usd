@@ -13,86 +13,102 @@ rename "pSphereShape1" "foofoo";
 
 TEST(export_unmerged, unmerged_metadata_parent_transform_exists)
 {
-   MFileIO::newFile(true);
-   MGlobal::executeCommand(generateSphere);
+  MFileIO::newFile(true);
+  MGlobal::executeCommand(generateSphere);
 
-   const char* command =
-   "select -r \"pSphere1\";"
-   "file -force -options "
-   "\"Dynamic_Attributes=1;"
-   "Meshes=1;"
-   "Nurbs_Curves=1;"
-   "Duplicate_Instances=1;"
-   "Merge_Transforms=0;"
-   "Animation=1;"
-   "Use_Timeline_Range=0;"
-   "Frame_Min=1;"
-   "Frame_Max=50;"
-   "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_sphere.usda\";";
-    MGlobal::executeCommand(command);
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_sphere.usda");
 
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_sphere.usda");
-    EXPECT_TRUE(stage);
-    UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pSphere1"));
-    EXPECT_TRUE(prim.IsValid());
+  MString command =
+  "select -r \"pSphere1\";"
+  "file -force -options "
+  "\"Dynamic_Attributes=1;"
+  "Meshes=1;"
+  "Nurbs_Curves=1;"
+  "Duplicate_Instances=1;"
+  "Merge_Transforms=0;"
+  "Animation=1;"
+  "Use_Timeline_Range=0;"
+  "Frame_Min=1;"
+  "Frame_Max=50;"
+  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"";
+  command += temp_path.c_str();
+  command += "\";";
+
+  MGlobal::executeCommand(command);
+
+  UsdStageRefPtr stage = UsdStage::Open(temp_path);
+  EXPECT_TRUE(stage);
+
+  UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pSphere1"));
+  EXPECT_TRUE(prim.IsValid());
 }
 
 TEST(export_unmerged, unmerged_metadata_shape_name_preserved)
 {
-   MFileIO::newFile(true);
-   MGlobal::executeCommand(generateSphere);
+  MFileIO::newFile(true);
+  MGlobal::executeCommand(generateSphere);
 
-   const char* command =
-   "select -r \"pSphere1\";"
-   "file -force -options "
-   "\"Dynamic_Attributes=1;"
-   "Meshes=1;"
-   "Nurbs_Curves=1;"
-   "Duplicate_Instances=1;"
-   "Merge_Transforms=0;"
-   "Animation=1;"
-   "Use_Timeline_Range=0;"
-   "Frame_Min=1;"
-   "Frame_Max=50;"
-   "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_sphere.usda\";";
-    MGlobal::executeCommand(command);
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_sphere.usda");
 
-    UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_sphere.usda");
-    EXPECT_TRUE(stage);
-    UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pSphere1/foofoo"));
-    EXPECT_TRUE(prim.IsValid());
+  MString command =
+  "select -r \"pSphere1\";"
+  "file -force -options "
+  "\"Dynamic_Attributes=1;"
+  "Meshes=1;"
+  "Nurbs_Curves=1;"
+  "Duplicate_Instances=1;"
+  "Merge_Transforms=0;"
+  "Animation=1;"
+  "Use_Timeline_Range=0;"
+  "Frame_Min=1;"
+  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"";
+  command += temp_path.c_str();
+  command += "\";";
+
+  MGlobal::executeCommand(command);
+
+  UsdStageRefPtr stage = UsdStage::Open(temp_path);
+  EXPECT_TRUE(stage);
+
+  UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pSphere1/foofoo"));
+  EXPECT_TRUE(prim.IsValid());
 }
 
 TEST(export_unmerged, unmerged_metadata_correctly_labelled_on_parent_transform)
 {
-    MFileIO::newFile(true);
-    MGlobal::executeCommand(generateSphere);
+  MFileIO::newFile(true);
+  MGlobal::executeCommand(generateSphere);
 
-    const char* command =
-    "select -r \"pSphere1\";"
-    "file -force -options "
-    "\"Dynamic_Attributes=1;"
-    "Meshes=1;"
-    "Nurbs_Curves=1;"
-    "Duplicate_Instances=1;"
-    "Merge_Transforms=0;"
-    "Animation=1;"
-    "Use_Timeline_Range=0;"
-    "Frame_Min=1;"
-    "Frame_Max=50;"
-    "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"/tmp/AL_USDMayaTests_sphere.usda\";";
-     MGlobal::executeCommand(command);
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_sphere.usda");
 
-     UsdStageRefPtr stage = UsdStage::Open("/tmp/AL_USDMayaTests_sphere.usda");
-     EXPECT_TRUE(stage);
+  MString command =
+  "select -r \"pSphere1\";"
+  "file -force -options "
+  "\"Dynamic_Attributes=1;"
+  "Meshes=1;"
+  "Nurbs_Curves=1;"
+  "Duplicate_Instances=1;"
+  "Merge_Transforms=0;"
+  "Animation=1;"
+  "Use_Timeline_Range=0;"
+  "Frame_Min=1;"
+  "Frame_Max=50;"
+  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"";
+  command += temp_path.c_str();
+  command += "\";";
 
-     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pSphere1"));
-     EXPECT_TRUE(prim.IsValid());
-     TfToken val;
-     EXPECT_TRUE(prim.GetMetadata(AL::usdmaya::Metadata::mergedTransform, &val));
-     EXPECT_TRUE(val == AL::usdmaya::Metadata::unmerged);
+  MGlobal::executeCommand(command);
 
-     prim = stage->GetPrimAtPath(SdfPath("/pSphere1/foofoo"));
-     EXPECT_TRUE(prim.IsValid());
-     EXPECT_FALSE(prim.GetMetadata(AL::usdmaya::Metadata::mergedTransform, &val));
+  UsdStageRefPtr stage = UsdStage::Open(temp_path);
+  EXPECT_TRUE(stage);
+
+  UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pSphere1"));
+  EXPECT_TRUE(prim.IsValid());
+  TfToken val;
+  EXPECT_TRUE(prim.GetMetadata(AL::usdmaya::Metadata::mergedTransform, &val));
+  EXPECT_TRUE(val == AL::usdmaya::Metadata::unmerged);
+
+  prim = stage->GetPrimAtPath(SdfPath("/pSphere1/foofoo"));
+  EXPECT_TRUE(prim.IsValid());
+  EXPECT_FALSE(prim.GetMetadata(AL::usdmaya::Metadata::mergedTransform, &val));
 }

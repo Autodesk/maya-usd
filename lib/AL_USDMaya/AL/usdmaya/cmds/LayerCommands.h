@@ -178,20 +178,6 @@ private:
   MStatus undoIt() override;
   MStatus redoIt() override;
 };
-//----------------------------------------------------------------------------------------------------------------------
-/// \brief  Get / Set renderer plugin settings
-/// \ingroup commands
-//----------------------------------------------------------------------------------------------------------------------
-class ManageRenderer
-  : public MPxCommand
-{
-  MArgDatabase makeDatabase(const MArgList& args);
-public:
-  AL_MAYA_DECLARE_COMMAND();
-private:
-  bool isUndoable() const override;
-  MStatus doIt(const MArgList& args) override;
-};
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Command to introspect and pull out data from the layer manager

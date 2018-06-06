@@ -50,7 +50,7 @@ TEST(ProxyShapeSelectabilityDB, selectablesOnOpen)
   };
 
   MFileIO::newFile(true);
-  const std::string temp_path = "/tmp/AL_USDMayaTests_ProxyShape_selectablesOnOpen.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_ProxyShape_selectablesOnOpen.usda");
   AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(constructTransformChain, temp_path);
 
   //Check that the path is selectable directly using the selectableDB object
@@ -72,7 +72,7 @@ TEST(ProxyShapeSelectabilityDB, selectablesOnModification)
   MFileIO::newFile(true);
 
   // unsure undo is enabled for this test
-  const std::string temp_path = "/tmp/AL_USDMayaTests_ProxyShape_selectablesOnModification.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_ProxyShape_selectablesOnModification.usda");
   AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(constructTransformChain, temp_path);
 
   SdfPath expectedSelectable("/A/B");
@@ -104,7 +104,7 @@ TEST(ProxyShapeSelectabilityDB, selectableIsRemoval)
   };
 
   MFileIO::newFile(true);
-  const std::string temp_path = "/tmp/AL_USDMayaTests_ProxyShape_selectableIsRemoval.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_ProxyShape_selectableIsRemoval.usda");
   AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(constructTransformChain, temp_path);
 
   EXPECT_TRUE(proxyShape->selectabilityDB().isPathUnselectable(expectedSelectable));

@@ -24,7 +24,7 @@ TEST(ExportCommands, exportUV)
 {
   MFileIO::newFile(true);
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_exportUV.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_exportUV.usda");
   MGlobal::executeCommand(MString("createNode transform -n geo;polyCube -n cube -cuv 2;parent cube geo;select geo"), false, true);
   MString exportCmd;
   exportCmd.format(MString("AL_usdmaya_ExportCommand -f \"^1s\" -sl 1 -muv 1 -luv 1"), AL::maya::utils::convert(temp_path));
@@ -40,7 +40,7 @@ TEST(ExportCommands, exportUV)
   ASSERT_EQ(cubePrim.GetSpecifier(), SdfSpecifierOver);
 
   const uint32_t uvSZ = 24;
-  const GfVec2f faceUVs[4] = {GfVec2f(.0f, 1.0f), GfVec2f(1.0f, 1.0f), GfVec2f(1.0f, .0f), GfVec2f(.0f, .0f)};
+  const GfVec2f faceUVs[4] = {GfVec2f(0.0f, 0.0f), GfVec2f(1.0f, 0.0f), GfVec2f(1.0f, 1.0f), GfVec2f(0.0f, 1.0f)};
 
   UsdAttribute stAttr = cubePrim.GetAttribute(TfToken("primvars:st"));
   ASSERT_TRUE(stAttr.IsValid());
@@ -69,7 +69,7 @@ TEST(ExportCommands, extensiveAnimationCheck)
   MGlobal::executeCommand(MString("createNode transform -n parent;polyCube -n child;parent child parent;"), false, true);
   MGlobal::executeCommand(MString("createNode transform -n master;connectAttr master.tx parent.tx;select child;"), false, true);
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_extensiveAnimationCheck.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_extensiveAnimationCheck.usda");
   MString exportCmd;
 
   auto expectAnimation = [temp_path] (bool expectAnimation)

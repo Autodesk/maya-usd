@@ -36,7 +36,11 @@
 #include <fstream>
 #include <stdio.h>
 
-static const char* const g_inactive =
+const MString temp_path = buildTempPath("AL_USDMayaTests_cube.ma");
+const MString temp_path2 = buildTempPath("AL_USDMayaTests_sphere.ma");
+const MString temp_path3 = buildTempPath("AL_USDMayaTests_camera.ma");
+
+static const MString g_inactive = MString(
 "#usda 1.0\n"
 "\n"
 "def Xform \"root\"\n"
@@ -45,24 +49,24 @@ static const char* const g_inactive =
 "      active = false\n"
 "    )\n"
 "    {\n"
-"      asset mayaReference = \"/tmp/AL_USDMayaTests_cube.ma\"\n"
+"      asset mayaReference = \"") + temp_path + "\"\n"
 "      string mayaNamespace = \"cube\"\n"
 "    }\n"
 "}\n";
 
-static const char* const g_active =
+static const MString g_active = MString(
 "#usda 1.0\n"
 "\n"
 "def Xform \"root\"\n"
 "{\n"
 "    def ALMayaReference \"rig\"\n"
 "    {\n"
-"      asset mayaReference = \"/tmp/AL_USDMayaTests_cube.ma\"\n"
+"      asset mayaReference = \"") + temp_path + "\"\n"
 "      string mayaNamespace = \"cube\"\n"
 "    }\n"
 "}\n";
 
-static const char* const g_variants =
+static const MString g_variants = MString(
 "#usda 1.0\n"
 "(\n"
 "    defaultPrim = \"rig_variants\"\n"
@@ -80,21 +84,21 @@ static const char* const g_variants =
 "      \"sphere\"{\n"
 "        def ALMayaReference \"rig\"\n"
 "        {\n"
-"           asset mayaReference = \"/tmp/AL_USDMayaTests_sphere.ma\"\n"
+"           asset mayaReference = \"") + temp_path2 + "\"\n"
 "           string mayaNamespace = \"dave\"\n"
 "        }\n"
 "      }\n"
 "      \"cube\"{\n"
 "        def ALMayaReference \"rig\"\n"
 "        {\n"
-"           asset mayaReference = \"/tmp/AL_USDMayaTests_cube.ma\"\n"
+"           asset mayaReference = \"" + temp_path + "\"\n"
 "           string mayaNamespace = \"dave\"\n"
 "        }\n"
 "      }\n"
 "      \"fredcube\"{\n"
 "        def ALMayaReference \"rig\"\n"
 "        {\n"
-"           asset mayaReference = \"/tmp/AL_USDMayaTests_cube.ma\"\n"
+"           asset mayaReference = \"" + temp_path + "\"\n"
 "           string mayaNamespace = \"fred\"\n"
 "        }\n"
 "      }\n"
@@ -107,7 +111,7 @@ static const char* const g_variants =
 "    }\n"
 "}\n";
 
-static const char* const g_customTransformType =
+static const MString g_customTransformType = MString(
 "#usda 1.0\n"
 "\n"
 "def Xform \"root\"\n"
@@ -116,12 +120,12 @@ static const char* const g_customTransformType =
 "      al_usdmaya_transformType = \"joint\"\n"
 "    )\n"
 "    {\n"
-"      asset mayaReference = \"/tmp/AL_USDMayaTests_cube.ma\"\n"
+"      asset mayaReference = \"") + temp_path + "\"\n"
 "      string mayaNamespace = \"cube\"\n"
 "    }\n"
 "}\n";
 
-static const char* const g_duplicateTransformNames =
+static const MString g_duplicateTransformNames = MString(
 "#usda 1.0\n"
 "\n"
 "def Xform \"root\"\n"
@@ -132,7 +136,7 @@ static const char* const g_duplicateTransformNames =
 "      al_usdmaya_transformType = \"joint\"\n"
 "    )\n"
 "    {\n"
-"      asset mayaReference = \"/tmp/AL_USDMayaTests_cube.ma\"\n"
+"      asset mayaReference = \"") + temp_path + "\"\n"
 "      string mayaNamespace = \"cube\"\n"
 "    }\n"
 "  }\n"
@@ -142,13 +146,13 @@ static const char* const g_duplicateTransformNames =
 "      al_usdmaya_transformType = \"joint\"\n"
 "    )\n"
 "    {\n"
-"      asset mayaReference = \"/tmp/AL_USDMayaTests_sphere.ma\"\n"
+"      asset mayaReference = \"" + temp_path2 + "\"\n"
 "      string mayaNamespace = \"cube\"\n"
 "    }\n"
 "  }\n"
 "}\n";
 
-static const char* const g_variantSwitchPrimTypes =
+static const MString g_variantSwitchPrimTypes = MString(
 "#usda 1.0\n"
 "\n"
 "def Xform \"root\"\n"
@@ -172,7 +176,7 @@ static const char* const g_variantSwitchPrimTypes =
 "            \"mayaReference\" {\n"
 "                def  ALMayaReference \"top\"\n"
 "                {\n"
-"                    asset mayaReference = @/tmp/AL_USDMayaTests_camera.ma@\n"
+"                    asset mayaReference = @") + temp_path3 + "@\n"
 "                    string mayaNamespace = \"cam_ns\"\n"
 "                }\n"
 "            }\n"
@@ -196,19 +200,19 @@ public:
    // pCube1, pCubeShape1, polyCube1
    MFileIO::newFile(true);
    MGlobal::executeCommand("polyCube -w 1 -h 1 -d 1 -sd 1 -sh 1 -sw 1", false, false);
-   MFileIO::saveAs(m_cubeMayaReference, 0, true);
+   MFileIO::saveAs(temp_path, 0, true);
 
    // pSphere1, pSphereShape1, polySphere1
    MFileIO::newFile(true);
    MGlobal::executeCommand("polySphere", false, false);
-   MFileIO::saveAs(m_sphereMayaReference, 0, true);
+   MFileIO::saveAs(temp_path2, 0, true);
   }
 
   static void TearDownTestCase()
   {
     // cleanup files
-    remove(m_cubeMayaReference);
-    remove(m_sphereMayaReference);
+    remove(temp_path.asChar());
+    remove(temp_path2.asChar());
   }
 
 protected:
@@ -224,15 +228,16 @@ protected:
   }
 
 private:
-  static constexpr auto m_cubeMayaReference = "/tmp/AL_USDMayaTests_cube.ma";
-  static constexpr auto m_sphereMayaReference = "/tmp/AL_USDMayaTests_sphere.ma";
 };
 
 TEST_F(ActiveInactive, duplicateTransformNames)
 {
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_duplicateTransformNames.usda");
+  const std::string temp_ma_path = buildTempPath("AL_USDMayaTests_duplicateTransformNames.ma");
+
   // output a couple of usda files for testing (active and inactive)
   {
-    std::ofstream os("/tmp/AL_USDMayaTests_duplicateTransformNames.usda");
+    std::ofstream os(temp_path);
     os << g_duplicateTransformNames;
   }
 
@@ -246,7 +251,7 @@ TEST_F(ActiveInactive, duplicateTransformNames)
     AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
 
     // force the stage to load
-    proxy->filePathPlug().setString("/tmp/AL_USDMayaTests_duplicateTransformNames.usda");
+    proxy->filePathPlug().setString(temp_path.c_str());
 
     auto stage = proxy->getUsdStage();
 
@@ -264,9 +269,9 @@ TEST_F(ActiveInactive, duplicateTransformNames)
     }
   }
   {
-    MFileIO::saveAs("/tmp/AL_USDMayaTests_duplicateTransformNames.ma", 0, true);
+    MFileIO::saveAs(temp_ma_path.c_str(), 0, true);
     MFileIO::newFile(true);
-    MFileIO::open("/tmp/AL_USDMayaTests_duplicateTransformNames.ma", 0, true);
+    MFileIO::open(temp_ma_path.c_str(), 0, true);
 
     // one of the prims should be a joint
     MItDependencyNodes it(MFn::kPluginShape);
@@ -292,9 +297,13 @@ TEST_F(ActiveInactive, duplicateTransformNames)
 
 TEST_F(ActiveInactive, customTransformType)
 {
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_customTransformType.usda");
+  const std::string temp_ma_path = buildTempPath("AL_USDMayaTests_customTransformType.ma");
+  const std::string temp_ma_path2 = buildTempPath("AL_USDMayaTests_customTransformTypeInactive.ma");
+
   // output a couple of usda files for testing (active and inactive)
   {
-    std::ofstream os("/tmp/AL_USDMayaTests_customTransformType.usda");
+    std::ofstream os(temp_path);
     os << g_customTransformType;
   }
 
@@ -308,7 +317,7 @@ TEST_F(ActiveInactive, customTransformType)
     AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
 
     // force the stage to load
-    proxy->filePathPlug().setString("/tmp/AL_USDMayaTests_customTransformType.usda");
+    proxy->filePathPlug().setString(temp_path.c_str());
 
     auto stage = proxy->getUsdStage();
 
@@ -323,7 +332,7 @@ TEST_F(ActiveInactive, customTransformType)
     EXPECT_EQ(3, sl.length());
     sl.clear();
 
-    MFileIO::saveAs("/tmp/AL_USDMayaTests_customTransformType.ma", 0, true);
+    MFileIO::saveAs(temp_ma_path.c_str(), 0, true);
 
     // one of the prims should be a joint
     MObject node = proxy->findRequiredPath(SdfPath("/root/rig"));
@@ -338,7 +347,7 @@ TEST_F(ActiveInactive, customTransformType)
     EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(0, sl.length());
 
-    MFileIO::saveAs("/tmp/AL_USDMayaTests_customTransformTypeInactive.ma", 0, true);
+    MFileIO::saveAs(temp_ma_path2.c_str(), 0, true);
 
     // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
@@ -353,7 +362,7 @@ TEST_F(ActiveInactive, customTransformType)
 
   {
     MFileIO::newFile(true);
-    MFileIO::open("/tmp/AL_USDMayaTests_customTransformType.ma", 0, true);
+    MFileIO::open(temp_ma_path.c_str(), 0, true);
 
     // one of the prims should be a joint
     MItDependencyNodes it(MFn::kPluginShape);
@@ -390,7 +399,7 @@ TEST_F(ActiveInactive, customTransformType)
 
   {
     MFileIO::newFile(true);
-    MFileIO::open("/tmp/AL_USDMayaTests_customTransformTypeInactive.ma", 0, true);
+    MFileIO::open(temp_ma_path2.c_str(), 0, true);
 
     // one of the prims should be a joint
     MItDependencyNodes it(MFn::kPluginShape);
@@ -427,17 +436,24 @@ TEST_F(ActiveInactive, customTransformType)
 
 TEST_F(ActiveInactive, disable)
 {
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_activePrim.usda");
+  const std::string temp_path2 = buildTempPath("AL_USDMayaTests_inactivePrim.usda");
+  const std::string temp_path3 = buildTempPath("AL_USDMayaTests_variants.usda");
+  const std::string temp_ma_path = buildTempPath("AL_USDMayaTests_customTransformType.ma");
+  const std::string temp_ma_path2 = buildTempPath("AL_USDMayaTests_customTransformTypeInactive.ma");
+  const std::string temp_ma_path3 = buildTempPath("AL_USDMayaTests_inactivePrim.ma");
+
   // output a couple of usda files for testing (active and inactive)
   {
-    std::ofstream os("/tmp/AL_USDMayaTests_activePrim.usda");
+    std::ofstream os(temp_path);
     os << g_active;
   }
   {
-    std::ofstream os("/tmp/AL_USDMayaTests_inactivePrim.usda");
+    std::ofstream os(temp_path2);
     os << g_inactive;
   }
   {
-    std::ofstream os("/tmp/AL_USDMayaTests_variants.usda");
+    std::ofstream os(temp_path3);
     os << g_variants;
   }
 
@@ -451,7 +467,7 @@ TEST_F(ActiveInactive, disable)
     AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
 
     // force the stage to load
-    proxy->filePathPlug().setString("/tmp/AL_USDMayaTests_inactivePrim.usda");
+    proxy->filePathPlug().setString(temp_path2.c_str());
 
     auto stage = proxy->getUsdStage();
 
@@ -507,7 +523,7 @@ TEST_F(ActiveInactive, disable)
     AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
 
     // force the stage to load
-    proxy->filePathPlug().setString("/tmp/AL_USDMayaTests_activePrim.usda");
+    proxy->filePathPlug().setString(temp_path.c_str());
 
     auto stage = proxy->getUsdStage();
 
@@ -562,7 +578,7 @@ TEST_F(ActiveInactive, disable)
     AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
 
     // force the stage to load
-    proxy->filePathPlug().setString("/tmp/AL_USDMayaTests_variants.usda");
+    proxy->filePathPlug().setString(temp_path3.c_str());
 
     auto stage = proxy->getUsdStage();
 
@@ -720,7 +736,7 @@ TEST_F(ActiveInactive, disable)
       AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
 
       // force the stage to load
-      proxy->filePathPlug().setString("/tmp/AL_USDMayaTests_activePrim.usda");
+      proxy->filePathPlug().setString(temp_path.c_str());
 
       auto stage = proxy->getUsdStage();
 
@@ -744,12 +760,12 @@ TEST_F(ActiveInactive, disable)
       EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
       EXPECT_EQ(0, sl.length());
 
-      EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs("/tmp/AL_USDMayaTests_inactive_prim.ma", 0, true));
+      EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs(temp_ma_path3.c_str(), 0, true));
 
       MFileIO::newFile(true);
     }
 
-    MFileIO::open("/tmp/AL_USDMayaTests_inactive_prim.ma", 0, true);
+    MFileIO::open(temp_ma_path3.c_str(), 0, true);
 
     MFnDagNode fn;
     MSelectionList sl;
@@ -781,14 +797,16 @@ TEST_F(ActiveInactive, disable)
 
 TEST_F(ActiveInactive, variantChange)
 {
+  const std::string temp_ma_path = buildTempPath("AL_USDMayaTests_camera.ma");
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_variant.usda");
+
   // camera1, camera1Shape
   MFileIO::newFile(true);
   MGlobal::executeCommand("camera", false, false);
   MGlobal::executeCommand("group -name camera_rigg_top camera1", false, false);
-  MFileIO::saveAs("/tmp/AL_USDMayaTests_camera.ma", 0, true);
+  MFileIO::saveAs(temp_ma_path.c_str(), 0, true);
   MFileIO::newFile(true);
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_variant.usda";
   // generate some data for the proxy shape
   {
     std::ofstream os(temp_path);

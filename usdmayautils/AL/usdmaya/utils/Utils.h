@@ -76,7 +76,7 @@ void convertDoubleVec4ArrayToFloatVec3Array(const double* const input, float* co
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  convert string types
-/// \param  str the USD TfToken to convert to an MString
+/// \param  token the USD TfToken to convert to an MString
 /// \return the MString
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------

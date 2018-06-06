@@ -43,6 +43,8 @@ struct NodeFactory
   /// \param  from the prim we are copying the data from
   /// \param  nodeType can be one of "transform", "mesh", "nurbsCurve", or "camera".
   /// \param  parent the parent transform for the Maya data
+  /// \param  parentUnmerged if false, the parent transform will be merged with a shape. If true, the nodes will remain
+  ///         separate
   MObject createNode(const UsdPrim& from, const char* const nodeType, MObject parent, bool parentUnmerged = false);
 
   /// \brief  Some of the translators rely on import settings specified in the import params. Prior to use of this factory,

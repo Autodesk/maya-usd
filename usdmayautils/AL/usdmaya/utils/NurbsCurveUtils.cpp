@@ -221,7 +221,7 @@ bool createMayaCurves(MFnNurbsCurve& fnCurve, MObject& parent, const UsdGeomNurb
       MObject objAttr = AL::maya::utils::NodeHelper::addFloatArrayAttr(fnCurve.object(), "width", "width", flags);
       if(!objAttr.isNull())
       {
-        AL::usdmaya::utils::DgNodeHelper::setFloatArray(fnCurve.object(), objAttr, dataWidths);
+        AL::usdmaya::utils::DgNodeHelper::setUsdFloatArray(fnCurve.object(), objAttr, dataWidths);
       }
       else
       {

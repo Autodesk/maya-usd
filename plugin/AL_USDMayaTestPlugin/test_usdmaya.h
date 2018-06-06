@@ -63,6 +63,17 @@ inline std::ostream& operator << (std::ostream& os, const MObject& obj)
   return os;
 }
 
+#ifdef _WIN32
+# define AL_PATH_CHAR "\\"
+#else
+# define AL_PATH_CHAR "/"
+#endif
+
+/// \brief  Used to generate a temporary filepath from the given filename.
+/// \param  filename the filename to append to the end of the OS temp dir
+/// \return the full path name
+const char* buildTempPath(const char* const filename);
+
 /// \brief  A method that compares a pair of plugs (on different nodes) that test for equiality.
 /// \param  plugA  the first plug to compare
 /// \param  plugB  the second plug to compare

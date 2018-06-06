@@ -82,17 +82,6 @@ TEST(TranslatorContext, value_compare)
   EXPECT_EQ(compare(bref, aref), path2 < path1);
 }
 
-static const char* const g_simpleRig =
-"#usda 1.0\n"
-"\n"
-"def Xform \"root\"\n"
-"{\n"
-"    def ALMayaReference \"rig\""
-"    {\n"
-"      asset mayaReference = \"/tmp/AL_USDMayaTests_cube.ma\"\n"
-"      string mayaNamespace = \"cube\"\n"
-"    }\n"
-"}\n";
 
 // static RefPtr TranslatorContext::create(nodes::ProxyShape* proxyShape);
 // const nodes::ProxyShape* TranslatorContext::getProxyShape() const;
@@ -113,14 +102,29 @@ static const char* const g_simpleRig =
 // void TranslatorContext::deserialise(const MString& string);
 TEST(TranslatorContext, TranslatorContext)
 {
+  const MString temp_ma_path = buildTempPath("AL_USDMayaTests_cube.ma");
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_simpleRig.usda");
+
+  const MString g_simpleRig = MString(
+  "#usda 1.0\n"
+  "\n"
+  "def Xform \"root\"\n"
+  "{\n"
+  "    def ALMayaReference \"rig\""
+  "    {\n"
+  "      asset mayaReference = \"") + temp_ma_path + "\"\n"
+  "      string mayaNamespace = \"cube\"\n"
+  "    }\n"
+  "}\n";
+
   // pCube1, pCubeShape1, polyCube1
   MFileIO::newFile(true);
   MGlobal::executeCommand("polyCube -w 1 -h 1 -d 1 -sd 1 -sh 1 -sw 1", false, false);
-  MFileIO::saveAs("/tmp/AL_USDMayaTests_cube.ma", 0, true);
+  MFileIO::saveAs(temp_ma_path, 0, true);
   MFileIO::newFile(true);
 
   {
-    std::ofstream os("/tmp/AL_USDMayaTests_simpleRig.usda");
+    std::ofstream os(temp_path);
     os << g_simpleRig;
   }
 
@@ -135,7 +139,7 @@ TEST(TranslatorContext, TranslatorContext)
     AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
 
     // force the stage to load
-    proxy->filePathPlug().setString("/tmp/AL_USDMayaTests_simpleRig.usda");
+    proxy->filePathPlug().setString(temp_path.c_str());
 
     auto stage = proxy->getUsdStage();
 
