@@ -317,43 +317,9 @@ static void preFileRead(void*)
 
   if(!readDepth)
   {
-    MFnDependencyNode fn;
-    {
-      MItDependencyNodes iter(MFn::kPluginShape);
-      for(; !iter.isDone(); iter.next())
-      {
-        fn.setObject(iter.item());
-        if(fn.typeId() == nodes::ProxyShape::kTypeId)
-        {
-          nodes::ProxyShape* proxy = (nodes::ProxyShape*)fn.userNode();
-          proxy->removeAttributeChangedCallback();
-        }
-      }
-    }
-
     Global::openingFile(true);
   }
-
   ++readDepth;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-static void disableAttributeChangedCallbacks()
-{
-  MFnDependencyNode fn;
-  {
-    MItDependencyNodes iter(MFn::kPluginShape);
-    for(; !iter.isDone(); iter.next())
-    {
-      fn.setObject(iter.item());
-      if(fn.typeId() == nodes::ProxyShape::kTypeId)
-      {
-        // execute a pull on each proxy shape to ensure that each one has a valid USD stage!
-        nodes::ProxyShape* proxy = (nodes::ProxyShape*)fn.userNode();
-        proxy->removeAttributeChangedCallback();
-      }
-    }
-  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -371,7 +337,6 @@ static void postFileRead(void*)
     // missed
     readDepth++;
     oldReadDepth++;
-    disableAttributeChangedCallbacks();
   }
 
   // oldReadDepth is the value BEFORE we decremented (with fetch_sub), so should be 1
@@ -413,7 +378,6 @@ static void postFileRead(void*)
       proxy->findTaggedPrims();
       proxy->deserialiseTransformRefs();
       proxy->constructGLImagingEngine();
-      proxy->addAttributeChangedCallback();
     }
     unloadedProxies.clear();
   }

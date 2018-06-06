@@ -114,10 +114,6 @@ namespace AL {
 namespace usdmaya {
 namespace nodes {
 
-LayerManager::~LayerManager()
-{
-}
-
 //----------------------------------------------------------------------------------------------------------------------
 bool LayerDatabase::addLayer(SdfLayerRefPtr layer, const std::string& identifier)
 {
