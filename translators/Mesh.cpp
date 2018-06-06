@@ -123,10 +123,6 @@ UsdPrim Mesh::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath
       params.m_animTranslator->addMesh(dagPath, pointsAttr);
     }
     uint32_t options = 0;
-    if(params.m_leftHandedUV)
-    {
-      options |= kLeftHandedUV;
-    }
     if(params.m_dynamicAttributes)
     {
       options |= kDynamicAttributes;
@@ -213,7 +209,7 @@ void Mesh::writeEdits(MDagPath& dagPath, UsdGeomMesh& geomPrim, uint32_t options
     context.copyInvisibleHoles();
     context.copyCreaseVertices();
     context.copyCreaseEdges();
-    context.copyUvSetData(options & kLeftHandedUV);
+    context.copyUvSetData();
     context.copyColourSetData();
     if(options & kDynamicAttributes)
     {

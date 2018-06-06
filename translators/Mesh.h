@@ -48,8 +48,7 @@ private:
   enum WriteOptions
   {
     kPerformDiff = 1 << 0,
-    kLeftHandedUV = 1 << 1,
-    kDynamicAttributes = 1 << 2
+    kDynamicAttributes = 1 << 1
   };
   void writeEdits(MDagPath& dagPath, UsdGeomMesh& geomPrim, uint32_t options);
 };

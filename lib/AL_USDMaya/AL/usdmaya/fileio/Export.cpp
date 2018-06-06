@@ -388,7 +388,7 @@ UsdPrim Export::exportMeshUV(MDagPath path, const SdfPath& usdPath)
   {
     UsdGeomMesh mesh(overPrim);
     AL::usdmaya::utils::MeshExportContext context(path, mesh, UsdTimeCode::Default(), false);
-    context.copyUvSetData(m_params.m_leftHandedUV);
+    context.copyUvSetData();
   }
   return overPrim;
 }
