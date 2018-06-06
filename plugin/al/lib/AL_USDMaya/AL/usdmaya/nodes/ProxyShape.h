@@ -342,6 +342,9 @@ public:
     /// when stage is opened
     AL_DECL_ATTRIBUTE(assetResolverConfig);
 
+    /// Don't update the proxy shape when updates to the usd stage are made
+    AL_DECL_ATTRIBUTE(pauseUpdates);
+
     /// Variant fallbacks if stage was opened and/reopened a Maya scene with custom variants
     /// fallbacks
     AL_DECL_ATTRIBUTE(variantFallbacks);
@@ -736,11 +739,21 @@ public:
     AL_USDMAYA_PUBLIC
     void resync(const SdfPath& primPath);
 
-    // \brief Serialize information unique to this shape
+    /// \brief Whether the proxy shape is currently listening to changes made to the usd stage
+    ///        Note that, because the proxy shape uses hydra for display purposes, which is
+    ///        connected to the underlying stage a a low level independent of this node, if
+    ///        ignoringUpdates / pauseUpdates are true, this does NOT mean that the displayed proxy
+    ///        shape will never reflect changes to the usd stage; rather, it just means that certain
+    ///        event listeners for the proxyShape are disabled. For instance, loading of
+    ///        ALMayaReference loads won't happen, nor will creation / destruction of transforms,
+    ///        etc.
+    inline bool ignoringUpdates() { return m_ignoringUpdates; }
+
+    /// \brief Serialize information unique to this shape
     AL_USDMAYA_PUBLIC
     void serialize(UsdStageRefPtr stage, LayerManager* layerManager);
 
-    // \brief Serialize all layers in proxyShapes to layerManager attributes; called before saving
+    /// \brief Serialize all layers in proxyShapes to layerManager attributes; called before saving
     AL_USDMAYA_PUBLIC
     static void serializeAll();
 
@@ -1141,6 +1154,7 @@ private:
 
     uint32_t m_engineRefCount = 0;
     bool     m_compositionHasChanged = false;
+    bool     m_ignoringUpdates = false;
     bool     m_pleaseIgnoreSelection = false;
     bool     m_hasChangedSelection = false;
     bool     m_filePathDirty = false;
