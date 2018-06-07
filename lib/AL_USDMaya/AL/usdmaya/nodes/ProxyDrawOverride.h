@@ -118,6 +118,9 @@ public:
   bool excludedFromPostEffects() const override
     { return false; }
 #endif
+
+private:
+  static MUint64 s_lastRefreshFrameStamp;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
