@@ -1888,7 +1888,7 @@ bool ProxyShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHand
     {
       // Get the prim
       // If no primPath string specified, then use the pseudo-root.
-      MString primPathStr = plug.asString();
+      MString primPathStr = dataHandle.asString();
       if (primPathStr.length())
       {
         m_path = SdfPath(AL::maya::utils::convert(primPathStr));
