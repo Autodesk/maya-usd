@@ -7,7 +7,12 @@
 #include <pxr/imaging/glf/glew.h>
 
 #include <pxr/usd/usd/stage.h>
+#include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/imaging/hdSt/renderDelegate.h>
 #include <pxr/usdImaging/usdImagingGL/hdEngine.h>
+#include <pxr/imaging/hd/engine.h>
+
+#include "mayaSceneDelegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -25,7 +30,11 @@ public:
 private:
     UsdStageRefPtr stage;
     // We only care about hydra, not the reference one.
+    HdEngine engine;
     UsdImagingGLEngine* hdEngine;
+    HdStRenderDelegate renderDelegate;
+    std::unique_ptr<HdRenderIndex> renderIndex;
+    MayaSceneDelegateSharedPtr taskDelegate;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

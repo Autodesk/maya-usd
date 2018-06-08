@@ -20,6 +20,8 @@ MStatus HdViewportRenderer::initialize() {
     GlfGlewInit();
     stage = UsdStage::Open(std::string("/ssd/usd/dragon.usd"));
     hdEngine = new UsdImagingGLHdEngine(SdfPath("/"), {});
+    renderIndex.reset(HdRenderIndex::New(&renderDelegate));
+    taskDelegate = std::make_shared<MayaSceneDelegate>(renderIndex.get(), SdfPath("/HdViewportRenderer"));
     return MStatus::kSuccess;
 }
 
