@@ -31,7 +31,6 @@ private:
     UsdStageRefPtr stage;
     // We only care about hydra, not the reference one.
     HdEngine engine;
-    UsdImagingGLEngine* hdEngine;
     HdStRenderDelegate renderDelegate;
     std::unique_ptr<HdRenderIndex> renderIndex;
     MayaSceneDelegateSharedPtr taskDelegate;

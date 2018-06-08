@@ -12,14 +12,11 @@ HdViewportRenderer::HdViewportRenderer() :
 }
 
 HdViewportRenderer::~HdViewportRenderer() {
-    delete hdEngine;
 }
 
 MStatus HdViewportRenderer::initialize() {
     if (!UsdImagingGLHdEngine::IsDefaultPluginAvailable()) { return MStatus::kFailure; }
     GlfGlewInit();
-    stage = UsdStage::Open(std::string("/ssd/usd/dragon.usd"));
-    hdEngine = new UsdImagingGLHdEngine(SdfPath("/"), {});
     renderIndex.reset(HdRenderIndex::New(&renderDelegate));
     taskDelegate = std::make_shared<MayaSceneDelegate>(renderIndex.get(), SdfPath("/HdViewportRenderer"));
     return MStatus::kSuccess;
@@ -50,23 +47,15 @@ MStatus HdViewportRenderer::render(const MRenderingInfo& renderInfo) {
     params.drawMode = UsdImagingGLEngine::DrawMode::DRAW_GEOM_FLAT;
     params.showGuides = true;
     params.gammaCorrectColors = false;
-    GfMatrix4d viewMatrix;
-    GfMatrix4d projectionMatrix;
-    memcpy(viewMatrix.GetArray(), renderInfo.viewMatrix().operator[](0), 16 * sizeof(double));
-    memcpy(projectionMatrix.GetArray(), renderInfo.projectionMatrix().operator[](0), 16 * sizeof(double));
     GfVec4d viewport(originX, originY, width, height);
-
-    GlfSimpleMaterial material;
-    GlfSimpleLightVector lights;
-
-    hdEngine->SetCameraState(viewMatrix, projectionMatrix, viewport);
-    hdEngine->SetLightingState(lights, material, GfVec4f(0.05f));
-
+    taskDelegate->SetCameraState(renderInfo.viewMatrix(), renderInfo.projectionMatrix(), viewport);
 
     glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT);
     glEnable(GL_FRAMEBUFFER_SRGB_EXT);
     glEnable(GL_LIGHTING);
-    hdEngine->Render(stage->GetPrimAtPath(SdfPath("/")), params);
+
+    auto tasks = taskDelegate->GetRenderTasks();
+    engine.Execute(*renderIndex, tasks);
 
     glDisable(GL_FRAMEBUFFER_SRGB_EXT);
     glPopAttrib(); // GL_ENABLE_BIT | GL_CURRENT_BIT
