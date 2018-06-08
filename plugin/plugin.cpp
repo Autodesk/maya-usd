@@ -4,6 +4,8 @@
 
 #include <memory>
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 namespace {
     std::unique_ptr<HdViewportRenderer> _viewportRenderer = nullptr;
 }
