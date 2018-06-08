@@ -116,7 +116,13 @@ MUserData* ProxyDrawOverride::prepareForDraw(
   TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::prepareForDraw\n");
   MFnDagNode fn(objPath);
 
-  RenderUserData* data = new RenderUserData;
+  auto data = static_cast<RenderUserData*>(userData);
+  bool newData = false;
+  if (data == nullptr)
+  {
+    newData = true;
+    data = new RenderUserData;
+  }
 
   data->m_shape = (ProxyShape*)fn.userNode();
   data->m_objPath = objPath;
@@ -132,6 +138,7 @@ MUserData* ProxyDrawOverride::prepareForDraw(
 
   if(!data->m_shape || !data->m_shape->getRenderAttris(&data->m_params, frameContext, objPath))
   {
+    if (newData) delete data;
     return NULL;
   }
 
