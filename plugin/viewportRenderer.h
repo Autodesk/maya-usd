@@ -11,6 +11,7 @@
 #include <pxr/imaging/hdSt/renderDelegate.h>
 #include <pxr/usdImaging/usdImagingGL/hdEngine.h>
 #include <pxr/imaging/hd/engine.h>
+#include <pxr/imaging/hd/rprimCollection.h>
 
 #include "mayaSceneDelegate.h"
 
@@ -21,8 +22,13 @@ public:
     HdViewportRenderer();
     ~HdViewportRenderer() override;
 
+    static HdViewportRenderer* getInstance();
+    static void cleanup();
+
     MStatus initialize() override;
     MStatus uninitialize() override;
+
+    TfTokenVector getRendererPlugins();
 
     MStatus render(const MRenderingInfo& renderInfo) override;
     bool nativelySupports(MViewportRenderer::RenderingAPI api, float version) override;
@@ -34,6 +40,7 @@ private:
     HdStRenderDelegate renderDelegate;
     std::unique_ptr<HdRenderIndex> renderIndex;
     MayaSceneDelegateSharedPtr taskDelegate;
+    HdRprimCollection rprims;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

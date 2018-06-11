@@ -3,7 +3,18 @@
 #include <maya/MRenderingInfo.h>
 #include <pxr/base/gf/matrix4d.h>
 
+#include <pxr/imaging/hdx/rendererPlugin.h>
+#include <pxr/imaging/hdx/rendererPluginRegistry.h>
+
+#include <memory>
+#include <mutex>
+
 PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
+    std::unique_ptr<HdViewportRenderer> _viewportRenderer = nullptr;
+    std::mutex _viewportRendererLock;
+}
 
 HdViewportRenderer::HdViewportRenderer() :
     MViewportRenderer("HdViewportRenderer") {
@@ -12,10 +23,20 @@ HdViewportRenderer::HdViewportRenderer() :
 }
 
 HdViewportRenderer::~HdViewportRenderer() {
+
+}
+
+HdViewportRenderer* HdViewportRenderer::getInstance() {
+    std::lock_guard<std::mutex> lg(_viewportRendererLock);
+    if (_viewportRenderer == nullptr) { _viewportRenderer.reset(new HdViewportRenderer()); }
+    return _viewportRenderer.get();
+}
+
+void HdViewportRenderer::cleanup() {
+    _viewportRenderer = nullptr;
 }
 
 MStatus HdViewportRenderer::initialize() {
-    if (!UsdImagingGLHdEngine::IsDefaultPluginAvailable()) { return MStatus::kFailure; }
     GlfGlewInit();
     renderIndex.reset(HdRenderIndex::New(&renderDelegate));
     taskDelegate = std::make_shared<MayaSceneDelegate>(renderIndex.get(), SdfPath("/HdViewportRenderer"));
@@ -24,6 +45,17 @@ MStatus HdViewportRenderer::initialize() {
 
 MStatus HdViewportRenderer::uninitialize() {
     return MStatus::kSuccess;
+}
+
+TfTokenVector HdViewportRenderer::getRendererPlugins() {
+    HfPluginDescVector pluginDescs;
+    HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescs);
+
+    TfTokenVector ret; ret.reserve(pluginDescs.size());
+    for (const auto& desc: pluginDescs) {
+        ret.emplace_back(desc.id);
+    }
+    return ret;
 }
 
 MStatus HdViewportRenderer::render(const MRenderingInfo& renderInfo) {
@@ -43,10 +75,6 @@ MStatus HdViewportRenderer::render(const MRenderingInfo& renderInfo) {
     const auto width = renderInfo.width();
     const auto height = renderInfo.height();
 
-    UsdImagingGLEngine::RenderParams params;
-    params.drawMode = UsdImagingGLEngine::DrawMode::DRAW_GEOM_FLAT;
-    params.showGuides = true;
-    params.gammaCorrectColors = false;
     GfVec4d viewport(originX, originY, width, height);
     taskDelegate->SetCameraState(renderInfo.viewMatrix(), renderInfo.projectionMatrix(), viewport);
 
@@ -54,7 +82,8 @@ MStatus HdViewportRenderer::render(const MRenderingInfo& renderInfo) {
     glEnable(GL_FRAMEBUFFER_SRGB_EXT);
     glEnable(GL_LIGHTING);
 
-    auto tasks = taskDelegate->GetRenderTasks();
+    MayaRenderParams params; params.enableLighting = false;
+    auto tasks = taskDelegate->GetRenderTasks(params, rprims);
     engine.Execute(*renderIndex, tasks);
 
     glDisable(GL_FRAMEBUFFER_SRGB_EXT);

@@ -9,6 +9,8 @@
 
 #include <maya/MMatrix.h>
 
+#include "params.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class MayaSceneDelegate : public HdSceneDelegate {
@@ -26,7 +28,9 @@ public:
         const MMatrix& projection,
         const GfVec4d& _viewport);
 
-    HdTaskSharedPtrVector GetRenderTasks();
+    HdTaskSharedPtrVector GetRenderTasks(
+        const MayaRenderParams& params,
+        const HdRprimCollection& rprimCollections);
 private:
     SdfPath cameraId;
     SdfPath rootId;
@@ -39,6 +43,18 @@ private:
     using RenderTaskIdMap = std::unordered_map<size_t, SdfPath>;
     RenderTaskIdMap renderSetupTaskIdMap;
     RenderTaskIdMap renderTaskIdMap;
+
+    template <typename T>
+    const T& GetValue(const SdfPath& id, const TfToken& key) {
+        auto v = valueCacheMap[id][key];
+        TF_VERIFY(v.IsHolding<T>());
+        return v.Get<T>();
+    }
+
+    template <typename T>
+    void SetValue(const SdfPath& id, const TfToken& key, const T& value) {
+        valueCacheMap[id][key] = value;
+    }
 };
 
 typedef std::shared_ptr<MayaSceneDelegate> MayaSceneDelegateSharedPtr;

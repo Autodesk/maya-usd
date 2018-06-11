@@ -6,33 +6,31 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
-    std::unique_ptr<HdViewportRenderer> _viewportRenderer = nullptr;
-}
-
 MStatus initializePlugin(MObject obj) {
     MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");
+    MStatus ret = MS::kSuccess;
 
-    _viewportRenderer.reset(new HdViewportRenderer());
-    if (!_viewportRenderer->registerRenderer()) {
-        std::cerr << "Error registering hd viewport renderer!" << std::endl;
-        _viewportRenderer = nullptr;
-        return MS::kFailure;
+    auto* vp = HdViewportRenderer::getInstance();
+    if (vp && !vp->registerRenderer()) {
+        ret = MS::kFailure;
+        ret.perror("Error registering hd viewport renderer!");
+        HdViewportRenderer::cleanup();
     }
 
-    return MS::kSuccess;
+    return ret;
 }
 
 
 MStatus uninitializePlugin(MObject obj) {
     MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");
+    MStatus ret = MS::kSuccess;
 
-    if (_viewportRenderer != nullptr) {
-        if (!_viewportRenderer->deregisterRenderer()) {
-            std::cerr << "Error deregistering hd viewport renderer!" << std::endl;
-        }
-        _viewportRenderer = nullptr;
+    auto* vp = HdViewportRenderer::getInstance();
+    if (vp && vp->deregisterRenderer()) {
+        ret = MS::kFailure;
+        ret.perror("Error deregistering hd viewport renderer!");
     }
+    HdViewportRenderer::cleanup();
 
-    return MS::kSuccess;
+    return ret;
 }
