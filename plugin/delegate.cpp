@@ -11,7 +11,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-HdMayaDelegate::MayaSceneDelegate(
+HdMayaDelegate::HdMayaDelegate(
     HdRenderIndex* renderIndex,
     const SdfPath& delegateID) :
     HdSceneDelegate(renderIndex, delegateID) {
@@ -30,7 +30,7 @@ HdMayaDelegate::MayaSceneDelegate(
     }
 }
 
-HdMayaDelegate::~MayaSceneDelegate() {
+HdMayaDelegate::~HdMayaDelegate() {
 
 }
 

@@ -17,18 +17,18 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdViewportRenderer : public MViewportRenderer {
+class HdMayaViewportRenderer : public MViewportRenderer {
 public:
-    HdViewportRenderer();
-    ~HdViewportRenderer() override;
+    HdMayaViewportRenderer();
+    ~HdMayaViewportRenderer() override;
 
-    static HdViewportRenderer* getInstance();
+    static HdMayaViewportRenderer* getInstance();
     static void cleanup();
 
     MStatus initialize() override;
     MStatus uninitialize() override;
 
-    TfTokenVector getRendererPlugins();
+    static TfTokenVector getRendererPlugins();
 
     MStatus render(const MRenderingInfo& renderInfo) override;
     bool nativelySupports(MViewportRenderer::RenderingAPI api, float version) override;

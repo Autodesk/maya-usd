@@ -12,42 +12,42 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
-    std::unique_ptr<HdViewportRenderer> _viewportRenderer = nullptr;
+    std::unique_ptr<HdMayaViewportRenderer> _viewportRenderer = nullptr;
     std::mutex _viewportRendererLock;
 }
 
-HdViewportRenderer::HdViewportRenderer() :
-    MViewportRenderer("HdViewportRenderer") {
+HdMayaViewportRenderer::HdMayaViewportRenderer() :
+    MViewportRenderer("HdMayaViewportRenderer") {
     fUIName.set("Hydra Viewport Renderer");
     fRenderingOverride = MViewportRenderer::kOverrideAllDrawing;
 }
 
-HdViewportRenderer::~HdViewportRenderer() {
+HdMayaViewportRenderer::~HdMayaViewportRenderer() {
 
 }
 
-HdViewportRenderer* HdViewportRenderer::getInstance() {
+HdMayaViewportRenderer* HdMayaViewportRenderer::getInstance() {
     std::lock_guard<std::mutex> lg(_viewportRendererLock);
-    if (_viewportRenderer == nullptr) { _viewportRenderer.reset(new HdViewportRenderer()); }
+    if (_viewportRenderer == nullptr) { _viewportRenderer.reset(new HdMayaViewportRenderer()); }
     return _viewportRenderer.get();
 }
 
-void HdViewportRenderer::cleanup() {
+void HdMayaViewportRenderer::cleanup() {
     _viewportRenderer = nullptr;
 }
 
-MStatus HdViewportRenderer::initialize() {
+MStatus HdMayaViewportRenderer::initialize() {
     GlfGlewInit();
     renderIndex.reset(HdRenderIndex::New(&renderDelegate));
-    taskDelegate = std::make_shared<HdMayaDelegate>(renderIndex.get(), SdfPath("/HdViewportRenderer"));
+    taskDelegate = std::make_shared<HdMayaDelegate>(renderIndex.get(), SdfPath("/HdMayaViewportRenderer"));
     return MStatus::kSuccess;
 }
 
-MStatus HdViewportRenderer::uninitialize() {
+MStatus HdMayaViewportRenderer::uninitialize() {
     return MStatus::kSuccess;
 }
 
-TfTokenVector HdViewportRenderer::getRendererPlugins() {
+TfTokenVector HdMayaViewportRenderer::getRendererPlugins() {
     HfPluginDescVector pluginDescs;
     HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescs);
 
@@ -58,7 +58,7 @@ TfTokenVector HdViewportRenderer::getRendererPlugins() {
     return ret;
 }
 
-MStatus HdViewportRenderer::render(const MRenderingInfo& renderInfo) {
+MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
     if (renderInfo.renderingAPI() != MViewportRenderer::kOpenGL) {
         return MS::kFailure;
     }
@@ -84,7 +84,7 @@ MStatus HdViewportRenderer::render(const MRenderingInfo& renderInfo) {
 
     MayaRenderParams params; params.enableLighting = false;
     auto tasks = taskDelegate->GetRenderTasks(params, rprims);
-    engine.Execute(*renderIndex, tasks);
+    // engine.Execute(*renderIndex, tasks);
 
     glDisable(GL_FRAMEBUFFER_SRGB_EXT);
     glPopAttrib(); // GL_ENABLE_BIT | GL_CURRENT_BIT
@@ -93,10 +93,10 @@ MStatus HdViewportRenderer::render(const MRenderingInfo& renderInfo) {
     return MStatus::kSuccess;
 }
 
-bool HdViewportRenderer::nativelySupports(MViewportRenderer::RenderingAPI api, float /*version*/) {
+bool HdMayaViewportRenderer::nativelySupports(MViewportRenderer::RenderingAPI api, float /*version*/) {
     return MViewportRenderer::kOpenGL == api;
 }
 
-bool HdViewportRenderer::override(MViewportRenderer::RenderingOverride override) {
+bool HdMayaViewportRenderer::override(MViewportRenderer::RenderingOverride override) {
     return fRenderingOverride == override;
 }
