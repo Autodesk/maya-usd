@@ -1,5 +1,5 @@
-#ifndef __MAYA_SCENE_DELEGATE_H__
-#define __MAYA_SCENE_DELEGATE_H__
+#ifndef __HDMAYA_DELEGATE_H__
+#define __HDMAYA_DELEGATE_H__
 
 #include <pxr/pxr.h>
 
@@ -13,13 +13,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class MayaSceneDelegate : public HdSceneDelegate {
+class HdMayaDelegate : public HdSceneDelegate {
 public:
-    MayaSceneDelegate(
+    HdMayaDelegate(
         HdRenderIndex* renderIndex,
         const SdfPath& delegateID);
 
-    virtual ~MayaSceneDelegate();
+    virtual ~HdMayaDelegate();
 
     VtValue Get(SdfPath const& id, TfToken const& key) override;
 
@@ -57,8 +57,8 @@ private:
     }
 };
 
-typedef std::shared_ptr<MayaSceneDelegate> MayaSceneDelegateSharedPtr;
+typedef std::shared_ptr<HdMayaDelegate> MayaSceneDelegateSharedPtr;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __MAYA_SCENE_DELEGATE_H__
+#endif // __HDMAYA_DELEGATE_H__

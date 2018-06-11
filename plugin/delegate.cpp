@@ -1,4 +1,4 @@
-#include "mayaSceneDelegate.h"
+#include "delegate.h"
 
 #include <pxr/base/gf/matrix4d.h>
 
@@ -11,7 +11,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MayaSceneDelegate::MayaSceneDelegate(
+HdMayaDelegate::MayaSceneDelegate(
     HdRenderIndex* renderIndex,
     const SdfPath& delegateID) :
     HdSceneDelegate(renderIndex, delegateID) {
@@ -30,26 +30,26 @@ MayaSceneDelegate::MayaSceneDelegate(
     }
 }
 
-MayaSceneDelegate::~MayaSceneDelegate() {
+HdMayaDelegate::~MayaSceneDelegate() {
 
 }
 
 VtValue
-MayaSceneDelegate::Get(SdfPath const& id, const TfToken& key) {
+HdMayaDelegate::Get(SdfPath const& id, const TfToken& key) {
     auto* cache = TfMapLookupPtr(valueCacheMap, id);
     VtValue ret;
     if (cache && TfMapLookup(*cache, key, &ret)) {
         return ret;
     }
 
-    std::cerr << "[MayaSceneDelegate] Error accessing " << key << " from the valueCacheMap!" << std::endl;
+    std::cerr << "[HdMayaDelegate] Error accessing " << key << " from the valueCacheMap!" << std::endl;
 
     return VtValue();
 
 }
 
 void
-MayaSceneDelegate::SetCameraState(const MMatrix& worldToView, const MMatrix& projection,
+HdMayaDelegate::SetCameraState(const MMatrix& worldToView, const MMatrix& projection,
                                   const GfVec4d& _viewport) {
     auto& cache = valueCacheMap[cameraId];
     GfMatrix4d mat;
@@ -64,7 +64,7 @@ MayaSceneDelegate::SetCameraState(const MMatrix& worldToView, const MMatrix& pro
     viewport = _viewport;
 }
 
-HdTaskSharedPtrVector MayaSceneDelegate::GetRenderTasks(
+HdTaskSharedPtrVector HdMayaDelegate::GetRenderTasks(
     const MayaRenderParams& params,
     const HdRprimCollection& rprimCollection) {
     const auto hash = params.hash();

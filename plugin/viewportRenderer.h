@@ -13,7 +13,7 @@
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/rprimCollection.h>
 
-#include "mayaSceneDelegate.h"
+#include "delegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

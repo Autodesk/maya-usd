@@ -39,7 +39,7 @@ void HdViewportRenderer::cleanup() {
 MStatus HdViewportRenderer::initialize() {
     GlfGlewInit();
     renderIndex.reset(HdRenderIndex::New(&renderDelegate));
-    taskDelegate = std::make_shared<MayaSceneDelegate>(renderIndex.get(), SdfPath("/HdViewportRenderer"));
+    taskDelegate = std::make_shared<HdMayaDelegate>(renderIndex.get(), SdfPath("/HdViewportRenderer"));
     return MStatus::kSuccess;
 }
 
