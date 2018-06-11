@@ -1,7 +1,8 @@
 set(PLUGIN_NAME hd_viewport)
 
 # In case we need boost
-set(Boost_USE_STATIC_LIBS ON)
+# USD still needs the dynamic ones
+# set(Boost_USE_STATIC_LIBS ON)
 
 find_package(Maya)
 find_package(OpenGL REQUIRED)

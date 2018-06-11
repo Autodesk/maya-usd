@@ -10,12 +10,6 @@ find_path(USD_LIBRARY_DIR libusd.so
           $ENV{USD_ROOT}/lib
           DOC "USD Libraries directory")
 
-find_file(USD_GENSCHEMA
-          names usdGenSchema
-          PATHS ${USD_ROOT}/bin
-          $ENV{USD_ROOT}/bin
-          DOC "USD Gen schema application")
-
 # USD Maya components
 
 find_path(USD_MAYA_INCLUDE_DIR usdMaya/api.h
@@ -82,6 +76,5 @@ find_package_handle_standard_args(
     REQUIRED_VARS
     USD_INCLUDE_DIR
     USD_LIBRARY_DIR
-    USD_GENSCHEMA
     VERSION_VAR
     USD_VERSION)
