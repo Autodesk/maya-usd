@@ -7,12 +7,17 @@
 #include <pxr/imaging/glf/glew.h>
 
 #include <pxr/usd/usd/stage.h>
+
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hdSt/renderDelegate.h>
+
 #include <pxr/usdImaging/usdImagingGL/hdEngine.h>
+
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/rprimCollection.h>
+
 #include <pxr/imaging/hdx/rendererPlugin.h>
+#include <pxr/imaging/hdx/taskController.h>
 
 #include "delegate.h"
 
@@ -42,9 +47,12 @@ private:
 
     HdEngine engine;
     HdxRendererPlugin* rendererPlugin = nullptr;
-    std::unique_ptr<HdRenderIndex> renderIndex;
-    MayaSceneDelegateSharedPtr delegate;
-    HdRprimCollection rprims;
+    HdxTaskController* taskController = nullptr;
+    HdRenderIndex* renderIndex = nullptr;
+    HdMayaDelegate* delegate = nullptr;
+    HdxSelectionTrackerSharedPtr selectionTracker;
+
+    SdfPath delegateID;
 
     bool initializedViewport = false;
 

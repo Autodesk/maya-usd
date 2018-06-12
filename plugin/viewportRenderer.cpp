@@ -5,6 +5,7 @@
 
 #include <pxr/imaging/hdx/rendererPlugin.h>
 #include <pxr/imaging/hdx/rendererPluginRegistry.h>
+#include <pxr/imaging/hdx/tokens.h>
 
 #include <memory>
 #include <mutex>
@@ -21,13 +22,21 @@ namespace {
         if (l.empty()) { return {}; }
         return l[0];
     }
+
+    GfMatrix4d _getGfMatrixFromMaya(const MMatrix& mayaMat) {
+        GfMatrix4d mat;
+        memcpy(mat.GetArray(), mayaMat[0], sizeof(double) * 16);
+        return mat;
+    }
 }
 
 HdMayaViewportRenderer::HdMayaViewportRenderer() :
-    MViewportRenderer("HdMayaViewportRenderer") {
+    MViewportRenderer("HdMayaViewportRenderer"),
+    selectionTracker(new HdxSelectionTracker) {
     fUIName.set("Hydra Viewport Renderer");
     fRenderingOverride = MViewportRenderer::kOverrideAllDrawing;
 
+    delegateID = SdfPath("/HdMayaViewportRenderer").AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
     rendererName = _getDefaultRenderer();
     // This is a critical error, so we don't allow the construction
     // of the viewport renderer plugin if there is no renderer plugin
@@ -74,16 +83,32 @@ MStatus HdMayaViewportRenderer::uninitialize() {
 void HdMayaViewportRenderer::initHydraResources() {
     rendererPlugin = HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(rendererName);
     auto* renderDelegate = rendererPlugin->CreateRenderDelegate();
-    renderIndex.reset(HdRenderIndex::New(renderDelegate));
-    delegate = std::make_shared<HdMayaDelegate>(renderIndex.get(), SdfPath("/HdMayaViewportRenderer"));
+    renderIndex = HdRenderIndex::New(renderDelegate);
+    delegate = new HdMayaDelegate(renderIndex, delegateID);
+    taskController = new HdxTaskController(
+        renderIndex,
+        delegateID.AppendChild(TfToken(
+            TfStringPrintf("_UsdImaging_%s_%p", TfMakeValidIdentifier(rendererName.GetText()).c_str(), this))));
+
+    // delegate->SetRootVisibility(true);
+    // delegate->SetRootTransform(GfMatrix4d(1.0));
 }
 
 void HdMayaViewportRenderer::clearHydraResources() {
-    delegate = nullptr;
+    if (delegate != nullptr) {
+        delete delegate;
+        delegate = nullptr;
+    }
+
+    if (taskController != nullptr) {
+        delete taskController;
+        taskController = nullptr;
+    }
 
     HdRenderDelegate* renderDelegate = nullptr;
     if (renderIndex != nullptr) {
         renderDelegate = renderIndex->GetRenderDelegate();
+        delete renderIndex;
         renderIndex = nullptr;
     }
 
@@ -146,15 +171,19 @@ MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
     const auto height = renderInfo.height();
 
     GfVec4d viewport(originX, originY, width, height);
-    delegate->SetCameraState(renderInfo.viewMatrix(), renderInfo.projectionMatrix(), viewport);
+    taskController->SetCameraMatrices(
+        _getGfMatrixFromMaya(renderInfo.viewMatrix()),
+        _getGfMatrixFromMaya(renderInfo.projectionMatrix()));
+    taskController->SetCameraViewport(viewport);
+    taskController->SetEnableSelection(false);
+    VtValue selectionTrackerValue(selectionTracker);
+    engine.SetTaskContextData(HdxTokens->selectionState, selectionTrackerValue);
 
     glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT);
     glEnable(GL_FRAMEBUFFER_SRGB_EXT);
     glEnable(GL_LIGHTING);
 
-    MayaRenderParams params; params.enableLighting = false;
-    auto tasks = delegate->GetRenderTasks(params, rprims);
-    engine.Execute(*renderIndex, tasks);
+    engine.Execute(*renderIndex, taskController->GetTasks(HdxTaskSetTokens->colorRender));
 
     glDisable(GL_FRAMEBUFFER_SRGB_EXT);
     glPopAttrib(); // GL_ENABLE_BIT | GL_CURRENT_BIT
