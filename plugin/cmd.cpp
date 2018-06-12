@@ -7,11 +7,12 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+const MString HdMayaCmd::name("hdmaya");
+
 namespace {
     constexpr auto _listRenderers = "-ls";
     constexpr auto _listRenderersLong = "-listRenderers";
 }
-
 
 MSyntax HdMayaCmd::createSyntax() {
     MSyntax syntax;

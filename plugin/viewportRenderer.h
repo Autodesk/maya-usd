@@ -1,5 +1,5 @@
-#ifndef __VIEWPORT_RENDERER_H__
-#define __VIEWPORT_RENDERER_H__
+#ifndef __HDMAYA_VIEWPORT_RENDERER_H__
+#define __HDMAYA_VIEWPORT_RENDERER_H__
 
 #include <maya/MViewportRenderer.h>
 
@@ -45,4 +45,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __VIEWPORT_RENDERER_H__
+#endif // __HDMAYA_VIEWPORT_RENDERER_H__

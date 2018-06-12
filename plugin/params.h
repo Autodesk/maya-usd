@@ -1,5 +1,5 @@
-#ifndef __PARAMS_H__
-#define __PARAMS_H__
+#ifndef __HDMAYA_PARAMS_H__
+#define __HDMAYA_PARAMS_H__
 
 #include <pxr/pxr.h>
 
@@ -16,4 +16,4 @@ struct MayaRenderParams{
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __PARAMS_H__
+#endif // __HDMAYA_PARAMS_H__

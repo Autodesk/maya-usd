@@ -12,6 +12,8 @@ public:
     static void* creator() { return new HdMayaCmd(); }
     static MSyntax createSyntax();
 
+    static const MString name;
+
     MStatus doIt(const MArgList& args) override;
 };
 

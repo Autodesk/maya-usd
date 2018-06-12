@@ -18,7 +18,10 @@ MStatus initializePlugin(MObject obj) {
         HdMayaViewportRenderer::cleanup();
     }
 
-    plugin.registerCommand(MString("hdmaya"), HdMayaCmd::creator, HdMayaCmd::createSyntax);
+    if (!plugin.registerCommand(HdMayaCmd::name, HdMayaCmd::creator, HdMayaCmd::createSyntax)) {
+        ret = MS::kFailure;
+        ret.perror("Error registering hdmaya command!");
+    }
 
     return ret;
 }
@@ -35,7 +38,10 @@ MStatus uninitializePlugin(MObject obj) {
     }
     HdMayaViewportRenderer::cleanup();
 
-    plugin.deregisterCommand(MString("hdmaya"));
+    if (!plugin.deregisterCommand(HdMayaCmd::name)) {
+        ret = MS::kFailure;
+        ret.perror("Error deregistering hdmaya command!");
+    }
 
     return ret;
 }
