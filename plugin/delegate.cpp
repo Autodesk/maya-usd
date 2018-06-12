@@ -132,7 +132,7 @@ HdTaskSharedPtrVector HdMayaDelegate::GetRenderTasks(
         HdChangeTracker::DirtyParams);
 
     // The render setup task both supports rprimCollection and rprimCollectionVector
-    SetValue(renderTaskId, HdTokens->collection, rprimCollection);
+    // SetValue(renderTaskId, HdTokens->collection, rprimCollection);
     GetRenderIndex().GetChangeTracker().MarkTaskDirty(
         renderTaskId,
         HdChangeTracker::DirtyCollection);

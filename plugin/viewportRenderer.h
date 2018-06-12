@@ -12,6 +12,7 @@
 #include <pxr/usdImaging/usdImagingGL/hdEngine.h>
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hdx/rendererPlugin.h>
 
 #include "delegate.h"
 
@@ -29,18 +30,25 @@ public:
     MStatus uninitialize() override;
 
     static TfTokenVector getRendererPlugins();
+    static std::string getRendererPluginDisplayName(const TfToken& id);
+    static void changeRendererPlugin(const TfToken& id);
 
     MStatus render(const MRenderingInfo& renderInfo) override;
     bool nativelySupports(MViewportRenderer::RenderingAPI api, float version) override;
     bool override(MViewportRenderer::RenderingOverride override) override;
 private:
-    UsdStageRefPtr stage;
-    // We only care about hydra, not the reference one.
+    void initHydraResources();
+    void clearHydraResources();
+
     HdEngine engine;
-    HdStRenderDelegate renderDelegate;
+    HdxRendererPlugin* rendererPlugin = nullptr;
     std::unique_ptr<HdRenderIndex> renderIndex;
-    MayaSceneDelegateSharedPtr taskDelegate;
+    MayaSceneDelegateSharedPtr delegate;
     HdRprimCollection rprims;
+
+    bool initializedViewport = false;
+
+    TfToken rendererName;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
