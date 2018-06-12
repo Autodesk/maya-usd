@@ -22,27 +22,10 @@ public:
     virtual ~HdMayaDelegate();
 
     VtValue Get(SdfPath const& id, TfToken const& key) override;
-
-    void SetCameraState(
-        const MMatrix& worldToView,
-        const MMatrix& projection,
-        const GfVec4d& _viewport);
-
-    HdTaskSharedPtrVector GetRenderTasks(
-        const MayaRenderParams& params,
-        const HdRprimCollection& rprimCollections);
 private:
-    SdfPath cameraId;
-    SdfPath rootId;
-    GfVec4d viewport;
-
     using ValueCache = TfHashMap<TfToken, VtValue, TfToken::HashFunctor>;
     using ValueCacheMap = TfHashMap<SdfPath, ValueCache, SdfPath::Hash>;
     ValueCacheMap valueCacheMap;
-
-    using RenderTaskIdMap = std::unordered_map<size_t, SdfPath>;
-    RenderTaskIdMap renderSetupTaskIdMap;
-    RenderTaskIdMap renderTaskIdMap;
 
     template <typename T>
     const T& GetValue(const SdfPath& id, const TfToken& key) {

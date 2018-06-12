@@ -89,9 +89,6 @@ void HdMayaViewportRenderer::initHydraResources() {
         renderIndex,
         delegateID.AppendChild(TfToken(
             TfStringPrintf("_UsdImaging_%s_%p", TfMakeValidIdentifier(rendererName.GetText()).c_str(), this))));
-
-    // delegate->SetRootVisibility(true);
-    // delegate->SetRootTransform(GfMatrix4d(1.0));
 }
 
 void HdMayaViewportRenderer::clearHydraResources() {
