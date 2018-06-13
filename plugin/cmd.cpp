@@ -2,6 +2,7 @@
 
 #include <maya/MSyntax.h>
 #include <maya/MArgDatabase.h>
+#include <maya/MGlobal.h>
 
 #include "viewportRenderer.h"
 
@@ -57,6 +58,7 @@ MStatus HdMayaCmd::doIt(const MArgList &args) {
         MString id;
         if (db.getFlagArgument(_changeRenderer, 0, id)) {
             HdMayaViewportRenderer::changeRendererPlugin(TfToken(id.asChar()));
+            MGlobal::executeCommandOnIdle("refresh -f");
         }
     }
     return MS::kSuccess;

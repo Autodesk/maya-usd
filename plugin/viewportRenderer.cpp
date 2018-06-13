@@ -143,7 +143,6 @@ std::string HdMayaViewportRenderer::getRendererPluginDisplayName(const TfToken& 
 }
 
 void HdMayaViewportRenderer::changeRendererPlugin(const TfToken& id) {
-    std::cerr << "Changing renderer" << std::endl;
     auto* instance = getInstance();
     if (instance->rendererName == id) { return; }
     const auto renderers = getRendererPlugins();
@@ -167,12 +166,7 @@ MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
         isPopulated = true;
     }
 
-    float clearColor[4] = { 0.0f };
-    glGetFloatv(GL_COLOR_CLEAR_VALUE, clearColor);
     renderInfo.renderTarget().makeTargetCurrent();
-
-    glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-    // glClear(GL_COLOR_BUFFER_BIT);
 
     const auto originX = renderInfo.originX();
     const auto originY = renderInfo.originY();
@@ -197,7 +191,6 @@ MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
     glDisable(GL_FRAMEBUFFER_SRGB_EXT);
     glPopAttrib(); // GL_ENABLE_BIT | GL_CURRENT_BIT
 
-    glClearColor(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
     return MStatus::kSuccess;
 }
 
