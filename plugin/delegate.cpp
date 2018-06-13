@@ -18,9 +18,9 @@
 #include <maya/MItDag.h>
 #include <maya/MString.h>
 
-#include "util.h"
+#include "utils.h"
 
-PXR_NAMESPACE_USING_DIRECTIVE
+PXR_NAMESPACE_OPEN_SCOPE
 
 HdMayaDelegate::HdMayaDelegate(
     HdRenderIndex* renderIndex,
@@ -209,3 +209,5 @@ HdMayaDelegate::GetMaterialPrimvars(const SdfPath& id) {
     std::cerr << "[HdSceneDelegate] Getting material primvars of " << id << std::endl;
     return {};
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

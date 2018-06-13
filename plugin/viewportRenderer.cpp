@@ -11,9 +11,9 @@
 #include <mutex>
 #include <exception>
 
-#include "util.h"
+#include "utils.h"
 
-PXR_NAMESPACE_USING_DIRECTIVE
+PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
     std::unique_ptr<HdMayaViewportRenderer> _viewportRenderer = nullptr;
@@ -201,3 +201,5 @@ bool HdMayaViewportRenderer::nativelySupports(MViewportRenderer::RenderingAPI ap
 bool HdMayaViewportRenderer::override(MViewportRenderer::RenderingOverride override) {
     return fRenderingOverride == override;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

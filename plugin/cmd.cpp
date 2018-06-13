@@ -6,7 +6,7 @@
 
 #include "viewportRenderer.h"
 
-PXR_NAMESPACE_USING_DIRECTIVE
+PXR_NAMESPACE_OPEN_SCOPE
 
 const MString HdMayaCmd::name("hdmaya");
 
@@ -63,3 +63,5 @@ MStatus HdMayaCmd::doIt(const MArgList &args) {
     }
     return MS::kSuccess;
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE
