@@ -11,22 +11,23 @@
 #include <mutex>
 #include <exception>
 
+#include "util.h"
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
     std::unique_ptr<HdMayaViewportRenderer> _viewportRenderer = nullptr;
     std::mutex _viewportRendererLock;
+    constexpr auto HDMAYA_DEFAULT_RENDERER_PLUGIN_NAME = "HDMAYA_DEFAULT_RENDERER_PLUGIN";
 
     TfToken _getDefaultRenderer() {
         const auto l = HdMayaViewportRenderer::getRendererPlugins();
         if (l.empty()) { return {}; }
+        const auto* defaultRenderer = getenv(HDMAYA_DEFAULT_RENDERER_PLUGIN_NAME);
+        if (defaultRenderer == nullptr) { return l[0]; }
+        const TfToken defaultRendererToken(defaultRenderer);
+        if (std::find(l.begin(), l.end(), defaultRendererToken) != l.end()) { return defaultRendererToken; }
         return l[0];
-    }
-
-    GfMatrix4d _getGfMatrixFromMaya(const MMatrix& mayaMat) {
-        GfMatrix4d mat;
-        memcpy(mat.GetArray(), mayaMat[0], sizeof(double) * 16);
-        return mat;
     }
 }
 
@@ -42,7 +43,7 @@ HdMayaViewportRenderer::HdMayaViewportRenderer() :
     // of the viewport renderer plugin if there is no renderer plugin
     // present.
     if (rendererName.IsEmpty()) {
-        throw std::runtime_error("No default renderer is present!");
+        throw std::runtime_error("No default renderer is available!");
     }
 }
 
@@ -116,6 +117,9 @@ void HdMayaViewportRenderer::clearHydraResources() {
         HdxRendererPluginRegistry::GetInstance().ReleasePlugin(rendererPlugin);
         rendererPlugin = nullptr;
     }
+
+
+    isPopulated = false;
 }
 
 TfTokenVector HdMayaViewportRenderer::getRendererPlugins() {
@@ -139,6 +143,7 @@ std::string HdMayaViewportRenderer::getRendererPluginDisplayName(const TfToken& 
 }
 
 void HdMayaViewportRenderer::changeRendererPlugin(const TfToken& id) {
+    std::cerr << "Changing renderer" << std::endl;
     auto* instance = getInstance();
     if (instance->rendererName == id) { return; }
     const auto renderers = getRendererPlugins();
@@ -155,12 +160,19 @@ MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
         return MS::kFailure;
     }
 
+    // TODO: dynamically update everything. For now we are just
+    // populating the delegate once.
+    if (!isPopulated) {
+        delegate->Populate();
+        isPopulated = true;
+    }
+
     float clearColor[4] = { 0.0f };
     glGetFloatv(GL_COLOR_CLEAR_VALUE, clearColor);
     renderInfo.renderTarget().makeTargetCurrent();
 
     glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    // glClear(GL_COLOR_BUFFER_BIT);
 
     const auto originX = renderInfo.originX();
     const auto originY = renderInfo.originY();
@@ -169,8 +181,8 @@ MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
 
     GfVec4d viewport(originX, originY, width, height);
     taskController->SetCameraMatrices(
-        _getGfMatrixFromMaya(renderInfo.viewMatrix()),
-        _getGfMatrixFromMaya(renderInfo.projectionMatrix()));
+        getGfMatrixFromMaya(renderInfo.viewMatrix()),
+        getGfMatrixFromMaya(renderInfo.projectionMatrix()));
     taskController->SetCameraViewport(viewport);
     taskController->SetEnableSelection(false);
     VtValue selectionTrackerValue(selectionTracker);

@@ -55,6 +55,7 @@ private:
     SdfPath delegateID;
 
     bool initializedViewport = false;
+    bool isPopulated = false;
 
     TfToken rendererName;
 };

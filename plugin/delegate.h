@@ -5,9 +5,12 @@
 
 #include <pxr/base/gf/vec4d.h>
 
-#include <pxr/imaging/hd/sceneDelegate.h>
+#include <pxr/usd/sdf/path.h>
 
-#include <maya/MMatrix.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
+#include <pxr/imaging/hd/meshTopology.h>
+
+#include <maya/MDagPath.h>
 
 #include "params.h"
 
@@ -21,23 +24,18 @@ public:
 
     virtual ~HdMayaDelegate();
 
+    HdMeshTopology GetMeshTopology(const SdfPath& id) override;
+    GfRange3d GetExtent(const SdfPath& id) override;
+    GfMatrix4d GetTransform(const SdfPath& id) override;
+    bool GetVisible(const SdfPath& id) override;
+    bool IsEnabled(const TfToken& option) const override;
     VtValue Get(SdfPath const& id, TfToken const& key) override;
+
+    void Populate();
 private:
-    using ValueCache = TfHashMap<TfToken, VtValue, TfToken::HashFunctor>;
-    using ValueCacheMap = TfHashMap<SdfPath, ValueCache, SdfPath::Hash>;
-    ValueCacheMap valueCacheMap;
-
-    template <typename T>
-    const T& GetValue(const SdfPath& id, const TfToken& key) {
-        auto v = valueCacheMap[id][key];
-        TF_VERIFY(v.IsHolding<T>());
-        return v.Get<T>();
-    }
-
-    template <typename T>
-    void SetValue(const SdfPath& id, const TfToken& key, const T& value) {
-        valueCacheMap[id][key] = value;
-    }
+    SdfPath getPrimPath(const MDagPath& dg);
+    using PathToDgMap = TfHashMap<SdfPath, MDagPath, SdfPath::Hash>;
+    PathToDgMap pathToDgMap;
 };
 
 typedef std::shared_ptr<HdMayaDelegate> MayaSceneDelegateSharedPtr;

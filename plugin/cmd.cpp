@@ -55,7 +55,7 @@ MStatus HdMayaCmd::doIt(const MArgList &args) {
         }
     } else if (db.isFlagSet(_changeRenderer)) {
         MString id;
-        if (db.getFlagArgument(_getRendererDisplayName, 0, id)) {
+        if (db.getFlagArgument(_changeRenderer, 0, id)) {
             HdMayaViewportRenderer::changeRendererPlugin(TfToken(id.asChar()));
         }
     }
