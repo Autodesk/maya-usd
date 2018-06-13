@@ -1769,6 +1769,10 @@ void TransformationMatrix::pushToPrim()
     return;
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushToPrim\n");
 
+  GfMatrix4d oldMatrix;
+  bool oldResetsStack;
+  m_xform.GetLocalTransformation(&oldMatrix, &oldResetsStack, getTimeCode());
+
   auto opIt = m_orderedOps.begin();
   for(std::vector<UsdGeomXformOp>::iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
   {
@@ -1891,6 +1895,7 @@ void TransformationMatrix::pushToPrim()
     }
   }
 
+
   // Anytime we update the xform, we need to tell the proxy shape that it
   // needs to redraw itself
   if (!m_transformNode.isNull())
@@ -1900,10 +1905,23 @@ void TransformationMatrix::pushToPrim()
     if (status && mfn.typeId() == Transform::kTypeId)
     {
       auto xform = static_cast<Transform*>(mfn.userNode());
-      MObject proxy = xform->getProxyShape();
-      if (!proxy.isNull())
+      MObject proxyObj = xform->getProxyShape();
+      if (!proxyObj.isNull())
       {
-        MHWRender::MRenderer::setGeometryDrawDirty(proxy);
+        MFnDependencyNode proxyMfn(proxyObj);
+        if (proxyMfn.typeId() == ProxyShape::kTypeId)
+        {
+          // We check that the matrix actually HAS changed, as this function will be
+          // called when, ie, pushToPrim is toggled, which often happens on node
+          // creation, when nothing has actually changed
+          GfMatrix4d newMatrix;
+          bool newResetsStack;
+          m_xform.GetLocalTransformation(&newMatrix, &newResetsStack, getTimeCode());
+          if (newMatrix != oldMatrix || newResetsStack != oldResetsStack)
+          {
+            MHWRender::MRenderer::setGeometryDrawDirty(proxyObj);
+          }
+        }
       }
     }
   }
