@@ -29,7 +29,20 @@ public:
     GfMatrix4d GetTransform(const SdfPath& id) override;
     bool GetVisible(const SdfPath& id) override;
     bool IsEnabled(const TfToken& option) const override;
+    bool GetDoubleSided(const SdfPath& id) override;
+    HdCullStyle GetCullStyle(const SdfPath& id) override;
+    VtValue GetShadingStyle(const SdfPath& id) override;
+    HdDisplayStyle GetDisplayStyle(const SdfPath& id) override;
+    TfToken GetReprName(const SdfPath& id) override;
     VtValue Get(SdfPath const& id, TfToken const& key) override;
+
+    SdfPath GetMaterialId(const SdfPath& id) override;
+    std::string GetSurfaceShaderSource(const SdfPath& id) override;
+    std::string GetDisplacementShaderSource(const SdfPath& id) override;
+    VtValue GetMaterialParamValue(const SdfPath& id, const TfToken& paramName) override;
+    HdMaterialParamVector GetMaterialParams(const SdfPath& id) override;
+    VtValue GetMaterialResource(const SdfPath& id) override;
+    TfTokenVector GetMaterialPrimvars(const SdfPath& id) override;
 
     void Populate();
 private:

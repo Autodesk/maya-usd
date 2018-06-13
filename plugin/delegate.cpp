@@ -60,14 +60,15 @@ HdMayaDelegate::GetMeshTopology(const SdfPath& id) {
 
 GfRange3d
 HdMayaDelegate::GetExtent(const SdfPath& id) {
-    std::cerr << "[HdMayaSceneDelegate] Getting extent " << id << std::endl;
+    MDagPath dg;
+    if (!TfMapLookup(pathToDgMap, id, &dg)) { return {}; }
+    MFnDagNode dagNode(dg);
     GfRange3d ret(GfVec3d(-1.0), GfVec3d(1.0));
     return ret;
 }
 
 GfMatrix4d
 HdMayaDelegate::GetTransform(const SdfPath& id) {
-    std::cerr << "[HdMayaSceneDelegate] Getting transform " << id << std::endl;
     MDagPath dg;
     if (!TfMapLookup(pathToDgMap, id, &dg)) { return GfMatrix4d(1.0); }
     return getGfMatrixFromMaya(dg.inclusiveMatrix());
@@ -106,7 +107,6 @@ HdMayaDelegate::Get(SdfPath const& id, const TfToken& key) {
 
 void
 HdMayaDelegate::Populate() {
-
     for (MItDag dagIt(MItDag::kDepthFirst, MFn::kInvalid); !dagIt.isDone(); dagIt.next()) {
         MDagPath path;
         dagIt.getPath(path);
@@ -130,7 +130,82 @@ HdMayaDelegate::getPrimPath(const MDagPath& dg) {
     return GetDelegateID().AppendPath(SdfPath(std::string(chr + 1)));
 }
 
-bool HdMayaDelegate::GetVisible(const SdfPath& id) {
-    std::cerr << "[HdSceneDelegate] Getting visibility of " << id << std::endl;
+bool
+HdMayaDelegate::GetVisible(const SdfPath& id) {
     return true;
+}
+
+bool
+HdMayaDelegate::GetDoubleSided(const SdfPath& id) {
+    std::cerr << "[HdSceneDelegate] Getting double sidedness of " << id << std::endl;
+    return true;
+}
+
+HdCullStyle
+HdMayaDelegate::GetCullStyle(const SdfPath& id) {
+    std::cerr << "[HdSceneDelegate] Getting cull style of " << id << std::endl;
+    return HdCullStyleDontCare;
+}
+
+VtValue
+HdMayaDelegate::GetShadingStyle(const SdfPath& id) {
+    std::cerr << "[HdSceneDelegate] Getting shading style of " << id << std::endl;
+    return HdSceneDelegate::GetShadingStyle(id);
+}
+
+HdDisplayStyle
+HdMayaDelegate::GetDisplayStyle(const SdfPath& id) {
+    std::cerr << "[HdSceneDelegate] Getting display style of " << id << std::endl;
+    HdDisplayStyle style;
+    style.flatShadingEnabled = true;
+    style.displacementEnabled = false;
+    return style;
+}
+
+TfToken
+HdMayaDelegate::GetReprName(const SdfPath& id) {
+    std::cerr << "[HdSceneDelegate] Getting repr name of " << id << std::endl;
+    return {};
+}
+
+SdfPath
+HdMayaDelegate::GetMaterialId(const SdfPath& id) {
+    std::cerr << "[HdSceneDelegate] Getting material id of " << id << std::endl;
+    return {};
+}
+
+std::string
+HdMayaDelegate::GetSurfaceShaderSource(const SdfPath& id) {
+    std::cerr << "[HdSceneDelegate] Getting surface shader source of " << id << std::endl;
+    return {};
+}
+
+std::string
+HdMayaDelegate::GetDisplacementShaderSource(const SdfPath& id) {
+    std::cerr << "[HdSceneDelegate] Getting displacement shader source of " << id << std::endl;
+    return {};
+}
+
+VtValue
+HdMayaDelegate::GetMaterialParamValue(const SdfPath& id, const TfToken& paramName) {
+    std::cerr << "[HdSceneDelegate] Getting material param value of " << id << std::endl;
+    return {};
+}
+
+HdMaterialParamVector
+HdMayaDelegate::GetMaterialParams(const SdfPath& id) {
+    std::cerr << "[HdSceneDelegate] Getting material params of " << id << std::endl;
+    return {};
+}
+
+VtValue
+HdMayaDelegate::GetMaterialResource(const SdfPath& id) {
+    std::cerr << "[HdSceneDelegate] Getting material resource of " << id << std::endl;
+    return {};
+}
+
+TfTokenVector
+HdMayaDelegate::GetMaterialPrimvars(const SdfPath& id) {
+    std::cerr << "[HdSceneDelegate] Getting material primvars of " << id << std::endl;
+    return {};
 }
