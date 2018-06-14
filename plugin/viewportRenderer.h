@@ -41,6 +41,7 @@ public:
     MStatus render(const MRenderingInfo& renderInfo) override;
     bool nativelySupports(MViewportRenderer::RenderingAPI api, float version) override;
     bool override(MViewportRenderer::RenderingOverride override) override;
+    unsigned int overrideThenStandardExclusion() const override;
 private:
     void InitHydraResources();
     void ClearHydraResources();

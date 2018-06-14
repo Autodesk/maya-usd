@@ -35,7 +35,7 @@ HdMayaViewportRenderer::HdMayaViewportRenderer() :
     MViewportRenderer("HdMayaViewportRenderer"),
     _selectionTracker(new HdxSelectionTracker) {
     fUIName.set("Hydra Viewport Renderer");
-    fRenderingOverride = MViewportRenderer::kOverrideAllDrawing;
+    fRenderingOverride = MViewportRenderer::kOverrideThenStandard;
 
     _delegateID = SdfPath("/HdMayaViewportRenderer").AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
     _rendererName = _getDefaultRenderer();
@@ -200,6 +200,11 @@ bool HdMayaViewportRenderer::nativelySupports(MViewportRenderer::RenderingAPI ap
 
 bool HdMayaViewportRenderer::override(MViewportRenderer::RenderingOverride override) {
     return fRenderingOverride == override;
+}
+
+unsigned int
+HdMayaViewportRenderer::overrideThenStandardExclusion() const {
+    return ~static_cast<unsigned int>(kExcludeManipulators);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
