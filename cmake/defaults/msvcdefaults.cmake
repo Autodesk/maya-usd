@@ -26,8 +26,8 @@
 set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /EHsc")
 
 # Standards compliant.
-set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:rvalueCast    \
-                                      /Zc:strictStrings \
+set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:rvalueCast
+                                      /Zc:strictStrings
                                       /Zc:inline")
 
 # Turn on all but informational warnings.

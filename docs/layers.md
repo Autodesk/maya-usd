@@ -1,15 +1,20 @@
 # Layers
 
-AL_USDMaya allows you to edit any of the layers used in a USD Stage as well as creating and modfiying them.
 
-Layers can be modified using the USD API 
+AL_USDMaya has limited support via Maya commands for editing or retrieving layer contents. It does know which layers have been modified in memory by tracking which layers have been set as an EditTarget and that are dirtied via the LayerManager node.
 
-#### Serialising Modified Layers
-Any layer changes you make will be serialised to the maya scene when the scene is saved, and reapplied when the scene is opened.
+Typically a user of AL_USDMaya will do modifications directly via the USD API and AL_USDMaya will react accordingly.
+
+#### LayerManager
+The LayerManager is a singleton that tracks all layers that have been set as an EditTarget and that are classified as "Dirty" by USD. The LayerManager can be retrieved via it's Python bindings or directly in C++, you can also retrieve it's tracked layer contents via the AL_usdmaya_LayerManager command.
+The tracked layers will be serialised to the Maya scene when the scene is saved, and reapplied when the scene is re-opened.
 To record edits to a layer, you need to set it as the current [Edit Target](https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-EditTarget). 
 AL_USDMaya will record which layers have been set as the edit target during a session, and when the scene is saved (via an OnSceneSaved callback) will serialise their content into the maya scene. Those layers will be deserialised into the live USD model after the scene has been opened again via an equivalent OnSceneOpened callback).
 Normally, the default Edit Target in USD will be the Root Layer of the scene, although using the [Session Layer](https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-SessionLayer) is something we should consider.
 
+##### Uses at AL
+###### Modifications for exisiting layers
+After doing in-memory edits to our USD scene changes(typically via Maya) we then translate our USD scene, which is a filepath to the root layer and the serialised content of all the modified in-memory layers that are tracked by the LayerManager, into our renderers scene description for rendering. 
 
 #### Commands 
 There are a number of layer-related commands available, all are available via MEL, and some from the USD->Layers dropdow in the UI.
@@ -50,31 +55,6 @@ You can see that this will be serialised in the maya scene if you find the appro
 ```python
 print cmds.getAttr("Ball_usd.szd")
 ```    
-
-
-
-
-#### Session Layer
-
-+ Session Layer support
-+ Layer Creation Commands
-+ Serialisation etc? Storing Layer Contents on the proxy shape
-+ Animation
-
-At Animal Logic we use this set of tools for our Shot Set Editing workflow
-
-@todo Baz!
-
-
-We currently create a layer DG node for each layer in the root layerstack. 
-How do we know if this has changed?
-We serialise this into the relevant DG node when we save the maya scene
-A layer is either owned by USDMaya or not - if it’s owned by USDMaya we allow you to make any changes to that layer you want, and that layer is serialised on scene save, and deserialised on scene open
-
-Creating temporary layer, checking in etc .. how does it work?
-Working from an existing layer vs creating one from scratch
-
-We use this system to implement our Shotbased-Set Overrides workflow - we import a shot which contains a set (sublayer or reference?). We want to be able to override transforms and visibility in that set and save the changes as an override layer which is passed down our pipeline
 
 #### Hydra Renderer Plugin
 

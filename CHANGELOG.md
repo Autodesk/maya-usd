@@ -1,3 +1,15 @@
+## v0.28.2 (2018-06-14)
+
+### Added
++ Viewport will continue to refresh to show updated progressive renderers (like embree) until converged (#91 - @elrond79)
+
+### Changed
++ make getRenderAttris update showRender, as well as showGuides (#87 - @elrond79)
+
+### Fixed
++ Tweaks to allow builds to work with just rpath. (#88 - @elrond79)
++ When importing left handed geometry that has no normals, compute the correct set of inverted normals.
+
 ## v0.28.1 (2018-06-06)
 
 ### Added

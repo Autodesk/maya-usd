@@ -547,6 +547,7 @@ bool ProxyShape::getRenderAttris(void* pattribs, const MHWRender::MFrameContext&
   const float complexities[] = {1.05f, 1.15f, 1.25f, 1.35f, 1.45f, 1.55f, 1.65f, 1.75f, 1.9f}; 
   attribs.complexity = complexities[complexityPlug().asInt()];
   attribs.showGuides = displayGuidesPlug().asBool();
+  attribs.showRender = displayRenderGuidesPlug().asBool();
   return true;
 }
 

@@ -18,8 +18,7 @@ include(${USD_CONFIG_FILE})
 # to get PYTHON_EXECUTABLE
 find_package(PythonInterp)
 
-include(ProjectDefaults)
-include(Public)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include(CXXDefaults)
 
 add_definitions(${_PXR_CXX_DEFINITIONS})
