@@ -3,8 +3,6 @@
 #include "viewportRenderer.h"
 #include "cmd.h"
 
-#include <memory>
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
 MStatus initializePlugin(MObject obj) {

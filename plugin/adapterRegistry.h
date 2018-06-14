@@ -20,7 +20,8 @@ public:
         return TfSingleton<HdMayaAdapterRegistry>::GetInstance();
     }
 
-    using DagAdapterCreator = std::function<HdMayaDagAdapter*(const MDagPath& dag)>;
+    using DagAdapterCreator = std::function<
+        std::shared_ptr<HdMayaDagAdapter>(const SdfPath& id, HdSceneDelegate* delegate, const MDagPath& dag)>;
     static void RegisterDagAdapter(const MFn::Type& type, DagAdapterCreator creator);
 
     static DagAdapterCreator GetAdapterCreator(const MDagPath& dag);

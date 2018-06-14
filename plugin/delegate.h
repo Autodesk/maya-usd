@@ -11,8 +11,9 @@
 #include <pxr/imaging/hd/meshTopology.h>
 
 #include <maya/MDagPath.h>
+#include <maya/MMessage.h>
 
-#include <unordered_map>
+#include <memory>
 
 #include "params.h"
 #include "dagAdapter.h"
@@ -50,7 +51,8 @@ public:
     void Populate();
 private:
     SdfPath GetPrimPath(const MDagPath& dg);
-    TfHashMap<SdfPath, HdMayaDagAdapter*, SdfPath::Hash> _pathToAdapterMap;
+    TfHashMap<SdfPath, HdMayaDagAdapterPtr, SdfPath::Hash> _pathToAdapterMap;
+    std::vector<MCallbackId> _callbacks;
 };
 
 typedef std::shared_ptr<HdMayaDelegate> MayaSceneDelegateSharedPtr;

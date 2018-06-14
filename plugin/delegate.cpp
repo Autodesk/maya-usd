@@ -31,15 +31,11 @@ HdMayaDelegate::HdMayaDelegate(
 }
 
 HdMayaDelegate::~HdMayaDelegate() {
-    for (auto it: _pathToAdapterMap) {
-        delete it.second;
-        // delete adapter;
-    }
 }
 
 HdMeshTopology
 HdMayaDelegate::GetMeshTopology(const SdfPath& id) {
-    HdMayaDagAdapter* adapter = nullptr;
+    HdMayaDagAdapterPtr adapter;
     if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
         return {};
     }
@@ -48,7 +44,7 @@ HdMayaDelegate::GetMeshTopology(const SdfPath& id) {
 
 GfRange3d
 HdMayaDelegate::GetExtent(const SdfPath& id) {
-    HdMayaDagAdapter* adapter = nullptr;
+    HdMayaDagAdapterPtr adapter;
     if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
         return {};
     }
@@ -57,7 +53,7 @@ HdMayaDelegate::GetExtent(const SdfPath& id) {
 
 GfMatrix4d
 HdMayaDelegate::GetTransform(const SdfPath& id) {
-    HdMayaDagAdapter* adapter = nullptr;
+    HdMayaDagAdapterPtr adapter;
     if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
         return GfMatrix4d(1.0);
     }
@@ -79,7 +75,7 @@ HdMayaDelegate::IsEnabled(const TfToken& option) const {
 
 VtValue
 HdMayaDelegate::Get(SdfPath const& id, const TfToken& key) {
-    HdMayaDagAdapter* adapter = nullptr;
+    HdMayaDagAdapterPtr adapter;
     if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
         return {};
     }
@@ -88,6 +84,8 @@ HdMayaDelegate::Get(SdfPath const& id, const TfToken& key) {
 
 void
 HdMayaDelegate::Populate() {
+    auto& renderIndex = GetRenderIndex();
+    auto& changeTracker = renderIndex.GetChangeTracker();
     for (MItDag dagIt(MItDag::kDepthFirst, MFn::kInvalid); !dagIt.isDone(); dagIt.next()) {
         MDagPath path;
         dagIt.getPath(path);
@@ -100,10 +98,11 @@ HdMayaDelegate::Populate() {
         const auto id = GetPrimPath(path);
         if (id.IsEmpty()) { continue; }
         if (TfMapLookupPtr(_pathToAdapterMap, id) != nullptr) { continue; }
-        auto* adapter = adapterCreator(path);
+        auto adapter = adapterCreator(id, this, path);
         if (adapter == nullptr) { continue; }
-        adapter->Populate(GetRenderIndex(), this, id);
+        adapter->Populate(renderIndex, this, id);
         _pathToAdapterMap.insert({id, adapter});
+        changeTracker.RprimInserted(id, HdChangeTracker::AllDirty);
     }
 }
 

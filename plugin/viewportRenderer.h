@@ -1,8 +1,6 @@
 #ifndef __HDMAYA_VIEWPORT_RENDERER_H__
 #define __HDMAYA_VIEWPORT_RENDERER_H__
 
-#include <maya/MViewportRenderer.h>
-
 #include <pxr/pxr.h>
 #include <pxr/imaging/glf/glew.h>
 
@@ -18,6 +16,8 @@
 
 #include <pxr/imaging/hdx/rendererPlugin.h>
 #include <pxr/imaging/hdx/taskController.h>
+
+#include <maya/MViewportRenderer.h>
 
 #include "delegate.h"
 

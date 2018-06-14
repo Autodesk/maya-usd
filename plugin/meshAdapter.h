@@ -10,7 +10,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaMeshAdapter : public HdMayaDagAdapter {
 public:
-    explicit HdMayaMeshAdapter(const MDagPath& dag);
+    explicit HdMayaMeshAdapter(const SdfPath& id, HdSceneDelegate* delegate, const MDagPath& dagPath);
 
     void Populate(
         HdRenderIndex& renderIndex,

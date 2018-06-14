@@ -2,8 +2,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdMayaDagAdapter::HdMayaDagAdapter(const MDagPath& dagPath) :
-    _dagPath(dagPath) {
+HdMayaDagAdapter::HdMayaDagAdapter(
+    const SdfPath& id, HdSceneDelegate* delegate, const MDagPath& dagPath) :
+    HdMayaAdapter(id, delegate), _dagPath(dagPath) {
 
 }
 

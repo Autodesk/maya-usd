@@ -21,12 +21,13 @@
 #include <maya/MFn.h>
 
 #include "utils.h"
+#include "adapter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaDagAdapter {
+class HdMayaDagAdapter : public HdMayaAdapter {
 protected:
-    HdMayaDagAdapter(const MDagPath& dagPath);
+    HdMayaDagAdapter(const SdfPath& id, HdSceneDelegate* delegate, const MDagPath& dagPath);
 public:
     virtual ~HdMayaDagAdapter() = default;
 
@@ -44,6 +45,8 @@ public:
 protected:
     MDagPath _dagPath;
 };
+
+using HdMayaDagAdapterPtr = std::shared_ptr<HdMayaDagAdapter>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

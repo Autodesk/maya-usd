@@ -10,12 +10,15 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, mesh) {
-    HdMayaAdapterRegistry::RegisterDagAdapter(MFn::kMesh, [](const MDagPath& dag) -> HdMayaDagAdapter* {
-        return new HdMayaMeshAdapter(dag);
+    HdMayaAdapterRegistry::RegisterDagAdapter(MFn::kMesh,
+        [](const SdfPath& id, HdSceneDelegate* delegate, const MDagPath& dag) -> std::shared_ptr<HdMayaDagAdapter> {
+        return std::static_pointer_cast<HdMayaDagAdapter>(std::make_shared<HdMayaMeshAdapter>(id, delegate, dag));
     });
 }
 
-HdMayaMeshAdapter::HdMayaMeshAdapter(const MDagPath& dag) : HdMayaDagAdapter(dag) {
+HdMayaMeshAdapter::HdMayaMeshAdapter(
+    const SdfPath& id, HdSceneDelegate* delegate, const MDagPath& dagPath) :
+    HdMayaDagAdapter(id, delegate, dagPath) {
 
 }
 
