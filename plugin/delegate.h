@@ -12,7 +12,10 @@
 
 #include <maya/MDagPath.h>
 
+#include <unordered_map>
+
 #include "params.h"
+#include "dagAdapter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -46,9 +49,8 @@ public:
 
     void Populate();
 private:
-    SdfPath getPrimPath(const MDagPath& dg);
-    using PathToDgMap = TfHashMap<SdfPath, MDagPath, SdfPath::Hash>;
-    PathToDgMap pathToDgMap;
+    SdfPath GetPrimPath(const MDagPath& dg);
+    TfHashMap<SdfPath, HdMayaDagAdapter*, SdfPath::Hash> _pathToAdapterMap;
 };
 
 typedef std::shared_ptr<HdMayaDelegate> MayaSceneDelegateSharedPtr;

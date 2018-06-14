@@ -3,17 +3,17 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdMayaDagAdapter::HdMayaDagAdapter(const MDagPath& dagPath) :
-    dagPath(dagPath) {
+    _dagPath(dagPath) {
 
 }
 
-VtValue HdMayaDagAdapter::get(const MDagPath& /*dag*/, const TfToken& /*key*/) {
+VtValue HdMayaDagAdapter::Get(const TfToken& /*key*/) {
     return {};
 };
 
-GfRange3d HdMayaDagAdapter::getExtent (const MDagPath& dag) {
+GfRange3d HdMayaDagAdapter::GetExtent() {
     MStatus status;
-    MFnDagNode dagNode(dag, &status);
+    MFnDagNode dagNode(_dagPath, &status);
     if (ARCH_UNLIKELY(!status)) { return {}; }
     const auto bb = dagNode.boundingBox();
     const auto mn = bb.min();
@@ -24,12 +24,12 @@ GfRange3d HdMayaDagAdapter::getExtent (const MDagPath& dag) {
     };
 };
 
-HdMeshTopology HdMayaDagAdapter::getMeshTopology (const MDagPath& /*dag*/) {
+HdMeshTopology HdMayaDagAdapter::GetMeshTopology() {
     return {};
 };
 
-GfMatrix4d HdMayaDagAdapter::getTransform (const MDagPath& dag) {
-    return getGfMatrixFromMaya(dag.inclusiveMatrix());
+GfMatrix4d HdMayaDagAdapter::GetTransform() {
+    return getGfMatrixFromMaya(_dagPath.inclusiveMatrix());
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

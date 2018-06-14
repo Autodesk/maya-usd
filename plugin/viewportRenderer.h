@@ -28,36 +28,36 @@ public:
     HdMayaViewportRenderer();
     ~HdMayaViewportRenderer() override;
 
-    static HdMayaViewportRenderer* getInstance();
-    static void cleanup();
+    static HdMayaViewportRenderer* GetInstance();
+    static void Cleanup();
 
     MStatus initialize() override;
     MStatus uninitialize() override;
 
-    static TfTokenVector getRendererPlugins();
-    static std::string getRendererPluginDisplayName(const TfToken& id);
-    static void changeRendererPlugin(const TfToken& id);
+    static TfTokenVector GetRendererPlugins();
+    static std::string GetRendererPluginDisplayName(const TfToken& id);
+    static void ChangeRendererPlugin(const TfToken& id);
 
     MStatus render(const MRenderingInfo& renderInfo) override;
     bool nativelySupports(MViewportRenderer::RenderingAPI api, float version) override;
     bool override(MViewportRenderer::RenderingOverride override) override;
 private:
-    void initHydraResources();
-    void clearHydraResources();
+    void InitHydraResources();
+    void ClearHydraResources();
 
-    HdEngine engine;
-    HdxRendererPlugin* rendererPlugin = nullptr;
-    HdxTaskController* taskController = nullptr;
-    HdRenderIndex* renderIndex = nullptr;
-    HdMayaDelegate* delegate = nullptr;
-    HdxSelectionTrackerSharedPtr selectionTracker;
+    HdEngine _engine;
+    HdxRendererPlugin* _rendererPlugin = nullptr;
+    HdxTaskController* _taskController = nullptr;
+    HdRenderIndex* _renderIndex = nullptr;
+    HdMayaDelegate* _delegate = nullptr;
+    HdxSelectionTrackerSharedPtr _selectionTracker;
 
-    SdfPath delegateID;
+    SdfPath _delegateID;
 
-    bool initializedViewport = false;
-    bool isPopulated = false;
+    bool _initializedViewport = false;
+    bool _isPopulated = false;
 
-    TfToken rendererName;
+    TfToken _rendererName;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

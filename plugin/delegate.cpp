@@ -19,6 +19,7 @@
 #include <maya/MString.h>
 
 #include "utils.h"
+#include "adapterRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -30,48 +31,37 @@ HdMayaDelegate::HdMayaDelegate(
 }
 
 HdMayaDelegate::~HdMayaDelegate() {
-
+    for (auto it: _pathToAdapterMap) {
+        delete it.second;
+        // delete adapter;
+    }
 }
 
 HdMeshTopology
 HdMayaDelegate::GetMeshTopology(const SdfPath& id) {
-    MDagPath dg;
-    if (!TfMapLookup(pathToDgMap, id, &dg)) { return {}; }
-    MFnMesh mesh(dg);
-    const auto numPolygons = mesh.numPolygons();
-    VtIntArray faceVertexCounts; faceVertexCounts.reserve(numPolygons);
-    VtIntArray faceVertexIndices; faceVertexIndices.reserve(mesh.numFaceVertices());
-    MIntArray mayaFaceVertexIndices;
-    for (auto i = decltype(numPolygons){0}; i < numPolygons; ++i) {
-        mesh.getPolygonVertices(i, mayaFaceVertexIndices);
-        const auto numIndices = mayaFaceVertexIndices.length();
-        faceVertexCounts.push_back(numIndices);
-        for (auto j = decltype(numIndices){0}; j < numIndices; ++j) {
-            faceVertexIndices.push_back(mayaFaceVertexIndices[j]);
-        }
+    HdMayaDagAdapter* adapter = nullptr;
+    if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
+        return {};
     }
-
-    return HdMeshTopology(
-        UsdGeomTokens->triangleSubdivisionRule,
-        UsdGeomTokens->rightHanded,
-        faceVertexCounts,
-        faceVertexIndices);
+    return adapter->GetMeshTopology();
 }
 
 GfRange3d
 HdMayaDelegate::GetExtent(const SdfPath& id) {
-    MDagPath dg;
-    if (!TfMapLookup(pathToDgMap, id, &dg)) { return {}; }
-    MFnDagNode dagNode(dg);
-    GfRange3d ret(GfVec3d(-1.0), GfVec3d(1.0));
-    return ret;
+    HdMayaDagAdapter* adapter = nullptr;
+    if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
+        return {};
+    }
+    return adapter->GetExtent();
 }
 
 GfMatrix4d
 HdMayaDelegate::GetTransform(const SdfPath& id) {
-    MDagPath dg;
-    if (!TfMapLookup(pathToDgMap, id, &dg)) { return GfMatrix4d(1.0); }
-    return getGfMatrixFromMaya(dg.inclusiveMatrix());
+    HdMayaDagAdapter* adapter = nullptr;
+    if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
+        return GfMatrix4d(1.0);
+    }
+    return adapter->GetTransform();
 }
 
 bool
@@ -89,20 +79,11 @@ HdMayaDelegate::IsEnabled(const TfToken& option) const {
 
 VtValue
 HdMayaDelegate::Get(SdfPath const& id, const TfToken& key) {
-    std::cerr << "[HdMayaDelegate] Accessing " << key << " from " << id << std::endl;
-    MDagPath dg;
-    if (!TfMapLookup(pathToDgMap, id, &dg)) { return VtValue(); }
-    MFnMesh mesh(dg);
-
-    if (key == HdTokens->points) {
-        // Same memory layout for MFloatVector and GfVec3f!
-        MStatus status;
-        const auto* rawPoints = reinterpret_cast<const GfVec3f*>(mesh.getRawPoints(&status));
-        if (!status) { return VtValue(); }
-        VtVec3fArray ret; ret.assign(rawPoints, rawPoints + mesh.numVertices());
-        return VtValue(ret);
+    HdMayaDagAdapter* adapter = nullptr;
+    if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
+        return {};
     }
-    return VtValue();
+    return adapter->Get(key);
 }
 
 void
@@ -114,20 +95,27 @@ HdMayaDelegate::Populate() {
         // We don't care about transforms for now.
         if (path.hasFn(MFn::kTransform)) { continue; }
 
-        if (path.hasFn(MFn::kMesh)) {
-            const auto id = getPrimPath(path);
-            pathToDgMap.insert({id, path});
-            GetRenderIndex().InsertRprim(HdPrimTypeTokens->mesh, this, id);
-        }
+        auto adapterCreator = HdMayaAdapterRegistry::GetAdapterCreator(path);
+        if (adapterCreator == nullptr) { continue; }
+        const auto id = GetPrimPath(path);
+        if (id.IsEmpty()) { continue; }
+        if (TfMapLookupPtr(_pathToAdapterMap, id) != nullptr) { continue; }
+        auto* adapter = adapterCreator(path);
+        if (adapter == nullptr) { continue; }
+        adapter->Populate(GetRenderIndex(), this, id);
+        _pathToAdapterMap.insert({id, adapter});
     }
 }
 
 SdfPath
-HdMayaDelegate::getPrimPath(const MDagPath& dg) {
+HdMayaDelegate::GetPrimPath(const MDagPath& dg) {
     const auto mayaPath = PxrUsdMayaUtil::MDagPathToUsdPath(dg, false, false);
+    if (mayaPath.IsEmpty()) { return {}; }
     const auto* chr = mayaPath.GetText();
-    TF_VERIFY(chr != nullptr);
-    return GetDelegateID().AppendPath(SdfPath(std::string(chr + 1)));
+    if (chr == nullptr) { return {}; };
+    std::string s(chr + 1);
+    if (s.empty()) { return {}; }
+    return GetDelegateID().AppendPath(SdfPath(s));
 }
 
 bool

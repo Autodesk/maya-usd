@@ -45,19 +45,19 @@ MStatus HdMayaCmd::doIt(const MArgList &args) {
     MArgDatabase db(syntax(), args);
 
     if (db.isFlagSet(_listRenderers)) {
-        for (const auto& renderer: HdMayaViewportRenderer::getRendererPlugins()) {
+        for (const auto& renderer: HdMayaViewportRenderer::GetRendererPlugins()) {
             appendToResult(renderer.GetText());
         }
     } else if (db.isFlagSet(_getRendererDisplayName)) {
         MString id;
         if (db.getFlagArgument(_getRendererDisplayName, 0, id)) {
-            const auto dn = HdMayaViewportRenderer::getRendererPluginDisplayName(TfToken(id.asChar()));
+            const auto dn = HdMayaViewportRenderer::GetRendererPluginDisplayName(TfToken(id.asChar()));
             setResult(MString(dn.c_str()));
         }
     } else if (db.isFlagSet(_changeRenderer)) {
         MString id;
         if (db.getFlagArgument(_changeRenderer, 0, id)) {
-            HdMayaViewportRenderer::changeRendererPlugin(TfToken(id.asChar()));
+            HdMayaViewportRenderer::ChangeRendererPlugin(TfToken(id.asChar()));
             MGlobal::executeCommandOnIdle("refresh -f");
         }
     }

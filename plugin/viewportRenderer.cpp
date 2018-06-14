@@ -21,7 +21,7 @@ namespace {
     constexpr auto HDMAYA_DEFAULT_RENDERER_PLUGIN_NAME = "HDMAYA_DEFAULT_RENDERER_PLUGIN";
 
     TfToken _getDefaultRenderer() {
-        const auto l = HdMayaViewportRenderer::getRendererPlugins();
+        const auto l = HdMayaViewportRenderer::GetRendererPlugins();
         if (l.empty()) { return {}; }
         const auto* defaultRenderer = getenv(HDMAYA_DEFAULT_RENDERER_PLUGIN_NAME);
         if (defaultRenderer == nullptr) { return l[0]; }
@@ -33,16 +33,16 @@ namespace {
 
 HdMayaViewportRenderer::HdMayaViewportRenderer() :
     MViewportRenderer("HdMayaViewportRenderer"),
-    selectionTracker(new HdxSelectionTracker) {
+    _selectionTracker(new HdxSelectionTracker) {
     fUIName.set("Hydra Viewport Renderer");
     fRenderingOverride = MViewportRenderer::kOverrideAllDrawing;
 
-    delegateID = SdfPath("/HdMayaViewportRenderer").AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
-    rendererName = _getDefaultRenderer();
+    _delegateID = SdfPath("/HdMayaViewportRenderer").AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
+    _rendererName = _getDefaultRenderer();
     // This is a critical error, so we don't allow the construction
     // of the viewport renderer plugin if there is no renderer plugin
     // present.
-    if (rendererName.IsEmpty()) {
+    if (_rendererName.IsEmpty()) {
         throw std::runtime_error("No default renderer is available!");
     }
 }
@@ -51,7 +51,7 @@ HdMayaViewportRenderer::~HdMayaViewportRenderer() {
 
 }
 
-HdMayaViewportRenderer* HdMayaViewportRenderer::getInstance() {
+HdMayaViewportRenderer* HdMayaViewportRenderer::GetInstance() {
     std::lock_guard<std::mutex> lg(_viewportRendererLock);
     if (_viewportRenderer == nullptr) {
         try {
@@ -65,64 +65,64 @@ HdMayaViewportRenderer* HdMayaViewportRenderer::getInstance() {
     return _viewportRenderer.get();
 }
 
-void HdMayaViewportRenderer::cleanup() {
+void HdMayaViewportRenderer::Cleanup() {
     _viewportRenderer = nullptr;
 }
 
 MStatus HdMayaViewportRenderer::initialize() {
-    initializedViewport = true;
+    _initializedViewport = true;
     GlfGlewInit();
-    initHydraResources();
+    InitHydraResources();
     return MStatus::kSuccess;
 }
 
 MStatus HdMayaViewportRenderer::uninitialize() {
-    clearHydraResources();
+    ClearHydraResources();
     return MStatus::kSuccess;
 }
 
-void HdMayaViewportRenderer::initHydraResources() {
-    rendererPlugin = HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(rendererName);
-    auto* renderDelegate = rendererPlugin->CreateRenderDelegate();
-    renderIndex = HdRenderIndex::New(renderDelegate);
-    delegate = new HdMayaDelegate(renderIndex, delegateID);
-    taskController = new HdxTaskController(
-        renderIndex,
-        delegateID.AppendChild(TfToken(
-            TfStringPrintf("_UsdImaging_%s_%p", TfMakeValidIdentifier(rendererName.GetText()).c_str(), this))));
+void HdMayaViewportRenderer::InitHydraResources() {
+    _rendererPlugin = HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(_rendererName);
+    auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
+    _renderIndex = HdRenderIndex::New(renderDelegate);
+    _delegate = new HdMayaDelegate(_renderIndex, _delegateID);
+    _taskController = new HdxTaskController(
+        _renderIndex,
+        _delegateID.AppendChild(TfToken(
+            TfStringPrintf("_UsdImaging_%s_%p", TfMakeValidIdentifier(_rendererName.GetText()).c_str(), this))));
 }
 
-void HdMayaViewportRenderer::clearHydraResources() {
-    if (delegate != nullptr) {
-        delete delegate;
-        delegate = nullptr;
+void HdMayaViewportRenderer::ClearHydraResources() {
+    if (_delegate != nullptr) {
+        delete _delegate;
+        _delegate = nullptr;
     }
 
-    if (taskController != nullptr) {
-        delete taskController;
-        taskController = nullptr;
+    if (_taskController != nullptr) {
+        delete _taskController;
+        _taskController = nullptr;
     }
 
     HdRenderDelegate* renderDelegate = nullptr;
-    if (renderIndex != nullptr) {
-        renderDelegate = renderIndex->GetRenderDelegate();
-        delete renderIndex;
-        renderIndex = nullptr;
+    if (_renderIndex != nullptr) {
+        renderDelegate = _renderIndex->GetRenderDelegate();
+        delete _renderIndex;
+        _renderIndex = nullptr;
     }
 
-    if (rendererPlugin != nullptr) {
+    if (_rendererPlugin != nullptr) {
         if (renderDelegate != nullptr) {
-            rendererPlugin->DeleteRenderDelegate(renderDelegate);
+            _rendererPlugin->DeleteRenderDelegate(renderDelegate);
         }
-        HdxRendererPluginRegistry::GetInstance().ReleasePlugin(rendererPlugin);
-        rendererPlugin = nullptr;
+        HdxRendererPluginRegistry::GetInstance().ReleasePlugin(_rendererPlugin);
+        _rendererPlugin = nullptr;
     }
 
 
-    isPopulated = false;
+    _isPopulated = false;
 }
 
-TfTokenVector HdMayaViewportRenderer::getRendererPlugins() {
+TfTokenVector HdMayaViewportRenderer::GetRendererPlugins() {
     HfPluginDescVector pluginDescs;
     HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescs);
 
@@ -133,7 +133,7 @@ TfTokenVector HdMayaViewportRenderer::getRendererPlugins() {
     return ret;
 }
 
-std::string HdMayaViewportRenderer::getRendererPluginDisplayName(const TfToken& id) {
+std::string HdMayaViewportRenderer::GetRendererPluginDisplayName(const TfToken& id) {
     HfPluginDesc pluginDesc;
     if (!TF_VERIFY(HdxRendererPluginRegistry::GetInstance().GetPluginDesc(id, &pluginDesc))) {
         return {};
@@ -142,15 +142,15 @@ std::string HdMayaViewportRenderer::getRendererPluginDisplayName(const TfToken& 
     return pluginDesc.displayName;
 }
 
-void HdMayaViewportRenderer::changeRendererPlugin(const TfToken& id) {
-    auto* instance = getInstance();
-    if (instance->rendererName == id) { return; }
-    const auto renderers = getRendererPlugins();
+void HdMayaViewportRenderer::ChangeRendererPlugin(const TfToken& id) {
+    auto* instance = GetInstance();
+    if (instance->_rendererName == id) { return; }
+    const auto renderers = GetRendererPlugins();
     if (std::find(renderers.begin(), renderers.end(), id) == renderers.end()) { return; }
-    instance->rendererName = id;
-    if (instance->initializedViewport) {
-        instance->clearHydraResources();
-        instance->initHydraResources();
+    instance->_rendererName = id;
+    if (instance->_initializedViewport) {
+        instance->ClearHydraResources();
+        instance->InitHydraResources();
     }
 }
 
@@ -161,9 +161,9 @@ MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
 
     // TODO: dynamically update everything. For now we are just
     // populating the delegate once.
-    if (!isPopulated) {
-        delegate->Populate();
-        isPopulated = true;
+    if (!_isPopulated) {
+        _delegate->Populate();
+        _isPopulated = true;
     }
 
     renderInfo.renderTarget().makeTargetCurrent();
@@ -174,19 +174,19 @@ MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
     const auto height = renderInfo.height();
 
     GfVec4d viewport(originX, originY, width, height);
-    taskController->SetCameraMatrices(
+    _taskController->SetCameraMatrices(
         getGfMatrixFromMaya(renderInfo.viewMatrix()),
         getGfMatrixFromMaya(renderInfo.projectionMatrix()));
-    taskController->SetCameraViewport(viewport);
-    taskController->SetEnableSelection(false);
-    VtValue selectionTrackerValue(selectionTracker);
-    engine.SetTaskContextData(HdxTokens->selectionState, selectionTrackerValue);
+    _taskController->SetCameraViewport(viewport);
+    _taskController->SetEnableSelection(false);
+    VtValue selectionTrackerValue(_selectionTracker);
+    _engine.SetTaskContextData(HdxTokens->selectionState, selectionTrackerValue);
 
     glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT);
     glEnable(GL_FRAMEBUFFER_SRGB_EXT);
     glEnable(GL_LIGHTING);
 
-    engine.Execute(*renderIndex, taskController->GetTasks(HdxTaskSetTokens->colorRender));
+    _engine.Execute(*_renderIndex, _taskController->GetTasks(HdxTaskSetTokens->colorRender));
 
     glDisable(GL_FRAMEBUFFER_SRGB_EXT);
     glPopAttrib(); // GL_ENABLE_BIT | GL_CURRENT_BIT

@@ -9,6 +9,8 @@
 #include <pxr/base/tf/token.h>
 
 #include <pxr/imaging/hd/meshTopology.h>
+#include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
 
 #include <functional>
 
@@ -28,13 +30,19 @@ protected:
 public:
     virtual ~HdMayaDagAdapter() = default;
 
-    virtual VtValue get (const MDagPath& dag, const TfToken& key);
-    virtual GfRange3d getExtent (const MDagPath& dag);
-    virtual HdMeshTopology getMeshTopology (const MDagPath& dag);
-    virtual GfMatrix4d getTransform (const MDagPath& dag) ;
+    virtual void Populate(
+        HdRenderIndex& renderIndex,
+        HdSceneDelegate* delegate,
+        const SdfPath& id) = 0;
 
-private:
-    MDagPath dagPath;
+    virtual VtValue Get(const TfToken& key);
+    virtual GfRange3d GetExtent();
+    virtual HdMeshTopology GetMeshTopology();
+    virtual GfMatrix4d GetTransform() ;
+
+    const MDagPath& GetDagPath() { return _dagPath; }
+protected:
+    MDagPath _dagPath;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

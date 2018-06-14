@@ -21,11 +21,11 @@ public:
     }
 
     using DagAdapterCreator = std::function<HdMayaDagAdapter*(const MDagPath& dag)>;
-    void registerDagAdapter(const MFn::Type& type, DagAdapterCreator creator);
+    static void RegisterDagAdapter(const MFn::Type& type, DagAdapterCreator creator);
 
-    HdMayaDagAdapter* createDagAdapter(const MDagPath& dag);
+    static DagAdapterCreator GetAdapterCreator(const MDagPath& dag);
 private:
-    std::vector<std::tuple<MFn::Type, DagAdapterCreator>> dagAdapters;
+    std::vector<std::tuple<MFn::Type, DagAdapterCreator>> _dagAdapters;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

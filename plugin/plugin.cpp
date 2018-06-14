@@ -11,11 +11,11 @@ MStatus initializePlugin(MObject obj) {
     MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");
     MStatus ret = MS::kSuccess;
 
-    auto* vp = HdMayaViewportRenderer::getInstance();
+    auto* vp = HdMayaViewportRenderer::GetInstance();
     if (vp && !vp->registerRenderer()) {
         ret = MS::kFailure;
         ret.perror("Error registering hd viewport renderer!");
-        HdMayaViewportRenderer::cleanup();
+        HdMayaViewportRenderer::Cleanup();
     }
 
     if (!plugin.registerCommand(HdMayaCmd::name, HdMayaCmd::creator, HdMayaCmd::createSyntax)) {
@@ -31,12 +31,12 @@ MStatus uninitializePlugin(MObject obj) {
     MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");
     MStatus ret = MS::kSuccess;
 
-    auto* vp = HdMayaViewportRenderer::getInstance();
+    auto* vp = HdMayaViewportRenderer::GetInstance();
     if (vp && vp->deregisterRenderer()) {
         ret = MS::kFailure;
         ret.perror("Error deregistering hd viewport renderer!");
     }
-    HdMayaViewportRenderer::cleanup();
+    HdMayaViewportRenderer::Cleanup();
 
     if (!plugin.deregisterCommand(HdMayaCmd::name)) {
         ret = MS::kFailure;
