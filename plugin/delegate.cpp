@@ -31,6 +31,9 @@ HdMayaDelegate::HdMayaDelegate(
 }
 
 HdMayaDelegate::~HdMayaDelegate() {
+    for (auto callback: _callbacks) {
+        MMessage::removeCallback(callback);
+    }
 }
 
 HdMeshTopology
@@ -101,6 +104,7 @@ HdMayaDelegate::Populate() {
         auto adapter = adapterCreator(id, this, path);
         if (adapter == nullptr) { continue; }
         adapter->Populate(renderIndex, this, id);
+        adapter->CreateCallbacks(_callbacks);
         _pathToAdapterMap.insert({id, adapter});
         changeTracker.RprimInserted(id, HdChangeTracker::AllDirty);
     }

@@ -20,6 +20,8 @@
 #include <maya/MMatrix.h>
 #include <maya/MFn.h>
 
+#include <maya/MMessage.h>
+
 #include "utils.h"
 #include "adapter.h"
 
@@ -39,7 +41,9 @@ public:
     virtual VtValue Get(const TfToken& key);
     virtual GfRange3d GetExtent();
     virtual HdMeshTopology GetMeshTopology();
-    virtual GfMatrix4d GetTransform() ;
+    virtual GfMatrix4d GetTransform();
+    virtual void CreateCallbacks(std::vector<MCallbackId>& ids);
+    void MarkDirty(HdDirtyBits dirtyBits);
 
     const MDagPath& GetDagPath() { return _dagPath; }
 protected:
