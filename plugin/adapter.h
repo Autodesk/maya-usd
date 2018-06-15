@@ -19,8 +19,10 @@ public:
 
     const SdfPath& GetID() { return _id; }
     HdSceneDelegate* GetDelegate() { return _delegate; }
-    virtual void CreateCallbacks() = 0;
     void AddCallback(MCallbackId callbackId);
+
+    virtual void CreateCallbacks() = 0;
+    virtual void MarkDirty(HdDirtyBits dirtyBits) = 0;
 protected:
     SdfPath _id;
     HdSceneDelegate* _delegate;

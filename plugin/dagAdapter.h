@@ -43,7 +43,7 @@ public:
     virtual HdMeshTopology GetMeshTopology();
     virtual GfMatrix4d GetTransform();
     virtual void CreateCallbacks() override;
-    void MarkDirty(HdDirtyBits dirtyBits);
+    virtual void MarkDirty(HdDirtyBits dirtyBits);
 
     const MDagPath& GetDagPath() { return _dagPath; }
 protected:
