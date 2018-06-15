@@ -17,11 +17,6 @@ HdMayaDagAdapter::HdMayaDagAdapter(
 
 }
 
-VtValue
-HdMayaDagAdapter::Get(const TfToken& /*key*/) {
-    return {};
-};
-
 GfRange3d
 HdMayaDagAdapter::GetExtent() {
     MStatus status;

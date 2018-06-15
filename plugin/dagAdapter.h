@@ -38,7 +38,6 @@ public:
         HdSceneDelegate* delegate,
         const SdfPath& id) = 0;
 
-    virtual VtValue Get(const TfToken& key);
     virtual GfRange3d GetExtent();
     virtual HdMeshTopology GetMeshTopology();
     virtual GfMatrix4d GetTransform();

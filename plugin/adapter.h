@@ -20,6 +20,7 @@ public:
     const SdfPath& GetID() { return _id; }
     HdSceneDelegate* GetDelegate() { return _delegate; }
     void AddCallback(MCallbackId callbackId);
+    virtual VtValue Get(const TfToken& key);
 
     virtual void CreateCallbacks() = 0;
     virtual void MarkDirty(HdDirtyBits dirtyBits) = 0;

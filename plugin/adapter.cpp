@@ -16,4 +16,9 @@ HdMayaAdapter::AddCallback(MCallbackId callbackId) {
     _callbacks.push_back(callbackId);
 }
 
+VtValue
+HdMayaAdapter::Get(const TfToken& /*key*/) {
+    return {};
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
