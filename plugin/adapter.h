@@ -6,17 +6,26 @@
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/usd/sdf/path.h>
 
+#include <maya/MMessage.h>
+
+#include <vector>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaAdapter {
 public:
     HdMayaAdapter(const SdfPath& id, HdSceneDelegate* delegate);
+    virtual ~HdMayaAdapter();
 
     const SdfPath& GetID() { return _id; }
     HdSceneDelegate* GetDelegate() { return _delegate; }
+    virtual void CreateCallbacks() = 0;
+    void AddCallback(MCallbackId callbackId);
 protected:
     SdfPath _id;
     HdSceneDelegate* _delegate;
+
+    std::vector<MCallbackId> _callbacks;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

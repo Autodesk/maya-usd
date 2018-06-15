@@ -42,7 +42,7 @@ public:
     virtual GfRange3d GetExtent();
     virtual HdMeshTopology GetMeshTopology();
     virtual GfMatrix4d GetTransform();
-    virtual void CreateCallbacks(std::vector<MCallbackId>& ids);
+    virtual void CreateCallbacks() override;
     void MarkDirty(HdDirtyBits dirtyBits);
 
     const MDagPath& GetDagPath() { return _dagPath; }

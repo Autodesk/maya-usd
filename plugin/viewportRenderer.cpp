@@ -174,6 +174,8 @@ MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
     const auto height = renderInfo.height();
 
     GfVec4d viewport(originX, originY, width, height);
+    HdxRenderTaskParams params;
+    _taskController->SetRenderParams(params);
     _taskController->SetCameraMatrices(
         getGfMatrixFromMaya(renderInfo.viewMatrix()),
         getGfMatrixFromMaya(renderInfo.projectionMatrix()));

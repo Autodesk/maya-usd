@@ -47,7 +47,7 @@ HdMayaDagAdapter::GetTransform() {
 };
 
 void
-HdMayaDagAdapter::CreateCallbacks(std::vector<MCallbackId>& ids) {
+HdMayaDagAdapter::CreateCallbacks() {
     MStatus status;
     for (auto dag = GetDagPath(); dag.length() > 0; dag.pop()) {
         // FIXME: I hate this. I have to figure out if the memory allocated for the
@@ -56,7 +56,7 @@ HdMayaDagAdapter::CreateCallbacks(std::vector<MCallbackId>& ids) {
         MObject obj = dag.node();
         if (obj != MObject::kNullObj) {
             auto id = MNodeMessage::addNodeDirtyCallback(obj, _dirtyTransform, this, &status);
-            if (status) { ids.push_back(id); }
+            if (status) { AddCallback(id); }
         }
     }
 }
