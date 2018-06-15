@@ -2,6 +2,7 @@
 
 #include <maya/MRenderingInfo.h>
 #include <pxr/base/gf/matrix4d.h>
+#include <pxr/imaging/glf/contextCaps.h>
 
 #include <pxr/imaging/hdx/rendererPlugin.h>
 #include <pxr/imaging/hdx/rendererPluginRegistry.h>
@@ -168,6 +169,21 @@ MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
 
     renderInfo.renderTarget().makeTargetCurrent();
 
+    // We need some empty vao to get the core profile running in some cases.
+    const auto isCoreProfileContext = GlfContextCaps::GetInstance().coreProfile;
+    GLuint vao;
+    if (isCoreProfileContext) {
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
+    } else {
+        glPushAttrib(GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT);
+    }
+
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_BLEND);
+    glEnable(GL_PROGRAM_POINT_SIZE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
     const auto originX = renderInfo.originX();
     const auto originY = renderInfo.originY();
     const auto width = renderInfo.width();
@@ -184,14 +200,14 @@ MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
     VtValue selectionTrackerValue(_selectionTracker);
     _engine.SetTaskContextData(HdxTokens->selectionState, selectionTrackerValue);
 
-    glPushAttrib(GL_ENABLE_BIT | GL_CURRENT_BIT);
-    glEnable(GL_FRAMEBUFFER_SRGB_EXT);
-    glEnable(GL_LIGHTING);
-
     _engine.Execute(*_renderIndex, _taskController->GetTasks(HdxTaskSetTokens->colorRender));
 
-    glDisable(GL_FRAMEBUFFER_SRGB_EXT);
-    glPopAttrib(); // GL_ENABLE_BIT | GL_CURRENT_BIT
+    if (isCoreProfileContext) {
+        glBindVertexArray(0);
+        glDeleteVertexArrays(1, &vao);
+    } else {
+        glPopAttrib(); // GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT
+    }
 
     return MStatus::kSuccess;
 }
