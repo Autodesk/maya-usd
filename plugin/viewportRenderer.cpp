@@ -169,6 +169,9 @@ MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
 
     renderInfo.renderTarget().makeTargetCurrent();
 
+    glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
     // We need some empty vao to get the core profile running in some cases.
     const auto isCoreProfileContext = GlfContextCaps::GetInstance().coreProfile;
     GLuint vao;

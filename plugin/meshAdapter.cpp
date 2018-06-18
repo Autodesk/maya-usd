@@ -3,6 +3,7 @@
 #include <pxr/usd/usdGeom/tokens.h>
 
 #include <pxr/imaging/hd/tokens.h>
+#include <pxr/imaging/pxOsd/tokens.h>
 
 #include <maya/MFnMesh.h>
 #include <maya/MIntArray.h>
@@ -43,7 +44,7 @@ HdMayaMeshAdapter::GetMeshTopology() {
     }
 
     return HdMeshTopology(
-        UsdGeomTokens->triangleSubdivisionRule,
+        PxOsdOpenSubdivTokens->none,
         UsdGeomTokens->rightHanded,
         faceVertexCounts,
         faceVertexIndices);
@@ -63,5 +64,19 @@ HdMayaMeshAdapter::Get(const TfToken& key) {
     }
     return VtValue();
 }
+
+HdPrimvarDescriptorVector
+HdMayaMeshAdapter::GetPrimvarDescriptors(HdInterpolation interpolation) {
+    if (interpolation == HdInterpolationVertex) {
+        HdPrimvarDescriptor desc;
+        desc.name = UsdGeomTokens->points;
+        desc.interpolation = interpolation;
+        desc.role = HdPrimvarRoleTokens->point;
+        return {desc};
+    }
+    return {};
+}
+
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

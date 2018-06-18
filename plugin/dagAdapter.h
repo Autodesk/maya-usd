@@ -43,6 +43,8 @@ public:
     virtual GfMatrix4d GetTransform();
     virtual void CreateCallbacks() override;
     virtual void MarkDirty(HdDirtyBits dirtyBits);
+    virtual HdPrimvarDescriptorVector
+    GetPrimvarDescriptors(HdInterpolation interpolation);
 
     const MDagPath& GetDagPath() { return _dagPath; }
 protected:

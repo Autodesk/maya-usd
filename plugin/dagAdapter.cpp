@@ -61,4 +61,9 @@ HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     GetDelegate()->GetRenderIndex().GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
 }
 
+HdPrimvarDescriptorVector
+HdMayaDagAdapter::GetPrimvarDescriptors(HdInterpolation interpolation) {
+    return {};
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

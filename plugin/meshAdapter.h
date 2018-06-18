@@ -19,6 +19,8 @@ public:
 
     VtValue Get(const TfToken& key) override;
     HdMeshTopology GetMeshTopology() override;
+    HdPrimvarDescriptorVector
+    GetPrimvarDescriptors(HdInterpolation interpolation) override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
