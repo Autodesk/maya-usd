@@ -18,5 +18,5 @@ Ideally, ongoing - but we can't provide any guarantees about our response time
 ## How often do you do a release and/or push to the github repository
 Ideally, quite often - but again, we can't provide any guarantees.
 
-## Does it build for  Windows or Mac?
-At the moment the plugin only builds on Linux and Windows. As USD support for MacOS stabilises, others can contribute this functionality if they wish. We only use Linux internally at Animal Logic, however we do maintain a Windows build for those who wish to use that platform.  
+## Does it build for Windows or Mac?
+At the moment the plugin builds on both Linux and Windows. As USD support for MacOS stabilises, others can contribute this functionality if they wish. We only use Linux internally at Animal Logic so that is the most tested path. Tests should also run on Windows
