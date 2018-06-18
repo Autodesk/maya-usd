@@ -7,7 +7,6 @@
 #include "pxr/base/tf/debug.h"
 
 #include "pxr/usd/usd/modelAPI.h"
-#include "AL/usd/schemas/tokens.h"
 
 #include "maya/MSyntax.h"
 #include "maya/MGlobal.h"
