@@ -4,7 +4,6 @@
 #include <pxr/pxr.h>
 
 #include "dagAdapter.h"
-#include "adapterRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -8,6 +8,8 @@
 #include <maya/MFnMesh.h>
 #include <maya/MIntArray.h>
 
+#include "adapterRegistry.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, mesh) {
