@@ -194,6 +194,8 @@ MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
 
     GfVec4d viewport(originX, originY, width, height);
     HdxRenderTaskParams params;
+    params.enableLighting = true;
+    params.enableHardwareShading = true;
     _taskController->SetRenderParams(params);
     _taskController->SetCameraMatrices(
         getGfMatrixFromMaya(renderInfo.viewMatrix()),

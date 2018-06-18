@@ -1,6 +1,7 @@
 #include "lightAdapter.h"
 
 #include <pxr/imaging/hd/light.h>
+#include <pxr/imaging/hdx/simpleLightTask.h>
 
 #include <maya/MColor.h>
 #include <maya/MFnLight.h>
@@ -21,7 +22,14 @@ VtValue
 HdMayaLightAdapter::Get(const TfToken& key) {
     if (key == HdTokens->transform) {
         return VtValue(GetTransform());
-    }
+    } /*else if (key == HdLightTokens->shadowParams) {
+        HdxShadowParams shadowParams;
+        shadowParams.enabled = true;
+        return VtValue(shadowParams);
+    } else if (key == HdLightTokens->shadowCollection) {
+        // FIXME?
+        return VtValue(HdRprimCollection());
+    }*/
     return {};
 }
 
