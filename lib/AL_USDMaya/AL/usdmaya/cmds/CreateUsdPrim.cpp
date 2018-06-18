@@ -63,7 +63,7 @@ AL_MAYA_DEFINE_COMMAND(CreateUsdPrim, AL_usdmaya);
 MSyntax CreateUsdPrim::createSyntax()
 {
   MSyntax syn;
-  syn.addFlag("-k", "-kind", MSyntax::kString);syn;
+  syn.addFlag("-k", "-kind", MSyntax::kString);
   syn.addFlag("-h", "-help");
   syn.addArg(MSyntax::kString);
   syn.addArg(MSyntax::kString);

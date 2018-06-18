@@ -56,20 +56,6 @@ static void bindBasicFunction(void* ptr)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-static void bindElapsedTimeFunction(float elapsed, float last, void* ptr)
-{
-  auto binder = [elapsed, last](void* ud, const void* cb)
-  {
-    MMessage::MElapsedTimeFunction cf = (MMessage::MElapsedTimeFunction)cb;
-    cf(elapsed, last, ud);
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 static void bindCheckFunction(bool* retCode, void* ptr)
 {
   bool result = true;
@@ -78,23 +64,6 @@ static void bindCheckFunction(bool* retCode, void* ptr)
     MMessage::MCheckFunction cf = (MMessage::MCheckFunction)cb;
     bool temp = true;
     cf(&temp, ud);
-    result = result && temp;
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-static void bindCheckFileFunction(bool* retCode, MFileObject& obj, void* ptr)
-{
-  bool result = true;
-  auto binder = [&result, &obj](void* ud, const void* cb)
-  {
-    MMessage::MCheckFileFunction cf = (MMessage::MCheckFileFunction)cb;
-    bool temp = true;
-    cf(&temp, obj, ud);
     result = result && temp;
   };
 
@@ -113,20 +82,6 @@ static void bindCheckPlugFunction(bool* retCode, MPlug& plug, void* ptr)
     bool temp = true;
     cf(&temp, plug, ud);
     result = result && temp;
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-static void bindComponentFunction(MUintArray componentIds[], unsigned int count, void* ptr)
-{
-  auto binder = [componentIds, count](void* ud, const void* cb)
-  {
-    MMessage::MComponentFunction cf = (MMessage::MComponentFunction)cb;
-    cf(componentIds, count, ud);
   };
 
   MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
@@ -163,34 +118,6 @@ static void bindStringFunction(const MString& str, void* ptr)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-static void bindTwoStringFunction(const MString& str1, const MString& str2, void* ptr)
-{
-  auto binder = [str1, str2](void* ud, const void* cb)
-  {
-    MMessage::MTwoStringFunction cf = (MMessage::MTwoStringFunction)cb;
-    cf(str1, str2, ud);
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-static void bindThreeStringFunction(const MString& str1, const MString& str2, const MString& str3, void* ptr)
-{
-  auto binder = [str1, str2, str3](void* ud, const void* cb)
-  {
-    MMessage::MThreeStringFunction cf = (MMessage::MThreeStringFunction)cb;
-    cf(str1, str2, str3, ud);
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 static void bindStringIntBoolIntFunction(const MString& str, uint32_t index, bool flag, uint32_t type, void* ptr)
 {
   auto binder = [str, index, flag, type](void* ud, const void* cb)
@@ -205,40 +132,12 @@ static void bindStringIntBoolIntFunction(const MString& str, uint32_t index, boo
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-static void bindStringIndexFunction(const MString& str, uint32_t index, void* ptr)
-{
-  auto binder = [str, index](void* ud, const void* cb)
-  {
-    MMessage::MStringIndexFunction cf = (MMessage::MStringIndexFunction)cb;
-    cf(str, index, ud);
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 static void bindNodeStringBoolFunction(MObject& node, const MString& str, bool flag, void* ptr)
 {
   auto binder = [&node, str, flag](void* ud, const void* cb)
   {
     MMessage::MNodeStringBoolFunction cf = (MMessage::MNodeStringBoolFunction)cb;
     cf(node, str, flag, ud);
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-static void bindStateFunction(bool flag, void* ptr)
-{
-  auto binder = [flag](void* ud, const void* cb)
-  {
-    MMessage::MStateFunction cf = (MMessage::MStateFunction)cb;
-    cf(flag, ud);
   };
 
   MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
@@ -275,54 +174,12 @@ static void bindPlugFunction(MPlug& src, MPlug& dst, bool made, void* ptr)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-static void bindNodePlugFunction(MObject& node, MPlug& plug, void* ptr)
-{
-  auto binder = [&node, &plug](void* ud, const void* cb)
-  {
-    MMessage::MNodePlugFunction cf = (MMessage::MNodePlugFunction)cb;
-    cf(node, plug, ud);
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-static void bindNodeStringFunction(MObject& node, const MString& str, void* ptr)
-{
-  auto binder = [&node, str](void* ud, const void* cb)
-  {
-    MMessage::MNodeStringFunction cf = (MMessage::MNodeStringFunction)cb;
-    cf(node, str, ud);
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 static void bindParentChildFunction(MDagPath& child, MDagPath& parent, void* ptr)
 {
   auto binder = [&child, &parent](void* ud, const void* cb)
   {
     MMessage::MParentChildFunction cf = (MMessage::MParentChildFunction)cb;
     cf(child, parent, ud);
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-static void bindModifierFunction(MDGModifier& mod, void* ptr)
-{
-  auto binder = [&mod](void* ud, const void* cb)
-  {
-    MMessage::MModifierFunction cf = (MMessage::MModifierFunction)cb;
-    cf(mod, ud);
   };
 
   MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
@@ -345,54 +202,12 @@ static void bindStringArrayFunction(const MStringArray& strs, void* ptr)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-static void bindNodeModifierFunction(MObject& node, MDGModifier& mod, void* ptr)
-{
-  auto binder = [&node, &mod](void* ud, const void* cb)
-  {
-    MMessage::MNodeModifierFunction cf = (MMessage::MNodeModifierFunction)cb;
-    cf(node, mod, ud);
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 static void bindObjArrayFunction(MObjectArray& objects, void* ptr)
 {
   auto binder = [&objects](void* ud, const void* cb)
   {
     MMessage::MObjArray cf = (MMessage::MObjArray)cb;
     cf(objects, ud);
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-static void bindNodeObjArrayFunction(MObject& node, MObjectArray& objects, void* ptr)
-{
-  auto binder = [&node, &objects](void* ud, const void* cb)
-  {
-    MMessage::MNodeObjArray cf = (MMessage::MNodeObjArray)cb;
-    cf(node, objects, ud);
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-static void bindStringNodeFunction(const MString& str, MObject& node, void* ptr)
-{
-  auto binder = [str, &node](void* ud, const void* cb)
-  {
-    MMessage::MStringNode cf = (MMessage::MStringNode)cb;
-    cf(str, node, ud);
   };
 
   MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
@@ -429,71 +244,12 @@ static void bindCameraLayerCameraFunction(MObject& cameraSetNode, uint32_t index
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-static void bindConnFailFunction(MPlug& src, MPlug& dst, const MString& srcName, const MString& dstName, void* ptr)
-{
-  auto binder = [&src, &dst, srcName, dstName](void* ud, const void* cb)
-  {
-    MMessage::MConnFailFunction cf = (MMessage::MConnFailFunction)cb;
-    cf(src, dst, srcName, dstName, ud);
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 static void bindPlugsDGModFunction(MPlugArray& plugs, MDGModifier& modifier, void* ptr)
 {
   auto binder = [&plugs, &modifier](void* ud, const void* cb)
   {
     MMessage::MPlugsDGModFunction cf = (MMessage::MPlugsDGModFunction)cb;
     cf(plugs, modifier, ud);
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-static void bindNodeUuidFunction(MObject& node, MUuid& uuid, void* ptr)
-{
-  auto binder = [&node, &uuid](void* ud, const void* cb)
-  {
-    MMessage::MNodeUuidFunction cf = (MMessage::MNodeUuidFunction)cb;
-    cf(node, uuid, ud);
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-static void bindObjectFileFunction(MObject& node, MFileObject& file, void* ptr)
-{
-  auto binder = [&node, &file](void* ud, const void* cb)
-  {
-    MMessage::MObjectFileFunction cf = (MMessage::MObjectFileFunction)cb;
-    cf(node, file, ud);
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-static void bindCheckObjectFileFunction(bool* retCode, const MObject& referenceNode, MFileObject& fo, void* ptr)
-{
-  bool result = true;
-  auto binder = [&result, referenceNode, &fo](void* ud, const void* cb)
-  {
-    MMessage::MCheckObjectFileFunction cf = (MMessage::MCheckObjectFileFunction)cb;
-    bool temp = true;
-    cf(&temp, referenceNode, fo, ud);
-    result = result && temp;
   };
 
   MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
@@ -547,6 +303,267 @@ static void bindMessageParentChildFunction(MDagMessage::DagMessage msgType, MDag
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+static void bindPathObjectPlugColoursFunction(MDagPath& path, MObject& object, MPlug& plug, MColorArray& colors, void* ptr)
+{
+  auto binder = [&path, &object, &plug, &colors](void* ud, const void* cb)
+  {
+    MPaintMessage::MPathObjectPlugColorsFunction cf = (MPaintMessage::MPathObjectPlugColorsFunction)cb;
+    cf(path, object, plug, colors, ud);
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+// these are functions we will probably want in the long term, however to ensure the OpenSource build does not
+// complain about unused symbols, they are hidden behind a #if 0 for now.
+#if 0
+//----------------------------------------------------------------------------------------------------------------------
+static void bindElapsedTimeFunction(float elapsed, float last, void* ptr)
+{
+  auto binder = [elapsed, last](void* ud, const void* cb)
+  {
+    MMessage::MElapsedTimeFunction cf = (MMessage::MElapsedTimeFunction)cb;
+    cf(elapsed, last, ud);
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void bindCheckFileFunction(bool* retCode, MFileObject& obj, void* ptr)
+{
+  bool result = true;
+  auto binder = [&result, &obj](void* ud, const void* cb)
+  {
+    MMessage::MCheckFileFunction cf = (MMessage::MCheckFileFunction)cb;
+    bool temp = true;
+    cf(&temp, obj, ud);
+    result = result && temp;
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void bindComponentFunction(MUintArray componentIds[], unsigned int count, void* ptr)
+{
+  auto binder = [componentIds, count](void* ud, const void* cb)
+  {
+    MMessage::MComponentFunction cf = (MMessage::MComponentFunction)cb;
+    cf(componentIds, count, ud);
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void bindTwoStringFunction(const MString& str1, const MString& str2, void* ptr)
+{
+  auto binder = [str1, str2](void* ud, const void* cb)
+  {
+    MMessage::MTwoStringFunction cf = (MMessage::MTwoStringFunction)cb;
+    cf(str1, str2, ud);
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void bindThreeStringFunction(const MString& str1, const MString& str2, const MString& str3, void* ptr)
+{
+  auto binder = [str1, str2, str3](void* ud, const void* cb)
+  {
+    MMessage::MThreeStringFunction cf = (MMessage::MThreeStringFunction)cb;
+    cf(str1, str2, str3, ud);
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void bindStringIndexFunction(const MString& str, uint32_t index, void* ptr)
+{
+  auto binder = [str, index](void* ud, const void* cb)
+  {
+    MMessage::MStringIndexFunction cf = (MMessage::MStringIndexFunction)cb;
+    cf(str, index, ud);
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void bindStateFunction(bool flag, void* ptr)
+{
+  auto binder = [flag](void* ud, const void* cb)
+  {
+    MMessage::MStateFunction cf = (MMessage::MStateFunction)cb;
+    cf(flag, ud);
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void bindNodePlugFunction(MObject& node, MPlug& plug, void* ptr)
+{
+  auto binder = [&node, &plug](void* ud, const void* cb)
+  {
+    MMessage::MNodePlugFunction cf = (MMessage::MNodePlugFunction)cb;
+    cf(node, plug, ud);
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void bindNodeStringFunction(MObject& node, const MString& str, void* ptr)
+{
+  auto binder = [&node, str](void* ud, const void* cb)
+  {
+    MMessage::MNodeStringFunction cf = (MMessage::MNodeStringFunction)cb;
+    cf(node, str, ud);
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void bindModifierFunction(MDGModifier& mod, void* ptr)
+{
+  auto binder = [&mod](void* ud, const void* cb)
+  {
+    MMessage::MModifierFunction cf = (MMessage::MModifierFunction)cb;
+    cf(mod, ud);
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void bindNodeModifierFunction(MObject& node, MDGModifier& mod, void* ptr)
+{
+  auto binder = [&node, &mod](void* ud, const void* cb)
+  {
+    MMessage::MNodeModifierFunction cf = (MMessage::MNodeModifierFunction)cb;
+    cf(node, mod, ud);
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void bindNodeObjArrayFunction(MObject& node, MObjectArray& objects, void* ptr)
+{
+  auto binder = [&node, &objects](void* ud, const void* cb)
+  {
+    MMessage::MNodeObjArray cf = (MMessage::MNodeObjArray)cb;
+    cf(node, objects, ud);
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void bindStringNodeFunction(const MString& str, MObject& node, void* ptr)
+{
+  auto binder = [str, &node](void* ud, const void* cb)
+  {
+    MMessage::MStringNode cf = (MMessage::MStringNode)cb;
+    cf(str, node, ud);
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void bindConnFailFunction(MPlug& src, MPlug& dst, const MString& srcName, const MString& dstName, void* ptr)
+{
+  auto binder = [&src, &dst, srcName, dstName](void* ud, const void* cb)
+  {
+    MMessage::MConnFailFunction cf = (MMessage::MConnFailFunction)cb;
+    cf(src, dst, srcName, dstName, ud);
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void bindNodeUuidFunction(MObject& node, MUuid& uuid, void* ptr)
+{
+  auto binder = [&node, &uuid](void* ud, const void* cb)
+  {
+    MMessage::MNodeUuidFunction cf = (MMessage::MNodeUuidFunction)cb;
+    cf(node, uuid, ud);
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void bindObjectFileFunction(MObject& node, MFileObject& file, void* ptr)
+{
+  auto binder = [&node, &file](void* ud, const void* cb)
+  {
+    MMessage::MObjectFileFunction cf = (MMessage::MObjectFileFunction)cb;
+    cf(node, file, ud);
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void bindCheckObjectFileFunction(bool* retCode, const MObject& referenceNode, MFileObject& fo, void* ptr)
+{
+  bool result = true;
+  auto binder = [&result, referenceNode, &fo](void* ud, const void* cb)
+  {
+    MMessage::MCheckObjectFileFunction cf = (MMessage::MCheckObjectFileFunction)cb;
+    bool temp = true;
+    cf(&temp, referenceNode, fo, ud);
+    result = result && temp;
+  };
+
+  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
+  auto& scheduler = AL::event::EventScheduler::getScheduler();
+  scheduler.triggerEvent(cbi->eventId, binder);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 static void bindWorldMatrixModifiedFunction(MObject& transform, MDagMessage::MatrixModifiedFlags& modified, void* ptr)
 {
   auto binder = [&transform, &modified](void* ud, const void* cb)
@@ -560,19 +577,7 @@ static void bindWorldMatrixModifiedFunction(MObject& transform, MDagMessage::Mat
   scheduler.triggerEvent(cbi->eventId, binder);
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-static void bindPathObjectPlugColoursFunction(MDagPath& path, MObject& object, MPlug& plug, MColorArray& colors, void* ptr)
-{
-  auto binder = [&path, &object, &plug, &colors](void* ud, const void* cb)
-  {
-    MPaintMessage::MPathObjectPlugColorsFunction cf = (MPaintMessage::MPathObjectPlugColorsFunction)cb;
-    cf(path, object, plug, colors, ud);
-  };
-
-  MayaEventHandler::MayaCallbackInfo* cbi = (MayaEventHandler::MayaCallbackInfo*)ptr;
-  auto& scheduler = AL::event::EventScheduler::getScheduler();
-  scheduler.triggerEvent(cbi->eventId, binder);
-}
+#endif
 
 //----------------------------------------------------------------------------------------------------------------------
 MayaEventHandler::MayaEventHandler(AL::event::EventScheduler* scheduler, AL::event::EventType eventType)
