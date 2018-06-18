@@ -53,6 +53,7 @@ set(NEED_BOOST_FILESYSTEM ON)
 if(WIN32)
     set(CMAKE_CXX_FLAGS
         -std=c++11
+        /WX
         "${_PXR_CXX_FLAGS}"
     )
 else()
