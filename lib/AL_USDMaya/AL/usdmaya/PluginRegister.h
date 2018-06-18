@@ -21,6 +21,7 @@
 #include "AL/usdmaya/Global.h"
 #include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/DrivenTransformsData.h"
+#include "AL/usdmaya/cmds/CreateUsdPrim.h"
 #include "AL/usdmaya/cmds/DebugCommands.h"
 #include "AL/usdmaya/cmds/EventCommand.h"
 #include "AL/usdmaya/cmds/LayerCommands.h"
@@ -98,6 +99,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_DATA(plugin, AL::usdmaya::StageData);
   AL_REGISTER_DATA(plugin, AL::usdmaya::DrivenTransformsData);
   AL_REGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::CreateUsdPrim);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCreateLayer);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerGetLayers);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCurrentEditTarget);
@@ -228,6 +230,7 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::TranslatePrim);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerManager);
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::CreateUsdPrim);
   AL_UNREGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
   AL_UNREGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ExportTranslator);
   AL_UNREGISTER_DRAW_OVERRIDE(plugin, AL::usdmaya::nodes::ProxyDrawOverride);

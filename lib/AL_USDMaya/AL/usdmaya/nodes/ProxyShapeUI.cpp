@@ -316,57 +316,61 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
   auto selected = false;
 
-  auto removeVariantFromPath = [] (const SdfPath& path) -> SdfPath {
-      std::string pathStr = path.GetText();
+  auto removeVariantFromPath = [] (const SdfPath& path) -> SdfPath
+  {
+    std::string pathStr = path.GetText();
+    // I'm not entirely sure about this, but it would appear that the returned string here has the variant name
+    // tacked onto the end?
+    size_t dot_location = pathStr.find_last_of('.');
+    if(dot_location != std::string::npos)
+    {
+      pathStr = pathStr.substr(0, dot_location);
+    }
 
-      // I'm not entirely sure about this, but it would appear that the returned string here has the variant name
-      // tacked onto the end?
-      size_t dot_location = pathStr.find_last_of('.');
-      if(dot_location != std::string::npos) {
-        pathStr = pathStr.substr(0, dot_location);
-      }
-
-      return SdfPath(pathStr);
+    return SdfPath(pathStr);
   };
 
-  auto getHitPath = [&engine, &removeVariantFromPath] (UsdImagingGLEngine::HitBatch::const_reference& it) -> SdfPath {
-      const UsdImagingGLEngine::HitInfo& hit = it.second;
-      auto path = engine->GetPrimPathFromInstanceIndex(it.first, hit.hitInstanceIndex);
-      if (!path.IsEmpty())
-      {
-        return path;
-      }
-      return removeVariantFromPath(it.first);
+  auto getHitPath = [&engine, &removeVariantFromPath] (UsdImagingGLEngine::HitBatch::const_reference& it) -> SdfPath
+  {
+    const UsdImagingGLEngine::HitInfo& hit = it.second;
+    auto path = engine->GetPrimPathFromInstanceIndex(it.first, hit.hitInstanceIndex);
+    if (!path.IsEmpty())
+    {
+      return path;
+    }
+    return removeVariantFromPath(it.first);
   };
 
 
   auto addSelection = [&hitBatch, &selectInfo, &selectionList,
       &worldSpaceSelectPoints, &objectsMask, &selected, proxyShape,
-      &removeVariantFromPath] (const MString& command) {
-      selected = true;
-      MStringArray nodes;
-      MGlobal::executeCommand(command, nodes, false, true);
+      &removeVariantFromPath, &getHitPath] (const MString& command)
+  {
+    selected = true;
+    MStringArray nodes;
+    MGlobal::executeCommand(command, nodes, false, true);
 
-      // If the selection is in a single selection mode, we don't know if your mesh
-      // will be the actual final selection, because we can't make sure this is going to
-      // be called the last. So we are returning a deferred command here, that'll run last.
-      // That'll check if the mesh is still selected, and run an internal deselect command on that.
-      // const auto singleSelection = selectInfo.singleSelection();
+    // If the selection is in a single selection mode, we don't know if your mesh
+    // will be the actual final selection, because we can't make sure this is going to
+    // be called the last. So we are returning a deferred command here, that'll run last.
+    // That'll check if the mesh is still selected, and run an internal deselect command on that.
+    // const auto singleSelection = selectInfo.singleSelection();
 
-      uint32_t i = 0;
-      for(auto it = hitBatch.begin(), e = hitBatch.end(); it != e; ++it, ++i)
+    uint32_t i = 0;
+    for(auto it = hitBatch.begin(), e = hitBatch.end(); it != e; ++it, ++i)
+    {
+      auto obj = proxyShape->findRequiredPath(removeVariantFromPath(getHitPath(*it)));
+      if (obj != MObject::kNullObj)
       {
-        auto obj = proxyShape->findRequiredPath(removeVariantFromPath(it->first));
-        if (obj != MObject::kNullObj) {
-          MSelectionList sl;
-          MFnDagNode dagNode(obj);
-          MDagPath dg;
-          dagNode.getPath(dg);
-          sl.add(dg);
-          const double* d = it->second.worldSpaceHitPoint.GetArray();
-          selectInfo.addSelection(sl, MPoint(d[0], d[1], d[2], 1.0), selectionList, worldSpaceSelectPoints, objectsMask, false);
-        }
+        MSelectionList sl;
+        MFnDagNode dagNode(obj);
+        MDagPath dg;
+        dagNode.getPath(dg);
+        sl.add(dg);
+        const double* d = it->second.worldSpaceHitPoint.GetArray();
+        selectInfo.addSelection(sl, MPoint(d[0], d[1], d[2], 1.0), selectionList, worldSpaceSelectPoints, objectsMask, false);
       }
+    }
   };
 
   // Currently we have two approaches to selection. One method works with undo (but does not
@@ -446,42 +450,52 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
       mode = MGlobal::kXORWithList;
 
     SdfPathVector paths;
-    if (!hitBatch.empty()) {
+    if (!hitBatch.empty())
+    {
       paths.reserve(hitBatch.size());
 
-      auto addHit = [&engine, &paths, &getHitPath](UsdImagingGLEngine::HitBatch::const_reference& it) {
+      auto addHit = [&engine, &paths, &getHitPath](UsdImagingGLEngine::HitBatch::const_reference& it)
+      {
         paths.push_back(getHitPath(it));
       };
 
       // Do to the inaccuracies in the selection method in gl engine
       // we still need to find the closest selection.
       // Around the edges it often selects two or more prims.
-      if (selectInfo.singleSelection()) {
+      if (selectInfo.singleSelection())
+      {
         auto closestHit = hitBatch.cbegin();
 
-        if (hitBatch.size() > 1) {
+        if (hitBatch.size() > 1)
+        {
           MDagPath cameraPath;
           selectInfo.view().getCamera(cameraPath);
           const auto cameraPoint = cameraPath.inclusiveMatrix() * MPoint(0.0, 0.0, 0.0, 1.0);
-          auto distanceToCameraSq = [&cameraPoint] (UsdImagingGLEngine::HitBatch::const_reference& it) -> double {
-              const auto dx = cameraPoint.x - it.second.worldSpaceHitPoint[0];
-              const auto dy = cameraPoint.y - it.second.worldSpaceHitPoint[1];
-              const auto dz = cameraPoint.z - it.second.worldSpaceHitPoint[2];
-              return dx * dx + dy * dy + dz * dz;
+          auto distanceToCameraSq = [&cameraPoint] (UsdImagingGLEngine::HitBatch::const_reference& it) -> double
+          {
+            const auto dx = cameraPoint.x - it.second.worldSpaceHitPoint[0];
+            const auto dy = cameraPoint.y - it.second.worldSpaceHitPoint[1];
+            const auto dz = cameraPoint.z - it.second.worldSpaceHitPoint[2];
+            return dx * dx + dy * dy + dz * dz;
           };
 
           auto closestDistance = distanceToCameraSq(*closestHit);
-          for (auto it = ++hitBatch.cbegin(), itEnd = hitBatch.cend(); it != itEnd; ++it) {
+          for (auto it = ++hitBatch.cbegin(), itEnd = hitBatch.cend(); it != itEnd; ++it)
+          {
             const auto currentDistance = distanceToCameraSq(*it);
-            if (currentDistance < closestDistance) {
+            if (currentDistance < closestDistance)
+            {
               closestDistance = currentDistance;
               closestHit = it;
             }
           }
         }
         addHit(*closestHit);
-      } else {
-        for (const auto& it : hitBatch) {
+      }
+      else
+      {
+        for (const auto& it : hitBatch)
+        {
           addHit(it);
         }
       }
@@ -517,7 +531,8 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
         }
 
-        if(command.length() > 0) {
+        if(command.length() > 0)
+        {
           addSelection(command);
         }
       }
@@ -542,7 +557,8 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
           command += "\"";
         }
 
-        if(command.length() > 0) {
+        if(command.length() > 0)
+        {
           selected = true;
           addSelection(command);
         }
@@ -611,11 +627,13 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
         deselectcommand += fn.name();
         deselectcommand += "\"";
 
-        if(hasSelectedItems) {
+        if(hasSelectedItems)
+        {
           addSelection(selectcommand);
         }
 
-        if(hasDeletedItems) {
+        if(hasDeletedItems)
+        {
           MGlobal::executeCommandOnIdle(deselectcommand, false);
         }
       }

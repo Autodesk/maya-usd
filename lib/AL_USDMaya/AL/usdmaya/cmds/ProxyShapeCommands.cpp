@@ -238,6 +238,34 @@ MStatus ProxyShapeImport::redoIt()
   MStatus status = m_modifier.doIt();
   if(status)
   {
+    // set the name of the node
+    MFnDagNode fnShape(m_shape);
+
+    if(m_createdParent)
+    {
+      // if lots of TM's have been specified as parents, just name the shape explicitly
+      if(m_parentTransforms.length())
+      {
+        if(m_proxy_name.length())
+        {
+          fnShape.setName(m_proxy_name + "Shape");
+        }
+      }
+      else
+      {
+        MFnDependencyNode fnTransform(fnShape.parent(0));
+        fnShape.setName(fnTransform.name() + "Shape");
+        if(m_proxy_name.length())
+        {
+          fnTransform.setName(m_proxy_name);
+        }
+        else
+        {
+          fnTransform.setName("AL_usdmaya_Proxy");
+        }
+      }
+    }
+
     status = m_modifier2.doIt();
     if(status)
     {
@@ -247,34 +275,6 @@ MStatus ProxyShapeImport::redoIt()
       {
         fn.setObject(m_parentTransforms[i]);
         fn.addChild(m_shape, MFnDagNode::kNextPos, true);
-      }
-    }
-  }
-
-  // set the name of the node
-  MFnDagNode fnShape(m_shape);
-
-  if(m_createdParent)
-  {
-    // if lots of TM's have been specified as parents, just name the shape explicitly
-    if(m_parentTransforms.length())
-    {
-      if(m_proxy_name.length())
-      {
-        fnShape.setName(m_proxy_name + "Shape");
-      }
-    }
-    else
-    {
-      MFnDependencyNode fnTransform(fnShape.parent(0));
-      fnShape.setName(fnTransform.name() + "Shape");
-      if(m_proxy_name.length())
-      {
-        fnTransform.setName(m_proxy_name);
-      }
-      else
-      {
-        fnTransform.setName("AL_usdmaya_Proxy");
       }
     }
   }
