@@ -27,18 +27,23 @@ Method list is:
 
 
 ## ProxyShape
+
+The ProxyShape class wraps an instance of a maya proxy shape
+
+You can get a specific shape in the scene with:
++ getByName
+
+example:
 ```
 from AL import usdmaya
-xx = usdmaya.ProxyShape.getByName('name_of_my_Proxy_Shape')
-theStage = xx.getUsdStage()
-print theStage
+myShape = usdmaya.ProxyShape.getByName('name_of_my_Proxy_Shape')
+theStage = myShape.getUsdStage()
 ```
 
-Method list is:
+As well as a number of methods to manipulate a shape instance:
 + boundingBox
 + destroyTransformReferences
 + findRequiredPath
-+ getByName
 + getUsdStage
 + isRequiredPath
 + makeUsdTransformChain
