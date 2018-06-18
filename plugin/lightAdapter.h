@@ -11,9 +11,9 @@ class HdMayaLightAdapter : public HdMayaDagAdapter {
 protected:
     HdMayaLightAdapter(const SdfPath& id, HdSceneDelegate* delegate, const MDagPath& dagPath);
 public:
-    virtual ~HdMayaLightAdapter() = default;
-
     void MarkDirty(HdDirtyBits dirtyBits) override;
+    VtValue GetLightParamValue(const TfToken& paramName) override;
+    VtValue Get(const TfToken& key) override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

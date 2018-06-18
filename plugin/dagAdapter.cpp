@@ -1,5 +1,7 @@
 #include "dagAdapter.h"
 
+#include <pxr/imaging/hd/tokens.h>
+
 #include <maya/MNodeMessage.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -62,6 +64,11 @@ HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
 
 HdPrimvarDescriptorVector
 HdMayaDagAdapter::GetPrimvarDescriptors(HdInterpolation interpolation) {
+    return {};
+}
+
+VtValue
+HdMayaDagAdapter::GetLightParamValue(const TfToken& paramName) {
     return {};
 }
 

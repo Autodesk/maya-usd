@@ -79,7 +79,11 @@ HdMayaDelegate::Get(SdfPath const& id, const TfToken& key) {
     if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
         return {};
     }
-    return adapter->Get(key);
+    auto ret = adapter->Get(key);
+    if (ret.IsEmpty()) {
+        std::cerr << "[HdMayaSceneDelegate] Get failed for " << key << " on " << id << std::endl;
+    }
+    return ret;
 }
 
 HdPrimvarDescriptorVector
@@ -89,6 +93,19 @@ HdMayaDelegate::GetPrimvarDescriptors(const SdfPath& id, HdInterpolation interpo
         return {};
     }
     return adapter->GetPrimvarDescriptors(interpolation);
+}
+
+VtValue
+HdMayaDelegate::GetLightParamValue(const SdfPath& id, const TfToken& paramName) {
+    HdMayaDagAdapterPtr adapter;
+    if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
+        return {};
+    }
+    auto ret = adapter->GetLightParamValue(paramName);
+    if (ret.IsEmpty()) {
+        std::cerr << "[HdMayaSceneDelegate] GetLightParamValue faled for " << paramName << " on " << id << std::endl;
+    }
+    return ret;
 }
 
 void
@@ -152,7 +169,7 @@ HdDisplayStyle
 HdMayaDelegate::GetDisplayStyle(const SdfPath& id) {
     // std::cerr << "[HdSceneDelegate] Getting display style of " << id << std::endl;
     HdDisplayStyle style;
-    style.flatShadingEnabled = true;
+    style.flatShadingEnabled = false;
     style.displacementEnabled = false;
     return style;
 }

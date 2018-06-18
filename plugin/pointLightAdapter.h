@@ -11,8 +11,6 @@ class HdMayaPointLightAdapter : public HdMayaLightAdapter {
 public:
     HdMayaPointLightAdapter(const SdfPath& id, HdSceneDelegate* delegate, const MDagPath& dagPath);
 
-    ~HdMayaPointLightAdapter() override = default;
-
     void Populate(
         HdRenderIndex& renderIndex,
         HdSceneDelegate* delegate,

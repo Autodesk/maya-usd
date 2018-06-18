@@ -45,6 +45,8 @@ public:
     virtual void MarkDirty(HdDirtyBits dirtyBits);
     virtual HdPrimvarDescriptorVector
     GetPrimvarDescriptors(HdInterpolation interpolation);
+    // TODO: think about this!
+    virtual VtValue GetLightParamValue(const TfToken& paramName);
 
     const MDagPath& GetDagPath() { return _dagPath; }
 protected:

@@ -40,6 +40,7 @@ public:
     VtValue Get(SdfPath const& id, TfToken const& key) override;
     HdPrimvarDescriptorVector
     GetPrimvarDescriptors(const SdfPath& id, HdInterpolation interpolation) override;
+    VtValue GetLightParamValue(const SdfPath& id, const TfToken& paramName) override;
 
     // SdfPath GetMaterialId(const SdfPath& id) override;
     // std::string GetSurfaceShaderSource(const SdfPath& id) override;
