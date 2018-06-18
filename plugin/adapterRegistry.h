@@ -8,7 +8,7 @@
 
 #include "dagAdapter.h"
 
-#include <vector>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -22,11 +22,11 @@ public:
 
     using DagAdapterCreator = std::function<
         std::shared_ptr<HdMayaDagAdapter>(const SdfPath& id, HdSceneDelegate* delegate, const MDagPath& dag)>;
-    static void RegisterDagAdapter(const MFn::Type& type, DagAdapterCreator creator);
+    static void RegisterDagAdapter(const std::string& type, DagAdapterCreator creator);
 
     static DagAdapterCreator GetAdapterCreator(const MDagPath& dag);
 private:
-    std::vector<std::tuple<MFn::Type, DagAdapterCreator>> _dagAdapters;
+    std::unordered_map<std::string, DagAdapterCreator> _dagAdapters;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
