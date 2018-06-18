@@ -1,3 +1,14 @@
+## v0.28.3 (2018-06-18)
+
+### Added
++ AL_usdmaya_CreateUsdPrim command added to insert a new prim into the UsdStage of a proxy shape. 
+
+### Changed
++ The proxyShape outStageData is now connectable, and now longer hidden. Allows for manual DG node connections to be made. 
+
+### Fixed
++ The internal mapping between a maya object and a prim now works correctly when specifying the -name flag of AL_usdmaya_ProxyShapeImport. 
+
 ## v0.28.2 (2018-06-14)
 
 ### Added
