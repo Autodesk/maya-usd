@@ -45,9 +45,8 @@ void
 HdMayaDagAdapter::CreateCallbacks() {
     MStatus status;
     for (auto dag = GetDagPath(); dag.length() > 0; dag.pop()) {
-        // FIXME: I hate this. I have to figure out if the memory allocated for the
-        // callback is going to be freed properly. If yes, we could use a weak pointer
-        // to the adapter itself.
+        // The adapter itself will free the callbacks, so we don't have to worry about
+        // passing raw pointers to the callbacks. Hopefully.
         MObject obj = dag.node();
         if (obj != MObject::kNullObj) {
             auto id = MNodeMessage::addNodeDirtyCallback(obj, _dirtyTransform, this, &status);
