@@ -431,7 +431,9 @@ bool TransformationMatrix::readMatrix(MMatrix& result, const UsdGeomXformOp& op,
       {
         return false;
       }
-      result = *(const MMatrix*)(&value);
+      auto vtemp = (const void*)&value;
+      auto mtemp = (const MMatrix*)vtemp;
+      result = *mtemp;
     }
     break;
 
@@ -1925,7 +1927,9 @@ void TransformationMatrix::pushToPrim()
         if(pushPrimToMatrix())
         {
           MMatrix m = MPxTransformationMatrix::asMatrix();
-          op.Set(*(const GfMatrix4d*)&m, getTimeCode());
+          auto vtemp = (const void*)&m;
+          auto mtemp = (const GfMatrix4d*)vtemp;
+          op.Set(*mtemp, getTimeCode());
         }
       }
       break;
@@ -2038,7 +2042,9 @@ void TransformationMatrix::enableReadAnimatedValues(bool enabled)
         if(m_orderedOps[i] == kTransform)
         {
           MMatrix m = MPxTransformationMatrix::asMatrix();
-          m_xformops[i].Set(*(const GfMatrix4d*)&m, getTimeCode());
+          auto vtemp = (const void*)&m;
+          auto mtemp = (const GfMatrix4d*)vtemp;
+          m_xformops[i].Set(*mtemp, getTimeCode());
           break;
         }
       }
@@ -2100,7 +2106,9 @@ void TransformationMatrix::enablePushToPrim(bool enabled)
         if(m_orderedOps[i] == kTransform)
         {
           MMatrix m = MPxTransformationMatrix::asMatrix();
-          m_xformops[i].Set(*(const GfMatrix4d*)&m, getTimeCode());
+          auto vtemp = (const void*)&m;
+          auto mtemp = (const GfMatrix4d*)vtemp;
+          m_xformops[i].Set(*mtemp, getTimeCode());
           break;
         }
       }

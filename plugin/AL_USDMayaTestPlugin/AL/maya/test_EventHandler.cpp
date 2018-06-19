@@ -156,7 +156,6 @@ TEST(EventDispatcher, EventDispatcher)
   CallbackId id2 = info.registerCallback("tag2", "i am a command", 1003, false);
 
   {
-    uint16_t eventPart = extractEventId(id2);
     uint64_t callbackPart = extractCallbackId(id2);
 
     EXPECT_EQ(callbackPart, 2);
@@ -177,7 +176,6 @@ TEST(EventDispatcher, EventDispatcher)
   CallbackId id3 = info.registerCallback("tag3", "i am a command", 1002, true);
 
   {
-    uint16_t eventPart = extractEventId(id3);
     uint64_t callbackPart = extractCallbackId(id3);
 
     EXPECT_EQ(callbackPart, 3);
