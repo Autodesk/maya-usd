@@ -280,7 +280,7 @@ public:
 
   /// \brief  set the prim that this transformation matrix will read/write to.
   /// \param  prim the prim
-  void setPrim(const UsdPrim& prim);
+  void setPrim(const UsdPrim& prim, Transform* transformNode);
 
   /// \brief  If set to true, modifications to these transform attributes will be pushed back onto the original prim.
   /// \param  enabled true will cause changes to this transform update the values on the USD prim. False will mean that

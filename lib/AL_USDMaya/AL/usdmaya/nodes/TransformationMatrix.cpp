@@ -103,7 +103,7 @@ TransformationMatrix::TransformationMatrix(const UsdPrim& prim)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void TransformationMatrix::setPrim(const UsdPrim& prim)
+void TransformationMatrix::setPrim(const UsdPrim& prim, Transform* transformNode)
 {
   if(prim.IsValid())
   {
@@ -145,11 +145,7 @@ void TransformationMatrix::setPrim(const UsdPrim& prim)
     m_rotatePivotFromUsd = MPoint(0, 0, 0);
     m_rotatePivotTranslationFromUsd = MVector(0, 0, 0);
     m_rotateOrientationFromUsd = MQuaternion(0, 0, 0, 1.0);
-    //if(MFileIO::isReadingFile())
-    {
-      initialiseToPrim(!MFileIO::isReadingFile());
-    }
-
+    initialiseToPrim(!MFileIO::isReadingFile(), transformNode);
     MPxTransformationMatrix::scaleValue = m_scaleFromUsd;
     MPxTransformationMatrix::rotationValue = m_rotationFromUsd;
     MPxTransformationMatrix::translationValue = m_translationFromUsd;
@@ -806,7 +802,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
         {
           m_flags |= kAnimatedTranslation;
         }
-        if(readFromPrim) {
+        if(readFromPrim)
+        {
           internal_readVector(m_translationFromUsd, op);
           if(transformNode)
           {
@@ -821,7 +818,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
     case kPivot:
       {
         m_flags |= kPrimHasPivot;
-        if(readFromPrim) {
+        if(readFromPrim)
+        {
           internal_readPoint(m_scalePivotFromUsd, op);
           m_rotatePivotFromUsd = m_scalePivotFromUsd;
           if(transformNode)
@@ -915,7 +913,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
     case kScalePivotTranslate:
       {
         m_flags |= kPrimHasScalePivotTranslate;
-        if(readFromPrim) {
+        if(readFromPrim)
+        {
           internal_readVector(m_scalePivotTranslationFromUsd, op);
           if(transformNode)
           {
@@ -930,7 +929,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
     case kScalePivot:
       {
         m_flags |= kPrimHasScalePivot;
-        if(readFromPrim) {
+        if(readFromPrim)
+        {
           internal_readPoint(m_scalePivotFromUsd, op);
           if(transformNode)
           {
@@ -949,7 +949,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
         {
           m_flags |= kAnimatedShear;
         }
-        if(readFromPrim) {
+        if(readFromPrim)
+        {
           internal_readShear(m_shearFromUsd, op);
           if(transformNode)
           {
@@ -968,7 +969,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
         {
           m_flags |= kAnimatedScale;
         }
-        if(readFromPrim) {
+        if(readFromPrim)
+        {
           internal_readVector(m_scaleFromUsd, op);
           if(transformNode)
           {
@@ -1000,7 +1002,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
           m_flags |= kAnimatedMatrix;
         }
 
-        if(readFromPrim) {
+        if(readFromPrim)
+        {
           MMatrix m;
           internal_readMatrix(m, op);
           decomposeMatrix(m);
