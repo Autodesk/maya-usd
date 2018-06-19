@@ -40,6 +40,7 @@ HdMayaDagAdapter::GetMeshTopology() {
 
 GfMatrix4d
 HdMayaDagAdapter::GetTransform() {
+    // std::cerr << "[HdMayaDagAdapter::GetTransform] For " << GetID() << std::endl;
     return getGfMatrixFromMaya(_dagPath.inclusiveMatrix());
 };
 

@@ -6,7 +6,22 @@
 #include <maya/MColor.h>
 #include <maya/MFnLight.h>
 
+#include <maya/MNodeMessage.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+namespace {
+    void _dirtyTransform(MObject& /*node*/, void* clientData) {
+        auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+        // We need both dirty params and dirty transform to get this working?
+        adapter->MarkDirty(HdLight::DirtyTransform | HdLight::DirtyParams);
+    }
+
+    void _dirtyParams(MObject& /*node*/, void* clientData) {
+        auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+        adapter->MarkDirty(HdLight::DirtyParams);
+    }
+}
 
 HdMayaLightAdapter::HdMayaLightAdapter(
     const SdfPath& id, HdSceneDelegate* delegate, const MDagPath& dagPath)
@@ -15,18 +30,21 @@ HdMayaLightAdapter::HdMayaLightAdapter(
 
 void
 HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits) {
+    // std::cerr << "[HdMayaLightAdapter::MarkDirty] " << dirtyBits << " on " << GetID() << std::endl;
     GetDelegate()->GetRenderIndex().GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
 }
 
 VtValue
 HdMayaLightAdapter::Get(const TfToken& key) {
     if (key == HdTokens->transform) {
-        return VtValue(GetTransform());
-    } /*else if (key == HdLightTokens->shadowParams) {
+        // std::cerr << "[HdMayaLightAdapter::Get] Transform on " << GetID() << std::endl;
+        return VtValue(HdMayaDagAdapter::GetTransform());
+    } else if (key == HdLightTokens->shadowParams) {
+        std::cerr << "[HdMayaLightAdapter::Get] Shadow params on " << GetID() << std::endl;
         HdxShadowParams shadowParams;
-        shadowParams.enabled = true;
+        shadowParams.enabled = false;
         return VtValue(shadowParams);
-    } else if (key == HdLightTokens->shadowCollection) {
+    } /*else if (key == HdLightTokens->shadowCollection) {
         // FIXME?
         return VtValue(HdRprimCollection());
     }*/
@@ -45,6 +63,25 @@ HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
         return VtValue(0.0f);
     }
     return {};
+}
+
+void
+HdMayaLightAdapter::CreateCallbacks() {
+    MStatus status;
+    auto dag = GetDagPath();
+    auto obj = dag.node();
+    auto id = MNodeMessage::addNodeDirtyCallback(obj, _dirtyParams, this, &status);
+    dag.pop();
+    if (status) { AddCallback(id); }
+    for (; dag.length() > 0; dag.pop()) {
+        // The adapter itself will free the callbacks, so we don't have to worry about
+        // passing raw pointers to the callbacks. Hopefully.
+        obj = dag.node();
+        if (obj != MObject::kNullObj) {
+            id = MNodeMessage::addNodeDirtyCallback(obj, _dirtyTransform, this, &status);
+            if (status) { AddCallback(id); }
+        }
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

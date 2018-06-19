@@ -14,6 +14,7 @@ public:
     void MarkDirty(HdDirtyBits dirtyBits) override;
     VtValue GetLightParamValue(const TfToken& paramName) override;
     VtValue Get(const TfToken& key) override;
+    virtual void CreateCallbacks() override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

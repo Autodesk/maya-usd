@@ -77,11 +77,12 @@ VtValue
 HdMayaDelegate::Get(SdfPath const& id, const TfToken& key) {
     HdMayaDagAdapterPtr adapter;
     if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
+        std::cerr << "[HdMayaSceneDelegate::Get] No adapter for " << key << " on " << id << std::endl;
         return {};
     }
     auto ret = adapter->Get(key);
     if (ret.IsEmpty()) {
-        std::cerr << "[HdMayaSceneDelegate] Get failed for " << key << " on " << id << std::endl;
+        std::cerr << "[HdMayaSceneDelegate::Get] Failed for " << key << " on " << id << std::endl;
     }
     return ret;
 }
@@ -99,11 +100,12 @@ VtValue
 HdMayaDelegate::GetLightParamValue(const SdfPath& id, const TfToken& paramName) {
     HdMayaDagAdapterPtr adapter;
     if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
+        std::cerr << "[HdMayaSceneDelegate::GetLightParamValue] No adapter for " << paramName << " on " << id << std::endl;
         return {};
     }
     auto ret = adapter->GetLightParamValue(paramName);
     if (ret.IsEmpty()) {
-        std::cerr << "[HdMayaSceneDelegate] GetLightParamValue faled for " << paramName << " on " << id << std::endl;
+        std::cerr << "[HdMayaSceneDelegate::GetLightParamValue] Failed for " << paramName << " on " << id << std::endl;
     }
     return ret;
 }

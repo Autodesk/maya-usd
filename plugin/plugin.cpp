@@ -12,7 +12,7 @@ MStatus initializePlugin(MObject obj) {
     // putenv requires char* and I'm not willing to use const cast!
     constexpr const char* envVarSet = "USDIMAGING_ENABLE_SCENE_LIGHTS=1";
     std::vector<char> envVarData; envVarData.resize(strlen(envVarSet) + 1);
-    sprintf(envVarData.data(), envVarSet);
+    sprintf(envVarData.data(), "%s", envVarSet);
     putenv(envVarData.data());
 
     MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");
