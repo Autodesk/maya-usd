@@ -7,14 +7,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, pointLight) {
     HdMayaAdapterRegistry::RegisterDagAdapter("pointLight",
-    [](const SdfPath& id, HdSceneDelegate* delegate, const MDagPath& dag) -> std::shared_ptr<HdMayaDagAdapter> {
+    [](const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dag) -> std::shared_ptr<HdMayaDagAdapter> {
         return std::static_pointer_cast<HdMayaDagAdapter>(std::make_shared<HdMayaPointLightAdapter>(id, delegate, dag));
     });
 }
 
 
 HdMayaPointLightAdapter::HdMayaPointLightAdapter(
-    const SdfPath& id, HdSceneDelegate* delegate, const MDagPath& dagPath)
+    const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath)
     : HdMayaLightAdapter(id, delegate, dagPath) {
 }
 

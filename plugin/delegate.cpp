@@ -26,7 +26,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdMayaDelegate::HdMayaDelegate(
     HdRenderIndex* renderIndex,
     const SdfPath& delegateID) :
-    HdMayaDelegateBase(renderIndex, delegateID) {
+    HdMayaDelegateCtx(renderIndex, delegateID) {
     // Unique ID
 }
 
@@ -44,10 +44,11 @@ HdMayaDelegate::Populate() {
         // We don't care about transforms for now.
         if (path.hasFn(MFn::kTransform)) { continue; }
 
-        auto adapterCreator = HdMayaAdapterRegistry::GetAdapterCreator(path);
-        if (adapterCreator == nullptr) { continue; }
         const auto id = GetPrimPath(path);
         if (id.IsEmpty()) { continue; }
+
+        auto adapterCreator = HdMayaAdapterRegistry::GetAdapterCreator(path);
+        if (adapterCreator == nullptr) { continue; }
         if (TfMapLookupPtr(_pathToAdapterMap, id) != nullptr) { continue; }
         auto adapter = adapterCreator(id, this, path);
         if (adapter == nullptr) { continue; }

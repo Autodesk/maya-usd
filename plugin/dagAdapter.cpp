@@ -14,7 +14,7 @@ namespace {
 }
 
 HdMayaDagAdapter::HdMayaDagAdapter(
-    const SdfPath& id, HdSceneDelegate* delegate, const MDagPath& dagPath) :
+    const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath) :
     HdMayaAdapter(id, delegate), _dagPath(dagPath) {
 
 }

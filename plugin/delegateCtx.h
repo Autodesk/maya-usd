@@ -11,9 +11,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaDelegateBase : protected HdSceneDelegate {
+class HdMayaDelegateCtx : protected HdSceneDelegate {
 protected:
-    HdMayaDelegateBase(
+    HdMayaDelegateCtx(
         HdRenderIndex* renderIndex,
         const SdfPath& delegateID);
 public:

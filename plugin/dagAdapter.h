@@ -29,7 +29,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaDagAdapter : public HdMayaAdapter {
 protected:
-    HdMayaDagAdapter(const SdfPath& id, HdSceneDelegate* delegate, const MDagPath& dagPath);
+    HdMayaDagAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath);
 public:
     virtual ~HdMayaDagAdapter() = default;
 

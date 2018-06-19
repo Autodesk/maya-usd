@@ -9,7 +9,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaPointLightAdapter : public HdMayaLightAdapter {
 public:
-    HdMayaPointLightAdapter(const SdfPath& id, HdSceneDelegate* delegate, const MDagPath& dagPath);
+    HdMayaPointLightAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath);
 
     void Populate(
         HdRenderIndex& renderIndex,

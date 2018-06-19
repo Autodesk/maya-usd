@@ -6,6 +6,8 @@
 
 #include <maya/MFn.h>
 
+#include "delegateCtx.h"
+#include "delegateCtx.h"
 #include "dagAdapter.h"
 
 #include <unordered_map>
@@ -21,7 +23,7 @@ public:
     }
 
     using DagAdapterCreator = std::function<
-        std::shared_ptr<HdMayaDagAdapter>(const SdfPath& id, HdSceneDelegate* delegate, const MDagPath& dag)>;
+        std::shared_ptr<HdMayaDagAdapter>(const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dag)>;
     static void RegisterDagAdapter(const std::string& type, DagAdapterCreator creator);
 
     static DagAdapterCreator GetAdapterCreator(const MDagPath& dag);

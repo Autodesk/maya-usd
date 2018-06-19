@@ -2,7 +2,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdMayaAdapter::HdMayaAdapter(const SdfPath& id, HdSceneDelegate* delegate) :
+HdMayaAdapter::HdMayaAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate) :
     _id(id), _delegate(delegate) { }
 
 HdMayaAdapter::~HdMayaAdapter() {

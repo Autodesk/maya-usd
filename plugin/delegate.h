@@ -16,11 +16,11 @@
 
 #include "params.h"
 #include "dagAdapter.h"
-#include "delegateBase.h"
+#include "delegateCtx.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaDelegate : protected HdMayaDelegateBase {
+class HdMayaDelegate : protected HdMayaDelegateCtx {
 public:
     HdMayaDelegate(
         HdRenderIndex* renderIndex,

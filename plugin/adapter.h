@@ -3,22 +3,23 @@
 
 #include <pxr/pxr.h>
 
-#include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/usd/sdf/path.h>
 
 #include <maya/MMessage.h>
 
 #include <vector>
 
+#include "delegateCtx.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaAdapter {
 public:
-    HdMayaAdapter(const SdfPath& id, HdSceneDelegate* delegate);
+    HdMayaAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate);
     virtual ~HdMayaAdapter();
 
     const SdfPath& GetID() { return _id; }
-    HdSceneDelegate* GetDelegate() { return _delegate; }
+    HdMayaDelegateCtx* GetDelegate() { return _delegate; }
     void AddCallback(MCallbackId callbackId);
     virtual VtValue Get(const TfToken& key);
 
@@ -26,7 +27,7 @@ public:
     virtual void MarkDirty(HdDirtyBits dirtyBits) = 0;
 protected:
     SdfPath _id;
-    HdSceneDelegate* _delegate;
+    HdMayaDelegateCtx* _delegate;
 
     std::vector<MCallbackId> _callbacks;
 };

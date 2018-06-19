@@ -1,8 +1,8 @@
-#include "delegateBase.h"
+#include "delegateCtx.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdMayaDelegateBase::HdMayaDelegateBase(
+HdMayaDelegateCtx::HdMayaDelegateCtx(
     HdRenderIndex* renderIndex,
     const SdfPath& delegateID) : HdSceneDelegate(renderIndex, delegateID) {
 
