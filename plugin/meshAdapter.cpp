@@ -26,7 +26,7 @@ HdMayaMeshAdapter::HdMayaMeshAdapter(
 }
 
 void HdMayaMeshAdapter::Populate(HdRenderIndex& renderIndex, HdSceneDelegate* delegate, const SdfPath& id) {
-    renderIndex.InsertRprim(HdPrimTypeTokens->mesh, delegate, id);
+    GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, id, HdChangeTracker::AllDirty);
 }
 
 HdMeshTopology

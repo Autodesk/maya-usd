@@ -5,6 +5,7 @@
 
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
+#include <pxr/imaging/hd/rprimCollection.h>
 
 #include <pxr/usd/sdf/path.h>
 
@@ -19,7 +20,12 @@ protected:
 public:
     using HdSceneDelegate::GetRenderIndex;
     HdChangeTracker& GetChangeTracker() { return GetRenderIndex().GetChangeTracker(); }
+
+    void InsertRprim(const TfToken& typeId, const SdfPath& id, HdDirtyBits initialBits);
+    void InsertSprim(const TfToken& typeId, const SdfPath& id, HdDirtyBits initialBits);
+    const HdRprimCollection& GetRprimCollection() { return _rprimCollection; }
 private:
+    HdRprimCollection _rprimCollection;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

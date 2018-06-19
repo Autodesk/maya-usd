@@ -46,7 +46,7 @@ HdMayaLightAdapter::Get(const TfToken& key) {
         return VtValue(shadowParams);
     } else if (key == HdLightTokens->shadowCollection) {
         // FIXME
-        return VtValue(HdRprimCollection());
+        return VtValue(GetDelegate()->GetRprimCollection());
     }
     return {};
 }

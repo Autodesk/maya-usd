@@ -23,8 +23,7 @@ HdMayaPointLightAdapter::Populate(
     HdRenderIndex& renderIndex,
     HdSceneDelegate* delegate,
     const SdfPath& id) {
-    renderIndex.InsertSprim(HdPrimTypeTokens->sphereLight, delegate, id);
-    renderIndex.GetChangeTracker().SprimInserted(id, HdLight::AllDirty);
+    GetDelegate()->InsertSprim(HdPrimTypeTokens->sphereLight, id, HdLight::AllDirty);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
