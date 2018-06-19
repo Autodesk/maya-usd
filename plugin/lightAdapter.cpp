@@ -43,6 +43,7 @@ HdMayaLightAdapter::Get(const TfToken& key) {
         // MFnLight light(GetDagPath().node());
         HdxShadowParams shadowParams;
         shadowParams.enabled = true;
+        shadowParams.resolution = 1024;
         return VtValue(shadowParams);
     } else if (key == HdLightTokens->shadowCollection) {
         // FIXME
