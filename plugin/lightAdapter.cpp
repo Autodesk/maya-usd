@@ -30,8 +30,7 @@ HdMayaLightAdapter::HdMayaLightAdapter(
 
 void
 HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits) {
-    // std::cerr << "[HdMayaLightAdapter::MarkDirty] " << dirtyBits << " on " << GetID() << std::endl;
-    GetDelegate()->GetRenderIndex().GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
+    GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
 }
 
 VtValue

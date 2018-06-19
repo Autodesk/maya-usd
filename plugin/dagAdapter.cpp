@@ -60,7 +60,7 @@ HdMayaDagAdapter::CreateCallbacks() {
 
 void
 HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
-    GetDelegate()->GetRenderIndex().GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
+    GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
 }
 
 HdPrimvarDescriptorVector
