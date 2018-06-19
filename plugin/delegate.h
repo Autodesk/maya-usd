@@ -16,10 +16,11 @@
 
 #include "params.h"
 #include "dagAdapter.h"
+#include "delegateBase.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaDelegate : public HdSceneDelegate {
+class HdMayaDelegate : protected HdMayaDelegateBase {
 public:
     HdMayaDelegate(
         HdRenderIndex* renderIndex,
@@ -27,6 +28,9 @@ public:
 
     virtual ~HdMayaDelegate();
 
+    void Populate();
+
+protected:
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;
     GfRange3d GetExtent(const SdfPath& id) override;
     GfMatrix4d GetTransform(const SdfPath& id) override;
@@ -50,7 +54,6 @@ public:
     // VtValue GetMaterialResource(const SdfPath& id) override;
     // TfTokenVector GetMaterialPrimvars(const SdfPath& id) override;
 
-    void Populate();
 private:
     SdfPath GetPrimPath(const MDagPath& dg);
     TfHashMap<SdfPath, HdMayaDagAdapterPtr, SdfPath::Hash> _pathToAdapterMap;

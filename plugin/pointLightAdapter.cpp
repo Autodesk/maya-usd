@@ -1,3 +1,4 @@
+#include <pxr/imaging/hd/light.h>
 #include "pointLightAdapter.h"
 
 #include "adapterRegistry.h"
@@ -23,7 +24,7 @@ HdMayaPointLightAdapter::Populate(
     HdSceneDelegate* delegate,
     const SdfPath& id) {
     renderIndex.InsertSprim(HdPrimTypeTokens->sphereLight, delegate, id);
-    // renderIndex.GetChangeTracker().SprimInserted(id, HdChangeTracker::DirtyTransform);
+    renderIndex.GetChangeTracker().SprimInserted(id, HdLight::AllDirty);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -40,14 +40,15 @@ HdMayaLightAdapter::Get(const TfToken& key) {
         // std::cerr << "[HdMayaLightAdapter::Get] Transform on " << GetID() << std::endl;
         return VtValue(HdMayaDagAdapter::GetTransform());
     } else if (key == HdLightTokens->shadowParams) {
-        std::cerr << "[HdMayaLightAdapter::Get] Shadow params on " << GetID() << std::endl;
+        // std::cerr << "[HdMayaLightAdapter::Get] Shadow params on " << GetID() << std::endl;
+        // MFnLight light(GetDagPath().node());
         HdxShadowParams shadowParams;
-        shadowParams.enabled = false;
+        shadowParams.enabled = true;
         return VtValue(shadowParams);
-    } /*else if (key == HdLightTokens->shadowCollection) {
-        // FIXME?
+    } else if (key == HdLightTokens->shadowCollection) {
+        // FIXME
         return VtValue(HdRprimCollection());
-    }*/
+    }
     return {};
 }
 

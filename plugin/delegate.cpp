@@ -26,11 +26,35 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdMayaDelegate::HdMayaDelegate(
     HdRenderIndex* renderIndex,
     const SdfPath& delegateID) :
-    HdSceneDelegate(renderIndex, delegateID) {
+    HdMayaDelegateBase(renderIndex, delegateID) {
     // Unique ID
 }
 
 HdMayaDelegate::~HdMayaDelegate() {
+}
+
+void
+HdMayaDelegate::Populate() {
+    auto& renderIndex = GetRenderIndex();
+    auto& changeTracker = renderIndex.GetChangeTracker();
+    for (MItDag dagIt(MItDag::kDepthFirst, MFn::kInvalid); !dagIt.isDone(); dagIt.next()) {
+        MDagPath path;
+        dagIt.getPath(path);
+
+        // We don't care about transforms for now.
+        if (path.hasFn(MFn::kTransform)) { continue; }
+
+        auto adapterCreator = HdMayaAdapterRegistry::GetAdapterCreator(path);
+        if (adapterCreator == nullptr) { continue; }
+        const auto id = GetPrimPath(path);
+        if (id.IsEmpty()) { continue; }
+        if (TfMapLookupPtr(_pathToAdapterMap, id) != nullptr) { continue; }
+        auto adapter = adapterCreator(id, this, path);
+        if (adapter == nullptr) { continue; }
+        adapter->Populate(renderIndex, this, id);
+        adapter->CreateCallbacks();
+        _pathToAdapterMap.insert({id, adapter});
+    }
 }
 
 HdMeshTopology
@@ -108,30 +132,6 @@ HdMayaDelegate::GetLightParamValue(const SdfPath& id, const TfToken& paramName) 
         std::cerr << "[HdMayaSceneDelegate::GetLightParamValue] Failed for " << paramName << " on " << id << std::endl;
     }
     return ret;
-}
-
-void
-HdMayaDelegate::Populate() {
-    auto& renderIndex = GetRenderIndex();
-    auto& changeTracker = renderIndex.GetChangeTracker();
-    for (MItDag dagIt(MItDag::kDepthFirst, MFn::kInvalid); !dagIt.isDone(); dagIt.next()) {
-        MDagPath path;
-        dagIt.getPath(path);
-
-        // We don't care about transforms for now.
-        if (path.hasFn(MFn::kTransform)) { continue; }
-
-        auto adapterCreator = HdMayaAdapterRegistry::GetAdapterCreator(path);
-        if (adapterCreator == nullptr) { continue; }
-        const auto id = GetPrimPath(path);
-        if (id.IsEmpty()) { continue; }
-        if (TfMapLookupPtr(_pathToAdapterMap, id) != nullptr) { continue; }
-        auto adapter = adapterCreator(id, this, path);
-        if (adapter == nullptr) { continue; }
-        adapter->Populate(renderIndex, this, id);
-        adapter->CreateCallbacks();
-        _pathToAdapterMap.insert({id, adapter});
-    }
 }
 
 SdfPath
