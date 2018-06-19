@@ -25,6 +25,7 @@ public:
 
     virtual void CreateCallbacks() = 0;
     virtual void MarkDirty(HdDirtyBits dirtyBits) = 0;
+    virtual void Populate() = 0;
 protected:
     SdfPath _id;
     HdMayaDelegateCtx* _delegate;

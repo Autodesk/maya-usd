@@ -9,7 +9,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaLightAdapter : public HdMayaDagAdapter {
 protected:
-    HdMayaLightAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath);
+    HdMayaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag);
 public:
     void MarkDirty(HdDirtyBits dirtyBits) override;
     VtValue GetLightParamValue(const TfToken& paramName) override;

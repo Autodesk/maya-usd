@@ -14,19 +14,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, mesh) {
     HdMayaAdapterRegistry::RegisterDagAdapter("mesh",
-        [](const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dag) -> std::shared_ptr<HdMayaDagAdapter> {
-        return std::static_pointer_cast<HdMayaDagAdapter>(std::make_shared<HdMayaMeshAdapter>(id, delegate, dag));
+        []( HdMayaDelegateCtx* delegate, const MDagPath& dag) -> std::shared_ptr<HdMayaDagAdapter> {
+        return std::static_pointer_cast<HdMayaDagAdapter>(std::make_shared<HdMayaMeshAdapter>(delegate, dag));
     });
 }
 
 HdMayaMeshAdapter::HdMayaMeshAdapter(
-    const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath) :
-    HdMayaDagAdapter(id, delegate, dagPath) {
+    HdMayaDelegateCtx* delegate, const MDagPath& dag) :
+    HdMayaDagAdapter(delegate->GetRPrimPath(dag), delegate, dag) {
 
 }
 
-void HdMayaMeshAdapter::Populate(HdRenderIndex& renderIndex, HdSceneDelegate* delegate, const SdfPath& id) {
-    GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, id, HdChangeTracker::AllDirty);
+void HdMayaMeshAdapter::Populate() {
+    GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty);
 }
 
 HdMeshTopology

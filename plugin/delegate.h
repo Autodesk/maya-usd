@@ -55,7 +55,6 @@ protected:
     // TfTokenVector GetMaterialPrimvars(const SdfPath& id) override;
 
 private:
-    SdfPath GetPrimPath(const MDagPath& dg);
     TfHashMap<SdfPath, HdMayaDagAdapterPtr, SdfPath::Hash> _pathToAdapterMap;
 };
 

@@ -9,6 +9,8 @@
 
 #include <pxr/usd/sdf/path.h>
 
+#include <maya/MDagPath.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -24,8 +26,12 @@ public:
     void InsertRprim(const TfToken& typeId, const SdfPath& id, HdDirtyBits initialBits);
     void InsertSprim(const TfToken& typeId, const SdfPath& id, HdDirtyBits initialBits);
     const HdRprimCollection& GetRprimCollection() { return _rprimCollection; }
+    SdfPath GetRPrimPath(const MDagPath& dg);
+    SdfPath GetSPrimPath(const MDagPath& dg);
 private:
     HdRprimCollection _rprimCollection;
+    SdfPath _rprimPath;
+    SdfPath _sprimPath;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

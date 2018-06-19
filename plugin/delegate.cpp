@@ -12,8 +12,6 @@
 #include <pxr/imaging/hdx/renderSetupTask.h>
 #include <pxr/imaging/hdx/renderTask.h>
 
-#include <usdMaya/util.h>
-
 #include <maya/MDagPath.h>
 #include <maya/MItDag.h>
 #include <maya/MString.h>
@@ -46,12 +44,14 @@ HdMayaDelegate::Populate() {
 
         auto adapterCreator = HdMayaAdapterRegistry::GetAdapterCreator(path);
         if (adapterCreator == nullptr) { continue; }
-        const auto id = GetPrimPath(path);
-        if (id.IsEmpty()) { continue; }
-        if (TfMapLookupPtr(_pathToAdapterMap, id) != nullptr) { continue; }
-        auto adapter = adapterCreator(id, this, path);
+        auto adapter = adapterCreator(this, path);
         if (adapter == nullptr) { continue; }
-        adapter->Populate(renderIndex, this, id);
+        const auto& id = adapter->GetID();
+        if (TfMapLookupPtr(_pathToAdapterMap, id) != nullptr) {
+            // Adapter is a shared ptr.
+            continue;
+        }
+        adapter->Populate();
         adapter->CreateCallbacks();
         _pathToAdapterMap.insert({id, adapter});
     }
@@ -79,6 +79,7 @@ GfMatrix4d
 HdMayaDelegate::GetTransform(const SdfPath& id) {
     HdMayaDagAdapterPtr adapter;
     if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
+        std::cerr << "[HdMayaSceneDelegate::GetTransform] No adapter for " << id << std::endl;
         return GfMatrix4d(1.0);
     }
     return adapter->GetTransform();
@@ -92,8 +93,7 @@ HdMayaDelegate::IsEnabled(const TfToken& option) const {
         return false;
     }
 
-    std::cerr << "[HdSceneDelegate] Checking for option: " << option << std::endl;
-
+    std::cerr << "[HdSceneDelegate::IsEnabled] Unsupported option " << option << std::endl;
     return false;
 }
 
@@ -115,6 +115,7 @@ HdPrimvarDescriptorVector
 HdMayaDelegate::GetPrimvarDescriptors(const SdfPath& id, HdInterpolation interpolation) {
     HdMayaDagAdapterPtr adapter;
     if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
+        std::cerr << "[HdMayaSceneDelegate::GetPrimvarDescriptors] No adapter for " << interpolation << " on " << id << std::endl;
         return {};
     }
     return adapter->GetPrimvarDescriptors(interpolation);
@@ -132,17 +133,6 @@ HdMayaDelegate::GetLightParamValue(const SdfPath& id, const TfToken& paramName) 
         std::cerr << "[HdMayaSceneDelegate::GetLightParamValue] Failed for " << paramName << " on " << id << std::endl;
     }
     return ret;
-}
-
-SdfPath
-HdMayaDelegate::GetPrimPath(const MDagPath& dg) {
-    const auto mayaPath = PxrUsdMayaUtil::MDagPathToUsdPath(dg, false, false);
-    if (mayaPath.IsEmpty()) { return {}; }
-    const auto* chr = mayaPath.GetText();
-    if (chr == nullptr) { return {}; };
-    std::string s(chr + 1);
-    if (s.empty()) { return {}; }
-    return GetDelegateID().AppendPath(SdfPath(s));
 }
 
 bool

@@ -9,12 +9,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaMeshAdapter : public HdMayaDagAdapter {
 public:
-    explicit HdMayaMeshAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath);
+    HdMayaMeshAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag);
 
-    void Populate(
-        HdRenderIndex& renderIndex,
-        HdSceneDelegate* delegate,
-        const SdfPath& id) override;
+    void Populate() override;
 
     VtValue Get(const TfToken& key) override;
     HdMeshTopology GetMeshTopology() override;

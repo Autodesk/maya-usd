@@ -33,11 +33,6 @@ protected:
 public:
     virtual ~HdMayaDagAdapter() = default;
 
-    virtual void Populate(
-        HdRenderIndex& renderIndex,
-        HdSceneDelegate* delegate,
-        const SdfPath& id) = 0;
-
     virtual GfRange3d GetExtent();
     virtual HdMeshTopology GetMeshTopology();
     virtual GfMatrix4d GetTransform();

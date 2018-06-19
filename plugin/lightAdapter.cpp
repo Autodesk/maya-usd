@@ -24,8 +24,8 @@ namespace {
 }
 
 HdMayaLightAdapter::HdMayaLightAdapter(
-    const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath)
-    : HdMayaDagAdapter(id, delegate, dagPath) {
+    HdMayaDelegateCtx* delegate, const MDagPath& dag)
+    : HdMayaDagAdapter(delegate->GetSPrimPath(dag), delegate, dag) {
 }
 
 void

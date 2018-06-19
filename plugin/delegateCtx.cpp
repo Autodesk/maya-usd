@@ -1,12 +1,32 @@
 #include "delegateCtx.h"
 
+#include <usdMaya/util.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+namespace {
+
+SdfPath
+_GetPrimPath(const SdfPath& base, const MDagPath& dg) {
+    const auto mayaPath = PxrUsdMayaUtil::MDagPathToUsdPath(dg, false, false);
+    if (mayaPath.IsEmpty()) { return {}; }
+    const auto* chr = mayaPath.GetText();
+    if (chr == nullptr) { return {}; };
+    std::string s(chr + 1);
+    if (s.empty()) { return {}; }
+    return base.AppendPath(SdfPath(s));
+}
+
+}
 
 HdMayaDelegateCtx::HdMayaDelegateCtx(
     HdRenderIndex* renderIndex,
-    const SdfPath& delegateID) : HdSceneDelegate(renderIndex, delegateID) {
+    const SdfPath& delegateID)
+    : HdSceneDelegate(renderIndex, delegateID),
+     _rprimPath(delegateID.AppendPath(SdfPath(std::string("rprims")))),
+     _sprimPath(delegateID.AppendPath(SdfPath(std::string("sprims")))) {
     _rprimCollection.SetName(TfToken("visible"));
-    _rprimCollection.SetRootPath(GetDelegateID());
+    _rprimCollection.SetRootPath(_rprimPath);
     _rprimCollection.SetRenderTags({HdTokens->geometry});
     GetChangeTracker().AddCollection(TfToken("visible"));
 }
@@ -21,6 +41,16 @@ void
 HdMayaDelegateCtx::InsertSprim(const TfToken& typeId, const SdfPath& id, HdDirtyBits initialBits) {
     GetRenderIndex().InsertSprim(typeId, this, id);
     GetChangeTracker().SprimInserted(id, initialBits);
+}
+
+SdfPath
+HdMayaDelegateCtx::GetRPrimPath(const MDagPath& dg) {
+    return _GetPrimPath(_rprimPath, dg);
+}
+
+SdfPath
+HdMayaDelegateCtx::GetSPrimPath(const MDagPath& dg) {
+    return _GetPrimPath(_sprimPath, dg);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
