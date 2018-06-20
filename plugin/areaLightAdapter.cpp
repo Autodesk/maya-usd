@@ -15,7 +15,11 @@ public:
     }
 
     void Populate() override {
-        GetDelegate()->InsertSprim(HdPrimTypeTokens->rectLight, GetID(), HdLight::AllDirty);
+        GetDelegate()->InsertSprim(HdPrimTypeTokens->simpleLight, GetID(), HdLight::AllDirty);
+    }
+
+    void CalculateLightParams(GlfSimpleLight& /*light*/) override {
+        // NOP
     }
 };
 

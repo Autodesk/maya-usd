@@ -1,6 +1,12 @@
 #include <pxr/pxr.h>
 
 #include <pxr/imaging/hd/light.h>
+#include <pxr/imaging/glf/simpleLight.h>
+
+#include <maya/MColor.h>
+#include <maya/MFnLight.h>
+#include <maya/MPlug.h>
+#include <maya/MPoint.h>
 
 #include "lightAdapter.h"
 #include "adapterRegistry.h"
@@ -15,7 +21,7 @@ public:
     }
 
     void Populate() override {
-        GetDelegate()->InsertSprim(HdPrimTypeTokens->sphereLight, GetID(), HdLight::AllDirty);
+        GetDelegate()->InsertSprim(HdPrimTypeTokens->simpleLight, GetID(), HdLight::AllDirty);
     }
 };
 

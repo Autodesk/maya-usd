@@ -169,7 +169,7 @@ MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
 
     renderInfo.renderTarget().makeTargetCurrent();
 
-    glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+    glClearColor(0.4f, 0.4f, 0.4f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     // We need some empty vao to get the core profile running in some cases.
@@ -227,7 +227,7 @@ bool HdMayaViewportRenderer::override(MViewportRenderer::RenderingOverride overr
 
 unsigned int
 HdMayaViewportRenderer::overrideThenStandardExclusion() const {
-    return ~static_cast<unsigned int>(kExcludeManipulators);
+    return ~static_cast<unsigned int>(kExcludeManipulators | kExcludeLights | kExcludeSelectHandles);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

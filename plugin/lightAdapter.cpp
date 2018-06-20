@@ -5,6 +5,8 @@
 
 #include <maya/MColor.h>
 #include <maya/MFnLight.h>
+#include <maya/MPlug.h>
+#include <maya/MPoint.h>
 
 #include <maya/MNodeMessage.h>
 
@@ -35,7 +37,36 @@ HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits) {
 
 VtValue
 HdMayaLightAdapter::Get(const TfToken& key) {
-    if (key == HdTokens->transform) {
+    if (key == HdLightTokens->params) {
+        MFnLight mayaLight(GetDagPath().node());
+        GlfSimpleLight light;
+        const auto color = mayaLight.color();
+        const auto intensity = mayaLight.intensity();
+        MPoint pt(0.0, 0.0, 0.0, 1.0);
+        const auto position = pt * GetDagPath().inclusiveMatrix();
+        // This will return zero / false if the plug is nonexistent.
+        const auto decayRate = mayaLight.findPlug("decayRate").asShort();
+        const auto emitDiffuse = mayaLight.findPlug("emitDiffuse").asBool();
+        const auto emitSpecular = mayaLight.findPlug("emitSpecular").asBool();
+        light.SetHasShadow(true);
+        const GfVec4f zeroColor(0.0f, 0.0f, 0.0f, 1.0f);
+        const GfVec4f lightColor(color.r * intensity, color.g * intensity, color.b * intensity, 1.0f);
+        light.SetDiffuse(emitDiffuse ? lightColor : zeroColor);
+        light.SetAmbient(zeroColor);
+        light.SetSpecular(emitSpecular ? lightColor : zeroColor);
+        light.SetShadowResolution(1024);
+        light.SetID(GetID());
+        light.SetPosition(GfVec4f(position.x, position.y, position.z, position.w));
+        if (decayRate == 0) {
+            light.SetAttenuation(GfVec3f(1.0f, 0.0f, 0.0f));
+        } else if (decayRate == 1) {
+            light.SetAttenuation(GfVec3f(0.0f, 1.0f, 0.0f));
+        } else if (decayRate == 2) {
+            light.SetAttenuation(GfVec3f(0.0f, 0.0f, 1.0f));
+        }
+        CalculateLightParams(light);
+        return VtValue(light);
+    } else if (key == HdTokens->transform) {
         // std::cerr << "[HdMayaLightAdapter::Get] Transform on " << GetID() << std::endl;
         return VtValue(HdMayaDagAdapter::GetTransform());
     } else if (key == HdLightTokens->shadowParams) {
@@ -83,6 +114,11 @@ HdMayaLightAdapter::CreateCallbacks() {
             if (status) { AddCallback(id); }
         }
     }
+}
+
+void
+HdMayaLightAdapter::CalculateLightParams(GlfSimpleLight& /*light*/) {
+
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
