@@ -578,7 +578,6 @@ MObject ProxyShape::makeUsdTransformChain(
     MPlug inStageData = ptrNode->inStageDataPlug();
     MPlug inTime = ptrNode->timePlug();
 
-    modifier.connect(outStage, inStageData);
 
     if(modifier2)
     {
@@ -602,8 +601,9 @@ MObject ProxyShape::makeUsdTransformChain(
     }
     else
     {
-      // only connect time if transform can change
+      // only connect time and stage if transform can change
       modifier.connect(outTime, inTime);
+      modifier.connect(outStage, inStageData);
     }
 
     // set the primitive path
