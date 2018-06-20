@@ -19,4 +19,4 @@ getGfMatrixFromMaya(const MMatrix& mayaMat) {
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMYA_UTIL_H_
+#endif // __HDMAYA_UTIL_H_
