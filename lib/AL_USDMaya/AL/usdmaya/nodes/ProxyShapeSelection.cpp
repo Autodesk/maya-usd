@@ -1010,6 +1010,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
   auto stage = m_stage;
   if(!stage)
     return false;
+  triggerEvent("SelectionStarted");
 
   m_pleaseIgnoreSelection = true;
   prepSelect();
@@ -1054,6 +1055,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
       if(keepPrims.empty() && insertPrims.empty())
       {
         m_pleaseIgnoreSelection = false;
+        triggerEvent("SelectionEnded");
         return false;
       }
 
@@ -1154,6 +1156,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
       if(prims.empty())
       {
         m_pleaseIgnoreSelection = false;
+        triggerEvent("SelectionEnded");
         return false;
       }
 
@@ -1262,6 +1265,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
   }
 
   m_pleaseIgnoreSelection = false;
+  triggerEvent("SelectionEnded");
   return true;
 }
 

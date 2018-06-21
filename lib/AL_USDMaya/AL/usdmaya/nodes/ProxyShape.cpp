@@ -2123,6 +2123,8 @@ void ProxyShape::registerEvents()
   registerEvent("PreDeserialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postRead());
   registerEvent("PostDeserialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postRead());
   registerEvent("EditTargetChanged", AL::event::kUSDMayaEventType);
+  registerEvent("SelectionStarted", AL::event::kUSDMayaEventType);
+  registerEvent("SelectionEnded", AL::event::kUSDMayaEventType);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
