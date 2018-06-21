@@ -24,7 +24,6 @@ protected:
     void CalculateLightParams(GlfSimpleLight& light) override {
         MFnLight mayaLight(GetDagPath().node());
         light.SetHasShadow(true);
-        light.SetSpotDirection(GfVec3f(0.0f, 0.0f, -1.0f));
         auto coneAnglePlug = mayaLight.findPlug("coneAngle");
         if (!coneAnglePlug.isNull()) {
             // Divided by two.

@@ -14,12 +14,9 @@ public:
 
     }
 
-    void Populate() override {
-        GetDelegate()->InsertSprim(HdPrimTypeTokens->simpleLight, GetID(), HdLight::AllDirty);
-    }
-
-    void CalculateLightParams(GlfSimpleLight& /*light*/) override {
-        // NOP
+    void CalculateLightParams(GlfSimpleLight& light) override {
+        light.SetSpotCutoff(90.0f);
+        light.SetSpotDirection(GfVec3f(0.0f, 0.0f, -1.0f));
     }
 };
 

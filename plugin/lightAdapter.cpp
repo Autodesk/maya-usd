@@ -43,11 +43,14 @@ HdMayaLightAdapter::Get(const TfToken& key) {
         const auto color = mayaLight.color();
         const auto intensity = mayaLight.intensity();
         MPoint pt(0.0, 0.0, 0.0, 1.0);
-        const auto position = pt * GetDagPath().inclusiveMatrix();
+        const auto inclusiveMatrix = GetDagPath().inclusiveMatrix();
+        const auto position = pt * inclusiveMatrix;
         // This will return zero / false if the plug is nonexistent.
         const auto decayRate = mayaLight.findPlug("decayRate").asShort();
         const auto emitDiffuse = mayaLight.findPlug("emitDiffuse").asBool();
         const auto emitSpecular = mayaLight.findPlug("emitSpecular").asBool();
+        MVector pv(0.0, 0.0, -1.0);
+        const auto lightDirection = (pv * inclusiveMatrix).normal();
         light.SetHasShadow(false);
         const GfVec4f zeroColor(0.0f, 0.0f, 0.0f, 1.0f);
         const GfVec4f lightColor(color.r * intensity, color.g * intensity, color.b * intensity, 1.0f);
@@ -57,6 +60,7 @@ HdMayaLightAdapter::Get(const TfToken& key) {
         light.SetShadowResolution(1024);
         light.SetID(GetID());
         light.SetPosition(GfVec4f(position.x, position.y, position.z, position.w));
+        light.SetSpotDirection(GfVec3f(lightDirection.x, lightDirection.y, lightDirection.z));
         if (decayRate == 0) {
             light.SetAttenuation(GfVec3f(1.0f, 0.0f, 0.0f));
         } else if (decayRate == 1) {
