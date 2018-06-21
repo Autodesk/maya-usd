@@ -16,7 +16,6 @@ public:
 
     void CalculateLightParams(GlfSimpleLight& light) override {
         light.SetSpotCutoff(90.0f);
-        light.SetSpotDirection(GfVec3f(0.0f, 0.0f, -1.0f));
     }
 };
 
