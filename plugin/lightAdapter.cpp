@@ -16,12 +16,12 @@ namespace {
     void _dirtyTransform(MObject& /*node*/, void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
         // We need both dirty params and dirty transform to get this working?
-        adapter->MarkDirty(HdLight::DirtyTransform | HdLight::DirtyParams);
+        adapter->MarkDirty(HdLight::DirtyTransform | HdLight::DirtyParams | HdLight::DirtyShadowParams);
     }
 
     void _dirtyParams(MObject& /*node*/, void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
-        adapter->MarkDirty(HdLight::DirtyParams);
+        adapter->MarkDirty(HdLight::DirtyParams | HdLight::DirtyShadowParams);
     }
 }
 
@@ -73,7 +73,12 @@ HdMayaLightAdapter::Get(const TfToken& key) {
     } else if (key == HdTokens->transform) {
         return VtValue(HdMayaDagAdapter::GetTransform());
     } else if (key == HdLightTokens->shadowCollection) {
-        return VtValue(GetDelegate()->GetRprimCollection());
+        return VtValue(HdRprimCollection(HdTokens->geometry, HdTokens->hull));
+        // return VtValue(GetDelegate()->GetRprimCollection());
+    } else if (key == HdLightTokens->shadowParams) {
+        HdxShadowParams shadowParams;
+        shadowParams.enabled = false;
+        return VtValue(shadowParams);
     }
     return {};
 }

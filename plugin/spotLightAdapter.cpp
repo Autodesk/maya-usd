@@ -1,8 +1,12 @@
 #include <pxr/pxr.h>
 
+#include <pxr/base/gf/frustum.h>
+
 #include <pxr/imaging/hd/light.h>
-#include <pxr/imaging/glf/simpleLight.h>
 #include <pxr/imaging/hdx/simpleLightTask.h>
+#include <pxr/imaging/hdx/shadowMatrixComputation.h>
+#include <pxr/imaging/glf/simpleLight.h>
+
 
 #include <maya/MColor.h>
 #include <maya/MFnLight.h>
@@ -11,13 +15,45 @@
 
 #include "lightAdapter.h"
 #include "adapterRegistry.h"
+#include "utils.h"
+
+// FFFFFFFFFFFFFFFffffffffffffffffff
+#include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+namespace {
+class SpotShadowMatrix : public HdxShadowMatrixComputation
+{
+public:
+    SpotShadowMatrix(const GlfSimpleLight& light, const GfMatrix4d& mat) {
+        GfFrustum frustum;
+        frustum.SetPositionAndRotationFromMatrix(mat);
+        frustum.SetProjectionType(GfFrustum::Perspective);
+        frustum.SetPerspective(
+            light.GetSpotCutoff(),
+            true,
+            1.0f,
+            0.1f,
+            100.0f);
+
+        _shadowMatrix = frustum.ComputeViewMatrix() * frustum.ComputeProjectionMatrix();
+    }
+
+    virtual GfMatrix4d Compute(const GfVec4f &viewport,
+                               CameraUtilConformWindowPolicy policy) {
+        return _shadowMatrix;
+    }
+private:
+    GfMatrix4d _shadowMatrix;
+};
+
+}
 
 class HdMayaSpotLightAdapter : public HdMayaLightAdapter {
 public:
     HdMayaSpotLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-    : HdMayaLightAdapter(delegate, dag) {
+        : HdMayaLightAdapter(delegate, dag) {
 
     }
 protected:
@@ -27,12 +63,16 @@ protected:
         auto coneAnglePlug = mayaLight.findPlug("coneAngle");
         if (!coneAnglePlug.isNull()) {
             // Divided by two.
-            light.SetSpotCutoff(90.0f * coneAnglePlug.asFloat() / static_cast<float>(M_PI));
+            light.SetSpotCutoff(
+                static_cast<float>(GfRadiansToDegrees(coneAnglePlug.asFloat())) * 0.5f);
         }
         auto dropoffPlug = mayaLight.findPlug("dropoff");
         if (!dropoffPlug.isNull()) {
             light.SetSpotFalloff(dropoffPlug.asFloat());
         }
+
+        _shadowMatrix = boost::static_pointer_cast<HdxShadowMatrixComputation>(
+            boost::make_shared<SpotShadowMatrix>(light, getGfMatrixFromMaya(GetDagPath().inclusiveMatrix())));
     }
 
     VtValue Get(const TfToken& key) override {
@@ -40,11 +80,15 @@ protected:
             HdxShadowParams shadowParams;
             shadowParams.enabled = true;
             shadowParams.resolution = 1024;
+            shadowParams.shadowMatrix = _shadowMatrix;
+            shadowParams.bias = 0.0;
             return VtValue(shadowParams);
         }
 
         return HdMayaLightAdapter::Get(key);
     }
+
+    HdxShadowMatrixComputationSharedPtr _shadowMatrix;
 };
 
 
