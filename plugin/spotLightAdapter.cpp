@@ -2,6 +2,7 @@
 
 #include <pxr/imaging/hd/light.h>
 #include <pxr/imaging/glf/simpleLight.h>
+#include <pxr/imaging/hdx/simpleLightTask.h>
 
 #include <maya/MColor.h>
 #include <maya/MFnLight.h>
@@ -19,7 +20,32 @@ public:
     : HdMayaLightAdapter(delegate, dag) {
 
     }
+protected:
+    void CalculateLightParams(GlfSimpleLight& light) override {
+        MFnLight mayaLight(GetDagPath().node());
+        light.SetHasShadow(true);
+        light.SetSpotDirection(GfVec3f(0.0f, 0.0f, -1.0f));
+        auto coneAnglePlug = mayaLight.findPlug("coneAngle");
+        if (!coneAnglePlug.isNull()) {
+            // Divided by two.
+            light.SetSpotCutoff(90.0f * coneAnglePlug.asFloat() / static_cast<float>(M_PI));
+        }
+        auto dropoffPlug = mayaLight.findPlug("dropoff");
+        if (!dropoffPlug.isNull()) {
+            light.SetSpotFalloff(dropoffPlug.asFloat());
+        }
+    }
 
+    VtValue Get(const TfToken& key) override {
+        if (key == HdLightTokens->shadowParams) {
+            HdxShadowParams shadowParams;
+            shadowParams.enabled = true;
+            shadowParams.resolution = 1024;
+            return VtValue(shadowParams);
+        }
+
+        return HdMayaLightAdapter::Get(key);
+    }
 };
 
 

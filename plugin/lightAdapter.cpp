@@ -67,17 +67,8 @@ HdMayaLightAdapter::Get(const TfToken& key) {
         CalculateLightParams(light);
         return VtValue(light);
     } else if (key == HdTokens->transform) {
-        // std::cerr << "[HdMayaLightAdapter::Get] Transform on " << GetID() << std::endl;
         return VtValue(HdMayaDagAdapter::GetTransform());
-    } else if (key == HdLightTokens->shadowParams) {
-        // std::cerr << "[HdMayaLightAdapter::Get] Shadow params on " << GetID() << std::endl;
-        // MFnLight light(GetDagPath().node());
-        HdxShadowParams shadowParams;
-        shadowParams.enabled = true;
-        shadowParams.resolution = 1024;
-        return VtValue(shadowParams);
     } else if (key == HdLightTokens->shadowCollection) {
-        // FIXME
         return VtValue(GetDelegate()->GetRprimCollection());
     }
     return {};
