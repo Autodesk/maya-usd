@@ -242,28 +242,40 @@ bool TransformationMatrix::pushVector(const MVector& result, UsdGeomXformOp& op,
   case UsdDataType::kVec3d:
     {
       GfVec3d value(result.x, result.y, result.z);
-      op.Set(value, timeCode);
+      GfVec3d oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
+        op.Set(value, timeCode);
     }
     break;
 
   case UsdDataType::kVec3f:
     {
       GfVec3f value(result.x, result.y, result.z);
-      op.Set(value, timeCode);
+      GfVec3f oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
+        op.Set(value, timeCode);
     }
     break;
 
   case UsdDataType::kVec3h:
     {
       GfVec3h value(result.x, result.y, result.z);
-      op.Set(value, timeCode);
+      GfVec3h oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
+        op.Set(value, timeCode);
     }
     break;
 
   case UsdDataType::kVec3i:
     {
       GfVec3i value(result.x, result.y, result.z);
-      op.Set(value, timeCode);
+      GfVec3i oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
+        op.Set(value, timeCode);
     }
     break;
 
@@ -289,7 +301,10 @@ bool TransformationMatrix::pushShear(const MVector& result, UsdGeomXformOp& op, 
           result.x, 1.0,      0.0, 0.0,
           result.y, result.z, 1.0, 0.0,
           0.0,      0.0,      0.0, 1.0);
-      op.Set(m, timeCode);
+      GfMatrix4d oldValue;
+      op.Get(&oldValue, timeCode);
+      if(m != oldValue)
+        op.Set(m, timeCode);
     }
     break;
 
@@ -438,10 +453,15 @@ bool TransformationMatrix::pushMatrix(const MMatrix& result, UsdGeomXformOp& op,
   case UsdDataType::kMatrix4d:
     {
       const GfMatrix4d& value = *(const GfMatrix4d*)(&result);
-      const bool retValue = op.Set<GfMatrix4d>(value, timeCode);
-      if (!retValue)
+      GfMatrix4d oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
       {
-        return false;
+        const bool retValue = op.Set<GfMatrix4d>(value, timeCode);
+        if (!retValue)
+        {
+          return false;
+        }
       }
     }
     break;
@@ -464,28 +484,40 @@ bool TransformationMatrix::pushPoint(const MPoint& result, UsdGeomXformOp& op, U
   case UsdDataType::kVec3d:
     {
       GfVec3d value(result.x, result.y, result.z);
-      op.Set(value, timeCode);
+      GfVec3d oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
+        op.Set(value, timeCode);
     }
     break;
 
   case UsdDataType::kVec3f:
     {
       GfVec3f value(result.x, result.y, result.z);
-      op.Set(value, timeCode);
+      GfVec3f oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
+        op.Set(value, timeCode);
     }
     break;
 
   case UsdDataType::kVec3h:
     {
       GfVec3h value(result.x, result.y, result.z);
-      op.Set(value, timeCode);
+      GfVec3h oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
+        op.Set(value, timeCode);
     }
     break;
 
   case UsdDataType::kVec3i:
     {
       GfVec3i value(result.x, result.y, result.z);
-      op.Set(value, timeCode);
+      GfVec3i oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
+        op.Set(value, timeCode);
     }
     break;
 
@@ -564,25 +596,37 @@ void TransformationMatrix::pushDouble(const double value, UsdGeomXformOp& op, Us
   {
   case UsdDataType::kHalf:
     {
-      op.Set(GfHalf(value), timeCode);
+      GfHalf oldValue;
+      op.Get(&oldValue);
+      if(oldValue != GfHalf(value))
+        op.Set(GfHalf(value), timeCode);
     }
     break;
 
   case UsdDataType::kFloat:
     {
-      op.Set(float(value), timeCode);
+      float oldValue;
+      op.Get(&oldValue);
+      if(oldValue != float(value))
+        op.Set(float(value), timeCode);
     }
     break;
 
   case UsdDataType::kDouble:
     {
-      op.Set(double(value), timeCode);
+      double oldValue;
+      op.Get(&oldValue);
+      if(oldValue != double(value))
+        op.Set(double(value), timeCode);
     }
     break;
 
   case UsdDataType::kInt:
     {
-      op.Set(int32_t(value), timeCode);
+      int32_t oldValue;
+      op.Get(&oldValue);
+      if(oldValue != int32_t(value))
+        op.Set(int32_t(value), timeCode);
     }
     break;
 
