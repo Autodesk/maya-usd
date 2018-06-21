@@ -48,7 +48,7 @@ HdMayaLightAdapter::Get(const TfToken& key) {
         const auto decayRate = mayaLight.findPlug("decayRate").asShort();
         const auto emitDiffuse = mayaLight.findPlug("emitDiffuse").asBool();
         const auto emitSpecular = mayaLight.findPlug("emitSpecular").asBool();
-        light.SetHasShadow(true);
+        light.SetHasShadow(false);
         const GfVec4f zeroColor(0.0f, 0.0f, 0.0f, 1.0f);
         const GfVec4f lightColor(color.r * intensity, color.g * intensity, color.b * intensity, 1.0f);
         light.SetDiffuse(emitDiffuse ? lightColor : zeroColor);
@@ -114,6 +114,10 @@ HdMayaLightAdapter::CreateCallbacks() {
             if (status) { AddCallback(id); }
         }
     }
+}
+
+void HdMayaLightAdapter::Populate() {
+    GetDelegate()->InsertSprim(HdPrimTypeTokens->simpleLight, GetID(), HdLight::AllDirty);
 }
 
 void

@@ -10,14 +10,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaLightAdapter : public HdMayaDagAdapter {
-protected:
-    HdMayaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag);
 public:
+    HdMayaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag);
     void MarkDirty(HdDirtyBits dirtyBits) override;
     VtValue GetLightParamValue(const TfToken& paramName) override;
     VtValue Get(const TfToken& key) override;
     virtual void CreateCallbacks() override;
-
+    virtual void Populate() override;
 protected:
     virtual void CalculateLightParams(GlfSimpleLight& light);
 };
