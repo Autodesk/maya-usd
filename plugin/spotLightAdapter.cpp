@@ -61,13 +61,13 @@ protected:
     void CalculateLightParams(GlfSimpleLight& light) override {
         MFnLight mayaLight(GetDagPath().node());
         light.SetHasShadow(true);
-        auto coneAnglePlug = mayaLight.findPlug("coneAngle");
+        auto coneAnglePlug = mayaLight.findPlug("coneAngle", true);
         if (!coneAnglePlug.isNull()) {
             // Divided by two.
             light.SetSpotCutoff(
                 static_cast<float>(GfRadiansToDegrees(coneAnglePlug.asFloat())) * 0.5f);
         }
-        auto dropoffPlug = mayaLight.findPlug("dropoff");
+        auto dropoffPlug = mayaLight.findPlug("dropoff", true);
         if (!dropoffPlug.isNull()) {
             light.SetSpotFalloff(dropoffPlug.asFloat());
         }

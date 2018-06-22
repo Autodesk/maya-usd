@@ -46,9 +46,9 @@ HdMayaLightAdapter::Get(const TfToken& key) {
         const auto inclusiveMatrix = GetDagPath().inclusiveMatrix();
         const auto position = pt * inclusiveMatrix;
         // This will return zero / false if the plug is nonexistent.
-        const auto decayRate = mayaLight.findPlug("decayRate").asShort();
-        const auto emitDiffuse = mayaLight.findPlug("emitDiffuse").asBool();
-        const auto emitSpecular = mayaLight.findPlug("emitSpecular").asBool();
+        const auto decayRate = mayaLight.findPlug("decayRate", true).asShort();
+        const auto emitDiffuse = mayaLight.findPlug("emitDiffuse", true).asBool();
+        const auto emitSpecular = mayaLight.findPlug("emitSpecular", true).asBool();
         MVector pv(0.0, 0.0, -1.0);
         const auto lightDirection = (pv * inclusiveMatrix).normal();
         light.SetHasShadow(false);
