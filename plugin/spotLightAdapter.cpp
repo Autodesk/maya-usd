@@ -23,6 +23,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
+
 class SpotShadowMatrix : public HdxShadowMatrixComputation
 {
 public:
@@ -31,11 +32,11 @@ public:
         frustum.SetPositionAndRotationFromMatrix(mat);
         frustum.SetProjectionType(GfFrustum::Perspective);
         frustum.SetPerspective(
-            light.GetSpotCutoff(),
+            light.GetSpotCutoff() * 2.0,
             true,
             1.0f,
-            0.1f,
-            100.0f);
+            1.0f,
+            50.0f);
 
         _shadowMatrix = frustum.ComputeViewMatrix() * frustum.ComputeProjectionMatrix();
     }
@@ -81,7 +82,7 @@ protected:
             shadowParams.enabled = true;
             shadowParams.resolution = 1024;
             shadowParams.shadowMatrix = _shadowMatrix;
-            shadowParams.bias = 0.0;
+            shadowParams.bias = -0.001;
             return VtValue(shadowParams);
         }
 
