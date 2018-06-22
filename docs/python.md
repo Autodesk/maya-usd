@@ -1,9 +1,9 @@
 
 # Python bindings
-Python bindings are currently limited to what we either we or Luma Pictures have implemented internally based on our needs, and are by no means comprehensive
+Python bindings are currently limited to what we or Luma Pictures have implemented internally based on our needs, and are by no means comprehensive
 
 Currently all bindings are under the AL.usdmaya module
-```
+```python
 from AL import usdmaya
 ```
 
@@ -34,7 +34,7 @@ You can get a specific shape in the scene with:
 + getByName
 
 example:
-```
+```python
 from AL import usdmaya
 myShape = usdmaya.ProxyShape.getByName('name_of_my_Proxy_Shape')
 theStage = myShape.getUsdStage()
@@ -66,7 +66,7 @@ there are  number of methods for manipulating the manager:
 
 
 Example:
-```
+```python
 from AL import usdmaya
 theLayerMan = usdmaya.LayerManager.findOrCreate()
 print theLayerMan.getLayerIdentifiers()
