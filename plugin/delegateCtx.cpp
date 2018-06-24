@@ -8,7 +8,11 @@ namespace {
 
 SdfPath
 _GetPrimPath(const SdfPath& base, const MDagPath& dg) {
-    const auto mayaPath = PxrUsdMayaUtil::MDagPathToUsdPath(dg, false, false);
+    const auto mayaPath = PxrUsdMayaUtil::MDagPathToUsdPath(dg, false
+#ifdef LUMA_USD_BUILD
+            , false
+#endif
+        );
     if (mayaPath.IsEmpty()) { return {}; }
     const auto* chr = mayaPath.GetText();
     if (chr == nullptr) { return {}; };

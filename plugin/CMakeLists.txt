@@ -27,6 +27,9 @@ target_link_libraries(${PLUGIN_NAME} PRIVATE usd usdGeom glf gf hd hdSt hdx usdI
 target_include_directories(${PLUGIN_NAME} SYSTEM PRIVATE ${MAYA_INCLUDE_DIRS} ${GLEW_INCLUDE_DIR})
 target_include_directories(${PLUGIN_NAME} SYSTEM PRIVATE ${USD_INCLUDE_DIR} ${USD_MAYA_INCLUDE_DIR})
 target_include_directories(${PLUGIN_NAME} SYSTEM PRIVATE ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
+if (LUMA_USD_BUILD)
+    target_compile_definitions(${PLUGIN_NAME} PRIVATE LUMA_USD_BUILD)
+endif ()
 
 install(TARGETS ${PLUGIN_NAME}
         DESTINATION plug-ins)
