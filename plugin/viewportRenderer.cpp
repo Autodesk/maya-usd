@@ -97,7 +97,9 @@ void HdMayaViewportRenderer::InitHydraResources() {
     params.enableHardwareShading = true;
     _taskController->SetRenderParams(params);
     _taskController->SetEnableSelection(false);
+#ifdef LUMA_USD_BUILD
     _taskController->SetEnableShadows(true);
+#endif
     VtValue selectionTrackerValue(_selectionTracker);
     _engine.SetTaskContextData(HdxTokens->selectionState, selectionTrackerValue);
 }
