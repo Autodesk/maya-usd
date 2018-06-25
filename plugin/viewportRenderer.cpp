@@ -91,6 +91,15 @@ void HdMayaViewportRenderer::InitHydraResources() {
         _renderIndex,
         _delegateID.AppendChild(TfToken(
             TfStringPrintf("_UsdImaging_%s_%p", TfMakeValidIdentifier(_rendererName.GetText()).c_str(), this))));
+
+    HdxRenderTaskParams params;
+    params.enableLighting = true;
+    params.enableHardwareShading = true;
+    _taskController->SetRenderParams(params);
+    _taskController->SetEnableSelection(false);
+    _taskController->SetEnableShadows(true);
+    VtValue selectionTrackerValue(_selectionTracker);
+    _engine.SetTaskContextData(HdxTokens->selectionState, selectionTrackerValue);
 }
 
 void HdMayaViewportRenderer::ClearHydraResources() {
@@ -193,17 +202,10 @@ MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
     const auto height = renderInfo.height();
 
     GfVec4d viewport(originX, originY, width, height);
-    HdxRenderTaskParams params;
-    params.enableLighting = true;
-    params.enableHardwareShading = true;
-    _taskController->SetRenderParams(params);
     _taskController->SetCameraMatrices(
         getGfMatrixFromMaya(renderInfo.viewMatrix()),
         getGfMatrixFromMaya(renderInfo.projectionMatrix()));
     _taskController->SetCameraViewport(viewport);
-    _taskController->SetEnableSelection(false);
-    VtValue selectionTrackerValue(_selectionTracker);
-    _engine.SetTaskContextData(HdxTokens->selectionState, selectionTrackerValue);
 
     _engine.Execute(*_renderIndex, _taskController->GetTasks(HdxTaskSetTokens->colorRender));
 
