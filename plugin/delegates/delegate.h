@@ -14,8 +14,7 @@
 
 #include <memory>
 
-#include "params.h"
-#include "adapters/dagAdapter.h"
+#include "../adapters/dagAdapter.h"
 #include "delegateCtx.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

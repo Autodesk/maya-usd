@@ -19,7 +19,7 @@
 
 #include <maya/MViewportRenderer.h>
 
-#include "delegate.h"
+#include "delegates/delegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
