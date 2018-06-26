@@ -1,4 +1,4 @@
-set(PLUGIN_NAME hd_viewport)
+set(PLUGIN hd_viewport)
 
 # In case we need boost
 # USD still needs the dynamic ones
@@ -37,20 +37,20 @@ set(SRC
     viewportRenderer.cpp
     )
 
-add_library(${PLUGIN_NAME} SHARED ${SRC} ${HDR})
-set_target_properties(${PLUGIN_NAME} PROPERTIES PREFIX "")
-target_link_libraries(${PLUGIN_NAME} PRIVATE ${OPENGL_gl_LIBRARY} ${MAYA_LIBS} ${Boost_LIBRARIES} ${GLEW_LIBRARY})
-target_link_libraries(${PLUGIN_NAME} PRIVATE usd usdGeom glf gf hd hdSt hdx usdImaging usdImagingGL usdMaya)
-target_include_directories(${PLUGIN_NAME} SYSTEM PRIVATE ${MAYA_INCLUDE_DIRS} ${GLEW_INCLUDE_DIR})
-target_include_directories(${PLUGIN_NAME} SYSTEM PRIVATE ${USD_INCLUDE_DIR} ${USD_MAYA_INCLUDE_DIR})
-target_include_directories(${PLUGIN_NAME} SYSTEM PRIVATE ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
-target_compile_features(${PLUGIN_NAME} PRIVATE cxx_std_11)
-set_target_properties(${PLUGIN_NAME} PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
+add_library(${PLUGIN} SHARED ${SRC} ${HDR})
+set_target_properties(${PLUGIN} PROPERTIES PREFIX "")
+target_link_libraries(${PLUGIN} PRIVATE ${OPENGL_gl_LIBRARY} ${MAYA_LIBS} ${Boost_LIBRARIES} ${GLEW_LIBRARY})
+target_link_libraries(${PLUGIN} PRIVATE usd usdGeom glf gf hd hdSt hdx usdImaging usdImagingGL usdMaya)
+target_include_directories(${PLUGIN} SYSTEM PRIVATE ${MAYA_INCLUDE_DIRS} ${GLEW_INCLUDE_DIR})
+target_include_directories(${PLUGIN} SYSTEM PRIVATE ${USD_INCLUDE_DIR} ${USD_MAYA_INCLUDE_DIR})
+target_include_directories(${PLUGIN} SYSTEM PRIVATE ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
+target_compile_features(${PLUGIN} PRIVATE cxx_std_11)
+set_target_properties(${PLUGIN} PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
 if (LUMA_USD_BUILD)
-    target_compile_definitions(${PLUGIN_NAME} PRIVATE LUMA_USD_BUILD)
+    target_compile_definitions(${PLUGIN} PRIVATE LUMA_USD_BUILD)
 endif ()
 
-install(TARGETS ${PLUGIN_NAME}
+install(TARGETS ${PLUGIN}
         DESTINATION plug-ins)
 
 # file(GLOB TEMPLATES scripts/*.py)
