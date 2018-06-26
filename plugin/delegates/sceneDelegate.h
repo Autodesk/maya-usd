@@ -1,5 +1,5 @@
-#ifndef __HDMAYA_DELEGATE_H__
-#define __HDMAYA_DELEGATE_H__
+#ifndef __HDMAYA_SCENE_DELEGATE_H__
+#define __HDMAYA_SCENE_DELEGATE_H__
 
 #include <pxr/pxr.h>
 
@@ -19,7 +19,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaSceneDelegate : protected HdMayaDelegateCtx {
+class HdMayaSceneDelegate : public HdMayaDelegateCtx {
 public:
     HdMayaSceneDelegate(
         HdRenderIndex* renderIndex,
@@ -27,7 +27,7 @@ public:
 
     virtual ~HdMayaSceneDelegate();
 
-    void Populate();
+    void Populate() override;
 
 protected:
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;
@@ -61,4 +61,4 @@ typedef std::shared_ptr<HdMayaSceneDelegate> MayaSceneDelegateSharedPtr;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_DELEGATE_H__
+#endif // __HDMAYA_SCENE_DELEGATE_H__

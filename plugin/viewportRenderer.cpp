@@ -38,7 +38,7 @@ HdMayaViewportRenderer::HdMayaViewportRenderer() :
     fUIName.set("Hydra Viewport Renderer");
     fRenderingOverride = MViewportRenderer::kOverrideThenStandard;
 
-    _delegateID = SdfPath("/HdMayaViewportRenderer").AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
+    _ID = SdfPath("/HdMayaViewportRenderer").AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
     _rendererName = _getDefaultRenderer();
     // This is a critical error, so we don't allow the construction
     // of the viewport renderer plugin if there is no renderer plugin
@@ -86,10 +86,16 @@ void HdMayaViewportRenderer::InitHydraResources() {
     _rendererPlugin = HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(_rendererName);
     auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
     _renderIndex = HdRenderIndex::New(renderDelegate);
-    _delegate = new HdMayaSceneDelegate(_renderIndex, _delegateID);
+    int delegateId = 0;
+    for (auto creator: HdMayaDelegateRegistry::GetDelegateCreators()) {
+        if (creator == nullptr) { continue; }
+        _delegates.push_back(creator(_renderIndex,
+            _ID.AppendChild(TfToken(
+                TfStringPrintf("_Delegate_%i_%p", delegateId++, this)))));
+    }
     _taskController = new HdxTaskController(
         _renderIndex,
-        _delegateID.AppendChild(TfToken(
+        _ID.AppendChild(TfToken(
             TfStringPrintf("_UsdImaging_%s_%p", TfMakeValidIdentifier(_rendererName.GetText()).c_str(), this))));
 
     HdxRenderTaskParams params;
@@ -105,10 +111,7 @@ void HdMayaViewportRenderer::InitHydraResources() {
 }
 
 void HdMayaViewportRenderer::ClearHydraResources() {
-    if (_delegate != nullptr) {
-        delete _delegate;
-        _delegate = nullptr;
-    }
+    _delegates.clear();
 
     if (_taskController != nullptr) {
         delete _taskController;
@@ -174,7 +177,9 @@ MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
     // TODO: dynamically update everything. For now we are just
     // populating the delegate once.
     if (!_isPopulated) {
-        _delegate->Populate();
+        for (auto& it: _delegates) {
+            it->Populate();
+        }
         _isPopulated = true;
     }
 

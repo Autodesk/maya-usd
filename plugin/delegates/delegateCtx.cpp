@@ -26,7 +26,7 @@ _GetPrimPath(const SdfPath& base, const MDagPath& dg) {
 HdMayaDelegateCtx::HdMayaDelegateCtx(
     HdRenderIndex* renderIndex,
     const SdfPath& delegateID)
-    : HdSceneDelegate(renderIndex, delegateID),
+    : HdMayaDelegate(renderIndex, delegateID),
      _rprimPath(delegateID.AppendPath(SdfPath(std::string("rprims")))),
      _sprimPath(delegateID.AppendPath(SdfPath(std::string("sprims")))) {
     _rprimCollection.SetName(TfToken("visible"));

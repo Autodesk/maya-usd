@@ -23,7 +23,7 @@ public:
     }
 
     using DagAdapterCreator = std::function<
-        std::shared_ptr<HdMayaDagAdapter>(HdMayaDelegateCtx* delegate, const MDagPath& dag)>;
+        HdMayaDagAdapterPtr(HdMayaDelegateCtx*, const MDagPath&)>;
     static void RegisterDagAdapter(const std::string& type, DagAdapterCreator creator);
 
     static DagAdapterCreator GetAdapterCreator(const MDagPath& dag);

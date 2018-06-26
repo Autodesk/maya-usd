@@ -19,7 +19,7 @@ HdMayaAdapterRegistry::RegisterDagAdapter(const std::string& type,
 HdMayaAdapterRegistry::DagAdapterCreator
 HdMayaAdapterRegistry::GetAdapterCreator(const MDagPath& dag) {
     TfRegistryManager::GetInstance().SubscribeTo<HdMayaAdapterRegistry>();
-    auto& instance = GetInstance();
+    const auto& instance = GetInstance();
     MFnDependencyNode node(dag.node());
     const auto it = instance._dagAdapters.find(node.typeName().asChar());
     return it == instance._dagAdapters.end() ? nullptr : it->second;

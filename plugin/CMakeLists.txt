@@ -27,9 +27,10 @@ set(SRC
     adapters/pointLightAdapter.cpp
     adapters/spotLightAdapter.cpp
 
-    delegates/sceneDelegate.cpp
+    delegates/delegate.cpp
     delegates/delegateCtx.cpp
     delegates/delegateRegistry.cpp
+    delegates/sceneDelegate.cpp
 
     cmd.cpp
     plugin.cpp
@@ -44,6 +45,7 @@ target_include_directories(${PLUGIN_NAME} SYSTEM PRIVATE ${MAYA_INCLUDE_DIRS} ${
 target_include_directories(${PLUGIN_NAME} SYSTEM PRIVATE ${USD_INCLUDE_DIR} ${USD_MAYA_INCLUDE_DIR})
 target_include_directories(${PLUGIN_NAME} SYSTEM PRIVATE ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
 target_compile_features(${PLUGIN_NAME} PRIVATE cxx_std_11)
+set_target_properties(${PLUGIN_NAME} PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
 if (LUMA_USD_BUILD)
     target_compile_definitions(${PLUGIN_NAME} PRIVATE LUMA_USD_BUILD)
 endif ()

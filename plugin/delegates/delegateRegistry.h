@@ -4,6 +4,11 @@
 #include <pxr/pxr.h>
 #include <pxr/base/tf/singleton.h>
 
+#include <vector>
+#include <tuple>
+
+#include "delegate.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaDelegateRegistry : public TfSingleton<HdMayaDelegateRegistry> {
@@ -13,6 +18,15 @@ public:
     static HdMayaDelegateRegistry& getInstance() {
         return TfSingleton<HdMayaDelegateRegistry>::GetInstance();
     }
+
+    using DelegateCreator = std::function<
+        HdMayaDelegatePtr(HdRenderIndex*, const SdfPath&)>;
+
+    static void RegisterDelegate(const TfToken& name, DelegateCreator creator);
+    static std::vector<TfToken> GetDelegateNames();
+    static std::vector<DelegateCreator> GetDelegateCreators();
+private:
+    std::vector<std::tuple<TfToken, DelegateCreator>> _delegates;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

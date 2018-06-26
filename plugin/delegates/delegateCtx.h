@@ -4,17 +4,17 @@
 #include <pxr/pxr.h>
 
 #include <pxr/imaging/hd/renderIndex.h>
-#include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hd/rprimCollection.h>
 
 #include <pxr/usd/sdf/path.h>
 
 #include <maya/MDagPath.h>
 
+#include "delegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaDelegateCtx : protected HdSceneDelegate {
+class HdMayaDelegateCtx : public HdMayaDelegate {
 protected:
     HdMayaDelegateCtx(
         HdRenderIndex* renderIndex,
