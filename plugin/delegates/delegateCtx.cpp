@@ -57,4 +57,9 @@ HdMayaDelegateCtx::GetSPrimPath(const MDagPath& dg) {
     return _GetPrimPath(_sprimPath, dg);
 }
 
+void
+HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum) {
+
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -28,6 +28,10 @@ public:
     const HdRprimCollection& GetRprimCollection() { return _rprimCollection; }
     SdfPath GetRPrimPath(const MDagPath& dg);
     SdfPath GetSPrimPath(const MDagPath& dg);
+
+    /// Fit the frustum's near/far value to contain all
+    /// the rprims inside the render index;
+    void FitFrustumToRprims(GfFrustum& frustum);
 private:
     HdRprimCollection _rprimCollection;
     SdfPath _rprimPath;
