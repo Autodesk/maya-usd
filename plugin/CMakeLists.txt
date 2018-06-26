@@ -29,6 +29,7 @@ set(SRC
 
     delegates/delegate.cpp
     delegates/delegateCtx.cpp
+    delegates/delegateRegistry.cpp
 
     cmd.cpp
     plugin.cpp
