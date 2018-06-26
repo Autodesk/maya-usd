@@ -1,4 +1,4 @@
-#include "delegate.h"
+#include "sceneDelegate.h"
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/range3d.h>
@@ -21,18 +21,18 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdMayaDelegate::HdMayaDelegate(
+HdMayaSceneDelegate::HdMayaSceneDelegate(
     HdRenderIndex* renderIndex,
     const SdfPath& delegateID) :
     HdMayaDelegateCtx(renderIndex, delegateID) {
     // Unique ID
 }
 
-HdMayaDelegate::~HdMayaDelegate() {
+HdMayaSceneDelegate::~HdMayaSceneDelegate() {
 }
 
 void
-HdMayaDelegate::Populate() {
+HdMayaSceneDelegate::Populate() {
     auto& renderIndex = GetRenderIndex();
     auto& changeTracker = renderIndex.GetChangeTracker();
     for (MItDag dagIt(MItDag::kDepthFirst, MFn::kInvalid); !dagIt.isDone(); dagIt.next()) {
@@ -58,7 +58,7 @@ HdMayaDelegate::Populate() {
 }
 
 HdMeshTopology
-HdMayaDelegate::GetMeshTopology(const SdfPath& id) {
+HdMayaSceneDelegate::GetMeshTopology(const SdfPath& id) {
     HdMayaDagAdapterPtr adapter;
     if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
         return {};
@@ -67,7 +67,7 @@ HdMayaDelegate::GetMeshTopology(const SdfPath& id) {
 }
 
 GfRange3d
-HdMayaDelegate::GetExtent(const SdfPath& id) {
+HdMayaSceneDelegate::GetExtent(const SdfPath& id) {
     HdMayaDagAdapterPtr adapter;
     if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
         return {};
@@ -76,7 +76,7 @@ HdMayaDelegate::GetExtent(const SdfPath& id) {
 }
 
 GfMatrix4d
-HdMayaDelegate::GetTransform(const SdfPath& id) {
+HdMayaSceneDelegate::GetTransform(const SdfPath& id) {
     HdMayaDagAdapterPtr adapter;
     if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
         std::cerr << "[HdMayaSceneDelegate::GetTransform] No adapter for " << id << std::endl;
@@ -86,19 +86,19 @@ HdMayaDelegate::GetTransform(const SdfPath& id) {
 }
 
 bool
-HdMayaDelegate::IsEnabled(const TfToken& option) const {
+HdMayaSceneDelegate::IsEnabled(const TfToken& option) const {
     // Maya scene can't be accessed on multiple threads,
     // so I don't think this is safe to enable.
     if (option == HdOptionTokens->parallelRprimSync) {
         return false;
     }
 
-    std::cerr << "[HdSceneDelegate::IsEnabled] Unsupported option " << option << std::endl;
+    std::cerr << "[HdMayaSceneDelegate::IsEnabled] Unsupported option " << option << std::endl;
     return false;
 }
 
 VtValue
-HdMayaDelegate::Get(SdfPath const& id, const TfToken& key) {
+HdMayaSceneDelegate::Get(SdfPath const& id, const TfToken& key) {
     HdMayaDagAdapterPtr adapter;
     if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
         std::cerr << "[HdMayaSceneDelegate::Get] No adapter for " << key << " on " << id << std::endl;
@@ -112,7 +112,7 @@ HdMayaDelegate::Get(SdfPath const& id, const TfToken& key) {
 }
 
 HdPrimvarDescriptorVector
-HdMayaDelegate::GetPrimvarDescriptors(const SdfPath& id, HdInterpolation interpolation) {
+HdMayaSceneDelegate::GetPrimvarDescriptors(const SdfPath& id, HdInterpolation interpolation) {
     HdMayaDagAdapterPtr adapter;
     if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
         std::cerr << "[HdMayaSceneDelegate::GetPrimvarDescriptors] No adapter for " << interpolation << " on " << id << std::endl;
@@ -122,7 +122,7 @@ HdMayaDelegate::GetPrimvarDescriptors(const SdfPath& id, HdInterpolation interpo
 }
 
 VtValue
-HdMayaDelegate::GetLightParamValue(const SdfPath& id, const TfToken& paramName) {
+HdMayaSceneDelegate::GetLightParamValue(const SdfPath& id, const TfToken& paramName) {
     HdMayaDagAdapterPtr adapter;
     if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
         std::cerr << "[HdMayaSceneDelegate::GetLightParamValue] No adapter for " << paramName << " on " << id << std::endl;
@@ -136,30 +136,30 @@ HdMayaDelegate::GetLightParamValue(const SdfPath& id, const TfToken& paramName) 
 }
 
 bool
-HdMayaDelegate::GetVisible(const SdfPath& id) {
+HdMayaSceneDelegate::GetVisible(const SdfPath& id) {
     return true;
 }
 
 bool
-HdMayaDelegate::GetDoubleSided(const SdfPath& id) {
+HdMayaSceneDelegate::GetDoubleSided(const SdfPath& id) {
     return true;
 }
 
 HdCullStyle
-HdMayaDelegate::GetCullStyle(const SdfPath& id) {
-    // std::cerr << "[HdSceneDelegate] Getting cull style of " << id << std::endl;
+HdMayaSceneDelegate::GetCullStyle(const SdfPath& id) {
+    // std::cerr << "[HdMayaSceneDelegate] Getting cull style of " << id << std::endl;
     return HdCullStyleDontCare;
 }
 
 // VtValue
-// HdMayaDelegate::GetShadingStyle(const SdfPath& id) {
-//     std::cerr << "[HdSceneDelegate] Getting shading style of " << id << std::endl;
-//     return HdSceneDelegate::GetShadingStyle(id);
+// HdMayaSceneDelegate::GetShadingStyle(const SdfPath& id) {
+//     std::cerr << "[HdMayaSceneDelegate] Getting shading style of " << id << std::endl;
+//     return HdMayaSceneDelegate::GetShadingStyle(id);
 // }
 
 HdDisplayStyle
-HdMayaDelegate::GetDisplayStyle(const SdfPath& id) {
-    // std::cerr << "[HdSceneDelegate] Getting display style of " << id << std::endl;
+HdMayaSceneDelegate::GetDisplayStyle(const SdfPath& id) {
+    // std::cerr << "[HdMayaSceneDelegate] Getting display style of " << id << std::endl;
     HdDisplayStyle style;
     style.flatShadingEnabled = false;
     style.displacementEnabled = false;
@@ -167,50 +167,50 @@ HdMayaDelegate::GetDisplayStyle(const SdfPath& id) {
 }
 
 // TfToken
-// HdMayaDelegate::GetReprName(const SdfPath& id) {
-//     std::cerr << "[HdSceneDelegate] Getting repr name of " << id << std::endl;
+// HdMayaSceneDelegate::GetReprName(const SdfPath& id) {
+//     std::cerr << "[HdMayaSceneDelegate] Getting repr name of " << id << std::endl;
 //     return HdTokens->hull;
 // }
 
 // SdfPath
-// HdMayaDelegate::GetMaterialId(const SdfPath& id) {
-//     std::cerr << "[HdSceneDelegate] Getting material id of " << id << std::endl;
+// HdMayaSceneDelegate::GetMaterialId(const SdfPath& id) {
+//     std::cerr << "[HdMayaSceneDelegate] Getting material id of " << id << std::endl;
 //     return {};
 // }
 //
 // std::string
-// HdMayaDelegate::GetSurfaceShaderSource(const SdfPath& id) {
-//     std::cerr << "[HdSceneDelegate] Getting surface shader source of " << id << std::endl;
+// HdMayaSceneDelegate::GetSurfaceShaderSource(const SdfPath& id) {
+//     std::cerr << "[HdMayaSceneDelegate] Getting surface shader source of " << id << std::endl;
 //     return {};
 // }
 //
 // std::string
-// HdMayaDelegate::GetDisplacementShaderSource(const SdfPath& id) {
-//     std::cerr << "[HdSceneDelegate] Getting displacement shader source of " << id << std::endl;
+// HdMayaSceneDelegate::GetDisplacementShaderSource(const SdfPath& id) {
+//     std::cerr << "[HdMayaSceneDelegate] Getting displacement shader source of " << id << std::endl;
 //     return {};
 // }
 //
 // VtValue
-// HdMayaDelegate::GetMaterialParamValue(const SdfPath& id, const TfToken& paramName) {
-//     std::cerr << "[HdSceneDelegate] Getting material param value of " << id << std::endl;
+// HdMayaSceneDelegate::GetMaterialParamValue(const SdfPath& id, const TfToken& paramName) {
+//     std::cerr << "[HdMayaSceneDelegate] Getting material param value of " << id << std::endl;
 //     return {};
 // }
 //
 // HdMaterialParamVector
-// HdMayaDelegate::GetMaterialParams(const SdfPath& id) {
-//     std::cerr << "[HdSceneDelegate] Getting material params of " << id << std::endl;
+// HdMayaSceneDelegate::GetMaterialParams(const SdfPath& id) {
+//     std::cerr << "[HdMayaSceneDelegate] Getting material params of " << id << std::endl;
 //     return {};
 // }
 //
 // VtValue
-// HdMayaDelegate::GetMaterialResource(const SdfPath& id) {
-//     std::cerr << "[HdSceneDelegate] Getting material resource of " << id << std::endl;
+// HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id) {
+//     std::cerr << "[HdMayaSceneDelegate] Getting material resource of " << id << std::endl;
 //     return {};
 // }
 //
 // TfTokenVector
-// HdMayaDelegate::GetMaterialPrimvars(const SdfPath& id) {
-//     std::cerr << "[HdSceneDelegate] Getting material primvars of " << id << std::endl;
+// HdMayaSceneDelegate::GetMaterialPrimvars(const SdfPath& id) {
+//     std::cerr << "[HdMayaSceneDelegate] Getting material primvars of " << id << std::endl;
 //     return {};
 // }
 

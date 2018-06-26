@@ -19,13 +19,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaDelegate : protected HdMayaDelegateCtx {
+class HdMayaSceneDelegate : protected HdMayaDelegateCtx {
 public:
-    HdMayaDelegate(
+    HdMayaSceneDelegate(
         HdRenderIndex* renderIndex,
         const SdfPath& delegateID);
 
-    virtual ~HdMayaDelegate();
+    virtual ~HdMayaSceneDelegate();
 
     void Populate();
 
@@ -57,7 +57,7 @@ private:
     TfHashMap<SdfPath, HdMayaDagAdapterPtr, SdfPath::Hash> _pathToAdapterMap;
 };
 
-typedef std::shared_ptr<HdMayaDelegate> MayaSceneDelegateSharedPtr;
+typedef std::shared_ptr<HdMayaSceneDelegate> MayaSceneDelegateSharedPtr;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

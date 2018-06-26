@@ -27,7 +27,7 @@ set(SRC
     adapters/pointLightAdapter.cpp
     adapters/spotLightAdapter.cpp
 
-    delegates/delegate.cpp
+    delegates/sceneDelegate.cpp
     delegates/delegateCtx.cpp
     delegates/delegateRegistry.cpp
 

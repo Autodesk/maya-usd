@@ -19,7 +19,7 @@
 
 #include <maya/MViewportRenderer.h>
 
-#include "delegates/delegate.h"
+#include "delegates/sceneDelegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -50,7 +50,7 @@ private:
     HdxRendererPlugin* _rendererPlugin = nullptr;
     HdxTaskController* _taskController = nullptr;
     HdRenderIndex* _renderIndex = nullptr;
-    HdMayaDelegate* _delegate = nullptr;
+    HdMayaSceneDelegate* _delegate = nullptr;
     HdxSelectionTrackerSharedPtr _selectionTracker;
 
     SdfPath _delegateID;

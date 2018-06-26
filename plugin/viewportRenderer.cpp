@@ -86,7 +86,7 @@ void HdMayaViewportRenderer::InitHydraResources() {
     _rendererPlugin = HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(_rendererName);
     auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
     _renderIndex = HdRenderIndex::New(renderDelegate);
-    _delegate = new HdMayaDelegate(_renderIndex, _delegateID);
+    _delegate = new HdMayaSceneDelegate(_renderIndex, _delegateID);
     _taskController = new HdxTaskController(
         _renderIndex,
         _delegateID.AppendChild(TfToken(
