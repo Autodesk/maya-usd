@@ -5,13 +5,14 @@
 #include <maya/MGlobal.h>
 
 #include "viewportRenderer.h"
+#include "delegates/delegateRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 const MString HdMayaCmd::name("hdmaya");
 
 namespace {
-    constexpr auto _listRenderers = "-ls";
+    constexpr auto _listRenderers = "-lr";
     constexpr auto _listRenderersLong = "-listRenderers";
 
     constexpr auto _getRendererDisplayName = "-gn";
@@ -19,6 +20,9 @@ namespace {
 
     constexpr auto _changeRenderer = "-cr";
     constexpr auto _changeRendererLong = "-changeRenderer";
+
+    constexpr auto _listDelegates = "-ld";
+    constexpr auto _listDelegatesLong = "-listDelegates";
 }
 
 MSyntax HdMayaCmd::createSyntax() {
@@ -37,6 +41,10 @@ MSyntax HdMayaCmd::createSyntax() {
         _changeRenderer,
         _changeRendererLong,
         MSyntax::kString);
+
+    syntax.addFlag(
+        _listDelegates,
+        _listDelegatesLong);
 
     return syntax;
 }
@@ -59,6 +67,10 @@ MStatus HdMayaCmd::doIt(const MArgList &args) {
         if (db.getFlagArgument(_changeRenderer, 0, id)) {
             HdMayaViewportRenderer::ChangeRendererPlugin(TfToken(id.asChar()));
             MGlobal::executeCommandOnIdle("refresh -f");
+        }
+    } else if (db.isFlagSet(_listDelegates)) {
+        for (const auto& delegate: HdMayaDelegateRegistry::GetDelegateNames()) {
+            appendToResult(delegate.GetText());
         }
     }
     return MS::kSuccess;
