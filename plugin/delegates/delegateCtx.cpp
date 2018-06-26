@@ -83,18 +83,19 @@ HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum) {
     // We sum all the bounding boxes inside the open-ended frustum,
     // and use that bounding box to calculate the closest and farthest away points.
 
-    std::array<GfPlane, 5> planes;
+    std::array<GfPlane, 1> planes;
     GfRange1d nearFar;
     const auto& rotation = frustum.GetRotation();
     const auto direction = rotation.TransformDir(GfVec3d(0.0, 0.0, -1.0)).GetNormalized();
     const auto position = frustum.GetPosition();
+    planes[0].Set(direction, position);
 
     auto isBoxInside = [&planes] (const GfRange3d& extent, const GfMatrix4d& worldToLocal) -> bool {
         for (const auto& plane : planes) {
             auto localPlane = plane;
             localPlane.Transform(worldToLocal);
             if (!localPlane.IntersectsPositiveHalfSpace(extent)) {
-                // return false;
+                return false;
             }
         }
         return true;
