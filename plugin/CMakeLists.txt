@@ -17,8 +17,22 @@ link_directories(${USD_MAYA_LIBRARY_DIR})
 
 set(MAYA_LIBS OpenMaya Foundation OpenMayaAnim OpenMayaFX OpenMayaUI OpenMayaRender)
 
-file(GLOB SRC *.cpp)
-file(GLOB HDR *.h)
+set(SRC
+    adapters/adapter.cpp
+    adapters/adapterRegistry.cpp
+    adapters/areaLightAdapter.cpp
+    adapters/dagAdapter.cpp
+    adapters/lightAdapter.cpp
+    adapters/meshAdapter.cpp
+    adapters/pointLightAdapter.cpp
+    adapters/spotLightAdapter.cpp
+
+    cmd.cpp
+    delegate.cpp
+    delegateCtx.cpp
+    plugin.cpp
+    viewportRenderer.cpp
+    )
 
 add_library(${PLUGIN_NAME} SHARED ${SRC} ${HDR})
 set_target_properties(${PLUGIN_NAME} PROPERTIES PREFIX "")

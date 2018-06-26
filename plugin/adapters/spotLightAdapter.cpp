@@ -15,7 +15,7 @@
 
 #include "lightAdapter.h"
 #include "adapterRegistry.h"
-#include "utils.h"
+#include "../utils.h"
 
 // FFFFFFFFFFFFFFFffffffffffffffffff
 #include <boost/shared_ptr.hpp>

@@ -22,7 +22,7 @@
 
 #include <maya/MMessage.h>
 
-#include "utils.h"
+#include "../utils.h"
 #include "adapter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

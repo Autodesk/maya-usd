@@ -17,7 +17,7 @@
 #include <maya/MString.h>
 
 #include "utils.h"
-#include "adapterRegistry.h"
+#include "adapters/adapterRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

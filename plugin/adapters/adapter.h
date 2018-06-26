@@ -9,7 +9,7 @@
 
 #include <vector>
 
-#include "delegateCtx.h"
+#include "../delegateCtx.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
