@@ -169,6 +169,15 @@ void HdMayaViewportRenderer::ChangeRendererPlugin(const TfToken& id) {
     }
 }
 
+int HdMayaViewportRenderer::GetFallbackShadowMapResolution() {
+    return GetInstance()->_fallbackShadowMapResolution;
+}
+
+void HdMayaViewportRenderer::SetFallbackShadowMapResolution(int resolution) {
+    // TODO: dirty light adapters
+    GetInstance()->_fallbackShadowMapResolution = resolution;
+}
+
 MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
     if (renderInfo.renderingAPI() != MViewportRenderer::kOpenGL) {
         return MS::kFailure;

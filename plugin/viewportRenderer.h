@@ -38,6 +38,8 @@ public:
     static TfTokenVector GetRendererPlugins();
     static std::string GetRendererPluginDisplayName(const TfToken& id);
     static void ChangeRendererPlugin(const TfToken& id);
+    static int GetFallbackShadowMapResolution();
+    static void SetFallbackShadowMapResolution(int resolution);
 
     MStatus render(const MRenderingInfo& renderInfo) override;
     bool nativelySupports(MViewportRenderer::RenderingAPI api, float version) override;
@@ -56,11 +58,12 @@ private:
     std::vector<HdMayaDelegatePtr> _delegates;
 
     SdfPath _ID;
+    TfToken _rendererName;
+
+    int _fallbackShadowMapResolution = 1024;
 
     bool _initializedViewport = false;
     bool _isPopulated = false;
-
-    TfToken _rendererName;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -18,6 +18,7 @@
 #include "constantShadowMatrix.h"
 
 #include "../utils.h"
+#include "../viewportRenderer.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -46,8 +47,19 @@ protected:
     VtValue Get(const TfToken& key) override {
         if (key == HdLightTokens->shadowParams) {
             MFnLight mayaLight(GetDagPath().node());
+            const auto useDepthMapShadows = mayaLight.findPlug("useDepthMapShadows", true).asBool();
+            if (!useDepthMapShadows) {
+                HdxShadowParams shadowParams;
+                shadowParams.enabled = false;
+                return VtValue(shadowParams);
+            }
+
             auto coneAnglePlug = mayaLight.findPlug("coneAngle", true);
             if (coneAnglePlug.isNull()) { return {}; }
+
+            auto dmapResolutionPlug = mayaLight.findPlug("dmapResolution");
+            auto dmapBiasPlug = mayaLight.findPlug("dmapBias");
+            auto dmapFilterSizePlug = mayaLight.findPlug("dmapFilterSize");
 
             GfFrustum frustum;
             frustum.SetPositionAndRotationFromMatrix(getGfMatrixFromMaya(GetDagPath().inclusiveMatrix()));
@@ -91,10 +103,14 @@ protected:
 
             HdxShadowParams shadowParams;
             shadowParams.enabled = true;
-            shadowParams.resolution = 1024;
+            shadowParams.resolution = dmapResolutionPlug.isNull() ?
+                HdMayaViewportRenderer::GetFallbackShadowMapResolution() : dmapResolutionPlug.asInt();
             shadowParams.shadowMatrix = boost::static_pointer_cast<HdxShadowMatrixComputation>(
                 boost::make_shared<ConstantShadowMatrix>(frustum.ComputeViewMatrix() * frustum.ComputeProjectionMatrix()));
-            shadowParams.bias = -0.001;
+            shadowParams.bias = dmapBiasPlug.isNull() ?
+                -0.001 : -dmapBiasPlug.asFloat();
+            shadowParams.blur = dmapFilterSizePlug.isNull() ?
+                0.0 : (static_cast<double>(dmapFilterSizePlug.asInt())) / static_cast<double>(shadowParams.resolution);
             return VtValue(shadowParams);
         }
 

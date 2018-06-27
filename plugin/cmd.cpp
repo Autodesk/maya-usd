@@ -12,17 +12,25 @@ PXR_NAMESPACE_OPEN_SCOPE
 const MString HdMayaCmd::name("hdmaya");
 
 namespace {
-    constexpr auto _listRenderers = "-lr";
-    constexpr auto _listRenderersLong = "-listRenderers";
 
-    constexpr auto _getRendererDisplayName = "-gn";
-    constexpr auto _getRendererDisplayNameLong = "-getRendererDisplayName";
+constexpr auto _listRenderers = "-lr";
+constexpr auto _listRenderersLong = "-listRenderers";
 
-    constexpr auto _changeRenderer = "-cr";
-    constexpr auto _changeRendererLong = "-changeRenderer";
+constexpr auto _getRendererDisplayName = "-gn";
+constexpr auto _getRendererDisplayNameLong = "-getRendererDisplayName";
 
-    constexpr auto _listDelegates = "-ld";
-    constexpr auto _listDelegatesLong = "-listDelegates";
+constexpr auto _changeRenderer = "-cr";
+constexpr auto _changeRendererLong = "-changeRenderer";
+
+constexpr auto _listDelegates = "-ld";
+constexpr auto _listDelegatesLong = "-listDelegates";
+
+constexpr auto _getFallbackShadowMapResolution = "-gsm";
+constexpr auto _getFallbackShadowMapResolutionLong = "-getFallbackShadowMapResolution";
+
+constexpr auto _setFallbackShadowMapResolution = "-ssm";
+constexpr auto _setFallbackShadowMapResolutionLong = "-setFallbackShadowMapResolution";
+
 }
 
 MSyntax HdMayaCmd::createSyntax() {
@@ -45,6 +53,15 @@ MSyntax HdMayaCmd::createSyntax() {
     syntax.addFlag(
         _listDelegates,
         _listDelegatesLong);
+
+    syntax.addFlag(
+        _getFallbackShadowMapResolution,
+        _getFallbackShadowMapResolutionLong);
+
+    syntax.addFlag(
+        _setFallbackShadowMapResolution,
+        _setFallbackShadowMapResolutionLong,
+        MSyntax::kLong);
 
     return syntax;
 }
@@ -71,6 +88,14 @@ MStatus HdMayaCmd::doIt(const MArgList &args) {
     } else if (db.isFlagSet(_listDelegates)) {
         for (const auto& delegate: HdMayaDelegateRegistry::GetDelegateNames()) {
             appendToResult(delegate.GetText());
+        }
+    } else if (db.isFlagSet(_getFallbackShadowMapResolution)) {
+        appendToResult(HdMayaViewportRenderer::GetFallbackShadowMapResolution());
+    } else if (db.isFlagSet(_setFallbackShadowMapResolution)) {
+        int res = 32;
+        if (db.getFlagArgument(_setFallbackShadowMapResolution, 0, res)) {
+            if (res < 32) { res = 32; }
+            HdMayaViewportRenderer::SetFallbackShadowMapResolution(res);
         }
     }
     return MS::kSuccess;
