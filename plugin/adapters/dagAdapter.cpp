@@ -16,32 +16,31 @@ namespace {
 HdMayaDagAdapter::HdMayaDagAdapter(
     const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath) :
     HdMayaAdapter(id, delegate), _dagPath(dagPath) {
-
+    CalculateExtent();
+    CalculateTransform();
 }
 
-GfRange3d
-HdMayaDagAdapter::GetExtent() {
+void
+HdMayaDagAdapter::CalculateExtent() {
     MStatus status;
     MFnDagNode dagNode(_dagPath, &status);
-    if (ARCH_UNLIKELY(!status)) { return {}; }
-    const auto bb = dagNode.boundingBox();
-    const auto mn = bb.min();
-    const auto mx = bb.max();
-    return {
-        {mn.x, mn.y, mn.z},
-        {mx.x, mx.y, mx.z}
-    };
+    if (ARCH_LIKELY(!status)) {
+        const auto bb = dagNode.boundingBox();
+        const auto mn = bb.min();
+        const auto mx = bb.max();
+        _extent.SetMin({mn.x, mn.y, mn.z});
+        _extent.SetMax({mx.x, mx.y, mx.z});
+    }
+};
+
+void
+HdMayaDagAdapter::CalculateTransform() {
+    _transform = getGfMatrixFromMaya(_dagPath.inclusiveMatrix());
 };
 
 HdMeshTopology
 HdMayaDagAdapter::GetMeshTopology() {
     return {};
-};
-
-GfMatrix4d
-HdMayaDagAdapter::GetTransform() {
-    // std::cerr << "[HdMayaDagAdapter::GetTransform] For " << GetID() << std::endl;
-    return getGfMatrixFromMaya(_dagPath.inclusiveMatrix());
 };
 
 void
@@ -61,6 +60,9 @@ HdMayaDagAdapter::CreateCallbacks() {
 void
 HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
+    if (dirtyBits & HdChangeTracker::DirtyTransform) {
+        CalculateTransform();
+    }
 }
 
 HdPrimvarDescriptorVector

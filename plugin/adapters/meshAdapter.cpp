@@ -24,7 +24,7 @@ public:
 
     VtValue Get(const TfToken& key) override {
         if (key == HdTokens->points) {
-            MFnMesh mesh(_dagPath);
+            MFnMesh mesh(GetDagPath());
             // Same memory layout for MFloatVector and GfVec3f!
             MStatus status;
             const auto* rawPoints = reinterpret_cast<const GfVec3f*>(mesh.getRawPoints(&status));
@@ -36,7 +36,7 @@ public:
     }
 
     HdMeshTopology GetMeshTopology() override {
-        MFnMesh mesh(_dagPath);
+        MFnMesh mesh(GetDagPath());
         const auto numPolygons = mesh.numPolygons();
         VtIntArray faceVertexCounts; faceVertexCounts.reserve(numPolygons);
         VtIntArray faceVertexIndices; faceVertexIndices.reserve(mesh.numFaceVertices());

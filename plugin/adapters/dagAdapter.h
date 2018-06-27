@@ -33,9 +33,7 @@ protected:
 public:
     virtual ~HdMayaDagAdapter() = default;
 
-    virtual GfRange3d GetExtent();
     virtual HdMeshTopology GetMeshTopology();
-    virtual GfMatrix4d GetTransform();
     virtual void CreateCallbacks() override;
     virtual void MarkDirty(HdDirtyBits dirtyBits);
     virtual HdPrimvarDescriptorVector
@@ -44,8 +42,20 @@ public:
     virtual VtValue GetLightParamValue(const TfToken& paramName);
 
     const MDagPath& GetDagPath() { return _dagPath; }
+    GfMatrix4d GetTransform() {
+        return _transform;
+    }
+    GfRange3d GetExtent() {
+        return _extent;
+    }
 protected:
+    void CalculateExtent();
+    void CalculateTransform();
+
+private:
     MDagPath _dagPath;
+    GfRange3d _extent;
+    GfMatrix4d _transform;
 };
 
 using HdMayaDagAdapterPtr = std::shared_ptr<HdMayaDagAdapter>;

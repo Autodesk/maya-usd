@@ -37,6 +37,9 @@ HdMayaLightAdapter::HdMayaLightAdapter(
 void
 HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
+    if (dirtyBits & HdLight::DirtyTransform) {
+        CalculateTransform();
+    }
 }
 
 VtValue
