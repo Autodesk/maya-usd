@@ -104,7 +104,6 @@ HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum) {
         planes[3].Set(GfRotation(right, vfov).TransformDir(-up).GetNormalized(), position);
         // Bottom plane
         planes[4].Set(GfRotation(right, -vfov).TransformDir(up).GetNormalized(), position);
-
     } else if (frustum.GetProjectionType() == GfFrustum::Orthographic) {
         const auto& window = frustum.GetWindow();
         // Right plane

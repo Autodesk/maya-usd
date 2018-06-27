@@ -41,8 +41,6 @@ protected:
         if (!dropoffPlug.isNull()) {
             light.SetSpotFalloff(dropoffPlug.asFloat());
         }
-
-
     }
 
     VtValue Get(const TfToken& key) override {
@@ -62,6 +60,34 @@ protected:
                 50.0f);
 
             GetDelegate()->FitFrustumToRprims(frustum);
+
+            const auto decayRate = mayaLight.findPlug("decayRate", true).asShort();
+            if (decayRate > 0) {
+                const auto color = mayaLight.color();
+                const auto intensity = mayaLight.intensity();
+                const auto maxIntensity = static_cast<double>(std::max(color.r * intensity,
+                    std::max(color.g * intensity, color.b * intensity)));
+                constexpr auto LIGHT_CUTOFF = 0.01;
+                auto maxDistance = std::numeric_limits<double>::max();
+                if (decayRate == 1) {
+                    maxDistance = maxIntensity / LIGHT_CUTOFF;
+                } else if (decayRate == 2) {
+                    maxDistance = sqrt(maxIntensity / LIGHT_CUTOFF);
+                }
+
+                if (maxDistance < std::numeric_limits<double>::max()) {
+                    const auto& nearFar = frustum.GetNearFar();
+                    if (nearFar.GetMax() > maxDistance) {
+                        if (nearFar.GetMin() < maxDistance) {
+                            HdxShadowParams shadowParams;
+                            shadowParams.enabled = false;
+                            return VtValue(shadowParams);
+                        } else {
+                            frustum.SetNearFar(GfRange1d(nearFar.GetMin(), maxDistance));
+                        }
+                    }
+                }
+            }
 
             HdxShadowParams shadowParams;
             shadowParams.enabled = true;
