@@ -3,7 +3,12 @@
 
 #include <pxr/pxr.h>
 
+#include <pxr/base/gf/frustum.h>
+
 #include <pxr/imaging/glf/simpleLight.h>
+#include <pxr/imaging/hdx/simpleLightTask.h>
+
+#include <maya/MFnLight.h>
 
 #include "dagAdapter.h"
 
@@ -19,6 +24,7 @@ public:
     virtual void Populate() override;
 protected:
     virtual void CalculateLightParams(GlfSimpleLight& light);
+    void CalculateShadowParams(MFnLight& light, GfFrustum& frustum, HdxShadowParams& params);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

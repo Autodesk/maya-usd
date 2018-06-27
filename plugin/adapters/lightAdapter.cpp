@@ -10,6 +10,10 @@
 
 #include <maya/MNodeMessage.h>
 
+#include "constantShadowMatrix.h"
+
+#include "../viewportRenderer.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -123,6 +127,50 @@ void HdMayaLightAdapter::Populate() {
 void
 HdMayaLightAdapter::CalculateLightParams(GlfSimpleLight& /*light*/) {
 
+}
+
+void
+HdMayaLightAdapter::CalculateShadowParams(MFnLight& light, GfFrustum& frustum, HdxShadowParams& params) {
+    auto dmapResolutionPlug = light.findPlug("dmapResolution");
+    auto dmapBiasPlug = light.findPlug("dmapBias");
+    auto dmapFilterSizePlug = light.findPlug("dmapFilterSize");
+
+    const auto decayRate = light.findPlug("decayRate", true).asShort();
+    if (decayRate > 0) {
+        const auto color = light.color();
+        const auto intensity = light.intensity();
+        const auto maxIntensity = static_cast<double>(std::max(color.r * intensity,
+                                                               std::max(color.g * intensity, color.b * intensity)));
+        constexpr auto LIGHT_CUTOFF = 0.01;
+        auto maxDistance = std::numeric_limits<double>::max();
+        if (decayRate == 1) {
+            maxDistance = maxIntensity / LIGHT_CUTOFF;
+        } else if (decayRate == 2) {
+            maxDistance = sqrt(maxIntensity / LIGHT_CUTOFF);
+        }
+
+        if (maxDistance < std::numeric_limits<double>::max()) {
+            const auto& nearFar = frustum.GetNearFar();
+            if (nearFar.GetMax() > maxDistance) {
+                if (nearFar.GetMin() < maxDistance) {
+                    HdxShadowParams shadowParams;
+                    params.enabled = false;
+                } else {
+                    frustum.SetNearFar(GfRange1d(nearFar.GetMin(), maxDistance));
+                }
+            }
+        }
+    }
+
+    params.enabled = true;
+    params.resolution = dmapResolutionPlug.isNull() ?
+                              HdMayaViewportRenderer::GetFallbackShadowMapResolution() : dmapResolutionPlug.asInt();
+    params.shadowMatrix = boost::static_pointer_cast<HdxShadowMatrixComputation>(
+        boost::make_shared<ConstantShadowMatrix>(frustum.ComputeViewMatrix() * frustum.ComputeProjectionMatrix()));
+    params.bias = dmapBiasPlug.isNull() ?
+                        -0.001 : -dmapBiasPlug.asFloat();
+    params.blur = dmapFilterSizePlug.isNull() ?
+                        0.0 : (static_cast<double>(dmapFilterSizePlug.asInt())) / static_cast<double>(params.resolution);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
