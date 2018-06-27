@@ -12,6 +12,8 @@ public:
     HdMayaDelegate() = default;
 
     virtual void Populate() = 0;
+    virtual void PreFrame() { }
+    virtual void PostFrame() { }
 };
 
 using HdMayaDelegatePtr = std::shared_ptr<HdMayaDelegate>;

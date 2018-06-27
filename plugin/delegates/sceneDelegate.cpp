@@ -12,6 +12,7 @@
 #include <pxr/imaging/hdx/renderSetupTask.h>
 #include <pxr/imaging/hdx/renderTask.h>
 
+#include <maya/MDGMessage.h>
 #include <maya/MDagPath.h>
 #include <maya/MItDag.h>
 #include <maya/MString.h>
@@ -21,6 +22,19 @@
 #include "delegateRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+namespace {
+
+void _nodeAdded(MObject& obj, void* clientData) {
+    auto* delegate = reinterpret_cast<HdMayaSceneDelegate*>(clientData);
+    MDagPath dag;
+    MStatus status = MDagPath::getAPathTo(obj, dag);
+    if (status) {
+        delegate->InsertDag(dag);
+    }
+}
+
+}
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -39,10 +53,12 @@ HdMayaSceneDelegate::HdMayaSceneDelegate(
     HdRenderIndex* renderIndex,
     const SdfPath& delegateID) :
     HdMayaDelegateCtx(renderIndex, delegateID) {
-    // Unique ID
 }
 
 HdMayaSceneDelegate::~HdMayaSceneDelegate() {
+    for (auto callback : _callbacks) {
+        MMessage::removeCallback(callback);
+    }
 }
 
 void
@@ -52,23 +68,11 @@ HdMayaSceneDelegate::Populate() {
     for (MItDag dagIt(MItDag::kDepthFirst, MFn::kInvalid); !dagIt.isDone(); dagIt.next()) {
         MDagPath path;
         dagIt.getPath(path);
-
-        // We don't care about transforms for now.
-        if (path.hasFn(MFn::kTransform)) { continue; }
-
-        auto adapterCreator = HdMayaAdapterRegistry::GetAdapterCreator(path);
-        if (adapterCreator == nullptr) { continue; }
-        auto adapter = adapterCreator(this, path);
-        if (adapter == nullptr) { continue; }
-        const auto& id = adapter->GetID();
-        if (TfMapLookupPtr(_pathToAdapterMap, id) != nullptr) {
-            // Adapter is a shared ptr.
-            continue;
-        }
-        adapter->Populate();
-        adapter->CreateCallbacks();
-        _pathToAdapterMap.insert({id, adapter});
+        InsertDag(path);
     }
+    MStatus status;
+    auto id = MDGMessage::addNodeAddedCallback(_nodeAdded, "dagNode", this, &status);
+    if (status) { _callbacks.push_back(id); }
 }
 
 void
@@ -78,6 +82,24 @@ HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
         adapter->RemovePrim();
         _pathToAdapterMap.erase(id);
     }
+}
+
+void
+HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
+    // We don't care about transforms for now.
+    if (dag.hasFn(MFn::kTransform)) { return; }
+
+    auto adapterCreator = HdMayaAdapterRegistry::GetAdapterCreator(dag);
+    if (adapterCreator == nullptr) { return; }
+    const auto id = GetPrimPath(dag);
+    if (TfMapLookupPtr(_pathToAdapterMap, id) != nullptr) {
+        return;
+    }
+    auto adapter = adapterCreator(this, dag);
+    if (adapter == nullptr) { return; }
+    adapter->Populate();
+    adapter->CreateCallbacks();
+    _pathToAdapterMap.insert({id, adapter});
 }
 
 HdMeshTopology

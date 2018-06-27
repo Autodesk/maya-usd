@@ -192,6 +192,10 @@ MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
         _isPopulated = true;
     }
 
+    for (auto& it: _delegates) {
+        it->PreFrame();
+    }
+
     renderInfo.renderTarget().makeTargetCurrent();
 
     glClearColor(0.4f, 0.4f, 0.4f, 1.0f);
@@ -230,6 +234,10 @@ MStatus HdMayaViewportRenderer::render(const MRenderingInfo& renderInfo) {
         glDeleteVertexArrays(1, &vao);
     } else {
         glPopAttrib(); // GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT
+    }
+
+    for (auto& it: _delegates) {
+        it->PostFrame();
     }
 
     return MStatus::kSuccess;

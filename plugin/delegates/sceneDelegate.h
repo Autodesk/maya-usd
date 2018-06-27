@@ -11,6 +11,7 @@
 #include <pxr/imaging/hd/meshTopology.h>
 
 #include <maya/MDagPath.h>
+#include <maya/MObject.h>
 
 #include <memory>
 
@@ -29,7 +30,7 @@ public:
 
     void Populate() override;
     void RemoveAdapter(const SdfPath& id) override;
-
+    void InsertDag(const MDagPath& dag);
 protected:
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;
     GfRange3d GetExtent(const SdfPath& id) override;
@@ -56,6 +57,7 @@ protected:
 
 private:
     TfHashMap<SdfPath, HdMayaDagAdapterPtr, SdfPath::Hash> _pathToAdapterMap;
+    std::vector<MCallbackId> _callbacks;
 };
 
 typedef std::shared_ptr<HdMayaSceneDelegate> MayaSceneDelegateSharedPtr;
