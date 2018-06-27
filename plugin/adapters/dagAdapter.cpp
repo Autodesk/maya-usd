@@ -24,7 +24,7 @@ void
 HdMayaDagAdapter::CalculateExtent() {
     MStatus status;
     MFnDagNode dagNode(_dagPath, &status);
-    if (ARCH_LIKELY(!status)) {
+    if (ARCH_LIKELY(status)) {
         const auto bb = dagNode.boundingBox();
         const auto mn = bb.min();
         const auto mx = bb.max();
