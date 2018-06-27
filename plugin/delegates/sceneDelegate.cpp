@@ -28,10 +28,11 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaSceneDelegate) {
-    HdMayaDelegateRegistry::RegisterDelegate(_tokens->HdMayaSceneDelegate,
-    [](HdRenderIndex* parentIndex, const SdfPath& id) -> HdMayaDelegatePtr {
-        return std::static_pointer_cast<HdMayaDelegate>(std::make_shared<HdMayaSceneDelegate>(parentIndex, id));
-    });
+    HdMayaDelegateRegistry::RegisterDelegate(
+        _tokens->HdMayaSceneDelegate,
+        [](HdRenderIndex* parentIndex, const SdfPath& id) -> HdMayaDelegatePtr {
+            return std::static_pointer_cast<HdMayaDelegate>(std::make_shared<HdMayaSceneDelegate>(parentIndex, id));
+        });
 }
 
 HdMayaSceneDelegate::HdMayaSceneDelegate(

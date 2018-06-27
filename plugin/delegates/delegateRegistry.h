@@ -4,6 +4,9 @@
 #include <pxr/pxr.h>
 #include <pxr/base/tf/singleton.h>
 
+#include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/usd/sdf/path.h>
+
 #include <vector>
 #include <tuple>
 

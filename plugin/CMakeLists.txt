@@ -31,6 +31,7 @@ set(SRC
     delegates/delegateCtx.cpp
     delegates/delegateRegistry.cpp
     delegates/sceneDelegate.cpp
+    delegates/testDelegate.cpp
 
     cmd.cpp
     plugin.cpp

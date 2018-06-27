@@ -3,6 +3,7 @@
 
 #include <pxr/pxr.h>
 
+#include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/rprimCollection.h>
 
@@ -14,7 +15,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaDelegateCtx : public HdMayaDelegate {
+class HdMayaDelegateCtx : public HdSceneDelegate {
 protected:
     HdMayaDelegateCtx(
         HdRenderIndex* renderIndex,

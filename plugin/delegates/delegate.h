@@ -2,19 +2,15 @@
 #define __HDMAYA_DELEGATE_H__
 
 #include <pxr/pxr.h>
-#include <pxr/imaging/hd/sceneDelegate.h>
 
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaDelegate : protected HdSceneDelegate {
+class HdMayaDelegate {
 public:
-    HdMayaDelegate(
-        HdRenderIndex* parentIndex,
-        const SdfPath& delegateID);
+    HdMayaDelegate() = default;
 
-    using HdSceneDelegate::GetDelegateID;
     virtual void Populate() = 0;
 };
 
