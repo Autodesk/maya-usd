@@ -83,12 +83,41 @@ HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum) {
     // We sum all the bounding boxes inside the open-ended frustum,
     // and use that bounding box to calculate the closest and farthest away points.
 
-    std::array<GfPlane, 1> planes;
+    std::array<GfPlane, 5> planes;
     GfRange1d nearFar;
     const auto& rotation = frustum.GetRotation();
     const auto direction = rotation.TransformDir(GfVec3d(0.0, 0.0, -1.0)).GetNormalized();
+    const auto right = rotation.TransformDir(GfVec3d(1.0, 0.0, 0.0)).GetNormalized();
+    const auto up = rotation.TransformDir(GfVec3d(0.0, 1.0, 0.0)).GetNormalized();
     const auto position = frustum.GetPosition();
     planes[0].Set(direction, position);
+
+    if (frustum.GetProjectionType() == GfFrustum::Perspective) {
+        const auto windowSize = frustum.GetWindow().GetSize();
+        const auto vfov = GfRadiansToDegrees(atan((windowSize[1] / 2.0) / GfFrustum::GetReferencePlaneDepth()));
+        const auto hfov = GfRadiansToDegrees(atan((windowSize[0] / 2.0) / GfFrustum::GetReferencePlaneDepth()));
+        // Right plane
+        planes[1].Set(GfRotation(up, -hfov).TransformDir(-right).GetNormalized(), position);
+        // Left plane
+        planes[2].Set(GfRotation(up, hfov).TransformDir(right).GetNormalized(), position);
+        // Top plane
+        planes[3].Set(GfRotation(right, vfov).TransformDir(-up).GetNormalized(), position);
+        // Bottom plane
+        planes[4].Set(GfRotation(right, -vfov).TransformDir(up).GetNormalized(), position);
+
+    } else if (frustum.GetProjectionType() == GfFrustum::Orthographic) {
+        const auto& window = frustum.GetWindow();
+        // Right plane
+        planes[1].Set(-right, position + right * window.GetMax()[0]);
+        // Left plane
+        planes[2].Set(right, position + right * window.GetMin()[0]);
+        // Top plane
+        planes[3].Set(-up, position + up * window.GetMax()[1]);
+        // Bottom plane
+        planes[4].Set(up, position + up * window.GetMin()[1]);
+    } else {
+        return;
+    }
 
     auto isBoxInside = [&planes] (const GfRange3d& extent, const GfMatrix4d& worldToLocal) -> bool {
         for (const auto& plane : planes) {
