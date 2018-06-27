@@ -16,7 +16,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdMayaMeshAdapter : public HdMayaDagAdapter {
 public:
     HdMayaMeshAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-        : HdMayaDagAdapter(delegate->GetRPrimPath(dag), delegate, dag) { }
+        : HdMayaDagAdapter(delegate->GetPrimPath(dag), delegate, dag) { }
 
     void Populate() override {
         GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty);

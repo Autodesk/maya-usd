@@ -15,7 +15,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaAdapter {
 public:
-    HdMayaAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate);
+    HdMayaAdapter(MObject node, const SdfPath& id, HdMayaDelegateCtx* delegate);
     virtual ~HdMayaAdapter();
 
     const SdfPath& GetID() { return _id; }
@@ -23,10 +23,12 @@ public:
     void AddCallback(MCallbackId callbackId);
     virtual VtValue Get(const TfToken& key);
 
-    virtual void CreateCallbacks() = 0;
+    virtual void CreateCallbacks();
     virtual void MarkDirty(HdDirtyBits dirtyBits) = 0;
+    virtual void RemovePrim() = 0;
     virtual void Populate() = 0;
 protected:
+    MObject _node;
     SdfPath _id;
     HdMayaDelegateCtx* _delegate;
 

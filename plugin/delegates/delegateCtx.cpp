@@ -7,6 +7,8 @@
 
 #include <usdMaya/util.h>
 
+#include <maya/MFnLight.h>
+
 #include <array>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -54,14 +56,23 @@ HdMayaDelegateCtx::InsertSprim(const TfToken& typeId, const SdfPath& id, HdDirty
     GetChangeTracker().SprimInserted(id, initialBits);
 }
 
-SdfPath
-HdMayaDelegateCtx::GetRPrimPath(const MDagPath& dg) {
-    return _GetPrimPath(_rprimPath, dg);
+void
+HdMayaDelegateCtx::RemoveRprim(const SdfPath& id) {
+    GetRenderIndex().RemoveRprim(id);
+}
+
+void
+HdMayaDelegateCtx::RemoveSprim(const TfToken& typeId, const SdfPath& id) {
+    GetRenderIndex().RemoveSprim(typeId, id);
 }
 
 SdfPath
-HdMayaDelegateCtx::GetSPrimPath(const MDagPath& dg) {
-    return _GetPrimPath(_sprimPath, dg);
+HdMayaDelegateCtx::GetPrimPath(const MDagPath& dg) {
+    if (dg.hasFn(MFn::kLight)) {
+        return _GetPrimPath(_sprimPath, dg);
+    } else {
+        return _GetPrimPath(_rprimPath, dg);
+    }
 }
 
 void

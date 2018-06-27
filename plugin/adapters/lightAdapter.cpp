@@ -31,7 +31,7 @@ namespace {
 
 HdMayaLightAdapter::HdMayaLightAdapter(
     HdMayaDelegateCtx* delegate, const MDagPath& dag)
-    : HdMayaDagAdapter(delegate->GetSPrimPath(dag), delegate, dag) {
+    : HdMayaDagAdapter(delegate->GetPrimPath(dag), delegate, dag) {
 }
 
 void
@@ -40,6 +40,11 @@ HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     if (dirtyBits & HdLight::DirtyTransform) {
         CalculateTransform();
     }
+}
+
+void
+HdMayaLightAdapter::RemovePrim() {
+    GetDelegate()->RemoveSprim(HdPrimTypeTokens->simpleLight, GetID());
 }
 
 VtValue

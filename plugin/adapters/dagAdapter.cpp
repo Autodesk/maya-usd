@@ -7,15 +7,17 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-    void _dirtyTransform(MObject& node, void* clientData) {
-        auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
-        adapter->MarkDirty(HdChangeTracker::DirtyTransform);
-    }
+
+void _dirtyTransform(MObject& node, void* clientData) {
+    auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    adapter->MarkDirty(HdChangeTracker::DirtyTransform);
+}
+
 }
 
 HdMayaDagAdapter::HdMayaDagAdapter(
     const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath) :
-    HdMayaAdapter(id, delegate), _dagPath(dagPath) {
+    HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {
     CalculateExtent();
     CalculateTransform();
 }
@@ -55,6 +57,7 @@ HdMayaDagAdapter::CreateCallbacks() {
             if (status) { AddCallback(id); }
         }
     }
+    HdMayaAdapter::CreateCallbacks();
 }
 
 void
@@ -63,6 +66,11 @@ HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     if (dirtyBits & HdChangeTracker::DirtyTransform) {
         CalculateTransform();
     }
+}
+
+void
+HdMayaDagAdapter::RemovePrim() {
+    GetDelegate()->RemoveRprim(GetID());
 }
 
 HdPrimvarDescriptorVector

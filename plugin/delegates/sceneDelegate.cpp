@@ -71,6 +71,15 @@ HdMayaSceneDelegate::Populate() {
     }
 }
 
+void
+HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
+    HdMayaDagAdapterPtr adapter;
+    if (TfMapLookup(_pathToAdapterMap, id, &adapter) && adapter == nullptr) {
+        adapter->RemovePrim();
+        _pathToAdapterMap.erase(id);
+    }
+}
+
 HdMeshTopology
 HdMayaSceneDelegate::GetMeshTopology(const SdfPath& id) {
     HdMayaDagAdapterPtr adapter;

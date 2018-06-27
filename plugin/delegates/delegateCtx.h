@@ -26,9 +26,11 @@ public:
 
     void InsertRprim(const TfToken& typeId, const SdfPath& id, HdDirtyBits initialBits);
     void InsertSprim(const TfToken& typeId, const SdfPath& id, HdDirtyBits initialBits);
+    void RemoveRprim(const SdfPath& id);
+    void RemoveSprim(const TfToken& typeId, const SdfPath& id);
+    virtual void RemoveAdapter(const SdfPath& id) = 0;
     const HdRprimCollection& GetRprimCollection() { return _rprimCollection; }
-    SdfPath GetRPrimPath(const MDagPath& dg);
-    SdfPath GetSPrimPath(const MDagPath& dg);
+    SdfPath GetPrimPath(const MDagPath& dg);
 
     /// Fit the frustum's near/far value to contain all
     /// the rprims inside the render index;

@@ -36,6 +36,7 @@ public:
     virtual HdMeshTopology GetMeshTopology();
     virtual void CreateCallbacks() override;
     virtual void MarkDirty(HdDirtyBits dirtyBits);
+    virtual void RemovePrim() override;
     virtual HdPrimvarDescriptorVector
     GetPrimvarDescriptors(HdInterpolation interpolation);
     // TODO: think about this!

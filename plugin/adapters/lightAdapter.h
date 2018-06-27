@@ -18,6 +18,7 @@ class HdMayaLightAdapter : public HdMayaDagAdapter {
 public:
     HdMayaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag);
     void MarkDirty(HdDirtyBits dirtyBits) override;
+    virtual void RemovePrim() override;
     VtValue GetLightParamValue(const TfToken& paramName) override;
     VtValue Get(const TfToken& key) override;
     virtual void CreateCallbacks() override;

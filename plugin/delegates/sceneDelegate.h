@@ -28,6 +28,7 @@ public:
     virtual ~HdMayaSceneDelegate();
 
     void Populate() override;
+    void RemoveAdapter(const SdfPath& id) override;
 
 protected:
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;
