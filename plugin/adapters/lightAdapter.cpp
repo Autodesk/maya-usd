@@ -126,6 +126,7 @@ HdMayaLightAdapter::CreateCallbacks() {
             if (status) { AddCallback(id); }
         }
     }
+    HdMayaAdapter::CreateCallbacks();
 }
 
 void HdMayaLightAdapter::Populate() {
