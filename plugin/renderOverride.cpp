@@ -287,8 +287,8 @@ HdMayaRenderOverride::setup(const MString& destination) {
         InitHydraResources();
 
         _operations[0].reset(new HdMayaRender(_operationNames[0], this));
-        _operations[1].reset(new MHWRender::MHUDRender());
-        _operations[2].reset(new MHWRender::MPresentTarget(_operationNames[2]));
+        // _operations[1].reset(new MHWRender::MHUDRender());
+        _operations[1].reset(new MHWRender::MPresentTarget(_operationNames[2]));
     }
 
     return MS::kSuccess;
