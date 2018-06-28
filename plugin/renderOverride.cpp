@@ -280,7 +280,7 @@ HdMayaRenderOverride::setup(const MString& destination) {
         return MStatus::kFailure;
     }
 
-    if (_operations[0] == nullptr) {
+    if (_operations.empty()) {
         _initializedViewport = true;
         GlfGlewInit();
         InitHydraResources();
