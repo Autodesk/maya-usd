@@ -287,7 +287,7 @@ HdMayaRenderOverride::setup(const MString& destination) {
 
         _operations.push_back(new MHWRender::MClearOperation("HydraRenderOverride_Clear"));
         _operations.push_back(new HdMayaRender("HydraRenderOverride_Scene", this));
-        // _operations[1].reset(new MHWRender::MHUDRender());
+        _operations.push_back(new MHWRender::MHUDRender());
         auto* presentTarget = new MHWRender::MPresentTarget("HydraRenderOverride_Present");
         presentTarget->setPresentDepth(true);
         presentTarget->setTargetBackBuffer(MHWRender::MPresentTarget::kCenterBuffer);
