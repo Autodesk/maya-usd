@@ -28,8 +28,13 @@ class HdMayaRenderOverride : public MHWRender::MRenderOverride, TfSingleton<HdMa
     friend class TfSingleton<HdMayaRenderOverride>;
     HdMayaRenderOverride();
 public:
+    ~HdMayaRenderOverride();
     static HdMayaRenderOverride& GetInstance() {
         return TfSingleton<HdMayaRenderOverride>::GetInstance();
+    }
+
+    static void DeleteInstance() {
+        return TfSingleton<HdMayaRenderOverride>::DeleteInstance();
     }
 
     static TfTokenVector GetRendererPlugins();
@@ -37,6 +42,10 @@ public:
     static void ChangeRendererPlugin(const TfToken& id);
     static int GetMaximumShadowMapResolution();
     static void SetMaximumShadowMapResolution(int resolution);
+
+    MString uiName() const override {
+        return MString("Hydra Viewport Override");
+    }
 private:
     void InitHydraResources();
     void ClearHydraResources();

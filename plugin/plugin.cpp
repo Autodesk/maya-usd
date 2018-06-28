@@ -1,6 +1,8 @@
 #include <maya/MFnPlugin.h>
 
 #include "viewportRenderer.h"
+#include "renderOverride.h"
+#include "renderOverride.h"
 #include "cmd.h"
 
 #include <stdlib.h>
@@ -25,6 +27,12 @@ MStatus initializePlugin(MObject obj) {
         HdMayaViewportRenderer::Cleanup();
     }
 
+    auto* renderer = MHWRender::MRenderer::theRenderer();
+    if (renderer) {
+        auto& override = HdMayaRenderOverride::GetInstance();
+        renderer->registerOverride(&override);
+    }
+
     if (!plugin.registerCommand(HdMayaCmd::name, HdMayaCmd::creator, HdMayaCmd::createSyntax)) {
         ret = MS::kFailure;
         ret.perror("Error registering hdmaya command!");
@@ -44,6 +52,15 @@ MStatus uninitializePlugin(MObject obj) {
         ret.perror("Error deregistering hd viewport renderer!");
     }
     HdMayaViewportRenderer::Cleanup();
+
+    auto* renderer = MHWRender::MRenderer::theRenderer();
+    if (renderer) {
+        const auto* override = renderer->findRenderOverride("hydraViewportOverride");
+        if (override) {
+            renderer->deregisterOverride(override);
+            HdMayaRenderOverride::DeleteInstance();
+        }
+    }
 
     if (!plugin.deregisterCommand(HdMayaCmd::name)) {
         ret = MS::kFailure;

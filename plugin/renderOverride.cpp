@@ -1,18 +1,24 @@
 #include "renderOverride.h"
 
-#include <maya/MRenderingInfo.h>
 #include <pxr/base/gf/matrix4d.h>
+
+#include <pxr/base/tf/instantiateSingleton.h>
+
 #include <pxr/imaging/glf/contextCaps.h>
 
 #include <pxr/imaging/hdx/rendererPlugin.h>
 #include <pxr/imaging/hdx/rendererPluginRegistry.h>
 #include <pxr/imaging/hdx/tokens.h>
 
+#include <maya/MRenderingInfo.h>
+
 #include <exception>
 
 #include "delegates/delegateRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_INSTANTIATE_SINGLETON(HdMayaRenderOverride);
 
 namespace {
     constexpr auto HDMAYA_DEFAULT_RENDERER_PLUGIN_NAME = "HDMAYA_DEFAULT_RENDERER_PLUGIN";
@@ -29,7 +35,8 @@ namespace {
 }
 
 HdMayaRenderOverride::HdMayaRenderOverride() :
-    MHWRender::MRenderOverride("Hydra Viewport Override") {
+    MHWRender::MRenderOverride("hydraViewportOverride") {
+    _ID = SdfPath("/HdMayaViewportRenderer").AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
     _rendererName = _getDefaultRenderer();
     // This is a critical error, so we don't allow the construction
     // of the viewport renderer plugin if there is no renderer plugin
@@ -37,6 +44,10 @@ HdMayaRenderOverride::HdMayaRenderOverride() :
     if (_rendererName.IsEmpty()) {
         throw std::runtime_error("No default renderer is available!");
     }
+}
+
+HdMayaRenderOverride::~HdMayaRenderOverride() {
+    ClearHydraResources();
 }
 
 TfTokenVector
