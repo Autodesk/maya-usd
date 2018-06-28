@@ -97,9 +97,8 @@ HdMayaRenderOverride::HdMayaRenderOverride() :
     if (_rendererName.IsEmpty()) {
         throw std::runtime_error("No default renderer is available!");
     }
-    _operationNames[0] = "hydraViewportOverride_Scene";
-    _operationNames[1] = "hydraViewportOverride_HUD";
-    _operationNames[2] = "hydraViewportOverride_Present";
+
+
 }
 
 HdMayaRenderOverride::~HdMayaRenderOverride() {
@@ -286,9 +285,13 @@ HdMayaRenderOverride::setup(const MString& destination) {
         GlfGlewInit();
         InitHydraResources();
 
-        _operations[0].reset(new HdMayaRender(_operationNames[0], this));
+        _operations[0].reset(new MHWRender::MClearOperation("HydraRenderOverride_Clear"));
+        _operations[1].reset(new HdMayaRender("HydraRenderOverride_Scene", this));
         // _operations[1].reset(new MHWRender::MHUDRender());
-        _operations[1].reset(new MHWRender::MPresentTarget(_operationNames[2]));
+        auto* presentTarget = new MHWRender::MPresentTarget("HydraRenderOverride_Present");
+        presentTarget->setPresentDepth(true);
+        presentTarget->setTargetBackBuffer(MHWRender::MPresentTarget::kCenterBuffer);
+        _operations[2].reset(presentTarget);
     }
 
     return MS::kSuccess;

@@ -66,7 +66,6 @@ private:
 
     static constexpr int _numOperations = 3;
     std::array<std::unique_ptr<MHWRender::MRenderOperation>, _numOperations> _operations;
-    std::array<MString, _numOperations> _operationNames;
 
     HdEngine _engine;
     HdxRendererPlugin* _rendererPlugin = nullptr;
