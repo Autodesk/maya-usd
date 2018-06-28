@@ -12,7 +12,7 @@
 
 #include "constantShadowMatrix.h"
 
-#include "../viewportRenderer.h"
+#include "../renderOverride.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -173,13 +173,14 @@ HdMayaLightAdapter::CalculateShadowParams(MFnLight& light, GfFrustum& frustum, H
 
     params.enabled = true;
     params.resolution = dmapResolutionPlug.isNull() ?
-                              HdMayaViewportRenderer::GetFallbackShadowMapResolution() : dmapResolutionPlug.asInt();
+        HdMayaRenderOverride::GetMaximumShadowMapResolution() :
+        std::min(HdMayaRenderOverride::GetMaximumShadowMapResolution(), dmapResolutionPlug.asInt());
     params.shadowMatrix = boost::static_pointer_cast<HdxShadowMatrixComputation>(
         boost::make_shared<ConstantShadowMatrix>(frustum.ComputeViewMatrix() * frustum.ComputeProjectionMatrix()));
     params.bias = dmapBiasPlug.isNull() ?
-                        -0.001 : -dmapBiasPlug.asFloat();
+        -0.001 : -dmapBiasPlug.asFloat();
     params.blur = dmapFilterSizePlug.isNull() ?
-                        0.0 : (static_cast<double>(dmapFilterSizePlug.asInt())) / static_cast<double>(params.resolution);
+        0.0 : (static_cast<double>(dmapFilterSizePlug.asInt())) / static_cast<double>(params.resolution);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
