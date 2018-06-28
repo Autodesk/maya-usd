@@ -36,7 +36,6 @@ set(SRC
     cmd.cpp
     plugin.cpp
     renderOverride.cpp
-    viewportRenderer.cpp
     )
 
 add_library(${PLUGIN} SHARED ${SRC} ${HDR})

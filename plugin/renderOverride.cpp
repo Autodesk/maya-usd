@@ -44,6 +44,14 @@ public:
 
     }
 
+    MUint64 getObjectTypeExclusions() override {
+        return ~(
+            MHWRender::MFrameContext::kExcludeManipulators |
+            MHWRender::MFrameContext::kExcludeSelectHandles |
+            // MHWRender::MFrameContext::kExcludeCameras |
+            MHWRender::MFrameContext::kExcludeLights);
+    }
+
     MHWRender::MClearOperation&
     clearOperation()
     {
@@ -97,8 +105,6 @@ HdMayaRenderOverride::HdMayaRenderOverride() :
     if (_rendererName.IsEmpty()) {
         throw std::runtime_error("No default renderer is available!");
     }
-
-
 }
 
 HdMayaRenderOverride::~HdMayaRenderOverride() {
@@ -166,9 +172,6 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     for (auto& it: _delegates) {
         it->PreFrame();
     }
-
-    glClearColor(0.4f, 0.4f, 0.4f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
 
     // We need some empty vao to get the core profile running in some cases.
     const auto isCoreProfileContext = GlfContextCaps::GetInstance().coreProfile;
@@ -285,8 +288,8 @@ HdMayaRenderOverride::setup(const MString& destination) {
         GlfGlewInit();
         InitHydraResources();
 
-        _operations.push_back(new MHWRender::MClearOperation("HydraRenderOverride_Clear"));
-        _operations.push_back(new HdMayaRender("HydraRenderOverride_Scene", this));
+        _operations.push_back(new HdMayaSceneRender("HydraRenderOverride_Scene"));
+        _operations.push_back(new HdMayaRender("HydraRenderOverride_Hydra", this));
         _operations.push_back(new MHWRender::MHUDRender());
         auto* presentTarget = new MHWRender::MPresentTarget("HydraRenderOverride_Present");
         presentTarget->setPresentDepth(true);
