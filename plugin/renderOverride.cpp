@@ -87,7 +87,8 @@ private:
 }
 
 HdMayaRenderOverride::HdMayaRenderOverride() :
-    MHWRender::MRenderOverride("hydraViewportOverride") {
+    MHWRender::MRenderOverride("hydraViewportOverride"),
+    _selectionTracker(new HdxSelectionTracker) {
     _ID = SdfPath("/HdMayaViewportRenderer").AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
     _rendererName = _getDefaultRenderer();
     // This is a critical error, so we don't allow the construction
