@@ -20,6 +20,9 @@
 #include <maya/MString.h>
 #include <maya/MViewport2Renderer.h>
 
+#include <array>
+#include <memory>
+
 #include "delegates/delegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -28,7 +31,7 @@ class HdMayaRenderOverride : public MHWRender::MRenderOverride, TfSingleton<HdMa
     friend class TfSingleton<HdMayaRenderOverride>;
     HdMayaRenderOverride();
 public:
-    ~HdMayaRenderOverride();
+    ~HdMayaRenderOverride() override;
     static HdMayaRenderOverride& GetInstance() {
         return TfSingleton<HdMayaRenderOverride>::GetInstance();
     }
@@ -43,12 +46,27 @@ public:
     static int GetMaximumShadowMapResolution();
     static void SetMaximumShadowMapResolution(int resolution);
 
+    MStatus Render(const MHWRender::MDrawContext& drawContext);
+
     MString uiName() const override {
         return MString("Hydra Viewport Override");
     }
+
+    MHWRender::DrawAPI supportedDrawAPIs() const override;
+
+    MStatus setup(const MString & destination) override;
+    MStatus cleanup() override;
+
+    bool startOperationIterator() override;
+    MHWRender::MRenderOperation* renderOperation() override;
+    bool nextRenderOperation() override;
 private:
     void InitHydraResources();
     void ClearHydraResources();
+
+    static constexpr int _numOperations = 3;
+    std::array<std::unique_ptr<MHWRender::MRenderOperation>, _numOperations> _operations;
+    std::array<MString, _numOperations> _operationNames;
 
     HdEngine _engine;
     HdxRendererPlugin* _rendererPlugin = nullptr;
@@ -62,6 +80,7 @@ private:
     TfToken _rendererName;
 
     int _maximumShadowMapResolution = 1024;
+    int _currentOperation = -1;
 
     bool _initializedViewport = false;
     bool _isPopulated = false;

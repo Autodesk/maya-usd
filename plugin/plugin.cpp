@@ -1,7 +1,5 @@
 #include <maya/MFnPlugin.h>
 
-#include "viewportRenderer.h"
-#include "renderOverride.h"
 #include "renderOverride.h"
 #include "cmd.h"
 
@@ -19,13 +17,6 @@ MStatus initializePlugin(MObject obj) {
 
     MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");
     MStatus ret = MS::kSuccess;
-
-    auto* vp = HdMayaViewportRenderer::GetInstance();
-    if (vp && !vp->registerRenderer()) {
-        ret = MS::kFailure;
-        ret.perror("Error registering hd viewport renderer!");
-        HdMayaViewportRenderer::Cleanup();
-    }
 
     auto* renderer = MHWRender::MRenderer::theRenderer();
     if (renderer) {
@@ -45,13 +36,6 @@ MStatus initializePlugin(MObject obj) {
 MStatus uninitializePlugin(MObject obj) {
     MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");
     MStatus ret = MS::kSuccess;
-
-    auto* vp = HdMayaViewportRenderer::GetInstance();
-    if (vp && vp->deregisterRenderer()) {
-        ret = MS::kFailure;
-        ret.perror("Error deregistering hd viewport renderer!");
-    }
-    HdMayaViewportRenderer::Cleanup();
 
     auto* renderer = MHWRender::MRenderer::theRenderer();
     if (renderer) {
