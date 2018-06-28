@@ -20,9 +20,6 @@
 #include <maya/MString.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <array>
-#include <memory>
-
 #include "delegates/delegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -64,8 +61,7 @@ private:
     void InitHydraResources();
     void ClearHydraResources();
 
-    static constexpr int _numOperations = 3;
-    std::array<std::unique_ptr<MHWRender::MRenderOperation>, _numOperations> _operations;
+    std::vector<MHWRender::MRenderOperation*> _operations;
 
     HdEngine _engine;
     HdxRendererPlugin* _rendererPlugin = nullptr;

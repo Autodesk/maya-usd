@@ -104,8 +104,8 @@ HdMayaRenderOverride::HdMayaRenderOverride() :
 HdMayaRenderOverride::~HdMayaRenderOverride() {
     ClearHydraResources();
 
-    for (auto& operation : _operations) {
-        operation.reset(nullptr);
+    for (auto operation : _operations) {
+        delete operation;
     }
 }
 
@@ -285,13 +285,13 @@ HdMayaRenderOverride::setup(const MString& destination) {
         GlfGlewInit();
         InitHydraResources();
 
-        _operations[0].reset(new MHWRender::MClearOperation("HydraRenderOverride_Clear"));
-        _operations[1].reset(new HdMayaRender("HydraRenderOverride_Scene", this));
+        _operations.push_back(new MHWRender::MClearOperation("HydraRenderOverride_Clear"));
+        _operations.push_back(new HdMayaRender("HydraRenderOverride_Scene", this));
         // _operations[1].reset(new MHWRender::MHUDRender());
         auto* presentTarget = new MHWRender::MPresentTarget("HydraRenderOverride_Present");
         presentTarget->setPresentDepth(true);
         presentTarget->setTargetBackBuffer(MHWRender::MPresentTarget::kCenterBuffer);
-        _operations[2].reset(presentTarget);
+        _operations.push_back(presentTarget);
     }
 
     return MS::kSuccess;
@@ -312,15 +312,15 @@ HdMayaRenderOverride::startOperationIterator() {
 MHWRender::MRenderOperation*
 HdMayaRenderOverride::renderOperation() {
     if (_currentOperation >= 0 &&
-        _currentOperation < _numOperations) {
-        return _operations[_currentOperation].get();
+        _currentOperation < static_cast<int>(_operations.size())) {
+        return _operations[_currentOperation];
     }
     return nullptr;
 }
 
 bool
 HdMayaRenderOverride::nextRenderOperation() {
-    return ++_currentOperation < _numOperations;
+    return ++_currentOperation < static_cast<int>(_operations.size());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
