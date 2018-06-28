@@ -35,6 +35,7 @@ set(SRC
 
     cmd.cpp
     plugin.cpp
+    renderOverride.cpp
     viewportRenderer.cpp
     )
 

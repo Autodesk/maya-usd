@@ -4,7 +4,7 @@
 #include <maya/MArgDatabase.h>
 #include <maya/MGlobal.h>
 
-#include "viewportRenderer.h"
+#include "renderOverride.h"
 #include "delegates/delegateRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -25,11 +25,11 @@ constexpr auto _changeRendererLong = "-changeRenderer";
 constexpr auto _listDelegates = "-ld";
 constexpr auto _listDelegatesLong = "-listDelegates";
 
-constexpr auto _getFallbackShadowMapResolution = "-gsm";
-constexpr auto _getFallbackShadowMapResolutionLong = "-getFallbackShadowMapResolution";
+constexpr auto _getMaximumShadowMapResolution = "-gms";
+constexpr auto _getMaximumShadowMapResolutionLong = "-getMaximumShadowMapResolution";
 
-constexpr auto _setFallbackShadowMapResolution = "-ssm";
-constexpr auto _setFallbackShadowMapResolutionLong = "-setFallbackShadowMapResolution";
+constexpr auto _setMaximumShadowMapResolution = "-sms";
+constexpr auto _setMaximumShadowMapResolutionLong = "-setMaximumShadowMapResolution";
 
 }
 
@@ -55,12 +55,12 @@ MSyntax HdMayaCmd::createSyntax() {
         _listDelegatesLong);
 
     syntax.addFlag(
-        _getFallbackShadowMapResolution,
-        _getFallbackShadowMapResolutionLong);
+        _getMaximumShadowMapResolution,
+        _getMaximumShadowMapResolutionLong);
 
     syntax.addFlag(
-        _setFallbackShadowMapResolution,
-        _setFallbackShadowMapResolutionLong,
+        _setMaximumShadowMapResolution,
+        _setMaximumShadowMapResolutionLong,
         MSyntax::kLong);
 
     return syntax;
@@ -70,32 +70,32 @@ MStatus HdMayaCmd::doIt(const MArgList &args) {
     MArgDatabase db(syntax(), args);
 
     if (db.isFlagSet(_listRenderers)) {
-        for (const auto& renderer: HdMayaViewportRenderer::GetRendererPlugins()) {
+        for (const auto& renderer: HdMayaRenderOverride::GetRendererPlugins()) {
             appendToResult(renderer.GetText());
         }
     } else if (db.isFlagSet(_getRendererDisplayName)) {
         MString id;
         if (db.getFlagArgument(_getRendererDisplayName, 0, id)) {
-            const auto dn = HdMayaViewportRenderer::GetRendererPluginDisplayName(TfToken(id.asChar()));
+            const auto dn = HdMayaRenderOverride::GetRendererPluginDisplayName(TfToken(id.asChar()));
             setResult(MString(dn.c_str()));
         }
     } else if (db.isFlagSet(_changeRenderer)) {
         MString id;
         if (db.getFlagArgument(_changeRenderer, 0, id)) {
-            HdMayaViewportRenderer::ChangeRendererPlugin(TfToken(id.asChar()));
+            HdMayaRenderOverride::ChangeRendererPlugin(TfToken(id.asChar()));
             MGlobal::executeCommandOnIdle("refresh -f");
         }
     } else if (db.isFlagSet(_listDelegates)) {
         for (const auto& delegate: HdMayaDelegateRegistry::GetDelegateNames()) {
             appendToResult(delegate.GetText());
         }
-    } else if (db.isFlagSet(_getFallbackShadowMapResolution)) {
-        appendToResult(HdMayaViewportRenderer::GetFallbackShadowMapResolution());
-    } else if (db.isFlagSet(_setFallbackShadowMapResolution)) {
+    } else if (db.isFlagSet(_getMaximumShadowMapResolution)) {
+        appendToResult(HdMayaRenderOverride::GetMaximumShadowMapResolution());
+    } else if (db.isFlagSet(_setMaximumShadowMapResolution)) {
         int res = 32;
-        if (db.getFlagArgument(_setFallbackShadowMapResolution, 0, res)) {
+        if (db.getFlagArgument(_setMaximumShadowMapResolution, 0, res)) {
             if (res < 32) { res = 32; }
-            HdMayaViewportRenderer::SetFallbackShadowMapResolution(res);
+            HdMayaRenderOverride::SetMaximumShadowMapResolution(res);
         }
     }
     return MS::kSuccess;
