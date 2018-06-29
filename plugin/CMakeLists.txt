@@ -19,6 +19,7 @@ set(MAYA_LIBS OpenMaya Foundation OpenMayaAnim OpenMayaFX OpenMayaUI OpenMayaRen
 
 set(SRC
     adapters/adapter.cpp
+    adapters/adapterDebugCodes.cpp
     adapters/adapterRegistry.cpp
     adapters/areaLightAdapter.cpp
     adapters/dagAdapter.cpp

@@ -10,6 +10,7 @@
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
 
+#include "adapterDebugCodes.h"
 #include "adapterRegistry.h"
 #include "dagAdapter.h"
 
@@ -105,9 +106,16 @@ private:
         for (const auto& it: _dirtyBits) {
             if (it.first == plugName) {
                 adapter->MarkDirty(it.second);
-                break;
+                TF_DEBUG(HDMAYA_ADAPTER_MESH_PLUG_DIRTY).Msg(
+                    "Marking prim dirty with bits %u because %s plug was dirtied.\n",
+                    it.second, it.first.asChar());
+                return;
             }
         }
+
+        TF_DEBUG(HDMAYA_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY).Msg(
+                "%s (%s) plug dirtying was not handled by HdMayaMeshAdapter::DeformCallback.\n",
+                plug.name().asChar(), plugName.asChar());
     }
 };
 
@@ -118,6 +126,5 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, mesh) {
             return std::static_pointer_cast<HdMayaDagAdapter>(std::make_shared<HdMayaMeshAdapter>(delegate, dag));
         });
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
