@@ -22,6 +22,7 @@ public:
     HdMayaDelegateCtx* GetDelegate() { return _delegate; }
     void AddCallback(MCallbackId callbackId);
     virtual VtValue Get(const TfToken& key);
+    const MObject& GetNode() { return _node; }
 
     virtual void CreateCallbacks();
     virtual void MarkDirty(HdDirtyBits dirtyBits) = 0;

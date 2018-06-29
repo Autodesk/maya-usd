@@ -5,13 +5,31 @@
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/pxOsd/tokens.h>
 
-#include <maya/MFnMesh.h>
 #include <maya/MIntArray.h>
+#include <maya/MFnMesh.h>
+#include <maya/MNodeMessage.h>
+#include <maya/MPlug.h>
 
 #include "adapterRegistry.h"
 #include "dagAdapter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+namespace {
+
+std::vector<std::pair<MString, HdDirtyBits>> _dirtyBits = {
+    {MString("pt"),
+     HdChangeTracker::DirtyPoints |
+     HdChangeTracker::DirtyExtent},
+    {MString("i"),
+     HdChangeTracker::DirtyPoints |
+     HdChangeTracker::DirtyExtent |
+     HdChangeTracker::DirtyPrimvar |
+     HdChangeTracker::DirtyTopology |
+     HdChangeTracker::DirtyNormals},
+};
+
+}
 
 class HdMayaMeshAdapter : public HdMayaDagAdapter {
 public:
@@ -20,6 +38,16 @@ public:
 
     void Populate() override {
         GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty);
+
+        MStatus status;
+        // Duh!
+        auto obj = GetNode();
+        auto id = MNodeMessage::addNodeDirtyCallback(
+            obj,
+            DeformCallback,
+            this,
+            &status);
+        if (status) { AddCallback(id); }
     }
 
     VtValue Get(const TfToken& key) override {
@@ -51,10 +79,10 @@ public:
         }
 
         return HdMeshTopology(
-        PxOsdOpenSubdivTokens->none,
-        UsdGeomTokens->rightHanded,
-        faceVertexCounts,
-        faceVertexIndices);
+            PxOsdOpenSubdivTokens->none,
+            UsdGeomTokens->rightHanded,
+            faceVertexCounts,
+            faceVertexIndices);
     }
 
     HdPrimvarDescriptorVector
@@ -67,6 +95,19 @@ public:
             return {desc};
         }
         return {};
+    }
+
+private:
+    static void
+    DeformCallback(MObject& node, MPlug& plug, void* clientData) {
+        auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
+        const auto plugName = plug.partialName();
+        for (const auto& it: _dirtyBits) {
+            if (it.first == plugName) {
+                adapter->MarkDirty(it.second);
+                break;
+            }
+        }
     }
 };
 
