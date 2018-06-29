@@ -55,6 +55,25 @@ endif ()
 install(TARGETS ${PLUGIN}
         DESTINATION plug-ins)
 
+install(FILES
+            adapters/adapter.h
+            adapters/adapterDebugCodes.h
+            adapters/adapterRegistry.h
+            adapters/constantShadowMatrix.h
+            adapters/dagAdapter.h
+            adapters/lightAdapter.h
+        DESTINATION include/adapter)
+
+install(FILES
+            delegates/delegate.h
+            delegates/delegateCtx.h
+            delegates/delegateRegistry.h
+        DESTINATION include)
+
+install(FILES
+            utils.h
+        DESTINATION include)
+
 # file(GLOB TEMPLATES scripts/*.py)
 #
 # install(FILES ${TEMPLATES}
