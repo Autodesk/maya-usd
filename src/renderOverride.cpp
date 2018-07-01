@@ -119,7 +119,7 @@ HdMayaRenderOverride::HdMayaRenderOverride() :
     _ID = SdfPath("/HdMayaViewportRenderer").AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
     _rendererName = _getDefaultRenderer();
     // This is a critical error, so we don't allow the construction
-    // of the viewport renderer plugin if there is no renderer plugin
+    // of the viewport renderer src if there is no renderer src
     // present.
     if (_rendererName.IsEmpty()) {
         throw std::runtime_error("No default renderer is available!");
