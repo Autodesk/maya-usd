@@ -20,7 +20,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaSceneDelegate : public HdMayaDelegateCtx, public HdMayaDelegate {
+class HdMayaSceneDelegate : public HdMayaDelegateCtx {
 public:
     HdMayaSceneDelegate(
         HdRenderIndex* renderIndex,

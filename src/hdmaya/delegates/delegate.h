@@ -5,6 +5,8 @@
 
 #include <memory>
 
+#include <hdmaya/delegates/params.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaDelegate {
@@ -14,6 +16,11 @@ public:
     virtual void Populate() = 0;
     virtual void PreFrame() { }
     virtual void PostFrame() { }
+
+    virtual void SetParams(const HdMayaParams& params);
+    const HdMayaParams& GetParams() { return _params; }
+private:
+    HdMayaParams _params;
 };
 
 using HdMayaDelegatePtr = std::shared_ptr<HdMayaDelegate>;

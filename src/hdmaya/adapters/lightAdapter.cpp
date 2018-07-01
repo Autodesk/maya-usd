@@ -12,9 +12,6 @@
 
 #include <hdmaya/adapters/constantShadowMatrix.h>
 
-// FIXME!
-#include "../../plugin/renderOverride.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -174,8 +171,8 @@ HdMayaLightAdapter::CalculateShadowParams(MFnLight& light, GfFrustum& frustum, H
 
     params.enabled = true;
     params.resolution = dmapResolutionPlug.isNull() ?
-        HdMayaRenderOverride::GetMaximumShadowMapResolution() :
-        std::min(HdMayaRenderOverride::GetMaximumShadowMapResolution(), dmapResolutionPlug.asInt());
+        GetDelegate()->GetParams().maximumShadowMapResolution :
+        std::min(GetDelegate()->GetParams().maximumShadowMapResolution, dmapResolutionPlug.asInt());
     params.shadowMatrix = boost::static_pointer_cast<HdxShadowMatrixComputation>(
         boost::make_shared<ConstantShadowMatrix>(frustum.ComputeViewMatrix() * frustum.ComputeProjectionMatrix()));
     params.bias = dmapBiasPlug.isNull() ?

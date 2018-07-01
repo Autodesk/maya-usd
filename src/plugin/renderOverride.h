@@ -21,6 +21,7 @@
 #include <maya/MViewport2Renderer.h>
 
 #include <hdmaya/delegates/delegate.h>
+#include <hdmaya/delegates/params.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -62,6 +63,7 @@ private:
     void ClearHydraResources();
 
     std::vector<MHWRender::MRenderOperation*> _operations;
+    HdMayaParams _params;
 
     HdEngine _engine;
     HdxRendererPlugin* _rendererPlugin = nullptr;
@@ -74,7 +76,6 @@ private:
     SdfPath _ID;
     TfToken _rendererName;
 
-    int _maximumShadowMapResolution = 1024;
     int _currentOperation = -1;
 
     bool _initializedViewport = false;

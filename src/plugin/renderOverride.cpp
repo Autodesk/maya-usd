@@ -171,12 +171,12 @@ HdMayaRenderOverride::ChangeRendererPlugin(const TfToken& id) {
 
 int
 HdMayaRenderOverride::GetMaximumShadowMapResolution() {
-    return GetInstance()._maximumShadowMapResolution;
+    return GetInstance()._params.maximumShadowMapResolution;
 }
 
 void
 HdMayaRenderOverride::SetMaximumShadowMapResolution(int resolution) {
-    GetInstance()._maximumShadowMapResolution = resolution;
+    GetInstance()._params.maximumShadowMapResolution = resolution;
 }
 
 MStatus
@@ -189,6 +189,7 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     }
 
     for (auto& it: _delegates) {
+        it->SetParams(_params);
         it->PreFrame();
     }
 
