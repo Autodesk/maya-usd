@@ -1,4 +1,4 @@
-#include "sceneDelegate.h"
+#include <hdmaya/delegates/sceneDelegate.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/range3d.h>
@@ -17,9 +17,9 @@
 #include <maya/MItDag.h>
 #include <maya/MString.h>
 
-#include "../utils.h"
-#include "../adapters/adapterRegistry.h"
-#include "delegateRegistry.h"
+#include <hdmaya/utils.h>
+#include <hdmaya/adapters/adapterRegistry.h>
+#include <hdmaya/delegates/delegateRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

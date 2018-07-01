@@ -1,4 +1,4 @@
-#include "delegateCtx.h"
+#include <hdmaya/delegates/delegateCtx.h>
 
 #include <pxr/base/gf/frustum.h>
 #include <pxr/base/gf/plane.h>

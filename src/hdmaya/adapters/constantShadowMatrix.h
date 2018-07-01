@@ -6,7 +6,6 @@
 
 #include <pxr/base/gf/matrix4d.h>
 
-// FFFFFFFFFFFFFFFffffffffffffffffff
 #include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE

@@ -9,7 +9,7 @@
 
 #include <vector>
 
-#include "../delegates/delegateCtx.h"
+#include <hdmaya/delegates/delegateCtx.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -2,8 +2,8 @@
 
 #include <pxr/imaging/hd/light.h>
 
-#include "lightAdapter.h"
-#include "adapterRegistry.h"
+#include <hdmaya/adapters/lightAdapter.h>
+#include <hdmaya/adapters/adapterRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

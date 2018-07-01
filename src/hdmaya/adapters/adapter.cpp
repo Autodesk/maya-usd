@@ -1,4 +1,4 @@
-#include "adapter.h"
+#include <hdmaya/adapters/adapter.h>
 
 #include <maya/MNodeMessage.h>
 

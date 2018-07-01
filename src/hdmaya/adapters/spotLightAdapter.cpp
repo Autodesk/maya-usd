@@ -9,10 +9,10 @@
 #include <maya/MPlug.h>
 #include <maya/MPoint.h>
 
-#include "adapterRegistry.h"
-#include "lightAdapter.h"
+#include <hdmaya/adapters/adapterRegistry.h>
+#include <hdmaya/adapters/lightAdapter.h>
 
-#include "../utils.h"
+#include <hdmaya/utils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

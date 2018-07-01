@@ -1,7 +1,7 @@
 #include <pxr/pxr.h>
 
-#include "lightAdapter.h"
-#include "adapterRegistry.h"
+#include <hdmaya/adapters/lightAdapter.h>
+#include <hdmaya/adapters/adapterRegistry.h>
 
 #include <memory>
 

@@ -1,4 +1,4 @@
-#include "delegateRegistry.h"
+#include <hdmaya/delegates/delegateRegistry.h>
 
 #include <pxr/base/tf/instantiateSingleton.h>
 

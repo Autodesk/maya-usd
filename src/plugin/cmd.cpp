@@ -5,7 +5,7 @@
 #include <maya/MGlobal.h>
 
 #include "renderOverride.h"
-#include "delegates/delegateRegistry.h"
+#include <hdmaya/delegates/delegateRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

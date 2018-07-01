@@ -1,8 +1,8 @@
-#include "testDelegate.h"
+#include <hdmaya/delegates/testDelegate.h>
 
 #include <pxr/base/tf/envSetting.h>
 
-#include "delegateRegistry.h"
+#include <hdmaya/delegates/delegateRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

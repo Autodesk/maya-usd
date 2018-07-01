@@ -10,9 +10,10 @@
 
 #include <maya/MNodeMessage.h>
 
-#include "constantShadowMatrix.h"
+#include <hdmaya/adapters/constantShadowMatrix.h>
 
-#include "../renderOverride.h"
+// FIXME!
+#include "../../plugin/renderOverride.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

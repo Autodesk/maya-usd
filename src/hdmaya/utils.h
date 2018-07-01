@@ -1,5 +1,5 @@
-#ifndef __HDMAYA_UTIL_H__
-#define __HDMAYA_UTIL_H__
+#ifndef __HDMAYA_UTILS_H__
+#define __HDMAYA_UTILS_H__
 
 #include <pxr/pxr.h>
 
@@ -19,4 +19,4 @@ getGfMatrixFromMaya(const MMatrix& mayaMat) {
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_UTIL_H_
+#endif // __HDMAYA_UTILS_H_

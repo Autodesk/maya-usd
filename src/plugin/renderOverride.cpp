@@ -14,9 +14,9 @@
 
 #include <exception>
 
-#include "delegates/delegateRegistry.h"
+#include <hdmaya/delegates/delegateRegistry.h>
 
-#include "utils.h"
+#include <hdmaya/utils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

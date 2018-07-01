@@ -10,7 +10,7 @@
 
 #include <maya/MFnLight.h>
 
-#include "dagAdapter.h"
+#include <hdmaya/adapters/dagAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

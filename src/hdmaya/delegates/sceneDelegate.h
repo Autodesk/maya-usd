@@ -15,8 +15,8 @@
 
 #include <memory>
 
-#include "../adapters/dagAdapter.h"
-#include "delegateCtx.h"
+#include <hdmaya/adapters/dagAdapter.h>
+#include <hdmaya/delegates/delegateCtx.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

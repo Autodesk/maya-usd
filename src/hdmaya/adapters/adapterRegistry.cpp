@@ -1,4 +1,4 @@
-#include "adapterRegistry.h"
+#include <hdmaya/adapters/adapterRegistry.h>
 
 #include <pxr/base/tf/instantiateSingleton.h>
 

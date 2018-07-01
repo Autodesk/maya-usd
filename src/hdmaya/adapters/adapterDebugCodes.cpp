@@ -1,4 +1,4 @@
-#include "adapterDebugCodes.h"
+#include <hdmaya/adapters/adapterDebugCodes.h>
 
 #include <pxr/base/tf/registryManager.h>
 

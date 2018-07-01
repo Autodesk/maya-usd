@@ -10,7 +10,7 @@
 #include <vector>
 #include <tuple>
 
-#include "delegate.h"
+#include <hdmaya/delegates/delegate.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

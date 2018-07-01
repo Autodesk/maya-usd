@@ -6,8 +6,8 @@
 
 #include <maya/MFn.h>
 
-#include "../delegates/delegateCtx.h"
-#include "dagAdapter.h"
+#include <hdmaya/delegates/delegateCtx.h>
+#include <hdmaya/adapters/dagAdapter.h>
 
 #include <unordered_map>
 

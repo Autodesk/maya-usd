@@ -18,31 +18,32 @@ link_directories(${USD_MAYA_LIBRARY_DIR})
 set(MAYA_LIBS OpenMaya Foundation OpenMayaAnim OpenMayaFX OpenMayaUI OpenMayaRender)
 
 set(SRC
-    adapters/adapter.cpp
-    adapters/adapterDebugCodes.cpp
-    adapters/adapterRegistry.cpp
-    adapters/areaLightAdapter.cpp
-    adapters/dagAdapter.cpp
-    adapters/lightAdapter.cpp
-    adapters/meshAdapter.cpp
-    adapters/pointLightAdapter.cpp
-    adapters/spotLightAdapter.cpp
+    hdmaya/adapters/adapter.cpp
+    hdmaya/adapters/adapterDebugCodes.cpp
+    hdmaya/adapters/adapterRegistry.cpp
+    hdmaya/adapters/areaLightAdapter.cpp
+    hdmaya/adapters/dagAdapter.cpp
+    hdmaya/adapters/lightAdapter.cpp
+    hdmaya/adapters/meshAdapter.cpp
+    hdmaya/adapters/pointLightAdapter.cpp
+    hdmaya/adapters/spotLightAdapter.cpp
 
-    delegates/delegate.cpp
-    delegates/delegateCtx.cpp
-    delegates/delegateRegistry.cpp
-    delegates/sceneDelegate.cpp
-    delegates/testDelegate.cpp
+    hdmaya/delegates/delegate.cpp
+    hdmaya/delegates/delegateCtx.cpp
+    hdmaya/delegates/delegateRegistry.cpp
+    hdmaya/delegates/sceneDelegate.cpp
+    hdmaya/delegates/testDelegate.cpp
 
-    cmd.cpp
-    plugin.cpp
-    renderOverride.cpp
+    plugin/cmd.cpp
+    plugin/plugin.cpp
+    plugin/renderOverride.cpp
     )
 
 add_library(${PLUGIN} SHARED ${SRC} ${HDR})
 set_target_properties(${PLUGIN} PROPERTIES PREFIX "")
 target_link_libraries(${PLUGIN} PRIVATE ${OPENGL_gl_LIBRARY} ${MAYA_LIBS} ${Boost_LIBRARIES} ${GLEW_LIBRARY})
 target_link_libraries(${PLUGIN} PRIVATE usd usdGeom glf gf hd hdSt hdx usdImaging usdImagingGL usdMaya)
+target_include_directories(${PLUGIN} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(${PLUGIN} SYSTEM PRIVATE ${MAYA_INCLUDE_DIRS} ${GLEW_INCLUDE_DIR})
 target_include_directories(${PLUGIN} SYSTEM PRIVATE ${USD_INCLUDE_DIR} ${USD_MAYA_INCLUDE_DIR})
 target_include_directories(${PLUGIN} SYSTEM PRIVATE ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
@@ -56,22 +57,22 @@ install(TARGETS ${PLUGIN}
         DESTINATION plug-ins)
 
 install(FILES
-            adapters/adapter.h
-            adapters/adapterDebugCodes.h
-            adapters/adapterRegistry.h
-            adapters/constantShadowMatrix.h
-            adapters/dagAdapter.h
-            adapters/lightAdapter.h
+        hdmaya/adapters/adapter.h
+        hdmaya/adapters/adapterDebugCodes.h
+        hdmaya/adapters/adapterRegistry.h
+        hdmaya/adapters/constantShadowMatrix.h
+        hdmaya/adapters/dagAdapter.h
+        hdmaya/adapters/lightAdapter.h
         DESTINATION include/adapter)
 
 install(FILES
-            delegates/delegate.h
-            delegates/delegateCtx.h
-            delegates/delegateRegistry.h
+        hdmaya/delegates/delegate.h
+        hdmaya/delegates/delegateCtx.h
+        hdmaya/delegates/delegateRegistry.h
         DESTINATION include)
 
 install(FILES
-            utils.h
+        hdmaya/utils.h
         DESTINATION include)
 
 # file(GLOB TEMPLATES scripts/*.py)

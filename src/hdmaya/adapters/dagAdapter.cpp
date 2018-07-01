@@ -1,4 +1,4 @@
-#include "dagAdapter.h"
+#include <hdmaya/adapters/dagAdapter.h>
 
 #include <pxr/imaging/hd/tokens.h>
 
