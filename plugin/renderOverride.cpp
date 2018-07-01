@@ -46,7 +46,6 @@ public:
 
     MUint64 getObjectTypeExclusions() override {
         return ~(
-            MHWRender::MFrameContext::kExcludeManipulators |
             MHWRender::MFrameContext::kExcludeSelectHandles |
             // MHWRender::MFrameContext::kExcludeCameras |
             MHWRender::MFrameContext::kExcludeLights);
@@ -66,6 +65,26 @@ public:
         mClearOperation.setClearColor(c1);
         mClearOperation.setClearColor2(c2);
         mClearOperation.setClearGradient(gradient);
+        return mClearOperation;
+    }
+};
+
+class HdMayaManipulatorRender : public MHWRender::MSceneRender
+{
+public:
+    HdMayaManipulatorRender(const MString &name) :
+        MHWRender::MSceneRender(name) {
+
+    }
+
+    MUint64 getObjectTypeExclusions() override {
+        return ~MHWRender::MFrameContext::kExcludeManipulators;
+    }
+
+    MHWRender::MClearOperation&
+    clearOperation()
+    {
+        mClearOperation.setMask(MClearOperation::kClearNone);
         return mClearOperation;
     }
 };
@@ -290,6 +309,7 @@ HdMayaRenderOverride::setup(const MString& destination) {
 
         _operations.push_back(new HdMayaSceneRender("HydraRenderOverride_Scene"));
         _operations.push_back(new HdMayaRender("HydraRenderOverride_Hydra", this));
+        _operations.push_back(new HdMayaManipulatorRender("HydraRenderOverride_Manipulator"));
         _operations.push_back(new MHWRender::MHUDRender());
         auto* presentTarget = new MHWRender::MPresentTarget("HydraRenderOverride_Present");
         presentTarget->setPresentDepth(true);
