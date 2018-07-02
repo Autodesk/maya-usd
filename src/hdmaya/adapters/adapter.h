@@ -9,21 +9,27 @@
 
 #include <vector>
 
+#include <hdmaya/api.h>
 #include <hdmaya/delegates/delegateCtx.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaAdapter {
 public:
+    HDMAYA_API
     HdMayaAdapter(MObject node, const SdfPath& id, HdMayaDelegateCtx* delegate);
+    HDMAYA_API
     virtual ~HdMayaAdapter();
 
     const SdfPath& GetID() { return _id; }
     HdMayaDelegateCtx* GetDelegate() { return _delegate; }
+    HDMAYA_API
     void AddCallback(MCallbackId callbackId);
+    HDMAYA_API
     virtual VtValue Get(const TfToken& key);
     const MObject& GetNode() { return _node; }
 
+    HDMAYA_API
     virtual void CreateCallbacks();
     virtual void MarkDirty(HdDirtyBits dirtyBits) = 0;
     virtual void RemovePrim() = 0;

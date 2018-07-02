@@ -45,13 +45,14 @@ target_include_directories(hdmaya SYSTEM PUBLIC ${MAYA_INCLUDE_DIRS} ${GLEW_INCL
 target_include_directories(hdmaya SYSTEM PUBLIC ${USD_INCLUDE_DIR} ${USD_MAYA_INCLUDE_DIR})
 target_include_directories(hdmaya SYSTEM PUBLIC ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
 target_compile_features(hdmaya PUBLIC cxx_std_11)
+target_compile_definitions(hdmaya PRIVATE "HDMAYA_EXPORT=1")
 set_target_properties(hdmaya PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
 
 add_library(hdview SHARED ${HDVIEW_SRC})
 target_link_libraries(hdview PRIVATE hdmaya)
 set_target_properties(hdview PROPERTIES PREFIX "")
 set_target_properties(hdview PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
-set_target_properties(hdview PROPERTIES INSTALL_RPATH "../lib")
+set_target_properties(hdview PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
 
 if (LUMA_USD_BUILD)
     target_compile_definitions(hdmaya PRIVATE LUMA_USD_BUILD)

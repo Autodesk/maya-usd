@@ -15,6 +15,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaAdapterRegistry : public TfSingleton<HdMayaAdapterRegistry> {
     friend class TfSingleton<HdMayaAdapterRegistry>;
+    HDMAYA_API
     HdMayaAdapterRegistry() = default;
 public:
     static HdMayaAdapterRegistry& getInstance() {
@@ -23,8 +24,10 @@ public:
 
     using DagAdapterCreator = std::function<
         HdMayaDagAdapterPtr(HdMayaDelegateCtx*, const MDagPath&)>;
+    HDMAYA_API
     static void RegisterDagAdapter(const std::string& type, DagAdapterCreator creator);
 
+    HDMAYA_API
     static DagAdapterCreator GetAdapterCreator(const MDagPath& dag);
 private:
     std::unordered_map<std::string, DagAdapterCreator> _dagAdapters;

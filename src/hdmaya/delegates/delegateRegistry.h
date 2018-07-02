@@ -16,6 +16,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaDelegateRegistry : public TfSingleton<HdMayaDelegateRegistry> {
     friend class TfSingleton<HdMayaDelegateRegistry>;
+    HDMAYA_API
     HdMayaDelegateRegistry() = default;
 public:
     static HdMayaDelegateRegistry& getInstance() {
@@ -25,8 +26,11 @@ public:
     using DelegateCreator = std::function<
         HdMayaDelegatePtr(HdRenderIndex*, const SdfPath&)>;
 
+    HDMAYA_API
     static void RegisterDelegate(const TfToken& name, DelegateCreator creator);
+    HDMAYA_API
     static std::vector<TfToken> GetDelegateNames();
+    HDMAYA_API
     static std::vector<DelegateCreator> GetDelegateCreators();
 private:
     std::vector<std::tuple<TfToken, DelegateCreator>> _delegates;

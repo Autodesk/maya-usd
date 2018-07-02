@@ -29,17 +29,25 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaDagAdapter : public HdMayaAdapter {
 protected:
+    HDMAYA_API
     HdMayaDagAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath);
 public:
+    HDMAYA_API
     virtual ~HdMayaDagAdapter() = default;
 
+    HDMAYA_API
     virtual HdMeshTopology GetMeshTopology();
+    HDMAYA_API
     virtual void CreateCallbacks() override;
+    HDMAYA_API
     virtual void MarkDirty(HdDirtyBits dirtyBits);
+    HDMAYA_API
     virtual void RemovePrim() override;
+    HDMAYA_API
     virtual HdPrimvarDescriptorVector
     GetPrimvarDescriptors(HdInterpolation interpolation);
-    // TODO: think about this!
+    // TODO: Maybe we could track lights separately from dag adapters?
+    HDMAYA_API
     virtual VtValue GetLightParamValue(const TfToken& paramName);
 
     const MDagPath& GetDagPath() { return _dagPath; }
@@ -50,7 +58,9 @@ public:
         return _extent;
     }
 protected:
+    HDMAYA_API
     void CalculateExtent();
+    HDMAYA_API
     void CalculateTransform();
 
 private:

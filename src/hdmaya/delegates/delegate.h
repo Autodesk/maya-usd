@@ -5,18 +5,23 @@
 
 #include <memory>
 
+#include <hdmaya/api.h>
 #include <hdmaya/delegates/params.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaDelegate {
 public:
+    HDMAYA_API
     HdMayaDelegate() = default;
+    HDMAYA_API
+    virtual ~HdMayaDelegate() = default;
 
     virtual void Populate() = 0;
     virtual void PreFrame() { }
     virtual void PostFrame() { }
 
+    HDMAYA_API
     virtual void SetParams(const HdMayaParams& params);
     const HdMayaParams& GetParams() { return _params; }
 private:
