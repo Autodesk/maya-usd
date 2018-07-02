@@ -19,6 +19,7 @@
 
 #include <maya/MString.h>
 #include <maya/MViewport2Renderer.h>
+#include <maya/MMessage.h>
 
 #include <hdmaya/delegates/delegate.h>
 #include <hdmaya/delegates/params.h>
@@ -61,8 +62,10 @@ public:
 private:
     void InitHydraResources();
     void ClearHydraResources();
+    static void ClearHydraCallback(void*);
 
     std::vector<MHWRender::MRenderOperation*> _operations;
+    std::vector<MCallbackId> _callbacks;
     HdMayaParams _params;
 
     HdEngine _engine;
@@ -79,7 +82,6 @@ private:
     int _currentOperation = -1;
 
     bool _initializedViewport = false;
-    bool _isPopulated = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

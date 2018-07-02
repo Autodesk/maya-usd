@@ -11,6 +11,7 @@
 #include <pxr/imaging/hdx/tokens.h>
 
 #include <maya/MDrawContext.h>
+#include <maya/MSceneMessage.h>
 
 #include <exception>
 
@@ -122,8 +123,23 @@ HdMayaRenderOverride::HdMayaRenderOverride() :
     // of the viewport renderer src if there is no renderer src
     // present.
     if (_rendererName.IsEmpty()) {
+        // TODO: this should be checked when loading the plugin.
         throw std::runtime_error("No default renderer is available!");
     }
+
+    MStatus status;
+    auto id = MSceneMessage::addCallback(
+        MSceneMessage::kBeforeNew,
+        ClearHydraCallback,
+        nullptr,
+        &status);
+    if (status) { _callbacks.push_back(id); }
+    id = MSceneMessage::addCallback(
+        MSceneMessage::kBeforeOpen,
+        ClearHydraCallback,
+        nullptr,
+        &status);
+    if (status) { _callbacks.push_back(id); }
 }
 
 HdMayaRenderOverride::~HdMayaRenderOverride() {
@@ -131,6 +147,10 @@ HdMayaRenderOverride::~HdMayaRenderOverride() {
 
     for (auto operation : _operations) {
         delete operation;
+    }
+
+    for (auto callback: _callbacks) {
+        MMessage::removeCallback(callback);
     }
 }
 
@@ -165,7 +185,6 @@ HdMayaRenderOverride::ChangeRendererPlugin(const TfToken& id) {
     instance._rendererName = id;
     if (instance._initializedViewport) {
         instance.ClearHydraResources();
-        instance.InitHydraResources();
     }
 }
 
@@ -181,11 +200,10 @@ HdMayaRenderOverride::SetMaximumShadowMapResolution(int resolution) {
 
 MStatus
 HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
-    if (!_isPopulated) {
-        for (auto& it: _delegates) {
-            it->Populate();
-        }
-        _isPopulated = true;
+    if (!_initializedViewport) {
+        GlfGlewInit();
+        InitHydraResources();
+        _initializedViewport = true;
     }
 
     for (auto& it: _delegates) {
@@ -262,6 +280,9 @@ HdMayaRenderOverride::InitHydraResources() {
 #endif
     VtValue selectionTrackerValue(_selectionTracker);
     _engine.SetTaskContextData(HdxTokens->selectionState, selectionTrackerValue);
+    for (auto& it: _delegates) {
+        it->Populate();
+    }
 }
 
 void
@@ -288,7 +309,12 @@ HdMayaRenderOverride::ClearHydraResources() {
         _rendererPlugin = nullptr;
     }
 
-    _isPopulated = false;
+    _initializedViewport = false;
+}
+
+void
+HdMayaRenderOverride::ClearHydraCallback(void*) {
+    GetInstance().ClearHydraResources();
 }
 
 MHWRender::DrawAPI
@@ -304,10 +330,6 @@ HdMayaRenderOverride::setup(const MString& destination) {
     }
 
     if (_operations.empty()) {
-        _initializedViewport = true;
-        GlfGlewInit();
-        InitHydraResources();
-
         _operations.push_back(new HdMayaSceneRender("HydraRenderOverride_Scene"));
         _operations.push_back(new HdMayaRender("HydraRenderOverride_Hydra", this));
         _operations.push_back(new HdMayaManipulatorRender("HydraRenderOverride_Manipulator"));
