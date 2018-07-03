@@ -24,8 +24,12 @@ public:
     HDMAYA_API
     virtual void SetParams(const HdMayaParams& params);
     const HdMayaParams& GetParams() { return _params; }
+
+    void SetPreferSimpleLight(bool v) { _preferSimpleLight = v; }
+    bool GetPreferSimpleLight() { return _preferSimpleLight; }
 private:
     HdMayaParams _params;
+    bool _preferSimpleLight = false;
 };
 
 using HdMayaDelegatePtr = std::shared_ptr<HdMayaDelegate>;

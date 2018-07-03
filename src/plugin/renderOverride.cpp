@@ -21,6 +21,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (HdStreamRendererPlugin)
+);
+
 TF_INSTANTIATE_SINGLETON(HdMayaRenderOverride);
 
 namespace {
@@ -280,7 +285,9 @@ HdMayaRenderOverride::InitHydraResources() {
 #endif
     VtValue selectionTrackerValue(_selectionTracker);
     _engine.SetTaskContextData(HdxTokens->selectionState, selectionTrackerValue);
+    const auto preferSimpleLight = _rendererName == _tokens->HdStreamRendererPlugin;
     for (auto& it: _delegates) {
+        it->SetPreferSimpleLight(preferSimpleLight);
         it->Populate();
     }
 }
