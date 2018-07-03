@@ -15,16 +15,18 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-    void _dirtyTransform(MObject& /*node*/, void* clientData) {
-        auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
-        // We need both dirty params and dirty transform to get this working?
-        adapter->MarkDirty(HdLight::DirtyTransform | HdLight::DirtyParams | HdLight::DirtyShadowParams);
-    }
 
-    void _dirtyParams(MObject& /*node*/, void* clientData) {
-        auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
-        adapter->MarkDirty(HdLight::DirtyParams | HdLight::DirtyShadowParams);
-    }
+void _dirtyTransform(MObject& /*node*/, void* clientData) {
+    auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    // We need both dirty params and dirty transform to get this working?
+    adapter->MarkDirty(HdLight::DirtyTransform | HdLight::DirtyParams | HdLight::DirtyShadowParams);
+}
+
+void _dirtyParams(MObject& /*node*/, void* clientData) {
+    auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    adapter->MarkDirty(HdLight::DirtyParams | HdLight::DirtyShadowParams);
+}
+
 }
 
 HdMayaLightAdapter::HdMayaLightAdapter(
@@ -42,7 +44,9 @@ HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits) {
 
 void
 HdMayaLightAdapter::RemovePrim() {
-    GetDelegate()->RemoveSprim(HdPrimTypeTokens->simpleLight, GetID());
+    if (GetDelegate()->GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
+        GetDelegate()->RemoveSprim(HdPrimTypeTokens->simpleLight, GetID());
+    }
 }
 
 VtValue
