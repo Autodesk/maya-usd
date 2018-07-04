@@ -40,13 +40,13 @@ namespace nodes {
 //----------------------------------------------------------------------------------------------------------------------
 ProxyShapeUI::ProxyShapeUI()
 {
-  TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyShapeUI::ProxyShapeUI");
+  TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyShapeUI::ProxyShapeUI\n");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 ProxyShapeUI::~ProxyShapeUI()
 {
-  TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyShapeUI::~ProxyShapeUI");
+  TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyShapeUI::~ProxyShapeUI\n");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -58,7 +58,7 @@ void* ProxyShapeUI::creator()
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShapeUI::getDrawRequests(const MDrawInfo& drawInfo, bool isObjectAndActiveOnly, MDrawRequestQueue& requests)
 {
-  TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyShapeUI::getDrawRequests");
+  TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyShapeUI::getDrawRequests\n");
 
   MDrawRequest request = drawInfo.getPrototype(*this);
 
@@ -79,7 +79,7 @@ void ProxyShapeUI::getDrawRequests(const MDrawInfo& drawInfo, bool isObjectAndAc
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
 {
-  TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyShapeUI::draw");
+  TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyShapeUI::draw\n");
 
   //
   view.beginGL();
@@ -263,7 +263,7 @@ SdfPathVector ProxyShapeSelectionHelper::m_paths;
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList, MPointArray& worldSpaceSelectPoints) const
 {
-  TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyShapeUI::select");
+  TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyShapeUI::select\n");
 
   float clearCol[4];
   glGetFloatv(GL_COLOR_CLEAR_VALUE, clearCol);
