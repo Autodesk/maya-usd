@@ -78,9 +78,11 @@ install(FILES
         hdmaya/delegates/delegate.h
         hdmaya/delegates/delegateCtx.h
         hdmaya/delegates/delegateRegistry.h
+        hdmaya/delegates/params.h
         DESTINATION include/hdmaya/delegates)
 
 install(FILES
+        hdmaya/api.h
         hdmaya/utils.h
         DESTINATION include/hdmaya)
 
