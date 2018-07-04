@@ -23,7 +23,8 @@ public:
 
     }
 protected:
-    void CalculateLightParams(GlfSimpleLight& light) override {
+    void
+    CalculateLightParams(GlfSimpleLight& light) override {
         MFnLight mayaLight(GetDagPath().node());
         light.SetHasShadow(true);
         auto coneAnglePlug = mayaLight.findPlug("coneAngle", true);
@@ -38,7 +39,18 @@ protected:
         }
     }
 
-    VtValue Get(const TfToken& key) override {
+    void
+    Populate() override {
+        GetDelegate()->InsertSprim(HdPrimTypeTokens->simpleLight, GetID(), HdLight::AllDirty);
+    }
+
+    bool
+    IsSupported() override {
+        return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->simpleLight);
+    }
+
+    VtValue
+    Get(const TfToken& key) override {
         if (key == HdLightTokens->shadowParams) {
             HdxShadowParams shadowParams;
             MFnLight mayaLight(GetDagPath().node());

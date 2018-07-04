@@ -28,6 +28,8 @@ public:
     HDMAYA_API
     virtual VtValue Get(const TfToken& key);
     const MObject& GetNode() { return _node; }
+    HDMAYA_API
+    virtual bool IsSupported() = 0;
 
     HDMAYA_API
     virtual void CreateCallbacks();

@@ -30,8 +30,6 @@ public:
     VtValue Get(const TfToken& key) override;
     HDMAYA_API
     virtual void CreateCallbacks() override;
-    HDMAYA_API
-    virtual void Populate() override;
 protected:
     HDMAYA_API
     virtual void CalculateLightParams(GlfSimpleLight& light);

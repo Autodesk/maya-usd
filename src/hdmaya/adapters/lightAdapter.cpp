@@ -131,10 +131,6 @@ HdMayaLightAdapter::CreateCallbacks() {
     HdMayaAdapter::CreateCallbacks();
 }
 
-void HdMayaLightAdapter::Populate() {
-    GetDelegate()->InsertSprim(HdPrimTypeTokens->simpleLight, GetID(), HdLight::AllDirty);
-}
-
 void
 HdMayaLightAdapter::CalculateLightParams(GlfSimpleLight& /*light*/) {
 

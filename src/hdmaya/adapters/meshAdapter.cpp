@@ -38,9 +38,6 @@ public:
         : HdMayaDagAdapter(delegate->GetPrimPath(dag), delegate, dag) { }
 
     void Populate() override {
-        if (!GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->mesh)) {
-            return;
-        }
         GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty);
 
         MStatus status;
@@ -52,6 +49,10 @@ public:
             this,
             &status);
         if (status) { AddCallback(id); }
+    }
+
+    bool IsSupported() override {
+        return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->mesh);
     }
 
     VtValue Get(const TfToken& key) override {

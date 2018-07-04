@@ -86,7 +86,7 @@ HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
 
 void
 HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
-    // We don't care about transforms for now.
+    // We don't care about transforms.
     if (dag.hasFn(MFn::kTransform)) { return; }
 
     auto adapterCreator = HdMayaAdapterRegistry::GetAdapterCreator(dag);
@@ -97,6 +97,7 @@ HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
     }
     auto adapter = adapterCreator(this, dag);
     if (adapter == nullptr) { return; }
+    if (!adapter->IsSupported()) { return; }
     adapter->Populate();
     adapter->CreateCallbacks();
     _pathToAdapterMap.insert({id, adapter});

@@ -14,11 +14,38 @@ public:
 
     }
 
-    void CalculateLightParams(GlfSimpleLight& light) override {
+    void
+    CalculateLightParams(GlfSimpleLight& light) override {
         light.SetSpotCutoff(90.0f);
     }
-};
 
+    void
+    Populate() override {
+        if (GetDelegate()->GetPreferSimpleLight()) {
+            GetDelegate()->InsertSprim(HdPrimTypeTokens->simpleLight, GetID(), HdLight::AllDirty);
+        } else {
+            GetDelegate()->InsertSprim(HdPrimTypeTokens->rectLight, GetID(), HdLight::AllDirty);
+        }
+    }
+
+    bool
+    IsSupported() override {
+        if (GetDelegate()->GetPreferSimpleLight()) {
+            return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->simpleLight);
+        } else {
+            return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->rectLight);
+        }
+    }
+
+    void
+    RemovePrim() override {
+        if (GetDelegate()->GetPreferSimpleLight()) {
+            GetDelegate()->RemoveSprim(HdPrimTypeTokens->simpleLight, GetID());
+        } else {
+            GetDelegate()->RemoveSprim(HdPrimTypeTokens->rectLight, GetID());
+        }
+    }
+};
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, pointLight) {
     HdMayaAdapterRegistry::RegisterDagAdapter(
