@@ -18,8 +18,8 @@ void _dirtyTransform(MObject& node, void* clientData) {
 HdMayaDagAdapter::HdMayaDagAdapter(
     const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath) :
     HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {
-    CalculateExtent();
     CalculateTransform();
+    CalculateExtent();
 }
 
 void
@@ -65,6 +65,9 @@ HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
     if (dirtyBits & HdChangeTracker::DirtyTransform) {
         CalculateTransform();
+    }
+    if (dirtyBits & HdChangeTracker::DirtyPoints) {
+        CalculateExtent();
     }
 }
 
