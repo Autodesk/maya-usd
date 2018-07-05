@@ -983,7 +983,7 @@ public:
       return eventInfo->buildCallback(tag, commandText, weight, isPython);
     }
     // register an empty event handler so that we can catch any missing events
-    EventId nullEventId = registerEvent(eventName, kUnknownEventType);
+    registerEvent(eventName, kUnknownEventType);
     eventInfo = event(eventName);
     return eventInfo->buildCallback(tag, commandText, weight, isPython);
   }
