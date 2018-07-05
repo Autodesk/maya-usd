@@ -82,6 +82,7 @@ private:
     int _currentOperation = -1;
 
     bool _initializedViewport = false;
+    bool _preferSimpleLight = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

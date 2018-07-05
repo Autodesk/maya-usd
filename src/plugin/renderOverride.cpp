@@ -205,10 +205,30 @@ HdMayaRenderOverride::SetMaximumShadowMapResolution(int resolution) {
 
 MStatus
 HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
+    auto renderFrame = [&] () {
+        const auto originX = 0;
+        const auto originY = 0;
+        int width = 0; int height = 0;
+        drawContext.getRenderTargetSize(width, height);
+
+        GfVec4d viewport(originX, originY, width, height);
+        _taskController->SetCameraMatrices(
+            getGfMatrixFromMaya(drawContext.getMatrix(MFrameContext::kViewMtx)),
+            getGfMatrixFromMaya(drawContext.getMatrix(MFrameContext::kProjectionMtx)));
+        _taskController->SetCameraViewport(viewport);
+
+        _engine.Execute(*_renderIndex, _taskController->GetTasks(HdxTaskSetTokens->colorRender));
+    };
+
     if (!_initializedViewport) {
         GlfGlewInit();
         InitHydraResources();
         _initializedViewport = true;
+        if (_preferSimpleLight) {
+            _taskController->SetEnableShadows(false);
+            renderFrame();
+            _taskController->SetEnableShadows(true);
+        }
     }
 
     for (auto& it: _delegates) {
@@ -216,18 +236,7 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         it->PreFrame();
     }
 
-    const auto originX = 0;
-    const auto originY = 0;
-    int width = 0; int height = 0;
-    drawContext.getRenderTargetSize(width, height);
-
-    GfVec4d viewport(originX, originY, width, height);
-    _taskController->SetCameraMatrices(
-        getGfMatrixFromMaya(drawContext.getMatrix(MFrameContext::kViewMtx)),
-        getGfMatrixFromMaya(drawContext.getMatrix(MFrameContext::kProjectionMtx)));
-    _taskController->SetCameraViewport(viewport);
-
-    _engine.Execute(*_renderIndex, _taskController->GetTasks(HdxTaskSetTokens->colorRender));
+    renderFrame();
 
     for (auto& it: _delegates) {
         it->PostFrame();
@@ -263,9 +272,9 @@ HdMayaRenderOverride::InitHydraResources() {
 #endif
     VtValue selectionTrackerValue(_selectionTracker);
     _engine.SetTaskContextData(HdxTokens->selectionState, selectionTrackerValue);
-    const auto preferSimpleLight = _rendererName == _tokens->HdStreamRendererPlugin;
+    _preferSimpleLight = _rendererName == _tokens->HdStreamRendererPlugin;
     for (auto& it: _delegates) {
-        it->SetPreferSimpleLight(preferSimpleLight);
+        it->SetPreferSimpleLight(_preferSimpleLight);
         it->Populate();
     }
 }
