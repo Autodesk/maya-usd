@@ -20,6 +20,7 @@ We have some videos explaining some of the workflows we support. We are hoping t
 
 + [Building it](docs/build.md)
 + [FAQ](docs/faq.md)
++ [Python](docs/python.md)
 + [Contributing](docs/contributing.md)
 + [Translation](docs/translation.md)
 + [Basic Usage](docs/basicUsage.md)

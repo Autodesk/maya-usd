@@ -1311,7 +1311,7 @@ bool compareUvArray(
 
   const f128 eps4 = splat4f(eps);
   const size_t count4 = count & ~0x3ULL;
-  size_t i = 0, j = 0;
+  size_t i = 0;
 
   // check all values that can be processed in blocks of 4
   for(; i < count4; i += 4)

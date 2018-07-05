@@ -103,7 +103,7 @@ TransformationMatrix::TransformationMatrix(const UsdPrim& prim)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void TransformationMatrix::setPrim(const UsdPrim& prim)
+void TransformationMatrix::setPrim(const UsdPrim& prim, Transform* transformNode)
 {
   if(prim.IsValid())
   {
@@ -145,11 +145,7 @@ void TransformationMatrix::setPrim(const UsdPrim& prim)
     m_rotatePivotFromUsd = MPoint(0, 0, 0);
     m_rotatePivotTranslationFromUsd = MVector(0, 0, 0);
     m_rotateOrientationFromUsd = MQuaternion(0, 0, 0, 1.0);
-    //if(MFileIO::isReadingFile())
-    {
-      initialiseToPrim(!MFileIO::isReadingFile());
-    }
-
+    initialiseToPrim(!MFileIO::isReadingFile(), transformNode);
     MPxTransformationMatrix::scaleValue = m_scaleFromUsd;
     MPxTransformationMatrix::rotationValue = m_rotationFromUsd;
     MPxTransformationMatrix::translationValue = m_translationFromUsd;
@@ -246,28 +242,40 @@ bool TransformationMatrix::pushVector(const MVector& result, UsdGeomXformOp& op,
   case UsdDataType::kVec3d:
     {
       GfVec3d value(result.x, result.y, result.z);
-      op.Set(value, timeCode);
+      GfVec3d oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
+        op.Set(value, timeCode);
     }
     break;
 
   case UsdDataType::kVec3f:
     {
       GfVec3f value(result.x, result.y, result.z);
-      op.Set(value, timeCode);
+      GfVec3f oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
+        op.Set(value, timeCode);
     }
     break;
 
   case UsdDataType::kVec3h:
     {
       GfVec3h value(result.x, result.y, result.z);
-      op.Set(value, timeCode);
+      GfVec3h oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
+        op.Set(value, timeCode);
     }
     break;
 
   case UsdDataType::kVec3i:
     {
       GfVec3i value(result.x, result.y, result.z);
-      op.Set(value, timeCode);
+      GfVec3i oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
+        op.Set(value, timeCode);
     }
     break;
 
@@ -293,7 +301,10 @@ bool TransformationMatrix::pushShear(const MVector& result, UsdGeomXformOp& op, 
           result.x, 1.0,      0.0, 0.0,
           result.y, result.z, 1.0, 0.0,
           0.0,      0.0,      0.0, 1.0);
-      op.Set(m, timeCode);
+      GfMatrix4d oldValue;
+      op.Get(&oldValue, timeCode);
+      if(m != oldValue)
+        op.Set(m, timeCode);
     }
     break;
 
@@ -420,7 +431,9 @@ bool TransformationMatrix::readMatrix(MMatrix& result, const UsdGeomXformOp& op,
       {
         return false;
       }
-      result = *(const MMatrix*)(&value);
+      auto vtemp = (const void*)&value;
+      auto mtemp = (const MMatrix*)vtemp;
+      result = *mtemp;
     }
     break;
 
@@ -442,10 +455,15 @@ bool TransformationMatrix::pushMatrix(const MMatrix& result, UsdGeomXformOp& op,
   case UsdDataType::kMatrix4d:
     {
       const GfMatrix4d& value = *(const GfMatrix4d*)(&result);
-      const bool retValue = op.Set<GfMatrix4d>(value, timeCode);
-      if (!retValue)
+      GfMatrix4d oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
       {
-        return false;
+        const bool retValue = op.Set<GfMatrix4d>(value, timeCode);
+        if (!retValue)
+        {
+          return false;
+        }
       }
     }
     break;
@@ -468,28 +486,40 @@ bool TransformationMatrix::pushPoint(const MPoint& result, UsdGeomXformOp& op, U
   case UsdDataType::kVec3d:
     {
       GfVec3d value(result.x, result.y, result.z);
-      op.Set(value, timeCode);
+      GfVec3d oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
+        op.Set(value, timeCode);
     }
     break;
 
   case UsdDataType::kVec3f:
     {
       GfVec3f value(result.x, result.y, result.z);
-      op.Set(value, timeCode);
+      GfVec3f oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
+        op.Set(value, timeCode);
     }
     break;
 
   case UsdDataType::kVec3h:
     {
       GfVec3h value(result.x, result.y, result.z);
-      op.Set(value, timeCode);
+      GfVec3h oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
+        op.Set(value, timeCode);
     }
     break;
 
   case UsdDataType::kVec3i:
     {
       GfVec3i value(result.x, result.y, result.z);
-      op.Set(value, timeCode);
+      GfVec3i oldValue;
+      op.Get(&oldValue, timeCode);
+      if(value != oldValue)
+        op.Set(value, timeCode);
     }
     break;
 
@@ -568,25 +598,37 @@ void TransformationMatrix::pushDouble(const double value, UsdGeomXformOp& op, Us
   {
   case UsdDataType::kHalf:
     {
-      op.Set(GfHalf(value), timeCode);
+      GfHalf oldValue;
+      op.Get(&oldValue);
+      if(oldValue != GfHalf(value))
+        op.Set(GfHalf(value), timeCode);
     }
     break;
 
   case UsdDataType::kFloat:
     {
-      op.Set(float(value), timeCode);
+      float oldValue;
+      op.Get(&oldValue);
+      if(oldValue != float(value))
+        op.Set(float(value), timeCode);
     }
     break;
 
   case UsdDataType::kDouble:
     {
-      op.Set(double(value), timeCode);
+      double oldValue;
+      op.Get(&oldValue);
+      if(oldValue != double(value))
+        op.Set(double(value), timeCode);
     }
     break;
 
   case UsdDataType::kInt:
     {
-      op.Set(int32_t(value), timeCode);
+      int32_t oldValue;
+      op.Get(&oldValue);
+      if(oldValue != int32_t(value))
+        op.Set(int32_t(value), timeCode);
     }
     break;
 
@@ -806,7 +848,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
         {
           m_flags |= kAnimatedTranslation;
         }
-        if(readFromPrim) {
+        if(readFromPrim)
+        {
           internal_readVector(m_translationFromUsd, op);
           if(transformNode)
           {
@@ -821,7 +864,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
     case kPivot:
       {
         m_flags |= kPrimHasPivot;
-        if(readFromPrim) {
+        if(readFromPrim)
+        {
           internal_readPoint(m_scalePivotFromUsd, op);
           m_rotatePivotFromUsd = m_scalePivotFromUsd;
           if(transformNode)
@@ -915,7 +959,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
     case kScalePivotTranslate:
       {
         m_flags |= kPrimHasScalePivotTranslate;
-        if(readFromPrim) {
+        if(readFromPrim)
+        {
           internal_readVector(m_scalePivotTranslationFromUsd, op);
           if(transformNode)
           {
@@ -930,7 +975,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
     case kScalePivot:
       {
         m_flags |= kPrimHasScalePivot;
-        if(readFromPrim) {
+        if(readFromPrim)
+        {
           internal_readPoint(m_scalePivotFromUsd, op);
           if(transformNode)
           {
@@ -949,7 +995,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
         {
           m_flags |= kAnimatedShear;
         }
-        if(readFromPrim) {
+        if(readFromPrim)
+        {
           internal_readShear(m_shearFromUsd, op);
           if(transformNode)
           {
@@ -968,7 +1015,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
         {
           m_flags |= kAnimatedScale;
         }
-        if(readFromPrim) {
+        if(readFromPrim)
+        {
           internal_readVector(m_scaleFromUsd, op);
           if(transformNode)
           {
@@ -1000,7 +1048,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
           m_flags |= kAnimatedMatrix;
         }
 
-        if(readFromPrim) {
+        if(readFromPrim)
+        {
           MMatrix m;
           internal_readMatrix(m, op);
           decomposeMatrix(m);
@@ -1878,7 +1927,9 @@ void TransformationMatrix::pushToPrim()
         if(pushPrimToMatrix())
         {
           MMatrix m = MPxTransformationMatrix::asMatrix();
-          op.Set(*(const GfMatrix4d*)&m, getTimeCode());
+          auto vtemp = (const void*)&m;
+          auto mtemp = (const GfMatrix4d*)vtemp;
+          op.Set(*mtemp, getTimeCode());
         }
       }
       break;
@@ -1991,7 +2042,9 @@ void TransformationMatrix::enableReadAnimatedValues(bool enabled)
         if(m_orderedOps[i] == kTransform)
         {
           MMatrix m = MPxTransformationMatrix::asMatrix();
-          m_xformops[i].Set(*(const GfMatrix4d*)&m, getTimeCode());
+          auto vtemp = (const void*)&m;
+          auto mtemp = (const GfMatrix4d*)vtemp;
+          m_xformops[i].Set(*mtemp, getTimeCode());
           break;
         }
       }
@@ -2053,7 +2106,9 @@ void TransformationMatrix::enablePushToPrim(bool enabled)
         if(m_orderedOps[i] == kTransform)
         {
           MMatrix m = MPxTransformationMatrix::asMatrix();
-          m_xformops[i].Set(*(const GfMatrix4d*)&m, getTimeCode());
+          auto vtemp = (const void*)&m;
+          auto mtemp = (const GfMatrix4d*)vtemp;
+          m_xformops[i].Set(*mtemp, getTimeCode());
           break;
         }
       }

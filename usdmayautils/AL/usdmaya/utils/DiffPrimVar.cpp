@@ -1580,7 +1580,7 @@ TfToken guessColourSetInterpolationTypeExtensive(
     {
       auto index = pointIndices[i];
       auto lastIndex = indicesMap[index];
-      if(lastIndex == -1)
+      if(lastIndex == 0xFFFFFFFF)
       {
         indicesMap[index] = i;
       }

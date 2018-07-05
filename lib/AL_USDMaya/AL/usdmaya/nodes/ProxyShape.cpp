@@ -1125,7 +1125,7 @@ void ProxyShape::validateTransforms()
           newPrim.GetMetadata(Metadata::transformType, &transformType);
           if(newPrim && transformType.empty())
           {
-            tm->transform()->setPrim(newPrim);
+            tm->transform()->setPrim(newPrim, tm);
           }
         }
         else
@@ -1228,7 +1228,10 @@ void ProxyShape::loadStage()
   AL_BEGIN_PROFILE_SECTION(LoadStage);
   MDataBlock dataBlock = forceCache();
   // in case there was already a stage in m_stage, check to see if it's edit target has been altered
-  trackEditTargetLayer();
+  if (m_stage)
+  {
+    trackEditTargetLayer();
+  }
   m_stage = UsdStageRefPtr();
 
   // Get input attr values
@@ -1764,6 +1767,11 @@ MStatus ProxyShape::computeOutStageData(const MPlug& plug, MDataBlock& dataBlock
     return MS::kFailure;
   }
 
+  // make sure a stage is loaded
+  if (!m_stage)
+  {
+    loadStage();
+  }
   // Set the output stage data params
   usdStageData->stage = m_stage;
   usdStageData->primPath = m_path;
@@ -2123,6 +2131,8 @@ void ProxyShape::registerEvents()
   registerEvent("PreDeserialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postRead());
   registerEvent("PostDeserialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postRead());
   registerEvent("EditTargetChanged", AL::event::kUSDMayaEventType);
+  registerEvent("SelectionStarted", AL::event::kUSDMayaEventType);
+  registerEvent("SelectionEnded", AL::event::kUSDMayaEventType);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

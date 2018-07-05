@@ -578,8 +578,6 @@ MObject ProxyShape::makeUsdTransformChain(
     MPlug inStageData = ptrNode->inStageDataPlug();
     MPlug inTime = ptrNode->timePlug();
 
-    modifier.connect(outStage, inStageData);
-    modifier.connect(outTime, inTime);
 
     if(modifier2)
     {
@@ -600,6 +598,12 @@ MObject ProxyShape::makeUsdTransformChain(
       MPlug(node, MPxTransform::shearXY).setLocked(true);
       MPlug(node, MPxTransform::shearXZ).setLocked(true);
       MPlug(node, MPxTransform::shearYZ).setLocked(true);
+    }
+    else
+    {
+      // only connect time and stage if transform can change
+      modifier.connect(outTime, inTime);
+      modifier.connect(outStage, inStageData);
     }
 
     // set the primitive path
@@ -1010,6 +1014,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
   auto stage = m_stage;
   if(!stage)
     return false;
+  triggerEvent("SelectionStarted");
 
   m_pleaseIgnoreSelection = true;
   prepSelect();
@@ -1054,6 +1059,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
       if(keepPrims.empty() && insertPrims.empty())
       {
         m_pleaseIgnoreSelection = false;
+        triggerEvent("SelectionEnded");
         return false;
       }
 
@@ -1154,6 +1160,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
       if(prims.empty())
       {
         m_pleaseIgnoreSelection = false;
+        triggerEvent("SelectionEnded");
         return false;
       }
 
@@ -1262,6 +1269,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
   }
 
   m_pleaseIgnoreSelection = false;
+  triggerEvent("SelectionEnded");
   return true;
 }
 

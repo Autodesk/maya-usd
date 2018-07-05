@@ -229,12 +229,22 @@ EventId EventScheduler::registerEvent(const char* eventName, EventType eventType
   EventId unusedId = 1;
   for(auto& it : m_registeredEvents)
   {
-    if(it.name() == eventName &&
-       it.parentCallbackId() == parentCallback &&
-       it.associatedData() == associatedData)
+    if(it.name() == eventName)
     {
-      m_system->error("The event \"%s\" has already been registered", eventName);
-      return 0;
+      if(it.eventType() == kUnknownEventType)
+      {
+        it.m_eventType = eventType;
+        it.m_associatedData = associatedData;
+        it.m_parentCallback = parentCallback;
+        return it.eventId();
+      }
+      else
+      if(it.parentCallbackId() == parentCallback &&
+         it.associatedData() == associatedData)
+      {
+        m_system->error("The event \"%s\" has already been registered", eventName);
+        return 0;
+      }
     }
   }
   for(auto it = m_registeredEvents.begin(), e = m_registeredEvents.end(); it != e; ++it, ++unusedId)

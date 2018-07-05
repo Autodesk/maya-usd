@@ -320,7 +320,7 @@ void MeshImportContext::gatherFaceConnectsAndVertices()
       }
 
       // normalise each normal in the array
-      for(int32_t j = 0; j < numPoints; ++j)
+      for(size_t j = 0; j < numPoints; ++j)
       {
         pnorm[j] = GfGetNormalized(pnorm[j]);
       }
@@ -520,7 +520,7 @@ bool MeshImportContext::applyVertexNormals()
     MIntArray normalsFaceIds;
     normalsFaceIds.setLength(connects.length());
     int32_t* normalsFaceIdsPtr = &normalsFaceIds[0];
-    if (normals.length() == fnMesh.numFaceVertices())
+    if (normals.length() == uint32_t(fnMesh.numFaceVertices()))
     {
       for (uint32_t i = 0, k = 0, n = counts.length(); i < n; i++)
       {
@@ -1303,18 +1303,6 @@ void zipUVs(const float* u, const float* v, float* uv, const size_t count)
     uv[j + 1] = v[i];
   }
 #endif
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-static void reverseIndices(VtArray<int32_t>& indices, const MIntArray& counts)
-{
-  auto iter = indices.begin();
-  for (uint32_t i = 0, len = counts.length(); i < len; ++i)
-  {
-    int32_t cnt = counts[i];
-    std::reverse(iter, iter + cnt);
-    iter += cnt;
-  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------

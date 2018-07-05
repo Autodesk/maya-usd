@@ -298,7 +298,7 @@ void TranslatorContext::removeItems(const SdfPath& path)
     }
     if(hasDagNodes)
     {
-      for (int i = 0; i < tempXforms.size(); ++i)
+      for (size_t i = 0, n = tempXforms.size(); i < n; ++i)
       {
         // Check if these xforms have already been deleted automatically when we deleted their child shape.
         if(tempXforms[i].isAlive() && tempXforms[i].isValid())

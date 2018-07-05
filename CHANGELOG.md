@@ -1,3 +1,38 @@
+## v0.28.4 (2018-07-05)
+
+### Added
+
+* New events to prevent USDGlimpse from rebuilding the scene when mapping meta data is inserted into the prims during selection.
+
+### Changed
+
+* Transform values that have not changed no longer get written back to USD.
+* Only hook up the proxy shape time attribute to the transform nodes that are actually transforms (i.e. ignore prims that are effectively just organisational containers)
+* Allowed named events to be able to have callbacks registered against them prior to the events being registered
+
+### Removed
+
+* Some export macros from inline methods
+
+### Fixed
+
+* Regression where transform values were no longer being correctly displayed when translating prims into maya.
+* A number of build warnings in the OSS build
+* Final two build warnings in the repo. The generated schema code needs to have a flag set in the build C4099 to hide the 'class defined as struct' warning (pixar issue, not ours)
+* When you duplicate a proxy shape, you wont see anything in the viewport and it wont be fully initialize until you reopen maya or find a hack (like changing the usd path) to trigger a load stage. (#98 - @nxkb)
+* Add missing newlines to some TF_DEBUG statements in ProxyShapeUI (#92 - @elrond79)
+
+## v0.28.3 (2018-06-18)
+
+### Added
++ AL_usdmaya_CreateUsdPrim command added to insert a new prim into the UsdStage of a proxy shape. 
+
+### Changed
++ The proxyShape outStageData is now connectable, and now longer hidden. Allows for manual DG node connections to be made. 
+
+### Fixed
++ The internal mapping between a maya object and a prim now works correctly when specifying the -name flag of AL_usdmaya_ProxyShapeImport. 
+
 ## v0.28.2 (2018-06-14)
 
 ### Added

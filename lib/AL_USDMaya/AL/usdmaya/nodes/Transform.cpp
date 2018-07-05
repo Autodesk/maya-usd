@@ -365,11 +365,11 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
         primPath = SdfPath(path.asChar());
         usdPrim = data->stage->GetPrimAtPath(primPath);
       }
-      transform()->setPrim(usdPrim);
+      transform()->setPrim(usdPrim, this);
     }
     else
     {
-      transform()->setPrim(UsdPrim());
+      transform()->setPrim(UsdPrim(), this);
     }
     return MS::kSuccess;
   }
@@ -390,7 +390,7 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
         primPath = SdfPath(path.asChar());
         usdPrim = UsdPrim(data->stage->GetPrimAtPath(primPath));
       }
-      transform()->setPrim(usdPrim);
+      transform()->setPrim(usdPrim, this);
       if(usdPrim)
         updateTransform(dataBlock);
     }
@@ -401,7 +401,7 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
         TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Could not set '%s' to '%s' - could not retrieve stage\n",
             plug.name().asChar(), path.asChar());
       }
-      transform()->setPrim(UsdPrim());
+      transform()->setPrim(UsdPrim(), this);
     }
     return MS::kSuccess;
   }

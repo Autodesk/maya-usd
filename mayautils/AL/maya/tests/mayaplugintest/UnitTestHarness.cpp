@@ -156,7 +156,7 @@ MStatus UnitTestHarness::doIt(const MArgList& args)
 
   char** argv = new char*[arguments.size()];
   int argc(arguments.size());
-  for(size_t i = 0; i < argc; ++i)
+  for(int i = 0; i < argc; ++i)
   {
     argv[i] = (char*)arguments[i].c_str();
   }
