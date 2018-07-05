@@ -216,21 +216,6 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         it->PreFrame();
     }
 
-    // We need some empty vao to get the core profile running in some cases.
-    const auto isCoreProfileContext = GlfContextCaps::GetInstance().coreProfile;
-    GLuint vao;
-    if (isCoreProfileContext) {
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
-    } else {
-        glPushAttrib(GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT);
-    }
-
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_BLEND);
-    glEnable(GL_PROGRAM_POINT_SIZE);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
     const auto originX = 0;
     const auto originY = 0;
     int width = 0; int height = 0;
@@ -243,13 +228,6 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     _taskController->SetCameraViewport(viewport);
 
     _engine.Execute(*_renderIndex, _taskController->GetTasks(HdxTaskSetTokens->colorRender));
-
-    if (isCoreProfileContext) {
-        glBindVertexArray(0);
-        glDeleteVertexArrays(1, &vao);
-    } else {
-        glPopAttrib(); // GL_ENABLE_BIT | GL_POLYGON_BIT | GL_DEPTH_BUFFER_BIT
-    }
 
     for (auto& it: _delegates) {
         it->PostFrame();
