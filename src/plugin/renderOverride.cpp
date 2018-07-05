@@ -236,6 +236,19 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         it->PreFrame();
     }
 
+    // TODO: Is there a way to improve this? Quite silly.
+    auto enableShadows = true;
+    auto* lightParam = drawContext.getLightParameterInformation(0, MHWRender::MDrawContext::kFilteredIgnoreLightLimit);
+    if (lightParam != nullptr) {
+        MIntArray intVals;
+        if (lightParam->getParameter(MHWRender::MLightParameterInformation::kGlobalShadowOn, intVals) &&
+            intVals.length() > 0) {
+            enableShadows = intVals[0] != 0;
+        }
+    }
+
+    _taskController->SetEnableShadows(enableShadows);
+
     renderFrame();
 
     for (auto& it: _delegates) {
