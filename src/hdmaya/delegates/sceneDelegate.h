@@ -31,6 +31,7 @@ public:
     void Populate() override;
     void RemoveAdapter(const SdfPath& id) override;
     void InsertDag(const MDagPath& dag);
+    void SetParams(const HdMayaParams& params) override;
 protected:
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;
     GfRange3d GetExtent(const SdfPath& id) override;
@@ -46,7 +47,6 @@ protected:
     HdPrimvarDescriptorVector
     GetPrimvarDescriptors(const SdfPath& id, HdInterpolation interpolation) override;
     VtValue GetLightParamValue(const SdfPath& id, const TfToken& paramName) override;
-
     // SdfPath GetMaterialId(const SdfPath& id) override;
     // std::string GetSurfaceShaderSource(const SdfPath& id) override;
     // std::string GetDisplacementShaderSource(const SdfPath& id) override;

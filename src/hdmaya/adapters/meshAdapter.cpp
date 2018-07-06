@@ -37,7 +37,8 @@ public:
     HdMayaMeshAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
         : HdMayaDagAdapter(delegate->GetPrimPath(dag), delegate, dag) { }
 
-    void Populate() override {
+    void
+    Populate() override {
         GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty);
 
         MStatus status;
@@ -51,11 +52,13 @@ public:
         if (status) { AddCallback(id); }
     }
 
-    bool IsSupported() override {
+    bool
+    IsSupported() override {
         return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->mesh);
     }
 
-    VtValue Get(const TfToken& key) override {
+    VtValue
+    Get(const TfToken& key) override {
         if (key == HdTokens->points) {
             MFnMesh mesh(GetDagPath());
             // Same memory layout for MFloatVector and GfVec3f!
@@ -68,7 +71,8 @@ public:
         return VtValue();
     }
 
-    HdMeshTopology GetMeshTopology() override {
+    HdMeshTopology
+    GetMeshTopology() override {
         MFnMesh mesh(GetDagPath());
         const auto numPolygons = mesh.numPolygons();
         VtIntArray faceVertexCounts; faceVertexCounts.reserve(numPolygons);
@@ -84,7 +88,9 @@ public:
         }
 
         return HdMeshTopology(
-            PxOsdOpenSubdivTokens->none,
+            GetDelegate()->GetParams().displaySmoothMeshes
+            ? PxOsdOpenSubdivTokens->catmullClark
+            : PxOsdOpenSubdivTokens->none,
             UsdGeomTokens->rightHanded,
             faceVertexCounts,
             faceVertexIndices);
@@ -100,6 +106,11 @@ public:
             return {desc};
         }
         return {};
+    }
+
+    bool
+    HasType(const TfToken& typeId) override {
+        return typeId == HdPrimTypeTokens->mesh;
     }
 
 private:

@@ -42,6 +42,15 @@ public:
             return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->sphereLight);
         }
     }
+
+    bool
+    HasType(const TfToken& typeId) override {
+        if (GetDelegate()->GetPreferSimpleLight()) {
+            return typeId == HdPrimTypeTokens->simpleLight;
+        } else {
+            return typeId == HdPrimTypeTokens->sphereLight;
+        }
+    }
 };
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, pointLight) {

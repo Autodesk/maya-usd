@@ -231,6 +231,9 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         }
     }
 
+    const auto displayStyle = drawContext.getDisplayStyle();
+    _params.displaySmoothMeshes = !(displayStyle & MHWRender::MFrameContext::kFlatShaded);
+
     for (auto& it: _delegates) {
         it->SetParams(_params);
         it->PreFrame();

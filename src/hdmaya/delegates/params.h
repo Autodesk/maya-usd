@@ -7,6 +7,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdMayaParams {
     int maximumShadowMapResolution = 2048;
+    bool displaySmoothMeshes = true;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -30,6 +30,8 @@ public:
     const MObject& GetNode() { return _node; }
     HDMAYA_API
     virtual bool IsSupported() = 0;
+    HDMAYA_API
+    virtual bool HasType(const TfToken& typeId);
 
     HDMAYA_API
     virtual void CreateCallbacks();

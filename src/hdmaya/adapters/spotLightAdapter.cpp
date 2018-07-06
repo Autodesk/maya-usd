@@ -81,6 +81,11 @@ protected:
 
         return HdMayaLightAdapter::Get(key);
     }
+
+    bool
+    HasType(const TfToken& typeId) override {
+        return typeId == HdPrimTypeTokens->simpleLight;
+    }
 };
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, pointLight) {

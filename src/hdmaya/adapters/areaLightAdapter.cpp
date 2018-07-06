@@ -45,6 +45,15 @@ public:
             GetDelegate()->RemoveSprim(HdPrimTypeTokens->rectLight, GetID());
         }
     }
+
+    bool
+    HasType(const TfToken& typeId) override {
+        if (GetDelegate()->GetPreferSimpleLight()) {
+            return typeId == HdPrimTypeTokens->simpleLight;
+        } else {
+            return typeId == HdPrimTypeTokens->rectLight;
+        }
+    }
 };
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, pointLight) {

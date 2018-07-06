@@ -95,6 +95,7 @@ MStatus HdMayaCmd::doIt(const MArgList &args) {
         int res = 32;
         if (db.getFlagArgument(_setMaximumShadowMapResolution, 0, res)) {
             if (res < 32) { res = 32; }
+            if (res > 8192) { res = 8192; }
             HdMayaRenderOverride::SetMaximumShadowMapResolution(res);
         }
     }

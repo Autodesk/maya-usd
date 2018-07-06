@@ -6,7 +6,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-void _aboutToDelete(MObject& node, MDGModifier& modifier, void* clientData) {
+void
+_aboutToDelete(MObject& node, MDGModifier& modifier, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaAdapter*>(clientData);
     adapter->GetDelegate()->RemoveAdapter(adapter->GetID());
 }
@@ -31,6 +32,11 @@ VtValue
 HdMayaAdapter::Get(const TfToken& /*key*/) {
     return {};
 };
+
+bool
+HdMayaAdapter::HasType(const TfToken& typeId) {
+    return false;
+}
 
 void
 HdMayaAdapter::CreateCallbacks() {

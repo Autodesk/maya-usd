@@ -5,6 +5,8 @@
 
 #include <pxr/usd/usdGeom/tokens.h>
 
+#include <pxr/imaging/hd/mesh.h>
+#include <pxr/imaging/hd/rprim.h>
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/hd/camera.h>
 
@@ -25,7 +27,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-void _nodeAdded(MObject& obj, void* clientData) {
+void
+_nodeAdded(MObject& obj, void* clientData) {
     auto* delegate = reinterpret_cast<HdMayaSceneDelegate*>(clientData);
     MDagPath dag;
     MStatus status = MDagPath::getAPathTo(obj, dag);
@@ -101,6 +104,25 @@ HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
     adapter->Populate();
     adapter->CreateCallbacks();
     _pathToAdapterMap.insert({id, adapter});
+}
+
+void
+HdMayaSceneDelegate::SetParams(const HdMayaParams& params) {
+    const auto& oldParams = GetParams();
+    if (oldParams.displaySmoothMeshes != params.displaySmoothMeshes) {
+        // I couldn't find any other way to turn this on / off.
+        // I can't convert HdRprim to HdMesh easily and no simple way
+        // to get the type of the HdRprim from the render index.
+        // If we want to allow creating multiple rprims and returning an id
+        // to a subtree, we need to use the HasType function and the mark dirty
+        // from each adapter.
+        for (auto& it: _pathToAdapterMap) {
+            if (it.second->HasType(HdPrimTypeTokens->mesh)) {
+                it.second->MarkDirty(HdChangeTracker::DirtyTopology);
+            }
+        }
+    }
+    HdMayaDelegate::SetParams(params);
 }
 
 HdMeshTopology
