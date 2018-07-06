@@ -252,6 +252,24 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 
     _taskController->SetEnableShadows(enableShadows);
 
+    HdxRenderTaskParams params;
+    params.enableLighting = true;
+    params.enableHardwareShading = true;
+
+    if (displayStyle & MHWRender::MFrameContext::kBoundingBox) {
+        params.complexity = HdComplexityBoundingBox;
+    } else {
+        params.complexity = HdComplexityVeryHigh;
+    }
+
+    if (displayStyle & MHWRender::MFrameContext::kWireFrame) {
+        params.geomStyle = HdGeomStyleLines;
+    } else {
+        params.geomStyle = HdGeomStylePolygons;
+    }
+
+    _taskController->SetRenderParams(params);
+
     renderFrame();
 
     for (auto& it: _delegates) {
@@ -278,10 +296,6 @@ HdMayaRenderOverride::InitHydraResources() {
         _ID.AppendChild(TfToken(
             TfStringPrintf("_UsdImaging_%s_%p", TfMakeValidIdentifier(_rendererName.GetText()).c_str(), this))));
 
-    HdxRenderTaskParams params;
-    params.enableLighting = true;
-    params.enableHardwareShading = true;
-    _taskController->SetRenderParams(params);
     _taskController->SetEnableSelection(false);
 #ifdef LUMA_USD_BUILD
     _taskController->SetEnableShadows(true);
