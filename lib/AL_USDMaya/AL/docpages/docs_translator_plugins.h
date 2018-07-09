@@ -3,14 +3,20 @@
 
 \page  translator_plugins  Custom Plugin Translators
 
-Let's say you have added a custom schema type to USD, and that maps to some custom plug-in or tool you have within Maya.
-In those cases, it is highly likely you'd want to trigger some sort of translation step to create your custom node set up.
+The plug-in translator system that is the core of AL_USDMaya provides a number of ways to integrate USD with existing
+maya nodes (including custom Maya plug-ins). Any particular type can be integrated in one (or all) of these ways:
 
-Ordinarily this wouldn't be a terrifying ordeal, however once you factor in variant switching in a scene, things can become
-a little bit more involved.
+* File Import
+* File Export
+* Importing as part of an AL_usdmaya_ProxyShape
+* Handling the changes to a AL_usdmaya_ProxyShape as a result of a variant switch
+
+The API for defining your own plug-in translator may at first seems a little convoluted (especially if you were expecting
+to override a pair of import/export methods), however this API has evolved over time to ensure it works correctly with
+live variant switches, prim activation/de-activation, and a number of other live changes to the underlying USD scene.
 
 To try to explain how this all works, let's start of with an extremely silly plug-in example that will create a custom
-translator plugin to represent a polygon cube in Maya.
+translator plugin to represent a polygon cube node in Maya.
 
 *PolyCubeNodeTranslator.h*
 \code
@@ -28,6 +34,7 @@ public:
   MStatus initialize() override;
 
   bool needsTransformParent() override;
+  MStatus writeEdits(MObject node, const UsdPrim& prim); ///< helper method
   MStatus import(const UsdPrim& prim, MObject& parent) override;
   MStatus postImport(const UsdPrim& prim) override;
   MStatus preTearDown(const UsdPrim& prim) override;
@@ -35,6 +42,10 @@ public:
   MStatus tearDown(const SdfPath& primPath) override;
   bool supportsUpdate() const override;
   bool importableByDefault() const override;
+
+  // new to AL_USDMaya 0.29.0
+  ExportFlag canExport(const MObject& obj) override;
+  UsdPrim exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath, const ExporterParams& params) override;
 
 private:
 
@@ -72,7 +83,7 @@ AL_USDMAYA_DEFINE_TRANSLATOR(PolyCubeNodeTranslator, AL_usd_PolyCube);
 
 The initialize method is a one time initialisation step for your translator plug-in. Now we all want to ensure our plug-ins
 operate as quickly as possible right? So the initialize step is really to help improve the performance when accessing data
-via MPlugs.
+via MPlugs (i.e. Ideally we don't want to be accessing MPlugs by constantly calling findPlug("someString"))
 
 \code
 MStatus PolyCubeNodeTranslator::initialize()
@@ -117,8 +128,12 @@ bool PolyCubeNodeTranslator::needsTransformParent() const
 }
 \endcode
 
-If your node is a DAG node, it will need to have a transform created for it, so return true. If however you node is
-a simple DG node (e.g. surface shader, texture etc), then you should return false from this method.
+If your node is a DAG node (i.e. a shape or custom transform), it will need to have a transform created for it,
+so return true in this case. If however you node is a simple DG node (e.g. surface shader, texture etc),
+then you should return false from this method.
+
+If you return true, a new transform will be generated within Maya to which you can parent your shape on creation.
+If you return false, no transform will be generated.
 
 
 \b import
@@ -154,12 +169,12 @@ MStatus PolyCubeNodeTranslator::import(const UsdPrim& prim, MObject& parent)
 
   // Now gather the parameters from the schema node
   AL_usd_PolyCube schema(prim);
-  schema.GetWidthAttr().Get(&width);
-  schema.GetHeightAttr().Get(&height);
-  schema.GetDepthAttr().Get(&depth);
-  schema.GetSubdivisionsWidthAttr().Get(&subdivisionsWidth);
-  schema.GetSubdivisionsHeightAttr().Get(&subdivisionsHeight);
-  schema.GetSubdivisionsDepthAttr().Get(&subdivisionsDepth);
+  if(auto attr = schema.GetWidthAttr()) attr.Get(&width);
+  if(auto attr = schema.GetHeightAttr()) attr.Get(&height);
+  if(auto attr = schema.GetDepthAttr()) attr.Get(&depth);
+  if(auto attr = schema.GetSubdivisionsWidthAttr()) attr.Get(&subdivisionsWidth);
+  if(auto attr = schema.GetSubdivisionsHeightAttr()) attr.Get(&subdivisionsHeight);
+  if(auto attr = schema.GetSubdivisionsDepthAttr()) attr.Get(&subdivisionsDepth);
 
   // set the values on the poly cube creator node
   MPlug(oPolyCube, m_width).setValue(width);
@@ -235,17 +250,11 @@ prim on which the variant switched, and call a preTearDown() method. This method
 from your maya nodes into a layer within the usd stage.
 
 \code
-MStatus PolyCubeNodeTranslator::preTearDown(UsdPrim& prim)
+// This is just a helper method (to avoid some code duplication later on)
+// It simply reads the node values from Maya, and sets writes those values
+// to the USD file
+MStatus PolyCubeNodeTranslator::writeEdits(MObject oPolyCube, UsdPrim& prim)
 {
-  MObjectHandle handleToPolyCube;
-  if(!context()->getMObject(prim, handleToPolyCube, MFn::kPolyCube))
-  {
-    MGlobal::displayError("unable to locate polycube");
-    return MS::kFailure;
-  }
-
-  MObject oPolyCube = handleToPolyCube.object();
-
   float width = 1.0f;
   float height = 1.0f;
   float depth = 1.0f;
@@ -261,17 +270,30 @@ MStatus PolyCubeNodeTranslator::preTearDown(UsdPrim& prim)
   MPlug(oPolyCube, m_subdivisionsHeight).getValue(subdivisionsHeight);
   MPlug(oPolyCube, m_subdivisionsDepth).getValue(subdivisionsDepth);
 
-  // Now set the parameters on the schema node
+  // Now set the parameters on the schema node (if they differ from the defaults)
   AL_usd_PolyCube schema(prim);
-  schema.GetWidthAttr().Set(width);
-  schema.GetHeightAttr().Set(height);
-  schema.GetDepthAttr().Set(depth);
-  schema.GetSubdivisionsWidthAttr().Set(subdivisionsWidth);
-  schema.GetSubdivisionsHeightAttr().Set(subdivisionsHeight);
-  schema.GetSubdivisionsDepthAttr().Set(subdivisionsDepth);
+  if(width != 1.0f) schema.CreateWidthAttr().Set(width);
+  if(height != 1.0f) schema.CreateHeightAttr().Set(height);
+  if(depth != 1.0f) schema.CreateDepthAttr().Set(depth);
+  if(subdivisionsWidth != 1) schema.CreateSubdivisionsWidthAttr().Set(subdivisionsWidth);
+  if(subdivisionsHeight != 1) schema.CreateSubdivisionsHeightAttr().Set(subdivisionsHeight);
+  if(subdivisionsDepth != 1) schema.CreateSubdivisionsDepthAttr().Set(subdivisionsDepth);
 
   // please check errors, and don't just return success! :)
   return MS::kSuccess;
+}
+
+// This method is called prior to a variant switch occurring (that may destroy our node)
+MStatus PolyCubeNodeTranslator::preTearDown(UsdPrim& prim)
+{
+  MObjectHandle handleToPolyCube;
+  if(!context()->getMObject(prim, handleToPolyCube, MFn::kPolyCube))
+  {
+    MGlobal::displayError("unable to locate polycube");
+    return MS::kFailure;
+  }
+
+  return writeEdits(handleToPolyCube.object(), prim);
 }
 \endcode
 
@@ -316,14 +338,14 @@ MStatus PolyCubeNodeTranslator::update(const UsdPrim& prim)
   int32_t subdivisionsHeight = 1;
   int32_t subdivisionsDepth = 1;
 
-  // grab params from schema
+  // Now gather the parameters from the schema node
   AL_usd_PolyCube schema(prim);
-  schema.GetWidthAttr().Get(&width);
-  schema.GetHeightAttr().Get(&height);
-  schema.GetDepthAttr().Get(&depth);
-  schema.GetSubdivisionsWidthAttr().Get(&subdivisionsWidth);
-  schema.GetSubdivisionsHeightAttr().Get(&subdivisionsHeight);
-  schema.GetSubdivisionsDepthAttr().Get(&subdivisionsDepth);
+  if(auto attr = schema.GetWidthAttr()) attr.Get(&width);
+  if(auto attr = schema.GetHeightAttr()) attr.Get(&height);
+  if(auto attr = schema.GetDepthAttr()) attr.Get(&depth);
+  if(auto attr = schema.GetSubdivisionsWidthAttr()) attr.Get(&subdivisionsWidth);
+  if(auto attr = schema.GetSubdivisionsHeightAttr()) attr.Get(&subdivisionsHeight);
+  if(auto attr = schema.GetSubdivisionsDepthAttr()) attr.Get(&subdivisionsDepth);
 
   // set the values on the poly cube creator node
   MPlug(oPolyCube, m_width).setValue(width);
@@ -395,6 +417,66 @@ modifications to that particular prim, you'll be able to selectively import the 
 bool PolyCubeNodeTranslator::importableByDefault() const
 {
   return false;
+}
+\endcode
+
+\b canExport
+
+If you wish to provide support for the standard file export operations (e.g. export some Maya data as a USD file),
+then there is a two step process you need to adhere to. The first step is to determine whether this translator
+can handle the export of a given Maya node, and the second step is to implement the actual export of that data.
+
+\code
+ExportFlag PolyCubeNodeTranslator::canExport(const MObject& obj)
+{
+  // test to see if we have a mesh object
+  if(obj.hasFn(MFn::kMesh))
+  {
+    // check the 'input' attr to see if it connected to a polyCube node
+    MPlug input(obj, m_inputMesh);
+    MPlugArray plugs;
+    input.connectedTo(plugs, true, false);
+    if(plugs.length() > 0 && plugs[0].node().hasFn(MFn::kPolyCube))
+    {
+      // If it is, return 'kSupported'. By default, all translators shipped
+      // with the OSS build of AL_USDMaya return 'kFallbackSupport' if supported.
+      // kSupported always takes precedence over kFallbackSupport, which means
+      // you can override the default support without your studio.
+      return ExportFlag::kSupported;
+    }
+  }
+  return ExportFlag::kNotSupported;
+}
+\endcode
+
+\b exportObject
+
+Finally, if the object can be exported by your translator, and it is the best translator available, then
+AL_USDMaya will call the exportObject method to export the data into USD. It's worth noting that the
+preTearDown and exportObject methods are likely to share a significant amount of code, hence the reason
+for utilising a common 'writeEdits' method.
+
+\code
+UsdPrim PolyCubeNodeTranslator::exportObject(
+  UsdStageRefPtr stage,
+  MDagPath dagPath,
+  const SdfPath& usdPath,
+  const ExporterParams& params)
+{
+  // check the 'input' attr to see if it connected to a polyCube node
+  MPlug input(dagPath.node(), m_inputMesh);
+  MPlugArray plugs;
+  input.connectedTo(plugs, true, false);
+  if(plugs.length() > 0 && plugs[0].node().hasFn(MFn::kPolyCube))
+  {
+    // create the new USD prim
+    AL_usd_PolyCube cube = AL_usd_PolyCube::Define(stage, usdPath);
+
+    // copy values into the cube prim
+    writeEdits(plugs[0].node(), cube.GetPrim());
+    return cube.GetPrim();
+  }
+  return UsdPrim();
 }
 \endcode
 
