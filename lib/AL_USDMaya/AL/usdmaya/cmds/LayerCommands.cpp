@@ -1028,7 +1028,7 @@ MStatus LayerManager::doIt(const MArgList& argList)
       MStringArray identifiers;
       layerManager->getLayerIdentifiers(identifiers);
 
-      for(int x = 0; x < identifiers.length(); ++x)
+      for(uint32_t x = 0, n = identifiers.length(); x < n; ++x)
       {
         MString currId = identifiers[x];
 

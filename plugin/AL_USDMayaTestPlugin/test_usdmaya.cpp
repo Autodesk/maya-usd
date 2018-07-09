@@ -47,7 +47,6 @@ const char* buildTempPath(const char* const filename)
     }
 #else
     const char* const TMPDIRs[4] = {"TMPDIR", "TMP", "TEMP", "TEMPDIR"};
-    bool found = false;
     for(int i = 0; !length && i < 4; ++i)
     {
       const char* const temp = getenv(TMPDIRs[i]);

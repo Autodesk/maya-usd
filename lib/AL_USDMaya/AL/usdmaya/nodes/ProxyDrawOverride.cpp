@@ -59,6 +59,7 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 MString ProxyDrawOverride::kDrawDbClassification("drawdb/geometry/AL_usdmaya");
 MString ProxyDrawOverride::kDrawRegistrantId("pxrUsd");
+MUint64 ProxyDrawOverride::s_lastRefreshFrameStamp = 0;
 
 //----------------------------------------------------------------------------------------------------------------------
 ProxyDrawOverride::ProxyDrawOverride(const MObject& obj)
@@ -144,8 +145,6 @@ MUserData* ProxyDrawOverride::prepareForDraw(
 
   data->m_objPath = objPath;
   data->m_shape = shape;
-  data->m_params.showGuides = shape->displayGuidesPlug().asBool();
-  data->m_params.showRender = shape->displayRenderGuidesPlug().asBool();
   data->m_rootPrim = shape->getRootPrim();
   data->m_engine = engine;
 
@@ -392,6 +391,16 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
 
     stateManager->setDepthStencilState(previousDepthState);
     MHWRender::MStateManager::releaseDepthStencilState(depthState);
+
+    // Check framestamp b/c we don't want to put multiple refresh commands
+    // on the idle queue for a single frame-render... especially if we have
+    // multiple ProxyShapes...
+    if (!ptr->m_engine->IsConverged() && context.getFrameStamp() != s_lastRefreshFrameStamp)
+    {
+      s_lastRefreshFrameStamp = context.getFrameStamp();
+      // Force another refresh of the current viewport
+      MGlobal::executeCommandOnIdle("refresh -cv -f");
+    }
   }
   glClearColor(clearCol[0], clearCol[1], clearCol[2], clearCol[3]);
 }

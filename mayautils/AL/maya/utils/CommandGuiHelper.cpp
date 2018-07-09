@@ -69,7 +69,7 @@ MStatus CommandGuiListGen::doIt(const MArgList& args)
     }
 
     // ensure the list id is valid
-    if(genListId < 0 || genListId >= m_funcs.size())
+    if(genListId < 0 || size_t(genListId) >= m_funcs.size())
     {
       MGlobal::displayError("Invalid gen list ID for the GUI");
       return MS::kFailure;

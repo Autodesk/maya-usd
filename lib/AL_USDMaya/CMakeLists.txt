@@ -31,6 +31,7 @@ list(APPEND AL_usdmaya_source
 )
 
 list(APPEND AL_usdmaya_cmds_headers
+        AL/usdmaya/cmds/CreateUsdPrim.h
         AL/usdmaya/cmds/DebugCommands.h
         AL/usdmaya/cmds/EventCommand.h
         AL/usdmaya/cmds/LayerCommands.h
@@ -41,6 +42,7 @@ list(APPEND AL_usdmaya_cmds_headers
         AL/usdmaya/cmds/UnloadPrim.h
 )
 list(APPEND AL_usdmaya_cmds_source
+        AL/usdmaya/cmds/CreateUsdPrim.cpp
         AL/usdmaya/cmds/DebugCommands.cpp
         AL/usdmaya/cmds/EventCommand.cpp
         AL/usdmaya/cmds/LayerCommands.cpp
@@ -248,8 +250,15 @@ target_link_libraries(${PYTHON_LIBRARY_NAME}
     ${LIBRARY_NAME}
 )
 
-# bake plugInfo.json using pxr macro
-_plugInfo_subst(${LIBRARY_NAME} plugInfo.json)
+set(libFile ${CMAKE_SHARED_LIBRARY_PREFIX}${libName}${CMAKE_SHARED_LIBRARY_SUFFIX})
+set(PLUG_INFO_RESOURCE_PATH "resources")
+set(PLUG_INFO_ROOT "..")
+set(PLUG_INFO_PLUGIN_NAME "pxr.${LIBRARY_NAME}")
+set(PLUG_INFO_LIBRARY_PATH "../../../../lib/${libFile}")
+configure_file(
+    plugInfo.json
+    ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
+)
 
 install(TARGETS ${PYTHON_LIBRARY_NAME}
     LIBRARY

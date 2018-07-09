@@ -10,6 +10,7 @@ using namespace AL::event;
 //----------------------------------------------------------------------------------------------------------------------
 static const char* const eventTypeStrings[] =
 {
+  "unknown",
   "custom",
   "schema",
   "coremaya",
@@ -155,7 +156,6 @@ TEST(EventDispatcher, EventDispatcher)
   CallbackId id2 = info.registerCallback("tag2", "i am a command", 1003, false);
 
   {
-    uint16_t eventPart = extractEventId(id2);
     uint64_t callbackPart = extractCallbackId(id2);
 
     EXPECT_EQ(callbackPart, 2);
@@ -176,7 +176,6 @@ TEST(EventDispatcher, EventDispatcher)
   CallbackId id3 = info.registerCallback("tag3", "i am a command", 1002, true);
 
   {
-    uint16_t eventPart = extractEventId(id3);
     uint64_t callbackPart = extractCallbackId(id3);
 
     EXPECT_EQ(callbackPart, 3);
@@ -401,6 +400,49 @@ TEST(EventScheduler, registerCallback)
   EXPECT_TRUE(registrar.unregisterEvent(id1));
   parentEventInfo = registrar.event(id1);
   EXPECT_TRUE(parentEventInfo == nullptr);
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+//
+// template<typename func_type>
+// CallbackId registerCallback(const EventId eventId, const char* const tag, const func_type functionPointer, uint32_t weight, void* userData = 0)
+// CallbackId registerCallback(const EventId eventId, const char* const tag, const char* const commandText, uint32_t weight, bool isPython)
+// bool unregisterCallback(CallbackId callbackId);
+//
+TEST(EventScheduler, registerCallbackAgainstEventThatDoesNotExist)
+{
+  EventScheduler registrar(&g_eventSystem);
+
+  int value;
+  Callback cb = registrar.buildCallback("EventType1", "ChildCallback", func_dispatch2, 1000, &value);
+  registrar.registerCallback(cb);
+
+  // we want to be able to register callbacks to events that don't quite exist yet
+  EXPECT_TRUE(cb.callbackId() != 0);
+
+  int associated;
+  EventId id1 = registrar.registerEvent("EventType1", kUserSpecifiedEventType, &associated, 0);
+  EXPECT_TRUE(id1 != 0);
+  auto eventInfo = registrar.event(id1);
+  EXPECT_TRUE(eventInfo != nullptr);
+  EXPECT_EQ(eventInfo->eventId(), 1);
+  EXPECT_EQ(eventInfo->parentCallbackId(), 0);
+  EXPECT_EQ(eventInfo->associatedData(), &associated);
+
+  CallbackId callbackId = registrar.registerCallback(id1, "ChildCallback2", func_dispatch2, 1000, &value);
+
+  EXPECT_TRUE(registrar.unregisterCallback(cb.callbackId()));
+  eventInfo = registrar.event(id1);
+  EXPECT_EQ(1, eventInfo->callbacks().size());
+
+  EXPECT_TRUE(registrar.unregisterCallback(callbackId));
+  eventInfo = registrar.event(id1);
+  EXPECT_TRUE(eventInfo->callbacks().empty());
+
+  EXPECT_TRUE(registrar.unregisterEvent(id1));
+  eventInfo = registrar.event(id1);
+  EXPECT_TRUE(eventInfo == nullptr);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

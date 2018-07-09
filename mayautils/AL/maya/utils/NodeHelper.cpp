@@ -57,7 +57,7 @@ std::string beautifyAttrName(std::string attrName)
   {
     attrName[0] = std::toupper(attrName[0]);
   }
-  for(int i = 1; i < attrName.size(); ++i)
+  for(size_t i = 1; i < attrName.size(); ++i)
   {
     if(std::isupper(attrName[i]))
     {

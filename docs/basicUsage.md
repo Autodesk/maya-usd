@@ -28,19 +28,3 @@ Now:
 - If you want to make these transforms permanent, from the menu, select "USD->Proxy Shape->Import Transforms as Transforms" (at the moment, you can only choose to create transforms for all of the objects in the scene, not just some of them.. it's a @todo). These transforms will be animated if the underlying USD data is animated
 
 
-
-##Python bindings
-There aren't many python bindings in AL_USDMaya - at the moment just the "StageCache" Singleton class which allows python access to the set of in-memory stages  
-
-
-getting the USD stage (once you've created a proxy shape)
-```python
-from AL import usdmaya
-stageCache = usdmaya.StageCache.Get()
-stages = stageCache.GetAllStages()
-if stages:
-    print stages[0]
-```
-Note at the moment there's no way of easily knowing which stage corresponds to which proxy Shape. 
-You could probably work it out by looking at something like the identifier/rootLayer of each stage and matching to something in the proxy shape..?
-

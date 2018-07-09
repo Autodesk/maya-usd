@@ -18,8 +18,7 @@ include(${USD_CONFIG_FILE})
 # to get PYTHON_EXECUTABLE
 find_package(PythonInterp)
 
-include(ProjectDefaults)
-include(Public)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include(CXXDefaults)
 
 add_definitions(${_PXR_CXX_DEFINITIONS})
@@ -54,6 +53,7 @@ set(NEED_BOOST_FILESYSTEM ON)
 if(WIN32)
     set(CMAKE_CXX_FLAGS
         -std=c++11
+        /WX
         "${_PXR_CXX_FLAGS}"
     )
 else()
