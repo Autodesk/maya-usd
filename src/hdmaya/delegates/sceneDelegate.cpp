@@ -15,6 +15,10 @@
 #include <pxr/imaging/hdx/renderSetupTask.h>
 #include <pxr/imaging/hdx/renderTask.h>
 
+#include <pxr/imaging/glf/glslfx.h>
+
+#include <pxr/usdImaging/usdImagingGL/package.h>
+
 #include <maya/MDGMessage.h>
 #include <maya/MDagPath.h>
 #include <maya/MItDag.h>
@@ -87,6 +91,10 @@ const HdMaterialParamVector _defaultShaderParams = {
         HdMaterialParam::ParamTypeFallback,
         TfToken("diffuseColor"),
         VtValue(GfVec3f(1.0, 1.0, 1.0))
+    }, {
+        HdMaterialParam::ParamTypeFallback,
+        TfToken("displacement"),
+        VtValue(0.0f)
     },
 };
 
@@ -306,12 +314,20 @@ HdMayaSceneDelegate::GetMaterialId(const SdfPath& id) {
 
 std::string
 HdMayaSceneDelegate::GetSurfaceShaderSource(const SdfPath& id) {
+    if (id == _fallbackMaterial) {
+        GlfGLSLFX gfx(UsdImagingGLPackagePreviewSurfaceShader());
+        return gfx.GetSurfaceSource();
+    }
     std::cerr << "[HdMayaSceneDelegate] Getting surface shader source of " << id << std::endl;
     return {};
 }
 
 std::string
 HdMayaSceneDelegate::GetDisplacementShaderSource(const SdfPath& id) {
+    if (id == _fallbackMaterial) {
+        GlfGLSLFX gfx(UsdImagingGLPackagePreviewSurfaceShader());
+        return gfx.GetDisplacementSource();
+    }
     std::cerr << "[HdMayaSceneDelegate] Getting displacement shader source of " << id << std::endl;
     return {};
 }
