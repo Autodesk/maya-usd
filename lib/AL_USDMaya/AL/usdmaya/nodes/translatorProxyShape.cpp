@@ -87,13 +87,15 @@ AL_USDMayaTranslatorProxyShape::Create(
     {
       srcPrimPath = shapeStage->GetDefaultPrim().GetPath();
     }
-    // Use custom Fn ShouldGraftValue to non-destructively copy specs.
-    // This will preserve Xform type if transform writer has already run on
-    // the prim because we are merging xform + shape.
-    SdfCopySpec(shapeStage->GetSessionLayer(), srcPrimPath,
-                stage->GetRootLayer(), authorPath,
-                ShouldGraftValue,
-                ShouldGraftChildren);
+    if (shapeStage->GetSessionLayer()->GetPrimAtPath(srcPrimPath)){
+      // Use custom Fn ShouldGraftValue to non-destructively copy specs.
+      // This will preserve Xform type if transform writer has already run on
+      // the prim because we are merging xform + shape.
+      SdfCopySpec(shapeStage->GetSessionLayer(), srcPrimPath,
+                  stage->GetRootLayer(), authorPath,
+                  ShouldGraftValue,
+                  ShouldGraftChildren);
+    }
   }
 
   // Guard against a situation where the prim being referenced has
