@@ -1,7 +1,8 @@
 #include <maya/MFnPlugin.h>
 
-#include "renderOverride.h"
 #include "cmd.h"
+#include "renderOverride.h"
+#include "usdPreviewSurface.h"
 
 #include <stdlib.h>
 
@@ -45,6 +46,17 @@ MStatus initializePlugin(MObject obj) {
         ret.perror("Error registering hdmaya command!");
     }
 
+    if (!plugin.registerNode(
+        HdMayaUsdPreviewSurface::name,
+        HdMayaUsdPreviewSurface::typeId,
+        HdMayaUsdPreviewSurface::Creator,
+        HdMayaUsdPreviewSurface::Initialize,
+        MPxNode::kDependNode,
+        &HdMayaUsdPreviewSurface::classification)) {
+        ret = MS::kFailure;
+        ret.perror("Error registering UsdPreviewSurface node!");
+    }
+
     return ret;
 }
 
@@ -65,6 +77,11 @@ MStatus uninitializePlugin(MObject obj) {
     if (!plugin.deregisterCommand(HdMayaCmd::name)) {
         ret = MS::kFailure;
         ret.perror("Error deregistering hdmaya command!");
+    }
+
+    if (!plugin.deregisterNode(HdMayaUsdPreviewSurface::typeId)) {
+        ret = MS::kFailure;
+        ret.perror("Error deregistering UsdPreviewSurface node!");
     }
 
     return ret;

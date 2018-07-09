@@ -224,11 +224,13 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         GlfGlewInit();
         InitHydraResources();
         _initializedViewport = true;
+#if LUMA_USD_BUILD
         if (_preferSimpleLight) {
             _taskController->SetEnableShadows(false);
             renderFrame();
             _taskController->SetEnableShadows(true);
         }
+#endif
     }
 
     const auto displayStyle = drawContext.getDisplayStyle();
@@ -250,7 +252,9 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         }
     }
 
+#ifdef LUMA_USD_BUILD
     _taskController->SetEnableShadows(enableShadows);
+#endif
 
     HdxRenderTaskParams params;
     params.enableLighting = true;
