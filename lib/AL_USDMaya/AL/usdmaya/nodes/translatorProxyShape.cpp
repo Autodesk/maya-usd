@@ -119,14 +119,22 @@ AL_USDMayaTranslatorProxyShape::Create(
 
     if (!resolvedRefPath.empty())
     {
+      // If an offset has been applied to the proxyShape, we use the values to
+      // construct the reference offset so the resulting stage will be look the
+      // same.
+      auto timeOffsetPlug = proxyShape->timeOffsetPlug();
+      auto timeScalarPlug = proxyShape->timeScalarPlug();
+      SdfLayerOffset offset(timeOffsetPlug.asMTime().as(MTime::uiUnit()),
+                            timeScalarPlug.asDouble());
+
       if (refPrimPathStr.empty())
       {
-        refs.AddReference(refAssetPath);
+        refs.AddReference(refAssetPath, offset);
       }
       else
       {
         SdfPath refPrimPath(refPrimPathStr);
-        refs.AddReference(SdfReference(refAssetPath, refPrimPath));
+        refs.AddReference(SdfReference(refAssetPath, refPrimPath, offset));
       }
     }
     else
