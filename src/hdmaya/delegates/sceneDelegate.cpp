@@ -43,58 +43,47 @@ const HdMaterialParamVector _defaultShaderParams = {
         HdMaterialParam::ParamTypeFallback,
         TfToken("roughness"),
         VtValue(0.0f)
-    },
-    {
+    }, {
         HdMaterialParam::ParamTypeFallback,
         TfToken("clearcoat"),
         VtValue(0.0f)
-    },
-    {
+    }, {
         HdMaterialParam::ParamTypeFallback,
         TfToken("clearcoatRoughness"),
         VtValue(0.0f)
-    },
-    {
+    }, {
         HdMaterialParam::ParamTypeFallback,
         TfToken("emissiveColor"),
         VtValue(GfVec3f(0.0f, 0.0f, 0.0f))
-    },
-    {
+    }, {
         HdMaterialParam::ParamTypeFallback,
         TfToken("specularColor"),
         VtValue(GfVec3f(0.0f, 0.0f, 0.0f))
-    },
-    {
+    }, {
         HdMaterialParam::ParamTypeFallback,
         TfToken("metallic"),
         VtValue(0.0f)
-    },
-    {
+    }, {
         HdMaterialParam::ParamTypeFallback,
         TfToken("useSpecularWorkflow"),
         VtValue(1)
-    },
-    {
+    }, {
         HdMaterialParam::ParamTypeFallback,
         TfToken("occlusion"),
         VtValue(1.0f)
-    },
-    {
+    }, {
         HdMaterialParam::ParamTypeFallback,
         TfToken("ior"),
         VtValue(1.0f)
-    },
-    {
+    }, {
         HdMaterialParam::ParamTypeFallback,
         TfToken("normal"),
         VtValue(GfVec3f(1.0f, 1.0f, 1.0f))
-    },
-    {
+    }, {
         HdMaterialParam::ParamTypeFallback,
         TfToken("opacity"),
         VtValue(1.0f)
-    },
-    {
+    }, {
         HdMaterialParam::ParamTypeFallback,
         TfToken("diffuseColor"),
         VtValue(GfVec3f(1.0, 1.0, 1.0))
