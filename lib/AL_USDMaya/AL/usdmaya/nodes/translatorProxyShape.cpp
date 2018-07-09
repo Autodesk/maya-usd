@@ -17,7 +17,7 @@
 #include "translatorProxyShape.h"
 #include "ProxyShape.h"
 
-#include "usdMaya/JobArgs.h"
+#include "usdMaya/jobArgs.h"
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
 #include "usdMaya/util.h"
@@ -63,8 +63,7 @@ AL_USDMayaTranslatorProxyShape::Create(
 
   const MDagPath& currPath = args.GetMDagPath();
   const MFnDagNode proxyShapeNode(currPath);
-  AL::usdmaya::nodes::ProxyShape* proxyShape =
-          (AL::usdmaya::nodes::ProxyShape*)proxyShapeNode.userNode();
+  auto proxyShape = (AL::usdmaya::nodes::ProxyShape*)proxyShapeNode.userNode();
 
   std::string refPrimPathStr;
   MPlug usdRefPrimPathPlg = proxyShape->primPathPlug();
@@ -88,8 +87,13 @@ AL_USDMayaTranslatorProxyShape::Create(
     {
       srcPrimPath = shapeStage->GetDefaultPrim().GetPath();
     }
+    // Use custom Fn ShouldGraftValue to non-destructively copy specs.
+    // This will preserve Xform type if transform writer has already run on
+    // the prim because we are merging xform + shape.
     SdfCopySpec(shapeStage->GetSessionLayer(), srcPrimPath,
-                stage->GetRootLayer(), authorPath);
+                stage->GetRootLayer(), authorPath,
+                ShouldGraftValue,
+                ShouldGraftChildren);
   }
 
   // Guard against a situation where the prim being referenced has

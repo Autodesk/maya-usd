@@ -32,8 +32,37 @@ struct AL_USDMayaTranslatorProxyShape {
   /// AL_usdmaya_ProxyShape node.
   PXRUSDMAYA_API
   static bool Create(
-          const PxrUsdMayaPrimWriterArgs &args,
-          PxrUsdMayaPrimWriterContext *context);
+          const PxrUsdMayaPrimWriterArgs& args,
+          PxrUsdMayaPrimWriterContext* context);
+
+  /// Return true if \p field should be copied from the spec at \p srcPath in
+  /// \p srcLayer to the spec at \p dstPath in \p dstLayer.
+  /// This version overrides the default behavior to preserve values that
+  /// already exist on dest if source does not have them (otherwise they
+  /// would be cleared).
+  static bool ShouldGraftValue(SdfSpecType specType,
+                                 const TfToken& field,
+                                 const SdfLayerHandle& srcLayer,
+                                 const SdfPath& srcPath,
+                                 bool fieldInSrc,
+                                 const SdfLayerHandle& dstLayer,
+                                 const SdfPath& dstPath,
+                                 bool fieldInDst,
+                                 boost::optional<VtValue>* valueToCopy){
+    // SdfShouldCopyValueFn copies everything by default
+    return (!fieldInDst && fieldInSrc);
+  }
+
+  static bool
+  ShouldGraftChildren(
+          const TfToken& childrenField,
+          const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
+          const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
+          boost::optional<VtValue>* srcChildren,
+          boost::optional<VtValue>* dstChildren){
+    // SdfShouldCopyChildrenFn copies everything by default
+    return true;
+  }
 };
 
 
