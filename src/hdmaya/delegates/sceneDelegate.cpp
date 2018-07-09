@@ -42,6 +42,7 @@ _nodeAdded(MObject& obj, void* clientData) {
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (HdMayaSceneDelegate)
+    ((FallbackMaterial, "__fallback_material__"))
 );
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaSceneDelegate) {
@@ -55,7 +56,9 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaSceneDelegate) {
 HdMayaSceneDelegate::HdMayaSceneDelegate(
     HdRenderIndex* renderIndex,
     const SdfPath& delegateID) :
-    HdMayaDelegateCtx(renderIndex, delegateID) {
+    HdMayaDelegateCtx(renderIndex, delegateID),
+    _fallbackMaterial(delegateID.AppendChild(_tokens->FallbackMaterial)) {
+
 }
 
 HdMayaSceneDelegate::~HdMayaSceneDelegate() {
@@ -76,6 +79,9 @@ HdMayaSceneDelegate::Populate() {
     MStatus status;
     auto id = MDGMessage::addNodeAddedCallback(_nodeAdded, "dagNode", this, &status);
     if (status) { _callbacks.push_back(id); }
+
+    // Adding fallback material sprim to the render index.
+    renderIndex.InsertSprim(HdPrimTypeTokens->material, this, _fallbackMaterial);
 }
 
 void
@@ -240,46 +246,46 @@ HdMayaSceneDelegate::GetDisplayStyle(const SdfPath& id) {
 //     return HdTokens->hull;
 // }
 
-// SdfPath
-// HdMayaSceneDelegate::GetMaterialId(const SdfPath& id) {
-//     std::cerr << "[HdMayaSceneDelegate] Getting material id of " << id << std::endl;
-//     return {};
-// }
-//
-// std::string
-// HdMayaSceneDelegate::GetSurfaceShaderSource(const SdfPath& id) {
-//     std::cerr << "[HdMayaSceneDelegate] Getting surface shader source of " << id << std::endl;
-//     return {};
-// }
-//
-// std::string
-// HdMayaSceneDelegate::GetDisplacementShaderSource(const SdfPath& id) {
-//     std::cerr << "[HdMayaSceneDelegate] Getting displacement shader source of " << id << std::endl;
-//     return {};
-// }
-//
-// VtValue
-// HdMayaSceneDelegate::GetMaterialParamValue(const SdfPath& id, const TfToken& paramName) {
-//     std::cerr << "[HdMayaSceneDelegate] Getting material param value of " << id << std::endl;
-//     return {};
-// }
-//
-// HdMaterialParamVector
-// HdMayaSceneDelegate::GetMaterialParams(const SdfPath& id) {
-//     std::cerr << "[HdMayaSceneDelegate] Getting material params of " << id << std::endl;
-//     return {};
-// }
-//
-// VtValue
-// HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id) {
-//     std::cerr << "[HdMayaSceneDelegate] Getting material resource of " << id << std::endl;
-//     return {};
-// }
-//
-// TfTokenVector
-// HdMayaSceneDelegate::GetMaterialPrimvars(const SdfPath& id) {
-//     std::cerr << "[HdMayaSceneDelegate] Getting material primvars of " << id << std::endl;
-//     return {};
-// }
+SdfPath
+HdMayaSceneDelegate::GetMaterialId(const SdfPath& id) {
+    std::cerr << "[HdMayaSceneDelegate] Getting material id of " << id << std::endl;
+    return _fallbackMaterial;
+}
+
+std::string
+HdMayaSceneDelegate::GetSurfaceShaderSource(const SdfPath& id) {
+    std::cerr << "[HdMayaSceneDelegate] Getting surface shader source of " << id << std::endl;
+    return {};
+}
+
+std::string
+HdMayaSceneDelegate::GetDisplacementShaderSource(const SdfPath& id) {
+    std::cerr << "[HdMayaSceneDelegate] Getting displacement shader source of " << id << std::endl;
+    return {};
+}
+
+VtValue
+HdMayaSceneDelegate::GetMaterialParamValue(const SdfPath& id, const TfToken& paramName) {
+    std::cerr << "[HdMayaSceneDelegate] Getting material param value of " << id << std::endl;
+    return {};
+}
+
+HdMaterialParamVector
+HdMayaSceneDelegate::GetMaterialParams(const SdfPath& id) {
+    std::cerr << "[HdMayaSceneDelegate] Getting material params of " << id << std::endl;
+    return {};
+}
+
+VtValue
+HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id) {
+    std::cerr << "[HdMayaSceneDelegate] Getting material resource of " << id << std::endl;
+    return {};
+}
+
+TfTokenVector
+HdMayaSceneDelegate::GetMaterialPrimvars(const SdfPath& id) {
+    std::cerr << "[HdMayaSceneDelegate] Getting material primvars of " << id << std::endl;
+    return {};
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -47,17 +47,19 @@ protected:
     HdPrimvarDescriptorVector
     GetPrimvarDescriptors(const SdfPath& id, HdInterpolation interpolation) override;
     VtValue GetLightParamValue(const SdfPath& id, const TfToken& paramName) override;
-    // SdfPath GetMaterialId(const SdfPath& id) override;
-    // std::string GetSurfaceShaderSource(const SdfPath& id) override;
-    // std::string GetDisplacementShaderSource(const SdfPath& id) override;
-    // VtValue GetMaterialParamValue(const SdfPath& id, const TfToken& paramName) override;
-    // HdMaterialParamVector GetMaterialParams(const SdfPath& id) override;
-    // VtValue GetMaterialResource(const SdfPath& id) override;
-    // TfTokenVector GetMaterialPrimvars(const SdfPath& id) override;
+    SdfPath GetMaterialId(const SdfPath& id) override;
+    std::string GetSurfaceShaderSource(const SdfPath& id) override;
+    std::string GetDisplacementShaderSource(const SdfPath& id) override;
+    VtValue GetMaterialParamValue(const SdfPath& id, const TfToken& paramName) override;
+    HdMaterialParamVector GetMaterialParams(const SdfPath& id) override;
+    VtValue GetMaterialResource(const SdfPath& id) override;
+    TfTokenVector GetMaterialPrimvars(const SdfPath& id) override;
 
 private:
     TfHashMap<SdfPath, HdMayaDagAdapterPtr, SdfPath::Hash> _pathToAdapterMap;
     std::vector<MCallbackId> _callbacks;
+
+    SdfPath _fallbackMaterial;
 };
 
 typedef std::shared_ptr<HdMayaSceneDelegate> MayaSceneDelegateSharedPtr;
