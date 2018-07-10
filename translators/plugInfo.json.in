@@ -14,6 +14,9 @@
                     },
                     "AL::usdmaya::fileio::translators::NurbsCurve": {
                         "bases": ["AL::usdmaya::fileio::translators::TranslatorBase"]
+                    },
+                    "AL::usdmaya::fileio::translators::FrameRange": {
+                        "bases": ["AL::usdmaya::fileio::translators::TranslatorBase"]
                     }
                 }
             },

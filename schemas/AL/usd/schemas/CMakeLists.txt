@@ -66,6 +66,7 @@ add_library(${SCHEMAS_PACKAGE}
     SHARED
     ModelAPI.cpp
     MayaReference.cpp
+    FrameRange.cpp
     tokens.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/ModuleDeps.cpp
 )
@@ -103,6 +104,7 @@ add_library(${SCHEMAS_PYTHON_PACKAGE}
     wrapModelAPI.cpp
     wrapMayaReference.cpp
     wrapTokens.cpp
+    wrapFrameRange.cpp
 )
 
 target_compile_definitions(${SCHEMAS_PYTHON_PACKAGE}
@@ -187,6 +189,7 @@ install(
     FILES
         ModelAPI.h
         MayaReference.h
+        FrameRange.h
         api.h
         tokens.h
     DESTINATION

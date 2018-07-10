@@ -99,3 +99,31 @@ class ALMayaReference "ALMayaReference"(
 }
 
 ###################################################################################################
+
+class ALFrameRange "ALFrameRange"(
+  doc = "Maya Frame Range"
+  inherits = </Typed>
+  customData = {
+        string className = "FrameRange"
+        string fileName = "FrameRange"
+      }
+)
+{
+    double animationStartFrame(
+      doc = "The start animation frame in Maya."
+    )
+    double startFrame(
+      doc = "The min frame in Maya."
+    )
+    double endFrame(
+      doc = "The max frame in Maya."
+    )
+    double animationEndFrame(
+      doc = "The end animation frame in Maya."
+    )
+    double currentFrame(
+      doc = "The current frame in Maya."
+    )
+}
+
+###################################################################################################

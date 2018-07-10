@@ -1,3 +1,15 @@
+## v0.28.5 (2018-07-10)
+
+### Added
+
+* New open-source ALFrameRange schema and translator, which sets up Maya time range and current frame during the translation.
+* Tests for ALFrameRange translator.
+* Tests for the fix for the over-decref issue in transform chain.
+
+### Fixed
+
+* Over-decref in transform chain during some prim tear-down.
+
 ## v0.28.4 (2018-07-05)
 
 ### Added
