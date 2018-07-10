@@ -15,6 +15,7 @@ add_library(${TRANSLATORS_PACKAGE}
     MayaReference.cpp
     Mesh.cpp
     NurbsCurve.cpp
+    FrameRange.cpp
 )
 
 target_compile_definitions(${TRANSLATORS_PACKAGE}

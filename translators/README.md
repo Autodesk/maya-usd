@@ -7,6 +7,12 @@ This translates the built-in USD "Camera" schema.
 Supports a minimal but useful set of camera-related parameters, see Camera.h (@todo: add doxygen reference) 
 
 
+## Frame Range
+This translates the ALFrameRange prim, and set up the time range and current time in Maya.
+If the time range is not authored in the prim, the startTimeCode and endTimeCode metadata of the usdStage are used if authored.
+If nothing was authored, the prim has no effect.
+
+
 ## Maya Reference
 This has an accompanying schema called ALMayaReference, defined in [schemas](../schemas/AL/usd/schemas/schema.usda.in)
 
