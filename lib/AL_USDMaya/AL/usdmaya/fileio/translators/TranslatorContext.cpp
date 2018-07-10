@@ -462,6 +462,7 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
   {
     auto path = *iter;
     auto node = std::lower_bound(m_primMapping.begin(), m_primMapping.end(), path, value_compare());
+    bool isInTransformChain = isPrimInTransformChain(path);
 
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries removing: %s\n", iter->GetText());
     if(node->objectHandle().isValid() && node->objectHandle().isAlive())
@@ -476,7 +477,10 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
       m_primMapping.erase(node);
     }
 
-    m_proxyShape->removeUsdTransformChain(path, modifier, nodes::ProxyShape::kRequired);
+    if(isInTransformChain)
+    {
+      m_proxyShape->removeUsdTransformChain(path, modifier, nodes::ProxyShape::kRequired);
+    }
 
     ++iter;
   }
@@ -570,6 +574,105 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
   }
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+bool TranslatorContext::isNodeAncestorOf(MObjectHandle ancestorHandle, MObjectHandle objectHandleToTest)
+{
+  if(!ancestorHandle.isValid() || !ancestorHandle.isAlive())
+  {
+    return false;
+  }
+
+  if(!objectHandleToTest.isValid() || !objectHandleToTest.isAlive())
+  {
+    return false;
+  }
+
+  MObject ancestorNode = ancestorHandle.object();
+  MObject nodeToTest = objectHandleToTest.object();
+  if(ancestorNode == nodeToTest)
+  {
+    return false;
+  }
+
+  MStatus parentStatus = MS::kSuccess;
+  MFnDagNode dagFn(nodeToTest, &parentStatus);
+
+  // If it is not a DAG node:
+  if(!parentStatus)
+  {
+    return false;
+  }
+
+  bool isParent = dagFn.isChildOf(ancestorNode, &parentStatus);
+  if(isParent)
+  {
+    return true;
+  }
+
+  unsigned int parentC = dagFn.parentCount(&parentStatus);
+  if(!parentStatus)
+  {
+    return false;
+  }
+
+  for(unsigned int i=0; i<parentC; ++i)
+  {
+    MObject parentNode = dagFn.parent(i, &parentStatus);
+    if(!parentStatus)
+    {
+      continue;
+    }
+
+    MObjectHandle parentHandle (parentNode);
+    if(isNodeAncestorOf(ancestorHandle, parentHandle))
+    {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool TranslatorContext::isPrimInTransformChain(const SdfPath& path)
+{
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::isPrimInTransformChain %s\n", path.GetText());
+
+  MDagPath proxyShapeTransformDagPath = m_proxyShape->parentTransform();
+  MObject proxyTransformNode = proxyShapeTransformDagPath.node();
+  MObjectHandle proxyTransformNodeHandle(proxyTransformNode);
+
+
+  // First test the Maya node that prim is for, this is for MayaReference..
+  MObjectHandle parentHandle;
+  if(getTransform(path, parentHandle))
+  {
+    if(isNodeAncestorOf(proxyTransformNodeHandle, parentHandle))
+    {
+      return true;
+    }
+  }
+
+  // Now test the Maya node that translator created, this is for DAG hierarchy transform|shape..
+  MObjectHandleArray mayaNodes;
+  bool everCreatedNodes = getMObjects(path, mayaNodes);
+  if(!everCreatedNodes)
+  {
+    return false;
+  }
+
+  size_t nodeCount = mayaNodes.size();
+  for(size_t i=0; i<nodeCount; ++i)
+  {
+    MObjectHandle node = mayaNodes[i];
+    if(isNodeAncestorOf(proxyTransformNodeHandle, node))
+    {
+      return true;
+    }
+  }
+
+  return false;
+}
 //----------------------------------------------------------------------------------------------------------------------
 } // translators
 } // fileio

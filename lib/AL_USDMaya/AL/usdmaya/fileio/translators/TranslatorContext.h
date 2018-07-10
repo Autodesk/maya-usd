@@ -416,6 +416,12 @@ private:
       UsdPrim& primPath,
       const MObject& primObj);
 
+  bool isNodeAncestorOf(MObjectHandle ancestorHandle, MObjectHandle objectHandleToTest);
+
+  /// \brief test if the prim was translated into any MObject(s), that sits underneath the parent MObject.
+  /// \return true if the prim maps to a MObject inside the Maya Dag tree.
+  bool isPrimInTransformChain(const SdfPath& path);
+
   inline PrimLookups::iterator find(const SdfPath& path)
   {
     PrimLookups::iterator end = m_primMapping.end();
