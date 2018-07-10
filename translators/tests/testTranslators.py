@@ -8,6 +8,7 @@ import translatortestutils
 class TestTranslator(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        mc.file(f=True, new=True)
         mc.loadPlugin('AL_USDMayaPlugin')
             
     @classmethod
@@ -393,7 +394,133 @@ class TestTranslator(unittest.TestCase):
             self.assertAlmostEqual(actualPoint[0], expectedPoint[0])
             self.assertAlmostEqual(actualPoint[1], expectedPoint[1])
             self.assertAlmostEqual(actualPoint[2], expectedPoint[2])
-
+            
+    def testFrameRange_TranslatorExists(self):
+        """
+        Test that the Maya frame range Translator exists
+        """
+        self.assertTrue(Tf.Type.Unknown != Tf.Type.FindByName('AL::usdmaya::fileio::translators::FrameRange'))
+        
+    def testFrameRange_PluginIsFunctional(self):
+        mc.AL_usdmaya_ProxyShapeImport(file='./testFrameRange.usda')
+        self.assertTrue(Tf.Type.Unknown != Tf.Type.FindByName('AL::usdmaya::fileio::translators::FrameRange'))
+        
+        currentFrame = mc.currentTime(q=True)
+        
+        startAnimFrame = mc.playbackOptions(q=True, animationStartTime=True)
+        endAnimFrame = mc.playbackOptions(q=True, animationEndTime=True)
+        
+        startVisibleFrame = mc.playbackOptions(q=True, minTime=True)
+        endVisibleFrame = mc.playbackOptions(q=True, maxTime=True)
+        
+        
+        self.assertEqual(currentFrame, 1100)
+        
+        self.assertEqual(startAnimFrame, 1072)
+        self.assertEqual(endAnimFrame, 1290)
+        
+        self.assertEqual(startVisibleFrame, 1080)
+        self.assertEqual(endVisibleFrame, 1200)
+        
+    def testFrameRange_FallbackIsFunctional(self):
+        # If no frame range data is authored in ALFrameRange prim, we use startTimeCode & endTimeCode from usdStage:
+        mc.AL_usdmaya_ProxyShapeImport(file='./testFrameRangeFallback.usda')
+        self.assertTrue(Tf.Type.Unknown != Tf.Type.FindByName('AL::usdmaya::fileio::translators::FrameRange'))
+        
+        currentFrame = mc.currentTime(q=True)
+        
+        startAnimFrame = mc.playbackOptions(q=True, animationStartTime=True)
+        endAnimFrame = mc.playbackOptions(q=True, animationEndTime=True)
+        
+        startVisibleFrame = mc.playbackOptions(q=True, minTime=True)
+        endVisibleFrame = mc.playbackOptions(q=True, maxTime=True)
+        
+        self.assertEqual(currentFrame, 1072)
+        
+        self.assertEqual(startAnimFrame, 1072)
+        self.assertEqual(endAnimFrame, 1290)
+        
+        self.assertEqual(startVisibleFrame, 1072)
+        self.assertEqual(endVisibleFrame, 1290)
+        
+    def testFrameRange_OnlyCurrentFrame(self):
+        startAnimFrameOld = mc.playbackOptions(q=True, animationStartTime=True)        
+        endAnimFrameOld = mc.playbackOptions(q=True, animationEndTime=True)
+        
+        startVisibleFrameOld = mc.playbackOptions(q=True, minTime=True)
+        endVisibleFrameOld = mc.playbackOptions(q=True, maxTime=True)
+        
+        # If frame range data is authored neither in ALFrameRange prim nor usdStage, no range action should be taken:
+        mc.AL_usdmaya_ProxyShapeImport(file='./testFrameRangeCurrentFrame.usda')
+        self.assertTrue(Tf.Type.Unknown != Tf.Type.FindByName('AL::usdmaya::fileio::translators::FrameRange'))
+        
+        currentFrame = mc.currentTime(q=True)
+        
+        startAnimFrame = mc.playbackOptions(q=True, animationStartTime=True)
+        endAnimFrame = mc.playbackOptions(q=True, animationEndTime=True)
+        
+        startVisibleFrame = mc.playbackOptions(q=True, minTime=True)
+        endVisibleFrame = mc.playbackOptions(q=True, maxTime=True)
+        
+        self.assertEqual(currentFrame, 10)
+        
+        self.assertEqual(startAnimFrame, startAnimFrameOld)
+        self.assertEqual(endAnimFrame, endAnimFrameOld)
+        
+        self.assertEqual(startVisibleFrame, startVisibleFrameOld)
+        self.assertEqual(endVisibleFrame, endVisibleFrameOld)
+        
+    def testFrameRange_NoImpactIfNoFrameRange(self):
+        currentFrameOld = mc.currentTime(q=True)
+        
+        startAnimFrameOld = mc.playbackOptions(q=True, animationStartTime=True)        
+        endAnimFrameOld = mc.playbackOptions(q=True, animationEndTime=True)
+        
+        startVisibleFrameOld = mc.playbackOptions(q=True, minTime=True)
+        endVisibleFrameOld = mc.playbackOptions(q=True, maxTime=True)
+        
+        # If frame range data is authored neither in ALFrameRange prim nor usdStage, no range action should be taken:
+        mc.AL_usdmaya_ProxyShapeImport(file='./testFrameRangeNoImpact.usda')
+        self.assertTrue(Tf.Type.Unknown != Tf.Type.FindByName('AL::usdmaya::fileio::translators::FrameRange'))
+        
+        currentFrame = mc.currentTime(q=True)
+        
+        startAnimFrame = mc.playbackOptions(q=True, animationStartTime=True)
+        endAnimFrame = mc.playbackOptions(q=True, animationEndTime=True)
+        
+        startVisibleFrame = mc.playbackOptions(q=True, minTime=True)
+        endVisibleFrame = mc.playbackOptions(q=True, maxTime=True)
+        
+        self.assertEqual(currentFrame, currentFrameOld)
+        
+        self.assertEqual(startAnimFrame, startAnimFrameOld)
+        self.assertEqual(endAnimFrame, endAnimFrameOld)
+        
+        self.assertEqual(startVisibleFrame, startVisibleFrameOld)
+        self.assertEqual(endVisibleFrame, endVisibleFrameOld)
+    
+    # --------------------------------------------------------------------------------------------------    
+    def _performDisablePrimTest(self, usdFilePath):
+        shapes = mc.AL_usdmaya_ProxyShapeImport(file=usdFilePath)
+        self.assertTrue(Tf.Type.Unknown != Tf.Type.FindByName('AL::usdmaya::fileio::translators::FrameRange'))
+        
+        shotPrimMayaNodeName = 'shot_name'
+        self.assertTrue(mc.objExists(shotPrimMayaNodeName))
+        configPrimPath = '/shot_name/config'
+        cmds.AL_usdmaya_ActivatePrim(shapes[0], pp=configPrimPath, a=False)
+        
+        # Assert not clearing:
+        self.assertTrue(mc.objExists(shotPrimMayaNodeName))
+        
+    def testTranslatedPrimDeactiveClearIssue(self):
+        # When a prim is within a translated hierarchy, deactivating it's parent should not clear children of proxyShapeTransform.
+        self._performDisablePrimTest('./testTranslatedPrimDisableClearIssue.usda')
+        
+    def testTranslatedPrimDeactiveCrashIssue(self):
+        # When a prim is within a translated hierarchy, deactivating it's parent should not crash Maya or clear the children of proxyShapeTransform.
+        self._performDisablePrimTest('./testTranslatedPrimDisableCrashIssue.usda')
+        
+        
 tests = unittest.TestLoader().loadTestsFromTestCase(TestTranslator)
 result = unittest.TextTestRunner(verbosity=2).run(tests)
 
