@@ -190,7 +190,12 @@ static std::string resolveRelativePathWithinMayaContext(const MObject &proxyShap
   if(currentFileDir.empty())
     return relativeFilePath;
 
-  AL::filesystem::path path = boost::filesystem::canonical(relativeFilePath, currentFileDir);
+  boost::system::error_code errorCode;
+  AL::filesystem::path path = boost::filesystem::canonical(relativeFilePath, currentFileDir, errorCode);
+  if (errorCode){
+    // file does not exist
+    return std::string();
+  }
   return path.string();
 }
 
@@ -1261,7 +1266,7 @@ void ProxyShape::loadStage()
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the relative USD file path to %s\n", fileString.c_str());
   }
 
-  // Fall back on checking if path is just a standard absolute path
+  // Fall back on providing the path "as is" to USD
   if (fileString.empty())
   {
     fileString.assign(file.asChar(), file.length());
@@ -1269,16 +1274,8 @@ void ProxyShape::loadStage()
 
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage called for the usd file: %s\n", fileString.c_str());
 
-  // Check path validity
-  // Don't try to create a stage for a non-existent file. Some processes
-  // such as mbuild may author a file path here does not yet exist until a
-  // later operation (e.g., the mayaConvert target will produce the .mb
-  // for the USD standin before the usd target runs the usdModelForeman to
-  // assemble all the necessary usd files).
-  bool isValidPath = (TfStringStartsWith(fileString, "//") ||
-                      TfIsFile(fileString, true /*resolveSymlinks*/));
-
-  if (isValidPath)
+  // Only try to create a stage for layers that can be opened.
+  if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString))
   {
     MStatus status;
     SdfLayerRefPtr sessionLayer;
@@ -1334,13 +1331,10 @@ void ProxyShape::loadStage()
         // Initialise the asset resolver with the resolverConfig string
         PXR_NS::ArGetResolver().ConfigureResolverForAsset(assetResolverConfig.asChar());
       }
-
-      SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString);
       AL_END_PROFILE_SECTION();
 
-      if(rootLayer)
+      AL_BEGIN_PROFILE_SECTION(UsdStageOpen);
       {
-        AL_BEGIN_PROFILE_SECTION(UsdStageOpen);
         UsdStageCacheContext ctx(StageCache::Get());
 
         bool unloadedFlag = inputBoolValue(dataBlock, m_unloaded);
@@ -1365,25 +1359,15 @@ void ProxyShape::loadStage()
 
         // Save the initial edit target
         trackEditTargetLayer();
-
-        AL_END_PROFILE_SECTION();
       }
-      else
-      {
-        // file path not valid
-        if(file.length())
-        {
-          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage failed to open the usd file: %s.\n", file.asChar());
-          MGlobal::displayWarning(MString("Failed to open usd file \"") + file + "\"");
-        }
-      }
+      AL_END_PROFILE_SECTION();
     AL_END_PROFILE_SECTION();
   }
   else
   if(!fileString.empty())
   {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("The usd file is not valid: %s.\n", file.asChar());
-    MGlobal::displayWarning(MString("usd file path not valid \"") + file + "\"");
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage failed to open the usd file: %s.\n", file.asChar());
+    MGlobal::displayWarning(MString("Failed to open usd file \"") + file + "\"");
   }
 
   // Get the prim
