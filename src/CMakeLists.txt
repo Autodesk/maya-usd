@@ -60,6 +60,16 @@ if (LUMA_USD_BUILD)
     target_compile_definitions(hdview PRIVATE LUMA_USD_BUILD)
 endif ()
 
+get_target_property(LIB_FULLPATH hdmaya LOCATION)
+get_filename_component(LIB_NAME ${LIB_FULLPATH} NAME)
+set(PLUG_INFO_PATH "hdmaya/plugInfo.json")
+set(PLUG_INFO_LIBRARY_PATH ${LIB_NAME})
+
+configure_file(
+    ${PLUG_INFO_PATH}
+    ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH}
+)
+
 install(TARGETS hdmaya
         DESTINATION lib)
 
@@ -86,6 +96,10 @@ install(FILES
         hdmaya/api.h
         hdmaya/utils.h
         DESTINATION include/hdmaya)
+        
+install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH}
+        DESTINATION lib)
 
 # file(GLOB TEMPLATES scripts/*.py)
 #

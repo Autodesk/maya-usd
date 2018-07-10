@@ -32,7 +32,12 @@ public:
     static std::vector<TfToken> GetDelegateNames();
     HDMAYA_API
     static std::vector<DelegateCreator> GetDelegateCreators();
+    // Find all HdMayaDelegate plugins, and load them all
+    HDMAYA_API
+    static void LoadAllDelegates();
 private:
+    static void _LoadAllDelegates();
+
     std::vector<std::tuple<TfToken, DelegateCreator>> _delegates;
 };
 

@@ -2,6 +2,7 @@
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/range3d.h>
+#include <pxr/base/tf/type.h>
 
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/sdf/assetPath.h>
@@ -105,6 +106,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     (HdMayaSceneDelegate)
     ((FallbackMaterial, "__fallback_material__"))
 );
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType::Define<HdMayaSceneDelegate, TfType::Bases<HdMayaDelegate> >();
+}
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaSceneDelegate) {
     HdMayaDelegateRegistry::RegisterDelegate(

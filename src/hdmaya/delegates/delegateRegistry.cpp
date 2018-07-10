@@ -1,6 +1,11 @@
 #include <hdmaya/delegates/delegateRegistry.h>
 
+#include <pxr/base/plug/plugin.h>
+#include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/instantiateSingleton.h>
+#include <pxr/base/tf/type.h>
+
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -17,7 +22,7 @@ HdMayaDelegateRegistry::RegisterDelegate(const TfToken& name, DelegateCreator cr
 
 std::vector<TfToken>
 HdMayaDelegateRegistry::GetDelegateNames() {
-    TfRegistryManager::GetInstance().SubscribeTo<HdMayaDelegateRegistry>();
+    LoadAllDelegates();
     const auto& instance = GetInstance();
     std::vector<TfToken> ret;
     ret.reserve(instance._delegates.size());
@@ -29,7 +34,7 @@ HdMayaDelegateRegistry::GetDelegateNames() {
 
 std::vector<HdMayaDelegateRegistry::DelegateCreator>
 HdMayaDelegateRegistry::GetDelegateCreators() {
-    TfRegistryManager::GetInstance().SubscribeTo<HdMayaDelegateRegistry>();
+    LoadAllDelegates();
     const auto& instance = GetInstance();
     std::vector<HdMayaDelegateRegistry::DelegateCreator> ret;
     ret.reserve(instance._delegates.size());
@@ -37,6 +42,39 @@ HdMayaDelegateRegistry::GetDelegateCreators() {
         ret.push_back(std::get<1>(it));
     }
     return ret;
+}
+
+void
+HdMayaDelegateRegistry::LoadAllDelegates() {
+    static std::once_flag loadAllOnce;
+    std::call_once(loadAllOnce, _LoadAllDelegates);
+}
+
+void
+HdMayaDelegateRegistry::_LoadAllDelegates() {
+    TfRegistryManager::GetInstance().SubscribeTo<HdMayaDelegateRegistry>();
+
+    const TfType& delegateType = TfType::Find<HdMayaDelegate>();
+    if (delegateType.IsUnknown()) {
+        TF_CODING_ERROR("Could not find HdMayaDelegate type");
+        return;
+    }
+
+    std::set<TfType> delegateTypes;
+    delegateType.GetAllDerivedTypes(&delegateTypes);
+
+    PlugRegistry& plugReg = PlugRegistry::GetInstance();
+
+    for(auto& subType : delegateTypes)
+    {
+        const PlugPluginPtr pluginForType = plugReg.GetPluginForType(subType);
+        if (!pluginForType) {
+            TF_CODING_ERROR(
+                "Could not find plugin for '%s'", subType.GetTypeName().c_str());
+            return;
+        }
+        pluginForType->Load();
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
