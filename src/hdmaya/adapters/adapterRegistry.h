@@ -2,14 +2,14 @@
 #define __HDMAYA_ADAPTER_REGISTRY_H__
 
 #include <pxr/pxr.h>
+#include <pxr/base/tf/hashmap.h>
 #include <pxr/base/tf/singleton.h>
 
 #include <maya/MFn.h>
 
 #include <hdmaya/delegates/delegateCtx.h>
 #include <hdmaya/adapters/dagAdapter.h>
-
-#include <unordered_map>
+#include <hdmaya/adapters/lightAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -25,20 +25,25 @@ public:
     using DagAdapterCreator = std::function<
         HdMayaDagAdapterPtr(HdMayaDelegateCtx*, const MDagPath&)>;
     HDMAYA_API
-    static void RegisterDagAdapter(const std::string& type, DagAdapterCreator creator);
+    static void RegisterDagAdapter(const TfToken& type, DagAdapterCreator creator);
 
     HDMAYA_API
-    static DagAdapterCreator GetAdapterCreator(const MDagPath& dag);
+    static DagAdapterCreator GetDagAdapterCreator(const MDagPath& dag);
 
+    using LightAdapterCreator = std::function<
+        HdMayaLightAdapterPtr(HdMayaDelegateCtx*, const MDagPath&)>;
+    HDMAYA_API
+    static void RegisterLightAdapter(const TfToken& type, LightAdapterCreator creator);
+
+    HDMAYA_API
+    static LightAdapterCreator GetLightAdapterCreator(const MDagPath& dag);
 
     // Find all HdMayaAdapter plugins, and load them all
     HDMAYA_API
-    static void LoadAllAdapters();
+    static void LoadAllPlugin();
 private:
-    static void _LoadAllAdapters();
-
-private:
-    std::unordered_map<std::string, DagAdapterCreator> _dagAdapters;
+    TfHashMap<TfToken, DagAdapterCreator, TfToken::HashFunctor> _dagAdapters;
+    TfHashMap<TfToken, LightAdapterCreator, TfToken::HashFunctor> _lightAdapters;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

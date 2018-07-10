@@ -64,9 +64,9 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, pointLight) {
     HdMayaAdapterRegistry::RegisterDagAdapter(
-        "areaLight",
+        TfToken("areaLight"),
         [](HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaDagAdapterPtr {
-            return std::static_pointer_cast<HdMayaDagAdapter>(std::make_shared<HdMayaAreaLightAdapter>(delegate, dag));
+            return HdMayaDagAdapterPtr(new HdMayaAreaLightAdapter(delegate, dag));
         });
 }
 

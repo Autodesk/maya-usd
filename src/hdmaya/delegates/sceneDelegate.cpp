@@ -136,6 +136,7 @@ HdMayaSceneDelegate::~HdMayaSceneDelegate() {
 
 void
 HdMayaSceneDelegate::Populate() {
+    HdMayaAdapterRegistry::LoadAllPlugin();
     auto& renderIndex = GetRenderIndex();
     auto& changeTracker = renderIndex.GetChangeTracker();
     for (MItDag dagIt(MItDag::kDepthFirst, MFn::kInvalid); !dagIt.isDone(); dagIt.next()) {
@@ -165,7 +166,7 @@ HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
     // We don't care about transforms.
     if (dag.hasFn(MFn::kTransform)) { return; }
 
-    auto adapterCreator = HdMayaAdapterRegistry::GetAdapterCreator(dag);
+    auto adapterCreator = HdMayaAdapterRegistry::GetDagAdapterCreator(dag);
     if (adapterCreator == nullptr) { return; }
     const auto id = GetPrimPath(dag);
     if (TfMapLookupPtr(_pathToAdapterMap, id) != nullptr) {

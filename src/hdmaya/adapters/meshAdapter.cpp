@@ -143,9 +143,9 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, mesh) {
     HdMayaAdapterRegistry::RegisterDagAdapter(
-        "mesh",
-        []( HdMayaDelegateCtx* delegate, const MDagPath& dag) -> std::shared_ptr<HdMayaDagAdapter> {
-            return std::static_pointer_cast<HdMayaDagAdapter>(std::make_shared<HdMayaMeshAdapter>(delegate, dag));
+        TfToken("mesh"),
+        []( HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaDagAdapterPtr {
+            return HdMayaDagAdapterPtr(new HdMayaMeshAdapter(delegate, dag));
         });
 }
 

@@ -37,6 +37,8 @@ protected:
     void CalculateShadowParams(MFnLight& light, GfFrustum& frustum, HdxShadowParams& params);
 };
 
+using HdMayaLightAdapterPtr = std::shared_ptr<HdMayaLightAdapter>;
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // __HDMAYA_LIGHT_ADAPTER_H__
