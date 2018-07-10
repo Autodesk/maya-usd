@@ -1,0 +1,23 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "HdMayaDelegate": {
+                        "displayName": "Base type for all scene delegates in Hydra for Maya"
+                    },
+                    "HdMayaSceneDelegate": {
+                        "bases": [
+                            "HdMayaDelegate"
+                        ],
+                        "displayName": "Maya Shapes in Hydra for Maya"
+                    }
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "hdmaya",
+            "Root": ".",
+            "Type": "library"
+        }
+    ]
+}
