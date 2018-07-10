@@ -1,5 +1,6 @@
 #include <alProxyDelegate.h>
 #include <pxr/base/tf/envSetting.h>
+#include <pxr/base/tf/type.h>
 
 #include <hdmaya/delegates/delegateRegistry.h>
 
@@ -12,6 +13,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (HdMayaALProxyDelegate)
 );
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType::Define<HdMayaALProxyDelegate, TfType::Bases<HdMayaDelegate> >();
+}
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaALProxyDelegate) {
     if (!TfGetEnvSetting(HDMAYA_AL_TEST_DELEGATE_FILE).empty()) {

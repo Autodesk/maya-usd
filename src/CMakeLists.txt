@@ -26,7 +26,21 @@ target_include_directories(hdmaya_al SYSTEM PUBLIC ${HDMAYA_INCLUDE_DIR})
 target_compile_features(hdmaya_al PUBLIC cxx_std_11)
 target_compile_definitions(hdmaya_al PRIVATE "HDMAYA_AL_EXPORT=1")
 
+get_target_property(LIB_FULLPATH hdmaya_al LOCATION)
+get_filename_component(LIB_NAME ${LIB_FULLPATH} NAME)
+set(PLUG_INFO_PATH "plugInfo.json")
+set(PLUG_INFO_LIBRARY_PATH ${LIB_NAME})
+
+configure_file(
+    ${PLUG_INFO_PATH}
+    ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH}
+)
+
 set_target_properties(hdmaya_al PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
 
 install(TARGETS hdmaya_al
+        DESTINATION lib)
+
+install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH}
         DESTINATION lib)

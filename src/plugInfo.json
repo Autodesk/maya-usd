@@ -1,0 +1,20 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "HdMayaALProxyDelegate": {
+                        "bases": [
+                            "HdMayaDelegate"
+                        ],
+                        "displayName": "Animal Logic Proxy Shapes in Hydra for Maya"
+                    }
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "hdmaya_al",
+            "Root": ".",
+            "Type": "library"
+        }
+    ]
+}
