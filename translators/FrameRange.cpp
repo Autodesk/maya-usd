@@ -169,7 +169,6 @@ MStatus FrameRange::setFrameRange(const UsdPrim& prim, bool setCurrentFrame)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-
 MStatus FrameRange::getFrame(const UsdStageWeakPtr &stage,
                               const UsdPrim &prim,
                               const UsdAttribute &attr,
@@ -194,36 +193,31 @@ MStatus FrameRange::getFrame(const UsdStageWeakPtr &stage,
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-
-MStatus FrameRange::import(const UsdPrim& prim, MObject& parent)
+MStatus FrameRange::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("FrameRange::import %s\n", prim.GetPath().GetText());
   return setFrameRange(prim, true);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-
 MStatus FrameRange::postImport(const UsdPrim& prim)
 {
   return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-
 MStatus FrameRange::preTearDown(UsdPrim& prim)
 {
   return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-
 MStatus FrameRange::tearDown(const SdfPath& primPath)
 {
   return MStatus::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-
 MStatus FrameRange::update(const UsdPrim& prim)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("FrameRange::update %s\n", prim.GetPath().GetText());
