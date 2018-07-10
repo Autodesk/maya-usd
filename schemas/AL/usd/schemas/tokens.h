@@ -58,10 +58,26 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Use AL_USDMayaSchemasTokens like so:
 ///
 /// \code
-///     gprim.GetMyTokenValuedAttr().Set(AL_USDMayaSchemasTokens->lock);
+///     gprim.GetMyTokenValuedAttr().Set(AL_USDMayaSchemasTokens->animationEndFrame);
 /// \endcode
 struct AL_USDMayaSchemasTokensType {
     AL_USDMAYASCHEMAS_API AL_USDMayaSchemasTokensType();
+    /// \brief "animationEndFrame"
+    /// 
+    /// AL_usd_FrameRange
+    const TfToken animationEndFrame;
+    /// \brief "animationStartFrame"
+    /// 
+    /// AL_usd_FrameRange
+    const TfToken animationStartFrame;
+    /// \brief "currentFrame"
+    /// 
+    /// AL_usd_FrameRange
+    const TfToken currentFrame;
+    /// \brief "endFrame"
+    /// 
+    /// AL_usd_FrameRange
+    const TfToken endFrame;
     /// \brief "al_usdmaya_lock"
     /// 
     /// Stores the lock state of corresponding Maya objects of the prims
@@ -110,6 +126,10 @@ struct AL_USDMayaSchemasTokensType {
     /// 
     /// State which makes the Prim unselectable
     const TfToken selectability_unselectable;
+    /// \brief "startFrame"
+    /// 
+    /// AL_usd_FrameRange
+    const TfToken startFrame;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

@@ -26,6 +26,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 AL_USDMayaSchemasTokensType::AL_USDMayaSchemasTokensType() :
+    animationEndFrame("animationEndFrame", TfToken::Immortal),
+    animationStartFrame("animationStartFrame", TfToken::Immortal),
+    currentFrame("currentFrame", TfToken::Immortal),
+    endFrame("endFrame", TfToken::Immortal),
     lock("al_usdmaya_lock", TfToken::Immortal),
     lock_inherited("inherited", TfToken::Immortal),
     lock_transform("transform", TfToken::Immortal),
@@ -38,7 +42,12 @@ AL_USDMayaSchemasTokensType::AL_USDMayaSchemasTokensType() :
     selectability_inherited("inherited", TfToken::Immortal),
     selectability_selectable("selectable", TfToken::Immortal),
     selectability_unselectable("unselectable", TfToken::Immortal),
+    startFrame("startFrame", TfToken::Immortal),
     allTokens({
+        animationEndFrame,
+        animationStartFrame,
+        currentFrame,
+        endFrame,
         lock,
         lock_inherited,
         lock_transform,
@@ -50,7 +59,8 @@ AL_USDMayaSchemasTokensType::AL_USDMayaSchemasTokensType() :
         selectability,
         selectability_inherited,
         selectability_selectable,
-        selectability_unselectable
+        selectability_unselectable,
+        startFrame
     })
 {
 }

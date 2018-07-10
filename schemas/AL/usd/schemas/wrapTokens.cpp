@@ -64,6 +64,10 @@ void wrapAL_USDMayaSchemasTokens()
 {
     boost::python::class_<AL_USDMayaSchemasTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
+    _AddToken(cls, "animationEndFrame", AL_USDMayaSchemasTokens->animationEndFrame);
+    _AddToken(cls, "animationStartFrame", AL_USDMayaSchemasTokens->animationStartFrame);
+    _AddToken(cls, "currentFrame", AL_USDMayaSchemasTokens->currentFrame);
+    _AddToken(cls, "endFrame", AL_USDMayaSchemasTokens->endFrame);
     _AddToken(cls, "lock", AL_USDMayaSchemasTokens->lock);
     _AddToken(cls, "lock_inherited", AL_USDMayaSchemasTokens->lock_inherited);
     _AddToken(cls, "lock_transform", AL_USDMayaSchemasTokens->lock_transform);
@@ -76,4 +80,5 @@ void wrapAL_USDMayaSchemasTokens()
     _AddToken(cls, "selectability_inherited", AL_USDMayaSchemasTokens->selectability_inherited);
     _AddToken(cls, "selectability_selectable", AL_USDMayaSchemasTokens->selectability_selectable);
     _AddToken(cls, "selectability_unselectable", AL_USDMayaSchemasTokens->selectability_unselectable);
+    _AddToken(cls, "startFrame", AL_USDMayaSchemasTokens->startFrame);
 }
