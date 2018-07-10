@@ -1,5 +1,6 @@
 #include <pxr/pxr.h>
 
+#include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/light.h>
 
 #include <hdmaya/adapters/lightAdapter.h>
@@ -52,6 +53,11 @@ public:
         }
     }
 };
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType::Define<HdMayaPointLightAdapter, TfType::Bases<HdMayaLightAdapter> >();
+}
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, pointLight) {
     HdMayaAdapterRegistry::RegisterDagAdapter(

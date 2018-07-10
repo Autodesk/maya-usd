@@ -1,5 +1,6 @@
 #include "lightAdapter.h"
 
+#include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/light.h>
 #include <pxr/imaging/hdx/simpleLightTask.h>
 
@@ -13,6 +14,11 @@
 #include <hdmaya/adapters/constantShadowMatrix.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType::Define<HdMayaLightAdapter, TfType::Bases<HdMayaDagAdapter> >();
+}
 
 namespace {
 

@@ -1,10 +1,16 @@
 #include <hdmaya/adapters/dagAdapter.h>
 
+#include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/tokens.h>
 
 #include <maya/MNodeMessage.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType::Define<HdMayaDagAdapter, TfType::Bases<HdMayaAdapter> >();
+}
 
 namespace {
 

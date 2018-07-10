@@ -1,5 +1,6 @@
 #include <pxr/pxr.h>
 
+#include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/light.h>
 #include <pxr/imaging/hdx/simpleLightTask.h>
 #include <pxr/imaging/hdx/shadowMatrixComputation.h>
@@ -87,6 +88,11 @@ protected:
         return typeId == HdPrimTypeTokens->simpleLight;
     }
 };
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType::Define<HdMayaSpotLightAdapter, TfType::Bases<HdMayaLightAdapter> >();
+}
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, pointLight) {
     HdMayaAdapterRegistry::RegisterDagAdapter(

@@ -1,8 +1,15 @@
 #include <hdmaya/adapters/adapter.h>
 
+#include <pxr/base/tf/type.h>
+
 #include <maya/MNodeMessage.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType::Define<HdMayaAdapter>();
+}
 
 namespace {
 

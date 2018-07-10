@@ -1,5 +1,7 @@
 #include <pxr/pxr.h>
 
+#include <pxr/base/tf/type.h>
+
 #include <pxr/usd/usdGeom/tokens.h>
 
 #include <pxr/imaging/hd/tokens.h>
@@ -133,6 +135,11 @@ private:
                 plug.name().asChar(), plugName.asChar());
     }
 };
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType::Define<HdMayaMeshAdapter, TfType::Bases<HdMayaDagAdapter> >();
+}
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, mesh) {
     HdMayaAdapterRegistry::RegisterDagAdapter(

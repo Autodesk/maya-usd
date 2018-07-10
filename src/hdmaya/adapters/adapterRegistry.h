@@ -29,6 +29,14 @@ public:
 
     HDMAYA_API
     static DagAdapterCreator GetAdapterCreator(const MDagPath& dag);
+
+
+    // Find all HdMayaAdapter plugins, and load them all
+    HDMAYA_API
+    static void LoadAllAdapters();
+private:
+    static void _LoadAllAdapters();
+
 private:
     std::unordered_map<std::string, DagAdapterCreator> _dagAdapters;
 };
