@@ -60,10 +60,18 @@ if (LUMA_USD_BUILD)
     target_compile_definitions(hdview PRIVATE LUMA_USD_BUILD)
 endif ()
 
-get_target_property(LIB_FULLPATH hdmaya LOCATION)
-get_filename_component(LIB_NAME ${LIB_FULLPATH} NAME)
+# Apparently you can't look up LOCATION is cmake-2.8... nor can you use
+# the generator expression "$<TARGET_FILE_NAME:hdmaya_al>" outside of special
+# commands, like add_custom_command... so we're forced to build the lib name
+# ourselves, with PREFIX and SUFFIX
+#get_target_property(LIB_FULLPATH hdmaya LOCATION)
+#get_filename_component(LIB_NAME ${LIB_FULLPATH} NAME)
+#set(PLUG_INFO_LIBRARY_PATH ${LIB_NAME})
+get_target_property(HDMAYA_PREFIX hdmaya PREFIX)
+get_target_property(HDMAYA_SUFFIX hdmaya SUFFIX)
+set(PLUG_INFO_LIBRARY_PATH ${HDMAYA_PREFIX}hdmaya${HDMAYA_SUFFIX})
+
 set(PLUG_INFO_PATH "hdmaya/plugInfo.json")
-set(PLUG_INFO_LIBRARY_PATH ${LIB_NAME})
 
 configure_file(
     ${PLUG_INFO_PATH}
