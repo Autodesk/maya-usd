@@ -26,10 +26,19 @@ target_include_directories(hdmaya_al SYSTEM PUBLIC ${HDMAYA_INCLUDE_DIR})
 target_compile_features(hdmaya_al PUBLIC cxx_std_11)
 target_compile_definitions(hdmaya_al PRIVATE "HDMAYA_AL_EXPORT=1")
 
-get_target_property(LIB_FULLPATH hdmaya_al LOCATION)
-get_filename_component(LIB_NAME ${LIB_FULLPATH} NAME)
+# Apparently you can't look up LOCATION is cmake-2.8... nor can you use
+# the generator expression "$<TARGET_FILE_NAME:hdmaya_al>" outside of special
+# commands, like add_custom_command... so we're forced to build the lib name
+# ourselves, with PREFIX and SUFFIX
+#get_target_property(LIB_FULLPATH hdmaya_al LOCATION)
+#get_filename_component(LIB_NAME ${LIB_FULLPATH} NAME)
+#set(PLUG_INFO_LIBRARY_PATH ${LIB_NAME})
+get_target_property(HDMAYA_AL_PREFIX hdmaya_al PREFIX)
+get_target_property(HDMAYA_AL_SUFFIX hdmaya_al SUFFIX)
+set(PLUG_INFO_LIBRARY_PATH ${HDMAYA_AL_PREFIX}hdmaya_al${HDMAYA_AL_SUFFIX})
+
 set(PLUG_INFO_PATH "plugInfo.json")
-set(PLUG_INFO_LIBRARY_PATH ${LIB_NAME})
+
 
 configure_file(
     ${PLUG_INFO_PATH}
