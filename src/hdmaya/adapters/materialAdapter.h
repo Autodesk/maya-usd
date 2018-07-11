@@ -26,6 +26,24 @@ public:
     void RemovePrim() override;
     HDMAYA_API
     void Populate() override;
+
+    HDMAYA_API
+    virtual std::string GetSurfaceShaderSource();
+    HDMAYA_API
+    virtual std::string GetDisplacementShaderSource();
+    HDMAYA_API
+    virtual VtValue GetMaterialParamValue(const TfToken& paramName);
+    HDMAYA_API
+    virtual HdMaterialParamVector GetMaterialParams();
+
+    HDMAYA_API
+    static const HdMaterialParamVector& GetPreviewParams();
+    HDMAYA_API
+    static const std::string& GetPreviewSurfaceSource();
+    HDMAYA_API
+    static const std::string& GetPreviewDisplacementSource();
+    HDMAYA_API
+    static const VtValue& GetPreviewMaterialParamValue(const TfToken& paramName);
 };
 
 using HdMayaMaterialAdapterPtr = std::shared_ptr<HdMayaMaterialAdapter>;

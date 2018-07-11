@@ -16,10 +16,6 @@
 #include <pxr/imaging/hdx/renderSetupTask.h>
 #include <pxr/imaging/hdx/renderTask.h>
 
-#include <pxr/imaging/glf/glslfx.h>
-
-#include <pxr/usdImaging/usdImagingGL/package.h>
-
 #include <maya/MDGMessage.h>
 #include <maya/MDagPath.h>
 #include <maya/MItDag.h>
@@ -42,62 +38,6 @@ _nodeAdded(MObject& obj, void* clientData) {
         delegate->InsertDag(dag);
     }
 }
-
-const HdMaterialParamVector _defaultShaderParams = {
-    {
-        HdMaterialParam::ParamTypeFallback,
-        TfToken("roughness"),
-        VtValue(0.0f)
-    }, {
-        HdMaterialParam::ParamTypeFallback,
-        TfToken("clearcoat"),
-        VtValue(0.0f)
-    }, {
-        HdMaterialParam::ParamTypeFallback,
-        TfToken("clearcoatRoughness"),
-        VtValue(0.0f)
-    }, {
-        HdMaterialParam::ParamTypeFallback,
-        TfToken("emissiveColor"),
-        VtValue(GfVec3f(0.0f, 0.0f, 0.0f))
-    }, {
-        HdMaterialParam::ParamTypeFallback,
-        TfToken("specularColor"),
-        VtValue(GfVec3f(0.0f, 0.0f, 0.0f))
-    }, {
-        HdMaterialParam::ParamTypeFallback,
-        TfToken("metallic"),
-        VtValue(0.0f)
-    }, {
-        HdMaterialParam::ParamTypeFallback,
-        TfToken("useSpecularWorkflow"),
-        VtValue(1)
-    }, {
-        HdMaterialParam::ParamTypeFallback,
-        TfToken("occlusion"),
-        VtValue(1.0f)
-    }, {
-        HdMaterialParam::ParamTypeFallback,
-        TfToken("ior"),
-        VtValue(1.0f)
-    }, {
-        HdMaterialParam::ParamTypeFallback,
-        TfToken("normal"),
-        VtValue(GfVec3f(1.0f, 1.0f, 1.0f))
-    }, {
-        HdMaterialParam::ParamTypeFallback,
-        TfToken("opacity"),
-        VtValue(1.0f)
-    }, {
-        HdMaterialParam::ParamTypeFallback,
-        TfToken("diffuseColor"),
-        VtValue(GfVec3f(1.0, 1.0, 1.0))
-    }, {
-        HdMaterialParam::ParamTypeFallback,
-        TfToken("displacement"),
-        VtValue(0.0f)
-    },
-};
 
 template <typename T> inline
 void _FindAdapter(const SdfPath&, const std::function<void(T*)>&) {
@@ -391,8 +331,7 @@ HdMayaSceneDelegate::GetMaterialId(const SdfPath& id) {
 std::string
 HdMayaSceneDelegate::GetSurfaceShaderSource(const SdfPath& id) {
     if (id == _fallbackMaterial) {
-        GlfGLSLFX gfx(UsdImagingGLPackagePreviewSurfaceShader());
-        return gfx.GetSurfaceSource();
+        return HdMayaMaterialAdapter::GetPreviewSurfaceSource();
     }
     std::cerr << "[HdMayaSceneDelegate] Getting surface shader source of " << id << std::endl;
     return {};
@@ -401,8 +340,7 @@ HdMayaSceneDelegate::GetSurfaceShaderSource(const SdfPath& id) {
 std::string
 HdMayaSceneDelegate::GetDisplacementShaderSource(const SdfPath& id) {
     if (id == _fallbackMaterial) {
-        GlfGLSLFX gfx(UsdImagingGLPackagePreviewSurfaceShader());
-        return gfx.GetDisplacementSource();
+        return HdMayaMaterialAdapter::GetPreviewDisplacementSource();
     }
     std::cerr << "[HdMayaSceneDelegate] Getting displacement shader source of " << id << std::endl;
     return {};
@@ -411,17 +349,7 @@ HdMayaSceneDelegate::GetDisplacementShaderSource(const SdfPath& id) {
 VtValue
 HdMayaSceneDelegate::GetMaterialParamValue(const SdfPath& id, const TfToken& paramName) {
     if (id == _fallbackMaterial) {
-        auto it = std::find_if(
-            _defaultShaderParams.begin(), _defaultShaderParams.end(),
-            [paramName] (const HdMaterialParam& param) -> bool
-            {
-                return param.GetName() == paramName;
-            });
-        if (ARCH_UNLIKELY(it == _defaultShaderParams.end())) {
-            TF_CODING_ERROR("Incorrect name passed to GetMaterialParamValue: %s", paramName.GetText());
-            return {};
-        }
-        return it->GetFallbackValue();
+        return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(paramName);
     }
     std::cerr << "[HdMayaSceneDelegate] Getting material param value of " << id << std::endl;
     return {};
@@ -430,7 +358,7 @@ HdMayaSceneDelegate::GetMaterialParamValue(const SdfPath& id, const TfToken& par
 HdMaterialParamVector
 HdMayaSceneDelegate::GetMaterialParams(const SdfPath& id) {
     if (id == _fallbackMaterial) {
-        return _defaultShaderParams;
+        return HdMayaMaterialAdapter::GetPreviewParams();
     }
     std::cerr << "[HdMayaSceneDelegate] Getting material params of " << id << std::endl;
     return {};
