@@ -15,7 +15,7 @@
 
 #include <memory>
 
-#include <hdmaya/adapters/dagAdapter.h>
+#include <hdmaya/adapters/shapeAdapter.h>
 #include <hdmaya/adapters/lightAdapter.h>
 #include <hdmaya/adapters/materialAdapter.h>
 #include <hdmaya/delegates/delegateCtx.h>
@@ -73,7 +73,7 @@ protected:
     TfTokenVector GetMaterialPrimvars(const SdfPath& id) override;
 
 private:
-    std::unordered_map<SdfPath, HdMayaDagAdapterPtr, SdfPath::Hash> _shapeAdapters;
+    std::unordered_map<SdfPath, HdMayaShapeAdapterPtr, SdfPath::Hash> _shapeAdapters;
     std::unordered_map<SdfPath, HdMayaLightAdapterPtr, SdfPath::Hash> _lightAdapters;
     std::unordered_map<SdfPath, HdMayaMaterialAdapterPtr, SdfPath::Hash> _materialAdapters;
     std::vector<MCallbackId> _callbacks;

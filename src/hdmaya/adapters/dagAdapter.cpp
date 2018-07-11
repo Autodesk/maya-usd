@@ -25,30 +25,11 @@ HdMayaDagAdapter::HdMayaDagAdapter(
     const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath) :
     HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {
     CalculateTransform();
-    CalculateExtent();
 }
-
-void
-HdMayaDagAdapter::CalculateExtent() {
-    MStatus status;
-    MFnDagNode dagNode(GetDagPath(), &status);
-    if (ARCH_LIKELY(status)) {
-        const auto bb = dagNode.boundingBox();
-        const auto mn = bb.min();
-        const auto mx = bb.max();
-        _extent.SetMin({mn.x, mn.y, mn.z});
-        _extent.SetMax({mx.x, mx.y, mx.z});
-    }
-};
 
 void
 HdMayaDagAdapter::CalculateTransform() {
     _transform = getGfMatrixFromMaya(_dagPath.inclusiveMatrix());
-};
-
-HdMeshTopology
-HdMayaDagAdapter::GetMeshTopology() {
-    return {};
 };
 
 void
@@ -72,19 +53,11 @@ HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     if (dirtyBits & HdChangeTracker::DirtyTransform) {
         CalculateTransform();
     }
-    if (dirtyBits & HdChangeTracker::DirtyPoints) {
-        CalculateExtent();
-    }
 }
 
 void
 HdMayaDagAdapter::RemovePrim() {
     GetDelegate()->RemoveRprim(GetID());
-}
-
-HdPrimvarDescriptorVector
-HdMayaDagAdapter::GetPrimvarDescriptors(HdInterpolation interpolation) {
-    return {};
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

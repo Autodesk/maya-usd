@@ -12,9 +12,9 @@
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
 
-#include "adapterDebugCodes.h"
-#include "adapterRegistry.h"
-#include "dagAdapter.h"
+#include <hdmaya/adapters/adapterDebugCodes.h>
+#include <hdmaya/adapters/adapterRegistry.h>
+#include <hdmaya/adapters/shapeAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -34,10 +34,10 @@ std::vector<std::pair<MString, HdDirtyBits>> _dirtyBits = {
 
 }
 
-class HdMayaMeshAdapter : public HdMayaDagAdapter {
+class HdMayaMeshAdapter : public HdMayaShapeAdapter {
 public:
     HdMayaMeshAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-        : HdMayaDagAdapter(delegate->GetPrimPath(dag), delegate, dag) { }
+        : HdMayaShapeAdapter(delegate->GetPrimPath(dag), delegate, dag) { }
 
     void
     Populate() override {
@@ -138,14 +138,14 @@ private:
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<HdMayaMeshAdapter, TfType::Bases<HdMayaDagAdapter> >();
+    TfType::Define<HdMayaMeshAdapter, TfType::Bases<HdMayaShapeAdapter> >();
 }
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, mesh) {
-    HdMayaAdapterRegistry::RegisterDagAdapter(
+    HdMayaAdapterRegistry::RegisterShapeAdapter(
         TfToken("mesh"),
-        []( HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaDagAdapterPtr {
-            return HdMayaDagAdapterPtr(new HdMayaMeshAdapter(delegate, dag));
+        [](HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaShapeAdapterPtr {
+            return HdMayaShapeAdapterPtr(new HdMayaMeshAdapter(delegate, dag));
         });
 }
 

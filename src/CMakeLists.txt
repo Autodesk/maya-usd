@@ -25,6 +25,7 @@ set(HDMAYA_SRC
     hdmaya/adapters/materialAdapter.cpp
     hdmaya/adapters/meshAdapter.cpp
     hdmaya/adapters/pointLightAdapter.cpp
+    hdmaya/adapters/shapeAdapter.cpp
     hdmaya/adapters/spotLightAdapter.cpp
 
     hdmaya/delegates/delegate.cpp

@@ -14,16 +14,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_INSTANTIATE_SINGLETON(HdMayaAdapterRegistry);
 
 void
-HdMayaAdapterRegistry::RegisterDagAdapter(
+HdMayaAdapterRegistry::RegisterShapeAdapter(
     const TfToken& type,
-    DagAdapterCreator creator) {
+    ShapeAdapterCreator creator) {
     GetInstance()._dagAdapters.insert({type, creator});
 }
 
-HdMayaAdapterRegistry::DagAdapterCreator
-HdMayaAdapterRegistry::GetDagAdapterCreator(const MDagPath& dag) {
+HdMayaAdapterRegistry::ShapeAdapterCreator
+HdMayaAdapterRegistry::GetShapeAdapterCreator(const MDagPath& dag) {
     MFnDependencyNode depNode(dag.node());
-    DagAdapterCreator ret = nullptr;
+    ShapeAdapterCreator ret = nullptr;
     TfMapLookup(GetInstance()._dagAdapters, TfToken(depNode.typeName().asChar()), &ret);
     return ret;
 }

@@ -24,13 +24,13 @@ public:
         return TfSingleton<HdMayaAdapterRegistry>::GetInstance();
     }
 
-    using DagAdapterCreator = std::function<
-        HdMayaDagAdapterPtr(HdMayaDelegateCtx*, const MDagPath&)>;
+    using ShapeAdapterCreator = std::function<
+        HdMayaShapeAdapterPtr(HdMayaDelegateCtx*, const MDagPath&)>;
     HDMAYA_API
-    static void RegisterDagAdapter(const TfToken& type, DagAdapterCreator creator);
+    static void RegisterShapeAdapter(const TfToken& type, ShapeAdapterCreator creator);
 
     HDMAYA_API
-    static DagAdapterCreator GetDagAdapterCreator(const MDagPath& dag);
+    static ShapeAdapterCreator GetShapeAdapterCreator(const MDagPath& dag);
 
     using LightAdapterCreator = std::function<
         HdMayaLightAdapterPtr(HdMayaDelegateCtx*, const MDagPath&)>;
@@ -52,7 +52,7 @@ public:
     HDMAYA_API
     static void LoadAllPlugin();
 private:
-    std::unordered_map<TfToken, DagAdapterCreator, TfToken::HashFunctor> _dagAdapters;
+    std::unordered_map<TfToken, ShapeAdapterCreator, TfToken::HashFunctor> _dagAdapters;
     std::unordered_map<TfToken, LightAdapterCreator, TfToken::HashFunctor> _lightAdapters;
     std::unordered_map<TfToken, MaterialAdapterCreator, TfToken::HashFunctor> _materialAdapters;
 };

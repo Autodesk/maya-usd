@@ -31,42 +31,33 @@ class HdMayaDagAdapter : public HdMayaAdapter {
 protected:
     HDMAYA_API
     HdMayaDagAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath);
+
 public:
     HDMAYA_API
     virtual ~HdMayaDagAdapter() = default;
 
-    HDMAYA_API
-    virtual HdMeshTopology GetMeshTopology();
     HDMAYA_API
     virtual void CreateCallbacks() override;
     HDMAYA_API
     virtual void MarkDirty(HdDirtyBits dirtyBits);
     HDMAYA_API
     virtual void RemovePrim() override;
-    HDMAYA_API
-    virtual HdPrimvarDescriptorVector
-    GetPrimvarDescriptors(HdInterpolation interpolation);
 
     const MDagPath& GetDagPath() { return _dagPath; }
     GfMatrix4d GetTransform() {
         return _transform;
     }
-    GfRange3d GetExtent() {
-        return _extent;
-    }
+
 protected:
-    HDMAYA_API
-    void CalculateExtent();
     HDMAYA_API
     void CalculateTransform();
 
 private:
     MDagPath _dagPath;
-    GfRange3d _extent;
     GfMatrix4d _transform;
 };
 
-using HdMayaDagAdapterPtr = std::shared_ptr<HdMayaDagAdapter>;
+using HdMayaShapeAdapterPtr = std::shared_ptr<HdMayaDagAdapter>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

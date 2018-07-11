@@ -180,7 +180,6 @@ HdMayaSceneDelegate::HdMayaSceneDelegate(
     const SdfPath& delegateID) :
     HdMayaDelegateCtx(renderIndex, delegateID),
     _fallbackMaterial(delegateID.AppendChild(_tokens->FallbackMaterial)) {
-
 }
 
 HdMayaSceneDelegate::~HdMayaSceneDelegate() {
@@ -210,7 +209,7 @@ HdMayaSceneDelegate::Populate() {
 void
 HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
     // FIXME: Improve this function!
-    HdMayaDagAdapterPtr adapter;
+    HdMayaShapeAdapterPtr adapter;
     if (TfMapLookup(_shapeAdapters, id, &adapter) && adapter != nullptr) {
         adapter->RemovePrim();
         _shapeAdapters.erase(id);
@@ -251,7 +250,7 @@ HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
         adapter->CreateCallbacks();
         _lightAdapters.insert({id, adapter});
     } else {
-        auto adapterCreator = HdMayaAdapterRegistry::GetDagAdapterCreator(dag);
+        auto adapterCreator = HdMayaAdapterRegistry::GetShapeAdapterCreator(dag);
         if (adapterCreator == nullptr) { return; }
         const auto id = GetPrimPath(dag);
         if (TfMapLookupPtr(_shapeAdapters, id) != nullptr) {
@@ -289,17 +288,17 @@ HdMayaSceneDelegate::SetParams(const HdMayaParams& params) {
 
 HdMeshTopology
 HdMayaSceneDelegate::GetMeshTopology(const SdfPath& id) {
-    return _GetValue<HdMayaDagAdapter, HdMeshTopology>(
+    return _GetValue<HdMayaShapeAdapter, HdMeshTopology>(
         id,
-        [](HdMayaDagAdapter* a) -> HdMeshTopology { return a->GetMeshTopology(); },
+        [](HdMayaShapeAdapter* a) -> HdMeshTopology { return a->GetMeshTopology(); },
         _shapeAdapters);
 }
 
 GfRange3d
 HdMayaSceneDelegate::GetExtent(const SdfPath& id) {
-    return _GetValue<HdMayaDagAdapter, GfRange3d>(
+    return _GetValue<HdMayaShapeAdapter, GfRange3d>(
         id,
-        [](HdMayaDagAdapter* a) -> GfRange3d { return a->GetExtent(); },
+        [](HdMayaShapeAdapter* a) -> GfRange3d { return a->GetExtent(); },
         _shapeAdapters);
 }
 
@@ -333,9 +332,9 @@ HdMayaSceneDelegate::Get(SdfPath const& id, const TfToken& key) {
 
 HdPrimvarDescriptorVector
 HdMayaSceneDelegate::GetPrimvarDescriptors(const SdfPath& id, HdInterpolation interpolation) {
-    return _GetValue<HdMayaDagAdapter, HdPrimvarDescriptorVector>(
+    return _GetValue<HdMayaShapeAdapter, HdPrimvarDescriptorVector>(
         id,
-        [&interpolation](HdMayaDagAdapter* a) -> HdPrimvarDescriptorVector { return a->GetPrimvarDescriptors(interpolation); },
+        [&interpolation](HdMayaShapeAdapter* a) -> HdPrimvarDescriptorVector { return a->GetPrimvarDescriptors(interpolation); },
         _shapeAdapters);
 }
 
