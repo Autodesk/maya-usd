@@ -32,9 +32,9 @@ public:
     virtual void CreateCallbacks() override;
 protected:
     HDMAYA_API
-    virtual void CalculateLightParams(GlfSimpleLight& light);
+    virtual void _CalculateLightParams(GlfSimpleLight& light);
     HDMAYA_API
-    void CalculateShadowParams(MFnLight& light, GfFrustum& frustum, HdxShadowParams& params);
+    void _CalculateShadowParams(MFnLight& light, GfFrustum& frustum, HdxShadowParams& params);
 };
 
 using HdMayaLightAdapterPtr = std::shared_ptr<HdMayaLightAdapter>;

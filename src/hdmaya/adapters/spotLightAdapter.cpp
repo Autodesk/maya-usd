@@ -25,7 +25,7 @@ public:
     }
 protected:
     void
-    CalculateLightParams(GlfSimpleLight& light) override {
+    _CalculateLightParams(GlfSimpleLight& light) override {
         MFnLight mayaLight(GetDagPath().node());
         light.SetHasShadow(true);
         auto coneAnglePlug = mayaLight.findPlug("coneAngle", true);
@@ -76,7 +76,7 @@ protected:
                 50.0f);
 
             GetDelegate()->FitFrustumToRprims(frustum);
-            CalculateShadowParams(mayaLight, frustum, shadowParams);
+            _CalculateShadowParams(mayaLight, frustum, shadowParams);
             return VtValue(shadowParams);
         }
 

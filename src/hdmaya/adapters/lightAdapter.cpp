@@ -88,7 +88,7 @@ HdMayaLightAdapter::Get(const TfToken& key) {
         } else if (decayRate == 2) {
             light.SetAttenuation(GfVec3f(0.0f, 0.0f, 1.0f));
         }
-        CalculateLightParams(light);
+        _CalculateLightParams(light);
         return VtValue(light);
     } else if (key == HdTokens->transform) {
         return VtValue(HdMayaDagAdapter::GetTransform());
@@ -138,12 +138,12 @@ HdMayaLightAdapter::CreateCallbacks() {
 }
 
 void
-HdMayaLightAdapter::CalculateLightParams(GlfSimpleLight& /*light*/) {
+HdMayaLightAdapter::_CalculateLightParams(GlfSimpleLight& /*light*/) {
 
 }
 
 void
-HdMayaLightAdapter::CalculateShadowParams(MFnLight& light, GfFrustum& frustum, HdxShadowParams& params) {
+HdMayaLightAdapter::_CalculateShadowParams(MFnLight& light, GfFrustum& frustum, HdxShadowParams& params) {
     auto dmapResolutionPlug = light.findPlug("dmapResolution");
     auto dmapBiasPlug = light.findPlug("dmapBias");
     auto dmapFilterSizePlug = light.findPlug("dmapFilterSize");

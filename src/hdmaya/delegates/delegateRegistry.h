@@ -19,10 +19,6 @@ class HdMayaDelegateRegistry : public TfSingleton<HdMayaDelegateRegistry> {
     HDMAYA_API
     HdMayaDelegateRegistry() = default;
 public:
-    static HdMayaDelegateRegistry& getInstance() {
-        return TfSingleton<HdMayaDelegateRegistry>::GetInstance();
-    }
-
     using DelegateCreator = std::function<
         HdMayaDelegatePtr(HdRenderIndex*, const SdfPath&)>;
 

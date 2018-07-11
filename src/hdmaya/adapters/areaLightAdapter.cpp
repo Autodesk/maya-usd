@@ -16,7 +16,7 @@ public:
     }
 
     void
-    CalculateLightParams(GlfSimpleLight& light) override {
+    _CalculateLightParams(GlfSimpleLight& light) override {
         light.SetSpotCutoff(90.0f);
     }
 

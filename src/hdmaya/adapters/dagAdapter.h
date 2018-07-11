@@ -57,8 +57,6 @@ private:
     GfMatrix4d _transform;
 };
 
-using HdMayaShapeAdapterPtr = std::shared_ptr<HdMayaDagAdapter>;
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // __HDMAYA_DG_ADAPTER_H__

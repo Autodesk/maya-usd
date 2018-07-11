@@ -30,11 +30,13 @@ public:
 
 protected:
     HDMAYA_API
-    void CalculateExtent();
+    void _CalculateExtent();
 
 private:
     GfRange3d _extent;
 };
+
+using HdMayaShapeAdapterPtr = std::shared_ptr<HdMayaDagAdapter>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

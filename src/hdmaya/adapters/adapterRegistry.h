@@ -7,9 +7,9 @@
 #include <maya/MFn.h>
 
 #include <hdmaya/delegates/delegateCtx.h>
-#include <hdmaya/adapters/dagAdapter.h>
 #include <hdmaya/adapters/lightAdapter.h>
 #include <hdmaya/adapters/materialAdapter.h>
+#include <hdmaya/adapters/shapeAdapter.h>
 
 #include <unordered_map>
 
@@ -20,10 +20,6 @@ class HdMayaAdapterRegistry : public TfSingleton<HdMayaAdapterRegistry> {
     HDMAYA_API
     HdMayaAdapterRegistry() = default;
 public:
-    static HdMayaAdapterRegistry& getInstance() {
-        return TfSingleton<HdMayaAdapterRegistry>::GetInstance();
-    }
-
     using ShapeAdapterCreator = std::function<
         HdMayaShapeAdapterPtr(HdMayaDelegateCtx*, const MDagPath&)>;
     HDMAYA_API

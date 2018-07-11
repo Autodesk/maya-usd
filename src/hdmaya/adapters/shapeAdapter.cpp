@@ -11,11 +11,11 @@ TF_REGISTRY_FUNCTION(TfType)
 
 HdMayaShapeAdapter::HdMayaShapeAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath)
     : HdMayaDagAdapter(id, delegate, dagPath) {
-    CalculateExtent();
+    _CalculateExtent();
 }
 
 void
-HdMayaShapeAdapter::CalculateExtent() {
+HdMayaShapeAdapter::_CalculateExtent() {
     MStatus status;
     MFnDagNode dagNode(GetDagPath(), &status);
     if (ARCH_LIKELY(status)) {
@@ -41,7 +41,7 @@ void
 HdMayaShapeAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     HdMayaDagAdapter::MarkDirty(dirtyBits);
     if (dirtyBits & HdChangeTracker::DirtyPoints) {
-        CalculateExtent();
+        _CalculateExtent();
     }
 }
 
