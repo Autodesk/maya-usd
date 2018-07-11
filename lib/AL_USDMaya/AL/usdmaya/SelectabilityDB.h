@@ -42,7 +42,8 @@ public:
   ///-------------------------------------------------------------------------------------------------------------------
   /// \brief  Gets the currently explictly tracked unseletable paths
   ///-------------------------------------------------------------------------------------------------------------------
-  inline const SdfPathVector& getUnselectablePaths() const { return m_unselectablePaths; }
+  inline const SdfPathVector& getUnselectablePaths() const
+     { return m_unselectablePaths; }
 
   ///-------------------------------------------------------------------------------------------------------------------
   /// \brief  Removes a list of paths from the selectable list if the exist.

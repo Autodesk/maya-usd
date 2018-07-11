@@ -182,18 +182,15 @@ public:
   typedef TfRefPtr<This> RefPtr;
 
   /// \brief  dtor
-  AL_USDMAYA_PUBLIC
   virtual ~TranslatorBase()
     {}
 
   /// \brief  returns the translated prim type
-  AL_USDMAYA_PUBLIC
   TfType getTranslatedType() const override
     { return m_translatedType; }
 
   /// \brief  returns the context currently being used to translate the USD prims. The context can be used to add
-  ///         references to prims you have created in your translator plugins (see:
-  AL_USDMAYA_PUBLIC
+  ///         references to prims you have created in your translator plugins
   TranslatorContextPtr context() const
     { return m_context; }
 
@@ -204,17 +201,8 @@ public:
   AL_USDMAYA_PUBLIC
   static RefPtr manufacture(const std::string& primType, TranslatorContextPtr context) = delete;
 
-  /// \brief  This method will be called prior to the tear down process taking place. This is the last chance you have
-  ///         to do any serialisation whilst all of the existing nodes are available to query.
-  /// \param  prim the prim that may be modified or deleted as a result of a variant switch
-  /// \return MS::kSuccess if all ok
-  AL_USDMAYA_PUBLIC
-  MStatus preTearDown(UsdPrim& prim) override
-    { return MS::kSuccess; }
-
   /// \brief  return the usd stage associated with this context
   /// \return the usd stage
-  AL_USDMAYA_PUBLIC
   UsdStageRefPtr getUsdStage() const
     { return context()->getUsdStage(); }
 

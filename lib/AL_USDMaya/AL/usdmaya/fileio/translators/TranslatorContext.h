@@ -55,11 +55,11 @@ struct TranslatorParameters
 {
   /// \brief Flag that determines if all Prim schema types should be forced to be imported
   inline void setForcePrimImport(bool forceImport)
-  { forcePrimImport = forceImport; }
+    { forcePrimImport = forceImport; }
 
   /// \brief Retrieves the flag that determines if all the Prim schema types should be imported
   inline bool forceTranslatorImport() const
-  { return forcePrimImport; }
+    { return forcePrimImport; }
 
 private:
   bool forcePrimImport = false;
@@ -80,7 +80,6 @@ public:
   /// \brief  construct a new context for the specified proxy shape node
   /// \param  proxyShape the proxy shape to associate the context with
   /// \return a new context
-  AL_USDMAYA_PUBLIC
   static RefPtr create(nodes::ProxyShape* proxyShape)
     {
       RefPtr res = TfCreateRefPtr(new This(proxyShape));
@@ -90,7 +89,6 @@ public:
 
   /// \brief  return the proxy shape associated with this context
   /// \return the proxy shape
-  AL_USDMAYA_PUBLIC
   const nodes::ProxyShape* getProxyShape() const
     { return m_proxyShape; }
 
@@ -104,7 +102,6 @@ public:
   /// \param  prim the usd prim
   /// \param  object the returned handle
   /// \return true if the prim exists
-  AL_USDMAYA_PUBLIC
   bool getTransform(const UsdPrim& prim, MObjectHandle& object)
     { return getTransform(prim.GetPath(), object); }
 
@@ -125,7 +122,6 @@ public:
   ///         that is not known at compile time (e.g. a prim that creates a lambert, blinn, or phong based on
   ///         some enum attribute). Another alternative would be to query all of the maya nodes via getMObjects
   /// \return true if the prim exists
-  AL_USDMAYA_PUBLIC
   bool getMObject(const UsdPrim& prim, MObjectHandle& object, MTypeId type)
     { return getMObject(prim.GetPath(), object, type); }
 
@@ -150,7 +146,6 @@ public:
   ///         that is not known at compile time (e.g. a prim that creates a lambert, blinn, or phong based on
   ///         some enum attribute). Another alternative would be to query all of the maya nodes via getMObjects
   /// \return true if the prim exists
-  AL_USDMAYA_PUBLIC
   bool getMObject(const UsdPrim& prim, MObjectHandle& object, MFn::Type type)
     { return getMObject(prim.GetPath(), object, type); }
 
@@ -170,7 +165,6 @@ public:
   /// \param  prim the prim to query
   /// \param  returned the returned list of MObjects
   /// \return true if a reference to the prim was found
-  AL_USDMAYA_PUBLIC
   bool getMObjects(const UsdPrim& prim, MObjectHandleArray& returned)
     { return getMObjects(prim.GetPath(), returned); }
 
@@ -191,7 +185,6 @@ public:
   /// \brief  during a variant switch, if we lose a prim, then it's path will be passed into this method, and
   ///         all the maya nodes that were created for it will be nuked.
   /// \param  prim the usd prim that was removed due to a variant switch
-  AL_USDMAYA_PUBLIC
   void removeItems(const UsdPrim& prim)
     { removeItems(prim.GetPath()); }
 
@@ -208,7 +201,6 @@ public:
   /// \brief  given a path to a prim, return the prim type we are aware of at that path
   /// \param  path the prim path of a prim that was imported via a custom translator plug-in
   /// \return the type name for that prim
-  AL_USDMAYA_PUBLIC
   TfToken getTypeForPath(SdfPath path) const
   {
     const auto it = find(path);
@@ -252,7 +244,6 @@ public:
   /// \param  path the path to the prim to query
   /// \param  type the type of prim
   /// \return true if an entry is found that matches, false otherwise
-  AL_USDMAYA_PUBLIC
   bool hasEntry(const SdfPath& path, const TfToken& type)
   {
     auto it = find(path);
@@ -359,7 +350,6 @@ public:
   };
 
   /// \brief  This is used for testing only. Do not call.
-  AL_USDMAYA_PUBLIC
   void clearPrimMappings()
     { m_primMapping.clear(); }
 
@@ -473,10 +463,10 @@ private:
 
 public:
   void setForceDefaultRead(bool forceDefaultRead)
-  { m_forceDefaultRead = forceDefaultRead; }
+    { m_forceDefaultRead = forceDefaultRead; }
 
   bool getForceDefaultRead()
-  { return m_forceDefaultRead; }
+    { return m_forceDefaultRead; }
 
 private:
   // If true, will explicitly read default attribute values.

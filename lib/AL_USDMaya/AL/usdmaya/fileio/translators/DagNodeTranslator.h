@@ -62,7 +62,6 @@ public:
   /// \param  to the USD prim to copy the attributes to
   /// \param  params the exporter params to determine what should be exported
   /// \return MS::kSuccess if ok
-  AL_USDMAYA_PUBLIC
   static MStatus copyAttributes(const MObject& from, UsdPrim& to, const ExporterParams& params)
     { return MS::kSuccess; }
 

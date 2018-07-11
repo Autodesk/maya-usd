@@ -390,20 +390,17 @@ public:
 
   /// \brief  returns the event type string
   /// \return "maya"
-  AL_MAYA_EVENTS_PUBLIC
   const char* eventTypeString() const override
     { return "maya"; }
 
   /// \brief  returns the event scheduler
   /// \return the event scheduler used for these maya events
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::EventScheduler* scheduler() const
     { return m_scheduler; }
 
   /// \brief  queries the maya event information for the specified maya event
   /// \param  event the event ID
   /// \return a pointer to the maya event information (or null for an invalid event)
-  AL_MAYA_EVENTS_PUBLIC
   const MayaCallbackInfo* getEventInfo(const AL::event::EventId event) const
   {
     const auto it = m_eventMapping.find(event);
@@ -414,7 +411,6 @@ public:
   /// \brief  queries whether the event has an associated MCallbackId (indicating the callback is active with maya)
   /// \param  event the event to query
   /// \return true if callback is active with maya, false otherwise
-  AL_MAYA_EVENTS_PUBLIC
   bool isMayaCallbackRegistered(const AL::event::EventId event) const
   {
     const MayaCallbackInfo* cbi = getEventInfo(event);
@@ -424,7 +420,6 @@ public:
   /// \brief  queries the maya event information for the specified maya event
   /// \param  eventName the event name
   /// \return a pointer to the maya event information (or null for an invalid event)
-  AL_MAYA_EVENTS_PUBLIC
   const MayaCallbackInfo* getEventInfo(const char* const eventName) const
   {
     const AL::event::EventDispatcher* const dispatcher = m_scheduler->event(eventName);
@@ -438,7 +433,6 @@ public:
   /// \brief  queries whether the event has an associated MCallbackId (indicating the callback is active with maya)
   /// \param  eventName the event to query
   /// \return true if callback is active with maya, false otherwise
-  AL_MAYA_EVENTS_PUBLIC
   bool isMayaCallbackRegistered(const char* const eventName) const
   {
     const MayaCallbackInfo* cbi = getEventInfo(eventName);

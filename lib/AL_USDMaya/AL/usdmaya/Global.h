@@ -42,27 +42,22 @@ public:
   static void onPluginUnload();
 
   /// pre save callback
-  AL_USDMAYA_PUBLIC
   static AL::event::CallbackId preSave()
     { return m_preSave; }
 
   /// post save callback
-  AL_USDMAYA_PUBLIC
   static AL::event::CallbackId postSave()
     { return m_postSave; }
 
   /// pre open callback
-  AL_USDMAYA_PUBLIC
   static AL::event::CallbackId preRead()
     { return m_preRead; }
 
   /// post open callback
-  AL_USDMAYA_PUBLIC
   static AL::event::CallbackId postRead()
     { return m_postRead; }
 
   /// callback used to flush the USD caches after a file new
-  AL_USDMAYA_PUBLIC
   static AL::event::CallbackId fileNew()
     { return m_fileNew; }
 

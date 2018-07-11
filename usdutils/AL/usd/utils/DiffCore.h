@@ -117,7 +117,6 @@ bool compareArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
 inline bool compareArray(
     const float* const input0,
     const GfHalf* const input1,
@@ -153,7 +152,6 @@ bool compareArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
 inline bool compareArray(
     const double* const input0,
     const GfHalf* const input1,
@@ -253,7 +251,6 @@ bool compareArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
 inline bool compareArray(
     const float* const input0,
     const double* const input1,
@@ -288,7 +285,6 @@ bool compareArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
 inline bool compareArray(
     const uint8_t* const input0,
     const uint8_t* const input1,
@@ -305,7 +301,6 @@ inline bool compareArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
 inline bool compareArray(
     const int16_t* const input0,
     const int16_t* const input1,
@@ -322,7 +317,6 @@ inline bool compareArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
 inline bool compareArray(
     const uint16_t* const input0,
     const uint16_t* const input1,
@@ -356,7 +350,6 @@ bool compareArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
 inline bool compareArray(
     const uint32_t* const input0,
     const uint32_t* const input1,
@@ -373,7 +366,6 @@ inline bool compareArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
 inline bool compareArray(
     const int64_t* const input0,
     const int64_t* const input1,
@@ -390,7 +382,6 @@ inline bool compareArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
 inline bool compareArray(
     const uint64_t* const input0,
     const uint64_t* const input1,

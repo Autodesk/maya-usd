@@ -86,7 +86,6 @@ public:
   /// or expression, or source attribute's full-name match a certain string.
   /// But in reality the control network might be really complicated and heavily customized thus it might go far beyond the
   /// situation we can cover here.
-  AL_USDMAYA_PUBLIC
   static bool isAnimated(const MObject& node, const MObject& attr, const bool assumeExpressionIsAnimated = true)
     { return isAnimated(MPlug(node, attr), assumeExpressionIsAnimated); }
 

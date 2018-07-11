@@ -195,7 +195,6 @@ public:
   /// \param  a   the default value for the 1st value of the flag
   /// \param  b   the default value for the 2st value of the flag
   /// \param  persist   if true, the GUI option will be persisted as an optionVar
-  AL_MAYA_UTILS_PUBLIC
   void addInt2Option(const char* commandFlag, const char* label, const int32_t a, const int32_t b, bool persist = true)
     {
       const int32_t temp[] = {a, b};
@@ -217,7 +216,6 @@ public:
   /// \param  b   the default value for the 2st value of the flag
   /// \param  c   the default value for the 3rd value of the flag
   /// \param  persist   if true, the GUI option will be persisted as an optionVar
-  AL_MAYA_UTILS_PUBLIC
   void addInt3Option(const char* commandFlag, const char* label, const int32_t a, const int32_t b, const int32_t c, bool persist = true)
     {
       const int32_t temp[] = {a, b, c};
@@ -240,7 +238,6 @@ public:
   /// \param  c   the default value for the 3rd value of the flag
   /// \param  d   the default value for the 4th value of the flag
   /// \param  persist   if true, the GUI option will be persisted as an optionVar
-  AL_MAYA_UTILS_PUBLIC
   void addInt4Option(const char* commandFlag, const char* label, const int32_t a, const int32_t b, const int32_t c, const int32_t d, bool persist = true)
     {
       const int32_t temp[] = {a, b, c, d};
@@ -351,7 +348,6 @@ public:
   /// \param  a   the default value for the 1st value of the flag
   /// \param  b   the default value for the 2st value of the flag
   /// \param  persist   if true, the GUI option will be persisted as an optionVar
-  AL_MAYA_UTILS_PUBLIC
   void addVec2Option(const char* commandFlag, const char* label, const double a, const double b, bool persist = true)
     {
       const double temp[] = {a, b};
@@ -373,7 +369,6 @@ public:
   /// \param  b   the default value for the 2st value of the flag
   /// \param  c   the default value for the 3rd value of the flag
   /// \param  persist   if true, the GUI option will be persisted as an optionVar
-  AL_MAYA_UTILS_PUBLIC
   void addVec3Option(const char* commandFlag, const char* label, const double a, const double b, const double c, bool persist = true)
     {
       const double temp[] = {a, b, c};
@@ -396,7 +391,6 @@ public:
   /// \param  c   the default value for the 3rd value of the flag
   /// \param  d   the default value for the 4th value of the flag
   /// \param  persist   if true, the GUI option will be persisted as an optionVar
-  AL_MAYA_UTILS_PUBLIC
   void addVec4Option(const char* commandFlag, const char* label, const double a, const double b, const double c, const double d, bool persist = true)
     {
       const double temp[] = {a, b, c, d};
@@ -418,7 +412,6 @@ public:
   /// \param  b   the default value for the 2st value of the flag
   /// \param  c   the default value for the 3rd value of the flag
   /// \param  persist   if true, the GUI option will be persisted as an optionVar
-  AL_MAYA_UTILS_PUBLIC
   void addColourOption(const char* commandFlag, const char* label, const double a, const double b, const double c, bool persist = true)
     {
       const double temp[] = {a, b, c};

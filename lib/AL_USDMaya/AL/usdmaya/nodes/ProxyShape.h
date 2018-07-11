@@ -534,7 +534,6 @@ public:
   void printRefCounts() const;
 
   /// \brief  destroys all internal transform references
-  AL_USDMAYA_PUBLIC
   void destroyTransformReferences()
     { m_requiredPaths.clear(); }
 
@@ -627,7 +626,6 @@ public:
 
   /// \brief  returns the plugin translator registry assigned to this shape
   /// \return the translator registry
-  AL_USDMAYA_PUBLIC
   fileio::translators::TranslatorManufacture& translatorManufacture()
     { return m_translatorManufacture; }
 
@@ -686,7 +684,6 @@ public:
   ///         has been specified, the pseudo root will be passed to UsdImaging
   /// \return the prim specified by the user (if valid), the pseudo root if no prim has been specified, or a NULL
   ///         prim if the stage is invalid.
-  AL_USDMAYA_PUBLIC
   UsdPrim getRootPrim()
     {
       if(m_stage)
@@ -766,7 +763,6 @@ public:
 
   /// \brief  provides access to the selection list on this proxy shape
   /// \return the internal selection list
-  AL_USDMAYA_PUBLIC
   SelectionList& selectionList()
     { return m_selectionList; }
 
@@ -782,7 +778,6 @@ public:
 
   /// \brief Returns the SelectionDatabase owned by the ProxyShape
   /// \return A constant SelectableDB owned by the ProxyShape
-  AL_USDMAYA_PUBLIC
   const AL::usdmaya::SelectabilityDB& selectabilityDB() const
     { return const_cast<ProxyShape*>(this)->selectabilityDB(); }
 

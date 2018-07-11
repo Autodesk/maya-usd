@@ -236,7 +236,6 @@ class LayerManager
 public:
 
   /// \brief  ctor
-  AL_USDMAYA_PUBLIC
   inline LayerManager()
     : MPxNode(), NodeHelper() {}
 
