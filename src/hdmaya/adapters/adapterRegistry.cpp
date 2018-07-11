@@ -73,8 +73,7 @@ HdMayaAdapterRegistry::LoadAllPlugin() {
 
         PlugRegistry& plugReg = PlugRegistry::GetInstance();
 
-        for(auto& subType : adapterTypes)
-        {
+        for(auto& subType : adapterTypes) {
             const PlugPluginPtr pluginForType = plugReg.GetPluginForType(subType);
             if (!pluginForType) {
                 TF_CODING_ERROR(
