@@ -95,10 +95,10 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, pointLight) {
-    HdMayaAdapterRegistry::RegisterDagAdapter(
+    HdMayaAdapterRegistry::RegisterLightAdapter(
         TfToken("spotLight"),
-        [](HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaDagAdapterPtr {
-            return HdMayaDagAdapterPtr(new HdMayaSpotLightAdapter(delegate, dag));
+        [](HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaLightAdapterPtr {
+            return HdMayaLightAdapterPtr(new HdMayaSpotLightAdapter(delegate, dag));
         });
 }
 

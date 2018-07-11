@@ -99,6 +99,61 @@ const HdMaterialParamVector _defaultShaderParams = {
     },
 };
 
+template <typename T> inline
+void _FindAdapter(const SdfPath&, const std::function<void(T*)>&) {
+    // Do nothing.
+}
+
+template <typename T, typename M0, typename... M> inline
+void _FindAdapter(
+    const SdfPath& id,
+    const std::function<void(T*)>& f,
+    const M0& m0,
+    const M& ...m) {
+    auto* adapterPtr = TfMapLookupPtr(m0, id);
+    if (adapterPtr == nullptr) {
+        _FindAdapter<T>(id, f, m...);
+    } else {
+        f(static_cast<T*>(adapterPtr->get()));
+    }
+}
+
+// This will be nicer to use with automatic parameter deduction for lambdas in C++14.
+template <typename T, typename R> inline
+R _GetValue(const SdfPath&, const std::function<R(T*)>&) {
+    return {};
+}
+
+template <typename T, typename R, typename M0, typename... M> inline
+R _GetValue(
+    const SdfPath& id,
+    const std::function<R(T*)>& f,
+    const M0& m0,
+    const M& ...m) {
+    auto* adapterPtr = TfMapLookupPtr(m0, id);
+    if (adapterPtr == nullptr) {
+        return _GetValue<T, R>(id, f, m...);
+    } else {
+        return f(static_cast<T*>(adapterPtr->get()));
+    }
+}
+
+template <typename T> inline
+void _MapAdapter(const std::function<void(T*)>&) {
+    // Do nothing.
+}
+
+template <typename T, typename M0, typename... M> inline
+void _MapAdapter(
+    const std::function<void(T*)>& f,
+    const M0& m0,
+    const M& ...m) {
+    for (auto& it : m0) {
+        f(static_cast<T*>(it.second->get()));
+    }
+    _MapAdapter<T>(f, m...);
+}
+
 }
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -154,10 +209,25 @@ HdMayaSceneDelegate::Populate() {
 
 void
 HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
+    // FIXME: Improve this function!
     HdMayaDagAdapterPtr adapter;
-    if (TfMapLookup(_pathToAdapterMap, id, &adapter) && adapter != nullptr) {
+    if (TfMapLookup(_shapeAdapters, id, &adapter) && adapter != nullptr) {
         adapter->RemovePrim();
-        _pathToAdapterMap.erase(id);
+        _shapeAdapters.erase(id);
+        return;
+    }
+
+    HdMayaLightAdapterPtr lightAdapter;
+    if (TfMapLookup(_lightAdapters, id, &lightAdapter) && lightAdapter != nullptr) {
+        lightAdapter->RemovePrim();
+        _lightAdapters.erase(id);
+        return;
+    }
+
+    HdMayaMaterialAdapterPtr materialAdapter;
+    if (TfMapLookup(_materialAdapters, id, &materialAdapter) && materialAdapter != nullptr) {
+        materialAdapter->RemovePrim();
+        _materialAdapters.erase(id);
     }
 }
 
@@ -166,18 +236,34 @@ HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
     // We don't care about transforms.
     if (dag.hasFn(MFn::kTransform)) { return; }
 
-    auto adapterCreator = HdMayaAdapterRegistry::GetDagAdapterCreator(dag);
-    if (adapterCreator == nullptr) { return; }
-    const auto id = GetPrimPath(dag);
-    if (TfMapLookupPtr(_pathToAdapterMap, id) != nullptr) {
-        return;
+    // FIXME: put this into a function!
+    if (dag.hasFn(MFn::kLight)) {
+        auto adapterCreator = HdMayaAdapterRegistry::GetLightAdapterCreator(dag);
+        if (adapterCreator == nullptr) { return; }
+        const auto id = GetPrimPath(dag);
+        if (TfMapLookupPtr(_lightAdapters, id) != nullptr) {
+            return;
+        }
+        auto adapter = adapterCreator(this, dag);
+        if (adapter == nullptr) { return; }
+        if (!adapter->IsSupported()) { return; }
+        adapter->Populate();
+        adapter->CreateCallbacks();
+        _lightAdapters.insert({id, adapter});
+    } else {
+        auto adapterCreator = HdMayaAdapterRegistry::GetDagAdapterCreator(dag);
+        if (adapterCreator == nullptr) { return; }
+        const auto id = GetPrimPath(dag);
+        if (TfMapLookupPtr(_shapeAdapters, id) != nullptr) {
+            return;
+        }
+        auto adapter = adapterCreator(this, dag);
+        if (adapter == nullptr) { return; }
+        if (!adapter->IsSupported()) { return; }
+        adapter->Populate();
+        adapter->CreateCallbacks();
+        _shapeAdapters.insert({id, adapter});
     }
-    auto adapter = adapterCreator(this, dag);
-    if (adapter == nullptr) { return; }
-    if (!adapter->IsSupported()) { return; }
-    adapter->Populate();
-    adapter->CreateCallbacks();
-    _pathToAdapterMap.insert({id, adapter});
 }
 
 void
@@ -190,41 +276,39 @@ HdMayaSceneDelegate::SetParams(const HdMayaParams& params) {
         // If we want to allow creating multiple rprims and returning an id
         // to a subtree, we need to use the HasType function and the mark dirty
         // from each adapter.
-        for (auto& it: _pathToAdapterMap) {
-            if (it.second->HasType(HdPrimTypeTokens->mesh)) {
-                it.second->MarkDirty(HdChangeTracker::DirtyTopology);
+        _MapAdapter<HdMayaDagAdapter>(
+            [] (HdMayaDagAdapter* a) {
+                if (a->HasType(HdPrimTypeTokens->mesh)) {
+                    a->MarkDirty(HdChangeTracker::DirtyTopology);
+                }
             }
-        }
+        );
     }
     HdMayaDelegate::SetParams(params);
 }
 
 HdMeshTopology
 HdMayaSceneDelegate::GetMeshTopology(const SdfPath& id) {
-    HdMayaDagAdapterPtr adapter;
-    if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
-        return {};
-    }
-    return adapter->GetMeshTopology();
+    return _GetValue<HdMayaDagAdapter, HdMeshTopology>(
+        id,
+        [](HdMayaDagAdapter* a) -> HdMeshTopology { return a->GetMeshTopology(); },
+        _shapeAdapters);
 }
 
 GfRange3d
 HdMayaSceneDelegate::GetExtent(const SdfPath& id) {
-    HdMayaDagAdapterPtr adapter;
-    if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
-        return {};
-    }
-    return adapter->GetExtent();
+    return _GetValue<HdMayaDagAdapter, GfRange3d>(
+        id,
+        [](HdMayaDagAdapter* a) -> GfRange3d { return a->GetExtent(); },
+        _shapeAdapters);
 }
 
 GfMatrix4d
 HdMayaSceneDelegate::GetTransform(const SdfPath& id) {
-    HdMayaDagAdapterPtr adapter;
-    if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
-        std::cerr << "[HdMayaSceneDelegate::GetTransform] No adapter for " << id << std::endl;
-        return GfMatrix4d(1.0);
-    }
-    return adapter->GetTransform();
+    return _GetValue<HdMayaDagAdapter, GfMatrix4d>(
+        id,
+        [](HdMayaDagAdapter* a) -> GfMatrix4d { return a->GetTransform(); },
+        _shapeAdapters);
 }
 
 bool
@@ -241,40 +325,26 @@ HdMayaSceneDelegate::IsEnabled(const TfToken& option) const {
 
 VtValue
 HdMayaSceneDelegate::Get(SdfPath const& id, const TfToken& key) {
-    HdMayaDagAdapterPtr adapter;
-    if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
-        std::cerr << "[HdMayaSceneDelegate::Get] No adapter for " << key << " on " << id << std::endl;
-        return {};
-    }
-    auto ret = adapter->Get(key);
-    if (ret.IsEmpty()) {
-        std::cerr << "[HdMayaSceneDelegate::Get] Failed for " << key << " on " << id << std::endl;
-    }
-    return ret;
+    return _GetValue<HdMayaAdapter, VtValue>(
+        id,
+        [&key](HdMayaAdapter* a) -> VtValue { return a->Get(key); },
+        _shapeAdapters, _lightAdapters, _materialAdapters);
 }
 
 HdPrimvarDescriptorVector
 HdMayaSceneDelegate::GetPrimvarDescriptors(const SdfPath& id, HdInterpolation interpolation) {
-    HdMayaDagAdapterPtr adapter;
-    if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
-        std::cerr << "[HdMayaSceneDelegate::GetPrimvarDescriptors] No adapter for " << interpolation << " on " << id << std::endl;
-        return {};
-    }
-    return adapter->GetPrimvarDescriptors(interpolation);
+    return _GetValue<HdMayaDagAdapter, HdPrimvarDescriptorVector>(
+        id,
+        [&interpolation](HdMayaDagAdapter* a) -> HdPrimvarDescriptorVector { return a->GetPrimvarDescriptors(interpolation); },
+        _shapeAdapters);
 }
 
 VtValue
 HdMayaSceneDelegate::GetLightParamValue(const SdfPath& id, const TfToken& paramName) {
-    HdMayaDagAdapterPtr adapter;
-    if (!TfMapLookup(_pathToAdapterMap, id, &adapter) || adapter == nullptr) {
-        std::cerr << "[HdMayaSceneDelegate::GetLightParamValue] No adapter for " << paramName << " on " << id << std::endl;
-        return {};
-    }
-    auto ret = adapter->GetLightParamValue(paramName);
-    if (ret.IsEmpty()) {
-        std::cerr << "[HdMayaSceneDelegate::GetLightParamValue] Failed for " << paramName << " on " << id << std::endl;
-    }
-    return ret;
+    return _GetValue<HdMayaLightAdapter, VtValue>(
+        id,
+        [&paramName](HdMayaLightAdapter* a) -> VtValue { return a->GetLightParamValue(paramName); },
+        _lightAdapters);
 }
 
 bool

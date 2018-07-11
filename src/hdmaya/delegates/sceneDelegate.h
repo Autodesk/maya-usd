@@ -16,7 +16,24 @@
 #include <memory>
 
 #include <hdmaya/adapters/dagAdapter.h>
+#include <hdmaya/adapters/lightAdapter.h>
+#include <hdmaya/adapters/materialAdapter.h>
 #include <hdmaya/delegates/delegateCtx.h>
+
+/*
+ * Notes.
+ *
+ * To remove the need of casting between different adapter types or
+ * making the base adapter class too heavy I decided to use 3 different set
+ * or map types. This adds a bit of extra code to the RemoveAdapter function
+ * but simplifies the rest of the functions significantly (and no downcasting!).
+ *
+ * All this would be probably way nicer / easier with C++14 and the polymorphic
+ * lambdas.
+ *
+ * This also optimizes other things, like it's easier to separate functionality
+ * that only affects shapes, lights or materials.
+ */
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -56,7 +73,9 @@ protected:
     TfTokenVector GetMaterialPrimvars(const SdfPath& id) override;
 
 private:
-    TfHashMap<SdfPath, HdMayaDagAdapterPtr, SdfPath::Hash> _pathToAdapterMap;
+    std::unordered_map<SdfPath, HdMayaDagAdapterPtr, SdfPath::Hash> _shapeAdapters;
+    std::unordered_map<SdfPath, HdMayaLightAdapterPtr, SdfPath::Hash> _lightAdapters;
+    std::unordered_map<SdfPath, HdMayaMaterialAdapterPtr, SdfPath::Hash> _materialAdapters;
     std::vector<MCallbackId> _callbacks;
 
     SdfPath _fallbackMaterial;
