@@ -24,7 +24,7 @@ public:
     HDMAYA_API
     virtual void MarkDirty(HdDirtyBits dirtyBits) override;
 
-    GfRange3d GetExtent() {
+    const GfRange3d& GetExtent() const {
         return _extent;
     }
 

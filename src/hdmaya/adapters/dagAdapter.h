@@ -44,7 +44,7 @@ public:
     virtual void RemovePrim() override;
 
     const MDagPath& GetDagPath() { return _dagPath; }
-    GfMatrix4d GetTransform() {
+    const GfMatrix4d& GetTransform() const {
         return _transform;
     }
 
