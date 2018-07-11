@@ -22,9 +22,9 @@ HdMayaAdapterRegistry::RegisterDagAdapter(
 
 HdMayaAdapterRegistry::DagAdapterCreator
 HdMayaAdapterRegistry::GetDagAdapterCreator(const MDagPath& dag) {
-    MFnDependencyNode node(dag.node());
+    MFnDependencyNode depNode(dag.node());
     DagAdapterCreator ret = nullptr;
-    TfMapLookup(GetInstance()._dagAdapters, TfToken(node.typeName().asChar()), &ret);
+    TfMapLookup(GetInstance()._dagAdapters, TfToken(depNode.typeName().asChar()), &ret);
     return ret;
 }
 
@@ -37,9 +37,22 @@ HdMayaAdapterRegistry::RegisterLightAdapter(
 
 HdMayaAdapterRegistry::LightAdapterCreator
 HdMayaAdapterRegistry::GetLightAdapterCreator(const MDagPath& dag) {
-    MFnDependencyNode node(dag.node());
+    MFnDependencyNode depNode(dag.node());
     LightAdapterCreator ret = nullptr;
-    TfMapLookup(GetInstance()._lightAdapters, TfToken(node.typeName().asChar()), &ret);
+    TfMapLookup(GetInstance()._lightAdapters, TfToken(depNode.typeName().asChar()), &ret);
+    return ret;
+}
+
+void
+HdMayaAdapterRegistry::RegisterMaterialAdapter(const TfToken& type, MaterialAdapterCreator creator) {
+    GetInstance()._materialAdapters.insert({type, creator});
+}
+
+HdMayaAdapterRegistry::MaterialAdapterCreator
+HdMayaAdapterRegistry::GetMaterialAdapterCreator(const MObject& node) {
+    MFnDependencyNode depNode(node);
+    MaterialAdapterCreator ret = nullptr;
+    TfMapLookup(GetInstance()._materialAdapters, TfToken(depNode.typeName().asChar()), &ret);
     return ret;
 }
 
