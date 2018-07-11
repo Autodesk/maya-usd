@@ -333,8 +333,10 @@ HdMayaSceneDelegate::GetSurfaceShaderSource(const SdfPath& id) {
     if (id == _fallbackMaterial) {
         return HdMayaMaterialAdapter::GetPreviewSurfaceSource();
     }
-    std::cerr << "[HdMayaSceneDelegate] Getting surface shader source of " << id << std::endl;
-    return {};
+    return _GetValue<HdMayaMaterialAdapter, std::string>(
+        id,
+        [](HdMayaMaterialAdapter* a) -> std::string { return a->GetSurfaceShaderSource(); },
+        _materialAdapters);
 }
 
 std::string
@@ -342,8 +344,10 @@ HdMayaSceneDelegate::GetDisplacementShaderSource(const SdfPath& id) {
     if (id == _fallbackMaterial) {
         return HdMayaMaterialAdapter::GetPreviewDisplacementSource();
     }
-    std::cerr << "[HdMayaSceneDelegate] Getting displacement shader source of " << id << std::endl;
-    return {};
+    return _GetValue<HdMayaMaterialAdapter, std::string>(
+        id,
+        [](HdMayaMaterialAdapter* a) -> std::string { return a->GetDisplacementShaderSource(); },
+        _materialAdapters);
 }
 
 VtValue
@@ -351,8 +355,10 @@ HdMayaSceneDelegate::GetMaterialParamValue(const SdfPath& id, const TfToken& par
     if (id == _fallbackMaterial) {
         return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(paramName);
     }
-    std::cerr << "[HdMayaSceneDelegate] Getting material param value of " << id << std::endl;
-    return {};
+    return _GetValue<HdMayaMaterialAdapter, VtValue>(
+        id,
+        [&paramName](HdMayaMaterialAdapter* a) -> VtValue { return a->GetMaterialParamValue(paramName); },
+        _materialAdapters);
 }
 
 HdMaterialParamVector
@@ -360,8 +366,10 @@ HdMayaSceneDelegate::GetMaterialParams(const SdfPath& id) {
     if (id == _fallbackMaterial) {
         return HdMayaMaterialAdapter::GetPreviewParams();
     }
-    std::cerr << "[HdMayaSceneDelegate] Getting material params of " << id << std::endl;
-    return {};
+    return _GetValue<HdMayaMaterialAdapter, HdMaterialParamVector>(
+        id,
+        [](HdMayaMaterialAdapter* a) -> HdMaterialParamVector { return a->GetMaterialParams(); },
+        _materialAdapters);
 }
 
 VtValue
