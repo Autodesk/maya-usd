@@ -43,8 +43,18 @@ target_compile_definitions(hdmaya_al PRIVATE "HDMAYA_AL_EXPORT=1")
 # But apparently you can't look up LOCATION in cmake-2.8.0... nor can you use
 # the generator expression "$<TARGET_FILE_NAME:hdmaya_al>" outside of special
 # commands, like add_custom_command...
-# So for now, just giving up on cross-platform, and hardwiring to libXXX.so
-set(PLUG_INFO_LIBRARY_PATH libhdmaya_al.so)
+# So just building "manually" with PREFIX / SUFFIX
+get_target_property(LIB_PREFIX hdmaya_al PREFIX)
+if (LIB_PREFIX STREQUAL LIB_PREFIX-NOTFOUND OR LIB_PREFIX STREQUAL NOTFOUND)
+    set(LIB_PREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
+endif (LIB_PREFIX STREQUAL LIB_PREFIX-NOTFOUND OR LIB_PREFIX STREQUAL NOTFOUND)
+
+get_target_property(LIB_SUFFIX hdmaya_al SUFFIX)
+if (LIB_SUFFIX STREQUAL LIB_SUFFIX-NOTFOUND OR LIB_SUFFIX STREQUAL NOTFOUND)
+    set(LIB_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
+endif (LIB_SUFFIX STREQUAL LIB_SUFFIX-NOTFOUND OR LIB_SUFFIX STREQUAL NOTFOUND)
+
+set(PLUG_INFO_LIBRARY_PATH ${LIB_PREFIX}hdmaya_al${LIB_SUFFIX})
 
 set(PLUG_INFO_PATH "plugInfo.json")
 
