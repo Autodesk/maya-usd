@@ -308,7 +308,7 @@ HdMayaSceneDelegate::GetTransform(const SdfPath& id) {
     return _GetValue<HdMayaDagAdapter, GfMatrix4d>(
         id,
         [](HdMayaDagAdapter* a) -> GfMatrix4d { return a->GetTransform(); },
-        _shapeAdapters);
+        _shapeAdapters, _lightAdapters);
 }
 
 bool
