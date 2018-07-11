@@ -17,7 +17,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdMayaAdapter {
 public:
     HDMAYA_API
-    HdMayaAdapter(MObject node, const SdfPath& id, HdMayaDelegateCtx* delegate);
+    HdMayaAdapter(const MObject& node, const SdfPath& id, HdMayaDelegateCtx* delegate);
     HDMAYA_API
     virtual ~HdMayaAdapter();
 

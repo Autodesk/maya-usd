@@ -37,6 +37,8 @@ public:
     const HdRprimCollection& GetRprimCollection() { return _rprimCollection; }
     HDMAYA_API
     SdfPath GetPrimPath(const MDagPath& dg);
+    HDMAYA_API
+    SdfPath GetMaterialPath(const MObject& obj);
 
     /// Fit the frustum's near/far value to contain all
     /// the rprims inside the render index;
@@ -46,6 +48,7 @@ private:
     HdRprimCollection _rprimCollection;
     SdfPath _rprimPath;
     SdfPath _sprimPath;
+    SdfPath _materialPath;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

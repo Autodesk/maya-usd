@@ -21,7 +21,7 @@ _aboutToDelete(MObject& node, MDGModifier& modifier, void* clientData) {
 
 }
 
-HdMayaAdapter::HdMayaAdapter(MObject node, const SdfPath& id, HdMayaDelegateCtx* delegate) :
+HdMayaAdapter::HdMayaAdapter(const MObject& node, const SdfPath& id, HdMayaDelegateCtx* delegate) :
     _node(node), _id(id), _delegate(delegate) { }
 
 HdMayaAdapter::~HdMayaAdapter() {

@@ -26,6 +26,16 @@ _GetPrimPath(const SdfPath& base, const MDagPath& dg) {
     return base.AppendPath(SdfPath(s));
 }
 
+SdfPath
+_GetMaterialPath(const SdfPath& base, const MObject& obj) {
+    MStatus status;
+    MFnDependencyNode node(obj, &status);
+    if (!status) { return {}; }
+    const auto* chr = node.name().asChar();
+    if (chr == nullptr || chr[0] == '\0') { return {}; }
+    return base.AppendPath(SdfPath(chr));
+}
+
 }
 
 HdMayaDelegateCtx::HdMayaDelegateCtx(
@@ -33,7 +43,8 @@ HdMayaDelegateCtx::HdMayaDelegateCtx(
     const SdfPath& delegateID)
     : HdSceneDelegate(renderIndex, delegateID),
      _rprimPath(delegateID.AppendPath(SdfPath(std::string("rprims")))),
-     _sprimPath(delegateID.AppendPath(SdfPath(std::string("sprims")))) {
+     _sprimPath(delegateID.AppendPath(SdfPath(std::string("sprims")))),
+     _materialPath(delegateID.AppendPath(SdfPath(std::string("materials")))) {
     _rprimCollection.SetName(TfToken("visible"));
     _rprimCollection.SetRootPath(_rprimPath);
     _rprimCollection.SetRenderTags({HdTokens->geometry});
@@ -69,6 +80,11 @@ HdMayaDelegateCtx::GetPrimPath(const MDagPath& dg) {
     } else {
         return _GetPrimPath(_rprimPath, dg);
     }
+}
+
+SdfPath
+HdMayaDelegateCtx::GetMaterialPath(const MObject& obj) {
+    return _GetMaterialPath(_materialPath, obj);
 }
 
 void
