@@ -25,7 +25,7 @@ public:
     HDMAYA_API
     virtual void RemovePrim() override;
     HDMAYA_API
-    VtValue GetLightParamValue(const TfToken& paramName) override;
+    virtual VtValue GetLightParamValue(const TfToken& paramName);
     HDMAYA_API
     VtValue Get(const TfToken& key) override;
     HDMAYA_API

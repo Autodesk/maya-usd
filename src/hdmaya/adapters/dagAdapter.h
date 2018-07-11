@@ -46,9 +46,6 @@ public:
     HDMAYA_API
     virtual HdPrimvarDescriptorVector
     GetPrimvarDescriptors(HdInterpolation interpolation);
-    // TODO: Maybe we could track lights separately from dag adapters?
-    HDMAYA_API
-    virtual VtValue GetLightParamValue(const TfToken& paramName);
 
     const MDagPath& GetDagPath() { return _dagPath; }
     GfMatrix4d GetTransform() {

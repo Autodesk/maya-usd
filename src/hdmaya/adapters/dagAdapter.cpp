@@ -87,9 +87,4 @@ HdMayaDagAdapter::GetPrimvarDescriptors(HdInterpolation interpolation) {
     return {};
 }
 
-VtValue
-HdMayaDagAdapter::GetLightParamValue(const TfToken& paramName) {
-    return {};
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
