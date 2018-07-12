@@ -37,13 +37,13 @@ namespace usdmaya {
 namespace utils {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  Captures the mapping of UsdPrim -> Maya Object and stores it into the session layer.
-///         usdMayaShapeNode is an optional argument, if it is passed and the passed in mayaObject's path couldnt be determined,
+/// \brief  Returns the dagPath result of mapping UsdPrim -> Maya Object.
+///         proxyShapeNode is an optional argument, if it is passed and the passed in mayaObject's path couldn't be determined,
 ///         then the corresponding maya path is determined using this AL::usdmaya::nodes::ProxyShape and the usdPrim path.
 ///         It is to get around the delayed creation of nodes using a Modifier.
 /// \param  usdPrim the prim to map to the mayaObject
 /// \param  mayaObject the maya node to map
-/// \param  proxyShapeNode pointer to the daga path for the proxy shape
+/// \param  proxyShapeNode pointer to the dag path for the proxy shape
 /// \return returns the path name
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------

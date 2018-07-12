@@ -1476,12 +1476,10 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
     return false;
   }
 
-
-  VtValue mayaPath = prim.GetCustomDataByKey(TfToken("MayaPath"));
   MObject lockObject;
-  if (!mayaPath.IsEmpty())
+  MString pathStr = getMayaPathFromUsdPrim(prim);
+  if (pathStr.length())
   {
-    MString pathStr = AL::maya::utils::convert(mayaPath.Get<std::string>());
     MSelectionList sl;
     MObject selObj;
     if (sl.add(pathStr) == MStatus::kSuccess)
@@ -1677,6 +1675,33 @@ bool ProxyShape::primHasExcludedParent(UsdPrim prim)
   return false;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+MString ProxyShape::recordUsdPrimToMayaPath(const UsdPrim &usdPrim,
+                                            const MObject &mayaObject){
+  // Retrieve the proxy shapes transform path which will be used in the
+  // UsdPrim->MayaNode mapping in the case where there is delayed node creation.
+  MFnDagNode shapeFn(thisMObject());
+  const MObject shapeParent = shapeFn.parent(0);
+  MDagPath mayaPath;
+  MDagPath::getAPathTo(shapeParent, mayaPath);
+
+  MString resultingPath;
+  SdfPath primPath(usdPrim.GetPath());
+  resultingPath = AL::usdmaya::utils::mapUsdPrimToMayaNode(usdPrim, mayaObject, &mayaPath);
+  m_primPathToDagPath.insert(std::make_pair(primPath, resultingPath));
+
+  return resultingPath;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MString ProxyShape::getMayaPathFromUsdPrim(const UsdPrim& usdPrim){
+  _PrimPathToDagPath::iterator itr = m_primPathToDagPath.find(usdPrim.GetPath());
+  if (itr == m_primPathToDagPath.end()){
+    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::getMayaPathFromUsdPrim could not find stored MayaPath\n");
+    return MString();
+  }
+  return itr->second;
+}
 //----------------------------------------------------------------------------------------------------------------------
 
 void ProxyShape::findTaggedPrims()
