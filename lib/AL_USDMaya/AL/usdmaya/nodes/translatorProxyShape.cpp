@@ -17,6 +17,8 @@
 #include "translatorProxyShape.h"
 #include "ProxyShape.h"
 
+#include "AL/maya/utils/Utils.h"
+
 #include "usdMaya/jobArgs.h"
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
@@ -69,7 +71,7 @@ AL_USDMayaTranslatorProxyShape::Create(
   MPlug usdRefPrimPathPlg = proxyShape->primPathPlug();
   if (!usdRefPrimPathPlg.isNull())
   {
-    refPrimPathStr = usdRefPrimPathPlg.asString().asChar();
+    refPrimPathStr = AL::maya::utils::convert(usdRefPrimPathPlg.asString());
   }
 
   // Get proxy shape stage and graft session layer onto exported layer.
@@ -118,7 +120,7 @@ AL_USDMayaTranslatorProxyShape::Create(
   MPlug usdRefFilepathPlg = proxyShape->filePathPlug();
   if (!usdRefFilepathPlg.isNull()){
     UsdReferences refs = prim.GetReferences();
-    std::string refAssetPath(usdRefFilepathPlg.asString().asChar());
+    std::string refAssetPath(AL::maya::utils::convert(usdRefFilepathPlg.asString()));
 
     std::string resolvedRefPath =
             stage->ResolveIdentifierToEditTarget(refAssetPath);
@@ -151,7 +153,7 @@ AL_USDMayaTranslatorProxyShape::Create(
       errorMsg += authorPath.GetText();
       errorMsg += ">";
       MGlobal::displayWarning(errorMsg);
-      prim.SetDocumentation(std::string(errorMsg.asChar()));
+      prim.SetDocumentation(errorMsg.asChar());
     }
   }
 
