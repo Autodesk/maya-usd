@@ -85,4 +85,9 @@ HdMayaALProxyDelegate::Populate() {
     }
 }
 
+void
+HdMayaALProxyDelegate::PreFrame() {
+	_delegate->ApplyPendingUpdates();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

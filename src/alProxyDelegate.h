@@ -23,6 +23,7 @@ public:
         const SdfPath& delegateID);
 
     void Populate() override;
+    void PreFrame() override;
 
 private:
     std::unique_ptr<UsdImagingDelegate> _delegate;
