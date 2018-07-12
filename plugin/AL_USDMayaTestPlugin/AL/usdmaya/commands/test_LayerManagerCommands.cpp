@@ -102,6 +102,7 @@ TEST(LayerManagerCommands, dirtySublayer)
     const char* sublayerId = "sublayertest";
     SdfLayerRefPtr sublayer = SdfLayer::CreateAnonymous(sublayerId);
 
+    stage->SetEditTarget(stage->GetRootLayer());
     std::vector<std::string> sublayers;
     sublayers.push_back(sublayer->GetIdentifier());
     stage->GetRootLayer()->SetSubLayerPaths(sublayers);
@@ -172,12 +173,15 @@ TEST(LayerManagerCommands, dirtySublayerSessionLayer)
     sublayers.push_back(sublayer->GetIdentifier());
 
     // this modified the RootLayer
+    stage->SetEditTarget(stage->GetRootLayer());
     stage->GetRootLayer()->SetSubLayerPaths(sublayers);
+    EXPECT_TRUE(stage->GetRootLayer()->IsDirty());
     EXPECT_FALSE(sublayer->IsDirty());
 
     // Now set the EditTarget to the session layer and dirty it
     stage->SetEditTarget(stage->GetSessionLayer());
     stage->DefinePrim(SdfPath("/DirtySublayer"));
+    EXPECT_TRUE(stage->GetSessionLayer()->IsDirty());
 
     stage->SetEditTarget(sublayer);
     result = MGlobal::executeCommand("AL_usdmaya_LayerManager -dal", dirtyLayerPairs, true);

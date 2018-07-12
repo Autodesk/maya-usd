@@ -1363,6 +1363,8 @@ void ProxyShape::loadStage()
         UsdStageCache::Id stageId = StageCache::Get().Insert(m_stage);
         outputInt32Value(dataBlock, m_stageCacheId, stageId.ToLongInt());
 
+        // Set the edit target to the session layer so any user interaction will wind up there
+        m_stage->SetEditTarget(m_stage->GetSessionLayer());
         // Save the initial edit target
         trackEditTargetLayer();
 
