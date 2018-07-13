@@ -39,9 +39,26 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaALProxyDelegate) {
 namespace {
 
 void
-StageLoadedCallback(
-		HdMayaALProxyDelegate* delegate,
-		ProxyShape* proxy) {
+StageLoadedCallback(void* userData, AL::event::NodeEvents* node) {
+	auto* delegate = static_cast<HdMayaALProxyDelegate*>(userData);
+	// TODO: add in TF_UNLIKELY for sanity checks
+	if (!delegate) {
+		TF_CODING_ERROR("StageLoadedCallback called with null "
+				"userData ptr");
+		return;
+	}
+	auto* proxy = dynamic_cast<ProxyShape*>(node);
+	if (!proxy) {
+		if (!userData) {
+			TF_CODING_ERROR("StageLoadedCallback called with null "
+					"node ptr");
+		}
+		else {
+			TF_CODING_ERROR("StageLoadedCallback called with node that "
+					"not a ProxyShape*");
+		}
+		return;
+	}
 	TF_DEBUG(HDMAYA_AL_CALLBACKS).Msg(
 			"HdMayaALProxyDelegate - called StageLoadedCallback (ProxyShape: "
 			"%s)\n", proxy->name().asChar());
@@ -49,9 +66,27 @@ StageLoadedCallback(
 }
 
 void
-ProxyShapeDestroyedCallback(
-		HdMayaALProxyDelegate* delegate,
-		ProxyShape* proxy) {
+ProxyShapeDestroyedCallback(void* userData, AL::event::NodeEvents* node) {
+	auto* delegate = static_cast<HdMayaALProxyDelegate*>(userData);
+	// TODO: add in TF_UNLIKELY for sanity checks
+	if (!delegate) {
+		TF_CODING_ERROR("ProxyShapeDestroyedCallback called with null "
+				"userData ptr");
+		return;
+	}
+	auto* proxy = dynamic_cast<ProxyShape*>(node);
+	if (!proxy) {
+		if (!userData) {
+			TF_CODING_ERROR("ProxyShapeDestroyedCallback called with null "
+					"node ptr");
+		}
+		else {
+			TF_CODING_ERROR("ProxyShapeDestroyedCallback called with node that "
+					"not a ProxyShape*");
+		}
+		return;
+	}
+
 	TF_DEBUG(HDMAYA_AL_CALLBACKS).Msg(
 			"HdMayaALProxyDelegate - called ProxyShapeDestroyedCallback "
 			"(ProxyShape: %s)\n", proxy->name().asChar());
