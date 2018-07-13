@@ -47,7 +47,7 @@ private:
     		HdMayaALProxyData& proxyData);
 
     std::unordered_map<ProxyShape*, HdMayaALProxyData> _proxiesData;
-    SdfPath const& _delegateID;
+    SdfPath const _delegateID;
     HdRenderIndex* _renderIndex;
     MCallbackId _nodeAddedCBId;
 };
