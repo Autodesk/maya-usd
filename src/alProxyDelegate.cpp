@@ -193,27 +193,32 @@ HdMayaALProxyDelegate::Populate() {
 	TF_DEBUG(HDMAYA_AL_POPULATE).Msg(
 			"HdMayaALProxyDelegate::Populate\n");
 	for (auto& proxyAndData : _proxiesData) {
-		auto& proxy = proxyAndData.first;
-		auto& proxyData = proxyAndData.second;
-
-		if (!proxyData.delegate) continue;
-
-		if (!proxyData.populated) {
-			TF_DEBUG(HDMAYA_AL_POPULATE).Msg(
-					"HdMayaALProxyDelegate::Populating %s\n",
-					proxy->name().asChar());
-
-			auto stage = proxy->getUsdStage();
-			if(!stage)
-			{
-			  MGlobal::displayError(MString(
-					  "Could not get stage for proxyShape: ") + proxy->name());
-			  continue;
-			}
-			proxyData.delegate->Populate(stage->GetPseudoRoot());
-			proxyData.populated = true;
-		}
+		_populateSingleProxy(proxyAndData.first, proxyAndData.second);
     }
+}
+
+bool
+HdMayaALProxyDelegate::_populateSingleProxy(
+		ProxyShape* proxy,
+		HdMayaALProxyData& proxyData) {
+	if (!proxyData.delegate) return false;;
+
+	if (!proxyData.populated) {
+		TF_DEBUG(HDMAYA_AL_POPULATE).Msg(
+				"HdMayaALProxyDelegate::Populating %s\n",
+				proxy->name().asChar());
+
+		auto stage = proxy->getUsdStage();
+		if(!stage)
+		{
+		  MGlobal::displayError(MString(
+				  "Could not get stage for proxyShape: ") + proxy->name());
+		  return false;
+		}
+		proxyData.delegate->Populate(stage->GetPseudoRoot());
+		proxyData.populated = true;
+	}
+	return true;
 }
 
 void
@@ -221,10 +226,7 @@ HdMayaALProxyDelegate::PreFrame() {
 	for (auto& proxyAndData : _proxiesData) {
 		auto& proxy = proxyAndData.first;
 		auto& proxyData = proxyAndData.second;
-
-		if (!proxyData.delegate) continue;
-
-		if (!proxyData.populated) {
+		if (_populateSingleProxy(proxy, proxyData)) {
 			proxyData.delegate->ApplyPendingUpdates();
 		}
 	}

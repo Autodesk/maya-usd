@@ -43,6 +43,8 @@ public:
     void setUsdImagingDelegate(ProxyShape* proxy);
 
 private:
+    bool _populateSingleProxy(ProxyShape* proxy,
+    		HdMayaALProxyData& proxyData);
     void _setUsdImagingDelegate(ProxyShape* proxy,
     		HdMayaALProxyData& proxyData);
 
