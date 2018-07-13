@@ -40,18 +40,20 @@ public:
 
     HdMayaALProxyData& addProxy(ProxyShape* proxy);
     void removeProxy(ProxyShape* proxy);
-    void setUsdImagingDelegate(ProxyShape* proxy);
+    void createUsdImagingDelegate(ProxyShape* proxy);
+    void deleteUsdImagingDelegate(ProxyShape* proxy);
 
 private:
     bool _populateSingleProxy(ProxyShape* proxy,
     		HdMayaALProxyData& proxyData);
-    void _setUsdImagingDelegate(ProxyShape* proxy,
+    void _createUsdImagingDelegate(ProxyShape* proxy,
     		HdMayaALProxyData& proxyData);
 
     std::unordered_map<ProxyShape*, HdMayaALProxyData> _proxiesData;
     SdfPath const _delegateID;
     HdRenderIndex* _renderIndex;
     MCallbackId _nodeAddedCBId;
+    MCallbackId _nodeRemovedCBId;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

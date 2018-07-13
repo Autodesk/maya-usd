@@ -62,7 +62,7 @@ StageLoadedCallback(void* userData, AL::event::NodeEvents* node) {
 	TF_DEBUG(HDMAYA_AL_CALLBACKS).Msg(
 			"HdMayaALProxyDelegate - called StageLoadedCallback (ProxyShape: "
 			"%s)\n", proxy->name().asChar());
-	delegate->setUsdImagingDelegate(proxy);
+	delegate->createUsdImagingDelegate(proxy);
 }
 
 void
@@ -130,6 +130,43 @@ ProxyShapeAddedCallback(MObject& node, void* clientData) {
 	delegate->addProxy(proxy);
 }
 
+void
+ProxyShapeRemovedCallback(MObject& node, void* clientData) {
+	auto delegate = static_cast<HdMayaALProxyDelegate*>(clientData);
+	if (!delegate) {
+		TF_CODING_ERROR("ProxyShapeRemovedCallback called with null "
+				"HdMayaALProxyDelegate ptr");
+		return;
+	}
+
+	MStatus status;
+	MFnDependencyNode mfnNode(node, &status);
+	if (!status) {
+		TF_CODING_ERROR("Error getting MFnDependencyNode");
+		return;
+	}
+
+	TF_DEBUG(HDMAYA_AL_CALLBACKS).Msg(
+			"HdMayaALProxyDelegate - called ProxyShapeRemovedCallback "
+			"(ProxyShape: %s)\n", mfnNode.name().asChar());
+
+
+	if(mfnNode.typeId() != ProxyShape::kTypeId) {
+		TF_CODING_ERROR("ProxyShapeRemovedCallback called on non-%s node",
+				ProxyShape::kTypeName.asChar());
+		return;
+	}
+
+	auto* proxy = dynamic_cast<ProxyShape*>(mfnNode.userNode());
+	if (!proxy) {
+		TF_CODING_ERROR("Error getting ProxyShape* for %s",
+						mfnNode.name().asChar());
+		return;
+	}
+
+	delegate->deleteUsdImagingDelegate(proxy);
+}
+
 } // private namespace
 
 HdMayaALProxyDelegate::HdMayaALProxyDelegate(HdRenderIndex* renderIndex,
@@ -156,7 +193,7 @@ HdMayaALProxyDelegate::HdMayaALProxyDelegate(HdRenderIndex* renderIndex,
 		auto stage = proxyShape->getUsdStage();
 		if(stage)
 		{
-			_setUsdImagingDelegate(proxyShape, proxyData);
+			_createUsdImagingDelegate(proxyShape, proxyData);
 		}
 	}
 
@@ -169,6 +206,17 @@ HdMayaALProxyDelegate::HdMayaALProxyDelegate(HdRenderIndex* renderIndex,
     if (!status) {
     	TF_CODING_ERROR("Could not set nodeAdded callback");
     	_nodeAddedCBId = 0;
+    }
+
+    // Set up callback to remove ProxyShapes from the index
+	TF_DEBUG(HDMAYA_AL_CALLBACKS).Msg(
+			"HdMayaALProxyDelegate - creating ProxyShapeRemovedCallback callback "
+			"for all ProxyShapes\n");
+	_nodeRemovedCBId = MDGMessage::addNodeRemovedCallback(ProxyShapeRemovedCallback,
+    		ProxyShape::kTypeName, this, &status);
+    if (!status) {
+    	TF_CODING_ERROR("Could not set nodeRemoved callback");
+    	_nodeRemovedCBId = 0;
     }
 }
 
@@ -279,6 +327,7 @@ HdMayaALProxyDelegate::addProxy(ProxyShape* proxy) {
 						this // userData
 						));
 	}
+	_createUsdImagingDelegate(proxy, proxyData);
 	return proxyData;
 }
 
@@ -290,18 +339,18 @@ HdMayaALProxyDelegate::removeProxy(ProxyShape* proxy) {
 }
 
 void
-HdMayaALProxyDelegate::setUsdImagingDelegate(ProxyShape* proxy) {
+HdMayaALProxyDelegate::createUsdImagingDelegate(ProxyShape* proxy) {
 	auto proxyDataIter = _proxiesData.find(proxy);
 	if (proxyDataIter == _proxiesData.end()) {
 		TF_CODING_ERROR("Proxy not found in delegate: %s",
 				proxy->name().asChar());
 		return;
 	}
-	_setUsdImagingDelegate(proxy, proxyDataIter->second);
+	_createUsdImagingDelegate(proxy, proxyDataIter->second);
 }
 
 void
-HdMayaALProxyDelegate::_setUsdImagingDelegate(
+HdMayaALProxyDelegate::_createUsdImagingDelegate(
 		ProxyShape* proxy,
 		HdMayaALProxyData& proxyData) {
 	// TODO: check what happens on deletion of old delegate - is renderIndex
@@ -313,5 +362,19 @@ HdMayaALProxyDelegate::_setUsdImagingDelegate(
 							proxy->name().asChar(), proxy)))));
 	proxyData.populated = false;
 }
+
+void
+HdMayaALProxyDelegate::deleteUsdImagingDelegate(ProxyShape* proxy) {
+	auto proxyDataIter = _proxiesData.find(proxy);
+	if (proxyDataIter == _proxiesData.end()) {
+		TF_CODING_ERROR("Proxy not found in delegate: %s",
+				proxy->name().asChar());
+		return;
+	}
+	auto& proxyData = proxyDataIter->second;
+	proxyData.delegate.reset(nullptr);
+	proxyData.populated = false;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
