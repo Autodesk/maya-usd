@@ -40,8 +40,9 @@ namespace {
 
 void
 StageLoadedCallback(void* userData, AL::event::NodeEvents* node) {
+
+	// Bunch of conversions + sanity checks...
 	auto* delegate = static_cast<HdMayaALProxyDelegate*>(userData);
-	// TODO: add in TF_UNLIKELY for sanity checks
 	if (ARCH_UNLIKELY(!delegate)) {
 		TF_CODING_ERROR("StageLoadedCallback called with null "
 				"userData ptr");
@@ -59,6 +60,8 @@ StageLoadedCallback(void* userData, AL::event::NodeEvents* node) {
 		}
 		return;
 	}
+
+	// Real work done by delegate->createUsdImagingDelegate
 	TF_DEBUG(HDMAYA_AL_CALLBACKS).Msg(
 			"HdMayaALProxyDelegate - called StageLoadedCallback (ProxyShape: "
 			"%s)\n", proxy->name().asChar());
@@ -67,8 +70,9 @@ StageLoadedCallback(void* userData, AL::event::NodeEvents* node) {
 
 void
 ProxyShapeDestroyedCallback(void* userData, AL::event::NodeEvents* node) {
+
+	// Bunch of conversions + sanity checks...
 	auto* delegate = static_cast<HdMayaALProxyDelegate*>(userData);
-	// TODO: add in TF_UNLIKELY for sanity checks
 	if (ARCH_UNLIKELY(!delegate)) {
 		TF_CODING_ERROR("ProxyShapeDestroyedCallback called with null "
 				"userData ptr");
@@ -87,6 +91,7 @@ ProxyShapeDestroyedCallback(void* userData, AL::event::NodeEvents* node) {
 		return;
 	}
 
+	// Real work done by delegate->removeProxy
 	TF_DEBUG(HDMAYA_AL_CALLBACKS).Msg(
 			"HdMayaALProxyDelegate - called ProxyShapeDestroyedCallback "
 			"(ProxyShape: %s)\n", proxy->name().asChar());
@@ -95,6 +100,8 @@ ProxyShapeDestroyedCallback(void* userData, AL::event::NodeEvents* node) {
 
 void
 ProxyShapeAddedCallback(MObject& node, void* clientData) {
+
+	// Bunch of conversions + sanity checks...
 	auto delegate = static_cast<HdMayaALProxyDelegate*>(clientData);
 	if (ARCH_UNLIKELY(!delegate)) {
 		TF_CODING_ERROR("ProxyShapeAddedCallback called with null "
@@ -127,11 +134,14 @@ ProxyShapeAddedCallback(MObject& node, void* clientData) {
 		return;
 	}
 
+	// Real work done by delegate->addProxy
 	delegate->addProxy(proxy);
 }
 
 void
 ProxyShapeRemovedCallback(MObject& node, void* clientData) {
+
+	// Bunch of conversions + sanity checks...
 	auto delegate = static_cast<HdMayaALProxyDelegate*>(clientData);
 	if (ARCH_UNLIKELY(!delegate)) {
 		TF_CODING_ERROR("ProxyShapeRemovedCallback called with null "
@@ -164,6 +174,7 @@ ProxyShapeRemovedCallback(MObject& node, void* clientData) {
 		return;
 	}
 
+	// Real work done by delegate->deleteUsdImagingDelegate
 	delegate->deleteUsdImagingDelegate(proxy);
 }
 
@@ -361,8 +372,6 @@ void
 HdMayaALProxyDelegate::_createUsdImagingDelegate(
 		ProxyShape* proxy,
 		HdMayaALProxyData& proxyData) {
-	// TODO: check what happens on deletion of old delegate - is renderIndex
-	// automatically cleaned up?
 	proxyData.delegate.reset(new UsdImagingDelegate(
 			_renderIndex,
 			_delegateID.AppendChild(TfToken(
