@@ -252,6 +252,8 @@ HdMayaALProxyDelegate::_populateSingleProxy(
 		HdMayaALProxyData& proxyData) {
 	if (!proxyData.delegate) return false;;
 
+	proxyData.delegate->SetRootTransform(GfMatrix4d(proxy->parentTransform().inclusiveMatrix().matrix));
+
 	if (!proxyData.populated) {
 		TF_DEBUG(HDMAYA_AL_POPULATE).Msg(
 				"HdMayaALProxyDelegate::Populating %s\n",
