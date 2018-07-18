@@ -324,7 +324,7 @@ private:
         }
 
         if (_surfaceShader != MObject::kNullObj) {
-            _surfaceShaderCallback = MNodeMessage::addNodeDirtyCallback(_surfaceShader, _DirtyShaderParams);
+            _surfaceShaderCallback = MNodeMessage::addNodeDirtyCallback(_surfaceShader, _DirtyShaderParams, this);
         }
     }
 
