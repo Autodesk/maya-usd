@@ -325,7 +325,19 @@ HdMayaSceneDelegate::GetDisplayStyle(const SdfPath& id) {
 
 SdfPath
 HdMayaSceneDelegate::GetMaterialId(const SdfPath& id) {
-    return _fallbackMaterial;
+    auto shapeAdapter = TfMapLookupPtr(_shapeAdapters, id);
+    if (shapeAdapter == nullptr) { _fallbackMaterial; }
+    auto material = shapeAdapter->get()->GetMaterial();
+    if (material == MObject::kNullObj) { return _fallbackMaterial; }
+    auto materialId = GetMaterialPath(material);
+    if (TfMapLookupPtr(_materialAdapters, materialId) != nullptr) { return materialId; }
+
+    auto materialCreator = HdMayaAdapterRegistry::GetMaterialAdapterCreator(material);
+    if (materialCreator == nullptr) { return _fallbackMaterial; }
+    auto materialAdapter = materialCreator(materialId, this, material);
+    if (materialAdapter == nullptr) { return _fallbackMaterial; }
+    _materialAdapters.insert({materialId, materialAdapter});
+    return materialId;
 }
 
 std::string

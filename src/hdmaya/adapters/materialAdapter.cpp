@@ -6,6 +6,8 @@
 
 #include <pxr/usdImaging/usdImagingGL/package.h>
 
+#include <hdmaya/adapters/adapterRegistry.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -75,8 +77,8 @@ const HdMaterialParamVector _defaultShaderParams = {
 
 }
 
-HdMayaMaterialAdapter::HdMayaMaterialAdapter(const MObject& node, HdMayaDelegateCtx* delegate)
-    : HdMayaAdapter(node, delegate->GetMaterialPath(node), delegate) {
+HdMayaMaterialAdapter::HdMayaMaterialAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MObject& node)
+    : HdMayaAdapter(node, id, delegate) {
 
 }
 
@@ -154,6 +156,19 @@ HdMayaMaterialAdapter::GetPreviewMaterialParamValue(const TfToken& paramName) {
         return _emptyValue;
     }
     return it->GetFallbackValue();
+}
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType::Define<HdMayaMaterialAdapter, TfType::Bases<HdMayaAdapter> >();
+}
+
+TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, shadingEngine) {
+    HdMayaAdapterRegistry::RegisterMaterialAdapter(
+        TfToken("shadingEngine"),
+        [](const SdfPath& id, HdMayaDelegateCtx* delegate, const MObject& obj) -> HdMayaMaterialAdapterPtr {
+            return HdMayaMaterialAdapterPtr(new HdMayaMaterialAdapter(id, delegate, obj));
+        });
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -24,6 +24,9 @@ public:
     HDMAYA_API
     virtual void MarkDirty(HdDirtyBits dirtyBits) override;
 
+    HDMAYA_API
+    virtual MObject GetMaterial();
+
     const GfRange3d& GetExtent() const {
         return _extent;
     }
@@ -36,7 +39,7 @@ private:
     GfRange3d _extent;
 };
 
-using HdMayaShapeAdapterPtr = std::shared_ptr<HdMayaDagAdapter>;
+using HdMayaShapeAdapterPtr = std::shared_ptr<HdMayaShapeAdapter>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

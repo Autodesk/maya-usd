@@ -58,6 +58,13 @@
                             "HdMayaShapeAdapter"
                         ],
                         "displayName": "Meshes in Hydra for Maya"
+                    },
+                    # Materials
+                    "HdMayaMaterialAdapter": {
+                        "bases": [
+                            "HdMayaAdapter"
+                        ],
+                        "displayName": "Base adapter for materials that translates everything to a Preview Surface"
                     }
                 }
             },

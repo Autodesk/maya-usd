@@ -37,7 +37,7 @@ public:
     static LightAdapterCreator GetLightAdapterCreator(const MDagPath& dag);
 
     using MaterialAdapterCreator = std::function<
-        HdMayaMaterialAdapterPtr(HdMayaDelegateCtx*, const MObject&)>;
+        HdMayaMaterialAdapterPtr(const SdfPath&, HdMayaDelegateCtx*, const MObject&)>;
     HDMAYA_API
     static void RegisterMaterialAdapter(const TfToken& type, MaterialAdapterCreator creator);
 
