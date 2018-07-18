@@ -35,9 +35,13 @@ public:
     virtual VtValue GetMaterialParamValue(const TfToken& paramName);
     HDMAYA_API
     virtual HdMaterialParamVector GetMaterialParams();
+    HDMAYA_API
+    virtual HdTextureResource::ID GetTextureResourceID(const TfToken& paramName);
+    HDMAYA_API
+    virtual HdTextureResourceSharedPtr GetTextureResource(const TfToken& paramName);
 
     HDMAYA_API
-    static const HdMaterialParamVector& GetPreviewParams();
+    static const HdMaterialParamVector& GetPreviewMaterialParams();
     HDMAYA_API
     static const std::string& GetPreviewSurfaceSource();
     HDMAYA_API

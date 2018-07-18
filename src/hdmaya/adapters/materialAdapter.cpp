@@ -20,25 +20,28 @@ namespace {
 
 const VtValue _emptyValue;
 const TfToken _emptyToken;
+TfTokenVector _stSamplerCoords = {TfToken("st")};
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (roughness)
-        (clearcoat)
-        (clearcoatRoughness)
-        (emissiveColor)
-        (specularColor)
-        (metallic)
-        (useSpecularWorkflow)
-        (occlusion)
-        (ior)
-        (normal)
-        (opacity)
-        (diffuseColor)
-        (displacement)
-        // Supported material tokens.
-        (UsdPreviewSurface)
-        (lambert)
+    (clearcoat)
+    (clearcoatRoughness)
+    (emissiveColor)
+    (specularColor)
+    (metallic)
+    (useSpecularWorkflow)
+    (occlusion)
+    (ior)
+    (normal)
+    (opacity)
+    (diffuseColor)
+    (displacement)
+    // Supported material tokens.
+    (UsdPreviewSurface)
+    (lambert)
+    // Other tokens
+    (fileTextureName)
 );
 
 struct _PreviewParam {
@@ -201,11 +204,21 @@ HdMayaMaterialAdapter::GetMaterialParamValue(const TfToken& paramName) {
 
 HdMaterialParamVector
 HdMayaMaterialAdapter::GetMaterialParams() {
-    return GetPreviewParams();
+    return GetPreviewMaterialParams();
+}
+
+HdTextureResource::ID
+HdMayaMaterialAdapter::GetTextureResourceID(const TfToken& paramName) {
+    return {};
+}
+
+HdTextureResourceSharedPtr
+HdMayaMaterialAdapter::GetTextureResource(const TfToken& paramName) {
+    return {};
 }
 
 const HdMaterialParamVector&
-HdMayaMaterialAdapter::GetPreviewParams() {
+HdMayaMaterialAdapter::GetPreviewMaterialParams() {
     return _previewShaderParamVector;
 }
 
@@ -243,7 +256,8 @@ public:
         }
     }
 
-    void CreateCallbacks() override {
+    void
+    CreateCallbacks() override {
         MStatus status;
         auto obj = GetNode();
         auto id = MNodeMessage::addNodeDirtyCallback(obj, _DirtyMaterialParams, this, &status);
@@ -252,18 +266,21 @@ public:
         HdMayaAdapter::CreateCallbacks();
     }
 private:
-    static void _DirtyMaterialParams(MObject& /*node*/, void* clientData) {
+    static void
+    _DirtyMaterialParams(MObject& /*node*/, void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaShadingEngineAdapter*>(clientData);
         adapter->_CreateSurfaceMaterialCallback();
         adapter->MarkDirty(HdMaterial::DirtyParams | HdMaterial::DirtySurfaceShader);
     }
 
-    static void _DirtyShaderParams(MObject& /*node*/, void* clientData) {
+    static void
+    _DirtyShaderParams(MObject& /*node*/, void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaShadingEngineAdapter*>(clientData);
         adapter->MarkDirty(HdMaterial::DirtyParams | HdMaterial::DirtySurfaceShader);
     }
 
-    void _CacheNodeAndTypes() {
+    void
+    _CacheNodeAndTypes() {
         _surfaceShader = MObject::kNullObj;
         _surfaceShaderType = _emptyToken;
         MStatus status;
@@ -281,7 +298,40 @@ private:
         }
     }
 
-    VtValue GetMaterialParamValue(const TfToken& paramName) override {
+    HdMaterialParamVector GetMaterialParams() override {
+        if (_surfaceShaderType != _tokens->UsdPreviewSurface) {
+            return GetPreviewMaterialParams();
+        }
+
+        MStatus status;
+        MFnDependencyNode node(_surfaceShader, &status);
+        if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParams(); }
+        HdMaterialParamVector ret;
+        ret.reserve(_previewShaderParamVector.size());
+        for (const auto& it: _previewShaderParamVector) {
+            auto p = node.findPlug(it.GetName().GetText());
+            MPlugArray conns;
+            p.connectedTo(conns, true, false);
+            if (conns.length() > 0) {
+                MFnDependencyNode connectedNode(conns[0].node(), &status);
+                if (status && connectedNode.typeName() == MString("file")) {
+                    ret.emplace_back(
+                        HdMaterialParam::ParamTypeTexture,
+                        it.GetName(),
+                        it.GetFallbackValue(),
+                        GetID().AppendProperty(it.GetName()),
+                        _stSamplerCoords);
+                    continue;
+                }
+            }
+            ret.emplace_back(it);
+        }
+
+        return ret;
+    }
+
+    VtValue
+    GetMaterialParamValue(const TfToken& paramName) override {
         if (ARCH_UNLIKELY(_surfaceShaderType.IsEmpty())) {
             return GetPreviewMaterialParamValue(paramName);
         }
@@ -335,6 +385,19 @@ private:
         if (_surfaceShader != MObject::kNullObj) {
             _surfaceShaderCallback = MNodeMessage::addNodeDirtyCallback(_surfaceShader, _DirtyShaderParams, this);
         }
+    }
+
+    HdTextureResource::ID
+    GetTextureResourceID(const TfToken& paramName) override {
+        MStatus status;
+        MFnDependencyNode node(_surfaceShader, &status);
+        
+        return {};
+    }
+
+    HdTextureResourceSharedPtr
+    GetTextureResource(const TfToken& paramName) override {
+        return {};
     }
 
     MObject _surfaceShader;

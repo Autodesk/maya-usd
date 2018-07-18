@@ -378,7 +378,7 @@ HdMayaSceneDelegate::GetMaterialParamValue(const SdfPath& id, const TfToken& par
 HdMaterialParamVector
 HdMayaSceneDelegate::GetMaterialParams(const SdfPath& id) {
     if (id == _fallbackMaterial) {
-        return HdMayaMaterialAdapter::GetPreviewParams();
+        return HdMayaMaterialAdapter::GetPreviewMaterialParams();
     }
     return _GetValue<HdMayaMaterialAdapter, HdMaterialParamVector>(
         id,
@@ -396,6 +396,24 @@ TfTokenVector
 HdMayaSceneDelegate::GetMaterialPrimvars(const SdfPath& id) {
     std::cerr << "[HdMayaSceneDelegate] Getting material primvars of " << id << std::endl;
     return {};
+}
+
+HdTextureResource::ID
+HdMayaSceneDelegate::GetTextureResourceID(const SdfPath& textureId) {
+    return _GetValue<HdMayaMaterialAdapter, HdTextureResource::ID>(
+        textureId.GetPrimPath(),
+        [&textureId](HdMayaMaterialAdapter* a) -> HdTextureResource::ID {
+            return a->GetTextureResourceID(textureId.GetNameToken()); },
+        _materialAdapters);
+}
+
+HdTextureResourceSharedPtr
+HdMayaSceneDelegate::GetTextureResource(const SdfPath& textureId) {
+    return _GetValue<HdMayaMaterialAdapter, HdTextureResourceSharedPtr>(
+        textureId.GetPrimPath(),
+        [&textureId](HdMayaMaterialAdapter* a) -> HdTextureResourceSharedPtr {
+            return a->GetTextureResource(textureId.GetNameToken()); },
+        _materialAdapters);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

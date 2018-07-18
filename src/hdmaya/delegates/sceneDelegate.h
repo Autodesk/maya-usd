@@ -71,6 +71,8 @@ protected:
     HdMaterialParamVector GetMaterialParams(const SdfPath& id) override;
     VtValue GetMaterialResource(const SdfPath& id) override;
     TfTokenVector GetMaterialPrimvars(const SdfPath& id) override;
+    HdTextureResource::ID GetTextureResourceID(const SdfPath& textureId) override;
+    HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureId) override;
 
 private:
     std::unordered_map<SdfPath, HdMayaShapeAdapterPtr, SdfPath::Hash> _shapeAdapters;
