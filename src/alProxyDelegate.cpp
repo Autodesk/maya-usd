@@ -222,8 +222,13 @@ HdMayaALProxyDelegate::HdMayaALProxyDelegate(HdRenderIndex* renderIndex,
 }
 
 HdMayaALProxyDelegate::~HdMayaALProxyDelegate() {
+	TF_DEBUG(HDMAYA_AL_CALLBACKS).Msg(
+			"~HdMayaALProxyDelegate - removing all callbacks\n");
 	if (_nodeAddedCBId) {
 		MMessage::removeCallback(_nodeAddedCBId);
+	}
+	if (_nodeRemovedCBId){
+		MMessage::removeCallback(_nodeRemovedCBId);
 	}
 
 	// If the delegate is destroyed before the proxy shapes, clean up their
