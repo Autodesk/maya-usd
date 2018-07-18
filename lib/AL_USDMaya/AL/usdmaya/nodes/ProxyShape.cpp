@@ -668,6 +668,7 @@ ProxyShape::ProxyShape()
 ProxyShape::~ProxyShape()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::~ProxyShape\n");
+  triggerEvent("PreDestroyProxyShape");
   MNodeMessage::removeCallback(m_attributeChanged);
   MEventMessage::removeCallback(m_onSelectionChanged);
   removeAttributeChangedCallback();
@@ -680,6 +681,7 @@ ProxyShape::~ProxyShape()
     m_engine->InvalidateBuffers();
     delete m_engine;
   }
+  triggerEvent("PostDestroyProxyShape");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -2114,6 +2116,8 @@ void ProxyShape::cleanupTransformRefs()
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::registerEvents()
 {
+  registerEvent("PreDestroyProxyShape", AL::event::kUSDMayaEventType);
+  registerEvent("PostDestroyProxyShape", AL::event::kUSDMayaEventType);
   registerEvent("PreStageLoaded", AL::event::kUSDMayaEventType);
   registerEvent("PostStageLoaded", AL::event::kUSDMayaEventType);
   registerEvent("ConstructGLEngine", AL::event::kUSDMayaEventType);
