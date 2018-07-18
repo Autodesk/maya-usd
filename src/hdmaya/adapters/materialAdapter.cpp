@@ -115,7 +115,7 @@ const _PreviewParams _previewShaderParams = [] () -> _PreviewParams {
 } ();
 
 // This is required quite often, so we precalc.
-const HdMaterialParamVector _defaultShaderParams = [] () -> HdMaterialParamVector {
+const HdMaterialParamVector _previewShaderParamVector = [] () -> HdMaterialParamVector {
     HdMaterialParamVector ret;
     for (const auto& it: _previewShaderParams) {
         ret.emplace_back(it._param);
@@ -205,7 +205,7 @@ HdMayaMaterialAdapter::GetMaterialParams() {
 
 const HdMaterialParamVector&
 HdMayaMaterialAdapter::GetPreviewParams() {
-    return _defaultShaderParams;
+    return _previewShaderParamVector;
 }
 
 const std::string&
@@ -263,8 +263,8 @@ private:
     }
 
     void _CacheNodeAndTypes() {
-        _surfaceMaterial = MObject::kNullObj;
-        _surfaceMaterialType = _emptyToken;
+        _surfaceShader = MObject::kNullObj;
+        _surfaceShaderType = _emptyToken;
         MStatus status;
         MFnDependencyNode node(GetNode(), &status);
         if (ARCH_UNLIKELY(!status)) { return; }
@@ -273,15 +273,15 @@ private:
         MPlugArray conns;
         p.connectedTo(conns, true, false);
         if (conns.length() > 0) {
-            _surfaceMaterial = conns[0].node();
-            MFnDependencyNode surfaceNode(_surfaceMaterial, &status);
+            _surfaceShader = conns[0].node();
+            MFnDependencyNode surfaceNode(_surfaceShader, &status);
             if (ARCH_UNLIKELY(!status)) { return; }
-            _surfaceMaterialType = TfToken(surfaceNode.typeName().asChar());
+            _surfaceShaderType = TfToken(surfaceNode.typeName().asChar());
         }
     }
 
     VtValue GetMaterialParamValue(const TfToken& paramName) override {
-        if (ARCH_UNLIKELY(_surfaceMaterialType.IsEmpty())) {
+        if (ARCH_UNLIKELY(_surfaceShaderType.IsEmpty())) {
             return GetPreviewMaterialParamValue(paramName);
         }
 
@@ -299,9 +299,9 @@ private:
             return {};
         };
 
-        if (_surfaceMaterialType == _tokens->UsdPreviewSurface) {
+        if (_surfaceShaderType == _tokens->UsdPreviewSurface) {
             MStatus status;
-            MFnDependencyNode node(_surfaceMaterial, &status);
+            MFnDependencyNode node(_surfaceShader, &status);
             if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParamValue(paramName); }
             auto p = node.findPlug(paramName.GetText());
             if (ARCH_UNLIKELY(p.isNull())) { return GetPreviewMaterialParamValue(paramName); }
@@ -323,13 +323,13 @@ private:
             _surfaceShaderCallback = 0;
         }
 
-        if (_surfaceMaterial != MObject::kNullObj) {
-            _surfaceShaderCallback = MNodeMessage::addNodeDirtyCallback(_surfaceMaterial, _DirtyShaderParams);
+        if (_surfaceShader != MObject::kNullObj) {
+            _surfaceShaderCallback = MNodeMessage::addNodeDirtyCallback(_surfaceShader, _DirtyShaderParams);
         }
     }
 
-    MObject _surfaceMaterial;
-    TfToken _surfaceMaterialType;
+    MObject _surfaceShader;
+    TfToken _surfaceShaderType;
     MCallbackId _surfaceShaderCallback;
 };
 
