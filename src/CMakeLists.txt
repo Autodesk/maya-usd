@@ -42,7 +42,7 @@ set(HDVIEW_SRC
 
 add_library(hdmaya SHARED ${HDMAYA_SRC})
 target_link_libraries(hdmaya PUBLIC ${OPENGL_gl_LIBRARY} ${MAYA_LIBS} ${Boost_LIBRARIES} ${GLEW_LIBRARY})
-target_link_libraries(hdmaya PUBLIC usd usdGeom glf gf hd hdSt hdx usdImaging usdImagingGL usdMaya)
+target_link_libraries(hdmaya PUBLIC usd usdGeom glf gf hd hdSt hdx usdImaging usdImagingGL sdf usdMaya)
 target_include_directories(hdmaya PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(hdmaya SYSTEM PUBLIC ${MAYA_INCLUDE_DIRS} ${GLEW_INCLUDE_DIR})
 target_include_directories(hdmaya SYSTEM PUBLIC ${USD_INCLUDE_DIR} ${USD_MAYA_INCLUDE_DIR})

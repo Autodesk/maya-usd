@@ -5,66 +5,72 @@
                 "Types": {
                     # Delegates
                     "HdMayaDelegate": {
-                        "displayName": "Base type for all scene delegates in Hydra for Maya"
+                        "displayName": "Base type for all scene delegates in Hydra for Maya."
                     },
                     "HdMayaSceneDelegate": {
                         "bases": [
                             "HdMayaDelegate"
                         ],
-                        "displayName": "Maya Shapes in Hydra for Maya"
+                        "displayName": "Maya Shapes in Hydra for Maya."
                     },
                     # Adapters
                     "HdMayaAdapter": {
-                        "displayName": "Base type for all node adapters in Hydra for Maya"
+                        "displayName": "Base type for all node adapters in Hydra for Maya."
                     },
                     "HdMayaDagAdapter": {
                         "bases": [
                             "HdMayaAdapter"
                         ],
-                        "displayName": "Dag nodes in Hydra for Maya"
+                        "displayName": "Dag nodes in Hydra for Maya."
                     },
                     "HdMayaLightAdapter": {
                         "bases": [
                             "HdMayaDagAdapter"
                         ],
-                        "displayName": "Lights in Hydra for Maya"
+                        "displayName": "Lights in Hydra for Maya."
                     },
                     "HdMayaAreaLightAdapter": {
                         "bases": [
                             "HdMayaLightAdapter"
                         ],
-                        "displayName": "Area lights in Hydra for Maya"
+                        "displayName": "Area lights in Hydra for Maya."
                     },
                     "HdMayaPointLightAdapter": {
                         "bases": [
                             "HdMayaLightAdapter"
                         ],
-                        "displayName": "Point lights in Hydra for Maya"
+                        "displayName": "Point lights in Hydra for Maya."
                     },
                     "HdMayaSpotLightAdapter": {
                         "bases": [
                             "HdMayaLightAdapter"
                         ],
-                        "displayName": "Spot lights in Hydra for Maya"
+                        "displayName": "Spot lights in Hydra for Maya."
                     },
                     "HdMayaShapeAdapter": {
                         "bases": [
                             "HdMayaDagAdapter"
                         ],
-                        "displayName": "Shapes in Hydra for Maya"
+                        "displayName": "Shapes in Hydra for Maya."
                     },
                     "HdMayaMeshAdapter": {
                         "bases": [
                             "HdMayaShapeAdapter"
                         ],
-                        "displayName": "Meshes in Hydra for Maya"
+                        "displayName": "Meshes in Hydra for Maya."
                     },
                     # Materials
                     "HdMayaMaterialAdapter": {
                         "bases": [
                             "HdMayaAdapter"
                         ],
-                        "displayName": "Base adapter for materials that translates everything to a Preview Surface"
+                        "displayName": "Base adapter for materials."
+                    },
+                    "HdMayaShadingEngineAdapter": {
+                        "bases": [
+                            "HdMayaMaterialAdapter"
+                        ],
+                        "displayName": "Adapter for the shading engine that translates everything to a Preview Surface."
                     }
                 }
             },

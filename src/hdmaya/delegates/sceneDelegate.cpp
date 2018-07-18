@@ -336,6 +336,8 @@ HdMayaSceneDelegate::GetMaterialId(const SdfPath& id) {
     if (materialCreator == nullptr) { return _fallbackMaterial; }
     auto materialAdapter = materialCreator(materialId, this, material);
     if (materialAdapter == nullptr) { return _fallbackMaterial; }
+    materialAdapter->Populate();
+    materialAdapter->CreateCallbacks();
     _materialAdapters.insert({materialId, materialAdapter});
     return materialId;
 }
