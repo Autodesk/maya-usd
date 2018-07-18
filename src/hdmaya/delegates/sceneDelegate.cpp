@@ -326,7 +326,7 @@ HdMayaSceneDelegate::GetDisplayStyle(const SdfPath& id) {
 SdfPath
 HdMayaSceneDelegate::GetMaterialId(const SdfPath& id) {
     auto shapeAdapter = TfMapLookupPtr(_shapeAdapters, id);
-    if (shapeAdapter == nullptr) { _fallbackMaterial; }
+    if (shapeAdapter == nullptr) { return _fallbackMaterial; }
     auto material = shapeAdapter->get()->GetMaterial();
     if (material == MObject::kNullObj) { return _fallbackMaterial; }
     auto materialId = GetMaterialPath(material);
