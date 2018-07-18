@@ -41,7 +41,7 @@ HdMayaUsdPreviewSurface::Initialize() {
 
     // Just some approximate defaults.
     auto roughness = nAttr.create("roughness", "roughness", MFnNumericData::kFloat);
-    nAttr.setDefault(0.0f);
+    nAttr.setDefault(1.0f);
     nAttr.setMin(0.0f);
     nAttr.setMax(1.0f);
     addAttribute(roughness);

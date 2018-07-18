@@ -38,6 +38,7 @@ TF_DEFINE_PRIVATE_TOKENS(
         (displacement)
         // Supported material tokens.
         (UsdPreviewSurface)
+        (lambert)
 );
 
 struct _PreviewParam {
@@ -56,7 +57,7 @@ const _PreviewParams _previewShaderParams = [] () -> _PreviewParams {
     _PreviewParams ret = {
         {
             _tokens->roughness,
-            VtValue(0.0f),
+            VtValue(1.0f),
             SdfValueTypeNames->Float
         }, {
             _tokens->clearcoat,
@@ -285,7 +286,7 @@ private:
             return GetPreviewMaterialParamValue(paramName);
         }
 
-        auto convertPlugToValue = [] (MPlug& plug, const SdfValueTypeName& type) -> VtValue {
+        auto convertPlugToValue = [] (const MPlug& plug, const SdfValueTypeName& type) -> VtValue {
             if (type == SdfValueTypeNames->Vector3f) {
                 return VtValue(GfVec3f(
                     plug.child(0).asFloat(),
@@ -310,8 +311,16 @@ private:
             auto ret = convertPlugToValue(p, it->_type);
             if (ARCH_UNLIKELY(ret.IsEmpty())) { return GetPreviewMaterialParamValue(paramName); }
             return ret;
+        } else if (_surfaceShaderType == _tokens->lambert) {
+            MStatus status;
+            MFnDependencyNode node(_surfaceShader, &status);
+            if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParamValue(paramName); }
+            if (paramName == _tokens->diffuseColor) {
+                return convertPlugToValue(node.findPlug("color"), SdfValueTypeNames->Vector3f);
+            } else if (paramName == _tokens->emissiveColor) {
+                return convertPlugToValue(node.findPlug("incandescence"), SdfValueTypeNames->Vector3f);
+            }
         }
-
 
         return GetPreviewMaterialParamValue(paramName);
     }

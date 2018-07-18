@@ -48,7 +48,13 @@ public:
         auto obj = GetNode();
         auto id = MNodeMessage::addNodeDirtyCallback(
             obj,
-            DeformCallback,
+            NodeDirtiedCallback,
+            this,
+            &status);
+        if (status) { AddCallback(id); }
+        id = MNodeMessage::addAttributeChangedCallback(
+            obj,
+            AttributeChangedCallback,
             this,
             &status);
         if (status) { AddCallback(id); }
@@ -117,7 +123,7 @@ public:
 
 private:
     static void
-    DeformCallback(MObject& node, MPlug& plug, void* clientData) {
+    NodeDirtiedCallback(MObject& node, MPlug& plug, void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
         const auto plugName = plug.partialName();
         for (const auto& it: _dirtyBits) {
@@ -131,8 +137,18 @@ private:
         }
 
         TF_DEBUG(HDMAYA_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY).Msg(
-                "%s (%s) plug dirtying was not handled by HdMayaMeshAdapter::DeformCallback.\n",
+                "%s (%s) plug dirtying was not handled by HdMayaMeshAdapter::NodeDirtiedCallback.\n",
                 plug.name().asChar(), plugName.asChar());
+    }
+
+    // For material assignments for now.
+    static void
+    AttributeChangedCallback(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPlug, void* clientData) {
+        auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
+        const auto plugName = plug.partialName();
+        if (plugName == MString("iog")) {
+            adapter->MarkDirty(HdChangeTracker::DirtyMaterialId);
+        }
     }
 };
 
