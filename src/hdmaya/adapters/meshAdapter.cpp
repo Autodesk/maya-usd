@@ -8,6 +8,7 @@
 #include <pxr/imaging/pxOsd/tokens.h>
 
 #include <maya/MIntArray.h>
+#include <maya/MFloatArray.h>
 #include <maya/MFnMesh.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
@@ -19,6 +20,11 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (st)
+);
 
 std::vector<std::pair<MString, HdDirtyBits>> _dirtyBits = {
     {MString("pt"),
@@ -72,19 +78,36 @@ public:
             // Same memory layout for MFloatVector and GfVec3f!
             MStatus status;
             const auto* rawPoints = reinterpret_cast<const GfVec3f*>(mesh.getRawPoints(&status));
-            if (!status) { return VtValue(); }
+            if (!status) { return {}; }
             VtVec3fArray ret; ret.assign(rawPoints, rawPoints + mesh.numVertices());
             return VtValue(ret);
+        } if (key == _tokens->st) {
+            MFnMesh mesh(GetDagPath());
+            // We need to flatten out the uvs.
+            MStatus status;
+            VtArray<GfVec2f> uvs;
+            const auto numPolygons = mesh.numPolygons();
+            uvs.reserve(static_cast<size_t>(mesh.numFaceVertices()));
+            for (auto p = decltype(numPolygons){0}; p < numPolygons; ++p) {
+                const auto numVertices = mesh.polygonVertexCount(p);
+                for (auto v = decltype(numVertices){0}; v < numVertices; ++v) {
+                    GfVec2f uv(0.0f, 0.0f);
+                    mesh.getPolygonUV(p, v, uv[0], uv[1]);
+                    uvs.push_back(uv);
+                }
+            }
+
+            return VtValue(uvs);
         }
-        return VtValue();
+        return {};
     }
 
     HdMeshTopology
     GetMeshTopology() override {
         MFnMesh mesh(GetDagPath());
         const auto numPolygons = mesh.numPolygons();
-        VtIntArray faceVertexCounts; faceVertexCounts.reserve(numPolygons);
-        VtIntArray faceVertexIndices; faceVertexIndices.reserve(mesh.numFaceVertices());
+        VtIntArray faceVertexCounts; faceVertexCounts.reserve(static_cast<size_t>(numPolygons));
+        VtIntArray faceVertexIndices; faceVertexIndices.reserve(static_cast<size_t>(mesh.numFaceVertices()));
         MIntArray mayaFaceVertexIndices;
         for (auto i = decltype(numPolygons){0}; i < numPolygons; ++i) {
             mesh.getPolygonVertices(i, mayaFaceVertexIndices);
@@ -112,6 +135,16 @@ public:
             desc.interpolation = interpolation;
             desc.role = HdPrimvarRoleTokens->point;
             return {desc};
+        } else if (interpolation == HdInterpolationFaceVarying) {
+            // UVs are face varying in maya.
+            MFnMesh mesh(GetDagPath());
+            if (mesh.numUVs() > 0) {
+                HdPrimvarDescriptor desc;
+                desc.name = _tokens->st;
+                desc.interpolation = interpolation;
+                desc.role = HdPrimvarRoleTokens->textureCoordinate;
+                return {desc};
+            }
         }
         return {};
     }
