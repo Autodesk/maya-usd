@@ -49,6 +49,7 @@ target_include_directories(hdmaya SYSTEM PUBLIC ${USD_INCLUDE_DIR} ${USD_MAYA_IN
 target_include_directories(hdmaya SYSTEM PUBLIC ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
 target_compile_features(hdmaya PUBLIC cxx_std_11)
 target_compile_definitions(hdmaya PRIVATE "HDMAYA_EXPORT=1")
+target_compile_options(hdmaya PUBLIC -Wall -Werror)
 set_target_properties(hdmaya PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
 
 add_library(hdview SHARED ${HDVIEW_SRC})

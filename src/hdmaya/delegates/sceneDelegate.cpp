@@ -133,7 +133,6 @@ void
 HdMayaSceneDelegate::Populate() {
     HdMayaAdapterRegistry::LoadAllPlugin();
     auto& renderIndex = GetRenderIndex();
-    auto& changeTracker = renderIndex.GetChangeTracker();
     for (MItDag dagIt(MItDag::kDepthFirst, MFn::kInvalid); !dagIt.isDone(); dagIt.next()) {
         MDagPath path;
         dagIt.getPath(path);

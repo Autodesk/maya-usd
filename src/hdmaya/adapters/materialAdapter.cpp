@@ -51,6 +51,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (lambert)
     // Other tokens
     (fileTextureName)
+    (color)
+    (incandescence)
 );
 
 struct _PreviewParam {
@@ -309,29 +311,56 @@ private:
 
     HdMaterialParamVector
     GetMaterialParams() override {
-        if (_surfaceShaderType != _tokens->UsdPreviewSurface) {
-            return GetPreviewMaterialParams();
-        }
-
         MStatus status;
         MFnDependencyNode node(_surfaceShader, &status);
         if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParams(); }
-        HdMaterialParamVector ret;
-        ret.reserve(_previewShaderParamVector.size());
-        for (const auto& it: _previewShaderParamVector) {
-            if (_RegisterTexture(node, it.GetName())) {
-                ret.emplace_back(
-                    HdMaterialParam::ParamTypeTexture,
-                    it.GetName(),
-                    it.GetFallbackValue(),
-                    GetID().AppendProperty(it.GetName()),
-                    _stSamplerCoords);
-            } else {
+        if (_surfaceShaderType == _tokens->UsdPreviewSurface) {
+            HdMaterialParamVector ret;
+            ret.reserve(_previewShaderParamVector.size());
+            for (const auto& it: _previewShaderParamVector) {
+                if (_RegisterTexture(node, it.GetName())) {
+                    ret.emplace_back(
+                        HdMaterialParam::ParamTypeTexture,
+                        it.GetName(),
+                        it.GetFallbackValue(),
+                        GetID().AppendProperty(it.GetName()),
+                        _stSamplerCoords);
+                } else {
+                    ret.emplace_back(it);
+                }
+            }
+            return ret;
+        } else if (_surfaceShaderType == _tokens->lambert) {
+            HdMaterialParamVector ret;
+            ret.reserve(_previewShaderParamVector.size());
+            for (const auto& it: _previewShaderParamVector) {
+                if (it.GetName() == _tokens->diffuseColor) {
+                    if (_RegisterTexture(node, _tokens->color)) {
+                        ret.emplace_back(
+                            HdMaterialParam::ParamTypeTexture,
+                            _tokens->diffuseColor,
+                            it.GetFallbackValue(),
+                            GetID().AppendProperty(_tokens->color),
+                            _stSamplerCoords);
+                        continue;
+                    }
+                } else if (it.GetName() == _tokens->emissiveColor) {
+                    if (_RegisterTexture(node, _tokens->incandescence)) {
+                        ret.emplace_back(
+                            HdMaterialParam::ParamTypeTexture,
+                            _tokens->emissiveColor,
+                            it.GetFallbackValue(),
+                            GetID().AppendProperty(_tokens->incandescence),
+                            _stSamplerCoords);
+                        continue;
+                    }
+                }
                 ret.emplace_back(it);
             }
+            return ret;
+        } else {
+            return GetPreviewMaterialParams();;
         }
-
-        return ret;
     }
 
     inline bool
@@ -395,9 +424,9 @@ private:
             MFnDependencyNode node(_surfaceShader, &status);
             if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParamValue(paramName); }
             if (paramName == _tokens->diffuseColor) {
-                return convertPlugToValue(node.findPlug("color"), SdfValueTypeNames->Vector3f);
+                return convertPlugToValue(node.findPlug(_tokens->color.GetText()), SdfValueTypeNames->Vector3f);
             } else if (paramName == _tokens->emissiveColor) {
-                return convertPlugToValue(node.findPlug("incandescence"), SdfValueTypeNames->Vector3f);
+                return convertPlugToValue(node.findPlug(_tokens->incandescence.GetText()), SdfValueTypeNames->Vector3f);
             }
         }
 
@@ -442,7 +471,6 @@ private:
         auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
         if (fileObj == MObject::kNullObj) { return {}; }
         return _GetTextureResource(_GetTextureFilePath(MFnDependencyNode(fileObj)));
-
     }
 
     inline HdTextureResourceSharedPtr
