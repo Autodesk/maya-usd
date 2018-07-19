@@ -38,15 +38,15 @@ public:
     void Populate() override;
     void PreFrame() override;
 
-    HdMayaALProxyData& addProxy(ProxyShape* proxy);
-    void removeProxy(ProxyShape* proxy);
-    void createUsdImagingDelegate(ProxyShape* proxy);
-    void deleteUsdImagingDelegate(ProxyShape* proxy);
+    HdMayaALProxyData& AddProxy(ProxyShape* proxy);
+    void RemoveProxy(ProxyShape* proxy);
+    void CreateUsdImagingDelegate(ProxyShape* proxy);
+    void DeleteUsdImagingDelegate(ProxyShape* proxy);
 
 private:
-    bool _populateSingleProxy(ProxyShape* proxy,
+    bool PopulateSingleProxy(ProxyShape* proxy,
     		HdMayaALProxyData& proxyData);
-    void _createUsdImagingDelegate(ProxyShape* proxy,
+    void CreateUsdImagingDelegate(ProxyShape* proxy,
     		HdMayaALProxyData& proxyData);
 
     std::unordered_map<ProxyShape*, HdMayaALProxyData> _proxiesData;

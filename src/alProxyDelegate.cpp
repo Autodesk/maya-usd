@@ -65,7 +65,7 @@ StageLoadedCallback(void* userData, AL::event::NodeEvents* node) {
 	TF_DEBUG(HDMAYA_AL_CALLBACKS).Msg(
 			"HdMayaALProxyDelegate - called StageLoadedCallback (ProxyShape: "
 			"%s)\n", proxy->name().asChar());
-	delegate->createUsdImagingDelegate(proxy);
+	delegate->CreateUsdImagingDelegate(proxy);
 }
 
 void
@@ -95,7 +95,7 @@ ProxyShapeDestroyedCallback(void* userData, AL::event::NodeEvents* node) {
 	TF_DEBUG(HDMAYA_AL_CALLBACKS).Msg(
 			"HdMayaALProxyDelegate - called ProxyShapeDestroyedCallback "
 			"(ProxyShape: %s)\n", proxy->name().asChar());
-	delegate->removeProxy(proxy);
+	delegate->RemoveProxy(proxy);
 }
 
 void
@@ -135,7 +135,7 @@ ProxyShapeAddedCallback(MObject& node, void* clientData) {
 	}
 
 	// Real work done by delegate->addProxy
-	delegate->addProxy(proxy);
+	delegate->AddProxy(proxy);
 }
 
 void
@@ -175,7 +175,7 @@ ProxyShapeRemovedCallback(MObject& node, void* clientData) {
 	}
 
 	// Real work done by delegate->deleteUsdImagingDelegate
-	delegate->deleteUsdImagingDelegate(proxy);
+	delegate->DeleteUsdImagingDelegate(proxy);
 }
 
 } // private namespace
@@ -201,11 +201,11 @@ HdMayaALProxyDelegate::HdMayaALProxyDelegate(HdRenderIndex* renderIndex,
 			continue;
 		}
 
-		auto& proxyData = addProxy(proxyShape);
+		auto& proxyData = AddProxy(proxyShape);
 		auto stage = proxyShape->getUsdStage();
 		if(stage)
 		{
-			_createUsdImagingDelegate(proxyShape, proxyData);
+			CreateUsdImagingDelegate(proxyShape, proxyData);
 		}
 	}
 
@@ -258,12 +258,12 @@ HdMayaALProxyDelegate::Populate() {
 	TF_DEBUG(HDMAYA_AL_POPULATE).Msg(
 			"HdMayaALProxyDelegate::Populate\n");
 	for (auto& proxyAndData : _proxiesData) {
-		_populateSingleProxy(proxyAndData.first, proxyAndData.second);
+		PopulateSingleProxy(proxyAndData.first, proxyAndData.second);
     }
 }
 
 bool
-HdMayaALProxyDelegate::_populateSingleProxy(
+HdMayaALProxyDelegate::PopulateSingleProxy(
 		ProxyShape* proxy,
 		HdMayaALProxyData& proxyData) {
 	if (!proxyData.delegate) return false;;
@@ -293,14 +293,14 @@ HdMayaALProxyDelegate::PreFrame() {
 	for (auto& proxyAndData : _proxiesData) {
 		auto& proxy = proxyAndData.first;
 		auto& proxyData = proxyAndData.second;
-		if (_populateSingleProxy(proxy, proxyData)) {
+		if (PopulateSingleProxy(proxy, proxyData)) {
 			proxyData.delegate->ApplyPendingUpdates();
 		}
 	}
 }
 
 HdMayaALProxyData&
-HdMayaALProxyDelegate::addProxy(ProxyShape* proxy) {
+HdMayaALProxyDelegate::AddProxy(ProxyShape* proxy) {
 	// Our ProxyShapeAdded callback is trigged every time the node is added
 	// to the DG, NOT when the C++ ProxyShape object is created; due to the
 	// undo queue, it's possible for the same ProxyShape to be added (and
@@ -346,30 +346,30 @@ HdMayaALProxyDelegate::addProxy(ProxyShape* proxy) {
 						this // userData
 						));
 	}
-	_createUsdImagingDelegate(proxy, proxyData);
+	CreateUsdImagingDelegate(proxy, proxyData);
 	return proxyData;
 }
 
 void
-HdMayaALProxyDelegate::removeProxy(ProxyShape* proxy) {
+HdMayaALProxyDelegate::RemoveProxy(ProxyShape* proxy) {
 	// Note that we don't bother unregistering the proxyShapeCallbacks,
 	// as this is called when the ProxyShape is about to be destroyed anyway
 	_proxiesData.erase(proxy);
 }
 
 void
-HdMayaALProxyDelegate::createUsdImagingDelegate(ProxyShape* proxy) {
+HdMayaALProxyDelegate::CreateUsdImagingDelegate(ProxyShape* proxy) {
 	auto proxyDataIter = _proxiesData.find(proxy);
 	if (ARCH_UNLIKELY(proxyDataIter == _proxiesData.end())) {
 		TF_CODING_ERROR("Proxy not found in delegate: %s",
 				proxy->name().asChar());
 		return;
 	}
-	_createUsdImagingDelegate(proxy, proxyDataIter->second);
+	CreateUsdImagingDelegate(proxy, proxyDataIter->second);
 }
 
 void
-HdMayaALProxyDelegate::_createUsdImagingDelegate(
+HdMayaALProxyDelegate::CreateUsdImagingDelegate(
 		ProxyShape* proxy,
 		HdMayaALProxyData& proxyData) {
 	proxyData.delegate.reset(new UsdImagingDelegate(
@@ -381,7 +381,7 @@ HdMayaALProxyDelegate::_createUsdImagingDelegate(
 }
 
 void
-HdMayaALProxyDelegate::deleteUsdImagingDelegate(ProxyShape* proxy) {
+HdMayaALProxyDelegate::DeleteUsdImagingDelegate(ProxyShape* proxy) {
 	auto proxyDataIter = _proxiesData.find(proxy);
 	if (ARCH_UNLIKELY(proxyDataIter == _proxiesData.end())) {
 		TF_CODING_ERROR("Proxy not found in delegate: %s",
