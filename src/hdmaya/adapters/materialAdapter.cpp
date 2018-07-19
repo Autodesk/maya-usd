@@ -1,10 +1,17 @@
 #include <hdmaya/adapters/materialAdapter.h>
 
+#include <pxr/base/tf/fileUtils.h>
+
 #include <pxr/imaging/hd/material.h>
+#include <pxr/imaging/hd/resourceRegistry.h>
+#include <pxr/imaging/hd/instanceRegistry.h>
 
 #include <pxr/imaging/glf/glslfx.h>
+#include <pxr/imaging/glf/textureRegistry.h>
 
 #include <pxr/usdImaging/usdImagingGL/package.h>
+
+#include <pxr/imaging/hdSt/textureResource.h>
 
 #include <pxr/usd/sdf/types.h>
 
@@ -20,7 +27,9 @@ namespace {
 
 const VtValue _emptyValue;
 const TfToken _emptyToken;
-TfTokenVector _stSamplerCoords = {TfToken("st")};
+const TfTokenVector _stSamplerCoords = {TfToken("st")};
+// const TfTokenVector _stSamplerCoords;
+const MString _fileTextureName("fileTextureName");
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -309,12 +318,19 @@ private:
         HdMaterialParamVector ret;
         ret.reserve(_previewShaderParamVector.size());
         for (const auto& it: _previewShaderParamVector) {
-            auto p = node.findPlug(it.GetName().GetText());
-            MPlugArray conns;
-            p.connectedTo(conns, true, false);
-            if (conns.length() > 0) {
-                MFnDependencyNode connectedNode(conns[0].node(), &status);
-                if (status && connectedNode.typeName() == MString("file")) {
+            if (GetConnectedFileNode(node, it.GetName()) != MObject::kNullObj) {
+                auto textureId = GetTextureResourceID(it.GetName());
+                if (textureId != HdTextureResource::ID(-1)) {
+                    const auto& resourceRegistry = GetDelegate()->GetRenderIndex().GetResourceRegistry();
+                    HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> textureInstance;
+                    auto regLock = resourceRegistry->RegisterTextureResource(textureId, &textureInstance);
+                    if (textureInstance.IsFirstInstance()) {
+                        auto textureResource = GetTextureResource(it.GetName());
+                        _textureResources[it.GetName()] = textureResource;
+                        textureInstance.SetValue(textureResource);
+                    } else {
+                        _textureResources[it.GetName()] = textureInstance.GetValue();
+                    }
                     ret.emplace_back(
                         HdMaterialParam::ParamTypeTexture,
                         it.GetName(),
@@ -322,6 +338,8 @@ private:
                         GetID().AppendProperty(it.GetName()),
                         _stSamplerCoords);
                     continue;
+                } else {
+                    _textureResources[it.GetName()].reset();
                 }
             }
             ret.emplace_back(it);
@@ -389,20 +407,55 @@ private:
 
     HdTextureResource::ID
     GetTextureResourceID(const TfToken& paramName) override {
-        MStatus status;
-        MFnDependencyNode node(_surfaceShader, &status);
-        
-        return {};
+        auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
+        if (fileObj == MObject::kNullObj) { return HdTextureResource::ID(-1); }
+        MFnDependencyNode fileNode(fileObj);
+        auto fileNamePlug = fileNode.findPlug(_fileTextureName);
+        size_t hash = TfToken(fileNamePlug.asString().asChar()).Hash();
+        // TODO: add wrap, memory limit and filters to the hash, whatever makes sense
+        return HdTextureResource::ID(hash);
     }
 
     HdTextureResourceSharedPtr
     GetTextureResource(const TfToken& paramName) override {
-        return {};
+        auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
+        if (fileObj == MObject::kNullObj) { return {}; }
+        MFnDependencyNode fileNode(fileObj);
+        auto fileNamePlug = fileNode.findPlug(_fileTextureName);
+        TfToken filePath(fileNode.findPlug(_fileTextureName).asString().asChar());
+        if (filePath.IsEmpty() || !TfPathExists(filePath)) { return {}; }
+        // TODO: handle origin
+        auto texture = GlfTextureRegistry::GetInstance().GetTextureHandle(filePath);
+        return HdTextureResourceSharedPtr(
+            new HdStSimpleTextureResource(
+                texture, false, false, HdWrapClamp, HdWrapClamp,
+                HdMinFilterLinearMipmapLinear, HdMagFilterLinear, 1024 * 1024 * 4)
+            );
+    }
+
+    MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName) {
+        MStatus status;
+        MFnDependencyNode node(obj, &status);
+        if (ARCH_UNLIKELY(!status)) { return MObject::kNullObj; }
+        return GetConnectedFileNode(node, paramName);
+    }
+
+    MObject GetConnectedFileNode(const MFnDependencyNode& node, const TfToken& paramName) {
+        MPlugArray conns;
+        node.findPlug(paramName.GetText()).connectedTo(conns, true, false);
+        if (conns.length() == 0) { return MObject::kNullObj; }
+        const auto ret = conns[0].node();
+        if (ret.apiType() == MFn::kFileTexture) {
+            return ret;
+        }
+        return MObject::kNullObj;
     }
 
     MObject _surfaceShader;
     TfToken _surfaceShaderType;
     MCallbackId _surfaceShaderCallback;
+    // So they live long enough
+    std::unordered_map<TfToken, HdTextureResourceSharedPtr, TfToken::HashFunctor> _textureResources;
 };
 
 TF_REGISTRY_FUNCTION(TfType)
