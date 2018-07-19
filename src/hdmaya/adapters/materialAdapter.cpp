@@ -307,7 +307,8 @@ private:
         }
     }
 
-    HdMaterialParamVector GetMaterialParams() override {
+    HdMaterialParamVector
+    GetMaterialParams() override {
         if (_surfaceShaderType != _tokens->UsdPreviewSurface) {
             return GetPreviewMaterialParams();
         }
@@ -318,36 +319,44 @@ private:
         HdMaterialParamVector ret;
         ret.reserve(_previewShaderParamVector.size());
         for (const auto& it: _previewShaderParamVector) {
-            const auto connectedFileObj = GetConnectedFileNode(node, it.GetName());
-            if (connectedFileObj != MObject::kNullObj) {
-                const auto filePath = _GetFilePath(MFnDependencyNode(connectedFileObj));
-                auto textureId = _GetTextureResourceID(filePath);
-                if (textureId != HdTextureResource::ID(-1)) {
-                    const auto& resourceRegistry = GetDelegate()->GetRenderIndex().GetResourceRegistry();
-                    HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> textureInstance;
-                    auto regLock = resourceRegistry->RegisterTextureResource(textureId, &textureInstance);
-                    if (textureInstance.IsFirstInstance()) {
-                        auto textureResource = _GetTextureResource(filePath);
-                        _textureResources[it.GetName()] = textureResource;
-                        textureInstance.SetValue(textureResource);
-                    } else {
-                        _textureResources[it.GetName()] = textureInstance.GetValue();
-                    }
-                    ret.emplace_back(
-                        HdMaterialParam::ParamTypeTexture,
-                        it.GetName(),
-                        it.GetFallbackValue(),
-                        GetID().AppendProperty(it.GetName()),
-                        _stSamplerCoords);
-                    continue;
-                } else {
-                    _textureResources[it.GetName()].reset();
-                }
+            if (_RegisterTexture(node, it.GetName())) {
+                ret.emplace_back(
+                    HdMaterialParam::ParamTypeTexture,
+                    it.GetName(),
+                    it.GetFallbackValue(),
+                    GetID().AppendProperty(it.GetName()),
+                    _stSamplerCoords);
+            } else {
+                ret.emplace_back(it);
             }
-            ret.emplace_back(it);
         }
 
         return ret;
+    }
+
+    inline bool
+    _RegisterTexture(const MFnDependencyNode& node, const TfToken& paramName) {
+        const auto connectedFileObj = GetConnectedFileNode(node, paramName);
+        if (connectedFileObj != MObject::kNullObj) {
+            const auto filePath = _GetTextureFilePath(MFnDependencyNode(connectedFileObj));
+            auto textureId = _GetTextureResourceID(filePath);
+            if (textureId != HdTextureResource::ID(-1)) {
+                const auto& resourceRegistry = GetDelegate()->GetRenderIndex().GetResourceRegistry();
+                HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> textureInstance;
+                auto regLock = resourceRegistry->RegisterTextureResource(textureId, &textureInstance);
+                if (textureInstance.IsFirstInstance()) {
+                    auto textureResource = _GetTextureResource(filePath);
+                    _textureResources[paramName] = textureResource;
+                    textureInstance.SetValue(textureResource);
+                } else {
+                    _textureResources[paramName] = textureInstance.GetValue();
+                }
+                return true;
+            } else {
+                _textureResources[paramName].reset();
+            }
+        }
+        return false;
     }
 
     VtValue
@@ -395,7 +404,8 @@ private:
         return GetPreviewMaterialParamValue(paramName);
     }
 
-    void _CreateSurfaceMaterialCallback() {
+    void
+    _CreateSurfaceMaterialCallback() {
         _CacheNodeAndTypes();
         if (_surfaceShaderCallback != 0) {
             MNodeMessage::removeCallback(_surfaceShaderCallback);
@@ -412,7 +422,7 @@ private:
         auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
         if (fileObj == MObject::kNullObj) { return HdTextureResource::ID(-1); }
         return _GetTextureResourceID(
-            _GetFilePath(MFnDependencyNode(fileObj)));
+            _GetTextureFilePath(MFnDependencyNode(fileObj)));
     }
 
     inline HdTextureResource::ID
@@ -423,7 +433,7 @@ private:
     }
 
     inline TfToken
-    _GetFilePath(const MFnDependencyNode& fileNode) {
+    _GetTextureFilePath(const MFnDependencyNode& fileNode) {
         return TfToken(fileNode.findPlug(_fileTextureName).asString().asChar());
     }
 
@@ -431,7 +441,7 @@ private:
     GetTextureResource(const TfToken& paramName) override {
         auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
         if (fileObj == MObject::kNullObj) { return {}; }
-        return _GetTextureResource(_GetFilePath(MFnDependencyNode(fileObj)));
+        return _GetTextureResource(_GetTextureFilePath(MFnDependencyNode(fileObj)));
 
     }
 
@@ -450,14 +460,16 @@ private:
         );
     }
 
-    MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName) {
+    MObject
+    GetConnectedFileNode(const MObject& obj, const TfToken& paramName) {
         MStatus status;
         MFnDependencyNode node(obj, &status);
         if (ARCH_UNLIKELY(!status)) { return MObject::kNullObj; }
         return GetConnectedFileNode(node, paramName);
     }
 
-    MObject GetConnectedFileNode(const MFnDependencyNode& node, const TfToken& paramName) {
+    MObject
+    GetConnectedFileNode(const MFnDependencyNode& node, const TfToken& paramName) {
         MPlugArray conns;
         node.findPlug(paramName.GetText()).connectedTo(conns, true, false);
         if (conns.length() == 0) { return MObject::kNullObj; }
@@ -470,9 +482,9 @@ private:
 
     MObject _surfaceShader;
     TfToken _surfaceShaderType;
-    MCallbackId _surfaceShaderCallback;
     // So they live long enough
     std::unordered_map<TfToken, HdTextureResourceSharedPtr, TfToken::HashFunctor> _textureResources;
+    MCallbackId _surfaceShaderCallback;
 };
 
 TF_REGISTRY_FUNCTION(TfType)
