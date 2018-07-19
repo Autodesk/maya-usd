@@ -318,14 +318,16 @@ private:
         HdMaterialParamVector ret;
         ret.reserve(_previewShaderParamVector.size());
         for (const auto& it: _previewShaderParamVector) {
-            if (GetConnectedFileNode(node, it.GetName()) != MObject::kNullObj) {
-                auto textureId = GetTextureResourceID(it.GetName());
+            const auto connectedFileObj = GetConnectedFileNode(node, it.GetName());
+            if (connectedFileObj != MObject::kNullObj) {
+                const auto filePath = _GetFilePath(MFnDependencyNode(connectedFileObj));
+                auto textureId = _GetTextureResourceID(filePath);
                 if (textureId != HdTextureResource::ID(-1)) {
                     const auto& resourceRegistry = GetDelegate()->GetRenderIndex().GetResourceRegistry();
                     HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> textureInstance;
                     auto regLock = resourceRegistry->RegisterTextureResource(textureId, &textureInstance);
                     if (textureInstance.IsFirstInstance()) {
-                        auto textureResource = GetTextureResource(it.GetName());
+                        auto textureResource = _GetTextureResource(filePath);
                         _textureResources[it.GetName()] = textureResource;
                         textureInstance.SetValue(textureResource);
                     } else {
@@ -409,20 +411,32 @@ private:
     GetTextureResourceID(const TfToken& paramName) override {
         auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
         if (fileObj == MObject::kNullObj) { return HdTextureResource::ID(-1); }
-        MFnDependencyNode fileNode(fileObj);
-        auto fileNamePlug = fileNode.findPlug(_fileTextureName);
-        size_t hash = TfToken(fileNamePlug.asString().asChar()).Hash();
+        return _GetTextureResourceID(
+            _GetFilePath(MFnDependencyNode(fileObj)));
+    }
+
+    inline HdTextureResource::ID
+    _GetTextureResourceID(const TfToken& filePath) {
+        size_t hash = filePath.Hash();
         boost::hash_combine(hash, GetDelegate()->GetParams().textureMemoryPerTexture);
         return HdTextureResource::ID(hash);
+    }
+
+    inline TfToken
+    _GetFilePath(const MFnDependencyNode& fileNode) {
+        return TfToken(fileNode.findPlug(_fileTextureName).asString().asChar());
     }
 
     HdTextureResourceSharedPtr
     GetTextureResource(const TfToken& paramName) override {
         auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
         if (fileObj == MObject::kNullObj) { return {}; }
-        MFnDependencyNode fileNode(fileObj);
-        auto fileNamePlug = fileNode.findPlug(_fileTextureName);
-        TfToken filePath(fileNode.findPlug(_fileTextureName).asString().asChar());
+        return _GetTextureResource(_GetFilePath(MFnDependencyNode(fileObj)));
+
+    }
+
+    inline HdTextureResourceSharedPtr
+    _GetTextureResource(const TfToken& filePath){
         if (filePath.IsEmpty() || !TfPathExists(filePath)) { return {}; }
         // TODO: handle origin
         auto texture = GlfTextureRegistry::GetInstance().GetTextureHandle(filePath);
@@ -433,7 +447,7 @@ private:
                 texture, false, false, HdWrapClamp, HdWrapClamp,
                 HdMinFilterLinearMipmapLinear, HdMagFilterLinear,
                 GetDelegate()->GetParams().textureMemoryPerTexture)
-            );
+        );
     }
 
     MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName) {
