@@ -203,6 +203,15 @@ HdMayaRenderOverride::SetMaximumShadowMapResolution(int resolution) {
     GetInstance()._params.maximumShadowMapResolution = resolution;
 }
 
+int
+HdMayaRenderOverride::GetTextureMemoryPerTexture() {
+    return static_cast<int>(GetInstance()._params.textureMemoryPerTexture);
+}
+
+void HdMayaRenderOverride::SetTextureMemoryPerTexture(int memory) {
+    GetInstance()._params.textureMemoryPerTexture = static_cast<size_t>(memory);
+}
+
 MStatus
 HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     auto renderFrame = [&] () {

@@ -31,6 +31,12 @@ constexpr auto _getMaximumShadowMapResolutionLong = "-getMaximumShadowMapResolut
 constexpr auto _setMaximumShadowMapResolution = "-sms";
 constexpr auto _setMaximumShadowMapResolutionLong = "-setMaximumShadowMapResolution";
 
+constexpr auto _getTextureMemoryPerTexture = "-gtm";
+constexpr auto _getTextureMemoryPerTextureLong = "-getTextureMemoryPerTexture";
+
+constexpr auto _setTextureMemoryPerTexture = "-stm";
+constexpr auto _setTextureMemoryPerTextureLong = "-setTextureMemoryPerTexture";
+
 }
 
 MSyntax HdMayaCmd::createSyntax() {
@@ -61,6 +67,15 @@ MSyntax HdMayaCmd::createSyntax() {
     syntax.addFlag(
         _setMaximumShadowMapResolution,
         _setMaximumShadowMapResolutionLong,
+        MSyntax::kLong);
+
+    syntax.addFlag(
+        _getTextureMemoryPerTexture,
+        _getTextureMemoryPerTextureLong);
+
+    syntax.addFlag(
+        _setTextureMemoryPerTexture,
+        _setTextureMemoryPerTextureLong,
         MSyntax::kLong);
 
     return syntax;
@@ -97,6 +112,15 @@ MStatus HdMayaCmd::doIt(const MArgList &args) {
             if (res < 32) { res = 32; }
             if (res > 8192) { res = 8192; }
             HdMayaRenderOverride::SetMaximumShadowMapResolution(res);
+        }
+    } else if (db.isFlagSet(_getTextureMemoryPerTexture)) {
+        appendToResult(HdMayaRenderOverride::GetTextureMemoryPerTexture());
+    } else if (db.isFlagSet(_setTextureMemoryPerTexture)) {
+        int res = 4 * 1024 * 1024;
+        if (db.getFlagArgument(_setTextureMemoryPerTexture, 0, res)) {
+            if (res < 1024) { res = 1024; }
+            if (res > 64 * 1024 * 1024) { res = 64 * 1024 * 1024; }
+            HdMayaRenderOverride::SetTextureMemoryPerTexture(res);
         }
     }
     return MS::kSuccess;

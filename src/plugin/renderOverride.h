@@ -44,6 +44,8 @@ public:
     static void ChangeRendererPlugin(const TfToken& id);
     static int GetMaximumShadowMapResolution();
     static void SetMaximumShadowMapResolution(int resolution);
+    static int GetTextureMemoryPerTexture();
+    static void SetTextureMemoryPerTexture(int memory);
 
     MStatus Render(const MHWRender::MDrawContext& drawContext);
 

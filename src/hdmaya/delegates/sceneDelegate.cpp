@@ -7,10 +7,11 @@
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/sdf/assetPath.h>
 
+#include <pxr/imaging/hd/camera.h>
+#include <pxr/imaging/hd/material.h>
 #include <pxr/imaging/hd/mesh.h>
 #include <pxr/imaging/hd/rprim.h>
 #include <pxr/imaging/hd/tokens.h>
-#include <pxr/imaging/hd/camera.h>
 
 #include <pxr/imaging/hdx/tokens.h>
 #include <pxr/imaging/hdx/renderSetupTask.h>
@@ -89,7 +90,7 @@ void _MapAdapter(
     const M0& m0,
     const M& ...m) {
     for (auto& it : m0) {
-        f(static_cast<T*>(it.second->get()));
+        f(static_cast<T*>(it.second.get()));
     }
     _MapAdapter<T>(f, m...);
 }
@@ -220,8 +221,14 @@ HdMayaSceneDelegate::SetParams(const HdMayaParams& params) {
                 if (a->HasType(HdPrimTypeTokens->mesh)) {
                     a->MarkDirty(HdChangeTracker::DirtyTopology);
                 }
-            }
-        );
+            }, _shapeAdapters);
+    }
+    // We need to trigger rebuilding shaders.
+    if (oldParams.textureMemoryPerTexture != params.textureMemoryPerTexture) {
+        _MapAdapter<HdMayaMaterialAdapter>(
+            [] (HdMayaMaterialAdapter* a) {
+                a->MarkDirty(HdMaterial::AllDirty);
+            }, _materialAdapters);
     }
     HdMayaDelegate::SetParams(params);
 }

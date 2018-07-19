@@ -412,7 +412,7 @@ private:
         MFnDependencyNode fileNode(fileObj);
         auto fileNamePlug = fileNode.findPlug(_fileTextureName);
         size_t hash = TfToken(fileNamePlug.asString().asChar()).Hash();
-        // TODO: add wrap, memory limit and filters to the hash, whatever makes sense
+        boost::hash_combine(hash, GetDelegate()->GetParams().textureMemoryPerTexture);
         return HdTextureResource::ID(hash);
     }
 
@@ -426,10 +426,13 @@ private:
         if (filePath.IsEmpty() || !TfPathExists(filePath)) { return {}; }
         // TODO: handle origin
         auto texture = GlfTextureRegistry::GetInstance().GetTextureHandle(filePath);
+        // We can't really mimic texture wrapping and mirroring settings from
+        // the uv placement node, so we don't touch those for now.
         return HdTextureResourceSharedPtr(
             new HdStSimpleTextureResource(
                 texture, false, false, HdWrapClamp, HdWrapClamp,
-                HdMinFilterLinearMipmapLinear, HdMagFilterLinear, 1024 * 1024 * 4)
+                HdMinFilterLinearMipmapLinear, HdMagFilterLinear,
+                GetDelegate()->GetParams().textureMemoryPerTexture)
             );
     }
 
