@@ -22,7 +22,7 @@ TF_REGISTRY_FUNCTION(TfType)
 
 namespace {
 
-void _dirtyTransform(MObject& /*node*/, void* clientData) {
+void _changeTransform(MNodeMessage::AttributeMessage /*msg*/, MPlug& /*plug*/, MPlug& /*otherPlug*/, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     // We need both dirty params and dirty transform to get this working?
     adapter->MarkDirty(HdLight::DirtyTransform | HdLight::DirtyParams | HdLight::DirtyShadowParams);
@@ -130,7 +130,7 @@ HdMayaLightAdapter::CreateCallbacks() {
         // passing raw pointers to the callbacks. Hopefully.
         obj = dag.node();
         if (obj != MObject::kNullObj) {
-            id = MNodeMessage::addNodeDirtyCallback(obj, _dirtyTransform, this, &status);
+            id = MNodeMessage::addAttributeChangedCallback(obj, _changeTransform, this, &status);
             if (status) { AddCallback(id); }
         }
     }

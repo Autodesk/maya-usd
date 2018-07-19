@@ -14,7 +14,7 @@ TF_REGISTRY_FUNCTION(TfType)
 
 namespace {
 
-void _dirtyTransform(MObject& node, void* clientData) {
+void _changeTransformAttributes(MNodeMessage::AttributeMessage /*msg*/, MPlug& /*plug*/, MPlug& /*otherPlug*/, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     adapter->MarkDirty(HdChangeTracker::DirtyTransform);
 }
@@ -40,7 +40,7 @@ HdMayaDagAdapter::CreateCallbacks() {
         // passing raw pointers to the callbacks. Hopefully.
         MObject obj = dag.node();
         if (obj != MObject::kNullObj) {
-            auto id = MNodeMessage::addNodeDirtyCallback(obj, _dirtyTransform, this, &status);
+            auto id = MNodeMessage::addAttributeChangedCallback(obj, _changeTransformAttributes, this, &status);
             if (status) { AddCallback(id); }
         }
     }
