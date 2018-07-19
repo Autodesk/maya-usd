@@ -33,7 +33,7 @@ target_include_directories(hdmaya_al SYSTEM PUBLIC ${Boost_INCLUDE_DIRS} ${TBB_I
 target_include_directories(hdmaya_al SYSTEM PUBLIC ${HDMAYA_INCLUDE_DIR})
 target_include_directories(hdmaya_al SYSTEM PUBLIC ${ALUSDMAYA_INCLUDE_DIR})
 target_compile_features(hdmaya_al PUBLIC cxx_std_11)
-target_compile_definitions(hdmaya_al PRIVATE "HDMAYA_AL_EXPORT=1")
+target_compile_options(hdmaya_al PRIVATE -Wall -Werror)
 
 
 # Wanted to do this:
