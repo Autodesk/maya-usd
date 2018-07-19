@@ -36,8 +36,6 @@ void
 HdMayaDagAdapter::CreateCallbacks() {
     MStatus status;
     for (auto dag = GetDagPath(); dag.length() > 0; dag.pop()) {
-        // The adapter itself will free the callbacks, so we don't have to worry about
-        // passing raw pointers to the callbacks. Hopefully.
         MObject obj = dag.node();
         if (obj != MObject::kNullObj) {
             auto id = MNodeMessage::addAttributeChangedCallback(obj, _changeTransformAttributes, this, &status);
