@@ -232,6 +232,14 @@ HdMayaSceneDelegate::SetParams(const HdMayaParams& params) {
     HdMayaDelegate::SetParams(params);
 }
 
+
+void
+HdMayaSceneDelegate::AddSelectedPath(
+        const MDagPath& dagPath,
+        SdfPathVector& selectedSdfPaths) {
+    selectedSdfPaths.push_back(GetPrimPath(dagPath));
+}
+
 HdMeshTopology
 HdMayaSceneDelegate::GetMeshTopology(const SdfPath& id) {
     return _GetValue<HdMayaShapeAdapter, HdMeshTopology>(

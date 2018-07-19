@@ -10,8 +10,13 @@
 #include <pxr/imaging/hdx/rendererPluginRegistry.h>
 #include <pxr/imaging/hdx/tokens.h>
 
+#include <maya/M3dView.h>
 #include <maya/MDrawContext.h>
+#include <maya/MDagPath.h>
+#include <maya/MEventMessage.h>
+#include <maya/MGlobal.h>
 #include <maya/MSceneMessage.h>
+#include <maya/MSelectionList.h>
 
 #include <exception>
 
@@ -47,7 +52,6 @@ class HdMayaSceneRender : public MHWRender::MSceneRender
 public:
     HdMayaSceneRender(const MString &name) :
         MHWRender::MSceneRender(name) {
-
     }
 
     MUint64 getObjectTypeExclusions() override {
@@ -121,7 +125,10 @@ private:
 
 HdMayaRenderOverride::HdMayaRenderOverride() :
     MHWRender::MRenderOverride("hydraViewportOverride"),
-    _selectionTracker(new HdxSelectionTracker) {
+    _selectionTracker(new HdxSelectionTracker),
+    _renderCollection(HdTokens->geometry, HdTokens->smoothHull,
+            SdfPath::AbsoluteRootPath()),
+    _selectionCollection(HdTokens->wire, HdTokens->wire) {
     _ID = SdfPath("/HdMayaViewportRenderer").AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
     _rendererName = _getDefaultRenderer();
     // This is a critical error, so we don't allow the construction
@@ -142,6 +149,12 @@ HdMayaRenderOverride::HdMayaRenderOverride() :
     id = MSceneMessage::addCallback(
         MSceneMessage::kBeforeOpen,
         ClearHydraCallback,
+        nullptr,
+        &status);
+    if (status) { _callbacks.push_back(id); }
+    id = MEventMessage::addEventCallback(
+        MString("SelectionChanged"),
+        SelectionChangedCallback,
         nullptr,
         &status);
     if (status) { _callbacks.push_back(id); }
@@ -281,9 +294,20 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         params.geomStyle = HdGeomStylePolygons;
     }
 
+    // TODO: separate color for normal wireframe / selected
+    MColor colour = M3dView::leadColor();
+    params.wireframeColor = GfVec4f(colour.r, colour.g, colour.b, 1.0f);
+
+
     _taskController->SetRenderParams(params);
 
     renderFrame();
+
+    if (!_selectionCollection.GetRootPaths().empty()) {
+        _taskController->SetCollection(_selectionCollection);
+        renderFrame();
+        _taskController->SetCollection(_renderCollection);
+    }
 
     for (auto& it: _delegates) {
         it->PostFrame();
@@ -309,6 +333,8 @@ HdMayaRenderOverride::InitHydraResources() {
         _ID.AppendChild(TfToken(
             TfStringPrintf("_UsdImaging_%s_%p", TfMakeValidIdentifier(_rendererName.GetText()).c_str(), this))));
 
+    // TODO: make selection work with "standard" _taskController methods, and
+    // set this to true
     _taskController->SetEnableSelection(false);
 #ifdef LUMA_USD_BUILD
     _taskController->SetEnableShadows(true);
@@ -320,6 +346,10 @@ HdMayaRenderOverride::InitHydraResources() {
         it->SetPreferSimpleLight(_preferSimpleLight);
         it->Populate();
     }
+
+    _renderIndex->GetChangeTracker().AddCollection(
+            _selectionCollection.GetName());
+    SelectionChanged();
 }
 
 void
@@ -353,6 +383,33 @@ void
 HdMayaRenderOverride::ClearHydraCallback(void*) {
     GetInstance().ClearHydraResources();
 }
+
+void
+HdMayaRenderOverride::SelectionChanged() {
+    MSelectionList sel;
+    if (!TF_VERIFY(MGlobal::getActiveSelectionList(sel))) { return; }
+
+    SdfPathVector selectedPaths;
+
+    MDagPath dagPath;
+    for (unsigned int i = 0, n = sel.length(); i < n; ++i) {
+        if (!TF_VERIFY(sel.getDagPath(i, dagPath))) { continue; }
+            for (auto& it: _delegates) {
+                it->AddSelectedPath(dagPath, selectedPaths);
+            }
+    }
+    _selectionCollection.SetRootPaths(selectedPaths);
+
+    // TODO: figure out if this is needed?
+//    _renderIndex->GetChangeTracker().MarkCollectionDirty(
+//            _selectionCollection.GetName());
+}
+
+void
+HdMayaRenderOverride::SelectionChangedCallback(void*) {
+    GetInstance().SelectionChanged();
+}
+
 
 MHWRender::DrawAPI
 HdMayaRenderOverride::supportedDrawAPIs() const {

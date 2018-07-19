@@ -49,6 +49,7 @@ public:
     void RemoveAdapter(const SdfPath& id) override;
     void InsertDag(const MDagPath& dag);
     void SetParams(const HdMayaParams& params) override;
+    void AddSelectedPath(const MDagPath& dagPath, SdfPathVector& selectedSdfPaths) override;
 protected:
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;
     GfRange3d GetExtent(const SdfPath& id) override;

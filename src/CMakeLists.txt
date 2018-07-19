@@ -49,6 +49,7 @@ target_include_directories(hdmaya SYSTEM PUBLIC ${USD_INCLUDE_DIR} ${USD_MAYA_IN
 target_include_directories(hdmaya SYSTEM PUBLIC ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
 target_compile_features(hdmaya PUBLIC cxx_std_11)
 target_compile_definitions(hdmaya PRIVATE "HDMAYA_EXPORT=1")
+
 target_compile_options(hdmaya PUBLIC -Wall -Werror)
 set_target_properties(hdmaya PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
 
@@ -57,6 +58,19 @@ target_link_libraries(hdview PRIVATE hdmaya)
 set_target_properties(hdview PROPERTIES PREFIX "")
 set_target_properties(hdview PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
 set_target_properties(hdview PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
+
+# M3dView needs this (technically, MNativeWindowHdl.h)
+# private atm because M3dView is only used in .cpp right now
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # gcc will NOT set this automatically
+    target_compile_definitions(hdview PRIVATE "LINUX")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    # Not sure if msvcc sets this automatically, but won't hurt to redefine
+    target_compile_definitions(hdview PRIVATE "_WIN32")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    # Not sure if osx sets this automatically, but won't hurt to redefine
+    target_compile_definitions(hdview PRIVATE "OSMac_")
+endif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
 if (LUMA_USD_BUILD)
     target_compile_definitions(hdmaya PRIVATE LUMA_USD_BUILD)

@@ -3,6 +3,10 @@
 
 #include <pxr/pxr.h>
 
+#include <pxr/usd/sdf/path.h>
+
+#include <maya/MDagPath.h>
+
 #include <memory>
 
 #include <hdmaya/api.h>
@@ -27,6 +31,10 @@ public:
 
     void SetPreferSimpleLight(bool v) { _preferSimpleLight = v; }
     bool GetPreferSimpleLight() { return _preferSimpleLight; }
+
+    virtual void AddSelectedPath(const MDagPath& dagPath,
+            SdfPathVector& selectedSdfPaths)
+    { }
 private:
     HdMayaParams _params;
     bool _preferSimpleLight = false;

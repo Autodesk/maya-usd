@@ -65,6 +65,8 @@ private:
     void InitHydraResources();
     void ClearHydraResources();
     static void ClearHydraCallback(void*);
+    void SelectionChanged();
+    static void SelectionChangedCallback(void*);
 
     std::vector<MHWRender::MRenderOperation*> _operations;
     std::vector<MCallbackId> _callbacks;
@@ -75,6 +77,8 @@ private:
     HdxTaskController* _taskController = nullptr;
     HdRenderIndex* _renderIndex = nullptr;
     HdxSelectionTrackerSharedPtr _selectionTracker;
+    HdRprimCollection _renderCollection;
+    HdRprimCollection _selectionCollection;
 
     std::vector<HdMayaDelegatePtr> _delegates;
 
