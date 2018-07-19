@@ -388,15 +388,9 @@ void
 HdMayaRenderOverride::SelectionChanged() {
     MSelectionList sel;
     if (!TF_VERIFY(MGlobal::getActiveSelectionList(sel))) { return; }
-
     SdfPathVector selectedPaths;
-
-    MDagPath dagPath;
-    for (unsigned int i = 0, n = sel.length(); i < n; ++i) {
-        if (!TF_VERIFY(sel.getDagPath(i, dagPath))) { continue; }
-            for (auto& it: _delegates) {
-                it->AddSelectedPath(dagPath, selectedPaths);
-            }
+    for (auto& it: _delegates) {
+        it->PopulateSelectedPaths(sel, selectedPaths);
     }
     _selectionCollection.SetRootPaths(selectedPaths);
 

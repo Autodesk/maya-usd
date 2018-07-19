@@ -234,10 +234,14 @@ HdMayaSceneDelegate::SetParams(const HdMayaParams& params) {
 
 
 void
-HdMayaSceneDelegate::AddSelectedPath(
-        const MDagPath& dagPath,
+HdMayaSceneDelegate::PopulateSelectedPaths(
+        MSelectionList mayaSelection,
         SdfPathVector& selectedSdfPaths) {
-    selectedSdfPaths.push_back(GetPrimPath(dagPath));
+    MDagPath dagPath;
+    for (unsigned int i = 0, n = mayaSelection.length(); i < n; ++i) {
+        if (!TF_VERIFY(mayaSelection.getDagPath(i, dagPath))) { continue; }
+        selectedSdfPaths.push_back(GetPrimPath(dagPath));
+    }
 }
 
 HdMeshTopology

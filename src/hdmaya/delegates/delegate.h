@@ -6,6 +6,7 @@
 #include <pxr/usd/sdf/path.h>
 
 #include <maya/MDagPath.h>
+#include <maya/MSelectionList.h>
 
 #include <memory>
 
@@ -32,7 +33,7 @@ public:
     void SetPreferSimpleLight(bool v) { _preferSimpleLight = v; }
     bool GetPreferSimpleLight() { return _preferSimpleLight; }
 
-    virtual void AddSelectedPath(const MDagPath& dagPath,
+    virtual void PopulateSelectedPaths(MSelectionList mayaSelection,
             SdfPathVector& selectedSdfPaths)
     { }
 private:
