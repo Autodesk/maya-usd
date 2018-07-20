@@ -240,6 +240,9 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         _taskController->SetCameraViewport(viewport);
 
         _engine.Execute(*_renderIndex, _taskController->GetTasks(HdxTaskSetTokens->colorRender));
+        if (!_taskController->IsConverged()) {
+            MGlobal::executeCommandOnIdle("refresh -f");
+        }
     };
 
     if (!_initializedViewport) {
