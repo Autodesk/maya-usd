@@ -44,21 +44,13 @@ StageLoadedCallback(void* userData, AL::event::NodeEvents* node) {
 
     // Bunch of conversions + sanity checks...
     auto* delegate = static_cast<HdMayaALProxyDelegate*>(userData);
-    if (ARCH_UNLIKELY(!delegate)) {
-        TF_CODING_ERROR("StageLoadedCallback called with null "
-                "userData ptr");
+    if (!TF_VERIFY(delegate,
+            "StageLoadedCallback called with null userData ptr")) {
         return;
     }
     auto* proxy = dynamic_cast<ProxyShape*>(node);
-    if (ARCH_UNLIKELY(!proxy)) {
-        if (!userData) {
-            TF_CODING_ERROR("StageLoadedCallback called with null "
-                    "node ptr");
-        }
-        else {
-            TF_CODING_ERROR("StageLoadedCallback called with node that "
-                    "not a ProxyShape*");
-        }
+    if (!TF_VERIFY(proxy,
+            "StageLoadedCallback called with null or non-ProxyShape* ptr")) {
         return;
     }
 
@@ -74,21 +66,14 @@ ProxyShapeDestroyedCallback(void* userData, AL::event::NodeEvents* node) {
 
     // Bunch of conversions + sanity checks...
     auto* delegate = static_cast<HdMayaALProxyDelegate*>(userData);
-    if (ARCH_UNLIKELY(!delegate)) {
-        TF_CODING_ERROR("ProxyShapeDestroyedCallback called with null "
-                "userData ptr");
+    if (!TF_VERIFY(delegate,
+            "ProxyShapeDestroyedCallback called with null userData ptr")) {
         return;
     }
     auto* proxy = dynamic_cast<ProxyShape*>(node);
-    if (ARCH_UNLIKELY(!proxy)) {
-        if (!userData) {
-            TF_CODING_ERROR("ProxyShapeDestroyedCallback called with null "
-                    "node ptr");
-        }
-        else {
-            TF_CODING_ERROR("ProxyShapeDestroyedCallback called with node that "
-                    "not a ProxyShape*");
-        }
+    if (!TF_VERIFY(proxy,
+            "ProxyShapeDestroyedCallback called with null or non-ProxyShape* "
+            "ptr")) {
         return;
     }
 
@@ -104,16 +89,15 @@ ProxyShapeAddedCallback(MObject& node, void* clientData) {
 
     // Bunch of conversions + sanity checks...
     auto delegate = static_cast<HdMayaALProxyDelegate*>(clientData);
-    if (ARCH_UNLIKELY(!delegate)) {
-        TF_CODING_ERROR("ProxyShapeAddedCallback called with null "
-                "HdMayaALProxyDelegate ptr");
+    if (!TF_VERIFY(delegate,
+            "ProxyShapeAddedCallback called with null HdMayaALProxyDelegate "
+            "ptr")) {
         return;
     }
 
     MStatus status;
     MFnDependencyNode mfnNode(node, &status);
-    if (ARCH_UNLIKELY(!status)) {
-        TF_CODING_ERROR("Error getting MFnDependencyNode");
+    if (!TF_VERIFY(status, "Error getting MFnDependencyNode")) {
         return;
     }
 
@@ -122,16 +106,16 @@ ProxyShapeAddedCallback(MObject& node, void* clientData) {
             "(ProxyShape: %s)\n", mfnNode.name().asChar());
 
 
-    if(ARCH_UNLIKELY(mfnNode.typeId() != ProxyShape::kTypeId)) {
-        TF_CODING_ERROR("ProxyShapeAddedCallback called on non-%s node",
-                ProxyShape::kTypeName.asChar());
+    if(!TF_VERIFY(mfnNode.typeId() == ProxyShape::kTypeId,
+            "ProxyShapeAddedCallback called on non-%s node",
+            ProxyShape::kTypeName.asChar())) {
         return;
     }
 
     auto* proxy = dynamic_cast<ProxyShape*>(mfnNode.userNode());
-    if (ARCH_UNLIKELY(!proxy)) {
-        TF_CODING_ERROR("Error getting ProxyShape* for %s",
-                        mfnNode.name().asChar());
+    if (!TF_VERIFY(proxy,
+            "Error getting ProxyShape* for %s",
+            mfnNode.name().asChar())) {
         return;
     }
 
@@ -144,34 +128,33 @@ ProxyShapeRemovedCallback(MObject& node, void* clientData) {
 
     // Bunch of conversions + sanity checks...
     auto delegate = static_cast<HdMayaALProxyDelegate*>(clientData);
-    if (ARCH_UNLIKELY(!delegate)) {
-        TF_CODING_ERROR("ProxyShapeRemovedCallback called with null "
-                "HdMayaALProxyDelegate ptr");
+    if (!TF_VERIFY(delegate,
+            "ProxyShapeRemovedCallback called with null HdMayaALProxyDelegate "
+            "ptr")) {
         return;
     }
 
     MStatus status;
     MFnDependencyNode mfnNode(node, &status);
-    if (ARCH_UNLIKELY(!status)) {
-        TF_CODING_ERROR("Error getting MFnDependencyNode");
+    if (!TF_VERIFY(status, "Error getting MFnDependencyNode")) {
         return;
     }
+
 
     TF_DEBUG(HDMAYA_AL_CALLBACKS).Msg(
             "HdMayaALProxyDelegate - called ProxyShapeRemovedCallback "
             "(ProxyShape: %s)\n", mfnNode.name().asChar());
 
-
-    if(ARCH_UNLIKELY(mfnNode.typeId() != ProxyShape::kTypeId)) {
-        TF_CODING_ERROR("ProxyShapeRemovedCallback called on non-%s node",
-                ProxyShape::kTypeName.asChar());
+    if(!TF_VERIFY(mfnNode.typeId() == ProxyShape::kTypeId,
+            "ProxyShapeRemovedCallback called on non-%s node",
+            ProxyShape::kTypeName.asChar())) {
         return;
     }
 
     auto* proxy = dynamic_cast<ProxyShape*>(mfnNode.userNode());
-    if (ARCH_UNLIKELY(!proxy)) {
-        TF_CODING_ERROR("Error getting ProxyShape* for %s",
-                        mfnNode.name().asChar());
+    if (!TF_VERIFY(proxy,
+            "Error getting ProxyShape* for %s",
+            mfnNode.name().asChar())) {
         return;
     }
 
@@ -196,9 +179,9 @@ HdMayaALProxyDelegate::HdMayaALProxyDelegate(HdRenderIndex* renderIndex,
         if(fn.typeId() != ProxyShape::kTypeId) continue;
 
         auto proxyShape = static_cast<ProxyShape *>(fn.userNode());
-        if(ARCH_UNLIKELY(proxyShape == nullptr)) {
-            TF_CODING_ERROR("ProxyShape had no mpx data: %s",
-                    fn.name().asChar());
+        if(!TF_VERIFY(proxyShape,
+                "ProxyShape had no mpx data: %s",
+                fn.name().asChar())) {
             continue;
         }
 
@@ -216,8 +199,7 @@ HdMayaALProxyDelegate::HdMayaALProxyDelegate(HdRenderIndex* renderIndex,
             "for all ProxyShapes\n");
     _nodeAddedCBId = MDGMessage::addNodeAddedCallback(ProxyShapeAddedCallback,
             ProxyShape::kTypeName, this, &status);
-    if (ARCH_UNLIKELY(!status)) {
-        TF_CODING_ERROR("Could not set nodeAdded callback");
+    if (!TF_VERIFY(status, "Could not set nodeAdded callback")) {
         _nodeAddedCBId = 0;
     }
 
@@ -227,8 +209,7 @@ HdMayaALProxyDelegate::HdMayaALProxyDelegate(HdRenderIndex* renderIndex,
             "for all ProxyShapes\n");
     _nodeRemovedCBId = MDGMessage::addNodeRemovedCallback(ProxyShapeRemovedCallback,
             ProxyShape::kTypeName, this, &status);
-    if (ARCH_UNLIKELY(!status)) {
-        TF_CODING_ERROR("Could not set nodeRemoved callback");
+    if (!TF_VERIFY(status, "Could not set nodeRemoved callback")) {
         _nodeRemovedCBId = 0;
     }
 }
@@ -400,9 +381,9 @@ HdMayaALProxyDelegate::AddProxy(ProxyShape* proxy) {
     if (emplaceResult.second) {
         // Okay, we have an actual insertion! Set up callbacks...
         auto* scheduler = proxy->scheduler();
-        if (ARCH_UNLIKELY(!scheduler)) {
-            TF_CODING_ERROR("Error getting scheduler for %s",
-                            proxy->name().asChar());
+        if (!TF_VERIFY(scheduler,
+                "Error getting scheduler for %s",
+                proxy->name().asChar())) {
             return proxyData;
         }
 
@@ -444,9 +425,9 @@ HdMayaALProxyDelegate::RemoveProxy(ProxyShape* proxy) {
 void
 HdMayaALProxyDelegate::CreateUsdImagingDelegate(ProxyShape* proxy) {
     auto proxyDataIter = _proxiesData.find(proxy);
-    if (ARCH_UNLIKELY(proxyDataIter == _proxiesData.end())) {
-        TF_CODING_ERROR("Proxy not found in delegate: %s",
-                proxy->name().asChar());
+    if (!TF_VERIFY(proxyDataIter != _proxiesData.end(),
+            "Proxy not found in delegate: %s",
+            proxy->name().asChar())) {
         return;
     }
     CreateUsdImagingDelegate(proxy, proxyDataIter->second);
@@ -467,9 +448,9 @@ HdMayaALProxyDelegate::CreateUsdImagingDelegate(
 void
 HdMayaALProxyDelegate::DeleteUsdImagingDelegate(ProxyShape* proxy) {
     auto proxyDataIter = _proxiesData.find(proxy);
-    if (ARCH_UNLIKELY(proxyDataIter == _proxiesData.end())) {
-        TF_CODING_ERROR("Proxy not found in delegate: %s",
-                proxy->name().asChar());
+    if (!TF_VERIFY(proxyDataIter != _proxiesData.end(),
+            "Proxy not found in delegate: %s",
+            proxy->name().asChar())) {
         return;
     }
     auto& proxyData = proxyDataIter->second;
