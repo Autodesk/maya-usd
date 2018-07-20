@@ -93,8 +93,9 @@ HdMayaLightAdapter::Get(const TfToken& key) {
     } else if (key == HdTokens->transform) {
         return VtValue(HdMayaDagAdapter::GetTransform());
     } else if (key == HdLightTokens->shadowCollection) {
-        return VtValue(HdRprimCollection(HdTokens->geometry, HdTokens->hull));
-        // return VtValue(GetDelegate()->GetRprimCollection());
+        HdRprimCollection coll(HdTokens->geometry, HdTokens->refined);
+        coll.SetRenderTags({HdTokens->geometry});
+        return VtValue(coll);
     } else if (key == HdLightTokens->shadowParams) {
         HdxShadowParams shadowParams;
         shadowParams.enabled = false;
