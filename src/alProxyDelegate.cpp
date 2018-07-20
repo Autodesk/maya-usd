@@ -4,6 +4,7 @@
 #include <pxr/base/tf/type.h>
 
 #include <maya/MDGMessage.h>
+#include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MItDependencyNodes.h>
 #include <maya/MObject.h>
@@ -297,6 +298,89 @@ HdMayaALProxyDelegate::PreFrame() {
 			proxyData.delegate->ApplyPendingUpdates();
 		}
 	}
+}
+
+void
+HdMayaALProxyDelegate::PopulateSelectedPaths(
+        MSelectionList mayaSelection,
+        SdfPathVector& selectedSdfPaths) {
+	MStatus status;
+	MObject proxyMObj;
+	MFnDagNode proxyMFnDag;
+	MDagPathArray proxyDagPaths;
+
+	for (auto& proxyAndData : _proxiesData) {
+		auto& proxy = proxyAndData.first;
+		auto& proxyData = proxyAndData.second;
+
+		// First, we check to see if the entire proxy shape is selected
+		proxyDagPaths.clear();
+		proxyMObj = proxy->thisMObject();
+		if (!TF_VERIFY(!proxyMObj.isNull())) { continue; }
+		if (!TF_VERIFY(proxyMFnDag.setObject(proxyMObj))) { continue; }
+		if (!TF_VERIFY(proxyMFnDag.getAllPaths(proxyDagPaths))) { continue; }
+		if (!TF_VERIFY(proxyDagPaths.length())) { continue; }
+
+		bool wholeProxySelected = false;
+		// Loop over all instances
+		for (unsigned int i = 0, n = proxyDagPaths.length(); i < n; ++i) {
+			MDagPath& dagPath = proxyDagPaths[i];
+			// Loop over all parents
+			while (dagPath.length()) {
+				if (mayaSelection.hasItem(dagPath)) {
+					TF_DEBUG(HDMAYA_AL_SELECTION).Msg(
+							"proxy node %s was selected\n",
+							dagPath.fullPathName().asChar());
+					wholeProxySelected = true;
+					selectedSdfPaths.push_back(
+							proxyData.delegate->GetDelegateID());
+					break;
+				}
+				dagPath.pop();
+			}
+			if (wholeProxySelected) { break; }
+		}
+		if (wholeProxySelected) { continue; }
+
+		// Ok, we didn't have the entire proxy selected - instead, add in
+		// any "subpaths" of the proxy which may be selected
+
+		const auto& paths1 = proxy->selectedPaths();
+	    const auto& paths2 = proxy->selectionList().paths();
+
+	    if (TfDebug::IsEnabled(HDMAYA_AL_SELECTION)) {
+	    	TfDebug::Helper().Msg(
+	    			"proxy %s has %lu selectedPaths",
+					proxyDagPaths[0].fullPathName().asChar(),
+					paths1.size());
+	    	if (!paths1.empty()) {
+	    		TfDebug::Helper().Msg(
+	    				" (1st: %s)",
+						paths1.begin()->GetText());
+	    	}
+	    	TfDebug::Helper().Msg(
+	    			", and %lu selectionList paths",
+					paths2.size());
+	    	if (!paths2.empty()) {
+	    		TfDebug::Helper().Msg(
+	    				" (1st: %s)",
+						paths2.begin()->GetText());
+	    	}
+	    	TfDebug::Helper().Msg("\n");
+
+	    }
+
+	    for (auto& usdPath : paths1) {
+	    	selectedSdfPaths.push_back(
+	    			proxyData.delegate->GetPathForIndex(usdPath));
+	    }
+
+	    for (auto& usdPath : paths2) {
+	    	selectedSdfPaths.push_back(
+	    			proxyData.delegate->GetPathForIndex(usdPath));
+	    }
+	}
+
 }
 
 HdMayaALProxyData&

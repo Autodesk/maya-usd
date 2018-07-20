@@ -37,6 +37,9 @@ public:
 
     void Populate() override;
     void PreFrame() override;
+    void PopulateSelectedPaths(
+    		MSelectionList mayaSelection,
+			SdfPathVector& selectedSdfPaths) override;
 
     HdMayaALProxyData& AddProxy(ProxyShape* proxy);
     void RemoveProxy(ProxyShape* proxy);

@@ -15,6 +15,9 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(
     	HDMAYA_AL_POPULATE,
         "Print info about populating the delegate from the stage");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+    	HDMAYA_AL_SELECTION,
+        "Print info about selecting AL objects in the maya-to-hydra viewport");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
