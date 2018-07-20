@@ -47,9 +47,11 @@ public:
     void DeleteUsdImagingDelegate(ProxyShape* proxy);
 
 private:
-    bool PopulateSingleProxy(ProxyShape* proxy,
+    bool PopulateSingleProxy(
+            ProxyShape* proxy,
     		HdMayaALProxyData& proxyData);
-    void CreateUsdImagingDelegate(ProxyShape* proxy,
+    void CreateUsdImagingDelegate(
+            ProxyShape* proxy,
     		HdMayaALProxyData& proxyData);
 
     std::unordered_map<ProxyShape*, HdMayaALProxyData> _proxiesData;

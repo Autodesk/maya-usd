@@ -164,7 +164,8 @@ ProxyShapeRemovedCallback(MObject& node, void* clientData) {
 
 } // private namespace
 
-HdMayaALProxyDelegate::HdMayaALProxyDelegate(HdRenderIndex* renderIndex,
+HdMayaALProxyDelegate::HdMayaALProxyDelegate(
+        HdRenderIndex* renderIndex,
         const SdfPath& delegateID) :
                 _delegateID(delegateID),
                 _renderIndex(renderIndex) {
