@@ -33,7 +33,10 @@ _GetMaterialPath(const SdfPath& base, const MObject& obj) {
     if (!status) { return {}; }
     const auto* chr = node.name().asChar();
     if (chr == nullptr || chr[0] == '\0') { return {}; }
-    return base.AppendPath(SdfPath(chr));
+    std::string usdPathStr(chr);
+    // replace namespace ":" with "_"
+    std::replace(usdPathStr.begin(), usdPathStr.end(), ':', '_');
+    return base.AppendPath(SdfPath(usdPathStr));
 }
 
 }
