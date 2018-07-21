@@ -35,6 +35,10 @@ public:
 
     ~HdMayaALProxyDelegate() override;
 
+    static HdMayaDelegatePtr Creator(
+            HdRenderIndex* parentIndex,
+            const SdfPath& id);
+
     void Populate() override;
     void PreFrame() override;
     void PopulateSelectedPaths(

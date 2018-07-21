@@ -7,9 +7,12 @@
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MItDependencyNodes.h>
+#include <maya/MNodeClass.h>
 #include <maya/MObject.h>
 
 #include <hdmaya/delegates/delegateRegistry.h>
+
+#include <atomic>
 
 #include "debugCodes.h"
 
@@ -32,12 +35,15 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaALProxyDelegate) {
             "Calling RegisterDelegate for HdMayaALProxyDelegate\n");
     HdMayaDelegateRegistry::RegisterDelegate(
         _tokens->HdMayaALProxyDelegate,
-        [](HdRenderIndex* parentIndex, const SdfPath& id) -> HdMayaDelegatePtr {
-            return std::static_pointer_cast<HdMayaALProxyDelegate>(std::make_shared<HdMayaALProxyDelegate>(parentIndex, id));
-        });
+        HdMayaALProxyDelegate::Creator);
 }
 
 namespace {
+
+// Don't know if this variable would be accessed from multiple threads, but
+// plugin load/unload is infrequent enough that performance isn't an issue, and
+// I prefer to default to thread-safety for global variables.
+std::atomic<bool> isALPluginLoaded(false);
 
 void
 StageLoadedCallback(void* userData, AL::event::NodeEvents* node) {
@@ -162,6 +168,71 @@ ProxyShapeRemovedCallback(MObject& node, void* clientData) {
     delegate->DeleteUsdImagingDelegate(proxy);
 }
 
+bool
+IsALPluginLoaded() {
+    auto nodeClass = MNodeClass(ProxyShape::kTypeId);
+    // if not loaded yet, typeName() will be an empty string
+    return nodeClass.typeName() == ProxyShape::kTypeName;
+}
+
+void
+PluginCallback(const MStringArray& strs, void* clientData) {
+    // Considered having separate plugin loaded/unloaded callbacks, but that
+    // would mean checking for the plugin "name", which seems somewhat
+    // unreliable - it's just the name of the built library, which seems too
+    // easy to alter.
+    // Instead, we check if the node is registered.
+
+    TF_DEBUG(HDMAYA_AL_CALLBACKS).Msg(
+            "HdMayaALProxyDelegate - PluginCallback - %s - %s\n",
+            strs.length() > 0 ? strs[0].asChar() : "<none>",
+            strs.length() > 1 ? strs[1].asChar() : "<none");
+
+    bool isCurrentlyLoaded  = IsALPluginLoaded();
+    bool wasLoaded = isALPluginLoaded.exchange(isCurrentlyLoaded);
+    if (wasLoaded != isCurrentlyLoaded) {
+        if (TfDebug::IsEnabled(HDMAYA_AL_CALLBACKS)) {
+            if (isCurrentlyLoaded) {
+                TfDebug::Helper().Msg("ALUSDMayaPlugin loaded!\n");
+            }
+            else {
+                TfDebug::Helper().Msg("ALUSDMayaPlugin unloaded!\n");
+            }
+        }
+        // AL plugin was either loaded or unloaded - either way, need to reset
+        // the renderOverride to either add / remove our AL delegate
+        HdMayaDelegateRegistry::SignalDelegatesChanged();
+    }
+}
+
+void
+SetupPluginCallbacks() {
+    MStatus status;
+
+    isALPluginLoaded.store(IsALPluginLoaded());
+
+    // Set up callback to notify of plugin load
+    TF_DEBUG(HDMAYA_AL_CALLBACKS).Msg(
+            "HdMayaALProxyDelegate - creating PluginLoaded callback\n");
+    MSceneMessage::addStringArrayCallback(
+            MSceneMessage::kAfterPluginLoad,
+            PluginCallback,
+            nullptr,
+            &status);
+    TF_VERIFY(status, "Could not set pluginLoaded callback");
+
+    // Set up callback to notify of plugin unload
+    TF_DEBUG(HDMAYA_AL_CALLBACKS).Msg(
+            "HdMayaALProxyDelegate - creating PluginUnloaded callback\n");
+    MSceneMessage::addStringArrayCallback(
+            MSceneMessage::kAfterPluginUnload,
+            PluginCallback,
+            nullptr,
+            &status);
+    TF_VERIFY(status, "Could not set pluginUnloaded callback");
+}
+
+
 } // private namespace
 
 HdMayaALProxyDelegate::HdMayaALProxyDelegate(
@@ -234,6 +305,19 @@ HdMayaALProxyDelegate::~HdMayaALProxyDelegate() {
             proxy->scheduler()->unregisterCallback(callbackId);
         }
     }
+}
+
+HdMayaDelegatePtr
+HdMayaALProxyDelegate::Creator(
+        HdRenderIndex* parentIndex,
+        const SdfPath& id) {
+    static std::once_flag setupPluginCallbacksOnce;
+    std::call_once(setupPluginCallbacksOnce, SetupPluginCallbacks);
+
+    if (!isALPluginLoaded.load()) {
+        return nullptr;
+    }
+    return std::static_pointer_cast<HdMayaDelegate>(std::make_shared<HdMayaALProxyDelegate>(parentIndex, id));
 }
 
 void
