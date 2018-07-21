@@ -19,6 +19,8 @@ class HdMayaDelegateRegistry : public TfSingleton<HdMayaDelegateRegistry> {
     HDMAYA_API
     HdMayaDelegateRegistry() = default;
 public:
+    // function creates and returns a pointer to a HdMayaDelegate - may return
+    // a nullptr indicate failure, or that the delegate is currently disabled
     using DelegateCreator = std::function<
         HdMayaDelegatePtr(HdRenderIndex*, const SdfPath&)>;
 
@@ -28,6 +30,13 @@ public:
     static std::vector<TfToken> GetDelegateNames();
     HDMAYA_API
     static std::vector<DelegateCreator> GetDelegateCreators();
+
+    // Signal that some delegate types are now either valid or invalid.
+    // ie, say some delegate type is only useful / works when a certain maya
+    // plugin is loaded - you would call this every time that plugin was loaded
+    // or unloaded.
+    HDMAYA_API
+    static void SignalDelegatesChanged();
 
     // Find all HdMayaDelegate plugins, and load them all
     HDMAYA_API

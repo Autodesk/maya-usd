@@ -39,6 +39,10 @@ public:
         return TfSingleton<HdMayaRenderOverride>::DeleteInstance();
     }
 
+    static bool CurrentlyExists() {
+        return TfSingleton<HdMayaRenderOverride>::CurrentlyExists();
+    }
+
     static TfTokenVector GetRendererPlugins();
     static std::string GetRendererPluginDisplayName(const TfToken& id);
     static void ChangeRendererPlugin(const TfToken& id);
@@ -48,6 +52,8 @@ public:
     static void SetTextureMemoryPerTexture(int memory);
 
     MStatus Render(const MHWRender::MDrawContext& drawContext);
+
+    void ClearHydraResources();
 
     MString uiName() const override {
         return MString("Hydra Viewport Override");
@@ -63,7 +69,6 @@ public:
     bool nextRenderOperation() override;
 private:
     void InitHydraResources();
-    void ClearHydraResources();
     static void ClearHydraCallback(void*);
     void SelectionChanged();
     static void SelectionChangedCallback(void*);

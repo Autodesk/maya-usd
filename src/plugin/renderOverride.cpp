@@ -248,7 +248,6 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     if (!_initializedViewport) {
         GlfGlewInit();
         InitHydraResources();
-        _initializedViewport = true;
 #if LUMA_USD_BUILD
         if (_preferSimpleLight) {
             _taskController->SetEnableShadows(false);
@@ -327,9 +326,11 @@ HdMayaRenderOverride::InitHydraResources() {
     int delegateId = 0;
     for (const auto& creator: HdMayaDelegateRegistry::GetDelegateCreators()) {
         if (creator == nullptr) { continue; }
-        _delegates.push_back(creator(_renderIndex,
-                                     _ID.AppendChild(TfToken(
-                                         TfStringPrintf("_Delegate_%i_%p", delegateId++, this)))));
+        auto newDelegate = creator(_renderIndex,
+                _ID.AppendChild(TfToken(
+                        TfStringPrintf("_Delegate_%i_%p",
+                                delegateId++, this))));
+        if (newDelegate) { _delegates.push_back(newDelegate); }
     }
     _taskController = new HdxTaskController(
         _renderIndex,
@@ -353,6 +354,8 @@ HdMayaRenderOverride::InitHydraResources() {
     _renderIndex->GetChangeTracker().AddCollection(
             _selectionCollection.GetName());
     SelectionChanged();
+
+    _initializedViewport = true;
 }
 
 void
