@@ -423,7 +423,6 @@ HdMayaRenderOverride::SelectionChangedCallback(void*) {
     GetInstance().SelectionChanged();
 }
 
-
 MHWRender::DrawAPI
 HdMayaRenderOverride::supportedDrawAPIs() const {
     return MHWRender::kOpenGLCoreProfile | MHWRender::kOpenGL;
