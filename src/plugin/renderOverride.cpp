@@ -300,8 +300,13 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     MColor colour = M3dView::leadColor();
     params.wireframeColor = GfVec4f(colour.r, colour.g, colour.b, 1.0f);
 
-
     _taskController->SetRenderParams(params);
+#ifdef LUMA_USD_BUIOLD
+    HdxShadowTaskParams shadowParams;
+    shadowParams.cullStyle = HdCullStyleNothing;
+
+    _taskController->SetShadowParams(shadowParams);
+#endif
 
     renderFrame();
 
