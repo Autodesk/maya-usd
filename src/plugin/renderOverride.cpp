@@ -272,9 +272,6 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         _taskController->SetCameraViewport(viewport);
 
         _engine.Execute(*_renderIndex, _taskController->GetTasks(HdxTaskSetTokens->colorRender));
-        if (!_taskController->IsConverged()) {
-            MGlobal::executeCommandOnIdle("refresh -f");
-        }
     };
 
     if (!_initializedViewport) {
@@ -358,6 +355,10 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 
     for (auto& it: _delegates) {
         it->PostFrame();
+    }
+
+    if (!_taskController->IsConverged()) {
+        MGlobal::executeCommandOnIdle("refresh -f");
     }
 
     return MStatus::kSuccess;
