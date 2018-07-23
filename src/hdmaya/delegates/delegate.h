@@ -33,7 +33,7 @@ public:
     void SetPreferSimpleLight(bool v) { _preferSimpleLight = v; }
     bool GetPreferSimpleLight() { return _preferSimpleLight; }
 
-    virtual void PopulateSelectedPaths(MSelectionList mayaSelection,
+    virtual void PopulateSelectedPaths(const MSelectionList& mayaSelection,
             SdfPathVector& selectedSdfPaths)
     { }
 private:

@@ -235,16 +235,16 @@ HdMayaSceneDelegate::SetParams(const HdMayaParams& params) {
 
 void
 HdMayaSceneDelegate::PopulateSelectedPaths(
-        MSelectionList mayaSelection,
+        const MSelectionList& mayaSelection,
         SdfPathVector& selectedSdfPaths) {
-    MDagPath dagPath;
-    for (unsigned int i = 0, n = mayaSelection.length(); i < n; ++i) {
-        if (!TF_VERIFY(mayaSelection.getDagPath(i, dagPath))) { continue; }
-        const auto primPath = GetPrimPath(dagPath);
-        if (TfMapLookupPtr(_shapeAdapters, primPath) != nullptr) {
-            selectedSdfPaths.push_back(primPath);
-        }
-    }
+    _MapAdapter<HdMayaDagAdapter>([&mayaSelection, &selectedSdfPaths](HdMayaDagAdapter* a) {
+        auto dagPath = a->GetDagPath();
+        for (; dagPath.length(); dagPath.pop()) {
+            if (mayaSelection.hasItem(dagPath)) {
+                selectedSdfPaths.push_back(a->GetID());
+                return;
+            }
+        }}, _shapeAdapters);
 }
 
 HdMeshTopology
