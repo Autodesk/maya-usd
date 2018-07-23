@@ -49,8 +49,12 @@ public:
     void RemoveAdapter(const SdfPath& id) override;
     void InsertDag(const MDagPath& dag);
     void SetParams(const HdMayaParams& params) override;
-    void PopulateSelectedPaths(const MSelectionList& mayaSelection,
-            SdfPathVector& selectedSdfPaths) override;
+    void PopulateSelectedPaths(
+        const MSelectionList& mayaSelection,
+        SdfPathVector& selectedSdfPaths) override;
+    void PopulateSelectedPaths(
+        const MSelectionList& mayaSelection,
+        HdSelection* selection) override;
 protected:
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;
     GfRange3d GetExtent(const SdfPath& id) override;

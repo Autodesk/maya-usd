@@ -235,8 +235,8 @@ HdMayaSceneDelegate::SetParams(const HdMayaParams& params) {
 
 void
 HdMayaSceneDelegate::PopulateSelectedPaths(
-        const MSelectionList& mayaSelection,
-        SdfPathVector& selectedSdfPaths) {
+    const MSelectionList& mayaSelection,
+    SdfPathVector& selectedSdfPaths) {
     _MapAdapter<HdMayaDagAdapter>([&mayaSelection, &selectedSdfPaths](HdMayaDagAdapter* a) {
         auto dagPath = a->GetDagPath();
         for (; dagPath.length(); dagPath.pop()) {
@@ -245,6 +245,12 @@ HdMayaSceneDelegate::PopulateSelectedPaths(
                 return;
             }
         }}, _shapeAdapters);
+}
+
+void HdMayaSceneDelegate::PopulateSelectedPaths(
+    const MSelectionList& mayaSelection,
+    HdSelection* selection) {
+
 }
 
 HdMeshTopology

@@ -3,6 +3,8 @@
 
 #include <pxr/pxr.h>
 
+#include <pxr/imaging/hd/selection.h>
+
 #include <pxr/usd/sdf/path.h>
 
 #include <maya/MDagPath.h>
@@ -33,8 +35,14 @@ public:
     void SetPreferSimpleLight(bool v) { _preferSimpleLight = v; }
     bool GetPreferSimpleLight() { return _preferSimpleLight; }
 
-    virtual void PopulateSelectedPaths(const MSelectionList& mayaSelection,
-            SdfPathVector& selectedSdfPaths)
+    virtual void PopulateSelectedPaths(
+        const MSelectionList& mayaSelection,
+        SdfPathVector& selectedSdfPaths)
+    { }
+
+    virtual void PopulateSelectedPaths(
+        const MSelectionList& mayaSelection,
+        HdSelection* selection)
     { }
 private:
     HdMayaParams _params;
