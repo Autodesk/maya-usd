@@ -22,9 +22,9 @@ using AL::usdmaya::nodes::ProxyShape;
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdMayaALProxyData {
-	std::vector<AL::event::CallbackId> proxyShapeCallbacks;
-	std::unique_ptr<UsdImagingDelegate> delegate;
-	bool populated = false;
+    std::vector<AL::event::CallbackId> proxyShapeCallbacks;
+    std::unique_ptr<UsdImagingDelegate> delegate;
+    bool populated = false;
 };
 
 class HdMayaALProxyDelegate : public HdMayaDelegate {
@@ -42,8 +42,8 @@ public:
     void Populate() override;
     void PreFrame() override;
     void PopulateSelectedPaths(
-    		const MSelectionList& mayaSelection,
-			SdfPathVector& selectedSdfPaths) override;
+            const MSelectionList& mayaSelection,
+            SdfPathVector& selectedSdfPaths) override;
 
     HdMayaALProxyData& AddProxy(ProxyShape* proxy);
     void RemoveProxy(ProxyShape* proxy);
@@ -53,10 +53,10 @@ public:
 private:
     bool PopulateSingleProxy(
             ProxyShape* proxy,
-    		HdMayaALProxyData& proxyData);
+            HdMayaALProxyData& proxyData);
     void CreateUsdImagingDelegate(
             ProxyShape* proxy,
-    		HdMayaALProxyData& proxyData);
+            HdMayaALProxyData& proxyData);
 
     std::unordered_map<ProxyShape*, HdMayaALProxyData> _proxiesData;
     SdfPath const _delegateID;
