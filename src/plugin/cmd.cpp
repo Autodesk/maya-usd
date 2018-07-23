@@ -37,6 +37,24 @@ constexpr auto _getTextureMemoryPerTextureLong = "-getTextureMemoryPerTexture";
 constexpr auto _setTextureMemoryPerTexture = "-stm";
 constexpr auto _setTextureMemoryPerTextureLong = "-setTextureMemoryPerTexture";
 
+constexpr auto _getWireframeSelectionHighlight = "-gwh";
+constexpr auto _getWireframeSelectionHighlightLong = "-getWireframeSelectionHighlight";
+
+constexpr auto _setWireframeSelectionHighlight = "-swh";
+constexpr auto _setWireframeSelectionHighlightLong = "-setWireframeSelectionHighlight";
+
+constexpr auto _getColorSelectionHighlight = "-gch";
+constexpr auto _getColorSelectionHighlightLong = "-getColorSelectionHighlight";
+
+constexpr auto _setColorSelectionHighlight = "-sch";
+constexpr auto _setColorSelectionHighlightLong = "-setColorSelectionHighlight";
+
+constexpr auto _getColorSelectionHighlightColor = "-gcc";
+constexpr auto _getColorSelectionHighlightColorLong = "-getColorSelectionHighlightColor";
+
+constexpr auto _setColorSelectionHighlightColor = "-scc";
+constexpr auto _setColorSelectionHighlightColorLong = "-setColorSelectionHighlightColor";
+
 }
 
 MSyntax HdMayaCmd::createSyntax() {
@@ -77,6 +95,36 @@ MSyntax HdMayaCmd::createSyntax() {
         _setTextureMemoryPerTexture,
         _setTextureMemoryPerTextureLong,
         MSyntax::kLong);
+
+    syntax.addFlag(
+        _getWireframeSelectionHighlight,
+        _getWireframeSelectionHighlightLong);
+
+    syntax.addFlag(
+        _setWireframeSelectionHighlight,
+        _setWireframeSelectionHighlightLong,
+        MSyntax::kBoolean);
+
+    syntax.addFlag(
+        _getColorSelectionHighlight,
+        _getColorSelectionHighlightLong);
+
+    syntax.addFlag(
+        _setColorSelectionHighlight,
+        _setColorSelectionHighlightLong,
+        MSyntax::kBoolean);
+
+    syntax.addFlag(
+        _getColorSelectionHighlightColor,
+        _getColorSelectionHighlightColorLong);
+
+    syntax.addFlag(
+        _setColorSelectionHighlightColor,
+        _setColorSelectionHighlightColorLong,
+        MSyntax::kDouble,
+        MSyntax::kDouble,
+        MSyntax::kDouble,
+        MSyntax::kDouble);
 
     return syntax;
 }
@@ -121,6 +169,34 @@ MStatus HdMayaCmd::doIt(const MArgList &args) {
             if (res < 1024) { res = 1024; }
             if (res > 64 * 1024 * 1024) { res = 64 * 1024 * 1024; }
             HdMayaRenderOverride::SetTextureMemoryPerTexture(res);
+        }
+    } else if (db.isFlagSet(_getWireframeSelectionHighlight)) {
+        appendToResult(HdMayaRenderOverride::GetWireframeSelectionHighlight());
+    } else if (db.isFlagSet(_setWireframeSelectionHighlight)) {
+        bool res = true;
+        if (db.getFlagArgument(_setWireframeSelectionHighlight, 0, res)) {
+            HdMayaRenderOverride::SetWireframeSelectionHighlight(res);
+        }
+    } else if (db.isFlagSet(_getColorSelectionHighlight)) {
+        appendToResult(HdMayaRenderOverride::GetColorSelectionHighlight());
+    } else if (db.isFlagSet(_setColorSelectionHighlight)) {
+        bool res = true;
+        if (db.getFlagArgument(_setColorSelectionHighlight, 0, res)) {
+            HdMayaRenderOverride::SetColorSelectionHighlight(res);
+        }
+    } else if (db.isFlagSet(_getColorSelectionHighlightColor)) {
+        const auto res = HdMayaRenderOverride::GetColorSelectionHighlightColor();
+        appendToResult(res[0]);
+        appendToResult(res[1]);
+        appendToResult(res[2]);
+        appendToResult(res[3]);
+    } else if (db.isFlagSet(_setColorSelectionHighlightColor)) {
+        GfVec4d res(1.0, 1.0, 0.0, 0.5);
+        if (db.getFlagArgument(_setColorSelectionHighlightColor, 0, res[0]) &&
+            db.getFlagArgument(_setColorSelectionHighlightColor, 1, res[1]) &&
+            db.getFlagArgument(_setColorSelectionHighlightColor, 2, res[2]) &&
+            db.getFlagArgument(_setColorSelectionHighlightColor, 3, res[3])) {
+            HdMayaRenderOverride::SetColorSelectionHighlightColor(res);
         }
     }
     return MS::kSuccess;

@@ -50,6 +50,12 @@ public:
     static void SetMaximumShadowMapResolution(int resolution);
     static int GetTextureMemoryPerTexture();
     static void SetTextureMemoryPerTexture(int memory);
+    static bool GetWireframeSelectionHighlight();
+    static void SetWireframeSelectionHighlight(bool value);
+    static bool GetColorSelectionHighlight();
+    static void SetColorSelectionHighlight(bool value);
+    static GfVec4d GetColorSelectionHighlightColor();
+    static void SetColorSelectionHighlightColor(const GfVec4d& color);
 
     MStatus Render(const MHWRender::MDrawContext& drawContext);
 
@@ -87,6 +93,8 @@ private:
 
     std::vector<HdMayaDelegatePtr> _delegates;
 
+    GfVec4f _colorSelectionHighlightColor;
+
     SdfPath _ID;
     TfToken _rendererName;
 
@@ -94,6 +102,8 @@ private:
 
     bool _initializedViewport = false;
     bool _preferSimpleLight = false;
+    bool _wireframeSelectionHighlight = true;
+    bool _colorSelectionHighlight = true;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -128,7 +128,8 @@ HdMayaRenderOverride::HdMayaRenderOverride() :
     _selectionTracker(new HdxSelectionTracker),
     _renderCollection(HdTokens->geometry, HdTokens->smoothHull,
             SdfPath::AbsoluteRootPath()),
-    _selectionCollection(HdTokens->wire, HdTokens->wire) {
+    _selectionCollection(HdTokens->wire, HdTokens->wire),
+    _colorSelectionHighlightColor(1.0f, 1.0f, 0.0f, 0.5f) {
     _ID = SdfPath("/HdMayaViewportRenderer").AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
     _rendererName = _getDefaultRenderer();
     // This is a critical error, so we don't allow the construction
@@ -221,8 +222,39 @@ HdMayaRenderOverride::GetTextureMemoryPerTexture() {
     return static_cast<int>(GetInstance()._params.textureMemoryPerTexture);
 }
 
-void HdMayaRenderOverride::SetTextureMemoryPerTexture(int memory) {
+void
+HdMayaRenderOverride::SetTextureMemoryPerTexture(int memory) {
     GetInstance()._params.textureMemoryPerTexture = static_cast<size_t>(memory);
+}
+
+bool
+HdMayaRenderOverride::GetWireframeSelectionHighlight() {
+    return GetInstance()._wireframeSelectionHighlight;
+}
+
+void
+HdMayaRenderOverride::SetWireframeSelectionHighlight(bool value) {
+    GetInstance()._wireframeSelectionHighlight = value;
+}
+
+bool
+HdMayaRenderOverride::GetColorSelectionHighlight() {
+    return GetInstance()._colorSelectionHighlight;
+}
+
+void
+HdMayaRenderOverride::SetColorSelectionHighlight(bool value) {
+    GetInstance()._colorSelectionHighlight = value;
+}
+
+GfVec4d
+HdMayaRenderOverride::GetColorSelectionHighlightColor() {
+    return GetInstance()._colorSelectionHighlightColor;
+}
+
+void
+HdMayaRenderOverride::SetColorSelectionHighlightColor(const GfVec4d& color) {
+    GetInstance()._colorSelectionHighlightColor = GfVec4f(color);
 }
 
 MStatus
@@ -309,12 +341,14 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 #endif
 
     // Default color in usdview.
-    _taskController->SetSelectionColor(GfVec4f(1.0f, 1.0f, 0.0f, 0.5f));
+    _taskController->SetSelectionColor(_colorSelectionHighlightColor);
+    _taskController->SetEnableSelection(_colorSelectionHighlight);
 
     renderFrame();
 
     // This causes issues with the embree delegate and potentially others.
-    if (_rendererName == _tokens->HdStreamRendererPlugin) {
+    if (_wireframeSelectionHighlight &&
+        _rendererName == _tokens->HdStreamRendererPlugin) {
         if (!_selectionCollection.GetRootPaths().empty()) {
             _taskController->SetCollection(_selectionCollection);
             renderFrame();
@@ -348,9 +382,6 @@ HdMayaRenderOverride::InitHydraResources() {
         _ID.AppendChild(TfToken(
             TfStringPrintf("_UsdImaging_%s_%p", TfMakeValidIdentifier(_rendererName.GetText()).c_str(), this))));
 
-    // TODO: make selection work with "standard" _taskController methods, and
-    // set this to true
-    _taskController->SetEnableSelection(true);
 #ifdef LUMA_USD_BUILD
     _taskController->SetEnableShadows(true);
 #endif
