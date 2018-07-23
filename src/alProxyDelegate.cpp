@@ -368,7 +368,7 @@ HdMayaALProxyDelegate::PreFrame() {
 
 void
 HdMayaALProxyDelegate::PopulateSelectedPaths(
-        MSelectionList mayaSelection,
+        const MSelectionList& mayaSelection,
         SdfPathVector& selectedSdfPaths) {
     MStatus status;
     MObject proxyMObj;

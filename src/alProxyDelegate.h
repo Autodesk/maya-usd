@@ -42,7 +42,7 @@ public:
     void Populate() override;
     void PreFrame() override;
     void PopulateSelectedPaths(
-    		MSelectionList mayaSelection,
+    		const MSelectionList& mayaSelection,
 			SdfPathVector& selectedSdfPaths) override;
 
     HdMayaALProxyData& AddProxy(ProxyShape* proxy);
