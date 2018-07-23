@@ -240,7 +240,10 @@ HdMayaSceneDelegate::PopulateSelectedPaths(
     MDagPath dagPath;
     for (unsigned int i = 0, n = mayaSelection.length(); i < n; ++i) {
         if (!TF_VERIFY(mayaSelection.getDagPath(i, dagPath))) { continue; }
-        selectedSdfPaths.push_back(GetPrimPath(dagPath));
+        const auto primPath = GetPrimPath(dagPath);
+        if (TfMapLookupPtr(_shapeAdapters, primPath) != nullptr) {
+            selectedSdfPaths.push_back(primPath);
+        }
     }
 }
 
