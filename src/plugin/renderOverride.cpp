@@ -408,6 +408,12 @@ HdMayaRenderOverride::SelectionChanged() {
     }
     _selectionCollection.SetRootPaths(selectedPaths);
 
+    auto* selection = new HdSelection;
+    for (auto& it: _delegates) {
+        it->PopulateSelectedPaths(sel, selection);
+    }
+    _selectionTracker->SetSelection(HdSelectionSharedPtr(selection));
+
     // TODO: figure out if this is needed?
 //    _renderIndex->GetChangeTracker().MarkCollectionDirty(
 //            _selectionCollection.GetName());
