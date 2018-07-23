@@ -248,7 +248,7 @@ HdMayaALProxyDelegate::HdMayaALProxyDelegate(
     for(; !iter.isDone(); iter.next()) {
         MObject mobj = iter.item();
         fn.setObject(mobj);
-        if(fn.typeId() != ProxyShape::kTypeId) continue;
+        if(fn.typeId() != ProxyShape::kTypeId) { continue; }
 
         auto proxyShape = static_cast<ProxyShape *>(fn.userNode());
         if(!TF_VERIFY(proxyShape,
@@ -333,7 +333,7 @@ bool
 HdMayaALProxyDelegate::PopulateSingleProxy(
         ProxyShape* proxy,
         HdMayaALProxyData& proxyData) {
-    if (!proxyData.delegate) return false;;
+    if (!proxyData.delegate) { return false; }
 
     proxyData.delegate->SetRootTransform(GfMatrix4d(proxy->parentTransform().inclusiveMatrix().matrix));
 
