@@ -250,7 +250,14 @@ HdMayaSceneDelegate::PopulateSelectedPaths(
 void HdMayaSceneDelegate::PopulateSelectedPaths(
     const MSelectionList& mayaSelection,
     HdSelection* selection) {
-
+    _MapAdapter<HdMayaDagAdapter>([&mayaSelection, &selection](HdMayaDagAdapter* a) {
+        auto dagPath = a->GetDagPath();
+        for (; dagPath.length(); dagPath.pop()) {
+            if (mayaSelection.hasItem(dagPath)) {
+                a->PopulateSelection(HdSelection::HighlightModeSelect, selection);
+                return;
+            }
+        }}, _shapeAdapters);
 }
 
 HdMeshTopology

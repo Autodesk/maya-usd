@@ -42,6 +42,10 @@ public:
     virtual void MarkDirty(HdDirtyBits dirtyBits);
     HDMAYA_API
     virtual void RemovePrim() override;
+    HDMAYA_API
+    virtual void PopulateSelection(
+        const HdSelection::HighlightMode& mode,
+        HdSelection* selection);
 
     const MDagPath& GetDagPath() { return _dagPath; }
     const GfMatrix4d& GetTransform() const {

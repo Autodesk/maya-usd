@@ -308,6 +308,9 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     _taskController->SetShadowParams(shadowParams);
 #endif
 
+    // Default color in usdview.
+    _taskController->SetSelectionColor(GfVec4f(1.0f, 1.0f, 0.0f, 0.5f));
+
     renderFrame();
 
     // This causes issues with the embree delegate and potentially others.
@@ -347,7 +350,7 @@ HdMayaRenderOverride::InitHydraResources() {
 
     // TODO: make selection work with "standard" _taskController methods, and
     // set this to true
-    _taskController->SetEnableSelection(false);
+    _taskController->SetEnableSelection(true);
 #ifdef LUMA_USD_BUILD
     _taskController->SetEnableShadows(true);
 #endif
@@ -413,10 +416,6 @@ HdMayaRenderOverride::SelectionChanged() {
         it->PopulateSelectedPaths(sel, selection);
     }
     _selectionTracker->SetSelection(HdSelectionSharedPtr(selection));
-
-    // TODO: figure out if this is needed?
-//    _renderIndex->GetChangeTracker().MarkCollectionDirty(
-//            _selectionCollection.GetName());
 }
 
 void

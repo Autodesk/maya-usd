@@ -58,4 +58,11 @@ HdMayaDagAdapter::RemovePrim() {
     GetDelegate()->RemoveRprim(GetID());
 }
 
+void
+HdMayaDagAdapter::PopulateSelection(
+    const HdSelection::HighlightMode& mode,
+    HdSelection* selection) {
+    selection->AddRprim(mode, GetID());
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
