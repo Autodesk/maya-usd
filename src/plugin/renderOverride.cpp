@@ -310,10 +310,13 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 
     renderFrame();
 
-    if (!_selectionCollection.GetRootPaths().empty()) {
-        _taskController->SetCollection(_selectionCollection);
-        renderFrame();
-        _taskController->SetCollection(_renderCollection);
+    // This causes issues with the embree delegate and potentially others.
+    if (_rendererName == _tokens->HdStreamRendererPlugin) {
+        if (!_selectionCollection.GetRootPaths().empty()) {
+            _taskController->SetCollection(_selectionCollection);
+            renderFrame();
+            _taskController->SetCollection(_renderCollection);
+        }
     }
 
     for (auto& it: _delegates) {
