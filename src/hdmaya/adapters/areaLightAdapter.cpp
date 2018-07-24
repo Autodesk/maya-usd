@@ -3,6 +3,7 @@
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/light.h>
 
+#include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/lightAdapter.h>
 #include <hdmaya/adapters/adapterRegistry.h>
 
@@ -49,6 +50,11 @@ public:
 
     VtValue
     GetLightParamValue(const TfToken& paramName) override {
+        TF_DEBUG(HDMAYA_ADAPTER_GET).Msg(
+                "Called HdMayaAreaLightAdapter::GetLightParamValue(%s) - %s\n",
+                paramName.GetText(),
+                GetDagPath().partialPathName().asChar());
+
         if (paramName == HdLightTokens->width) {
             return VtValue(1.0f);
         } else if (paramName == HdLightTokens->height) {

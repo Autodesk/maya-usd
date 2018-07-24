@@ -10,6 +10,7 @@
 #include <maya/MPlug.h>
 #include <maya/MPoint.h>
 
+#include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/adapterRegistry.h>
 #include <hdmaya/adapters/lightAdapter.h>
 
@@ -52,6 +53,11 @@ protected:
 
     VtValue
     Get(const TfToken& key) override {
+        TF_DEBUG(HDMAYA_ADAPTER_GET).Msg(
+                "Called HdMayaSpotLightAdapter::Get(%s) - %s\n",
+                key.GetText(),
+                GetDagPath().partialPathName().asChar());
+
         if (key == HdLightTokens->shadowParams) {
             HdxShadowParams shadowParams;
             MFnLight mayaLight(GetDagPath().node());

@@ -5,6 +5,8 @@
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 
+#include <hdmaya/adapters/adapterDebugCodes.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -51,6 +53,10 @@ HdMayaShapeAdapter::MarkDirty(HdDirtyBits dirtyBits) {
 
 MObject
 HdMayaShapeAdapter::GetMaterial() {
+    TF_DEBUG(HDMAYA_ADAPTER_GET).Msg(
+            "Called HdMayaShapeAdapter::GetMaterial() - %s\n",
+            GetDagPath().partialPathName().asChar());
+
     MStatus status;
     MFnDagNode dagNode(GetDagPath(), &status);
     if (!status) { return MObject::kNullObj; }

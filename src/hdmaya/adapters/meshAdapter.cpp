@@ -97,6 +97,11 @@ public:
 
     VtValue
     Get(const TfToken& key) override {
+        TF_DEBUG(HDMAYA_ADAPTER_GET).Msg(
+                "Called HdMayaMeshAdapter::Get(%s) - %s\n",
+                key.GetText(),
+                GetDagPath().partialPathName().asChar());
+
         if (key == HdTokens->points) {
             MFnMesh mesh(GetDagPath());
             // Same memory layout for MFloatVector and GfVec3f!

@@ -13,6 +13,7 @@
 
 #include <maya/MNodeMessage.h>
 
+#include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/constantShadowMatrix.h>
 
 namespace {
@@ -110,6 +111,11 @@ HdMayaLightAdapter::RemovePrim() {
 
 VtValue
 HdMayaLightAdapter::Get(const TfToken& key) {
+    TF_DEBUG(HDMAYA_ADAPTER_GET).Msg(
+            "Called HdMayaLightAdapter::Get(%s) - %s\n",
+            key.GetText(),
+            GetDagPath().partialPathName().asChar());
+
     if (key == HdLightTokens->params) {
         MFnLight mayaLight(GetDagPath().node());
         GlfSimpleLight light;
@@ -159,6 +165,11 @@ HdMayaLightAdapter::Get(const TfToken& key) {
 
 VtValue
 HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
+    TF_DEBUG(HDMAYA_ADAPTER_GET).Msg(
+            "Called HdMayaLightAdapter::GetLightParamValue(%s) - %s\n",
+            paramName.GetText(),
+            GetDagPath().partialPathName().asChar());
+
     MFnLight light(GetDagPath().node());
     if (paramName == HdTokens->color) {
         const auto color = light.color();
