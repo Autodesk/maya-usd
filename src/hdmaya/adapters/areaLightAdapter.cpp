@@ -47,6 +47,16 @@ public:
         }
     }
 
+    VtValue
+    GetLightParamValue(const TfToken& paramName) override {
+        if (paramName == HdLightTokens->width) {
+            return VtValue(1.0f);
+        } else if (paramName == HdLightTokens->height) {
+            return VtValue(1.0f);
+        }
+        return HdMayaLightAdapter::GetLightParamValue(paramName);
+    }
+
     bool
     HasType(const TfToken& typeId) override {
         if (GetDelegate()->GetPreferSimpleLight()) {
