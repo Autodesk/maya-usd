@@ -1,17 +1,64 @@
 #include "lightAdapter.h"
 
+#include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/light.h>
 #include <pxr/imaging/hdx/simpleLightTask.h>
 
 #include <maya/MColor.h>
 #include <maya/MFnLight.h>
+#include <maya/MNodeClass.h>
 #include <maya/MPlug.h>
 #include <maya/MPoint.h>
 
 #include <maya/MNodeMessage.h>
 
 #include <hdmaya/adapters/constantShadowMatrix.h>
+
+namespace {
+
+    PXR_NAMESPACE_USING_DIRECTIVE;
+
+    MObject _decayRateAttr;
+    MObject _emitDiffuseAttr;
+    MObject _emitSpecularAttr;
+    MObject _dmapResolutionAttr;
+    MObject _dmapBiasAttr;
+    MObject _dmapFilterSizeAttr;
+
+    bool _attrsInitialized = false;
+
+    void _initializeAttrs() {
+        if (_attrsInitialized) { return; }
+
+        MStatus status;
+        bool success = true;
+
+        MNodeClass nonAmbientClass("nonAmbientLightShapeNode");
+        if (TF_VERIFY(nonAmbientClass.typeId() != 0)) {
+            _decayRateAttr = nonAmbientClass.attribute("decayRate", &status);
+            success &= TF_VERIFY(status);
+            _emitDiffuseAttr = nonAmbientClass.attribute("emitDiffuse", &status);
+            success &= TF_VERIFY(status);
+            _emitSpecularAttr = nonAmbientClass.attribute("emitSpecular", &status);
+            success &= TF_VERIFY(status);
+        }
+        else { success = false; }
+
+        MNodeClass nonExtendedClass("nonExtendedLightShapeNode");
+        if (TF_VERIFY(nonExtendedClass.typeId() != 0)) {
+            _dmapResolutionAttr = nonExtendedClass.attribute("dmapResolution", &status);
+            success &= TF_VERIFY(status);
+            _dmapBiasAttr = nonExtendedClass.attribute("dmapBias", &status);
+            success &= TF_VERIFY(status);
+            _dmapFilterSizeAttr = nonExtendedClass.attribute("dmapFilterSize", &status);
+            success &= TF_VERIFY(status);
+        }
+        else { success = false; }
+
+        _attrsInitialized = success;
+    }
+}
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -38,6 +85,7 @@ void _dirtyParams(MObject& /*node*/, void* clientData) {
 HdMayaLightAdapter::HdMayaLightAdapter(
     HdMayaDelegateCtx* delegate, const MDagPath& dag)
     : HdMayaDagAdapter(delegate->GetPrimPath(dag), delegate, dag) {
+    _initializeAttrs();
 }
 
 void
@@ -71,9 +119,9 @@ HdMayaLightAdapter::Get(const TfToken& key) {
         const auto inclusiveMatrix = GetDagPath().inclusiveMatrix();
         const auto position = pt * inclusiveMatrix;
         // This will return zero / false if the plug is nonexistent.
-        const auto decayRate = mayaLight.findPlug("decayRate", true).asShort();
-        const auto emitDiffuse = mayaLight.findPlug("emitDiffuse", true).asBool();
-        const auto emitSpecular = mayaLight.findPlug("emitSpecular", true).asBool();
+        const auto decayRate = mayaLight.findPlug(_decayRateAttr, true).asShort();
+        const auto emitDiffuse = mayaLight.findPlug(_emitDiffuseAttr, true).asBool();
+        const auto emitSpecular = mayaLight.findPlug(_emitSpecularAttr, true).asBool();
         MVector pv(0.0, 0.0, -1.0);
         const auto lightDirection = (pv * inclusiveMatrix).normal();
         light.SetHasShadow(false);
@@ -150,11 +198,11 @@ HdMayaLightAdapter::_CalculateLightParams(GlfSimpleLight& /*light*/) {
 
 void
 HdMayaLightAdapter::_CalculateShadowParams(MFnLight& light, GfFrustum& frustum, HdxShadowParams& params) {
-    auto dmapResolutionPlug = light.findPlug("dmapResolution");
-    auto dmapBiasPlug = light.findPlug("dmapBias");
-    auto dmapFilterSizePlug = light.findPlug("dmapFilterSize");
+    auto dmapResolutionPlug = light.findPlug(_dmapResolutionAttr);
+    auto dmapBiasPlug = light.findPlug(_dmapBiasAttr);
+    auto dmapFilterSizePlug = light.findPlug(_dmapFilterSizeAttr);
 
-    const auto decayRate = light.findPlug("decayRate", true).asShort();
+    const auto decayRate = light.findPlug(_decayRateAttr, true).asShort();
     if (decayRate > 0) {
         const auto color = light.color();
         const auto intensity = light.intensity();
