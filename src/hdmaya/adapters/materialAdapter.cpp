@@ -192,7 +192,6 @@ HdMayaMaterialAdapter::RemovePrim() {
     GetDelegate()->RemoveSprim(HdPrimTypeTokens->material, GetID());
 }
 
-
 void
 HdMayaMaterialAdapter::Populate() {
     GetDelegate()->InsertSprim(HdPrimTypeTokens->material, GetID(), HdMaterial::AllDirty);

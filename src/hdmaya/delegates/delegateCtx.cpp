@@ -3,7 +3,11 @@
 #include <pxr/base/gf/frustum.h>
 #include <pxr/base/gf/plane.h>
 #include <pxr/base/gf/range1d.h>
+
 #include <pxr/imaging/hd/rprim.h>
+#include <pxr/imaging/hd/renderDelegate.h>
+
+#include <pxr/imaging/glf/glslfx.h>
 
 #include <usdMaya/util.h>
 
@@ -52,6 +56,9 @@ HdMayaDelegateCtx::HdMayaDelegateCtx(
     _rprimCollection.SetRootPath(_rprimPath);
     _rprimCollection.SetRenderTags({HdTokens->geometry});
     GetChangeTracker().AddCollection(TfToken("visible"));
+
+    _needsGLSLFX = renderIndex->GetRenderDelegate()->GetMaterialNetworkSelector()
+        == GlfGLSLFXTokens->glslfx;
 }
 
 void

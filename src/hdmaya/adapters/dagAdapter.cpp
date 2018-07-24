@@ -14,7 +14,8 @@ TF_REGISTRY_FUNCTION(TfType)
 
 namespace {
 
-void _changeTransformAttributes(MNodeMessage::AttributeMessage /*msg*/, MPlug& /*plug*/, MPlug& /*otherPlug*/, void* clientData) {
+void _ChangeTransformAttributes(
+    MNodeMessage::AttributeMessage /*msg*/, MPlug& /*plug*/, MPlug& /*otherPlug*/, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     adapter->MarkDirty(HdChangeTracker::DirtyTransform);
 }
@@ -38,7 +39,7 @@ HdMayaDagAdapter::CreateCallbacks() {
     for (auto dag = GetDagPath(); dag.length() > 0; dag.pop()) {
         MObject obj = dag.node();
         if (obj != MObject::kNullObj) {
-            auto id = MNodeMessage::addAttributeChangedCallback(obj, _changeTransformAttributes, this, &status);
+            auto id = MNodeMessage::addAttributeChangedCallback(obj, _ChangeTransformAttributes, this, &status);
             if (status) { AddCallback(id); }
         }
     }
