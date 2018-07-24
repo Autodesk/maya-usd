@@ -27,9 +27,8 @@ public:
     HDMAYA_API
     virtual MObject GetMaterial();
 
-    const GfRange3d& GetExtent() const {
-        return _extent;
-    }
+    HDMAYA_API
+    const GfRange3d& GetExtent();
 
 protected:
     HDMAYA_API
@@ -37,6 +36,7 @@ protected:
 
 private:
     GfRange3d _extent;
+    bool _extentDirty;
 };
 
 using HdMayaShapeAdapterPtr = std::shared_ptr<HdMayaShapeAdapter>;

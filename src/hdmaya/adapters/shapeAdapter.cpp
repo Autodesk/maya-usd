@@ -27,6 +27,7 @@ HdMayaShapeAdapter::_CalculateExtent() {
         const auto mx = bb.max();
         _extent.SetMin({mn.x, mn.y, mn.z});
         _extent.SetMax({mx.x, mx.y, mx.z});
+        _extentDirty = false;
     }
 };
 
@@ -44,7 +45,7 @@ void
 HdMayaShapeAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     HdMayaDagAdapter::MarkDirty(dirtyBits);
     if (dirtyBits & HdChangeTracker::DirtyPoints) {
-        _CalculateExtent();
+        _extentDirty = true;
     }
 }
 
@@ -71,6 +72,15 @@ HdMayaShapeAdapter::GetMaterial() {
     }
 
     return MObject::kNullObj;
+}
+
+const GfRange3d&
+HdMayaShapeAdapter::GetExtent() {
+
+    if (_extentDirty) {
+        _CalculateExtent();
+    }
+    return _extent;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

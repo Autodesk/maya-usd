@@ -51,6 +51,12 @@ HdMayaDagAdapter::CreateCallbacks() {
 void
 HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     if (dirtyBits & HdChangeTracker::DirtyTransform) {
+        // TODO: this will trigger dg evalutation during the dirty-bit-push
+        // loop... refactor to avoid - we should just be able to only set the
+        // DirtyTransform bit if the transform was actually dirtied - we will
+        // miss the case where it was "changed" to the same value, but this
+        // should be an infrequent enough case we can probably ignore - or
+        // else delay the check until the renderOverride's "setup"
         if (!CalculateTransform()) {
             dirtyBits &= ~HdChangeTracker::DirtyTransform;
         }
