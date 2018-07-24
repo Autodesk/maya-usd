@@ -422,8 +422,13 @@ HdMayaSceneDelegate::GetMaterialParams(const SdfPath& id) {
 
 VtValue
 HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id) {
-    std::cerr << "[HdMayaSceneDelegate] Getting material resource of " << id << std::endl;
-    return {};
+    if (id == _fallbackMaterial) {
+        return VtValue(HdMaterialNetworkMap());
+    }
+    return _GetValue<HdMayaMaterialAdapter, VtValue>(
+        id,
+        [](HdMayaMaterialAdapter* a) -> VtValue { return a->GetMaterialResource(); },
+        _materialAdapters);
 }
 
 TfTokenVector

@@ -227,6 +227,11 @@ HdMayaMaterialAdapter::GetTextureResource(const TfToken& paramName) {
     return {};
 }
 
+VtValue
+HdMayaMaterialAdapter::GetMaterialResource() {
+    return VtValue(HdMaterialNetworkMap());
+}
+
 const HdMaterialParamVector&
 HdMayaMaterialAdapter::GetPreviewMaterialParams() {
     return _previewShaderParamVector;
