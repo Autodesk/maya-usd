@@ -11,6 +11,10 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Print information about 'get' calls to the adapter.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
+            HDMAYA_ADAPTER_LIGHT_SHADOWS,
+        "Print information about shadow rendering.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_ADAPTER_MESH_PLUG_DIRTY,
         "Print information about the mesh plug dirtying handled.");
 

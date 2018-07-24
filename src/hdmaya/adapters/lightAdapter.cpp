@@ -209,6 +209,10 @@ HdMayaLightAdapter::_CalculateLightParams(GlfSimpleLight& /*light*/) {
 
 void
 HdMayaLightAdapter::_CalculateShadowParams(MFnLight& light, GfFrustum& frustum, HdxShadowParams& params) {
+    TF_DEBUG(HDMAYA_ADAPTER_LIGHT_SHADOWS).Msg(
+            "Called HdMayaLightAdapter::_CalculateShadowParams - %s\n",
+            GetDagPath().partialPathName().asChar());
+
     auto dmapResolutionPlug = light.findPlug(_dmapResolutionAttr);
     auto dmapBiasPlug = light.findPlug(_dmapBiasAttr);
     auto dmapFilterSizePlug = light.findPlug(_dmapFilterSizeAttr);
@@ -251,6 +255,11 @@ HdMayaLightAdapter::_CalculateShadowParams(MFnLight& light, GfFrustum& frustum, 
         -0.021 : -dmapBiasPlug.asFloat() - .02;
     params.blur = dmapFilterSizePlug.isNull() ?
         0.0 : (static_cast<double>(dmapFilterSizePlug.asInt())) / static_cast<double>(params.resolution);
+
+    if (TfDebug::IsEnabled(HDMAYA_ADAPTER_LIGHT_SHADOWS)) {
+        std::cout << "Resulting HdxShadowParams:" << std::endl;
+        std::cout << params << std::endl;
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
