@@ -54,7 +54,7 @@ public:
 
 protected:
     HDMAYA_API
-    void CalculateTransform();
+    bool CalculateTransform();
 
 private:
     MDagPath _dagPath;

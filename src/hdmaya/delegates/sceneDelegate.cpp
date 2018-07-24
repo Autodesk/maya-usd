@@ -298,10 +298,14 @@ HdMayaSceneDelegate::IsEnabled(const TfToken& option) const {
 
 VtValue
 HdMayaSceneDelegate::Get(SdfPath const& id, const TfToken& key) {
-    return _GetValue<HdMayaAdapter, VtValue>(
+    const auto ret = _GetValue<HdMayaAdapter, VtValue>(
         id,
         [&key](HdMayaAdapter* a) -> VtValue { return a->Get(key); },
         _shapeAdapters, _lightAdapters, _materialAdapters);
+    /*if (ret.IsEmpty()) {
+        std::cerr << "[HdMayaSceneDelegate::Get] Failed for " << key << " on " << id << std::endl;
+    }*/
+    return ret;
 }
 
 HdPrimvarDescriptorVector
@@ -314,10 +318,14 @@ HdMayaSceneDelegate::GetPrimvarDescriptors(const SdfPath& id, HdInterpolation in
 
 VtValue
 HdMayaSceneDelegate::GetLightParamValue(const SdfPath& id, const TfToken& paramName) {
-    return _GetValue<HdMayaLightAdapter, VtValue>(
+    const auto ret = _GetValue<HdMayaLightAdapter, VtValue>(
         id,
         [&paramName](HdMayaLightAdapter* a) -> VtValue { return a->GetLightParamValue(paramName); },
         _lightAdapters);
+    /*if (ret.IsEmpty()) {
+        std::cerr << "[HdMayaSceneDelegate::GetLightParamValue] Failed for " << paramName << " on " << id << std::endl;
+    }*/
+    return ret;
 }
 
 bool

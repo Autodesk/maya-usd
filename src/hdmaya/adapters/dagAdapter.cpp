@@ -28,9 +28,11 @@ HdMayaDagAdapter::HdMayaDagAdapter(
     CalculateTransform();
 }
 
-void
+bool
 HdMayaDagAdapter::CalculateTransform() {
+    const auto _oldTransform = _transform;
     _transform = getGfMatrixFromMaya(_dagPath.inclusiveMatrix());
+    return !GfIsClose(_oldTransform, _transform, 0.001);
 };
 
 void
@@ -48,9 +50,14 @@ HdMayaDagAdapter::CreateCallbacks() {
 
 void
 HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
-    GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
     if (dirtyBits & HdChangeTracker::DirtyTransform) {
-        CalculateTransform();
+        if (!CalculateTransform()) {
+            dirtyBits &= ~HdChangeTracker::DirtyTransform;
+        }
+    }
+
+    if (dirtyBits != 0) {
+        GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
     }
 }
 

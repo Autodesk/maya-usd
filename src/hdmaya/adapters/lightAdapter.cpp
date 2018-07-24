@@ -42,9 +42,14 @@ HdMayaLightAdapter::HdMayaLightAdapter(
 
 void
 HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits) {
-    GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
     if (dirtyBits & HdLight::DirtyTransform) {
-        CalculateTransform();
+        if (!CalculateTransform()) {
+            dirtyBits &= ~HdLight::DirtyTransform;
+        }
+    }
+
+    if (dirtyBits != 0) {
+        GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
     }
 }
 
