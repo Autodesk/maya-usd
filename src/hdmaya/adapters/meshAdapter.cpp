@@ -10,6 +10,7 @@
 #include <maya/MIntArray.h>
 #include <maya/MFloatArray.h>
 #include <maya/MFnMesh.h>
+#include <maya/MNodeClass.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
 
@@ -26,11 +27,15 @@ TF_DEFINE_PRIVATE_TOKENS(
     (st)
 );
 
-std::vector<std::pair<MString, HdDirtyBits>> _dirtyBits = {
-    {MString("pt"),
+bool _meshAttrsInitialized = false;
+
+MObject _meshIogAttribute; // Will hold "iog" attribute when initialized
+
+std::vector<std::pair<MObject, HdDirtyBits>> _dirtyBits = {
+    {MObject(), // Will hold "pt" attribute when initialized
      HdChangeTracker::DirtyPoints |
      HdChangeTracker::DirtyExtent},
-    {MString("i"),
+    {MObject(), // Will hold "i" attribute when initialized
      HdChangeTracker::DirtyPoints |
      HdChangeTracker::DirtyExtent |
      HdChangeTracker::DirtyPrimvar |
@@ -43,7 +48,26 @@ std::vector<std::pair<MString, HdDirtyBits>> _dirtyBits = {
 class HdMayaMeshAdapter : public HdMayaShapeAdapter {
 public:
     HdMayaMeshAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-        : HdMayaShapeAdapter(delegate->GetPrimPath(dag), delegate, dag) { }
+        : HdMayaShapeAdapter(delegate->GetPrimPath(dag), delegate, dag) {
+        // Do this here just because we want to wait for a point in time where
+        // we KNOW maya is initialized
+        if (!_meshAttrsInitialized) {
+            // Don't have a mutex here, should be fine - worst case we have two
+            // threads setting these to the same thing at the same time
+            MNodeClass meshNodeClass("mesh");
+            if (TF_VERIFY(meshNodeClass.typeId() != 0)) {
+                MStatus status;
+                bool success = true;
+                _dirtyBits[0].first = meshNodeClass.attribute("pt", &status);
+                success &= TF_VERIFY(status);
+                _dirtyBits[0].first = meshNodeClass.attribute("i", &status);
+                success &= TF_VERIFY(status);
+                _meshIogAttribute = meshNodeClass.attribute("iog", &status);
+                success &= TF_VERIFY(status);
+                _meshAttrsInitialized = success;
+            }
+        }
+    }
 
     void
     Populate() override {
@@ -158,28 +182,26 @@ private:
     static void
     NodeDirtiedCallback(MObject& node, MPlug& plug, void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
-        const auto plugName = plug.partialName();
         for (const auto& it: _dirtyBits) {
-            if (it.first == plugName) {
+            if (it.first == plug) {
                 adapter->MarkDirty(it.second);
                 TF_DEBUG(HDMAYA_ADAPTER_MESH_PLUG_DIRTY).Msg(
                     "Marking prim dirty with bits %u because %s plug was dirtied.\n",
-                    it.second, it.first.asChar());
+                    it.second, plug.partialName().asChar());
                 return;
             }
         }
 
         TF_DEBUG(HDMAYA_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY).Msg(
                 "%s (%s) plug dirtying was not handled by HdMayaMeshAdapter::NodeDirtiedCallback.\n",
-                plug.name().asChar(), plugName.asChar());
+                plug.name().asChar(), plug.partialName().asChar());
     }
 
     // For material assignments for now.
     static void
     AttributeChangedCallback(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPlug, void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
-        const auto plugName = plug.partialName();
-        if (plugName == MString("iog")) {
+        if (plug == _meshIogAttribute) {
             adapter->MarkDirty(HdChangeTracker::DirtyMaterialId);
         }
     }
