@@ -362,6 +362,7 @@ HdMayaALProxyDelegate::PreFrame() {
         auto& proxyData = proxyAndData.second;
         if (PopulateSingleProxy(proxy, proxyData)) {
             proxyData.delegate->ApplyPendingUpdates();
+            proxyData.delegate->PostSyncCleanup();
         }
     }
 }
