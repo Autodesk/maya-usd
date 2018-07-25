@@ -163,8 +163,6 @@ HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum) {
     };
 
     for (const auto& id : GetRenderIndex().GetRprimIds()) {
-        auto* rprim = GetRenderIndex().GetRprim(id);
-        if (rprim == nullptr) { continue; }
         auto* delegate = GetRenderIndex().GetSceneDelegateForRprim(id);
         if (delegate == nullptr) { continue; }
         const auto extent = delegate->GetExtent(id);
