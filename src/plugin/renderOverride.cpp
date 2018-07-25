@@ -46,11 +46,11 @@ constexpr auto HDMAYA_DEFAULT_RENDERER_PLUGIN_NAME = "HDMAYA_DEFAULT_RENDERER_PL
 // There MUST be a better way to do this!
 std::mutex _convergenceMutex;
 bool _isConverged;
-std::chrono::system_clock::time_point _lastRendered = std::chrono::system_clock::now();
+std::chrono::system_clock::time_point _lastRenderTime = std::chrono::system_clock::now();
 
 void _TimerCallback(float, float, void*) {
     std::lock_guard<std::mutex> lock(_convergenceMutex);
-    if (!_isConverged && (std::chrono::system_clock::now() - _lastRendered) < std::chrono::seconds(5)) {
+    if (!_isConverged && (std::chrono::system_clock::now() - _lastRenderTime) < std::chrono::seconds(5)) {
         MGlobal::executeCommandOnIdle("refresh -f");
     }
 }
@@ -379,7 +379,7 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     }
 
     std::lock_guard<std::mutex> lock(_convergenceMutex);
-    _lastRendered = std::chrono::system_clock::now();
+    _lastRenderTime = std::chrono::system_clock::now();
     _isConverged = _taskController->IsConverged();
 
     return MStatus::kSuccess;
