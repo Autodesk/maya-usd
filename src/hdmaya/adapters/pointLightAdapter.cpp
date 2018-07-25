@@ -5,6 +5,7 @@
 
 #include <hdmaya/adapters/lightAdapter.h>
 #include <hdmaya/adapters/adapterRegistry.h>
+#include <hdmaya/adapters/adapterDebugCodes.h>
 
 #include <memory>
 
@@ -51,6 +52,19 @@ public:
         } else {
             return typeId == HdPrimTypeTokens->sphereLight;
         }
+    }
+
+    VtValue
+    GetLightParamValue(const TfToken& paramName) override {
+        TF_DEBUG(HDMAYA_ADAPTER_GET).Msg(
+                "Called HdMayaAreaLightAdapter::GetLightParamValue(%s) - %s\n",
+                paramName.GetText(),
+                GetDagPath().partialPathName().asChar());
+
+        if (paramName == HdLightTokens->radius) {
+            return VtValue(1.0f);
+        }
+        return HdMayaLightAdapter::GetLightParamValue(paramName);
     }
 };
 
