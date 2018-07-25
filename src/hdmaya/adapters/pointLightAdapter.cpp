@@ -56,7 +56,7 @@ public:
 
     VtValue
     GetLightParamValue(const TfToken& paramName) override {
-        TF_DEBUG(HDMAYA_ADAPTER_GET).Msg(
+        TF_DEBUG(HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE).Msg(
                 "Called HdMayaAreaLightAdapter::GetLightParamValue(%s) - %s\n",
                 paramName.GetText(),
                 GetDagPath().partialPathName().asChar());

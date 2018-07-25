@@ -165,7 +165,7 @@ HdMayaLightAdapter::Get(const TfToken& key) {
 
 VtValue
 HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
-    TF_DEBUG(HDMAYA_ADAPTER_GET).Msg(
+    TF_DEBUG(HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE).Msg(
             "Called HdMayaLightAdapter::GetLightParamValue(%s) - %s\n",
             paramName.GetText(),
             GetDagPath().partialPathName().asChar());
