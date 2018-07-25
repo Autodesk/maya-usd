@@ -37,6 +37,8 @@ public:
     virtual ~HdMayaDagAdapter() = default;
 
     HDMAYA_API
+    virtual bool GetVisible();
+    HDMAYA_API
     virtual void CreateCallbacks() override;
     HDMAYA_API
     virtual void MarkDirty(HdDirtyBits dirtyBits);

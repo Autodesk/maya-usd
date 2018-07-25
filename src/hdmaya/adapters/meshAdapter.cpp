@@ -41,6 +41,10 @@ std::vector<std::pair<MObject, HdDirtyBits>> _dirtyBits = {
      HdChangeTracker::DirtyPrimvar |
      HdChangeTracker::DirtyTopology |
      HdChangeTracker::DirtyNormals},
+    {MObject(), // Will hold "wm" attribute when initialized,
+     HdChangeTracker::DirtyTransform},
+    {MObject(), // Will hold "ds" attribute when initialized,,
+     HdChangeTracker::DirtyDoubleSided},
 };
 
 }
@@ -60,7 +64,11 @@ public:
                 bool success = true;
                 _dirtyBits[0].first = meshNodeClass.attribute("pt", &status);
                 success &= TF_VERIFY(status);
-                _dirtyBits[0].first = meshNodeClass.attribute("i", &status);
+                _dirtyBits[1].first = meshNodeClass.attribute("i", &status);
+                success &= TF_VERIFY(status);
+                _dirtyBits[2].first = meshNodeClass.attribute("wm", &status);
+                success &= TF_VERIFY(status);
+                _dirtyBits[3].first = meshNodeClass.attribute("ds", &status);
                 success &= TF_VERIFY(status);
                 _meshIogAttribute = meshNodeClass.attribute("iog", &status);
                 success &= TF_VERIFY(status);
@@ -179,6 +187,16 @@ public:
     }
 
     bool
+    GetDoubleSided(){
+        MFnMesh mesh(GetDagPath());
+        auto p = mesh.findPlug("doubleSided", true);
+        if (ARCH_UNLIKELY(p.isNull())) { return true; }
+        bool doubleSided;
+        p.getValue(doubleSided);
+        return doubleSided;
+    }
+
+    bool
     HasType(const TfToken& typeId) override {
         return typeId == HdPrimTypeTokens->mesh;
     }
@@ -208,6 +226,10 @@ private:
         auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
         if (plug == _meshIogAttribute) {
             adapter->MarkDirty(HdChangeTracker::DirtyMaterialId);
+        } else {
+            TF_DEBUG(HDMAYA_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY).Msg(
+                        "%s (%s) plug dirtying was not handled by HdMayaMeshAdapter::attributeChangedCallback.\n",
+                        plug.name().asChar(), plug.name().asChar());
         }
     }
 };

@@ -330,12 +330,18 @@ HdMayaSceneDelegate::GetLightParamValue(const SdfPath& id, const TfToken& paramN
 
 bool
 HdMayaSceneDelegate::GetVisible(const SdfPath& id) {
-    return true;
+    return _GetValue<HdMayaDagAdapter, bool>(
+            id,
+            [](HdMayaDagAdapter *a) -> bool { return a->GetVisible(); },
+            _shapeAdapters, _lightAdapters);
 }
 
 bool
 HdMayaSceneDelegate::GetDoubleSided(const SdfPath& id) {
-    return true;
+    return _GetValue<HdMayaShapeAdapter, bool>(
+            id,
+            [](HdMayaShapeAdapter *a) -> bool { return a->GetDoubleSided(); },
+            _shapeAdapters);
 }
 
 HdCullStyle

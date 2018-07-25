@@ -4,6 +4,9 @@
 #include <pxr/imaging/hd/tokens.h>
 
 #include <maya/MNodeMessage.h>
+#include <maya/MNodeClass.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MPlug.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -14,10 +17,26 @@ TF_REGISTRY_FUNCTION(TfType)
 
 namespace {
 
-void _ChangeTransformAttributes(
-    MNodeMessage::AttributeMessage /*msg*/, MPlug& /*plug*/, MPlug& /*otherPlug*/, void* clientData) {
+bool _xformAttrsInitialized = false;
+
+MObject _xformVisibilityAttribute; // Will hold "visibility" attribute when initialized
+
+void _TransformNodeDirty(
+    MObject& node, MPlug& plug, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
-    adapter->MarkDirty(HdChangeTracker::DirtyTransform);
+    if (plug == _xformVisibilityAttribute ){
+        adapter->MarkDirty(HdChangeTracker::DirtyVisibility);
+    }
+}
+
+void _ChangeTransformAttributes(
+    MNodeMessage::AttributeMessage /*msg*/, MPlug& plug, MPlug& /*otherPlug*/, void* clientData) {
+    auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    if (plug == _xformVisibilityAttribute ){
+        adapter->MarkDirty(HdChangeTracker::DirtyVisibility);
+    } else {
+        adapter->MarkDirty(HdChangeTracker::DirtyTransform);
+    }
 }
 
 }
@@ -25,7 +44,23 @@ void _ChangeTransformAttributes(
 HdMayaDagAdapter::HdMayaDagAdapter(
     const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath) :
     HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {
+    if (!_xformAttrsInitialized) {
+        MNodeClass xformNodeClass("transform");
+        if (TF_VERIFY(xformNodeClass.typeId() != 0)) {
+            MStatus status;
+            _xformAttrsInitialized = true;
+            _xformVisibilityAttribute = xformNodeClass.attribute("visibility", &status);
+            _xformAttrsInitialized &= TF_VERIFY(status);
+        }
+    }
     CalculateTransform();
+}
+
+bool
+HdMayaDagAdapter::GetVisible(){
+    MDagPath path(GetDagPath());
+    if (ARCH_UNLIKELY(!path.isValid())) { return {}; }
+    return path.isVisible();
 }
 
 bool
@@ -42,6 +77,8 @@ HdMayaDagAdapter::CreateCallbacks() {
         MObject obj = dag.node();
         if (obj != MObject::kNullObj) {
             auto id = MNodeMessage::addAttributeChangedCallback(obj, _ChangeTransformAttributes, this, &status);
+            if (status) { AddCallback(id); }
+            id = MNodeMessage::addNodeDirtyCallback(obj, _TransformNodeDirty, this, &status);
             if (status) { AddCallback(id); }
         }
     }
