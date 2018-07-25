@@ -167,7 +167,10 @@ HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum) {
         if (rprim == nullptr) { continue; }
         auto* delegate = GetRenderIndex().GetSceneDelegateForRprim(id);
         if (delegate == nullptr) { continue; }
-        const auto extent = rprim->GetExtent(delegate);
+        const auto extent = delegate->GetExtent(id);
+        if (extent.IsEmpty()) {
+            continue;
+        }
         const auto localToWorld = delegate->GetTransform(id);
 
         if (isBoxInside(extent, getInverse(localToWorld))) {
