@@ -41,10 +41,12 @@ std::vector<std::pair<MObject, HdDirtyBits>> _dirtyBits = {
      HdChangeTracker::DirtyPrimvar |
      HdChangeTracker::DirtyTopology |
      HdChangeTracker::DirtyNormals},
-    {MObject(), // Will hold "wm" attribute when initialized,
+    {MObject(), // Will hold "wm" attribute when initialized
      HdChangeTracker::DirtyTransform},
-    {MObject(), // Will hold "ds" attribute when initialized,,
+    {MObject(), // Will hold "ds" attribute when initialized
      HdChangeTracker::DirtyDoubleSided},
+    {MObject(), // Will hold "io"/"intermediateObject" attribute when initialized
+     HdChangeTracker::DirtyVisibility},
 };
 
 }
@@ -69,6 +71,8 @@ public:
                 _dirtyBits[2].first = meshNodeClass.attribute("wm", &status);
                 success &= TF_VERIFY(status);
                 _dirtyBits[3].first = meshNodeClass.attribute("ds", &status);
+                success &= TF_VERIFY(status);
+                _dirtyBits[4].first = meshNodeClass.attribute("io", &status);
                 success &= TF_VERIFY(status);
                 _meshIogAttribute = meshNodeClass.attribute("iog", &status);
                 success &= TF_VERIFY(status);
