@@ -17,7 +17,11 @@
 #include <maya/MGlobal.h>
 #include <maya/MSceneMessage.h>
 #include <maya/MSelectionList.h>
+#include <maya/MTimerMessage.h>
+#include <maya/MNodeMessage.h>
 
+#include <atomic>
+#include <chrono>
 #include <exception>
 
 #include <hdmaya/delegates/delegateRegistry.h>
@@ -37,7 +41,21 @@ namespace {
 
 constexpr auto HDMAYA_DEFAULT_RENDERER_PLUGIN_NAME = "HDMAYA_DEFAULT_RENDERER_PLUGIN";
 
-TfToken _getDefaultRenderer() {
+// I don't think there is an easy way to detect if the viewport was changed,
+// so I'm adding a 5 second timeout.
+// There MUST be a better way to do this!
+std::mutex _convergenceMutex;
+bool _isConverged;
+std::chrono::system_clock::time_point _lastRendered = std::chrono::system_clock::now();
+
+void _TimerCallback(float, float, void*) {
+    std::lock_guard<std::mutex> lock(_convergenceMutex);
+    if (!_isConverged && (std::chrono::system_clock::now() - _lastRendered) < std::chrono::seconds(5)) {
+        MGlobal::executeCommandOnIdle("refresh -f");
+    }
+}
+
+TfToken _GetDefaultRenderer() {
     const auto l = HdMayaRenderOverride::GetRendererPlugins();
     if (l.empty()) { return {}; }
     const auto* defaultRenderer = getenv(HDMAYA_DEFAULT_RENDERER_PLUGIN_NAME);
@@ -131,7 +149,7 @@ HdMayaRenderOverride::HdMayaRenderOverride() :
     _selectionCollection(HdTokens->wire, HdTokens->wire),
     _colorSelectionHighlightColor(1.0f, 1.0f, 0.0f, 0.5f) {
     _ID = SdfPath("/HdMayaViewportRenderer").AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
-    _rendererName = _getDefaultRenderer();
+    _rendererName = _GetDefaultRenderer();
     // This is a critical error, so we don't allow the construction
     // of the viewport renderer src if there is no renderer src
     // present.
@@ -158,6 +176,9 @@ HdMayaRenderOverride::HdMayaRenderOverride() :
         SelectionChangedCallback,
         nullptr,
         &status);
+    if (status) { _callbacks.push_back(id); }
+
+    id = MTimerMessage::addTimerCallback(1.0f / 10.0f, _TimerCallback, &status);
     if (status) { _callbacks.push_back(id); }
 }
 
@@ -357,9 +378,9 @@ HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         it->PostFrame();
     }
 
-    if (!_taskController->IsConverged()) {
-        MGlobal::executeCommandOnIdle("refresh -f");
-    }
+    std::lock_guard<std::mutex> lock(_convergenceMutex);
+    _lastRendered = std::chrono::system_clock::now();
+    _isConverged = _taskController->IsConverged();
 
     return MStatus::kSuccess;
 }
