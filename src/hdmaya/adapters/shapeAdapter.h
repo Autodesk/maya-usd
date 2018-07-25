@@ -26,6 +26,8 @@ public:
 
     HDMAYA_API
     virtual MObject GetMaterial();
+    HDMAYA_API
+    virtual bool GetDoubleSided() { return true;};
 
     HDMAYA_API
     const GfRange3d& GetExtent();
