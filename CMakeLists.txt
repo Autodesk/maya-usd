@@ -16,3 +16,7 @@ add_subdirectory(src)
 install(
     FILES README.md
     DESTINATION .)
+
+install(
+    FILES LICENSE.txt
+    DESTINATION .)
