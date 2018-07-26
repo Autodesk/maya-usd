@@ -61,6 +61,7 @@ public:
     virtual void MarkDirty(HdDirtyBits dirtyBits) = 0;
     virtual void RemovePrim() = 0;
     virtual void Populate() = 0;
+
 protected:
     MObject _node;
     SdfPath _id;

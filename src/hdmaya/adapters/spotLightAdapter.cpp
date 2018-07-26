@@ -24,10 +24,10 @@
 #include <pxr/pxr.h>
 
 #include <pxr/base/tf/type.h>
-#include <pxr/imaging/hd/light.h>
-#include <pxr/imaging/hdx/simpleLightTask.h>
-#include <pxr/imaging/hdx/shadowMatrixComputation.h>
 #include <pxr/imaging/glf/simpleLight.h>
+#include <pxr/imaging/hd/light.h>
+#include <pxr/imaging/hdx/shadowMatrixComputation.h>
+#include <pxr/imaging/hdx/simpleLightTask.h>
 
 #include <maya/MColor.h>
 #include <maya/MPlug.h>
@@ -42,14 +42,12 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaSpotLightAdapter : public HdMayaLightAdapter {
-public:
+   public:
     HdMayaSpotLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-        : HdMayaLightAdapter(delegate, dag) {
+        : HdMayaLightAdapter(delegate, dag) {}
 
-    }
-protected:
-    void
-    _CalculateLightParams(GlfSimpleLight& light) override {
+   protected:
+    void _CalculateLightParams(GlfSimpleLight& light) override {
         MFnLight mayaLight(GetDagPath().node());
         light.SetHasShadow(true);
         auto coneAnglePlug = mayaLight.findPlug("coneAngle", true);
@@ -59,26 +57,21 @@ protected:
                 static_cast<float>(GfRadiansToDegrees(coneAnglePlug.asFloat())) * 0.5f);
         }
         auto dropoffPlug = mayaLight.findPlug("dropoff", true);
-        if (!dropoffPlug.isNull()) {
-            light.SetSpotFalloff(dropoffPlug.asFloat());
-        }
+        if (!dropoffPlug.isNull()) { light.SetSpotFalloff(dropoffPlug.asFloat()); }
     }
 
-    void
-    Populate() override {
+    void Populate() override {
         GetDelegate()->InsertSprim(HdPrimTypeTokens->simpleLight, GetID(), HdLight::AllDirty);
     }
 
-    bool
-    IsSupported() override {
+    bool IsSupported() override {
         return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->simpleLight);
     }
 
-    VtValue
-    Get(const TfToken& key) override {
-        TF_DEBUG(HDMAYA_ADAPTER_GET).Msg(
-                "Called HdMayaSpotLightAdapter::Get(%s) - %s\n",
-                key.GetText(),
+    VtValue Get(const TfToken& key) override {
+        TF_DEBUG(HDMAYA_ADAPTER_GET)
+            .Msg(
+                "Called HdMayaSpotLightAdapter::Get(%s) - %s\n", key.GetText(),
                 GetDagPath().partialPathName().asChar());
 
         if (key == HdLightTokens->shadowParams) {
@@ -93,16 +86,12 @@ protected:
             auto coneAnglePlug = mayaLight.findPlug("coneAngle", true);
             if (coneAnglePlug.isNull()) { return {}; }
 
-
             GfFrustum frustum;
-            frustum.SetPositionAndRotationFromMatrix(getGfMatrixFromMaya(GetDagPath().inclusiveMatrix()));
+            frustum.SetPositionAndRotationFromMatrix(
+                getGfMatrixFromMaya(GetDagPath().inclusiveMatrix()));
             frustum.SetProjectionType(GfFrustum::Perspective);
             frustum.SetPerspective(
-                GfRadiansToDegrees(coneAnglePlug.asFloat()),
-                true,
-                1.0f,
-                1.0f,
-                50.0f);
+                GfRadiansToDegrees(coneAnglePlug.asFloat()), true, 1.0f, 1.0f, 50.0f);
 
             GetDelegate()->FitFrustumToRprims(frustum);
             _CalculateShadowParams(mayaLight, frustum, shadowParams);
@@ -112,14 +101,10 @@ protected:
         return HdMayaLightAdapter::Get(key);
     }
 
-    bool
-    HasType(const TfToken& typeId) override {
-        return typeId == HdPrimTypeTokens->simpleLight;
-    }
+    bool HasType(const TfToken& typeId) override { return typeId == HdPrimTypeTokens->simpleLight; }
 };
 
-TF_REGISTRY_FUNCTION(TfType)
-{
+TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<HdMayaSpotLightAdapter, TfType::Bases<HdMayaLightAdapter> >();
 }
 

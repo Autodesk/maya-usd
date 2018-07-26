@@ -30,17 +30,17 @@
 
 #include <pxr/usd/sdf/path.h>
 
-#include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hd/meshTopology.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
 
 #include <maya/MDagPath.h>
 #include <maya/MObject.h>
 
 #include <memory>
 
-#include <hdmaya/adapters/shapeAdapter.h>
 #include <hdmaya/adapters/lightAdapter.h>
 #include <hdmaya/adapters/materialAdapter.h>
+#include <hdmaya/adapters/shapeAdapter.h>
 #include <hdmaya/delegates/delegateCtx.h>
 
 /*
@@ -62,9 +62,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaSceneDelegate : public HdMayaDelegateCtx {
 public:
-    HdMayaSceneDelegate(
-        HdRenderIndex* renderIndex,
-        const SdfPath& delegateID);
+    HdMayaSceneDelegate(HdRenderIndex* renderIndex, const SdfPath& delegateID);
 
     virtual ~HdMayaSceneDelegate();
 
@@ -73,11 +71,10 @@ public:
     void InsertDag(const MDagPath& dag);
     void SetParams(const HdMayaParams& params) override;
     void PopulateSelectedPaths(
-        const MSelectionList& mayaSelection,
-        SdfPathVector& selectedSdfPaths) override;
+        const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths) override;
     void PopulateSelectedPaths(
-        const MSelectionList& mayaSelection,
-        HdSelection* selection) override;
+        const MSelectionList& mayaSelection, HdSelection* selection) override;
+
 protected:
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;
     GfRange3d GetExtent(const SdfPath& id) override;
@@ -90,8 +87,8 @@ protected:
     HdDisplayStyle GetDisplayStyle(const SdfPath& id) override;
     // TfToken GetReprName(const SdfPath& id) override;
     VtValue Get(SdfPath const& id, TfToken const& key) override;
-    HdPrimvarDescriptorVector
-    GetPrimvarDescriptors(const SdfPath& id, HdInterpolation interpolation) override;
+    HdPrimvarDescriptorVector GetPrimvarDescriptors(
+        const SdfPath& id, HdInterpolation interpolation) override;
     VtValue GetLightParamValue(const SdfPath& id, const TfToken& paramName) override;
     SdfPath GetMaterialId(const SdfPath& id) override;
     std::string GetSurfaceShaderSource(const SdfPath& id) override;

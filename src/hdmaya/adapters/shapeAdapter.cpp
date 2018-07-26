@@ -32,18 +32,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfType)
-{
+TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<HdMayaShapeAdapter, TfType::Bases<HdMayaDagAdapter> >();
 }
 
-HdMayaShapeAdapter::HdMayaShapeAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath)
+HdMayaShapeAdapter::HdMayaShapeAdapter(
+    const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath)
     : HdMayaDagAdapter(id, delegate, dagPath) {
     _CalculateExtent();
 }
 
-void
-HdMayaShapeAdapter::_CalculateExtent() {
+void HdMayaShapeAdapter::_CalculateExtent() {
     MStatus status;
     MFnDagNode dagNode(GetDagPath(), &status);
     if (ARCH_LIKELY(status)) {
@@ -56,27 +55,20 @@ HdMayaShapeAdapter::_CalculateExtent() {
     }
 };
 
-HdMeshTopology
-HdMayaShapeAdapter::GetMeshTopology() {
-    return {};
-};
+HdMeshTopology HdMayaShapeAdapter::GetMeshTopology() { return {}; };
 
-HdPrimvarDescriptorVector
-HdMayaShapeAdapter::GetPrimvarDescriptors(HdInterpolation interpolation) {
+HdPrimvarDescriptorVector HdMayaShapeAdapter::GetPrimvarDescriptors(HdInterpolation interpolation) {
     return {};
 }
 
-void
-HdMayaShapeAdapter::MarkDirty(HdDirtyBits dirtyBits) {
+void HdMayaShapeAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     HdMayaDagAdapter::MarkDirty(dirtyBits);
-    if (dirtyBits & HdChangeTracker::DirtyPoints) {
-        _extentDirty = true;
-    }
+    if (dirtyBits & HdChangeTracker::DirtyPoints) { _extentDirty = true; }
 }
 
-MObject
-HdMayaShapeAdapter::GetMaterial() {
-    TF_DEBUG(HDMAYA_ADAPTER_GET).Msg(
+MObject HdMayaShapeAdapter::GetMaterial() {
+    TF_DEBUG(HDMAYA_ADAPTER_GET)
+        .Msg(
             "Called HdMayaShapeAdapter::GetMaterial() - %s\n",
             GetDagPath().partialPathName().asChar());
 
@@ -95,20 +87,14 @@ HdMayaShapeAdapter::GetMaterial() {
     if (numConnections == 0) { return MObject::kNullObj; }
     for (auto i = decltype(numConnections){0}; i < numConnections; ++i) {
         auto sg = conns[i].node();
-        if (sg.apiType() == MFn::kShadingEngine) {
-            return sg;
-        }
+        if (sg.apiType() == MFn::kShadingEngine) { return sg; }
     }
 
     return MObject::kNullObj;
 }
 
-const GfRange3d&
-HdMayaShapeAdapter::GetExtent() {
-
-    if (_extentDirty) {
-        _CalculateExtent();
-    }
+const GfRange3d& HdMayaShapeAdapter::GetExtent() {
+    if (_extentDirty) { _CalculateExtent(); }
     return _extent;
 }
 

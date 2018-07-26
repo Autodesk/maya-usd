@@ -26,9 +26,9 @@
 
 #include <pxr/pxr.h>
 
-#include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
 
 #include <pxr/usd/sdf/path.h>
 
@@ -41,9 +41,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdMayaDelegateCtx : public HdSceneDelegate, public HdMayaDelegate {
 protected:
     HDMAYA_API
-    HdMayaDelegateCtx(
-        HdRenderIndex* renderIndex,
-        const SdfPath& delegateID);
+    HdMayaDelegateCtx(HdRenderIndex* renderIndex, const SdfPath& delegateID);
+
 public:
     using HdSceneDelegate::GetRenderIndex;
     HdChangeTracker& GetChangeTracker() { return GetRenderIndex().GetChangeTracker(); }
@@ -68,10 +67,8 @@ public:
     HDMAYA_API
     void FitFrustumToRprims(GfFrustum& frustum);
 
-    inline
-    bool GetNeedsGLGLSFX() {
-        return _needsGLSLFX;
-    }
+    inline bool GetNeedsGLGLSFX() { return _needsGLSLFX; }
+
 private:
     HdRprimCollection _rprimCollection;
     SdfPath _rprimPath;

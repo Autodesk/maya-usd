@@ -39,14 +39,14 @@
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
+#include <maya/MFn.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MMatrix.h>
-#include <maya/MFn.h>
 
 #include <maya/MMessage.h>
 
-#include <hdmaya/utils.h>
 #include <hdmaya/adapters/adapter.h>
+#include <hdmaya/utils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -68,14 +68,10 @@ public:
     HDMAYA_API
     virtual void RemovePrim() override;
     HDMAYA_API
-    virtual void PopulateSelection(
-        const HdSelection::HighlightMode& mode,
-        HdSelection* selection);
+    virtual void PopulateSelection(const HdSelection::HighlightMode& mode, HdSelection* selection);
 
     const MDagPath& GetDagPath() { return _dagPath; }
-    const GfMatrix4d& GetTransform() const {
-        return _transform;
-    }
+    const GfMatrix4d& GetTransform() const { return _transform; }
 
 protected:
     HDMAYA_API

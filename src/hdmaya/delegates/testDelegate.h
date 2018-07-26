@@ -30,8 +30,8 @@
 
 #include <pxr/usd/sdf/path.h>
 
-#include <pxr/usdImaging/usdImaging/delegate.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <memory>
 
@@ -41,9 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaTestDelegate : public HdMayaDelegate {
 public:
-    HdMayaTestDelegate(
-        HdRenderIndex* renderIndex,
-        const SdfPath& delegateID);
+    HdMayaTestDelegate(HdRenderIndex* renderIndex, const SdfPath& delegateID);
 
     void Populate() override;
 
@@ -53,6 +51,5 @@ private:
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif // __HDMAYA_TEST_DELEGATE_H__

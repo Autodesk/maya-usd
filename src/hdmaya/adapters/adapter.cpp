@@ -29,47 +29,31 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfType)
-{
-    TfType::Define<HdMayaAdapter>();
-}
+TF_REGISTRY_FUNCTION(TfType) { TfType::Define<HdMayaAdapter>(); }
 
 namespace {
 
-void
-_aboutToDelete(MObject& node, MDGModifier& modifier, void* clientData) {
+void _aboutToDelete(MObject& node, MDGModifier& modifier, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaAdapter*>(clientData);
     adapter->GetDelegate()->RemoveAdapter(adapter->GetID());
 }
 
-}
+} // namespace
 
-HdMayaAdapter::HdMayaAdapter(const MObject& node, const SdfPath& id, HdMayaDelegateCtx* delegate) :
-    _node(node), _id(id), _delegate(delegate) { }
+HdMayaAdapter::HdMayaAdapter(const MObject& node, const SdfPath& id, HdMayaDelegateCtx* delegate)
+    : _node(node), _id(id), _delegate(delegate) {}
 
 HdMayaAdapter::~HdMayaAdapter() {
-    for (auto c : _callbacks) {
-        MMessage::removeCallback(c);
-    }
+    for (auto c : _callbacks) { MMessage::removeCallback(c); }
 }
 
-void
-HdMayaAdapter::AddCallback(MCallbackId callbackId) {
-    _callbacks.push_back(callbackId);
-}
+void HdMayaAdapter::AddCallback(MCallbackId callbackId) { _callbacks.push_back(callbackId); }
 
-VtValue
-HdMayaAdapter::Get(const TfToken& /*key*/) {
-    return {};
-};
+VtValue HdMayaAdapter::Get(const TfToken& /*key*/) { return {}; };
 
-bool
-HdMayaAdapter::HasType(const TfToken& typeId) {
-    return false;
-}
+bool HdMayaAdapter::HasType(const TfToken& typeId) { return false; }
 
-void
-HdMayaAdapter::CreateCallbacks() {
+void HdMayaAdapter::CreateCallbacks() {
     if (_node != MObject::kNullObj) {
         MStatus status;
         auto id = MNodeMessage::addNodeAboutToDeleteCallback(_node, _aboutToDelete, this, &status);

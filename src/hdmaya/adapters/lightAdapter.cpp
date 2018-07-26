@@ -41,59 +41,62 @@
 
 namespace {
 
-    PXR_NAMESPACE_USING_DIRECTIVE;
+PXR_NAMESPACE_USING_DIRECTIVE;
 
-    MObject _decayRateAttr;
-    MObject _emitDiffuseAttr;
-    MObject _emitSpecularAttr;
-    MObject _dmapResolutionAttr;
-    MObject _dmapBiasAttr;
-    MObject _dmapFilterSizeAttr;
+MObject _decayRateAttr;
+MObject _emitDiffuseAttr;
+MObject _emitSpecularAttr;
+MObject _dmapResolutionAttr;
+MObject _dmapBiasAttr;
+MObject _dmapFilterSizeAttr;
 
-    bool _attrsInitialized = false;
+bool _attrsInitialized = false;
 
-    void _initializeAttrs() {
-        if (_attrsInitialized) { return; }
+void _initializeAttrs() {
+    if (_attrsInitialized) { return; }
 
-        MStatus status;
-        bool success = true;
+    MStatus status;
+    bool success = true;
 
-        MNodeClass nonAmbientClass("nonAmbientLightShapeNode");
-        if (TF_VERIFY(nonAmbientClass.typeId() != 0)) {
-            _decayRateAttr = nonAmbientClass.attribute("decayRate", &status);
-            success &= TF_VERIFY(status);
-            _emitDiffuseAttr = nonAmbientClass.attribute("emitDiffuse", &status);
-            success &= TF_VERIFY(status);
-            _emitSpecularAttr = nonAmbientClass.attribute("emitSpecular", &status);
-            success &= TF_VERIFY(status);
-        }
-        else { success = false; }
-
-        MNodeClass nonExtendedClass("nonExtendedLightShapeNode");
-        if (TF_VERIFY(nonExtendedClass.typeId() != 0)) {
-            _dmapResolutionAttr = nonExtendedClass.attribute("dmapResolution", &status);
-            success &= TF_VERIFY(status);
-            _dmapBiasAttr = nonExtendedClass.attribute("dmapBias", &status);
-            success &= TF_VERIFY(status);
-            _dmapFilterSizeAttr = nonExtendedClass.attribute("dmapFilterSize", &status);
-            success &= TF_VERIFY(status);
-        }
-        else { success = false; }
-
-        _attrsInitialized = success;
+    MNodeClass nonAmbientClass("nonAmbientLightShapeNode");
+    if (TF_VERIFY(nonAmbientClass.typeId() != 0)) {
+        _decayRateAttr = nonAmbientClass.attribute("decayRate", &status);
+        success &= TF_VERIFY(status);
+        _emitDiffuseAttr = nonAmbientClass.attribute("emitDiffuse", &status);
+        success &= TF_VERIFY(status);
+        _emitSpecularAttr = nonAmbientClass.attribute("emitSpecular", &status);
+        success &= TF_VERIFY(status);
+    } else {
+        success = false;
     }
+
+    MNodeClass nonExtendedClass("nonExtendedLightShapeNode");
+    if (TF_VERIFY(nonExtendedClass.typeId() != 0)) {
+        _dmapResolutionAttr = nonExtendedClass.attribute("dmapResolution", &status);
+        success &= TF_VERIFY(status);
+        _dmapBiasAttr = nonExtendedClass.attribute("dmapBias", &status);
+        success &= TF_VERIFY(status);
+        _dmapFilterSizeAttr = nonExtendedClass.attribute("dmapFilterSize", &status);
+        success &= TF_VERIFY(status);
+    } else {
+        success = false;
+    }
+
+    _attrsInitialized = success;
 }
+} // namespace
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfType)
-{
+TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<HdMayaLightAdapter, TfType::Bases<HdMayaDagAdapter> >();
 }
 
 namespace {
 
-void _changeTransform(MNodeMessage::AttributeMessage /*msg*/, MPlug& /*plug*/, MPlug& /*otherPlug*/, void* clientData) {
+void _changeTransform(
+    MNodeMessage::AttributeMessage /*msg*/, MPlug& /*plug*/, MPlug& /*otherPlug*/,
+    void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     // We need both dirty params and dirty transform to get this working?
     adapter->MarkDirty(HdLight::DirtyTransform | HdLight::DirtyParams | HdLight::DirtyShadowParams);
@@ -104,39 +107,31 @@ void _dirtyParams(MObject& /*node*/, void* clientData) {
     adapter->MarkDirty(HdLight::DirtyParams | HdLight::DirtyShadowParams);
 }
 
-}
+} // namespace
 
-HdMayaLightAdapter::HdMayaLightAdapter(
-    HdMayaDelegateCtx* delegate, const MDagPath& dag)
+HdMayaLightAdapter::HdMayaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
     : HdMayaDagAdapter(delegate->GetPrimPath(dag), delegate, dag) {
     _initializeAttrs();
 }
 
-void
-HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits) {
+void HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     if (dirtyBits & HdLight::DirtyTransform) {
-        if (!CalculateTransform()) {
-            dirtyBits &= ~HdLight::DirtyTransform;
-        }
+        if (!CalculateTransform()) { dirtyBits &= ~HdLight::DirtyTransform; }
     }
 
-    if (dirtyBits != 0) {
-        GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
-    }
+    if (dirtyBits != 0) { GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits); }
 }
 
-void
-HdMayaLightAdapter::RemovePrim() {
+void HdMayaLightAdapter::RemovePrim() {
     if (GetDelegate()->GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
         GetDelegate()->RemoveSprim(HdPrimTypeTokens->simpleLight, GetID());
     }
 }
 
-VtValue
-HdMayaLightAdapter::Get(const TfToken& key) {
-    TF_DEBUG(HDMAYA_ADAPTER_GET).Msg(
-            "Called HdMayaLightAdapter::Get(%s) - %s\n",
-            key.GetText(),
+VtValue HdMayaLightAdapter::Get(const TfToken& key) {
+    TF_DEBUG(HDMAYA_ADAPTER_GET)
+        .Msg(
+            "Called HdMayaLightAdapter::Get(%s) - %s\n", key.GetText(),
             GetDagPath().partialPathName().asChar());
 
     if (key == HdLightTokens->params) {
@@ -155,7 +150,8 @@ HdMayaLightAdapter::Get(const TfToken& key) {
         const auto lightDirection = (pv * inclusiveMatrix).normal();
         light.SetHasShadow(false);
         const GfVec4f zeroColor(0.0f, 0.0f, 0.0f, 1.0f);
-        const GfVec4f lightColor(color.r * intensity, color.g * intensity, color.b * intensity, 1.0f);
+        const GfVec4f lightColor(
+            color.r * intensity, color.g * intensity, color.b * intensity, 1.0f);
         light.SetDiffuse(emitDiffuse ? lightColor : zeroColor);
         light.SetAmbient(zeroColor);
         light.SetSpecular(emitSpecular ? lightColor : zeroColor);
@@ -186,11 +182,10 @@ HdMayaLightAdapter::Get(const TfToken& key) {
     return {};
 }
 
-VtValue
-HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
-    TF_DEBUG(HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE).Msg(
-            "Called HdMayaLightAdapter::GetLightParamValue(%s) - %s\n",
-            paramName.GetText(),
+VtValue HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
+    TF_DEBUG(HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE)
+        .Msg(
+            "Called HdMayaLightAdapter::GetLightParamValue(%s) - %s\n", paramName.GetText(),
             GetDagPath().partialPathName().asChar());
 
     MFnLight light(GetDagPath().node());
@@ -207,8 +202,7 @@ HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
     return {};
 }
 
-void
-HdMayaLightAdapter::CreateCallbacks() {
+void HdMayaLightAdapter::CreateCallbacks() {
     MStatus status;
     auto dag = GetDagPath();
     auto obj = dag.node();
@@ -227,14 +221,12 @@ HdMayaLightAdapter::CreateCallbacks() {
     HdMayaAdapter::CreateCallbacks();
 }
 
-void
-HdMayaLightAdapter::_CalculateLightParams(GlfSimpleLight& /*light*/) {
+void HdMayaLightAdapter::_CalculateLightParams(GlfSimpleLight& /*light*/) {}
 
-}
-
-void
-HdMayaLightAdapter::_CalculateShadowParams(MFnLight& light, GfFrustum& frustum, HdxShadowParams& params) {
-    TF_DEBUG(HDMAYA_ADAPTER_LIGHT_SHADOWS).Msg(
+void HdMayaLightAdapter::_CalculateShadowParams(
+    MFnLight& light, GfFrustum& frustum, HdxShadowParams& params) {
+    TF_DEBUG(HDMAYA_ADAPTER_LIGHT_SHADOWS)
+        .Msg(
             "Called HdMayaLightAdapter::_CalculateShadowParams - %s\n",
             GetDagPath().partialPathName().asChar());
 
@@ -246,8 +238,8 @@ HdMayaLightAdapter::_CalculateShadowParams(MFnLight& light, GfFrustum& frustum, 
     if (decayRate > 0) {
         const auto color = light.color();
         const auto intensity = light.intensity();
-        const auto maxIntensity = static_cast<double>(std::max(color.r * intensity,
-                                                               std::max(color.g * intensity, color.b * intensity)));
+        const auto maxIntensity = static_cast<double>(
+            std::max(color.r * intensity, std::max(color.g * intensity, color.b * intensity)));
         constexpr auto LIGHT_CUTOFF = 0.01;
         auto maxDistance = std::numeric_limits<double>::max();
         if (decayRate == 1) {
@@ -270,16 +262,19 @@ HdMayaLightAdapter::_CalculateShadowParams(MFnLight& light, GfFrustum& frustum, 
     }
 
     params.enabled = true;
-    params.resolution = dmapResolutionPlug.isNull() ?
-        GetDelegate()->GetParams().maximumShadowMapResolution :
-        std::min(GetDelegate()->GetParams().maximumShadowMapResolution, dmapResolutionPlug.asInt());
+    params.resolution = dmapResolutionPlug.isNull()
+                            ? GetDelegate()->GetParams().maximumShadowMapResolution
+                            : std::min(
+                                  GetDelegate()->GetParams().maximumShadowMapResolution,
+                                  dmapResolutionPlug.asInt());
     params.shadowMatrix = boost::static_pointer_cast<HdxShadowMatrixComputation>(
-        boost::make_shared<ConstantShadowMatrix>(frustum.ComputeViewMatrix() * frustum.ComputeProjectionMatrix()));
+        boost::make_shared<ConstantShadowMatrix>(
+            frustum.ComputeViewMatrix() * frustum.ComputeProjectionMatrix()));
     // add additional bias to more closely match viewport 2.0
-    params.bias = dmapBiasPlug.isNull() ?
-        -0.021 : -dmapBiasPlug.asFloat() - .02;
-    params.blur = dmapFilterSizePlug.isNull() ?
-        0.0 : (static_cast<double>(dmapFilterSizePlug.asInt())) / static_cast<double>(params.resolution);
+    params.bias = dmapBiasPlug.isNull() ? -0.021 : -dmapBiasPlug.asFloat() - .02;
+    params.blur = dmapFilterSizePlug.isNull() ? 0.0
+                                              : (static_cast<double>(dmapFilterSizePlug.asInt())) /
+                                                    static_cast<double>(params.resolution);
 
     if (TfDebug::IsEnabled(HDMAYA_ADAPTER_LIGHT_SHADOWS)) {
         std::cout << "Resulting HdxShadowParams:" << std::endl;

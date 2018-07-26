@@ -26,17 +26,14 @@
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/tokens.h>
 
-#include <maya/MNodeMessage.h>
-#include <maya/MNodeClass.h>
 #include <maya/MFnDagNode.h>
+#include <maya/MNodeClass.h>
+#include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfType)
-{
-    TfType::Define<HdMayaDagAdapter, TfType::Bases<HdMayaAdapter> >();
-}
+TF_REGISTRY_FUNCTION(TfType) { TfType::Define<HdMayaDagAdapter, TfType::Bases<HdMayaAdapter> >(); }
 
 namespace {
 
@@ -44,29 +41,26 @@ bool _xformAttrsInitialized = false;
 
 MObject _xformVisibilityAttribute; // Will hold "visibility" attribute when initialized
 
-void _TransformNodeDirty(
-    MObject& node, MPlug& plug, void* clientData) {
+void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
-    if (plug == _xformVisibilityAttribute ){
-        adapter->MarkDirty(HdChangeTracker::DirtyVisibility);
-    }
+    if (plug == _xformVisibilityAttribute) { adapter->MarkDirty(HdChangeTracker::DirtyVisibility); }
 }
 
 void _ChangeTransformAttributes(
     MNodeMessage::AttributeMessage /*msg*/, MPlug& plug, MPlug& /*otherPlug*/, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
-    if (plug == _xformVisibilityAttribute ){
+    if (plug == _xformVisibilityAttribute) {
         adapter->MarkDirty(HdChangeTracker::DirtyVisibility);
     } else {
         adapter->MarkDirty(HdChangeTracker::DirtyTransform);
     }
 }
 
-}
+} // namespace
 
 HdMayaDagAdapter::HdMayaDagAdapter(
-    const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath) :
-    HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {
+    const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath)
+    : HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {
     if (!_xformAttrsInitialized) {
         MNodeClass xformNodeClass("transform");
         if (TF_VERIFY(xformNodeClass.typeId() != 0)) {
@@ -79,27 +73,25 @@ HdMayaDagAdapter::HdMayaDagAdapter(
     CalculateTransform();
 }
 
-bool
-HdMayaDagAdapter::GetVisible(){
+bool HdMayaDagAdapter::GetVisible() {
     MDagPath path(GetDagPath());
     if (ARCH_UNLIKELY(!path.isValid())) { return {}; }
     return path.isVisible();
 }
 
-bool
-HdMayaDagAdapter::CalculateTransform() {
+bool HdMayaDagAdapter::CalculateTransform() {
     const auto _oldTransform = _transform;
     _transform = getGfMatrixFromMaya(_dagPath.inclusiveMatrix());
     return !GfIsClose(_oldTransform, _transform, 0.001);
 };
 
-void
-HdMayaDagAdapter::CreateCallbacks() {
+void HdMayaDagAdapter::CreateCallbacks() {
     MStatus status;
     for (auto dag = GetDagPath(); dag.length() > 0; dag.pop()) {
         MObject obj = dag.node();
         if (obj != MObject::kNullObj) {
-            auto id = MNodeMessage::addAttributeChangedCallback(obj, _ChangeTransformAttributes, this, &status);
+            auto id = MNodeMessage::addAttributeChangedCallback(
+                obj, _ChangeTransformAttributes, this, &status);
             if (status) { AddCallback(id); }
             id = MNodeMessage::addNodeDirtyCallback(obj, _TransformNodeDirty, this, &status);
             if (status) { AddCallback(id); }
@@ -108,8 +100,7 @@ HdMayaDagAdapter::CreateCallbacks() {
     HdMayaAdapter::CreateCallbacks();
 }
 
-void
-HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
+void HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     if (dirtyBits & HdChangeTracker::DirtyTransform) {
         // TODO: this will trigger dg evalutation during the dirty-bit-push
         // loop... refactor to avoid - we should just be able to only set the
@@ -117,25 +108,16 @@ HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
         // miss the case where it was "changed" to the same value, but this
         // should be an infrequent enough case we can probably ignore - or
         // else delay the check until the renderOverride's "setup"
-        if (!CalculateTransform()) {
-            dirtyBits &= ~HdChangeTracker::DirtyTransform;
-        }
+        if (!CalculateTransform()) { dirtyBits &= ~HdChangeTracker::DirtyTransform; }
     }
 
-    if (dirtyBits != 0) {
-        GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
-    }
+    if (dirtyBits != 0) { GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits); }
 }
 
-void
-HdMayaDagAdapter::RemovePrim() {
-    GetDelegate()->RemoveRprim(GetID());
-}
+void HdMayaDagAdapter::RemovePrim() { GetDelegate()->RemoveRprim(GetID()); }
 
-void
-HdMayaDagAdapter::PopulateSelection(
-    const HdSelection::HighlightMode& mode,
-    HdSelection* selection) {
+void HdMayaDagAdapter::PopulateSelection(
+    const HdSelection::HighlightMode& mode, HdSelection* selection) {
     selection->AddRprim(mode, GetID());
 }
 

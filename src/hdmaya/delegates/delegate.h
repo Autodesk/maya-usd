@@ -48,8 +48,8 @@ public:
     virtual ~HdMayaDelegate() = default;
 
     virtual void Populate() = 0;
-    virtual void PreFrame() { }
-    virtual void PostFrame() { }
+    virtual void PreFrame() {}
+    virtual void PostFrame() {}
 
     HDMAYA_API
     virtual void SetParams(const HdMayaParams& params);
@@ -59,14 +59,11 @@ public:
     bool GetPreferSimpleLight() { return _preferSimpleLight; }
 
     virtual void PopulateSelectedPaths(
-        const MSelectionList& mayaSelection,
-        SdfPathVector& selectedSdfPaths)
-    { }
+        const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths) {}
 
     virtual void PopulateSelectedPaths(
-        const MSelectionList& mayaSelection,
-        HdSelection* selection)
-    { }
+        const MSelectionList& mayaSelection, HdSelection* selection) {}
+
 private:
     HdMayaParams _params;
     bool _preferSimpleLight = false;

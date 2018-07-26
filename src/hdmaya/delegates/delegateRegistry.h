@@ -24,14 +24,14 @@
 #ifndef __HDMAYA_DELEGATE_REGISTRY_H__
 #define __HDMAYA_DELEGATE_REGISTRY_H__
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/singleton.h>
+#include <pxr/pxr.h>
 
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/usd/sdf/path.h>
 
-#include <vector>
 #include <tuple>
+#include <vector>
 
 #include <hdmaya/delegates/delegate.h>
 
@@ -41,11 +41,11 @@ class HdMayaDelegateRegistry : public TfSingleton<HdMayaDelegateRegistry> {
     friend class TfSingleton<HdMayaDelegateRegistry>;
     HDMAYA_API
     HdMayaDelegateRegistry() = default;
+
 public:
     // function creates and returns a pointer to a HdMayaDelegate - may return
     // a nullptr indicate failure, or that the delegate is currently disabled
-    using DelegateCreator = std::function<
-        HdMayaDelegatePtr(HdRenderIndex*, const SdfPath&)>;
+    using DelegateCreator = std::function<HdMayaDelegatePtr(HdRenderIndex*, const SdfPath&)>;
 
     HDMAYA_API
     static void RegisterDelegate(const TfToken& name, DelegateCreator creator);
@@ -64,6 +64,7 @@ public:
     // Find all HdMayaDelegate plugins, and load them all
     HDMAYA_API
     static void LoadAllDelegates();
+
 private:
     static void _LoadAllDelegates();
 

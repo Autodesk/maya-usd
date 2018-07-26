@@ -33,8 +33,7 @@ const MString HdMayaUsdPreviewSurface::classification("shader/surface");
 const MString HdMayaUsdPreviewSurface::name("UsdPreviewSurface");
 const MTypeId HdMayaUsdPreviewSurface::typeId(0x00116EFB); // something from our luma IDS
 
-MStatus
-HdMayaUsdPreviewSurface::Initialize() {
+MStatus HdMayaUsdPreviewSurface::Initialize() {
     MFnEnumAttribute eAttr;
     MFnNumericAttribute nAttr;
 
@@ -75,7 +74,8 @@ HdMayaUsdPreviewSurface::Initialize() {
     nAttr.setMax(1.0f);
     addAttribute(clearcoat);
 
-    auto clearcoatRoughness = nAttr.create("clearcoatRoughness", "clearcoatRoughness", MFnNumericData::kFloat);
+    auto clearcoatRoughness =
+        nAttr.create("clearcoatRoughness", "clearcoatRoughness", MFnNumericData::kFloat);
     nAttr.setDefault(0.0f);
     nAttr.setMin(0.0f);
     nAttr.setMax(1.0f);

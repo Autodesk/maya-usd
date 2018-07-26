@@ -24,8 +24,8 @@
 #ifndef __HDMAYA_VIEW_OVERRIDE_H__
 #define __HDMAYA_VIEW_OVERRIDE_H__
 
-#include <pxr/pxr.h>
 #include <pxr/imaging/glf/glew.h>
+#include <pxr/pxr.h>
 
 #include <pxr/base/tf/singleton.h>
 
@@ -40,9 +40,9 @@
 #include <pxr/imaging/hdx/rendererPlugin.h>
 #include <pxr/imaging/hdx/taskController.h>
 
+#include <maya/MMessage.h>
 #include <maya/MString.h>
 #include <maya/MViewport2Renderer.h>
-#include <maya/MMessage.h>
 
 #include <hdmaya/delegates/delegate.h>
 #include <hdmaya/delegates/params.h>
@@ -52,19 +52,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdMayaRenderOverride : public MHWRender::MRenderOverride, TfSingleton<HdMayaRenderOverride> {
     friend class TfSingleton<HdMayaRenderOverride>;
     HdMayaRenderOverride();
+
 public:
     ~HdMayaRenderOverride() override;
     static HdMayaRenderOverride& GetInstance() {
         return TfSingleton<HdMayaRenderOverride>::GetInstance();
     }
 
-    static void DeleteInstance() {
-        return TfSingleton<HdMayaRenderOverride>::DeleteInstance();
-    }
+    static void DeleteInstance() { return TfSingleton<HdMayaRenderOverride>::DeleteInstance(); }
 
-    static bool CurrentlyExists() {
-        return TfSingleton<HdMayaRenderOverride>::CurrentlyExists();
-    }
+    static bool CurrentlyExists() { return TfSingleton<HdMayaRenderOverride>::CurrentlyExists(); }
 
     static TfTokenVector GetRendererPlugins();
     static std::string GetRendererPluginDisplayName(const TfToken& id);
@@ -84,18 +81,17 @@ public:
 
     void ClearHydraResources();
 
-    MString uiName() const override {
-        return MString("Hydra Viewport Override");
-    }
+    MString uiName() const override { return MString("Hydra Viewport Override"); }
 
     MHWRender::DrawAPI supportedDrawAPIs() const override;
 
-    MStatus setup(const MString & destination) override;
+    MStatus setup(const MString& destination) override;
     MStatus cleanup() override;
 
     bool startOperationIterator() override;
     MHWRender::MRenderOperation* renderOperation() override;
     bool nextRenderOperation() override;
+
 private:
     void InitHydraResources();
     static void ClearHydraCallback(void*);

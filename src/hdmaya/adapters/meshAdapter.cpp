@@ -30,9 +30,9 @@
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/pxOsd/tokens.h>
 
-#include <maya/MIntArray.h>
 #include <maya/MFloatArray.h>
 #include <maya/MFnMesh.h>
+#include <maya/MIntArray.h>
 #include <maya/MNodeClass.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
@@ -45,10 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (st)
-);
+TF_DEFINE_PRIVATE_TOKENS(_tokens, (st));
 
 bool _meshAttrsInitialized = false;
 
@@ -56,14 +53,10 @@ MObject _meshIogAttribute; // Will hold "iog" attribute when initialized
 
 std::vector<std::pair<MObject, HdDirtyBits>> _dirtyBits = {
     {MObject(), // Will hold "pt" attribute when initialized
-     HdChangeTracker::DirtyPoints |
-     HdChangeTracker::DirtyExtent},
+     HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent},
     {MObject(), // Will hold "i" attribute when initialized
-     HdChangeTracker::DirtyPoints |
-     HdChangeTracker::DirtyExtent |
-     HdChangeTracker::DirtyPrimvar |
-     HdChangeTracker::DirtyTopology |
-     HdChangeTracker::DirtyNormals},
+     HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent | HdChangeTracker::DirtyPrimvar |
+         HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyNormals},
     {MObject(), // Will hold "wm" attribute when initialized
      HdChangeTracker::DirtyTransform},
     {MObject(), // Will hold "ds" attribute when initialized
@@ -72,10 +65,10 @@ std::vector<std::pair<MObject, HdDirtyBits>> _dirtyBits = {
      HdChangeTracker::DirtyVisibility},
 };
 
-}
+} // namespace
 
 class HdMayaMeshAdapter : public HdMayaShapeAdapter {
-public:
+   public:
     HdMayaMeshAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
         : HdMayaShapeAdapter(delegate->GetPrimPath(dag), delegate, dag) {
         // Do this here just because we want to wait for a point in time where
@@ -104,37 +97,27 @@ public:
         }
     }
 
-    void
-    Populate() override {
+    void Populate() override {
         GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty);
 
         MStatus status;
         // Duh!
         auto obj = GetNode();
-        auto id = MNodeMessage::addNodeDirtyCallback(
-            obj,
-            NodeDirtiedCallback,
-            this,
-            &status);
+        auto id = MNodeMessage::addNodeDirtyCallback(obj, NodeDirtiedCallback, this, &status);
         if (status) { AddCallback(id); }
-        id = MNodeMessage::addAttributeChangedCallback(
-            obj,
-            AttributeChangedCallback,
-            this,
-            &status);
+        id =
+            MNodeMessage::addAttributeChangedCallback(obj, AttributeChangedCallback, this, &status);
         if (status) { AddCallback(id); }
     }
 
-    bool
-    IsSupported() override {
+    bool IsSupported() override {
         return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->mesh);
     }
 
-    VtValue
-    Get(const TfToken& key) override {
-        TF_DEBUG(HDMAYA_ADAPTER_GET).Msg(
-                "Called HdMayaMeshAdapter::Get(%s) - %s\n",
-                key.GetText(),
+    VtValue Get(const TfToken& key) override {
+        TF_DEBUG(HDMAYA_ADAPTER_GET)
+            .Msg(
+                "Called HdMayaMeshAdapter::Get(%s) - %s\n", key.GetText(),
                 GetDagPath().partialPathName().asChar());
 
         if (key == HdTokens->points) {
@@ -143,9 +126,11 @@ public:
             MStatus status;
             const auto* rawPoints = reinterpret_cast<const GfVec3f*>(mesh.getRawPoints(&status));
             if (!status) { return {}; }
-            VtVec3fArray ret; ret.assign(rawPoints, rawPoints + mesh.numVertices());
+            VtVec3fArray ret;
+            ret.assign(rawPoints, rawPoints + mesh.numVertices());
             return VtValue(ret);
-        } if (key == _tokens->st) {
+        }
+        if (key == _tokens->st) {
             MFnMesh mesh(GetDagPath());
             // We need to flatten out the uvs.
             MStatus status;
@@ -166,12 +151,13 @@ public:
         return {};
     }
 
-    HdMeshTopology
-    GetMeshTopology() override {
+    HdMeshTopology GetMeshTopology() override {
         MFnMesh mesh(GetDagPath());
         const auto numPolygons = mesh.numPolygons();
-        VtIntArray faceVertexCounts; faceVertexCounts.reserve(static_cast<size_t>(numPolygons));
-        VtIntArray faceVertexIndices; faceVertexIndices.reserve(static_cast<size_t>(mesh.numFaceVertices()));
+        VtIntArray faceVertexCounts;
+        faceVertexCounts.reserve(static_cast<size_t>(numPolygons));
+        VtIntArray faceVertexIndices;
+        faceVertexIndices.reserve(static_cast<size_t>(mesh.numFaceVertices()));
         MIntArray mayaFaceVertexIndices;
         for (auto i = decltype(numPolygons){0}; i < numPolygons; ++i) {
             mesh.getPolygonVertices(i, mayaFaceVertexIndices);
@@ -183,16 +169,12 @@ public:
         }
 
         return HdMeshTopology(
-            GetDelegate()->GetParams().displaySmoothMeshes
-            ? PxOsdOpenSubdivTokens->catmullClark
-            : PxOsdOpenSubdivTokens->none,
-            UsdGeomTokens->rightHanded,
-            faceVertexCounts,
-            faceVertexIndices);
+            GetDelegate()->GetParams().displaySmoothMeshes ? PxOsdOpenSubdivTokens->catmullClark
+                                                           : PxOsdOpenSubdivTokens->none,
+            UsdGeomTokens->rightHanded, faceVertexCounts, faceVertexIndices);
     }
 
-    HdPrimvarDescriptorVector
-    GetPrimvarDescriptors(HdInterpolation interpolation) override {
+    HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation) override {
         if (interpolation == HdInterpolationVertex) {
             HdPrimvarDescriptor desc;
             desc.name = UsdGeomTokens->points;
@@ -213,8 +195,7 @@ public:
         return {};
     }
 
-    bool
-    GetDoubleSided(){
+    bool GetDoubleSided() {
         MFnMesh mesh(GetDagPath());
         auto p = mesh.findPlug("doubleSided", true);
         if (ARCH_UNLIKELY(p.isNull())) { return true; }
@@ -223,47 +204,47 @@ public:
         return doubleSided;
     }
 
-    bool
-    HasType(const TfToken& typeId) override {
-        return typeId == HdPrimTypeTokens->mesh;
-    }
+    bool HasType(const TfToken& typeId) override { return typeId == HdPrimTypeTokens->mesh; }
 
-private:
-    static void
-    NodeDirtiedCallback(MObject& node, MPlug& plug, void* clientData) {
+   private:
+    static void NodeDirtiedCallback(MObject& node, MPlug& plug, void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
-        for (const auto& it: _dirtyBits) {
+        for (const auto& it : _dirtyBits) {
             if (it.first == plug) {
                 adapter->MarkDirty(it.second);
-                TF_DEBUG(HDMAYA_ADAPTER_MESH_PLUG_DIRTY).Msg(
-                    "Marking prim dirty with bits %u because %s plug was dirtied.\n",
-                    it.second, plug.partialName().asChar());
+                TF_DEBUG(HDMAYA_ADAPTER_MESH_PLUG_DIRTY)
+                    .Msg(
+                        "Marking prim dirty with bits %u because %s plug was dirtied.\n", it.second,
+                        plug.partialName().asChar());
                 return;
             }
         }
 
-        TF_DEBUG(HDMAYA_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY).Msg(
-                "%s (%s) plug dirtying was not handled by HdMayaMeshAdapter::NodeDirtiedCallback.\n",
+        TF_DEBUG(HDMAYA_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY)
+            .Msg(
+                "%s (%s) plug dirtying was not handled by "
+                "HdMayaMeshAdapter::NodeDirtiedCallback.\n",
                 plug.name().asChar(), plug.partialName().asChar());
     }
 
     // For material assignments for now.
-    static void
-    AttributeChangedCallback(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPlug, void* clientData) {
+    static void AttributeChangedCallback(
+        MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPlug, void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
         if (plug == _meshIogAttribute) {
             adapter->MarkDirty(HdChangeTracker::DirtyMaterialId);
         } else {
-            TF_DEBUG(HDMAYA_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY).Msg(
-                        "%s (%s) plug dirtying was not handled by HdMayaMeshAdapter::attributeChangedCallback.\n",
-                        plug.name().asChar(), plug.name().asChar());
+            TF_DEBUG(HDMAYA_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY)
+                .Msg(
+                    "%s (%s) plug dirtying was not handled by "
+                    "HdMayaMeshAdapter::attributeChangedCallback.\n",
+                    plug.name().asChar(), plug.name().asChar());
         }
     }
 };
 
-TF_REGISTRY_FUNCTION(TfType)
-{
-    TfType::Define<HdMayaMeshAdapter, TfType::Bases<HdMayaShapeAdapter> >();
+TF_REGISTRY_FUNCTION(TfType) {
+    TfType::Define<HdMayaMeshAdapter, TfType::Bases<HdMayaShapeAdapter>>();
 }
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, mesh) {

@@ -29,8 +29,8 @@
 
 #include <stdlib.h>
 
-#include <pxr/base/plug/registry.h>
 #include <pxr/base/plug/plugin.h>
+#include <pxr/base/plug/registry.h>
 #include <pxr/usd/ar/defaultResolver.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -39,7 +39,8 @@ MStatus initializePlugin(MObject obj) {
     // For now this is required for the HdSt backed to use lights.
     // putenv requires char* and I'm not willing to use const cast!
     constexpr const char* envVarSet = "USDIMAGING_ENABLE_SCENE_LIGHTS=1";
-    std::vector<char> envVarData; envVarData.resize(strlen(envVarSet) + 1);
+    std::vector<char> envVarData;
+    envVarData.resize(strlen(envVarSet) + 1);
     sprintf(envVarData.data(), "%s", envVarSet);
     putenv(envVarData.data());
 
@@ -70,19 +71,15 @@ MStatus initializePlugin(MObject obj) {
     }
 
     if (!plugin.registerNode(
-        HdMayaUsdPreviewSurface::name,
-        HdMayaUsdPreviewSurface::typeId,
-        HdMayaUsdPreviewSurface::Creator,
-        HdMayaUsdPreviewSurface::Initialize,
-        MPxNode::kDependNode,
-        &HdMayaUsdPreviewSurface::classification)) {
+            HdMayaUsdPreviewSurface::name, HdMayaUsdPreviewSurface::typeId,
+            HdMayaUsdPreviewSurface::Creator, HdMayaUsdPreviewSurface::Initialize,
+            MPxNode::kDependNode, &HdMayaUsdPreviewSurface::classification)) {
         ret = MS::kFailure;
         ret.perror("Error registering UsdPreviewSurface node!");
     }
 
     return ret;
 }
-
 
 MStatus uninitializePlugin(MObject obj) {
     MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");

@@ -27,25 +27,19 @@
 #include <pxr/imaging/hd/light.h>
 
 #include <hdmaya/adapters/adapterDebugCodes.h>
-#include <hdmaya/adapters/lightAdapter.h>
 #include <hdmaya/adapters/adapterRegistry.h>
+#include <hdmaya/adapters/lightAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaAreaLightAdapter : public HdMayaLightAdapter {
-public:
+   public:
     HdMayaAreaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-    : HdMayaLightAdapter(delegate, dag) {
+        : HdMayaLightAdapter(delegate, dag) {}
 
-    }
+    void _CalculateLightParams(GlfSimpleLight& light) override { light.SetSpotCutoff(90.0f); }
 
-    void
-    _CalculateLightParams(GlfSimpleLight& light) override {
-        light.SetSpotCutoff(90.0f);
-    }
-
-    void
-    Populate() override {
+    void Populate() override {
         if (GetDelegate()->GetPreferSimpleLight()) {
             GetDelegate()->InsertSprim(HdPrimTypeTokens->simpleLight, GetID(), HdLight::AllDirty);
         } else {
@@ -53,17 +47,17 @@ public:
         }
     }
 
-    bool
-    IsSupported() override {
+    bool IsSupported() override {
         if (GetDelegate()->GetPreferSimpleLight()) {
-            return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->simpleLight);
+            return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(
+                HdPrimTypeTokens->simpleLight);
         } else {
-            return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->rectLight);
+            return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(
+                HdPrimTypeTokens->rectLight);
         }
     }
 
-    void
-    RemovePrim() override {
+    void RemovePrim() override {
         if (GetDelegate()->GetPreferSimpleLight()) {
             GetDelegate()->RemoveSprim(HdPrimTypeTokens->simpleLight, GetID());
         } else {
@@ -71,11 +65,10 @@ public:
         }
     }
 
-    VtValue
-    GetLightParamValue(const TfToken& paramName) override {
-        TF_DEBUG(HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE).Msg(
-                "Called HdMayaAreaLightAdapter::GetLightParamValue(%s) - %s\n",
-                paramName.GetText(),
+    VtValue GetLightParamValue(const TfToken& paramName) override {
+        TF_DEBUG(HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE)
+            .Msg(
+                "Called HdMayaAreaLightAdapter::GetLightParamValue(%s) - %s\n", paramName.GetText(),
                 GetDagPath().partialPathName().asChar());
 
         if (paramName == HdLightTokens->width) {
@@ -86,8 +79,7 @@ public:
         return HdMayaLightAdapter::GetLightParamValue(paramName);
     }
 
-    bool
-    HasType(const TfToken& typeId) override {
+    bool HasType(const TfToken& typeId) override {
         if (GetDelegate()->GetPreferSimpleLight()) {
             return typeId == HdPrimTypeTokens->simpleLight;
         } else {
@@ -96,8 +88,7 @@ public:
     }
 };
 
-TF_REGISTRY_FUNCTION(TfType)
-{
+TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<HdMayaAreaLightAdapter, TfType::Bases<HdMayaLightAdapter> >();
 }
 

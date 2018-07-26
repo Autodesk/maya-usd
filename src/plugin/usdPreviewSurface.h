@@ -40,7 +40,6 @@ public:
     static const MTypeId typeId;
     static void* Creator() { return new HdMayaUsdPreviewSurface(); }
     static MStatus Initialize();
-
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

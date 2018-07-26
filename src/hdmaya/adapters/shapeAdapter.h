@@ -42,15 +42,14 @@ public:
     HDMAYA_API
     virtual HdMeshTopology GetMeshTopology();
     HDMAYA_API
-    virtual HdPrimvarDescriptorVector
-    GetPrimvarDescriptors(HdInterpolation interpolation);
+    virtual HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation);
     HDMAYA_API
     virtual void MarkDirty(HdDirtyBits dirtyBits) override;
 
     HDMAYA_API
     virtual MObject GetMaterial();
     HDMAYA_API
-    virtual bool GetDoubleSided() { return true;};
+    virtual bool GetDoubleSided() { return true; };
 
     HDMAYA_API
     const GfRange3d& GetExtent();

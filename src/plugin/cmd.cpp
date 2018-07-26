@@ -23,12 +23,12 @@
 //
 #include "cmd.h"
 
-#include <maya/MSyntax.h>
 #include <maya/MArgDatabase.h>
 #include <maya/MGlobal.h>
+#include <maya/MSyntax.h>
 
-#include "renderOverride.h"
 #include <hdmaya/delegates/delegateRegistry.h>
+#include "renderOverride.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -78,91 +78,58 @@ constexpr auto _getColorSelectionHighlightColorLong = "-getColorSelectionHighlig
 constexpr auto _setColorSelectionHighlightColor = "-scc";
 constexpr auto _setColorSelectionHighlightColorLong = "-setColorSelectionHighlightColor";
 
-}
+} // namespace
 
 MSyntax HdMayaCmd::createSyntax() {
     MSyntax syntax;
 
-    syntax.addFlag(
-        _listRenderers,
-        _listRenderersLong);
+    syntax.addFlag(_listRenderers, _listRenderersLong);
+
+    syntax.addFlag(_getRendererDisplayName, _getRendererDisplayNameLong, MSyntax::kString);
+
+    syntax.addFlag(_changeRenderer, _changeRendererLong, MSyntax::kString);
+
+    syntax.addFlag(_listDelegates, _listDelegatesLong);
+
+    syntax.addFlag(_getMaximumShadowMapResolution, _getMaximumShadowMapResolutionLong);
 
     syntax.addFlag(
-        _getRendererDisplayName,
-        _getRendererDisplayNameLong,
-        MSyntax::kString);
+        _setMaximumShadowMapResolution, _setMaximumShadowMapResolutionLong, MSyntax::kLong);
+
+    syntax.addFlag(_getTextureMemoryPerTexture, _getTextureMemoryPerTextureLong);
+
+    syntax.addFlag(_setTextureMemoryPerTexture, _setTextureMemoryPerTextureLong, MSyntax::kLong);
+
+    syntax.addFlag(_getWireframeSelectionHighlight, _getWireframeSelectionHighlightLong);
 
     syntax.addFlag(
-        _changeRenderer,
-        _changeRendererLong,
-        MSyntax::kString);
+        _setWireframeSelectionHighlight, _setWireframeSelectionHighlightLong, MSyntax::kBoolean);
+
+    syntax.addFlag(_getColorSelectionHighlight, _getColorSelectionHighlightLong);
+
+    syntax.addFlag(_setColorSelectionHighlight, _setColorSelectionHighlightLong, MSyntax::kBoolean);
+
+    syntax.addFlag(_getColorSelectionHighlightColor, _getColorSelectionHighlightColorLong);
 
     syntax.addFlag(
-        _listDelegates,
-        _listDelegatesLong);
-
-    syntax.addFlag(
-        _getMaximumShadowMapResolution,
-        _getMaximumShadowMapResolutionLong);
-
-    syntax.addFlag(
-        _setMaximumShadowMapResolution,
-        _setMaximumShadowMapResolutionLong,
-        MSyntax::kLong);
-
-    syntax.addFlag(
-        _getTextureMemoryPerTexture,
-        _getTextureMemoryPerTextureLong);
-
-    syntax.addFlag(
-        _setTextureMemoryPerTexture,
-        _setTextureMemoryPerTextureLong,
-        MSyntax::kLong);
-
-    syntax.addFlag(
-        _getWireframeSelectionHighlight,
-        _getWireframeSelectionHighlightLong);
-
-    syntax.addFlag(
-        _setWireframeSelectionHighlight,
-        _setWireframeSelectionHighlightLong,
-        MSyntax::kBoolean);
-
-    syntax.addFlag(
-        _getColorSelectionHighlight,
-        _getColorSelectionHighlightLong);
-
-    syntax.addFlag(
-        _setColorSelectionHighlight,
-        _setColorSelectionHighlightLong,
-        MSyntax::kBoolean);
-
-    syntax.addFlag(
-        _getColorSelectionHighlightColor,
-        _getColorSelectionHighlightColorLong);
-
-    syntax.addFlag(
-        _setColorSelectionHighlightColor,
-        _setColorSelectionHighlightColorLong,
-        MSyntax::kDouble,
-        MSyntax::kDouble,
-        MSyntax::kDouble,
-        MSyntax::kDouble);
+        _setColorSelectionHighlightColor, _setColorSelectionHighlightColorLong, MSyntax::kDouble,
+        MSyntax::kDouble, MSyntax::kDouble, MSyntax::kDouble);
 
     return syntax;
 }
 
-MStatus HdMayaCmd::doIt(const MArgList &args) {
+MStatus HdMayaCmd::doIt(const MArgList& args) {
     MArgDatabase db(syntax(), args);
 
     if (db.isFlagSet(_listRenderers)) {
-        for (const auto& renderer: HdMayaRenderOverride::GetRendererPlugins()) {
+        for (const auto& renderer : HdMayaRenderOverride::GetRendererPlugins()) {
             appendToResult(renderer.GetText());
         }
     } else if (db.isFlagSet(_getRendererDisplayName)) {
         MString id;
         if (db.getFlagArgument(_getRendererDisplayName, 0, id)) {
-            const auto dn = HdMayaRenderOverride::GetRendererPluginDisplayName(TfToken(id.asChar()));
+            const auto dn =
+                HdMayaRenderOverride::GetRendererPluginDisplayName(TfToken(id.asChar()));
             setResult(MString(dn.c_str()));
         }
     } else if (db.isFlagSet(_changeRenderer)) {
@@ -172,7 +139,7 @@ MStatus HdMayaCmd::doIt(const MArgList &args) {
             MGlobal::executeCommandOnIdle("refresh -f");
         }
     } else if (db.isFlagSet(_listDelegates)) {
-        for (const auto& delegate: HdMayaDelegateRegistry::GetDelegateNames()) {
+        for (const auto& delegate : HdMayaDelegateRegistry::GetDelegateNames()) {
             appendToResult(delegate.GetText());
         }
     } else if (db.isFlagSet(_getMaximumShadowMapResolution)) {
