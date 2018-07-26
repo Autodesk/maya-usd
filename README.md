@@ -23,4 +23,21 @@ This project is still very alpha.  We're looking for contributors.
 
 ## Building
 
-Targets maya 2018 and the latest USD dev branch.
+Configure the build using cmake and run the build via your favourite build system.
+
+The plugin targets Maya 2018, Linux and the latest USD dev branch, which is built including UsdMaya and UsdImaging. USD_ROOT can be passed to cmake to set the location to the compiled USD libraries.
+
+Requirements:
+| Package | Version |
+| - | - |
+| GCC | 4.8.5 |
+| USD | 0.8.6 |
+| Maya | 2018 |
+| Boost | 1.61 |
+| TBB | 4.4 |
+
+To enable limited shadow support when using the HdSt render delegate, merge in https://github.com/PixarAnimationStudios/USD/pull/541 to your USD source and add -DLUMA_USD_BUILD=ON when running cmake.
+
+## Contributing
+
+The codebase (including the coding style) is highly volatile at this moment, breaking changes can be arrive at any time. When preparing a pull request make sure you run clang-format (version 6) before submitting.
