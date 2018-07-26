@@ -76,7 +76,7 @@ bool HdMayaDagAdapter::GetVisible() {
     return path.isVisible();
 }
 
-bool HdMayaDagAdapter::CalculateTransform() {
+void HdMayaDagAdapter::CalculateTransform() {
     _transform = getGfMatrixFromMaya(_dagPath.inclusiveMatrix());
 };
 
