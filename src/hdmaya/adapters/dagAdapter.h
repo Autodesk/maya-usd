@@ -47,6 +47,7 @@
 
 #include <hdmaya/adapters/adapter.h>
 #include <hdmaya/utils.h>
+#include <hdmaya/adapters/adapterDebugCodes.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -70,12 +71,13 @@ public:
     HDMAYA_API
     virtual void PopulateSelection(const HdSelection::HighlightMode& mode, HdSelection* selection);
 
+    HDMAYA_API
+    GfMatrix4d& GetTransform();
     const MDagPath& GetDagPath() { return _dagPath; }
-    const GfMatrix4d& GetTransform() const { return _transform; }
 
 protected:
     HDMAYA_API
-    bool CalculateTransform();
+    void CalculateTransform();
 
 private:
     MDagPath _dagPath;

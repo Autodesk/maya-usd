@@ -115,10 +115,6 @@ HdMayaLightAdapter::HdMayaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPa
 }
 
 void HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits) {
-    if (dirtyBits & HdLight::DirtyTransform) {
-        if (!CalculateTransform()) { dirtyBits &= ~HdLight::DirtyTransform; }
-    }
-
     if (dirtyBits != 0) { GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits); }
 }
 

@@ -37,6 +37,9 @@ TF_REGISTRY_FUNCTION(TfDebug) {
         "calls to the light adapters.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_ADAPTER_DAG_PLUG_DIRTY, "Print information about the dag node plug dirtying.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_ADAPTER_LIGHT_SHADOWS, "Print information about shadow rendering.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(

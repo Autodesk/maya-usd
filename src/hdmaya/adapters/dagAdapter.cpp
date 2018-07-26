@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include <hdmaya/adapters/dagAdapter.h>
+#include <hdmaya/adapters/adapterDebugCodes.h>
 
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/tokens.h>
@@ -43,12 +44,9 @@ MObject _xformVisibilityAttribute; // Will hold "visibility" attribute when init
 
 void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
-    if (plug == _xformVisibilityAttribute) { adapter->MarkDirty(HdChangeTracker::DirtyVisibility); }
-}
-
-void _ChangeTransformAttributes(
-    MNodeMessage::AttributeMessage /*msg*/, MPlug& plug, MPlug& /*otherPlug*/, void* clientData) {
-    auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    TF_DEBUG(HDMAYA_ADAPTER_DAG_PLUG_DIRTY).Msg(
+             "Dag adapter marking prim (%s) dirty because %s plug was dirtied.\n",
+             adapter->GetID().GetText(), plug.partialName().asChar());
     if (plug == _xformVisibilityAttribute) {
         adapter->MarkDirty(HdChangeTracker::DirtyVisibility);
     } else {
@@ -70,7 +68,6 @@ HdMayaDagAdapter::HdMayaDagAdapter(
             _xformAttrsInitialized &= TF_VERIFY(status);
         }
     }
-    CalculateTransform();
 }
 
 bool HdMayaDagAdapter::GetVisible() {
@@ -80,20 +77,24 @@ bool HdMayaDagAdapter::GetVisible() {
 }
 
 bool HdMayaDagAdapter::CalculateTransform() {
-    const auto _oldTransform = _transform;
     _transform = getGfMatrixFromMaya(_dagPath.inclusiveMatrix());
-    return !GfIsClose(_oldTransform, _transform, 0.001);
 };
+
+GfMatrix4d& HdMayaDagAdapter::GetTransform() {
+    TF_DEBUG(HDMAYA_ADAPTER_GET).Msg(
+        "Called HdMayaDagAdapter::GetTransform() - %s\n",
+        _dagPath.partialPathName().asChar());
+    CalculateTransform();
+    return _transform;
+}
 
 void HdMayaDagAdapter::CreateCallbacks() {
     MStatus status;
     for (auto dag = GetDagPath(); dag.length() > 0; dag.pop()) {
         MObject obj = dag.node();
         if (obj != MObject::kNullObj) {
-            auto id = MNodeMessage::addAttributeChangedCallback(
-                obj, _ChangeTransformAttributes, this, &status);
-            if (status) { AddCallback(id); }
-            id = MNodeMessage::addNodeDirtyCallback(obj, _TransformNodeDirty, this, &status);
+            auto id = MNodeMessage::addNodeDirtyCallback(
+                obj, _TransformNodeDirty, this, &status);
             if (status) { AddCallback(id); }
         }
     }
@@ -101,16 +102,6 @@ void HdMayaDagAdapter::CreateCallbacks() {
 }
 
 void HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
-    if (dirtyBits & HdChangeTracker::DirtyTransform) {
-        // TODO: this will trigger dg evalutation during the dirty-bit-push
-        // loop... refactor to avoid - we should just be able to only set the
-        // DirtyTransform bit if the transform was actually dirtied - we will
-        // miss the case where it was "changed" to the same value, but this
-        // should be an infrequent enough case we can probably ignore - or
-        // else delay the check until the renderOverride's "setup"
-        if (!CalculateTransform()) { dirtyBits &= ~HdChangeTracker::DirtyTransform; }
-    }
-
     if (dirtyBits != 0) { GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits); }
 }
 
