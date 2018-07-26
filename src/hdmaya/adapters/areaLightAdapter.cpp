@@ -56,9 +56,9 @@ public:
                 GetDagPath().partialPathName().asChar());
 
         if (paramName == HdLightTokens->width) {
-            return VtValue(1.0f);
+            return VtValue(2.0f);
         } else if (paramName == HdLightTokens->height) {
-            return VtValue(1.0f);
+            return VtValue(2.0f);
         }
         return HdMayaLightAdapter::GetLightParamValue(paramName);
     }

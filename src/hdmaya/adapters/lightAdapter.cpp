@@ -178,6 +178,8 @@ HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
         return VtValue(light.intensity());
     } else if (paramName == HdLightTokens->exposure) {
         return VtValue(0.0f);
+    } else if (paramName == HdLightTokens->normalize) {
+        return VtValue(true);
     }
     return {};
 }
