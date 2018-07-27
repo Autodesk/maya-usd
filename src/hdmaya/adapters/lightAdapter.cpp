@@ -194,6 +194,8 @@ VtValue HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
         return VtValue(0.0f);
     } else if (paramName == HdLightTokens->normalize) {
         return VtValue(true);
+    } else if (paramName == HdLightTokens->enableColorTemperature) {
+        return VtValue(false);
     }
     return {};
 }
