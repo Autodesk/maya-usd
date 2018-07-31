@@ -416,7 +416,7 @@ SdfPathVector ProxyShape::getPrimPathsFromCommaJoinedString(const MString &paths
 void ProxyShape::constructGLImagingEngine()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::constructGLImagingEngine\n");
-  if (MGlobal::mayaState() != MGlobal::kBatch)
+  if (MGlobal::mayaState() == MGlobal::kInteractive)
   {
     if(m_stage)
     {
