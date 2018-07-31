@@ -61,6 +61,9 @@ extern MObject doubleSided;
 extern MObject pnts;
 extern MObject inMesh;
 
+// shadingEngine
+extern MObject surfaceShader;
+
 MStatus initialize();
 
 }

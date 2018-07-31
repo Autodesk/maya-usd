@@ -28,6 +28,7 @@
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 
+#include <hdmaya/mayaAttrs.h>
 #include <hdmaya/adapters/adapterDebugCodes.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -76,7 +77,7 @@ MObject HdMayaShapeAdapter::GetMaterial() {
     MFnDagNode dagNode(GetDagPath(), &status);
     if (!status) { return MObject::kNullObj; }
 
-    auto instObjGroups = dagNode.findPlug("instObjGroups");
+    auto instObjGroups = dagNode.findPlug(MayaAttrs::instObjGroups);
     if (instObjGroups.isNull()) { return MObject::kNullObj; }
 
     MPlugArray conns;

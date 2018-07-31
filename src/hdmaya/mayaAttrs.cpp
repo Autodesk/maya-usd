@@ -60,6 +60,9 @@ MObject doubleSided;
 MObject pnts;
 MObject inMesh;
 
+// shadingEngine
+MObject surfaceShader;
+
 MStatus initialize() {
     MStatus status;
     {
@@ -137,6 +140,14 @@ MStatus initialize() {
         if (!TF_VERIFY(status)) { return status; }
 
         inMesh = nodeClass.attribute("inMesh", &status);
+        if (!TF_VERIFY(status)) { return status; }
+    }
+
+    {
+        MNodeClass nodeClass("shadingEngine");
+        if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
+
+        surfaceShader = nodeClass.attribute("surfaceShader", &status);
         if (!TF_VERIFY(status)) { return status; }
     }
     return MStatus::kSuccess;

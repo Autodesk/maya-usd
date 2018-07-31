@@ -33,6 +33,7 @@
 #include <maya/MPlug.h>
 #include <maya/MPoint.h>
 
+#include <hdmaya/mayaAttrs.h>
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/adapterRegistry.h>
 #include <hdmaya/adapters/lightAdapter.h>
@@ -58,13 +59,13 @@ class HdMayaSpotLightAdapter : public HdMayaLightAdapter {
     void _CalculateLightParams(GlfSimpleLight& light) override {
         MFnLight mayaLight(GetDagPath().node());
         light.SetHasShadow(true);
-        auto coneAnglePlug = mayaLight.findPlug("coneAngle", true);
+        auto coneAnglePlug = mayaLight.findPlug(MayaAttrs::coneAngle, true);
         if (!coneAnglePlug.isNull()) {
             // Divided by two.
             light.SetSpotCutoff(
                 static_cast<float>(GfRadiansToDegrees(coneAnglePlug.asFloat())) * 0.5f);
         }
-        auto dropoffPlug = mayaLight.findPlug("dropoff", true);
+        auto dropoffPlug = mayaLight.findPlug(MayaAttrs::dropoff, true);
         if (!dropoffPlug.isNull()) { light.SetSpotFalloff(dropoffPlug.asFloat()); }
     }
 
@@ -77,13 +78,13 @@ class HdMayaSpotLightAdapter : public HdMayaLightAdapter {
         if (key == HdLightTokens->shadowParams) {
             HdxShadowParams shadowParams;
             MFnLight mayaLight(GetDagPath().node());
-            const auto useDepthMapShadows = mayaLight.findPlug("useDepthMapShadows", true).asBool();
+            const auto useDepthMapShadows = mayaLight.findPlug(MayaAttrs::useDepthMapShadows, true).asBool();
             if (!useDepthMapShadows) {
                 shadowParams.enabled = false;
                 return VtValue(shadowParams);
             }
 
-            auto coneAnglePlug = mayaLight.findPlug("coneAngle", true);
+            auto coneAnglePlug = mayaLight.findPlug(MayaAttrs::coneAngle, true);
             if (coneAnglePlug.isNull()) { return {}; }
 
             GfFrustum frustum;

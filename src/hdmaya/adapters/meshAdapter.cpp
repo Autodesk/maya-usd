@@ -185,7 +185,7 @@ class HdMayaMeshAdapter : public HdMayaShapeAdapter {
 
     bool GetDoubleSided() {
         MFnMesh mesh(GetDagPath());
-        auto p = mesh.findPlug("doubleSided", true);
+        auto p = mesh.findPlug(MayaAttrs::doubleSided, true);
         if (ARCH_UNLIKELY(p.isNull())) { return true; }
         bool doubleSided;
         p.getValue(doubleSided);
