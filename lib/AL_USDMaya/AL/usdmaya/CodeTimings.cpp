@@ -22,7 +22,7 @@ namespace usdmaya {
 
 //----------------------------------------------------------------------------------------------------------------------
 Profiler::ProfilerSectionStackNode Profiler::m_timeStack[MAX_TIMESTAMP_STACK_SIZE];
-int32_t Profiler::m_stackPos = 0;
+uint32_t Profiler::m_stackPos = 0;
 Profiler::ProfilerSectionPathLUT Profiler::m_map;
 
 //----------------------------------------------------------------------------------------------------------------------

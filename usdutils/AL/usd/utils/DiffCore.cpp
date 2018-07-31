@@ -1266,7 +1266,7 @@ bool compareUvArray(
 
   const f256 eps8 = splat8f(eps);
   const size_t count8 = count & ~0x7ULL;
-  size_t i = 0, j = 0;
+  size_t i = 0;
 
   // check all values that can be processed in blocks of 4
   for(; i < count8; i += 8)
