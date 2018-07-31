@@ -1227,6 +1227,8 @@ void ProxyShape::loadStage()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::loadStage\n");
 
+  triggerEvent("PreStageLoaded");
+
   AL_BEGIN_PROFILE_SECTION(LoadStage);
   MDataBlock dataBlock = forceCache();
   // in case there was already a stage in m_stage, check to see if it's edit target has been altered
@@ -1426,6 +1428,8 @@ void ProxyShape::loadStage()
   }
 
   stageDataDirtyPlug().setValue(true);
+
+  triggerEvent("PostStageLoaded");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
