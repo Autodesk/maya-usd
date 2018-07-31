@@ -33,10 +33,10 @@
 #include <maya/MFloatArray.h>
 #include <maya/MFnMesh.h>
 #include <maya/MIntArray.h>
-#include <maya/MNodeClass.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
 
+#include <hdmaya/mayaAttrs.h>
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/adapterRegistry.h>
 #include <hdmaya/adapters/shapeAdapter.h>
@@ -47,21 +47,21 @@ namespace {
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens, (st));
 
-bool _meshAttrsInitialized = false;
-
-MObject _meshIogAttribute; // Will hold "iog" attribute when initialized
+// When this code is loaded, maya may not be initialized - delay setting the
+// MObjects...
+bool _dirtyBitsInitialized = false;
 
 std::vector<std::pair<MObject, HdDirtyBits>> _dirtyBits = {
-    {MObject(), // Will hold "pt" attribute when initialized
+    {MObject(), // Will hold "pnts" attribute when initialized
      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent},
-    {MObject(), // Will hold "i" attribute when initialized
+    {MObject(), // Will hold "inMesh" attribute when initialized
      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent | HdChangeTracker::DirtyPrimvar |
          HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyNormals},
-    {MObject(), // Will hold "wm" attribute when initialized
+    {MObject(), // Will hold "worldMatrix" attribute when initialized
      HdChangeTracker::DirtyTransform},
-    {MObject(), // Will hold "ds" attribute when initialized
+    {MObject(), // Will hold "doubleSided" attribute when initialized
      HdChangeTracker::DirtyDoubleSided},
-    {MObject(), // Will hold "io"/"intermediateObject" attribute when initialized
+    {MObject(), // Will hold "intermediateObject" attribute when initialized
      HdChangeTracker::DirtyVisibility},
 };
 
@@ -73,27 +73,15 @@ class HdMayaMeshAdapter : public HdMayaShapeAdapter {
         : HdMayaShapeAdapter(delegate->GetPrimPath(dag), delegate, dag) {
         // Do this here just because we want to wait for a point in time where
         // we KNOW maya is initialized
-        if (!_meshAttrsInitialized) {
+        if (!_dirtyBitsInitialized) {
             // Don't have a mutex here, should be fine - worst case we have two
             // threads setting these to the same thing at the same time
-            MNodeClass meshNodeClass("mesh");
-            if (TF_VERIFY(meshNodeClass.typeId() != 0)) {
-                MStatus status;
-                bool success = true;
-                _dirtyBits[0].first = meshNodeClass.attribute("pt", &status);
-                success &= TF_VERIFY(status);
-                _dirtyBits[1].first = meshNodeClass.attribute("i", &status);
-                success &= TF_VERIFY(status);
-                _dirtyBits[2].first = meshNodeClass.attribute("wm", &status);
-                success &= TF_VERIFY(status);
-                _dirtyBits[3].first = meshNodeClass.attribute("ds", &status);
-                success &= TF_VERIFY(status);
-                _dirtyBits[4].first = meshNodeClass.attribute("io", &status);
-                success &= TF_VERIFY(status);
-                _meshIogAttribute = meshNodeClass.attribute("iog", &status);
-                success &= TF_VERIFY(status);
-                _meshAttrsInitialized = success;
-            }
+            _dirtyBits[0].first = MayaAttrs::pnts;
+            _dirtyBits[1].first = MayaAttrs::inMesh;
+            _dirtyBits[2].first = MayaAttrs::worldMatrix;
+            _dirtyBits[3].first = MayaAttrs::doubleSided;
+            _dirtyBits[4].first = MayaAttrs::intermediateObject;
+            _dirtyBitsInitialized = true;
         }
     }
 
@@ -231,7 +219,7 @@ class HdMayaMeshAdapter : public HdMayaShapeAdapter {
     static void AttributeChangedCallback(
         MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPlug, void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
-        if (plug == _meshIogAttribute) {
+        if (plug == MayaAttrs::instObjGroups) {
             adapter->MarkDirty(HdChangeTracker::DirtyMaterialId);
         } else {
             TF_DEBUG(HDMAYA_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY)
