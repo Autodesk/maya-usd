@@ -8,6 +8,20 @@
             },
             "Name": "AL.usdmaya",
             "Type": "python"
+        },
+        {
+            "Info": {
+                "UsdMaya": {
+                    "PrimWriter": {
+                        "mayaPlugin": "AL_USDMayaPlugin",
+                        "providesTranslator": [
+                            "AL_usdmaya_ProxyShape"
+                        ]
+                    }
+                }
+            },
+            "Name": "pxr.UsdMaya",
+            "Type": "python"
         }
     ]
 }
