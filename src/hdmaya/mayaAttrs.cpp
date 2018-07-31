@@ -65,20 +65,37 @@ MObject surfaceShader;
 
 MStatus initialize() {
     MStatus status;
+
+    auto setAttrObj = [&status](MObject& attrObj,
+            MNodeClass& nodeClass,
+            const MString& name) {
+        attrObj = nodeClass.attribute(name, &status);
+        if (!TF_VERIFY(status)) { return; }
+        if (!TF_VERIFY(!attrObj.isNull())) {
+            status = MS::kFailure;
+            MString errMsg("Error finding '");
+            errMsg += nodeClass.typeName();
+            errMsg += ".";
+            errMsg += name;
+            errMsg += "' attribute";
+            status.perror(errMsg);
+            return;
+        }
+    };
     {
         MNodeClass nodeClass("dagNode");
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 
-        visibility = nodeClass.attribute("visibility", &status);
+        setAttrObj(visibility, nodeClass, "visibility");
         if (!TF_VERIFY(status)) { return status; }
 
-        worldMatrix = nodeClass.attribute("worldMatrix", &status);
+        setAttrObj(worldMatrix, nodeClass, "worldMatrix");
         if (!TF_VERIFY(status)) { return status; }
 
-        intermediateObject = nodeClass.attribute("intermediateObject", &status);
+        setAttrObj(intermediateObject, nodeClass, "intermediateObject");
         if (!TF_VERIFY(status)) { return status; }
 
-        instObjGroups = nodeClass.attribute("intermediateObject", &status);
+        setAttrObj(instObjGroups, nodeClass, "intermediateObject");
         if (!TF_VERIFY(status)) { return status; }
     }
 
@@ -86,13 +103,13 @@ MStatus initialize() {
         MNodeClass nodeClass("nonAmbientLightShapeNode");
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 
-        decayRate = nodeClass.attribute("decayRate", &status);
+        setAttrObj(decayRate, nodeClass, "decayRate");
         if (!TF_VERIFY(status)) { return status; }
 
-        emitDiffuse = nodeClass.attribute("emitDiffuse", &status);
+        setAttrObj(emitDiffuse, nodeClass, "emitDiffuse");
         if (!TF_VERIFY(status)) { return status; }
 
-        emitSpecular = nodeClass.attribute("emitSpecular", &status);
+        setAttrObj(emitSpecular, nodeClass, "emitSpecular");
         if (!TF_VERIFY(status)) { return status; }
     }
 
@@ -100,16 +117,16 @@ MStatus initialize() {
         MNodeClass nodeClass("nonExtendedLightShapeNode");
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 
-        dmapResolution = nodeClass.attribute("dmapResolution", &status);
+        setAttrObj(dmapResolution, nodeClass, "dmapResolution");
         if (!TF_VERIFY(status)) { return status; }
 
-        dmapBias = nodeClass.attribute("dmapBias", &status);
+        setAttrObj(dmapBias, nodeClass, "dmapBias");
         if (!TF_VERIFY(status)) { return status; }
 
-        dmapFilterSize = nodeClass.attribute("dmapFilterSize", &status);
+        setAttrObj(dmapFilterSize, nodeClass, "dmapFilterSize");
         if (!TF_VERIFY(status)) { return status; }
 
-        useDepthMapShadows = nodeClass.attribute("useDepthMapShadows", &status);
+        setAttrObj(useDepthMapShadows, nodeClass, "useDepthMapShadows");
         if (!TF_VERIFY(status)) { return status; }
     }
 
@@ -117,10 +134,10 @@ MStatus initialize() {
         MNodeClass nodeClass("spotLight");
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 
-        coneAngle = nodeClass.attribute("coneAngle", &status);
+        setAttrObj(coneAngle, nodeClass, "coneAngle");
         if (!TF_VERIFY(status)) { return status; }
 
-        dropoff = nodeClass.attribute("dropoff", &status);
+        setAttrObj(dropoff, nodeClass, "dropoff");
         if (!TF_VERIFY(status)) { return status; }
     }
 
@@ -128,7 +145,7 @@ MStatus initialize() {
         MNodeClass nodeClass("surfaceShape");
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 
-        doubleSided = nodeClass.attribute("doubleSided", &status);
+        setAttrObj(doubleSided, nodeClass, "doubleSided");
         if (!TF_VERIFY(status)) { return status; }
     }
 
@@ -136,10 +153,10 @@ MStatus initialize() {
         MNodeClass nodeClass("mesh");
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 
-        pnts = nodeClass.attribute("pnts", &status);
+        setAttrObj(pnts, nodeClass, "pnts");
         if (!TF_VERIFY(status)) { return status; }
 
-        inMesh = nodeClass.attribute("inMesh", &status);
+        setAttrObj(inMesh, nodeClass, "inMesh");
         if (!TF_VERIFY(status)) { return status; }
     }
 
@@ -147,7 +164,7 @@ MStatus initialize() {
         MNodeClass nodeClass("shadingEngine");
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 
-        surfaceShader = nodeClass.attribute("surfaceShader", &status);
+        setAttrObj(surfaceShader, nodeClass, "surfaceShader");
         if (!TF_VERIFY(status)) { return status; }
     }
     return MStatus::kSuccess;
