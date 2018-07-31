@@ -61,6 +61,81 @@ AL::event::CallbackId Global::m_preExport;
 AL::event::CallbackId Global::m_postExport;
 
 //----------------------------------------------------------------------------------------------------------------------
+
+//class of MObjects
+static MSelectionList g_selected;
+
+//Store the current selection list, but dont store AL_USD proxies
+static void storeSelection()
+{
+  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("storeSelection\n");
+  MGlobal::getActiveSelectionList(g_selected);
+
+  // some utils that test for AL types, but which only initialise function sets when it's possible
+  // that the type may be a plugin shape or transform. Avoids a tonne of function set initialisations
+  // and string compares on the types. 
+  auto isProxyShape = [] (MDagPath p) {
+    if(p.node().hasFn(MFn::kPluginShape)) {
+       return MFnDagNode(p).typeName() == "AL_usdmaya_ProxyShape";
+    }
+    return false;
+  };
+  auto isTransform = [] (MDagPath p) {
+    if(p.node().hasFn(MFn::kPluginTransformNode)) {
+       return MFnDagNode(p).typeName() == "AL_usdmaya_Transform";
+    }
+    return false;
+  };
+
+  for(int i = 0; i < g_selected.length(); /* empty */ )
+  {
+    // grab item as a dag path (skip over materials/textures/etc)
+    MDagPath selectedPath; 
+    if(!g_selected.getDagPath(i, selectedPath))
+    {
+      ++i;
+      continue;
+    }
+
+    // test for any selected proxy shapes or transform nodes
+    if(isProxyShape(selectedPath) || isTransform(selectedPath))
+    {
+      // remove node from selection list
+      g_selected.remove(i);
+      continue;
+    }
+
+    // test for any parents of proxy shapes selected (don't iterate over all children, just the shape nodes below)
+    uint32_t num = 0, j;
+    selectedPath.numberOfShapesDirectlyBelow(num);
+    for(j = 0; j < num; ++j)
+    {
+      MDagPath child = selectedPath;
+      child.extendToShapeDirectlyBelow(j); //< only care about shape nodes (rather than ALL children!)
+      if(isProxyShape(child))
+      {
+        g_selected.remove(i);
+        break;
+      }
+    }
+
+    // if none found, increment count
+    if(j == num)
+    {
+      ++i;
+    }
+  }
+  
+}
+
+//Reselect the selection stored in storeSelection()
+static void restoreSelection()
+{
+  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("restoreSelection\n");
+  MGlobal::setActiveSelectionList(g_selected);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 static void onFileNew(void*)
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("onFileNew\n");
@@ -198,6 +273,11 @@ static void _preFileSave()
   // Ideally we don't want these transient nodes to be stored in the Maya file, so make sure we unselect prior to a file
   // save (which should call another set of callbacks and delete those transient nodes. This should leave us with just
   // those AL::usdmaya::nodes::Transform nodes that are created because they are required, or have been requested).
+
+  // Selection will be restored to the selection prior to the clearing in the post save.
+
+  storeSelection();
+
   MGlobal::clearSelectionList();
 
   nodes::ProxyShape::serializeAll();
@@ -240,9 +320,11 @@ static void postFileSave(void*)
 
   nodes::LayerManager* layerManager = nodes::LayerManager::findManager();
   if (layerManager)
-  {
+  { 
     AL_MAYA_CHECK_ERROR2(layerManager->clearSerialisationAttributes(), "postFileSave");
   }
+  // Restore selection cleared by _preFileSave()
+  restoreSelection();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -301,4 +383,3 @@ void Global::onPluginUnload()
 } // usdmaya
 } // al
 //----------------------------------------------------------------------------------------------------------------------
-
