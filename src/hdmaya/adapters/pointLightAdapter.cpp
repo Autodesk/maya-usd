@@ -39,37 +39,11 @@ class HdMayaPointLightAdapter : public HdMayaLightAdapter {
     HdMayaPointLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
         : HdMayaLightAdapter(delegate, dag) {}
 
-    void Populate() override {
+    const TfToken& LightType() override {
         if (GetDelegate()->GetPreferSimpleLight()) {
-            GetDelegate()->InsertSprim(HdPrimTypeTokens->simpleLight, GetID(), HdLight::AllDirty);
+            return HdPrimTypeTokens->simpleLight;
         } else {
-            GetDelegate()->InsertSprim(HdPrimTypeTokens->sphereLight, GetID(), HdLight::AllDirty);
-        }
-    }
-
-    void RemovePrim() override {
-        if (GetDelegate()->GetPreferSimpleLight()) {
-            GetDelegate()->RemoveSprim(HdPrimTypeTokens->simpleLight, GetID());
-        } else {
-            GetDelegate()->RemoveSprim(HdPrimTypeTokens->sphereLight, GetID());
-        }
-    }
-
-    bool IsSupported() override {
-        if (GetDelegate()->GetPreferSimpleLight()) {
-            return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(
-                HdPrimTypeTokens->simpleLight);
-        } else {
-            return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(
-                HdPrimTypeTokens->sphereLight);
-        }
-    }
-
-    bool HasType(const TfToken& typeId) override {
-        if (GetDelegate()->GetPreferSimpleLight()) {
-            return typeId == HdPrimTypeTokens->simpleLight;
-        } else {
-            return typeId == HdPrimTypeTokens->sphereLight;
+            return HdPrimTypeTokens->sphereLight;
         }
     }
 

@@ -114,14 +114,24 @@ HdMayaLightAdapter::HdMayaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPa
     _initializeAttrs();
 }
 
+bool HdMayaLightAdapter::IsSupported() {
+    return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(LightType());
+}
+
+void HdMayaLightAdapter::Populate() {
+    GetDelegate()->InsertSprim(LightType(), GetID(), HdLight::AllDirty);
+}
+
 void HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     if (dirtyBits != 0) { GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits); }
 }
 
 void HdMayaLightAdapter::RemovePrim() {
-    if (GetDelegate()->GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
-        GetDelegate()->RemoveSprim(HdPrimTypeTokens->simpleLight, GetID());
-    }
+    GetDelegate()->RemoveSprim(LightType(), GetID());
+}
+
+bool HdMayaLightAdapter::HasType(const TfToken& typeId) {
+    return typeId == LightType();
 }
 
 VtValue HdMayaLightAdapter::Get(const TfToken& key) {

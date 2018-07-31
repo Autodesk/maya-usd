@@ -46,6 +46,14 @@ class HdMayaSpotLightAdapter : public HdMayaLightAdapter {
     HdMayaSpotLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
         : HdMayaLightAdapter(delegate, dag) {}
 
+    const TfToken& LightType() override {
+        if (GetDelegate()->GetPreferSimpleLight()) {
+            return HdPrimTypeTokens->simpleLight;
+        } else {
+            return HdPrimTypeTokens->sphereLight;
+        }
+    }
+
    protected:
     void _CalculateLightParams(GlfSimpleLight& light) override {
         MFnLight mayaLight(GetDagPath().node());
@@ -58,14 +66,6 @@ class HdMayaSpotLightAdapter : public HdMayaLightAdapter {
         }
         auto dropoffPlug = mayaLight.findPlug("dropoff", true);
         if (!dropoffPlug.isNull()) { light.SetSpotFalloff(dropoffPlug.asFloat()); }
-    }
-
-    void Populate() override {
-        GetDelegate()->InsertSprim(HdPrimTypeTokens->simpleLight, GetID(), HdLight::AllDirty);
-    }
-
-    bool IsSupported() override {
-        return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->simpleLight);
     }
 
     VtValue Get(const TfToken& key) override {
@@ -100,8 +100,6 @@ class HdMayaSpotLightAdapter : public HdMayaLightAdapter {
 
         return HdMayaLightAdapter::Get(key);
     }
-
-    bool HasType(const TfToken& typeId) override { return typeId == HdPrimTypeTokens->simpleLight; }
 };
 
 TF_REGISTRY_FUNCTION(TfType) {
