@@ -57,7 +57,7 @@ class HdMayaSpotLightAdapter : public HdMayaLightAdapter {
 
    protected:
     void _CalculateLightParams(GlfSimpleLight& light) override {
-        MFnLight mayaLight(GetDagPath().node());
+        MFnLight mayaLight(GetDagPath());
         light.SetHasShadow(true);
         auto coneAnglePlug = mayaLight.findPlug(MayaAttrs::coneAngle, true);
         if (!coneAnglePlug.isNull()) {
@@ -77,7 +77,7 @@ class HdMayaSpotLightAdapter : public HdMayaLightAdapter {
 
         if (key == HdLightTokens->shadowParams) {
             HdxShadowParams shadowParams;
-            MFnLight mayaLight(GetDagPath().node());
+            MFnLight mayaLight(GetDagPath());
             const auto useDepthMapShadows = mayaLight.findPlug(MayaAttrs::useDepthMapShadows, true).asBool();
             if (!useDepthMapShadows) {
                 shadowParams.enabled = false;

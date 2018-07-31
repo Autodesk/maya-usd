@@ -94,7 +94,7 @@ VtValue HdMayaLightAdapter::Get(const TfToken& key) {
             GetDagPath().partialPathName().asChar());
 
     if (key == HdLightTokens->params) {
-        MFnLight mayaLight(GetDagPath().node());
+        MFnLight mayaLight(GetDagPath());
         GlfSimpleLight light;
         const auto color = mayaLight.color();
         const auto intensity = mayaLight.intensity();
@@ -147,7 +147,7 @@ VtValue HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
             "Called HdMayaLightAdapter::GetLightParamValue(%s) - %s\n", paramName.GetText(),
             GetDagPath().partialPathName().asChar());
 
-    MFnLight light(GetDagPath().node());
+    MFnLight light(GetDagPath());
     if (paramName == HdTokens->color) {
         const auto color = light.color();
         return VtValue(GfVec3f(color.r, color.g, color.b));
