@@ -1,4 +1,7 @@
 .idea
 .vscode
+.project
+.cproject
+.settings
 cmake-build-*
 /build/
