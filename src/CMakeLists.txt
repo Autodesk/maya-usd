@@ -36,6 +36,7 @@ set(HDMAYA_SRC
     hdmaya/delegates/testDelegate.cpp)
 
 set(HDVIEW_SRC
+    hdmaya/mayaAttrs.cpp
     plugin/cmd.cpp
     plugin/plugin.cpp
     plugin/renderOverride.cpp

@@ -34,10 +34,10 @@ namespace MayaAttrs {
 
 namespace dagNode {
 
-extern MObject visibility;
-extern MObject worldMatrix;
-extern MObject intermediateObject;
-extern MObject instObjGroups;
+MObject visibility;
+MObject worldMatrix;
+MObject intermediateObject;
+MObject instObjGroups;
 
 } // namespace dagNode
 
