@@ -63,8 +63,6 @@ void HdMayaAdapter::CreateCallbacks() {
     }
 }
 
-MStatus HdMayaAdapter::Initialize() {
-    return MayaAttrs::initialize();
-}
+MStatus HdMayaAdapter::Initialize() { return MayaAttrs::initialize(); }
 
 PXR_NAMESPACE_CLOSE_SCOPE

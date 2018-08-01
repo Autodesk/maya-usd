@@ -64,6 +64,7 @@ public:
 
     HDMAYA_API
     static MStatus Initialize();
+
 protected:
     MObject _node;
     SdfPath _id;
