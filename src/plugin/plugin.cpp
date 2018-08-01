@@ -24,7 +24,6 @@
 #include <maya/MFnPlugin.h>
 
 #include "cmd.h"
-#include "hdmaya/mayaAttrs.h"
 #include "renderOverride.h"
 #include "usdPreviewSurface.h"
 
@@ -34,12 +33,14 @@
 #include <pxr/base/plug/registry.h>
 #include <pxr/usd/ar/defaultResolver.h>
 
+#include <hdmaya/adapters/adapter.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 MStatus initializePlugin(MObject obj) {
     MStatus ret = MS::kSuccess;
 
-    ret = MayaAttrs::initialize();
+    ret = HdMayaAdapter::Initialize();
     if (!ret) { return ret; }
 
     // For now this is required for the HdSt backed to use lights.

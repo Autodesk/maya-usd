@@ -21,9 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/dagAdapter.h>
-#include <hdmaya/mayaAttrs.h>
+
+#include <hdmaya/adapters/adapterDebugCodes.h>
+#include <hdmaya/adapters/mayaAttrs.h>
 
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/tokens.h>

@@ -46,7 +46,7 @@
 #include <maya/MPlugArray.h>
 
 #include <hdmaya/adapters/adapterRegistry.h>
-#include <hdmaya/mayaAttrs.h>
+#include <hdmaya/adapters/mayaAttrs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -455,8 +455,7 @@ private:
         if (fileNode.findPlug(MayaAttrs::file::uvTilingMode).asShort() != 0) {
             auto ret = fileNode.findPlug(MayaAttrs::file::fileTextureNamePattern).asString();
             if (ret.length() == 0) {
-                ret = fileNode.findPlug(MayaAttrs::file::computedFileTextureNamePattern)
-                          .asString();
+                ret = fileNode.findPlug(MayaAttrs::file::computedFileTextureNamePattern).asString();
             }
             return TfToken(ret.asChar());
         }

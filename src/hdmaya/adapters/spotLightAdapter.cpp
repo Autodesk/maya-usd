@@ -38,7 +38,7 @@
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/adapterRegistry.h>
 #include <hdmaya/adapters/lightAdapter.h>
-#include <hdmaya/mayaAttrs.h>
+#include <hdmaya/adapters/mayaAttrs.h>
 
 #include <hdmaya/utils.h>
 

@@ -29,7 +29,7 @@
 #include <maya/MPlugArray.h>
 
 #include <hdmaya/adapters/adapterDebugCodes.h>
-#include <hdmaya/mayaAttrs.h>
+#include <hdmaya/adapters/mayaAttrs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

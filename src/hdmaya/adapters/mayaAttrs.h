@@ -29,7 +29,13 @@
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 
+#include <hdmaya/api.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+#ifdef __GNUC__
+#pragma GCC visibility push(hidden)
+#endif
 
 namespace MayaAttrs {
 
@@ -100,9 +106,14 @@ extern MObject uvTilingMode;
 
 } // namespace file
 
+HDMAYA_API
 MStatus initialize();
 
 } // namespace MayaAttrs
+
+#ifdef __GNUC__
+#pragma GCC visibility pop
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -38,8 +38,8 @@
 
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/adapterRegistry.h>
+#include <hdmaya/adapters/mayaAttrs.h>
 #include <hdmaya/adapters/shapeAdapter.h>
-#include <hdmaya/mayaAttrs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

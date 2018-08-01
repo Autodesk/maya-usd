@@ -16,7 +16,7 @@ link_directories(${USD_MAYA_LIBRARY_DIR})
 set(MAYA_LIBS OpenMaya Foundation OpenMayaAnim OpenMayaFX OpenMayaUI OpenMayaRender)
 
 set(HDMAYA_SRC
-    hdmaya/mayaAttrs.cpp
+    hdmaya/adapters/mayaAttrs.cpp
     hdmaya/adapters/adapter.cpp
     hdmaya/adapters/adapterDebugCodes.cpp
     hdmaya/adapters/adapterRegistry.cpp
@@ -36,7 +36,7 @@ set(HDMAYA_SRC
     hdmaya/delegates/testDelegate.cpp)
 
 set(HDVIEW_SRC
-    hdmaya/mayaAttrs.cpp
+    hdmaya/adapters/mayaAttrs.cpp
     plugin/cmd.cpp
     plugin/plugin.cpp
     plugin/renderOverride.cpp

@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "hdmaya/mayaAttrs.h"
+#include <hdmaya/adapters/mayaAttrs.h>
 
 #include <pxr/base/tf/diagnostic.h>
 
@@ -97,7 +97,7 @@ MObject uvTilingMode;
 MStatus initialize() {
     MStatus status;
 
-     auto setAttrObj = [&status](MObject& attrObj, MNodeClass& nodeClass, const MString& name) {
+    auto setAttrObj = [&status](MObject& attrObj, MNodeClass& nodeClass, const MString& name) {
         if (!TF_VERIFY(attrObj.isNull())) {
             // This attempts to avoid copy-paste mistakes - ie, I had done:
             //      setAttrObj(instObjGroups, nodeClass, "instObjGroups");
@@ -108,9 +108,10 @@ MStatus initialize() {
             errMsg += nodeClass.typeName();
             errMsg += ".";
             errMsg += name;
-            errMsg += "' to a non-empty MObject - check to ensure you're "
-                    "assigning it to the correct object, and that you're not "
-                    "running initialize() twice";
+            errMsg +=
+                "' to a non-empty MObject - check to ensure you're "
+                "assigning it to the correct object, and that you're not "
+                "running initialize() twice";
             status.perror(errMsg);
             return;
         }

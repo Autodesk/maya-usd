@@ -62,6 +62,8 @@ public:
     virtual void RemovePrim() = 0;
     virtual void Populate() = 0;
 
+    HDMAYA_API
+    static MStatus Initialize();
 protected:
     MObject _node;
     SdfPath _id;

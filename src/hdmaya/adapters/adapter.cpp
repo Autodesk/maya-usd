@@ -27,6 +27,8 @@
 
 #include <maya/MNodeMessage.h>
 
+#include <hdmaya/adapters/mayaAttrs.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) { TfType::Define<HdMayaAdapter>(); }
@@ -59,6 +61,10 @@ void HdMayaAdapter::CreateCallbacks() {
         auto id = MNodeMessage::addNodeAboutToDeleteCallback(_node, _aboutToDelete, this, &status);
         if (status) { AddCallback(id); }
     }
+}
+
+MStatus HdMayaAdapter::Initialize() {
+    return MayaAttrs::initialize();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
