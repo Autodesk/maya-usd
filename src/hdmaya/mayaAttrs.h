@@ -64,6 +64,9 @@ extern MObject inMesh;
 // shadingEngine
 extern MObject surfaceShader;
 
+// fileNode
+extern MObject uvTilingMode;
+
 MStatus initialize();
 
 } // namespace MayaAttrs

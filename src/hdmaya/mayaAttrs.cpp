@@ -63,6 +63,9 @@ MObject inMesh;
 // shadingEngine
 MObject surfaceShader;
 
+// fileNode
+MObject uvTilingMode;
+
 MStatus initialize() {
     MStatus status;
 
@@ -163,6 +166,14 @@ MStatus initialize() {
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 
         setAttrObj(surfaceShader, nodeClass, "surfaceShader");
+        if (!TF_VERIFY(status)) { return status; }
+    }
+
+    {
+        MNodeClass nodeClass("file");
+        if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
+
+        setAttrObj(uvTilingMode, nodeClass, "uvTilingMode");
         if (!TF_VERIFY(status)) { return status; }
     }
     return MStatus::kSuccess;

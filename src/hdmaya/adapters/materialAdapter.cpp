@@ -31,6 +31,9 @@
 
 #include <pxr/imaging/glf/glslfx.h>
 #include <pxr/imaging/glf/textureRegistry.h>
+#ifdef LUMA_USD_BUILD
+#include <pxr/imaging/glf/udimTexture.h>
+#endif
 
 #include <pxr/usdImaging/usdImagingGL/package.h>
 
@@ -43,6 +46,7 @@
 #include <maya/MPlugArray.h>
 
 #include <hdmaya/adapters/adapterRegistry.h>
+#include <hdmaya/mayaAttrs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -259,10 +263,24 @@ private:
             HdMaterialParamVector ret;
             ret.reserve(_previewShaderParamVector.size());
             for (const auto& it : _previewShaderParamVector) {
-                if (_RegisterTexture(node, it.GetName())) {
+#ifdef LUMA_USD_BUILD
+                auto isUdim = false;
+#endif
+                if (_RegisterTexture(
+                        node, it.GetName()
+#ifdef LUMA_USD_BUILD
+                        ,
+                        isUdim
+#endif
+                        )) {
                     ret.emplace_back(
                         HdMaterialParam::ParamTypeTexture, it.GetName(), it.GetFallbackValue(),
-                        GetID().AppendProperty(it.GetName()), _stSamplerCoords);
+                        GetID().AppendProperty(it.GetName()), _stSamplerCoords, false
+#ifdef LUMA_USD_BUILD
+                        ,
+                        isUdim
+#endif
+                    );
                 } else {
                     ret.emplace_back(it);
                 }
@@ -273,19 +291,47 @@ private:
             ret.reserve(_previewShaderParamVector.size());
             for (const auto& it : _previewShaderParamVector) {
                 if (it.GetName() == _tokens->diffuseColor) {
-                    if (_RegisterTexture(node, _tokens->color)) {
+#ifdef LUMA_USD_BUILD
+                    auto isUdim = false;
+#endif
+                    if (_RegisterTexture(
+                            node, _tokens->color
+#ifdef LUMA_USD_BUILD
+                            ,
+                            isUdim
+#endif
+                            )) {
                         ret.emplace_back(
                             HdMaterialParam::ParamTypeTexture, _tokens->diffuseColor,
                             it.GetFallbackValue(), GetID().AppendProperty(_tokens->color),
-                            _stSamplerCoords);
+                            _stSamplerCoords, false
+#ifdef LUMA_USD_BUILD
+                            ,
+                            isUdim
+#endif
+                        );
                         continue;
                     }
                 } else if (it.GetName() == _tokens->emissiveColor) {
-                    if (_RegisterTexture(node, _tokens->incandescence)) {
+#ifdef LUMA_USD_BUILD
+                    auto isUdim = false;
+#endif
+                    if (_RegisterTexture(
+                            node, _tokens->incandescence
+#ifdef LUMA_USD_BUILD
+                            ,
+                            isUdim
+#endif
+                            )) {
                         ret.emplace_back(
                             HdMaterialParam::ParamTypeTexture, _tokens->emissiveColor,
                             it.GetFallbackValue(), GetID().AppendProperty(_tokens->incandescence),
-                            _stSamplerCoords);
+                            _stSamplerCoords, false
+#ifdef LUMA_USD_BUILD
+                            ,
+                            isUdim
+#endif
+                        );
                         continue;
                     }
                 }
@@ -298,7 +344,13 @@ private:
         }
     }
 
-    inline bool _RegisterTexture(const MFnDependencyNode& node, const TfToken& paramName) {
+    inline bool _RegisterTexture(
+        const MFnDependencyNode& node, const TfToken& paramName
+#ifdef LUMA_USD_BUILD
+        ,
+        bool& isUdim
+#endif
+    ) {
         const auto connectedFileObj = GetConnectedFileNode(node, paramName);
         if (connectedFileObj != MObject::kNullObj) {
             const auto filePath = _GetTextureFilePath(MFnDependencyNode(connectedFileObj));
@@ -316,6 +368,9 @@ private:
                 } else {
                     _textureResources[paramName] = textureInstance.GetValue();
                 }
+#ifdef LUMA_USD_BUILD
+                isUdim = GlfIsSupportedUdimTexture(filePath);
+#endif
                 return true;
             } else {
                 _textureResources[paramName].reset();
@@ -396,6 +451,15 @@ private:
     }
 
     inline TfToken _GetTextureFilePath(const MFnDependencyNode& fileNode) {
+#ifdef LUMA_USD_BUILD
+        if (fileNode.findPlug(MayaAttrs::uvTilingMode).asShort() != 0) {
+            auto ret = fileNode.findPlug("fileTextureNamePattern").asString();
+            if (ret.length() == 0) {
+                ret = fileNode.findPlug("computedFileTextureNamePattern").asString();
+            }
+            return TfToken(ret.asChar());
+        }
+#endif
         return TfToken(fileNode.findPlug(_fileTextureName).asString().asChar());
     }
 
@@ -406,14 +470,34 @@ private:
     }
 
     inline HdTextureResourceSharedPtr _GetTextureResource(const TfToken& filePath) {
-        if (filePath.IsEmpty() || !TfPathExists(filePath)) { return {}; }
+        if (filePath.IsEmpty()) { return {}; }
+#ifdef LUMA_USD_BUILD
+        const auto isUdim = GlfIsSupportedUdimTexture(filePath);
+#endif
+        if (
+#ifdef LUMA_USD_BUILD
+            !isUdim &&
+#endif
+            !TfPathExists(filePath)) {
+            return {};
+        }
         // TODO: handle origin
-        auto texture = GlfTextureRegistry::GetInstance().GetTextureHandle(filePath);
+        auto texture =
+#ifdef LUMA_USD_BUILD
+            isUdim
+                ? GlfTextureRegistry::GetInstance().GetTextureHandle(GlfUdimTexture::New(filePath))
+                :
+#endif
+                GlfTextureRegistry::GetInstance().GetTextureHandle(filePath);
         // We can't really mimic texture wrapping and mirroring settings from
         // the uv placement node, so we don't touch those for now.
         return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
-            texture, false, false, HdWrapClamp, HdWrapClamp, HdMinFilterLinearMipmapLinear,
-            HdMagFilterLinear, GetDelegate()->GetParams().textureMemoryPerTexture));
+            texture, false,
+#ifdef LUMA_USD_BUILD
+            isUdim,
+#endif
+            HdWrapClamp, HdWrapClamp, HdMinFilterLinearMipmapLinear, HdMagFilterLinear,
+            GetDelegate()->GetParams().textureMemoryPerTexture));
     }
 
     MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName) {
