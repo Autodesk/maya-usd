@@ -157,6 +157,7 @@ void HdMayaMaterialAdapter::RemovePrim() {
 }
 
 void HdMayaMaterialAdapter::Populate() {
+    TF_DEBUG(HDMAYA_ADAPTER_GET).Msg("HdMayaMaterialAdapter::Populate() - %s\n", GetID().GetText());
     GetDelegate()->InsertSprim(HdPrimTypeTokens->material, GetID(), HdMaterial::AllDirty);
 }
 

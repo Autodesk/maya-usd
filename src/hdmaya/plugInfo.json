@@ -77,6 +77,12 @@
                             "HdMayaMaterialAdapter"
                         ],
                         "displayName": "Adapter for the shading engine that translates everything to a Preview Surface."
+                    },
+                    "HdMayaImagePlaneMaterialAdapter": {
+                        "bases": [
+                            "HdMayaMaterialAdapter"
+                        ],
+                        "displayName": "Adapter for the image plane texture."
                     }
                 }
             },

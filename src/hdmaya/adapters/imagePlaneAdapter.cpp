@@ -1,7 +1,26 @@
 //
-// Created by nickk on 7/26/18.
+// Copyright 2018 Luma Pictures
 //
-
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http:#www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
 #include <pxr/pxr.h>
 
 #include <pxr/base/tf/type.h>
@@ -87,7 +106,7 @@ void _CameraNodeDirtiedCallback(MObject& node, MPlug& plug, void* clientData) {
 struct _ImagePlaneParams {
     float depth = 100.0f;
     GfVec2f aperture {1.0f, 1.0f};
-    GfVec2f offset {1.0f, 1.0f};
+    GfVec2f offset {0.0f, 0.0f};
     float focalLength = 1.0f;
     GfVec2f size {-1.0f, -1.0f};
     GfVec2f coverage {-1.0f, -1.0f};
@@ -185,10 +204,12 @@ CalculateGeometryForCamera(
         vertex[1] = params.depth * vertex[1] / params.focalLength;
     };
 
-    projectVertex(upperLeft);
-    projectVertex(upperRight);
-    projectVertex(lowerLeft);
-    projectVertex(lowerRight);
+    if (params.depth != 0.0f and params.focalLength != 0.0f){
+        projectVertex(upperLeft);
+        projectVertex(upperRight);
+        projectVertex(lowerLeft);
+        projectVertex(lowerRight);
+    }
 
     vertices->resize(4);
     vertices->operator[](0) = GfVec3f(upperLeft[0] , upperLeft[1] , -params.depth);
@@ -275,14 +296,18 @@ public:
                 _camera = temp;
             }
         }
-        TF_VERIFY(!_camera.isNull(), "No camera found for this imagePlane\n");
+        if (_camera.isNull()){
+            TF_DEBUG(HDMAYA_ADAPTER_IMAGEPLANES).Msg(
+                    "imagePlane %s is not linked to a camera\n",
+                    fn.fullPathName().asChar());
+        }
     }
 
     ~HdMayaImagePlaneAdapter() {
     }
 
     void Populate() {
-        TF_DEBUG(HDMAYA_ADAPTER_GET).Msg(
+        TF_DEBUG(HDMAYA_ADAPTER_IMAGEPLANES).Msg(
                     "Called HdMayaImagePlaneAdapter::Populate() - %s\n",
                     GetDagPath().partialPathName().asChar());
 
@@ -326,7 +351,7 @@ public:
 
     void UpdateGeometry(){
         if (!_planeIsDirty){ return; }
-        TF_DEBUG(HDMAYA_ADAPTER_GET)
+        TF_DEBUG(HDMAYA_ADAPTER_IMAGEPLANES)
             .Msg("HdMayaImagePlaneAdapter::UpdateGeometry - %s\n",
                  GetDagPath().partialPathName().asChar());
 
@@ -336,9 +361,6 @@ public:
 
         auto imageNameExtracted = MRenderUtil::exactImagePlaneFileName(dnode.object());
         paramsFromMaya.fileName = SdfAssetPath(std::string(imageNameExtracted.asChar()));
-
-        paramsFromMaya.depth = dnode.findPlug("depth").asFloat();
-        paramsFromMaya.rotate = dnode.findPlug("rotate").asFloat();
 
         const auto fit = dnode.findPlug("fit").asShort();
         if (fit == UsdGeomImagePlane::FIT_BEST) {
@@ -353,10 +375,6 @@ public:
             paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->toSize;
         }
 
-        const auto sizePlug = dnode.findPlug("size");
-        paramsFromMaya.size = GfVec2f(sizePlug.child(0).asFloat(), sizePlug.child(1).asFloat()) * inch_to_mm;
-        const auto offsetPlug = dnode.findPlug("offset");
-        paramsFromMaya.offset = GfVec2f(offsetPlug.child(0).asFloat(), offsetPlug.child(1).asFloat());
         const auto coveragePlug = dnode.findPlug("coverage");
         paramsFromMaya.coverage = GfVec2i(coveragePlug.child(0).asInt(), coveragePlug.child(1).asInt());
         const auto coverageOriginPlug = dnode.findPlug("coverageOrigin");
@@ -368,6 +386,27 @@ public:
             paramsFromMaya.aperture[0] = camera.horizontalFilmAperture(&status);
             paramsFromMaya.aperture[1] = camera.verticalFilmAperture(&status);
             paramsFromMaya.focalLength = camera.focalLength(&status);
+
+            // enabled attributes when connected to camera
+            paramsFromMaya.depth = dnode.findPlug("depth").asFloat();
+            paramsFromMaya.rotate = dnode.findPlug("rotate").asFloat();
+
+            // always enabled but only affect when connected to camera
+            const auto sizePlug = dnode.findPlug("size");
+            // Size attr is in inches while aperture is in millimeters.
+            paramsFromMaya.size = GfVec2f(sizePlug.child(0).asFloat(), sizePlug.child(1).asFloat()) * inch_to_mm;
+            const auto offsetPlug = dnode.findPlug("offset");
+            paramsFromMaya.offset = GfVec2f(offsetPlug.child(0).asFloat(), offsetPlug.child(1).asFloat()) * inch_to_mm;
+        } else {
+            paramsFromMaya.size = GfVec2f(dnode.findPlug("width").asFloat(), dnode.findPlug("height").asFloat());
+            // maya uses a center attribute as a 3d offset, but we can also
+            // express this with depth + offset since those other attributes
+            // do not affect non camera image planes.
+            const auto centerPlug = dnode.findPlug("imageCenter");
+            paramsFromMaya.offset = GfVec2f(centerPlug.child(0).asFloat(), centerPlug.child(1).asFloat());
+            paramsFromMaya.depth = -centerPlug.child(2).asFloat();
+            // need to zero out focal length to prevent projection of depth
+            paramsFromMaya.focalLength = 0.0f;
         }
 
         CalculateGeometryForCamera(
@@ -378,7 +417,7 @@ public:
     }
 
     VtValue Get(const TfToken &key) override {
-        TF_DEBUG(HDMAYA_ADAPTER_GET)
+        TF_DEBUG(HDMAYA_ADAPTER_IMAGEPLANES)
             .Msg("Called HdMayaImagePlaneAdapter::Get(%s) - %s\n", key.GetText(),
                  GetDagPath().partialPathName().asChar());
 
@@ -393,10 +432,9 @@ public:
     }
 
     HdMeshTopology GetMeshTopology() override {
-        TF_DEBUG(HDMAYA_ADAPTER_GET)
-                .Msg(
-                        "Called HdMayaImagePlaneAdapter::GetMeshTopology - %s\n",
-                        GetDagPath().partialPathName().asChar());
+        TF_DEBUG(HDMAYA_ADAPTER_IMAGEPLANES).Msg(
+                "Called HdMayaImagePlaneAdapter::GetMeshTopology - %s\n",
+                GetDagPath().partialPathName().asChar());
         return HdMeshTopology(UsdGeomTokens->triangleSubdivisionRule,
                               // TODO: Would it be cleaner to flip the xform instead?
                               // Without this, the normal is facing away from camera.
@@ -406,6 +444,14 @@ public:
                               _faceVertexIndices,
                               _holeIndices,
                               0);
+    }
+
+    MObject GetMaterial() override {
+        // return image plane itself
+        MStatus status;
+        MFnDagNode dagNode(GetDagPath(), &status);
+        if (!status) { return MObject::kNullObj; }
+        return dagNode.object();
     }
 
     void MarkDirty(HdDirtyBits dirtyBits) {
