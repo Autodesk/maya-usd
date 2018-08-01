@@ -25,6 +25,9 @@
 
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/light.h>
+#include <pxr/usd/usdLux/tokens.h>
+
+#include <maya/MFnPointLight.h>
 
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/adapterRegistry.h>
@@ -50,10 +53,18 @@ class HdMayaPointLightAdapter : public HdMayaLightAdapter {
     VtValue GetLightParamValue(const TfToken& paramName) override {
         TF_DEBUG(HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE)
             .Msg(
-                "Called HdMayaAreaLightAdapter::GetLightParamValue(%s) - %s\n", paramName.GetText(),
+                "Called HdMayaPointLightAdapter::GetLightParamValue(%s) - %s\n", paramName.GetText(),
                 GetDagPath().partialPathName().asChar());
 
-        if (paramName == HdLightTokens->radius) { return VtValue(1.0f); }
+        MFnPointLight light(GetDagPath());
+        if (paramName == UsdLuxTokens->radius) {
+            const float radius = light.shadowRadius();
+            return VtValue(radius);
+        }
+        else if (paramName == UsdLuxTokens->treatAsPoint) {
+            const bool treatAsPoint = (light.shadowRadius() == 0.0);
+            return VtValue(treatAsPoint);
+        }
         return HdMayaLightAdapter::GetLightParamValue(paramName);
     }
 };
