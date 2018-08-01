@@ -452,10 +452,11 @@ private:
 
     inline TfToken _GetTextureFilePath(const MFnDependencyNode& fileNode) {
 #ifdef LUMA_USD_BUILD
-        if (fileNode.findPlug(MayaAttrs::uvTilingMode).asShort() != 0) {
-            auto ret = fileNode.findPlug(MayaAttrs::fileTextureNamePattern).asString();
+        if (fileNode.findPlug(MayaAttrs::file::uvTilingMode).asShort() != 0) {
+            auto ret = fileNode.findPlug(MayaAttrs::file::fileTextureNamePattern).asString();
             if (ret.length() == 0) {
-                ret = fileNode.findPlug(MayaAttrs::computedFileTextureNamePattern).asString();
+                ret = fileNode.findPlug(MayaAttrs::file::computedFileTextureNamePattern)
+                          .asString();
             }
             return TfToken(ret.asChar());
         }

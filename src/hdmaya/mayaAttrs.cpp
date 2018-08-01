@@ -64,9 +64,13 @@ MObject inMesh;
 MObject surfaceShader;
 
 // fileNode
+namespace file {
+
 MObject computedFileTextureNamePattern;
 MObject fileTextureNamePattern;
 MObject uvTilingMode;
+
+} // namespace file
 
 MStatus initialize() {
     MStatus status;
@@ -172,6 +176,7 @@ MStatus initialize() {
     }
 
     {
+        using namespace file;
         MNodeClass nodeClass("file");
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 
