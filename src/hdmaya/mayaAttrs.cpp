@@ -64,6 +64,8 @@ MObject inMesh;
 MObject surfaceShader;
 
 // fileNode
+MObject computedFileTextureNamePattern;
+MObject fileTextureNamePattern;
 MObject uvTilingMode;
 
 MStatus initialize() {
@@ -172,6 +174,12 @@ MStatus initialize() {
     {
         MNodeClass nodeClass("file");
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
+
+        setAttrObj(computedFileTextureNamePattern, nodeClass, "computedFileTextureNamePattern");
+        if (!TF_VERIFY(status)) { return status; }
+
+        setAttrObj(fileTextureNamePattern, nodeClass, "fileTextureNamePattern");
+        if (!TF_VERIFY(status)) { return status; }
 
         setAttrObj(uvTilingMode, nodeClass, "uvTilingMode");
         if (!TF_VERIFY(status)) { return status; }

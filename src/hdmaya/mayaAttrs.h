@@ -65,6 +65,8 @@ extern MObject inMesh;
 extern MObject surfaceShader;
 
 // fileNode
+extern MObject computedFileTextureNamePattern;
+extern MObject fileTextureNamePattern;
 extern MObject uvTilingMode;
 
 MStatus initialize();
