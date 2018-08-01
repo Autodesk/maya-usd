@@ -96,9 +96,9 @@ VtValue HdMayaLightAdapter::Get(const TfToken& key) {
         const auto inclusiveMatrix = GetDagPath().inclusiveMatrix();
         const auto position = pt * inclusiveMatrix;
         // This will return zero / false if the plug is nonexistent.
-        const auto decayRate = mayaLight.findPlug(MayaAttrs::decayRate, true).asShort();
-        const auto emitDiffuse = mayaLight.findPlug(MayaAttrs::emitDiffuse, true).asBool();
-        const auto emitSpecular = mayaLight.findPlug(MayaAttrs::emitSpecular, true).asBool();
+        const auto decayRate = mayaLight.findPlug(MayaAttrs::nonAmbientLightShapeNode::decayRate, true).asShort();
+        const auto emitDiffuse = mayaLight.findPlug(MayaAttrs::nonAmbientLightShapeNode::emitDiffuse, true).asBool();
+        const auto emitSpecular = mayaLight.findPlug(MayaAttrs::nonAmbientLightShapeNode::emitSpecular, true).asBool();
         MVector pv(0.0, 0.0, -1.0);
         const auto lightDirection = (pv * inclusiveMatrix).normal();
         light.SetHasShadow(false);
@@ -185,11 +185,11 @@ void HdMayaLightAdapter::_CalculateShadowParams(
             "Called HdMayaLightAdapter::_CalculateShadowParams - %s\n",
             GetDagPath().partialPathName().asChar());
 
-    auto dmapResolutionPlug = light.findPlug(MayaAttrs::dmapResolution);
-    auto dmapBiasPlug = light.findPlug(MayaAttrs::dmapBias);
-    auto dmapFilterSizePlug = light.findPlug(MayaAttrs::dmapFilterSize);
+    auto dmapResolutionPlug = light.findPlug(MayaAttrs::nonExtendedLightShapeNode::dmapResolution);
+    auto dmapBiasPlug = light.findPlug(MayaAttrs::nonExtendedLightShapeNode::dmapBias);
+    auto dmapFilterSizePlug = light.findPlug(MayaAttrs::nonExtendedLightShapeNode::dmapFilterSize);
 
-    const auto decayRate = light.findPlug(MayaAttrs::decayRate, true).asShort();
+    const auto decayRate = light.findPlug(MayaAttrs::nonExtendedLightShapeNode::decayRate, true).asShort();
     if (decayRate > 0) {
         const auto color = light.color();
         const auto intensity = light.intensity();

@@ -76,11 +76,11 @@ public:
         if (!_dirtyBitsInitialized) {
             // Don't have a mutex here, should be fine - worst case we have two
             // threads setting these to the same thing at the same time
-            _dirtyBits[0].first = MayaAttrs::pnts;
-            _dirtyBits[1].first = MayaAttrs::inMesh;
-            _dirtyBits[2].first = MayaAttrs::worldMatrix;
-            _dirtyBits[3].first = MayaAttrs::doubleSided;
-            _dirtyBits[4].first = MayaAttrs::intermediateObject;
+            _dirtyBits[0].first = MayaAttrs::mesh::pnts;
+            _dirtyBits[1].first = MayaAttrs::mesh::inMesh;
+            _dirtyBits[2].first = MayaAttrs::mesh::worldMatrix;
+            _dirtyBits[3].first = MayaAttrs::mesh::doubleSided;
+            _dirtyBits[4].first = MayaAttrs::mesh::intermediateObject;
             _dirtyBitsInitialized = true;
         }
     }
@@ -185,7 +185,7 @@ public:
 
     bool GetDoubleSided() {
         MFnMesh mesh(GetDagPath());
-        auto p = mesh.findPlug(MayaAttrs::doubleSided, true);
+        auto p = mesh.findPlug(MayaAttrs::mesh::doubleSided, true);
         if (ARCH_UNLIKELY(p.isNull())) { return true; }
         bool doubleSided;
         p.getValue(doubleSided);
@@ -219,7 +219,7 @@ private:
     static void AttributeChangedCallback(
         MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPlug, void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
-        if (plug == MayaAttrs::instObjGroups) {
+        if (plug == MayaAttrs::mesh::instObjGroups) {
             adapter->MarkDirty(HdChangeTracker::DirtyMaterialId);
         } else {
             TF_DEBUG(HDMAYA_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY)

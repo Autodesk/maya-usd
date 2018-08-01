@@ -33,38 +33,65 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace MayaAttrs {
 
-// dagNode
+namespace dagNode {
+
 extern MObject visibility;
 extern MObject worldMatrix;
 extern MObject intermediateObject;
 extern MObject instObjGroups;
 
-// nonAmbientLightShapeNode
+} // namespace dagNode
+
+namespace nonAmbientLightShapeNode {
+
+using namespace dagNode;
 extern MObject decayRate;
 extern MObject emitDiffuse;
 extern MObject emitSpecular;
 
-// nonExtendedLightShapeNode
+} // namespace nonAmbientLightShapeNode
+
+namespace nonExtendedLightShapeNode {
+
+using namespace nonAmbientLightShapeNode;
 extern MObject dmapResolution;
 extern MObject dmapBias;
 extern MObject dmapFilterSize;
 extern MObject useDepthMapShadows;
 
-// spotLight
+} // namespace nonExtendedLightShapeNode
+
+namespace spotLight {
+
+using namespace nonExtendedLightShapeNode;
 extern MObject coneAngle;
 extern MObject dropoff;
 
-// surfaceShape
+} // namespace spotLight
+
+namespace surfaceShape {
+
+using namespace dagNode;
 extern MObject doubleSided;
 
+} // namespace surfaceShape
+
 // mesh
+
+namespace mesh {
+
+using namespace surfaceShape;
 extern MObject pnts;
 extern MObject inMesh;
 
-// shadingEngine
+} // namespace mesh
+
+namespace shadingEngine {
+
 extern MObject surfaceShader;
 
-// fileNode
+} // namespace shadingEngine
+
 namespace file {
 
 extern MObject computedFileTextureNamePattern;

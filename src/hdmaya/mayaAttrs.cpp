@@ -32,38 +32,60 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace MayaAttrs {
 
-// dagNode
-MObject visibility;
-MObject worldMatrix;
-MObject intermediateObject;
-MObject instObjGroups;
+namespace dagNode {
 
-// nonAmbientLightShapeNode
+extern MObject visibility;
+extern MObject worldMatrix;
+extern MObject intermediateObject;
+extern MObject instObjGroups;
+
+} // namespace dagNode
+
+namespace nonAmbientLightShapeNode {
+
 MObject decayRate;
 MObject emitDiffuse;
 MObject emitSpecular;
 
-// nonExtendedLightShapeNode
+} // namespace nonAmbientLightShapeNode
+
+namespace nonExtendedLightShapeNode {
+
 MObject dmapResolution;
 MObject dmapBias;
 MObject dmapFilterSize;
 MObject useDepthMapShadows;
 
-// spotLight
+} // namespace nonExtendedLightShapeNode
+
+namespace spotLight {
+
 MObject coneAngle;
 MObject dropoff;
 
-// surfaceShape
+} // namespace spotLight
+
+namespace surfaceShape {
+
 MObject doubleSided;
 
+} // namespace surfaceShape
+
 // mesh
+
+namespace mesh {
+
 MObject pnts;
 MObject inMesh;
 
-// shadingEngine
+} // namespace mesh
+
+namespace shadingEngine {
+
 MObject surfaceShader;
 
-// fileNode
+} // namespace shadingEngine
+
 namespace file {
 
 MObject computedFileTextureNamePattern;
@@ -106,6 +128,7 @@ MStatus initialize() {
         }
     };
     {
+        using namespace dagNode;
         MNodeClass nodeClass("dagNode");
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 
@@ -123,6 +146,7 @@ MStatus initialize() {
     }
 
     {
+        using namespace nonAmbientLightShapeNode;
         MNodeClass nodeClass("nonAmbientLightShapeNode");
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 
@@ -137,6 +161,7 @@ MStatus initialize() {
     }
 
     {
+        using namespace nonExtendedLightShapeNode;
         MNodeClass nodeClass("nonExtendedLightShapeNode");
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 
@@ -154,6 +179,7 @@ MStatus initialize() {
     }
 
     {
+        using namespace spotLight;
         MNodeClass nodeClass("spotLight");
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 
@@ -165,6 +191,7 @@ MStatus initialize() {
     }
 
     {
+        using namespace surfaceShape;
         MNodeClass nodeClass("surfaceShape");
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 
@@ -173,6 +200,7 @@ MStatus initialize() {
     }
 
     {
+        using namespace mesh;
         MNodeClass nodeClass("mesh");
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 
@@ -184,6 +212,7 @@ MStatus initialize() {
     }
 
     {
+        using namespace shadingEngine;
         MNodeClass nodeClass("shadingEngine");
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 

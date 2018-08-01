@@ -44,7 +44,7 @@ void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
         .Msg(
             "Dag adapter marking prim (%s) dirty because %s plug was dirtied.\n",
             adapter->GetID().GetText(), plug.partialName().asChar());
-    if (plug == MayaAttrs::visibility) {
+    if (plug == MayaAttrs::dagNode::visibility) {
         adapter->MarkDirty(HdChangeTracker::DirtyVisibility);
     } else {
         adapter->MarkDirty(HdChangeTracker::DirtyTransform);

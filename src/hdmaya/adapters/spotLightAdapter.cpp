@@ -104,13 +104,13 @@ protected:
             HdxShadowParams shadowParams;
             MFnLight mayaLight(GetDagPath());
             const auto useDepthMapShadows =
-                mayaLight.findPlug(MayaAttrs::useDepthMapShadows, true).asBool();
+                mayaLight.findPlug(MayaAttrs::spotLight::useDepthMapShadows, true).asBool();
             if (!useDepthMapShadows) {
                 shadowParams.enabled = false;
                 return VtValue(shadowParams);
             }
 
-            auto coneAnglePlug = mayaLight.findPlug(MayaAttrs::coneAngle, true);
+            auto coneAnglePlug = mayaLight.findPlug(MayaAttrs::spotLight::coneAngle, true);
             if (coneAnglePlug.isNull()) { return {}; }
 
             GfFrustum frustum;
