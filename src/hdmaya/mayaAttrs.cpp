@@ -93,7 +93,7 @@ MStatus initialize() {
         setAttrObj(intermediateObject, nodeClass, "intermediateObject");
         if (!TF_VERIFY(status)) { return status; }
 
-        setAttrObj(instObjGroups, nodeClass, "intermediateObject");
+        setAttrObj(instObjGroups, nodeClass, "instObjGroups");
         if (!TF_VERIFY(status)) { return status; }
     }
 
