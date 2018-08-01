@@ -75,7 +75,23 @@ MObject uvTilingMode;
 MStatus initialize() {
     MStatus status;
 
-    auto setAttrObj = [&status](MObject& attrObj, MNodeClass& nodeClass, const MString& name) {
+     auto setAttrObj = [&status](MObject& attrObj, MNodeClass& nodeClass, const MString& name) {
+        if (!TF_VERIFY(attrObj.isNull())) {
+            // This attempts to avoid copy-paste mistakes - ie, I had done:
+            //      setAttrObj(instObjGroups, nodeClass, "instObjGroups");
+            //      setAttrObj(instObjGroups, nodeClass, "intermediateObject");
+            // ...which this would catch...
+            status = MS::kFailure;
+            MString errMsg("Attempted to assign the attribute '");
+            errMsg += nodeClass.typeName();
+            errMsg += ".";
+            errMsg += name;
+            errMsg += "' to a non-empty MObject - check to ensure you're "
+                    "assigning it to the correct object, and that you're not "
+                    "running initialize() twice";
+            status.perror(errMsg);
+            return;
+        }
         attrObj = nodeClass.attribute(name, &status);
         if (!TF_VERIFY(status)) { return; }
         if (!TF_VERIFY(!attrObj.isNull())) {
