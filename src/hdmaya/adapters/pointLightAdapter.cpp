@@ -25,6 +25,9 @@
 
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/light.h>
+#include <pxr/usd/usdLux/tokens.h>
+
+#include <maya/MFnPointLight.h>
 
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/adapterRegistry.h>
@@ -35,51 +38,32 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaPointLightAdapter : public HdMayaLightAdapter {
-   public:
+public:
     HdMayaPointLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
         : HdMayaLightAdapter(delegate, dag) {}
 
-    void Populate() override {
+    const TfToken& LightType() override {
         if (GetDelegate()->GetPreferSimpleLight()) {
-            GetDelegate()->InsertSprim(HdPrimTypeTokens->simpleLight, GetID(), HdLight::AllDirty);
+            return HdPrimTypeTokens->simpleLight;
         } else {
-            GetDelegate()->InsertSprim(HdPrimTypeTokens->sphereLight, GetID(), HdLight::AllDirty);
-        }
-    }
-
-    void RemovePrim() override {
-        if (GetDelegate()->GetPreferSimpleLight()) {
-            GetDelegate()->RemoveSprim(HdPrimTypeTokens->simpleLight, GetID());
-        } else {
-            GetDelegate()->RemoveSprim(HdPrimTypeTokens->sphereLight, GetID());
-        }
-    }
-
-    bool IsSupported() override {
-        if (GetDelegate()->GetPreferSimpleLight()) {
-            return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(
-                HdPrimTypeTokens->simpleLight);
-        } else {
-            return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(
-                HdPrimTypeTokens->sphereLight);
-        }
-    }
-
-    bool HasType(const TfToken& typeId) override {
-        if (GetDelegate()->GetPreferSimpleLight()) {
-            return typeId == HdPrimTypeTokens->simpleLight;
-        } else {
-            return typeId == HdPrimTypeTokens->sphereLight;
+            return HdPrimTypeTokens->sphereLight;
         }
     }
 
     VtValue GetLightParamValue(const TfToken& paramName) override {
         TF_DEBUG(HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE)
             .Msg(
-                "Called HdMayaAreaLightAdapter::GetLightParamValue(%s) - %s\n", paramName.GetText(),
-                GetDagPath().partialPathName().asChar());
+                "Called HdMayaPointLightAdapter::GetLightParamValue(%s) - %s\n",
+                paramName.GetText(), GetDagPath().partialPathName().asChar());
 
-        if (paramName == HdLightTokens->radius) { return VtValue(1.0f); }
+        MFnPointLight light(GetDagPath());
+        if (paramName == UsdLuxTokens->radius) {
+            const float radius = light.shadowRadius();
+            return VtValue(radius);
+        } else if (paramName == UsdLuxTokens->treatAsPoint) {
+            const bool treatAsPoint = (light.shadowRadius() == 0.0);
+            return VtValue(treatAsPoint);
+        }
         return HdMayaLightAdapter::GetLightParamValue(paramName);
     }
 };

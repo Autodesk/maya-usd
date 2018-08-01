@@ -33,35 +33,17 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaAreaLightAdapter : public HdMayaLightAdapter {
-   public:
+public:
     HdMayaAreaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
         : HdMayaLightAdapter(delegate, dag) {}
 
     void _CalculateLightParams(GlfSimpleLight& light) override { light.SetSpotCutoff(90.0f); }
 
-    void Populate() override {
+    const TfToken& LightType() override {
         if (GetDelegate()->GetPreferSimpleLight()) {
-            GetDelegate()->InsertSprim(HdPrimTypeTokens->simpleLight, GetID(), HdLight::AllDirty);
+            return HdPrimTypeTokens->simpleLight;
         } else {
-            GetDelegate()->InsertSprim(HdPrimTypeTokens->rectLight, GetID(), HdLight::AllDirty);
-        }
-    }
-
-    bool IsSupported() override {
-        if (GetDelegate()->GetPreferSimpleLight()) {
-            return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(
-                HdPrimTypeTokens->simpleLight);
-        } else {
-            return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(
-                HdPrimTypeTokens->rectLight);
-        }
-    }
-
-    void RemovePrim() override {
-        if (GetDelegate()->GetPreferSimpleLight()) {
-            GetDelegate()->RemoveSprim(HdPrimTypeTokens->simpleLight, GetID());
-        } else {
-            GetDelegate()->RemoveSprim(HdPrimTypeTokens->rectLight, GetID());
+            return HdPrimTypeTokens->rectLight;
         }
     }
 
@@ -77,14 +59,6 @@ class HdMayaAreaLightAdapter : public HdMayaLightAdapter {
             return VtValue(2.0f);
         }
         return HdMayaLightAdapter::GetLightParamValue(paramName);
-    }
-
-    bool HasType(const TfToken& typeId) override {
-        if (GetDelegate()->GetPreferSimpleLight()) {
-            return typeId == HdPrimTypeTokens->simpleLight;
-        } else {
-            return typeId == HdPrimTypeTokens->rectLight;
-        }
     }
 };
 

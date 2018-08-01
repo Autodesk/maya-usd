@@ -89,7 +89,7 @@ TfToken _GetDefaultRenderer() {
 }
 
 class HdMayaSceneRender : public MHWRender::MSceneRender {
-   public:
+public:
     HdMayaSceneRender(const MString& name) : MHWRender::MSceneRender(name) {}
 
     MUint64 getObjectTypeExclusions() override {
@@ -116,7 +116,7 @@ class HdMayaSceneRender : public MHWRender::MSceneRender {
 };
 
 class HdMayaManipulatorRender : public MHWRender::MSceneRender {
-   public:
+public:
     HdMayaManipulatorRender(const MString& name) : MHWRender::MSceneRender(name) {}
 
     MUint64 getObjectTypeExclusions() override {
@@ -130,7 +130,7 @@ class HdMayaManipulatorRender : public MHWRender::MSceneRender {
 };
 
 class HdMayaRender : public MHWRender::MUserRenderOperation {
-   public:
+public:
     HdMayaRender(const MString& name, HdMayaRenderOverride* override)
         : MHWRender::MUserRenderOperation(name), _override(override) {}
 
@@ -142,7 +142,7 @@ class HdMayaRender : public MHWRender::MUserRenderOperation {
 
     bool requiresLightData() const override { return false; }
 
-   private:
+private:
     HdMayaRenderOverride* _override;
 };
 

@@ -29,7 +29,7 @@ The plugin targets Maya 2018, Linux and the latest USD dev branch, which is buil
 
 Requirements:
 | Package | Version |
-| - | - |
+| --- | --- |
 | GCC | 4.8.5 |
 | USD | 0.8.6 |
 | Maya | 2018 |

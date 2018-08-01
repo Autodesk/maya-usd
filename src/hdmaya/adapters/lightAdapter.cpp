@@ -30,7 +30,6 @@
 
 #include <maya/MColor.h>
 #include <maya/MFnLight.h>
-#include <maya/MNodeClass.h>
 #include <maya/MPlug.h>
 #include <maya/MPoint.h>
 
@@ -38,53 +37,7 @@
 
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/constantShadowMatrix.h>
-
-namespace {
-
-PXR_NAMESPACE_USING_DIRECTIVE;
-
-MObject _decayRateAttr;
-MObject _emitDiffuseAttr;
-MObject _emitSpecularAttr;
-MObject _dmapResolutionAttr;
-MObject _dmapBiasAttr;
-MObject _dmapFilterSizeAttr;
-
-bool _attrsInitialized = false;
-
-void _initializeAttrs() {
-    if (_attrsInitialized) { return; }
-
-    MStatus status;
-    bool success = true;
-
-    MNodeClass nonAmbientClass("nonAmbientLightShapeNode");
-    if (TF_VERIFY(nonAmbientClass.typeId() != 0)) {
-        _decayRateAttr = nonAmbientClass.attribute("decayRate", &status);
-        success &= TF_VERIFY(status);
-        _emitDiffuseAttr = nonAmbientClass.attribute("emitDiffuse", &status);
-        success &= TF_VERIFY(status);
-        _emitSpecularAttr = nonAmbientClass.attribute("emitSpecular", &status);
-        success &= TF_VERIFY(status);
-    } else {
-        success = false;
-    }
-
-    MNodeClass nonExtendedClass("nonExtendedLightShapeNode");
-    if (TF_VERIFY(nonExtendedClass.typeId() != 0)) {
-        _dmapResolutionAttr = nonExtendedClass.attribute("dmapResolution", &status);
-        success &= TF_VERIFY(status);
-        _dmapBiasAttr = nonExtendedClass.attribute("dmapBias", &status);
-        success &= TF_VERIFY(status);
-        _dmapFilterSizeAttr = nonExtendedClass.attribute("dmapFilterSize", &status);
-        success &= TF_VERIFY(status);
-    } else {
-        success = false;
-    }
-
-    _attrsInitialized = success;
-}
-} // namespace
+#include <hdmaya/mayaAttrs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -110,19 +63,23 @@ void _dirtyParams(MObject& /*node*/, void* clientData) {
 } // namespace
 
 HdMayaLightAdapter::HdMayaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-    : HdMayaDagAdapter(delegate->GetPrimPath(dag), delegate, dag) {
-    _initializeAttrs();
+    : HdMayaDagAdapter(delegate->GetPrimPath(dag), delegate, dag) {}
+
+bool HdMayaLightAdapter::IsSupported() {
+    return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(LightType());
+}
+
+void HdMayaLightAdapter::Populate() {
+    GetDelegate()->InsertSprim(LightType(), GetID(), HdLight::AllDirty);
 }
 
 void HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     if (dirtyBits != 0) { GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits); }
 }
 
-void HdMayaLightAdapter::RemovePrim() {
-    if (GetDelegate()->GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
-        GetDelegate()->RemoveSprim(HdPrimTypeTokens->simpleLight, GetID());
-    }
-}
+void HdMayaLightAdapter::RemovePrim() { GetDelegate()->RemoveSprim(LightType(), GetID()); }
+
+bool HdMayaLightAdapter::HasType(const TfToken& typeId) { return typeId == LightType(); }
 
 VtValue HdMayaLightAdapter::Get(const TfToken& key) {
     TF_DEBUG(HDMAYA_ADAPTER_GET)
@@ -131,7 +88,7 @@ VtValue HdMayaLightAdapter::Get(const TfToken& key) {
             GetDagPath().partialPathName().asChar());
 
     if (key == HdLightTokens->params) {
-        MFnLight mayaLight(GetDagPath().node());
+        MFnLight mayaLight(GetDagPath());
         GlfSimpleLight light;
         const auto color = mayaLight.color();
         const auto intensity = mayaLight.intensity();
@@ -139,9 +96,9 @@ VtValue HdMayaLightAdapter::Get(const TfToken& key) {
         const auto inclusiveMatrix = GetDagPath().inclusiveMatrix();
         const auto position = pt * inclusiveMatrix;
         // This will return zero / false if the plug is nonexistent.
-        const auto decayRate = mayaLight.findPlug(_decayRateAttr, true).asShort();
-        const auto emitDiffuse = mayaLight.findPlug(_emitDiffuseAttr, true).asBool();
-        const auto emitSpecular = mayaLight.findPlug(_emitSpecularAttr, true).asBool();
+        const auto decayRate = mayaLight.findPlug(MayaAttrs::nonAmbientLightShapeNode::decayRate, true).asShort();
+        const auto emitDiffuse = mayaLight.findPlug(MayaAttrs::nonAmbientLightShapeNode::emitDiffuse, true).asBool();
+        const auto emitSpecular = mayaLight.findPlug(MayaAttrs::nonAmbientLightShapeNode::emitSpecular, true).asBool();
         MVector pv(0.0, 0.0, -1.0);
         const auto lightDirection = (pv * inclusiveMatrix).normal();
         light.SetHasShadow(false);
@@ -184,7 +141,7 @@ VtValue HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
             "Called HdMayaLightAdapter::GetLightParamValue(%s) - %s\n", paramName.GetText(),
             GetDagPath().partialPathName().asChar());
 
-    MFnLight light(GetDagPath().node());
+    MFnLight light(GetDagPath());
     if (paramName == HdTokens->color) {
         const auto color = light.color();
         return VtValue(GfVec3f(color.r, color.g, color.b));
@@ -194,6 +151,8 @@ VtValue HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
         return VtValue(0.0f);
     } else if (paramName == HdLightTokens->normalize) {
         return VtValue(true);
+    } else if (paramName == HdLightTokens->enableColorTemperature) {
+        return VtValue(false);
     }
     return {};
 }
@@ -226,11 +185,11 @@ void HdMayaLightAdapter::_CalculateShadowParams(
             "Called HdMayaLightAdapter::_CalculateShadowParams - %s\n",
             GetDagPath().partialPathName().asChar());
 
-    auto dmapResolutionPlug = light.findPlug(_dmapResolutionAttr);
-    auto dmapBiasPlug = light.findPlug(_dmapBiasAttr);
-    auto dmapFilterSizePlug = light.findPlug(_dmapFilterSizeAttr);
+    auto dmapResolutionPlug = light.findPlug(MayaAttrs::nonExtendedLightShapeNode::dmapResolution);
+    auto dmapBiasPlug = light.findPlug(MayaAttrs::nonExtendedLightShapeNode::dmapBias);
+    auto dmapFilterSizePlug = light.findPlug(MayaAttrs::nonExtendedLightShapeNode::dmapFilterSize);
 
-    const auto decayRate = light.findPlug(_decayRateAttr, true).asShort();
+    const auto decayRate = light.findPlug(MayaAttrs::nonExtendedLightShapeNode::decayRate, true).asShort();
     if (decayRate > 0) {
         const auto color = light.color();
         const auto intensity = light.intensity();

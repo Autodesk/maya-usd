@@ -21,14 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include <hdmaya/adapters/dagAdapter.h>
 #include <hdmaya/adapters/adapterDebugCodes.h>
+#include <hdmaya/adapters/dagAdapter.h>
+#include <hdmaya/mayaAttrs.h>
 
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/tokens.h>
 
 #include <maya/MFnDagNode.h>
-#include <maya/MNodeClass.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
 
@@ -38,16 +38,13 @@ TF_REGISTRY_FUNCTION(TfType) { TfType::Define<HdMayaDagAdapter, TfType::Bases<Hd
 
 namespace {
 
-bool _xformAttrsInitialized = false;
-
-MObject _xformVisibilityAttribute; // Will hold "visibility" attribute when initialized
-
 void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
-    TF_DEBUG(HDMAYA_ADAPTER_DAG_PLUG_DIRTY).Msg(
-             "Dag adapter marking prim (%s) dirty because %s plug was dirtied.\n",
-             adapter->GetID().GetText(), plug.partialName().asChar());
-    if (plug == _xformVisibilityAttribute) {
+    TF_DEBUG(HDMAYA_ADAPTER_DAG_PLUG_DIRTY)
+        .Msg(
+            "Dag adapter marking prim (%s) dirty because %s plug was dirtied.\n",
+            adapter->GetID().GetText(), plug.partialName().asChar());
+    if (plug == MayaAttrs::dagNode::visibility) {
         adapter->MarkDirty(HdChangeTracker::DirtyVisibility);
     } else {
         adapter->MarkDirty(HdChangeTracker::DirtyTransform);
@@ -58,17 +55,7 @@ void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
 
 HdMayaDagAdapter::HdMayaDagAdapter(
     const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath)
-    : HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {
-    if (!_xformAttrsInitialized) {
-        MNodeClass xformNodeClass("transform");
-        if (TF_VERIFY(xformNodeClass.typeId() != 0)) {
-            MStatus status;
-            _xformAttrsInitialized = true;
-            _xformVisibilityAttribute = xformNodeClass.attribute("visibility", &status);
-            _xformAttrsInitialized &= TF_VERIFY(status);
-        }
-    }
-}
+    : HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {}
 
 bool HdMayaDagAdapter::GetVisible() {
     MDagPath path(GetDagPath());
@@ -81,9 +68,8 @@ void HdMayaDagAdapter::CalculateTransform() {
 };
 
 GfMatrix4d& HdMayaDagAdapter::GetTransform() {
-    TF_DEBUG(HDMAYA_ADAPTER_GET).Msg(
-        "Called HdMayaDagAdapter::GetTransform() - %s\n",
-        _dagPath.partialPathName().asChar());
+    TF_DEBUG(HDMAYA_ADAPTER_GET)
+        .Msg("Called HdMayaDagAdapter::GetTransform() - %s\n", _dagPath.partialPathName().asChar());
     CalculateTransform();
     return _transform;
 }
@@ -93,8 +79,7 @@ void HdMayaDagAdapter::CreateCallbacks() {
     for (auto dag = GetDagPath(); dag.length() > 0; dag.pop()) {
         MObject obj = dag.node();
         if (obj != MObject::kNullObj) {
-            auto id = MNodeMessage::addNodeDirtyCallback(
-                obj, _TransformNodeDirty, this, &status);
+            auto id = MNodeMessage::addNodeDirtyCallback(obj, _TransformNodeDirty, this, &status);
             if (status) { AddCallback(id); }
         }
     }

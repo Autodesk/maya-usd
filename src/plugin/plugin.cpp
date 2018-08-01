@@ -24,6 +24,7 @@
 #include <maya/MFnPlugin.h>
 
 #include "cmd.h"
+#include "hdmaya/mayaAttrs.h"
 #include "renderOverride.h"
 #include "usdPreviewSurface.h"
 
@@ -36,6 +37,11 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 MStatus initializePlugin(MObject obj) {
+    MStatus ret = MS::kSuccess;
+
+    ret = MayaAttrs::initialize();
+    if (!ret) { return ret; }
+
     // For now this is required for the HdSt backed to use lights.
     // putenv requires char* and I'm not willing to use const cast!
     constexpr const char* envVarSet = "USDIMAGING_ENABLE_SCENE_LIGHTS=1";
@@ -57,7 +63,6 @@ MStatus initializePlugin(MObject obj) {
     ArDefaultResolver::SetDefaultSearchPath(defaultSearchPaths);
 
     MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");
-    MStatus ret = MS::kSuccess;
 
     auto* renderer = MHWRender::MRenderer::theRenderer();
     if (renderer) {
@@ -68,6 +73,7 @@ MStatus initializePlugin(MObject obj) {
     if (!plugin.registerCommand(HdMayaCmd::name, HdMayaCmd::creator, HdMayaCmd::createSyntax)) {
         ret = MS::kFailure;
         ret.perror("Error registering hdmaya command!");
+        return ret;
     }
 
     if (!plugin.registerNode(
@@ -76,6 +82,7 @@ MStatus initializePlugin(MObject obj) {
             MPxNode::kDependNode, &HdMayaUsdPreviewSurface::classification)) {
         ret = MS::kFailure;
         ret.perror("Error registering UsdPreviewSurface node!");
+        return ret;
     }
 
     return ret;
