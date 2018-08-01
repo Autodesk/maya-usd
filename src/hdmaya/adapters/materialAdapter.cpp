@@ -83,11 +83,7 @@ const _PreviewParams _previewShaderParams = []() -> _PreviewParams {
         {_tokens->useSpecularWorkflow, VtValue(1), SdfValueTypeNames->Int},
         {_tokens->occlusion, VtValue(1.0f), SdfValueTypeNames->Float},
         {_tokens->ior, VtValue(1.0f), SdfValueTypeNames->Float},
-        {
-            _tokens->normal,
-            VtValue(GfVec3f(1.0f, 1.0f, 1.0f)),
-            SdfValueTypeNames->Vector3f,
-        },
+        {_tokens->normal, VtValue(GfVec3f(1.0f, 1.0f, 1.0f)), SdfValueTypeNames->Vector3f},
         {_tokens->opacity, VtValue(1.0f), SdfValueTypeNames->Float},
         {_tokens->diffuseColor, VtValue(GfVec3f(1.0, 1.0, 1.0)), SdfValueTypeNames->Vector3f},
         {_tokens->displacement, VtValue(0.0f), SdfValueTypeNames->Float},
@@ -206,7 +202,7 @@ const VtValue& HdMayaMaterialAdapter::GetPreviewMaterialParamValue(const TfToken
 }
 
 class HdMayaShadingEngineAdapter : public HdMayaMaterialAdapter {
-   public:
+public:
     HdMayaShadingEngineAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MObject& obj)
         : HdMayaMaterialAdapter(id, delegate, obj), _surfaceShaderCallback(0) {
         _CacheNodeAndTypes();
@@ -225,7 +221,7 @@ class HdMayaShadingEngineAdapter : public HdMayaMaterialAdapter {
         HdMayaAdapter::CreateCallbacks();
     }
 
-   private:
+private:
     static void _DirtyMaterialParams(MObject& /*node*/, void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaShadingEngineAdapter*>(clientData);
         adapter->_CreateSurfaceMaterialCallback();

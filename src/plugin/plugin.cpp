@@ -24,9 +24,9 @@
 #include <maya/MFnPlugin.h>
 
 #include "cmd.h"
+#include "hdmaya/mayaAttrs.h"
 #include "renderOverride.h"
 #include "usdPreviewSurface.h"
-#include "hdmaya/mayaAttrs.h"
 
 #include <stdlib.h>
 

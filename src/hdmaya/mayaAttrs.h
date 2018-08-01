@@ -66,7 +66,7 @@ extern MObject surfaceShader;
 
 MStatus initialize();
 
-}
+} // namespace MayaAttrs
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

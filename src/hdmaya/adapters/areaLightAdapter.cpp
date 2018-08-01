@@ -33,7 +33,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaAreaLightAdapter : public HdMayaLightAdapter {
-   public:
+public:
     HdMayaAreaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
         : HdMayaLightAdapter(delegate, dag) {}
 

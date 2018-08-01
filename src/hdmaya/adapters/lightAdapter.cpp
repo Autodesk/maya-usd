@@ -35,10 +35,9 @@
 
 #include <maya/MNodeMessage.h>
 
-#include <hdmaya/mayaAttrs.h>
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/constantShadowMatrix.h>
-
+#include <hdmaya/mayaAttrs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -64,8 +63,7 @@ void _dirtyParams(MObject& /*node*/, void* clientData) {
 } // namespace
 
 HdMayaLightAdapter::HdMayaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-    : HdMayaDagAdapter(delegate->GetPrimPath(dag), delegate, dag) {
-}
+    : HdMayaDagAdapter(delegate->GetPrimPath(dag), delegate, dag) {}
 
 bool HdMayaLightAdapter::IsSupported() {
     return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(LightType());
@@ -79,13 +77,9 @@ void HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     if (dirtyBits != 0) { GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits); }
 }
 
-void HdMayaLightAdapter::RemovePrim() {
-    GetDelegate()->RemoveSprim(LightType(), GetID());
-}
+void HdMayaLightAdapter::RemovePrim() { GetDelegate()->RemoveSprim(LightType(), GetID()); }
 
-bool HdMayaLightAdapter::HasType(const TfToken& typeId) {
-    return typeId == LightType();
-}
+bool HdMayaLightAdapter::HasType(const TfToken& typeId) { return typeId == LightType(); }
 
 VtValue HdMayaLightAdapter::Get(const TfToken& key) {
     TF_DEBUG(HDMAYA_ADAPTER_GET)

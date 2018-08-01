@@ -38,7 +38,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaPointLightAdapter : public HdMayaLightAdapter {
-   public:
+public:
     HdMayaPointLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
         : HdMayaLightAdapter(delegate, dag) {}
 
@@ -53,15 +53,14 @@ class HdMayaPointLightAdapter : public HdMayaLightAdapter {
     VtValue GetLightParamValue(const TfToken& paramName) override {
         TF_DEBUG(HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE)
             .Msg(
-                "Called HdMayaPointLightAdapter::GetLightParamValue(%s) - %s\n", paramName.GetText(),
-                GetDagPath().partialPathName().asChar());
+                "Called HdMayaPointLightAdapter::GetLightParamValue(%s) - %s\n",
+                paramName.GetText(), GetDagPath().partialPathName().asChar());
 
         MFnPointLight light(GetDagPath());
         if (paramName == UsdLuxTokens->radius) {
             const float radius = light.shadowRadius();
             return VtValue(radius);
-        }
-        else if (paramName == UsdLuxTokens->treatAsPoint) {
+        } else if (paramName == UsdLuxTokens->treatAsPoint) {
             const bool treatAsPoint = (light.shadowRadius() == 0.0);
             return VtValue(treatAsPoint);
         }

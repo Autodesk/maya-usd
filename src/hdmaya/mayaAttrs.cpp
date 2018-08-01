@@ -66,9 +66,7 @@ MObject surfaceShader;
 MStatus initialize() {
     MStatus status;
 
-    auto setAttrObj = [&status](MObject& attrObj,
-            MNodeClass& nodeClass,
-            const MString& name) {
+    auto setAttrObj = [&status](MObject& attrObj, MNodeClass& nodeClass, const MString& name) {
         attrObj = nodeClass.attribute(name, &status);
         if (!TF_VERIFY(status)) { return; }
         if (!TF_VERIFY(!attrObj.isNull())) {
@@ -170,6 +168,6 @@ MStatus initialize() {
     return MStatus::kSuccess;
 }
 
-}  // namespace MayaAttrs
+} // namespace MayaAttrs
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -36,10 +36,10 @@
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
 
-#include <hdmaya/mayaAttrs.h>
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/adapterRegistry.h>
 #include <hdmaya/adapters/shapeAdapter.h>
+#include <hdmaya/mayaAttrs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -68,7 +68,7 @@ std::vector<std::pair<MObject, HdDirtyBits>> _dirtyBits = {
 } // namespace
 
 class HdMayaMeshAdapter : public HdMayaShapeAdapter {
-   public:
+public:
     HdMayaMeshAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
         : HdMayaShapeAdapter(delegate->GetPrimPath(dag), delegate, dag) {
         // Do this here just because we want to wait for a point in time where
@@ -194,7 +194,7 @@ class HdMayaMeshAdapter : public HdMayaShapeAdapter {
 
     bool HasType(const TfToken& typeId) override { return typeId == HdPrimTypeTokens->mesh; }
 
-   private:
+private:
     static void NodeDirtiedCallback(MObject& node, MPlug& plug, void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
         for (const auto& it : _dirtyBits) {

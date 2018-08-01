@@ -31,52 +31,47 @@
 #include <pxr/usd/usdLux/tokens.h>
 
 #include <maya/MColor.h>
+#include <maya/MFnSpotLight.h>
 #include <maya/MPlug.h>
 #include <maya/MPoint.h>
-#include <maya/MFnSpotLight.h>
 
-#include <hdmaya/mayaAttrs.h>
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/adapterRegistry.h>
 #include <hdmaya/adapters/lightAdapter.h>
+#include <hdmaya/mayaAttrs.h>
 
 #include <hdmaya/utils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-    void GetSpotCutoffAndSoftness(
-            MFnSpotLight& mayaLight, float& cutoffOut, float& softnessOut) {
-        // Divided by two.
-        auto coneAngle = static_cast<float>(
-                GfRadiansToDegrees(mayaLight.coneAngle())) * 0.5f;
-        auto penumbraAngle = static_cast<float>(
-                        GfRadiansToDegrees(mayaLight.penumbraAngle()));
-        cutoffOut = coneAngle + penumbraAngle;
-        softnessOut = cutoffOut / penumbraAngle;
-    }
-
-    float GetSpotCutoff(MFnSpotLight& mayaLight) {
-        float cutoff;
-        float softness;
-        GetSpotCutoffAndSoftness(mayaLight, cutoff, softness);
-        return cutoff;
-    }
-
-    float GetSpotSoftness(MFnSpotLight& mayaLight) {
-        float cutoff;
-        float softness;
-        GetSpotCutoffAndSoftness(mayaLight, cutoff, softness);
-        return softness;
-    }
-
-    float GetSpotFalloff(MFnSpotLight& mayaLight) {
-        return static_cast<float>(mayaLight.dropOff());
-    }
+void GetSpotCutoffAndSoftness(MFnSpotLight& mayaLight, float& cutoffOut, float& softnessOut) {
+    // Divided by two.
+    auto coneAngle = static_cast<float>(GfRadiansToDegrees(mayaLight.coneAngle())) * 0.5f;
+    auto penumbraAngle = static_cast<float>(GfRadiansToDegrees(mayaLight.penumbraAngle()));
+    cutoffOut = coneAngle + penumbraAngle;
+    softnessOut = cutoffOut / penumbraAngle;
 }
 
+float GetSpotCutoff(MFnSpotLight& mayaLight) {
+    float cutoff;
+    float softness;
+    GetSpotCutoffAndSoftness(mayaLight, cutoff, softness);
+    return cutoff;
+}
+
+float GetSpotSoftness(MFnSpotLight& mayaLight) {
+    float cutoff;
+    float softness;
+    GetSpotCutoffAndSoftness(mayaLight, cutoff, softness);
+    return softness;
+}
+
+float GetSpotFalloff(MFnSpotLight& mayaLight) { return static_cast<float>(mayaLight.dropOff()); }
+} // namespace
+
 class HdMayaSpotLightAdapter : public HdMayaLightAdapter {
-   public:
+public:
     HdMayaSpotLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
         : HdMayaLightAdapter(delegate, dag) {}
 
@@ -88,7 +83,7 @@ class HdMayaSpotLightAdapter : public HdMayaLightAdapter {
         }
     }
 
-   protected:
+protected:
     void _CalculateLightParams(GlfSimpleLight& light) override {
         MStatus status;
         MFnSpotLight mayaLight(GetDagPath(), &status);
@@ -108,7 +103,8 @@ class HdMayaSpotLightAdapter : public HdMayaLightAdapter {
         if (key == HdLightTokens->shadowParams) {
             HdxShadowParams shadowParams;
             MFnLight mayaLight(GetDagPath());
-            const auto useDepthMapShadows = mayaLight.findPlug(MayaAttrs::useDepthMapShadows, true).asBool();
+            const auto useDepthMapShadows =
+                mayaLight.findPlug(MayaAttrs::useDepthMapShadows, true).asBool();
             if (!useDepthMapShadows) {
                 shadowParams.enabled = false;
                 return VtValue(shadowParams);
@@ -144,24 +140,19 @@ class HdMayaSpotLightAdapter : public HdMayaLightAdapter {
             if (paramName == UsdLuxTokens->radius) {
                 const float radius = light.shadowRadius();
                 return VtValue(radius);
-            }
-            else if (paramName == UsdLuxTokens->treatAsPoint) {
+            } else if (paramName == UsdLuxTokens->treatAsPoint) {
                 const bool treatAsPoint = (light.shadowRadius() == 0.0);
                 return VtValue(treatAsPoint);
-            }
-            else if (paramName == UsdLuxTokens->shapingConeAngle) {
+            } else if (paramName == UsdLuxTokens->shapingConeAngle) {
                 return VtValue(GetSpotCutoff(light));
-            }
-            else if (paramName == UsdLuxTokens->shapingConeSoftness) {
+            } else if (paramName == UsdLuxTokens->shapingConeSoftness) {
                 return VtValue(GetSpotSoftness(light));
-            }
-            else if (paramName == UsdLuxTokens->shapingFocus) {
+            } else if (paramName == UsdLuxTokens->shapingFocus) {
                 return VtValue(GetSpotFalloff(light));
             }
         }
         return HdMayaLightAdapter::GetLightParamValue(paramName);
     }
-
 };
 
 TF_REGISTRY_FUNCTION(TfType) {

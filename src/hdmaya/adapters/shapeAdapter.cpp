@@ -28,8 +28,8 @@
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 
-#include <hdmaya/mayaAttrs.h>
 #include <hdmaya/adapters/adapterDebugCodes.h>
+#include <hdmaya/mayaAttrs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

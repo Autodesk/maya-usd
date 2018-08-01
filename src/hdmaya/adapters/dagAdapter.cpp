@@ -21,9 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/dagAdapter.h>
 #include <hdmaya/mayaAttrs.h>
-#include <hdmaya/adapters/adapterDebugCodes.h>
 
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/tokens.h>
@@ -40,9 +40,10 @@ namespace {
 
 void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
-    TF_DEBUG(HDMAYA_ADAPTER_DAG_PLUG_DIRTY).Msg(
-             "Dag adapter marking prim (%s) dirty because %s plug was dirtied.\n",
-             adapter->GetID().GetText(), plug.partialName().asChar());
+    TF_DEBUG(HDMAYA_ADAPTER_DAG_PLUG_DIRTY)
+        .Msg(
+            "Dag adapter marking prim (%s) dirty because %s plug was dirtied.\n",
+            adapter->GetID().GetText(), plug.partialName().asChar());
     if (plug == MayaAttrs::visibility) {
         adapter->MarkDirty(HdChangeTracker::DirtyVisibility);
     } else {
@@ -54,8 +55,7 @@ void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
 
 HdMayaDagAdapter::HdMayaDagAdapter(
     const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath)
-    : HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {
-}
+    : HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {}
 
 bool HdMayaDagAdapter::GetVisible() {
     MDagPath path(GetDagPath());
@@ -68,9 +68,8 @@ void HdMayaDagAdapter::CalculateTransform() {
 };
 
 GfMatrix4d& HdMayaDagAdapter::GetTransform() {
-    TF_DEBUG(HDMAYA_ADAPTER_GET).Msg(
-        "Called HdMayaDagAdapter::GetTransform() - %s\n",
-        _dagPath.partialPathName().asChar());
+    TF_DEBUG(HDMAYA_ADAPTER_GET)
+        .Msg("Called HdMayaDagAdapter::GetTransform() - %s\n", _dagPath.partialPathName().asChar());
     CalculateTransform();
     return _transform;
 }
@@ -80,8 +79,7 @@ void HdMayaDagAdapter::CreateCallbacks() {
     for (auto dag = GetDagPath(); dag.length() > 0; dag.pop()) {
         MObject obj = dag.node();
         if (obj != MObject::kNullObj) {
-            auto id = MNodeMessage::addNodeDirtyCallback(
-                obj, _TransformNodeDirty, this, &status);
+            auto id = MNodeMessage::addNodeDirtyCallback(obj, _TransformNodeDirty, this, &status);
             if (status) { AddCallback(id); }
         }
     }
