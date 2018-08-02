@@ -494,12 +494,22 @@ private:
                    GlfTextureRegistry::GetInstance().GetTextureHandle(filePath, origin);
         // We can't really mimic texture wrapping and mirroring settings from
         // the uv placement node, so we don't touch those for now.
+        // Currently the udims don't setup mipmaps, so we need to use
+        // linear min and mag filters. This should be resolved quickly.
         return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
             texture, false,
 #ifdef LUMA_USD_BUILD
             isUdim,
 #endif
-            HdWrapClamp, HdWrapClamp, HdMinFilterLinearMipmapLinear, HdMagFilterLinear,
+            HdWrapClamp, HdWrapClamp,
+#ifdef LUMA_USD_BUILD
+            isUdim ? HdMinFilterNearest :
+#endif
+            HdMinFilterLinearMipmapLinear,
+#ifdef LUMA_USD_BUILD
+            isUdim ? HdMagFilterNearest :
+#endif
+            HdMagFilterLinear,
             GetDelegate()->GetParams().textureMemoryPerTexture));
     }
 
