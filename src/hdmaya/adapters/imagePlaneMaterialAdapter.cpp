@@ -44,7 +44,7 @@
 #include <maya/MPlugArray.h>
 #include <maya/MRenderUtil.h>
 
-#include <hdmaya/mayaAttrs.h>
+#include <hdmaya/adapters/mayaAttrs.h>
 #include <hdmaya/adapters/adapterRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE

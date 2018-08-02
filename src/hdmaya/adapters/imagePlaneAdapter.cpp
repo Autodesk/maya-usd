@@ -45,7 +45,7 @@
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/adapterRegistry.h>
 #include <hdmaya/adapters/shapeAdapter.h>
-#include <hdmaya/mayaAttrs.h>
+#include <hdmaya/adapters/mayaAttrs.h>
 
 #include "pxr/base/vt/value.h"
 #include "pxr/usd/sdf/types.h"
@@ -197,21 +197,6 @@ public:
         auto imageNameExtracted = MRenderUtil::exactImagePlaneFileName(dnode.object());
         const SdfAssetPath imageNameExtractedPath(std::string(imageNameExtracted.asChar()));
         paramsFromMaya.fileName = imageNameExtractedPath;
-        TF_DEBUG(HDMAYA_ADAPTER_IMAGEPLANES)
-            .Msg("HdMayaImagePlaneAdapter::UpdateGeometry - image path \n%s\n%s",
-                imageNameExtractedPath.GetAssetPath().c_str(), std::string(imageNameExtractedPath.GetResolvedPath()).c_str());
-        const auto fit = dnode.findPlug("fit").asShort();
-        if (fit == UsdGeomImagePlane::FIT_BEST) {
-            paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->best;
-        } else if (fit == UsdGeomImagePlane::FIT_FILL) {
-            paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->fill;
-        } else if (fit == UsdGeomImagePlane::FIT_HORIZONTAL) {
-            paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->horizontal;
-        } else if (fit == UsdGeomImagePlane::FIT_VERTICAL) {
-            paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->vertical;
-        } else if (fit == UsdGeomImagePlane::FIT_TO_SIZE) {
-            paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->toSize;
-        }
 
         const auto coveragePlug = dnode.findPlug("coverage");
         paramsFromMaya.coverage = GfVec2i(coveragePlug.child(0).asInt(), coveragePlug.child(1).asInt());
@@ -229,14 +214,32 @@ public:
             paramsFromMaya.depth = dnode.findPlug("depth").asFloat();
             paramsFromMaya.rotate = dnode.findPlug("rotate").asFloat();
 
+            const auto fit = dnode.findPlug("fit").asShort();
+            if (fit == UsdGeomImagePlane::FIT_BEST) {
+                paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->best;
+            } else if (fit == UsdGeomImagePlane::FIT_FILL) {
+                paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->fill;
+            } else if (fit == UsdGeomImagePlane::FIT_HORIZONTAL) {
+                paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->horizontal;
+            } else if (fit == UsdGeomImagePlane::FIT_VERTICAL) {
+                paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->vertical;
+            } else if (fit == UsdGeomImagePlane::FIT_TO_SIZE) {
+                paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->toSize;
+            }
+
             // always enabled but only affect when connected to camera
             const auto sizePlug = dnode.findPlug("size");
             // Size attr is in inches while aperture is in millimeters.
             paramsFromMaya.size = GfVec2f(sizePlug.child(0).asFloat(), sizePlug.child(1).asFloat()) * inch_to_mm;
             const auto offsetPlug = dnode.findPlug("offset");
             paramsFromMaya.offset = GfVec2f(offsetPlug.child(0).asFloat(), offsetPlug.child(1).asFloat()) * inch_to_mm;
+
         } else {
+            //  if no camera maya gets size from height and width
             paramsFromMaya.size = GfVec2f(dnode.findPlug("width").asFloat(), dnode.findPlug("height").asFloat());
+            // if no camera, fit wont affect size, and this fit value uses
+            // size without any modifications
+            paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->toSize;
             // maya uses a center attribute as a 3d offset, but we can also
             // express this with depth + offset since those other attributes
             // do not affect non camera image planes.
