@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifdef LUMA_USD_BUILD
 #include <hdmaya/adapters/materialAdapter.h>
 
 #include <pxr/base/tf/fileUtils.h>
@@ -235,3 +236,4 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, shadingEngine) {
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+#endif  // LUMA_USD_BUILD
