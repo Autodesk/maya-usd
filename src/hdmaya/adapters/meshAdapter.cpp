@@ -117,8 +117,7 @@ public:
             VtVec3fArray ret;
             ret.assign(rawPoints, rawPoints + mesh.numVertices());
             return VtValue(ret);
-        }
-        if (key == _tokens->st) {
+        } else if (key == _tokens->st) {
             MFnMesh mesh(GetDagPath());
             // We need to flatten out the uvs.
             MStatus status;
