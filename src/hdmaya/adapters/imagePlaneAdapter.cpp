@@ -44,6 +44,7 @@
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/adapterRegistry.h>
 #include <hdmaya/adapters/shapeAdapter.h>
+#include <hdmaya/mayaAttrs.h>
 
 #include "pxr/base/vt/value.h"
 #include "pxr/usd/sdf/types.h"
@@ -82,12 +83,15 @@ void _ImagePlaneNodeDirtiedCallback(MObject& node, MPlug& plug, void* clientData
                 "Image plane adapter marking prim (%s) dirty because %s plug was dirtied.\n",
                 adapter->GetID().GetText(), plug.partialName().asChar());
     // if wm changes
-    adapter->MarkDirty(HdChangeTracker::DirtyTransform |
-                       HdChangeTracker::DirtyPoints |
-                       HdChangeTracker::DirtyExtent |
-                       HdChangeTracker::DirtyPrimvar |
-                       HdChangeTracker::DirtyTopology |
-                       HdChangeTracker::DirtyNormals);
+    if (plug == MayaAttrs::dagNode::worldMatrix) {
+        adapter->MarkDirty(HdChangeTracker::DirtyTransform);
+    } else {
+        adapter->MarkDirty(HdChangeTracker::DirtyPoints |
+                           HdChangeTracker::DirtyExtent |
+                           HdChangeTracker::DirtyPrimvar |
+                           HdChangeTracker::DirtyTopology |
+                           HdChangeTracker::DirtyNormals);
+    }
 }
 
 void _CameraNodeDirtiedCallback(MObject& node, MPlug& plug, void* clientData) {

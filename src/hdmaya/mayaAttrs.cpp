@@ -34,10 +34,10 @@ namespace MayaAttrs {
 
 namespace dagNode {
 
-extern MObject visibility;
-extern MObject worldMatrix;
-extern MObject intermediateObject;
-extern MObject instObjGroups;
+MObject visibility;
+MObject worldMatrix;
+MObject intermediateObject;
+MObject instObjGroups;
 
 } // namespace dagNode
 
@@ -93,6 +93,27 @@ MObject fileTextureNamePattern;
 MObject uvTilingMode;
 
 } // namespace file
+
+namespace imagePlane {
+    
+MObject imageName;
+MObject useFrameExtension;
+MObject frameOffset;
+MObject frameExtension;
+MObject displayMode;
+
+MObject fit;
+MObject coverage;
+MObject coverageOrigin;
+MObject depth;
+MObject rotate;
+MObject size;
+MObject offset;
+MObject width;
+MObject height;
+MObject imageCenter;
+
+} // namespace imagePlane
 
 MStatus initialize() {
     MStatus status;
@@ -233,6 +254,57 @@ MStatus initialize() {
 
         setAttrObj(uvTilingMode, nodeClass, "uvTilingMode");
         if (!TF_VERIFY(status)) { return status; }
+    }
+    {
+        using namespace imagePlane;
+        MNodeClass nodeClass("imagePlane");
+        if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
+
+        setAttrObj(displayMode, nodeClass, "displayMode");
+        if (!TF_VERIFY(status)) { return status; }
+
+        setAttrObj(imageName, nodeClass, "imageName");
+        if (!TF_VERIFY(status)) { return status; }
+
+        setAttrObj(useFrameExtension, nodeClass, "useFrameExtension");
+        if (!TF_VERIFY(status)) { return status; }
+
+        setAttrObj(frameOffset, nodeClass, "frameOffset");
+        if (!TF_VERIFY(status)) { return status; }
+
+        setAttrObj(frameExtension, nodeClass, "frameExtension");
+        if (!TF_VERIFY(status)) { return status; }
+
+        setAttrObj(fit, nodeClass, "fit");
+        if (!TF_VERIFY(status)) { return status; }
+
+        setAttrObj(coverage, nodeClass, "coverage");
+        if (!TF_VERIFY(status)) { return status; }
+
+        setAttrObj(coverageOrigin, nodeClass, "coverageOrigin");
+        if (!TF_VERIFY(status)) { return status; }
+
+        setAttrObj(depth, nodeClass, "depth");
+        if (!TF_VERIFY(status)) { return status; }
+
+        setAttrObj(rotate, nodeClass, "rotate");
+        if (!TF_VERIFY(status)) { return status; }
+
+        setAttrObj(size, nodeClass, "size");
+        if (!TF_VERIFY(status)) { return status; }
+
+        setAttrObj(offset, nodeClass, "offset");
+        if (!TF_VERIFY(status)) { return status; }
+
+        setAttrObj(width, nodeClass, "width");
+        if (!TF_VERIFY(status)) { return status; }
+
+        setAttrObj(height, nodeClass, "height");
+        if (!TF_VERIFY(status)) { return status; }
+
+        setAttrObj(imageCenter, nodeClass, "imageCenter");
+        if (!TF_VERIFY(status)) { return status; }
+
     }
     return MStatus::kSuccess;
 }

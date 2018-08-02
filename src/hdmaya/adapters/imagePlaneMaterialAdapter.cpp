@@ -43,6 +43,7 @@
 #include <maya/MPlugArray.h>
 #include <maya/MRenderUtil.h>
 
+#include <hdmaya/mayaAttrs.h>
 #include <hdmaya/adapters/adapterRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -173,9 +174,14 @@ public:
     }
 
 private:
-    static void _DirtyMaterialParams(MObject& /*node*/, void* clientData) {
+    static void _DirtyMaterialParams(MObject& node, MPlug& plug, void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaImagePlaneMaterialAdapter*>(clientData);
-        adapter->MarkDirty(HdMaterial::AllDirty);
+        if (plug == MayaAttrs::imagePlane::imageName ||
+                plug == MayaAttrs::imagePlane::frameExtension ||
+                plug == MayaAttrs::imagePlane::frameOffset ||
+                plug == MayaAttrs::imagePlane::useFrameExtension){
+            adapter->MarkDirty(HdMaterial::AllDirty);
+        }
     }
 
     inline HdTextureResource::ID _GetTextureResourceID(const TfToken& filePath) {
