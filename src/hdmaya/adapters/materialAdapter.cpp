@@ -482,7 +482,7 @@ private:
             return {};
         }
         // TODO: handle origin
-        auto origin = GlfImage::OriginUpperLeft;
+        const auto origin = GlfImage::OriginUpperLeft;
         auto texture =
 #ifdef LUMA_USD_BUILD
             isUdim ? GlfTextureRegistry::GetInstance().GetTextureHandle(
