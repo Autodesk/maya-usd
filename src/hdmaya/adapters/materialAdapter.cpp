@@ -482,13 +482,16 @@ private:
             return {};
         }
         // TODO: handle origin
+        auto origin = GlfImage::OriginUpperLeft;
         auto texture =
 #ifdef LUMA_USD_BUILD
-            isUdim
-                ? GlfTextureRegistry::GetInstance().GetTextureHandle(GlfUdimTexture::New(filePath))
-                :
+            isUdim ? GlfTextureRegistry::GetInstance().GetTextureHandle(
+                         filePath, origin,
+                         [](const TfToken& filePath, GlfImage::ImageOriginLocation)
+                             -> GlfTextureRefPtr { return GlfUdimTexture::New(filePath); })
+                   :
 #endif
-                GlfTextureRegistry::GetInstance().GetTextureHandle(filePath);
+                   GlfTextureRegistry::GetInstance().GetTextureHandle(filePath, origin);
         // We can't really mimic texture wrapping and mirroring settings from
         // the uv placement node, so we don't touch those for now.
         return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
