@@ -59,6 +59,12 @@
                         ],
                         "displayName": "Meshes in Hydra for Maya."
                     },
+                    "HdMayaImagePlaneAdapter": {
+                        "bases": [
+                            "HdMayaShapeAdapter"
+                        ],
+                        "displayName": "ImagePlanes in Hydra for Maya."
+                    },
                     # Materials
                     "HdMayaMaterialAdapter": {
                         "bases": [
@@ -71,6 +77,12 @@
                             "HdMayaMaterialAdapter"
                         ],
                         "displayName": "Adapter for the shading engine that translates everything to a Preview Surface."
+                    },
+                    "HdMayaImagePlaneMaterialAdapter": {
+                        "bases": [
+                            "HdMayaMaterialAdapter"
+                        ],
+                        "displayName": "Adapter for the image plane texture."
                     }
                 }
             },

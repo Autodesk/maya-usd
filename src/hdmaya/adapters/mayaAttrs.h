@@ -106,6 +106,28 @@ extern MObject uvTilingMode;
 
 } // namespace file
 
+namespace imagePlane {
+
+using namespace dagNode;
+extern MObject imageName;
+extern MObject useFrameExtension;
+extern MObject frameOffset;
+extern MObject frameExtension;
+extern MObject displayMode;
+
+extern MObject fit;
+extern MObject coverage;
+extern MObject coverageOrigin;
+extern MObject depth;
+extern MObject rotate;
+extern MObject size;
+extern MObject offset;
+extern MObject width;
+extern MObject height;
+extern MObject imageCenter;
+
+} // namespace imagePlane
+
 HDMAYA_API
 MStatus initialize();
 

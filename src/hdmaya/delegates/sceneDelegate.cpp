@@ -132,7 +132,9 @@ HdMayaSceneDelegate::~HdMayaSceneDelegate() {
 void HdMayaSceneDelegate::Populate() {
     HdMayaAdapterRegistry::LoadAllPlugin();
     auto& renderIndex = GetRenderIndex();
-    for (MItDag dagIt(MItDag::kDepthFirst, MFn::kInvalid); !dagIt.isDone(); dagIt.next()) {
+    MItDag dagIt(MItDag::kDepthFirst, MFn::kInvalid);
+    dagIt.traverseUnderWorld(true);
+    for (; !dagIt.isDone(); dagIt.next()) {
         MDagPath path;
         dagIt.getPath(path);
         InsertDag(path);

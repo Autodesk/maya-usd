@@ -48,6 +48,10 @@ TF_REGISTRY_FUNCTION(TfDebug) {
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY,
         "Print information about unhandled mesh plug dirtying.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_ADAPTER_IMAGEPLANES,
+        "Print information about drawing image planes.");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
