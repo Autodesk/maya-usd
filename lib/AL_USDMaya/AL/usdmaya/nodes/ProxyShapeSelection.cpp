@@ -560,11 +560,17 @@ MObject ProxyShape::makeUsdTransformChain(
 
   if(fn.setObject(node))
   {
-     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::makeUsdTransformChain created transformType=%s name=%s\n", transformType.c_str(), usdPrim.GetName().GetText());
+     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::makeUsdTransformChain created transformType=%s name=%s\n",
+                                       transformType.c_str(),
+                                       usdPrim.GetName().GetText());
   }
   else
   {
-    std::cerr << "!!! ProxyShape::makeUsdTransformChain is unable to create the node with transformType=" << transformType << " name=" << usdPrim.GetName().GetText() << std::endl;
+    MString err;
+    err.format("USDMaya is unable to create the node with transformType=^1s, name=^2s.",
+              transformType.c_str(),
+              usdPrim.GetName().GetText());
+    MGlobal::displayError(err);
   }
 
   fn.setName(AL::maya::utils::convert(usdPrim.GetName().GetString()));
