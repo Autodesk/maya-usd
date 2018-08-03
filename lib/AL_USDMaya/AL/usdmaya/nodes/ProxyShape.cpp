@@ -416,6 +416,8 @@ SdfPathVector ProxyShape::getPrimPathsFromCommaJoinedString(const MString &paths
 void ProxyShape::constructGLImagingEngine()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::constructGLImagingEngine\n");
+
+  // kBatch does not cover mayapy use, we only need this in interactive mode:
   if (MGlobal::mayaState() == MGlobal::kInteractive)
   {
     if(m_stage)
