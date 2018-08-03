@@ -502,8 +502,7 @@ private:
 #ifdef LUMA_USD_BUILD
             isUdim,
 #endif
-            HdWrapClamp, HdWrapClamp,
-            HdMinFilterLinearMipmapLinear, HdMagFilterLinear,
+            HdWrapClamp, HdWrapClamp, HdMinFilterLinearMipmapLinear, HdMagFilterLinear,
             GetDelegate()->GetParams().textureMemoryPerTexture));
     }
 

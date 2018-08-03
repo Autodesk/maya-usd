@@ -95,7 +95,7 @@ MObject uvTilingMode;
 } // namespace file
 
 namespace imagePlane {
-    
+
 MObject imageName;
 MObject useFrameExtension;
 MObject frameOffset;
@@ -305,7 +305,6 @@ MStatus initialize() {
 
         setAttrObj(imageCenter, nodeClass, "imageCenter");
         if (!TF_VERIFY(status)) { return status; }
-
     }
     return MStatus::kSuccess;
 }
