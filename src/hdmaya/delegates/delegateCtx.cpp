@@ -110,7 +110,8 @@ SdfPath HdMayaDelegateCtx::GetMaterialPath(const MObject& obj) {
     return _GetMaterialPath(_materialPath, obj);
 }
 
-void HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum) {
+void HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum,
+        const GfMatrix4d& lightToWorld) {
     auto getInverse = [](const GfMatrix4d& mat) {
         const double PRECISION_LIMIT = 1.0e-13;
         double det;
@@ -118,6 +119,8 @@ void HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum) {
         if (GfAbs(det) <= PRECISION_LIMIT) { return GfMatrix4d(1.0); }
         return ret;
     };
+    GfMatrix4d worldToLight = getInverse(lightToWorld);
+
     // TODO: Cache these queries and handle dirtying.
     // TODO: Take visibility and shadow casting parameters into account.
     // This slightly differs from how you would make a calculation on a traditional frustum,
@@ -128,12 +131,11 @@ void HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum) {
 
     std::array<GfPlane, 5> planes;
     GfRange1d nearFar;
-    const auto& rotation = frustum.GetRotation();
-    const auto direction = rotation.TransformDir(GfVec3d(0.0, 0.0, -1.0)).GetNormalized();
-    const auto right = rotation.TransformDir(GfVec3d(1.0, 0.0, 0.0)).GetNormalized();
-    const auto up = rotation.TransformDir(GfVec3d(0.0, 1.0, 0.0)).GetNormalized();
-    const auto position = frustum.GetPosition();
-    planes[0].Set(direction, position);
+
+    const auto direction = GfVec3d(0.0, 0.0, -1.0);
+    const auto right = GfVec3d(1.0, 0.0, 0.0);
+    const auto up = GfVec3d(0.0, 1.0, 0.0);
+    planes[0].Set(direction, 0);
 
     if (frustum.GetProjectionType() == GfFrustum::Perspective) {
         const auto windowSize = frustum.GetWindow().GetSize();
@@ -142,25 +144,29 @@ void HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum) {
         const auto hfov =
             GfRadiansToDegrees(atan((windowSize[0] / 2.0) / GfFrustum::GetReferencePlaneDepth()));
         // Right plane
-        planes[1].Set(GfRotation(up, -hfov).TransformDir(-right).GetNormalized(), position);
+        planes[1].Set(GfRotation(up, -hfov).TransformDir(-right).GetNormalized(), 0);
         // Left plane
-        planes[2].Set(GfRotation(up, hfov).TransformDir(right).GetNormalized(), position);
+        planes[2].Set(GfRotation(up, hfov).TransformDir(right).GetNormalized(), 0);
         // Top plane
-        planes[3].Set(GfRotation(right, vfov).TransformDir(-up).GetNormalized(), position);
+        planes[3].Set(GfRotation(right, vfov).TransformDir(-up).GetNormalized(), 0);
         // Bottom plane
-        planes[4].Set(GfRotation(right, -vfov).TransformDir(up).GetNormalized(), position);
+        planes[4].Set(GfRotation(right, -vfov).TransformDir(up).GetNormalized(), 0);
     } else if (frustum.GetProjectionType() == GfFrustum::Orthographic) {
         const auto& window = frustum.GetWindow();
         // Right plane
-        planes[1].Set(-right, position + right * window.GetMax()[0]);
+        planes[1].Set(-right, right * window.GetMax()[0]);
         // Left plane
-        planes[2].Set(right, position + right * window.GetMin()[0]);
+        planes[2].Set(right, right * window.GetMin()[0]);
         // Top plane
-        planes[3].Set(-up, position + up * window.GetMax()[1]);
+        planes[3].Set(-up, up * window.GetMax()[1]);
         // Bottom plane
-        planes[4].Set(up, position + up * window.GetMin()[1]);
+        planes[4].Set(up, up * window.GetMin()[1]);
     } else {
         return;
+    }
+
+    for (auto& plane : planes) {
+        plane.Transform(lightToWorld);
     }
 
     auto isBoxInside = [&planes](const GfRange3d& extent, const GfMatrix4d& worldToLocal) -> bool {
@@ -180,10 +186,11 @@ void HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum) {
         const auto localToWorld = delegate->GetTransform(id);
 
         if (isBoxInside(extent, getInverse(localToWorld))) {
+            auto localToLight = localToWorld * worldToLight;
             for (size_t i = 0; i < 8u; ++i) {
-                const auto corner = localToWorld.Transform(extent.GetCorner(i));
+                const auto corner = localToLight.Transform(extent.GetCorner(i));
                 // Project position into direction
-                nearFar.ExtendBy((corner - position) * direction);
+                nearFar.ExtendBy(-corner[2]);
             }
         }
     }

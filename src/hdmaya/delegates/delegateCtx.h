@@ -65,7 +65,7 @@ public:
     /// Fit the frustum's near/far value to contain all
     /// the rprims inside the render index;
     HDMAYA_API
-    void FitFrustumToRprims(GfFrustum& frustum);
+    void FitFrustumToRprims(GfFrustum& frustum, const GfMatrix4d& lightToWorld);
 
     inline bool GetNeedsGLGLSFX() { return _needsGLSLFX; }
 

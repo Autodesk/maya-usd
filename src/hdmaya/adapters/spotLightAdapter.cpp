@@ -114,13 +114,12 @@ protected:
             if (coneAnglePlug.isNull()) { return {}; }
 
             GfFrustum frustum;
-            frustum.SetPositionAndRotationFromMatrix(
-                getGfMatrixFromMaya(GetDagPath().inclusiveMatrix()));
+            GfMatrix4d lightToWorld = getGfMatrixFromMaya(GetDagPath().inclusiveMatrix());
             frustum.SetProjectionType(GfFrustum::Perspective);
             frustum.SetPerspective(
                 GfRadiansToDegrees(coneAnglePlug.asFloat()), true, 1.0f, 1.0f, 50.0f);
 
-            GetDelegate()->FitFrustumToRprims(frustum);
+            GetDelegate()->FitFrustumToRprims(frustum, lightToWorld);
             _CalculateShadowParams(mayaLight, frustum, shadowParams);
             return VtValue(shadowParams);
         }
