@@ -102,7 +102,7 @@ protected:
 
         if (key == HdLightTokens->shadowParams) {
             HdxShadowParams shadowParams;
-            MFnLight mayaLight(GetDagPath());
+            MFnSpotLight mayaLight(GetDagPath());
             const auto useDepthMapShadows =
                 mayaLight.findPlug(MayaAttrs::spotLight::useDepthMapShadows, true).asBool();
             if (!useDepthMapShadows) {
@@ -121,6 +121,8 @@ protected:
 
             GetDelegate()->FitFrustumToRprims(frustum, lightToWorld);
             _CalculateShadowParams(mayaLight, frustum, shadowParams);
+            // Use the radius as the "blur" amount, for PCSS
+            shadowParams.blur = mayaLight.shadowRadius();
             return VtValue(shadowParams);
         }
 
