@@ -33,7 +33,7 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/nodes/test_Transform.cpp
         AL/usdmaya/nodes/test_TransformMatrix.cpp
         AL/usdmaya/nodes/test_TranslatorContext.cpp
-        AL/usdmaya/nodes/test_TranslatorProxyShape.cpp
+        #AL/usdmaya/nodes/test_TranslatorProxyShape.cpp
         AL/usdmaya/nodes/test_ProxyShapeSelectabilityDB.cpp
         AL/usdmaya/nodes/proxy/test_DrivenTransforms.cpp
         AL/usdmaya/nodes/proxy/test_PrimFilter.cpp
