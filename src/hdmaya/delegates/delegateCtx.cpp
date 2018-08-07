@@ -110,8 +110,7 @@ SdfPath HdMayaDelegateCtx::GetMaterialPath(const MObject& obj) {
     return _GetMaterialPath(_materialPath, obj);
 }
 
-void HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum,
-        const GfMatrix4d& lightToWorld) {
+void HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum, const GfMatrix4d& lightToWorld) {
     auto getInverse = [](const GfMatrix4d& mat) {
         const double PRECISION_LIMIT = 1.0e-13;
         double det;
@@ -165,9 +164,7 @@ void HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum,
         return;
     }
 
-    for (auto& plane : planes) {
-        plane.Transform(lightToWorld);
-    }
+    for (auto& plane : planes) { plane.Transform(lightToWorld); }
 
     auto isBoxInside = [&planes](const GfRange3d& extent, const GfMatrix4d& worldToLocal) -> bool {
         for (const auto& plane : planes) {

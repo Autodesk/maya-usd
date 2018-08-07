@@ -72,11 +72,7 @@ const char* _simpleTexturedSurfaceSource =
 vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
 #if defined(HD_HAS_emissiveColor)
-    #if defined(HD_HAS_opacity)
-        return vec4(HdGet_emissiveColor().xyz, HdGet_opacity().x);
-    #else
-        return vec4(HdGet_emissiveColor().xyz, 1.0);
-    #endif
+    return HdGet_emissiveColor();
 #else
     return vec4(1.0, 0.0, 0.0, 1.0);
 #endif
@@ -90,7 +86,7 @@ static const std::pair<std::string, std::string> _textureShaderSource =
 }();
 
 const TfTokenVector _stSamplerCoords = {TfToken("st")};
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (emissiveColor)(opacity));
+TF_DEFINE_PRIVATE_TOKENS(_tokens, (emissiveColor));
 const MString _imageName("imageName");
 
 } // namespace
@@ -103,10 +99,7 @@ public:
 
     std::string GetSurfaceShaderSource() { return _textureShaderSource.first; }
 
-    std::string GetDisplacementShaderSource() {
-        return _textureShaderSource.second;
-        ;
-    }
+    std::string GetDisplacementShaderSource() { return _textureShaderSource.second; }
 
     void CreateCallbacks() override {
         MStatus status;
@@ -147,20 +140,9 @@ public:
         if (_RegisterTexture(node, _tokens->emissiveColor)) {
             HdMaterialParam emission(
                 HdMaterialParam::ParamTypeTexture, _tokens->emissiveColor,
-                VtValue(GfVec3f(0.0f, 0.0f, 1.0f)), GetID().AppendProperty(_tokens->emissiveColor),
-                _stSamplerCoords);
-            // FIXME: Opacity doesnt display correctly, even if surfaceShader
-            // returns 0.0 for the alpha value.
-            if (_RegisterTexture(node, _tokens->opacity)) {
-                HdMaterialParam opacity(
-                    HdMaterialParam::ParamTypeTexture, _tokens->opacity, VtValue(1.0f),
-                    GetID().AppendProperty(_tokens->opacity), _stSamplerCoords);
-                return {emission, opacity};
-            } else {
-                TF_DEBUG(HDMAYA_ADAPTER_IMAGEPLANES)
-                    .Msg("Unexpected failure to register opacity\n");
-                return {emission};
-            }
+                VtValue(GfVec4f(0.0f, 0.0f, 0.0f, 1.0f)),
+                GetID().AppendProperty(_tokens->emissiveColor), _stSamplerCoords);
+            return {emission};
         }
         TF_DEBUG(HDMAYA_ADAPTER_IMAGEPLANES).Msg("Unexpected failure to register texture\n");
         return {};
@@ -168,7 +150,7 @@ public:
 
     VtValue GetMaterialParamValue(const TfToken& paramName) override {
         TF_DEBUG(HDMAYA_ADAPTER_IMAGEPLANES).Msg("Unexpected call to GetMaterialParamValue\n");
-        return VtValue(GfVec3f(1.0f, 0.0f, 0.0f));
+        return VtValue(GfVec4f(0.0f, 0.0f, 0.0f, 1.0f));
     }
 
 private:
