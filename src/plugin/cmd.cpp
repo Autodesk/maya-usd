@@ -157,7 +157,7 @@ MStatus HdMayaCmd::doIt(const MArgList& args) {
         int res = 4 * 1024 * 1024;
         if (db.getFlagArgument(_setTextureMemoryPerTexture, 0, res)) {
             if (res < 1024) { res = 1024; }
-            if (res > 64 * 1024 * 1024) { res = 64 * 1024 * 1024; }
+            if (res > 256 * 1024 * 1024) { res = 256 * 1024 * 1024; }
             HdMayaRenderOverride::SetTextureMemoryPerTexture(res);
         }
     } else if (db.isFlagSet(_getWireframeSelectionHighlight)) {
