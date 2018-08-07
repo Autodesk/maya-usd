@@ -1,0 +1,3 @@
+loadPlugin "AL_USDMayaTestPlugin";
+int $res = `AL_usdmaya_UnitTestHarness`;
+quit -f -exitCode `abs($res)`;

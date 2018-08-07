@@ -1,0 +1,5 @@
+# This file has been auto-generated.
+
+set(AL_USDMAYA_MAJOR_VERSION 0)
+set(AL_USDMAYA_MINOR_VERSION 28)
+set(AL_USDMAYA_PATCH_LEVEL 4-adsk-rel_2)

@@ -1,0 +1,13 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "AL::usdmaya::fileio::translators::TranslatorBase": {}
+                }
+            },
+            "Name": "AL.usdmaya",
+            "Type": "python"
+        }
+    ]
+}

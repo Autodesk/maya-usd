@@ -1,0 +1,9 @@
+# This file has been auto-generated.
+# TODO: We need to retrieve the USD artifacts here
+
+{ usd-0.8.5-dbg-lin : d15122aea7976687abbcf3cca17cf12531f349d8 }
+{ usd-0.8.5-rel-lin : d15122aea7976687abbcf3cca17cf12531f349d8 }
+{ usd-0.8.4-dbg-osx : 3209386124bc5728a087f4d023c0a52d47b96392 }
+{ usd-0.8.4-rel-osx : 3209386124bc5728a087f4d023c0a52d47b96392 }
+{ usd-0.8.5-dbg-win : 7be7f18cae78d1a8cf2dc835f4243ea5b34080a5 }
+{ usd-0.8.5-rel-win : 7be7f18cae78d1a8cf2dc835f4243ea5b34080a5 }

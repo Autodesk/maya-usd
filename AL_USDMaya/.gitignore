@@ -1,0 +1,13 @@
+/build/
+/nbproject/
+.project
+.cproject
+.pydevproject
+.settings/
+CMakeCache.txt
+CMakeLists.txt.user
+CMakeFiles/cmake.check_cache
+Testing/
+*~
+lib/usdMaya/docs/
+*.orig

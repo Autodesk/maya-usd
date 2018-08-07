@@ -1,0 +1,9 @@
+# This file has been auto-generated.
+# Only using Release artifacts as we only have USD in Release
+
+{ ufe-0.1.6-dbg-lin : 812f830471526f3d2834e5520ed9c044f69db96e }
+{ ufe-0.1.6-rel-lin : 812f830471526f3d2834e5520ed9c044f69db96e }
+{ ufe-0.1.6-dbg-osx : b2d4d9842272df4c50c7e3568cce7ea55df53d54 }
+{ ufe-0.1.6-rel-osx : b2d4d9842272df4c50c7e3568cce7ea55df53d54 }
+{ ufe-0.1.6-dbg-win : ef00cefeb92737924d4fe5c11f642cc32896b12f }
+{ ufe-0.1.6-rel-win : ef00cefeb92737924d4fe5c11f642cc32896b12f }
