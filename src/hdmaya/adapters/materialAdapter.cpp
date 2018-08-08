@@ -66,7 +66,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Supported material tokens.
     (UsdPreviewSurface)(lambert)(file)(place2dTexture)
     // Other tokens
-    (fileTextureName)(color)(incandescence)(out)(st)(uvCoord)(rgb)(r)(varname));
+    (fileTextureName)(color)(incandescence)(out)(st)(uvCoord)(rgb)(r)(varname)(result));
 
 struct _PreviewParam {
     HdMaterialParam _param;
@@ -170,7 +170,7 @@ public:
         if (ARCH_UNLIKELY(!status)) { return SdfPath(); }
         const auto converterIt = _converters.find(TfToken(node.typeName().asChar()));
         if (converterIt == _converters.end()) { return SdfPath(); }
-        HdMaterialNode material {};
+        HdMaterialNode material{};
         material.path = materialPath;
         converterIt->second(*this, material, node);
         _network.nodes.push_back(material);
@@ -198,10 +198,8 @@ public:
             rel.inputId = connectedNodePath;
             if (type == SdfValueTypeNames->Vector3f) {
                 rel.inputName = _tokens->rgb;
-            } else if (type == SdfValueTypeNames->Float || type == SdfValueTypeNames->Int) {
-                rel.inputName = _tokens->r;
-            } else if (type == SdfValueTypeNames->Float2) {
-                rel.inputName = _tokens->st;
+            } else {
+                rel.inputName = _tokens->result;
             }
             rel.outputId = material.path;
             rel.outputName = name;
@@ -247,8 +245,9 @@ private:
 
     static void ConvertFile(
         MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
+        const std::string fileTextureName(node.findPlug(_fileTextureName).asString().asChar());
         material.parameters[_tokens->file] =
-            VtValue(SdfAssetPath(node.findPlug(_fileTextureName).asString().asChar()));
+            VtValue(SdfAssetPath(fileTextureName, fileTextureName));
         converter.ConvertParameter(
             node, material, _tokens->uvCoord, _tokens->st, SdfValueTypeNames->Float2);
         material.type = UsdImagingTokens->UsdUVTexture;
@@ -258,7 +257,7 @@ private:
         MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
         converter.AddPrimvar(_tokens->st);
         material.parameters[_tokens->varname] = VtValue(_tokens->st);
-        material.type = UsdImagingTokens->UsdPrimvarReader_float;
+        material.type = UsdImagingTokens->UsdPrimvarReader_float2;
     }
 };
 
