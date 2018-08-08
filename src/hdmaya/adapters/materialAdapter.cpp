@@ -546,7 +546,7 @@ private:
         if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialResource(GetID()); }
 
         HdMaterialNode surfaceNode;
-        surfaceNode.path = GetID();
+        surfaceNode.path = GetDelegate()->GetMaterialPath(_surfaceShader);
         surfaceNode.type = UsdImagingTokens->UsdPreviewSurface;
         if (_surfaceShaderType == _tokens->UsdPreviewSurface) {
             for (const auto& param : _previewShaderParams) {
