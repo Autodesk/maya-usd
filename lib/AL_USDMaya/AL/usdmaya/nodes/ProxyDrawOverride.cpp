@@ -245,6 +245,17 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
             {
               MFloatArray fa;
               lightParam->getParameter(paramNames[i], fa);
+              if (fa[0] == 0)
+              {
+                light.SetAttenuation(GfVec3f(1.0f, 0.0f, 0.0f));
+              }
+              else if (fa[0] == 1)
+              {
+                light.SetAttenuation(GfVec3f(0.0f, 1.0f, 0.0f));
+              }
+              else if (fa[0] == 2) {
+                light.SetAttenuation(GfVec3f(0.0f, 0.0f, 1.0f));
+              }
             }
             break;
           case MHWRender::MLightParameterInformation::kDropoff:
