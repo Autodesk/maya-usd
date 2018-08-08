@@ -35,6 +35,8 @@
 #include <pxr/imaging/glf/udimTexture.h>
 #endif
 
+#include <pxr/usdImaging/usdImaging/tokens.h>
+
 #include <pxr/usdImaging/usdImagingGL/package.h>
 
 #include <pxr/imaging/hdSt/textureResource.h>
@@ -134,6 +136,18 @@ static const std::pair<std::string, std::string> _previewShaderSource =
     return {gfx.GetSurfaceSource(), gfx.GetDisplacementSource()};
 }();
 
+VtValue _ConvertPlugToValue(const MPlug& plug, const SdfValueTypeName& type) {
+    if (type == SdfValueTypeNames->Vector3f) {
+        return VtValue(
+            GfVec3f(plug.child(0).asFloat(), plug.child(1).asFloat(), plug.child(2).asFloat()));
+    } else if (type == SdfValueTypeNames->Float) {
+        return VtValue(plug.asFloat());
+    } else if (type == SdfValueTypeNames->Int) {
+        return VtValue(plug.asInt());
+    }
+    return {};
+};
+
 } // namespace
 
 HdMayaMaterialAdapter::HdMayaMaterialAdapter(
@@ -230,12 +244,14 @@ private:
     static void _DirtyMaterialParams(MObject& /*node*/, void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaShadingEngineAdapter*>(clientData);
         adapter->_CreateSurfaceMaterialCallback();
-        adapter->MarkDirty(HdMaterial::DirtyParams | HdMaterial::DirtySurfaceShader);
+        adapter->MarkDirty(
+            HdMaterial::DirtyParams | HdMaterial::DirtySurfaceShader | HdMaterial::DirtyResource);
     }
 
     static void _DirtyShaderParams(MObject& /*node*/, void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaShadingEngineAdapter*>(clientData);
-        adapter->MarkDirty(HdMaterial::DirtyParams | HdMaterial::DirtySurfaceShader);
+        adapter->MarkDirty(
+            HdMaterial::DirtyParams | HdMaterial::DirtySurfaceShader | HdMaterial::DirtyResource);
     }
 
     void _CacheNodeAndTypes() {
@@ -385,18 +401,6 @@ private:
             return GetPreviewMaterialParamValue(paramName);
         }
 
-        auto convertPlugToValue = [](const MPlug& plug, const SdfValueTypeName& type) -> VtValue {
-            if (type == SdfValueTypeNames->Vector3f) {
-                return VtValue(GfVec3f(
-                    plug.child(0).asFloat(), plug.child(1).asFloat(), plug.child(2).asFloat()));
-            } else if (type == SdfValueTypeNames->Float) {
-                return VtValue(plug.asFloat());
-            } else if (type == SdfValueTypeNames->Int) {
-                return VtValue(plug.asInt());
-            }
-            return {};
-        };
-
         if (_surfaceShaderType == _tokens->UsdPreviewSurface) {
             MStatus status;
             MFnDependencyNode node(_surfaceShader, &status);
@@ -407,7 +411,7 @@ private:
             if (ARCH_UNLIKELY(it == _previewShaderParams.cend())) {
                 return GetPreviewMaterialParamValue(paramName);
             }
-            auto ret = convertPlugToValue(p, it->_type);
+            auto ret = _ConvertPlugToValue(p, it->_type);
             if (ARCH_UNLIKELY(ret.IsEmpty())) { return GetPreviewMaterialParamValue(paramName); }
             return ret;
         } else if (_surfaceShaderType == _tokens->lambert) {
@@ -415,10 +419,10 @@ private:
             MFnDependencyNode node(_surfaceShader, &status);
             if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParamValue(paramName); }
             if (paramName == _tokens->diffuseColor) {
-                return convertPlugToValue(
+                return _ConvertPlugToValue(
                     node.findPlug(_tokens->color.GetText()), SdfValueTypeNames->Vector3f);
             } else if (paramName == _tokens->emissiveColor) {
-                return convertPlugToValue(
+                return _ConvertPlugToValue(
                     node.findPlug(_tokens->incandescence.GetText()), SdfValueTypeNames->Vector3f);
             }
         }
@@ -521,6 +525,49 @@ private:
         if (ret.apiType() == MFn::kFileTexture) { return ret; }
         return MObject::kNullObj;
     }
+
+    VtValue GetMaterialResource() override {
+        MStatus status;
+        MFnDependencyNode node(_surfaceShader, &status);
+        if (ARCH_UNLIKELY(!status)) { return {}; }
+
+        HdMaterialNode surfaceNode;
+        surfaceNode.path = GetID();
+        surfaceNode.type = UsdImagingTokens->UsdPreviewSurface;
+        if (_surfaceShaderType == _tokens->UsdPreviewSurface) {
+            for (const auto& param : _previewShaderParams) {
+                auto p = node.findPlug(param._param.GetName().GetText());
+                surfaceNode.parameters[param._param.GetName()] =
+                    _ConvertPlugToValue(p, param._type);
+            }
+        } else if (_surfaceShaderType == _tokens->lambert) {
+            for (const auto& param : _previewShaderParams) {
+                if (param._param.GetName() == _tokens->diffuseColor) {
+                    surfaceNode.parameters[_tokens->diffuseColor] = _ConvertPlugToValue(
+                        node.findPlug(_tokens->color.GetText()), SdfValueTypeNames->Vector3f);
+                } else if (param._param.GetName() == _tokens->emissiveColor) {
+                    surfaceNode.parameters[_tokens->emissiveColor] = _ConvertPlugToValue(
+                        node.findPlug(_tokens->incandescence.GetText()),
+                        SdfValueTypeNames->Vector3f);
+                } else {
+                    surfaceNode.parameters[param._param.GetName()] =
+                        param._param.GetFallbackValue();
+                }
+            }
+        } else {
+            return {};
+        }
+
+        HdMaterialNetworkMap materialNetworkMap;
+        HdMaterialNetwork surfaceNetwork;
+        surfaceNetwork.nodes.push_back(surfaceNode);
+
+        materialNetworkMap.map[UsdImagingTokens->bxdf] = surfaceNetwork;
+        // HdMaterialNetwork displacementNetwork;
+        // materialNetworkMap.map[UsdImagingTokens->displacement] = displacementNetwork;
+
+        return VtValue(materialNetworkMap);
+    };
 
     MObject _surfaceShader;
     TfToken _surfaceShaderType;
