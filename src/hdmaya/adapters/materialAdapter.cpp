@@ -64,9 +64,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens, (roughness)(clearcoat)(clearcoatRoughness)(emissiveColor)(specularColor)(metallic)(
                  useSpecularWorkflow)(occlusion)(ior)(normal)(opacity)(diffuseColor)(displacement)
     // Supported material tokens.
-    (UsdPreviewSurface)(lambert)
+    (UsdPreviewSurface)(lambert)(file)(place2dTexture)
     // Other tokens
-    (fileTextureName)(color)(incandescence));
+    (fileTextureName)(color)(incandescence)(out)(st)(uvCoord)(rgb)(r)(varname));
 
 struct _PreviewParam {
     HdMaterialParam _param;
@@ -170,9 +170,10 @@ public:
         if (ARCH_UNLIKELY(!status)) { return SdfPath(); }
         const auto converterIt = _converters.find(TfToken(node.typeName().asChar()));
         if (converterIt == _converters.end()) { return SdfPath(); }
-        _network.nodes.push_back({});
-        _network.nodes.back().path = materialPath;
-        converterIt->second(*this, _network.nodes.back(), node);
+        HdMaterialNode material {};
+        material.path = materialPath;
+        converterIt->second(*this, material, node);
+        _network.nodes.push_back(material);
         return materialPath;
     }
 
@@ -186,7 +187,26 @@ public:
     void ConvertParameter(
         MFnDependencyNode& node, HdMaterialNode& material, const TfToken& mayaName,
         const TfToken& name, const SdfValueTypeName& type) {
-        material.parameters[name] = _ConvertPlugToValue(node.findPlug(mayaName.GetText()), type);
+        auto p = node.findPlug(mayaName.GetText());
+        material.parameters[name] = _ConvertPlugToValue(p, type);
+        MPlugArray conns;
+        p.connectedTo(conns, true, false);
+        if (conns.length() > 0) {
+            const auto connectedNodePath = GetMaterial(conns[0].node());
+            if (connectedNodePath.IsEmpty()) { return; }
+            HdMaterialRelationship rel;
+            rel.inputId = connectedNodePath;
+            if (type == SdfValueTypeNames->Vector3f) {
+                rel.inputName = _tokens->rgb;
+            } else if (type == SdfValueTypeNames->Float || type == SdfValueTypeNames->Int) {
+                rel.inputName = _tokens->r;
+            } else if (type == SdfValueTypeNames->Float2) {
+                rel.inputName = _tokens->st;
+            }
+            rel.outputId = material.path;
+            rel.outputName = name;
+            _network.relationships.push_back(rel);
+        }
     }
 
 private:
@@ -224,6 +244,22 @@ private:
         }
         material.type = UsdImagingTokens->UsdPreviewSurface;
     }
+
+    static void ConvertFile(
+        MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
+        material.parameters[_tokens->file] =
+            VtValue(SdfAssetPath(node.findPlug(_fileTextureName).asString().asChar()));
+        converter.ConvertParameter(
+            node, material, _tokens->uvCoord, _tokens->st, SdfValueTypeNames->Float2);
+        material.type = UsdImagingTokens->UsdUVTexture;
+    }
+
+    static void ConvertPlace2dTexture(
+        MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
+        converter.AddPrimvar(_tokens->st);
+        material.parameters[_tokens->varname] = VtValue(_tokens->st);
+        material.type = UsdImagingTokens->UsdPrimvarReader_float;
+    }
 };
 
 std::unordered_map<
@@ -232,6 +268,8 @@ std::unordered_map<
     MaterialNetworkConverter::_converters{
         {UsdImagingTokens->UsdPreviewSurface, MaterialNetworkConverter::ConvertUsdPreviewSurface},
         {_tokens->lambert, MaterialNetworkConverter::ConvertLambert},
+        {_tokens->file, MaterialNetworkConverter::ConvertFile},
+        {_tokens->place2dTexture, MaterialNetworkConverter::ConvertPlace2dTexture},
     };
 
 } // namespace
