@@ -152,11 +152,20 @@ VtValue _ConvertPlugToValue(const MPlug& plug, const SdfValueTypeName& type) {
 // make creating new converters easy.
 class MaterialNetworkConverter {
 public:
-    MaterialNetworkConverter(HdMayaDelegateCtx* ctx, HdMaterialNetwork& network)
-        : _ctx(ctx), _network(network) {}
+    MaterialNetworkConverter(HdMaterialNetwork& network, const SdfPath& prefix)
+        : _network(network), _prefix(prefix) {}
 
     SdfPath GetMaterial(const MObject& mayaNode) {
-        const auto materialPath = _ctx->GetMaterialPath(mayaNode);
+        MStatus status;
+        MFnDependencyNode node(mayaNode, &status);
+        if (ARCH_UNLIKELY(!status)) { return {}; }
+        const auto* chr = node.name().asChar();
+        if (chr == nullptr || chr[0] == '\0') { return {}; }
+        std::string usdPathStr(chr);
+        // replace namespace ":" with "_"
+        std::replace(usdPathStr.begin(), usdPathStr.end(), ':', '_');
+        const auto materialPath = _prefix.AppendPath(SdfPath(usdPathStr));
+
         if (std::find_if(
                 _network.nodes.begin(), _network.nodes.end(),
                 [&materialPath](const HdMaterialNode& m) -> bool {
@@ -165,9 +174,6 @@ public:
             return materialPath;
         }
 
-        MStatus status;
-        MFnDependencyNode node(mayaNode, &status);
-        if (ARCH_UNLIKELY(!status)) { return SdfPath(); }
         const auto converterIt = _converters.find(TfToken(node.typeName().asChar()));
         if (converterIt == _converters.end()) { return SdfPath(); }
         HdMaterialNode material{};
@@ -208,8 +214,8 @@ public:
     }
 
 private:
-    HdMayaDelegateCtx* _ctx;
     HdMaterialNetwork& _network;
+    const SdfPath& _prefix;
 
     static std::unordered_map<
         TfToken,
@@ -665,7 +671,7 @@ private:
 
     VtValue GetMaterialResource() override {
         HdMaterialNetwork materialNetwork;
-        MaterialNetworkConverter converter(GetDelegate(), materialNetwork);
+        MaterialNetworkConverter converter(materialNetwork, GetID());
         if (converter.GetMaterial(_surfaceShader).IsEmpty()) {
             return GetPreviewMaterialResource(GetID());
         }
