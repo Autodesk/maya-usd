@@ -225,6 +225,7 @@ VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(const SdfPath& materia
     HdMaterialNetwork network;
     HdMaterialNode node;
     node.path = materialID;
+    node.type = UsdImagingTokens->UsdPreviewSurface;
     for (const auto& it: _previewShaderParams) {
         node.parameters.emplace(it._param.GetName(), it._param.GetFallbackValue());
     }
