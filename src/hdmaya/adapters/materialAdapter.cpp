@@ -251,7 +251,15 @@ private:
 
     static void ConvertFile(
         MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
-        const std::string fileTextureName(node.findPlug(_fileTextureName).asString().asChar());
+        std::string fileTextureName{};
+        if (node.findPlug(MayaAttrs::file::uvTilingMode).asShort() != 0) {
+            fileTextureName = node.findPlug(MayaAttrs::file::fileTextureNamePattern).asString().asChar();
+            if (fileTextureName.empty()) {
+                fileTextureName = node.findPlug(MayaAttrs::file::computedFileTextureNamePattern).asString().asChar();
+            }
+        } else {
+            fileTextureName = node.findPlug(_fileTextureName).asString().asChar();
+        }
         material.parameters[_tokens->file] =
             VtValue(SdfAssetPath(fileTextureName, fileTextureName));
         converter.ConvertParameter(
