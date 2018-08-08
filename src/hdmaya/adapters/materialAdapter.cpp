@@ -148,6 +148,75 @@ VtValue _ConvertPlugToValue(const MPlug& plug, const SdfValueTypeName& type) {
     return {};
 };
 
+// TODO: use a registry to handle list of converters, expose this class and
+// make creating new converters easy.
+class MaterialNetworkConverter {
+public:
+    MaterialNetworkConverter(HdMayaDelegateCtx* ctx, HdMaterialNetwork& network)
+        : _ctx(ctx), _network(network) {}
+
+    SdfPath GetMaterial(const MObject& mayaNode) {
+        const auto materialPath = _ctx->GetMaterialPath(mayaNode);
+        auto materialIt = std::find_if(
+            _network.nodes.begin(), _network.nodes.end(),
+            [&materialPath](const HdMaterialNode& m) -> bool { return m.path == materialPath; });
+        if (materialIt != _network.nodes.end()) { return materialIt->path; }
+
+        MStatus status;
+        MFnDependencyNode node(mayaNode, &status);
+        if (ARCH_UNLIKELY(!status)) { return SdfPath(); }
+        const auto converterIt = _converters.find(TfToken(node.typeName().asChar()));
+        if (converterIt == _converters.end()) { return SdfPath(); }
+        _network.nodes.push_back({});
+        _network.nodes.back().path = materialPath;
+        converterIt->second(*this, _network.nodes.back(), node);
+        return materialPath;
+    }
+
+private:
+    HdMayaDelegateCtx* _ctx;
+    HdMaterialNetwork& _network;
+
+    static std::unordered_map<
+        TfToken,
+        std::function<void(MaterialNetworkConverter&, HdMaterialNode&, MFnDependencyNode&)>,
+        TfToken::HashFunctor>
+        _converters;
+
+    static void ConvertUsdPreviewSurface(
+        MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
+        for (const auto& param : _previewShaderParams) {
+            auto p = node.findPlug(param._param.GetName().GetText());
+            material.parameters[param._param.GetName()] = _ConvertPlugToValue(p, param._type);
+        }
+        material.type = UsdImagingTokens->UsdPreviewSurface;
+    }
+
+    static void ConvertLambert(
+        MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
+        for (const auto& param : _previewShaderParams) {
+            if (param._param.GetName() == _tokens->diffuseColor) {
+                material.parameters[_tokens->diffuseColor] = _ConvertPlugToValue(
+                    node.findPlug(_tokens->color.GetText()), SdfValueTypeNames->Vector3f);
+            } else if (param._param.GetName() == _tokens->emissiveColor) {
+                material.parameters[_tokens->emissiveColor] = _ConvertPlugToValue(
+                    node.findPlug(_tokens->incandescence.GetText()), SdfValueTypeNames->Vector3f);
+            } else {
+                material.parameters[param._param.GetName()] = param._param.GetFallbackValue();
+            }
+        }
+        material.type = UsdImagingTokens->UsdPreviewSurface;
+    }
+};
+
+std::unordered_map<
+    TfToken, std::function<void(MaterialNetworkConverter&, HdMaterialNode&, MFnDependencyNode&)>,
+    TfToken::HashFunctor>
+    MaterialNetworkConverter::_converters{
+        {UsdImagingTokens->UsdPreviewSurface, MaterialNetworkConverter::ConvertUsdPreviewSurface},
+        {_tokens->lambert, MaterialNetworkConverter::ConvertLambert},
+    };
+
 } // namespace
 
 HdMayaMaterialAdapter::HdMayaMaterialAdapter(
@@ -226,7 +295,7 @@ VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(const SdfPath& materia
     HdMaterialNode node;
     node.path = materialID;
     node.type = UsdImagingTokens->UsdPreviewSurface;
-    for (const auto& it: _previewShaderParams) {
+    for (const auto& it : _previewShaderParams) {
         node.parameters.emplace(it._param.GetName(), it._param.GetFallbackValue());
     }
     network.nodes.push_back(node);
@@ -541,42 +610,14 @@ private:
     }
 
     VtValue GetMaterialResource() override {
-        MStatus status;
-        MFnDependencyNode node(_surfaceShader, &status);
-        if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialResource(GetID()); }
-
-        HdMaterialNode surfaceNode;
-        surfaceNode.path = GetDelegate()->GetMaterialPath(_surfaceShader);
-        surfaceNode.type = UsdImagingTokens->UsdPreviewSurface;
-        if (_surfaceShaderType == _tokens->UsdPreviewSurface) {
-            for (const auto& param : _previewShaderParams) {
-                auto p = node.findPlug(param._param.GetName().GetText());
-                surfaceNode.parameters[param._param.GetName()] =
-                    _ConvertPlugToValue(p, param._type);
-            }
-        } else if (_surfaceShaderType == _tokens->lambert) {
-            for (const auto& param : _previewShaderParams) {
-                if (param._param.GetName() == _tokens->diffuseColor) {
-                    surfaceNode.parameters[_tokens->diffuseColor] = _ConvertPlugToValue(
-                        node.findPlug(_tokens->color.GetText()), SdfValueTypeNames->Vector3f);
-                } else if (param._param.GetName() == _tokens->emissiveColor) {
-                    surfaceNode.parameters[_tokens->emissiveColor] = _ConvertPlugToValue(
-                        node.findPlug(_tokens->incandescence.GetText()),
-                        SdfValueTypeNames->Vector3f);
-                } else {
-                    surfaceNode.parameters[param._param.GetName()] =
-                        param._param.GetFallbackValue();
-                }
-            }
-        } else {
+        HdMaterialNetwork materialNetwork;
+        MaterialNetworkConverter converter(GetDelegate(), materialNetwork);
+        if (converter.GetMaterial(_surfaceShader).IsEmpty()) {
             return GetPreviewMaterialResource(GetID());
         }
 
         HdMaterialNetworkMap materialNetworkMap;
-        HdMaterialNetwork surfaceNetwork;
-        surfaceNetwork.nodes.push_back(surfaceNode);
-
-        materialNetworkMap.map[UsdImagingTokens->bxdf] = surfaceNetwork;
+        materialNetworkMap.map[UsdImagingTokens->bxdf] = materialNetwork;
         // HdMaterialNetwork displacementNetwork;
         // materialNetworkMap.map[UsdImagingTokens->displacement] = displacementNetwork;
 
