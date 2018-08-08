@@ -108,7 +108,7 @@ const HdMaterialParamVector _previewShaderParamVector = []() -> HdMaterialParamV
 }();
 
 // Specialized version of : https://en.cppreference.com/w/cpp/algorithm/lower_bound
-auto _FindPreviewParam = [](const TfToken& id) -> _PreviewParams::const_iterator {
+_PreviewParams::const_iterator _FindPreviewParam(const TfToken& id) {
     _PreviewParams::const_iterator it;
     typename std::iterator_traits<_PreviewParams::const_iterator>::difference_type count, step;
     auto first = _previewShaderParams.cbegin();
@@ -197,7 +197,7 @@ HdTextureResourceSharedPtr HdMayaMaterialAdapter::GetTextureResource(const TfTok
     return {};
 }
 
-VtValue HdMayaMaterialAdapter::GetMaterialResource() { return VtValue(HdMaterialNetworkMap()); }
+VtValue HdMayaMaterialAdapter::GetMaterialResource() { return GetPreviewMaterialResource(GetID()); }
 
 const HdMaterialParamVector& HdMayaMaterialAdapter::GetPreviewMaterialParams() {
     return _previewShaderParamVector;
@@ -218,6 +218,19 @@ const VtValue& HdMayaMaterialAdapter::GetPreviewMaterialParamValue(const TfToken
         return _emptyValue;
     }
     return it->_param.GetFallbackValue();
+}
+
+VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(const SdfPath& materialID) {
+    HdMaterialNetworkMap map;
+    HdMaterialNetwork network;
+    HdMaterialNode node;
+    node.path = materialID;
+    for (const auto& it: _previewShaderParams) {
+        node.parameters.emplace(it._param.GetName(), it._param.GetFallbackValue());
+    }
+    network.nodes.push_back(node);
+    map.map.emplace(UsdImagingTokens->bxdf, network);
+    return VtValue(map);
 }
 
 class HdMayaShadingEngineAdapter : public HdMayaMaterialAdapter {
@@ -529,7 +542,7 @@ private:
     VtValue GetMaterialResource() override {
         MStatus status;
         MFnDependencyNode node(_surfaceShader, &status);
-        if (ARCH_UNLIKELY(!status)) { return {}; }
+        if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialResource(GetID()); }
 
         HdMaterialNode surfaceNode;
         surfaceNode.path = GetID();
@@ -555,7 +568,7 @@ private:
                 }
             }
         } else {
-            return {};
+            return GetPreviewMaterialResource(GetID());
         }
 
         HdMaterialNetworkMap materialNetworkMap;

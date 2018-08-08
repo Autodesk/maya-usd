@@ -404,10 +404,11 @@ HdMaterialParamVector HdMayaSceneDelegate::GetMaterialParams(const SdfPath& id) 
 }
 
 VtValue HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id) {
-    if (id == _fallbackMaterial) { return VtValue(HdMaterialNetworkMap()); }
-    return _GetValue<HdMayaMaterialAdapter, VtValue>(
+    if (id == _fallbackMaterial) { return HdMayaMaterialAdapter::GetPreviewMaterialResource(id); }
+    auto ret = _GetValue<HdMayaMaterialAdapter, VtValue>(
         id, [](HdMayaMaterialAdapter* a) -> VtValue { return a->GetMaterialResource(); },
         _materialAdapters);
+    return ret.IsEmpty() ? HdMayaMaterialAdapter::GetPreviewMaterialResource(id) : ret;
 }
 
 TfTokenVector HdMayaSceneDelegate::GetMaterialPrimvars(const SdfPath& id) {

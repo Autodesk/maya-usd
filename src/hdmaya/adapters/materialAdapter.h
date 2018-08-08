@@ -73,6 +73,9 @@ public:
     static const std::string& GetPreviewDisplacementSource();
     HDMAYA_API
     static const VtValue& GetPreviewMaterialParamValue(const TfToken& paramName);
+
+    HDMAYA_API
+    static VtValue GetPreviewMaterialResource(const SdfPath& materialID);
 };
 
 using HdMayaMaterialAdapterPtr = std::shared_ptr<HdMayaMaterialAdapter>;
