@@ -157,10 +157,13 @@ public:
 
     SdfPath GetMaterial(const MObject& mayaNode) {
         const auto materialPath = _ctx->GetMaterialPath(mayaNode);
-        auto materialIt = std::find_if(
-            _network.nodes.begin(), _network.nodes.end(),
-            [&materialPath](const HdMaterialNode& m) -> bool { return m.path == materialPath; });
-        if (materialIt != _network.nodes.end()) { return materialIt->path; }
+        if (std::find_if(
+                _network.nodes.begin(), _network.nodes.end(),
+                [&materialPath](const HdMaterialNode& m) -> bool {
+                    return m.path == materialPath;
+                }) != _network.nodes.end()) {
+            return materialPath;
+        }
 
         MStatus status;
         MFnDependencyNode node(mayaNode, &status);
@@ -171,6 +174,19 @@ public:
         _network.nodes.back().path = materialPath;
         converterIt->second(*this, _network.nodes.back(), node);
         return materialPath;
+    }
+
+    void AddPrimvar(const TfToken& primvar) {
+        if (std::find(_network.primvars.begin(), _network.primvars.end(), primvar) ==
+            _network.primvars.end()) {
+            _network.primvars.push_back(primvar);
+        }
+    }
+
+    void ConvertParameter(
+        MFnDependencyNode& node, HdMaterialNode& material, const TfToken& mayaName,
+        const TfToken& name, const SdfValueTypeName& type) {
+        material.parameters[name] = _ConvertPlugToValue(node.findPlug(mayaName.GetText()), type);
     }
 
 private:
@@ -186,8 +202,8 @@ private:
     static void ConvertUsdPreviewSurface(
         MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
         for (const auto& param : _previewShaderParams) {
-            auto p = node.findPlug(param._param.GetName().GetText());
-            material.parameters[param._param.GetName()] = _ConvertPlugToValue(p, param._type);
+            converter.ConvertParameter(
+                node, material, param._param.GetName(), param._param.GetName(), param._type);
         }
         material.type = UsdImagingTokens->UsdPreviewSurface;
     }
@@ -196,13 +212,14 @@ private:
         MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
         for (const auto& param : _previewShaderParams) {
             if (param._param.GetName() == _tokens->diffuseColor) {
-                material.parameters[_tokens->diffuseColor] = _ConvertPlugToValue(
-                    node.findPlug(_tokens->color.GetText()), SdfValueTypeNames->Vector3f);
+                converter.ConvertParameter(
+                    node, material, _tokens->color, _tokens->diffuseColor, param._type);
             } else if (param._param.GetName() == _tokens->emissiveColor) {
-                material.parameters[_tokens->emissiveColor] = _ConvertPlugToValue(
-                    node.findPlug(_tokens->incandescence.GetText()), SdfValueTypeNames->Vector3f);
+                converter.ConvertParameter(
+                    node, material, _tokens->incandescence, _tokens->emissiveColor, param._type);
             } else {
-                material.parameters[param._param.GetName()] = param._param.GetFallbackValue();
+                converter.ConvertParameter(
+                    node, material, param._param.GetName(), param._param.GetName(), param._type);
             }
         }
         material.type = UsdImagingTokens->UsdPreviewSurface;
