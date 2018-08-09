@@ -64,9 +64,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens, (roughness)(clearcoat)(clearcoatRoughness)(emissiveColor)(specularColor)(metallic)(
                  useSpecularWorkflow)(occlusion)(ior)(normal)(opacity)(diffuseColor)(displacement)
     // Supported material tokens.
-    (UsdPreviewSurface)(lambert)(file)(place2dTexture)
+    (UsdPreviewSurface)(lambert)(blinn)(file)(place2dTexture)
     // Other tokens
-    (fileTextureName)(color)(incandescence)(out)(st)(uvCoord)(rgb)(r)(varname)(result));
+    (fileTextureName)(color)(incandescence)(out)(st)(uvCoord)(rgb)(r)(varname)(result)(eccentricity));
 
 struct _PreviewParam {
     HdMaterialParam _param;
@@ -249,6 +249,26 @@ private:
         material.type = UsdImagingTokens->UsdPreviewSurface;
     }
 
+    static void ConvertBlinn(
+            MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
+        for (const auto& param : _previewShaderParams) {
+            if (param._param.GetName() == _tokens->diffuseColor) {
+                converter.ConvertParameter(
+                        node, material, _tokens->color, _tokens->diffuseColor, param._type);
+            } else if (param._param.GetName() == _tokens->emissiveColor) {
+                converter.ConvertParameter(
+                        node, material, _tokens->incandescence, _tokens->emissiveColor, param._type);
+            } else if (param._param.GetName() == _tokens->roughness) {
+                converter.ConvertParameter(
+                        node, material, _tokens->eccentricity, _tokens->roughness, param._type);
+            } else {
+                converter.ConvertParameter(
+                        node, material, param._param.GetName(), param._param.GetName(), param._type);
+            }
+        }
+        material.type = UsdImagingTokens->UsdPreviewSurface;
+    }
+
     static void ConvertFile(
         MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
         std::string fileTextureName{};
@@ -281,6 +301,7 @@ std::unordered_map<
     MaterialNetworkConverter::_converters{
         {UsdImagingTokens->UsdPreviewSurface, MaterialNetworkConverter::ConvertUsdPreviewSurface},
         {_tokens->lambert, MaterialNetworkConverter::ConvertLambert},
+        {_tokens->blinn, MaterialNetworkConverter::ConvertBlinn},
         {_tokens->file, MaterialNetworkConverter::ConvertFile},
         {_tokens->place2dTexture, MaterialNetworkConverter::ConvertPlace2dTexture},
     };
@@ -454,7 +475,8 @@ private:
                 }
             }
             return ret;
-        } else if (_surfaceShaderType == _tokens->lambert) {
+        // TODO: properly support textures for blinn specific attributes
+        } else if (_surfaceShaderType == _tokens->lambert || _surfaceShaderType == _tokens->blinn) {
             HdMaterialParamVector ret;
             ret.reserve(_previewShaderParamVector.size());
             for (const auto& it : _previewShaderParamVector) {
@@ -571,10 +593,27 @@ private:
             if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParamValue(paramName); }
             if (paramName == _tokens->diffuseColor) {
                 return _ConvertPlugToValue(
+                        node.findPlug(_tokens->color.GetText()), SdfValueTypeNames->Vector3f);
+            } else if (paramName == _tokens->emissiveColor) {
+                return _ConvertPlugToValue(
+                        node.findPlug(_tokens->incandescence.GetText()), SdfValueTypeNames->Vector3f);
+            }
+        } else if (_surfaceShaderType == _tokens->blinn) {
+            MStatus status;
+            MFnDependencyNode node(_surfaceShader, &status);
+            if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParamValue(paramName); }
+            if (paramName == _tokens->diffuseColor) {
+                return _ConvertPlugToValue(
                     node.findPlug(_tokens->color.GetText()), SdfValueTypeNames->Vector3f);
             } else if (paramName == _tokens->emissiveColor) {
                 return _ConvertPlugToValue(
                     node.findPlug(_tokens->incandescence.GetText()), SdfValueTypeNames->Vector3f);
+            } else if (paramName == _tokens->specularColor) {
+                return _ConvertPlugToValue(
+                        node.findPlug(_tokens->specularColor.GetText()), SdfValueTypeNames->Vector3f);
+            } else if (paramName == _tokens->roughness) {
+                return _ConvertPlugToValue(
+                        node.findPlug(_tokens->eccentricity.GetText()), SdfValueTypeNames->Float);
             }
         }
 
