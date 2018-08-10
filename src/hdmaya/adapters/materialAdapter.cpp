@@ -469,14 +469,12 @@ private:
         auto mIt = _materialParamRemaps.end();
         if (_surfaceShaderType != UsdImagingTokens->UsdPreviewSurface) {
             mIt = _materialParamRemaps.find(_surfaceShaderType);
-            if (mIt == _materialParamRemaps.end()) {
-                return GetPreviewMaterialParams();
-            }
+            if (mIt == _materialParamRemaps.end()) { return GetPreviewMaterialParams(); }
         }
 
         HdMaterialParamVector ret;
         ret.reserve(_previewShaderParamVector.size());
-        for (const auto& it: _previewShaderParamVector) {
+        for (const auto& it : _previewShaderParamVector) {
 #ifdef LUMA_USD_BUILD
             auto isUdim = false;
 #endif
@@ -493,12 +491,12 @@ private:
                     });
             }
             if (_RegisterTexture(
-                node, remappedName
+                    node, remappedName
 #ifdef LUMA_USD_BUILD
-                ,
-                isUdim
+                    ,
+                    isUdim
 #endif
-            )) {
+                    )) {
                 ret.emplace_back(
                     HdMaterialParam::ParamTypeTexture, it.GetName(), it.GetFallbackValue(),
                     GetID().AppendProperty(remappedName), _stSamplerCoords, false
