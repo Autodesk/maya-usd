@@ -64,7 +64,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens, (roughness)(clearcoat)(clearcoatRoughness)(emissiveColor)(specularColor)(metallic)(
                  useSpecularWorkflow)(occlusion)(ior)(normal)(opacity)(diffuseColor)(displacement)
     // Supported material tokens.
-    (UsdPreviewSurface)(lambert)(blinn)(file)(place2dTexture)
+    (lambert)(blinn)(file)(place2dTexture)
     // Other tokens
     (fileTextureName)(color)(incandescence)(out)(st)(uvCoord)(rgb)(r)(varname)(result)(
         eccentricity));
@@ -467,7 +467,7 @@ private:
         MFnDependencyNode node(_surfaceShader, &status);
         if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParams(); }
         auto mIt = _materialParamRemaps.end();
-        if (_surfaceShaderType != _tokens->UsdPreviewSurface) {
+        if (_surfaceShaderType != UsdImagingTokens->UsdPreviewSurface) {
             mIt = _materialParamRemaps.find(_surfaceShaderType);
             if (mIt == _materialParamRemaps.end()) {
                 return GetPreviewMaterialParams();
@@ -560,7 +560,7 @@ private:
         if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParamValue(paramName); }
 
         auto remappedParam = paramName;
-        if (_surfaceShaderType != _tokens->UsdPreviewSurface) {
+        if (_surfaceShaderType != UsdImagingTokens->UsdPreviewSurface) {
             auto mIt = _materialParamRemaps.find(_surfaceShaderType);
             if (mIt != _materialParamRemaps.end()) {
                 const auto remapIt = std::find_if(
