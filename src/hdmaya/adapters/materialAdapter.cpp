@@ -66,7 +66,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Supported material tokens.
     (UsdPreviewSurface)(lambert)(blinn)(file)(place2dTexture)
     // Other tokens
-    (fileTextureName)(color)(incandescence)(out)(st)(uvCoord)(rgb)(r)(varname)(result)(eccentricity));
+    (fileTextureName)(color)(incandescence)(out)(st)(uvCoord)(rgb)(r)(varname)(result)(
+        eccentricity));
 
 struct _PreviewParam {
     HdMaterialParam _param;
@@ -250,20 +251,20 @@ private:
     }
 
     static void ConvertBlinn(
-            MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
+        MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
         for (const auto& param : _previewShaderParams) {
             if (param._param.GetName() == _tokens->diffuseColor) {
                 converter.ConvertParameter(
-                        node, material, _tokens->color, _tokens->diffuseColor, param._type);
+                    node, material, _tokens->color, _tokens->diffuseColor, param._type);
             } else if (param._param.GetName() == _tokens->emissiveColor) {
                 converter.ConvertParameter(
-                        node, material, _tokens->incandescence, _tokens->emissiveColor, param._type);
+                    node, material, _tokens->incandescence, _tokens->emissiveColor, param._type);
             } else if (param._param.GetName() == _tokens->roughness) {
                 converter.ConvertParameter(
-                        node, material, _tokens->eccentricity, _tokens->roughness, param._type);
+                    node, material, _tokens->eccentricity, _tokens->roughness, param._type);
             } else {
                 converter.ConvertParameter(
-                        node, material, param._param.GetName(), param._param.GetName(), param._type);
+                    node, material, param._param.GetName(), param._param.GetName(), param._type);
             }
         }
         material.type = UsdImagingTokens->UsdPreviewSurface;
@@ -273,9 +274,12 @@ private:
         MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
         std::string fileTextureName{};
         if (node.findPlug(MayaAttrs::file::uvTilingMode).asShort() != 0) {
-            fileTextureName = node.findPlug(MayaAttrs::file::fileTextureNamePattern).asString().asChar();
+            fileTextureName =
+                node.findPlug(MayaAttrs::file::fileTextureNamePattern).asString().asChar();
             if (fileTextureName.empty()) {
-                fileTextureName = node.findPlug(MayaAttrs::file::computedFileTextureNamePattern).asString().asChar();
+                fileTextureName = node.findPlug(MayaAttrs::file::computedFileTextureNamePattern)
+                                      .asString()
+                                      .asChar();
             }
         } else {
             fileTextureName = node.findPlug(_fileTextureName).asString().asChar();
@@ -305,6 +309,20 @@ std::unordered_map<
         {_tokens->file, MaterialNetworkConverter::ConvertFile},
         {_tokens->place2dTexture, MaterialNetworkConverter::ConvertPlace2dTexture},
     };
+
+std::unordered_map<TfToken, std::vector<std::pair<TfToken, TfToken>>, TfToken::HashFunctor>
+    _materialParamRemaps{{_tokens->lambert,
+                          {
+                              {_tokens->diffuseColor, _tokens->color},
+                              {_tokens->emissiveColor, _tokens->incandescence},
+                          }},
+                         {_tokens->blinn,
+                          {
+                              {_tokens->diffuseColor, _tokens->color},
+                              {_tokens->emissiveColor, _tokens->incandescence},
+                              {_tokens->specularColor, _tokens->specularColor},
+                              {_tokens->roughness, _tokens->eccentricity},
+                          }}};
 
 } // namespace
 
@@ -475,7 +493,7 @@ private:
                 }
             }
             return ret;
-        // TODO: properly support textures for blinn specific attributes
+            // TODO: properly support textures for blinn specific attributes
         } else if (_surfaceShaderType == _tokens->lambert || _surfaceShaderType == _tokens->blinn) {
             HdMaterialParamVector ret;
             ret.reserve(_previewShaderParamVector.size());
@@ -574,50 +592,38 @@ private:
             return GetPreviewMaterialParamValue(paramName);
         }
 
-        if (_surfaceShaderType == _tokens->UsdPreviewSurface) {
-            MStatus status;
-            MFnDependencyNode node(_surfaceShader, &status);
-            if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParamValue(paramName); }
-            auto p = node.findPlug(paramName.GetText());
-            if (ARCH_UNLIKELY(p.isNull())) { return GetPreviewMaterialParamValue(paramName); }
-            auto it = _FindPreviewParam(paramName);
-            if (ARCH_UNLIKELY(it == _previewShaderParams.cend())) {
+        MStatus status;
+        MFnDependencyNode node(_surfaceShader, &status);
+        if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParamValue(paramName); }
+
+        auto remappedParam = paramName;
+        if (_surfaceShaderType != _tokens->UsdPreviewSurface) {
+            auto mIt = _materialParamRemaps.find(_surfaceShaderType);
+            if (mIt != _materialParamRemaps.end()) {
+                const auto remapIt = std::find_if(
+                    mIt->second.begin(), mIt->second.end(),
+                    [&paramName](const std::pair<TfToken, TfToken>& p) -> bool {
+                        return p.first == paramName;
+                    });
+                if (remapIt != mIt->second.end()) { remappedParam = remapIt->second; }
+            } else {
                 return GetPreviewMaterialParamValue(paramName);
-            }
-            auto ret = _ConvertPlugToValue(p, it->_type);
-            if (ARCH_UNLIKELY(ret.IsEmpty())) { return GetPreviewMaterialParamValue(paramName); }
-            return ret;
-        } else if (_surfaceShaderType == _tokens->lambert) {
-            MStatus status;
-            MFnDependencyNode node(_surfaceShader, &status);
-            if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParamValue(paramName); }
-            if (paramName == _tokens->diffuseColor) {
-                return _ConvertPlugToValue(
-                        node.findPlug(_tokens->color.GetText()), SdfValueTypeNames->Vector3f);
-            } else if (paramName == _tokens->emissiveColor) {
-                return _ConvertPlugToValue(
-                        node.findPlug(_tokens->incandescence.GetText()), SdfValueTypeNames->Vector3f);
-            }
-        } else if (_surfaceShaderType == _tokens->blinn) {
-            MStatus status;
-            MFnDependencyNode node(_surfaceShader, &status);
-            if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParamValue(paramName); }
-            if (paramName == _tokens->diffuseColor) {
-                return _ConvertPlugToValue(
-                    node.findPlug(_tokens->color.GetText()), SdfValueTypeNames->Vector3f);
-            } else if (paramName == _tokens->emissiveColor) {
-                return _ConvertPlugToValue(
-                    node.findPlug(_tokens->incandescence.GetText()), SdfValueTypeNames->Vector3f);
-            } else if (paramName == _tokens->specularColor) {
-                return _ConvertPlugToValue(
-                        node.findPlug(_tokens->specularColor.GetText()), SdfValueTypeNames->Vector3f);
-            } else if (paramName == _tokens->roughness) {
-                return _ConvertPlugToValue(
-                        node.findPlug(_tokens->eccentricity.GetText()), SdfValueTypeNames->Float);
             }
         }
 
-        return GetPreviewMaterialParamValue(paramName);
+        const auto p = node.findPlug(remappedParam.GetText());
+        if (ARCH_UNLIKELY(p.isNull())) {
+            return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(paramName);
+        }
+        const auto previewIt = _FindPreviewParam(paramName);
+        if (ARCH_UNLIKELY(previewIt == _previewShaderParams.cend())) {
+            return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(paramName);
+        }
+        const auto ret = _ConvertPlugToValue(p, previewIt->_type);
+        if (ARCH_UNLIKELY(ret.IsEmpty())) {
+            return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(paramName);
+        }
+        return ret;
     }
 
     void _CreateSurfaceMaterialCallback() {
@@ -739,8 +745,8 @@ private:
 };
 
 TF_REGISTRY_FUNCTION(TfType) {
-    TfType::Define<HdMayaMaterialAdapter, TfType::Bases<HdMayaAdapter> >();
-    TfType::Define<HdMayaShadingEngineAdapter, TfType::Bases<HdMayaMaterialAdapter> >();
+    TfType::Define<HdMayaMaterialAdapter, TfType::Bases<HdMayaAdapter>>();
+    TfType::Define<HdMayaShadingEngineAdapter, TfType::Bases<HdMayaMaterialAdapter>>();
 }
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, shadingEngine) {
