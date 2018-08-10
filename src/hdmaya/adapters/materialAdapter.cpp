@@ -466,90 +466,53 @@ private:
         MStatus status;
         MFnDependencyNode node(_surfaceShader, &status);
         if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParams(); }
-        if (_surfaceShaderType == _tokens->UsdPreviewSurface) {
-            HdMaterialParamVector ret;
-            ret.reserve(_previewShaderParamVector.size());
-            for (const auto& it : _previewShaderParamVector) {
-#ifdef LUMA_USD_BUILD
-                auto isUdim = false;
-#endif
-                if (_RegisterTexture(
-                        node, it.GetName()
-#ifdef LUMA_USD_BUILD
-                                  ,
-                        isUdim
-#endif
-                        )) {
-                    ret.emplace_back(
-                        HdMaterialParam::ParamTypeTexture, it.GetName(), it.GetFallbackValue(),
-                        GetID().AppendProperty(it.GetName()), _stSamplerCoords, false
-#ifdef LUMA_USD_BUILD
-                        ,
-                        isUdim
-#endif
-                    );
-                } else {
-                    ret.emplace_back(it);
-                }
+        auto mIt = _materialParamRemaps.end();
+        if (_surfaceShaderType != _tokens->UsdPreviewSurface) {
+            mIt = _materialParamRemaps.find(_surfaceShaderType);
+            if (mIt == _materialParamRemaps.end()) {
+                return GetPreviewMaterialParams();
             }
-            return ret;
-            // TODO: properly support textures for blinn specific attributes
-        } else if (_surfaceShaderType == _tokens->lambert || _surfaceShaderType == _tokens->blinn) {
-            HdMaterialParamVector ret;
-            ret.reserve(_previewShaderParamVector.size());
-            for (const auto& it : _previewShaderParamVector) {
-                if (it.GetName() == _tokens->diffuseColor) {
+        }
+
+        HdMaterialParamVector ret;
+        ret.reserve(_previewShaderParamVector.size());
+        for (const auto& it: _previewShaderParamVector) {
 #ifdef LUMA_USD_BUILD
-                    auto isUdim = false;
+            auto isUdim = false;
 #endif
-                    if (_RegisterTexture(
-                            node, _tokens->color
+            auto remappedName = it.GetName();
+            if (mIt != _materialParamRemaps.end()) {
+                std::find_if(
+                    mIt->second.begin(), mIt->second.end(),
+                    [&remappedName](const std::pair<TfToken, TfToken>& p) -> bool {
+                        if (p.first == remappedName) {
+                            remappedName = p.second;
+                            return true;
+                        }
+                        return false;
+                    });
+            }
+            if (_RegisterTexture(
+                node, remappedName
 #ifdef LUMA_USD_BUILD
-                            ,
-                            isUdim
+                ,
+                isUdim
 #endif
-                            )) {
-                        ret.emplace_back(
-                            HdMaterialParam::ParamTypeTexture, _tokens->diffuseColor,
-                            it.GetFallbackValue(), GetID().AppendProperty(_tokens->color),
-                            _stSamplerCoords, false
+            )) {
+                ret.emplace_back(
+                    HdMaterialParam::ParamTypeTexture, it.GetName(), it.GetFallbackValue(),
+                    GetID().AppendProperty(remappedName), _stSamplerCoords, false
 #ifdef LUMA_USD_BUILD
-                            ,
-                            isUdim
+                    ,
+                    isUdim
 #endif
-                        );
-                        continue;
-                    }
-                } else if (it.GetName() == _tokens->emissiveColor) {
-#ifdef LUMA_USD_BUILD
-                    auto isUdim = false;
-#endif
-                    if (_RegisterTexture(
-                            node, _tokens->incandescence
-#ifdef LUMA_USD_BUILD
-                            ,
-                            isUdim
-#endif
-                            )) {
-                        ret.emplace_back(
-                            HdMaterialParam::ParamTypeTexture, _tokens->emissiveColor,
-                            it.GetFallbackValue(), GetID().AppendProperty(_tokens->incandescence),
-                            _stSamplerCoords, false
-#ifdef LUMA_USD_BUILD
-                            ,
-                            isUdim
-#endif
-                        );
-                        continue;
-                    }
-                }
+                );
+            } else {
                 ret.emplace_back(it);
             }
-            return ret;
-        } else {
-            return GetPreviewMaterialParams();
-            ;
         }
+
+        return ret;
     }
 
     inline bool _RegisterTexture(
