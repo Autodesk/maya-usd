@@ -193,9 +193,20 @@ public:
 
     void ConvertParameter(
         MFnDependencyNode& node, HdMaterialNode& material, const TfToken& mayaName,
-        const TfToken& name, const SdfValueTypeName& type) {
-        auto p = node.findPlug(mayaName.GetText());
-        material.parameters[name] = _ConvertPlugToValue(p, type);
+        const TfToken& name, const SdfValueTypeName type, const VtValue* fallback = nullptr) {
+        MStatus status;
+        auto p = node.findPlug(mayaName.GetText(), &status);
+        VtValue val;
+        if (status) {
+            val = _ConvertPlugToValue(p, type);
+        } else if (fallback) {
+            val = *fallback;
+        } else {
+            TF_DEBUG(HDMAYA_ADAPTER_GET).Msg("MaterialNetworkConverter::ConvertParameter(): "
+                                             "No plug found with name: %s and no fallback given", mayaName.GetText());
+            val = VtValue();
+        }
+        material.parameters[name] = val;
         MPlugArray conns;
         p.connectedTo(conns, true, false);
         if (conns.length() > 0) {
@@ -227,8 +238,9 @@ private:
     static void ConvertUsdPreviewSurface(
         MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
         for (const auto& param : _previewShaderParams) {
+            const VtValue* fallback = &param._param.GetFallbackValue();
             converter.ConvertParameter(
-                node, material, param._param.GetName(), param._param.GetName(), param._type);
+                node, material, param._param.GetName(), param._param.GetName(), param._type, fallback);
         }
         material.type = UsdImagingTokens->UsdPreviewSurface;
     }
@@ -236,15 +248,16 @@ private:
     static void ConvertLambert(
         MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
         for (const auto& param : _previewShaderParams) {
+            const VtValue* fallback = &param._param.GetFallbackValue();
             if (param._param.GetName() == _tokens->diffuseColor) {
                 converter.ConvertParameter(
-                    node, material, _tokens->color, _tokens->diffuseColor, param._type);
+                    node, material, _tokens->color, _tokens->diffuseColor, param._type, fallback);
             } else if (param._param.GetName() == _tokens->emissiveColor) {
                 converter.ConvertParameter(
-                    node, material, _tokens->incandescence, _tokens->emissiveColor, param._type);
+                    node, material, _tokens->incandescence, _tokens->emissiveColor, param._type, fallback);
             } else {
                 converter.ConvertParameter(
-                    node, material, param._param.GetName(), param._param.GetName(), param._type);
+                    node, material, param._param.GetName(), param._param.GetName(), param._type, fallback);
             }
         }
         material.type = UsdImagingTokens->UsdPreviewSurface;
@@ -253,18 +266,19 @@ private:
     static void ConvertBlinn(
         MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
         for (const auto& param : _previewShaderParams) {
+            const VtValue* fallback = &param._param.GetFallbackValue();
             if (param._param.GetName() == _tokens->diffuseColor) {
                 converter.ConvertParameter(
-                    node, material, _tokens->color, _tokens->diffuseColor, param._type);
+                    node, material, _tokens->color, _tokens->diffuseColor, param._type, fallback);
             } else if (param._param.GetName() == _tokens->emissiveColor) {
                 converter.ConvertParameter(
-                    node, material, _tokens->incandescence, _tokens->emissiveColor, param._type);
+                    node, material, _tokens->incandescence, _tokens->emissiveColor, param._type, fallback);
             } else if (param._param.GetName() == _tokens->roughness) {
                 converter.ConvertParameter(
-                    node, material, _tokens->eccentricity, _tokens->roughness, param._type);
+                    node, material, _tokens->eccentricity, _tokens->roughness, param._type, fallback);
             } else {
                 converter.ConvertParameter(
-                    node, material, param._param.GetName(), param._param.GetName(), param._type);
+                    node, material, param._param.GetName(), param._param.GetName(), param._type, fallback);
             }
         }
         material.type = UsdImagingTokens->UsdPreviewSurface;
