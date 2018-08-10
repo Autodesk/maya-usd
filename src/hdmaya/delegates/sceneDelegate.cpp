@@ -186,7 +186,6 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
         adapter->Populate();
         adapter->CreateCallbacks();
         _lightAdapters.insert({id, adapter});
-        GetMaterialId(id);
     } else {
         auto adapterCreator = HdMayaAdapterRegistry::GetShapeAdapterCreator(dag);
         if (adapterCreator == nullptr) { return; }
