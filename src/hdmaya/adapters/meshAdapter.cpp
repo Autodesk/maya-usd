@@ -52,16 +52,16 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens, (st));
 bool _dirtyBitsInitialized = false;
 
 std::vector<std::pair<MObject, HdDirtyBits>> _dirtyBits = {
-    {MObject(), // Will hold "pnts" attribute when initialized
+    {{}, // Will hold "pnts" attribute when initialized
      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent},
-    {MObject(), // Will hold "inMesh" attribute when initialized
+    {{}, // Will hold "inMesh" attribute when initialized
      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent | HdChangeTracker::DirtyPrimvar |
          HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyNormals},
-    {MObject(), // Will hold "worldMatrix" attribute when initialized
+    {{}, // Will hold "worldMatrix" attribute when initialized
      HdChangeTracker::DirtyTransform},
-    {MObject(), // Will hold "doubleSided" attribute when initialized
+    {{}, // Will hold "doubleSided" attribute when initialized
      HdChangeTracker::DirtyDoubleSided},
-    {MObject(), // Will hold "intermediateObject" attribute when initialized
+    {{}, // Will hold "intermediateObject" attribute when initialized
      HdChangeTracker::DirtyVisibility},
 };
 
