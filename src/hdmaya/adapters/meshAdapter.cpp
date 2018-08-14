@@ -49,24 +49,21 @@ namespace {
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens, (st));
 
-// When this code is loaded, maya may not be initialized - delay setting the
-// MObjects...
-bool _dirtyBitsInitialized = false;
-
-std::vector<std::pair<MObject, HdDirtyBits>> _dirtyBits = {
-    {{}, // Will hold "pnts" attribute when initialized
+std::vector<std::pair<MObject&, HdDirtyBits>> _dirtyBits = {
+    {MayaAttrs::mesh::pnts,
          // This is useful when the user edits the mesh.
      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent},
-    {{}, // Will hold "inMesh" attribute when initialized
+    {MayaAttrs::mesh::inMesh,
          // We are tracking topology changes and uv changes separately
      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent},
-    {{}, // Will hold "worldMatrix" attribute when initialized
+    {MayaAttrs::mesh::worldMatrix,
      HdChangeTracker::DirtyTransform},
-    {{}, // Will hold "doubleSided" attribute when initialized
+    {MayaAttrs::mesh::doubleSided,
      HdChangeTracker::DirtyDoubleSided},
-    {{}, // Will hold "intermediateObject" attribute when initialized
+    {MayaAttrs::mesh::intermediateObject,
      HdChangeTracker::DirtyVisibility},
-    {{}, // Will hold "uvPivot" attribute when initialized
+    {MayaAttrs::mesh::uvPivot,
+        // Tracking manual edits to uvs.
      HdChangeTracker::DirtyPrimvar},
 };
 
@@ -76,19 +73,6 @@ class HdMayaMeshAdapter : public HdMayaShapeAdapter {
 public:
     HdMayaMeshAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
         : HdMayaShapeAdapter(delegate->GetPrimPath(dag), delegate, dag) {
-        // Do this here just because we want to wait for a point in time where
-        // we KNOW maya is initialized
-        if (!_dirtyBitsInitialized) {
-            // Don't have a mutex here, should be fine - worst case we have two
-            // threads setting these to the same thing at the same time
-            _dirtyBits[0].first = MayaAttrs::mesh::pnts;
-            _dirtyBits[1].first = MayaAttrs::mesh::inMesh;
-            _dirtyBits[2].first = MayaAttrs::mesh::worldMatrix;
-            _dirtyBits[3].first = MayaAttrs::mesh::doubleSided;
-            _dirtyBits[4].first = MayaAttrs::mesh::intermediateObject;
-            _dirtyBits[5].first = MayaAttrs::mesh::uvPivot;
-            _dirtyBitsInitialized = true;
-        }
     }
 
     void Populate() override {
