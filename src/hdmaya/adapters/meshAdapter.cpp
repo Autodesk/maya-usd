@@ -144,13 +144,11 @@ public:
         faceVertexCounts.reserve(static_cast<size_t>(numPolygons));
         VtIntArray faceVertexIndices;
         faceVertexIndices.reserve(static_cast<size_t>(mesh.numFaceVertices()));
-        MIntArray mayaFaceVertexIndices;
-        for (auto i = decltype(numPolygons){0}; i < numPolygons; ++i) {
-            mesh.getPolygonVertices(i, mayaFaceVertexIndices);
-            const auto numIndices = mayaFaceVertexIndices.length();
-            faceVertexCounts.push_back(numIndices);
-            for (auto j = decltype(numIndices){0}; j < numIndices; ++j) {
-                faceVertexIndices.push_back(mayaFaceVertexIndices[j]);
+        for (MItMeshPolygon pit(GetDagPath()); !pit.isDone(); pit.next()) {
+            const auto vc = pit.polygonVertexCount();
+            faceVertexCounts.push_back(vc);
+            for (auto i = decltype(vc){0}; i < vc; ++i) {
+                faceVertexIndices.push_back(pit.vertexIndex(i));
             }
         }
 
