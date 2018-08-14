@@ -77,6 +77,7 @@ namespace mesh {
 
 MObject pnts;
 MObject inMesh;
+MObject uvPivot;
 
 } // namespace mesh
 
@@ -230,6 +231,9 @@ MStatus initialize() {
         if (!TF_VERIFY(status)) { return status; }
 
         setAttrObj(inMesh, nodeClass, "inMesh");
+        if (!TF_VERIFY(status)) { return status; }
+
+        setAttrObj(uvPivot, nodeClass, "uvPivot");
         if (!TF_VERIFY(status)) { return status; }
     }
 

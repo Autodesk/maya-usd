@@ -36,6 +36,7 @@
 #include <maya/MItMeshPolygon.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
+#include <maya/MPolyMessage.h>
 
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/adapterRegistry.h>
@@ -54,16 +55,19 @@ bool _dirtyBitsInitialized = false;
 
 std::vector<std::pair<MObject, HdDirtyBits>> _dirtyBits = {
     {{}, // Will hold "pnts" attribute when initialized
+         // This is useful when the user edits the mesh.
      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent},
     {{}, // Will hold "inMesh" attribute when initialized
-     HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent | HdChangeTracker::DirtyPrimvar |
-         HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyNormals},
+         // We are tracking topology changes and uv changes separately
+     HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent},
     {{}, // Will hold "worldMatrix" attribute when initialized
      HdChangeTracker::DirtyTransform},
     {{}, // Will hold "doubleSided" attribute when initialized
      HdChangeTracker::DirtyDoubleSided},
     {{}, // Will hold "intermediateObject" attribute when initialized
      HdChangeTracker::DirtyVisibility},
+    {{}, // Will hold "uvPivot" attribute when initialized
+     HdChangeTracker::DirtyPrimvar},
 };
 
 } // namespace
@@ -82,6 +86,7 @@ public:
             _dirtyBits[2].first = MayaAttrs::mesh::worldMatrix;
             _dirtyBits[3].first = MayaAttrs::mesh::doubleSided;
             _dirtyBits[4].first = MayaAttrs::mesh::intermediateObject;
+            _dirtyBits[5].first = MayaAttrs::mesh::uvPivot;
             _dirtyBitsInitialized = true;
         }
     }
@@ -96,6 +101,15 @@ public:
         if (status) { AddCallback(id); }
         id =
             MNodeMessage::addAttributeChangedCallback(obj, AttributeChangedCallback, this, &status);
+        if (status) { AddCallback(id); }
+        id = MPolyMessage::addPolyTopologyChangedCallback(
+            obj, TopologyChangedCallback, this, &status);
+        if (status) { AddCallback(id); }
+        bool wantModifications[3] = {true, true, true};
+        id = MPolyMessage::addPolyComponentIdChangedCallback(
+            obj, wantModifications, 3, ComponentIdChanged, this, &status);
+        if (status) { AddCallback(id); }
+        id = MPolyMessage::addUVSetChangedCallback(obj, UVSetChangedCallback, this, &status);
         if (status) { AddCallback(id); }
     }
 
@@ -224,6 +238,28 @@ private:
                     "HdMayaMeshAdapter::attributeChangedCallback.\n",
                     plug.name().asChar(), plug.name().asChar());
         }
+    }
+
+    static void TopologyChangedCallback(MObject& node, void* clientData) {
+        auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
+        adapter->MarkDirty(
+            HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyPrimvar |
+            HdChangeTracker::DirtyPoints);
+    }
+
+    static void ComponentIdChanged(
+        MUintArray componentIds[], unsigned int count, void* clientData) {
+        auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
+        adapter->MarkDirty(
+            HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyPrimvar |
+            HdChangeTracker::DirtyPoints);
+    }
+
+    static void UVSetChangedCallback(
+        MObject& node, const MString& name, MPolyMessage::MessageType type, void* clientData) {
+        // TODO: Only track the uvset we care about.
+        auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
+        adapter->MarkDirty(HdChangeTracker::DirtyPrimvar);
     }
 };
 

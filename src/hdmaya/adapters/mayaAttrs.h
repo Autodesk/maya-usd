@@ -89,6 +89,7 @@ namespace mesh {
 using namespace surfaceShape;
 extern MObject pnts;
 extern MObject inMesh;
+extern MObject uvPivot;
 
 } // namespace mesh
 
