@@ -51,19 +51,16 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens, (st));
 
 std::vector<std::pair<MObject&, HdDirtyBits>> _dirtyBits = {
     {MayaAttrs::mesh::pnts,
-         // This is useful when the user edits the mesh.
+     // This is useful when the user edits the mesh.
      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent},
     {MayaAttrs::mesh::inMesh,
-         // We are tracking topology changes and uv changes separately
+     // We are tracking topology changes and uv changes separately
      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent},
-    {MayaAttrs::mesh::worldMatrix,
-     HdChangeTracker::DirtyTransform},
-    {MayaAttrs::mesh::doubleSided,
-     HdChangeTracker::DirtyDoubleSided},
-    {MayaAttrs::mesh::intermediateObject,
-     HdChangeTracker::DirtyVisibility},
+    {MayaAttrs::mesh::worldMatrix, HdChangeTracker::DirtyTransform},
+    {MayaAttrs::mesh::doubleSided, HdChangeTracker::DirtyDoubleSided},
+    {MayaAttrs::mesh::intermediateObject, HdChangeTracker::DirtyVisibility},
     {MayaAttrs::mesh::uvPivot,
-        // Tracking manual edits to uvs.
+     // Tracking manual edits to uvs.
      HdChangeTracker::DirtyPrimvar},
 };
 
@@ -72,8 +69,9 @@ std::vector<std::pair<MObject&, HdDirtyBits>> _dirtyBits = {
 class HdMayaMeshAdapter : public HdMayaShapeAdapter {
 public:
     HdMayaMeshAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-        : HdMayaShapeAdapter(delegate->GetPrimPath(dag), delegate, dag) {
-    }
+        : HdMayaShapeAdapter(delegate->GetPrimPath(dag), delegate, dag) {}
+
+    ~HdMayaMeshAdapter() = default;
 
     void Populate() override {
         GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty);
