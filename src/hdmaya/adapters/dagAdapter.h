@@ -65,7 +65,7 @@ public:
     HDMAYA_API
     virtual void CreateCallbacks() override;
     HDMAYA_API
-    virtual void MarkDirty(HdDirtyBits dirtyBits);
+    virtual void MarkDirty(HdDirtyBits dirtyBits) override;
     HDMAYA_API
     virtual void RemovePrim() override;
     HDMAYA_API

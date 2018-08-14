@@ -49,7 +49,7 @@ namespace {
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens, (st));
 
-std::vector<std::pair<MObject&, HdDirtyBits>> _dirtyBits = {
+const std::array<std::pair<MObject&, HdDirtyBits>, 6> _dirtyBits{{
     {MayaAttrs::mesh::pnts,
      // This is useful when the user edits the mesh.
      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent},
@@ -62,7 +62,7 @@ std::vector<std::pair<MObject&, HdDirtyBits>> _dirtyBits = {
     {MayaAttrs::mesh::uvPivot,
      // Tracking manual edits to uvs.
      HdChangeTracker::DirtyPrimvar},
-};
+}};
 
 } // namespace
 

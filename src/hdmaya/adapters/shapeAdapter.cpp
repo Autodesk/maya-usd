@@ -58,7 +58,8 @@ void HdMayaShapeAdapter::_CalculateExtent() {
 
 HdMeshTopology HdMayaShapeAdapter::GetMeshTopology() { return {}; };
 
-HdPrimvarDescriptorVector HdMayaShapeAdapter::GetPrimvarDescriptors(HdInterpolation interpolation) {
+HdPrimvarDescriptorVector HdMayaShapeAdapter::GetPrimvarDescriptors(
+    HdInterpolation /*interpolation*/) {
     return {};
 }
 
