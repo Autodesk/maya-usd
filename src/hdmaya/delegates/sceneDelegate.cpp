@@ -174,6 +174,11 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
     // We don't care about transforms.
     if (dag.hasFn(MFn::kTransform)) { return; }
 
+    MFnDagNode dagNode(dag);
+    if (dagNode.isIntermediateObject()) {
+        return;
+    }
+
     // FIXME: put this into a function!
     if (dag.hasFn(MFn::kLight)) {
         auto adapterCreator = HdMayaAdapterRegistry::GetLightAdapterCreator(dag);
