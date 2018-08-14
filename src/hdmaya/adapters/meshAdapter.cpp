@@ -35,6 +35,7 @@
 #include <maya/MIntArray.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
+#include <maya/MItMeshPolygon.h>
 
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/adapterRegistry.h>
@@ -119,17 +120,15 @@ public:
             return VtValue(ret);
         } else if (key == _tokens->st) {
             MFnMesh mesh(GetDagPath());
-            // We need to flatten out the uvs.
             MStatus status;
             VtArray<GfVec2f> uvs;
-            const auto numPolygons = mesh.numPolygons();
-            uvs.reserve(static_cast<size_t>(mesh.numFaceVertices()));
-            for (auto p = decltype(numPolygons){0}; p < numPolygons; ++p) {
-                const auto numVertices = mesh.polygonVertexCount(p);
-                for (auto v = decltype(numVertices){0}; v < numVertices; ++v) {
-                    GfVec2f uv(0.0f, 0.0f);
-                    mesh.getPolygonUV(p, v, uv[0], uv[1]);
-                    uvs.push_back(uv);
+            uvs.reserve(mesh.numFaceVertices());
+            for (MItMeshPolygon pit(GetDagPath()); !pit.isDone(); pit.next()) {
+                const auto vertexCount = pit.polygonVertexCount();
+                for (auto i = decltype(vertexCount){0}; i < vertexCount; ++i) {
+                    float2 uv = {0.0f, 0.0f};
+                    pit.getUV(i, uv);
+                    uvs.push_back(GfVec2f(uv[0], uv[1]));
                 }
             }
 
