@@ -12,7 +12,7 @@ We have a google group for discussion and technical assistance: https://groups.g
 
 ## Videos
 We have some videos explaining some of the workflows we support. We are hoping to add to this as we go:
-+ [Animation & Layout](https://youtu.be/wcC71Yu2gjA)
++ [Animation & Layout](https://youtu.be/RluuvOAXvnk)
 + [Modelling & Surfacing](https://youtu.be/DaxLk6pHijw)
 
 
