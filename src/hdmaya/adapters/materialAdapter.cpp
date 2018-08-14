@@ -202,8 +202,11 @@ public:
         } else if (fallback) {
             val = *fallback;
         } else {
-            TF_DEBUG(HDMAYA_ADAPTER_GET).Msg("MaterialNetworkConverter::ConvertParameter(): "
-                                             "No plug found with name: %s and no fallback given", mayaName.GetText());
+            TF_DEBUG(HDMAYA_ADAPTER_GET)
+                .Msg(
+                    "MaterialNetworkConverter::ConvertParameter(): "
+                    "No plug found with name: %s and no fallback given",
+                    mayaName.GetText());
             val = VtValue();
         }
         material.parameters[name] = val;
@@ -240,7 +243,8 @@ private:
         for (const auto& param : _previewShaderParams) {
             const VtValue* fallback = &param._param.GetFallbackValue();
             converter.ConvertParameter(
-                node, material, param._param.GetName(), param._param.GetName(), param._type, fallback);
+                node, material, param._param.GetName(), param._param.GetName(), param._type,
+                fallback);
         }
         material.type = UsdImagingTokens->UsdPreviewSurface;
     }
@@ -254,10 +258,12 @@ private:
                     node, material, _tokens->color, _tokens->diffuseColor, param._type, fallback);
             } else if (param._param.GetName() == _tokens->emissiveColor) {
                 converter.ConvertParameter(
-                    node, material, _tokens->incandescence, _tokens->emissiveColor, param._type, fallback);
+                    node, material, _tokens->incandescence, _tokens->emissiveColor, param._type,
+                    fallback);
             } else {
                 converter.ConvertParameter(
-                    node, material, param._param.GetName(), param._param.GetName(), param._type, fallback);
+                    node, material, param._param.GetName(), param._param.GetName(), param._type,
+                    fallback);
             }
         }
         material.type = UsdImagingTokens->UsdPreviewSurface;
@@ -272,13 +278,16 @@ private:
                     node, material, _tokens->color, _tokens->diffuseColor, param._type, fallback);
             } else if (param._param.GetName() == _tokens->emissiveColor) {
                 converter.ConvertParameter(
-                    node, material, _tokens->incandescence, _tokens->emissiveColor, param._type, fallback);
+                    node, material, _tokens->incandescence, _tokens->emissiveColor, param._type,
+                    fallback);
             } else if (param._param.GetName() == _tokens->roughness) {
                 converter.ConvertParameter(
-                    node, material, _tokens->eccentricity, _tokens->roughness, param._type, fallback);
+                    node, material, _tokens->eccentricity, _tokens->roughness, param._type,
+                    fallback);
             } else {
                 converter.ConvertParameter(
-                    node, material, param._param.GetName(), param._param.GetName(), param._type, fallback);
+                    node, material, param._param.GetName(), param._param.GetName(), param._type,
+                    fallback);
             }
         }
         material.type = UsdImagingTokens->UsdPreviewSurface;

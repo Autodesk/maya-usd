@@ -33,9 +33,9 @@
 #include <maya/MFloatArray.h>
 #include <maya/MFnMesh.h>
 #include <maya/MIntArray.h>
+#include <maya/MItMeshPolygon.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
-#include <maya/MItMeshPolygon.h>
 
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/adapterRegistry.h>
