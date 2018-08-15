@@ -353,7 +353,7 @@ set_target_properties(pxrUsd PROPERTIES
 )
 
 # Load information for each installed configuration.
-file(GLOB CONFIG_FILES "${CMAKE_SOURCE_DIR}/cmake/pxrTargets-release_linux.cmake")
+file(GLOB CONFIG_FILES "${USD_CONFIG_DIR}/pxrTargets-release_linux.cmake")
 foreach(f ${CONFIG_FILES})
   include(${f})
 endforeach()

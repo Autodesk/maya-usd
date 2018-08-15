@@ -52,8 +52,8 @@ set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 include(Public)
 
-find_package(USD REQUIRED)
 find_package(Maya REQUIRED)
+find_package(USD REQUIRED)
 
 #==============================================================================
 # PACKAGES USED WHILE BUILING
@@ -64,14 +64,6 @@ if(NOT(PYTHON_INCLUDE_DIRS AND PYTHON_LIBRARIES))
 	include(cmake/python.cmake)
 endif()
 include_directories(${PYTHON_INCLUDE_DIRS})
-
-
-#==============================================================================
-# 3rd-parties
-#==============================================================================
-
-find_package(USD REQUIRED)
-find_package(Maya REQUIRED)
 
 #==============================================================================
 # AL_USDMAYA CMAKE VARS
