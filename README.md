@@ -10,11 +10,11 @@ Viewport 2.0.
 
 There are several advantages to HdStream over Viewport 2.0:
 
-- # Ability to cast shadows between [AL_USDMaya](www.github.com/AnimalLogc/AL_usdMaya) proxy shapes and real Maya shapes
-- # Consistent lighting and shading between Hydra-enabled applications: Maya, Katana, usdview, etc
-- # HdStream is under active development by Pixar
-- # HdStream is open source: you can add core features as you need them
-- # HdStream is extensible: you can create plugins for custom objects
+1. Ability to cast shadows between [AL_USDMaya](www.github.com/AnimalLogc/AL_usdMaya) proxy shapes and real Maya shapes
+1. Consistent lighting and shading between Hydra-enabled applications: Maya, Katana, usdview, etc
+1. HdStream is under active development by Pixar
+1. HdStream is open source: you can add core features as you need them
+1. HdStream is extensible: you can create plugins for custom objects
 
 Using Hydra also has beneftis for offline renderers. Any renderer that implements a Hydra render delegate can now how a fully interactive render viewport in Maya, along with support for render proxies via AL_USDMaya. This could be particularly useful for newer projects, like Radeon ProRender or in-house renderers.
 
