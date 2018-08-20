@@ -37,11 +37,11 @@ get_filename_component(LIBRARY_LOCATION
 
 configure_file(
   ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
-  ${CMAKE_CURRENT_BINARY_DIR}/share/usd/plugins/${TRANSLATORS_PACKAGE}/resources/plugInfo.json
+  ${CMAKE_CURRENT_BINARY_DIR}/lib/usd/${TRANSLATORS_PACKAGE}/resources/plugInfo.json
   )
 
 # Setup the actual plugInfo.json
-set(LIBRARY_LOCATION "../../../../lib")
+set(LIBRARY_LOCATION "../..")
 configure_file(
   ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
   ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
@@ -85,12 +85,12 @@ install(TARGETS ${TRANSLATORS_PACKAGE}
 )
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
- DESTINATION ${CMAKE_INSTALL_PREFIX}/share/usd/plugins/${TRANSLATORS_PACKAGE}/resources
+ DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/${TRANSLATORS_PACKAGE}/resources
 )
 
 #install top level plugInfo.json that includes the configured plugInfo.json
 install(CODE
- "file(WRITE \"${CMAKE_INSTALL_PREFIX}/share/usd/plugins/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+ "file(WRITE \"${CMAKE_INSTALL_PREFIX}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
 )
 
 # install public headers
