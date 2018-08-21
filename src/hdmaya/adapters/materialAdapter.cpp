@@ -246,7 +246,7 @@ private:
                 node, material, param._param.GetName(), param._param.GetName(), param._type,
                 fallback);
         }
-        material.type = UsdImagingTokens->UsdPreviewSurface;
+        material.identifier = UsdImagingTokens->UsdPreviewSurface;
     }
 
     static void ConvertLambert(
@@ -266,7 +266,7 @@ private:
                     fallback);
             }
         }
-        material.type = UsdImagingTokens->UsdPreviewSurface;
+        material.identifier = UsdImagingTokens->UsdPreviewSurface;
     }
 
     static void ConvertBlinn(
@@ -290,7 +290,7 @@ private:
                     fallback);
             }
         }
-        material.type = UsdImagingTokens->UsdPreviewSurface;
+        material.identifier = UsdImagingTokens->UsdPreviewSurface;
     }
 
     static void ConvertFile(
@@ -311,14 +311,14 @@ private:
             VtValue(SdfAssetPath(fileTextureName, fileTextureName));
         converter.ConvertParameter(
             node, material, _tokens->uvCoord, _tokens->st, SdfValueTypeNames->Float2);
-        material.type = UsdImagingTokens->UsdUVTexture;
+        material.identifier = UsdImagingTokens->UsdUVTexture;
     }
 
     static void ConvertPlace2dTexture(
         MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
         converter.AddPrimvar(_tokens->st);
         material.parameters[_tokens->varname] = VtValue(_tokens->st);
-        material.type = UsdImagingTokens->UsdPrimvarReader_float2;
+        material.identifier = UsdImagingTokens->UsdPrimvarReader_float2;
     }
 };
 
@@ -424,7 +424,7 @@ VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(const SdfPath& materia
     HdMaterialNetwork network;
     HdMaterialNode node;
     node.path = materialID;
-    node.type = UsdImagingTokens->UsdPreviewSurface;
+    node.identifier = UsdImagingTokens->UsdPreviewSurface;
     for (const auto& it : _previewShaderParams) {
         node.parameters.emplace(it._param.GetName(), it._param.GetFallbackValue());
     }

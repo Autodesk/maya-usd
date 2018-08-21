@@ -43,7 +43,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace {
 
 SdfPath _GetPrimPath(const SdfPath& base, const MDagPath& dg) {
-    const auto mayaPath = PxrUsdMayaUtil::MDagPathToUsdPath(dg, false, false);
+    const auto mayaPath = UsdMayaUtil::MDagPathToUsdPath(dg, false, false);
     if (mayaPath.IsEmpty()) { return {}; }
     const auto* chr = mayaPath.GetText();
     if (chr == nullptr) { return {}; };
