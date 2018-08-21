@@ -1,3 +1,4 @@
 [submodule "AL_USDMaya"]
 	path = AL_USDMaya
 	url = https://git.autodesk.com/autodesk-forks/AL_USDMaya
+	branch = dev-adsk
