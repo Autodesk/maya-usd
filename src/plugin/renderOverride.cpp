@@ -59,19 +59,21 @@ TF_INSTANTIATE_SINGLETON(HdMayaRenderOverride);
 
 namespace {
 
-constexpr auto HDMAYA_DEFAULT_RENDERER_PLUGIN_NAME = "HDMAYA_DEFAULT_RENDERER_PLUGIN";
+constexpr auto HDMAYA_DEFAULT_RENDERER_PLUGIN_NAME =
+    "HDMAYA_DEFAULT_RENDERER_PLUGIN";
 
 // I don't think there is an easy way to detect if the viewport was changed,
 // so I'm adding a 5 second timeout.
 // There MUST be a better way to do this!
 std::mutex _convergenceMutex;
 bool _isConverged;
-std::chrono::system_clock::time_point _lastRenderTime = std::chrono::system_clock::now();
+std::chrono::system_clock::time_point _lastRenderTime =
+    std::chrono::system_clock::now();
 
 void _TimerCallback(float, float, void*) {
     std::lock_guard<std::mutex> lock(_convergenceMutex);
-    if (!_isConverged &&
-        (std::chrono::system_clock::now() - _lastRenderTime) < std::chrono::seconds(5)) {
+    if (!_isConverged && (std::chrono::system_clock::now() - _lastRenderTime) <
+                             std::chrono::seconds(5)) {
         MGlobal::executeCommandOnIdle("refresh -f");
     }
 }
@@ -117,7 +119,8 @@ public:
 
 class HdMayaManipulatorRender : public MHWRender::MSceneRender {
 public:
-    HdMayaManipulatorRender(const MString& name) : MHWRender::MSceneRender(name) {}
+    HdMayaManipulatorRender(const MString& name)
+        : MHWRender::MSceneRender(name) {}
 
     MUint64 getObjectTypeExclusions() override {
         return ~MHWRender::MFrameContext::kExcludeManipulators;
@@ -151,11 +154,13 @@ private:
 HdMayaRenderOverride::HdMayaRenderOverride()
     : MHWRender::MRenderOverride("hydraViewportOverride"),
       _selectionTracker(new HdxSelectionTracker),
-      _renderCollection(HdTokens->geometry, HdTokens->smoothHull, SdfPath::AbsoluteRootPath()),
+      _renderCollection(
+          HdTokens->geometry, HdTokens->smoothHull,
+          SdfPath::AbsoluteRootPath()),
       _selectionCollection(HdTokens->wire, HdTokens->wire),
       _colorSelectionHighlightColor(1.0f, 1.0f, 0.0f, 0.5f) {
-    _ID =
-        SdfPath("/HdMayaViewportRenderer").AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
+    _ID = SdfPath("/HdMayaViewportRenderer")
+              .AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
     _rendererName = _GetDefaultRenderer();
     // This is a critical error, so we don't allow the construction
     // of the viewport renderer src if there is no renderer src
@@ -166,14 +171,15 @@ HdMayaRenderOverride::HdMayaRenderOverride()
     }
 
     MStatus status;
-    auto id =
-        MSceneMessage::addCallback(MSceneMessage::kBeforeNew, ClearHydraCallback, nullptr, &status);
+    auto id = MSceneMessage::addCallback(
+        MSceneMessage::kBeforeNew, ClearHydraCallback, nullptr, &status);
     if (status) { _callbacks.push_back(id); }
     id = MSceneMessage::addCallback(
         MSceneMessage::kBeforeOpen, ClearHydraCallback, nullptr, &status);
     if (status) { _callbacks.push_back(id); }
     id = MEventMessage::addEventCallback(
-        MString("SelectionChanged"), SelectionChangedCallback, nullptr, &status);
+        MString("SelectionChanged"), SelectionChangedCallback, nullptr,
+        &status);
     if (status) { _callbacks.push_back(id); }
 
     id = MTimerMessage::addTimerCallback(1.0f / 10.0f, _TimerCallback, &status);
@@ -198,9 +204,11 @@ TfTokenVector HdMayaRenderOverride::GetRendererPlugins() {
     return ret;
 }
 
-std::string HdMayaRenderOverride::GetRendererPluginDisplayName(const TfToken& id) {
+std::string HdMayaRenderOverride::GetRendererPluginDisplayName(
+    const TfToken& id) {
     HfPluginDesc pluginDesc;
-    if (!TF_VERIFY(HdxRendererPluginRegistry::GetInstance().GetPluginDesc(id, &pluginDesc))) {
+    if (!TF_VERIFY(HdxRendererPluginRegistry::GetInstance().GetPluginDesc(
+            id, &pluginDesc))) {
         return {};
     }
 
@@ -211,7 +219,9 @@ void HdMayaRenderOverride::ChangeRendererPlugin(const TfToken& id) {
     auto& instance = GetInstance();
     if (instance._rendererName == id) { return; }
     const auto renderers = GetRendererPlugins();
-    if (std::find(renderers.begin(), renderers.end(), id) == renderers.end()) { return; }
+    if (std::find(renderers.begin(), renderers.end(), id) == renderers.end()) {
+        return;
+    }
     instance._rendererName = id;
     if (instance._initializedViewport) { instance.ClearHydraResources(); }
 }
@@ -252,11 +262,13 @@ GfVec4d HdMayaRenderOverride::GetColorSelectionHighlightColor() {
     return GetInstance()._colorSelectionHighlightColor;
 }
 
-void HdMayaRenderOverride::SetColorSelectionHighlightColor(const GfVec4d& color) {
+void HdMayaRenderOverride::SetColorSelectionHighlightColor(
+    const GfVec4d& color) {
     GetInstance()._colorSelectionHighlightColor = GfVec4f(color);
 }
 
-MStatus HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
+MStatus HdMayaRenderOverride::Render(
+    const MHWRender::MDrawContext& drawContext) {
     auto renderFrame = [&]() {
         const auto originX = 0;
         const auto originY = 0;
@@ -267,10 +279,13 @@ MStatus HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
         GfVec4d viewport(originX, originY, width, height);
         _taskController->SetCameraMatrices(
             getGfMatrixFromMaya(drawContext.getMatrix(MFrameContext::kViewMtx)),
-            getGfMatrixFromMaya(drawContext.getMatrix(MFrameContext::kProjectionMtx)));
+            getGfMatrixFromMaya(
+                drawContext.getMatrix(MFrameContext::kProjectionMtx)));
         _taskController->SetCameraViewport(viewport);
 
-        _engine.Execute(*_renderIndex, _taskController->GetTasks(HdxTaskSetTokens->colorRender));
+        _engine.Execute(
+            *_renderIndex,
+            _taskController->GetTasks(HdxTaskSetTokens->colorRender));
     };
 
     if (!_initializedViewport) {
@@ -286,7 +301,8 @@ MStatus HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
     }
 
     const auto displayStyle = drawContext.getDisplayStyle();
-    _params.displaySmoothMeshes = !(displayStyle & MHWRender::MFrameContext::kFlatShaded);
+    _params.displaySmoothMeshes =
+        !(displayStyle & MHWRender::MFrameContext::kFlatShaded);
 
     for (auto& it : _delegates) {
         it->SetParams(_params);
@@ -300,7 +316,8 @@ MStatus HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
     if (lightParam != nullptr) {
         MIntArray intVals;
         if (lightParam->getParameter(
-                MHWRender::MLightParameterInformation::kGlobalShadowOn, intVals) &&
+                MHWRender::MLightParameterInformation::kGlobalShadowOn,
+                intVals) &&
             intVals.length() > 0) {
             enableShadows = intVals[0] != 0;
         }
@@ -345,7 +362,8 @@ MStatus HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
     renderFrame();
 
     // This causes issues with the embree delegate and potentially others.
-    if (_wireframeSelectionHighlight && _rendererName == _tokens->HdStreamRendererPlugin) {
+    if (_wireframeSelectionHighlight &&
+        _rendererName == _tokens->HdStreamRendererPlugin) {
         if (!_selectionCollection.GetRootPaths().empty()) {
             _taskController->SetCollection(_selectionCollection);
             renderFrame();
@@ -363,34 +381,39 @@ MStatus HdMayaRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
 }
 
 void HdMayaRenderOverride::InitHydraResources() {
-    _rendererPlugin = HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(_rendererName);
+    _rendererPlugin =
+        HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(
+            _rendererName);
     auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
     _renderIndex = HdRenderIndex::New(renderDelegate);
     int delegateId = 0;
     for (const auto& creator : HdMayaDelegateRegistry::GetDelegateCreators()) {
         if (creator == nullptr) { continue; }
         auto newDelegate = creator(
-            _renderIndex,
-            _ID.AppendChild(TfToken(TfStringPrintf("_Delegate_%i_%p", delegateId++, this))));
+            _renderIndex, _ID.AppendChild(TfToken(TfStringPrintf(
+                              "_Delegate_%i_%p", delegateId++, this))));
         if (newDelegate) { _delegates.push_back(newDelegate); }
     }
     _taskController = new HdxTaskController(
         _renderIndex,
         _ID.AppendChild(TfToken(TfStringPrintf(
-            "_UsdImaging_%s_%p", TfMakeValidIdentifier(_rendererName.GetText()).c_str(), this))));
+            "_UsdImaging_%s_%p",
+            TfMakeValidIdentifier(_rendererName.GetText()).c_str(), this))));
 
 #ifdef LUMA_USD_BUILD
     _taskController->SetEnableShadows(true);
 #endif
     VtValue selectionTrackerValue(_selectionTracker);
-    _engine.SetTaskContextData(HdxTokens->selectionState, selectionTrackerValue);
+    _engine.SetTaskContextData(
+        HdxTokens->selectionState, selectionTrackerValue);
     _preferSimpleLight = _rendererName == _tokens->HdStreamRendererPlugin;
     for (auto& it : _delegates) {
         it->SetPreferSimpleLight(_preferSimpleLight);
         it->Populate();
     }
 
-    _renderIndex->GetChangeTracker().AddCollection(_selectionCollection.GetName());
+    _renderIndex->GetChangeTracker().AddCollection(
+        _selectionCollection.GetName());
     SelectionChanged();
 
     _initializedViewport = true;
@@ -412,7 +435,9 @@ void HdMayaRenderOverride::ClearHydraResources() {
     }
 
     if (_rendererPlugin != nullptr) {
-        if (renderDelegate != nullptr) { _rendererPlugin->DeleteRenderDelegate(renderDelegate); }
+        if (renderDelegate != nullptr) {
+            _rendererPlugin->DeleteRenderDelegate(renderDelegate);
+        }
         HdxRendererPluginRegistry::GetInstance().ReleasePlugin(_rendererPlugin);
         _rendererPlugin = nullptr;
     }
@@ -420,13 +445,17 @@ void HdMayaRenderOverride::ClearHydraResources() {
     _initializedViewport = false;
 }
 
-void HdMayaRenderOverride::ClearHydraCallback(void*) { GetInstance().ClearHydraResources(); }
+void HdMayaRenderOverride::ClearHydraCallback(void*) {
+    GetInstance().ClearHydraResources();
+}
 
 void HdMayaRenderOverride::SelectionChanged() {
     MSelectionList sel;
     if (!TF_VERIFY(MGlobal::getActiveSelectionList(sel))) { return; }
     SdfPathVector selectedPaths;
-    for (auto& it : _delegates) { it->PopulateSelectedPaths(sel, selectedPaths); }
+    for (auto& it : _delegates) {
+        it->PopulateSelectedPaths(sel, selectedPaths);
+    }
     _selectionCollection.SetRootPaths(selectedPaths);
 
     auto* selection = new HdSelection;
@@ -434,7 +463,9 @@ void HdMayaRenderOverride::SelectionChanged() {
     _selectionTracker->SetSelection(HdSelectionSharedPtr(selection));
 }
 
-void HdMayaRenderOverride::SelectionChangedCallback(void*) { GetInstance().SelectionChanged(); }
+void HdMayaRenderOverride::SelectionChangedCallback(void*) {
+    GetInstance().SelectionChanged();
+}
 
 MHWRender::DrawAPI HdMayaRenderOverride::supportedDrawAPIs() const {
     return MHWRender::kOpenGLCoreProfile | MHWRender::kOpenGL;
@@ -445,13 +476,18 @@ MStatus HdMayaRenderOverride::setup(const MString& destination) {
     if (renderer == nullptr) { return MStatus::kFailure; }
 
     if (_operations.empty()) {
-        _operations.push_back(new HdMayaSceneRender("HydraRenderOverride_Scene"));
-        _operations.push_back(new HdMayaRender("HydraRenderOverride_Hydra", this));
-        _operations.push_back(new HdMayaManipulatorRender("HydraRenderOverride_Manipulator"));
+        _operations.push_back(
+            new HdMayaSceneRender("HydraRenderOverride_Scene"));
+        _operations.push_back(
+            new HdMayaRender("HydraRenderOverride_Hydra", this));
+        _operations.push_back(
+            new HdMayaManipulatorRender("HydraRenderOverride_Manipulator"));
         _operations.push_back(new MHWRender::MHUDRender());
-        auto* presentTarget = new MHWRender::MPresentTarget("HydraRenderOverride_Present");
+        auto* presentTarget =
+            new MHWRender::MPresentTarget("HydraRenderOverride_Present");
         presentTarget->setPresentDepth(true);
-        presentTarget->setTargetBackBuffer(MHWRender::MPresentTarget::kCenterBuffer);
+        presentTarget->setTargetBackBuffer(
+            MHWRender::MPresentTarget::kCenterBuffer);
         _operations.push_back(presentTarget);
     }
 
@@ -469,7 +505,8 @@ bool HdMayaRenderOverride::startOperationIterator() {
 }
 
 MHWRender::MRenderOperation* HdMayaRenderOverride::renderOperation() {
-    if (_currentOperation >= 0 && _currentOperation < static_cast<int>(_operations.size())) {
+    if (_currentOperation >= 0 &&
+        _currentOperation < static_cast<int>(_operations.size())) {
         return _operations[_currentOperation];
     }
     return nullptr;

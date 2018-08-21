@@ -66,7 +66,8 @@ SdfPath _GetMaterialPath(const SdfPath& base, const MObject& obj) {
 
 } // namespace
 
-HdMayaDelegateCtx::HdMayaDelegateCtx(HdRenderIndex* renderIndex, const SdfPath& delegateID)
+HdMayaDelegateCtx::HdMayaDelegateCtx(
+    HdRenderIndex* renderIndex, const SdfPath& delegateID)
     : HdSceneDelegate(renderIndex, delegateID),
       _rprimPath(delegateID.AppendPath(SdfPath(std::string("rprims")))),
       _sprimPath(delegateID.AppendPath(SdfPath(std::string("sprims")))),
@@ -77,7 +78,8 @@ HdMayaDelegateCtx::HdMayaDelegateCtx(HdRenderIndex* renderIndex, const SdfPath& 
     GetChangeTracker().AddCollection(TfToken("visible"));
 
     _needsGLSLFX =
-        renderIndex->GetRenderDelegate()->GetMaterialNetworkSelector() == GlfGLSLFXTokens->glslfx;
+        renderIndex->GetRenderDelegate()->GetMaterialNetworkSelector() ==
+        GlfGLSLFXTokens->glslfx;
 }
 
 void HdMayaDelegateCtx::InsertRprim(
@@ -92,7 +94,9 @@ void HdMayaDelegateCtx::InsertSprim(
     GetChangeTracker().SprimInserted(id, initialBits);
 }
 
-void HdMayaDelegateCtx::RemoveRprim(const SdfPath& id) { GetRenderIndex().RemoveRprim(id); }
+void HdMayaDelegateCtx::RemoveRprim(const SdfPath& id) {
+    GetRenderIndex().RemoveRprim(id);
+}
 
 void HdMayaDelegateCtx::RemoveSprim(const TfToken& typeId, const SdfPath& id) {
     GetRenderIndex().RemoveSprim(typeId, id);
@@ -110,7 +114,8 @@ SdfPath HdMayaDelegateCtx::GetMaterialPath(const MObject& obj) {
     return _GetMaterialPath(_materialPath, obj);
 }
 
-void HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum, const GfMatrix4d& lightToWorld) {
+void HdMayaDelegateCtx::FitFrustumToRprims(
+    GfFrustum& frustum, const GfMatrix4d& lightToWorld) {
     auto getInverse = [](const GfMatrix4d& mat) {
         const double PRECISION_LIMIT = 1.0e-13;
         double det;
@@ -122,11 +127,11 @@ void HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum, const GfMatrix4d&
 
     // TODO: Cache these queries and handle dirtying.
     // TODO: Take visibility and shadow casting parameters into account.
-    // This slightly differs from how you would make a calculation on a traditional frustum,
-    // since we don't have a far plane. For simplicity we set the near plane to
-    // 0.1 to cull anything behind the light.
-    // We sum all the bounding boxes inside the open-ended frustum,
-    // and use that bounding box to calculate the closest and farthest away points.
+    // This slightly differs from how you would make a calculation on a
+    // traditional frustum, since we don't have a far plane. For simplicity we
+    // set the near plane to 0.1 to cull anything behind the light. We sum all
+    // the bounding boxes inside the open-ended frustum, and use that bounding
+    // box to calculate the closest and farthest away points.
 
     std::array<GfPlane, 5> planes;
     GfRange1d nearFar;
@@ -138,18 +143,22 @@ void HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum, const GfMatrix4d&
 
     if (frustum.GetProjectionType() == GfFrustum::Perspective) {
         const auto windowSize = frustum.GetWindow().GetSize();
-        const auto vfov =
-            GfRadiansToDegrees(atan((windowSize[1] / 2.0) / GfFrustum::GetReferencePlaneDepth()));
-        const auto hfov =
-            GfRadiansToDegrees(atan((windowSize[0] / 2.0) / GfFrustum::GetReferencePlaneDepth()));
+        const auto vfov = GfRadiansToDegrees(
+            atan((windowSize[1] / 2.0) / GfFrustum::GetReferencePlaneDepth()));
+        const auto hfov = GfRadiansToDegrees(
+            atan((windowSize[0] / 2.0) / GfFrustum::GetReferencePlaneDepth()));
         // Right plane
-        planes[1].Set(GfRotation(up, -hfov).TransformDir(-right).GetNormalized(), 0);
+        planes[1].Set(
+            GfRotation(up, -hfov).TransformDir(-right).GetNormalized(), 0);
         // Left plane
-        planes[2].Set(GfRotation(up, hfov).TransformDir(right).GetNormalized(), 0);
+        planes[2].Set(
+            GfRotation(up, hfov).TransformDir(right).GetNormalized(), 0);
         // Top plane
-        planes[3].Set(GfRotation(right, vfov).TransformDir(-up).GetNormalized(), 0);
+        planes[3].Set(
+            GfRotation(right, vfov).TransformDir(-up).GetNormalized(), 0);
         // Bottom plane
-        planes[4].Set(GfRotation(right, -vfov).TransformDir(up).GetNormalized(), 0);
+        planes[4].Set(
+            GfRotation(right, -vfov).TransformDir(up).GetNormalized(), 0);
     } else if (frustum.GetProjectionType() == GfFrustum::Orthographic) {
         const auto& window = frustum.GetWindow();
         // Right plane
@@ -166,11 +175,15 @@ void HdMayaDelegateCtx::FitFrustumToRprims(GfFrustum& frustum, const GfMatrix4d&
 
     for (auto& plane : planes) { plane.Transform(lightToWorld); }
 
-    auto isBoxInside = [&planes](const GfRange3d& extent, const GfMatrix4d& worldToLocal) -> bool {
+    auto isBoxInside = [&planes](
+                           const GfRange3d& extent,
+                           const GfMatrix4d& worldToLocal) -> bool {
         for (const auto& plane : planes) {
             auto localPlane = plane;
             localPlane.Transform(worldToLocal);
-            if (!localPlane.IntersectsPositiveHalfSpace(extent)) { return false; }
+            if (!localPlane.IntersectsPositiveHalfSpace(extent)) {
+                return false;
+            }
         }
         return true;
     };

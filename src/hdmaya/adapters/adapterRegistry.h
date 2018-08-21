@@ -44,38 +44,45 @@ class HdMayaAdapterRegistry : public TfSingleton<HdMayaAdapterRegistry> {
     HdMayaAdapterRegistry() = default;
 
 public:
-    using ShapeAdapterCreator =
-        std::function<HdMayaShapeAdapterPtr(HdMayaDelegateCtx*, const MDagPath&)>;
+    using ShapeAdapterCreator = std::function<HdMayaShapeAdapterPtr(
+        HdMayaDelegateCtx*, const MDagPath&)>;
     HDMAYA_API
-    static void RegisterShapeAdapter(const TfToken& type, ShapeAdapterCreator creator);
+    static void RegisterShapeAdapter(
+        const TfToken& type, ShapeAdapterCreator creator);
 
     HDMAYA_API
     static ShapeAdapterCreator GetShapeAdapterCreator(const MDagPath& dag);
 
-    using LightAdapterCreator =
-        std::function<HdMayaLightAdapterPtr(HdMayaDelegateCtx*, const MDagPath&)>;
+    using LightAdapterCreator = std::function<HdMayaLightAdapterPtr(
+        HdMayaDelegateCtx*, const MDagPath&)>;
     HDMAYA_API
-    static void RegisterLightAdapter(const TfToken& type, LightAdapterCreator creator);
+    static void RegisterLightAdapter(
+        const TfToken& type, LightAdapterCreator creator);
 
     HDMAYA_API
     static LightAdapterCreator GetLightAdapterCreator(const MDagPath& dag);
 
-    using MaterialAdapterCreator =
-        std::function<HdMayaMaterialAdapterPtr(const SdfPath&, HdMayaDelegateCtx*, const MObject&)>;
+    using MaterialAdapterCreator = std::function<HdMayaMaterialAdapterPtr(
+        const SdfPath&, HdMayaDelegateCtx*, const MObject&)>;
     HDMAYA_API
-    static void RegisterMaterialAdapter(const TfToken& type, MaterialAdapterCreator creator);
+    static void RegisterMaterialAdapter(
+        const TfToken& type, MaterialAdapterCreator creator);
 
     HDMAYA_API
-    static MaterialAdapterCreator GetMaterialAdapterCreator(const MObject& node);
+    static MaterialAdapterCreator GetMaterialAdapterCreator(
+        const MObject& node);
 
     // Find all HdMayaAdapter plugins, and load them all
     HDMAYA_API
     static void LoadAllPlugin();
 
 private:
-    std::unordered_map<TfToken, ShapeAdapterCreator, TfToken::HashFunctor> _dagAdapters;
-    std::unordered_map<TfToken, LightAdapterCreator, TfToken::HashFunctor> _lightAdapters;
-    std::unordered_map<TfToken, MaterialAdapterCreator, TfToken::HashFunctor> _materialAdapters;
+    std::unordered_map<TfToken, ShapeAdapterCreator, TfToken::HashFunctor>
+        _dagAdapters;
+    std::unordered_map<TfToken, LightAdapterCreator, TfToken::HashFunctor>
+        _lightAdapters;
+    std::unordered_map<TfToken, MaterialAdapterCreator, TfToken::HashFunctor>
+        _materialAdapters;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

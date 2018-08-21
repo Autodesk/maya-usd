@@ -42,14 +42,17 @@ void _aboutToDelete(MObject& node, MDGModifier& modifier, void* clientData) {
 
 } // namespace
 
-HdMayaAdapter::HdMayaAdapter(const MObject& node, const SdfPath& id, HdMayaDelegateCtx* delegate)
+HdMayaAdapter::HdMayaAdapter(
+    const MObject& node, const SdfPath& id, HdMayaDelegateCtx* delegate)
     : _node(node), _id(id), _delegate(delegate) {}
 
 HdMayaAdapter::~HdMayaAdapter() {
     for (auto c : _callbacks) { MMessage::removeCallback(c); }
 }
 
-void HdMayaAdapter::AddCallback(MCallbackId callbackId) { _callbacks.push_back(callbackId); }
+void HdMayaAdapter::AddCallback(MCallbackId callbackId) {
+    _callbacks.push_back(callbackId);
+}
 
 VtValue HdMayaAdapter::Get(const TfToken& /*key*/) { return {}; };
 
@@ -58,7 +61,8 @@ bool HdMayaAdapter::HasType(const TfToken& typeId) { return false; }
 void HdMayaAdapter::CreateCallbacks() {
     if (_node != MObject::kNullObj) {
         MStatus status;
-        auto id = MNodeMessage::addNodeAboutToDeleteCallback(_node, _aboutToDelete, this, &status);
+        auto id = MNodeMessage::addNodeAboutToDeleteCallback(
+            _node, _aboutToDelete, this, &status);
         if (status) { AddCallback(id); }
     }
 }

@@ -31,7 +31,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 const MString HdMayaUsdPreviewSurface::classification("shader/surface");
 const MString HdMayaUsdPreviewSurface::name("UsdPreviewSurface");
-const MTypeId HdMayaUsdPreviewSurface::typeId(0x00116EFB); // something from our luma IDS
+const MTypeId HdMayaUsdPreviewSurface::typeId(
+    0x00116EFB); // something from our luma IDS
 
 MStatus HdMayaUsdPreviewSurface::Initialize() {
     MFnEnumAttribute eAttr;
@@ -62,20 +63,22 @@ MStatus HdMayaUsdPreviewSurface::Initialize() {
     addAttribute(normalCamera);
 
     // Just some approximate defaults.
-    auto roughness = nAttr.create("roughness", "roughness", MFnNumericData::kFloat);
+    auto roughness =
+        nAttr.create("roughness", "roughness", MFnNumericData::kFloat);
     nAttr.setDefault(1.0f);
     nAttr.setMin(0.0f);
     nAttr.setMax(1.0f);
     addAttribute(roughness);
 
-    auto clearcoat = nAttr.create("clearcoat", "clearcoat", MFnNumericData::kFloat);
+    auto clearcoat =
+        nAttr.create("clearcoat", "clearcoat", MFnNumericData::kFloat);
     nAttr.setDefault(0.0f);
     nAttr.setMin(0.0f);
     nAttr.setMax(1.0f);
     addAttribute(clearcoat);
 
-    auto clearcoatRoughness =
-        nAttr.create("clearcoatRoughness", "clearcoatRoughness", MFnNumericData::kFloat);
+    auto clearcoatRoughness = nAttr.create(
+        "clearcoatRoughness", "clearcoatRoughness", MFnNumericData::kFloat);
     nAttr.setDefault(0.0f);
     nAttr.setMin(0.0f);
     nAttr.setMax(1.0f);
@@ -89,19 +92,22 @@ MStatus HdMayaUsdPreviewSurface::Initialize() {
     nAttr.setDefault(0.0f, 0.0f, 0.0f);
     addAttribute(specularColor);
 
-    auto metallic = nAttr.create("metallic", "metallic", MFnNumericData::kFloat);
+    auto metallic =
+        nAttr.create("metallic", "metallic", MFnNumericData::kFloat);
     nAttr.setDefault(0.0f);
     nAttr.setMin(0.0f);
     nAttr.setMax(1.0f);
     addAttribute(metallic);
 
-    auto useSpecularWorkflow = eAttr.create("useSpecularWorkflow", "useSpecularWorkflow");
+    auto useSpecularWorkflow =
+        eAttr.create("useSpecularWorkflow", "useSpecularWorkflow");
     eAttr.addField("metallic", 0);
     eAttr.addField("specular", 1);
     eAttr.setDefault(1);
     addAttribute(useSpecularWorkflow);
 
-    auto occlusion = nAttr.create("occlusion", "occlusion", MFnNumericData::kFloat);
+    auto occlusion =
+        nAttr.create("occlusion", "occlusion", MFnNumericData::kFloat);
     nAttr.setDefault(1.0f);
     nAttr.setMin(0.0f);
     nAttr.setMax(1.0f);
@@ -127,7 +133,8 @@ MStatus HdMayaUsdPreviewSurface::Initialize() {
     nAttr.setDefault(1.0f, 1.0f, 1.0f);
     addAttribute(diffuseColor);
 
-    auto displacement = nAttr.create("displacement", "displacement", MFnNumericData::kFloat);
+    auto displacement =
+        nAttr.create("displacement", "displacement", MFnNumericData::kFloat);
     nAttr.setDefault(0.0f);
     nAttr.setSoftMin(0.0f);
     nAttr.setSoftMax(1.0f);

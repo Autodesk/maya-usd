@@ -37,7 +37,9 @@ public:
     HdMayaAreaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
         : HdMayaLightAdapter(delegate, dag) {}
 
-    void _CalculateLightParams(GlfSimpleLight& light) override { light.SetSpotCutoff(90.0f); }
+    void _CalculateLightParams(GlfSimpleLight& light) override {
+        light.SetSpotCutoff(90.0f);
+    }
 
     const TfToken& LightType() override {
         if (GetDelegate()->GetPreferSimpleLight()) {
@@ -50,8 +52,8 @@ public:
     VtValue GetLightParamValue(const TfToken& paramName) override {
         TF_DEBUG(HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE)
             .Msg(
-                "Called HdMayaAreaLightAdapter::GetLightParamValue(%s) - %s\n", paramName.GetText(),
-                GetDagPath().partialPathName().asChar());
+                "Called HdMayaAreaLightAdapter::GetLightParamValue(%s) - %s\n",
+                paramName.GetText(), GetDagPath().partialPathName().asChar());
 
         if (paramName == HdLightTokens->width) {
             return VtValue(2.0f);
@@ -63,14 +65,17 @@ public:
 };
 
 TF_REGISTRY_FUNCTION(TfType) {
-    TfType::Define<HdMayaAreaLightAdapter, TfType::Bases<HdMayaLightAdapter> >();
+    TfType::Define<
+        HdMayaAreaLightAdapter, TfType::Bases<HdMayaLightAdapter> >();
 }
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, pointLight) {
     HdMayaAdapterRegistry::RegisterLightAdapter(
         TfToken("areaLight"),
-        [](HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaLightAdapterPtr {
-            return HdMayaLightAdapterPtr(new HdMayaAreaLightAdapter(delegate, dag));
+        [](HdMayaDelegateCtx* delegate,
+           const MDagPath& dag) -> HdMayaLightAdapterPtr {
+            return HdMayaLightAdapterPtr(
+                new HdMayaAreaLightAdapter(delegate, dag));
         });
 }
 

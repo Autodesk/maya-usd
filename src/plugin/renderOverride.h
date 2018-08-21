@@ -49,7 +49,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaRenderOverride : public MHWRender::MRenderOverride, TfSingleton<HdMayaRenderOverride> {
+class HdMayaRenderOverride : public MHWRender::MRenderOverride,
+                             TfSingleton<HdMayaRenderOverride> {
     friend class TfSingleton<HdMayaRenderOverride>;
     HdMayaRenderOverride();
 
@@ -59,9 +60,13 @@ public:
         return TfSingleton<HdMayaRenderOverride>::GetInstance();
     }
 
-    static void DeleteInstance() { return TfSingleton<HdMayaRenderOverride>::DeleteInstance(); }
+    static void DeleteInstance() {
+        return TfSingleton<HdMayaRenderOverride>::DeleteInstance();
+    }
 
-    static bool CurrentlyExists() { return TfSingleton<HdMayaRenderOverride>::CurrentlyExists(); }
+    static bool CurrentlyExists() {
+        return TfSingleton<HdMayaRenderOverride>::CurrentlyExists();
+    }
 
     static TfTokenVector GetRendererPlugins();
     static std::string GetRendererPluginDisplayName(const TfToken& id);
@@ -81,7 +86,9 @@ public:
 
     void ClearHydraResources();
 
-    MString uiName() const override { return MString("Hydra Viewport Override"); }
+    MString uiName() const override {
+        return MString("Hydra Viewport Override");
+    }
 
     MHWRender::DrawAPI supportedDrawAPIs() const override;
 

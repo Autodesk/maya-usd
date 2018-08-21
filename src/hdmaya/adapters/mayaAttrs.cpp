@@ -119,7 +119,9 @@ MObject imageCenter;
 MStatus initialize() {
     MStatus status;
 
-    auto setAttrObj = [&status](MObject& attrObj, MNodeClass& nodeClass, const MString& name) {
+    auto setAttrObj = [&status](
+                          MObject& attrObj, MNodeClass& nodeClass,
+                          const MString& name) {
         if (!TF_VERIFY(attrObj.isNull())) {
             // This attempts to avoid copy-paste mistakes - ie, I had done:
             //      setAttrObj(instObjGroups, nodeClass, "instObjGroups");
@@ -251,7 +253,9 @@ MStatus initialize() {
         MNodeClass nodeClass("file");
         if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 
-        setAttrObj(computedFileTextureNamePattern, nodeClass, "computedFileTextureNamePattern");
+        setAttrObj(
+            computedFileTextureNamePattern, nodeClass,
+            "computedFileTextureNamePattern");
         if (!TF_VERIFY(status)) { return status; }
 
         setAttrObj(fileTextureNamePattern, nodeClass, "fileTextureNamePattern");

@@ -66,7 +66,8 @@ protected:
     HDMAYA_API
     virtual void _CalculateLightParams(GlfSimpleLight& light);
     HDMAYA_API
-    void _CalculateShadowParams(MFnLight& light, GfFrustum& frustum, HdxShadowParams& params);
+    void _CalculateShadowParams(
+        MFnLight& light, GfFrustum& frustum, HdxShadowParams& params);
 };
 
 using HdMayaLightAdapterPtr = std::shared_ptr<HdMayaLightAdapter>;

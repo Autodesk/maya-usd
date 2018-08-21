@@ -35,7 +35,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfType) { TfType::Define<HdMayaDagAdapter, TfType::Bases<HdMayaAdapter> >(); }
+TF_REGISTRY_FUNCTION(TfType) {
+    TfType::Define<HdMayaDagAdapter, TfType::Bases<HdMayaAdapter> >();
+}
 
 namespace {
 
@@ -43,7 +45,8 @@ void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     TF_DEBUG(HDMAYA_ADAPTER_DAG_PLUG_DIRTY)
         .Msg(
-            "Dag adapter marking prim (%s) dirty because %s plug was dirtied.\n",
+            "Dag adapter marking prim (%s) dirty because %s plug was "
+            "dirtied.\n",
             adapter->GetID().GetText(), plug.partialName().asChar());
     if (plug == MayaAttrs::dagNode::visibility) {
         adapter->MarkDirty(HdChangeTracker::DirtyVisibility);
@@ -70,7 +73,9 @@ void HdMayaDagAdapter::CalculateTransform() {
 
 GfMatrix4d& HdMayaDagAdapter::GetTransform() {
     TF_DEBUG(HDMAYA_ADAPTER_GET)
-        .Msg("Called HdMayaDagAdapter::GetTransform() - %s\n", _dagPath.partialPathName().asChar());
+        .Msg(
+            "Called HdMayaDagAdapter::GetTransform() - %s\n",
+            _dagPath.partialPathName().asChar());
     CalculateTransform();
     return _transform;
 }
@@ -80,7 +85,8 @@ void HdMayaDagAdapter::CreateCallbacks() {
     for (auto dag = GetDagPath(); dag.length() > 0; dag.pop()) {
         MObject obj = dag.node();
         if (obj != MObject::kNullObj) {
-            auto id = MNodeMessage::addNodeDirtyCallback(obj, _TransformNodeDirty, this, &status);
+            auto id = MNodeMessage::addNodeDirtyCallback(
+                obj, _TransformNodeDirty, this, &status);
             if (status) { AddCallback(id); }
         }
     }
@@ -88,7 +94,9 @@ void HdMayaDagAdapter::CreateCallbacks() {
 }
 
 void HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
-    if (dirtyBits != 0) { GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits); }
+    if (dirtyBits != 0) {
+        GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
+    }
 }
 
 void HdMayaDagAdapter::RemovePrim() { GetDelegate()->RemoveRprim(GetID()); }

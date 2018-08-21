@@ -72,11 +72,13 @@ const VtIntArray _faceVertexIndices = {0, 1, 2, 0, 2, 3};
 
 const VtIntArray _holeIndices;
 
-void _ImagePlaneNodeDirtiedCallback(MObject& node, MPlug& plug, void* clientData) {
+void _ImagePlaneNodeDirtiedCallback(
+    MObject& node, MPlug& plug, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     TF_DEBUG(HDMAYA_ADAPTER_DAG_PLUG_DIRTY)
         .Msg(
-            "Image plane adapter marking prim (%s) dirty because %s plug was dirtied.\n",
+            "Image plane adapter marking prim (%s) dirty because %s plug was "
+            "dirtied.\n",
             adapter->GetID().GetText(), plug.partialName().asChar());
     if (plug == MayaAttrs::dagNode::worldMatrix) {
         adapter->MarkDirty(HdChangeTracker::DirtyTransform);
@@ -92,9 +94,11 @@ void _CameraNodeDirtiedCallback(MObject& node, MPlug& plug, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     TF_DEBUG(HDMAYA_ADAPTER_DAG_PLUG_DIRTY)
         .Msg(
-            "Camera adapter marking prim (%s) dirty because %s plug was dirtied.\n",
+            "Camera adapter marking prim (%s) dirty because %s plug was "
+            "dirtied.\n",
             adapter->GetID().GetText(), plug.partialName().asChar());
-    adapter->MarkDirty(HdChangeTracker::DirtyTransform | HdChangeTracker::DirtyPoints);
+    adapter->MarkDirty(
+        HdChangeTracker::DirtyTransform | HdChangeTracker::DirtyPoints);
 }
 
 } // namespace
@@ -122,7 +126,9 @@ public:
         }
         if (_camera.isNull()) {
             TF_DEBUG(HDMAYA_ADAPTER_IMAGEPLANES)
-                .Msg("imagePlane %s is not linked to a camera\n", fn.fullPathName().asChar());
+                .Msg(
+                    "imagePlane %s is not linked to a camera\n",
+                    fn.fullPathName().asChar());
         }
     }
 
@@ -134,12 +140,13 @@ public:
                 "Called HdMayaImagePlaneAdapter::Populate() - %s\n",
                 GetDagPath().partialPathName().asChar());
 
-        GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty);
+        GetDelegate()->InsertRprim(
+            HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty);
 
         MStatus status;
         auto obj = GetNode();
-        auto id =
-            MNodeMessage::addNodeDirtyCallback(obj, _ImagePlaneNodeDirtiedCallback, this, &status);
+        auto id = MNodeMessage::addNodeDirtyCallback(
+            obj, _ImagePlaneNodeDirtiedCallback, this, &status);
         if (status) { AddCallback(id); }
 
         if (!_camera.isNull()) {
@@ -151,12 +158,16 @@ public:
 
     // note: could remove if made a header for meshAdapter
     bool IsSupported() override {
-        return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->mesh);
+        return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(
+            HdPrimTypeTokens->mesh);
     }
 
-    bool HasType(const TfToken& typeId) override { return typeId == HdPrimTypeTokens->mesh; }
+    bool HasType(const TfToken& typeId) override {
+        return typeId == HdPrimTypeTokens->mesh;
+    }
 
-    HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation) override {
+    HdPrimvarDescriptorVector GetPrimvarDescriptors(
+        HdInterpolation interpolation) override {
         if (interpolation == HdInterpolationVertex) {
             HdPrimvarDescriptor desc;
             desc.name = UsdGeomTokens->points;
@@ -185,16 +196,19 @@ public:
         // get imagePlane attributes
         MFnDagNode dnode(GetDagPath().node());
 
-        auto imageNameExtracted = MRenderUtil::exactImagePlaneFileName(dnode.object());
-        const SdfAssetPath imageNameExtractedPath(std::string(imageNameExtracted.asChar()));
+        auto imageNameExtracted =
+            MRenderUtil::exactImagePlaneFileName(dnode.object());
+        const SdfAssetPath imageNameExtractedPath(
+            std::string(imageNameExtracted.asChar()));
         paramsFromMaya.fileName = imageNameExtractedPath;
 
         const auto coveragePlug = dnode.findPlug("coverage");
-        paramsFromMaya.coverage =
-            GfVec2i(coveragePlug.child(0).asInt(), coveragePlug.child(1).asInt());
+        paramsFromMaya.coverage = GfVec2i(
+            coveragePlug.child(0).asInt(), coveragePlug.child(1).asInt());
         const auto coverageOriginPlug = dnode.findPlug("coverageOrigin");
-        paramsFromMaya.coverageOrigin =
-            GfVec2i(coverageOriginPlug.child(0).asInt(), coverageOriginPlug.child(1).asInt());
+        paramsFromMaya.coverageOrigin = GfVec2i(
+            coverageOriginPlug.child(0).asInt(),
+            coverageOriginPlug.child(1).asInt());
 
         MStatus status;
         if (!_camera.isNull()) {
@@ -224,15 +238,20 @@ public:
             const auto sizePlug = dnode.findPlug("size");
             // Size attr is in inches while aperture is in millimeters.
             paramsFromMaya.size =
-                GfVec2f(sizePlug.child(0).asFloat(), sizePlug.child(1).asFloat()) * inch_to_mm;
+                GfVec2f(
+                    sizePlug.child(0).asFloat(), sizePlug.child(1).asFloat()) *
+                inch_to_mm;
             const auto offsetPlug = dnode.findPlug("offset");
-            paramsFromMaya.offset =
-                GfVec2f(offsetPlug.child(0).asFloat(), offsetPlug.child(1).asFloat()) * inch_to_mm;
+            paramsFromMaya.offset = GfVec2f(
+                                        offsetPlug.child(0).asFloat(),
+                                        offsetPlug.child(1).asFloat()) *
+                                    inch_to_mm;
 
         } else {
             //  if no camera maya gets size from height and width
-            paramsFromMaya.size =
-                GfVec2f(dnode.findPlug("width").asFloat(), dnode.findPlug("height").asFloat());
+            paramsFromMaya.size = GfVec2f(
+                dnode.findPlug("width").asFloat(),
+                dnode.findPlug("height").asFloat());
             // if no camera, fit wont affect size, and this fit value uses
             // size without any modifications
             paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->toSize;
@@ -240,8 +259,8 @@ public:
             // express this with depth + offset since those other attributes
             // do not affect non camera image planes.
             const auto centerPlug = dnode.findPlug("imageCenter");
-            paramsFromMaya.offset =
-                GfVec2f(centerPlug.child(0).asFloat(), centerPlug.child(1).asFloat());
+            paramsFromMaya.offset = GfVec2f(
+                centerPlug.child(0).asFloat(), centerPlug.child(1).asFloat());
             paramsFromMaya.depth = -centerPlug.child(2).asFloat();
             // need to zero out focal length to prevent projection of depth
             paramsFromMaya.focalLength = 0.0f;
@@ -277,7 +296,8 @@ public:
             // TODO: Would it be cleaner to flip the xform instead?
             // Without this, the normal is facing away from camera.
             // UsdGeomTokens->rightHanded,
-            UsdGeomTokens->leftHanded, _faceVertexCounts, _faceVertexIndices, _holeIndices, 0);
+            UsdGeomTokens->leftHanded, _faceVertexCounts, _faceVertexIndices,
+            _holeIndices, 0);
     }
 
     MObject GetMaterial() override {
@@ -295,14 +315,17 @@ public:
 }; // HdMayaImagePlaneAdapter
 
 TF_REGISTRY_FUNCTION(TfType) {
-    TfType::Define<HdMayaImagePlaneAdapter, TfType::Bases<HdMayaShapeAdapter>>();
+    TfType::Define<
+        HdMayaImagePlaneAdapter, TfType::Bases<HdMayaShapeAdapter>>();
 }
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, imagePlane) {
     HdMayaAdapterRegistry::RegisterShapeAdapter(
         TfToken("imagePlane"),
-        [](HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaShapeAdapterPtr {
-            return HdMayaShapeAdapterPtr(new HdMayaImagePlaneAdapter(delegate, dag));
+        [](HdMayaDelegateCtx* delegate,
+           const MDagPath& dag) -> HdMayaShapeAdapterPtr {
+            return HdMayaShapeAdapterPtr(
+                new HdMayaImagePlaneAdapter(delegate, dag));
         });
 }
 

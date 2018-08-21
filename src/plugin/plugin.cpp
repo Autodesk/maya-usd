@@ -71,7 +71,8 @@ MStatus initializePlugin(MObject obj) {
         renderer->registerOverride(&override);
     }
 
-    if (!plugin.registerCommand(HdMayaCmd::name, HdMayaCmd::creator, HdMayaCmd::createSyntax)) {
+    if (!plugin.registerCommand(
+            HdMayaCmd::name, HdMayaCmd::creator, HdMayaCmd::createSyntax)) {
         ret = MS::kFailure;
         ret.perror("Error registering hdmaya command!");
         return ret;
@@ -79,8 +80,9 @@ MStatus initializePlugin(MObject obj) {
 
     if (!plugin.registerNode(
             HdMayaUsdPreviewSurface::name, HdMayaUsdPreviewSurface::typeId,
-            HdMayaUsdPreviewSurface::Creator, HdMayaUsdPreviewSurface::Initialize,
-            MPxNode::kDependNode, &HdMayaUsdPreviewSurface::classification)) {
+            HdMayaUsdPreviewSurface::Creator,
+            HdMayaUsdPreviewSurface::Initialize, MPxNode::kDependNode,
+            &HdMayaUsdPreviewSurface::classification)) {
         ret = MS::kFailure;
         ret.perror("Error registering UsdPreviewSurface node!");
         return ret;
@@ -95,7 +97,8 @@ MStatus uninitializePlugin(MObject obj) {
 
     auto* renderer = MHWRender::MRenderer::theRenderer();
     if (renderer) {
-        const auto* override = renderer->findRenderOverride("hydraViewportOverride");
+        const auto* override =
+            renderer->findRenderOverride("hydraViewportOverride");
         if (override) {
             renderer->deregisterOverride(override);
             HdMayaRenderOverride::DeleteInstance();

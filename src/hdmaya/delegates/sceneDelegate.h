@@ -71,7 +71,8 @@ public:
     void InsertDag(const MDagPath& dag);
     void SetParams(const HdMayaParams& params) override;
     void PopulateSelectedPaths(
-        const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths) override;
+        const MSelectionList& mayaSelection,
+        SdfPathVector& selectedSdfPaths) override;
     void PopulateSelectedPaths(
         const MSelectionList& mayaSelection, HdSelection* selection) override;
 
@@ -89,21 +90,28 @@ protected:
     VtValue Get(SdfPath const& id, TfToken const& key) override;
     HdPrimvarDescriptorVector GetPrimvarDescriptors(
         const SdfPath& id, HdInterpolation interpolation) override;
-    VtValue GetLightParamValue(const SdfPath& id, const TfToken& paramName) override;
+    VtValue GetLightParamValue(
+        const SdfPath& id, const TfToken& paramName) override;
     SdfPath GetMaterialId(const SdfPath& id) override;
     std::string GetSurfaceShaderSource(const SdfPath& id) override;
     std::string GetDisplacementShaderSource(const SdfPath& id) override;
-    VtValue GetMaterialParamValue(const SdfPath& id, const TfToken& paramName) override;
+    VtValue GetMaterialParamValue(
+        const SdfPath& id, const TfToken& paramName) override;
     HdMaterialParamVector GetMaterialParams(const SdfPath& id) override;
     VtValue GetMaterialResource(const SdfPath& id) override;
     TfTokenVector GetMaterialPrimvars(const SdfPath& id) override;
-    HdTextureResource::ID GetTextureResourceID(const SdfPath& textureId) override;
-    HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureId) override;
+    HdTextureResource::ID GetTextureResourceID(
+        const SdfPath& textureId) override;
+    HdTextureResourceSharedPtr GetTextureResource(
+        const SdfPath& textureId) override;
 
 private:
-    std::unordered_map<SdfPath, HdMayaShapeAdapterPtr, SdfPath::Hash> _shapeAdapters;
-    std::unordered_map<SdfPath, HdMayaLightAdapterPtr, SdfPath::Hash> _lightAdapters;
-    std::unordered_map<SdfPath, HdMayaMaterialAdapterPtr, SdfPath::Hash> _materialAdapters;
+    std::unordered_map<SdfPath, HdMayaShapeAdapterPtr, SdfPath::Hash>
+        _shapeAdapters;
+    std::unordered_map<SdfPath, HdMayaLightAdapterPtr, SdfPath::Hash>
+        _lightAdapters;
+    std::unordered_map<SdfPath, HdMayaMaterialAdapterPtr, SdfPath::Hash>
+        _materialAdapters;
     std::vector<MCallbackId> _callbacks;
 
     SdfPath _fallbackMaterial;

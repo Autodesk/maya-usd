@@ -38,7 +38,8 @@ public:
     explicit ConstantShadowMatrix(const GfMatrix4d& mat) : _shadowMatrix(mat) {}
 
     inline GfMatrix4d Compute(
-        const GfVec4f& viewport, CameraUtilConformWindowPolicy policy) override {
+        const GfVec4f& viewport,
+        CameraUtilConformWindowPolicy policy) override {
         return _shadowMatrix;
     }
 

@@ -29,7 +29,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfDebug) {
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_ADAPTER_GET, "Print information about 'Get' calls to the adapter.");
+        HDMAYA_ADAPTER_GET,
+        "Print information about 'Get' calls to the adapter.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE,
@@ -37,20 +38,24 @@ TF_REGISTRY_FUNCTION(TfDebug) {
         "calls to the light adapters.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_ADAPTER_DAG_PLUG_DIRTY, "Print information about the dag node plug dirtying.");
+        HDMAYA_ADAPTER_DAG_PLUG_DIRTY,
+        "Print information about the dag node plug dirtying.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_ADAPTER_LIGHT_SHADOWS, "Print information about shadow rendering.");
+        HDMAYA_ADAPTER_LIGHT_SHADOWS,
+        "Print information about shadow rendering.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_ADAPTER_MESH_PLUG_DIRTY, "Print information about the mesh plug dirtying handled.");
+        HDMAYA_ADAPTER_MESH_PLUG_DIRTY,
+        "Print information about the mesh plug dirtying handled.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY,
         "Print information about unhandled mesh plug dirtying.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_ADAPTER_IMAGEPLANES, "Print information about drawing image planes.");
+        HDMAYA_ADAPTER_IMAGEPLANES,
+        "Print information about drawing image planes.");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

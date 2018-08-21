@@ -54,7 +54,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdMayaDagAdapter : public HdMayaAdapter {
 protected:
     HDMAYA_API
-    HdMayaDagAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath);
+    HdMayaDagAdapter(
+        const SdfPath& id, HdMayaDelegateCtx* delegate,
+        const MDagPath& dagPath);
 
 public:
     HDMAYA_API
@@ -69,7 +71,8 @@ public:
     HDMAYA_API
     virtual void RemovePrim() override;
     HDMAYA_API
-    virtual void PopulateSelection(const HdSelection::HighlightMode& mode, HdSelection* selection);
+    virtual void PopulateSelection(
+        const HdSelection::HighlightMode& mode, HdSelection* selection);
 
     HDMAYA_API
     GfMatrix4d& GetTransform();

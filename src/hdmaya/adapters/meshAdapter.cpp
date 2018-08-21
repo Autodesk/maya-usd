@@ -74,15 +74,17 @@ public:
     ~HdMayaMeshAdapter() = default;
 
     void Populate() override {
-        GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty);
+        GetDelegate()->InsertRprim(
+            HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty);
 
         MStatus status;
         // Duh!
         auto obj = GetNode();
-        auto id = MNodeMessage::addNodeDirtyCallback(obj, NodeDirtiedCallback, this, &status);
+        auto id = MNodeMessage::addNodeDirtyCallback(
+            obj, NodeDirtiedCallback, this, &status);
         if (status) { AddCallback(id); }
-        id =
-            MNodeMessage::addAttributeChangedCallback(obj, AttributeChangedCallback, this, &status);
+        id = MNodeMessage::addAttributeChangedCallback(
+            obj, AttributeChangedCallback, this, &status);
         if (status) { AddCallback(id); }
         id = MPolyMessage::addPolyTopologyChangedCallback(
             obj, TopologyChangedCallback, this, &status);
@@ -91,12 +93,14 @@ public:
         id = MPolyMessage::addPolyComponentIdChangedCallback(
             obj, wantModifications, 3, ComponentIdChanged, this, &status);
         if (status) { AddCallback(id); }
-        id = MPolyMessage::addUVSetChangedCallback(obj, UVSetChangedCallback, this, &status);
+        id = MPolyMessage::addUVSetChangedCallback(
+            obj, UVSetChangedCallback, this, &status);
         if (status) { AddCallback(id); }
     }
 
     bool IsSupported() override {
-        return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->mesh);
+        return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(
+            HdPrimTypeTokens->mesh);
     }
 
     VtValue Get(const TfToken& key) override {
@@ -109,7 +113,8 @@ public:
             MFnMesh mesh(GetDagPath());
             // Same memory layout for MFloatVector and GfVec3f!
             MStatus status;
-            const auto* rawPoints = reinterpret_cast<const GfVec3f*>(mesh.getRawPoints(&status));
+            const auto* rawPoints =
+                reinterpret_cast<const GfVec3f*>(mesh.getRawPoints(&status));
             if (!status) { return {}; }
             VtVec3fArray ret;
             ret.assign(rawPoints, rawPoints + mesh.numVertices());
@@ -149,12 +154,14 @@ public:
         }
 
         return HdMeshTopology(
-            GetDelegate()->GetParams().displaySmoothMeshes ? PxOsdOpenSubdivTokens->catmullClark
-                                                           : PxOsdOpenSubdivTokens->none,
+            GetDelegate()->GetParams().displaySmoothMeshes
+                ? PxOsdOpenSubdivTokens->catmullClark
+                : PxOsdOpenSubdivTokens->none,
             UsdGeomTokens->rightHanded, faceVertexCounts, faceVertexIndices);
     }
 
-    HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation) override {
+    HdPrimvarDescriptorVector GetPrimvarDescriptors(
+        HdInterpolation interpolation) override {
         if (interpolation == HdInterpolationVertex) {
             HdPrimvarDescriptor desc;
             desc.name = UsdGeomTokens->points;
@@ -184,18 +191,22 @@ public:
         return doubleSided;
     }
 
-    bool HasType(const TfToken& typeId) override { return typeId == HdPrimTypeTokens->mesh; }
+    bool HasType(const TfToken& typeId) override {
+        return typeId == HdPrimTypeTokens->mesh;
+    }
 
 private:
-    static void NodeDirtiedCallback(MObject& node, MPlug& plug, void* clientData) {
+    static void NodeDirtiedCallback(
+        MObject& node, MPlug& plug, void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
         for (const auto& it : _dirtyBits) {
             if (it.first == plug) {
                 adapter->MarkDirty(it.second);
                 TF_DEBUG(HDMAYA_ADAPTER_MESH_PLUG_DIRTY)
                     .Msg(
-                        "Marking prim dirty with bits %u because %s plug was dirtied.\n", it.second,
-                        plug.partialName().asChar());
+                        "Marking prim dirty with bits %u because %s plug was "
+                        "dirtied.\n",
+                        it.second, plug.partialName().asChar());
                 return;
             }
         }
@@ -209,7 +220,8 @@ private:
 
     // For material assignments for now.
     static void AttributeChangedCallback(
-        MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPlug, void* clientData) {
+        MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPlug,
+        void* clientData) {
         auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
         if (plug == MayaAttrs::mesh::instObjGroups) {
             adapter->MarkDirty(HdChangeTracker::DirtyMaterialId);
@@ -238,7 +250,8 @@ private:
     }
 
     static void UVSetChangedCallback(
-        MObject& node, const MString& name, MPolyMessage::MessageType type, void* clientData) {
+        MObject& node, const MString& name, MPolyMessage::MessageType type,
+        void* clientData) {
         // TODO: Only track the uvset we care about.
         auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
         adapter->MarkDirty(HdChangeTracker::DirtyPrimvar);
@@ -252,7 +265,8 @@ TF_REGISTRY_FUNCTION(TfType) {
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, mesh) {
     HdMayaAdapterRegistry::RegisterShapeAdapter(
         TfToken("mesh"),
-        [](HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaShapeAdapterPtr {
+        [](HdMayaDelegateCtx* delegate,
+           const MDagPath& dag) -> HdMayaShapeAdapterPtr {
             return HdMayaShapeAdapterPtr(new HdMayaMeshAdapter(delegate, dag));
         });
 }

@@ -49,10 +49,12 @@ constexpr auto _listDelegates = "-ld";
 constexpr auto _listDelegatesLong = "-listDelegates";
 
 constexpr auto _getMaximumShadowMapResolution = "-gms";
-constexpr auto _getMaximumShadowMapResolutionLong = "-getMaximumShadowMapResolution";
+constexpr auto _getMaximumShadowMapResolutionLong =
+    "-getMaximumShadowMapResolution";
 
 constexpr auto _setMaximumShadowMapResolution = "-sms";
-constexpr auto _setMaximumShadowMapResolutionLong = "-setMaximumShadowMapResolution";
+constexpr auto _setMaximumShadowMapResolutionLong =
+    "-setMaximumShadowMapResolution";
 
 constexpr auto _getTextureMemoryPerTexture = "-gtm";
 constexpr auto _getTextureMemoryPerTextureLong = "-getTextureMemoryPerTexture";
@@ -61,10 +63,12 @@ constexpr auto _setTextureMemoryPerTexture = "-stm";
 constexpr auto _setTextureMemoryPerTextureLong = "-setTextureMemoryPerTexture";
 
 constexpr auto _getWireframeSelectionHighlight = "-gwh";
-constexpr auto _getWireframeSelectionHighlightLong = "-getWireframeSelectionHighlight";
+constexpr auto _getWireframeSelectionHighlightLong =
+    "-getWireframeSelectionHighlight";
 
 constexpr auto _setWireframeSelectionHighlight = "-swh";
-constexpr auto _setWireframeSelectionHighlightLong = "-setWireframeSelectionHighlight";
+constexpr auto _setWireframeSelectionHighlightLong =
+    "-setWireframeSelectionHighlight";
 
 constexpr auto _getColorSelectionHighlight = "-gch";
 constexpr auto _getColorSelectionHighlightLong = "-getColorSelectionHighlight";
@@ -73,10 +77,12 @@ constexpr auto _setColorSelectionHighlight = "-sch";
 constexpr auto _setColorSelectionHighlightLong = "-setColorSelectionHighlight";
 
 constexpr auto _getColorSelectionHighlightColor = "-gcc";
-constexpr auto _getColorSelectionHighlightColorLong = "-getColorSelectionHighlightColor";
+constexpr auto _getColorSelectionHighlightColorLong =
+    "-getColorSelectionHighlightColor";
 
 constexpr auto _setColorSelectionHighlightColor = "-scc";
-constexpr auto _setColorSelectionHighlightColorLong = "-setColorSelectionHighlightColor";
+constexpr auto _setColorSelectionHighlightColorLong =
+    "-setColorSelectionHighlightColor";
 
 } // namespace
 
@@ -85,35 +91,47 @@ MSyntax HdMayaCmd::createSyntax() {
 
     syntax.addFlag(_listRenderers, _listRenderersLong);
 
-    syntax.addFlag(_getRendererDisplayName, _getRendererDisplayNameLong, MSyntax::kString);
+    syntax.addFlag(
+        _getRendererDisplayName, _getRendererDisplayNameLong, MSyntax::kString);
 
     syntax.addFlag(_changeRenderer, _changeRendererLong, MSyntax::kString);
 
     syntax.addFlag(_listDelegates, _listDelegatesLong);
 
-    syntax.addFlag(_getMaximumShadowMapResolution, _getMaximumShadowMapResolutionLong);
+    syntax.addFlag(
+        _getMaximumShadowMapResolution, _getMaximumShadowMapResolutionLong);
 
     syntax.addFlag(
-        _setMaximumShadowMapResolution, _setMaximumShadowMapResolutionLong, MSyntax::kLong);
-
-    syntax.addFlag(_getTextureMemoryPerTexture, _getTextureMemoryPerTextureLong);
-
-    syntax.addFlag(_setTextureMemoryPerTexture, _setTextureMemoryPerTextureLong, MSyntax::kLong);
-
-    syntax.addFlag(_getWireframeSelectionHighlight, _getWireframeSelectionHighlightLong);
+        _setMaximumShadowMapResolution, _setMaximumShadowMapResolutionLong,
+        MSyntax::kLong);
 
     syntax.addFlag(
-        _setWireframeSelectionHighlight, _setWireframeSelectionHighlightLong, MSyntax::kBoolean);
-
-    syntax.addFlag(_getColorSelectionHighlight, _getColorSelectionHighlightLong);
-
-    syntax.addFlag(_setColorSelectionHighlight, _setColorSelectionHighlightLong, MSyntax::kBoolean);
-
-    syntax.addFlag(_getColorSelectionHighlightColor, _getColorSelectionHighlightColorLong);
+        _getTextureMemoryPerTexture, _getTextureMemoryPerTextureLong);
 
     syntax.addFlag(
-        _setColorSelectionHighlightColor, _setColorSelectionHighlightColorLong, MSyntax::kDouble,
-        MSyntax::kDouble, MSyntax::kDouble, MSyntax::kDouble);
+        _setTextureMemoryPerTexture, _setTextureMemoryPerTextureLong,
+        MSyntax::kLong);
+
+    syntax.addFlag(
+        _getWireframeSelectionHighlight, _getWireframeSelectionHighlightLong);
+
+    syntax.addFlag(
+        _setWireframeSelectionHighlight, _setWireframeSelectionHighlightLong,
+        MSyntax::kBoolean);
+
+    syntax.addFlag(
+        _getColorSelectionHighlight, _getColorSelectionHighlightLong);
+
+    syntax.addFlag(
+        _setColorSelectionHighlight, _setColorSelectionHighlightLong,
+        MSyntax::kBoolean);
+
+    syntax.addFlag(
+        _getColorSelectionHighlightColor, _getColorSelectionHighlightColorLong);
+
+    syntax.addFlag(
+        _setColorSelectionHighlightColor, _setColorSelectionHighlightColorLong,
+        MSyntax::kDouble, MSyntax::kDouble, MSyntax::kDouble, MSyntax::kDouble);
 
     return syntax;
 }
@@ -122,14 +140,15 @@ MStatus HdMayaCmd::doIt(const MArgList& args) {
     MArgDatabase db(syntax(), args);
 
     if (db.isFlagSet(_listRenderers)) {
-        for (const auto& renderer : HdMayaRenderOverride::GetRendererPlugins()) {
+        for (const auto& renderer :
+             HdMayaRenderOverride::GetRendererPlugins()) {
             appendToResult(renderer.GetText());
         }
     } else if (db.isFlagSet(_getRendererDisplayName)) {
         MString id;
         if (db.getFlagArgument(_getRendererDisplayName, 0, id)) {
-            const auto dn =
-                HdMayaRenderOverride::GetRendererPluginDisplayName(TfToken(id.asChar()));
+            const auto dn = HdMayaRenderOverride::GetRendererPluginDisplayName(
+                TfToken(id.asChar()));
             setResult(MString(dn.c_str()));
         }
     } else if (db.isFlagSet(_changeRenderer)) {
@@ -139,7 +158,8 @@ MStatus HdMayaCmd::doIt(const MArgList& args) {
             MGlobal::executeCommandOnIdle("refresh -f");
         }
     } else if (db.isFlagSet(_listDelegates)) {
-        for (const auto& delegate : HdMayaDelegateRegistry::GetDelegateNames()) {
+        for (const auto& delegate :
+             HdMayaDelegateRegistry::GetDelegateNames()) {
             appendToResult(delegate.GetText());
         }
     } else if (db.isFlagSet(_getMaximumShadowMapResolution)) {
@@ -175,7 +195,8 @@ MStatus HdMayaCmd::doIt(const MArgList& args) {
             HdMayaRenderOverride::SetColorSelectionHighlight(res);
         }
     } else if (db.isFlagSet(_getColorSelectionHighlightColor)) {
-        const auto res = HdMayaRenderOverride::GetColorSelectionHighlightColor();
+        const auto res =
+            HdMayaRenderOverride::GetColorSelectionHighlightColor();
         appendToResult(res[0]);
         appendToResult(res[1]);
         appendToResult(res[2]);

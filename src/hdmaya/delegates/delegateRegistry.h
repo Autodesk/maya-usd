@@ -45,7 +45,8 @@ class HdMayaDelegateRegistry : public TfSingleton<HdMayaDelegateRegistry> {
 public:
     // function creates and returns a pointer to a HdMayaDelegate - may return
     // a nullptr indicate failure, or that the delegate is currently disabled
-    using DelegateCreator = std::function<HdMayaDelegatePtr(HdRenderIndex*, const SdfPath&)>;
+    using DelegateCreator =
+        std::function<HdMayaDelegatePtr(HdRenderIndex*, const SdfPath&)>;
 
     HDMAYA_API
     static void RegisterDelegate(const TfToken& name, DelegateCreator creator);

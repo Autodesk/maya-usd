@@ -99,23 +99,30 @@ public:
 
     std::string GetSurfaceShaderSource() { return _textureShaderSource.first; }
 
-    std::string GetDisplacementShaderSource() { return _textureShaderSource.second; }
+    std::string GetDisplacementShaderSource() {
+        return _textureShaderSource.second;
+    }
 
     void CreateCallbacks() override {
         MStatus status;
         auto obj = GetNode();
-        auto id = MNodeMessage::addNodeDirtyCallback(obj, _DirtyMaterialParams, this, &status);
+        auto id = MNodeMessage::addNodeDirtyCallback(
+            obj, _DirtyMaterialParams, this, &status);
         if (ARCH_LIKELY(status)) { AddCallback(id); }
         HdMayaAdapter::CreateCallbacks();
     }
 
-    inline bool _RegisterTexture(const MFnDependencyNode& node, const TfToken& paramName) {
+    inline bool _RegisterTexture(
+        const MFnDependencyNode& node, const TfToken& paramName) {
         const auto filePath = _GetTextureFilePath(node);
         auto textureId = _GetTextureResourceID(filePath);
         if (textureId != HdTextureResource::ID(-1)) {
-            const auto& resourceRegistry = GetDelegate()->GetRenderIndex().GetResourceRegistry();
-            HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> textureInstance;
-            auto regLock = resourceRegistry->RegisterTextureResource(textureId, &textureInstance);
+            const auto& resourceRegistry =
+                GetDelegate()->GetRenderIndex().GetResourceRegistry();
+            HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr>
+                textureInstance;
+            auto regLock = resourceRegistry->RegisterTextureResource(
+                textureId, &textureInstance);
             if (textureInstance.IsFirstInstance()) {
                 auto textureResource = _GetTextureResource(filePath);
                 _textureResources[paramName] = textureResource;
@@ -141,21 +148,26 @@ public:
             HdMaterialParam emission(
                 HdMaterialParam::ParamTypeTexture, _tokens->emissiveColor,
                 VtValue(GfVec4f(0.0f, 0.0f, 0.0f, 1.0f)),
-                GetID().AppendProperty(_tokens->emissiveColor), _stSamplerCoords);
+                GetID().AppendProperty(_tokens->emissiveColor),
+                _stSamplerCoords);
             return {emission};
         }
-        TF_DEBUG(HDMAYA_ADAPTER_IMAGEPLANES).Msg("Unexpected failure to register texture\n");
+        TF_DEBUG(HDMAYA_ADAPTER_IMAGEPLANES)
+            .Msg("Unexpected failure to register texture\n");
         return {};
     }
 
     VtValue GetMaterialParamValue(const TfToken& paramName) override {
-        TF_DEBUG(HDMAYA_ADAPTER_IMAGEPLANES).Msg("Unexpected call to GetMaterialParamValue\n");
+        TF_DEBUG(HDMAYA_ADAPTER_IMAGEPLANES)
+            .Msg("Unexpected call to GetMaterialParamValue\n");
         return VtValue(GfVec4f(0.0f, 0.0f, 0.0f, 1.0f));
     }
 
 private:
-    static void _DirtyMaterialParams(MObject& node, MPlug& plug, void* clientData) {
-        auto* adapter = reinterpret_cast<HdMayaImagePlaneMaterialAdapter*>(clientData);
+    static void _DirtyMaterialParams(
+        MObject& node, MPlug& plug, void* clientData) {
+        auto* adapter =
+            reinterpret_cast<HdMayaImagePlaneMaterialAdapter*>(clientData);
         if (plug == MayaAttrs::imagePlane::imageName ||
             plug == MayaAttrs::imagePlane::frameExtension ||
             plug == MayaAttrs::imagePlane::frameOffset ||
@@ -164,46 +176,63 @@ private:
         }
     }
 
-    inline HdTextureResource::ID _GetTextureResourceID(const TfToken& filePath) {
+    inline HdTextureResource::ID _GetTextureResourceID(
+        const TfToken& filePath) {
         size_t hash = filePath.Hash();
-        boost::hash_combine(hash, GetDelegate()->GetParams().textureMemoryPerTexture);
+        boost::hash_combine(
+            hash, GetDelegate()->GetParams().textureMemoryPerTexture);
         return HdTextureResource::ID(hash);
     }
 
-    inline TfToken _GetTextureFilePath(const MFnDependencyNode& imagePlaneNode) {
-        MString imageNameExtracted = MRenderUtil::exactImagePlaneFileName(imagePlaneNode.object());
+    inline TfToken _GetTextureFilePath(
+        const MFnDependencyNode& imagePlaneNode) {
+        MString imageNameExtracted =
+            MRenderUtil::exactImagePlaneFileName(imagePlaneNode.object());
         return TfToken(std::string(imageNameExtracted.asChar()));
     }
 
-    inline HdTextureResourceSharedPtr _GetTextureResource(const TfToken& filePath) {
+    inline HdTextureResourceSharedPtr _GetTextureResource(
+        const TfToken& filePath) {
         if (filePath.IsEmpty() || !TfPathExists(filePath)) { return {}; }
         // TODO: handle origin
-        auto texture = GlfTextureRegistry::GetInstance().GetTextureHandle(filePath);
+        auto texture =
+            GlfTextureRegistry::GetInstance().GetTextureHandle(filePath);
         // We can't really mimic texture wrapping and mirroring settings from
         // the uv placement node, so we don't touch those for now.
         return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
-            texture, false, false, HdWrapClamp, HdWrapClamp, HdMinFilterLinearMipmapLinear,
-            HdMagFilterLinear, GetDelegate()->GetParams().textureMemoryPerTexture));
+            texture, false, false, HdWrapClamp, HdWrapClamp,
+            HdMinFilterLinearMipmapLinear, HdMagFilterLinear,
+            GetDelegate()->GetParams().textureMemoryPerTexture));
     }
 
-    HdTextureResourceSharedPtr GetTextureResource(const TfToken& paramName) override {
+    HdTextureResourceSharedPtr GetTextureResource(
+        const TfToken& paramName) override {
         TF_DEBUG(HDMAYA_ADAPTER_IMAGEPLANES)
-            .Msg("Called HdMayaImagePlaneMaterialAdapter::GetTextureResource()\n");
+            .Msg(
+                "Called "
+                "HdMayaImagePlaneMaterialAdapter::GetTextureResource()\n");
         if (_node == MObject::kNullObj) { return {}; }
-        return _GetTextureResource(_GetTextureFilePath(MFnDependencyNode(_node)));
+        return _GetTextureResource(
+            _GetTextureFilePath(MFnDependencyNode(_node)));
     }
 
-    HdTextureResource::ID GetTextureResourceID(const TfToken& paramName) override {
+    HdTextureResource::ID GetTextureResourceID(
+        const TfToken& paramName) override {
         if (_node == MObject::kNullObj) { return {}; }
-        return _GetTextureResourceID(_GetTextureFilePath(MFnDependencyNode(_node)));
+        return _GetTextureResourceID(
+            _GetTextureFilePath(MFnDependencyNode(_node)));
     }
 
     // So they live long enough
-    std::unordered_map<TfToken, HdTextureResourceSharedPtr, TfToken::HashFunctor> _textureResources;
+    std::unordered_map<
+        TfToken, HdTextureResourceSharedPtr, TfToken::HashFunctor>
+        _textureResources;
 };
 
 TF_REGISTRY_FUNCTION(TfType) {
-    TfType::Define<HdMayaImagePlaneMaterialAdapter, TfType::Bases<HdMayaMaterialAdapter> >();
+    TfType::Define<
+        HdMayaImagePlaneMaterialAdapter,
+        TfType::Bases<HdMayaMaterialAdapter> >();
 }
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, shadingEngine) {
@@ -211,7 +240,8 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, shadingEngine) {
         TfToken("imagePlane"),
         [](const SdfPath& id, HdMayaDelegateCtx* delegate,
            const MObject& obj) -> HdMayaMaterialAdapterPtr {
-            return HdMayaMaterialAdapterPtr(new HdMayaImagePlaneMaterialAdapter(id, delegate, obj));
+            return HdMayaMaterialAdapterPtr(
+                new HdMayaImagePlaneMaterialAdapter(id, delegate, obj));
         });
 }
 

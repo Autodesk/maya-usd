@@ -48,11 +48,13 @@ TF_REGISTRY_FUNCTION(TfType) {
 namespace {
 
 void _changeTransform(
-    MNodeMessage::AttributeMessage /*msg*/, MPlug& /*plug*/, MPlug& /*otherPlug*/,
-    void* clientData) {
+    MNodeMessage::AttributeMessage /*msg*/, MPlug& /*plug*/,
+    MPlug& /*otherPlug*/, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     // We need both dirty params and dirty transform to get this working?
-    adapter->MarkDirty(HdLight::DirtyTransform | HdLight::DirtyParams | HdLight::DirtyShadowParams);
+    adapter->MarkDirty(
+        HdLight::DirtyTransform | HdLight::DirtyParams |
+        HdLight::DirtyShadowParams);
 }
 
 void _dirtyParams(MObject& /*node*/, void* clientData) {
@@ -62,7 +64,8 @@ void _dirtyParams(MObject& /*node*/, void* clientData) {
 
 } // namespace
 
-HdMayaLightAdapter::HdMayaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
+HdMayaLightAdapter::HdMayaLightAdapter(
+    HdMayaDelegateCtx* delegate, const MDagPath& dag)
     : HdMayaDagAdapter(delegate->GetPrimPath(dag), delegate, dag) {}
 
 bool HdMayaLightAdapter::IsSupported() {
@@ -74,12 +77,18 @@ void HdMayaLightAdapter::Populate() {
 }
 
 void HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits) {
-    if (dirtyBits != 0) { GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits); }
+    if (dirtyBits != 0) {
+        GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
+    }
 }
 
-void HdMayaLightAdapter::RemovePrim() { GetDelegate()->RemoveSprim(LightType(), GetID()); }
+void HdMayaLightAdapter::RemovePrim() {
+    GetDelegate()->RemoveSprim(LightType(), GetID());
+}
 
-bool HdMayaLightAdapter::HasType(const TfToken& typeId) { return typeId == LightType(); }
+bool HdMayaLightAdapter::HasType(const TfToken& typeId) {
+    return typeId == LightType();
+}
 
 VtValue HdMayaLightAdapter::Get(const TfToken& key) {
     TF_DEBUG(HDMAYA_ADAPTER_GET)
@@ -97,24 +106,35 @@ VtValue HdMayaLightAdapter::Get(const TfToken& key) {
         const auto position = pt * inclusiveMatrix;
         // This will return zero / false if the plug is nonexistent.
         const auto decayRate =
-            mayaLight.findPlug(MayaAttrs::nonAmbientLightShapeNode::decayRate, true).asShort();
+            mayaLight
+                .findPlug(MayaAttrs::nonAmbientLightShapeNode::decayRate, true)
+                .asShort();
         const auto emitDiffuse =
-            mayaLight.findPlug(MayaAttrs::nonAmbientLightShapeNode::emitDiffuse, true).asBool();
+            mayaLight
+                .findPlug(
+                    MayaAttrs::nonAmbientLightShapeNode::emitDiffuse, true)
+                .asBool();
         const auto emitSpecular =
-            mayaLight.findPlug(MayaAttrs::nonAmbientLightShapeNode::emitSpecular, true).asBool();
+            mayaLight
+                .findPlug(
+                    MayaAttrs::nonAmbientLightShapeNode::emitSpecular, true)
+                .asBool();
         MVector pv(0.0, 0.0, -1.0);
         const auto lightDirection = (pv * inclusiveMatrix).normal();
         light.SetHasShadow(false);
         const GfVec4f zeroColor(0.0f, 0.0f, 0.0f, 1.0f);
         const GfVec4f lightColor(
-            color.r * intensity, color.g * intensity, color.b * intensity, 1.0f);
+            color.r * intensity, color.g * intensity, color.b * intensity,
+            1.0f);
         light.SetDiffuse(emitDiffuse ? lightColor : zeroColor);
         light.SetAmbient(zeroColor);
         light.SetSpecular(emitSpecular ? lightColor : zeroColor);
         light.SetShadowResolution(1024);
         light.SetID(GetID());
-        light.SetPosition(GfVec4f(position.x, position.y, position.z, position.w));
-        light.SetSpotDirection(GfVec3f(lightDirection.x, lightDirection.y, lightDirection.z));
+        light.SetPosition(
+            GfVec4f(position.x, position.y, position.z, position.w));
+        light.SetSpotDirection(
+            GfVec3f(lightDirection.x, lightDirection.y, lightDirection.z));
         if (decayRate == 0) {
             light.SetAttenuation(GfVec3f(1.0f, 0.0f, 0.0f));
         } else if (decayRate == 1) {
@@ -122,7 +142,8 @@ VtValue HdMayaLightAdapter::Get(const TfToken& key) {
         } else if (decayRate == 2) {
             light.SetAttenuation(GfVec3f(0.0f, 0.0f, 1.0f));
         }
-        light.SetTransform(getGfMatrixFromMaya(GetDagPath().inclusiveMatrixInverse()));
+        light.SetTransform(
+            getGfMatrixFromMaya(GetDagPath().inclusiveMatrixInverse()));
         _CalculateLightParams(light);
         return VtValue(light);
     } else if (key == HdTokens->transform) {
@@ -142,8 +163,8 @@ VtValue HdMayaLightAdapter::Get(const TfToken& key) {
 VtValue HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
     TF_DEBUG(HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE)
         .Msg(
-            "Called HdMayaLightAdapter::GetLightParamValue(%s) - %s\n", paramName.GetText(),
-            GetDagPath().partialPathName().asChar());
+            "Called HdMayaLightAdapter::GetLightParamValue(%s) - %s\n",
+            paramName.GetText(), GetDagPath().partialPathName().asChar());
 
     MFnLight light(GetDagPath());
     if (paramName == HdTokens->color) {
@@ -165,15 +186,17 @@ void HdMayaLightAdapter::CreateCallbacks() {
     MStatus status;
     auto dag = GetDagPath();
     auto obj = dag.node();
-    auto id = MNodeMessage::addNodeDirtyCallback(obj, _dirtyParams, this, &status);
+    auto id =
+        MNodeMessage::addNodeDirtyCallback(obj, _dirtyParams, this, &status);
     dag.pop();
     if (status) { AddCallback(id); }
     for (; dag.length() > 0; dag.pop()) {
-        // The adapter itself will free the callbacks, so we don't have to worry about
-        // passing raw pointers to the callbacks. Hopefully.
+        // The adapter itself will free the callbacks, so we don't have to worry
+        // about passing raw pointers to the callbacks. Hopefully.
         obj = dag.node();
         if (obj != MObject::kNullObj) {
-            id = MNodeMessage::addAttributeChangedCallback(obj, _changeTransform, this, &status);
+            id = MNodeMessage::addAttributeChangedCallback(
+                obj, _changeTransform, this, &status);
             if (status) { AddCallback(id); }
         }
     }
@@ -189,17 +212,22 @@ void HdMayaLightAdapter::_CalculateShadowParams(
             "Called HdMayaLightAdapter::_CalculateShadowParams - %s\n",
             GetDagPath().partialPathName().asChar());
 
-    auto dmapResolutionPlug = light.findPlug(MayaAttrs::nonExtendedLightShapeNode::dmapResolution);
-    auto dmapBiasPlug = light.findPlug(MayaAttrs::nonExtendedLightShapeNode::dmapBias);
-    auto dmapFilterSizePlug = light.findPlug(MayaAttrs::nonExtendedLightShapeNode::dmapFilterSize);
+    auto dmapResolutionPlug =
+        light.findPlug(MayaAttrs::nonExtendedLightShapeNode::dmapResolution);
+    auto dmapBiasPlug =
+        light.findPlug(MayaAttrs::nonExtendedLightShapeNode::dmapBias);
+    auto dmapFilterSizePlug =
+        light.findPlug(MayaAttrs::nonExtendedLightShapeNode::dmapFilterSize);
 
     const auto decayRate =
-        light.findPlug(MayaAttrs::nonExtendedLightShapeNode::decayRate, true).asShort();
+        light.findPlug(MayaAttrs::nonExtendedLightShapeNode::decayRate, true)
+            .asShort();
     if (decayRate > 0) {
         const auto color = light.color();
         const auto intensity = light.intensity();
-        const auto maxIntensity = static_cast<double>(
-            std::max(color.r * intensity, std::max(color.g * intensity, color.b * intensity)));
+        const auto maxIntensity = static_cast<double>(std::max(
+            color.r * intensity,
+            std::max(color.g * intensity, color.b * intensity)));
         constexpr auto LIGHT_CUTOFF = 0.01;
         auto maxDistance = std::numeric_limits<double>::max();
         if (decayRate == 1) {
@@ -215,24 +243,29 @@ void HdMayaLightAdapter::_CalculateShadowParams(
                     HdxShadowParams shadowParams;
                     params.enabled = false;
                 } else {
-                    frustum.SetNearFar(GfRange1d(nearFar.GetMin(), maxDistance));
+                    frustum.SetNearFar(
+                        GfRange1d(nearFar.GetMin(), maxDistance));
                 }
             }
         }
     }
 
     params.enabled = true;
-    params.resolution = dmapResolutionPlug.isNull()
-                            ? GetDelegate()->GetParams().maximumShadowMapResolution
-                            : std::min(
-                                  GetDelegate()->GetParams().maximumShadowMapResolution,
-                                  dmapResolutionPlug.asInt());
-    params.shadowMatrix = boost::static_pointer_cast<HdxShadowMatrixComputation>(
-        boost::make_shared<ConstantShadowMatrix>(frustum.ComputeProjectionMatrix()));
+    params.resolution =
+        dmapResolutionPlug.isNull()
+            ? GetDelegate()->GetParams().maximumShadowMapResolution
+            : std::min(
+                  GetDelegate()->GetParams().maximumShadowMapResolution,
+                  dmapResolutionPlug.asInt());
+    params.shadowMatrix =
+        boost::static_pointer_cast<HdxShadowMatrixComputation>(
+            boost::make_shared<ConstantShadowMatrix>(
+                frustum.ComputeProjectionMatrix()));
     params.bias = dmapBiasPlug.isNull() ? -0.001 : -dmapBiasPlug.asFloat();
-    params.blur = dmapFilterSizePlug.isNull() ? 0.0
-                                              : (static_cast<double>(dmapFilterSizePlug.asInt())) /
-                                                    static_cast<double>(params.resolution);
+    params.blur = dmapFilterSizePlug.isNull()
+                      ? 0.0
+                      : (static_cast<double>(dmapFilterSizePlug.asInt())) /
+                            static_cast<double>(params.resolution);
 
     if (TfDebug::IsEnabled(HDMAYA_ADAPTER_LIGHT_SHADOWS)) {
         std::cout << "Resulting HdxShadowParams:" << std::endl;

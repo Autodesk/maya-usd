@@ -33,7 +33,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdMayaShapeAdapter : public HdMayaDagAdapter {
 protected:
     HDMAYA_API
-    HdMayaShapeAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath);
+    HdMayaShapeAdapter(
+        const SdfPath& id, HdMayaDelegateCtx* delegate,
+        const MDagPath& dagPath);
 
 public:
     HDMAYA_API
@@ -42,7 +44,8 @@ public:
     HDMAYA_API
     virtual HdMeshTopology GetMeshTopology();
     HDMAYA_API
-    virtual HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation);
+    virtual HdPrimvarDescriptorVector GetPrimvarDescriptors(
+        HdInterpolation interpolation);
     HDMAYA_API
     virtual void MarkDirty(HdDirtyBits dirtyBits) override;
 

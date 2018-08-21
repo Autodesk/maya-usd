@@ -45,10 +45,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-void GetSpotCutoffAndSoftness(MFnSpotLight& mayaLight, float& cutoffOut, float& softnessOut) {
+void GetSpotCutoffAndSoftness(
+    MFnSpotLight& mayaLight, float& cutoffOut, float& softnessOut) {
     // Divided by two.
-    auto coneAngle = static_cast<float>(GfRadiansToDegrees(mayaLight.coneAngle())) * 0.5f;
-    auto penumbraAngle = static_cast<float>(GfRadiansToDegrees(mayaLight.penumbraAngle()));
+    auto coneAngle =
+        static_cast<float>(GfRadiansToDegrees(mayaLight.coneAngle())) * 0.5f;
+    auto penumbraAngle =
+        static_cast<float>(GfRadiansToDegrees(mayaLight.penumbraAngle()));
     cutoffOut = coneAngle + penumbraAngle;
     softnessOut = cutoffOut / penumbraAngle;
 }
@@ -67,7 +70,9 @@ float GetSpotSoftness(MFnSpotLight& mayaLight) {
     return softness;
 }
 
-float GetSpotFalloff(MFnSpotLight& mayaLight) { return static_cast<float>(mayaLight.dropOff()); }
+float GetSpotFalloff(MFnSpotLight& mayaLight) {
+    return static_cast<float>(mayaLight.dropOff());
+}
 } // namespace
 
 class HdMayaSpotLightAdapter : public HdMayaLightAdapter {
@@ -104,20 +109,25 @@ protected:
             HdxShadowParams shadowParams;
             MFnSpotLight mayaLight(GetDagPath());
             const auto useDepthMapShadows =
-                mayaLight.findPlug(MayaAttrs::spotLight::useDepthMapShadows, true).asBool();
+                mayaLight
+                    .findPlug(MayaAttrs::spotLight::useDepthMapShadows, true)
+                    .asBool();
             if (!useDepthMapShadows) {
                 shadowParams.enabled = false;
                 return VtValue(shadowParams);
             }
 
-            auto coneAnglePlug = mayaLight.findPlug(MayaAttrs::spotLight::coneAngle, true);
+            auto coneAnglePlug =
+                mayaLight.findPlug(MayaAttrs::spotLight::coneAngle, true);
             if (coneAnglePlug.isNull()) { return {}; }
 
             GfFrustum frustum;
-            GfMatrix4d lightToWorld = getGfMatrixFromMaya(GetDagPath().inclusiveMatrix());
+            GfMatrix4d lightToWorld =
+                getGfMatrixFromMaya(GetDagPath().inclusiveMatrix());
             frustum.SetProjectionType(GfFrustum::Perspective);
             frustum.SetPerspective(
-                GfRadiansToDegrees(coneAnglePlug.asFloat()), true, 1.0f, 1.0f, 50.0f);
+                GfRadiansToDegrees(coneAnglePlug.asFloat()), true, 1.0f, 1.0f,
+                50.0f);
 
             GetDelegate()->FitFrustumToRprims(frustum, lightToWorld);
             _CalculateShadowParams(mayaLight, frustum, shadowParams);
@@ -132,8 +142,8 @@ protected:
     VtValue GetLightParamValue(const TfToken& paramName) override {
         TF_DEBUG(HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE)
             .Msg(
-                "Called HdMayaSpotLightAdapter::GetLightParamValue(%s) - %s\n", paramName.GetText(),
-                GetDagPath().partialPathName().asChar());
+                "Called HdMayaSpotLightAdapter::GetLightParamValue(%s) - %s\n",
+                paramName.GetText(), GetDagPath().partialPathName().asChar());
 
         MStatus status;
         MFnSpotLight light(GetDagPath(), &status);
@@ -157,14 +167,17 @@ protected:
 };
 
 TF_REGISTRY_FUNCTION(TfType) {
-    TfType::Define<HdMayaSpotLightAdapter, TfType::Bases<HdMayaLightAdapter> >();
+    TfType::Define<
+        HdMayaSpotLightAdapter, TfType::Bases<HdMayaLightAdapter> >();
 }
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, pointLight) {
     HdMayaAdapterRegistry::RegisterLightAdapter(
         TfToken("spotLight"),
-        [](HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaLightAdapterPtr {
-            return HdMayaLightAdapterPtr(new HdMayaSpotLightAdapter(delegate, dag));
+        [](HdMayaDelegateCtx* delegate,
+           const MDagPath& dag) -> HdMayaLightAdapterPtr {
+            return HdMayaLightAdapterPtr(
+                new HdMayaSpotLightAdapter(delegate, dag));
         });
 }
 

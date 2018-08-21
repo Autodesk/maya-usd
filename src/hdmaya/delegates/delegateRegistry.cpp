@@ -36,7 +36,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(HdMayaDelegateRegistry);
 
-void HdMayaDelegateRegistry::RegisterDelegate(const TfToken& name, DelegateCreator creator) {
+void HdMayaDelegateRegistry::RegisterDelegate(
+    const TfToken& name, DelegateCreator creator) {
     auto& instance = GetInstance();
     for (auto it : instance._delegates) {
         if (name == std::get<0>(it)) { return; }
@@ -53,7 +54,8 @@ std::vector<TfToken> HdMayaDelegateRegistry::GetDelegateNames() {
     return ret;
 }
 
-std::vector<HdMayaDelegateRegistry::DelegateCreator> HdMayaDelegateRegistry::GetDelegateCreators() {
+std::vector<HdMayaDelegateRegistry::DelegateCreator>
+HdMayaDelegateRegistry::GetDelegateCreators() {
     LoadAllDelegates();
     const auto& instance = GetInstance();
     std::vector<HdMayaDelegateRegistry::DelegateCreator> ret;
@@ -90,7 +92,9 @@ void HdMayaDelegateRegistry::_LoadAllDelegates() {
     for (auto& subType : delegateTypes) {
         const PlugPluginPtr pluginForType = plugReg.GetPluginForType(subType);
         if (!pluginForType) {
-            TF_CODING_ERROR("Could not find plugin for '%s'", subType.GetTypeName().c_str());
+            TF_CODING_ERROR(
+                "Could not find plugin for '%s'",
+                subType.GetTypeName().c_str());
             return;
         }
         pluginForType->Load();

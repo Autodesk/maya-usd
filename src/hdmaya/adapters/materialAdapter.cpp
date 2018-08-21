@@ -61,20 +61,23 @@ const TfTokenVector _stSamplerCoords = {TfToken("st")};
 const MString _fileTextureName("fileTextureName");
 
 TF_DEFINE_PRIVATE_TOKENS(
-    _tokens, (roughness)(clearcoat)(clearcoatRoughness)(emissiveColor)(specularColor)(metallic)(
-                 useSpecularWorkflow)(occlusion)(ior)(normal)(opacity)(diffuseColor)(displacement)
+    _tokens, (roughness)(clearcoat)(clearcoatRoughness)(emissiveColor)(
+                 specularColor)(metallic)(useSpecularWorkflow)(occlusion)(ior)(
+                 normal)(opacity)(diffuseColor)(displacement)
     // Supported material tokens.
     (lambert)(blinn)(file)(place2dTexture)
     // Other tokens
-    (fileTextureName)(color)(incandescence)(out)(st)(uvCoord)(rgb)(r)(varname)(result)(
-        eccentricity));
+    (fileTextureName)(color)(incandescence)(out)(st)(uvCoord)(rgb)(r)(varname)(
+        result)(eccentricity));
 
 struct _PreviewParam {
     HdMaterialParam _param;
     SdfValueTypeName _type;
 
-    _PreviewParam(const TfToken& name, const VtValue& value, const SdfValueTypeName& type)
-        : _param(HdMaterialParam::ParamTypeFallback, name, value), _type(type) {}
+    _PreviewParam(
+        const TfToken& name, const VtValue& value, const SdfValueTypeName& type)
+        : _param(HdMaterialParam::ParamTypeFallback, name, value),
+          _type(type) {}
 };
 
 using _PreviewParams = std::vector<_PreviewParam>;
@@ -84,34 +87,44 @@ const _PreviewParams _previewShaderParams = []() -> _PreviewParams {
         {_tokens->roughness, VtValue(1.0f), SdfValueTypeNames->Float},
         {_tokens->clearcoat, VtValue(0.0f), SdfValueTypeNames->Float},
         {_tokens->clearcoatRoughness, VtValue(0.0f), SdfValueTypeNames->Float},
-        {_tokens->emissiveColor, VtValue(GfVec3f(0.0f, 0.0f, 0.0f)), SdfValueTypeNames->Vector3f},
-        {_tokens->specularColor, VtValue(GfVec3f(0.0f, 0.0f, 0.0f)), SdfValueTypeNames->Vector3f},
+        {_tokens->emissiveColor, VtValue(GfVec3f(0.0f, 0.0f, 0.0f)),
+         SdfValueTypeNames->Vector3f},
+        {_tokens->specularColor, VtValue(GfVec3f(0.0f, 0.0f, 0.0f)),
+         SdfValueTypeNames->Vector3f},
         {_tokens->metallic, VtValue(0.0f), SdfValueTypeNames->Float},
         {_tokens->useSpecularWorkflow, VtValue(1), SdfValueTypeNames->Int},
         {_tokens->occlusion, VtValue(1.0f), SdfValueTypeNames->Float},
         {_tokens->ior, VtValue(1.0f), SdfValueTypeNames->Float},
-        {_tokens->normal, VtValue(GfVec3f(1.0f, 1.0f, 1.0f)), SdfValueTypeNames->Vector3f},
+        {_tokens->normal, VtValue(GfVec3f(1.0f, 1.0f, 1.0f)),
+         SdfValueTypeNames->Vector3f},
         {_tokens->opacity, VtValue(1.0f), SdfValueTypeNames->Float},
-        {_tokens->diffuseColor, VtValue(GfVec3f(1.0, 1.0, 1.0)), SdfValueTypeNames->Vector3f},
+        {_tokens->diffuseColor, VtValue(GfVec3f(1.0, 1.0, 1.0)),
+         SdfValueTypeNames->Vector3f},
         {_tokens->displacement, VtValue(0.0f), SdfValueTypeNames->Float},
     };
-    std::sort(ret.begin(), ret.end(), [](const _PreviewParam& a, const _PreviewParam& b) -> bool {
-        return a._param.GetName() < b._param.GetName();
-    });
+    std::sort(
+        ret.begin(), ret.end(),
+        [](const _PreviewParam& a, const _PreviewParam& b) -> bool {
+            return a._param.GetName() < b._param.GetName();
+        });
     return ret;
 }();
 
 // This is required quite often, so we precalc.
-const HdMaterialParamVector _previewShaderParamVector = []() -> HdMaterialParamVector {
+const HdMaterialParamVector _previewShaderParamVector =
+    []() -> HdMaterialParamVector {
     HdMaterialParamVector ret;
     for (const auto& it : _previewShaderParams) { ret.emplace_back(it._param); }
     return ret;
 }();
 
-// Specialized version of : https://en.cppreference.com/w/cpp/algorithm/lower_bound
+// Specialized version of :
+// https://en.cppreference.com/w/cpp/algorithm/lower_bound
 _PreviewParams::const_iterator _FindPreviewParam(const TfToken& id) {
     _PreviewParams::const_iterator it;
-    typename std::iterator_traits<_PreviewParams::const_iterator>::difference_type count, step;
+    typename std::iterator_traits<
+        _PreviewParams::const_iterator>::difference_type count,
+        step;
     auto first = _previewShaderParams.cbegin();
     count = std::distance(first, _previewShaderParams.cend());
 
@@ -127,7 +140,8 @@ _PreviewParams::const_iterator _FindPreviewParam(const TfToken& id) {
         }
     }
     return first != _previewShaderParams.cend()
-               ? (first->_param.GetName() == id ? first : _previewShaderParams.cend())
+               ? (first->_param.GetName() == id ? first
+                                                : _previewShaderParams.cend())
                : first;
 };
 
@@ -139,8 +153,9 @@ static const std::pair<std::string, std::string> _previewShaderSource =
 
 VtValue _ConvertPlugToValue(const MPlug& plug, const SdfValueTypeName& type) {
     if (type == SdfValueTypeNames->Vector3f) {
-        return VtValue(
-            GfVec3f(plug.child(0).asFloat(), plug.child(1).asFloat(), plug.child(2).asFloat()));
+        return VtValue(GfVec3f(
+            plug.child(0).asFloat(), plug.child(1).asFloat(),
+            plug.child(2).asFloat()));
     } else if (type == SdfValueTypeNames->Float) {
         return VtValue(plug.asFloat());
     } else if (type == SdfValueTypeNames->Int) {
@@ -175,7 +190,8 @@ public:
             return materialPath;
         }
 
-        const auto converterIt = _converters.find(TfToken(node.typeName().asChar()));
+        const auto converterIt =
+            _converters.find(TfToken(node.typeName().asChar()));
         if (converterIt == _converters.end()) { return SdfPath(); }
         HdMaterialNode material{};
         material.path = materialPath;
@@ -185,15 +201,17 @@ public:
     }
 
     void AddPrimvar(const TfToken& primvar) {
-        if (std::find(_network.primvars.begin(), _network.primvars.end(), primvar) ==
+        if (std::find(
+                _network.primvars.begin(), _network.primvars.end(), primvar) ==
             _network.primvars.end()) {
             _network.primvars.push_back(primvar);
         }
     }
 
     void ConvertParameter(
-        MFnDependencyNode& node, HdMaterialNode& material, const TfToken& mayaName,
-        const TfToken& name, const SdfValueTypeName type, const VtValue* fallback = nullptr) {
+        MFnDependencyNode& node, HdMaterialNode& material,
+        const TfToken& mayaName, const TfToken& name,
+        const SdfValueTypeName type, const VtValue* fallback = nullptr) {
         MStatus status;
         auto p = node.findPlug(mayaName.GetText(), &status);
         VtValue val;
@@ -234,88 +252,102 @@ private:
 
     static std::unordered_map<
         TfToken,
-        std::function<void(MaterialNetworkConverter&, HdMaterialNode&, MFnDependencyNode&)>,
+        std::function<void(
+            MaterialNetworkConverter&, HdMaterialNode&, MFnDependencyNode&)>,
         TfToken::HashFunctor>
         _converters;
 
     static void ConvertUsdPreviewSurface(
-        MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
+        MaterialNetworkConverter& converter, HdMaterialNode& material,
+        MFnDependencyNode& node) {
         for (const auto& param : _previewShaderParams) {
             const VtValue* fallback = &param._param.GetFallbackValue();
             converter.ConvertParameter(
-                node, material, param._param.GetName(), param._param.GetName(), param._type,
-                fallback);
+                node, material, param._param.GetName(), param._param.GetName(),
+                param._type, fallback);
         }
         material.identifier = UsdImagingTokens->UsdPreviewSurface;
     }
 
     static void ConvertLambert(
-        MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
+        MaterialNetworkConverter& converter, HdMaterialNode& material,
+        MFnDependencyNode& node) {
         for (const auto& param : _previewShaderParams) {
             const VtValue* fallback = &param._param.GetFallbackValue();
             if (param._param.GetName() == _tokens->diffuseColor) {
                 converter.ConvertParameter(
-                    node, material, _tokens->color, _tokens->diffuseColor, param._type, fallback);
+                    node, material, _tokens->color, _tokens->diffuseColor,
+                    param._type, fallback);
             } else if (param._param.GetName() == _tokens->emissiveColor) {
                 converter.ConvertParameter(
-                    node, material, _tokens->incandescence, _tokens->emissiveColor, param._type,
-                    fallback);
+                    node, material, _tokens->incandescence,
+                    _tokens->emissiveColor, param._type, fallback);
             } else {
                 converter.ConvertParameter(
-                    node, material, param._param.GetName(), param._param.GetName(), param._type,
-                    fallback);
+                    node, material, param._param.GetName(),
+                    param._param.GetName(), param._type, fallback);
             }
         }
         material.identifier = UsdImagingTokens->UsdPreviewSurface;
     }
 
     static void ConvertBlinn(
-        MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
+        MaterialNetworkConverter& converter, HdMaterialNode& material,
+        MFnDependencyNode& node) {
         for (const auto& param : _previewShaderParams) {
             const VtValue* fallback = &param._param.GetFallbackValue();
             if (param._param.GetName() == _tokens->diffuseColor) {
                 converter.ConvertParameter(
-                    node, material, _tokens->color, _tokens->diffuseColor, param._type, fallback);
+                    node, material, _tokens->color, _tokens->diffuseColor,
+                    param._type, fallback);
             } else if (param._param.GetName() == _tokens->emissiveColor) {
                 converter.ConvertParameter(
-                    node, material, _tokens->incandescence, _tokens->emissiveColor, param._type,
-                    fallback);
+                    node, material, _tokens->incandescence,
+                    _tokens->emissiveColor, param._type, fallback);
             } else if (param._param.GetName() == _tokens->roughness) {
                 converter.ConvertParameter(
-                    node, material, _tokens->eccentricity, _tokens->roughness, param._type,
-                    fallback);
+                    node, material, _tokens->eccentricity, _tokens->roughness,
+                    param._type, fallback);
             } else {
                 converter.ConvertParameter(
-                    node, material, param._param.GetName(), param._param.GetName(), param._type,
-                    fallback);
+                    node, material, param._param.GetName(),
+                    param._param.GetName(), param._type, fallback);
             }
         }
         material.identifier = UsdImagingTokens->UsdPreviewSurface;
     }
 
     static void ConvertFile(
-        MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
+        MaterialNetworkConverter& converter, HdMaterialNode& material,
+        MFnDependencyNode& node) {
         std::string fileTextureName{};
         if (node.findPlug(MayaAttrs::file::uvTilingMode).asShort() != 0) {
             fileTextureName =
-                node.findPlug(MayaAttrs::file::fileTextureNamePattern).asString().asChar();
+                node.findPlug(MayaAttrs::file::fileTextureNamePattern)
+                    .asString()
+                    .asChar();
             if (fileTextureName.empty()) {
-                fileTextureName = node.findPlug(MayaAttrs::file::computedFileTextureNamePattern)
-                                      .asString()
-                                      .asChar();
+                fileTextureName =
+                    node.findPlug(
+                            MayaAttrs::file::computedFileTextureNamePattern)
+                        .asString()
+                        .asChar();
             }
         } else {
-            fileTextureName = node.findPlug(_fileTextureName).asString().asChar();
+            fileTextureName =
+                node.findPlug(_fileTextureName).asString().asChar();
         }
         material.parameters[_tokens->file] =
             VtValue(SdfAssetPath(fileTextureName, fileTextureName));
         converter.ConvertParameter(
-            node, material, _tokens->uvCoord, _tokens->st, SdfValueTypeNames->Float2);
+            node, material, _tokens->uvCoord, _tokens->st,
+            SdfValueTypeNames->Float2);
         material.identifier = UsdImagingTokens->UsdUVTexture;
     }
 
     static void ConvertPlace2dTexture(
-        MaterialNetworkConverter& converter, HdMaterialNode& material, MFnDependencyNode& node) {
+        MaterialNetworkConverter& converter, HdMaterialNode& material,
+        MFnDependencyNode& node) {
         converter.AddPrimvar(_tokens->st);
         material.parameters[_tokens->varname] = VtValue(_tokens->st);
         material.identifier = UsdImagingTokens->UsdPrimvarReader_float2;
@@ -323,17 +355,22 @@ private:
 };
 
 std::unordered_map<
-    TfToken, std::function<void(MaterialNetworkConverter&, HdMaterialNode&, MFnDependencyNode&)>,
+    TfToken,
+    std::function<void(
+        MaterialNetworkConverter&, HdMaterialNode&, MFnDependencyNode&)>,
     TfToken::HashFunctor>
     MaterialNetworkConverter::_converters{
-        {UsdImagingTokens->UsdPreviewSurface, MaterialNetworkConverter::ConvertUsdPreviewSurface},
+        {UsdImagingTokens->UsdPreviewSurface,
+         MaterialNetworkConverter::ConvertUsdPreviewSurface},
         {_tokens->lambert, MaterialNetworkConverter::ConvertLambert},
         {_tokens->blinn, MaterialNetworkConverter::ConvertBlinn},
         {_tokens->file, MaterialNetworkConverter::ConvertFile},
-        {_tokens->place2dTexture, MaterialNetworkConverter::ConvertPlace2dTexture},
+        {_tokens->place2dTexture,
+         MaterialNetworkConverter::ConvertPlace2dTexture},
     };
 
-std::unordered_map<TfToken, std::vector<std::pair<TfToken, TfToken>>, TfToken::HashFunctor>
+std::unordered_map<
+    TfToken, std::vector<std::pair<TfToken, TfToken>>, TfToken::HashFunctor>
     _materialParamRemaps{{_tokens->lambert,
                           {
                               {_tokens->diffuseColor, _tokens->color},
@@ -354,7 +391,8 @@ HdMayaMaterialAdapter::HdMayaMaterialAdapter(
     : HdMayaAdapter(node, id, delegate) {}
 
 bool HdMayaMaterialAdapter::IsSupported() {
-    return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->material);
+    return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(
+        HdPrimTypeTokens->material);
 }
 
 bool HdMayaMaterialAdapter::HasType(const TfToken& typeId) {
@@ -370,11 +408,15 @@ void HdMayaMaterialAdapter::RemovePrim() {
 }
 
 void HdMayaMaterialAdapter::Populate() {
-    TF_DEBUG(HDMAYA_ADAPTER_GET).Msg("HdMayaMaterialAdapter::Populate() - %s\n", GetID().GetText());
-    GetDelegate()->InsertSprim(HdPrimTypeTokens->material, GetID(), HdMaterial::AllDirty);
+    TF_DEBUG(HDMAYA_ADAPTER_GET)
+        .Msg("HdMayaMaterialAdapter::Populate() - %s\n", GetID().GetText());
+    GetDelegate()->InsertSprim(
+        HdPrimTypeTokens->material, GetID(), HdMaterial::AllDirty);
 }
 
-std::string HdMayaMaterialAdapter::GetSurfaceShaderSource() { return GetPreviewSurfaceSource(); }
+std::string HdMayaMaterialAdapter::GetSurfaceShaderSource() {
+    return GetPreviewSurfaceSource();
+}
 
 std::string HdMayaMaterialAdapter::GetDisplacementShaderSource() {
     return GetPreviewDisplacementSource();
@@ -388,15 +430,19 @@ HdMaterialParamVector HdMayaMaterialAdapter::GetMaterialParams() {
     return GetPreviewMaterialParams();
 }
 
-HdTextureResource::ID HdMayaMaterialAdapter::GetTextureResourceID(const TfToken& paramName) {
+HdTextureResource::ID HdMayaMaterialAdapter::GetTextureResourceID(
+    const TfToken& paramName) {
     return {};
 }
 
-HdTextureResourceSharedPtr HdMayaMaterialAdapter::GetTextureResource(const TfToken& paramName) {
+HdTextureResourceSharedPtr HdMayaMaterialAdapter::GetTextureResource(
+    const TfToken& paramName) {
     return {};
 }
 
-VtValue HdMayaMaterialAdapter::GetMaterialResource() { return GetPreviewMaterialResource(GetID()); }
+VtValue HdMayaMaterialAdapter::GetMaterialResource() {
+    return GetPreviewMaterialResource(GetID());
+}
 
 const HdMaterialParamVector& HdMayaMaterialAdapter::GetPreviewMaterialParams() {
     return _previewShaderParamVector;
@@ -410,23 +456,28 @@ const std::string& HdMayaMaterialAdapter::GetPreviewDisplacementSource() {
     return _previewShaderSource.second;
 }
 
-const VtValue& HdMayaMaterialAdapter::GetPreviewMaterialParamValue(const TfToken& paramName) {
+const VtValue& HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
+    const TfToken& paramName) {
     const auto it = _FindPreviewParam(paramName);
     if (ARCH_UNLIKELY(it == _previewShaderParams.cend())) {
-        TF_CODING_ERROR("Incorrect name passed to GetMaterialParamValue: %s", paramName.GetText());
+        TF_CODING_ERROR(
+            "Incorrect name passed to GetMaterialParamValue: %s",
+            paramName.GetText());
         return _emptyValue;
     }
     return it->_param.GetFallbackValue();
 }
 
-VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(const SdfPath& materialID) {
+VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(
+    const SdfPath& materialID) {
     HdMaterialNetworkMap map;
     HdMaterialNetwork network;
     HdMaterialNode node;
     node.path = materialID;
     node.identifier = UsdImagingTokens->UsdPreviewSurface;
     for (const auto& it : _previewShaderParams) {
-        node.parameters.emplace(it._param.GetName(), it._param.GetFallbackValue());
+        node.parameters.emplace(
+            it._param.GetName(), it._param.GetFallbackValue());
     }
     network.nodes.push_back(node);
     map.map.emplace(UsdImagingTokens->bxdf, network);
@@ -435,19 +486,23 @@ VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(const SdfPath& materia
 
 class HdMayaShadingEngineAdapter : public HdMayaMaterialAdapter {
 public:
-    HdMayaShadingEngineAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MObject& obj)
+    HdMayaShadingEngineAdapter(
+        const SdfPath& id, HdMayaDelegateCtx* delegate, const MObject& obj)
         : HdMayaMaterialAdapter(id, delegate, obj), _surfaceShaderCallback(0) {
         _CacheNodeAndTypes();
     }
 
     ~HdMayaShadingEngineAdapter() override {
-        if (_surfaceShaderCallback != 0) { MNodeMessage::removeCallback(_surfaceShaderCallback); }
+        if (_surfaceShaderCallback != 0) {
+            MNodeMessage::removeCallback(_surfaceShaderCallback);
+        }
     }
 
     void CreateCallbacks() override {
         MStatus status;
         auto obj = GetNode();
-        auto id = MNodeMessage::addNodeDirtyCallback(obj, _DirtyMaterialParams, this, &status);
+        auto id = MNodeMessage::addNodeDirtyCallback(
+            obj, _DirtyMaterialParams, this, &status);
         if (ARCH_LIKELY(status)) { AddCallback(id); }
         _CreateSurfaceMaterialCallback();
         HdMayaAdapter::CreateCallbacks();
@@ -455,16 +510,20 @@ public:
 
 private:
     static void _DirtyMaterialParams(MObject& /*node*/, void* clientData) {
-        auto* adapter = reinterpret_cast<HdMayaShadingEngineAdapter*>(clientData);
+        auto* adapter =
+            reinterpret_cast<HdMayaShadingEngineAdapter*>(clientData);
         adapter->_CreateSurfaceMaterialCallback();
         adapter->MarkDirty(
-            HdMaterial::DirtyParams | HdMaterial::DirtySurfaceShader | HdMaterial::DirtyResource);
+            HdMaterial::DirtyParams | HdMaterial::DirtySurfaceShader |
+            HdMaterial::DirtyResource);
     }
 
     static void _DirtyShaderParams(MObject& /*node*/, void* clientData) {
-        auto* adapter = reinterpret_cast<HdMayaShadingEngineAdapter*>(clientData);
+        auto* adapter =
+            reinterpret_cast<HdMayaShadingEngineAdapter*>(clientData);
         adapter->MarkDirty(
-            HdMaterial::DirtyParams | HdMaterial::DirtySurfaceShader | HdMaterial::DirtyResource);
+            HdMaterial::DirtyParams | HdMaterial::DirtySurfaceShader |
+            HdMaterial::DirtyResource);
     }
 
     void _CacheNodeAndTypes() {
@@ -492,7 +551,9 @@ private:
         auto mIt = _materialParamRemaps.end();
         if (_surfaceShaderType != UsdImagingTokens->UsdPreviewSurface) {
             mIt = _materialParamRemaps.find(_surfaceShaderType);
-            if (mIt == _materialParamRemaps.end()) { return GetPreviewMaterialParams(); }
+            if (mIt == _materialParamRemaps.end()) {
+                return GetPreviewMaterialParams();
+            }
         }
 
         HdMaterialParamVector ret;
@@ -505,7 +566,8 @@ private:
             if (mIt != _materialParamRemaps.end()) {
                 std::find_if(
                     mIt->second.begin(), mIt->second.end(),
-                    [&remappedName](const std::pair<TfToken, TfToken>& p) -> bool {
+                    [&remappedName](
+                        const std::pair<TfToken, TfToken>& p) -> bool {
                         if (p.first == remappedName) {
                             remappedName = p.second;
                             return true;
@@ -521,8 +583,9 @@ private:
 #endif
                     )) {
                 ret.emplace_back(
-                    HdMaterialParam::ParamTypeTexture, it.GetName(), it.GetFallbackValue(),
-                    GetID().AppendProperty(remappedName), _stSamplerCoords, false
+                    HdMaterialParam::ParamTypeTexture, it.GetName(),
+                    it.GetFallbackValue(), GetID().AppendProperty(remappedName),
+                    _stSamplerCoords, false
 #ifdef LUMA_USD_BUILD
                     ,
                     isUdim
@@ -545,14 +608,16 @@ private:
     ) {
         const auto connectedFileObj = GetConnectedFileNode(node, paramName);
         if (connectedFileObj != MObject::kNullObj) {
-            const auto filePath = _GetTextureFilePath(MFnDependencyNode(connectedFileObj));
+            const auto filePath =
+                _GetTextureFilePath(MFnDependencyNode(connectedFileObj));
             auto textureId = _GetTextureResourceID(filePath);
             if (textureId != HdTextureResource::ID(-1)) {
                 const auto& resourceRegistry =
                     GetDelegate()->GetRenderIndex().GetResourceRegistry();
-                HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr> textureInstance;
-                auto regLock =
-                    resourceRegistry->RegisterTextureResource(textureId, &textureInstance);
+                HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr>
+                    textureInstance;
+                auto regLock = resourceRegistry->RegisterTextureResource(
+                    textureId, &textureInstance);
                 if (textureInstance.IsFirstInstance()) {
                     auto textureResource = _GetTextureResource(filePath);
                     _textureResources[paramName] = textureResource;
@@ -578,7 +643,9 @@ private:
 
         MStatus status;
         MFnDependencyNode node(_surfaceShader, &status);
-        if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParamValue(paramName); }
+        if (ARCH_UNLIKELY(!status)) {
+            return GetPreviewMaterialParamValue(paramName);
+        }
 
         auto remappedParam = paramName;
         if (_surfaceShaderType != UsdImagingTokens->UsdPreviewSurface) {
@@ -589,7 +656,9 @@ private:
                     [&paramName](const std::pair<TfToken, TfToken>& p) -> bool {
                         return p.first == paramName;
                     });
-                if (remapIt != mIt->second.end()) { remappedParam = remapIt->second; }
+                if (remapIt != mIt->second.end()) {
+                    remappedParam = remapIt->second;
+                }
             } else {
                 return GetPreviewMaterialParamValue(paramName);
             }
@@ -597,15 +666,18 @@ private:
 
         const auto p = node.findPlug(remappedParam.GetText());
         if (ARCH_UNLIKELY(p.isNull())) {
-            return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(paramName);
+            return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
+                paramName);
         }
         const auto previewIt = _FindPreviewParam(paramName);
         if (ARCH_UNLIKELY(previewIt == _previewShaderParams.cend())) {
-            return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(paramName);
+            return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
+                paramName);
         }
         const auto ret = _ConvertPlugToValue(p, previewIt->_type);
         if (ARCH_UNLIKELY(ret.IsEmpty())) {
-            return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(paramName);
+            return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
+                paramName);
         }
         return ret;
     }
@@ -618,29 +690,38 @@ private:
         }
 
         if (_surfaceShader != MObject::kNullObj) {
-            _surfaceShaderCallback =
-                MNodeMessage::addNodeDirtyCallback(_surfaceShader, _DirtyShaderParams, this);
+            _surfaceShaderCallback = MNodeMessage::addNodeDirtyCallback(
+                _surfaceShader, _DirtyShaderParams, this);
         }
     }
 
-    HdTextureResource::ID GetTextureResourceID(const TfToken& paramName) override {
+    HdTextureResource::ID GetTextureResourceID(
+        const TfToken& paramName) override {
         auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
         if (fileObj == MObject::kNullObj) { return HdTextureResource::ID(-1); }
-        return _GetTextureResourceID(_GetTextureFilePath(MFnDependencyNode(fileObj)));
+        return _GetTextureResourceID(
+            _GetTextureFilePath(MFnDependencyNode(fileObj)));
     }
 
-    inline HdTextureResource::ID _GetTextureResourceID(const TfToken& filePath) {
+    inline HdTextureResource::ID _GetTextureResourceID(
+        const TfToken& filePath) {
         size_t hash = filePath.Hash();
-        boost::hash_combine(hash, GetDelegate()->GetParams().textureMemoryPerTexture);
+        boost::hash_combine(
+            hash, GetDelegate()->GetParams().textureMemoryPerTexture);
         return HdTextureResource::ID(hash);
     }
 
     inline TfToken _GetTextureFilePath(const MFnDependencyNode& fileNode) {
 #ifdef LUMA_USD_BUILD
         if (fileNode.findPlug(MayaAttrs::file::uvTilingMode).asShort() != 0) {
-            auto ret = fileNode.findPlug(MayaAttrs::file::fileTextureNamePattern).asString();
+            auto ret =
+                fileNode.findPlug(MayaAttrs::file::fileTextureNamePattern)
+                    .asString();
             if (ret.length() == 0) {
-                ret = fileNode.findPlug(MayaAttrs::file::computedFileTextureNamePattern).asString();
+                ret = fileNode
+                          .findPlug(
+                              MayaAttrs::file::computedFileTextureNamePattern)
+                          .asString();
             }
             return TfToken(ret.asChar());
         }
@@ -648,13 +729,16 @@ private:
         return TfToken(fileNode.findPlug(_fileTextureName).asString().asChar());
     }
 
-    HdTextureResourceSharedPtr GetTextureResource(const TfToken& paramName) override {
+    HdTextureResourceSharedPtr GetTextureResource(
+        const TfToken& paramName) override {
         auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
         if (fileObj == MObject::kNullObj) { return {}; }
-        return _GetTextureResource(_GetTextureFilePath(MFnDependencyNode(fileObj)));
+        return _GetTextureResource(
+            _GetTextureFilePath(MFnDependencyNode(fileObj)));
     }
 
-    inline HdTextureResourceSharedPtr _GetTextureResource(const TfToken& filePath) {
+    inline HdTextureResourceSharedPtr _GetTextureResource(
+        const TfToken& filePath) {
         if (filePath.IsEmpty()) { return {}; }
 #ifdef LUMA_USD_BUILD
         const auto isUdim = GlfIsSupportedUdimTexture(filePath);
@@ -672,11 +756,14 @@ private:
 #ifdef LUMA_USD_BUILD
             isUdim ? GlfTextureRegistry::GetInstance().GetTextureHandle(
                          filePath, origin,
-                         [](const TfToken& filePath, GlfImage::ImageOriginLocation)
-                             -> GlfTextureRefPtr { return GlfUdimTexture::New(filePath); })
+                         [](const TfToken& filePath,
+                            GlfImage::ImageOriginLocation) -> GlfTextureRefPtr {
+                             return GlfUdimTexture::New(filePath);
+                         })
                    :
 #endif
-                   GlfTextureRegistry::GetInstance().GetTextureHandle(filePath, origin);
+                   GlfTextureRegistry::GetInstance().GetTextureHandle(
+                       filePath, origin);
         // We can't really mimic texture wrapping and mirroring settings from
         // the uv placement node, so we don't touch those for now.
         return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
@@ -684,7 +771,8 @@ private:
 #ifdef LUMA_USD_BUILD
             isUdim,
 #endif
-            HdWrapClamp, HdWrapClamp, HdMinFilterLinearMipmapLinear, HdMagFilterLinear,
+            HdWrapClamp, HdWrapClamp, HdMinFilterLinearMipmapLinear,
+            HdMagFilterLinear,
             GetDelegate()->GetParams().textureMemoryPerTexture));
     }
 
@@ -695,7 +783,8 @@ private:
         return GetConnectedFileNode(node, paramName);
     }
 
-    MObject GetConnectedFileNode(const MFnDependencyNode& node, const TfToken& paramName) {
+    MObject GetConnectedFileNode(
+        const MFnDependencyNode& node, const TfToken& paramName) {
         MPlugArray conns;
         node.findPlug(paramName.GetText()).connectedTo(conns, true, false);
         if (conns.length() == 0) { return MObject::kNullObj; }
@@ -714,7 +803,8 @@ private:
         HdMaterialNetworkMap materialNetworkMap;
         materialNetworkMap.map[UsdImagingTokens->bxdf] = materialNetwork;
         // HdMaterialNetwork displacementNetwork;
-        // materialNetworkMap.map[UsdImagingTokens->displacement] = displacementNetwork;
+        // materialNetworkMap.map[UsdImagingTokens->displacement] =
+        // displacementNetwork;
 
         return VtValue(materialNetworkMap);
     };
@@ -722,13 +812,16 @@ private:
     MObject _surfaceShader;
     TfToken _surfaceShaderType;
     // So they live long enough
-    std::unordered_map<TfToken, HdTextureResourceSharedPtr, TfToken::HashFunctor> _textureResources;
+    std::unordered_map<
+        TfToken, HdTextureResourceSharedPtr, TfToken::HashFunctor>
+        _textureResources;
     MCallbackId _surfaceShaderCallback;
 };
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<HdMayaMaterialAdapter, TfType::Bases<HdMayaAdapter>>();
-    TfType::Define<HdMayaShadingEngineAdapter, TfType::Bases<HdMayaMaterialAdapter>>();
+    TfType::Define<
+        HdMayaShadingEngineAdapter, TfType::Bases<HdMayaMaterialAdapter>>();
 }
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, shadingEngine) {
@@ -736,7 +829,8 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, shadingEngine) {
         TfToken("shadingEngine"),
         [](const SdfPath& id, HdMayaDelegateCtx* delegate,
            const MObject& obj) -> HdMayaMaterialAdapterPtr {
-            return HdMayaMaterialAdapterPtr(new HdMayaShadingEngineAdapter(id, delegate, obj));
+            return HdMayaMaterialAdapterPtr(
+                new HdMayaShadingEngineAdapter(id, delegate, obj));
         });
 }
 

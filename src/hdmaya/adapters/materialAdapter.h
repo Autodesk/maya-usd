@@ -33,7 +33,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdMayaMaterialAdapter : public HdMayaAdapter {
 public:
     HDMAYA_API
-    HdMayaMaterialAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MObject& node);
+    HdMayaMaterialAdapter(
+        const SdfPath& id, HdMayaDelegateCtx* delegate, const MObject& node);
     HDMAYA_API
     virtual ~HdMayaMaterialAdapter() = default;
 
@@ -59,9 +60,11 @@ public:
     HDMAYA_API
     virtual HdMaterialParamVector GetMaterialParams();
     HDMAYA_API
-    virtual HdTextureResource::ID GetTextureResourceID(const TfToken& paramName);
+    virtual HdTextureResource::ID GetTextureResourceID(
+        const TfToken& paramName);
     HDMAYA_API
-    virtual HdTextureResourceSharedPtr GetTextureResource(const TfToken& paramName);
+    virtual HdTextureResourceSharedPtr GetTextureResource(
+        const TfToken& paramName);
     HDMAYA_API
     virtual VtValue GetMaterialResource();
 
@@ -72,7 +75,8 @@ public:
     HDMAYA_API
     static const std::string& GetPreviewDisplacementSource();
     HDMAYA_API
-    static const VtValue& GetPreviewMaterialParamValue(const TfToken& paramName);
+    static const VtValue& GetPreviewMaterialParamValue(
+        const TfToken& paramName);
 
     HDMAYA_API
     static VtValue GetPreviewMaterialResource(const SdfPath& materialID);

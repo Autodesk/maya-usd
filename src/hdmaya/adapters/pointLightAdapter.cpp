@@ -69,14 +69,17 @@ public:
 };
 
 TF_REGISTRY_FUNCTION(TfType) {
-    TfType::Define<HdMayaPointLightAdapter, TfType::Bases<HdMayaLightAdapter> >();
+    TfType::Define<
+        HdMayaPointLightAdapter, TfType::Bases<HdMayaLightAdapter> >();
 }
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, pointLight) {
     HdMayaAdapterRegistry::RegisterLightAdapter(
         TfToken("pointLight"),
-        [](HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaLightAdapterPtr {
-            return HdMayaLightAdapterPtr(new HdMayaPointLightAdapter(delegate, dag));
+        [](HdMayaDelegateCtx* delegate,
+           const MDagPath& dag) -> HdMayaLightAdapterPtr {
+            return HdMayaLightAdapterPtr(
+                new HdMayaPointLightAdapter(delegate, dag));
         });
 }
 

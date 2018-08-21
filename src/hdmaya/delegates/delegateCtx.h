@@ -45,12 +45,16 @@ protected:
 
 public:
     using HdSceneDelegate::GetRenderIndex;
-    HdChangeTracker& GetChangeTracker() { return GetRenderIndex().GetChangeTracker(); }
+    HdChangeTracker& GetChangeTracker() {
+        return GetRenderIndex().GetChangeTracker();
+    }
 
     HDMAYA_API
-    void InsertRprim(const TfToken& typeId, const SdfPath& id, HdDirtyBits initialBits);
+    void InsertRprim(
+        const TfToken& typeId, const SdfPath& id, HdDirtyBits initialBits);
     HDMAYA_API
-    void InsertSprim(const TfToken& typeId, const SdfPath& id, HdDirtyBits initialBits);
+    void InsertSprim(
+        const TfToken& typeId, const SdfPath& id, HdDirtyBits initialBits);
     HDMAYA_API
     void RemoveRprim(const SdfPath& id);
     HDMAYA_API
