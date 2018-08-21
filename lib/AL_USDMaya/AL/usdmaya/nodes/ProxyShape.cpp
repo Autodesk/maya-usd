@@ -1683,19 +1683,21 @@ MString ProxyShape::recordUsdPrimToMayaPath(const UsdPrim &usdPrim,
   MFnDagNode shapeFn(thisMObject());
   const MObject shapeParent = shapeFn.parent(0);
   MDagPath mayaPath;
+  // Note: This doesn't account for the possibility of multiple paths to a node, but so far this
+  // is only used for recently created transforms that should only have single paths.
   MDagPath::getAPathTo(shapeParent, mayaPath);
 
   MString resultingPath;
   SdfPath primPath(usdPrim.GetPath());
   resultingPath = AL::usdmaya::utils::mapUsdPrimToMayaNode(usdPrim, mayaObject, &mayaPath);
-  m_primPathToDagPath.insert(std::make_pair(primPath, resultingPath));
+  m_primPathToDagPath.emplace(primPath, resultingPath);
 
   return resultingPath;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MString ProxyShape::getMayaPathFromUsdPrim(const UsdPrim& usdPrim){
-  _PrimPathToDagPath::iterator itr = m_primPathToDagPath.find(usdPrim.GetPath());
+  PrimPathToDagPath::iterator itr = m_primPathToDagPath.find(usdPrim.GetPath());
   if (itr == m_primPathToDagPath.end()){
     TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::getMayaPathFromUsdPrim could not find stored MayaPath\n");
     return MString();

@@ -231,7 +231,7 @@ struct FindLockedPrimsLogic
 };
 
 typedef const HierarchyIterationLogic*  HierarchyIterationLogics[3];
-typedef TfHashMap<SdfPath, MString, SdfPath::Hash > _PrimPathToDagPath;
+typedef std::unordered_map<SdfPath, MString, SdfPath::Hash > PrimPathToDagPath;
 
 extern AL::event::EventId kPreClearStageCache;
 extern AL::event::EventId kPostClearStageCache;
@@ -608,11 +608,16 @@ public:
   void deserialiseTranslatorContext();
 
   /// \brief  gets the maya node path for a prim, stores the mapping and returns it
+  /// \param  usdPrim the prim we are bringing in to maya
+  /// \param  mayaObject the corresponding maya node
+  /// \return  a dag path to the maya object
   AL_USDMAYA_PUBLIC
   MString recordUsdPrimToMayaPath(const UsdPrim &usdPrim,
                                   const MObject &mayaObject);
 
   /// \brief  returns the stored maya node path for a prim
+  /// \param  usdPrim a prim that has been brought into maya
+  /// \return  a dag path to the maya object
   AL_USDMAYA_PUBLIC
   MString getMayaPathFromUsdPrim(const UsdPrim& usdPrim);
 
@@ -1015,7 +1020,7 @@ private:
   FindUnselectablePrimsLogic m_findUnselectablePrims;
   SdfPathHashSet m_selectedPaths;
   FindLockedPrimsLogic m_findLockedPrims;
-  _PrimPathToDagPath m_primPathToDagPath;
+  PrimPathToDagPath m_primPathToDagPath;
   std::vector<SdfPath> m_paths;
   std::vector<UsdPrim> m_prims;
   TfNotice::Key m_objectsChangedNoticeKey;
