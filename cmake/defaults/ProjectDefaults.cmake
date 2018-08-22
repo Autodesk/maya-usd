@@ -31,7 +31,6 @@ if(APPLE)
     message(WARNING "Building USD on Mac OSX is currently experimental.")
 elseif(WIN32)
     # Windows specific set up
-    message(WARNING "Building USD on Windows is currently experimental.")
 endif()
 
 # Allow local includes from source directory.
