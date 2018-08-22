@@ -74,6 +74,11 @@ AL_usd_FrameRange::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType AL_usd_FrameRange::_GetSchemaType() const {
+    return AL_usd_FrameRange::schemaType;
+}
+
 /* static */
 const TfType &
 AL_usd_FrameRange::_GetStaticTfType()

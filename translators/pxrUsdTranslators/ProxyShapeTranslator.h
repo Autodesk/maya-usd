@@ -32,8 +32,8 @@ struct AL_USDMayaTranslatorProxyShape {
   /// AL_usdmaya_ProxyShape node.
   PXRUSDMAYA_API
   static bool Create(
-          const PxrUsdMayaPrimWriterArgs& args,
-          PxrUsdMayaPrimWriterContext* context);
+          const UsdMayaPrimWriterArgs& args,
+          UsdMayaPrimWriterContext* context);
 
 private:
   /// Return true if \p field should be copied from the spec at \p srcPath in

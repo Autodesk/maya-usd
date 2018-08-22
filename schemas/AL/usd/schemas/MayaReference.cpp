@@ -74,6 +74,11 @@ AL_usd_MayaReference::Define(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
+/* virtual */
+UsdSchemaType AL_usd_MayaReference::_GetSchemaType() const {
+    return AL_usd_MayaReference::schemaType;
+}
+
 /* static */
 const TfType &
 AL_usd_MayaReference::_GetStaticTfType()

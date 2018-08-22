@@ -21,7 +21,7 @@
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 
-#include "usdMaya/JobArgs.h"
+#include "usdMaya/jobArgs.h"
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
 #include "usdMaya/primWriterRegistry.h"
@@ -40,16 +40,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 /* static */
 bool
 AL_USDMayaTranslatorProxyShape::Create(
-        const PxrUsdMayaPrimWriterArgs& args,
-        PxrUsdMayaPrimWriterContext* context)
+        const UsdMayaPrimWriterArgs& args,
+        UsdMayaPrimWriterContext* context)
 {
   UsdStageRefPtr stage = context->GetUsdStage();
   SdfPath authorPath = context->GetAuthorPath();
   UsdTimeCode usdTime = context->GetTimeCode();
 
   context->SetExportsGprims(false);
-  context->SetExportsReferences(true);
   context->SetPruneChildren(true);
+  context->SetModelPaths({authorPath});
 
   UsdPrim prim = stage->DefinePrim(authorPath);
   if (!prim)

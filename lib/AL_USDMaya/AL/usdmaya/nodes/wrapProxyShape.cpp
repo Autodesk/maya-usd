@@ -40,7 +40,7 @@ using boost::python::object;
 namespace {
   struct MBoundingBoxConverter
   {
-    // to-python conversion of const PxrUsdMayaXformOpClassification.
+    // to-python conversion of const MBoundingBox.
     // Decided NOT to register this using boost::python::to_python_converter,
     // in case pxr registers one at some point
     static PyObject* convert(const MBoundingBox& bbox)
