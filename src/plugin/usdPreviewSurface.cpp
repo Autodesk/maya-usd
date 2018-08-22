@@ -65,7 +65,7 @@ MStatus HdMayaUsdPreviewSurface::Initialize() {
     // Just some approximate defaults.
     auto roughness =
         nAttr.create("roughness", "roughness", MFnNumericData::kFloat);
-    nAttr.setDefault(1.0f);
+    nAttr.setDefault(0.01f);
     nAttr.setMin(0.0f);
     nAttr.setMax(1.0f);
     addAttribute(roughness);
@@ -79,7 +79,7 @@ MStatus HdMayaUsdPreviewSurface::Initialize() {
 
     auto clearcoatRoughness = nAttr.create(
         "clearcoatRoughness", "clearcoatRoughness", MFnNumericData::kFloat);
-    nAttr.setDefault(0.0f);
+    nAttr.setDefault(0.01f);
     nAttr.setMin(0.0f);
     nAttr.setMax(1.0f);
     addAttribute(clearcoatRoughness);
@@ -89,12 +89,12 @@ MStatus HdMayaUsdPreviewSurface::Initialize() {
     addAttribute(emissiveColor);
 
     auto specularColor = nAttr.createColor("specularColor", "specularColor");
-    nAttr.setDefault(0.0f, 0.0f, 0.0f);
+    nAttr.setDefault(1.0f, 1.0f, 1.0f);
     addAttribute(specularColor);
 
     auto metallic =
         nAttr.create("metallic", "metallic", MFnNumericData::kFloat);
-    nAttr.setDefault(0.0f);
+    nAttr.setDefault(1.0f);
     nAttr.setMin(0.0f);
     nAttr.setMax(1.0f);
     addAttribute(metallic);
@@ -103,7 +103,7 @@ MStatus HdMayaUsdPreviewSurface::Initialize() {
         eAttr.create("useSpecularWorkflow", "useSpecularWorkflow");
     eAttr.addField("metallic", 0);
     eAttr.addField("specular", 1);
-    eAttr.setDefault(1);
+    eAttr.setDefault(0);
     addAttribute(useSpecularWorkflow);
 
     auto occlusion =
@@ -114,13 +114,13 @@ MStatus HdMayaUsdPreviewSurface::Initialize() {
     addAttribute(occlusion);
 
     auto ior = nAttr.create("ior", "ior", MFnNumericData::kFloat);
-    nAttr.setDefault(1.0f);
+    nAttr.setDefault(1.5f);
     nAttr.setMin(0.0f);
     nAttr.setSoftMax(5.0f);
     addAttribute(ior);
 
     auto normal = nAttr.createPoint("normal", "normal");
-    nAttr.setDefault(1.0f, 1.0f, 1.0f);
+    nAttr.setDefault(0.0f, 0.0f, 1.0f);
     addAttribute(normal);
 
     auto opacity = nAttr.create("opacity", "opacity", MFnNumericData::kFloat);
@@ -130,7 +130,7 @@ MStatus HdMayaUsdPreviewSurface::Initialize() {
     addAttribute(opacity);
 
     auto diffuseColor = nAttr.createColor("diffuseColor", "diffuseColor");
-    nAttr.setDefault(1.0f, 1.0f, 1.0f);
+    nAttr.setDefault(0.18f, 0.18f, 0.18f);
     addAttribute(diffuseColor);
 
     auto displacement =

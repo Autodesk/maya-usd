@@ -83,22 +83,23 @@ struct _PreviewParam {
 using _PreviewParams = std::vector<_PreviewParam>;
 
 const _PreviewParams _previewShaderParams = []() -> _PreviewParams {
+    // TODO: Use SdrRegistry, but it seems PreviewSurface is not there yet?
     _PreviewParams ret = {
-        {_tokens->roughness, VtValue(1.0f), SdfValueTypeNames->Float},
+        {_tokens->roughness, VtValue(0.01f), SdfValueTypeNames->Float},
         {_tokens->clearcoat, VtValue(0.0f), SdfValueTypeNames->Float},
-        {_tokens->clearcoatRoughness, VtValue(0.0f), SdfValueTypeNames->Float},
+        {_tokens->clearcoatRoughness, VtValue(0.01f), SdfValueTypeNames->Float},
         {_tokens->emissiveColor, VtValue(GfVec3f(0.0f, 0.0f, 0.0f)),
          SdfValueTypeNames->Vector3f},
-        {_tokens->specularColor, VtValue(GfVec3f(0.0f, 0.0f, 0.0f)),
+        {_tokens->specularColor, VtValue(GfVec3f(1.0f, 1.0f, 1.0f)),
          SdfValueTypeNames->Vector3f},
-        {_tokens->metallic, VtValue(0.0f), SdfValueTypeNames->Float},
-        {_tokens->useSpecularWorkflow, VtValue(1), SdfValueTypeNames->Int},
+        {_tokens->metallic, VtValue(1.0f), SdfValueTypeNames->Float},
+        {_tokens->useSpecularWorkflow, VtValue(0), SdfValueTypeNames->Int},
         {_tokens->occlusion, VtValue(1.0f), SdfValueTypeNames->Float},
-        {_tokens->ior, VtValue(1.0f), SdfValueTypeNames->Float},
-        {_tokens->normal, VtValue(GfVec3f(1.0f, 1.0f, 1.0f)),
+        {_tokens->ior, VtValue(1.5f), SdfValueTypeNames->Float},
+        {_tokens->normal, VtValue(GfVec3f(0.0f, 0.0f, 1.0f)),
          SdfValueTypeNames->Vector3f},
         {_tokens->opacity, VtValue(1.0f), SdfValueTypeNames->Float},
-        {_tokens->diffuseColor, VtValue(GfVec3f(1.0, 1.0, 1.0)),
+        {_tokens->diffuseColor, VtValue(GfVec3f(0.18f, 0.18f, 0.18f)),
          SdfValueTypeNames->Vector3f},
         {_tokens->displacement, VtValue(0.0f), SdfValueTypeNames->Float},
     };
