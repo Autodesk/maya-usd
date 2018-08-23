@@ -23,6 +23,6 @@ echo "-Updating MAYA_SCRIPT_PATH-"
 export MAYA_SCRIPT_PATH=$1/lib:$1/share/usd/plugins/usdMaya/resources:$MAYA_SCRIPT_PATH
 echo $MAYA_SCRIPT_PATH
 
-echo "-Updating PXR_PLUGINPATH-"
-export PXR_PLUGINPATH=$1/share/usd/plugins:$PXR_PLUGINPATH
-echo $PXR_PLUGINPATH
+echo "-Updating PXR_PLUGINPATH_NAME-"
+export PXR_PLUGINPATH_NAME=$1/share/usd/plugins:$PXR_PLUGINPATH_NAME
+echo $PXR_PLUGINPATH_NAME

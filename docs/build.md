@@ -84,7 +84,7 @@ Feel free to use any flavour of the build_docker_*.sh scripts. You just need to 
 
 AL_USDMaya is made of several plugins:
 - AL_USDMayaPlugin.so (maya plugin): its path has to be added to MAYA_PLUG_IN_PATH
-- libAL_USDMaya.so, libAL_USDMayaSchemas.so, libAL_USDMayaTranslators.so (usd plugins): they need to be setup properly (using PXR_PLUGINPATH) for them to register types used by AL_USDMaya.
+- libAL_USDMaya.so, libAL_USDMayaSchemas.so, libAL_USDMayaTranslators.so (usd plugins): they need to be setup properly (using PXR_PLUGINPATH_NAME) for them to register types used by AL_USDMaya.
 - python bindings are also available, they have to be added to PYTHONPATH.
 See the docker scripts for a configuration example.
 
