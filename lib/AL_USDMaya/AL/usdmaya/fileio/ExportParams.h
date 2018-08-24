@@ -38,6 +38,7 @@ struct ExporterParams
   MString m_fileName; ///< the filename of the file we will be exporting
   double m_minFrame=0.0; ///< the start frame for the animation export
   double m_maxFrame=1.0; ///< the end frame of the animation export
+  uint32_t m_subSamples = 1; ///< the number of subsample steps to export
   bool m_selected = false; ///< are we exporting selected objects (true) or all objects (false)
   bool m_meshes = true; ///< if true, export meshes
   bool m_meshPoints = true; ///< if true mesh vertices will be exported

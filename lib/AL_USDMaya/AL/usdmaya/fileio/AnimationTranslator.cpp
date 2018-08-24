@@ -268,7 +268,8 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
      (startTransformAttrib != endTransformAttrib) ||
      (startMesh != endMesh))
   {
-    for(double t = params.m_minFrame, e = params.m_maxFrame + 1e-3f; t < e; t += 1.0)
+    double increment = 1.0 / params.m_subSamples;
+    for(double t = params.m_minFrame, e = params.m_maxFrame + 1e-3f; t < e; t += increment)
     {
       MAnimControl::setCurrentTime(t);
       UsdTimeCode timeCode(t);

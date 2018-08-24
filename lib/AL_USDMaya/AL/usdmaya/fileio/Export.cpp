@@ -995,6 +995,11 @@ MStatus ExportCommand::doIt(const MArgList& args)
     m_params.m_maxFrame = MAnimControl::maxTime().value();
   }
 
+  if(argData.isFlagSet("ss", &status))
+  {
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("ss", 0, m_params.m_subSamples), "ALUSDExport: Unable to fetch \"sub samples\" argument");
+  }
+
   if (argData.isFlagSet("fs", &status))
   {
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("fs", 0, m_params.m_filterSample), "ALUSDExport: Unable to fetch \"filter sample\" argument");
@@ -1088,6 +1093,8 @@ MSyntax ExportCommand::createSyntax()
   status = syntax.addFlag("-fs", "-filterSample", MSyntax::kBoolean);
   AL_MAYA_CHECK_ERROR2(status, errorString);
   status = syntax.addFlag("-eac", "-extensiveAnimationCheck", MSyntax::kBoolean);
+  AL_MAYA_CHECK_ERROR2(status, errorString);
+  status = syntax.addFlag("-ss", "-subSamples", MSyntax::kUnsigned);
   AL_MAYA_CHECK_ERROR2(status, errorString);
   syntax.enableQuery(false);
   syntax.enableEdit(false);

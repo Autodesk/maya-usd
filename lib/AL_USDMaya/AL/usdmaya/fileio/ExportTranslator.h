@@ -59,6 +59,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
   static constexpr const char* const kUseTimelineRange = "Use Timeline Range"; ///< export using the timeline range option name
   static constexpr const char* const kFrameMin = "Frame Min"; ///< specify min time frame option name
   static constexpr const char* const kFrameMax = "Frame Max"; ///< specify max time frame option name
+  static constexpr const char* const kSubSamples = "Sub Samples"; ///< specify the number of sub samples to export
   static constexpr const char* const kFilterSample = "Filter Sample"; ///< export filter sample option name
   static constexpr const char* const kExportAtWhichTime = "Export At Which Time";
 
@@ -93,6 +94,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
     if(!options.addBool(kUseTimelineRange, defaultValues.m_useTimelineRange)) return MS::kFailure;
     if(!options.addFloat(kFrameMin, defaultValues.m_minFrame)) return MS::kFailure;
     if(!options.addFloat(kFrameMax, defaultValues.m_maxFrame)) return MS::kFailure;
+    if(!options.addInt(kSubSamples, defaultValues.m_subSamples)) return MS::kFailure;
     if(!options.addBool(kFilterSample, defaultValues.m_filterSample)) return MS::kFailure;
     if(!options.addEnum(kExportAtWhichTime, timelineLevel, defaultValues.m_exportAtWhichTime)) return MS::kFailure;
     
