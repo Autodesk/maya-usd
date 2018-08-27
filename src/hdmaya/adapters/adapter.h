@@ -50,6 +50,8 @@ public:
     HDMAYA_API
     void AddCallback(MCallbackId callbackId);
     HDMAYA_API
+    void RemoveCallbacks();
+    HDMAYA_API
     virtual VtValue Get(const TfToken& key);
     const MObject& GetNode() { return _node; }
     HDMAYA_API

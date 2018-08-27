@@ -47,11 +47,17 @@ HdMayaAdapter::HdMayaAdapter(
     : _node(node), _id(id), _delegate(delegate) {}
 
 HdMayaAdapter::~HdMayaAdapter() {
-    for (auto c : _callbacks) { MMessage::removeCallback(c); }
+    RemoveCallbacks();
 }
 
 void HdMayaAdapter::AddCallback(MCallbackId callbackId) {
     _callbacks.push_back(callbackId);
+}
+
+void HdMayaAdapter::RemoveCallbacks() {
+    if (_callbacks.empty()) { return; }
+    for (auto c : _callbacks) { MMessage::removeCallback(c); }
+    std::vector<MCallbackId>().swap(_callbacks);
 }
 
 VtValue HdMayaAdapter::Get(const TfToken& /*key*/) { return {}; };

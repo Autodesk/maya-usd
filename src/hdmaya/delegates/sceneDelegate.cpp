@@ -134,6 +134,11 @@ HdMayaSceneDelegate::HdMayaSceneDelegate(
 
 HdMayaSceneDelegate::~HdMayaSceneDelegate() {
     for (auto callback : _callbacks) { MMessage::removeCallback(callback); }
+    _MapAdapter<HdMayaAdapter>(
+        [](HdMayaAdapter* a) {
+            a->RemoveCallbacks();
+        },
+        _shapeAdapters, _lightAdapters, _materialAdapters);
 }
 
 void HdMayaSceneDelegate::Populate() {
@@ -161,6 +166,7 @@ void HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
     HdMayaShapeAdapterPtr adapter;
     if (TfMapLookup(_shapeAdapters, id, &adapter) && adapter != nullptr) {
         adapter->RemovePrim();
+        adapter->RemoveCallbacks();
         _shapeAdapters.erase(id);
         return;
     }
@@ -169,6 +175,7 @@ void HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
     if (TfMapLookup(_lightAdapters, id, &lightAdapter) &&
         lightAdapter != nullptr) {
         lightAdapter->RemovePrim();
+        adapter->RemoveCallbacks();
         _lightAdapters.erase(id);
         return;
     }
@@ -177,6 +184,7 @@ void HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
     if (TfMapLookup(_materialAdapters, id, &materialAdapter) &&
         materialAdapter != nullptr) {
         materialAdapter->RemovePrim();
+        adapter->RemoveCallbacks();
         _materialAdapters.erase(id);
     }
 }
