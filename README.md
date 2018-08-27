@@ -38,8 +38,10 @@ Requirements:
 | Boost | 1.61 |
 | TBB | 4.4 |
 
-To enable limited shadow support when using the HdSt render delegate, merge in https://github.com/PixarAnimationStudios/USD/pull/541 to your USD source and add `-DLUMA_USD_BUILD=ON` when running cmake.
+To enable shadows and UDIM textures, merge in the following PRs to your local USD build, and add `-DLUMA_USD_BUILD=ON` to your cmake configuration call.
+- https://github.com/PixarAnimationStudios/USD/pull/541
+- https://github.com/PixarAnimationStudios/USD/pull/597
 
 ## Contributing
 
-The codebase (including the coding style) is highly volatile at this moment, breaking changes can be arrive at any time. When preparing a pull request make sure you run `clang-format` (version 6) before submitting.
+The codebase (including the coding style) is highly volatile at this moment, breaking changes can arrive at any time. When preparing a pull request make sure you run `clang-format` (version 6) before submitting.
