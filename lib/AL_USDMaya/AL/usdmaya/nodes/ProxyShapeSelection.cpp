@@ -551,15 +551,28 @@ MObject ProxyShape::makeUsdTransformChain(
     node = modifier.createNode(AL::maya::utils::convert(transformType), parentNode);
     isTransform = false;
     isUsdTransform = false;
-    TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::makeUsdTransformChain created transformType=%s name=%s\n", transformType.c_str(), usdPrim.GetName().GetText());
   }
   else
   {
     node = modifier.createNode(Transform::kTypeId, parentNode);
-    TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::makeUsdTransformChain created transformType = AL_usdmaya_Transform name=%s\n", usdPrim.GetName().GetText());
+    transformType = "AL_usdmaya_Transform";
   }
 
-  fn.setObject(node);
+  if(fn.setObject(node))
+  {
+     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::makeUsdTransformChain created transformType=%s name=%s\n",
+                                       transformType.c_str(),
+                                       usdPrim.GetName().GetText());
+  }
+  else
+  {
+    MString err;
+    err.format("USDMaya is unable to create the node with transformType=^1s, name=^2s.",
+              transformType.c_str(),
+              usdPrim.GetName().GetText());
+    MGlobal::displayError(err);
+  }
+
   fn.setName(AL::maya::utils::convert(usdPrim.GetName().GetString()));
 
   if(resultingPath)

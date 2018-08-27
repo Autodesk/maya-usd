@@ -87,7 +87,7 @@ static void storeSelection()
     return false;
   };
 
-  for(int i = 0; i < g_selected.length(); /* empty */ )
+  for(unsigned int i = 0; i < g_selected.length(); /* empty */ )
   {
     // grab item as a dag path (skip over materials/textures/etc)
     MDagPath selectedPath; 

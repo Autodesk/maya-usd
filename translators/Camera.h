@@ -45,6 +45,9 @@ public:
     { return true; }
     
   void checkCurrentCameras(MObject cameraNode);
+
+  ExportFlag canExport(const MObject& obj) override
+    { return obj.hasFn(MFn::kCamera) ? ExportFlag::kFallbackSupport : ExportFlag::kNotSupported; }
     
 private:
   MStatus updateAttributes(MObject to, UsdGeomCamera& usdCamera);

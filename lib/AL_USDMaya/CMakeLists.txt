@@ -105,7 +105,7 @@ list(APPEND AL_usdmaya_nodes_headers
         AL/usdmaya/nodes/RendererManager.h
         AL/usdmaya/nodes/Transform.h
         AL/usdmaya/nodes/TransformationMatrix.h
-        AL/usdmaya/nodes/translatorProxyShape.h
+        #AL/usdmaya/nodes/translatorProxyShape.h
 )
 list(APPEND AL_usdmaya_nodes_proxy_headers
         AL/usdmaya/nodes/proxy/DrivenTransforms.h
@@ -123,7 +123,7 @@ list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/TransformationMatrix.cpp
         AL/usdmaya/nodes/proxy/DrivenTransforms.cpp
         AL/usdmaya/nodes/proxy/PrimFilter.cpp
-        AL/usdmaya/nodes/translatorProxyShape.cpp
+        #AL/usdmaya/nodes/translatorProxyShape.cpp
 )
 
 list(APPEND AL_usdmaya_public_headers
@@ -142,7 +142,7 @@ add_library(${LIBRARY_NAME}
         ${AL_usdmaya_fileio_source}
         ${AL_usdmaya_fileio_translators_source}
         ${AL_usdmaya_nodes_source}
-        usdTranslator.cpp
+        #usdTranslator.cpp
 )
 
 target_compile_definitions(${LIBRARY_NAME}
