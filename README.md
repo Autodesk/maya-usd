@@ -38,7 +38,7 @@ Requirements:
 | Boost | 1.61 |
 | TBB | 4.4 |
 
-To enable shadows and UDIM textures, merge in the following PRs to your local USD build, and add `-DLUMA_USD_BUILD=ON` to your cmake configuration call.
+To enable shadows and UDIM textures, merge in the following PRs to your local USD build, and pass `-DUSD_HDST_UDIM_BUILD=ON` for UDIM support or `-DUSD_HDST_SHADOWS_BUILD` for shadows to cmake.
 - https://github.com/PixarAnimationStudios/USD/pull/541
 - https://github.com/PixarAnimationStudios/USD/pull/597
 

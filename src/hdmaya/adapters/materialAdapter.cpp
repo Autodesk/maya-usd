@@ -31,7 +31,7 @@
 
 #include <pxr/imaging/glf/glslfx.h>
 #include <pxr/imaging/glf/textureRegistry.h>
-#ifdef LUMA_USD_BUILD
+#ifdef USD_HDST_UDIM_BUILD
 #include <pxr/imaging/glf/udimTexture.h>
 #endif
 
@@ -560,7 +560,7 @@ private:
         HdMaterialParamVector ret;
         ret.reserve(_previewShaderParamVector.size());
         for (const auto& it : _previewShaderParamVector) {
-#ifdef LUMA_USD_BUILD
+#ifdef USD_HDST_UDIM_BUILD
             auto textureType = HdTextureType::Uv;
 #endif
             auto remappedName = it.GetName();
@@ -578,7 +578,7 @@ private:
             }
             if (_RegisterTexture(
                     node, remappedName
-#ifdef LUMA_USD_BUILD
+#ifdef USD_HDST_UDIM_BUILD
                     ,
                     textureType
 #endif
@@ -587,7 +587,7 @@ private:
                     HdMaterialParam::ParamTypeTexture, it.GetName(),
                     it.GetFallbackValue(), GetID().AppendProperty(remappedName),
                     _stSamplerCoords,
-#ifdef LUMA_USD_BUILD
+#ifdef USD_HDST_UDIM_BUILD
                     textureType
 #else
                     false
@@ -603,7 +603,7 @@ private:
 
     inline bool _RegisterTexture(
         const MFnDependencyNode& node, const TfToken& paramName
-#ifdef LUMA_USD_BUILD
+#ifdef USD_HDST_UDIM_BUILD
         ,
         HdTextureType& textureType
 #endif
@@ -627,7 +627,7 @@ private:
                 } else {
                     _textureResources[paramName] = textureInstance.GetValue();
                 }
-#ifdef LUMA_USD_BUILD
+#ifdef USD_HDST_UDIM_BUILD
                 if (GlfIsSupportedUdimTexture(filePath)) {
                     textureType = HdTextureType::Udim;
                 }
@@ -716,7 +716,7 @@ private:
     }
 
     inline TfToken _GetTextureFilePath(const MFnDependencyNode& fileNode) {
-#ifdef LUMA_USD_BUILD
+#ifdef USD_HDST_UDIM_BUILD
         if (fileNode.findPlug(MayaAttrs::file::uvTilingMode).asShort() != 0) {
             auto ret =
                 fileNode.findPlug(MayaAttrs::file::fileTextureNamePattern)
@@ -744,14 +744,14 @@ private:
     inline HdTextureResourceSharedPtr _GetTextureResource(
         const TfToken& filePath) {
         if (filePath.IsEmpty()) { return {}; }
-#ifdef LUMA_USD_BUILD
+#ifdef USD_HDST_UDIM_BUILD
         auto textureType = HdTextureType::Uv;
         if (GlfIsSupportedUdimTexture(filePath)) {
             textureType = HdTextureType::Udim;
         }
 #endif
         if (
-#ifdef LUMA_USD_BUILD
+#ifdef USD_HDST_UDIM_BUILD
             textureType != HdTextureType::Udim &&
 #endif
             !TfPathExists(filePath)) {
@@ -760,7 +760,7 @@ private:
         // TODO: handle origin
         const auto origin = GlfImage::OriginUpperLeft;
         GlfTextureHandleRefPtr texture = nullptr;
-#ifdef LUMA_USD_BUILD
+#ifdef USD_HDST_UDIM_BUILD
         if (textureType == HdTextureType::Udim) {
             GlfUdimTextureFactory factory;
             texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
@@ -776,7 +776,7 @@ private:
         // the uv placement node, so we don't touch those for now.
         return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
             texture,
-#ifdef LUMA_USD_BUILD
+#ifdef USD_HDST_UDIM_BUILD
             textureType,
 #else
             false,

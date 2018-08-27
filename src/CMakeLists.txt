@@ -79,6 +79,16 @@ if (LUMA_USD_BUILD)
     target_compile_definitions(hdview PRIVATE LUMA_USD_BUILD)
 endif ()
 
+if (USD_HDST_SHADOWS_BUILD)
+    target_compile_definitions(hdmaya PRIVATE USD_HDST_SHADOWS_BUILD)
+    target_compile_definitions(hdview PRIVATE USD_HDST_SHADOWS_BUILD)
+endif ()
+
+if (USD_HDST_UDIM_BUILD)
+    target_compile_definitions(hdmaya PRIVATE USD_HDST_UDIM_BUILD)
+    target_compile_definitions(hdview PRIVATE USD_HDST_UDIM_BUILD)
+endif ()
+
 # Wanted to do this:
 #   get_target_property(LIB_FULLPATH hdmaya LOCATION)
 #   get_filename_component(LIB_NAME ${LIB_FULLPATH} NAME)

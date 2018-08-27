@@ -246,4 +246,5 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, shadingEngine) {
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif // LUMA_USD_BUILD

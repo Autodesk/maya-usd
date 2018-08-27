@@ -291,7 +291,7 @@ MStatus HdMayaRenderOverride::Render(
     if (!_initializedViewport) {
         GlfGlewInit();
         InitHydraResources();
-#if LUMA_USD_BUILD
+#if USD_HDST_SHADOWS_BUILD
         if (_preferSimpleLight) {
             _taskController->SetEnableShadows(false);
             renderFrame();
@@ -309,6 +309,7 @@ MStatus HdMayaRenderOverride::Render(
         it->PreFrame();
     }
 
+#ifdef USD_HDST_SHADOWS_BUILD
     // TODO: Is there a way to improve this? Quite silly.
     auto enableShadows = true;
     auto* lightParam = drawContext.getLightParameterInformation(
@@ -322,8 +323,6 @@ MStatus HdMayaRenderOverride::Render(
             enableShadows = intVals[0] != 0;
         }
     }
-
-#ifdef LUMA_USD_BUILD
     _taskController->SetEnableShadows(enableShadows);
 #endif
 
@@ -348,7 +347,7 @@ MStatus HdMayaRenderOverride::Render(
     params.wireframeColor = GfVec4f(colour.r, colour.g, colour.b, 1.0f);
 
     _taskController->SetRenderParams(params);
-#ifdef LUMA_USD_BUILD
+#ifdef USD_HDST_SHADOWS_BUILD
     HdxShadowTaskParams shadowParams;
     shadowParams.cullStyle = HdCullStyleNothing;
 
@@ -400,7 +399,7 @@ void HdMayaRenderOverride::InitHydraResources() {
             "_UsdImaging_%s_%p",
             TfMakeValidIdentifier(_rendererName.GetText()).c_str(), this))));
 
-#ifdef LUMA_USD_BUILD
+#ifdef USD_HDST_SHADOWS_BUILD
     _taskController->SetEnableShadows(true);
 #endif
     VtValue selectionTrackerValue(_selectionTracker);
