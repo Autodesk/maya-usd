@@ -561,7 +561,7 @@ private:
         ret.reserve(_previewShaderParamVector.size());
         for (const auto& it : _previewShaderParamVector) {
 #ifdef LUMA_USD_BUILD
-            auto isUdim = false;
+            auto textureType = HdTextureType::Uv;
 #endif
             auto remappedName = it.GetName();
             if (mIt != _materialParamRemaps.end()) {
@@ -580,16 +580,17 @@ private:
                     node, remappedName
 #ifdef LUMA_USD_BUILD
                     ,
-                    isUdim
+                    textureType
 #endif
                     )) {
                 ret.emplace_back(
                     HdMaterialParam::ParamTypeTexture, it.GetName(),
                     it.GetFallbackValue(), GetID().AppendProperty(remappedName),
-                    _stSamplerCoords, false
+                    _stSamplerCoords,
 #ifdef LUMA_USD_BUILD
-                    ,
-                    isUdim
+                    textureType
+#else
+                    false
 #endif
                 );
             } else {
@@ -604,7 +605,7 @@ private:
         const MFnDependencyNode& node, const TfToken& paramName
 #ifdef LUMA_USD_BUILD
         ,
-        bool& isUdim
+        HdTextureType& textureType
 #endif
     ) {
         const auto connectedFileObj = GetConnectedFileNode(node, paramName);
@@ -627,7 +628,9 @@ private:
                     _textureResources[paramName] = textureInstance.GetValue();
                 }
 #ifdef LUMA_USD_BUILD
-                isUdim = GlfIsSupportedUdimTexture(filePath);
+                if (GlfIsSupportedUdimTexture(filePath)) {
+                    textureType = HdTextureType::Udim;
+                }
 #endif
                 return true;
             } else {
@@ -742,35 +745,41 @@ private:
         const TfToken& filePath) {
         if (filePath.IsEmpty()) { return {}; }
 #ifdef LUMA_USD_BUILD
-        const auto isUdim = GlfIsSupportedUdimTexture(filePath);
+        auto textureType = HdTextureType::Uv;
+        if (GlfIsSupportedUdimTexture(filePath)) {
+            textureType = HdTextureType::Udim;
+        }
 #endif
         if (
 #ifdef LUMA_USD_BUILD
-            !isUdim &&
+            textureType != HdTextureType::Udim &&
 #endif
             !TfPathExists(filePath)) {
             return {};
         }
         // TODO: handle origin
         const auto origin = GlfImage::OriginUpperLeft;
-        auto texture =
+        GlfTextureHandleRefPtr texture = nullptr;
 #ifdef LUMA_USD_BUILD
-            isUdim ? GlfTextureRegistry::GetInstance().GetTextureHandle(
-                         filePath, origin,
-                         [](const TfToken& filePath,
-                            GlfImage::ImageOriginLocation) -> GlfTextureRefPtr {
-                             return GlfUdimTexture::New(filePath);
-                         })
-                   :
+        if (textureType == HdTextureType::Udim) {
+            GlfUdimTextureFactory factory;
+            texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
+                filePath, origin, &factory);
+        } else
 #endif
-                   GlfTextureRegistry::GetInstance().GetTextureHandle(
-                       filePath, origin);
+        {
+            texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
+                filePath, origin);
+        }
+
         // We can't really mimic texture wrapping and mirroring settings from
         // the uv placement node, so we don't touch those for now.
         return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
-            texture, false,
+            texture,
 #ifdef LUMA_USD_BUILD
-            isUdim,
+            textureType,
+#else
+            false,
 #endif
             HdWrapClamp, HdWrapClamp, HdMinFilterLinearMipmapLinear,
             HdMagFilterLinear,

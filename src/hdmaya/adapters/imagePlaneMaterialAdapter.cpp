@@ -200,7 +200,7 @@ private:
         // We can't really mimic texture wrapping and mirroring settings from
         // the uv placement node, so we don't touch those for now.
         return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
-            texture, false, false, HdWrapClamp, HdWrapClamp,
+            texture, HdTextureType::Uv, HdWrapClamp, HdWrapClamp,
             HdMinFilterLinearMipmapLinear, HdMagFilterLinear,
             GetDelegate()->GetParams().textureMemoryPerTexture));
     }

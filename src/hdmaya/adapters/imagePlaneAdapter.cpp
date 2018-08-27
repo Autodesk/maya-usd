@@ -223,15 +223,15 @@ public:
 
             const auto fit = dnode.findPlug("fit").asShort();
             if (fit == UsdGeomImagePlane::FIT_BEST) {
-                paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->best;
+                paramsFromMaya.fit = UsdGeomTokens->best;
             } else if (fit == UsdGeomImagePlane::FIT_FILL) {
-                paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->fill;
+                paramsFromMaya.fit = UsdGeomTokens->fill;
             } else if (fit == UsdGeomImagePlane::FIT_HORIZONTAL) {
-                paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->horizontal;
+                paramsFromMaya.fit = UsdGeomTokens->horizontal;
             } else if (fit == UsdGeomImagePlane::FIT_VERTICAL) {
-                paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->vertical;
+                paramsFromMaya.fit = UsdGeomTokens->vertical;
             } else if (fit == UsdGeomImagePlane::FIT_TO_SIZE) {
-                paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->toSize;
+                paramsFromMaya.fit = UsdGeomTokens->toSize;
             }
 
             // always enabled but only affect when connected to camera
@@ -254,7 +254,7 @@ public:
                 dnode.findPlug("height").asFloat());
             // if no camera, fit wont affect size, and this fit value uses
             // size without any modifications
-            paramsFromMaya.fit = UsdGeomImagePlaneFitTokens->toSize;
+            paramsFromMaya.fit = UsdGeomTokens->toSize;
             // maya uses a center attribute as a 3d offset, but we can also
             // express this with depth + offset since those other attributes
             // do not affect non camera image planes.
