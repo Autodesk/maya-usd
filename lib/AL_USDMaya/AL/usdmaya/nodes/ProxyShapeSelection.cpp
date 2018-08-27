@@ -562,15 +562,10 @@ MObject ProxyShape::makeUsdTransformChain(
   fn.setObject(node);
   fn.setName(AL::maya::utils::convert(usdPrim.GetName().GetString()));
 
-  //Retrieve the proxy shapes transform path which will be used in the UsdPrim->MayaNode mapping in the case where there is delayed node creation.
-  MFnDagNode shapeFn(thisMObject());
-  const MObject shapeParent = shapeFn.parent(0);
-  MDagPath mayaPath;
-  MDagPath::getAPathTo(shapeParent, mayaPath);
   if(resultingPath)
-    *resultingPath = AL::usdmaya::utils::mapUsdPrimToMayaNode(usdPrim, node, &mayaPath);
+    *resultingPath = recordUsdPrimToMayaPath(usdPrim, node);
   else
-    AL::usdmaya::utils::mapUsdPrimToMayaNode(usdPrim, node, &mayaPath);
+    recordUsdPrimToMayaPath(usdPrim, node);
 
   if(isUsdTransform)
   {

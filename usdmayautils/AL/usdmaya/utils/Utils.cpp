@@ -98,12 +98,6 @@ MString mapUsdPrimToMayaNode(const UsdPrim& usdPrim,
 
   UsdStageWeakPtr stage = usdPrim.GetStage();
 
-  // copy the previousTarget, and restore it later
-  UsdEditTarget previousTarget = stage->GetEditTarget();
-  //auto previousLayer = previousTarget.GetLayer();
-  auto sessionLayer = stage->GetSessionLayer();
-  stage->SetEditTarget(sessionLayer);
-
   MFnDagNode mayaNode(mayaObject);
   MDagPath mayaDagPath;
   mayaNode.getPath(mayaDagPath);
@@ -116,13 +110,7 @@ MString mapUsdPrimToMayaNode(const UsdPrim& usdPrim,
     std::replace(mayaElementPath.begin(), mayaElementPath.end(), '/','|');
   }
 
-  VtValue mayaPathValue(mayaElementPath);
-  usdPrim.SetCustomDataByKey(mayaPathAttributeName, mayaPathValue);
-
-  TF_DEBUG(ALUTILS_INFO).Msg("Capturing the path for prim=%s mayaObject=%s\n", usdPrim.GetName().GetText(), mayaElementPath.c_str());
-
-  //restore the edit target
-  stage->SetEditTarget(previousTarget);
+  TF_DEBUG(ALUTILS_INFO).Msg("Mapped the path for prim=%s to mayaObject=%s\n", usdPrim.GetName().GetText(), mayaElementPath.c_str());
 
   return AL::maya::utils::convert(mayaElementPath);
 }

@@ -10,7 +10,7 @@ The LayerManager is a singleton that tracks all layers that have been set as an 
 The tracked layers will be serialised to the Maya scene when the scene is saved, and reapplied when the scene is re-opened.
 To record edits to a layer, you need to set it as the current [Edit Target](https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-EditTarget). 
 AL_USDMaya will record which layers have been set as the edit target during a session, and when the scene is saved (via an OnSceneSaved callback) will serialise their content into the maya scene. Those layers will be deserialised into the live USD model after the scene has been opened again via an equivalent OnSceneOpened callback).
-Normally, the default Edit Target in USD will be the Root Layer of the scene, although using the [Session Layer](https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-SessionLayer) is something we should consider.
+Normally, the default Edit Target in USD will be the Root Layer of the scene, but the proxyShape sets the [Session Layer](https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-SessionLayer) as the default Edit Target. This has several advantages such as: authoring edits as the highest strength opinion, concentrating edits in one place, and avoiding serializing heavy root layers.
 
 ##### Uses at AL
 ###### Modifications for exisiting layers
