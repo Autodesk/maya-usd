@@ -98,6 +98,7 @@ void NodeFactory::setupNode(const UsdPrim& from, MObject obj, MObject parent, bo
       {
         nodeName += "Shape";
       }
+      // FIXME: calling mapUsdPrimToMayaNode no longer has any effect since it doesn't write to the session layer. Remove this?
       // Write in the shapes parent transform node's path instead of the shape.
       // This was done because we want the xform to be selected when chosen through the outliner instead of the shape.
       AL::usdmaya::utils::mapUsdPrimToMayaNode(from, parent);

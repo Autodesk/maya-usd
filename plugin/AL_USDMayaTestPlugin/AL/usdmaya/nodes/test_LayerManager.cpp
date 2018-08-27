@@ -463,13 +463,13 @@ TEST(LayerManager, simpleSaveRestore)
 
     auto stage = proxy->getUsdStage();
     auto hip = stage->GetPrimAtPath(hipPath);
-    auto root = stage->GetRootLayer();
+    auto session = stage->GetSessionLayer();
 
     ASSERT_TRUE(hip.HasAttribute(fooToken));
     float outValue;
     hip.GetAttribute(fooToken).Get(&outValue);
     EXPECT_EQ(outValue, fooValue);
-    auto fooLayerAttr = root->GetAttributeAtPath(fooPath);
+    auto fooLayerAttr = session->GetAttributeAtPath(fooPath);
     ASSERT_TRUE(fooLayerAttr);
     EXPECT_EQ(fooLayerAttr->GetDefaultValue(), fooValue);
   };
@@ -501,14 +501,14 @@ TEST(LayerManager, simpleSaveRestore)
 
     auto stage = proxy->getUsdStage();
     auto hip = stage->GetPrimAtPath(hipPath);
-    auto root = stage->GetRootLayer();
+    auto session = stage->GetSessionLayer();
 
     // Verify that initially, in the stage, /root/hip1.foo attribute is not present
     EXPECT_FALSE(hip.HasAttribute(fooToken));
-    EXPECT_FALSE(root->GetAttributeAtPath(fooPath));
+    EXPECT_FALSE(session->GetAttributeAtPath(fooPath));
 
     // Now add the foo attribute
-    EXPECT_EQ(stage->GetEditTarget().GetLayer(), root);
+    EXPECT_EQ(stage->GetEditTarget().GetLayer(), session);
     auto fooStageAttr = hip.CreateAttribute(fooToken, SdfValueTypeNames->Float);
     // ...and set it...
     fooStageAttr.Set(fooValue);
@@ -518,7 +518,7 @@ TEST(LayerManager, simpleSaveRestore)
     float outValue;
     hip.GetAttribute(fooToken).Get(&outValue);
     EXPECT_EQ(outValue, fooValue);
-    auto fooLayerAttr = root->GetAttributeAtPath(fooPath);
+    auto fooLayerAttr = session->GetAttributeAtPath(fooPath);
     ASSERT_TRUE(fooLayerAttr);
     EXPECT_EQ(fooLayerAttr->GetDefaultValue(), fooValue);
   }
