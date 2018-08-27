@@ -196,8 +196,7 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
         const auto id = GetPrimPath(dag);
         if (TfMapLookupPtr(_lightAdapters, id) != nullptr) { return; }
         auto adapter = adapterCreator(this, dag);
-        if (adapter == nullptr) { return; }
-        if (!adapter->IsSupported()) { return; }
+        if (adapter == nullptr || !adapter->IsSupported()) { return; }
         adapter->Populate();
         adapter->CreateCallbacks();
         _lightAdapters.insert({id, adapter});
@@ -208,8 +207,7 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
         const auto id = GetPrimPath(dag);
         if (TfMapLookupPtr(_shapeAdapters, id) != nullptr) { return; }
         auto adapter = adapterCreator(this, dag);
-        if (adapter == nullptr) { return; }
-        if (!adapter->IsSupported()) { return; }
+        if (adapter == nullptr || !adapter->IsSupported()) { return; }
         adapter->Populate();
         adapter->CreateCallbacks();
         _shapeAdapters.insert({id, adapter});

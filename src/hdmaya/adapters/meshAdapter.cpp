@@ -78,24 +78,30 @@ public:
             HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty);
 
         MStatus status;
-        // Duh!
+    }
+
+    void CreateCallbacks() override {
+        MStatus status;
         auto obj = GetNode();
-        auto id = MNodeMessage::addNodeDirtyCallback(
-            obj, NodeDirtiedCallback, this, &status);
-        if (status) { AddCallback(id); }
-        id = MNodeMessage::addAttributeChangedCallback(
-            obj, AttributeChangedCallback, this, &status);
-        if (status) { AddCallback(id); }
-        id = MPolyMessage::addPolyTopologyChangedCallback(
-            obj, TopologyChangedCallback, this, &status);
-        if (status) { AddCallback(id); }
-        bool wantModifications[3] = {true, true, true};
-        id = MPolyMessage::addPolyComponentIdChangedCallback(
-            obj, wantModifications, 3, ComponentIdChanged, this, &status);
-        if (status) { AddCallback(id); }
-        id = MPolyMessage::addUVSetChangedCallback(
-            obj, UVSetChangedCallback, this, &status);
-        if (status) { AddCallback(id); }
+        if (obj != MObject::kNullObj) {
+            auto id = MNodeMessage::addNodeDirtyCallback(
+                obj, NodeDirtiedCallback, this, &status);
+            if (status) { AddCallback(id); }
+            id = MNodeMessage::addAttributeChangedCallback(
+                obj, AttributeChangedCallback, this, &status);
+            if (status) { AddCallback(id); }
+            id = MPolyMessage::addPolyTopologyChangedCallback(
+                obj, TopologyChangedCallback, this, &status);
+            if (status) { AddCallback(id); }
+            bool wantModifications[3] = {true, true, true};
+            id = MPolyMessage::addPolyComponentIdChangedCallback(
+                obj, wantModifications, 3, ComponentIdChanged, this, &status);
+            if (status) { AddCallback(id); }
+            id = MPolyMessage::addUVSetChangedCallback(
+                obj, UVSetChangedCallback, this, &status);
+            if (status) { AddCallback(id); }
+        }
+        HdMayaDagAdapter::CreateCallbacks();
     }
 
     bool IsSupported() override {
