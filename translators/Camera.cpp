@@ -294,17 +294,17 @@ UsdPrim Camera::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPa
   MDistance farDistance;
   MDistance focusDistance;
 
-  AL::usdmaya::utils::DgNodeHelper::getBool(cameraObject, m_orthographic, isOrthographic);
-  AL::usdmaya::utils::DgNodeHelper::getDouble(cameraObject, m_horizontalFilmAperture, horizontalAperture);
-  AL::usdmaya::utils::DgNodeHelper::getDouble(cameraObject, m_verticalFilmAperture, verticalAperture);
-  AL::usdmaya::utils::DgNodeHelper::getDouble(cameraObject, m_horizontalFilmApertureOffset, horizontalApertureOffset);
-  AL::usdmaya::utils::DgNodeHelper::getDouble(cameraObject, m_verticalFilmApertureOffset, verticalApertureOffset);
-  AL::usdmaya::utils::DgNodeHelper::getDouble(cameraObject, m_focalLength, focalLength);
-  AL::usdmaya::utils::DgNodeHelper::getDistance(cameraObject, m_nearDistance, nearDistance);
-  AL::usdmaya::utils::DgNodeHelper::getDistance(cameraObject, m_farDistance, farDistance);
-  AL::usdmaya::utils::DgNodeHelper::getDouble(cameraObject, m_fstop, fstop);
-  AL::usdmaya::utils::DgNodeHelper::getDistance(cameraObject, m_focusDistance, focusDistance);
-  AL::usdmaya::utils::DgNodeHelper::getDouble(cameraObject, m_lensSqueezeRatio, squeezeRatio);
+  AL_MAYA_CHECK_ERROR2(AL::usdmaya::utils::DgNodeHelper::getBool(cameraObject, m_orthographic, isOrthographic), errorString);
+  AL_MAYA_CHECK_ERROR2(AL::usdmaya::utils::DgNodeHelper::getDouble(cameraObject, m_horizontalFilmAperture, horizontalAperture), errorString);
+  AL_MAYA_CHECK_ERROR2(AL::usdmaya::utils::DgNodeHelper::getDouble(cameraObject, m_verticalFilmAperture, verticalAperture), errorString);
+  AL_MAYA_CHECK_ERROR2(AL::usdmaya::utils::DgNodeHelper::getDouble(cameraObject, m_horizontalFilmApertureOffset, horizontalApertureOffset), errorString);
+  AL_MAYA_CHECK_ERROR2(AL::usdmaya::utils::DgNodeHelper::getDouble(cameraObject, m_verticalFilmApertureOffset, verticalApertureOffset), errorString);
+  AL_MAYA_CHECK_ERROR2(AL::usdmaya::utils::DgNodeHelper::getDouble(cameraObject, m_focalLength, focalLength), errorString);
+  AL_MAYA_CHECK_ERROR2(AL::usdmaya::utils::DgNodeHelper::getDistance(cameraObject, m_nearDistance, nearDistance), errorString);
+  AL_MAYA_CHECK_ERROR2(AL::usdmaya::utils::DgNodeHelper::getDistance(cameraObject, m_farDistance, farDistance), errorString);
+  AL_MAYA_CHECK_ERROR2(AL::usdmaya::utils::DgNodeHelper::getDouble(cameraObject, m_fstop, fstop), errorString);
+  AL_MAYA_CHECK_ERROR2(AL::usdmaya::utils::DgNodeHelper::getDistance(cameraObject, m_focusDistance, focusDistance), errorString);
+  AL_MAYA_CHECK_ERROR2(AL::usdmaya::utils::DgNodeHelper::getDouble(cameraObject, m_lensSqueezeRatio, squeezeRatio), errorString);
 
   usdCamera.GetProjectionAttr().Set(isOrthographic ? UsdGeomTokens->orthographic : UsdGeomTokens->perspective);
   usdCamera.GetHorizontalApertureAttr().Set(float(horizontalAperture * squeezeRatio * inches_to_mm));
