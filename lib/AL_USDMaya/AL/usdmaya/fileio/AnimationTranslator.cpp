@@ -268,7 +268,7 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
      (startTransformAttrib != endTransformAttrib) ||
      (startMesh != endMesh))
   {
-    double increment = 1.0 / params.m_subSamples;
+    double increment = 1.0 / std::max(1U, params.m_subSamples);
     for(double t = params.m_minFrame, e = params.m_maxFrame + 1e-3f; t < e; t += increment)
     {
       MAnimControl::setCurrentTime(t);
