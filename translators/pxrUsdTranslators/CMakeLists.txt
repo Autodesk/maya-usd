@@ -23,7 +23,7 @@ list(APPEND DEPENDANT_LIBRARIES AL_USDMaya "${USD_MAYA_LIBRARY}")
 set(DIRECTORY_PATH AL/usdmaya/fileio/translators/pxrUsd)
 
 # Setup the plugInfo.json
-set(LIBRARY_LOCATION "../../../../plugin")
+set(LIBRARY_LOCATION "../../plugin")
 configure_file (
   "${CMAKE_CURRENT_SOURCE_DIR}/plugInfo.json.in"
   "${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json"
@@ -67,12 +67,12 @@ install(TARGETS ${PXR_TRANSLATORS_PACKAGE}
 )
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
- DESTINATION ${CMAKE_INSTALL_PREFIX}/share/usd/plugins/${PXR_TRANSLATORS_PACKAGE}/resources
+ DESTINATION ${CMAKE_INSTALL_PREFIX}/plugin/${PXR_TRANSLATORS_PACKAGE}/resources
 )
 
 #install top level plugInfo.json that includes the configured plugInfo.json
 install(CODE
- "file(WRITE \"${CMAKE_INSTALL_PREFIX}/share/usd/plugins/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+ "file(WRITE \"${CMAKE_INSTALL_PREFIX}/plugin/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
 )
 
 if(NOT SKIP_USDMAYA_TESTS)

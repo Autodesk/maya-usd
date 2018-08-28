@@ -1,5 +1,7 @@
 import unittest
 import tempfile
+import os
+
 import maya.cmds as mc
 
 from pxr import Usd, Sdf
@@ -26,7 +28,8 @@ class TestTranslator(unittest.TestCase):
         
         # create one proxyShape with a time offset
         mc.select(clear=1)
-        proxyShapeNode = mc.AL_usdmaya_ProxyShapeImport(file="/mnt/Samsung/luma/rez-build/al_usdmaya/dev/src/translators/pxrUsdTranslators/tests/sphere2.usda")[0]
+        proxyShapeNode = mc.AL_usdmaya_ProxyShapeImport(
+            file="{}/sphere2.usda".format(os.environ.get('TEST_DIR')))[0]
         proxyShape = AL.usdmaya.ProxyShape.getByName(proxyShapeNode)
         proxyParentNode1 = mc.listRelatives(proxyShapeNode, fullPath=1, parent=1)[0]
         proxyParentNode1 = mc.parent(proxyParentNode1, "geo")[0]
@@ -39,7 +42,8 @@ class TestTranslator(unittest.TestCase):
         
         # create another proxyShape with a few session layer edits
         mc.select(clear=1)
-        proxyShapeNode2 = mc.AL_usdmaya_ProxyShapeImport(file="/mnt/Samsung/luma/rez-build/al_usdmaya/dev/src/translators/pxrUsdTranslators/tests/sphere2.usda")[0]
+        proxyShapeNode2 = mc.AL_usdmaya_ProxyShapeImport(
+            file="{}/sphere2.usda".format(os.environ.get('TEST_DIR')))[0]
         proxyShape2 = AL.usdmaya.ProxyShape.getByName(proxyShapeNode2)
         proxyParentNode2 = mc.listRelatives(proxyShapeNode2, fullPath=1, parent=1)[0]
         proxyParentNode2 = mc.parent(proxyParentNode2, "geo")[0]
