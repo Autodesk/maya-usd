@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef AL_USDMAYA_TRANSLATORPROXYSHAPE_H
-#define AL_USDMAYA_TRANSLATORPROXYSHAPE_H
+#ifndef AL_USDMAYA_PROXYSHAPETRANSLATOR_H
+#define AL_USDMAYA_PROXYSHAPETRANSLATOR_H
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
@@ -32,15 +32,16 @@ struct AL_USDMayaTranslatorProxyShape {
   /// AL_usdmaya_ProxyShape node.
   PXRUSDMAYA_API
   static bool Create(
-          const PxrUsdMayaPrimWriterArgs& args,
-          PxrUsdMayaPrimWriterContext* context);
+          const UsdMayaPrimWriterArgs& args,
+          UsdMayaPrimWriterContext* context);
 
+private:
   /// Return true if \p field should be copied from the spec at \p srcPath in
   /// \p srcLayer to the spec at \p dstPath in \p dstLayer.
   /// This version overrides the default behavior to preserve values that
   /// already exist on dest if source does not have them (otherwise they
   /// would be cleared).
-  static bool ShouldGraftValue(SdfSpecType specType,
+  static bool _ShouldGraftValue(SdfSpecType specType,
                                  const TfToken& field,
                                  const SdfLayerHandle& srcLayer,
                                  const SdfPath& srcPath,
@@ -54,7 +55,7 @@ struct AL_USDMayaTranslatorProxyShape {
   }
 
   static bool
-  ShouldGraftChildren(
+  _ShouldGraftChildren(
           const TfToken& childrenField,
           const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
           const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
@@ -68,4 +69,4 @@ struct AL_USDMayaTranslatorProxyShape {
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //AL_USDMAYA_TRANSLATORPROXYSHAPE_H
+#endif //AL_USDMAYA_PROXYSHAPETRANSLATOR_H

@@ -13,15 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "ProxyShapeTranslator.h"
+
 #include "pxr/pxr.h"
-#include "translatorProxyShape.h"
-#include "ProxyShape.h"
 
 #include "AL/maya/utils/Utils.h"
+#include "AL/usdmaya/fileio/translators/TranslatorBase.h"
+#include "AL/usdmaya/nodes/ProxyShape.h"
 
 #include "usdMaya/jobArgs.h"
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
+#include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/util.h"
 
 #include "pxr/base/tf/token.h"
@@ -37,16 +40,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 /* static */
 bool
 AL_USDMayaTranslatorProxyShape::Create(
-        const PxrUsdMayaPrimWriterArgs& args,
-        PxrUsdMayaPrimWriterContext* context)
+        const UsdMayaPrimWriterArgs& args,
+        UsdMayaPrimWriterContext* context)
 {
   UsdStageRefPtr stage = context->GetUsdStage();
   SdfPath authorPath = context->GetAuthorPath();
   UsdTimeCode usdTime = context->GetTimeCode();
 
   context->SetExportsGprims(false);
-  context->SetExportsReferences(true);
   context->SetPruneChildren(true);
+  context->SetModelPaths({authorPath});
 
   UsdPrim prim = stage->DefinePrim(authorPath);
   if (!prim)
@@ -95,8 +98,8 @@ AL_USDMayaTranslatorProxyShape::Create(
       // the prim because we are merging xform + shape.
       SdfCopySpec(shapeStage->GetSessionLayer(), srcPrimPath,
                   stage->GetRootLayer(), authorPath,
-                  ShouldGraftValue,
-                  ShouldGraftChildren);
+                  _ShouldGraftValue,
+                  _ShouldGraftChildren);
     }
   }
 
@@ -174,6 +177,11 @@ AL_USDMayaTranslatorProxyShape::Create(
   }
 
   return true;
+}
+
+PXRUSDMAYA_DEFINE_WRITER(AL_usdmaya_ProxyShape, args, context)
+{
+  return AL_USDMayaTranslatorProxyShape::Create(args, context);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

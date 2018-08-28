@@ -101,3 +101,12 @@ install(FILES ${arg_PUBLIC_HEADER_FILES}
 if(NOT SKIP_USDMAYA_TESTS)
   add_subdirectory(tests)
 endif()
+
+option(BUILD_USDMAYA_PXR_TRANSLATORS
+    "Build a translator for pxrUsd maya plugin, that allows it to export AL_usdmaya_ProxyShapes as references when usdExport is called."
+    ON)
+    
+if(BUILD_USDMAYA_PXR_TRANSLATORS)
+    set(PXR_TRANSLATORS_PACKAGE AL_USDMayaPxrTranslators)
+    add_subdirectory(pxrUsdTranslators)
+endif()
