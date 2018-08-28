@@ -32,7 +32,9 @@
 #include <pxr/imaging/glf/glslfx.h>
 #include <pxr/imaging/glf/textureRegistry.h>
 #ifdef USD_HDST_UDIM_BUILD
+#include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/glf/udimTexture.h>
+#include <pxr/usdImaging/usdImaging/textureUtils.h>
 #endif
 
 #include <pxr/usdImaging/usdImaging/tokens.h>
@@ -384,6 +386,30 @@ std::unordered_map<
                               {_tokens->specularColor, _tokens->specularColor},
                               {_tokens->roughness, _tokens->eccentricity},
                           }}};
+
+#ifdef USD_HDST_UDIM_BUILD
+
+class UdimTextureFactory : public GlfTextureFactoryBase {
+public:
+    virtual GlfTextureRefPtr New(
+        TfToken const& texturePath,
+        GlfImage::ImageOriginLocation originLocation =
+        GlfImage::OriginUpperLeft) const override {
+        const GlfContextCaps& caps = GlfContextCaps::GetInstance();
+        return GlfUdimTexture::New(
+            texturePath, originLocation, UsdImaging_GetUdimTiles(
+                texturePath, caps.maxArrayTextureLayers));
+    }
+
+    virtual GlfTextureRefPtr New(
+        TfTokenVector const& texturePaths,
+        GlfImage::ImageOriginLocation originLocation =
+        GlfImage::OriginUpperLeft) const override {
+        return nullptr;
+    }
+};
+
+#endif
 
 } // namespace
 
@@ -762,7 +788,7 @@ private:
         GlfTextureHandleRefPtr texture = nullptr;
 #ifdef USD_HDST_UDIM_BUILD
         if (textureType == HdTextureType::Udim) {
-            GlfUdimTextureFactory factory;
+            UdimTextureFactory factory;
             texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
                 filePath, origin, &factory);
         } else
