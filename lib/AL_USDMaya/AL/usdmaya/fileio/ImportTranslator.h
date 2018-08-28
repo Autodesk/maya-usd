@@ -66,6 +66,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ImportTranslator, "AL usdmaya import", true, false, "*.
   }
 
 private:
+  AL_USDMAYA_PUBLIC
   MStatus reader(const MFileObject& file, const AL::maya::utils::OptionsParser& options, FileAccessMode mode) override;
   ImporterParams m_params;
 
