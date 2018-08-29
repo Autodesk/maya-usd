@@ -135,10 +135,8 @@ HdMayaSceneDelegate::HdMayaSceneDelegate(
 HdMayaSceneDelegate::~HdMayaSceneDelegate() {
     for (auto callback : _callbacks) { MMessage::removeCallback(callback); }
     _MapAdapter<HdMayaAdapter>(
-        [](HdMayaAdapter* a) {
-            a->RemoveCallbacks();
-        },
-        _shapeAdapters, _lightAdapters, _materialAdapters);
+        [](HdMayaAdapter* a) { a->RemoveCallbacks(); }, _shapeAdapters,
+        _lightAdapters, _materialAdapters);
 }
 
 void HdMayaSceneDelegate::Populate() {

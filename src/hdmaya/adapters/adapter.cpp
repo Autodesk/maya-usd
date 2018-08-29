@@ -46,9 +46,7 @@ HdMayaAdapter::HdMayaAdapter(
     const MObject& node, const SdfPath& id, HdMayaDelegateCtx* delegate)
     : _node(node), _id(id), _delegate(delegate) {}
 
-HdMayaAdapter::~HdMayaAdapter() {
-    RemoveCallbacks();
-}
+HdMayaAdapter::~HdMayaAdapter() { RemoveCallbacks(); }
 
 void HdMayaAdapter::AddCallback(MCallbackId callbackId) {
     _callbacks.push_back(callbackId);

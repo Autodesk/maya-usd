@@ -394,17 +394,17 @@ public:
     virtual GlfTextureRefPtr New(
         TfToken const& texturePath,
         GlfImage::ImageOriginLocation originLocation =
-        GlfImage::OriginUpperLeft) const override {
+            GlfImage::OriginUpperLeft) const override {
         const GlfContextCaps& caps = GlfContextCaps::GetInstance();
         return GlfUdimTexture::New(
-            texturePath, originLocation, UsdImaging_GetUdimTiles(
-                texturePath, caps.maxArrayTextureLayers));
+            texturePath, originLocation,
+            UsdImaging_GetUdimTiles(texturePath, caps.maxArrayTextureLayers));
     }
 
     virtual GlfTextureRefPtr New(
         TfTokenVector const& texturePaths,
         GlfImage::ImageOriginLocation originLocation =
-        GlfImage::OriginUpperLeft) const override {
+            GlfImage::OriginUpperLeft) const override {
         return nullptr;
     }
 };
