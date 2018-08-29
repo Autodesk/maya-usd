@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-inline GfMatrix4d getGfMatrixFromMaya(const MMatrix& mayaMat) {
+inline GfMatrix4d GetGfMatrixFromMaya(const MMatrix& mayaMat) {
     GfMatrix4d mat;
     memcpy(mat.GetArray(), mayaMat[0], sizeof(double) * 16);
     return mat;

@@ -123,7 +123,7 @@ protected:
 
             GfFrustum frustum;
             GfMatrix4d lightToWorld =
-                getGfMatrixFromMaya(GetDagPath().inclusiveMatrix());
+                GetGfMatrixFromMaya(GetDagPath().inclusiveMatrix());
             frustum.SetProjectionType(GfFrustum::Perspective);
             frustum.SetPerspective(
                 GfRadiansToDegrees(coneAnglePlug.asFloat()), true, 1.0f, 1.0f,

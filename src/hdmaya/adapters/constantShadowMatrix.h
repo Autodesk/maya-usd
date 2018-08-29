@@ -33,9 +33,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class ConstantShadowMatrix : public HdxShadowMatrixComputation {
+class HdMayaConstantShadowMatrix : public HdxShadowMatrixComputation {
 public:
-    explicit ConstantShadowMatrix(const GfMatrix4d& mat) : _shadowMatrix(mat) {}
+    explicit HdMayaConstantShadowMatrix(const GfMatrix4d& mat)
+        : _shadowMatrix(mat) {}
 
     inline GfMatrix4d Compute(
         const GfVec4f& viewport,

@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-const MString HdViewCmd::name("hdview");
+const MString HdMayaViewCmd::name("hdview");
 
 namespace {
 
@@ -122,7 +122,7 @@ Usage: hdview [flags]
 
 } // namespace
 
-MSyntax HdViewCmd::createSyntax() {
+MSyntax HdMayaViewCmd::createSyntax() {
     MSyntax syntax;
 
     syntax.addFlag(_listRenderers, _listRenderersLong);
@@ -174,7 +174,7 @@ MSyntax HdViewCmd::createSyntax() {
     return syntax;
 }
 
-MStatus HdViewCmd::doIt(const MArgList& args) {
+MStatus HdMayaViewCmd::doIt(const MArgList& args) {
     MArgDatabase db(syntax(), args);
 
     if (db.isFlagSet(_listRenderers)) {

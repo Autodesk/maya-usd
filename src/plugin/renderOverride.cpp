@@ -278,8 +278,8 @@ MStatus HdMayaRenderOverride::Render(
 
         GfVec4d viewport(originX, originY, width, height);
         _taskController->SetCameraMatrices(
-            getGfMatrixFromMaya(drawContext.getMatrix(MFrameContext::kViewMtx)),
-            getGfMatrixFromMaya(
+            GetGfMatrixFromMaya(drawContext.getMatrix(MFrameContext::kViewMtx)),
+            GetGfMatrixFromMaya(
                 drawContext.getMatrix(MFrameContext::kProjectionMtx)));
         _taskController->SetCameraViewport(viewport);
 

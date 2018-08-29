@@ -72,7 +72,8 @@ MStatus initializePlugin(MObject obj) {
     }
 
     if (!plugin.registerCommand(
-            HdViewCmd::name, HdViewCmd::creator, HdViewCmd::createSyntax)) {
+            HdMayaViewCmd::name, HdMayaViewCmd::creator,
+            HdMayaViewCmd::createSyntax)) {
         ret = MS::kFailure;
         ret.perror("Error registering hdmaya command!");
         return ret;
@@ -105,7 +106,7 @@ MStatus uninitializePlugin(MObject obj) {
         }
     }
 
-    if (!plugin.deregisterCommand(HdViewCmd::name)) {
+    if (!plugin.deregisterCommand(HdMayaViewCmd::name)) {
         ret = MS::kFailure;
         ret.perror("Error deregistering hdmaya command!");
     }

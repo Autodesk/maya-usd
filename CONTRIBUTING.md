@@ -49,6 +49,22 @@ struct MyStruct {
 };
 ```
 
+File names are camelCase, header files use the "h" extensions, source files use "cpp".
+
+```
+delegate.cpp // ok
+Delegate.cpp // not ok
+delegate.cxx // not ok
+
+delegate.hpp // not ok
+```
+
+## Includes
+
+Include guards are preferred over #pragma once, because we follow USD's method of copying headers during build. Include guards should be named `__HDMAYA_CAMEL_CASE_H__`, where camel case represents each word in the header file's name.
+
+Prefer using `#include "fileName.h"` for relative, same directory, includes and `#include <pxr/usd/usd/stage.h>` for includes coming from outside the current directory. Note, headers from delegates and adapters are outside the current directory, due to the header copying.
+
 ## Coding style
 
 We use c++11 as our c++ standard, and switching to c++14 once Maya caught up with the vfx platform.
@@ -58,3 +74,4 @@ We use c++11 as our c++ standard, and switching to c++14 once Maya caught up wit
 - Prefer range-based for loops.
 - Use RAII wherever it makes sense.
 - Prefer the use of lambdas and STL algorithms.
+- Prefer the use constexpr wherever possible.

@@ -24,8 +24,9 @@
 #ifndef __HDMAYA_ADAPTER_DEBUG_CODES_H__
 #define __HDMAYA_ADAPTER_DEBUG_CODES_H__
 
-#include <pxr/base/tf/debug.h>
 #include <pxr/pxr.h>
+
+#include <pxr/base/tf/debug.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

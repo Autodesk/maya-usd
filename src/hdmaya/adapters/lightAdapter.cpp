@@ -143,7 +143,7 @@ VtValue HdMayaLightAdapter::Get(const TfToken& key) {
             light.SetAttenuation(GfVec3f(0.0f, 0.0f, 1.0f));
         }
         light.SetTransform(
-            getGfMatrixFromMaya(GetDagPath().inclusiveMatrixInverse()));
+            GetGfMatrixFromMaya(GetDagPath().inclusiveMatrixInverse()));
         _CalculateLightParams(light);
         return VtValue(light);
     } else if (key == HdTokens->transform) {
@@ -259,7 +259,7 @@ void HdMayaLightAdapter::_CalculateShadowParams(
                   dmapResolutionPlug.asInt());
     params.shadowMatrix =
         boost::static_pointer_cast<HdxShadowMatrixComputation>(
-            boost::make_shared<ConstantShadowMatrix>(
+            boost::make_shared<HdMayaConstantShadowMatrix>(
                 frustum.ComputeProjectionMatrix()));
     params.bias = dmapBiasPlug.isNull() ? -0.001 : -dmapBiasPlug.asFloat();
     params.blur = dmapFilterSizePlug.isNull()

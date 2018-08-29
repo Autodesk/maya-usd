@@ -68,7 +68,7 @@ bool HdMayaDagAdapter::GetVisible() {
 }
 
 void HdMayaDagAdapter::CalculateTransform() {
-    _transform = getGfMatrixFromMaya(_dagPath.inclusiveMatrix());
+    _transform = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
 };
 
 GfMatrix4d& HdMayaDagAdapter::GetTransform() {
