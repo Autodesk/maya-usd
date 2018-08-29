@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "cmd.h"
+#include "viewCommand.h"
 
 #include <maya/MArgDatabase.h>
 #include <maya/MGlobal.h>
@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-const MString HdMayaCmd::name("hdmaya");
+const MString HdViewCmd::name("hdview");
 
 namespace {
 
@@ -84,9 +84,45 @@ constexpr auto _setColorSelectionHighlightColor = "-scc";
 constexpr auto _setColorSelectionHighlightColorLong =
     "-setColorSelectionHighlightColor";
 
+constexpr auto _help = "-h";
+constexpr auto _helpLong = "-help";
+
+constexpr auto _helpText = R"HELP(
+Maya to Hydra utility function.
+Usage: hdview [flags]
+
+-changeRenderer/-cr [string] : Changing the active render delegate.
+-getColorSelectionHighlightColor/-gcc : Returns the RGBA value used to
+    highlight selections.
+-getColorSelectionHighlight/-gch : Returns true if color selection highlight
+    is enabled, false otherwise.
+-getMaximumShadowMapResolution/-gms : Returns the maximum pixel size of shadow
+    maps.
+-getRendererDisplayName/-gn : Returns the display name for the current render
+    delegate.
+-getTextureMemoryPerTexture/-gtm : Returns the maximum amount of bytes available
+    for each texture.
+-getWireframeSelectionHighlight/-gwh : Returns true if wireframe selection
+    highlight is enabled, false otherwise. This is only available for the
+    HdStreamRendererPlugin.
+-listDelegates/-ld : Returns the names of available scene delegates.
+-listRenderers/-lr : Returns the names of available render delegates.
+-setColorSelectionHighlightColor/-scc [float] [float] [float] [float] : Sets the
+    RGBA color used to highlight selections.
+-setColorSelectionHighlight/-sch [bool] : Turns color highlight of selections
+    on or off.
+-setMaximumShadowMapResolution/-sms [int] : Sets the maximum shadow map
+    resolution in pixels for shadows in the HdStreamRendererPlugin.
+-setTextureMemoryPerTexture/-stm [int] : Sets the maximum texture memory in
+    bytes allowed for each texture for textures in the HdStreamRendererPlugin.
+-setWireframeSelectionHighlight/-swh [bool] : Turns wireframe highlight for
+    selections on or off.
+
+)HELP";
+
 } // namespace
 
-MSyntax HdMayaCmd::createSyntax() {
+MSyntax HdViewCmd::createSyntax() {
     MSyntax syntax;
 
     syntax.addFlag(_listRenderers, _listRenderersLong);
@@ -133,10 +169,12 @@ MSyntax HdMayaCmd::createSyntax() {
         _setColorSelectionHighlightColor, _setColorSelectionHighlightColorLong,
         MSyntax::kDouble, MSyntax::kDouble, MSyntax::kDouble, MSyntax::kDouble);
 
+    syntax.addFlag(_help, _helpLong);
+
     return syntax;
 }
 
-MStatus HdMayaCmd::doIt(const MArgList& args) {
+MStatus HdViewCmd::doIt(const MArgList& args) {
     MArgDatabase db(syntax(), args);
 
     if (db.isFlagSet(_listRenderers)) {
@@ -209,6 +247,8 @@ MStatus HdMayaCmd::doIt(const MArgList& args) {
             db.getFlagArgument(_setColorSelectionHighlightColor, 3, res[3])) {
             HdMayaRenderOverride::SetColorSelectionHighlightColor(res);
         }
+    } else if (db.isFlagSet(_help)) {
+        MGlobal::displayInfo(MString(_helpText));
     }
     return MS::kSuccess;
 }

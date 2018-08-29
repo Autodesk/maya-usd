@@ -30,9 +30,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaCmd : public MPxCommand {
+class HdViewCmd : public MPxCommand {
 public:
-    static void* creator() { return new HdMayaCmd(); }
+    static void* creator() { return new HdViewCmd(); }
     static MSyntax createSyntax();
 
     static const MString name;

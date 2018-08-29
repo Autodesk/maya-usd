@@ -23,9 +23,9 @@
 //
 #include <maya/MFnPlugin.h>
 
-#include "cmd.h"
 #include "renderOverride.h"
 #include "usdPreviewSurface.h"
+#include "viewCommand.h"
 
 #include <stdlib.h>
 
@@ -72,7 +72,7 @@ MStatus initializePlugin(MObject obj) {
     }
 
     if (!plugin.registerCommand(
-            HdMayaCmd::name, HdMayaCmd::creator, HdMayaCmd::createSyntax)) {
+            HdViewCmd::name, HdViewCmd::creator, HdViewCmd::createSyntax)) {
         ret = MS::kFailure;
         ret.perror("Error registering hdmaya command!");
         return ret;
@@ -105,7 +105,7 @@ MStatus uninitializePlugin(MObject obj) {
         }
     }
 
-    if (!plugin.deregisterCommand(HdMayaCmd::name)) {
+    if (!plugin.deregisterCommand(HdViewCmd::name)) {
         ret = MS::kFailure;
         ret.perror("Error deregistering hdmaya command!");
     }
