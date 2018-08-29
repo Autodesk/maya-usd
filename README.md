@@ -41,6 +41,26 @@ Requirements:
 To enable shadows merge in https://github.com/PixarAnimationStudios/USD/pull/541 and pass `-DUSD_HDST_SHADOWS_BUILD` to cmake.
 To enable udims merge in https://github.com/PixarAnimationStudios/USD/pull/597 and pass `-DUSD_HDST_UDIM_BUILD=ON` to cmake.
 
+## Environment configuration
+
+Add `<prefix>/plug-ins` to MAYA_PLUG_IN_PATH and `<prefix>/lib` to PXR_PLUGINPATH_NAME when configuring the environment for Maya.
+
+## List of supported Maya nodes
+
+Shapes:
+- mesh
+
+Lights:
+- areaLight
+- pointLight
+- spotLight
+
+Shaders:
+- UsdPreviewSurface
+- lambert
+- blinn
+- file
+
 ## Contributing
 
-The codebase (including the coding style) is highly volatile at this moment, breaking changes can arrive at any time. When preparing a pull request make sure you run `clang-format` (version 6) before submitting.
+The codebase (including the coding style) is highly volatile at this moment, breaking changes can arrive at any time. Check CONTRIBUTING.md for details about writing code for Maya to Hydra.
