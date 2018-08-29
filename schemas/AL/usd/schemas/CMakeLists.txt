@@ -23,10 +23,8 @@ configure_file (
 list(APPEND DEPENDANT_LIBRARIES ${PYTHON_LIBRARIES} usd usdGeom)
 
 ####################################################################################################
-# Schemas generation and validation
+# Schemas generation
 ####################################################################################################
-
-if(VALIDATE_GENERATED_SCHEMAS)
 
 # Bake library name, tokens prefix and usd schemas path
 set(USD_SCHEMA_PATH usd/schema.usda)
@@ -48,8 +46,6 @@ execute_process(
 )
 if(usdgen_res)
     message(FATAL_ERROR "Schemas generation failed")
-endif()
-
 endif()
 
 ####################################################################################################

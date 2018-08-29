@@ -47,7 +47,6 @@ Name | Description | Default
 --- | --- | ---
 BUILD_USDMAYA_SCHEMAS | Build optional schemas | ON
 BUILD_USDMAYA_TRANSLATORS | Build optional translators | ON
-VALIDATE_GENERATED_SCHEMAS | Run usdGenSchemas.py to validate checked in code | OFF
 
 ## Using Rez
 ```
