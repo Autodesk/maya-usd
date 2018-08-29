@@ -10,13 +10,13 @@ Viewport 2.0.
 
 There are several advantages to HdStream over Viewport 2.0:
 
-1. Ability to cast shadows between [AL_USDMaya](www.github.com/AnimalLogc/AL_usdMaya) proxy shapes and real Maya shapes
+1. Ability to cast shadows between [AL_USDMaya](www.github.com/AnimalLogc/AL_usdMaya) proxy shapes and real Maya shapes, using the [maya-to-hydra-alproxy](https://github.com/LumaPictures/maya-to-hydra-alproxy) adapter.
 1. Consistent lighting and shading between Hydra-enabled applications: Maya, Katana, usdview, etc
 1. HdStream is under active development by Pixar
 1. HdStream is open source: you can add core features as you need them
 1. HdStream is extensible: you can create plugins for custom objects
 
-Using Hydra also has beneftis for offline renderers. Any renderer that implements a Hydra render delegate can now how a fully interactive render viewport in Maya, along with support for render proxies via AL_USDMaya. This could be particularly useful for newer projects, like Radeon ProRender or in-house renderers.
+Using Hydra also has beneftis for offline renderers. Any renderer that implements a Hydra render delegate can now have a fully interactive render viewport in Maya, along with support for render proxies via AL_USDMaya. This could be particularly useful for newer projects, like Radeon ProRender (which already has a [render delegate](https://github.com/GPUOpen-LibrariesAndSDKs/RadeonProRenderUSD)) or in-house renderers.
 
 ## Status
 
@@ -39,6 +39,7 @@ Requirements:
 | TBB | 4.4 |
 
 To enable shadows merge in https://github.com/PixarAnimationStudios/USD/pull/541 and pass `-DUSD_HDST_SHADOWS_BUILD` to cmake.
+
 To enable udims merge in https://github.com/PixarAnimationStudios/USD/pull/597 and pass `-DUSD_HDST_UDIM_BUILD=ON` to cmake.
 
 ## Contributing
