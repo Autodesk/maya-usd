@@ -62,6 +62,8 @@ namespace {
 constexpr auto HDMAYA_DEFAULT_RENDERER_PLUGIN_NAME =
     "HDMAYA_DEFAULT_RENDERER_PLUGIN";
 
+constexpr auto HDMAYA_RENDER_OVERRIDE_NAME = "hydraViewportOverride";
+
 // I don't think there is an easy way to detect if the viewport was changed,
 // so I'm adding a 5 second timeout.
 // There MUST be a better way to do this!
@@ -76,6 +78,18 @@ void _TimerCallback(float, float, void*) {
                              std::chrono::seconds(5)) {
         MGlobal::executeCommandOnIdle("refresh -f");
     }
+}
+
+void _ClearResourcesCallback(float, float, void*) {
+    const auto num3dViews = M3dView::numberOf3dViews();
+    for (auto i = decltype(num3dViews){0}; i < num3dViews; ++i) {
+        M3dView view;
+        M3dView::get3dView(i, view);
+        if (view.renderOverrideName() == MString(HDMAYA_RENDER_OVERRIDE_NAME)) {
+            return;
+        }
+    }
+    HdMayaRenderOverride::GetInstance().ClearHydraResources();
 }
 
 TfToken _GetDefaultRenderer() {
@@ -191,7 +205,7 @@ private:
 } // namespace
 
 HdMayaRenderOverride::HdMayaRenderOverride()
-    : MHWRender::MRenderOverride("hydraViewportOverride"),
+    : MHWRender::MRenderOverride(HDMAYA_RENDER_OVERRIDE_NAME),
       _selectionTracker(new HdxSelectionTracker),
       _renderCollection(
           HdTokens->geometry, HdTokens->smoothHull,
@@ -222,6 +236,9 @@ HdMayaRenderOverride::HdMayaRenderOverride()
     if (status) { _callbacks.push_back(id); }
 
     id = MTimerMessage::addTimerCallback(1.0f / 10.0f, _TimerCallback, &status);
+    if (status) { _callbacks.push_back(id); }
+
+    id = MTimerMessage::addTimerCallback(5.0f, _ClearResourcesCallback, &status);
     if (status) { _callbacks.push_back(id); }
 }
 
@@ -466,6 +483,9 @@ void HdMayaRenderOverride::InitHydraResources() {
 }
 
 void HdMayaRenderOverride::ClearHydraResources() {
+    if (!_initializedViewport) {
+        return;
+    }
     _delegates.clear();
 
     if (_taskController != nullptr) {
