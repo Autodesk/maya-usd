@@ -149,6 +149,45 @@ private:
     HdMayaRenderOverride* _override;
 };
 
+class SetRenderGLState {
+public:
+    SetRenderGLState(HdGeomStyle geomStyle) :
+        _geomStyle(geomStyle) {
+        if (_geomStyle == HdGeomStylePolygons) {
+            glGetIntegerv(GL_BLEND_SRC_ALPHA, &_oldBlendFunc);
+            glGetBooleanv(GL_BLEND, &_oldBlend);
+
+            if (_oldBlendFunc != _blendFunc) {
+                glBlendFunc(GL_SRC_ALPHA, _blendFunc);
+            }
+
+            if (_oldBlend != _blend) {
+                glEnable(GL_BLEND);
+            }
+        }
+    }
+
+    ~SetRenderGLState() {
+        if (_geomStyle == HdGeomStylePolygons) {
+            if (_oldBlend != _blend) {
+                glDisable(GL_BLEND);
+            }
+
+            if (_oldBlendFunc != _blendFunc) {
+                glBlendFunc(GL_SRC_ALPHA, _oldBlendFunc);
+            }
+        }
+    }
+private:
+    // non-odr
+    constexpr static int _blendFunc = GL_ONE_MINUS_SRC_ALPHA;
+    constexpr static GLboolean _blend = GL_TRUE;
+
+    HdGeomStyle _geomStyle = HdGeomStylePolygons;
+    int _oldBlendFunc = _blendFunc;
+    GLboolean _oldBlend = _blend;
+};
+
 } // namespace
 
 HdMayaRenderOverride::HdMayaRenderOverride()
@@ -358,7 +397,15 @@ MStatus HdMayaRenderOverride::Render(
     _taskController->SetSelectionColor(_colorSelectionHighlightColor);
     _taskController->SetEnableSelection(_colorSelectionHighlight);
 
-    renderFrame();
+    // This is required for HdStream to display transparency.
+    // We should fix this upstream, so HdStream can setup
+    // all the required states.
+    if (_rendererName == _tokens->HdStreamRendererPlugin) {
+        SetRenderGLState state(params.geomStyle);
+        renderFrame();
+    } else {
+        renderFrame();
+    }
 
     // This causes issues with the embree delegate and potentially others.
     if (_wireframeSelectionHighlight &&

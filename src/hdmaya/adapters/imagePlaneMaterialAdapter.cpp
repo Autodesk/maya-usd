@@ -71,8 +71,8 @@ const char* _simpleTexturedSurfaceSource =
 
 vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
-#if defined(HD_HAS_emissiveColor)
-    return HdGet_emissiveColor();
+#if defined(HD_HAS_color)
+    return HdGet_color();
 #else
     return vec4(1.0, 0.0, 0.0, 1.0);
 #endif
@@ -86,7 +86,7 @@ static const std::pair<std::string, std::string> _textureShaderSource =
 }();
 
 const TfTokenVector _stSamplerCoords = {TfToken("st")};
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (emissiveColor));
+TF_DEFINE_PRIVATE_TOKENS(_tokens, (color));
 const MString _imageName("imageName");
 
 } // namespace
@@ -144,13 +144,12 @@ public:
         MFnDependencyNode node(_node, &status);
         if (ARCH_UNLIKELY(!status)) { return {}; }
 
-        if (_RegisterTexture(node, _tokens->emissiveColor)) {
-            HdMaterialParam emission(
-                HdMaterialParam::ParamTypeTexture, _tokens->emissiveColor,
+        if (_RegisterTexture(node, _tokens->color)) {
+            HdMaterialParam color(
+                HdMaterialParam::ParamTypeTexture, _tokens->color,
                 VtValue(GfVec4f(0.0f, 0.0f, 0.0f, 1.0f)),
-                GetID().AppendProperty(_tokens->emissiveColor),
-                _stSamplerCoords);
-            return {emission};
+                GetID().AppendProperty(_tokens->color), _stSamplerCoords);
+            return {color};
         }
         TF_DEBUG(HDMAYA_ADAPTER_IMAGEPLANES)
             .Msg("Unexpected failure to register texture\n");
