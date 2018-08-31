@@ -170,36 +170,47 @@ public:
         if (_geomStyle == HdGeomStylePolygons) {
             glGetIntegerv(GL_BLEND_SRC_ALPHA, &_oldBlendFunc);
             glGetBooleanv(GL_BLEND, &_oldBlend);
+            glGetBooleanv(GL_CULL_FACE, &_oldCullFace);
 
-            if (_oldBlendFunc != _blendFunc) {
-                glBlendFunc(GL_SRC_ALPHA, _blendFunc);
+            if (_oldBlendFunc != BLEND_FUNC) {
+                glBlendFunc(GL_SRC_ALPHA, BLEND_FUNC);
             }
 
-            if (_oldBlend != _blend) {
+            if (_oldBlend != BLEND) {
                 glEnable(GL_BLEND);
+            }
+
+            if (_oldCullFace != CULL_FACE) {
+                glDisable(GL_CULL_FACE);
             }
         }
     }
 
     ~SetRenderGLState() {
         if (_geomStyle == HdGeomStylePolygons) {
-            if (_oldBlend != _blend) {
+            if (_oldBlend != BLEND) {
                 glDisable(GL_BLEND);
             }
 
-            if (_oldBlendFunc != _blendFunc) {
+            if (_oldBlendFunc != BLEND_FUNC) {
                 glBlendFunc(GL_SRC_ALPHA, _oldBlendFunc);
+            }
+
+            if (_oldCullFace != CULL_FACE) {
+                glEnable(GL_CULL_FACE);
             }
         }
     }
 private:
     // non-odr
-    constexpr static int _blendFunc = GL_ONE_MINUS_SRC_ALPHA;
-    constexpr static GLboolean _blend = GL_TRUE;
+    constexpr static int BLEND_FUNC = GL_ONE_MINUS_SRC_ALPHA;
+    constexpr static GLboolean BLEND = GL_TRUE;
+    constexpr static GLboolean CULL_FACE = GL_FALSE;
 
     HdGeomStyle _geomStyle = HdGeomStylePolygons;
-    int _oldBlendFunc = _blendFunc;
-    GLboolean _oldBlend = _blend;
+    int _oldBlendFunc = BLEND_FUNC;
+    GLboolean _oldBlend = BLEND;
+    GLboolean _oldCullFace = CULL_FACE;
 };
 
 } // namespace
@@ -401,6 +412,8 @@ MStatus HdMayaRenderOverride::Render(
     // TODO: separate color for normal wireframe / selected
     MColor colour = M3dView::leadColor();
     params.wireframeColor = GfVec4f(colour.r, colour.g, colour.b, 1.0f);
+
+    params.cullStyle = HdCullStyleBackUnlessDoubleSided;
 
     _taskController->SetRenderParams(params);
 #ifdef USD_HDST_SHADOWS_BUILD

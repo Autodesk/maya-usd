@@ -192,7 +192,7 @@ public:
         MFnMesh mesh(GetDagPath());
         auto p = mesh.findPlug(MayaAttrs::mesh::doubleSided, true);
         if (ARCH_UNLIKELY(p.isNull())) { return true; }
-        bool doubleSided;
+        bool doubleSided = true;
         p.getValue(doubleSided);
         return doubleSided;
     }
