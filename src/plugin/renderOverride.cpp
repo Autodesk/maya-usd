@@ -165,8 +165,7 @@ private:
 
 class SetRenderGLState {
 public:
-    SetRenderGLState(HdGeomStyle geomStyle) :
-        _geomStyle(geomStyle) {
+    SetRenderGLState(HdGeomStyle geomStyle) : _geomStyle(geomStyle) {
         if (_geomStyle == HdGeomStylePolygons) {
             glGetIntegerv(GL_BLEND_SRC_ALPHA, &_oldBlendFunc);
             glGetBooleanv(GL_BLEND, &_oldBlend);
@@ -176,31 +175,24 @@ public:
                 glBlendFunc(GL_SRC_ALPHA, BLEND_FUNC);
             }
 
-            if (_oldBlend != BLEND) {
-                glEnable(GL_BLEND);
-            }
+            if (_oldBlend != BLEND) { glEnable(GL_BLEND); }
 
-            if (_oldCullFace != CULL_FACE) {
-                glDisable(GL_CULL_FACE);
-            }
+            if (_oldCullFace != CULL_FACE) { glDisable(GL_CULL_FACE); }
         }
     }
 
     ~SetRenderGLState() {
         if (_geomStyle == HdGeomStylePolygons) {
-            if (_oldBlend != BLEND) {
-                glDisable(GL_BLEND);
-            }
+            if (_oldBlend != BLEND) { glDisable(GL_BLEND); }
 
             if (_oldBlendFunc != BLEND_FUNC) {
                 glBlendFunc(GL_SRC_ALPHA, _oldBlendFunc);
             }
 
-            if (_oldCullFace != CULL_FACE) {
-                glEnable(GL_CULL_FACE);
-            }
+            if (_oldCullFace != CULL_FACE) { glEnable(GL_CULL_FACE); }
         }
     }
+
 private:
     // non-odr
     constexpr static int BLEND_FUNC = GL_ONE_MINUS_SRC_ALPHA;
@@ -249,7 +241,8 @@ HdMayaRenderOverride::HdMayaRenderOverride()
     id = MTimerMessage::addTimerCallback(1.0f / 10.0f, _TimerCallback, &status);
     if (status) { _callbacks.push_back(id); }
 
-    id = MTimerMessage::addTimerCallback(5.0f, _ClearResourcesCallback, &status);
+    id =
+        MTimerMessage::addTimerCallback(5.0f, _ClearResourcesCallback, &status);
     if (status) { _callbacks.push_back(id); }
 }
 
@@ -496,9 +489,7 @@ void HdMayaRenderOverride::InitHydraResources() {
 }
 
 void HdMayaRenderOverride::ClearHydraResources() {
-    if (!_initializedViewport) {
-        return;
-    }
+    if (!_initializedViewport) { return; }
     _delegates.clear();
 
     if (_taskController != nullptr) {

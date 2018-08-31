@@ -59,6 +59,12 @@
                         ],
                         "displayName": "Meshes in Hydra for Maya."
                     },
+                    "HdMayaNurbsCurveAdapter": {
+                        "bases": [
+                            "HdMayaShapeAdapter"
+                        ],
+                        "displayName": "Nurbs Curves in Hydra for Maya."
+                    },
                     "HdMayaImagePlaneAdapter": {
                         "bases": [
                             "HdMayaShapeAdapter"

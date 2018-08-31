@@ -76,8 +76,6 @@ public:
     void Populate() override {
         GetDelegate()->InsertRprim(
             HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty);
-
-        MStatus status;
     }
 
     void CreateCallbacks() override {
