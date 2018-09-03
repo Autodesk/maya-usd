@@ -1,6 +1,6 @@
-# In case we need boost
-# USD still needs the dynamic ones
-# set(Boost_USE_STATIC_LIBS ON)
+# In case we need boost, USD still needs the dynamic ones.
+# This is the default value.
+# set(Boost_USE_STATIC_LIBS OFF)
 
 find_package(Maya)
 find_package(OpenGL REQUIRED)
@@ -34,6 +34,7 @@ set(HDMAYA_SRC
 
     hdmaya/delegates/delegate.cpp
     hdmaya/delegates/delegateCtx.cpp
+    hdmaya/delegates/delegateDebugCodes.cpp
     hdmaya/delegates/delegateRegistry.cpp
     hdmaya/delegates/sceneDelegate.cpp
     hdmaya/delegates/testDelegate.cpp)
@@ -135,6 +136,7 @@ install(FILES
 install(FILES
         hdmaya/delegates/delegate.h
         hdmaya/delegates/delegateCtx.h
+        hdmaya/delegates/delegateDebugCodes.h
         hdmaya/delegates/delegateRegistry.h
         hdmaya/delegates/params.h
         DESTINATION include/hdmaya/delegates)
@@ -147,8 +149,3 @@ install(FILES
 install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH}
         DESTINATION lib)
-
-# file(GLOB TEMPLATES scripts/*.py)
-#
-# install(FILES ${TEMPLATES}
-#         DESTINATION scripts)

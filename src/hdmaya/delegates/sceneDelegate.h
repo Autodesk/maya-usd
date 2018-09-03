@@ -87,7 +87,7 @@ protected:
     // VtValue GetShadingStyle(const SdfPath& id) override;
     HdDisplayStyle GetDisplayStyle(const SdfPath& id) override;
     // TfToken GetReprName(const SdfPath& id) override;
-    VtValue Get(SdfPath const& id, TfToken const& key) override;
+    VtValue Get(const SdfPath& id, const TfToken& key) override;
     HdPrimvarDescriptorVector GetPrimvarDescriptors(
         const SdfPath& id, HdInterpolation interpolation) override;
     VtValue GetLightParamValue(
