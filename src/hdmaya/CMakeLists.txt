@@ -44,6 +44,11 @@ target_compile_features(hdmaya PUBLIC cxx_std_11)
 target_compile_definitions(hdmaya PRIVATE "HDMAYA_EXPORT=1")
 set_target_properties(hdmaya PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
 
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    # Prevent windows.h from defining min and max macros.
+    target_compile_definitions(hdmaya PUBLIC "NOMINMAX=1")
+endif ()
+
 if (LUMA_USD_BUILD)
     target_compile_definitions(hdmaya PRIVATE LUMA_USD_BUILD)
 endif ()

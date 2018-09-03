@@ -143,7 +143,7 @@ public:
     }
 
     MHWRender::MClearOperation& clearOperation() {
-        mClearOperation.setMask(MClearOperation::kClearNone);
+        mClearOperation.setMask(MHWRender::MClearOperation::kClearNone);
         return mClearOperation;
     }
 };
@@ -341,9 +341,9 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 
         GfVec4d viewport(originX, originY, width, height);
         _taskController->SetCameraMatrices(
-            GetGfMatrixFromMaya(drawContext.getMatrix(MFrameContext::kViewMtx)),
+            GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
             GetGfMatrixFromMaya(
-                drawContext.getMatrix(MFrameContext::kProjectionMtx)));
+                drawContext.getMatrix(MHWRender::MFrameContext::kProjectionMtx)));
         _taskController->SetCameraViewport(viewport);
 
         _engine.Execute(
