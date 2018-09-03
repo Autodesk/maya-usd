@@ -36,7 +36,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MStatus initializePlugin(MObject obj) {
+PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
     MStatus ret = MS::kSuccess;
 
     ret = HdMayaAdapter::Initialize();
@@ -78,7 +78,7 @@ MStatus initializePlugin(MObject obj) {
     return ret;
 }
 
-MStatus uninitializePlugin(MObject obj) {
+PLUGIN_EXPORT MStatus uninitializePlugin(MObject obj) {
     MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");
     MStatus ret = MS::kSuccess;
 
