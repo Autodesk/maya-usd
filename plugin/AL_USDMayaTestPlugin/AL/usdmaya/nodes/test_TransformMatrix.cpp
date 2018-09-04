@@ -19,16 +19,20 @@
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "AL/usdmaya/nodes/Layer.h"
 #include "AL/usdmaya/StageCache.h"
-#include "maya/MFnTransform.h"
-#include "maya/MSelectionList.h"
-#include "maya/MGlobal.h"
 #include "maya/MAnimControl.h"
-#include "maya/MItDependencyNodes.h"
 #include "maya/MDagModifier.h"
+#include "maya/MEulerRotation.h"
 #include "maya/MFileIO.h"
+#include "maya/MFnMatrixData.h"
+#include "maya/MFnTransform.h"
+#include "maya/MGlobal.h"
+#include "maya/MItDependencyNodes.h"
 #include "maya/MMatrix.h"
 #include "maya/MPlug.h"
-#include "maya/MFnMatrixData.h"
+#include "maya/MPxTransformationMatrix.h"
+#include "maya/MQuaternion.h"
+#include "maya/MSelectionList.h"
+#include "maya/MVector.h"
 
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/sdf/types.h"
@@ -1042,6 +1046,190 @@ TEST(Transform, animationValuesFromUsdAreCorrectlyRead)
 
     if(MGlobal::kInteractive == MGlobal::mayaState())
       MGlobal::executeCommand("refresh -suspend true");
+  }
+}
+
+// Test that both, ie, "translateTo" and "translateBy" methods work, for all
+// xform ops
+TEST(Transform, checkXformByAndTo)
+{
+  MStatus status;
+  const char* xformName = "myXform";
+  SdfPath xformPath(std::string("/") + xformName);
+
+  auto constructTransformChain = [&] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomXform a = UsdGeomXform::Define(stage, xformPath);
+    return stage;
+  };
+
+  MFileIO::newFile(true);
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_transform_checkXformByAndTo.usda";
+  std::string sessionLayerContents;
+
+  // generate some data for the proxy shape
+  {
+    auto stage = constructTransformChain();
+    stage->Export(temp_path, false);
+  }
+
+  {
+    MFnDagNode fn;
+    MObject xform = fn.create("transform");
+    MString proxyParentMayaPath = fn.fullPathName();
+    MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+    MString proxyShapeMayaPath = fn.fullPathName();
+
+    AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+    // force the stage to load
+    proxy->filePathPlug().setString(temp_path.c_str());
+
+    auto stage = proxy->getUsdStage();
+
+    auto xformPrim = stage->GetPrimAtPath(xformPath);
+    UsdGeomXform xformGeom(xformPrim);
+
+    // Make the xform in maya
+    MString cmd = MString("select -r \"") + proxyShapeMayaPath
+        + "\"; AL_usdmaya_ProxyShapeImportAllTransforms;";
+    ASSERT_EQ(MS::kSuccess, MGlobal::executeCommand(cmd));
+
+    MSelectionList sel;
+    sel.add("myXform");
+    MObject myXformObj;
+    sel.getDependNode(0, myXformObj);
+    ASSERT_FALSE(myXformObj.isNull());
+    MFnTransform myXformMfn(myXformObj, &status);
+    ASSERT_EQ(MS::kSuccess, status);
+
+    MVector expectedTranslation(0, 0, 0);
+    MVector expectedRotatePivotTranslation(0, 0, 0);
+    MVector expectedRotatePivot(0, 0, 0);
+    MEulerRotation expectedRotation(0, 0, 0);
+    MQuaternion expectedOrientation;
+    MVector expectedScalePivotTranslation(0, 0, 0);
+    MVector expectedScalePivot(0, 0, 0);
+    double expectedShear[3] = {0, 0, 0};
+    double expectedScale[3] = {1, 1, 1};
+    // Originally had this as an MTransformationMatrix for easy comparison, but
+    // it seems there's a bug with MTransformationMatrix.setRotationOrientation - or, perhaps, it always
+    // functions as though balance=true?
+    MPxTransformationMatrix expectedMatrix;
+
+    auto assertExpectedXform = [&]() {
+      ASSERT_EQ(myXformMfn.getTranslation(MSpace::kTransform), expectedTranslation);
+      ASSERT_EQ(myXformMfn.rotatePivotTranslation(MSpace::kTransform), expectedRotatePivotTranslation);
+      ASSERT_EQ(myXformMfn.rotatePivot(MSpace::kTransform), expectedRotatePivot);
+      MEulerRotation actualRotation;
+      myXformMfn.getRotation(actualRotation);
+      ASSERT_EQ(actualRotation, expectedRotation);
+      ASSERT_TRUE(myXformMfn.rotateOrientation(MSpace::kTransform).isEquivalent(expectedOrientation));
+      ASSERT_EQ(myXformMfn.scalePivotTranslation(MSpace::kTransform), expectedScalePivotTranslation);
+      ASSERT_EQ(myXformMfn.scalePivot(MSpace::kTransform), expectedScalePivot);
+      double actualShear[3];
+      myXformMfn.getShear(actualShear);
+      ASSERT_EQ(actualShear[0], expectedShear[0]);
+      ASSERT_EQ(actualShear[1], expectedShear[1]);
+      ASSERT_EQ(actualShear[2], expectedShear[2]);
+      double actualScale[3];
+      myXformMfn.getScale(actualScale);
+      ASSERT_EQ(actualScale[0], expectedScale[0]);
+      ASSERT_EQ(actualScale[1], expectedScale[1]);
+      ASSERT_EQ(actualScale[2], expectedScale[2]);
+      MMatrix expectedMMatrix = expectedMatrix.asMatrix();
+      MMatrix actualMMatrix = myXformMfn.transformation().asMatrix();
+      if(!expectedMMatrix.isEquivalent(expectedMMatrix, 1e-3))
+      {
+        std::cout << "actualMatrix:" << std::endl;
+        std::cout << actualMMatrix << std::endl;
+        std::cout << "expectedMatrix:" << std::endl;
+        std::cout << expectedMMatrix << std::endl;
+        ASSERT_TRUE(false);
+      }
+    };
+
+    { SCOPED_TRACE("inital empty xform"); assertExpectedXform(); }
+
+    expectedTranslation = MVector(1, 2, 3);
+    myXformMfn.setTranslation(expectedTranslation, MSpace::kTransform);
+    expectedMatrix.translateTo(expectedTranslation, MSpace::kTransform);
+    { SCOPED_TRACE("translateTo"); assertExpectedXform(); }
+    myXformMfn.translateBy(MVector(4, 5, 6), MSpace::kTransform);
+    expectedTranslation = MVector(5, 7, 9);
+    expectedMatrix.translateTo(expectedTranslation, MSpace::kTransform);
+    { SCOPED_TRACE("translateBy"); assertExpectedXform(); }
+
+    expectedRotatePivotTranslation = MVector(.1, .2, .3);
+    myXformMfn.setRotatePivotTranslation(expectedRotatePivotTranslation, MSpace::kTransform);
+    expectedMatrix.setRotatePivotTranslation(expectedRotatePivotTranslation, MSpace::kTransform);
+    { SCOPED_TRACE("rotatePivotTranslate"); assertExpectedXform(); }
+
+    expectedRotatePivot = MVector(.9, .8, .7);
+    myXformMfn.setRotatePivot(expectedRotatePivot, MSpace::kTransform, false);
+    expectedMatrix.setRotatePivot(expectedRotatePivot, MSpace::kTransform, false);
+    { SCOPED_TRACE("rotatePivot"); assertExpectedXform(); }
+
+    expectedOrientation.setAxisAngle(MVector(2, 1, -5), .83);
+    myXformMfn.setRotateOrientation(expectedOrientation, MSpace::kTransform, false);
+    expectedMatrix.setRotateOrientation(expectedOrientation, MSpace::kTransform, false);
+    { SCOPED_TRACE("rotateOrient"); assertExpectedXform(); }
+
+    // 15/30/60 degrees, if you're curious
+    expectedRotation.setValue(0.2617993877991494, 0.5235987755982988, 1.0471975511965976);
+    myXformMfn.setRotation(expectedRotation);
+    expectedMatrix.rotateTo(expectedRotation);
+    { SCOPED_TRACE("rotateTo"); assertExpectedXform(); }
+    // 8/7/6 degrees
+    MEulerRotation addedRotate(0.13962634015954636, 0.12217304763960307, 0.10471975511965978);
+    myXformMfn.rotateBy(addedRotate, MSpace::kTransform);
+    // The euler rotations aren't simple additions - ie, not x+dx, y+dy, z+dz
+    // instead, the two rotation matrices are multiplied... so for simplicity,
+    // we just rely on MPxTransformationMatrix.rotateBy to get us the new
+    // expected value
+    expectedMatrix.rotateBy(addedRotate);
+    expectedRotation = expectedMatrix.eulerRotation();
+    { SCOPED_TRACE("rotateBy"); assertExpectedXform(); }
+
+    expectedScalePivotTranslation = MVector(-.04, -.05, -.06);
+    myXformMfn.setScalePivotTranslation(expectedScalePivotTranslation, MSpace::kTransform);
+    expectedMatrix.setScalePivotTranslation(expectedScalePivotTranslation, MSpace::kTransform);
+    { SCOPED_TRACE("scalePivotTranslate"); assertExpectedXform(); }
+
+    expectedScalePivot = MVector(10, 20, 30);
+    myXformMfn.setScalePivot(expectedScalePivot, MSpace::kTransform, false);
+    expectedMatrix.setScalePivot(expectedScalePivot, MSpace::kTransform, false);
+    { SCOPED_TRACE("scalePivot"); assertExpectedXform(); }
+
+    expectedShear[0] = .4;
+    expectedShear[1] = .5;
+    expectedShear[2] = -.8;
+    myXformMfn.setShear(expectedShear);
+    expectedMatrix.shearTo(MVector(expectedShear), MSpace::kTransform);
+    { SCOPED_TRACE("shearTo"); assertExpectedXform(); }
+    double shearBy[3] = {2, 3, 4};
+    myXformMfn.shearBy(shearBy);
+    expectedShear[0] = .8;
+    expectedShear[1] = 1.5;
+    expectedShear[2] = -3.2;
+    expectedMatrix.shearTo(MVector(expectedShear), MSpace::kTransform);
+    { SCOPED_TRACE("shearBy"); assertExpectedXform(); }
+
+    expectedScale[0] = 7;
+    expectedScale[1] = 13;
+    expectedScale[2] = 17;
+    myXformMfn.setScale(expectedScale);
+    expectedMatrix.scaleTo(MVector(expectedScale), MSpace::kTransform);
+    { SCOPED_TRACE("scaleTo"); assertExpectedXform(); }
+    double scaleBy[3] = {5, -1, 2};
+    myXformMfn.scaleBy(scaleBy);
+    expectedScale[0] = 35;
+    expectedScale[1] = -13;
+    expectedScale[2] = 34;
+    expectedMatrix.scaleTo(MVector(expectedScale), MSpace::kTransform);
+    { SCOPED_TRACE("scaleBy"); assertExpectedXform(); }
   }
 }
 
