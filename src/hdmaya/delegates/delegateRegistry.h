@@ -66,10 +66,16 @@ public:
     HDMAYA_API
     static void LoadAllDelegates();
 
+    using DelegatesChangedSignal = std::function<void()>;
+
+    HDMAYA_API
+    static void InstallDelegatesChangedSignal(DelegatesChangedSignal signal);
+
 private:
     static void _LoadAllDelegates();
 
     std::vector<std::tuple<TfToken, DelegateCreator>> _delegates;
+    std::vector<DelegatesChangedSignal> _signals;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

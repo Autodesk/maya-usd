@@ -28,8 +28,6 @@
 #include <pxr/base/tf/instantiateSingleton.h>
 #include <pxr/base/tf/type.h>
 
-#include "plugin/renderOverride.h"
-
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -65,14 +63,17 @@ HdMayaDelegateRegistry::GetDelegateCreators() {
 }
 
 void HdMayaDelegateRegistry::SignalDelegatesChanged() {
-    if (HdMayaRenderOverride::CurrentlyExists()) {
-        HdMayaRenderOverride::GetInstance().ClearHydraResources();
-    }
+    for (const auto& s : GetInstance()._signals) { s(); }
 }
 
 void HdMayaDelegateRegistry::LoadAllDelegates() {
     static std::once_flag loadAllOnce;
     std::call_once(loadAllOnce, _LoadAllDelegates);
+}
+
+void HdMayaDelegateRegistry::InstallDelegatesChangedSignal(
+    DelegatesChangedSignal signal) {
+    GetInstance()._signals.emplace_back(signal);
 }
 
 void HdMayaDelegateRegistry::_LoadAllDelegates() {

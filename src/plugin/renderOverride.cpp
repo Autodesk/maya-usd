@@ -72,6 +72,8 @@ bool _isConverged;
 std::chrono::system_clock::time_point _lastRenderTime =
     std::chrono::system_clock::now();
 
+std::atomic<bool> _needsClear;
+
 void _TimerCallback(float, float, void*) {
     std::lock_guard<std::mutex> lock(_convergenceMutex);
     if (!_isConverged && (std::chrono::system_clock::now() - _lastRenderTime) <
@@ -215,6 +217,9 @@ HdMayaRenderOverride::HdMayaRenderOverride()
           SdfPath::AbsoluteRootPath()),
       _selectionCollection(HdTokens->wire, HdTokens->wire),
       _colorSelectionHighlightColor(1.0f, 1.0f, 0.0f, 0.5f) {
+    _needsClear.store(false);
+    HdMayaDelegateRegistry::InstallDelegatesChangedSignal(
+        []() { _needsClear.store(true); });
     _ID = SdfPath("/HdMayaViewportRenderer")
               .AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
     _rendererName = _GetDefaultRenderer();
@@ -347,6 +352,8 @@ MStatus HdMayaRenderOverride::Render(
             *_renderIndex,
             _taskController->GetTasks(HdxTaskSetTokens->colorRender));
     };
+
+    if (_needsClear.exchange(false)) { ClearHydraResources(); }
 
     if (!_initializedViewport) {
         GlfGlewInit();

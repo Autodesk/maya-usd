@@ -31,7 +31,6 @@
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
-#include <pxr/usd/ar/defaultResolver.h>
 
 #include <hdmaya/adapters/adapter.h>
 
@@ -50,18 +49,6 @@ MStatus initializePlugin(MObject obj) {
     envVarData.resize(strlen(envVarSet) + 1);
     sprintf(envVarData.data(), "%s", envVarSet);
     putenv(envVarData.data());
-
-    std::vector<std::string> defaultSearchPaths;
-    // We are trying to setup the default search paths for shaders
-    // to simplify finding shader paths, like the preview surface.
-    for (auto plug : PlugRegistry::GetInstance().GetAllPlugins()) {
-        const auto metadata = plug->GetMetadata();
-        if (metadata.find("ShaderResources") != metadata.end()) {
-            defaultSearchPaths.push_back(plug->GetResourcePath());
-        }
-    }
-    std::sort(defaultSearchPaths.begin(), defaultSearchPaths.end());
-    ArDefaultResolver::SetDefaultSearchPath(defaultSearchPaths);
 
     MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");
 

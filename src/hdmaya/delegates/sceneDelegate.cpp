@@ -346,8 +346,9 @@ HdPrimvarDescriptorVector HdMayaSceneDelegate::GetPrimvarDescriptors(
 VtValue HdMayaSceneDelegate::GetLightParamValue(
     const SdfPath& id, const TfToken& paramName) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_LIGHT_PARAM_VALUE)
-        .Msg("HdMayaSceneDelegate::GetLightParamValue(%s, %s)",
-            id.GetText(), paramName.GetText());
+        .Msg(
+            "HdMayaSceneDelegate::GetLightParamValue(%s, %s)", id.GetText(),
+            paramName.GetText());
     return _GetValue<HdMayaLightAdapter, VtValue>(
         id,
         [&paramName](HdMayaLightAdapter* a) -> VtValue {
@@ -358,8 +359,7 @@ VtValue HdMayaSceneDelegate::GetLightParamValue(
 
 bool HdMayaSceneDelegate::GetVisible(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_VISIBLE)
-        .Msg("HdMayaSceneDelegate::GetVisible(%s)",
-            id.GetText());
+        .Msg("HdMayaSceneDelegate::GetVisible(%s)", id.GetText());
     return _GetValue<HdMayaDagAdapter, bool>(
         id, [](HdMayaDagAdapter* a) -> bool { return a->GetVisible(); },
         _shapeAdapters, _lightAdapters);
@@ -367,8 +367,7 @@ bool HdMayaSceneDelegate::GetVisible(const SdfPath& id) {
 
 bool HdMayaSceneDelegate::GetDoubleSided(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_DOUBLE_SIDED)
-        .Msg("HdMayaSceneDelegate::GetDoubleSided(%s)",
-            id.GetText());
+        .Msg("HdMayaSceneDelegate::GetDoubleSided(%s)", id.GetText());
     return _GetValue<HdMayaShapeAdapter, bool>(
         id, [](HdMayaShapeAdapter* a) -> bool { return a->GetDoubleSided(); },
         _shapeAdapters);
@@ -376,15 +375,13 @@ bool HdMayaSceneDelegate::GetDoubleSided(const SdfPath& id) {
 
 HdCullStyle HdMayaSceneDelegate::GetCullStyle(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_CULL_STYLE)
-        .Msg("HdMayaSceneDelegate::GetCullStyle(%s)",
-             id.GetText());
+        .Msg("HdMayaSceneDelegate::GetCullStyle(%s)", id.GetText());
     return HdCullStyleDontCare;
 }
 
 HdDisplayStyle HdMayaSceneDelegate::GetDisplayStyle(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_DISPLAY_STYLE)
-        .Msg("HdMayaSceneDelegate::GetDisplayStyle(%s)",
-             id.GetText());
+        .Msg("HdMayaSceneDelegate::GetDisplayStyle(%s)", id.GetText());
     HdDisplayStyle style;
     style.flatShadingEnabled = false;
     style.displacementEnabled = false;
@@ -393,8 +390,7 @@ HdDisplayStyle HdMayaSceneDelegate::GetDisplayStyle(const SdfPath& id) {
 
 SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_ID)
-        .Msg("HdMayaSceneDelegate::GetDoubleSided(%s)",
-             id.GetText());
+        .Msg("HdMayaSceneDelegate::GetDoubleSided(%s)", id.GetText());
     auto shapeAdapter = TfMapLookupPtr(_shapeAdapters, id);
     if (shapeAdapter == nullptr) { return _fallbackMaterial; }
     auto material = shapeAdapter->get()->GetMaterial();
@@ -417,8 +413,7 @@ SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id) {
 
 std::string HdMayaSceneDelegate::GetSurfaceShaderSource(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_SURFACE_SHADER_SOURCE)
-        .Msg("HdMayaSceneDelegate::GetSurfaceShaderSource(%s)",
-             id.GetText());
+        .Msg("HdMayaSceneDelegate::GetSurfaceShaderSource(%s)", id.GetText());
     if (id == _fallbackMaterial) {
         return HdMayaMaterialAdapter::GetPreviewSurfaceSource();
     }
@@ -433,8 +428,9 @@ std::string HdMayaSceneDelegate::GetSurfaceShaderSource(const SdfPath& id) {
 std::string HdMayaSceneDelegate::GetDisplacementShaderSource(
     const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_DISPLACEMENT_SHADER_SOURCE)
-        .Msg("HdMayaSceneDelegate::GetDisplacementShaderSource(%s)",
-             id.GetText());
+        .Msg(
+            "HdMayaSceneDelegate::GetDisplacementShaderSource(%s)",
+            id.GetText());
     if (id == _fallbackMaterial) {
         return HdMayaMaterialAdapter::GetPreviewDisplacementSource();
     }
@@ -449,8 +445,9 @@ std::string HdMayaSceneDelegate::GetDisplacementShaderSource(
 VtValue HdMayaSceneDelegate::GetMaterialParamValue(
     const SdfPath& id, const TfToken& paramName) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_PARAM_VALUE)
-        .Msg("HdMayaSceneDelegate::GetMaterialParamValue(%s, %s)",
-             id.GetText(), paramName.GetText());
+        .Msg(
+            "HdMayaSceneDelegate::GetMaterialParamValue(%s, %s)", id.GetText(),
+            paramName.GetText());
     if (id == _fallbackMaterial) {
         return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(paramName);
     }
@@ -465,8 +462,7 @@ VtValue HdMayaSceneDelegate::GetMaterialParamValue(
 HdMaterialParamVector HdMayaSceneDelegate::GetMaterialParams(
     const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_PARAMS)
-        .Msg("HdMayaSceneDelegate::GetMaterialParams(%s)",
-             id.GetText());
+        .Msg("HdMayaSceneDelegate::GetMaterialParams(%s)", id.GetText());
     if (id == _fallbackMaterial) {
         return HdMayaMaterialAdapter::GetPreviewMaterialParams();
     }
@@ -480,8 +476,7 @@ HdMaterialParamVector HdMayaSceneDelegate::GetMaterialParams(
 
 VtValue HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_RESOURCE)
-        .Msg("HdMayaSceneDelegate::GetMaterialResource(%s)",
-             id.GetText());
+        .Msg("HdMayaSceneDelegate::GetMaterialResource(%s)", id.GetText());
     if (id == _fallbackMaterial) {
         return HdMayaMaterialAdapter::GetPreviewMaterialResource(id);
     }
@@ -497,16 +492,16 @@ VtValue HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id) {
 
 TfTokenVector HdMayaSceneDelegate::GetMaterialPrimvars(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_PRIMVARS)
-        .Msg("HdMayaSceneDelegate::GetMaterialPrimvars(%s)",
-             id.GetText());
+        .Msg("HdMayaSceneDelegate::GetMaterialPrimvars(%s)", id.GetText());
     return {};
 }
 
 HdTextureResource::ID HdMayaSceneDelegate::GetTextureResourceID(
     const SdfPath& textureId) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE_ID)
-        .Msg("HdMayaSceneDelegate::GetTextureResourceID(%s)",
-             textureId.GetText());
+        .Msg(
+            "HdMayaSceneDelegate::GetTextureResourceID(%s)",
+            textureId.GetText());
     return _GetValue<HdMayaMaterialAdapter, HdTextureResource::ID>(
         textureId.GetPrimPath(),
         [&textureId](HdMayaMaterialAdapter* a) -> HdTextureResource::ID {
@@ -518,8 +513,8 @@ HdTextureResource::ID HdMayaSceneDelegate::GetTextureResourceID(
 HdTextureResourceSharedPtr HdMayaSceneDelegate::GetTextureResource(
     const SdfPath& textureId) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE)
-        .Msg("HdMayaSceneDelegate::GetTextureResource(%s)",
-             textureId.GetText());
+        .Msg(
+            "HdMayaSceneDelegate::GetTextureResource(%s)", textureId.GetText());
     return _GetValue<HdMayaMaterialAdapter, HdTextureResourceSharedPtr>(
         textureId.GetPrimPath(),
         [&textureId](HdMayaMaterialAdapter* a) -> HdTextureResourceSharedPtr {
