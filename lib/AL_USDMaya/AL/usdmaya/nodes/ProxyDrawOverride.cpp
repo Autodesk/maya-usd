@@ -354,8 +354,6 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
 
     ptr->m_engine->SetRootTransform(GfMatrix4d(ptr->m_objPath.inclusiveMatrix().matrix));
 
-    ptr->m_engine->Render(ptr->m_rootPrim, ptr->m_params);
-
     auto view = M3dView::active3dView();
     const auto& paths1 = ptr->m_shape->selectedPaths();
     const auto& paths2 = ptr->m_shape->selectionList().paths();
@@ -377,6 +375,8 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
       ptr->m_engine->RenderBatch(combined, params);
     }
 
+    ptr->m_engine->Render(ptr->m_rootPrim, ptr->m_params);
+    
     // HACK: Maya doesn't restore this ONE buffer binding after our override is done so we have to do it for them.
     glBindBufferBase(GL_UNIFORM_BUFFER, 4, uboBinding);
 
