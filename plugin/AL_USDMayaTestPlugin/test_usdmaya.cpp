@@ -31,47 +31,29 @@
 #include "maya/MFnAnimCurve.h"
 #include "maya/MFnDagNode.h"
 
+#include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/tf/pathUtils.h"
+
 //----------------------------------------------------------------------------------------------------------------------
 const char* buildTempPath(const char* const filename)
 {
-  static char temp_file[512];
-  static size_t length = 0;
-
-  if(!length)
+  static std::string _temp_subdir;
+  if(_temp_subdir.empty())
   {
-#ifdef _WIN32
-    length = GetTempPath(512, temp_file);
-    if(temp_file[length - 1] != '\\')
+    _temp_subdir = ArchMakeTmpSubdir(TfRealPath(ArchGetTmpDir()), "AL_USDMaya");
+
+    if(_temp_subdir.empty())
     {
-      temp_file[length++] = '\\';
+      return nullptr;
     }
-#else
-    const char* const TMPDIRs[4] = {"TMPDIR", "TMP", "TEMP", "TEMPDIR"};
-    for(int i = 0; !length && i < 4; ++i)
-    {
-      const char* const temp = getenv(TMPDIRs[i]);
-      if(temp)
-      {
-        realpath(temp, temp_file);
-        length = std::strlen(temp_file);
-        if(temp_file[length - 1] != '/')
-        {
-          temp_file[length++] = '/';
-        }
-      }
-    }
-    if(!length)
-    {
-      temp_file[0] = '/';
-      temp_file[1] = 't';
-      temp_file[2] = 'm';
-      temp_file[3] = 'p';
-      temp_file[4] = '/';
-      length = 5;
-    }
-#endif
+
+    _temp_subdir += AL_PATH_CHAR;
   }
-  std::strcpy(temp_file + length, filename);
+  
+  static char temp_file[512];
+  std::strcpy(temp_file, _temp_subdir.data());
+  std::strcpy(temp_file + _temp_subdir.size(), filename);
+
   return temp_file;
 }
 
