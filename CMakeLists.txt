@@ -81,7 +81,4 @@ else()
 endif()
 set(BOOST_ROOT "${USD_ROOT}" )
 
-#add_definitions(-DWANT_UFE_BUILD)
-#set(CMAKE_WANT_UFE_BUILD "1")
-
 add_subdirectory(AL_USDMaya)
