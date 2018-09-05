@@ -49,7 +49,6 @@ public:
   /// Equivalent to TranslatorTestType::Get(prim.GetStage(), prim.GetPath())
   /// for a \em valid \p prim, but will not immediately throw an error for
   /// an invalid \p prim
-  AL_USDMAYA_PUBLIC
   explicit TranslatorTestType(const UsdPrim& prim=UsdPrim())
       : UsdTyped(prim)
   {
@@ -58,7 +57,6 @@ public:
   /// Construct a TranslatorTestType on the prim held by \p schemaObj .
   /// Should be preferred over TranslatorTestType(schemaObj.GetPrim()),
   /// as it preserves SchemaBase state.
-  AL_USDMAYA_PUBLIC
   explicit TranslatorTestType(const UsdSchemaBase& schemaObj)
       : UsdTyped(schemaObj)
   {
@@ -72,8 +70,7 @@ public:
   /// class and all its ancestor classes.  Does not include attributes that
   /// may be authored by custom/extended methods of the schemas involved.
   AL_USDMAYA_PUBLIC
-  static const TfTokenVector &
-  GetSchemaAttributeNames(bool includeInherited=true);
+  static const TfTokenVector& GetSchemaAttributeNames(bool includeInherited = true);
 
   /// \brief Return a TranslatorTestType holding the prim adhering to this
   /// schema at \p path on \p stage.  If no prim exists at \p path on

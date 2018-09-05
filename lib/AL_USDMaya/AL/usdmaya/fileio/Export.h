@@ -15,6 +15,7 @@
 //
 #pragma once
 #include "AL/usdmaya/fileio/ExportParams.h"
+#include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
 #include "maya/MPxCommand.h"
 
@@ -62,24 +63,21 @@ private:
   enum ReferenceType
   {
     kNoReference,
-    kMeshReference,
+    kShapeReference,
     kTransformReference,
   };
 
   void exportSceneHierarchy(MDagPath path, SdfPath& defaultPrim);
   void exportShapesCommonProc(MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath, ReferenceType refType);
   void exportShapesOnlyUVProc(MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath);
-  UsdPrim exportMesh(MDagPath path, const SdfPath& usdPath, ReferenceType refType);
   UsdPrim exportMeshUV(MDagPath path, const SdfPath& usdPath);
-  UsdPrim exportNurbsCurve(MDagPath path, const SdfPath& usdPath, ReferenceType refType);
   UsdPrim exportAssembly(MDagPath path, const SdfPath& usdPath);
   UsdPrim exportPluginLocatorNode(MDagPath path, const SdfPath& usdPath);
   UsdPrim exportPluginShape(MDagPath path, const SdfPath& usdPath);
-  UsdPrim exportCamera(MDagPath path, const SdfPath& usdPath);
   void exportIkChain(MDagPath effectorPath, const SdfPath& usdPath);
   void exportGeometryConstraint(MDagPath effectorPath, const SdfPath& usdPath);
   void copyTransformParams(UsdPrim prim, MFnTransform& fnTransform);
-  SdfPath makeMeshReferencePath(MDagPath path, const SdfPath& usdPath, ReferenceType refType);
+  SdfPath determineUsdPath(MDagPath path, const SdfPath& usdPath, ReferenceType refType);
   void addReferences(MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath,
                      const SdfPath& instancePath, ReferenceType refType);
 
@@ -87,6 +85,7 @@ private:
   void doExport();
   const ExporterParams& m_params;
   Impl* m_impl;
+  translators::TranslatorManufacture m_translatorManufacture;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

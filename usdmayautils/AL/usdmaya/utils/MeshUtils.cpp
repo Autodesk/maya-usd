@@ -2057,20 +2057,22 @@ void MeshExportContext::copyVertexData(UsdTimeCode time)
 {
   if(diffGeom & kPoints)
   {
-    UsdAttribute pointsAttr = mesh.GetPointsAttr();
-    MStatus status;
-    const uint32_t numVertices = fnMesh.numVertices();
-    VtArray<GfVec3f> points(numVertices);
-    const float* pointsData = fnMesh.getRawPoints(&status);
-    if(status)
+    if(UsdAttribute pointsAttr = mesh.GetPointsAttr())
     {
-      memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
+      MStatus status;
+      const uint32_t numVertices = fnMesh.numVertices();
+      VtArray<GfVec3f> points(numVertices);
+      const float* pointsData = fnMesh.getRawPoints(&status);
+      if(status)
+      {
+        memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
 
-      pointsAttr.Set(points, time);
-    }
-    else
-    {
-      MGlobal::displayError(MString("Unable to access mesh vertices on mesh: ") + fnMesh.fullPathName());
+        pointsAttr.Set(points, time);
+      }
+      else
+      {
+        MGlobal::displayError(MString("Unable to access mesh vertices on mesh: ") + fnMesh.fullPathName());
+      }
     }
   }
 }
@@ -2080,32 +2082,34 @@ void MeshExportContext::copyNormalData(UsdTimeCode time)
 {
   if(diffGeom & kNormals)
   {
-    UsdAttribute normalsAttr = mesh.GetNormalsAttr();
-    MStatus status;
-    const uint32_t numNormals = fnMesh.numNormals();
-    const float* normalsData = fnMesh.getRawNormals(&status);
-    if(status && numNormals)
+    if(UsdAttribute normalsAttr = mesh.GetNormalsAttr())
     {
-      // if prim vars are all identical, we have a constant value
-      if(usd::utils::vec3AreAllTheSame(normalsData, numNormals))
+      MStatus status;
+      const uint32_t numNormals = fnMesh.numNormals();
+      const float* normalsData = fnMesh.getRawNormals(&status);
+      if(status && numNormals)
       {
-        VtArray<GfVec3f> normals(1);
-        mesh.SetNormalsInterpolation(UsdGeomTokens->constant);
-        normals[0][0] = normalsData[0];
-        normals[0][1] = normalsData[1];
-        normals[0][2] = normalsData[2];
+        // if prim vars are all identical, we have a constant value
+        if(usd::utils::vec3AreAllTheSame(normalsData, numNormals))
+        {
+          VtArray<GfVec3f> normals(1);
+          mesh.SetNormalsInterpolation(UsdGeomTokens->constant);
+          normals[0][0] = normalsData[0];
+          normals[0][1] = normalsData[1];
+          normals[0][2] = normalsData[2];
+        }
+        else
+        {
+          VtArray<GfVec3f> normals(numNormals);
+          mesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
+          memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
+          normalsAttr.Set(normals, time);
+        }
       }
       else
       {
-        VtArray<GfVec3f> normals(numNormals);
-        mesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
-        memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
-        normalsAttr.Set(normals, time);
+        MGlobal::displayError(MString("Unable to access mesh normals on mesh: ") + fnMesh.fullPathName());
       }
-    }
-    else
-    {
-      MGlobal::displayError(MString("Unable to access mesh normals on mesh: ") + fnMesh.fullPathName());
     }
   }
 }

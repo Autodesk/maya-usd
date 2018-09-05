@@ -15,6 +15,8 @@
 //
 #include "AL/usdmaya/fileio/translators/TranslatorTestPlugin.h"
 
+#include "maya/MFn.h"
+
 namespace AL {
 namespace usdmaya {
 namespace fileio {
@@ -29,7 +31,7 @@ MStatus TranslatorTestPlugin::initialize()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus TranslatorTestPlugin::import(const UsdPrim& prim, MObject& parent)
+MStatus TranslatorTestPlugin::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 {
   return MStatus::kSuccess;
 }

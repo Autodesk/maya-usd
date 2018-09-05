@@ -47,6 +47,8 @@ struct NodeFactory
   ///         separate
   MObject createNode(const UsdPrim& from, const char* const nodeType, MObject parent, bool parentUnmerged = false);
 
+  static void setupNode(const UsdPrim& from, MObject obj, MObject parent, bool parentUnmerged);
+
   /// \brief  Some of the translators rely on import settings specified in the import params. Prior to use of this factory,
   ///         you should set the import params for it to use.
   /// \param  params the import params

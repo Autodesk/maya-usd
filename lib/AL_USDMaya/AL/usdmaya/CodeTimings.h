@@ -248,7 +248,7 @@ private:
   }
 
   static ProfilerSectionStackNode m_timeStack[MAX_TIMESTAMP_STACK_SIZE];
-  static int32_t m_stackPos;
+  static uint32_t m_stackPos;
   static ProfilerSectionPathLUT m_map;
 };
 

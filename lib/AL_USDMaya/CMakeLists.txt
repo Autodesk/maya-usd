@@ -77,11 +77,8 @@ list(APPEND AL_usdmaya_fileio_source
 )
 
 list(APPEND AL_usdmaya_fileio_translators_headers
-        AL/usdmaya/fileio/translators/CameraTranslator.h
         AL/usdmaya/fileio/translators/DagNodeTranslator.h
         AL/usdmaya/fileio/translators/DgNodeTranslator.h
-        AL/usdmaya/fileio/translators/MeshTranslator.h
-        AL/usdmaya/fileio/translators/NurbsCurveTranslator.h
         AL/usdmaya/fileio/translators/TransformTranslator.h
         AL/usdmaya/fileio/translators/TranslatorBase.h
         AL/usdmaya/fileio/translators/TranslatorContext.h
@@ -90,11 +87,8 @@ list(APPEND AL_usdmaya_fileio_translators_headers
 )
 
 list(APPEND AL_usdmaya_fileio_translators_source
-        AL/usdmaya/fileio/translators/CameraTranslator.cpp
         AL/usdmaya/fileio/translators/DagNodeTranslator.cpp
         AL/usdmaya/fileio/translators/DgNodeTranslator.cpp
-        AL/usdmaya/fileio/translators/MeshTranslator.cpp
-        AL/usdmaya/fileio/translators/NurbsCurveTranslator.cpp
         AL/usdmaya/fileio/translators/TransformTranslator.cpp
         AL/usdmaya/fileio/translators/TranslatorBase.cpp
         AL/usdmaya/fileio/translators/TranslatorContext.cpp
@@ -250,11 +244,11 @@ target_link_libraries(${PYTHON_LIBRARY_NAME}
     ${LIBRARY_NAME}
 )
 
-set(libFile ${CMAKE_SHARED_LIBRARY_PREFIX}${libName}${CMAKE_SHARED_LIBRARY_SUFFIX})
+set(libFile ${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(PLUG_INFO_RESOURCE_PATH "resources")
 set(PLUG_INFO_ROOT "..")
 set(PLUG_INFO_PLUGIN_NAME "pxr.${LIBRARY_NAME}")
-set(PLUG_INFO_LIBRARY_PATH "../../../../lib/${libFile}")
+set(PLUG_INFO_LIBRARY_PATH "../../${libFile}")
 configure_file(
     plugInfo.json
     ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
@@ -281,10 +275,10 @@ install(CODE
 )
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/usd/plugins/${LIBRARY_NAME}/resources
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/${LIBRARY_NAME}/resources
 )
 install(CODE
-    "file(WRITE \"${CMAKE_INSTALL_PREFIX}/share/usd/plugins/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+    "file(WRITE \"${CMAKE_INSTALL_PREFIX}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
 )
 
 # install public headers

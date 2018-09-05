@@ -93,7 +93,7 @@ bool isSchemaOfType(const UsdPrim& prim, const TfToken& typeToken)
 bool importSchemaPrim(
     const UsdPrim& prim,
     MObject& parent,
-    MObject* created,
+    MObject& created,
     translators::TranslatorContextPtr context,
     const translators::TranslatorRefPtr torBase,
     const fileio::translators::TranslatorParameters& param)
@@ -103,7 +103,7 @@ bool importSchemaPrim(
     if(param.forceTranslatorImport() || torBase->importableByDefault())
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("SchemaPrims::importSchemaPrim import %s\n", prim.GetPath().GetText());
-      if(torBase->import(prim, parent) != MS::kSuccess)
+      if(torBase->import(prim, parent, created) != MS::kSuccess)
       {
         std::cerr << "Failed to import schema prim \"" << prim.GetPath().GetText() << "\"\n";
         return false;

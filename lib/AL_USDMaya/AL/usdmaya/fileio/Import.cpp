@@ -132,6 +132,16 @@ void Import::doImport()
           return obj;
         };
 
+    m_nonImportablePrims.clear();
+    if(!m_params.m_meshes)
+    {
+      m_nonImportablePrims.insert(TfToken("Mesh"));
+    }
+    if(!m_params.m_nurbsCurves)
+    {
+      m_nonImportablePrims.insert(TfToken("NurbsCurves"));
+    }
+
     for(TransformIterator it(stage, m_params.m_parentPath); !it.done(); it.next())
     {
       const UsdPrim& prim = it.prim();
@@ -139,79 +149,48 @@ void Import::doImport()
       // assembly failed.
       bool parentUnmerged = false;
       TfToken val;
-      if(prim.IsInMaster() || prim.GetParent().GetMetadata(AL::usdmaya::Metadata::mergedTransform, &val))
+      if(prim.GetParent().GetMetadata(AL::usdmaya::Metadata::mergedTransform, &val))
       {
         parentUnmerged = (val == AL::usdmaya::Metadata::unmerged);
       }
 
+      translators::TranslatorRefPtr schemaTranslator = utils.isSchemaPrim(prim);
+      if(schemaTranslator != nullptr)
       {
-        if(prim.GetTypeName() == "Mesh")
+        AL_BEGIN_PROFILE_SECTION(ImportingSchemaPrim);
+        MObject parent;
+        if(!parentUnmerged && !prim.IsInMaster())
         {
-          AL_BEGIN_PROFILE_SECTION(ImportingMesh);
-          MObject obj;
-
-          if(!parentUnmerged && !prim.IsInMaster())
+          parent = createParentTransform(prim, it);
+        }
+        else
+        {
+          parent = it.parent();
+        }
+        if (m_nonImportablePrims.find(prim.GetTypeName()) == m_nonImportablePrims.end())
+        {
+          MObject shape = createShape(schemaTranslator, prim, parent, parentUnmerged);
+          if (shape == MObject::kNullObj)
           {
-            obj = createParentTransform(prim, it);
+            MGlobal::displayWarning(MString("Unable to create prim ") +
+                                    AL::usdmaya::utils::convert(prim.GetPath().GetToken()));
           }
           else
           {
-            obj = it.parent();
+            MFnTransform fnP(parent);
+            fnP.addChild(shape, MFnTransform::kNextPos, true);
           }
-
-          if(m_params.m_meshes)
-          {
-            MObject mesh = createMesh(factory, prim, "mesh", obj, parentUnmerged);
-            MFnTransform fnP(obj);
-            fnP.addChild(mesh, MFnTransform::kNextPos, true);
-          }
-          AL_END_PROFILE_SECTION();
         }
-        else
-        if(prim.GetTypeName() == "NurbsCurves")
-        {
-          AL_BEGIN_PROFILE_SECTION(ImportingNurbsCurves);
-          MObject obj;
-
-          if(!parentUnmerged && !prim.IsInMaster())
-          {
-            obj = createParentTransform(prim, it);
-          }
-          else
-          {
-            obj = it.parent();
-          }
-
-          if(m_params.m_nurbsCurves)
-          {
-            MObject mesh = createMesh(factory, prim, "nurbsCurve", obj, parentUnmerged);
-            MFnTransform fnP(obj);
-            fnP.addChild(mesh, MFnTransform::kNextPos, true);
-          }
-          AL_END_PROFILE_SECTION();
-        }
-        else
-        if(utils.isSchemaPrim(prim))
-        {
-          AL_BEGIN_PROFILE_SECTION(ImportingSchemaPrim);
-          MObject obj = createParentTransform(prim, it);
-          MObject created;
-          if(!importSchemaPrim(prim, obj, &created))
-          {
-            MGlobal::displayWarning(MString("Unable to create prim ") + prim.GetPath().GetText());
-          }
-          AL_END_PROFILE_SECTION();
-        }
-        else
-        {
-          AL_BEGIN_PROFILE_SECTION(ImportingTransform);
-          MObject obj = createParentTransform(prim, it);
-          it.append(obj);
-          AL_END_PROFILE_SECTION();
-        }
+        AL_END_PROFILE_SECTION();
+      }
+      else
+      {
+        AL_BEGIN_PROFILE_SECTION(ImportingTransform);
+        MObject obj = createParentTransform(prim, it);
+        it.append(obj);
+        AL_END_PROFILE_SECTION();
       }
     }
-
     m_success = true;
   }
   else
@@ -228,28 +207,29 @@ void Import::doImport()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MObject Import::createMesh(NodeFactory& factory, const UsdPrim& prim, const char* const meshType, MObject parent,
-                           bool parentUnmerged)
+MObject Import::createShape(translators::TranslatorRefPtr translator, const UsdPrim& prim, MObject parent, bool parentUnmerged)
 {
-  MObject mesh;
+  MObject shapeObj;
   if (prim.IsInMaster())
   {
     const SdfPath& primPath = prim.GetPrimPath();
     if (m_instanceObjects.find(primPath) != m_instanceObjects.end())
     {
-      mesh = m_instanceObjects[primPath];
+      shapeObj = m_instanceObjects[primPath];
     }
     else
     {
-      mesh = factory.createNode(prim, meshType, parent, true);
-      m_instanceObjects[primPath] = mesh;
+      translator->import(prim, parent, shapeObj);
+      NodeFactory::setupNode(prim, shapeObj, parent, true);
+      m_instanceObjects[primPath] = shapeObj;
     }
   }
   else
   {
-    mesh = factory.createNode(prim, meshType, parent, parentUnmerged);
+    translator->import(prim, parent, shapeObj);
+    NodeFactory::setupNode(prim, shapeObj, parent, parentUnmerged);
   }
-  return mesh;
+  return shapeObj;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

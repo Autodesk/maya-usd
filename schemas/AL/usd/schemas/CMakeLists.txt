@@ -1,6 +1,6 @@
 set(
     resources_install_path
-    ${CMAKE_INSTALL_PREFIX}/share/usd/plugins/${SCHEMAS_PACKAGE}/resources
+    ${CMAKE_INSTALL_PREFIX}/lib/usd/${SCHEMAS_PACKAGE}/resources
 )
 
 set(

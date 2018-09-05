@@ -18,8 +18,8 @@
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/NodeFactory.h"
-#include "AL/usdmaya/fileio/translators/CameraTranslator.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
+#include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/StageCache.h"
 
 
@@ -32,7 +32,6 @@
 
 using AL::usdmaya::fileio::ExporterParams;
 using AL::usdmaya::fileio::ImporterParams;
-using AL::usdmaya::fileio::translators::CameraTranslator;
 using AL::usdmaya::fileio::AnimationTranslator;
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -40,7 +39,6 @@ using AL::usdmaya::fileio::AnimationTranslator;
 //----------------------------------------------------------------------------------------------------------------------
 TEST(translators_CameraTranslator, io)
 {
-  CameraTranslator::registerType();
   for(int i = 0; i < 100; ++i)
   {
     MDagModifier mod, mod2;
@@ -68,14 +66,18 @@ TEST(translators_CameraTranslator, io)
 
     // generate a prim for testing
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
-    UsdGeomCamera camera = UsdGeomCamera::Define(stage, SdfPath("/hello"));
-    UsdPrim prim = camera.GetPrim();
-
     ExporterParams eparams;
     ImporterParams iparams;
-    CameraTranslator xlator;
-    EXPECT_EQ(MStatus(MS::kSuccess), CameraTranslator::copyAttributes(node, prim, eparams));
-    MObject nodeB = xlator.createNode(prim, xformB, "camera", iparams);
+    SdfPath cameraPath("/hello");
+    MDagPath nodeDagPath;
+    MDagPath::getAPathTo(node, nodeDagPath);
+
+    AL::usdmaya::fileio::translators::TranslatorManufacture manufacture(nullptr);
+    AL::usdmaya::fileio::translators::TranslatorRefPtr xtrans = manufacture.get(TfToken("Camera"));
+    UsdPrim cameraPrim = xtrans->exportObject(stage, nodeDagPath, cameraPath, eparams);
+    EXPECT_TRUE(cameraPrim.IsValid());
+    MObject nodeB;
+    EXPECT_EQ(MStatus(MS::kSuccess), xtrans->import(cameraPrim, xformB, nodeB));
 
     // now make sure the imported node matches the one we started with
     compareNodes(node, nodeB, attributeNames, numAttributes, true);
@@ -93,14 +95,12 @@ TEST(translators_CameraTranslator, animated_io)
   const double startFrame = 1.0;
   const double endFrame = 20.0;
 
-  CameraTranslator::registerType();
   for(int i = 0; i < 100; ++i)
   {
     MDagModifier mod;
     MObject xform = mod.createNode("transform");
     MObject node = mod.createNode("camera", xform);
     MObject xformB = mod.createNode("transform");
-    MObject nodeB = mod.createNode("camera", xformB);
     EXPECT_EQ(MStatus(MS::kSuccess), mod.doIt());
 
     const char* const attributeNames[] = {
@@ -122,7 +122,6 @@ TEST(translators_CameraTranslator, animated_io)
 
     // generate a prim for testing
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
-    UsdGeomCamera camera = UsdGeomCamera::Define(stage, SdfPath("/hello"));
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Export animation
@@ -134,8 +133,14 @@ TEST(translators_CameraTranslator, animated_io)
     eparams.m_animation = true;
     eparams.m_animTranslator = new AnimationTranslator;
 
-    UsdPrim prim = camera.GetPrim();
-    EXPECT_EQ(MStatus(MS::kSuccess), CameraTranslator::copyAttributes(node, prim, eparams));
+    AL::usdmaya::fileio::translators::TranslatorManufacture manufacture(nullptr);
+    AL::usdmaya::fileio::translators::TranslatorRefPtr xtrans = manufacture.get(TfToken("Camera"));
+    SdfPath cameraPath("/hello");
+    MDagPath nodeDagPath;
+    MDagPath::getAPathTo(node, nodeDagPath);
+
+    UsdPrim cameraPrim = xtrans->exportObject(stage, nodeDagPath, cameraPath, eparams);
+    EXPECT_TRUE(cameraPrim.IsValid());
     eparams.m_animTranslator->exportAnimation(eparams);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -143,8 +148,8 @@ TEST(translators_CameraTranslator, animated_io)
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ImporterParams iparams;
-    CameraTranslator xlator;
-    EXPECT_EQ(MStatus(MS::kSuccess), xlator.copyAttributes(prim, nodeB, iparams));
+    MObject nodeB;
+    EXPECT_EQ(MStatus(MS::kSuccess), xtrans->import(cameraPrim, xformB, nodeB));
 
     // now make sure the imported node matches the one we started with
     for(double t = eparams.m_minFrame, e = eparams.m_maxFrame + 1e-3f; t < e; t += 1.0)

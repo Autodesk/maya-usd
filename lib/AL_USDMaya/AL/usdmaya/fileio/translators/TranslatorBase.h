@@ -28,12 +28,22 @@
 
 #include <iostream>
 #include <unordered_map>
+#include <functional>
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
+#include "AL/usdmaya/fileio/ExportParams.h"
 
 namespace AL {
 namespace usdmaya {
 namespace fileio {
 namespace translators {
+
+enum class ExportFlag
+{
+  kNotSupported,
+  kFallbackSupport,
+  kSupported
+};
+
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  The base class interface of all translator plugins. The absolute minimum a translator plugin must implement
@@ -103,9 +113,13 @@ public:
   /// \param  parent a handle to an MObject that represents an AL_usd_Transform node. You should parent your DAG
   ///         objects under this node. If the prim you are importing is NOT a DAG object (e.g. surface shader, etc),
   ///         then you can ignore this parameter.
+  /// \param  output a handle to an MObject created in the importing process
   /// \return MS::kSuccess if all ok
-  virtual MStatus import(const UsdPrim& prim, MObject& parent)
+  virtual MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
     { return MS::kSuccess; }
+
+  virtual UsdPrim exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath, const ExporterParams& params)
+    { return UsdPrim(); }
 
   /// \brief  If your node needs to set up any relationships after import (for example, adding the node to a set, or
   ///         making attribute connections), then all of that work should be performed here.
@@ -149,6 +163,10 @@ public:
   virtual MStatus update(const UsdPrim& prim)
     { return MStatus::kNotImplemented; }
 
+  /// \brief  Method used to test a Maya node to see whether it can be exported.
+  virtual ExportFlag canExport(const MObject& obj)
+    { return ExportFlag::kNotSupported; }
+
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -164,18 +182,15 @@ public:
   typedef TfRefPtr<This> RefPtr;
 
   /// \brief  dtor
-  AL_USDMAYA_PUBLIC
   virtual ~TranslatorBase()
     {}
 
   /// \brief  returns the translated prim type
-  AL_USDMAYA_PUBLIC
   TfType getTranslatedType() const override
     { return m_translatedType; }
 
   /// \brief  returns the context currently being used to translate the USD prims. The context can be used to add
-  ///         references to prims you have created in your translator plugins (see:
-  AL_USDMAYA_PUBLIC
+  ///         references to prims you have created in your translator plugins
   TranslatorContextPtr context() const
     { return m_context; }
 
@@ -186,17 +201,8 @@ public:
   AL_USDMAYA_PUBLIC
   static RefPtr manufacture(const std::string& primType, TranslatorContextPtr context) = delete;
 
-  /// \brief  This method will be called prior to the tear down process taking place. This is the last chance you have
-  ///         to do any serialisation whilst all of the existing nodes are available to query.
-  /// \param  prim the prim that may be modified or deleted as a result of a variant switch
-  /// \return MS::kSuccess if all ok
-  AL_USDMAYA_PUBLIC
-  MStatus preTearDown(UsdPrim& prim) override
-    { return MS::kSuccess; }
-
   /// \brief  return the usd stage associated with this context
   /// \return the usd stage
-  AL_USDMAYA_PUBLIC
   UsdStageRefPtr getUsdStage() const
     { return context()->getUsdStage(); }
 
@@ -219,6 +225,7 @@ private:
 };
 
 typedef TfRefPtr<TranslatorBase> TranslatorRefPtr;
+typedef std::vector<TranslatorRefPtr> TranslatorRefPtrVector;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Forms a registry of all plug-in translator types registered
@@ -228,6 +235,7 @@ class TranslatorManufacture
 {
 public:
   typedef TfRefPtr<TranslatorBase> RefPtr; ///< handle to a plug-in translator
+  typedef std::vector<RefPtr> RefPtrVector;
 
   /// \brief  constructs a registry of translator plugins that are currently registered within usd maya. This construction
   ///         should only happen once per-proxy shape.
@@ -236,10 +244,16 @@ public:
   TranslatorManufacture(TranslatorContextPtr context);
 
   /// \brief  returns a translator for the specified prim type.
-  /// \param  type_name the scheman name
+  /// \param  type_name the schema name
   /// \return returns the requested translator type
   AL_USDMAYA_PUBLIC
   RefPtr get(const TfToken type_name);
+
+  /// \brief  returns a translator for the specified prim type.
+  /// \param  type_name the schema name
+  /// \return returns the requested translator type
+  AL_USDMAYA_PUBLIC
+  RefPtr get(const MObject& mayaObject);
 
 private:
   std::unordered_map<std::string, TranslatorRefPtr> m_translatorsMap;
@@ -295,7 +309,7 @@ static RefPtr create(TranslatorContextPtr context);
 TfRefPtr<PlugClass>                                                             \
 PlugClass::create(TranslatorContextPtr context) {                               \
   TfType const &type = TfType::Find<TranslatedType>();                          \
-  if(!type.IsUnknown()) {                                                    \
+  if(!type.IsUnknown()) {                                                       \
     TfRefPtr<PlugClass> plugin = TfCreateRefPtr(new This());                    \
     plugin->setTranslatedType(type);                                            \
     plugin->setContext(context);                                                \
@@ -308,7 +322,7 @@ PlugClass::create(TranslatorContextPtr context) {                               
       typeid(TranslatedType).name());                                           \
     return TfNullPtr;                                                           \
   }                                                                             \
-}                                                                             \
+}                                                                               \
                                                                                 \
 TF_REGISTRY_FUNCTION(TfType)                                                    \
 {                                                                               \

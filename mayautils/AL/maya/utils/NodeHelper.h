@@ -898,7 +898,6 @@ public:
   /// \param  shortName  short name for the attribute
   /// \param  flags  a bitfield containing a mask of the AttributeFlags enumeration. Describes if the attribute is an input/output/etc
   /// \return the MObject for the attribute
-  AL_MAYA_UTILS_PUBLIC
   static MObject addVec2hAttr(const char* longName, const char* shortName, uint32_t flags)
     { return addVec2fAttr(longName, shortName, flags); }
 
@@ -949,7 +948,6 @@ public:
   /// \param  shortName  short name for the attribute
   /// \param  flags  a bitfield containing a mask of the AttributeFlags enumeration. Describes if the attribute is an input/output/etc
   /// \return the MObject for the attribute
-  AL_MAYA_UTILS_PUBLIC
   static MObject addVec3hAttr(const char* longName, const char* shortName, uint32_t flags)
     { return addVec3fAttr(longName, shortName, flags); }
 
@@ -982,7 +980,6 @@ public:
   /// \param  shortName  short name for the attribute
   /// \param  flags  a bitfield containing a mask of the AttributeFlags enumeration. Describes if the attribute is an input/output/etc
   /// \return the MObject for the attribute
-  AL_MAYA_UTILS_PUBLIC
   static MObject addVec4hAttr(const char* longName, const char* shortName, uint32_t flags)
     { return addVec4fAttr(longName, shortName, flags); }
 
@@ -1041,7 +1038,6 @@ public:
   /// \brief  used to add additional references to AETemplate calls for standard types, e.g. "AEsurfaceShapeTemplate"
   ///         these will be inserted into the correct location
   /// \param  baseTemplate the additional AE template UI
-  AL_MAYA_UTILS_PUBLIC
   static void addBaseTemplate(const std::string& baseTemplate)
   {
     if(!baseTemplate.empty())
@@ -1235,7 +1231,6 @@ public:
   /// \param  node the node to add the attribute to
   /// \param  attribute an optional pointer to an MObject in which the attribute handle will be returned
   /// \return MS::kSuccess when succeeded, otherwise the error code
-  AL_MAYA_UTILS_PUBLIC
   static MStatus addFloatPointAttr(const MObject& node, const char* longName, const char* shortName, const MFloatPoint& defaultValue, uint32_t flags, MObject* attribute = 0)
     { return addFloat3Attr(node, longName, shortName, defaultValue.x, defaultValue.y, defaultValue.z, flags, attribute); }
 
@@ -1258,7 +1253,6 @@ public:
   /// \param  node the node to add the attribute to
   /// \param  attribute an optional pointer to an MObject in which the attribute handle will be returned
   /// \return MS::kSuccess when succeeded, otherwise the error code
-  AL_MAYA_UTILS_PUBLIC
   static MStatus addFloatVectorAttr(const MObject& node, const char* longName, const char* shortName, const MFloatVector& defaultValue, uint32_t flags, MObject* attribute = 0)
     { return addFloat3Attr(node, longName, shortName, defaultValue.x, defaultValue.y, defaultValue.z, flags); }
 
@@ -1270,7 +1264,6 @@ public:
   /// \param  node the node to add the attribute to
   /// \param  attribute an optional pointer to an MObject in which the attribute handle will be returned
   /// \return MS::kSuccess when succeeded, otherwise the error code
-  AL_MAYA_UTILS_PUBLIC
   static MStatus addColourAttr(const MObject& node, const char* longName, const char* shortName, const MColor& defaultValue, uint32_t flags, MObject* attribute = 0)
     { return addFloat3Attr(node, longName, shortName, defaultValue.r, defaultValue.g, defaultValue.b, flags | kColour, attribute); }
 
@@ -1348,7 +1341,6 @@ public:
   /// \param  node the node to add the attribute to
   /// \param  attribute an optional pointer to an MObject in which the attribute handle will be returned
   /// \return MS::kSuccess when succeeded, otherwise the error code
-  AL_MAYA_UTILS_PUBLIC
   static MStatus addVec2hAttr(const MObject& node, const char* longName, const char* shortName, uint32_t flags, MObject* attribute = 0)
     { return addVec2fAttr(node, longName, shortName, flags); }
 
@@ -1389,7 +1381,6 @@ public:
   /// \param  node the node to add the attribute to
   /// \param  attribute an optional pointer to an MObject in which the attribute handle will be returned
   /// \return MS::kSuccess when succeeded, otherwise the error code
-  AL_MAYA_UTILS_PUBLIC
   static MStatus addVec3hAttr(const MObject& node, const char* longName, const char* shortName, uint32_t flags, MObject* attribute = 0)
     { return addVec3fAttr(node, longName, shortName, flags, attribute); }
 
@@ -1430,7 +1421,6 @@ public:
   /// \param  node the node to add the attribute to
   /// \param  attribute an optional pointer to an MObject in which the attribute handle will be returned
   /// \return MS::kSuccess when succeeded, otherwise the error code
-  AL_MAYA_UTILS_PUBLIC
   static MStatus addVec4hAttr(const MObject& node, const char* longName, const char* shortName, uint32_t flags, MObject* attribute = 0)
     { return addVec4fAttr(node, longName, shortName, flags, attribute); }
 

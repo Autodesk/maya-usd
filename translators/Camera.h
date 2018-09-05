@@ -28,23 +28,29 @@ namespace translators {
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief Class to translate an image plane in and out of maya.
 //----------------------------------------------------------------------------------------------------------------------
-class CameraTranslator
+class Camera
   : public TranslatorBase
 {
 public:
   
-  AL_USDMAYA_DECLARE_TRANSLATOR(CameraTranslator);
+  AL_USDMAYA_DECLARE_TRANSLATOR(Camera);
 
   MStatus initialize() override;
-  MStatus import(const UsdPrim& prim, MObject& parent) override;
+  MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
+  UsdPrim exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath,
+                       const ExporterParams& params) override;
   MStatus tearDown(const SdfPath& path) override;
   MStatus update(const UsdPrim& path) override;
   bool supportsUpdate() const override 
     { return true; }
     
   void checkCurrentCameras(MObject cameraNode);
+
+  ExportFlag canExport(const MObject& obj) override
+    { return obj.hasFn(MFn::kCamera) ? ExportFlag::kFallbackSupport : ExportFlag::kNotSupported; }
     
 private:
+  MStatus updateAttributes(MObject to, UsdGeomCamera& usdCamera);
   static MObject m_orthographic;
   static MObject m_horizontalFilmAperture;
   static MObject m_verticalFilmAperture;

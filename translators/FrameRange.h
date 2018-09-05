@@ -37,7 +37,7 @@ public:
   AL_USDMAYA_DECLARE_TRANSLATOR(FrameRange);
 
 private:
-  MStatus import(const UsdPrim& prim, MObject& parent) override;
+  MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
   MStatus postImport(const UsdPrim& prim) override;
   MStatus preTearDown(UsdPrim& prim) override;
   MStatus tearDown(const SdfPath& path) override;

@@ -19,7 +19,6 @@
 
 #include "AL/maya/utils/NodeHelper.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
-#include "AL/usdmaya/fileio/translators/MeshTranslator.h"
 #include "AL/usdmaya/fileio/translators/DagNodeTranslator.h"
 #include "AL/usdmaya/utils/MeshUtils.h"
 

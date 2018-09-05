@@ -64,9 +64,6 @@ class TransformIterator;
 namespace translators {
   class DagNodeTranslator;
   class DgNodeTranslator;
-  class MeshTranslator;
-  class NurbsCurveTranslator;
-  class CameraTranslator;
   class TransformTranslator;
 } // translators
 } // fileio
