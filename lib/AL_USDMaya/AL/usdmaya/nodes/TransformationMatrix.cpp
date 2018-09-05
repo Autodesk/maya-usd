@@ -1220,40 +1220,6 @@ MStatus TransformationMatrix::translateTo(const MVector& vector, MSpace::Space s
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus TransformationMatrix::translateBy(const MVector& vector, MSpace::Space space)
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::translateBy %f %f %f\n", vector.x, vector.y, vector.z);
-  if(isTranslateLocked())
-    return MS::kSuccess;
-
-  MStatus status = MPxTransformationMatrix::translateBy(vector, space);
-  if(status)
-  {
-    m_translationTweak = MPxTransformationMatrix::translationValue - m_translationFromUsd;
-  }
-  if(pushToPrimAvailable())
-  {
-    // if the prim does not contain a translation, make sure we insert a transform op for that.
-    if(primHasTranslation())
-    {
-      // helping the branch predictor
-    }
-    else
-    if(!pushPrimToMatrix())
-    {
-      // generate our translate op, and insert into the correct stack location
-      UsdGeomXformOp op = m_xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("translate"));
-      m_xformops.insert(m_xformops.begin(), op);
-      m_orderedOps.insert(m_orderedOps.begin(), kTranslate);
-      m_xform.SetXformOpOrder(m_xformops, (m_flags & kInheritsTransform) == 0);
-      m_flags |= kPrimHasTranslation;
-    }
-    pushToPrim();
-  }
-  return status;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 // Scale
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::insertScaleOp()
@@ -1300,34 +1266,6 @@ MStatus TransformationMatrix::scaleTo(const MVector& scale, MSpace::Space space)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus TransformationMatrix::scaleBy(const MVector& scale, MSpace::Space space)
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::scaleBy %f %f %f\n", scale.x, scale.y, scale.z);
-  if(isScaleLocked())
-    return MStatus::kSuccess;
-  MStatus status = MPxTransformationMatrix::scaleBy(scale, space);
-  if(status)
-  {
-    m_scaleTweak = MPxTransformationMatrix::scaleValue - m_scaleFromUsd;
-  }
-  if(pushToPrimAvailable())
-  {
-    if(primHasScale())
-    {
-      // helping the branch predictor
-    }
-    else
-    if(!pushPrimToMatrix())
-    {
-      // rare case: add a new scale op into the prim
-      insertScaleOp();
-    }
-    pushToPrim();
-  }
-  return status;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 // Shear
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::insertShearOp()
@@ -1350,32 +1288,6 @@ MStatus TransformationMatrix::shearTo(const MVector& shear, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::shearTo %f %f %f\n", shear.x, shear.y, shear.z);
   MStatus status = MPxTransformationMatrix::shearTo(shear, space);
-  if(status)
-  {
-    m_scaleTweak = MPxTransformationMatrix::shearValue - m_shearFromUsd;
-  }
-  if(pushToPrimAvailable())
-  {
-    if(primHasShear())
-    {
-      // helping the branch predictor
-    }
-    else
-    if(!pushPrimToMatrix())
-    {
-      // rare case: add a new scale op into the prim
-      insertShearOp();
-    }
-    pushToPrim();
-  }
-  return status;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-MStatus TransformationMatrix::shearBy(const MVector& shear, MSpace::Space space)
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::shearBy %f %f %f\n", shear.x, shear.y, shear.z);
-  MStatus status = MPxTransformationMatrix::shearBy(shear, space);
   if(status)
   {
     m_scaleTweak = MPxTransformationMatrix::shearValue - m_shearFromUsd;
@@ -1654,68 +1566,12 @@ MStatus TransformationMatrix::rotateTo(const MQuaternion &q, MSpace::Space space
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus TransformationMatrix::rotateBy(const MQuaternion &q, MSpace::Space space)
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::rotateBy %f %f %f %f\n", q.x, q.y, q.z, q.w);
-  if(isRotateLocked())
-    return MS::kSuccess;
-  MStatus status = MPxTransformationMatrix::rotateBy(q, space);
-  if(status)
-  {
-    m_rotationTweak.x = MPxTransformationMatrix::rotationValue.x - m_rotationFromUsd.x;
-    m_rotationTweak.y = MPxTransformationMatrix::rotationValue.y - m_rotationFromUsd.y;
-    m_rotationTweak.z = MPxTransformationMatrix::rotationValue.z - m_rotationFromUsd.z;
-  }
-  if(pushToPrimAvailable())
-  {
-    if(primHasRotation())
-    {
-    }
-    else
-    if(!pushPrimToMatrix())
-    {
-      insertRotateOp();
-    }
-    pushToPrim();
-  }
-  return status;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 MStatus TransformationMatrix::rotateTo(const MEulerRotation &e, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::rotateTo %f %f %f\n", e.x, e.y, e.z);
   if(isRotateLocked())
     return MS::kSuccess;
   MStatus status = MPxTransformationMatrix::rotateTo(e, space);
-  if(status)
-  {
-    m_rotationTweak.x = MPxTransformationMatrix::rotationValue.x - m_rotationFromUsd.x;
-    m_rotationTweak.y = MPxTransformationMatrix::rotationValue.y - m_rotationFromUsd.y;
-    m_rotationTweak.z = MPxTransformationMatrix::rotationValue.z - m_rotationFromUsd.z;
-  }
-  if(pushToPrimAvailable())
-  {
-    if(primHasRotation())
-    {
-    }
-    else
-    if(!pushPrimToMatrix())
-    {
-      insertRotateOp();
-    }
-    pushToPrim();
-  }
-  return status;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-MStatus TransformationMatrix::rotateBy(const MEulerRotation &e, MSpace::Space space)
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::rotateBy %f %f %f\n", e.x, e.y, e.z);
-  if(isRotateLocked())
-    return MS::kSuccess;
-  MStatus status = MPxTransformationMatrix::rotateBy(e, space);
   if(status)
   {
     m_rotationTweak.x = MPxTransformationMatrix::rotationValue.x - m_rotationFromUsd.x;
