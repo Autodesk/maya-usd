@@ -1211,7 +1211,7 @@ MStatus TransformationMatrix::translateTo(const MVector& vector, MSpace::Space s
       // helping the branch predictor
     }
     else
-    if(!pushPrimToMatrix() && vector != MVector::zero)
+    if(!pushPrimToMatrix() && vector != MVector(0.0, 0.0, 0.0))
     {
       insertTranslateOp();
     }
@@ -1290,7 +1290,7 @@ MStatus TransformationMatrix::scaleTo(const MVector& scale, MSpace::Space space)
       // helping the branch predictor
     }
     else
-    if(!pushPrimToMatrix() && scale != MVector::one)
+    if(!pushPrimToMatrix() && scale != MVector(1.0, 1.0, 1.0))
     {
       // rare case: add a new scale op into the prim
       insertScaleOp();
@@ -1362,7 +1362,7 @@ MStatus TransformationMatrix::shearTo(const MVector& shear, MSpace::Space space)
       // helping the branch predictor
     }
     else
-    if(!pushPrimToMatrix() && shear != MVector::zero)
+    if(!pushPrimToMatrix() && shear != MVector(0.0, 0.0, 0.0))
     {
       // rare case: add a new scale op into the prim
       insertShearOp();
@@ -1438,7 +1438,7 @@ MStatus TransformationMatrix::setScalePivot(const MPoint& sp, MSpace::Space spac
     {
     }
     else
-    if(!pushPrimToMatrix() && sp != MPoint::origin)
+    if(!pushPrimToMatrix() && sp != MPoint(0.0, 0.0, 0.0, 1.0))
     {
       insertScalePivotOp();
     }
@@ -1478,7 +1478,7 @@ MStatus TransformationMatrix::setScalePivotTranslation(const MVector& sp, MSpace
     {
     }
     else
-    if(!pushPrimToMatrix() && sp != MVector::zero)
+    if(!pushPrimToMatrix() && sp != MVector(0.0, 0.0, 0.0))
     {
       insertScalePivotTranslationOp();
     }
@@ -1528,7 +1528,7 @@ MStatus TransformationMatrix::setRotatePivot(const MPoint& pivot, MSpace::Space 
     {
     }
     else
-    if(!pushPrimToMatrix() && pivot != MPoint::origin)
+    if(!pushPrimToMatrix() && pivot != MPoint(0.0, 0.0, 0.0, 1.0))
     {
       insertRotatePivotOp();
     }
@@ -1568,7 +1568,7 @@ MStatus TransformationMatrix::setRotatePivotTranslation(const MVector &vector, M
     {
     }
     else
-    if(!pushPrimToMatrix() && vector != MPoint::origin)
+    if(!pushPrimToMatrix() && vector != MPoint(0.0, 0.0, 0.0, 1.0))
     {
       insertRotatePivotTranslationOp();
     }
@@ -1645,7 +1645,7 @@ MStatus TransformationMatrix::rotateTo(const MQuaternion &q, MSpace::Space space
     {
     }
     else
-    if(!pushPrimToMatrix() && q != MQuaternion::identity)
+    if(!pushPrimToMatrix() && q != MQuaternion(0.0, 0.0, 0.0, 1.0))
     {
       insertRotateOp();
     }
@@ -1701,7 +1701,7 @@ MStatus TransformationMatrix::rotateTo(const MEulerRotation &e, MSpace::Space sp
     {
     }
     else
-    if(!pushPrimToMatrix() && e != MEulerRotation::identity)
+    if(!pushPrimToMatrix() && e != MEulerRotation(0.0, 0.0, 0.0, MEulerRotation::kXYZ))
     {
       insertRotateOp();
     }
@@ -1778,7 +1778,7 @@ MStatus TransformationMatrix::setRotateOrientation(const MQuaternion &q, MSpace:
     {
     }
     else
-    if(!pushPrimToMatrix() && q != MQuaternion::identity)
+    if(!pushPrimToMatrix() && q != MQuaternion(0.0, 0.0, 0.0, 1.0))
     {
       insertRotateAxesOp();
     }
@@ -1802,7 +1802,7 @@ MStatus TransformationMatrix::setRotateOrientation(const MEulerRotation& euler, 
     {
     }
     else
-    if(!pushPrimToMatrix() && euler != MEulerRotation::identity)
+    if(!pushPrimToMatrix() && euler != MEulerRotation(0.0, 0.0, 0.0, MEulerRotation::kXYZ))
     {
       insertRotateAxesOp();
     }
