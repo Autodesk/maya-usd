@@ -1881,7 +1881,7 @@ void TransformationMatrix::enableReadAnimatedValues(bool enabled)
       if(primHasScalePivot() || scalePivot() != nullPoint)
         setScalePivot(scalePivot(), MSpace::kTransform, false);
 
-      if(primHasScalePivot() || scalePivot() != nullPoint)
+      if(primHasScalePivotTranslate() || scalePivotTranslation() != nullVec)
         setScalePivotTranslation(scalePivotTranslation(), MSpace::kTransform);
 
       if(primHasRotatePivot() || rotatePivot() != nullPoint)
@@ -1950,7 +1950,7 @@ void TransformationMatrix::enablePushToPrim(bool enabled)
       if(primHasScalePivot() || scalePivot() != nullPoint)
         setScalePivot(scalePivot(), MSpace::kTransform, false);
 
-      if(primHasScalePivotTranslate() || scalePivotTranslation() != nullPoint)
+      if(primHasScalePivotTranslate() || scalePivotTranslation() != nullVec)
         setScalePivotTranslation(scalePivotTranslation(), MSpace::kTransform);
 
       if(primHasRotatePivot() || rotatePivot() != nullPoint)
