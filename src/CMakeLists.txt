@@ -10,11 +10,16 @@ find_package(PythonLibs REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(TBB REQUIRED)
 
-link_directories(${MAYA_LIBRARY_DIR})
 link_directories(${USD_LIBRARY_DIR})
 link_directories(${USD_MAYA_LIBRARY_DIR})
 
-set(MAYA_LIBS OpenMaya Foundation OpenMayaAnim OpenMayaFX OpenMayaUI OpenMayaRender)
+set(MAYA_LIBS
+    ${MAYA_OpenMaya_LIBRARY}
+    ${MAYA_Foundation_LIBRARY}
+    ${MAYA_OpenMayaAnim_LIBRARY}
+    ${MAYA_OpenMayaFX_LIBRARY}
+    ${MAYA_OpenMayaUI_LIBRARY}
+    ${MAYA_OpenMayaRender_LIBRARY})
 
 set(HDMAYA_SRC
     hdmaya/adapters/mayaAttrs.cpp
