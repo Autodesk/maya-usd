@@ -1,6 +1,6 @@
 ## Identation
 
-The project follows the 1TBS variant of K&R style. To make sure your code follows our guidelines run `clang-format` (we use version 6.0.0) on the codebase before submitting a pull request.
+The project follows the 1TBS variant of K&R style, with a limit of 80 columns per line. To make sure your code follows our guidelines run `clang-format` (we use version 6.0.0) on the codebase before submitting a pull request.
 
 ## Naming scheme
 
