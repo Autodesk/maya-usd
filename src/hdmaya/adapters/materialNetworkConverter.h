@@ -81,30 +81,6 @@ public:
 private:
     HdMaterialNetwork& _network;
     const SdfPath& _prefix;
-
-    static std::unordered_map<
-        TfToken,
-        std::function<void(
-            HdMayaMaterialNetworkConverter&, HdMaterialNode&,
-            MFnDependencyNode&)>,
-        TfToken::HashFunctor>
-        _converters;
-
-    static void ConvertUsdPreviewSurface(
-        HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
-        MFnDependencyNode& node);
-    static void ConvertLambert(
-        HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
-        MFnDependencyNode& node);
-    static void ConvertBlinn(
-        HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
-        MFnDependencyNode& node);
-    static void ConvertFile(
-        HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
-        MFnDependencyNode& node);
-    static void ConvertPlace2dTexture(
-        HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
-        MFnDependencyNode& node);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

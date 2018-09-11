@@ -84,22 +84,113 @@ const auto _previewMaterialParamVector = []() -> HdMaterialParamVector {
 
 const MString _fileTextureName("fileTextureName");
 
-} // namespace
+void ConvertUsdPreviewSurface(
+    HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
+    MFnDependencyNode& node) {
+    for (const auto& param : _previewShaderParams) {
+        const VtValue* fallback = &param._param.GetFallbackValue();
+        converter.ConvertParameter(
+            node, material, param._param.GetName(), param._param.GetName(),
+            param._type, fallback);
+    }
+    material.identifier = UsdImagingTokens->UsdPreviewSurface;
+}
+
+void ConvertLambert(
+    HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
+    MFnDependencyNode& node) {
+    for (const auto& param : _previewShaderParams) {
+        const VtValue* fallback = &param._param.GetFallbackValue();
+        if (param._param.GetName() == _tokens->diffuseColor) {
+            converter.ConvertParameter(
+                node, material, _tokens->color, _tokens->diffuseColor,
+                param._type, fallback);
+        } else if (param._param.GetName() == _tokens->emissiveColor) {
+            converter.ConvertParameter(
+                node, material, _tokens->incandescence, _tokens->emissiveColor,
+                param._type, fallback);
+        } else {
+            converter.ConvertParameter(
+                node, material, param._param.GetName(), param._param.GetName(),
+                param._type, fallback);
+        }
+    }
+    material.identifier = UsdImagingTokens->UsdPreviewSurface;
+}
+
+void ConvertBlinn(
+    HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
+    MFnDependencyNode& node) {
+    for (const auto& param : _previewShaderParams) {
+        const VtValue* fallback = &param._param.GetFallbackValue();
+        if (param._param.GetName() == _tokens->diffuseColor) {
+            converter.ConvertParameter(
+                node, material, _tokens->color, _tokens->diffuseColor,
+                param._type, fallback);
+        } else if (param._param.GetName() == _tokens->emissiveColor) {
+            converter.ConvertParameter(
+                node, material, _tokens->incandescence, _tokens->emissiveColor,
+                param._type, fallback);
+        } else if (param._param.GetName() == _tokens->roughness) {
+            converter.ConvertParameter(
+                node, material, _tokens->eccentricity, _tokens->roughness,
+                param._type, fallback);
+        } else {
+            converter.ConvertParameter(
+                node, material, param._param.GetName(), param._param.GetName(),
+                param._type, fallback);
+        }
+    }
+    material.identifier = UsdImagingTokens->UsdPreviewSurface;
+}
+
+void ConvertFile(
+    HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
+    MFnDependencyNode& node) {
+    std::string fileTextureName{};
+    if (node.findPlug(MayaAttrs::file::uvTilingMode).asShort() != 0) {
+        fileTextureName = node.findPlug(MayaAttrs::file::fileTextureNamePattern)
+                              .asString()
+                              .asChar();
+        if (fileTextureName.empty()) {
+            fileTextureName =
+                node.findPlug(MayaAttrs::file::computedFileTextureNamePattern)
+                    .asString()
+                    .asChar();
+        }
+    } else {
+        fileTextureName = node.findPlug(_fileTextureName).asString().asChar();
+    }
+    material.parameters[_tokens->file] =
+        VtValue(SdfAssetPath(fileTextureName, fileTextureName));
+    converter.ConvertParameter(
+        node, material, _tokens->uvCoord, _tokens->st,
+        SdfValueTypeNames->Float2);
+    material.identifier = UsdImagingTokens->UsdUVTexture;
+}
+
+void ConvertPlace2dTexture(
+    HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
+    MFnDependencyNode& node) {
+    converter.AddPrimvar(_tokens->st);
+    material.parameters[_tokens->varname] = VtValue(_tokens->st);
+    material.identifier = UsdImagingTokens->UsdPrimvarReader_float2;
+}
 
 std::unordered_map<
     TfToken,
     std::function<void(
         HdMayaMaterialNetworkConverter&, HdMaterialNode&, MFnDependencyNode&)>,
     TfToken::HashFunctor>
-    HdMayaMaterialNetworkConverter::_converters{
-        {UsdImagingTokens->UsdPreviewSurface,
-         HdMayaMaterialNetworkConverter::ConvertUsdPreviewSurface},
-        {_tokens->lambert, HdMayaMaterialNetworkConverter::ConvertLambert},
-        {_tokens->blinn, HdMayaMaterialNetworkConverter::ConvertBlinn},
-        {_tokens->file, HdMayaMaterialNetworkConverter::ConvertFile},
-        {_tokens->place2dTexture,
-         HdMayaMaterialNetworkConverter::ConvertPlace2dTexture},
+    _converters{
+        {UsdImagingTokens->UsdPreviewSurface, ConvertUsdPreviewSurface},
+        {_tokens->lambert, ConvertLambert},
+        {_tokens->blinn, ConvertBlinn},
+        {_tokens->file, ConvertFile},
+        {_tokens->place2dTexture, ConvertPlace2dTexture},
     };
+
+} // namespace
 
 HdMayaMaterialNetworkConverter::HdMayaMaterialNetworkConverter(
     HdMaterialNetwork& network, const SdfPath& prefix)
@@ -202,99 +293,6 @@ HdMayaMaterialNetworkConverter::GetPreviewShaderParams() {
 const HdMaterialParamVector&
 HdMayaMaterialNetworkConverter::GetPreviewMaterialParamVector() {
     return _previewMaterialParamVector;
-}
-
-void HdMayaMaterialNetworkConverter::ConvertUsdPreviewSurface(
-    HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
-    MFnDependencyNode& node) {
-    for (const auto& param : _previewShaderParams) {
-        const VtValue* fallback = &param._param.GetFallbackValue();
-        converter.ConvertParameter(
-            node, material, param._param.GetName(), param._param.GetName(),
-            param._type, fallback);
-    }
-    material.identifier = UsdImagingTokens->UsdPreviewSurface;
-}
-
-void HdMayaMaterialNetworkConverter::ConvertLambert(
-    HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
-    MFnDependencyNode& node) {
-    for (const auto& param : _previewShaderParams) {
-        const VtValue* fallback = &param._param.GetFallbackValue();
-        if (param._param.GetName() == _tokens->diffuseColor) {
-            converter.ConvertParameter(
-                node, material, _tokens->color, _tokens->diffuseColor,
-                param._type, fallback);
-        } else if (param._param.GetName() == _tokens->emissiveColor) {
-            converter.ConvertParameter(
-                node, material, _tokens->incandescence, _tokens->emissiveColor,
-                param._type, fallback);
-        } else {
-            converter.ConvertParameter(
-                node, material, param._param.GetName(), param._param.GetName(),
-                param._type, fallback);
-        }
-    }
-    material.identifier = UsdImagingTokens->UsdPreviewSurface;
-}
-
-void HdMayaMaterialNetworkConverter::ConvertBlinn(
-    HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
-    MFnDependencyNode& node) {
-    for (const auto& param : _previewShaderParams) {
-        const VtValue* fallback = &param._param.GetFallbackValue();
-        if (param._param.GetName() == _tokens->diffuseColor) {
-            converter.ConvertParameter(
-                node, material, _tokens->color, _tokens->diffuseColor,
-                param._type, fallback);
-        } else if (param._param.GetName() == _tokens->emissiveColor) {
-            converter.ConvertParameter(
-                node, material, _tokens->incandescence, _tokens->emissiveColor,
-                param._type, fallback);
-        } else if (param._param.GetName() == _tokens->roughness) {
-            converter.ConvertParameter(
-                node, material, _tokens->eccentricity, _tokens->roughness,
-                param._type, fallback);
-        } else {
-            converter.ConvertParameter(
-                node, material, param._param.GetName(), param._param.GetName(),
-                param._type, fallback);
-        }
-    }
-    material.identifier = UsdImagingTokens->UsdPreviewSurface;
-}
-
-void HdMayaMaterialNetworkConverter::ConvertFile(
-    HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
-    MFnDependencyNode& node) {
-    std::string fileTextureName{};
-    if (node.findPlug(MayaAttrs::file::uvTilingMode).asShort() != 0) {
-        fileTextureName = node.findPlug(MayaAttrs::file::fileTextureNamePattern)
-                              .asString()
-                              .asChar();
-        if (fileTextureName.empty()) {
-            fileTextureName =
-                node.findPlug(MayaAttrs::file::computedFileTextureNamePattern)
-                    .asString()
-                    .asChar();
-        }
-    } else {
-        fileTextureName = node.findPlug(_fileTextureName).asString().asChar();
-    }
-    material.parameters[_tokens->file] =
-        VtValue(SdfAssetPath(fileTextureName, fileTextureName));
-    converter.ConvertParameter(
-        node, material, _tokens->uvCoord, _tokens->st,
-        SdfValueTypeNames->Float2);
-    material.identifier = UsdImagingTokens->UsdUVTexture;
-}
-
-void HdMayaMaterialNetworkConverter::ConvertPlace2dTexture(
-    HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
-    MFnDependencyNode& node) {
-    converter.AddPrimvar(_tokens->st);
-    material.parameters[_tokens->varname] = VtValue(_tokens->st);
-    material.identifier = UsdImagingTokens->UsdPrimvarReader_float2;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
