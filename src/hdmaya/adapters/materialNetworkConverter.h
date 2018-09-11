@@ -39,13 +39,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdMayaShaderParam {
-    HdMaterialParam _param;
-    SdfValueTypeName _type;
+    HdMaterialParam param;
+    SdfValueTypeName type;
 
+    HDMAYA_API
     HdMayaShaderParam(
-        const TfToken& name, const VtValue& value, const SdfValueTypeName& type)
-        : _param(HdMaterialParam::ParamTypeFallback, name, value),
-          _type(type) {}
+        const TfToken& name, const VtValue& value,
+        const SdfValueTypeName& type);
 };
 
 using HdMayaShaderParams = std::vector<HdMayaShaderParam>;

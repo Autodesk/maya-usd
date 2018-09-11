@@ -80,7 +80,7 @@ HdMayaShaderParams::const_iterator _FindPreviewParam(const TfToken& id) {
         it = first;
         step = count / 2;
         std::advance(it, step);
-        if (it->_param.GetName() < id) {
+        if (it->param.GetName() < id) {
             first = ++it;
             count -= step + 1;
         } else {
@@ -88,8 +88,8 @@ HdMayaShaderParams::const_iterator _FindPreviewParam(const TfToken& id) {
         }
     }
     return first != previewShaderParams.cend()
-               ? (first->_param.GetName() == id ? first
-                                                : previewShaderParams.cend())
+               ? (first->param.GetName() == id ? first
+                                               : previewShaderParams.cend())
                : first;
 };
 
@@ -226,7 +226,7 @@ const VtValue& HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
             paramName.GetText());
         return _emptyValue;
     }
-    return it->_param.GetFallbackValue();
+    return it->param.GetFallbackValue();
 }
 
 VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(
@@ -239,7 +239,7 @@ VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(
     for (const auto& it :
          HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
         node.parameters.emplace(
-            it._param.GetName(), it._param.GetFallbackValue());
+            it.param.GetName(), it.param.GetFallbackValue());
     }
     network.nodes.push_back(node);
     map.map.emplace(UsdImagingTokens->bxdf, network);
@@ -443,7 +443,7 @@ private:
                 paramName);
         }
         const auto ret = HdMayaMaterialNetworkConverter::ConvertPlugToValue(
-            p, previewIt->_type);
+            p, previewIt->type);
         if (ARCH_UNLIKELY(ret.IsEmpty())) {
             return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
                 paramName);

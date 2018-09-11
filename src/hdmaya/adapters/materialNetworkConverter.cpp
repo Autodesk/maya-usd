@@ -69,7 +69,7 @@ const auto _previewShaderParams = []() -> HdMayaShaderParams {
     std::sort(
         ret.begin(), ret.end(),
         [](const HdMayaShaderParam& a, const HdMayaShaderParam& b) -> bool {
-            return a._param.GetName() < b._param.GetName();
+            return a.param.GetName() < b.param.GetName();
         });
     return ret;
 }();
@@ -77,7 +77,7 @@ const auto _previewShaderParams = []() -> HdMayaShaderParams {
 // This is required quite often, so we precalc.
 const auto _previewMaterialParamVector = []() -> HdMaterialParamVector {
     HdMaterialParamVector ret;
-    for (const auto& it : _previewShaderParams) { ret.emplace_back(it._param); }
+    for (const auto& it : _previewShaderParams) { ret.emplace_back(it.param); }
     return ret;
 }();
 
@@ -87,10 +87,10 @@ void ConvertUsdPreviewSurface(
     HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
     MFnDependencyNode& node) {
     for (const auto& param : _previewShaderParams) {
-        const VtValue* fallback = &param._param.GetFallbackValue();
+        const VtValue* fallback = &param.param.GetFallbackValue();
         converter.ConvertParameter(
-            node, material, param._param.GetName(), param._param.GetName(),
-            param._type, fallback);
+            node, material, param.param.GetName(), param.param.GetName(),
+            param.type, fallback);
     }
     material.identifier = UsdImagingTokens->UsdPreviewSurface;
 }
@@ -99,20 +99,20 @@ void ConvertLambert(
     HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
     MFnDependencyNode& node) {
     for (const auto& param : _previewShaderParams) {
-        const VtValue* fallback = &param._param.GetFallbackValue();
-        if (param._param.GetName() == HdMayaAdapterTokens->diffuseColor) {
+        const VtValue* fallback = &param.param.GetFallbackValue();
+        if (param.param.GetName() == HdMayaAdapterTokens->diffuseColor) {
             converter.ConvertParameter(
                 node, material, HdMayaAdapterTokens->color,
-                HdMayaAdapterTokens->diffuseColor, param._type, fallback);
+                HdMayaAdapterTokens->diffuseColor, param.type, fallback);
         } else if (
-            param._param.GetName() == HdMayaAdapterTokens->emissiveColor) {
+            param.param.GetName() == HdMayaAdapterTokens->emissiveColor) {
             converter.ConvertParameter(
                 node, material, HdMayaAdapterTokens->incandescence,
-                HdMayaAdapterTokens->emissiveColor, param._type, fallback);
+                HdMayaAdapterTokens->emissiveColor, param.type, fallback);
         } else {
             converter.ConvertParameter(
-                node, material, param._param.GetName(), param._param.GetName(),
-                param._type, fallback);
+                node, material, param.param.GetName(), param.param.GetName(),
+                param.type, fallback);
         }
     }
     material.identifier = UsdImagingTokens->UsdPreviewSurface;
@@ -122,24 +122,24 @@ void ConvertBlinn(
     HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
     MFnDependencyNode& node) {
     for (const auto& param : _previewShaderParams) {
-        const VtValue* fallback = &param._param.GetFallbackValue();
-        if (param._param.GetName() == HdMayaAdapterTokens->diffuseColor) {
+        const VtValue* fallback = &param.param.GetFallbackValue();
+        if (param.param.GetName() == HdMayaAdapterTokens->diffuseColor) {
             converter.ConvertParameter(
                 node, material, HdMayaAdapterTokens->color,
-                HdMayaAdapterTokens->diffuseColor, param._type, fallback);
+                HdMayaAdapterTokens->diffuseColor, param.type, fallback);
         } else if (
-            param._param.GetName() == HdMayaAdapterTokens->emissiveColor) {
+            param.param.GetName() == HdMayaAdapterTokens->emissiveColor) {
             converter.ConvertParameter(
                 node, material, HdMayaAdapterTokens->incandescence,
-                HdMayaAdapterTokens->emissiveColor, param._type, fallback);
-        } else if (param._param.GetName() == HdMayaAdapterTokens->roughness) {
+                HdMayaAdapterTokens->emissiveColor, param.type, fallback);
+        } else if (param.param.GetName() == HdMayaAdapterTokens->roughness) {
             converter.ConvertParameter(
                 node, material, HdMayaAdapterTokens->eccentricity,
-                HdMayaAdapterTokens->roughness, param._type, fallback);
+                HdMayaAdapterTokens->roughness, param.type, fallback);
         } else {
             converter.ConvertParameter(
-                node, material, param._param.GetName(), param._param.GetName(),
-                param._type, fallback);
+                node, material, param.param.GetName(), param.param.GetName(),
+                param.type, fallback);
         }
     }
     material.identifier = UsdImagingTokens->UsdPreviewSurface;
@@ -193,6 +193,10 @@ std::unordered_map<
     };
 
 } // namespace
+
+HdMayaShaderParam::HdMayaShaderParam(
+    const TfToken& name, const VtValue& value, const SdfValueTypeName& type)
+    : param(HdMaterialParam::ParamTypeFallback, name, value), type(type) {}
 
 HdMayaMaterialNetworkConverter::HdMayaMaterialNetworkConverter(
     HdMaterialNetwork& network, const SdfPath& prefix)
