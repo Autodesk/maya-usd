@@ -21,29 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifndef __HDMAYA_ADAPTER_TOKENS_H__
+#define __HDMAYA_ADAPTER_TOKENS_H__
+
 #include <pxr/pxr.h>
 
-#include <usdMaya/shadingModeExporter.h>
-#include <usdMaya/shadingModeRegistry.h>
+#include <pxr/base/tf/staticTokens.h>
+
+#include <hdmaya/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class MtohShadingModeExporter : public UsdMayaShadingModeExporter {
-public:
-    MtohShadingModeExporter() = default;
-    ~MtohShadingModeExporter() = default;
+#define HDMAYA_ADAPTER_TOKENS                                                 \
+    (roughness)(clearcoat)(clearcoatRoughness)(emissiveColor)(specularColor)( \
+        metallic)(useSpecularWorkflow)(occlusion)(ior)(normal)(opacity)(      \
+        diffuseColor)(displacement)(lambert)(blinn)(file)(place2dTexture)(    \
+        fileTextureName)(color)(incandescence)(out)(st)(uvCoord)(rgb)(r)(     \
+        varname)(result)(eccentricity)
 
-    virtual void Export(
-        const UsdMayaShadingModeExportContext& context,
-        UsdShadeMaterial* const mat,
-        SdfPathSet* const boundPrimPaths) override {}
-};
-
-TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, mtoh) {
-    UsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
-        "mtoh", []() -> UsdMayaShadingModeExporterPtr {
-            return UsdMayaShadingModeExporterPtr(new MtohShadingModeExporter());
-        });
-}
+TF_DECLARE_PUBLIC_TOKENS(
+    HdMayaAdapterTokens, HDMAYA_API, HDMAYA_ADAPTER_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // __HDMAYA_ADAPTER_TOKENS_H__

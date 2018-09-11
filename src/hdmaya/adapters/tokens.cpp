@@ -21,7 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef __MTOH_SHADING_MODE_EXPORTER_H__
-#define __MTOH_SHADING_MODE_EXPORTER_H__
+#include <hdmaya/adapters/tokens.h>
 
-#endif // __MTOH_SHADING_MODE_EXPORTER_H__
+PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PUBLIC_TOKENS(HdMayaAdapterTokens, HDMAYA_ADAPTER_TOKENS);
+
+PXR_NAMESPACE_CLOSE_SCOPE

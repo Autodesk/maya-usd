@@ -50,7 +50,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class MtohRenderOverride : public MHWRender::MRenderOverride,
-                             TfSingleton<MtohRenderOverride> {
+                           TfSingleton<MtohRenderOverride> {
     friend class TfSingleton<MtohRenderOverride>;
     MtohRenderOverride();
 

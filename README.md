@@ -32,7 +32,7 @@ Requirements:
 
 | Package | Version |
 | --- | --- |
-| GCC | 4.8.5 |
+| GCC | 4.8.5/6.3.1 |
 | USD | 0.18.09 |
 | Maya | 2018 |
 | Boost | 1.61 |

@@ -8,12 +8,14 @@ set(SRC
     adapters/imagePlaneMaterialAdapter.cpp
     adapters/lightAdapter.cpp
     adapters/materialAdapter.cpp
+    adapters/materialNetworkConverter.cpp
     adapters/mayaAttrs.cpp
     adapters/meshAdapter.cpp
     adapters/nurbsCurveAdapter.cpp
     adapters/pointLightAdapter.cpp
     adapters/shapeAdapter.cpp
     adapters/spotLightAdapter.cpp
+    adapters/tokens.cpp
 
     delegates/delegate.cpp
     delegates/delegateCtx.cpp
@@ -97,6 +99,11 @@ install(
         adapters/constantShadowMatrix.h
         adapters/dagAdapter.h
         adapters/lightAdapter.h
+        adapters/materialAdapter.h
+        adapters/materialNetworkConverter.h
+        adapters/mayaAttrs.h
+        adapters/shapeAdapter.h
+        adapters/tokens.h
     DESTINATION include/hdmaya/adapters)
 
 install(
