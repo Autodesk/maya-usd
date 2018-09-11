@@ -21,3 +21,29 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include <pxr/pxr.h>
+
+#include <usdMaya/shadingModeExporter.h>
+#include <usdMaya/shadingModeRegistry.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+class MtohShadingModeExporter : public UsdMayaShadingModeExporter {
+public:
+    MtohShadingModeExporter() = default;
+    ~MtohShadingModeExporter() = default;
+
+    virtual void Export(
+        const UsdMayaShadingModeExportContext& context,
+        UsdShadeMaterial* const mat,
+        SdfPathSet* const boundPrimPaths) override {}
+};
+
+TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, mtoh) {
+    UsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
+        "mtoh", []() -> UsdMayaShadingModeExporterPtr {
+            return UsdMayaShadingModeExporterPtr(new MtohShadingModeExporter());
+        });
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -68,9 +68,8 @@ MStatus initializePlugin(MObject obj) {
 
     if (!plugin.registerNode(
             MtohUsdPreviewSurface::name, MtohUsdPreviewSurface::typeId,
-            MtohUsdPreviewSurface::Creator,
-            MtohUsdPreviewSurface::Initialize, MPxNode::kDependNode,
-            &MtohUsdPreviewSurface::classification)) {
+            MtohUsdPreviewSurface::Creator, MtohUsdPreviewSurface::Initialize,
+            MPxNode::kDependNode, &MtohUsdPreviewSurface::classification)) {
         ret = MS::kFailure;
         ret.perror("Error registering UsdPreviewSurface node!");
         return ret;

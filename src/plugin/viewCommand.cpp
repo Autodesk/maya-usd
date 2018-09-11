@@ -178,8 +178,7 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
     MArgDatabase db(syntax(), args);
 
     if (db.isFlagSet(_listRenderers)) {
-        for (const auto& renderer :
-             MtohRenderOverride::GetRendererPlugins()) {
+        for (const auto& renderer : MtohRenderOverride::GetRendererPlugins()) {
             appendToResult(renderer.GetText());
         }
     } else if (db.isFlagSet(_getRendererDisplayName)) {
@@ -233,8 +232,7 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
             MtohRenderOverride::SetColorSelectionHighlight(res);
         }
     } else if (db.isFlagSet(_getColorSelectionHighlightColor)) {
-        const auto res =
-            MtohRenderOverride::GetColorSelectionHighlightColor();
+        const auto res = MtohRenderOverride::GetColorSelectionHighlightColor();
         appendToResult(res[0]);
         appendToResult(res[1]);
         appendToResult(res[2]);

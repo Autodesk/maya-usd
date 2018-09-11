@@ -327,13 +327,11 @@ GfVec4d MtohRenderOverride::GetColorSelectionHighlightColor() {
     return GetInstance()._colorSelectionHighlightColor;
 }
 
-void MtohRenderOverride::SetColorSelectionHighlightColor(
-    const GfVec4d& color) {
+void MtohRenderOverride::SetColorSelectionHighlightColor(const GfVec4d& color) {
     GetInstance()._colorSelectionHighlightColor = GfVec4f(color);
 }
 
-MStatus MtohRenderOverride::Render(
-    const MHWRender::MDrawContext& drawContext) {
+MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     auto renderFrame = [&]() {
         const auto originX = 0;
         const auto originY = 0;
