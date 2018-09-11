@@ -29,12 +29,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-const MString HdMayaUsdPreviewSurface::classification("shader/surface");
-const MString HdMayaUsdPreviewSurface::name("UsdPreviewSurface");
-const MTypeId HdMayaUsdPreviewSurface::typeId(
+const MString MtohUsdPreviewSurface::classification("shader/surface");
+const MString MtohUsdPreviewSurface::name("UsdPreviewSurface");
+const MTypeId MtohUsdPreviewSurface::typeId(
     0x00116EFB); // something from our luma IDS
 
-MStatus HdMayaUsdPreviewSurface::Initialize() {
+MStatus MtohUsdPreviewSurface::Initialize() {
     MFnEnumAttribute eAttr;
     MFnNumericAttribute nAttr;
 

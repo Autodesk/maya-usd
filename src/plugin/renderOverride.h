@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef __HDMAYA_VIEW_OVERRIDE_H__
-#define __HDMAYA_VIEW_OVERRIDE_H__
+#ifndef __MTOH_VIEW_OVERRIDE_H__
+#define __MTOH_VIEW_OVERRIDE_H__
 
 #include <pxr/imaging/glf/glew.h>
 #include <pxr/pxr.h>
@@ -49,23 +49,23 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaRenderOverride : public MHWRender::MRenderOverride,
-                             TfSingleton<HdMayaRenderOverride> {
-    friend class TfSingleton<HdMayaRenderOverride>;
-    HdMayaRenderOverride();
+class MtohRenderOverride : public MHWRender::MRenderOverride,
+                             TfSingleton<MtohRenderOverride> {
+    friend class TfSingleton<MtohRenderOverride>;
+    MtohRenderOverride();
 
 public:
-    ~HdMayaRenderOverride() override;
-    static HdMayaRenderOverride& GetInstance() {
-        return TfSingleton<HdMayaRenderOverride>::GetInstance();
+    ~MtohRenderOverride() override;
+    static MtohRenderOverride& GetInstance() {
+        return TfSingleton<MtohRenderOverride>::GetInstance();
     }
 
     static void DeleteInstance() {
-        return TfSingleton<HdMayaRenderOverride>::DeleteInstance();
+        return TfSingleton<MtohRenderOverride>::DeleteInstance();
     }
 
     static bool CurrentlyExists() {
-        return TfSingleton<HdMayaRenderOverride>::CurrentlyExists();
+        return TfSingleton<MtohRenderOverride>::CurrentlyExists();
     }
 
     static TfTokenVector GetRendererPlugins();
@@ -134,4 +134,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_VIEW_OVERRIDE_H__
+#endif // __MTOH_VIEW_OVERRIDE_H__

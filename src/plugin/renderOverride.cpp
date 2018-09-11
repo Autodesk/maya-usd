@@ -55,14 +55,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens, (HdStreamRendererPlugin));
 
-TF_INSTANTIATE_SINGLETON(HdMayaRenderOverride);
+TF_INSTANTIATE_SINGLETON(MtohRenderOverride);
 
 namespace {
 
-constexpr auto HDMAYA_DEFAULT_RENDERER_PLUGIN_NAME =
-    "HDMAYA_DEFAULT_RENDERER_PLUGIN";
+constexpr auto MTOH_DEFAULT_RENDERER_PLUGIN_NAME =
+    "MTOH_DEFAULT_RENDERER_PLUGIN";
 
-constexpr auto HDMAYA_RENDER_OVERRIDE_NAME = "hydraViewportOverride";
+constexpr auto MTOH_RENDER_OVERRIDE_NAME = "hydraViewportOverride";
 
 // I don't think there is an easy way to detect if the viewport was changed,
 // so I'm adding a 5 second timeout.
@@ -87,17 +87,17 @@ void _ClearResourcesCallback(float, float, void*) {
     for (auto i = decltype(num3dViews){0}; i < num3dViews; ++i) {
         M3dView view;
         M3dView::get3dView(i, view);
-        if (view.renderOverrideName() == MString(HDMAYA_RENDER_OVERRIDE_NAME)) {
+        if (view.renderOverrideName() == MString(MTOH_RENDER_OVERRIDE_NAME)) {
             return;
         }
     }
-    HdMayaRenderOverride::GetInstance().ClearHydraResources();
+    MtohRenderOverride::GetInstance().ClearHydraResources();
 }
 
 TfToken _GetDefaultRenderer() {
-    const auto l = HdMayaRenderOverride::GetRendererPlugins();
+    const auto l = MtohRenderOverride::GetRendererPlugins();
     if (l.empty()) { return {}; }
-    const auto* defaultRenderer = getenv(HDMAYA_DEFAULT_RENDERER_PLUGIN_NAME);
+    const auto* defaultRenderer = getenv(MTOH_DEFAULT_RENDERER_PLUGIN_NAME);
     if (defaultRenderer == nullptr) { return l[0]; }
     const TfToken defaultRendererToken(defaultRenderer);
     if (std::find(l.begin(), l.end(), defaultRendererToken) != l.end()) {
@@ -150,7 +150,7 @@ public:
 
 class HdMayaRender : public MHWRender::MUserRenderOperation {
 public:
-    HdMayaRender(const MString& name, HdMayaRenderOverride* override)
+    HdMayaRender(const MString& name, MtohRenderOverride* override)
         : MHWRender::MUserRenderOperation(name), _override(override) {}
 
     MStatus execute(const MHWRender::MDrawContext& drawContext) override {
@@ -162,7 +162,7 @@ public:
     bool requiresLightData() const override { return false; }
 
 private:
-    HdMayaRenderOverride* _override;
+    MtohRenderOverride* _override;
 };
 
 class SetRenderGLState {
@@ -209,8 +209,8 @@ private:
 
 } // namespace
 
-HdMayaRenderOverride::HdMayaRenderOverride()
-    : MHWRender::MRenderOverride(HDMAYA_RENDER_OVERRIDE_NAME),
+MtohRenderOverride::MtohRenderOverride()
+    : MHWRender::MRenderOverride(MTOH_RENDER_OVERRIDE_NAME),
       _selectionTracker(new HdxSelectionTracker),
       _renderCollection(
           HdTokens->geometry, HdTokens->smoothHull,
@@ -251,7 +251,7 @@ HdMayaRenderOverride::HdMayaRenderOverride()
     if (status) { _callbacks.push_back(id); }
 }
 
-HdMayaRenderOverride::~HdMayaRenderOverride() {
+MtohRenderOverride::~MtohRenderOverride() {
     ClearHydraResources();
 
     for (auto operation : _operations) { delete operation; }
@@ -259,7 +259,7 @@ HdMayaRenderOverride::~HdMayaRenderOverride() {
     for (auto callback : _callbacks) { MMessage::removeCallback(callback); }
 }
 
-TfTokenVector HdMayaRenderOverride::GetRendererPlugins() {
+TfTokenVector MtohRenderOverride::GetRendererPlugins() {
     HfPluginDescVector pluginDescs;
     HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescs);
 
@@ -269,7 +269,7 @@ TfTokenVector HdMayaRenderOverride::GetRendererPlugins() {
     return ret;
 }
 
-std::string HdMayaRenderOverride::GetRendererPluginDisplayName(
+std::string MtohRenderOverride::GetRendererPluginDisplayName(
     const TfToken& id) {
     HfPluginDesc pluginDesc;
     if (!TF_VERIFY(HdxRendererPluginRegistry::GetInstance().GetPluginDesc(
@@ -280,7 +280,7 @@ std::string HdMayaRenderOverride::GetRendererPluginDisplayName(
     return pluginDesc.displayName;
 }
 
-void HdMayaRenderOverride::ChangeRendererPlugin(const TfToken& id) {
+void MtohRenderOverride::ChangeRendererPlugin(const TfToken& id) {
     auto& instance = GetInstance();
     if (instance._rendererName == id) { return; }
     const auto renderers = GetRendererPlugins();
@@ -291,48 +291,48 @@ void HdMayaRenderOverride::ChangeRendererPlugin(const TfToken& id) {
     if (instance._initializedViewport) { instance.ClearHydraResources(); }
 }
 
-int HdMayaRenderOverride::GetMaximumShadowMapResolution() {
+int MtohRenderOverride::GetMaximumShadowMapResolution() {
     return GetInstance()._params.maximumShadowMapResolution;
 }
 
-void HdMayaRenderOverride::SetMaximumShadowMapResolution(int resolution) {
+void MtohRenderOverride::SetMaximumShadowMapResolution(int resolution) {
     GetInstance()._params.maximumShadowMapResolution = resolution;
 }
 
-int HdMayaRenderOverride::GetTextureMemoryPerTexture() {
+int MtohRenderOverride::GetTextureMemoryPerTexture() {
     return static_cast<int>(GetInstance()._params.textureMemoryPerTexture);
 }
 
-void HdMayaRenderOverride::SetTextureMemoryPerTexture(int memory) {
+void MtohRenderOverride::SetTextureMemoryPerTexture(int memory) {
     GetInstance()._params.textureMemoryPerTexture = static_cast<size_t>(memory);
 }
 
-bool HdMayaRenderOverride::GetWireframeSelectionHighlight() {
+bool MtohRenderOverride::GetWireframeSelectionHighlight() {
     return GetInstance()._wireframeSelectionHighlight;
 }
 
-void HdMayaRenderOverride::SetWireframeSelectionHighlight(bool value) {
+void MtohRenderOverride::SetWireframeSelectionHighlight(bool value) {
     GetInstance()._wireframeSelectionHighlight = value;
 }
 
-bool HdMayaRenderOverride::GetColorSelectionHighlight() {
+bool MtohRenderOverride::GetColorSelectionHighlight() {
     return GetInstance()._colorSelectionHighlight;
 }
 
-void HdMayaRenderOverride::SetColorSelectionHighlight(bool value) {
+void MtohRenderOverride::SetColorSelectionHighlight(bool value) {
     GetInstance()._colorSelectionHighlight = value;
 }
 
-GfVec4d HdMayaRenderOverride::GetColorSelectionHighlightColor() {
+GfVec4d MtohRenderOverride::GetColorSelectionHighlightColor() {
     return GetInstance()._colorSelectionHighlightColor;
 }
 
-void HdMayaRenderOverride::SetColorSelectionHighlightColor(
+void MtohRenderOverride::SetColorSelectionHighlightColor(
     const GfVec4d& color) {
     GetInstance()._colorSelectionHighlightColor = GfVec4f(color);
 }
 
-MStatus HdMayaRenderOverride::Render(
+MStatus MtohRenderOverride::Render(
     const MHWRender::MDrawContext& drawContext) {
     auto renderFrame = [&]() {
         const auto originX = 0;
@@ -456,7 +456,7 @@ MStatus HdMayaRenderOverride::Render(
     return MStatus::kSuccess;
 }
 
-void HdMayaRenderOverride::InitHydraResources() {
+void MtohRenderOverride::InitHydraResources() {
     _rendererPlugin =
         HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(
             _rendererName);
@@ -495,7 +495,7 @@ void HdMayaRenderOverride::InitHydraResources() {
     _initializedViewport = true;
 }
 
-void HdMayaRenderOverride::ClearHydraResources() {
+void MtohRenderOverride::ClearHydraResources() {
     if (!_initializedViewport) { return; }
     _delegates.clear();
 
@@ -522,11 +522,11 @@ void HdMayaRenderOverride::ClearHydraResources() {
     _initializedViewport = false;
 }
 
-void HdMayaRenderOverride::ClearHydraCallback(void*) {
+void MtohRenderOverride::ClearHydraCallback(void*) {
     GetInstance().ClearHydraResources();
 }
 
-void HdMayaRenderOverride::SelectionChanged() {
+void MtohRenderOverride::SelectionChanged() {
     MSelectionList sel;
     if (!TF_VERIFY(MGlobal::getActiveSelectionList(sel))) { return; }
     SdfPathVector selectedPaths;
@@ -540,15 +540,15 @@ void HdMayaRenderOverride::SelectionChanged() {
     _selectionTracker->SetSelection(HdSelectionSharedPtr(selection));
 }
 
-void HdMayaRenderOverride::SelectionChangedCallback(void*) {
+void MtohRenderOverride::SelectionChangedCallback(void*) {
     GetInstance().SelectionChanged();
 }
 
-MHWRender::DrawAPI HdMayaRenderOverride::supportedDrawAPIs() const {
+MHWRender::DrawAPI MtohRenderOverride::supportedDrawAPIs() const {
     return MHWRender::kOpenGLCoreProfile | MHWRender::kOpenGL;
 }
 
-MStatus HdMayaRenderOverride::setup(const MString& destination) {
+MStatus MtohRenderOverride::setup(const MString& destination) {
     auto* renderer = MHWRender::MRenderer::theRenderer();
     if (renderer == nullptr) { return MStatus::kFailure; }
 
@@ -571,17 +571,17 @@ MStatus HdMayaRenderOverride::setup(const MString& destination) {
     return MS::kSuccess;
 }
 
-MStatus HdMayaRenderOverride::HdMayaRenderOverride::cleanup() {
+MStatus MtohRenderOverride::MtohRenderOverride::cleanup() {
     _currentOperation = -1;
     return MS::kSuccess;
 }
 
-bool HdMayaRenderOverride::startOperationIterator() {
+bool MtohRenderOverride::startOperationIterator() {
     _currentOperation = 0;
     return true;
 }
 
-MHWRender::MRenderOperation* HdMayaRenderOverride::renderOperation() {
+MHWRender::MRenderOperation* MtohRenderOverride::renderOperation() {
     if (_currentOperation >= 0 &&
         _currentOperation < static_cast<int>(_operations.size())) {
         return _operations[_currentOperation];
@@ -589,7 +589,7 @@ MHWRender::MRenderOperation* HdMayaRenderOverride::renderOperation() {
     return nullptr;
 }
 
-bool HdMayaRenderOverride::nextRenderOperation() {
+bool MtohRenderOverride::nextRenderOperation() {
     return ++_currentOperation < static_cast<int>(_operations.size());
 }
 

@@ -32,7 +32,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-const MString HdMayaViewCmd::name("hdview");
+const MString MtohViewCmd::name("mtoh");
 
 namespace {
 
@@ -89,7 +89,7 @@ constexpr auto _helpLong = "-help";
 
 constexpr auto _helpText = R"HELP(
 Maya to Hydra utility function.
-Usage: hdview [flags]
+Usage: mtoh [flags]
 
 -changeRenderer/-cr [string] : Changing the active render delegate.
 -getColorSelectionHighlightColor/-gcc : Returns the RGBA value used to
@@ -122,7 +122,7 @@ Usage: hdview [flags]
 
 } // namespace
 
-MSyntax HdMayaViewCmd::createSyntax() {
+MSyntax MtohViewCmd::createSyntax() {
     MSyntax syntax;
 
     syntax.addFlag(_listRenderers, _listRenderersLong);
@@ -174,25 +174,25 @@ MSyntax HdMayaViewCmd::createSyntax() {
     return syntax;
 }
 
-MStatus HdMayaViewCmd::doIt(const MArgList& args) {
+MStatus MtohViewCmd::doIt(const MArgList& args) {
     MArgDatabase db(syntax(), args);
 
     if (db.isFlagSet(_listRenderers)) {
         for (const auto& renderer :
-             HdMayaRenderOverride::GetRendererPlugins()) {
+             MtohRenderOverride::GetRendererPlugins()) {
             appendToResult(renderer.GetText());
         }
     } else if (db.isFlagSet(_getRendererDisplayName)) {
         MString id;
         if (db.getFlagArgument(_getRendererDisplayName, 0, id)) {
-            const auto dn = HdMayaRenderOverride::GetRendererPluginDisplayName(
+            const auto dn = MtohRenderOverride::GetRendererPluginDisplayName(
                 TfToken(id.asChar()));
             setResult(MString(dn.c_str()));
         }
     } else if (db.isFlagSet(_changeRenderer)) {
         MString id;
         if (db.getFlagArgument(_changeRenderer, 0, id)) {
-            HdMayaRenderOverride::ChangeRendererPlugin(TfToken(id.asChar()));
+            MtohRenderOverride::ChangeRendererPlugin(TfToken(id.asChar()));
             MGlobal::executeCommandOnIdle("refresh -f");
         }
     } else if (db.isFlagSet(_listDelegates)) {
@@ -201,40 +201,40 @@ MStatus HdMayaViewCmd::doIt(const MArgList& args) {
             appendToResult(delegate.GetText());
         }
     } else if (db.isFlagSet(_getMaximumShadowMapResolution)) {
-        appendToResult(HdMayaRenderOverride::GetMaximumShadowMapResolution());
+        appendToResult(MtohRenderOverride::GetMaximumShadowMapResolution());
     } else if (db.isFlagSet(_setMaximumShadowMapResolution)) {
         int res = 32;
         if (db.getFlagArgument(_setMaximumShadowMapResolution, 0, res)) {
             if (res < 32) { res = 32; }
             if (res > 8192) { res = 8192; }
-            HdMayaRenderOverride::SetMaximumShadowMapResolution(res);
+            MtohRenderOverride::SetMaximumShadowMapResolution(res);
         }
     } else if (db.isFlagSet(_getTextureMemoryPerTexture)) {
-        appendToResult(HdMayaRenderOverride::GetTextureMemoryPerTexture());
+        appendToResult(MtohRenderOverride::GetTextureMemoryPerTexture());
     } else if (db.isFlagSet(_setTextureMemoryPerTexture)) {
         int res = 4 * 1024 * 1024;
         if (db.getFlagArgument(_setTextureMemoryPerTexture, 0, res)) {
             if (res < 1024) { res = 1024; }
             if (res > 256 * 1024 * 1024) { res = 256 * 1024 * 1024; }
-            HdMayaRenderOverride::SetTextureMemoryPerTexture(res);
+            MtohRenderOverride::SetTextureMemoryPerTexture(res);
         }
     } else if (db.isFlagSet(_getWireframeSelectionHighlight)) {
-        appendToResult(HdMayaRenderOverride::GetWireframeSelectionHighlight());
+        appendToResult(MtohRenderOverride::GetWireframeSelectionHighlight());
     } else if (db.isFlagSet(_setWireframeSelectionHighlight)) {
         bool res = true;
         if (db.getFlagArgument(_setWireframeSelectionHighlight, 0, res)) {
-            HdMayaRenderOverride::SetWireframeSelectionHighlight(res);
+            MtohRenderOverride::SetWireframeSelectionHighlight(res);
         }
     } else if (db.isFlagSet(_getColorSelectionHighlight)) {
-        appendToResult(HdMayaRenderOverride::GetColorSelectionHighlight());
+        appendToResult(MtohRenderOverride::GetColorSelectionHighlight());
     } else if (db.isFlagSet(_setColorSelectionHighlight)) {
         bool res = true;
         if (db.getFlagArgument(_setColorSelectionHighlight, 0, res)) {
-            HdMayaRenderOverride::SetColorSelectionHighlight(res);
+            MtohRenderOverride::SetColorSelectionHighlight(res);
         }
     } else if (db.isFlagSet(_getColorSelectionHighlightColor)) {
         const auto res =
-            HdMayaRenderOverride::GetColorSelectionHighlightColor();
+            MtohRenderOverride::GetColorSelectionHighlightColor();
         appendToResult(res[0]);
         appendToResult(res[1]);
         appendToResult(res[2]);
@@ -245,7 +245,7 @@ MStatus HdMayaViewCmd::doIt(const MArgList& args) {
             db.getFlagArgument(_setColorSelectionHighlightColor, 1, res[1]) &&
             db.getFlagArgument(_setColorSelectionHighlightColor, 2, res[2]) &&
             db.getFlagArgument(_setColorSelectionHighlightColor, 3, res[3])) {
-            HdMayaRenderOverride::SetColorSelectionHighlightColor(res);
+            MtohRenderOverride::SetColorSelectionHighlightColor(res);
         }
     } else if (db.isFlagSet(_help)) {
         MGlobal::displayInfo(MString(_helpText));

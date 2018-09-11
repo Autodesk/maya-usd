@@ -54,23 +54,23 @@ MStatus initializePlugin(MObject obj) {
 
     auto* renderer = MHWRender::MRenderer::theRenderer();
     if (renderer) {
-        auto& override = HdMayaRenderOverride::GetInstance();
+        auto& override = MtohRenderOverride::GetInstance();
         renderer->registerOverride(&override);
     }
 
     if (!plugin.registerCommand(
-            HdMayaViewCmd::name, HdMayaViewCmd::creator,
-            HdMayaViewCmd::createSyntax)) {
+            MtohViewCmd::name, MtohViewCmd::creator,
+            MtohViewCmd::createSyntax)) {
         ret = MS::kFailure;
-        ret.perror("Error registering hdmaya command!");
+        ret.perror("Error registering mtoh command!");
         return ret;
     }
 
     if (!plugin.registerNode(
-            HdMayaUsdPreviewSurface::name, HdMayaUsdPreviewSurface::typeId,
-            HdMayaUsdPreviewSurface::Creator,
-            HdMayaUsdPreviewSurface::Initialize, MPxNode::kDependNode,
-            &HdMayaUsdPreviewSurface::classification)) {
+            MtohUsdPreviewSurface::name, MtohUsdPreviewSurface::typeId,
+            MtohUsdPreviewSurface::Creator,
+            MtohUsdPreviewSurface::Initialize, MPxNode::kDependNode,
+            &MtohUsdPreviewSurface::classification)) {
         ret = MS::kFailure;
         ret.perror("Error registering UsdPreviewSurface node!");
         return ret;
@@ -89,16 +89,16 @@ MStatus uninitializePlugin(MObject obj) {
             renderer->findRenderOverride("hydraViewportOverride");
         if (override) {
             renderer->deregisterOverride(override);
-            HdMayaRenderOverride::DeleteInstance();
+            MtohRenderOverride::DeleteInstance();
         }
     }
 
-    if (!plugin.deregisterCommand(HdMayaViewCmd::name)) {
+    if (!plugin.deregisterCommand(MtohViewCmd::name)) {
         ret = MS::kFailure;
-        ret.perror("Error deregistering hdmaya command!");
+        ret.perror("Error deregistering mtoh command!");
     }
 
-    if (!plugin.deregisterNode(HdMayaUsdPreviewSurface::typeId)) {
+    if (!plugin.deregisterNode(MtohUsdPreviewSurface::typeId)) {
         ret = MS::kFailure;
         ret.perror("Error deregistering UsdPreviewSurface node!");
     }

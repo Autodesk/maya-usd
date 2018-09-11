@@ -22,4 +22,4 @@ set(MAYA_LIBS
     ${MAYA_OpenMayaRender_LIBRARY})
 
 add_subdirectory(hdmaya)
-add_subdirectory(hdview)
+add_subdirectory(plugin)

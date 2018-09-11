@@ -1,4 +1,4 @@
-set(HDMAYA_SRC
+set(SRC
     adapters/adapter.cpp
     adapters/adapterDebugCodes.cpp
     adapters/adapterRegistry.cpp
@@ -22,7 +22,7 @@ set(HDMAYA_SRC
     delegates/sceneDelegate.cpp
     delegates/testDelegate.cpp)
 
-add_library(hdmaya SHARED ${HDMAYA_SRC})
+add_library(hdmaya SHARED ${SRC})
 target_link_libraries(hdmaya PUBLIC ${OPENGL_gl_LIBRARY} ${MAYA_LIBS})
 target_link_libraries(hdmaya PUBLIC ${Boost_LIBRARIES} ${GLEW_LIBRARY})
 target_link_libraries(hdmaya PUBLIC arch gf plug tf vt)
