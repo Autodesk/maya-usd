@@ -52,6 +52,7 @@
 #include <hdmaya/adapters/adapterRegistry.h>
 #include <hdmaya/adapters/materialNetworkConverter.h>
 #include <hdmaya/adapters/mayaAttrs.h>
+#include <hdmaya/adapters/tokens.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -62,16 +63,6 @@ const TfToken _emptyToken;
 const TfTokenVector _stSamplerCoords = {TfToken("st")};
 // const TfTokenVector _stSamplerCoords;
 const MString _fileTextureName("fileTextureName");
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens, (roughness)(clearcoat)(clearcoatRoughness)(emissiveColor)(
-                 specularColor)(metallic)(useSpecularWorkflow)(occlusion)(ior)(
-                 normal)(opacity)(diffuseColor)(displacement)
-    // Supported material tokens.
-    (lambert)(blinn)(file)(place2dTexture)
-    // Other tokens
-    (fileTextureName)(color)(incandescence)(out)(st)(uvCoord)(rgb)(r)(varname)(
-        result)(eccentricity));
 
 // Specialized version of :
 // https://en.cppreference.com/w/cpp/algorithm/lower_bound
@@ -110,18 +101,23 @@ static const std::pair<std::string, std::string> _previewShaderSource =
 
 std::unordered_map<
     TfToken, std::vector<std::pair<TfToken, TfToken>>, TfToken::HashFunctor>
-    _materialParamRemaps{{_tokens->lambert,
-                          {
-                              {_tokens->diffuseColor, _tokens->color},
-                              {_tokens->emissiveColor, _tokens->incandescence},
-                          }},
-                         {_tokens->blinn,
-                          {
-                              {_tokens->diffuseColor, _tokens->color},
-                              {_tokens->emissiveColor, _tokens->incandescence},
-                              {_tokens->specularColor, _tokens->specularColor},
-                              {_tokens->roughness, _tokens->eccentricity},
-                          }}};
+    _materialParamRemaps{
+        {HdMayaAdapterTokens->lambert,
+         {
+             {HdMayaAdapterTokens->diffuseColor, HdMayaAdapterTokens->color},
+             {HdMayaAdapterTokens->emissiveColor,
+              HdMayaAdapterTokens->incandescence},
+         }},
+        {HdMayaAdapterTokens->blinn,
+         {
+             {HdMayaAdapterTokens->diffuseColor, HdMayaAdapterTokens->color},
+             {HdMayaAdapterTokens->emissiveColor,
+              HdMayaAdapterTokens->incandescence},
+             {HdMayaAdapterTokens->specularColor,
+              HdMayaAdapterTokens->specularColor},
+             {HdMayaAdapterTokens->roughness,
+              HdMayaAdapterTokens->eccentricity},
+         }}};
 
 #ifdef USD_HDST_UDIM_BUILD
 

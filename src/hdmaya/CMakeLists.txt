@@ -15,6 +15,7 @@ set(SRC
     adapters/pointLightAdapter.cpp
     adapters/shapeAdapter.cpp
     adapters/spotLightAdapter.cpp
+    adapters/tokens.cpp
 
     delegates/delegate.cpp
     delegates/delegateCtx.cpp
@@ -102,6 +103,7 @@ install(
         adapters/materialNetworkConverter.h
         adapters/mayaAttrs.h
         adapters/shapeAdapter.h
+        adapters/tokens.h
     DESTINATION include/hdmaya/adapters)
 
 install(
