@@ -47,10 +47,10 @@ set(HDMAYA_SRC
 
 set(HDVIEW_SRC
     hdmaya/adapters/mayaAttrs.cpp
-    plugin/plugin.cpp
-    plugin/renderOverride.cpp
-    plugin/usdPreviewSurface.cpp
-    plugin/viewCommand.cpp)
+    hdview/plugin.cpp
+    hdview/renderOverride.cpp
+    hdview/usdPreviewSurface.cpp
+    hdview/viewCommand.cpp)
 
 add_library(hdmaya SHARED ${HDMAYA_SRC})
 target_link_libraries(hdmaya PUBLIC ${OPENGL_gl_LIBRARY} ${MAYA_LIBS})
