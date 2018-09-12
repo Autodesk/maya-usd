@@ -149,7 +149,7 @@ VtValue HdMayaLightAdapter::Get(const TfToken& key) {
     } else if (key == HdTokens->transform) {
         return VtValue(HdMayaDagAdapter::GetTransform());
     } else if (key == HdLightTokens->shadowCollection) {
-        HdRprimCollection coll(HdTokens->geometry, HdTokens->refined);
+        HdRprimCollection coll(HdTokens->geometry, HdReprSelector(HdTokens->refined));
         coll.SetRenderTags({HdTokens->geometry});
         return VtValue(coll);
     } else if (key == HdLightTokens->shadowParams) {

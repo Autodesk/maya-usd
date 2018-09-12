@@ -213,9 +213,10 @@ MtohRenderOverride::MtohRenderOverride()
     : MHWRender::MRenderOverride(MTOH_RENDER_OVERRIDE_NAME),
       _selectionTracker(new HdxSelectionTracker),
       _renderCollection(
-          HdTokens->geometry, HdTokens->smoothHull,
+          HdTokens->geometry,
+          HdReprSelector(HdTokens->smoothHull),
           SdfPath::AbsoluteRootPath()),
-      _selectionCollection(HdTokens->wire, HdTokens->wire),
+      _selectionCollection(HdTokens->wire, HdReprSelector(HdTokens->wire)),
       _colorSelectionHighlightColor(1.0f, 1.0f, 0.0f, 0.5f) {
     _needsClear.store(false);
     HdMayaDelegateRegistry::InstallDelegatesChangedSignal(
