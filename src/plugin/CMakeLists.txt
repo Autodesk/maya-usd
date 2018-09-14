@@ -6,7 +6,7 @@ set(SRC
     viewCommand.cpp)
 
 add_library(mtoh SHARED ${SRC})
-target_link_libraries(mtoh PRIVATE hdmaya)
+target_link_libraries(mtoh PRIVATE hdmaya usdShade)
 target_include_directories(mtoh PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/..")
 set_target_properties(mtoh PROPERTIES PREFIX "")
 set_target_properties(mtoh PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)

@@ -23,20 +23,92 @@
 //
 #include <pxr/pxr.h>
 
+#include <pxr/imaging/glf/glslfx.h>
+#include <pxr/usd/usdShade/connectableAPI.h>
+#include <pxr/usd/usdShade/shader.h>
+
 #include <usdMaya/shadingModeExporter.h>
 #include <usdMaya/shadingModeRegistry.h>
 
+#include <hdmaya/adapters/materialNetworkConverter.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    ((defaultOutputName, "outputs:out"))
+    ((glslfxSurface, "glslfx:surface"))
+);
 
 class MtohShadingModeExporter : public UsdMayaShadingModeExporter {
 public:
     MtohShadingModeExporter() = default;
     ~MtohShadingModeExporter() = default;
 
+protected:
+    void _ExportNode(UsdStagePtr& stage, HdMaterialNode& hdNode) {
+        UsdShadeShader shaderSchema = UsdShadeShader::Define(
+                stage, hdNode.path);
+        shaderSchema.CreateIdAttr(VtValue(hdNode.identifier));
+        for(auto& paramNameVal: hdNode.parameters) {
+            auto& paramName = paramNameVal.first;
+            auto& paramVal = paramNameVal.second;
+            UsdShadeInput input = shaderSchema.CreateInput(
+                    paramName, SdfGetValueTypeNameForValue(paramVal));
+            input.Set(paramVal);
+        }
+    }
+
+public:
     virtual void Export(
         const UsdMayaShadingModeExportContext& context,
         UsdShadeMaterial* const mat,
-        SdfPathSet* const boundPrimPaths) override {}
+        SdfPathSet* const boundPrimPaths) override {
+        const UsdMayaShadingModeExportContext::AssignmentVector& assignments =
+                context.GetAssignments();
+        if (assignments.empty()) {
+            return;
+        }
+
+        UsdPrim materialPrim = context.MakeStandardMaterialPrim(assignments,
+                std::string(), boundPrimPaths);
+        UsdShadeMaterial material(materialPrim);
+        if (!material) {
+            return;
+        }
+
+        if (mat != nullptr) {
+            *mat = material;
+        }
+
+        HdMaterialNetwork materialNetwork;
+        HdMayaMaterialNetworkConverter converter(materialNetwork,
+                materialPrim.GetPath());
+        SdfPath hdSurf = converter.GetMaterial(context.GetSurfaceShader());
+
+        // TODO: add support for volume / displacement
+        //SdfPath hdVol = converter.GetMaterial(context.GetVolumeShader());
+        //SdfPath hdDisp = converter.GetMaterial(context.GetDisplacementShader());
+
+        if (hdSurf.IsEmpty()) {
+            return;
+        }
+
+        UsdStagePtr stage = materialPrim.GetStage();
+
+        for (auto& hdNode : materialNetwork.nodes) {
+            _ExportNode(stage, hdNode);
+            if (hdNode.path == hdSurf) {
+                UsdShadeOutput surfaceOutput = material
+                        .CreateSurfaceOutput(GlfGLSLFXTokens->glslfx);
+                UsdShadeConnectableAPI::ConnectToSource(
+                    surfaceOutput,
+                    hdNode.path.IsPropertyPath() ? hdNode.path :
+                            hdNode.path.AppendProperty(_tokens->defaultOutputName));
+            }
+        }
+    }
 };
 
 TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, mtoh) {
