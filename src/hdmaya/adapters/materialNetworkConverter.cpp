@@ -115,6 +115,9 @@ void ConvertLambert(
                 param.type, fallback);
         }
     }
+    material.parameters[HdMayaAdapterTokens->roughness] = VtValue(1.0f);
+    material.parameters[HdMayaAdapterTokens->metallic] = VtValue(0.0f);
+    material.parameters[HdMayaAdapterTokens->useSpecularWorkflow] = VtValue(0);
     material.identifier = UsdImagingTokens->UsdPreviewSurface;
 }
 
@@ -142,6 +145,8 @@ void ConvertBlinn(
                 param.type, fallback);
         }
     }
+    material.parameters[HdMayaAdapterTokens->metallic] = VtValue(0.0f);
+    material.parameters[HdMayaAdapterTokens->useSpecularWorkflow] = VtValue(1);
     material.identifier = UsdImagingTokens->UsdPreviewSurface;
 }
 
