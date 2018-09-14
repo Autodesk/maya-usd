@@ -47,17 +47,28 @@ public:
     ~MtohShadingModeExporter() = default;
 
 protected:
-    void _ExportNode(UsdStagePtr& stage, HdMaterialNode& hdNode) {
+    bool _ExportNode(UsdStagePtr& stage, HdMaterialNode& hdNode) {
         UsdShadeShader shaderSchema = UsdShadeShader::Define(
                 stage, hdNode.path);
-        shaderSchema.CreateIdAttr(VtValue(hdNode.identifier));
+        if (!TF_VERIFY(shaderSchema)) { return false; }
+        if (!TF_VERIFY(shaderSchema.CreateIdAttr(VtValue(hdNode.identifier)))) {
+            return false;
+        }
+        bool success = true;
         for(auto& paramNameVal: hdNode.parameters) {
             auto& paramName = paramNameVal.first;
             auto& paramVal = paramNameVal.second;
             UsdShadeInput input = shaderSchema.CreateInput(
                     paramName, SdfGetValueTypeNameForValue(paramVal));
-            input.Set(paramVal);
+            if (!TF_VERIFY(input)) {
+                success = false;
+                continue;
+            }
+            if (!TF_VERIFY(input.Set(paramVal))) {
+                success = false;
+            }
         }
+        return success;
     }
 
 public:
@@ -97,15 +108,20 @@ public:
 
         UsdStagePtr stage = materialPrim.GetStage();
 
+        // Generate nodes
         for (auto& hdNode : materialNetwork.nodes) {
-            _ExportNode(stage, hdNode);
+            if (!TF_VERIFY(_ExportNode(stage, hdNode))) {
+                continue;
+            }
             if (hdNode.path == hdSurf) {
                 UsdShadeOutput surfaceOutput = material
                         .CreateSurfaceOutput(GlfGLSLFXTokens->glslfx);
-                UsdShadeConnectableAPI::ConnectToSource(
-                    surfaceOutput,
-                    hdNode.path.IsPropertyPath() ? hdNode.path :
-                            hdNode.path.AppendProperty(_tokens->defaultOutputName));
+                if (TF_VERIFY(surfaceOutput)) {
+                    UsdShadeConnectableAPI::ConnectToSource(
+                        surfaceOutput,
+                        hdNode.path.IsPropertyPath() ? hdNode.path :
+                                hdNode.path.AppendProperty(_tokens->defaultOutputName));
+                }
             }
         }
     }
