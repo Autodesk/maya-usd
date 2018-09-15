@@ -71,6 +71,62 @@ protected:
         return success;
     }
 
+    bool _ExportRelationship(
+            UsdStagePtr& stage,
+            HdMaterialRelationship& relationship) {
+        // TODO: come up with a better way for determining type rather than
+        // relying on the input or output to already be set, so we can read it's
+        // type...
+        // probably use the shader registry (?), though I don't think the
+        // PreviewSurface is actually registered there yet
+        SdfValueTypeName typeName;
+
+        auto inputPrim = stage->GetPrimAtPath(relationship.inputId);
+        if (!TF_VERIFY(inputPrim)) { return false; }
+        UsdShadeShader inputShader(inputPrim);
+        if (!TF_VERIFY(inputShader)) { return false; }
+        UsdShadeInput input = inputShader.GetInput(relationship.inputName);
+        if (input) {
+            typeName = input.GetTypeName();
+        }
+
+        auto outputPrim = stage->GetPrimAtPath(relationship.outputId);
+        if (!TF_VERIFY(outputPrim)) { return false; }
+        UsdShadeShader outputShader(outputPrim);
+        if (!TF_VERIFY(outputShader)) { return false; }
+        UsdShadeInput output = outputShader.GetInput(relationship.outputName);
+        if (output) {
+            if (!typeName) {
+                typeName = output.GetTypeName();
+            } else if (typeName != output.GetTypeName()) {
+                TF_WARN("Types of inputs and outputs did not match: "
+                        "input %s.%s was %s, output %s.%s was %s",
+                        relationship.inputId.GetText(),
+                        relationship.inputName.GetText(),
+                        typeName.GetAsToken().GetText(),
+                        relationship.outputId.GetText(),
+                        relationship.outputName.GetText(),
+                        output.GetTypeName().GetAsToken().GetText());
+                return false;
+            }
+        }
+
+        if (!typeName) {
+            typeName = SdfValueTypeNames->Token;
+        }
+
+        if (!input) {
+            input = inputShader.CreateInput(relationship.inputName, typeName);
+            if (!TF_VERIFY(input)) { return false; }
+        }
+        if (output) {
+            return UsdShadeConnectableAPI::ConnectToSource(input, output);
+        }
+        return UsdShadeConnectableAPI::ConnectToSource(input,
+                outputShader, relationship.outputName,
+                UsdShadeAttributeType::Output, typeName);
+    }
+
 public:
     virtual void Export(
         const UsdMayaShadingModeExportContext& context,
@@ -123,6 +179,11 @@ public:
                                 hdNode.path.AppendProperty(_tokens->defaultOutputName));
                 }
             }
+        }
+
+        // Make connections
+        for (auto& relationship : materialNetwork.relationships) {
+            _ExportRelationship(stage, relationship);
         }
     }
 };

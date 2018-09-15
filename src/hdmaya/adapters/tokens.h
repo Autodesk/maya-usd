@@ -37,7 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
         metallic)(useSpecularWorkflow)(occlusion)(ior)(normal)(opacity)(      \
         diffuseColor)(displacement)(lambert)(blinn)(file)(place2dTexture)(    \
         fileTextureName)(color)(incandescence)(out)(st)(uvCoord)(rgb)(r)(     \
-        varname)(result)(eccentricity)
+        varname)(result)(eccentricity)(textureMemory)
 
 TF_DECLARE_PUBLIC_TOKENS(
     HdMayaAdapterTokens, HDMAYA_API, HDMAYA_ADAPTER_TOKENS);

@@ -70,7 +70,8 @@ public:
 
     HDMAYA_API
     static VtValue ConvertPlugToValue(
-        const MPlug& plug, const SdfValueTypeName& type);
+        const MPlug& plug, const SdfValueTypeName& type,
+        const VtValue* fallback = nullptr);
 
     HDMAYA_API
     static const HdMayaShaderParams& GetPreviewShaderParams();

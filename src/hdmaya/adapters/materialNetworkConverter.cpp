@@ -38,6 +38,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
+const VtValue defaultUV(GfVec2f(0));
+const VtValue defaultTextureMemoryLimit(1e8f);
+
 const auto _previewShaderParams = []() -> HdMayaShaderParams {
     // TODO: Use SdrRegistry, but it seems PreviewSurface is not there yet?
     HdMayaShaderParams ret = {
@@ -169,9 +172,18 @@ void ConvertFile(
     }
     material.parameters[HdMayaAdapterTokens->file] =
         VtValue(SdfAssetPath(fileTextureName, fileTextureName));
+    // TODO: currently we don't know how to read array params, for Vec2's...
+    // so we set a default value for uv, so at least we can know what type
+    // it is
     converter.ConvertParameter(
         node, material, HdMayaAdapterTokens->uvCoord, HdMayaAdapterTokens->st,
-        SdfValueTypeNames->Float2);
+        SdfValueTypeNames->Float2, &defaultUV);
+    // If the user has a "textureMemory" dynamic parameter set, obey it,
+    // otherwise, default to something big (this should be a memory upper limit)
+    converter.ConvertParameter(
+        node, material, HdMayaAdapterTokens->textureMemory,
+        HdMayaAdapterTokens->textureMemory, SdfValueTypeNames->Float,
+        &defaultTextureMemoryLimit);
     material.identifier = UsdImagingTokens->UsdUVTexture;
 }
 
@@ -252,7 +264,7 @@ void HdMayaMaterialNetworkConverter::ConvertParameter(
     auto p = node.findPlug(mayaName.GetText(), &status);
     VtValue val;
     if (status) {
-        val = ConvertPlugToValue(p, type);
+        val = ConvertPlugToValue(p, type, fallback);
     } else if (fallback) {
         val = *fallback;
     } else {
@@ -267,23 +279,23 @@ void HdMayaMaterialNetworkConverter::ConvertParameter(
     MPlugArray conns;
     p.connectedTo(conns, true, false);
     if (conns.length() > 0) {
-        const auto connectedNodePath = GetMaterial(conns[0].node());
-        if (connectedNodePath.IsEmpty()) { return; }
+        const auto sourceNodePath = GetMaterial(conns[0].node());
+        if (sourceNodePath.IsEmpty()) { return; }
         HdMaterialRelationship rel;
-        rel.inputId = connectedNodePath;
+        rel.outputId = sourceNodePath;
         if (type == SdfValueTypeNames->Vector3f) {
-            rel.inputName = HdMayaAdapterTokens->rgb;
+            rel.outputName = HdMayaAdapterTokens->rgb;
         } else {
-            rel.inputName = HdMayaAdapterTokens->result;
+            rel.outputName = HdMayaAdapterTokens->result;
         }
-        rel.outputId = material.path;
-        rel.outputName = name;
+        rel.inputId = material.path;
+        rel.inputName = name;
         _network.relationships.push_back(rel);
     }
 }
 
 VtValue HdMayaMaterialNetworkConverter::ConvertPlugToValue(
-    const MPlug& plug, const SdfValueTypeName& type) {
+    const MPlug& plug, const SdfValueTypeName& type, const VtValue* fallback) {
     if (type == SdfValueTypeNames->Vector3f) {
         return VtValue(GfVec3f(
             plug.child(0).asFloat(), plug.child(1).asFloat(),
@@ -293,6 +305,7 @@ VtValue HdMayaMaterialNetworkConverter::ConvertPlugToValue(
     } else if (type == SdfValueTypeNames->Int) {
         return VtValue(plug.asInt());
     }
+    if (fallback) { return *fallback; }
     return {};
 };
 
