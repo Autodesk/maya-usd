@@ -11,6 +11,7 @@ target_include_directories(mtoh PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/..")
 set_target_properties(mtoh PROPERTIES PREFIX "")
 set_target_properties(mtoh PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
 set_target_properties(mtoh PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
+MAYA_SET_PLUGIN_PROPERTIES(mtoh)
 
 # M3dView needs this (technically, MNativeWindowHdl.h)
 # private atm because M3dView is only used in .cpp right now

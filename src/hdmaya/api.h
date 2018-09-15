@@ -24,11 +24,25 @@
 #ifndef __HDMAYA_API_H__
 #define __HDMAYA_API_H__
 
-// TODO: add flags for windows too! The current ones only for gcc and clang.
-#if defined(HDMAYA_EXPORT)
-#define HDMAYA_API __attribute__((visibility("default")))
+#ifdef __GNUC__
+#   define HDMAYA_API_EXPORT __attribute__((visibility("default")))
+#   define HDMAYA_API_IMPORT
+#elif defined(_WIN32) || defined(_WIN64)
+#   define HDMAYA_API_EXPORT __declspec(dllexport)
+#   define HDMAYA_API_IMPORT __declspec(dllimport)
 #else
-#define HDMAYA_API
+#   define HDMAYA_API_EXPORT
+#   define HDMAYA_API_IMPORT
+#endif
+
+#if defined(HDMAYA_STATIC)
+#   define HDMAYA_API
+#else
+#   if defined(HDMAYA_EXPORT)
+#      define HDMAYA_API HDMAYA_API_EXPORT
+#   else
+#      define HDMAYA_API HDMAYA_API_IMPORT
+#   endif
 #endif
 
 #endif // __HDMAYA_API_H__

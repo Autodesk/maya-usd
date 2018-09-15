@@ -15,7 +15,12 @@ option(USD_HDST_SHADOWS_BUILD "Enable PR-541 for USD." OFF)
 option(USD_HDST_UDIM_BUILD "Enable PR-597 for USD." OFF)
 
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-add_compile_options(-Wall -Werror)
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    add_compile_options(/Wall)
+else ()
+    add_compile_options(-Wall -Werror)
+endif()
+
 if (LINUX)
     string(APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--no-undefined")
 endif ()
