@@ -51,7 +51,7 @@ const auto _previewShaderParams = []() -> HdMayaShaderParams {
          SdfValueTypeNames->Vector3f},
         {HdMayaAdapterTokens->specularColor, VtValue(GfVec3f(1.0f, 1.0f, 1.0f)),
          SdfValueTypeNames->Vector3f},
-        {HdMayaAdapterTokens->metallic, VtValue(1.0f),
+        {HdMayaAdapterTokens->metallic, VtValue(0.0f),
          SdfValueTypeNames->Float},
         {HdMayaAdapterTokens->useSpecularWorkflow, VtValue(0),
          SdfValueTypeNames->Int},
