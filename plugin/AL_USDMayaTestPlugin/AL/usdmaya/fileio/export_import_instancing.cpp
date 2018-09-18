@@ -71,8 +71,8 @@ TEST(export_import_instancing, usd_instancing_roundtrip)
 
   UsdPrim masterPrim = prim.GetMaster();
   EXPECT_TRUE(masterPrim.IsValid());
-  masterPrim = masterPrim.GetChild(TfToken("pSphereShape1"));
-  EXPECT_TRUE(masterPrim.IsValid() && masterPrim.IsA<UsdGeomMesh>());
+  UsdPrim masterPrimChild = masterPrim.GetChild(TfToken("pSphereShape1"));
+  EXPECT_TRUE(masterPrimChild.IsValid() && masterPrimChild.IsA<UsdGeomMesh>());
 
   prim = stage->GetPrimAtPath(SdfPath("/parentTransform/nurbsCircle2"));
   EXPECT_TRUE(prim.IsValid() && prim.IsInstance() && prim.IsA<UsdGeomXform>());
@@ -96,7 +96,8 @@ TEST(export_import_instancing, usd_instancing_roundtrip)
   EXPECT_TRUE(status == MStatus::kSuccess && dag.parentCount() == 3);
   MDagPathArray allPaths;
   status = dag.getAllPaths(allPaths);
-  EXPECT_TRUE(status == MStatus::kSuccess && allPaths.length() == 3);
+  EXPECT_TRUE(status == MStatus::kSuccess);
+  ASSERT_TRUE(allPaths.length() == 3);
   EXPECT_EQ(allPaths[0].fullPathName(), "|pSphere1|pSphereShape1");
   EXPECT_EQ(allPaths[1].fullPathName(), "|pSphere2|pSphereShape1");
   EXPECT_EQ(allPaths[2].fullPathName(), "|pSphere3|pSphereShape1");
@@ -115,7 +116,8 @@ TEST(export_import_instancing, usd_instancing_roundtrip)
   status = dag.setObject(path);
   EXPECT_TRUE(status == MStatus::kSuccess && dag.parentCount() == 2);
   status = dag.getAllPaths(allPaths);
-  EXPECT_TRUE(status == MStatus::kSuccess && allPaths.length() == 2);
+  EXPECT_TRUE(status == MStatus::kSuccess);
+  ASSERT_TRUE(allPaths.length() == 2);
   EXPECT_EQ(allPaths[0].fullPathName(), "|nurbsCircle1|nurbsCircleShape1");
   EXPECT_EQ(allPaths[1].fullPathName(), "|parentTransform|nurbsCircle2|nurbsCircleShape1");
 }

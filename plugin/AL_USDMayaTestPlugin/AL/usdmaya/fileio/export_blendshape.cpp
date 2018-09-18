@@ -103,6 +103,7 @@ TEST(export_blendshape, animated_mesh)
   EXPECT_TRUE(stage);
 
   UsdPrim prim = stage->GetPrimAtPath(SdfPath("/baseCube"));
+  ASSERT_TRUE(prim.IsA<UsdGeomMesh>());
   UsdGeomMesh mesh(prim);
 
   UsdAttribute pointsAttr = mesh.GetPointsAttr();
