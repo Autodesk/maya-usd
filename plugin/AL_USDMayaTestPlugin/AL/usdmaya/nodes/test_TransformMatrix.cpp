@@ -1330,6 +1330,135 @@ TEST(Transform, matrixAnimationChannels)
   AL_USDMAYA_UNTESTED;
 }
 
+
+// Check that simply querying the value of various xform attrs doesn't create do-nothing ops
+TEST(Transform, emptyOpsNotMade)
+{
+  MStatus status;
+  const char* xformName = "myXform";
+  SdfPath xformPath(std::string("/") + xformName);
+
+  auto constructTransformChain = [&] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomXform a = UsdGeomXform::Define(stage, xformPath);
+    return stage;
+  };
+
+  MFileIO::newFile(true);
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_transform_emptyOpsNotMade.usda";
+  std::string sessionLayerContents;
+
+  // generate some data for the proxy shape
+  {
+    auto stage = constructTransformChain();
+    stage->Export(temp_path, false);
+  }
+
+  {
+    MFnDagNode fn;
+    MObject xform = fn.create("transform");
+    MString proxyParentMayaPath = fn.fullPathName();
+    MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+    MString proxyShapeMayaPath = fn.fullPathName();
+
+    AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+    // force the stage to load
+    proxy->filePathPlug().setString(temp_path.c_str());
+
+    auto stage = proxy->getUsdStage();
+
+    auto xformPrim = stage->GetPrimAtPath(xformPath);
+    UsdGeomXform xformGeom(xformPrim);
+
+    // Make sure the xform op is initially what's expected
+    auto assertEmptyOps = [&] () {
+      bool resetsXform;
+      auto xformOps = xformGeom.GetOrderedXformOps(&resetsXform);
+      EXPECT_FALSE(resetsXform);
+      EXPECT_EQ(xformOps.size(), 0);
+    };
+
+    {
+      SCOPED_TRACE("initial stage load");
+      assertEmptyOps();
+    }
+
+    // Select the xform, to make it in maya
+    // use "-r" to insulate from previous tests, as default is append
+    MString cmd = MString("AL_usdmaya_ProxyShapeSelect -r -primPath \"")
+        + xformPath.GetText() + "\" -proxy \"" + proxyShapeMayaPath + "\"";
+    MGlobal::executeCommand(cmd);
+
+    MSelectionList sel;
+    EXPECT_TRUE(MGlobal::getActiveSelectionList(sel));
+    EXPECT_EQ(1, sel.length());
+    MObject xformMobj;
+    EXPECT_TRUE(sel.getDependNode(0, xformMobj));
+    MFnTransform xformMfn(xformMobj);
+
+    // Make sure the usd ops haven't changed yet
+    {
+      SCOPED_TRACE("After selection");
+      assertEmptyOps();
+    }
+
+    auto assertEmptyAfterQuerying = [&]() {
+      // Make sure that things are still empty as we query various plugs
+      for (auto& plugName : {
+            "translate",
+            "rotate",
+            "scale",
+            "shear",
+            "rotatePivot",
+            "rotatePivotTranslate",
+            "scalePivot",
+            "scalePivotTranslate",
+            "rotateAxis",
+            "transMinusRotatePivot"
+          })
+      {
+        MPlug basePlug = xformMfn.findPlug(plugName, true, &status);
+        EXPECT_EQ(MS::kSuccess, status);
+
+        for(unsigned int i = 0; i < 3; ++i)
+        {
+          MPlug childPlug = basePlug.child(i, &status);
+          EXPECT_EQ(MS::kSuccess, status);
+
+          SCOPED_TRACE(MString("Pulling on plug: ") + childPlug.name());
+          childPlug.asDouble();
+          assertEmptyOps();
+        }
+      }
+
+      {
+        MPlug plug = xformMfn.findPlug("rotateOrder", true, &status);
+        EXPECT_EQ(MS::kSuccess, status);
+
+        SCOPED_TRACE(MString("Pulling on plug: ") + plug.name());
+        plug.asShort();
+        assertEmptyOps();
+      }
+    };
+
+    {
+      SCOPED_TRACE("Clean querying");
+      assertEmptyAfterQuerying();
+    }
+
+    {
+      SCOPED_TRACE("Querying after dirtying node");
+      MString cmd = MString("dgdirty \"") + xformMfn.partialPathName() + "\";";
+      status = MGlobal::executeCommand(cmd);
+      EXPECT_EQ(MS::kSuccess, status);
+      assertEmptyAfterQuerying();
+    }
+  }
+}
+
 //  TransformationMatrix();
 //  TransformationMatrix(const UsdPrim& prim);
 //  void setPrim(const UsdPrim& prim);
