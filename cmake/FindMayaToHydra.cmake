@@ -1,4 +1,4 @@
-# Simple module to find Maya2Hydra.
+# Simple module to find MayaToHydra.
 
 find_path(HDMAYA_INCLUDE_DIR hdmaya/delegates/delegate.h
           PATHS ${HDMAYA_ROOT}/include

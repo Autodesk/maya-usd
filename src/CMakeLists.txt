@@ -1,5 +1,5 @@
 find_package(Maya REQUIRED)
-find_package(Maya2Hydra REQUIRED)
+find_package(MayaToHydra REQUIRED)
 find_package(USD REQUIRED)
 if(NOT USD_MAYA_INCLUDE_DIR OR NOT USD_MAYA_LIBRARY_DIR)
     message(FATAL "Could not find usdMaya - aborting")
