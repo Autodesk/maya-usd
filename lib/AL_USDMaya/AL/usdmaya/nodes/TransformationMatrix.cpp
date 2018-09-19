@@ -1292,7 +1292,7 @@ MStatus TransformationMatrix::shearTo(const MVector& shear, MSpace::Space space)
   MStatus status = MPxTransformationMatrix::shearTo(shear, space);
   if(status)
   {
-    m_scaleTweak = MPxTransformationMatrix::shearValue - m_shearFromUsd;
+    m_shearTweak = MPxTransformationMatrix::shearValue - m_shearFromUsd;
   }
   if(pushToPrimAvailable())
   {
