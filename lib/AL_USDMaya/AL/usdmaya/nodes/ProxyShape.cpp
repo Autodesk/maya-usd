@@ -459,6 +459,37 @@ void ProxyShape::constructGLImagingEngine()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShape::setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& plugs)
 {
+  // I thought that, if your ProxyDrawOverride is set to not always be dirty,
+  // prepareForDraw would automatically be triggered whenever any attribute
+  // that was marked as affectsAppearance was dirtied; however, this is not
+  // the case, so we mark the draw geo dirty ourselves.
+  {
+    MStatus status;
+    MFnAttribute attr(plugBeingDirtied, &status);
+    if (!status)
+    {
+      if (plugBeingDirtied.isNull())
+      {
+        TF_CODING_ERROR(TfStringPrintf(
+            "ProxyShape setInternalValue given invalid plug - shape: %s",
+            name().asChar()));
+        }
+      else
+      {
+        TF_CODING_ERROR(TfStringPrintf(
+            "Unable to retrieve attribute from plug: %s",
+            plugBeingDirtied.name().asChar()));
+      }
+    }
+    else
+    {
+      if (attr.affectsAppearance())
+      {
+        MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
+      }
+    }
+  }
+
   if(plugBeingDirtied == m_time || plugBeingDirtied == m_timeOffset || plugBeingDirtied == m_timeScalar)
   {
     plugs.append(outTimePlug());
@@ -1850,6 +1881,7 @@ MStatus ProxyShape::computeOutputTime(const MPlug& plug, MDataBlock& dataBlock, 
 MStatus ProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::compute %s\n", plug.name().asChar());
+
   MTime currentTime;
   if(plug == m_outTime)
   {

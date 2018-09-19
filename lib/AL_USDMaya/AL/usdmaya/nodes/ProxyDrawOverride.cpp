@@ -41,7 +41,7 @@ public:
 
   // Constructor to use when shape is drawn but no bounding box.
   RenderUserData()
-    : MUserData(true)
+    : MUserData(false)
     {}
 
   // Make sure everything gets freed!
@@ -64,7 +64,7 @@ MUint64 ProxyDrawOverride::s_lastRefreshFrameStamp = 0;
 //----------------------------------------------------------------------------------------------------------------------
 ProxyDrawOverride::ProxyDrawOverride(const MObject& obj)
 #if MAYA_API_VERSION >= 201700
-  : MHWRender::MPxDrawOverride(obj, draw, true)
+  : MHWRender::MPxDrawOverride(obj, draw, false)
 #else
   : MHWRender::MPxDrawOverride(obj, draw)
 #endif
@@ -117,26 +117,35 @@ MUserData* ProxyDrawOverride::prepareForDraw(
   TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::prepareForDraw\n");
   MFnDagNode fn(objPath);
 
-  RenderUserData* data = new RenderUserData;
+  auto data = static_cast<RenderUserData*>(userData);
+  auto shape = static_cast<ProxyShape*>(fn.userNode());
+  if (!shape)
+    return nullptr;
 
-  data->m_shape = (ProxyShape*)fn.userNode();
-  data->m_objPath = objPath;
-
-  auto engine = data->m_shape->engine();
+  auto engine = shape->engine();
   if(!engine)
   {
-    data->m_shape->constructGLImagingEngine();
-    engine = data->m_shape->engine();
+    shape->constructGLImagingEngine();
+    engine = shape->engine();
     if(!engine)
-      return data;
+      return nullptr;
   }
 
-  if(!data->m_shape || !data->m_shape->getRenderAttris(&data->m_params, frameContext, objPath))
+  RenderUserData* newData = nullptr;
+  if (data == nullptr)
   {
-    return NULL;
+    data = newData = new RenderUserData;
   }
 
-  data->m_rootPrim = data->m_shape->getRootPrim();
+  if(!shape->getRenderAttris(&data->m_params, frameContext, objPath))
+  {
+    delete newData;
+    return nullptr;
+  }
+
+  data->m_objPath = objPath;
+  data->m_shape = shape;
+  data->m_rootPrim = shape->getRootPrim();
   data->m_engine = engine;
 
   return data;

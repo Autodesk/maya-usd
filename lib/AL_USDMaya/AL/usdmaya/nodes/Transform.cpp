@@ -18,6 +18,7 @@
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
+#include "AL/usdmaya/nodes/ProxyShape.h"
 
 #include "maya/MBoundingBox.h"
 #include "maya/MDataBlock.h"
@@ -320,6 +321,34 @@ MBoundingBox Transform::boundingBox() const
     return MBoundingBox(minBound, maxBound);
   }
   return MPxTransform::boundingBox();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus Transform::connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc)
+{
+  if(!asSrc && plug == m_inStageData)
+  {
+    MFnDependencyNode otherNode(otherPlug.node());
+    if (otherNode.typeId() == ProxyShape::kTypeId)
+    {
+      proxyShapeHandle = otherPlug.node();
+    }
+  }
+  return MPxTransform::connectionMade(plug, otherPlug, asSrc);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus Transform::connectionBroken(const MPlug& plug, const MPlug& otherPlug, bool asSrc)
+{
+  if(!asSrc && plug == m_inStageData)
+  {
+    MFnDependencyNode otherNode(otherPlug.node());
+    if (otherNode.typeId() == ProxyShape::kTypeId)
+    {
+      proxyShapeHandle = MObject();
+    }
+  }
+  return MPxTransform::connectionBroken(plug, otherPlug, asSrc);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
