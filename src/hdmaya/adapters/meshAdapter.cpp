@@ -82,7 +82,7 @@ public:
         MStatus status;
         auto obj = GetNode();
         if (obj != MObject::kNullObj) {
-            auto id = MNodeMessage::addNodeDirtyCallback(
+            auto id = MNodeMessage::addNodeDirtyPlugCallback(
                 obj, NodeDirtiedCallback, this, &status);
             if (status) { AddCallback(id); }
             id = MNodeMessage::addAttributeChangedCallback(

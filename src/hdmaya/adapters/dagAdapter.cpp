@@ -85,7 +85,7 @@ void HdMayaDagAdapter::CreateCallbacks() {
     for (auto dag = GetDagPath(); dag.length() > 0; dag.pop()) {
         MObject obj = dag.node();
         if (obj != MObject::kNullObj) {
-            auto id = MNodeMessage::addNodeDirtyCallback(
+            auto id = MNodeMessage::addNodeDirtyPlugCallback(
                 obj, _TransformNodeDirty, this, &status);
             if (status) { AddCallback(id); }
         }

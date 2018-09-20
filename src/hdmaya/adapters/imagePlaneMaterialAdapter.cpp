@@ -106,7 +106,7 @@ public:
     void CreateCallbacks() override {
         MStatus status;
         auto obj = GetNode();
-        auto id = MNodeMessage::addNodeDirtyCallback(
+        auto id = MNodeMessage::addNodeDirtyPlugCallback(
             obj, _DirtyMaterialParams, this, &status);
         if (ARCH_LIKELY(status)) { AddCallback(id); }
         HdMayaAdapter::CreateCallbacks();

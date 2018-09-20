@@ -157,18 +157,22 @@ void ConvertFile(
     HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
     MFnDependencyNode& node) {
     std::string fileTextureName{};
-    if (node.findPlug(MayaAttrs::file::uvTilingMode).asShort() != 0) {
-        fileTextureName = node.findPlug(MayaAttrs::file::fileTextureNamePattern)
+    if (node.findPlug(MayaAttrs::file::uvTilingMode, true).asShort() != 0) {
+        fileTextureName = node.findPlug(MayaAttrs::file::fileTextureNamePattern,
+                                        true)
                               .asString()
                               .asChar();
         if (fileTextureName.empty()) {
             fileTextureName =
-                node.findPlug(MayaAttrs::file::computedFileTextureNamePattern)
+                node.findPlug(MayaAttrs::file::computedFileTextureNamePattern,
+                              true)
                     .asString()
                     .asChar();
         }
     } else {
-        fileTextureName = node.findPlug(_fileTextureName).asString().asChar();
+        fileTextureName = node.findPlug(_fileTextureName, true)
+                .asString()
+                .asChar();
     }
     material.parameters[HdMayaAdapterTokens->file] =
         VtValue(SdfAssetPath(fileTextureName, fileTextureName));
@@ -261,7 +265,7 @@ void HdMayaMaterialNetworkConverter::ConvertParameter(
     const TfToken& name, const SdfValueTypeName& type,
     const VtValue* fallback) {
     MStatus status;
-    auto p = node.findPlug(mayaName.GetText(), &status);
+    auto p = node.findPlug(mayaName.GetText(), true, &status);
     VtValue val;
     if (status) {
         val = ConvertPlugToValue(p, type, fallback);
