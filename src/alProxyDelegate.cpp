@@ -246,7 +246,7 @@ HdMayaALProxyDelegate::HdMayaALProxyDelegate(
     MFnDependencyNode fn;
     MItDependencyNodes iter(MFn::kPluginShape);
     for(; !iter.isDone(); iter.next()) {
-        MObject mobj = iter.item();
+        MObject mobj = iter.thisNode();
         fn.setObject(mobj);
         if(fn.typeId() != ProxyShape::kTypeId) { continue; }
 
