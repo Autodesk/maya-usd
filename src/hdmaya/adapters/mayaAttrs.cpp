@@ -28,6 +28,15 @@
 
 #include <maya/MNodeClass.h>
 
+#define SET_NODE_CLASS(nodeTypeName) \
+   using namespace nodeTypeName; \
+   MNodeClass nodeClass(#nodeTypeName); \
+   if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
+
+#define SET_ATTR_OBJ(attr) \
+    setAttrObj(attr, nodeClass, #attr); \
+    if (!TF_VERIFY(status)) { return status; }
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace MayaAttrs {
@@ -122,23 +131,6 @@ MStatus initialize() {
     auto setAttrObj = [&status](
                           MObject& attrObj, MNodeClass& nodeClass,
                           const MString& name) {
-        if (!TF_VERIFY(attrObj.isNull())) {
-            // This attempts to avoid copy-paste mistakes - ie, I had done:
-            //      setAttrObj(instObjGroups, nodeClass, "instObjGroups");
-            //      setAttrObj(instObjGroups, nodeClass, "intermediateObject");
-            // ...which this would catch...
-            status = MS::kFailure;
-            MString errMsg("Attempted to assign the attribute '");
-            errMsg += nodeClass.typeName();
-            errMsg += ".";
-            errMsg += name;
-            errMsg +=
-                "' to a non-empty MObject - check to ensure you're "
-                "assigning it to the correct object, and that you're not "
-                "running initialize() twice";
-            status.perror(errMsg);
-            return;
-        }
         attrObj = nodeClass.attribute(name, &status);
         if (!TF_VERIFY(status)) { return; }
         if (!TF_VERIFY(!attrObj.isNull())) {
@@ -153,166 +145,83 @@ MStatus initialize() {
         }
     };
     {
-        using namespace dagNode;
-        MNodeClass nodeClass("dagNode");
-        if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
+        SET_NODE_CLASS(dagNode);
 
-        setAttrObj(visibility, nodeClass, "visibility");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(worldMatrix, nodeClass, "worldMatrix");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(intermediateObject, nodeClass, "intermediateObject");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(instObjGroups, nodeClass, "instObjGroups");
-        if (!TF_VERIFY(status)) { return status; }
+        SET_ATTR_OBJ(visibility);
+        SET_ATTR_OBJ(worldMatrix);
+        SET_ATTR_OBJ(intermediateObject);
+        SET_ATTR_OBJ(instObjGroups);
     }
 
     {
-        using namespace nonAmbientLightShapeNode;
-        MNodeClass nodeClass("nonAmbientLightShapeNode");
-        if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
+        SET_NODE_CLASS(nonAmbientLightShapeNode);
 
-        setAttrObj(decayRate, nodeClass, "decayRate");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(emitDiffuse, nodeClass, "emitDiffuse");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(emitSpecular, nodeClass, "emitSpecular");
-        if (!TF_VERIFY(status)) { return status; }
+        SET_ATTR_OBJ(decayRate);
+        SET_ATTR_OBJ(emitDiffuse);
+        SET_ATTR_OBJ(emitSpecular);
     }
 
     {
-        using namespace nonExtendedLightShapeNode;
-        MNodeClass nodeClass("nonExtendedLightShapeNode");
-        if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
+        SET_NODE_CLASS(nonExtendedLightShapeNode);
 
-        setAttrObj(dmapResolution, nodeClass, "dmapResolution");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(dmapBias, nodeClass, "dmapBias");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(dmapFilterSize, nodeClass, "dmapFilterSize");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(useDepthMapShadows, nodeClass, "useDepthMapShadows");
-        if (!TF_VERIFY(status)) { return status; }
+        SET_ATTR_OBJ(dmapResolution);
+        SET_ATTR_OBJ(dmapBias);
+        SET_ATTR_OBJ(dmapFilterSize);
+        SET_ATTR_OBJ(useDepthMapShadows);
     }
 
     {
-        using namespace spotLight;
-        MNodeClass nodeClass("spotLight");
-        if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
+        SET_NODE_CLASS(spotLight);
 
-        setAttrObj(coneAngle, nodeClass, "coneAngle");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(dropoff, nodeClass, "dropoff");
-        if (!TF_VERIFY(status)) { return status; }
+        SET_ATTR_OBJ(coneAngle);
+        SET_ATTR_OBJ(dropoff);
     }
 
     {
-        using namespace surfaceShape;
-        MNodeClass nodeClass("surfaceShape");
-        if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
+        SET_NODE_CLASS(surfaceShape);
 
-        setAttrObj(doubleSided, nodeClass, "doubleSided");
-        if (!TF_VERIFY(status)) { return status; }
+        SET_ATTR_OBJ(doubleSided);
     }
 
     {
-        using namespace mesh;
-        MNodeClass nodeClass("mesh");
-        if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
+        SET_NODE_CLASS(mesh);
 
-        setAttrObj(pnts, nodeClass, "pnts");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(inMesh, nodeClass, "inMesh");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(uvPivot, nodeClass, "uvPivot");
-        if (!TF_VERIFY(status)) { return status; }
+        SET_ATTR_OBJ(pnts);
+        SET_ATTR_OBJ(inMesh);
+        SET_ATTR_OBJ(uvPivot);
     }
 
     {
-        using namespace shadingEngine;
-        MNodeClass nodeClass("shadingEngine");
-        if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
+        SET_NODE_CLASS(shadingEngine);
 
-        setAttrObj(surfaceShader, nodeClass, "surfaceShader");
-        if (!TF_VERIFY(status)) { return status; }
+        SET_ATTR_OBJ(surfaceShader);
     }
 
     {
-        using namespace file;
-        MNodeClass nodeClass("file");
-        if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
+        SET_NODE_CLASS(file);
 
-        setAttrObj(
-            computedFileTextureNamePattern, nodeClass,
-            "computedFileTextureNamePattern");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(fileTextureNamePattern, nodeClass, "fileTextureNamePattern");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(uvTilingMode, nodeClass, "uvTilingMode");
-        if (!TF_VERIFY(status)) { return status; }
+        SET_ATTR_OBJ(computedFileTextureNamePattern);
+        SET_ATTR_OBJ(fileTextureNamePattern);
+        SET_ATTR_OBJ(uvTilingMode);
     }
     {
-        using namespace imagePlane;
-        MNodeClass nodeClass("imagePlane");
-        if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
+        SET_NODE_CLASS(imagePlane);
 
-        setAttrObj(displayMode, nodeClass, "displayMode");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(imageName, nodeClass, "imageName");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(useFrameExtension, nodeClass, "useFrameExtension");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(frameOffset, nodeClass, "frameOffset");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(frameExtension, nodeClass, "frameExtension");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(fit, nodeClass, "fit");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(coverage, nodeClass, "coverage");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(coverageOrigin, nodeClass, "coverageOrigin");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(depth, nodeClass, "depth");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(rotate, nodeClass, "rotate");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(size, nodeClass, "size");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(offset, nodeClass, "offset");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(width, nodeClass, "width");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(height, nodeClass, "height");
-        if (!TF_VERIFY(status)) { return status; }
-
-        setAttrObj(imageCenter, nodeClass, "imageCenter");
-        if (!TF_VERIFY(status)) { return status; }
+        SET_ATTR_OBJ(displayMode);
+        SET_ATTR_OBJ(imageName);
+        SET_ATTR_OBJ(useFrameExtension);
+        SET_ATTR_OBJ(frameOffset);
+        SET_ATTR_OBJ(frameExtension);
+        SET_ATTR_OBJ(fit);
+        SET_ATTR_OBJ(coverage);
+        SET_ATTR_OBJ(coverageOrigin);
+        SET_ATTR_OBJ(depth);
+        SET_ATTR_OBJ(rotate);
+        SET_ATTR_OBJ(size);
+        SET_ATTR_OBJ(offset);
+        SET_ATTR_OBJ(width);
+        SET_ATTR_OBJ(height);
+        SET_ATTR_OBJ(imageCenter);
     }
     return MStatus::kSuccess;
 }
