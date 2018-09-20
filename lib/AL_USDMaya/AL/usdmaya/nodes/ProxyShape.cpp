@@ -2191,6 +2191,13 @@ void ProxyShape::registerEvents()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+MSelectionMask ProxyShape::getShapeSelectionMask() const
+{
+  MSelectionMask::SelectionType selType = MSelectionMask::kSelectMeshes;
+  return MSelectionMask(selType);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 } // nodes
 } // usdmaya
 } // AL
