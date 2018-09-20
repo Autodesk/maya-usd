@@ -62,7 +62,6 @@ const VtValue _emptyValue;
 const TfToken _emptyToken;
 const TfTokenVector _stSamplerCoords = {TfToken("st")};
 // const TfTokenVector _stSamplerCoords;
-const MString _fileTextureName("fileTextureName");
 
 // Specialized version of :
 // https://en.cppreference.com/w/cpp/algorithm/lower_bound
@@ -295,7 +294,7 @@ private:
         MFnDependencyNode node(GetNode(), &status);
         if (ARCH_UNLIKELY(!status)) { return; }
 
-        auto p = node.findPlug("surfaceShader", true);
+        auto p = node.findPlug(MayaAttrs::shadingEngine::surfaceShader, true);
         MPlugArray conns;
         p.connectedTo(conns, true, false);
         if (conns.length() > 0) {
@@ -496,7 +495,7 @@ private:
             return TfToken(ret.asChar());
         }
 #endif
-        return TfToken(fileNode.findPlug(_fileTextureName, true).asString().asChar());
+        return TfToken(fileNode.findPlug(MayaAttrs::file::fileTextureName, true).asString().asChar());
     }
 
     HdTextureResourceSharedPtr GetTextureResource(

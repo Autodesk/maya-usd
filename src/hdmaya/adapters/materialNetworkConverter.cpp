@@ -84,8 +84,6 @@ const auto _previewMaterialParamVector = []() -> HdMaterialParamVector {
     return ret;
 }();
 
-const MString _fileTextureName("fileTextureName");
-
 void ConvertUsdPreviewSurface(
     HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
     MFnDependencyNode& node) {
@@ -170,7 +168,7 @@ void ConvertFile(
                     .asChar();
         }
     } else {
-        fileTextureName = node.findPlug(_fileTextureName, true)
+        fileTextureName = node.findPlug(MayaAttrs::file::fileTextureName, true)
                 .asString()
                 .asChar();
     }

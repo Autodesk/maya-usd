@@ -39,8 +39,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace MayaAttrs {
 
+namespace node {
+
+extern MObject message;
+
+} // namespace node
+
 namespace dagNode {
 
+using namespace node;
 extern MObject visibility;
 extern MObject worldMatrix;
 extern MObject intermediateObject;
@@ -95,13 +102,16 @@ extern MObject uvPivot;
 
 namespace shadingEngine {
 
+using namespace node;
 extern MObject surfaceShader;
 
 } // namespace shadingEngine
 
 namespace file {
 
+using namespace node;
 extern MObject computedFileTextureNamePattern;
+extern MObject fileTextureName;
 extern MObject fileTextureNamePattern;
 extern MObject uvTilingMode;
 

@@ -117,7 +117,7 @@ public:
         _camera = MObject::kNullObj;
         MFnDagNode fn(dag.node());
         MStatus status;
-        MPlug messagePlug = fn.findPlug("message", true, &status);
+        MPlug messagePlug = fn.findPlug(MayaAttrs::node::message, true, &status);
         MPlugArray referencePlugs;
         messagePlug.connectedTo(referencePlugs, false, true);
         for (uint32_t i = 0, n = referencePlugs.length(); i < n; ++i) {
@@ -202,10 +202,12 @@ public:
             std::string(imageNameExtracted.asChar()));
         paramsFromMaya.fileName = imageNameExtractedPath;
 
-        const auto coveragePlug = dnode.findPlug("coverage", true);
+        const auto coveragePlug = dnode.findPlug(
+                MayaAttrs::imagePlane::coverage, true);
         paramsFromMaya.coverage = GfVec2i(
             coveragePlug.child(0).asInt(), coveragePlug.child(1).asInt());
-        const auto coverageOriginPlug = dnode.findPlug("coverageOrigin", true);
+        const auto coverageOriginPlug = dnode.findPlug(
+                MayaAttrs::imagePlane::coverageOrigin, true);
         paramsFromMaya.coverageOrigin = GfVec2i(
             coverageOriginPlug.child(0).asInt(),
             coverageOriginPlug.child(1).asInt());
@@ -218,10 +220,13 @@ public:
             paramsFromMaya.focalLength = camera.focalLength(&status);
 
             // enabled attributes when connected to camera
-            paramsFromMaya.depth = dnode.findPlug("depth", true).asFloat();
-            paramsFromMaya.rotate = dnode.findPlug("rotate", true).asFloat();
+            paramsFromMaya.depth = dnode.findPlug(
+                    MayaAttrs::imagePlane::depth, true).asFloat();
+            paramsFromMaya.rotate = dnode.findPlug(
+                    MayaAttrs::imagePlane::rotate, true).asFloat();
 
-            const auto fit = dnode.findPlug("fit", true).asShort();
+            const auto fit = dnode.findPlug(
+                    MayaAttrs::imagePlane::fit, true).asShort();
             if (fit == UsdGeomImagePlane::FIT_BEST) {
                 paramsFromMaya.fit = UsdGeomTokens->best;
             } else if (fit == UsdGeomImagePlane::FIT_FILL) {
@@ -235,13 +240,15 @@ public:
             }
 
             // always enabled but only affect when connected to camera
-            const auto sizePlug = dnode.findPlug("size", true);
+            const auto sizePlug = dnode.findPlug(
+                    MayaAttrs::imagePlane::size, true);
             // Size attr is in inches while aperture is in millimeters.
             paramsFromMaya.size =
                 GfVec2f(
                     sizePlug.child(0).asFloat(), sizePlug.child(1).asFloat()) *
                 inch_to_mm;
-            const auto offsetPlug = dnode.findPlug("offset", true);
+            const auto offsetPlug = dnode.findPlug(
+                    MayaAttrs::imagePlane::offset, true);
             paramsFromMaya.offset = GfVec2f(
                                         offsetPlug.child(0).asFloat(),
                                         offsetPlug.child(1).asFloat()) *
@@ -250,15 +257,16 @@ public:
         } else {
             //  if no camera maya gets size from height and width
             paramsFromMaya.size = GfVec2f(
-                dnode.findPlug("width", true).asFloat(),
-                dnode.findPlug("height", true).asFloat());
+                dnode.findPlug(MayaAttrs::imagePlane::width, true).asFloat(),
+                dnode.findPlug(MayaAttrs::imagePlane::height, true).asFloat());
             // if no camera, fit wont affect size, and this fit value uses
             // size without any modifications
             paramsFromMaya.fit = UsdGeomTokens->toSize;
             // maya uses a center attribute as a 3d offset, but we can also
             // express this with depth + offset since those other attributes
             // do not affect non camera image planes.
-            const auto centerPlug = dnode.findPlug("imageCenter", true);
+            const auto centerPlug = dnode.findPlug(
+                    MayaAttrs::imagePlane::imageCenter, true);
             paramsFromMaya.offset = GfVec2f(
                 centerPlug.child(0).asFloat(), centerPlug.child(1).asFloat());
             paramsFromMaya.depth = -centerPlug.child(2).asFloat();

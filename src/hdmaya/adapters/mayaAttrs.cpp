@@ -41,6 +41,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace MayaAttrs {
 
+namespace node {
+
+MObject message;
+
+} // namespace node
+
 namespace dagNode {
 
 MObject visibility;
@@ -99,6 +105,7 @@ MObject surfaceShader;
 namespace file {
 
 MObject computedFileTextureNamePattern;
+MObject fileTextureName;
 MObject fileTextureNamePattern;
 MObject uvTilingMode;
 
@@ -144,6 +151,11 @@ MStatus initialize() {
             return;
         }
     };
+    {
+        SET_NODE_CLASS(node);
+
+        SET_ATTR_OBJ(message);
+    }
     {
         SET_NODE_CLASS(dagNode);
 
@@ -201,6 +213,7 @@ MStatus initialize() {
         SET_NODE_CLASS(file);
 
         SET_ATTR_OBJ(computedFileTextureNamePattern);
+        SET_ATTR_OBJ(fileTextureName);
         SET_ATTR_OBJ(fileTextureNamePattern);
         SET_ATTR_OBJ(uvTilingMode);
     }
