@@ -176,6 +176,7 @@ bool AnimationTranslator::isAnimatedMesh(const MDagPath& mesh)
     MItDependencyGraph::kDepthFirst,
     MItDependencyGraph::kNodeLevel,
     &status);
+  iter.setTraversalOverWorldSpaceDependents(true);
   if (!status)
   {
     MGlobal::displayError("Unable to create DG iterator");
