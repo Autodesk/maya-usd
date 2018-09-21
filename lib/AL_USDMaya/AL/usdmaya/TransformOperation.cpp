@@ -67,6 +67,7 @@ TransformOperation xformOpToEnum(const std::string& opName)
       switch(opName.size())
       {
         case 6: return TestType(kRotate);
+        case 7:
         case 9:
         {
           if(opName.compare(0, 6, "rotate") == 0)

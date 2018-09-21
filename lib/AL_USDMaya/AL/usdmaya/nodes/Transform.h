@@ -19,6 +19,7 @@
 #include "AL/maya/utils/NodeHelper.h"
 #include "AL/usdmaya/utils/ForwardDeclares.h"
 #include "AL/maya/utils/MayaHelperMacros.h"
+#include "maya/MObjectHandle.h"
 #include "maya/MPxTransform.h"
 
 
@@ -124,6 +125,9 @@ public:
   MPxNode::SchedulingType schedulingType() const override
     { return kParallel; }
 
+  inline const MObject getProxyShape() const
+    { return proxyShapeHandle.object(); }
+
 private:
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -135,6 +139,8 @@ private:
   MStatus compute(const MPlug &plug, MDataBlock &datablock) override;
   void postConstructor() override;
   MBoundingBox boundingBox() const override;
+  MStatus connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
+  MStatus connectionBroken(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
   bool isBounded() const override
     { return true; }
   bool treatAsTransform() const override
@@ -145,6 +151,11 @@ private:
   //--------------------------------------------------------------------------------------------------------------------
 
   void updateTransform(MDataBlock& dataBlock);
+
+  //--------------------------------------------------------------------------------------------------------------------
+  /// Data members
+  //--------------------------------------------------------------------------------------------------------------------
+  bool updateTransformInProgress = false;
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name Input Attributes
@@ -220,6 +231,8 @@ private:
   /// \var    static MObject outTime();
   /// \brief  access the outTime attribute handle
   /// \return the outTime attribute
+
+  MObjectHandle proxyShapeHandle;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

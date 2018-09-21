@@ -251,6 +251,7 @@ class ProxyShape
   friend struct SelectionUndoHelper;
   friend class ProxyShapeUI;
   friend class StageReloadGuard;
+  friend class ProxyDrawOverride;
 public:
 
   // returns the shape's parent transform
@@ -838,6 +839,10 @@ public:
   /// \return the separated list of paths
   AL_USDMAYA_PUBLIC
   SdfPathVector getPrimPathsFromCommaJoinedString(const MString &paths) const;
+
+  /// \brief  Returns the selection mask of the shape
+  AL_USDMAYA_PUBLIC
+  MSelectionMask getShapeSelectionMask() const override;
 
 private:
 

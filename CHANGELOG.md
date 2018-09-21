@@ -1,3 +1,25 @@
+## v0.29.2 (2018-09-21)
+
+### Added
+* AL proxy shape will now probably respect the light decay properties (ie, linear, quadratic, none) of lights in the viewport (#116 - @elrond79)
+* Implementation of new ProxyDrawOverride::userSelect() provided with maya2019 (#118 - @pilarmolinalopez)
+* Implementation of ProxyShape::getShapeSelectionMask(#118 - @pilarmolinalopez)
+
+### Changed
+* Improved performance when proxy shape isn't changing (ie, viewport tumble) (#93 - @elrond79)
+
+### Removed
+* [schemas] generated plugInfo.json from source tree
+* VALIDATE_GENERATED_SCHEMAS build option
+
+### Fixed
+* Transform Import now respects single float rotations
+* Transform orders that do not match maya's order are now correctly imported.
+* Rendering of Wireframe selected objects
+* Don't create do-nothing xform ops (#112 - @elrond79)
+* Fixed setting of shearTweak (#114 - @elrond79)
+* check for whether scalePivotTranslate needs to be set enableReadAnimatedValues was checking if scalePivot was set, not scalePivotTranslate (#115 - @elrond79)
+
 ## v0.29.1 (2018-08-28)
 
 ### Added

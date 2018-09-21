@@ -36,9 +36,9 @@
 #include <fstream>
 #include <stdio.h>
 
-const MString temp_path = buildTempPath("AL_USDMayaTests_cube.ma");
-const MString temp_path2 = buildTempPath("AL_USDMayaTests_sphere.ma");
-const MString temp_path3 = buildTempPath("AL_USDMayaTests_camera.ma");
+const MString temp_path_cube = buildTempPath("AL_USDMayaTests_cube.ma");
+const MString temp_path_sphere = buildTempPath("AL_USDMayaTests_sphere.ma");
+const MString temp_path_camera = buildTempPath("AL_USDMayaTests_camera.ma");
 
 static const MString g_inactive = MString(
 "#usda 1.0\n"
@@ -49,7 +49,7 @@ static const MString g_inactive = MString(
 "      active = false\n"
 "    )\n"
 "    {\n"
-"      asset mayaReference = \"") + temp_path + "\"\n"
+"      asset mayaReference = \"") + temp_path_cube + "\"\n"
 "      string mayaNamespace = \"cube\"\n"
 "    }\n"
 "}\n";
@@ -61,7 +61,7 @@ static const MString g_active = MString(
 "{\n"
 "    def ALMayaReference \"rig\"\n"
 "    {\n"
-"      asset mayaReference = \"") + temp_path + "\"\n"
+"      asset mayaReference = \"") + temp_path_cube + "\"\n"
 "      string mayaNamespace = \"cube\"\n"
 "    }\n"
 "}\n";
@@ -84,21 +84,21 @@ static const MString g_variants = MString(
 "      \"sphere\"{\n"
 "        def ALMayaReference \"rig\"\n"
 "        {\n"
-"           asset mayaReference = \"") + temp_path2 + "\"\n"
+"           asset mayaReference = \"") + temp_path_sphere + "\"\n"
 "           string mayaNamespace = \"dave\"\n"
 "        }\n"
 "      }\n"
 "      \"cube\"{\n"
 "        def ALMayaReference \"rig\"\n"
 "        {\n"
-"           asset mayaReference = \"" + temp_path + "\"\n"
+"           asset mayaReference = \"" + temp_path_cube + "\"\n"
 "           string mayaNamespace = \"dave\"\n"
 "        }\n"
 "      }\n"
 "      \"fredcube\"{\n"
 "        def ALMayaReference \"rig\"\n"
 "        {\n"
-"           asset mayaReference = \"" + temp_path + "\"\n"
+"           asset mayaReference = \"" + temp_path_cube + "\"\n"
 "           string mayaNamespace = \"fred\"\n"
 "        }\n"
 "      }\n"
@@ -120,7 +120,7 @@ static const MString g_customTransformType = MString(
 "      al_usdmaya_transformType = \"joint\"\n"
 "    )\n"
 "    {\n"
-"      asset mayaReference = \"") + temp_path + "\"\n"
+"      asset mayaReference = \"") + temp_path_cube + "\"\n"
 "      string mayaNamespace = \"cube\"\n"
 "    }\n"
 "}\n";
@@ -136,7 +136,7 @@ static const MString g_duplicateTransformNames = MString(
 "      al_usdmaya_transformType = \"joint\"\n"
 "    )\n"
 "    {\n"
-"      asset mayaReference = \"") + temp_path + "\"\n"
+"      asset mayaReference = \"") + temp_path_cube + "\"\n"
 "      string mayaNamespace = \"cube\"\n"
 "    }\n"
 "  }\n"
@@ -146,7 +146,7 @@ static const MString g_duplicateTransformNames = MString(
 "      al_usdmaya_transformType = \"joint\"\n"
 "    )\n"
 "    {\n"
-"      asset mayaReference = \"" + temp_path2 + "\"\n"
+"      asset mayaReference = \"" + temp_path_sphere + "\"\n"
 "      string mayaNamespace = \"cube\"\n"
 "    }\n"
 "  }\n"
@@ -176,7 +176,7 @@ static const MString g_variantSwitchPrimTypes = MString(
 "            \"mayaReference\" {\n"
 "                def  ALMayaReference \"top\"\n"
 "                {\n"
-"                    asset mayaReference = @") + temp_path3 + "@\n"
+"                    asset mayaReference = @") + temp_path_camera + "@\n"
 "                    string mayaNamespace = \"cam_ns\"\n"
 "                }\n"
 "            }\n"
@@ -200,19 +200,26 @@ public:
    // pCube1, pCubeShape1, polyCube1
    MFileIO::newFile(true);
    MGlobal::executeCommand("polyCube -w 1 -h 1 -d 1 -sd 1 -sh 1 -sw 1", false, false);
-   MFileIO::saveAs(temp_path, 0, true);
+   MFileIO::saveAs(temp_path_cube, 0, true);
 
    // pSphere1, pSphereShape1, polySphere1
    MFileIO::newFile(true);
    MGlobal::executeCommand("polySphere", false, false);
-   MFileIO::saveAs(temp_path2, 0, true);
-  }
+   MFileIO::saveAs(temp_path_sphere, 0, true);
+  
+  // camera1, camera1Shape
+  MFileIO::newFile(true);
+  MGlobal::executeCommand("camera", false, false);
+  MGlobal::executeCommand("group -name camera_rigg_top camera1", false, false);
+  MFileIO::saveAs(temp_path_camera, 0, true);
+}
 
   static void TearDownTestCase()
   {
     // cleanup files
-    remove(temp_path.asChar());
-    remove(temp_path2.asChar());
+    remove(temp_path_cube.asChar());
+    remove(temp_path_sphere.asChar());
+    remove(temp_path_camera.asChar());
   }
 
 protected:
@@ -797,15 +804,7 @@ TEST_F(ActiveInactive, disable)
 
 TEST_F(ActiveInactive, variantChange)
 {
-  const std::string temp_ma_path = buildTempPath("AL_USDMayaTests_camera.ma");
   const std::string temp_path = buildTempPath("AL_USDMayaTests_variant.usda");
-
-  // camera1, camera1Shape
-  MFileIO::newFile(true);
-  MGlobal::executeCommand("camera", false, false);
-  MGlobal::executeCommand("group -name camera_rigg_top camera1", false, false);
-  MFileIO::saveAs(temp_ma_path.c_str(), 0, true);
-  MFileIO::newFile(true);
 
   // generate some data for the proxy shape
   {
@@ -813,6 +812,7 @@ TEST_F(ActiveInactive, variantChange)
     os << g_variantSwitchPrimTypes;
   }
 
+  MFileIO::newFile(true);
   MString shapeName;
 
   MFnDagNode fn;

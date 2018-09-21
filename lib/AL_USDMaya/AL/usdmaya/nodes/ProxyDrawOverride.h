@@ -121,6 +121,19 @@ public:
 
 private:
   static MUint64 s_lastRefreshFrameStamp;
+  
+#if MAYA_API_VERSION >= 20190000
+  bool wantUserSelection() const override {return true;}
+  
+  bool userSelect(
+      const MHWRender::MSelectionInfo& selectInfo,
+      const MHWRender::MDrawContext& context,
+      const MDagPath& objPath,
+      const MUserData* data,
+      MSelectionList& selectionList,
+      MPointArray& worldSpaceHitPts) override;
+#endif
+
 };
 
 //----------------------------------------------------------------------------------------------------------------------

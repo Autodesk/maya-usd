@@ -423,15 +423,12 @@ public:
 private:
   //  Translation methods:
   MStatus translateTo(const MVector &vector, MSpace::Space = MSpace::kTransform) override;
-  MStatus translateBy(const MVector &vector, MSpace::Space = MSpace::kTransform) override;
 
   //  Scale methods:
   MStatus scaleTo(const MVector &, MSpace::Space = MSpace::kTransform) override;
-  MStatus scaleBy(const MVector &, MSpace::Space = MSpace::kTransform) override;
 
   //  Shear methods:
   MStatus shearTo(const MVector& shear, MSpace::Space = MSpace::kTransform) override;
-  MStatus shearBy(const MVector& shear, MSpace::Space = MSpace::kTransform) override;
 
   //  Scale pivot methods:
   MStatus setScalePivot(const MPoint &, MSpace::Space = MSpace::kTransform, bool balance = true) override;
@@ -446,9 +443,7 @@ private:
 
   //  Rotation methods:
   MStatus rotateTo(const MQuaternion &q, MSpace::Space = MSpace::kTransform) override;
-  MStatus rotateBy(const MQuaternion &q, MSpace::Space = MSpace::kTransform) override;
   MStatus rotateTo(const MEulerRotation &e, MSpace::Space = MSpace::kTransform) override;
-  MStatus rotateBy(const MEulerRotation &e, MSpace::Space = MSpace::kTransform) override;
   MStatus setRotateOrientation(const MQuaternion &q, MSpace::Space = MSpace::kTransform, bool balance = true) override;
   MStatus setRotateOrientation(const MEulerRotation &euler, MSpace::Space = MSpace::kTransform, bool balance = true) override;
 

@@ -18,6 +18,7 @@
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
+#include "AL/usdmaya/nodes/ProxyShape.h"
 
 #include "maya/MBoundingBox.h"
 #include "maya/MDataBlock.h"
@@ -35,6 +36,24 @@
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdUtils/stageCache.h"
+
+namespace {
+  // Simple RAII class to ensure boolean gets set to false when done.
+  struct TempBoolLock
+  {
+    TempBoolLock(bool& theVal) : theRef(theVal)
+    {
+      theRef = true;
+    }
+
+    ~TempBoolLock()
+    {
+      theRef = false;
+    }
+
+    bool& theRef;
+  };
+}
 
 namespace AL {
 namespace usdmaya {
@@ -112,11 +131,35 @@ MStatus Transform::initialise()
     mustCallValidateAndSet(m_readAnimatedValues);
     mustCallValidateAndSet(m_inStageData);
 
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_time, rotate), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_time, scale), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_time, translate), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_time, matrix), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_time, worldMatrix), errorString);
+
+    AL_MAYA_CHECK_ERROR(attributeAffects(m_time, m_outTime), errorString);
+    AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, m_outTime), errorString);
+    AL_MAYA_CHECK_ERROR(attributeAffects(m_timeScalar, m_outTime), errorString);
+
+    for(auto& inAttr : {m_time, m_timeOffset, m_timeScalar, m_primPath, m_inStageData, m_readAnimatedValues})
+    {
+      AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, translate), errorString);
+      AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, rotate), errorString);
+      AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, rotateOrder), errorString);
+      AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, scale), errorString);
+      AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, shear), errorString);
+      AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, rotatePivot), errorString);
+      AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, rotatePivotTranslate), errorString);
+      AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, scalePivot), errorString);
+      AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, scalePivotTranslate), errorString);
+      // Maya 2018 (checked 2018.2 and 2018.3) has a bug where, if any loaded plugin has an MPxTransform subclass
+      // that has ANY attribute that connected to rotateAxis, it will cause the rotateAxis to evaluate INCORRECTLY,
+      // even on the BASE transform class!
+      // See this gist for full reproduction details:
+      //   https://gist.github.com/elrond79/f9ddb277da3eab2948d27ddb1f84aba0
+#if MAYA_API_VERSION >= 20190000
+      AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, rotateAxis), errorString);
+#endif
+      AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, matrix), errorString);
+      AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, worldMatrix), errorString);
+      AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, inverseMatrix), errorString);
+      AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, worldInverseMatrix), errorString);
+    }
   }
   catch(const MStatus& status)
   {
@@ -135,16 +178,9 @@ MStatus Transform::initialise()
 MStatus Transform::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::compute %s\n", plug.name().asChar());
-  if(plug == m_time)
+  if(plug == m_time || plug == m_timeOffset || plug == m_timeScalar || plug == m_outTime)
   {
     updateTransform(dataBlock);
-    return MS::kSuccess;
-  }
-  else
-  if(plug == m_outTime)
-  {
-    MTime theTime = (inputTimeValue(dataBlock, m_time) - inputTimeValue(dataBlock, m_timeOffset)) * inputDoubleValue(dataBlock, m_timeScalar);
-    outputTimeValue(dataBlock, m_outTime, theTime);
     return MS::kSuccess;
   }
   else
@@ -168,6 +204,26 @@ MStatus Transform::compute(const MPlug& plug, MDataBlock& dataBlock)
     return status;
   }
 
+  // If the time is dirty, we need to make sure we calculate / update that BEFORE calculating our transform. Otherwise,
+  // we may read info for the wrong time from usd - and even worse, we may push that out-of-date info back to usd!
+  // So, we always trigger a compute of outTime to make sure it's up to date...
+
+  if (!dataBlock.isClean(m_outTime) && !plug.isNull())
+  {
+    // instead of checking if the attr is one in a giant list of attrs affected by m_time, I just check if it's
+    // affected by world space.
+    MStatus status;
+    MFnAttribute plugAttr(plug.attribute(), &status);
+    AL_MAYA_CHECK_ERROR(status, "error retrieving attribute");
+    if (plugAttr.isAffectsWorldSpace())
+    {
+      // NOTE: initially thought that I could just fetch value of "m_time" with inputTimeValue...but it appears there's
+      // a bug where validateAndSetValue is not called if there's an incoming connection to m_time, and we're not in GUI
+      // mode. So we just get the outTime, and rely on it's compute; since it's not writable, it's compute should always
+      // be called.
+      inputTimeValue(dataBlock, m_outTime);
+    }
+  }
   return MPxTransform::compute(plug, dataBlock);
 }
 
@@ -175,6 +231,15 @@ MStatus Transform::compute(const MPlug& plug, MDataBlock& dataBlock)
 void Transform::updateTransform(MDataBlock& dataBlock)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::updateTransform\n");
+
+  // It's possible that the calls to inputTimeValue below will ALSO trigger a call to
+  // updateTransform; since there's no need to run this twice, we check for this and
+  // abort if we're already in the middle of running.
+  // Note that we don't bother using, say, std::atomic_flag, because multithreaded
+  // collisions here seem unlikely, and the worst case is just that this function runs twice.
+  if (updateTransformInProgress) return;
+
+  TempBoolLock updateTransformLock(updateTransformInProgress);
 
   // compute updated time value
   MTime theTime = (inputTimeValue(dataBlock, m_time) - inputTimeValue(dataBlock, m_timeOffset)) * inputDoubleValue(dataBlock, m_timeScalar);
@@ -256,6 +321,34 @@ MBoundingBox Transform::boundingBox() const
     return MBoundingBox(minBound, maxBound);
   }
   return MPxTransform::boundingBox();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus Transform::connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc)
+{
+  if(!asSrc && plug == m_inStageData)
+  {
+    MFnDependencyNode otherNode(otherPlug.node());
+    if (otherNode.typeId() == ProxyShape::kTypeId)
+    {
+      proxyShapeHandle = otherPlug.node();
+    }
+  }
+  return MPxTransform::connectionMade(plug, otherPlug, asSrc);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus Transform::connectionBroken(const MPlug& plug, const MPlug& otherPlug, bool asSrc)
+{
+  if(!asSrc && plug == m_inStageData)
+  {
+    MFnDependencyNode otherNode(otherPlug.node());
+    if (otherNode.typeId() == ProxyShape::kTypeId)
+    {
+      proxyShapeHandle = MObject();
+    }
+  }
+  return MPxTransform::connectionBroken(plug, otherPlug, asSrc);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

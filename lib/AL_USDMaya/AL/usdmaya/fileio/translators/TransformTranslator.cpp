@@ -157,7 +157,11 @@ MObject TransformTranslator::createNode(const UsdPrim& from, MObject parent, con
 //----------------------------------------------------------------------------------------------------------------------
 MEulerRotation::RotationOrder convertRotationOrder(UsdGeomXformOp::Type type)
 {
-  switch (type) {
+  switch (type)
+  {
+  case UsdGeomXformOp::TypeRotateX:
+  case UsdGeomXformOp::TypeRotateY:
+  case UsdGeomXformOp::TypeRotateZ:
   case UsdGeomXformOp::TypeRotateXYZ:
     return MEulerRotation::kXYZ;
   case UsdGeomXformOp::TypeRotateXZY:
@@ -295,7 +299,6 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
         else if(attr_type == utils::UsdDataType::kFloat)
         {
           MObject attr;
-
           switch(*opIt)
           {
             case kRotate:
@@ -498,41 +501,20 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
   else
   {
     auto opIt = orderedOps.begin();
-    for(std::vector<UsdGeomXformOp>::const_iterator it = xformops.begin(), e = xformops.end(); it != e; ++it, ++opIt)
-    {
-      const UsdGeomXformOp& op = *it;
-      const SdfValueTypeName vtn = op.GetTypeName();
-      utils::UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
-      if(attr_type == utils::UsdDataType::kMatrix4d)
-      {
-        switch(op.GetOpType())
-        {
-        case UsdGeomXformOp::TypeTransform:
-          {
-            GfMatrix4d value;
-            const bool retValue = op.GetAs<GfMatrix4d>(&value, usdTime);
-            if(!retValue)
-            {
-              continue;
-            }
 
-            double S[3], T[3];
-            MEulerRotation R;
-            AL::usdmaya::utils::matrixToSRT(value, S, R, T);
-            MVector rotVector = R.asVector();
-            AL_MAYA_CHECK_ERROR2(setAngle(to, m_rotationX, MAngle(rotVector.x, MAngle::kRadians)), xformError);
-            AL_MAYA_CHECK_ERROR2(setAngle(to, m_rotationY, MAngle(rotVector.y, MAngle::kRadians)), xformError);
-            AL_MAYA_CHECK_ERROR2(setAngle(to, m_rotationZ, MAngle(rotVector.z, MAngle::kRadians)), xformError);
-            AL_MAYA_CHECK_ERROR2(setVec3(to, m_translation, T[0], T[1], T[2]), xformError);
-            AL_MAYA_CHECK_ERROR2(setVec3(to, m_scale, S[0], S[1], S[2]), xformError);
-          }
-          break;
+    bool resetsXformStack = false;
+    GfMatrix4d value;
+    xformSchema.GetLocalTransformation(&value, &resetsXformStack, usdTime);
 
-        default:
-          break;
-        };
-      }
-    }
+    double S[3], T[3];
+    MEulerRotation R;
+    AL::usdmaya::utils::matrixToSRT(value, S, R, T);
+    MVector rotVector = R.asVector();
+    AL_MAYA_CHECK_ERROR2(setAngle(to, m_rotationX, MAngle(rotVector.x, MAngle::kRadians)), xformError);
+    AL_MAYA_CHECK_ERROR2(setAngle(to, m_rotationY, MAngle(rotVector.y, MAngle::kRadians)), xformError);
+    AL_MAYA_CHECK_ERROR2(setAngle(to, m_rotationZ, MAngle(rotVector.z, MAngle::kRadians)), xformError);
+    AL_MAYA_CHECK_ERROR2(setVec3(to, m_translation, T[0], T[1], T[2]), xformError);
+    AL_MAYA_CHECK_ERROR2(setVec3(to, m_scale, S[0], S[1], S[2]), xformError);
   }
 
   AL_MAYA_CHECK_ERROR2(setBool(to, m_inheritsTransform, !resetsXformStack), xformError);

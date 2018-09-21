@@ -15,18 +15,16 @@ set(
 
 # Bake library name
 configure_file (
-    ./plugInfo.json.in
-    ${CMAKE_CURRENT_SOURCE_DIR}/plugInfo.json
+    plugInfo.json.in
+    ./plugInfo.json
     @ONLY
 )
 
 list(APPEND DEPENDANT_LIBRARIES ${PYTHON_LIBRARIES} usd usdGeom)
 
 ####################################################################################################
-# Schemas generation and validation
+# Schemas generation
 ####################################################################################################
-
-if(VALIDATE_GENERATED_SCHEMAS)
 
 # Bake library name, tokens prefix and usd schemas path
 set(USD_SCHEMA_PATH usd/schema.usda)
@@ -38,18 +36,17 @@ configure_file (
 
 execute_process(
     COMMAND
-        usdGenSchema
-            ${CMAKE_CURRENT_BINARY_DIR}/schema.usda
-            .
+        python
+        ${USD_GENSCHEMA}
+        ${CMAKE_CURRENT_BINARY_DIR}/schema.usda
+        .
     WORKING_DIRECTORY
-        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_BINARY_DIR}
     RESULT_VARIABLE
         usdgen_res
 )
 if(usdgen_res)
     message(FATAL_ERROR "Schemas generation failed")
-endif()
-
 endif()
 
 ####################################################################################################
@@ -209,7 +206,7 @@ file(RELATIVE_PATH
 
 # Bake relative path
 configure_file(
-    ./plugInfo.json
+    ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
     .
 )
 
@@ -219,7 +216,7 @@ install(
 )
 
 install(
-    FILES generatedSchema.usda 
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/generatedSchema.usda 
     DESTINATION ${resources_install_path}
 )
 
