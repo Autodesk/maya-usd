@@ -176,12 +176,14 @@ bool AnimationTranslator::isAnimatedMesh(const MDagPath& mesh)
     MItDependencyGraph::kDepthFirst,
     MItDependencyGraph::kNodeLevel,
     &status);
-  iter.setTraversalOverWorldSpaceDependents(true);
+
   if (!status)
   {
     MGlobal::displayError("Unable to create DG iterator");
     return false;
   }
+  iter.setTraversalOverWorldSpaceDependents(true);
+
   for (; !iter.isDone(); iter.next())
   {
     MObject currNode = iter.thisPlug().node();
