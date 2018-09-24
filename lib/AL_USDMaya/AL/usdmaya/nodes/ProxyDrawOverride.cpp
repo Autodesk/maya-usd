@@ -66,7 +66,7 @@ MUint64 ProxyDrawOverride::s_lastRefreshFrameStamp = 0;
 //----------------------------------------------------------------------------------------------------------------------
 ProxyDrawOverride::ProxyDrawOverride(const MObject& obj)
 #if MAYA_API_VERSION >= 201700
-  : MHWRender::MPxDrawOverride(obj, draw, false)
+  : MHWRender::MPxDrawOverride(obj, draw, true)
 #else
   : MHWRender::MPxDrawOverride(obj, draw)
 #endif
