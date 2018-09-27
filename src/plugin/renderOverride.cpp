@@ -51,6 +51,8 @@
 
 #include <hdmaya/utils.h>
 
+#include "pluginDebugCodes.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens, (HdStreamRendererPlugin));
@@ -333,6 +335,8 @@ void MtohRenderOverride::SetColorSelectionHighlightColor(const GfVec4d& color) {
 }
 
 MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
+    TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
+        .Msg("MtohRenderOverride::Render()\n");
     auto renderFrame = [&]() {
         const auto originX = 0;
         const auto originY = 0;
