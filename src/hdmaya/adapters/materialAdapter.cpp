@@ -41,9 +41,12 @@
 
 #include <pxr/usdImaging/usdImagingGL/package.h>
 
+#include <pxr/imaging/glf/glslfx.h>
 #include <pxr/imaging/hdSt/textureResource.h>
 
 #include <pxr/usd/sdf/types.h>
+
+#include <pxr/usd/sdr/registry.h>
 
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
@@ -94,7 +97,11 @@ HdMayaShaderParams::const_iterator _FindPreviewParam(const TfToken& id) {
 
 static const std::pair<std::string, std::string> _previewShaderSource =
     []() -> std::pair<std::string, std::string> {
-    GlfGLSLFX gfx(UsdImagingGLPackagePreviewSurfaceShader());
+    auto& registry = SdrRegistry::GetInstance();
+    auto sdrNode = registry.GetShaderNodeByIdentifierAndType(
+        UsdImagingTokens->UsdPreviewSurface, GlfGLSLFXTokens->glslfx);
+    if (!sdrNode) { return {"", ""}; }
+    GlfGLSLFX gfx(sdrNode->GetSourceURI());
     return {gfx.GetSurfaceSource(), gfx.GetDisplacementSource()};
 }();
 
@@ -481,7 +488,8 @@ private:
 
     inline TfToken _GetTextureFilePath(const MFnDependencyNode& fileNode) {
 #ifdef USD_HDST_UDIM_BUILD
-        if (fileNode.findPlug(MayaAttrs::file::uvTilingMode, true).asShort() != 0) {
+        if (fileNode.findPlug(MayaAttrs::file::uvTilingMode, true).asShort() !=
+            0) {
             auto ret =
                 fileNode.findPlug(MayaAttrs::file::fileTextureNamePattern, true)
                     .asString();
@@ -495,7 +503,9 @@ private:
             return TfToken(ret.asChar());
         }
 #endif
-        return TfToken(fileNode.findPlug(MayaAttrs::file::fileTextureName, true).asString().asChar());
+        return TfToken(fileNode.findPlug(MayaAttrs::file::fileTextureName, true)
+                           .asString()
+                           .asChar());
     }
 
     HdTextureResourceSharedPtr GetTextureResource(
@@ -561,7 +571,8 @@ private:
     MObject GetConnectedFileNode(
         const MFnDependencyNode& node, const TfToken& paramName) {
         MPlugArray conns;
-        node.findPlug(paramName.GetText(), true).connectedTo(conns, true, false);
+        node.findPlug(paramName.GetText(), true)
+            .connectedTo(conns, true, false);
         if (conns.length() == 0) { return MObject::kNullObj; }
         const auto ret = conns[0].node();
         if (ret.apiType() == MFn::kFileTexture) { return ret; }

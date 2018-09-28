@@ -213,10 +213,10 @@ MtohRenderOverride::MtohRenderOverride()
     : MHWRender::MRenderOverride(MTOH_RENDER_OVERRIDE_NAME),
       _selectionTracker(new HdxSelectionTracker),
       _renderCollection(
-          HdTokens->geometry,
-          HdReprSelector(HdTokens->smoothHull),
+          HdTokens->geometry, HdReprSelector(HdReprTokens->smoothHull),
           SdfPath::AbsoluteRootPath()),
-      _selectionCollection(HdTokens->wire, HdReprSelector(HdTokens->wire)),
+      _selectionCollection(
+          HdReprTokens->wire, HdReprSelector(HdReprTokens->wire)),
       _colorSelectionHighlightColor(1.0f, 1.0f, 0.0f, 0.5f) {
     _needsClear.store(false);
     HdMayaDelegateRegistry::InstallDelegatesChangedSignal(
@@ -342,9 +342,10 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 
         GfVec4d viewport(originX, originY, width, height);
         _taskController->SetCameraMatrices(
-            GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
             GetGfMatrixFromMaya(
-                drawContext.getMatrix(MHWRender::MFrameContext::kProjectionMtx)));
+                drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
+            GetGfMatrixFromMaya(drawContext.getMatrix(
+                MHWRender::MFrameContext::kProjectionMtx)));
         _taskController->SetCameraViewport(viewport);
 
         _engine.Execute(
@@ -394,7 +395,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 
     HdxRenderTaskParams params;
     params.enableLighting = true;
-    params.enableHardwareShading = true;
+    params.enableSceneMaterials = true;
 
     if (displayStyle & MHWRender::MFrameContext::kBoundingBox) {
         params.complexity = HdComplexityBoundingBox;
