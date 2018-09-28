@@ -333,8 +333,8 @@ HdPrimvarDescriptorVector HdMayaSceneDelegate::GetPrimvarDescriptors(
     const SdfPath& id, HdInterpolation interpolation) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_PRIMVAR_DESCRIPTORS)
         .Msg(
-            "HdMayaSceneDelegate::GetPrimvarDescriptors(%s, %i)\n", id.GetText(),
-            interpolation);
+            "HdMayaSceneDelegate::GetPrimvarDescriptors(%s, %i)\n",
+            id.GetText(), interpolation);
     return _GetValue<HdMayaShapeAdapter, HdPrimvarDescriptorVector>(
         id,
         [&interpolation](HdMayaShapeAdapter* a) -> HdPrimvarDescriptorVector {
@@ -446,8 +446,8 @@ VtValue HdMayaSceneDelegate::GetMaterialParamValue(
     const SdfPath& id, const TfToken& paramName) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_PARAM_VALUE)
         .Msg(
-            "HdMayaSceneDelegate::GetMaterialParamValue(%s, %s)\n", id.GetText(),
-            paramName.GetText());
+            "HdMayaSceneDelegate::GetMaterialParamValue(%s, %s)\n",
+            id.GetText(), paramName.GetText());
     if (id == _fallbackMaterial) {
         return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(paramName);
     }
@@ -514,7 +514,8 @@ HdTextureResourceSharedPtr HdMayaSceneDelegate::GetTextureResource(
     const SdfPath& textureId) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE)
         .Msg(
-            "HdMayaSceneDelegate::GetTextureResource(%s)\n", textureId.GetText());
+            "HdMayaSceneDelegate::GetTextureResource(%s)\n",
+            textureId.GetText());
     return _GetValue<HdMayaMaterialAdapter, HdTextureResourceSharedPtr>(
         textureId.GetPrimPath(),
         [&textureId](HdMayaMaterialAdapter* a) -> HdTextureResourceSharedPtr {

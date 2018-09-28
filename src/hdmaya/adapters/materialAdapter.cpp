@@ -69,7 +69,8 @@ const TfTokenVector _stSamplerCoords = {TfToken("st")};
 // Specialized version of :
 // https://en.cppreference.com/w/cpp/algorithm/lower_bound
 HdMayaShaderParams::const_iterator _FindPreviewParam(const TfToken& id) {
-    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS).Msg("_FindPreviewParam(id=%s)\n", id.GetText());
+    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+        .Msg("_FindPreviewParam(id=%s)\n", id.GetText());
     HdMayaShaderParams::const_iterator it;
     typename std::iterator_traits<
         HdMayaShaderParams::const_iterator>::difference_type count,
@@ -207,7 +208,8 @@ HdTextureResourceSharedPtr HdMayaMaterialAdapter::GetTextureResource(
 }
 
 VtValue HdMayaMaterialAdapter::GetMaterialResource() {
-    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS).Msg("HdMayaMaterialAdapter::GetMaterialResource()\n");
+    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+        .Msg("HdMayaMaterialAdapter::GetMaterialResource()\n");
     return GetPreviewMaterialResource(GetID());
 }
 
@@ -311,7 +313,10 @@ private:
             MFnDependencyNode surfaceNode(_surfaceShader, &status);
             if (ARCH_UNLIKELY(!status)) { return; }
             _surfaceShaderType = TfToken(surfaceNode.typeName().asChar());
-            TF_DEBUG(HDMAYA_ADAPTER_MATERIALS).Msg("Found surfaceShader %s[%s]\n", surfaceNode.name().asChar(), _surfaceShaderType.GetText());
+            TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+                .Msg(
+                    "Found surfaceShader %s[%s]\n", surfaceNode.name().asChar(),
+                    _surfaceShaderType.GetText());
         }
     }
 
@@ -341,7 +346,10 @@ private:
                         const std::pair<TfToken, TfToken>& p) -> bool {
                         if (p.first == remappedName) {
                             remappedName = p.second;
-                            TF_DEBUG(HDMAYA_ADAPTER_MATERIALS).Msg("Found remapped material param %s\n", remappedName.GetText());
+                            TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+                                .Msg(
+                                    "Found remapped material param %s\n",
+                                    remappedName.GetText());
                             return true;
                         }
                         return false;
@@ -584,7 +592,8 @@ private:
     }
 
     VtValue GetMaterialResource() override {
-        TF_DEBUG(HDMAYA_ADAPTER_MATERIALS).Msg("HdMayaShadingEngineAdapter::GetMaterialResource()\n");
+        TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+            .Msg("HdMayaShadingEngineAdapter::GetMaterialResource()\n");
         HdMaterialNetwork materialNetwork;
         HdMayaMaterialNetworkConverter converter(materialNetwork, GetID());
         if (converter.GetMaterial(_surfaceShader).IsEmpty()) {

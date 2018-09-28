@@ -99,7 +99,8 @@ void ConvertUsdPreviewSurface(
 void ConvertLambert(
     HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
     MFnDependencyNode& node) {
-    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS).Msg("ConvertLambert(node=%s)\n", node.name().asChar());
+    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+        .Msg("ConvertLambert(node=%s)\n", node.name().asChar());
     for (const auto& param : _previewShaderParams) {
         const VtValue* fallback = &param.param.GetFallbackValue();
         if (param.param.GetName() == HdMayaAdapterTokens->diffuseColor) {
@@ -157,21 +158,21 @@ void ConvertFile(
     MFnDependencyNode& node) {
     std::string fileTextureName{};
     if (node.findPlug(MayaAttrs::file::uvTilingMode, true).asShort() != 0) {
-        fileTextureName = node.findPlug(MayaAttrs::file::fileTextureNamePattern,
-                                        true)
-                              .asString()
-                              .asChar();
+        fileTextureName =
+            node.findPlug(MayaAttrs::file::fileTextureNamePattern, true)
+                .asString()
+                .asChar();
         if (fileTextureName.empty()) {
             fileTextureName =
-                node.findPlug(MayaAttrs::file::computedFileTextureNamePattern,
-                              true)
+                node.findPlug(
+                        MayaAttrs::file::computedFileTextureNamePattern, true)
                     .asString()
                     .asChar();
         }
     } else {
         fileTextureName = node.findPlug(MayaAttrs::file::fileTextureName, true)
-                .asString()
-                .asChar();
+                              .asString()
+                              .asChar();
     }
     material.parameters[HdMayaAdapterTokens->file] =
         VtValue(SdfAssetPath(fileTextureName, fileTextureName));
@@ -228,7 +229,8 @@ SdfPath HdMayaMaterialNetworkConverter::GetMaterial(const MObject& mayaNode) {
     if (ARCH_UNLIKELY(!status)) { return {}; }
     const auto* chr = node.name().asChar();
     if (chr == nullptr || chr[0] == '\0') { return {}; }
-    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS).Msg("HdMayaMaterialNetworkConverter::GetMaterial(node=%s)\n", chr);
+    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+        .Msg("HdMayaMaterialNetworkConverter::GetMaterial(node=%s)\n", chr);
     std::string usdPathStr(chr);
     // replace namespace ":" with "_"
     std::replace(usdPathStr.begin(), usdPathStr.end(), ':', '_');
