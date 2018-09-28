@@ -3,7 +3,8 @@ set(SRC
     renderOverride.cpp
     shadingModeExporter.cpp
     usdPreviewSurface.cpp
-    viewCommand.cpp)
+    viewCommand.cpp
+    pluginDebugCodes.cpp)
 
 add_library(mtoh SHARED ${SRC})
 target_link_libraries(mtoh PRIVATE hdmaya usdShade)

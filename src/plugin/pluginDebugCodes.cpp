@@ -21,21 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef __HDMAYA_ADAPTER_DEBUG_CODES_H__
-#define __HDMAYA_ADAPTER_DEBUG_CODES_H__
+#include "pluginDebugCodes.h"
 
-#include <pxr/pxr.h>
-
-#include <pxr/base/tf/debug.h>
+#include <pxr/base/tf/registryManager.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEBUG_CODES(
-    HDMAYA_ADAPTER_GET, HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE,
-    HDMAYA_ADAPTER_LIGHT_SHADOWS, HDMAYA_ADAPTER_DAG_PLUG_DIRTY,
-    HDMAYA_ADAPTER_MESH_PLUG_DIRTY, HDMAYA_ADAPTER_MESH_UNHANDLED_PLUG_DIRTY,
-    HDMAYA_ADAPTER_IMAGEPLANES, HDMAYA_ADAPTER_MATERIALS);
+TF_REGISTRY_FUNCTION(TfDebug) {
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_PLUGIN_RENDEROVERRIDE,
+        "Print information about Maya VP2 RenderOverride calls.");
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // __HDMAYA_ADAPTER_DEBUG_CODES_H__

@@ -56,6 +56,10 @@ TF_REGISTRY_FUNCTION(TfDebug) {
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_ADAPTER_IMAGEPLANES,
         "Print information about drawing image planes.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_ADAPTER_MATERIALS,
+        "Print information about converting materials.");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

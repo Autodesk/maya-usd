@@ -99,6 +99,7 @@ void ConvertUsdPreviewSurface(
 void ConvertLambert(
     HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
     MFnDependencyNode& node) {
+    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS).Msg("ConvertLambert(node=%s)\n", node.name().asChar());
     for (const auto& param : _previewShaderParams) {
         const VtValue* fallback = &param.param.GetFallbackValue();
         if (param.param.GetName() == HdMayaAdapterTokens->diffuseColor) {
@@ -227,6 +228,7 @@ SdfPath HdMayaMaterialNetworkConverter::GetMaterial(const MObject& mayaNode) {
     if (ARCH_UNLIKELY(!status)) { return {}; }
     const auto* chr = node.name().asChar();
     if (chr == nullptr || chr[0] == '\0') { return {}; }
+    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS).Msg("HdMayaMaterialNetworkConverter::GetMaterial(node=%s)\n", chr);
     std::string usdPathStr(chr);
     // replace namespace ":" with "_"
     std::replace(usdPathStr.begin(), usdPathStr.end(), ':', '_');
