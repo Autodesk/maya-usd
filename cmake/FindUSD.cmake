@@ -5,7 +5,8 @@ find_path(USD_INCLUDE_DIR pxr/pxr.h
           $ENV{USD_ROOT}/include
           DOC "USD Include directory")
 
-find_path(USD_LIBRARY_DIR libusd.so
+find_path(USD_LIBRARY_DIR
+          NAMES libusd.so libusd.dylib usd.dll
           PATHS ${USD_ROOT}/lib
           $ENV{USD_ROOT}/lib
           DOC "USD Libraries directory")
@@ -19,7 +20,8 @@ find_path(USD_MAYA_INCLUDE_DIR usdMaya/api.h
           $ENV{USD_MAYA_ROOT}/third_party/maya/include
           DOC "USD Maya Include directory")
 
-find_path(USD_MAYA_LIBRARY_DIR libusdMaya.so
+find_path(USD_MAYA_LIBRARY_DIR
+          NAMES libusdMaya.so libusdMaya.dylib usdMaya.dll
           PATHS ${USD_ROOT}/third_party/maya/lib
           $ENV{USD_ROOT}/third_party/maya/lib
           ${USD_MAYA_ROOT}/third_party/maya/lib
@@ -35,7 +37,8 @@ find_path(USD_KATANA_INCLUDE_DIR usdKatana/api.h
           $ENV{USD_KATANA_ROOT}/third_party/katana/include
           DOC "USD Katana Include directory")
 
-find_path(USD_KATANA_LIBRARY_DIR libusdKatana.so
+find_path(USD_KATANA_LIBRARY_DIR
+          NAMES libusdKatana.so libusdKatana.dylib usdKatana.dll
           PATHS ${USD_ROOT}/third_party/katana/lib
           $ENV{USD_ROOT}/third_party/katana/lib
           ${USD_KATANA_ROOT}/third_party/katana/lib
@@ -51,7 +54,8 @@ find_path(USD_HOUDINI_INCLUDE_DIR gusd/api.h
           $ENV{USD_HOUDINI_ROOT}/third_party/houdini/include
           DOC "USD Houdini Include directory")
 
-find_path(USD_HOUDINI_LIBRARY_DIR libgusd.so
+find_path(USD_HOUDINI_LIBRARY_DIR
+          NAMES libgusd.so libgusd.dylib gusd.dll
           PATHS ${USD_ROOT}/third_party/houdini/lib
           $ENV{USD_ROOT}/third_party/houdini/lib
           ${USD_HOUDINI_ROOT}/third_party/houdini/lib

@@ -119,7 +119,7 @@ public:
             MHWRender::MFrameContext::kExcludeLights);
     }
 
-    MHWRender::MClearOperation& clearOperation() {
+    MHWRender::MClearOperation& clearOperation() override {
         auto* renderer = MHWRender::MRenderer::theRenderer();
         const auto gradient = renderer->useGradient();
         const auto color1 = renderer->clearColor();
@@ -144,7 +144,7 @@ public:
         return ~MHWRender::MFrameContext::kExcludeManipulators;
     }
 
-    MHWRender::MClearOperation& clearOperation() {
+    MHWRender::MClearOperation& clearOperation() override {
         mClearOperation.setMask(MHWRender::MClearOperation::kClearNone);
         return mClearOperation;
     }

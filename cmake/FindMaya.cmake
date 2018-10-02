@@ -220,7 +220,10 @@ find_path(MAYA_INCLUDE_DIR maya/MFn.h
           PATH_SUFFIXES
           include               # linux and windows
           ../../devkit/include  # osx
+          ../../include  # newer osx
           DOC "Maya's include path")
+
+message(STATUS "Maya Include Dir: ${MAYA_INCLUDE_DIR}")
 
 LIST(APPEND MAYA_INCLUDE_DIRS ${MAYA_INCLUDE_DIR})
 
@@ -233,7 +236,9 @@ FIND_PATH(MAYA_DEVKIT_INC_DIR GL/glext.h
           ../../devkit/plug-ins   # osx
           DOC "Maya's devkit headers path"
           )
-LIST(APPEND MAYA_INCLUDE_DIRS ${MAYA_DEVKIT_INC_DIR})
+if (MAYA_DEVKIT_INC_DIR)
+    LIST(APPEND MAYA_INCLUDE_DIRS ${MAYA_DEVKIT_INC_DIR})
+endif ()
 
 
 find_path(MAYA_LIBRARY_DIRS libOpenMaya.dylib libOpenMaya.so OpenMaya.lib
