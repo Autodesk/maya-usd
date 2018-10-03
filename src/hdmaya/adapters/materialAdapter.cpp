@@ -97,18 +97,20 @@ HdMayaShaderParams::const_iterator _FindPreviewParam(const TfToken& id) {
                : first;
 };
 
-static const std::pair<std::string, std::string> _previewShaderSource =
-    []() -> std::pair<std::string, std::string> {
-    auto& registry = SdrRegistry::GetInstance();
-    auto sdrNode = registry.GetShaderNodeByIdentifierAndType(
-        UsdImagingTokens->UsdPreviewSurface, GlfGLSLFXTokens->glslfx);
-    if (!sdrNode) { return {"", ""}; }
-    GlfGLSLFX gfx(sdrNode->GetSourceURI());
-    return {gfx.GetSurfaceSource(), gfx.GetDisplacementSource()};
-}();
+auto _PreviewShaderSource = []() -> std::pair<std::string, std::string> {
+    static const auto ret = []() -> std::pair<std::string, std::string> {
+        auto &registry = SdrRegistry::GetInstance();
+        auto sdrNode = registry.GetShaderNodeByIdentifierAndType(
+            UsdImagingTokens->UsdPreviewSurface, GlfGLSLFXTokens->glslfx);
+        if (!sdrNode) { return {"", ""}; }
+        GlfGLSLFX gfx(sdrNode->GetSourceURI());
+        return {gfx.GetSurfaceSource(), gfx.GetDisplacementSource()};
+    }();
+    return ret;
+};
 
 std::unordered_map<
-    TfToken, std::vector<std::pair<TfToken, TfToken>>, TfToken::HashFunctor>
+    TfToken, std::vector<std::pair<TfToken, TfToken> >, TfToken::HashFunctor>
     _materialParamRemaps{
         {HdMayaAdapterTokens->lambert,
          {
@@ -218,11 +220,11 @@ const HdMaterialParamVector& HdMayaMaterialAdapter::GetPreviewMaterialParams() {
 }
 
 const std::string& HdMayaMaterialAdapter::GetPreviewSurfaceSource() {
-    return _previewShaderSource.first;
+    return _PreviewShaderSource().first;
 }
 
 const std::string& HdMayaMaterialAdapter::GetPreviewDisplacementSource() {
-    return _previewShaderSource.second;
+    return _PreviewShaderSource().second;
 }
 
 const VtValue& HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
