@@ -104,6 +104,7 @@ private:
     static void ClearHydraCallback(void*);
     void SelectionChanged();
     static void SelectionChangedCallback(void*);
+    void ConfigureLighting(const MHWRender::MDrawContext& drawContext);
 
     std::vector<MHWRender::MRenderOperation*> _operations;
     std::vector<MCallbackId> _callbacks;
