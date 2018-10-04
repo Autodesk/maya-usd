@@ -362,13 +362,11 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     if (!_initializedViewport) {
         GlfGlewInit();
         InitHydraResources();
-#if USD_HDST_SHADOWS_BUILD
         if (_preferSimpleLight) {
             _taskController->SetEnableShadows(false);
             renderFrame();
             _taskController->SetEnableShadows(true);
         }
-#endif
     }
 
     const auto displayStyle = drawContext.getDisplayStyle();
@@ -380,7 +378,6 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         it->PreFrame();
     }
 
-#ifdef USD_HDST_SHADOWS_BUILD
     // TODO: Is there a way to improve this? Quite silly.
     auto enableShadows = true;
     auto* lightParam = drawContext.getLightParameterInformation(
@@ -395,7 +392,6 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         }
     }
     _taskController->SetEnableShadows(enableShadows);
-#endif
 
     HdxRenderTaskParams params;
     params.enableLighting = true;
@@ -420,12 +416,10 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     params.cullStyle = HdCullStyleBackUnlessDoubleSided;
 
     _taskController->SetRenderParams(params);
-#ifdef USD_HDST_SHADOWS_BUILD
     HdxShadowTaskParams shadowParams;
     shadowParams.cullStyle = HdCullStyleNothing;
 
     _taskController->SetShadowParams(shadowParams);
-#endif
 
     // Default color in usdview.
     _taskController->SetSelectionColor(_colorSelectionHighlightColor);
@@ -480,9 +474,7 @@ void MtohRenderOverride::InitHydraResources() {
             "_UsdImaging_%s_%p",
             TfMakeValidIdentifier(_rendererName.GetText()).c_str(), this))));
 
-#ifdef USD_HDST_SHADOWS_BUILD
     _taskController->SetEnableShadows(true);
-#endif
     VtValue selectionTrackerValue(_selectionTracker);
     _engine.SetTaskContextData(
         HdxTokens->selectionState, selectionTrackerValue);

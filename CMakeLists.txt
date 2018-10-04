@@ -11,7 +11,6 @@ if (UNIX AND NOT APPLE)
 endif ()
 
 option(LUMA_USD_BUILD "Build the plugin for Luma's version of USD." OFF)
-option(USD_HDST_SHADOWS_BUILD "Enable PR-541 for USD." OFF)
 option(USD_HDST_UDIM_BUILD "Enable PR-597 for USD." OFF)
 
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_SOURCE_DIR}/cmake)

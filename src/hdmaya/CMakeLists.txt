@@ -55,10 +55,6 @@ if (LUMA_USD_BUILD)
     target_compile_definitions(hdmaya PRIVATE LUMA_USD_BUILD)
 endif ()
 
-if (USD_HDST_SHADOWS_BUILD)
-    target_compile_definitions(hdmaya PRIVATE USD_HDST_SHADOWS_BUILD)
-endif ()
-
 if (USD_HDST_UDIM_BUILD)
     target_compile_definitions(hdmaya PRIVATE USD_HDST_UDIM_BUILD)
 endif ()
