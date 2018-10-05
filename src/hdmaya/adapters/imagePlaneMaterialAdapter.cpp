@@ -97,9 +97,11 @@ public:
         const SdfPath& id, HdMayaDelegateCtx* delegate, const MObject& obj)
         : HdMayaMaterialAdapter(id, delegate, obj) {}
 
-    std::string GetSurfaceShaderSource() { return _textureShaderSource.first; }
+    std::string GetSurfaceShaderSource() override {
+        return _textureShaderSource.first;
+    }
 
-    std::string GetDisplacementShaderSource() {
+    std::string GetDisplacementShaderSource() override {
         return _textureShaderSource.second;
     }
 
@@ -117,12 +119,15 @@ public:
         const auto filePath = _GetTextureFilePath(node);
         auto textureId = _GetTextureResourceID(filePath);
         if (textureId != HdTextureResource::ID(-1)) {
+            HdResourceRegistry::TextureKey textureKey =
+                GetDelegate()->GetRenderIndex().GetTextureKey(textureId);
             const auto& resourceRegistry =
                 GetDelegate()->GetRenderIndex().GetResourceRegistry();
-            HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr>
+            HdInstance<
+                HdResourceRegistry::TextureKey, HdTextureResourceSharedPtr>
                 textureInstance;
             auto regLock = resourceRegistry->RegisterTextureResource(
-                textureId, &textureInstance);
+                textureKey, &textureInstance);
             if (textureInstance.IsFirstInstance()) {
                 auto textureResource = _GetTextureResource(filePath);
                 _textureResources[paramName] = textureResource;

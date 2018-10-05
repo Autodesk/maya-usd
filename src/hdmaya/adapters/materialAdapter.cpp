@@ -99,7 +99,7 @@ HdMayaShaderParams::const_iterator _FindPreviewParam(const TfToken& id) {
 
 auto _PreviewShaderSource = []() -> std::pair<std::string, std::string> {
     static const auto ret = []() -> std::pair<std::string, std::string> {
-        auto &registry = SdrRegistry::GetInstance();
+        auto& registry = SdrRegistry::GetInstance();
         auto sdrNode = registry.GetShaderNodeByIdentifierAndType(
             UsdImagingTokens->UsdPreviewSurface, GlfGLSLFXTokens->glslfx);
         if (!sdrNode) { return {"", ""}; }
@@ -110,7 +110,7 @@ auto _PreviewShaderSource = []() -> std::pair<std::string, std::string> {
 };
 
 std::unordered_map<
-    TfToken, std::vector<std::pair<TfToken, TfToken> >, TfToken::HashFunctor>
+    TfToken, std::vector<std::pair<TfToken, TfToken>>, TfToken::HashFunctor>
     _materialParamRemaps{
         {HdMayaAdapterTokens->lambert,
          {
@@ -395,12 +395,15 @@ private:
                 _GetTextureFilePath(MFnDependencyNode(connectedFileObj));
             auto textureId = _GetTextureResourceID(filePath);
             if (textureId != HdTextureResource::ID(-1)) {
+                HdResourceRegistry::TextureKey textureKey =
+                    GetDelegate()->GetRenderIndex().GetTextureKey(textureId);
                 const auto& resourceRegistry =
                     GetDelegate()->GetRenderIndex().GetResourceRegistry();
-                HdInstance<HdTextureResource::ID, HdTextureResourceSharedPtr>
+                HdInstance<
+                    HdResourceRegistry::TextureKey, HdTextureResourceSharedPtr>
                     textureInstance;
                 auto regLock = resourceRegistry->RegisterTextureResource(
-                    textureId, &textureInstance);
+                    textureKey, &textureInstance);
                 if (textureInstance.IsFirstInstance()) {
                     auto textureResource = _GetTextureResource(filePath);
                     _textureResources[paramName] = textureResource;
