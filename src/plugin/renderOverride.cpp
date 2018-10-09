@@ -39,6 +39,7 @@
 #include <maya/MEventMessage.h>
 #include <maya/MGlobal.h>
 #include <maya/MNodeMessage.h>
+#include <maya/MProfiler.h>
 #include <maya/MSceneMessage.h>
 #include <maya/MSelectionList.h>
 #include <maya/MTimerMessage.h>
@@ -48,6 +49,7 @@
 #include <exception>
 
 #include <hdmaya/delegates/delegateRegistry.h>
+#include <hdmaya/delegates/sceneDelegate.h>
 
 #include <hdmaya/utils.h>
 
@@ -65,6 +67,8 @@ constexpr auto MTOH_DEFAULT_RENDERER_PLUGIN_NAME =
     "MTOH_DEFAULT_RENDERER_PLUGIN";
 
 constexpr auto MTOH_RENDER_OVERRIDE_NAME = "hydraViewportOverride";
+
+int HDMAYA_PROFILER_CATEGORY = MProfiler::addCategory("MayaToHydra");
 
 // I don't think there is an easy way to detect if the viewport was changed,
 // so I'm adding a 5 second timeout.
@@ -334,13 +338,19 @@ void MtohRenderOverride::SetColorSelectionHighlightColor(const GfVec4d& color) {
     GetInstance()._colorSelectionHighlightColor = GfVec4f(color);
 }
 
-void MtohRenderOverride::ConfigureLighting(const MHWRender::MDrawContext& drawContext) {
+void MtohRenderOverride::ConfigureLighting(
+    const MHWRender::MDrawContext& drawContext) {
+    MProfilingScope profilingScope(
+        HDMAYA_PROFILER_CATEGORY, MProfiler::kColorD_L1, "ConfigureLighting",
+        "MtohRenderOverride::ConfigureLighting");
+
     MHWRender::MDrawContext::LightFilter considerAllSceneLights =
         MHWRender::MDrawContext::kFilteredIgnoreLightLimit;
 
     GlfSimpleLightVector lights;
     uint32_t numLights =
         drawContext.numberOfActiveLights(considerAllSceneLights);
+    bool foundMayaDefaultLight = false;
     if (numLights == 1) {
         MStatus status;
         MHWRender::MLightParameterInformation* lightParam =
@@ -348,7 +358,8 @@ void MtohRenderOverride::ConfigureLighting(const MHWRender::MDrawContext& drawCo
         if (lightParam) {
             MDagPath lightPath = lightParam->lightPath(&status);
             if (!status) { // This light does not exist so it must be the
-                           // default maya light
+                // default maya light
+                foundMayaDefaultLight = true;
                 GlfSimpleLight light;
                 MFloatPointArray positions;
                 MFloatVector direction;
@@ -356,146 +367,74 @@ void MtohRenderOverride::ConfigureLighting(const MHWRender::MDrawContext& drawCo
                 MColor color;
                 bool hasDirection;
                 bool hasPosition;
+
+                // Maya default light has no position, only direction
                 drawContext.getLightInformation(
                     0, positions, direction, intensity, color, hasDirection,
                     hasPosition, considerAllSceneLights);
-                if (hasPosition) {
-                    if (positions.length() == 1) {
-                        GfVec4f pos(
-                            positions[0].x, positions[0].y, positions[0].z,
-                            positions[0].w);
-                        light.SetPosition(pos);
-                    } else {
-                        MFloatPoint fp(0, 0, 0);
-                        for (uint32_t j = 0; j < positions.length(); ++j) {
-                            fp += positions[j];
-                        }
-                        float value = (1.0f / positions.length());
-                        fp.x *= value;
-                        fp.y *= value;
-                        fp.z *= value;
-                        light.SetPosition(GfVec4f(fp.x, fp.y, fp.z, 1.0f));
-                    }
-                }
-
-                if (hasDirection) {
-                    GfVec3f dir(direction.x, direction.y, direction.z);
-                    light.SetSpotDirection(dir);
-                }
-
-                MStringArray paramNames;
-                lightParam->parameterList(paramNames);
-                for (uint32_t i = 0, n = paramNames.length(); i != n; ++i) {
-                    auto semantic =
-                        lightParam->parameterSemantic(paramNames[i]);
-                    switch (semantic) {
-                        case MHWRender::MLightParameterInformation::
-                            kIntensity: {
-                            MFloatArray fa;
-                            lightParam->getParameter(paramNames[i], fa);
-                        } break;
-
-                        case MHWRender::MLightParameterInformation::kColor: {
-                            MFloatArray fa;
-                            lightParam->getParameter(paramNames[i], fa);
-                            if (fa.length() == 3) {
-                                GfVec4f c(
-                                    intensity * fa[0], intensity * fa[1],
-                                    intensity * fa[2], 1.0f);
-                                light.SetDiffuse(c);
-                                light.SetSpecular(c);
-                            }
-                        } break;
-                        case MHWRender::MLightParameterInformation::
-                            kEmitsDiffuse:
-                        case MHWRender::MLightParameterInformation::
-                            kEmitsSpecular: {
-                            MIntArray ia;
-                            lightParam->getParameter(paramNames[i], ia);
-                        } break;
-                        case MHWRender::MLightParameterInformation::
-                            kDecayRate: {
-                            MFloatArray fa;
-                            lightParam->getParameter(paramNames[i], fa);
-                        } break;
-                        case MHWRender::MLightParameterInformation::kDropoff: {
-                            MFloatArray fa;
-                            lightParam->getParameter(paramNames[i], fa);
-                            light.SetSpotFalloff(fa[0]);
-                        } break;
-                        case MHWRender::MLightParameterInformation::
-                            kCosConeAngle: {
-                            MFloatArray fa;
-                            lightParam->getParameter(paramNames[i], fa);
-                            fa[0] = acos(fa[0]) * 57.295779506f;
-                            light.SetSpotCutoff(fa[0]);
-                        } break;
-                        case MHWRender::MLightParameterInformation::
-                            kStartShadowParameters:
-                        case MHWRender::MLightParameterInformation::
-                            kShadowBias: {
-                            MFloatArray fa;
-                            lightParam->getParameter(paramNames[i], fa);
-                        } break;
-                        case MHWRender::MLightParameterInformation::
-                            kShadowMapSize:
-                        case MHWRender::MLightParameterInformation::
-                            kShadowViewProj: {
-                            MMatrix value;
-                            lightParam->getParameter(paramNames[i], value);
-                            GfMatrix4d m(value.matrix);
-                            light.SetShadowMatrix(m);
-                        } break;
-                        case MHWRender::MLightParameterInformation::
-                            kShadowColor: {
-                            MFloatArray fa;
-                            lightParam->getParameter(paramNames[i], fa);
-                            if (fa.length() == 3) {
-                                GfVec4f c(fa[0], fa[1], fa[2], 1.0f);
-                            }
-                        } break;
-                        case MHWRender::MLightParameterInformation::
-                            kGlobalShadowOn:
-                        case MHWRender::MLightParameterInformation::kShadowOn: {
-                            MIntArray ia;
-                            lightParam->getParameter(paramNames[i], ia);
-                            if (ia.length()) light.SetHasShadow(ia[0]);
-                        } break;
-                        default:
-                            break;
-                    }
-                }
 
                 light.SetIsCameraSpaceLight(true);
+                GfVec4f lightPos(0.f, 2.f, 0.f, 1.f);
+                light.SetPosition(lightPos);
+                if (hasDirection) {
+                    GfVec3f lightDir(direction.x, direction.y, direction.z);
+                    light.SetSpotDirection(lightDir);
+                }
+
+                light.SetDiffuse(GfVec4f(0.4f));
+                light.SetSpecular(GfVec4f(0.f));
+
                 lights.push_back(light);
                 GlfSimpleMaterial material;
-                material.SetAmbient(GfVec4f(0.001f));
-                material.SetDiffuse(GfVec4f(0.1f));
-                material.SetSpecular(GfVec4f(0.0f));
-                material.SetEmission(GfVec4f(0.0f));
+                material.SetAmbient(GfVec4f(0.f));
+                material.SetDiffuse(GfVec4f(1.f));
+                material.SetSpecular(GfVec4f(0.f));
+                material.SetEmission(GfVec4f(0.f));
                 material.SetShininess(0.0f);
                 GlfSimpleLightingContextRefPtr lightingContext =
                     GlfSimpleLightingContext::New();
                 lightingContext->SetLights(lights);
                 lightingContext->SetMaterial(material);
-                lightingContext->SetSceneAmbient(GfVec4f(0.001f));
+                lightingContext->SetSceneAmbient(GfVec4f(0.0f));
                 lightingContext->SetUseLighting(lights.size() > 0);
 
                 _taskController->SetLightingState(lightingContext);
+                if (!_hasDefaultLighting) {
+                    _hasDefaultLighting = true;
+                    for (auto& it : _delegates) {
+                        // This slow dynamic cast will only be called when the
+                        // lighting menu is changed in Maya
+                        auto sceneDelegate =
+                            dynamic_cast<HdMayaSceneDelegate*>(&(*it));
+                        if (sceneDelegate) { sceneDelegate->removeAllLights(); }
+                    }
+                }
             }
         }
     }
-    if (lights.empty()) {
-        GlfSimpleLightingContextRefPtr lightingContext =
-            GlfSimpleLightingContext::New();
-        _taskController->SetLightingState(lightingContext);
+    // Reset LightingState if default lighting was on
+    if (!foundMayaDefaultLight && _hasDefaultLighting) {
+        _taskController->SetLightingState(nullptr);
+        _hasDefaultLighting = false;
+        for (auto& it : _delegates) {
+            // This slow dynamic cast will only be called when the lighting menu
+            // is changed in Maya
+            auto sceneDelegate = dynamic_cast<HdMayaSceneDelegate*>(&(*it));
+            if (sceneDelegate) { sceneDelegate->populateAllLights(); }
+        }
     }
 }
 
 MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
+    MProfilingScope profilingScope(
+        HDMAYA_PROFILER_CATEGORY, MProfiler::kColorD_L1, "Render",
+        "MtohRenderOverride::Render");
     TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
         .Msg("MtohRenderOverride::Render()\n");
     auto renderFrame = [&]() {
+        MProfilingScope profilingScope(
+            HDMAYA_PROFILER_CATEGORY, MProfiler::kColorD_L1, "renderFrame",
+            "MtohRenderOverride::Render::renderFrame");
         const auto originX = 0;
         const auto originY = 0;
         int width = 0;

@@ -160,6 +160,18 @@ void HdMayaSceneDelegate::Populate() {
         HdPrimTypeTokens->material, this, _fallbackMaterial);
 }
 
+void HdMayaSceneDelegate::removeAllLights() {
+    for (auto& it : _lightAdapters) {
+        it.second->RemovePrim();
+    }
+}
+
+void HdMayaSceneDelegate::populateAllLights() {
+    for (auto& it : _lightAdapters) {
+        it.second->Populate();
+    }
+}
+
 void HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
     // FIXME: Improve this function!
     HdMayaShapeAdapterPtr adapter;

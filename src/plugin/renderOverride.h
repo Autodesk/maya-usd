@@ -131,6 +131,7 @@ private:
     bool _preferSimpleLight = false;
     bool _wireframeSelectionHighlight = true;
     bool _colorSelectionHighlight = true;
+    bool _hasDefaultLighting = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
