@@ -172,11 +172,16 @@ public:
     SetRenderGLState(HdGeomStyle geomStyle) : _geomStyle(geomStyle) {
         if (_geomStyle == HdGeomStylePolygons) {
             glGetIntegerv(GL_BLEND_SRC_ALPHA, &_oldBlendFunc);
+            glGetIntegerv(GL_BLEND_EQUATION_RGB, &_oldBlendEquation);
             glGetBooleanv(GL_BLEND, &_oldBlend);
             glGetBooleanv(GL_CULL_FACE, &_oldCullFace);
 
             if (_oldBlendFunc != BLEND_FUNC) {
                 glBlendFunc(GL_SRC_ALPHA, BLEND_FUNC);
+            }
+
+            if (_oldBlendEquation != BLEND_EQUATION) {
+                glBlendEquation(BLEND_EQUATION);
             }
 
             if (_oldBlend != BLEND) { glEnable(GL_BLEND); }
@@ -193,6 +198,10 @@ public:
                 glBlendFunc(GL_SRC_ALPHA, _oldBlendFunc);
             }
 
+            if (_oldBlendEquation != BLEND_EQUATION) {
+                glBlendEquation(_oldBlendEquation);
+            }
+
             if (_oldCullFace != CULL_FACE) { glEnable(GL_CULL_FACE); }
         }
     }
@@ -200,11 +209,13 @@ public:
 private:
     // non-odr
     constexpr static int BLEND_FUNC = GL_ONE_MINUS_SRC_ALPHA;
+    constexpr static int BLEND_EQUATION = GL_FUNC_ADD;
     constexpr static GLboolean BLEND = GL_TRUE;
     constexpr static GLboolean CULL_FACE = GL_FALSE;
 
     HdGeomStyle _geomStyle = HdGeomStylePolygons;
     int _oldBlendFunc = BLEND_FUNC;
+    int _oldBlendEquation = BLEND_EQUATION;
     GLboolean _oldBlend = BLEND;
     GLboolean _oldCullFace = CULL_FACE;
 };
