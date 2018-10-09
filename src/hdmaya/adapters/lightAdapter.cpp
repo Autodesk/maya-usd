@@ -149,7 +149,8 @@ VtValue HdMayaLightAdapter::Get(const TfToken& key) {
     } else if (key == HdTokens->transform) {
         return VtValue(HdMayaDagAdapter::GetTransform());
     } else if (key == HdLightTokens->shadowCollection) {
-        HdRprimCollection coll(HdTokens->geometry, HdReprSelector(HdReprTokens->refined));
+        HdRprimCollection coll(
+            HdTokens->geometry, HdReprSelector(HdReprTokens->refined));
         coll.SetRenderTags({HdTokens->geometry});
         return VtValue(coll);
     } else if (key == HdLightTokens->shadowParams) {
@@ -212,12 +213,12 @@ void HdMayaLightAdapter::_CalculateShadowParams(
             "Called HdMayaLightAdapter::_CalculateShadowParams - %s\n",
             GetDagPath().partialPathName().asChar());
 
-    auto dmapResolutionPlug =
-        light.findPlug(MayaAttrs::nonExtendedLightShapeNode::dmapResolution, true);
+    auto dmapResolutionPlug = light.findPlug(
+        MayaAttrs::nonExtendedLightShapeNode::dmapResolution, true);
     auto dmapBiasPlug =
         light.findPlug(MayaAttrs::nonExtendedLightShapeNode::dmapBias, true);
-    auto dmapFilterSizePlug =
-        light.findPlug(MayaAttrs::nonExtendedLightShapeNode::dmapFilterSize, true);
+    auto dmapFilterSizePlug = light.findPlug(
+        MayaAttrs::nonExtendedLightShapeNode::dmapFilterSize, true);
 
     const auto decayRate =
         light.findPlug(MayaAttrs::nonExtendedLightShapeNode::decayRate, true)

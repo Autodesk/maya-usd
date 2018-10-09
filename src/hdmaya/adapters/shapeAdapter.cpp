@@ -78,7 +78,8 @@ MObject HdMayaShapeAdapter::GetMaterial() {
     MFnDagNode dagNode(GetDagPath(), &status);
     if (!status) { return MObject::kNullObj; }
 
-    auto instObjGroups = dagNode.findPlug(MayaAttrs::dagNode::instObjGroups, true);
+    auto instObjGroups =
+        dagNode.findPlug(MayaAttrs::dagNode::instObjGroups, true);
     if (instObjGroups.isNull()) { return MObject::kNullObj; }
 
     MPlugArray conns;

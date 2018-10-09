@@ -28,12 +28,12 @@
 
 #include <maya/MNodeClass.h>
 
-#define SET_NODE_CLASS(nodeTypeName) \
-   using namespace nodeTypeName; \
-   MNodeClass nodeClass(#nodeTypeName); \
-   if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
+#define SET_NODE_CLASS(nodeTypeName)     \
+    using namespace nodeTypeName;        \
+    MNodeClass nodeClass(#nodeTypeName); \
+    if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
 
-#define SET_ATTR_OBJ(attr) \
+#define SET_ATTR_OBJ(attr)              \
     setAttrObj(attr, nodeClass, #attr); \
     if (!TF_VERIFY(status)) { return status; }
 

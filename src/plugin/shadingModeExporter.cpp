@@ -37,9 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    ((defaultOutputName, "outputs:out"))
-    ((glslfxSurface, "glslfx:surface"))
-);
+    ((defaultOutputName, "outputs:out"))((glslfxSurface, "glslfx:surface")));
 
 class MtohShadingModeExporter : public UsdMayaShadingModeExporter {
 public:
@@ -48,32 +46,29 @@ public:
 
 protected:
     bool _ExportNode(UsdStagePtr& stage, HdMaterialNode& hdNode) {
-        UsdShadeShader shaderSchema = UsdShadeShader::Define(
-                stage, hdNode.path);
+        UsdShadeShader shaderSchema =
+            UsdShadeShader::Define(stage, hdNode.path);
         if (!TF_VERIFY(shaderSchema)) { return false; }
         if (!TF_VERIFY(shaderSchema.CreateIdAttr(VtValue(hdNode.identifier)))) {
             return false;
         }
         bool success = true;
-        for(auto& paramNameVal: hdNode.parameters) {
+        for (auto& paramNameVal : hdNode.parameters) {
             auto& paramName = paramNameVal.first;
             auto& paramVal = paramNameVal.second;
             UsdShadeInput input = shaderSchema.CreateInput(
-                    paramName, SdfGetValueTypeNameForValue(paramVal));
+                paramName, SdfGetValueTypeNameForValue(paramVal));
             if (!TF_VERIFY(input)) {
                 success = false;
                 continue;
             }
-            if (!TF_VERIFY(input.Set(paramVal))) {
-                success = false;
-            }
+            if (!TF_VERIFY(input.Set(paramVal))) { success = false; }
         }
         return success;
     }
 
     bool _ExportRelationship(
-            UsdStagePtr& stage,
-            HdMaterialRelationship& relationship) {
+        UsdStagePtr& stage, HdMaterialRelationship& relationship) {
         // TODO: come up with a better way for determining type rather than
         // relying on the input or output to already be set, so we can read it's
         // type...
@@ -86,9 +81,7 @@ protected:
         UsdShadeShader inputShader(inputPrim);
         if (!TF_VERIFY(inputShader)) { return false; }
         UsdShadeInput input = inputShader.GetInput(relationship.inputName);
-        if (input) {
-            typeName = input.GetTypeName();
-        }
+        if (input) { typeName = input.GetTypeName(); }
 
         auto outputPrim = stage->GetPrimAtPath(relationship.outputId);
         if (!TF_VERIFY(outputPrim)) { return false; }
@@ -99,21 +92,20 @@ protected:
             if (!typeName) {
                 typeName = output.GetTypeName();
             } else if (typeName != output.GetTypeName()) {
-                TF_WARN("Types of inputs and outputs did not match: "
-                        "input %s.%s was %s, output %s.%s was %s",
-                        relationship.inputId.GetText(),
-                        relationship.inputName.GetText(),
-                        typeName.GetAsToken().GetText(),
-                        relationship.outputId.GetText(),
-                        relationship.outputName.GetText(),
-                        output.GetTypeName().GetAsToken().GetText());
+                TF_WARN(
+                    "Types of inputs and outputs did not match: "
+                    "input %s.%s was %s, output %s.%s was %s",
+                    relationship.inputId.GetText(),
+                    relationship.inputName.GetText(),
+                    typeName.GetAsToken().GetText(),
+                    relationship.outputId.GetText(),
+                    relationship.outputName.GetText(),
+                    output.GetTypeName().GetAsToken().GetText());
                 return false;
             }
         }
 
-        if (!typeName) {
-            typeName = SdfValueTypeNames->Token;
-        }
+        if (!typeName) { typeName = SdfValueTypeNames->Token; }
 
         if (!input) {
             input = inputShader.CreateInput(relationship.inputName, typeName);
@@ -122,9 +114,9 @@ protected:
         if (output) {
             return UsdShadeConnectableAPI::ConnectToSource(input, output);
         }
-        return UsdShadeConnectableAPI::ConnectToSource(input,
-                outputShader, relationship.outputName,
-                UsdShadeAttributeType::Output, typeName);
+        return UsdShadeConnectableAPI::ConnectToSource(
+            input, outputShader, relationship.outputName,
+            UsdShadeAttributeType::Output, typeName);
     }
 
 public:
@@ -133,50 +125,42 @@ public:
         UsdShadeMaterial* const mat,
         SdfPathSet* const boundPrimPaths) override {
         const UsdMayaShadingModeExportContext::AssignmentVector& assignments =
-                context.GetAssignments();
-        if (assignments.empty()) {
-            return;
-        }
+            context.GetAssignments();
+        if (assignments.empty()) { return; }
 
-        UsdPrim materialPrim = context.MakeStandardMaterialPrim(assignments,
-                std::string(), boundPrimPaths);
+        UsdPrim materialPrim = context.MakeStandardMaterialPrim(
+            assignments, std::string(), boundPrimPaths);
         UsdShadeMaterial material(materialPrim);
-        if (!material) {
-            return;
-        }
+        if (!material) { return; }
 
-        if (mat != nullptr) {
-            *mat = material;
-        }
+        if (mat != nullptr) { *mat = material; }
 
         HdMaterialNetwork materialNetwork;
-        HdMayaMaterialNetworkConverter converter(materialNetwork,
-                materialPrim.GetPath());
+        HdMayaMaterialNetworkConverter converter(
+            materialNetwork, materialPrim.GetPath());
         SdfPath hdSurf = converter.GetMaterial(context.GetSurfaceShader());
 
         // TODO: add support for volume / displacement
-        //SdfPath hdVol = converter.GetMaterial(context.GetVolumeShader());
-        //SdfPath hdDisp = converter.GetMaterial(context.GetDisplacementShader());
+        // SdfPath hdVol = converter.GetMaterial(context.GetVolumeShader());
+        // SdfPath hdDisp =
+        // converter.GetMaterial(context.GetDisplacementShader());
 
-        if (hdSurf.IsEmpty()) {
-            return;
-        }
+        if (hdSurf.IsEmpty()) { return; }
 
         UsdStagePtr stage = materialPrim.GetStage();
 
         // Generate nodes
         for (auto& hdNode : materialNetwork.nodes) {
-            if (!TF_VERIFY(_ExportNode(stage, hdNode))) {
-                continue;
-            }
+            if (!TF_VERIFY(_ExportNode(stage, hdNode))) { continue; }
             if (hdNode.path == hdSurf) {
-                UsdShadeOutput surfaceOutput = material
-                        .CreateSurfaceOutput(GlfGLSLFXTokens->glslfx);
+                UsdShadeOutput surfaceOutput =
+                    material.CreateSurfaceOutput(GlfGLSLFXTokens->glslfx);
                 if (TF_VERIFY(surfaceOutput)) {
                     UsdShadeConnectableAPI::ConnectToSource(
-                        surfaceOutput,
-                        hdNode.path.IsPropertyPath() ? hdNode.path :
-                                hdNode.path.AppendProperty(_tokens->defaultOutputName));
+                        surfaceOutput, hdNode.path.IsPropertyPath()
+                                           ? hdNode.path
+                                           : hdNode.path.AppendProperty(
+                                                 _tokens->defaultOutputName));
                 }
             }
         }
