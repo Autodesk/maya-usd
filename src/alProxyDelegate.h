@@ -23,7 +23,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdMayaALProxyData {
     std::vector<AL::event::CallbackId> proxyShapeCallbacks;
-    std::unique_ptr<UsdImagingDelegate> delegate;
+    std::unique_ptr<UsdImagingDelegate> delegate = nullptr;
     bool populated = false;
 };
 
