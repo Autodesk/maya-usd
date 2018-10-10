@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include <maya/MFnPlugin.h>
-#include <maya/MProfiler.h>
 
 #include "renderOverride.h"
 #include "usdPreviewSurface.h"
@@ -76,7 +75,6 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
         return ret;
     }
 
-    MProfiler::addCategory("MayaToHydra");
     return ret;
 }
 
@@ -104,6 +102,5 @@ PLUGIN_EXPORT MStatus uninitializePlugin(MObject obj) {
         ret.perror("Error deregistering UsdPreviewSurface node!");
     }
 
-    MProfiler::removeCategory("MayaToHydra");
     return ret;
 }

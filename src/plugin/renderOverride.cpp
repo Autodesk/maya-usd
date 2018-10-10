@@ -39,7 +39,6 @@
 #include <maya/MEventMessage.h>
 #include <maya/MGlobal.h>
 #include <maya/MNodeMessage.h>
-#include <maya/MProfiler.h>
 #include <maya/MSceneMessage.h>
 #include <maya/MSelectionList.h>
 #include <maya/MTimerMessage.h>
@@ -67,8 +66,6 @@ constexpr auto MTOH_DEFAULT_RENDERER_PLUGIN_NAME =
     "MTOH_DEFAULT_RENDERER_PLUGIN";
 
 constexpr auto MTOH_RENDER_OVERRIDE_NAME = "hydraViewportOverride";
-
-int HDMAYA_PROFILER_CATEGORY = MProfiler::addCategory("MayaToHydra");
 
 // I don't think there is an easy way to detect if the viewport was changed,
 // so I'm adding a 5 second timeout.
@@ -340,9 +337,6 @@ void MtohRenderOverride::SetColorSelectionHighlightColor(const GfVec4d& color) {
 
 void MtohRenderOverride::ConfigureLighting(
     const MHWRender::MDrawContext& drawContext) {
-    MProfilingScope profilingScope(
-        HDMAYA_PROFILER_CATEGORY, MProfiler::kColorD_L1, "ConfigureLighting",
-        "MtohRenderOverride::ConfigureLighting");
 
     MHWRender::MDrawContext::LightFilter considerAllSceneLights =
         MHWRender::MDrawContext::kFilteredIgnoreLightLimit;
@@ -426,15 +420,9 @@ void MtohRenderOverride::ConfigureLighting(
 }
 
 MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
-    MProfilingScope profilingScope(
-        HDMAYA_PROFILER_CATEGORY, MProfiler::kColorD_L1, "Render",
-        "MtohRenderOverride::Render");
     TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
         .Msg("MtohRenderOverride::Render()\n");
     auto renderFrame = [&]() {
-        MProfilingScope profilingScope(
-            HDMAYA_PROFILER_CATEGORY, MProfiler::kColorD_L1, "renderFrame",
-            "MtohRenderOverride::Render::renderFrame");
         const auto originX = 0;
         const auto originY = 0;
         int width = 0;
