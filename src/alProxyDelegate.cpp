@@ -257,12 +257,7 @@ HdMayaALProxyDelegate::HdMayaALProxyDelegate(
             continue;
         }
 
-        auto& proxyData = AddProxy(proxyShape);
-        auto stage = proxyShape->getUsdStage();
-        if(stage)
-        {
-            CreateUsdImagingDelegate(proxyShape, proxyData);
-        }
+        AddProxy(proxyShape);
     }
 
     // Set up callback to add any new ProxyShapes
@@ -524,6 +519,13 @@ void
 HdMayaALProxyDelegate::CreateUsdImagingDelegate(
         ProxyShape* proxy,
         HdMayaALProxyData& proxyData) {
+    // Why do this release when we do a reset right below? Because we want to
+    // make sure we delete the old delegate before creating a new one (the reset
+    // statement below will first create a new one, THEN delete the old one).
+    // Why do we care? In case they have the same _renderIndex - if so, the
+    // delete may clear out items from the renderIndex that the constructor
+    // potentially adds
+    proxyData.delegate.release();
     proxyData.delegate.reset(new UsdImagingDelegate(
             _renderIndex,
             _delegateID.AppendChild(TfToken(
