@@ -335,13 +335,11 @@ void MtohRenderOverride::SetColorSelectionHighlightColor(const GfVec4d& color) {
     GetInstance()._colorSelectionHighlightColor = GfVec4f(color);
 }
 
-void MtohRenderOverride::ConfigureLighting(
+void MtohRenderOverride::DetectMayaDefaultLightingAndClearIfChanged(
     const MHWRender::MDrawContext& drawContext) {
-
     MHWRender::MDrawContext::LightFilter considerAllSceneLights =
         MHWRender::MDrawContext::kFilteredIgnoreLightLimit;
 
-    GlfSimpleLightVector lights;
     uint32_t numLights =
         drawContext.numberOfActiveLights(considerAllSceneLights);
     bool foundMayaDefaultLight = false;
@@ -352,9 +350,9 @@ void MtohRenderOverride::ConfigureLighting(
         if (lightParam) {
             MDagPath lightPath = lightParam->lightPath(&status);
             if (!status) { // This light does not exist so it must be the
-                // default maya light
+                           // default maya light
                 foundMayaDefaultLight = true;
-                GlfSimpleLight light;
+
                 MFloatPointArray positions;
                 MFloatVector direction;
                 float intensity;
@@ -367,55 +365,51 @@ void MtohRenderOverride::ConfigureLighting(
                     0, positions, direction, intensity, color, hasDirection,
                     hasPosition, considerAllSceneLights);
 
-                light.SetIsCameraSpaceLight(true);
+                _defaultLight.SetIsCameraSpaceLight(true);
                 GfVec4f lightPos(0.f, 2.f, 0.f, 1.f);
-                light.SetPosition(lightPos);
+                _defaultLight.SetPosition(lightPos);
                 if (hasDirection) {
                     GfVec3f lightDir(direction.x, direction.y, direction.z);
-                    light.SetSpotDirection(lightDir);
+                    _defaultLight.SetSpotDirection(lightDir);
                 }
-
-                light.SetDiffuse(GfVec4f(0.4f));
-                light.SetSpecular(GfVec4f(0.f));
-
-                lights.push_back(light);
-                GlfSimpleMaterial material;
-                material.SetAmbient(GfVec4f(0.f));
-                material.SetDiffuse(GfVec4f(1.f));
-                material.SetSpecular(GfVec4f(0.f));
-                material.SetEmission(GfVec4f(0.f));
-                material.SetShininess(0.0f);
-                GlfSimpleLightingContextRefPtr lightingContext =
-                    GlfSimpleLightingContext::New();
-                lightingContext->SetLights(lights);
-                lightingContext->SetMaterial(material);
-                lightingContext->SetSceneAmbient(GfVec4f(0.0f));
-                lightingContext->SetUseLighting(lights.size() > 0);
-
-                _taskController->SetLightingState(lightingContext);
-                if (!_hasDefaultLighting) {
-                    _hasDefaultLighting = true;
-                    for (auto& it : _delegates) {
-                        // This slow dynamic cast will only be called when the
-                        // lighting menu is changed in Maya
-                        auto sceneDelegate =
-                            dynamic_cast<HdMayaSceneDelegate*>(&(*it));
-                        if (sceneDelegate) { sceneDelegate->removeAllLights(); }
-                    }
-                }
+                _defaultLight.SetDiffuse(GfVec4f(0.4f));
+                _defaultLight.SetSpecular(GfVec4f(0.f));
             }
         }
     }
-    // Reset LightingState if default lighting was on
-    if (!foundMayaDefaultLight && _hasDefaultLighting) {
-        _taskController->SetLightingState(nullptr);
+    TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
+        .Msg(
+            "MtohRenderOverride::"
+            "DetectMayaDefaultLightingAndClearIfChanged() "
+            "foundMayaDefaultLight=%i\n",
+            foundMayaDefaultLight);
+
+    bool hasChanged = false;
+    if (foundMayaDefaultLight && !_hasDefaultLighting) {
+        hasChanged = true;
+        _hasDefaultLighting = true;
+    } else if (!foundMayaDefaultLight && _hasDefaultLighting) {
+        hasChanged = true;
         _hasDefaultLighting = false;
-        for (auto& it : _delegates) {
-            // This slow dynamic cast will only be called when the lighting menu
-            // is changed in Maya
-            auto sceneDelegate = dynamic_cast<HdMayaSceneDelegate*>(&(*it));
-            if (sceneDelegate) { sceneDelegate->populateAllLights(); }
-        }
+    }
+    if (hasChanged) {
+        _needsClear.store(true);
+        TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
+            .Msg(
+                "MtohRenderOverride::"
+                "DetectMayaDefaultLightingAndClearIfChanged() clearing! "
+                "_hasDefaultLighting=%i\n",
+                _hasDefaultLighting);
+    }
+}
+
+void MtohRenderOverride::ConfigureLighting() {
+    if (_hasDefaultLighting) {
+        GlfSimpleLightVector lights;
+        lights.push_back(_defaultLight);
+        _defaultLightingContext->SetLights(lights);
+        _defaultLightingContext->SetUseLighting(true);
+        _taskController->SetLightingState(_defaultLightingContext);
     }
 }
 
@@ -442,6 +436,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
             _taskController->GetTasks(HdxTaskSetTokens->colorRender));
     };
 
+    DetectMayaDefaultLightingAndClearIfChanged(drawContext);
     if (_needsClear.exchange(false)) { ClearHydraResources(); }
 
     if (!_initializedViewport) {
@@ -478,7 +473,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     }
     _taskController->SetEnableShadows(enableShadows);
 
-    ConfigureLighting(drawContext);
+    ConfigureLighting();
 
     HdxRenderTaskParams params;
     params.enableLighting = true;
@@ -542,6 +537,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 }
 
 void MtohRenderOverride::InitHydraResources() {
+    TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
+        .Msg("MtohRenderOverride::InitHydraResources()\n");
     _rendererPlugin =
         HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(
             _rendererName);
@@ -553,14 +550,28 @@ void MtohRenderOverride::InitHydraResources() {
         auto newDelegate = creator(
             _renderIndex, _ID.AppendChild(TfToken(TfStringPrintf(
                               "_Delegate_%i_%p", delegateId++, this))));
-        if (newDelegate) { _delegates.push_back(newDelegate); }
+        if (newDelegate) {
+            // Call SetLightsEnabled before the delegate is populated
+            newDelegate->SetLightsEnabled(!_hasDefaultLighting);
+            _delegates.push_back(newDelegate);
+        }
     }
     _taskController = new HdxTaskController(
         _renderIndex,
         _ID.AppendChild(TfToken(TfStringPrintf(
             "_UsdImaging_%s_%p",
             TfMakeValidIdentifier(_rendererName.GetText()).c_str(), this))));
-
+    if (_hasDefaultLighting) {
+        _defaultLightingContext = GlfSimpleLightingContext::New();
+        GlfSimpleMaterial material;
+        material.SetAmbient(GfVec4f(0.f));
+        material.SetDiffuse(GfVec4f(1.f));
+        material.SetSpecular(GfVec4f(0.f));
+        material.SetEmission(GfVec4f(0.f));
+        material.SetShininess(0.0f);
+        _defaultLightingContext->SetMaterial(material);
+        _defaultLightingContext->SetSceneAmbient(GfVec4f(0.0f));
+    }
     _taskController->SetEnableShadows(true);
     VtValue selectionTrackerValue(_selectionTracker);
     _engine.SetTaskContextData(
@@ -581,6 +592,7 @@ void MtohRenderOverride::InitHydraResources() {
 void MtohRenderOverride::ClearHydraResources() {
     if (!_initializedViewport) { return; }
     _delegates.clear();
+    _defaultLightingContext.Reset();
 
     if (_taskController != nullptr) {
         delete _taskController;

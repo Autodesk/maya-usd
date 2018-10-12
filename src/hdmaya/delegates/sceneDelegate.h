@@ -76,9 +76,6 @@ public:
     void PopulateSelectedPaths(
         const MSelectionList& mayaSelection, HdSelection* selection) override;
 
-    void removeAllLights();
-    void populateAllLights();
-    
 protected:
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;
     GfRange3d GetExtent(const SdfPath& id) override;

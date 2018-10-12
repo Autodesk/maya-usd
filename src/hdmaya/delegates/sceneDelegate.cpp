@@ -160,18 +160,6 @@ void HdMayaSceneDelegate::Populate() {
         HdPrimTypeTokens->material, this, _fallbackMaterial);
 }
 
-void HdMayaSceneDelegate::removeAllLights() {
-    for (auto& it : _lightAdapters) {
-        it.second->RemovePrim();
-    }
-}
-
-void HdMayaSceneDelegate::populateAllLights() {
-    for (auto& it : _lightAdapters) {
-        it.second->Populate();
-    }
-}
-
 void HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
     // FIXME: Improve this function!
     HdMayaShapeAdapterPtr adapter;
@@ -201,6 +189,10 @@ void HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
 }
 
 void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
+        TF_DEBUG(HDMAYA_DELEGATE_INSERTDAG)
+            .Msg(
+                "HdMayaSceneDelegate::InsertDag::"
+                "GetLightsEnabled()=%i\n", GetLightsEnabled());
     // We don't care about transforms.
     if (dag.hasFn(MFn::kTransform)) { return; }
 
@@ -208,7 +200,11 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
     if (dagNode.isIntermediateObject()) { return; }
 
     // FIXME: put this into a function!
-    if (dag.hasFn(MFn::kLight)) {
+    if (dag.hasFn(MFn::kLight) && GetLightsEnabled()) {
+        TF_DEBUG(HDMAYA_DELEGATE_INSERTDAG)
+            .Msg(
+                "HdMayaSceneDelegate::InsertDag::"
+                "found light\n");
         auto adapterCreator =
             HdMayaAdapterRegistry::GetLightAdapterCreator(dag);
         if (adapterCreator == nullptr) { return; }

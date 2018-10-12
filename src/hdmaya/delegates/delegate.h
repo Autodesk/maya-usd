@@ -64,9 +64,13 @@ public:
     virtual void PopulateSelectedPaths(
         const MSelectionList& mayaSelection, HdSelection* selection) {}
 
+    void SetLightsEnabled(const bool enabled) { _lightsEnabled = enabled; }
+    bool GetLightsEnabled() { return _lightsEnabled; }
+
 private:
     HdMayaParams _params;
     bool _preferSimpleLight = false;
+    bool _lightsEnabled = true;
 };
 
 using HdMayaDelegatePtr = std::shared_ptr<HdMayaDelegate>;
