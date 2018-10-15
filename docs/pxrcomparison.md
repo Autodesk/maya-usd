@@ -1,4 +1,4 @@
-This is a table comparing some of the features of AL_USDMaya and Pixar's USDMaya plugin (roughly correct at 15/10/2018). 
+This is a table comparing some of the features (mostly import/export functionality) of AL_USDMaya and Pixar's USDMaya plugin (roughly up to date at 15/10/2018). 
 Thanks to Christopher Moore from Blue Sky Studios for making the first version of this
 
 
