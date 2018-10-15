@@ -32,7 +32,4 @@ When implenting a translator of any kind, you can of course choose other ways of
 This is a set of Array Values on the Proxy Shape Node that allow you to drive multiple transform nodes in maya, batching up the updates to improve performance.
 @todo: deprecate unless it's useful to someone?
 
-### HostDrivenTransform Node ###
-see [here](https://github.com/AnimalLogic/AL_USDMaya/blob/master/lib/AL_USDMaya/AL/usdmaya/nodes/HostDrivenTransforms.h)
-@todo needs documentation
 
