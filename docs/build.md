@@ -1,10 +1,14 @@
 # Building
 
 ## Build Requirements
-- This project is buildable on a variety of Linux platforms (It has been tested extensively on CentOS 6.6) and on Windows 7 (it's probably buildable on more recent versions also)
+- This project is buildable on a variety of Linux platforms (It has been tested extensively on CentOS 6.6 and 7.0) and on Windows 7 (it's probably buildable on more recent versions also)
 - USD-0.18.9 (18.09) built with ptex-2.0.40 (<2.0.41)
 - [google test framework](https://github.com/google/googletest) (>1.8.0) to build and run the tests
 - GLEW: Maya (certainly up to 2018) uses a very old build of GLEW. We've found that both to use the latest OpenGL 4x features that Hydra exploits, and for stability reasons, you should use a newer version (e.g GLEW 2.0). We've had to LD_PRELOAD GLEW 2.0 to make this happen. 
+
+### Pixar USDMaya
+Recent versions of AL_USDMaya contain an export plugin for Pixar's USDMaya - see [here](../translators/pxrUsdTranslators) creating a plugin called AL_USDMayaPxrTranslators. This sandboxes the main AL_USDMayaPlugin from needing to link against any pixar maya libraries (ie, usdMaya)
+There is a cmake option to disable building of the plugin entirely, BUILD_USDMAYA_PXR_TRANSLATORS
 
 ## Supported Maya Versions 
 + maya-2016 extension 2
@@ -14,6 +18,8 @@
   - Update 3 recommended for viewport selection fixes
 + maya-2018
   - working as far as we know
++ maya-2019
+  - we have done some testing up to and including beta PR97 
 
 ## Using Cmake
 
