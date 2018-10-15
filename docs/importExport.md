@@ -242,6 +242,12 @@ Use -aec/-extensiveAnimationCheck 0 to turn off this behavior (and just export e
 AL_usdmaya_ExportCommand -f "<path/to/out/file.usd>"  -eac 0 -ani
 ```
 
+### Subsample Export
+Use -ss or - subSamples to export sub-frame samples (defaults to 1 - 1 sample per frame)
+```
+AL_usdmaya_ExportCommand -f "<path/to/out/file.usd>"  -ss 2
+```
+
 ## Mesh Export
 For meshes normally we export:
 1. Topology and Point Positions
