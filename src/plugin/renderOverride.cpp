@@ -363,9 +363,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
                 MHWRender::MFrameContext::kProjectionMtx)));
         _taskController->SetCameraViewport(viewport);
 
-        _engine.Execute(
-            *_renderIndex,
-            _taskController->GetTasks());
+        _engine.Execute(*_renderIndex, _taskController->GetTasks());
     };
 
     if (_needsClear.exchange(false)) { ClearHydraResources(); }

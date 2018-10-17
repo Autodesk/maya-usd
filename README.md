@@ -38,8 +38,6 @@ Requirements:
 | Boost | 1.61 |
 | TBB | 4.4 |
 
-To enable udims merge in https://github.com/PixarAnimationStudios/USD/pull/597 and pass `-DUSD_HDST_UDIM_BUILD=ON` to cmake.
-
 ## Environment configuration
 
 Add `<prefix>/plug-ins` to MAYA_PLUG_IN_PATH and `<prefix>/lib` to PXR_PLUGINPATH_NAME when configuring the environment for Maya.

@@ -31,10 +31,6 @@ if (LUMA_USD_BUILD)
     target_compile_definitions(mtoh PRIVATE LUMA_USD_BUILD)
 endif ()
 
-if (USD_HDST_UDIM_BUILD)
-    target_compile_definitions(mtoh PRIVATE USD_HDST_UDIM_BUILD)
-endif ()
-
 install(
     TARGETS mtoh
     DESTINATION plug-ins)

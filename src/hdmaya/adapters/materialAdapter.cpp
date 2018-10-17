@@ -29,13 +29,11 @@
 #include <pxr/imaging/hd/material.h>
 #include <pxr/imaging/hd/resourceRegistry.h>
 
+#include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/glf/glslfx.h>
 #include <pxr/imaging/glf/textureRegistry.h>
-#ifdef USD_HDST_UDIM_BUILD
-#include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/glf/udimTexture.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
-#endif
 
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
@@ -129,8 +127,6 @@ std::unordered_map<
               HdMayaAdapterTokens->eccentricity},
          }}};
 
-#ifdef USD_HDST_UDIM_BUILD
-
 class UdimTextureFactory : public GlfTextureFactoryBase {
 public:
     virtual GlfTextureRefPtr New(
@@ -150,8 +146,6 @@ public:
         return nullptr;
     }
 };
-
-#endif
 
 } // namespace
 
@@ -337,9 +331,7 @@ private:
         HdMaterialParamVector ret;
         ret.reserve(GetPreviewMaterialParams().size());
         for (const auto& it : GetPreviewMaterialParams()) {
-#ifdef USD_HDST_UDIM_BUILD
             auto textureType = HdTextureType::Uv;
-#endif
             auto remappedName = it.GetName();
             if (mIt != _materialParamRemaps.end()) {
                 std::find_if(
@@ -357,23 +349,11 @@ private:
                         return false;
                     });
             }
-            if (_RegisterTexture(
-                    node, remappedName
-#ifdef USD_HDST_UDIM_BUILD
-                    ,
-                    textureType
-#endif
-                    )) {
+            if (_RegisterTexture(node, remappedName, textureType)) {
                 ret.emplace_back(
                     HdMaterialParam::ParamTypeTexture, it.GetName(),
                     it.GetFallbackValue(), GetID().AppendProperty(remappedName),
-                    _stSamplerCoords,
-#ifdef USD_HDST_UDIM_BUILD
-                    textureType
-#else
-                    false
-#endif
-                );
+                    _stSamplerCoords, textureType);
             } else {
                 ret.emplace_back(it);
             }
@@ -383,12 +363,8 @@ private:
     }
 
     inline bool _RegisterTexture(
-        const MFnDependencyNode& node, const TfToken& paramName
-#ifdef USD_HDST_UDIM_BUILD
-        ,
-        HdTextureType& textureType
-#endif
-    ) {
+        const MFnDependencyNode& node, const TfToken& paramName,
+        HdTextureType& textureType) {
         const auto connectedFileObj = GetConnectedFileNode(node, paramName);
         if (connectedFileObj != MObject::kNullObj) {
             const auto filePath =
@@ -411,11 +387,9 @@ private:
                 } else {
                     _textureResources[paramName] = textureInstance.GetValue();
                 }
-#ifdef USD_HDST_UDIM_BUILD
                 if (GlfIsSupportedUdimTexture(filePath)) {
                     textureType = HdTextureType::Udim;
                 }
-#endif
                 return true;
             } else {
                 _textureResources[paramName].reset();
@@ -504,7 +478,6 @@ private:
     }
 
     inline TfToken _GetTextureFilePath(const MFnDependencyNode& fileNode) {
-#ifdef USD_HDST_UDIM_BUILD
         if (fileNode.findPlug(MayaAttrs::file::uvTilingMode, true).asShort() !=
             0) {
             auto ret =
@@ -519,7 +492,6 @@ private:
             }
             return TfToken(ret.asChar());
         }
-#endif
         return TfToken(fileNode.findPlug(MayaAttrs::file::fileTextureName, true)
                            .asString()
                            .asChar());
@@ -536,30 +508,21 @@ private:
     inline HdTextureResourceSharedPtr _GetTextureResource(
         const TfToken& filePath) {
         if (filePath.IsEmpty()) { return {}; }
-#ifdef USD_HDST_UDIM_BUILD
         auto textureType = HdTextureType::Uv;
         if (GlfIsSupportedUdimTexture(filePath)) {
             textureType = HdTextureType::Udim;
         }
-#endif
-        if (
-#ifdef USD_HDST_UDIM_BUILD
-            textureType != HdTextureType::Udim &&
-#endif
-            !TfPathExists(filePath)) {
+        if (textureType != HdTextureType::Udim && !TfPathExists(filePath)) {
             return {};
         }
         // TODO: handle origin
         const auto origin = GlfImage::OriginUpperLeft;
         GlfTextureHandleRefPtr texture = nullptr;
-#ifdef USD_HDST_UDIM_BUILD
         if (textureType == HdTextureType::Udim) {
             UdimTextureFactory factory;
             texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
                 filePath, origin, &factory);
-        } else
-#endif
-        {
+        } else {
             texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
                 filePath, origin);
         }
@@ -567,14 +530,8 @@ private:
         // We can't really mimic texture wrapping and mirroring settings from
         // the uv placement node, so we don't touch those for now.
         return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
-            texture,
-#ifdef USD_HDST_UDIM_BUILD
-            textureType,
-#else
-            false,
-#endif
-            HdWrapClamp, HdWrapClamp, HdMinFilterLinearMipmapLinear,
-            HdMagFilterLinear,
+            texture, textureType, HdWrapClamp, HdWrapClamp,
+            HdMinFilterLinearMipmapLinear, HdMagFilterLinear,
             GetDelegate()->GetParams().textureMemoryPerTexture));
     }
 
