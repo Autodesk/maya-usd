@@ -365,7 +365,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 
         _engine.Execute(
             *_renderIndex,
-            _taskController->GetTasks(HdxTaskSetTokens->colorRender));
+            _taskController->GetTasks());
     };
 
     if (_needsClear.exchange(false)) { ClearHydraResources(); }
