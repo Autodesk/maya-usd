@@ -640,22 +640,48 @@ void Export::addReferences(MDagPath shapePath, MFnTransform& fnTransform, SdfPat
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+bool Export::isPrimDefined(SdfPath& usdPath)
+{
+  UsdPrim transformPrim = m_impl->stage()->GetPrimAtPath(usdPath);
+  return (transformPrim && transformPrim.IsDefined());
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void Export::exportShapesCommonProc(MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath,
                                     const ReferenceType refType)
 {
   UsdPrim transformPrim;
+
   bool copyTransform = true;
   MFnDagNode dgNode(shapePath);
-
   translators::TranslatorManufacture::RefPtr translatorPtr = m_translatorManufacture.get(shapePath.node());
   if (translatorPtr)
   {
-    SdfPath meshPath = determineUsdPath(shapePath, usdPath, refType);
-    transformPrim = translatorPtr->exportObject(m_impl->stage(), shapePath, meshPath, m_params);
+    SdfPath shapeUsdPath = determineUsdPath(shapePath, usdPath, refType);
+
+    // If the prim is valid and has already been defined, we skip the leftover shapes.
+    // Since that is probably the case a transform has multiple shapes and we chose to merge transform.
+    // In that case, once a shape get exported we will skip the rest of shapes.
+    if(isPrimDefined(shapeUsdPath))
+    {
+      TF_WARN("The usd prim: %s has already been defined, will skip exporting the shape: %s",
+        shapeUsdPath.GetText(), shapePath.partialPathName().asChar());
+      return;
+    }
+
+    transformPrim = translatorPtr->exportObject(m_impl->stage(), shapePath, shapeUsdPath, m_params);
     copyTransform = (refType == kNoReference);
   }
   else // no translator register for this Maya type
   {
+    // As same reason above, for multiple shapes transform, once there's a shape exported, we ignore the leftovers:
+    if(isPrimDefined(usdPath))
+    {
+      TF_WARN("The usd prim: %s has already been defined, will skip exporting the shape: %s",
+        usdPath.GetText(), shapePath.partialPathName().asChar());
+      return;
+    }
+
     if (shapePath.node().hasFn(MFn::kAssembly))
     {
       transformPrim = exportAssembly(shapePath, usdPath);
@@ -1106,7 +1132,7 @@ MSyntax ExportCommand::createSyntax()
 const char* const ExportCommand::g_helpText = R"(
 ExportCommand Overview:
 
-  This command will export your maya scene into the USD format. If you want the export to happen from 
+  This command will export your maya scene into the USD format. If you want the export to happen from
   a certain point in the hierarchy then select the node in maya and pass the parameter selected=True, otherwise
   it will export from the root of the scene.
 
@@ -1122,7 +1148,7 @@ ExportCommand Overview:
 
   Nurbs curves can be exported by passing the corresponding parameters:
     1. AL_usdmaya_ExportCommand -f "<path/to/out/file.usd>" -nc
-  
+
   The exporter can remove samples that contain the same data for adjacent samples
     1. AL_usdmaya_ExportCommand -f "<path/to/out/file.usd>" -fs
 )";

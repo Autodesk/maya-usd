@@ -80,12 +80,13 @@ private:
   SdfPath determineUsdPath(MDagPath path, const SdfPath& usdPath, ReferenceType refType);
   void addReferences(MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath,
                      const SdfPath& instancePath, ReferenceType refType);
-
+  inline bool isPrimDefined(SdfPath &usdPath);
   struct Impl;
   void doExport();
   const ExporterParams& m_params;
   Impl* m_impl;
   translators::TranslatorManufacture m_translatorManufacture;
+
 };
 
 //----------------------------------------------------------------------------------------------------------------------
