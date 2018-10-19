@@ -1789,10 +1789,7 @@ void TransformationMatrix::pushToPrim()
       {
         if(pushPrimToMatrix())
         {
-          MMatrix m = MPxTransformationMatrix::asMatrix();
-          auto vtemp = (const void*)&m;
-          auto mtemp = (const GfMatrix4d*)vtemp;
-          op.Set(*mtemp, getTimeCode());
+          internal_pushMatrix(asMatrix(), op);
         }
       }
       break;
@@ -1936,16 +1933,10 @@ void TransformationMatrix::enableReadAnimatedValues(bool enabled)
     else
     if(primHasTransform())
     {
-      for(size_t i = 0, n = m_orderedOps.size(); i < n; ++i)
+      auto transformIt = std::find(m_orderedOps.begin(), m_orderedOps.end(), kTransform);
+      if (transformIt != m_orderedOps.end() )
       {
-        if(m_orderedOps[i] == kTransform)
-        {
-          MMatrix m = MPxTransformationMatrix::asMatrix();
-          auto vtemp = (const void*)&m;
-          auto mtemp = (const GfMatrix4d*)vtemp;
-          m_xformops[i].Set(*mtemp, getTimeCode());
-          break;
-        }
+        internal_pushMatrix(asMatrix(), m_xformops[std::distance(m_orderedOps.begin(), transformIt)]);
       }
     }
   }
@@ -2005,16 +1996,10 @@ void TransformationMatrix::enablePushToPrim(bool enabled)
     else
     if(primHasTransform())
     {
-      for(size_t i = 0, n = m_orderedOps.size(); i < n; ++i)
+      auto transformIt = std::find(m_orderedOps.begin(), m_orderedOps.end(), kTransform);
+      if (transformIt != m_orderedOps.end() )
       {
-        if(m_orderedOps[i] == kTransform)
-        {
-          MMatrix m = MPxTransformationMatrix::asMatrix();
-          auto vtemp = (const void*)&m;
-          auto mtemp = (const GfMatrix4d*)vtemp;
-          m_xformops[i].Set(*mtemp, getTimeCode());
-          break;
-        }
+        internal_pushMatrix(asMatrix(), m_xformops[std::distance(m_orderedOps.begin(), transformIt)]);
       }
     }
   }
