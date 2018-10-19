@@ -81,7 +81,10 @@ def Mesh "pSphere1"
 {
 }
 ```
- 
+If you have multiple shapes under the transform, with "-mergeTransforms 1" you only get the first exportable shape exported 
+and the type of the prim will be determined by the type of the shape.
+With "-mergeTransforms 0", all shapes will still be exported.
+
 By disabling the flag, transforms and child shape nodes can be exported separately, mirroring the Maya hierarchy:
 ```
 AL_usdmaya_ExportCommand -f "<path/to/out/file.usd>" -mergeTransforms 0
