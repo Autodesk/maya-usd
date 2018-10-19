@@ -47,7 +47,7 @@ set(CMAKE_IMPORT_FILE_VERSION 1)
 set(_targetsDefined)
 set(_targetsNotDefined)
 set(_expectedTargets)
-foreach(_expectedTarget arch tf gf js trace work plug vt ar kind sdf pcp usd usdGeom usdLux usdShade usdHydra usdRi usdSkel usdUI usdUtils garch hf cameraUtil pxOsd glf hd hdSt hdx hdStream usdImaging usdImagingGL usdSkelImaging usdviewq usdObj usdSchemaExamples px_vp20 pxrUsdMayaGL usdMaya pxrUsd)
+foreach(_expectedTarget arch tf gf js trace work plug vt ar kind sdf ndr sdr pcp usd usdGeom usdLux usdShade usdHydra usdRi usdSkel usdUI usdUtils garch hf cameraUtil pxOsd glf hd hdSt hdx hdStream usdImaging usdImagingGL usdSkelImaging usdviewq usdObj usdSchemaExamples px_vp20 pxrUsdMayaGL usdMaya pxrUsd pxrUsdTranslators)
   list(APPEND _expectedTargets ${_expectedTarget})
   if(NOT TARGET ${_expectedTarget})
     list(APPEND _targetsNotDefined ${_expectedTarget})
@@ -121,7 +121,7 @@ add_library(trace SHARED IMPORTED)
 
 set_target_properties(trace PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
-  INTERFACE_LINK_LIBRARIES "arch"
+  INTERFACE_LINK_LIBRARIES "arch;js;tf;${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}python${BOOST_LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${TBB_LIB}"
 )
 
 # Create imported target work
@@ -177,6 +177,24 @@ set_target_properties(sdf PROPERTIES
   INTERFACE_LINK_LIBRARIES "arch;tf;gf;trace;vt;work;ar;${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}python${BOOST_LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}regex${BOOST_LIB_SUFFIX}"
 )
 
+# Create imported target ndr
+add_library(ndr SHARED IMPORTED)
+
+set_target_properties(ndr PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
+  INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR}"
+  INTERFACE_LINK_LIBRARIES "tf;plug;vt;work;ar;sdf;${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}python${BOOST_LIB_SUFFIX}"
+)
+
+# Create imported target sdr
+add_library(sdr SHARED IMPORTED)
+
+set_target_properties(sdr PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
+  INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR}"
+  INTERFACE_LINK_LIBRARIES "tf;vt;ar;ndr;sdf;${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}python${BOOST_LIB_SUFFIX}"
+)
+
 # Create imported target pcp
 add_library(pcp SHARED IMPORTED)
 
@@ -217,7 +235,7 @@ add_library(usdShade SHARED IMPORTED)
 
 set_target_properties(usdShade PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
-  INTERFACE_LINK_LIBRARIES "tf;vt;sdf;usd;usdGeom"
+  INTERFACE_LINK_LIBRARIES "tf;vt;sdf;ndr;sdr;usd;usdGeom"
 )
 
 # Create imported target usdHydra
@@ -294,7 +312,7 @@ add_library(pxOsd SHARED IMPORTED)
 set_target_properties(pxOsd PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "tf;gf;vt;${AL_USDMAYA_USD_LOCATION}/lib/${LIB_PREFIX}osdGPU${LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${LIB_PREFIX}osdCPU${LIB_SUFFIX}"
+  INTERFACE_LINK_LIBRARIES "tf;gf;vt;${AL_USDMAYA_USD_LOCATION}/lib/${LIB_PREFIX}osdCPU${LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${LIB_PREFIX}osdGPU${LIB_SUFFIX}"
 )
 
 # Create imported target glf
@@ -303,7 +321,7 @@ add_library(glf SHARED IMPORTED)
 set_target_properties(glf PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include;${BOOST_INCLUDE_DIR};${AL_USDMAYA_USD_LOCATION}/include;${AL_USDMAYA_USD_LOCATION}/include;${AL_USDMAYA_USD_LOCATION}/include/OpenEXR"
-  INTERFACE_LINK_LIBRARIES "arch;garch;gf;hf;js;plug;tf;trace;sdf;${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}python${BOOST_LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}system${BOOST_LIB_SUFFIX};opengl32;glu32;${AL_USDMAYA_USD_LOCATION}/lib/${LIB_PREFIX}OpenImageIO${LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${LIB_PREFIX}OpenImageIO_Util${LIB_SUFFIX};${LIB_GLEW}"
+  INTERFACE_LINK_LIBRARIES "ar;arch;garch;gf;hf;js;plug;tf;trace;sdf;${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}python${BOOST_LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}system${BOOST_LIB_SUFFIX};opengl32;glu32;${LIB_GLEW}"
 )
 
 # Create imported target hd
@@ -312,7 +330,7 @@ add_library(hd SHARED IMPORTED)
 set_target_properties(hd PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "plug;tf;trace;vt;work;sdf;hf;pxOsd;${AL_USDMAYA_USD_LOCATION}/lib/${TBB_LIB}"
+  INTERFACE_LINK_LIBRARIES "plug;tf;trace;vt;work;sdf;cameraUtil;hf;pxOsd;${AL_USDMAYA_USD_LOCATION}/lib/${TBB_LIB}"
 )
 
 # Create imported target hdSt
@@ -321,7 +339,7 @@ add_library(hdSt SHARED IMPORTED)
 set_target_properties(hdSt PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include;${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "cameraUtil;garch;glf;hd;tf;trace;${LIB_GLEW};${AL_USDMAYA_USD_LOCATION}/lib/${LIB_PREFIX}osdGPU${LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${LIB_PREFIX}osdCPU${LIB_SUFFIX}"
+  INTERFACE_LINK_LIBRARIES "garch;glf;hd;tf;trace;${LIB_GLEW};${AL_USDMAYA_USD_LOCATION}/lib/${LIB_PREFIX}osdCPU${LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${LIB_PREFIX}osdGPU${LIB_SUFFIX}"
 )
 
 # Create imported target hdx
@@ -339,7 +357,7 @@ add_library(hdStream SHARED IMPORTED)
 set_target_properties(hdStream PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include;${AL_USDMAYA_USD_LOCATION}/include;${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "plug;tf;trace;vt;work;hd;hdSt;hdx;${AL_USDMAYA_USD_LOCATION}/lib/${LIB_PREFIX}osdGPU${LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${LIB_PREFIX}osdCPU${LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${TBB_LIB}"
+  INTERFACE_LINK_LIBRARIES "plug;tf;trace;vt;work;hd;hdSt;hdx;${AL_USDMAYA_USD_LOCATION}/lib/${LIB_PREFIX}osdCPU${LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${LIB_PREFIX}osdGPU${LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${TBB_LIB}"
 )
 
 # Create imported target usdImaging
@@ -348,7 +366,7 @@ add_library(usdImaging SHARED IMPORTED)
 set_target_properties(usdImaging PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "gf;tf;plug;trace;vt;work;garch;glf;hd;hdx;pxOsd;sdf;usd;usdGeom;usdHydra;usdLux;usdRi;usdShade;ar;${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}python${BOOST_LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${TBB_LIB}"
+  INTERFACE_LINK_LIBRARIES "gf;tf;plug;trace;vt;work;hd;pxOsd;sdf;usd;usdGeom;usdLux;usdShade;ar;${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}python${BOOST_LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${TBB_LIB}"
 )
 
 # Create imported target usdImagingGL
@@ -358,6 +376,14 @@ set_target_properties(usdImagingGL PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include;${AL_USDMAYA_USD_LOCATION}/include"
   INTERFACE_LINK_LIBRARIES "gf;tf;plug;trace;vt;work;garch;glf;hd;hdx;pxOsd;sdf;usd;usdGeom;usdShade;usdHydra;usdImaging;ar;${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}python${BOOST_LIB_SUFFIX};opengl32;glu32;${LIB_GLEW};${AL_USDMAYA_USD_LOCATION}/lib/${TBB_LIB}"
+)
+
+# Create imported target usdSkelImaging
+add_library(usdSkelImaging SHARED IMPORTED)
+
+set_target_properties(usdSkelImaging PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
+  INTERFACE_LINK_LIBRARIES "hd;pxOsd;usdImaging;usdSkel"
 )
 
 # Create imported target usdviewq
@@ -411,7 +437,7 @@ add_library(usdMaya SHARED IMPORTED)
 set_target_properties(usdMaya PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${MAYA_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "ar;gf;js;kind;plug;sdf;tf;usd;usdGeom;usdLux;usdRi;usdShade;usdUtils;vt;${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}python${BOOST_LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}Foundation${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMaya${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaAnim${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaFX${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaRender${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaUI${LIB_SUFFIX}"
+  INTERFACE_LINK_LIBRARIES "ar;gf;js;kind;plug;sdf;tf;usd;usdGeom;usdLux;usdRi;usdShade;usdSkel;usdUtils;vt;${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}python${BOOST_LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}Foundation${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMaya${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaAnim${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaFX${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaRender${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaUI${LIB_SUFFIX}"
 )
 
 # Create imported target pxrUsd
@@ -421,6 +447,15 @@ set_target_properties(pxrUsd PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${MAYA_LOCATION}/include"
   INTERFACE_LINK_LIBRARIES "sdf;tf;usd;usdGeom;pxrUsdMayaGL;usdMaya;${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMaya${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaAnim${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaFX${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaRender${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaUI${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}Image${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}Foundation${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}IMFBase${LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${TBB_LIB};${MAYA_LOCATION}/lib/${LIB_PREFIX}Cg${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}CgGl${LIB_SUFFIX}"
+)
+
+# Create imported target pxrUsdTranslators
+add_library(pxrUsdTranslators SHARED IMPORTED)
+
+set_target_properties(pxrUsdTranslators PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
+  INTERFACE_INCLUDE_DIRECTORIES "${MAYA_LOCATION}/include"
+  INTERFACE_LINK_LIBRARIES "arch;gf;tf;usd;usdGeom;usdShade;usdSkel;usdUtils;vt;usdMaya;${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}python${BOOST_LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMaya${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaAnim${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaFX${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaRender${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaUI${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}Image${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}Foundation${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}IMFBase${LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${TBB_LIB};${MAYA_LOCATION}/lib/${LIB_PREFIX}Cg${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}CgGl${LIB_SUFFIX}"
 )
 
 if(CMAKE_VERSION VERSION_LESS 2.8.12)

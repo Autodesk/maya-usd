@@ -16,7 +16,7 @@ set(CMAKE_IMPORT_FILE_VERSION 1)
 set(_targetsDefined)
 set(_targetsNotDefined)
 set(_expectedTargets)
-foreach(_expectedTarget arch tf gf js trace work plug vt ar kind sdf pcp usd usdGeom usdLux usdShade usdHydra usdRi usdSkel usdUI usdUtils garch hf cameraUtil pxOsd glf hd hdSt hdx hdStream usdImaging usdImagingGL usdSkelImaging usdviewq usdObj usdSchemaExamples px_vp20 pxrUsdMayaGL usdMaya pxrUsd)
+foreach(_expectedTarget arch tf gf js trace work plug vt ar kind sdf ndr sdr pcp usd usdGeom usdLux usdShade usdHydra usdRi usdSkel usdUI usdUtils garch hf cameraUtil pxOsd glf hd hdSt hdx hdStream usdImaging usdImagingGL usdSkelImaging usdviewq usdObj usdSchemaExamples px_vp20 pxrUsdMayaGL usdMaya pxrUsd pxrUsdTranslators)
   list(APPEND _expectedTargets ${_expectedTarget})
   if(NOT TARGET ${_expectedTarget})
     list(APPEND _targetsNotDefined ${_expectedTarget})
@@ -54,7 +54,7 @@ add_library(tf SHARED IMPORTED)
 
 set_target_properties(tf PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
-  INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include;${AL_USDMAYA_USD_LOCATION}/include"
+  INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include"
 )
 
 # Create imported target gf
@@ -77,6 +77,7 @@ add_library(trace SHARED IMPORTED)
 
 set_target_properties(trace PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
+  INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include"
 )
 
 # Create imported target work
@@ -122,6 +123,22 @@ set_target_properties(kind PROPERTIES
 add_library(sdf SHARED IMPORTED)
 
 set_target_properties(sdf PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
+  INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include"
+)
+
+# Create imported target ndr
+add_library(ndr SHARED IMPORTED)
+
+set_target_properties(ndr PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
+  INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include"
+)
+
+# Create imported target sdr
+add_library(sdr SHARED IMPORTED)
+
+set_target_properties(sdr PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include"
 )
@@ -293,7 +310,6 @@ add_library(usdSkelImaging SHARED IMPORTED)
 
 set_target_properties(usdSkelImaging PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
-  INTERFACE_LINK_LIBRARIES "hd;pxOsd;usdImaging;usdSkel"
 )
 
 # Create imported target usdviewq
@@ -348,6 +364,14 @@ set_target_properties(usdMaya PROPERTIES
 add_library(pxrUsd SHARED IMPORTED)
 
 set_target_properties(pxrUsd PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
+  INTERFACE_INCLUDE_DIRECTORIES "${MAYA_LOCATION}/include;/usr/include"
+)
+
+# Create imported target pxrUsdTranslators
+add_library(pxrUsdTranslators SHARED IMPORTED)
+
+set_target_properties(pxrUsdTranslators PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${MAYA_LOCATION}/include;/usr/include"
 )

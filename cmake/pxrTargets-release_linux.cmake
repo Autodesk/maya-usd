@@ -8,7 +8,8 @@ set(CMAKE_IMPORT_FILE_VERSION 1)
 # Import target "arch" for configuration "Release"
 set_property(TARGET arch APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(arch PROPERTIES
-  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "dl;"
+#  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "dl;/usr/lib64/libm.so"
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "dl"
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libarch.so"
   IMPORTED_SONAME_RELEASE "libarch.so"
   )
@@ -52,7 +53,7 @@ list(APPEND _IMPORT_CHECK_FILES_FOR_js "${_IMPORT_PREFIX}/lib/libjs.so" )
 # Import target "trace" for configuration "Release"
 set_property(TARGET trace APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(trace PROPERTIES
-  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "arch"
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "arch;js;tf;${_IMPORT_PREFIX}/lib/libboost_python.so;${_IMPORT_PREFIX}/lib/libtbb.so"
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libtrace.so"
   IMPORTED_SONAME_RELEASE "libtrace.so"
   )
@@ -118,13 +119,35 @@ list(APPEND _IMPORT_CHECK_FILES_FOR_kind "${_IMPORT_PREFIX}/lib/libkind.so" )
 # Import target "sdf" for configuration "Release"
 set_property(TARGET sdf APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(sdf PROPERTIES
-  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "arch;tf;gf;trace;vt;work;ar;${_IMPORT_PREFIX}/lib/libboost_python.so;${_IMPORT_PREFIX}/lib/libboost_regex.so"
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "arch;tf;gf;trace;vt;work;ar;${_IMPORT_PREFIX}/lib/libboost_python.so"
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libsdf.so"
   IMPORTED_SONAME_RELEASE "libsdf.so"
   )
 
 list(APPEND _IMPORT_CHECK_TARGETS sdf )
 list(APPEND _IMPORT_CHECK_FILES_FOR_sdf "${_IMPORT_PREFIX}/lib/libsdf.so" )
+
+# Import target "ndr" for configuration "Release"
+set_property(TARGET ndr APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+set_target_properties(ndr PROPERTIES
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "tf;plug;vt;work;ar;sdf;${_IMPORT_PREFIX}/lib/libboost_python.so"
+  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libndr.so"
+  IMPORTED_SONAME_RELEASE "libndr.so"
+  )
+
+list(APPEND _IMPORT_CHECK_TARGETS ndr )
+list(APPEND _IMPORT_CHECK_FILES_FOR_ndr "${_IMPORT_PREFIX}/lib/libndr.so" )
+
+# Import target "sdr" for configuration "Release"
+set_property(TARGET sdr APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+set_target_properties(sdr PROPERTIES
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "tf;vt;ar;ndr;sdf;${_IMPORT_PREFIX}/lib/libboost_python.so"
+  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libsdr.so"
+  IMPORTED_SONAME_RELEASE "libsdr.so"
+  )
+
+list(APPEND _IMPORT_CHECK_TARGETS sdr )
+list(APPEND _IMPORT_CHECK_FILES_FOR_sdr "${_IMPORT_PREFIX}/lib/libsdr.so" )
 
 # Import target "pcp" for configuration "Release"
 set_property(TARGET pcp APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
@@ -173,7 +196,7 @@ list(APPEND _IMPORT_CHECK_FILES_FOR_usdLux "${_IMPORT_PREFIX}/lib/libusdLux.so" 
 # Import target "usdShade" for configuration "Release"
 set_property(TARGET usdShade APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(usdShade PROPERTIES
-  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "tf;vt;sdf;usd;usdGeom"
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "tf;vt;sdf;ndr;sdr;usd;usdGeom"
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libusdShade.so"
   IMPORTED_SONAME_RELEASE "libusdShade.so"
   )
@@ -239,7 +262,8 @@ list(APPEND _IMPORT_CHECK_FILES_FOR_usdUtils "${_IMPORT_PREFIX}/lib/libusdUtils.
 # Import target "garch" for configuration "Release"
 set_property(TARGET garch APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(garch PROPERTIES
-  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "arch;tf;${_IMPORT_PREFIX}/lib/libboost_system.so;"
+#  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "arch;tf;${_IMPORT_PREFIX}/lib/libboost_system.so;/usr/lib64/libGL.so"
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "arch;tf;${_IMPORT_PREFIX}/lib/libboost_system.so"
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libgarch.so"
   IMPORTED_SONAME_RELEASE "libgarch.so"
   )
@@ -272,7 +296,7 @@ list(APPEND _IMPORT_CHECK_FILES_FOR_cameraUtil "${_IMPORT_PREFIX}/lib/libcameraU
 # Import target "pxOsd" for configuration "Release"
 set_property(TARGET pxOsd APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(pxOsd PROPERTIES
-  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "tf;gf;vt;${_IMPORT_PREFIX}/lib/libosdGPU.so;${_IMPORT_PREFIX}/lib/libosdCPU.so"
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "tf;gf;vt;${_IMPORT_PREFIX}/lib/libosdCPU.so;${_IMPORT_PREFIX}/lib/libosdGPU.so"
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libpxOsd.so"
   IMPORTED_SONAME_RELEASE "libpxOsd.so"
   )
@@ -283,7 +307,8 @@ list(APPEND _IMPORT_CHECK_FILES_FOR_pxOsd "${_IMPORT_PREFIX}/lib/libpxOsd.so" )
 # Import target "glf" for configuration "Release"
 set_property(TARGET glf APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(glf PROPERTIES
-  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "arch;garch;gf;hf;js;plug;tf;trace;sdf;${_IMPORT_PREFIX}/lib/libboost_python.so;${_IMPORT_PREFIX}/lib/libboost_system.so;${_IMPORT_PREFIX}/lib/libOpenImageIO.so;${_IMPORT_PREFIX}/lib/libOpenImageIO_Util.so;${MAYA_LOCATION}/lib/libglew.so;"
+#  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "ar;arch;garch;gf;hf;js;plug;tf;trace;sdf;${_IMPORT_PREFIX}/lib/libboost_python.so;${_IMPORT_PREFIX}/lib/libboost_system.so;/usr/lib64/libGL.so;/usr/lib64/libGLU.so;${MAYA_LOCATION}/lib/libglew.so;/usr/lib64/libSM.so;/usr/lib64/libICE.so;/usr/lib64/libX11.so;/usr/lib64/libXext.so"
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "ar;arch;garch;gf;hf;js;plug;tf;trace;sdf;${_IMPORT_PREFIX}/lib/libboost_python.so;${_IMPORT_PREFIX}/lib/libboost_system.so;${MAYA_LOCATION}/lib/libglew.so"
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libglf.so"
   IMPORTED_SONAME_RELEASE "libglf.so"
   )
@@ -294,7 +319,7 @@ list(APPEND _IMPORT_CHECK_FILES_FOR_glf "${_IMPORT_PREFIX}/lib/libglf.so" )
 # Import target "hd" for configuration "Release"
 set_property(TARGET hd APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(hd PROPERTIES
-  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "plug;tf;trace;vt;work;sdf;hf;pxOsd;${_IMPORT_PREFIX}/lib/libtbb.so"
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "plug;tf;trace;vt;work;sdf;cameraUtil;hf;pxOsd;${_IMPORT_PREFIX}/lib/libtbb.so"
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libhd.so"
   IMPORTED_SONAME_RELEASE "libhd.so"
   )
@@ -305,7 +330,7 @@ list(APPEND _IMPORT_CHECK_FILES_FOR_hd "${_IMPORT_PREFIX}/lib/libhd.so" )
 # Import target "hdSt" for configuration "Release"
 set_property(TARGET hdSt APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(hdSt PROPERTIES
-  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "cameraUtil;garch;glf;hd;tf;trace;${MAYA_LOCATION}/lib/libglew.so;${_IMPORT_PREFIX}/lib/libosdGPU.so;${_IMPORT_PREFIX}/lib/libosdCPU.so"
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "garch;glf;hd;tf;trace;${MAYA_LOCATION}/lib/libglew.so;${_IMPORT_PREFIX}/lib/libosdCPU.so;${_IMPORT_PREFIX}/lib/libosdGPU.so"
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libhdSt.so"
   IMPORTED_SONAME_RELEASE "libhdSt.so"
   )
@@ -327,7 +352,7 @@ list(APPEND _IMPORT_CHECK_FILES_FOR_hdx "${_IMPORT_PREFIX}/lib/libhdx.so" )
 # Import target "hdStream" for configuration "Release"
 set_property(TARGET hdStream APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(hdStream PROPERTIES
-  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "plug;tf;trace;vt;work;hd;hdSt;hdx;${_IMPORT_PREFIX}/lib/libosdGPU.so;${_IMPORT_PREFIX}/lib/libosdCPU.so;${_IMPORT_PREFIX}/lib/libtbb.so"
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "plug;tf;trace;vt;work;hd;hdSt;hdx;${_IMPORT_PREFIX}/lib/libosdCPU.so;${_IMPORT_PREFIX}/lib/libosdGPU.so;${_IMPORT_PREFIX}/lib/libtbb.so"
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libhdStream.so"
   IMPORTED_SONAME_RELEASE "libhdStream.so"
   )
@@ -338,7 +363,7 @@ list(APPEND _IMPORT_CHECK_FILES_FOR_hdStream "${_IMPORT_PREFIX}/lib/libhdStream.
 # Import target "usdImaging" for configuration "Release"
 set_property(TARGET usdImaging APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(usdImaging PROPERTIES
-  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "gf;tf;plug;trace;vt;work;garch;glf;hd;hdx;pxOsd;sdf;usd;usdGeom;usdHydra;usdLux;usdRi;usdShade;ar;${_IMPORT_PREFIX}/lib/libboost_python.so;${_IMPORT_PREFIX}/lib/libtbb.so"
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "gf;tf;plug;trace;vt;work;hd;pxOsd;sdf;usd;usdGeom;usdLux;usdShade;ar;${_IMPORT_PREFIX}/lib/libboost_python.so;${_IMPORT_PREFIX}/lib/libtbb.so"
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libusdImaging.so"
   IMPORTED_SONAME_RELEASE "libusdImaging.so"
   )
@@ -349,13 +374,25 @@ list(APPEND _IMPORT_CHECK_FILES_FOR_usdImaging "${_IMPORT_PREFIX}/lib/libusdImag
 # Import target "usdImagingGL" for configuration "Release"
 set_property(TARGET usdImagingGL APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(usdImagingGL PROPERTIES
-  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "gf;tf;plug;trace;vt;work;garch;glf;hd;hdx;pxOsd;sdf;usd;usdGeom;usdShade;usdHydra;usdImaging;ar;${_IMPORT_PREFIX}/lib/libboost_python.so;${MAYA_LOCATION}/lib/libglew.so;${_IMPORT_PREFIX}/lib/libtbb.so"
+#  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "gf;tf;plug;trace;vt;work;garch;glf;hd;hdx;pxOsd;sdf;usd;usdGeom;usdHydra;usdShade;usdImaging;ar;${_IMPORT_PREFIX}/lib/libboost_python.so;/usr/lib64/libGL.so;/usr/lib64/libGLU.so;${MAYA_LOCATION}/lib/libglew.so;${_IMPORT_PREFIX}/lib/libtbb.so"
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "gf;tf;plug;trace;vt;work;garch;glf;hd;hdx;pxOsd;sdf;usd;usdGeom;usdHydra;usdShade;usdImaging;ar;${_IMPORT_PREFIX}/lib/libboost_python.so;${MAYA_LOCATION}/lib/libglew.so;${_IMPORT_PREFIX}/lib/libtbb.so"
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libusdImagingGL.so"
   IMPORTED_SONAME_RELEASE "libusdImagingGL.so"
   )
 
 list(APPEND _IMPORT_CHECK_TARGETS usdImagingGL )
 list(APPEND _IMPORT_CHECK_FILES_FOR_usdImagingGL "${_IMPORT_PREFIX}/lib/libusdImagingGL.so" )
+
+# Import target "usdSkelImaging" for configuration "Release"
+set_property(TARGET usdSkelImaging APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+set_target_properties(usdSkelImaging PROPERTIES
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "hd;pxOsd;usdImaging;usdSkel"
+  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libusdSkelImaging.so"
+  IMPORTED_SONAME_RELEASE "libusdSkelImaging.so"
+  )
+
+list(APPEND _IMPORT_CHECK_TARGETS usdSkelImaging )
+list(APPEND _IMPORT_CHECK_FILES_FOR_usdSkelImaging "${_IMPORT_PREFIX}/lib/libusdSkelImaging.so" )
 
 # Import target "usdviewq" for configuration "Release"
 set_property(TARGET usdviewq APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
@@ -393,7 +430,8 @@ list(APPEND _IMPORT_CHECK_FILES_FOR_usdSchemaExamples "${_IMPORT_PREFIX}/share/u
 # Import target "px_vp20" for configuration "Release"
 set_property(TARGET px_vp20 APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(px_vp20 PROPERTIES
-  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "garch;gf;glf;tf;${MAYA_LOCATION}/lib/libglew.so;${MAYA_LOCATION}/lib/libOpenMaya.so;${MAYA_LOCATION}/lib/libOpenMayaUI.so;${MAYA_LOCATION}/lib/libOpenMayaRender.so;"
+#  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "garch;gf;glf;tf;${MAYA_LOCATION}/lib/libglew.so;${MAYA_LOCATION}/lib/libOpenMaya.so;${MAYA_LOCATION}/lib/libOpenMayaUI.so;${MAYA_LOCATION}/lib/libOpenMayaRender.so;/usr/lib64/libGL.so"
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "garch;gf;glf;tf;${MAYA_LOCATION}/lib/libglew.so;${MAYA_LOCATION}/lib/libOpenMaya.so;${MAYA_LOCATION}/lib/libOpenMayaUI.so;${MAYA_LOCATION}/lib/libOpenMayaRender.so"
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/third_party/maya/lib/libpx_vp20.so"
   IMPORTED_SONAME_RELEASE "libpx_vp20.so"
   )
@@ -415,7 +453,7 @@ list(APPEND _IMPORT_CHECK_FILES_FOR_pxrUsdMayaGL "${_IMPORT_PREFIX}/third_party/
 # Import target "usdMaya" for configuration "Release"
 set_property(TARGET usdMaya APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(usdMaya PROPERTIES
-  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "ar;gf;js;kind;plug;sdf;tf;usd;usdGeom;usdLux;usdRi;usdShade;usdUtils;vt;${_IMPORT_PREFIX}/lib/libboost_python.so;${MAYA_LOCATION}/lib/libFoundation.so;${MAYA_LOCATION}/lib/libOpenMaya.so;${MAYA_LOCATION}/lib/libOpenMayaAnim.so;${MAYA_LOCATION}/lib/libOpenMayaFX.so;${MAYA_LOCATION}/lib/libOpenMayaRender.so;${MAYA_LOCATION}/lib/libOpenMayaUI.so"
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "ar;gf;js;kind;plug;sdf;tf;usd;usdGeom;usdLux;usdRi;usdShade;usdSkel;usdUtils;vt;${_IMPORT_PREFIX}/lib/libboost_python.so;${MAYA_LOCATION}/lib/libFoundation.so;${MAYA_LOCATION}/lib/libOpenMaya.so;${MAYA_LOCATION}/lib/libOpenMayaAnim.so;${MAYA_LOCATION}/lib/libOpenMayaFX.so;${MAYA_LOCATION}/lib/libOpenMayaRender.so;${MAYA_LOCATION}/lib/libOpenMayaUI.so"
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/third_party/maya/lib/libusdMaya.so"
   IMPORTED_SONAME_RELEASE "libusdMaya.so"
   )
@@ -433,6 +471,17 @@ set_target_properties(pxrUsd PROPERTIES
 
 list(APPEND _IMPORT_CHECK_TARGETS pxrUsd )
 list(APPEND _IMPORT_CHECK_FILES_FOR_pxrUsd "${_IMPORT_PREFIX}/third_party/maya/plugin/pxrUsd.so" )
+
+# Import target "pxrUsdTranslators" for configuration "Release"
+set_property(TARGET pxrUsdTranslators APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+set_target_properties(pxrUsdTranslators PROPERTIES
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "arch;gf;tf;usd;usdGeom;usdShade;usdSkel;usdUtils;vt;usdMaya;${_IMPORT_PREFIX}/lib/libboost_python.so;${MAYA_LOCATION}/lib/libOpenMaya.so;${MAYA_LOCATION}/lib/libOpenMayaAnim.so;${MAYA_LOCATION}/lib/libOpenMayaFX.so;${MAYA_LOCATION}/lib/libOpenMayaRender.so;${MAYA_LOCATION}/lib/libOpenMayaUI.so;${MAYA_LOCATION}/lib/libImage.so;${MAYA_LOCATION}/lib/libFoundation.so;${MAYA_LOCATION}/lib/libIMFbase.so;${_IMPORT_PREFIX}/lib/libtbb.so"
+  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/third_party/maya/plugin/pxrUsdTranslators.so"
+  IMPORTED_SONAME_RELEASE "pxrUsdTranslators.so"
+  )
+
+list(APPEND _IMPORT_CHECK_TARGETS pxrUsdTranslators )
+list(APPEND _IMPORT_CHECK_FILES_FOR_pxrUsdTranslators "${_IMPORT_PREFIX}/third_party/maya/plugin/pxrUsdTranslators.so" )
 
 # Commands beyond this point should not need to know the version.
 set(CMAKE_IMPORT_FILE_VERSION)
