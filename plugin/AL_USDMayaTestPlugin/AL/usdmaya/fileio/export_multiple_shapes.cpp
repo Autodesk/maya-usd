@@ -1,6 +1,8 @@
 #include <maya/MGlobal.h>
 #include <maya/MFileIO.h>
 
+#include "pxr/usd/usdGeom/camera.h"
+
 #include "test_usdmaya.h"
 
 static const char* const generateCamera = R"(
@@ -11,7 +13,6 @@ string $plane = `createNode "imagePlane" -p "foofoo" -n "foofooImagePlane"`;
 }
 )";
 
-static const TfToken cameraPrimTypeName("Camera");
 static const TfToken xformPrimTypeName("Xform");
 
 static const MString outputCommandTemplate =
@@ -44,7 +45,9 @@ TEST(export_merged, merged_multiple_shape)
 
   UsdPrim prim = stage->GetPrimAtPath(SdfPath("/foofoo"));
   EXPECT_TRUE(prim.IsValid());
-  EXPECT_TRUE(prim.GetTypeName() == cameraPrimTypeName);
+  // exported prim's exact prim type depends on which translator is available, but it is guaranteed to
+  // inherit from UsdGeomCamera
+  EXPECT_TRUE(prim.IsA<UsdGeomCamera>());
 
   prim = stage->GetPrimAtPath(SdfPath("/foofoo/foofooShape"));
   EXPECT_FALSE(prim.IsValid());
@@ -71,7 +74,7 @@ TEST(export_unmerged, unmerged_multiple_shape)
 
   prim = stage->GetPrimAtPath(SdfPath("/foofoo/foofooShape"));
   EXPECT_TRUE(prim.IsValid());
-  EXPECT_TRUE(prim.GetTypeName() == cameraPrimTypeName);
+  EXPECT_TRUE(prim.IsA<UsdGeomCamera>());
 
   prim = stage->GetPrimAtPath(SdfPath("/foofoo/foofooImagePlane"));
   EXPECT_TRUE(prim.IsValid());
