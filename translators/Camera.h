@@ -37,7 +37,7 @@ public:
 
   AL_USDMAYA_PUBLIC MStatus initialize() override;
   MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
-  AL_USDMAYA_PUBLIC UsdPrim exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath,
+  UsdPrim exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath,
                        const ExporterParams& params) override;
   MStatus tearDown(const SdfPath& path) override;
   MStatus update(const UsdPrim& path) override;
