@@ -166,6 +166,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL::usdmaya::cmds::constructProxyShapeCommandGuis();
   AL::usdmaya::cmds::constructDebugCommandGuis();
   AL::usdmaya::cmds::constructRendererCommandGuis();
+  AL::usdmaya::cmds::constructPickModeCommandGuis();
 
   CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
   AL::usdmaya::Global::onPluginLoad();

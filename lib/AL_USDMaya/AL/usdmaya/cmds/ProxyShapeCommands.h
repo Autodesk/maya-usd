@@ -299,6 +299,11 @@ private:
 AL_USDMAYA_PUBLIC
 void constructProxyShapeCommandGuis();
 
+/// \brief Construct menu and commands for setting pick modes.
+/// \ingroup commands
+AL_USDMAYA_PUBLIC
+void constructPickModeCommandGuis();
+
 //----------------------------------------------------------------------------------------------------------------------
 } // cmds
 } // usdmaya

@@ -20,6 +20,7 @@
 #include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
+#include "AL/maya/utils/MenuBuilder.h"
 
 #include "maya/MArgDatabase.h"
 #include "maya/MFnDagNode.h"
@@ -1418,6 +1419,14 @@ void constructProxyShapeCommandGuis()
     commandGui.addStringOption("importPath", "USD Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
     commandGui.addStringOption("teardownPath", "USD Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
   }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void constructPickModeCommandGuis()
+{
+  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Prims", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 0");
+  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Models", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 1");
+  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Instances", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 2");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
