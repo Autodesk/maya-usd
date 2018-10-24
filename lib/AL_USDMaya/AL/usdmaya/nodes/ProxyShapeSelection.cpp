@@ -27,6 +27,8 @@
 #include <algorithm>
 #include "AL/usdmaya/utils/Utils.h"
 
+#include "pxr/usd/usd/modelAPI.h"
+#include "pxr/usd/kind/registry.h"
 
 namespace AL {
 namespace usdmaya {
@@ -383,6 +385,34 @@ inline void ProxyShape::prepSelect()
   {
     iter.second.prepSelect();
   }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+UsdPrim ProxyShape::retargetSelectPrim(const UsdPrim &prim) const {
+  switch(static_cast<nodes::ProxyShape::PickMode>(MGlobal::optionVarIntValue("AL_usdmaya_pickMode"))){
+
+    // Read up prim hierarchy and return first Model kind ancestor as the target prim
+    case nodes::ProxyShape::PickMode::kModels:
+    {
+      UsdPrim tmpPrim = prim;
+      while(tmpPrim.IsValid()) {
+        TfToken kind;
+        UsdModelAPI(tmpPrim).GetKind(&kind);
+        if (KindRegistry::GetInstance().IsA(kind, KindTokens->model)) {
+          return tmpPrim;
+        }
+        tmpPrim = tmpPrim.GetParent();
+      }
+    }
+
+    case nodes::ProxyShape::PickMode::kPrims:
+    case nodes::ProxyShape::PickMode::kInstances:
+    default:
+    {
+      break;
+    }
+  }
+  return prim;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1058,7 +1088,8 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
         if(prim)
         {
           if(!alreadySelected)
-            insertPrims.push_back(prim);
+
+            insertPrims.push_back(retargetSelectPrim(prim));
           else
             keepPrims.push_back(path);
         }
@@ -1120,7 +1151,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
           auto prim = stage->GetPrimAtPath(path);
           if(prim)
           {
-            prims.push_back(prim);
+            prims.push_back(retargetSelectPrim(prim));
           }
         }
       }

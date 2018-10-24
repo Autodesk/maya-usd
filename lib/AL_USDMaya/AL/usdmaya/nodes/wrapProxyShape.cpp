@@ -385,6 +385,12 @@ void wrapProxyShape()
       .value("kRequired", ProxyShape::kRequired)
   ;
 
+  boost::python::enum_<ProxyShape::PickMode>("PickMode")
+      .value("kPrims", ProxyShape::PickMode::kPrims)
+      .value("kModels", ProxyShape::PickMode::kModels)
+      .value("kInstances", ProxyShape::PickMode::kInstances)
+  ;
+
   proxyShapeCls
     .def("getByName", PyProxyShape::getProxyShapeByName,
         boost::python::return_value_policy<reference_existing_object>())
