@@ -431,9 +431,9 @@ public:
   /// Selection pick modes (based on USD View application)
   enum class PickMode : int
   {
-      kPrims = 0,      ///< Pick the target prim
-      kModels = 1,     ///< Pick the nearest model kind ancestor of target
-      kInstances = 2,  ///< TODO
+    kPrims = 0,      ///< Pick the target prim
+    kModels = 1,     ///< Pick the nearest model kind ancestor of target
+    kInstances = 2,  ///< TODO
   };
 
   /// \brief  returns true if the path is required for an imported schema prim
@@ -957,10 +957,10 @@ private:
   /// we need to make sure we can remove
   void prepSelect();
 
-  /// Retarget a prim based on the AL_USDMaya's pick mode settings.
-  /// @param prim: Attempt to retarget this prim.
-  /// @return: Depending on the PickMode setting, this will either return new prim to select, or the original prim
-  /// if no retargetting occurred.
+  /// \brief Retarget a prim based on the AL_USDMaya's pick mode settings. This will either return new prim to select,
+  ///        or the original prim if no retargetting occurred.
+  /// \param prim Attempt to retarget this prim.
+  /// \return The retargetted prim, or the original.
   UsdPrim retargetSelectPrim(const UsdPrim &prim) const;
 
   //--------------------------------------------------------------------------------------------------------------------

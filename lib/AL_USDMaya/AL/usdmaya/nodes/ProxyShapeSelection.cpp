@@ -388,11 +388,12 @@ inline void ProxyShape::prepSelect()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UsdPrim ProxyShape::retargetSelectPrim(const UsdPrim &prim) const {
-  switch(static_cast<nodes::ProxyShape::PickMode>(MGlobal::optionVarIntValue("AL_usdmaya_pickMode"))){
+UsdPrim ProxyShape::retargetSelectPrim(const UsdPrim &prim) const
+{
+  switch(PickMode(MGlobal::optionVarIntValue("AL_usdmaya_pickMode"))){
 
     // Read up prim hierarchy and return first Model kind ancestor as the target prim
-    case nodes::ProxyShape::PickMode::kModels:
+    case PickMode::kModels:
     {
       UsdPrim tmpPrim = prim;
       while(tmpPrim.IsValid()) {
@@ -405,8 +406,8 @@ UsdPrim ProxyShape::retargetSelectPrim(const UsdPrim &prim) const {
       }
     }
 
-    case nodes::ProxyShape::PickMode::kPrims:
-    case nodes::ProxyShape::PickMode::kInstances:
+    case PickMode::kPrims:
+    case PickMode::kInstances:
     default:
     {
       break;
