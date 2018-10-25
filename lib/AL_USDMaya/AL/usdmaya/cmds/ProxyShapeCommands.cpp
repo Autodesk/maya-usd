@@ -1424,9 +1424,9 @@ void constructProxyShapeCommandGuis()
 //----------------------------------------------------------------------------------------------------------------------
 void constructPickModeCommandGuis()
 {
-  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Prims", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 0");
-  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Models", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 1");
-  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Instances", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 2");
+  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Prims", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 0", false, false, true, true);
+  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Models", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 1", false, false, true, false);
+  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Instances", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 2", false, false, true, false);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
