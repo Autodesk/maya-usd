@@ -302,6 +302,10 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
         AL::usdmaya::utils::MeshExportContext context(it->first, mesh, timeCode);
         context.copyVertexData(timeCode);
       }
+      for(auto nodeAnim : m_animatedNodes)
+      {
+        nodeAnim.m_translator->exportCustomAnim(nodeAnim.m_path, nodeAnim.m_prim, timeCode);
+      }
     }
   }
 }

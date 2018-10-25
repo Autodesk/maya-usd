@@ -206,6 +206,18 @@ public:
   UsdStageRefPtr getUsdStage() const
     { return context()->getUsdStage(); }
 
+  /// \brief  override if you have a node that needs to generate animation that cannot be mapped between an MPlug 
+  ///         and a UsdAttribute.
+  /// \param  path path to the object being exported
+  /// \param  prim the prim to write the data into 
+  /// \param  timeCode the time value to sample the data at
+  virtual void exportCustomAnim(const MDagPath& path, UsdPrim& prim, const UsdTimeCode& timeCode)
+    {
+      (void)path;
+      (void)prim;
+      (void)timeCode;
+    }
+
 protected:
 
   /// \brief  internal method. Used within AL_USDMAYA_DEFINE_TRANSLATOR macro to set the schema type of the node we
