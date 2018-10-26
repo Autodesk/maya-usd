@@ -161,7 +161,7 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
   float clearCol[4];
   glGetFloatv(GL_COLOR_CLEAR_VALUE, clearCol);
 
-  const RenderUserData* ptr = (const RenderUserData*)data;
+  RenderUserData* ptr = (RenderUserData*)data;
   if(ptr && ptr->m_rootPrim)
   {
     MHWRender::MStateManager* stateManager = context.getStateManager();
@@ -387,6 +387,7 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
     ptr->m_engine->SetSelected(combined);
     ptr->m_engine->SetSelectionColor(GfVec4f(1.0f, 2.0f/3.0f, 0.0f, 1.0f));
 
+    ptr->m_params.frame = ptr->m_shape->outTimePlug().asMTime().as(MTime::uiUnit());
     if(combined.size())
     {
       UsdImagingGLEngine::RenderParams params = ptr->m_params;
