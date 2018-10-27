@@ -27,9 +27,6 @@
 #include <algorithm>
 #include "AL/usdmaya/utils/Utils.h"
 
-#include "pxr/usd/usd/modelAPI.h"
-#include "pxr/usd/kind/registry.h"
-
 namespace AL {
 namespace usdmaya {
 namespace nodes {
