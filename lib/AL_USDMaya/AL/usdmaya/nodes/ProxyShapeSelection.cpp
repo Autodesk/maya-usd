@@ -388,35 +388,6 @@ inline void ProxyShape::prepSelect()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UsdPrim ProxyShape::retargetSelectPrim(const UsdPrim &prim) const
-{
-  switch(PickMode(MGlobal::optionVarIntValue("AL_usdmaya_pickMode"))){
-
-    // Read up prim hierarchy and return first Model kind ancestor as the target prim
-    case PickMode::kModels:
-    {
-      UsdPrim tmpPrim = prim;
-      while(tmpPrim.IsValid()) {
-        TfToken kind;
-        UsdModelAPI(tmpPrim).GetKind(&kind);
-        if (KindRegistry::GetInstance().IsA(kind, KindTokens->model)) {
-          return tmpPrim;
-        }
-        tmpPrim = tmpPrim.GetParent();
-      }
-    }
-
-    case PickMode::kPrims:
-    case PickMode::kInstances:
-    default:
-    {
-      break;
-    }
-  }
-  return prim;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 MObject ProxyShape::makeUsdTransformChain_internal(
     const UsdPrim& usdPrim,
     MDagModifier& modifier,
@@ -1089,8 +1060,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
         if(prim)
         {
           if(!alreadySelected)
-
-            insertPrims.push_back(retargetSelectPrim(prim));
+            insertPrims.push_back(prim);
           else
             keepPrims.push_back(path);
         }
@@ -1152,7 +1122,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
           auto prim = stage->GetPrimAtPath(path);
           if(prim)
           {
-            prims.push_back(retargetSelectPrim(prim));
+            prims.push_back(prim);
           }
         }
       }

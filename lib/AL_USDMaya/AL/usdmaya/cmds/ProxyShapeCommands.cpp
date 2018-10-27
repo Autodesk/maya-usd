@@ -1424,9 +1424,10 @@ void constructProxyShapeCommandGuis()
 //----------------------------------------------------------------------------------------------------------------------
 void constructPickModeCommandGuis()
 {
-  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Prims", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 0", false, false, true, true);
-  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Models", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 1", false, false, true, false);
-  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Instances", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 2", false, false, true, false);
+  const nodes::ProxyShape::PickMode pickMode = nodes::ProxyShape::PickMode(MGlobal::optionVarIntValue("AL_usdmaya_pickMode"));
+  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Prims", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 0", false, false, true, pickMode == nodes::ProxyShape::PickMode::kPrims);
+  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Models", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 1", false, false, true, pickMode == nodes::ProxyShape::PickMode::kModels);
+  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Instances", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 2", false, false, true, pickMode == nodes::ProxyShape::PickMode::kInstances);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

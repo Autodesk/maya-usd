@@ -957,12 +957,6 @@ private:
   /// we need to make sure we can remove
   void prepSelect();
 
-  /// \brief Retarget a prim based on the AL_USDMaya's pick mode settings. This will either return new prim to select,
-  ///        or the original prim if no retargetting occurred.
-  /// \param prim Attempt to retarget this prim.
-  /// \return The retargetted prim, or the original.
-  UsdPrim retargetSelectPrim(const UsdPrim &prim) const;
-
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Virtual overrides
   //--------------------------------------------------------------------------------------------------------------------
