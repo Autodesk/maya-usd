@@ -27,6 +27,7 @@
 #include <algorithm>
 #include "AL/usdmaya/utils/Utils.h"
 
+
 namespace AL {
 namespace usdmaya {
 namespace nodes {
