@@ -1424,10 +1424,21 @@ void constructProxyShapeCommandGuis()
 //----------------------------------------------------------------------------------------------------------------------
 void constructPickModeCommandGuis()
 {
-  const nodes::ProxyShape::PickMode pickMode = nodes::ProxyShape::PickMode(MGlobal::optionVarIntValue("AL_usdmaya_pickMode"));
-  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Prims", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 0", false, false, true, pickMode == nodes::ProxyShape::PickMode::kPrims);
-  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Models", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 1", false, false, true, pickMode == nodes::ProxyShape::PickMode::kModels);
-  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Instances", "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 2", false, false, true, pickMode == nodes::ProxyShape::PickMode::kInstances);
+  const nodes::ProxyShape::PickMode pickMode = MGlobal::optionVarExists("AL_usdmaya_pickMode")
+          ? nodes::ProxyShape::PickMode(MGlobal::optionVarIntValue("AL_usdmaya_pickMode"))  // Restore from prefs
+          : nodes::ProxyShape::PickMode::kPrims;                                            // Fall back to default
+  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Prims",
+                                         "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 0",
+                                         false,                                             // Checkbox
+                                         false,                                             // Checkbox state
+                                         true,                                              // Radio button
+                                         pickMode == nodes::ProxyShape::PickMode::kPrims);  // Radio button state
+  AL::maya::utils::MenuBuilder::addEntry("USD/Pick Mode/Models",
+                                         "optionVar -iv \\\"AL_usdmaya_pickMode\\\" 1",
+                                         false,                                             // Checkbox
+                                         false,                                             // Checkbox state
+                                         true,                                              // Radio button
+                                         pickMode == nodes::ProxyShape::PickMode::kModels); // Radio button state
 }
 
 //----------------------------------------------------------------------------------------------------------------------
