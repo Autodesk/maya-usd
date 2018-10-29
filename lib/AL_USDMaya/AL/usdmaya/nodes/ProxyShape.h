@@ -433,7 +433,7 @@ public:
   {
     kPrims = 0,      ///< Pick the target prim
     kModels = 1,     ///< Pick the nearest model kind ancestor of target
-    kInstances = 2,  ///< TODO
+    kInstances = 2,  ///< Pick an instance of the target (if available)
   };
 
   /// \brief  returns true if the path is required for an imported schema prim

@@ -217,3 +217,42 @@ TEST(maya_MenuBuilder, simpleCheckbox)
   AL::maya::utils::MenuBuilder::clearRootMenus();
 }
 
+// Test radio button values are correctly assigned
+TEST(maya_MenuBuilder, simpleRadioButton)
+{
+  AL::maya::utils::MenuBuilder::clearRootMenus();
+  EXPECT_TRUE(0 != AL::maya::utils::MenuBuilder::addEntry("FOO/BAR/MOO/HI1", "Radio", false, false, true, false));
+  EXPECT_TRUE(0 != AL::maya::utils::MenuBuilder::addEntry("FOO/BAR/MOO/HI2", "McRadioFace", false, false, true, true));
+  EXPECT_EQ(size_t(1), AL::maya::utils::MenuBuilder::rootMenus().size());
+
+  const AL::maya::utils::MenuBuilder::Menu& menu0 = *AL::maya::utils::MenuBuilder::rootMenus().begin();
+  EXPECT_EQ(std::string("FOO"), menu0.name());
+  EXPECT_EQ(size_t(1), menu0.childMenus().size());
+  EXPECT_EQ(size_t(0), menu0.menuItems().size());
+
+  const AL::maya::utils::MenuBuilder::Menu& menu1 = *menu0.childMenus().begin();
+  EXPECT_EQ(std::string("BAR"), menu1.name());
+  EXPECT_EQ(size_t(1), menu1.childMenus().size());
+  EXPECT_EQ(size_t(0), menu1.menuItems().size());
+
+  const AL::maya::utils::MenuBuilder::Menu& menu2 = *menu1.childMenus().begin();
+  EXPECT_EQ(std::string("MOO"), menu2.name());
+  EXPECT_EQ(size_t(0), menu2.childMenus().size());
+  EXPECT_EQ(size_t(2), menu2.menuItems().size());
+
+  const AL::maya::utils::MenuBuilder::MenuItem& item1 = menu2.menuItems()[0];
+  EXPECT_EQ(std::string("HI1"), item1.label);
+  EXPECT_EQ(std::string("Radio"), item1.command);
+  EXPECT_EQ(std::string(""), item1.optionBox);
+  EXPECT_TRUE(item1.radioButton);
+  EXPECT_FALSE(item1.radioButtonValue);
+
+  const AL::maya::utils::MenuBuilder::MenuItem& item2 = menu2.menuItems()[1];
+  EXPECT_EQ(std::string("HI2"), item2.label);
+  EXPECT_EQ(std::string("McRadioFace"), item2.command);
+  EXPECT_EQ(std::string(""), item2.optionBox);
+  EXPECT_TRUE(item2.radioButton);
+  EXPECT_TRUE(item2.radioButtonValue);
+
+  AL::maya::utils::MenuBuilder::clearRootMenus();
+}
