@@ -143,13 +143,13 @@ void MenuBuilder::Menu::generate(std::ostringstream& os, std::ostringstream& kil
   {
 
     // Radio button group must be declared before adding menuItems
-    if(!inRadioButtonGroup and it->radioButton)
+    if(!inRadioButtonGroup && it->radioButton)
     {
       print_indent(os, indent);
       os << "radioMenuItemCollection;\n";
       inRadioButtonGroup = true;
     }
-    else if(inRadioButtonGroup and !it->radioButton)
+    else if(inRadioButtonGroup && !it->radioButton)
     {
       inRadioButtonGroup = false;
     }
