@@ -1,3 +1,49 @@
+## v0.29.3 (2018-10-31)
+### Added
+
+* support for displaying proxyShapes with default materials instead of full gl shaders for performance by toggling maya's "use default material" option (#121 - @nxkb)
+* uvs/meshUVS flag for AL_usdmaya_ExportCommand to turn on/off the export of mesh UV beside other mesh data.
+* uvo/meshUVOnly flag for AL_usdmaya_ExportCommand to turn on/off the UV data only export mode.
+* "Mesh_UV_Only=1" option for export translator for uvOnly export.
+* An override to the plugin translator interface that can be used to export animation from nodes that don't have a one to one mapping between UsdAttributes, and MPlugs.
+* Added `PickMode` enum
+* Added Python wrapper for `PickMode` enum
+* Camera::writePrim()
+
+### Changed
+
+* Tests data is generated in unique temporary folders
+* Inserted some calls to `internal_pushMatrix(...)` to handle pushing matrix values to prim.
+* Camera::initialize() is exposed as public API.
+* Camera::updateAttributes() is exposed publicly and signature changed to be able work on different schemas.
+* Multiple shapes test checks exported prim is a type inherit from UsdGeomCamera.
+
+### Deprecated
+
+N/A
+
+### Removed
+
+* [schemas] generated plugInfo.json from source tree
+* VALIDATE_GENERATED_SCHEMAS build option
+* Setting matrix values on prim without validation.
+- muv/meshUV flag for AL_usdmaya_ExportCommand and replace with uvo/meshUVOnly to make things clear.
+
+### Fixed
+
+* FindMaya cmake module checking MAYA_DEVKIT_INC_DIR before using it (#127 - @AlexSchwank)
+* Rendering of Wireframe selected objects
+* Transform Import now respects single float rotations
+* Transform orders that do not match maya's order are now correctly imported.
+* Failing tests were crashing maya
+* Ask DG iterator to traverse over world space dependents. Without this change, for a typical skin deformer, traversal ends at all upstream joints. And MAnimUtil::isAnimated failed to detect it is an animated joint, which is not too unexpected. After setTraversalOverWorldSpaceDependents(), those ctrl and srt nodes will be traversed and detected as animated.
+- Clear the xformOps when copying attributes during exporting to avoid crashing Maya.
+- Pick the first exportable shape to export and ignore the others when there are multiple shapes under a transform, and "mergeTransforms" flag is turned on on AL_usdmaya_ExportCommand.
+- Fix the primvar normal mismatch warnings by setting interpolation to "vertex" for normals attribute.
+Overs are no longer applied to prims by selecting them in the viewport.
+* Animated caches were no longer animating in the viewport - fixed by setting the time in the draw method (rather than the now infrequently called prepareForDraw method)
+- The mesh translator does not respect the internal exporting mesh params.
+
 ## v0.29.2 (2018-09-21)
 
 ### Added
@@ -118,13 +164,13 @@
 ## v0.28.3 (2018-06-18)
 
 ### Added
-+ AL_usdmaya_CreateUsdPrim command added to insert a new prim into the UsdStage of a proxy shape. 
++ AL_usdmaya_CreateUsdPrim command added to insert a new prim into the UsdStage of a proxy shape.
 
 ### Changed
-+ The proxyShape outStageData is now connectable, and now longer hidden. Allows for manual DG node connections to be made. 
++ The proxyShape outStageData is now connectable, and now longer hidden. Allows for manual DG node connections to be made.
 
 ### Fixed
-+ The internal mapping between a maya object and a prim now works correctly when specifying the -name flag of AL_usdmaya_ProxyShapeImport. 
++ The internal mapping between a maya object and a prim now works correctly when specifying the -name flag of AL_usdmaya_ProxyShapeImport.
 
 ## v0.28.2 (2018-06-14)
 
@@ -219,7 +265,7 @@
 
 ### Added
 
-+ Add assetResolverConfig string attribute to ProxyShape 
++ Add assetResolverConfig string attribute to ProxyShape
 
 ### Changed
 
@@ -293,10 +339,10 @@
 
 ## v0.27.0 (2018-03-12)
 
-### Added 
+### Added
 + Mesh Translation: Add support for glimpse user data attributes during import / export
-+ Added a Translate command "AL_usdmaya_TranslatePrim" that allows you to selectively run the Translator for a set of Prim Paths to either Import or Teardown the prim. Tutorial on the way! 
-+ preTearDown writes Meshes Translated to Maya to EditTarget 
++ Added a Translate command "AL_usdmaya_TranslatePrim" that allows you to selectively run the Translator for a set of Prim Paths to either Import or Teardown the prim. Tutorial on the way!
++ preTearDown writes Meshes Translated to Maya to EditTarget
 + Library Refactor: Refactored to seperate code into multiple libraries: see change [DeveloperDocumentation](README.md#developer-documentation)
 
 
@@ -376,7 +422,7 @@ Change default lock behaviour of al_usdmaya_lock metadata. "transform" will lock
 * ProxyShapeImport command now correctly takes `ul` parameter to direct if it should load payloads or not
 * Bug where it was possible to select a transform outside the proxyshape using the 'up' key
 * Bug with CommandGuiHelper where if it has errors building it would stay hidden, it now deletes and rebuilds itself
-* Bug where addListOption would error if any list items had any characters that need to be quoted 
+* Bug where addListOption would error if any list items had any characters that need to be quoted
 * Crash when a prim is selected multiple times via command
 * Crash if set xform values on an invalid prim
 * Crash when pushToPrim is triggered but the prim is invalid
@@ -489,15 +535,15 @@ Move all the selection commands into a different cpp file.
 ## v0.20.0
 * Hooked up display Guides + displayRenderGuides attributes to usdImaging
 * Added MEL command to provide a simple selection mechanism in USD imaging layer
-* Reduced the number of times the translators were being initialized to once per proxy shape instance. 
+* Reduced the number of times the translators were being initialized to once per proxy shape instance.
 * Added ability for the translators to say they support an inactive state (so nodes don't get deleted)
-* Added reference counting for kRequired transforms. 
+* Added reference counting for kRequired transforms.
 * Bug Fix: If a prim changed type as a result of a variant switch, the type info was not updated in the translator context
 * Bug Fix: Shapes, Transforms, and DG nodes now correctly deleted (without leaving transforms)
 * Bug Fix: Fixed issue where we could end up with invalid transform references in some very rare edge cases
-* Bug Fix: Fixed issue where invalid MObjects could be generated within transform reference generation. 
+* Bug Fix: Fixed issue where invalid MObjects could be generated within transform reference generation.
 * Bug Fix: Switching from a plugin prim type, to an ignored cache prim, could leave transforms in the scene
-* Added the AL_usdmaya_ProxyShapeSelect command to select prims via a command (supports undo/redo). 
+* Added the AL_usdmaya_ProxyShapeSelect command to select prims via a command (supports undo/redo).
 * Promoted the CameraTranslator to a properly implemented translator plugin
 
 ## v0.19.0
@@ -516,7 +562,7 @@ Move all the selection commands into a different cpp file.
 ## v0.18.0
 **Change Log**
 * AL_usdmaya_LayerCurrentEditTarget command can now take a layer identifier to specify the target layer
-* New command AL_usdmaya_LayerCreateLayer added 
+* New command AL_usdmaya_LayerCreateLayer added
 * Updated docker config
 * Bug Fix: Unchecked pointer access in SchemaNodeRefDB::removeEntries
 * proxyShapeImport GUI now displays all usd file types
@@ -536,42 +582,42 @@ Move all the selection commands into a different cpp file.
 
 ## v0.16.9
 **Change Log**
-* Bug Fix: Previous selection crash-fix, that re-parented custom transforms under a temporary, would cause a change in the 
-           selection list, which resulted in a crash. 
+* Bug Fix: Previous selection crash-fix, that re-parented custom transforms under a temporary, would cause a change in the
+           selection list, which resulted in a crash.
 * Bug Fix: Fixed crash in removeUsdTransforms as a result of Maya deleting the parent of a custom transform
 * Bug Fix: Hydra selection highlighting was being overwritten when performing Shift+Select
 * The proxy shape now responds to changes of the Active state of plugin translator prims
 * Maya 2016 now supported
- 
+
 ## v0.16.8
 **Change Log**
 * Bug Fix: fixing a regression that would cause the transform hierarchy to be incorrect
- 
+
 ## v0.16.7
 **Change Log**
 * Changes to the driven transforms on the proxy shape
 * Ported from CPP unit to googletest, and moved all tests into a test plugin.
 * Code now compiles against Maya 2018 beta77
 * Bug Fix: session layer handle was incorrectly being wiped after a file load, which could cause a crash
-* Bug Fix: Layer::getSubLayers would fail after the scene was reloaded. 
+* Bug Fix: Layer::getSubLayers would fail after the scene was reloaded.
 * Bug Fix: Incorrectly warned of storable message attributes
 * Bug Fix: Unitialised layer handles could cause a crash
-* Bug Fix: Deleting AL_usdmaya_Transform nodes would cause parent transforms to be deleted. 
+* Bug Fix: Deleting AL_usdmaya_Transform nodes would cause parent transforms to be deleted.
 * Bug Fix: Layer::getParentLayer returning invalid value
 * Bug Fix: getAttr "layerNode.framePrecision" now works as expected
 * Bug Fix: Chaning the USD edit target now correctly updates the 'hasBeenEditTarget' flag
-* Bug Fix: Animated Shear 
+* Bug Fix: Animated Shear
 * Bug Fix: AL_usdmaya_TransformationMatrix::getTimeCode now correctly returns the animated time values
 * Bug Fix: AL_usdmaya_TransformationMatrix::enablePushToPrim would incorrectly create a scalePivot transformation op
-* Bug Fix: AL_usdmaya_TransformationMatrix could fail to update if frame 0 was the first animation frame in a sequence. 
-* Bug Fix: Selecting a parent of a selected transform, would cause a crash in Maya. 
+* Bug Fix: AL_usdmaya_TransformationMatrix could fail to update if frame 0 was the first animation frame in a sequence.
+* Bug Fix: Selecting a parent of a selected transform, would cause a crash in Maya.
 
 ## v0.16.6
 **Change Log**
-* Bug Fix: Matrix driven transform node could write an invalid key into the session layer, nuking animation cache data. 
-* Bug Fix: Excluded geometry became visible on reload. 
+* Bug Fix: Matrix driven transform node could write an invalid key into the session layer, nuking animation cache data.
+* Bug Fix: Excluded geometry became visible on reload.
 * Bug Fix: Removed option box from Import Proxy Shape (was causing a crash).
-* Improvement: Proxy Shape now runs the post-load process immediately, rather than waiting on a defferred MEL call. 
+* Improvement: Proxy Shape now runs the post-load process immediately, rather than waiting on a defferred MEL call.
 
 ## v0.16.5
 **Change Log**
@@ -589,7 +635,7 @@ Move all the selection commands into a different cpp file.
 ## v0.16.3
 **Change Log**
 * Bug Fix: excluded objects not hidden after file load
-* Bug Fix: Prevented crash within draw override. 
+* Bug Fix: Prevented crash within draw override.
 
 ## v0.16.2
 **Change Log**
@@ -598,13 +644,13 @@ Move all the selection commands into a different cpp file.
 ## v0.16.1
 **Change Log**
 * Bug Fix: Fixed incorrect depth settings when rendering in Hydra
-* Bug Fix: Fixed complexity issue that caused warnings to be spammed into the command prompt. 
+* Bug Fix: Fixed complexity issue that caused warnings to be spammed into the command prompt.
 
 ## v0.16.0
 **Change Log**
 * Switched code over to use UsdImaging rather than UsdMayaGL library
 * Updated USD base to 0.7.4
-* Selection highlighting now visible in the maya viewport. 
+* Selection highlighting now visible in the maya viewport.
 
 ## v0.12.1
 **Change Log**
@@ -642,7 +688,7 @@ Move all the selection commands into a different cpp file.
 * Massive rename of nodes, and commands. The previous names (e.g. alUsdProxyShape) have been standardised with the rest of AL, so now it's 'AL_usdmaya_ProxyShape'.
 * Support for the export of animated cameras via the 'AL usdmaya Export' translator
 * The AL usdmaya plugin has been divorced from the orignal PXR maya plugin
-* Remaining python code has been moved, previously you had to import the module by 'from pxrUsd import UsdMaya', now you should use 'from AL import UsdMaya'. 
+* Remaining python code has been moved, previously you had to import the module by 'from pxrUsd import UsdMaya', now you should use 'from AL import UsdMaya'.
 
 **Known issues**
 * Missing usdImport and usdExport command for animated data - http://github.al.com.au/rnd/usdMaya/issues/108
