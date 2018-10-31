@@ -568,6 +568,9 @@ bool ProxyShape::getRenderAttris(void* pattribs, const MHWRender::MFrameContext&
     attribs.drawMode = UsdImagingGLEngine::DRAW_POINTS;
   }
 
+  // determine whether to use the default material for everything
+  attribs.enableSceneMaterials = !(displayStyle & MHWRender::MFrameContext::kDefaultMaterial);
+
   // set the time for the scene
   attribs.frame = outTimePlug().asMTime().as(MTime::uiUnit());
 
