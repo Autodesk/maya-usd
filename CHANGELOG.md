@@ -1,6 +1,7 @@
-## v0.29.3 (2018-10-31)
+## v0.29.4 (2018-11-01)
 ### Added
 
+* Built against USD-0.18.11
 * support for displaying proxyShapes with default materials instead of full gl shaders for performance by toggling maya's "use default material" option (#121 - @nxkb)
 * uvs/meshUVS flag for AL_usdmaya_ExportCommand to turn on/off the export of mesh UV beside other mesh data.
 * uvo/meshUVOnly flag for AL_usdmaya_ExportCommand to turn on/off the UV data only export mode.
