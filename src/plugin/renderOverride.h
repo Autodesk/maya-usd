@@ -30,9 +30,9 @@
 #include <pxr/base/tf/singleton.h>
 
 #include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hdSt/renderDelegate.h>
 
-#include <pxr/usdImaging/usdImagingGL/hdEngine.h>
 
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/rprimCollection.h>
