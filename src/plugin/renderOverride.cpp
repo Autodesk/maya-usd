@@ -371,13 +371,8 @@ void MtohRenderOverride::DetectMayaDefaultLighting(
                 hasPosition, considerAllSceneLights);
 
             if (hasDirection && !hasPosition) {
-                _defaultLight.SetPosition({
-#ifdef LUMA_USD_BUILD
-                    direction.x, direction.y, direction.z, 0.0f
-#else
-                    -direction.x, -direction.y, -direction.z, 0.0f
-#endif
-                });
+                _defaultLight.SetPosition(
+                    {-direction.x, -direction.y, -direction.z, 0.0f});
                 _defaultLight.SetDiffuse(GfVec4f(
                     intensity * color.r, intensity * color.g,
                     intensity * color.b, 1.0f));
