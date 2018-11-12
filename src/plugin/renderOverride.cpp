@@ -259,6 +259,9 @@ MtohRenderOverride::MtohRenderOverride()
     id =
         MTimerMessage::addTimerCallback(5.0f, _ClearResourcesCallback, &status);
     if (status) { _callbacks.push_back(id); }
+
+    _defaultLight.SetSpecular(GfVec4f(0.0f));
+    _defaultLight.SetAmbient(GfVec4f(0.0f));
 }
 
 MtohRenderOverride::~MtohRenderOverride() {
@@ -341,48 +344,48 @@ void MtohRenderOverride::SetColorSelectionHighlightColor(const GfVec4d& color) {
     GetInstance()._colorSelectionHighlightColor = GfVec4f(color);
 }
 
-void MtohRenderOverride::DetectMayaDefaultLightingAndClearIfChanged(
+void MtohRenderOverride::DetectMayaDefaultLighting(
     const MHWRender::MDrawContext& drawContext) {
-    MHWRender::MDrawContext::LightFilter considerAllSceneLights =
+    constexpr auto considerAllSceneLights =
         MHWRender::MDrawContext::kFilteredIgnoreLightLimit;
 
-    uint32_t numLights =
+    const auto numLights =
         drawContext.numberOfActiveLights(considerAllSceneLights);
-    bool foundMayaDefaultLight = false;
+    auto foundMayaDefaultLight = false;
     if (numLights == 1) {
-        MStatus status;
-        MHWRender::MLightParameterInformation* lightParam =
+        auto* lightParam =
             drawContext.getLightParameterInformation(0, considerAllSceneLights);
-        if (lightParam) {
-            MDagPath lightPath = lightParam->lightPath(&status);
-            if (!status) { // This light does not exist so it must be the
-                           // default maya light
+        if (lightParam != nullptr && !lightParam->lightPath().isValid()) {
+            // This light does not exist so it must be the
+            // default maya light
+            MFloatPointArray positions;
+            MFloatVector direction;
+            auto intensity = 0.0f;
+            MColor color;
+            auto hasDirection = false;
+            auto hasPosition = false;
+
+            // Maya default light has no position, only direction
+            drawContext.getLightInformation(
+                0, positions, direction, intensity, color, hasDirection,
+                hasPosition, considerAllSceneLights);
+
+            if (hasDirection && !hasPosition) {
+                _defaultLight.SetPosition({
+#ifdef LUMA_USD_BUILD
+                    direction.x, direction.y, direction.z, 0.0f
+#else
+                    -direction.x, -direction.y, -direction.z, 0.0f
+#endif
+                });
+                _defaultLight.SetDiffuse(GfVec4f(
+                    intensity * color.r, intensity * color.g,
+                    intensity * color.b, 1.0f));
                 foundMayaDefaultLight = true;
-
-                MFloatPointArray positions;
-                MFloatVector direction;
-                float intensity;
-                MColor color;
-                bool hasDirection;
-                bool hasPosition;
-
-                // Maya default light has no position, only direction
-                drawContext.getLightInformation(
-                    0, positions, direction, intensity, color, hasDirection,
-                    hasPosition, considerAllSceneLights);
-
-                _defaultLight.SetIsCameraSpaceLight(true);
-                GfVec4f lightPos(0.f, 2.f, 0.f, 1.f);
-                _defaultLight.SetPosition(lightPos);
-                if (hasDirection) {
-                    GfVec3f lightDir(direction.x, direction.y, direction.z);
-                    _defaultLight.SetSpotDirection(lightDir);
-                }
-                _defaultLight.SetDiffuse(GfVec4f(0.4f));
-                _defaultLight.SetSpecular(GfVec4f(0.f));
             }
         }
     }
+
     TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
         .Msg(
             "MtohRenderOverride::"
@@ -390,20 +393,13 @@ void MtohRenderOverride::DetectMayaDefaultLightingAndClearIfChanged(
             "foundMayaDefaultLight=%i\n",
             foundMayaDefaultLight);
 
-    bool hasChanged = false;
-    if (foundMayaDefaultLight && !_hasDefaultLighting) {
-        hasChanged = true;
-        _hasDefaultLighting = true;
-    } else if (!foundMayaDefaultLight && _hasDefaultLighting) {
-        hasChanged = true;
-        _hasDefaultLighting = false;
-    }
-    if (hasChanged) {
+    if (foundMayaDefaultLight != _hasDefaultLighting) {
+        _hasDefaultLighting = foundMayaDefaultLight;
         _needsClear.store(true);
         TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
             .Msg(
                 "MtohRenderOverride::"
-                "DetectMayaDefaultLightingAndClearIfChanged() clearing! "
+                "DetectMayaDefaultLighting() clearing! "
                 "_hasDefaultLighting=%i\n",
                 _hasDefaultLighting);
     }
@@ -440,7 +436,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         _engine.Execute(*_renderIndex, _taskController->GetTasks());
     };
 
-    DetectMayaDefaultLightingAndClearIfChanged(drawContext);
+    DetectMayaDefaultLighting(drawContext);
     if (_needsClear.exchange(false)) { ClearHydraResources(); }
 
     if (!_initializedViewport) {

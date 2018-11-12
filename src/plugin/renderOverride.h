@@ -103,8 +103,7 @@ private:
     static void ClearHydraCallback(void*);
     void SelectionChanged();
     static void SelectionChangedCallback(void*);
-    void DetectMayaDefaultLightingAndClearIfChanged(
-        const MHWRender::MDrawContext& drawContext);
+    void DetectMayaDefaultLighting(const MHWRender::MDrawContext& drawContext);
     void ConfigureLighting();
 
     std::vector<MHWRender::MRenderOperation*> _operations;
