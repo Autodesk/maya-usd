@@ -170,41 +170,37 @@ private:
 
 class SetRenderGLState {
 public:
-    SetRenderGLState(HdGeomStyle geomStyle) : _geomStyle(geomStyle) {
-        if (_geomStyle == HdGeomStylePolygons) {
-            glGetIntegerv(GL_BLEND_SRC_ALPHA, &_oldBlendFunc);
-            glGetIntegerv(GL_BLEND_EQUATION_RGB, &_oldBlendEquation);
-            glGetBooleanv(GL_BLEND, &_oldBlend);
-            glGetBooleanv(GL_CULL_FACE, &_oldCullFace);
+    SetRenderGLState() {
+        glGetIntegerv(GL_BLEND_SRC_ALPHA, &_oldBlendFunc);
+        glGetIntegerv(GL_BLEND_EQUATION_RGB, &_oldBlendEquation);
+        glGetBooleanv(GL_BLEND, &_oldBlend);
+        glGetBooleanv(GL_CULL_FACE, &_oldCullFace);
 
-            if (_oldBlendFunc != BLEND_FUNC) {
-                glBlendFunc(GL_SRC_ALPHA, BLEND_FUNC);
-            }
-
-            if (_oldBlendEquation != BLEND_EQUATION) {
-                glBlendEquation(BLEND_EQUATION);
-            }
-
-            if (_oldBlend != BLEND) { glEnable(GL_BLEND); }
-
-            if (_oldCullFace != CULL_FACE) { glDisable(GL_CULL_FACE); }
+        if (_oldBlendFunc != BLEND_FUNC) {
+            glBlendFunc(GL_SRC_ALPHA, BLEND_FUNC);
         }
+
+        if (_oldBlendEquation != BLEND_EQUATION) {
+            glBlendEquation(BLEND_EQUATION);
+        }
+
+        if (_oldBlend != BLEND) { glEnable(GL_BLEND); }
+
+        if (_oldCullFace != CULL_FACE) { glDisable(GL_CULL_FACE); }
     }
 
     ~SetRenderGLState() {
-        if (_geomStyle == HdGeomStylePolygons) {
-            if (_oldBlend != BLEND) { glDisable(GL_BLEND); }
+        if (_oldBlend != BLEND) { glDisable(GL_BLEND); }
 
-            if (_oldBlendFunc != BLEND_FUNC) {
-                glBlendFunc(GL_SRC_ALPHA, _oldBlendFunc);
-            }
-
-            if (_oldBlendEquation != BLEND_EQUATION) {
-                glBlendEquation(_oldBlendEquation);
-            }
-
-            if (_oldCullFace != CULL_FACE) { glEnable(GL_CULL_FACE); }
+        if (_oldBlendFunc != BLEND_FUNC) {
+            glBlendFunc(GL_SRC_ALPHA, _oldBlendFunc);
         }
+
+        if (_oldBlendEquation != BLEND_EQUATION) {
+            glBlendEquation(_oldBlendEquation);
+        }
+
+        if (_oldCullFace != CULL_FACE) { glEnable(GL_CULL_FACE); }
     }
 
 private:
@@ -214,7 +210,6 @@ private:
     constexpr static GLboolean BLEND = GL_TRUE;
     constexpr static GLboolean CULL_FACE = GL_FALSE;
 
-    HdGeomStyle _geomStyle = HdGeomStylePolygons;
     int _oldBlendFunc = BLEND_FUNC;
     int _oldBlendEquation = BLEND_EQUATION;
     GLboolean _oldBlend = BLEND;
@@ -488,7 +483,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     params.enableLighting = true;
     params.enableSceneMaterials = true;
 
-    if (displayStyle & MHWRender::MFrameContext::kBoundingBox) {
+    /* TODO: Find replacement
+     * if (displayStyle & MHWRender::MFrameContext::kBoundingBox) {
         params.complexity = HdComplexityBoundingBox;
     } else {
         params.complexity = HdComplexityVeryHigh;
@@ -498,7 +494,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         params.geomStyle = HdGeomStyleLines;
     } else {
         params.geomStyle = HdGeomStylePolygons;
-    }
+    }*/
 
     // TODO: separate color for normal wireframe / selected
     MColor colour = M3dView::leadColor();
@@ -520,7 +516,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     // We should fix this upstream, so HdStream can setup
     // all the required states.
     if (_rendererName == _tokens->HdStreamRendererPlugin) {
-        SetRenderGLState state(params.geomStyle);
+        SetRenderGLState state;
         renderFrame();
     } else {
         renderFrame();
