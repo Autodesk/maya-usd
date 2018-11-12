@@ -33,10 +33,10 @@ Requirements:
 | Package | Version |
 | --- | --- |
 | GCC | 4.8.5/6.3.1 |
-| USD | 0.18.09 |
+| USD | 0.19.1 |
 | Maya | 2018 |
 | Boost | 1.61 |
-| TBB | 4.4 |
+| TBB | 4.4+ |
 
 ## Environment configuration
 
