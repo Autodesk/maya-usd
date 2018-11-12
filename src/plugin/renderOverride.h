@@ -29,10 +29,9 @@
 
 #include <pxr/base/tf/singleton.h>
 
-#include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/engine.h>
+#include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hdSt/renderDelegate.h>
-
 
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/rprimCollection.h>
@@ -104,7 +103,8 @@ private:
     static void ClearHydraCallback(void*);
     void SelectionChanged();
     static void SelectionChangedCallback(void*);
-    void DetectMayaDefaultLightingAndClearIfChanged(const MHWRender::MDrawContext& drawContext);
+    void DetectMayaDefaultLightingAndClearIfChanged(
+        const MHWRender::MDrawContext& drawContext);
     void ConfigureLighting();
 
     std::vector<MHWRender::MRenderOperation*> _operations;
