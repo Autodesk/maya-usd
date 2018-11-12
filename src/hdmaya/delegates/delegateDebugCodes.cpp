@@ -114,6 +114,10 @@ TF_REGISTRY_FUNCTION(TfDebug) {
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE,
         "Print information about 'GetTextureResource' calls to the delegates.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_DELEGATE_INSERTDAG,
+        "Print information about 'InsertDag' calls to the delegates.");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

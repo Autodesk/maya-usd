@@ -48,6 +48,7 @@
 #include <exception>
 
 #include <hdmaya/delegates/delegateRegistry.h>
+#include <hdmaya/delegates/sceneDelegate.h>
 
 #include <hdmaya/utils.h>
 
@@ -345,6 +346,84 @@ void MtohRenderOverride::SetColorSelectionHighlightColor(const GfVec4d& color) {
     GetInstance()._colorSelectionHighlightColor = GfVec4f(color);
 }
 
+void MtohRenderOverride::DetectMayaDefaultLightingAndClearIfChanged(
+    const MHWRender::MDrawContext& drawContext) {
+    MHWRender::MDrawContext::LightFilter considerAllSceneLights =
+        MHWRender::MDrawContext::kFilteredIgnoreLightLimit;
+
+    uint32_t numLights =
+        drawContext.numberOfActiveLights(considerAllSceneLights);
+    bool foundMayaDefaultLight = false;
+    if (numLights == 1) {
+        MStatus status;
+        MHWRender::MLightParameterInformation* lightParam =
+            drawContext.getLightParameterInformation(0, considerAllSceneLights);
+        if (lightParam) {
+            MDagPath lightPath = lightParam->lightPath(&status);
+            if (!status) { // This light does not exist so it must be the
+                           // default maya light
+                foundMayaDefaultLight = true;
+
+                MFloatPointArray positions;
+                MFloatVector direction;
+                float intensity;
+                MColor color;
+                bool hasDirection;
+                bool hasPosition;
+
+                // Maya default light has no position, only direction
+                drawContext.getLightInformation(
+                    0, positions, direction, intensity, color, hasDirection,
+                    hasPosition, considerAllSceneLights);
+
+                _defaultLight.SetIsCameraSpaceLight(true);
+                GfVec4f lightPos(0.f, 2.f, 0.f, 1.f);
+                _defaultLight.SetPosition(lightPos);
+                if (hasDirection) {
+                    GfVec3f lightDir(direction.x, direction.y, direction.z);
+                    _defaultLight.SetSpotDirection(lightDir);
+                }
+                _defaultLight.SetDiffuse(GfVec4f(0.4f));
+                _defaultLight.SetSpecular(GfVec4f(0.f));
+            }
+        }
+    }
+    TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
+        .Msg(
+            "MtohRenderOverride::"
+            "DetectMayaDefaultLightingAndClearIfChanged() "
+            "foundMayaDefaultLight=%i\n",
+            foundMayaDefaultLight);
+
+    bool hasChanged = false;
+    if (foundMayaDefaultLight && !_hasDefaultLighting) {
+        hasChanged = true;
+        _hasDefaultLighting = true;
+    } else if (!foundMayaDefaultLight && _hasDefaultLighting) {
+        hasChanged = true;
+        _hasDefaultLighting = false;
+    }
+    if (hasChanged) {
+        _needsClear.store(true);
+        TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
+            .Msg(
+                "MtohRenderOverride::"
+                "DetectMayaDefaultLightingAndClearIfChanged() clearing! "
+                "_hasDefaultLighting=%i\n",
+                _hasDefaultLighting);
+    }
+}
+
+void MtohRenderOverride::ConfigureLighting() {
+    if (_hasDefaultLighting) {
+        GlfSimpleLightVector lights;
+        lights.push_back(_defaultLight);
+        _defaultLightingContext->SetLights(lights);
+        _defaultLightingContext->SetUseLighting(true);
+        _taskController->SetLightingState(_defaultLightingContext);
+    }
+}
+
 MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
         .Msg("MtohRenderOverride::Render()\n");
@@ -366,6 +445,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         _engine.Execute(*_renderIndex, _taskController->GetTasks());
     };
 
+    DetectMayaDefaultLightingAndClearIfChanged(drawContext);
     if (_needsClear.exchange(false)) { ClearHydraResources(); }
 
     if (!_initializedViewport) {
@@ -401,6 +481,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         }
     }
     _taskController->SetEnableShadows(enableShadows);
+
+    ConfigureLighting();
 
     HdxRenderTaskParams params;
     params.enableLighting = true;
@@ -464,6 +546,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 }
 
 void MtohRenderOverride::InitHydraResources() {
+    TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
+        .Msg("MtohRenderOverride::InitHydraResources()\n");
     _rendererPlugin =
         HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(
             _rendererName);
@@ -475,14 +559,28 @@ void MtohRenderOverride::InitHydraResources() {
         auto newDelegate = creator(
             _renderIndex, _ID.AppendChild(TfToken(TfStringPrintf(
                               "_Delegate_%i_%p", delegateId++, this))));
-        if (newDelegate) { _delegates.push_back(newDelegate); }
+        if (newDelegate) {
+            // Call SetLightsEnabled before the delegate is populated
+            newDelegate->SetLightsEnabled(!_hasDefaultLighting);
+            _delegates.push_back(newDelegate);
+        }
     }
     _taskController = new HdxTaskController(
         _renderIndex,
         _ID.AppendChild(TfToken(TfStringPrintf(
             "_UsdImaging_%s_%p",
             TfMakeValidIdentifier(_rendererName.GetText()).c_str(), this))));
-
+    if (_hasDefaultLighting) {
+        _defaultLightingContext = GlfSimpleLightingContext::New();
+        GlfSimpleMaterial material;
+        material.SetAmbient(GfVec4f(0.f));
+        material.SetDiffuse(GfVec4f(1.f));
+        material.SetSpecular(GfVec4f(0.f));
+        material.SetEmission(GfVec4f(0.f));
+        material.SetShininess(0.0f);
+        _defaultLightingContext->SetMaterial(material);
+        _defaultLightingContext->SetSceneAmbient(GfVec4f(0.0f));
+    }
     _taskController->SetEnableShadows(true);
     VtValue selectionTrackerValue(_selectionTracker);
     _engine.SetTaskContextData(
@@ -503,6 +601,7 @@ void MtohRenderOverride::InitHydraResources() {
 void MtohRenderOverride::ClearHydraResources() {
     if (!_initializedViewport) { return; }
     _delegates.clear();
+    _defaultLightingContext.Reset();
 
     if (_taskController != nullptr) {
         delete _taskController;

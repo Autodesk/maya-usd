@@ -189,6 +189,11 @@ void HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
 }
 
 void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
+    TF_DEBUG(HDMAYA_DELEGATE_INSERTDAG)
+        .Msg(
+            "HdMayaSceneDelegate::InsertDag::"
+            "GetLightsEnabled()=%i\n",
+            GetLightsEnabled());
     // We don't care about transforms.
     if (dag.hasFn(MFn::kTransform)) { return; }
 
@@ -197,16 +202,22 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
 
     // FIXME: put this into a function!
     if (dag.hasFn(MFn::kLight)) {
-        auto adapterCreator =
-            HdMayaAdapterRegistry::GetLightAdapterCreator(dag);
-        if (adapterCreator == nullptr) { return; }
-        const auto id = GetPrimPath(dag);
-        if (TfMapLookupPtr(_lightAdapters, id) != nullptr) { return; }
-        auto adapter = adapterCreator(this, dag);
-        if (adapter == nullptr || !adapter->IsSupported()) { return; }
-        adapter->Populate();
-        adapter->CreateCallbacks();
-        _lightAdapters.insert({id, adapter});
+        if (GetLightsEnabled()) {
+            TF_DEBUG(HDMAYA_DELEGATE_INSERTDAG)
+                .Msg(
+                    "HdMayaSceneDelegate::InsertDag::"
+                    "found light\n");
+            auto adapterCreator =
+                HdMayaAdapterRegistry::GetLightAdapterCreator(dag);
+            if (adapterCreator == nullptr) { return; }
+            const auto id = GetPrimPath(dag);
+            if (TfMapLookupPtr(_lightAdapters, id) != nullptr) { return; }
+            auto adapter = adapterCreator(this, dag);
+            if (adapter == nullptr || !adapter->IsSupported()) { return; }
+            adapter->Populate();
+            adapter->CreateCallbacks();
+            _lightAdapters.insert({id, adapter});
+        }
     } else {
         auto adapterCreator =
             HdMayaAdapterRegistry::GetShapeAdapterCreator(dag);

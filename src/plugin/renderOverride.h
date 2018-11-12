@@ -104,6 +104,8 @@ private:
     static void ClearHydraCallback(void*);
     void SelectionChanged();
     static void SelectionChangedCallback(void*);
+    void DetectMayaDefaultLightingAndClearIfChanged(const MHWRender::MDrawContext& drawContext);
+    void ConfigureLighting();
 
     std::vector<MHWRender::MRenderOperation*> _operations;
     std::vector<MCallbackId> _callbacks;
@@ -116,6 +118,8 @@ private:
     HdxSelectionTrackerSharedPtr _selectionTracker;
     HdRprimCollection _renderCollection;
     HdRprimCollection _selectionCollection;
+    GlfSimpleLightingContextRefPtr _defaultLightingContext;
+    GlfSimpleLight _defaultLight;
 
     std::vector<HdMayaDelegatePtr> _delegates;
 
@@ -130,6 +134,7 @@ private:
     bool _preferSimpleLight = false;
     bool _wireframeSelectionHighlight = true;
     bool _colorSelectionHighlight = true;
+    bool _hasDefaultLighting = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
