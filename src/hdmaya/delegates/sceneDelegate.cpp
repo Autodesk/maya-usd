@@ -174,7 +174,7 @@ void HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
     if (TfMapLookup(_lightAdapters, id, &lightAdapter) &&
         lightAdapter != nullptr) {
         lightAdapter->RemovePrim();
-        adapter->RemoveCallbacks();
+        lightAdapter->RemoveCallbacks();
         _lightAdapters.erase(id);
         return;
     }
@@ -183,7 +183,7 @@ void HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
     if (TfMapLookup(_materialAdapters, id, &materialAdapter) &&
         materialAdapter != nullptr) {
         materialAdapter->RemovePrim();
-        adapter->RemoveCallbacks();
+        materialAdapter->RemoveCallbacks();
         _materialAdapters.erase(id);
     }
 }
