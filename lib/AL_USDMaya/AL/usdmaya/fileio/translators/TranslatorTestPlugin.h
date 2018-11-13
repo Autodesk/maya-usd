@@ -47,7 +47,7 @@ private:
   MStatus preTearDown(UsdPrim& path) override;
   MStatus tearDown(const SdfPath& path) override;
   ExportFlag canExport(const MObject& obj) override
-    { return ExportFlag::kFallbackSupport; }
+    { return ExportFlag::kNotSupported; }
 };
 #endif
 

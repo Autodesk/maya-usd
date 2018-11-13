@@ -32,10 +32,46 @@
 #include "maya/MObjectArray.h"
 #include "maya/MPointArray.h"
 
+#include "pxr/usd/usd/modelAPI.h"
+#include "pxr/usd/kind/registry.h"
 
 namespace AL {
 namespace usdmaya {
 namespace nodes {
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief Retarget a prim based on the AL_USDMaya's pick mode settings. This will either return new prim to select,
+///        or the original prim if no retargetting occurred.
+/// \param prim Attempt to retarget this prim.
+/// \return The retargetted prim, or the original.
+UsdPrim retargetSelectPrim(const UsdPrim &prim)
+{
+  switch(ProxyShape::PickMode(MGlobal::optionVarIntValue("AL_usdmaya_pickMode"))){
+
+    // Read up prim hierarchy and return first Model kind ancestor as the target prim
+    case ProxyShape::PickMode::kModels:
+    {
+      UsdPrim tmpPrim = prim;
+      while(tmpPrim.IsValid()) {
+        TfToken kind;
+        UsdModelAPI(tmpPrim).GetKind(&kind);
+        if (KindRegistry::GetInstance().IsA(kind, KindTokens->model)) {
+          return tmpPrim;
+        }
+        tmpPrim = tmpPrim.GetParent();
+      }
+    }
+
+    case ProxyShape::PickMode::kPrims:
+    case ProxyShape::PickMode::kInstances:
+    default:
+    {
+      break;
+    }
+  }
+  return prim;
+}
+
 
 //----------------------------------------------------------------------------------------------------------------------
 ProxyShapeUI::ProxyShapeUI()
@@ -363,7 +399,13 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     uint32_t i = 0;
     for(auto it = hitBatch.begin(), e = hitBatch.end(); it != e; ++it, ++i)
     {
-      auto obj = proxyShape->findRequiredPath(removeVariantFromPath(getHitPath(*it)));
+
+      // Retarget hit path based on pick mode policy. The retargeted prim must
+      // align with the path used in the 'AL_usdmaya_ProxyShapeSelect' command.
+      const SdfPath hitPath = removeVariantFromPath(getHitPath(*it));
+      const UsdPrim retargetedHitPrim = retargetSelectPrim(proxyShape->getUsdStage()->GetPrimAtPath(hitPath));
+      const MObject obj = proxyShape->findRequiredPath(retargetedHitPrim.GetPath());
+
       if (obj != MObject::kNullObj)
       {
         MSelectionList sl;
@@ -502,6 +544,17 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
         {
           addHit(it);
         }
+      }
+    }
+
+    // Massage hit paths to align with pick mode policy
+    for (std::size_t i = 0; i < paths.size(); ++i)
+    {
+      const SdfPath& path = paths[i];
+      const UsdPrim retargetedPrim = retargetSelectPrim(proxyShape->getUsdStage()->GetPrimAtPath(path));
+      if (retargetedPrim.GetPath() != path)
+      {
+        paths[i] = retargetedPrim.GetPath();
       }
     }
 

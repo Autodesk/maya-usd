@@ -68,6 +68,8 @@ public:
     std::string optionBox; ///< the MEL command to execute when the option box is checked
     bool checkBox; ///< true if an option box exists for this item
     bool checkBoxValue; ///< the default value for the check box if it is enabled
+    bool radioButton; ///< true if this is a radio butto menu item
+    bool radioButtonValue; ///< true if this radio button should be checked
   };
 
   #ifndef AL_GENERATING_DOCS
@@ -118,9 +120,18 @@ public:
   /// \param  command the MEL command to execute when the item is clicked.
   /// \param  hasCheckbox if true, the menu item will have a check box. If false, only a menu item will exist.
   /// \param  defaultCheckBoxValue If the checkbox has been enabled, this will determine whether it is on or off by default
+  /// \param  isRadioButton if true, this menu item will be created as a radio button. The radio button group declaration
+  ///         command will be added automatically during code generation.
+  /// \param  radioButtonCheckedState The checked state of the radio button. If multiple radio buttons from the same group
+  ///         are initialised as checked, the last true state will supplant the others.
   /// \return pointer to the menu item added
   AL_MAYA_UTILS_PUBLIC
-  static MenuItem* addEntry(const char* menuItemPath, const char* command, bool hasCheckbox = false, bool defaultCheckBoxValue = false);
+  static MenuItem* addEntry(const char* menuItemPath,
+                            const char* command,
+                            bool hasCheckbox = false,
+                            bool defaultCheckBoxValue = false,
+                            bool isRadioButton = false,
+                            bool radioButtonCheckedState = false);
 
   /// \brief  add an entry to the menu
   /// \param  menuItemPath forward slash seperated path to the menu item, e.g. "Create/polygons/Construct Teapot"

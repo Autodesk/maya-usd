@@ -25,7 +25,7 @@ namespace utils {
 std::set<MenuBuilder::Menu> MenuBuilder::m_menus;
 
 //----------------------------------------------------------------------------------------------------------------------
-MenuBuilder::MenuItem* MenuBuilder::addEntry(const char* menuItemPath, const char* command, bool hasCheckbox, bool defaultCheckBoxValue)
+MenuBuilder::MenuItem* MenuBuilder::addEntry(const char* menuItemPath, const char* command, bool hasCheckbox, bool defaultCheckBoxValue, bool isRadioButton, bool radioButtonCheckedState)
 {
   std::string str(menuItemPath);
 
@@ -60,6 +60,8 @@ MenuBuilder::MenuItem* MenuBuilder::addEntry(const char* menuItemPath, const cha
       item.command = command;
       item.checkBox = hasCheckbox;
       item.checkBoxValue = defaultCheckBoxValue;
+      item.radioButton = isRadioButton;
+      item.radioButtonValue = radioButtonCheckedState;
 
       for(size_t i = 0; i < it->m_menuItems.size(); ++i)
       {
@@ -134,14 +136,34 @@ void MenuBuilder::Menu::generate(std::ostringstream& os, std::ostringstream& kil
     it->generate(os, kill, prefix, indent);
   }
 
+  // Track if we're in a radio button group or not
+  bool inRadioButtonGroup = false;
+
   for(auto it = m_menuItems.begin(); it != m_menuItems.end(); ++it)
   {
+
+    // Radio button group must be declared before adding menuItems
+    if(!inRadioButtonGroup && it->radioButton)
+    {
+      print_indent(os, indent);
+      os << "radioMenuItemCollection;\n";
+      inRadioButtonGroup = true;
+    }
+    else if(inRadioButtonGroup && !it->radioButton)
+    {
+      inRadioButtonGroup = false;
+    }
+
     print_indent(os, indent);
     os << "menuItem -l \"" << it->label << "\" -c \"" << it->command << "\"";
 
     if(it->checkBox)
     {
       os << " -cb " << it->checkBoxValue;
+    }
+    else if(it->radioButton)
+    {
+      os << " -radioButton " << ( it->radioButtonValue ? "on" : "off" );
     }
 
     os << ";\n";

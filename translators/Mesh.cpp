@@ -108,22 +108,55 @@ UsdPrim Mesh::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath
 
   UsdGeomMesh mesh = UsdGeomMesh::Define(stage, usdPath);
 
-  MStatus status;
-  MFnMesh fnMesh(dagPath, &status);
-  AL_MAYA_CHECK_ERROR2(status, MString("unable to attach function set to mesh") + dagPath.fullPathName());
-  if(status)
+  AL::usdmaya::utils::MeshExportContext context(dagPath, mesh, params.m_timeCode, false, (AL::usdmaya::utils::MeshExportContext::CompactionLevel)params.m_compactionLevel);
+  if(context)
   {
     UsdAttribute pointsAttr = mesh.GetPointsAttr();
     if (params.m_animTranslator && AnimationTranslator::isAnimatedMesh(dagPath))
     {
       params.m_animTranslator->addMesh(dagPath, pointsAttr);
     }
-    uint32_t options = 0;
+
+    if(params.m_meshPoints)
+    {
+      context.copyVertexData(context.timeCode());
+    }
+    if(params.m_meshConnects)
+    {
+      context.copyFaceConnectsAndPolyCounts();
+    }
+    if(params.m_meshHoles)
+    {
+      context.copyInvisibleHoles();
+    }
+    if(params.m_meshUvs)
+    {
+      context.copyUvSetData();
+    }
+    if(params.m_meshNormals)
+    {
+      context.copyNormalData(context.timeCode());
+    }
+    context.copyGlimpseTesselationAttributes();
+    if(params.m_meshColours)
+    {
+      context.copyColourSetData();
+    }
+    if(params.m_meshVertexCreases)
+    {
+      context.copyCreaseVertices();
+    }
+    if(params.m_meshEdgeCreases)
+    {
+      context.copyCreaseEdges();
+    }
+
+    // pick up any additional attributes attached to the mesh node (these will be added alongside the transform attributes)
     if(params.m_dynamicAttributes)
     {
-      options |= kDynamicAttributes;
+      UsdPrim prim = mesh.GetPrim();
+      DgNodeTranslator::copyDynamicAttributes(dagPath.node(), prim);
     }
-    writeEdits(dagPath, mesh, options);
   }
   return mesh.GetPrim();
 }

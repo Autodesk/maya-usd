@@ -18,6 +18,7 @@
 #include "AL/usdmaya/utils/DiffPrimVar.h"
 #include "AL/usdmaya/utils/Utils.h"
 #include "AL/usd/utils/DebugCodes.h"
+#include "pxr/usd/usdGeom/tokens.h"
 
 #include "maya/MItMeshPolygon.h"
 #include "maya/MGlobal.h"
@@ -2104,6 +2105,9 @@ void MeshExportContext::copyNormalData(UsdTimeCode time)
           mesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
           memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
           normalsAttr.Set(normals, time);
+
+          // Also set the normal interpolation, so that there won't be tons of mismatch warnings during playback:
+          normalsAttr.SetMetadata (UsdGeomTokens->interpolation, UsdGeomTokens->vertex);
         }
       }
       else

@@ -428,6 +428,14 @@ public:
     kRequired = 1 << 2    ///< the node is required for an imported schema prim
   };
 
+  /// Selection pick modes (based on USD View application)
+  enum class PickMode : int
+  {
+    kPrims = 0,      ///< Pick the target prim
+    kModels = 1,     ///< Pick the nearest model kind ancestor of target
+    kInstances = 2,  ///< Pick an instance of the target (if available)
+  };
+
   /// \brief  returns true if the path is required for an imported schema prim
   /// \param  path the path to query
   /// \return true if the path represents a prim that is required.

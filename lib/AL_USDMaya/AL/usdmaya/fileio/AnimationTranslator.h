@@ -18,6 +18,7 @@
 #include "../Api.h"
 
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
+#include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
 #include "maya/MPlug.h"
 #include "maya/MString.h"
@@ -205,11 +206,26 @@ public:
   /// \param  params the export options
   AL_USDMAYA_PUBLIC
   void exportAnimation(const ExporterParams& params);
+
+  /// \brief  insert a prim into the anim translator for custom anim export. 
+  /// \param  translator the plugin translator to handle the export of anim data for the node
+  /// \param  dagPath the maya dag path for the maya object to export
+  /// \param  usdPrim the prim to write the data into
+  inline void addCustomAnimNode(translators::TranslatorBase* translator, MDagPath dagPath, UsdPrim usdPrim)
+    { m_animatedNodes.push_back({translator, dagPath, usdPrim}); }
+
 private:
   static bool considerToBeAnimation(const MFn::Type nodeType);
   static bool inheritTransform(const MDagPath &path);
   static bool areTransformAttributesConnected(const MDagPath &path);
 private:
+  struct NodeExportInfo
+  {
+    translators::TranslatorBase* m_translator;
+    MDagPath m_path;
+    UsdPrim m_prim;
+  };
+  std::vector<NodeExportInfo> m_animatedNodes;
   PlugAttrVector m_animatedPlugs;
   PlugAttrScaledVector m_scaledAnimatedPlugs;
   PlugAttrVector m_animatedTransformPlugs;

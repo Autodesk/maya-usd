@@ -64,6 +64,7 @@ The exporter can remove samples that contain the same data for adjacent samples
 AL_usdmaya_ExportCommand -f "<path/to/out/file.usd>" -fs
 ```
 
+#### Transform Merging, Instancing
 The default behaviour of AL_USDMaya is to merge transforms and child shape nodes into a single Mesh on export,
 which can be explicitly set:
 ```
@@ -80,8 +81,11 @@ def Mesh "pSphere1"
 {
 }
 ```
- 
-By disabling the flag, transforms and child shape nodes can be exported separately, mirroring the Maya heirarchy:
+If you have multiple shapes under the transform, with "-mergeTransforms 1" you only get the first exportable shape exported 
+and the type of the prim will be determined by the type of the shape.
+With "-mergeTransforms 0", all shapes will still be exported.
+
+By disabling the flag, transforms and child shape nodes can be exported separately, mirroring the Maya hierarchy:
 ```
 AL_usdmaya_ExportCommand -f "<path/to/out/file.usd>" -mergeTransforms 0
 ```
@@ -231,12 +235,20 @@ def Xform "parentTransform"
     }
 }
 ```
-Geometry prims sharing instanced shapes still reference same source prim. USD doesn't support instancing on geometry prim, thus ```instanceable``` is not turned on.
+Geometry prims sharing instanced shapes still reference the same source prim. USD doesn't support instancing on geometry prims, thus ```instanceable``` is not turned on.
 
-By default the exporter performs an extensive animation check on node like transform, if any of common attributes like translate, rotate, scale and rotateOrder is connected as target, we take it as animated.
-Use -aec/-extensiveAnimationCheck 0 to turn off this behavior:
+### Animation Export
+By default the exporter performs an extensive animation check on maya nodes such as transform, if any of common attributes like translate, rotate, scale and rotateOrder are connected as a target, we consider that attribute to be animated.
+
+Use -aec/-extensiveAnimationCheck 0 to turn off this behavior (and just export everything as animated)
 ```
 AL_usdmaya_ExportCommand -f "<path/to/out/file.usd>"  -eac 0 -ani
+```
+
+### Subsample Export
+Use -ss or - subSamples to export sub-frame samples (defaults to 1 - 1 sample per frame)
+```
+AL_usdmaya_ExportCommand -f "<path/to/out/file.usd>"  -ss 2
 ```
 
 ## Mesh Export

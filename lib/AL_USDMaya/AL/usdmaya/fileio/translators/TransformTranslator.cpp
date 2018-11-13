@@ -658,6 +658,10 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
     transformAnimated = animTranslator->isAnimatedTransform(from);
   }
 
+  // For insurance, we will make sure there aren't any ordered ops before we start
+  xformSchema.ClearXformOpOrder();
+
+  // This adds an op to the stack so we should do it after ClearXformOpOrder():
   xformSchema.SetResetXformStack(!inheritsTransform);
 
   bool plugAnimated = animationCheck(animTranslator, MPlug(from, m_visible));

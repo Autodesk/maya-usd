@@ -98,8 +98,9 @@ void Camera::checkCurrentCameras(MObject cameraNode)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus Camera::updateAttributes(MObject to, UsdGeomCamera& usdCamera)
+MStatus Camera::updateAttributes(MObject to, const UsdPrim& prim)
 {
+  UsdGeomCamera usdCamera(prim);
   const char* const errorString = "CameraTranslator: error setting maya camera parameters";
   const float mm_to_inches = 0.0393701f;
   UsdTimeCode timeCode = UsdTimeCode::EarliestTime();
@@ -204,7 +205,6 @@ MStatus Camera::updateAttributes(MObject to, UsdGeomCamera& usdCamera)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Camera::update(const UsdPrim& prim)
 {
-  UsdGeomCamera usdCamera(prim);
   MObjectHandle handle;
   if(context() && !context()->getMObject(prim, handle, MFn::kCamera))
   {
@@ -212,7 +212,7 @@ MStatus Camera::update(const UsdPrim& prim)
     return MS::kFailure;
   }
   MObject to = handle.object();
-  return updateAttributes(to, usdCamera);
+  return updateAttributes(to, prim);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -220,7 +220,7 @@ MStatus Camera::import(const UsdPrim& prim, MObject& parent, MObject& createdObj
 {
   const char* const errorString = "CameraTranslator: error setting maya camera parameters";
   UsdGeomCamera usdCamera(prim);
-  
+
   MStatus status;
   MFnDagNode fn;
   MString name(prim.GetName().GetText() + MString("Shape"));
@@ -261,7 +261,7 @@ MStatus Camera::import(const UsdPrim& prim, MObject& parent, MObject& createdObj
     usdCamera.GetFocusDistanceAttr().Get(&focusDistance, timeCode);
     AL_MAYA_CHECK_ERROR(DgNodeTranslator::setDistance(to, m_focusDistance, MDistance(focusDistance, MDistance::kCentimeters)), errorString);
   }
-  return updateAttributes(to, usdCamera);
+  return updateAttributes(to, prim);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -270,6 +270,14 @@ UsdPrim Camera::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPa
 {
   UsdGeomCamera usdCamera = UsdGeomCamera::Define(stage, usdPath);
   UsdPrim prim = usdCamera.GetPrim();
+  writePrim(prim, dagPath, params);
+  return prim;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void Camera::writePrim(UsdPrim &prim, MDagPath dagPath, const ExporterParams& params)
+{
+  UsdGeomCamera usdCamera(prim);
 
   MStatus status;
   MFnCamera fnCamera(dagPath, &status);
@@ -328,8 +336,6 @@ UsdPrim Camera::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPa
     animTranslator->addPlug(MPlug(cameraObject, m_fstop), usdCamera.GetFStopAttr(), true);
     animTranslator->addPlug(MPlug(cameraObject, m_focusDistance), usdCamera.GetFocusDistanceAttr(), true);
   }
-
-  return usdCamera.GetPrim();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
