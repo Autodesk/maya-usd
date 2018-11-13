@@ -48,18 +48,27 @@ TF_REGISTRY_FUNCTION(TfType) {
 namespace {
 
 void _changeTransform(
-    MNodeMessage::AttributeMessage /*msg*/, MPlug& /*plug*/,
-    MPlug& /*otherPlug*/, void* clientData) {
+    MNodeMessage::AttributeMessage /*msg*/, MPlug& plug, MPlug& /*otherPlug*/,
+    void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
-    // We need both dirty params and dirty transform to get this working?
-    adapter->MarkDirty(
-        HdLight::DirtyTransform | HdLight::DirtyParams |
-        HdLight::DirtyShadowParams);
+    if (plug == MayaAttrs::dagNode::visibility) {
+        if (adapter->UpdateVisibility()) {
+            adapter->RemovePrim();
+            adapter->Populate();
+        }
+    } else if (adapter->IsVisible()) {
+        // We need both dirty params and dirty transform to get this working?
+        adapter->MarkDirty(
+            HdLight::DirtyTransform | HdLight::DirtyParams |
+            HdLight::DirtyShadowParams);
+    }
 }
 
 void _dirtyParams(MObject& /*node*/, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
-    adapter->MarkDirty(HdLight::DirtyParams | HdLight::DirtyShadowParams);
+    if (adapter->IsVisible()) {
+        adapter->MarkDirty(HdLight::DirtyParams | HdLight::DirtyShadowParams);
+    }
 }
 
 } // namespace
@@ -73,7 +82,9 @@ bool HdMayaLightAdapter::IsSupported() {
 }
 
 void HdMayaLightAdapter::Populate() {
-    GetDelegate()->InsertSprim(LightType(), GetID(), HdLight::AllDirty);
+    if (IsVisible()) {
+        GetDelegate()->InsertSprim(LightType(), GetID(), HdLight::AllDirty);
+    }
 }
 
 void HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits) {

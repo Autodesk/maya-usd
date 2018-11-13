@@ -373,9 +373,9 @@ void MtohRenderOverride::DetectMayaDefaultLighting(
             if (hasDirection && !hasPosition) {
                 _defaultLight.SetPosition(
                     {-direction.x, -direction.y, -direction.z, 0.0f});
-                _defaultLight.SetDiffuse(GfVec4f(
-                    intensity * color.r, intensity * color.g,
-                    intensity * color.b, 1.0f));
+                _defaultLight.SetDiffuse({intensity * color.r,
+                                          intensity * color.g,
+                                          intensity * color.b, 1.0f});
                 foundMayaDefaultLight = true;
             }
         }

@@ -63,7 +63,7 @@ public:
     virtual ~HdMayaDagAdapter() = default;
 
     HDMAYA_API
-    virtual bool GetVisible();
+    virtual bool GetVisible() { return IsVisible(); }
     HDMAYA_API
     virtual void CreateCallbacks() override;
     HDMAYA_API
@@ -76,7 +76,10 @@ public:
 
     HDMAYA_API
     GfMatrix4d& GetTransform();
+    HDMAYA_API
+    bool UpdateVisibility();
     const MDagPath& GetDagPath() { return _dagPath; }
+    const bool IsVisible() { return _isVisible; }
 
 protected:
     HDMAYA_API
@@ -85,6 +88,7 @@ protected:
 private:
     MDagPath _dagPath;
     GfMatrix4d _transform;
+    bool _isVisible = true;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

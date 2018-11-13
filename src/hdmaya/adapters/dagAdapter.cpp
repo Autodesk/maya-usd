@@ -49,8 +49,13 @@ void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
             "dirtied.\n",
             adapter->GetID().GetText(), plug.partialName().asChar());
     if (plug == MayaAttrs::dagNode::visibility) {
-        adapter->MarkDirty(HdChangeTracker::DirtyVisibility);
-    } else {
+        if (adapter->UpdateVisibility()) {
+            // Transform can change while dag path is hidden.
+            adapter->MarkDirty(
+                HdChangeTracker::DirtyVisibility |
+                HdChangeTracker::DirtyTransform);
+        }
+    } else if (adapter->IsVisible()) {
         adapter->MarkDirty(HdChangeTracker::DirtyTransform);
     }
 }
@@ -59,12 +64,8 @@ void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
 
 HdMayaDagAdapter::HdMayaDagAdapter(
     const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath)
-    : HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {}
-
-bool HdMayaDagAdapter::GetVisible() {
-    MDagPath path(GetDagPath());
-    if (ARCH_UNLIKELY(!path.isValid())) { return {}; }
-    return path.isVisible();
+    : HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {
+    UpdateVisibility();
 }
 
 void HdMayaDagAdapter::CalculateTransform() {
@@ -104,6 +105,16 @@ void HdMayaDagAdapter::RemovePrim() { GetDelegate()->RemoveRprim(GetID()); }
 void HdMayaDagAdapter::PopulateSelection(
     const HdSelection::HighlightMode& mode, HdSelection* selection) {
     selection->AddRprim(mode, GetID());
+}
+
+bool HdMayaDagAdapter::UpdateVisibility() {
+    if (ARCH_UNLIKELY(!GetDagPath().isValid())) { return false; }
+    const auto visible = GetDagPath().isVisible();
+    if (visible != _isVisible) {
+        _isVisible = visible;
+        return true;
+    }
+    return false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
