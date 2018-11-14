@@ -11,7 +11,11 @@ target_link_libraries(mtoh PRIVATE hdmaya usdShade)
 target_include_directories(mtoh PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/..")
 set_target_properties(mtoh PROPERTIES PREFIX "")
 set_target_properties(mtoh PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
-set_target_properties(mtoh PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
+if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    set_target_properties(mtoh PROPERTIES INSTALL_RPATH "@loader_path/../lib")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set_target_properties(mtoh PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
+endif ()
 maya_set_plugin_properties(mtoh)
 
 # M3dView needs this (technically, MNativeWindowHdl.h)
@@ -34,3 +38,12 @@ endif ()
 install(
     TARGETS mtoh
     DESTINATION plug-ins)
+
+if (INSTALL_MAYA_MOD)
+    install(CODE
+    "file(WRITE \"${CMAKE_INSTALL_PREFIX}/mtoh.mod\"
+\"+ mtoh any ${CMAKE_INSTALL_PREFIX}
+MAYA_SCRIPT_PATH +:= scripts
+PYTHONPATH +:= scripts
+\")")
+endif ()

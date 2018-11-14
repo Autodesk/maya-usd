@@ -43,6 +43,9 @@ target_include_directories(hdmaya SYSTEM PUBLIC ${TBB_INCLUDE_DIRS})
 target_compile_features(hdmaya PUBLIC cxx_std_11)
 target_compile_definitions(hdmaya PRIVATE "HDMAYA_EXPORT=1")
 set_target_properties(hdmaya PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
+if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    set_target_properties(hdmaya PROPERTIES INSTALL_NAME_DIR "@loader_path/../lib")
+endif ()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     # Prevent windows.h from defining min and max macros.
