@@ -62,19 +62,38 @@ void _nodeAdded(MObject& obj, void* clientData) {
 }
 
 template <typename T>
-inline void _FindAdapter(const SdfPath&, const std::function<void(T*)>&) {
-    // Do nothing.
+inline bool _FindAdapter(const SdfPath&, const std::function<void(T*)>&) {
+    return false;
 }
 
 template <typename T, typename M0, typename... M>
-inline void _FindAdapter(
+inline bool _FindAdapter(
     const SdfPath& id, const std::function<void(T*)>& f, const M0& m0,
     const M&... m) {
     auto* adapterPtr = TfMapLookupPtr(m0, id);
     if (adapterPtr == nullptr) {
-        _FindAdapter<T>(id, f, m...);
+        return _FindAdapter<T>(id, f, m...);
     } else {
         f(static_cast<T*>(adapterPtr->get()));
+        return true;
+    }
+}
+
+template <typename T>
+inline bool _RemoveAdapter(const SdfPath&, const std::function<void(T*)>&) {
+    return false;
+}
+
+template <typename T, typename M0, typename... M>
+inline bool _RemoveAdapter(
+    const SdfPath& id, const std::function<void(T*)>& f, M0& m0, M&... m) {
+    auto* adapterPtr = TfMapLookupPtr(m0, id);
+    if (adapterPtr == nullptr) {
+        return _RemoveAdapter<T>(id, f, m...);
+    } else {
+        f(static_cast<T*>(adapterPtr->get()));
+        m0.erase(id);
+        return true;
     }
 }
 
@@ -161,31 +180,35 @@ void HdMayaSceneDelegate::Populate() {
 }
 
 void HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
-    // FIXME: Improve this function!
-    HdMayaShapeAdapterPtr adapter;
-    if (TfMapLookup(_shapeAdapters, id, &adapter) && adapter != nullptr) {
-        adapter->RemovePrim();
-        adapter->RemoveCallbacks();
-        _shapeAdapters.erase(id);
+    _RemoveAdapter<HdMayaAdapter>(
+        id,
+        [](HdMayaAdapter* a) {
+            a->RemovePrim();
+            a->RemoveCallbacks();
+        },
+        _shapeAdapters, _lightAdapters, _materialAdapters);
+}
+
+void HdMayaSceneDelegate::RenameAdapter(const SdfPath& id, const MObject& obj) {
+    if (_RemoveAdapter<HdMayaAdapter>(
+            id,
+            [](HdMayaAdapter* a) {
+                a->RemovePrim();
+                a->RemoveCallbacks();
+            },
+            _shapeAdapters, _lightAdapters)) {
+        MFnDagNode dgNode(obj);
+        MDagPath path;
+        dgNode.getPath(path);
+        if (path.isValid()) { InsertDag(path); }
         return;
     }
-
-    HdMayaLightAdapterPtr lightAdapter;
-    if (TfMapLookup(_lightAdapters, id, &lightAdapter) &&
-        lightAdapter != nullptr) {
-        lightAdapter->RemovePrim();
-        lightAdapter->RemoveCallbacks();
-        _lightAdapters.erase(id);
-        return;
-    }
-
-    HdMayaMaterialAdapterPtr materialAdapter;
-    if (TfMapLookup(_materialAdapters, id, &materialAdapter) &&
-        materialAdapter != nullptr) {
-        materialAdapter->RemovePrim();
-        materialAdapter->RemoveCallbacks();
-        _materialAdapters.erase(id);
-    }
+    _RemoveAdapter<HdMayaMaterialAdapter>(
+        id,
+        [](HdMayaMaterialAdapter*) {
+            // TODO: Mark objects dirty with the old path.
+        },
+        _materialAdapters);
 }
 
 void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {

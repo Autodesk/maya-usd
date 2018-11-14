@@ -40,6 +40,11 @@ void _aboutToDelete(MObject& node, MDGModifier& modifier, void* clientData) {
     adapter->GetDelegate()->RemoveAdapter(adapter->GetID());
 }
 
+void _nameChanged(MObject& node, const MString& /*str*/, void* clientData) {
+    auto* adapter = reinterpret_cast<HdMayaAdapter*>(clientData);
+    adapter->GetDelegate()->RenameAdapter(adapter->GetID(), adapter->GetNode());
+}
+
 } // namespace
 
 HdMayaAdapter::HdMayaAdapter(
@@ -67,6 +72,9 @@ void HdMayaAdapter::CreateCallbacks() {
         MStatus status;
         auto id = MNodeMessage::addNodeAboutToDeleteCallback(
             _node, _aboutToDelete, this, &status);
+        if (status) { AddCallback(id); }
+        id = MNodeMessage::addNameChangedCallback(
+            _node, _nameChanged, this, &status);
         if (status) { AddCallback(id); }
     }
 }

@@ -59,7 +59,10 @@ public:
     void RemoveRprim(const SdfPath& id);
     HDMAYA_API
     void RemoveSprim(const TfToken& typeId, const SdfPath& id);
+    HDMAYA_API
     virtual void RemoveAdapter(const SdfPath& id) = 0;
+    HDMAYA_API
+    virtual void RenameAdapter(const SdfPath& id, const MObject& obj) = 0;
     const HdRprimCollection& GetRprimCollection() { return _rprimCollection; }
     HDMAYA_API
     SdfPath GetPrimPath(const MDagPath& dg);

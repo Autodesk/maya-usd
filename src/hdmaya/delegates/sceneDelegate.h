@@ -68,6 +68,7 @@ public:
 
     void Populate() override;
     void RemoveAdapter(const SdfPath& id) override;
+    void RenameAdapter(const SdfPath& id, const MObject& obj) override;
     void InsertDag(const MDagPath& dag);
     void SetParams(const HdMayaParams& params) override;
     void PopulateSelectedPaths(
