@@ -105,6 +105,7 @@ protected:
         const SdfPath& textureId) override;
     HdTextureResourceSharedPtr GetTextureResource(
         const SdfPath& textureId) override;
+    bool _CreateMaterial(const SdfPath& id, const MObject& obj);
 
 private:
     std::unordered_map<SdfPath, HdMayaShapeAdapterPtr, SdfPath::Hash>

@@ -207,22 +207,25 @@ void HdMayaSceneDelegate::RenameAdapter(const SdfPath& id, const MObject& obj) {
         if (path.isValid()) { InsertDag(path); }
         return;
     }
-    if (!_RemoveAdapter<HdMayaMaterialAdapter>(
+    if (_RemoveAdapter<HdMayaMaterialAdapter>(
             id,
-            [this, &id](HdMayaMaterialAdapter* a) {
+            [](HdMayaMaterialAdapter* a) {
                 a->RemovePrim();
                 a->RemoveCallbacks();
-                auto& renderIndex = GetRenderIndex();
-                auto& changeTracker = renderIndex.GetChangeTracker();
-                for (const auto& rprimId : renderIndex.GetRprimIds()) {
-                    const auto* rprim = renderIndex.GetRprim(rprimId);
-                    if (rprim != nullptr && rprim->GetMaterialId() == id) {
-                        changeTracker.MarkRprimDirty(
-                            rprimId, HdChangeTracker::DirtyMaterialId);
-                    }
-                }
             },
             _materialAdapters)) {
+        auto& renderIndex = GetRenderIndex();
+        auto& changeTracker = renderIndex.GetChangeTracker();
+        for (const auto& rprimId : renderIndex.GetRprimIds()) {
+            const auto* rprim = renderIndex.GetRprim(rprimId);
+            if (rprim != nullptr && rprim->GetMaterialId() == id) {
+                changeTracker.MarkRprimDirty(
+                    rprimId, HdChangeTracker::DirtyMaterialId);
+            }
+        }
+        _CreateMaterial(GetMaterialPath(obj), obj);
+
+    } else {
         TF_WARN(
             "HdMayaSceneDelegate::RenameAdapter(%s) -- Adapter does not exists",
             id.GetText());
@@ -267,10 +270,16 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
         if (TfMapLookupPtr(_shapeAdapters, id) != nullptr) { return; }
         auto adapter = adapterCreator(this, dag);
         if (adapter == nullptr || !adapter->IsSupported()) { return; }
+        auto material = adapter->GetMaterial();
+        if (material != MObject::kNullObj) {
+            const auto materialId = GetMaterialPath(material);
+            if (TfMapLookupPtr(_materialAdapters, materialId) == nullptr) {
+                _CreateMaterial(materialId, material);
+            }
+        }
         adapter->Populate();
         adapter->CreateCallbacks();
         _shapeAdapters.insert({id, adapter});
-        GetMaterialId(id);
     }
 }
 
@@ -452,15 +461,8 @@ SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id) {
         return materialId;
     }
 
-    auto materialCreator =
-        HdMayaAdapterRegistry::GetMaterialAdapterCreator(material);
-    if (materialCreator == nullptr) { return _fallbackMaterial; }
-    auto materialAdapter = materialCreator(materialId, this, material);
-    if (materialAdapter == nullptr) { return _fallbackMaterial; }
-    materialAdapter->Populate();
-    materialAdapter->CreateCallbacks();
-    _materialAdapters.insert({materialId, materialAdapter});
-    return materialId;
+    return _CreateMaterial(materialId, material) ? materialId
+                                                 : _fallbackMaterial;
 }
 
 std::string HdMayaSceneDelegate::GetSurfaceShaderSource(const SdfPath& id) {
@@ -574,6 +576,19 @@ HdTextureResourceSharedPtr HdMayaSceneDelegate::GetTextureResource(
             return a->GetTextureResource(textureId.GetNameToken());
         },
         _materialAdapters);
+}
+
+bool HdMayaSceneDelegate::_CreateMaterial(
+    const SdfPath& id, const MObject& obj) {
+    auto materialCreator =
+        HdMayaAdapterRegistry::GetMaterialAdapterCreator(obj);
+    if (materialCreator == nullptr) { return false; }
+    auto materialAdapter = materialCreator(id, this, obj);
+    if (materialAdapter == nullptr) { return false; }
+    materialAdapter->Populate();
+    materialAdapter->CreateCallbacks();
+    _materialAdapters.insert({id, materialAdapter});
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
