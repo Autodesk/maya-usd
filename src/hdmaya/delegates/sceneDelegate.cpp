@@ -193,7 +193,8 @@ void HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
     }
 }
 
-void HdMayaSceneDelegate::RenameAdapter(const SdfPath& id, const MObject& obj) {
+void HdMayaSceneDelegate::RecreateAdapter(
+    const SdfPath& id, const MObject& obj) {
     if (_RemoveAdapter<HdMayaAdapter>(
             id,
             [](HdMayaAdapter* a) {

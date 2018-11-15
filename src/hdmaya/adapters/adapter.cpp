@@ -42,7 +42,8 @@ void _aboutToDelete(MObject& node, MDGModifier& modifier, void* clientData) {
 
 void _nameChanged(MObject& node, const MString& /*str*/, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaAdapter*>(clientData);
-    adapter->GetDelegate()->RenameAdapter(adapter->GetID(), adapter->GetNode());
+    adapter->GetDelegate()->RecreateAdapter(
+        adapter->GetID(), adapter->GetNode());
 }
 
 } // namespace

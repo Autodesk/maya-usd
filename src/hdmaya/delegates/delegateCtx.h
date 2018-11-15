@@ -62,7 +62,7 @@ public:
     HDMAYA_API
     virtual void RemoveAdapter(const SdfPath& id) = 0;
     HDMAYA_API
-    virtual void RenameAdapter(const SdfPath& id, const MObject& obj) = 0;
+    virtual void RecreateAdapter(const SdfPath& id, const MObject& obj) = 0;
     const HdRprimCollection& GetRprimCollection() { return _rprimCollection; }
     HDMAYA_API
     SdfPath GetPrimPath(const MDagPath& dg);

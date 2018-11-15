@@ -29,6 +29,7 @@
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/tokens.h>
 
+#include <maya/MDagMessage.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
@@ -60,6 +61,14 @@ void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
     }
 }
 
+void _DagChanged(MDagPath& child, MDagPath& parent, void* clientData) {
+    TF_UNUSED(child);
+    TF_UNUSED(parent);
+    auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    adapter->GetDelegate()->RecreateAdapter(
+        adapter->GetID(), adapter->GetNode());
+}
+
 } // namespace
 
 HdMayaDagAdapter::HdMayaDagAdapter(
@@ -88,6 +97,9 @@ void HdMayaDagAdapter::CreateCallbacks() {
         if (obj != MObject::kNullObj) {
             auto id = MNodeMessage::addNodeDirtyPlugCallback(
                 obj, _TransformNodeDirty, this, &status);
+            if (status) { AddCallback(id); }
+            id = MDagMessage::addParentAddedDagPathCallback(
+                dag, _DagChanged, this, &status);
             if (status) { AddCallback(id); }
         }
     }
