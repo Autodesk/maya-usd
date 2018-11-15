@@ -180,13 +180,17 @@ void HdMayaSceneDelegate::Populate() {
 }
 
 void HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
-    _RemoveAdapter<HdMayaAdapter>(
-        id,
-        [](HdMayaAdapter* a) {
-            a->RemovePrim();
-            a->RemoveCallbacks();
-        },
-        _shapeAdapters, _lightAdapters, _materialAdapters);
+    if (!_RemoveAdapter<HdMayaAdapter>(
+            id,
+            [](HdMayaAdapter* a) {
+                a->RemovePrim();
+                a->RemoveCallbacks();
+            },
+            _shapeAdapters, _lightAdapters, _materialAdapters)) {
+        TF_WARN(
+            "HdMayaSceneDelegate::RemoveAdapter(%s) -- Adapter does not exists",
+            id.GetText());
+    }
 }
 
 void HdMayaSceneDelegate::RenameAdapter(const SdfPath& id, const MObject& obj) {
@@ -203,12 +207,26 @@ void HdMayaSceneDelegate::RenameAdapter(const SdfPath& id, const MObject& obj) {
         if (path.isValid()) { InsertDag(path); }
         return;
     }
-    _RemoveAdapter<HdMayaMaterialAdapter>(
-        id,
-        [](HdMayaMaterialAdapter*) {
-            // TODO: Mark objects dirty with the old path.
-        },
-        _materialAdapters);
+    if (!_RemoveAdapter<HdMayaMaterialAdapter>(
+            id,
+            [this, &id](HdMayaMaterialAdapter* a) {
+                a->RemovePrim();
+                a->RemoveCallbacks();
+                auto& renderIndex = GetRenderIndex();
+                auto& changeTracker = renderIndex.GetChangeTracker();
+                for (const auto& rprimId : renderIndex.GetRprimIds()) {
+                    const auto* rprim = renderIndex.GetRprim(rprimId);
+                    if (rprim != nullptr && rprim->GetMaterialId() == id) {
+                        changeTracker.MarkRprimDirty(
+                            rprimId, HdChangeTracker::DirtyMaterialId);
+                    }
+                }
+            },
+            _materialAdapters)) {
+        TF_WARN(
+            "HdMayaSceneDelegate::RenameAdapter(%s) -- Adapter does not exists",
+            id.GetText());
+    }
 }
 
 void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
