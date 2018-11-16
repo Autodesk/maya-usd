@@ -63,7 +63,7 @@ void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
     }
 }
 
-void _DagChanged(MDagPath& child, MDagPath& parent, void* clientData) {
+void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData) {
     TF_UNUSED(child);
     TF_UNUSED(parent);
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
