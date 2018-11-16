@@ -182,6 +182,17 @@ set_target_properties(usdGeom PROPERTIES
 list(APPEND _IMPORT_CHECK_TARGETS usdGeom )
 list(APPEND _IMPORT_CHECK_FILES_FOR_usdGeom "${_IMPORT_PREFIX}/lib/libusdGeom.so" )
 
+# Import target "usdVol" for configuration "Release"
+set_property(TARGET usdVol APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+set_target_properties(usdVol PROPERTIES
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "tf;usd;usdGeom"
+  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libusdVol.so"
+  IMPORTED_SONAME_RELEASE "libusdVol.so"
+  )
+
+list(APPEND _IMPORT_CHECK_TARGETS usdVol )
+list(APPEND _IMPORT_CHECK_FILES_FOR_usdVol "${_IMPORT_PREFIX}/lib/libusdVol.so" )
+
 # Import target "usdLux" for configuration "Release"
 set_property(TARGET usdLux APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(usdLux PROPERTIES
@@ -363,7 +374,7 @@ list(APPEND _IMPORT_CHECK_FILES_FOR_hdStream "${_IMPORT_PREFIX}/lib/libhdStream.
 # Import target "usdImaging" for configuration "Release"
 set_property(TARGET usdImaging APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(usdImaging PROPERTIES
-  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "gf;tf;plug;trace;vt;work;hd;pxOsd;sdf;usd;usdGeom;usdLux;usdShade;ar;${_IMPORT_PREFIX}/lib/libboost_python.so;${_IMPORT_PREFIX}/lib/libtbb.so"
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "gf;tf;plug;trace;vt;work;hd;pxOsd;sdf;usd;usdGeom;usdLux;usdShade;usdVol;ar;${_IMPORT_PREFIX}/lib/libboost_python.so;${_IMPORT_PREFIX}/lib/libtbb.so"
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libusdImaging.so"
   IMPORTED_SONAME_RELEASE "libusdImaging.so"
   )
@@ -374,14 +385,25 @@ list(APPEND _IMPORT_CHECK_FILES_FOR_usdImaging "${_IMPORT_PREFIX}/lib/libusdImag
 # Import target "usdImagingGL" for configuration "Release"
 set_property(TARGET usdImagingGL APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(usdImagingGL PROPERTIES
-#  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "gf;tf;plug;trace;vt;work;garch;glf;hd;hdx;pxOsd;sdf;usd;usdGeom;usdHydra;usdShade;usdImaging;ar;${_IMPORT_PREFIX}/lib/libboost_python.so;/usr/lib64/libGL.so;/usr/lib64/libGLU.so;${MAYA_LOCATION}/lib/libglew.so;${_IMPORT_PREFIX}/lib/libtbb.so"
-  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "gf;tf;plug;trace;vt;work;garch;glf;hd;hdx;pxOsd;sdf;usd;usdGeom;usdHydra;usdShade;usdImaging;ar;${_IMPORT_PREFIX}/lib/libboost_python.so;${MAYA_LOCATION}/lib/libglew.so;${_IMPORT_PREFIX}/lib/libtbb.so"
+#  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "gf;tf;plug;trace;vt;work;garch;glf;hd;hdx;pxOsd;sdf;sdr;usd;usdGeom;usdHydra;usdShade;usdImaging;ar;${_IMPORT_PREFIX}/lib/libboost_python.so;/usr/lib64/libGL.so;/usr/lib64/libGLU.so;${MAYA_LOCATION}/lib/libglew.so;${_IMPORT_PREFIX}/lib/libtbb.so"
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "gf;tf;plug;trace;vt;work;garch;glf;hd;hdx;pxOsd;sdf;sdr;usd;usdGeom;usdHydra;usdShade;usdImaging;ar;${_IMPORT_PREFIX}/lib/libboost_python.so;${MAYA_LOCATION}/lib/libglew.so;${_IMPORT_PREFIX}/lib/libtbb.so"
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libusdImagingGL.so"
   IMPORTED_SONAME_RELEASE "libusdImagingGL.so"
   )
 
 list(APPEND _IMPORT_CHECK_TARGETS usdImagingGL )
 list(APPEND _IMPORT_CHECK_FILES_FOR_usdImagingGL "${_IMPORT_PREFIX}/lib/libusdImagingGL.so" )
+
+# Import target "usdShaders" for configuration "Release"
+set_property(TARGET usdShaders APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+set_target_properties(usdShaders PROPERTIES
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "ar;ndr;sdr;usdShade"
+  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libusdShaders.so"
+  IMPORTED_SONAME_RELEASE "libusdShaders.so"
+  )
+
+list(APPEND _IMPORT_CHECK_TARGETS usdShaders )
+list(APPEND _IMPORT_CHECK_FILES_FOR_usdShaders "${_IMPORT_PREFIX}/lib/libusdShaders.so" )
 
 # Import target "usdSkelImaging" for configuration "Release"
 set_property(TARGET usdSkelImaging APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
@@ -393,6 +415,17 @@ set_target_properties(usdSkelImaging PROPERTIES
 
 list(APPEND _IMPORT_CHECK_TARGETS usdSkelImaging )
 list(APPEND _IMPORT_CHECK_FILES_FOR_usdSkelImaging "${_IMPORT_PREFIX}/lib/libusdSkelImaging.so" )
+
+# Import target "usdVolImaging" for configuration "Release"
+set_property(TARGET usdVolImaging APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+set_target_properties(usdVolImaging PROPERTIES
+  IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE "usdImaging"
+  IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libusdVolImaging.so"
+  IMPORTED_SONAME_RELEASE "libusdVolImaging.so"
+  )
+
+list(APPEND _IMPORT_CHECK_TARGETS usdVolImaging )
+list(APPEND _IMPORT_CHECK_FILES_FOR_usdVolImaging "${_IMPORT_PREFIX}/lib/libusdVolImaging.so" )
 
 # Import target "usdviewq" for configuration "Release"
 set_property(TARGET usdviewq APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)

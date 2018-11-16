@@ -1,3 +1,43 @@
+#-----------------------------------------------------------------------
+#
+# Sean (Nov 2018):
+#
+#                     THIS FILE IS OUT OF DATE
+#
+# This file has not been updated in a long time since we are not yet
+# supporting USD on Mac.
+#
+#-----------------------------------------------------------------------
+message(FATAL_ERROR "This file is out-of-date")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #----------------------------------------------------------------
 # Generated CMake target import file for configuration "Release".
 #----------------------------------------------------------------

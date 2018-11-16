@@ -1,9 +1,9 @@
 # This file has been auto-generated.
 # Note: only using Release artifacts as we only have USD in Release
 
-{ ufe-0.1.20-dbg-lin : a716a9b3c3f7c05d88a290ee555450b5fde6e801 }
-{ ufe-0.1.20-rel-lin : a716a9b3c3f7c05d88a290ee555450b5fde6e801 }
-{ ufe-0.1.20-dbg-osx : f5a392a202f33a0ed8fdf2f3b85a326250e09f07 }
-{ ufe-0.1.20-rel-osx : f5a392a202f33a0ed8fdf2f3b85a326250e09f07 }
-{ ufe-0.1.20-dbg-win : fad03b993d3702987cfed93b101b34ba19e04a50 }
-{ ufe-0.1.20-rel-win : fad03b993d3702987cfed93b101b34ba19e04a50 }
+{ ufe-1.0.0-dbg-lin : 4a2c62dd6ee12e62f4d6d20e6c2f3599f3a83137 }
+{ ufe-1.0.0-rel-lin : 4a2c62dd6ee12e62f4d6d20e6c2f3599f3a83137 }
+{ ufe-1.0.0-dbg-osx : 8f64a33b3c9563373dd5c38deaeaa29bffd8dd6d }
+{ ufe-1.0.0-rel-osx : 8f64a33b3c9563373dd5c38deaeaa29bffd8dd6d }
+{ ufe-1.0.0-dbg-win : 07305fa0a4980dc62e5c3428db6923f22b501c05 }
+{ ufe-1.0.0-rel-win : 07305fa0a4980dc62e5c3428db6923f22b501c05 }

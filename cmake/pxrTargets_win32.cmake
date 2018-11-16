@@ -22,7 +22,7 @@ set(CMAKE_IMPORT_FILE_VERSION 1)
 set(_targetsDefined)
 set(_targetsNotDefined)
 set(_expectedTargets)
-foreach(_expectedTarget arch tf gf js trace work plug vt ar kind sdf ndr sdr pcp usd usdGeom usdLux usdShade usdHydra usdRi usdSkel usdUI usdUtils garch hf cameraUtil pxOsd glf hd hdSt hdx hdStream usdImaging usdImagingGL usdSkelImaging usdviewq usdObj usdSchemaExamples px_vp20 pxrUsdMayaGL usdMaya pxrUsd pxrUsdTranslators)
+foreach(_expectedTarget arch tf gf js trace work plug vt ar kind sdf ndr sdr pcp usd usdGeom usdVol usdLux usdShade usdHydra usdRi usdSkel usdUI usdUtils garch hf cameraUtil pxOsd glf hd hdSt hdx hdStream usdImaging usdImagingGL usdShaders usdSkelImaging usdVolImaging usdviewq usdObj usdSchemaExamples px_vp20 pxrUsdMayaGL usdMaya pxrUsd pxrUsdTranslators)
   list(APPEND _expectedTargets ${_expectedTarget})
   if(NOT TARGET ${_expectedTarget})
     list(APPEND _targetsNotDefined ${_expectedTarget})
@@ -191,6 +191,14 @@ set_target_properties(usdGeom PROPERTIES
   INTERFACE_LINK_LIBRARIES "js;tf;plug;vt;sdf;trace;usd;work;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib"
 )
 
+# Create imported target usdVol
+add_library(usdVol SHARED IMPORTED)
+
+set_target_properties(usdVol PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
+  INTERFACE_LINK_LIBRARIES "tf;usd;usdGeom"
+)
+
 # Create imported target usdLux
 add_library(usdLux SHARED IMPORTED)
 
@@ -335,7 +343,7 @@ add_library(usdImaging SHARED IMPORTED)
 set_target_properties(usdImaging PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "gf;tf;plug;trace;vt;work;hd;pxOsd;sdf;usd;usdGeom;usdLux;usdShade;ar;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib"
+  INTERFACE_LINK_LIBRARIES "gf;tf;plug;trace;vt;work;hd;pxOsd;sdf;usd;usdGeom;usdLux;usdShade;usdVol;ar;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib"
 )
 
 # Create imported target usdImagingGL
@@ -344,7 +352,15 @@ add_library(usdImagingGL SHARED IMPORTED)
 set_target_properties(usdImagingGL PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include;${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "gf;tf;plug;trace;vt;work;garch;glf;hd;hdx;pxOsd;sdf;usd;usdGeom;usdShade;usdHydra;usdImaging;ar;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;opengl32;glu32;${AL_USDMAYA_USD_LOCATION}/lib/glew32.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib"
+  INTERFACE_LINK_LIBRARIES "gf;tf;plug;trace;vt;work;garch;glf;hd;hdx;pxOsd;sdf;sdr;usd;usdGeom;usdShade;usdHydra;usdImaging;ar;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;opengl32;glu32;${AL_USDMAYA_USD_LOCATION}/lib/glew32.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib"
+)
+
+# Create imported target usdShaders
+add_library(usdShaders SHARED IMPORTED)
+
+set_target_properties(usdShaders PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
+  INTERFACE_LINK_LIBRARIES "ar;ndr;sdr;usdShade"
 )
 
 # Create imported target usdSkelImaging
@@ -353,6 +369,14 @@ add_library(usdSkelImaging SHARED IMPORTED)
 set_target_properties(usdSkelImaging PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_LINK_LIBRARIES "hd;pxOsd;usdImaging;usdSkel"
+)
+
+# Create imported target usdVolImaging
+add_library(usdVolImaging SHARED IMPORTED)
+
+set_target_properties(usdVolImaging PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
+  INTERFACE_LINK_LIBRARIES "usdImaging"
 )
 
 # Create imported target usdviewq
@@ -444,8 +468,8 @@ set(_IMPORT_PREFIX)
 foreach(target ${_IMPORT_CHECK_TARGETS} )
   foreach(file ${_IMPORT_CHECK_FILES_FOR_${target}} )
     get_filename_component(barename "${file}" NAME)
-    # HACK - usdObj and hdStream are dynamic libs in Windows - these will be dll's
-    if(NOT EXISTS "${file}" AND NOT (("${barename}" STREQUAL "hdStream.lib" OR "${barename}" STREQUAL "usdObj.lib") AND WIN32))
+    # HACK - usdObj/hdStream/usdShders are dynamic libs in Windows (no .lib) - these will be dll's only
+    if(NOT EXISTS "${file}" AND NOT (("${barename}" STREQUAL "hdStream.lib" OR "${barename}" STREQUAL "usdObj.lib" OR "${barename}" STREQUAL "usdShaders.lib") AND WIN32))
       message(FATAL_ERROR "The imported target \"${target}\" references the file
    \"${file}\"
 but this file does not exist.  Possible reasons include:

@@ -16,7 +16,7 @@ set(CMAKE_IMPORT_FILE_VERSION 1)
 set(_targetsDefined)
 set(_targetsNotDefined)
 set(_expectedTargets)
-foreach(_expectedTarget arch tf gf js trace work plug vt ar kind sdf ndr sdr pcp usd usdGeom usdLux usdShade usdHydra usdRi usdSkel usdUI usdUtils garch hf cameraUtil pxOsd glf hd hdSt hdx hdStream usdImaging usdImagingGL usdSkelImaging usdviewq usdObj usdSchemaExamples px_vp20 pxrUsdMayaGL usdMaya pxrUsd pxrUsdTranslators)
+foreach(_expectedTarget arch tf gf js trace work plug vt ar kind sdf ndr sdr pcp usd usdGeom usdVol usdLux usdShade usdHydra usdRi usdSkel usdUI usdUtils garch hf cameraUtil pxOsd glf hd hdSt hdx hdStream usdImaging usdImagingGL usdShaders usdSkelImaging usdVolImaging usdviewq usdObj usdSchemaExamples px_vp20 pxrUsdMayaGL usdMaya pxrUsd pxrUsdTranslators)
   list(APPEND _expectedTargets ${_expectedTarget})
   if(NOT TARGET ${_expectedTarget})
     list(APPEND _targetsNotDefined ${_expectedTarget})
@@ -167,6 +167,13 @@ set_target_properties(usdGeom PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include"
 )
 
+# Create imported target usdVol
+add_library(usdVol SHARED IMPORTED)
+
+set_target_properties(usdVol PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
+)
+
 # Create imported target usdLux
 add_library(usdLux SHARED IMPORTED)
 
@@ -305,10 +312,24 @@ set_target_properties(usdImagingGL PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "/usr/include;${AL_USDMAYA_USD_LOCATION}/include;${AL_USDMAYA_USD_LOCATION}/include"
 )
 
+# Create imported target usdShaders
+add_library(usdShaders SHARED IMPORTED)
+
+set_target_properties(usdShaders PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
+)
+
 # Create imported target usdSkelImaging
 add_library(usdSkelImaging SHARED IMPORTED)
 
 set_target_properties(usdSkelImaging PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
+)
+
+# Create imported target usdVolImaging
+add_library(usdVolImaging SHARED IMPORTED)
+
+set_target_properties(usdVolImaging PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
 )
 
