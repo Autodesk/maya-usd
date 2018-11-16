@@ -55,12 +55,14 @@ void _changeTransform(
         if (adapter->UpdateVisibility()) {
             adapter->RemovePrim();
             adapter->Populate();
+            adapter->InvalidateTransform();
         }
     } else if (adapter->IsVisible()) {
         // We need both dirty params and dirty transform to get this working?
         adapter->MarkDirty(
             HdLight::DirtyTransform | HdLight::DirtyParams |
             HdLight::DirtyShadowParams);
+        adapter->InvalidateTransform();
     }
 }
 
@@ -68,6 +70,7 @@ void _dirtyParams(MObject& /*node*/, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     if (adapter->IsVisible()) {
         adapter->MarkDirty(HdLight::DirtyParams | HdLight::DirtyShadowParams);
+        adapter->InvalidateTransform();
     }
 }
 

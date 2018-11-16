@@ -75,11 +75,12 @@ public:
         const HdSelection::HighlightMode& mode, HdSelection* selection);
 
     HDMAYA_API
-    GfMatrix4d& GetTransform();
+    const GfMatrix4d& GetTransform();
     HDMAYA_API
     bool UpdateVisibility();
     const MDagPath& GetDagPath() { return _dagPath; }
     const bool IsVisible() { return _isVisible; }
+    void InvalidateTransform() { _invalidTransform = true; }
 
 protected:
     HDMAYA_API
@@ -89,6 +90,7 @@ private:
     MDagPath _dagPath;
     GfMatrix4d _transform;
     bool _isVisible = true;
+    bool _invalidTransform = true;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

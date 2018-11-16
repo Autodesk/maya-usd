@@ -193,7 +193,7 @@ void HdMayaDelegateCtx::FitFrustumToRprims(
         if (delegate == nullptr) { continue; }
         const auto extent = delegate->GetExtent(id);
         if (extent.IsEmpty()) { continue; }
-        const auto localToWorld = delegate->GetTransform(id);
+        auto localToWorld = delegate->GetTransform(id);
 
         if (isBoxInside(extent, getInverse(localToWorld))) {
             auto localToLight = localToWorld * worldToLight;

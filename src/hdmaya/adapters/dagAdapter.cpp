@@ -55,9 +55,11 @@ void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
             adapter->MarkDirty(
                 HdChangeTracker::DirtyVisibility |
                 HdChangeTracker::DirtyTransform);
+            adapter->InvalidateTransform();
         }
     } else if (adapter->IsVisible()) {
         adapter->MarkDirty(HdChangeTracker::DirtyTransform);
+        adapter->InvalidateTransform();
     }
 }
 
@@ -78,10 +80,13 @@ HdMayaDagAdapter::HdMayaDagAdapter(
 }
 
 void HdMayaDagAdapter::CalculateTransform() {
-    _transform = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
+    if (_invalidTransform) {
+        _transform = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
+        _invalidTransform = false;
+    }
 };
 
-GfMatrix4d& HdMayaDagAdapter::GetTransform() {
+const GfMatrix4d& HdMayaDagAdapter::GetTransform() {
     TF_DEBUG(HDMAYA_ADAPTER_GET)
         .Msg(
             "Called HdMayaDagAdapter::GetTransform() - %s\n",
