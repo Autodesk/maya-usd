@@ -61,7 +61,6 @@ protected:
 public:
     HDMAYA_API
     virtual ~HdMayaDagAdapter() = default;
-
     HDMAYA_API
     virtual bool GetVisible() { return IsVisible(); }
     HDMAYA_API
@@ -73,7 +72,6 @@ public:
     HDMAYA_API
     virtual void PopulateSelection(
         const HdSelection::HighlightMode& mode, HdSelection* selection);
-
     HDMAYA_API
     const GfMatrix4d& GetTransform();
     HDMAYA_API
@@ -84,7 +82,9 @@ public:
 
 protected:
     HDMAYA_API
-    void CalculateTransform();
+    void _CalculateTransform();
+    HDMAYA_API
+    void _AddHierarchyChangedCallback(MDagPath& dag);
 
 private:
     MDagPath _dagPath;

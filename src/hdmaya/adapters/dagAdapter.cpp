@@ -79,7 +79,7 @@ HdMayaDagAdapter::HdMayaDagAdapter(
     UpdateVisibility();
 }
 
-void HdMayaDagAdapter::CalculateTransform() {
+void HdMayaDagAdapter::_CalculateTransform() {
     if (_invalidTransform) {
         _transform = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
         _invalidTransform = false;
@@ -91,7 +91,7 @@ const GfMatrix4d& HdMayaDagAdapter::GetTransform() {
         .Msg(
             "Called HdMayaDagAdapter::GetTransform() - %s\n",
             _dagPath.partialPathName().asChar());
-    CalculateTransform();
+    _CalculateTransform();
     return _transform;
 }
 
@@ -103,9 +103,7 @@ void HdMayaDagAdapter::CreateCallbacks() {
             auto id = MNodeMessage::addNodeDirtyPlugCallback(
                 obj, _TransformNodeDirty, this, &status);
             if (status) { AddCallback(id); }
-            id = MDagMessage::addParentAddedDagPathCallback(
-                dag, _DagChanged, this, &status);
-            if (status) { AddCallback(id); }
+            _AddHierarchyChangedCallback(dag);
         }
     }
     HdMayaAdapter::CreateCallbacks();
@@ -132,6 +130,13 @@ bool HdMayaDagAdapter::UpdateVisibility() {
         return true;
     }
     return false;
+}
+
+void HdMayaDagAdapter::_AddHierarchyChangedCallback(MDagPath& dag) {
+    MStatus status;
+    auto id = MDagMessage::addParentAddedDagPathCallback(
+        dag, _HierarchyChanged, this, &status);
+    if (status) { AddCallback(id); }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

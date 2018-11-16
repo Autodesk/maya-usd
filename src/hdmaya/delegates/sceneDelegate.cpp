@@ -183,8 +183,8 @@ void HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
     if (!_RemoveAdapter<HdMayaAdapter>(
             id,
             [](HdMayaAdapter* a) {
-                a->RemovePrim();
                 a->RemoveCallbacks();
+                a->RemovePrim();
             },
             _shapeAdapters, _lightAdapters, _materialAdapters)) {
         TF_WARN(
@@ -198,8 +198,8 @@ void HdMayaSceneDelegate::RecreateAdapter(
     if (_RemoveAdapter<HdMayaAdapter>(
             id,
             [](HdMayaAdapter* a) {
-                a->RemovePrim();
                 a->RemoveCallbacks();
+                a->RemovePrim();
             },
             _shapeAdapters, _lightAdapters)) {
         MFnDagNode dgNode(obj);
@@ -211,8 +211,8 @@ void HdMayaSceneDelegate::RecreateAdapter(
     if (_RemoveAdapter<HdMayaMaterialAdapter>(
             id,
             [](HdMayaMaterialAdapter* a) {
-                a->RemovePrim();
                 a->RemoveCallbacks();
+                a->RemovePrim();
             },
             _materialAdapters)) {
         auto& renderIndex = GetRenderIndex();
