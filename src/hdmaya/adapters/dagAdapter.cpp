@@ -97,7 +97,11 @@ const GfMatrix4d& HdMayaDagAdapter::GetTransform() {
 
 void HdMayaDagAdapter::CreateCallbacks() {
     MStatus status;
-    for (auto dag = GetDagPath(); dag.length() > 0; dag.pop()) {
+    auto dag = GetDagPath();
+    if (dag.node() != dag.transform()) {
+        dag.pop();
+    }
+    for (; dag.length() > 0; dag.pop()) {
         MObject obj = dag.node();
         if (obj != MObject::kNullObj) {
             auto id = MNodeMessage::addNodeDirtyPlugCallback(
