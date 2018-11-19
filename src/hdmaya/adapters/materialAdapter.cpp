@@ -127,6 +127,12 @@ std::unordered_map<
               HdMayaAdapterTokens->eccentricity},
          }}};
 
+#ifndef USD_001901_BUILD
+enum class HdTextureType { Uv, Ptex, Udim };
+#endif
+
+#ifdef USD_001901_BUILD
+
 class UdimTextureFactory : public GlfTextureFactoryBase {
 public:
     virtual GlfTextureRefPtr New(
@@ -146,6 +152,8 @@ public:
         return nullptr;
     }
 };
+
+#endif
 
 } // namespace
 
@@ -353,7 +361,12 @@ private:
                 ret.emplace_back(
                     HdMaterialParam::ParamTypeTexture, it.GetName(),
                     it.GetFallbackValue(), GetID().AppendProperty(remappedName),
-                    _stSamplerCoords, textureType);
+                    _stSamplerCoords,
+#ifdef USD_001901_BUILD
+                    textureType);
+#else
+                    false);
+#endif
             } else {
                 ret.emplace_back(it);
             }
@@ -387,9 +400,11 @@ private:
                 } else {
                     _textureResources[paramName] = textureInstance.GetValue();
                 }
+#ifdef USD_001901_BUILD
                 if (GlfIsSupportedUdimTexture(filePath)) {
                     textureType = HdTextureType::Udim;
                 }
+#endif
                 return true;
             } else {
                 _textureResources[paramName].reset();
@@ -509,9 +524,11 @@ private:
         const TfToken& filePath) {
         if (filePath.IsEmpty()) { return {}; }
         auto textureType = HdTextureType::Uv;
+#ifdef USD_001901_BUILD
         if (GlfIsSupportedUdimTexture(filePath)) {
             textureType = HdTextureType::Udim;
         }
+#endif
         if (textureType != HdTextureType::Udim && !TfPathExists(filePath)) {
             return {};
         }
@@ -519,9 +536,13 @@ private:
         const auto origin = GlfImage::OriginUpperLeft;
         GlfTextureHandleRefPtr texture = nullptr;
         if (textureType == HdTextureType::Udim) {
+#ifdef USD_001901_BUILD
             UdimTextureFactory factory;
             texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
                 filePath, origin, &factory);
+#else
+            return nullptr;
+#endif
         } else {
             texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
                 filePath, origin);
@@ -530,8 +551,14 @@ private:
         // We can't really mimic texture wrapping and mirroring settings from
         // the uv placement node, so we don't touch those for now.
         return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
-            texture, textureType, HdWrapClamp, HdWrapClamp,
-            HdMinFilterLinearMipmapLinear, HdMagFilterLinear,
+            texture,
+#ifdef USD_001901_BUILD
+            textureType,
+#else
+            false,
+#endif
+            HdWrapClamp, HdWrapClamp, HdMinFilterLinearMipmapLinear,
+            HdMagFilterLinear,
             GetDelegate()->GetParams().textureMemoryPerTexture));
     }
 

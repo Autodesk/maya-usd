@@ -98,9 +98,7 @@ const GfMatrix4d& HdMayaDagAdapter::GetTransform() {
 void HdMayaDagAdapter::CreateCallbacks() {
     MStatus status;
     auto dag = GetDagPath();
-    if (dag.node() != dag.transform()) {
-        dag.pop();
-    }
+    if (dag.node() != dag.transform()) { dag.pop(); }
     for (; dag.length() > 0; dag.pop()) {
         MObject obj = dag.node();
         if (obj != MObject::kNullObj) {

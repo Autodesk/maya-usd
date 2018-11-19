@@ -13,6 +13,10 @@ find_package(TBB REQUIRED)
 link_directories(${USD_LIBRARY_DIR})
 link_directories(${USD_MAYA_LIBRARY_DIR})
 
+if (USD_VERSION VERSION_GREATER "0.18.11")
+    set (USD_001901_BUILD ON)
+endif ()
+
 set(MAYA_LIBS
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_Foundation_LIBRARY}
