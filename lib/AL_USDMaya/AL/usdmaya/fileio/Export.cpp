@@ -993,12 +993,19 @@ MStatus ExportCommand::doIt(const MArgList& args)
   }
   if(argData.isFlagSet("uvs", &status))
   {
-    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("uvs", 0, m_params.m_meshUvs), "ALUSDExport: Unable to fetch \"meshUV\" argument");
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("uvs", 0, m_params.m_meshUvs), "ALUSDExport: Unable to fetch \"meshUVS\" argument");
   }
   if(argData.isFlagSet("uvo", &status))
   {
-    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("uvo", 0, m_params.m_meshUV), "ALUSDExport: Unable to fetch \"meshUV\" argument");
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("uvo", 0, m_params.m_meshUV), "ALUSDExport: Unable to fetch \"meshUVOnly\" argument");
   }
+  if(argData.isFlagSet("pr", &status))
+  {
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("pr", 0, m_params.m_meshPointsAsPref), "ALUSDExport: Unable to fetch \"meshPointsPref\" argument");
+  }
+
+
+
   if(argData.isFlagSet("luv", &status))
   {
     MGlobal::displayWarning("-luv flag is deprecated in AL_usdmaya_ExportCommand\n");
@@ -1109,6 +1116,8 @@ MSyntax ExportCommand::createSyntax()
   status = syntax.addFlag("-uvs" , "-meshUVS", MSyntax::kBoolean); // If this is on, we export UV data beside normal data.
   AL_MAYA_CHECK_ERROR2(status, errorString);
   status = syntax.addFlag("-uvo" , "-meshUVOnly", MSyntax::kBoolean); // when this is on, only overs contains UV are exported.
+  AL_MAYA_CHECK_ERROR2(status, errorString);
+  status = syntax.addFlag("-pr" , "-meshPointsPref", MSyntax::kBoolean); // when this is on, only overs contains UV are exported.
   AL_MAYA_CHECK_ERROR2(status, errorString);
   status = syntax.addFlag("-luv" , "-leftHandedUV", MSyntax::kBoolean);
   AL_MAYA_CHECK_ERROR2(status, errorString);

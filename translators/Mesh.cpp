@@ -150,6 +150,10 @@ UsdPrim Mesh::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath
     {
       context.copyCreaseEdges();
     }
+    if (params.m_meshPointsAsPref)
+    {
+      context.copyBindPoseData(context.timeCode());
+    }
 
     // pick up any additional attributes attached to the mesh node (these will be added alongside the transform attributes)
     if(params.m_dynamicAttributes)
@@ -240,6 +244,7 @@ void Mesh::writeEdits(MDagPath& dagPath, UsdGeomMesh& geomPrim, uint32_t options
     context.copyCreaseEdges();
     context.copyUvSetData();
     context.copyColourSetData();
+    context.copyBindPoseData(t);
     if(options & kDynamicAttributes)
     {
       UsdPrim prim = geomPrim.GetPrim();

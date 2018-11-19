@@ -256,6 +256,10 @@ public:
   AL_USDMAYA_UTILS_PUBLIC
   void copyUvSetData();
 
+  /// \brief  copies the Points set data from maya into the usd prim as "pref"
+  AL_USDMAYA_UTILS_PUBLIC
+  void copyBindPoseData(UsdTimeCode time);
+
   /// \brief  copies the colour set data from maya into the usd prim.
   AL_USDMAYA_UTILS_PUBLIC
   void copyColourSetData();
