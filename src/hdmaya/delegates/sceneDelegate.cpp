@@ -42,6 +42,7 @@
 
 #include <maya/MDGMessage.h>
 #include <maya/MDagPath.h>
+#include <maya/MDagPathArray.h>
 #include <maya/MItDag.h>
 #include <maya/MString.h>
 
@@ -271,6 +272,16 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
         if (TfMapLookupPtr(_shapeAdapters, id) != nullptr) { return; }
         auto adapter = adapterCreator(this, dag);
         if (adapter == nullptr || !adapter->IsSupported()) { return; }
+        // We need to make sure the first dag is inserted as well.
+        if (dag.isInstanced() && dag.instanceNumber() != 0) {
+            MDagPathArray dags;
+            if (MDagPath::getAllPathsTo(dag.node(), dags) &&
+                dags.length() > 0 &&
+                !(dags[0] == dag)) { // The last check should be redundant.
+                InsertDag(dags[0]);
+            }
+        }
+
         auto material = adapter->GetMaterial();
         if (material != MObject::kNullObj) {
             const auto materialId = GetMaterialPath(material);
