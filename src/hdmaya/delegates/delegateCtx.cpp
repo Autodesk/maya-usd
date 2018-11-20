@@ -76,10 +76,6 @@ HdMayaDelegateCtx::HdMayaDelegateCtx(
     _rprimCollection.SetRootPath(_rprimPath);
     _rprimCollection.SetRenderTags({HdTokens->geometry});
     GetChangeTracker().AddCollection(TfToken("visible"));
-
-    _needsGLSLFX =
-        renderIndex->GetRenderDelegate()->GetMaterialNetworkSelector() ==
-        GlfGLSLFXTokens->glslfx;
 }
 
 void HdMayaDelegateCtx::InsertRprim(

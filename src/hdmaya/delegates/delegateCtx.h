@@ -74,15 +74,11 @@ public:
     HDMAYA_API
     void FitFrustumToRprims(GfFrustum& frustum, const GfMatrix4d& lightToWorld);
 
-    inline bool GetNeedsGLGLSFX() { return _needsGLSLFX; }
-
 private:
     HdRprimCollection _rprimCollection;
     SdfPath _rprimPath;
     SdfPath _sprimPath;
     SdfPath _materialPath;
-
-    bool _needsGLSLFX;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
