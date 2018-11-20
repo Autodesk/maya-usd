@@ -4,6 +4,7 @@ set(SRC
     adapters/adapterRegistry.cpp
     adapters/areaLightAdapter.cpp
     adapters/dagAdapter.cpp
+    adapters/directionalLightAdapter.cpp
     adapters/imagePlaneAdapter.cpp
     adapters/imagePlaneMaterialAdapter.cpp
     adapters/lightAdapter.cpp

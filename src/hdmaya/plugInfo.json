@@ -47,6 +47,12 @@
                         ],
                         "displayName": "Spot lights in Hydra for Maya."
                     },
+                    "HdMayaDirectionalLightAdapter": {
+                        "bases": [
+                            "HdMayaLightAdapter"
+                        ],
+                        "displayName": "Directional lights in Hydra for Maya."
+                    },
                     "HdMayaShapeAdapter": {
                         "bases": [
                             "HdMayaDagAdapter"

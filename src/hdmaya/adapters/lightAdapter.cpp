@@ -219,8 +219,6 @@ void HdMayaLightAdapter::CreateCallbacks() {
     HdMayaAdapter::CreateCallbacks();
 }
 
-void HdMayaLightAdapter::_CalculateLightParams(GlfSimpleLight& /*light*/) {}
-
 void HdMayaLightAdapter::_CalculateShadowParams(
     MFnLight& light, GfFrustum& frustum, HdxShadowParams& params) {
     TF_DEBUG(HDMAYA_ADAPTER_LIGHT_SHADOWS)
