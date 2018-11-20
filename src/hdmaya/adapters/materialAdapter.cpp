@@ -32,8 +32,10 @@
 #include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/glf/glslfx.h>
 #include <pxr/imaging/glf/textureRegistry.h>
+#ifdef USD_001901_BUILD
 #include <pxr/imaging/glf/udimTexture.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
+#endif
 
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
