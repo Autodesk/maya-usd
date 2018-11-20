@@ -69,7 +69,7 @@ public:
     void Populate() override;
     void RemoveAdapter(const SdfPath& id) override;
     void RecreateAdapter(const SdfPath& id, const MObject& obj) override;
-    void InsertDag(const MDagPath& dag);
+    SdfPath InsertDag(const MDagPath& dag) override;
     void SetParams(const HdMayaParams& params) override;
     void PopulateSelectedPaths(
         const MSelectionList& mayaSelection,

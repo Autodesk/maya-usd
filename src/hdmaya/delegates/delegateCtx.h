@@ -68,6 +68,7 @@ public:
     SdfPath GetPrimPath(const MDagPath& dg);
     HDMAYA_API
     SdfPath GetMaterialPath(const MObject& obj);
+    virtual SdfPath InsertDag(const MDagPath& dag) { return {}; }
 
     /// Fit the frustum's near/far value to contain all
     /// the rprims inside the render index;
