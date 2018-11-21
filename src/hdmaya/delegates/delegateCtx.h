@@ -61,6 +61,8 @@ public:
     HDMAYA_API
     void RemoveSprim(const TfToken& typeId, const SdfPath& id);
     HDMAYA_API
+    void RemoveInstancer(const SdfPath& id);
+    HDMAYA_API
     virtual void RemoveAdapter(const SdfPath& id) = 0;
     HDMAYA_API
     virtual void RecreateAdapter(const SdfPath& id, const MObject& obj) = 0;
@@ -69,7 +71,6 @@ public:
     SdfPath GetPrimPath(const MDagPath& dg);
     HDMAYA_API
     SdfPath GetMaterialPath(const MObject& obj);
-    virtual SdfPath InsertDag(const MDagPath& dag) { return {}; }
 
     /// Fit the frustum's near/far value to contain all
     /// the rprims inside the render index;

@@ -44,7 +44,7 @@ public:
     HDMAYA_API
     virtual HdMeshTopology GetMeshTopology();
     HDMAYA_API
-    virtual HdPrimvarDescriptorVector GetPrimvarDescriptors(
+    HdPrimvarDescriptorVector GetPrimvarDescriptors(
         HdInterpolation interpolation);
     HDMAYA_API
     virtual void MarkDirty(HdDirtyBits dirtyBits) override;
@@ -57,9 +57,19 @@ public:
     HDMAYA_API
     const GfRange3d& GetExtent();
 
+    HDMAYA_API
+    VtValue Get(const TfToken& key) override;
+
 protected:
     HDMAYA_API
     void _CalculateExtent();
+
+    virtual HdPrimvarDescriptorVector _GetPrimvarDescriptors(
+        HdInterpolation interpolation) {
+        return {};
+    }
+
+    virtual VtValue _Get(const TfToken& key) { return {}; };
 
 private:
     GfRange3d _extent;

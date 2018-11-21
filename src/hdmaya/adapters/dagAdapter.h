@@ -76,9 +76,12 @@ public:
     const GfMatrix4d& GetTransform();
     HDMAYA_API
     bool UpdateVisibility();
-    const MDagPath& GetDagPath() { return _dagPath; }
-    const bool IsVisible() { return _isVisible; }
+    const MDagPath& GetDagPath() const { return _dagPath; }
+    bool IsVisible() const { return _isVisible; }
     void InvalidateTransform() { _invalidTransform = true; }
+    bool IsMasterInstancer() const { return _isMasterInstancer; }
+    HDMAYA_API
+    virtual VtIntArray GetInstanceIndices(const SdfPath& prototypeId);
 
 protected:
     HDMAYA_API
@@ -87,12 +90,17 @@ protected:
     void _AddHierarchyChangedCallback(MDagPath& dag);
     HDMAYA_API
     SdfPath _GetInstancerID();
+    HDMAYA_API
+    HdPrimvarDescriptorVector _GetInstancePrimvars() const;
+    HDMAYA_API
+    VtValue _GetInstancePrimvar(const TfToken& key);
 
 private:
     MDagPath _dagPath;
     GfMatrix4d _transform;
     bool _isVisible = true;
     bool _invalidTransform = true;
+    bool _isMasterInstancer = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

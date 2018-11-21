@@ -30,15 +30,22 @@
 #include <pxr/imaging/hd/tokens.h>
 
 #include <maya/MDagMessage.h>
+#include <maya/MDagPathArray.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
+#include <maya/MTransformationMatrix.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<HdMayaDagAdapter, TfType::Bases<HdMayaAdapter> >();
 }
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (translate)(rotate)(scale));
 
 namespace {
 
@@ -77,6 +84,8 @@ HdMayaDagAdapter::HdMayaDagAdapter(
     const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath)
     : HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {
     UpdateVisibility();
+    _isMasterInstancer =
+        _dagPath.isInstanced() && _dagPath.instanceNumber() == 0;
 }
 
 void HdMayaDagAdapter::_CalculateTransform() {
@@ -117,7 +126,10 @@ void HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     }
 }
 
-void HdMayaDagAdapter::RemovePrim() { GetDelegate()->RemoveRprim(GetID()); }
+void HdMayaDagAdapter::RemovePrim() {
+    if (_isMasterInstancer) { GetDelegate()->RemoveInstancer(GetID()); }
+    GetDelegate()->RemoveRprim(GetID());
+}
 
 void HdMayaDagAdapter::PopulateSelection(
     const HdSelection::HighlightMode& mode, HdSelection* selection) {
@@ -134,6 +146,16 @@ bool HdMayaDagAdapter::UpdateVisibility() {
     return false;
 }
 
+VtIntArray HdMayaDagAdapter::GetInstanceIndices(const SdfPath& prototypeId) {
+    if (!IsMasterInstancer()) { return {}; }
+    MDagPathArray dags;
+    if (!MDagPath::getAllPathsTo(GetDagPath().node(), dags)) { return {}; }
+    const auto numDags = dags.length();
+    VtIntArray ret;
+    ret.assign(numDags, 0);
+    return ret;
+}
+
 void HdMayaDagAdapter::_AddHierarchyChangedCallback(MDagPath& dag) {
     MStatus status;
     auto id = MDagMessage::addParentAddedDagPathCallback(
@@ -141,6 +163,45 @@ void HdMayaDagAdapter::_AddHierarchyChangedCallback(MDagPath& dag) {
     if (status) { AddCallback(id); }
 }
 
-SdfPath HdMayaDagAdapter::_GetInstancerID() { return {}; }
+SdfPath HdMayaDagAdapter::_GetInstancerID() {
+    if (!_isMasterInstancer) { return {}; }
+
+    const auto& id = GetID();
+    auto& renderIndex = GetDelegate()->GetRenderIndex();
+    if (renderIndex.GetInstancer(id) == nullptr) {
+        renderIndex.InsertInstancer(GetDelegate(), id);
+        renderIndex.GetChangeTracker().InstancerInserted(id);
+    }
+    return id;
+}
+
+HdPrimvarDescriptorVector HdMayaDagAdapter::_GetInstancePrimvars() const {
+    return {
+        {_tokens->translate, HdInterpolationInstance,
+         HdPrimvarRoleTokens->none},
+        /*{_tokens->rotate, HdInterpolationInstance, HdPrimvarRoleTokens->none},
+        {_tokens->scale, HdInterpolationInstance, HdPrimvarRoleTokens->none},*/
+    };
+}
+
+VtValue HdMayaDagAdapter::_GetInstancePrimvar(const TfToken& key) {
+    if (key == _tokens->translate) {
+        MDagPathArray dags;
+        if (!MDagPath::getAllPathsTo(GetDagPath().node(), dags)) { return {}; }
+        const auto numDags = dags.length();
+        VtVec3fArray ret;
+        ret.assign(numDags, GfVec3f{0.0f, 0.0f, 0.0f});
+        for (auto i = decltype(numDags){0}; i < numDags; ++i) {
+            MTransformationMatrix matrix(dags[i].inclusiveMatrix());
+            const auto translation = matrix.translation(MSpace::kWorld);
+            ret[i] = GfVec3f(
+                static_cast<float>(translation.x),
+                static_cast<float>(translation.y),
+                static_cast<float>(translation.z));
+        }
+        return VtValue(ret);
+    }
+    return {};
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

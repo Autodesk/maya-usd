@@ -59,8 +59,10 @@ void HdMayaShapeAdapter::_CalculateExtent() {
 HdMeshTopology HdMayaShapeAdapter::GetMeshTopology() { return {}; };
 
 HdPrimvarDescriptorVector HdMayaShapeAdapter::GetPrimvarDescriptors(
-    HdInterpolation /*interpolation*/) {
-    return {};
+    HdInterpolation interpolation) {
+    return interpolation == HdInterpolationInstance && IsMasterInstancer()
+               ? _GetInstancePrimvars()
+               : _GetPrimvarDescriptors(interpolation);
 }
 
 void HdMayaShapeAdapter::MarkDirty(HdDirtyBits dirtyBits) {
@@ -99,6 +101,14 @@ MObject HdMayaShapeAdapter::GetMaterial() {
 const GfRange3d& HdMayaShapeAdapter::GetExtent() {
     if (_extentDirty) { _CalculateExtent(); }
     return _extent;
+}
+
+VtValue HdMayaShapeAdapter::Get(const TfToken& key) {
+    if (IsMasterInstancer()) {
+        auto ret = _GetInstancePrimvar(key);
+        if (!ret.IsEmpty()) { return ret; }
+    }
+    return _Get(key);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

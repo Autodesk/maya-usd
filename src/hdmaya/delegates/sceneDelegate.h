@@ -69,7 +69,7 @@ public:
     void Populate() override;
     void RemoveAdapter(const SdfPath& id) override;
     void RecreateAdapter(const SdfPath& id, const MObject& obj) override;
-    SdfPath InsertDag(const MDagPath& dag) override;
+    void InsertDag(const MDagPath& dag);
     void SetParams(const HdMayaParams& params) override;
     void PopulateSelectedPaths(
         const MSelectionList& mayaSelection,
@@ -93,6 +93,8 @@ protected:
         const SdfPath& id, HdInterpolation interpolation) override;
     VtValue GetLightParamValue(
         const SdfPath& id, const TfToken& paramName) override;
+    VtIntArray GetInstanceIndices(
+        const SdfPath& instancerId, const SdfPath& prototypeId) override;
     SdfPath GetMaterialId(const SdfPath& id) override;
     std::string GetSurfaceShaderSource(const SdfPath& id) override;
     std::string GetDisplacementShaderSource(const SdfPath& id) override;

@@ -99,6 +99,10 @@ void HdMayaDelegateCtx::RemoveSprim(const TfToken& typeId, const SdfPath& id) {
     GetRenderIndex().RemoveSprim(typeId, id);
 }
 
+void HdMayaDelegateCtx::RemoveInstancer(const SdfPath& id) {
+    GetRenderIndex().RemoveInstancer(id);
+}
+
 SdfPath HdMayaDelegateCtx::GetPrimPath(const MDagPath& dg) {
     if (dg.hasFn(MFn::kLight)) {
         return _GetPrimPath(_sprimPath, dg);
