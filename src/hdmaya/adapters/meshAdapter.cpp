@@ -108,7 +108,7 @@ public:
             HdPrimTypeTokens->mesh);
     }
 
-    VtValue _Get(const TfToken& key) override {
+    VtValue Get(const TfToken& key) override {
         TF_DEBUG(HDMAYA_ADAPTER_GET)
             .Msg(
                 "Called HdMayaMeshAdapter::Get(%s) - %s\n", key.GetText(),
@@ -165,7 +165,7 @@ public:
             UsdGeomTokens->rightHanded, faceVertexCounts, faceVertexIndices);
     }
 
-    HdPrimvarDescriptorVector _GetPrimvarDescriptors(
+    HdPrimvarDescriptorVector GetPrimvarDescriptors(
         HdInterpolation interpolation) override {
         if (interpolation == HdInterpolationVertex) {
             HdPrimvarDescriptor desc;

@@ -82,6 +82,11 @@ public:
     bool IsMasterInstancer() const { return _isMasterInstancer; }
     HDMAYA_API
     virtual VtIntArray GetInstanceIndices(const SdfPath& prototypeId);
+    HDMAYA_API
+    HdPrimvarDescriptorVector GetInstancePrimvarDescriptors(
+        HdInterpolation interpolation) const;
+    HDMAYA_API
+    VtValue GetInstancePrimvar(const TfToken& key);
 
 protected:
     HDMAYA_API
@@ -90,10 +95,6 @@ protected:
     void _AddHierarchyChangedCallback(MDagPath& dag);
     HDMAYA_API
     SdfPath _GetInstancerID();
-    HDMAYA_API
-    HdPrimvarDescriptorVector _GetInstancePrimvars() const;
-    HDMAYA_API
-    VtValue _GetInstancePrimvar(const TfToken& key);
 
 private:
     MDagPath _dagPath;

@@ -391,9 +391,18 @@ bool HdMayaSceneDelegate::IsEnabled(const TfToken& option) const {
 VtValue HdMayaSceneDelegate::Get(const SdfPath& id, const TfToken& key) {
     TF_DEBUG(HDMAYA_DELEGATE_GET)
         .Msg("HdMayaSceneDelegate::Get(%s, %s)\n", id.GetText(), key.GetText());
-    return _GetValue<HdMayaAdapter, VtValue>(
-        id, [&key](HdMayaAdapter* a) -> VtValue { return a->Get(key); },
-        _shapeAdapters, _lightAdapters, _materialAdapters);
+    if (id.IsPropertyPath()) {
+        return _GetValue<HdMayaDagAdapter, VtValue>(
+            id,
+            [&key](HdMayaDagAdapter* a) -> VtValue {
+                return a->GetInstancePrimvar(key);
+            },
+            _shapeAdapters);
+    } else {
+        return _GetValue<HdMayaAdapter, VtValue>(
+            id, [&key](HdMayaAdapter* a) -> VtValue { return a->Get(key); },
+            _shapeAdapters, _lightAdapters, _materialAdapters);
+    }
 }
 
 HdPrimvarDescriptorVector HdMayaSceneDelegate::GetPrimvarDescriptors(
@@ -402,12 +411,22 @@ HdPrimvarDescriptorVector HdMayaSceneDelegate::GetPrimvarDescriptors(
         .Msg(
             "HdMayaSceneDelegate::GetPrimvarDescriptors(%s, %i)\n",
             id.GetText(), interpolation);
-    return _GetValue<HdMayaShapeAdapter, HdPrimvarDescriptorVector>(
-        id,
-        [&interpolation](HdMayaShapeAdapter* a) -> HdPrimvarDescriptorVector {
-            return a->GetPrimvarDescriptors(interpolation);
-        },
-        _shapeAdapters);
+    if (id.IsPropertyPath()) {
+        return _GetValue<HdMayaDagAdapter, HdPrimvarDescriptorVector>(
+            id.GetPrimPath(),
+            [&interpolation](HdMayaDagAdapter* a) -> HdPrimvarDescriptorVector {
+                return a->GetInstancePrimvarDescriptors(interpolation);
+            },
+            _shapeAdapters);
+    } else {
+        return _GetValue<HdMayaShapeAdapter, HdPrimvarDescriptorVector>(
+            id,
+            [&interpolation](
+                HdMayaShapeAdapter* a) -> HdPrimvarDescriptorVector {
+                return a->GetPrimvarDescriptors(interpolation);
+            },
+            _shapeAdapters);
+    }
 }
 
 VtValue HdMayaSceneDelegate::GetLightParamValue(
@@ -431,7 +450,7 @@ VtIntArray HdMayaSceneDelegate::GetInstanceIndices(
             "HdMayaSceneDelegate::GetInstanceIndices(%s, %s)\n",
             instancerId.GetText(), prototypeId.GetText());
     return _GetValue<HdMayaDagAdapter, VtIntArray>(
-        instancerId,
+        instancerId.GetPrimPath(),
         [&prototypeId](HdMayaDagAdapter* a) -> VtIntArray {
             return a->GetInstanceIndices(prototypeId);
         },

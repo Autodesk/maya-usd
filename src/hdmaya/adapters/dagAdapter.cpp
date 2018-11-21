@@ -45,7 +45,7 @@ TF_REGISTRY_FUNCTION(TfType) {
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    (translate)(rotate)(scale));
+    (translate)(rotate)(scale)(instancer));
 
 namespace {
 
@@ -94,6 +94,12 @@ VtValue _GetPerInstanceValues(
     }
     return VtValue(ret);
 }
+
+const auto _instancePrimvarDescriptors = HdPrimvarDescriptorVector{
+    {_tokens->translate, HdInterpolationInstance, HdPrimvarRoleTokens->none},
+    {_tokens->rotate, HdInterpolationInstance, HdPrimvarRoleTokens->none},
+    {_tokens->scale, HdInterpolationInstance, HdPrimvarRoleTokens->none},
+};
 
 } // namespace
 
@@ -183,7 +189,7 @@ void HdMayaDagAdapter::_AddHierarchyChangedCallback(MDagPath& dag) {
 SdfPath HdMayaDagAdapter::_GetInstancerID() {
     if (!_isMasterInstancer) { return {}; }
 
-    const auto& id = GetID();
+    const auto& id = GetID().AppendProperty(_tokens->instancer);
     auto& renderIndex = GetDelegate()->GetRenderIndex();
     if (renderIndex.GetInstancer(id) == nullptr) {
         renderIndex.InsertInstancer(GetDelegate(), id);
@@ -192,16 +198,16 @@ SdfPath HdMayaDagAdapter::_GetInstancerID() {
     return id;
 }
 
-HdPrimvarDescriptorVector HdMayaDagAdapter::_GetInstancePrimvars() const {
-    return {
-        {_tokens->translate, HdInterpolationInstance,
-         HdPrimvarRoleTokens->none},
-        {_tokens->rotate, HdInterpolationInstance, HdPrimvarRoleTokens->none},
-        {_tokens->scale, HdInterpolationInstance, HdPrimvarRoleTokens->none},
-    };
+HdPrimvarDescriptorVector HdMayaDagAdapter::GetInstancePrimvarDescriptors(
+    HdInterpolation interpolation) const {
+    if (interpolation == HdInterpolationInstance) {
+        return _instancePrimvarDescriptors;
+    } else {
+        return {};
+    }
 }
 
-VtValue HdMayaDagAdapter::_GetInstancePrimvar(const TfToken& key) {
+VtValue HdMayaDagAdapter::GetInstancePrimvar(const TfToken& key) {
     if (key == _tokens->translate) {
         return _GetPerInstanceValues<GfVec3f>(
             GetDagPath().node(),
