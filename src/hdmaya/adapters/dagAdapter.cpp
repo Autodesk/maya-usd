@@ -78,6 +78,23 @@ void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData) {
         adapter->GetID(), adapter->GetNode());
 }
 
+template <typename T>
+VtValue _GetPerInstanceValues(
+    const MObject& obj,
+    const std::function<void(const MTransformationMatrix&, T&)>& f,
+    const T& defValue = T()) {
+    MDagPathArray dags;
+    if (!MDagPath::getAllPathsTo(obj, dags)) { return {}; }
+    const auto numDags = dags.length();
+    VtArray<T> ret;
+    ret.assign(numDags, defValue);
+    for (auto i = decltype(numDags){0}; i < numDags; ++i) {
+        MTransformationMatrix matrix(dags[i].inclusiveMatrix());
+        f(matrix, ret[i]);
+    }
+    return VtValue(ret);
+}
+
 } // namespace
 
 HdMayaDagAdapter::HdMayaDagAdapter(
@@ -179,27 +196,50 @@ HdPrimvarDescriptorVector HdMayaDagAdapter::_GetInstancePrimvars() const {
     return {
         {_tokens->translate, HdInterpolationInstance,
          HdPrimvarRoleTokens->none},
-        /*{_tokens->rotate, HdInterpolationInstance, HdPrimvarRoleTokens->none},
-        {_tokens->scale, HdInterpolationInstance, HdPrimvarRoleTokens->none},*/
+        {_tokens->rotate, HdInterpolationInstance, HdPrimvarRoleTokens->none},
+        {_tokens->scale, HdInterpolationInstance, HdPrimvarRoleTokens->none},
     };
 }
 
 VtValue HdMayaDagAdapter::_GetInstancePrimvar(const TfToken& key) {
     if (key == _tokens->translate) {
-        MDagPathArray dags;
-        if (!MDagPath::getAllPathsTo(GetDagPath().node(), dags)) { return {}; }
-        const auto numDags = dags.length();
-        VtVec3fArray ret;
-        ret.assign(numDags, GfVec3f{0.0f, 0.0f, 0.0f});
-        for (auto i = decltype(numDags){0}; i < numDags; ++i) {
-            MTransformationMatrix matrix(dags[i].inclusiveMatrix());
-            const auto translation = matrix.translation(MSpace::kWorld);
-            ret[i] = GfVec3f(
-                static_cast<float>(translation.x),
-                static_cast<float>(translation.y),
-                static_cast<float>(translation.z));
-        }
-        return VtValue(ret);
+        return _GetPerInstanceValues<GfVec3f>(
+            GetDagPath().node(),
+            [](const MTransformationMatrix& matrix, GfVec3f& out) {
+                const auto translation = matrix.getTranslation(MSpace::kWorld);
+                out[0] = static_cast<float>(translation.x);
+                out[1] = static_cast<float>(translation.y);
+                out[2] = static_cast<float>(translation.z);
+            },
+            GfVec3f(0.0f, 0.0f, 0.0f));
+    } else if (key == _tokens->rotate) {
+        return _GetPerInstanceValues<GfVec4f>(
+            GetDagPath().node(),
+            [](const MTransformationMatrix& matrix, GfVec4f& out) {
+                GfVec4d rotation;
+                matrix.getRotationQuaternion(
+                    rotation[0], rotation[1], rotation[2], rotation[3]);
+                out[0] = static_cast<float>(rotation[0]);
+                out[1] = static_cast<float>(rotation[1]);
+                out[2] = static_cast<float>(rotation[2]);
+                out[3] = static_cast<float>(rotation[3]);
+                const auto translation = matrix.getTranslation(MSpace::kWorld);
+                out[0] = static_cast<float>(translation.x);
+                out[1] = static_cast<float>(translation.y);
+                out[2] = static_cast<float>(translation.z);
+            },
+            GfVec4f(0.0f, 0.0f, 0.0f, 0.0f));
+    } else if (key == _tokens->scale) {
+        return _GetPerInstanceValues<GfVec3f>(
+            GetDagPath().node(),
+            [](const MTransformationMatrix& matrix, GfVec3f& out) {
+                GfVec3d scale;
+                matrix.getScale(scale.data(), MSpace::kWorld);
+                out[0] = static_cast<float>(scale[0]);
+                out[1] = static_cast<float>(scale[1]);
+                out[2] = static_cast<float>(scale[2]);
+            },
+            GfVec3f(1.0f, 1.0f, 1.0f));
     }
     return {};
 }
