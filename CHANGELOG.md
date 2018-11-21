@@ -1,3 +1,8 @@
+## v0.29.5 (2018-11-21)
+### Fixed
+
+* Ensure custom animation nodes being processed.
+
 ## v0.29.4 (2018-11-01)
 ### Added
 

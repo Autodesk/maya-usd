@@ -269,7 +269,8 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
   if((startAttrib != endAttrib) ||
      (startAttribScaled != endAttribScaled) ||
      (startTransformAttrib != endTransformAttrib) ||
-     (startMesh != endMesh))
+     (startMesh != endMesh) ||
+     (!m_animatedNodes.empty()))
   {
     double increment = 1.0 / std::max(1U, params.m_subSamples);
     for(double t = params.m_minFrame, e = params.m_maxFrame + 1e-3f; t < e; t += increment)
