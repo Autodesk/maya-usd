@@ -585,7 +585,9 @@ bool HdMayaSceneDelegate::_CreateMaterial(
         HdMayaAdapterRegistry::GetMaterialAdapterCreator(obj);
     if (materialCreator == nullptr) { return false; }
     auto materialAdapter = materialCreator(id, this, obj);
-    if (materialAdapter == nullptr) { return false; }
+    if (materialAdapter == nullptr || !materialAdapter->IsSupported()) {
+        return false;
+    }
     materialAdapter->Populate();
     materialAdapter->CreateCallbacks();
     _materialAdapters.insert({id, materialAdapter});
