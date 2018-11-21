@@ -141,4 +141,6 @@ void HdMayaDagAdapter::_AddHierarchyChangedCallback(MDagPath& dag) {
     if (status) { AddCallback(id); }
 }
 
+SdfPath HdMayaDagAdapter::_GetInstancerID() { return {}; }
+
 PXR_NAMESPACE_CLOSE_SCOPE

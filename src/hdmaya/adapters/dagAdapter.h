@@ -85,6 +85,8 @@ protected:
     void _CalculateTransform();
     HDMAYA_API
     void _AddHierarchyChangedCallback(MDagPath& dag);
+    HDMAYA_API
+    SdfPath _GetInstancerID();
 
 private:
     MDagPath _dagPath;

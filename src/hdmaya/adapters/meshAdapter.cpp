@@ -75,7 +75,8 @@ public:
 
     void Populate() override {
         GetDelegate()->InsertRprim(
-            HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty);
+            HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty,
+            _GetInstancerID());
     }
 
     void CreateCallbacks() override {
