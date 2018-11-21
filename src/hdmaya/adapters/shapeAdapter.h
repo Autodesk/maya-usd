@@ -44,7 +44,9 @@ public:
     HDMAYA_API
     virtual HdMeshTopology GetMeshTopology();
     virtual HdPrimvarDescriptorVector GetPrimvarDescriptors(
-        HdInterpolation interpolation) { return {}; }
+        HdInterpolation interpolation) {
+        return {};
+    }
     HDMAYA_API
     virtual void MarkDirty(HdDirtyBits dirtyBits) override;
 
