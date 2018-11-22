@@ -245,7 +245,7 @@ void HdMayaLightAdapter::_CalculateShadowParams(
     params.shadowMatrix =
         boost::static_pointer_cast<HdxShadowMatrixComputation>(
             boost::make_shared<HdMayaConstantShadowMatrix>(
-                _shadowProjectionMatrix));
+                GetTransform() * _shadowProjectionMatrix));
     params.bias = dmapBiasPlug.isNull() ? -0.001 : -dmapBiasPlug.asFloat();
     params.blur = dmapFilterSizePlug.isNull()
                       ? 0.0
