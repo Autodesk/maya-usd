@@ -81,8 +81,12 @@ HdMayaDelegateCtx::HdMayaDelegateCtx(
 void HdMayaDelegateCtx::InsertRprim(
     const TfToken& typeId, const SdfPath& id, HdDirtyBits initialBits,
     const SdfPath& instancerId) {
+    if (!instancerId.IsEmpty()) {
+        GetRenderIndex().InsertInstancer(this, instancerId);
+    }
     GetRenderIndex().InsertRprim(typeId, this, id, instancerId);
     GetChangeTracker().RprimInserted(id, initialBits);
+    GetChangeTracker().InstancerInserted(id);
 }
 
 void HdMayaDelegateCtx::InsertSprim(

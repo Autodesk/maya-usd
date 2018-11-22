@@ -95,6 +95,15 @@ protected:
         const SdfPath& id, const TfToken& paramName) override;
     VtIntArray GetInstanceIndices(
         const SdfPath& instancerId, const SdfPath& prototypeId) override;
+    SdfPath GetPathForInstanceIndex(
+        const SdfPath& protoPrimPath, int instanceIndex,
+        int* absoluteInstanceIndex, SdfPath* rprimPath,
+        SdfPathVector* instanceContext) override {
+        if (absoluteInstanceIndex != nullptr) {
+            *absoluteInstanceIndex = instanceIndex;
+        }
+        return {};
+    }
     SdfPath GetMaterialId(const SdfPath& id) override;
     std::string GetSurfaceShaderSource(const SdfPath& id) override;
     std::string GetDisplacementShaderSource(const SdfPath& id) override;
