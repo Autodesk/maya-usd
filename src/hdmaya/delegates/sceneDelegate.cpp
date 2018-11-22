@@ -395,7 +395,7 @@ VtValue HdMayaSceneDelegate::Get(const SdfPath& id, const TfToken& key) {
         .Msg("HdMayaSceneDelegate::Get(%s, %s)\n", id.GetText(), key.GetText());
     if (id.IsPropertyPath()) {
         return _GetValue<HdMayaDagAdapter, VtValue>(
-            id,
+            id.GetPrimPath(),
             [&key](HdMayaDagAdapter* a) -> VtValue {
                 return a->GetInstancePrimvar(key);
             },
