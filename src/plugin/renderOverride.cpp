@@ -455,7 +455,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 
     for (auto& it : _delegates) {
         it->SetParams(_params);
-        it->PreFrame();
+        it->PreFrame(drawContext);
     }
 
     // TODO: Is there a way to improve this? Quite silly.

@@ -61,13 +61,17 @@ public:
     VtValue Get(const TfToken& key) override;
     HDMAYA_API
     virtual void CreateCallbacks() override;
+    void SetShadowProjectionMatrix(const GfMatrix4d& matrix) {
+        _shadowProjectionMatrix = matrix;
+    }
 
 protected:
     HDMAYA_API
     virtual void _CalculateLightParams(GlfSimpleLight& light) {}
     HDMAYA_API
-    void _CalculateShadowParams(
-        MFnLight& light, GfFrustum& frustum, HdxShadowParams& params);
+    void _CalculateShadowParams(MFnLight& light, HdxShadowParams& params);
+
+    GfMatrix4d _shadowProjectionMatrix;
 };
 
 using HdMayaLightAdapterPtr = std::shared_ptr<HdMayaLightAdapter>;

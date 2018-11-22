@@ -67,6 +67,7 @@ public:
     virtual ~HdMayaSceneDelegate();
 
     void Populate() override;
+    void PreFrame(const MHWRender::MDrawContext& context) override;
     void RemoveAdapter(const SdfPath& id) override;
     void RecreateAdapter(const SdfPath& id, const MObject& obj) override;
     void InsertDag(const MDagPath& dag);

@@ -44,12 +44,14 @@
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
 #include <maya/MItDag.h>
+#include <maya/MMatrixArray.h>
 #include <maya/MString.h>
 
 #include <hdmaya/adapters/adapterRegistry.h>
 #include <hdmaya/delegates/delegateDebugCodes.h>
 #include <hdmaya/delegates/delegateRegistry.h>
 #include <hdmaya/utils.h>
+#include <pxr/imaging/hd/light.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -179,6 +181,41 @@ void HdMayaSceneDelegate::Populate() {
     if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->material)) {
         renderIndex.InsertSprim(
             HdPrimTypeTokens->material, this, _fallbackMaterial);
+    }
+}
+
+void HdMayaSceneDelegate::PreFrame(const MHWRender::MDrawContext& context) {
+    constexpr auto considerAllSceneLights =
+        MHWRender::MDrawContext::kFilteredIgnoreLightLimit;
+    MStatus status;
+    const auto numLights =
+        context.numberOfActiveLights(considerAllSceneLights, &status);
+    if (!status || numLights == 0) { return; }
+    MIntArray intVals;
+    MMatrix matrixVal;
+    for (auto i = decltype(numLights){0}; i < numLights; ++i) {
+        auto* lightParam =
+            context.getLightParameterInformation(i, considerAllSceneLights);
+        if (lightParam == nullptr) { continue; }
+        const auto lightPath = lightParam->lightPath();
+        if (!lightPath.isValid()) { continue; }
+        if (!lightParam->getParameter(
+                MHWRender::MLightParameterInformation::kShadowOn, intVals) ||
+            intVals.length() < 1 || intVals[0] != 1) {
+            continue;
+        }
+        if (lightParam->getParameter(
+                MHWRender::MLightParameterInformation::kShadowViewProj,
+                matrixVal)) {
+            _FindAdapter<HdMayaLightAdapter>(
+                GetPrimPath(lightPath),
+                [&matrixVal](HdMayaLightAdapter* a) {
+                    // TODO: Mark Dirty?
+                    a->SetShadowProjectionMatrix(
+                        GetGfMatrixFromMaya(matrixVal));
+                },
+                _lightAdapters);
+        }
     }
 }
 

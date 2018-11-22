@@ -117,20 +117,7 @@ protected:
                 return VtValue(shadowParams);
             }
 
-            auto coneAnglePlug =
-                mayaLight.findPlug(MayaAttrs::spotLight::coneAngle, true);
-            if (coneAnglePlug.isNull()) { return {}; }
-
-            GfFrustum frustum;
-            GfMatrix4d lightToWorld =
-                GetGfMatrixFromMaya(GetDagPath().inclusiveMatrix());
-            frustum.SetProjectionType(GfFrustum::Perspective);
-            frustum.SetPerspective(
-                GfRadiansToDegrees(coneAnglePlug.asFloat()), true, 1.0f, 1.0f,
-                50.0f);
-
-            GetDelegate()->FitFrustumToRprims(frustum, lightToWorld);
-            _CalculateShadowParams(mayaLight, frustum, shadowParams);
+            _CalculateShadowParams(mayaLight, shadowParams);
             // Use the radius as the "blur" amount, for PCSS
             shadowParams.blur = mayaLight.shadowRadius();
             return VtValue(shadowParams);

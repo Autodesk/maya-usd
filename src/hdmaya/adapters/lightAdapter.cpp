@@ -78,7 +78,9 @@ void _dirtyParams(MObject& /*node*/, void* clientData) {
 
 HdMayaLightAdapter::HdMayaLightAdapter(
     HdMayaDelegateCtx* delegate, const MDagPath& dag)
-    : HdMayaDagAdapter(delegate->GetPrimPath(dag), delegate, dag) {}
+    : HdMayaDagAdapter(delegate->GetPrimPath(dag), delegate, dag) {
+    _shadowProjectionMatrix.SetIdentity();
+}
 
 bool HdMayaLightAdapter::IsSupported() {
     return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(LightType());
@@ -220,7 +222,7 @@ void HdMayaLightAdapter::CreateCallbacks() {
 }
 
 void HdMayaLightAdapter::_CalculateShadowParams(
-    MFnLight& light, GfFrustum& frustum, HdxShadowParams& params) {
+    MFnLight& light, HdxShadowParams& params) {
     TF_DEBUG(HDMAYA_ADAPTER_LIGHT_SHADOWS)
         .Msg(
             "Called HdMayaLightAdapter::_CalculateShadowParams - %s\n",
@@ -233,37 +235,6 @@ void HdMayaLightAdapter::_CalculateShadowParams(
     auto dmapFilterSizePlug = light.findPlug(
         MayaAttrs::nonExtendedLightShapeNode::dmapFilterSize, true);
 
-    const auto decayRate =
-        light.findPlug(MayaAttrs::nonExtendedLightShapeNode::decayRate, true)
-            .asShort();
-    if (decayRate > 0) {
-        const auto color = light.color();
-        const auto intensity = light.intensity();
-        const auto maxIntensity = static_cast<double>(std::max(
-            color.r * intensity,
-            std::max(color.g * intensity, color.b * intensity)));
-        constexpr auto LIGHT_CUTOFF = 0.01;
-        auto maxDistance = std::numeric_limits<double>::max();
-        if (decayRate == 1) {
-            maxDistance = maxIntensity / LIGHT_CUTOFF;
-        } else if (decayRate == 2) {
-            maxDistance = sqrt(maxIntensity / LIGHT_CUTOFF);
-        }
-
-        if (maxDistance < std::numeric_limits<double>::max()) {
-            const auto& nearFar = frustum.GetNearFar();
-            if (nearFar.GetMax() > maxDistance) {
-                if (nearFar.GetMin() < maxDistance) {
-                    HdxShadowParams shadowParams;
-                    params.enabled = false;
-                } else {
-                    frustum.SetNearFar(
-                        GfRange1d(nearFar.GetMin(), maxDistance));
-                }
-            }
-        }
-    }
-
     params.enabled = true;
     params.resolution =
         dmapResolutionPlug.isNull()
@@ -274,7 +245,7 @@ void HdMayaLightAdapter::_CalculateShadowParams(
     params.shadowMatrix =
         boost::static_pointer_cast<HdxShadowMatrixComputation>(
             boost::make_shared<HdMayaConstantShadowMatrix>(
-                frustum.ComputeProjectionMatrix()));
+                _shadowProjectionMatrix));
     params.bias = dmapBiasPlug.isNull() ? -0.001 : -dmapBiasPlug.asFloat();
     params.blur = dmapFilterSizePlug.isNull()
                       ? 0.0
@@ -282,8 +253,8 @@ void HdMayaLightAdapter::_CalculateShadowParams(
                             static_cast<double>(params.resolution);
 
     if (TfDebug::IsEnabled(HDMAYA_ADAPTER_LIGHT_SHADOWS)) {
-        std::cout << "Resulting HdxShadowParams:" << std::endl;
-        std::cout << params << std::endl;
+        std::cout << "Resulting HdxShadowParams:\n";
+        std::cout << params << "\n";
     }
 }
 

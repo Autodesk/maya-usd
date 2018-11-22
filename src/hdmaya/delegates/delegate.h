@@ -31,6 +31,7 @@
 #include <pxr/usd/sdf/path.h>
 
 #include <maya/MDagPath.h>
+#include <maya/MDrawContext.h>
 #include <maya/MSelectionList.h>
 
 #include <memory>
@@ -48,7 +49,7 @@ public:
     virtual ~HdMayaDelegate() = default;
 
     virtual void Populate() = 0;
-    virtual void PreFrame() {}
+    virtual void PreFrame(const MHWRender::MDrawContext& context) {}
     virtual void PostFrame() {}
 
     HDMAYA_API
