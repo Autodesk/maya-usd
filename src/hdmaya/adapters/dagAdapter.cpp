@@ -95,7 +95,11 @@ HdMayaDagAdapter::HdMayaDagAdapter(
 
 void HdMayaDagAdapter::_CalculateTransform() {
     if (_invalidTransform) {
-        _transform = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
+        if (IsMasterInstancer()) {
+            _transform.SetIdentity();
+        } else {
+            _transform = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
+        }
         _invalidTransform = false;
     }
 };
