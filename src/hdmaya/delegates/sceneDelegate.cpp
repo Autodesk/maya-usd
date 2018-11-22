@@ -185,6 +185,7 @@ void HdMayaSceneDelegate::Populate() {
 }
 
 void HdMayaSceneDelegate::PreFrame(const MHWRender::MDrawContext& context) {
+    if (!GetPreferSimpleLight()) { return; }
     constexpr auto considerAllSceneLights =
         MHWRender::MDrawContext::kFilteredIgnoreLightLimit;
     MStatus status;
