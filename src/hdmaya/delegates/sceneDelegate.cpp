@@ -176,8 +176,10 @@ void HdMayaSceneDelegate::Populate() {
     if (status) { _callbacks.push_back(id); }
 
     // Adding fallback material sprim to the render index.
-    renderIndex.InsertSprim(
-        HdPrimTypeTokens->material, this, _fallbackMaterial);
+    if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->material)) {
+        renderIndex.InsertSprim(
+            HdPrimTypeTokens->material, this, _fallbackMaterial);
+    }
 }
 
 void HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
