@@ -459,6 +459,20 @@ VtIntArray HdMayaSceneDelegate::GetInstanceIndices(
         _shapeAdapters);
 }
 
+GfMatrix4d HdMayaSceneDelegate::GetInstancerTransform(
+    SdfPath const& instancerId, SdfPath const& prototypeId) {
+    return GfMatrix4d(1.0);
+}
+
+SdfPath HdMayaSceneDelegate::GetPathForInstanceIndex(
+    const SdfPath& protoPrimPath, int instanceIndex, int* absoluteInstanceIndex,
+    SdfPath* rprimPath, SdfPathVector* instanceContext) {
+    if (absoluteInstanceIndex != nullptr) {
+        *absoluteInstanceIndex = instanceIndex;
+    }
+    return {};
+}
+
 bool HdMayaSceneDelegate::GetVisible(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_VISIBLE)
         .Msg("HdMayaSceneDelegate::GetVisible(%s)\n", id.GetText());
