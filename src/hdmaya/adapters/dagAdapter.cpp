@@ -45,7 +45,7 @@ TF_REGISTRY_FUNCTION(TfType) {
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    (translate)(rotate)(scale)(instancer));
+    (translate)(rotate)(scale)(instanceTransform)(instancer));
 
 namespace {
 
@@ -99,6 +99,7 @@ const auto _instancePrimvarDescriptors = HdPrimvarDescriptorVector{
     {_tokens->translate, HdInterpolationInstance, HdPrimvarRoleTokens->none},
     {_tokens->rotate, HdInterpolationInstance, HdPrimvarRoleTokens->none},
     {_tokens->scale, HdInterpolationInstance, HdPrimvarRoleTokens->none},
+    {_tokens->instanceTransform, HdInterpolationInstance, HdPrimvarRoleTokens->none},
 };
 
 } // namespace
@@ -150,7 +151,10 @@ void HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
 }
 
 void HdMayaDagAdapter::RemovePrim() {
-    if (_isMasterInstancer) { GetDelegate()->RemoveInstancer(GetID()); }
+    if (_isMasterInstancer) {
+        GetDelegate()->RemoveInstancer(
+            GetID().AppendProperty(_tokens->instancer));
+    }
     GetDelegate()->RemoveRprim(GetID());
 }
 
@@ -174,8 +178,10 @@ VtIntArray HdMayaDagAdapter::GetInstanceIndices(const SdfPath& prototypeId) {
     MDagPathArray dags;
     if (!MDagPath::getAllPathsTo(GetDagPath().node(), dags)) { return {}; }
     const auto numDags = dags.length();
-    VtIntArray ret;
-    ret.assign(numDags, 0);
+    VtIntArray ret; ret.reserve(numDags);
+    for (auto i = decltype(numDags){0}; i < numDags; ++i) {
+        ret.push_back(i);
+    }
     return ret;
 }
 
@@ -246,6 +252,12 @@ VtValue HdMayaDagAdapter::GetInstancePrimvar(const TfToken& key) {
                 out[2] = static_cast<float>(scale[2]);
             },
             GfVec3f(1.0f, 1.0f, 1.0f));
+    } else if (key == _tokens->instanceTransform) {
+        return _GetPerInstanceValues<GfMatrix4d>(
+            GetDagPath().node(),
+            [](const MTransformationMatrix& matrix, GfMatrix4d& out) {
+                out = GetGfMatrixFromMaya(matrix.asMatrix());
+            });
     }
     return {};
 }
