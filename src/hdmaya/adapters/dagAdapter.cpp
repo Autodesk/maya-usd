@@ -96,9 +96,9 @@ VtValue _GetPerInstanceValues(
 }
 
 const auto _instancePrimvarDescriptors = HdPrimvarDescriptorVector{
-    {_tokens->translate, HdInterpolationInstance, HdPrimvarRoleTokens->none},
+    /*{_tokens->translate, HdInterpolationInstance, HdPrimvarRoleTokens->none},
     {_tokens->rotate, HdInterpolationInstance, HdPrimvarRoleTokens->none},
-    {_tokens->scale, HdInterpolationInstance, HdPrimvarRoleTokens->none},
+    {_tokens->scale, HdInterpolationInstance, HdPrimvarRoleTokens->none},*/
     {_tokens->instanceTransform, HdInterpolationInstance, HdPrimvarRoleTokens->none},
 };
 
@@ -214,7 +214,7 @@ HdPrimvarDescriptorVector HdMayaDagAdapter::GetInstancePrimvarDescriptors(
 }
 
 VtValue HdMayaDagAdapter::GetInstancePrimvar(const TfToken& key) {
-    if (key == _tokens->translate) {
+    /*if (key == _tokens->translate) {
         return _GetPerInstanceValues<GfVec3f>(
             GetDagPath().node(),
             [](const MTransformationMatrix& matrix, GfVec3f& out) {
@@ -252,7 +252,7 @@ VtValue HdMayaDagAdapter::GetInstancePrimvar(const TfToken& key) {
                 out[2] = static_cast<float>(scale[2]);
             },
             GfVec3f(1.0f, 1.0f, 1.0f));
-    } else if (key == _tokens->instanceTransform) {
+    } else*/ if (key == _tokens->instanceTransform) {
         return _GetPerInstanceValues<GfMatrix4d>(
             GetDagPath().node(),
             [](const MTransformationMatrix& matrix, GfMatrix4d& out) {
