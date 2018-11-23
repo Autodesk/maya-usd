@@ -110,7 +110,10 @@ protected:
             MFnSpotLight mayaLight(GetDagPath());
             const auto useDepthMapShadows =
                 mayaLight
-                    .findPlug(MayaAttrs::spotLight::useDepthMapShadows, true)
+                    .findPlug(
+                        MayaAttrs::nonExtendedLightShapeNode::
+                            useDepthMapShadows,
+                        true)
                     .asBool();
             if (!useDepthMapShadows) {
                 shadowParams.enabled = false;

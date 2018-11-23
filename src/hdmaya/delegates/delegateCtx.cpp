@@ -83,10 +83,10 @@ void HdMayaDelegateCtx::InsertRprim(
     const SdfPath& instancerId) {
     if (!instancerId.IsEmpty()) {
         GetRenderIndex().InsertInstancer(this, instancerId);
+        GetChangeTracker().InstancerInserted(id);
     }
     GetRenderIndex().InsertRprim(typeId, this, id, instancerId);
     GetChangeTracker().RprimInserted(id, initialBits);
-    GetChangeTracker().InstancerInserted(id);
 }
 
 void HdMayaDelegateCtx::InsertSprim(

@@ -32,6 +32,7 @@
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/adapterRegistry.h>
 #include <hdmaya/adapters/lightAdapter.h>
+#include <hdmaya/adapters/mayaAttrs.h>
 
 #include <memory>
 
@@ -55,7 +56,38 @@ public:
         // Directional lights point toward -Z, but we need the opposite
         // for the position so the light acts as a directional light.
         const auto direction = GfVec4f(0.0, 0.0, 1.0, 0.0) * GetTransform();
+        light.SetHasShadow(true);
         light.SetPosition({direction[0], direction[1], direction[2], 0.0f});
+    }
+
+    VtValue Get(const TfToken& key) override {
+        TF_DEBUG(HDMAYA_ADAPTER_GET)
+            .Msg(
+                "Called HdMayaSpotLightAdapter::Get(%s) - %s\n", key.GetText(),
+                GetDagPath().partialPathName().asChar());
+
+        if (key == HdLightTokens->shadowParams) {
+            HdxShadowParams shadowParams;
+            MFnDirectionalLight mayaLight(GetDagPath());
+            const auto useDepthMapShadows =
+                mayaLight
+                    .findPlug(
+                        MayaAttrs::nonExtendedLightShapeNode::
+                            useDepthMapShadows,
+                        true)
+                    .asBool();
+            if (!useDepthMapShadows) {
+                shadowParams.enabled = false;
+                return VtValue(shadowParams);
+            }
+
+            _CalculateShadowParams(mayaLight, shadowParams);
+            // Use the radius as the "blur" amount, for PCSS
+            shadowParams.blur = mayaLight.shadowRadius();
+            return VtValue(shadowParams);
+        }
+
+        return HdMayaLightAdapter::Get(key);
     }
 };
 

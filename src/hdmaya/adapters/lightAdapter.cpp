@@ -221,6 +221,13 @@ void HdMayaLightAdapter::CreateCallbacks() {
     HdMayaAdapter::CreateCallbacks();
 }
 
+void HdMayaLightAdapter::SetShadowProjectionMatrix(const GfMatrix4d& matrix) {
+    if (!GfIsClose(_shadowProjectionMatrix, matrix, 0.0001)) {
+        MarkDirty(HdLight::DirtyShadowParams);
+        _shadowProjectionMatrix = matrix;
+    }
+}
+
 void HdMayaLightAdapter::_CalculateShadowParams(
     MFnLight& light, HdxShadowParams& params) {
     TF_DEBUG(HDMAYA_ADAPTER_LIGHT_SHADOWS)

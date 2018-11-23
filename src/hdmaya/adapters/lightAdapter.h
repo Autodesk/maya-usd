@@ -34,6 +34,7 @@
 #include <maya/MFnLight.h>
 
 #include <hdmaya/adapters/dagAdapter.h>
+#include <pxr/imaging/hd/light.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -61,9 +62,8 @@ public:
     VtValue Get(const TfToken& key) override;
     HDMAYA_API
     virtual void CreateCallbacks() override;
-    void SetShadowProjectionMatrix(const GfMatrix4d& matrix) {
-        _shadowProjectionMatrix = matrix;
-    }
+    HDMAYA_API
+    void SetShadowProjectionMatrix(const GfMatrix4d& matrix);
 
 protected:
     HDMAYA_API
