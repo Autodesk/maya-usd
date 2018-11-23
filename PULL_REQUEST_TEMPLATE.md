@@ -24,3 +24,4 @@
 - [ ] Are any new features, behaviour changes documented in the .md format [documentation](https://github.com/AnimalLogic/AL_USDMaya/docs)?
 - [ ] Have you added, updated tests to cover new features and behaviour changes?
 - [ ] Have you filled out at least one changelog entry?
+- [ ] Is the branch's history clean? (only relevant commits)
