@@ -70,6 +70,24 @@ void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
     }
 }
 
+void _InstancerNodeDirty(MObject& node, MPlug& plug, void* clientData) {
+    auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    TF_DEBUG(HDMAYA_ADAPTER_DAG_PLUG_DIRTY)
+        .Msg(
+            "Dag instancer adapter marking prim (%s) dirty because %s plug was "
+            "dirtied.\n",
+            adapter->GetID().GetText(), plug.partialName().asChar());
+    adapter->MarkDirty(
+        HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyPrimvar);
+}
+
+void _InstancerNodeDestroyed(
+    void* clientData) {
+    auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    adapter->MarkDirty(
+        HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyPrimvar);
+}
+
 void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData) {
     TF_UNUSED(child);
     TF_UNUSED(parent);
@@ -120,10 +138,34 @@ void HdMayaDagAdapter::CreateCallbacks() {
     for (; dag.length() > 0; dag.pop()) {
         MObject obj = dag.node();
         if (obj != MObject::kNullObj) {
-            auto id = MNodeMessage::addNodeDirtyPlugCallback(
-                obj, _TransformNodeDirty, this, &status);
-            if (status) { AddCallback(id); }
+            if (!IsMasterInstancer()) {
+                auto id = MNodeMessage::addNodeDirtyPlugCallback(
+                    obj, _TransformNodeDirty, this, &status);
+                if (status) { AddCallback(id); }
+            }
             _AddHierarchyChangedCallback(dag);
+        }
+    }
+    if (IsMasterInstancer()) {
+        MDagPathArray dags;
+        if (MDagPath::getAllPathsTo(GetDagPath().node(), dags)) {
+            const auto numDags = dags.length();
+            for (auto i = decltype(numDags){0}; i < numDags; ++i) {
+                auto cdag = dags[i];
+                MObject obj = cdag.node();
+                auto id = MNodeMessage::addNodeDestroyedCallback(
+                    obj, _InstancerNodeDestroyed, this, &status);
+                if (status) { AddCallback(id); }
+                cdag.pop();
+                for (; cdag.length() > 0; cdag.pop()) {
+                    obj = cdag.node();
+                    if (obj != MObject::kNullObj) {
+                        id = MNodeMessage::addNodeDirtyPlugCallback(
+                            obj, _InstancerNodeDirty, this, &status);
+                        if (status) { AddCallback(id); }
+                    }
+                }
+            }
         }
     }
     HdMayaAdapter::CreateCallbacks();
@@ -132,6 +174,10 @@ void HdMayaDagAdapter::CreateCallbacks() {
 void HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     if (dirtyBits != 0) {
         GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
+        if (IsMasterInstancer()) {
+            GetDelegate()->GetChangeTracker().MarkInstancerDirty(
+                _GetInstancerID(), dirtyBits);
+        }
     }
 }
 
