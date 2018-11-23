@@ -235,11 +235,11 @@ void HdMayaLightAdapter::_CalculateShadowParams(
             "Called HdMayaLightAdapter::_CalculateShadowParams - %s\n",
             GetDagPath().partialPathName().asChar());
 
-    auto dmapResolutionPlug = light.findPlug(
+    const auto dmapResolutionPlug = light.findPlug(
         MayaAttrs::nonExtendedLightShapeNode::dmapResolution, true);
-    auto dmapBiasPlug =
+    const auto dmapBiasPlug =
         light.findPlug(MayaAttrs::nonExtendedLightShapeNode::dmapBias, true);
-    auto dmapFilterSizePlug = light.findPlug(
+    const auto dmapFilterSizePlug = light.findPlug(
         MayaAttrs::nonExtendedLightShapeNode::dmapFilterSize, true);
 
     params.enabled = true;
