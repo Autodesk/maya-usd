@@ -211,7 +211,11 @@ VtIntArray HdMayaDagAdapter::GetInstanceIndices(const SdfPath& prototypeId) {
     const auto numDags = dags.length();
     VtIntArray ret;
     ret.reserve(numDags);
-    for (auto i = decltype(numDags){0}; i < numDags; ++i) { ret.push_back(i); }
+    for (auto i = decltype(numDags){0}; i < numDags; ++i) {
+        if (dags[i].isValid() && dags[i].isVisible()) {
+            ret.push_back(ret.size());
+        }
+    }
     return ret;
 }
 
@@ -245,7 +249,9 @@ VtValue HdMayaDagAdapter::GetInstancePrimvar(const TfToken& key) {
         VtArray<GfMatrix4d> ret;
         ret.reserve(numDags);
         for (auto i = decltype(numDags){0}; i < numDags; ++i) {
-            ret.push_back(GetGfMatrixFromMaya(dags[i].inclusiveMatrix()));
+            if (dags[i].isValid() && dags[i].isVisible()) {
+                ret.push_back(GetGfMatrixFromMaya(dags[i].inclusiveMatrix()));
+            }
         }
         return VtValue(ret);
     }
