@@ -107,7 +107,7 @@ auto _PreviewShaderSource = []() -> std::pair<std::string, std::string> {
         return {gfx.GetSurfaceSource(), gfx.GetDisplacementSource()};
     }();
     return ret;
-};
+} ();
 
 std::unordered_map<
     TfToken, std::vector<std::pair<TfToken, TfToken>>, TfToken::HashFunctor>
@@ -224,11 +224,11 @@ const HdMaterialParamVector& HdMayaMaterialAdapter::GetPreviewMaterialParams() {
 }
 
 const std::string& HdMayaMaterialAdapter::GetPreviewSurfaceSource() {
-    return _PreviewShaderSource().first;
+    return _PreviewShaderSource.first;
 }
 
 const std::string& HdMayaMaterialAdapter::GetPreviewDisplacementSource() {
-    return _PreviewShaderSource().second;
+    return _PreviewShaderSource.second;
 }
 
 const VtValue& HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
