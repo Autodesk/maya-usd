@@ -96,8 +96,9 @@ HdMayaShaderParams::const_iterator _FindPreviewParam(const TfToken& id) {
                                                : previewShaderParams.cend())
                : first;
 };
-
-auto _PreviewShaderSource = []() -> std::pair<std::string, std::string> {
+// We can't store the shader here explicitly, since it causes a deadlock
+// due to library dependencies.
+auto _PreviewShaderSource = []() -> const std::pair<std::string, std::string>& {
     static const auto ret = []() -> std::pair<std::string, std::string> {
         auto& registry = SdrRegistry::GetInstance();
         auto sdrNode = registry.GetShaderNodeByIdentifierAndType(
@@ -107,7 +108,7 @@ auto _PreviewShaderSource = []() -> std::pair<std::string, std::string> {
         return {gfx.GetSurfaceSource(), gfx.GetDisplacementSource()};
     }();
     return ret;
-} ();
+};
 
 std::unordered_map<
     TfToken, std::vector<std::pair<TfToken, TfToken>>, TfToken::HashFunctor>
@@ -224,11 +225,11 @@ const HdMaterialParamVector& HdMayaMaterialAdapter::GetPreviewMaterialParams() {
 }
 
 const std::string& HdMayaMaterialAdapter::GetPreviewSurfaceSource() {
-    return _PreviewShaderSource.first;
+    return _PreviewShaderSource().first;
 }
 
 const std::string& HdMayaMaterialAdapter::GetPreviewDisplacementSource() {
-    return _PreviewShaderSource.second;
+    return _PreviewShaderSource().second;
 }
 
 const VtValue& HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
