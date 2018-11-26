@@ -82,8 +82,8 @@ void _InstancerNodeDirty(MObject& node, MPlug& plug, void* clientData) {
         HdChangeTracker::DirtyPrimvar);
 }
 
-void _InstancerNodeDestroyed(
-    void* clientData) {
+void _InstancerNodeAboutToDelete(
+    MObject& /*node*/, MDGModifier& /*modifier*/, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     adapter->MarkDirty(
         HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyInstanceIndex |
@@ -154,11 +154,11 @@ void HdMayaDagAdapter::CreateCallbacks() {
             const auto numDags = dags.length();
             for (auto i = decltype(numDags){0}; i < numDags; ++i) {
                 auto cdag = dags[i];
-                MObject obj = cdag.node();
-                auto id = MNodeMessage::addNodeDestroyedCallback(
-                    obj, _InstancerNodeDestroyed, this, &status);
-                if (status) { AddCallback(id); }
                 cdag.pop();
+                MObject obj = cdag.node();
+                auto id = MNodeMessage::addNodeAboutToDeleteCallback(
+                    obj, _InstancerNodeAboutToDelete, this, &status);
+                if (status) { AddCallback(id); }
                 for (; cdag.length() > 0; cdag.pop()) {
                     obj = cdag.node();
                     if (obj != MObject::kNullObj) {
