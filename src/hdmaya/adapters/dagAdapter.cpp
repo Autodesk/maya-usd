@@ -78,14 +78,16 @@ void _InstancerNodeDirty(MObject& node, MPlug& plug, void* clientData) {
             "dirtied.\n",
             adapter->GetID().GetText(), plug.partialName().asChar());
     adapter->MarkDirty(
-        HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyPrimvar);
+        HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyInstanceIndex |
+        HdChangeTracker::DirtyPrimvar);
 }
 
 void _InstancerNodeDestroyed(
     void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     adapter->MarkDirty(
-        HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyPrimvar);
+        HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyInstanceIndex |
+        HdChangeTracker::DirtyPrimvar);
 }
 
 void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData) {
