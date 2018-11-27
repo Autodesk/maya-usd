@@ -53,7 +53,7 @@ void _nameChanged(MObject& node, const MString& /*str*/, void* clientData) {
 
 HdMayaAdapter::HdMayaAdapter(
     const MObject& node, const SdfPath& id, HdMayaDelegateCtx* delegate)
-    : _node(node), _id(id), _delegate(delegate) {}
+    : _id(id), _delegate(delegate), _node(node) {}
 
 HdMayaAdapter::~HdMayaAdapter() { RemoveCallbacks(); }
 

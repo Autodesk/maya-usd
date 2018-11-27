@@ -178,14 +178,18 @@ void HdMayaMaterialAdapter::MarkDirty(HdDirtyBits dirtyBits) {
 }
 
 void HdMayaMaterialAdapter::RemovePrim() {
+    if (!_isPopulated) { return; }
     GetDelegate()->RemoveSprim(HdPrimTypeTokens->material, GetID());
+    _isPopulated = false;
 }
 
 void HdMayaMaterialAdapter::Populate() {
     TF_DEBUG(HDMAYA_ADAPTER_GET)
         .Msg("HdMayaMaterialAdapter::Populate() - %s\n", GetID().GetText());
+    if (_isPopulated) { return; }
     GetDelegate()->InsertSprim(
         HdPrimTypeTokens->material, GetID(), HdMaterial::AllDirty);
+    _isPopulated = true;
 }
 
 std::string HdMayaMaterialAdapter::GetSurfaceShaderSource() {

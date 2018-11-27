@@ -68,12 +68,15 @@ public:
     HDMAYA_API
     static MStatus Initialize();
 
-protected:
-    MObject _node;
-    SdfPath _id;
-    HdMayaDelegateCtx* _delegate;
+    bool IsPopulated() const { return _isPopulated; }
 
+protected:
+    SdfPath _id;
     std::vector<MCallbackId> _callbacks;
+    HdMayaDelegateCtx* _delegate;
+    MObject _node;
+
+    bool _isPopulated = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -325,7 +325,19 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
     } else {
         // We are inserting a single prim and
         // instancer for every instanced mesh.
-        if (dag.isInstanced() && dag.instanceNumber() > 0) { return; }
+        if (dag.isInstanced() && dag.instanceNumber() > 0) {
+            /*MDagPathArray dags;
+            MDagPath::getAllPathsTo(dag.node(), dags);
+            if (dags.length() == 0) { return; }
+            const auto id = GetPrimPath(dags[0]);
+            auto* adapter = TfMapLookupPtr(_shapeAdapters, id);
+            if (adapter != nullptr) {
+                (*adapter)->RemovePrim();
+                (*adapter)->RemoveCallbacks();
+                RecreateAdapter((*adapter)->GetID(), (*adapter)->GetNode());
+            }*/
+            return;
+        }
         auto adapterCreator =
             HdMayaAdapterRegistry::GetShapeAdapterCreator(dag);
         if (adapterCreator == nullptr) { return; }

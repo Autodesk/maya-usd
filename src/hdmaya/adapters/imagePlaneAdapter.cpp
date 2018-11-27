@@ -140,6 +140,7 @@ public:
             .Msg(
                 "Called HdMayaImagePlaneAdapter::Populate() - %s\n",
                 GetDagPath().partialPathName().asChar());
+        if (_isPopulated) { return; }
 
         GetDelegate()->InsertRprim(
             HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty);
@@ -155,6 +156,7 @@ public:
                 _camera, _CameraNodeDirtiedCallback, this, &status);
             if (status) { AddCallback(id); }
         }
+        _isPopulated = true;
     }
 
     // note: could remove if made a header for meshAdapter

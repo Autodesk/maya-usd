@@ -123,13 +123,13 @@ HdMayaDagAdapter::HdMayaDagAdapter(
     const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath)
     : HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {
     UpdateVisibility();
-    _isMasterInstancer =
+    _isInstanced =
         _dagPath.isInstanced() && _dagPath.instanceNumber() == 0;
 }
 
 void HdMayaDagAdapter::_CalculateTransform() {
     if (_invalidTransform) {
-        if (IsMasterInstancer()) {
+        if (IsInstanced()) {
             _transform.SetIdentity();
         } else {
             _transform = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
@@ -149,7 +149,7 @@ const GfMatrix4d& HdMayaDagAdapter::GetTransform() {
 
 void HdMayaDagAdapter::CreateCallbacks() {
     MStatus status;
-    if (IsMasterInstancer()) {
+    if (IsInstanced()) {
         auto obj = GetDagPath().transform();
         auto id = MNodeMessage::addNodePreRemovalCallback(
             obj, _MasterNodePreRemoval, this, &status);
@@ -181,7 +181,7 @@ void HdMayaDagAdapter::CreateCallbacks() {
         for (; dag.length() > 0; dag.pop()) {
             MObject obj = dag.node();
             if (obj != MObject::kNullObj) {
-                if (!IsMasterInstancer()) {
+                if (!IsInstanced()) {
                     auto id = MNodeMessage::addNodeDirtyPlugCallback(
                         obj, _TransformNodeDirty, this, &status);
                     if (status) { AddCallback(id); }
@@ -196,7 +196,7 @@ void HdMayaDagAdapter::CreateCallbacks() {
 void HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     if (dirtyBits != 0) {
         GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
-        if (IsMasterInstancer()) {
+        if (IsInstanced()) {
             GetDelegate()->GetChangeTracker().MarkInstancerDirty(
                 _GetInstancerID(), dirtyBits);
         }
@@ -204,11 +204,13 @@ void HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
 }
 
 void HdMayaDagAdapter::RemovePrim() {
+    if (!_isPopulated) { return; }
     GetDelegate()->RemoveRprim(GetID());
-    if (_isMasterInstancer) {
+    if (_isInstanced) {
         GetDelegate()->RemoveInstancer(
             GetID().AppendProperty(_tokens->instancer));
     }
+    _isPopulated = false;
 }
 
 void HdMayaDagAdapter::PopulateSelection(
@@ -227,7 +229,7 @@ bool HdMayaDagAdapter::UpdateVisibility() {
 }
 
 VtIntArray HdMayaDagAdapter::GetInstanceIndices(const SdfPath& prototypeId) {
-    if (!IsMasterInstancer()) { return {}; }
+    if (!IsInstanced()) { return {}; }
     MDagPathArray dags;
     if (!MDagPath::getAllPathsTo(GetDagPath().node(), dags)) { return {}; }
     const auto numDags = dags.length();
@@ -249,7 +251,7 @@ void HdMayaDagAdapter::_AddHierarchyChangedCallback(MDagPath& dag) {
 }
 
 SdfPath HdMayaDagAdapter::_GetInstancerID() {
-    if (!_isMasterInstancer) { return {}; }
+    if (!_isInstanced) { return {}; }
 
     return GetID().AppendProperty(_tokens->instancer);
 }

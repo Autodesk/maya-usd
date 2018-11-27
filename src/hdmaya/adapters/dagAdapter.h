@@ -79,7 +79,7 @@ public:
     const MDagPath& GetDagPath() const { return _dagPath; }
     bool IsVisible() const { return _isVisible; }
     void InvalidateTransform() { _invalidTransform = true; }
-    bool IsMasterInstancer() const { return _isMasterInstancer; }
+    bool IsInstanced() const { return _isInstanced; }
     HDMAYA_API
     virtual VtIntArray GetInstanceIndices(const SdfPath& prototypeId);
     HDMAYA_API
@@ -101,7 +101,7 @@ private:
     GfMatrix4d _transform;
     bool _isVisible = true;
     bool _invalidTransform = true;
-    bool _isMasterInstancer = false;
+    bool _isInstanced = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

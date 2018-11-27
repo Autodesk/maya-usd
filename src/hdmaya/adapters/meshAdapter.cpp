@@ -74,9 +74,11 @@ public:
     ~HdMayaMeshAdapter() = default;
 
     void Populate() override {
+        if (_isPopulated) { return; }
         GetDelegate()->InsertRprim(
             HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty,
             _GetInstancerID());
+        _isPopulated = true;
     }
 
     void CreateCallbacks() override {

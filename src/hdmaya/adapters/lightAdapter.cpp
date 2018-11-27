@@ -87,8 +87,10 @@ bool HdMayaLightAdapter::IsSupported() {
 }
 
 void HdMayaLightAdapter::Populate() {
+    if (_isPopulated)  { return; }
     if (IsVisible()) {
         GetDelegate()->InsertSprim(LightType(), GetID(), HdLight::AllDirty);
+        _isPopulated = true;
     }
 }
 
@@ -99,7 +101,9 @@ void HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits) {
 }
 
 void HdMayaLightAdapter::RemovePrim() {
+    if (!_isPopulated) { return; }
     GetDelegate()->RemoveSprim(LightType(), GetID());
+    _isPopulated = false;
 }
 
 bool HdMayaLightAdapter::HasType(const TfToken& typeId) {
