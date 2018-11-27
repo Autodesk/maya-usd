@@ -186,7 +186,7 @@ void HdMayaSceneDelegate::Populate() {
 
 void HdMayaSceneDelegate::PreFrame(const MHWRender::MDrawContext& context) {
     if (!_adaptersToRecreate.empty()) {
-        for (const auto& it: _adaptersToRecreate) {
+        for (const auto& it : _adaptersToRecreate) {
             _RecreateAdapter(std::get<0>(it), std::get<1>(it));
         }
         _adaptersToRecreate.clear();
@@ -245,7 +245,7 @@ void HdMayaSceneDelegate::RecreateAdapter(
     // TODO: Thread safety?
     // We expect this to be a small number of objects, so using a simple linear
     // search and a vector is generally a good choice.
-    for (const auto& it: _adaptersToRecreate) {
+    for (const auto& it : _adaptersToRecreate) {
         if (std::get<0>(it) == id) { return; }
     }
     _adaptersToRecreate.emplace_back(id, obj);
@@ -286,7 +286,8 @@ void HdMayaSceneDelegate::_RecreateAdapter(
 
     } else {
         TF_WARN(
-            "HdMayaSceneDelegate::RecreateAdapter(%s) -- Adapter does not exists",
+            "HdMayaSceneDelegate::RecreateAdapter(%s) -- Adapter does not "
+            "exists",
             id.GetText());
     }
 }

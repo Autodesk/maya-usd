@@ -82,13 +82,24 @@ void _InstancerNodeDirty(MObject& node, MPlug& plug, void* clientData) {
         HdChangeTracker::DirtyPrimvar);
 }
 
-void _InstancerNodePreRemoval(
-    MObject& node, void* clientData) {
+void _InstancerNodePreRemoval(MObject& node, void* clientData) {
     TF_UNUSED(node);
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     adapter->MarkDirty(
         HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyInstanceIndex |
         HdChangeTracker::DirtyPrimvar);
+}
+
+void _MasterNodePreRemoval(MObject& node, void* clientData) {
+    // The node points to the transform above the shape, not the shape itself.
+    TF_UNUSED(node);
+    auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    MDagPathArray dags;
+    MDagPath::getAllPathsTo(adapter->GetNode(), dags);
+    if (dags.length() < 2) { return; }
+    adapter->RemoveCallbacks();
+    adapter->RemovePrim();
+    adapter->GetDelegate()->RecreateAdapter(adapter->GetID(), dags[1].node());
 }
 
 void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData) {
@@ -139,14 +150,18 @@ const GfMatrix4d& HdMayaDagAdapter::GetTransform() {
 void HdMayaDagAdapter::CreateCallbacks() {
     MStatus status;
     if (IsMasterInstancer()) {
+        auto obj = GetDagPath().transform();
+        auto id = MNodeMessage::addNodePreRemovalCallback(
+            obj, _MasterNodePreRemoval, this, &status);
+        if (status) { AddCallback(id); }
         MDagPathArray dags;
         if (MDagPath::getAllPathsTo(GetDagPath().node(), dags)) {
             const auto numDags = dags.length();
             for (auto i = decltype(numDags){0}; i < numDags; ++i) {
                 auto cdag = dags[i];
                 cdag.pop();
-                MObject obj = cdag.node();
-                auto id = MNodeMessage::addNodePreRemovalCallback(
+                obj = cdag.node();
+                id = MNodeMessage::addNodePreRemovalCallback(
                     obj, _InstancerNodePreRemoval, this, &status);
                 if (status) { AddCallback(id); }
                 for (; cdag.length() > 0; cdag.pop()) {
@@ -189,11 +204,11 @@ void HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
 }
 
 void HdMayaDagAdapter::RemovePrim() {
+    GetDelegate()->RemoveRprim(GetID());
     if (_isMasterInstancer) {
         GetDelegate()->RemoveInstancer(
             GetID().AppendProperty(_tokens->instancer));
     }
-    GetDelegate()->RemoveRprim(GetID());
 }
 
 void HdMayaDagAdapter::PopulateSelection(
