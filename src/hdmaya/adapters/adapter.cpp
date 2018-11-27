@@ -35,12 +35,14 @@ TF_REGISTRY_FUNCTION(TfType) { TfType::Define<HdMayaAdapter>(); }
 
 namespace {
 
-void _aboutToDelete(MObject& node, MDGModifier& modifier, void* clientData) {
+void _preRemoval(MObject& node, void* clientData) {
+    TF_UNUSED(node);
     auto* adapter = reinterpret_cast<HdMayaAdapter*>(clientData);
     adapter->GetDelegate()->RemoveAdapter(adapter->GetID());
 }
 
 void _nameChanged(MObject& node, const MString& /*str*/, void* clientData) {
+    TF_UNUSED(node);
     auto* adapter = reinterpret_cast<HdMayaAdapter*>(clientData);
     adapter->GetDelegate()->RecreateAdapter(
         adapter->GetID(), adapter->GetNode());
@@ -71,8 +73,8 @@ bool HdMayaAdapter::HasType(const TfToken& typeId) { return false; }
 void HdMayaAdapter::CreateCallbacks() {
     if (_node != MObject::kNullObj) {
         MStatus status;
-        auto id = MNodeMessage::addNodeAboutToDeleteCallback(
-            _node, _aboutToDelete, this, &status);
+        auto id = MNodeMessage::addNodePreRemovalCallback(
+            _node, _preRemoval, this, &status);
         if (status) { AddCallback(id); }
         id = MNodeMessage::addNameChangedCallback(
             _node, _nameChanged, this, &status);
