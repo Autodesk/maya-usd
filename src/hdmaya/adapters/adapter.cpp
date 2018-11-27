@@ -44,6 +44,7 @@ void _preRemoval(MObject& node, void* clientData) {
 void _nameChanged(MObject& node, const MString& /*str*/, void* clientData) {
     TF_UNUSED(node);
     auto* adapter = reinterpret_cast<HdMayaAdapter*>(clientData);
+    adapter->RemoveCallbacks();
     adapter->GetDelegate()->RecreateAdapter(
         adapter->GetID(), adapter->GetNode());
 }

@@ -185,6 +185,12 @@ void HdMayaSceneDelegate::Populate() {
 }
 
 void HdMayaSceneDelegate::PreFrame(const MHWRender::MDrawContext& context) {
+    if (!_adaptersToRecreate.empty()) {
+        for (const auto& it: _adaptersToRecreate) {
+            _RecreateAdapter(std::get<0>(it), std::get<1>(it));
+        }
+        _adaptersToRecreate.clear();
+    }
     if (!GetPreferSimpleLight()) { return; }
     constexpr auto considerAllSceneLights =
         MHWRender::MDrawContext::kFilteredIgnoreLightLimit;
@@ -236,6 +242,17 @@ void HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
 
 void HdMayaSceneDelegate::RecreateAdapter(
     const SdfPath& id, const MObject& obj) {
+    // TODO: Thread safety?
+    // We expect this to be a small number of objects, so using a simple linear
+    // search and a vector is generally a good choice.
+    for (const auto& it: _adaptersToRecreate) {
+        if (std::get<0>(it) == id) { return; }
+    }
+    _adaptersToRecreate.emplace_back(id, obj);
+}
+
+void HdMayaSceneDelegate::_RecreateAdapter(
+    const SdfPath& id, const MObject& obj) {
     if (_RemoveAdapter<HdMayaAdapter>(
             id,
             [](HdMayaAdapter* a) {
@@ -269,7 +286,7 @@ void HdMayaSceneDelegate::RecreateAdapter(
 
     } else {
         TF_WARN(
-            "HdMayaSceneDelegate::RenameAdapter(%s) -- Adapter does not exists",
+            "HdMayaSceneDelegate::RecreateAdapter(%s) -- Adapter does not exists",
             id.GetText());
     }
 }

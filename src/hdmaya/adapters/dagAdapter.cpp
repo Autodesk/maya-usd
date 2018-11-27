@@ -95,6 +95,8 @@ void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData) {
     TF_UNUSED(child);
     TF_UNUSED(parent);
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    adapter->RemoveCallbacks();
+    adapter->RemovePrim();
     adapter->GetDelegate()->RecreateAdapter(
         adapter->GetID(), adapter->GetNode());
 }
@@ -136,19 +138,6 @@ const GfMatrix4d& HdMayaDagAdapter::GetTransform() {
 
 void HdMayaDagAdapter::CreateCallbacks() {
     MStatus status;
-    auto dag = GetDagPath();
-    if (dag.node() != dag.transform()) { dag.pop(); }
-    for (; dag.length() > 0; dag.pop()) {
-        MObject obj = dag.node();
-        if (obj != MObject::kNullObj) {
-            if (!IsMasterInstancer()) {
-                auto id = MNodeMessage::addNodeDirtyPlugCallback(
-                    obj, _TransformNodeDirty, this, &status);
-                if (status) { AddCallback(id); }
-            }
-            _AddHierarchyChangedCallback(dag);
-        }
-    }
     if (IsMasterInstancer()) {
         MDagPathArray dags;
         if (MDagPath::getAllPathsTo(GetDagPath().node(), dags)) {
@@ -166,8 +155,23 @@ void HdMayaDagAdapter::CreateCallbacks() {
                         id = MNodeMessage::addNodeDirtyPlugCallback(
                             obj, _InstancerNodeDirty, this, &status);
                         if (status) { AddCallback(id); }
+                        _AddHierarchyChangedCallback(cdag);
                     }
                 }
+            }
+        }
+    } else {
+        auto dag = GetDagPath();
+        if (dag.node() != dag.transform()) { dag.pop(); }
+        for (; dag.length() > 0; dag.pop()) {
+            MObject obj = dag.node();
+            if (obj != MObject::kNullObj) {
+                if (!IsMasterInstancer()) {
+                    auto id = MNodeMessage::addNodeDirtyPlugCallback(
+                        obj, _TransformNodeDirty, this, &status);
+                    if (status) { AddCallback(id); }
+                }
+                _AddHierarchyChangedCallback(dag);
             }
         }
     }
