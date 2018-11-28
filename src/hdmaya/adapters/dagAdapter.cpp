@@ -241,7 +241,7 @@ VtIntArray HdMayaDagAdapter::GetInstanceIndices(const SdfPath& prototypeId) {
     ret.reserve(numDags);
     for (auto i = decltype(numDags){0}; i < numDags; ++i) {
         if (dags[i].isValid() && dags[i].isVisible()) {
-            ret.push_back(ret.size());
+            ret.push_back(static_cast<int>(ret.size()));
         }
     }
     return ret;
