@@ -87,7 +87,7 @@ bool HdMayaLightAdapter::IsSupported() {
 }
 
 void HdMayaLightAdapter::Populate() {
-    if (_isPopulated)  { return; }
+    if (_isPopulated) { return; }
     if (IsVisible()) {
         GetDelegate()->InsertSprim(LightType(), GetID(), HdLight::AllDirty);
         _isPopulated = true;

@@ -44,6 +44,12 @@ protected:
     HdMayaDelegateCtx(HdRenderIndex* renderIndex, const SdfPath& delegateID);
 
 public:
+    enum RecreateFlags : uint32_t {
+        RecreateFlagsPrim = 1 << 0,
+        RecreateFlagsCallbacks = 1 << 1,
+        RecreateFlagsAdapter = 1 << 2
+    };
+
     using HdSceneDelegate::GetRenderIndex;
     HdChangeTracker& GetChangeTracker() {
         return GetRenderIndex().GetChangeTracker();
@@ -65,7 +71,8 @@ public:
     HDMAYA_API
     virtual void RemoveAdapter(const SdfPath& id) = 0;
     HDMAYA_API
-    virtual void RecreateAdapter(const SdfPath& id, const MObject& obj) = 0;
+    virtual void RecreateAdapter(
+        const SdfPath& id, const MObject& obj, RecreateFlags flag) = 0;
     const HdRprimCollection& GetRprimCollection() { return _rprimCollection; }
     HDMAYA_API
     SdfPath GetPrimPath(const MDagPath& dg);

@@ -46,7 +46,8 @@ void _nameChanged(MObject& node, const MString& /*str*/, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaAdapter*>(clientData);
     adapter->RemoveCallbacks();
     adapter->GetDelegate()->RecreateAdapter(
-        adapter->GetID(), adapter->GetNode());
+        adapter->GetID(), adapter->GetNode(),
+        HdMayaDelegateCtx::RecreateFlagsAdapter);
 }
 
 } // namespace

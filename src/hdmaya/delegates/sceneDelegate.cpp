@@ -58,10 +58,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace {
 
 void _nodeAdded(MObject& obj, void* clientData) {
+    // In case of creating new instances, the instance below the
+    // dag will be empty and not initialized properly.
     auto* delegate = reinterpret_cast<HdMayaSceneDelegate*>(clientData);
-    MDagPath dag;
-    MStatus status = MDagPath::getAPathTo(obj, dag);
-    if (status) { delegate->InsertDag(dag); }
+    delegate->NodeAdded(obj);
 }
 
 template <typename T>
@@ -185,9 +185,34 @@ void HdMayaSceneDelegate::Populate() {
 }
 
 void HdMayaSceneDelegate::PreFrame(const MHWRender::MDrawContext& context) {
+    if (!_addedNodes.empty()) {
+        // Maya sometimes needs reference to nodes.
+        for (auto obj : _addedNodes) {
+            if (obj.isNull()) { continue; }
+            MDagPath dag;
+            MStatus status = MDagPath::getAPathTo(obj, dag);
+            if (!status) { return; }
+            // We need to check if there is an instanced shape below this dag
+            // and insert it as well, because they won't be inserted.
+            if (dag.hasFn(MFn::kTransform)) {
+                const auto childCount = dag.childCount();
+                for (auto child = decltype(childCount){0}; child < childCount;
+                     ++child) {
+                    auto dagCopy = dag;
+                    dagCopy.push(dag.child(child));
+                    if (dagCopy.isInstanced() && dagCopy.instanceNumber() > 0) {
+                        AddNewInstance(dagCopy);
+                    }
+                }
+            } else {
+                InsertDag(dag);
+            }
+        }
+        _addedNodes.clear();
+    }
     if (!_adaptersToRecreate.empty()) {
         for (const auto& it : _adaptersToRecreate) {
-            _RecreateAdapter(std::get<0>(it), std::get<1>(it));
+            _RecreateAdapter(std::get<0>(it), std::get<1>(it), std::get<2>(it));
         }
         _adaptersToRecreate.clear();
     }
@@ -241,18 +266,36 @@ void HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
 }
 
 void HdMayaSceneDelegate::RecreateAdapter(
-    const SdfPath& id, const MObject& obj) {
+    const SdfPath& id, const MObject& obj,
+    HdMayaDelegateCtx::RecreateFlags flags) {
     // TODO: Thread safety?
     // We expect this to be a small number of objects, so using a simple linear
     // search and a vector is generally a good choice.
     for (const auto& it : _adaptersToRecreate) {
         if (std::get<0>(it) == id) { return; }
     }
-    _adaptersToRecreate.emplace_back(id, obj);
+    _adaptersToRecreate.emplace_back(id, obj, flags);
 }
 
 void HdMayaSceneDelegate::_RecreateAdapter(
-    const SdfPath& id, const MObject& obj) {
+    const SdfPath& id, const MObject& obj,
+    HdMayaDelegateCtx::RecreateFlags flags) {
+    if ((flags & HdMayaDelegateCtx::RecreateFlagsAdapter) == 0) {
+        _FindAdapter<HdMayaAdapter>(
+            id,
+            [flags](HdMayaAdapter* a) {
+                if (flags & HdMayaDelegateCtx::RecreateFlagsPrim) {
+                    a->RemovePrim();
+                    a->Populate();
+                }
+                if (flags & HdMayaDelegateCtx::RecreateFlagsCallbacks) {
+                    a->RemoveCallbacks();
+                    a->CreateCallbacks();
+                }
+            },
+            _shapeAdapters, _lightAdapters);
+        return;
+    }
     if (_RemoveAdapter<HdMayaAdapter>(
             id,
             [](HdMayaAdapter* a) {
@@ -356,6 +399,38 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
         adapter->Populate();
         adapter->CreateCallbacks();
         _shapeAdapters.insert({id, adapter});
+    }
+}
+
+void HdMayaSceneDelegate::NodeAdded(const MObject& obj) {
+    _addedNodes.push_back(obj);
+}
+
+void HdMayaSceneDelegate::AddNewInstance(const MDagPath& dag) {
+    MDagPathArray dags;
+    MDagPath::getAllPathsTo(dag.node(), dags);
+    const auto dagsLength = dags.length();
+    if (dagsLength == 0) { return; }
+    const auto masterDag = dags[0];
+    const auto id = GetPrimPath(masterDag);
+    std::shared_ptr<HdMayaShapeAdapter> masterAdapter;
+    if (!TfMapLookup(_shapeAdapters, id, &masterAdapter) ||
+        masterAdapter == nullptr) {
+        return;
+    }
+    // If dags is 1, we have to recreate the adapter.
+    if (dags.length() == 1 || !masterAdapter->IsInstanced()) {
+        RecreateAdapter(
+            id, masterDag.node(), HdMayaDelegateCtx::RecreateFlagsAdapter);
+    } else {
+        // If dags is more than one, trigger rebuilding callbacks next call and
+        // mark dirty.
+        RecreateAdapter(
+            id, masterDag.node(), HdMayaDelegateCtx::RecreateFlagsCallbacks);
+        masterAdapter->MarkDirty(
+            HdChangeTracker::DirtyInstancer |
+            HdChangeTracker::DirtyInstanceIndex |
+            HdChangeTracker::DirtyPrimvar);
     }
 }
 

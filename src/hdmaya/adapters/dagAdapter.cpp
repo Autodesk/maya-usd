@@ -88,6 +88,11 @@ void _InstancerNodePreRemoval(MObject& node, void* clientData) {
     adapter->MarkDirty(
         HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyInstanceIndex |
         HdChangeTracker::DirtyPrimvar);
+    // Otherwise we keep Callback IDs pointing to invalid callbacks.
+    adapter->RemoveCallbacks();
+    adapter->GetDelegate()->RecreateAdapter(
+        adapter->GetID(), adapter->GetNode(),
+        HdMayaDelegateCtx::RecreateFlagsCallbacks);
 }
 
 void _MasterNodePreRemoval(MObject& node, void* clientData) {
@@ -99,7 +104,9 @@ void _MasterNodePreRemoval(MObject& node, void* clientData) {
     if (dags.length() < 2) { return; }
     adapter->RemoveCallbacks();
     adapter->RemovePrim();
-    adapter->GetDelegate()->RecreateAdapter(adapter->GetID(), dags[1].node());
+    adapter->GetDelegate()->RecreateAdapter(
+        adapter->GetID(), dags[1].node(),
+        HdMayaDelegateCtx::RecreateFlagsAdapter);
 }
 
 void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData) {
@@ -109,7 +116,8 @@ void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData) {
     adapter->RemoveCallbacks();
     adapter->RemovePrim();
     adapter->GetDelegate()->RecreateAdapter(
-        adapter->GetID(), adapter->GetNode());
+        adapter->GetID(), adapter->GetNode(),
+        HdMayaDelegateCtx::RecreateFlagsAdapter);
 }
 
 const auto _instancePrimvarDescriptors = HdPrimvarDescriptorVector{
@@ -123,8 +131,7 @@ HdMayaDagAdapter::HdMayaDagAdapter(
     const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath)
     : HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {
     UpdateVisibility();
-    _isInstanced =
-        _dagPath.isInstanced() && _dagPath.instanceNumber() == 0;
+    _isInstanced = _dagPath.isInstanced() && _dagPath.instanceNumber() == 0;
 }
 
 void HdMayaDagAdapter::_CalculateTransform() {
