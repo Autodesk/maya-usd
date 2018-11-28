@@ -85,7 +85,7 @@ namespace {
       std::string mayaPath = sceneItem->path().popSegment().popHead().string();
 
       MSelectionList sl;
-      sl.add(MString(mayaPath.c_str()));
+      sl.add(MString(mayaPath.c_str(), mayaPath.length()));
 
       MObject object;
       MStatus status = sl.getDependNode(0, object);
@@ -97,7 +97,7 @@ namespace {
       if (dependNode.typeId() == AL::usdmaya::nodes::ProxyShape::kTypeId)
       {
         auto proxyShape =
-          dynamic_cast<AL::usdmaya::nodes::ProxyShape*>(dependNode.userNode());
+          static_cast<AL::usdmaya::nodes::ProxyShape*>(dependNode.userNode());
         if (proxyShape)
         {
           proxyShape->clearBoundingBoxCache();

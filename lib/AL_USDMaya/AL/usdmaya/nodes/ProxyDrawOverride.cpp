@@ -423,8 +423,7 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
                 Ufe::PathSegment leaf = itemPath.getSegments().back();
                 if (leaf.runTimeId() == USD_UFE_RUNTIME_ID)
                 {
-                    SdfPath ufePath(leaf.string());
-                    ufePaths.push_back(ufePath);
+                    ufePaths.emplace_back(leaf.string());
                 }
             }
         }

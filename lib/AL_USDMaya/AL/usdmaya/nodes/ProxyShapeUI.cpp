@@ -371,7 +371,8 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     if (ArchHasEnv("MAYA_WANT_UFE_SELECTION")) {
       // Get only Xform types for ufe selection
       UsdPrim prim = proxyShape->getUsdStage()->GetPrimAtPath(path);
-      while (prim && prim.GetTypeName() != "Xform")
+      TfToken xformToken("Xform");
+      while (prim && prim.GetTypeName() != xformToken)
         prim = prim.GetParent();
       return prim.GetPath();
     }
