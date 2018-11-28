@@ -298,18 +298,24 @@ void HdMayaSceneDelegate::RecreateAdapterOnIdle(
     // TODO: Thread safety?
     // We expect this to be a small number of objects, so using a simple linear
     // search and a vector is generally a good choice.
-    for (const auto& it : _adaptersToRecreate) {
-        if (std::get<0>(it) == id) { return; }
+    for (auto& it : _adaptersToRecreate) {
+        if (std::get<0>(it) == id) {
+            std::get<1>(it) = obj;
+            return;
+        }
     }
     _adaptersToRecreate.emplace_back(id, obj);
 }
 
 void HdMayaSceneDelegate::RebuildAdapterOnIdle(
-    const SdfPath& id, HdMayaDelegateCtx::RebuildFlags flags) {
+    const SdfPath& id, uint32_t flags) {
     // We expect this to be a small number of objects, so using a simple linear
     // search and a vector is generally a good choice.
-    for (const auto& it : _adaptersToRebuild) {
-        if (std::get<0>(it) == id) { return; }
+    for (auto& it : _adaptersToRebuild) {
+        if (std::get<0>(it) == id) {
+            std::get<1>(it) |= flags;
+            return;
+        }
     }
     _adaptersToRebuild.emplace_back(id, flags);
 }

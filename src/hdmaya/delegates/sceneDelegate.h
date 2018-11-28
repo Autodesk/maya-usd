@@ -71,7 +71,7 @@ public:
     void RemoveAdapter(const SdfPath& id) override;
     void RecreateAdapter(const SdfPath& id, const MObject& obj) override;
     void RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj) override;
-    void RebuildAdapterOnIdle(const SdfPath& id, RebuildFlags flags) override;
+    void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags) override;
     void InsertDag(const MDagPath& dag);
     void NodeAdded(const MObject& obj);
     void AddNewInstance(const MDagPath& dag);
@@ -129,7 +129,7 @@ private:
         _materialAdapters;
     std::vector<MCallbackId> _callbacks;
     std::vector<std::tuple<SdfPath, MObject>> _adaptersToRecreate;
-    std::vector<std::tuple<SdfPath, HdMayaDelegateCtx::RebuildFlags>>
+    std::vector<std::tuple<SdfPath, uint32_t>>
         _adaptersToRebuild;
     std::vector<MObject> _addedNodes;
 

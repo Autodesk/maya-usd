@@ -70,7 +70,7 @@ public:
     virtual void RemoveAdapter(const SdfPath& id) { }
     virtual void RecreateAdapter(const SdfPath& id, const MObject& obj) {}
     virtual void RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj) {}
-    virtual void RebuildAdapterOnIdle(const SdfPath& id, RebuildFlags flags) {}
+    virtual void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags) {}
     const HdRprimCollection& GetRprimCollection() { return _rprimCollection; }
     HDMAYA_API
     SdfPath GetPrimPath(const MDagPath& dg);

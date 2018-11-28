@@ -70,6 +70,16 @@ void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
     }
 }
 
+void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData) {
+    TF_UNUSED(child);
+    TF_UNUSED(parent);
+    auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    adapter->RemoveCallbacks();
+    adapter->RemovePrim();
+    adapter->GetDelegate()->RecreateAdapterOnIdle(
+        adapter->GetID(), adapter->GetNode());
+}
+
 void _InstancerNodeDirty(MObject& node, MPlug& plug, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     TF_DEBUG(HDMAYA_ADAPTER_DAG_PLUG_DIRTY)
@@ -88,10 +98,10 @@ void _InstancerNodePreRemoval(MObject& node, void* clientData) {
     adapter->MarkDirty(
         HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyInstanceIndex |
         HdChangeTracker::DirtyPrimvar);
-    // Otherwise we keep Callback IDs pointing to invalid callbacks.
     adapter->RemoveCallbacks();
-    adapter->GetDelegate()->RebuildAdapterOnIdle(
-        adapter->GetID(), HdMayaDelegateCtx::RebuildFlagCallbacks);
+    adapter->RemovePrim();
+    adapter->GetDelegate()->RecreateAdapterOnIdle(
+        adapter->GetID(), adapter->GetNode());
 }
 
 void _MasterNodePreRemoval(MObject& node, void* clientData) {
@@ -105,16 +115,6 @@ void _MasterNodePreRemoval(MObject& node, void* clientData) {
     adapter->RemovePrim();
     adapter->GetDelegate()->RecreateAdapterOnIdle(
         adapter->GetID(), dags[1].node());
-}
-
-void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData) {
-    TF_UNUSED(child);
-    TF_UNUSED(parent);
-    auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
-    adapter->RemoveCallbacks();
-    adapter->RemovePrim();
-    adapter->GetDelegate()->RecreateAdapterOnIdle(
-        adapter->GetID(), adapter->GetNode());
 }
 
 const auto _instancePrimvarDescriptors = HdPrimvarDescriptorVector{
