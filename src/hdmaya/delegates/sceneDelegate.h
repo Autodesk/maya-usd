@@ -69,6 +69,7 @@ public:
     void Populate() override;
     void PreFrame(const MHWRender::MDrawContext& context) override;
     void RemoveAdapter(const SdfPath& id) override;
+    void RecreateAdapter(const SdfPath& id, const MObject& obj) override;
     void RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj) override;
     void RebuildAdapterOnIdle(const SdfPath& id, RebuildFlags flags) override;
     void InsertDag(const MDagPath& dag);
@@ -82,7 +83,6 @@ public:
         const MSelectionList& mayaSelection, HdSelection* selection) override;
 
 protected:
-    void _RecreateAdapter(const SdfPath& id, const MObject& obj);
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;
     GfRange3d GetExtent(const SdfPath& id) override;
     GfMatrix4d GetTransform(const SdfPath& id) override;

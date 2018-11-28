@@ -214,7 +214,7 @@ void HdMayaSceneDelegate::PreFrame(const MHWRender::MDrawContext& context) {
     // be okay.
     if (!_adaptersToRecreate.empty()) {
         for (const auto& it : _adaptersToRecreate) {
-            _RecreateAdapter(std::get<0>(it), std::get<1>(it));
+            RecreateAdapter(std::get<0>(it), std::get<1>(it));
             for (auto itr = _adaptersToRebuild.begin();
                  itr != _adaptersToRebuild.end(); ++itr) {
                 if (std::get<0>(it) == std::get<0>(*itr)) {
@@ -314,7 +314,7 @@ void HdMayaSceneDelegate::RebuildAdapterOnIdle(
     _adaptersToRebuild.emplace_back(id, flags);
 }
 
-void HdMayaSceneDelegate::_RecreateAdapter(
+void HdMayaSceneDelegate::RecreateAdapter(
     const SdfPath& id, const MObject& obj) {
     if (_RemoveAdapter<HdMayaAdapter>(
             id,

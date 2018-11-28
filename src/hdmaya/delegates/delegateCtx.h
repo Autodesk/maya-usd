@@ -67,14 +67,10 @@ public:
     void RemoveSprim(const TfToken& typeId, const SdfPath& id);
     HDMAYA_API
     void RemoveInstancer(const SdfPath& id);
-    HDMAYA_API
-    virtual void RemoveAdapter(const SdfPath& id) = 0;
-    HDMAYA_API
-    virtual void RecreateAdapterOnIdle(
-        const SdfPath& id, const MObject& obj) = 0;
-    HDMAYA_API
-    virtual void RebuildAdapterOnIdle(
-        const SdfPath& id, RebuildFlags flags) = 0;
+    virtual void RemoveAdapter(const SdfPath& id) { }
+    virtual void RecreateAdapter(const SdfPath& id, const MObject& obj) {}
+    virtual void RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj) {}
+    virtual void RebuildAdapterOnIdle(const SdfPath& id, RebuildFlags flags) {}
     const HdRprimCollection& GetRprimCollection() { return _rprimCollection; }
     HDMAYA_API
     SdfPath GetPrimPath(const MDagPath& dg);
