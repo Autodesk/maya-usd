@@ -41,13 +41,13 @@ void _preRemoval(MObject& node, void* clientData) {
     adapter->GetDelegate()->RemoveAdapter(adapter->GetID());
 }
 
-void _nameChanged(MObject& node, const MString& /*str*/, void* clientData) {
+void _nameChanged(MObject& node, const MString& str, void* clientData) {
     TF_UNUSED(node);
+    TF_UNUSED(str);
     auto* adapter = reinterpret_cast<HdMayaAdapter*>(clientData);
     adapter->RemoveCallbacks();
-    adapter->GetDelegate()->RecreateAdapter(
-        adapter->GetID(), adapter->GetNode(),
-        HdMayaDelegateCtx::RecreateFlagsAdapter);
+    adapter->GetDelegate()->RecreateAdapterOnIdle(
+        adapter->GetID(), adapter->GetNode());
 }
 
 } // namespace
@@ -68,9 +68,15 @@ void HdMayaAdapter::RemoveCallbacks() {
     std::vector<MCallbackId>().swap(_callbacks);
 }
 
-VtValue HdMayaAdapter::Get(const TfToken& /*key*/) { return {}; };
+VtValue HdMayaAdapter::Get(const TfToken& key) {
+    TF_UNUSED(key);
+    return {};
+};
 
-bool HdMayaAdapter::HasType(const TfToken& typeId) { return false; }
+bool HdMayaAdapter::HasType(const TfToken& typeId) {
+    TF_UNUSED(typeId);
+    return false;
+}
 
 void HdMayaAdapter::CreateCallbacks() {
     if (_node != MObject::kNullObj) {

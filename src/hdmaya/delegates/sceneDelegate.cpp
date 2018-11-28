@@ -186,8 +186,7 @@ void HdMayaSceneDelegate::Populate() {
 
 void HdMayaSceneDelegate::PreFrame(const MHWRender::MDrawContext& context) {
     if (!_addedNodes.empty()) {
-        // Maya sometimes needs reference to nodes.
-        for (auto obj : _addedNodes) {
+        for (const auto& obj : _addedNodes) {
             if (obj.isNull()) { continue; }
             MDagPath dag;
             MStatus status = MDagPath::getAPathTo(obj, dag);
@@ -210,11 +209,40 @@ void HdMayaSceneDelegate::PreFrame(const MHWRender::MDrawContext& context) {
         }
         _addedNodes.clear();
     }
+    // We don't need to rebuild something that's already being recreated.
+    // Since we have a few elements, linear search over vectors is going to
+    // be okay.
     if (!_adaptersToRecreate.empty()) {
         for (const auto& it : _adaptersToRecreate) {
-            _RecreateAdapter(std::get<0>(it), std::get<1>(it), std::get<2>(it));
+            _RecreateAdapter(std::get<0>(it), std::get<1>(it));
+            for (auto itr = _adaptersToRebuild.begin();
+                 itr != _adaptersToRebuild.end(); ++itr) {
+                if (std::get<0>(it) == std::get<0>(*itr)) {
+                    _adaptersToRebuild.erase(itr);
+                    break;
+                }
+            }
         }
         _adaptersToRecreate.clear();
+    }
+    if (!_adaptersToRebuild.empty()) {
+        for (const auto& it : _adaptersToRebuild) {
+            _FindAdapter<HdMayaAdapter>(
+                std::get<0>(it),
+                [it](HdMayaAdapter* a) {
+                    if (std::get<1>(it) &
+                        HdMayaDelegateCtx::RebuildFlagCallbacks) {
+                        a->RemoveCallbacks();
+                        a->CreateCallbacks();
+                    }
+                    if (std::get<1>(it) & HdMayaDelegateCtx::RebuildFlagPrim) {
+                        a->RemovePrim();
+                        a->Populate();
+                    }
+                },
+                _shapeAdapters, _lightAdapters, _materialAdapters);
+        }
+        _adaptersToRebuild.clear();
     }
     if (!GetPreferSimpleLight()) { return; }
     constexpr auto considerAllSceneLights =
@@ -265,37 +293,29 @@ void HdMayaSceneDelegate::RemoveAdapter(const SdfPath& id) {
     }
 }
 
-void HdMayaSceneDelegate::RecreateAdapter(
-    const SdfPath& id, const MObject& obj,
-    HdMayaDelegateCtx::RecreateFlags flags) {
+void HdMayaSceneDelegate::RecreateAdapterOnIdle(
+    const SdfPath& id, const MObject& obj) {
     // TODO: Thread safety?
     // We expect this to be a small number of objects, so using a simple linear
     // search and a vector is generally a good choice.
     for (const auto& it : _adaptersToRecreate) {
         if (std::get<0>(it) == id) { return; }
     }
-    _adaptersToRecreate.emplace_back(id, obj, flags);
+    _adaptersToRecreate.emplace_back(id, obj);
+}
+
+void HdMayaSceneDelegate::RebuildAdapterOnIdle(
+    const SdfPath& id, HdMayaDelegateCtx::RebuildFlags flags) {
+    // We expect this to be a small number of objects, so using a simple linear
+    // search and a vector is generally a good choice.
+    for (const auto& it : _adaptersToRebuild) {
+        if (std::get<0>(it) == id) { return; }
+    }
+    _adaptersToRebuild.emplace_back(id, flags);
 }
 
 void HdMayaSceneDelegate::_RecreateAdapter(
-    const SdfPath& id, const MObject& obj,
-    HdMayaDelegateCtx::RecreateFlags flags) {
-    if ((flags & HdMayaDelegateCtx::RecreateFlagsAdapter) == 0) {
-        _FindAdapter<HdMayaAdapter>(
-            id,
-            [flags](HdMayaAdapter* a) {
-                if (flags & HdMayaDelegateCtx::RecreateFlagsPrim) {
-                    a->RemovePrim();
-                    a->Populate();
-                }
-                if (flags & HdMayaDelegateCtx::RecreateFlagsCallbacks) {
-                    a->RemoveCallbacks();
-                    a->CreateCallbacks();
-                }
-            },
-            _shapeAdapters, _lightAdapters);
-        return;
-    }
+    const SdfPath& id, const MObject& obj) {
     if (_RemoveAdapter<HdMayaAdapter>(
             id,
             [](HdMayaAdapter* a) {
@@ -329,8 +349,8 @@ void HdMayaSceneDelegate::_RecreateAdapter(
 
     } else {
         TF_WARN(
-            "HdMayaSceneDelegate::RecreateAdapter(%s) -- Adapter does not "
-            "exists",
+            "HdMayaSceneDelegate::RecreateAdapterOnIdle(%s) -- Adapter does "
+            "not exists",
             id.GetText());
     }
 }
@@ -368,19 +388,7 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
     } else {
         // We are inserting a single prim and
         // instancer for every instanced mesh.
-        if (dag.isInstanced() && dag.instanceNumber() > 0) {
-            /*MDagPathArray dags;
-            MDagPath::getAllPathsTo(dag.node(), dags);
-            if (dags.length() == 0) { return; }
-            const auto id = GetPrimPath(dags[0]);
-            auto* adapter = TfMapLookupPtr(_shapeAdapters, id);
-            if (adapter != nullptr) {
-                (*adapter)->RemovePrim();
-                (*adapter)->RemoveCallbacks();
-                RecreateAdapter((*adapter)->GetID(), (*adapter)->GetNode());
-            }*/
-            return;
-        }
+        if (dag.isInstanced() && dag.instanceNumber() > 0) { return; }
         auto adapterCreator =
             HdMayaAdapterRegistry::GetShapeAdapterCreator(dag);
         if (adapterCreator == nullptr) { return; }
@@ -420,13 +428,11 @@ void HdMayaSceneDelegate::AddNewInstance(const MDagPath& dag) {
     }
     // If dags is 1, we have to recreate the adapter.
     if (dags.length() == 1 || !masterAdapter->IsInstanced()) {
-        RecreateAdapter(
-            id, masterDag.node(), HdMayaDelegateCtx::RecreateFlagsAdapter);
+        RecreateAdapterOnIdle(id, masterDag.node());
     } else {
         // If dags is more than one, trigger rebuilding callbacks next call and
         // mark dirty.
-        RecreateAdapter(
-            id, masterDag.node(), HdMayaDelegateCtx::RecreateFlagsCallbacks);
+        RebuildAdapterOnIdle(id, HdMayaDelegateCtx::RebuildFlagCallbacks);
         masterAdapter->MarkDirty(
             HdChangeTracker::DirtyInstancer |
             HdChangeTracker::DirtyInstanceIndex |

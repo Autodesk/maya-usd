@@ -44,10 +44,9 @@ protected:
     HdMayaDelegateCtx(HdRenderIndex* renderIndex, const SdfPath& delegateID);
 
 public:
-    enum RecreateFlags : uint32_t {
-        RecreateFlagsPrim = 1 << 0,
-        RecreateFlagsCallbacks = 1 << 1,
-        RecreateFlagsAdapter = 1 << 2
+    enum RebuildFlags : uint32_t {
+        RebuildFlagPrim = 1 << 1,
+        RebuildFlagCallbacks = 1 << 1,
     };
 
     using HdSceneDelegate::GetRenderIndex;
@@ -71,8 +70,11 @@ public:
     HDMAYA_API
     virtual void RemoveAdapter(const SdfPath& id) = 0;
     HDMAYA_API
-    virtual void RecreateAdapter(
-        const SdfPath& id, const MObject& obj, RecreateFlags flag) = 0;
+    virtual void RecreateAdapterOnIdle(
+        const SdfPath& id, const MObject& obj) = 0;
+    HDMAYA_API
+    virtual void RebuildAdapterOnIdle(
+        const SdfPath& id, RebuildFlags flags) = 0;
     const HdRprimCollection& GetRprimCollection() { return _rprimCollection; }
     HDMAYA_API
     SdfPath GetPrimPath(const MDagPath& dg);

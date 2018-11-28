@@ -90,9 +90,8 @@ void _InstancerNodePreRemoval(MObject& node, void* clientData) {
         HdChangeTracker::DirtyPrimvar);
     // Otherwise we keep Callback IDs pointing to invalid callbacks.
     adapter->RemoveCallbacks();
-    adapter->GetDelegate()->RecreateAdapter(
-        adapter->GetID(), adapter->GetNode(),
-        HdMayaDelegateCtx::RecreateFlagsCallbacks);
+    adapter->GetDelegate()->RebuildAdapterOnIdle(
+        adapter->GetID(), HdMayaDelegateCtx::RebuildFlagCallbacks);
 }
 
 void _MasterNodePreRemoval(MObject& node, void* clientData) {
@@ -104,9 +103,8 @@ void _MasterNodePreRemoval(MObject& node, void* clientData) {
     if (dags.length() < 2) { return; }
     adapter->RemoveCallbacks();
     adapter->RemovePrim();
-    adapter->GetDelegate()->RecreateAdapter(
-        adapter->GetID(), dags[1].node(),
-        HdMayaDelegateCtx::RecreateFlagsAdapter);
+    adapter->GetDelegate()->RecreateAdapterOnIdle(
+        adapter->GetID(), dags[1].node());
 }
 
 void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData) {
@@ -115,9 +113,8 @@ void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     adapter->RemoveCallbacks();
     adapter->RemovePrim();
-    adapter->GetDelegate()->RecreateAdapter(
-        adapter->GetID(), adapter->GetNode(),
-        HdMayaDelegateCtx::RecreateFlagsAdapter);
+    adapter->GetDelegate()->RecreateAdapterOnIdle(
+        adapter->GetID(), adapter->GetNode());
 }
 
 const auto _instancePrimvarDescriptors = HdPrimvarDescriptorVector{
