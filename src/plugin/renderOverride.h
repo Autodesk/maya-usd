@@ -67,8 +67,6 @@ public:
         return TfSingleton<MtohRenderOverride>::CurrentlyExists();
     }
 
-    static TfTokenVector GetRendererPlugins();
-    static std::string GetRendererPluginDisplayName(const TfToken& id);
     static void ChangeRendererPlugin(const TfToken& id);
     static int GetMaximumShadowMapResolution();
     static void SetMaximumShadowMapResolution(int resolution);

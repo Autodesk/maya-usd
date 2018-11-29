@@ -1,9 +1,11 @@
 set(SRC
     plugin.cpp
     pluginDebugCodes.cpp
+    renderGlobalsNode.cpp
     renderOverride.cpp
     shadingModeExporter.cpp
     usdPreviewSurface.cpp
+    utils.cpp
     viewCommand.cpp)
 
 add_library(mtoh SHARED ${SRC})

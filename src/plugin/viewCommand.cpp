@@ -28,7 +28,9 @@
 #include <maya/MSyntax.h>
 
 #include <hdmaya/delegates/delegateRegistry.h>
+
 #include "renderOverride.h"
+#include "utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -178,14 +180,14 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
     MArgDatabase db(syntax(), args);
 
     if (db.isFlagSet(_listRenderers)) {
-        for (const auto& renderer : MtohRenderOverride::GetRendererPlugins()) {
+        for (const auto& renderer : MtohGetRendererPlugins()) {
             appendToResult(renderer.GetText());
         }
     } else if (db.isFlagSet(_getRendererDisplayName)) {
         MString id;
         if (db.getFlagArgument(_getRendererDisplayName, 0, id)) {
-            const auto dn = MtohRenderOverride::GetRendererPluginDisplayName(
-                TfToken(id.asChar()));
+            const auto dn =
+                MtohGetRendererPluginDisplayName(TfToken(id.asChar()));
             setResult(MString(dn.c_str()));
         }
     } else if (db.isFlagSet(_changeRenderer)) {

@@ -129,8 +129,7 @@ private:
         _materialAdapters;
     std::vector<MCallbackId> _callbacks;
     std::vector<std::tuple<SdfPath, MObject>> _adaptersToRecreate;
-    std::vector<std::tuple<SdfPath, uint32_t>>
-        _adaptersToRebuild;
+    std::vector<std::tuple<SdfPath, uint32_t>> _adaptersToRebuild;
     std::vector<MObject> _addedNodes;
 
     SdfPath _fallbackMaterial;

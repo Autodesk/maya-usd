@@ -53,6 +53,7 @@
 #include <hdmaya/utils.h>
 
 #include "pluginDebugCodes.h"
+#include "utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -61,9 +62,6 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens, (HdStreamRendererPlugin));
 TF_INSTANTIATE_SINGLETON(MtohRenderOverride);
 
 namespace {
-
-constexpr auto MTOH_DEFAULT_RENDERER_PLUGIN_NAME =
-    "MTOH_DEFAULT_RENDERER_PLUGIN";
 
 constexpr auto MTOH_RENDER_OVERRIDE_NAME = "hydraViewportOverride";
 
@@ -95,18 +93,6 @@ void _ClearResourcesCallback(float, float, void*) {
         }
     }
     MtohRenderOverride::GetInstance().ClearHydraResources();
-}
-
-TfToken _GetDefaultRenderer() {
-    const auto l = MtohRenderOverride::GetRendererPlugins();
-    if (l.empty()) { return {}; }
-    const auto* defaultRenderer = getenv(MTOH_DEFAULT_RENDERER_PLUGIN_NAME);
-    if (defaultRenderer == nullptr) { return l[0]; }
-    const TfToken defaultRendererToken(defaultRenderer);
-    if (std::find(l.begin(), l.end(), defaultRendererToken) != l.end()) {
-        return defaultRendererToken;
-    }
-    return l[0];
 }
 
 class HdMayaSceneRender : public MHWRender::MSceneRender {
@@ -232,7 +218,7 @@ MtohRenderOverride::MtohRenderOverride()
         []() { _needsClear.store(true); });
     _ID = SdfPath("/HdMayaViewportRenderer")
               .AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
-    _rendererName = _GetDefaultRenderer();
+    _rendererName = MtohGetDefaultRenderer();
     // This is a critical error, so we don't allow the construction
     // of the viewport renderer src if there is no renderer src
     // present.
@@ -272,31 +258,10 @@ MtohRenderOverride::~MtohRenderOverride() {
     for (auto callback : _callbacks) { MMessage::removeCallback(callback); }
 }
 
-TfTokenVector MtohRenderOverride::GetRendererPlugins() {
-    HfPluginDescVector pluginDescs;
-    HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescs);
-
-    TfTokenVector ret;
-    ret.reserve(pluginDescs.size());
-    for (const auto& desc : pluginDescs) { ret.emplace_back(desc.id); }
-    return ret;
-}
-
-std::string MtohRenderOverride::GetRendererPluginDisplayName(
-    const TfToken& id) {
-    HfPluginDesc pluginDesc;
-    if (!TF_VERIFY(HdxRendererPluginRegistry::GetInstance().GetPluginDesc(
-            id, &pluginDesc))) {
-        return {};
-    }
-
-    return pluginDesc.displayName;
-}
-
 void MtohRenderOverride::ChangeRendererPlugin(const TfToken& id) {
     auto& instance = GetInstance();
     if (instance._rendererName == id) { return; }
-    const auto renderers = GetRendererPlugins();
+    const auto renderers = MtohGetRendererPlugins();
     if (std::find(renderers.begin(), renderers.end(), id) == renderers.end()) {
         return;
     }

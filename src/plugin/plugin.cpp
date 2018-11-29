@@ -23,6 +23,7 @@
 //
 #include <maya/MFnPlugin.h>
 
+#include "renderGlobalsNode.h"
 #include "renderOverride.h"
 #include "usdPreviewSurface.h"
 #include "viewCommand.h"
@@ -72,6 +73,15 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
             MPxNode::kDependNode, &MtohUsdPreviewSurface::classification)) {
         ret = MS::kFailure;
         ret.perror("Error registering UsdPreviewSurface node!");
+        return ret;
+    }
+
+    if (!plugin.registerNode(
+            MtohRenderGlobalsNode::name, MtohRenderGlobalsNode::typeId,
+            MtohRenderGlobalsNode::Creator, MtohRenderGlobalsNode::Initialize,
+            MPxNode::kDependNode)) {
+        ret = MS::kFailure;
+        ret.perror("Error registering MtohRenderGlobalsNode node!");
         return ret;
     }
 
