@@ -867,8 +867,7 @@ public:
   MSelectionMask getShapeSelectionMask() const override;
 
   /// \brief  Clears the bounding box cache of the shape
-  AL_USDMAYA_PUBLIC
-  void clearBoundingBoxCache()
+  inline void clearBoundingBoxCache()
     { m_boundingBoxCache.clear(); }
 
 private:
