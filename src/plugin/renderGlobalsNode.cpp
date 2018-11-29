@@ -57,4 +57,9 @@ MStatus MtohRenderGlobalsNode::Initialize() {
     return MS::kSuccess;
 }
 
+void MtohRenderGlobalsNode::postConstructor() {
+    setExistWithoutInConnections(true);
+    setExistWithoutOutConnections(true);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

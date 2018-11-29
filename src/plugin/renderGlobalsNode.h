@@ -36,6 +36,8 @@ public:
     static const MTypeId typeId;
     static void* Creator() { return new MtohRenderGlobalsNode(); }
     static MStatus Initialize();
+
+    void postConstructor() override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
