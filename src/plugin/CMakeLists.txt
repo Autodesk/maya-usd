@@ -41,6 +41,11 @@ install(
     TARGETS mtoh
     DESTINATION plug-ins)
 
+install(
+    DIRECTORY scripts
+    DESTINATION .
+)
+
 if (INSTALL_MAYA_MOD)
     install(CODE
     "file(WRITE \"${CMAKE_INSTALL_PREFIX}/mtoh.mod\"
