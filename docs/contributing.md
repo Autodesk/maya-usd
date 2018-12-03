@@ -31,6 +31,10 @@ git checkout -b my_feature al_origin/develop
 
 Before submitting the pull request, make sure `my_feature` branch contains the relevant
 commits only (rebasing and/or squashing your work if needed).
+
+Also make sure to go through the checklist described in the pull request's template.
+
+Note that once your PR has been approved, it might take some time before we merge it.
  
 
 # Coding Conventions
