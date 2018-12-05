@@ -35,6 +35,7 @@
 #include <maya/MPlug.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
+#include <maya/MGlobal.h>
 
 #include "utils.h"
 
@@ -42,7 +43,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (defaultRenderGlobals)(mtohCurrentRenderer));
+TF_DEFINE_PRIVATE_TOKENS(_tokens, (defaultRenderGlobals)(mtohRenderer));
 
 namespace {
 
@@ -88,10 +89,49 @@ void _CreateTypedAttribute(
     }
     node.addAttribute(creator());
 }
+
+void _SetToken(
+    const MFnDependencyNode& node, const TfToken& attrName, TfToken& out) {
+    const auto plug = node.findPlug(attrName.GetText());
+    if (!plug.isNull()) { out = TfToken(plug.asString().asChar()); }
+}
+
+void _SetEnum(
+    const MFnDependencyNode& node, const TfToken& attrName, TfToken& out) {
+    const auto plug = node.findPlug(attrName.GetText());
+    if (plug.isNull()) { return; }
+    MStatus status;
+    MFnEnumAttribute eAttr(plug.attribute(), &status);
+    if (!status) { return; }
+    out = TfToken(eAttr.fieldName(plug.asShort()).asChar());
+}
+
+constexpr auto _renderOverrideOptionBoxCommand = R"mel(
+global proc hydraViewportOverrideOptionBox() {
+    string $windowName = "hydraViewportOverrideOptionsWindow";
+    if (`window -exists $windowName`) {
+        showWindow $windowName;
+        return;
+    }
+    string $cc = "mtoh -updateRenderGlobals; refresh -f";
+
+    mtoh -createRenderGlobals;
+
+    window -title "Maya to Hydra Settings" "hydraViewportOverrideOptionsWindow";
+    scrollLayout;
+    frameLayout -label "Hydra Settings";
+    columnLayout;
+    attrControlGrp -label "Renderer Name" -attribute "defaultRenderGlobals.mtohRenderer" -changeCommand $cc;
+    setParent ..;
+    setParent ..;
+    setParent ..;
+
+    showWindow $windowName;
+}
+)mel";
 } // namespace
 
-MtohRenderGlobals::MtohRenderGlobals()
-    : currentRenderer(MtohGetDefaultRenderer()) {}
+MtohRenderGlobals::MtohRenderGlobals() : renderer(MtohGetDefaultRenderer()) {}
 
 void MtohInitializeRenderGlobals() {
     for (const auto& rendererPluginName : MtohGetRendererPlugins()) {
@@ -105,6 +145,7 @@ void MtohInitializeRenderGlobals() {
             renderDelegate->GetRenderSettingDescriptors();
         delete renderDelegate;
     }
+    MGlobal::executeCommand(_renderOverrideOptionBoxCommand);
 }
 
 MObject MtohCreateRenderGlobals() {
@@ -116,19 +157,20 @@ MObject MtohCreateRenderGlobals() {
     MFnDependencyNode node(ret, &status);
     if (!status) { return MObject(); }
     _CreateEnumAttribute(
-        node, _tokens->mtohCurrentRenderer, MtohGetRendererPlugins(),
+        node, _tokens->mtohRenderer, MtohGetRendererPlugins(),
         MtohGetDefaultRenderer());
 
     return ret;
 }
 
-MtohRenderGlobals MtohReadRenderGlobals() {
+MtohRenderGlobals MtohGetRenderGlobals() {
     const auto obj = MtohCreateRenderGlobals();
     MtohRenderGlobals ret;
     if (obj.isNull()) { return ret; }
     MStatus status;
     MFnDependencyNode node(obj, &status);
     if (!status) { return ret; }
+    _SetEnum(node, _tokens->mtohRenderer, ret.renderer);
     return ret;
 }
 

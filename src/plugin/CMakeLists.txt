@@ -42,10 +42,10 @@ install(
     TARGETS mtoh
     DESTINATION plug-ins)
 
-install(
-    DIRECTORY scripts
-    DESTINATION .
-)
+#install(
+#    DIRECTORY scripts
+#    DESTINATION .
+#)
 
 if (INSTALL_MAYA_MOD)
     install(CODE

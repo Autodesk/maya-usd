@@ -40,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct MtohRenderGlobals {
     MtohRenderGlobals();
     ~MtohRenderGlobals() = default;
-    TfToken currentRenderer;
+    TfToken renderer;
     std::unordered_map<
         TfToken, std::vector<std::tuple<TfToken, VtValue>>,
         TfToken::HashFunctor>
@@ -52,7 +52,7 @@ void MtohInitializeRenderGlobals();
 // Creating render globals attributes on "defaultRenderGlobals"
 MObject MtohCreateRenderGlobals();
 // Returning the settings stored on "defaultRenderGlobals"
-MtohRenderGlobals MtohReadRenderGlobals();
+MtohRenderGlobals MtohGetRenderGlobals();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

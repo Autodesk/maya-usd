@@ -45,9 +45,6 @@ constexpr auto _listRenderersLong = "-listRenderers";
 constexpr auto _getRendererDisplayName = "-gn";
 constexpr auto _getRendererDisplayNameLong = "-getRendererDisplayName";
 
-constexpr auto _changeRenderer = "-cr";
-constexpr auto _changeRendererLong = "-changeRenderer";
-
 constexpr auto _listDelegates = "-ld";
 constexpr auto _listDelegatesLong = "-listDelegates";
 
@@ -100,7 +97,6 @@ constexpr auto _helpText = R"HELP(
 Maya to Hydra utility function.
 Usage: mtoh [flags]
 
--changeRenderer/-cr [string] : Changing the active render delegate.
 -getColorSelectionHighlightColor/-gcc : Returns the RGBA value used to
     highlight selections.
 -getColorSelectionHighlight/-gch : Returns true if color selection highlight
@@ -138,8 +134,6 @@ MSyntax MtohViewCmd::createSyntax() {
 
     syntax.addFlag(
         _getRendererDisplayName, _getRendererDisplayNameLong, MSyntax::kString);
-
-    syntax.addFlag(_changeRenderer, _changeRendererLong, MSyntax::kString);
 
     syntax.addFlag(_listDelegates, _listDelegatesLong);
 
@@ -200,12 +194,6 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
             const auto dn =
                 MtohGetRendererPluginDisplayName(TfToken(id.asChar()));
             setResult(MString(dn.c_str()));
-        }
-    } else if (db.isFlagSet(_changeRenderer)) {
-        MString id;
-        if (db.getFlagArgument(_changeRenderer, 0, id)) {
-            MtohRenderOverride::ChangeRendererPlugin(TfToken(id.asChar()));
-            MGlobal::executeCommandOnIdle("refresh -f");
         }
     } else if (db.isFlagSet(_listDelegates)) {
         for (const auto& delegate :

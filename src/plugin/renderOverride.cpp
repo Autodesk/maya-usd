@@ -218,11 +218,10 @@ MtohRenderOverride::MtohRenderOverride()
         []() { _needsClear.store(true); });
     _ID = SdfPath("/HdMayaViewportRenderer")
               .AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
-    _rendererName = MtohGetDefaultRenderer();
     // This is a critical error, so we don't allow the construction
     // of the viewport renderer src if there is no renderer src
     // present.
-    if (_rendererName.IsEmpty()) {
+    if (_globals.renderer.IsEmpty()) {
         // TODO: this should be checked when loading the plugin.
         throw std::runtime_error("No default renderer is available!");
     }
@@ -256,17 +255,6 @@ MtohRenderOverride::~MtohRenderOverride() {
     for (auto operation : _operations) { delete operation; }
 
     for (auto callback : _callbacks) { MMessage::removeCallback(callback); }
-}
-
-void MtohRenderOverride::ChangeRendererPlugin(const TfToken& id) {
-    auto& instance = GetInstance();
-    if (instance._rendererName == id) { return; }
-    const auto renderers = MtohGetRendererPlugins();
-    if (std::find(renderers.begin(), renderers.end(), id) == renderers.end()) {
-        return;
-    }
-    instance._rendererName = id;
-    if (instance._initializedViewport) { instance.ClearHydraResources(); }
 }
 
 int MtohRenderOverride::GetMaximumShadowMapResolution() {
@@ -382,6 +370,11 @@ void MtohRenderOverride::ConfigureLighting() {
 void MtohRenderOverride::_UpdateRenderGlobals() {
     if (!_renderGlobalsHaveChanged) { return; }
     _renderGlobalsHaveChanged = false;
+    const auto _currentGlobals = MtohGetRenderGlobals();
+    if (_globals.renderer != _currentGlobals.renderer) {
+        _globals = _currentGlobals;
+        ClearHydraResources();
+    }
     // TODO:
 }
 
@@ -488,7 +481,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     // This is required for HdStream to display transparency.
     // We should fix this upstream, so HdStream can setup
     // all the required states.
-    if (_rendererName == _tokens->HdStreamRendererPlugin) {
+    if (_globals.renderer == _tokens->HdStreamRendererPlugin) {
         SetRenderGLState state;
         renderFrame();
     } else {
@@ -497,7 +490,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 
     // This causes issues with the embree delegate and potentially others.
     if (_wireframeSelectionHighlight &&
-        _rendererName == _tokens->HdStreamRendererPlugin) {
+        _globals.renderer == _tokens->HdStreamRendererPlugin) {
         if (!_selectionCollection.GetRootPaths().empty()) {
             _taskController->SetCollection(_selectionCollection);
             renderFrame();
@@ -519,7 +512,7 @@ void MtohRenderOverride::InitHydraResources() {
         .Msg("MtohRenderOverride::InitHydraResources()\n");
     _rendererPlugin =
         HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(
-            _rendererName);
+            _globals.renderer);
     auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
     _renderIndex = HdRenderIndex::New(renderDelegate);
     int delegateId = 0;
@@ -538,7 +531,8 @@ void MtohRenderOverride::InitHydraResources() {
         _renderIndex,
         _ID.AppendChild(TfToken(TfStringPrintf(
             "_UsdImaging_%s_%p",
-            TfMakeValidIdentifier(_rendererName.GetText()).c_str(), this))));
+            TfMakeValidIdentifier(_globals.renderer.GetText()).c_str(),
+            this))));
     if (_hasDefaultLighting) {
         _defaultLightingContext = GlfSimpleLightingContext::New();
         GlfSimpleMaterial material;
@@ -554,7 +548,7 @@ void MtohRenderOverride::InitHydraResources() {
     VtValue selectionTrackerValue(_selectionTracker);
     _engine.SetTaskContextData(
         HdxTokens->selectionState, selectionTrackerValue);
-    _preferSimpleLight = _rendererName == _tokens->HdStreamRendererPlugin;
+    _preferSimpleLight = _globals.renderer == _tokens->HdStreamRendererPlugin;
     for (auto& it : _delegates) {
         it->SetPreferSimpleLight(_preferSimpleLight);
         it->Populate();

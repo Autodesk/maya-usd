@@ -69,7 +69,6 @@ public:
         return TfSingleton<MtohRenderOverride>::CurrentlyExists();
     }
 
-    static void ChangeRendererPlugin(const TfToken& id);
     static int GetMaximumShadowMapResolution();
     static void SetMaximumShadowMapResolution(int resolution);
     static int GetTextureMemoryPerTexture();
@@ -111,6 +110,7 @@ private:
     std::vector<MHWRender::MRenderOperation*> _operations;
     std::vector<MCallbackId> _callbacks;
     HdMayaParams _params;
+    MtohRenderGlobals _globals;
 
     HdEngine _engine;
     HdxRendererPlugin* _rendererPlugin = nullptr;
@@ -127,7 +127,6 @@ private:
     GfVec4f _colorSelectionHighlightColor;
 
     SdfPath _ID;
-    TfToken _rendererName;
 
     int _currentOperation = -1;
 
@@ -136,7 +135,7 @@ private:
     bool _wireframeSelectionHighlight = true;
     bool _colorSelectionHighlight = true;
     bool _hasDefaultLighting = false;
-    bool _renderGlobalsHaveChanged = false;
+    bool _renderGlobalsHaveChanged = true;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
