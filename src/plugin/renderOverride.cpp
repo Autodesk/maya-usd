@@ -309,6 +309,10 @@ void MtohRenderOverride::SetColorSelectionHighlightColor(const GfVec4d& color) {
     GetInstance()._colorSelectionHighlightColor = GfVec4f(color);
 }
 
+void MtohRenderOverride::UpdateRenderGlobals() {
+    GetInstance()._renderGlobalsHaveChanged = true;
+}
+
 void MtohRenderOverride::DetectMayaDefaultLighting(
     const MHWRender::MDrawContext& drawContext) {
     constexpr auto considerAllSceneLights =
@@ -375,6 +379,14 @@ void MtohRenderOverride::ConfigureLighting() {
     }
 }
 
+void MtohRenderOverride::_UpdateRenderGlobals() {
+    if (!_renderGlobalsHaveChanged) {
+        return;
+    }
+    _renderGlobalsHaveChanged = false;
+    // TODO:
+}
+
 MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
         .Msg("MtohRenderOverride::Render()\n");
@@ -412,7 +424,10 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
             renderFrame();
             _taskController->SetEnableShadows(true);
         }
+        _renderGlobalsHaveChanged = true;
     }
+
+    _UpdateRenderGlobals();
 
     const auto displayStyle = drawContext.getDisplayStyle();
     _params.displaySmoothMeshes =

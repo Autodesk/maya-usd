@@ -29,6 +29,7 @@
 
 #include <hdmaya/delegates/delegateRegistry.h>
 
+#include "renderGlobals.h"
 #include "renderOverride.h"
 #include "utils.h"
 
@@ -85,6 +86,12 @@ constexpr auto _getColorSelectionHighlightColorLong =
 constexpr auto _setColorSelectionHighlightColor = "-scc";
 constexpr auto _setColorSelectionHighlightColorLong =
     "-setColorSelectionHighlightColor";
+
+constexpr auto _createRenderGlobals = "-crg";
+constexpr auto _createRenderGlobalsLong = "-createRenderGlobals";
+
+constexpr auto _updateRenderGlobals = "-urg";
+constexpr auto _updateRenderGlobalsLong = "-updateRenderGlobals";
 
 constexpr auto _help = "-h";
 constexpr auto _helpLong = "-help";
@@ -171,6 +178,12 @@ MSyntax MtohViewCmd::createSyntax() {
         _setColorSelectionHighlightColor, _setColorSelectionHighlightColorLong,
         MSyntax::kDouble, MSyntax::kDouble, MSyntax::kDouble, MSyntax::kDouble);
 
+    syntax.addFlag(
+        _createRenderGlobals, _createRenderGlobalsLong);
+
+    syntax.addFlag(
+        _updateRenderGlobals, _updateRenderGlobalsLong);
+
     syntax.addFlag(_help, _helpLong);
 
     return syntax;
@@ -249,6 +262,10 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
         }
     } else if (db.isFlagSet(_help)) {
         MGlobal::displayInfo(MString(_helpText));
+    } else if (db.isFlagSet(_createRenderGlobals)) {
+        MtohCreateRenderGlobals();
+    } else if (db.isFlagSet(_updateRenderGlobals)) {
+        return MS::kNotImplemented;
     }
     return MS::kSuccess;
 }

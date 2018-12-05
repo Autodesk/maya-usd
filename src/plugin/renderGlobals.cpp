@@ -21,56 +21,30 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "renderGlobalsNode.h"
+#include "renderGlobals.h"
 
+#include <pxr/imaging/hd/renderDelegate.h>
+#include <pxr/imaging/hdx/rendererPlugin.h>
 #include <pxr/imaging/hdx/rendererPluginRegistry.h>
 
-#include <maya/MFnCompoundAttribute.h>
-#include <maya/MFnEnumAttribute.h>
-#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MPlug.h>
+#include <maya/MSelectionList.h>
+#include <maya/MStatus.h>
 
-#include "renderOverride.h"
 #include "utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-MObject _rendererPlugins;
-
 std::unordered_map<TfToken, HdRenderSettingDescriptorList, TfToken::HashFunctor>
     _rendererAttributes;
+
+constexpr auto _defaultRenderGlobalsName = "defaultRenderGlobals";
 } // namespace
 
-const MString MtohRenderGlobalsNode::name("MtohRenderGlobals");
-// Part of the internal Luma node id block
-const MTypeId MtohRenderGlobalsNode::typeId(0x00116EFC);
-
-MStatus MtohRenderGlobalsNode::Initialize() {
-    MFnEnumAttribute eAttr;
-    _rendererPlugins = eAttr.create("rendererPlugins", "rp");
-
-    {
-        const auto rendererPlugins = MtohGetRendererPlugins();
-        short rendererIndex = 0;
-        for (const auto& rendererPlugin : rendererPlugins) {
-            eAttr.addField(rendererPlugin.GetText(), rendererIndex);
-            rendererIndex += 1;
-        }
-    }
-    eAttr.setDefault(MtohGetDefaultRenderer().GetText());
-
-    addAttribute(_rendererPlugins);
-
-    return MS::kSuccess;
-}
-
-void MtohRenderGlobalsNode::postConstructor() {
-    setExistWithoutInConnections(true);
-    setExistWithoutOutConnections(true);
-}
-
-void MtohRenderGlobalsNode::ReadRenderDelegateAttributes() {
+void MtohInitializeRenderGlobals() {
     for (const auto& rendererPluginName : MtohGetRendererPlugins()) {
         auto* rendererPlugin =
             HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(
@@ -82,6 +56,24 @@ void MtohRenderGlobalsNode::ReadRenderDelegateAttributes() {
             renderDelegate->GetRenderSettingDescriptors();
         delete renderDelegate;
     }
+}
+
+MObject MtohCreateRenderGlobals() {
+    MSelectionList slist;
+    slist.add(MString(_defaultRenderGlobalsName));
+    MObject ret;
+    if (slist.length() == 0 || !slist.getDependNode(0, ret)) { return ret; }
+    return ret;
+}
+
+MtohRenderGlobals MtohReadRenderGlobals() {
+    const auto obj = MtohCreateRenderGlobals();
+    MtohRenderGlobals ret;
+    if (obj.isNull()) { return ret; }
+    MStatus status;
+    MFnDependencyNode node(obj, &status);
+    if (!status) { return ret; }
+    return ret;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

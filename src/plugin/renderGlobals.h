@@ -21,27 +21,39 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef __MTOH_RENDER_GLOBALS_NODE_H__
-#define __MTOH_RENDER_GLOBALS_NODE_H__
+#ifndef __MTOH_RENDER_GLOBALS_H__
+#define __MTOH_RENDER_GLOBALS_H__
 
 #include <pxr/pxr.h>
 
-#include <maya/MPxNode.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/value.h>
+
+#include <maya/MObject.h>
+
+#include <tuple>
+#include <unordered_map>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class MtohRenderGlobalsNode : public MPxNode {
-public:
-    static const MString name;
-    static const MTypeId typeId;
-    static void* Creator() { return new MtohRenderGlobalsNode(); }
-    static MStatus Initialize();
-
-    void postConstructor() override;
-
-    static void ReadRenderDelegateAttributes();
+struct MtohRenderGlobals {
+    MtohRenderGlobals() {}
+    ~MtohRenderGlobals() {}
+    TfToken currentRendererName;
+    std::unordered_map<
+        TfToken, std::vector<std::tuple<TfToken, VtValue>>,
+        TfToken::HashFunctor>
+        rendererSettings;
 };
+
+// Reading renderer delegate attributes and generating UI code.
+void MtohInitializeRenderGlobals();
+// Creating render globals attributes on "defaultRenderGlobals"
+MObject MtohCreateRenderGlobals();
+// Returning the settings stored on "defaultRenderGlobals"
+MtohRenderGlobals MtohReadRenderGlobals();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __MTOH_RENDER_GLOBALS_NODE_H__
+#endif // __MTOH_RENDER_GLOBALS_H__

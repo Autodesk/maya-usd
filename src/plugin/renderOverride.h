@@ -46,6 +46,8 @@
 #include <hdmaya/delegates/delegate.h>
 #include <hdmaya/delegates/params.h>
 
+#include "renderGlobals.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class MtohRenderOverride : public MHWRender::MRenderOverride,
@@ -78,6 +80,7 @@ public:
     static void SetColorSelectionHighlight(bool value);
     static GfVec4d GetColorSelectionHighlightColor();
     static void SetColorSelectionHighlightColor(const GfVec4d& color);
+    static void UpdateRenderGlobals();
 
     MStatus Render(const MHWRender::MDrawContext& drawContext);
 
@@ -103,6 +106,7 @@ private:
     static void SelectionChangedCallback(void*);
     void DetectMayaDefaultLighting(const MHWRender::MDrawContext& drawContext);
     void ConfigureLighting();
+    void _UpdateRenderGlobals();
 
     std::vector<MHWRender::MRenderOperation*> _operations;
     std::vector<MCallbackId> _callbacks;
@@ -132,6 +136,7 @@ private:
     bool _wireframeSelectionHighlight = true;
     bool _colorSelectionHighlight = true;
     bool _hasDefaultLighting = false;
+    bool _renderGlobalsHaveChanged = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -27,6 +27,7 @@
 #include "renderOverride.h"
 #include "usdPreviewSurface.h"
 #include "viewCommand.h"
+#include "renderGlobals.h"
 
 #include <stdlib.h>
 
@@ -84,6 +85,9 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
         ret.perror("Error registering MtohRenderGlobalsNode node!");
         return ret;
     }
+
+    MtohRenderGlobalsNode::ReadRenderDelegateAttributes();
+    MtohInitializeRenderGlobals();
 
     return ret;
 }
