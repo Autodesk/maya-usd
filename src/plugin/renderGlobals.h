@@ -38,9 +38,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct MtohRenderGlobals {
-    MtohRenderGlobals() {}
-    ~MtohRenderGlobals() {}
-    TfToken currentRendererName;
+    MtohRenderGlobals();
+    ~MtohRenderGlobals() = default;
+    TfToken currentRenderer;
     std::unordered_map<
         TfToken, std::vector<std::tuple<TfToken, VtValue>>,
         TfToken::HashFunctor>

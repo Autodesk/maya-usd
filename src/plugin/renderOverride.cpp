@@ -380,9 +380,7 @@ void MtohRenderOverride::ConfigureLighting() {
 }
 
 void MtohRenderOverride::_UpdateRenderGlobals() {
-    if (!_renderGlobalsHaveChanged) {
-        return;
-    }
+    if (!_renderGlobalsHaveChanged) { return; }
     _renderGlobalsHaveChanged = false;
     // TODO:
 }
@@ -413,6 +411,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 #endif
     };
 
+    _UpdateRenderGlobals();
+
     DetectMayaDefaultLighting(drawContext);
     if (_needsClear.exchange(false)) { ClearHydraResources(); }
 
@@ -424,10 +424,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
             renderFrame();
             _taskController->SetEnableShadows(true);
         }
-        _renderGlobalsHaveChanged = true;
     }
-
-    _UpdateRenderGlobals();
 
     const auto displayStyle = drawContext.getDisplayStyle();
     _params.displaySmoothMeshes =

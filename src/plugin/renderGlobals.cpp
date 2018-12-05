@@ -28,21 +28,70 @@
 #include <pxr/imaging/hdx/rendererPluginRegistry.h>
 
 #include <maya/MFnDependencyNode.h>
+#include <maya/MFnEnumAttribute.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnStringData.h>
+#include <maya/MFnTypedAttribute.h>
 #include <maya/MPlug.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 
 #include "utils.h"
 
+#include <functional>
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(_tokens, (defaultRenderGlobals)(mtohCurrentRenderer));
 
 namespace {
 
 std::unordered_map<TfToken, HdRenderSettingDescriptorList, TfToken::HashFunctor>
     _rendererAttributes;
 
-constexpr auto _defaultRenderGlobalsName = "defaultRenderGlobals";
+void _CreateEnumAttribute(
+    MFnDependencyNode& node, const TfToken& attrName,
+    const TfTokenVector& values, const TfToken& defValue) {
+    const auto attr = node.attribute(MString(attrName.GetText()));
+    if (!attr.isNull()) {
+        if ([&attr, &values]() -> bool { // Meaning: Can return?
+                MStatus status;
+                MFnEnumAttribute eAttr(attr, &status);
+                if (!status) { return true; }
+                short id = 0;
+                for (const auto& v : values) {
+                    if (eAttr.fieldName(id++) != v.GetText()) { return false; }
+                }
+                return true;
+            }()) {
+            return;
+        } else {
+            node.removeAttribute(attr);
+        }
+    }
+    MFnEnumAttribute eAttr;
+    auto o = eAttr.create(attrName.GetText(), attrName.GetText());
+    short id = 0;
+    for (const auto& v : values) { eAttr.addField(v.GetText(), id++); }
+    eAttr.setDefault(defValue.GetText());
+    node.addAttribute(o);
+}
+
+void _CreateTypedAttribute(
+    MFnDependencyNode& node, const char* attrName, MFnData::Type type,
+    const std::function<MObject()>& creator) {
+    const auto attr = node.attribute(MString(attrName));
+    if (!attr.isNull()) {
+        MFnTypedAttribute tAttr(attr);
+        if (tAttr.attrType() == type) { return; }
+        node.removeAttribute(attr);
+    }
+    node.addAttribute(creator());
+}
 } // namespace
+
+MtohRenderGlobals::MtohRenderGlobals()
+    : currentRenderer(MtohGetDefaultRenderer()) {}
 
 void MtohInitializeRenderGlobals() {
     for (const auto& rendererPluginName : MtohGetRendererPlugins()) {
@@ -60,9 +109,16 @@ void MtohInitializeRenderGlobals() {
 
 MObject MtohCreateRenderGlobals() {
     MSelectionList slist;
-    slist.add(MString(_defaultRenderGlobalsName));
+    slist.add(_tokens->defaultRenderGlobals.GetText());
     MObject ret;
     if (slist.length() == 0 || !slist.getDependNode(0, ret)) { return ret; }
+    MStatus status;
+    MFnDependencyNode node(ret, &status);
+    if (!status) { return MObject(); }
+    _CreateEnumAttribute(
+        node, _tokens->mtohCurrentRenderer, MtohGetRendererPlugins(),
+        MtohGetDefaultRenderer());
+
     return ret;
 }
 

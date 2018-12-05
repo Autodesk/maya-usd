@@ -178,11 +178,9 @@ MSyntax MtohViewCmd::createSyntax() {
         _setColorSelectionHighlightColor, _setColorSelectionHighlightColorLong,
         MSyntax::kDouble, MSyntax::kDouble, MSyntax::kDouble, MSyntax::kDouble);
 
-    syntax.addFlag(
-        _createRenderGlobals, _createRenderGlobalsLong);
+    syntax.addFlag(_createRenderGlobals, _createRenderGlobalsLong);
 
-    syntax.addFlag(
-        _updateRenderGlobals, _updateRenderGlobalsLong);
+    syntax.addFlag(_updateRenderGlobals, _updateRenderGlobalsLong);
 
     syntax.addFlag(_help, _helpLong);
 
@@ -265,7 +263,7 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
     } else if (db.isFlagSet(_createRenderGlobals)) {
         MtohCreateRenderGlobals();
     } else if (db.isFlagSet(_updateRenderGlobals)) {
-        return MS::kNotImplemented;
+        MtohRenderOverride::UpdateRenderGlobals();
     }
     return MS::kSuccess;
 }

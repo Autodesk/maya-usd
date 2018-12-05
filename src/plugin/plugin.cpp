@@ -23,11 +23,11 @@
 //
 #include <maya/MFnPlugin.h>
 
+#include "renderGlobals.h"
 #include "renderGlobalsNode.h"
 #include "renderOverride.h"
 #include "usdPreviewSurface.h"
 #include "viewCommand.h"
-#include "renderGlobals.h"
 
 #include <stdlib.h>
 
