@@ -2,7 +2,6 @@ set(SRC
     plugin.cpp
     pluginDebugCodes.cpp
     renderGlobals.cpp
-    renderGlobalsNode.cpp
     renderOverride.cpp
     shadingModeExporter.cpp
     usdPreviewSurface.cpp
