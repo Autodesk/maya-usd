@@ -161,13 +161,13 @@ MObject _CreateBoolAttribute(const TfToken& attrName, bool defValue) {
 
 void _SetToken(
     const MFnDependencyNode& node, const TfToken& attrName, TfToken& out) {
-    const auto plug = node.findPlug(attrName.GetText());
+    const auto plug = node.findPlug(attrName.GetText(), true);
     if (!plug.isNull()) { out = TfToken(plug.asString().asChar()); }
 }
 
 void _SetEnum(
     const MFnDependencyNode& node, const TfToken& attrName, TfToken& out) {
-    const auto plug = node.findPlug(attrName.GetText());
+    const auto plug = node.findPlug(attrName.GetText(), true);
     if (plug.isNull()) { return; }
     MStatus status;
     MFnEnumAttribute eAttr(plug.attribute(), &status);
@@ -198,7 +198,7 @@ void _SetFromPlug<float>(const MPlug& plug, float& out) {
 template <typename T>
 bool _SetNumericAttribute(
     const MFnDependencyNode& node, const TfToken& attrName, T& out) {
-    const auto plug = node.findPlug(attrName.GetText());
+    const auto plug = node.findPlug(attrName.GetText(), true);
     if (plug.isNull()) { return false; }
     _SetFromPlug<T>(plug, out);
     return true;
@@ -207,12 +207,12 @@ bool _SetNumericAttribute(
 void _SetColorAttribute(
     const MFnDependencyNode& node, const TfToken& attrName,
     const TfToken& attrAName, GfVec4f& out) {
-    const auto plug = node.findPlug(attrName.GetText());
+    const auto plug = node.findPlug(attrName.GetText(), true);
     if (plug.isNull()) { return; }
     out[0] = plug.child(0).asFloat();
     out[1] = plug.child(1).asFloat();
     out[2] = plug.child(2).asFloat();
-    const auto plugA = node.findPlug(attrAName.GetText());
+    const auto plugA = node.findPlug(attrAName.GetText(), true);
     if (plugA.isNull()) { return; }
     out[3] = plugA.asFloat();
 }
