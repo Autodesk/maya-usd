@@ -233,7 +233,7 @@ MtohRenderOverride::MtohRenderOverride()
         MSceneMessage::kBeforeOpen, _ClearHydraCallback, nullptr, &status);
     if (status) { _callbacks.push_back(id); }
     id = MEventMessage::addEventCallback(
-        MString("_SelectionChanged"), _SelectionChangedCallback, nullptr,
+        MString("SelectionChanged"), _SelectionChangedCallback, nullptr,
         &status);
     if (status) { _callbacks.push_back(id); }
 
