@@ -44,8 +44,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
-    _tokens, (defaultRenderGlobals)(mtohRenderer)(mtohTextureMemoryPerTexture)(
-                 mtohMaximumShadowMapResolution));
+    _tokens,
+    (defaultRenderGlobals)(mtohRenderer)(mtohTextureMemoryPerTexture)(
+        mtohMaximumShadowMapResolution)(mtohColorSelectionHighlight)(
+        mtohColorSelectionHighlightColor)(mtohWireframeSelectionHighlight));
 
 namespace {
 
@@ -106,6 +108,14 @@ void _CreateNumericAttribute(
     node.addAttribute(creator());
 }
 
+MObject _CreateBoolAttribute(const TfToken& attrName, bool defValue) {
+    MFnNumericAttribute nAttr;
+    const auto o = nAttr.create(
+        attrName.GetText(), attrName.GetText(), MFnNumericData::kBoolean);
+    nAttr.setDefault(defValue);
+    return o;
+}
+
 void _SetToken(
     const MFnDependencyNode& node, const TfToken& attrName, TfToken& out) {
     const auto plug = node.findPlug(attrName.GetText());
@@ -124,12 +134,17 @@ void _SetEnum(
 
 template <typename T>
 void _SetFromPlug(const MPlug& plug, T& out) {
-    static_assert(true, "Specialisation not implemented for SetFromPlug");
+    assert(false);
 }
 
 template <>
 void _SetFromPlug<int>(const MPlug& plug, int& out) {
     out = plug.asInt();
+}
+
+template <>
+void _SetFromPlug<bool>(const MPlug& plug, bool& out) {
+    out = plug.asBool();
 }
 
 template <typename T>
@@ -158,7 +173,8 @@ global proc hydraViewportOverrideOptionBox() {
     columnLayout;
     attrControlGrp -label "Renderer Name" -attribute "defaultRenderGlobals.mtohRenderer" -changeCommand $cc;
     attrControlGrp -label "Texture Memory Per Texture (KB)" -attribute "defaultRenderGlobals.mtohTextureMemoryPerTexture" -changeCommand $cc;
-    attrControlGrp -label "Maximum Shadow Map Resolution" -attribute "defaultRenderGlobals.mtohMaximumShadowMapResolution" -changeCommand $cc;
+    attrControlGrp -label "Show Wireframe on Selected Objects" -attribute "defaultRenderGlobals.mtohWireframeSelectionHighlight" -changeCommand $cc;
+    attrControlGrp -label "Highlight Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlight" -changeCommand $cc;
     setParent ..;
     setParent ..;
     setParent ..;
@@ -193,6 +209,7 @@ MObject MtohCreateRenderGlobals() {
     MStatus status;
     MFnDependencyNode node(ret, &status);
     if (!status) { return MObject(); }
+    static const MtohRenderGlobals defGlobals;
     _CreateEnumAttribute(
         node, _tokens->mtohRenderer, MtohGetRendererPlugins(),
         MtohGetDefaultRenderer());
@@ -208,8 +225,8 @@ MObject MtohCreateRenderGlobals() {
             nAttr.setMax(256 * 1024);
             nAttr.setSoftMin(1 * 1024);
             nAttr.setSoftMin(16 * 1024);
-            HdMayaParams params;
-            nAttr.setDefault(params.textureMemoryPerTexture / 1024);
+            nAttr.setDefault(
+                defGlobals.delegateParams.textureMemoryPerTexture / 1024);
             return o;
         });
     _CreateNumericAttribute(
@@ -222,10 +239,22 @@ MObject MtohCreateRenderGlobals() {
                 MFnNumericData::kInt);
             nAttr.setMin(32);
             nAttr.setMax(8192);
-            HdMayaParams params;
-            nAttr.setDefault(params.maximumShadowMapResolution);
+            nAttr.setDefault(
+                defGlobals.delegateParams.maximumShadowMapResolution);
             return o;
         });
+    _CreateNumericAttribute(
+        node, _tokens->mtohWireframeSelectionHighlight,
+        MFnNumericData::kBoolean,
+        std::bind(
+            _CreateBoolAttribute, _tokens->mtohWireframeSelectionHighlight,
+            defGlobals.wireframeSelectionHighlight));
+    _CreateNumericAttribute(
+        node, _tokens->mtohColorSelectionHighlightColor,
+        MFnNumericData::kBoolean,
+        std::bind(
+            _CreateBoolAttribute, _tokens->mtohColorSelectionHighlight,
+            defGlobals.colorSelectionHighlight));
     return ret;
 }
 
@@ -245,6 +274,12 @@ MtohRenderGlobals MtohGetRenderGlobals() {
     _SetNumericAttribute(
         node, _tokens->mtohMaximumShadowMapResolution,
         ret.delegateParams.maximumShadowMapResolution);
+    _SetNumericAttribute(
+        node, _tokens->mtohWireframeSelectionHighlight,
+        ret.wireframeSelectionHighlight);
+    _SetNumericAttribute(
+        node, _tokens->mtohColorSelectionHighlight,
+        ret.colorSelectionHighlight);
     return ret;
 }
 

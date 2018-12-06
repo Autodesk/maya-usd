@@ -48,28 +48,6 @@ constexpr auto _getRendererDisplayNameLong = "-getRendererDisplayName";
 constexpr auto _listDelegates = "-ld";
 constexpr auto _listDelegatesLong = "-listDelegates";
 
-constexpr auto _getWireframeSelectionHighlight = "-gwh";
-constexpr auto _getWireframeSelectionHighlightLong =
-    "-getWireframeSelectionHighlight";
-
-constexpr auto _setWireframeSelectionHighlight = "-swh";
-constexpr auto _setWireframeSelectionHighlightLong =
-    "-setWireframeSelectionHighlight";
-
-constexpr auto _getColorSelectionHighlight = "-gch";
-constexpr auto _getColorSelectionHighlightLong = "-getColorSelectionHighlight";
-
-constexpr auto _setColorSelectionHighlight = "-sch";
-constexpr auto _setColorSelectionHighlightLong = "-setColorSelectionHighlight";
-
-constexpr auto _getColorSelectionHighlightColor = "-gcc";
-constexpr auto _getColorSelectionHighlightColorLong =
-    "-getColorSelectionHighlightColor";
-
-constexpr auto _setColorSelectionHighlightColor = "-scc";
-constexpr auto _setColorSelectionHighlightColorLong =
-    "-setColorSelectionHighlightColor";
-
 constexpr auto _createRenderGlobals = "-crg";
 constexpr auto _createRenderGlobalsLong = "-createRenderGlobals";
 
@@ -83,27 +61,12 @@ constexpr auto _helpText = R"HELP(
 Maya to Hydra utility function.
 Usage: mtoh [flags]
 
--getColorSelectionHighlightColor/-gcc : Returns the RGBA value used to
-    highlight selections.
--getColorSelectionHighlight/-gch : Returns true if color selection highlight
-    is enabled, false otherwise.
 -getRendererDisplayName/-gn : Returns the display name for the current render
     delegate.
--getWireframeSelectionHighlight/-gwh : Returns true if wireframe selection
-    highlight is enabled, false otherwise. This is only available for the
-    HdStreamRendererPlugin.
 -listDelegates/-ld : Returns the names of available scene delegates.
 -listRenderers/-lr : Returns the names of available render delegates.
--setColorSelectionHighlightColor/-scc [float] [float] [float] [float] : Sets the
-    RGBA color used to highlight selections.
--setColorSelectionHighlight/-sch [bool] : Turns color highlight of selections
-    on or off.
--setMaximumShadowMapResolution/-sms [int] : Sets the maximum shadow map
-    resolution in pixels for shadows in the HdStreamRendererPlugin.
--setTextureMemoryPerTexture/-stm [int] : Sets the maximum texture memory in
-    bytes allowed for each texture for textures in the HdStreamRendererPlugin.
--setWireframeSelectionHighlight/-swh [bool] : Turns wireframe highlight for
-    selections on or off.
+-createRenderGlobals/-crg : Creates the render globals.
+-updateRenderGlobals/-urg : Forces the update of the render globals for the viewport.
 
 )HELP";
 
@@ -118,27 +81,6 @@ MSyntax MtohViewCmd::createSyntax() {
         _getRendererDisplayName, _getRendererDisplayNameLong, MSyntax::kString);
 
     syntax.addFlag(_listDelegates, _listDelegatesLong);
-
-    syntax.addFlag(
-        _getWireframeSelectionHighlight, _getWireframeSelectionHighlightLong);
-
-    syntax.addFlag(
-        _setWireframeSelectionHighlight, _setWireframeSelectionHighlightLong,
-        MSyntax::kBoolean);
-
-    syntax.addFlag(
-        _getColorSelectionHighlight, _getColorSelectionHighlightLong);
-
-    syntax.addFlag(
-        _setColorSelectionHighlight, _setColorSelectionHighlightLong,
-        MSyntax::kBoolean);
-
-    syntax.addFlag(
-        _getColorSelectionHighlightColor, _getColorSelectionHighlightColorLong);
-
-    syntax.addFlag(
-        _setColorSelectionHighlightColor, _setColorSelectionHighlightColorLong,
-        MSyntax::kDouble, MSyntax::kDouble, MSyntax::kDouble, MSyntax::kDouble);
 
     syntax.addFlag(_createRenderGlobals, _createRenderGlobalsLong);
 
@@ -167,34 +109,6 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
         for (const auto& delegate :
              HdMayaDelegateRegistry::GetDelegateNames()) {
             appendToResult(delegate.GetText());
-        }
-    } else if (db.isFlagSet(_getWireframeSelectionHighlight)) {
-        appendToResult(MtohRenderOverride::GetWireframeSelectionHighlight());
-    } else if (db.isFlagSet(_setWireframeSelectionHighlight)) {
-        bool res = true;
-        if (db.getFlagArgument(_setWireframeSelectionHighlight, 0, res)) {
-            MtohRenderOverride::SetWireframeSelectionHighlight(res);
-        }
-    } else if (db.isFlagSet(_getColorSelectionHighlight)) {
-        appendToResult(MtohRenderOverride::GetColorSelectionHighlight());
-    } else if (db.isFlagSet(_setColorSelectionHighlight)) {
-        bool res = true;
-        if (db.getFlagArgument(_setColorSelectionHighlight, 0, res)) {
-            MtohRenderOverride::SetColorSelectionHighlight(res);
-        }
-    } else if (db.isFlagSet(_getColorSelectionHighlightColor)) {
-        const auto res = MtohRenderOverride::GetColorSelectionHighlightColor();
-        appendToResult(res[0]);
-        appendToResult(res[1]);
-        appendToResult(res[2]);
-        appendToResult(res[3]);
-    } else if (db.isFlagSet(_setColorSelectionHighlightColor)) {
-        GfVec4d res(1.0, 1.0, 0.0, 0.5);
-        if (db.getFlagArgument(_setColorSelectionHighlightColor, 0, res[0]) &&
-            db.getFlagArgument(_setColorSelectionHighlightColor, 1, res[1]) &&
-            db.getFlagArgument(_setColorSelectionHighlightColor, 2, res[2]) &&
-            db.getFlagArgument(_setColorSelectionHighlightColor, 3, res[3])) {
-            MtohRenderOverride::SetColorSelectionHighlightColor(res);
         }
     } else if (db.isFlagSet(_help)) {
         MGlobal::displayInfo(MString(_helpText));

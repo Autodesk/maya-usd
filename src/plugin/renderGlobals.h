@@ -26,6 +26,7 @@
 
 #include <pxr/pxr.h>
 
+#include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
 
@@ -44,6 +45,9 @@ struct MtohRenderGlobals {
     ~MtohRenderGlobals() = default;
     TfToken renderer;
     HdMayaParams delegateParams;
+    GfVec4f colorSelectionHighlightColor = GfVec4f(1.0f, 1.0f, 0.0f, 0.5f);
+    bool colorSelectionHighlight = true;
+    bool wireframeSelectionHighlight = true;
     std::unordered_map<
         TfToken, std::vector<std::tuple<TfToken, VtValue>>,
         TfToken::HashFunctor>

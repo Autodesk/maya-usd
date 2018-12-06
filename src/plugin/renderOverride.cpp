@@ -211,8 +211,7 @@ MtohRenderOverride::MtohRenderOverride()
           HdTokens->geometry, HdReprSelector(HdReprTokens->smoothHull),
           SdfPath::AbsoluteRootPath()),
       _selectionCollection(
-          HdReprTokens->wire, HdReprSelector(HdReprTokens->wire)),
-      _colorSelectionHighlightColor(1.0f, 1.0f, 0.0f, 0.5f) {
+          HdReprTokens->wire, HdReprSelector(HdReprTokens->wire)) {
     _needsClear.store(false);
     HdMayaDelegateRegistry::InstallDelegatesChangedSignal(
         []() { _needsClear.store(true); });
@@ -255,30 +254,6 @@ MtohRenderOverride::~MtohRenderOverride() {
     for (auto operation : _operations) { delete operation; }
 
     for (auto callback : _callbacks) { MMessage::removeCallback(callback); }
-}
-
-bool MtohRenderOverride::GetWireframeSelectionHighlight() {
-    return GetInstance()._wireframeSelectionHighlight;
-}
-
-void MtohRenderOverride::SetWireframeSelectionHighlight(bool value) {
-    GetInstance()._wireframeSelectionHighlight = value;
-}
-
-bool MtohRenderOverride::GetColorSelectionHighlight() {
-    return GetInstance()._colorSelectionHighlight;
-}
-
-void MtohRenderOverride::SetColorSelectionHighlight(bool value) {
-    GetInstance()._colorSelectionHighlight = value;
-}
-
-GfVec4d MtohRenderOverride::GetColorSelectionHighlightColor() {
-    return GetInstance()._colorSelectionHighlightColor;
-}
-
-void MtohRenderOverride::SetColorSelectionHighlightColor(const GfVec4d& color) {
-    GetInstance()._colorSelectionHighlightColor = GfVec4f(color);
 }
 
 void MtohRenderOverride::UpdateRenderGlobals() {
@@ -458,8 +433,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     _taskController->SetShadowParams(shadowParams);
 
     // Default color in usdview.
-    _taskController->SetSelectionColor(_colorSelectionHighlightColor);
-    _taskController->SetEnableSelection(_colorSelectionHighlight);
+    _taskController->SetSelectionColor(_globals.colorSelectionHighlightColor);
+    _taskController->SetEnableSelection(_globals.colorSelectionHighlight);
 
     // This is required for HdStream to display transparency.
     // We should fix this upstream, so HdStream can setup
@@ -472,7 +447,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     }
 
     // This causes issues with the embree delegate and potentially others.
-    if (_wireframeSelectionHighlight &&
+    if (_globals.wireframeSelectionHighlight &&
         _globals.renderer == _tokens->HdStreamRendererPlugin) {
         if (!_selectionCollection.GetRootPaths().empty()) {
             _taskController->SetCollection(_selectionCollection);

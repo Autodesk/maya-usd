@@ -69,12 +69,6 @@ public:
         return TfSingleton<MtohRenderOverride>::CurrentlyExists();
     }
 
-    static bool GetWireframeSelectionHighlight();
-    static void SetWireframeSelectionHighlight(bool value);
-    static bool GetColorSelectionHighlight();
-    static void SetColorSelectionHighlight(bool value);
-    static GfVec4d GetColorSelectionHighlightColor();
-    static void SetColorSelectionHighlightColor(const GfVec4d& color);
     static void UpdateRenderGlobals();
 
     MStatus Render(const MHWRender::MDrawContext& drawContext);
@@ -119,16 +113,12 @@ private:
 
     std::vector<HdMayaDelegatePtr> _delegates;
 
-    GfVec4f _colorSelectionHighlightColor;
-
     SdfPath _ID;
 
     int _currentOperation = -1;
 
     bool _initializedViewport = false;
     bool _preferSimpleLight = false;
-    bool _wireframeSelectionHighlight = true;
-    bool _colorSelectionHighlight = true;
     bool _hasDefaultLighting = false;
     bool _renderGlobalsHaveChanged = true;
 };
