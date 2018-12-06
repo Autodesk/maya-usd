@@ -471,6 +471,12 @@ void HdMayaSceneDelegate::SetParams(const HdMayaParams& params) {
             },
             _materialAdapters);
     }
+    if (oldParams.maximumShadowMapResolution !=
+        params.maximumShadowMapResolution) {
+        _MapAdapter<HdMayaLightAdapter>(
+            [](HdMayaLightAdapter* a) { a->MarkDirty(HdLight::AllDirty); },
+            _lightAdapters);
+    }
     HdMayaDelegate::SetParams(params);
 }
 

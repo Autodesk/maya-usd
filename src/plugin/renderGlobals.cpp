@@ -209,7 +209,7 @@ MObject MtohCreateRenderGlobals() {
             nAttr.setSoftMin(1 * 1024);
             nAttr.setSoftMin(16 * 1024);
             HdMayaParams params;
-            nAttr.setDefault(params.textureMemoryPerTexture);
+            nAttr.setDefault(params.textureMemoryPerTexture / 1024);
             return o;
         });
     _CreateNumericAttribute(
@@ -231,15 +231,15 @@ MObject MtohCreateRenderGlobals() {
 
 MtohRenderGlobals MtohGetRenderGlobals() {
     const auto obj = MtohCreateRenderGlobals();
-    MtohRenderGlobals ret;
+    MtohRenderGlobals ret{};
     if (obj.isNull()) { return ret; }
     MStatus status;
     MFnDependencyNode node(obj, &status);
     if (!status) { return ret; }
     _SetEnum(node, _tokens->mtohRenderer, ret.renderer);
     if (_SetNumericAttribute(
-        node, _tokens->mtohTextureMemoryPerTexture,
-        ret.delegateParams.textureMemoryPerTexture)) {
+            node, _tokens->mtohTextureMemoryPerTexture,
+            ret.delegateParams.textureMemoryPerTexture)) {
         ret.delegateParams.textureMemoryPerTexture *= 1024;
     }
     _SetNumericAttribute(
