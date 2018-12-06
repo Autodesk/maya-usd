@@ -40,6 +40,7 @@
 #include "utils.h"
 
 #include <functional>
+#include <sstream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -180,13 +181,18 @@ void _SetFromPlug(const MPlug& plug, T& out) {
 }
 
 template <>
+void _SetFromPlug<bool>(const MPlug& plug, bool& out) {
+    out = plug.asBool();
+}
+
+template <>
 void _SetFromPlug<int>(const MPlug& plug, int& out) {
     out = plug.asInt();
 }
 
 template <>
-void _SetFromPlug<bool>(const MPlug& plug, bool& out) {
-    out = plug.asBool();
+void _SetFromPlug<float>(const MPlug& plug, float& out) {
+    out = plug.asFloat();
 }
 
 template <typename T>
@@ -211,6 +217,11 @@ void _SetColorAttribute(
     out[3] = plugA.asFloat();
 }
 
+bool _IsSupportedAttribute(const VtValue& v) {
+    return v.IsHolding<bool>() || v.IsHolding<int>() || v.IsHolding<float>() ||
+           v.IsHolding<GfVec4f>();
+}
+
 constexpr auto _renderOverrideOptionBoxCommand = R"mel(
 global proc hydraViewportOverrideOptionBox() {
     string $windowName = "hydraViewportOverrideOptionsWindow";
@@ -233,6 +244,7 @@ global proc hydraViewportOverrideOptionBox() {
     attrControlGrp -label "Highlight Color for Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlightColor" -changeCommand $cc;
     setParent ..;
     setParent ..;
+    hydraViewportRenderDelegateOptions();
     setParent ..;
 
     showWindow $windowName;
@@ -254,7 +266,38 @@ void MtohInitializeRenderGlobals() {
             renderDelegate->GetRenderSettingDescriptors();
         delete renderDelegate;
     }
-    MGlobal::executeCommand(_renderOverrideOptionBoxCommand);
+    std::stringstream ss;
+    ss << "global proc hydraViewportRenderDelegateOptions() {\n";
+    ss << "\tstring $cc = \"mtoh -updateRenderGlobals; refresh -f\";\n";
+    for (const auto& rit : _rendererAttributes) {
+        const auto rendererName = rit.first;
+        ss << "\tframeLayout -label \"" << rendererName.GetText()
+           << "\" -collapsable true;\n";
+        ss << "\tcolumnLayout;\n";
+        for (const auto& attr : rit.second) {
+            if (!_IsSupportedAttribute(attr.defaultValue)) { continue; }
+            const auto attrName = TfStringPrintf(
+                "%s%s", rendererName.GetText(), attr.key.GetText());
+            ss << "\tattrControlGrp -label \"" << attr.name
+               << "\" -attribute \"defaultRenderGlobals." << attrName
+               << "\" -changeCommand $cc;\n";
+        }
+        ss << "\tsetParent ..;\n";
+        ss << "\tsetParent ..;\n";
+    }
+    ss << "}\n";
+    auto status = MGlobal::executeCommand(ss.str().c_str());
+    if (!status) {
+        TF_WARN(
+            "Error in render delegate options function: \n%s",
+            status.errorString().asChar());
+    }
+    status = MGlobal::executeCommand(_renderOverrideOptionBoxCommand);
+    if (!status) {
+        TF_WARN(
+            "Error in render override option box command function: \n%s",
+            status.errorString().asChar());
+    }
 }
 
 MObject MtohCreateRenderGlobals() {
@@ -314,6 +357,51 @@ MObject MtohCreateRenderGlobals() {
         node, _tokens->mtohColorSelectionHighlightColor,
         _tokens->mtohColorSelectionHighlightColorA,
         defGlobals.colorSelectionHighlightColor);
+    // TODO: Move this to an external function and add support for more types,
+    //  and improve code quality/reuse.
+    for (const auto& rit : _rendererAttributes) {
+        const auto rendererName = rit.first;
+        for (const auto& attr : rit.second) {
+            const TfToken attrName(TfStringPrintf(
+                "%s%s", rendererName.GetText(), attr.key.GetText()));
+            if (attr.defaultValue.IsHolding<bool>()) {
+                _CreateNumericAttribute(
+                    node, attrName, MFnNumericData::kBoolean,
+                    std::bind(
+                        _CreateBoolAttribute, attrName,
+                        attr.defaultValue.UncheckedGet<bool>()));
+            } else if (attr.defaultValue.IsHolding<int>()) {
+                _CreateNumericAttribute(
+                    node, attrName, MFnNumericData::kInt,
+                    [&attrName, &attr]() -> MObject {
+                        MFnNumericAttribute nAttr;
+                        const auto o = nAttr.create(
+                            attrName.GetText(), attrName.GetText(),
+                            MFnNumericData::kInt);
+                        nAttr.setDefault(attr.defaultValue.UncheckedGet<int>());
+                        return o;
+                    });
+            } else if (attr.defaultValue.IsHolding<float>()) {
+                _CreateNumericAttribute(
+                    node, attrName, MFnNumericData::kFloat,
+                    [&attrName, &attr]() -> MObject {
+                        MFnNumericAttribute nAttr;
+                        const auto o = nAttr.create(
+                            attrName.GetText(), attrName.GetText(),
+                            MFnNumericData::kFloat);
+                        nAttr.setDefault(
+                            attr.defaultValue.UncheckedGet<float>());
+                        return o;
+                    });
+            } else if (attr.defaultValue.IsHolding<GfVec4f>()) {
+                const TfToken attrAName(
+                    TfStringPrintf("%sA", attrName.GetText()));
+                _CreateColorAttribute(
+                    node, attrName, attrAName,
+                    attr.defaultValue.UncheckedGet<GfVec4f>());
+            }
+        }
+    }
     return ret;
 }
 
@@ -343,6 +431,36 @@ MtohRenderGlobals MtohGetRenderGlobals() {
         node, _tokens->mtohColorSelectionHighlightColor,
         _tokens->mtohColorSelectionHighlightColorA,
         ret.colorSelectionHighlightColor);
+    // TODO: Move this to an external function and add support for more types,
+    //  and improve code quality/reuse.
+    for (const auto& rit : _rendererAttributes) {
+        const auto rendererName = rit.first;
+        auto& settings = ret.rendererSettings[rendererName];
+        settings.reserve(rit.second.size());
+        for (const auto& attr : rit.second) {
+            const TfToken attrName(TfStringPrintf(
+                "%s%s", rendererName.GetText(), attr.key.GetText()));
+            if (attr.defaultValue.IsHolding<bool>()) {
+                auto v = attr.defaultValue.UncheckedGet<bool>();
+                _SetNumericAttribute(node, attrName, v);
+                settings.emplace_back(attr.key, v);
+            } else if (attr.defaultValue.IsHolding<int>()) {
+                auto v = attr.defaultValue.UncheckedGet<int>();
+                _SetNumericAttribute(node, attrName, v);
+                settings.emplace_back(attr.key, v);
+            } else if (attr.defaultValue.IsHolding<float>()) {
+                auto v = attr.defaultValue.UncheckedGet<float>();
+                _SetNumericAttribute(node, attrName, v);
+                settings.emplace_back(attr.key, v);
+            } else if (attr.defaultValue.IsHolding<GfVec4f>()) {
+                auto v = attr.defaultValue.UncheckedGet<GfVec4f>();
+                const TfToken attrAName(
+                    TfStringPrintf("%sA", attrName.GetText()));
+                _SetColorAttribute(node, attrName, attrAName, v);
+                settings.emplace_back(attr.key, v);
+            }
+        }
+    }
     return ret;
 }
 

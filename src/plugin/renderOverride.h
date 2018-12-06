@@ -96,6 +96,7 @@ private:
     void DetectMayaDefaultLighting(const MHWRender::MDrawContext& drawContext);
     void ConfigureLighting();
     void _UpdateRenderGlobals();
+    void _UpdateRenderDelegateOptions();
 
     std::vector<MHWRender::MRenderOperation*> _operations;
     std::vector<MCallbackId> _callbacks;

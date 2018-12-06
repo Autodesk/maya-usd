@@ -48,8 +48,14 @@ struct MtohRenderGlobals {
     GfVec4f colorSelectionHighlightColor = GfVec4f(1.0f, 1.0f, 0.0f, 0.5f);
     bool colorSelectionHighlight = true;
     bool wireframeSelectionHighlight = true;
+    struct RenderParam {
+        template <typename T>
+        RenderParam(const TfToken& k, const T& v) : key(k), value(v) {}
+        TfToken key;
+        VtValue value;
+    };
     std::unordered_map<
-        TfToken, std::vector<std::tuple<TfToken, VtValue>>,
+        TfToken, std::vector<RenderParam>,
         TfToken::HashFunctor>
         rendererSettings;
 };

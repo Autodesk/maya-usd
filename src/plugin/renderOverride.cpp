@@ -334,6 +334,24 @@ void MtohRenderOverride::_UpdateRenderGlobals() {
         ClearHydraResources();
     }
     _globals = _currentGlobals;
+    _UpdateRenderDelegateOptions();
+}
+
+void MtohRenderOverride::_UpdateRenderDelegateOptions() {
+    if (_renderIndex == nullptr) { return; }
+    auto* renderDelegate = _renderIndex->GetRenderDelegate();
+    if (renderDelegate == nullptr) { return; }
+    auto* settings = TfMapLookupPtr(_globals.rendererSettings, _globals.renderer);
+    if (settings == nullptr) { return; }
+    // TODO: Which is better? Set everything blindly or only set settings that
+    //  have changed? This is not performance critical, and render delegates
+    //  might track changes internally.
+    for (const auto& setting : *settings) {
+        const auto v = renderDelegate->GetRenderSetting(setting.key);
+        if (v != setting.value) {
+            renderDelegate->SetRenderSetting(setting.key, setting.value);
+        }
+    }
 }
 
 MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
@@ -517,6 +535,7 @@ void MtohRenderOverride::InitHydraResources() {
     SelectionChanged();
 
     _initializedViewport = true;
+    _UpdateRenderDelegateOptions();
 }
 
 void MtohRenderOverride::ClearHydraResources() {
