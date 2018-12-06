@@ -31,7 +31,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdMayaParams {
-    size_t textureMemoryPerTexture = 4 * 1024 * 1024;
+    int textureMemoryPerTexture = 4 * 1024 * 1024;
     int maximumShadowMapResolution = 2048;
     bool displaySmoothMeshes = true;
 };

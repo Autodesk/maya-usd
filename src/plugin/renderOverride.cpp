@@ -257,22 +257,6 @@ MtohRenderOverride::~MtohRenderOverride() {
     for (auto callback : _callbacks) { MMessage::removeCallback(callback); }
 }
 
-int MtohRenderOverride::GetMaximumShadowMapResolution() {
-    return GetInstance()._params.maximumShadowMapResolution;
-}
-
-void MtohRenderOverride::SetMaximumShadowMapResolution(int resolution) {
-    GetInstance()._params.maximumShadowMapResolution = resolution;
-}
-
-int MtohRenderOverride::GetTextureMemoryPerTexture() {
-    return static_cast<int>(GetInstance()._params.textureMemoryPerTexture);
-}
-
-void MtohRenderOverride::SetTextureMemoryPerTexture(int memory) {
-    GetInstance()._params.textureMemoryPerTexture = static_cast<size_t>(memory);
-}
-
 bool MtohRenderOverride::GetWireframeSelectionHighlight() {
     return GetInstance()._wireframeSelectionHighlight;
 }
@@ -372,10 +356,9 @@ void MtohRenderOverride::_UpdateRenderGlobals() {
     _renderGlobalsHaveChanged = false;
     const auto _currentGlobals = MtohGetRenderGlobals();
     if (_globals.renderer != _currentGlobals.renderer) {
-        _globals = _currentGlobals;
         ClearHydraResources();
     }
-    // TODO:
+    _globals = _currentGlobals;
 }
 
 MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
@@ -420,11 +403,11 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     }
 
     const auto displayStyle = drawContext.getDisplayStyle();
-    _params.displaySmoothMeshes =
+    _globals.delegateParams.displaySmoothMeshes =
         !(displayStyle & MHWRender::MFrameContext::kFlatShaded);
 
     for (auto& it : _delegates) {
-        it->SetParams(_params);
+        it->SetParams(_globals.delegateParams);
         it->PreFrame(drawContext);
     }
 

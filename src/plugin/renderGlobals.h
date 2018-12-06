@@ -31,6 +31,8 @@
 
 #include <maya/MObject.h>
 
+#include <hdmaya/delegates/params.h>
+
 #include <tuple>
 #include <unordered_map>
 #include <vector>
@@ -41,6 +43,7 @@ struct MtohRenderGlobals {
     MtohRenderGlobals();
     ~MtohRenderGlobals() = default;
     TfToken renderer;
+    HdMayaParams delegateParams;
     std::unordered_map<
         TfToken, std::vector<std::tuple<TfToken, VtValue>>,
         TfToken::HashFunctor>

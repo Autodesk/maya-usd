@@ -48,20 +48,6 @@ constexpr auto _getRendererDisplayNameLong = "-getRendererDisplayName";
 constexpr auto _listDelegates = "-ld";
 constexpr auto _listDelegatesLong = "-listDelegates";
 
-constexpr auto _getMaximumShadowMapResolution = "-gms";
-constexpr auto _getMaximumShadowMapResolutionLong =
-    "-getMaximumShadowMapResolution";
-
-constexpr auto _setMaximumShadowMapResolution = "-sms";
-constexpr auto _setMaximumShadowMapResolutionLong =
-    "-setMaximumShadowMapResolution";
-
-constexpr auto _getTextureMemoryPerTexture = "-gtm";
-constexpr auto _getTextureMemoryPerTextureLong = "-getTextureMemoryPerTexture";
-
-constexpr auto _setTextureMemoryPerTexture = "-stm";
-constexpr auto _setTextureMemoryPerTextureLong = "-setTextureMemoryPerTexture";
-
 constexpr auto _getWireframeSelectionHighlight = "-gwh";
 constexpr auto _getWireframeSelectionHighlightLong =
     "-getWireframeSelectionHighlight";
@@ -101,12 +87,8 @@ Usage: mtoh [flags]
     highlight selections.
 -getColorSelectionHighlight/-gch : Returns true if color selection highlight
     is enabled, false otherwise.
--getMaximumShadowMapResolution/-gms : Returns the maximum pixel size of shadow
-    maps.
 -getRendererDisplayName/-gn : Returns the display name for the current render
     delegate.
--getTextureMemoryPerTexture/-gtm : Returns the maximum amount of bytes available
-    for each texture.
 -getWireframeSelectionHighlight/-gwh : Returns true if wireframe selection
     highlight is enabled, false otherwise. This is only available for the
     HdStreamRendererPlugin.
@@ -136,20 +118,6 @@ MSyntax MtohViewCmd::createSyntax() {
         _getRendererDisplayName, _getRendererDisplayNameLong, MSyntax::kString);
 
     syntax.addFlag(_listDelegates, _listDelegatesLong);
-
-    syntax.addFlag(
-        _getMaximumShadowMapResolution, _getMaximumShadowMapResolutionLong);
-
-    syntax.addFlag(
-        _setMaximumShadowMapResolution, _setMaximumShadowMapResolutionLong,
-        MSyntax::kLong);
-
-    syntax.addFlag(
-        _getTextureMemoryPerTexture, _getTextureMemoryPerTextureLong);
-
-    syntax.addFlag(
-        _setTextureMemoryPerTexture, _setTextureMemoryPerTextureLong,
-        MSyntax::kLong);
 
     syntax.addFlag(
         _getWireframeSelectionHighlight, _getWireframeSelectionHighlightLong);
@@ -199,24 +167,6 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
         for (const auto& delegate :
              HdMayaDelegateRegistry::GetDelegateNames()) {
             appendToResult(delegate.GetText());
-        }
-    } else if (db.isFlagSet(_getMaximumShadowMapResolution)) {
-        appendToResult(MtohRenderOverride::GetMaximumShadowMapResolution());
-    } else if (db.isFlagSet(_setMaximumShadowMapResolution)) {
-        int res = 32;
-        if (db.getFlagArgument(_setMaximumShadowMapResolution, 0, res)) {
-            if (res < 32) { res = 32; }
-            if (res > 8192) { res = 8192; }
-            MtohRenderOverride::SetMaximumShadowMapResolution(res);
-        }
-    } else if (db.isFlagSet(_getTextureMemoryPerTexture)) {
-        appendToResult(MtohRenderOverride::GetTextureMemoryPerTexture());
-    } else if (db.isFlagSet(_setTextureMemoryPerTexture)) {
-        int res = 4 * 1024 * 1024;
-        if (db.getFlagArgument(_setTextureMemoryPerTexture, 0, res)) {
-            if (res < 1024) { res = 1024; }
-            if (res > 256 * 1024 * 1024) { res = 256 * 1024 * 1024; }
-            MtohRenderOverride::SetTextureMemoryPerTexture(res);
         }
     } else if (db.isFlagSet(_getWireframeSelectionHighlight)) {
         appendToResult(MtohRenderOverride::GetWireframeSelectionHighlight());

@@ -69,10 +69,6 @@ public:
         return TfSingleton<MtohRenderOverride>::CurrentlyExists();
     }
 
-    static int GetMaximumShadowMapResolution();
-    static void SetMaximumShadowMapResolution(int resolution);
-    static int GetTextureMemoryPerTexture();
-    static void SetTextureMemoryPerTexture(int memory);
     static bool GetWireframeSelectionHighlight();
     static void SetWireframeSelectionHighlight(bool value);
     static bool GetColorSelectionHighlight();
@@ -109,7 +105,6 @@ private:
 
     std::vector<MHWRender::MRenderOperation*> _operations;
     std::vector<MCallbackId> _callbacks;
-    HdMayaParams _params;
     MtohRenderGlobals _globals;
 
     HdEngine _engine;

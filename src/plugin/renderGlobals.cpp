@@ -32,10 +32,10 @@
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
+#include <maya/MGlobal.h>
 #include <maya/MPlug.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
-#include <maya/MGlobal.h>
 
 #include "utils.h"
 
@@ -43,7 +43,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (defaultRenderGlobals)(mtohRenderer));
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens, (defaultRenderGlobals)(mtohRenderer)(mtohTextureMemoryPerTexture)(
+                 mtohMaximumShadowMapResolution));
 
 namespace {
 
@@ -79,12 +81,26 @@ void _CreateEnumAttribute(
 }
 
 void _CreateTypedAttribute(
-    MFnDependencyNode& node, const char* attrName, MFnData::Type type,
+    MFnDependencyNode& node, const TfToken& attrName, MFnData::Type type,
     const std::function<MObject()>& creator) {
-    const auto attr = node.attribute(MString(attrName));
+    const auto attr = node.attribute(attrName.GetText());
     if (!attr.isNull()) {
-        MFnTypedAttribute tAttr(attr);
-        if (tAttr.attrType() == type) { return; }
+        MStatus status;
+        MFnTypedAttribute tAttr(attr, &status);
+        if (status && tAttr.attrType() == type) { return; }
+        node.removeAttribute(attr);
+    }
+    node.addAttribute(creator());
+}
+
+void _CreateNumericAttribute(
+    MFnDependencyNode& node, const TfToken& attrName, MFnNumericData::Type type,
+    const std::function<MObject()>& creator) {
+    const auto attr = node.attribute(attrName.GetText());
+    if (!attr.isNull()) {
+        MStatus status;
+        MFnNumericAttribute nAttr(attr, &status);
+        if (status && nAttr.unitType() == type) { return; }
         node.removeAttribute(attr);
     }
     node.addAttribute(creator());
@@ -106,6 +122,25 @@ void _SetEnum(
     out = TfToken(eAttr.fieldName(plug.asShort()).asChar());
 }
 
+template <typename T>
+void _SetFromPlug(const MPlug& plug, T& out) {
+    static_assert(true, "Specialisation not implemented for SetFromPlug");
+}
+
+template <>
+void _SetFromPlug<int>(const MPlug& plug, int& out) {
+    out = plug.asInt();
+}
+
+template <typename T>
+bool _SetNumericAttribute(
+    const MFnDependencyNode& node, const TfToken& attrName, T& out) {
+    const auto plug = node.findPlug(attrName.GetText());
+    if (plug.isNull()) { return false; }
+    _SetFromPlug<T>(plug, out);
+    return true;
+}
+
 constexpr auto _renderOverrideOptionBoxCommand = R"mel(
 global proc hydraViewportOverrideOptionBox() {
     string $windowName = "hydraViewportOverrideOptionsWindow";
@@ -122,6 +157,8 @@ global proc hydraViewportOverrideOptionBox() {
     frameLayout -label "Hydra Settings";
     columnLayout;
     attrControlGrp -label "Renderer Name" -attribute "defaultRenderGlobals.mtohRenderer" -changeCommand $cc;
+    attrControlGrp -label "Texture Memory Per Texture (KB)" -attribute "defaultRenderGlobals.mtohTextureMemoryPerTexture" -changeCommand $cc;
+    attrControlGrp -label "Maximum Shadow Map Resolution" -attribute "defaultRenderGlobals.mtohMaximumShadowMapResolution" -changeCommand $cc;
     setParent ..;
     setParent ..;
     setParent ..;
@@ -159,7 +196,36 @@ MObject MtohCreateRenderGlobals() {
     _CreateEnumAttribute(
         node, _tokens->mtohRenderer, MtohGetRendererPlugins(),
         MtohGetDefaultRenderer());
-
+    _CreateNumericAttribute(
+        node, _tokens->mtohTextureMemoryPerTexture, MFnNumericData::kInt,
+        []() -> MObject {
+            MFnNumericAttribute nAttr;
+            const auto o = nAttr.create(
+                _tokens->mtohTextureMemoryPerTexture.GetText(),
+                _tokens->mtohTextureMemoryPerTexture.GetText(),
+                MFnNumericData::kInt);
+            nAttr.setMin(1);
+            nAttr.setMax(256 * 1024);
+            nAttr.setSoftMin(1 * 1024);
+            nAttr.setSoftMin(16 * 1024);
+            HdMayaParams params;
+            nAttr.setDefault(params.textureMemoryPerTexture);
+            return o;
+        });
+    _CreateNumericAttribute(
+        node, _tokens->mtohMaximumShadowMapResolution, MFnNumericData::kInt,
+        []() -> MObject {
+            MFnNumericAttribute nAttr;
+            const auto o = nAttr.create(
+                _tokens->mtohMaximumShadowMapResolution.GetText(),
+                _tokens->mtohMaximumShadowMapResolution.GetText(),
+                MFnNumericData::kInt);
+            nAttr.setMin(32);
+            nAttr.setMax(8192);
+            HdMayaParams params;
+            nAttr.setDefault(params.maximumShadowMapResolution);
+            return o;
+        });
     return ret;
 }
 
@@ -171,6 +237,14 @@ MtohRenderGlobals MtohGetRenderGlobals() {
     MFnDependencyNode node(obj, &status);
     if (!status) { return ret; }
     _SetEnum(node, _tokens->mtohRenderer, ret.renderer);
+    if (_SetNumericAttribute(
+        node, _tokens->mtohTextureMemoryPerTexture,
+        ret.delegateParams.textureMemoryPerTexture)) {
+        ret.delegateParams.textureMemoryPerTexture *= 1024;
+    }
+    _SetNumericAttribute(
+        node, _tokens->mtohMaximumShadowMapResolution,
+        ret.delegateParams.maximumShadowMapResolution);
     return ret;
 }
 
