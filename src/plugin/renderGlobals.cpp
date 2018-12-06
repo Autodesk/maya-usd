@@ -47,7 +47,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (defaultRenderGlobals)(mtohRenderer)(mtohTextureMemoryPerTexture)(
         mtohMaximumShadowMapResolution)(mtohColorSelectionHighlight)(
-        mtohColorSelectionHighlightColor)(mtohWireframeSelectionHighlight));
+        mtohColorSelectionHighlightColor)(mtohColorSelectionHighlightColorA)(
+        mtohWireframeSelectionHighlight));
 
 namespace {
 
@@ -108,6 +109,47 @@ void _CreateNumericAttribute(
     node.addAttribute(creator());
 }
 
+void _CreateColorAttribute(
+    MFnDependencyNode& node, const TfToken& attrName, const TfToken& attrAName,
+    const GfVec4f& defValue) {
+    const auto attr = node.attribute(attrName.GetText());
+    auto foundColor = false;
+    if (!attr.isNull()) {
+        MStatus status;
+        MFnNumericAttribute nAttr(attr, &status);
+        if (status && nAttr.isUsedAsColor()) {
+            foundColor = true;
+        } else {
+            node.removeAttribute(attr);
+        }
+    }
+    const auto attrA = node.attribute(attrAName.GetText());
+    auto foundAlpha = false;
+    if (!attrA.isNull()) {
+        MStatus status;
+        MFnNumericAttribute nAttr(attrA, &status);
+        if (status && nAttr.unitType() == MFnNumericData::kFloat) {
+            if (foundColor) { return; }
+            foundAlpha = true;
+        } else {
+            node.removeAttribute(attrA);
+        }
+    }
+    MFnNumericAttribute nAttr;
+    if (!foundColor) {
+        const auto o =
+            nAttr.createColor(attrName.GetText(), attrName.GetText());
+        nAttr.setDefault(defValue[0], defValue[1], defValue[2]);
+        node.addAttribute(o);
+    }
+    if (!foundAlpha) {
+        const auto o = nAttr.create(
+            attrAName.GetText(), attrAName.GetText(), MFnNumericData::kFloat);
+        nAttr.setDefault(defValue[3]);
+        node.addAttribute(o);
+    }
+}
+
 MObject _CreateBoolAttribute(const TfToken& attrName, bool defValue) {
     MFnNumericAttribute nAttr;
     const auto o = nAttr.create(
@@ -156,6 +198,19 @@ bool _SetNumericAttribute(
     return true;
 }
 
+void _SetColorAttribute(
+    const MFnDependencyNode& node, const TfToken& attrName,
+    const TfToken& attrAName, GfVec4f& out) {
+    const auto plug = node.findPlug(attrName.GetText());
+    if (plug.isNull()) { return; }
+    out[0] = plug.child(0).asFloat();
+    out[1] = plug.child(1).asFloat();
+    out[2] = plug.child(2).asFloat();
+    const auto plugA = node.findPlug(attrAName.GetText());
+    if (plugA.isNull()) { return; }
+    out[3] = plugA.asFloat();
+}
+
 constexpr auto _renderOverrideOptionBoxCommand = R"mel(
 global proc hydraViewportOverrideOptionBox() {
     string $windowName = "hydraViewportOverrideOptionsWindow";
@@ -175,6 +230,7 @@ global proc hydraViewportOverrideOptionBox() {
     attrControlGrp -label "Texture Memory Per Texture (KB)" -attribute "defaultRenderGlobals.mtohTextureMemoryPerTexture" -changeCommand $cc;
     attrControlGrp -label "Show Wireframe on Selected Objects" -attribute "defaultRenderGlobals.mtohWireframeSelectionHighlight" -changeCommand $cc;
     attrControlGrp -label "Highlight Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlight" -changeCommand $cc;
+    attrControlGrp -label "Highlight Color for Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlightColor" -changeCommand $cc;
     setParent ..;
     setParent ..;
     setParent ..;
@@ -250,11 +306,14 @@ MObject MtohCreateRenderGlobals() {
             _CreateBoolAttribute, _tokens->mtohWireframeSelectionHighlight,
             defGlobals.wireframeSelectionHighlight));
     _CreateNumericAttribute(
-        node, _tokens->mtohColorSelectionHighlightColor,
-        MFnNumericData::kBoolean,
+        node, _tokens->mtohColorSelectionHighlight, MFnNumericData::kBoolean,
         std::bind(
             _CreateBoolAttribute, _tokens->mtohColorSelectionHighlight,
             defGlobals.colorSelectionHighlight));
+    _CreateColorAttribute(
+        node, _tokens->mtohColorSelectionHighlightColor,
+        _tokens->mtohColorSelectionHighlightColorA,
+        defGlobals.colorSelectionHighlightColor);
     return ret;
 }
 
@@ -280,6 +339,10 @@ MtohRenderGlobals MtohGetRenderGlobals() {
     _SetNumericAttribute(
         node, _tokens->mtohColorSelectionHighlight,
         ret.colorSelectionHighlight);
+    _SetColorAttribute(
+        node, _tokens->mtohColorSelectionHighlightColor,
+        _tokens->mtohColorSelectionHighlightColorA,
+        ret.colorSelectionHighlightColor);
     return ret;
 }
 
