@@ -54,9 +54,7 @@ struct MtohRenderGlobals {
         TfToken key;
         VtValue value;
     };
-    std::unordered_map<
-        TfToken, std::vector<RenderParam>,
-        TfToken::HashFunctor>
+    std::unordered_map<TfToken, std::vector<RenderParam>, TfToken::HashFunctor>
         rendererSettings;
 };
 

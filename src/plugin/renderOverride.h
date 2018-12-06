@@ -89,12 +89,12 @@ public:
     bool nextRenderOperation() override;
 
 private:
-    void InitHydraResources();
-    static void ClearHydraCallback(void*);
-    void SelectionChanged();
-    static void SelectionChangedCallback(void*);
-    void DetectMayaDefaultLighting(const MHWRender::MDrawContext& drawContext);
-    void ConfigureLighting();
+    void _InitHydraResources();
+    static void _ClearHydraCallback(void*);
+    void _SelectionChanged();
+    static void _SelectionChangedCallback(void*);
+    void _DetectMayaDefaultLighting(const MHWRender::MDrawContext& drawContext);
+    void _ConfigureLighting();
     void _UpdateRenderGlobals();
     void _UpdateRenderDelegateOptions();
 

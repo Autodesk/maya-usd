@@ -227,13 +227,13 @@ MtohRenderOverride::MtohRenderOverride()
 
     MStatus status;
     auto id = MSceneMessage::addCallback(
-        MSceneMessage::kBeforeNew, ClearHydraCallback, nullptr, &status);
+        MSceneMessage::kBeforeNew, _ClearHydraCallback, nullptr, &status);
     if (status) { _callbacks.push_back(id); }
     id = MSceneMessage::addCallback(
-        MSceneMessage::kBeforeOpen, ClearHydraCallback, nullptr, &status);
+        MSceneMessage::kBeforeOpen, _ClearHydraCallback, nullptr, &status);
     if (status) { _callbacks.push_back(id); }
     id = MEventMessage::addEventCallback(
-        MString("SelectionChanged"), SelectionChangedCallback, nullptr,
+        MString("_SelectionChanged"), _SelectionChangedCallback, nullptr,
         &status);
     if (status) { _callbacks.push_back(id); }
 
@@ -260,7 +260,7 @@ void MtohRenderOverride::UpdateRenderGlobals() {
     GetInstance()._renderGlobalsHaveChanged = true;
 }
 
-void MtohRenderOverride::DetectMayaDefaultLighting(
+void MtohRenderOverride::_DetectMayaDefaultLighting(
     const MHWRender::MDrawContext& drawContext) {
     constexpr auto considerAllSceneLights =
         MHWRender::MDrawContext::kFilteredIgnoreLightLimit;
@@ -310,13 +310,13 @@ void MtohRenderOverride::DetectMayaDefaultLighting(
         TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
             .Msg(
                 "MtohRenderOverride::"
-                "DetectMayaDefaultLighting() clearing! "
+                "_DetectMayaDefaultLighting() clearing! "
                 "_hasDefaultLighting=%i\n",
                 _hasDefaultLighting);
     }
 }
 
-void MtohRenderOverride::ConfigureLighting() {
+void MtohRenderOverride::_ConfigureLighting() {
     if (_hasDefaultLighting) {
         GlfSimpleLightVector lights;
         lights.push_back(_defaultLight);
@@ -341,7 +341,8 @@ void MtohRenderOverride::_UpdateRenderDelegateOptions() {
     if (_renderIndex == nullptr) { return; }
     auto* renderDelegate = _renderIndex->GetRenderDelegate();
     if (renderDelegate == nullptr) { return; }
-    auto* settings = TfMapLookupPtr(_globals.rendererSettings, _globals.renderer);
+    const auto* settings =
+        TfMapLookupPtr(_globals.rendererSettings, _globals.renderer);
     if (settings == nullptr) { return; }
     // TODO: Which is better? Set everything blindly or only set settings that
     //  have changed? This is not performance critical, and render delegates
@@ -382,12 +383,12 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 
     _UpdateRenderGlobals();
 
-    DetectMayaDefaultLighting(drawContext);
+    _DetectMayaDefaultLighting(drawContext);
     if (_needsClear.exchange(false)) { ClearHydraResources(); }
 
     if (!_initializedViewport) {
         GlfGlewInit();
-        InitHydraResources();
+        _InitHydraResources();
         if (_preferSimpleLight) {
             _taskController->SetEnableShadows(false);
             renderFrame();
@@ -419,7 +420,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     }
     _taskController->SetEnableShadows(enableShadows);
 
-    ConfigureLighting();
+    _ConfigureLighting();
 
     HdxRenderTaskParams params;
     params.enableLighting = true;
@@ -483,9 +484,9 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     return MStatus::kSuccess;
 }
 
-void MtohRenderOverride::InitHydraResources() {
+void MtohRenderOverride::_InitHydraResources() {
     TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
-        .Msg("MtohRenderOverride::InitHydraResources()\n");
+        .Msg("MtohRenderOverride::_InitHydraResources()\n");
     _rendererPlugin =
         HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(
             _globals.renderer);
@@ -532,7 +533,7 @@ void MtohRenderOverride::InitHydraResources() {
 
     _renderIndex->GetChangeTracker().AddCollection(
         _selectionCollection.GetName());
-    SelectionChanged();
+    _SelectionChanged();
 
     _initializedViewport = true;
     _UpdateRenderDelegateOptions();
@@ -566,11 +567,11 @@ void MtohRenderOverride::ClearHydraResources() {
     _initializedViewport = false;
 }
 
-void MtohRenderOverride::ClearHydraCallback(void*) {
+void MtohRenderOverride::_ClearHydraCallback(void*) {
     GetInstance().ClearHydraResources();
 }
 
-void MtohRenderOverride::SelectionChanged() {
+void MtohRenderOverride::_SelectionChanged() {
     MSelectionList sel;
     if (!TF_VERIFY(MGlobal::getActiveSelectionList(sel))) { return; }
     SdfPathVector selectedPaths;
@@ -584,8 +585,8 @@ void MtohRenderOverride::SelectionChanged() {
     _selectionTracker->SetSelection(HdSelectionSharedPtr(selection));
 }
 
-void MtohRenderOverride::SelectionChangedCallback(void*) {
-    GetInstance().SelectionChanged();
+void MtohRenderOverride::_SelectionChangedCallback(void*) {
+    GetInstance()._SelectionChanged();
 }
 
 MHWRender::DrawAPI MtohRenderOverride::supportedDrawAPIs() const {
