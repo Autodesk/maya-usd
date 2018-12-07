@@ -59,7 +59,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdImagingGLHdEngine;
+class UsdImagingGLEngine;
 
 // Note: you MUST forward declare LayerManager, and not include LayerManager.h;
 // The reason is that LayerManager.h includes MPxLocatorNode.h, which on Linux,
@@ -697,7 +697,7 @@ public:
 
   /// \brief  returns the usd imaging engine for this proxy shape
   /// \return the imagine engin instance for this shape (shared between draw override and shape ui)
-  inline UsdImagingGLHdEngine* engine() const
+  inline UsdImagingGLEngine* engine() const
     { return m_engine; }
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -1072,7 +1072,7 @@ private:
   SdfPath m_changedPath;
   SdfPathVector m_variantSwitchedPrims;
   SdfLayerHandle m_prevEditTarget;
-  UsdImagingGLHdEngine* m_engine = 0;
+  UsdImagingGLEngine* m_engine = 0;
 
   uint32_t m_engineRefCount = 0;
   bool m_compositionHasChanged = false;

@@ -109,7 +109,7 @@ void ProxyShapeUI::getDrawRequests(const MDrawInfo& drawInfo, bool isObjectAndAc
   MDrawRequest request = drawInfo.getPrototype(*this);
 
   ProxyShape* shape = static_cast<ProxyShape*>(surfaceShape());
-  UsdImagingGLHdEngine* engine = shape->engine();
+  UsdImagingGLEngine* engine = shape->engine();
   if(!engine)
   {
     shape->constructGLImagingEngine();
@@ -138,14 +138,14 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
 
   ProxyShape* shape = static_cast<ProxyShape*>(surfaceShape());
-  UsdImagingGLHdEngine* engine = shape->engine();
+  UsdImagingGLEngine* engine = shape->engine();
   if(!engine)
   {
     return;
   }
 
   auto stage = shape->getUsdStage();
-  UsdImagingGLEngine::RenderParams params;
+  UsdImagingGLRenderParams params;
 
   params.showGuides = shape->displayGuidesPlug().asBool();
   params.showRender = shape->displayRenderGuidesPlug().asBool();
@@ -170,23 +170,23 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   switch(request.displayStyle())
   {
   case M3dView::kBoundingBox:
-    params.drawMode = UsdImagingGLEngine::DRAW_POINTS;
+    params.drawMode = UsdImagingGLDrawMode::DRAW_POINTS;
     break;
 
   case M3dView::kFlatShaded:
-    params.drawMode = UsdImagingGLEngine::DRAW_SHADED_FLAT;
+    params.drawMode = UsdImagingGLDrawMode::DRAW_SHADED_FLAT;
     break;
 
   case M3dView::kGouraudShaded:
-    params.drawMode = UsdImagingGLEngine::DRAW_SHADED_SMOOTH;
+    params.drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
     break;
 
   case M3dView::kWireFrame:
-    params.drawMode = UsdImagingGLEngine::DRAW_WIREFRAME;
+    params.drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
     break;
 
   case M3dView::kPoints:
-    params.drawMode = UsdImagingGLEngine::DRAW_POINTS;
+    params.drawMode = UsdImagingGLDrawMode::DRAW_POINTS;
     break;
   }
 
@@ -194,16 +194,16 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   {
     if(!request.displayCullOpposite())
     {
-      params.cullStyle = UsdImagingGLEngine::CULL_STYLE_BACK;
+      params.cullStyle = UsdImagingGLCullStyle::CULL_STYLE_BACK;
     }
     else
     {
-      params.cullStyle = UsdImagingGLEngine::CULL_STYLE_FRONT;
+      params.cullStyle = UsdImagingGLCullStyle::CULL_STYLE_FRONT;
     }
   }
   else
   {
-    params.cullStyle = UsdImagingGLEngine::CULL_STYLE_NOTHING;
+    params.cullStyle = UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
   }
 
   #if !USE_GL_LIGHTING_STATE
@@ -275,7 +275,7 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   if(paths.size())
   {
     MColor colour = M3dView::leadColor();
-    params.drawMode = UsdImagingGLEngine::DRAW_WIREFRAME;
+    params.drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
     params.wireframeColor = GfVec4f(colour.r, colour.g, colour.b, 1.0f);
     glDepthFunc(GL_LEQUAL);
     engine->RenderBatch(paths, params);
@@ -329,7 +329,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
   MDagPath selectPath = selectInfo.selectPath();
   MMatrix invMatrix = selectPath.inclusiveMatrixInverse();
 
-  UsdImagingGLEngine::RenderParams params;
+  UsdImagingGLRenderParams params;
   MMatrix viewMatrix, projectionMatrix;
   GfMatrix4d worldToLocalSpace(invMatrix.matrix);
 
