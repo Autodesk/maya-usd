@@ -53,8 +53,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 namespace {
 
+#ifdef USD_001901_BUILD
 std::unordered_map<TfToken, HdRenderSettingDescriptorList, TfToken::HashFunctor>
     _rendererAttributes;
+#endif
 
 void _CreateEnumAttribute(
     MFnDependencyNode& node, const TfToken& attrName,
@@ -84,7 +86,7 @@ void _CreateEnumAttribute(
     node.addAttribute(o);
 }
 
-void _CreateTypedAttribute(
+/*void _CreateTypedAttribute(
     MFnDependencyNode& node, const TfToken& attrName, MFnData::Type type,
     const std::function<MObject()>& creator) {
     const auto attr = node.attribute(attrName.GetText());
@@ -95,7 +97,7 @@ void _CreateTypedAttribute(
         node.removeAttribute(attr);
     }
     node.addAttribute(creator());
-}
+}*/
 
 void _CreateNumericAttribute(
     MFnDependencyNode& node, const TfToken& attrName, MFnNumericData::Type type,
@@ -159,11 +161,11 @@ MObject _CreateBoolAttribute(const TfToken& attrName, bool defValue) {
     return o;
 }
 
-void _SetToken(
+/*void _SetToken(
     const MFnDependencyNode& node, const TfToken& attrName, TfToken& out) {
     const auto plug = node.findPlug(attrName.GetText(), true);
     if (!plug.isNull()) { out = TfToken(plug.asString().asChar()); }
-}
+}*/
 
 void _SetEnum(
     const MFnDependencyNode& node, const TfToken& attrName, TfToken& out) {
@@ -190,10 +192,12 @@ void _SetFromPlug<int>(const MPlug& plug, int& out) {
     out = plug.asInt();
 }
 
+#ifdef USD_001901_BUILD
 template <>
 void _SetFromPlug<float>(const MPlug& plug, float& out) {
     out = plug.asFloat();
 }
+#endif
 
 template <typename T>
 bool _SetNumericAttribute(
@@ -217,10 +221,12 @@ void _SetColorAttribute(
     out[3] = plugA.asFloat();
 }
 
+#ifdef USD_001901_BUILD
 bool _IsSupportedAttribute(const VtValue& v) {
     return v.IsHolding<bool>() || v.IsHolding<int>() || v.IsHolding<float>() ||
            v.IsHolding<GfVec4f>();
 }
+#endif
 
 constexpr auto _renderOverrideOptionBoxCommand = R"mel(
 global proc hydraViewportOverrideOptionBox() {
@@ -255,6 +261,7 @@ global proc hydraViewportOverrideOptionBox() {
 MtohRenderGlobals::MtohRenderGlobals() : renderer(MtohGetDefaultRenderer()) {}
 
 void MtohInitializeRenderGlobals() {
+#ifdef USD_001901_BUILD
     for (const auto& rendererPluginName : MtohGetRendererPlugins()) {
         auto* rendererPlugin =
             HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(
@@ -266,9 +273,11 @@ void MtohInitializeRenderGlobals() {
             renderDelegate->GetRenderSettingDescriptors();
         delete renderDelegate;
     }
+#endif
     std::stringstream ss;
     ss << "global proc hydraViewportRenderDelegateOptions() {\n";
     ss << "\tstring $cc = \"mtoh -updateRenderGlobals; refresh -f\";\n";
+#ifdef USD_001901_BUILD
     for (const auto& rit : _rendererAttributes) {
         const auto rendererName = rit.first;
         ss << "\tframeLayout -label \"" << rendererName.GetText()
@@ -285,6 +294,7 @@ void MtohInitializeRenderGlobals() {
         ss << "\tsetParent ..;\n";
         ss << "\tsetParent ..;\n";
     }
+#endif
     ss << "}\n";
     auto status = MGlobal::executeCommand(ss.str().c_str());
     if (!status) {
@@ -359,6 +369,7 @@ MObject MtohCreateRenderGlobals() {
         defGlobals.colorSelectionHighlightColor);
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
+#ifdef USD_001901_BUILD
     for (const auto& rit : _rendererAttributes) {
         const auto rendererName = rit.first;
         for (const auto& attr : rit.second) {
@@ -402,6 +413,7 @@ MObject MtohCreateRenderGlobals() {
             }
         }
     }
+#endif
     return ret;
 }
 
@@ -433,6 +445,7 @@ MtohRenderGlobals MtohGetRenderGlobals() {
         ret.colorSelectionHighlightColor);
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
+#ifdef USD_001901_BUILD
     for (const auto& rit : _rendererAttributes) {
         const auto rendererName = rit.first;
         auto& settings = ret.rendererSettings[rendererName];
@@ -461,6 +474,7 @@ MtohRenderGlobals MtohGetRenderGlobals() {
             }
         }
     }
+#endif
     return ret;
 }
 

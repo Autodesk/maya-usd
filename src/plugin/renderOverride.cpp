@@ -338,6 +338,7 @@ void MtohRenderOverride::_UpdateRenderGlobals() {
 }
 
 void MtohRenderOverride::_UpdateRenderDelegateOptions() {
+#ifdef USD_001901_BUILD
     if (_renderIndex == nullptr) { return; }
     auto* renderDelegate = _renderIndex->GetRenderDelegate();
     if (renderDelegate == nullptr) { return; }
@@ -353,6 +354,7 @@ void MtohRenderOverride::_UpdateRenderDelegateOptions() {
             renderDelegate->SetRenderSetting(setting.key, setting.value);
         }
     }
+#endif
 }
 
 MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
