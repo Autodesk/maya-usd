@@ -40,7 +40,7 @@ public:
             const SdfPath& id);
 
     void Populate() override;
-    void PreFrame() override;
+    void PreFrame(const MHWRender::MDrawContext& context) override;
     void PopulateSelectedPaths(
             const MSelectionList& mayaSelection,
             SdfPathVector& selectedSdfPaths) override;

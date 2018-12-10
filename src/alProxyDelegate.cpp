@@ -351,7 +351,7 @@ HdMayaALProxyDelegate::PopulateSingleProxy(
 }
 
 void
-HdMayaALProxyDelegate::PreFrame() {
+HdMayaALProxyDelegate::PreFrame(const MHWRender::MDrawContext& context) {
     for (auto& proxyAndData : _proxiesData) {
         auto& proxy = proxyAndData.first;
         auto& proxyData = proxyAndData.second;
