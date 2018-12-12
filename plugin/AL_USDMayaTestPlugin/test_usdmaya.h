@@ -15,40 +15,8 @@
 //
 #pragma once
 
-#include <gtest/gtest.h>
-
-#include "maya/MAngle.h"
-#include "maya/MDistance.h"
-#include "maya/MFnDependencyNode.h"
-#include "maya/MPlug.h"
-#include "maya/MString.h"
-#include "maya/MTime.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/test/testHelpers.h"
-
-#include <cstdint>
-#include <iostream>
-#include <functional>
-
-#ifdef TRACE_ASSIGNMENT
-# define TRACE(X) X;
-#else
-# define TRACE(X)
-#endif
-
-#if 0
-# define AL_OUTPUT_TEST_NAME(X) std::cerr << X << std::endl;
-#else
-# define AL_OUTPUT_TEST_NAME(X)
-#endif
-
-
-#if 0
-# define AL_USDMAYA_UNTESTED EXPECT_TRUE(false)
-#else
-# define AL_USDMAYA_UNTESTED
-#endif
-
 
   /// \brief  Creates a ProxyShape with the contents generated from the buildUsdStage function object. It will export it into the specified temp_location and
   ///         feed this temp-file into a ProxyShape

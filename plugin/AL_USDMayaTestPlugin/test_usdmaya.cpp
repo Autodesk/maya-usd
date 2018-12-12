@@ -15,26 +15,6 @@
 //
 #include "test_usdmaya.h"
 
-#include "maya/MFloatMatrix.h"
-#include "maya/MFnAttribute.h"
-#include "maya/MFnCompoundAttribute.h"
-#include "maya/MFnEnumAttribute.h"
-#include "maya/MFnMatrixAttribute.h"
-#include "maya/MFnMatrixData.h"
-#include "maya/MFnNumericAttribute.h"
-#include "maya/MFnNumericData.h"
-#include "maya/MFnTypedAttribute.h"
-#include "maya/MFnUnitAttribute.h"
-#include "maya/MGlobal.h"
-#include "maya/MFileIO.h"
-#include "maya/MMatrix.h"
-#include "maya/MFnAnimCurve.h"
-#include "maya/MFnDagNode.h"
-
-#include "pxr/base/arch/fileSystem.h"
-#include "pxr/base/tf/pathUtils.h"
-
-
 AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(
     std::function<UsdStageRefPtr()> buildUsdStage,
     const std::string& tempPath,
