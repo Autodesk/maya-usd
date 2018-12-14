@@ -37,6 +37,7 @@
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 
+#include "tokens.h"
 #include "utils.h"
 
 #include <functional>
@@ -49,7 +50,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (defaultRenderGlobals)(mtohRenderer)(mtohTextureMemoryPerTexture)(
         mtohMaximumShadowMapResolution)(mtohColorSelectionHighlight)(
         mtohColorSelectionHighlightColor)(mtohColorSelectionHighlightColorA)(
-        mtohWireframeSelectionHighlight));
+        mtohWireframeSelectionHighlight)(mtohSelectionOverlay));
 
 namespace {
 
@@ -245,6 +246,7 @@ global proc hydraViewportOverrideOptionBox() {
     columnLayout;
     attrControlGrp -label "Renderer Name" -attribute "defaultRenderGlobals.mtohRenderer" -changeCommand $cc;
     attrControlGrp -label "Texture Memory Per Texture (KB)" -attribute "defaultRenderGlobals.mtohTextureMemoryPerTexture" -changeCommand $cc;
+    attrControlGrp -label "Selection Overlay Mode" -attribute "defaultRenderGlobals.mtohSelectionOverlay" -changeCommand $cc;
     attrControlGrp -label "Show Wireframe on Selected Objects" -attribute "defaultRenderGlobals.mtohWireframeSelectionHighlight" -changeCommand $cc;
     attrControlGrp -label "Highlight Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlight" -changeCommand $cc;
     attrControlGrp -label "Highlight Color for Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlightColor" -changeCommand $cc;
@@ -352,6 +354,11 @@ MObject MtohCreateRenderGlobals() {
                 defGlobals.delegateParams.maximumShadowMapResolution);
             return o;
         });
+    static const TfTokenVector selectionOverlays{MtohTokens->UseHdSt,
+                                                 MtohTokens->UseVp2};
+    _CreateEnumAttribute(
+        node, _tokens->mtohSelectionOverlay, selectionOverlays,
+        MtohTokens->UseHdSt);
     _CreateNumericAttribute(
         node, _tokens->mtohWireframeSelectionHighlight,
         MFnNumericData::kBoolean,
@@ -433,6 +440,7 @@ MtohRenderGlobals MtohGetRenderGlobals() {
     _SetNumericAttribute(
         node, _tokens->mtohMaximumShadowMapResolution,
         ret.delegateParams.maximumShadowMapResolution);
+    _SetEnum(node, _tokens->mtohSelectionOverlay, ret.selectionOverlay);
     _SetNumericAttribute(
         node, _tokens->mtohWireframeSelectionHighlight,
         ret.wireframeSelectionHighlight);

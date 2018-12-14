@@ -100,10 +100,15 @@ public:
     HdMayaSceneRender(const MString& name) : MHWRender::MSceneRender(name) {}
 
     MUint64 getObjectTypeExclusions() override {
-        return ~(
-            MHWRender::MFrameContext::kExcludeSelectHandles |
-            // MHWRender::MFrameContext::kExcludeCameras |
-            MHWRender::MFrameContext::kExcludeLights);
+        return _vp2Overlay ? MHWRender::MSceneRender::getObjectTypeExclusions()
+                           : ~(MHWRender::MFrameContext::kExcludeSelectHandles |
+                               // MHWRender::MFrameContext::kExcludeCameras |
+                               MHWRender::MFrameContext::kExcludeLights);
+    }
+
+    MSceneFilterOption renderFilterOverride() override {
+        return _vp2Overlay ? kRenderUIItems
+                           : MHWRender::MSceneRender::renderFilterOverride();
     }
 
     MHWRender::MClearOperation& clearOperation() override {
@@ -120,6 +125,8 @@ public:
         mClearOperation.setClearGradient(gradient);
         return mClearOperation;
     }
+
+    bool _vp2Overlay = false;
 };
 
 class HdMayaManipulatorRender : public MHWRender::MSceneRender {

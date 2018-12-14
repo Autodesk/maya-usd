@@ -4,6 +4,7 @@ set(SRC
     renderGlobals.cpp
     renderOverride.cpp
     shadingModeExporter.cpp
+    tokens.cpp
     usdPreviewSurface.cpp
     utils.cpp
     viewCommand.cpp)
