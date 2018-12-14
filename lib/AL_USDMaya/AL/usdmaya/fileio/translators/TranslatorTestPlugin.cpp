@@ -16,6 +16,7 @@
 #include "AL/usdmaya/fileio/translators/TranslatorTestPlugin.h"
 
 #include "maya/MFn.h"
+#include "maya/MFnDagNode.h"
 
 namespace AL {
 namespace usdmaya {
@@ -33,6 +34,9 @@ MStatus TranslatorTestPlugin::initialize()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus TranslatorTestPlugin::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 {
+  MObject distanceShape = MFnDagNode().create("distanceDimShape", parent);
+  createdObj = distanceShape;
+  context()->insertItem(prim, createdObj);
   return MStatus::kSuccess;
 }
 
@@ -51,7 +55,20 @@ MStatus TranslatorTestPlugin::preTearDown(UsdPrim& path)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus TranslatorTestPlugin::tearDown(const SdfPath& path)
 {
+  context()->removeItems(path);
   return MStatus::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+UsdPrim TranslatorTestPlugin::exportObject(
+  UsdStageRefPtr stage,
+  MDagPath dagPath,
+  const SdfPath& usdPath,
+  const ExporterParams& params)
+{
+  MFnDagNode fn(dagPath);
+  TranslatorTestType node = TranslatorTestType::Define(stage, usdPath);
+  return node.GetPrim();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

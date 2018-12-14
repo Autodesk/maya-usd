@@ -18,7 +18,6 @@
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 #include "AL/usdmaya/fileio/translators/TranslatorTestType.h"
-
 #include "maya/MStatus.h"
 
 #include "pxr/pxr.h"
@@ -41,13 +40,14 @@ public:
   AL_USDMAYA_DECLARE_TRANSLATOR(TranslatorTestPlugin);
 
 private:
+  UsdPrim exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath, const ExporterParams& params) override;
   MStatus initialize() override;
   MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
   MStatus postImport(const UsdPrim& prim) override;
   MStatus preTearDown(UsdPrim& path) override;
   MStatus tearDown(const SdfPath& path) override;
   ExportFlag canExport(const MObject& obj) override
-    { return ExportFlag::kNotSupported; }
+    { return (obj.hasFn(MFn::kDistance) ? ExportFlag::kFallbackSupport : ExportFlag::kNotSupported); }
 };
 #endif
 

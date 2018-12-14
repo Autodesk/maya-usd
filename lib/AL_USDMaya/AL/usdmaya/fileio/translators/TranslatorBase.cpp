@@ -57,14 +57,34 @@ TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
       }
     }
   }
+
+  derivedTypes.clear();
+  PlugRegistry::GetAllDerivedTypes<SchemaPluginBase>(&derivedTypes);
+  for (const TfType& t : derivedTypes)
+  {
+    //const auto insertResult = loadedTypes.insert(t);
+    //if (insertResult.second)
+    {
+      // TfType::GetFactory may cause additional plugins to be loaded
+      // may means potentially more translator types. We need to re-iterate
+      // over the derived types just to be sure...
+      if (auto* factory = t.GetFactory<SchemaApiTranslatorFactoryBase>())
+      {
+        if (auto ptr = factory->create(context))
+        {
+          m_apiPlugins.push_back(ptr);
+        }
+      }
+    }
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorManufacture::RefPtr TranslatorManufacture::get(const TfToken type_name)
 {
+
   TfType type = TfType::FindDerivedByName<UsdSchemaBase>(type_name);
   std::string typeName(type.GetTypeName());
-
   if (m_translatorsMap.find(typeName)!= m_translatorsMap.end())
   {
     return m_translatorsMap[typeName];
@@ -90,6 +110,54 @@ TranslatorManufacture::RefPtr TranslatorManufacture::get(const MObject& mayaObje
     }
   }
   return derived ? derived : base;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+std::vector<TranslatorManufacture::SchemaPluginPtr> TranslatorManufacture::getAPI(const MObject& mayaObject)
+{
+  std::vector<TranslatorManufacture::SchemaPluginPtr> ptrs;
+  for(auto plugin : m_apiPlugins)
+  {
+    MFn::Type type = plugin->getFnType();
+    if(mayaObject.hasFn(type))
+    {
+      switch(type)
+      {
+      case MFn::kPluginMotionPathNode:
+      case MFn::kPluginDependNode:
+      case MFn::kPluginLocatorNode:
+      case MFn::kPluginDeformerNode:
+      case MFn::kPluginShape:
+      case MFn::kPluginFieldNode:
+      case MFn::kPluginEmitterNode:
+      case MFn::kPluginSpringNode:
+      case MFn::kPluginIkSolver:
+      case MFn::kPluginHardwareShader:
+      case MFn::kPluginHwShaderNode:
+      case MFn::kPluginTransformNode:
+      case MFn::kPluginObjectSet:
+      case MFn::kPluginImagePlaneNode:
+      case MFn::kPluginConstraintNode:
+      case MFn::kPluginManipulatorNode:
+      case MFn::kPluginSkinCluster:
+      case MFn::kPluginGeometryFilter:
+      case MFn::kPluginBlendShape:
+        {
+          const MString typeName = plugin->getPluginTypeName();
+          MFnDependencyNode fn(mayaObject);
+          if(fn.typeName() != typeName)
+          {
+            continue;
+          }
+        }
+        break;
+      default:
+        break;
+      }
+      ptrs.push_back(plugin);
+    }
+  }
+  return ptrs;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

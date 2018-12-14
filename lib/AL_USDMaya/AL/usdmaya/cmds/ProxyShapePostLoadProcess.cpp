@@ -306,6 +306,12 @@ void ProxyShapePostLoadProcess::createSchemaPrims(
           std::cerr << "Error: unable to load schema prim node: '" << prim.GetName().GetString() << "' that has type: '" << prim.GetTypeName() << "'" << std::endl;
         }
         AL_END_PROFILE_SECTION();
+
+        auto apis = translatorManufacture.getAPI(created);
+        for(auto api : apis)
+        {
+          api->import(prim, created);
+        }
       }
     }
   }
@@ -345,11 +351,26 @@ void ProxyShapePostLoadProcess::updateSchemaPrims(
       else
       {
         TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createSchemaPrims [update] prim=%s\n", prim.GetPath().GetText());
-        if(translator && translator->update(prim).statusCode() == MStatus::kNotImplemented)
+        if(translator)
         {
-          MGlobal::displayError(
+          if(translator->update(prim).statusCode() == MStatus::kNotImplemented)
+          {
+            MGlobal::displayError(
               MString("Prim type has claimed that it supports variant switching via update, but it does not! ") +
               prim.GetPath().GetText());
+          }
+          else
+          {
+            std::vector<MObjectHandle> returned;
+            if(context->getMObjects(prim, returned) && !returned.empty())
+            {
+              auto apis = translatorManufacture.getAPI(returned[0].object());
+              for(auto api : apis)
+              {
+                api->update(prim);
+              }
+            }
+          }
         }
       }
     }
@@ -381,6 +402,15 @@ void ProxyShapePostLoadProcess::connectSchemaPrims(
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::connectSchemaPrims [postImport] prim=%s\n", prim.GetPath().GetText());
       AL_BEGIN_PROFILE_SECTION(TranslatorBasePostImport);
       torBase->postImport(prim);
+      std::vector<MObjectHandle> returned;
+      if(context->getMObjects(prim, returned) && !returned.empty())
+      {
+        auto apis = translatorManufacture.getAPI(returned[0].object());
+        for(auto api : apis)
+        {
+          api->postImport(prim);
+        }
+      }
       AL_END_PROFILE_SECTION();
     }
   }
