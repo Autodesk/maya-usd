@@ -260,7 +260,9 @@ global proc hydraViewportOverrideOptionBox() {
 )mel";
 } // namespace
 
-MtohRenderGlobals::MtohRenderGlobals() : renderer(MtohGetDefaultRenderer()) {}
+MtohRenderGlobals::MtohRenderGlobals()
+    : renderer(MtohGetDefaultRenderer()),
+      selectionOverlay(MtohTokens->UseVp2) {}
 
 void MtohInitializeRenderGlobals() {
 #ifdef USD_001901_BUILD
@@ -323,7 +325,7 @@ MObject MtohCreateRenderGlobals() {
     static const MtohRenderGlobals defGlobals;
     _CreateEnumAttribute(
         node, _tokens->mtohRenderer, MtohGetRendererPlugins(),
-        MtohGetDefaultRenderer());
+        defGlobals.renderer);
     _CreateNumericAttribute(
         node, _tokens->mtohTextureMemoryPerTexture, MFnNumericData::kInt,
         []() -> MObject {
@@ -358,7 +360,7 @@ MObject MtohCreateRenderGlobals() {
                                                  MtohTokens->UseVp2};
     _CreateEnumAttribute(
         node, _tokens->mtohSelectionOverlay, selectionOverlays,
-        MtohTokens->UseHdSt);
+        defGlobals.selectionOverlay);
     _CreateNumericAttribute(
         node, _tokens->mtohWireframeSelectionHighlight,
         MFnNumericData::kBoolean,

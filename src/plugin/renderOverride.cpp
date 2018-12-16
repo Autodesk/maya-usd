@@ -53,6 +53,7 @@
 #include <hdmaya/utils.h>
 
 #include "pluginDebugCodes.h"
+#include "tokens.h"
 #include "utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -103,7 +104,8 @@ public:
         return _vp2Overlay ? MHWRender::MSceneRender::getObjectTypeExclusions()
                            : ~(MHWRender::MFrameContext::kExcludeSelectHandles |
                                // MHWRender::MFrameContext::kExcludeCameras |
-                               MHWRender::MFrameContext::kExcludeLights);
+                               MHWRender::MFrameContext::kExcludeLights |
+                               MHWRender::MFrameContext::kExcludeGrid);
     }
 
     MSceneFilterOption renderFilterOverride() override {
@@ -342,6 +344,14 @@ void MtohRenderOverride::_UpdateRenderGlobals() {
     }
     _globals = _currentGlobals;
     _UpdateRenderDelegateOptions();
+    if (!_operations.empty()) {
+        const auto vp2Overlay = _globals.selectionOverlay == MtohTokens->UseVp2;
+        auto* mayaRender = reinterpret_cast<HdMayaSceneRender*>(_operations[0]);
+        if (mayaRender->_vp2Overlay != vp2Overlay) {
+            mayaRender->_vp2Overlay = vp2Overlay;
+            MGlobal::executeCommandOnIdle("refresh -f;");
+        }
+    }
 }
 
 void MtohRenderOverride::_UpdateRenderDelegateOptions() {
@@ -476,6 +486,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 
     // This causes issues with the embree delegate and potentially others.
     if (_globals.wireframeSelectionHighlight &&
+        _globals.selectionOverlay == MtohTokens->UseHdSt &&
         _globals.renderer == _tokens->HdStreamRendererPlugin) {
         if (!_selectionCollection.GetRootPaths().empty()) {
             _taskController->SetCollection(_selectionCollection);
