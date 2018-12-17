@@ -33,6 +33,9 @@ list(APPEND CMAKE_MODULE_PATH
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules
 )
 
+# This defines functions and macros that are used later on.
+include(cmake/utils.cmake)
+
 include(Options)
 
 # Versions prior to 3.1.0 on Unix platforms built archive libraries
@@ -52,11 +55,15 @@ set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 include(Public)
 
+# find_package() uses PackageName_ROOT variables.
+# Silence the cmake warning.
+cmake_policy(SET CMP0074 OLD)
+
 find_package(Maya REQUIRED)
 find_package(USD REQUIRED)
 
 #==============================================================================
-# PACKAGES USED WHILE BUILING
+# PACKAGES USED WHILE BUILDING
 #==============================================================================
 
 # Used to build the Python bindings of the SDK
@@ -64,6 +71,12 @@ if(NOT(PYTHON_INCLUDE_DIRS AND PYTHON_LIBRARIES))
 	include(cmake/python.cmake)
 endif()
 include_directories(${PYTHON_INCLUDE_DIRS})
+
+# The building of the schemas requires some extra python packages which may or
+# may not be installed. If they aren't we manually set them up (from artifactory).
+if (BUILD_USDMAYA_SCHEMAS)
+	include(cmake/jinja.cmake)
+endif()
 
 #==============================================================================
 # AL_USDMAYA CMAKE VARS

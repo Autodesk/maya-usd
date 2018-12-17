@@ -37,3 +37,11 @@ find_package_handle_standard_args(
     PXR_INCLUDE_DIRS
     USD_LIBRARY_DIR
     USD_GENSCHEMA)
+
+if (USD_FOUND)
+    # Adjust some paths, so we can run usdGenSchemas
+    append_path_to_env_var("PYTHONPATH" "${AL_USDMAYA_USD_LOCATION}/lib/python")
+    if(WIN32)
+        append_path_to_env_var("PATH" "${AL_USDMAYA_USD_LOCATION}/bin;${AL_USDMAYA_USD_LOCATION}/lib")
+    endif()
+endif()
