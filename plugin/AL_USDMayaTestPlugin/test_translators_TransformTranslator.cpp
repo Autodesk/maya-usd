@@ -24,6 +24,7 @@
 
 #include "maya/MDagModifier.h"
 #include "maya/MFnDagNode.h"
+#include "maya/MFileIO.h"
 
 using AL::usdmaya::fileio::ExporterParams;
 using AL::usdmaya::fileio::ImporterParams;
