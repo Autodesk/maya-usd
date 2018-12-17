@@ -47,7 +47,7 @@ const char* g_schemaApiTestFile =
 "{\n"
 "}\n";
 
-TEST(ScheamApiPlugin, ScheamApiPlugin)
+TEST(SchemaApiPlugin, SchemaApiPlugin)
 {
   const std::string filePath = buildTempPath("AL_USDMayaTests_schemaApi.usda");
   {

@@ -129,7 +129,7 @@ void Import::doImport()
           TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("Import::doImport::createParentTransform prim=%s transformType=%s\n", prim.GetPath().GetText(), transformType);
           MObject obj = factory.createNode(prim, transformType, parent);
 
-          // handle the special case of exporting custom transform params
+          // handle the special case of importing custom transform params
           {
             auto apis = manufacture.getAPI(parent);
             for(auto api : apis)
