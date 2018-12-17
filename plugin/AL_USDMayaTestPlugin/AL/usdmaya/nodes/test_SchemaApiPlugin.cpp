@@ -47,7 +47,7 @@ const char* g_schemaApiTestFile =
 "{\n"
 "}\n";
 
-TEST(ScheamApiPlugin, ScheamApiPlugin)
+TEST(SchemaApiPlugin, SchemaApiPlugin)
 {
   const std::string filePath = buildTempPath("AL_USDMayaTests_schemaApi.usda");
   {
@@ -102,7 +102,9 @@ TEST(ScheamApiPlugin, ScheamApiPlugin)
   auto first = apis[0];
   EXPECT_EQ(MFn::kDistance, first->getFnType());
 
-  AL::usdmaya::fileio::translators::TestSchemaPlugin* pptr = (AL::usdmaya::fileio::translators::TestSchemaPlugin*)&(*first);
+  typedef TfRefPtr<AL::usdmaya::fileio::translators::TestSchemaPlugin> TestSchemaPluginPtr;
+  auto pptr = TfStatic_cast<TestSchemaPluginPtr>(first);
+
   EXPECT_TRUE(pptr->importCalled);
   EXPECT_TRUE(pptr->postImportCalled);
   EXPECT_TRUE(pptr->initialiseCalled);

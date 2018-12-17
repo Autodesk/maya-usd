@@ -62,18 +62,14 @@ TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
   PlugRegistry::GetAllDerivedTypes<SchemaPluginBase>(&derivedTypes);
   for (const TfType& t : derivedTypes)
   {
-    //const auto insertResult = loadedTypes.insert(t);
-    //if (insertResult.second)
+    // TfType::GetFactory may cause additional plugins to be loaded
+    // may means potentially more translator types. We need to re-iterate
+    // over the derived types just to be sure...
+    if (auto* factory = t.GetFactory<SchemaApiTranslatorFactoryBase>())
     {
-      // TfType::GetFactory may cause additional plugins to be loaded
-      // may means potentially more translator types. We need to re-iterate
-      // over the derived types just to be sure...
-      if (auto* factory = t.GetFactory<SchemaApiTranslatorFactoryBase>())
+      if (auto ptr = factory->create(context))
       {
-        if (auto ptr = factory->create(context))
-        {
-          m_apiPlugins.push_back(ptr);
-        }
+        m_apiPlugins.push_back(ptr);
       }
     }
   }

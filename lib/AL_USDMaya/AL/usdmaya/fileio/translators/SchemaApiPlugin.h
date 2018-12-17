@@ -63,7 +63,7 @@ public:
   virtual MFn::Type getFnType() const
     { return MFn::kInvalid; };
 
-  /// \brief  If the APIschema plugn is to apply to a plugin node type, then you'll need to specify the typename 
+  /// \brief  If the APIschema plugin is to apply to a plugin node type, then you'll need to specify the typename 
   ///         by overloading this method. 
   /// \return the maya plugin typename
   virtual const char* getPluginTypeName() const
