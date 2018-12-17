@@ -46,6 +46,7 @@
 #include <hdmaya/delegates/delegate.h>
 #include <hdmaya/delegates/params.h>
 
+#include "defaultLightDelegate.h"
 #include "renderGlobals.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -94,7 +95,6 @@ private:
     void _SelectionChanged();
     static void _SelectionChangedCallback(void*);
     void _DetectMayaDefaultLighting(const MHWRender::MDrawContext& drawContext);
-    void _ConfigureLighting();
     void _UpdateRenderGlobals();
     void _UpdateRenderDelegateOptions();
 
@@ -106,10 +106,10 @@ private:
     HdxRendererPlugin* _rendererPlugin = nullptr;
     HdxTaskController* _taskController = nullptr;
     HdRenderIndex* _renderIndex = nullptr;
+    std::unique_ptr<MtohDefaultLightDelegate> _defaultLightDelegate = nullptr;
     HdxSelectionTrackerSharedPtr _selectionTracker;
     HdRprimCollection _renderCollection;
     HdRprimCollection _selectionCollection;
-    GlfSimpleLightingContextRefPtr _defaultLightingContext;
     GlfSimpleLight _defaultLight;
 
     std::vector<HdMayaDelegatePtr> _delegates;

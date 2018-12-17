@@ -130,7 +130,7 @@ public:
             MFnMesh mesh(GetDagPath());
             MStatus status;
             VtArray<GfVec2f> uvs;
-            uvs.reserve(mesh.numFaceVertices());
+            uvs.reserve(static_cast<size_t>(mesh.numFaceVertices()));
             for (MItMeshPolygon pit(GetDagPath()); !pit.isDone(); pit.next()) {
                 const auto vertexCount = pit.polygonVertexCount();
                 for (auto i = decltype(vertexCount){0}; i < vertexCount; ++i) {

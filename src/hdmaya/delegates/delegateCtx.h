@@ -46,7 +46,7 @@ protected:
 public:
     enum RebuildFlags : uint32_t {
         RebuildFlagPrim = 1 << 1,
-        RebuildFlagCallbacks = 1 << 1,
+        RebuildFlagCallbacks = 1 << 2,
     };
 
     using HdSceneDelegate::GetRenderIndex;

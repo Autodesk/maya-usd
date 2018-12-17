@@ -309,7 +309,7 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(
     TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
         .Msg(
             "MtohRenderOverride::"
-            "DetectMayaDefaultLightingAndClearIfChanged() "
+            "_DetectMayaDefaultLighting() "
             "foundMayaDefaultLight=%i\n",
             foundMayaDefaultLight);
 
@@ -322,16 +322,6 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(
                 "_DetectMayaDefaultLighting() clearing! "
                 "_hasDefaultLighting=%i\n",
                 _hasDefaultLighting);
-    }
-}
-
-void MtohRenderOverride::_ConfigureLighting() {
-    if (_hasDefaultLighting) {
-        GlfSimpleLightVector lights;
-        lights.push_back(_defaultLight);
-        _defaultLightingContext->SetLights(lights);
-        _defaultLightingContext->SetUseLighting(true);
-        _taskController->SetLightingState(_defaultLightingContext);
     }
 }
 
@@ -419,6 +409,9 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     _globals.delegateParams.displaySmoothMeshes =
         !(displayStyle & MHWRender::MFrameContext::kFlatShaded);
 
+    if (_defaultLightDelegate != nullptr) {
+        _defaultLightDelegate->SetDefaultLight(_defaultLight);
+    }
     for (auto& it : _delegates) {
         it->SetParams(_globals.delegateParams);
         it->PreFrame(drawContext);
@@ -438,8 +431,6 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         }
     }
     _taskController->SetEnableShadows(enableShadows);
-
-    _ConfigureLighting();
 
     HdxRenderTaskParams params;
     params.enableLighting = true;
@@ -513,6 +504,7 @@ void MtohRenderOverride::_InitHydraResources() {
     auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
     _renderIndex = HdRenderIndex::New(renderDelegate);
     int delegateId = 0;
+    _preferSimpleLight = _globals.renderer == _tokens->HdStreamRendererPlugin;
     for (const auto& creator : HdMayaDelegateRegistry::GetDelegateCreators()) {
         if (creator == nullptr) { continue; }
         auto newDelegate = creator(
@@ -521,8 +513,15 @@ void MtohRenderOverride::_InitHydraResources() {
         if (newDelegate) {
             // Call SetLightsEnabled before the delegate is populated
             newDelegate->SetLightsEnabled(!_hasDefaultLighting);
+            newDelegate->SetPreferSimpleLight(_preferSimpleLight);
             _delegates.push_back(newDelegate);
         }
+    }
+    if (_hasDefaultLighting) {
+        _defaultLightDelegate.reset(new MtohDefaultLightDelegate(
+            _renderIndex, _ID.AppendChild(TfToken(TfStringPrintf(
+                              "_DefaultLightDelegate_%p", this)))));
+        _defaultLightDelegate->SetPreferSimpleLight(_preferSimpleLight);
     }
     _taskController = new HdxTaskController(
         _renderIndex,
@@ -530,26 +529,12 @@ void MtohRenderOverride::_InitHydraResources() {
             "_UsdImaging_%s_%p",
             TfMakeValidIdentifier(_globals.renderer.GetText()).c_str(),
             this))));
-    if (_hasDefaultLighting) {
-        _defaultLightingContext = GlfSimpleLightingContext::New();
-        GlfSimpleMaterial material;
-        material.SetAmbient(GfVec4f(0.f));
-        material.SetDiffuse(GfVec4f(1.f));
-        material.SetSpecular(GfVec4f(0.f));
-        material.SetEmission(GfVec4f(0.f));
-        material.SetShininess(0.0f);
-        _defaultLightingContext->SetMaterial(material);
-        _defaultLightingContext->SetSceneAmbient(GfVec4f(0.0f));
-    }
     _taskController->SetEnableShadows(true);
     VtValue selectionTrackerValue(_selectionTracker);
     _engine.SetTaskContextData(
         HdxTokens->selectionState, selectionTrackerValue);
-    _preferSimpleLight = _globals.renderer == _tokens->HdStreamRendererPlugin;
-    for (auto& it : _delegates) {
-        it->SetPreferSimpleLight(_preferSimpleLight);
-        it->Populate();
-    }
+    for (auto& it : _delegates) { it->Populate(); }
+    if (_defaultLightDelegate) { _defaultLightDelegate->Populate(); }
 
     _renderIndex->GetChangeTracker().AddCollection(
         _selectionCollection.GetName());
@@ -562,7 +547,7 @@ void MtohRenderOverride::_InitHydraResources() {
 void MtohRenderOverride::ClearHydraResources() {
     if (!_initializedViewport) { return; }
     _delegates.clear();
-    _defaultLightingContext.Reset();
+    _defaultLightDelegate.reset();
 
     if (_taskController != nullptr) {
         delete _taskController;

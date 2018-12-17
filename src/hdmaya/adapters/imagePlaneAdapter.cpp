@@ -218,9 +218,12 @@ public:
         MStatus status;
         if (!_camera.isNull()) {
             MFnCamera camera(_camera);
-            paramsFromMaya.aperture[0] = camera.horizontalFilmAperture(&status);
-            paramsFromMaya.aperture[1] = camera.verticalFilmAperture(&status);
-            paramsFromMaya.focalLength = camera.focalLength(&status);
+            paramsFromMaya.aperture[0] =
+                static_cast<float>(camera.horizontalFilmAperture(&status));
+            paramsFromMaya.aperture[1] =
+                static_cast<float>(camera.verticalFilmAperture(&status));
+            paramsFromMaya.focalLength =
+                static_cast<float>(camera.focalLength(&status));
 
             // enabled attributes when connected to camera
             paramsFromMaya.depth =

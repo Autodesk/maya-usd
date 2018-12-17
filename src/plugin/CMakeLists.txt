@@ -1,4 +1,5 @@
 set(SRC
+    defaultLightDelegate.cpp
     plugin.cpp
     pluginDebugCodes.cpp
     renderGlobals.cpp
