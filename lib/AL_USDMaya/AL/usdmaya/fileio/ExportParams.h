@@ -58,6 +58,7 @@ struct ExporterParams
   bool m_animation = false; ///< if true, animation will be exported.
   bool m_useTimelineRange = false; ///< if true, then the export uses Maya's timeline range.
   bool m_filterSample = false; ///< if true, duplicate sample of attribute will be filtered out
+  bool m_exportInWorldSpace = false; ///< if true, transform hierarchies will be flattened to a single WS transform PRIM (and no parents will be written out)
   int m_compactionLevel = 3; ///< by default apply the strongest level of data compaction
   AnimationTranslator* m_animTranslator = 0; ///< the animation translator to help exporting the animation data
   bool m_extensiveAnimationCheck = true; ///< if true, extensive animation check will be performed on transform nodes.

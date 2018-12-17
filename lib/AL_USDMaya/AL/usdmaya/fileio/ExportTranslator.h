@@ -64,6 +64,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
   static constexpr const char* const kSubSamples = "Sub Samples"; ///< specify the number of sub samples to export
   static constexpr const char* const kFilterSample = "Filter Sample"; ///< export filter sample option name
   static constexpr const char* const kExportAtWhichTime = "Export At Which Time";
+  static constexpr const char* const kExportInWorldSpace = "Export In World Space";
 
   AL_USDMAYA_PUBLIC
   static const char* const compactionLevels[];
@@ -101,6 +102,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
     if(!options.addInt(kSubSamples, defaultValues.m_subSamples)) return MS::kFailure;
     if(!options.addBool(kFilterSample, defaultValues.m_filterSample)) return MS::kFailure;
     if(!options.addEnum(kExportAtWhichTime, timelineLevel, defaultValues.m_exportAtWhichTime)) return MS::kFailure;
+    if(!options.addBool(kExportInWorldSpace, defaultValues.m_exportAtWhichTime)) return MS::kFailure;
     
     return MS::kSuccess;
   }
