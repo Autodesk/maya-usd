@@ -55,10 +55,6 @@ set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 include(Public)
 
-# find_package() uses PackageName_ROOT variables.
-# Silence the cmake warning.
-cmake_policy(SET CMP0074 OLD)
-
 find_package(Maya REQUIRED)
 find_package(USD REQUIRED)
 
