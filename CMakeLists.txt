@@ -25,6 +25,22 @@ add_definitions(${_PXR_CXX_DEFINITIONS})
 
 find_package(Maya REQUIRED)
 
+if(CMAKE_WANT_UFE_BUILD)
+    add_definitions(-DWANT_UFE_BUILD)	
+    message(STATUS "UFE Build Enabled")
+    if (NOT UFE_VERSION)
+        message(FATAL_ERROR "UFE_VERSION must be defined when WANT_UFE_BUILD is enabled")
+    endif()
+    message(STATUS "Using UFE version : ${UFE_VERSION}")
+    string(REPLACE "." ";" UFE_VERSION_LIST ${UFE_VERSION})
+    list(GET UFE_VERSION_LIST 0 UFE_MAJOR_VERSION)
+    list(GET UFE_VERSION_LIST 1 UFE_MINOR_VERSION)
+    list(GET UFE_VERSION_LIST 2 UFE_PATCH_LEVEL)
+    find_package(UFE REQUIRED)
+    include_directories(${UFE_INCLUDE_DIR})
+endif()
+
+
 include_directories(${MAYA_INCLUDE_DIRS})
 
 include_directories(${PXR_INCLUDE_DIRS})
@@ -52,8 +68,6 @@ set(NEED_BOOST_FILESYSTEM ON)
 
 if(WIN32)
     set(CMAKE_CXX_FLAGS
-        -std=c++11
-        /WX
         "${_PXR_CXX_FLAGS}"
     )
 else()

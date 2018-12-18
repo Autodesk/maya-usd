@@ -112,7 +112,7 @@ will force VP2 to use the "OpenGL -- Legacy" profile
 
 see [Autodesk docs](https://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2017/ENU/Maya/files/GUID-4928A912-DA6C-4734-863B-AB5959DA73C9-htm.html)
 
-For selection to work, also need to set
+For selection to work in versions of Maya prior to `2019`, you also need to set:
 ```
 MAYA_VP2_USE_VP1_SELECTION=1 
 ```

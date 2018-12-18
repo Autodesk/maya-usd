@@ -16,6 +16,7 @@
 #include "AL/usdmaya/Global.h"
 #include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/DebugCodes.h"
+#include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
@@ -28,9 +29,21 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdUtils/stageCache.h>
 
+#if defined(WANT_UFE_BUILD)
+#include "ufe/globalSelection.h"
+#include "ufe/observer.h"
+#include "ufe/observableSelection.h"
+#include "ufe/path.h"
+#include "ufe/sceneItemList.h"
+#include "ufe/selectionNotification.h"
+#include "ufe/transform3d.h"
+#include "ufe/transform3dNotification.h"
+#endif
+
 #include "maya/MGlobal.h"
 #include "maya/MFnDependencyNode.h"
 #include "maya/MItDependencyNodes.h"
+#include "maya/MSelectionList.h"
 
 #include <iostream>
 
@@ -45,11 +58,164 @@ namespace {
   // once per top-level file read operation (ie, once per open, or once
   // per import, or once per reference).
   std::atomic<size_t> readDepth;
+
+#if defined(WANT_UFE_BUILD)
+  // The proxy shape has an internal cache which needs to update when any of
+  // its UFE scene items are selected and transformed.
+  class UfeTransformObserver : public Ufe::Observer
+  {
+  public:
+    UfeTransformObserver() : Ufe::Observer()
+    {
+    }
+
+    ~UfeTransformObserver() override
+    {
+    }
+
+    void operator()(const Ufe::Notification& notification) override
+    {
+      auto xformChanged = dynamic_cast<const Ufe::Transform3dChanged*>(&notification);
+      if (xformChanged == nullptr) return;
+
+      // Action for USD scene items only.
+      Ufe::SceneItem::Ptr sceneItem = xformChanged->item();
+      if (!sceneItem || (sceneItem->runTimeId() != AL::usdmaya::USD_UFE_RUNTIME_ID)) return;
+
+      std::string mayaPath = sceneItem->path().popSegment().popHead().string();
+
+      MSelectionList sl;
+      sl.add(MString(mayaPath.c_str(), mayaPath.length()));
+
+      MObject object;
+      MStatus status = sl.getDependNode(0, object);
+      if (!status) return;
+
+      MFnDependencyNode dependNode(object, &status);
+      if (!status) return;
+
+      if (dependNode.typeId() == AL::usdmaya::nodes::ProxyShape::kTypeId)
+      {
+        auto proxyShape =
+          static_cast<AL::usdmaya::nodes::ProxyShape*>(dependNode.userNode());
+        if (proxyShape)
+        {
+          proxyShape->clearBoundingBoxCache();
+        }
+      }
+    }
+  };
+#endif
 }
 
 namespace AL {
 namespace usdmaya {
 
+
+//----------------------------------------------------------------------------------------------------------------------
+#if defined(WANT_UFE_BUILD)
+  // Observe UFE scene items for transformation changed only when they are selected.
+  class Global::UfeSelectionObserver : public Ufe::Observer
+  {
+  public:
+    UfeSelectionObserver()
+      : Ufe::Observer()
+      , m_ufeTransformObserver(std::make_shared<UfeTransformObserver>())
+      , m_openingFile(false)
+    {
+    }
+
+    ~UfeSelectionObserver() override
+    {
+      clear();
+    }
+
+    void clear()
+    {
+      for (auto si : m_observedSceneItems)
+      {
+        Ufe::Transform3d::removeObserver(si, m_ufeTransformObserver);
+      }
+
+      m_observedSceneItems.clear();
+    }
+
+    void observe(const Ufe::SceneItem::Ptr& si)
+    {
+      if (si &&
+        (si->runTimeId() == USD_UFE_RUNTIME_ID) &&
+        Ufe::Transform3d::addObserver(si, m_ufeTransformObserver))
+      {
+        m_observedSceneItems.push_back(si);
+      }
+    }
+
+    void openingFile(bool val)
+    {
+      m_openingFile = val;
+    }
+
+    void operator()(const Ufe::Notification& notification) override
+    {
+      // During Maya file read, each node will be selected in turn, so we get
+      // notified for each node in the scene.  Prune this out.
+      if (m_openingFile)
+      {
+        return;
+      }
+
+      auto selectionChanged = dynamic_cast<const Ufe::SelectionChanged*>(&notification);
+      if (selectionChanged == nullptr)
+      {
+        return;
+      }
+
+      if (dynamic_cast<const Ufe::SelectionCleared*>(selectionChanged))
+      {
+        clear();
+      }
+      else if (dynamic_cast<const Ufe::SelectionReplaced*>(selectionChanged) ||
+        dynamic_cast<const Ufe::SelectionCompositeNotification*>(selectionChanged))
+      {
+        clear();
+
+        const Ufe::GlobalSelection::Ptr& ufeSelection = Ufe::GlobalSelection::get();
+        if (ufeSelection)
+        {
+          for (auto it = ufeSelection->cbegin(); it != ufeSelection->cend(); it++)
+          {
+            observe(*it);
+          }
+        }
+      }
+      else if (auto appended = dynamic_cast<const Ufe::SelectionItemAppended*>(selectionChanged))
+      {
+        observe(appended->item());
+      }
+      else if (auto removed = dynamic_cast<const Ufe::SelectionItemRemoved*>(selectionChanged))
+      {
+        Ufe::SceneItem::Ptr si = removed->item();
+        if (si &&
+          (si->runTimeId() == USD_UFE_RUNTIME_ID) &&
+          Ufe::Transform3d::removeObserver(si, m_ufeTransformObserver))
+        {
+          m_observedSceneItems.remove(si);
+        }
+      }
+    }
+
+  private:
+    // Scene items being observed for transformation matrix change.
+    Ufe::SceneItemList m_observedSceneItems;
+
+    // Transform3d observer for selected scene items.
+    std::shared_ptr<UfeTransformObserver> m_ufeTransformObserver;
+
+    bool m_openingFile;
+  };
+
+  std::shared_ptr<Global::UfeSelectionObserver> Global::m_ufeSelectionObserver;
+#endif
 
 //----------------------------------------------------------------------------------------------------------------------
 AL::event::CallbackId Global::m_preSave;
@@ -164,6 +330,8 @@ static void preFileRead(void*)
         }
       }
     }
+
+    Global::openingFile(true);
   }
 
   ++readDepth;
@@ -262,6 +430,8 @@ static void postFileRead(void*)
       }
     }
   }
+
+  Global::openingFile(false);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -358,6 +528,15 @@ void Global::onPluginLoad()
   std::string pluginLocation(TfStringCatPaths(TfGetenv(AL_USDMAYA_LOCATION_NAME), "share/usd/plugins"));
   PlugRegistry::GetInstance().RegisterPlugins(pluginLocation);
 
+#if defined(WANT_UFE_BUILD)
+  const Ufe::GlobalSelection::Ptr& ufeSelection = Ufe::GlobalSelection::get();
+  if (ufeSelection)
+  {
+    m_ufeSelectionObserver = std::make_shared<Global::UfeSelectionObserver>();
+    ufeSelection->addObserver(m_ufeSelectionObserver);
+  }
+#endif
+
   // For callback initialization for stage cache callback, it will be done via proxy node attribute change.
 }
 
@@ -377,6 +556,25 @@ void Global::onPluginUnload()
 
   AL::maya::event::MayaEventManager::freeInstance();
   AL::event::EventScheduler::freeScheduler();
+
+#if defined(WANT_UFE_BUILD)
+  const Ufe::GlobalSelection::Ptr& ufeSelection = Ufe::GlobalSelection::get();
+  if (ufeSelection)
+  {
+    ufeSelection->removeObserver(m_ufeSelectionObserver);
+    m_ufeSelectionObserver = nullptr;
+  }
+#endif
+}
+
+void Global::openingFile(bool val)
+{
+#if defined(WANT_UFE_BUILD)
+  if (m_ufeSelectionObserver)
+  {
+    m_ufeSelectionObserver->openingFile(val);
+  }
+#endif
 }
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -32,6 +32,16 @@
 #include "maya/MObjectArray.h"
 #include "maya/MPointArray.h"
 
+#if defined(WANT_UFE_BUILD)
+#include "AL/usdmaya/TypeIDs.h"
+#include "pxr/base/arch/env.h"
+#include "ufe/hierarchyHandler.h"
+#include "ufe/sceneItem.h"
+#include "ufe/runTimeMgr.h"
+#include "ufe/globalSelection.h"
+#include "ufe/observableSelection.h"
+#endif
+
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/kind/registry.h"
 
@@ -356,7 +366,24 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
   auto selected = false;
 
-  auto removeVariantFromPath = [] (const SdfPath& path) -> SdfPath
+#if defined(WANT_UFE_BUILD)
+  auto pickUfePathPrim = [proxyShape](const SdfPath& path) -> SdfPath {
+    if (ArchHasEnv("MAYA_WANT_UFE_SELECTION")) {
+      // Get only Xform types for ufe selection
+      UsdPrim prim = proxyShape->getUsdStage()->GetPrimAtPath(path);
+      TfToken xformToken("Xform");
+      while (prim && prim.GetTypeName() != xformToken)
+        prim = prim.GetParent();
+      return prim.GetPath();
+    }
+    return path;
+  };
+#else
+  // Do nothing if WANT_UFE_BUILD is disabled
+  auto pickUfePathPrim = false;
+#endif
+
+  auto removeVariantFromPath = [&pickUfePathPrim] (const SdfPath& path) -> SdfPath
   {
     std::string pathStr = path.GetText();
     // I'm not entirely sure about this, but it would appear that the returned string here has the variant name
@@ -366,17 +393,26 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     {
       pathStr = pathStr.substr(0, dot_location);
     }
-
+    
+#if defined(WANT_UFE_BUILD)
+    SdfPath resultPath(pathStr);
+    return pickUfePathPrim(resultPath);
+#else
     return SdfPath(pathStr);
+#endif
   };
 
-  auto getHitPath = [&engine, &removeVariantFromPath] (UsdImagingGLEngine::HitBatch::const_reference& it) -> SdfPath
+  auto getHitPath = [&engine, &removeVariantFromPath, &pickUfePathPrim] (const UsdImagingGLEngine::HitBatch::const_reference& it) -> SdfPath
   {
     const UsdImagingGLEngine::HitInfo& hit = it.second;
     auto path = engine->GetPrimPathFromInstanceIndex(it.first, hit.hitInstanceIndex);
     if (!path.IsEmpty())
     {
+#if defined(WANT_UFE_BUILD)
+      return pickUfePathPrim(path);
+#else
       return path;
+#endif
     }
     return removeVariantFromPath(it.first);
   };
@@ -546,6 +582,66 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
         }
       }
     }
+#if defined(WANT_UFE_BUILD)
+    if (ArchHasEnv("MAYA_WANT_UFE_SELECTION")) {
+        auto handler{ Ufe::RunTimeMgr::instance().hierarchyHandler(USD_UFE_RUNTIME_ID) };
+        if (handler == nullptr) {
+            MGlobal::displayError("USD Hierarchy handler has not been loaded - Picking is not possible");
+            return false;
+        }
+
+        Ufe::Selection dstSelection; // Only used for kReplaceList
+                                     // Get the paths
+        if (paths.size())
+        {
+            for (auto it : paths)
+            {
+                // Build a path segment of the USD picked object
+                Ufe::PathSegment ps_usd(it.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
+
+                // Create a sceneItem
+                const Ufe::SceneItem::Ptr& si{ handler->createItem(proxyShape->ufePath() + ps_usd) };
+
+                auto globalSelection = Ufe::GlobalSelection::get();
+
+                switch (mode)
+                {
+                case MGlobal::kReplaceList:
+                {
+                    // Add the sceneItem to dstSelection
+                    dstSelection.append(si);
+                }
+                break;
+                case MGlobal::kAddToList:
+                {
+                    // Add the sceneItem to global selection
+                    globalSelection->append(si);
+                }
+                break;
+                case MGlobal::kRemoveFromList:
+                {
+                    // Remove the sceneItem to global selection
+                    globalSelection->remove(si);
+                }
+                break;
+                case MGlobal::kXORWithList:
+                {
+                    if (!globalSelection->remove(si)) {
+                        globalSelection->append(si);
+                    }
+                }
+                break;
+                }
+            }
+
+            if (mode == MGlobal::kReplaceList) {
+                // Add to Global selection
+                Ufe::GlobalSelection::get()->replaceWith(dstSelection);
+            }
+        }
+    }
+    else {
+#endif
 
     // Massage hit paths to align with pick mode policy
     for (std::size_t i = 0; i < paths.size(); ++i)
@@ -703,6 +799,9 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     final_command += "\"";
     proxyShape->setChangedSelectionState(true);
     MGlobal::executeCommandOnIdle(final_command, false);
+#if defined(WANT_UFE_BUILD)
+  } // else MAYA_WANT_UFE_SELECTION
+#endif
   }
 
   ProxyShapeSelectionHelper::m_paths.clear();

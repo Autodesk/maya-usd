@@ -29,6 +29,15 @@
 #include "maya/M3dView.h"
 #include "maya/MSelectionContext.h"
 
+#if defined(WANT_UFE_BUILD)
+#include "AL/usdmaya/TypeIDs.h"
+#include "pxr/base/arch/env.h"
+#include "ufe/sceneItem.h"
+#include "ufe/runTimeMgr.h"
+#include "ufe/globalSelection.h"
+#include "ufe/observableSelection.h"
+#endif
+
 namespace AL {
 namespace usdmaya {
 namespace nodes {
@@ -399,7 +408,42 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
     }
 
     ptr->m_engine->Render(ptr->m_rootPrim, ptr->m_params);
-    
+
+#if defined(WANT_UFE_BUILD)
+    if (ArchHasEnv("MAYA_WANT_UFE_SELECTION"))
+    {
+		// Draw selection highlighting for all USD items in the UFE selection.
+        SdfPathVector ufePaths;
+        auto ufeSelList = Ufe::GlobalSelection::get();
+        for (const auto& sceneItem : *ufeSelList)
+        {
+            if (sceneItem->runTimeId() == USD_UFE_RUNTIME_ID)
+            {
+                const Ufe::Path& itemPath = sceneItem->path();
+                Ufe::PathSegment leaf = itemPath.getSegments().back();
+                if (leaf.runTimeId() == USD_UFE_RUNTIME_ID)
+                {
+                    ufePaths.emplace_back(leaf.string());
+                }
+            }
+        }
+        if (!ufePaths.empty())
+        {
+            UsdImagingGLEngine::RenderParams params = ptr->m_params;
+            params.drawMode = UsdImagingGLEngine::DRAW_WIREFRAME;
+            MColor colour = M3dView::leadColor();	// Maya selection color
+            params.wireframeColor = GfVec4f(colour.r, colour.g, colour.b, 1.0f);
+            glDepthFunc(GL_LEQUAL);
+            // Geometry already rendered, can't offset it deeper.  Push
+            // lines in front with negative offset.
+            glEnable(GL_POLYGON_OFFSET_LINE);
+            glPolygonOffset(-1.0, -1.0);
+            ptr->m_engine->RenderBatch(ufePaths, params);
+            glDisable(GL_POLYGON_OFFSET_LINE);
+        }
+    }
+#endif
+
     // HACK: Maya doesn't restore this ONE buffer binding after our override is done so we have to do it for them.
     glBindBufferBase(GL_UNIFORM_BUFFER, 4, uboBinding);
 
@@ -458,29 +502,46 @@ bool ProxyDrawOverride::userSelect(
     MPointArray& worldSpaceHitPts)
 {
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyDrawOverride::userSelect\n");
+
+  if (!selectInfo.selectable(MSelectionMask(ProxyShape::s_selectionMaskName)))
+    return false;
+
   MStatus status;
-
-  M3dView view = M3dView::active3dView();
-
-  // Get view matrix
-  MMatrix viewMatrix = context.getMatrix(MHWRender::MFrameContext::kViewMtx, &status);
+  MMatrix worldViewMatrix = context.getMatrix(
+    MHWRender::MFrameContext::kWorldViewMtx, &status);
   if (status != MStatus::kSuccess) return false;
 
-  // Get projection matrix
-  MMatrix projectionMatrix = context.getMatrix(MHWRender::MFrameContext::kProjectionMtx, &status);
+  MMatrix projectionMatrix = context.getMatrix(
+    MHWRender::MFrameContext::kProjectionMtx, &status);
   if (status != MStatus::kSuccess) return false;
+
+  // Compute a pick matrix that, when it is post-multiplied with the projection
+  // matrix, will cause the picking region to fill the entire viewport for
+  // OpenGL selection.
+  {
+    int view_x, view_y, view_w, view_h;
+    context.getViewportDimensions(view_x, view_y, view_w, view_h);
+
+    unsigned int sel_x, sel_y, sel_w, sel_h;
+    selectInfo.selectRect(sel_x, sel_y, sel_w, sel_h);
+
+    double center_x = sel_x + sel_w * 0.5;
+    double center_y = sel_y + sel_h * 0.5;
+
+    MMatrix pickMatrix;
+    pickMatrix[0][0] = view_w / double(sel_w);
+    pickMatrix[1][1] = view_h / double(sel_h);
+    pickMatrix[3][0] = (view_w - 2.0 * (center_x - view_x)) / double(sel_w);
+    pickMatrix[3][1] = (view_h - 2.0 * (center_y - view_y)) / double(sel_h);
+
+    projectionMatrix *= pickMatrix;
+  }
 
   // Get world to local matrix
   MMatrix invMatrix = objPath.inclusiveMatrixInverse();
   GfMatrix4d worldToLocalSpace(invMatrix.matrix);
 
   UsdImagingGLEngine::RenderParams params;
-
-  GLuint glHitRecord;
-  view.beginSelect(&glHitRecord, 1);
-  glGetDoublev(GL_MODELVIEW_MATRIX, viewMatrix[0]);
-  glGetDoublev(GL_PROJECTION_MATRIX, projectionMatrix[0]);
-  view.endSelect();
 
   auto* proxyShape = static_cast<ProxyShape*>(getShape(objPath));
   auto engine = proxyShape->engine();
@@ -499,7 +560,7 @@ bool ProxyDrawOverride::userSelect(
 
 
   bool hitSelected = engine->TestIntersectionBatch(
-          GfMatrix4d(viewMatrix.matrix),
+          GfMatrix4d(worldViewMatrix.matrix),
           GfMatrix4d(projectionMatrix.matrix),
           worldToLocalSpace,
           rootPath,
@@ -548,7 +609,27 @@ bool ProxyDrawOverride::userSelect(
       }
     }
   };
-  
+
+  // Maya determines the selection list adjustment mode by Ctrl/Shift modifiers.
+  int modifiers = 0;
+  MGlobal::executeCommand("getModifiers", modifiers);
+
+  const bool shiftHeld = (modifiers % 2);
+  const bool ctrlHeld = (modifiers / 4 % 2);
+
+  MGlobal::ListAdjustment listAdjustment = MGlobal::kReplaceList;
+  if (shiftHeld && ctrlHeld)
+  {
+    listAdjustment = MGlobal::kAddToList;
+  }
+  else if (ctrlHeld)
+  {
+    listAdjustment = MGlobal::kRemoveFromList;
+  }
+  else if (shiftHeld)
+  {
+    listAdjustment = MGlobal::kXORWithList;
+  }
 
   // Currently we have two approaches to selection. One method works with undo (but does not
   // play nicely with maya geometry). The second method doesn't work with undo, but does play
@@ -558,24 +639,8 @@ bool ProxyDrawOverride::userSelect(
   {
     if(hitSelected)
     {
-      int mods;
-      MString cmd = "getModifiers";
-      MGlobal::executeCommand(cmd, mods);
-
-      bool shiftHeld = (mods % 2);
-      bool ctrlHeld = (mods / 4 % 2);
-      MGlobal::ListAdjustment mode = MGlobal::kReplaceList;
-      if(shiftHeld && ctrlHeld)
-        mode = MGlobal::kAddToList;
-      else
-      if(ctrlHeld)
-        mode = MGlobal::kRemoveFromList;
-      else
-      if(shiftHeld)
-        mode = MGlobal::kXORWithList;
-      
       MString command = "AL_usdmaya_ProxyShapeSelect";
-      switch(mode)
+      switch(listAdjustment)
       {
       case MGlobal::kReplaceList: command += " -r"; break;
       case MGlobal::kRemoveFromList: command += " -d"; break;
@@ -610,22 +675,6 @@ bool ProxyDrawOverride::userSelect(
   }
   else
   {
-    int mods;
-    MString cmd = "getModifiers";
-    MGlobal::executeCommand(cmd, mods);
-    
-    bool shiftHeld = (mods % 2);
-    bool ctrlHeld = (mods / 4 % 2);
-    MGlobal::ListAdjustment mode = MGlobal::kReplaceList;
-    if(shiftHeld && ctrlHeld)
-      mode = MGlobal::kAddToList;
-    else
-    if(ctrlHeld)
-      mode = MGlobal::kRemoveFromList;
-    else
-    if(shiftHeld)
-      mode = MGlobal::kXORWithList;
-
     SdfPathVector paths;
     if (!hitBatch.empty())
     {
@@ -646,7 +695,7 @@ bool ProxyDrawOverride::userSelect(
         if (hitBatch.size() > 1)
         {
           MDagPath cameraPath;
-          view.getCamera(cameraPath);
+          M3dView::active3dView().getCamera(cameraPath);
           const auto cameraPoint = cameraPath.inclusiveMatrix() * MPoint(0.0, 0.0, 0.0, 1.0);
           auto distanceToCameraSq = [&cameraPoint] (UsdImagingGLEngine::HitBatch::const_reference& it) -> double
           {
@@ -678,9 +727,60 @@ bool ProxyDrawOverride::userSelect(
       }
     }
 
-    switch(mode)
+#if defined(WANT_UFE_BUILD)
+    if (ArchHasEnv("MAYA_WANT_UFE_SELECTION"))
     {
-    case MGlobal::kReplaceList:
+      // Get the Hierarchy Handler of USD - Id = 2
+      auto handler{ Ufe::RunTimeMgr::instance().hierarchyHandler(2) };
+      if (handler == nullptr)
+      {
+        MGlobal::displayError("USD Hierarchy handler has not been loaded - Picking is not possible");
+        return false;
+      }
+
+      if (paths.size())
+      {
+        auto globalSelection = Ufe::GlobalSelection::get();
+
+        for (auto it : paths)
+        {
+          // Build a path segment of the USD picked object
+          Ufe::PathSegment ps_usd(it.GetText(), 2, '/');
+
+          // Create a sceneItem
+          const Ufe::SceneItem::Ptr& si{ handler->createItem(proxyShape->ufePath() + ps_usd) };
+
+          switch (listAdjustment)
+          {
+          case MGlobal::kReplaceList:
+            // The list has been cleared before viewport selection runs, so we
+            // can add the new hits directly. UFE selection list is a superset
+            // of Maya selection list, calling clear()/replaceWith() on UFE
+            // selection list would clear Maya selection list.
+            globalSelection->append(si);
+            break;
+          case MGlobal::kAddToList:
+            globalSelection->append(si);
+            break;
+          case MGlobal::kRemoveFromList:
+            globalSelection->remove(si);
+            break;
+          case MGlobal::kXORWithList:
+            if (!globalSelection->remove(si))
+            {
+              globalSelection->append(si);
+            }
+            break;
+          }
+        }
+      }
+    }
+    else
+    {
+#endif
+      switch (listAdjustment)
+      {
+      case MGlobal::kReplaceList:
       {
         MString command;
         if(!proxyShape->selectedPaths().empty())
@@ -816,14 +916,17 @@ bool ProxyDrawOverride::userSelect(
         }
       }
       break;
-    }
+      }
 
-    MString final_command = "AL_usdmaya_ProxyShapePostSelect \"";
-    MFnDependencyNode fn(proxyShape->thisMObject());
-    final_command += fn.name();
-    final_command += "\"";
-    proxyShape->setChangedSelectionState(true);
-    MGlobal::executeCommandOnIdle(final_command, false);
+      MString final_command = "AL_usdmaya_ProxyShapePostSelect \"";
+      MFnDependencyNode fn(proxyShape->thisMObject());
+      final_command += fn.name();
+      final_command += "\"";
+      proxyShape->setChangedSelectionState(true);
+      MGlobal::executeCommandOnIdle(final_command, false);
+#if defined(WANT_UFE_BUILD)
+    } // else MAYA_WANT_UFE_SELECTION
+#endif
   }
 
   ProxyDrawOverrideSelectionHelper::m_paths.clear();

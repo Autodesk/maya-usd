@@ -48,6 +48,13 @@
 #include <functional>
 #include "AL/usd/utils/ForwardDeclares.h"
 
+#if defined(WANT_UFE_BUILD)
+#include "ufe/ufe.h"
+UFE_NS_DEF {
+    class Path;
+}
+#endif
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -848,9 +855,20 @@ public:
   AL_USDMAYA_PUBLIC
   SdfPathVector getPrimPathsFromCommaJoinedString(const MString &paths) const;
 
+#if defined(WANT_UFE_BUILD)
+  /// \brief Get the UFE path of the maya proxy shape
+  /// \return An UFE path containing the path to the proxy shape
+  AL_USDMAYA_PUBLIC
+  Ufe::Path ufePath() const;
+#endif
+
   /// \brief  Returns the selection mask of the shape
   AL_USDMAYA_PUBLIC
   MSelectionMask getShapeSelectionMask() const override;
+
+  /// \brief  Clears the bounding box cache of the shape
+  inline void clearBoundingBoxCache()
+    { m_boundingBoxCache.clear(); }
 
 private:
 

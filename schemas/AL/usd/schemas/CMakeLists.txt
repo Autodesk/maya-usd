@@ -85,6 +85,9 @@ install(
     RUNTIME
     DESTINATION ${library_install_path}
 )
+if(MSVC)
+    install(FILES $<TARGET_PDB_FILE:${SCHEMAS_PACKAGE}> DESTINATION ${library_install_path} OPTIONAL)
+endif()
 
 ####################################################################################################
 # Python bindings
