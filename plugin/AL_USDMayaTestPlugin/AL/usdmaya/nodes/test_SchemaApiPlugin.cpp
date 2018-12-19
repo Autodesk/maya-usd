@@ -72,9 +72,9 @@ TEST(SchemaApiPlugin, SchemaApiPlugin)
   auto context = shape->context();
   ASSERT_TRUE(context);
 
-  MFnDagNode fnSilly;
-  MObject mayaTM = fnSilly.create("transform");
-  MObject mayaObject = fnSilly.create("distanceDimShape", mayaTM);
+  MFnDagNode fnDag;
+  MObject mayaTM = fnDag.create("transform");
+  MObject mayaObject = fnDag.create("distanceDimShape", mayaTM);
   EXPECT_TRUE(mayaObject.hasFn(MFn::kDistance));
 
   auto apis = manufacture.getAPI(mayaObject);
