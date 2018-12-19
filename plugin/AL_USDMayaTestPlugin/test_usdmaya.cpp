@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 #include "test_usdmaya.h"
+#include "maya/MFileIO.h"
+#include "maya/MFnDagNode.h"
 
 AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(
     std::function<UsdStageRefPtr()> buildUsdStage,
