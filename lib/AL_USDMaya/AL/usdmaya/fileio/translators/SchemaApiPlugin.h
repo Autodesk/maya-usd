@@ -127,7 +127,7 @@ public:
   inline void setContext(TranslatorContextPtr ctx)
     { m_context = ctx; }
 
-
+  /// \brief  return a pointer to the translator context
   TranslatorContextPtr context()
     { return m_context; }
 
