@@ -86,7 +86,6 @@ list(APPEND AL_usdmaya_fileio_translators_headers
         AL/usdmaya/fileio/translators/TranslatorTestType.h
         AL/usdmaya/fileio/translators/SchemaApiPlugin.h
         AL/usdmaya/fileio/translators/SchemaApiTestPlugin.h
-        AL/usdmaya/fileio/translators/SchemaApiTestType.h
 )
 
 list(APPEND AL_usdmaya_fileio_translators_source
@@ -99,7 +98,6 @@ list(APPEND AL_usdmaya_fileio_translators_source
         AL/usdmaya/fileio/translators/TranslatorTestType.cpp
         AL/usdmaya/fileio/translators/SchemaApiPlugin.cpp
         AL/usdmaya/fileio/translators/SchemaApiTestPlugin.cpp
-        AL/usdmaya/fileio/translators/SchemaApiTestType.cpp
 )
 
 list(APPEND AL_usdmaya_nodes_headers

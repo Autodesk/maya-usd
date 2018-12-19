@@ -18,7 +18,6 @@
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 #include "AL/usdmaya/fileio/translators/TranslatorTestType.h"
-#include "AL/usdmaya/fileio/translators/SchemaApiTestType.h"
 #include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 

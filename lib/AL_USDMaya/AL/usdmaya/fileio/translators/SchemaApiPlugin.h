@@ -127,6 +127,10 @@ public:
   inline void setContext(TranslatorContextPtr ctx)
     { m_context = ctx; }
 
+
+  TranslatorContextPtr context()
+    { return m_context; }
+
 private:
   TfType m_type;
   TranslatorContextPtr m_context;
@@ -194,23 +198,13 @@ static RefPtr create(TranslatorContextPtr context);
 /// \brief  a macro to define an API plug-in translator
 /// \ingroup   translators
 //----------------------------------------------------------------------------------------------------------------------
-#define AL_USDMAYA_DEFINE_SCHEMA_PLUGIN(PlugClass, TranslatedType)              \
+#define AL_USDMAYA_DEFINE_SCHEMA_PLUGIN(PlugClass)                              \
 TfRefPtr<PlugClass>                                                             \
 PlugClass::create(TranslatorContextPtr context) {                               \
-  TfType const &type = TfType::Find<TranslatedType>();                          \
-  if(!type.IsUnknown()) {                                                       \
-    TfRefPtr<PlugClass> plugin = TfCreateRefPtr(new This());                    \
-    plugin->setTranslatedType(type);                                            \
-    plugin->setContext(context);                                                \
-    if(!plugin->initialize()) return TfRefPtr<PlugClass>();                     \
-    return plugin;                                                              \
-  }                                                                             \
-  else {                                                                        \
-    TF_CODING_ERROR(                                                            \
-      "Failed to get %s usd type, maybe the needed plugin is not loaded",       \
-      typeid(TranslatedType).name());                                           \
-    return TfNullPtr;                                                           \
-  }                                                                             \
+  TfRefPtr<PlugClass> plugin = TfCreateRefPtr(new This());                      \
+  plugin->setContext(context);                                                  \
+  if(!plugin->initialize()) return TfRefPtr<PlugClass>();                       \
+  return plugin;                                                                \
 }                                                                               \
                                                                                 \
 TF_REGISTRY_FUNCTION(TfType)                                                    \

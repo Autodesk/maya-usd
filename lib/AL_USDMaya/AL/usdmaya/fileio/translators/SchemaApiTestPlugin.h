@@ -25,13 +25,13 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/attribute.h"
 
 #include <iostream>
 #include <unordered_map>
 #include <functional>
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 #include "AL/usdmaya/fileio/translators/SchemaApiPlugin.h"
-#include "AL/usdmaya/fileio/translators/SchemaApiTestType.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
 
 namespace AL {
@@ -70,7 +70,7 @@ public:
   /// \param  output a handle to an MObject created in the importing process
   /// \return MS::kSuccess if all ok
   MStatus import(const UsdPrim& prim, const MObject& node) 
-    { importCalled = true; return MS::kSuccess; }
+    { importCalled = true; UsdPrim(prim).CreateAttribute(TfToken("imported"), SdfValueTypeNames->Float); return MS::kSuccess; }
 
   /// \brief  Override this method to export a Maya object into USD
   /// \param  stage the stage to write the data into 
@@ -79,7 +79,7 @@ public:
   /// \param  params the exporter params
   /// \return the prim created
   MStatus exportObject(UsdPrim& prim, const MObject& node, const ExporterParams& params) 
-    { exportObjectCalled = true; SchemaApiTestType::Apply(prim); return MS::kSuccess; }
+    { exportObjectCalled = true; prim.CreateAttribute(TfToken("exported"), SdfValueTypeNames->Float); return MS::kSuccess; }
 
   /// \brief  If your node needs to set up any relationships after import (for example, adding the node to a set, or
   ///         making attribute connections), then all of that work should be performed here.

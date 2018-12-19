@@ -180,14 +180,6 @@ public:
   AL_USDMAYA_UTILS_PUBLIC
   void applyPrimVars(bool createUvs = true, bool createColours = true);
 
-  /// \brief  deprecated. Will be removed in a future release
-  AL_USDMAYA_UTILS_PUBLIC
-  void applyGlimpseSubdivParams();
-
-  /// \brief  deprecated. Will be removed in a future release
-  AL_USDMAYA_UTILS_PUBLIC
-  void applyGlimpseUserDataParams();
-
   /// \brief  returns the poly shape being imported.
   MObject getPolyShape() const
     { return polyShape; }
@@ -271,14 +263,6 @@ public:
   /// \brief  deprecated, will be removed in a later release
   AL_USDMAYA_UTILS_PUBLIC
   void copyAnimalFaceColours();
-
-  /// \brief  deprecated, will be removed in a later release
-  AL_USDMAYA_UTILS_PUBLIC
-  void copyGlimpseTesselationAttributes();
-
-  /// \brief  deprecated, will be removed in a later release
-  AL_USDMAYA_UTILS_PUBLIC
-  void copyGlimpseUserDataAttributes();
 
   /// \brief  returns the mesh function set
   MFnMesh& getFn()

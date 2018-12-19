@@ -25,7 +25,6 @@
 #include "maya/MDagModifier.h"
 #include "maya/MFileIO.h"
 #include "AL/usdmaya/fileio/translators/TranslatorTestType.h"
-#include "AL/usdmaya/fileio/translators/SchemaApiTestType.h"
 #include "AL/usdmaya/fileio/translators/SchemaApiTestPlugin.h"
 
 #include "pxr/usd/usd/stage.h"
@@ -38,30 +37,14 @@
 
 using namespace AL::usdmaya::fileio::translators;
 
-const char* g_schemaApiTestFile = 
-"#usda 1.0\n"
-"\n"
-"def AL::usdmaya::fileio::translators::TranslatorTestType \"testPrim\" (\n"
-"    prepend apiSchemas = [\"AL::usdmaya::fileio::translators::SchemaApiTestType\"]\n"
-")\n"
-"{\n"
-"}\n";
-
 TEST(SchemaApiPlugin, SchemaApiPlugin)
 {
   const std::string filePath = buildTempPath("AL_USDMayaTests_schemaApi.usda");
-  {
-    std::ofstream ofs(filePath);
-    ASSERT_TRUE(ofs);
-    ofs << g_schemaApiTestFile;
-  }
-
   {
     // create a TranslatorTestType usd prim
     UsdStageRefPtr m_stage = UsdStage::CreateInMemory();
     TranslatorTestType testPrim = TranslatorTestType::Define(m_stage, SdfPath("/testPrim"));
     UsdPrim m_prim = testPrim.GetPrim();
-    SchemaApiTestType::Apply(m_prim);
     m_stage->GetRootLayer()->Export(filePath);
   }
 
@@ -164,7 +147,6 @@ TEST(SchemaApiPlugin, SchemaApiPlugin)
   prim = stg->GetPrimAtPath(SdfPath("/transform1"));
   ASSERT_TRUE(prim);
 
-  TfTokenVector v = prim.GetAppliedSchemas();
-  ASSERT_EQ(1, v.size());
-  EXPECT_EQ(v[0].GetString(), "AL::usdmaya::fileio::translators::SchemaApiTestType");
+  auto v = prim.GetAttribute(TfToken("exported"));
+  ASSERT_TRUE(v);
 }
