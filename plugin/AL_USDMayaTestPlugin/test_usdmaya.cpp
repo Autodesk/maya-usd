@@ -17,6 +17,8 @@
 #include "maya/MFileIO.h"
 #include "maya/MFnDagNode.h"
 
+using AL::usdmaya::test::buildTempPath;
+
 AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(
     std::function<UsdStageRefPtr()> buildUsdStage,
     const std::string& tempPath,

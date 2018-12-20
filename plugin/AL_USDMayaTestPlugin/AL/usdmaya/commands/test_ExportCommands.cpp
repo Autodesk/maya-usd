@@ -20,6 +20,8 @@
 #include "maya/MFileIO.h"
 #include "maya/MFnDagNode.h"
 
+using AL::usdmaya::test::buildTempPath;
+
 TEST(ExportCommands, exportUVOnly)
 {
   MFileIO::newFile(true);

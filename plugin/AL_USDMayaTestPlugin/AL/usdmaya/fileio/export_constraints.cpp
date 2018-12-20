@@ -5,6 +5,9 @@
 
 #include "pxr/usd/usdGeom/xform.h"
 
+using AL::usdmaya::test::buildTempPath;
+
+
 static const char* const g_constraints = R"(
 {
 $s = `polyCylinder -r 1 -h 4 -sx 20 -sy 20 -sz 1 -ax 0 1 0 -rcp 0 -cuv 3 -ch 1`;

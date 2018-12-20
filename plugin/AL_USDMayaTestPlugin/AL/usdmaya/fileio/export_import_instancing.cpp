@@ -11,6 +11,8 @@
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/mesh.h"
 
+using AL::usdmaya::test::buildTempPath;
+
 static const char* const generateInstances = R"(
 {
 polySphere -r 1 -sx 20 -sy 20 -ax 0 1 0 -cuv 2 -ch 1;

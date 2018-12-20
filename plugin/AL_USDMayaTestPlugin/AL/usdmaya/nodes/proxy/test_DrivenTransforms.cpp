@@ -35,6 +35,8 @@
 
 #include <fstream>
 
+using AL::usdmaya::test::buildTempPath;
+
 
 static const char* const g_drivenData =
 "#usda 1.0\n"

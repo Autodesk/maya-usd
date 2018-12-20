@@ -7,6 +7,9 @@
 
 #include "pxr/usd/usdGeom/xform.h"
 
+using AL::usdmaya::test::buildTempPath;
+
+
 static const char* const g_ikChain = R"(
 {
 select -cl;

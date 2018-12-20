@@ -23,6 +23,8 @@
 #include "maya/MItDependencyNodes.h"
 #include "maya/MFileIO.h"
 
+using AL::usdmaya::test::buildTempPath;
+
 TEST(InternalProxyShapeSelect, selectNode)
 {
   MFileIO::newFile(true);

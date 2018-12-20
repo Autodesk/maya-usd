@@ -4,6 +4,8 @@
 #include "test_usdmaya.h"
 #include "AL/usdmaya/Metadata.h"
 
+using AL::usdmaya::test::buildTempPath;
+
 static const char* const generateSphere = R"(
 {
 polySphere -r 1 -sx 20 -sy 20 -ax 0 1 0 -cuv 2 -ch 1;

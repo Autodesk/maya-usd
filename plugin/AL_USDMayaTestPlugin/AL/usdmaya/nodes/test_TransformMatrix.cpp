@@ -40,6 +40,8 @@
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
+using AL::usdmaya::test::buildTempPath;
+
 //#define TEST(X, Y) void X##Y()
 
 //  inline const UsdPrim& prim() const

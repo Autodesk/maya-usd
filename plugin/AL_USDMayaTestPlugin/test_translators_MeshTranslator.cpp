@@ -23,6 +23,8 @@
 #include "AL/usdmaya/utils/MeshUtils.h"
 
 using namespace AL::usdmaya::fileio::translators;
+using AL::usdmaya::test::buildTempPath;
+
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Test some of the functionality of the mesh translator
 //----------------------------------------------------------------------------------------------------------------------

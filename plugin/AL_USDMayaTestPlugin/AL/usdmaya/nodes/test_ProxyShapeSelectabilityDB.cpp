@@ -33,6 +33,8 @@
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
+using AL::usdmaya::test::buildTempPath;
+
 /*
  * Test that prims that are marked as unselectable are picked when opening a new stage
  * and that prims whos selectability is modified is picked up
