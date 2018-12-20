@@ -35,7 +35,7 @@
 #include <functional>
 #include "AL/usdmaya/utils/Utils.h"
 
-using AL::usdmaya::test::buildTempPath;
+using AL::maya::test::buildTempPath;
 
 
 //  Layer();

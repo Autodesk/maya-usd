@@ -5,7 +5,7 @@
 
 #include "test_usdmaya.h"
 
-using AL::usdmaya::test::buildTempPath;
+using AL::maya::test::buildTempPath;
 
 static const char* const generateCamera = R"(
 {

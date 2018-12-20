@@ -22,7 +22,7 @@
 
 
 namespace AL {
-namespace usdmaya {
+namespace maya {
 namespace test {
 
 #ifdef _WIN32
@@ -219,7 +219,7 @@ MStatus UnitTestHarness::doIt(const MArgList& args)
 //------------------------------------------------------------------------------
 void UnitTestHarness::cleanTemporaryFiles() const
 {
-  const MString temp_path = AL::usdmaya::test::buildTempPath("AL_USDMayaTests*.*");
+  const MString temp_path = buildTempPath("AL_USDMayaTests*.*");
   MString cmd(
       "import glob;"
       "import os;"
@@ -235,7 +235,7 @@ void UnitTestHarness::cleanTemporaryFiles() const
 
 //----------------------------------------------------------------------------------------------------------------------
 } // test
-} // usdmaya
+} // maya
 } // AL
 //----------------------------------------------------------------------------------------------------------------------
 

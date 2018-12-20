@@ -3,34 +3,34 @@
 # Setup 
 ####################################################################################################
 
-set(USDMAYA_TEST_LIBRARY_NAME "AL_USDMayaTest")
+set(MAYA_TEST_LIBRARY_NAME "AL_MayaTest")
 set(MAYA_TEST_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
 
 ####################################################################################################
 # Source 
 ####################################################################################################
 
-list(APPEND usdmaya_test_headers
+list(APPEND maya_test_headers
     testHelpers.h
     testHarness.h
 )
 
-list(APPEND usdmaya_test_source
+list(APPEND maya_test_source
     testHelpers.cpp
     testHarness.cpp
 )
 
-add_library(${USDMAYA_TEST_LIBRARY_NAME}
+add_library(${MAYA_TEST_LIBRARY_NAME}
     SHARED
-        ${usdmaya_test_source}
+        ${maya_test_source}
 )
 
-target_compile_definitions(${USDMAYA_TEST_LIBRARY_NAME}
+target_compile_definitions(${MAYA_TEST_LIBRARY_NAME}
     PRIVATE
-        AL_USDMAYA_TEST_EXPORT
+        AL_MAYA_TEST_EXPORT
 )
 
-target_link_libraries(${USDMAYA_TEST_LIBRARY_NAME}
+target_link_libraries(${MAYA_TEST_LIBRARY_NAME}
     AL_EventSystem
     AL_USDMayaUtils
     AL_MayaUtils
@@ -39,19 +39,18 @@ target_link_libraries(${USDMAYA_TEST_LIBRARY_NAME}
     ${GTEST_LIBRARIES}
     ${MAYA_LIBRARIES}
 )
-
-target_include_directories(${USDMAYA_TEST_LIBRARY_NAME} 
+target_include_directories(${MAYA_TEST_LIBRARY_NAME} 
     PUBLIC
-    ${USDMAYATEST_INCLUDE_LOCATION}
+    ${MAYATEST_INCLUDE_LOCATION}
 )
 
 # install the public headers
-install( FILES ${usdmaya_test_headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/usdmaya/test
+install( FILES ${maya_test_headers}
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/maya/test
 )
 
 # install the library
-install(TARGETS ${USDMAYA_TEST_LIBRARY_NAME}
+install(TARGETS ${MAYA_TEST_LIBRARY_NAME}
     LIBRARY
     DESTINATION ${MAYA_TEST_LIBRARY_LOCATION}
     RUNTIME

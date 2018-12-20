@@ -23,7 +23,7 @@
 #include "maya/MItDependencyNodes.h"
 #include "maya/MFileIO.h"
 
-using AL::usdmaya::test::buildTempPath;
+using AL::maya::test::buildTempPath;
 
 TEST(InternalProxyShapeSelect, selectNode)
 {

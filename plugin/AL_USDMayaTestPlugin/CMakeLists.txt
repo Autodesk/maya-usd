@@ -64,7 +64,7 @@ target_link_libraries(${PXR_PACKAGE}
     AL_MayaUtils
     AL_USDUtils
     AL_USDMaya
-    ${USDMAYA_TEST_LIBRARY_NAME}
+    ${MAYA_TEST_LIBRARY_NAME}
     ${GTEST_LIBRARIES}
     ${MAYA_LIBRARIES}
 )
@@ -74,7 +74,7 @@ PRIVATE
     ${GTEST_INCLUDE_DIRS}
     ${MAYA_INCLUDE_DIRS}
     "../../lib/AL_USDMaya"    
-    ${USDMAYATEST_INCLUDE_LOCATION}
+    ${MAYATEST_INCLUDE_LOCATION}
 )
 
 if(MSVC)

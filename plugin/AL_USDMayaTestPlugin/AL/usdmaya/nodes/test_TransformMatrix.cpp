@@ -40,7 +40,7 @@
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
-using AL::usdmaya::test::buildTempPath;
+using AL::maya::test::buildTempPath;
 
 //#define TEST(X, Y) void X##Y()
 

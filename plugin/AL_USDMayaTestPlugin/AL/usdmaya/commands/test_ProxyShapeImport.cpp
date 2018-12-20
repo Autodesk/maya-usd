@@ -30,7 +30,7 @@
 
 #include <functional>
 
-using AL::usdmaya::test::buildTempPath;
+using AL::maya::test::buildTempPath;
 
 
 TEST(ProxyShapeImport, populationMaskInclude)

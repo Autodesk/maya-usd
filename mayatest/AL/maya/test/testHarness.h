@@ -16,10 +16,8 @@
 #pragma once
 #include "maya/MPxCommand.h"
 
-#include "AL/usd/utils/ForwardDeclares.h"
-
 namespace AL {
-namespace usdmaya {
+namespace maya {
 namespace test {
 
 class UnitTestHarness : public MPxCommand
@@ -38,6 +36,6 @@ private:
 
 //----------------------------------------------------------------------------------------------------------------------
 } // test
-} // usdmaya
+} // maya
 } // AL
 //----------------------------------------------------------------------------------------------------------------------

@@ -29,7 +29,7 @@
 #include <functional>
 
 namespace AL {
-namespace usdmaya {
+namespace maya {
 namespace test {
 
 
@@ -209,6 +209,6 @@ extern void randomAnimatedValue(MPlug plug, double startFrame, double endFrame);
 
 //----------------------------------------------------------------------------------------------------------------------
 } // test
-} // usdmaya
+} // maya
 } // AL
 //----------------------------------------------------------------------------------------------------------------------

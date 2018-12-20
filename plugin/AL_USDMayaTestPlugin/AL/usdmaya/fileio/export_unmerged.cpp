@@ -4,7 +4,7 @@
 #include "test_usdmaya.h"
 #include "AL/usdmaya/Metadata.h"
 
-using AL::usdmaya::test::buildTempPath;
+using AL::maya::test::buildTempPath;
 
 static const char* const generateSphere = R"(
 {

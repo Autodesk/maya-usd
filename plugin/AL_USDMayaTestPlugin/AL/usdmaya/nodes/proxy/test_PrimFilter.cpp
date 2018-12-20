@@ -35,7 +35,7 @@
 
 #include <fstream>
 
-using AL::usdmaya::test::buildTempPath;
+using AL::maya::test::buildTempPath;
 
 struct MockPrimFilterInterface : public AL::usdmaya::nodes::proxy::PrimFilterInterface
 {

@@ -33,7 +33,7 @@
 
 #include <fstream>
 
-using AL::usdmaya::test::buildTempPath;
+using AL::maya::test::buildTempPath;
 
 // PrimLookup::PrimLookup(const SdfPath& path, const TfToken& type, MObject mayaObj);
 // PrimLookup::~PrimLookup();

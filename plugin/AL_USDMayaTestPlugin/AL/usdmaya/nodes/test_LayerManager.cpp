@@ -29,7 +29,7 @@
 #include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
-using AL::usdmaya::test::buildTempPath;
+using AL::maya::test::buildTempPath;
 
 // Utilities -----------------------------------------------------------------------------------------------------------
 

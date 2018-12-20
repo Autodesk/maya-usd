@@ -30,9 +30,9 @@ using AL::usdmaya::fileio::ImporterParams;
 using AL::usdmaya::fileio::translators::DagNodeTranslator;
 using AL::usdmaya::fileio::translators::TransformTranslator;
 using AL::usdmaya::fileio::AnimationTranslator;
-using AL::usdmaya::test::randomNode;
-using AL::usdmaya::test::compareNodes;
-using AL::usdmaya::test::randomAnimatedNode;
+using AL::maya::test::randomNode;
+using AL::maya::test::compareNodes;
+using AL::maya::test::randomAnimatedNode;
 
 
 //----------------------------------------------------------------------------------------------------------------------

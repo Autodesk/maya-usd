@@ -51,15 +51,15 @@ using AL::usdmaya::fileio::ImporterParams;
 using AL::usdmaya::fileio::ExporterParams;
 using AL::usdmaya::fileio::translators::DgNodeTranslator;
 using AL::maya::utils::NodeHelper;
-using AL::usdmaya::test::buildTempPath;
-using AL::usdmaya::test::randBool;
-using AL::usdmaya::test::randInt8;
-using AL::usdmaya::test::randInt16;
-using AL::usdmaya::test::randInt32;
-using AL::usdmaya::test::randInt64;
-using AL::usdmaya::test::randFloat;
-using AL::usdmaya::test::randDouble;
-using AL::usdmaya::test::comparePlugs;
+using AL::maya::test::buildTempPath;
+using AL::maya::test::randBool;
+using AL::maya::test::randInt8;
+using AL::maya::test::randInt16;
+using AL::maya::test::randInt32;
+using AL::maya::test::randInt64;
+using AL::maya::test::randFloat;
+using AL::maya::test::randDouble;
+using AL::maya::test::comparePlugs;
 
 
 namespace {
@@ -365,9 +365,9 @@ TEST(translators_DgNodeTranslator, half_array)
   std::memset(result, 0, sizeof(GfHalf) * SIZE);
   for(int i = 0 ; i < SIZE; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
-    container[i] = AL::usdmaya::test::randFloat();
-    vcontainer[i] = AL::usdmaya::test::randFloat();
+    orig[i] = AL::maya::test::randFloat();
+    container[i] = AL::maya::test::randFloat();
+    vcontainer[i] = AL::maya::test::randFloat();
   }
   const char* const longName = "longHalfArrayName";
   const char* const shortName = "lhan";
@@ -404,9 +404,9 @@ TEST(translators_DgNodeTranslator, float_array)
   std::memset(result, 0, sizeof(float) * SIZE);
   for(int i = 0 ; i < SIZE; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
-    container[i] = AL::usdmaya::test::randFloat();
-    vcontainer[i] = AL::usdmaya::test::randFloat();
+    orig[i] = AL::maya::test::randFloat();
+    container[i] = AL::maya::test::randFloat();
+    vcontainer[i] = AL::maya::test::randFloat();
   }
   const char* const longName = "longFloatArrayName";
   const char* const shortName = "lfan";
@@ -485,7 +485,7 @@ TEST(translators_DgNodeTranslator, vec2h_array)
   std::memset(result, 0, sizeof(GfHalf) * SIZE * VEC_SIZE);
   for(int i = 0 ; i < SIZE * VEC_SIZE; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
+    orig[i] = AL::maya::test::randFloat();
   }
   const char* const longName = "longVec2hArrayName";
   const char* const shortName = "lv2han";
@@ -531,7 +531,7 @@ TEST(translators_DgNodeTranslator, vec2f_array)
   std::memset(result, 0, sizeof(float) * SIZE * VEC_SIZE);
   for(int i = 0 ; i < SIZE * VEC_SIZE; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
+    orig[i] = AL::maya::test::randFloat();
   }
   const char* const longName = "longVec2fArrayName";
   const char* const shortName = "lv2fan";
@@ -554,7 +554,7 @@ TEST(translators_DgNodeTranslator, vec2d_array)
   std::memset(result, 0, sizeof(double) * SIZE * VEC_SIZE);
   for(int i = 0 ; i < SIZE * VEC_SIZE; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
+    orig[i] = AL::maya::test::randFloat();
   }
   const char* const longName = "longVec2dArrayName";
   const char* const shortName = "lv2dan";
@@ -589,7 +589,7 @@ TEST(translators_DgNodeTranslator, vec3h_array)
   std::memset(result, 0, sizeof(GfHalf) * SIZE * VEC_SIZE);
   for(int i = 0 ; i < SIZE * VEC_SIZE; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
+    orig[i] = AL::maya::test::randFloat();
   }
   const char* const longName = "longVec3hArrayName";
   const char* const shortName = "lv3han";
@@ -635,7 +635,7 @@ TEST(translators_DgNodeTranslator, vec3f_array)
   std::memset(result, 0, sizeof(float) * SIZE * VEC_SIZE);
   for(int i = 0 ; i < SIZE * VEC_SIZE; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
+    orig[i] = randFloat();
   }
   const char* const longName = "longVec3fArrayName";
   const char* const shortName = "lv3fan";
@@ -658,7 +658,7 @@ TEST(translators_DgNodeTranslator, vec3d_array)
   std::memset(result, 0, sizeof(double) * SIZE * VEC_SIZE);
   for(int i = 0 ; i < SIZE * VEC_SIZE; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
+    orig[i] = randFloat();
   }
   const char* const longName = "longVec3dArrayName";
   const char* const shortName = "lv3dan";
@@ -692,7 +692,7 @@ TEST(translators_DgNodeTranslator, vec4h_array)
   std::memset(result, 0, sizeof(GfHalf) * SIZE * VEC_SIZE);
   for(int i = 0 ; i < SIZE * VEC_SIZE; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
+    orig[i] = randFloat();
   }
   const char* const longName = "longVec4hArrayName";
   const char* const shortName = "lv4han";
@@ -738,7 +738,7 @@ TEST(translators_DgNodeTranslator, vec4f_array)
   std::memset(result, 0, sizeof(float) * SIZE * VEC_SIZE);
   for(int i = 0 ; i < SIZE * VEC_SIZE; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
+    orig[i] = randFloat();
   }
   const char* const longName = "longVec4fArrayName";
   const char* const shortName = "lv4fan";
@@ -761,7 +761,7 @@ TEST(translators_DgNodeTranslator, vec4d_array)
   std::memset(result, 0, sizeof(double) * SIZE * VEC_SIZE);
   for(int i = 0 ; i < SIZE * VEC_SIZE; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
+    orig[i] = randFloat();
   }
   const char* const longName = "longVec4dArrayName";
   const char* const shortName = "lv4dan";
@@ -793,7 +793,7 @@ TEST(translators_DgNodeTranslator, quath_array)
   std::memset(result, 0, sizeof(GfHalf) * SIZE * VEC_SIZE);
   for(int i = 0 ; i < SIZE * VEC_SIZE; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
+    orig[i] = randFloat();
   }
   const char* const longName = "longQuathArrayName";
   const char* const shortName = "lqhan";
@@ -816,7 +816,7 @@ TEST(translators_DgNodeTranslator, quatf_array)
   std::memset(result, 0, sizeof(float) * SIZE * VEC_SIZE);
   for(int i = 0 ; i < SIZE * VEC_SIZE; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
+    orig[i] = randFloat();
   }
   const char* const longName = "longQuatfArrayName";
   const char* const shortName = "lqfan";
@@ -839,7 +839,7 @@ TEST(translators_DgNodeTranslator, quatd_array)
   std::memset(result, 0, sizeof(double) * SIZE * VEC_SIZE);
   for(int i = 0 ; i < SIZE * VEC_SIZE; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
+    orig[i] = randFloat();
   }
   const char* const longName = "longQuatdArrayName";
   const char* const shortName = "lqdan";
@@ -867,14 +867,14 @@ TEST(translators_DgNodeTranslator, matrix2x2f_array)
   float* result = new float[SIZE * 4];;
   for(int i = 0 ; i < SIZE * 4; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
+    orig[i] = randFloat();
   }
   const char* const longName = "longMatrix2x2fArrayName";
   const char* const shortName = "lM22fan";
   const uint32_t flags = kCached | kReadable | kWritable | kStorable | kArray | kUsesArrayDataBuilder;
   const float defaultValue[2][2] = {
-      {AL::usdmaya::test::randFloat(), AL::usdmaya::test::randFloat()},
-      {AL::usdmaya::test::randFloat(), AL::usdmaya::test::randFloat()},
+      {randFloat(), randFloat()},
+      {randFloat(), randFloat()},
   };
   EXPECT_EQ(MStatus(MS::kSuccess), NodeHelper::addMatrix2x2Attr(m_node, longName, shortName, defaultValue, flags));
   EXPECT_EQ(MStatus(MS::kSuccess), DgNodeTranslator::setMatrix2x2Array(m_node, findAttribute(longName), orig, SIZE));
@@ -899,8 +899,8 @@ TEST(translators_DgNodeTranslator, matrix2x2d_array)
   const char* const shortName = "lM22dan";
   const uint32_t flags = kCached | kReadable | kWritable | kStorable | kArray | kUsesArrayDataBuilder;
   const float defaultValue[2][2] = {
-      {AL::usdmaya::test::randFloat(), AL::usdmaya::test::randFloat()},
-      {AL::usdmaya::test::randFloat(), AL::usdmaya::test::randFloat()},
+      {randFloat(), randFloat()},
+      {randFloat(), randFloat()},
   };
   EXPECT_EQ(MStatus(MS::kSuccess), NodeHelper::addMatrix2x2Attr(m_node, longName, shortName, defaultValue, flags));
   EXPECT_EQ(MStatus(MS::kSuccess), DgNodeTranslator::setMatrix2x2Array(m_node, findAttribute(longName), orig, SIZE));
@@ -924,15 +924,15 @@ TEST(translators_DgNodeTranslator, matrix3x3f_array)
   float* result = new float[SIZE * 9];;
   for(int i = 0 ; i < SIZE * 9; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
+    orig[i] = randFloat();
   }
   const char* const longName = "longMatrix3x3fArrayName";
   const char* const shortName = "lM33fan";
   const uint32_t flags = kCached | kReadable | kWritable | kStorable | kArray | kUsesArrayDataBuilder;
   const float defaultValue[3][3] = {
-      {AL::usdmaya::test::randFloat(), AL::usdmaya::test::randFloat(), AL::usdmaya::test::randFloat()},
-      {AL::usdmaya::test::randFloat(), AL::usdmaya::test::randFloat(), AL::usdmaya::test::randFloat()},
-      {AL::usdmaya::test::randFloat(), AL::usdmaya::test::randFloat(), AL::usdmaya::test::randFloat()}
+      {randFloat(), randFloat(), randFloat()},
+      {randFloat(), randFloat(), randFloat()},
+      {randFloat(), randFloat(), randFloat()}
   };
   EXPECT_EQ(MStatus(MS::kSuccess), NodeHelper::addMatrix3x3Attr(m_node, longName, shortName, defaultValue, flags));
   EXPECT_EQ(MStatus(MS::kSuccess), DgNodeTranslator::setMatrix3x3Array(m_node, findAttribute(longName), orig, SIZE));
@@ -957,9 +957,9 @@ TEST(translators_DgNodeTranslator, matrix3x3d_array)
   const char* const shortName = "lM33dan";
   const uint32_t flags = kCached | kReadable | kWritable | kStorable | kArray | kUsesArrayDataBuilder;
   const float defaultValue[3][3] = {
-      {AL::usdmaya::test::randFloat(), AL::usdmaya::test::randFloat(), AL::usdmaya::test::randFloat()},
-      {AL::usdmaya::test::randFloat(), AL::usdmaya::test::randFloat(), AL::usdmaya::test::randFloat()},
-      {AL::usdmaya::test::randFloat(), AL::usdmaya::test::randFloat(), AL::usdmaya::test::randFloat()}
+      {randFloat(), randFloat(), randFloat()},
+      {randFloat(), randFloat(), randFloat()},
+      {randFloat(), randFloat(), randFloat()}
   };
   EXPECT_EQ(MStatus(MS::kSuccess), NodeHelper::addMatrix3x3Attr(m_node, longName, shortName, defaultValue, flags));
   EXPECT_EQ(MStatus(MS::kSuccess), DgNodeTranslator::setMatrix3x3Array(m_node, findAttribute(longName), orig, SIZE));
@@ -983,7 +983,7 @@ TEST(translators_DgNodeTranslator, matrix4x4f_array)
   float* result = new float[SIZE * 16];;
   for(int i = 0 ; i < SIZE * 16; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
+    orig[i] = randFloat();
   }
   const char* const longName = "longMatrix4x4fArrayName";
   const char* const shortName = "lM44fan";
@@ -1006,7 +1006,7 @@ TEST(translators_DgNodeTranslator,  matrix4x4d_array)
   double* result = new double[SIZE * 16];;
   for(int i = 0 ; i < SIZE * 16; ++i)
   {
-    orig[i] = AL::usdmaya::test::randFloat();
+    orig[i] = randFloat();
   }
   const char* const longName = "longMatrix4x4dArrayName";
   const char* const shortName = "lM44dan";

@@ -5,7 +5,7 @@
 
 #include "pxr/usd/usdGeom/mesh.h"
 
-using AL::usdmaya::test::buildTempPath;
+using AL::maya::test::buildTempPath;
 
 static const char* const g_nonlinear = R"(
 {

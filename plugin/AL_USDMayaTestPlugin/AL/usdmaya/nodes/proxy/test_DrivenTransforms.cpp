@@ -35,7 +35,7 @@
 
 #include <fstream>
 
-using AL::usdmaya::test::buildTempPath;
+using AL::maya::test::buildTempPath;
 
 
 static const char* const g_drivenData =

@@ -36,7 +36,7 @@
 #include <fstream>
 #include <stdio.h>
 
-using AL::usdmaya::test::buildTempPath;
+using AL::maya::test::buildTempPath;
 
 const MString temp_path_cube = buildTempPath("AL_USDMayaTests_cube.ma");
 const MString temp_path_sphere = buildTempPath("AL_USDMayaTests_sphere.ma");

@@ -106,7 +106,7 @@ add_subdirectory(utils)
 add_subdirectory(usdutils)
 add_subdirectory(mayautils)
 add_subdirectory(usdmayautils)
-add_subdirectory(usdmayatest)
+add_subdirectory(mayatest)
 
 add_subdirectory(lib)
 add_subdirectory(plugin)
