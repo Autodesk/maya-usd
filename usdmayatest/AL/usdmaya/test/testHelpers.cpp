@@ -38,6 +38,11 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace AL {
+namespace usdmaya {
+namespace test {
+
+
 //----------------------------------------------------------------------------------------------------------------------
 const char* buildTempPath(const char* const filename)
 {
@@ -712,4 +717,10 @@ void randomAnimatedNode(MObject node, const char* const attributeNames[], const 
     }
   }
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+} // test
+} // usdmaya
+} // AL
+//----------------------------------------------------------------------------------------------------------------------
 

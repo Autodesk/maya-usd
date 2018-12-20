@@ -12,10 +12,12 @@ set(MAYA_TEST_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib)
 
 list(APPEND usdmaya_test_headers
     testHelpers.h
+    testHarness.h
 )
 
 list(APPEND usdmaya_test_source
     testHelpers.cpp
+    testHarness.cpp
 )
 
 add_library(${USDMAYA_TEST_LIBRARY_NAME}

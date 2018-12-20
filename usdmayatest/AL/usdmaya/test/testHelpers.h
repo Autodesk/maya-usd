@@ -28,6 +28,11 @@
 #include <iostream>
 #include <functional>
 
+namespace AL {
+namespace usdmaya {
+namespace test {
+
+
 #ifdef TRACE_ASSIGNMENT
 # define TRACE(X) X;
 #else
@@ -46,6 +51,7 @@
 #else
 # define AL_USDMAYA_UNTESTED
 #endif
+
 
 // comparisons between MPlugs require stream operators for cpp unit
 inline std::ostream& operator << (std::ostream& os, const MPlug& plug)
@@ -201,4 +207,8 @@ extern void randomAnimatedNode(MObject node, const char* const attributeNames[],
 extern void randomAnimatedValue(MPlug plug, double startFrame, double endFrame);
 
 
-
+//----------------------------------------------------------------------------------------------------------------------
+} // test
+} // usdmaya
+} // AL
+//----------------------------------------------------------------------------------------------------------------------

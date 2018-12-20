@@ -3,13 +3,11 @@ find_package(GTest REQUIRED)
 set(PXR_PACKAGE AL_USDMayaTestPlugin)
 
 list(APPEND AL_maya_test_headers
-    AL/UnitTestHarness.h
     test_usdmaya.h
 )
 
 list(APPEND AL_maya_test_source
         plugin.cpp
-		AL/UnitTestHarness.cpp
         AL/maya/test_DiffCore.cpp
         AL/maya/test_EventHandler.cpp
         AL/maya/test_MatrixToSRT.cpp
