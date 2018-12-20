@@ -47,6 +47,22 @@ const char* angry_dino =
 " _|  (  | (  |\n"
 "/__.-'|_|--|_|\n" RESET_COLOUR;
 
+const char* happy_cat =
+"\n"
+"    \\    /\\ \n"
+"     )  ( ^)\n"
+"    (  /  )\n"
+"     \\(__)|\n"
+RESET_COLOUR;
+
+const char* angry_cat =
+"\n"
+"         // \n"
+"        ( >)\n"
+"   /\\  /  )\n"
+"  /  \\(__)|\n"
+RESET_COLOUR;
+
 //----------------------------------------------------------------------------------------------------------------------
 const MString UnitTestHarness::kName = "AL_usdmaya_UnitTestHarness";
 

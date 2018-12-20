@@ -11,7 +11,6 @@ list(APPEND mayaplugin_test_source
   test_maya_MenuBuilder.cpp
   test_maya_NodeHelper.cpp
   test_mobjectmap.cpp
-  UnitTestHarness.cpp
 )
 
 add_library(${MAYAUTILS_TEST_LIBRARY_NAME}
@@ -27,11 +26,13 @@ target_link_libraries(${MAYAUTILS_TEST_LIBRARY_NAME}
       ${GTEST_LIBRARIES}
       ${MAYA_LIBRARIES}
       ${MAYAUTILS_LIBRARY_NAME}
+      AL_USDMayaTest
 )
 
 target_include_directories(${MAYAUTILS_TEST_LIBRARY_NAME}
   PRIVATE
       ${GTEST_INCLUDE_DIRS}
+      ${USDMAYATEST_INCLUDE_LOCATION}
 )
 
 set(MAYAUTILS_TEST_MAYAPLUGIN_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/testplugins)
