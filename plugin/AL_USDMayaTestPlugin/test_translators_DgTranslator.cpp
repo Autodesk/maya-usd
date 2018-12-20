@@ -365,9 +365,9 @@ TEST(translators_DgNodeTranslator, half_array)
   std::memset(result, 0, sizeof(GfHalf) * SIZE);
   for(int i = 0 ; i < SIZE; ++i)
   {
-    orig[i] = AL::maya::test::randFloat();
-    container[i] = AL::maya::test::randFloat();
-    vcontainer[i] = AL::maya::test::randFloat();
+    orig[i] = randFloat();
+    container[i] = randFloat();
+    vcontainer[i] = randFloat();
   }
   const char* const longName = "longHalfArrayName";
   const char* const shortName = "lhan";
@@ -404,9 +404,9 @@ TEST(translators_DgNodeTranslator, float_array)
   std::memset(result, 0, sizeof(float) * SIZE);
   for(int i = 0 ; i < SIZE; ++i)
   {
-    orig[i] = AL::maya::test::randFloat();
-    container[i] = AL::maya::test::randFloat();
-    vcontainer[i] = AL::maya::test::randFloat();
+    orig[i] = randFloat();
+    container[i] = randFloat();
+    vcontainer[i] = randFloat();
   }
   const char* const longName = "longFloatArrayName";
   const char* const shortName = "lfan";
@@ -485,7 +485,7 @@ TEST(translators_DgNodeTranslator, vec2h_array)
   std::memset(result, 0, sizeof(GfHalf) * SIZE * VEC_SIZE);
   for(int i = 0 ; i < SIZE * VEC_SIZE; ++i)
   {
-    orig[i] = AL::maya::test::randFloat();
+    orig[i] = randFloat();
   }
   const char* const longName = "longVec2hArrayName";
   const char* const shortName = "lv2han";
@@ -531,7 +531,7 @@ TEST(translators_DgNodeTranslator, vec2f_array)
   std::memset(result, 0, sizeof(float) * SIZE * VEC_SIZE);
   for(int i = 0 ; i < SIZE * VEC_SIZE; ++i)
   {
-    orig[i] = AL::maya::test::randFloat();
+    orig[i] = randFloat();
   }
   const char* const longName = "longVec2fArrayName";
   const char* const shortName = "lv2fan";
@@ -554,7 +554,7 @@ TEST(translators_DgNodeTranslator, vec2d_array)
   std::memset(result, 0, sizeof(double) * SIZE * VEC_SIZE);
   for(int i = 0 ; i < SIZE * VEC_SIZE; ++i)
   {
-    orig[i] = AL::maya::test::randFloat();
+    orig[i] = randFloat();
   }
   const char* const longName = "longVec2dArrayName";
   const char* const shortName = "lv2dan";
@@ -589,7 +589,7 @@ TEST(translators_DgNodeTranslator, vec3h_array)
   std::memset(result, 0, sizeof(GfHalf) * SIZE * VEC_SIZE);
   for(int i = 0 ; i < SIZE * VEC_SIZE; ++i)
   {
-    orig[i] = AL::maya::test::randFloat();
+    orig[i] = randFloat();
   }
   const char* const longName = "longVec3hArrayName";
   const char* const shortName = "lv3han";
