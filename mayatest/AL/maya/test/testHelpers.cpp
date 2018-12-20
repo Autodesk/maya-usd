@@ -36,7 +36,7 @@
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/pathUtils.h"
 
-//PXR_NAMESPACE_USING_DIRECTIVE
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
 namespace maya {

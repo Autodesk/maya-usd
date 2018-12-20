@@ -31,17 +31,8 @@ target_compile_definitions(${MAYA_TEST_LIBRARY_NAME}
 )
 
 target_link_libraries(${MAYA_TEST_LIBRARY_NAME}
-    AL_EventSystem
-    AL_USDMayaUtils
-    AL_MayaUtils
-    AL_USDUtils
-    AL_USDMaya
     ${GTEST_LIBRARIES}
     ${MAYA_LIBRARIES}
-)
-target_include_directories(${MAYA_TEST_LIBRARY_NAME} 
-    PUBLIC
-    ${MAYATEST_INCLUDE_LOCATION}
 )
 
 # install the public headers
