@@ -131,7 +131,7 @@ void Import::doImport()
 
           // handle the special case of importing custom transform params
           {
-            auto apis = manufacture.getAPI(parent);
+            auto apis = manufacture.getAPI(obj);
             for(auto api : apis)
             {
               // special case
