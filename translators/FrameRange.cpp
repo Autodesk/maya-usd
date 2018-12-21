@@ -1,4 +1,4 @@
-#include "AL/usd/schemas/FrameRange.h"
+#include "AL/usd/schemas/maya/FrameRange.h"
 #include "AL/usdmaya/DebugCodes.h"
 
 #include "maya/MStatus.h"

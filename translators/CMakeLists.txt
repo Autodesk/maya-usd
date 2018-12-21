@@ -1,4 +1,4 @@
-list(APPEND DEPENDANT_LIBRARIES AL_USDMaya ${SCHEMAS_PACKAGE} gf plug tf)
+list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas gf plug tf)
 
 set(DIRECTORY_PATH AL/usdmaya/fileio/translators)
 

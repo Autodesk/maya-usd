@@ -1,6 +1,6 @@
 set(
     resources_install_path
-    ${CMAKE_INSTALL_PREFIX}/lib/usd/${SCHEMAS_PACKAGE}/resources
+    ${CMAKE_INSTALL_PREFIX}/lib/usd/AL_USDMayaSchemas/resources
 )
 
 set(
@@ -10,7 +10,7 @@ set(
 
 set(
     bindings_install_path
-    ${CMAKE_INSTALL_PREFIX}/lib/python/${SCHEMAS_PYTHON_PATH}
+    ${CMAKE_INSTALL_PREFIX}/lib/python/AL/usd/schemas/maya
 )
 
 # Bake library name
@@ -53,82 +53,71 @@ endif()
 # Usd plugin
 ####################################################################################################
 
-# Bake python module path
-configure_file (
-  "${CMAKE_CURRENT_SOURCE_DIR}/ModuleDeps.cpp.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/ModuleDeps.cpp"
-)
-
-add_library(${SCHEMAS_PACKAGE}
+add_library(AL_USDMayaSchemas
     SHARED
     ModelAPI.cpp
     MayaReference.cpp
     FrameRange.cpp
     tokens.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/ModuleDeps.cpp
+    ModuleDeps.cpp
 )
 
-target_compile_definitions(${SCHEMAS_PACKAGE}
+target_compile_definitions(AL_USDMayaSchemas
     PRIVATE
-        MFB_PACKAGE_NAME=${SCHEMAS_PACKAGE}
-        MFB_ALT_PACKAGE_NAME=${SCHEMAS_PACKAGE}
-        MFB_PACKAGE_MODULE=${SCHEMAS_PYTHON_MODULE}
+        MFB_PACKAGE_NAME=AL_USDMayaSchemas
+        MFB_ALT_PACKAGE_NAME=AL_USDMayaSchemas
+        MFB_PACKAGE_MODULE=AL.usd.schemas.maya
         AL_USDMAYASCHEMAS_EXPORTS
 )
 
-target_link_libraries(${SCHEMAS_PACKAGE} ${DEPENDANT_LIBRARIES})
+target_link_libraries(AL_USDMayaSchemas ${DEPENDANT_LIBRARIES})
 
 install(
-    TARGETS ${SCHEMAS_PACKAGE}
+    TARGETS AL_USDMayaSchemas
     LIBRARY
     DESTINATION ${library_install_path}
     RUNTIME
     DESTINATION ${library_install_path}
 )
 if(MSVC)
-    install(FILES $<TARGET_PDB_FILE:${SCHEMAS_PACKAGE}> DESTINATION ${library_install_path} OPTIONAL)
+    install(FILES $<TARGET_PDB_FILE:AL_USDMayaSchemas> DESTINATION ${library_install_path} OPTIONAL)
 endif()
 
 ####################################################################################################
 # Python bindings
 ####################################################################################################
 
-configure_file (
-  "${CMAKE_CURRENT_SOURCE_DIR}/module.cpp.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/module.cpp"
-)
-
-add_library(${SCHEMAS_PYTHON_PACKAGE}
+add_library(_AL_USDMayaSchemas
     SHARED
-    ${CMAKE_CURRENT_BINARY_DIR}/module.cpp
+    module.cpp
     wrapModelAPI.cpp
     wrapMayaReference.cpp
     wrapTokens.cpp
     wrapFrameRange.cpp
 )
 
-target_compile_definitions(${SCHEMAS_PYTHON_PACKAGE}
+target_compile_definitions(_AL_USDMayaSchemas
     PRIVATE
-        MFB_PACKAGE_NAME=${SCHEMAS_PACKAGE}
-        MFB_ALT_PACKAGE_NAME=${SCHEMAS_PACKAGE}
-        MFB_PACKAGE_MODULE=${SCHEMAS_PYTHON_MODULE}
+        MFB_PACKAGE_NAME=AL_USDMayaSchemas
+        MFB_ALT_PACKAGE_NAME=AL_USDMayaSchemas
+        MFB_PACKAGE_MODULE=AL.usd.schemas.maya
 )
 
-set_target_properties(${SCHEMAS_PYTHON_PACKAGE} 
+set_target_properties(_AL_USDMayaSchemas
     PROPERTIES 
         PREFIX ""
 )
 
 if(MSVC)
-set_target_properties(${SCHEMAS_PYTHON_PACKAGE}
+set_target_properties(_AL_USDMayaSchemas
     PROPERTIES
         SUFFIX ".pyd"
 )
 endif()
 
-target_link_libraries(${SCHEMAS_PYTHON_PACKAGE} ${SCHEMAS_PACKAGE} ${DEPENDANT_LIBRARIES})
+target_link_libraries(_AL_USDMayaSchemas AL_USDMayaSchemas ${DEPENDANT_LIBRARIES})
 
-install(TARGETS ${SCHEMAS_PYTHON_PACKAGE}
+install(TARGETS _AL_USDMayaSchemas
     LIBRARY
     DESTINATION ${bindings_install_path}
     RUNTIME
@@ -139,14 +128,11 @@ install(TARGETS ${SCHEMAS_PYTHON_PACKAGE}
 # Setup python packages
 ####################################################################################################
 
-configure_file (
-  ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py.in
-  ${CMAKE_BINARY_DIR}/${SCHEMAS_PYTHON_PATH}/__init__.py
-)
+# configure_file has a nice feature where it will copy the __init__ file over when it gets modified, unlike file(COPY ...)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/__init__.py ${CMAKE_BINARY_DIR}/AL/usd/schemas/maya/__init__.py COPYONLY)
+install(CODE "execute_process(COMMAND python -m compileall ${CMAKE_BINARY_DIR}/AL/usd/schemas/maya/__init__.py )")
 
-install(CODE "execute_process(COMMAND python -m compileall ${CMAKE_BINARY_DIR}/${currentPath}/__init__.py )")
-
-string(REPLACE "/" ";" folderHierarchy "${SCHEMAS_PYTHON_PATH}")
+string(REPLACE "/" ";" folderHierarchy "AL/usd/schemas/maya")
 
 list(LENGTH folderHierarchy listCount)
 math(EXPR listMaxIndex "${listCount}-1")
@@ -193,7 +179,7 @@ install(
         api.h
         tokens.h
     DESTINATION
-        ${CMAKE_INSTALL_PREFIX}/include/AL/usd/schemas
+        ${CMAKE_INSTALL_PREFIX}/include/AL/usd/schemas/maya
 )
 
 ####################################################################################################

@@ -12,7 +12,7 @@ TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
     reqs.push_back(TfToken("usd"));
     reqs.push_back(TfToken("usdGeom"));
     TfScriptModuleLoader::GetInstance().
-        RegisterLibrary(TfToken("@SCHEMAS_PACKAGE@"), TfToken("@SCHEMAS_PYTHON_MODULE@"), reqs);
+        RegisterLibrary(TfToken("AL_USDMayaSchemas"), TfToken("AL.usd.schemas.maya"), reqs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

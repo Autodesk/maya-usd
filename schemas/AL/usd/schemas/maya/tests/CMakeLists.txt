@@ -13,12 +13,12 @@ add_executable(testMayaSchemas
 
 target_include_directories(testMayaSchemas
     PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../schemas
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../schemas
     ${GTEST_INCLUDE_DIRS}
     )
 
 target_link_libraries(testMayaSchemas
-    ${SCHEMAS_PACKAGE}
+    AL_USDMayaSchemas
     ${GTEST_LIBRARIES}
     )
 

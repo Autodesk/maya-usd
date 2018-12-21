@@ -14,7 +14,7 @@ If nothing was authored, the prim has no effect.
 
 
 ## Maya Reference
-This has an accompanying schema called ALMayaReference, defined in [schemas](../schemas/AL/usd/schemas/schema.usda.in)
+This has an accompanying schema called ALMayaReference, defined in [schemas](../schemas/AL/usd/schemas/maya/schema.usda.in)
 
 The ALMayaReference schema allow you to define a Maya Reference in USD. The translator plugin will create the corresponding reference node in maya, and set it's attributes.
 Currently supports:

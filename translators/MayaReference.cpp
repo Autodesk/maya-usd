@@ -30,7 +30,7 @@
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
 #include "AL/usdmaya/utils/DgNodeHelper.h"
-#include "AL/usd/schemas/MayaReference.h"
+#include "AL/usd/schemas/maya/MayaReference.h"
 #include "AL/usdmaya/DebugCodes.h"
 
 #include "AL/usdmaya/utils/Utils.h"
