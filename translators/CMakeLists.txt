@@ -16,6 +16,7 @@ add_library(${TRANSLATORS_PACKAGE}
     Mesh.cpp
     NurbsCurve.cpp
     FrameRange.cpp
+    DirectionalLight.cpp
 )
 
 set(arg_PUBLIC_HEADER_FILES
