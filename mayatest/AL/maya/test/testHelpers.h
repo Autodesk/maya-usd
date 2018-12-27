@@ -28,6 +28,8 @@
 #include <iostream>
 #include <functional>
 
+#include "./Api.h"
+
 namespace AL {
 namespace maya {
 namespace test {
@@ -77,7 +79,7 @@ inline std::ostream& operator << (std::ostream& os, const MObject& obj)
 /// \brief  Used to generate a temporary filepath from the given filename.
 /// \param  filename the filename to append to the end of the OS temp dir
 /// \return the full path name
-const char* buildTempPath(const char* const filename);
+AL_MAYA_TEST_PUBLIC const char* buildTempPath(const char* const filename);
 
 /// \brief  A method that compares a pair of plugs (on different nodes) that test for equiality.
 /// \param  plugA  the first plug to compare
@@ -85,7 +87,7 @@ const char* buildTempPath(const char* const filename);
 /// \param  usdTesting  if true, when plugA refers to a Time, Angle, or Distance attribute, then
 ///         plugB is assumed to be a double. This is to work around the inability of USD attributes to understand
 ///         time values. In most cases you should be able to leave this value as false.
-extern void comparePlugs(const MPlug& plugA, const MPlug& plugB, bool usdTesting = false);
+AL_MAYA_TEST_PUBLIC void comparePlugs(const MPlug& plugA, const MPlug& plugB, bool usdTesting = false);
 
 /// \brief  Compares all of the attributes contained on the two nodes to see if the values and types match. This is
 ///         a way to help test the importers / exporters. i.e. Create a node of a given type, assign random attribute
@@ -97,7 +99,7 @@ extern void comparePlugs(const MPlug& plugA, const MPlug& plugB, bool usdTesting
 /// \param  usdTesting  if true, when plugA refers to a Time, Angle, or Distance attribute, then
 ///         plugB is assumed to be a double. This is to work around the inability of USD attributes to understand
 ///         time values. In most cases you should be able to leave this value as false.
-extern void compareNodes(const MObject& nodeA, const MObject& nodeB, bool includeDefaultAttrs, bool includeDynamicAttrs, bool usdTesting = false);
+AL_MAYA_TEST_PUBLIC void compareNodes(const MObject& nodeA, const MObject& nodeB, bool includeDefaultAttrs, bool includeDynamicAttrs, bool usdTesting = false);
 
 /// \brief  Compares all of the attributes contained on the two nodes to see if the values and types match. This is
 ///         a way to help test the importers / exporters. i.e. Create a node of a given type, assign random attribute
@@ -109,7 +111,7 @@ extern void compareNodes(const MObject& nodeA, const MObject& nodeB, bool includ
 /// \param  usdTesting  if true, when plugA refers to a Time, Angle, or Distance attribute, then
 ///         plugB is assumed to be a double. This is to work around the inability of USD attributes to understand
 ///         time values. In most cases you should be able to leave this value as false.
-extern void compareNodes(const MObject& nodeA, const MObject& nodeB, const char* const attributes[], uint32_t attributeCount, bool usdTesting = false);
+AL_MAYA_TEST_PUBLIC void compareNodes(const MObject& nodeA, const MObject& nodeB, const char* const attributes[], uint32_t attributeCount, bool usdTesting = false);
 
 // some random number generators
 inline bool randBool() { return (rand() % 2) ? true : false; }
@@ -193,18 +195,18 @@ inline void randomString(MPlug plug)
 //----------------------------------------------------------------------------------------------------------------------
 // make a random plug full of random data
 //----------------------------------------------------------------------------------------------------------------------
-extern void randomPlug(MPlug plug);
+AL_MAYA_TEST_PUBLIC void randomPlug(MPlug plug);
 
 //----------------------------------------------------------------------------------------------------------------------
 // make a random plug full of random data
 //----------------------------------------------------------------------------------------------------------------------
-extern void randomNode(MObject node, const char* const attributeNames[], const uint32_t attributeCount);
+AL_MAYA_TEST_PUBLIC void randomNode(MObject node, const char* const attributeNames[], const uint32_t attributeCount);
 
 //----------------------------------------------------------------------------------------------------------------------
 // make a random plug full of random data that is animated in the range startFrame -> endFrame
 //----------------------------------------------------------------------------------------------------------------------
-extern void randomAnimatedNode(MObject node, const char* const attributeNames[], const uint32_t attributeCount, double startFrame, double endFrame);
-extern void randomAnimatedValue(MPlug plug, double startFrame, double endFrame);
+AL_MAYA_TEST_PUBLIC void randomAnimatedNode(MObject node, const char* const attributeNames[], const uint32_t attributeCount, double startFrame, double endFrame);
+AL_MAYA_TEST_PUBLIC void randomAnimatedValue(MPlug plug, double startFrame, double endFrame);
 
 
 //----------------------------------------------------------------------------------------------------------------------

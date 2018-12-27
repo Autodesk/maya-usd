@@ -11,6 +11,7 @@ set(MAYA_TEST_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib)
 ####################################################################################################
 
 list(APPEND maya_test_headers
+    Api.h
     testHelpers.h
     testHarness.h
 )
@@ -32,7 +33,9 @@ target_compile_definitions(${MAYA_TEST_LIBRARY_NAME}
 
 target_link_libraries(${MAYA_TEST_LIBRARY_NAME}
     ${GTEST_LIBRARIES}
-    ${MAYA_LIBRARIES}
+    ${MAYA_Foundation_LIBRARY}
+    arch    # We should try and remove this dependency
+    tf      # We should try and remove this dependency
 )
 
 # install the public headers

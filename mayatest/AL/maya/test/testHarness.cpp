@@ -64,7 +64,7 @@ const char* angry_cat =
 RESET_COLOUR;
 
 //----------------------------------------------------------------------------------------------------------------------
-const MString UnitTestHarness::kName = "AL_usdmaya_UnitTestHarness";
+const MString UnitTestHarness::kName = "AL_maya_test_UnitTestHarness";
 
 //----------------------------------------------------------------------------------------------------------------------
 MSyntax UnitTestHarness::createSyntax()
