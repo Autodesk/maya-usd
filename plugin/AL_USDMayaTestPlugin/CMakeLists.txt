@@ -63,8 +63,8 @@ target_link_libraries(${PXR_PACKAGE}
     AL_USDMayaUtils
     AL_MayaUtils
     AL_USDUtils
-    AL_USDMaya
-    ${MAYA_TEST_LIBRARY_NAME}
+    AL_USDMaya   #Adding this recursively pulls in lots of things
+    AL_MayaTest
     ${GTEST_LIBRARIES}
 )
 

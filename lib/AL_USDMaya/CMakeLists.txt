@@ -192,7 +192,6 @@ target_link_libraries(${LIBRARY_NAME}
     ${Boost_LINK_LIBRARIES}
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
-    ${MAYA_OpenMayaFX_LIBRARY}
     ${MAYA_OpenMayaUI_LIBRARY}
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_OpenMayaRender_LIBRARY}
