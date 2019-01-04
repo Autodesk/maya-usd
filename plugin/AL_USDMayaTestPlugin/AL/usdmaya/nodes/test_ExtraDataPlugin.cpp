@@ -36,6 +36,7 @@
 #include <fstream>
 
 using namespace AL::usdmaya::fileio::translators;
+using AL::maya::test::buildTempPath;
 
 
 TEST(ExtraDataPlugin, ExtraDataPlugin)
