@@ -38,6 +38,11 @@ target_link_libraries(${MAYA_TEST_LIBRARY_NAME}
     tf      # We should try and remove this dependency
 )
 
+target_include_directories(${MAYA_TEST_LIBRARY_NAME} 
+    PUBLIC
+    ${MAYATEST_INCLUDE_LOCATION}
+)
+
 # install the public headers
 install( FILES ${maya_test_headers}
         DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/maya/test
