@@ -924,7 +924,6 @@ void ProxyShape::onPrimResync(SdfPath primPath, SdfPathVector& previousPrims)
   AL_END_PROFILE_SECTION();
 
   validateTransforms();
-  constructGLImagingEngine();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1490,8 +1489,12 @@ bool ProxyShape::updateLockPrims(const SdfPathSet& lockTransformPrims, const Sdf
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::constructExcludedPrims()
 {
-  m_excludedGeometry = getExcludePrimPaths();
-  constructGLImagingEngine();
+  auto excludedPaths = getExcludePrimPaths();
+  if (m_excludedGeometry != excludedPaths)
+  {
+    std::swap(m_excludedGeometry, excludedPaths);
+    constructGLImagingEngine();
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
