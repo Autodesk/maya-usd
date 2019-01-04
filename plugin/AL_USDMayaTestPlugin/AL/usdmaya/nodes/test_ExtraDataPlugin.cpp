@@ -78,12 +78,12 @@ TEST(ExtraDataPlugin, ExtraDataPlugin)
   MObject mayaObject = fnDag.create("distanceDimShape", mayaTM);
   EXPECT_TRUE(mayaObject.hasFn(MFn::kDistance));
 
-  auto apis = manufacture.getAPI(mayaObject);
-  ASSERT_TRUE(!apis.empty());
-  EXPECT_EQ(1, apis.size());
+  auto dataPlugins = manufacture.getExtraDataPlugins(mayaObject);
+  ASSERT_TRUE(!dataPlugins.empty());
+  EXPECT_EQ(1, dataPlugins.size());
 
-  // ensure correct api plugin returned
-  auto first = apis[0];
+  // ensure correct extra data plugin returned
+  auto first = dataPlugins[0];
   EXPECT_EQ(MFn::kDistance, first->getFnType());
 
   typedef TfRefPtr<AL::usdmaya::fileio::translators::TestExtraDataPlugin> TestExtraDataPluginPtr;
@@ -141,8 +141,8 @@ TEST(ExtraDataPlugin, ExtraDataPlugin)
   MGlobal::executeCommand(command);
 
   // we can't test the translators to see if export has been called, since the export would use a different context,
-  // and so the api schema plugin used will be a new instance :(
-  // As a result, load the usda file that was exported, and see if the api has been applied to the prim
+  // and so the extra data plugin used will be a new instance :(
+  // As a result, load the usda file that was exported, and see if the extra data plugin has been applied to the prim
   auto stg = UsdStage::Open(temp_path);
   ASSERT_TRUE(stg);
   prim = stg->GetPrimAtPath(SdfPath("/transform1"));

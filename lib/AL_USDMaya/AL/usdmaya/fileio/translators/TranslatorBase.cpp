@@ -69,7 +69,7 @@ TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
     {
       if (auto ptr = factory->create(context))
       {
-        m_apiPlugins.push_back(ptr);
+        m_extraDataPlugins.push_back(ptr);
       }
     }
   }
@@ -109,10 +109,10 @@ TranslatorManufacture::RefPtr TranslatorManufacture::get(const MObject& mayaObje
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-std::vector<TranslatorManufacture::ExtraDataPluginPtr> TranslatorManufacture::getAPI(const MObject& mayaObject)
+std::vector<TranslatorManufacture::ExtraDataPluginPtr> TranslatorManufacture::getExtraDataPlugins(const MObject& mayaObject)
 {
   std::vector<TranslatorManufacture::ExtraDataPluginPtr> ptrs;
-  for(auto plugin : m_apiPlugins)
+  for(auto plugin : m_extraDataPlugins)
   {
     MFn::Type type = plugin->getFnType();
     if(mayaObject.hasFn(type))

@@ -566,12 +566,12 @@ void Export::copyTransformParams(UsdPrim prim, MFnTransform& fnTransform)
 
   // handle the special case of exporting 
   {
-    auto apis = m_translatorManufacture.getAPI(fnTransform.object());
-    for(auto api : apis)
+    auto dataPlugins = m_translatorManufacture.getExtraDataPlugins(fnTransform.object());
+    for(auto dataPlugin : dataPlugins)
     {
-      if(api->getFnType() == MFn::kTransform)
+      if(dataPlugin->getFnType() == MFn::kTransform)
       {
-        api->exportObject(prim, fnTransform.object(), ExporterParams());
+        dataPlugin->exportObject(prim, fnTransform.object(), ExporterParams());
       }
     }
   }
@@ -682,10 +682,10 @@ void Export::exportShapesCommonProc(MDagPath shapePath, MFnTransform& fnTransfor
     }
 
     transformPrim = translatorPtr->exportObject(m_impl->stage(), shapePath, shapeUsdPath, m_params);
-    auto apis = m_translatorManufacture.getAPI(shapePath.node());
-    for(auto api : apis)
+    auto dataPlugins = m_translatorManufacture.getExtraDataPlugins(shapePath.node());
+    for(auto dataPlugin : dataPlugins)
     {
-      api->exportObject(transformPrim, shapePath.node(), m_params);
+      dataPlugin->exportObject(transformPrim, shapePath.node(), m_params);
     }
 
     copyTransform = (refType == kNoReference);

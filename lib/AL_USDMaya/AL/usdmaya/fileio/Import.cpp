@@ -131,13 +131,13 @@ void Import::doImport()
 
           // handle the special case of importing custom transform params
           {
-            auto apis = manufacture.getAPI(obj);
-            for(auto api : apis)
+            auto dataPlugins = manufacture.getExtraDataPlugins(obj);
+            for(auto dataPlugin : dataPlugins)
             {
               // special case
-              if(api->getFnType() == MFn::kTransform)
+              if(dataPlugin->getFnType() == MFn::kTransform)
               {
-                api->import(prim, parent);
+                dataPlugin->import(prim, parent);
               }
             }
           }

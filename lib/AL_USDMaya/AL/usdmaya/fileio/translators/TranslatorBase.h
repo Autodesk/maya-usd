@@ -268,15 +268,15 @@ public:
   AL_USDMAYA_PUBLIC
   RefPtr get(const MObject& mayaObject);
 
-  /// \brief  returns a list of schema API translators that may apply to this node type
+  /// \brief  returns a list of extra data plugins that may apply to this node type
   /// \param  mayaObject 
-  /// \return returns a list of API schemas that can be applied to the current node
+  /// \return returns a list of extra data plugins that can be applied to the current node
   AL_USDMAYA_PUBLIC
-  std::vector<ExtraDataPluginPtr> getAPI(const MObject& mayaObject);
+  std::vector<ExtraDataPluginPtr> getExtraDataPlugins(const MObject& mayaObject);
 
 private:
   std::unordered_map<std::string, TranslatorRefPtr> m_translatorsMap;
-  std::vector<ExtraDataPluginPtr> m_apiPlugins;
+  std::vector<ExtraDataPluginPtr> m_extraDataPlugins;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

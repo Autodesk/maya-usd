@@ -307,10 +307,10 @@ void ProxyShapePostLoadProcess::createSchemaPrims(
         }
         AL_END_PROFILE_SECTION();
 
-        auto apis = translatorManufacture.getAPI(created);
-        for(auto api : apis)
+        auto dataPlugins = translatorManufacture.getExtraDataPlugins(created);
+        for(auto dataPlugin : dataPlugins)
         {
-          api->import(prim, created);
+          dataPlugin->import(prim, created);
         }
       }
     }
@@ -364,10 +364,10 @@ void ProxyShapePostLoadProcess::updateSchemaPrims(
             std::vector<MObjectHandle> returned;
             if(context->getMObjects(prim, returned) && !returned.empty())
             {
-              auto apis = translatorManufacture.getAPI(returned[0].object());
-              for(auto api : apis)
+              auto dataPlugins = translatorManufacture.getExtraDataPlugins(returned[0].object());
+              for(auto dataPlugin : dataPlugins)
               {
-                api->update(prim);
+                dataPlugin->update(prim);
               }
             }
           }
@@ -405,10 +405,10 @@ void ProxyShapePostLoadProcess::connectSchemaPrims(
       std::vector<MObjectHandle> returned;
       if(context->getMObjects(prim, returned) && !returned.empty())
       {
-        auto apis = translatorManufacture.getAPI(returned[0].object());
-        for(auto api : apis)
+        auto dataPlugins = translatorManufacture.getExtraDataPlugins(returned[0].object());
+        for(auto dataPlugin : dataPlugins)
         {
-          api->postImport(prim);
+          dataPlugin->postImport(prim);
         }
       }
       AL_END_PROFILE_SECTION();

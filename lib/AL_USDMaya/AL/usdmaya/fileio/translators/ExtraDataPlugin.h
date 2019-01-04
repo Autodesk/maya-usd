@@ -79,7 +79,7 @@ public:
   virtual MStatus import(const UsdPrim& prim, const MObject& node)
     { return MS::kSuccess; }
 
-  /// \brief  Override this method to export additional API schema params on a node already handled by another schema. 
+  /// \brief  Override this method to export additional parameters on a node already handled by another translator. 
   /// \param  prim the USD prim to export into
   /// \param  node the maya node being exported.
   /// \param  params the exporter params
@@ -113,11 +113,6 @@ public:
   virtual MStatus update(const UsdPrim& prim)
     { return MS::kSuccess; }
 
-  /// \brief  internal method - specify the API type to translate
-  /// \param  type the API type for this API translator
-  inline void setTranslatedType(const TfType& type)
-    { m_type = type; }
-
   /// \brief  internal method - set the internal pointer to the translator context
   /// \param  ctx the context pointer
   inline void setContext(TranslatorContextPtr ctx)
@@ -128,12 +123,11 @@ public:
     { return m_context; }
 
 private:
-  TfType m_type;
   TranslatorContextPtr m_context;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  the base class for API plugins 
+/// \brief  the base class for extra data plugins 
 /// \ingroup   translators
 //----------------------------------------------------------------------------------------------------------------------
 class ExtraDataPluginBase
@@ -149,7 +143,7 @@ public:
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  core factory type to create an API schema translator
+/// \brief  core factory type to create an extra data plug-in translator
 /// \ingroup   translators
 //----------------------------------------------------------------------------------------------------------------------
 class ExtraDataPluginFactoryBase
@@ -165,7 +159,7 @@ public:
 
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  core factory type to create an API schema translator
+/// \brief  core factory type to create an extra data plug-in translator
 /// \ingroup   translators
 //----------------------------------------------------------------------------------------------------------------------
 template <typename T>
@@ -180,7 +174,7 @@ public:
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a macro to declare an API plug-in translator
+/// \brief  a macro to declare an extra data plug-in translator
 /// \ingroup   translators
 //----------------------------------------------------------------------------------------------------------------------
 #define AL_USDMAYA_DECLARE_EXTRA_DATA_PLUGIN(PlugClass)                         \
@@ -191,7 +185,7 @@ AL_MAYA_MACROS_PUBLIC                                                           
 static RefPtr create(TranslatorContextPtr context);
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a macro to define an API plug-in translator
+/// \brief  a macro to define an extra data plug-in translator
 /// \ingroup   translators
 //----------------------------------------------------------------------------------------------------------------------
 #define AL_USDMAYA_DEFINE_EXTRA_DATA_PLUGIN(PlugClass)                          \
