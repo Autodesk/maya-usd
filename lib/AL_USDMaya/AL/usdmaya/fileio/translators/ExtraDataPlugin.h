@@ -26,11 +26,7 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/usd/usd/prim.h"
 
-#include <iostream>
-#include <unordered_map>
-#include <functional>
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
-#include "AL/usdmaya/fileio/translators/SchemaApiPlugin.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
 
 namespace AL {
@@ -45,17 +41,17 @@ namespace translators {
 ///         schema translator will be called to handle its specific attributes. 
 /// \ingroup   translators
 //----------------------------------------------------------------------------------------------------------------------
-class SchemaPluginAbstract
+class ExtraDataPluginAbstract
   : public TfRefBase, public TfWeakBase
 {
 public:
-  typedef SchemaPluginAbstract This; ///< this type
+  typedef ExtraDataPluginAbstract This; ///< this type
   typedef TfRefPtr<This> RefPtr; ///< the type of a reference this type
   typedef TfWeakPtr<This> Ptr; ///< weak pointer to this type
 
   /// \brief  dtor
-  virtual ~SchemaPluginAbstract() = default;
-  SchemaPluginAbstract() = default;
+  virtual ~ExtraDataPluginAbstract() = default;
+  ExtraDataPluginAbstract() = default;
 
   /// \brief  Provides the base filter to remove Maya nodes to test for the applied schema. If the API schema is to 
   ///         apply to a custom plugin node, then the MFn::Type returned should be the relevant MFn::kPluginFoo enum,
@@ -140,15 +136,15 @@ private:
 /// \brief  the base class for API plugins 
 /// \ingroup   translators
 //----------------------------------------------------------------------------------------------------------------------
-class SchemaPluginBase
-  : public SchemaPluginAbstract
+class ExtraDataPluginBase
+  : public ExtraDataPluginAbstract
 {
 public:
-  typedef SchemaPluginBase This;
+  typedef ExtraDataPluginBase This;
   typedef TfRefPtr<This> RefPtr;
 
   /// \brief  dtor
-  virtual ~SchemaPluginBase()
+  virtual ~ExtraDataPluginBase()
     {}
 };
 
@@ -156,7 +152,7 @@ public:
 /// \brief  core factory type to create an API schema translator
 /// \ingroup   translators
 //----------------------------------------------------------------------------------------------------------------------
-class SchemaApiTranslatorFactoryBase
+class ExtraDataPluginFactoryBase
   : public TfType::FactoryBase
 {
 public:
@@ -164,7 +160,7 @@ public:
   /// \param  ctx the current translator context
   /// \return the plugin translator
   AL_USDMAYA_PUBLIC
-  virtual TfRefPtr<SchemaPluginBase> create(TranslatorContextPtr ctx) const = 0;
+  virtual TfRefPtr<ExtraDataPluginBase> create(TranslatorContextPtr ctx) const = 0;
 };
 
 
@@ -173,13 +169,13 @@ public:
 /// \ingroup   translators
 //----------------------------------------------------------------------------------------------------------------------
 template <typename T>
-class SchemaApiTranslatorFactory : public SchemaApiTranslatorFactoryBase
+class ExtraDataPluginTranslatorFactory : public ExtraDataPluginFactoryBase
 {
 public:
   /// \brief  creates a new translator for a given type T
   /// \param  ctx the current translator context
   /// \return the plugin translator associated with type T
-  TfRefPtr<SchemaPluginBase> create(TranslatorContextPtr ctx) const override
+  TfRefPtr<ExtraDataPluginBase> create(TranslatorContextPtr ctx) const override
     { return T::create(ctx); }
 };
 
@@ -187,7 +183,7 @@ public:
 /// \brief  a macro to declare an API plug-in translator
 /// \ingroup   translators
 //----------------------------------------------------------------------------------------------------------------------
-#define AL_USDMAYA_DECLARE_SCHEMA_PLUGIN(PlugClass)                             \
+#define AL_USDMAYA_DECLARE_EXTRA_DATA_PLUGIN(PlugClass)                         \
 typedef PlugClass This;                                                         \
 typedef TfRefPtr<This> RefPtr;                                                  \
 typedef TfWeakPtr<This> Ptr;                                                    \
@@ -198,7 +194,7 @@ static RefPtr create(TranslatorContextPtr context);
 /// \brief  a macro to define an API plug-in translator
 /// \ingroup   translators
 //----------------------------------------------------------------------------------------------------------------------
-#define AL_USDMAYA_DEFINE_SCHEMA_PLUGIN(PlugClass)                              \
+#define AL_USDMAYA_DEFINE_EXTRA_DATA_PLUGIN(PlugClass)                          \
 TfRefPtr<PlugClass>                                                             \
 PlugClass::create(TranslatorContextPtr context) {                               \
   TfRefPtr<PlugClass> plugin = TfCreateRefPtr(new This());                      \
@@ -209,8 +205,8 @@ PlugClass::create(TranslatorContextPtr context) {                               
                                                                                 \
 TF_REGISTRY_FUNCTION(TfType)                                                    \
 {                                                                               \
-    TfType::Define<PlugClass, TfType::Bases<SchemaPluginBase>>()                \
-        .SetFactory<SchemaApiTranslatorFactory<PlugClass>>();                   \
+    TfType::Define<PlugClass, TfType::Bases<ExtraDataPluginBase>>()             \
+        .SetFactory<ExtraDataPluginTranslatorFactory<PlugClass>>();             \
 }
 
 //----------------------------------------------------------------------------------------------------------------------

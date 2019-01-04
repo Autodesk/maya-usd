@@ -27,11 +27,8 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/attribute.h"
 
-#include <iostream>
-#include <unordered_map>
-#include <functional>
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
-#include "AL/usdmaya/fileio/translators/SchemaApiPlugin.h"
+#include "AL/usdmaya/fileio/translators/ExtraDataPlugin.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
 
 namespace AL {
@@ -39,16 +36,16 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
-class TestSchemaPlugin
-  : public SchemaPluginBase
+class TestExtraDataPlugin
+  : public ExtraDataPluginBase
 {
 public:
 
-  AL_USDMAYA_DECLARE_SCHEMA_PLUGIN(TestSchemaPlugin);
+  AL_USDMAYA_DECLARE_EXTRA_DATA_PLUGIN(TestExtraDataPlugin);
 
   /// \brief  dtor
-  virtual ~TestSchemaPlugin() = default;
-  TestSchemaPlugin() = default;
+  virtual ~TestExtraDataPlugin() = default;
+  TestExtraDataPlugin() = default;
 
   /// \brief  Provides the base filter to remove Maya nodes to test for the applied schema
   ///         for this test, just output the distance dimension

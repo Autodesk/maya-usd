@@ -59,13 +59,13 @@ TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
   }
 
   derivedTypes.clear();
-  PlugRegistry::GetAllDerivedTypes<SchemaPluginBase>(&derivedTypes);
+  PlugRegistry::GetAllDerivedTypes<ExtraDataPluginBase>(&derivedTypes);
   for (const TfType& t : derivedTypes)
   {
     // TfType::GetFactory may cause additional plugins to be loaded
     // may means potentially more translator types. We need to re-iterate
     // over the derived types just to be sure...
-    if (auto* factory = t.GetFactory<SchemaApiTranslatorFactoryBase>())
+    if (auto* factory = t.GetFactory<ExtraDataPluginFactoryBase>())
     {
       if (auto ptr = factory->create(context))
       {
@@ -109,9 +109,9 @@ TranslatorManufacture::RefPtr TranslatorManufacture::get(const MObject& mayaObje
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-std::vector<TranslatorManufacture::SchemaPluginPtr> TranslatorManufacture::getAPI(const MObject& mayaObject)
+std::vector<TranslatorManufacture::ExtraDataPluginPtr> TranslatorManufacture::getAPI(const MObject& mayaObject)
 {
-  std::vector<TranslatorManufacture::SchemaPluginPtr> ptrs;
+  std::vector<TranslatorManufacture::ExtraDataPluginPtr> ptrs;
   for(auto plugin : m_apiPlugins)
   {
     MFn::Type type = plugin->getFnType();

@@ -30,7 +30,7 @@
 #include <unordered_map>
 #include <functional>
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
-#include "AL/usdmaya/fileio/translators/SchemaApiPlugin.h"
+#include "AL/usdmaya/fileio/translators/ExtraDataPlugin.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
 
 namespace AL {
@@ -247,7 +247,7 @@ class TranslatorManufacture
 {
 public:
   typedef TfRefPtr<TranslatorBase> RefPtr; ///< handle to a plug-in transla
-  typedef TfRefPtr<SchemaPluginBase> SchemaPluginPtr; ///< handle to a plug-in transla
+  typedef TfRefPtr<ExtraDataPluginBase> ExtraDataPluginPtr; ///< handle to a plug-in transla
   typedef std::vector<RefPtr> RefPtrVector;
 
   /// \brief  constructs a registry of translator plugins that are currently registered within usd maya. This construction
@@ -272,11 +272,11 @@ public:
   /// \param  mayaObject 
   /// \return returns a list of API schemas that can be applied to the current node
   AL_USDMAYA_PUBLIC
-  std::vector<SchemaPluginPtr> getAPI(const MObject& mayaObject);
+  std::vector<ExtraDataPluginPtr> getAPI(const MObject& mayaObject);
 
 private:
   std::unordered_map<std::string, TranslatorRefPtr> m_translatorsMap;
-  std::vector<SchemaPluginPtr> m_apiPlugins;
+  std::vector<ExtraDataPluginPtr> m_apiPlugins;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

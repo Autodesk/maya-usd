@@ -1,5 +1,5 @@
 //
-// Copyright 2017 Animal Logic
+// Copyright 2019 Animal Logic
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.//
@@ -25,7 +25,7 @@
 #include "maya/MDagModifier.h"
 #include "maya/MFileIO.h"
 #include "AL/usdmaya/fileio/translators/TranslatorTestType.h"
-#include "AL/usdmaya/fileio/translators/SchemaApiTestPlugin.h"
+#include "AL/usdmaya/fileio/translators/TestExtraDataPlugin.h"
 
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/sdf/types.h"
@@ -37,9 +37,10 @@
 
 using namespace AL::usdmaya::fileio::translators;
 
-TEST(SchemaApiPlugin, SchemaApiPlugin)
+
+TEST(ExtraDataPlugin, ExtraDataPlugin)
 {
-  const std::string filePath = buildTempPath("AL_USDMayaTests_schemaApi.usda");
+  const std::string filePath = buildTempPath("AL_USDMayaTests_extraData.usda");
   {
     // create a TranslatorTestType usd prim
     UsdStageRefPtr m_stage = UsdStage::CreateInMemory();
@@ -85,8 +86,8 @@ TEST(SchemaApiPlugin, SchemaApiPlugin)
   auto first = apis[0];
   EXPECT_EQ(MFn::kDistance, first->getFnType());
 
-  typedef TfRefPtr<AL::usdmaya::fileio::translators::TestSchemaPlugin> TestSchemaPluginPtr;
-  auto pptr = TfStatic_cast<TestSchemaPluginPtr>(first);
+  typedef TfRefPtr<AL::usdmaya::fileio::translators::TestExtraDataPlugin> TestExtraDataPluginPtr;
+  auto pptr = TfStatic_cast<TestExtraDataPluginPtr>(first);
 
   EXPECT_TRUE(pptr->importCalled);
   EXPECT_TRUE(pptr->postImportCalled);
@@ -131,7 +132,7 @@ TEST(SchemaApiPlugin, SchemaApiPlugin)
   MGlobal::setActiveSelectionList(sl);
 
   // lets see if we can export the schema plugin 
-  const std::string temp_path = buildTempPath("AL_USDMayaTests_schemaplugin.usda");
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_extraData2.usda");
   MString command =
   "file -force -options "
   "\"Merge_Transforms=1;\" -typ \"AL usdmaya export\" -pr -ea \"";
