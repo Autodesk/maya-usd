@@ -39,7 +39,7 @@ target_link_libraries(${MAYA_TEST_LIBRARY_NAME}
 )
 
 target_include_directories(${MAYA_TEST_LIBRARY_NAME} 
-    PUBLIC
+    PRIVATE
     ${MAYATEST_INCLUDE_LOCATION}
     ${GTEST_INCLUDE_DIRS}
 )
