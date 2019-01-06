@@ -105,7 +105,9 @@ set(MAYATEST_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/mayatest)
 
 add_subdirectory(utils)
 add_subdirectory(usdutils)
-add_subdirectory(mayatest)
+if(NOT SKIP_USDMAYA_TESTS)
+	add_subdirectory(mayatest)
+endif()	
 add_subdirectory(mayautils)
 add_subdirectory(usdmayautils)
 
