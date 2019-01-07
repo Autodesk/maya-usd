@@ -398,11 +398,16 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     if (!_initializedViewport) {
         GlfGlewInit();
         _InitHydraResources();
+// This was required to work around an issue in HdSt
+// that didn't render lights the first time. Leaving it here
+// for a while in case others run into the problem.
+#if 0 
         if (_preferSimpleLight) {
             _taskController->SetEnableShadows(false);
             renderFrame();
             _taskController->SetEnableShadows(true);
         }
+#endif
     }
 
     const auto displayStyle = drawContext.getDisplayStyle();
