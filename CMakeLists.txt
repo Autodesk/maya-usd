@@ -10,6 +10,12 @@ if (UNIX AND NOT APPLE)
     set(LINUX TRUE)
 endif ()
 
+set(MTOH_CXX_STD "11"
+    CACHE
+    STRING
+    "Which C++ standard / version to use, as an integer - ie, 14 means use c++14."
+)
+
 option(LUMA_USD_BUILD "Build the plugin for Luma's version of USD." OFF)
 option(INSTALL_MAYA_MOD "Installs a maya module file for the plugin." OFF)
 
