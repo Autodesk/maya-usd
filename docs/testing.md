@@ -11,7 +11,7 @@ Plugins created with this module can be run in a number of ways:
 + In batch mode (we have some convenience MEL/Shell scripts to bootstrap this)
 
 
-## Interactive  Usage
+### Usage
 The plugin registers a single command which runs the tests:
 ```
 AL_usdmaya_UnitTestHarness [flags]
@@ -37,8 +37,6 @@ Most of the flags are taken directly from googletest (see [here](https://github.
 | -l -list                 |    | list all tests (stdout) see [googletest](https://github.com/abseil/googletest/blob/master/googletest/docs/advanced.md#listing-test-names) |
 | -nt                      |    | print execution time see [googletest](https://github.com/abseil/googletest/blob/master/googletest/docs/advanced.md#suppressing-the-elapsed-time)|
     
-## Non-interactive usage
-The AL_USDMayaTestPlugin has a CMake file that creates a test command that calls **run_mayaplugin_tests.sh** which calls maya -batch with the **run_mayaplugin_tests.mel** script which loads the plugin, run the test command with no args, return result to the shell script - you could reuse this in your own code
 
 # testHelpers
 contains general purpose test utility functionality that could be reused by your own  plugins or any additional tests
@@ -51,6 +49,12 @@ see [here](../plugin/AL_USDMayaTestPlugin/)
 
 This contains most of the unit tests for the core AL_USDMaya library, and uses the AL_MayaTest library to create a test plugin to run them (see [plugin](../plugin/AL_USDMayaTestPlugin/plugin.cpp))
 
+It also contains a **run_mayaplugin_tests.mel** script which loads the plugin, and runs the test command with no args. 
+You can use this to run the tests from batch mode, and additionally use the **run_mayaplugin_tests.sh** to call the same from the command line or a CI system - there are CMake targets for using with [ctest](https://cmake.org/cmake/help/latest/manual/ctest.1.html) which we use to run our automated tests
+
+
+
 ## AL_MayaUtils
 see [here](../mayautils/AL/maya/tests/mayaplugintest/) 
 
+Similar to the above
