@@ -1,7 +1,7 @@
 # AL_MayaTest library
 AL_USDMaya (as of 0.30.1) contains a library called "AL_MayaTest", see [here](../mayatest). This provides 2 modules:
-+ testHelpers - Some useful helper methods for writing your own tests
-+ testHarness - some glue to allow you to easily create a maya plugin which is a "wrapper" around [googletest](https://github.com/abseil/googletest) (Note: we're currently using googletest-2.a2.0.1 internally). 
++ [testHelpers](../mayatest/AL/maya/test/testHelpers.h) - Some useful helper methods for writing your own tests
++ [testHarness](../mayatest/AL/maya/test/testHarness.h)  - some glue to allow you to easily create a maya plugin which is a "wrapper" around [googletest](https://github.com/abseil/googletest) (Note: we're currently using googletest-2.a2.0.1 internally). 
 
 ## testHarness
 This module is used by AL_USDMaya's own tests, but can also be used to test your own AL_USDMaya translators, or indeed any maya code at all. All you need to do is to use write a simple plugin entry point that uses the testHarness, and compile in your test files - google test is able to find them without any additional registration scheme.
@@ -38,7 +38,7 @@ Most of the flags are taken directly from googletest (see [here](https://github.
 | -nt                      |    | print execution time see [googletest](https://github.com/abseil/googletest/blob/master/googletest/docs/advanced.md#suppressing-the-elapsed-time)|
     
 
-# testHelpers
+## testHelpers
 contains general purpose test utility functionality that could be reused by your own  plugins or any additional tests
 
 # AL_USDMaya tests
