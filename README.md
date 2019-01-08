@@ -35,6 +35,7 @@ We have some videos explaining some of the workflows we support. We are hoping t
 + [Asset Resolution and versioning](docs/assetresolution.md)
 + [Workflows](docs/workflows.md)
 + [Example Plugins](https://github.com/AnimalLogic/StudioExample/README.md)
++ [Testing](docs/testing.md)
 + [Comparison with Pixar USDMaya plugin](docs/pxrcomparison.md)
 
 ## Developer Documentation

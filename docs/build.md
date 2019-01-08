@@ -119,14 +119,6 @@ MAYA_VP2_USE_VP1_SELECTION=1
 as mentioned here:
 http://help.autodesk.com/view/MAYAUL/2017/ENU/?guid=__files_GUID_343690A7_F76D_4CD2_A964_E10DA7B5BDF8_htm
 
-## How to run the tests ##
-Unit tests of AL_USDMaya have been wrapped into a regular maya plugin (_AL_USDMayaTestPlugin_). Its path simply needs to be part of the MAYA_PLUG_IN_PATH environment variable and then it can be loaded.
-
-> AL_USDMayaPlugin and AL_USDMayaTestPlugin cannot be loaded at the same time.
-
-Once the test plugin loaded, you can run the `AL_usdmaya_UnitTestHarness` command. This test command does not need an interactive maya instance and can be run in a maya batch session.
-
-
 # Our internal development workflow
 We use git and github at Animal Logic. This repository and it's companions are git subtrees of our internal repo. This repo contains almost everything in our internal repo except for some of the Rez files we use internally for building (we do provide examples). Rez is an excellent package management system used by many studios in our industry, and you can find the source [here](https://github.com/nerdvegas/rez). We run AL_USDMaya unit tests on our internal Jenkins server
 
