@@ -70,7 +70,7 @@ constexpr auto MTOH_RENDER_OVERRIDE_NAME = "hydraViewportOverride";
 // so I'm adding a 5 second timeout.
 // There MUST be a better way to do this!
 std::mutex _convergenceMutex;
-bool _isConverged;
+bool _isConverged = false;
 std::chrono::system_clock::time_point _lastRenderTime =
     std::chrono::system_clock::now();
 
@@ -104,7 +104,7 @@ public:
     MUint64 getObjectTypeExclusions() override {
         return _vp2Overlay ? MHWRender::MSceneRender::getObjectTypeExclusions()
                            : ~(MHWRender::MFrameContext::kExcludeSelectHandles |
-                               // MHWRender::MFrameContext::kExcludeCameras |
+                               MHWRender::MFrameContext::kExcludeCameras |
                                MHWRender::MFrameContext::kExcludeLights |
                                MHWRender::MFrameContext::kExcludeGrid);
     }
