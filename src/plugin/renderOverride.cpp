@@ -105,7 +105,10 @@ public:
         return _vp2Overlay ? MHWRender::MSceneRender::getObjectTypeExclusions()
                            : ~(MHWRender::MFrameContext::kExcludeSelectHandles |
                                MHWRender::MFrameContext::kExcludeCameras |
+                               MHWRender::MFrameContext::kExcludeCVs |
+                               MHWRender::MFrameContext::kExcludeDimensions |
                                MHWRender::MFrameContext::kExcludeLights |
+                               MHWRender::MFrameContext::kExcludeLocators |
                                MHWRender::MFrameContext::kExcludeGrid);
     }
 
