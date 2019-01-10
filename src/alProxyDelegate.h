@@ -44,6 +44,9 @@ public:
     void PopulateSelectedPaths(
             const MSelectionList& mayaSelection,
             SdfPathVector& selectedSdfPaths) override;
+    void PopulateSelectedPaths(
+            const MSelectionList& mayaSelection,
+            HdSelection* selection) override;
 
     HdMayaALProxyData& AddProxy(ProxyShape* proxy);
     void RemoveProxy(ProxyShape* proxy);

@@ -446,6 +446,30 @@ HdMayaALProxyDelegate::PopulateSelectedPaths(
 
 }
 
+void HdMayaALProxyDelegate::PopulateSelectedPaths(
+            const MSelectionList& mayaSelection,
+            HdSelection* selection) {
+    MStatus status;
+    MObject proxyMObj;
+    MFnDagNode proxyMFnDag;
+    MDagPathArray proxyDagPaths;
+
+    for (auto& proxyAndData : _proxiesData) {
+        auto& proxy = proxyAndData.first;
+        auto& proxyData = proxyAndData.second;
+
+        for (auto& usdPath : proxy->selectedPaths()) {
+            selection->AddRprim(HdSelection::HighlightModeSelect,
+                                proxyData.delegate->GetPathForIndex(usdPath));
+        }
+
+        for (auto& usdPath : proxy->selectionList().paths()) {
+            selection->AddRprim(HdSelection::HighlightModeSelect,
+                                proxyData.delegate->GetPathForIndex(usdPath));
+        }
+    }
+}
+
 HdMayaALProxyData&
 HdMayaALProxyDelegate::AddProxy(ProxyShape* proxy) {
     // Our ProxyShapeAdded callback is trigged every time the node is added
