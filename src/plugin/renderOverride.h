@@ -75,6 +75,7 @@ public:
     MStatus Render(const MHWRender::MDrawContext& drawContext);
 
     void ClearHydraResources();
+    void SelectionChanged();
 
     MString uiName() const override {
         return MString("Hydra Viewport Override");
@@ -93,7 +94,6 @@ private:
     void _InitHydraResources();
     static void _ClearHydraCallback(void*);
     void _SelectionChanged();
-    static void _SelectionChangedCallback(void*);
     void _DetectMayaDefaultLighting(const MHWRender::MDrawContext& drawContext);
     void _UpdateRenderGlobals();
     void _UpdateRenderDelegateOptions();
@@ -122,6 +122,7 @@ private:
     bool _preferSimpleLight = false;
     bool _hasDefaultLighting = false;
     bool _renderGlobalsHaveChanged = true;
+    bool _selectionChanged = true;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -97,6 +97,10 @@ void _ClearResourcesCallback(float, float, void*) {
     MtohRenderOverride::GetInstance().UpdateRenderGlobals();
 }
 
+void _SelectionChangedCallback(void*) {
+    MtohRenderOverride::GetInstance().SelectionChanged();
+}
+
 class HdMayaSceneRender : public MHWRender::MSceneRender {
 public:
     HdMayaSceneRender(const MString& name) : MHWRender::MSceneRender(name) {}
@@ -414,6 +418,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 #endif
     }
 
+    _SelectionChanged();
+
     const auto displayStyle = drawContext.getDisplayStyle();
     _globals.delegateParams.displaySmoothMeshes =
         !(displayStyle & MHWRender::MFrameContext::kFlatShaded);
@@ -579,6 +585,11 @@ void MtohRenderOverride::ClearHydraResources() {
     }
 
     _initializedViewport = false;
+    SelectionChanged();
+}
+
+void MtohRenderOverride::SelectionChanged() {
+    _selectionChanged = true;
 }
 
 void MtohRenderOverride::_ClearHydraCallback(void*) {
@@ -586,6 +597,8 @@ void MtohRenderOverride::_ClearHydraCallback(void*) {
 }
 
 void MtohRenderOverride::_SelectionChanged() {
+    if (!_selectionChanged) { return; }
+    _selectionChanged = false;
     MSelectionList sel;
     if (!TF_VERIFY(MGlobal::getActiveSelectionList(sel))) { return; }
     SdfPathVector selectedPaths;
@@ -597,10 +610,6 @@ void MtohRenderOverride::_SelectionChanged() {
     auto* selection = new HdSelection;
     for (auto& it : _delegates) { it->PopulateSelectedPaths(sel, selection); }
     _selectionTracker->SetSelection(HdSelectionSharedPtr(selection));
-}
-
-void MtohRenderOverride::_SelectionChangedCallback(void*) {
-    GetInstance()._SelectionChanged();
 }
 
 MHWRender::DrawAPI MtohRenderOverride::supportedDrawAPIs() const {
