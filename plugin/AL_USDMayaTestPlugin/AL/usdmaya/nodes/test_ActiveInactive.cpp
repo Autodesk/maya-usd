@@ -624,7 +624,7 @@ TEST_F(ActiveInactive, disable)
         // should be able to set the variant back to a sphere
         EXPECT_TRUE(actualSet.SetVariantSelection("sphere"));
 
-        // sphere should not be there, but the cube should be
+        // sphere should be there, but the cube should not be
         EXPECT_TRUE(bool(sl.add("dave:pSphere1")));
         EXPECT_TRUE(bool(sl.add("dave:pSphereShape1")));
         EXPECT_TRUE(bool(sl.add("dave:polySphere1")));
@@ -634,7 +634,7 @@ TEST_F(ActiveInactive, disable)
         EXPECT_EQ(3, sl.length());
         sl.clear();
 
-        // should be able to set the variant back to a sphere
+        // should be able to set the variant back to a cube
         EXPECT_TRUE(actualSet.SetVariantSelection("cube"));
 
         // sphere should not be there, but the cube should be
@@ -647,10 +647,10 @@ TEST_F(ActiveInactive, disable)
         EXPECT_EQ(3, sl.length());
         sl.clear();
 
-        // should be able to set the variant back to a sphere
+        // should be able to set the variant to cube with ns fred
         EXPECT_TRUE(actualSet.SetVariantSelection("fredcube"));
 
-        // sphere should not be there, but the cube should be
+        // cube ref should be loaded under ns fred
         EXPECT_FALSE(bool(sl.add("dave:pSphere1")));
         EXPECT_FALSE(bool(sl.add("dave:pSphereShape1")));
         EXPECT_FALSE(bool(sl.add("dave:polySphere1")));
@@ -662,7 +662,7 @@ TEST_F(ActiveInactive, disable)
         EXPECT_TRUE(bool(sl.add("fred:polyCube1")));
         sl.clear();
 
-        // should be able to set the variant back to a sphere
+        // should be able to set the variant back to a cube with ns dave
         EXPECT_TRUE(actualSet.SetVariantSelection("cube"));
 
         // sphere should not be there, but the cube should be
@@ -722,6 +722,30 @@ TEST_F(ActiveInactive, disable)
           MItDependencyNodes iter(MFn::kPluginTransformNode);
           EXPECT_FALSE(iter.isDone());
         }
+
+        // Make sure the same prim can only bring in one copy of a reference.
+        fn.findPlug("pauseUpdates").setBool(True);
+        EXPECT_TRUE(actualSet.SetVariantSelection("sphere"));
+        EXPECT_TRUE(actualSet.SetVariantSelection("fredcube"));
+        fn.findPlug("pauseUpdates").setBool(False);
+        // Make sure we only got one ref
+        EXPECT_TRUE(bool(sl.add("fred:pCube1")));
+        EXPECT_FALSE(bool(sl.add("fred1:pCube1")));
+
+        // import a reference, and make sure a new ref is created on a resync.
+        MString command;
+        command = "file -importReference \"";
+        command += temp_path_cube.asChar();
+        command += "\";";
+        MStatus status = MGlobal::executeCommand(command);
+        EXPECT_EQ(MStatus(MS::kSuccess), status);
+        // old imported reference
+        EXPECT_TRUE(bool(sl.add("fred:pCube1")));
+        proxy->resync(SdfPath("/"));
+        // new reference created on resync
+        EXPECT_TRUE(bool(sl.add("fred1:pCube1")));
+        // old will still exist
+        EXPECT_TRUE(bool(sl.add("fred:pCube1")));
       }
     }
   }
