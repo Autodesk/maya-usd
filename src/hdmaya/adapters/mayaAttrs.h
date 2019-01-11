@@ -114,6 +114,10 @@ extern MObject computedFileTextureNamePattern;
 extern MObject fileTextureName;
 extern MObject fileTextureNamePattern;
 extern MObject uvTilingMode;
+extern MObject wrapU;
+extern MObject wrapV;
+extern MObject mirrorU;
+extern MObject mirrorV;
 
 } // namespace file
 

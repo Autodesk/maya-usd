@@ -108,6 +108,10 @@ MObject computedFileTextureNamePattern;
 MObject fileTextureName;
 MObject fileTextureNamePattern;
 MObject uvTilingMode;
+MObject wrapU;
+MObject wrapV;
+MObject mirrorU;
+MObject mirrorV;
 
 } // namespace file
 
@@ -216,6 +220,10 @@ MStatus initialize() {
         SET_ATTR_OBJ(fileTextureName);
         SET_ATTR_OBJ(fileTextureNamePattern);
         SET_ATTR_OBJ(uvTilingMode);
+        SET_ATTR_OBJ(wrapU);
+        SET_ATTR_OBJ(wrapV);
+        SET_ATTR_OBJ(mirrorU);
+        SET_ATTR_OBJ(mirrorV);
     }
     {
         SET_NODE_CLASS(imagePlane);
