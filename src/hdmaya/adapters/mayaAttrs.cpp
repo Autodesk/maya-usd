@@ -108,6 +108,7 @@ MObject computedFileTextureNamePattern;
 MObject fileTextureName;
 MObject fileTextureNamePattern;
 MObject uvTilingMode;
+MObject uvCoord;
 
 } // namespace file
 
@@ -225,6 +226,7 @@ MStatus initialize() {
         SET_ATTR_OBJ(fileTextureName);
         SET_ATTR_OBJ(fileTextureNamePattern);
         SET_ATTR_OBJ(uvTilingMode);
+        SET_ATTR_OBJ(uvCoord);
     }
 
     {

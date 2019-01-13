@@ -197,12 +197,12 @@ void ConvertFile(
                     VtValue(UsdHydraTokens->repeat);
             }
         } else {
-            material.parameters[wrapProperty] = VtValue(UsdHydraTokens->black);
+            material.parameters[wrapProperty] = VtValue(UsdHydraTokens->clamp);
         }
     };
 
     MPlugArray conns;
-    auto p = node.findPlug(HdMayaAdapterTokens->uvCoord.GetText());
+    auto p = node.findPlug(MayaAttrs::file::uvCoord, true);
     if (!p.isNull() && p.connectedTo(conns, true, false) &&
         conns.length() > 0) {
         MStatus status;

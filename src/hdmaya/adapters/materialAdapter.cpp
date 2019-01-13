@@ -389,7 +389,7 @@ private:
         if (connectedFileObj != MObject::kNullObj) {
             const auto filePath =
                 _GetTextureFilePath(MFnDependencyNode(connectedFileObj));
-            auto textureId = _GetTextureResourceID(filePath);
+            auto textureId = _GetTextureResourceID(connectedFileObj, filePath);
             if (textureId != HdTextureResource::ID(-1)) {
                 HdResourceRegistry::TextureKey textureKey =
                     GetDelegate()->GetRenderIndex().GetTextureKey(textureId);
@@ -401,7 +401,8 @@ private:
                 auto regLock = resourceRegistry->RegisterTextureResource(
                     textureKey, &textureInstance);
                 if (textureInstance.IsFirstInstance()) {
-                    auto textureResource = _GetTextureResource(filePath);
+                    auto textureResource =
+                        _GetTextureResource(connectedFileObj, filePath);
                     _textureResources[paramName] = textureResource;
                     textureInstance.SetValue(textureResource);
                 } else {
@@ -488,14 +489,17 @@ private:
         auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
         if (fileObj == MObject::kNullObj) { return HdTextureResource::ID(-1); }
         return _GetTextureResourceID(
-            _GetTextureFilePath(MFnDependencyNode(fileObj)));
+            fileObj, _GetTextureFilePath(MFnDependencyNode(fileObj)));
     }
 
     inline HdTextureResource::ID _GetTextureResourceID(
-        const TfToken& filePath) {
-        size_t hash = filePath.Hash();
+        const MObject& fileObj, const TfToken& filePath) {
+        auto hash = filePath.Hash();
+        const auto wrapping = _GetWrappingParams(fileObj);
         boost::hash_combine(
             hash, GetDelegate()->GetParams().textureMemoryPerTexture);
+        boost::hash_combine(hash, std::get<0>(wrapping));
+        boost::hash_combine(hash, std::get<1>(wrapping));
         return HdTextureResource::ID(hash);
     }
 
@@ -524,11 +528,11 @@ private:
         auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
         if (fileObj == MObject::kNullObj) { return {}; }
         return _GetTextureResource(
-            _GetTextureFilePath(MFnDependencyNode(fileObj)));
+            fileObj, _GetTextureFilePath(MFnDependencyNode(fileObj)));
     }
 
     inline HdTextureResourceSharedPtr _GetTextureResource(
-        const TfToken& filePath) {
+        const MObject& fileObj, const TfToken& filePath) {
         if (filePath.IsEmpty()) { return {}; }
         auto textureType = HdTextureType::Uv;
 #ifdef USD_001901_BUILD
@@ -555,6 +559,8 @@ private:
                 filePath, origin);
         }
 
+        const auto wrapping = _GetWrappingParams(fileObj);
+
         // We can't really mimic texture wrapping and mirroring settings from
         // the uv placement node, so we don't touch those for now.
         return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
@@ -564,10 +570,48 @@ private:
 #else
             false,
 #endif
-            HdWrapClamp, HdWrapClamp, HdMinFilterLinearMipmapLinear,
-            HdMagFilterLinear,
+            std::get<0>(wrapping), std::get<1>(wrapping),
+            HdMinFilterLinearMipmapLinear, HdMagFilterLinear,
             GetDelegate()->GetParams().textureMemoryPerTexture));
     }
+
+    inline std::tuple<HdWrap, HdWrap> _GetWrappingParams(
+        const MObject& fileObj) {
+        constexpr std::tuple<HdWrap, HdWrap> def{HdWrapClamp, HdWrapClamp};
+        MStatus status;
+        MFnDependencyNode fileNode(fileObj, &status);
+        if (!status) { return def; }
+        MPlugArray conns;
+        auto p = fileNode.findPlug(MayaAttrs::file::uvCoord, true);
+        if (p.isNull() || !p.connectedTo(conns, true, false) ||
+            conns.length() == 0) {
+            return def;
+        }
+        MFnDependencyNode place2d(conns[0].node(), &status);
+        if (!status || place2d.typeName() !=
+                           HdMayaAdapterTokens->place2dTexture.GetText()) {
+            return def;
+        }
+
+        auto getWrap = [&place2d](MObject& wrapAttr, MObject& mirrorAttr) {
+            if (place2d.findPlug(wrapAttr, true).asBool()) {
+                if (place2d.findPlug(mirrorAttr, true).asBool()) {
+                    return HdWrapMirror;
+                } else {
+                    return HdWrapRepeat;
+                }
+            } else {
+                return HdWrapClamp;
+            }
+        };
+        return std::tuple<HdWrap, HdWrap>{
+            getWrap(
+                MayaAttrs::place2dTexture::wrapU,
+                MayaAttrs::place2dTexture::mirrorU),
+            getWrap(
+                MayaAttrs::place2dTexture::wrapV,
+                MayaAttrs::place2dTexture::mirrorV)};
+    };
 
     MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName) {
         MStatus status;

@@ -114,6 +114,7 @@ extern MObject computedFileTextureNamePattern;
 extern MObject fileTextureName;
 extern MObject fileTextureNamePattern;
 extern MObject uvTilingMode;
+extern MObject uvCoord;
 
 } // namespace file
 
