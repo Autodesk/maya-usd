@@ -183,7 +183,7 @@ void Import::doImport()
         }
         if (m_nonImportablePrims.find(prim.GetTypeName()) == m_nonImportablePrims.end())
         {
-          MObject shape = createShape(schemaTranslator, prim, parent, parentUnmerged);
+          MObject shape = createShape(schemaTranslator, manufacture, prim, parent, parentUnmerged);
           if (shape == MObject::kNullObj)
           {
             MGlobal::displayWarning(MString("Unable to create prim ") +
@@ -221,7 +221,12 @@ void Import::doImport()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MObject Import::createShape(translators::TranslatorRefPtr translator, const UsdPrim& prim, MObject parent, bool parentUnmerged)
+MObject Import::createShape(
+  translators::TranslatorRefPtr translator, 
+  translators::TranslatorManufacture& manufacture,
+  const UsdPrim& prim,
+  MObject parent,
+  bool parentUnmerged)
 {
   MObject shapeObj;
   if (prim.IsInMaster())
@@ -243,6 +248,14 @@ MObject Import::createShape(translators::TranslatorRefPtr translator, const UsdP
     translator->import(prim, parent, shapeObj);
     NodeFactory::setupNode(prim, shapeObj, parent, parentUnmerged);
   }
+  
+  auto dataPlugins = manufacture.getExtraDataPlugins(shapeObj);
+  for(auto dataPlugin : dataPlugins)
+  {
+    // special case
+    dataPlugin->import(prim, parent);
+  }
+  
   return shapeObj;
 }
 
