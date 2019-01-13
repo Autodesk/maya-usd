@@ -114,12 +114,18 @@ extern MObject computedFileTextureNamePattern;
 extern MObject fileTextureName;
 extern MObject fileTextureNamePattern;
 extern MObject uvTilingMode;
+
+} // namespace file
+
+namespace place2dTexture {
+
+using namespace node;
 extern MObject wrapU;
 extern MObject wrapV;
 extern MObject mirrorU;
 extern MObject mirrorV;
 
-} // namespace file
+} // namespace place2dTexture
 
 namespace imagePlane {
 

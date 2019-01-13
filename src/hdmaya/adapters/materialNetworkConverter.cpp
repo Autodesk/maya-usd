@@ -31,7 +31,6 @@
 #include <pxr/usd/usdHydra/tokens.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
-
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 #include <maya/MStatus.h>
@@ -186,25 +185,38 @@ void ConvertFile(
         SdfValueTypeNames->Float2, &defaultUV);
 
     // Set wrapS / wrapT
-    auto setWrap = [&node, &material](MObject& wrapAttr, MObject& mirrorAttr,
-            const TfToken& wrapProperty) {
-        if(node.findPlug(wrapAttr, true).asBool()) {
-            if(node.findPlug(mirrorAttr, true).asBool()) {
+    auto setWrap = [&material](
+                       MFnDependencyNode& node, MObject& wrapAttr,
+                       MObject& mirrorAttr, const TfToken& wrapProperty) {
+        if (node.findPlug(wrapAttr, true).asBool()) {
+            if (node.findPlug(mirrorAttr, true).asBool()) {
                 material.parameters[wrapProperty] =
-                        VtValue(UsdHydraTokens->mirror);
+                    VtValue(UsdHydraTokens->mirror);
             } else {
                 material.parameters[wrapProperty] =
-                        VtValue(UsdHydraTokens->repeat);
+                    VtValue(UsdHydraTokens->repeat);
             }
         } else {
             material.parameters[wrapProperty] = VtValue(UsdHydraTokens->black);
         }
     };
 
-    setWrap(MayaAttrs::file::wrapU, MayaAttrs::file::mirrorU,
-            UsdHydraTokens->wrapS);
-    setWrap(MayaAttrs::file::wrapV, MayaAttrs::file::mirrorV,
-            UsdHydraTokens->wrapT);
+    MPlugArray conns;
+    auto p = node.findPlug(HdMayaAdapterTokens->uvCoord.GetText());
+    if (!p.isNull() && p.connectedTo(conns, true, false) &&
+        conns.length() > 0) {
+        MStatus status;
+        MFnDependencyNode place2d(conns[0].node(), &status);
+        if (status && place2d.typeName() ==
+                          HdMayaAdapterTokens->place2dTexture.GetText()) {
+            setWrap(
+                place2d, MayaAttrs::place2dTexture::wrapU,
+                MayaAttrs::place2dTexture::mirrorU, UsdHydraTokens->wrapS);
+            setWrap(
+                place2d, MayaAttrs::place2dTexture::wrapV,
+                MayaAttrs::place2dTexture::mirrorV, UsdHydraTokens->wrapT);
+        }
+    }
 
     // If the user has a "textureMemory" dynamic parameter set, obey it,
     // otherwise, default to something big (this should be a memory upper limit)

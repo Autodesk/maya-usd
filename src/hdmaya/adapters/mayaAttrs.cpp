@@ -108,12 +108,17 @@ MObject computedFileTextureNamePattern;
 MObject fileTextureName;
 MObject fileTextureNamePattern;
 MObject uvTilingMode;
+
+} // namespace file
+
+namespace place2dTexture {
+
 MObject wrapU;
 MObject wrapV;
 MObject mirrorU;
 MObject mirrorV;
 
-} // namespace file
+} // namespace place2dTexture
 
 namespace imagePlane {
 
@@ -220,11 +225,17 @@ MStatus initialize() {
         SET_ATTR_OBJ(fileTextureName);
         SET_ATTR_OBJ(fileTextureNamePattern);
         SET_ATTR_OBJ(uvTilingMode);
+    }
+
+    {
+        SET_NODE_CLASS(place2dTexture);
+
         SET_ATTR_OBJ(wrapU);
         SET_ATTR_OBJ(wrapV);
         SET_ATTR_OBJ(mirrorU);
         SET_ATTR_OBJ(mirrorV);
     }
+
     {
         SET_NODE_CLASS(imagePlane);
 
