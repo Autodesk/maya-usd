@@ -104,12 +104,6 @@ void Import::doImport()
       AL_MAYA_CHECK_ERROR2(MAnimControl::setMaxTime(endTimeCode), timeError);
     }
 
-    UsdPrim usdRootPrim = stage->GetDefaultPrim();
-    if (!usdRootPrim)
-    {
-      usdRootPrim = stage->GetPseudoRoot();
-    }
-
     NodeFactory& factory = getNodeFactory();
     factory.setImportParams(&m_params);
 
