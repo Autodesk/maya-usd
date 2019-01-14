@@ -581,21 +581,10 @@ private:
         MStatus status;
         MFnDependencyNode fileNode(fileObj, &status);
         if (!status) { return def; }
-        MPlugArray conns;
-        auto p = fileNode.findPlug(MayaAttrs::file::uvCoord, true);
-        if (p.isNull() || !p.connectedTo(conns, true, false) ||
-            conns.length() == 0) {
-            return def;
-        }
-        MFnDependencyNode place2d(conns[0].node(), &status);
-        if (!status || place2d.typeName() !=
-                           HdMayaAdapterTokens->place2dTexture.GetText()) {
-            return def;
-        }
 
-        auto getWrap = [&place2d](MObject& wrapAttr, MObject& mirrorAttr) {
-            if (place2d.findPlug(wrapAttr, true).asBool()) {
-                if (place2d.findPlug(mirrorAttr, true).asBool()) {
+        auto getWrap = [&fileNode](MObject& wrapAttr, MObject& mirrorAttr) {
+            if (fileNode.findPlug(wrapAttr, true).asBool()) {
+                if (fileNode.findPlug(mirrorAttr, true).asBool()) {
                     return HdWrapMirror;
                 } else {
                     return HdWrapRepeat;
@@ -606,11 +595,11 @@ private:
         };
         return std::tuple<HdWrap, HdWrap>{
             getWrap(
-                MayaAttrs::place2dTexture::wrapU,
-                MayaAttrs::place2dTexture::mirrorU),
+                MayaAttrs::file::wrapU,
+                MayaAttrs::file::mirrorU),
             getWrap(
-                MayaAttrs::place2dTexture::wrapV,
-                MayaAttrs::place2dTexture::mirrorV)};
+                MayaAttrs::file::wrapV,
+                MayaAttrs::file::mirrorV)};
     };
 
     MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName) {

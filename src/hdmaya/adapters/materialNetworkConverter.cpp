@@ -185,8 +185,8 @@ void ConvertFile(
         SdfValueTypeNames->Float2, &defaultUV);
 
     // Set wrapS / wrapT
-    auto setWrap = [&material](
-                       MFnDependencyNode& node, MObject& wrapAttr,
+    auto setWrap = [&node, &material](
+                       MObject& wrapAttr,
                        MObject& mirrorAttr, const TfToken& wrapProperty) {
         if (node.findPlug(wrapAttr, true).asBool()) {
             if (node.findPlug(mirrorAttr, true).asBool()) {
@@ -201,22 +201,12 @@ void ConvertFile(
         }
     };
 
-    MPlugArray conns;
-    auto p = node.findPlug(MayaAttrs::file::uvCoord, true);
-    if (!p.isNull() && p.connectedTo(conns, true, false) &&
-        conns.length() > 0) {
-        MStatus status;
-        MFnDependencyNode place2d(conns[0].node(), &status);
-        if (status && place2d.typeName() ==
-                          HdMayaAdapterTokens->place2dTexture.GetText()) {
-            setWrap(
-                place2d, MayaAttrs::place2dTexture::wrapU,
-                MayaAttrs::place2dTexture::mirrorU, UsdHydraTokens->wrapS);
-            setWrap(
-                place2d, MayaAttrs::place2dTexture::wrapV,
-                MayaAttrs::place2dTexture::mirrorV, UsdHydraTokens->wrapT);
-        }
-    }
+    setWrap(
+        MayaAttrs::file::wrapU,
+        MayaAttrs::file::mirrorU, UsdHydraTokens->wrapS);
+    setWrap(
+        MayaAttrs::file::wrapV,
+        MayaAttrs::file::mirrorV, UsdHydraTokens->wrapT);
 
     // If the user has a "textureMemory" dynamic parameter set, obey it,
     // otherwise, default to something big (this should be a memory upper limit)

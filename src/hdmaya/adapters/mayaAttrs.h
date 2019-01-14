@@ -124,18 +124,12 @@ extern MObject fileTextureName;
 extern MObject fileTextureNamePattern;
 extern MObject uvTilingMode;
 extern MObject uvCoord;
-
-} // namespace file
-
-namespace place2dTexture {
-
-using namespace node;
 extern MObject wrapU;
 extern MObject wrapV;
 extern MObject mirrorU;
 extern MObject mirrorV;
 
-} // namespace place2dTexture
+} // namespace file
 
 namespace imagePlane {
 
