@@ -112,10 +112,9 @@ public:
             const auto pointCount = pointArray.length();
             for (auto i = decltype(pointCount){0}; i < pointCount; i++) {
                 const auto pt = pointArray[i];
-                ret[i] =
-                    GfVec3f(static_cast<float>(pt.x),
-                            static_cast<float>(pt.y),
-                            static_cast<float>(pt.z));
+                ret[i] = GfVec3f(
+                    static_cast<float>(pt.x), static_cast<float>(pt.y),
+                    static_cast<float>(pt.z));
             }
             return VtValue(ret);
         }
@@ -151,6 +150,8 @@ public:
         }
         return {};
     }
+
+    TfToken GetRenderTag() const override { return HdTokens->guide; }
 
 private:
     static void NodeDirtiedCallback(

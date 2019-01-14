@@ -625,6 +625,15 @@ VtValue HdMayaSceneDelegate::Get(const SdfPath& id, const TfToken& key) {
     }
 }
 
+TfToken HdMayaSceneDelegate::GetRenderTag(const SdfPath& id) {
+    TF_DEBUG(HDMAYA_DELEGATE_GET_RENDER_TAG)
+        .Msg("HdMayaSceneDelegate::GetRenderTag(%s)\n", id.GetText());
+    return _GetValue<HdMayaShapeAdapter, TfToken>(
+        id.GetPrimPath(),
+        [](HdMayaShapeAdapter* a) -> TfToken { return a->GetRenderTag(); },
+        _shapeAdapters);
+}
+
 HdPrimvarDescriptorVector HdMayaSceneDelegate::GetPrimvarDescriptors(
     const SdfPath& id, HdInterpolation interpolation) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_PRIMVAR_DESCRIPTORS)

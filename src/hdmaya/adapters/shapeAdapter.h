@@ -61,6 +61,9 @@ public:
     HDMAYA_API
     const GfRange3d& GetExtent();
 
+    HDMAYA_API
+    virtual TfToken GetRenderTag() const;
+
 protected:
     HDMAYA_API
     void _CalculateExtent();

@@ -99,4 +99,6 @@ const GfRange3d& HdMayaShapeAdapter::GetExtent() {
     return _extent;
 }
 
+TfToken HdMayaShapeAdapter::GetRenderTag() const { return HdTokens->geometry; }
+
 PXR_NAMESPACE_CLOSE_SCOPE
