@@ -48,6 +48,7 @@
 #include <maya/MString.h>
 
 #include <hdmaya/adapters/adapterRegistry.h>
+#include <hdmaya/adapters/mayaAttrs.h>
 #include <hdmaya/delegates/delegateDebugCodes.h>
 #include <hdmaya/delegates/delegateRegistry.h>
 #include <hdmaya/utils.h>
@@ -62,6 +63,34 @@ void _nodeAdded(MObject& obj, void* clientData) {
     // dag will be empty and not initialized properly.
     auto* delegate = reinterpret_cast<HdMayaSceneDelegate*>(clientData);
     delegate->NodeAdded(obj);
+}
+
+const MString defaultLightSet("defaultLightSet");
+
+void _connectionChanged(
+    MPlug& srcPlug, MPlug& destPlug, bool made, void* clientData) {
+    TF_UNUSED(made);
+    const auto srcObj = srcPlug.node();
+    if (!srcObj.hasFn(MFn::kTransform)) { return; }
+    const auto destObj = destPlug.node();
+    if (!destObj.hasFn(MFn::kSet)) { return; }
+    if (srcPlug != MayaAttrs::dagNode::instObjGroups) { return; }
+    MStatus status;
+    MFnDependencyNode destNode(destObj, &status);
+    if (ARCH_UNLIKELY(!status)) { return; }
+    if (destNode.name() != defaultLightSet) { return; }
+    auto* delegate = reinterpret_cast<HdMayaSceneDelegate*>(clientData);
+    const auto dag = MDagPath::getAPathTo(srcObj, &status);
+    if (ARCH_UNLIKELY(!status)) { return; }
+    unsigned int shapesBelow = 0;
+    dag.numberOfShapesDirectlyBelow(shapesBelow);
+    for (auto i = decltype(shapesBelow){0}; i < shapesBelow; ++i) {
+        auto dagCopy = dag;
+        dagCopy.extendToShapeDirectlyBelow(i);
+        if (dagCopy.hasFn(MFn::kLight)) {
+            delegate->UpdateLightVisibility(dagCopy);
+        }
+    }
 }
 
 template <typename T>
@@ -175,6 +204,8 @@ void HdMayaSceneDelegate::Populate() {
     MStatus status;
     auto id =
         MDGMessage::addNodeAddedCallback(_nodeAdded, "dagNode", this, &status);
+    if (status) { _callbacks.push_back(id); }
+    id = MDGMessage::addConnectionCallback(_connectionChanged, this, &status);
     if (status) { _callbacks.push_back(id); }
 
     // Adding fallback material sprim to the render index.
@@ -418,6 +449,20 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
 
 void HdMayaSceneDelegate::NodeAdded(const MObject& obj) {
     _addedNodes.push_back(obj);
+}
+
+void HdMayaSceneDelegate::UpdateLightVisibility(const MDagPath& dag) {
+    const auto id = GetPrimPath(dag);
+    _FindAdapter<HdMayaLightAdapter>(
+        id,
+        [](HdMayaLightAdapter* a) {
+            if (a->UpdateVisibility()) {
+                a->RemovePrim();
+                a->Populate();
+                a->InvalidateTransform();
+            }
+        },
+        _lightAdapters);
 }
 
 void HdMayaSceneDelegate::AddNewInstance(const MDagPath& dag) {

@@ -74,6 +74,7 @@ public:
     void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags) override;
     void InsertDag(const MDagPath& dag);
     void NodeAdded(const MObject& obj);
+    void UpdateLightVisibility(const MDagPath& dag);
     void AddNewInstance(const MDagPath& dag);
     void SetParams(const HdMayaParams& params) override;
     void PopulateSelectedPaths(
