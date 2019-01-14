@@ -95,6 +95,7 @@ public:
         }
         HdMayaDagAdapter::CreateCallbacks();
     }
+
     VtValue Get(const TfToken& key) override {
         TF_DEBUG(HDMAYA_ADAPTER_GET)
             .Msg(
@@ -108,9 +109,14 @@ public:
             status = curve.getCVs(pointArray);
             if (!status) { return {}; }
             VtVec3fArray ret(pointArray.length());
-            for (size_t i = 0; i < pointArray.length(); i++)
+            const auto pointCount = pointArray.length();
+            for (auto i = decltype(pointCount){0}; i < pointCount; i++) {
+                const auto pt = pointArray[i];
                 ret[i] =
-                    GfVec3f(pointArray[i].x, pointArray[i].y, pointArray[i].z);
+                    GfVec3f(static_cast<float>(pt.x),
+                            static_cast<float>(pt.y),
+                            static_cast<float>(pt.z));
+            }
             return VtValue(ret);
         }
         return {};
@@ -118,13 +124,13 @@ public:
 
     HdBasisCurvesTopology GetBasisCurvesTopology() override {
         MFnNurbsCurve curve(GetDagPath());
-        int pointCount = curve.numCVs();
+        const auto pointCount = curve.numCVs();
 
         VtIntArray curveVertexCounts;
-        int numIndices = (pointCount - 1) * 2;
+        const auto numIndices = (pointCount - 1) * 2;
         curveVertexCounts.push_back(numIndices);
-        VtIntArray curveIndices(numIndices);
-        for (int i = 0; i < numIndices / 2; i++) {
+        VtIntArray curveIndices(static_cast<size_t>(numIndices));
+        for (auto i = decltype(numIndices){0}; i < numIndices / 2; i++) {
             curveIndices[i * 2] = i;
             curveIndices[i * 2 + 1] = i + 1;
         }
