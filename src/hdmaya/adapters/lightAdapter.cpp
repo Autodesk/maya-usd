@@ -276,9 +276,7 @@ void HdMayaLightAdapter::_CalculateShadowParams(
 }
 
 bool HdMayaLightAdapter::_GetVisibility() const {
-    if (!GetDagPath().isVisible()) {
-        return false;
-    }
+    if (!GetDagPath().isVisible()) { return false; }
     MStatus status;
     MFnDependencyNode node(GetDagPath().transform(), &status);
     if (ARCH_UNLIKELY(!status)) { return true; }
@@ -295,9 +293,7 @@ bool HdMayaLightAdapter::_GetVisibility() const {
         for (auto j = decltype(numConns){0}; j < numConns; ++j) {
             MFnDependencyNode otherNode(conns[j].node(), &status);
             if (!status) { continue; }
-            if (otherNode.name() == defaultLightSet) {
-                return true;
-            }
+            if (otherNode.name() == defaultLightSet) { return true; }
         }
     }
     return false;

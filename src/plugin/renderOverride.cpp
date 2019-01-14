@@ -588,9 +588,7 @@ void MtohRenderOverride::ClearHydraResources() {
     SelectionChanged();
 }
 
-void MtohRenderOverride::SelectionChanged() {
-    _selectionChanged = true;
-}
+void MtohRenderOverride::SelectionChanged() { _selectionChanged = true; }
 
 void MtohRenderOverride::_ClearHydraCallback(void*) {
     GetInstance().ClearHydraResources();
