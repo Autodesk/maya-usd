@@ -94,7 +94,7 @@ void _ClearResourcesCallback(float, float, void*) {
         }
     }
     MtohRenderOverride::GetInstance().ClearHydraResources();
-    MtohRenderOverride::GetInstance().UpdateRenderGlobals();
+    UpdateRenderGlobals();
 }
 
 void _SelectionChangedCallback(void*) {
