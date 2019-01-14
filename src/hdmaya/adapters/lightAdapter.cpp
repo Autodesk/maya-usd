@@ -48,18 +48,25 @@ TF_REGISTRY_FUNCTION(TfType) {
 
 namespace {
 
-void _changeTransform(
-    MNodeMessage::AttributeMessage /*msg*/, MPlug& plug, MPlug& /*otherPlug*/,
+void _changeVisibility(
+    MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPlug,
     void* clientData) {
-    auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    TF_UNUSED(msg);
+    TF_UNUSED(otherPlug);
     if (plug == MayaAttrs::dagNode::visibility) {
+        auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
         if (adapter->UpdateVisibility()) {
             adapter->RemovePrim();
             adapter->Populate();
             adapter->InvalidateTransform();
         }
-    } else if (adapter->IsVisible()) {
-        // We need both dirty params and dirty transform to get this working?
+    }
+}
+
+void _dirtyTransform(MObject& node, void* clientData) {
+    TF_UNUSED(node);
+    auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    if (adapter->IsVisible()) {
         adapter->MarkDirty(
             HdLight::DirtyTransform | HdLight::DirtyParams |
             HdLight::DirtyShadowParams);
@@ -67,7 +74,8 @@ void _changeTransform(
     }
 }
 
-void _dirtyParams(MObject& /*node*/, void* clientData) {
+void _dirtyParams(MObject& node, void* clientData) {
+    TF_UNUSED(node);
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     if (adapter->IsVisible()) {
         adapter->MarkDirty(HdLight::DirtyParams | HdLight::DirtyShadowParams);
@@ -223,7 +231,10 @@ void HdMayaLightAdapter::CreateCallbacks() {
         obj = dag.node();
         if (obj != MObject::kNullObj) {
             id = MNodeMessage::addAttributeChangedCallback(
-                obj, _changeTransform, this, &status);
+                obj, _changeVisibility, this, &status);
+            if (status) { AddCallback(id); }
+            id = MNodeMessage::addNodeDirtyCallback(
+                obj, _dirtyTransform, this, &status);
             if (status) { AddCallback(id); }
             _AddHierarchyChangedCallback(dag);
         }
