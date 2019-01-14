@@ -95,6 +95,8 @@ protected:
     void _AddHierarchyChangedCallback(MDagPath& dag);
     HDMAYA_API
     SdfPath _GetInstancerID();
+    HDMAYA_API
+    virtual bool _GetVisibility() const;
 
 private:
     MDagPath _dagPath;

@@ -70,6 +70,8 @@ protected:
     virtual void _CalculateLightParams(GlfSimpleLight& light) {}
     HDMAYA_API
     void _CalculateShadowParams(MFnLight& light, HdxShadowParams& params);
+    HDMAYA_API
+    bool _GetVisibility() const override;
 
     GfMatrix4d _shadowProjectionMatrix;
 };

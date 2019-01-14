@@ -31,6 +31,7 @@
 #include <maya/MColor.h>
 #include <maya/MFnLight.h>
 #include <maya/MPlug.h>
+#include <maya/MPlugArray.h>
 #include <maya/MPoint.h>
 
 #include <maya/MNodeMessage.h>
@@ -74,11 +75,16 @@ void _dirtyParams(MObject& /*node*/, void* clientData) {
     }
 }
 
+const MString defaultLightSet("defaultLightSet");
+
 } // namespace
 
 HdMayaLightAdapter::HdMayaLightAdapter(
     HdMayaDelegateCtx* delegate, const MDagPath& dag)
     : HdMayaDagAdapter(delegate->GetPrimPath(dag), delegate, dag) {
+    // This should be avoided, not a good idea to call virtual functions
+    // directly or indirectly in a constructor.
+    UpdateVisibility();
     _shadowProjectionMatrix.SetIdentity();
 }
 
@@ -209,8 +215,8 @@ void HdMayaLightAdapter::CreateCallbacks() {
     auto obj = dag.node();
     auto id =
         MNodeMessage::addNodeDirtyCallback(obj, _dirtyParams, this, &status);
-    dag.pop();
     if (status) { AddCallback(id); }
+    dag.pop();
     for (; dag.length() > 0; dag.pop()) {
         // The adapter itself will free the callbacks, so we don't have to worry
         // about passing raw pointers to the callbacks. Hopefully.
@@ -267,6 +273,34 @@ void HdMayaLightAdapter::_CalculateShadowParams(
         std::cout << "Resulting HdxShadowParams:\n";
         std::cout << params << "\n";
     }
+}
+
+bool HdMayaLightAdapter::_GetVisibility() const {
+    if (!GetDagPath().isVisible()) {
+        return false;
+    }
+    MStatus status;
+    MFnDependencyNode node(GetDagPath().transform(), &status);
+    if (ARCH_UNLIKELY(!status)) { return true; }
+    auto p = node.findPlug(MayaAttrs::dagNode::instObjGroups, true);
+    if (ARCH_UNLIKELY(p.isNull())) { return true; }
+    const auto numElements = p.numElements();
+    MPlugArray conns;
+    for (auto i = decltype(numElements){0}; i < numElements; ++i) {
+        auto ep = p[i]; // == elementByPhysicalIndex
+        if (!ep.connectedTo(conns, false, true) || conns.length() < 1) {
+            continue;
+        }
+        const auto numConns = conns.length();
+        for (auto j = decltype(numConns){0}; j < numConns; ++j) {
+            MFnDependencyNode otherNode(conns[j].node(), &status);
+            if (!status) { continue; }
+            if (otherNode.name() == defaultLightSet) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

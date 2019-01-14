@@ -127,7 +127,8 @@ const auto _instancePrimvarDescriptors = HdPrimvarDescriptorVector{
 HdMayaDagAdapter::HdMayaDagAdapter(
     const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath)
     : HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {
-    UpdateVisibility();
+    // We shouldn't call virtual functions in constructors.
+    _isVisible = GetDagPath().isVisible();
     _isInstanced = _dagPath.isInstanced() && _dagPath.instanceNumber() == 0;
 }
 
@@ -224,7 +225,7 @@ void HdMayaDagAdapter::PopulateSelection(
 
 bool HdMayaDagAdapter::UpdateVisibility() {
     if (ARCH_UNLIKELY(!GetDagPath().isValid())) { return false; }
-    const auto visible = GetDagPath().isVisible();
+    const auto visible = _GetVisibility();
     if (visible != _isVisible) {
         _isVisible = visible;
         return true;
@@ -267,6 +268,10 @@ HdPrimvarDescriptorVector HdMayaDagAdapter::GetInstancePrimvarDescriptors(
     } else {
         return {};
     }
+}
+
+bool HdMayaDagAdapter::_GetVisibility() const {
+    return GetDagPath().isVisible();
 }
 
 VtValue HdMayaDagAdapter::GetInstancePrimvar(const TfToken& key) {
