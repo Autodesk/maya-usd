@@ -141,7 +141,7 @@ public:
     virtual GlfTextureRefPtr New(
         TfToken const& texturePath,
         GlfImage::ImageOriginLocation originLocation =
-            GlfImage::OriginUpperLeft) const override {
+            GlfImage::OriginLowerLeft) const override {
         const GlfContextCaps& caps = GlfContextCaps::GetInstance();
         return GlfUdimTexture::New(
             texturePath, originLocation,
@@ -151,7 +151,7 @@ public:
     virtual GlfTextureRefPtr New(
         TfTokenVector const& texturePaths,
         GlfImage::ImageOriginLocation originLocation =
-            GlfImage::OriginUpperLeft) const override {
+            GlfImage::OriginLowerLeft) const override {
         return nullptr;
     }
 };
@@ -544,7 +544,7 @@ private:
             return {};
         }
         // TODO: handle origin
-        const auto origin = GlfImage::OriginUpperLeft;
+        const auto origin = GlfImage::OriginLowerLeft;
         GlfTextureHandleRefPtr texture = nullptr;
         if (textureType == HdTextureType::Udim) {
 #ifdef USD_001901_BUILD
