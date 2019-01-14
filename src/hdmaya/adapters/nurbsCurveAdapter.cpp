@@ -31,6 +31,10 @@
 #include <pxr/imaging/pxOsd/tokens.h>
 
 #include <maya/MFnNurbsCurve.h>
+#include <maya/MNodeMessage.h>
+#include <maya/MPlug.h>
+#include <maya/MPointArray.h>
+#include <maya/MPolyMessage.h>
 
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/adapterRegistry.h>
@@ -38,6 +42,21 @@
 #include <hdmaya/adapters/shapeAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+namespace {
+
+TF_DEFINE_PRIVATE_TOKENS(_tokens, (st));
+
+const std::array<std::pair<MObject&, HdDirtyBits>, 4> _dirtyBits{{
+    {MayaAttrs::nurbsCurve::controlPoints,
+     HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent},
+    {MayaAttrs::nurbsCurve::worldMatrix, HdChangeTracker::DirtyTransform},
+    {MayaAttrs::nurbsCurve::doubleSided, HdChangeTracker::DirtyDoubleSided},
+    {MayaAttrs::nurbsCurve::intermediateObject,
+     HdChangeTracker::DirtyVisibility},
+}};
+
+} // namespace
 
 class HdMayaNurbsCurveAdapter : public HdMayaShapeAdapter {
 public:
@@ -54,6 +73,131 @@ public:
     void Populate() override {
         GetDelegate()->InsertRprim(
             HdPrimTypeTokens->basisCurves, GetID(), HdChangeTracker::AllDirty);
+    }
+
+    void CreateCallbacks() override {
+        MStatus status;
+        auto obj = GetNode();
+        if (obj != MObject::kNullObj) {
+            auto id = MNodeMessage::addNodeDirtyPlugCallback(
+                obj, NodeDirtiedCallback, this, &status);
+            if (status) { AddCallback(id); }
+            id = MNodeMessage::addAttributeChangedCallback(
+                obj, AttributeChangedCallback, this, &status);
+            if (status) { AddCallback(id); }
+            id = MPolyMessage::addPolyTopologyChangedCallback(
+                obj, TopologyChangedCallback, this, &status);
+            if (status) { AddCallback(id); }
+            bool wantModifications[3] = {true, true, true};
+            id = MPolyMessage::addPolyComponentIdChangedCallback(
+                obj, wantModifications, 3, ComponentIdChanged, this, &status);
+            if (status) { AddCallback(id); }
+        }
+        HdMayaDagAdapter::CreateCallbacks();
+    }
+    VtValue Get(const TfToken& key) override {
+        TF_DEBUG(HDMAYA_ADAPTER_GET)
+            .Msg(
+                "Called HdMayaNurbsCurveAdapter::Get(%s) - %s\n", key.GetText(),
+                GetDagPath().partialPathName().asChar());
+
+        if (key == HdTokens->points) {
+            MFnNurbsCurve curve(GetDagPath());
+            MStatus status;
+            MPointArray pointArray;
+            status = curve.getCVs(pointArray);
+            if (!status) { return {}; }
+            VtVec3fArray ret(pointArray.length());
+            for (size_t i = 0; i < pointArray.length(); i++)
+                ret[i] =
+                    GfVec3f(pointArray[i].x, pointArray[i].y, pointArray[i].z);
+            return VtValue(ret);
+        }
+        return {};
+    }
+
+    HdBasisCurvesTopology GetBasisCurvesTopology() override {
+        MFnNurbsCurve curve(GetDagPath());
+        int pointCount = curve.numCVs();
+
+        VtIntArray curveVertexCounts;
+        int numIndices = (pointCount - 1) * 2;
+        curveVertexCounts.push_back(numIndices);
+        VtIntArray curveIndices(numIndices);
+        for (int i = 0; i < numIndices / 2; i++) {
+            curveIndices[i * 2] = i;
+            curveIndices[i * 2 + 1] = i + 1;
+        }
+
+        return HdBasisCurvesTopology(
+            HdTokens->linear, HdTokens->bezier, HdTokens->segmented,
+            curveVertexCounts, curveIndices);
+    }
+
+    HdPrimvarDescriptorVector GetPrimvarDescriptors(
+        HdInterpolation interpolation) override {
+        if (interpolation == HdInterpolationVertex) {
+            HdPrimvarDescriptor desc;
+            desc.name = UsdGeomTokens->points;
+            desc.interpolation = interpolation;
+            desc.role = HdPrimvarRoleTokens->point;
+            return {desc};
+        }
+        return {};
+    }
+
+private:
+    static void NodeDirtiedCallback(
+        MObject& node, MPlug& plug, void* clientData) {
+        auto* adapter = reinterpret_cast<HdMayaNurbsCurveAdapter*>(clientData);
+        for (const auto& it : _dirtyBits) {
+            if (it.first == plug) {
+                adapter->MarkDirty(it.second);
+                TF_DEBUG(HDMAYA_ADAPTER_CURVE_PLUG_DIRTY)
+                    .Msg(
+                        "Marking prim dirty with bits %u because %s plug was "
+                        "dirtied.\n",
+                        it.second, plug.partialName().asChar());
+                return;
+            }
+        }
+
+        TF_DEBUG(HDMAYA_ADAPTER_CURVE_UNHANDLED_PLUG_DIRTY)
+            .Msg(
+                "%s (%s) plug dirtying was not handled by "
+                "HdMayaNurbsCurveAdapter::NodeDirtiedCallback.\n",
+                plug.name().asChar(), plug.partialName().asChar());
+    }
+
+    // For material assignments for now.
+    static void AttributeChangedCallback(
+        MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug& otherPlug,
+        void* clientData) {
+        auto* adapter = reinterpret_cast<HdMayaNurbsCurveAdapter*>(clientData);
+        if (plug == MayaAttrs::mesh::instObjGroups) {
+            adapter->MarkDirty(HdChangeTracker::DirtyMaterialId);
+        } else {
+            TF_DEBUG(HDMAYA_ADAPTER_CURVE_UNHANDLED_PLUG_DIRTY)
+                .Msg(
+                    "%s (%s) plug dirtying was not handled by "
+                    "HdMayaNurbsCurveAdapter::attributeChangedCallback.\n",
+                    plug.name().asChar(), plug.name().asChar());
+        }
+    }
+
+    static void TopologyChangedCallback(MObject& node, void* clientData) {
+        auto* adapter = reinterpret_cast<HdMayaNurbsCurveAdapter*>(clientData);
+        adapter->MarkDirty(
+            HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyPrimvar |
+            HdChangeTracker::DirtyPoints);
+    }
+
+    static void ComponentIdChanged(
+        MUintArray componentIds[], unsigned int count, void* clientData) {
+        auto* adapter = reinterpret_cast<HdMayaNurbsCurveAdapter*>(clientData);
+        adapter->MarkDirty(
+            HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyPrimvar |
+            HdChangeTracker::DirtyPoints);
     }
 };
 

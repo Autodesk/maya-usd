@@ -96,6 +96,14 @@ MObject uvPivot;
 
 } // namespace mesh
 
+// nurbsCurve
+
+namespace nurbsCurve {
+
+MObject controlPoints;
+
+} // namespace nurbsCurve
+
 namespace shadingEngine {
 
 MObject surfaceShader;
@@ -211,6 +219,12 @@ MStatus initialize() {
         SET_ATTR_OBJ(pnts);
         SET_ATTR_OBJ(inMesh);
         SET_ATTR_OBJ(uvPivot);
+    }
+
+    {
+        SET_NODE_CLASS(nurbsCurve);
+
+        SET_ATTR_OBJ(controlPoints);
     }
 
     {

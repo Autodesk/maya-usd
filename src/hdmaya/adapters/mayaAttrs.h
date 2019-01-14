@@ -100,6 +100,15 @@ extern MObject uvPivot;
 
 } // namespace mesh
 
+// curve
+
+namespace nurbsCurve {
+
+using namespace surfaceShape;
+extern MObject controlPoints;
+
+} // namespace nurbsCurve
+
 namespace shadingEngine {
 
 using namespace node;

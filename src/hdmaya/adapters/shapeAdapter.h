@@ -43,6 +43,9 @@ public:
 
     HDMAYA_API
     virtual HdMeshTopology GetMeshTopology();
+    HDMAYA_API
+    virtual HdBasisCurvesTopology GetBasisCurvesTopology();
+    HDMAYA_API
     virtual HdPrimvarDescriptorVector GetPrimvarDescriptors(
         HdInterpolation interpolation) {
         return {};

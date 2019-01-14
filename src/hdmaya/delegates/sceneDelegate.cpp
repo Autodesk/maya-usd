@@ -567,6 +567,18 @@ HdMeshTopology HdMayaSceneDelegate::GetMeshTopology(const SdfPath& id) {
         _shapeAdapters);
 }
 
+HdBasisCurvesTopology HdMayaSceneDelegate::GetBasisCurvesTopology(
+    const SdfPath& id) {
+    TF_DEBUG(HDMAYA_DELEGATE_GET_CURVE_TOPOLOGY)
+        .Msg("HdMayaSceneDelegate::GetBasisCurvesTopology(%s)\n", id.GetText());
+    return _GetValue<HdMayaShapeAdapter, HdBasisCurvesTopology>(
+        id,
+        [](HdMayaShapeAdapter* a) -> HdBasisCurvesTopology {
+            return a->GetBasisCurvesTopology();
+        },
+        _shapeAdapters);
+}
+
 GfRange3d HdMayaSceneDelegate::GetExtent(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_EXTENT)
         .Msg("HdMayaSceneDelegate::GetExtent(%s)\n", id.GetText());

@@ -85,6 +85,7 @@ public:
 
 protected:
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;
+    HdBasisCurvesTopology GetBasisCurvesTopology(const SdfPath& id) override;
     GfRange3d GetExtent(const SdfPath& id) override;
     GfMatrix4d GetTransform(const SdfPath& id) override;
     bool GetVisible(const SdfPath& id) override;
