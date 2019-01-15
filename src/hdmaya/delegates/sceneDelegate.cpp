@@ -80,7 +80,8 @@ void _connectionChanged(
     if (ARCH_UNLIKELY(!status)) { return; }
     if (destNode.name() != defaultLightSet) { return; }
     auto* delegate = reinterpret_cast<HdMayaSceneDelegate*>(clientData);
-    const auto dag = MDagPath::getAPathTo(srcObj, &status);
+    MDagPath dag;
+    status = MDagPath::getAPathTo(srcObj, dag);
     if (ARCH_UNLIKELY(!status)) { return; }
     unsigned int shapesBelow = 0;
     dag.numberOfShapesDirectlyBelow(shapesBelow);
