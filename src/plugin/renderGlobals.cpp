@@ -67,7 +67,7 @@ void _CreateEnumAttribute(
         if ([&attr, &values]() -> bool { // Meaning: Can return?
                 MStatus status;
                 MFnEnumAttribute eAttr(attr, &status);
-                if (!status) { return true; }
+                if (!status) { return false; }
                 short id = 0;
                 for (const auto& v : values) {
                     if (eAttr.fieldName(id++) != v.GetText()) { return false; }
