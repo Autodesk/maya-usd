@@ -186,8 +186,8 @@ void ConvertFile(
 
     // Set wrapS / wrapT
     auto setWrap = [&node, &material](
-                       MObject& wrapAttr,
-                       MObject& mirrorAttr, const TfToken& wrapProperty) {
+                       MObject& wrapAttr, MObject& mirrorAttr,
+                       const TfToken& wrapProperty) {
         if (node.findPlug(wrapAttr, true).asBool()) {
             if (node.findPlug(mirrorAttr, true).asBool()) {
                 material.parameters[wrapProperty] =
@@ -202,11 +202,11 @@ void ConvertFile(
     };
 
     setWrap(
-        MayaAttrs::file::wrapU,
-        MayaAttrs::file::mirrorU, UsdHydraTokens->wrapS);
+        MayaAttrs::file::wrapU, MayaAttrs::file::mirrorU,
+        UsdHydraTokens->wrapS);
     setWrap(
-        MayaAttrs::file::wrapV,
-        MayaAttrs::file::mirrorV, UsdHydraTokens->wrapT);
+        MayaAttrs::file::wrapV, MayaAttrs::file::mirrorV,
+        UsdHydraTokens->wrapT);
 
     // If the user has a "textureMemory" dynamic parameter set, obey it,
     // otherwise, default to something big (this should be a memory upper limit)
@@ -314,14 +314,14 @@ void HdMayaMaterialNetworkConverter::ConvertParameter(
         const auto sourceNodePath = GetMaterial(conns[0].node());
         if (sourceNodePath.IsEmpty()) { return; }
         HdMaterialRelationship rel;
-        rel.outputId = sourceNodePath;
+        rel.inputId = sourceNodePath;
         if (type == SdfValueTypeNames->Vector3f) {
-            rel.outputName = HdMayaAdapterTokens->rgb;
+            rel.inputName = HdMayaAdapterTokens->rgb;
         } else {
-            rel.outputName = HdMayaAdapterTokens->result;
+            rel.inputName = HdMayaAdapterTokens->result;
         }
-        rel.inputId = material.path;
-        rel.inputName = name;
+        rel.outputId = material.path;
+        rel.outputName = name;
         _network.relationships.push_back(rel);
     }
 }

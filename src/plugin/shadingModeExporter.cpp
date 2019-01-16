@@ -76,18 +76,27 @@ protected:
         // PreviewSurface is actually registered there yet
         SdfValueTypeName typeName;
 
-        auto inputPrim = stage->GetPrimAtPath(relationship.inputId);
+        // The following segment can be confusing at first. Output and input
+        // have two different meaning. In a Hydra context, like
+        // HdMaterialRelationship connections go from input to output.
+        // On USD primitives connections go from parameters in the
+        // outputs namespace to parameters in the inputs namespace.
+        // This is why the meaning is seemingly reversed, even though
+        // they represent two different concepts.
+        // Hydra is using input and output for connections, while USD is
+        // using inputs and outputs for the role of parameters on a prim.
+        auto inputPrim = stage->GetPrimAtPath(relationship.outputId);
         if (!TF_VERIFY(inputPrim)) { return false; }
         UsdShadeShader inputShader(inputPrim);
         if (!TF_VERIFY(inputShader)) { return false; }
-        UsdShadeInput input = inputShader.GetInput(relationship.inputName);
+        UsdShadeInput input = inputShader.GetInput(relationship.outputName);
         if (input) { typeName = input.GetTypeName(); }
 
-        auto outputPrim = stage->GetPrimAtPath(relationship.outputId);
+        auto outputPrim = stage->GetPrimAtPath(relationship.inputId);
         if (!TF_VERIFY(outputPrim)) { return false; }
         UsdShadeShader outputShader(outputPrim);
         if (!TF_VERIFY(outputShader)) { return false; }
-        UsdShadeInput output = outputShader.GetInput(relationship.outputName);
+        UsdShadeInput output = outputShader.GetInput(relationship.inputName);
         if (output) {
             if (!typeName) {
                 typeName = output.GetTypeName();
@@ -95,11 +104,11 @@ protected:
                 TF_WARN(
                     "Types of inputs and outputs did not match: "
                     "input %s.%s was %s, output %s.%s was %s",
-                    relationship.inputId.GetText(),
-                    relationship.inputName.GetText(),
-                    typeName.GetAsToken().GetText(),
                     relationship.outputId.GetText(),
                     relationship.outputName.GetText(),
+                    typeName.GetAsToken().GetText(),
+                    relationship.inputId.GetText(),
+                    relationship.inputName.GetText(),
                     output.GetTypeName().GetAsToken().GetText());
                 return false;
             }
@@ -108,14 +117,14 @@ protected:
         if (!typeName) { typeName = SdfValueTypeNames->Token; }
 
         if (!input) {
-            input = inputShader.CreateInput(relationship.inputName, typeName);
+            input = inputShader.CreateInput(relationship.outputName, typeName);
             if (!TF_VERIFY(input)) { return false; }
         }
         if (output) {
             return UsdShadeConnectableAPI::ConnectToSource(input, output);
         }
         return UsdShadeConnectableAPI::ConnectToSource(
-            input, outputShader, relationship.outputName,
+            input, outputShader, relationship.inputName,
             UsdShadeAttributeType::Output, typeName);
     }
 
