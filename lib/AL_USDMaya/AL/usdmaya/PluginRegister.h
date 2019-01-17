@@ -54,6 +54,100 @@ namespace AL {
 namespace usdmaya {
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief  Short term fix to enable meshes to connect directly to USD prims. This will be removed once the plugin
+///         translator API has been updated to allow custom import/export options. 
+//----------------------------------------------------------------------------------------------------------------------
+static const char* const g_geom_deformer_code = R"(
+global proc AL_usdmaya_meshStaticImport()
+{
+  string $sl[] = `ls -sl`;
+  for($s in $sl)
+  {
+    string $tm;
+    string $mesh;
+    string $nt = `nodeType $s`;
+    if($nt == "mesh")
+    {
+      $ps = `listRelatives -p "AL_usdmaya_Transform" -type $s`;
+      if(!size($ps)) 
+        continue;
+      $tm = $ps[0];
+      $mesh = $s;
+    }
+    else
+    if($nt == "AL_usdmaya_Transform")
+    {
+      $cs = `listRelatives -c -type "mesh" $s`;
+      if(!size($cs)) 
+        continue;
+      $mesh = $cs[0];
+      $tm = $s;
+    }
+    else
+      continue;
+            
+    string $pp = `getAttr ($tm + ".primPath")`;
+    string $cs[] = `listConnections -s 1 ($tm + ".inStageData")`; 
+    if(!size($pp) || !size($cs))
+      continue;
+    if(size(`listConnections -s 1 ($mesh + ".inMesh")`))
+      continue;
+    
+    $ctor = `createNode "AL_usdmaya_MeshAnimCreator"`;
+    setAttr -type "string" ($ctor + ".primPath") $pp;
+    connectAttr ($cs[0] + ".outStageData") ($ctor + ".inStageData");
+    connectAttr ($ctor + ".outMesh") ($mesh + ".inMesh");
+  }
+}
+global proc AL_usdmaya_meshAnimImport()
+{
+  string $sl[] = `ls -sl`;
+  for($s in $sl)
+  {
+    string $tm;
+    string $mesh;
+    string $nt = `nodeType $s`;
+    if($nt == "mesh")
+    {
+      $ps = `listRelatives -p "AL_usdmaya_Transform" -type $s`;
+      if(!size($ps)) 
+        continue;
+      $tm = $ps[0];
+      $mesh = $s;
+    }
+    else
+    if($nt == "AL_usdmaya_Transform")
+    {
+      $cs = `listRelatives -c -type "mesh" $s`;
+      if(!size($cs)) 
+        continue;
+      $mesh = $cs[0];
+      $tm = $s;
+    }
+    else
+      continue;
+            
+    string $pp = `getAttr ($tm + ".primPath")`;
+    string $cs[] = `listConnections -s 1 ($tm + ".inStageData")`; 
+    if(!size($pp) || !size($cs))
+      continue;
+    if(size(`listConnections -s 1 ($mesh + ".inMesh")`))
+      continue;
+    
+    $ctor = `createNode "AL_usdmaya_MeshAnimCreator"`;
+    $def = `createNode "AL_usdmaya_MeshAnimDeformer"`;
+    setAttr -type "string" ($ctor + ".primPath") $pp;
+    setAttr -type "string" ($def + ".primPath") $pp;
+    connectAttr "time1.outTime" ($def + ".inTime");
+    connectAttr ($cs[0] + ".outStageData") ($ctor + ".inStageData");
+    connectAttr ($cs[0] + ".outStageData") ($def + ".inStageData");
+    connectAttr ($ctor + ".outMesh") ($def + ".inMesh");
+    connectAttr ($def + ".outMesh") ($mesh + ".inMesh");
+  }
+}
+)";
+
+//----------------------------------------------------------------------------------------------------------------------
 /// \brief  This method is basically the main initializePlugin routine. The reason for it being a template is simply
 ///         a historical artifact.
 /// \param  plugin the MFnPlugin
@@ -79,6 +173,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   {
     MGlobal::setOptionVarValue("AL_usdmaya_pickMode", static_cast<int>(nodes::ProxyShape::PickMode::kPrims));
   }
+
 
   MStatus status;
 
@@ -173,6 +268,9 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL::usdmaya::cmds::constructRendererCommandGuis();
   AL::usdmaya::cmds::constructPickModeCommandGuis();
 
+  MGlobal::executeCommand(g_geom_deformer_code);
+  AL::maya::utils::MenuBuilder::addEntry("USD/Animated Geometry/Connect selected meshes to USD (static)", "AL_usdmaya_meshStaticImport");
+  AL::maya::utils::MenuBuilder::addEntry("USD/Animated Geometry/Connect selected meshes to USD (animated)", "AL_usdmaya_meshAnimImport");
   CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
   AL::usdmaya::Global::onPluginLoad();
   return status;
