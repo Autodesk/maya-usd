@@ -2,7 +2,7 @@
 ####################################################################################################
 # Setup 
 ####################################################################################################
-
+find_package(GTest REQUIRED)
 set(MAYA_TEST_LIBRARY_NAME "AL_MayaTest")
 set(MAYA_TEST_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
 
