@@ -34,9 +34,11 @@ Requirements:
 | --- | --- |
 | GCC | 4.8.5/6.3.1 |
 | USD | 0.18.11/0.19.1/0.19.3 |
-| Maya | 2018 |
+| Maya | 2018/2019 |
 | Boost | 1.61 |
 | TBB | 4.4+ |
+
+Note: Support of smooth mesh preview is limited to Maya 2019.
 
 ## Environment configuration
 

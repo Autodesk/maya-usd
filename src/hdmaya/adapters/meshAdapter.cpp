@@ -165,6 +165,9 @@ public:
             }
         }
 
+#if MAYA_APP_VERSION >= 2019
+#else
+#endif
         return HdMeshTopology(
             GetDelegate()->GetParams().displaySmoothMeshes
                 ? PxOsdOpenSubdivTokens->catmullClark
@@ -173,6 +176,7 @@ public:
     }
 
     HdDisplayStyle GetDisplayStyle() override {
+#if MAYA_APP_VERSION >= 2019
         MStatus status;
         MFnDependencyNode node(GetNode(), &status);
         if (ARCH_UNLIKELY(!status)) { return {0, false, false}; }
@@ -184,9 +188,23 @@ public:
             std::max(
                 0, node.findPlug(MayaAttrs::mesh::smoothLevel, true).asInt()));
         return {smoothLevel, false, false};
+#else
+        return {0, false, false};
+#endif
     }
 
-    PxOsdSubdivTags GetSubdivTags() override { return {}; }
+    PxOsdSubdivTags GetSubdivTags() override {
+#if MAYA_APP_VERSION >= 2019
+        PxOsdSubdivTags tags;
+        if (GetDisplayStyle().refineLevel < 1) {
+            return tags;
+        }
+
+        return tags;
+#else
+        return {};
+#endif
+    }
 
     HdPrimvarDescriptorVector GetPrimvarDescriptors(
         HdInterpolation interpolation) override {
