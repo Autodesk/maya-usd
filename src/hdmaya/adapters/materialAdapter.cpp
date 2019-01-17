@@ -594,12 +594,8 @@ private:
             }
         };
         return std::tuple<HdWrap, HdWrap>{
-            getWrap(
-                MayaAttrs::file::wrapU,
-                MayaAttrs::file::mirrorU),
-            getWrap(
-                MayaAttrs::file::wrapV,
-                MayaAttrs::file::mirrorV)};
+            getWrap(MayaAttrs::file::wrapU, MayaAttrs::file::mirrorU),
+            getWrap(MayaAttrs::file::wrapV, MayaAttrs::file::mirrorV)};
     };
 
     MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName) {

@@ -580,6 +580,17 @@ HdBasisCurvesTopology HdMayaSceneDelegate::GetBasisCurvesTopology(
         _shapeAdapters);
 }
 
+PxOsdSubdivTags HdMayaSceneDelegate::GetSubdivTags(const SdfPath& id) {
+    TF_DEBUG(HDMAYA_DELEGATE_GET_SUBDIV_TAGS)
+        .Msg("HdMayaSceneDelegate::GetSubdivTags(%s)\n", id.GetText());
+    return _GetValue<HdMayaShapeAdapter, PxOsdSubdivTags>(
+        id,
+        [](HdMayaShapeAdapter* a) -> PxOsdSubdivTags {
+            return a->GetSubdivTags();
+        },
+        _shapeAdapters);
+}
+
 GfRange3d HdMayaSceneDelegate::GetExtent(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_EXTENT)
         .Msg("HdMayaSceneDelegate::GetExtent(%s)\n", id.GetText());
@@ -726,10 +737,12 @@ HdCullStyle HdMayaSceneDelegate::GetCullStyle(const SdfPath& id) {
 HdDisplayStyle HdMayaSceneDelegate::GetDisplayStyle(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_DISPLAY_STYLE)
         .Msg("HdMayaSceneDelegate::GetDisplayStyle(%s)\n", id.GetText());
-    HdDisplayStyle style;
-    style.flatShadingEnabled = false;
-    style.displacementEnabled = false;
-    return style;
+    return _GetValue<HdMayaShapeAdapter, HdDisplayStyle>(
+        id,
+        [](HdMayaShapeAdapter* a) -> HdDisplayStyle {
+            return a->GetDisplayStyle();
+        },
+        _shapeAdapters);
 }
 
 SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id) {

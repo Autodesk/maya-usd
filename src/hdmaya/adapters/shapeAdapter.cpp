@@ -57,9 +57,16 @@ void HdMayaShapeAdapter::_CalculateExtent() {
 };
 
 HdMeshTopology HdMayaShapeAdapter::GetMeshTopology() { return {}; };
+
 HdBasisCurvesTopology HdMayaShapeAdapter::GetBasisCurvesTopology() {
     return {};
 };
+
+HdDisplayStyle HdMayaShapeAdapter::GetDisplayStyle() {
+    return {0, false, false};
+}
+
+PxOsdSubdivTags HdMayaShapeAdapter::GetSubdivTags() { return {}; }
 
 void HdMayaShapeAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     HdMayaDagAdapter::MarkDirty(dirtyBits);

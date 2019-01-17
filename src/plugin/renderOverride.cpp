@@ -225,7 +225,7 @@ MtohRenderOverride::MtohRenderOverride()
     : MHWRender::MRenderOverride(MTOH_RENDER_OVERRIDE_NAME),
       _selectionTracker(new HdxSelectionTracker),
       _renderCollection(
-          HdTokens->geometry, HdReprSelector(HdReprTokens->smoothHull),
+          HdTokens->geometry, HdReprSelector(HdReprTokens->refined),
           SdfPath::AbsoluteRootPath()),
       _selectionCollection(
           HdReprTokens->wire, HdReprSelector(HdReprTokens->wire)) {
@@ -483,6 +483,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     // This is required for HdStream to display transparency.
     // We should fix this upstream, so HdStream can setup
     // all the required states.
+    _taskController->SetCollection(_renderCollection);
     if (_globals.renderer == _tokens->HdStreamRendererPlugin) {
         SetRenderGLState state;
         renderFrame();

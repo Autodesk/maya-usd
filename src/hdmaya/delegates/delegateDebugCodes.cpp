@@ -130,6 +130,10 @@ TF_REGISTRY_FUNCTION(TfDebug) {
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_GET_RENDER_TAG,
         "Print information about 'GetRenderTag' calls to the delegates.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_DELEGATE_GET_SUBDIV_TAGS,
+        "Print information about 'GetSubdivTags' calls to the delegates.");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
