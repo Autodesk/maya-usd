@@ -103,6 +103,8 @@ list(APPEND AL_usdmaya_fileio_translators_source
 list(APPEND AL_usdmaya_nodes_headers
         AL/usdmaya/nodes/Layer.h
         AL/usdmaya/nodes/LayerManager.h
+        AL/usdmaya/nodes/MeshAnimCreator.h
+        AL/usdmaya/nodes/MeshAnimDeformer.h
         AL/usdmaya/nodes/ProxyDrawOverride.h
         AL/usdmaya/nodes/ProxyShape.h
         AL/usdmaya/nodes/ProxyShapeUI.h
@@ -117,6 +119,8 @@ list(APPEND AL_usdmaya_nodes_proxy_headers
 list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/Layer.cpp
         AL/usdmaya/nodes/LayerManager.cpp
+        AL/usdmaya/nodes/MeshAnimCreator.cpp
+        AL/usdmaya/nodes/MeshAnimDeformer.cpp
         AL/usdmaya/nodes/ProxyDrawOverride.cpp
         AL/usdmaya/nodes/ProxyShape.cpp
         AL/usdmaya/nodes/ProxyShapeSelection.cpp

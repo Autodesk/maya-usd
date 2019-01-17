@@ -143,18 +143,23 @@ public:
 
   /// \brief  constructs the import context for the specified mesh
   /// \param  mesh the usd geometry to import
-  /// \param  parent the maya transform that will be the parent transform of the geometry being imported
+  /// \param  parentOrOwner the maya transform that will be the parent transform of the geometry being imported, 
+  ///         or a mesh data objected created via MFnMeshData.
   /// \param  dagName the name for the new mesh node
   /// \param  timeCode the time code at which to gather the data from USD
-  MeshImportContext(const UsdGeomMesh& mesh, MObject parent, MString dagName, UsdTimeCode timeCode = UsdTimeCode::EarliestTime())
+  MeshImportContext(const UsdGeomMesh& mesh, MObject parentOrOwner, MString dagName, UsdTimeCode timeCode = UsdTimeCode::EarliestTime())
     : mesh(mesh), m_timeCode(timeCode)
   {
     gatherFaceConnectsAndVertices();
-    polyShape = fnMesh.create(points.length(), counts.length(), points, counts, connects, parent);
+    polyShape = fnMesh.create(points.length(), counts.length(), points, counts, connects, parentOrOwner);
     TfToken orientation;
     bool leftHanded = (mesh.GetOrientationAttr().Get(&orientation, timeCode) && orientation == UsdGeomTokens->leftHanded);
-    fnMesh.setName(dagName);
-    fnMesh.findPlug("opposite", true).setBool(leftHanded);
+    fnMesh.findPlug("op", true).setBool(leftHanded);
+    // 
+    if(parentOrOwner.hasFn(MFn::kTransform))
+    {
+      fnMesh.setName(dagName);
+    }
   }
 
   /// \brief  reads the HoleIndices attribute from the usd geometry, and assigns those values as invisible faces on

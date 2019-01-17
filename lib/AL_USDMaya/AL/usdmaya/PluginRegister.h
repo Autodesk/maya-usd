@@ -35,6 +35,8 @@
 #include "AL/usdmaya/fileio/ImportTranslator.h"
 #include "AL/usdmaya/nodes/Layer.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
+#include "AL/usdmaya/nodes/MeshAnimCreator.h"
+#include "AL/usdmaya/nodes/MeshAnimDeformer.h"
 #include "AL/usdmaya/nodes/ProxyDrawOverride.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/ProxyShapeUI.h"
@@ -144,6 +146,9 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Transform, AL::usdmaya::nodes::TransformationMatrix);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::Layer);
+  AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::MeshAnimCreator);
+  AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::MeshAnimDeformer);
+
   // Since AL_MAYA_DECLARE_NODE / AL_MAYA_DEFINE_NODE declare/define "creator"
   // method, and AL_REGISTER_DEPEND_NODE registers "creator", in order to
   // define custom creator, need to either 'override' one of those... chose to
@@ -240,6 +245,8 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
   AL_UNREGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ExportTranslator);
   AL_UNREGISTER_DRAW_OVERRIDE(plugin, AL::usdmaya::nodes::ProxyDrawOverride);
+  AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimDeformer);
+  AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimCreator);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::ProxyShape);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Transform);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::RendererManager);

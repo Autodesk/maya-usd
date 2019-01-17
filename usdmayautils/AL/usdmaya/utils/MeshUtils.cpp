@@ -1809,8 +1809,6 @@ void MeshExportContext::copyBindPoseData(UsdTimeCode time)
   }
 }
 
-
-
 //----------------------------------------------------------------------------------------------------------------------
 void MeshExportContext::copyNormalData(UsdTimeCode time)
 {

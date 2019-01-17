@@ -1256,6 +1256,16 @@ public:
   static MStatus addFloatVectorAttr(const MObject& node, const char* longName, const char* shortName, const MFloatVector& defaultValue, uint32_t flags, MObject* attribute = 0)
     { return addFloat3Attr(node, longName, shortName, defaultValue.x, defaultValue.y, defaultValue.z, flags); }
 
+  /// \brief  add a new mesh attribute to this node type.
+  /// \param  longName  long name for the attribute
+  /// \param  shortName  short name for the attribute
+  /// \param  flags  a bitfield containing a mask of the AttributeFlags enumeration. Describes if the attribute is an input/output/etc
+  /// \param  node the node to add the attribute to
+  /// \param  attribute an optional pointer to an MObject in which the attribute handle will be returned
+  /// \return MS::kSuccess when succeeded, otherwise the error code
+  AL_MAYA_UTILS_PUBLIC
+  static MObject addMeshAttr(const char* longName, const char* shortName, uint32_t flags);
+
   /// \brief  add a new colour attribute to this node type.
   /// \param  longName  long name for the attribute
   /// \param  shortName  short name for the attribute
