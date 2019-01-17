@@ -154,7 +154,6 @@ void MeshAnimCreator::postConstructor()
 void MeshAnimCreator::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug&, void* clientData)
 {
   TF_DEBUG(ALUSDMAYA_GEOMETRY_DEFORMER).Msg("MeshAnimCreator::onAttributeChanged\n");
-
   MeshAnimCreator* deformer = (MeshAnimCreator*)clientData;
   if(msg & MNodeMessage::kAttributeSet)
   {
