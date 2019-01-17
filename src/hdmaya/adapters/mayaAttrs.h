@@ -97,6 +97,8 @@ using namespace surfaceShape;
 extern MObject pnts;
 extern MObject inMesh;
 extern MObject uvPivot;
+extern MObject displaySmoothMesh;
+extern MObject smoothLevel;
 
 } // namespace mesh
 

@@ -49,20 +49,25 @@ namespace {
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens, (st));
 
-const std::array<std::pair<MObject&, HdDirtyBits>, 6> _dirtyBits{{
-    {MayaAttrs::mesh::pnts,
-     // This is useful when the user edits the mesh.
-     HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent},
-    {MayaAttrs::mesh::inMesh,
-     // We are tracking topology changes and uv changes separately
-     HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent},
-    {MayaAttrs::mesh::worldMatrix, HdChangeTracker::DirtyTransform},
-    {MayaAttrs::mesh::doubleSided, HdChangeTracker::DirtyDoubleSided},
-    {MayaAttrs::mesh::intermediateObject, HdChangeTracker::DirtyVisibility},
-    {MayaAttrs::mesh::uvPivot,
-     // Tracking manual edits to uvs.
-     HdChangeTracker::DirtyPrimvar},
-}};
+constexpr int MAX_SMOOTH_LEVEL = 8;
+
+const std::array<std::pair<MObject&, HdDirtyBits>, 8> _dirtyBits{
+    {{MayaAttrs::mesh::pnts,
+      // This is useful when the user edits the mesh.
+      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent |
+          HdChangeTracker::DirtySubdivTags},
+     {MayaAttrs::mesh::inMesh,
+      // We are tracking topology changes and uv changes separately
+      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent |
+          HdChangeTracker::DirtySubdivTags},
+     {MayaAttrs::mesh::worldMatrix, HdChangeTracker::DirtyTransform},
+     {MayaAttrs::mesh::doubleSided, HdChangeTracker::DirtyDoubleSided},
+     {MayaAttrs::mesh::intermediateObject, HdChangeTracker::DirtyVisibility},
+     {MayaAttrs::mesh::uvPivot,
+      // Tracking manual edits to uvs.
+      HdChangeTracker::DirtyPrimvar},
+     {MayaAttrs::mesh::displaySmoothMesh, HdChangeTracker::DirtyDisplayStyle},
+     {MayaAttrs::mesh::smoothLevel, HdChangeTracker::DirtyDisplayStyle}}};
 
 } // namespace
 
@@ -166,6 +171,22 @@ public:
                 : PxOsdOpenSubdivTokens->none,
             UsdGeomTokens->rightHanded, faceVertexCounts, faceVertexIndices);
     }
+
+    HdDisplayStyle GetDisplayStyle() override {
+        MStatus status;
+        MFnDependencyNode node(GetNode(), &status);
+        if (ARCH_UNLIKELY(!status)) { return {0, false, false}; }
+        const auto displaySmoothMesh =
+            node.findPlug(MayaAttrs::mesh::displaySmoothMesh, true).asShort();
+        if (displaySmoothMesh == 0) { return {0, false, false}; }
+        const auto smoothLevel = std::min(
+            MAX_SMOOTH_LEVEL,
+            std::max(
+                0, node.findPlug(MayaAttrs::mesh::smoothLevel, true).asInt()));
+        return {smoothLevel, false, false};
+    }
+
+    PxOsdSubdivTags GetSubdivTags() override { return {}; }
 
     HdPrimvarDescriptorVector GetPrimvarDescriptors(
         HdInterpolation interpolation) override {

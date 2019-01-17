@@ -93,6 +93,8 @@ namespace mesh {
 MObject pnts;
 MObject inMesh;
 MObject uvPivot;
+MObject displaySmoothMesh;
+MObject smoothLevel;
 
 } // namespace mesh
 
@@ -214,6 +216,8 @@ MStatus initialize() {
         SET_ATTR_OBJ(pnts);
         SET_ATTR_OBJ(inMesh);
         SET_ATTR_OBJ(uvPivot);
+        SET_ATTR_OBJ(displaySmoothMesh);
+        SET_ATTR_OBJ(smoothLevel);
     }
 
     {
@@ -261,6 +265,7 @@ MStatus initialize() {
         SET_ATTR_OBJ(height);
         SET_ATTR_OBJ(imageCenter);
     }
+
     return MStatus::kSuccess;
 }
 
