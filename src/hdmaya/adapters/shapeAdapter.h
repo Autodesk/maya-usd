@@ -48,7 +48,7 @@ public:
     HDMAYA_API
     virtual HdDisplayStyle GetDisplayStyle();
     HDMAYA_API
-    PxOsdSubdivTags GetSubdivTags();
+    virtual PxOsdSubdivTags GetSubdivTags();
     HDMAYA_API
     virtual HdPrimvarDescriptorVector GetPrimvarDescriptors(
         HdInterpolation interpolation) {
