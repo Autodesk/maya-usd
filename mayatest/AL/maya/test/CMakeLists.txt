@@ -33,7 +33,6 @@ target_compile_definitions(${MAYA_TEST_LIBRARY_NAME}
 
 target_link_libraries(${MAYA_TEST_LIBRARY_NAME}
     ${GTEST_LIBRARIES}
-    ${MAYA_Foundation_LIBRARY}
     ${MAYA_LIBRARIES}
     arch    # We should try and remove this dependency
     tf      # We should try and remove this dependency
