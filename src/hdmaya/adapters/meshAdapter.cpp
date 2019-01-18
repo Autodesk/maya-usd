@@ -165,13 +165,19 @@ public:
             }
         }
 
-#if MAYA_APP_VERSION >= 2019
-#else
-#endif
+        // TODO: Maybe we could use the flat shading of the display style?
         return HdMeshTopology(
+#if MAYA_APP_VERSION >= 2019
+            (GetDelegate()->GetParams().displaySmoothMeshes ||
+             GetDisplayStyle().refineLevel > 0)
+                ? PxOsdOpenSubdivTokens->catmullClark
+                : PxOsdOpenSubdivTokens->none,
+#else
             GetDelegate()->GetParams().displaySmoothMeshes
                 ? PxOsdOpenSubdivTokens->catmullClark
                 : PxOsdOpenSubdivTokens->none,
+#endif
+
             UsdGeomTokens->rightHanded, faceVertexCounts, faceVertexIndices);
     }
 
@@ -196,9 +202,62 @@ public:
     PxOsdSubdivTags GetSubdivTags() override {
 #if MAYA_APP_VERSION >= 2019
         PxOsdSubdivTags tags;
-        if (GetDisplayStyle().refineLevel < 1) {
+        if (GetDisplayStyle().refineLevel < 1) { return tags; }
+
+        MStatus status;
+        MFnMesh mesh(GetNode(), &status);
+        if (ARCH_UNLIKELY(!status)) { return tags; }
+        MUintArray creaseVertIds;
+        MDoubleArray creaseVertValues;
+        mesh.getCreaseVertices(creaseVertIds, creaseVertValues);
+        const auto creaseVertIdCount = creaseVertIds.length();
+        if (!TF_VERIFY(creaseVertIdCount == creaseVertValues.length())) {
             return tags;
         }
+
+        MUintArray creaseEdgeIds;
+        MDoubleArray creaseEdgeValues;
+        mesh.getCreaseEdges(creaseEdgeIds, creaseEdgeValues);
+        const auto creaseEdgeIdCount = creaseEdgeIds.length();
+        if (!TF_VERIFY(creaseEdgeIdCount == creaseEdgeIds.length())) {
+            return tags;
+        }
+
+        if (creaseVertIdCount > 0) {
+            VtIntArray cornerIndices(creaseVertIdCount);
+            VtFloatArray cornerWeights(creaseVertIdCount);
+            for (auto i = decltype(creaseVertIdCount){0}; i < creaseVertIdCount;
+                 ++i) {
+                cornerIndices[i] = static_cast<int>(creaseVertIds[i]);
+                cornerWeights[i] = static_cast<float>(creaseVertValues[i]);
+            }
+
+            tags.SetCornerIndices(cornerIndices);
+            tags.SetCornerWeights(cornerWeights);
+        }
+
+        // TODO: Do a similar compression to usdMaya:
+        //  meshWrite_Subdiv.cpp:_CompressCreases.
+        if (creaseEdgeIdCount > 0) {
+            VtIntArray edgeIndices(creaseEdgeIdCount * 2);
+            VtFloatArray edgeWeights(creaseEdgeIdCount);
+            int edgeVertices[2] = {0, 0};
+            for (auto i = decltype(creaseEdgeIdCount){0}; i < creaseEdgeIdCount;
+                 ++i) {
+                mesh.getEdgeVertices(creaseEdgeIds[i], edgeVertices);
+                edgeIndices[i * 2] = static_cast<int>(edgeVertices[0]);
+                edgeIndices[i * 2 + 1] = static_cast<int>(edgeVertices[1]);
+                edgeWeights[i] = static_cast<float>(creaseEdgeValues[i]);
+            }
+
+            tags.SetCreaseIndices(edgeIndices);
+            tags.SetCreaseLengths(VtIntArray(creaseEdgeIdCount, 2));
+            tags.SetCreaseWeights(edgeWeights);
+        }
+
+        tags.SetVertexInterpolationRule(UsdGeomTokens->edgeAndCorner);
+        tags.SetFaceVaryingInterpolationRule(UsdGeomTokens->cornersPlus1);
+        tags.SetTriangleSubdivision(UsdGeomTokens->catmullClark);
 
         return tags;
 #else

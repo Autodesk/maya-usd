@@ -225,7 +225,8 @@ MtohRenderOverride::MtohRenderOverride()
     : MHWRender::MRenderOverride(MTOH_RENDER_OVERRIDE_NAME),
       _selectionTracker(new HdxSelectionTracker),
       _renderCollection(
-          HdTokens->geometry, HdReprSelector(
+          HdTokens->geometry,
+          HdReprSelector(
 #if MAYA_APP_VERSION >= 2019
               HdReprTokens->refined
 #else
