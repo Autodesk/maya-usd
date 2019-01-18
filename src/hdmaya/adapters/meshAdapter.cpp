@@ -245,8 +245,8 @@ public:
             for (auto i = decltype(creaseEdgeIdCount){0}; i < creaseEdgeIdCount;
                  ++i) {
                 mesh.getEdgeVertices(creaseEdgeIds[i], edgeVertices);
-                edgeIndices[i * 2] = static_cast<int>(edgeVertices[0]);
-                edgeIndices[i * 2 + 1] = static_cast<int>(edgeVertices[1]);
+                edgeIndices[i * 2] = edgeVertices[0];
+                edgeIndices[i * 2 + 1] = edgeVertices[1];
                 edgeWeights[i] = static_cast<float>(creaseEdgeValues[i]);
             }
 
