@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Luma Pictures
+// Copyright 2019 Luma Pictures
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification you may not use this file except in
@@ -53,6 +53,7 @@
 #include <hdmaya/utils.h>
 
 #include "pluginDebugCodes.h"
+#include "renderOverrideUtils.h"
 #include "tokens.h"
 #include "utils.h"
 
@@ -100,124 +101,6 @@ void _ClearResourcesCallback(float, float, void*) {
 void _SelectionChangedCallback(void*) {
     MtohRenderOverride::GetInstance().SelectionChanged();
 }
-
-class HdMayaSceneRender : public MHWRender::MSceneRender {
-public:
-    HdMayaSceneRender(const MString& name) : MHWRender::MSceneRender(name) {}
-
-    MUint64 getObjectTypeExclusions() override {
-        return _vp2Overlay ? MHWRender::MSceneRender::getObjectTypeExclusions()
-                           : ~(MHWRender::MFrameContext::kExcludeSelectHandles |
-                               MHWRender::MFrameContext::kExcludeCameras |
-                               MHWRender::MFrameContext::kExcludeCVs |
-                               MHWRender::MFrameContext::kExcludeDimensions |
-                               MHWRender::MFrameContext::kExcludeLights |
-                               MHWRender::MFrameContext::kExcludeLocators |
-                               MHWRender::MFrameContext::kExcludeGrid);
-    }
-
-    MSceneFilterOption renderFilterOverride() override {
-        return _vp2Overlay ? kRenderUIItems
-                           : MHWRender::MSceneRender::renderFilterOverride();
-    }
-
-    MHWRender::MClearOperation& clearOperation() override {
-        auto* renderer = MHWRender::MRenderer::theRenderer();
-        const auto gradient = renderer->useGradient();
-        const auto color1 = renderer->clearColor();
-        const auto color2 = renderer->clearColor2();
-
-        float c1[4] = {color1[0], color1[1], color1[2], 1.0f};
-        float c2[4] = {color2[0], color2[1], color2[2], 1.0f};
-
-        mClearOperation.setClearColor(c1);
-        mClearOperation.setClearColor2(c2);
-        mClearOperation.setClearGradient(gradient);
-        return mClearOperation;
-    }
-
-    bool _vp2Overlay = false;
-};
-
-class HdMayaManipulatorRender : public MHWRender::MSceneRender {
-public:
-    HdMayaManipulatorRender(const MString& name)
-        : MHWRender::MSceneRender(name) {}
-
-    MUint64 getObjectTypeExclusions() override {
-        return ~MHWRender::MFrameContext::kExcludeManipulators;
-    }
-
-    MHWRender::MClearOperation& clearOperation() override {
-        mClearOperation.setMask(MHWRender::MClearOperation::kClearNone);
-        return mClearOperation;
-    }
-};
-
-class HdMayaRender : public MHWRender::MUserRenderOperation {
-public:
-    HdMayaRender(const MString& name, MtohRenderOverride* override)
-        : MHWRender::MUserRenderOperation(name), _override(override) {}
-
-    MStatus execute(const MHWRender::MDrawContext& drawContext) override {
-        return _override->Render(drawContext);
-    }
-
-    bool hasUIDrawables() const override { return false; }
-
-    bool requiresLightData() const override { return false; }
-
-private:
-    MtohRenderOverride* _override;
-};
-
-class SetRenderGLState {
-public:
-    SetRenderGLState() {
-        glGetIntegerv(GL_BLEND_SRC_ALPHA, &_oldBlendFunc);
-        glGetIntegerv(GL_BLEND_EQUATION_RGB, &_oldBlendEquation);
-        glGetBooleanv(GL_BLEND, &_oldBlend);
-        glGetBooleanv(GL_CULL_FACE, &_oldCullFace);
-
-        if (_oldBlendFunc != BLEND_FUNC) {
-            glBlendFunc(GL_SRC_ALPHA, BLEND_FUNC);
-        }
-
-        if (_oldBlendEquation != BLEND_EQUATION) {
-            glBlendEquation(BLEND_EQUATION);
-        }
-
-        if (_oldBlend != BLEND) { glEnable(GL_BLEND); }
-
-        if (_oldCullFace != CULL_FACE) { glDisable(GL_CULL_FACE); }
-    }
-
-    ~SetRenderGLState() {
-        if (_oldBlend != BLEND) { glDisable(GL_BLEND); }
-
-        if (_oldBlendFunc != BLEND_FUNC) {
-            glBlendFunc(GL_SRC_ALPHA, _oldBlendFunc);
-        }
-
-        if (_oldBlendEquation != BLEND_EQUATION) {
-            glBlendEquation(_oldBlendEquation);
-        }
-
-        if (_oldCullFace != CULL_FACE) { glEnable(GL_CULL_FACE); }
-    }
-
-private:
-    // non-odr
-    constexpr static int BLEND_FUNC = GL_ONE_MINUS_SRC_ALPHA;
-    constexpr static int BLEND_EQUATION = GL_FUNC_ADD;
-    constexpr static GLboolean BLEND = GL_TRUE;
-    constexpr static GLboolean CULL_FACE = GL_FALSE;
-
-    int _oldBlendFunc = BLEND_FUNC;
-    int _oldBlendEquation = BLEND_EQUATION;
-    GLboolean _oldBlend = BLEND;
-    GLboolean _oldCullFace = CULL_FACE;
-};
 
 } // namespace
 
@@ -492,7 +375,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     // all the required states.
     _taskController->SetCollection(_renderCollection);
     if (_globals.renderer == _tokens->HdStreamRendererPlugin) {
-        SetRenderGLState state;
+        HdMayaSetRenderGLState state;
         renderFrame();
     } else {
         renderFrame();
