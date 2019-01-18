@@ -49,26 +49,16 @@
 #include "defaultLightDelegate.h"
 #include "renderGlobals.h"
 
+#include <atomic>
+#include <chrono>
+#include <mutex>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-class MtohRenderOverride : public MHWRender::MRenderOverride,
-                           TfSingleton<MtohRenderOverride> {
-    friend class TfSingleton<MtohRenderOverride>;
-    MtohRenderOverride();
-
+class MtohRenderOverride : public MHWRender::MRenderOverride {
 public:
+    MtohRenderOverride();
     ~MtohRenderOverride() override;
-    static MtohRenderOverride& GetInstance() {
-        return TfSingleton<MtohRenderOverride>::GetInstance();
-    }
-
-    static void DeleteInstance() {
-        return TfSingleton<MtohRenderOverride>::DeleteInstance();
-    }
-
-    static bool CurrentlyExists() {
-        return TfSingleton<MtohRenderOverride>::CurrentlyExists();
-    }
 
     static void UpdateRenderGlobals();
 
@@ -92,15 +82,27 @@ public:
 
 private:
     void _InitHydraResources();
-    static void _ClearHydraCallback(void*);
     void _SelectionChanged();
     void _DetectMayaDefaultLighting(const MHWRender::MDrawContext& drawContext);
     void _UpdateRenderGlobals();
     void _UpdateRenderDelegateOptions();
 
+    // Callbacks
+    static void _ClearHydraCallback(void* data);
+    static void _TimerCallback(float, float, void* data);
+    static void _ClearResourcesCallback(float, float, void* data);
+    static void _SelectionChangedCallback(void* data);
+
+    TfToken _rendererName;
+    TfToken _overrideName;
+
     std::vector<MHWRender::MRenderOperation*> _operations;
     std::vector<MCallbackId> _callbacks;
     MtohRenderGlobals _globals;
+
+    std::mutex _convergenceMutex;
+    std::chrono::system_clock::time_point _lastRenderTime;
+    std::atomic<bool> _needsClear;
 
     HdEngine _engine;
     HdxRendererPlugin* _rendererPlugin = nullptr;
@@ -123,6 +125,7 @@ private:
     bool _hasDefaultLighting = false;
     bool _renderGlobalsHaveChanged = true;
     bool _selectionChanged = true;
+    bool _isConverged = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

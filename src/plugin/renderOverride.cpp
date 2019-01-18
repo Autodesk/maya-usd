@@ -65,47 +65,14 @@ TF_INSTANTIATE_SINGLETON(MtohRenderOverride);
 
 namespace {
 
-constexpr auto MTOH_RENDER_OVERRIDE_NAME = "hydraViewportOverride";
-
-// I don't think there is an easy way to detect if the viewport was changed,
-// so I'm adding a 5 second timeout.
-// There MUST be a better way to do this!
-std::mutex _convergenceMutex;
-bool _isConverged = false;
-std::chrono::system_clock::time_point _lastRenderTime =
-    std::chrono::system_clock::now();
-
-std::atomic<bool> _needsClear;
-
-void _TimerCallback(float, float, void*) {
-    std::lock_guard<std::mutex> lock(_convergenceMutex);
-    if (!_isConverged && (std::chrono::system_clock::now() - _lastRenderTime) <
-                             std::chrono::seconds(5)) {
-        MGlobal::executeCommandOnIdle("refresh -f");
-    }
-}
-
-void _ClearResourcesCallback(float, float, void*) {
-    const auto num3dViews = M3dView::numberOf3dViews();
-    for (auto i = decltype(num3dViews){0}; i < num3dViews; ++i) {
-        M3dView view;
-        M3dView::get3dView(i, view);
-        if (view.renderOverrideName() == MString(MTOH_RENDER_OVERRIDE_NAME)) {
-            return;
-        }
-    }
-    MtohRenderOverride::GetInstance().ClearHydraResources();
-    MtohRenderOverride::UpdateRenderGlobals();
-}
-
-void _SelectionChangedCallback(void*) {
-    MtohRenderOverride::GetInstance().SelectionChanged();
-}
+std::vector<MtohRenderOverride*> _allInstances;
 
 } // namespace
 
 MtohRenderOverride::MtohRenderOverride()
-    : MHWRender::MRenderOverride(MTOH_RENDER_OVERRIDE_NAME),
+    : MHWRender::MRenderOverride("hydraViewportOverride"),
+      _rendererName("HdStreamRendererPlugin"),
+      _overrideName("hydraViewportOverride"),
       _selectionTracker(new HdxSelectionTracker),
       _renderCollection(
           HdTokens->geometry,
@@ -121,7 +88,7 @@ MtohRenderOverride::MtohRenderOverride()
           HdReprTokens->wire, HdReprSelector(HdReprTokens->wire)) {
     _needsClear.store(false);
     HdMayaDelegateRegistry::InstallDelegatesChangedSignal(
-        []() { _needsClear.store(true); });
+        [this]() { _needsClear.store(true); });
     _ID = SdfPath("/HdMayaViewportRenderer")
               .AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
     // This is a critical error, so we don't allow the construction
@@ -134,25 +101,26 @@ MtohRenderOverride::MtohRenderOverride()
 
     MStatus status;
     auto id = MSceneMessage::addCallback(
-        MSceneMessage::kBeforeNew, _ClearHydraCallback, nullptr, &status);
+        MSceneMessage::kBeforeNew, _ClearHydraCallback, this, &status);
     if (status) { _callbacks.push_back(id); }
     id = MSceneMessage::addCallback(
-        MSceneMessage::kBeforeOpen, _ClearHydraCallback, nullptr, &status);
+        MSceneMessage::kBeforeOpen, _ClearHydraCallback, this, &status);
     if (status) { _callbacks.push_back(id); }
     id = MEventMessage::addEventCallback(
-        MString("SelectionChanged"), _SelectionChangedCallback, nullptr,
-        &status);
+        MString("SelectionChanged"), _SelectionChangedCallback, this, &status);
     if (status) { _callbacks.push_back(id); }
 
-    id = MTimerMessage::addTimerCallback(1.0f / 10.0f, _TimerCallback, &status);
+    id = MTimerMessage::addTimerCallback(
+        1.0f / 10.0f, _TimerCallback, this, &status);
     if (status) { _callbacks.push_back(id); }
 
-    id =
-        MTimerMessage::addTimerCallback(5.0f, _ClearResourcesCallback, &status);
+    id = MTimerMessage::addTimerCallback(
+        5.0f, _ClearResourcesCallback, this, &status);
     if (status) { _callbacks.push_back(id); }
 
     _defaultLight.SetSpecular(GfVec4f(0.0f));
     _defaultLight.SetAmbient(GfVec4f(0.0f));
+    _allInstances.push_back(this);
 }
 
 MtohRenderOverride::~MtohRenderOverride() {
@@ -161,10 +129,13 @@ MtohRenderOverride::~MtohRenderOverride() {
     for (auto operation : _operations) { delete operation; }
 
     for (auto callback : _callbacks) { MMessage::removeCallback(callback); }
+    std::remove(_allInstances.begin(), _allInstances.end(), this);
 }
 
 void MtohRenderOverride::UpdateRenderGlobals() {
-    GetInstance()._renderGlobalsHaveChanged = true;
+    for (auto* instance : _allInstances) {
+        instance->_renderGlobalsHaveChanged = true;
+    }
 }
 
 void MtohRenderOverride::_DetectMayaDefaultLighting(
@@ -481,10 +452,6 @@ void MtohRenderOverride::ClearHydraResources() {
 
 void MtohRenderOverride::SelectionChanged() { _selectionChanged = true; }
 
-void MtohRenderOverride::_ClearHydraCallback(void*) {
-    GetInstance().ClearHydraResources();
-}
-
 void MtohRenderOverride::_SelectionChanged() {
     if (!_selectionChanged) { return; }
     _selectionChanged = false;
@@ -548,6 +515,44 @@ MHWRender::MRenderOperation* MtohRenderOverride::renderOperation() {
 
 bool MtohRenderOverride::nextRenderOperation() {
     return ++_currentOperation < static_cast<int>(_operations.size());
+}
+
+void MtohRenderOverride::_ClearHydraCallback(void* data) {
+    auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
+    if (!TF_VERIFY(instance)) { return; }
+    instance->ClearHydraResources();
+}
+
+void MtohRenderOverride::_TimerCallback(float, float, void* data) {
+    auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
+    if (!TF_VERIFY(instance)) { return; }
+    std::lock_guard<std::mutex> lock(instance->_convergenceMutex);
+    if (!instance->_isConverged &&
+        (std::chrono::system_clock::now() - instance->_lastRenderTime) <
+            std::chrono::seconds(5)) {
+        MGlobal::executeCommandOnIdle("refresh -f");
+    }
+}
+
+void MtohRenderOverride::_ClearResourcesCallback(float, float, void* data) {
+    auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
+    if (!TF_VERIFY(instance)) { return; }
+    const auto num3dViews = M3dView::numberOf3dViews();
+    for (auto i = decltype(num3dViews){0}; i < num3dViews; ++i) {
+        M3dView view;
+        M3dView::get3dView(i, view);
+        if (view.renderOverrideName() == instance->_overrideName.GetText()) {
+            return;
+        }
+    }
+    instance->ClearHydraResources();
+    instance->_UpdateRenderGlobals();
+}
+
+void MtohRenderOverride::_SelectionChangedCallback(void* data) {
+    auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
+    if (!TF_VERIFY(instance)) { return; }
+    instance->SelectionChanged();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
