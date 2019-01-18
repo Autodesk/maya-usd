@@ -29,12 +29,26 @@
 #include <pxr/base/tf/token.h>
 
 #include <string>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+struct MtohRendererDescription {
+    MtohRendererDescription(
+        const TfToken& rn, const TfToken& on, const TfToken& dn)
+        : rendererName(rn), overrideName(on), displayName(dn) {}
+
+    TfToken rendererName;
+    TfToken overrideName;
+    TfToken displayName;
+};
+
+using MtohRendererDescriptionVector = std::vector<MtohRendererDescription>;
 
 TfTokenVector MtohGetRendererPlugins();
 std::string MtohGetRendererPluginDisplayName(const TfToken& id);
 TfToken MtohGetDefaultRenderer();
+const MtohRendererDescriptionVector& MtohGetRendererDescriptions();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

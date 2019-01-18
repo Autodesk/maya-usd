@@ -43,7 +43,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct MtohRenderGlobals {
     MtohRenderGlobals();
     ~MtohRenderGlobals() = default;
-    TfToken renderer;
     HdMayaParams delegateParams;
     GfVec4f colorSelectionHighlightColor = GfVec4f(1.0f, 1.0f, 0.0f, 0.5f);
     TfToken selectionOverlay;

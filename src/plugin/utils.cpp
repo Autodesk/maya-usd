@@ -34,12 +34,16 @@ constexpr auto MTOH_DEFAULT_RENDERER_PLUGIN_NAME =
 }
 
 TfTokenVector MtohGetRendererPlugins() {
-    HfPluginDescVector pluginDescs;
-    HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescs);
+    static const auto ret = []() -> TfTokenVector {
+        HfPluginDescVector pluginDescs;
+        HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescs);
 
-    TfTokenVector ret;
-    ret.reserve(pluginDescs.size());
-    for (const auto& desc : pluginDescs) { ret.emplace_back(desc.id); }
+        TfTokenVector r;
+        r.reserve(pluginDescs.size());
+        for (const auto& desc : pluginDescs) { r.emplace_back(desc.id); }
+        return r;
+    }();
+
     return ret;
 }
 
@@ -63,6 +67,26 @@ TfToken MtohGetDefaultRenderer() {
         return defaultRendererToken;
     }
     return l[0];
+}
+
+const MtohRendererDescriptionVector& MtohGetRendererDescriptions() {
+    static const auto ret = []() -> MtohRendererDescriptionVector {
+        MtohRendererDescriptionVector r;
+        const auto& plugins = MtohGetRendererPlugins();
+        if (plugins.empty()) { return r; }
+        r.reserve(plugins.size());
+        for (const auto& plugin : plugins) {
+            r.emplace_back(
+                plugin,
+                TfToken(
+                    TfStringPrintf("mtohRenderOverride_%s", plugin.GetText())),
+                TfToken(TfStringPrintf(
+                    "%s (Hydra)",
+                    MtohGetRendererPluginDisplayName(plugin).c_str())));
+        }
+        return r;
+    }();
+    return ret;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

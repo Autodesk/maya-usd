@@ -61,18 +61,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens, (HdStreamRendererPlugin));
 
-TF_INSTANTIATE_SINGLETON(MtohRenderOverride);
-
 namespace {
 
 std::vector<MtohRenderOverride*> _allInstances;
 
 } // namespace
 
-MtohRenderOverride::MtohRenderOverride()
-    : MHWRender::MRenderOverride("hydraViewportOverride"),
-      _rendererName("HdStreamRendererPlugin"),
-      _overrideName("hydraViewportOverride"),
+MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
+    : MHWRender::MRenderOverride(desc.overrideName.GetText()),
+      _rendererDesc(desc),
       _selectionTracker(new HdxSelectionTracker),
       _renderCollection(
           HdTokens->geometry,
@@ -91,13 +88,6 @@ MtohRenderOverride::MtohRenderOverride()
         [this]() { _needsClear.store(true); });
     _ID = SdfPath("/HdMayaViewportRenderer")
               .AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
-    // This is a critical error, so we don't allow the construction
-    // of the viewport renderer src if there is no renderer src
-    // present.
-    if (_globals.renderer.IsEmpty()) {
-        // TODO: this should be checked when loading the plugin.
-        throw std::runtime_error("No default renderer is available!");
-    }
 
     MStatus status;
     auto id = MSceneMessage::addCallback(
@@ -197,11 +187,7 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(
 void MtohRenderOverride::_UpdateRenderGlobals() {
     if (!_renderGlobalsHaveChanged) { return; }
     _renderGlobalsHaveChanged = false;
-    const auto _currentGlobals = MtohGetRenderGlobals();
-    if (_globals.renderer != _currentGlobals.renderer) {
-        ClearHydraResources();
-    }
-    _globals = _currentGlobals;
+    _globals = MtohGetRenderGlobals();
     _UpdateRenderDelegateOptions();
     if (!_operations.empty()) {
         const auto vp2Overlay = _globals.selectionOverlay == MtohTokens->UseVp2;
@@ -219,7 +205,7 @@ void MtohRenderOverride::_UpdateRenderDelegateOptions() {
     auto* renderDelegate = _renderIndex->GetRenderDelegate();
     if (renderDelegate == nullptr) { return; }
     const auto* settings =
-        TfMapLookupPtr(_globals.rendererSettings, _globals.renderer);
+        TfMapLookupPtr(_globals.rendererSettings, _rendererDesc.rendererName);
     if (settings == nullptr) { return; }
     // TODO: Which is better? Set everything blindly or only set settings that
     //  have changed? This is not performance critical, and render delegates
@@ -345,7 +331,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     // We should fix this upstream, so HdStream can setup
     // all the required states.
     _taskController->SetCollection(_renderCollection);
-    if (_globals.renderer == _tokens->HdStreamRendererPlugin) {
+    if (_rendererDesc.rendererName == _tokens->HdStreamRendererPlugin) {
         HdMayaSetRenderGLState state;
         renderFrame();
     } else {
@@ -355,7 +341,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     // This causes issues with the embree delegate and potentially others.
     if (_globals.wireframeSelectionHighlight &&
         _globals.selectionOverlay == MtohTokens->UseHdSt &&
-        _globals.renderer == _tokens->HdStreamRendererPlugin) {
+        _rendererDesc.rendererName == _tokens->HdStreamRendererPlugin) {
         if (!_selectionCollection.GetRootPaths().empty()) {
             _taskController->SetCollection(_selectionCollection);
             renderFrame();
@@ -377,11 +363,12 @@ void MtohRenderOverride::_InitHydraResources() {
         .Msg("MtohRenderOverride::_InitHydraResources()\n");
     _rendererPlugin =
         HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(
-            _globals.renderer);
+            _rendererDesc.rendererName);
     auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
     _renderIndex = HdRenderIndex::New(renderDelegate);
     int delegateId = 0;
-    _preferSimpleLight = _globals.renderer == _tokens->HdStreamRendererPlugin;
+    _preferSimpleLight =
+        _rendererDesc.rendererName == _tokens->HdStreamRendererPlugin;
     for (const auto& creator : HdMayaDelegateRegistry::GetDelegateCreators()) {
         if (creator == nullptr) { continue; }
         auto newDelegate = creator(
@@ -404,7 +391,7 @@ void MtohRenderOverride::_InitHydraResources() {
         _renderIndex,
         _ID.AppendChild(TfToken(TfStringPrintf(
             "_UsdImaging_%s_%p",
-            TfMakeValidIdentifier(_globals.renderer.GetText()).c_str(),
+            TfMakeValidIdentifier(_rendererDesc.rendererName.GetText()).c_str(),
             this))));
     _taskController->SetEnableShadows(true);
     VtValue selectionTrackerValue(_selectionTracker);
@@ -541,7 +528,8 @@ void MtohRenderOverride::_ClearResourcesCallback(float, float, void* data) {
     for (auto i = decltype(num3dViews){0}; i < num3dViews; ++i) {
         M3dView view;
         M3dView::get3dView(i, view);
-        if (view.renderOverrideName() == instance->_overrideName.GetText()) {
+        if (view.renderOverrideName() ==
+            instance->_rendererDesc.overrideName.GetText()) {
             return;
         }
     }

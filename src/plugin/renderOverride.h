@@ -48,6 +48,7 @@
 
 #include "defaultLightDelegate.h"
 #include "renderGlobals.h"
+#include "utils.h"
 
 #include <atomic>
 #include <chrono>
@@ -57,7 +58,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class MtohRenderOverride : public MHWRender::MRenderOverride {
 public:
-    MtohRenderOverride();
+    MtohRenderOverride(const MtohRendererDescription& desc);
     ~MtohRenderOverride() override;
 
     static void UpdateRenderGlobals();
@@ -68,7 +69,7 @@ public:
     void SelectionChanged();
 
     MString uiName() const override {
-        return MString("Hydra Viewport Override");
+        return MString(_rendererDesc.displayName.GetText());
     }
 
     MHWRender::DrawAPI supportedDrawAPIs() const override;
@@ -93,8 +94,7 @@ private:
     static void _ClearResourcesCallback(float, float, void* data);
     static void _SelectionChangedCallback(void* data);
 
-    TfToken _rendererName;
-    TfToken _overrideName;
+    MtohRendererDescription _rendererDesc;
 
     std::vector<MHWRender::MRenderOperation*> _operations;
     std::vector<MCallbackId> _callbacks;

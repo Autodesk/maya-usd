@@ -47,7 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (defaultRenderGlobals)(mtohRenderer)(mtohTextureMemoryPerTexture)(
+    (defaultRenderGlobals)(mtohTextureMemoryPerTexture)(
         mtohMaximumShadowMapResolution)(mtohColorSelectionHighlight)(
         mtohColorSelectionHighlightColor)(mtohColorSelectionHighlightColorA)(
         mtohWireframeSelectionHighlight)(mtohSelectionOverlay));
@@ -244,7 +244,6 @@ global proc hydraViewportOverrideOptionBox() {
     scrollLayout;
     frameLayout -label "Hydra Settings";
     columnLayout;
-    attrControlGrp -label "Renderer Name" -attribute "defaultRenderGlobals.mtohRenderer" -changeCommand $cc;
     attrControlGrp -label "Texture Memory Per Texture (KB)" -attribute "defaultRenderGlobals.mtohTextureMemoryPerTexture" -changeCommand $cc;
     attrControlGrp -label "Selection Overlay Mode" -attribute "defaultRenderGlobals.mtohSelectionOverlay" -changeCommand $cc;
     attrControlGrp -label "Show Wireframe on Selected Objects" -attribute "defaultRenderGlobals.mtohWireframeSelectionHighlight" -changeCommand $cc;
@@ -260,9 +259,7 @@ global proc hydraViewportOverrideOptionBox() {
 )mel";
 } // namespace
 
-MtohRenderGlobals::MtohRenderGlobals()
-    : renderer(MtohGetDefaultRenderer()),
-      selectionOverlay(MtohTokens->UseVp2) {}
+MtohRenderGlobals::MtohRenderGlobals() : selectionOverlay(MtohTokens->UseVp2) {}
 
 void MtohInitializeRenderGlobals() {
 #ifdef USD_001901_BUILD
@@ -323,9 +320,6 @@ MObject MtohCreateRenderGlobals() {
     MFnDependencyNode node(ret, &status);
     if (!status) { return MObject(); }
     static const MtohRenderGlobals defGlobals;
-    _CreateEnumAttribute(
-        node, _tokens->mtohRenderer, MtohGetRendererPlugins(),
-        defGlobals.renderer);
     _CreateNumericAttribute(
         node, _tokens->mtohTextureMemoryPerTexture, MFnNumericData::kInt,
         []() -> MObject {
@@ -433,7 +427,6 @@ MtohRenderGlobals MtohGetRenderGlobals() {
     MStatus status;
     MFnDependencyNode node(obj, &status);
     if (!status) { return ret; }
-    _SetEnum(node, _tokens->mtohRenderer, ret.renderer);
     if (_SetNumericAttribute(
             node, _tokens->mtohTextureMemoryPerTexture,
             ret.delegateParams.textureMemoryPerTexture)) {

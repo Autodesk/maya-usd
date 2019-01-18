@@ -55,8 +55,10 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
 
     auto* renderer = MHWRender::MRenderer::theRenderer();
     if (renderer) {
-        auto* override = new MtohRenderOverride();
-        renderer->registerOverride(override);
+        for (const auto& desc : MtohGetRendererDescriptions()) {
+            auto* override = new MtohRenderOverride(desc);
+            renderer->registerOverride(override);
+        }
     }
 
     if (!plugin.registerCommand(
@@ -87,11 +89,13 @@ PLUGIN_EXPORT MStatus uninitializePlugin(MObject obj) {
 
     auto* renderer = MHWRender::MRenderer::theRenderer();
     if (renderer) {
-        const auto* override =
-            renderer->findRenderOverride("hydraViewportOverride");
-        if (override) {
-            renderer->deregisterOverride(override);
-            delete override;
+        for (const auto& desc : MtohGetRendererDescriptions()) {
+            const auto* override =
+                renderer->findRenderOverride(desc.overrideName.GetText());
+            if (override) {
+                renderer->deregisterOverride(override);
+                delete override;
+            }
         }
     }
 
