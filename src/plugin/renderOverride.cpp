@@ -224,6 +224,15 @@ void MtohRenderOverride::_UpdateRenderDelegateOptions() {
 }
 
 MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
+    // It would be good to clear the resources of the overrides that are
+    // not in active use, but I'm not sure if we have a better way than
+    // the idle time we use currently. The approach below would break if
+    // two render overrides were used at the same time.
+    // for (auto* override: _allInstances) {
+    //     if (override != this) {
+    //         override->ClearHydraResources();
+    //     }
+    // }
     TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
         .Msg("MtohRenderOverride::Render()\n");
     auto renderFrame = [&]() {
