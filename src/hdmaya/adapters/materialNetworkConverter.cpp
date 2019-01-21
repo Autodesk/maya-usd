@@ -233,6 +233,7 @@ std::unordered_map<
     TfToken::HashFunctor>
     _converters{
         {UsdImagingTokens->UsdPreviewSurface, ConvertUsdPreviewSurface},
+        {HdMayaAdapterTokens->pxrUsdPreviewSurface, ConvertUsdPreviewSurface},
         {HdMayaAdapterTokens->lambert, ConvertLambert},
         {HdMayaAdapterTokens->blinn, ConvertBlinn},
         {HdMayaAdapterTokens->file, ConvertFile},

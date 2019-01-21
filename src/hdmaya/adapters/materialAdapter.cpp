@@ -336,7 +336,8 @@ private:
         MFnDependencyNode node(_surfaceShader, &status);
         if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParams(); }
         auto mIt = _materialParamRemaps.end();
-        if (_surfaceShaderType != UsdImagingTokens->UsdPreviewSurface) {
+        if (_surfaceShaderType != UsdImagingTokens->UsdPreviewSurface &&
+            _surfaceShaderType != HdMayaAdapterTokens->pxrUsdPreviewSurface) {
             mIt = _materialParamRemaps.find(_surfaceShaderType);
             if (mIt == _materialParamRemaps.end()) {
                 return GetPreviewMaterialParams();
@@ -433,7 +434,8 @@ private:
         }
 
         auto remappedParam = paramName;
-        if (_surfaceShaderType != UsdImagingTokens->UsdPreviewSurface) {
+        if (_surfaceShaderType != UsdImagingTokens->UsdPreviewSurface &&
+            _surfaceShaderType != HdMayaAdapterTokens->pxrUsdPreviewSurface) {
             auto mIt = _materialParamRemaps.find(_surfaceShaderType);
             if (mIt != _materialParamRemaps.end()) {
                 const auto remapIt = std::find_if(

@@ -32,10 +32,20 @@
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
+#include <pxr/base/tf/envSetting.h>
 
 #include <hdmaya/adapters/adapter.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+TF_DEFINE_ENV_SETTING(
+    MTOH_ENABLE_USD_PREVIEW_SURFACE_NODE, true,
+    "Enables the registration of the UsdPreviewSurface node."
+    "This is not required with newer version of usdMaya.");
+
+namespace {
+bool _enableUsdPreviewSurface = true;
+}
 
 PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
     MStatus ret = MS::kSuccess;
@@ -69,13 +79,19 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
         return ret;
     }
 
-    if (!plugin.registerNode(
-            MtohUsdPreviewSurface::name, MtohUsdPreviewSurface::typeId,
-            MtohUsdPreviewSurface::Creator, MtohUsdPreviewSurface::Initialize,
-            MPxNode::kDependNode, &MtohUsdPreviewSurface::classification)) {
-        ret = MS::kFailure;
-        ret.perror("Error registering UsdPreviewSurface node!");
-        return ret;
+    _enableUsdPreviewSurface =
+        TfGetEnvSetting(MTOH_ENABLE_USD_PREVIEW_SURFACE_NODE);
+
+    if (_enableUsdPreviewSurface) {
+        if (!plugin.registerNode(
+                MtohUsdPreviewSurface::name, MtohUsdPreviewSurface::typeId,
+                MtohUsdPreviewSurface::Creator,
+                MtohUsdPreviewSurface::Initialize, MPxNode::kDependNode,
+                &MtohUsdPreviewSurface::classification)) {
+            ret = MS::kFailure;
+            ret.perror("Error registering UsdPreviewSurface node!");
+            return ret;
+        }
     }
 
     MtohInitializeRenderGlobals();
@@ -104,9 +120,11 @@ PLUGIN_EXPORT MStatus uninitializePlugin(MObject obj) {
         ret.perror("Error deregistering mtoh command!");
     }
 
-    if (!plugin.deregisterNode(MtohUsdPreviewSurface::typeId)) {
-        ret = MS::kFailure;
-        ret.perror("Error deregistering UsdPreviewSurface node!");
+    if (_enableUsdPreviewSurface) {
+        if (!plugin.deregisterNode(MtohUsdPreviewSurface::typeId)) {
+            ret = MS::kFailure;
+            ret.perror("Error deregistering UsdPreviewSurface node!");
+        }
     }
 
     return ret;
