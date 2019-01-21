@@ -28,8 +28,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaSceneRender : public MHWRender::MSceneRender {
 public:
-    explicit HdMayaSceneRender(const MString& name)
-        : MHWRender::MSceneRender(name) {}
+    explicit HdMayaSceneRender(const MString& name, bool vp2Overlay)
+        : MHWRender::MSceneRender(name), _vp2Overlay(vp2Overlay) {}
 
     MUint64 getObjectTypeExclusions() override {
         return _vp2Overlay ? MHWRender::MSceneRender::getObjectTypeExclusions()

@@ -123,7 +123,7 @@ private:
     bool _initializedViewport = false;
     bool _preferSimpleLight = false;
     bool _hasDefaultLighting = false;
-    bool _renderGlobalsHaveChanged = true;
+    bool _renderGlobalsHaveChanged = false;
     bool _selectionChanged = true;
     bool _isConverged = false;
 };

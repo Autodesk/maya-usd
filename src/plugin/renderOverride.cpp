@@ -111,6 +111,8 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     _defaultLight.SetSpecular(GfVec4f(0.0f));
     _defaultLight.SetAmbient(GfVec4f(0.0f));
     _allInstances.push_back(this);
+
+    _globals = MtohGetRenderGlobals();
 }
 
 MtohRenderOverride::~MtohRenderOverride() {
@@ -119,7 +121,9 @@ MtohRenderOverride::~MtohRenderOverride() {
     for (auto operation : _operations) { delete operation; }
 
     for (auto callback : _callbacks) { MMessage::removeCallback(callback); }
-    std::remove(_allInstances.begin(), _allInstances.end(), this);
+    _allInstances.erase(
+        std::remove(_allInstances.begin(), _allInstances.end(), this),
+        _allInstances.end());
 }
 
 void MtohRenderOverride::UpdateRenderGlobals() {
@@ -464,8 +468,9 @@ MStatus MtohRenderOverride::setup(const MString& destination) {
     if (renderer == nullptr) { return MStatus::kFailure; }
 
     if (_operations.empty()) {
-        _operations.push_back(
-            new HdMayaSceneRender("HydraRenderOverride_Scene"));
+        _operations.push_back(new HdMayaSceneRender(
+            "HydraRenderOverride_Scene",
+            _globals.selectionOverlay == MtohTokens->UseVp2));
         _operations.push_back(
             new HdMayaRender("HydraRenderOverride_Hydra", this));
         _operations.push_back(
