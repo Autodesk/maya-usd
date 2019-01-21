@@ -73,7 +73,7 @@ VtValue HdMayaAdapter::Get(const TfToken& key) {
     return {};
 };
 
-bool HdMayaAdapter::HasType(const TfToken& typeId) {
+bool HdMayaAdapter::HasType(const TfToken& typeId) const {
     TF_UNUSED(typeId);
     return false;
 }

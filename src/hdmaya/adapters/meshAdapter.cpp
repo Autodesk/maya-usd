@@ -82,7 +82,7 @@ public:
         if (_isPopulated) { return; }
         GetDelegate()->InsertRprim(
             HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty,
-            _GetInstancerID());
+            GetInstancerID());
         _isPopulated = true;
     }
 
@@ -110,7 +110,7 @@ public:
         HdMayaDagAdapter::CreateCallbacks();
     }
 
-    bool IsSupported() override {
+    bool IsSupported() const override {
         return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(
             HdPrimTypeTokens->mesh);
     }
@@ -296,7 +296,7 @@ public:
         return doubleSided;
     }
 
-    bool HasType(const TfToken& typeId) override {
+    bool HasType(const TfToken& typeId) const override {
         return typeId == HdPrimTypeTokens->mesh;
     }
 

@@ -164,12 +164,12 @@ HdMayaMaterialAdapter::HdMayaMaterialAdapter(
     const SdfPath& id, HdMayaDelegateCtx* delegate, const MObject& node)
     : HdMayaAdapter(node, id, delegate) {}
 
-bool HdMayaMaterialAdapter::IsSupported() {
+bool HdMayaMaterialAdapter::IsSupported() const {
     return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(
         HdPrimTypeTokens->material);
 }
 
-bool HdMayaMaterialAdapter::HasType(const TfToken& typeId) {
+bool HdMayaMaterialAdapter::HasType(const TfToken& typeId) const {
     return typeId == HdPrimTypeTokens->material;
 }
 

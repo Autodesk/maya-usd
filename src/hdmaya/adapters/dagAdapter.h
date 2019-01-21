@@ -78,6 +78,8 @@ public:
     void InvalidateTransform() { _invalidTransform = true; }
     bool IsInstanced() const { return _isInstanced; }
     HDMAYA_API
+    SdfPath GetInstancerID() const;
+    HDMAYA_API
     virtual VtIntArray GetInstanceIndices(const SdfPath& prototypeId);
     HDMAYA_API
     HdPrimvarDescriptorVector GetInstancePrimvarDescriptors(
@@ -90,8 +92,6 @@ protected:
     void _CalculateTransform();
     HDMAYA_API
     void _AddHierarchyChangedCallback(MDagPath& dag);
-    HDMAYA_API
-    SdfPath _GetInstancerID();
     HDMAYA_API
     virtual bool _GetVisibility() const;
 

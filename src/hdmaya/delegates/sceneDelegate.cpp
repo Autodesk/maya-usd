@@ -161,6 +161,15 @@ inline void _MapAdapter(
     _MapAdapter<T>(f, m...);
 }
 
+inline bool _dagIsSelected(
+    const MDagPath& dag, const MSelectionList& selection) {
+    for (auto dagCopy = dag; dagCopy.length() > 0; dagCopy.pop()) {
+        if (selection.hasItem(dagCopy)) { return true; }
+    }
+
+    return false;
+}
+
 } // namespace
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -527,30 +536,33 @@ void HdMayaSceneDelegate::SetParams(const HdMayaParams& params) {
 }
 
 void HdMayaSceneDelegate::PopulateSelectedPaths(
-    const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths) {
+    const MSelectionList& mayaSelection,
+    SdfPathVector& selectedSdfPaths, HdSelection* selection) {
     _MapAdapter<HdMayaDagAdapter>(
-        [&mayaSelection, &selectedSdfPaths](HdMayaDagAdapter* a) {
-            auto dagPath = a->GetDagPath();
-            for (; dagPath.length(); dagPath.pop()) {
-                if (mayaSelection.hasItem(dagPath)) {
-                    selectedSdfPaths.push_back(a->GetID());
-                    return;
+        [&mayaSelection, &selectedSdfPaths, &selection](HdMayaDagAdapter* a) {
+            if (a->IsInstanced()) {
+                auto dagPath = a->GetDagPath();
+                MDagPathArray dags;
+                MDagPath::getAllPathsTo(dagPath.node(), dags);
+                const auto dagCount = dags.length();
+                VtIntArray indices;
+                indices.reserve(dagCount);
+                for (auto i = decltype(dagCount){0}; i < dagCount; ++i) {
+                    if (_dagIsSelected(dags[i], mayaSelection)) {
+                        indices.push_back(i);
+                    }
                 }
-            }
-        },
-        _shapeAdapters);
-}
-
-void HdMayaSceneDelegate::PopulateSelectedPaths(
-    const MSelectionList& mayaSelection, HdSelection* selection) {
-    _MapAdapter<HdMayaDagAdapter>(
-        [&mayaSelection, &selection](HdMayaDagAdapter* a) {
-            auto dagPath = a->GetDagPath();
-            for (; dagPath.length(); dagPath.pop()) {
-                if (mayaSelection.hasItem(dagPath)) {
+                if (!indices.empty()) {
+                    selection->AddInstance(
+                        HdSelection::HighlightModeSelect, a->GetID(),
+                        indices);
+                    selectedSdfPaths.push_back(a->GetID());
+                }
+            } else {
+                if (_dagIsSelected(a->GetDagPath(), mayaSelection)) {
                     selection->AddRprim(
                         HdSelection::HighlightModeSelect, a->GetID());
-                    return;
+                    selectedSdfPaths.push_back(a->GetID());
                 }
             }
         },

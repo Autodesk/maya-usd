@@ -41,7 +41,7 @@ public:
         light.SetSpotCutoff(90.0f);
     }
 
-    const TfToken& LightType() override {
+    const TfToken& LightType() const override {
         if (GetDelegate()->GetPreferSimpleLight()) {
             return HdPrimTypeTokens->simpleLight;
         } else {

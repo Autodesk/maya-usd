@@ -45,8 +45,8 @@ public:
     HDMAYA_API
     virtual ~HdMayaAdapter();
 
-    const SdfPath& GetID() { return _id; }
-    HdMayaDelegateCtx* GetDelegate() { return _delegate; }
+    const SdfPath& GetID() const { return _id; }
+    HdMayaDelegateCtx* GetDelegate() const { return _delegate; }
     HDMAYA_API
     void AddCallback(MCallbackId callbackId);
     HDMAYA_API
@@ -55,9 +55,9 @@ public:
     virtual VtValue Get(const TfToken& key);
     const MObject& GetNode() const { return _node; }
     HDMAYA_API
-    virtual bool IsSupported() = 0;
+    virtual bool IsSupported() const = 0;
     HDMAYA_API
-    virtual bool HasType(const TfToken& typeId);
+    virtual bool HasType(const TfToken& typeId) const;
 
     HDMAYA_API
     virtual void CreateCallbacks();

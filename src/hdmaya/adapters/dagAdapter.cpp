@@ -203,7 +203,7 @@ void HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
         GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
         if (IsInstanced()) {
             GetDelegate()->GetChangeTracker().MarkInstancerDirty(
-                _GetInstancerID(), dirtyBits);
+                GetInstancerID(), dirtyBits);
         }
     }
 }
@@ -250,7 +250,7 @@ void HdMayaDagAdapter::_AddHierarchyChangedCallback(MDagPath& dag) {
     if (status) { AddCallback(id); }
 }
 
-SdfPath HdMayaDagAdapter::_GetInstancerID() {
+SdfPath HdMayaDagAdapter::GetInstancerID() const {
     if (!_isInstanced) { return {}; }
 
     return GetID().AppendProperty(_tokens->instancer);

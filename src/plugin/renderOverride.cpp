@@ -458,13 +458,11 @@ void MtohRenderOverride::_SelectionChanged() {
     MSelectionList sel;
     if (!TF_VERIFY(MGlobal::getActiveSelectionList(sel))) { return; }
     SdfPathVector selectedPaths;
+    auto* selection = new HdSelection;
     for (auto& it : _delegates) {
-        it->PopulateSelectedPaths(sel, selectedPaths);
+        it->PopulateSelectedPaths(sel, selectedPaths, selection);
     }
     _selectionCollection.SetRootPaths(selectedPaths);
-
-    auto* selection = new HdSelection;
-    for (auto& it : _delegates) { it->PopulateSelectedPaths(sel, selection); }
     _selectionTracker->SetSelection(HdSelectionSharedPtr(selection));
 }
 

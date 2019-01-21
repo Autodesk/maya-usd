@@ -65,7 +65,7 @@ public:
 
     ~HdMayaNurbsCurveAdapter() = default;
 
-    bool IsSupported() override {
+    bool IsSupported() const override {
         return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(
             HdPrimTypeTokens->basisCurves);
     }

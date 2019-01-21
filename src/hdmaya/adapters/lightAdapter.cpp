@@ -96,7 +96,7 @@ HdMayaLightAdapter::HdMayaLightAdapter(
     _shadowProjectionMatrix.SetIdentity();
 }
 
-bool HdMayaLightAdapter::IsSupported() {
+bool HdMayaLightAdapter::IsSupported() const {
     return GetDelegate()->GetRenderIndex().IsSprimTypeSupported(LightType());
 }
 
@@ -120,7 +120,7 @@ void HdMayaLightAdapter::RemovePrim() {
     _isPopulated = false;
 }
 
-bool HdMayaLightAdapter::HasType(const TfToken& typeId) {
+bool HdMayaLightAdapter::HasType(const TfToken& typeId) const {
     return typeId == LightType();
 }
 

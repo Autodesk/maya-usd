@@ -39,10 +39,10 @@ public:
     virtual ~HdMayaMaterialAdapter() = default;
 
     HDMAYA_API
-    bool IsSupported() override;
+    bool IsSupported() const override;
 
     HDMAYA_API
-    bool HasType(const TfToken& typeId) override;
+    bool HasType(const TfToken& typeId) const override;
 
     HDMAYA_API
     void MarkDirty(HdDirtyBits dirtyBits) override;

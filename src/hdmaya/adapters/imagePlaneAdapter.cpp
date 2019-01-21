@@ -160,12 +160,12 @@ public:
     }
 
     // note: could remove if made a header for meshAdapter
-    bool IsSupported() override {
+    bool IsSupported() const override {
         return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(
             HdPrimTypeTokens->mesh);
     }
 
-    bool HasType(const TfToken& typeId) override {
+    bool HasType(const TfToken& typeId) const override {
         return typeId == HdPrimTypeTokens->mesh;
     }
 

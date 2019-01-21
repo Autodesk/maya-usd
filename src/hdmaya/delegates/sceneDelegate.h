@@ -79,9 +79,7 @@ public:
     void SetParams(const HdMayaParams& params) override;
     void PopulateSelectedPaths(
         const MSelectionList& mayaSelection,
-        SdfPathVector& selectedSdfPaths) override;
-    void PopulateSelectedPaths(
-        const MSelectionList& mayaSelection, HdSelection* selection) override;
+        SdfPathVector& selectedSdfPaths, HdSelection* selection) override;
 
 protected:
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;

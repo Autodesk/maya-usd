@@ -60,10 +60,8 @@ public:
     bool GetPreferSimpleLight() { return _preferSimpleLight; }
 
     virtual void PopulateSelectedPaths(
-        const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths) {}
-
-    virtual void PopulateSelectedPaths(
-        const MSelectionList& mayaSelection, HdSelection* selection) {}
+        const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
+        HdSelection* selection) {}
 
     void SetLightsEnabled(const bool enabled) { _lightsEnabled = enabled; }
     bool GetLightsEnabled() { return _lightsEnabled; }

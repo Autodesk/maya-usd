@@ -45,9 +45,9 @@ public:
     HDMAYA_API
     virtual ~HdMayaLightAdapter() = default;
     HDMAYA_API
-    virtual const TfToken& LightType() = 0;
+    virtual const TfToken& LightType() const = 0;
     HDMAYA_API
-    bool IsSupported() override;
+    bool IsSupported() const override;
     HDMAYA_API
     void Populate() override;
     HDMAYA_API
@@ -55,7 +55,7 @@ public:
     HDMAYA_API
     virtual void RemovePrim() override;
     HDMAYA_API
-    bool HasType(const TfToken& typeId) override;
+    bool HasType(const TfToken& typeId) const override;
     HDMAYA_API
     virtual VtValue GetLightParamValue(const TfToken& paramName);
     HDMAYA_API

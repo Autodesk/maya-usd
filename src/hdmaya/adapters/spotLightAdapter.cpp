@@ -80,7 +80,7 @@ public:
     HdMayaSpotLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
         : HdMayaLightAdapter(delegate, dag) {}
 
-    const TfToken& LightType() override {
+    const TfToken& LightType() const override {
         if (GetDelegate()->GetPreferSimpleLight()) {
             return HdPrimTypeTokens->simpleLight;
         } else {
