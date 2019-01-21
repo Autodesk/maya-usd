@@ -218,11 +218,6 @@ void HdMayaDagAdapter::RemovePrim() {
     _isPopulated = false;
 }
 
-void HdMayaDagAdapter::PopulateSelection(
-    const HdSelection::HighlightMode& mode, HdSelection* selection) {
-    selection->AddRprim(mode, GetID());
-}
-
 bool HdMayaDagAdapter::UpdateVisibility() {
     if (ARCH_UNLIKELY(!GetDagPath().isValid())) { return false; }
     const auto visible = _GetVisibility();

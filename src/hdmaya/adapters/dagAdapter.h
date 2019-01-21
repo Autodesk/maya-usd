@@ -70,9 +70,6 @@ public:
     HDMAYA_API
     virtual void RemovePrim() override;
     HDMAYA_API
-    virtual void PopulateSelection(
-        const HdSelection::HighlightMode& mode, HdSelection* selection);
-    HDMAYA_API
     const GfMatrix4d& GetTransform();
     HDMAYA_API
     bool UpdateVisibility();

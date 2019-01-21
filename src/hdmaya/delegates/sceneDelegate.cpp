@@ -548,8 +548,8 @@ void HdMayaSceneDelegate::PopulateSelectedPaths(
             auto dagPath = a->GetDagPath();
             for (; dagPath.length(); dagPath.pop()) {
                 if (mayaSelection.hasItem(dagPath)) {
-                    a->PopulateSelection(
-                        HdSelection::HighlightModeSelect, selection);
+                    selection->AddRprim(
+                        HdSelection::HighlightModeSelect, a->GetID());
                     return;
                 }
             }
