@@ -229,9 +229,9 @@ bool _IsSupportedAttribute(const VtValue& v) {
 }
 #endif
 
-constexpr auto _renderOverrideOptionBoxCommand = R"mel(
-global proc hydraViewportOverrideOptionBox() {
-    string $windowName = "hydraViewportOverrideOptionsWindow";
+constexpr auto _renderOverrideOptionBoxTemplate = R"mel(
+global proc {{override}}OptionBox() {
+    string $windowName = "{{override}}OptionsWindow";
     if (`window -exists $windowName`) {
         showWindow $windowName;
         return;
@@ -240,7 +240,7 @@ global proc hydraViewportOverrideOptionBox() {
 
     mtoh -createRenderGlobals;
 
-    window -title "Maya to Hydra Settings" "hydraViewportOverrideOptionsWindow";
+    window -title "Maya to Hydra Settings" "{{override}}OptionsWindow";
     scrollLayout;
     frameLayout -label "Hydra Settings";
     columnLayout;
@@ -251,7 +251,7 @@ global proc hydraViewportOverrideOptionBox() {
     attrControlGrp -label "Highlight Color for Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlightColor" -changeCommand $cc;
     setParent ..;
     setParent ..;
-    hydraViewportRenderDelegateOptions();
+    {{override}}Options();
     setParent ..;
 
     showWindow $windowName;
@@ -262,52 +262,60 @@ global proc hydraViewportOverrideOptionBox() {
 MtohRenderGlobals::MtohRenderGlobals() : selectionOverlay(MtohTokens->UseVp2) {}
 
 void MtohInitializeRenderGlobals() {
+    const auto& rendererDescs = MtohGetRendererDescriptions();
+    for (const auto& rendererDesc : rendererDescs) {
+        const auto optionBoxCommand = TfStringReplace(
+            _renderOverrideOptionBoxTemplate, "{{override}}",
+            rendererDesc.overrideName.GetText());
+        auto status = MGlobal::executeCommand(optionBoxCommand.c_str());
+        if (!status) {
+            TF_WARN(
+                "Error in render override option box command function: \n%s",
+                status.errorString().asChar());
+        }
 #ifdef USD_001901_BUILD
-    for (const auto& rendererPluginName : MtohGetRendererPlugins()) {
         auto* rendererPlugin =
             HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(
-                rendererPluginName);
+                rendererDesc.rendererName);
         if (rendererPlugin == nullptr) { continue; }
         auto* renderDelegate = rendererPlugin->CreateRenderDelegate();
         if (renderDelegate == nullptr) { continue; }
-        _rendererAttributes[rendererPluginName] =
+        const auto rendererSettingDescriptors =
             renderDelegate->GetRenderSettingDescriptors();
+        _rendererAttributes[rendererDesc.rendererName] =
+            rendererSettingDescriptors;
         delete renderDelegate;
-    }
-#endif
-    std::stringstream ss;
-    ss << "global proc hydraViewportRenderDelegateOptions() {\n";
-    ss << "\tstring $cc = \"mtoh -updateRenderGlobals; refresh -f\";\n";
-#ifdef USD_001901_BUILD
-    for (const auto& rit : _rendererAttributes) {
-        const auto rendererName = rit.first;
-        ss << "\tframeLayout -label \"" << rendererName.GetText()
-           << "\" -collapsable true;\n";
+
+        std::stringstream ss;
+        ss << "global proc " << rendererDesc.overrideName << "Options() {\n";
+        ss << "\tstring $cc = \"mtoh -updateRenderGlobals; refresh -f\";\n";
+        ss << "\tframeLayout -label \"" << rendererDesc.displayName
+           << "Options\" -collapsable true;\n";
         ss << "\tcolumnLayout;\n";
-        for (const auto& attr : rit.second) {
-            if (!_IsSupportedAttribute(attr.defaultValue)) { continue; }
+        for (const auto& desc : rendererSettingDescriptors) {
+            if (!_IsSupportedAttribute(desc.defaultValue)) { continue; }
             const auto attrName = TfStringPrintf(
-                "%s%s", rendererName.GetText(), attr.key.GetText());
-            ss << "\tattrControlGrp -label \"" << attr.name
+                "%s%s", rendererDesc.rendererName.GetText(),
+                desc.key.GetText());
+            ss << "\tattrControlGrp -label \"" << desc.name
                << "\" -attribute \"defaultRenderGlobals." << attrName
                << "\" -changeCommand $cc;\n";
         }
         ss << "\tsetParent ..;\n";
         ss << "\tsetParent ..;\n";
-    }
+        ss << "}\n";
+
+        const auto optionsCommand = ss.str();
+#else
+        const auto optionsCommand = TfStringPrintf(
+            "global proc %sOptions() { }", rendererDesc.overrideName.GetText());
 #endif
-    ss << "}\n";
-    auto status = MGlobal::executeCommand(ss.str().c_str());
-    if (!status) {
-        TF_WARN(
-            "Error in render delegate options function: \n%s",
-            status.errorString().asChar());
-    }
-    status = MGlobal::executeCommand(_renderOverrideOptionBoxCommand);
-    if (!status) {
-        TF_WARN(
-            "Error in render override option box command function: \n%s",
-            status.errorString().asChar());
+        status = MGlobal::executeCommand(optionsCommand.c_str());
+        if (!status) {
+            TF_WARN(
+                "Error in render delegate options function: \n%s",
+                status.errorString().asChar());
+        }
     }
 }
 
