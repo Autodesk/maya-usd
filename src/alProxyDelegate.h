@@ -1,21 +1,21 @@
 #ifndef __HDMAYA_AL_PROXY_DELEGATE_H__
 #define __HDMAYA_AL_PROXY_DELEGATE_H__
 
+#include <hdmaya/delegates/delegate.h>
+
+#include <AL/usdmaya/nodes/ProxyShape.h>
+
 #include <pxr/pxr.h>
+
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
-#include <AL/usdmaya/nodes/ProxyShape.h>
-
-#include <hdmaya/delegates/delegate.h>
-
 #include <maya/MMessage.h>
 
 #include <memory>
 #include <unordered_map>
-
 
 using AL::usdmaya::nodes::ProxyShape;
 
@@ -30,23 +30,20 @@ struct HdMayaALProxyData {
 class HdMayaALProxyDelegate : public HdMayaDelegate {
 public:
     HdMayaALProxyDelegate(
-        HdRenderIndex* renderIndex,
-        const SdfPath& delegateID);
+        HdRenderIndex* renderIndex, const SdfPath& delegateID);
 
     ~HdMayaALProxyDelegate() override;
 
     static HdMayaDelegatePtr Creator(
-            HdRenderIndex* parentIndex,
-            const SdfPath& id);
+        HdRenderIndex* parentIndex, const SdfPath& id);
 
     void Populate() override;
     void PreFrame(const MHWRender::MDrawContext& context) override;
     void PopulateSelectedPaths(
-            const MSelectionList& mayaSelection,
-            SdfPathVector& selectedSdfPaths) override;
+        const MSelectionList& mayaSelection,
+        SdfPathVector& selectedSdfPaths) override;
     void PopulateSelectedPaths(
-            const MSelectionList& mayaSelection,
-            HdSelection* selection) override;
+        const MSelectionList& mayaSelection, HdSelection* selection) override;
 
     HdMayaALProxyData& AddProxy(ProxyShape* proxy);
     void RemoveProxy(ProxyShape* proxy);
@@ -54,12 +51,9 @@ public:
     void DeleteUsdImagingDelegate(ProxyShape* proxy);
 
 private:
-    bool PopulateSingleProxy(
-            ProxyShape* proxy,
-            HdMayaALProxyData& proxyData);
+    bool PopulateSingleProxy(ProxyShape* proxy, HdMayaALProxyData& proxyData);
     void CreateUsdImagingDelegate(
-            ProxyShape* proxy,
-            HdMayaALProxyData& proxyData);
+        ProxyShape* proxy, HdMayaALProxyData& proxyData);
 
     std::unordered_map<ProxyShape*, HdMayaALProxyData> _proxiesData;
     SdfPath const _delegateID;
@@ -69,6 +63,5 @@ private:
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif // __HDMAYA_AL_PROXY_DELEGATE_H__
