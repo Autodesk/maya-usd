@@ -64,7 +64,7 @@ class HdMayaSceneDelegate : public HdMayaDelegateCtx {
 public:
     HdMayaSceneDelegate(HdRenderIndex* renderIndex, const SdfPath& delegateID);
 
-    virtual ~HdMayaSceneDelegate();
+    ~HdMayaSceneDelegate() override;
 
     void Populate() override;
     void PreFrame(const MHWRender::MDrawContext& context) override;
@@ -78,8 +78,8 @@ public:
     void AddNewInstance(const MDagPath& dag);
     void SetParams(const HdMayaParams& params) override;
     void PopulateSelectedPaths(
-        const MSelectionList& mayaSelection,
-        SdfPathVector& selectedSdfPaths, HdSelection* selection) override;
+        const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
+        HdSelection* selection) override;
 
 protected:
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;

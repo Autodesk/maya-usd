@@ -536,12 +536,12 @@ void HdMayaSceneDelegate::SetParams(const HdMayaParams& params) {
 }
 
 void HdMayaSceneDelegate::PopulateSelectedPaths(
-    const MSelectionList& mayaSelection,
-    SdfPathVector& selectedSdfPaths, HdSelection* selection) {
+    const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
+    HdSelection* selection) {
     _MapAdapter<HdMayaDagAdapter>(
         [&mayaSelection, &selectedSdfPaths, &selection](HdMayaDagAdapter* a) {
             if (a->IsInstanced()) {
-                auto dagPath = a->GetDagPath();
+                const auto& dagPath = a->GetDagPath();
                 MDagPathArray dags;
                 MDagPath::getAllPathsTo(dagPath.node(), dags);
                 const auto dagCount = dags.length();
@@ -554,8 +554,7 @@ void HdMayaSceneDelegate::PopulateSelectedPaths(
                 }
                 if (!indices.empty()) {
                     selection->AddInstance(
-                        HdSelection::HighlightModeSelect, a->GetID(),
-                        indices);
+                        HdSelection::HighlightModeSelect, a->GetID(), indices);
                     selectedSdfPaths.push_back(a->GetID());
                 }
             } else {

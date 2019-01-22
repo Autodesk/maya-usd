@@ -129,7 +129,7 @@ protected:
     }
 
 public:
-    virtual void Export(
+    void Export(
         const UsdMayaShadingModeExportContext& context,
         UsdShadeMaterial* const mat,
         SdfPathSet* const boundPrimPaths) override {

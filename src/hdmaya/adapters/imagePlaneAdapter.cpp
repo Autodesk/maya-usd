@@ -133,9 +133,9 @@ public:
         }
     }
 
-    ~HdMayaImagePlaneAdapter() {}
+    ~HdMayaImagePlaneAdapter() = default;
 
-    void Populate() {
+    void Populate() override {
         TF_DEBUG(HDMAYA_ADAPTER_IMAGEPLANES)
             .Msg(
                 "Called HdMayaImagePlaneAdapter::Populate() - %s\n",
@@ -322,7 +322,7 @@ public:
         return dagNode.object();
     }
 
-    void MarkDirty(HdDirtyBits dirtyBits) {
+    void MarkDirty(HdDirtyBits dirtyBits) override {
         if (dirtyBits & HdChangeTracker::DirtyPoints) { _planeIsDirty = true; }
         HdMayaShapeAdapter::MarkDirty(dirtyBits);
     }
