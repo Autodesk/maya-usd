@@ -8,8 +8,40 @@
 # UFE_INCLUDE_DIR     Path to the UFE's include directories
 #
 
+find_path(UFE_INCLUDE_DIR
+        ufe/versionInfo.h
+    HINTS
+        "${UFE_INCLUDE_ROOT}"
+        "${MAYA_DEVKIT_LOCATION}"
+        "${MAYA_LOCATION}"
+        "$ENV{MAYA_LOCATION}"
+        "${MAYA_BASE_DIR}"
+    PATH_SUFFIXES
+        devkit/ufe/include
+        include/
+    DOC
+        "UFE's headers path"
+)
+
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/ufe.h")
+    foreach(_ufe_comp MAJOR_VERSION MINOR_VERSION PATCH_LEVEL)
+        file(STRINGS
+            "${UFE_INCLUDE_DIR}/ufe/ufe.h"
+            _ufe_tmp
+            REGEX "#define UFE_${_ufe_comp} .*$")
+        if (NOT "${_ufe_tmp}" STREQUAL "")
+            string(REGEX MATCHALL "[0-9]+" UFE_${_ufe_comp} ${_ufe_tmp})
+        endif()
+    endforeach()
+
+    if(DEFINED UFE_PATCH_LEVEL)
+        set(UFE_PATCH_VERSION "${UFE_PATCH_LEVEL}")
+        set(UFE_VERSION ${UFE_MAJOR_VERSION}.${UFE_MINOR_VERSION}.${UFE_PATCH_VERSION})
+    endif()
+endif()
+
 if(APPLE)
-    find_path(UFE_LIBRARY_DIR 
+    find_path(UFE_LIBRARY_DIR
         libufe_${UFE_MAJOR_VERSION}.dylib
         HINTS
             "${UFE_LIB_ROOT}"
@@ -55,24 +87,6 @@ elseif(WIN32)
     )
 endif()
 
-find_path(UFE_INCLUDE_DIR
-        ufe/versionInfo.h
-    HINTS
-        "${UFE_INCLUDE_ROOT}"
-        "${MAYA_DEVKIT_LOCATION}"
-        "${MAYA_LOCATION}"
-        "$ENV{MAYA_LOCATION}"
-        "${MAYA_BASE_DIR}"
-    PATH_SUFFIXES
-        devkit/ufe/include
-        include/
-    DOC
-        "UFE's headers path"
-)
-
-message(STATUS "UFE Include directory: ${UFE_INCLUDE_DIR}")
-message(STATUS "UFE Library directory: ${UFE_LIBRARY_DIR}")
-
 foreach(UFE_LIB
     ufe_${UFE_MAJOR_VERSION})
 
@@ -97,4 +111,6 @@ find_package_handle_standard_args(UFE
     REQUIRED_VARS
         UFE_INCLUDE_DIR
         UFE_LIBRARIES
+    VERSION_VAR
+        UFE_VERSION
 )
