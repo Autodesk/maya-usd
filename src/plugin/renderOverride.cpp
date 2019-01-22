@@ -82,7 +82,8 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
               ),
           SdfPath::AbsoluteRootPath()),
       _selectionCollection(
-          HdReprTokens->wire, HdReprSelector(HdReprTokens->wire)) {
+          HdReprTokens->wire, HdReprSelector(HdReprTokens->wire)),
+      _isUsingHdSt(desc.rendererName == _tokens->HdStreamRendererPlugin) {
     _needsClear.store(false);
     HdMayaDelegateRegistry::InstallDelegatesChangedSignal(
         [this]() { _needsClear.store(true); });
@@ -193,11 +194,11 @@ void MtohRenderOverride::_UpdateRenderGlobals() {
     _renderGlobalsHaveChanged = false;
     _globals = MtohGetRenderGlobals();
     _UpdateRenderDelegateOptions();
-    if (!_operations.empty()) {
+    if (_isUsingHdSt && !_operations.empty()) {
         const auto vp2Overlay = _globals.selectionOverlay == MtohTokens->UseVp2;
         auto* mayaRender = reinterpret_cast<HdMayaSceneRender*>(_operations[0]);
-        if (mayaRender->_vp2Overlay != vp2Overlay) {
-            mayaRender->_vp2Overlay = vp2Overlay;
+        if (mayaRender->_drawSelectionOverlay != vp2Overlay) {
+            mayaRender->_drawSelectionOverlay = vp2Overlay;
             MGlobal::executeCommandOnIdle("refresh -f;");
         }
     }
@@ -270,7 +271,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 // that didn't render lights the first time. Leaving it here
 // for a while in case others run into the problem.
 #if 0 
-        if (_preferSimpleLight) {
+        if (_isUsingHdSt) {
             _taskController->SetEnableShadows(false);
             renderFrame();
             _taskController->SetEnableShadows(true);
@@ -344,7 +345,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     // We should fix this upstream, so HdStream can setup
     // all the required states.
     _taskController->SetCollection(_renderCollection);
-    if (_rendererDesc.rendererName == _tokens->HdStreamRendererPlugin) {
+    if (_isUsingHdSt) {
         HdMayaSetRenderGLState state;
         renderFrame();
     } else {
@@ -353,8 +354,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 
     // This causes issues with the embree delegate and potentially others.
     if (_globals.wireframeSelectionHighlight &&
-        _globals.selectionOverlay == MtohTokens->UseHdSt &&
-        _rendererDesc.rendererName == _tokens->HdStreamRendererPlugin) {
+        _globals.selectionOverlay == MtohTokens->UseHdSt && _isUsingHdSt) {
         if (!_selectionCollection.GetRootPaths().empty()) {
             _taskController->SetCollection(_selectionCollection);
             renderFrame();
@@ -380,8 +380,6 @@ void MtohRenderOverride::_InitHydraResources() {
     auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
     _renderIndex = HdRenderIndex::New(renderDelegate);
     int delegateId = 0;
-    _preferSimpleLight =
-        _rendererDesc.rendererName == _tokens->HdStreamRendererPlugin;
     for (const auto& creator : HdMayaDelegateRegistry::GetDelegateCreators()) {
         if (creator == nullptr) { continue; }
         auto newDelegate = creator(
@@ -390,7 +388,7 @@ void MtohRenderOverride::_InitHydraResources() {
         if (newDelegate) {
             // Call SetLightsEnabled before the delegate is populated
             newDelegate->SetLightsEnabled(!_hasDefaultLighting);
-            newDelegate->SetPreferSimpleLight(_preferSimpleLight);
+            newDelegate->SetPreferSimpleLight(_isUsingHdSt);
             _delegates.push_back(newDelegate);
         }
     }
@@ -398,7 +396,7 @@ void MtohRenderOverride::_InitHydraResources() {
         _defaultLightDelegate.reset(new MtohDefaultLightDelegate(
             _renderIndex, _ID.AppendChild(TfToken(TfStringPrintf(
                               "_DefaultLightDelegate_%p", this)))));
-        _defaultLightDelegate->SetPreferSimpleLight(_preferSimpleLight);
+        _defaultLightDelegate->SetPreferSimpleLight(_isUsingHdSt);
     }
     _taskController = new HdxTaskController(
         _renderIndex,
@@ -477,7 +475,7 @@ MStatus MtohRenderOverride::setup(const MString& destination) {
     if (_operations.empty()) {
         _operations.push_back(new HdMayaSceneRender(
             "HydraRenderOverride_Scene",
-            _globals.selectionOverlay == MtohTokens->UseVp2));
+            !_isUsingHdSt || _globals.selectionOverlay == MtohTokens->UseVp2));
         _operations.push_back(
             new HdMayaRender("HydraRenderOverride_Hydra", this));
         _operations.push_back(

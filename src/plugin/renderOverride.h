@@ -120,8 +120,8 @@ private:
 
     int _currentOperation = -1;
 
+    const bool _isUsingHdSt = false;
     bool _initializedViewport = false;
-    bool _preferSimpleLight = false;
     bool _hasDefaultLighting = false;
     bool _renderGlobalsHaveChanged = false;
     bool _selectionChanged = true;

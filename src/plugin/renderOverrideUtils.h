@@ -28,23 +28,26 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaSceneRender : public MHWRender::MSceneRender {
 public:
-    explicit HdMayaSceneRender(const MString& name, bool vp2Overlay)
-        : MHWRender::MSceneRender(name), _vp2Overlay(vp2Overlay) {}
+    explicit HdMayaSceneRender(const MString& name, bool drawSelectionOverlay)
+        : MHWRender::MSceneRender(name),
+          _drawSelectionOverlay(drawSelectionOverlay) {}
 
     MUint64 getObjectTypeExclusions() override {
-        return _vp2Overlay ? MHWRender::MSceneRender::getObjectTypeExclusions()
-                           : ~(MHWRender::MFrameContext::kExcludeSelectHandles |
-                               MHWRender::MFrameContext::kExcludeCameras |
-                               MHWRender::MFrameContext::kExcludeCVs |
-                               MHWRender::MFrameContext::kExcludeDimensions |
-                               MHWRender::MFrameContext::kExcludeLights |
-                               MHWRender::MFrameContext::kExcludeLocators |
-                               MHWRender::MFrameContext::kExcludeGrid);
+        return _drawSelectionOverlay
+                   ? MHWRender::MSceneRender::getObjectTypeExclusions()
+                   : ~(MHWRender::MFrameContext::kExcludeSelectHandles |
+                       MHWRender::MFrameContext::kExcludeCameras |
+                       MHWRender::MFrameContext::kExcludeCVs |
+                       MHWRender::MFrameContext::kExcludeDimensions |
+                       MHWRender::MFrameContext::kExcludeLights |
+                       MHWRender::MFrameContext::kExcludeLocators |
+                       MHWRender::MFrameContext::kExcludeGrid);
     }
 
     MSceneFilterOption renderFilterOverride() override {
-        return _vp2Overlay ? kRenderUIItems
-                           : MHWRender::MSceneRender::renderFilterOverride();
+        return _drawSelectionOverlay
+                   ? kRenderUIItems
+                   : MHWRender::MSceneRender::renderFilterOverride();
     }
 
     MHWRender::MClearOperation& clearOperation() override {
@@ -62,7 +65,7 @@ public:
         return mClearOperation;
     }
 
-    bool _vp2Overlay = false;
+    bool _drawSelectionOverlay = false;
 };
 
 class HdMayaManipulatorRender : public MHWRender::MSceneRender {
