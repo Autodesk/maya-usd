@@ -93,6 +93,14 @@ configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH}
 )
 
+set(HDMAYA_H "hdmaya.h")
+
+configure_file(
+    ${HDMAYA_H}.in
+    ${CMAKE_CURRENT_BINARY_DIR}/${HDMAYA_H}
+    @ONLY
+)
+
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH}
     DESTINATION lib)
@@ -129,4 +137,6 @@ install(
     FILES
         api.h
         utils.h
+        ${CMAKE_CURRENT_BINARY_DIR}/${HDMAYA_H}
+
     DESTINATION include/hdmaya)

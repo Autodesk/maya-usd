@@ -17,6 +17,25 @@ if (USD_VERSION VERSION_GREATER "0.18.11")
     set (USD_001901_BUILD ON)
 endif ()
 
+if(HDMAYA_UFE_BUILD)
+    # make sure HDMAYA_UFE_BUILD_INT is an int, for use in #define / configure
+    set(HDMAYA_UFE_BUILD_INT 1)
+
+    message(STATUS "UFE Build Enabled")
+    find_package(UFE REQUIRED)
+    message(STATUS "Using UFE version : ${UFE_VERSION}")
+    message(STATUS "UFE Include directory: ${UFE_INCLUDE_DIR}")
+    message(STATUS "UFE Library directory: ${UFE_LIBRARY_DIR}")
+    include_directories(${UFE_INCLUDE_DIR})
+
+else()
+    # make sure HDMAYA_UFE_BUILD is an int, for use in #define / configure
+    set(HDMAYA_UFE_BUILD_INT 0)
+endif()
+
+add_definitions(-DHDMAYA_UFE_BUILD=${HDMAYA_UFE_BUILD_INT})
+
+
 set(MAYA_LIBS
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_Foundation_LIBRARY}
