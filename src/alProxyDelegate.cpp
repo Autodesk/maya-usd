@@ -385,8 +385,13 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
         // Ok, we didn't have the entire proxy selected - instead, add in
         // any "subpaths" of the proxy which may be selected
 
+        // Not sure why we need both paths1 and paths2, or what the difference
+        // is... but AL's own selection drawing code (in ProxyDrawOverride)
+        // makes a combined list from both of these, so we do the same
         const auto& paths1 = proxy->selectedPaths();
         const auto& paths2 = proxy->selectionList().paths();
+        selectedSdfPaths.reserve(
+            selectedSdfPaths.size() + paths1.size() + paths2.size());
 
         if (TfDebug::IsEnabled(HDMAYA_AL_SELECTION)) {
             TfDebug::Helper().Msg(
