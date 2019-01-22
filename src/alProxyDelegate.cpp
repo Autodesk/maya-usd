@@ -342,7 +342,8 @@ void HdMayaALProxyDelegate::PreFrame(const MHWRender::MDrawContext& context) {
 }
 
 void HdMayaALProxyDelegate::PopulateSelectedPaths(
-    const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths) {
+    const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
+    HdSelection* selection) {
     MStatus status;
     MObject proxyMObj;
     MFnDagNode proxyMFnDag;
@@ -374,6 +375,9 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
                     wholeProxySelected = true;
                     selectedSdfPaths.push_back(
                         proxyData.delegate->GetDelegateID());
+                    selection->AddRprim(
+                        HdSelection::HighlightModeSelect,
+                        selectedSdfPaths.back());
                     break;
                 }
                 dagPath.pop();
@@ -411,36 +415,15 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
         for (auto& usdPath : paths1) {
             selectedSdfPaths.push_back(
                 proxyData.delegate->GetPathForIndex(usdPath));
+            selection->AddRprim(
+                HdSelection::HighlightModeSelect, selectedSdfPaths.back());
         }
 
         for (auto& usdPath : paths2) {
             selectedSdfPaths.push_back(
                 proxyData.delegate->GetPathForIndex(usdPath));
-        }
-    }
-}
-
-void HdMayaALProxyDelegate::PopulateSelectedPaths(
-    const MSelectionList& mayaSelection, HdSelection* selection) {
-    MStatus status;
-    MObject proxyMObj;
-    MFnDagNode proxyMFnDag;
-    MDagPathArray proxyDagPaths;
-
-    for (auto& proxyAndData : _proxiesData) {
-        auto& proxy = proxyAndData.first;
-        auto& proxyData = proxyAndData.second;
-
-        for (auto& usdPath : proxy->selectedPaths()) {
             selection->AddRprim(
-                HdSelection::HighlightModeSelect,
-                proxyData.delegate->GetPathForIndex(usdPath));
-        }
-
-        for (auto& usdPath : proxy->selectionList().paths()) {
-            selection->AddRprim(
-                HdSelection::HighlightModeSelect,
-                proxyData.delegate->GetPathForIndex(usdPath));
+                HdSelection::HighlightModeSelect, selectedSdfPaths.back());
         }
     }
 }

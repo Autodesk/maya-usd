@@ -40,10 +40,8 @@ public:
     void Populate() override;
     void PreFrame(const MHWRender::MDrawContext& context) override;
     void PopulateSelectedPaths(
-        const MSelectionList& mayaSelection,
-        SdfPathVector& selectedSdfPaths) override;
-    void PopulateSelectedPaths(
-        const MSelectionList& mayaSelection, HdSelection* selection) override;
+        const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
+        HdSelection* selection) override;
 
     HdMayaALProxyData& AddProxy(ProxyShape* proxy);
     void RemoveProxy(ProxyShape* proxy);
