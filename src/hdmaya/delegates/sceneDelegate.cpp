@@ -545,18 +545,19 @@ void HdMayaSceneDelegate::PopulateSelectedPaths(
                 MDagPathArray dags;
                 MDagPath::getAllPathsTo(dagPath.node(), dags);
                 const auto dagCount = dags.length();
-                VtIntArray indices;
-                indices.reserve(dagCount);
+                VtIntArray indices(1);
+                auto selected = false;
                 for (auto i = decltype(dagCount){0}; i < dagCount; ++i) {
                     if (_dagIsSelected(dags[i], mayaSelection)) {
-                        indices.push_back(i);
+                        indices[0] = i;
+                        // This doesn't work with a single call.
+                        selection->AddInstance(
+                            HdSelection::HighlightModeSelect, a->GetID(),
+                            indices);
+                        selected = true;
                     }
                 }
-                if (!indices.empty()) {
-                    selection->AddInstance(
-                        HdSelection::HighlightModeSelect, a->GetID(), indices);
-                    selectedSdfPaths.push_back(a->GetID());
-                }
+                if (selected) { selectedSdfPaths.push_back(a->GetID()); }
             } else {
                 if (_dagIsSelected(a->GetDagPath(), mayaSelection)) {
                     selection->AddRprim(
