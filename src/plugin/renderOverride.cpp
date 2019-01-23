@@ -76,20 +76,20 @@ std::vector<MtohRenderOverride*> _allInstances;
 
 // Observe UFE scene items for transformation changed only when they are
 // selected.
-class UfeSelectionObserver : public Ufe::Observer {
+class UfeSelectionObserver : public UFE_NS::Observer {
 public:
     UfeSelectionObserver(MtohRenderOverride& mtohRenderOverride)
-        : Ufe::Observer(), _mtohRenderOverride(mtohRenderOverride) {}
+        : UFE_NS::Observer(), _mtohRenderOverride(mtohRenderOverride) {}
 
     //~UfeSelectionObserver() override {}
 
-    void operator()(const Ufe::Notification& notification) override {
+    void operator()(const UFE_NS::Notification& notification) override {
         // During Maya file read, each node will be selected in turn, so we get
         // notified for each node in the scene.  Prune this out.
         if (MFileIO::isOpeningFile()) { return; }
 
         auto selectionChanged =
-            dynamic_cast<const Ufe::SelectionChanged*>(&notification);
+            dynamic_cast<const UFE_NS::SelectionChanged*>(&notification);
         if (selectionChanged == nullptr) { return; }
 
         TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
@@ -156,7 +156,8 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     _globals = MtohGetRenderGlobals();
 
 #if HDMAYA_UFE_BUILD
-    const Ufe::GlobalSelection::Ptr& ufeSelection = Ufe::GlobalSelection::get();
+    const UFE_NS::GlobalSelection::Ptr& ufeSelection =
+        UFE_NS::GlobalSelection::get();
     if (ufeSelection) {
         _ufeSelectionObserver = std::make_shared<UfeSelectionObserver>(*this);
         ufeSelection->addObserver(_ufeSelectionObserver);

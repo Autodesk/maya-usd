@@ -132,7 +132,7 @@ private:
     bool _isConverged = false;
 
 #if HDMAYA_UFE_BUILD
-    Ufe::Observer::Ptr _ufeSelectionObserver;
+    UFE_NS::Observer::Ptr _ufeSelectionObserver;
 #endif // HDMAYA_UFE_BUILD
 };
 
