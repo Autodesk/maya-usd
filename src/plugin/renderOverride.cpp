@@ -515,7 +515,23 @@ void MtohRenderOverride::_SelectionChanged() {
     if (!TF_VERIFY(MGlobal::getActiveSelectionList(sel))) { return; }
     SdfPathVector selectedPaths;
     auto* selection = new HdSelection;
+
+#if HDMAYA_UFE_BUILD
+    const UFE_NS::GlobalSelection::Ptr& ufeSelection =
+        UFE_NS::GlobalSelection::get();
+#endif // HDMAYA_UFE_BUILD
+
     for (auto& it : _delegates) {
+#if HDMAYA_UFE_BUILD
+        if (it->SupportsUfeSelection()) {
+            if (ufeSelection) {
+                it->PopulateSelectedPaths(
+                    *ufeSelection, selectedPaths, selection);
+            }
+            // skip non-ufe PopulateSelectedPaths call
+            continue;
+        }
+#endif // HDMAYA_UFE_BUILD
         it->PopulateSelectedPaths(sel, selectedPaths, selection);
     }
     _selectionCollection.SetRootPaths(selectedPaths);
