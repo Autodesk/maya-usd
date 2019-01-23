@@ -536,6 +536,10 @@ void MtohRenderOverride::_SelectionChanged() {
     }
     _selectionCollection.SetRootPaths(selectedPaths);
     _selectionTracker->SetSelection(HdSelectionSharedPtr(selection));
+    TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
+        .Msg(
+            "MtohRenderOverride::_SelectionChanged - num selected: %lu\n",
+            selectedPaths.size());
 }
 
 MHWRender::DrawAPI MtohRenderOverride::supportedDrawAPIs() const {
