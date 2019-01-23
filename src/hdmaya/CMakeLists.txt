@@ -41,6 +41,11 @@ target_include_directories(hdmaya SYSTEM PUBLIC ${MAYA_INCLUDE_DIRS} ${GLEW_INCL
 target_include_directories(hdmaya SYSTEM PUBLIC ${USD_INCLUDE_DIR} ${USD_MAYA_INCLUDE_DIR})
 target_include_directories(hdmaya SYSTEM PUBLIC ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
 target_include_directories(hdmaya SYSTEM PUBLIC ${TBB_INCLUDE_DIRS})
+
+if (HDMAYA_UFE_BUILD)
+    target_link_libraries(hdmaya PUBLIC ${UFE_LIBRARY})
+endif()
+
 if (MTOH_CXX_STD MATCHES "^11$")
     target_compile_features(hdmaya PUBLIC cxx_std_11)
 elseif (MTOH_CXX_STD MATCHES "^14$")

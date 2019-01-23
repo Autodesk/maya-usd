@@ -27,7 +27,6 @@ if(HDMAYA_UFE_BUILD)
     message(STATUS "UFE Include directory: ${UFE_INCLUDE_DIR}")
     message(STATUS "UFE Library directory: ${UFE_LIBRARY_DIR}")
     include_directories(${UFE_INCLUDE_DIR})
-
 else()
     # make sure HDMAYA_UFE_BUILD is an int, for use in #define / configure
     set(HDMAYA_UFE_BUILD_INT 0)

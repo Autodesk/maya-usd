@@ -57,6 +57,13 @@
 #include "tokens.h"
 #include "utils.h"
 
+#if HDMAYA_UFE_BUILD
+#include <maya/MFileIO.h>
+#include <ufe/globalSelection.h>
+#include <ufe/observableSelection.h>
+#include <ufe/selectionNotification.h>
+#endif // HDMAYA_UFE_BUILD
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens, (HdStreamRendererPlugin));
@@ -64,6 +71,39 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens, (HdStreamRendererPlugin));
 namespace {
 
 std::vector<MtohRenderOverride*> _allInstances;
+
+#if HDMAYA_UFE_BUILD
+
+// Observe UFE scene items for transformation changed only when they are
+// selected.
+class UfeSelectionObserver : public Ufe::Observer {
+public:
+    UfeSelectionObserver(MtohRenderOverride& mtohRenderOverride)
+        : Ufe::Observer(), _mtohRenderOverride(mtohRenderOverride) {}
+
+    //~UfeSelectionObserver() override {}
+
+    void operator()(const Ufe::Notification& notification) override {
+        // During Maya file read, each node will be selected in turn, so we get
+        // notified for each node in the scene.  Prune this out.
+        if (MFileIO::isOpeningFile()) { return; }
+
+        auto selectionChanged =
+            dynamic_cast<const Ufe::SelectionChanged*>(&notification);
+        if (selectionChanged == nullptr) { return; }
+
+        TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
+            .Msg(
+                "UfeSelectionObserver triggered (ufe selection change "
+                "triggered)\n");
+        _mtohRenderOverride.SelectionChanged();
+    }
+
+private:
+    MtohRenderOverride& _mtohRenderOverride;
+};
+
+#endif // HDMAYA_UFE_BUILD
 
 } // namespace
 
@@ -114,6 +154,14 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     _allInstances.push_back(this);
 
     _globals = MtohGetRenderGlobals();
+
+#if HDMAYA_UFE_BUILD
+    const Ufe::GlobalSelection::Ptr& ufeSelection = Ufe::GlobalSelection::get();
+    if (ufeSelection) {
+        _ufeSelectionObserver = std::make_shared<UfeSelectionObserver>(*this);
+        ufeSelection->addObserver(_ufeSelectionObserver);
+    }
+#endif // HDMAYA_UFE_BUILD
 }
 
 MtohRenderOverride::~MtohRenderOverride() {
@@ -125,6 +173,15 @@ MtohRenderOverride::~MtohRenderOverride() {
     _allInstances.erase(
         std::remove(_allInstances.begin(), _allInstances.end(), this),
         _allInstances.end());
+
+#if HDMAYA_UFE_BUILD
+    const UFE_NS::GlobalSelection::Ptr& ufeSelection =
+        UFE_NS::GlobalSelection::get();
+    if (ufeSelection) {
+        ufeSelection->removeObserver(_ufeSelectionObserver);
+        _ufeSelectionObserver = nullptr;
+    }
+#endif // HDMAYA_UFE_BUILD
 }
 
 void MtohRenderOverride::UpdateRenderGlobals() {
@@ -270,7 +327,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 // This was required to work around an issue in HdSt
 // that didn't render lights the first time. Leaving it here
 // for a while in case others run into the problem.
-#if 0 
+#if 0
         if (_isUsingHdSt) {
             _taskController->SetEnableShadows(false);
             renderFrame();
@@ -548,6 +605,10 @@ void MtohRenderOverride::_ClearResourcesCallback(float, float, void* data) {
 }
 
 void MtohRenderOverride::_SelectionChangedCallback(void* data) {
+    TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
+        .Msg(
+            "MtohRenderOverride::_SelectionChangedCallback() (normal maya "
+            "selection triggered)\n");
     auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
     if (!TF_VERIFY(instance)) { return; }
     instance->SelectionChanged();

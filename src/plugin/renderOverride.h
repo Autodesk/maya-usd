@@ -54,6 +54,10 @@
 #include <chrono>
 #include <mutex>
 
+#if HDMAYA_UFE_BUILD
+#include <ufe/observer.h>
+#endif // HDMAYA_UFE_BUILD
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class MtohRenderOverride : public MHWRender::MRenderOverride {
@@ -126,6 +130,10 @@ private:
     bool _renderGlobalsHaveChanged = false;
     bool _selectionChanged = true;
     bool _isConverged = false;
+
+#if HDMAYA_UFE_BUILD
+    Ufe::Observer::Ptr _ufeSelectionObserver;
+#endif // HDMAYA_UFE_BUILD
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
