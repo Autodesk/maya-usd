@@ -453,10 +453,94 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
 
     TF_DEBUG(HDMAYA_AL_SELECTION)
         .Msg("HdMayaALProxyDelegate::PopulateSelectedPaths (ufe version)\n");
+
+    // We get the maya selection for the whole-proxy-selected check, since
+    // it is a subset of the ufe selection
+    MSelectionList mayaSel;
+    MGlobal::getActiveSelectionList(mayaSel);
+
+    std::unordered_map<std::string, HdMayaALProxyData*> proxyPathToData;
+
+    for (auto& proxyAndData : _proxiesData) {
+        auto& proxy = proxyAndData.first;
+        auto& proxyData = proxyAndData.second;
+
+        // First, we check to see if the entire proxy shape is selected
+        proxyDagPaths.clear();
+        proxyMObj = proxy->thisMObject();
+        if (!TF_VERIFY(!proxyMObj.isNull())) { continue; }
+        if (!TF_VERIFY(proxyMFnDag.setObject(proxyMObj))) { continue; }
+        if (!TF_VERIFY(proxyMFnDag.getAllPaths(proxyDagPaths))) { continue; }
+        if (!TF_VERIFY(proxyDagPaths.length())) { continue; }
+
+        bool wholeProxySelected = false;
+        // Loop over all instances
+        for (unsigned int i = 0, n = proxyDagPaths.length(); i < n; ++i) {
+            // Make a copy because we're modifying it
+            MDagPath dagPath = proxyDagPaths[i];
+            // Loop over all parents
+            while (dagPath.length()) {
+                if (mayaSel.hasItem(dagPath)) {
+                    TF_DEBUG(HDMAYA_AL_SELECTION)
+                        .Msg(
+                            "proxy node %s was selected\n",
+                            dagPath.fullPathName().asChar());
+                    wholeProxySelected = true;
+                    selectedSdfPaths.push_back(
+                        proxyData.delegate->GetDelegateID());
+                    selection->AddRprim(
+                        HdSelection::HighlightModeSelect,
+                        selectedSdfPaths.back());
+                    break;
+                }
+                dagPath.pop();
+            }
+            if (wholeProxySelected) { break; }
+        }
+        if (!wholeProxySelected) {
+            for (unsigned int i = 0, n = proxyDagPaths.length(); i < n; ++i) {
+                MDagPath& dagPath = proxyDagPaths[i];
+
+                TF_DEBUG(HDMAYA_AL_SELECTION)
+                    .Msg(
+                        "HdMayaALProxyDelegate::PopulateSelectedPaths - adding "
+                        "proxy to lookup: %s\n",
+                        dagPath.fullPathName().asChar());
+                proxyPathToData.emplace(
+                    dagPath.fullPathName().asChar(), &proxyData);
+            }
+        }
+    }
+
     for (auto item : ufeSelection) {
         if (item->runTimeId() != usdUfeRtid) { continue; }
-        UFE_NS::PathSegment usdPathSegment = item->path().getSegments().back();
-        selectedSdfPaths.emplace_back(usdPathSegment.string());
+        auto& pathSegments = item->path().getSegments();
+        if (pathSegments.size() != 2) {
+            TF_WARN(
+                "Found invalid usd-ufe path (had %lu segments - should have "
+                "2): %s\n",
+                item->path().size(), item->path().string().c_str());
+            continue;
+        }
+        // We popHead for maya pathSegment because it always starts with
+        // "|world", which makes it non-standard...
+        auto mayaPathSegment = pathSegments[0].popHead();
+        auto& usdPathSegment = pathSegments[1];
+
+        auto findResult = proxyPathToData.find(mayaPathSegment.string());
+
+        TF_DEBUG(HDMAYA_AL_SELECTION)
+            .Msg(
+                "HdMayaALProxyDelegate::PopulateSelectedPaths - looking up "
+                "proxy: %s\n",
+                mayaPathSegment.string().c_str());
+
+        if (findResult == proxyPathToData.cend()) { continue; }
+
+        auto& proxyData = *(findResult->second);
+
+        selectedSdfPaths.push_back(proxyData.delegate->GetPathForIndex(
+            SdfPath(usdPathSegment.string())));
         selection->AddRprim(
             HdSelection::HighlightModeSelect, selectedSdfPaths.back());
         TF_DEBUG(HDMAYA_AL_SELECTION)
@@ -471,7 +555,7 @@ bool HdMayaALProxyDelegate::SupportsUfeSelection() { return true; }
 #endif // HDMAYA_UFE_BUILD
 
 HdMayaALProxyData& HdMayaALProxyDelegate::AddProxy(ProxyShape* proxy) {
-    // Our ProxyShapeAdded callback is trigged every time the node is added
+    // Our ProxyShapeAdded callback is triggered every time the node is added
     // to the DG, NOT when the C++ ProxyShape object is created; due to the
     // undo queue, it's possible for the same ProxyShape to be added (and
     // removed) from the DG several times throughout it's lifetime. However,
