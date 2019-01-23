@@ -16,6 +16,11 @@
 
 #include <atomic>
 
+#if HDMAYA_UFE_BUILD
+#include <ufe/rtid.h>
+#include <ufe/runTimeMgr.h>
+#endif // HDMAYA_UFE_BUILD
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens, (HdMayaALProxyDelegate));
@@ -34,6 +39,8 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaALProxyDelegate) {
 }
 
 namespace {
+constexpr auto USD_UFE_RUNTIME_NAME = "USD";
+static UFE_NS::Rtid usdUfeRtid = 0;
 
 // Don't know if this variable would be accessed from multiple threads, but
 // plugin load/unload is infrequent enough that performance isn't an issue, and
@@ -266,6 +273,12 @@ HdMayaALProxyDelegate::HdMayaALProxyDelegate(
     if (!TF_VERIFY(status, "Could not set nodeRemoved callback")) {
         _nodeRemovedCBId = 0;
     }
+
+#if HDMAYA_UFE_BUILD
+    if (usdUfeRtid == 0) {
+        usdUfeRtid = UFE_NS::RunTimeMgr::instance().getId(USD_UFE_RUNTIME_NAME);
+    }
+#endif // HDMAYA_UFE_BUILD
 }
 
 HdMayaALProxyDelegate::~HdMayaALProxyDelegate() {
@@ -428,11 +441,40 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
     }
 }
 
+#if HDMAYA_UFE_BUILD
+
+void HdMayaALProxyDelegate::PopulateSelectedPaths(
+    const UFE_NS::Selection& ufeSelection, SdfPathVector& selectedSdfPaths,
+    HdSelection* selection) {
+    MStatus status;
+    MObject proxyMObj;
+    MFnDagNode proxyMFnDag;
+    MDagPathArray proxyDagPaths;
+
+    TF_DEBUG(HDMAYA_AL_SELECTION)
+        .Msg("HdMayaALProxyDelegate::PopulateSelectedPaths (ufe version)\n");
+    for (auto item : ufeSelection) {
+        if (item->runTimeId() != usdUfeRtid) { continue; }
+        UFE_NS::PathSegment usdPathSegment = item->path().getSegments().back();
+        selectedSdfPaths.emplace_back(usdPathSegment.string());
+        selection->AddRprim(
+            HdSelection::HighlightModeSelect, selectedSdfPaths.back());
+        TF_DEBUG(HDMAYA_AL_SELECTION)
+            .Msg(
+                "HdMayaALProxyDelegate::PopulateSelectedPaths - selecting %s\n",
+                selectedSdfPaths.back().GetText());
+    }
+}
+
+bool HdMayaALProxyDelegate::SupportsUfeSelection() { return true; }
+
+#endif // HDMAYA_UFE_BUILD
+
 HdMayaALProxyData& HdMayaALProxyDelegate::AddProxy(ProxyShape* proxy) {
     // Our ProxyShapeAdded callback is trigged every time the node is added
     // to the DG, NOT when the C++ ProxyShape object is created; due to the
     // undo queue, it's possible for the same ProxyShape to be added (and
-    // removed) from the DG several times throughout it's lifetime.  However,
+    // removed) from the DG several times throughout it's lifetime. However,
     // we only call removeProxy() when the C++ ProxyShape object is actually
     // destroyed - so it's possible that the given proxy has already been
     // added to this delegate!
@@ -497,12 +539,12 @@ void HdMayaALProxyDelegate::CreateUsdImagingDelegate(ProxyShape* proxy) {
 
 void HdMayaALProxyDelegate::CreateUsdImagingDelegate(
     ProxyShape* proxy, HdMayaALProxyData& proxyData) {
-    // Why do this release when we do a reset right below? Because we want to
-    // make sure we delete the old delegate before creating a new one (the reset
-    // statement below will first create a new one, THEN delete the old one).
-    // Why do we care? In case they have the same _renderIndex - if so, the
-    // delete may clear out items from the renderIndex that the constructor
-    // potentially adds
+    // Why do this release when we do a reset right below? Because we want
+    // to make sure we delete the old delegate before creating a new one
+    // (the reset statement below will first create a new one, THEN delete
+    // the old one). Why do we care? In case they have the same _renderIndex
+    // - if so, the delete may clear out items from the renderIndex that the
+    // constructor potentially adds
     proxyData.delegate.release();
     proxyData.delegate.reset(new UsdImagingDelegate(
         _renderIndex,

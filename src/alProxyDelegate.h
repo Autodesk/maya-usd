@@ -17,6 +17,10 @@
 #include <memory>
 #include <unordered_map>
 
+#if HDMAYA_UFE_BUILD
+#include <ufe/selection.h>
+#endif // HDMAYA_UFE_BUILD
+
 using AL::usdmaya::nodes::ProxyShape;
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -42,6 +46,13 @@ public:
     void PopulateSelectedPaths(
         const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
         HdSelection* selection) override;
+
+#if HDMAYA_UFE_BUILD
+    void PopulateSelectedPaths(
+        const UFE_NS::Selection& ufeSelection, SdfPathVector& selectedSdfPaths,
+        HdSelection* selection) override;
+    bool SupportsUfeSelection() override;
+#endif // HDMAYA_UFE_BUILD
 
     HdMayaALProxyData& AddProxy(ProxyShape* proxy);
     void RemoveProxy(ProxyShape* proxy);

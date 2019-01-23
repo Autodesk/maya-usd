@@ -10,6 +10,18 @@ find_path(HDMAYA_LIBRARY_DIR libhdmaya.so
           $ENV{HDMAYA_ROOT}/lib
           DOC "HdMaya Libraries directory")
 
+if(HDMAYA_INCLUDE_DIR AND EXISTS "${HDMAYA_INCLUDE_DIR}/hdmaya/hdmaya.h")
+    file(STRINGS
+        "${HDMAYA_INCLUDE_DIR}/hdmaya/hdmaya.h"
+        _hdmaya_ufe_tmp
+        REGEX "#define HDMAYA_UFE_BUILD (.*)$")
+    if (NOT "${_hdmaya_ufe_tmp}" STREQUAL "")
+        string(REGEX REPLACE "#define HDMAYA_UFE_BUILD (.*)$" "\\1"
+            HDMAYA_UFE_BUILD ${_hdmaya_ufe_tmp})
+    endif()
+endif()
+
+
 include(FindPackageHandleStandardArgs)
 
 find_package_handle_standard_args(

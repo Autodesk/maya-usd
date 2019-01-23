@@ -36,6 +36,17 @@ target_compile_features(hdmaya_al PUBLIC cxx_std_11)
 target_compile_options(hdmaya_al PRIVATE -Wall -Werror)
 
 
+if(HDMAYA_UFE_BUILD)
+    message(STATUS "UFE Build Enabled")
+    find_package(UFE REQUIRED)
+    message(STATUS "Using UFE version : ${UFE_VERSION}")
+    message(STATUS "UFE Include directory: ${UFE_INCLUDE_DIR}")
+    message(STATUS "UFE Library directory: ${UFE_LIBRARY_DIR}")
+    include_directories(${UFE_INCLUDE_DIR})
+    target_link_libraries(hdmaya_al PUBLIC ${UFE_LIBRARY})
+    target_compile_definitions(hdmaya_al PUBLIC HDMAYA_UFE_BUILD=${HDMAYA_UFE_BUILD})
+endif()
+
 # Wanted to do this:
 #   get_target_property(LIB_FULLPATH hdmaya_al LOCATION)
 #   get_filename_component(LIB_NAME ${LIB_FULLPATH} NAME)
