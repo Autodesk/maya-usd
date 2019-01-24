@@ -39,8 +39,11 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaALProxyDelegate) {
 }
 
 namespace {
+
+#if HDMAYA_UFE_BUILD
 constexpr auto USD_UFE_RUNTIME_NAME = "USD";
 static UFE_NS::Rtid usdUfeRtid = 0;
+#endif // HDMAYA_UFE_BUILD
 
 // Don't know if this variable would be accessed from multiple threads, but
 // plugin load/unload is infrequent enough that performance isn't an issue, and
