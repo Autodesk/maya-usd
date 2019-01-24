@@ -635,7 +635,9 @@ size_t HdMayaSceneDelegate::SampleTransform(
     const SdfPath& id, size_t maxSampleCount, float* times,
     GfMatrix4d* samples) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_TRANSFORM)
-        .Msg("HdMayaSceneDelegate::GetTransform(%s)\n", id.GetText());
+        .Msg(
+            "HdMayaSceneDelegate::SampleTransform(%s, %u)\n", id.GetText(),
+            static_cast<unsigned int>(maxSampleCount));
     return _GetValue<HdMayaDagAdapter, size_t>(
         id,
         [maxSampleCount, times, samples](HdMayaDagAdapter* a) -> size_t {
@@ -677,6 +679,10 @@ VtValue HdMayaSceneDelegate::Get(const SdfPath& id, const TfToken& key) {
 size_t HdMayaSceneDelegate::SamplePrimvar(
     const SdfPath& id, const TfToken& key, size_t maxSampleCount, float* times,
     VtValue* samples) {
+    TF_DEBUG(HDMAYA_DELEGATE_SAMPLE_PRIMVAR)
+        .Msg(
+            "HdMayaSceneDelegate::Get(%s, %s, %u)\n", id.GetText(),
+            key.GetText(), static_cast<unsigned int>(maxSampleCount));
     if (maxSampleCount < 1) { return 0; }
     if (id.IsPropertyPath()) {
         times[0] = 0.0f;

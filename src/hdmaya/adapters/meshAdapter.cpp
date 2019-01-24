@@ -30,6 +30,9 @@
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/pxOsd/tokens.h>
 
+#include <maya/MAnimControl.h>
+#include <maya/MDGContext.h>
+#include <maya/MDGContextGuard.h>
 #include <maya/MFloatArray.h>
 #include <maya/MFnMesh.h>
 #include <maya/MIntArray.h>
@@ -115,6 +118,34 @@ public:
             HdPrimTypeTokens->mesh);
     }
 
+    VtValue GetUVs() {
+        MStatus status;
+        MFnMesh mesh(GetDagPath(), &status);
+        if (ARCH_UNLIKELY(!status)) { return {}; }
+        VtArray<GfVec2f> uvs;
+        uvs.reserve(static_cast<size_t>(mesh.numFaceVertices()));
+        for (MItMeshPolygon pit(GetDagPath()); !pit.isDone(); pit.next()) {
+            const auto vertexCount = pit.polygonVertexCount();
+            for (auto i = decltype(vertexCount){0}; i < vertexCount; ++i) {
+                float2 uv = {0.0f, 0.0f};
+                pit.getUV(i, uv);
+                uvs.push_back(GfVec2f(uv[0], uv[1]));
+            }
+        }
+
+        return VtValue(uvs);
+    }
+
+    VtValue GetPoints(const MFnMesh& mesh) {
+        MStatus status;
+        const auto* rawPoints =
+            reinterpret_cast<const GfVec3f*>(mesh.getRawPoints(&status));
+        if (ARCH_UNLIKELY(!status)) { return {}; }
+        VtVec3fArray ret;
+        ret.assign(rawPoints, rawPoints + mesh.numVertices());
+        return VtValue(ret);
+    }
+
     VtValue Get(const TfToken& key) override {
         TF_DEBUG(HDMAYA_ADAPTER_GET)
             .Msg(
@@ -124,32 +155,38 @@ public:
         if (key == HdTokens->points) {
             MStatus status;
             MFnMesh mesh(GetDagPath(), &status);
-            // Same memory layout for MFloatVector and GfVec3f!
             if (ARCH_UNLIKELY(!status)) { return {}; }
-            const auto* rawPoints =
-                reinterpret_cast<const GfVec3f*>(mesh.getRawPoints(&status));
-            if (ARCH_UNLIKELY(!status)) { return {}; }
-            VtVec3fArray ret;
-            ret.assign(rawPoints, rawPoints + mesh.numVertices());
-            return VtValue(ret);
+            return GetPoints(mesh);
         } else if (key == _tokens->st) {
-            MStatus status;
-            MFnMesh mesh(GetDagPath(), &status);
-            if (ARCH_UNLIKELY(!status)) { return {}; }
-            VtArray<GfVec2f> uvs;
-            uvs.reserve(static_cast<size_t>(mesh.numFaceVertices()));
-            for (MItMeshPolygon pit(GetDagPath()); !pit.isDone(); pit.next()) {
-                const auto vertexCount = pit.polygonVertexCount();
-                for (auto i = decltype(vertexCount){0}; i < vertexCount; ++i) {
-                    float2 uv = {0.0f, 0.0f};
-                    pit.getUV(i, uv);
-                    uvs.push_back(GfVec2f(uv[0], uv[1]));
-                }
-            }
-
-            return VtValue(uvs);
+            return GetUVs();
         }
         return {};
+    }
+
+    size_t SamplePrimvar(
+        const TfToken& key, size_t maxSampleCount, float* times,
+        VtValue* samples) override {
+        if (maxSampleCount < 1) { return 0; }
+
+        if (key == HdTokens->points) {
+            MStatus status;
+            MFnMesh mesh(GetDagPath(), &status);
+            if (ARCH_UNLIKELY(!status)) { return 0; }
+            times[0] = 0.0f;
+            samples[0] = GetPoints(mesh);
+            if (maxSampleCount == 1 ||
+                !GetDelegate()->GetParams().enableMotionSamples) {
+                return 1;
+            }
+            times[1] = 1.0f;
+            MDGContextGuard guard(MAnimControl::currentTime() + 1.0);
+            samples[1] = GetPoints(mesh);
+        } else if (key == _tokens->st) {
+            times[0] = 0.0f;
+            samples[0] = GetUVs();
+            return 1;
+        }
+        return 0;
     }
 
     HdMeshTopology GetMeshTopology() override {

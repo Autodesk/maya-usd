@@ -168,12 +168,12 @@ size_t HdMayaDagAdapter::SampleTransform(
     if (maxSampleCount < 1) { return 0; }
     times[0] = 0.0f;
     samples[0] = _transform[0];
-    if (maxSampleCount > 1 && GetDelegate()->GetParams().enableMotionSamples) {
+    if (maxSampleCount == 1 || !GetDelegate()->GetParams().enableMotionSamples) {
+        return 1;
+    } else {
         times[1] = 1.0f;
         samples[1] = _transform[1];
         return 2;
-    } else {
-        return 1;
     }
 }
 
