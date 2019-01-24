@@ -87,6 +87,9 @@ protected:
     PxOsdSubdivTags GetSubdivTags(const SdfPath& id) override;
     GfRange3d GetExtent(const SdfPath& id) override;
     GfMatrix4d GetTransform(const SdfPath& id) override;
+    size_t SampleTransform(
+        const SdfPath& id, size_t maxSampleCount, float* times,
+        GfMatrix4d* samples) override;
     bool GetVisible(const SdfPath& id) override;
     bool IsEnabled(const TfToken& option) const override;
     bool GetDoubleSided(const SdfPath& id) override;

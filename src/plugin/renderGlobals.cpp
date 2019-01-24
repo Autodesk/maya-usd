@@ -50,7 +50,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (defaultRenderGlobals)(mtohTextureMemoryPerTexture)(
         mtohMaximumShadowMapResolution)(mtohColorSelectionHighlight)(
         mtohColorSelectionHighlightColor)(mtohColorSelectionHighlightColorA)(
-        mtohWireframeSelectionHighlight)(mtohSelectionOverlay));
+        mtohWireframeSelectionHighlight)(mtohSelectionOverlay)(
+        mtohEnableMotionSamples));
 
 namespace {
 
@@ -244,6 +245,7 @@ global proc {{override}}OptionBox() {
     scrollLayout;
     frameLayout -label "Hydra Settings";
     columnLayout;
+    attrControlGrp -label "Enable Motion Samples" -attribute "defaultRenderGlobals.mtohEnableMotionSamples" -changeCommand $cc;
     attrControlGrp -label "Texture Memory Per Texture (KB)" -attribute "defaultRenderGlobals.mtohTextureMemoryPerTexture" -changeCommand $cc;
     attrControlGrp -label "OpenGL Selection Overlay" -attribute "defaultRenderGlobals.mtohSelectionOverlay" -changeCommand $cc;
     attrControlGrp -label "Show Wireframe on Selected Objects" -attribute "defaultRenderGlobals.mtohWireframeSelectionHighlight" -changeCommand $cc;
@@ -328,6 +330,11 @@ MObject MtohCreateRenderGlobals() {
     MFnDependencyNode node(ret, &status);
     if (!status) { return MObject(); }
     static const MtohRenderGlobals defGlobals;
+    _CreateNumericAttribute(
+        node, _tokens->mtohEnableMotionSamples, MFnNumericData::kBoolean,
+        std::bind(
+            _CreateBoolAttribute, _tokens->mtohEnableMotionSamples,
+            defGlobals.delegateParams.enableMotionSamples));
     _CreateNumericAttribute(
         node, _tokens->mtohTextureMemoryPerTexture, MFnNumericData::kInt,
         []() -> MObject {
@@ -440,6 +447,9 @@ MtohRenderGlobals MtohGetRenderGlobals() {
             ret.delegateParams.textureMemoryPerTexture)) {
         ret.delegateParams.textureMemoryPerTexture *= 1024;
     }
+    _SetNumericAttribute(
+        node, _tokens->mtohEnableMotionSamples,
+        ret.delegateParams.enableMotionSamples);
     _SetNumericAttribute(
         node, _tokens->mtohMaximumShadowMapResolution,
         ret.delegateParams.maximumShadowMapResolution);

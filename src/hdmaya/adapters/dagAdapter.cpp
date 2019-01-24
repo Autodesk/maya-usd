@@ -29,6 +29,9 @@
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/tokens.h>
 
+#include <maya/MAnimControl.h>
+#include <maya/MDGContext.h>
+#include <maya/MDGContextGuard.h>
 #include <maya/MDagMessage.h>
 #include <maya/MDagPathArray.h>
 #include <maya/MFnDagNode.h>
@@ -135,9 +138,16 @@ HdMayaDagAdapter::HdMayaDagAdapter(
 void HdMayaDagAdapter::_CalculateTransform() {
     if (_invalidTransform) {
         if (IsInstanced()) {
-            _transform.SetIdentity();
+            _transform[0].SetIdentity();
+            _transform[1].SetIdentity();
         } else {
-            _transform = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
+            _transform[0] = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
+            if (GetDelegate()->GetParams().enableMotionSamples) {
+                MDGContextGuard guard(MAnimControl::currentTime() + 1.0);
+                _transform[1] = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
+            } else {
+                _transform[1] = _transform[0];
+            }
         }
         _invalidTransform = false;
     }
@@ -149,7 +159,22 @@ const GfMatrix4d& HdMayaDagAdapter::GetTransform() {
             "Called HdMayaDagAdapter::GetTransform() - %s\n",
             _dagPath.partialPathName().asChar());
     _CalculateTransform();
-    return _transform;
+    return _transform[0];
+}
+
+size_t HdMayaDagAdapter::SampleTransform(
+    size_t maxSampleCount, float* times, GfMatrix4d* samples) {
+    _CalculateTransform();
+    if (maxSampleCount < 1) { return 0; }
+    times[0] = 0.0f;
+    samples[0] = _transform[0];
+    if (maxSampleCount > 1 && GetDelegate()->GetParams().enableMotionSamples) {
+        times[1] = 1.0f;
+        samples[1] = _transform[1];
+        return 2;
+    } else {
+        return 1;
+    }
 }
 
 void HdMayaDagAdapter::CreateCallbacks() {

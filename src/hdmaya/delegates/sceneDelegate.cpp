@@ -518,6 +518,18 @@ void HdMayaSceneDelegate::SetParams(const HdMayaParams& params) {
             },
             _shapeAdapters);
     }
+    if (oldParams.enableMotionSamples != params.enableMotionSamples) {
+        _MapAdapter<HdMayaDagAdapter>(
+            [](HdMayaDagAdapter* a) {
+                if (a->HasType(HdPrimTypeTokens->mesh)) {
+                    a->InvalidateTransform();
+                    a->MarkDirty(
+                        HdChangeTracker::DirtyPoints |
+                        HdChangeTracker::DirtyTransform);
+                }
+            },
+            _shapeAdapters);
+    }
     // We need to trigger rebuilding shaders.
     if (oldParams.textureMemoryPerTexture != params.textureMemoryPerTexture) {
         _MapAdapter<HdMayaMaterialAdapter>(
@@ -616,6 +628,19 @@ GfMatrix4d HdMayaSceneDelegate::GetTransform(const SdfPath& id) {
         .Msg("HdMayaSceneDelegate::GetTransform(%s)\n", id.GetText());
     return _GetValue<HdMayaDagAdapter, GfMatrix4d>(
         id, [](HdMayaDagAdapter* a) -> GfMatrix4d { return a->GetTransform(); },
+        _shapeAdapters, _lightAdapters);
+}
+
+size_t HdMayaSceneDelegate::SampleTransform(
+    const SdfPath& id, size_t maxSampleCount, float* times,
+    GfMatrix4d* samples) {
+    TF_DEBUG(HDMAYA_DELEGATE_GET_TRANSFORM)
+        .Msg("HdMayaSceneDelegate::GetTransform(%s)\n", id.GetText());
+    return _GetValue<HdMayaDagAdapter, size_t>(
+        id,
+        [maxSampleCount, times, samples](HdMayaDagAdapter* a) -> size_t {
+            return a->SampleTransform(maxSampleCount, times, samples);
+        },
         _shapeAdapters, _lightAdapters);
 }
 

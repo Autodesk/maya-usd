@@ -134,6 +134,10 @@ TF_REGISTRY_FUNCTION(TfDebug) {
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_GET_SUBDIV_TAGS,
         "Print information about 'GetSubdivTags' calls to the delegates.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_DELEGATE_SAMPLE_TRANSFORM,
+        "Print information about 'SampleTransform' calls to the delegates.");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

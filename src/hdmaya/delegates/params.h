@@ -34,6 +34,7 @@ struct HdMayaParams {
     int textureMemoryPerTexture = 4 * 1024 * 1024;
     int maximumShadowMapResolution = 2048;
     bool displaySmoothMeshes = true;
+    bool enableMotionSamples = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
