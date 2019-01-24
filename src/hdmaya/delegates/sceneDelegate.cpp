@@ -674,6 +674,30 @@ VtValue HdMayaSceneDelegate::Get(const SdfPath& id, const TfToken& key) {
     }
 }
 
+size_t HdMayaSceneDelegate::SamplePrimvar(
+    const SdfPath& id, const TfToken& key, size_t maxSampleCount, float* times,
+    VtValue* samples) {
+    if (maxSampleCount < 1) { return 0; }
+    if (id.IsPropertyPath()) {
+        times[0] = 0.0f;
+        samples[0] = _GetValue<HdMayaDagAdapter, VtValue>(
+            id.GetPrimPath(),
+            [&key](HdMayaDagAdapter* a) -> VtValue {
+                return a->GetInstancePrimvar(key);
+            },
+            _shapeAdapters);
+        return 1;
+    } else {
+        return _GetValue<HdMayaShapeAdapter, size_t>(
+            id,
+            [&key, maxSampleCount, times,
+             samples](HdMayaShapeAdapter* a) -> size_t {
+                return a->SamplePrimvar(key, maxSampleCount, times, samples);
+            },
+            _shapeAdapters);
+    }
+}
+
 TfToken HdMayaSceneDelegate::GetRenderTag(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_RENDER_TAG)
         .Msg("HdMayaSceneDelegate::GetRenderTag(%s)\n", id.GetText());

@@ -122,18 +122,20 @@ public:
                 GetDagPath().partialPathName().asChar());
 
         if (key == HdTokens->points) {
-            MFnMesh mesh(GetDagPath());
-            // Same memory layout for MFloatVector and GfVec3f!
             MStatus status;
+            MFnMesh mesh(GetDagPath(), &status);
+            // Same memory layout for MFloatVector and GfVec3f!
+            if (ARCH_UNLIKELY(!status)) { return {}; }
             const auto* rawPoints =
                 reinterpret_cast<const GfVec3f*>(mesh.getRawPoints(&status));
-            if (!status) { return {}; }
+            if (ARCH_UNLIKELY(!status)) { return {}; }
             VtVec3fArray ret;
             ret.assign(rawPoints, rawPoints + mesh.numVertices());
             return VtValue(ret);
         } else if (key == _tokens->st) {
-            MFnMesh mesh(GetDagPath());
             MStatus status;
+            MFnMesh mesh(GetDagPath(), &status);
+            if (ARCH_UNLIKELY(!status)) { return {}; }
             VtArray<GfVec2f> uvs;
             uvs.reserve(static_cast<size_t>(mesh.numFaceVertices()));
             for (MItMeshPolygon pit(GetDagPath()); !pit.isDone(); pit.next()) {

@@ -56,6 +56,14 @@ void HdMayaShapeAdapter::_CalculateExtent() {
     }
 };
 
+size_t HdMayaShapeAdapter::SamplePrimvar(
+    const TfToken& key, size_t maxSampleCount, float* times, VtValue* samples) {
+    if (maxSampleCount < 1) { return 0; }
+    times[0] = 0.0f;
+    samples[0] = Get(key);
+    return 1;
+}
+
 HdMeshTopology HdMayaShapeAdapter::GetMeshTopology() { return {}; };
 
 HdBasisCurvesTopology HdMayaShapeAdapter::GetBasisCurvesTopology() {

@@ -42,6 +42,10 @@ public:
     virtual ~HdMayaShapeAdapter() = default;
 
     HDMAYA_API
+    size_t SamplePrimvar(
+        const TfToken& key, size_t maxSampleCount, float* times,
+        VtValue* samples);
+    HDMAYA_API
     virtual HdMeshTopology GetMeshTopology();
     HDMAYA_API
     virtual HdBasisCurvesTopology GetBasisCurvesTopology();
