@@ -80,6 +80,11 @@ MObject dropoff;
 
 } // namespace spotLight
 
+namespace directionalLight {
+
+MObject lightAngle;
+}
+
 namespace surfaceShape {
 
 MObject doubleSided;
@@ -202,6 +207,12 @@ MStatus initialize() {
 
         SET_ATTR_OBJ(coneAngle);
         SET_ATTR_OBJ(dropoff);
+    }
+
+    {
+        SET_NODE_CLASS(directionalLight);
+
+        SET_ATTR_OBJ(lightAngle);
     }
 
     {

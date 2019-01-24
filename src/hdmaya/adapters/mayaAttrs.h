@@ -82,6 +82,13 @@ extern MObject dropoff;
 
 } // namespace spotLight
 
+namespace directionalLight {
+
+using namespace nonExtendedLightShapeNode;
+extern MObject lightAngle;
+
+} // namespace directionalLight
+
 namespace surfaceShape {
 
 using namespace dagNode;

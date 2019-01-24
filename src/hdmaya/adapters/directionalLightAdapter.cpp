@@ -89,6 +89,20 @@ public:
 
         return HdMayaLightAdapter::Get(key);
     }
+
+    VtValue GetLightParamValue(const TfToken& paramName) override {
+        if (paramName == HdLightTokens->angle) {
+            MStatus status;
+            MFnDependencyNode lightNode(GetNode(), &status);
+            if (ARCH_UNLIKELY(!status)) { return VtValue(0.0f); }
+            return VtValue(
+                lightNode
+                    .findPlug(MayaAttrs::directionalLight::lightAngle, true)
+                    .asFloat());
+        } else {
+            return HdMayaLightAdapter::GetLightParamValue(paramName);
+        }
+    }
 };
 
 TF_REGISTRY_FUNCTION(TfType) {
