@@ -181,6 +181,7 @@ public:
             times[1] = 1.0f;
             MDGContextGuard guard(MAnimControl::currentTime() + 1.0);
             samples[1] = GetPoints(mesh);
+            return 2;
         } else if (key == _tokens->st) {
             times[0] = 0.0f;
             samples[0] = GetUVs();
