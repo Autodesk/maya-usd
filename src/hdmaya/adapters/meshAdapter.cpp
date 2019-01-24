@@ -181,7 +181,8 @@ public:
             times[1] = 1.0f;
             MDGContextGuard guard(MAnimControl::currentTime() + 1.0);
             samples[1] = GetPoints(mesh);
-            return 2;
+            // FIXME: should we do this or in the render delegate?
+            return samples[1] == samples[0] ? 1 : 2;
         } else if (key == _tokens->st) {
             times[0] = 0.0f;
             samples[0] = GetUVs();
