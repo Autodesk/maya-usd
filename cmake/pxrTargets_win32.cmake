@@ -90,7 +90,7 @@ add_library(trace SHARED IMPORTED)
 
 set_target_properties(trace PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
-  INTERFACE_LINK_LIBRARIES "arch;js;tf;${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}python${BOOST_LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${TBB_LIB}"
+  INTERFACE_LINK_LIBRARIES "arch;js;tf;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib"
 )
 
 # Create imported target work
@@ -152,7 +152,7 @@ add_library(ndr SHARED IMPORTED)
 set_target_properties(ndr PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR}"
-  INTERFACE_LINK_LIBRARIES "tf;plug;vt;work;ar;sdf;${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}python${BOOST_LIB_SUFFIX}"
+  INTERFACE_LINK_LIBRARIES "tf;plug;vt;work;ar;sdf;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib"
 )
 
 # Create imported target sdr
@@ -161,7 +161,7 @@ add_library(sdr SHARED IMPORTED)
 set_target_properties(sdr PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR}"
-  INTERFACE_LINK_LIBRARIES "tf;vt;ar;ndr;sdf;${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}python${BOOST_LIB_SUFFIX}"
+  INTERFACE_LINK_LIBRARIES "tf;vt;ar;ndr;sdf;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib"
 )
 
 # Create imported target pcp
@@ -448,7 +448,7 @@ add_library(pxrUsdTranslators SHARED IMPORTED)
 set_target_properties(pxrUsdTranslators PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${MAYA_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "arch;gf;tf;usd;usdGeom;usdShade;usdSkel;usdUtils;vt;usdMaya;${AL_USDMAYA_USD_LOCATION}/lib/${BOOST_LIB_PREFIX}python${BOOST_LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMaya${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaAnim${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaFX${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaRender${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}OpenMayaUI${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}Image${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}Foundation${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}IMFBase${LIB_SUFFIX};${AL_USDMAYA_USD_LOCATION}/lib/${TBB_LIB};${MAYA_LOCATION}/lib/${LIB_PREFIX}Cg${LIB_SUFFIX};${MAYA_LOCATION}/lib/${LIB_PREFIX}CgGl${LIB_SUFFIX}"
+  INTERFACE_LINK_LIBRARIES "arch;gf;tf;usd;usdGeom;usdShade;usdSkel;usdUtils;vt;usdMaya;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;${MAYA_LOCATION}/lib/OpenMaya.lib;${MAYA_LOCATION}/lib/OpenMayaAnim.lib;${MAYA_LOCATION}/lib/OpenMayaFX.lib;${MAYA_LOCATION}/lib/OpenMayaRender.lib;${MAYA_LOCATION}/lib/OpenMayaUI.lib;${MAYA_LOCATION}/lib/Image.lib;${MAYA_LOCATION}/lib/Foundation.lib;${MAYA_LOCATION}/lib/IMFBase.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib;${MAYA_LOCATION}/lib/Cg.lib;${MAYA_LOCATION}/lib/CgGl.lib"
 )
 
 if(CMAKE_VERSION VERSION_LESS 2.8.12)
