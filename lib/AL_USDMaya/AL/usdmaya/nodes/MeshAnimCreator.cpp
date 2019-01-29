@@ -155,7 +155,6 @@ void MeshAnimCreator::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPl
 {
   TF_DEBUG(ALUSDMAYA_GEOMETRY_DEFORMER).Msg("MeshAnimCreator::onAttributeChanged\n");
 
-  const SdfPath rootPath(std::string("/"));
   MeshAnimCreator* deformer = (MeshAnimCreator*)clientData;
   if(msg & MNodeMessage::kAttributeSet)
   {

@@ -178,7 +178,6 @@ void MeshAnimDeformer::onAttributeChanged(MNodeMessage::AttributeMessage msg, MP
 {
   TF_DEBUG(ALUSDMAYA_GEOMETRY_DEFORMER).Msg("MeshAnimDeformer::onAttributeChanged\n");
 
-  const SdfPath rootPath(std::string("/"));
   MeshAnimDeformer* deformer = (MeshAnimDeformer*)clientData;
   if(msg & MNodeMessage::kAttributeSet)
   {
