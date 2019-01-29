@@ -22,6 +22,7 @@ list(APPEND maya_utils_headers
     utils/NodeHelper.h
     utils/Utils.h
     utils/DebugCodes.h
+    utils/PluginTranslatorOptions.h
 )
 
 list(APPEND maya_event_headers
@@ -34,6 +35,7 @@ list(APPEND maya_source
     utils/MenuBuilder.cpp
     utils/NodeHelper.cpp
     utils/CommandGuiHelper.cpp
+    utils/PluginTranslatorOptions.cpp
     event/MayaEventManager.cpp
 )
 

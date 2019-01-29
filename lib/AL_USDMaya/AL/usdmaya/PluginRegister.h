@@ -28,6 +28,7 @@
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
 #include "AL/usdmaya/cmds/ProxyShapeSelectCommands.h"
 #include "AL/usdmaya/cmds/RendererCommands.h"
+#include "AL/usdmaya/cmds/SyncFileIOGui.h"
 #include "AL/usdmaya/cmds/UnloadPrim.h"
 #include "AL/usdmaya/fileio/Export.h"
 #include "AL/usdmaya/fileio/ExportTranslator.h"
@@ -43,6 +44,9 @@
 #include "AL/usdmaya/nodes/RendererManager.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
+
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/registry.h"
 
 #include "maya/MDrawRegistry.h"
 #include "maya/MGlobal.h"
@@ -232,6 +236,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventLookup);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::TranslatePrim);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerManager);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::SyncFileIOGui);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
   AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
@@ -273,6 +278,16 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL::maya::utils::MenuBuilder::addEntry("USD/Animated Geometry/Connect selected meshes to USD (animated)", "AL_usdmaya_meshAnimImport");
   CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
   AL::usdmaya::Global::onPluginLoad();
+
+  // Forcing all plugins to be loaded at startup time. If we don't do this, the plugins will only be loaded when they 
+  // are needed. Sadly, this means that any plugin export options will not be registered until the export process
+  // starts (and not prior to that, when we are building the GUI). 
+  PlugPluginPtrVector plugins = PlugRegistry::GetInstance().GetAllPlugins();
+  for(auto& plugin : plugins)
+  {
+    if(!plugin->IsLoaded())
+      plugin->Load();
+  }
   return status;
 }
 
@@ -306,6 +321,7 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
     }
   }
 
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::SyncFileIOGui);
   AL_UNREGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::InternalProxyShapeSelect);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePostSelect);

@@ -18,10 +18,16 @@
 #include "../Api.h"
 
 #include "AL/maya/utils/FileTranslatorBase.h"
+#include "AL/maya/utils/PluginTranslatorOptions.h"
 
 namespace AL {
 namespace usdmaya {
 namespace fileio {
+
+using AL::maya::utils::PluginTranslatorOptionsContext;
+using AL::maya::utils::PluginTranslatorOptionsInstance;
+using AL::maya::utils::PluginTranslatorOptions;
+using AL::maya::utils::PluginTranslatorOptionsContextManager;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A Maya export plugin that writes out USD files from Maya (this is largely optimised for the needs of the
@@ -80,6 +86,18 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
     ExporterParams defaultValues;
     if(!options.addFrame("AL USD Exporter Options")) return MS::kFailure;
     if(!options.addBool(kDynamicAttributes, defaultValues.m_dynamicAttributes)) return MS::kFailure;
+    if(!options.addBool(kDuplicateInstances, defaultValues.m_duplicateInstances)) return MS::kFailure;
+    if(!options.addBool(kMergeTransforms, defaultValues.m_mergeTransforms)) return MS::kFailure;
+    if(!options.addBool(kAnimation, defaultValues.m_animation)) return MS::kFailure;
+    if(!options.addBool(kUseTimelineRange, defaultValues.m_useTimelineRange)) return MS::kFailure;
+    if(!options.addFloat(kFrameMin, defaultValues.m_minFrame)) return MS::kFailure;
+    if(!options.addFloat(kFrameMax, defaultValues.m_maxFrame)) return MS::kFailure;
+    if(!options.addInt(kSubSamples, defaultValues.m_subSamples)) return MS::kFailure;
+    if(!options.addBool(kFilterSample, defaultValues.m_filterSample)) return MS::kFailure;
+    if(!options.addEnum(kExportAtWhichTime, timelineLevel, defaultValues.m_exportAtWhichTime)) return MS::kFailure;
+
+    // legacy options
+    if(!options.addBool(kNurbsCurves, defaultValues.m_nurbsCurves)) return MS::kFailure;
     if(!options.addBool(kMeshes, defaultValues.m_meshes)) return MS::kFailure;
     if(!options.addBool(kMeshConnects, defaultValues.m_meshConnects)) return MS::kFailure;
     if(!options.addBool(kMeshPoints, defaultValues.m_meshPoints)) return MS::kFailure;
@@ -92,22 +110,17 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
     if(!options.addBool(kMeshColours, defaultValues.m_meshColours)) return MS::kFailure;
     if(!options.addBool(kMeshHoles, defaultValues.m_meshHoles)) return MS::kFailure;
     if(!options.addEnum(kCompactionLevel, compactionLevels, defaultValues.m_compactionLevel)) return MS::kFailure;
-    if(!options.addBool(kNurbsCurves, defaultValues.m_nurbsCurves)) return MS::kFailure;
-    if(!options.addBool(kDuplicateInstances, defaultValues.m_duplicateInstances)) return MS::kFailure;
-    if(!options.addBool(kMergeTransforms, defaultValues.m_mergeTransforms)) return MS::kFailure;
-    if(!options.addBool(kAnimation, defaultValues.m_animation)) return MS::kFailure;
-    if(!options.addBool(kUseTimelineRange, defaultValues.m_useTimelineRange)) return MS::kFailure;
-    if(!options.addFloat(kFrameMin, defaultValues.m_minFrame)) return MS::kFailure;
-    if(!options.addFloat(kFrameMax, defaultValues.m_maxFrame)) return MS::kFailure;
-    if(!options.addInt(kSubSamples, defaultValues.m_subSamples)) return MS::kFailure;
-    if(!options.addBool(kFilterSample, defaultValues.m_filterSample)) return MS::kFailure;
-    if(!options.addEnum(kExportAtWhichTime, timelineLevel, defaultValues.m_exportAtWhichTime)) return MS::kFailure;
-    if(!options.addBool(kExportInWorldSpace, defaultValues.m_exportAtWhichTime)) return MS::kFailure;
-    
+
+    // cool beans - we should now be able to register some plugin thingies.
+    PluginTranslatorOptionsContextManager::registerContext("ExportTranslator", &m_pluginContext);
+ 
     return MS::kSuccess;
   }
 
 private:
+  static PluginTranslatorOptionsContext m_pluginContext;
+  static PluginTranslatorOptions* m_compatPluginOptions;
+  static PluginTranslatorOptionsInstance* m_pluginInstance;
   AL_USDMAYA_PUBLIC
   MStatus writer(const MFileObject& file, const AL::maya::utils::OptionsParser& options, FileAccessMode mode) override;
 

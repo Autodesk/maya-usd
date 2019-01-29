@@ -39,6 +39,7 @@ list(APPEND AL_usdmaya_cmds_headers
         AL/usdmaya/cmds/ProxyShapeSelectCommands.h
         AL/usdmaya/cmds/ProxyShapePostLoadProcess.h
         AL/usdmaya/cmds/RendererCommands.h
+        AL/usdmaya/cmds/SyncFileIOGui.h
         AL/usdmaya/cmds/UnloadPrim.h
 )
 list(APPEND AL_usdmaya_cmds_source
@@ -50,6 +51,7 @@ list(APPEND AL_usdmaya_cmds_source
         AL/usdmaya/cmds/ProxyShapeSelectCommands.cpp
         AL/usdmaya/cmds/ProxyShapePostLoadProcess.cpp
         AL/usdmaya/cmds/RendererCommands.cpp
+        AL/usdmaya/cmds/SyncFileIOGui.cpp
         AL/usdmaya/cmds/UnloadPrim.cpp
 )
 

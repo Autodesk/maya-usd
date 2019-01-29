@@ -24,10 +24,12 @@
 #include <string>
 
 #include "AL/maya/utils/ForwardDeclares.h"
+#include "AL/maya/utils/PluginTranslatorOptions.h"
 
 namespace AL {
 namespace maya {
 namespace utils {
+
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Utility class that parses the file translator options passed through by Maya
@@ -40,7 +42,7 @@ public:
 
   /// \brief  ctor
   AL_MAYA_UTILS_PUBLIC
-  OptionsParser();
+  OptionsParser(PluginTranslatorOptionsInstance* pluginOptions = 0);
 
   /// \brief  dtor
   AL_MAYA_UTILS_PUBLIC
@@ -53,6 +55,13 @@ public:
   AL_MAYA_UTILS_PUBLIC
   MStatus parse(const MString& optionString);
 
+  /// \brief  Given a string containing a semi-colon separated list of options passed to a file translator plugin,
+  ///         this function will parse and extract all of the option values.
+  /// \param  optionString the option string to parse
+  /// \return MS::kSuccess if the parsing was successful, false otherwise.
+  AL_MAYA_UTILS_PUBLIC
+  void construct(MString& optionString);
+
   /// \brief  Given the text name of an option, returns the boolean value for that option.
   /// \param  str the name of the option
   /// \return the option value
@@ -62,6 +71,11 @@ public:
     if(it != m_niceNameToValue.end())
     {
       return it->second->m_bool;
+    }
+    else
+    if(m_pluginOptions)
+    {
+      return m_pluginOptions->getBool(str);
     }
     return false;
   }
@@ -76,6 +90,11 @@ public:
     {
       return it->second->m_int;
     }
+    else
+    if(m_pluginOptions)
+    {
+      return m_pluginOptions->getInt(str);
+    }
     return 0;
   }
 
@@ -88,6 +107,11 @@ public:
     if(it != m_niceNameToValue.end())
     {
       return it->second->m_float;
+    }
+    else
+    if(m_pluginOptions)
+    {
+      return m_pluginOptions->getFloat(str);
     }
     return 0.0f;
   }
@@ -102,7 +126,85 @@ public:
     {
       return it->second->m_string.c_str();
     }
+    else
+    if(m_pluginOptions)
+    {
+      return m_pluginOptions->getString(str);
+    }
     return kNullString;
+  }
+
+  /// \brief  Given the text name of an option, returns the boolean value for that option.
+  /// \param  str the name of the option
+  /// \return the option value
+  void setBool(const char* const str, bool value)
+  {
+    auto it = m_niceNameToValue.find(str);
+    if(it != m_niceNameToValue.end())
+    {
+      it->second->m_bool = value;
+    }
+    else
+    if(m_pluginOptions)
+    {
+      m_pluginOptions->setBool(str, value);
+    }
+  }
+
+  /// \brief  Given the text name of an option, returns the integer value for that option.
+  /// \param  str the name of the option
+  /// \return the option value
+  void setInt(const char* const str, int value)
+  {
+    auto it = m_niceNameToValue.find(str);
+    if(it != m_niceNameToValue.end())
+    {
+      it->second->m_int = value;
+    }
+    else
+    if(m_pluginOptions)
+    {
+      m_pluginOptions->setInt(str, value);
+    }
+  }
+
+  /// \brief  Given the text name of an option, returns the floating point value for that option.
+  /// \param  str the name of the option
+  /// \return the option value
+  void setFloat(const char* const str, float value)
+  {
+    auto it = m_niceNameToValue.find(str);
+    if(it != m_niceNameToValue.end())
+    {
+      it->second->m_float = value;
+    }
+    else
+    if(m_pluginOptions)
+    {
+      m_pluginOptions->setFloat(str, value);
+    }
+  }
+
+  /// \brief  Given the text name of an option, returns the string value for that option.
+  /// \param  str the name of the option
+  /// \return the option value
+  void setString(const char* const str, const MString& value)
+  {
+    auto it = m_niceNameToValue.find(str);
+    if(it != m_niceNameToValue.end())
+    {
+      it->second->m_string = std::string(value.asChar(), value.length());
+    }
+    else
+    if(m_pluginOptions)
+    {
+      m_pluginOptions->setString(str, value.asChar());
+    }
+  }
+
+  void setPluginOptionsContext(PluginTranslatorOptionsInstance* pluginOptions)
+  {
+    m_pluginOptions = pluginOptions;
   }
 
 private:
@@ -164,6 +266,7 @@ private:
   };
   std::map<std::string, OptionValue*> m_optionNameToValue;
   std::map<std::string, OptionValue*> m_niceNameToValue;
+  PluginTranslatorOptionsInstance* m_pluginOptions;
 #endif
 };
 

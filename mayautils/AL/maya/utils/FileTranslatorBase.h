@@ -176,6 +176,11 @@ public:
   virtual MStatus writer(const MFileObject& file, const OptionsParser& options, FileAccessMode mode)
     { return MS::kFailure; }
 
+protected:
+  static void setPluginOptionsContext(PluginTranslatorOptionsInstance* pluginOptions)
+  {
+    m_optionParser.setPluginOptionsContext(pluginOptions);
+  }
 private:
 
   MStatus reader(const MFileObject &file, const MString &optionsString, FileAccessMode mode) override

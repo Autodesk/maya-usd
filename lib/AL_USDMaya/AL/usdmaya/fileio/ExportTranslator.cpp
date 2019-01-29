@@ -29,6 +29,10 @@ namespace AL {
 namespace usdmaya {
 namespace fileio {
 
+PluginTranslatorOptionsContext ExportTranslator::m_pluginContext;
+PluginTranslatorOptions* ExportTranslator::m_compatPluginOptions;
+PluginTranslatorOptionsInstance* ExportTranslator::m_pluginInstance;
+
 //----------------------------------------------------------------------------------------------------------------------
 const char* const ExportTranslator::compactionLevels[] = {
     "None",
@@ -58,6 +62,16 @@ MStatus ExportTranslator::writer(const MFileObject& file, const AL::maya::utils:
     "top",
     "side"
   };
+  std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAa " << m_pluginContext.dirty() << std::endl;
+
+  // I need to possibly recreate this when dirty (i.e. when new optins have been registered/unregistered)
+  if(m_pluginContext.dirty())
+  {
+    delete m_pluginInstance;
+    m_pluginInstance = new PluginTranslatorOptionsInstance(m_pluginContext);
+    setPluginOptionsContext(m_pluginInstance);
+    std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAa " << std::endl;
+  }
 
   ExporterParams params;
   params.m_dynamicAttributes = options.getBool(kDynamicAttributes);
@@ -142,6 +156,8 @@ MStatus ExportTranslator::writer(const MFileObject& file, const AL::maya::utils:
   {
     delete params.m_animTranslator;
   }
+
+  //m_pluginContext.setClean();
 
   // import your data
 

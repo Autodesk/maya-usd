@@ -131,6 +131,12 @@ MStatus MeshAnimDeformer::connectionMade(const MPlug& plug, const MPlug& otherPl
     {
       proxyShapeHandle = otherPlug.node();
     }
+    m_dirty = true;
+  }
+  else
+  if(plug == m_inMesh)
+  {
+    m_dirty = true;
   }
   return MPxNode::connectionMade(plug, otherPlug, asSrc);
 }
@@ -146,6 +152,9 @@ MStatus MeshAnimDeformer::connectionBroken(const MPlug& plug, const MPlug& other
     {
       proxyShapeHandle = MObject();
     }
+    m_dirty = true;
+   // m_animatedUvSets.clear();
+   // m_animatedColourSets.clear();
   }
   return MPxNode::connectionBroken(plug, otherPlug, asSrc);
 }
@@ -190,6 +199,11 @@ void MeshAnimDeformer::onAttributeChanged(MNodeMessage::AttributeMessage msg, MP
       {
         deformer->m_cachePath = SdfPath(AL::maya::utils::convert(primPathStr));
       }
+      else
+      {
+        deformer->m_cachePath = SdfPath();
+      }
+    //  deformer->m_dirty = true;
     }
   }
 }

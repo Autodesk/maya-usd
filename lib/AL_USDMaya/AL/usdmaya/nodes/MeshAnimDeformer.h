@@ -30,6 +30,22 @@ namespace AL {
 namespace usdmaya {
 namespace nodes {
 
+#if 0
+struct AnimatedSetInfo
+{
+  MString m_name;
+  UsdGeomPrimvar m_primVar;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
+struct MeshAnimInfo
+{
+  std::vector<AnimatedSetInfo> animatedUvSets;
+  std::vector<AnimatedSetInfo> animatedColourSets;
+};
+#endif
+
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief   This node is a simple deformer that modifies 
 /// \ingroup nodes
@@ -74,6 +90,9 @@ private:
   SdfPath m_cachePath;
   MObjectHandle proxyShapeHandle;
   MCallbackId m_attributeChanged = 0;
+ // std::vector<AnimatedSetInfo> m_animatedUvSets;
+ // std::vector<AnimatedSetInfo> m_animatedColourSets;
+  bool m_dirty = false;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
