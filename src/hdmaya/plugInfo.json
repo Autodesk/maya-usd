@@ -77,6 +77,12 @@
                         ],
                         "displayName": "ImagePlanes in Hydra for Maya."
                     },
+                    "HdMayaAiSkyDomeLightAdapter": {
+                        "bases": [
+                            "HdMayaLightAdapter"
+                        ],
+                        "displayName": "Ai SkyDome Light in Hydra for Maya."
+                    },
                     # Materials
                     "HdMayaMaterialAdapter": {
                         "bases": [
