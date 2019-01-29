@@ -2,6 +2,7 @@ set(SRC
     adapters/adapter.cpp
     adapters/adapterDebugCodes.cpp
     adapters/adapterRegistry.cpp
+    adapters/aiSkydomeLightAdapter.cpp
     adapters/areaLightAdapter.cpp
     adapters/dagAdapter.cpp
     adapters/directionalLightAdapter.cpp
