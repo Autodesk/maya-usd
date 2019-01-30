@@ -73,7 +73,17 @@ public:
         } else if (paramName == HdLightTokens->normalize) {
             return VtValue(light.findPlug("aiNormalize", true).asBool());
         } else if (paramName == UsdLuxTokens->textureFormat) {
-            return VtValue(TfToken());
+            const auto format = light.findPlug("format", true).asShort();
+            // mirrored_ball : 0
+            // angular : 1
+            // latlong : 2
+            if (format == 0) {
+                return VtValue(UsdLuxTokens->mirroredBall);
+            } else if (format == 2) {
+                return VtValue(UsdLuxTokens->latlong);
+            } else {
+                return VtValue(UsdLuxTokens->automatic);
+            }
         } else if (paramName == HdLightTokens->textureFile) {
             MPlugArray conns;
             light.findPlug("color", true).connectedTo(conns, true, false);
@@ -81,13 +91,14 @@ public:
             MFnDependencyNode file(conns[0].node(), &status);
             if (ARCH_UNLIKELY(
                     !status ||
-                    file.typeName() != HdMayaAdapterTokens->file.GetText())) {
+                    (file.typeName() != HdMayaAdapterTokens->file.GetText()))) {
                 return VtValue(SdfAssetPath());
             }
 
-            return VtValue(file.findPlug(MayaAttrs::file::fileTextureName, true)
-                               .asString()
-                               .asChar());
+            return VtValue(SdfAssetPath(
+                file.findPlug(MayaAttrs::file::fileTextureName, true)
+                    .asString()
+                    .asChar()));
         } else if (paramName == HdLightTokens->enableColorTemperature) {
             return VtValue(false);
         }
