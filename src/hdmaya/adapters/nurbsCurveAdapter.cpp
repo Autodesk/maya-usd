@@ -61,7 +61,8 @@ const std::array<std::pair<MObject&, HdDirtyBits>, 4> _dirtyBits{{
 class HdMayaNurbsCurveAdapter : public HdMayaShapeAdapter {
 public:
     HdMayaNurbsCurveAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-        : HdMayaShapeAdapter(delegate->GetPrimPath(dag), delegate, dag) {}
+        : HdMayaShapeAdapter(delegate->GetPrimPath(dag, false), delegate, dag) {
+    }
 
     ~HdMayaNurbsCurveAdapter() = default;
 

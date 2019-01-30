@@ -112,7 +112,7 @@ private:
 
 public:
     HdMayaImagePlaneAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-        : HdMayaShapeAdapter(delegate->GetPrimPath(dag), delegate, dag) {
+        : HdMayaShapeAdapter(delegate->GetPrimPath(dag, false), delegate, dag) {
         // find the camera attached to the image plane
         _camera = MObject::kNullObj;
         MFnDagNode fn(dag.node());

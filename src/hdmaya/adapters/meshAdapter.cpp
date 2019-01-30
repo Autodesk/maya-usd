@@ -77,7 +77,8 @@ const std::array<std::pair<MObject&, HdDirtyBits>, 8> _dirtyBits{
 class HdMayaMeshAdapter : public HdMayaShapeAdapter {
 public:
     HdMayaMeshAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-        : HdMayaShapeAdapter(delegate->GetPrimPath(dag), delegate, dag) {}
+        : HdMayaShapeAdapter(delegate->GetPrimPath(dag, false), delegate, dag) {
+    }
 
     ~HdMayaMeshAdapter() = default;
 

@@ -89,7 +89,7 @@ const MString defaultLightSet("defaultLightSet");
 
 HdMayaLightAdapter::HdMayaLightAdapter(
     HdMayaDelegateCtx* delegate, const MDagPath& dag)
-    : HdMayaDagAdapter(delegate->GetPrimPath(dag), delegate, dag) {
+    : HdMayaDagAdapter(delegate->GetPrimPath(dag, true), delegate, dag) {
     // This should be avoided, not a good idea to call virtual functions
     // directly or indirectly in a constructor.
     UpdateVisibility();

@@ -88,9 +88,7 @@ void _connectionChanged(
     for (auto i = decltype(shapesBelow){0}; i < shapesBelow; ++i) {
         auto dagCopy = dag;
         dagCopy.extendToShapeDirectlyBelow(i);
-        if (dagCopy.hasFn(MFn::kLight)) {
-            delegate->UpdateLightVisibility(dagCopy);
-        }
+        delegate->UpdateLightVisibility(dagCopy);
     }
 }
 
@@ -309,7 +307,7 @@ void HdMayaSceneDelegate::PreFrame(const MHWRender::MDrawContext& context) {
                 MHWRender::MLightParameterInformation::kShadowViewProj,
                 matrixVal)) {
             _FindAdapter<HdMayaLightAdapter>(
-                GetPrimPath(lightPath),
+                GetPrimPath(lightPath, true),
                 [&matrixVal](HdMayaLightAdapter* a) {
                     // TODO: Mark Dirty?
                     a->SetShadowProjectionMatrix(
@@ -414,47 +412,51 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
     MFnDagNode dagNode(dag);
     if (dagNode.isIntermediateObject()) { return; }
 
-    // FIXME: put this into a function!
-    if (dag.hasFn(MFn::kLight)) {
-        if (GetLightsEnabled()) {
+    // Custom lights don't have MFn::kLight.
+    if (GetLightsEnabled()) {
+        auto adapterCreator =
+            HdMayaAdapterRegistry::GetLightAdapterCreator(dag);
+        if (adapterCreator != nullptr) {
             TF_DEBUG(HDMAYA_DELEGATE_INSERTDAG)
                 .Msg(
                     "HdMayaSceneDelegate::InsertDag::"
-                    "found light\n");
-            auto adapterCreator =
-                HdMayaAdapterRegistry::GetLightAdapterCreator(dag);
-            if (adapterCreator == nullptr) { return; }
-            const auto id = GetPrimPath(dag);
+                    "found light: %s\n",
+                    dag.fullPathName().asChar());
+            const auto id = GetPrimPath(dag, true);
             if (TfMapLookupPtr(_lightAdapters, id) != nullptr) { return; }
             auto adapter = adapterCreator(this, dag);
             if (adapter == nullptr || !adapter->IsSupported()) { return; }
             adapter->Populate();
             adapter->CreateCallbacks();
             _lightAdapters.insert({id, adapter});
+            return;
         }
-    } else {
-        // We are inserting a single prim and
-        // instancer for every instanced mesh.
-        if (dag.isInstanced() && dag.instanceNumber() > 0) { return; }
-        auto adapterCreator =
-            HdMayaAdapterRegistry::GetShapeAdapterCreator(dag);
-        if (adapterCreator == nullptr) { return; }
-        const auto id = GetPrimPath(dag);
-        if (TfMapLookupPtr(_shapeAdapters, id) != nullptr) { return; }
-        auto adapter = adapterCreator(this, dag);
-        if (adapter == nullptr || !adapter->IsSupported()) { return; }
-
-        auto material = adapter->GetMaterial();
-        if (material != MObject::kNullObj) {
-            const auto materialId = GetMaterialPath(material);
-            if (TfMapLookupPtr(_materialAdapters, materialId) == nullptr) {
-                _CreateMaterial(materialId, material);
-            }
-        }
-        adapter->Populate();
-        adapter->CreateCallbacks();
-        _shapeAdapters.insert({id, adapter});
     }
+    TF_DEBUG(HDMAYA_DELEGATE_INSERTDAG)
+        .Msg(
+            "HdMayaSceneDelegate::InsertDag::"
+            "found shape: %s\n",
+            dag.fullPathName().asChar());
+    // We are inserting a single prim and
+    // instancer for every instanced mesh.
+    if (dag.isInstanced() && dag.instanceNumber() > 0) { return; }
+    auto adapterCreator = HdMayaAdapterRegistry::GetShapeAdapterCreator(dag);
+    if (adapterCreator == nullptr) { return; }
+    const auto id = GetPrimPath(dag, false);
+    if (TfMapLookupPtr(_shapeAdapters, id) != nullptr) { return; }
+    auto adapter = adapterCreator(this, dag);
+    if (adapter == nullptr || !adapter->IsSupported()) { return; }
+
+    auto material = adapter->GetMaterial();
+    if (material != MObject::kNullObj) {
+        const auto materialId = GetMaterialPath(material);
+        if (TfMapLookupPtr(_materialAdapters, materialId) == nullptr) {
+            _CreateMaterial(materialId, material);
+        }
+    }
+    adapter->Populate();
+    adapter->CreateCallbacks();
+    _shapeAdapters.insert({id, adapter});
 }
 
 void HdMayaSceneDelegate::NodeAdded(const MObject& obj) {
@@ -462,7 +464,7 @@ void HdMayaSceneDelegate::NodeAdded(const MObject& obj) {
 }
 
 void HdMayaSceneDelegate::UpdateLightVisibility(const MDagPath& dag) {
-    const auto id = GetPrimPath(dag);
+    const auto id = GetPrimPath(dag, true);
     _FindAdapter<HdMayaLightAdapter>(
         id,
         [](HdMayaLightAdapter* a) {
@@ -481,7 +483,7 @@ void HdMayaSceneDelegate::AddNewInstance(const MDagPath& dag) {
     const auto dagsLength = dags.length();
     if (dagsLength == 0) { return; }
     const auto masterDag = dags[0];
-    const auto id = GetPrimPath(masterDag);
+    const auto id = GetPrimPath(masterDag, false);
     std::shared_ptr<HdMayaShapeAdapter> masterAdapter;
     if (!TfMapLookup(_shapeAdapters, id, &masterAdapter) ||
         masterAdapter == nullptr) {

@@ -107,8 +107,8 @@ void HdMayaDelegateCtx::RemoveInstancer(const SdfPath& id) {
     GetRenderIndex().RemoveInstancer(id);
 }
 
-SdfPath HdMayaDelegateCtx::GetPrimPath(const MDagPath& dg) {
-    if (dg.hasFn(MFn::kLight)) {
+SdfPath HdMayaDelegateCtx::GetPrimPath(const MDagPath& dg, bool isLight) {
+    if (isLight) {
         return _GetPrimPath(_sprimPath, dg);
     } else {
         return _GetPrimPath(_rprimPath, dg);

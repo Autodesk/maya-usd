@@ -73,7 +73,7 @@ public:
     virtual void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags) {}
     const HdRprimCollection& GetRprimCollection() { return _rprimCollection; }
     HDMAYA_API
-    SdfPath GetPrimPath(const MDagPath& dg);
+    SdfPath GetPrimPath(const MDagPath& dg, bool isLight);
     HDMAYA_API
     SdfPath GetMaterialPath(const MObject& obj);
 

@@ -60,7 +60,7 @@ TF_REGISTRY_FUNCTION(TfType) {
         HdMayaAiSkyDomeLightAdapter, TfType::Bases<HdMayaLightAdapter> >();
 }
 
-TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAiSkyDomeLightAdapter, aiSkyDomeLight) {
+TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, domeLight) {
     HdMayaAdapterRegistry::RegisterLightAdapter(
         TfToken("aiSkyDomeLight"),
         [](HdMayaDelegateCtx* delegate,
