@@ -17,10 +17,10 @@ def getPrimsFromUfe():
 def getMayaWindow():
     import maya.OpenMayaUI as omUI
     import shiboken2
-    import PySide2.QtWidgets
+    import PySide2.QtWidgets as QtWidgets
 
     ptr = omUI.MQtUtil.mainWindow()
-    return shiboken2.wrapInstance(long(ptr), PySide2.QtWidgets.QMainWindow)
+    return shiboken2.wrapInstance(long(ptr), QtWidgets.QMainWindow)
 
 
 class UfeOpinionDialog(OpinionDialog):
@@ -30,8 +30,12 @@ class UfeOpinionDialog(OpinionDialog):
         # ...so we have to set .opinionDialog "manually", after creation...
 
         def __call__(self, notification):
+            #print "SelectionObserver()"
+            if not isinstance(notification, ufe.SelectionChanged):
+                return
             opinionDialog = getattr(self, 'opinionDialog', None)
             if opinionDialog:
+                #print "...resetting prims!"
                 opinionDialog.controller.ResetPrims(getPrimsFromUfe())
 
     def __init__(self, parent=None):
@@ -39,30 +43,36 @@ class UfeOpinionDialog(OpinionDialog):
         self.globalSelection = None
         super(UfeOpinionDialog, self).__init__(prims=getPrimsFromUfe(), parent=parent)
         self.addSelObserver()
+        self.destroyed.connect(self.removeSelObserver)
+        self.finished.connect(self.removeSelObserver)
 
     def addSelObserver(self):
+        #print "addSelObserver()"
         self.globalSelection = ufe.GlobalSelection.get()
-        if self.globalSelection:
+        if self.globalSelection is not None:
             self.selObserver = self.SelectionObserver()
+            #print "set self.selObserver"
             # if you add a __init__ or __new__, the selObserver doesn't work!
             # ...so manually adding an attr outside of __init__
             self.selObserver.opinionDialog = self
             self.globalSelection.addObserver(self.selObserver)
 
-    def removeSelObserver(self):
-        if self.globalSelection and self.selObserver:
-            self.globalSelection.removeObserver(self.selObserver)
+    def removeSelObserver(self, *args, **kwargs):
+        #print "removeSelObserver()"
+        if self.globalSelection is not None or self.selObserver is not None:
+            if self.globalSelection is not None and self.selObserver is not None:
+                self.globalSelection.removeObserver(self.selObserver)
             self.selObserver = None
             self.globalSelection = None
-
-    def reject(self, *args, **kwargs):
-        self.removeSelObserver()
-        super(UfeOpinionDialog, self).reject(*args, **kwargs)
+            #print "unset self.selObserver"
 
     @classmethod
     def launch(cls):
+        import PySide2.QtCore as QtCore
+
         dialog = cls(parent=getMayaWindow())
         dialog.setWindowTitle("USD Inspector")
+        dialog.setAttribute(QtCore.Qt.WA_DeleteOnClose, True)
         dialog.show()
         dialog.raise_()
         dialog.activateWindow()
