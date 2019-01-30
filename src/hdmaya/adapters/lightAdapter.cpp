@@ -288,6 +288,8 @@ void HdMayaLightAdapter::_CalculateShadowParams(
 
 bool HdMayaLightAdapter::_GetVisibility() const {
     if (!GetDagPath().isVisible()) { return false; }
+    // Shapes are not part of the default light set.
+    if (!GetNode().hasFn(MFn::kLight)) { return true; }
     MStatus status;
     MFnDependencyNode node(GetDagPath().transform(), &status);
     if (ARCH_UNLIKELY(!status)) { return true; }
