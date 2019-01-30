@@ -32,6 +32,10 @@
 #include <hdmaya/adapters/adapterDebugCodes.h>
 #include <hdmaya/adapters/adapterRegistry.h>
 #include <hdmaya/adapters/lightAdapter.h>
+#include <hdmaya/adapters/mayaAttrs.h>
+#include <hdmaya/adapters/tokens.h>
+
+#include <maya/MPlugArray.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -46,12 +50,49 @@ public:
     }
 
     VtValue GetLightParamValue(const TfToken& paramName) override {
-        if (paramName == UsdLuxTokens->textureFormat) {
+        MStatus status;
+        MFnDependencyNode light(GetNode(), &status);
+        if (ARCH_UNLIKELY(!status)) { return {}; }
+
+        // We are not using precomputed attributes here, because we don't have
+        // a guarantee that mtoa will be loaded before mtoh.
+        if (paramName == HdLightTokens->color) {
+            const auto plug = light.findPlug("color", true);
+            MPlugArray conns;
+            plug.connectedTo(conns, true, false);
+            return VtValue(
+                conns.length() > 0
+                    ? GfVec3f(1.0f, 1.0f, 1.0f)
+                    : GfVec3f(
+                          plug.child(0).asFloat(), plug.child(1).asFloat(),
+                          plug.child(2).asFloat()));
+        } else if (paramName == HdLightTokens->intensity) {
+            return VtValue(light.findPlug("intensity", true).asFloat());
+        } else if (paramName == HdLightTokens->exposure) {
+            return VtValue(light.findPlug("aiExposure", true).asFloat());
+        } else if (paramName == HdLightTokens->normalize) {
+            return VtValue(light.findPlug("aiNormalize", true).asBool());
+        } else if (paramName == UsdLuxTokens->textureFormat) {
             return VtValue(TfToken());
         } else if (paramName == HdLightTokens->textureFile) {
-            return VtValue(SdfAssetPath());
+            MPlugArray conns;
+            light.findPlug("color", true).connectedTo(conns, true, false);
+            if (conns.length() < 1) { return VtValue(SdfAssetPath()); }
+            MStatus status;
+            MFnDependencyNode file(conns[0].node(), &status);
+            if (ARCH_UNLIKELY(
+                    !status ||
+                    file.typeName() != HdMayaAdapterTokens->file.GetText())) {
+                return VtValue(SdfAssetPath());
+            }
+
+            return VtValue(file.findPlug(MayaAttrs::file::fileTextureName, true)
+                               .asString()
+                               .asChar());
+        } else if (paramName == HdLightTokens->enableColorTemperature) {
+            return VtValue(false);
         }
-        return HdMayaLightAdapter::GetLightParamValue(paramName);
+        return {};
     }
 };
 
