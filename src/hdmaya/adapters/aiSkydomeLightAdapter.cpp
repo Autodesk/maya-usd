@@ -78,7 +78,6 @@ public:
             MPlugArray conns;
             light.findPlug("color", true).connectedTo(conns, true, false);
             if (conns.length() < 1) { return VtValue(SdfAssetPath()); }
-            MStatus status;
             MFnDependencyNode file(conns[0].node(), &status);
             if (ARCH_UNLIKELY(
                     !status ||
