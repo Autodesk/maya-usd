@@ -4,6 +4,7 @@ from pxr.UsdQtEditors.opinionEditor import OpinionDialog
 import ufe
 usdRtid = ufe.RunTimeMgr.instance().getId('USD')
 
+
 def getPrimsFromUfe():
     globalSelection = ufe.GlobalSelection.get()
     prims = []
@@ -11,6 +12,15 @@ def getPrimsFromUfe():
         if ufeItem.runTimeId() == usdRtid:
             prims.append(ufeItem.prim())
     return prims
+
+
+def getMayaWindow():
+    import maya.OpenMayaUI as omUI
+    import shiboken2
+    import PySide2.QtWidgets
+
+    ptr = omUI.MQtUtil.mainWindow()
+    return shiboken2.wrapInstance(long(ptr), PySide2.QtWidgets.QMainWindow)
 
 
 class UfeOpinionDialog(OpinionDialog):
@@ -51,7 +61,9 @@ class UfeOpinionDialog(OpinionDialog):
 
     @classmethod
     def launch(cls):
-        dialog = cls()
+        dialog = cls(parent=getMayaWindow())
+        dialog.setWindowTitle("USD Inspector")
         dialog.show()
         dialog.raise_()
         dialog.activateWindow()
+        return dialog
