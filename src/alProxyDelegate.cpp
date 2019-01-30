@@ -455,7 +455,10 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
     MDagPathArray proxyDagPaths;
 
     TF_DEBUG(HDMAYA_AL_SELECTION)
-        .Msg("HdMayaALProxyDelegate::PopulateSelectedPaths (ufe version)\n");
+        .Msg(
+            "HdMayaALProxyDelegate::PopulateSelectedPaths (ufe version) - ufe "
+            "sel size: %lu\n",
+            ufeSelection.size());
 
     // We get the maya selection for the whole-proxy-selected check, since
     // it is a subset of the ufe selection
