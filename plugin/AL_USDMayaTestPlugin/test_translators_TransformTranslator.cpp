@@ -35,6 +35,7 @@ using AL::maya::test::randomNode;
 using AL::maya::test::compareNodes;
 using AL::maya::test::randomAnimatedNode;
 
+using AL::maya::test::buildTempPath;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Test some of the functionality of the alUsdNodeHelper.
