@@ -37,6 +37,7 @@ We have some videos explaining some of the workflows we support. We are hoping t
 + [Example Plugins](https://github.com/AnimalLogic/StudioExample/README.md)
 + [Testing](docs/testing.md)
 + [Comparison with Pixar USDMaya plugin](docs/pxrcomparison.md)
++ [Extra Data Translator Plugin](extraDataTranslatorPlugins.md)
 
 ## Developer Documentation
 
