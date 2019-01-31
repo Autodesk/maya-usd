@@ -415,15 +415,22 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
 		// Draw selection highlighting for all USD items in the UFE selection.
         SdfPathVector ufePaths;
         auto ufeSelList = Ufe::GlobalSelection::get();
+
+        Ufe::PathSegment proxyUfePath = ptr->m_shape->ufePathSegment();
         for (const auto& sceneItem : *ufeSelList)
         {
             if (sceneItem->runTimeId() == USD_UFE_RUNTIME_ID)
             {
                 const Ufe::Path& itemPath = sceneItem->path();
-                Ufe::PathSegment leaf = itemPath.getSegments().back();
-                if (leaf.runTimeId() == USD_UFE_RUNTIME_ID)
+                const Ufe::PathSegment& usdPathSegment = itemPath.getSegments().back();
+                if (usdPathSegment.runTimeId() == USD_UFE_RUNTIME_ID
+                    && itemPath.getSegments().size() == 2)
                 {
-                    ufePaths.emplace_back(leaf.string());
+                  const Ufe::PathSegment& mayaPathSegment = itemPath.getSegments().front();
+                  if(mayaPathSegment == proxyUfePath)
+                  {
+                    ufePaths.emplace_back(usdPathSegment.string());
+                  }
                 }
             }
         }
