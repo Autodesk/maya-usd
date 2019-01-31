@@ -523,9 +523,8 @@ MStatus ProxyShape::preEvaluation(const MDGContext & context, const MEvaluationN
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool ProxyShape::getRenderAttris(void* pattribs, const MHWRender::MFrameContext& drawRequest, const MDagPath& objPath)
+bool ProxyShape::getRenderAttris(UsdImagingGLRenderParams& attribs, const MHWRender::MFrameContext& drawRequest, const MDagPath& objPath)
 {
-  UsdImagingGLRenderParams& attribs = *(UsdImagingGLRenderParams*)pattribs;
   uint32_t displayStyle = drawRequest.getDisplayStyle();
   uint32_t displayStatus = MHWRender::MGeometryUtilities::displayStatus(objPath);
 

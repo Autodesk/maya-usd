@@ -44,6 +44,7 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/sdf/notice.h"
+#include "pxr/usdImaging/usdImagingGL/renderParams.h"
 #include <stack>
 #include <functional>
 #include "AL/usd/utils/ForwardDeclares.h"
@@ -407,12 +408,11 @@ public:
     { return m_stage; }
 
   /// \brief  gets hold of the attributes on this node that control the rendering in some way
-  /// \param  attribs the returned set of render attributes (should be of type: UsdImagingGLEngine::RenderParams*. Hiding
-  ///         this behind a void pointer to prevent UsdImagingGLEngine leaking into the translator plugin dependencies)
+  /// \param  attribs the returned set of render attributes
   /// \param  frameContext the frame context for rendering
   /// \param  dagPath the dag path of the node being rendered
   /// \return true if the attribs could be retrieved (i.e. is the stage is valid)
-  bool getRenderAttris(void* attribs, const MHWRender::MFrameContext& frameContext, const MDagPath& dagPath);
+  bool getRenderAttris(UsdImagingGLRenderParams& attribs, const MHWRender::MFrameContext& frameContext, const MDagPath& dagPath);
 
   /// \brief  compute bounds
   AL_USDMAYA_PUBLIC

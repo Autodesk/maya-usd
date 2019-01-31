@@ -148,7 +148,7 @@ MUserData* ProxyDrawOverride::prepareForDraw(
     data = newData = new RenderUserData;
   }
 
-  if(!shape->getRenderAttris(&data->m_params, frameContext, objPath))
+  if(!shape->getRenderAttris(data->m_params, frameContext, objPath))
   {
     delete newData;
     return nullptr;
