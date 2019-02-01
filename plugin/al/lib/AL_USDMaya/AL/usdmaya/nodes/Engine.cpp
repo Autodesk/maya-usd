@@ -54,7 +54,6 @@ bool Engine::TestIntersectionBatch(
     UsdImagingGLRenderParams params,
     const TfToken&           resolveMode,
     unsigned int             pickResolution,
-    PathTranslatorCallback   pathTranslator,
     HitBatch*                outHit)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {
@@ -124,7 +123,7 @@ bool Engine::TestIntersectionBatch(
         }
 #endif
 
-        HitInfo& info = (*outHit)[pathTranslator(primPath, instancerPath, instanceIndex)];
+        HitInfo& info = (*outHit)[primPath];
 
         info.worldSpaceHitPoint = GfVec3d(
             hit.worldSpaceHitPoint[0], hit.worldSpaceHitPoint[1], hit.worldSpaceHitPoint[2]);

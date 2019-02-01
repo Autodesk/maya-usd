@@ -47,7 +47,6 @@ public:
         UsdImagingGLRenderParams params,
         const TfToken&           resolveMode,
         unsigned int             pickResolution,
-        PathTranslatorCallback   pathTranslator,
         HitBatch*                outHit);
 };
 

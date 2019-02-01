@@ -468,19 +468,6 @@ ProxyShape* ProxyDrawOverride::getShape(const MDagPath& objPath)
     return static_cast<ProxyShape*>(dnNode.userNode());
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-class ProxyDrawOverrideSelectionHelper
-{
-public:
-    static SdfPath path_ting(const SdfPath& a, const SdfPath& b, const int c)
-    {
-        m_paths.push_back(a);
-        return a;
-    }
-    static SdfPathVector m_paths;
-};
-SdfPathVector ProxyDrawOverrideSelectionHelper::m_paths;
-
 #if MAYA_API_VERSION >= 20180600
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyDrawOverride::userSelect(
@@ -578,7 +565,6 @@ bool ProxyDrawOverride::userSelect(
         params,
         resolveMode,
         resolution,
-        ProxyDrawOverrideSelectionHelper::path_ting,
         &hitBatch);
 
     auto selected = false;
@@ -636,9 +622,8 @@ bool ProxyDrawOverride::userSelect(
             }
 
             for (const auto& it : hitBatch) {
-                auto path = it.first;
                 command += " -pp \"";
-                command += path.GetText();
+                command += it.first.GetText();
                 command += "\"";
             }
 
@@ -831,8 +816,6 @@ bool ProxyDrawOverride::userSelect(
         } // else MAYA_WANT_UFE_SELECTION
 #endif
     }
-
-    ProxyDrawOverrideSelectionHelper::m_paths.clear();
 
     // We are done executing commands that needed to handle our current
     // proxy as a special case.  Unset the ignore state on the proxy.

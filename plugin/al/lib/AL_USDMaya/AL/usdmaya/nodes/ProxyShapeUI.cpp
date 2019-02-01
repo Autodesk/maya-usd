@@ -280,19 +280,6 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-class ProxyShapeSelectionHelper
-{
-public:
-    static SdfPath path_ting(const SdfPath& a, const SdfPath& b, const int c)
-    {
-        m_paths.push_back(a);
-        return a;
-    }
-    static SdfPathVector m_paths;
-};
-SdfPathVector ProxyShapeSelectionHelper::m_paths;
-
-//----------------------------------------------------------------------------------------------------------------------
 bool ProxyShapeUI::select(
     MSelectInfo&    selectInfo,
     MSelectionList& selectionList,
@@ -363,7 +350,6 @@ bool ProxyShapeUI::select(
         params,
         resolveMode,
         resolution,
-        ProxyShapeSelectionHelper::path_ting,
         &hitBatch);
 
     auto selected = false;
@@ -442,9 +428,8 @@ bool ProxyShapeUI::select(
             }
 
             for (const auto& it : hitBatch) {
-                auto path = it.first;
                 command += " -pp \"";
-                command += path.GetText();
+                command += it.first.GetText();
                 command += "\"";
             }
 
@@ -681,8 +666,6 @@ bool ProxyShapeUI::select(
         } // else MAYA_WANT_UFE_SELECTION
 #endif
     }
-
-    ProxyShapeSelectionHelper::m_paths.clear();
 
     // restore clear colour
     glClearColor(clearCol[0], clearCol[1], clearCol[2], clearCol[3]);
