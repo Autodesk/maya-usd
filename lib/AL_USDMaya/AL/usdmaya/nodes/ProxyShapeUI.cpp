@@ -367,20 +367,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
   auto selected = false;
 
-  auto removeVariantFromPath = [] (const SdfPath& path) -> SdfPath
-  {
-    std::string pathStr = path.GetText();
-    // I'm not entirely sure about this, but it would appear that the returned string here has the variant name
-    // tacked onto the end?
-    size_t dot_location = pathStr.find_last_of('.');
-    if(dot_location != std::string::npos)
-    {
-      pathStr = pathStr.substr(0, dot_location);
-    }
-    return SdfPath(pathStr);
-  };
-
-  auto getHitPath = [&engine, &removeVariantFromPath] (const Engine::HitBatch::const_reference& it) -> SdfPath
+  auto getHitPath = [&engine] (const Engine::HitBatch::const_reference& it) -> SdfPath
   {
     const Engine::HitInfo& hit = it.second;
     auto path = engine->GetPrimPathFromInstanceIndex(it.first, hit.hitInstanceIndex);
@@ -388,13 +375,13 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     {
       return path;
     }
-    return removeVariantFromPath(it.first);
+    return it.first.StripAllVariantSelections();
   };
 
 
   auto addSelection = [&hitBatch, &selectInfo, &selectionList,
       &worldSpaceSelectPoints, &objectsMask, &selected, proxyShape,
-      &removeVariantFromPath, &getHitPath] (const MString& command)
+      &getHitPath] (const MString& command)
   {
     selected = true;
     MStringArray nodes;
@@ -411,7 +398,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
       // Retarget hit path based on pick mode policy. The retargeted prim must
       // align with the path used in the 'AL_usdmaya_ProxyShapeSelect' command.
-      const SdfPath hitPath = removeVariantFromPath(getHitPath(it));
+      const SdfPath hitPath = getHitPath(it).StripAllVariantSelections();
       const UsdPrim retargetedHitPrim = retargetSelectPrim(proxyShape->getUsdStage()->GetPrimAtPath(hitPath));
       const MObject obj = proxyShape->findRequiredPath(retargetedHitPrim.GetPath());
 
