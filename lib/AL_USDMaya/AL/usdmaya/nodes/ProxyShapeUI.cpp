@@ -433,13 +433,12 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     // That'll check if the mesh is still selected, and run an internal deselect command on that.
     // const auto singleSelection = selectInfo.singleSelection();
 
-    uint32_t i = 0;
-    for(auto it = hitBatch.begin(), e = hitBatch.end(); it != e; ++it, ++i)
+    for(const auto& it : hitBatch)
     {
 
       // Retarget hit path based on pick mode policy. The retargeted prim must
       // align with the path used in the 'AL_usdmaya_ProxyShapeSelect' command.
-      const SdfPath hitPath = removeVariantFromPath(getHitPath(*it));
+      const SdfPath hitPath = removeVariantFromPath(getHitPath(it));
       const UsdPrim retargetedHitPrim = retargetSelectPrim(proxyShape->getUsdStage()->GetPrimAtPath(hitPath));
       const MObject obj = proxyShape->findRequiredPath(retargetedHitPrim.GetPath());
 
@@ -450,7 +449,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
         MDagPath dg;
         dagNode.getPath(dg);
         sl.add(dg);
-        const double* d = it->second.worldSpaceHitPoint.GetArray();
+        const double* d = it.second.worldSpaceHitPoint.GetArray();
         selectInfo.addSelection(sl, MPoint(d[0], d[1], d[2], 1.0), selectionList, worldSpaceSelectPoints, objectsMask, false);
       }
     }
@@ -490,9 +489,9 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
       case MGlobal::kAddToHeadOfList: /* should never get here */ break;
       }
 
-      for(auto it = hitBatch.begin(), e = hitBatch.end(); it != e; ++it)
+      for(const auto& it : hitBatch)
       {
-        auto path = getHitPath(*it);
+        auto path = getHitPath(it);
         command += " -pp \"";
         command += path.GetText();
         command += "\"";
@@ -595,7 +594,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
                                      // Get the paths
         if (paths.size())
         {
-            for (auto it : paths)
+            for (const auto& it : paths)
             {
                 // Build a path segment of the USD picked object
                 Ufe::PathSegment ps_usd(it.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
@@ -699,7 +698,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
         if(paths.size())
         {
           command = "AL_usdmaya_ProxyShapeSelect -i -a ";
-          for(auto it : paths)
+          for(const auto& it : paths)
           {
             command += " -pp \"";
             command += it.GetText();
@@ -724,7 +723,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
         if(!proxyShape->selectedPaths().empty() && paths.size())
         {
           MString command = "AL_usdmaya_ProxyShapeSelect -d ";
-          for(auto it : paths)
+          for(const auto& it : paths)
           {
             command += " -pp \"";
             command += it.GetText();
@@ -747,7 +746,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
         MString selectcommand = "AL_usdmaya_ProxyShapeSelect -i -a ";
         MString deselectcommand = "AL_usdmaya_ProxyShapeSelect -d ";
-        for(auto it : paths)
+        for(const auto& it : paths)
         {
           bool flag = false;
           for(auto sit : slpaths)
