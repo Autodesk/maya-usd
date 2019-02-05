@@ -69,6 +69,11 @@ public:
         const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
         HdSelection* selection) override;
 
+    inline HdRenderIndex* GetRenderIndex() { return _renderIndex; }
+    inline const SdfPath& GetDelegateID() { return _delegateID; }
+    inline HdEngine& GetEngine() { return _engine; }
+    inline HdxTaskController* GetTaskController() { return _taskController; }
+
 #if HDMAYA_UFE_BUILD
     void PopulateSelectedPaths(
         const UFE_NS::Selection& ufeSelection, SdfPathVector& selectedSdfPaths,
@@ -78,6 +83,7 @@ public:
 
     HdMayaALProxyData& AddProxy(ProxyShape* proxy);
     void RemoveProxy(ProxyShape* proxy);
+    HdMayaALProxyData* FindProxyData(ProxyShape* proxy);
     void CreateUsdImagingDelegate(ProxyShape* proxy);
     void DeleteUsdImagingDelegate(ProxyShape* proxy);
 
@@ -87,8 +93,10 @@ private:
         ProxyShape* proxy, HdMayaALProxyData& proxyData);
 
     std::unordered_map<ProxyShape*, HdMayaALProxyData> _proxiesData;
+    HdEngine& _engine;
     SdfPath const _delegateID;
     HdRenderIndex* _renderIndex;
+    HdxTaskController* _taskController;
     MCallbackId _nodeAddedCBId;
     MCallbackId _nodeRemovedCBId;
 };

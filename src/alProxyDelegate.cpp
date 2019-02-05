@@ -28,9 +28,15 @@
 
 #include <hdmaya/delegates/delegateRegistry.h>
 
+#include <AL/usdmaya/nodes/Engine.h>
+
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/type.h>
+#include <pxr/imaging/hdx/intersector.h>
+#include <pxr/imaging/hdx/tokens.h>
+#include <pxr/usdImaging/usdImagingGL/engine.h>
 
+#include <maya/M3dView.h>
 #include <maya/MDGMessage.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
@@ -253,12 +259,145 @@ void SetupPluginCallbacks() {
     TF_VERIFY(status, "Could not set pluginUnloaded callback");
 }
 
+ProxyShape::FindPickedPrimsFunction oldFindPickedPrimsFunction;
+HdMayaALProxyDelegate* hdStAlProxyDelegate;
+
+/// Alternate picking mechanism for the AL proxy shape, which
+/// uses our own renderIndex
+static bool FindPickedPrimsMtoh(
+    ProxyShape& proxy, const GfMatrix4d& viewMatrix,
+    const GfMatrix4d& projectionMatrix, const GfMatrix4d& worldToLocalSpace,
+    const SdfPathVector& paths, const UsdImagingGLRenderParams& params,
+    bool nearestOnly, unsigned int pickResolution,
+    ProxyShape::HitBatch& outHit) {
+    TF_DEBUG(HDMAYA_AL_SELECTION).Msg("FindPickedPrimsMtoh\n");
+
+    auto doOldFindPickedPrims = [&]() {
+        return oldFindPickedPrimsFunction(
+            proxy, viewMatrix, projectionMatrix, worldToLocalSpace, paths,
+            params, nearestOnly, pickResolution, outHit);
+    };
+
+    // Unless the current viewport renderer is an mtoh HdStream one, use
+    // the normal AL picking function.
+    MStatus status;
+    auto view = M3dView::active3dView(&status);
+    if (!status) {
+        TF_WARN("Error getting active3dView\n");
+        return doOldFindPickedPrims();
+    }
+    auto rendererEnum = view.getRendererName(&status);
+    if (!status) {
+        TF_WARN("Error calling getRendererName\n");
+        return doOldFindPickedPrims();
+    }
+    if (rendererEnum != M3dView::kViewport2Renderer) {
+        return doOldFindPickedPrims();
+    }
+    MString overrideName = view.renderOverrideName(&status);
+    if (!status) {
+        TF_WARN("Error calling renderOverrideName\n");
+        return doOldFindPickedPrims();
+    }
+    if (overrideName != "mtohRenderOverride_HdStreamRendererPlugin") {
+        return doOldFindPickedPrims();
+    }
+
+    // Ok, we have an Mtoh StreamRenderer view - find the HdMayaALProxyDelegate
+    // with the HdStream render delegate
+
+    HdMayaALProxyDelegate* alProxyDelegate = hdStAlProxyDelegate;
+    if (!TF_VERIFY(alProxyDelegate->IsHdSt())) { doOldFindPickedPrims(); }
+
+    TF_DEBUG(HDMAYA_AL_SELECTION)
+        .Msg("FindPickedPrimsMtoh - using mtoh's render index\n");
+
+    auto* proxyData = alProxyDelegate->FindProxyData(&proxy);
+    if (!TF_VERIFY(proxyData)) { return false; }
+    const SdfPath& proxyDelegateID = proxyData->delegate->GetDelegateID();
+
+    // We found the HdSt proxy delegate, use it's engine / renderIndex to do
+    // selection!
+
+    HdRprimCollection intersectCollect;
+    TfTokenVector renderTags;
+    HdxIntersector::HitVector hdxHits;
+    auto& intersectionMode = nearestOnly
+                                 ? HdxIntersectionModeTokens->nearestToCamera
+                                 : HdxIntersectionModeTokens->unique;
+
+    if (!AL::usdmaya::nodes::Engine::TestIntersectionBatch(
+            viewMatrix, projectionMatrix, worldToLocalSpace, paths, params,
+            intersectionMode, pickResolution, intersectCollect,
+            *alProxyDelegate->GetTaskController(), alProxyDelegate->GetEngine(),
+            renderTags, hdxHits)) {
+        return false;
+    }
+
+    bool foundHit = false;
+    for (const auto& hit : hdxHits) {
+        const SdfPath primPath = hit.objectId;
+
+        // TODO: improve handling of multiple AL proxy shapes
+        // if we have multiple proxy shapes, we will run a selection
+        // query once for each shape, and then we throw any results that
+        // aren't in our proxy - clearly, this is wasteful - we should run
+        // the selection once, cache it, and use that for all shapes...
+        if (!primPath.HasPrefix(proxyDelegateID)) { continue; }
+
+        foundHit = true;
+
+        const SdfPath instancerPath = hit.instancerId;
+        const int instanceIndex = hit.instanceIndex;
+
+        // auto instancePath = proxy.engine()->GetPrimPathFromInstanceIndex(
+        auto usdPath = proxyData->delegate->GetPathForInstanceIndex(
+            primPath, instanceIndex, nullptr);
+
+        if (usdPath.IsEmpty()) {
+            usdPath = primPath.StripAllVariantSelections();
+        }
+        usdPath = proxyData->delegate->GetPathForUsd(usdPath);
+
+        TF_DEBUG(HDMAYA_AL_SELECTION)
+            .Msg(
+                "FindPickedPrimsMtoh - hit (usdPath): %s\n", usdPath.GetText());
+
+        auto& worldSpaceHitPoint = outHit[usdPath];
+        worldSpaceHitPoint = GfVec3d(
+            hit.worldSpaceHitPoint[0], hit.worldSpaceHitPoint[1],
+            hit.worldSpaceHitPoint[2]);
+    }
+
+    return foundHit;
+}
+
 } // namespace
 
 HdMayaALProxyDelegate::HdMayaALProxyDelegate(const InitData& initData)
     : HdMayaDelegate(initData),
-      _delegateID(initData.delegateID),
-      _renderIndex(initData.renderIndex) {
+      _engine(initData.engine),
+      _delegateID(*initData.delegateID),
+      _renderIndex(initData.renderIndex),
+      _taskController(initData.taskController) {
+    TF_DEBUG(HDMAYA_AL_PROXY_DELEGATE)
+        .Msg(
+            "HdMayaALProxyDelegate - creating with delegateID %s\n",
+            _delegateID.GetText());
+
+    if (IsHdSt()) {
+        TF_DEBUG(HDMAYA_AL_SELECTION)
+            .Msg(
+                "HdMayaALProxyDelegate - installing alt "
+                "FindPickedPrimsFunction\n");
+        if (TF_VERIFY(oldFindPickedPrimsFunction == nullptr)) {
+            oldFindPickedPrimsFunction =
+                ProxyShape::getFindPickedPrimsFunction();
+            ProxyShape::setFindPickedPrimsFunction(FindPickedPrimsMtoh);
+            hdStAlProxyDelegate = this;
+        }
+    }
+
     MStatus status;
 
     // Add all pre-existing proxy shapes
@@ -310,6 +449,11 @@ HdMayaALProxyDelegate::HdMayaALProxyDelegate(const InitData& initData)
 }
 
 HdMayaALProxyDelegate::~HdMayaALProxyDelegate() {
+    TF_DEBUG(HDMAYA_AL_PROXY_DELEGATE)
+        .Msg(
+            "HdMayaALProxyDelegate - destroying with delegateID %s\n",
+            _delegateID.GetText());
+
     TF_DEBUG(HDMAYA_AL_CALLBACKS)
         .Msg("~HdMayaALProxyDelegate - removing all callbacks\n");
     if (_nodeAddedCBId) { MMessage::removeCallback(_nodeAddedCBId); }
@@ -323,6 +467,17 @@ HdMayaALProxyDelegate::~HdMayaALProxyDelegate() {
         for (auto& callbackId : proxyData.proxyShapeCallbacks) {
             proxy->scheduler()->unregisterCallback(callbackId);
         }
+    }
+
+    if (IsHdSt()) {
+        TF_DEBUG(HDMAYA_AL_SELECTION)
+            .Msg(
+                "~HdMayaALProxyDelegate - uninstalling alt "
+                "FindPickedPrimsFunction\n");
+        TF_VERIFY(oldFindPickedPrimsFunction != nullptr);
+        ProxyShape::setFindPickedPrimsFunction(oldFindPickedPrimsFunction);
+        oldFindPickedPrimsFunction = nullptr;
+        hdStAlProxyDelegate = nullptr;
     }
 }
 
@@ -641,6 +796,12 @@ void HdMayaALProxyDelegate::RemoveProxy(ProxyShape* proxy) {
     _proxiesData.erase(proxy);
 }
 
+HdMayaALProxyData* HdMayaALProxyDelegate::FindProxyData(ProxyShape* proxy) {
+    auto findResult = _proxiesData.find(proxy);
+    if (findResult == _proxiesData.end()) { return nullptr; }
+    return &(findResult->second);
+}
+
 void HdMayaALProxyDelegate::CreateUsdImagingDelegate(ProxyShape* proxy) {
     auto proxyDataIter = _proxiesData.find(proxy);
     if (!TF_VERIFY(
@@ -664,6 +825,12 @@ void HdMayaALProxyDelegate::CreateUsdImagingDelegate(
         _renderIndex,
         _delegateID.AppendChild(TfToken(TfStringPrintf(
             "ALProxyDelegate_%s_%p", proxy->name().asChar(), proxy)))));
+
+    // TODO: REMOVE!
+    TF_DEBUG(HDMAYA_AL_SELECTION)
+        .Msg(
+            "HdMayaALProxyDelegate::CreateUsdImagingDelegate - %s\n",
+            proxyData.delegate->GetDelegateID().GetText());
     proxyData.populated = false;
 }
 
