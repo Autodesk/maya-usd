@@ -437,26 +437,7 @@ void MtohRenderOverride::_InitHydraResources() {
             _rendererDesc.rendererName);
     auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
     _renderIndex = HdRenderIndex::New(renderDelegate);
-    int delegateId = 0;
-    for (const auto& creator : HdMayaDelegateRegistry::GetDelegateCreators()) {
-        if (creator == nullptr) { continue; }
-        auto newDelegate = creator(HdMayaDelegate::InitData{
-            _renderIndex,
-            _ID.AppendChild(
-                TfToken(TfStringPrintf("_Delegate_%i_%p", delegateId++, this))),
-            _isUsingHdSt});
-        if (newDelegate) {
-            // Call SetLightsEnabled before the delegate is populated
-            newDelegate->SetLightsEnabled(!_hasDefaultLighting);
-            _delegates.push_back(newDelegate);
-        }
-    }
-    if (_hasDefaultLighting) {
-        _defaultLightDelegate.reset(
-            new MtohDefaultLightDelegate(HdMayaDelegate::InitData{
-                _renderIndex, _ID.AppendChild(TfToken(TfStringPrintf(
-                                  "_DefaultLightDelegate_%p", this)))}));
-    }
+
     _taskController = new HdxTaskController(
         _renderIndex,
         _ID.AppendChild(TfToken(TfStringPrintf(
@@ -464,6 +445,31 @@ void MtohRenderOverride::_InitHydraResources() {
             TfMakeValidIdentifier(_rendererDesc.rendererName.GetText()).c_str(),
             this))));
     _taskController->SetEnableShadows(true);
+
+    HdMayaDelegate::InitData delegateInitData(
+        _engine, _renderIndex, _rendererPlugin, _taskController, nullptr,
+        _isUsingHdSt);
+
+    int delegateIdIndex = 0;
+    for (const auto& creator : HdMayaDelegateRegistry::GetDelegateCreators()) {
+        if (creator == nullptr) { continue; }
+        auto delegateID = _ID.AppendChild(TfToken(
+            TfStringPrintf("_Delegate_%i_%p", delegateIdIndex++, this)));
+        delegateInitData.delegateID = &delegateID;
+        auto newDelegate = creator(delegateInitData);
+        if (newDelegate) {
+            // Call SetLightsEnabled before the delegate is populated
+            newDelegate->SetLightsEnabled(!_hasDefaultLighting);
+            _delegates.push_back(newDelegate);
+        }
+    }
+    if (_hasDefaultLighting) {
+        auto delegateID = _ID.AppendChild(
+            TfToken(TfStringPrintf("_DefaultLightDelegate_%p", this)));
+        delegateInitData.delegateID = &delegateID;
+        _defaultLightDelegate.reset(
+            new MtohDefaultLightDelegate(delegateInitData));
+    }
     VtValue selectionTrackerValue(_selectionTracker);
     _engine.SetTaskContextData(
         HdxTokens->selectionState, selectionTrackerValue);

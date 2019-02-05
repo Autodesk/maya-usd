@@ -26,9 +26,12 @@
 
 #include <pxr/pxr.h>
 
+#include <pxr/imaging/glf/glew.h>
+#include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/selection.h>
-
+#include <pxr/imaging/hdx/rendererPlugin.h>
+#include <pxr/imaging/hdx/taskController.h>
 #include <pxr/usd/sdf/path.h>
 
 #include <maya/MDagPath.h>
@@ -49,8 +52,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdMayaDelegate {
 public:
     struct InitData {
+        inline InitData(
+            HdEngine& engineIn, HdRenderIndex* renderIndexIn,
+            HdxRendererPlugin* rendererPluginIn,
+            HdxTaskController* taskControllerIn, const SdfPath* delegateIDIn,
+            bool isHdStIn)
+            : engine(engineIn),
+              renderIndex(renderIndexIn),
+              rendererPlugin(rendererPluginIn),
+              taskController(taskControllerIn),
+              delegateID(delegateIDIn),
+              isHdSt(isHdStIn) {}
+
+        HdEngine& engine;
         HdRenderIndex* renderIndex;
-        const SdfPath& delegateID;
+        HdxRendererPlugin* rendererPlugin;
+        HdxTaskController* taskController;
+        const SdfPath* delegateID;
         bool isHdSt;
     };
 

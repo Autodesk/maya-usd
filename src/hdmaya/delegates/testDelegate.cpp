@@ -48,7 +48,7 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaTestDelegate) {
 HdMayaTestDelegate::HdMayaTestDelegate(const InitData& initData)
     : HdMayaDelegate(initData) {
     _delegate.reset(
-        new UsdImagingDelegate(initData.renderIndex, initData.delegateID));
+        new UsdImagingDelegate(initData.renderIndex, *initData.delegateID));
 }
 
 void HdMayaTestDelegate::Populate() {
