@@ -255,9 +255,10 @@ void SetupPluginCallbacks() {
 
 } // namespace
 
-HdMayaALProxyDelegate::HdMayaALProxyDelegate(
-    HdRenderIndex* renderIndex, const SdfPath& delegateID)
-    : _delegateID(delegateID), _renderIndex(renderIndex) {
+HdMayaALProxyDelegate::HdMayaALProxyDelegate(const InitData& initData)
+    : HdMayaDelegate(initData),
+      _delegateID(initData.delegateID),
+      _renderIndex(initData.renderIndex) {
     MStatus status;
 
     // Add all pre-existing proxy shapes
@@ -325,14 +326,13 @@ HdMayaALProxyDelegate::~HdMayaALProxyDelegate() {
     }
 }
 
-HdMayaDelegatePtr HdMayaALProxyDelegate::Creator(
-    HdRenderIndex* parentIndex, const SdfPath& id) {
+HdMayaDelegatePtr HdMayaALProxyDelegate::Creator(const InitData& initData) {
     static std::once_flag setupPluginCallbacksOnce;
     std::call_once(setupPluginCallbacksOnce, SetupPluginCallbacks);
 
     if (!isALPluginLoaded.load()) { return nullptr; }
     return std::static_pointer_cast<HdMayaDelegate>(
-        std::make_shared<HdMayaALProxyDelegate>(parentIndex, id));
+        std::make_shared<HdMayaALProxyDelegate>(initData));
 }
 
 void HdMayaALProxyDelegate::Populate() {

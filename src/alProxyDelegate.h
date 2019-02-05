@@ -57,13 +57,11 @@ struct HdMayaALProxyData {
 
 class HdMayaALProxyDelegate : public HdMayaDelegate {
 public:
-    HdMayaALProxyDelegate(
-        HdRenderIndex* renderIndex, const SdfPath& delegateID);
+    HdMayaALProxyDelegate(const InitData& initData);
 
     ~HdMayaALProxyDelegate() override;
 
-    static HdMayaDelegatePtr Creator(
-        HdRenderIndex* parentIndex, const SdfPath& id);
+    static HdMayaDelegatePtr Creator(const InitData& initData);
 
     void Populate() override;
     void PreFrame(const MHWRender::MDrawContext& context) override;
