@@ -283,7 +283,7 @@ void HdMayaSceneDelegate::PreFrame(const MHWRender::MDrawContext& context) {
         }
         _adaptersToRebuild.clear();
     }
-    if (!GetPreferSimpleLight()) { return; }
+    if (!IsHdSt()) { return; }
     constexpr auto considerAllSceneLights =
         MHWRender::MDrawContext::kFilteredIgnoreLightLimit;
     MStatus status;

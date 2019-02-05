@@ -45,7 +45,7 @@ public:
         : HdMayaLightAdapter(delegate, dag) {}
 
     const TfToken& LightType() const override {
-        if (GetDelegate()->GetPreferSimpleLight()) {
+        if (GetDelegate()->IsHdSt()) {
             return HdPrimTypeTokens->simpleLight;
         } else {
             return HdPrimTypeTokens->distantLight;

@@ -446,7 +446,7 @@ void MtohRenderOverride::_InitHydraResources() {
         if (newDelegate) {
             // Call SetLightsEnabled before the delegate is populated
             newDelegate->SetLightsEnabled(!_hasDefaultLighting);
-            newDelegate->SetPreferSimpleLight(_isUsingHdSt);
+            newDelegate->SetIsHdSt(_isUsingHdSt);
             _delegates.push_back(newDelegate);
         }
     }
@@ -454,7 +454,7 @@ void MtohRenderOverride::_InitHydraResources() {
         _defaultLightDelegate.reset(new MtohDefaultLightDelegate(
             _renderIndex, _ID.AppendChild(TfToken(TfStringPrintf(
                               "_DefaultLightDelegate_%p", this)))));
-        _defaultLightDelegate->SetPreferSimpleLight(_isUsingHdSt);
+        _defaultLightDelegate->SetIsHdSt(_isUsingHdSt);
     }
     _taskController = new HdxTaskController(
         _renderIndex,

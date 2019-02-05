@@ -60,8 +60,8 @@ public:
     virtual void SetParams(const HdMayaParams& params);
     const HdMayaParams& GetParams() { return _params; }
 
-    void SetPreferSimpleLight(bool v) { _preferSimpleLight = v; }
-    bool GetPreferSimpleLight() { return _preferSimpleLight; }
+    void SetIsHdSt(bool v) { _isHdSt = v; }
+    bool IsHdSt() { return _isHdSt; }
 
     virtual void PopulateSelectedPaths(
         const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
@@ -80,7 +80,7 @@ public:
 
 private:
     HdMayaParams _params;
-    bool _preferSimpleLight = false;
+    bool _isHdSt = false;
     bool _lightsEnabled = true;
 };
 

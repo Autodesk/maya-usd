@@ -43,7 +43,7 @@ MtohDefaultLightDelegate::MtohDefaultLightDelegate(
 
 MtohDefaultLightDelegate::~MtohDefaultLightDelegate() {
     if (ARCH_UNLIKELY(!_isSupported)) { return; }
-    if (GetPreferSimpleLight()) {
+    if (IsHdSt()) {
         GetRenderIndex().RemoveSprim(HdPrimTypeTokens->simpleLight, _lightPath);
     } else {
         GetRenderIndex().RemoveSprim(
@@ -52,13 +52,13 @@ MtohDefaultLightDelegate::~MtohDefaultLightDelegate() {
 }
 
 void MtohDefaultLightDelegate::Populate() {
-    _isSupported = GetPreferSimpleLight()
+    _isSupported = IsHdSt()
                        ? GetRenderIndex().IsSprimTypeSupported(
                              HdPrimTypeTokens->simpleLight)
                        : GetRenderIndex().IsSprimTypeSupported(
                              HdPrimTypeTokens->distantLight);
     if (ARCH_UNLIKELY(!_isSupported)) { return; }
-    if (GetPreferSimpleLight()) {
+    if (IsHdSt()) {
         GetRenderIndex().InsertSprim(
             HdPrimTypeTokens->simpleLight, this, _lightPath);
     } else {
@@ -83,7 +83,7 @@ GfMatrix4d MtohDefaultLightDelegate::GetTransform(const SdfPath& id) {
     // We have to rotate the distant to match the simple light's direction
     // stored in it's position. Otherwise, the matrix needs to be an identity
     // matrix.
-    if (!GetPreferSimpleLight()) {
+    if (!IsHdSt()) {
         const auto position = _light.GetPosition();
         GfTransform transform;
         transform.SetRotation(GfRotation(
