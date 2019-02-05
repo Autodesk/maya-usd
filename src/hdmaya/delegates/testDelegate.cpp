@@ -38,17 +38,17 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaTestDelegate) {
     if (!TfGetEnvSetting(HDMAYA_TEST_DELEGATE_FILE).empty()) {
         HdMayaDelegateRegistry::RegisterDelegate(
             _tokens->HdMayaTestDelegate,
-            [](HdRenderIndex* parentIndex,
-               const SdfPath& id) -> HdMayaDelegatePtr {
+            [](const HdMayaDelegate::InitData& initData) -> HdMayaDelegatePtr {
                 return std::static_pointer_cast<HdMayaDelegate>(
-                    std::make_shared<HdMayaTestDelegate>(parentIndex, id));
+                    std::make_shared<HdMayaTestDelegate>(initData));
             });
     }
 }
 
-HdMayaTestDelegate::HdMayaTestDelegate(
-    HdRenderIndex* renderIndex, const SdfPath& delegateID) {
-    _delegate.reset(new UsdImagingDelegate(renderIndex, delegateID));
+HdMayaTestDelegate::HdMayaTestDelegate(const InitData& initData)
+    : HdMayaDelegate(initData) {
+    _delegate.reset(
+        new UsdImagingDelegate(initData.renderIndex, initData.delegateID));
 }
 
 void HdMayaTestDelegate::Populate() {

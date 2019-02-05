@@ -62,7 +62,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaSceneDelegate : public HdMayaDelegateCtx {
 public:
-    HdMayaSceneDelegate(HdRenderIndex* renderIndex, const SdfPath& delegateID);
+    HdMayaSceneDelegate(const InitData& initData);
 
     ~HdMayaSceneDelegate() override;
 

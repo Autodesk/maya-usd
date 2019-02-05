@@ -41,7 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdMayaDelegateCtx : public HdSceneDelegate, public HdMayaDelegate {
 protected:
     HDMAYA_API
-    HdMayaDelegateCtx(HdRenderIndex* renderIndex, const SdfPath& delegateID);
+    HdMayaDelegateCtx(const InitData& initData);
 
 public:
     enum RebuildFlags : uint32_t {

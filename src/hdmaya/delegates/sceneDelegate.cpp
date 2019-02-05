@@ -181,16 +181,16 @@ TF_REGISTRY_FUNCTION(TfType) {
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaSceneDelegate) {
     HdMayaDelegateRegistry::RegisterDelegate(
         _tokens->HdMayaSceneDelegate,
-        [](HdRenderIndex* parentIndex, const SdfPath& id) -> HdMayaDelegatePtr {
+        [](const HdMayaDelegate::InitData& initData) -> HdMayaDelegatePtr {
             return std::static_pointer_cast<HdMayaDelegate>(
-                std::make_shared<HdMayaSceneDelegate>(parentIndex, id));
+                std::make_shared<HdMayaSceneDelegate>(initData));
         });
 }
 
-HdMayaSceneDelegate::HdMayaSceneDelegate(
-    HdRenderIndex* renderIndex, const SdfPath& delegateID)
-    : HdMayaDelegateCtx(renderIndex, delegateID),
-      _fallbackMaterial(delegateID.AppendChild(_tokens->FallbackMaterial)) {}
+HdMayaSceneDelegate::HdMayaSceneDelegate(const InitData& initData)
+    : HdMayaDelegateCtx(initData),
+      _fallbackMaterial(
+          initData.delegateID.AppendChild(_tokens->FallbackMaterial)) {}
 
 HdMayaSceneDelegate::~HdMayaSceneDelegate() {
     for (auto callback : _callbacks) { MMessage::removeCallback(callback); }

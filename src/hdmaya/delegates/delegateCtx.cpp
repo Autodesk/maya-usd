@@ -66,12 +66,15 @@ SdfPath _GetMaterialPath(const SdfPath& base, const MObject& obj) {
 
 } // namespace
 
-HdMayaDelegateCtx::HdMayaDelegateCtx(
-    HdRenderIndex* renderIndex, const SdfPath& delegateID)
-    : HdSceneDelegate(renderIndex, delegateID),
-      _rprimPath(delegateID.AppendPath(SdfPath(std::string("rprims")))),
-      _sprimPath(delegateID.AppendPath(SdfPath(std::string("sprims")))),
-      _materialPath(delegateID.AppendPath(SdfPath(std::string("materials")))) {
+HdMayaDelegateCtx::HdMayaDelegateCtx(const InitData& initData)
+    : HdSceneDelegate(initData.renderIndex, initData.delegateID),
+      HdMayaDelegate(initData),
+      _rprimPath(
+          initData.delegateID.AppendPath(SdfPath(std::string("rprims")))),
+      _sprimPath(
+          initData.delegateID.AppendPath(SdfPath(std::string("sprims")))),
+      _materialPath(
+          initData.delegateID.AppendPath(SdfPath(std::string("materials")))) {
     _rprimCollection.SetName(TfToken("visible"));
     _rprimCollection.SetRootPath(_rprimPath);
     _rprimCollection.SetRenderTags({HdTokens->geometry});

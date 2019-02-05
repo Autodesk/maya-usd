@@ -26,6 +26,7 @@
 
 #include <pxr/pxr.h>
 
+#include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/selection.h>
 
 #include <pxr/usd/sdf/path.h>
@@ -47,8 +48,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaDelegate {
 public:
+    struct InitData {
+        HdRenderIndex* renderIndex;
+        const SdfPath& delegateID;
+        bool isHdSt;
+    };
+
     HDMAYA_API
-    HdMayaDelegate() = default;
+    HdMayaDelegate(const InitData& initData);
     HDMAYA_API
     virtual ~HdMayaDelegate() = default;
 
@@ -60,7 +67,6 @@ public:
     virtual void SetParams(const HdMayaParams& params);
     const HdMayaParams& GetParams() { return _params; }
 
-    void SetIsHdSt(bool v) { _isHdSt = v; }
     bool IsHdSt() { return _isHdSt; }
 
     virtual void PopulateSelectedPaths(

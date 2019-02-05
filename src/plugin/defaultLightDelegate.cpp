@@ -34,11 +34,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens, (DefaultMayaLight));
 
-MtohDefaultLightDelegate::MtohDefaultLightDelegate(
-    HdRenderIndex* renderIndex, const SdfPath& delegateID)
-    : HdSceneDelegate(renderIndex, delegateID),
-      HdMayaDelegate(),
-      _lightPath(delegateID.AppendChild(_tokens->DefaultMayaLight)),
+MtohDefaultLightDelegate::MtohDefaultLightDelegate(const InitData& initData)
+    : HdSceneDelegate(initData.renderIndex, initData.delegateID),
+      HdMayaDelegate(initData),
+      _lightPath(initData.delegateID.AppendChild(_tokens->DefaultMayaLight)),
       _isSupported(false) {}
 
 MtohDefaultLightDelegate::~MtohDefaultLightDelegate() {
@@ -52,11 +51,10 @@ MtohDefaultLightDelegate::~MtohDefaultLightDelegate() {
 }
 
 void MtohDefaultLightDelegate::Populate() {
-    _isSupported = IsHdSt()
-                       ? GetRenderIndex().IsSprimTypeSupported(
-                             HdPrimTypeTokens->simpleLight)
-                       : GetRenderIndex().IsSprimTypeSupported(
-                             HdPrimTypeTokens->distantLight);
+    _isSupported = IsHdSt() ? GetRenderIndex().IsSprimTypeSupported(
+                                  HdPrimTypeTokens->simpleLight)
+                            : GetRenderIndex().IsSprimTypeSupported(
+                                  HdPrimTypeTokens->distantLight);
     if (ARCH_UNLIKELY(!_isSupported)) { return; }
     if (IsHdSt()) {
         GetRenderIndex().InsertSprim(

@@ -41,7 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaTestDelegate : public HdMayaDelegate {
 public:
-    HdMayaTestDelegate(HdRenderIndex* renderIndex, const SdfPath& delegateID);
+    HdMayaTestDelegate(const InitData& initData);
 
     void Populate() override;
 

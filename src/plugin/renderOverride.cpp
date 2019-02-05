@@ -440,21 +440,22 @@ void MtohRenderOverride::_InitHydraResources() {
     int delegateId = 0;
     for (const auto& creator : HdMayaDelegateRegistry::GetDelegateCreators()) {
         if (creator == nullptr) { continue; }
-        auto newDelegate = creator(
-            _renderIndex, _ID.AppendChild(TfToken(TfStringPrintf(
-                              "_Delegate_%i_%p", delegateId++, this))));
+        auto newDelegate = creator(HdMayaDelegate::InitData{
+            _renderIndex,
+            _ID.AppendChild(
+                TfToken(TfStringPrintf("_Delegate_%i_%p", delegateId++, this))),
+            _isUsingHdSt});
         if (newDelegate) {
             // Call SetLightsEnabled before the delegate is populated
             newDelegate->SetLightsEnabled(!_hasDefaultLighting);
-            newDelegate->SetIsHdSt(_isUsingHdSt);
             _delegates.push_back(newDelegate);
         }
     }
     if (_hasDefaultLighting) {
-        _defaultLightDelegate.reset(new MtohDefaultLightDelegate(
-            _renderIndex, _ID.AppendChild(TfToken(TfStringPrintf(
-                              "_DefaultLightDelegate_%p", this)))));
-        _defaultLightDelegate->SetIsHdSt(_isUsingHdSt);
+        _defaultLightDelegate.reset(
+            new MtohDefaultLightDelegate(HdMayaDelegate::InitData{
+                _renderIndex, _ID.AppendChild(TfToken(TfStringPrintf(
+                                  "_DefaultLightDelegate_%p", this)))}));
     }
     _taskController = new HdxTaskController(
         _renderIndex,

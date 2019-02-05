@@ -27,7 +27,6 @@
 #include <pxr/base/tf/singleton.h>
 #include <pxr/pxr.h>
 
-#include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/usd/sdf/path.h>
 
 #include <tuple>
@@ -46,7 +45,7 @@ public:
     // function creates and returns a pointer to a HdMayaDelegate - may return
     // a nullptr indicate failure, or that the delegate is currently disabled
     using DelegateCreator =
-        std::function<HdMayaDelegatePtr(HdRenderIndex*, const SdfPath&)>;
+        std::function<HdMayaDelegatePtr(const HdMayaDelegate::InitData&)>;
 
     HDMAYA_API
     static void RegisterDelegate(const TfToken& name, DelegateCreator creator);

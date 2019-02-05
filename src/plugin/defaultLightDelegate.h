@@ -42,8 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class MtohDefaultLightDelegate : public HdSceneDelegate, public HdMayaDelegate {
 public:
-    MtohDefaultLightDelegate(
-        HdRenderIndex* renderIndex, const SdfPath& delegateID);
+    MtohDefaultLightDelegate(const InitData& initData);
 
     ~MtohDefaultLightDelegate() override;
 
