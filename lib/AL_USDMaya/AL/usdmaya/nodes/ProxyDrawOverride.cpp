@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "pxr/imaging/glf/glew.h"
+#include "AL/usdmaya/nodes/Engine.h"
 #include "AL/usdmaya/nodes/ProxyDrawOverride.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/DebugCodes.h"
@@ -61,7 +62,7 @@ public:
 
   UsdImagingGLRenderParams m_params;
   UsdPrim m_rootPrim;
-  UsdImagingGLEngine* m_engine = 0;
+  Engine* m_engine = 0;
   ProxyShape* m_shape = 0;
   MDagPath m_objPath;
 };
@@ -549,7 +550,7 @@ bool ProxyDrawOverride::userSelect(
 
   UsdPrim root = proxyShape->getUsdStage()->GetPseudoRoot();
 
-  UsdImagingGLEngine::HitBatch hitBatch;
+  Engine::HitBatch hitBatch;
   SdfPathVector rootPath;
   rootPath.push_back(root.GetPath());
 
@@ -571,9 +572,9 @@ bool ProxyDrawOverride::userSelect(
 
   auto selected = false;
 
-  auto getHitPath = [&engine] (UsdImagingGLEngine::HitBatch::const_reference& it) -> SdfPath
+  auto getHitPath = [&engine] (Engine::HitBatch::const_reference& it) -> SdfPath
   {
-    const UsdImagingGLEngine::HitInfo& hit = it.second;
+    const Engine::HitInfo& hit = it.second;
     auto path = engine->GetPrimPathFromInstanceIndex(it.first, hit.hitInstanceIndex);
     if (!path.IsEmpty())
     {
@@ -680,7 +681,7 @@ bool ProxyDrawOverride::userSelect(
     {
       paths.reserve(hitBatch.size());
 
-      auto addHit = [&engine, &paths, &getHitPath](UsdImagingGLEngine::HitBatch::const_reference& it)
+      auto addHit = [&engine, &paths, &getHitPath](Engine::HitBatch::const_reference& it)
       {
         paths.push_back(getHitPath(it));
       };
@@ -697,7 +698,7 @@ bool ProxyDrawOverride::userSelect(
           MDagPath cameraPath;
           M3dView::active3dView().getCamera(cameraPath);
           const auto cameraPoint = cameraPath.inclusiveMatrix() * MPoint(0.0, 0.0, 0.0, 1.0);
-          auto distanceToCameraSq = [&cameraPoint] (UsdImagingGLEngine::HitBatch::const_reference& it) -> double
+          auto distanceToCameraSq = [&cameraPoint] (Engine::HitBatch::const_reference& it) -> double
           {
             const auto dx = cameraPoint.x - it.second.worldSpaceHitPoint[0];
             const auto dy = cameraPoint.y - it.second.worldSpaceHitPoint[1];

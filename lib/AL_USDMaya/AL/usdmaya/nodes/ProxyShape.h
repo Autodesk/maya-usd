@@ -60,8 +60,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdImagingGLEngine;
-
 // Note: you MUST forward declare LayerManager, and not include LayerManager.h;
 // The reason is that LayerManager.h includes MPxLocatorNode.h, which on Linux,
 // ends up bringing in Xlib.h, which has this unfortunate macro:
@@ -77,6 +75,8 @@ PXR_NAMESPACE_CLOSE_SCOPE;
 namespace AL {
 namespace usdmaya {
 namespace nodes {
+
+class Engine;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A helper class to store the state that is modified during a change to the current selection within a
@@ -697,7 +697,7 @@ public:
 
   /// \brief  returns the usd imaging engine for this proxy shape
   /// \return the imagine engin instance for this shape (shared between draw override and shape ui)
-  inline UsdImagingGLEngine* engine() const
+  inline Engine* engine() const
     { return m_engine; }
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -1072,7 +1072,7 @@ private:
   SdfPath m_changedPath;
   SdfPathVector m_variantSwitchedPrims;
   SdfLayerHandle m_prevEditTarget;
-  UsdImagingGLEngine* m_engine = 0;
+  Engine* m_engine = 0;
 
   uint32_t m_engineRefCount = 0;
   bool m_compositionHasChanged = false;

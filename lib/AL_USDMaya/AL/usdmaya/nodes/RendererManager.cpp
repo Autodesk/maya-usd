@@ -15,6 +15,7 @@
 //
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/DebugCodes.h"
+#include "AL/usdmaya/nodes/Engine.h"
 #include "AL/usdmaya/nodes/RendererManager.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 
@@ -60,7 +61,7 @@ MStatus RendererManager::initialise()
 
     // hydra renderer plugin discovery
     // create dummy imaging engine to get renderer names
-    UsdImagingGLEngine imagingEngine(SdfPath(), {});
+    Engine imagingEngine(SdfPath(), {});
     m_rendererPluginsTokens = imagingEngine.GetRendererPlugins();
     const size_t numTokens = m_rendererPluginsTokens.size();
     m_rendererPluginsNames = MStringArray(numTokens, MString());

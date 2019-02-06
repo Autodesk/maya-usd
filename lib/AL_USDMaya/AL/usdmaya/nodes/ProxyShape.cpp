@@ -17,6 +17,8 @@
 #include "pxr/usdImaging/usdImaging/version.h"
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
+#include "AL/usdmaya/nodes/Engine.h"
+
 #if (__cplusplus >= 201703L)
 # include <filesystem>
 #else
@@ -444,7 +446,7 @@ void ProxyShape::constructGLImagingEngine()
                                    translatedGeo.begin(),
                                    translatedGeo.end());
 
-      m_engine = new UsdImagingGLEngine(m_path, excludedGeometryPaths);
+      m_engine = new Engine(m_path, excludedGeometryPaths);
       // set renderer plugin based on RendererManager setting
       RendererManager* manager = RendererManager::findManager();
       if(manager && m_engine)
@@ -582,7 +584,7 @@ bool ProxyShape::getRenderAttris(UsdImagingGLRenderParams& attribs, const MHWRen
     attribs.cullStyle = UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
   }
 #else
-  attribs.cullStyle = UsdImagingGLEngine::CULL_STYLE_NOTHING;
+  attribs.cullStyle = Engine::CULL_STYLE_NOTHING;
 #endif
 
   const float complexities[] = {1.05f, 1.15f, 1.25f, 1.35f, 1.45f, 1.55f, 1.65f, 1.75f, 1.9f}; 
