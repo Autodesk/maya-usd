@@ -367,24 +367,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
   auto selected = false;
 
-#if defined(WANT_UFE_BUILD)
-  auto pickUfePathPrim = [proxyShape](const SdfPath& path) -> SdfPath {
-    if (ArchHasEnv("MAYA_WANT_UFE_SELECTION")) {
-      // Get only Xform types for ufe selection
-      UsdPrim prim = proxyShape->getUsdStage()->GetPrimAtPath(path);
-      TfToken xformToken("Xform");
-      while (prim && prim.GetTypeName() != xformToken)
-        prim = prim.GetParent();
-      return prim.GetPath();
-    }
-    return path;
-  };
-#else
-  // Do nothing if WANT_UFE_BUILD is disabled
-  auto pickUfePathPrim = false;
-#endif
-
-  auto removeVariantFromPath = [&pickUfePathPrim] (const SdfPath& path) -> SdfPath
+  auto removeVariantFromPath = [] (const SdfPath& path) -> SdfPath
   {
     std::string pathStr = path.GetText();
     // I'm not entirely sure about this, but it would appear that the returned string here has the variant name
@@ -394,26 +377,16 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     {
       pathStr = pathStr.substr(0, dot_location);
     }
-    
-#if defined(WANT_UFE_BUILD)
-    SdfPath resultPath(pathStr);
-    return pickUfePathPrim(resultPath);
-#else
     return SdfPath(pathStr);
-#endif
   };
 
-  auto getHitPath = [&engine, &removeVariantFromPath, &pickUfePathPrim] (const Engine::HitBatch::const_reference& it) -> SdfPath
+  auto getHitPath = [&engine, &removeVariantFromPath] (const Engine::HitBatch::const_reference& it) -> SdfPath
   {
     const Engine::HitInfo& hit = it.second;
     auto path = engine->GetPrimPathFromInstanceIndex(it.first, hit.hitInstanceIndex);
     if (!path.IsEmpty())
     {
-#if defined(WANT_UFE_BUILD)
-      return pickUfePathPrim(path);
-#else
       return path;
-#endif
     }
     return removeVariantFromPath(it.first);
   };
