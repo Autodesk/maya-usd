@@ -1,3 +1,18 @@
+//
+// Copyright 2019 Animal Logic
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.//
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 #include "AL/maya/utils/PluginTranslatorOptions.h"
 #include "maya/MGlobal.h"
 #include "maya/MStringArray.h"
@@ -214,41 +229,6 @@ MString PluginTranslatorOptions::defaultString(const char* const optionName) con
     return option->defString;
   }
   return MString(); 
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-AL_MAYA_UTILS_PUBLIC
-void PluginTranslatorOptions::toOptionVars()
-{
-
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-AL_MAYA_UTILS_PUBLIC
-void PluginTranslatorOptions::fromOptionVars()
-{
-
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-AL_MAYA_UTILS_PUBLIC
-void PluginTranslatorOptions::fromDefaults()
-{
-
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-AL_MAYA_UTILS_PUBLIC
-void PluginTranslatorOptions::generateExportGUI(MString& guiCode)
-{
-
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-AL_MAYA_UTILS_PUBLIC
-void PluginTranslatorOptions::generateImportGUI(MString& guiCode)
-{
-
 }
 
 //----------------------------------------------------------------------------------------------------------------------
