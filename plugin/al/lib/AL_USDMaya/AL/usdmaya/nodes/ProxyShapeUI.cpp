@@ -386,7 +386,7 @@ bool ProxyShapeUI::select(
                 MDagPath       dg;
                 dagNode.getPath(dg);
                 sl.add(dg);
-                const double* d = it.second.worldSpaceHitPoint.GetArray();
+                const double* d = it.second.GetArray();
                 selectInfo.addSelection(
                     sl,
                     MPoint(d[0], d[1], d[2], 1.0),

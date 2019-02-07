@@ -582,7 +582,7 @@ bool ProxyDrawOverride::userSelect(
                 MFnDagNode dagNode(obj);
                 MDagPath   dg;
                 dagNode.getPath(dg);
-                const double* p = it.second.worldSpaceHitPoint.GetArray();
+                const double* p = it.second.GetArray();
 
                 selectionList.add(dg);
                 worldSpaceHitPts.append(MPoint(p[0], p[1], p[2]));

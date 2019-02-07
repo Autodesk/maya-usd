@@ -32,7 +32,6 @@
 
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hdx/pickTask.h>
-#include <pxr/imaging/hdx/taskController.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <vector>
@@ -100,20 +99,14 @@ bool Engine::TestIntersectionBatch(
 
     for (const auto& hit : allHits) {
         SdfPath primPath = hit.objectId;
-        SdfPath instancerPath = hit.instancerId;
         int     instanceIndex = hit.instanceIndex;
 
 #if defined(USDIMAGINGGL_API_VERSION) && USDIMAGINGGL_API_VERSION >= 5
         // See similar code in usdImagingGL/engine.cpp...
         primPath = _GetSceneDelegate()->GetScenePrimPath(primPath, instanceIndex);
-        instancerPath = _GetSceneDelegate()
-                            ->ConvertIndexPathToCachePath(instancerPath)
-                            .GetAbsoluteRootOrPrimPath();
 #elif defined(USDIMAGINGGL_API_VERSION) && USDIMAGINGGL_API_VERSION >= 3
         // See similar code in usdImagingGL/engine.cpp...
         primPath = _delegate->GetScenePrimPath(primPath, instanceIndex);
-        instancerPath
-            = _delegate->ConvertIndexPathToCachePath(instancerPath).GetAbsoluteRootOrPrimPath();
 #else
         SdfPath resolvedPath = GetPrimPathFromInstanceIndex(primPath, instanceIndex);
         if (!resolvedPath.IsEmpty()) {
@@ -123,11 +116,7 @@ bool Engine::TestIntersectionBatch(
         }
 #endif
 
-        HitInfo& info = (*outHit)[primPath];
-
-        info.worldSpaceHitPoint = GfVec3d(
-            hit.worldSpaceHitPoint[0], hit.worldSpaceHitPoint[1], hit.worldSpaceHitPoint[2]);
-        info.hitInstanceIndex = instanceIndex;
+        (*outHit)[primPath] = hit.worldSpaceHitPoint;
     }
 
     return true;
