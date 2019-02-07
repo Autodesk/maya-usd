@@ -352,12 +352,16 @@ bool ProxyShapeUI::select(
         resolution = 1024;
     }
 
+    TfToken resolveMode = selectInfo.singleSelection() ? HdxPickTokens->resolveNearestToCamera
+                                                       : HdxPickTokens->resolveUnique;
+
     bool hitSelected = engine->TestIntersectionBatch(
         GfMatrix4d(viewMatrix.matrix),
         GfMatrix4d(projectionMatrix.matrix),
         worldToLocalSpace,
         rootPath,
         params,
+        resolveMode,
         resolution,
         ProxyShapeSelectionHelper::path_ting,
         &hitBatch);
@@ -475,44 +479,8 @@ bool ProxyShapeUI::select(
         SdfPathVector paths;
         if (!hitBatch.empty()) {
             paths.reserve(hitBatch.size());
-
-            auto addHit
-                = [&paths](Engine::HitBatch::const_reference& it) { paths.push_back(it.first); };
-
-            // Do to the inaccuracies in the selection method in gl engine
-            // we still need to find the closest selection.
-            // Around the edges it often selects two or more prims.
-            if (selectInfo.singleSelection()) {
-                auto closestHit = hitBatch.cbegin();
-
-                if (hitBatch.size() > 1) {
-                    MDagPath cameraPath;
-                    selectInfo.view().getCamera(cameraPath);
-                    const auto cameraPoint
-                        = cameraPath.inclusiveMatrix() * MPoint(0.0, 0.0, 0.0, 1.0);
-                    auto distanceToCameraSq
-                        = [&cameraPoint](Engine::HitBatch::const_reference& it) -> double {
-                        const auto dx = cameraPoint.x - it.second.worldSpaceHitPoint[0];
-                        const auto dy = cameraPoint.y - it.second.worldSpaceHitPoint[1];
-                        const auto dz = cameraPoint.z - it.second.worldSpaceHitPoint[2];
-                        return dx * dx + dy * dy + dz * dz;
-                    };
-
-                    auto closestDistance = distanceToCameraSq(*closestHit);
-                    for (auto it = ++hitBatch.cbegin(), itEnd = hitBatch.cend(); it != itEnd;
-                         ++it) {
-                        const auto currentDistance = distanceToCameraSq(*it);
-                        if (currentDistance < closestDistance) {
-                            closestDistance = currentDistance;
-                            closestHit = it;
-                        }
-                    }
-                }
-                addHit(*closestHit);
-            } else {
-                for (const auto& it : hitBatch) {
-                    addHit(it);
-                }
+            for (const auto& it : hitBatch) {
+                paths.push_back(it.first);
             }
         }
 #if defined(WANT_UFE_BUILD)

@@ -52,6 +52,7 @@ bool Engine::TestIntersectionBatch(
     const GfMatrix4d&        worldToLocalSpace,
     const SdfPathVector&     paths,
     UsdImagingGLRenderParams params,
+    const TfToken&           resolveMode,
     unsigned int             pickResolution,
     PathTranslatorCallback   pathTranslator,
     HitBatch*                outHit)
@@ -59,7 +60,6 @@ bool Engine::TestIntersectionBatch(
     if (ARCH_UNLIKELY(_legacyImpl)) {
         return false;
     }
-
     _UpdateHydraCollection(&_intersectCollection, paths, params);
 
     TfTokenVector renderTags;
@@ -73,7 +73,7 @@ bool Engine::TestIntersectionBatch(
 
     HdxPickTaskContextParams pickParams;
     pickParams.resolution = GfVec2i(pickResolution, pickResolution);
-    pickParams.resolveMode = HdxPickTokens->resolveUnique;
+    pickParams.resolveMode = resolveMode;
     pickParams.viewMatrix = worldToLocalSpace * viewMatrix;
     pickParams.projectionMatrix = projectionMatrix;
     pickParams.clipPlanes = params.clipPlanes;

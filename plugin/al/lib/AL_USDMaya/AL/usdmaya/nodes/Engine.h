@@ -45,6 +45,7 @@ public:
         const GfMatrix4d&        worldToLocalSpace,
         const SdfPathVector&     paths,
         UsdImagingGLRenderParams params,
+        const TfToken&           resolveMode,
         unsigned int             pickResolution,
         PathTranslatorCallback   pathTranslator,
         HitBatch*                outHit);
