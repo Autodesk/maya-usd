@@ -63,14 +63,6 @@ MStatus ExportTranslator::writer(const MFileObject& file, const AL::maya::utils:
     "side"
   };
 
-  // I need to possibly recreate this when dirty (i.e. when new optins have been registered/unregistered)
-  if(m_pluginContext.dirty())
-  {
-    delete m_pluginInstance;
-    m_pluginInstance = new PluginTranslatorOptionsInstance(m_pluginContext);
-    setPluginOptionsContext(m_pluginInstance);
-  }
-
   ExporterParams params;
   params.m_dynamicAttributes = options.getBool(kDynamicAttributes);
   params.m_duplicateInstances = options.getBool(kDuplicateInstances);

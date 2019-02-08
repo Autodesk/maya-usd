@@ -185,6 +185,7 @@ private:
 
   MStatus reader(const MFileObject &file, const MString &optionsString, FileAccessMode mode) override
     {
+      prepPluginOptions();
       MStatus status = m_optionParser.parse(optionsString);
       if(MS::kSuccess == status)
       {
@@ -196,6 +197,7 @@ private:
 
   MStatus writer(const MFileObject &file, const MString &optionsString, FileAccessMode mode) override
     {
+      prepPluginOptions();
       MStatus status = m_optionParser.parse(optionsString);
       if(MS::kSuccess == status)
       {
@@ -204,6 +206,8 @@ private:
       MGlobal::displayError("Unable to parse the file translator options");
       return status;
     }
+
+  virtual void prepPluginOptions() {}
 
   static MString m_defaultOptionString;
   static OptionsParser m_optionParser;

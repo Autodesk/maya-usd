@@ -580,7 +580,7 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
             "    $result = 0;\n  }\n"
             "  return $result;\n}\n";
 
-#if 1
+#if 0
   std::cout << "--------------------------------------------------------\n";
   std::cout << "--------------------------------------------------------\n";
   std::cout << "--------------------------------------------------------\n";

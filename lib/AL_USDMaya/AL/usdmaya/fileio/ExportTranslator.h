@@ -117,6 +117,18 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
     return MS::kSuccess;
   }
 
+  void prepPluginOptions() override
+  {
+      // I need to possibly recreate this when dirty (i.e. when new optins have been registered/unregistered)
+      std::cout << "DIRTY " << m_pluginContext.dirty() << std::endl;
+      if(m_pluginContext.dirty())
+      {
+        delete m_pluginInstance;
+        m_pluginInstance = new PluginTranslatorOptionsInstance(m_pluginContext);
+        setPluginOptionsContext(m_pluginInstance);
+      }
+  }
+  
 private:
   static PluginTranslatorOptionsContext m_pluginContext;
   static PluginTranslatorOptions* m_compatPluginOptions;
