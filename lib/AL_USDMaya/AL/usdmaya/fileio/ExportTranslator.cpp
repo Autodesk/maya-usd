@@ -62,7 +62,6 @@ MStatus ExportTranslator::writer(const MFileObject& file, const AL::maya::utils:
     "top",
     "side"
   };
-  std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAa " << m_pluginContext.dirty() << std::endl;
 
   // I need to possibly recreate this when dirty (i.e. when new optins have been registered/unregistered)
   if(m_pluginContext.dirty())
@@ -70,7 +69,6 @@ MStatus ExportTranslator::writer(const MFileObject& file, const AL::maya::utils:
     delete m_pluginInstance;
     m_pluginInstance = new PluginTranslatorOptionsInstance(m_pluginContext);
     setPluginOptionsContext(m_pluginInstance);
-    std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAa " << std::endl;
   }
 
   ExporterParams params;

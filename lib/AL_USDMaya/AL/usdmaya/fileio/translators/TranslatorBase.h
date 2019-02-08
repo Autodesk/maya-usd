@@ -350,7 +350,6 @@ PlugClass::create(TranslatorContextPtr context) {                               
                                                                                 \
 TF_REGISTRY_FUNCTION(TfType)                                                    \
 {                                                                               \
-    std::cout << "SHITE " << #PlugClass << std::endl; \
     TfType::Define<PlugClass, TfType::Bases<TranslatorBase>>()                  \
         .SetFactory<TranslatorFactory<PlugClass>>();                            \
 }
