@@ -1193,9 +1193,9 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
               break;
             }
           }
-          helper.m_paths = m_selectedPaths;
           helper.m_removedRefs.emplace_back(prim.GetPath(), object);
         }
+        helper.m_paths = m_selectedPaths;
       }
       else
       {
