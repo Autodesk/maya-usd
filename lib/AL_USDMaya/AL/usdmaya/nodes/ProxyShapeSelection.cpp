@@ -1172,35 +1172,28 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
         return false;
       }
 
-      if(!prims.empty())
+      for(auto prim : prims)
       {
-        for(auto prim : prims)
+        auto temp = m_requiredPaths.find(prim.GetPath());
+        MObject object = temp->second.node();
+
+        m_selectedPaths.erase(prim.GetPath());
+
+        removeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection);
+        for(uint32_t i = 0; i < helper.m_newSelection.length(); ++i)
         {
-          auto temp = m_requiredPaths.find(prim.GetPath());
-          MObject object = temp->second.node();
+          MObject obj;
+          helper.m_newSelection.getDependNode(i, obj);
 
-          m_selectedPaths.erase(prim.GetPath());
-
-          removeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection);
-          for(uint32_t i = 0; i < helper.m_newSelection.length(); ++i)
+          if(object == obj)
           {
-            MObject obj;
-            helper.m_newSelection.getDependNode(i, obj);
-
-            if(object == obj)
-            {
-              helper.m_newSelection.remove(i);
-              break;
-            }
+            helper.m_newSelection.remove(i);
+            break;
           }
-          helper.m_removedRefs.emplace_back(prim.GetPath(), object);
         }
-        helper.m_paths = m_selectedPaths;
+        helper.m_removedRefs.emplace_back(prim.GetPath(), object);
       }
-      else
-      {
-        helper.m_paths.clear();
-      }
+      helper.m_paths = m_selectedPaths;
     }
     break;
 
