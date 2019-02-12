@@ -1,3 +1,93 @@
+## v0.31.1 (2019-02-21)
+### Added
+
+* Maya directional light import/export [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/137) (#137 - @wengn)
+
+## v0.31.0 (2019-02-07)
+### Added
+
+* Option for the exporter to output transforms in world space.
+
+### Changed
+
+* Avoid reconstruction of imaging engine on prim resync
+* Updated to work with USD 0.19.01, see [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/133/) (#133 @elrond79)
+
+## v0.30.5 (2019-01-30)
+### Added
+
+* AL_usdmaya_MeshAnimCreator node. Used to read mesh data directly from USD into the Maya DG. Avoids the need to store mesh data (translated from USD) in the maya files on save.
+* AL_usdmaya_MeshAnimDeformer node. Used to modify a mesh by updating the points/normals to the values from USD (at a given time)
+
+## v0.30.4 (2019-01-18)
+### Added
+
+* Added a [AL_MayaTest docs](docs/testing.md) file explaining how to use the AL_MayaTest library, run AL_USDMaya tests etc
+
+### Changed
+
+* googletest updated to 1.8 - no code change
+
+## v0.30.3 (2019-01-16)
+### Added
+
+* Strings can now be exported
+
+## v0.30.2 (2019-01-14)
+### Changed
+
+* update root cmake file to not build new mayaTest library
+* Bumping version to 0.30.2
+
+### Fixed
+
+* Extra Data Plugins not called on file import.
+
+## v0.30.1 (2019-01-04)
+### Added
+
+* Created AL_MayaTest library to store reusable test utility and test "harness" code
+* Extra Data Translation Plugins "An additional plugin mechanism to allow import/export of data which is not tied to a specific USD Schema (Typed or API) or Maya node type". See [docs](docs/extraDataTranslatorPlugins.md)
+
+### Changed
+
+* Removed openMayaFX as a dependency on AL_USDMaya lib
+* Bumped version to 0.30.1
+
+### Removed
+
+* Test boilerplate from mayautils and AL_USDMayaTestPlugin
+
+## v0.30.0 (2018-12-21)
+### Changed
+
+* Updated schema python module path to be AL.usd.schemas.maya
+
+## v0.29.9 (2018-12-19)
+
+### Added
+* Autodesk UFE selection integration (Maya 2019+)
+* When building with UFE is enabled, you will still get the default AL selection behavior. To enable UFE selection, you also need to set the env var MAYA_WANT_UFE_SELECTION. For now this is checked at run-time allowing you to enable/disable it to switch between the different selection modes. Note: this UFE selection is supported in the old VP1 code and also in VP2. When UFE selection is enabled, perform an extra wireframe draw to show selection.
+* Implemented VP2 selection, so the env var MAYA_VP2_USE_VP1_SELECTION is no longer required.
+* Set proper version in Maya plugin.
+
+### Deprecated
+* MAYA_VP2_USE_VP1_SELECTION is no longer required for Maya 2019+
+
+### Fixed
+* Some minor Windows build fixes.
+* Update bounding box when UFE selection occurs.
+
+## v0.29.8 (2018-12-18)
+### Fixed
+
+* Fixed incorrect export mode of polygon normals
+
+## v0.29.7 (2018-12-16)
+### Added
+
+* Added "Duplicate_Mesh_Points_as_PRef" export flag to export first frame of points as "pref" attribute (a duplicate of the first sample of "P")
+
 ## v0.29.5 (2018-11-21)
 ### Fixed
 
@@ -90,6 +180,7 @@ Overs are no longer applied to prims by selecting them in the viewport.
 * This sandboxes the main AL_USDMayaPlugin from needing to link against any pixar maya libraries (ie, usdMaya) (#109 - @elrond79)
 * Also added a cmake option to disable building of the plugin entirely, BUILD_USDMAYA_PXR_TRANSLATORS (#109 - @elrond79)
 * Updated FindUSD.cmake to enable finding of usdMaya (#109 - @elrond79)
++ Updated github contribution guidelines
 
 ### Fixed
 
@@ -764,5 +855,3 @@ http://github.al.com.au/rnd/usdMaya/wiki
 * DG Parallel Eval: http://github.al.com.au/rnd/usdMaya/issues/41
 * Frame Range http://github.al.com.au/rnd/usdMaya/issues/72
 * Crash if ref rig missing http://github.al.com.au/rnd/usdMaya/issues/84
-
-
