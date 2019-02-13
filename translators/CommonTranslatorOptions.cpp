@@ -36,12 +36,13 @@ void registerCommonExportOptions()
     g_exportOptions->addBool(GeometryExportOptions::kMeshPoints, true);
     g_exportOptions->addBool(GeometryExportOptions::kMeshNormals, true);
     g_exportOptions->addBool(GeometryExportOptions::kMeshVertexCreases, true);
+    g_exportOptions->addBool(GeometryExportOptions::kMeshEdgeCreases, true);
     g_exportOptions->addBool(GeometryExportOptions::kMeshUvs, true);
     g_exportOptions->addBool(GeometryExportOptions::kMeshUvOnly, false);
     g_exportOptions->addBool(GeometryExportOptions::kMeshPointsAsPref, false);
     g_exportOptions->addBool(GeometryExportOptions::kMeshColours, true);
     g_exportOptions->addBool(GeometryExportOptions::kMeshHoles, true);
-    g_exportOptions->addEnum(GeometryExportOptions::kCompactionLevel, g_compactionLevels, 0);
+    g_exportOptions->addEnum(GeometryExportOptions::kCompactionLevel, g_compactionLevels, 3);
   }
 
   context = AL::maya::utils::PluginTranslatorOptionsContextManager::find("ImportTranslator");
@@ -53,17 +54,17 @@ void registerCommonExportOptions()
   }
 }
 
-struct Shite
+//----------------------------------------------------------------------------------------------------------------------
+struct RegistrationHack
 {
-  Shite()
+  RegistrationHack()
   {
     registerCommonExportOptions();
-    std::cout << "BITCHES!!!!" << std::endl;
   }
 };
 
-Shite g_shite;
-
+//----------------------------------------------------------------------------------------------------------------------
+RegistrationHack g_registration;
 
 //----------------------------------------------------------------------------------------------------------------------
 } // translators

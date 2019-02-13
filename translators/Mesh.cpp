@@ -37,6 +37,7 @@
 #include "pxr/usd/usdGeom/mesh.h"
 
 #include "Mesh.h"
+#include "CommonTranslatorOptions.h"
 
 namespace AL {
 namespace usdmaya {
@@ -102,12 +103,14 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 //----------------------------------------------------------------------------------------------------------------------
 UsdPrim Mesh::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath, const ExporterParams& params)
 {
-  if(!params.m_meshes)
+  if(!params.getBool(GeometryExportOptions::kMeshes))
     return UsdPrim();
 
   UsdGeomMesh mesh = UsdGeomMesh::Define(stage, usdPath);
 
-  AL::usdmaya::utils::MeshExportContext context(dagPath, mesh, params.m_timeCode, false, (AL::usdmaya::utils::MeshExportContext::CompactionLevel)params.m_compactionLevel);
+  auto compaction = (AL::usdmaya::utils::MeshExportContext::CompactionLevel)params.getInt(GeometryExportOptions::kCompactionLevel);
+
+  AL::usdmaya::utils::MeshExportContext context(dagPath, mesh, params.m_timeCode, false, compaction);
   if(context)
   {
     UsdAttribute pointsAttr = mesh.GetPointsAttr();
@@ -116,39 +119,39 @@ UsdPrim Mesh::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath
       params.m_animTranslator->addMesh(dagPath, pointsAttr);
     }
 
-    if(params.m_meshPoints)
+    if(params.getBool(GeometryExportOptions::kMeshPoints))
     {
       context.copyVertexData(context.timeCode());
     }
-    if(params.m_meshConnects)
+    if(params.getBool(GeometryExportOptions::kMeshConnects))
     {
       context.copyFaceConnectsAndPolyCounts();
     }
-    if(params.m_meshHoles)
+    if(params.getBool(GeometryExportOptions::kMeshHoles))
     {
       context.copyInvisibleHoles();
     }
-    if(params.m_meshUvs)
+    if(params.getBool(GeometryExportOptions::kMeshUvs))
     {
       context.copyUvSetData();
     }
-    if(params.m_meshNormals)
+    if(params.getBool(GeometryExportOptions::kMeshNormals))
     {
       context.copyNormalData(context.timeCode());
     }
-    if(params.m_meshColours)
+    if(params.getBool(GeometryExportOptions::kMeshColours))
     {
       context.copyColourSetData();
     }
-    if(params.m_meshVertexCreases)
+    if(params.getBool(GeometryExportOptions::kMeshVertexCreases))
     {
       context.copyCreaseVertices();
     }
-    if(params.m_meshEdgeCreases)
+    if(params.getBool(GeometryExportOptions::kMeshEdgeCreases))
     {
       context.copyCreaseEdges();
     }
-    if (params.m_meshPointsAsPref)
+    if(params.getBool(GeometryExportOptions::kMeshPointsAsPref))
     {
       context.copyBindPoseData(context.timeCode());
     }

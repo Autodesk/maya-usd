@@ -359,6 +359,12 @@ public:
   AL_MAYA_UTILS_PUBLIC
   MStatus generateScript(OptionsParser& optionParser, MString& defaultOptionString);
 
+  /// \brief  This method initialises all of the options stored within the option parser
+  /// \param  optionParser the option parser in which the options for the file translator have been specified
+  /// \return MS::kSuccess if ok
+  AL_MAYA_UTILS_PUBLIC
+  MStatus initParser(OptionsParser& optionParser);
+
 protected:
 #ifndef AL_GENERATING_DOCS
   bool hasOption(const char* const optionName) const;

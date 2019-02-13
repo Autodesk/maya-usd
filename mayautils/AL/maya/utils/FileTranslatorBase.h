@@ -104,10 +104,10 @@ namespace utils {
     static constexpr const char* const kClassName = #ClassName; \
     static void* creator() { return new ClassName; } \
   private: \
-    bool haveReadMethod() const { return HaveRead; } \
-    bool haveWriteMethod() const { return HaveWrite; } \
-    MString defaultExtension() const { return DefaultExtension; } \
-    MString filter() const { return FilterString; } \
+    bool haveReadMethod() const override { return HaveRead; } \
+    bool haveWriteMethod() const override { return HaveWrite; } \
+    MString defaultExtension() const override { return DefaultExtension; } \
+    MString filter() const override { return FilterString; } \
   public:
 
 /// \brief  Macro to wrap some boiler plate creation of a file translator
@@ -127,10 +127,9 @@ public:
   template<typename FnPlugin>
   static MStatus registerTranslator(FnPlugin& plugin)
     {
-      FileTranslatorOptions options(T::kClassName);
-      if(MS::kSuccess == T::specifyOptions(options))
+      if(MS::kSuccess == T::specifyOptions(m_options))
       {
-        options.generateScript(m_optionParser, m_defaultOptionString);
+        m_options.generateScript(m_optionParser, m_defaultOptionString);
 
         MStatus status = plugin.registerFileTranslator(
             T::kTranslatorName,
@@ -176,6 +175,11 @@ public:
   virtual MStatus writer(const MFileObject& file, const OptionsParser& options, FileAccessMode mode)
     { return MS::kFailure; }
 
+  /// \brief  access the registered translator options
+  /// \return the options
+  static FileTranslatorOptions& options()
+    { return m_options; }
+
 protected:
   static void setPluginOptionsContext(PluginTranslatorOptionsInstance* pluginOptions)
   {
@@ -211,10 +215,12 @@ private:
 
   static MString m_defaultOptionString;
   static OptionsParser m_optionParser;
+  static FileTranslatorOptions m_options;
 };
 
 template<typename T> MString FileTranslatorBase<T>::m_defaultOptionString;
 template<typename T> OptionsParser FileTranslatorBase<T>::m_optionParser;
+template<typename T> FileTranslatorOptions FileTranslatorBase<T>::m_options(T::kClassName);
 
 //----------------------------------------------------------------------------------------------------------------------
 } // utils

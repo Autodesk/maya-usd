@@ -245,7 +245,7 @@ public:
   /// \param  key the name of the option
   /// \param  value the value for the option
   AL_MAYA_UTILS_PUBLIC
-  void parse(const MString& key, const MString& value);
+  void parse(MString key, const MString& value);
 
 private:
 

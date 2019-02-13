@@ -15,6 +15,7 @@
 //
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/fileio/Export.h"
+#include "AL/usdmaya/fileio/ExportTranslator.h"
 #include "AL/usdmaya/fileio/NodeFactory.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
 #include "AL/usdmaya/TransformOperation.h"
@@ -793,8 +794,8 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
     return exportKids;
   };
 
-  // choose right proc required by meshUV option
-  if (m_params.m_meshUV)
+  // choose right proc required by meshUV option;
+  if (m_params.getBool("Mesh UV Only"))
   {
     exportShapeProc =
         [this] (MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath, ReferenceType refType)
@@ -845,7 +846,7 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
       }
 
       // for UV only exporting, record first prim as default
-      if (m_params.m_meshUV && defaultPrim.IsEmpty())
+      if (m_params.getBool("Mesh UV Only") && defaultPrim.IsEmpty())
       {
         defaultPrim = usdPath;
       }
@@ -1019,6 +1020,13 @@ ExportCommand::~ExportCommand()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ExportCommand::doIt(const MArgList& args)
 {
+  maya::utils::OptionsParser parser;
+  ExportTranslator::options().initParser(parser);
+  m_params.m_parser = &parser;
+  PluginTranslatorOptionsInstance pluginInstance(ExportTranslator::pluginContext());
+  parser.setPluginOptionsContext(&pluginInstance);
+  pluginInstance.toOptionVarsB("BALLS");
+
   MStatus status;
   MArgDatabase argData(syntax(), args, &status);
   AL_MAYA_CHECK_ERROR(status, "ALUSDExport: failed to match arguments");
@@ -1045,22 +1053,28 @@ MStatus ExportCommand::doIt(const MArgList& args)
   }
   if(argData.isFlagSet("m", &status))
   {
-    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("m", 0, m_params.m_meshes), "ALUSDExport: Unable to fetch \"meshes\" argument");
+    bool option;
+    argData.getFlagArgument("m", 0, option);
+    m_params.setBool("Meshes", option);
   }
   if(argData.isFlagSet("uvs", &status))
   {
-    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("uvs", 0, m_params.m_meshUvs), "ALUSDExport: Unable to fetch \"meshUVS\" argument");
+    bool option;
+    argData.getFlagArgument("uvs", 0, option);
+    m_params.setBool("Mesh UVs", option);
   }
   if(argData.isFlagSet("uvo", &status))
   {
-    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("uvo", 0, m_params.m_meshUV), "ALUSDExport: Unable to fetch \"meshUVOnly\" argument");
+    bool option;
+    argData.getFlagArgument("uvo", 0, option);
+    m_params.setBool("Mesh UV Only", option);
   }
   if(argData.isFlagSet("pr", &status))
   {
-    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("pr", 0, m_params.m_meshPointsAsPref), "ALUSDExport: Unable to fetch \"meshPointsPref\" argument");
+    bool option;
+    argData.getFlagArgument("pr", 0, option);
+    m_params.setBool("Mesh Points as PRef", option);
   }
-
-
 
   if(argData.isFlagSet("luv", &status))
   {
@@ -1072,7 +1086,9 @@ MStatus ExportCommand::doIt(const MArgList& args)
   }
   if(argData.isFlagSet("nc", &status))
   {
-    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("nc", 0, m_params.m_nurbsCurves), "ALUSDExport: Unable to fetch \"nurbs curves\" argument");
+    bool option;
+    argData.getFlagArgument("nc", 0, option);
+    m_params.setBool("Nurbs Curves", option);
   }
 
   if(argData.isFlagSet("fr", &status))

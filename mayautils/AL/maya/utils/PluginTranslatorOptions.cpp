@@ -32,7 +32,6 @@ void PluginTranslatorOptionsContext::registerPluginTranslatorOptions(PluginTrans
 {
   m_optionGroups.push_back(options);
   m_dirty = true;
-  std::cout << "registerPluginTranslatorOptions " << std::endl;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -244,8 +243,9 @@ PluginTranslatorOptionsInstance::PluginTranslatorOptionsInstance(PluginTranslato
 
 //----------------------------------------------------------------------------------------------------------------------
 AL_MAYA_UTILS_PUBLIC
-void PluginTranslatorOptionsInstance::parse(const MString& key, const MString& value)
+void PluginTranslatorOptionsInstance::parse(MString key, const MString& value)
 {
+  key.substitute("_", " ");
   for(auto& set : m_optionSets)
   {
     const PluginTranslatorOptions* const def = set.m_def;
@@ -463,7 +463,9 @@ void PluginTranslatorOptionsInstance::OptionSet::toOptionVars(const char* const 
   for(auto& opt : m_options)
   {
     const PluginTranslatorOptions::Option* option = m_def->option(i++);
-    options += option->name;
+    MString name = option->name;
+    name.substitute(" ", "_");
+    options += name;
     options += "=";
     switch(option->type)
     {
@@ -494,9 +496,9 @@ void PluginTranslatorOptionsInstance::OptionSet::fromOptionVars(const char* cons
   {
     MStringArray split;
     splitOptions[i].split('=', split);
-    const MString& optName = split[0];
+    MString optName = split[0];
+    optName.substitute("_", " ");
     const MString& optValue = split[1];
-    std::cout << optName << ' ' << optValue << std::endl;
     for(uint32_t j = 0; j < m_options.size(); ++j)
     {
       auto opt = m_def->option(j);
@@ -527,6 +529,7 @@ void PluginTranslatorOptionsInstance::OptionSet::fromOptionVars(const char* cons
   }
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 static inline MString makeName(MString s)
 {
   s.substitute(" ", "_");
@@ -541,7 +544,7 @@ void PluginTranslatorOptions::generateBoolGlobals(const char* const prefix, cons
   MString controlName = MString(prefix) + "_" + makeName(optionName);
   MString createCommand = MString("global proc create_") + controlName + "() {" + MString("checkBox -l \"") + niceName + "\" -v " + valueStr + " " + controlName + ";}\n";
   MString postCommand = MString("global proc post_") + controlName + "(string $value){ eval (\"checkBox -e -v \" + $value + \" " + controlName + "\");}\n";
-  MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + optionName + "=\"; if(` checkBox -q -v " + controlName + "`) $str = $str + \"1;\"; else $str = $str + \"0;\"; return $str;}\n";
+  MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + makeName(optionName) + "=\"; if(` checkBox -q -v " + controlName + "`) $str = $str + \"1;\"; else $str = $str + \"0;\"; return $str;}\n";
 
   code += createCommand;
   code += postCommand;
@@ -557,7 +560,7 @@ void PluginTranslatorOptions::generateIntGlobals(const char* const prefix, const
   MString controlName = MString(prefix) + "_" + makeName(optionName);
   MString createCommand = MString("global proc create_") + controlName + "() {" + MString("intFieldGrp -l \"") + niceName + "\" -v1 " + valueStr + " " + controlName + ";}\n";
   MString postCommand = MString("global proc post_") + controlName + "(string $value){ eval (\"intFieldGrp -e -v1 \" + $value + \" " + controlName + "\");}\n";
-  MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + optionName + "=\" + `intFieldGrp -q -v1 " + controlName + "` + \";\"; return $str;}\n";
+  MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + makeName(optionName) + "=\" + `intFieldGrp -q -v1 " + controlName + "` + \";\"; return $str;}\n";
 
   code += createCommand;
   code += postCommand;
@@ -573,7 +576,7 @@ void PluginTranslatorOptions::generateFloatGlobals(const char* const prefix, con
   MString controlName = MString(prefix) + "_" + makeName(optionName);
   MString createCommand = MString("global proc create_") + controlName + "() {" + MString("floatFieldGrp -l \"") + niceName + "\" -v1 " + valueStr + " " + controlName + ";}\n";
   MString postCommand = MString("global proc post_") + controlName + "(string $value){ eval (\"floatFieldGrp -e -v1 \" + $value + \" " + controlName + "\");}\n";
-  MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + optionName + "=\" + `floatFieldGrp -q -v1 " + controlName + "` + \";\"; return $str;}\n";
+  MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + makeName(optionName) + "=\" + `floatFieldGrp -q -v1 " + controlName + "` + \";\"; return $str;}\n";
 
   code += createCommand;
   code += postCommand;
@@ -588,7 +591,7 @@ void PluginTranslatorOptions::generateStringGlobals(const char* const prefix, co
   MString controlName = MString(prefix) + "_" + makeName(optionName);
   MString createCommand = MString("global proc create_") + controlName + "() {" + MString("textFieldGrp -l \"") + niceName + "\" -tx \"" + stringify(value).c_str() + "\" " + controlName + ";}\n";
   MString postCommand = MString("global proc post_") + controlName + "(string $value){ eval (\"textFieldGrp -e -tx \" + $value + \" " + controlName + "\");}\n";
-  MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + optionName + "=\" + `textFieldGrp -q -tx " + controlName + "` + \";\"; return $str;}\n";
+  MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + makeName(optionName) + "=\" + `textFieldGrp -q -tx " + controlName + "` + \";\"; return $str;}\n";
 
   code += createCommand;
   code += postCommand;
@@ -611,7 +614,7 @@ void PluginTranslatorOptions::generateEnumGlobals(const char* const prefix, cons
   createCommand += "eval (\"optionMenuGrp -e -sl \" + " + valueStr + " + \" " + controlName + "\");\n";
   createCommand += "}\n";
   MString postCommand = MString("global proc post_") + controlName + "(string $value){ int $v=$value; eval (\"optionMenuGrp -e -sl \" + ($v + 1) + \" " + controlName + "\");}\n";
-  MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + optionName + "=\" + (`optionMenuGrp -q -sl " + controlName + "` -1) + \";\"; return $str;}\n";
+  MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + makeName(optionName) + "=\" + (`optionMenuGrp -q -sl " + controlName + "` -1) + \";\"; return $str;}\n";
 
   code += createCommand;
   code += postCommand;
@@ -706,80 +709,6 @@ void PluginTranslatorOptionsInstance::fromOptionVars(const char* const prefix)
   }
 }
 
-/*
-//----------------------------------------------------------------------------------------------------------------------
-AL_MAYA_UTILS_PUBLIC
-void PluginTranslatorOptionsInstance::generateGUI(const char* const prefix, MString& code)
-{
-  MStringArray methodNames;
-  for(auto& set : m_optionSets)
-  {
-    MString methodName = set.generateGUI(prefix, code);
-    methodNames.append(methodName);
-  }
-  
-  code += "global proc fromOptionVars_";
-  code += prefix;
-  code += "()\n{\n";
-  code += "  string $optionList[];\n";
-  code += "  string $optionBreakDown[];\n";
-  code += "  string $result;\n";
-
-  for(uint32_t j = 0; j < methodNames.length(); ++j)
-  {
-    MString optionVarName = prefix; 
-    optionVarName += makeName(m_optionSets[j].m_def->grouping());
-    code += MString("  if(`optionVar -ex \"") + optionVarName + "\"`) {\n";
-    code += MString("    $result = `optionVar -q \"") + optionVarName + "\"`;\n";
-    code += "    tokenize($result, \";\", $optionList);\n";
-    code += "    for ($index = 0; $index < size($optionList); $index++) {\n";
-    code += "      tokenize($optionList[$index], \"=\", $optionBreakDown);\n";
-    code += "      if(size($optionBreakDown) < 2) continue;\n";
-    code += MString("      post_") + methodNames[j] + "($optionBreakDown[0], $optionBreakDown[1]);\n";
-    code += "    }\n";
-    code += "  }\n";
-  }
-  code += "}\n";
-
-  code += "global proc create_";
-  code += prefix;
-  code += "(string $parent)\n{\n";
-  for(uint32_t j = 0; j < methodNames.length(); ++j)
-  {
-    code += MString("  setParent $parent; create_") + methodNames[j] + "();\n";
-  }
-  code += "  fromOptionVars_";
-  code += prefix;
-  code += "();\n";
-  code += "}\n";
-
-  code += "global proc post_";
-  code += prefix;
-  code += "(string $name, string $value)\n{\n";
-
-  for(uint32_t j = 0; j < methodNames.length(); ++j)
-  {
-    code += MString("  if(post_") + methodNames[j] + "($name, $value)) return;\n";
-  }
-  code += "}\n";
-
-  code += "global proc string query_";
-  code += prefix;
-  code += "()\n{\n";
-  code += "  string $result, $temp;\n";
-  for(uint32_t j = 0; j < methodNames.length(); ++j)
-  {
-    code += MString("  $temp = query_") + methodNames[j] + "();\n";
-    code += "  $result += $temp;\n";
-
-    MString optionVarName = prefix; 
-    optionVarName += makeName(m_optionSets[j].m_def->grouping());
-    code += MString("  optionVar -sv \"") + optionVarName + "\" $temp;\n";
-  }
-  code += "  return $result;\n}\n";
-}
-*/
-
 //----------------------------------------------------------------------------------------------------------------------
 AL_MAYA_UTILS_PUBLIC
 void PluginTranslatorOptionsContext::generateGUI(const char* const prefix, MString& code)
@@ -867,7 +796,6 @@ void PluginTranslatorOptionsContextManager::resyncGUI(const char* const translat
   }
 }
 
-
 //----------------------------------------------------------------------------------------------------------------------
 AL_MAYA_UTILS_PUBLIC
 void PluginTranslatorOptionsContext::resyncGUI(const char* const translatorName)
@@ -876,7 +804,6 @@ void PluginTranslatorOptionsContext::resyncGUI(const char* const translatorName)
   generateGUI(translatorName, guiCode);
   MGlobal::executeCommand(guiCode);
 }
-
 
 //----------------------------------------------------------------------------------------------------------------------
 } // utils

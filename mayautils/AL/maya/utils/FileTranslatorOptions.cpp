@@ -393,8 +393,92 @@ std::string stringify(const char* str)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+MStatus FileTranslatorOptions::initParser(OptionsParser& optionParser)
+{
+  // first generate a collection of methods to create, edit, and query each separate option. For each exporter/importer
+  // option, we will generate three methods:
+  //
+  //   proc create_myOptionName();              ///< creates the GUI control for the option
+  //   proc post_myOptionName(string $value);   ///< set the value in the control from the parsed option string
+  //   proc string build_myOptionName();        ///< get the value from the control, and return it as a text string "myOptionName=<value>"
+  //
+  // We will also add in some entries into the optionParser, which will be used later on when using the exporter.
+  // This option parser will know about the option names (both the 'nice' names and the actual option name), as well as
+  // the associated data type. This will be able to split apart the option string of the form "option1=10;option2=hello;option3=true"
+  //
+  auto itf = m_frames.begin();
+  auto endf = m_frames.end();
+  for(; itf != endf; ++itf)
+  {
+    auto ito = itf->m_options.begin();
+    auto endo = itf->m_options.end();
+    for(; ito != endo; ++ito)
+    {
+      switch(ito->type)
+      {
+      case kBool:
+        {
+          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
+          value->m_type = OptionsParser::kBool;
+          value->m_defaultBool = ito->defaultBool;
+          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
+          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
+        }
+        break;
+
+      case kInt:
+        {
+          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
+          value->m_type = OptionsParser::kInt;
+          value->m_defaultInt = ito->defaultInt;
+          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
+          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
+        }
+        break;
+
+      case kFloat:
+        {
+          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
+          value->m_type = OptionsParser::kFloat;
+          value->m_defaultFloat = ito->defaultFloat;
+          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
+          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
+        }
+        break;
+
+      case kString:
+        {
+          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
+          value->m_type = OptionsParser::kString;
+          value->m_defaultString = ito->defaultString;
+          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
+          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
+        }
+        break;
+
+      case kEnum:
+        {
+          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
+          value->m_type = OptionsParser::kEnum;
+          value->m_defaultInt = ito->defaultInt;
+          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
+          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
+        }
+        break;
+      }
+    }
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MString& defaultOptionString)
 {
+  MStatus status = initParser(optionParser);
+  if(!status)
+  {
+    return status;
+  }
+
   // first generate a collection of methods to create, edit, and query each separate option. For each exporter/importer
   // option, we will generate three methods:
   //
@@ -424,12 +508,6 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
             defaultOptionString += "1;";
           else
             defaultOptionString += "0;";
-
-          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
-          value->m_type = OptionsParser::kBool;
-          value->m_defaultBool = ito->defaultBool;
-          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
-          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
         }
         break;
 
@@ -437,12 +515,6 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
         {
           generateIntGlobals(ito->niceName, ito->optionName, ito->defaultInt);
           defaultOptionString += ito->optionName + "=" + (MString() + ito->defaultInt) + ";";
-
-          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
-          value->m_type = OptionsParser::kInt;
-          value->m_defaultInt = ito->defaultInt;
-          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
-          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
         }
         break;
 
@@ -450,12 +522,6 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
         {
           generateFloatGlobals(ito->niceName, ito->optionName, ito->defaultFloat);
           defaultOptionString += ito->optionName + "=" + (MString() + ito->defaultFloat) + ";";
-
-          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
-          value->m_type = OptionsParser::kFloat;
-          value->m_defaultFloat = ito->defaultFloat;
-          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
-          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
         }
         break;
 
@@ -463,12 +529,6 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
         {
           generateStringGlobals(ito->niceName, ito->optionName, ito->defaultString);
           defaultOptionString += ito->optionName + "=" + ito->defaultString + ";";
-
-          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
-          value->m_type = OptionsParser::kString;
-          value->m_defaultString = ito->defaultString;
-          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
-          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
         }
         break;
 
@@ -476,12 +536,6 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
         {
           generateEnumGlobals(ito->niceName, ito->optionName, ito->enumValues, ito->defaultInt);
           defaultOptionString += ito->optionName + "=" + (MString() + ito->defaultInt) + ";";
-
-          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
-          value->m_type = OptionsParser::kEnum;
-          value->m_defaultInt = ito->defaultInt;
-          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
-          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
         }
         break;
       }
