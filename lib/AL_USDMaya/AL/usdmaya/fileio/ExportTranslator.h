@@ -104,7 +104,6 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
   static PluginTranslatorOptionsContext& pluginContext()
     { return m_pluginContext; }
 
-
 private:
   static PluginTranslatorOptionsContext m_pluginContext;
   static PluginTranslatorOptions* m_compatPluginOptions;

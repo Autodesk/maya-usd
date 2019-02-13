@@ -1025,7 +1025,7 @@ MStatus ExportCommand::doIt(const MArgList& args)
   m_params.m_parser = &parser;
   PluginTranslatorOptionsInstance pluginInstance(ExportTranslator::pluginContext());
   parser.setPluginOptionsContext(&pluginInstance);
-
+  
   MStatus status;
   MArgDatabase argData(syntax(), args, &status);
   AL_MAYA_CHECK_ERROR(status, "ALUSDExport: failed to match arguments");
