@@ -1025,7 +1025,6 @@ MStatus ExportCommand::doIt(const MArgList& args)
   m_params.m_parser = &parser;
   PluginTranslatorOptionsInstance pluginInstance(ExportTranslator::pluginContext());
   parser.setPluginOptionsContext(&pluginInstance);
-  pluginInstance.toOptionVarsB("BALLS");
 
   MStatus status;
   MArgDatabase argData(syntax(), args, &status);
@@ -1121,6 +1120,12 @@ MStatus ExportCommand::doIt(const MArgList& args)
   {
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("ws", 0, m_params.m_exportInWorldSpace), "ALUSDExport: Unable to fetch \"world space\" argument");
   }
+  if(argData.isFlagSet("opt", &status))
+  {
+    MString optionString;
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("opt", 0, optionString), "ALUSDExport: Unable to fetch \"options\" argument");
+    parser.parse(optionString);
+  }
   if(m_params.m_animation)
   {
     m_params.m_animTranslator = new AnimationTranslator;
@@ -1213,6 +1218,8 @@ MSyntax ExportCommand::createSyntax()
   status = syntax.addFlag("-ss", "-subSamples", MSyntax::kUnsigned);
   AL_MAYA_CHECK_ERROR2(status, errorString);
   status = syntax.addFlag("-ws", "-worldSpace", MSyntax::kBoolean);
+  AL_MAYA_CHECK_ERROR2(status, errorString);
+  status = syntax.addFlag("-opt", "-options", MSyntax::kString);
   AL_MAYA_CHECK_ERROR2(status, errorString);
   syntax.enableQuery(false);
   syntax.enableEdit(false);
