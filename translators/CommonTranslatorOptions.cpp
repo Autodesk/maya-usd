@@ -24,7 +24,7 @@ static const char* const g_compactionLevels[] = {
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-void registerCommonExportOptions()
+void registerCommonTranslatorOptions()
 {
   auto context = AL::maya::utils::PluginTranslatorOptionsContextManager::find("ExportTranslator");
   if(context)
@@ -49,8 +49,8 @@ void registerCommonExportOptions()
   if(context)
   {
     g_importOptions = new AL::maya::utils::PluginTranslatorOptions(*context, "Geometry Import");
-    g_importOptions->addBool(GeometryExportOptions::kNurbsCurves, true);
-    g_importOptions->addBool(GeometryExportOptions::kMeshes, true);
+    g_importOptions->addBool(GeometryImportOptions::kNurbsCurves, true);
+    g_importOptions->addBool(GeometryImportOptions::kMeshes, true);
   }
 }
 
@@ -59,12 +59,9 @@ struct RegistrationHack
 {
   RegistrationHack()
   {
-    registerCommonExportOptions();
+    registerCommonTranslatorOptions();
   }
-};
-
-//----------------------------------------------------------------------------------------------------------------------
-RegistrationHack g_registration;
+} g_registration;
 
 //----------------------------------------------------------------------------------------------------------------------
 } // translators

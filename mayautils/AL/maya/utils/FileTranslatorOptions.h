@@ -77,6 +77,8 @@ public:
     {
       return m_pluginOptions->getBool(str);
     }
+    else
+    std::cout << "no plugin options" << std::endl;
     return false;
   }
 

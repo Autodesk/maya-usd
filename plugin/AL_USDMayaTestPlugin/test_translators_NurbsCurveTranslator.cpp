@@ -102,9 +102,6 @@ MObject createNurbStage(bool useSingleWidth=false)
   MFnTransform fnx;
   MObject parent = fnx.create();
 
-  ImporterParams ip;
-  ip.m_nurbsCurves = true;
-
   UsdPrim prim = nurb.GetPrim();
   AL::usdmaya::fileio::translators::TranslatorManufacture manufacture(nullptr);
   AL::usdmaya::fileio::translators::TranslatorRefPtr translator = manufacture.get(prim.GetTypeName());
@@ -134,7 +131,6 @@ TEST(translators_NurbsCurveTranslator, test_width)
 
   MFnNurbsCurve nurbs(nurbObj);
 
-  ImporterParams ip;
   const char* plugName = "width";
 
   MStatus s2;

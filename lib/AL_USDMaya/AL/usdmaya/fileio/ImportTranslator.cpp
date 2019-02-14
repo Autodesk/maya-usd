@@ -23,9 +23,14 @@ namespace AL {
 namespace usdmaya {
 namespace fileio {
 
+PluginTranslatorOptionsContext ImportTranslator::m_pluginContext;
+PluginTranslatorOptions* ImportTranslator::m_compatPluginOptions;
+PluginTranslatorOptionsInstance* ImportTranslator::m_pluginInstance;
+
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ImportTranslator::reader(const MFileObject& file, const AL::maya::utils::OptionsParser& options, FileAccessMode mode)
 {
+  m_params.m_parser = (maya::utils::OptionsParser*)&options;
   MString parentPath = options.getString(kParentPath);
   m_params.m_parentPath = MDagPath();
   if(parentPath.length())
@@ -42,11 +47,14 @@ MStatus ImportTranslator::reader(const MFileObject& file, const AL::maya::utils:
   }
 
   m_params.m_fileName = file.fullName();
-  m_params.m_meshes = options.getBool(kMeshes);
-  m_params.m_nurbsCurves = options.getBool(kNurbsCurves);
   m_params.m_animations = options.getBool(kAnimations);
   m_params.m_stageUnloaded = options.getBool(kStageUnload);
   m_params.m_forceDefaultRead = options.getBool(kReadDefaultValues);
+
+  if(m_pluginInstance)
+  {
+    m_pluginInstance->toOptionVars("ImportTranslator");
+  }
   
   Import importer(m_params);
 

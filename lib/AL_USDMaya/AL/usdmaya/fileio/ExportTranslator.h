@@ -83,8 +83,8 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
     if(!options.addBool(kFilterSample, defaultValues.m_filterSample)) return MS::kFailure;
     if(!options.addEnum(kExportAtWhichTime, timelineLevel, defaultValues.m_exportAtWhichTime)) return MS::kFailure;
     if(!options.addBool(kExportInWorldSpace, defaultValues.m_exportInWorldSpace)) return MS::kFailure;
-
-    // cool beans - we should now be able to register some plugin thingies.
+    
+    // register the export translator context
     PluginTranslatorOptionsContextManager::registerContext("ExportTranslator", &m_pluginContext);
  
     return MS::kSuccess;

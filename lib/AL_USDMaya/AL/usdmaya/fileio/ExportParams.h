@@ -61,7 +61,6 @@ struct ExporterParams
   {
     if(m_parser)
       return m_parser->getBool(str);
-      else std::cout << "NO parser\n";
     return false;
   }
 

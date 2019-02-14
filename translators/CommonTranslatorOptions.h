@@ -24,6 +24,13 @@ static constexpr const char* const kNurbsCurves = "Nurbs Curves"; ///< export nu
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+namespace GeometryImportOptions
+{
+static constexpr const char* const kMeshes = "Import Meshes"; ///< the import meshes option name
+static constexpr const char* const kNurbsCurves = "Import Curves"; ///< the import curves option name
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 } // translators
 } // fileio
 } // usdmaya

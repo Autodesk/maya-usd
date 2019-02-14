@@ -20,6 +20,7 @@
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/fileio/Import.h"
+#include "AL/usdmaya/fileio/ImportTranslator.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
@@ -56,6 +57,10 @@ namespace AL {
 namespace usdmaya {
 namespace fileio {
 
+using AL::maya::utils::PluginTranslatorOptionsContext;
+using AL::maya::utils::PluginTranslatorOptionsInstance;
+using AL::maya::utils::PluginTranslatorOptions;
+using AL::maya::utils::PluginTranslatorOptionsContextManager;
 
 AL_MAYA_DEFINE_COMMAND(ImportCommand, AL_usdmaya);
 
@@ -141,11 +146,11 @@ void Import::doImport()
         };
 
     m_nonImportablePrims.clear();
-    if(!m_params.m_meshes)
+    if(!m_params.getBool("Import Meshes"))
     {
       m_nonImportablePrims.insert(TfToken("Mesh"));
     }
-    if(!m_params.m_nurbsCurves)
+    if(!m_params.getBool("Import Curves"))
     {
       m_nonImportablePrims.insert(TfToken("NurbsCurves"));
     }
@@ -256,6 +261,12 @@ MObject Import::createShape(
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ImportCommand::doIt(const MArgList& args)
 {
+  maya::utils::OptionsParser parser;
+  ImportTranslator::options().initParser(parser);
+  m_params.m_parser = &parser;
+  PluginTranslatorOptionsInstance pluginInstance(ImportTranslator::pluginContext());
+  parser.setPluginOptionsContext(&pluginInstance);
+
   MStatus status;
   MArgDatabase argData(syntax(), args, &status);
   AL_MAYA_CHECK_ERROR(status, "ImportCommand: failed to match arguments");
@@ -303,12 +314,23 @@ MStatus ImportCommand::doIt(const MArgList& args)
 
   if(argData.isFlagSet("-m", &status))
   {
-    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("-m", 0, m_params.m_meshes), "ImportCommand: Unable to fetch \"meshes\" argument");
+    bool value = true;
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("-m", 0, value), "ImportCommand: Unable to fetch \"meshes\" argument");
+    m_params.setBool("Import Meshes", value);
   }
 
   if(argData.isFlagSet("-nc", &status))
   {
-    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("-nc", 0, m_params.m_nurbsCurves), "ImportCommand: Unable to fetch \"nurbs curves\" argument");
+    bool value = true;
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("-nc", 0, value), "ImportCommand: Unable to fetch \"nurbs curves\" argument");
+    m_params.setBool("Import Curves", value);
+  }
+
+  if(argData.isFlagSet("opt", &status))
+  {
+    MString optionString;
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("opt", 0, optionString), "ALUSDExport: Unable to fetch \"options\" argument");
+    parser.parse(optionString);
   }
 
   if(argData.isFlagSet("-fd", &status))
