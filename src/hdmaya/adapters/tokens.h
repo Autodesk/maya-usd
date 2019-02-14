@@ -32,12 +32,38 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define HDMAYA_ADAPTER_TOKENS                                                 \
-    (roughness)(clearcoat)(clearcoatRoughness)(emissiveColor)(specularColor)( \
-        metallic)(useSpecularWorkflow)(occlusion)(ior)(normal)(opacity)(      \
-        diffuseColor)(displacement)(lambert)(blinn)(file)(place2dTexture)(    \
-        fileTextureName)(color)(incandescence)(out)(st)(uvCoord)(rgb)(r)(     \
-        varname)(result)(eccentricity)(pxrUsdPreviewSurface)
+// clang-format off
+#define HDMAYA_ADAPTER_TOKENS                 \
+    (roughness)                               \
+    (clearcoat)                               \
+    (clearcoatRoughness)                      \
+    (emissiveColor)                           \
+    (specularColor)                           \
+    (metallic)                                \
+    (useSpecularWorkflow)                     \
+    (occlusion)                               \
+    (ior)                                     \
+    (normal)                                  \
+    (opacity)                                 \
+    (diffuseColor)                            \
+    (displacement)                            \
+    (lambert)                                 \
+    (blinn)                                   \
+    (file)                                    \
+    (place2dTexture)                          \
+    (fileTextureName)                         \
+    (color)                                   \
+    (incandescence)                           \
+    (out)                                     \
+    (st)                                      \
+    (uvCoord)                                 \
+    (rgb)                                     \
+    (r)                                       \
+    (varname)                                 \
+    (result)                                  \
+    (eccentricity)                            \
+    (pxrUsdPreviewSurface)
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     HdMayaAdapterTokens, HDMAYA_API, HDMAYA_ADAPTER_TOKENS);
