@@ -128,7 +128,8 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     HdMayaDelegateRegistry::InstallDelegatesChangedSignal(
         [this]() { _needsClear.store(true); });
     _ID = SdfPath("/HdMayaViewportRenderer")
-              .AppendChild(TfToken(TfStringPrintf("_HdMaya_%p", this)));
+              .AppendChild(TfToken(TfStringPrintf(
+                  "_HdMaya_%s_%p", desc.rendererName.GetText(), this)));
 
     MStatus status;
     auto id = MSceneMessage::addCallback(
@@ -450,11 +451,14 @@ void MtohRenderOverride::_InitHydraResources() {
         _engine, _renderIndex, _rendererPlugin, _taskController, SdfPath(),
         _isUsingHdSt);
 
-    int delegateIdIndex = 0;
-    for (const auto& creator : HdMayaDelegateRegistry::GetDelegateCreators()) {
+    auto delegateNames = HdMayaDelegateRegistry::GetDelegateNames();
+    auto creators = HdMayaDelegateRegistry::GetDelegateCreators();
+    TF_VERIFY(delegateNames.size() == creators.size());
+    for (size_t i = 0, n = creators.size(); i < n; ++i) {
+        const auto& creator = creators[i];
         if (creator == nullptr) { continue; }
-        delegateInitData.delegateID = _ID.AppendChild(TfToken(
-            TfStringPrintf("_Delegate_%i_%p", delegateIdIndex++, this)));
+        delegateInitData.delegateID = _ID.AppendChild(TfToken(TfStringPrintf(
+            "_Delegate_%s_%lu_%p", delegateNames[i].GetText(), i, this)));
         auto newDelegate = creator(delegateInitData);
         if (newDelegate) {
             // Call SetLightsEnabled before the delegate is populated
