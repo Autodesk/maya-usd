@@ -49,6 +49,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (displacement)                            \
     (lambert)                                 \
     (blinn)                                   \
+    (phong)                                   \
     (file)                                    \
     (place2dTexture)                          \
     (fileTextureName)                         \

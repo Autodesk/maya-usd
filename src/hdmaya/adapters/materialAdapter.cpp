@@ -119,6 +119,10 @@ std::unordered_map<
              {HdMayaAdapterTokens->emissiveColor,
               HdMayaAdapterTokens->incandescence},
          }},
+        {HdMayaAdapterTokens->phong,
+         {{HdMayaAdapterTokens->diffuseColor, HdMayaAdapterTokens->color},
+          {HdMayaAdapterTokens->emissiveColor,
+           HdMayaAdapterTokens->incandescence}}},
         {HdMayaAdapterTokens->blinn,
          {
              {HdMayaAdapterTokens->diffuseColor, HdMayaAdapterTokens->color},

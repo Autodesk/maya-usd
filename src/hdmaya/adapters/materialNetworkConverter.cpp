@@ -154,6 +154,48 @@ void ConvertBlinn(
     material.identifier = UsdImagingTokens->UsdPreviewSurface;
 }
 
+void ConvertPhong(
+    HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
+    MFnDependencyNode& node) {
+    for (const auto& param : _previewShaderParams) {
+        const VtValue* fallback = &param.param.GetFallbackValue();
+        if (param.param.GetName() == HdMayaAdapterTokens->diffuseColor) {
+            converter.ConvertParameter(
+                node, material, HdMayaAdapterTokens->color,
+                HdMayaAdapterTokens->diffuseColor, param.type, fallback);
+        } else if (
+            param.param.GetName() == HdMayaAdapterTokens->emissiveColor) {
+            converter.ConvertParameter(
+                node, material, HdMayaAdapterTokens->incandescence,
+                HdMayaAdapterTokens->emissiveColor, param.type, fallback);
+        } else if (param.param.GetName() == HdMayaAdapterTokens->roughness) {
+            VtValue cosinePower = converter.ConvertMayaAttrToValue(
+                node, "cosinePower", param.type, nullptr);
+            if (!cosinePower.IsHolding<float>()) {
+                if (fallback) {
+                    material.parameters[HdMayaAdapterTokens->roughness] =
+                        *fallback;
+                }
+            } else {
+                // In the maya UI, cosinePower goes from 2.0 to 100.0 ...
+                // so for now, we just do a dumb linear mapping from that onto
+                // 1 to 0 for roughness
+                float roughnessVal =
+                    1.0 - (cosinePower.UncheckedGet<float>() - 2.0) / 98.0;
+                material.parameters[HdMayaAdapterTokens->roughness] =
+                    VtValue(roughnessVal);
+            }
+        } else {
+            converter.ConvertParameter(
+                node, material, param.param.GetName(), param.param.GetName(),
+                param.type, fallback);
+        }
+    }
+    material.parameters[HdMayaAdapterTokens->metallic] = VtValue(0.0f);
+    material.parameters[HdMayaAdapterTokens->useSpecularWorkflow] = VtValue(1);
+    material.identifier = UsdImagingTokens->UsdPreviewSurface;
+}
+
 void ConvertFile(
     HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
     MFnDependencyNode& node) {
@@ -236,6 +278,7 @@ std::unordered_map<
         {HdMayaAdapterTokens->pxrUsdPreviewSurface, ConvertUsdPreviewSurface},
         {HdMayaAdapterTokens->lambert, ConvertLambert},
         {HdMayaAdapterTokens->blinn, ConvertBlinn},
+        {HdMayaAdapterTokens->phong, ConvertPhong},
         {HdMayaAdapterTokens->file, ConvertFile},
         {HdMayaAdapterTokens->place2dTexture, ConvertPlace2dTexture},
     };
