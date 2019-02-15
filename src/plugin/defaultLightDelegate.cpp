@@ -35,9 +35,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(_tokens, (DefaultMayaLight));
 
 MtohDefaultLightDelegate::MtohDefaultLightDelegate(const InitData& initData)
-    : HdSceneDelegate(initData.renderIndex, *initData.delegateID),
+    : HdSceneDelegate(initData.renderIndex, initData.delegateID),
       HdMayaDelegate(initData),
-      _lightPath(initData.delegateID->AppendChild(_tokens->DefaultMayaLight)),
+      _lightPath(initData.delegateID.AppendChild(_tokens->DefaultMayaLight)),
       _isSupported(false) {}
 
 MtohDefaultLightDelegate::~MtohDefaultLightDelegate() {

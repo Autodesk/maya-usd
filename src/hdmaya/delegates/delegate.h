@@ -55,7 +55,7 @@ public:
         inline InitData(
             HdEngine& engineIn, HdRenderIndex* renderIndexIn,
             HdxRendererPlugin* rendererPluginIn,
-            HdxTaskController* taskControllerIn, const SdfPath* delegateIDIn,
+            HdxTaskController* taskControllerIn, const SdfPath& delegateIDIn,
             bool isHdStIn)
             : engine(engineIn),
               renderIndex(renderIndexIn),
@@ -68,7 +68,7 @@ public:
         HdRenderIndex* renderIndex;
         HdxRendererPlugin* rendererPlugin;
         HdxTaskController* taskController;
-        const SdfPath* delegateID;
+        SdfPath delegateID;
         bool isHdSt;
     };
 

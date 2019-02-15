@@ -447,15 +447,14 @@ void MtohRenderOverride::_InitHydraResources() {
     _taskController->SetEnableShadows(true);
 
     HdMayaDelegate::InitData delegateInitData(
-        _engine, _renderIndex, _rendererPlugin, _taskController, nullptr,
+        _engine, _renderIndex, _rendererPlugin, _taskController, SdfPath(),
         _isUsingHdSt);
 
     int delegateIdIndex = 0;
     for (const auto& creator : HdMayaDelegateRegistry::GetDelegateCreators()) {
         if (creator == nullptr) { continue; }
-        auto delegateID = _ID.AppendChild(TfToken(
+        delegateInitData.delegateID = _ID.AppendChild(TfToken(
             TfStringPrintf("_Delegate_%i_%p", delegateIdIndex++, this)));
-        delegateInitData.delegateID = &delegateID;
         auto newDelegate = creator(delegateInitData);
         if (newDelegate) {
             // Call SetLightsEnabled before the delegate is populated
@@ -464,9 +463,8 @@ void MtohRenderOverride::_InitHydraResources() {
         }
     }
     if (_hasDefaultLighting) {
-        auto delegateID = _ID.AppendChild(
+        delegateInitData.delegateID = _ID.AppendChild(
             TfToken(TfStringPrintf("_DefaultLightDelegate_%p", this)));
-        delegateInitData.delegateID = &delegateID;
         _defaultLightDelegate.reset(
             new MtohDefaultLightDelegate(delegateInitData));
     }

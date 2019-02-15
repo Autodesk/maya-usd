@@ -190,7 +190,7 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaSceneDelegate) {
 HdMayaSceneDelegate::HdMayaSceneDelegate(const InitData& initData)
     : HdMayaDelegateCtx(initData),
       _fallbackMaterial(
-          initData.delegateID->AppendChild(_tokens->FallbackMaterial)) {}
+          initData.delegateID.AppendChild(_tokens->FallbackMaterial)) {}
 
 HdMayaSceneDelegate::~HdMayaSceneDelegate() {
     for (auto callback : _callbacks) { MMessage::removeCallback(callback); }
