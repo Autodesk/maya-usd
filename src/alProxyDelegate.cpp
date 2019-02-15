@@ -259,7 +259,7 @@ void SetupPluginCallbacks() {
     TF_VERIFY(status, "Could not set pluginUnloaded callback");
 }
 
-ProxyShape::FindPickedPrimsFunction oldFindPickedPrimsFunction;
+ProxyShape::FindPickedPrimsFunction oldFindPickedPrimsFunction = nullptr;
 HdMayaALProxyDelegate* hdStAlProxyDelegate;
 
 /// Alternate picking mechanism for the AL proxy shape, which
@@ -377,7 +377,7 @@ static bool FindPickedPrimsMtoh(
 HdMayaALProxyDelegate::HdMayaALProxyDelegate(const InitData& initData)
     : HdMayaDelegate(initData),
       _engine(initData.engine),
-      _delegateID(*initData.delegateID),
+      _delegateID(initData.delegateID),
       _renderIndex(initData.renderIndex),
       _taskController(initData.taskController) {
     TF_DEBUG(HDMAYA_AL_PROXY_DELEGATE)
