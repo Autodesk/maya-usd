@@ -293,24 +293,12 @@ void HdMayaMaterialNetworkConverter::ConvertParameter(
     MFnDependencyNode& node, HdMaterialNode& material, const TfToken& mayaName,
     const TfToken& name, const SdfValueTypeName& type,
     const VtValue* fallback) {
-    MStatus status;
-    auto p = node.findPlug(mayaName.GetText(), true, &status);
-    VtValue val;
-    if (status) {
-        val = ConvertPlugToValue(p, type, fallback);
-    } else if (fallback) {
-        val = *fallback;
-    } else {
-        TF_DEBUG(HDMAYA_ADAPTER_GET)
-            .Msg(
-                "HdMayaMaterialNetworkConverter::ConvertParameter(): "
-                "No plug found with name: %s and no fallback given",
-                mayaName.GetText());
-        val = VtValue();
-    }
+    MPlug plug;
+    VtValue val =
+        ConvertMayaAttrToValue(node, mayaName.GetText(), type, fallback, &plug);
     material.parameters[name] = val;
     MPlugArray conns;
-    p.connectedTo(conns, true, false);
+    plug.connectedTo(conns, true, false);
     if (conns.length() > 0) {
         const auto sourceNodePath = GetMaterial(conns[0].node());
         if (sourceNodePath.IsEmpty()) { return; }
@@ -325,6 +313,28 @@ void HdMayaMaterialNetworkConverter::ConvertParameter(
         rel.outputName = name;
         _network.relationships.push_back(rel);
     }
+}
+
+VtValue HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
+    MFnDependencyNode& node, const MString& plugName,
+    const SdfValueTypeName& type, const VtValue* fallback, MPlug* outPlug) {
+    MStatus status;
+    auto p = node.findPlug(plugName, true, &status);
+    VtValue val;
+    if (status) {
+        if (outPlug) { *outPlug = p; }
+        val = ConvertPlugToValue(p, type, fallback);
+    } else if (fallback) {
+        val = *fallback;
+    } else {
+        TF_DEBUG(HDMAYA_ADAPTER_GET)
+            .Msg(
+                "HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(): "
+                "No plug found with name: %s and no fallback given",
+                plugName.asChar());
+        val = VtValue();
+    }
+    return val;
 }
 
 VtValue HdMayaMaterialNetworkConverter::ConvertPlugToValue(

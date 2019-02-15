@@ -433,6 +433,15 @@ private:
             return GetPreviewMaterialParamValue(paramName);
         }
 
+        const auto previewIt = _FindPreviewParam(paramName);
+        if (ARCH_UNLIKELY(
+                previewIt ==
+                HdMayaMaterialNetworkConverter::GetPreviewShaderParams()
+                    .cend())) {
+            return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
+                paramName);
+        }
+
         auto remappedParam = paramName;
         if (_surfaceShaderType != UsdImagingTokens->UsdPreviewSurface &&
             _surfaceShaderType != HdMayaAdapterTokens->pxrUsdPreviewSurface) {
@@ -451,21 +460,8 @@ private:
             }
         }
 
-        const auto p = node.findPlug(remappedParam.GetText(), true);
-        if (ARCH_UNLIKELY(p.isNull())) {
-            return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
-                paramName);
-        }
-        const auto previewIt = _FindPreviewParam(paramName);
-        if (ARCH_UNLIKELY(
-                previewIt ==
-                HdMayaMaterialNetworkConverter::GetPreviewShaderParams()
-                    .cend())) {
-            return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
-                paramName);
-        }
-        const auto ret = HdMayaMaterialNetworkConverter::ConvertPlugToValue(
-            p, previewIt->type);
+        const auto ret = HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
+            node, remappedParam.GetText(), previewIt->type);
         if (ARCH_UNLIKELY(ret.IsEmpty())) {
             return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
                 paramName);

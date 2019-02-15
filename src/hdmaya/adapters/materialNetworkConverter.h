@@ -69,6 +69,12 @@ public:
         const SdfValueTypeName& type, const VtValue* fallback = nullptr);
 
     HDMAYA_API
+    static VtValue ConvertMayaAttrToValue(
+        MFnDependencyNode& node, const MString& plugName,
+        const SdfValueTypeName& type, const VtValue* fallback = nullptr,
+        MPlug* outPlug = nullptr);
+
+    HDMAYA_API
     static VtValue ConvertPlugToValue(
         const MPlug& plug, const SdfValueTypeName& type,
         const VtValue* fallback = nullptr);
