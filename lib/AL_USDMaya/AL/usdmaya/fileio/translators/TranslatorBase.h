@@ -278,6 +278,18 @@ public:
   AL_USDMAYA_PUBLIC
   std::vector<ExtraDataPluginPtr> getExtraDataPlugins(const MObject& mayaObject);
 
+  /// \brief  activates the translator of the specified type
+  /// \param  type_name the name of the translator to activate
+  /// \return returns the requested translator type
+  AL_USDMAYA_PUBLIC
+  void activate(const TfTokenVector& types);
+
+  /// \brief  returns a translator for the specified prim type.
+  /// \param  type_name the schema name
+  /// \return returns the requested translator type
+  AL_USDMAYA_PUBLIC
+  void deactivate(const TfTokenVector& types);
+
 private:
   std::unordered_map<std::string, TranslatorRefPtr> m_translatorsMap;
   std::vector<ExtraDataPluginPtr> m_extraDataPlugins;
