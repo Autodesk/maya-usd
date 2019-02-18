@@ -13,12 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/version.h"
-#if (USD_IMAGING_API_VERSION >= 7)
-  #include "pxr/usdImaging/usdImagingGL/hdEngine.h"
-#else
-  #include "pxr/usdImaging/usdImaging/hdEngine.h"
-#endif
+#include "pxr/usdImaging/usdImagingGL/engine.h"
+
+#include "AL/usdmaya/nodes/Engine.h"
 
 #if (__cplusplus >= 201703L)
 # include <filesystem>
@@ -447,7 +446,7 @@ void ProxyShape::constructGLImagingEngine()
                                    translatedGeo.begin(),
                                    translatedGeo.end());
 
-      m_engine = new UsdImagingGLHdEngine(m_path, excludedGeometryPaths);
+      m_engine = new Engine(m_path, excludedGeometryPaths);
       // set renderer plugin based on RendererManager setting
       RendererManager* manager = RendererManager::findManager();
       if(manager && m_engine)
@@ -526,9 +525,8 @@ MStatus ProxyShape::preEvaluation(const MDGContext & context, const MEvaluationN
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool ProxyShape::getRenderAttris(void* pattribs, const MHWRender::MFrameContext& drawRequest, const MDagPath& objPath)
+bool ProxyShape::getRenderAttris(UsdImagingGLRenderParams& attribs, const MHWRender::MFrameContext& drawRequest, const MDagPath& objPath)
 {
-  UsdImagingGLEngine::RenderParams& attribs = *(UsdImagingGLEngine::RenderParams*)pattribs;
   uint32_t displayStyle = drawRequest.getDisplayStyle();
   uint32_t displayStatus = MHWRender::MGeometryUtilities::displayStatus(objPath);
 
@@ -541,35 +539,35 @@ bool ProxyShape::getRenderAttris(void* pattribs, const MHWRender::MFrameContext&
   const uint32_t wireframeOnShaded2 = (MHWRender::MFrameContext::kWireFrame | MHWRender::MFrameContext::kFlatShaded);
   if((displayStyle & wireframeOnShaded1) == wireframeOnShaded1 ||
      (displayStyle & wireframeOnShaded2) == wireframeOnShaded2) {
-    attribs.drawMode = UsdImagingGLEngine::DRAW_WIREFRAME_ON_SURFACE;
+    attribs.drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME_ON_SURFACE;
   }
   else
   if(displayStyle & MHWRender::MFrameContext::kWireFrame) {
-    attribs.drawMode = UsdImagingGLEngine::DRAW_WIREFRAME;
+    attribs.drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
   }
   else
 #if MAYA_API_VERSION >= 201600
   if(displayStyle & MHWRender::MFrameContext::kFlatShaded) {
-    attribs.drawMode = UsdImagingGLEngine::DRAW_SHADED_FLAT;
+    attribs.drawMode = UsdImagingGLDrawMode::DRAW_SHADED_FLAT;
     if ((displayStatus == MHWRender::kActive) ||
         (displayStatus == MHWRender::kLead) ||
         (displayStatus == MHWRender::kHilite)) {
-      attribs.drawMode = UsdImagingGLEngine::DRAW_WIREFRAME_ON_SURFACE;
+      attribs.drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME_ON_SURFACE;
     }
   }
   else
 #endif
   if(displayStyle & MHWRender::MFrameContext::kGouraudShaded) {
-    attribs.drawMode = UsdImagingGLEngine::DRAW_SHADED_SMOOTH;
+    attribs.drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
     if ((displayStatus == MHWRender::kActive) ||
         (displayStatus == MHWRender::kLead) ||
         (displayStatus == MHWRender::kHilite)) {
-      attribs.drawMode = UsdImagingGLEngine::DRAW_WIREFRAME_ON_SURFACE;
+      attribs.drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME_ON_SURFACE;
     }
   }
   else
   if(displayStyle & MHWRender::MFrameContext::kBoundingBox) {
-    attribs.drawMode = UsdImagingGLEngine::DRAW_POINTS;
+    attribs.drawMode = UsdImagingGLDrawMode::DRAW_POINTS;
   }
 
   // determine whether to use the default material for everything
@@ -580,13 +578,13 @@ bool ProxyShape::getRenderAttris(void* pattribs, const MHWRender::MFrameContext&
 
 #if MAYA_API_VERSION >= 201603
   if(displayStyle & MHWRender::MFrameContext::kBackfaceCulling) {
-    attribs.cullStyle = UsdImagingGLEngine::CULL_STYLE_BACK;
+    attribs.cullStyle = UsdImagingGLCullStyle::CULL_STYLE_BACK;
   }
   else {
-    attribs.cullStyle = UsdImagingGLEngine::CULL_STYLE_NOTHING;
+    attribs.cullStyle = UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
   }
 #else
-  attribs.cullStyle = UsdImagingGLEngine::CULL_STYLE_NOTHING;
+  attribs.cullStyle = Engine::CULL_STYLE_NOTHING;
 #endif
 
   const float complexities[] = {1.05f, 1.15f, 1.25f, 1.35f, 1.45f, 1.55f, 1.65f, 1.75f, 1.9f}; 
