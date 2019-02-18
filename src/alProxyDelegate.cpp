@@ -443,7 +443,15 @@ HdMayaALProxyDelegate::HdMayaALProxyDelegate(const InitData& initData)
 
 #if HDMAYA_UFE_BUILD
     if (usdUfeRtid == 0) {
-        usdUfeRtid = UFE_NS::RunTimeMgr::instance().getId(USD_UFE_RUNTIME_NAME);
+        try {
+            usdUfeRtid =
+                UFE_NS::RunTimeMgr::instance().getId(USD_UFE_RUNTIME_NAME);
+        }
+        // This shoudl catch ufe's InvalidRunTimeName exception, but they don't
+        // expose that!
+        catch (...) {
+            TF_WARN("USD UFE Runtime plugin not loaded!\n");
+        }
     }
 #endif // HDMAYA_UFE_BUILD
 }
@@ -735,7 +743,7 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
     }
 }
 
-bool HdMayaALProxyDelegate::SupportsUfeSelection() { return true; }
+bool HdMayaALProxyDelegate::SupportsUfeSelection() { return usdUfeRtid != 0; }
 
 #endif // HDMAYA_UFE_BUILD
 
