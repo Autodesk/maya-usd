@@ -110,30 +110,6 @@ auto _PreviewShaderSource = []() -> const std::pair<std::string, std::string>& {
     return ret;
 };
 
-std::unordered_map<
-    TfToken, std::vector<std::pair<TfToken, TfToken>>, TfToken::HashFunctor>
-    _materialParamRemaps{
-        {HdMayaAdapterTokens->lambert,
-         {
-             {HdMayaAdapterTokens->diffuseColor, HdMayaAdapterTokens->color},
-             {HdMayaAdapterTokens->emissiveColor,
-              HdMayaAdapterTokens->incandescence},
-         }},
-        {HdMayaAdapterTokens->phong,
-         {{HdMayaAdapterTokens->diffuseColor, HdMayaAdapterTokens->color},
-          {HdMayaAdapterTokens->emissiveColor,
-           HdMayaAdapterTokens->incandescence}}},
-        {HdMayaAdapterTokens->blinn,
-         {
-             {HdMayaAdapterTokens->diffuseColor, HdMayaAdapterTokens->color},
-             {HdMayaAdapterTokens->emissiveColor,
-              HdMayaAdapterTokens->incandescence},
-             {HdMayaAdapterTokens->specularColor,
-              HdMayaAdapterTokens->specularColor},
-             {HdMayaAdapterTokens->roughness,
-              HdMayaAdapterTokens->eccentricity},
-         }}};
-
 #ifndef USD_001901_BUILD
 enum class HdTextureType { Uv, Ptex, Udim };
 #endif
@@ -339,48 +315,35 @@ private:
         MStatus status;
         MFnDependencyNode node(_surfaceShader, &status);
         if (ARCH_UNLIKELY(!status)) { return GetPreviewMaterialParams(); }
-        auto mIt = _materialParamRemaps.end();
-        if (_surfaceShaderType != UsdImagingTokens->UsdPreviewSurface &&
-            _surfaceShaderType != HdMayaAdapterTokens->pxrUsdPreviewSurface) {
-            mIt = _materialParamRemaps.find(_surfaceShaderType);
-            if (mIt == _materialParamRemaps.end()) {
-                return GetPreviewMaterialParams();
-            }
-        }
+
+        auto* nodeConverter =
+            HdMayaMaterialNodeConverter::GetNodeConverter(_surfaceShaderType);
+        if (!nodeConverter) { return GetPreviewMaterialParams(); }
 
         HdMaterialParamVector ret;
         ret.reserve(GetPreviewMaterialParams().size());
-        for (const auto& it : GetPreviewMaterialParams()) {
+        for (const auto& it :
+             HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
             auto textureType = HdTextureType::Uv;
-            auto remappedName = it.GetName();
-            if (mIt != _materialParamRemaps.end()) {
-                std::find_if(
-                    mIt->second.begin(), mIt->second.end(),
-                    [&remappedName](
-                        const std::pair<TfToken, TfToken>& p) -> bool {
-                        if (p.first == remappedName) {
-                            remappedName = p.second;
-                            TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
-                                .Msg(
-                                    "Found remapped material param %s\n",
-                                    remappedName.GetText());
-                            return true;
-                        }
-                        return false;
-                    });
+            auto remappedName = it.param.GetName();
+            auto* attrConverter = nodeConverter->GetAttrConverter(remappedName);
+            if (attrConverter) {
+                TfToken tempName = attrConverter->GetPlugName(remappedName);
+                if (!tempName.IsEmpty()) { remappedName = tempName; }
             }
+
             if (_RegisterTexture(node, remappedName, textureType)) {
                 ret.emplace_back(
-                    HdMaterialParam::ParamTypeTexture, it.GetName(),
-                    it.GetFallbackValue(), GetID().AppendProperty(remappedName),
-                    _stSamplerCoords,
+                    HdMaterialParam::ParamTypeTexture, it.param.GetName(),
+                    it.param.GetFallbackValue(),
+                    GetID().AppendProperty(remappedName), _stSamplerCoords,
 #ifdef USD_001901_BUILD
                     textureType);
 #else
                     false);
 #endif
             } else {
-                ret.emplace_back(it);
+                ret.emplace_back(it.param);
             }
         }
 
@@ -447,30 +410,17 @@ private:
         }
 
         auto remappedParam = paramName;
-        if (_surfaceShaderType != UsdImagingTokens->UsdPreviewSurface &&
-            _surfaceShaderType != HdMayaAdapterTokens->pxrUsdPreviewSurface) {
-            auto mIt = _materialParamRemaps.find(_surfaceShaderType);
-            if (mIt != _materialParamRemaps.end()) {
-                const auto remapIt = std::find_if(
-                    mIt->second.begin(), mIt->second.end(),
-                    [&paramName](const std::pair<TfToken, TfToken>& p) -> bool {
-                        return p.first == paramName;
-                    });
-                if (remapIt != mIt->second.end()) {
-                    remappedParam = remapIt->second;
-                }
-            } else {
-                return GetPreviewMaterialParamValue(paramName);
-            }
+        auto* nodeConverter =
+            HdMayaMaterialNodeConverter::GetNodeConverter(_surfaceShaderType);
+        if (!nodeConverter) { return GetPreviewMaterialParamValue(paramName); }
+        auto* attrConverter = nodeConverter->GetAttrConverter(paramName);
+        if (attrConverter) {
+            return attrConverter->GetValue(
+                node, previewIt->param.GetName(), previewIt->type,
+                &previewIt->param.GetFallbackValue());
+        } else {
+            return GetPreviewMaterialParamValue(paramName);
         }
-
-        const auto ret = HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
-            node, remappedParam.GetText(), previewIt->type);
-        if (ARCH_UNLIKELY(ret.IsEmpty())) {
-            return HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
-                paramName);
-        }
-        return ret;
     }
 
     void _CreateSurfaceMaterialCallback() {
@@ -563,8 +513,8 @@ private:
 
         const auto wrapping = _GetWrappingParams(fileObj);
 
-        // We can't really mimic texture wrapping and mirroring settings from
-        // the uv placement node, so we don't touch those for now.
+        // We can't really mimic texture wrapping and mirroring settings
+        // from the uv placement node, so we don't touch those for now.
         return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
             texture,
 #ifdef USD_001901_BUILD

@@ -39,8 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-const VtValue defaultUV(GfVec2f(0));
-const VtValue defaultTextureMemoryLimit(1e8f);
+constexpr float defaultTextureMemoryLimit = 1e8f;
 
 const auto _previewShaderParams = []() -> HdMayaShaderParams {
     // TODO: Use SdrRegistry, but it seems PreviewSurface is not there yet?
@@ -85,205 +84,286 @@ const auto _previewMaterialParamVector = []() -> HdMaterialParamVector {
     return ret;
 }();
 
-void ConvertUsdPreviewSurface(
-    HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
-    MFnDependencyNode& node) {
-    for (const auto& param : _previewShaderParams) {
-        const VtValue* fallback = &param.param.GetFallbackValue();
-        converter.ConvertParameter(
-            node, material, param.param.GetName(), param.param.GetName(),
-            param.type, fallback);
-    }
-    material.identifier = UsdImagingTokens->UsdPreviewSurface;
-}
+class HdMayaGenericMaterialAttrConverter : public HdMayaMaterialAttrConverter {
+public:
+    /// Generic attr converter has no fixed type
+    SdfValueTypeName GetType() override { return SdfValueTypeName(); }
 
-void ConvertLambert(
-    HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
-    MFnDependencyNode& node) {
-    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
-        .Msg("ConvertLambert(node=%s)\n", node.name().asChar());
-    for (const auto& param : _previewShaderParams) {
-        const VtValue* fallback = &param.param.GetFallbackValue();
-        if (param.param.GetName() == HdMayaAdapterTokens->diffuseColor) {
-            converter.ConvertParameter(
-                node, material, HdMayaAdapterTokens->color,
-                HdMayaAdapterTokens->diffuseColor, param.type, fallback);
-        } else if (
-            param.param.GetName() == HdMayaAdapterTokens->emissiveColor) {
-            converter.ConvertParameter(
-                node, material, HdMayaAdapterTokens->incandescence,
-                HdMayaAdapterTokens->emissiveColor, param.type, fallback);
+    TfToken GetPlugName(const TfToken& usdName) override { return usdName; }
+
+    VtValue GetValue(
+        MFnDependencyNode& node, const TfToken& paramName,
+        const SdfValueTypeName& type, const VtValue* fallback = nullptr,
+        MPlug* outPlug = nullptr) override {
+        return HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
+            node, paramName.GetText(), type, fallback, outPlug);
+    }
+};
+
+class HdMayaNewDefaultMaterialAttrConverter
+    : public HdMayaMaterialAttrConverter {
+public:
+    template <typename T>
+    HdMayaNewDefaultMaterialAttrConverter(const T& defaultValue)
+        : _defaultValue(defaultValue) {}
+
+    SdfValueTypeName GetType() override {
+        return SdfGetValueTypeNameForValue(_defaultValue);
+    }
+
+    TfToken GetPlugName(const TfToken& usdName) override { return usdName; }
+
+    VtValue GetValue(
+        MFnDependencyNode& node, const TfToken& paramName,
+        const SdfValueTypeName& type, const VtValue* fallback = nullptr,
+        MPlug* outPlug = nullptr) override {
+        return HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
+            node, paramName.GetText(), type, &_defaultValue, outPlug);
+    }
+
+    const VtValue _defaultValue;
+};
+
+class HdMayaRemappingMaterialAttrConverter
+    : public HdMayaMaterialAttrConverter {
+public:
+    HdMayaRemappingMaterialAttrConverter(
+        const TfToken& remappedName, const SdfValueTypeName& type)
+        : _remappedName(remappedName), _type(type) {}
+
+    SdfValueTypeName GetType() override { return _type; }
+
+    TfToken GetPlugName(const TfToken& usdName) override {
+        return _remappedName;
+    }
+
+    VtValue GetValue(
+        MFnDependencyNode& node, const TfToken& paramName,
+        const SdfValueTypeName& type, const VtValue* fallback = nullptr,
+        MPlug* outPlug = nullptr) override {
+        return HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
+            node, _remappedName.GetText(), type, fallback, outPlug);
+    }
+
+private:
+    const TfToken& _remappedName;
+    const SdfValueTypeName& _type;
+};
+
+class HdMayaComputedMaterialAttrConverter : public HdMayaMaterialAttrConverter {
+public:
+    /// Classes which derive from this use some sort of calculation to get
+    /// the right value for the node, and so don't have a single plug that
+    /// can be hooked into a node network.
+    TfToken GetPlugName(const TfToken& usdName) override { return TfToken(); }
+};
+
+class HdMayaFixedMaterialAttrConverter
+    : public HdMayaComputedMaterialAttrConverter {
+public:
+    template <typename T>
+    HdMayaFixedMaterialAttrConverter(const T& value) : _value(value) {}
+
+    SdfValueTypeName GetType() override {
+        return SdfGetValueTypeNameForValue(_value);
+    }
+
+    VtValue GetValue(
+        MFnDependencyNode& node, const TfToken& paramName,
+        const SdfValueTypeName& type, const VtValue* fallback = nullptr,
+        MPlug* outPlug = nullptr) override {
+        return _value;
+    }
+
+private:
+    const VtValue _value;
+};
+
+class HdMayaCosinePowerMaterialAttrConverter
+    : public HdMayaComputedMaterialAttrConverter {
+public:
+    SdfValueTypeName GetType() override { return SdfValueTypeNames->Float; }
+
+    VtValue GetValue(
+        MFnDependencyNode& node, const TfToken& paramName,
+        const SdfValueTypeName& type, const VtValue* fallback = nullptr,
+        MPlug* outPlug = nullptr) override {
+        VtValue cosinePower =
+            HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
+                node, "cosinePower", type, nullptr);
+        if (!cosinePower.IsHolding<float>()) {
+            if (fallback) { return *fallback; }
+            TF_DEBUG(HDMAYA_ADAPTER_GET)
+                .Msg(
+                    "HdMayaCosinePowerMaterialAttrConverter::GetValue(): "
+                    "No float plug found with name: cosinePower and no "
+                    "fallback given");
+            return VtValue();
         } else {
-            converter.ConvertParameter(
-                node, material, param.param.GetName(), param.param.GetName(),
-                param.type, fallback);
+            // In the maya UI, cosinePower goes from 2.0 to 100.0 ...
+            // so for now, we just do a dumb linear mapping from that onto
+            // 1 to 0 for roughness
+            float roughnessFloat =
+                1.0f - (cosinePower.UncheckedGet<float>() - 2.0f) / 98.0f;
+            return VtValue(roughnessFloat);
         }
     }
-    material.parameters[HdMayaAdapterTokens->roughness] = VtValue(1.0f);
-    material.parameters[HdMayaAdapterTokens->metallic] = VtValue(0.0f);
-    material.parameters[HdMayaAdapterTokens->useSpecularWorkflow] = VtValue(0);
-    material.identifier = UsdImagingTokens->UsdPreviewSurface;
-}
+};
 
-void ConvertBlinn(
-    HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
-    MFnDependencyNode& node) {
-    for (const auto& param : _previewShaderParams) {
-        const VtValue* fallback = &param.param.GetFallbackValue();
-        if (param.param.GetName() == HdMayaAdapterTokens->diffuseColor) {
-            converter.ConvertParameter(
-                node, material, HdMayaAdapterTokens->color,
-                HdMayaAdapterTokens->diffuseColor, param.type, fallback);
-        } else if (
-            param.param.GetName() == HdMayaAdapterTokens->emissiveColor) {
-            converter.ConvertParameter(
-                node, material, HdMayaAdapterTokens->incandescence,
-                HdMayaAdapterTokens->emissiveColor, param.type, fallback);
-        } else if (param.param.GetName() == HdMayaAdapterTokens->roughness) {
-            converter.ConvertParameter(
-                node, material, HdMayaAdapterTokens->eccentricity,
-                HdMayaAdapterTokens->roughness, param.type, fallback);
-        } else {
-            converter.ConvertParameter(
-                node, material, param.param.GetName(), param.param.GetName(),
-                param.type, fallback);
+class HdMayaFilenameMaterialAttrConverter
+    : public HdMayaComputedMaterialAttrConverter {
+public:
+    SdfValueTypeName GetType() override { return SdfValueTypeNames->Asset; }
+
+    VtValue GetValue(
+        MFnDependencyNode& node, const TfToken& paramName,
+        const SdfValueTypeName& type, const VtValue* fallback = nullptr,
+        MPlug* outPlug = nullptr) override {
+        if (node.findPlug(MayaAttrs::file::uvTilingMode, true).asShort() != 0) {
+            auto ret =
+                node.findPlug(MayaAttrs::file::fileTextureNamePattern, true)
+                    .asString();
+            if (ret.length() == 0) {
+                ret = node.findPlug(
+                              MayaAttrs::file::computedFileTextureNamePattern,
+                              true)
+                          .asString();
+            }
+            return VtValue(TfToken(ret.asChar()));
         }
+        return VtValue(
+            TfToken(node.findPlug(MayaAttrs::file::fileTextureName, true)
+                        .asString()
+                        .asChar()));
     }
-    material.parameters[HdMayaAdapterTokens->metallic] = VtValue(0.0f);
-    material.parameters[HdMayaAdapterTokens->useSpecularWorkflow] = VtValue(1);
-    material.identifier = UsdImagingTokens->UsdPreviewSurface;
-}
+};
 
-void ConvertPhong(
-    HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
-    MFnDependencyNode& node) {
-    for (const auto& param : _previewShaderParams) {
-        const VtValue* fallback = &param.param.GetFallbackValue();
-        if (param.param.GetName() == HdMayaAdapterTokens->diffuseColor) {
-            converter.ConvertParameter(
-                node, material, HdMayaAdapterTokens->color,
-                HdMayaAdapterTokens->diffuseColor, param.type, fallback);
-        } else if (
-            param.param.GetName() == HdMayaAdapterTokens->emissiveColor) {
-            converter.ConvertParameter(
-                node, material, HdMayaAdapterTokens->incandescence,
-                HdMayaAdapterTokens->emissiveColor, param.type, fallback);
-        } else if (param.param.GetName() == HdMayaAdapterTokens->roughness) {
-            VtValue cosinePower = converter.ConvertMayaAttrToValue(
-                node, "cosinePower", param.type, nullptr);
-            if (!cosinePower.IsHolding<float>()) {
-                if (fallback) {
-                    material.parameters[HdMayaAdapterTokens->roughness] =
-                        *fallback;
-                }
+class HdMayaWrapMaterialAttrConverter
+    : public HdMayaComputedMaterialAttrConverter {
+public:
+    HdMayaWrapMaterialAttrConverter(MObject& wrapAttr, MObject& mirrorAttr)
+        : _wrapAttr(wrapAttr), _mirrorAttr(mirrorAttr) {}
+
+    SdfValueTypeName GetType() override { return SdfValueTypeNames->Token; }
+
+    VtValue GetValue(
+        MFnDependencyNode& node, const TfToken& paramName,
+        const SdfValueTypeName& type, const VtValue* fallback = nullptr,
+        MPlug* outPlug = nullptr) override {
+        if (node.findPlug(_wrapAttr, true).asBool()) {
+            if (node.findPlug(_mirrorAttr, true).asBool()) {
+                return VtValue(UsdHydraTokens->mirror);
             } else {
-                // In the maya UI, cosinePower goes from 2.0 to 100.0 ...
-                // so for now, we just do a dumb linear mapping from that onto
-                // 1 to 0 for roughness
-                float roughnessVal =
-                    1.0 - (cosinePower.UncheckedGet<float>() - 2.0) / 98.0;
-                material.parameters[HdMayaAdapterTokens->roughness] =
-                    VtValue(roughnessVal);
+                return VtValue(UsdHydraTokens->repeat);
             }
         } else {
-            converter.ConvertParameter(
-                node, material, param.param.GetName(), param.param.GetName(),
-                param.type, fallback);
+            return VtValue(UsdHydraTokens->clamp);
         }
     }
-    material.parameters[HdMayaAdapterTokens->metallic] = VtValue(0.0f);
-    material.parameters[HdMayaAdapterTokens->useSpecularWorkflow] = VtValue(1);
-    material.identifier = UsdImagingTokens->UsdPreviewSurface;
-}
 
-void ConvertFile(
-    HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
-    MFnDependencyNode& node) {
-    std::string fileTextureName{};
-    if (node.findPlug(MayaAttrs::file::uvTilingMode, true).asShort() != 0) {
-        fileTextureName =
-            node.findPlug(MayaAttrs::file::fileTextureNamePattern, true)
-                .asString()
-                .asChar();
-        if (fileTextureName.empty()) {
-            fileTextureName =
-                node.findPlug(
-                        MayaAttrs::file::computedFileTextureNamePattern, true)
-                    .asString()
-                    .asChar();
-        }
-    } else {
-        fileTextureName = node.findPlug(MayaAttrs::file::fileTextureName, true)
-                              .asString()
-                              .asChar();
-    }
-    material.parameters[HdMayaAdapterTokens->file] =
-        VtValue(SdfAssetPath(fileTextureName, fileTextureName));
-    // TODO: currently we don't know how to read array params, for Vec2's...
-    // so we set a default value for uv, so at least we can know what type
-    // it is
-    converter.ConvertParameter(
-        node, material, HdMayaAdapterTokens->uvCoord, HdMayaAdapterTokens->st,
-        SdfValueTypeNames->Float2, &defaultUV);
+private:
+    MObject _wrapAttr;
+    MObject _mirrorAttr;
+};
 
-    // Set wrapS / wrapT
-    auto setWrap = [&node, &material](
-                       MObject& wrapAttr, MObject& mirrorAttr,
-                       const TfToken& wrapProperty) {
-        if (node.findPlug(wrapAttr, true).asBool()) {
-            if (node.findPlug(mirrorAttr, true).asBool()) {
-                material.parameters[wrapProperty] =
-                    VtValue(UsdHydraTokens->mirror);
-            } else {
-                material.parameters[wrapProperty] =
-                    VtValue(UsdHydraTokens->repeat);
-            }
-        } else {
-            material.parameters[wrapProperty] = VtValue(UsdHydraTokens->clamp);
-        }
-    };
+HdMayaGenericMaterialAttrConverter _genericAttrConverter;
 
-    setWrap(
-        MayaAttrs::file::wrapU, MayaAttrs::file::mirrorU,
-        UsdHydraTokens->wrapS);
-    setWrap(
-        MayaAttrs::file::wrapV, MayaAttrs::file::mirrorV,
-        UsdHydraTokens->wrapT);
+HdMayaRemappingMaterialAttrConverter _colorConverter(
+    HdMayaAdapterTokens->color, SdfValueTypeNames->Vector3f);
+HdMayaRemappingMaterialAttrConverter _incandescenceConverter(
+    HdMayaAdapterTokens->incandescence, SdfValueTypeNames->Vector3f);
+HdMayaRemappingMaterialAttrConverter _eccentricityConverter(
+    HdMayaAdapterTokens->eccentricity, SdfValueTypeNames->Float);
+HdMayaRemappingMaterialAttrConverter _uvConverter(
+    HdMayaAdapterTokens->uvCoord, SdfValueTypeNames->Float2);
 
-    // If the user has a "textureMemory" dynamic parameter set, obey it,
-    // otherwise, default to something big (this should be a memory upper limit)
-    converter.ConvertParameter(
-        node, material, UsdHydraTokens->textureMemory,
-        UsdHydraTokens->textureMemory, SdfValueTypeNames->Float,
-        &defaultTextureMemoryLimit);
-    material.identifier = UsdImagingTokens->UsdUVTexture;
-}
+HdMayaFixedMaterialAttrConverter _fixedZeroFloat(0.0f);
+HdMayaFixedMaterialAttrConverter _fixedOneFloat(1.0f);
+HdMayaFixedMaterialAttrConverter _fixedZeroInt(0);
+HdMayaFixedMaterialAttrConverter _fixedOneInt(1);
+HdMayaFixedMaterialAttrConverter _fixedStToken(HdMayaAdapterTokens->st);
 
-void ConvertPlace2dTexture(
-    HdMayaMaterialNetworkConverter& converter, HdMaterialNode& material,
-    MFnDependencyNode& node) {
-    converter.AddPrimvar(HdMayaAdapterTokens->st);
-    material.parameters[HdMayaAdapterTokens->varname] =
-        VtValue(HdMayaAdapterTokens->st);
-    material.identifier = UsdImagingTokens->UsdPrimvarReader_float2;
-}
+HdMayaCosinePowerMaterialAttrConverter _cosinePowerToRoughness;
+HdMayaFilenameMaterialAttrConverter _filenameConverter;
 
-std::unordered_map<
-    TfToken,
-    std::function<void(
-        HdMayaMaterialNetworkConverter&, HdMaterialNode&, MFnDependencyNode&)>,
-    TfToken::HashFunctor>
-    _converters{
-        {UsdImagingTokens->UsdPreviewSurface, ConvertUsdPreviewSurface},
-        {HdMayaAdapterTokens->pxrUsdPreviewSurface, ConvertUsdPreviewSurface},
-        {HdMayaAdapterTokens->lambert, ConvertLambert},
-        {HdMayaAdapterTokens->blinn, ConvertBlinn},
-        {HdMayaAdapterTokens->phong, ConvertPhong},
-        {HdMayaAdapterTokens->file, ConvertFile},
-        {HdMayaAdapterTokens->place2dTexture, ConvertPlace2dTexture},
-    };
+HdMayaWrapMaterialAttrConverter _wrapUConverter(
+    MayaAttrs::file::wrapU, MayaAttrs::file::mirrorU);
+HdMayaWrapMaterialAttrConverter _wrapVConverter(
+    MayaAttrs::file::wrapV, MayaAttrs::file::mirrorV);
+
+HdMayaNewDefaultMaterialAttrConverter _textureMemoryConverter(
+    defaultTextureMemoryLimit);
+
+typedef std::unordered_map<
+    TfToken, HdMayaMaterialNodeConverter, TfToken::HashFunctor>
+    NameToNodeConverterMap;
+
+NameToNodeConverterMap _nodeConverters{
+    {UsdImagingTokens->UsdPreviewSurface,
+     {UsdImagingTokens->UsdPreviewSurface, {}}},
+    {HdMayaAdapterTokens->pxrUsdPreviewSurface,
+     {UsdImagingTokens->UsdPreviewSurface, {}}},
+    {HdMayaAdapterTokens->lambert,
+     {UsdImagingTokens->UsdPreviewSurface,
+      {
+          {HdMayaAdapterTokens->diffuseColor, &_colorConverter},
+          {HdMayaAdapterTokens->emissiveColor, &_incandescenceConverter},
+          {HdMayaAdapterTokens->roughness, &_fixedOneFloat},
+          {HdMayaAdapterTokens->metallic, &_fixedZeroFloat},
+          {HdMayaAdapterTokens->useSpecularWorkflow, &_fixedZeroInt},
+      }}},
+    {HdMayaAdapterTokens->blinn,
+     {UsdImagingTokens->UsdPreviewSurface,
+      {
+          {HdMayaAdapterTokens->diffuseColor, &_colorConverter},
+          {HdMayaAdapterTokens->emissiveColor, &_incandescenceConverter},
+          {HdMayaAdapterTokens->roughness, &_eccentricityConverter},
+          {HdMayaAdapterTokens->metallic, &_fixedZeroFloat},
+          {HdMayaAdapterTokens->useSpecularWorkflow, &_fixedOneInt},
+      }}},
+    {HdMayaAdapterTokens->phong,
+     {UsdImagingTokens->UsdPreviewSurface,
+      {
+          {HdMayaAdapterTokens->diffuseColor, &_colorConverter},
+          {HdMayaAdapterTokens->emissiveColor, &_incandescenceConverter},
+          {HdMayaAdapterTokens->roughness, &_cosinePowerToRoughness},
+          {HdMayaAdapterTokens->metallic, &_fixedZeroFloat},
+          {HdMayaAdapterTokens->useSpecularWorkflow, &_fixedOneInt},
+      }}},
+    {HdMayaAdapterTokens->file,
+     {UsdImagingTokens->UsdUVTexture,
+      {
+          {HdMayaAdapterTokens->file, &_filenameConverter},
+          {HdMayaAdapterTokens->st, &_uvConverter},
+          {UsdHydraTokens->wrapS, &_wrapUConverter},
+          {UsdHydraTokens->wrapT, &_wrapVConverter},
+      }}},
+    {HdMayaAdapterTokens->place2dTexture,
+     {UsdImagingTokens->UsdPrimvarReader_float2,
+      {
+          {HdMayaAdapterTokens->varname, &_fixedStToken},
+      }}},
+};
 
 } // namespace
+
+HdMayaMaterialNodeConverter::HdMayaMaterialNodeConverter(
+    const TfToken& identifier, const NameToAttrConverterMap& attrConverters)
+    : _attrConverters(attrConverters), _identifier(identifier) {}
+
+HdMayaMaterialAttrConverter* HdMayaMaterialNodeConverter::GetAttrConverter(
+    const TfToken& paramName) {
+    auto it = _attrConverters.find(paramName);
+    if (it == _attrConverters.end()) { return &_genericAttrConverter; }
+    return it->second;
+}
+
+HdMayaMaterialNodeConverter* HdMayaMaterialNodeConverter::GetNodeConverter(
+    const TfToken& nodeType) {
+    auto it = _nodeConverters.find(nodeType);
+    if (it == _nodeConverters.end()) { return nullptr; }
+    return &(it->second);
+}
 
 HdMayaShaderParam::HdMayaShaderParam(
     const TfToken& name, const VtValue& value, const SdfValueTypeName& type)
@@ -314,12 +394,45 @@ SdfPath HdMayaMaterialNetworkConverter::GetMaterial(const MObject& mayaNode) {
         return materialPath;
     }
 
-    const auto converterIt =
-        _converters.find(TfToken(node.typeName().asChar()));
-    if (converterIt == _converters.end()) { return SdfPath(); }
+    auto* nodeConverter = HdMayaMaterialNodeConverter::GetNodeConverter(
+        TfToken(node.typeName().asChar()));
+    if (!nodeConverter) { return SdfPath(); }
     HdMaterialNode material{};
     material.path = materialPath;
-    converterIt->second(*this, material, node);
+    material.identifier = nodeConverter->GetIdentifier();
+    if (material.identifier == UsdImagingTokens->UsdPreviewSurface) {
+        for (const auto& param : _previewShaderParams) {
+            this->ConvertParameter(
+                node, *nodeConverter, material, param.param.GetName(),
+                param.type, &param.param.GetFallbackValue());
+        }
+    } else {
+        for (auto& nameAttrConverterPair : nodeConverter->GetAttrConverters()) {
+            auto& name = nameAttrConverterPair.first;
+            auto& attrConverter = nameAttrConverterPair.second;
+            this->ConvertParameter(
+                node, *nodeConverter, material, name, attrConverter->GetType());
+
+            if (name == HdMayaAdapterTokens->varname &&
+                (material.identifier ==
+                     UsdImagingTokens->UsdPrimvarReader_float ||
+                 material.identifier ==
+                     UsdImagingTokens->UsdPrimvarReader_float2 ||
+                 material.identifier ==
+                     UsdImagingTokens->UsdPrimvarReader_float3 ||
+                 material.identifier ==
+                     UsdImagingTokens->UsdPrimvarReader_float4)) {
+                VtValue& primVarName = material.parameters[name];
+                if (TF_VERIFY(primVarName.IsHolding<TfToken>())) {
+                    AddPrimvar(primVarName.UncheckedGet<TfToken>());
+                } else {
+                    TF_WARN(
+                        "Converter identified as a UsdPrimvarReader*, but it's "
+                        "varname did not hold a TfToken");
+                }
+            }
+        }
+    }
     _network.nodes.push_back(material);
     return materialPath;
 }
@@ -333,13 +446,27 @@ void HdMayaMaterialNetworkConverter::AddPrimvar(const TfToken& primvar) {
 }
 
 void HdMayaMaterialNetworkConverter::ConvertParameter(
-    MFnDependencyNode& node, HdMaterialNode& material, const TfToken& mayaName,
-    const TfToken& name, const SdfValueTypeName& type,
-    const VtValue* fallback) {
+    MFnDependencyNode& node, HdMayaMaterialNodeConverter& nodeConverter,
+    HdMaterialNode& material, const TfToken& paramName,
+    const SdfValueTypeName& type, const VtValue* fallback) {
     MPlug plug;
-    VtValue val =
-        ConvertMayaAttrToValue(node, mayaName.GetText(), type, fallback, &plug);
-    material.parameters[name] = val;
+    VtValue val;
+    auto* attrConverter = nodeConverter.GetAttrConverter(paramName);
+    if (attrConverter) {
+        val = attrConverter->GetValue(node, paramName, type, fallback, &plug);
+    } else if (fallback) {
+        val = *fallback;
+    } else {
+        TF_DEBUG(HDMAYA_ADAPTER_GET)
+            .Msg(
+                "HdMayaMaterialNetworkConverter::ConvertParameter(): "
+                "No attrConverter found with name: %s and no fallback given",
+                paramName.GetText());
+        val = VtValue();
+    }
+
+    material.parameters[paramName] = val;
+    if (!plug.isNull()) { return; }
     MPlugArray conns;
     plug.connectedTo(conns, true, false);
     if (conns.length() > 0) {
@@ -353,7 +480,7 @@ void HdMayaMaterialNetworkConverter::ConvertParameter(
             rel.inputName = HdMayaAdapterTokens->result;
         }
         rel.outputId = material.path;
-        rel.outputName = name;
+        rel.outputName = paramName;
         _network.relationships.push_back(rel);
     }
 }

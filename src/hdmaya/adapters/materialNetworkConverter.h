@@ -50,6 +50,77 @@ struct HdMayaShaderParam {
 
 using HdMayaShaderParams = std::vector<HdMayaShaderParam>;
 
+/// Class which provides basic name and value translation for an attribute.
+/// Used by both HdMayaMaterialNetworkConverter (for to-usd file export
+/// translation) and HdMayaMaterialAdapter (for translation to Hydra).
+class HdMayaMaterialAttrConverter {
+public:
+    virtual ~HdMayaMaterialAttrConverter(){};
+
+    /// Returns the default type for this attr converter - if an
+    /// implementation returns an invalid type, this indicates the attr
+    /// converter's type is undefined / variable.
+    virtual SdfValueTypeName GetType() = 0;
+
+    /// If there is a simple, one-to-one mapping from the usd/hydra attribute
+    /// we are trying to "get", and a corresponding maya plug, AND the value
+    /// can be used "directly", then this should return the name of the maya
+    /// plug. Otherwise it should return an empty token.
+    /// By returning an empty token, we indicate that we want to set a value,
+    /// but that we don't wish to set up any network connections (ie, textures,
+    /// etc.)
+    HDMAYA_API
+    virtual TfToken GetPlugName(const TfToken& usdName) = 0;
+
+    /// Returns the value computed from maya for the usd/hydra attribute
+    //    HDMAYA_API
+    //    virtual VtValue GetValue(
+    //        const HdMayaShaderParam& destParam, MFnDependencyNode& node,
+    //        MPlug* outPlug = nullptr) = 0;
+
+    HDMAYA_API
+    virtual VtValue GetValue(
+        MFnDependencyNode& node, const TfToken& paramName,
+        const SdfValueTypeName& type, const VtValue* fallback = nullptr,
+        MPlug* outPlug = nullptr) = 0;
+};
+
+/// Class which provides basic name and value translation for a maya node
+/// type. Used by both HdMayaMaterialNetworkConverter (for to-usd file
+/// export translation) and HdMayaMaterialAdapter (for translation to Hydra).
+class HdMayaMaterialNodeConverter {
+public:
+    typedef std::unordered_map<
+        TfToken, HdMayaMaterialAttrConverter*, TfToken::HashFunctor>
+        NameToAttrConverterMap;
+
+    HDMAYA_API
+    HdMayaMaterialNodeConverter(
+        const TfToken& identifier,
+        const NameToAttrConverterMap& attrConverters);
+
+    inline TfToken GetIdentifier() { return _identifier; }
+
+    /// Try to find the correct attribute converter to use for the given
+    /// param; if nothing is found, will usually return a generic converter,
+    /// that will look for an attribute on the maya node with the same name, and
+    /// use that if possible.
+    HDMAYA_API
+    HdMayaMaterialAttrConverter* GetAttrConverter(const TfToken& paramName);
+
+    inline NameToAttrConverterMap& GetAttrConverters() {
+        return _attrConverters;
+    }
+
+    HDMAYA_API
+    static HdMayaMaterialNodeConverter* GetNodeConverter(
+        const TfToken& nodeType);
+
+private:
+    NameToAttrConverterMap _attrConverters;
+    const TfToken _identifier;
+};
+
 class HdMayaMaterialNetworkConverter {
 public:
     HDMAYA_API
@@ -64,12 +135,11 @@ public:
 
     HDMAYA_API
     void ConvertParameter(
-        MFnDependencyNode& node, HdMaterialNode& material,
-        const TfToken& mayaName, const TfToken& name,
+        MFnDependencyNode& node, HdMayaMaterialNodeConverter& nodeConverter,
+        HdMaterialNode& material, const TfToken& paramName,
         const SdfValueTypeName& type, const VtValue* fallback = nullptr);
 
-    HDMAYA_API
-    static VtValue ConvertMayaAttrToValue(
+    HDMAYA_API static VtValue ConvertMayaAttrToValue(
         MFnDependencyNode& node, const MString& plugName,
         const SdfValueTypeName& type, const VtValue* fallback = nullptr,
         MPlug* outPlug = nullptr);
