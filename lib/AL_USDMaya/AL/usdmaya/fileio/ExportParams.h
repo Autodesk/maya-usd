@@ -16,7 +16,7 @@
 #pragma once
 #include <AL/usdmaya/ForwardDeclares.h>
 #include "maya/MSelectionList.h"
-#include "maya/MString.h"
+#include "maya/MStringArray.h"
 #include "AL/usd/utils/ForwardDeclares.h"
 #include "AL/maya/utils/FileTranslatorOptions.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -53,6 +53,10 @@ struct ExporterParams
   bool m_extensiveAnimationCheck = true; ///< if true, extensive animation check will be performed on transform nodes.
   int m_exportAtWhichTime = 0; ///< controls where the data will be written to: 0 = default time, 1 = earliest time, 2 = current time
   UsdTimeCode m_timeCode = UsdTimeCode::Default();
+
+  bool m_activateAllTranslators = true;
+  TfTokenVector m_activePluginTranslators;
+  TfTokenVector m_inactivePluginTranslators;
 
   /// \brief  Given the text name of an option, returns the boolean value for that option.
   /// \param  str the name of the option

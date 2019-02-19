@@ -43,6 +43,10 @@ struct ImporterParams
   SdfLayerRefPtr m_rootLayer; ///< \todo  Remove?
   SdfLayerRefPtr m_sessionLayer; ///< \todo  Remove?
 
+  bool m_activateAllTranslators = true;
+  TfTokenVector m_activePluginTranslators;
+  TfTokenVector m_inactivePluginTranslators;
+  
   /// \brief  Given the text name of an option, returns the boolean value for that option.
   /// \param  str the name of the option
   /// \return the option value

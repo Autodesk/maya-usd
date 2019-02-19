@@ -84,6 +84,24 @@ void Import::doImport()
 
   translators::TranslatorContextPtr context = translators::TranslatorContext::create(nullptr);
   translators::TranslatorManufacture manufacture(context);
+  if(m_params.m_activateAllTranslators)
+  {
+    manufacture.activateAll();
+  }
+  else
+  {
+    manufacture.deactivateAll();
+  }
+
+  if(!m_params.m_activePluginTranslators.empty())
+  {
+    manufacture.activate(m_params.m_activePluginTranslators);
+  }
+  if(!m_params.m_inactivePluginTranslators.empty())
+  {
+    manufacture.deactivate(m_params.m_inactivePluginTranslators);
+  }
+
 
   UsdStageRefPtr stage;
   if(m_params.m_rootLayer)

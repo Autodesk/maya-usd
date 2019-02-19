@@ -366,6 +366,24 @@ Export::Export(const ExporterParams& params)
     g_geomConstraint_targetAttr = ngc.attribute("tg");
   }
 
+  if(params.m_activateAllTranslators)
+  {
+    m_translatorManufacture.activateAll();
+  }
+  else
+  {
+    m_translatorManufacture.deactivateAll();
+  }
+
+  if(!params.m_activePluginTranslators.empty())
+  {
+    m_translatorManufacture.activate(params.m_activePluginTranslators);
+  }
+  if(!params.m_inactivePluginTranslators.empty())
+  {
+    m_translatorManufacture.deactivate(params.m_inactivePluginTranslators);
+  }
+
   if(m_impl->setStage(UsdStage::CreateNew(m_params.m_fileName.asChar())))
   {
     doExport();

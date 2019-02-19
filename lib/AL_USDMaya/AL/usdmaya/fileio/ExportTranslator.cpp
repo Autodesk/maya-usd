@@ -74,6 +74,19 @@ MStatus ExportTranslator::writer(const MFileObject& file, const AL::maya::utils:
   params.m_exportInWorldSpace = options.getBool(kExportInWorldSpace);
   params.m_subSamples = options.getInt(kSubSamples);
   params.m_parser = (maya::utils::OptionsParser*)&options;
+  params.m_activateAllTranslators = options.getBool(kActivateAllTranslators);
+  MStringArray strings;
+  options.getString(kActiveTranslatorList).split(',', strings); 
+  for(uint32_t i = 0, n = strings.length(); i < n; ++i)
+  {
+    params.m_activePluginTranslators.emplace_back(strings[i].asChar());
+  }
+  strings.setLength(0);
+  options.getString(kDeactiveTranslatorList).split(',', strings); 
+  for(uint32_t i = 0, n = strings.length(); i < n; ++i)
+  {
+    params.m_inactivePluginTranslators.emplace_back(strings[i].asChar());
+  }
 
   if(m_pluginInstance)
   {

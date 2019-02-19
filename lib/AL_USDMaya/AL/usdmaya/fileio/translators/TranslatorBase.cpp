@@ -80,11 +80,12 @@ TranslatorManufacture::RefPtr TranslatorManufacture::get(const TfToken type_name
 {
   TfType type = TfType::FindDerivedByName<UsdSchemaBase>(type_name);
   std::string typeName(type.GetTypeName());
-  if (m_translatorsMap.find(typeName)!= m_translatorsMap.end())
+  auto it = m_translatorsMap.find(typeName);
+  if (it != m_translatorsMap.end())
   {
-    if(it.second->active())
+    if(it->second->active())
     {
-      return m_translatorsMap[typeName];
+      return it->second;
     }
   }
   return TfNullPtr;
@@ -167,7 +168,8 @@ void TranslatorManufacture::activate(const TfTokenVector& types)
   for(auto& type : types)
   {
     auto it = m_translatorsMap.find(type.GetString());
-    it.second->activate();
+    if(it != m_translatorsMap.end())
+      it->second->activate();
   }
 }
 
@@ -177,6 +179,25 @@ void TranslatorManufacture::deactivate(const TfTokenVector& types)
   for(auto& type : types)
   {
     auto it = m_translatorsMap.find(type.GetString());
+    if(it != m_translatorsMap.end())
+      it->second->deactivate();
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TranslatorManufacture::activateAll()
+{
+  for(auto& it : m_translatorsMap)
+  {
+    it.second->activate();
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TranslatorManufacture::deactivateAll()
+{
+  for(auto& it : m_translatorsMap)
+  {
     it.second->deactivate();
   }
 }

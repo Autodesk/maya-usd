@@ -25,6 +25,7 @@
 #include "AL/usdmaya/cmds/DebugCommands.h"
 #include "AL/usdmaya/cmds/EventCommand.h"
 #include "AL/usdmaya/cmds/LayerCommands.h"
+#include "AL/usdmaya/cmds/ListTranslators.h"
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
 #include "AL/usdmaya/cmds/ProxyShapeSelectCommands.h"
 #include "AL/usdmaya/cmds/RendererCommands.h"
@@ -227,6 +228,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::UsdDebugCommand);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListEvents);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListCallbacks);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListTranslators);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::Callback);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::TriggerEvent);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::DeleteCallbacks);
@@ -343,6 +345,7 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::Callback);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListCallbacks);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListEvents);
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListTranslators);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::TriggerEvent);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::DeleteCallbacks);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::CallbackQuery);

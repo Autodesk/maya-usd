@@ -46,6 +46,20 @@ MStatus ImportTranslator::reader(const MFileObject& file, const AL::maya::utils:
     }
   }
 
+  m_params.m_activateAllTranslators = options.getBool(kActivateAllTranslators);
+  MStringArray strings;
+  options.getString(kActiveTranslatorList).split(',', strings); 
+  for(uint32_t i = 0, n = strings.length(); i < n; ++i)
+  {
+    m_params.m_activePluginTranslators.emplace_back(strings[i].asChar());
+  }
+  strings.setLength(0);
+  options.getString(kDeactiveTranslatorList).split(',', strings); 
+  for(uint32_t i = 0, n = strings.length(); i < n; ++i)
+  {
+    m_params.m_inactivePluginTranslators.emplace_back(strings[i].asChar());
+  }
+
   m_params.m_fileName = file.fullName();
   m_params.m_animations = options.getBool(kAnimations);
   m_params.m_stageUnloaded = options.getBool(kStageUnload);

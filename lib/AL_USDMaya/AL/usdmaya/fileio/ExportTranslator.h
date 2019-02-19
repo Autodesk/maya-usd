@@ -56,8 +56,11 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
   static constexpr const char* const kFrameMax = "Frame Max"; ///< specify max time frame option name
   static constexpr const char* const kSubSamples = "Sub Samples"; ///< specify the number of sub samples to export
   static constexpr const char* const kFilterSample = "Filter Sample"; ///< export filter sample option name
-  static constexpr const char* const kExportAtWhichTime = "Export At Which Time";
-  static constexpr const char* const kExportInWorldSpace = "Export In World Space";
+  static constexpr const char* const kExportAtWhichTime = "Export At Which Time"; ///< which time code should be used for default values?
+  static constexpr const char* const kExportInWorldSpace = "Export In World Space"; ///< should selected transforms be output in world space?
+  static constexpr const char* const kActivateAllTranslators = "Activate all Plugin Translators"; ///< if true, all translator plugins will be enabled by default
+  static constexpr const char* const kActiveTranslatorList = "Active Translator List"; ///< A comma seperated list of translator plugins that should be activated for export
+  static constexpr const char* const kDeactiveTranslatorList = "Deactive Translator List"; ///< A comma seperated list of translator plugins that should be inactive for export
 
   AL_USDMAYA_PUBLIC
   static const char* const compactionLevels[];
@@ -83,6 +86,9 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
     if(!options.addBool(kFilterSample, defaultValues.m_filterSample)) return MS::kFailure;
     if(!options.addEnum(kExportAtWhichTime, timelineLevel, defaultValues.m_exportAtWhichTime)) return MS::kFailure;
     if(!options.addBool(kExportInWorldSpace, defaultValues.m_exportInWorldSpace)) return MS::kFailure;
+    if(!options.addBool(kActivateAllTranslators, false)) return MS::kFailure;
+    if(!options.addString(kActiveTranslatorList, "")) return MS::kFailure;
+    if(!options.addString(kDeactiveTranslatorList, "")) return MS::kFailure;
     
     // register the export translator context
     PluginTranslatorOptionsContextManager::registerContext("ExportTranslator", &m_pluginContext);
