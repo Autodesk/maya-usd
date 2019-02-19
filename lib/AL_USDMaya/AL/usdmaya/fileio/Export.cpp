@@ -1148,6 +1148,44 @@ MStatus ExportCommand::doIt(const MArgList& args)
   {
     m_params.m_animTranslator = new AnimationTranslator;
   }
+
+  m_params.m_activateAllTranslators = true;
+  bool eat = argData.isFlagSet("eat", &status);
+  bool dat = argData.isFlagSet("dat", &status);
+  if(eat && dat)
+  {
+    MGlobal::displayError("ALUSDExport: cannot enable all translators, AND disable all translators, at the same time");
+  }
+  else
+  if(dat) 
+  {
+    m_params.m_activateAllTranslators = false;
+  }
+
+  if(argData.isFlagSet("ept", &status))
+  {
+    MString arg;
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("ept", 0, arg), "ALUSDExport: Unable to fetch \"enablePluginTranslators\" argument");
+    MStringArray strings;
+    arg.split(',', strings); 
+    for(uint32_t i = 0, n = strings.length(); i < n; ++i)
+    {
+      m_params.m_activePluginTranslators.emplace_back(strings[i].asChar());
+    }
+  }
+
+  if(argData.isFlagSet("dpt", &status))
+  {
+    MString arg;
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("dpt", 0, arg), "ALUSDExport: Unable to fetch \"disablePluginTranslators\" argument");
+    MStringArray strings;
+    arg.split(',', strings); 
+    for(uint32_t i = 0, n = strings.length(); i < n; ++i)
+    {
+      m_params.m_inactivePluginTranslators.emplace_back(strings[i].asChar());
+    }
+  }
+
   return redoIt();
 }
 
@@ -1239,6 +1277,10 @@ MSyntax ExportCommand::createSyntax()
   AL_MAYA_CHECK_ERROR2(status, errorString);
   status = syntax.addFlag("-opt", "-options", MSyntax::kString);
   AL_MAYA_CHECK_ERROR2(status, errorString);
+  AL_MAYA_CHECK_ERROR2(syntax.addFlag("-eat", "-enableAllTranslators", MSyntax::kNoArg), errorString);
+  AL_MAYA_CHECK_ERROR2(syntax.addFlag("-dat", "-disableAllTranslators", MSyntax::kNoArg), errorString);
+  AL_MAYA_CHECK_ERROR2(syntax.addFlag("-ept", "-enablePluginTranslators", MSyntax::kString), errorString);
+  AL_MAYA_CHECK_ERROR2(syntax.addFlag("-dpt", "-disablePluginTranslators", MSyntax::kString), errorString);
   syntax.enableQuery(false);
   syntax.enableEdit(false);
 

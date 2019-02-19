@@ -31,7 +31,7 @@ namespace usdmaya {
 namespace cmds {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  A command that allows you to query and modify the current status of the TfDebug symbols.
+/// \brief  A command that allows you to query all of the translator plugins that are currently registered with AL_usdmaya
 /// \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
 class ListTranslators
