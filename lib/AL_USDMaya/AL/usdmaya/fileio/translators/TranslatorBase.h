@@ -167,6 +167,10 @@ public:
   virtual ExportFlag canExport(const MObject& obj)
     { return ExportFlag::kNotSupported; }
 
+  /// \brief After exporting the current obj/dagPath, should we proceed to it's children?
+  virtual bool exportDescendants() const
+  { return true; }
+
 };
 
 //----------------------------------------------------------------------------------------------------------------------

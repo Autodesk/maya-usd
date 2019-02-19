@@ -759,7 +759,8 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
   {
     this->exportShapesCommonProc(shapePath, fnTransform, usdPath, refType);
   };
-  std::function<void(MDagPath, MFnTransform&, SdfPath&, bool)> exportTransformFunc =
+
+  std::function<bool(MDagPath, MFnTransform&, SdfPath&, bool)> exportTransformFunc =
       [this] (MDagPath transformPath, MFnTransform& fnTransform, SdfPath& usdPath, bool inWorldSpace)
   {
     SdfPath path;
@@ -773,9 +774,23 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
     {
       path = usdPath;
     }
-    UsdGeomXform xform = UsdGeomXform::Define(m_impl->stage(), path);
-    UsdPrim transformPrim = xform.GetPrim();
-    this->copyTransformParams(transformPrim, fnTransform);
+
+    bool exportKids = true;
+    translators::TranslatorManufacture::RefPtr translatorPtr = m_translatorManufacture.get(transformPath.node());
+    if (translatorPtr)
+    {
+      UsdPrim transformPrim = translatorPtr->exportObject(m_impl->stage(), transformPath, path, m_params);
+      this->copyTransformParams(transformPrim, fnTransform);
+      exportKids = translatorPtr->exportDescendants();
+     }
+    else
+    {
+
+      UsdGeomXform xform = UsdGeomXform::Define(m_impl->stage(), path);
+      UsdPrim transformPrim = xform.GetPrim();
+      this->copyTransformParams(transformPrim, fnTransform);
+    }
+    return exportKids;
   };
 
   // choose right proc required by meshUV option
@@ -793,6 +808,7 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
       size_t s = pathName.find_last_of('/');
       SdfPath path(pathName.data() + s);
       m_impl->stage()->OverridePrim(path);
+      return true;
     };
   }
 
@@ -850,9 +866,13 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
 
       if(!m_params.m_mergeTransforms && !m_params.m_exportInWorldSpace)
       {
-        exportTransformFunc(transformPath, fnTransform, usdPath, m_params.m_exportInWorldSpace);
+        bool exportKids = exportTransformFunc(transformPath, fnTransform, usdPath, m_params.m_exportInWorldSpace);
         UsdPrim prim = m_impl->stage()->GetPrimAtPath(usdPath);
         prim.SetMetadata<TfToken>(AL::usdmaya::Metadata::mergedTransform, AL::usdmaya::Metadata::unmerged);
+        if (!exportKids)
+        {
+          it.prune();
+        }
       }
 
       if(numShapes)
@@ -909,7 +929,10 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
       {
         if(m_params.m_mergeTransforms)
         {
-          exportTransformFunc(transformPath, fnTransform, usdPath, m_params.m_exportInWorldSpace);
+          if (!exportTransformFunc(transformPath, fnTransform, usdPath, m_params.m_exportInWorldSpace))
+          {
+            it.prune();
+          }
         }
       }
     }
