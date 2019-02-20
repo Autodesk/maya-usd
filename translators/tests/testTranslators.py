@@ -1,6 +1,7 @@
 import unittest
 import tempfile
 import maya.cmds as mc
+import maya.mel as mel
 
 from pxr import Tf, Usd, UsdGeom, Gf
 import translatortestutils
@@ -394,7 +395,40 @@ class TestTranslator(unittest.TestCase):
             self.assertAlmostEqual(actualPoint[0], expectedPoint[0])
             self.assertAlmostEqual(actualPoint[1], expectedPoint[1])
             self.assertAlmostEqual(actualPoint[2], expectedPoint[2])
-            
+           
+    def testDirectionalLight_TranslatorExists(self):
+        """
+        Test that the Maya directional light Translator exists
+        """
+        self.assertTrue(Tf.Type.Unknown != Tf.Type.FindByName('AL::usdmaya::fileio::translators::DirectionalLight')) 
+    
+    def testDirectionalLight_PluginIsFunctional(self):
+        mc.AL_usdmaya_ProxyShapeImport(file='./testDirectionalLight.usda')
+        self.assertTrue(Tf.Type.Unknown != Tf.Type.FindByName('AL::usdmaya::fileio::translators::DirectionalLight'))
+        self.assertEqual(len(mc.ls('directionalLightShape1')), 1)
+        self.assertEqual(len(mc.ls(type='directionalLight')), 1)
+        self.assertEqual('alight',mc.listRelatives(mc.listRelatives(mc.ls('directionalLightShape1')[0], parent=1)[0],parent=1)[0])
+
+    def testDirectionalLight_TranslateRoundTrip(self):
+        # setup scene with directional light
+     
+        # Create directional light in Maya and export a .usda file
+        mel.eval('defaultDirectionalLight(3, 1,1,0, "0", 0,0,0, 0)')
+        mc.setAttr('directionalLightShape1.lightAngle', 0.25)
+        mc.setAttr('directionalLightShape1.pw', 6, 7 ,8)
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="test_DirectionalLightTranslator_", delete=True)
+        mc.AL_usdmaya_ExportCommand(file=tempFile.name)
+              
+        # clear scene
+        mc.file(f=True, new=True)
+         
+        # import file back     
+        mc.AL_usdmaya_ProxyShapeImport(file=tempFile.name)
+        self.assertEqual(0.25, mc.getAttr('directionalLightShape1.lightAngle'))
+        self.assertEqual((1.0, 1.0, 0), mc.getAttr('directionalLightShape1.color')[0])
+        self.assertEqual(3, mc.getAttr('directionalLightShape1.intensity'))
+        self.assertEqual((6.0, 7.0, 8.0), mc.getAttr('directionalLightShape1.pointWorld')[0])
+
     def testFrameRange_TranslatorExists(self):
         """
         Test that the Maya frame range Translator exists

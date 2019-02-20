@@ -44,6 +44,7 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/sdf/notice.h"
+#include "pxr/usdImaging/usdImagingGL/renderParams.h"
 #include <stack>
 #include <functional>
 #include "AL/usd/utils/ForwardDeclares.h"
@@ -58,8 +59,6 @@ UFE_NS_DEF {
 PXR_NAMESPACE_USING_DIRECTIVE
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-class UsdImagingGLHdEngine;
 
 // Note: you MUST forward declare LayerManager, and not include LayerManager.h;
 // The reason is that LayerManager.h includes MPxLocatorNode.h, which on Linux,
@@ -76,6 +75,8 @@ PXR_NAMESPACE_CLOSE_SCOPE;
 namespace AL {
 namespace usdmaya {
 namespace nodes {
+
+class Engine;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A helper class to store the state that is modified during a change to the current selection within a
@@ -407,12 +408,11 @@ public:
     { return m_stage; }
 
   /// \brief  gets hold of the attributes on this node that control the rendering in some way
-  /// \param  attribs the returned set of render attributes (should be of type: UsdImagingGLEngine::RenderParams*. Hiding
-  ///         this behind a void pointer to prevent UsdImagingGLEngine leaking into the translator plugin dependencies)
+  /// \param  attribs the returned set of render attributes
   /// \param  frameContext the frame context for rendering
   /// \param  dagPath the dag path of the node being rendered
   /// \return true if the attribs could be retrieved (i.e. is the stage is valid)
-  bool getRenderAttris(void* attribs, const MHWRender::MFrameContext& frameContext, const MDagPath& dagPath);
+  bool getRenderAttris(UsdImagingGLRenderParams& attribs, const MHWRender::MFrameContext& frameContext, const MDagPath& dagPath);
 
   /// \brief  compute bounds
   AL_USDMAYA_PUBLIC
@@ -697,7 +697,7 @@ public:
 
   /// \brief  returns the usd imaging engine for this proxy shape
   /// \return the imagine engin instance for this shape (shared between draw override and shape ui)
-  inline UsdImagingGLHdEngine* engine() const
+  inline Engine* engine() const
     { return m_engine; }
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -1072,7 +1072,7 @@ private:
   SdfPath m_changedPath;
   SdfPathVector m_variantSwitchedPrims;
   SdfLayerHandle m_prevEditTarget;
-  UsdImagingGLHdEngine* m_engine = 0;
+  Engine* m_engine = 0;
 
   uint32_t m_engineRefCount = 0;
   bool m_compositionHasChanged = false;

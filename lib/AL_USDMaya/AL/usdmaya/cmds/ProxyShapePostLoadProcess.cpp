@@ -295,6 +295,7 @@ void ProxyShapePostLoadProcess::createSchemaPrims(
       }
 
       fileio::translators::TranslatorRefPtr translator = translatorManufacture.get(prim.GetTypeName());
+
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createSchemaPrims prim=%s\n", prim.GetPath().GetText());
 
       //if(!context->hasEntry(prim.GetPath(), prim.GetTypeName()))

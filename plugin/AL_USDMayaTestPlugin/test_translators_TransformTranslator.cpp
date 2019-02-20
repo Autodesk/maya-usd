@@ -24,6 +24,7 @@
 
 #include "maya/MDagModifier.h"
 #include "maya/MFnDagNode.h"
+#include "maya/MFileIO.h"
 
 using AL::usdmaya::fileio::ExporterParams;
 using AL::usdmaya::fileio::ImporterParams;
@@ -34,6 +35,7 @@ using AL::maya::test::randomNode;
 using AL::maya::test::compareNodes;
 using AL::maya::test::randomAnimatedNode;
 
+using AL::maya::test::buildTempPath;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Test some of the functionality of the alUsdNodeHelper.
@@ -74,7 +76,7 @@ TEST(translators_TranformTranslator, io)
     ImporterParams iparams;
     TransformTranslator xlator;
 
-    EXPECT_EQ(MStatus(MS::kSuccess), TransformTranslator::copyAttributes(node, prim, eparams));
+    EXPECT_EQ(MStatus(MS::kSuccess), TransformTranslator::copyAttributes(node, prim, eparams, fn.dagPath()));
 
     MObject nodeB = xlator.createNode(prim, MObject::kNullObj,
         "transform", iparams);
@@ -137,7 +139,7 @@ TEST(translators_TranformTranslator, animated_io)
     eparams.m_animation = true;
     eparams.m_animTranslator = new AnimationTranslator;
 
-    EXPECT_EQ(MStatus(MS::kSuccess), TransformTranslator::copyAttributes(node, prim, eparams));
+    EXPECT_EQ(MStatus(MS::kSuccess), TransformTranslator::copyAttributes(node, prim, eparams, fn.dagPath()));
     eparams.m_animTranslator->exportAnimation(eparams);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -162,4 +164,42 @@ TEST(translators_TranformTranslator, animated_io)
     EXPECT_EQ(MStatus(MS::kSuccess), mod.deleteNode(nodeB));
     EXPECT_EQ(MStatus(MS::kSuccess), mod.doIt());
   }
+}
+
+TEST(translators_TranformTranslator, worldSpaceExport)
+{
+  MFileIO::newFile(true);
+
+  // create cube, parent to a group, and move the parent
+  MString buildCommand = "polyCube; group; move 1 2 3; select -r \"pCube1\";";
+  ASSERT_TRUE(MGlobal::executeCommand(buildCommand));
+
+  auto path = buildTempPath("AL_USDMayaTests_exportInWorldSpace.usda");
+  MString exportCommand = 
+  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Face_Connects=1;Mesh_Points=1;Mesh_Normals=0;Mesh_Vertex_Creases=0;"
+  "Mesh_Edge_Creases=0;Mesh_UVs=0;Mesh_UV_Only=0;Mesh_Points_as_PRef=0;Mesh_Colours=0;Mesh_Holes=0;Compaction_Level=0;"
+  "Nurbs_Curves=0;Duplicate_Instances=0;Merge_Transforms=1;Animation=1;Use_Timeline_Range=0;Frame_Min=1;"
+  "Frame_Max=2;Sub_Samples=1;Filter_Sample=0;Export_At_Which_Time=2;Export_In_World_Space=1;\" -typ \"AL usdmaya export\" -pr -es ";
+  exportCommand += "\"";
+  exportCommand += path;
+  exportCommand += "\"";
+
+  // export cube in world space 
+  ASSERT_TRUE(MGlobal::executeCommand(exportCommand));
+
+  auto stage = UsdStage::Open(path);
+  ASSERT_TRUE(stage);
+
+  auto prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
+  ASSERT_TRUE(prim);
+
+  UsdGeomXform xform(prim);
+  bool resetsXformStack = 0;
+  GfMatrix4d transform;
+  xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode::EarliestTime());
+
+  // make sure the local space tm values match the world coords.
+  EXPECT_NEAR(1.0, transform[3][0], 1e-6);
+  EXPECT_NEAR(2.0, transform[3][1], 1e-6);
+  EXPECT_NEAR(3.0, transform[3][2], 1e-6);
 }

@@ -24,11 +24,7 @@
 #include "pxr/usdImaging/usdImaging/version.h"
 
 #include "AL/usd/utils/ForwardDeclares.h"
-#if (USD_IMAGING_API_VERSION >= 7)
-# include "pxr/usdImaging/usdImagingGL/hdEngine.h"
-#else
-# include "pxr/usdImaging/usdImaging/hdEngine.h"
-#endif
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

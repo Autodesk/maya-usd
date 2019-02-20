@@ -16,6 +16,7 @@
 #include "maya/MTypes.h"
 
 #include "AL/usdmaya/DebugCodes.h"
+#include "AL/usdmaya/nodes/Engine.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/ProxyShapeUI.h"
 #include "AL/usdmaya/nodes/ProxyDrawOverride.h"
@@ -109,7 +110,7 @@ void ProxyShapeUI::getDrawRequests(const MDrawInfo& drawInfo, bool isObjectAndAc
   MDrawRequest request = drawInfo.getPrototype(*this);
 
   ProxyShape* shape = static_cast<ProxyShape*>(surfaceShape());
-  UsdImagingGLHdEngine* engine = shape->engine();
+  Engine* engine = shape->engine();
   if(!engine)
   {
     shape->constructGLImagingEngine();
@@ -138,14 +139,14 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
 
   ProxyShape* shape = static_cast<ProxyShape*>(surfaceShape());
-  UsdImagingGLHdEngine* engine = shape->engine();
+  Engine* engine = shape->engine();
   if(!engine)
   {
     return;
   }
 
   auto stage = shape->getUsdStage();
-  UsdImagingGLEngine::RenderParams params;
+  UsdImagingGLRenderParams params;
 
   params.showGuides = shape->displayGuidesPlug().asBool();
   params.showRender = shape->displayRenderGuidesPlug().asBool();
@@ -170,23 +171,23 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   switch(request.displayStyle())
   {
   case M3dView::kBoundingBox:
-    params.drawMode = UsdImagingGLEngine::DRAW_POINTS;
+    params.drawMode = UsdImagingGLDrawMode::DRAW_POINTS;
     break;
 
   case M3dView::kFlatShaded:
-    params.drawMode = UsdImagingGLEngine::DRAW_SHADED_FLAT;
+    params.drawMode = UsdImagingGLDrawMode::DRAW_SHADED_FLAT;
     break;
 
   case M3dView::kGouraudShaded:
-    params.drawMode = UsdImagingGLEngine::DRAW_SHADED_SMOOTH;
+    params.drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
     break;
 
   case M3dView::kWireFrame:
-    params.drawMode = UsdImagingGLEngine::DRAW_WIREFRAME;
+    params.drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
     break;
 
   case M3dView::kPoints:
-    params.drawMode = UsdImagingGLEngine::DRAW_POINTS;
+    params.drawMode = UsdImagingGLDrawMode::DRAW_POINTS;
     break;
   }
 
@@ -194,16 +195,16 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   {
     if(!request.displayCullOpposite())
     {
-      params.cullStyle = UsdImagingGLEngine::CULL_STYLE_BACK;
+      params.cullStyle = UsdImagingGLCullStyle::CULL_STYLE_BACK;
     }
     else
     {
-      params.cullStyle = UsdImagingGLEngine::CULL_STYLE_FRONT;
+      params.cullStyle = UsdImagingGLCullStyle::CULL_STYLE_FRONT;
     }
   }
   else
   {
-    params.cullStyle = UsdImagingGLEngine::CULL_STYLE_NOTHING;
+    params.cullStyle = UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
   }
 
   #if !USE_GL_LIGHTING_STATE
@@ -275,7 +276,7 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   if(paths.size())
   {
     MColor colour = M3dView::leadColor();
-    params.drawMode = UsdImagingGLEngine::DRAW_WIREFRAME;
+    params.drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
     params.wireframeColor = GfVec4f(colour.r, colour.g, colour.b, 1.0f);
     glDepthFunc(GL_LEQUAL);
     engine->RenderBatch(paths, params);
@@ -329,7 +330,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
   MDagPath selectPath = selectInfo.selectPath();
   MMatrix invMatrix = selectPath.inclusiveMatrixInverse();
 
-  UsdImagingGLEngine::RenderParams params;
+  UsdImagingGLRenderParams params;
   MMatrix viewMatrix, projectionMatrix;
   GfMatrix4d worldToLocalSpace(invMatrix.matrix);
 
@@ -345,7 +346,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
   UsdPrim root = proxyShape->getUsdStage()->GetPseudoRoot();
 
-  UsdImagingGLEngine::HitBatch hitBatch;
+  Engine::HitBatch hitBatch;
   SdfPathVector rootPath;
   rootPath.push_back(root.GetPath());
 
@@ -402,9 +403,9 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 #endif
   };
 
-  auto getHitPath = [&engine, &removeVariantFromPath, &pickUfePathPrim] (const UsdImagingGLEngine::HitBatch::const_reference& it) -> SdfPath
+  auto getHitPath = [&engine, &removeVariantFromPath, &pickUfePathPrim] (const Engine::HitBatch::const_reference& it) -> SdfPath
   {
-    const UsdImagingGLEngine::HitInfo& hit = it.second;
+    const Engine::HitInfo& hit = it.second;
     auto path = engine->GetPrimPathFromInstanceIndex(it.first, hit.hitInstanceIndex);
     if (!path.IsEmpty())
     {
@@ -536,7 +537,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     {
       paths.reserve(hitBatch.size());
 
-      auto addHit = [&engine, &paths, &getHitPath](UsdImagingGLEngine::HitBatch::const_reference& it)
+      auto addHit = [&engine, &paths, &getHitPath](Engine::HitBatch::const_reference& it)
       {
         paths.push_back(getHitPath(it));
       };
@@ -553,7 +554,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
           MDagPath cameraPath;
           selectInfo.view().getCamera(cameraPath);
           const auto cameraPoint = cameraPath.inclusiveMatrix() * MPoint(0.0, 0.0, 0.0, 1.0);
-          auto distanceToCameraSq = [&cameraPoint] (UsdImagingGLEngine::HitBatch::const_reference& it) -> double
+          auto distanceToCameraSq = [&cameraPoint] (Engine::HitBatch::const_reference& it) -> double
           {
             const auto dx = cameraPoint.x - it.second.worldSpaceHitPoint[0];
             const auto dy = cameraPoint.y - it.second.worldSpaceHitPoint[1];

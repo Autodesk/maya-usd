@@ -101,6 +101,7 @@ list(APPEND AL_usdmaya_fileio_translators_source
 )
 
 list(APPEND AL_usdmaya_nodes_headers
+        AL/usdmaya/nodes/Engine.h
         AL/usdmaya/nodes/Layer.h
         AL/usdmaya/nodes/LayerManager.h
         AL/usdmaya/nodes/MeshAnimCreator.h
@@ -117,6 +118,7 @@ list(APPEND AL_usdmaya_nodes_proxy_headers
         AL/usdmaya/nodes/proxy/PrimFilter.h
 )
 list(APPEND AL_usdmaya_nodes_source
+        AL/usdmaya/nodes/Engine.cpp
         AL/usdmaya/nodes/Layer.cpp
         AL/usdmaya/nodes/LayerManager.cpp
         AL/usdmaya/nodes/MeshAnimCreator.cpp

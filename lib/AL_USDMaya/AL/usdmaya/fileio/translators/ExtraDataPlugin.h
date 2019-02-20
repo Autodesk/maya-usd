@@ -35,8 +35,9 @@ namespace fileio {
 namespace translators {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  This base class defines an interface to allow you to apply USD api schemas. This class works alongside 
-///         the core translator plugin concepts, and allows you to decorate the data of a prim being imported/exported.
+/// \brief  This base class defines an interface to allow you to import/export extra data to/from USD prims. It works
+///         alongside the core translator plugin concepts, and allows you to decorate the data of a prim being
+///         imported/exported.
 ///         It works by associating itself with a specific MFn::Type, and if matched at export/import time, the api 
 ///         schema translator will be called to handle its specific attributes. 
 /// \ingroup   translators
@@ -53,13 +54,13 @@ public:
   virtual ~ExtraDataPluginAbstract() = default;
   ExtraDataPluginAbstract() = default;
 
-  /// \brief  Provides the base filter to remove Maya nodes to test for the applied schema. If the API schema is to 
-  ///         apply to a custom plugin node, then the MFn::Type returned should be the relevant MFn::kPluginFoo enum,
+  /// \brief  Provides the base filter to remove Maya nodes to test for. If the plugin is intended to apply to a
+  ///         custom maya node, then the MFn::Type returned should be the relevant MFn::kPluginFoo enum,
   ///         and you will also need to specify the node typename by overloading the getPluginTypeName method.
   virtual MFn::Type getFnType() const
     { return MFn::kInvalid; };
 
-  /// \brief  If the APIschema plugin is to apply to a plugin node type, then you'll need to specify the typename 
+  /// \brief  If the plugin is to apply to a maya plugin node type, then you'll need to specify the typename
   ///         by overloading this method. 
   /// \return the maya plugin typename
   virtual const char* getPluginTypeName() const

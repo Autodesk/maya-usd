@@ -24,13 +24,7 @@
 #include "pxr/usd/sdf/textFileFormat.h"
 #include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/usdImaging/usdImaging/version.h"
-#if (USD_IMAGING_API_VERSION >= 7)
-  #include "pxr/usdImaging/usdImagingGL/gl.h"
-  #include "pxr/usdImaging/usdImagingGL/hdEngine.h"
-#else
-  #include "pxr/usdImaging/usdImaging/gl.h"
-  #include "pxr/usdImaging/usdImaging/hdEngine.h"
-#endif
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include "maya/MBoundingBox.h"
 #include "maya/MGlobal.h"

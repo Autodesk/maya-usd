@@ -79,7 +79,8 @@ MStatus ExportTranslator::writer(const MFileObject& file, const AL::maya::utils:
   params.m_fileName = file.fullName();
   params.m_selected = mode == MPxFileTranslator::kExportActiveAccessMode;
   params.m_animation = options.getBool(kAnimation);
-  params.m_exportAtWhichTime = options.getInt(kExportAtWhichTime);
+  params.m_exportAtWhichTime = options.getBool(kExportAtWhichTime);
+  params.m_exportInWorldSpace = options.getBool(kExportInWorldSpace);
   params.m_subSamples = options.getInt(kSubSamples);
 
   if(params.m_animation)
