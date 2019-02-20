@@ -54,7 +54,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ImportTranslator, "AL usdmaya import", true, false, "*.
   static constexpr const char* const kReadDefaultValues = "Read Default Values"; ///< the import animation option name
   static constexpr const char* const kActivateAllTranslators = "Activate all Plugin Translators";
   static constexpr const char* const kActiveTranslatorList = "Active Translator List";
-  static constexpr const char* const kDeactiveTranslatorList = "Deactive Translator List";
+  static constexpr const char* const kInactiveTranslatorList = "Inactive Translator List";
   
   /// \brief  provide a method to specify the import options
   /// \param  options a set of options that are constructed and later used for option parsing
@@ -67,9 +67,9 @@ AL_MAYA_TRANSLATOR_BEGIN(ImportTranslator, "AL usdmaya import", true, false, "*.
     if(!options.addBool(kDynamicAttributes, true)) return MS::kFailure;
     if(!options.addBool(kStageUnload, false)) return MS::kFailure;
     if(!options.addBool(kReadDefaultValues, true)) return MS::kFailure;
-    if(!options.addBool(kActivateAllTranslators, false)) return MS::kFailure;
+    if(!options.addBool(kActivateAllTranslators, true)) return MS::kFailure;
     if(!options.addString(kActiveTranslatorList, "")) return MS::kFailure;
-    if(!options.addString(kDeactiveTranslatorList, "")) return MS::kFailure;
+    if(!options.addString(kInactiveTranslatorList, "")) return MS::kFailure;
 
     // register the export translator context
     PluginTranslatorOptionsContextManager::registerContext("ImportTranslator", &m_pluginContext);

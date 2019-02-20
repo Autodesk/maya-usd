@@ -54,7 +54,7 @@ MStatus ImportTranslator::reader(const MFileObject& file, const AL::maya::utils:
     m_params.m_activePluginTranslators.emplace_back(strings[i].asChar());
   }
   strings.setLength(0);
-  options.getString(kDeactiveTranslatorList).split(',', strings); 
+  options.getString(kInactiveTranslatorList).split(',', strings); 
   for(uint32_t i = 0, n = strings.length(); i < n; ++i)
   {
     m_params.m_inactivePluginTranslators.emplace_back(strings[i].asChar());
