@@ -63,7 +63,6 @@ TEST(PluginTranslators, activeInactive2)
   file -force -options "Merge_Transforms=1;Animation=0;Export_At_Which_Time=2;Export_In_World_Space=1;Activate_all_Plugin_Translators=0;Active_Translator_List=UsdGeomMesh;Meshes=1;Mesh_Face_Connects=1;Mesh_Points=1;Mesh_UV_Only=0;" -typ "AL usdmaya export" -pr -es
   )";
   auto path = buildTempPath("AL_USDMayaTests_ativeInactiveTranslators2.usda");
-  std::cout << path << std::endl;
   export_cmd += "\"";
   export_cmd += path;
   export_cmd += "\"";
