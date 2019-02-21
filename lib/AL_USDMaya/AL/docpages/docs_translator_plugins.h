@@ -72,7 +72,7 @@ methods do, and how to implement them correctly.
 *PolyCubeNodeTranslator.cpp*
 \code
 #include "PolyCubeNodeTranslator.h"
-#include "AL/usd/schemas/PolyCube.h"  //< this is the custom schema you have created
+#include "AL/usd/schemas/maya/PolyCube.h"  //< this is the custom schema you have created
 
 // Some macro magic that generates some boiler plate code.
 AL_USDMAYA_DEFINE_TRANSLATOR(PolyCubeNodeTranslator, AL_usd_PolyCube);

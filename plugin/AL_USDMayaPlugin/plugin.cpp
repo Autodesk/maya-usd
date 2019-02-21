@@ -21,11 +21,12 @@
 #include <maya/MStatus.h>
 
 #include "AL/usdmaya/PluginRegister.h"
+#include "AL/usdmaya/Version.h"
 
 AL_USDMAYA_PLUGIN_PUBLIC
 MStatus initializePlugin(MObject obj)
 {
-  MFnPlugin plugin(obj, "Animal Logic", "1.0", "Any");
+  MFnPlugin plugin(obj, "Animal Logic", AL::usdmaya::getVersion().c_str(), "Any");
   return AL::usdmaya::registerPlugin(plugin);
 }
 

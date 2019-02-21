@@ -35,6 +35,8 @@
 
 #include <fstream>
 
+using AL::maya::test::buildTempPath;
+
 struct MockPrimFilterInterface : public AL::usdmaya::nodes::proxy::PrimFilterInterface
 {
   SdfPathVector refPaths;

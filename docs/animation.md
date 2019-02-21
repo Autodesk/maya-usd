@@ -33,3 +33,24 @@ This is a set of Array Values on the Proxy Shape Node that allow you to drive mu
 @todo: deprecate unless it's useful to someone?
 
 
+
+## Driving Animated Maya Meshes from USD
+
+As of AL_USDMaya 0.30.5, we have initial work on a pair of nodes to drive animated mesh data from USD - further work is scheduled to better integrate the nodes from this PR with AL_USDMaya. This PR adds two custom maya nodes:
+
+**AL_usdmaya_MeshAnimCreator**
+This node acts as a polyCreator node which reads a mesh prim from a USD stage, and pipes the output into the outMesh attribute. In many cases, this may be preferable to simply importing a mesh prim (since the creator node approach will not insert additional polygonal data into the maya ascii/binary files when saved). This node is ideal for static meshes. Whilst it can be used for animated meshes, it might be advisable to use.... 
+
+**AL_usdmaya_MeshAnimDeformer**
+This node acts as a very simple deformer node, which takes an input mesh, applies the vertex and normal values from USD at the given time code, and passes the result through to the output mesh. In theory this node should be much faster to evaluate than the AL_usdmaya_MeshAnimCreator node (since it doesn't need to re-specify face indices, etc). The downside is that it can't handle animated topology changes (and currently animated primVars are not supported). Using a AL_usdmaya_MeshAnimCreator node as an input to this deformer will give you the best of both worlds (zero data added to the maya file, and fast deformation times)
+
+Eventually we will build these nodes into the TranslatPrim operation on a mesh, but that requires a few internal changes before we can fully support that. In the meantime, there are two menu items that have been added to the USD->AnimatedGeometry  menu. 
+
+To use:
+
+1. translate a mesh prim from USD into maya. 
+2. Select the mesh that has been translated
+3. Choose either 'Static' or 'Animated' from the USD->AnimatedGeometry menu. 
+
+The static option will simply create a AL_usdmaya_MeshAnimCreator node as an input to the mesh. Visually nothing will change, however the mesh data is now gathered directly from USD. 
+The Animated option creates a AL_usdmaya_MeshAnimCreator which feeds into a AL_usdmaya_MeshAnimDeformer node. Scrubbing through the timeline should now show you an animated mesh. 

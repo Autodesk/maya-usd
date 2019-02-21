@@ -30,6 +30,7 @@
 #include <unordered_map>
 #include <functional>
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
+#include "AL/usdmaya/fileio/translators/ExtraDataPlugin.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
 
 namespace AL {
@@ -43,7 +44,6 @@ enum class ExportFlag
   kFallbackSupport,
   kSupported
 };
-
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  The base class interface of all translator plugins. The absolute minimum a translator plugin must implement
@@ -246,7 +246,8 @@ typedef std::vector<TranslatorRefPtr> TranslatorRefPtrVector;
 class TranslatorManufacture
 {
 public:
-  typedef TfRefPtr<TranslatorBase> RefPtr; ///< handle to a plug-in translator
+  typedef TfRefPtr<TranslatorBase> RefPtr; ///< handle to a plug-in transla
+  typedef TfRefPtr<ExtraDataPluginBase> ExtraDataPluginPtr; ///< handle to a plug-in transla
   typedef std::vector<RefPtr> RefPtrVector;
 
   /// \brief  constructs a registry of translator plugins that are currently registered within usd maya. This construction
@@ -262,13 +263,20 @@ public:
   RefPtr get(const TfToken type_name);
 
   /// \brief  returns a translator for the specified prim type.
-  /// \param  type_name the schema name
+  /// \param  mayaObject the maya object for which you wish to check for a plugin node translator
   /// \return returns the requested translator type
   AL_USDMAYA_PUBLIC
   RefPtr get(const MObject& mayaObject);
 
+  /// \brief  returns a list of extra data plugins that may apply to this node type
+  /// \param  mayaObject 
+  /// \return returns a list of extra data plugins that can be applied to the current node
+  AL_USDMAYA_PUBLIC
+  std::vector<ExtraDataPluginPtr> getExtraDataPlugins(const MObject& mayaObject);
+
 private:
   std::unordered_map<std::string, TranslatorRefPtr> m_translatorsMap;
+  std::vector<ExtraDataPluginPtr> m_extraDataPlugins;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -11,10 +11,10 @@
 
 over "GLOBAL" (
     customData = {
-        string libraryName        = "@SCHEMAS_PACKAGE@"
+        string libraryName        = "AL_USDMayaSchemas"
         string libraryPath        = "."
         string libraryPrefix      = "AL_usd_"#This AL_ is here to get around that the Jinja template doesn't generate a template that supports namespaces. If we had a AL namespace then I could remove this AL.
-        string tokensPrefix       = "@SCHEMAS_TOKENS_PREFIX@"
+        string tokensPrefix       = "AL_USDMayaSchemas"
         dictionary libraryTokens = {
             dictionary selectability = {
                 string value = "al_usdmaya_selectability"

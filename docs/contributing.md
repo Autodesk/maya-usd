@@ -11,6 +11,30 @@ Once your CLA is signed, send it to usdmaya@al.com.au (please make sure to inclu
 Before you begin working on a bug fix or new feature, please post an issue on GitHub to let everyone know about the feature you want to implement, or the bug that you found and intend to fix.
  
 When you do begin your work, create a fork into your own private repository and work from there.
+
+Your development should be based on `develop` (and not on `master`).
+
+Here is an example (linux):
+
+```shell
+git clone https://github.com/your_fork/AL_USDMaya.git
+cd AL_USD
+
+# Add the original repository as a remote
+git remote add al_origin https://github.com/AnimalLogic/AL_USDMaya.git
+
+git fetch al_origin
+
+git checkout -b my_feature al_origin/develop
+
+```
+
+Before submitting the pull request, make sure `my_feature` branch contains the relevant
+commits only (rebasing and/or squashing your work if needed).
+
+Also make sure to go through the checklist described in the pull request's template.
+
+Note that once your PR has been approved, it might take some time before we merge it.
  
 
 # Coding Conventions

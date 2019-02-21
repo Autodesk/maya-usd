@@ -34,6 +34,8 @@ using AL::usdmaya::nodes::ProxyShape;
 using AL::usdmaya::nodes::Transform;
 using AL::usdmaya::nodes::TransformationMatrix;
 
+using AL::maya::test::buildTempPath;
+
 TEST(Transform, noInputStage)
 {
   MStatus status;

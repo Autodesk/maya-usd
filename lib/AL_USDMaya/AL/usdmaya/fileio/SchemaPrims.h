@@ -84,10 +84,9 @@ public:
   /// \param  prim the USD prim to check
   /// \return true if the prim requires a parent transform on import, false otherwise
   bool needsTransformParent(const UsdPrim& prim);
-
+  
 private:
   fileio::translators::TranslatorManufacture& m_manufacture;
-  //std::unordered_set<std::string> m_nonTransformParentTypes;
 };
 
 

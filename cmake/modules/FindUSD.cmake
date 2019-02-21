@@ -10,8 +10,15 @@ if (NOT DEFINED USD_ROOT AND NOT DEFINED ENV{USD_ROOT})
   endif ()
 endif ()
 
+# On a system with an existing USD /usr/local installation added to the system
+# PATH, use of PATHS in find_path incorrectly causes the existing USD
+# installation to be found.  As per
+# https://cmake.org/cmake/help/v3.4/command/find_path.html
+# and
+# https://cmake.org/pipermail/cmake/2010-October/040460.html
+# HINTS get searched before system paths, which produces the desired result.
 find_path(USD_INCLUDE_DIR pxr/pxr.h
-          PATHS ${USD_ROOT}/include
+          HINTS ${USD_ROOT}/include
                 $ENV{USD_ROOT}/include
           DOC "USD Include directory")
 

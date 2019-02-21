@@ -20,7 +20,9 @@
 #include <maya/MGlobal.h>
 #include <maya/MStatus.h>
 #include "AL/usdmaya/PluginRegister.h" 
-#include "AL/UnitTestHarness.h"
+#include "AL/maya/test/testHarness.h"
+
+using AL::maya::test::UnitTestHarness;
 
 AL_USDMAYATEST_PLUGIN_PUBLIC
 MStatus initializePlugin(MObject obj)

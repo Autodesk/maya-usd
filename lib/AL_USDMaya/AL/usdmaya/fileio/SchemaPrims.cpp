@@ -18,6 +18,7 @@
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
+#include "AL/usdmaya/fileio/translators/ExtraDataPlugin.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 
 #include "maya/MAnimControl.h"

@@ -23,6 +23,7 @@
 #include "maya/MItDependencyNodes.h"
 #include "maya/MFileIO.h"
 
+using AL::maya::test::buildTempPath;
 
 TEST(TranslateCommand, translateMeshPrim)
 /*

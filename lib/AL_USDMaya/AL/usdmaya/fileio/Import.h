@@ -56,7 +56,13 @@ public:
 
 private:
   void doImport();
-  MObject createShape(translators::TranslatorRefPtr translator, const UsdPrim& prim, MObject parent, bool parentUnmerged);
+  MObject createShape(
+    translators::TranslatorRefPtr translator, 
+    translators::TranslatorManufacture& manufacture,
+    const UsdPrim& prim, 
+    MObject parent, 
+    bool parentUnmerged);
+
   const ImporterParams& m_params;
   TfHashMap<SdfPath, MObject, SdfPath::Hash> m_instanceObjects;
   TfToken::HashSet m_nonImportablePrims;

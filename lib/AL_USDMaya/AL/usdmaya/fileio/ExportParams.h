@@ -50,6 +50,7 @@ struct ExporterParams
   bool m_meshColours = true; ///< if true colour sets will be exported
   bool m_meshHoles = true; ///< if true polygonal holes will be exported
   bool m_meshUV = false; ///< if true, export a scene hierarchy with all empty prims marked "over", only meshes UV will be filled in.
+  bool m_meshPointsAsPref = false; // < if true duplicate the first mesh points ("P" attribute) sample as "pref"
   bool m_nurbsCurves = true; ///< if true export nurbs curves
   bool m_dynamicAttributes = true; ///< if true export any dynamic attributes found on the nodes we are exporting
   bool m_duplicateInstances = true; ///< if true, instances will be exported as duplicates. As of 23/01/17, nothing will be exported if set to false.
@@ -57,6 +58,7 @@ struct ExporterParams
   bool m_animation = false; ///< if true, animation will be exported.
   bool m_useTimelineRange = false; ///< if true, then the export uses Maya's timeline range.
   bool m_filterSample = false; ///< if true, duplicate sample of attribute will be filtered out
+  bool m_exportInWorldSpace = false; ///< if true, transform hierarchies will be flattened to a single WS transform PRIM (and no parents will be written out)
   int m_compactionLevel = 3; ///< by default apply the strongest level of data compaction
   AnimationTranslator* m_animTranslator = 0; ///< the animation translator to help exporting the animation data
   bool m_extensiveAnimationCheck = true; ///< if true, extensive animation check will be performed on transform nodes.

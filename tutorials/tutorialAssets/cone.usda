@@ -1,7 +1,6 @@
 #usda 1.0
 (
     defaultPrim = "pCone1"
-    doc = "Exported from: /jobs/alfx/peter/021gi/021gi_020/dev/anim/maya_anim_danielbar/untitled"
     endTimeCode = 0
     framesPerSecond = 24
     startTimeCode = 0

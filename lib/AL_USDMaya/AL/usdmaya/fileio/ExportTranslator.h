@@ -50,6 +50,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
   static constexpr const char* const kMeshEdgeCreases = "Mesh Edge Creases"; ///< export mesh edge creases
   static constexpr const char* const kMeshUvs = "Mesh UVs"; ///< export mesh UV coordinates
   static constexpr const char* const kMeshUvOnly = "Mesh UV Only"; ///< export mesh UV coordinates
+  static constexpr const char* const kMeshPointsAsPref = "Mesh Points as PRef"; ///< export mesh Points as PRef, duplicating "P"
   static constexpr const char* const kMeshColours = "Mesh Colours"; ///< export mesh Colour Sets
   static constexpr const char* const kMeshHoles = "Mesh Holes"; ///< export mesh face holes
   static constexpr const char* const kCompactionLevel = "Compaction Level"; ///< export mesh face holes
@@ -63,6 +64,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
   static constexpr const char* const kSubSamples = "Sub Samples"; ///< specify the number of sub samples to export
   static constexpr const char* const kFilterSample = "Filter Sample"; ///< export filter sample option name
   static constexpr const char* const kExportAtWhichTime = "Export At Which Time";
+  static constexpr const char* const kExportInWorldSpace = "Export In World Space";
 
   AL_USDMAYA_PUBLIC
   static const char* const compactionLevels[];
@@ -86,6 +88,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
     if(!options.addBool(kMeshEdgeCreases, defaultValues.m_meshEdgeCreases)) return MS::kFailure;
     if(!options.addBool(kMeshUvs, defaultValues.m_meshUvs)) return MS::kFailure;
     if(!options.addBool(kMeshUvOnly, defaultValues.m_meshUV)) return MS::kFailure;
+    if(!options.addBool(kMeshPointsAsPref, defaultValues.m_meshPointsAsPref)) return MS::kFailure;
     if(!options.addBool(kMeshColours, defaultValues.m_meshColours)) return MS::kFailure;
     if(!options.addBool(kMeshHoles, defaultValues.m_meshHoles)) return MS::kFailure;
     if(!options.addEnum(kCompactionLevel, compactionLevels, defaultValues.m_compactionLevel)) return MS::kFailure;
@@ -99,6 +102,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
     if(!options.addInt(kSubSamples, defaultValues.m_subSamples)) return MS::kFailure;
     if(!options.addBool(kFilterSample, defaultValues.m_filterSample)) return MS::kFailure;
     if(!options.addEnum(kExportAtWhichTime, timelineLevel, defaultValues.m_exportAtWhichTime)) return MS::kFailure;
+    if(!options.addBool(kExportInWorldSpace, defaultValues.m_exportAtWhichTime)) return MS::kFailure;
     
     return MS::kSuccess;
   }

@@ -5,6 +5,8 @@
 
 #include "test_usdmaya.h"
 
+using AL::maya::test::buildTempPath;
+
 static const char* const generateCamera = R"(
 {
 string $cam[] = `camera`;

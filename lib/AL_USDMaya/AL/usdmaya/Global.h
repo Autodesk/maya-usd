@@ -61,6 +61,8 @@ public:
   static AL::event::CallbackId fileNew()
     { return m_fileNew; }
 
+  static void openingFile(bool val);
+
 private:
   static AL::event::CallbackId m_preSave;  ///< callback prior to saving the scene (so we can store the session layer)
   static AL::event::CallbackId m_postSave; ///< callback after saving
@@ -69,6 +71,11 @@ private:
   static AL::event::CallbackId m_fileNew;  ///< callback used to flush the USD caches after a file new
   static AL::event::CallbackId m_preExport; ///< callback prior to exporting the scene (so we can store the session layer)
   static AL::event::CallbackId m_postExport; ///< callback after exporting
+
+#if defined(WANT_UFE_BUILD)
+  class UfeSelectionObserver;
+  static std::shared_ptr<UfeSelectionObserver> m_ufeSelectionObserver;
+#endif
 };
 
 //----------------------------------------------------------------------------------------------------------------------

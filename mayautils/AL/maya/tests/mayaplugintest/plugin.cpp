@@ -19,9 +19,11 @@
 #include "AL/maya/utils/MayaHelperMacros.h"
 #include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/maya/utils/MenuBuilder.h"
-#include "AL/maya/tests/mayaplugintest/UnitTestHarness.h"
+#include "AL/maya/test/testHarness.h"
 #include "AL/maya/tests/mayaplugintest/utils/NodeHelperUnitTest.h"
 #include "AL/maya/tests/mayaplugintest/utils/CommandGuiHelperTest.h"
+
+using AL::maya::test::UnitTestHarness;
 
 MStatus initializePlugin(MObject obj)
 {

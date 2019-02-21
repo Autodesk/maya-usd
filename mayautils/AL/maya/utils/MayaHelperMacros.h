@@ -207,6 +207,21 @@
     return status; \
   }}
 
+/// a macro to register an MPxNode derived node with maya
+/// \ingroup   mayautils
+#define AL_REGISTER_DEFORMER_NODE(plugin, X){ \
+  MStatus status = plugin.registerNode( \
+      X ::kTypeName, \
+      X ::kTypeId, \
+      X ::creator, \
+      X ::initialise, \
+      MPxNode::kDeformerNode ); \
+  if(!status) { \
+    status.perror("unable to register deformer node " #X); \
+    return status; \
+  }}
+
+
 /// a macro to register an MPxShape derived node with maya
 /// \ingroup   mayautils
 #define AL_REGISTER_SHAPE_NODE(plugin, X, UI, DRAW){ \

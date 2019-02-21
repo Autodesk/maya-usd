@@ -14,11 +14,16 @@
 // limitations under the License.
 //
 #include <gtest/gtest.h>
-#include "AL/UnitTestHarness.h"
-#include "test_usdmaya.h"
+#include "testHarness.h"
+#include "testHelpers.h"
 #include "maya/MSyntax.h"
 #include "maya/MArgDatabase.h"
 #include "maya/MGlobal.h"
+
+
+namespace AL {
+namespace maya {
+namespace test {
 
 #ifdef _WIN32
 # define RESET_COLOUR
@@ -42,8 +47,24 @@ const char* angry_dino =
 " _|  (  | (  |\n"
 "/__.-'|_|--|_|\n" RESET_COLOUR;
 
+const char* happy_cat =
+"\n"
+"    \\    /\\ \n"
+"     )  ( ^)\n"
+"    (  /  )\n"
+"     \\(__)|\n"
+RESET_COLOUR;
+
+const char* angry_cat =
+"\n"
+"         // \n"
+"        ( >)\n"
+"   /\\  /  )\n"
+"  /  \\(__)|\n"
+RESET_COLOUR;
+
 //----------------------------------------------------------------------------------------------------------------------
-const MString UnitTestHarness::kName = "AL_usdmaya_UnitTestHarness";
+const MString UnitTestHarness::kName = "AL_maya_test_UnitTestHarness";
 
 //----------------------------------------------------------------------------------------------------------------------
 MSyntax UnitTestHarness::createSyntax()
@@ -211,3 +232,10 @@ void UnitTestHarness::cleanTemporaryFiles() const
     MGlobal::displayWarning("Unable to remove temporary test files");
   }
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+} // test
+} // maya
+} // AL
+//----------------------------------------------------------------------------------------------------------------------
+

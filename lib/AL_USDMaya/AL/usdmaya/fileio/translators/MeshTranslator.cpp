@@ -123,6 +123,10 @@ UsdPrim MeshTranslator::exportObject(UsdStageRefPtr stage, MDagPath path, const 
     {
       context.copyUvSetData();
     }
+    if (params.m_meshPointsAsPref)
+    {
+      context.m_meshPointsAsPref(context.timeCode());
+    }
     if(params.m_meshNormals)
     {
       context.copyNormalData(context.timeCode());

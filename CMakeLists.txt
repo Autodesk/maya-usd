@@ -25,6 +25,22 @@ add_definitions(${_PXR_CXX_DEFINITIONS})
 
 find_package(Maya REQUIRED)
 
+if(CMAKE_WANT_UFE_BUILD)
+    add_definitions(-DWANT_UFE_BUILD)	
+    message(STATUS "UFE Build Enabled")
+    if (NOT UFE_VERSION)
+        message(FATAL_ERROR "UFE_VERSION must be defined when WANT_UFE_BUILD is enabled")
+    endif()
+    message(STATUS "Using UFE version : ${UFE_VERSION}")
+    string(REPLACE "." ";" UFE_VERSION_LIST ${UFE_VERSION})
+    list(GET UFE_VERSION_LIST 0 UFE_MAJOR_VERSION)
+    list(GET UFE_VERSION_LIST 1 UFE_MINOR_VERSION)
+    list(GET UFE_VERSION_LIST 2 UFE_PATCH_LEVEL)
+    find_package(UFE REQUIRED)
+    include_directories(${UFE_INCLUDE_DIR})
+endif()
+
+
 include_directories(${MAYA_INCLUDE_DIRS})
 
 include_directories(${PXR_INCLUDE_DIRS})
@@ -52,8 +68,6 @@ set(NEED_BOOST_FILESYSTEM ON)
 
 if(WIN32)
     set(CMAKE_CXX_FLAGS
-        -std=c++11
-        /WX
         "${_PXR_CXX_FLAGS}"
     )
 else()
@@ -87,9 +101,13 @@ set(EVENTS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/utils)
 set(USDUTILS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/usdutils)
 set(MAYAUTILS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/mayautils)
 set(USDMAYAUTILS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/usdmayautils)
+set(MAYATEST_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/mayatest)
 
 add_subdirectory(utils)
 add_subdirectory(usdutils)
+if(NOT SKIP_USDMAYA_TESTS)
+	add_subdirectory(mayatest)
+endif()	
 add_subdirectory(mayautils)
 add_subdirectory(usdmayautils)
 
@@ -98,11 +116,6 @@ add_subdirectory(plugin)
 
 if(BUILD_USDMAYA_SCHEMAS)
     message(STATUS "Building AL_USDMayaSchemas")
-    set(SCHEMAS_PYTHON_MODULE AL.usd.maya.schemas)
-    set(SCHEMAS_PYTHON_PATH AL/usd/maya/schemas)
-    set(SCHEMAS_PACKAGE AL_USDMayaSchemas)
-    set(SCHEMAS_PYTHON_PACKAGE _AL_USDMayaSchemas)
-    set(SCHEMAS_TOKENS_PREFIX AL_USDMayaSchemas)
     add_subdirectory(schemas)
     if(BUILD_USDMAYA_TRANSLATORS)
         message(STATUS "Building AL_USDMayaTranslators")

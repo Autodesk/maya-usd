@@ -79,7 +79,6 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
   importContext.applyHoleFaces();
   importContext.applyVertexCreases();
   importContext.applyEdgeCreases();
-  importContext.applyGlimpseSubdivParams();
 
   MObject initialShadingGroup;
   DagNodeTranslator::initialiseDefaultShadingGroup(initialShadingGroup);
@@ -137,7 +136,6 @@ UsdPrim Mesh::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath
     {
       context.copyNormalData(context.timeCode());
     }
-    context.copyGlimpseTesselationAttributes();
     if(params.m_meshColours)
     {
       context.copyColourSetData();
@@ -149,6 +147,10 @@ UsdPrim Mesh::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath
     if(params.m_meshEdgeCreases)
     {
       context.copyCreaseEdges();
+    }
+    if (params.m_meshPointsAsPref)
+    {
+      context.copyBindPoseData(context.timeCode());
     }
 
     // pick up any additional attributes attached to the mesh node (these will be added alongside the transform attributes)
@@ -232,7 +234,6 @@ void Mesh::writeEdits(MDagPath& dagPath, UsdGeomMesh& geomPrim, uint32_t options
   if(context)
   {
     context.copyVertexData(t);
-    context.copyGlimpseTesselationAttributes();
     context.copyNormalData(t);
     context.copyFaceConnectsAndPolyCounts();
     context.copyInvisibleHoles();
@@ -240,6 +241,7 @@ void Mesh::writeEdits(MDagPath& dagPath, UsdGeomMesh& geomPrim, uint32_t options
     context.copyCreaseEdges();
     context.copyUvSetData();
     context.copyColourSetData();
+    context.copyBindPoseData(t);
     if(options & kDynamicAttributes)
     {
       UsdPrim prim = geomPrim.GetPrim();

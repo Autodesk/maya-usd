@@ -3,8 +3,8 @@
 #include <iostream>
 #include <functional>
 
-#include <AL/usd/schemas/ModelAPI.h>
-#include <AL/usd/schemas/MayaReference.h>
+#include <AL/usd/schemas/maya/ModelAPI.h>
+#include <AL/usd/schemas/maya/MayaReference.h>
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"

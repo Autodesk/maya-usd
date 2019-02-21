@@ -6,6 +6,9 @@
 
 #include "pxr/usd/usdGeom/mesh.h"
 
+using AL::maya::test::buildTempPath;
+
+
 static const char* const g_nonAnimatedMesh = R"(
 {
 polyCube -w 1 -h 1 -d 1 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -cuv 2 -ch 1 -name "baseCube";

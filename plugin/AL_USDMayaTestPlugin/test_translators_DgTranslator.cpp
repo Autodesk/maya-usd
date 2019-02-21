@@ -51,6 +51,16 @@ using AL::usdmaya::fileio::ImporterParams;
 using AL::usdmaya::fileio::ExporterParams;
 using AL::usdmaya::fileio::translators::DgNodeTranslator;
 using AL::maya::utils::NodeHelper;
+using AL::maya::test::buildTempPath;
+using AL::maya::test::randBool;
+using AL::maya::test::randInt8;
+using AL::maya::test::randInt16;
+using AL::maya::test::randInt32;
+using AL::maya::test::randInt64;
+using AL::maya::test::randFloat;
+using AL::maya::test::randDouble;
+using AL::maya::test::comparePlugs;
+
 
 namespace {
 

@@ -35,6 +35,9 @@
 #include <functional>
 #include "AL/usdmaya/utils/Utils.h"
 
+using AL::maya::test::buildTempPath;
+
+
 //  Layer();
 //  void init(ProxyShape* shape, SdfLayerHandle handle);
 TEST(LayerCommands, layerCreateLayerTests)

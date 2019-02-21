@@ -168,6 +168,21 @@ MObject NodeHelper::addEnumAttr(const char* longName, const char* shortName, uin
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+MObject NodeHelper::addMeshAttr(const char* longName, const char* shortName, uint32_t flags)
+{
+  MFnTypedAttribute fn;
+  MStatus status;
+  MObject attr = fn.create(longName, shortName, MFnData::kMesh, MObject::kNullObj, &status);
+  if(!status)
+    throw status;
+  status = applyAttributeFlags(fn, flags);
+  if(!status)
+    throw status;
+
+  return attr;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addStringAttr(const char* longName, const char* shortName, uint32_t flags, bool forceShow)
 {
   return addStringAttr(longName, shortName, "", flags, forceShow);

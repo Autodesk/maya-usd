@@ -35,6 +35,9 @@
 #include <functional>
 #include "AL/usdmaya/utils/Utils.h"
 
+using AL::maya::test::buildTempPath;
+
+
 void setup(std::string testName, UsdStageRefPtr* outStage = nullptr)
 {
   auto constructTransformChain = [] () -> UsdStageRefPtr

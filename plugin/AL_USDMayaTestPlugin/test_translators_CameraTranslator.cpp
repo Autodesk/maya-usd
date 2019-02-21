@@ -33,6 +33,10 @@
 using AL::usdmaya::fileio::ExporterParams;
 using AL::usdmaya::fileio::ImporterParams;
 using AL::usdmaya::fileio::AnimationTranslator;
+using AL::maya::test::buildTempPath;
+using AL::maya::test::randomNode;
+using AL::maya::test::randomAnimatedNode;
+using AL::maya::test::compareNodes;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Test some of the functionality of the CameraTranslator.

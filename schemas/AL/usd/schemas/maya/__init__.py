@@ -1,6 +1,6 @@
-from . import @SCHEMAS_PYTHON_PACKAGE@
+from . import _AL_USDMayaSchemas
 from pxr import Tf
-Tf.PrepareModule(@SCHEMAS_PYTHON_PACKAGE@, locals())
+Tf.PrepareModule(_AL_USDMayaSchemas, locals())
 del Tf
 
 try:

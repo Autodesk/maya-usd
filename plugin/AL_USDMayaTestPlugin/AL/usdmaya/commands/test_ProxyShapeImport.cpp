@@ -30,6 +30,9 @@
 
 #include <functional>
 
+using AL::maya::test::buildTempPath;
+
+
 TEST(ProxyShapeImport, populationMaskInclude)
 {
   auto  constructTestUSDFile = [] ()

@@ -6053,18 +6053,24 @@ void DgNodeHelper::copyAttributeValue(const MPlug& plug, UsdAttribute& usdAttr, 
 
   case MFn::kEnumAttribute:
     {
-      if(!isArray)
+      switch(getAttributeType(usdAttr))
       {
-        int32_t value;
-        getInt32(node, attribute, value);
-        usdAttr.Set(value, timeCode);
-      }
-      else
-      {
-        VtArray<int> m;
-        m.resize(plug.numElements());
-        getInt32Array(node, attribute, (int32_t*)m.data(), m.size());
-        usdAttr.Set(m, timeCode);
+        case UsdDataType::kInt:
+        {
+          if(!isArray)
+          {
+            int32_t value;
+            getInt32(node, attribute, value);
+            usdAttr.Set(value, timeCode);
+          }
+          else
+          {
+            VtArray<int> m;
+            m.resize(plug.numElements());
+            getInt32Array(node, attribute, m.data(), m.size());
+            usdAttr.Set(m, timeCode);
+          }
+        }
       }
     }
     break;
@@ -6078,7 +6084,9 @@ void DgNodeHelper::copyAttributeValue(const MPlug& plug, UsdAttribute& usdAttr, 
       {
       case MFnData::kString:
         {
-          // don't animate strings
+          std::string value;
+          getString(node, attribute, value);
+          usdAttr.Set(value, timeCode);
         }
         break;
 

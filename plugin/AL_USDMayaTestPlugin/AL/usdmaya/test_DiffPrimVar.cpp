@@ -32,6 +32,8 @@
 using namespace AL::maya;
 using namespace AL::usdmaya;
 
+using AL::maya::test::buildTempPath;
+
 TEST(DiffPrimVar, diffGeomVerts)
 {
   MFileIO::newFile(true);

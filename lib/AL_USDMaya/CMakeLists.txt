@@ -84,6 +84,8 @@ list(APPEND AL_usdmaya_fileio_translators_headers
         AL/usdmaya/fileio/translators/TranslatorContext.h
         AL/usdmaya/fileio/translators/TranslatorTestPlugin.h
         AL/usdmaya/fileio/translators/TranslatorTestType.h
+        AL/usdmaya/fileio/translators/ExtraDataPlugin.h
+        AL/usdmaya/fileio/translators/TestExtraDataPlugin.h
 )
 
 list(APPEND AL_usdmaya_fileio_translators_source
@@ -94,11 +96,16 @@ list(APPEND AL_usdmaya_fileio_translators_source
         AL/usdmaya/fileio/translators/TranslatorContext.cpp
         AL/usdmaya/fileio/translators/TranslatorTestPlugin.cpp
         AL/usdmaya/fileio/translators/TranslatorTestType.cpp
+        AL/usdmaya/fileio/translators/ExtraDataPlugin.cpp
+        AL/usdmaya/fileio/translators/TestExtraDataPlugin.cpp
 )
 
 list(APPEND AL_usdmaya_nodes_headers
+        AL/usdmaya/nodes/Engine.h
         AL/usdmaya/nodes/Layer.h
         AL/usdmaya/nodes/LayerManager.h
+        AL/usdmaya/nodes/MeshAnimCreator.h
+        AL/usdmaya/nodes/MeshAnimDeformer.h
         AL/usdmaya/nodes/ProxyDrawOverride.h
         AL/usdmaya/nodes/ProxyShape.h
         AL/usdmaya/nodes/ProxyShapeUI.h
@@ -111,8 +118,11 @@ list(APPEND AL_usdmaya_nodes_proxy_headers
         AL/usdmaya/nodes/proxy/PrimFilter.h
 )
 list(APPEND AL_usdmaya_nodes_source
+        AL/usdmaya/nodes/Engine.cpp
         AL/usdmaya/nodes/Layer.cpp
         AL/usdmaya/nodes/LayerManager.cpp
+        AL/usdmaya/nodes/MeshAnimCreator.cpp
+        AL/usdmaya/nodes/MeshAnimDeformer.cpp
         AL/usdmaya/nodes/ProxyDrawOverride.cpp
         AL/usdmaya/nodes/ProxyShape.cpp
         AL/usdmaya/nodes/ProxyShapeSelection.cpp
@@ -192,10 +202,10 @@ target_link_libraries(${LIBRARY_NAME}
     ${Boost_LINK_LIBRARIES}
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
-    ${MAYA_OpenMayaFX_LIBRARY}
     ${MAYA_OpenMayaUI_LIBRARY}
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_OpenMayaRender_LIBRARY}
+    ${UFE_LIBRARY}
 )
 
 if(NEED_BOOST_FILESYSTEM)
@@ -209,6 +219,9 @@ install(TARGETS ${LIBRARY_NAME}
     RUNTIME
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
+if(MSVC)
+    install(FILES $<TARGET_PDB_FILE:${LIBRARY_NAME}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL)
+endif()
 
 set_property(GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 

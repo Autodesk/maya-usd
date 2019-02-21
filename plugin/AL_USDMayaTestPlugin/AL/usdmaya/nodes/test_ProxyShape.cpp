@@ -39,6 +39,8 @@
 #include <iostream>
 #include <fstream>
 
+using AL::maya::test::buildTempPath;
+
 // UsdStageRefPtr ProxyShape::getUsdStage() const;
 // UsdPrim ProxyShape::getRootPrim()
 TEST(ProxyShape, basicProxyShapeSetUp)

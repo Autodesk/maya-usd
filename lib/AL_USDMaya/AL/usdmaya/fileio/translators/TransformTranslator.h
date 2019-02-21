@@ -69,7 +69,7 @@ public:
   /// \param  params the exporter params to determine what should be exported
   /// \return MS::kSuccess if ok
   AL_USDMAYA_PUBLIC
-  static MStatus copyAttributes(const MObject& from, UsdPrim& to, const ExporterParams& params);
+  static MStatus copyAttributes(const MObject& from, UsdPrim& to, const ExporterParams& params, const MDagPath& path);
 
   /// \brief  copy the attribute value from the plug specified, at the given time, and store the data on the usdAttr.
   /// \param  attr the attribute to be copied

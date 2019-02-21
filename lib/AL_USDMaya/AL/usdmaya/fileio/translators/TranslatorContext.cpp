@@ -534,6 +534,13 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
       UsdPrim prim = stage->GetPrimAtPath(path);
       if(prim)
       {
+        // run through the extra data plugins to apply to this prim
+        auto dataPlugins = m_proxyShape->translatorManufacture().getExtraDataPlugins(primObj);
+        for(auto dataPlugin : dataPlugins)
+        {
+          dataPlugin->preTearDown(prim);
+        }
+
         translator->preTearDown(prim);
       }
       else

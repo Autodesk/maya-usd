@@ -12,7 +12,7 @@ class TestTranslator(unittest.TestCase):
         mc.file(f=True, new=True)
         mc.loadPlugin('pxrUsd')
         mc.loadPlugin('AL_USDMayaPlugin')
-            
+
     @classmethod
     def tearDown(cls):
         mc.file(f=True, new=True)
