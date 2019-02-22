@@ -279,9 +279,8 @@ MStatus registerPlugin(AFnPlugin& plugin)
   CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
   AL::usdmaya::Global::onPluginLoad();
 
-  // Forcing all plugins to be loaded at startup time. If we don't do this, the plugins will only be loaded when they 
-  // are needed. Sadly, this means that any plugin export options will not be registered until the export process
-  // starts (and not prior to that, when we are building the GUI). 
+  // Force all plugins to be loaded at startup time. Unless we load plugins upfront
+  // options will not be registered until the start of import or export, and won't be available in the GUI
   PlugPluginPtrVector plugins = PlugRegistry::GetInstance().GetAllPlugins();
   for(auto& plugin : plugins)
   {
