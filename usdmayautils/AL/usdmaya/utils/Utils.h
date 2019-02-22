@@ -61,7 +61,7 @@ MString mapUsdPrimToMayaNode(const UsdPrim& usdPrim,
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
 AL_USDMAYA_UTILS_PUBLIC
-void matrixToSRT(GfMatrix4d& value,
+void matrixToSRT(const GfMatrix4d& value,
                  double S[3],
                  MEulerRotation& R,
                  double T[3]);

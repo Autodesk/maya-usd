@@ -41,7 +41,7 @@ namespace usdmaya {
 namespace utils {
 
 //----------------------------------------------------------------------------------------------------------------------
-void matrixToSRT(GfMatrix4d& value, double S[3], MEulerRotation& R, double T[3])
+void matrixToSRT(const GfMatrix4d& value, double S[3], MEulerRotation& R, double T[3])
 {
   double matrix[4][4];
   value.Get(matrix);
