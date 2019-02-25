@@ -455,7 +455,6 @@ int32_t PluginTranslatorOptionsInstance::getEnum(const char* optionName)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-AL_MAYA_UTILS_PUBLIC
 void PluginTranslatorOptionsInstance::OptionSet::toOptionVars(const char* const prefix)
 {
   int i = 0;
@@ -483,7 +482,6 @@ void PluginTranslatorOptionsInstance::OptionSet::toOptionVars(const char* const 
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-AL_MAYA_UTILS_PUBLIC
 void PluginTranslatorOptionsInstance::OptionSet::fromOptionVars(const char* const prefix)
 {
   MString optionVarName = prefix; 
