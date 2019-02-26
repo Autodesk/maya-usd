@@ -1779,6 +1779,7 @@ void MeshExportContext::copyVertexData(UsdTimeCode time)
   }
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 void MeshExportContext::copyBindPoseData(UsdTimeCode time)
 {
   if(diffGeom & kPoints)
@@ -1821,6 +1822,9 @@ void MeshExportContext::copyNormalData(UsdTimeCode time)
       const float* normalsData = fnMesh.getRawNormals(&status);
       if(status && numNormals)
       {
+        MIntArray normalCounts, normalIndices;
+        fnMesh.getNormalIds(normalCounts, normalIndices);
+
         // if prim vars are all identical, we have a constant value
         if(usd::utils::vec3AreAllTheSame(normalsData, numNormals))
         {
@@ -1829,6 +1833,19 @@ void MeshExportContext::copyNormalData(UsdTimeCode time)
           normals[0][0] = normalsData[0];
           normals[0][1] = normalsData[1];
           normals[0][2] = normalsData[2];
+          normalsAttr.Set(normals, time);
+        }
+        else
+        if(numNormals != normalIndices.length())
+        {
+          VtArray<GfVec3f> normals(normalIndices.length());
+          for(uint32_t i = 0, n = normalIndices.length(); i < n; ++i)
+          {
+            const uint32_t index = 3 * normalIndices[i];
+            normals[i] = GfVec3f(normalsData[index], normalsData[index + 1], normalsData[index + 2]);
+          }        
+          mesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
+          normalsAttr.Set(normals, time);  
         }
         else
         {
