@@ -286,7 +286,7 @@ UsdStagePopulationMask ProxyShape::constructStagePopulationMask(const MString &p
 
   for(const SdfPath &path : list)
   {
-    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape: Add include to mask:(%s)\n", path.GetString().c_str());
+    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape: Add include to mask:(%s)\n", path.GetText());
     mask.Add(path);
   }
   return mask;
@@ -312,7 +312,7 @@ void ProxyShape::translatePrimPathsIntoMaya(
     }
     else
     {
-      TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimPathsIntoMaya Path for import '%s' resolves to an invalid prim\n", path.GetString().c_str());
+      TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimPathsIntoMaya Path for import '%s' resolves to an invalid prim\n", path.GetText());
     }
   }
 
@@ -1246,7 +1246,7 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
           triggerEvent("PreVariantChangedCB");
 
           TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::variantSelectionListener oldPath=%s, oldIdentifier=%s, path=%s, layer=%s\n",
-                                         entry.oldPath.GetString().c_str(),
+                                         entry.oldPath.GetText(),
                                          entry.oldIdentifier.c_str(),
                                          path.GetText(),
                                          itr->first->GetIdentifier().c_str());
@@ -1504,7 +1504,7 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
   UsdPrim prim = m_stage->GetPrimAtPath(path);
   if(!prim.IsValid())
   {
-    TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute prim path not valid '%s'\n", prim.GetPath().GetString().c_str());
+    TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute prim path not valid '%s'\n", prim.GetPath().GetText());
     return false;
   }
 
@@ -1553,7 +1553,7 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
   {
     MPlug(lockObject, Transform::pushToPrim()).setBool(false);
   }
-  TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute Setting lock for '%s'\n", prim.GetPath().GetString().c_str());
+  TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute Setting lock for '%s'\n", prim.GetPath().GetText());
   return true;
 }
 
@@ -1691,7 +1691,6 @@ void ProxyShape::postConstructor()
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyShape::primHasExcludedParent(UsdPrim prim)
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::primHasExcludedParent\n");
   if(prim.IsValid())
   {
     SdfPath primPath = prim.GetPrimPath();
@@ -1699,6 +1698,7 @@ bool ProxyShape::primHasExcludedParent(UsdPrim prim)
     {
       if (primPath.HasPrefix(*excludedPath))
       {
+        TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::primHasExcludedParent %s=true\n", primPath.GetText());
         return true;
       }
     }
@@ -2078,6 +2078,7 @@ MStatus ProxyShape::computeDrivenAttributes(const MPlug& plug, MDataBlock& dataB
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialiseTransformRefs()
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::serialiseTransformRefs\n");
   triggerEvent("PreSerialiseTransformRefs");
 
   std::ostringstream oss;
