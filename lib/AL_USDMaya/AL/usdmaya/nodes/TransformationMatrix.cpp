@@ -1804,10 +1804,11 @@ void TransformationMatrix::pushToPrim()
 
   // Anytime we update the xform, we need to tell the proxy shape that it
   // needs to redraw itself
-  if (!m_transformNode.isNull())
+  MObject tn(m_transformNode.object());
+  if (!tn.isNull())
   {
     MStatus status;
-    MFnDependencyNode mfn(m_transformNode, &status);
+    MFnDependencyNode mfn(tn, &status);
     if (status && mfn.typeId() == Transform::kTypeId)
     {
       auto xform = static_cast<Transform*>(mfn.userNode());

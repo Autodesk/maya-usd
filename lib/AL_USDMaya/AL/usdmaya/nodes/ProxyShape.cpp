@@ -1037,16 +1037,14 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   {
     auto it = m_requiredPaths.find(path);
     if(it != m_requiredPaths.end()){
-      Transform* tm = it->second.m_transform;
+      UsdPrim newPrim = m_stage->GetPrimAtPath(path);
+      Transform* tm = it->second.transform();
       if(!tm)
         continue;
-
       TransformationMatrix* tmm = tm->transform();
       if(!tmm)
         continue;
-
-      UsdPrim newPrim = m_stage->GetPrimAtPath(path);
-      tmm->setPrim(newPrim); // Might be invalid but that's OK at least it won't crash
+      tmm->setPrim(newPrim, tm); // Might be (invalid/nullptr) but that's OK at least it won't crash
     }
   }
 
@@ -1168,7 +1166,13 @@ void ProxyShape::validateTransforms()
     SdfPathVector pathsToNuke;
     for(auto& it : m_requiredPaths)
     {
-      Transform* tm = it.second.m_transform;
+      TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("validateTransforms %s\n", it.first.GetText());
+
+      MObject node = it.second.node();
+      if(node.isNull())
+        continue;
+
+      Transform* tm = it.second.transform();
       if(!tm)
         continue;
 
@@ -1176,23 +1180,19 @@ void ProxyShape::validateTransforms()
       if(!tmm)
         continue;
 
-      const UsdPrim& prim = tmm->prim();
-      if(!prim.IsValid())
+      UsdPrim newPrim = m_stage->GetPrimAtPath(it.first);
+      if(newPrim)
       {
-        UsdPrim newPrim = m_stage->GetPrimAtPath(it.first);
-        if(newPrim)
+        std::string transformType;
+        newPrim.GetMetadata(Metadata::transformType, &transformType);
+        if(newPrim && transformType.empty())
         {
-          std::string transformType;
-          newPrim.GetMetadata(Metadata::transformType, &transformType);
-          if(newPrim && transformType.empty())
-          {
-            tm->transform()->setPrim(newPrim, tm);
-          }
+          tm->transform()->setPrim(newPrim, tm);
         }
-        else
-        {
-          pathsToNuke.push_back(it.first);
-        }
+      }
+      else
+      {
+        pathsToNuke.push_back(it.first);
       }
     }
   }
@@ -2145,7 +2145,8 @@ void ProxyShape::deserialiseTransformRefs()
             const uint32_t selected = tstrs[3].asUnsigned();
             const uint32_t refCounts = tstrs[4].asUnsigned();
             SdfPath path(tstrs[1].asChar());
-            m_requiredPaths.emplace(path, TransformReference(node, ptr, required, selected, refCounts));
+            m_requiredPaths.emplace(path, TransformReference(node, required, selected, refCounts));
+            TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::deserialiseTransformRefs m_requiredPaths added AL_usdmaya_Transform TransformReference: %s\n", path.GetText());
           }
           else
           {
@@ -2153,7 +2154,8 @@ void ProxyShape::deserialiseTransformRefs()
             const uint32_t selected = tstrs[3].asUnsigned();
             const uint32_t refCounts = tstrs[4].asUnsigned();
             SdfPath path(tstrs[1].asChar());
-            m_requiredPaths.emplace(path, TransformReference(node, 0, required, selected, refCounts));
+            m_requiredPaths.emplace(path, TransformReference(node, required, selected, refCounts));
+            TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::deserialiseTransformRefs m_requiredPaths added TransformReference: %s\n", path.GetText());
           }
         }
       }
@@ -2166,12 +2168,37 @@ void ProxyShape::deserialiseTransformRefs()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-ProxyShape::TransformReference::TransformReference(MObject mayaNode, Transform* node, uint32_t r, uint32_t s, uint32_t rc)
-  : m_transform(node), m_node(mayaNode)
+ProxyShape::TransformReference::TransformReference(MObject mayaNode, uint32_t r, uint32_t s, uint32_t rc)
+  : m_node(mayaNode)
 {
   m_required = r;
   m_selected = s;
   m_refCount = rc;
+}
+
+Transform* ProxyShape::TransformReference::transform() const
+{
+  MObject n(node());
+  if(!n.isNull()){
+    MStatus status;
+    MFnDependencyNode fn(n, &status);
+    if(status == MS::kSuccess){
+      if(fn.typeId() == AL_USDMAYA_TRANSFORM){
+        TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformReference::transform found valid AL_usdmaya_Tranform: %s\n", fn.absoluteName().asChar());
+        return (Transform*)fn.userNode();
+      }
+      else{
+        TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformReference::transform found non AL_usdmaya_Tranform: %s\n", fn.absoluteName().asChar());
+        return nullptr;
+      }
+    }
+    else{
+      TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformReference::transform found invalid transform\n");
+      return nullptr;
+    }
+  }
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformReference::transform found null transform\n");
+  return nullptr;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -2181,6 +2208,7 @@ void ProxyShape::cleanupTransformRefs()
   {
     if(!it->second.selected() && !it->second.required() && !it->second.refCount())
     {
+      TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::cleanupTransformRefs m_requiredPaths removed TransformReference: %s\n", it->first.GetText());
       m_requiredPaths.erase(it++);
     }
     else
