@@ -90,8 +90,11 @@ AL_MAYA_TRANSLATOR_BEGIN(ImportTranslator, "AL usdmaya import", true, false, "*.
     { return m_pluginContext; }
 
 private:
+  AL_USDMAYA_PUBLIC
   static PluginTranslatorOptionsContext m_pluginContext;
+  AL_USDMAYA_PUBLIC
   static PluginTranslatorOptions* m_compatPluginOptions;
+  AL_USDMAYA_PUBLIC
   static PluginTranslatorOptionsInstance* m_pluginInstance;
   AL_USDMAYA_PUBLIC
   MStatus reader(const MFileObject& file, const AL::maya::utils::OptionsParser& options, FileAccessMode mode) override;

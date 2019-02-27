@@ -111,8 +111,10 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
     { return m_pluginContext; }
 
 private:
+  AL_USDMAYA_PUBLIC
   static PluginTranslatorOptionsContext m_pluginContext;
   static PluginTranslatorOptions* m_compatPluginOptions;
+  AL_USDMAYA_PUBLIC
   static PluginTranslatorOptionsInstance* m_pluginInstance;
   AL_USDMAYA_PUBLIC
   MStatus writer(const MFileObject& file, const AL::maya::utils::OptionsParser& options, FileAccessMode mode) override;
