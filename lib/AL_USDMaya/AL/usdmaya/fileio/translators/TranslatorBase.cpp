@@ -78,12 +78,15 @@ TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorManufacture::RefPtr TranslatorManufacture::get(const TfToken type_name)
 {
-
   TfType type = TfType::FindDerivedByName<UsdSchemaBase>(type_name);
   std::string typeName(type.GetTypeName());
-  if (m_translatorsMap.find(typeName)!= m_translatorsMap.end())
+  auto it = m_translatorsMap.find(typeName);
+  if (it != m_translatorsMap.end())
   {
-    return m_translatorsMap[typeName];
+    if(it->second->active())
+    {
+      return it->second;
+    }
   }
   return TfNullPtr;
 }
@@ -95,14 +98,17 @@ TranslatorManufacture::RefPtr TranslatorManufacture::get(const MObject& mayaObje
   TranslatorManufacture::RefPtr derived;
   for(auto& it : m_translatorsMap)
   {
-    ExportFlag mode = it.second->canExport(mayaObject);
-    switch(mode)
+    if(it.second->active())
     {
-    case ExportFlag::kNotSupported: break;
-    case ExportFlag::kFallbackSupport: base = it.second; break;
-    case ExportFlag::kSupported: derived = it.second; break;
-    default:
-      break;
+      ExportFlag mode = it.second->canExport(mayaObject);
+      switch(mode)
+      {
+      case ExportFlag::kNotSupported: break;
+      case ExportFlag::kFallbackSupport: base = it.second; break;
+      case ExportFlag::kSupported: derived = it.second; break;
+      default:
+        break;
+      }
     }
   }
   return derived ? derived : base;
@@ -154,6 +160,46 @@ std::vector<TranslatorManufacture::ExtraDataPluginPtr> TranslatorManufacture::ge
     }
   }
   return ptrs;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TranslatorManufacture::activate(const TfTokenVector& types)
+{
+  for(auto& type : types)
+  {
+    auto it = m_translatorsMap.find(type.GetString());
+    if(it != m_translatorsMap.end())
+      it->second->activate();
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TranslatorManufacture::deactivate(const TfTokenVector& types)
+{
+  for(auto& type : types)
+  {
+    auto it = m_translatorsMap.find(type.GetString());
+    if(it != m_translatorsMap.end())
+      it->second->deactivate();
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TranslatorManufacture::activateAll()
+{
+  for(auto& it : m_translatorsMap)
+  {
+    it.second->activate();
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TranslatorManufacture::deactivateAll()
+{
+  for(auto& it : m_translatorsMap)
+  {
+    it.second->deactivate();
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------

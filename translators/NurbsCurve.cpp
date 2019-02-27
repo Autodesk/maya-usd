@@ -32,6 +32,7 @@
 #include "AL/maya/utils/NodeHelper.h"
 
 #include "NurbsCurve.h"
+#include "CommonTranslatorOptions.h"
 
 namespace AL {
 namespace usdmaya {
@@ -103,7 +104,7 @@ MStatus NurbsCurve::import(const UsdPrim& prim, MObject& parent, MObject& create
 UsdPrim NurbsCurve::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath,
                                  const ExporterParams& params)
 {
-  if(!params.m_nurbsCurves)
+  if(!params.getBool(GeometryExportOptions::kNurbsCurves))
       return UsdPrim();
 
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::Starting to export Nurbs for path '%s'\n", usdPath.GetText());

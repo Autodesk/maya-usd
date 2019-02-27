@@ -20,6 +20,7 @@
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/fileio/Import.h"
+#include "AL/usdmaya/fileio/ImportTranslator.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
@@ -56,6 +57,10 @@ namespace AL {
 namespace usdmaya {
 namespace fileio {
 
+using AL::maya::utils::PluginTranslatorOptionsContext;
+using AL::maya::utils::PluginTranslatorOptionsInstance;
+using AL::maya::utils::PluginTranslatorOptions;
+using AL::maya::utils::PluginTranslatorOptionsContextManager;
 
 AL_MAYA_DEFINE_COMMAND(ImportCommand, AL_usdmaya);
 
@@ -79,6 +84,24 @@ void Import::doImport()
 
   translators::TranslatorContextPtr context = translators::TranslatorContext::create(nullptr);
   translators::TranslatorManufacture manufacture(context);
+  if(m_params.m_activateAllTranslators)
+  {
+    manufacture.activateAll();
+  }
+  else
+  {
+    manufacture.deactivateAll();
+  }
+
+  if(!m_params.m_activePluginTranslators.empty())
+  {
+    manufacture.activate(m_params.m_activePluginTranslators);
+  }
+  if(!m_params.m_inactivePluginTranslators.empty())
+  {
+    manufacture.deactivate(m_params.m_inactivePluginTranslators);
+  }
+
 
   UsdStageRefPtr stage;
   if(m_params.m_rootLayer)
@@ -141,11 +164,11 @@ void Import::doImport()
         };
 
     m_nonImportablePrims.clear();
-    if(!m_params.m_meshes)
+    if(!m_params.getBool("Import Meshes"))
     {
       m_nonImportablePrims.insert(TfToken("Mesh"));
     }
-    if(!m_params.m_nurbsCurves)
+    if(!m_params.getBool("Import Curves"))
     {
       m_nonImportablePrims.insert(TfToken("NurbsCurves"));
     }
@@ -256,6 +279,12 @@ MObject Import::createShape(
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ImportCommand::doIt(const MArgList& args)
 {
+  maya::utils::OptionsParser parser;
+  ImportTranslator::options().initParser(parser);
+  m_params.m_parser = &parser;
+  PluginTranslatorOptionsInstance pluginInstance(ImportTranslator::pluginContext());
+  parser.setPluginOptionsContext(&pluginInstance);
+
   MStatus status;
   MArgDatabase argData(syntax(), args, &status);
   AL_MAYA_CHECK_ERROR(status, "ImportCommand: failed to match arguments");
@@ -303,17 +332,65 @@ MStatus ImportCommand::doIt(const MArgList& args)
 
   if(argData.isFlagSet("-m", &status))
   {
-    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("-m", 0, m_params.m_meshes), "ImportCommand: Unable to fetch \"meshes\" argument");
+    bool value = true;
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("-m", 0, value), "ImportCommand: Unable to fetch \"meshes\" argument");
+    m_params.setBool("Import Meshes", value);
   }
 
   if(argData.isFlagSet("-nc", &status))
   {
-    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("-nc", 0, m_params.m_nurbsCurves), "ImportCommand: Unable to fetch \"nurbs curves\" argument");
+    bool value = true;
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("-nc", 0, value), "ImportCommand: Unable to fetch \"nurbs curves\" argument");
+    m_params.setBool("Import Curves", value);
+  }
+
+  if(argData.isFlagSet("opt", &status))
+  {
+    MString optionString;
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("opt", 0, optionString), "ImportCommand: Unable to fetch \"options\" argument");
+    parser.parse(optionString);
   }
 
   if(argData.isFlagSet("-fd", &status))
   {
     m_params.m_forceDefaultRead = true;
+  }
+
+  m_params.m_activateAllTranslators = true;
+  bool eat = argData.isFlagSet("eat", &status);
+  bool dat = argData.isFlagSet("dat", &status);
+  if(eat && dat)
+  {
+    MGlobal::displayError("ImportCommand: cannot enable all translators, AND disable all translators, at the same time");
+  }
+  else
+  if(dat) 
+  {
+    m_params.m_activateAllTranslators = false;
+  }
+
+  if(argData.isFlagSet("ept", &status))
+  {
+    MString arg;
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("ept", 0, arg), "ALUSDExport: Unable to fetch \"enablePluginTranslators\" argument");
+    MStringArray strings;
+    arg.split(',', strings); 
+    for(uint32_t i = 0, n = strings.length(); i < n; ++i)
+    {
+      m_params.m_activePluginTranslators.emplace_back(strings[i].asChar());
+    }
+  }
+
+  if(argData.isFlagSet("dpt", &status))
+  {
+    MString arg;
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("dpt", 0, arg), "ALUSDExport: Unable to fetch \"disablePluginTranslators\" argument");
+    MStringArray strings;
+    arg.split(',', strings); 
+    for(uint32_t i = 0, n = strings.length(); i < n; ++i)
+    {
+      m_params.m_inactivePluginTranslators.emplace_back(strings[i].asChar());
+    }
   }
 
   return redoIt();
@@ -346,6 +423,10 @@ MSyntax ImportCommand::createSyntax()
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-m", "-meshes", MSyntax::kBoolean), errorString);
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-nc", "-nurbsCurves", MSyntax::kBoolean), errorString);
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-fd", "-forceDefaultRead", MSyntax::kNoArg), errorString);
+  AL_MAYA_CHECK_ERROR2(syntax.addFlag("-eat", "-enableAllTranslators", MSyntax::kNoArg), errorString);
+  AL_MAYA_CHECK_ERROR2(syntax.addFlag("-dat", "-disableAllTranslators", MSyntax::kNoArg), errorString);
+  AL_MAYA_CHECK_ERROR2(syntax.addFlag("-ept", "-enablePluginTranslators", MSyntax::kString), errorString);
+  AL_MAYA_CHECK_ERROR2(syntax.addFlag("-dpt", "-disablePluginTranslators", MSyntax::kString), errorString);
   syntax.makeFlagMultiUse("-arp");
   syntax.enableQuery(false);
   syntax.enableEdit(false);

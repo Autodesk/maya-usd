@@ -68,6 +68,7 @@ struct ScaledPair
 typedef std::map<MPlug, UsdAttribute, compare_MPlug> PlugAttrVector;
 typedef std::map<MDagPath, UsdAttribute, compare_MDagPath> MeshAttrVector;
 typedef std::map<MPlug, ScaledPair, compare_MPlug> PlugAttrScaledVector;
+typedef std::map<MDagPath, UsdAttribute, compare_MDagPath> WorldSpaceAttrVector;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A utility class to help with exporting animated plugs from maya
@@ -202,6 +203,15 @@ public:
       m_animatedMeshes.emplace(path, attribute);
   }
 
+  /// \brief  add a dag path to be exported as a set of world space matrix keyframes. 
+  /// \param  path the path to the animated maya mesh
+  /// \param  attribute the corresponding maya attribute to write the anim data into if the plug is animated
+  inline void addWorldSpace(const MDagPath& path, const UsdAttribute& attribute)
+  {
+    if(m_worldSpaceOutputs.find(path) == m_worldSpaceOutputs.end())
+      m_worldSpaceOutputs.emplace(path, attribute);
+  }
+
   /// \brief  After the scene has been exported, call this method to export the animation data on various attributes
   /// \param  params the export options
   AL_USDMAYA_PUBLIC
@@ -230,6 +240,7 @@ private:
   PlugAttrScaledVector m_scaledAnimatedPlugs;
   PlugAttrVector m_animatedTransformPlugs;
   MeshAttrVector m_animatedMeshes;
+  WorldSpaceAttrVector m_worldSpaceOutputs;
 };
 
 

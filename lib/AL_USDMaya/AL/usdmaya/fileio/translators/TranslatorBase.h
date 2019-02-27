@@ -167,6 +167,10 @@ public:
   virtual ExportFlag canExport(const MObject& obj)
     { return ExportFlag::kNotSupported; }
 
+  /// \brief After exporting the current obj/dagPath, should we proceed to it's children?
+  virtual bool exportDescendants() const
+  { return true; }
+
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -218,6 +222,18 @@ public:
       (void)timeCode;
     }
 
+  /// \brief  returns the active status of the translator
+  bool active() const
+    { return m_active; }
+
+  /// \brief  activate this translator
+  void activate()
+    { m_active = true; }
+
+  /// \brief  deactivate this translator
+  void deactivate()
+    { m_active = false; }
+
 protected:
 
   /// \brief  internal method. Used within AL_USDMAYA_DEFINE_TRANSLATOR macro to set the schema type of the node we
@@ -234,6 +250,7 @@ protected:
 private:
   TfType m_translatedType;
   TranslatorContextPtr m_context;
+  bool m_active = true;
 };
 
 typedef TfRefPtr<TranslatorBase> TranslatorRefPtr;
@@ -273,6 +290,30 @@ public:
   /// \return returns a list of extra data plugins that can be applied to the current node
   AL_USDMAYA_PUBLIC
   std::vector<ExtraDataPluginPtr> getExtraDataPlugins(const MObject& mayaObject);
+
+  /// \brief  activates the translator of the specified type
+  /// \param  type_name the name of the translator to activate
+  /// \return returns the requested translator type
+  AL_USDMAYA_PUBLIC
+  void activate(const TfTokenVector& types);
+
+  /// \brief  returns a translator for the specified prim type.
+  /// \param  type_name the schema name
+  /// \return returns the requested translator type
+  AL_USDMAYA_PUBLIC
+  void deactivate(const TfTokenVector& types);
+
+  /// \brief  activates the translator of the specified type
+  /// \param  type_name the name of the translator to activate
+  /// \return returns the requested translator type
+  AL_USDMAYA_PUBLIC
+  void activateAll();
+
+  /// \brief  returns a translator for the specified prim type.
+  /// \param  type_name the schema name
+  /// \return returns the requested translator type
+  AL_USDMAYA_PUBLIC
+  void deactivateAll();
 
 private:
   std::unordered_map<std::string, TranslatorRefPtr> m_translatorsMap;
@@ -346,6 +387,7 @@ PlugClass::create(TranslatorContextPtr context) {                               
                                                                                 \
 TF_REGISTRY_FUNCTION(TfType)                                                    \
 {                                                                               \
+std::cout << "TF_REGISTRY_FUNCTION " << #PlugClass << std::endl; \
     TfType::Define<PlugClass, TfType::Bases<TranslatorBase>>()                  \
         .SetFactory<TranslatorFactory<PlugClass>>();                            \
 }

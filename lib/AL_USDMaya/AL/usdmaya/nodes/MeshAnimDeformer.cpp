@@ -190,6 +190,10 @@ void MeshAnimDeformer::onAttributeChanged(MNodeMessage::AttributeMessage msg, MP
       {
         deformer->m_cachePath = SdfPath(AL::maya::utils::convert(primPathStr));
       }
+      else
+      {
+        deformer->m_cachePath = SdfPath();
+      }
     }
   }
 }

@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <vector>
 #include "pxr/imaging/glf/glew.h"
 #include "AL/usdmaya/nodes/Engine.h"
 #include "AL/usdmaya/nodes/ProxyDrawOverride.h"

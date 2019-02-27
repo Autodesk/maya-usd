@@ -26,6 +26,7 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/fileio/export_nonlinear.cpp
         AL/usdmaya/fileio/export_unmerged.cpp
         AL/usdmaya/fileio/export_multiple_shapes.cpp
+        AL/usdmaya/fileio/test_activeInActiveTranslators.cpp
         AL/usdmaya/nodes/test_ActiveInactive.cpp
         AL/usdmaya/nodes/test_LayerManager.cpp
         AL/usdmaya/nodes/test_ProxyShape.cpp

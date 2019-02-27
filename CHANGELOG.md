@@ -1,3 +1,22 @@
+## AL_USDMaya-0.31.2 (2019-02-25)
+### Added
+
+* added exportDescendants virtual method to TranslatorBase - this checks whether children of the exported node should be exported, and early outs if false (defaults to true)
+* support for exporting custom Transforms by calling the appropriate registered translator (previously all transforms were exported with the default Transform Translator
+* A system to allow for plugin translator options to be specified by a plugin
+* Support for export of world space animation data
+* Active/Inactive state on the translator plugins
+* New command AL_usdmaya_ListTranslators
+* New export/import options to specify the translator plugins that are enabled.
+
+### Changed
+
+* Some of the older options (specifically for mesh/camera/etc) have been changed from the hard coded variants, to plugin options.
+
+### Removed
+
+* Removed old (and no longer used) legacy translators
+
 ## AL_USDMaya-0.31.1 (2019-02-21)
 ### Added
 

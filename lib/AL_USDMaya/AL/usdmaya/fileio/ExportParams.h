@@ -16,8 +16,9 @@
 #pragma once
 #include <AL/usdmaya/ForwardDeclares.h>
 #include "maya/MSelectionList.h"
-#include "maya/MString.h"
+#include "maya/MStringArray.h"
 #include "AL/usd/utils/ForwardDeclares.h"
+#include "AL/maya/utils/FileTranslatorOptions.h"
 #include "pxr/usd/usd/timeCode.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -34,24 +35,13 @@ namespace fileio {
 //----------------------------------------------------------------------------------------------------------------------
 struct ExporterParams
 {
+  maya::utils::OptionsParser* m_parser = 0;
   MSelectionList m_nodes; ///< the selected node to be exported
   MString m_fileName; ///< the filename of the file we will be exporting
   double m_minFrame=0.0; ///< the start frame for the animation export
   double m_maxFrame=1.0; ///< the end frame of the animation export
   uint32_t m_subSamples = 1; ///< the number of subsample steps to export
   bool m_selected = false; ///< are we exporting selected objects (true) or all objects (false)
-  bool m_meshes = true; ///< if true, export meshes
-  bool m_meshPoints = true; ///< if true mesh vertices will be exported
-  bool m_meshConnects = true; ///< if true face connects and counts will be exported
-  bool m_meshNormals = true; ///< if true normal vectors will be exported
-  bool m_meshVertexCreases = true; ///< if true vertex creases will be exported
-  bool m_meshEdgeCreases = true; ///< if true edge creases will be exported
-  bool m_meshUvs = true; ///< if true UV coordinates will be exported
-  bool m_meshColours = true; ///< if true colour sets will be exported
-  bool m_meshHoles = true; ///< if true polygonal holes will be exported
-  bool m_meshUV = false; ///< if true, export a scene hierarchy with all empty prims marked "over", only meshes UV will be filled in.
-  bool m_meshPointsAsPref = false; // < if true duplicate the first mesh points ("P" attribute) sample as "pref"
-  bool m_nurbsCurves = true; ///< if true export nurbs curves
   bool m_dynamicAttributes = true; ///< if true export any dynamic attributes found on the nodes we are exporting
   bool m_duplicateInstances = true; ///< if true, instances will be exported as duplicates. As of 23/01/17, nothing will be exported if set to false.
   bool m_mergeTransforms = true; ///< if true, shapes will be merged into their parent transforms in the exported data. If false, the transform and shape will be exported seperately
@@ -59,11 +49,63 @@ struct ExporterParams
   bool m_useTimelineRange = false; ///< if true, then the export uses Maya's timeline range.
   bool m_filterSample = false; ///< if true, duplicate sample of attribute will be filtered out
   bool m_exportInWorldSpace = false; ///< if true, transform hierarchies will be flattened to a single WS transform PRIM (and no parents will be written out)
-  int m_compactionLevel = 3; ///< by default apply the strongest level of data compaction
   AnimationTranslator* m_animTranslator = 0; ///< the animation translator to help exporting the animation data
   bool m_extensiveAnimationCheck = true; ///< if true, extensive animation check will be performed on transform nodes.
   int m_exportAtWhichTime = 0; ///< controls where the data will be written to: 0 = default time, 1 = earliest time, 2 = current time
   UsdTimeCode m_timeCode = UsdTimeCode::Default();
+
+  bool m_activateAllTranslators = true;
+  TfTokenVector m_activePluginTranslators;
+  TfTokenVector m_inactivePluginTranslators;
+
+  /// \brief  Given the text name of an option, returns the boolean value for that option.
+  /// \param  str the name of the option
+  /// \return the option value
+  bool getBool(const char* const str) const
+  {
+    if(m_parser)
+      return m_parser->getBool(str);
+    return false;
+  }
+
+  /// \brief  Given the text name of an option, returns the integer value for that option.
+  /// \param  str the name of the option
+  /// \return the option value
+  int getInt(const char* const str) const
+  {
+    if(m_parser)
+      return m_parser->getInt(str);
+    return 0;
+  }
+
+  /// \brief  Given the text name of an option, returns the floating point value for that option.
+  /// \param  str the name of the option
+  /// \return the option value
+  float getFloat(const char* const str) const
+  {
+    if(m_parser)
+      return m_parser->getFloat(str);
+    return 0.0f;
+  }
+
+  /// \brief  Given the text name of an option, returns the string value for that option.
+  /// \param  str the name of the option
+  /// \return the option value
+  MString getString(const char* const str) const
+  {
+    if(m_parser)
+      return m_parser->getString(str);
+    return MString();
+  }
+
+  /// \brief  Given the text name of an option, returns the boolean value for that option.
+  /// \param  str the name of the option
+  /// \return the option value
+  void setBool(const char* const str, bool value)
+  {
+    if(m_parser)
+      m_parser->setBool(str, value);
+  }
 };
 
 //----------------------------------------------------------------------------------------------------------------------

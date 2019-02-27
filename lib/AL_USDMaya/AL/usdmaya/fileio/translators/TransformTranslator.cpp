@@ -769,6 +769,7 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
     MMatrix wsm = path.inclusiveMatrix();
     auto op = xformSchema.AddTransformOp(UsdGeomXformOp::PrecisionDouble, TfToken("transform"));
     op.Set(*(const GfMatrix4d*)&wsm, params.m_timeCode);
+    if(animTranslator) animTranslator->addWorldSpace(path, op.GetAttr());
   }
 
   return MS::kSuccess;

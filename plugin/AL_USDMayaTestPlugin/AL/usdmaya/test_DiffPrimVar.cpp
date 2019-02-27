@@ -313,7 +313,7 @@ TEST(DiffPrimVar, diffCreaseEdges)
 
   ASSERT_TRUE(MGlobal::executeCommand("polyCrease -ch true -value 0.96 -vertexValue 0.96 pCube1.e[2]") == MS::kSuccess);
 
-  const MString temp_path = buildTempPath("AL_USDMayaTests_diffCreaseEdges.usda");
+  const MString temp_path = buildTempPath("AL_USDMayaTests_diffCreaseEdgesSSS.usda");
 
   const MString exportCommand =
   "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Merge_Transforms=1;Animation=0;"
