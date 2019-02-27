@@ -318,6 +318,7 @@ inline bool ProxyShape::TransformReference::checkRef(const TransformReason reaso
 //----------------------------------------------------------------------------------------------------------------------
 inline ProxyShape::TransformReference::TransformReference(const MObject& node, const TransformReason reason)
   : m_node(node)
+  , m_transform(nullptr)
 {
   m_required = 0;
   m_selected = 0;
