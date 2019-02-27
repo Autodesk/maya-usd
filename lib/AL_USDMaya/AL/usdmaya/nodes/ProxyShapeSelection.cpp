@@ -470,14 +470,10 @@ MObject ProxyShape::makeUsdTransformChain(
 
           // if valid, grab reference to path
           if(usdPrim)
-            TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChain m_requiredPaths added TransformReference: %s\n", path.GetText());
-
-            TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChain m_requiredPaths added TransformReference: %s\n", path.GetText());
-
-            TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChain m_requiredPaths added TransformReference: %s\n", path.GetText());
-
-        };  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChain m_requiredPaths added TransformReference: %s\n", path.GetText());
-
+          {
+            iter = m_requiredPaths.find(usdPrim.GetPath());
+          }
+        };
       }
       break;
 
