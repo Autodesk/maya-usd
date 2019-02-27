@@ -311,6 +311,10 @@ public:
   /// \return the prim this transform matrix is controlling
   inline const UsdPrim& prim() const
     { return m_prim; }
+  
+  /// \brief  sets the prim this transform matrix is attached to
+  inline void setPrim(const UsdPrim& p)
+    { m_prim = p; }
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name  Query flags

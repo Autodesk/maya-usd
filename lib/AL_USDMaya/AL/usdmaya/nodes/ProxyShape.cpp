@@ -1032,6 +1032,23 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
       return;
 
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::onObjectsChanged called m_compositionHasChanged=%i\n", m_compositionHasChanged);
+  const UsdNotice::ObjectsChanged::PathRange resyncedPaths = notice.GetResyncedPaths();
+  for(const SdfPath& path : resyncedPaths)
+  {
+    auto it = m_requiredPaths.find(path);
+    if(it != m_requiredPaths.end()){
+      Transform* tm = it->second.m_transform;
+      if(!tm)
+        continue;
+
+      TransformationMatrix* tmm = tm->transform();
+      if(!tmm)
+        continue;
+
+      UsdPrim newPrim = m_stage->GetPrimAtPath(path);
+      tmm->setPrim(newPrim); // Might be invalid but that's OK at least it won't crash
+    }
+  }
 
   // These paths are subtree-roots representing entire subtrees that may have
   // changed. In this case, we must dump all cached data below these points
@@ -1102,7 +1119,6 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     }
   };
 
-  const UsdNotice::ObjectsChanged::PathRange resyncedPaths = notice.GetResyncedPaths();
   for(const SdfPath& path : resyncedPaths)
   {
     UsdPrim newPrim = m_stage->GetPrimAtPath(path);
