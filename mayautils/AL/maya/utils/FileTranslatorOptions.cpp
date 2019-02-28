@@ -565,7 +565,6 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
   //
   m_code += MString("global proc int ") + m_translatorName + "(string $parent, string $action, string $initialSettings, string $resultCallback)\n{\n";
   m_code += "  int $result = 1;\n"
-            "  print(\"parent: \" + $parent + \"\\naction: \" + $action + \"\\n\");\n"
             "  string $currentOptions;\n"
             "  string $optionList[];\n"
             "  string $optionBreakDown[];\n"

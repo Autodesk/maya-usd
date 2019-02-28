@@ -41,6 +41,7 @@ TEST(DiffPrimVar, diffGeomVerts)
   ASSERT_TRUE(MGlobal::executeCommand("polySphere  -r 1 -sx 20 -sy 20 -ax 0 1 0 -cuv 2 -ch 1", result) == MS::kSuccess);
 
   const MString temp_path = buildTempPath("AL_USDMayaTests_diffPrimVarVerts.usda");
+  const MString temp_path2 = buildTempPath("AL_USDMayaTests_diffPrimVarVerts2.usda");
 
   const MString exportCommand =
   "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Merge_Transforms=1;Animation=0;"
@@ -51,7 +52,8 @@ TEST(DiffPrimVar, diffGeomVerts)
 
   MSelectionList sl;
   EXPECT_TRUE(sl.add("pSphereShape1")  == MS::kSuccess);
-
+  MGlobal::setActiveSelectionList(sl);
+  
   MObject obj;
   sl.getDependNode(0, obj);
   MStatus status;
