@@ -112,6 +112,13 @@ UsdPrim NurbsCurve::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const S
   UsdGeomNurbsCurves nurbs = UsdGeomNurbsCurves::Define(stage, usdPath);
   MFnNurbsCurve fnCurve(dagPath);
   writeEdits(nurbs, fnCurve, true);
+
+  // pick up any additional attributes attached to the curve node (these will be added alongside the transform attributes)
+  if(params.m_dynamicAttributes)
+  {
+    UsdPrim prim = nurbs.GetPrim();
+    DgNodeTranslator::copyDynamicAttributes(dagPath.node(), prim);
+  }
   return nurbs.GetPrim();
 }
 
