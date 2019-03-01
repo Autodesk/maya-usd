@@ -1,4 +1,21 @@
-## AL_USDMaya-0.31.2 (2019-02-25)
+## AL_USDMaya-0.32.3 (2019-03-01)
+
+### Changed
+
++ Default values are now set for file translator options.
++ Nurbs Curve: width was never being written
++ Nurbs Curve: Maya dynamic attribute written from Curve shape (consistent with mesh behaviour)
+
+## AL_USDMaya-0.32.2 (2019-03-01)
+### Added
+
++ 3 utility functions used by our internal translators to AL/maya/utils
+
+### Changed
+
++ Fixed crashes during variant switches and prim activation/deactivation
+
+## AL_USDMaya-0.32.0 (2019-02-25)
 ### Added
 
 * added exportDescendants virtual method to TranslatorBase - this checks whether children of the exported node should be exported, and early outs if false (defaults to true)
