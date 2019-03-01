@@ -4,6 +4,7 @@
 #include <maya/MString.h>
 #include <maya/MDagPath.h>
 #include <maya/MObject.h>
+#include "AL/maya/utils/Api.h"
 
 namespace AL {
 namespace maya {
