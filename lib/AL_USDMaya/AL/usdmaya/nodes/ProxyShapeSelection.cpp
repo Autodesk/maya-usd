@@ -323,8 +323,6 @@ inline ProxyShape::TransformReference::TransformReference(const MObject& node, c
   m_selected = 0;
   m_selectedTemp = 0;
   m_refCount = 0;
-  MFnDependencyNode fn(node);
-  m_transform = (Transform*)fn.userNode();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -353,6 +351,7 @@ void ProxyShape::makeTransformReference(const SdfPath& path, const MObject& node
         TransformReference ref(tempNode, reason);
         ref.incRef(reason);
         m_requiredPaths.emplace(tempPath, ref);
+        TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeTransformReference m_requiredPaths added TransformReference: %s\n", tempPath.GetText());
       }
       status = dagPath.pop();
       tempPath = tempPath.GetParentPath();
@@ -450,7 +449,8 @@ MObject ProxyShape::makeUsdTransformChain(
 {
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChain %s\n", usdPrim.GetPath().GetText());
 
-  SdfPath path = usdPrim.GetPath();
+  const SdfPath path{usdPrim.GetPath()};
+
   auto iter = m_requiredPaths.find(path);
 
   // If this path has been found.
@@ -514,9 +514,9 @@ MObject ProxyShape::makeUsdTransformChain(
     if(resultingPath)
     {
       MFnDagNode fn(nodeToReturn);
-      MDagPath path;
-      fn.getPath(path);
-      *resultingPath = path.fullPathName();
+      MDagPath mpath;
+      fn.getPath(mpath);
+      *resultingPath = mpath.fullPathName();
     }
     // return the lowest point on the found chain.
     return nodeToReturn;
@@ -620,6 +620,7 @@ MObject ProxyShape::makeUsdTransformChain(
   TransformReference ref(node, reason);
   ref.checkIncRef(reason);
   m_requiredPaths.emplace(path, ref);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChain m_requiredPaths added TransformReference: %s\n", path.GetText());
   return node;
 }
 
@@ -676,6 +677,7 @@ void ProxyShape::makeUsdTransformsInternal(const UsdPrim& usdPrim, const MObject
       TransformReference transformRef(node, reason);
       transformRef.incRef(reason);
       m_requiredPaths.emplace(prim.GetPath(), transformRef);
+      TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformsInternal m_requiredPaths added TransformReference: %s\n", prim.GetPath().GetText());
 
       makeUsdTransformsInternal(prim, node, modifier, reason, modifier2);
     }
@@ -758,6 +760,7 @@ void ProxyShape::removeUsdTransformChain(
 
       m_currentLockedPrims.erase(parentPrim);
       m_requiredPaths.erase(it);
+      TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeUsdTransformChain m_requiredPaths removed TransformReference: %s\n", it->first.GetText());
     }
 
     parentPrim = parentPrim.GetParentPath();
@@ -809,6 +812,7 @@ void ProxyShape::removeUsdTransformChain(
         modifier.deleteNode(object);
       }
 
+      TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeUsdTransformChain m_requiredPaths removed TransformReference: %s\n", it->first.GetText());
       m_requiredPaths.erase(it);
     }
 
@@ -841,6 +845,7 @@ void ProxyShape::removeUsdTransformsInternal(
     // work around for Maya's love of deleting the parent transforms of custom transform nodes :(
     modifier.reparentNode(it->second.node());
     modifier.deleteNode(it->second.node());
+    TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeUsdTransformsInternal m_requiredPaths removed TransformReference: %s\n", it->first.GetText());
     m_requiredPaths.erase(it);
   }
 }
@@ -939,6 +944,7 @@ void ProxyShape::removeTransformRefs(const std::vector<std::pair<SdfPath, MObjec
       {
         if(it->second.decRef(reason))
         {
+          TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::removeTransformRefs m_requiredPaths removed TransformReference: %s\n", it->first.GetText());
           m_requiredPaths.erase(it);
         }
       }

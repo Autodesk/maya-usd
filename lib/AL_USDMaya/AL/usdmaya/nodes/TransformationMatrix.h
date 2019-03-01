@@ -46,7 +46,7 @@ class TransformationMatrix
   UsdTimeCode m_time;
   std::vector<UsdGeomXformOp> m_xformops;
   std::vector<TransformOperation> m_orderedOps;
-  MObject m_transformNode;
+  MObjectHandle m_transformNode;
 
   // tweak values. These are applied on top of the USD transform values to produce the final result.
   MVector m_scaleTweak;
@@ -150,7 +150,7 @@ public:
   /// \return true if the translate attribute is locked
   bool isTranslateLocked()
     {
-      MPlug plug(m_transformNode, MPxTransform::translate);
+      MPlug plug(m_transformNode.object(), MPxTransform::translate);
       return plug.isLocked() ||
              plug.child(0).isLocked() ||
              plug.child(1).isLocked() ||
@@ -161,7 +161,7 @@ public:
   /// \return true if the rotate attribute is locked
   bool isRotateLocked()
     {
-      MPlug plug(m_transformNode, MPxTransform::rotate);
+      MPlug plug(m_transformNode.object(), MPxTransform::rotate);
       return plug.isLocked() ||
              plug.child(0).isLocked() ||
              plug.child(1).isLocked() ||
@@ -172,7 +172,7 @@ public:
   /// \return true if the scale attribute is locked
   bool isScaleLocked()
     {
-      MPlug plug(m_transformNode, MPxTransform::scale);
+      MPlug plug(m_transformNode.object(), MPxTransform::scale);
       return plug.isLocked() ||
              plug.child(0).isLocked() ||
              plug.child(1).isLocked() ||
@@ -311,7 +311,7 @@ public:
   /// \return the prim this transform matrix is controlling
   inline const UsdPrim& prim() const
     { return m_prim; }
-
+  
   //--------------------------------------------------------------------------------------------------------------------
   /// \name  Query flags
   //--------------------------------------------------------------------------------------------------------------------

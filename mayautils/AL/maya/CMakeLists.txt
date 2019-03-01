@@ -36,6 +36,7 @@ list(APPEND maya_source
     utils/NodeHelper.cpp
     utils/CommandGuiHelper.cpp
     utils/PluginTranslatorOptions.cpp
+    utils/Utils.cpp
     event/MayaEventManager.cpp
 )
 
