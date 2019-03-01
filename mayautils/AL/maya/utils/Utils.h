@@ -28,14 +28,17 @@ namespace utils {
   }
 
   /// \brief  returns the dag path for the specified maya object
+  AL_MAYA_UTILS_PUBLIC
   MDagPath getDagPath(const MObject&);
 
   /// \brief  checks to see if the maya plugin is loaded. If it isn't, it will attempt to load the plugin.
   /// \param  pluginName the name of the plugin to check
   /// \return if the plugin is avalable and loaded, it will return true. If the plugin is not found, false is returned.
+  AL_MAYA_UTILS_PUBLIC
   bool ensureMayaPluginIsLoaded(const MString& pluginName);
 
   /// \brief  return maya object with specified name
+  AL_MAYA_UTILS_PUBLIC
   MObject findMayaObject(const MString& objectName);
 
 
