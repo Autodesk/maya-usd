@@ -283,7 +283,7 @@ bool FileTranslatorOptions::addEnum(const char* niceName, const char* const enum
 void FileTranslatorOptions::generateBoolGlobals(const MString& niceName, const MString& optionName, bool defaultValue)
 {
   MString controlName = m_translatorName + "_" + optionName;
-  MString createCommand = MString("global proc create_") + controlName + "() {" + MString("checkBox -l \"") + niceName + "\" " + controlName + ";}\n";
+  MString createCommand = MString("global proc create_") + controlName + "() {" + MString("checkBox -l \"") + niceName + "\" -v " + defaultValue + " " + controlName + ";}\n";
   MString postCommand = MString("global proc post_") + controlName + "(string $value){ eval (\"checkBox -e -v \" + $value + \" " + controlName + "\");}\n";
   MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + optionName + "=\"; if(` checkBox -q -v " + controlName + "`) $str = $str + \"1;\"; else $str = $str + \"0;\"; return $str;}\n";
 
@@ -297,7 +297,7 @@ void FileTranslatorOptions::generateBoolGlobals(const MString& niceName, const M
 void FileTranslatorOptions::generateIntGlobals(const MString& niceName, const MString& optionName, int defaultValue)
 {
   MString controlName = m_translatorName + "_" + optionName;
-  MString createCommand = MString("global proc create_") + controlName + "() {" + MString("intFieldGrp -l \"") + niceName + "\" " + controlName + ";}\n";
+  MString createCommand = MString("global proc create_") + controlName + "() {" + MString("intFieldGrp -l \"") + niceName + "\" -v1 " + defaultValue + " " + controlName + ";}\n";
   MString postCommand = MString("global proc post_") + controlName + "(string $value){ eval (\"intFieldGrp -e -v1 \" + $value + \" " + controlName + "\");}\n";
   MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + optionName + "=\" + `intFieldGrp -q -v1 " + controlName + "` + \";\"; return $str;}\n";
 
@@ -311,7 +311,7 @@ void FileTranslatorOptions::generateIntGlobals(const MString& niceName, const MS
 void FileTranslatorOptions::generateFloatGlobals(const MString& niceName, const MString& optionName, float defaultValue)
 {
   MString controlName = m_translatorName + "_" + optionName;
-  MString createCommand = MString("global proc create_") + controlName + "() {" + MString("floatFieldGrp -l \"") + niceName + "\" " + controlName + ";}\n";
+  MString createCommand = MString("global proc create_") + controlName + "() {" + MString("floatFieldGrp -l \"") + niceName + "\" -v1 " + defaultValue + " " + controlName + ";}\n";
   MString postCommand = MString("global proc post_") + controlName + "(string $value){ eval (\"floatFieldGrp -e -v1 \" + $value + \" " + controlName + "\");}\n";
   MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + optionName + "=\" + `floatFieldGrp -q -v1 " + controlName + "` + \";\"; return $str;}\n";
 
