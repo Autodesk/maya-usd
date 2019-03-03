@@ -167,6 +167,10 @@ public:
   virtual ExportFlag canExport(const MObject& obj)
     { return ExportFlag::kNotSupported; }
 
+  /// \brief  The translator plugins that ship with AL_USDMaya specify this flag as true so that they can be overridden
+  virtual bool canBeOverridden()
+    { return false; }
+
   /// \brief After exporting the current obj/dagPath, should we proceed to it's children?
   virtual bool exportDescendants() const
   { return true; }

@@ -62,6 +62,9 @@ private:
   bool supportsUpdate() const override 
     { return true; }
 
+  bool canBeOverridden() override
+    { return true; }
+    
   MayaReferenceLogic m_mayaReferenceLogic;
 };
 

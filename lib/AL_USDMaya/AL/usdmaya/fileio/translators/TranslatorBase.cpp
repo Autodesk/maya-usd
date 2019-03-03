@@ -51,7 +51,20 @@ TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
         {
           if (TranslatorRefPtr ptr = factory->create(context))
           {
-            m_translatorsMap.emplace(ptr->getTranslatedType().GetTypeName(), ptr);
+            auto it = m_translatorsMap.find(ptr->getTranslatedType().GetTypeName());
+            if(it == m_translatorsMap.end())
+            {
+              m_translatorsMap.emplace(ptr->getTranslatedType().GetTypeName(), ptr);
+            }
+            else
+            {
+              // located two translators for the same type
+              auto& previous = it->second;
+              if(previous->canBeOverridden() && !ptr->canBeOverridden())
+              {
+                m_translatorsMap[ptr->getTranslatedType().GetTypeName()] = ptr;
+              }
+            }
           }
         }
       }
