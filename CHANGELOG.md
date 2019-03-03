@@ -1,3 +1,8 @@
+## AL_USDMaya-0.32.2 (2019-03-04)
+### Added
++ canBeOverridden method to the translator plugin to identify which plugins can be overridden
+
+
 ## AL_USDMaya-0.32.3 (2019-03-01)
 
 ### Changed
