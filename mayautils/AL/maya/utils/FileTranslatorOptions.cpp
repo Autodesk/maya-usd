@@ -393,7 +393,7 @@ std::string stringify(const char* str)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void FileTranslatorOptions::initParser(OptionsParser& optionParser)
+MStatus FileTranslatorOptions::initParser(OptionsParser& optionParser)
 {
   // first generate a collection of methods to create, edit, and query each separate option. For each exporter/importer
   // option, we will generate three methods:
@@ -468,6 +468,7 @@ void FileTranslatorOptions::initParser(OptionsParser& optionParser)
       }
     }
   }
+  return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
