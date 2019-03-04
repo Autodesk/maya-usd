@@ -393,7 +393,7 @@ std::string stringify(const char* str)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus FileTranslatorOptions::initParser(OptionsParser& optionParser)
+void FileTranslatorOptions::initParser(OptionsParser& optionParser)
 {
   // first generate a collection of methods to create, edit, and query each separate option. For each exporter/importer
   // option, we will generate three methods:
@@ -473,11 +473,7 @@ MStatus FileTranslatorOptions::initParser(OptionsParser& optionParser)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MString& defaultOptionString)
 {
-  MStatus status = initParser(optionParser);
-  if(!status)
-  {
-    return status;
-  }
+  initParser(optionParser);
 
   // first generate a collection of methods to create, edit, and query each separate option. For each exporter/importer
   // option, we will generate three methods:

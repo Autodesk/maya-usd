@@ -365,7 +365,7 @@ public:
   /// \param  optionParser the option parser in which the options for the file translator have been specified
   /// \return MS::kSuccess if ok
   AL_MAYA_UTILS_PUBLIC
-  MStatus initParser(OptionsParser& optionParser);
+  void initParser(OptionsParser& optionParser);
 
 protected:
 #ifndef AL_GENERATING_DOCS
