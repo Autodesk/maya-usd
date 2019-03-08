@@ -22,6 +22,9 @@
 #include "maya/MGlobal.h"
 #include "maya/MItDependencyNodes.h"
 #include "maya/MFileIO.h"
+#include "maya/MStringArray.h"
+
+#include "pxr/usd/usdGeom/camera.h"
 
 using AL::maya::test::buildTempPath;
 
@@ -1165,4 +1168,103 @@ TEST(ProxyShapeSelect, repeatedSelection)
   { SCOPED_TRACE(""); assertSelected("hip1", hipPath, proxy); }
   MGlobal::executeCommand("undo", false, true);
   { SCOPED_TRACE(""); assertNothingSelected(proxy); }
+}
+
+TEST(ProxyShapeSelect, deselectNode)
+{
+  MFileIO::newFile(true);
+  // unsure undo is enabled for this test
+  MGlobal::executeCommand("undoInfo -state 1;");
+
+  auto constructTransformChain = [] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+
+    UsdGeomXform::Define(stage, SdfPath("/root"));
+    UsdGeomXform::Define(stage, SdfPath("/root/hip1"));
+    UsdGeomCamera::Define(stage, SdfPath("/root/cam"));
+    return stage;
+  };
+
+  auto assertSelected = [] (MString objName)
+  {
+    MSelectionList sl;
+    MGlobal::getActiveSelectionList(sl);
+    MStringArray selStrings;
+    sl.getSelectionStrings(selStrings);
+    ASSERT_EQ(1, selStrings.length());
+    ASSERT_EQ(objName, selStrings[0]);
+  };
+
+  auto assertNothingSelected = [] ()
+  {
+    MSelectionList sl;
+    MGlobal::getActiveSelectionList(sl);
+    ASSERT_EQ(0, sl.length());
+  };
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_deselectNode.usda";
+  std::string sessionLayerContents;
+
+
+  // generate some data for the proxy shape
+  {
+    auto stage = constructTransformChain();
+    stage->Export(temp_path, false);
+  }
+
+  MFnDagNode fn;
+  MObject xform = fn.create("transform");
+  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+  MString shapeName = fn.name();
+
+  AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+  // force the stage to load
+  proxy->filePathPlug().setString(temp_path.c_str());
+  MStringArray results;
+
+  // select a single path
+  MGlobal::executeCommand("select -cl;");
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip1\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
+  // Make sure it's selected
+  assertSelected("hip1");
+
+  // deselect it
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -d -pp \"/root/hip1\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
+  // Make sure it's deselected
+  assertNothingSelected();
+
+  // make sure undo /redo work as expected
+  MGlobal::executeCommand("undo", false, true);
+  assertSelected("hip1");
+  MGlobal::executeCommand("redo", false, true);
+  assertNothingSelected();
+  MGlobal::executeCommand("undo", false, true);
+  assertSelected("hip1");
+  MGlobal::executeCommand("undo", false, true);
+  assertNothingSelected();
+
+  // Make sure that all the above works, even with an object that will not be destroyed when deselected (ie, a cam)
+  // select a single path
+  MGlobal::executeCommand("select -cl;");
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/cam\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
+  // Make sure it's selected
+  assertSelected("cam");
+
+  // deselect it
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -d -pp \"/root/cam\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
+  // Make sure it's deselected
+  assertNothingSelected();
+
+  // make sure undo /redo work as expected
+  MGlobal::executeCommand("undo", false, true);
+  assertSelected("cam");
+  MGlobal::executeCommand("redo", false, true);
+  assertNothingSelected();
+  MGlobal::executeCommand("undo", false, true);
+  assertSelected("cam");
+  MGlobal::executeCommand("undo", false, true);
+  assertNothingSelected();
+
 }
