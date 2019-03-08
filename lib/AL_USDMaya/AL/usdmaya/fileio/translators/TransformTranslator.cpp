@@ -500,8 +500,6 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
   }
   else
   {
-    auto opIt = orderedOps.begin();
-
     bool resetsXformStack = false;
     GfMatrix4d value;
     xformSchema.GetLocalTransformation(&value, &resetsXformStack, usdTime);
