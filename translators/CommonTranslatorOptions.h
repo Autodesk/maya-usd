@@ -21,6 +21,7 @@ static constexpr const char* const kMeshColours = "Mesh Colours"; ///< export me
 static constexpr const char* const kMeshHoles = "Mesh Holes"; ///< export mesh face holes
 static constexpr const char* const kCompactionLevel = "Compaction Level"; ///< export mesh face holes
 static constexpr const char* const kNurbsCurves = "Nurbs Curves"; ///< export nurbs curves option name
+static constexpr const char* const kNurbsPointsAsPref = "Nurbs Curves as PRef"; ///< export nurbs curves CV's as PRef, duplicating "P"
 }
 
 //----------------------------------------------------------------------------------------------------------------------

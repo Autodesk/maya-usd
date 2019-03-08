@@ -119,6 +119,12 @@ UsdPrim NurbsCurve::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const S
     UsdPrim prim = nurbs.GetPrim();
     DgNodeTranslator::copyDynamicAttributes(dagPath.node(), prim);
   }
+
+  if(params.getBool(GeometryExportOptions::kNurbsPointsAsPref))
+  {
+    AL::usdmaya::utils::copyNurbsCurveBindPoseData(fnCurve, nurbs, params.m_timeCode);
+  }
+
   return nurbs.GetPrim();
 }
 

@@ -47,6 +47,9 @@ AL_USDMAYA_UTILS_PUBLIC
 void copyOrder(const MFnNurbsCurve& fnCurve, const UsdAttribute& orderAttr, UsdTimeCode time = UsdTimeCode::Default());
 
 AL_USDMAYA_UTILS_PUBLIC
+void copyNurbsCurveBindPoseData(MFnNurbsCurve& fnCurve, UsdGeomNurbsCurves& usdCurves, UsdTimeCode time = UsdTimeCode::Default());
+
+AL_USDMAYA_UTILS_PUBLIC
 void copyWidths(
   const MObject& widthObj, 
   const MPlug& widthPlug,
