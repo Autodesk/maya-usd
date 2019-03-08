@@ -2253,7 +2253,7 @@ MSelectionMask ProxyShape::getShapeSelectionMask() const
 
 #if defined(WANT_UFE_BUILD)
 //----------------------------------------------------------------------------------------------------------------------
-Ufe::Path ProxyShape::ufePath() const
+Ufe::PathSegment ProxyShape::ufePathSegment() const
 {
     //Build a path segment to proxyShape
     MDagPath thisPath;
@@ -2262,7 +2262,13 @@ Ufe::Path ProxyShape::ufePath() const
     // MDagPath does not include |world to its full path naem
     MString fullpath = "|world" + thisPath.fullPathName();
 
-    return Ufe::Path(Ufe::PathSegment(fullpath.asChar(), MAYA_UFE_RUNTIME_ID, MAYA_UFE_SEPARATOR));
+    return Ufe::PathSegment(fullpath.asChar(), MAYA_UFE_RUNTIME_ID, MAYA_UFE_SEPARATOR);
+}
+
+
+Ufe::Path ProxyShape::ufePath() const
+{
+    return Ufe::Path(ProxyShape::ufePathSegment());
 }
 #endif
 

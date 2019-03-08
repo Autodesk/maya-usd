@@ -51,8 +51,10 @@
 
 #if defined(WANT_UFE_BUILD)
 #include "ufe/ufe.h"
+
 UFE_NS_DEF {
     class Path;
+    class PathSegment;
 }
 #endif
 
@@ -860,6 +862,11 @@ public:
   /// \return An UFE path containing the path to the proxy shape
   AL_USDMAYA_PUBLIC
   Ufe::Path ufePath() const;
+
+  /// \brief Get the UFE path segment of the maya proxy shape
+  /// \return An UFE path segment containing the maya path to the proxy shape
+  AL_USDMAYA_PUBLIC
+  Ufe::PathSegment ufePathSegment() const;
 #endif
 
   /// \brief  Returns the selection mask of the shape
