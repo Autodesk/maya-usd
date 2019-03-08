@@ -56,11 +56,27 @@ set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
 include(Public)
 
 find_package(Maya REQUIRED)
+if (CMAKE_WANT_UFE_BUILD)
+    if (NOT UFE_MAJOR_VERSION)
+        if (NOT UFE_VERSION)
+            message(FATAL_ERROR "UFE_VERSION must be defined when CMAKE_WANT_UFE_BUILD is enabled")
+        endif()
+        string(REPLACE "." ";" UFE_VERSION_LIST ${UFE_VERSION})
+        list(GET UFE_VERSION_LIST 0 UFE_MAJOR_VERSION)
+        list(GET UFE_VERSION_LIST 1 UFE_MINOR_VERSION)
+        list(GET UFE_VERSION_LIST 2 UFE_PATCH_LEVEL)
+    endif()
+    find_package(UFE REQUIRED)
+endif()
 find_package(USD REQUIRED)
 
 #==============================================================================
 # PACKAGES USED WHILE BUILDING
 #==============================================================================
+
+if (NOT DEFINED PYTHON_INCLUDE_DIRS AND DEFINED PYTHON_INCLUDE_DIR)
+    set(PYTHON_INCLUDE_DIRS ${PYTHON_INCLUDE_DIR})
+endif()
 
 # Used to build the Python bindings of the SDK
 if(NOT(PYTHON_INCLUDE_DIRS AND PYTHON_LIBRARIES))
@@ -77,6 +93,13 @@ endif()
 #==============================================================================
 # AL_USDMAYA CMAKE VARS
 #==============================================================================
+
+set(BUILD_MAYAUSD ON CACHE BOOL "Build the Maya USD plugin and core libraries.")
+set(BUILD_AL_USDMAYA OFF CACHE BOOL "Build the Animal Logic plugin and libraries.")
+
+if (BUILD_MAYAUSD)
+    set(MAYAUSD_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD_PATCH_LEVEL}")
+endif()
 
 set(CMAKE_MODULE_PATH     "${CMAKE_SOURCE_DIR}/al_usdmaya/cmake/modules")
 set(MAYA_LOCATION         "${MAYA_LOCATION}")

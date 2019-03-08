@@ -398,7 +398,8 @@ set_target_properties(pxrUsdTranslators PROPERTIES
 )
 
 # Load information for each installed configuration.
-file(GLOB CONFIG_FILES "${USD_CONFIG_DIR}/pxrTargets-release_linux.cmake")
+get_filename_component(_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+file(GLOB CONFIG_FILES "${_DIR}/pxrTargets-*_linux.cmake")
 foreach(f ${CONFIG_FILES})
   include(${f})
 endforeach()

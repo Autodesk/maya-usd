@@ -43,7 +43,8 @@ function(init_ufe)
 
     set(UFE_LOCATION "${UFE_LOCATION}" PARENT_SCOPE)
 
-    set(UFE_INCLUDE_DIR  "${UFE_LOCATION}/common/include" PARENT_SCOPE)
+    set(UFE_INCLUDE_DIR  "${UFE_LOCATION}/common/include")
+    set(UFE_INCLUDE_DIR ${UFE_INCLUDE_DIR} PARENT_SCOPE)
 
     if(PEPTIDE_IS_DEBUG)
         set(UFE_VARIANT_NAME ${PEPTIDE_VARIANT_DIR})
@@ -51,12 +52,8 @@ function(init_ufe)
         set(UFE_VARIANT_NAME RelWithDebInfo)
     endif()
 
-    if(PEPTIDE_IS_WINDOWS)
-        set(UFE_LIBRARY_DIR      "${UFE_LOCATION}/platform/${CMAKE_SYSTEM_NAME}/${UFE_VARIANT_NAME}/lib")
-    else()
-        set(UFE_LIBRARY_DIR      "${UFE_LOCATION}/platform/${CMAKE_SYSTEM_NAME}/${UFE_VARIANT_NAME}/lib")
-    endif()
-    set(UFE_LIBRARY_DIR "${UFE_LIBRARY_DIR}" PARENT_SCOPE)
+    set(UFE_LIBRARY_DIR "${UFE_LOCATION}/platform/${CMAKE_SYSTEM_NAME}/${UFE_VARIANT_NAME}/lib")
+    set(UFE_LIBRARY_DIR ${UFE_LIBRARY_DIR} PARENT_SCOPE)
 
     if(NOT PEPTIDE_IS_WINDOWS)
         set(MAYA_UFE_PLUGIN_UFE_LIB_PREFIX "lib")

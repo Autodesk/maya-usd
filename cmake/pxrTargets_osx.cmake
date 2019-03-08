@@ -358,7 +358,8 @@ set_target_properties(usdSchemaExamples PROPERTIES
 )
 
 # Load information for each installed configuration.
-file(GLOB CONFIG_FILES "${CMAKE_SOURCE_DIR}/cmake/pxrTargets-release_osx.cmake")
+get_filename_component(_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+file(GLOB CONFIG_FILES "${_DIR}/pxrTargets-*_osx.cmake")
 foreach(f ${CONFIG_FILES})
   include(${f})
 endforeach()

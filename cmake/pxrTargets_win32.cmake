@@ -10,6 +10,13 @@ cmake_policy(VERSION 2.6)
 # Helper variables
 #----------------------------------------------------------------
 set(BOOST_INCLUDE_DIR "${AL_USDMAYA_USD_LOCATION}/include/boost-1_61")
+set(BOOST_SUFFIX "")
+set(TBB_SUFFIX "")
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+  set(BOOST_SUFFIX "-gd")
+  set(TBB_SUFFIX "_debug")
+endif()
+
 
 #----------------------------------------------------------------
 # Generated CMake target import file.
@@ -65,7 +72,7 @@ add_library(tf SHARED IMPORTED)
 set_target_properties(tf PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR};${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "arch;Shlwapi.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_date_time-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib"
+  INTERFACE_LINK_LIBRARIES "arch;Shlwapi.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_date_time-vc140-mt${BOOST_SUFFIX}-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb${TBB_SUFFIX}.lib"
 )
 
 # Create imported target gf
@@ -90,7 +97,7 @@ add_library(trace SHARED IMPORTED)
 
 set_target_properties(trace PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
-  INTERFACE_LINK_LIBRARIES "arch;js;tf;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib"
+  INTERFACE_LINK_LIBRARIES "arch;js;tf;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb${TBB_SUFFIX}.lib"
 )
 
 # Create imported target work
@@ -99,7 +106,7 @@ add_library(work SHARED IMPORTED)
 set_target_properties(work PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "tf;trace;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib"
+  INTERFACE_LINK_LIBRARIES "tf;trace;${AL_USDMAYA_USD_LOCATION}/lib/tbb${TBB_SUFFIX}.lib"
 )
 
 # Create imported target plug
@@ -108,7 +115,7 @@ add_library(plug SHARED IMPORTED)
 set_target_properties(plug PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR};${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "arch;tf;js;trace;work;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib"
+  INTERFACE_LINK_LIBRARIES "arch;tf;js;trace;work;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb${TBB_SUFFIX}.lib"
 )
 
 # Create imported target vt
@@ -117,7 +124,7 @@ add_library(vt SHARED IMPORTED)
 set_target_properties(vt PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR};${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "arch;tf;gf;trace;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib"
+  INTERFACE_LINK_LIBRARIES "arch;tf;gf;trace;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb${TBB_SUFFIX}.lib"
 )
 
 # Create imported target ar
@@ -126,7 +133,7 @@ add_library(ar SHARED IMPORTED)
 set_target_properties(ar PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR}"
-  INTERFACE_LINK_LIBRARIES "arch;tf;plug;vt;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib"
+  INTERFACE_LINK_LIBRARIES "arch;tf;plug;vt;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib"
 )
 
 # Create imported target kind
@@ -143,7 +150,7 @@ add_library(sdf SHARED IMPORTED)
 set_target_properties(sdf PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR}"
-  INTERFACE_LINK_LIBRARIES "arch;tf;gf;trace;vt;work;ar;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_regex-vc140-mt-1_61.lib"
+  INTERFACE_LINK_LIBRARIES "arch;tf;gf;trace;vt;work;ar;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_regex-vc140-mt${BOOST_SUFFIX}-1_61.lib"
 )
 
 # Create imported target ndr
@@ -152,7 +159,7 @@ add_library(ndr SHARED IMPORTED)
 set_target_properties(ndr PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR}"
-  INTERFACE_LINK_LIBRARIES "tf;plug;vt;work;ar;sdf;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib"
+  INTERFACE_LINK_LIBRARIES "tf;plug;vt;work;ar;sdf;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib"
 )
 
 # Create imported target sdr
@@ -161,7 +168,7 @@ add_library(sdr SHARED IMPORTED)
 set_target_properties(sdr PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR}"
-  INTERFACE_LINK_LIBRARIES "tf;vt;ar;ndr;sdf;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib"
+  INTERFACE_LINK_LIBRARIES "tf;vt;ar;ndr;sdf;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib"
 )
 
 # Create imported target pcp
@@ -170,7 +177,7 @@ add_library(pcp SHARED IMPORTED)
 set_target_properties(pcp PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR};${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "tf;trace;vt;sdf;work;ar;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib"
+  INTERFACE_LINK_LIBRARIES "tf;trace;vt;sdf;work;ar;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb${TBB_SUFFIX}.lib"
 )
 
 # Create imported target usd
@@ -179,7 +186,7 @@ add_library(usd SHARED IMPORTED)
 set_target_properties(usd PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR};${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "arch;kind;pcp;sdf;ar;plug;tf;trace;vt;work;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib"
+  INTERFACE_LINK_LIBRARIES "arch;kind;pcp;sdf;ar;plug;tf;trace;vt;work;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb${TBB_SUFFIX}.lib"
 )
 
 # Create imported target usdGeom
@@ -188,7 +195,7 @@ add_library(usdGeom SHARED IMPORTED)
 set_target_properties(usdGeom PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR}"
-  INTERFACE_LINK_LIBRARIES "js;tf;plug;vt;sdf;trace;usd;work;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib"
+  INTERFACE_LINK_LIBRARIES "js;tf;plug;vt;sdf;trace;usd;work;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib"
 )
 
 # Create imported target usdVol
@@ -229,7 +236,7 @@ add_library(usdRi SHARED IMPORTED)
 set_target_properties(usdRi PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR}"
-  INTERFACE_LINK_LIBRARIES "tf;vt;sdf;usd;usdShade;usdGeom;usdLux;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib"
+  INTERFACE_LINK_LIBRARIES "tf;vt;sdf;usd;usdShade;usdGeom;usdLux;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib"
 )
 
 # Create imported target usdSkel
@@ -238,7 +245,7 @@ add_library(usdSkel SHARED IMPORTED)
 set_target_properties(usdSkel PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR};${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "arch;gf;tf;trace;vt;work;sdf;usd;usdGeom;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib"
+  INTERFACE_LINK_LIBRARIES "arch;gf;tf;trace;vt;work;sdf;usd;usdGeom;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb${TBB_SUFFIX}.lib"
 )
 
 # Create imported target usdUI
@@ -255,7 +262,7 @@ add_library(usdUtils SHARED IMPORTED)
 set_target_properties(usdUtils PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR}"
-  INTERFACE_LINK_LIBRARIES "arch;tf;gf;sdf;usd;usdGeom;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib"
+  INTERFACE_LINK_LIBRARIES "arch;tf;gf;sdf;usd;usdGeom;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib"
 )
 
 # Create imported target garch
@@ -264,7 +271,7 @@ add_library(garch SHARED IMPORTED)
 set_target_properties(garch PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR}"
-  INTERFACE_LINK_LIBRARIES "arch;tf;${AL_USDMAYA_USD_LOCATION}/lib/boost_system-vc140-mt-1_61.lib;opengl32"
+  INTERFACE_LINK_LIBRARIES "arch;tf;${AL_USDMAYA_USD_LOCATION}/lib/boost_system-vc140-mt${BOOST_SUFFIX}-1_61.lib;opengl32"
 )
 
 # Create imported target hf
@@ -298,7 +305,7 @@ add_library(glf SHARED IMPORTED)
 set_target_properties(glf PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include;${BOOST_INCLUDE_DIR};${AL_USDMAYA_USD_LOCATION}/include;${AL_USDMAYA_USD_LOCATION}/include;${AL_USDMAYA_USD_LOCATION}/include/OpenEXR"
-  INTERFACE_LINK_LIBRARIES "ar;arch;garch;gf;hf;js;plug;tf;trace;sdf;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_system-vc140-mt-1_61.lib;opengl32;glu32;${AL_USDMAYA_USD_LOCATION}/lib/glew32.lib"
+  INTERFACE_LINK_LIBRARIES "ar;arch;garch;gf;hf;js;plug;tf;trace;sdf;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_system-vc140-mt${BOOST_SUFFIX}-1_61.lib;opengl32;glu32;${AL_USDMAYA_USD_LOCATION}/lib/glew32.lib"
 )
 
 # Create imported target hd
@@ -307,7 +314,7 @@ add_library(hd SHARED IMPORTED)
 set_target_properties(hd PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "plug;tf;trace;vt;work;sdf;cameraUtil;hf;pxOsd;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib"
+  INTERFACE_LINK_LIBRARIES "plug;tf;trace;vt;work;sdf;cameraUtil;hf;pxOsd;${AL_USDMAYA_USD_LOCATION}/lib/tbb${TBB_SUFFIX}.lib"
 )
 
 # Create imported target hdSt
@@ -334,7 +341,7 @@ add_library(hdStream SHARED IMPORTED)
 set_target_properties(hdStream PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include;${AL_USDMAYA_USD_LOCATION}/include;${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "plug;tf;trace;vt;work;hd;hdSt;hdx;${AL_USDMAYA_USD_LOCATION}/lib/osdCPU.lib;${AL_USDMAYA_USD_LOCATION}/lib/osdGPU.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib"
+  INTERFACE_LINK_LIBRARIES "plug;tf;trace;vt;work;hd;hdSt;hdx;${AL_USDMAYA_USD_LOCATION}/lib/osdCPU.lib;${AL_USDMAYA_USD_LOCATION}/lib/osdGPU.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb${TBB_SUFFIX}.lib"
 )
 
 # Create imported target usdImaging
@@ -343,7 +350,7 @@ add_library(usdImaging SHARED IMPORTED)
 set_target_properties(usdImaging PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "gf;tf;plug;trace;vt;work;hd;pxOsd;sdf;usd;usdGeom;usdLux;usdShade;usdVol;ar;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib"
+  INTERFACE_LINK_LIBRARIES "gf;tf;plug;trace;vt;work;hd;pxOsd;sdf;usd;usdGeom;usdLux;usdShade;usdVol;ar;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb${TBB_SUFFIX}.lib"
 )
 
 # Create imported target usdImagingGL
@@ -352,7 +359,7 @@ add_library(usdImagingGL SHARED IMPORTED)
 set_target_properties(usdImagingGL PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${AL_USDMAYA_USD_LOCATION}/include;${AL_USDMAYA_USD_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "gf;tf;plug;trace;vt;work;garch;glf;hd;hdx;pxOsd;sdf;sdr;usd;usdGeom;usdShade;usdHydra;usdImaging;ar;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;opengl32;glu32;${AL_USDMAYA_USD_LOCATION}/lib/glew32.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib"
+  INTERFACE_LINK_LIBRARIES "gf;tf;plug;trace;vt;work;garch;glf;hd;hdx;pxOsd;sdf;sdr;usd;usdGeom;usdShade;usdHydra;usdImaging;ar;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib;opengl32;glu32;${AL_USDMAYA_USD_LOCATION}/lib/glew32.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb${TBB_SUFFIX}.lib"
 )
 
 # Create imported target usdShaders
@@ -385,7 +392,7 @@ add_library(usdviewq SHARED IMPORTED)
 set_target_properties(usdviewq PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR}"
-  INTERFACE_LINK_LIBRARIES "tf;usd;usdGeom;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib"
+  INTERFACE_LINK_LIBRARIES "tf;usd;usdGeom;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib"
 )
 
 # Create imported target usdObj
@@ -421,7 +428,7 @@ add_library(pxrUsdMayaGL SHARED IMPORTED)
 set_target_properties(pxrUsdMayaGL PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${BOOST_INCLUDE_DIR};${MAYA_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "arch;gf;glf;hd;hdSt;hdx;sdf;tf;usd;usdImaging;usdImagingGL;vt;px_vp20;usdMaya;${AL_USDMAYA_USD_LOCATION}/lib/boost_date_time-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_filesystem-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_program_options-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_regex-vc140-mt-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_system-vc140-mt-1_61.lib;${MAYA_LOCATION}/lib/OpenMaya.lib;${MAYA_LOCATION}/lib/OpenMayaAnim.lib;${MAYA_LOCATION}/lib/OpenMayaFX.lib;${MAYA_LOCATION}/lib/OpenMayaRender.lib;${MAYA_LOCATION}/lib/OpenMayaUI.lib;${MAYA_LOCATION}/lib/Image.lib;${MAYA_LOCATION}/lib/Foundation.lib;${MAYA_LOCATION}/lib/IMFbase.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib;${MAYA_LOCATION}/lib/cg.lib;${MAYA_LOCATION}/lib/cgGL.lib"
+  INTERFACE_LINK_LIBRARIES "arch;gf;glf;hd;hdSt;hdx;sdf;tf;usd;usdImaging;usdImagingGL;vt;px_vp20;usdMaya;${AL_USDMAYA_USD_LOCATION}/lib/boost_date_time-vc140-mt${BOOST_SUFFIX}-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_filesystem-vc140-mt${BOOST_SUFFIX}-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_program_options-vc140-mt${BOOST_SUFFIX}-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_regex-vc140-mt${BOOST_SUFFIX}-1_61.lib;${AL_USDMAYA_USD_LOCATION}/lib/boost_system-vc140-mt${BOOST_SUFFIX}-1_61.lib;${MAYA_LOCATION}/lib/OpenMaya.lib;${MAYA_LOCATION}/lib/OpenMayaAnim.lib;${MAYA_LOCATION}/lib/OpenMayaFX.lib;${MAYA_LOCATION}/lib/OpenMayaRender.lib;${MAYA_LOCATION}/lib/OpenMayaUI.lib;${MAYA_LOCATION}/lib/Image.lib;${MAYA_LOCATION}/lib/Foundation.lib;${MAYA_LOCATION}/lib/IMFbase.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb${TBB_SUFFIX}.lib;${MAYA_LOCATION}/lib/cg.lib;${MAYA_LOCATION}/lib/cgGL.lib"
 )
 
 # Create imported target usdMaya
@@ -430,7 +437,7 @@ add_library(usdMaya SHARED IMPORTED)
 set_target_properties(usdMaya PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${MAYA_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "ar;gf;js;kind;plug;sdf;tf;usd;usdGeom;usdLux;usdRi;usdShade;usdSkel;usdUtils;vt;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;${MAYA_LOCATION}/lib/Foundation.lib;${MAYA_LOCATION}/lib/OpenMaya.lib;${MAYA_LOCATION}/lib/OpenMayaAnim.lib;${MAYA_LOCATION}/lib/OpenMayaFX.lib;${MAYA_LOCATION}/lib/OpenMayaRender.lib;${MAYA_LOCATION}/lib/OpenMayaUI.lib"
+  INTERFACE_LINK_LIBRARIES "ar;gf;js;kind;plug;sdf;tf;usd;usdGeom;usdLux;usdRi;usdShade;usdSkel;usdUtils;vt;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib;${MAYA_LOCATION}/lib/Foundation.lib;${MAYA_LOCATION}/lib/OpenMaya.lib;${MAYA_LOCATION}/lib/OpenMayaAnim.lib;${MAYA_LOCATION}/lib/OpenMayaFX.lib;${MAYA_LOCATION}/lib/OpenMayaRender.lib;${MAYA_LOCATION}/lib/OpenMayaUI.lib"
 )
 
 # Create imported target pxrUsd
@@ -439,7 +446,7 @@ add_library(pxrUsd SHARED IMPORTED)
 set_target_properties(pxrUsd PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${MAYA_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "sdf;tf;usd;usdGeom;pxrUsdMayaGL;usdMaya;${MAYA_LOCATION}/lib/OpenMaya.lib;${MAYA_LOCATION}/lib/OpenMayaAnim.lib;${MAYA_LOCATION}/lib/OpenMayaFX.lib;${MAYA_LOCATION}/lib/OpenMayaRender.lib;${MAYA_LOCATION}/lib/OpenMayaUI.lib;${MAYA_LOCATION}/lib/Image.lib;${MAYA_LOCATION}/lib/Foundation.lib;${MAYA_LOCATION}/lib/IMFbase.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib;${MAYA_LOCATION}/lib/cg.lib;${MAYA_LOCATION}/lib/cgGL.lib"
+  INTERFACE_LINK_LIBRARIES "sdf;tf;usd;usdGeom;pxrUsdMayaGL;usdMaya;${MAYA_LOCATION}/lib/OpenMaya.lib;${MAYA_LOCATION}/lib/OpenMayaAnim.lib;${MAYA_LOCATION}/lib/OpenMayaFX.lib;${MAYA_LOCATION}/lib/OpenMayaRender.lib;${MAYA_LOCATION}/lib/OpenMayaUI.lib;${MAYA_LOCATION}/lib/Image.lib;${MAYA_LOCATION}/lib/Foundation.lib;${MAYA_LOCATION}/lib/IMFbase.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb${TBB_SUFFIX}.lib;${MAYA_LOCATION}/lib/cg.lib;${MAYA_LOCATION}/lib/cgGL.lib"
 )
 
 # Create imported target pxrUsdTranslators
@@ -448,7 +455,7 @@ add_library(pxrUsdTranslators SHARED IMPORTED)
 set_target_properties(pxrUsdTranslators PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS "PXR_PYTHON_ENABLED=1"
   INTERFACE_INCLUDE_DIRECTORIES "${MAYA_LOCATION}/include"
-  INTERFACE_LINK_LIBRARIES "arch;gf;tf;usd;usdGeom;usdShade;usdSkel;usdUtils;vt;usdMaya;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt-1_61.lib;${MAYA_LOCATION}/lib/OpenMaya.lib;${MAYA_LOCATION}/lib/OpenMayaAnim.lib;${MAYA_LOCATION}/lib/OpenMayaFX.lib;${MAYA_LOCATION}/lib/OpenMayaRender.lib;${MAYA_LOCATION}/lib/OpenMayaUI.lib;${MAYA_LOCATION}/lib/Image.lib;${MAYA_LOCATION}/lib/Foundation.lib;${MAYA_LOCATION}/lib/IMFBase.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb.lib;${MAYA_LOCATION}/lib/Cg.lib;${MAYA_LOCATION}/lib/CgGl.lib"
+  INTERFACE_LINK_LIBRARIES "arch;gf;tf;usd;usdGeom;usdShade;usdSkel;usdUtils;vt;usdMaya;${AL_USDMAYA_USD_LOCATION}/lib/boost_python-vc140-mt${BOOST_SUFFIX}-1_61.lib;${MAYA_LOCATION}/lib/OpenMaya.lib;${MAYA_LOCATION}/lib/OpenMayaAnim.lib;${MAYA_LOCATION}/lib/OpenMayaFX.lib;${MAYA_LOCATION}/lib/OpenMayaRender.lib;${MAYA_LOCATION}/lib/OpenMayaUI.lib;${MAYA_LOCATION}/lib/Image.lib;${MAYA_LOCATION}/lib/Foundation.lib;${MAYA_LOCATION}/lib/IMFBase.lib;${AL_USDMAYA_USD_LOCATION}/lib/tbb${TBB_SUFFIX}.lib;${MAYA_LOCATION}/lib/Cg.lib;${MAYA_LOCATION}/lib/CgGl.lib"
 )
 
 if(CMAKE_VERSION VERSION_LESS 2.8.12)

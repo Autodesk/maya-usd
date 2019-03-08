@@ -3,14 +3,14 @@
 # PXR_INCLUDE_DIRS  - Root include directory for the installed project.
 # PXR_LIBRARIES     - List of all libraries, by target name.
 # PXR_foo_LIBRARY   - Absolute path to individual libraries.
-message(STATUS "CMAKESOURCEDIR ${USD_CONFIG_DIR}")
 set(PXR_CMAKE_DIR "${AL_USDMAYA_USD_LOCATION}")
+get_filename_component(_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 if(WIN32)
-    include("${USD_CONFIG_DIR}/pxrTargets_win32.cmake")
+    include("${_DIR}/pxrTargets_win32.cmake")
 elseif(APPLE)
-    include("${USD_CONFIG_DIR}/pxrTargets_osx.cmake")
+    include("${_DIR}/pxrTargets_osx.cmake")
 else()
-    include("${USD_CONFIG_DIR}/pxrTargets_linux.cmake")
+    include("${_DIR}/pxrTargets_linux.cmake")
 endif()
 set(libs "arch;tf;gf;js;trace;work;plug;vt;ar;kind;sdf;ndr;sdr;pcp;usd;usdGeom;usdVol;usdLux;usdShade;usdHydra;usdRi;usdSkel;usdUI;usdUtils;garch;hf;cameraUtil;pxOsd;glf;hd;hdSt;hdx;hdStream;usdImaging;usdImagingGL;usdShaders;usdSkelImaging;usdVolImaging;usdviewq;pxrUsdTranslators")
 set(PXR_LIBRARIES "")
