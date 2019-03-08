@@ -76,6 +76,18 @@ AL_MAYA_TRANSLATOR_BEGIN(ImportTranslator, "AL usdmaya import", true, false, "*.
     return MS::kSuccess;
   }
 
+  /// \brief clean up the options registered for this translator
+  /// \param  options a set of options that are constructed and later used for option parsing
+  /// \return MS::kSuccess if ok
+  static MStatus cleanupOptions(AL::maya::utils::FileTranslatorOptions& options)
+  {
+    if(!options.removeFrame("AL USD Importer Options")) return MS::kFailure;
+
+    // unregister the export translator context
+    PluginTranslatorOptionsContextManager::unregisterContext("ImportTranslator");
+    return MS::kSuccess;
+  }
+
   void prepPluginOptions() override
   {
     if(m_pluginContext.dirty())

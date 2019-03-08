@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <algorithm>
 #include "AL/maya/utils/FileTranslatorOptions.h"
 #include "AL/maya/utils/DebugCodes.h"
 
@@ -132,6 +133,23 @@ bool FileTranslatorOptions::addFrame(const char* frameName)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+bool FileTranslatorOptions::removeFrame(const char* frameName)
+{
+  auto iter = std::find_if(m_frames.begin(),
+                           m_frames.end(),
+                           [&](FrameLayout& frame) {
+                             return frame.m_frameName == frameName;
+                           });
+  if (iter != m_frames.end())
+  {
+    m_frames.erase(iter);
+    return true;
+  }
+  MGlobal::displayError((std::string("FileTranslatorOptions: failed to remove frame: ") + frameName).c_str());
+  return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MString niceNameToOptionString(MString n)
 {
   char* str = (char*)n.asChar();
@@ -178,8 +196,9 @@ bool FileTranslatorOptions::addBool(const char* niceName, bool defaultValue)
   option.enumValues = 0;
   if(hasOption(option.optionName))
   {
-    MGlobal::displayError("FileTranslatorOptions: cannot register the same option twice");
-    return false;
+    MString msg("FileTranslatorOptions: cannot register the same bool option twice: ^1");
+    msg.format(option.optionName);
+    MGlobal::displayError(msg);    return false;
   }
 
   frame.m_options.push_back(option);
@@ -202,8 +221,9 @@ bool FileTranslatorOptions::addInt(const char* niceName, int defaultValue)
   option.enumValues = 0;
   if(hasOption(option.optionName))
   {
-    MGlobal::displayError("FileTranslatorOptions: cannot register the same option twice");
-    return false;
+    MString msg("FileTranslatorOptions: cannot register the same int option twice: ^1");
+    msg.format(option.optionName);
+    MGlobal::displayError(msg);    return false;
   }
   frame.m_options.push_back(option);
   return true;
@@ -225,8 +245,9 @@ bool FileTranslatorOptions::addFloat(const char* niceName, float defaultValue)
   option.enumValues = 0;
   if(hasOption(option.optionName))
   {
-    MGlobal::displayError("FileTranslatorOptions: cannot register the same option twice");
-    return false;
+    MString msg("FileTranslatorOptions: cannot register the same float option twice: ^1");
+    msg.format(option.optionName);
+    MGlobal::displayError(msg);    return false;
   }
   frame.m_options.push_back(option);
   return true;
@@ -248,8 +269,9 @@ bool FileTranslatorOptions::addString(const char* niceName, const char* const de
   option.enumValues = 0;
   if(hasOption(option.optionName))
   {
-    MGlobal::displayError("FileTranslatorOptions: cannot register the same option twice");
-    return false;
+    MString msg("FileTranslatorOptions: cannot register the same string option twice: ^1");
+    msg.format(option.optionName);
+    MGlobal::displayError(msg);    return false;
   }
   frame.m_options.push_back(option);
   return true;
@@ -272,7 +294,9 @@ bool FileTranslatorOptions::addEnum(const char* niceName, const char* const enum
 
   if(hasOption(option.optionName))
   {
-    MGlobal::displayError("FileTranslatorOptions: cannot register the same option twice");
+    MString msg("FileTranslatorOptions: cannot register the same enum option twice: ^1");
+    msg.format(option.optionName);
+    MGlobal::displayError(msg);
     return false;
   }
   frame.m_options.push_back(option);

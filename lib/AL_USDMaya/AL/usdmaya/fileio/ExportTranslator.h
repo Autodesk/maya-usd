@@ -96,6 +96,18 @@ AL_MAYA_TRANSLATOR_BEGIN(ExportTranslator, "AL usdmaya export", false, true, "us
     return MS::kSuccess;
   }
 
+  /// \brief clean up the options registered for this translator
+  /// \param  options a set of options that are constructed and later used for option parsing
+  /// \return MS::kSuccess if ok
+  static MStatus cleanupOptions(AL::maya::utils::FileTranslatorOptions& options)
+  {
+    if(!options.removeFrame("AL USD Exporter Options")) return MS::kFailure;
+
+    // unregister the export translator context
+    PluginTranslatorOptionsContextManager::unregisterContext("ExportTranslator");
+    return MS::kSuccess;
+  }
+
   void prepPluginOptions() override
   {
     // I need to possibly recreate this when dirty (i.e. when new optins have been registered/unregistered)

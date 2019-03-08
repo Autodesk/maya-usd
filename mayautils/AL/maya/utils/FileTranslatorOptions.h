@@ -295,6 +295,11 @@ public:
   AL_MAYA_UTILS_PUBLIC
   bool addFrame(const char* frameName);
 
+  /// \brief  remove frame layout and it's set of controls
+  /// \param  frameName the name of the high level frame to remove
+  AL_MAYA_UTILS_PUBLIC
+  bool removeFrame(const char* frameName);
+
   /// \name   Add Exporter Options
   /// \brief  Add custom export/import options using the following methods. There must be at least 1 frame layout
   ///         created prior to creating any new controls.

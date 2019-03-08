@@ -151,12 +151,30 @@ public:
   /// \param  plugin the MFnPlugin function set
   template<typename FnPlugin>
   static MStatus deregisterTranslator(FnPlugin& plugin)
-    { return plugin.deregisterFileTranslator(T::kTranslatorName); }
+  {
+    if(MS::kSuccess == T::cleanupOptions(m_options))
+    {
+      MStatus status = plugin.deregisterFileTranslator(T::kTranslatorName);
+      if(!status)
+      {
+        MGlobal::displayError(MString("Failed to deregister translator: ") + T::kTranslatorName);
+      }
+      return status;
+    }
+    MGlobal::displayError(MString("Failed to remove options for translator: ") + T::kTranslatorName);
+    return MS::kFailure;
+  }
 
   /// \brief  default fall back in case no options are needed in the derived translator
   /// \param  options the file translator options
   /// \return MS::kSuccess if options were correctly specified
   static MStatus specifyOptions(FileTranslatorOptions& options)
+    { return MS::kSuccess; }
+
+  /// \brief  default fall back in case no options are needed in the derived translator
+  /// \param  options the file translator options
+  /// \return MS::kSuccess if options were correctly cleaned up
+  static MStatus cleanupOptions(FileTranslatorOptions& options)
     { return MS::kSuccess; }
 
   /// \brief  Override this method to read your files (do not use the version from MPxFileTranslator!)
