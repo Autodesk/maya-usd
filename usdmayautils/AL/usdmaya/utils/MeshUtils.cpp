@@ -1801,7 +1801,7 @@ void MeshExportContext::copyBindPoseData(UsdTimeCode time)
     UsdGeomPrimvar pRefPrimVarAttr = mesh.CreatePrimvar(
             UsdUtilsGetPrefName(),
             SdfValueTypeNames->Point3fArray,
-            UsdGeomTokens->varying);
+            UsdGeomTokens->vertex);
 
     if(pRefPrimVarAttr)
     {
