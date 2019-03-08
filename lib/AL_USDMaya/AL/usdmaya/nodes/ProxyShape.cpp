@@ -1155,6 +1155,9 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   {
     constructLockPrims();
   }
+
+  // Manually trigger a viewport redraw
+  MGlobal::executeCommand("refresh");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
