@@ -2148,7 +2148,7 @@ void ProxyShape::deserialiseTransformRefs()
             const uint32_t selected = tstrs[3].asUnsigned();
             const uint32_t refCounts = tstrs[4].asUnsigned();
             SdfPath path(tstrs[1].asChar());
-            m_requiredPaths.emplace(path, TransformReference(node, required, selected, refCounts));
+            m_requiredPaths.emplace(path, TransformReference(node, ptr, required, selected, refCounts));
             TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::deserialiseTransformRefs m_requiredPaths added AL_usdmaya_Transform TransformReference: %s\n", path.GetText());
           }
           else
@@ -2157,7 +2157,7 @@ void ProxyShape::deserialiseTransformRefs()
             const uint32_t selected = tstrs[3].asUnsigned();
             const uint32_t refCounts = tstrs[4].asUnsigned();
             SdfPath path(tstrs[1].asChar());
-            m_requiredPaths.emplace(path, TransformReference(node, required, selected, refCounts));
+            m_requiredPaths.emplace(path, TransformReference(node, nullptr, required, selected, refCounts));
             TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::deserialiseTransformRefs m_requiredPaths added TransformReference: %s\n", path.GetText());
           }
         }
@@ -2171,31 +2171,38 @@ void ProxyShape::deserialiseTransformRefs()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-ProxyShape::TransformReference::TransformReference(MObject mayaNode, uint32_t r, uint32_t s, uint32_t rc)
+ProxyShape::TransformReference::TransformReference(MObject mayaNode, Transform* node, uint32_t r, uint32_t s, uint32_t rc)
   : m_node(mayaNode)
+  , m_transform(nullptr)
 {
   m_required = r;
   m_selected = s;
   m_refCount = rc;
+  m_transform = transform();
 }
 
 Transform* ProxyShape::TransformReference::transform() const
 {
   MObject n(node());
-  if(!n.isNull()){
+  if(!n.isNull())
+  {
     MStatus status;
     MFnDependencyNode fn(n, &status);
-    if(status == MS::kSuccess){
-      if(fn.typeId() == AL_USDMAYA_TRANSFORM){
+    if(status == MS::kSuccess)
+    {
+      if(fn.typeId() == AL_USDMAYA_TRANSFORM)
+      {
         TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformReference::transform found valid AL_usdmaya_Tranform: %s\n", fn.absoluteName().asChar());
         return (Transform*)fn.userNode();
       }
-      else{
+      else
+      {
         TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformReference::transform found non AL_usdmaya_Tranform: %s\n", fn.absoluteName().asChar());
         return nullptr;
       }
     }
-    else{
+    else
+    {
       TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformReference::transform found invalid transform\n");
       return nullptr;
     }
