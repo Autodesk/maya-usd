@@ -648,6 +648,8 @@ TEST_F(ActiveInactive, disable)
         sl.clear();
 
         // should be able to set the variant to cube with ns fred
+        // Make sure the same prim will only bring in one copy of a reference.
+        // "cube" -> "fredcube: same filepath, but new ns
         EXPECT_TRUE(actualSet.SetVariantSelection("fredcube"));
 
         // cube ref should be loaded under ns fred
@@ -678,10 +680,10 @@ TEST_F(ActiveInactive, disable)
         EXPECT_EQ(3, sl.length());
         sl.clear();
 
-        // should be able to set the variant back to a sphere
+        // should be able to set the variant back to a cached sphere
         EXPECT_TRUE(actualSet.SetVariantSelection("cache"));
 
-        // sphere should not be there, but the cube should be
+        // no refs should be loaded anymore
         EXPECT_FALSE(bool(sl.add("dave:pSphere1")));
         EXPECT_FALSE(bool(sl.add("dave:pSphereShape1")));
         EXPECT_FALSE(bool(sl.add("dave:polySphere1")));
@@ -704,7 +706,7 @@ TEST_F(ActiveInactive, disable)
         // transform chain has re-appeared, and the correct reference has been imported into the scene
         EXPECT_TRUE(actualSet.SetVariantSelection("cube"));
 
-        // sphere should not be there, but the cube should be
+        // only the cube should be loaded
         EXPECT_FALSE(bool(sl.add("dave:pSphere1")));
         EXPECT_FALSE(bool(sl.add("dave:pSphereShape1")));
         EXPECT_FALSE(bool(sl.add("dave:polySphere1")));
@@ -723,15 +725,6 @@ TEST_F(ActiveInactive, disable)
           EXPECT_FALSE(iter.isDone());
         }
 
-        // Make sure the same prim can only bring in one copy of a reference.
-        fn.findPlug("pauseUpdates").setBool(True);
-        EXPECT_TRUE(actualSet.SetVariantSelection("sphere"));
-        EXPECT_TRUE(actualSet.SetVariantSelection("fredcube"));
-        fn.findPlug("pauseUpdates").setBool(False);
-        // Make sure we only got one ref
-        EXPECT_TRUE(bool(sl.add("fred:pCube1")));
-        EXPECT_FALSE(bool(sl.add("fred1:pCube1")));
-
         // import a reference, and make sure a new ref is created on a resync.
         MString command;
         command = "file -importReference \"";
@@ -740,12 +733,12 @@ TEST_F(ActiveInactive, disable)
         MStatus status = MGlobal::executeCommand(command);
         EXPECT_EQ(MStatus(MS::kSuccess), status);
         // old imported reference
-        EXPECT_TRUE(bool(sl.add("fred:pCube1")));
+        EXPECT_TRUE(bool(sl.add("dave:pCube1")));
         proxy->resync(SdfPath("/"));
         // new reference created on resync
-        EXPECT_TRUE(bool(sl.add("fred1:pCube1")));
+        EXPECT_TRUE(bool(sl.add("dave1:pCube1")));
         // old will still exist
-        EXPECT_TRUE(bool(sl.add("fred:pCube1")));
+        EXPECT_TRUE(bool(sl.add("dave:pCube1")));
       }
     }
   }
