@@ -43,7 +43,7 @@ void registerCommonTranslatorOptions()
     g_exportOptions->addBool(GeometryExportOptions::kMeshColours, true);
     g_exportOptions->addBool(GeometryExportOptions::kMeshHoles, true);
     g_exportOptions->addEnum(GeometryExportOptions::kCompactionLevel, g_compactionLevels, 3);
-    g_exportOptions->addBool(GeometryExportOptions::kNurbsPointsAsPref, false);
+    g_exportOptions->addBool(GeometryExportOptions::kPointsAsPRef, false);
   }
 
   context = AL::maya::utils::PluginTranslatorOptionsContextManager::find("ImportTranslator");

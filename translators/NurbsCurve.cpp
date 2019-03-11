@@ -120,7 +120,7 @@ UsdPrim NurbsCurve::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const S
     DgNodeTranslator::copyDynamicAttributes(dagPath.node(), prim);
   }
 
-  if(params.getBool(GeometryExportOptions::kNurbsPointsAsPref))
+  if(params.getBool(GeometryExportOptions::kPointsAsPRef))
   {
     AL::usdmaya::utils::copyNurbsCurveBindPoseData(fnCurve, nurbs, params.m_timeCode);
   }
