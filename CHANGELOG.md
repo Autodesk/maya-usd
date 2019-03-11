@@ -1,7 +1,28 @@
-## AL_USDMaya-0.32.2 (2019-03-04)
+## AL_USDMaya-0.32.6 (2019-03-11)
+### Changed
++ Refresh command call added at the end of ProxyShape::onObjectsChanged [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/144) (#144 - @[pilarmolinalopez](//github.com/pilarmolinalopez))
++ Some c++11 style foreach loops changed to iterate over refs, instead of values, to avoid copy [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/142) (#142 - @[elrond79](//github.com/elrond79))
++ Replaced removeVariantFromPath in ProxyShapeUI with standard SdfPath:: StripAllVariantSelections [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/142) (#142 - @[elrond79](//github.com/elrond79))
++ Removed an unused opIt var from TransformTranslator [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/142) (#142 - @[elrond79](//github.com/elrond79))
++ ProxyShapeSelection - avoided re-assignment of helper.m_paths = m_selectedPaths on every loop [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/142) (#142 - @[elrond79](//github.com/elrond79))
++ Removed unused if-branch in ProxyDrawOverride::userSelect [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/142) (#142 - @[elrond79](//github.com/elrond79))
++ FindUFE.cmake now detects version (so you can require specific version, and don't need to explicitly set it beforehand) [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/139) (#139 - @[elrond79](//github.com/elrond79))
+
+### Fixed
++ Fixes bug where, in UFE mode, if had a USD hierarchy without any Xform nodes, it would select the
+root anytime you clicked on anything [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/142) (#142 - @[elrond79](//github.com/elrond79))
++ Made sure SelectionEnded event was triggered in toggle mode, even if no changes made [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/142) (#142 - @[elrond79](//github.com/elrond79))
++ ufe selection: check for correct proxy shape before drawing sel highlight [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/141) (#141 - @[elrond79](//github.com/elrond79))
++ Fixed deselect mode of the proxy shape command [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/12) (#12 - @[elrond79](//github.com/elrond79))
+
+## AL_USDMaya-0.32.5 (2019-03-04)
+### Fixed
++ In Maya 2019, The File translator GUI's could end up failing due to an incorrect early return.
++ Bug when exporting normals, for cases where normalIDs need to be considered
+
+## AL_USDMaya-0.32.4 (2019-03-04)
 ### Added
 + canBeOverridden method to the translator plugin to identify which plugins can be overridden
-
 
 ## AL_USDMaya-0.32.3 (2019-03-01)
 
