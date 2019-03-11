@@ -1,3 +1,10 @@
+## AL_USDMaya-0.32.7 (2019-03-11)
+### Changed
++ Revered the TransformReference struct to the state prior to 0.32.2 . This may re-introduce variant switch crashes.
+
+### Fixed
++ No longer incorrectly expanding normals in the per-vertex case.
+
 ## AL_USDMaya-0.32.6 (2019-03-11)
 ### Changed
 + Refresh command call added at the end of ProxyShape::onObjectsChanged [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/144) (#144 - @[pilarmolinalopez](//github.com/pilarmolinalopez))
