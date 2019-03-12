@@ -2181,13 +2181,14 @@ ProxyShape::TransformReference::TransformReference(MObject mayaNode, Transform* 
   m_transform = transform();
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 Transform* ProxyShape::TransformReference::transform() const
 {
-  MObject n(node());
-  if(!n.isNull())
+  MObjectHandle n(node());
+  if(n.isValid() && n.isAlive())
   {
     MStatus status;
-    MFnDependencyNode fn(n, &status);
+    MFnDependencyNode fn(n.object(), &status);
     if(status == MS::kSuccess)
     {
       if(fn.typeId() == AL_USDMAYA_TRANSFORM)
