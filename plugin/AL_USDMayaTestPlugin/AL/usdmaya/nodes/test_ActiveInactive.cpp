@@ -726,19 +726,21 @@ TEST_F(ActiveInactive, disable)
         }
 
         // import a reference, and make sure a new ref is created on a resync.
+        EXPECT_TRUE(bool(sl.add("dave:pCube1")));
+        EXPECT_FALSE(bool(sl.add("dave1:pCube1")));
         MString command;
         command = "file -importReference \"";
         command += temp_path_cube.asChar();
         command += "\";";
         MStatus status = MGlobal::executeCommand(command);
         EXPECT_EQ(MStatus(MS::kSuccess), status);
-        // old imported reference
+        // old reference is now imported
         EXPECT_TRUE(bool(sl.add("dave:pCube1")));
+        EXPECT_FALSE(bool(sl.add("dave1:pCube1")));
         proxy->resync(SdfPath("/"));
-        // new reference created on resync
-        EXPECT_TRUE(bool(sl.add("dave1:pCube1")));
-        // old will still exist
+        // old will still exist and a new reference has been created
         EXPECT_TRUE(bool(sl.add("dave:pCube1")));
+        EXPECT_TRUE(bool(sl.add("dave1:pCube1")));
       }
     }
   }
