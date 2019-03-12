@@ -24,7 +24,6 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
-
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorContext::~TranslatorContext()
 {
@@ -221,6 +220,12 @@ void TranslatorContext::insertItem(const UsdPrim& prim, MObjectHandle object)
   {
     iter = m_primMapping.insert(iter, PrimLookup(prim.GetPath(), prim.GetTypeName(), object.object()));
   }
+  
+  if(object.object() == MObject::kNullObj)
+  {
+    return;
+  }
+
   iter->createdNodes().push_back(object);
 
   if(object.object() == MObject::kNullObj)
@@ -262,6 +267,7 @@ void TranslatorContext::removeItems(const SdfPath& path)
           hasDagNodes = true;
           modifier2.reparentNode(obj);
           status = modifier2.deleteNode(obj);
+          status = modifier2.doIt();
           AL_MAYA_CHECK_ERROR2(status, "failed to delete transform node");
         }
         else
@@ -281,12 +287,14 @@ void TranslatorContext::removeItems(const SdfPath& path)
         {
           hasDependNodes = true;
           status = modifier1.deleteNode(obj);
+          status = modifier1.doIt();
           AL_MAYA_CHECK_ERROR2(status, MString("failed to delete node"));
         }
       }
       else
       {
         TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeItems Invalid MObject was registered with the primPath \"%s\"\n", path.GetText());
+
       }
     }
     nodes.clear();
