@@ -663,7 +663,7 @@ MString PluginTranslatorOptions::generateGUI(const char* const prefix, MString& 
   {
     auto opt = option(j);
     MString controlName = MString(prefix) + "_" + makeName(opt->name);
-    code += (MString("  if($name == \"" + opt->name + "\") { post_" + controlName + "($value); return 1; } else\n"));
+    code += (MString("  if($name == \"" + makeName(opt->name) + "\") { post_" + controlName + "($value); return 1; } else\n"));
   }
   code += "  {}\n";
   code += "  return 0;\n";
