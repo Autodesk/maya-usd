@@ -1,6 +1,11 @@
+## AL_USDMaya-0.32.7 (2019-03-13)
+### Fixed
++ Fixed potential crash on variant switch
++ Fixed problem where plugin translator options would not post the previous settings to the import/export GUI. 
+
 ## AL_USDMaya-0.32.7 (2019-03-11)
 ### Changed
-+ Revered the TransformReference struct to the state prior to 0.32.2 . This may re-introduce variant switch crashes.
++ Reverted the TransformReference struct to the state prior to 0.32.2 . This may re-introduce variant switch crashes.
 
 ### Fixed
 + No longer incorrectly expanding normals in the per-vertex case.
