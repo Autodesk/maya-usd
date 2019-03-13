@@ -30,7 +30,11 @@
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/rprim.h>
 
+#ifdef USD_001905_BUILD
+#include <pxr/imaging/hio/glslfx.h>
+#else
 #include <pxr/imaging/glf/glslfx.h>
+#endif // USD_001905_BUILD
 
 #include <usdMaya/util.h>
 

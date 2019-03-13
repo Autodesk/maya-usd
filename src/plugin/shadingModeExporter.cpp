@@ -23,7 +23,15 @@
 //
 #include <pxr/pxr.h>
 
+#ifdef USD_001905_BUILD
+#include <pxr/imaging/hio/glslfx.h>
+#else
 #include <pxr/imaging/glf/glslfx.h>
+namespace {
+auto& HioGlslfxTokens = PXR_NS::GlfGLSLFXTokens;
+}
+#endif // USD_001905_BUILD
+
 #include <pxr/usd/usdShade/connectableAPI.h>
 #include <pxr/usd/usdShade/shader.h>
 
@@ -163,7 +171,7 @@ public:
             if (!TF_VERIFY(_ExportNode(stage, hdNode))) { continue; }
             if (hdNode.path == hdSurf) {
                 UsdShadeOutput surfaceOutput =
-                    material.CreateSurfaceOutput(GlfGLSLFXTokens->glslfx);
+                    material.CreateSurfaceOutput(HioGlslfxTokens->glslfx);
                 if (TF_VERIFY(surfaceOutput)) {
                     UsdShadeConnectableAPI::ConnectToSource(
                         surfaceOutput, hdNode.path.IsPropertyPath()

@@ -202,7 +202,11 @@ VtValue HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
             paramName.GetText(), GetDagPath().partialPathName().asChar());
 
     MFnLight light(GetDagPath());
+#ifdef USD_001905_BUILD
+    if (paramName == HdTokens->displayColor) {
+#else
     if (paramName == HdTokens->color) {
+#endif // USD_001905_BUILD
         const auto color = light.color();
         return VtValue(GfVec3f(color.r, color.g, color.b));
     } else if (paramName == HdLightTokens->intensity) {

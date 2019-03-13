@@ -116,7 +116,11 @@ VtValue MtohDefaultLightDelegate::Get(const SdfPath& id, const TfToken& key) {
 VtValue MtohDefaultLightDelegate::GetLightParamValue(
     const SdfPath& id, const TfToken& paramName) {
     TF_UNUSED(id);
+#ifdef USD_001905_BUILD
+    if (paramName == HdTokens->displayColor) {
+#else
     if (paramName == HdTokens->color) {
+#endif // USD_001905_BUILD
         const auto diffuse = _light.GetDiffuse();
         return VtValue(GfVec3f(diffuse[0], diffuse[1], diffuse[2]));
     } else if (paramName == HdLightTokens->intensity) {

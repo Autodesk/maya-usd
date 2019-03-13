@@ -30,7 +30,13 @@
 #include <pxr/imaging/hd/material.h>
 #include <pxr/imaging/hd/resourceRegistry.h>
 
+#ifdef USD_001905_BUILD
+#include <pxr/imaging/hio/glslfx.h>
+#else
 #include <pxr/imaging/glf/glslfx.h>
+typedef PXR_NS::GlfGLSLFX HioGlslfx;
+#endif // USD_001905_BUILD
+
 #include <pxr/imaging/glf/textureRegistry.h>
 
 #include <pxr/usdImaging/usdImagingGL/package.h>
@@ -81,7 +87,7 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 static const std::pair<std::string, std::string> _textureShaderSource =
     []() -> std::pair<std::string, std::string> {
     std::istringstream ss(_simpleTexturedSurfaceSource);
-    GlfGLSLFX gfx(ss);
+    HioGlslfx gfx(ss);
     return {gfx.GetSurfaceSource(), gfx.GetDisplacementSource()};
 }();
 

@@ -30,8 +30,18 @@
 #include <pxr/imaging/hd/resourceRegistry.h>
 
 #include <pxr/imaging/glf/contextCaps.h>
-#include <pxr/imaging/glf/glslfx.h>
 #include <pxr/imaging/glf/textureRegistry.h>
+
+#ifdef USD_001905_BUILD
+#include <pxr/imaging/hio/glslfx.h>
+#else
+#include <pxr/imaging/glf/glslfx.h>
+typedef PXR_NS::GlfGLSLFX HioGlslfx;
+namespace {
+auto& HioGlslfxTokens = PXR_NS::GlfGLSLFXTokens;
+}
+#endif // USD_001905_BUILD
+
 #ifdef USD_001901_BUILD
 #include <pxr/imaging/glf/udimTexture.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
@@ -41,7 +51,6 @@
 
 #include <pxr/usdImaging/usdImagingGL/package.h>
 
-#include <pxr/imaging/glf/glslfx.h>
 #include <pxr/imaging/hdSt/textureResource.h>
 
 #include <pxr/usd/sdf/types.h>
@@ -102,9 +111,9 @@ auto _PreviewShaderSource = []() -> const std::pair<std::string, std::string>& {
     static const auto ret = []() -> std::pair<std::string, std::string> {
         auto& registry = SdrRegistry::GetInstance();
         auto sdrNode = registry.GetShaderNodeByIdentifierAndType(
-            UsdImagingTokens->UsdPreviewSurface, GlfGLSLFXTokens->glslfx);
+            UsdImagingTokens->UsdPreviewSurface, HioGlslfxTokens->glslfx);
         if (!sdrNode) { return {"", ""}; }
-        GlfGLSLFX gfx(sdrNode->GetSourceURI());
+        HioGlslfx gfx(sdrNode->GetSourceURI());
         return {gfx.GetSurfaceSource(), gfx.GetDisplacementSource()};
     }();
     return ret;
