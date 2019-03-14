@@ -229,12 +229,11 @@ public:
                               true)
                           .asString();
             }
-            return VtValue(TfToken(ret.asChar()));
+            return VtValue(SdfAssetPath(ret.asChar(), ret.asChar()));
         }
-        return VtValue(
-            TfToken(node.findPlug(MayaAttrs::file::fileTextureName, true)
-                        .asString()
-                        .asChar()));
+        auto ret =
+            node.findPlug(MayaAttrs::file::fileTextureName, true).asString();
+        return VtValue(SdfAssetPath(ret.asChar(), ret.asChar()));
     }
 };
 
