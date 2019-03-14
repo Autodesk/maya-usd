@@ -1,4 +1,9 @@
-## AL_USDMaya-0.32.7 (2019-03-13)
+## AL_USDMaya-0.32.9 (2019-03-14)
+### Fixed
++ Fixed crash when modifying rotation attributes
++ Fixed erratic rotate tool
+
+## AL_USDMaya-0.32.8 (2019-03-13)
 ### Fixed
 + Fixed potential crash on variant switch
 + Fixed problem where plugin translator options would not post the previous settings to the import/export GUI. 
