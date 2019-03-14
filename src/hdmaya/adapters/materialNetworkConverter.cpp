@@ -517,9 +517,17 @@ VtValue HdMayaMaterialNetworkConverter::ConvertPlugToValue(
             plug.child(2).asFloat()));
     } else if (type == SdfValueTypeNames->Float) {
         return VtValue(plug.asFloat());
+    } else if (type == SdfValueTypeNames->Float2) {
+        return VtValue(
+            GfVec2f(plug.child(0).asFloat(), plug.child(1).asFloat()));
     } else if (type == SdfValueTypeNames->Int) {
         return VtValue(plug.asInt());
     }
+    TF_DEBUG(HDMAYA_ADAPTER_GET)
+        .Msg(
+            "HdMayaMaterialNetworkConverter::ConvertPlugToValue(): do not know "
+            "how to handle type: %s (cpp type: %s)\n",
+            type.GetAsToken().GetText(), type.GetCPPTypeName().c_str());
     if (fallback) { return *fallback; }
     return {};
 };
