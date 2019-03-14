@@ -1036,7 +1036,8 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   for(const SdfPath& path : resyncedPaths)
   {
     auto it = m_requiredPaths.find(path);
-    if(it != m_requiredPaths.end()){
+    if(it != m_requiredPaths.end())
+    {
       UsdPrim newPrim = m_stage->GetPrimAtPath(path);
       Transform* tm = it->second.transform();
       if(!tm)
@@ -1156,8 +1157,11 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     constructLockPrims();
   }
 
-  // Manually trigger a viewport redraw
-  MGlobal::executeCommand("refresh");
+  if(m_compositionHasChanged)
+  {
+    // Manually trigger a viewport redraw
+    MGlobal::executeCommand("refresh");
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
