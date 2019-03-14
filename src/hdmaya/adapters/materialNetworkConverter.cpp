@@ -451,6 +451,9 @@ void HdMayaMaterialNetworkConverter::ConvertParameter(
     const SdfValueTypeName& type, const VtValue* fallback) {
     MPlug plug;
     VtValue val;
+    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+        .Msg("ConvertParameter(%s)\n", paramName.GetText());
+
     auto* attrConverter = nodeConverter.GetAttrConverter(paramName);
     if (attrConverter) {
         val = attrConverter->GetValue(node, paramName, type, fallback, &plug);
@@ -466,7 +469,7 @@ void HdMayaMaterialNetworkConverter::ConvertParameter(
     }
 
     material.parameters[paramName] = val;
-    if (!plug.isNull()) { return; }
+    if (plug.isNull()) { return; }
     MPlugArray conns;
     plug.connectedTo(conns, true, false);
     if (conns.length() > 0) {
