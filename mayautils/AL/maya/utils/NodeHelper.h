@@ -17,17 +17,12 @@
 
 #include "./Api.h"
 
-#include "maya/MFnNumericAttribute.h"
-#include "maya/MFnData.h"
-#include "maya/MTypeId.h"
 #include "maya/MColor.h"
-#include "maya/MFloatPoint.h"
 #include "maya/MFloatVector.h"
-#include "AL/maya/utils/ForwardDeclares.h"
+#include "maya/MFnNumericAttribute.h"
 
 #include <deque>
 #include <vector>
-#include <string>
 
 namespace AL {
 namespace maya {

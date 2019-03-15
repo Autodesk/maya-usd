@@ -16,10 +16,8 @@
 #pragma once
 
 #include "./Api.h"
-
-#include "AL/usd/utils/SIMD.h"
 #include "AL/usd/utils/ALHalf.h"
-PXR_NAMESPACE_USING_DIRECTIVE
+#include <cstdint>
 
 namespace AL {
 namespace usd {

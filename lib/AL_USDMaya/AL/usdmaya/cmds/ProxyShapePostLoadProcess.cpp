@@ -13,45 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "AL/usdmaya/cmds/ProxyShapePostLoadProcess.h"
+
 #include "AL/usdmaya/CodeTimings.h"
 #include "AL/usdmaya/Metadata.h"
-#include "AL/usdmaya/StageData.h"
-#include "AL/usdmaya/DebugCodes.h"
-#include "AL/usdmaya/cmds/LayerCommands.h"
-#include "AL/usdmaya/cmds/ProxyShapePostLoadProcess.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
-#include "AL/usdmaya/fileio/NodeFactory.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
-#include "AL/usdmaya/fileio/translators/TranslatorContext.h"
-
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 
-#include "maya/MArgList.h"
-#include "maya/MDagPath.h"
-#include "maya/MDagModifier.h"
-#include "maya/MDGModifier.h"
 #include "maya/MFnDagNode.h"
-#include "maya/MFnCamera.h"
-#include "maya/MFnTransform.h"
-#include "maya/MGlobal.h"
-#include "maya/MPlug.h"
-#include "maya/MPlugArray.h"
-#include "maya/MSelectionList.h"
-#include "maya/MString.h"
-#include "maya/MSyntax.h"
-#include "maya/MObjectHandle.h"
-
-#include <pxr/base/tf/type.h>
-#include <pxr/base/vt/dictionary.h>
-#include <pxr/usd/kind/registry.h>
-#include <pxr/usd/usd/modelAPI.h>
-#include <pxr/usd/usd/variantSets.h>
-
-#include <map>
-#include <string>
-#include "AL/usdmaya/utils/Utils.h"
 
 namespace AL {
 namespace usdmaya {

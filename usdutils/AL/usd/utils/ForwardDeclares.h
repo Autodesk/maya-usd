@@ -17,7 +17,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usdLux/light.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

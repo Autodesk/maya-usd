@@ -16,13 +16,11 @@
 
 #pragma once
 
+#include "./Api.h"
+
 #include "maya/MFnNurbsCurve.h"
-#include "maya/MFnDoubleArrayData.h"
-#include "maya/MObject.h"
-#include "maya/MPlug.h"
 
 #include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/nurbsCurves.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE

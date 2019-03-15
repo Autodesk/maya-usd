@@ -14,15 +14,19 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/cmds/ListTranslators.h"
+
+#include "pxr/pxr.h"
+#include "pxr/base/tf/debug.h"
+#include "pxr/base/plug/registry.h"
+
+#include "maya/MArgDatabase.h"
+#include "maya/MGlobal.h"
+#include "maya/MSyntax.h"
+#include "maya/MStringArray.h"
+
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
-#include "pxr/base/plug/registry.h"
-#include "pxr/base/tf/debug.h"
-
-#include "maya/MSyntax.h"
-#include "maya/MGlobal.h"
-#include "maya/MArgDatabase.h"
-#include "maya/MStringArray.h"
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
 namespace usdmaya {

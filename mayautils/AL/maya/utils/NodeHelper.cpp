@@ -17,32 +17,24 @@
 #include "AL/maya/utils/MayaHelperMacros.h"
 #include "AL/maya/utils/DebugCodes.h"
 
-#include "maya/MPxNode.h"
-#include "maya/MFnNumericAttribute.h"
+#include "maya/MDataBlock.h"
+#include "maya/MEulerRotation.h"
+#include "maya/MFnCompoundAttribute.h"
+#include "maya/MFnDependencyNode.h"
+#include "maya/MFnEnumAttribute.h"
 #include "maya/MFnMatrixAttribute.h"
+#include "maya/MFnMessageAttribute.h"
+#include "maya/MFnPluginData.h"
+#include "maya/MFnStringData.h"
 #include "maya/MFnTypedAttribute.h"
 #include "maya/MFnUnitAttribute.h"
-#include "maya/MFnMessageAttribute.h"
-#include "maya/MFnCompoundAttribute.h"
-#include "maya/MFnEnumAttribute.h"
-#include "maya/MFnDependencyNode.h"
-#include "maya/MFnStringData.h"
 #include "maya/MGlobal.h"
 #include "maya/MMatrix.h"
-#include "maya/MVector.h"
-#include "maya/MPoint.h"
+#include "maya/MPxNode.h"
 #include "maya/MTime.h"
-#include "maya/MEulerRotation.h"
-#include "maya/MDataBlock.h"
-#include "maya/MPxData.h"
-#include "maya/MDataHandle.h"
-#include "maya/MFnPluginData.h"
-#include "maya/MTime.h"
-#include "maya/MFnDoubleArrayData.h"
 
-#include <sstream>
 #include <cassert>
-#include <cctype>
+#include <sstream>
 
 namespace AL {
 namespace maya {

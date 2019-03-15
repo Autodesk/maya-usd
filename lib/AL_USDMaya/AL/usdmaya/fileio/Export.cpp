@@ -18,45 +18,26 @@
 #include "AL/usdmaya/fileio/ExportTranslator.h"
 #include "AL/usdmaya/fileio/NodeFactory.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
-#include "AL/usdmaya/TransformOperation.h"
 #include "AL/usdmaya/Metadata.h"
+#include "AL/usdmaya/TransformOperation.h"
+#include "AL/usdmaya/utils/MeshUtils.h"
+#include "AL/usdmaya/utils/Utils.h"
+#include "AL/maya/utils/Utils.h"
+#include "AL/maya/utils/MObjectMap.h"
 
 #include "maya/MAnimControl.h"
-#include "maya/MAnimUtil.h"
 #include "maya/MArgDatabase.h"
-#include "maya/MDagPath.h"
-#include "maya/MFnCamera.h"
-#include "maya/MFnDagNode.h"
 #include "maya/MFnMesh.h"
 #include "maya/MFnTransform.h"
-#include "maya/MGlobal.h"
 #include "maya/MItDag.h"
-#include "maya/MSyntax.h"
 #include "maya/MNodeClass.h"
-#include "maya/MObjectArray.h"
-#include "maya/MPlug.h"
 #include "maya/MPlugArray.h"
-#include "maya/MSelectionList.h"
-#include "maya/MUuid.h"
+#include "maya/MSyntax.h"
 
-#include "pxr/usd/usd/modelAPI.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usd/variantSets.h"
-#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/nurbsCurves.h"
-#include "pxr/base/gf/transform.h"
-#include "pxr/usd/usdGeom/camera.h"
-
-#include <unordered_set>
-#include <algorithm>
-#include "AL/usdmaya/utils/Utils.h"
-#include "AL/usdmaya/utils/MeshUtils.h"
-#include "AL/usd/utils/SIMD.h"
-#include "AL/maya/utils/MObjectMap.h"
-#include <functional>
+#include "pxr/usd/usd/primRange.h"
 
 namespace AL {
 namespace usdmaya {

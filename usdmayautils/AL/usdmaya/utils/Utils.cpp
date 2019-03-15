@@ -14,27 +14,15 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/utils/Utils.h"
-
 #include "AL/usd/utils/DebugCodes.h"
 #include "AL/maya/utils/Utils.h"
 
-#include "maya/MMatrix.h"
-#include "maya/MEulerRotation.h"
-#include "maya/MVector.h"
-#include "maya/MObject.h"
-#include "maya/MFnDagNode.h"
 #include "maya/MDagPath.h"
+#include "maya/MEulerRotation.h"
+#include "maya/MFnDagNode.h"
 #include "maya/MGlobal.h"
-
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/editTarget.h"
-#include "pxr/usd/usd/common.h"
-#include "pxr/usd/usd/stage.h"
-
-#include <algorithm>
-
-#include "AL/usdmaya/utils/ForwardDeclares.h"
+#include "maya/MMatrix.h"
+#include "maya/MVector.h"
 
 namespace AL {
 namespace usdmaya {

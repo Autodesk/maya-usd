@@ -17,8 +17,8 @@
 
 #include "./Api.h"
 
-#include "pxr/pxr.h"
 #include "AL/usdmaya/utils/ForwardDeclares.h"
+
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

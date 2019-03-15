@@ -13,25 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/utils/CommandGuiHelper.h"
-#include "AL/usdmaya/utils/Utils.h"
-#include "AL/maya/utils/MayaHelperMacros.h"
-#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/cmds/RendererCommands.h"
 #include "AL/usdmaya/nodes/RendererManager.h"
+#include "AL/maya/utils/CommandGuiHelper.h"
 
 #include "maya/MArgDatabase.h"
-#include "maya/MDagPath.h"
-#include "maya/MFnDagNode.h"
 #include "maya/MGlobal.h"
-#include "maya/MItDependencyGraph.h"
-#include "maya/MItDependencyNodes.h"
-#include "maya/MSelectionList.h"
-#include "maya/MStringArray.h"
 #include "maya/MSyntax.h"
-
-#include <sstream>
-#include "AL/usdmaya/utils/Utils.h"
 
 namespace AL {
 namespace usdmaya {

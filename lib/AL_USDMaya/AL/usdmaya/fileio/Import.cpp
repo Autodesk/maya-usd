@@ -13,45 +13,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usdmaya/CodeTimings.h"
-
-#include "AL/usdmaya/utils/DgNodeHelper.h"
-#include "AL/usdmaya/utils/Utils.h"
-#include "AL/usdmaya/DebugCodes.h"
-#include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/fileio/Import.h"
 #include "AL/usdmaya/fileio/ImportTranslator.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
-#include "AL/usdmaya/nodes/ProxyShape.h"
-#include "AL/usdmaya/nodes/Transform.h"
+#include "AL/usdmaya/Metadata.h"
+#include "AL/usdmaya/utils/Utils.h"
+#include "AL/maya/utils/Utils.h"
+
+#include "AL/usdmaya/CodeTimings.h"
 
 #include "maya/MAnimControl.h"
 #include "maya/MArgDatabase.h"
-#include "maya/MArgList.h"
-#include "maya/MDagModifier.h"
-#include "maya/MEulerRotation.h"
-#include "maya/MFileIO.h"
-#include "maya/MFnCamera.h"
-#include "maya/MFnDagNode.h"
 #include "maya/MFnTransform.h"
-#include "maya/MFnIkJoint.h"
-#include "maya/MGlobal.h"
-#include "maya/MNodeClass.h"
-#include "maya/MPlug.h"
-#include "maya/MSelectionList.h"
 #include "maya/MSyntax.h"
-#include "maya/MStringArray.h"
+#include "maya/MTime.h"
 
-#include "pxr/usd/usd/modelAPI.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usd/primRange.h"
-#include "pxr/usd/usd/variantSets.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
-#include "pxr/base/gf/transform.h"
-
-#include <sstream>
+#include "pxr/usd/usd/stage.h"
 
 namespace AL {
 namespace usdmaya {

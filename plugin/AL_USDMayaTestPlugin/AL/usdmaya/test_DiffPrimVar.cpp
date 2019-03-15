@@ -22,6 +22,7 @@
 #include "maya/MFileIO.h"
 #include "maya/MFnDagNode.h"
 #include "maya/MGlobal.h"
+#include "maya/MUintArray.h"
 #include "maya/MStringArray.h"
 #include "maya/MPointArray.h"
 #include "maya/MVectorArray.h"

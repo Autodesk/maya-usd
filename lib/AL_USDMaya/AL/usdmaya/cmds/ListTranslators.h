@@ -17,14 +17,8 @@
 
 #include "../Api.h"
 
-#include "maya/MPxCommand.h"
-
-#include "pxr/pxr.h"
-#include "AL/usdmaya/utils/ForwardDeclares.h"
-#include "AL/maya/utils/Api.h"
 #include "AL/maya/utils/MayaHelperMacros.h"
-
-PXR_NAMESPACE_USING_DIRECTIVE
+#include "maya/MPxCommand.h"
 
 namespace AL {
 namespace usdmaya {

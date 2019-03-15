@@ -16,9 +16,10 @@
 #pragma once
 #include "AL/maya/utils/Api.h"
 #include "AL/maya/utils/MayaHelperMacros.h"
-#include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
 
+/*
+#include "AL/usdmaya/fileio/ImportParams.h"
 #include "maya/MPxCommand.h"
 #include "maya/MDagModifier.h"
 #include "maya/MObject.h"
@@ -26,10 +27,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-#include <map>
+*/
 
 namespace AL {
 namespace usdmaya {

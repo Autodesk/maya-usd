@@ -90,7 +90,6 @@
 
 #include "maya/MPxFileTranslator.h"
 #include "maya/MGlobal.h"
-#include "maya/MFileObject.h"
 
 namespace AL {
 namespace maya {

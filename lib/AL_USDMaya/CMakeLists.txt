@@ -37,7 +37,6 @@ list(APPEND AL_usdmaya_cmds_headers
         AL/usdmaya/cmds/LayerCommands.h
         AL/usdmaya/cmds/ListTranslators.h
         AL/usdmaya/cmds/ProxyShapeCommands.h
-        AL/usdmaya/cmds/ProxyShapeSelectCommands.h
         AL/usdmaya/cmds/ProxyShapePostLoadProcess.h
         AL/usdmaya/cmds/RendererCommands.h
         AL/usdmaya/cmds/SyncFileIOGui.h
@@ -50,7 +49,6 @@ list(APPEND AL_usdmaya_cmds_source
         AL/usdmaya/cmds/LayerCommands.cpp
         AL/usdmaya/cmds/ListTranslators.cpp
         AL/usdmaya/cmds/ProxyShapeCommands.cpp
-        AL/usdmaya/cmds/ProxyShapeSelectCommands.cpp
         AL/usdmaya/cmds/ProxyShapePostLoadProcess.cpp
         AL/usdmaya/cmds/RendererCommands.cpp
         AL/usdmaya/cmds/SyncFileIOGui.cpp

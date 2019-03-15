@@ -21,9 +21,6 @@
 
 #include <map>
 #include <vector>
-#include <string>
-
-#include "AL/maya/utils/ForwardDeclares.h"
 
 namespace AL {
 namespace maya {

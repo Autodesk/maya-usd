@@ -17,23 +17,13 @@
 
 #include "../Api.h"
 
-#include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
-#include "AL/usdmaya/fileio/translators/TranslatorBase.h"
-
+#include "maya/MDagPath.h"
 #include "maya/MPlug.h"
 #include "maya/MString.h"
-#include "maya/MDagPath.h"
-#include "maya/MObjectHandle.h"
 
-#include <vector>
-#include <array>
-#include <map>
+#include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
-#include <utility>
-
-#include "pxr/pxr.h"
-#include "pxr/usd/usd/stage.h"
-
+#include "pxr/usd/usd/attribute.h"
 PXR_NAMESPACE_USING_DIRECTIVE
 
 /// \brief  operator to compare MPlugs with < operator

@@ -18,23 +18,14 @@
 
 #include "./Api.h"
 
-#include "maya/MVectorArray.h"
+#include "pxr/usd/usdGeom/mesh.h"
+
 #include "maya/MFloatPointArray.h"
+#include "maya/MFnMesh.h"
+#include "maya/MItMeshVertex.h"
 #include "maya/MIntArray.h"
 #include "maya/MUintArray.h"
-#include "maya/MFnMesh.h"
-#include "maya/MDoubleArray.h"
-#include "maya/MItMeshVertex.h"
 #include "maya/MPlug.h"
-#include "maya/MDagPath.h"
-#include "maya/MGlobal.h"
-
-
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/base/vt/array.h"
-#include "pxr/base/gf/vec3f.h"
-
-#include "pxr/usd/usdGeom/mesh.h"
 
 #include "AL/maya/utils/MayaHelperMacros.h"
 

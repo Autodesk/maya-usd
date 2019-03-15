@@ -27,7 +27,6 @@
 #include "AL/usdmaya/cmds/LayerCommands.h"
 #include "AL/usdmaya/cmds/ListTranslators.h"
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
-#include "AL/usdmaya/cmds/ProxyShapeSelectCommands.h"
 #include "AL/usdmaya/cmds/RendererCommands.h"
 #include "AL/usdmaya/cmds/SyncFileIOGui.h"
 #include "AL/usdmaya/cmds/UnloadPrim.h"

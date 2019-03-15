@@ -36,6 +36,7 @@ typedef boost::filesystem::path path;
 }
 
 #include "AL/usdmaya/CodeTimings.h"
+#include "AL/maya/utils/Utils.h"
 #include "AL/usdmaya/utils/Utils.h"
 
 #include "AL/usdmaya/DebugCodes.h"
@@ -801,9 +802,8 @@ MStatus ProxyShape::initialise()
     m_serializedRefCounts = addStringAttr("serializedRefCounts", "strcs", kReadable | kWritable | kStorable | kHidden);
 
     m_version = addStringAttr(
-        "version", "vrs", getVersion().c_str(),
-        kReadable | kStorable | kHidden
-        );
+        "version", "vrs", getVersion(),
+        kReadable | kStorable | kHidden);
 
     MNodeClass nc("transform");
     m_transformTranslate = nc.attribute("t");

@@ -18,6 +18,7 @@
 #include "pxr/usd/usdGeom/xform.h"
 
 #include "maya/MDoubleArray.h"
+#include "maya/MFnDoubleArrayData.h"
 #include "maya/MFnNurbsCurve.h"
 #include "maya/MPointArray.h"
 #include "maya/MStatus.h"

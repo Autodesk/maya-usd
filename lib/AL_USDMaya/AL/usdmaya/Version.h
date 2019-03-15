@@ -31,7 +31,7 @@
 namespace AL {
 namespace usdmaya {
 
-inline std::string getVersion()
+inline const char* getVersion()
 {
     return AL_USDMAYA_VERSION_STR;
 }

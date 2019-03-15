@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/TypeIDs.h"
+#include "AL/maya/utils/Utils.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/MeshAnimDeformer.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"

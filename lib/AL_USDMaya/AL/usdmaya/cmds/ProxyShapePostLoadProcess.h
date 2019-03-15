@@ -15,12 +15,9 @@
 //
 #pragma once
 #include "AL/usdmaya/ForwardDeclares.h"
-#include "AL/usdmaya/fileio/ImportParams.h"
-#include "maya/MPxCommand.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 
 #include "pxr/pxr.h"
-#include "pxr/usd/usd/common.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

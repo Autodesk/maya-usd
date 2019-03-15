@@ -17,12 +17,11 @@
 
 #include "./Api.h"
 
-#include "AL/maya/event/MayaEventManager.h"
+#include "AL/event/EventHandler.h"
+
 #include "maya/MPxGeometryData.h"
 
-#include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
-#include "AL/usd/utils/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

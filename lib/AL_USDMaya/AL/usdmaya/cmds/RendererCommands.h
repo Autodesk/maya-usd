@@ -17,9 +17,13 @@
 
 #include "../Api.h"
 
+#include "AL/maya/utils/MayaHelperMacros.h"
+
+#include "maya/MPxCommand.h"
+
+/*
 #include "AL/usdmaya/ForwardDeclares.h"
 #include "AL/maya/utils/Api.h"
-#include "AL/maya/utils/MayaHelperMacros.h"
 #include "maya/MDGModifier.h"
 #include "maya/MObject.h"
 #include "maya/MPxCommand.h"
@@ -27,6 +31,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
 #include <functional>
+*/
 
 namespace AL {
 namespace usdmaya {

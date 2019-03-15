@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/TransformOperation.h"
+#include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include <string>
+#include <vector>
 namespace AL {
 namespace usdmaya {
 

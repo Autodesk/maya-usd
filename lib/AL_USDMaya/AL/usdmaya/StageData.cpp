@@ -16,9 +16,8 @@
 #include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/DebugCodes.h"
+#include "AL/maya/event/MayaEventManager.h"
 
-#include "maya/MTypeId.h"
-#include "maya/MString.h"
 namespace AL {
 namespace usdmaya {
 

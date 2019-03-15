@@ -14,16 +14,12 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/utils/DiffPrimVar.h"
-#include "maya/MFnMesh.h"
+#include "AL/usd/utils/SIMD.h"
+
 #include "maya/MDoubleArray.h"
 #include "maya/MFloatArray.h"
 #include "maya/MIntArray.h"
 #include "maya/MUintArray.h"
-#include "maya/MItMeshFaceVertex.h"
-#include "maya/MGlobal.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/mesh.h"
-#include "pxr/usd/usd/attribute.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

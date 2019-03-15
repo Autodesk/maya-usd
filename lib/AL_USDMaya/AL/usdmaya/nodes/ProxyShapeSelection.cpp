@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/nodes/ProxyShape.h"
+#include "AL/maya/utils/Utils.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "AL/usdmaya/TypeIDs.h"

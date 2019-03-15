@@ -14,11 +14,11 @@
 // limitations under the License.
 //
 #include "AL/maya/utils/Utils.h"
-#include "AL/usdmaya/utils/MeshUtils.h"
 #include "AL/usdmaya/utils/DiffPrimVar.h"
+#include "AL/usdmaya/utils/MeshUtils.h"
 #include "AL/usdmaya/utils/Utils.h"
 #include "AL/usd/utils/DebugCodes.h"
-#include "pxr/usd/usdGeom/tokens.h"
+
 #include "pxr/usd/usdUtils/pipeline.h"
 
 #include "maya/MItMeshPolygon.h"

@@ -18,15 +18,11 @@
 #include "AL/usdmaya/fileio/NodeFactory.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
+#include "AL/maya/utils/MayaHelperMacros.h"
+
 #include "maya/MPxCommand.h"
 
 #include "pxr/pxr.h"
-#include <pxr/base/tf/token.h>
-#include <pxr/base/tf/hashmap.h>
-#include "AL/usdmaya/utils/ForwardDeclares.h"
-#include "AL/maya/utils/Api.h"
-#include "AL/maya/utils/MayaHelperMacros.h"
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
