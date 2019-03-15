@@ -288,7 +288,7 @@ void HdMayaMaterialNetworkConverter::initialize() {
         std::make_shared<HdMayaRemappingMaterialAttrConverter>(
             HdMayaAdapterTokens->eccentricity, SdfValueTypeNames->Float);
     auto uvConverter = std::make_shared<HdMayaRemappingMaterialAttrConverter>(
-        HdMayaAdapterTokens->uvCoord, SdfValueTypeNames->Float2);
+        HdMayaAdapterTokens->uvCoord, SdfValueTypeNames->TexCoord2f);
 
     auto fixedZeroFloat =
         std::make_shared<HdMayaFixedMaterialAttrConverter>(0.0f);
@@ -535,7 +535,9 @@ VtValue HdMayaMaterialNetworkConverter::ConvertPlugToValue(
             plug.child(2).asFloat()));
     } else if (type == SdfValueTypeNames->Float) {
         return VtValue(plug.asFloat());
-    } else if (type == SdfValueTypeNames->Float2) {
+    } else if (
+        type == SdfValueTypeNames->Float2 ||
+        type == SdfValueTypeNames->TexCoord2f) {
         return VtValue(
             GfVec2f(plug.child(0).asFloat(), plug.child(1).asFloat()));
     } else if (type == SdfValueTypeNames->Int) {
