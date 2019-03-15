@@ -265,95 +265,110 @@ private:
     MObject _mirrorAttr;
 };
 
-HdMayaGenericMaterialAttrConverter _genericAttrConverter;
-
-HdMayaRemappingMaterialAttrConverter _colorConverter(
-    HdMayaAdapterTokens->color, SdfValueTypeNames->Vector3f);
-HdMayaRemappingMaterialAttrConverter _incandescenceConverter(
-    HdMayaAdapterTokens->incandescence, SdfValueTypeNames->Vector3f);
-HdMayaRemappingMaterialAttrConverter _eccentricityConverter(
-    HdMayaAdapterTokens->eccentricity, SdfValueTypeNames->Float);
-HdMayaRemappingMaterialAttrConverter _uvConverter(
-    HdMayaAdapterTokens->uvCoord, SdfValueTypeNames->Float2);
-
-HdMayaFixedMaterialAttrConverter _fixedZeroFloat(0.0f);
-HdMayaFixedMaterialAttrConverter _fixedOneFloat(1.0f);
-HdMayaFixedMaterialAttrConverter _fixedZeroInt(0);
-HdMayaFixedMaterialAttrConverter _fixedOneInt(1);
-HdMayaFixedMaterialAttrConverter _fixedStToken(HdMayaAdapterTokens->st);
-
-HdMayaCosinePowerMaterialAttrConverter _cosinePowerToRoughness;
-HdMayaFilenameMaterialAttrConverter _filenameConverter;
-
-HdMayaWrapMaterialAttrConverter _wrapUConverter(
-    MayaAttrs::file::wrapU, MayaAttrs::file::mirrorU);
-HdMayaWrapMaterialAttrConverter _wrapVConverter(
-    MayaAttrs::file::wrapV, MayaAttrs::file::mirrorV);
-
-HdMayaNewDefaultMaterialAttrConverter _textureMemoryConverter(
-    defaultTextureMemoryLimit);
+auto _genericAttrConverter =
+    std::make_shared<HdMayaGenericMaterialAttrConverter>();
 
 typedef std::unordered_map<
     TfToken, HdMayaMaterialNodeConverter, TfToken::HashFunctor>
     NameToNodeConverterMap;
 
-NameToNodeConverterMap _nodeConverters{
-    {UsdImagingTokens->UsdPreviewSurface,
-     {UsdImagingTokens->UsdPreviewSurface, {}}},
-    {HdMayaAdapterTokens->pxrUsdPreviewSurface,
-     {UsdImagingTokens->UsdPreviewSurface, {}}},
-    {HdMayaAdapterTokens->lambert,
-     {UsdImagingTokens->UsdPreviewSurface,
-      {
-          {HdMayaAdapterTokens->diffuseColor, &_colorConverter},
-          {HdMayaAdapterTokens->emissiveColor, &_incandescenceConverter},
-          {HdMayaAdapterTokens->roughness, &_fixedOneFloat},
-          {HdMayaAdapterTokens->metallic, &_fixedZeroFloat},
-          {HdMayaAdapterTokens->useSpecularWorkflow, &_fixedZeroInt},
-      }}},
-    {HdMayaAdapterTokens->blinn,
-     {UsdImagingTokens->UsdPreviewSurface,
-      {
-          {HdMayaAdapterTokens->diffuseColor, &_colorConverter},
-          {HdMayaAdapterTokens->emissiveColor, &_incandescenceConverter},
-          {HdMayaAdapterTokens->roughness, &_eccentricityConverter},
-          {HdMayaAdapterTokens->metallic, &_fixedZeroFloat},
-          {HdMayaAdapterTokens->useSpecularWorkflow, &_fixedOneInt},
-      }}},
-    {HdMayaAdapterTokens->phong,
-     {UsdImagingTokens->UsdPreviewSurface,
-      {
-          {HdMayaAdapterTokens->diffuseColor, &_colorConverter},
-          {HdMayaAdapterTokens->emissiveColor, &_incandescenceConverter},
-          {HdMayaAdapterTokens->roughness, &_cosinePowerToRoughness},
-          {HdMayaAdapterTokens->metallic, &_fixedZeroFloat},
-          {HdMayaAdapterTokens->useSpecularWorkflow, &_fixedOneInt},
-      }}},
-    {HdMayaAdapterTokens->file,
-     {UsdImagingTokens->UsdUVTexture,
-      {
-          {HdMayaAdapterTokens->file, &_filenameConverter},
-          {HdMayaAdapterTokens->st, &_uvConverter},
-          {UsdHydraTokens->wrapS, &_wrapUConverter},
-          {UsdHydraTokens->wrapT, &_wrapVConverter},
-      }}},
-    {HdMayaAdapterTokens->place2dTexture,
-     {UsdImagingTokens->UsdPrimvarReader_float2,
-      {
-          {HdMayaAdapterTokens->varname, &_fixedStToken},
-      }}},
-};
+NameToNodeConverterMap _nodeConverters;
 
 } // namespace
+
+/*static*/
+void HdMayaMaterialNetworkConverter::initialize() {
+    auto colorConverter =
+        std::make_shared<HdMayaRemappingMaterialAttrConverter>(
+            HdMayaAdapterTokens->color, SdfValueTypeNames->Vector3f);
+    auto incandescenceConverter =
+        std::make_shared<HdMayaRemappingMaterialAttrConverter>(
+            HdMayaAdapterTokens->incandescence, SdfValueTypeNames->Vector3f);
+    auto eccentricityConverter =
+        std::make_shared<HdMayaRemappingMaterialAttrConverter>(
+            HdMayaAdapterTokens->eccentricity, SdfValueTypeNames->Float);
+    auto uvConverter = std::make_shared<HdMayaRemappingMaterialAttrConverter>(
+        HdMayaAdapterTokens->uvCoord, SdfValueTypeNames->Float2);
+
+    auto fixedZeroFloat =
+        std::make_shared<HdMayaFixedMaterialAttrConverter>(0.0f);
+    auto fixedOneFloat =
+        std::make_shared<HdMayaFixedMaterialAttrConverter>(1.0f);
+    auto fixedZeroInt = std::make_shared<HdMayaFixedMaterialAttrConverter>(0);
+    auto fixedOneInt = std::make_shared<HdMayaFixedMaterialAttrConverter>(1);
+    auto fixedStToken = std::make_shared<HdMayaFixedMaterialAttrConverter>(
+        HdMayaAdapterTokens->st);
+
+    auto cosinePowerToRoughness =
+        std::make_shared<HdMayaCosinePowerMaterialAttrConverter>();
+    auto filenameConverter =
+        std::make_shared<HdMayaFilenameMaterialAttrConverter>();
+
+    auto wrapUConverter = std::make_shared<HdMayaWrapMaterialAttrConverter>(
+        MayaAttrs::file::wrapU, MayaAttrs::file::mirrorU);
+    auto wrapVConverter = std::make_shared<HdMayaWrapMaterialAttrConverter>(
+        MayaAttrs::file::wrapV, MayaAttrs::file::mirrorV);
+
+    auto textureMemoryConverter =
+        std::make_shared<HdMayaNewDefaultMaterialAttrConverter>(
+            defaultTextureMemoryLimit);
+
+    _nodeConverters = {
+        {UsdImagingTokens->UsdPreviewSurface,
+         {UsdImagingTokens->UsdPreviewSurface, {}}},
+        {HdMayaAdapterTokens->pxrUsdPreviewSurface,
+         {UsdImagingTokens->UsdPreviewSurface, {}}},
+        {HdMayaAdapterTokens->lambert,
+         {UsdImagingTokens->UsdPreviewSurface,
+          {
+              {HdMayaAdapterTokens->diffuseColor, colorConverter},
+              {HdMayaAdapterTokens->emissiveColor, incandescenceConverter},
+              {HdMayaAdapterTokens->roughness, fixedOneFloat},
+              {HdMayaAdapterTokens->metallic, fixedZeroFloat},
+              {HdMayaAdapterTokens->useSpecularWorkflow, fixedZeroInt},
+          }}},
+        {HdMayaAdapterTokens->blinn,
+         {UsdImagingTokens->UsdPreviewSurface,
+          {
+              {HdMayaAdapterTokens->diffuseColor, colorConverter},
+              {HdMayaAdapterTokens->emissiveColor, incandescenceConverter},
+              {HdMayaAdapterTokens->roughness, eccentricityConverter},
+              {HdMayaAdapterTokens->metallic, fixedZeroFloat},
+              {HdMayaAdapterTokens->useSpecularWorkflow, fixedOneInt},
+          }}},
+        {HdMayaAdapterTokens->phong,
+         {UsdImagingTokens->UsdPreviewSurface,
+          {
+              {HdMayaAdapterTokens->diffuseColor, colorConverter},
+              {HdMayaAdapterTokens->emissiveColor, incandescenceConverter},
+              {HdMayaAdapterTokens->roughness, cosinePowerToRoughness},
+              {HdMayaAdapterTokens->metallic, fixedZeroFloat},
+              {HdMayaAdapterTokens->useSpecularWorkflow, fixedOneInt},
+          }}},
+        {HdMayaAdapterTokens->file,
+         {UsdImagingTokens->UsdUVTexture,
+          {
+              {HdMayaAdapterTokens->file, filenameConverter},
+              {HdMayaAdapterTokens->st, uvConverter},
+              {UsdHydraTokens->wrapS, wrapUConverter},
+              {UsdHydraTokens->wrapT, wrapVConverter},
+          }}},
+        {HdMayaAdapterTokens->place2dTexture,
+         {UsdImagingTokens->UsdPrimvarReader_float2,
+          {
+              {HdMayaAdapterTokens->varname, fixedStToken},
+          }}},
+    };
+}
 
 HdMayaMaterialNodeConverter::HdMayaMaterialNodeConverter(
     const TfToken& identifier, const NameToAttrConverterMap& attrConverters)
     : _attrConverters(attrConverters), _identifier(identifier) {}
 
-HdMayaMaterialAttrConverter* HdMayaMaterialNodeConverter::GetAttrConverter(
-    const TfToken& paramName) {
+HdMayaMaterialAttrConverter::RefPtr
+HdMayaMaterialNodeConverter::GetAttrConverter(const TfToken& paramName) {
     auto it = _attrConverters.find(paramName);
-    if (it == _attrConverters.end()) { return &_genericAttrConverter; }
+    if (it == _attrConverters.end()) { return _genericAttrConverter; }
     return it->second;
 }
 
@@ -426,7 +441,8 @@ SdfPath HdMayaMaterialNetworkConverter::GetMaterial(const MObject& mayaNode) {
                     AddPrimvar(primVarName.UncheckedGet<TfToken>());
                 } else {
                     TF_WARN(
-                        "Converter identified as a UsdPrimvarReader*, but it's "
+                        "Converter identified as a UsdPrimvarReader*, but "
+                        "it's "
                         "varname did not hold a TfToken");
                 }
             }
@@ -453,7 +469,7 @@ void HdMayaMaterialNetworkConverter::ConvertParameter(
     TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
         .Msg("ConvertParameter(%s)\n", paramName.GetText());
 
-    auto* attrConverter = nodeConverter.GetAttrConverter(paramName);
+    auto attrConverter = nodeConverter.GetAttrConverter(paramName);
     if (attrConverter) {
         val = attrConverter->GetValue(node, paramName, type, fallback, &plug);
     } else if (fallback) {
@@ -462,7 +478,8 @@ void HdMayaMaterialNetworkConverter::ConvertParameter(
         TF_DEBUG(HDMAYA_ADAPTER_GET)
             .Msg(
                 "HdMayaMaterialNetworkConverter::ConvertParameter(): "
-                "No attrConverter found with name: %s and no fallback given",
+                "No attrConverter found with name: %s and no fallback "
+                "given",
                 paramName.GetText());
         val = VtValue();
     }
@@ -525,7 +542,8 @@ VtValue HdMayaMaterialNetworkConverter::ConvertPlugToValue(
     }
     TF_DEBUG(HDMAYA_ADAPTER_GET)
         .Msg(
-            "HdMayaMaterialNetworkConverter::ConvertPlugToValue(): do not know "
+            "HdMayaMaterialNetworkConverter::ConvertPlugToValue(): do not "
+            "know "
             "how to handle type: %s (cpp type: %s)\n",
             type.GetAsToken().GetText(), type.GetCPPTypeName().c_str());
     if (fallback) { return *fallback; }

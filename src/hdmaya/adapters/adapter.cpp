@@ -27,6 +27,7 @@
 
 #include <maya/MNodeMessage.h>
 
+#include <hdmaya/adapters/materialNetworkConverter.h>
 #include <hdmaya/adapters/mayaAttrs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -90,6 +91,10 @@ void HdMayaAdapter::CreateCallbacks() {
     }
 }
 
-MStatus HdMayaAdapter::Initialize() { return MayaAttrs::initialize(); }
+MStatus HdMayaAdapter::Initialize() {
+    auto status = MayaAttrs::initialize();
+    if (status) { HdMayaMaterialNetworkConverter::initialize(); }
+    return MayaAttrs::initialize();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

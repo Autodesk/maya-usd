@@ -55,6 +55,8 @@ using HdMayaShaderParams = std::vector<HdMayaShaderParam>;
 /// translation) and HdMayaMaterialAdapter (for translation to Hydra).
 class HdMayaMaterialAttrConverter {
 public:
+    typedef std::shared_ptr<HdMayaMaterialAttrConverter> RefPtr;
+
     virtual ~HdMayaMaterialAttrConverter(){};
 
     /// Returns the default type for this attr converter - if an
@@ -91,7 +93,7 @@ public:
 class HdMayaMaterialNodeConverter {
 public:
     typedef std::unordered_map<
-        TfToken, HdMayaMaterialAttrConverter*, TfToken::HashFunctor>
+        TfToken, HdMayaMaterialAttrConverter::RefPtr, TfToken::HashFunctor>
         NameToAttrConverterMap;
 
     HDMAYA_API
@@ -106,7 +108,8 @@ public:
     /// that will look for an attribute on the maya node with the same name, and
     /// use that if possible.
     HDMAYA_API
-    HdMayaMaterialAttrConverter* GetAttrConverter(const TfToken& paramName);
+    HdMayaMaterialAttrConverter::RefPtr GetAttrConverter(
+        const TfToken& paramName);
 
     inline NameToAttrConverterMap& GetAttrConverters() {
         return _attrConverters;
@@ -143,6 +146,9 @@ public:
         MFnDependencyNode& node, const MString& plugName,
         const SdfValueTypeName& type, const VtValue* fallback = nullptr,
         MPlug* outPlug = nullptr);
+
+    HDMAYA_API
+    static void initialize();
 
     HDMAYA_API
     static VtValue ConvertPlugToValue(

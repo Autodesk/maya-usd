@@ -326,7 +326,7 @@ private:
              HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
             auto textureType = HdTextureType::Uv;
             auto remappedName = it.param.GetName();
-            auto* attrConverter = nodeConverter->GetAttrConverter(remappedName);
+            auto attrConverter = nodeConverter->GetAttrConverter(remappedName);
             if (attrConverter) {
                 TfToken tempName = attrConverter->GetPlugName(remappedName);
                 if (!tempName.IsEmpty()) { remappedName = tempName; }
@@ -413,7 +413,7 @@ private:
         auto* nodeConverter =
             HdMayaMaterialNodeConverter::GetNodeConverter(_surfaceShaderType);
         if (!nodeConverter) { return GetPreviewMaterialParamValue(paramName); }
-        auto* attrConverter = nodeConverter->GetAttrConverter(paramName);
+        auto attrConverter = nodeConverter->GetAttrConverter(paramName);
         if (attrConverter) {
             return attrConverter->GetValue(
                 node, previewIt->param.GetName(), previewIt->type,
