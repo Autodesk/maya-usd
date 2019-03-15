@@ -352,6 +352,7 @@ void HdMayaMaterialNetworkConverter::initialize() {
               {HdMayaAdapterTokens->st, uvConverter},
               {UsdHydraTokens->wrapS, wrapUConverter},
               {UsdHydraTokens->wrapT, wrapVConverter},
+              {UsdHydraTokens->textureMemory, textureMemoryConverter},
           }}},
         {HdMayaAdapterTokens->place2dTexture,
          {UsdImagingTokens->UsdPrimvarReader_float2,
