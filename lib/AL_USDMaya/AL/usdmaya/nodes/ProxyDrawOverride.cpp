@@ -25,6 +25,11 @@
 #include "maya/MFnDagNode.h"
 #include "maya/MTime.h"
 
+#if MAYA_API_VERSION >= 20190000
+#include "maya/MPointArray.h"
+#include "maya/MSelectionContext.h"
+#endif
+
 #if defined(WANT_UFE_BUILD)
 #include "AL/usdmaya/TypeIDs.h"
 #include "pxr/base/arch/env.h"
