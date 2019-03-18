@@ -21,6 +21,10 @@
 #include "maya/MFloatVector.h"
 #include "maya/MFnNumericAttribute.h"
 
+#if MAYA_API_VERSION < 201800
+#include "maya/MDataBlock.h"
+#endif
+
 #include <deque>
 #include <vector>
 

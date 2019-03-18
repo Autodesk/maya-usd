@@ -35,6 +35,10 @@
 #include "maya/MPxSurfaceShape.h"
 #include "maya/MSelectionList.h"
 
+#if MAYA_API_VERSION < 201800
+#include "maya/MViewport2Renderer.h"
+#endif
+
 #include "pxr/usd/sdf/notice.h"
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/usd/prim.h"

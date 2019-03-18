@@ -19,6 +19,10 @@
 
 #include "maya/MPxCommand.h"
 
+#if MAYA_API_VERSION < 201800
+#include "maya/MArgDatabase.h"
+#endif
+
 #include "AL/maya/utils/MayaHelperMacros.h"
 
 namespace AL {

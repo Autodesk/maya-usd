@@ -22,6 +22,10 @@
 
 #include "maya/MPxNode.h"
 
+#if MAYA_API_VERSION < 201800
+#include "maya/MDGModifier.h"
+#endif
+
 #include "pxr/usd/usd/stage.h"
 
 #include <map>
