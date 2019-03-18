@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include "./Api.h"
+#include "AL/maya/utils/Api.h"
 
 #include "maya/MString.h"
 

@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include "./Api.h"
+#include "AL/usd/utils/Api.h"
 #include "AL/usd/utils/ALHalf.h"
 #include <cstdint>
 

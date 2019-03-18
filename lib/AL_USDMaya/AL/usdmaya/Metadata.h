@@ -19,7 +19,7 @@
 /// \brief  This file contains the tokens for the USDMaya metadata.
 //----------------------------------------------------------------------------------------------------------------------
 
-#include "./Api.h"
+#include "AL/usdmaya/Api.h"
 
 #include "pxr/base/tf/token.h"
 

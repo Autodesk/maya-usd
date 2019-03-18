@@ -27,6 +27,7 @@
 #include <pxr/usd/usdUtils/stageCache.h>
 
 #if defined(WANT_UFE_BUILD)
+#include "AL/usdmaya/TypeIDs.h"
 #include "ufe/globalSelection.h"
 #include "ufe/observer.h"
 #include "ufe/observableSelection.h"

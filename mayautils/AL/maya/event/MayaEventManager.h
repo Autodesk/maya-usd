@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include "./Api.h"
+#include "AL/maya/event/Api.h"
 
 #include "maya/MCommandMessage.h"
 #include "maya/MDagMessage.h"

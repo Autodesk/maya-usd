@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "./Api.h"
+#include "AL/usdmaya/utils/Api.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
 

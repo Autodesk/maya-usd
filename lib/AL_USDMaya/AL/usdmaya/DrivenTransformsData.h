@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include "./Api.h"
+#include "AL/usdmaya/Api.h"
 
 #include "AL/usdmaya/nodes/proxy/DrivenTransforms.h"
 #include "maya/MPxData.h"
