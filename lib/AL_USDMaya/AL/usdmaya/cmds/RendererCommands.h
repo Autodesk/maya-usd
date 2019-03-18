@@ -21,18 +21,6 @@
 
 #include "maya/MPxCommand.h"
 
-/*
-#include "AL/usdmaya/ForwardDeclares.h"
-#include "AL/maya/utils/Api.h"
-#include "maya/MDGModifier.h"
-#include "maya/MObject.h"
-#include "maya/MPxCommand.h"
-
-#include "pxr/pxr.h"
-#include "pxr/usd/usd/stage.h"
-#include <functional>
-*/
-
 namespace AL {
 namespace usdmaya {
 namespace cmds {
@@ -51,7 +39,6 @@ private:
   bool isUndoable() const override;
   MStatus doIt(const MArgList& args) override;
 };
-
 
 /// \brief  function called on startup to generate the menu & option boxes for the layer commands
 /// \ingroup commands

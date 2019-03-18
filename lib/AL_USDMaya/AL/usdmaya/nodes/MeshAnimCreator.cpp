@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usdmaya/TypeIDs.h"
 #include "AL/maya/utils/Utils.h"
+
+#include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/MeshAnimCreator.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
@@ -23,6 +24,8 @@
 #include "AL/usdmaya/utils/MeshUtils.h"
 
 #include "maya/MFnMeshData.h"
+#include "maya/MTime.h"
+
 #include "pxr/usd/usdGeom/mesh.h"
 
 namespace AL {

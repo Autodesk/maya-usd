@@ -15,39 +15,31 @@
 //
 #pragma once
 
-#include "../Api.h"
+#include "AL/maya/event/MayaEventManager.h"
 
-#include <AL/usdmaya/ForwardDeclares.h>
-#include "AL/maya/utils/Api.h"
 #include "AL/maya/utils/MayaHelperMacros.h"
 #include "AL/maya/utils/NodeHelper.h"
-#include "AL/event/EventHandler.h"
-#include "AL/maya/event/MayaEventManager.h"
-#include <AL/usdmaya/SelectabilityDB.h>
-#include "AL/usdmaya/DrivenTransformsData.h"
+
+#include "AL/usdmaya/Api.h"
+
+#include "AL/usdmaya/ForwardDeclares.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
-#include "AL/usdmaya/fileio/translators/TransformTranslator.h"
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
-#include "maya/MPxSurfaceShape.h"
-#include "maya/MEventMessage.h"
-#include "maya/MNodeMessage.h"
-#include "maya/MPxDrawOverride.h"
-#include "maya/MEvaluationNode.h"
+#include "AL/usdmaya/SelectabilityDB.h"
+
 #include "maya/MDagModifier.h"
-#include "maya/MObjectArray.h"
+#include "maya/MDagPath.h"
+#include "maya/MGlobal.h"
+#include "maya/MNodeMessage.h"
+#include "maya/MPxSurfaceShape.h"
 #include "maya/MSelectionList.h"
-#include "pxr/pxr.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/base/tf/weakBase.h"
-#include "pxr/usd/usd/notice.h"
+
 #include "pxr/usd/sdf/notice.h"
+#include "pxr/usd/usd/notice.h"
+#include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/stage.h"
 #include "pxr/usdImaging/usdImagingGL/renderParams.h"
-#include <stack>
-#include <functional>
-#include "AL/usd/utils/ForwardDeclares.h"
 
 #if defined(WANT_UFE_BUILD)
 #include "ufe/ufe.h"

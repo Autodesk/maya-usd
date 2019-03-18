@@ -18,6 +18,7 @@
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/Layer.h"
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
+#include "AL/usdmaya/nodes/proxy/DrivenTransforms.h"
 #include "AL/usdmaya/StageCache.h"
 #include "maya/MFnTransform.h"
 #include "maya/MSelectionList.h"

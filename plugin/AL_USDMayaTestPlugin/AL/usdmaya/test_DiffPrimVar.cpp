@@ -20,6 +20,7 @@
 #include "maya/MFnMesh.h"
 #include "maya/MSelectionList.h"
 #include "maya/MFileIO.h"
+#include "maya/MFloatArray.h"
 #include "maya/MFnDagNode.h"
 #include "maya/MGlobal.h"
 #include "maya/MUintArray.h"

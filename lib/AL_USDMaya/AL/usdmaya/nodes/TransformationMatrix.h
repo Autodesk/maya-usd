@@ -15,14 +15,12 @@
 //
 #pragma once
 
-#include "../Api.h"
-
+#include "AL/usdmaya/Api.h"
 #include "AL/usdmaya/TransformOperation.h"
 
 #include "maya/MPxTransformationMatrix.h"
 #include "maya/MPxTransform.h"
 
-#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 

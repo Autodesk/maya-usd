@@ -22,6 +22,7 @@
 
 #include "maya/MArgDatabase.h"
 #include "maya/MArgList.h"
+#include "maya/MDagPathArray.h"
 #include "maya/MFnDagNode.h"
 #include "maya/MSyntax.h"
 

@@ -14,23 +14,15 @@
 // limitations under the License.
 //
 #pragma once
-#include <AL/usdmaya/ForwardDeclares.h>
-#include "AL/maya/utils/NodeHelper.h"
+
 #include "AL/maya/utils/MayaHelperMacros.h"
-#include "AL/usdmaya/utils/ForwardDeclares.h"
-#include "pxr/pxr.h"
-#include "pxr/usd/usd/stage.h"
-#include "maya/MPxLocatorNode.h"
-#include <map>
-#include <set>
+#include "AL/maya/utils/NodeHelper.h"
 
-
-PXR_NAMESPACE_USING_DIRECTIVE
+#include "maya/MPxNode.h"
 
 namespace AL {
 namespace usdmaya {
 namespace nodes {
-
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  The layer node stores a reference to an SdfLayer. Obsolete. LayerManager now used instead.

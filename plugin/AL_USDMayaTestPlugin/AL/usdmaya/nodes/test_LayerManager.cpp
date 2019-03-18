@@ -27,6 +27,7 @@
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usd/usdaFileFormat.h"
+#include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
 using AL::maya::test::buildTempPath;

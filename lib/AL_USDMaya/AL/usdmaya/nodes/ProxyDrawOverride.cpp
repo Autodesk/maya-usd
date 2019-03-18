@@ -13,23 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <vector>
 #include "pxr/imaging/glf/glew.h"
-#include "AL/usdmaya/nodes/Engine.h"
-#include "AL/usdmaya/nodes/ProxyDrawOverride.h"
-#include "AL/usdmaya/nodes/ProxyShape.h"
+
 #include "AL/usdmaya/DebugCodes.h"
+#include "AL/usdmaya/nodes/Engine.h"
+#include "AL/usdmaya/nodes/ProxyShape.h"
+#include "AL/usdmaya/nodes/ProxyDrawOverride.h"
 
-
-#include "pxr/base/tf/envSetting.h"
-
-#include "maya/MFnDagNode.h"
-#include "maya/MBoundingBox.h"
-#include "maya/MDrawContext.h"
-#include "maya/MPoint.h"
-#include "maya/MPointArray.h"
 #include "maya/M3dView.h"
-#include "maya/MSelectionContext.h"
+#include "maya/MDrawContext.h"
+#include "maya/MFnDagNode.h"
+#include "maya/MTime.h"
 
 #if defined(WANT_UFE_BUILD)
 #include "AL/usdmaya/TypeIDs.h"

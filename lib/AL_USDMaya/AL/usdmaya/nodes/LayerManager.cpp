@@ -13,33 +13,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usdmaya/TypeIDs.h"
-#include "AL/usdmaya/DebugCodes.h"
-#include "AL/usdmaya/nodes/LayerManager.h"
-#include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/maya/utils/Utils.h"
-#include "AL/maya/utils/MayaHelperMacros.h"
 
-#include "pxr/usd/sdf/fileFormat.h"
+#include "AL/usdmaya/DebugCodes.h"
+#include "AL/usdmaya/TypeIDs.h"
+#include "AL/usdmaya/nodes/LayerManager.h"
+
 #include "pxr/usd/sdf/textFileFormat.h"
 #include "pxr/usd/usd/usdaFileFormat.h"
-#include "pxr/usdImaging/usdImaging/version.h"
-#include "pxr/usdImaging/usdImagingGL/engine.h"
 
-#include "maya/MBoundingBox.h"
-#include "maya/MGlobal.h"
-#include "maya/MPlugArray.h"
+#include "maya/MArrayDataBuilder.h"
 #include "maya/MDGModifier.h"
 #include "maya/MFnDependencyNode.h"
-#include "maya/MArrayDataBuilder.h"
-#include "maya/MArrayDataHandle.h"
-#include "maya/MSelectionList.h"
+#include "maya/MGlobal.h"
 #include "maya/MItDependencyNodes.h"
-
-#include <boost/thread.hpp>
-#include <boost/thread/shared_lock_guard.hpp>
-
-#include <mutex>
+#include "maya/MPlugArray.h"
 
 namespace {
   // Global mutex protecting _findNode / findOrCreateNode.

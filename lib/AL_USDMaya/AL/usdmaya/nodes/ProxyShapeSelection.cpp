@@ -13,21 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/maya/utils/Utils.h"
+
+#include "AL/usdmaya/Metadata.h"
+#include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
-#include "AL/usdmaya/TypeIDs.h"
-#include "AL/usdmaya/Metadata.h"
-#include "AL/usdmaya/DebugCodes.h"
 
 #include "maya/MFnDagNode.h"
 #include "maya/MPxCommand.h"
-
-#include <set>
-#include <algorithm>
-#include "AL/usdmaya/utils/Utils.h"
-
 
 namespace AL {
 namespace usdmaya {

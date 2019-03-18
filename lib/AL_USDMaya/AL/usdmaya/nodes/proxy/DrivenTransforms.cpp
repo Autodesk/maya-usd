@@ -3,6 +3,8 @@
 #include "AL/usdmaya/nodes/proxy/DrivenTransforms.h"
 #include "AL/usdmaya/DebugCodes.h"
 
+#include "maya/MTime.h"
+
 namespace AL {
 namespace usdmaya {
 namespace nodes {

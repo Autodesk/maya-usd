@@ -15,17 +15,15 @@
 //
 #pragma once
 
-#include "../Api.h"
+#include "AL/usdmaya/Api.h"
 
+#include "AL/maya/utils/MayaHelperMacros.h"
 #include "AL/maya/utils/NodeHelper.h"
-#include "pxr/pxr.h"
+
+#include "maya/MPxNode.h"
+
 #include "pxr/usd/usd/stage.h"
 
-#include "maya/MPxLocatorNode.h"
-#include "maya/MNodeMessage.h"
-#include "AL/maya/utils/MayaHelperMacros.h"
-
-#include <iterator>
 #include <map>
 #include <set>
 #include <boost/thread.hpp>

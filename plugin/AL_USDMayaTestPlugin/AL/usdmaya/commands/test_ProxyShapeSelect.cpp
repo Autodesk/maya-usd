@@ -24,6 +24,7 @@
 #include "maya/MFileIO.h"
 #include "maya/MStringArray.h"
 
+#include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/camera.h"
 
 using AL::maya::test::buildTempPath;
