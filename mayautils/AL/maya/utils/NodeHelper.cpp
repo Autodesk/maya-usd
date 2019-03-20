@@ -35,6 +35,7 @@
 
 #include <cassert>
 #include <sstream>
+#include <cctype>
 
 namespace AL {
 namespace maya {

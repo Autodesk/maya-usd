@@ -29,14 +29,21 @@
 #include "maya/MItDependencyNodes.h"
 #include "maya/MPlugArray.h"
 
+#if MAYA_API_VERSION < 201800
+//@todo: Not sure where these are being pulled in from in Maya 2018+, but we should replace with more standard fare
+#include <boost/thread.hpp>
+#include <boost/thread/shared_lock_guard.hpp>
+#include <mutex>
+#endif
+
 namespace {
   // Global mutex protecting _findNode / findOrCreateNode.
   // Recursive because we need to get the mutex inside of conditionalCreator,
   // but that may be triggered by the node creation inside of findOrCreateNode.
 
   // Note on layerManager / multithreading:
-  // I don't know that layerManager will be used in a multihreaded manenr... but I also don't know it COULDN'T be.
-  // (I haven't really looked into the way maya's new multi-threaded node evaluation works, for instance.) This is
+  // I don't know that layerManager will be used in a multithreaded manner... but I also don't know it COULDN'T be.
+  // (I haven't really looked into the way maya's new multithreaded node evaluation works, for instance.) This is
   // essentially a globally shared resource, so I figured better be safe...
   static std::recursive_mutex _findNodeMutex;
 

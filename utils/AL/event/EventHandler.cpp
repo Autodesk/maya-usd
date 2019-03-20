@@ -16,6 +16,7 @@
 #include "AL/event/EventHandler.h"
 #include <cstring>
 #include <iostream>
+#include <algorithm>
 
 namespace AL {
 namespace event {
