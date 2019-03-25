@@ -1,3 +1,10 @@
+## AL_USDMaya-0.32.10 (2019-03-25)
+### Fixed
+* consolidate MayaReference update logic to make it more resilient: Combine the similar logic from update() and LoadMayaReference() to make the maya reference translator more resilient to imported references and stage changes [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/138) (#138 - @[nxkb](//github.com/nxkb))
++ Fixes a crash that happens when using AL_usdmayaProxyShapeSelect with pseudo-root "/" [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/145) (#145 - @[elrond79](//github.com/elrond79))
++ usd-0.19.3 fix: filesystem library needs system lib - need to explicitly link now that usd doesn't [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/146) (#146 - @[elrond79](//github.com/elrond79))
++ convert onAttributeChanged callbacks to setInternalValue, for performance [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/89) (#89 - @[elrond79](//github.com/elrond79))
+
 ## AL_USDMaya-0.32.9 (2019-03-14)
 ### Fixed
 + Fixed crash when modifying rotation attributes
