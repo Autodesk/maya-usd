@@ -214,7 +214,8 @@ target_link_libraries(${LIBRARY_NAME}
 
 if(NEED_BOOST_FILESYSTEM)
     target_link_libraries(${LIBRARY_NAME}
-                        ${Boost_FILESYSTEM_LIBRARY})
+                        ${Boost_FILESYSTEM_LIBRARY}
+                        ${Boost_SYSTEM_LIBRARY})
 endif()
 
 install(TARGETS ${LIBRARY_NAME}
