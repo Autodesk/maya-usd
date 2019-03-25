@@ -711,9 +711,7 @@ ProxyShape::~ProxyShape()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::~ProxyShape\n");
   triggerEvent("PreDestroyProxyShape");
-  MNodeMessage::removeCallback(m_attributeChanged);
   MEventMessage::removeCallback(m_onSelectionChanged);
-  removeAttributeChangedCallback();
   TfNotice::Revoke(m_variantChangedNoticeKey);
   TfNotice::Revoke(m_objectsChangedNoticeKey);
   TfNotice::Revoke(m_editTargetChanged);
@@ -764,10 +762,11 @@ MStatus ProxyShape::initialise()
     m_sessionLayerName = addStringAttr("sessionLayerName", "sln", kCached|kReadable|kWritable|kStorable|kHidden);
 
     m_serializedArCtx = addStringAttr("serializedArCtx", "arcd", kCached|kReadable|kWritable|kStorable|kHidden);
-    m_filePath = addFilePathAttr("filePath", "fp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance, kLoad, "USD Files (*.usd*) (*.usd*);;Alembic Files (*.abc)");
+    // m_filePath / m_primPath / m_excludePrimPaths are internal just so we get notification on change
+    m_filePath = addFilePathAttr("filePath", "fp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance | kInternal, kLoad, "USD Files (*.usd*) (*.usd*);;Alembic Files (*.abc)");
 
-    m_primPath = addStringAttr("primPath", "pp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance);
-    m_excludePrimPaths = addStringAttr("excludePrimPaths", "epp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance);
+    m_primPath = addStringAttr("primPath", "pp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance | kInternal);
+    m_excludePrimPaths = addStringAttr("excludePrimPaths", "epp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance | kInternal);
     m_populationMaskIncludePaths = addStringAttr("populationMaskIncludePaths", "pmi", kCached | kReadable | kWritable | kStorable | kAffectsAppearance);
     m_excludedTranslatedGeometry = addStringAttr("excludedTranslatedGeometry", "etg", kCached | kReadable | kWritable | kStorable | kAffectsAppearance);
 
@@ -1623,89 +1622,10 @@ void ProxyShape::constructLockPrims()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug&, void* clientData)
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::onAttributeChanged\n");
-
-  const SdfPath rootPath(std::string("/"));
-  ProxyShape* proxy = (ProxyShape*)clientData;
-  if(msg & MNodeMessage::kAttributeSet)
-  {
-    // Delay stage creation if opening a file, because we haven't created the LayerManager node yet
-    if(plug == m_filePath || plug == m_assetResolverConfig)
-    {
-      if (MFileIO::isReadingFile())
-      {
-        m_unloadedProxyShapes.push_back(MObjectHandle(proxy->thisMObject()));
-      }
-      else
-      {
-        proxy->loadStage();
-      }
-    }
-    else
-    if(plug == m_primPath)
-    {
-      if(proxy->m_stage)
-      {
-        // Get the prim
-        // If no primPath string specified, then use the pseudo-root.
-        MString primPathStr = plug.asString();
-        if (primPathStr.length())
-        {
-          proxy->m_path = SdfPath(AL::maya::utils::convert(primPathStr));
-          UsdPrim prim = proxy->m_stage->GetPrimAtPath(proxy->m_path);
-          if(!prim)
-          {
-            proxy->m_path = rootPath;
-          }
-        }
-        else
-        {
-          proxy->m_path = rootPath;
-        }
-        proxy->constructGLImagingEngine();
-      }
-    }
-    else
-    if(plug == m_excludePrimPaths || plug == m_excludedTranslatedGeometry)
-    {
-      if(proxy->m_stage)
-      {
-        proxy->constructExcludedPrims();
-      }
-    }
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::removeAttributeChangedCallback()
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::removeAttributeChangedCallback\n");
-  if(m_attributeChanged != 0)
-  {
-    MMessage::removeCallback(m_attributeChanged);
-    m_attributeChanged = 0;
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::addAttributeChangedCallback()
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::addAttributeChangedCallback\n");
-  if(m_attributeChanged == 0)
-  {
-    MObject obj = thisMObject();
-    m_attributeChanged = MNodeMessage::addAttributeChangedCallback(obj, onAttributeChanged, (void*)this);
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::postConstructor()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::postConstructor\n");
   setRenderable(true);
-  addAttributeChangedCallback();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1927,6 +1847,88 @@ MStatus ProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
     return status == MS::kSuccess ? computeOutStageData(plug, dataBlock) : status;
   }
   return MPxSurfaceShape::compute(plug, dataBlock);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool ProxyShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHandle)
+{
+  // We set the value in the datablock ourselves, so that the plug's value is
+  // can be queried from subfunctions (ie, loadStage, constructExcludedPrims, etc)
+  //
+  // If we simply returned "false", the "standard" implementation would set
+  // the datablock for us, but this would be too late for these subfunctions
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::setInternalValue %s\n", plug.name().asChar());
+
+  // Delay stage creation if opening a file, because we haven't created the LayerManager node yet
+  if(plug == m_filePath || plug == m_assetResolverConfig)
+  {
+    // can't use dataHandle.datablock(), as this is a temporary datahandle
+    MDataBlock datablock = forceCache();
+    AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, m_filePath, dataHandle.asString()),
+        false, "ProxyShape::setInternalValue - error setting filePath");
+
+    if (MFileIO::isReadingFile())
+    {
+      m_unloadedProxyShapes.push_back(MObjectHandle(thisMObject()));
+    }
+    else
+    {
+      loadStage();
+    }
+    return true;
+  }
+  else
+  if(plug == m_primPath)
+  {
+    // can't use dataHandle.datablock(), as this is a temporary datahandle
+    MDataBlock datablock = forceCache();
+    AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, m_primPath, dataHandle.asString()),
+        false, "ProxyShape::setInternalValue - error setting primPath");
+
+    if(m_stage)
+    {
+      // Get the prim
+      // If no primPath string specified, then use the pseudo-root.
+      MString primPathStr = dataHandle.asString();
+      if (primPathStr.length())
+      {
+        m_path = SdfPath(AL::maya::utils::convert(primPathStr));
+        UsdPrim prim = m_stage->GetPrimAtPath(m_path);
+        if(!prim)
+        {
+          m_path = SdfPath::AbsoluteRootPath();
+        }
+      }
+      else
+      {
+        m_path = SdfPath::AbsoluteRootPath();
+      }
+      constructGLImagingEngine();
+    }
+    return true;
+  }
+  else
+  if(plug == m_excludePrimPaths || plug == m_excludedTranslatedGeometry)
+  {
+    // can't use dataHandle.datablock(), as this is a temporary datahandle
+    MDataBlock datablock = forceCache();
+    AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, plug.attribute(), dataHandle.asString()),
+        false, MString("ProxyShape::setInternalValue - error setting ") + plug.name());
+
+    if(m_stage)
+    {
+      constructExcludedPrims();
+    }
+    return true;
+  }
+  return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool ProxyShape::getInternalValue(const MPlug& plug, MDataHandle& dataHandle)
+{
+  // Not sure if this is needed... don't know behavior of default implementation?
+  return false;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

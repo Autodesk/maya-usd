@@ -241,8 +241,6 @@ public:
   inline LayerManager()
     : MPxNode(), NodeHelper() {}
 
-  ~LayerManager();
-
   /// \brief  Find the already-existing non-referenced LayerManager node in the scene, or return a null MObject
   /// \return the found LayerManager node, or a null MObject
   AL_USDMAYA_PUBLIC

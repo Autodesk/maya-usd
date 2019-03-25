@@ -814,14 +814,6 @@ public:
   AL_USDMAYA_PUBLIC
   void loadStage();
 
-  /// \brief  adds the attribute changed callback to the proxy shape
-  AL_USDMAYA_PUBLIC
-  void addAttributeChangedCallback();
-
-  /// \brief  removes the attribute changed callback from the proxy shape
-  AL_USDMAYA_PUBLIC
-  void removeAttributeChangedCallback();
-
   AL_USDMAYA_PUBLIC
   void constructLockPrims();
 
@@ -985,6 +977,8 @@ private:
 
   void postConstructor() override;
   MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
+  bool setInternalValue(const MPlug& plug, const MDataHandle& dataHandle) override;
+  bool getInternalValue(const MPlug& plug, MDataHandle& dataHandle) override;
   MStatus setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& plugs) override;
   bool isBounded() const override;
   #if MAYA_API_VERSION < 201700
@@ -1058,8 +1052,6 @@ private:
   TfNotice::Key m_editTargetChanged;
 
   mutable std::map<UsdTimeCode, MBoundingBox> m_boundingBoxCache;
-  AL::event::CallbackId m_beforeSaveSceneId = -1;
-  MCallbackId m_attributeChanged = 0;
   MCallbackId m_onSelectionChanged = 0;
   SdfPathVector m_excludedGeometry;
   SdfPathVector m_excludedTaggedGeometry;

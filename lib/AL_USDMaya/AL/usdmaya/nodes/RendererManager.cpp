@@ -34,11 +34,6 @@ namespace AL {
 namespace usdmaya {
 namespace nodes {
 
-RendererManager::~RendererManager()
-{
-  removeAttributeChangedCallback();
-}
-
 //----------------------------------------------------------------------------------------------------------------------
 AL_MAYA_DEFINE_NODE(RendererManager, AL_USDMAYA_RENDERERMANAGER, AL_usdmaya);
 
@@ -78,7 +73,7 @@ MStatus RendererManager::initialise()
     }
     
     m_rendererPluginName = addStringAttr(
-      "rendererPluginName", "rpn", "GL", kCached | kReadable | kWritable | kStorable | kHidden);
+      "rendererPluginName", "rpn", "GL", kInternal | kCached | kReadable | kWritable | kStorable | kHidden);
     m_rendererPlugin = addEnumAttr(
       "rendererPlugin", "rp", kInternal | kReadable | kWritable, enumNames.data(), enumValues.data()
     );
@@ -161,48 +156,8 @@ RendererManager* RendererManager::findOrCreateManager(MDGModifier* dgmod, bool* 
   return static_cast<RendererManager*>(MFnDependencyNode(findOrCreateNode(dgmod, wasCreated)).userNode());
 }
 
-
 //----------------------------------------------------------------------------------------------------------------------
-void RendererManager::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug&, void* clientData)
-{
-  TF_DEBUG(ALUSDMAYA_RENDERER).Msg("RendererManager::onAttributeChanged\n");
-  RendererManager* manager = static_cast<RendererManager*>(clientData);
-  assert(manager);
-  if(plug == m_rendererPluginName)
-    manager->onRendererChanged();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void RendererManager::removeAttributeChangedCallback()
-{
-  TF_DEBUG(ALUSDMAYA_RENDERER).Msg("RendererManager::removeAttributeChangedCallback\n");
-  if(m_attributeChanged != 0)
-  {
-    MMessage::removeCallback(m_attributeChanged);
-    m_attributeChanged = 0;
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void RendererManager::addAttributeChangedCallback()
-{
-  TF_DEBUG(ALUSDMAYA_RENDERER).Msg("RendererManager::addAttributeChangedCallback\n");
-  if(m_attributeChanged == 0)
-  {
-    MObject obj = thisMObject();
-    m_attributeChanged = MNodeMessage::addAttributeChangedCallback(obj, onAttributeChanged, (void*)this);
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void RendererManager::postConstructor()
-{
-  TF_DEBUG(ALUSDMAYA_RENDERER).Msg("RendererManager::postConstructor\n");
-  addAttributeChangedCallback();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-bool RendererManager::setInternalValueInContext(const MPlug& plug, const MDataHandle& dataHandle, MDGContext& ctx)
+bool RendererManager::setInternalValue(const MPlug& plug, const MDataHandle& dataHandle)
 {
   if (plug == m_rendererPlugin)
   {
@@ -214,11 +169,22 @@ bool RendererManager::setInternalValueInContext(const MPlug& plug, const MDataHa
       return true;
     }
   }
-  return MPxNode::setInternalValueInContext(plug, dataHandle, ctx);
+  else if(plug == m_rendererPluginName)
+  {
+    // can't use dataHandle.datablock(), as this is a temporary datahandle
+    // Need to set this before calling onRendererChanged, so it can access the (new) value...
+    MDataBlock datablock = forceCache();
+    AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, plug.attribute(), dataHandle.asString()),
+                                   false, MString("ProxyShape::setInternalValue - error setting ") + plug.name());
+
+    onRendererChanged();
+    return true;
+  }
+  return MPxNode::setInternalValue(plug, dataHandle);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool RendererManager::getInternalValueInContext(const MPlug& plug, MDataHandle& dataHandle, MDGContext& ctx)
+bool RendererManager::getInternalValue(const MPlug& plug, MDataHandle& dataHandle)
 {
   if (plug == m_rendererPlugin)
   {
@@ -229,7 +195,7 @@ bool RendererManager::getInternalValueInContext(const MPlug& plug, MDataHandle& 
       return true;
     }
   }
-  return MPxNode::getInternalValueInContext(plug, dataHandle, ctx);
+  return MPxNode::getInternalValue(plug, dataHandle);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
