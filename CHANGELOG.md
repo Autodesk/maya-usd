@@ -1,3 +1,8 @@
+## AL_USDMaya-0.32.12 (2019-03-27)
+### Fixed
++ Potential problems when importing/exporting surface normals.
++ Bug where a transform chain would be incorrectly created for prims not being translated (When translating a prim into the maya scene, if the forceImport flag was disabled, then a transform chain would end up being created for a non existent prim (and could never be removed again). The PrimFilter now respects the forceImport flag.)
+
 
 ## AL_USDMaya-0.32.11 (2019-03-26)
 ### Removed
