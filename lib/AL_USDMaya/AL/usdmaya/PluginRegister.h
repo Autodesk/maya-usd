@@ -47,6 +47,7 @@
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
+#include "pxr/imaging/glf/contextCaps.h"
 
 #include "maya/MDrawRegistry.h"
 #include "maya/MGlobal.h"
@@ -162,6 +163,7 @@ template<typename AFnPlugin>
 MStatus registerPlugin(AFnPlugin& plugin)
 {
   GlfGlewInit();
+  GlfContextCaps::InitInstance();
 
   if(!MGlobal::optionVarExists("AL_usdmaya_selectMode"))
   {
