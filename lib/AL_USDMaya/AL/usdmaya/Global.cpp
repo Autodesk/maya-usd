@@ -373,7 +373,6 @@ static void postFileRead(void*)
       proxy->deserialiseTranslatorContext();
       proxy->findTaggedPrims();
       proxy->deserialiseTransformRefs();
-      proxy->constructGLImagingEngine();
     }
     unloadedProxies.clear();
   }

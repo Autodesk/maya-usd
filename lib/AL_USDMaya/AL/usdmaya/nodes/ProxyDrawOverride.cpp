@@ -62,7 +62,6 @@ public:
 
   UsdImagingGLRenderParams m_params;
   UsdPrim m_rootPrim;
-  Engine* m_engine = 0;
   ProxyShape* m_shape = 0;
   MDagPath m_objPath;
 };
@@ -137,10 +136,7 @@ MUserData* ProxyDrawOverride::prepareForDraw(
   auto engine = shape->engine();
   if(!engine)
   {
-    shape->constructGLImagingEngine();
-    engine = shape->engine();
-    if(!engine)
-      return nullptr;
+    return nullptr;
   }
 
   RenderUserData* newData = nullptr;
@@ -158,7 +154,6 @@ MUserData* ProxyDrawOverride::prepareForDraw(
   data->m_objPath = objPath;
   data->m_shape = shape;
   data->m_rootPrim = shape->getRootPrim();
-  data->m_engine = engine;
 
   return data;
 }
@@ -174,6 +169,12 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
   RenderUserData* ptr = (RenderUserData*)data;
   if(ptr && ptr->m_rootPrim)
   {
+    auto* engine = ptr->m_shape->engine();
+    if (!engine)
+    {
+      TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::draw - Error constructing usd opengl drawing engine - aborting draw\n");
+      return;
+    }
     MHWRender::MStateManager* stateManager = context.getStateManager();
     MHWRender::MDepthStencilStateDesc depthDesc;
 
@@ -373,18 +374,18 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
     GLint uboBinding = -1;
     glGetIntegeri_v(GL_UNIFORM_BUFFER_BINDING, 4, &uboBinding);
 
-    ptr->m_engine->SetLightingState(lights, material, GfVec4f(0.05f));
+    engine->SetLightingState(lights, material, GfVec4f(0.05f));
     glDepthFunc(GL_LESS);
 
     int originX, originY, width, height;
     context.getViewportDimensions(originX, originY, width, height);
 
-    ptr->m_engine->SetCameraState(
+    engine->SetCameraState(
         GfMatrix4d(context.getMatrix(MHWRender::MFrameContext::kViewMtx).matrix),
         GfMatrix4d(context.getMatrix(MHWRender::MFrameContext::kProjectionMtx).matrix),
         GfVec4d(originX, originY, width, height));
 
-    ptr->m_engine->SetRootTransform(GfMatrix4d(ptr->m_objPath.inclusiveMatrix().matrix));
+    engine->SetRootTransform(GfMatrix4d(ptr->m_objPath.inclusiveMatrix().matrix));
 
     auto view = M3dView::active3dView();
     const auto& paths1 = ptr->m_shape->selectedPaths();
@@ -394,8 +395,8 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
     combined.insert(combined.end(), paths1.begin(), paths1.end());
     combined.insert(combined.end(), paths2.begin(), paths2.end());
 
-    ptr->m_engine->SetSelected(combined);
-    ptr->m_engine->SetSelectionColor(GfVec4f(1.0f, 2.0f/3.0f, 0.0f, 1.0f));
+    engine->SetSelected(combined);
+    engine->SetSelectionColor(GfVec4f(1.0f, 2.0f/3.0f, 0.0f, 1.0f));
 
     ptr->m_params.frame = ptr->m_shape->outTimePlug().asMTime().as(MTime::uiUnit());
     if(combined.size())
@@ -405,10 +406,10 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
       MColor colour = M3dView::leadColor();
       params.wireframeColor = GfVec4f(colour.r, colour.g, colour.b, 1.0f);
       glDepthFunc(GL_LEQUAL);
-      ptr->m_engine->RenderBatch(combined, params);
+      engine->RenderBatch(combined, params);
     }
 
-    ptr->m_engine->Render(ptr->m_rootPrim, ptr->m_params);
+    engine->Render(ptr->m_rootPrim, ptr->m_params);
 
 #if defined(WANT_UFE_BUILD)
     if (ArchHasEnv("MAYA_WANT_UFE_SELECTION"))
@@ -446,7 +447,7 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
             // lines in front with negative offset.
             glEnable(GL_POLYGON_OFFSET_LINE);
             glPolygonOffset(-1.0, -1.0);
-            ptr->m_engine->RenderBatch(ufePaths, params);
+            engine->RenderBatch(ufePaths, params);
             glDisable(GL_POLYGON_OFFSET_LINE);
         }
     }
@@ -461,7 +462,7 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
     // Check framestamp b/c we don't want to put multiple refresh commands
     // on the idle queue for a single frame-render... especially if we have
     // multiple ProxyShapes...
-    if (!ptr->m_engine->IsConverged() && context.getFrameStamp() != s_lastRefreshFrameStamp)
+    if (!engine->IsConverged() && context.getFrameStamp() != s_lastRefreshFrameStamp)
     {
       s_lastRefreshFrameStamp = context.getFrameStamp();
       // Force another refresh of the current viewport
@@ -553,6 +554,7 @@ bool ProxyDrawOverride::userSelect(
 
   auto* proxyShape = static_cast<ProxyShape*>(getShape(objPath));
   auto engine = proxyShape->engine();
+  if (!engine) return false;
   proxyShape->m_pleaseIgnoreSelection = true;
 
   UsdPrim root = proxyShape->getUsdStage()->GetPseudoRoot();
