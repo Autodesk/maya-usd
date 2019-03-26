@@ -43,6 +43,7 @@
 #include <maya/MItDependencyNodes.h>
 #include <maya/MNodeClass.h>
 #include <maya/MObject.h>
+#include <maya/MTime.h>
 
 #include <atomic>
 
