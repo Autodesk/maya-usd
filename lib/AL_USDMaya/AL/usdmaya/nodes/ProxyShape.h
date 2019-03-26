@@ -1018,13 +1018,14 @@ private:
   TfToken getTypeForPath(const SdfPath& path) override
     { return m_context->getTypeForPath(path); }
 
-  bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent) override
+  bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent, bool& importableByDefault) override
     {
       auto translator = m_translatorManufacture.get(type);
       if(translator)
       {
         supportsUpdate = translator->supportsUpdate();
         requiresParent = translator->needsTransformParent();
+        importableByDefault = translator->importableByDefault();
       }
       return translator != 0;
     }

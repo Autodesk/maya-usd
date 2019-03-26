@@ -32,10 +32,36 @@ TEST(TranslateCommand, translateMeshPrim)
 {
   AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMesh();
   ASSERT_TRUE(proxyShape != 0);
+  MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1/pSphereShape1\" \"AL_usdmaya_ProxyShape1\"", false, false);
+
+  MStatus s = MGlobal::selectByName("pSphereShape1");
+  EXPECT_TRUE(s.statusCode() == MStatus::kSuccess);
+}
+
+TEST(TranslateCommand, translateMergedMeshPrim)
+/*
+ * Test translating a Mesh Prim via the command
+ */
+{
+  AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMergedMesh();
+  ASSERT_TRUE(proxyShape != 0);
   MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
   MStatus s = MGlobal::selectByName("pSphere1Shape");
   EXPECT_TRUE(s.statusCode() == MStatus::kSuccess);
+}
+
+TEST(TranslateCommand, doNotCreateTransform)
+/*
+ * Make sure we don't create a transform chain when not force importing
+ */
+{
+  AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMesh();
+  ASSERT_TRUE(proxyShape != 0);
+  MGlobal::executeCommand("AL_usdmaya_TranslatePrim -ip \"/pSphere1\" \"AL_usdmaya_ProxyShape1\"", false, false);
+
+  MStatus s = MGlobal::selectByName("pSphere1");
+  EXPECT_FALSE(s.statusCode() == MStatus::kSuccess);
 }
 
 TEST(TranslateCommand, forceDefaultRead)
@@ -121,6 +147,28 @@ TEST(TranslateCommand, roundTripMeshPrim)
  */
 {
   AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMesh();
+  ASSERT_TRUE(proxyShape != 0);
+
+  MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1/pSphereShape1\" \"AL_usdmaya_ProxyShape1\"", false, false);
+  MStatus s = MGlobal::selectByName("pSphereShape1");
+  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+
+  // call teardown on the prim
+  MGlobal::executeCommand("AL_usdmaya_TranslatePrim -tp \"/pSphere1/pSphereShape1\" \"AL_usdmaya_ProxyShape1\"", false, false);
+  s = MGlobal::selectByName("pSphereShape1");
+  ASSERT_FALSE(s.statusCode() == MStatus::kSuccess);
+
+  MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1/pSphereShape1\" \"AL_usdmaya_ProxyShape1\"", false, false);
+  s = MGlobal::selectByName("pSphereShape1");
+  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+}
+
+TEST(TranslateCommand, roundTripMeshMergedPrim)
+/*
+ * Test translating a Mesh Prim via the command
+ */
+{
+  AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMergedMesh();
   ASSERT_TRUE(proxyShape != 0);
 
   MGlobal::executeCommand("AL_usdmaya_TranslatePrim -fi -ip \"/pSphere1\" \"AL_usdmaya_ProxyShape1\"", false, false);

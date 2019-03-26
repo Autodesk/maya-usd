@@ -294,7 +294,6 @@ void TranslatorContext::removeItems(const SdfPath& path)
       else
       {
         TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeItems Invalid MObject was registered with the primPath \"%s\"\n", path.GetText());
-
       }
     }
     nodes.clear();
@@ -470,6 +469,11 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
   {
     auto path = *iter;
     auto node = std::lower_bound(m_primMapping.begin(), m_primMapping.end(), path, value_compare());
+    if(node == m_primMapping.end())
+    {
+      ++iter;
+      continue;
+    }
     bool isInTransformChain = isPrimInTransformChain(path);
 
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries removing: %s\n", iter->GetText());

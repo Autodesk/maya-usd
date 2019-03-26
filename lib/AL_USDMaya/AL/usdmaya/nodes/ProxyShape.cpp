@@ -288,6 +288,7 @@ UsdStagePopulationMask ProxyShape::constructStagePopulationMask(const MString &p
   return mask;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::translatePrimPathsIntoMaya(
     const SdfPathVector& importPaths,
     const SdfPathVector& teardownPaths,
@@ -315,6 +316,7 @@ void ProxyShape::translatePrimPathsIntoMaya(
   translatePrimsIntoMaya(importPrims, teardownPaths, param);
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::translatePrimsIntoMaya(
     const UsdPrimVector& importPrims,
     const SdfPathVector& teardownPrims,
@@ -322,29 +324,29 @@ void ProxyShape::translatePrimsIntoMaya(
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimsIntoMaya ImportSize='%zd' TearDownSize='%zd' \n", importPrims.size(), teardownPrims.size());
 
-  proxy::PrimFilter filter(teardownPrims, importPrims, this);
+  proxy::PrimFilter filter(teardownPrims, importPrims, this, param.forceTranslatorImport());
 
   if(TfDebug::IsEnabled(ALUSDMAYA_TRANSLATORS))
   {
     std::cout << "new prims" << std::endl;
     for(auto it : filter.newPrimSet())
     {
-      std::cout << it.GetPath().GetText() << std::endl;
+      std::cout << it.GetPath().GetText() << ' ' << it.GetTypeName().GetText() << std::endl;
     }
     std::cout << "new transforms" << std::endl;
     for(auto it : filter.transformsToCreate())
     {
-      std::cout << it.GetPath().GetText() << std::endl;
+      std::cout << it.GetPath().GetText() << ' ' << it.GetTypeName().GetText() << std::endl;
     }
     std::cout << "updateable prims" << std::endl;
     for(auto it : filter.updatablePrimSet())
     {
-      std::cout << it.GetPath().GetText() << std::endl;
+      std::cout << it.GetPath().GetText() << '\n';
     }
     std::cout << "removed prims" << std::endl;
     for(auto it : filter.removedPrimSet())
     {
-      std::cout << it.GetText() << std::endl;
+      std::cout << it.GetText() << '\n';
     }
   }
 
@@ -1156,15 +1158,21 @@ void ProxyShape::validateTransforms()
 
       MObject node = it.second.node();
       if(node.isNull())
+      {
         continue;
+      }
 
       Transform* tm = it.second.transform();
       if(!tm)
+      {
         continue;
+      }
 
       TransformationMatrix* tmm = tm->transform();
       if(!tmm)
+      {
         continue;
+      }
 
       UsdPrim newPrim = m_stage->GetPrimAtPath(it.first);
       if(newPrim)
