@@ -50,7 +50,6 @@ typedef boost::filesystem::path path;
 
 #include "AL/usdmaya/cmds/ProxyShapePostLoadProcess.h"
 #include "AL/usdmaya/CodeTimings.h"
-#include "AL/usdmaya/DrivenTransformsData.h"
 #include "AL/usdmaya/Global.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
@@ -222,7 +221,6 @@ MObject ProxyShape::m_sessionLayerName = MObject::kNullObj;
 MObject ProxyShape::m_serializedArCtx = MObject::kNullObj;
 MObject ProxyShape::m_serializedTrCtx = MObject::kNullObj;
 MObject ProxyShape::m_unloaded = MObject::kNullObj;
-MObject ProxyShape::m_inDrivenTransformsData = MObject::kNullObj;
 MObject ProxyShape::m_ambient = MObject::kNullObj;
 MObject ProxyShape::m_diffuse = MObject::kNullObj;
 MObject ProxyShape::m_specular = MObject::kNullObj;
@@ -501,11 +499,6 @@ MStatus ProxyShape::setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray
   {
     MHWRender::MRenderer::setGeometryDrawDirty(thisMObject(), true);
   }
-  if (plugBeingDirtied.array() == m_inDrivenTransformsData)
-  {
-    m_drivenTransformsDirty = true;
-    MHWRender::MRenderer::setGeometryDrawDirty(thisMObject(), true);
-  }
   return MPxSurfaceShape::setDependentsDirty(plugBeingDirtied, plugs);
 }
 
@@ -514,12 +507,6 @@ MStatus ProxyShape::preEvaluation(const MDGContext & context, const MEvaluationN
 {
   if( !context.isNormal() )
       return MStatus::kFailure;
-  MStatus status;
-  if (evaluationNode.dirtyPlugExists(m_inDrivenTransformsData, &status) && status)
-  {
-    m_drivenTransformsDirty = true;
-    MHWRender::MRenderer::setGeometryDrawDirty(thisMObject(), true);
-  }
   return MStatus::kSuccess;
 }
 
@@ -785,9 +772,6 @@ MStatus ProxyShape::initialise()
     m_outTime = addTimeAttr("outTime", "otm", MTime(0.0), kCached | kConnectable | kReadable | kAffectsAppearance);
     m_layers = addMessageAttr("layers", "lys", kWritable | kReadable | kConnectable | kHidden);
 
-    addFrame("USD Driven Transforms");
-    m_inDrivenTransformsData = addDataAttr("inDrivenTransformsData", "idrvtd", DrivenTransformsData::kTypeId, kWritable | kArray | kConnectable);
-
     addFrame("OpenGL Display");
     m_ambient = addColourAttr("ambientColour", "amc", MColor(0.1f, 0.1f, 0.1f), kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance);
     m_diffuse = addColourAttr("diffuseColour", "dic", MColor(0.7f, 0.7f, 0.7f), kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance);
@@ -817,7 +801,6 @@ MStatus ProxyShape::initialise()
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeScalar, m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_filePath, m_outStageData), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_primPath, m_outStageData), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_inDrivenTransformsData, m_outStageData), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_populationMaskIncludePaths, m_outStageData), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_stageDataDirty, m_outStageData), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_assetResolverConfig, m_outStageData), errorString);
@@ -1840,10 +1823,6 @@ MStatus ProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
   if(plug == m_outStageData)
   {
     MStatus status = computeOutputTime(MPlug(plug.node(), m_outTime), dataBlock, currentTime);
-    if (m_drivenTransformsDirty)
-    {
-      computeDrivenAttributes(plug, dataBlock, currentTime);
-    }
     return status == MS::kSuccess ? computeOutStageData(plug, dataBlock) : status;
   }
   return MPxSurfaceShape::compute(plug, dataBlock);
@@ -2067,35 +2046,6 @@ void ProxyShape::unloadMayaReferences()
   }
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-MStatus ProxyShape::computeDrivenAttributes(const MPlug& plug, MDataBlock& dataBlock, const MTime& currentTime)
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::computeDrivenAttributes\n");
-  m_drivenTransformsDirty = false;
-
-  MArrayDataHandle drvTransArray = dataBlock.inputArrayValue(m_inDrivenTransformsData);
-  uint32_t elemCnt = drvTransArray.elementCount();
-  for (uint32_t elemIdx = 0; elemIdx < elemCnt; ++elemIdx)
-  {
-    drvTransArray.jumpToArrayElement(elemIdx);
-    MDataHandle dtHandle = drvTransArray.inputValue();
-    DrivenTransformsData* dtData = static_cast<DrivenTransformsData*>(dtHandle.asPluginData());
-    if (!dtData)
-      continue;
-
-    proxy::DrivenTransforms& drivenTransforms = dtData->m_drivenTransforms;
-
-    if (!drivenTransforms.drivenPrimPaths().empty())
-    {
-      if(!drivenTransforms.update(m_stage, currentTime))
-      {
-        MString command("failed to update driven prims on block: ");
-        MGlobal::displayError(command + elemIdx);
-      }
-    }
-  }
-  return dataBlock.setClean(plug);
-}
 
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialiseTransformRefs()

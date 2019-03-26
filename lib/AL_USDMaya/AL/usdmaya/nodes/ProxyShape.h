@@ -340,9 +340,6 @@ public:
   /// Open the stage unloaded.
   AL_DECL_ATTRIBUTE(unloaded);
 
-  /// an array of MPxData for the driven transforms
-  AL_DECL_ATTRIBUTE(inDrivenTransformsData);
-
   /// ambient display colour
   AL_DECL_ATTRIBUTE(ambient);
 
@@ -996,7 +993,6 @@ private:
   MStatus computeInStageDataCached(const MPlug& plug, MDataBlock& dataBlock);
   MStatus computeOutStageData(const MPlug& plug, MDataBlock& dataBlock);
   MStatus computeOutputTime(const MPlug& plug, MDataBlock& dataBlock, MTime&);
-  MStatus computeDrivenAttributes(const MPlug& plug, MDataBlock& dataBlock, const MTime&);
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Utils
@@ -1072,7 +1068,6 @@ private:
 
   uint32_t m_engineRefCount = 0;
   bool m_compositionHasChanged = false;
-  bool m_drivenTransformsDirty = false;
   bool m_pleaseIgnoreSelection = false;
   bool m_hasChangedSelection = false;
 };

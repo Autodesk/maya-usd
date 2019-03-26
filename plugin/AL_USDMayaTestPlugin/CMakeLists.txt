@@ -35,7 +35,6 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/nodes/test_TranslatorContext.cpp
         AL/usdmaya/nodes/test_ExtraDataPlugin.cpp
         AL/usdmaya/nodes/test_ProxyShapeSelectabilityDB.cpp
-        AL/usdmaya/nodes/proxy/test_DrivenTransforms.cpp
         AL/usdmaya/nodes/proxy/test_PrimFilter.cpp
         AL/usdmaya/test_SelectabilityDB.cpp
         AL/usdmaya/test_DiffPrimVar.cpp

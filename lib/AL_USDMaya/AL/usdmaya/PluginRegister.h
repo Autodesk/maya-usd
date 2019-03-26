@@ -20,7 +20,6 @@
 #include "AL/maya/utils/MenuBuilder.h"
 #include "AL/usdmaya/Global.h"
 #include "AL/usdmaya/StageData.h"
-#include "AL/usdmaya/DrivenTransformsData.h"
 #include "AL/usdmaya/cmds/CreateUsdPrim.h"
 #include "AL/usdmaya/cmds/DebugCommands.h"
 #include "AL/usdmaya/cmds/EventCommand.h"
@@ -203,7 +202,6 @@ MStatus registerPlugin(AFnPlugin& plugin)
   }
 
   AL_REGISTER_DATA(plugin, AL::usdmaya::StageData);
-  AL_REGISTER_DATA(plugin, AL::usdmaya::DrivenTransformsData);
   AL_REGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::CreateUsdPrim);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCreateLayer);
@@ -367,7 +365,6 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Layer);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::LayerManager);
-  AL_UNREGISTER_DATA(plugin, AL::usdmaya::DrivenTransformsData);
   AL_UNREGISTER_DATA(plugin, AL::usdmaya::StageData);
 
   AL::usdmaya::Global::onPluginUnload();
