@@ -1,3 +1,15 @@
+
+## AL_USDMaya-0.32.11 (2019-03-26)
+### Removed
++ DrivenTransformData MPxData type
++ DrivenTransforms.h/.cpp
++ DrivenTransformData.h/.cpp
++ test_DrivenTransforms.cpp
++ ProxyShape::computeDrivenAttributes method
++ related maya attribute on Proxy Shape etc
+
+
+
 ## AL_USDMaya-0.32.10 (2019-03-25)
 ### Fixed
 * consolidate MayaReference update logic to make it more resilient: Combine the similar logic from update() and LoadMayaReference() to make the maya reference translator more resilient to imported references and stage changes [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/138) (#138 - @[nxkb](//github.com/nxkb))
