@@ -196,9 +196,25 @@ void MeshImportContext::gatherFaceConnectsAndVertices()
   connects.setLength(faceVertexIndices.size());
 
   mesh.GetPointsAttr().Get(&pointData, m_timeCode);
+
+  // According to the docs for UsdGeomMesh: If 'normals' and 'primvars:normals' are both specified, the latter has precedence.
+  const TfToken primvarNormalsToken("primvars:normals");
+  TfToken interpolation = mesh.GetNormalsInterpolation();
+  bool isIndexed = false;
+  bool hasNormalsOpinion = false;
+  if(mesh.HasPrimvar(primvarNormalsToken))
+  {
+    UsdGeomPrimvar primvar = mesh.GetPrimvar(primvarNormalsToken);
+    interpolation = primvar.GetInterpolation();
+    isIndexed = primvar.IsIndexed();
+    hasNormalsOpinion = true;
+    primvar.Get(&normalsData, m_timeCode);
+  }
+  else    
   if(mesh.GetNormalsAttr().HasAuthoredValueOpinion())
   {
     mesh.GetNormalsAttr().Get(&normalsData, m_timeCode);
+    hasNormalsOpinion = mesh.GetNormalsAttr().HasAuthoredValueOpinion();
   }
 
   points.setLength(pointData.size());
@@ -207,10 +223,10 @@ void MeshImportContext::gatherFaceConnectsAndVertices()
   memcpy(&counts[0], (const int32_t*)faceVertexCounts.cdata(), sizeof(int32_t) * faceVertexCounts.size());
   memcpy(&connects[0], (const int32_t*)faceVertexIndices.cdata(), sizeof(int32_t) * faceVertexIndices.size());
 
-  if(mesh.GetNormalsAttr().HasAuthoredValueOpinion())
+  if(hasNormalsOpinion)
   {
-    if(mesh.GetNormalsInterpolation() == UsdGeomTokens->faceVarying ||
-       mesh.GetNormalsInterpolation() == UsdGeomTokens->varying)
+    if(interpolation == UsdGeomTokens->faceVarying ||
+       interpolation == UsdGeomTokens->varying)
     {
       normals.setLength(normalsData.size());
       double* const optr = &normals[0].x;
@@ -223,7 +239,7 @@ void MeshImportContext::gatherFaceConnectsAndVertices()
       }
     }
     else
-    if(mesh.GetNormalsInterpolation() == UsdGeomTokens->uniform)
+    if(interpolation == UsdGeomTokens->uniform)
     {
       const float* const iptr = (const float*)normalsData.cdata();
       normals.setLength(connects.length());
@@ -238,7 +254,7 @@ void MeshImportContext::gatherFaceConnectsAndVertices()
       }
     }
     else
-    if(mesh.GetNormalsInterpolation() == UsdGeomTokens->vertex)
+    if(interpolation == UsdGeomTokens->vertex)
     {
       const float* const iptr = (const float*)normalsData.cdata();
       normals.setLength(normalsData.size());
@@ -506,17 +522,51 @@ bool MeshImportContext::applyVertexNormals()
 {
   if(normals.length())
   {
-    if(mesh.GetNormalsInterpolation() == UsdGeomTokens->vertex)
+    // According to the docs for UsdGeomMesh: If 'normals' and 'primvars:normals' are both specified, the latter has precedence.
+    TfToken primvarNormalsToken("primvars:normals");
+    if(mesh.HasPrimvar(primvarNormalsToken))
     {
-      return fnMesh.setFaceVertexNormals(normals, connects, connects, MSpace::kObject) == MS::kSuccess;
-    }
-    else
-    {
-      MIntArray normalsFaceIds;
-      normalsFaceIds.setLength(connects.length());
-      int32_t* normalsFaceIdsPtr = &normalsFaceIds[0];
-      if (normals.length() == uint32_t(fnMesh.numFaceVertices()))
+      UsdGeomPrimvar primvar = mesh.GetPrimvar(primvarNormalsToken);
+      const TfToken interpolation = primvar.GetInterpolation();
+      const bool isIndexed = primvar.IsIndexed();
+      if(interpolation == UsdGeomTokens->vertex)
       {
+        if(isIndexed)
+        {
+          VtIntArray indices;
+          primvar.GetIndices(&indices, m_timeCode);
+
+          MVectorArray ns(indices.size());
+          for(uint32_t i = 0, n = indices.size(); i < n; ++i)
+          {
+            ns[i] = normals[indices[i]];
+          }
+
+          MIntArray mayaIndices(fnMesh.numVertices());
+          for(uint32_t i = 0, n = fnMesh.numVertices(); i < n; ++i)
+          {
+            mayaIndices[i] = i;
+          }
+
+          return fnMesh.setVertexNormals(ns, mayaIndices);
+        }
+        else
+        {
+          MIntArray mayaIndices(fnMesh.numVertices());
+          for(uint32_t i = 0, n = fnMesh.numVertices(); i < n; ++i)
+          {
+            mayaIndices[i] = i;
+          }
+          return fnMesh.setVertexNormals(normals, mayaIndices, MSpace::kObject);
+        }
+      }
+      else
+      if(interpolation == UsdGeomTokens->faceVarying)
+      {
+        MIntArray normalsFaceIds;
+        normalsFaceIds.setLength(connects.length());
+        
+        int32_t* normalsFaceIdsPtr = &normalsFaceIds[0];
         for (uint32_t i = 0, k = 0, n = counts.length(); i < n; i++)
         {
           for (uint32_t j = 0, m = counts[i]; j < m; j++, ++k)
@@ -524,9 +574,56 @@ bool MeshImportContext::applyVertexNormals()
             normalsFaceIdsPtr[k] = i;
           }
         }
-      }
 
-      return fnMesh.setFaceVertexNormals(normals, normalsFaceIds, connects, MSpace::kObject) == MS::kSuccess;
+        if(isIndexed)
+        {
+          VtIntArray indices;
+          primvar.GetIndices(&indices, m_timeCode);
+
+          MVectorArray ns(indices.size());
+          for(uint32_t i = 0, n = indices.size(); i < n; ++i)
+          {
+            ns[i] = normals[indices[i]];
+          }
+
+          return fnMesh.setFaceVertexNormals(ns, normalsFaceIds, connects, MSpace::kObject);
+
+        }
+        else
+        {
+          return fnMesh.setFaceVertexNormals(normals, normalsFaceIds, connects, MSpace::kObject);
+        }
+
+      }
+    }
+    else
+    {
+      if(mesh.GetNormalsInterpolation() == UsdGeomTokens->vertex)
+      {
+        MIntArray mayaIndices(fnMesh.numVertices());
+        for(uint32_t i = 0, n = fnMesh.numVertices(); i < n; ++i)
+        {
+          mayaIndices[i] = i;
+        }
+        return fnMesh.setVertexNormals(normals, mayaIndices, MSpace::kObject);
+      }
+      else
+      {
+        MIntArray normalsFaceIds;
+        normalsFaceIds.setLength(connects.length());
+        int32_t* normalsFaceIdsPtr = &normalsFaceIds[0];
+        if (normals.length() == uint32_t(fnMesh.numFaceVertices()))
+        {
+          for (uint32_t i = 0, k = 0, n = counts.length(); i < n; i++)
+          {
+            for (uint32_t j = 0, m = counts[i]; j < m; j++, ++k)
+            {
+              normalsFaceIdsPtr[k] = i;
+            }
+          }
+        }
+        return fnMesh.setFaceVertexNormals(normals, normalsFaceIds, connects, MSpace::kObject);
+      }
     }
   }
   return false;
@@ -1817,11 +1914,19 @@ void MeshExportContext::copyBindPoseData(UsdTimeCode time)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void MeshExportContext::copyNormalData(UsdTimeCode time)
+void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
 {
+  const TfToken normalPrimvarName("primvars:normals");
   if(diffGeom & kNormals)
   {
-    if(UsdAttribute normalsAttr = mesh.GetNormalsAttr())
+    UsdAttribute normalsAttr = mesh.GetNormalsAttr();
+    UsdGeomPrimvar primvar;
+    if(copyAsPrimvar)
+    {
+      primvar = mesh.CreatePrimvar(normalPrimvarName, SdfValueTypeNames->Float3Array);
+      normalsAttr = primvar.GetAttr();
+    }
+
     {
       MStatus status;
       const uint32_t numNormals = fnMesh.numNormals();
@@ -1835,7 +1940,14 @@ void MeshExportContext::copyNormalData(UsdTimeCode time)
         if(usd::utils::vec3AreAllTheSame(normalsData, numNormals))
         {
           VtArray<GfVec3f> normals(1);
-          mesh.SetNormalsInterpolation(UsdGeomTokens->constant);
+          if(copyAsPrimvar)
+          {
+            primvar.SetInterpolation(UsdGeomTokens->constant);
+          }
+          else
+          {
+            mesh.SetNormalsInterpolation(UsdGeomTokens->constant);
+          }
           normals[0][0] = normalsData[0];
           normals[0][1] = normalsData[1];
           normals[0][2] = normalsData[2];
@@ -1847,7 +1959,15 @@ void MeshExportContext::copyNormalData(UsdTimeCode time)
           if(usd::utils::compareArray(&normalIndices[0], &faceConnects[0], normalIndices.length(), faceConnects.length()))
           {
             VtArray<GfVec3f> normals(numNormals);
-            mesh.SetNormalsInterpolation(UsdGeomTokens->vertex);
+            if(copyAsPrimvar)
+            {
+              primvar.SetInterpolation(UsdGeomTokens->vertex);
+            }
+            else
+            {
+              mesh.SetNormalsInterpolation(UsdGeomTokens->vertex);
+            }
+
             memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
             normalsAttr.Set(normals, time);
           }
@@ -1884,28 +2004,90 @@ void MeshExportContext::copyNormalData(UsdTimeCode time)
                 const GfVec3f normal(normalsData[index], normalsData[index + 1], normalsData[index + 2]);
                 normals[remapped] = normal;
               }
-              mesh.SetNormalsInterpolation(UsdGeomTokens->vertex);
+              if(copyAsPrimvar)
+              {
+                primvar.SetInterpolation(UsdGeomTokens->vertex);
+              }
+              else
+              {
+                mesh.SetNormalsInterpolation(UsdGeomTokens->vertex);
+              }
               normalsAttr.Set(normals, time);
             }
             else
             {
-              VtArray<GfVec3f> normals(normalIndices.length());
-              for(uint32_t i = 0, n = normalIndices.length(); i < n; ++i)
+              if(copyAsPrimvar)
               {
-                const uint32_t index = 3 * normalIndices[i];
-                normals[i] = GfVec3f(normalsData[index], normalsData[index + 1], normalsData[index + 2]);
-              }        
-              mesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
-              normalsAttr.Set(normals, time);  
+                primvar.SetInterpolation(UsdGeomTokens->faceVarying);
+                VtArray<GfVec3f> normals(numNormals);
+                for(uint32_t i = 0, n = numNormals; i < n; ++i)
+                {
+                  const uint32_t index = 3 * i;
+                  normals[i] = GfVec3f(normalsData[index], normalsData[index + 1], normalsData[index + 2]);
+                }
+                normalsAttr.Set(normals, time);  
+                VtArray<int> normalIds(normalIndices.length());
+                memcpy(normalIds.data(), &normalIndices[0], sizeof(int) * normalIndices.length());
+                primvar.SetIndices(normalIds, time);  
+              }
+              else
+              {
+                VtArray<GfVec3f> normals(normalIndices.length());
+                for(uint32_t i = 0, n = normalIndices.length(); i < n; ++i)
+                {
+                  const uint32_t index = 3 * normalIndices[i];
+                  normals[i] = GfVec3f(normalsData[index], normalsData[index + 1], normalsData[index + 2]);
+                }
+                mesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
+                normalsAttr.Set(normals, time);  
+              }
             }
           }
         }
         else
         {
-          VtArray<GfVec3f> normals(numNormals);
-          mesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
-          memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
-          normalsAttr.Set(normals, time);
+          // run a check to see if the normalIds is relevant in this case.
+          bool isOrdered = true;
+          for(uint32_t i = 0, n = normalIndices.length(); i < n; ++i)
+          {
+            if(normalIndices[i] != i)
+            {
+              isOrdered = false;
+              break;
+            }
+          }
+          if(isOrdered)
+          {
+            if(copyAsPrimvar)
+            {
+              primvar.SetInterpolation(UsdGeomTokens->faceVarying);
+            }
+            else
+            {
+              mesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
+            }
+            VtArray<GfVec3f> normals(numNormals);
+            memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
+            normalsAttr.Set(normals, time);
+          }
+          else
+          {
+            if(copyAsPrimvar)
+            {
+              primvar.SetInterpolation(UsdGeomTokens->faceVarying);
+            }
+            else
+            {
+              mesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
+            }
+            VtArray<GfVec3f> normals(numNormals);
+            for(uint32_t i = 0, n = normalIndices.length(); i < n; ++i)
+            {
+              const uint32_t index = 3 * normalIndices[i];
+              normals[i] = GfVec3f(normalsData[index], normalsData[index + 1], normalsData[index + 2]);
+            }
+            normalsAttr.Set(normals, time);
+          }
         }
       }
       else

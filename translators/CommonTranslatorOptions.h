@@ -19,6 +19,7 @@ static constexpr const char* const kMeshUvOnly = "Mesh UV Only"; ///< export mes
 static constexpr const char* const kMeshPointsAsPref = "Mesh Points as PRef"; ///< export mesh Points as PRef, duplicating "P"
 static constexpr const char* const kMeshColours = "Mesh Colours"; ///< export mesh Colour Sets
 static constexpr const char* const kMeshHoles = "Mesh Holes"; ///< export mesh face holes
+static constexpr const char* const kNormalsAsPrimvars = "Write Normals as Primvars"; ///< if true, allow indexed normals to be written as primvars
 static constexpr const char* const kCompactionLevel = "Compaction Level"; ///< export mesh face holes
 static constexpr const char* const kNurbsCurves = "Nurbs Curves"; ///< export nurbs curves option name
 }

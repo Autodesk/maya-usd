@@ -137,7 +137,7 @@ UsdPrim Mesh::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath
     }
     if(params.getBool(GeometryExportOptions::kMeshNormals))
     {
-      context.copyNormalData(context.timeCode());
+      context.copyNormalData(context.timeCode(), params.getBool(GeometryExportOptions::kNormalsAsPrimvars));
     }
     if(params.getBool(GeometryExportOptions::kMeshColours))
     {
