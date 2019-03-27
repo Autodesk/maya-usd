@@ -136,6 +136,10 @@ TF_REGISTRY_FUNCTION(TfDebug) {
         "Print information about 'GetSubdivTags' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_DELEGATE_REGISTRY,
+        "Print information about registration of HdMayaDelegates.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_SAMPLE_TRANSFORM,
         "Print information about 'SampleTransform' calls to the delegates.");
 

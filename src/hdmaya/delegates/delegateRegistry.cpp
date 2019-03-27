@@ -23,6 +23,8 @@
 //
 #include <hdmaya/delegates/delegateRegistry.h>
 
+#include <hdmaya/delegates/delegateDebugCodes.h>
+
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/instantiateSingleton.h>
@@ -38,8 +40,20 @@ void HdMayaDelegateRegistry::RegisterDelegate(
     const TfToken& name, DelegateCreator creator) {
     auto& instance = GetInstance();
     for (auto it : instance._delegates) {
-        if (name == std::get<0>(it)) { return; }
+        if (name == std::get<0>(it)) {
+            TF_DEBUG(HDMAYA_DELEGATE_REGISTRY)
+                .Msg(
+                    "HdMayaDelegateRegistry::RegisterDelegate(%s) - existing "
+                    "delegate\n",
+                    name.GetText());
+            return;
+        }
     }
+
+    TF_DEBUG(HDMAYA_DELEGATE_REGISTRY)
+        .Msg(
+            "HdMayaDelegateRegistry::RegisterDelegate(%s) - new delegate\n",
+            name.GetText());
     instance._delegates.emplace_back(name, creator);
 }
 
@@ -77,6 +91,9 @@ void HdMayaDelegateRegistry::InstallDelegatesChangedSignal(
 }
 
 void HdMayaDelegateRegistry::_LoadAllDelegates() {
+    TF_DEBUG(HDMAYA_DELEGATE_REGISTRY)
+        .Msg("HdMayaDelegateRegistry::_LoadAllDelegates()\n");
+
     TfRegistryManager::GetInstance().SubscribeTo<HdMayaDelegateRegistry>();
 
     const TfType& delegateType = TfType::Find<HdMayaDelegate>();
