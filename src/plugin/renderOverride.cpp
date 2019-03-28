@@ -433,6 +433,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 void MtohRenderOverride::_InitHydraResources() {
     TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
         .Msg("MtohRenderOverride::_InitHydraResources()\n");
+    GlfContextCaps::InitInstance();
     _rendererPlugin =
         HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(
             _rendererDesc.rendererName);
