@@ -109,7 +109,7 @@ protected:
     VtIntArray GetInstanceIndices(
         const SdfPath& instancerId, const SdfPath& prototypeId) override;
     GfMatrix4d GetInstancerTransform(
-        SdfPath const& instancerId, SdfPath const& prototypeId) override;
+        SdfPath const& instancerId) override;
     SdfPath GetPathForInstanceIndex(
         const SdfPath& protoPrimPath, int instanceIndex,
         int* absoluteInstanceIndex, SdfPath* rprimPath,
