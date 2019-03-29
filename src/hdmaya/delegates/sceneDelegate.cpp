@@ -768,7 +768,12 @@ VtIntArray HdMayaSceneDelegate::GetInstanceIndices(
 }
 
 GfMatrix4d HdMayaSceneDelegate::GetInstancerTransform(
-    SdfPath const& instancerId) {
+#ifdef USD_001905_BUILD
+    SdfPath const& instancerId
+#else
+    SdfPath const& instancerId, SdfPath const& prototypeId
+#endif
+    ) {
     return GfMatrix4d(1.0);
 }
 
