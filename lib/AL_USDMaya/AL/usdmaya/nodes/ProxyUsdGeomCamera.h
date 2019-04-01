@@ -16,6 +16,9 @@
 #pragma once
 
 #include <maya/MPxNode.h>
+
+#include "AL/usdmaya/Api.h"
+
 #include <AL/maya/utils/NodeHelper.h>
 #include <AL/maya/utils/MayaHelperMacros.h>
 
@@ -52,29 +55,32 @@ public:
   };
 
 public:
-  static const MTypeId kTypeId;
-  static const MString kTypeName;
-
-  /// \brief  Returns a new instance of this UI component.
-  static void* creator();
-  /// \brief  Initialises UI component type.
-  static MStatus initialise();
+  AL_MAYA_DECLARE_NODE();
 
 protected:
   /// \brief Returns the UsdGeomCamera this node is proxying.
+  AL_USDMAYA_PUBLIC
   UsdGeomCamera getCamera() const;
+
   /// \brief Returns the UsdTimeCode at which attributes are being accessed.
+  AL_USDMAYA_PUBLIC
   UsdTimeCode getTime() const;
 
 public:
   /// \brief  ctor
+  AL_USDMAYA_PUBLIC
   ProxyUsdGeomCamera() = default;
+
   /// \brief  dtor
+  AL_USDMAYA_PUBLIC
   ~ProxyUsdGeomCamera() = default;
 
   /// \brief Writes attribute values from Maya to the UsdGeomCamera this node is proxying.
+  AL_USDMAYA_PUBLIC
   bool setInternalValue(const MPlug& plug, const MDataHandle& dataHandle) override;
+
   /// \brief Reads attributes from the UsdGeomCamera this node is proxying when requested by Maya.
+  AL_USDMAYA_PUBLIC
   bool getInternalValue(const MPlug& plug, MDataHandle& dataHandle) override;
 
   AL_DECL_ATTRIBUTE(path);
