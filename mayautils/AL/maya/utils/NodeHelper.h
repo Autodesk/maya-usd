@@ -618,6 +618,11 @@ public:
   AL_MAYA_UTILS_PUBLIC
   static void addFrame(const char* frameTitle);
 
+  /// \brief  add an inherited attribute to this node type
+  /// \param  longName  long name of the attribute
+  AL_MAYA_UTILS_PUBLIC
+  static void addInheritedAttr(const char* longName);
+
   /// \brief  add a new compound attribute to this node type
   /// \param  longName  long name for the attribute
   /// \param  shortName  short name for the attribute

@@ -37,6 +37,7 @@
 #include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/nodes/MeshAnimCreator.h"
 #include "AL/usdmaya/nodes/MeshAnimDeformer.h"
+#include "AL/usdmaya/nodes/ProxyUsdGeomCamera.h"
 #include "AL/usdmaya/nodes/ProxyDrawOverride.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/ProxyShapeUI.h"
@@ -247,6 +248,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::Layer);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::MeshAnimCreator);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::MeshAnimDeformer);
+  AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::ProxyUsdGeomCamera);
 
   // Since AL_MAYA_DECLARE_NODE / AL_MAYA_DEFINE_NODE declare/define "creator"
   // method, and AL_REGISTER_DEPEND_NODE registers "creator", in order to
