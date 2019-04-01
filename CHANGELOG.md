@@ -1,7 +1,13 @@
-## AL_USDMaya-0.32.12 (2019-03-27)
+## AL_USDMaya-0.32.12 (2019-04-02)
+### Added
++ A node to act as a proxy between Maya and USD cameras to enable interactive updates to the USD scene see [docs](docs/cameraProxy.md) for more info
++ Added a new flag to the AL_usdmaya_TranslatePrim command to control whether pushToPrim is enabled on newly created transforms.
++ Ability to import nested instances into Maya from USD.
+
 ### Fixed
 + Potential problems when importing/exporting surface normals.
 + Bug where a transform chain would be incorrectly created for prims not being translated (When translating a prim into the maya scene, if the forceImport flag was disabled, then a transform chain would end up being created for a non existent prim (and could never be removed again). The PrimFilter now respects the forceImport flag.)
++ crash on AL_USDMaya Plugin Registration
 
 
 ## AL_USDMaya-0.32.11 (2019-03-26)
