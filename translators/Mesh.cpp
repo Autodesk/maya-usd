@@ -110,7 +110,7 @@ UsdPrim Mesh::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath
 
   auto compaction = (AL::usdmaya::utils::MeshExportContext::CompactionLevel)params.getInt(GeometryExportOptions::kCompactionLevel);
 
-  AL::usdmaya::utils::MeshExportContext context(dagPath, mesh, params.m_timeCode, false, compaction);
+  AL::usdmaya::utils::MeshExportContext context(dagPath, mesh, params.m_timeCode, false, compaction, params.getBool(GeometryExportOptions::kReverseOppositeNormals));
   if(context)
   {
     UsdAttribute pointsAttr = mesh.GetPointsAttr();

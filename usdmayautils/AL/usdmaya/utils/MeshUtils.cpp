@@ -997,8 +997,10 @@ MeshExportContext::MeshExportContext(
     UsdGeomMesh& mesh,
     UsdTimeCode timeCode,
     bool performDiff,
-    CompactionLevel compactionLevel)
-  : fnMesh(), faceCounts(), faceConnects(), m_timeCode(timeCode), mesh(mesh), compaction(compactionLevel), performDiff(performDiff)
+    CompactionLevel compactionLevel,
+    bool reverseNormals)
+  : fnMesh(), faceCounts(), faceConnects(), m_timeCode(timeCode), mesh(mesh), compaction(compactionLevel), 
+    performDiff(performDiff), reverseNormals(reverseNormals)
 {
   MStatus status = fnMesh.setObject(path);
   valid = (status == MS::kSuccess);
@@ -1008,7 +1010,7 @@ MeshExportContext::MeshExportContext(
     fnMesh.getVertices(faceCounts, faceConnects);
   }
 
-  if(fnMesh.findPlug("opposite", true).asBool())
+  if(!reverseNormals && fnMesh.findPlug("opposite", true).asBool())
   {
     mesh.CreateOrientationAttr().Set(UsdGeomTokens->leftHanded);
   }
@@ -1927,6 +1929,12 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
       normalsAttr = primvar.GetAttr();
     }
 
+    bool invertNormals = false;
+    if(fnMesh.findPlug("opposite", true).asBool())
+    {
+      invertNormals = reverseNormals;
+    }
+
     {
       MStatus status;
       const uint32_t numNormals = fnMesh.numNormals();
@@ -2088,6 +2096,17 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
             }
             normalsAttr.Set(normals, time);
           }
+        }
+
+        if(invertNormals)
+        {
+          VtArray<GfVec3f> normals;
+          normalsAttr.Get(&normals, time);
+          for(size_t i = 0; i < normals.size(); ++i)
+          {
+            normals[i] = -normals[i]; 
+          }
+          normalsAttr.Set(normals, time);
         }
       }
       else

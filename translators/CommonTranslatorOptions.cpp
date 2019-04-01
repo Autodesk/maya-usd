@@ -43,6 +43,7 @@ void registerCommonTranslatorOptions()
     g_exportOptions->addBool(GeometryExportOptions::kMeshColours, true);
     g_exportOptions->addBool(GeometryExportOptions::kMeshHoles, true);
     g_exportOptions->addBool(GeometryExportOptions::kNormalsAsPrimvars, false);
+    g_exportOptions->addBool(GeometryExportOptions::kReverseOppositeNormals, false);
     g_exportOptions->addEnum(GeometryExportOptions::kCompactionLevel, g_compactionLevels, 3);
   }
 

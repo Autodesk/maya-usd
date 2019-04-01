@@ -212,7 +212,8 @@ public:
     UsdGeomMesh& mesh,
     UsdTimeCode timeCode,
     bool performDiff = false,
-    CompactionLevel compactionLevel = kFull);
+    CompactionLevel compactionLevel = kFull,
+    bool reverseNormals = false);
 
   /// \brief  returns true if it's ok to continue exporting the data
   operator bool () const
@@ -281,6 +282,7 @@ private:
   CompactionLevel compaction;
   bool valid; ///< true if the function set is ok
   bool performDiff; ///< true if performing a diff on export
+  bool reverseNormals; ///< true if reversing normals on 'opposite' meshes
 };
 
 
