@@ -55,6 +55,41 @@ Import::~Import()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+MObject Import::createParentTransform(
+  const UsdPrim& prim,
+  TransformIterator& it,
+  translators::TranslatorManufacture manufacture)
+{
+  NodeFactory& factory = getNodeFactory();
+    fileio::SchemaPrimsUtils utils(manufacture);
+
+  MObject parent = it.parent();
+  const char * transformType = "transform";
+  std::string ttype;
+  prim.GetMetadata(Metadata::transformType, &ttype);
+  if(!ttype.empty()){
+    transformType = ttype.c_str();
+  }
+  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("Import::doImport::createParentTransform prim=%s transformType=%s\n", prim.GetPath().GetText(), transformType);
+  MObject obj = factory.createNode(prim, transformType, parent);
+
+  // handle the special case of importing custom transform params
+  {
+    auto dataPlugins = manufacture.getExtraDataPlugins(obj);
+    for(auto dataPlugin : dataPlugins)
+    {
+      // special case
+      if(dataPlugin->getFnType() == MFn::kTransform)
+      {
+        dataPlugin->import(prim, parent);
+      }
+    }
+  }
+  it.append(obj);
+  return obj;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
 void Import::doImport()
 {
   AL::usdmaya::Profiler::clearAll();
@@ -112,34 +147,6 @@ void Import::doImport()
 
     fileio::SchemaPrimsUtils utils(manufacture);
 
-    auto createParentTransform = [&](const UsdPrim& prim, TransformIterator& it)
-        {
-          MObject parent = it.parent();
-          const char * transformType = "transform";
-          std::string ttype;
-          prim.GetMetadata(Metadata::transformType, &ttype);
-          if(!ttype.empty()){
-            transformType = ttype.c_str();
-          }
-          TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("Import::doImport::createParentTransform prim=%s transformType=%s\n", prim.GetPath().GetText(), transformType);
-          MObject obj = factory.createNode(prim, transformType, parent);
-
-          // handle the special case of importing custom transform params
-          {
-            auto dataPlugins = manufacture.getExtraDataPlugins(obj);
-            for(auto dataPlugin : dataPlugins)
-            {
-              // special case
-              if(dataPlugin->getFnType() == MFn::kTransform)
-              {
-                dataPlugin->import(prim, parent);
-              }
-            }
-          }
-          
-          it.append(obj);
-          return obj;
-        };
 
     m_nonImportablePrims.clear();
     if(!m_params.getBool("Import Meshes"))
@@ -151,61 +158,82 @@ void Import::doImport()
       m_nonImportablePrims.insert(TfToken("NurbsCurves"));
     }
 
+    std::map<SdfPath, MObject> masterMap;
     for(TransformIterator it(stage, m_params.m_parentPath); !it.done(); it.next())
     {
       const UsdPrim& prim = it.prim();
-      // fallback in cases where either the node is NOT an assembly, or the attempt to load the
-      // assembly failed.
-      bool parentUnmerged = false;
-      TfToken val;
-      if(prim.GetParent().GetMetadata(AL::usdmaya::Metadata::mergedTransform, &val))
+      if(prim.IsInstance())
       {
-        parentUnmerged = (val == AL::usdmaya::Metadata::unmerged);
-      }
-
-      translators::TranslatorRefPtr schemaTranslator = utils.isSchemaPrim(prim);
-      if(schemaTranslator != nullptr)
-      {
-        AL_BEGIN_PROFILE_SECTION(ImportingSchemaPrim);
-        MObject parent;
-        if(!parentUnmerged && !prim.IsInMaster())
+        UsdPrim masterPrim = prim.GetMaster();
+        auto iter = masterMap.find(masterPrim.GetPath());
+        if(iter == masterMap.end())
         {
-          parent = createParentTransform(prim, it);
+          MObject mayaObject = createParentTransform(prim, it, manufacture);
+          MFnDagNode fnInstance(mayaObject);
+          fnInstance.setInstanceable(true);
+          masterMap.emplace(masterPrim.GetPath(), mayaObject);
         }
         else
         {
-          parent = it.parent();
-        }
-        if (m_nonImportablePrims.find(prim.GetTypeName()) == m_nonImportablePrims.end())
-        {
-          MObject shape = createShape(schemaTranslator, manufacture, prim, parent, parentUnmerged);
-          if (shape == MObject::kNullObj)
+          MStatus status;
+          MObject instanceParent = iter->second;
+          MObject mayaObject = createParentTransform(prim, it, manufacture);
+
+          MFnDagNode fnParent(mayaObject, &status);
+          MFnDagNode fnInstance(instanceParent, &status);
+          if(!status) status.perror("Failed to access instance parent");
+
+          // add each child from the instance transform, to the new transform
+          for(int i = 0; i < fnInstance.childCount(); ++i)
           {
-            MGlobal::displayWarning(MString("Unable to create prim ") +
-                                    AL::usdmaya::utils::convert(prim.GetPath().GetToken()));
+            MObject child = fnInstance.child(i);
+            status = fnParent.addChild(child, MFnDagNode::kNextPos, true);
+            if(!status) status.perror("Failed to parent instance");
           }
-          else
-          {
-            MFnTransform fnP(parent);
-            fnP.addChild(shape, MFnTransform::kNextPos, true);
-          }
+
+          it.prune();
         }
-        AL_END_PROFILE_SECTION();
       }
       else
       {
-        AL_BEGIN_PROFILE_SECTION(ImportingTransform);
-        MObject obj = createParentTransform(prim, it);
-        it.append(obj);
-        AL_END_PROFILE_SECTION();
+        translators::TranslatorRefPtr schemaTranslator = utils.isSchemaPrim(prim);
+        if(schemaTranslator != nullptr)
+        {
+          if (m_nonImportablePrims.find(prim.GetTypeName()) == m_nonImportablePrims.end())
+          {
+            // check merge status on parent transform (we must use the parent from the iterator!)
+            bool parentUnmerged = false;
+            TfToken val;
+            if(it.parentPrim().GetMetadata(AL::usdmaya::Metadata::mergedTransform, &val))
+            {
+              parentUnmerged = (val == AL::usdmaya::Metadata::unmerged);
+            }
+
+            MObject obj;
+            if(!parentUnmerged)
+            {
+              obj = createParentTransform(prim, it, manufacture);
+            }
+            else
+            {
+              obj = it.parent();
+            }
+            MObject shape = createShape(schemaTranslator, manufacture, prim, obj, parentUnmerged);
+
+            MFnTransform fnP(obj);
+            fnP.addChild(shape, MFnTransform::kNextPos, true);
+          }
+        }
+        else
+        {
+          AL_BEGIN_PROFILE_SECTION(ImportingTransform);
+          createParentTransform(prim, it, manufacture);
+          AL_END_PROFILE_SECTION();
+        }
       }
     }
-    m_success = true;
   }
-  else
-  {
-    MGlobal::displayError(MString("Unable to open USD file \"") + m_params.m_fileName + "\"");
-  }
+  m_success = true;
 
   AL_END_PROFILE_SECTION();
 
