@@ -15,8 +15,6 @@
 //
 #include "test_usdmaya.h"
 #include "AL/usdmaya/nodes/ProxyUsdGeomCamera.h"
-//#include "AL/usdmaya/nodes/Transform.h"
-//#include "maya/MAnimControl.h"
 #include "maya/MFileIO.h"
 #include "maya/MFnDagNode.h"
 #include "maya/MFnTransform.h"
@@ -24,7 +22,6 @@
 #include "maya/MPlug.h"
 #include "maya/MStatus.h"
 #include "maya/MTypes.h"
-
 
 #include "maya/MGlobal.h"
 #include "maya/MDataBlock.h"
@@ -37,20 +34,13 @@
 #include "maya/MFnEnumAttribute.h"
 
 #include "pxr/usd/usd/api.h"
-//#include "pxr/usd/usd/stage.h"
-//#include "pxr/usd/usd/common.h"
-//#include "pxr/usd/usd/attribute.h"
-//#include "pxr/usd/usd/stage.h"
-//#include "pxr/usd/usd/timeCode.h"
-//#include "pxr/usd/usdGeom/xformable.h"
-
+#include "pxr/usd/usdGeom/xform.h"
 
 #include "AL/usdmaya/TypeIDs.h"
 #include <AL/usdmaya/StageData.h>
 #include <AL/maya/utils/MayaHelperMacros.h>
 
-//using AL::usdmaya::nodes::ProxyShape;
-//using AL::usdmaya::nodes::Transform;
+using AL::usdmaya::nodes::ProxyShape;
 using AL::usdmaya::nodes::ProxyUsdGeomCamera;
 
 using AL::maya::test::buildTempPath;
@@ -72,14 +62,14 @@ TEST(ProxyUsdGeomCamera, cameraProxyReadWriteAttributes)
   MFnDependencyNode fnNode;
   MObject proxyNode = fnNode.create("AL_usd_ProxyUsdGeomCamera", &status);
   EXPECT_EQ(status, MStatus::kSuccess);
-  AL::usdmaya::nodes::ProxyUsdGeomCamera* proxyCamera = (AL::usdmaya::nodes::ProxyUsdGeomCamera*)fnNode.userNode(&status);
+  ProxyUsdGeomCamera* proxyCamera = (ProxyUsdGeomCamera*)fnNode.userNode(&status);
   EXPECT_EQ(status, MStatus::kSuccess);
   MString proxyCameraName = proxyCamera->name();
 
   MFnDagNode fnDag;
   MObject xform = fnDag.create("transform");
   MObject shape = fnDag.create("AL_usdmaya_ProxyShape", xform);
-  AL::usdmaya::nodes::ProxyShape* proxyShape = (AL::usdmaya::nodes::ProxyShape*)fnDag.userNode(&status);
+  ProxyShape* proxyShape = (ProxyShape*)fnDag.userNode(&status);
   EXPECT_EQ(status, MStatus::kSuccess);
   MString proxyShapeName = proxyShape->name();
 
@@ -257,7 +247,5 @@ TEST(ProxyUsdGeomCamera, cameraProxyReadWriteAttributes)
   camera.GetClippingRangeAttr().Set(GfVec2f(1.0f, 10000.0f), usdTime);
   EXPECT_EQ(1.0f, proxyCamera->nearClipPlanePlug().asFloat());
   EXPECT_EQ(10000.0f, proxyCamera->farClipPlanePlug().asFloat());
-
-  stage->Export("/home/users/curtisb/Desktop/stage.usda", false);
 
 }
