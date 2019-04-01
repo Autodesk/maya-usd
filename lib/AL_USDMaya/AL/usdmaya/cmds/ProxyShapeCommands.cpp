@@ -1307,6 +1307,7 @@ MSyntax TranslatePrim::createSyntax()
   syntax.addFlag("-tp", "-teardownPaths", MSyntax::kString);
   syntax.addFlag("-fi", "-forceImport", MSyntax::kNoArg);
   syntax.addFlag("-fd", "-forceDefault", MSyntax::kNoArg);
+  syntax.addFlag("-ptp", "-pushToPrim", MSyntax::kBoolean);
   return syntax;
 }
 
@@ -1338,6 +1339,14 @@ MStatus TranslatePrim::doIt(const MArgList& args)
     if(db.isFlagSet("-fi"))
     {
       tp.setForcePrimImport(true);
+    }
+
+    // should pushToPrim be enabled on transforms when translating?
+    if(db.isFlagSet("-ptp"))
+    {
+      bool value = true;
+      db.getFlagArgument("-ptp", 0, value);
+      tp.setPushToPrim(value);
     }
 
     // change the translator context to read default value

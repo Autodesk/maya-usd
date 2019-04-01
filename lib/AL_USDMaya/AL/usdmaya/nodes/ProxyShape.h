@@ -486,7 +486,8 @@ public:
       MDagModifier& modifier,
       TransformReason reason,
       MDGModifier* modifier2 = 0,
-      uint32_t* createCount = 0);
+      uint32_t* createCount = 0,
+      bool pushToPrim = true);
 
   /// \brief  Will construct AL_usdmaya_Transform nodes for all of the prims from the specified usdPrim and down.
   /// \param  usdPrim the root for the transforms to be created
@@ -880,7 +881,8 @@ private:
       TransformReason reason,
       MDGModifier* modifier2 = 0,
       uint32_t* createCount = 0,
-      MString* newPath = 0);
+      MString* newPath = 0,
+      bool pushToPrim = true);
 
   void removeUsdTransformChain_internal(
       const UsdPrim& usdPrim,
@@ -896,14 +898,16 @@ private:
       TransformReason reason,
       MDGModifier* modifier2,
       uint32_t* createCount,
-      MString* newPath = 0);
+      MString* newPath = 0,
+      bool pushToPrim = true);
 
   void makeUsdTransformsInternal(
       const UsdPrim& usdPrim,
       const MObject& parentXForm,
       MDagModifier& modifier,
       TransformReason reason,
-      MDGModifier* modifier2);
+      MDGModifier* modifier2,
+      bool pushToPrim = true);
 
   void removeUsdTransformsInternal(
       const UsdPrim& usdPrim,

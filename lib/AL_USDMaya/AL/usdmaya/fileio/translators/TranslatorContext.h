@@ -55,14 +55,23 @@ struct TranslatorParameters
 {
   /// \brief Flag that determines if all Prim schema types should be forced to be imported
   inline void setForcePrimImport(bool forceImport)
-    { forcePrimImport = forceImport; }
+    { m_forcePrimImport = forceImport; }
 
   /// \brief Retrieves the flag that determines if all the Prim schema types should be imported
   inline bool forceTranslatorImport() const
-    { return forcePrimImport; }
+    { return m_forcePrimImport; }
+
+  /// \brief  should pushToPrim be enabled on created transforms
+  inline void setPushToPrim(bool value) 
+    { m_pushToPrim = value; }
+
+  /// \brief  should pushToPrim be enabled on created transforms
+  inline bool pushToPrim() const 
+    { return m_pushToPrim; }
 
 private:
-  bool forcePrimImport = false;
+  bool m_forcePrimImport = false;
+  bool m_pushToPrim = true;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

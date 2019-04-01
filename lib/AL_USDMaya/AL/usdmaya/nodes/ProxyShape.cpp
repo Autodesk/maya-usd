@@ -357,7 +357,8 @@ void ProxyShape::translatePrimsIntoMaya(
         this,
         filter.transformsToCreate(),
         parentTransform(),
-        objsToCreate);
+        objsToCreate,
+        param.pushToPrim());
   }
 
   context()->removeEntries(filter.removedPrimSet());
