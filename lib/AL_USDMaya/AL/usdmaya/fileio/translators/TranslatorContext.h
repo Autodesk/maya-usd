@@ -43,6 +43,7 @@ namespace fileio {
 namespace translators {
 
 typedef std::vector<MObjectHandle> MObjectHandleArray;
+typedef std::map<SdfPath, SdfPath> SdfInstanceMap;
 
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -366,19 +367,7 @@ public:
   /// \param  newPath the path to add as an excluded translator path
   /// \return true if the exclusion was added, false if it wasn't added since it might be already there
   AL_USDMAYA_PUBLIC
-  bool addExcludedGeometry(const SdfPath& newPath)
-  {
-    auto foundPath = m_excludedGeometry.find(newPath);
-
-    if(foundPath != m_excludedGeometry.end())
-    {
-      return false;
-    }
-
-    m_excludedGeometry.insert(newPath);
-    m_isExcludedGeometryDirty = true;
-    return true;
-  }
+  bool addExcludedGeometry(const SdfPath& newPath);
 
   /// \brief  remove geometry from the exclusion list
   /// \param  newPath the path to add as an excluded translator path
@@ -387,7 +376,6 @@ public:
   bool removeExcludedGeometry(const SdfPath& newPath)
   {
     auto foundPath = m_excludedGeometry.find(newPath);
-
     if(foundPath == m_excludedGeometry.end())
     {
       return false;
@@ -399,7 +387,7 @@ public:
 
   /// \brief  retrieve currently excluded translator geometries
   /// \return  retrieve currently excluded translator geometries
-  inline const SdfPathSet& excludedGeometry()
+  inline const SdfInstanceMap& excludedGeometry()
     {return m_excludedGeometry;}
 
   /// \brief Retrieves if the the excluded geometry has been pushed to the renderer
@@ -467,7 +455,7 @@ private:
   bool m_forcePrimImport;
 
   // list of geometry that has been request to be excluded during the translation
-  SdfPathSet m_excludedGeometry;
+  SdfInstanceMap m_excludedGeometry;
   bool m_isExcludedGeometryDirty;
 
 public:

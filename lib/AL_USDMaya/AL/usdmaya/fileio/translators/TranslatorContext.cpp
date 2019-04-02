@@ -32,7 +32,9 @@ TranslatorContext::~TranslatorContext()
 //----------------------------------------------------------------------------------------------------------------------
 UsdStageRefPtr TranslatorContext::getUsdStage() const
 {
-  return m_proxyShape->usdStage();
+  if(m_proxyShape)
+    return m_proxyShape->usdStage();
+  return UsdStageRefPtr();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -342,7 +344,7 @@ MString TranslatorContext::serialise() const
   std::ostringstream oss;
   for(auto& path : m_excludedGeometry)
   {
-    oss << path.GetString() << ",";
+    oss << path.first.GetString() << ",";
   }
 
   m_proxyShape->excludedTranslatedGeometryPlug().setString(MString(oss.str().c_str()));
@@ -399,7 +401,10 @@ void TranslatorContext::deserialise(const MString& string)
   }
 
   SdfPathVector vec = m_proxyShape->getPrimPathsFromCommaJoinedString(m_proxyShape->excludedTranslatedGeometryPlug().asString());
-  m_excludedGeometry.insert(vec.begin(), vec.end());
+  for(auto& it : vec)
+  {
+    m_excludedGeometry.emplace(it, it);
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -692,6 +697,52 @@ bool TranslatorContext::isPrimInTransformChain(const SdfPath& path)
 
   return false;
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+bool TranslatorContext::addExcludedGeometry(const SdfPath& newPath)
+{
+  if(m_proxyShape)
+  {
+    auto foundPath = m_excludedGeometry.find(newPath);
+    if(foundPath != m_excludedGeometry.end())
+    {
+      return false;
+    }
+
+    UsdStageRefPtr stage = getUsdStage();
+    SdfPath pathToAdd = newPath;
+    bool hasInstanceParent = false;
+    {
+      UsdPrim parentPrim;
+      do
+      {
+        pathToAdd = pathToAdd.GetParentPath();
+        parentPrim = stage->GetPrimAtPath(pathToAdd);
+        if(!parentPrim)
+          break;
+
+        if(parentPrim.IsInstance())
+        {
+          hasInstanceParent = true;
+          break;
+        }
+      }
+      while(!pathToAdd.IsEmpty());
+    }
+    if(hasInstanceParent)
+    {
+      m_excludedGeometry.emplace(newPath, pathToAdd);
+    }
+    else
+    {
+      m_excludedGeometry.emplace(newPath, newPath);
+    }
+    m_isExcludedGeometryDirty = true;
+    return true;
+  }
+  return false;
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 } // translators
 } // fileio

@@ -436,15 +436,17 @@ void ProxyShape::constructGLImagingEngine()
         delete m_engine;
       }
 
-      const SdfPathSet& translatedGeo = m_context->excludedGeometry();
+      const auto& translatedGeo = m_context->excludedGeometry();
+
       // combine the excluded paths
       SdfPathVector excludedGeometryPaths;
       excludedGeometryPaths.reserve(m_excludedTaggedGeometry.size() + m_excludedGeometry.size() + translatedGeo.size());
       excludedGeometryPaths.assign(m_excludedTaggedGeometry.begin(), m_excludedTaggedGeometry.end());
       excludedGeometryPaths.insert(excludedGeometryPaths.end(), m_excludedGeometry.begin(), m_excludedGeometry.end());
-      excludedGeometryPaths.insert(excludedGeometryPaths.end(),
-                                   translatedGeo.begin(),
-                                   translatedGeo.end());
+      for(auto& it : translatedGeo)
+      {
+        excludedGeometryPaths.push_back(it.second);  
+      }
 
       m_engine = new Engine(m_path, excludedGeometryPaths);
       // set renderer plugin based on RendererManager setting

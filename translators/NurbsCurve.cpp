@@ -96,7 +96,7 @@ MStatus NurbsCurve::import(const UsdPrim& prim, MObject& parent, MObject& create
   if (ctx)
   {
     ctx->addExcludedGeometry(prim.GetPath());
-    ctx->insertItem(prim, parent);
+    ctx->insertItem(prim, createdObj);
   }
   return MStatus::kSuccess;
 }
