@@ -792,7 +792,7 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
             if(s)
             {
               VtIntArray usdindices;
-              primvar.GetIndices(&usdindices);
+              primvar.GetIndices(&usdindices, UsdTimeCode::EarliestTime());
               mayaIndices.setLength(usdindices.size());
               std::memcpy(&mayaIndices[0], usdindices.cdata(), sizeof(int) * usdindices.size());
               s = fnMesh.assignUVs(counts, mayaIndices, uv_set);
@@ -899,7 +899,7 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
                 if(primvar.IsIndexed())
                 {
                   VtIntArray usdindices;
-                  primvar.GetIndices(&usdindices);
+                  primvar.GetIndices(&usdindices, UsdTimeCode::EarliestTime());
                   mayaIndices.setLength(usdindices.size());
                   std::memcpy(&mayaIndices[0], usdindices.cdata(), sizeof(int) * usdindices.size());
 
@@ -923,7 +923,7 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
               if(primvar.IsIndexed())
               {
                 VtIntArray usdindices;
-                primvar.GetIndices(&usdindices);
+                primvar.GetIndices(&usdindices, UsdTimeCode::EarliestTime());
                 mayaIndices.setLength(usdindices.size());
                 std::memcpy(&mayaIndices[0], usdindices.cdata(), sizeof(int) * usdindices.size());
               }
@@ -948,7 +948,7 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
               {
                 const MColor* pcolours = (const MColor*)rawVal.cdata();
                 VtIntArray usdindices;
-                primvar.GetIndices(&usdindices);
+                primvar.GetIndices(&usdindices, UsdTimeCode::EarliestTime());
                 for(uint32_t i = 0, n = connects.length(); i < n; ++i)
                 {
                   temp[i] = pcolours[usdindices[connects[i]]];

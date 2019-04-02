@@ -760,6 +760,17 @@ TfToken guessUVInterpolationTypeExtensive(
     MIntArray& faceCounts,
     std::vector<uint32_t>& indicesToExtract)
 {
+  // sanity check on input arrays
+  if(indices.length() == 0 ||
+     pointIndices.length() == 0 || 
+     u.length() == 0 || 
+     v.length() == 0 || 
+     faceCounts.length() == 0)
+  {
+    TF_RUNTIME_ERROR("Unable to process mesh UV's - Invalid array lengths provided");
+    return UsdGeomTokens->faceVarying;
+  }
+
   // if UV coords are all identical, we have a constant value
   if(usd::utils::vec2AreAllTheSame(&u[0], &v[0], u.length()))
   {
