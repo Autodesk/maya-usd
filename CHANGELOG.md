@@ -1,7 +1,7 @@
 ## AL_USDMaya-0.32.13 (2019-04-02)
 ### Fixed
-When importing meshes, primVar indices could end up being lost.
-Correctly exclude instance paths when translating an instanced prim
++ When importing meshes, primVar indices could end up being lost.
++ Correctly exclude instance paths when translating an instanced prim
 
 ## AL_USDMaya-0.32.12 (2019-04-02)
 ### Added
