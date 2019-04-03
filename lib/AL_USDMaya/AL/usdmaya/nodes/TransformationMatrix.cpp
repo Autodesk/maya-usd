@@ -477,6 +477,33 @@ bool TransformationMatrix::pushMatrix(const MMatrix& result, UsdGeomXformOp& op,
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void TransformationMatrix::setFromMatrix(MObject thisNode, const MMatrix& m)
+{
+  double S[3];
+  MEulerRotation R;
+  double T[3];
+  utils::matrixToSRT(*(const GfMatrix4d*)&m, S, R, T);
+  m_scaleFromUsd.x = S[0];
+  m_scaleFromUsd.y = S[1];
+  m_scaleFromUsd.z = S[2];
+  m_rotationFromUsd.x = R.x;
+  m_rotationFromUsd.y = R.y;
+  m_rotationFromUsd.z = R.z;
+  m_translationFromUsd.x = T[0];
+  m_translationFromUsd.y = T[1];
+  m_translationFromUsd.z = T[2];
+  MPlug(thisNode, MPxTransform::scaleX).setValue(m_scaleFromUsd.x);
+  MPlug(thisNode, MPxTransform::scaleY).setValue(m_scaleFromUsd.y);
+  MPlug(thisNode, MPxTransform::scaleZ).setValue(m_scaleFromUsd.z);
+  MPlug(thisNode, MPxTransform::rotateX).setValue(m_rotationFromUsd.x);
+  MPlug(thisNode, MPxTransform::rotateY).setValue(m_rotationFromUsd.y);
+  MPlug(thisNode, MPxTransform::rotateZ).setValue(m_rotationFromUsd.z);
+  MPlug(thisNode, MPxTransform::translateX).setValue(m_translationFromUsd.x);
+  MPlug(thisNode, MPxTransform::translateY).setValue(m_translationFromUsd.y);
+  MPlug(thisNode, MPxTransform::translateZ).setValue(m_translationFromUsd.z);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 bool TransformationMatrix::pushPoint(const MPoint& result, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushPoint %f %f %f\n%s\n", result.x, result.y, result.z, op.GetOpName().GetText());
@@ -1052,29 +1079,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
         if(readFromPrim)
         {
           MMatrix m;
-          double S[3];
-          MEulerRotation R;
-          double T[3];
           internal_readMatrix(m, op);
-          utils::matrixToSRT(*(const GfMatrix4d*)&m, S, R, T);
-          m_scaleFromUsd.x = S[0];
-          m_scaleFromUsd.y = S[1];
-          m_scaleFromUsd.z = S[2];
-          m_rotationFromUsd.x = R.x;
-          m_rotationFromUsd.y = R.y;
-          m_rotationFromUsd.z = R.z;
-          m_translationFromUsd.x = T[0];
-          m_translationFromUsd.y = T[1];
-          m_translationFromUsd.z = T[2];
-          MPlug(transformNode->thisMObject(), MPxTransform::scaleX).setValue(m_scaleFromUsd.x);
-          MPlug(transformNode->thisMObject(), MPxTransform::scaleY).setValue(m_scaleFromUsd.y);
-          MPlug(transformNode->thisMObject(), MPxTransform::scaleZ).setValue(m_scaleFromUsd.z);
-          MPlug(transformNode->thisMObject(), MPxTransform::rotateX).setValue(m_rotationFromUsd.x);
-          MPlug(transformNode->thisMObject(), MPxTransform::rotateY).setValue(m_rotationFromUsd.y);
-          MPlug(transformNode->thisMObject(), MPxTransform::rotateZ).setValue(m_rotationFromUsd.z);
-          MPlug(transformNode->thisMObject(), MPxTransform::translateX).setValue(m_translationFromUsd.x);
-          MPlug(transformNode->thisMObject(), MPxTransform::translateY).setValue(m_translationFromUsd.y);
-          MPlug(transformNode->thisMObject(), MPxTransform::translateZ).setValue(m_translationFromUsd.z);
+          setFromMatrix(transformNode->thisMObject(), m);
         }
       }
       break;
