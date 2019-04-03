@@ -1763,8 +1763,9 @@ MStatus ProxyShape::computeOutStageData(const MPlug& plug, MDataBlock& dataBlock
   }
 
   // make sure a stage is loaded
-  if (!m_stage)
+  if (!m_stage && m_filePathDirty)
   {
+    m_filePathDirty = false;
     loadStage();
   }
   // Set the output stage data params
@@ -1852,6 +1853,8 @@ bool ProxyShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHand
   // Delay stage creation if opening a file, because we haven't created the LayerManager node yet
   if(plug == m_filePath || plug == m_assetResolverConfig)
   {
+    m_filePathDirty = true;
+    
     // can't use dataHandle.datablock(), as this is a temporary datahandle
     MDataBlock datablock = forceCache();
     AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, m_filePath, dataHandle.asString()),

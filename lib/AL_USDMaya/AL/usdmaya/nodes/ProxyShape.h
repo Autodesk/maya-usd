@@ -1015,7 +1015,6 @@ private:
   void variantSelectionListener(SdfNotice::LayersDidChange const& notice);
   void onEditTargetChanged(UsdNotice::StageEditTargetChanged const& notice, UsdStageWeakPtr const& sender);
   void trackEditTargetLayer(LayerManager* layerManager=nullptr);
-  static void onAttributeChanged(MNodeMessage::AttributeMessage, MPlug&, MPlug&, void*);
   void validateTransforms();
 
 
@@ -1075,6 +1074,7 @@ private:
   bool m_compositionHasChanged = false;
   bool m_pleaseIgnoreSelection = false;
   bool m_hasChangedSelection = false;
+  bool m_filePathDirty = false;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
