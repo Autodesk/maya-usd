@@ -1052,17 +1052,29 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
         if(readFromPrim)
         {
           MMatrix m;
+          double S[3];
+          MEulerRotation R;
+          double T[3];
           internal_readMatrix(m, op);
-          decomposeMatrix(m);
-          m_scaleFromUsd = scaleValue;
-          m_rotationFromUsd = rotationValue;
-          m_translationFromUsd = translationValue;
-          m_shearFromUsd = shearValue;
-          m_scalePivotFromUsd = scalePivotValue;
-          m_scalePivotTranslationFromUsd = scalePivotTranslationValue;
-          m_rotatePivotFromUsd = rotatePivotValue;
-          m_rotatePivotTranslationFromUsd = rotatePivotTranslationValue;
-          m_rotateOrientationFromUsd = rotateOrientationValue;
+          utils::matrixToSRT(*(const GfMatrix4d*)&m, S, R, T);
+          m_scaleFromUsd.x = S[0];
+          m_scaleFromUsd.y = S[1];
+          m_scaleFromUsd.z = S[2];
+          m_rotationFromUsd.x = R.x;
+          m_rotationFromUsd.y = R.y;
+          m_rotationFromUsd.z = R.z;
+          m_translationFromUsd.x = T[0];
+          m_translationFromUsd.y = T[1];
+          m_translationFromUsd.z = T[2];
+          MPlug(transformNode->thisMObject(), MPxTransform::scaleX).setValue(m_scaleFromUsd.x);
+          MPlug(transformNode->thisMObject(), MPxTransform::scaleY).setValue(m_scaleFromUsd.y);
+          MPlug(transformNode->thisMObject(), MPxTransform::scaleZ).setValue(m_scaleFromUsd.z);
+          MPlug(transformNode->thisMObject(), MPxTransform::rotateX).setValue(m_rotationFromUsd.x);
+          MPlug(transformNode->thisMObject(), MPxTransform::rotateY).setValue(m_rotationFromUsd.y);
+          MPlug(transformNode->thisMObject(), MPxTransform::rotateZ).setValue(m_rotationFromUsd.z);
+          MPlug(transformNode->thisMObject(), MPxTransform::translateX).setValue(m_translationFromUsd.x);
+          MPlug(transformNode->thisMObject(), MPxTransform::translateY).setValue(m_translationFromUsd.y);
+          MPlug(transformNode->thisMObject(), MPxTransform::translateZ).setValue(m_translationFromUsd.z);
         }
       }
       break;
