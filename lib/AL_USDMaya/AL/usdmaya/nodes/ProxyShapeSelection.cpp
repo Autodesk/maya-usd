@@ -1087,6 +1087,8 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
       if(keepPrims.empty() && insertPrims.empty())
       {
         m_pleaseIgnoreSelection = false;
+        triggerEvent("PreSelectionChanged");
+        triggerEvent("PostSelectionChanged");
         triggerEvent("SelectionEnded");
         return false;
       }
@@ -1218,6 +1220,8 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
       if(prims.empty())
       {
         m_pleaseIgnoreSelection = false;
+        triggerEvent("PreSelectionChanged");
+        triggerEvent("PostSelectionChanged");
         triggerEvent("SelectionEnded");
         return false;
       }
@@ -1276,6 +1280,8 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
       if(removePrims.empty() && insertPrims.empty())
       {
         m_pleaseIgnoreSelection = false;
+        triggerEvent("PreSelectionChanged");
+        triggerEvent("PostSelectionChanged");
         triggerEvent("SelectionEnded");
         return false;
       }
@@ -1322,14 +1328,12 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
     break;
   }
 
+  triggerEvent("PreSelectionChanged");
   if(newlySelectedPaths.length())
   {
-    triggerEvent("PreSelectionChanged");
-
     MPxCommand::setResult(newlySelectedPaths);
-
-    triggerEvent("PostSelectionChanged");
   }
+  triggerEvent("PostSelectionChanged");
 
   m_pleaseIgnoreSelection = false;
   triggerEvent("SelectionEnded");
