@@ -110,6 +110,7 @@ WRAP_CUSTOM {
     _class
       .def("SetSelectability", &This::SetSelectability, (arg("selectability")))
       .def("GetSelectability", &This::GetSelectability)
+      .def("ComputeSelectability", &This::ComputeSelectabilty)
       .def("SetLock", &This::SetLock, (arg("lock")))
       .def("GetLock", &This::GetLock)
       .def("ComputeLock", &This::ComputeLock)
