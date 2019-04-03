@@ -1,3 +1,9 @@
+## AL_USDMaya-0.32.14 (2019-04-03)
+### Added
++ Exposed ModelAPI's ComputeSelectability method to Python
+### Changed
++ Selectability tutorial 
+
 ## AL_USDMaya-0.32.13 (2019-04-02)
 ### Fixed
 + When importing meshes, primVar indices could end up being lost.
