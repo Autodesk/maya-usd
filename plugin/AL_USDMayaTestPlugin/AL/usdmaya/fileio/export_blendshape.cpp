@@ -73,6 +73,7 @@ TEST(export_blendshape, non_animated_mesh)
   UsdGeomMesh mesh(prim);
 
   UsdAttribute pointsAttr = mesh.GetPointsAttr();
+  ASSERT_TRUE(pointsAttr);
   size_t size = pointsAttr.GetNumTimeSamples();
   EXPECT_EQ(0, size);
 }
@@ -110,6 +111,7 @@ TEST(export_blendshape, animated_mesh)
   UsdGeomMesh mesh(prim);
 
   UsdAttribute pointsAttr = mesh.GetPointsAttr();
+  ASSERT_TRUE(pointsAttr);
   size_t size = pointsAttr.GetNumTimeSamples();
   EXPECT_EQ(50, size);
 }
