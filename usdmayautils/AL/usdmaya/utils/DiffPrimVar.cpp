@@ -41,6 +41,11 @@ uint32_t diffGeom(UsdGeomPointBased& geom, MFnMesh& mesh, UsdTimeCode timeCode, 
     const float* const mayaPoints = (const float* const)mesh.getRawPoints(&status);
     const size_t usdPointsCount = pointData.size();
     const size_t mayaPointsCount = mesh.numVertices();
+    if(mayaPointsCount != usdPointsCount)
+    {
+      result |= kPoints;
+    }
+    else
     if(!usd::utils::compareArray(usdPoints, mayaPoints, usdPointsCount * 3, mayaPointsCount * 3))
     {
       result |= kPoints;
@@ -56,31 +61,39 @@ uint32_t diffGeom(UsdGeomPointBased& geom, MFnMesh& mesh, UsdTimeCode timeCode, 
     {
       VtArray<int32_t> indexData;
       UsdGeomMesh(geom.GetPrim()).GetFaceVertexIndicesAttr().Get(&indexData, timeCode);
+
       MStatus status;
       const float* const usdNormals = (const float*)normalData.cdata();
       const int32_t* const usdNormalIndices = (const int32_t*)indexData.cdata();
       if(usdNormals && usdNormalIndices)
       {
-        const float* const mayaNormals = (const float*)mesh.getRawNormals(&status);
-        MIntArray normalIds, normalCounts;
-        mesh.getNormalIds(normalCounts, normalIds);
-        if(normalIds.length())
+        if(mesh.numNormals() != normalData.size())
         {
-          int32_t* const ptr = &normalIds[0];
-          const uint32_t n = indexData.size();
-          for(uint32_t i = 0; i < n; ++i)
+          result |= kNormals;
+        }
+        else
+        {
+          MIntArray normalIds, normalCounts;
+          mesh.getNormalIds(normalCounts, normalIds);
+          const float* const mayaNormals = (const float*)mesh.getRawNormals(&status);
+          if(normalIds.length())
           {
-            const float* const n0 = usdNormals + 3 * usdNormalIndices[i];
-            const float* const n1 = mayaNormals + 3 * ptr[i];
-            const float dx = n0[0] - n1[0];
-            const float dy = n0[1] - n1[1];
-            const float dz = n0[2] - n1[2];
-            if(std::abs(dx) > 1e-5f || 
-               std::abs(dy) > 1e-5f ||
-               std::abs(dz) > 1e-5f)
+            int32_t* const ptr = &normalIds[0];
+            const uint32_t n = indexData.size();
+            for(uint32_t i = 0; i < n; ++i)
             {
-              result |= kNormals;
-              break;
+              const float* const n0 = usdNormals + 3 * usdNormalIndices[i];
+              const float* const n1 = mayaNormals + 3 * ptr[i];
+              const float dx = n0[0] - n1[0];
+              const float dy = n0[1] - n1[1];
+              const float dz = n0[2] - n1[2];
+              if(std::abs(dx) > 1e-5f || 
+                 std::abs(dy) > 1e-5f ||
+                 std::abs(dz) > 1e-5f)
+              {
+                result |= kNormals;
+                break;
+              }
             }
           }
         }
