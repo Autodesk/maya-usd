@@ -351,6 +351,11 @@ private:
 #else
                     false);
 #endif
+                TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+                    .Msg(
+                        "HdMayaShadingEngineAdapter: registered texture with "
+                        "connection path: %s\n",
+                        ret.back().GetConnection().GetText());
             } else {
                 ret.emplace_back(it.param);
             }
@@ -366,6 +371,30 @@ private:
         if (connectedFileObj != MObject::kNullObj) {
             const auto filePath =
                 _GetTextureFilePath(MFnDependencyNode(connectedFileObj));
+
+            if (TfDebug::IsEnabled(HDMAYA_ADAPTER_MATERIALS)) {
+                const char* textureTypeName;
+                switch (textureType) {
+                    case HdTextureType::Uv:
+                        textureTypeName = "Uv";
+                        break;
+                    case HdTextureType::Ptex:
+                        textureTypeName = "Ptex";
+                        break;
+                    case HdTextureType::Udim:
+                        textureTypeName = "Udim";
+                        break;
+                    default:
+                        textureTypeName = "<Unknown texture type>";
+                }
+                TfDebug::Helper().Msg(
+                    "HdMayaShadingEngineAdapter::_RegisterTexture(%s, %s, "
+                    "%s)\n",
+                    node.name().asChar(), paramName.GetText(), textureTypeName);
+                TfDebug::Helper().Msg(
+                    "  texture filepath: %s\n", filePath.GetText());
+            }
+
             auto textureId = _GetTextureResourceID(connectedFileObj, filePath);
             if (textureId != HdTextureResource::ID(-1)) {
                 HdResourceRegistry::TextureKey textureKey =
@@ -387,11 +416,24 @@ private:
                 }
 #ifdef USD_001901_BUILD
                 if (GlfIsSupportedUdimTexture(filePath)) {
+                    if (TfDebug::IsEnabled(HDMAYA_ADAPTER_MATERIALS) &&
+                        textureType != HdTextureType::Udim) {
+                        TfDebug::Helper().Msg(
+                            "  ...changing textureType to Udim\n");
+                    }
                     textureType = HdTextureType::Udim;
                 }
+                TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+                    .Msg(
+                        "  ...successfully registered texture with id: %lu\n",
+                        textureId);
 #endif
                 return true;
             } else {
+                TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+                    .Msg(
+                        "  ...failed registering texture - could not get "
+                        "textureID\n");
                 _textureResources[paramName].reset();
             }
         }
