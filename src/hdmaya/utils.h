@@ -28,7 +28,11 @@
 
 #include <pxr/base/gf/matrix4d.h>
 
+#include <maya/MFnDependencyNode.h>
 #include <maya/MMatrix.h>
+#include <maya/MRenderUtil.h>
+
+#include <hdmaya/adapters/mayaAttrs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,6 +40,30 @@ inline GfMatrix4d GetGfMatrixFromMaya(const MMatrix& mayaMat) {
     GfMatrix4d mat;
     memcpy(mat.GetArray(), mayaMat[0], sizeof(double) * 16);
     return mat;
+}
+
+inline MString GetTextureFilePath(
+    const MFnDependencyNode& fileNode, bool fullPath = false) {
+    MString ret;
+    if (fileNode.findPlug(MayaAttrs::file::uvTilingMode, true).asShort() != 0) {
+        ret = fileNode.findPlug(MayaAttrs::file::fileTextureNamePattern, true)
+                  .asString();
+        if (ret.length() == 0) {
+            ret = fileNode
+                      .findPlug(
+                          MayaAttrs::file::computedFileTextureNamePattern, true)
+                      .asString();
+        }
+    } else {
+        if (fullPath) {
+            ret = MRenderUtil::exactFileTextureName(fileNode.object());
+        }
+        if (ret.length() == 0) {
+            ret = fileNode.findPlug(MayaAttrs::file::fileTextureName, true)
+                      .asString();
+        }
+    }
+    return ret;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

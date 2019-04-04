@@ -35,6 +35,8 @@
 #include <maya/MPlugArray.h>
 #include <maya/MStatus.h>
 
+#include <hdmaya/utils.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -219,21 +221,8 @@ public:
         MFnDependencyNode& node, const TfToken& paramName,
         const SdfValueTypeName& type, const VtValue* fallback = nullptr,
         MPlug* outPlug = nullptr) override {
-        if (node.findPlug(MayaAttrs::file::uvTilingMode, true).asShort() != 0) {
-            auto ret =
-                node.findPlug(MayaAttrs::file::fileTextureNamePattern, true)
-                    .asString();
-            if (ret.length() == 0) {
-                ret = node.findPlug(
-                              MayaAttrs::file::computedFileTextureNamePattern,
-                              true)
-                          .asString();
-            }
-            return VtValue(SdfAssetPath(ret.asChar(), ret.asChar()));
-        }
-        auto ret =
-            node.findPlug(MayaAttrs::file::fileTextureName, true).asString();
-        return VtValue(SdfAssetPath(ret.asChar(), ret.asChar()));
+        auto path = GetTextureFilePath(node);
+        return VtValue(SdfAssetPath(path.asChar(), path.asChar()));
     }
 };
 

@@ -65,6 +65,7 @@ auto& HioGlslfxTokens = PXR_NS::GlfGLSLFXTokens;
 #include <hdmaya/adapters/materialNetworkConverter.h>
 #include <hdmaya/adapters/mayaAttrs.h>
 #include <hdmaya/adapters/tokens.h>
+#include <hdmaya/utils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -370,7 +371,7 @@ private:
         const auto connectedFileObj = GetConnectedFileNode(node, paramName);
         if (connectedFileObj != MObject::kNullObj) {
             const auto filePath =
-                _GetTextureFilePath(MFnDependencyNode(connectedFileObj));
+                _GetTextureFilePathToken(MFnDependencyNode(connectedFileObj));
 
             if (TfDebug::IsEnabled(HDMAYA_ADAPTER_MATERIALS)) {
                 const char* textureTypeName;
@@ -460,7 +461,6 @@ private:
                 paramName);
         }
 
-        auto remappedParam = paramName;
         auto* nodeConverter =
             HdMayaMaterialNodeConverter::GetNodeConverter(_surfaceShaderType);
         if (!nodeConverter) { return GetPreviewMaterialParamValue(paramName); }
@@ -492,7 +492,7 @@ private:
         auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
         if (fileObj == MObject::kNullObj) { return HdTextureResource::ID(-1); }
         return _GetTextureResourceID(
-            fileObj, _GetTextureFilePath(MFnDependencyNode(fileObj)));
+            fileObj, _GetTextureFilePathToken(MFnDependencyNode(fileObj)));
     }
 
     inline HdTextureResource::ID _GetTextureResourceID(
@@ -506,24 +506,8 @@ private:
         return HdTextureResource::ID(hash);
     }
 
-    inline TfToken _GetTextureFilePath(const MFnDependencyNode& fileNode) {
-        if (fileNode.findPlug(MayaAttrs::file::uvTilingMode, true).asShort() !=
-            0) {
-            auto ret =
-                fileNode.findPlug(MayaAttrs::file::fileTextureNamePattern, true)
-                    .asString();
-            if (ret.length() == 0) {
-                ret = fileNode
-                          .findPlug(
-                              MayaAttrs::file::computedFileTextureNamePattern,
-                              true)
-                          .asString();
-            }
-            return TfToken(ret.asChar());
-        }
-        return TfToken(fileNode.findPlug(MayaAttrs::file::fileTextureName, true)
-                           .asString()
-                           .asChar());
+    inline TfToken _GetTextureFilePathToken(const MFnDependencyNode& fileNode) {
+        return TfToken(GetTextureFilePath(fileNode, true).asChar());
     }
 
     HdTextureResourceSharedPtr GetTextureResource(
@@ -531,7 +515,7 @@ private:
         auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
         if (fileObj == MObject::kNullObj) { return {}; }
         return _GetTextureResource(
-            fileObj, _GetTextureFilePath(MFnDependencyNode(fileObj)));
+            fileObj, _GetTextureFilePathToken(MFnDependencyNode(fileObj)));
     }
 
     inline HdTextureResourceSharedPtr _GetTextureResource(
