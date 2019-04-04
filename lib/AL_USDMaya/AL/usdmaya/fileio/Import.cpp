@@ -81,7 +81,7 @@ MObject Import::createParentTransform(
       // special case
       if(dataPlugin->getFnType() == MFn::kTransform)
       {
-        dataPlugin->import(prim, parent);
+        dataPlugin->import(prim, obj);
       }
     }
   }
