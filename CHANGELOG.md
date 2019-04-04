@@ -1,3 +1,17 @@
+## AL_USDMaya-0.32.15 (2019-04-04)
+### Added
++ Flag to exporter to revese normals if opposite has been set to true.
+
+### Changed
++ passing correct maya dag into the ExtraData import process
+
+### Fixed
++ Ensure that the PreSelectionChanged and PostSelectionChanged events are always triggered.
++ TRS values not updating in the GUI when the xform is matrix based.
++ Selection is now retained after auto save
++ Stopped the proxy shape from constantly trying to load corrupt files, or invalid file paths
++ unit test crash in docker as a result of a buffer overrun
+
 ## AL_USDMaya-0.32.14 (2019-04-03)
 ### Added
 + Exposed ModelAPI's ComputeSelectability method to Python
