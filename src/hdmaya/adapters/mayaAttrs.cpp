@@ -199,7 +199,6 @@ MStatus initialize() {
         SET_ATTR_OBJ(dmapResolution);
         SET_ATTR_OBJ(dmapBias);
         SET_ATTR_OBJ(dmapFilterSize);
-        SET_ATTR_OBJ(useDepthMapShadows);
     }
 
     {

@@ -69,14 +69,7 @@ public:
         if (key == HdLightTokens->shadowParams) {
             HdxShadowParams shadowParams;
             MFnDirectionalLight mayaLight(GetDagPath());
-            const auto useDepthMapShadows =
-                mayaLight
-                    .findPlug(
-                        MayaAttrs::nonExtendedLightShapeNode::
-                            useDepthMapShadows,
-                        true)
-                    .asBool();
-            if (!useDepthMapShadows) {
+            if (!GetShadowsEnabled(mayaLight)) {
                 shadowParams.enabled = false;
                 return VtValue(shadowParams);
             }

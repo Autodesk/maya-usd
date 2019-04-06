@@ -32,6 +32,7 @@
 #include <pxr/imaging/hdx/simpleLightTask.h>
 
 #include <maya/MFnLight.h>
+#include <maya/MFnNonExtendedLight.h>
 
 #include <hdmaya/adapters/dagAdapter.h>
 #include <pxr/imaging/hd/light.h>
@@ -40,6 +41,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMayaLightAdapter : public HdMayaDagAdapter {
 public:
+    inline bool GetShadowsEnabled(MFnNonExtendedLight& light) {
+        return light.useDepthMapShadows() || light.useRayTraceShadows();
+    }
+
     HDMAYA_API
     HdMayaLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag);
     HDMAYA_API

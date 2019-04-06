@@ -70,7 +70,6 @@ using namespace nonAmbientLightShapeNode;
 extern MObject dmapResolution;
 extern MObject dmapBias;
 extern MObject dmapFilterSize;
-extern MObject useDepthMapShadows;
 
 } // namespace nonExtendedLightShapeNode
 
