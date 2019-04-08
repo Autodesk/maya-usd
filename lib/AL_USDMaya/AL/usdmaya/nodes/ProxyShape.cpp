@@ -416,6 +416,28 @@ SdfPathVector ProxyShape::getPrimPathsFromCommaJoinedString(const MString &paths
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+Engine* ProxyShape::engine(bool construct)
+{
+  if (!m_engine && construct)
+  {
+    constructGLImagingEngine();
+  }
+  return m_engine;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::destroyGLImagingEngine()
+{
+  if(m_engine)
+  {
+    triggerEvent("DestroyGLEngine");
+    m_engine->InvalidateBuffers();
+    delete m_engine;
+    m_engine = nullptr;
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::constructGLImagingEngine()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::constructGLImagingEngine\n");
@@ -429,12 +451,7 @@ void ProxyShape::constructGLImagingEngine()
       typedef void (*proxy_function_prototype)(void*, AL::usdmaya::nodes::ProxyShape*);
 
       // delete previous instance
-      if(m_engine)
-      {
-        triggerEvent("DestroyGLEngine");
-        m_engine->InvalidateBuffers();
-        delete m_engine;
-      }
+      destroyGLImagingEngine();
 
       const auto& translatedGeo = m_context->excludedGeometry();
 
@@ -707,12 +724,7 @@ ProxyShape::~ProxyShape()
   TfNotice::Revoke(m_variantChangedNoticeKey);
   TfNotice::Revoke(m_objectsChangedNoticeKey);
   TfNotice::Revoke(m_editTargetChanged);
-  if(m_engine)
-  {
-    triggerEvent("DestroyGLEngine");
-    m_engine->InvalidateBuffers();
-    delete m_engine;
-  }
+  destroyGLImagingEngine();
   triggerEvent("PostDestroyProxyShape");
 }
 
@@ -1464,6 +1476,7 @@ void ProxyShape::loadStage()
     MGlobal::displayInfo(AL::maya::utils::convert(strstr.str()));
   }
 
+  destroyGLImagingEngine();
   stageDataDirtyPlug().setValue(true);
 
   triggerEvent("PostStageLoaded");

@@ -687,14 +687,10 @@ public:
   /// \name   UsdImaging
   //--------------------------------------------------------------------------------------------------------------------
 
-  /// \brief  constructs the USD imaging engine for this shape
+  /// \brief  returns and optionally constructs the usd imaging engine for this proxy shape
+  /// \return the imagine engine instance for this shape (shared between draw override and shape ui)
   AL_USDMAYA_PUBLIC
-  void constructGLImagingEngine();
-
-  /// \brief  returns the usd imaging engine for this proxy shape
-  /// \return the imagine engin instance for this shape (shared between draw override and shape ui)
-  inline Engine* engine() const
-    { return m_engine; }
+  Engine* engine(bool construct=true);
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Miscellaneous
@@ -864,6 +860,11 @@ public:
     { m_boundingBoxCache.clear(); }
 
 private:
+  /// \brief  constructs the USD imaging engine for this shape
+  void constructGLImagingEngine();
+
+  /// \brief destroys the USD imaging engine for this shape
+  void destroyGLImagingEngine();
 
   static void onSelectionChanged(void* ptr);
   bool removeAllSelectedNodes(SelectionUndoHelper& helper);

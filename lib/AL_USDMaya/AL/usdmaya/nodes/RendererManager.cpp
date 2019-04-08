@@ -222,7 +222,7 @@ void RendererManager::changeRendererPlugin(ProxyShape* proxy, bool creation)
 {
   TF_DEBUG(ALUSDMAYA_RENDERER).Msg("RendererManager::changeRendererPlugin\n");
   assert(proxy);
-  if (proxy->engine())
+  if (proxy->engine(false))
   {
     int rendererId = getRendererPluginIndex();
     if (rendererId >= 0)
