@@ -1,3 +1,10 @@
+## AL_USDMaya-0.32.16 (2019-04-08)
+
+### Fixed
++ fix issue where proxy shape wasn't redrawn when filepath was changed
++ Fixes compilation against maya 2018+
+
+
 ## AL_USDMaya-0.32.15 (2019-04-04)
 ### Added
 + Flag to exporter to revese normals if opposite has been set to true.
