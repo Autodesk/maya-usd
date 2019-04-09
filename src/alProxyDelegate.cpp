@@ -28,15 +28,9 @@
 
 #include <hdmaya/delegates/delegateRegistry.h>
 
-#include <AL/usdmaya/nodes/Engine.h>
-
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/type.h>
-#include <pxr/imaging/hdx/intersector.h>
-#include <pxr/imaging/hdx/tokens.h>
-#include <pxr/usdImaging/usdImagingGL/engine.h>
 
-#include <maya/M3dView.h>
 #include <maya/MDGMessage.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
@@ -46,6 +40,16 @@
 #include <maya/MTime.h>
 
 #include <atomic>
+
+#ifdef HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
+#include <AL/usdmaya/nodes/Engine.h>
+
+#include <pxr/imaging/hdx/intersector.h>
+#include <pxr/imaging/hdx/tokens.h>
+#include <pxr/usdImaging/usdImagingGL/engine.h>
+
+#include <maya/M3dView.h>
+#endif // HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
 
 #if HDMAYA_UFE_BUILD
 #include <ufe/rtid.h>
@@ -260,6 +264,8 @@ void SetupPluginCallbacks() {
     TF_VERIFY(status, "Could not set pluginUnloaded callback");
 }
 
+#ifdef HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
+
 ProxyShape::FindPickedPrimsFunction oldFindPickedPrimsFunction = nullptr;
 HdMayaALProxyDelegate* hdStAlProxyDelegate;
 
@@ -373,6 +379,8 @@ static bool FindPickedPrimsMtoh(
     return foundHit;
 }
 
+#endif // HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
+
 } // namespace
 
 HdMayaALProxyDelegate::HdMayaALProxyDelegate(const InitData& initData)
@@ -386,6 +394,7 @@ HdMayaALProxyDelegate::HdMayaALProxyDelegate(const InitData& initData)
             "HdMayaALProxyDelegate - creating with delegateID %s\n",
             _delegateID.GetText());
 
+#ifdef HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
     if (IsHdSt()) {
         TF_DEBUG(HDMAYA_AL_SELECTION)
             .Msg(
@@ -398,6 +407,7 @@ HdMayaALProxyDelegate::HdMayaALProxyDelegate(const InitData& initData)
             hdStAlProxyDelegate = this;
         }
     }
+#endif // HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
 
     MStatus status;
 
@@ -478,6 +488,7 @@ HdMayaALProxyDelegate::~HdMayaALProxyDelegate() {
         }
     }
 
+#ifdef HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
     if (IsHdSt()) {
         TF_DEBUG(HDMAYA_AL_SELECTION)
             .Msg(
@@ -488,6 +499,7 @@ HdMayaALProxyDelegate::~HdMayaALProxyDelegate() {
         oldFindPickedPrimsFunction = nullptr;
         hdStAlProxyDelegate = nullptr;
     }
+#endif // HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
 }
 
 HdMayaDelegatePtr HdMayaALProxyDelegate::Creator(const InitData& initData) {
@@ -834,12 +846,6 @@ void HdMayaALProxyDelegate::CreateUsdImagingDelegate(
         _renderIndex,
         _delegateID.AppendChild(TfToken(TfStringPrintf(
             "ALProxyDelegate_%s_%p", proxy->name().asChar(), proxy)))));
-
-    // TODO: REMOVE!
-    TF_DEBUG(HDMAYA_AL_SELECTION)
-        .Msg(
-            "HdMayaALProxyDelegate::CreateUsdImagingDelegate - %s\n",
-            proxyData.delegate->GetDelegateID().GetText());
     proxyData.populated = false;
 }
 

@@ -4,7 +4,6 @@ if(NOT USD_MAYA_INCLUDE_DIR OR NOT USD_MAYA_LIBRARY_DIR)
 endif(NOT USD_MAYA_INCLUDE_DIR OR NOT USD_MAYA_LIBRARY_DIR)
 find_package(ALUSDMaya REQUIRED)
 find_package(Boost REQUIRED)
-find_package(GLEW REQUIRED)
 find_package(PythonLibs REQUIRED)
 find_package(TBB REQUIRED COMPONENTS tbb)
 
@@ -22,7 +21,6 @@ set(HDMAYA_AL_SRC
 
 add_library(hdmaya_al SHARED ${HDMAYA_AL_SRC})
 target_link_libraries(hdmaya_al PUBLIC ${MAYA_LIBS} ${Boost_LIBRARIES} ${TBB_LIBRARIES})
-target_link_libraries(hdmaya_al PUBLIC ${GLEW_LIBRARY})
 target_link_libraries(hdmaya_al PUBLIC usdMaya)
 target_link_libraries(hdmaya_al PUBLIC hdmaya)
 target_link_libraries(hdmaya_al PUBLIC AL_USDMaya AL_USDMayaUtils AL_MayaUtils AL_USDUtils AL_EventSystem)
@@ -36,11 +34,15 @@ target_include_directories(hdmaya_al SYSTEM PUBLIC ${ALUSDMAYA_INCLUDE_DIR})
 target_compile_features(hdmaya_al PUBLIC cxx_std_11)
 target_compile_options(hdmaya_al PRIVATE -Wall -Werror)
 
-# Maya (ie, M3dView) seems to require this
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_compile_definitions(hdmaya_al PUBLIC LINUX)
+if(HD_MAYA_AL_OVERRIDE_PROXY_SELECTION)
+    target_compile_definitions(hdmaya_al PUBLIC HD_MAYA_AL_OVERRIDE_PROXY_SELECTION)
+    find_package(GLEW REQUIRED)
+    target_link_libraries(hdmaya_al PUBLIC ${GLEW_LIBRARY})
+    # Maya (ie, M3dView) seems to require this
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        target_compile_definitions(hdmaya_al PUBLIC LINUX)
+    endif()        
 endif()
-
 
 if(HDMAYA_UFE_BUILD)
     message(STATUS "UFE Build Enabled")
@@ -52,6 +54,7 @@ if(HDMAYA_UFE_BUILD)
     target_link_libraries(hdmaya_al PUBLIC ${UFE_LIBRARY})
     target_compile_definitions(hdmaya_al PUBLIC HDMAYA_UFE_BUILD=${HDMAYA_UFE_BUILD})
 endif()
+
 
 # Wanted to do this:
 #   get_target_property(LIB_FULLPATH hdmaya_al LOCATION)
