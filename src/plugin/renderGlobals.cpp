@@ -51,7 +51,7 @@ TF_DEFINE_PRIVATE_TOKENS(
         mtohMaximumShadowMapResolution)(mtohColorSelectionHighlight)(
         mtohColorSelectionHighlightColor)(mtohColorSelectionHighlightColorA)(
         mtohWireframeSelectionHighlight)(mtohSelectionOverlay)(
-        mtohEnableMotionSamples));
+        mtohEnableMotionSamples)(HdStreamRendererPlugin));
 
 namespace {
 
@@ -301,6 +301,12 @@ void MtohInitializeRenderGlobals() {
                 desc.key.GetText());
             ss << "\tattrControlGrp -label \"" << desc.name
                << "\" -attribute \"defaultRenderGlobals." << attrName
+               << "\" -changeCommand $cc;\n";
+        }
+        if (rendererDesc.rendererName == _tokens->HdStreamRendererPlugin) {
+            ss << "\tattrControlGrp -label \"Maximum shadow map size"
+               << "\" -attribute \"defaultRenderGlobals."
+               << _tokens->mtohMaximumShadowMapResolution.GetString()
                << "\" -changeCommand $cc;\n";
         }
         ss << "\tsetParent ..;\n";
