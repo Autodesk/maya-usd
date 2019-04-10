@@ -330,10 +330,6 @@ public:
   /// name of serialized session layer (on the LayerManager)
   AL_DECL_ATTRIBUTE(sessionLayerName);
 
-  /// serialised asset resolver context
-  // @note currently not used
-  AL_DECL_ATTRIBUTE(serializedArCtx);
-
   /// serialised translator context
   AL_DECL_ATTRIBUTE(serializedTrCtx);
 

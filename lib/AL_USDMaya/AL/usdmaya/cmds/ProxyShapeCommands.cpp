@@ -349,8 +349,6 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
     database.getFlagArgument("-pmi", 0, populationMaskIncludePath);
   }
 
-  // TODO - AssetResolver config - just take string arg and store it in arCtxStr
-
   // what are we parenting this node to?
   MObject firstParent;
   if(m_parentTransforms.length())
@@ -397,10 +395,6 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
 
   if(hasStagePopulationMaskInclude) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::populationMaskIncludePaths()), populationMaskIncludePath);
 
-  std::string arCtxStr("ARconfigGoesHere");
-  m_modifier.newPlugValueString(
-      MPlug(m_shape, nodes::ProxyShape::serializedArCtx()),
-      MString(arCtxStr.c_str()));
   m_modifier2.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::filePath()), filePath);
 
   if(connectToTime)
