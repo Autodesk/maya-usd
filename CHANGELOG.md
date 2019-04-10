@@ -1,5 +1,11 @@
-## AL_USDMaya-0.32.16 (2019-04-08)
+## AL_USDMaya-0.32.17 (2019-04-10)
+### Removed
++ Removed "serializedArCtx" attribute and related code from the proxy shape
 
+### Fixed
++ Fixes potential crash when using the translate tool to move prims
+
+## AL_USDMaya-0.32.16 (2019-04-08)
 ### Fixed
 + fix issue where proxy shape wasn't redrawn when filepath was changed
 + Fixes compilation against maya 2018+
