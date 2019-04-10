@@ -235,9 +235,16 @@ bool TransformationMatrix::readVector(MVector& result, const UsdGeomXformOp& op,
 bool TransformationMatrix::pushVector(const MVector& result, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushVector %f %f %f\n%s\n", result.x, result.y, result.z, op.GetOpName().GetText());
-  const SdfValueTypeName vtn = op.GetTypeName();
-  UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
+  auto attr = op.GetAttr();
+  if(!attr)
+  {
+    return false;
+  }
 
+  TfToken typeName;
+  attr.GetMetadata(SdfFieldKeys->TypeName, &typeName);
+  SdfValueTypeName vtn = SdfSchema::GetInstance().FindType(typeName);
+  UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
   {
   case UsdDataType::kVec3d:
