@@ -332,6 +332,84 @@ class TestTranslator(unittest.TestCase):
         self.assertEqual(len(mc.ls(type='nurbsCurve')), 1)
         self.assertEqual(len(mc.ls('parent')), 1)
 
+    def testNurbsCurve_curve_width_floatarray_export(self):
+        expectedWidths = [1.,2.,3.]
+        mc.CreateNURBSCircle()
+        mc.select("nurbsCircleShape1")
+        mc.addAttr(longName="width", dt="floatArray")
+        mc.setAttr("nurbsCircleShape1.width", expectedWidths ,type="floatArray")
+        self.assertEqual(mc.getAttr("nurbsCircleShape1.width"), expectedWidths)
+
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="testNurbsCurve_curve_width_export", delete=False)
+        mc.AL_usdmaya_ExportCommand(file=tempFile.name)
+        stage = Usd.Stage.Open(tempFile.name)
+        prim = stage.GetPrimAtPath("/nurbsCircle1")
+        nurbPrim = UsdGeom.NurbsCurves(prim)
+        assert(nurbPrim.GetWidthsAttr())
+        actualWidths = nurbPrim.GetWidthsAttr().Get()
+        self.assertTrue(actualWidths)
+        sure = any([a == b for a, b in zip(expectedWidths, actualWidths)])
+        self.assertTrue(sure)
+
+    def testNurbsCurve_curve_width_doublearray_export(self):
+        expectedWidths = [1.,2.,3.]
+        mc.CreateNURBSCircle()
+        mc.select("nurbsCircleShape1")
+        mc.addAttr(longName="width", dt="doubleArray")
+        mc.setAttr("nurbsCircleShape1.width", expectedWidths ,type="doubleArray")
+        self.assertEqual(mc.getAttr("nurbsCircleShape1.width"), expectedWidths)
+
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="testNurbsCurve_curve_width_export", delete=False)
+        mc.AL_usdmaya_ExportCommand(file=tempFile.name)
+        stage = Usd.Stage.Open(tempFile.name)
+        prim = stage.GetPrimAtPath("/nurbsCircle1")
+        nurbPrim = UsdGeom.NurbsCurves(prim)
+        assert(nurbPrim.GetWidthsAttr())
+        actualWidths = nurbPrim.GetWidthsAttr().Get()
+        self.assertTrue(actualWidths)
+        sure = any([a == b for a, b in zip(expectedWidths, actualWidths)])
+        self.assertTrue(sure)
+
+    def testNurbsCurve_curve_width_double_export(self):
+        expectedWidths = 1.
+        mc.CreateNURBSCircle()
+        mc.select("nurbsCircleShape1")
+        mc.addAttr(longName="width", at="double")
+        mc.setAttr("nurbsCircleShape1.width", expectedWidths)
+        self.assertEqual(mc.getAttr("nurbsCircleShape1.width"), expectedWidths)
+
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="testNurbsCurve_curve_width_double_export", delete=False)
+        mc.AL_usdmaya_ExportCommand(file=tempFile.name)
+        stage = Usd.Stage.Open(tempFile.name)
+        prim = stage.GetPrimAtPath("/nurbsCircle1")
+        nurbPrim = UsdGeom.NurbsCurves(prim)
+
+        assert(nurbPrim.GetWidthsAttr())
+        actualWidths = nurbPrim.GetWidthsAttr().Get()
+        self.assertTrue(actualWidths)
+        sure = any([a == b for a, b in zip([expectedWidths], actualWidths)])
+        self.assertTrue(sure)
+
+    def testNurbsCurve_curve_width_float_export(self):
+        expectedWidths = 1.
+        mc.CreateNURBSCircle()
+        mc.select("nurbsCircleShape1")
+        mc.addAttr(longName="width", at="float")
+        mc.setAttr("nurbsCircleShape1.width", expectedWidths)
+        self.assertEqual(mc.getAttr("nurbsCircleShape1.width"), expectedWidths)
+
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="testNurbsCurve_curve_width_float_export", delete=False)
+        mc.AL_usdmaya_ExportCommand(file=tempFile.name)
+        stage = Usd.Stage.Open(tempFile.name)
+        prim = stage.GetPrimAtPath("/nurbsCircle1")
+        nurbPrim = UsdGeom.NurbsCurves(prim)
+
+        assert(nurbPrim.GetWidthsAttr())
+        actualWidths = nurbPrim.GetWidthsAttr().Get()
+        self.assertTrue(actualWidths)
+        sure = any([a == b for a, b in zip([expectedWidths], actualWidths)])
+        self.assertTrue(sure)
+
     def testNurbsCurve_PretearDownEditTargetWrite(self):
         """
         Simple test to determine if the edit target gets written to preteardown

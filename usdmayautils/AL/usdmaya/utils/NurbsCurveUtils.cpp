@@ -22,7 +22,9 @@
 #include "AL/usd/utils/DiffCore.h"
 
 #include "maya/MDoubleArray.h"
+#include "maya/MFloatArray.h"
 #include "maya/MFnDoubleArrayData.h"
+#include "maya/MFnFloatArrayData.h"
 #include "maya/MFnNumericAttribute.h"
 #include "maya/MGlobal.h"
 #include "maya/MPlug.h"
@@ -110,9 +112,21 @@ void copyWidths(const MObject& widthObj, const MPlug& widthPlug, const MFnDouble
     }
     widthsAttr.Set(dataWidths);
   }
-  else if(MFnNumericAttribute(widthObj).unitType() == MFnNumericData::kDouble) // data can come in as a single value
+}
+//----------------------------------------------------------------------------------------------------------------------
+void copyWidths(const MObject& widthObj, const MPlug& widthPlug, const MFnFloatArrayData& widthArray,
+                const UsdAttribute& widthsAttr, UsdTimeCode time)
+{
+  std::cout << "Copy widths " << std::endl;
+  VtArray<float> dataWidths;
+  if(widthObj.apiType() == MFn::kFloatArrayData)
   {
-    dataWidths.push_back(widthPlug.asFloat());
+    const uint32_t numElements = widthArray.length();
+    dataWidths.resize(numElements);
+    for(uint32_t i = 0; i < numElements; ++i)
+    {
+      dataWidths[i] = widthArray[i];
+    }
     widthsAttr.Set(dataWidths);
   }
 }
@@ -135,6 +149,27 @@ bool getMayaCurveWidth(const MFnNurbsCurve& fnCurve, MObject& object, MPlug& plu
   {
     plug.getValue(object);
     array.setObject(object);
+    return true;
+  }
+  return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool getMayaCurveWidth(const MFnNurbsCurve& fnCurve, MObject& object, MPlug& plug)
+{
+  // Width of the NURB curve
+  MStatus status;
+  plug = fnCurve.findPlug("widths", true, &status);
+  if (status == MStatus::kSuccess)
+  {
+    plug.getValue(object);
+    return true;
+  }
+  // "widths" not founded, try "width"
+  plug = fnCurve.findPlug("width", true, &status);
+  if (status == MStatus::kSuccess)
+  {
+    plug.getValue(object);
     return true;
   }
   return false;
