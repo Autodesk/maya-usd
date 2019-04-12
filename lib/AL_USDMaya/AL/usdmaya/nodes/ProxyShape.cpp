@@ -764,6 +764,8 @@ MStatus ProxyShape::initialise()
     m_serializedSessionLayer = addStringAttr("serializedSessionLayer", "ssl", kCached|kReadable|kWritable|kStorable|kHidden);
     m_sessionLayerName = addStringAttr("sessionLayerName", "sln", kCached|kReadable|kWritable|kStorable|kHidden);
 
+    //for backward compatibility (or at least to stop maya spewing out errors on scene open). This attribute was removed in 0.32.17
+    addStringAttr("serializedArCtx", "arcd", kReadable|kWritable|kHidden);
     // m_filePath / m_primPath / m_excludePrimPaths are internal just so we get notification on change
     m_filePath = addFilePathAttr("filePath", "fp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance | kInternal, kLoad, "USD Files (*.usd*) (*.usd*);;Alembic Files (*.abc)");
 
