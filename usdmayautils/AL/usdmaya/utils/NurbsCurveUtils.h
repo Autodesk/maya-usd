@@ -22,6 +22,7 @@
 
 #if MAYA_API_VERSION < 201800
 #include "maya/MFnDoubleArrayData.h"
+#include "maya/MFnFloatArrayData.h"
 #endif
 
 #include "pxr/usd/usd/attribute.h"

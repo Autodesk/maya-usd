@@ -117,7 +117,6 @@ void copyWidths(const MObject& widthObj, const MPlug& widthPlug, const MFnDouble
 void copyWidths(const MObject& widthObj, const MPlug& widthPlug, const MFnFloatArrayData& widthArray,
                 const UsdAttribute& widthsAttr, UsdTimeCode time)
 {
-  std::cout << "Copy widths " << std::endl;
   VtArray<float> dataWidths;
   if(widthObj.apiType() == MFn::kFloatArrayData)
   {
