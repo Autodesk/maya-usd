@@ -507,7 +507,7 @@ private:
     }
 
     inline TfToken _GetTextureFilePathToken(const MFnDependencyNode& fileNode) {
-        return TfToken(GetTextureFilePath(fileNode, true).asChar());
+        return TfToken(GetTextureFilePath(fileNode).asChar());
     }
 
     HdTextureResourceSharedPtr GetTextureResource(

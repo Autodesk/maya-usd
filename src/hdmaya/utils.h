@@ -42,8 +42,7 @@ inline GfMatrix4d GetGfMatrixFromMaya(const MMatrix& mayaMat) {
     return mat;
 }
 
-inline MString GetTextureFilePath(
-    const MFnDependencyNode& fileNode, bool fullPath = false) {
+inline MString GetTextureFilePath(const MFnDependencyNode& fileNode) {
     MString ret;
     if (fileNode.findPlug(MayaAttrs::file::uvTilingMode, true).asShort() != 0) {
         ret = fileNode.findPlug(MayaAttrs::file::fileTextureNamePattern, true)
@@ -55,9 +54,7 @@ inline MString GetTextureFilePath(
                       .asString();
         }
     } else {
-        if (fullPath) {
-            ret = MRenderUtil::exactFileTextureName(fileNode.object());
-        }
+        ret = MRenderUtil::exactFileTextureName(fileNode.object());
         if (ret.length() == 0) {
             ret = fileNode.findPlug(MayaAttrs::file::fileTextureName, true)
                       .asString();
