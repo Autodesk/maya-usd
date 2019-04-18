@@ -377,6 +377,7 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
     {
       outputDoubleValue(dataBlock, m_timeScalar, handle.asDouble());
     }
+    
 
     updateTransform(dataBlock);
     return MS::kSuccess;

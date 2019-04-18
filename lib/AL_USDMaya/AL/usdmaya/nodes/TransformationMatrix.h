@@ -71,6 +71,28 @@ class TransformationMatrix
   // post-transform translation value applied in object space after all other transformations
   MVector m_localTranslateOffset;
 
+  void print() const
+  {
+    std::cout << "m_scaleTweak " << m_scaleTweak << '\n';
+    std::cout << "m_rotationTweak " << m_rotationTweak << '\n';
+    std::cout << "m_translationTweak " << m_translationTweak << '\n';
+    std::cout << "m_shearTweak " << m_shearTweak << '\n';
+    std::cout << "m_scalePivotTweak " << m_scalePivotTweak << '\n';
+    std::cout << "m_scalePivotTranslationTweak " << m_scalePivotTranslationTweak << '\n';
+    std::cout << "m_rotatePivotTweak " << m_rotatePivotTweak << '\n';
+    std::cout << "m_rotatePivotTranslationTweak " << m_rotatePivotTranslationTweak << '\n';
+    std::cout << "m_rotateOrientationTweak " << m_rotateOrientationTweak << '\n';
+    std::cout << "m_scaleFromUsd " << m_scaleFromUsd << '\n';
+    std::cout << "m_rotationFromUsd " << m_rotationFromUsd << '\n';
+    std::cout << "m_translationFromUsd " << m_translationFromUsd << '\n';
+    std::cout << "m_shearFromUsd " << m_shearFromUsd << '\n';
+    std::cout << "m_scalePivotFromUsd " << m_scalePivotFromUsd << '\n';
+    std::cout << "m_scalePivotTranslationFromUsd " << m_scalePivotTranslationFromUsd << '\n';
+    std::cout << "m_rotatePivotFromUsd " << m_rotatePivotFromUsd << '\n';
+    std::cout << "m_rotatePivotTranslationFromUsd " << m_rotatePivotTranslationFromUsd << '\n';
+    std::cout << "m_rotateOrientationFromUsd " << m_rotateOrientationFromUsd << '\n' << std::endl;
+  }
+
   // methods that will insert a transform op into the ordered queue of operations, if for some.
   void insertTranslateOp();
   void insertScaleOp();
@@ -121,7 +143,7 @@ class TransformationMatrix
     // when we're re-initializing (ie, in setPrim)
     kPreservationMask = kPushToPrimEnabled | kReadAnimatedValues
   };
-  uint32_t m_flags = 0;
+  uint32_t m_flags = kReadAnimatedValues;
 
   bool internal_readVector(MVector& result, const UsdGeomXformOp& op) { return readVector(result, op, getTimeCode()); }
   bool internal_readShear(MVector& result, const UsdGeomXformOp& op) { return readShear(result, op, getTimeCode()); }

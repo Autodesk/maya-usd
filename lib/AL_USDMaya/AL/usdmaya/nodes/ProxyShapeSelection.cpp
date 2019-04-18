@@ -590,6 +590,7 @@ MObject ProxyShape::makeUsdTransformChain(
     if(modifier2)
     {
       modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), pushToPrim);
+      modifier2->newPlugValueBool(ptrNode->readAnimatedValuesPlug(), true);
     }
 
     if(!isTransform)

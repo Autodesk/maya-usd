@@ -234,7 +234,7 @@ bool TransformationMatrix::readVector(MVector& result, const UsdGeomXformOp& op,
 //----------------------------------------------------------------------------------------------------------------------
 bool TransformationMatrix::pushVector(const MVector& result, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushVector %f %f %f\n%s\n", result.x, result.y, result.z, op.GetOpName().GetText());
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushVector %f %f %f [@%f]\n%s\n", result.x, result.y, result.z, timeCode.GetValue(), op.GetOpName().GetText());
   auto attr = op.GetAttr();
   if(!attr)
   {
@@ -253,7 +253,9 @@ bool TransformationMatrix::pushVector(const MVector& result, UsdGeomXformOp& op,
       GfVec3d oldValue;
       op.Get(&oldValue, timeCode);
       if(value != oldValue)
+      {
         op.Set(value, timeCode);
+      }
     }
     break;
 
@@ -263,7 +265,9 @@ bool TransformationMatrix::pushVector(const MVector& result, UsdGeomXformOp& op,
       GfVec3f oldValue;
       op.Get(&oldValue, timeCode);
       if(value != oldValue)
+      {
         op.Set(value, timeCode);
+      }
     }
     break;
 
@@ -273,7 +277,9 @@ bool TransformationMatrix::pushVector(const MVector& result, UsdGeomXformOp& op,
       GfVec3h oldValue;
       op.Get(&oldValue, timeCode);
       if(value != oldValue)
+      {
         op.Set(value, timeCode);
+      }
     }
     break;
 
@@ -283,7 +289,9 @@ bool TransformationMatrix::pushVector(const MVector& result, UsdGeomXformOp& op,
       GfVec3i oldValue;
       op.Get(&oldValue, timeCode);
       if(value != oldValue)
+      {
         op.Set(value, timeCode);
+      }
     }
     break;
 
@@ -1116,11 +1124,9 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
   {
     return;
   }
-
   if(m_time != time)
   {
     m_time = time;
-    if(hasAnimation())
     {
       auto opIt = m_orderedOps.begin();
       for(std::vector<UsdGeomXformOp>::const_iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
@@ -1130,8 +1136,9 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
         {
         case kTranslate:
           {
-            if(hasAnimatedTranslation())
+            if(op.GetNumTimeSamples() >= 1)
             {
+              m_flags |= kAnimatedTranslation;
               internal_readVector(m_translationFromUsd, op);
               MPxTransformationMatrix::translationValue = m_translationFromUsd + m_translationTweak;
             }
@@ -1140,8 +1147,9 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 
         case kRotate:
           {
-            if(hasAnimatedRotation())
+            if(op.GetNumTimeSamples() >= 1)
             {
+              m_flags |= kAnimatedRotation;
               internal_readRotation(m_rotationFromUsd, op);
               MPxTransformationMatrix::rotationValue = m_rotationFromUsd;
               MPxTransformationMatrix::rotationValue.x += m_rotationTweak.x;
@@ -1153,8 +1161,9 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 
         case kScale:
           {
-            if(hasAnimatedScale())
+            if(op.GetNumTimeSamples() >= 1)
             {
+              m_flags |= kAnimatedScale;
               internal_readVector(m_scaleFromUsd, op);
               MPxTransformationMatrix::scaleValue = m_scaleFromUsd + m_scaleTweak;
             }
@@ -1163,8 +1172,9 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 
         case kShear:
           {
-            if(hasAnimatedShear())
+            if(op.GetNumTimeSamples() >= 1)
             {
+              m_flags |= kAnimatedShear;
               internal_readShear(m_shearFromUsd, op);
               MPxTransformationMatrix::shearValue = m_shearFromUsd + m_shearTweak;
             }
@@ -1173,8 +1183,9 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 
         case kTransform:
           {
-            if(hasAnimatedMatrix())
+            if(op.GetNumTimeSamples() >= 1)
             {
+              m_flags |= kAnimatedMatrix;
               GfMatrix4d matrix;
               op.Get<GfMatrix4d>(&matrix, getTimeCode());
               double T[3], S[3];
