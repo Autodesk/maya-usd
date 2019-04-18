@@ -399,6 +399,8 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
     engine->SetSelectionColor(GfVec4f(1.0f, 2.0f/3.0f, 0.0f, 1.0f));
 
     ptr->m_params.frame = ptr->m_shape->outTimePlug().asMTime().as(MTime::uiUnit());
+    engine->Render(ptr->m_rootPrim, ptr->m_params);
+
     if(combined.size())
     {
       UsdImagingGLRenderParams params = ptr->m_params;
@@ -408,8 +410,6 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
       glDepthFunc(GL_LEQUAL);
       engine->RenderBatch(combined, params);
     }
-
-    engine->Render(ptr->m_rootPrim, ptr->m_params);
 
 #if defined(WANT_UFE_BUILD)
     if (ArchHasEnv("MAYA_WANT_UFE_SELECTION"))
