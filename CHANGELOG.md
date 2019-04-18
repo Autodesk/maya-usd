@@ -1,3 +1,15 @@
+## AL_USDMaya-0.32.19 (2019-04-18)
+### Added
++ Added "serializedArCtx" attribute as non-storable, to prevent errors when loading old files. 
+### Fixed
++ Ensure readAnimatedValues is correctly set on transform creation.
++ Ensure transform values are correctly updated when scrubbing through the timeline.
++ Wireframe selection rendering trailed behind the geom by 1 frame when scrubbing throught the timeline
+
+## AL_USDMaya-0.32.18 (2019-04-15)
+### Fixed
++ Curve width export now supports widths that are MFn::kFloatArray or MFn::kDoubleArray
+
 ## AL_USDMaya-0.32.17 (2019-04-10)
 ### Removed
 + Removed "serializedArCtx" attribute and related code from the proxy shape
