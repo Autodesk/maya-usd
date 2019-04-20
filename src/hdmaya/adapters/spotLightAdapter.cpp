@@ -53,7 +53,7 @@ void GetSpotCutoffAndSoftness(
     auto penumbraAngle =
         static_cast<float>(GfRadiansToDegrees(mayaLight.penumbraAngle()));
     cutoffOut = coneAngle + penumbraAngle;
-    softnessOut = cutoffOut / penumbraAngle;
+    softnessOut = cutoffOut == 0 ? 0 : penumbraAngle / cutoffOut;
 }
 
 float GetSpotCutoff(MFnSpotLight& mayaLight) {
