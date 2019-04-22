@@ -203,7 +203,8 @@ VtValue HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
 
     MFnLight light(GetDagPath());
 #ifdef USD_001905_BUILD
-    if (paramName == HdTokens->displayColor) {
+    if (paramName == HdLightTokens->color ||
+        paramName == HdTokens->displayColor) {
 #else
     if (paramName == HdTokens->color) {
 #endif // USD_001905_BUILD
