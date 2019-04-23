@@ -98,7 +98,7 @@ public:
             dynamic_cast<const UFE_NS::SelectionChanged*>(&notification);
         if (selectionChanged == nullptr) { return; }
 
-        TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
+        TF_DEBUG(HDMAYA_RENDEROVERRIDE_SELECTION)
             .Msg(
                 "UfeSelectionObserver triggered (ufe selection change "
                 "triggered)\n");
@@ -130,6 +130,12 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
       _selectionCollection(
           HdReprTokens->wire, HdReprSelector(HdReprTokens->wire)),
       _isUsingHdSt(desc.rendererName == _tokens->HdStreamRendererPlugin) {
+    TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
+        .Msg(
+            "MtohRenderOverride created (%s - %s - %s)\n",
+            _rendererDesc.rendererName.GetText(),
+            _rendererDesc.overrideName.GetText(),
+            _rendererDesc.displayName.GetText());
     _needsClear.store(false);
     HdMayaDelegateRegistry::InstallDelegatesChangedSignal(
         [this]() { _needsClear.store(true); });
@@ -173,6 +179,13 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
 }
 
 MtohRenderOverride::~MtohRenderOverride() {
+    TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
+        .Msg(
+            "MtohRenderOverride destroyed (%s - %s - %s)\n",
+            _rendererDesc.rendererName.GetText(),
+            _rendererDesc.overrideName.GetText(),
+            _rendererDesc.displayName.GetText());
+
     ClearHydraResources();
 
     for (auto operation : _operations) { delete operation; }
@@ -235,7 +248,7 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(
         }
     }
 
-    TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
+    TF_DEBUG(HDMAYA_RENDEROVERRIDE_DEFAULT_LIGHTING)
         .Msg(
             "MtohRenderOverride::"
             "_DetectMayaDefaultLighting() "
@@ -245,7 +258,7 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(
     if (foundMayaDefaultLight != _hasDefaultLighting) {
         _hasDefaultLighting = foundMayaDefaultLight;
         _needsClear.store(true);
-        TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
+        TF_DEBUG(HDMAYA_RENDEROVERRIDE_DEFAULT_LIGHTING)
             .Msg(
                 "MtohRenderOverride::"
                 "_DetectMayaDefaultLighting() clearing! "
@@ -299,7 +312,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     //         override->ClearHydraResources();
     //     }
     // }
-    TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
+    TF_DEBUG(HDMAYA_RENDEROVERRIDE_RENDER)
         .Msg("MtohRenderOverride::Render()\n");
     auto renderFrame = [&]() {
         const auto originX = 0;
@@ -440,8 +453,10 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 }
 
 void MtohRenderOverride::_InitHydraResources() {
-    TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
-        .Msg("MtohRenderOverride::_InitHydraResources()\n");
+    TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
+        .Msg(
+            "MtohRenderOverride::_InitHydraResources(%s)\n",
+            _rendererDesc.rendererName.GetText());
 #ifdef USD_001905_BUILD
     GlfContextCaps::InitInstance();
 #endif
@@ -500,6 +515,12 @@ void MtohRenderOverride::_InitHydraResources() {
 
 void MtohRenderOverride::ClearHydraResources() {
     if (!_initializedViewport) { return; }
+
+    TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
+        .Msg(
+            "MtohRenderOverride::ClearHydraResources(%s)\n",
+            _rendererDesc.rendererName.GetText());
+
     _delegates.clear();
     _defaultLightDelegate.reset();
 
@@ -557,7 +578,7 @@ void MtohRenderOverride::_SelectionChanged() {
     }
     _selectionCollection.SetRootPaths(selectedPaths);
     _selectionTracker->SetSelection(HdSelectionSharedPtr(selection));
-    TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
+    TF_DEBUG(HDMAYA_RENDEROVERRIDE_SELECTION)
         .Msg(
             "MtohRenderOverride::_SelectionChanged - num selected: %lu\n",
             selectedPaths.size());
@@ -647,7 +668,7 @@ void MtohRenderOverride::_ClearResourcesCallback(float, float, void* data) {
 }
 
 void MtohRenderOverride::_SelectionChangedCallback(void* data) {
-    TF_DEBUG(HDMAYA_PLUGIN_RENDEROVERRIDE)
+    TF_DEBUG(HDMAYA_RENDEROVERRIDE_SELECTION)
         .Msg(
             "MtohRenderOverride::_SelectionChangedCallback() (normal maya "
             "selection triggered)\n");
