@@ -76,6 +76,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 namespace {
 
+// Not sure if we actually need a mutex guarding _allInstances, but
+// everywhere that uses it isn't a "frequent" operation, so the
+// extra speed loss should be fine, and I'd rather be safe.
+std::mutex _allInstancesMutex;
 std::vector<MtohRenderOverride*> _allInstances;
 
 #if HDMAYA_UFE_BUILD
@@ -164,7 +168,11 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
 
     _defaultLight.SetSpecular(GfVec4f(0.0f));
     _defaultLight.SetAmbient(GfVec4f(0.0f));
-    _allInstances.push_back(this);
+
+    {
+        std::lock_guard<std::mutex> lock(_allInstancesMutex);
+        _allInstances.push_back(this);
+    }
 
     _globals = MtohGetRenderGlobals();
 
@@ -191,9 +199,13 @@ MtohRenderOverride::~MtohRenderOverride() {
     for (auto operation : _operations) { delete operation; }
 
     for (auto callback : _callbacks) { MMessage::removeCallback(callback); }
-    _allInstances.erase(
-        std::remove(_allInstances.begin(), _allInstances.end(), this),
-        _allInstances.end());
+
+    {
+        std::lock_guard<std::mutex> lock(_allInstancesMutex);
+        _allInstances.erase(
+            std::remove(_allInstances.begin(), _allInstances.end(), this),
+            _allInstances.end());
+    }
 
 #if HDMAYA_UFE_BUILD
     const UFE_NS::GlobalSelection::Ptr& ufeSelection =
@@ -206,6 +218,7 @@ MtohRenderOverride::~MtohRenderOverride() {
 }
 
 void MtohRenderOverride::UpdateRenderGlobals() {
+    std::lock_guard<std::mutex> lock(_allInstancesMutex);
     for (auto* instance : _allInstances) {
         instance->_renderGlobalsHaveChanged = true;
     }
