@@ -66,6 +66,7 @@ public:
     ~MtohRenderOverride() override;
 
     static void UpdateRenderGlobals();
+    static std::vector<MString> AllActiveRendererNames();
 
     MStatus Render(const MHWRender::MDrawContext& drawContext);
 

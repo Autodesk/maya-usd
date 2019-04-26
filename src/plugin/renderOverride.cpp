@@ -224,6 +224,18 @@ void MtohRenderOverride::UpdateRenderGlobals() {
     }
 }
 
+std::vector<MString> MtohRenderOverride::AllActiveRendererNames() {
+    std::vector<MString> renderers;
+
+    std::lock_guard<std::mutex> lock(_allInstancesMutex);
+    for (auto* instance : _allInstances) {
+        if (instance->_initializedViewport) {
+            renderers.push_back(instance->_rendererDesc.rendererName.GetText());
+        }
+    }
+    return renderers;
+}
+
 void MtohRenderOverride::_DetectMayaDefaultLighting(
     const MHWRender::MDrawContext& drawContext) {
     constexpr auto considerAllSceneLights =
