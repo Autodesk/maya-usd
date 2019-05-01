@@ -773,7 +773,7 @@ GfMatrix4d HdMayaSceneDelegate::GetInstancerTransform(
 #else
     SdfPath const& instancerId, SdfPath const& prototypeId
 #endif
-    ) {
+) {
     return GfMatrix4d(1.0);
 }
 
