@@ -178,6 +178,10 @@ MStatus registerPlugin(AFnPlugin& plugin)
     MGlobal::setOptionVarValue("AL_usdmaya_pickMode", static_cast<int>(nodes::ProxyShape::PickMode::kPrims));
   }
 
+  if(!MGlobal::optionVarExists("AL_usdmaya_readAnimatedValues"))
+  {
+    MGlobal::setOptionVarValue("AL_usdmaya_readAnimatedValues", false);
+  }
 
   MStatus status;
 

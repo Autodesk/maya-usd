@@ -590,7 +590,7 @@ MObject ProxyShape::makeUsdTransformChain(
     if(modifier2)
     {
       modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), pushToPrim);
-      modifier2->newPlugValueBool(ptrNode->readAnimatedValuesPlug(), true);
+      modifier2->newPlugValueBool(ptrNode->readAnimatedValuesPlug(), MGlobal::optionVarIntValue("AL_usdmaya_readAnimatedValues") );
     }
 
     if(!isTransform)
@@ -671,6 +671,7 @@ void ProxyShape::makeUsdTransformsInternal(const UsdPrim& usdPrim, const MObject
       if(modifier2)
       {
         modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), pushToPrim);
+        modifier2->newPlugValueBool(ptrNode->readAnimatedValuesPlug(), MGlobal::optionVarIntValue("AL_usdmaya_readAnimatedValues"));
       }
 
       // set the primitive path
