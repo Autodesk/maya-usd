@@ -309,7 +309,10 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
             GetGfMatrixFromMaya(drawContext.getMatrix(
                 MHWRender::MFrameContext::kProjectionMtx)));
         _taskController->SetCameraViewport(viewport);
-#ifdef USD_001901_BUILD
+#if USD_001907_BUILD
+        auto tasks = _taskController->GetTasks();
+        _engine.Execute(_renderIndex, &tasks);
+#elif USD_001901_BUILD
         _engine.Execute(*_renderIndex, _taskController->GetTasks());
 #else
         _engine.Execute(
