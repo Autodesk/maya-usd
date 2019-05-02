@@ -1,3 +1,7 @@
+## AL_USDMaya-0.32.20 (2019-05-02)
+### Added
++ Added "AL_usdmaya_readAnimatedValues" option var to control default setting of readAnimatedValues attribute
+
 ## AL_USDMaya-0.32.19 (2019-04-18)
 ### Added
 + Added "serializedArCtx" attribute as non-storable, to prevent errors when loading old files. 
