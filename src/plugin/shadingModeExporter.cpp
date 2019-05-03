@@ -42,10 +42,14 @@ auto& HioGlslfxTokens = PXR_NS::GlfGLSLFXTokens;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    ((defaultOutputName, "outputs:out"))((glslfxSurface, "glslfx:surface")));
+    ((defaultOutputName, "outputs:out"))
+    ((glslfxSurface, "glslfx:surface"))
+);
+// clang-format off
 
 class MtohShadingModeExporter : public UsdMayaShadingModeExporter {
 public:

@@ -66,7 +66,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (HdStreamRendererPlugin));
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    
+    (HdStreamRendererPlugin)
+);
+// clang-format on
 
 namespace {
 

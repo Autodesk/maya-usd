@@ -29,7 +29,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define MTOH_TOKENS (UseHdSt)(UseVp2)
+// clang-format off
+#define MTOH_TOKENS (UseHdSt) \
+                    (UseVp2)
+// clang-format on
 
 // This is not an exported API.
 TF_DECLARE_PUBLIC_TOKENS(MtohTokens, , MTOH_TOKENS);

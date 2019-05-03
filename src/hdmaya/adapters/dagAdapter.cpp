@@ -45,10 +45,17 @@ TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<HdMayaDagAdapter, TfType::Bases<HdMayaAdapter> >();
 }
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    (translate)(rotate)(scale)(instanceTransform)(instancer));
+    (translate)
+    (rotate)
+    (scale)
+    (instanceTransform)
+    (instancer)
+);
+// clang-format on
 
 namespace {
 

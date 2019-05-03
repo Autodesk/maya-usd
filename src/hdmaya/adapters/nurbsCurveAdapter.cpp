@@ -45,7 +45,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (st));
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    
+    (st)
+);
+// clang-format on
 
 const std::array<std::pair<MObject&, HdDirtyBits>, 4> _dirtyBits{{
     {MayaAttrs::nurbsCurve::controlPoints,

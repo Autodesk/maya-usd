@@ -32,7 +32,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (DefaultMayaLight));
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    
+    (DefaultMayaLight)
+);
+// clang-format on
 
 MtohDefaultLightDelegate::MtohDefaultLightDelegate(const InitData& initData)
     : HdSceneDelegate(initData.renderIndex, initData.delegateID),

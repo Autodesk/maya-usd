@@ -25,6 +25,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(HdMayaAdapterTokens, HDMAYA_ADAPTER_TOKENS);
+// clang-format off
+TF_DEFINE_PUBLIC_TOKENS(
+    HdMayaAdapterTokens,
+
+    HDMAYA_ADAPTER_TOKENS
+);
+// clang-format on
 
 PXR_NAMESPACE_CLOSE_SCOPE
