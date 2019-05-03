@@ -61,7 +61,7 @@ bool Engine::TestIntersectionBatch(
   if (ARCH_UNLIKELY(_legacyImpl)) {
     return false;
   }
-  _UpdateHydraCollection(&_intersectCollection, paths, params, &_renderTags);
+  _UpdateHydraCollection(&_intersectCollection, paths, params);
 
   HdxIntersector::HitVector allHits;
   HdxIntersector::Params qparams;
@@ -87,7 +87,7 @@ bool Engine::TestIntersectionBatch(
     default:
       qparams.cullStyle = HdCullStyleDontCare;
   }
-  qparams.renderTags = _renderTags;
+  qparams.renderTags = _intersectCollection.GetRenderTags();
   qparams.enableSceneMaterials = params.enableSceneMaterials;
 
   _taskController->SetPickResolution(pickResolution);
