@@ -408,7 +408,12 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
       MColor colour = M3dView::leadColor();
       params.wireframeColor = GfVec4f(colour.r, colour.g, colour.b, 1.0f);
       glDepthFunc(GL_LEQUAL);
+      // Geometry already rendered, can't offset it deeper.  Push
+      // lines in front with negative offset.
+      glEnable(GL_POLYGON_OFFSET_LINE);
+      glPolygonOffset(-1.0, -1.0);
       engine->RenderBatch(combined, params);
+      glDisable(GL_POLYGON_OFFSET_LINE);
     }
 
 #if defined(WANT_UFE_BUILD)
