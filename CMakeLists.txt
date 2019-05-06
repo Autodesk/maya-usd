@@ -19,6 +19,7 @@ set(MTOH_CXX_STD "11"
 option(LUMA_USD_BUILD "Build the plugin for Luma's version of USD." OFF)
 option(INSTALL_MAYA_MOD "Installs a maya module file for the plugin." OFF)
 option(HDMAYA_UFE_BUILD "Whether to build with UFE support." OFF)
+option(BUILD_DOCS "Wether to build the Documentation." OFF)
 
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -32,6 +33,9 @@ if (LINUX)
 endif ()
 
 add_subdirectory(src)
+if (BUILD_DOCS)
+    add_subdirectory(docs)
+endif ()
 
 install(
     FILES README.md

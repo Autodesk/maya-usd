@@ -1,0 +1,64 @@
+PROJECT_NAME           = "Maya to Hydra"
+PROJECT_NUMBER         = 0.0.1
+PROJECT_BRIEF          = "Hydra plugin for Maya"
+
+OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/docs/
+INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@/../src/ @CMAKE_CURRENT_SOURCE_DIR@/../docs
+CREATE_SUBDIRS         = YES
+
+OUTPUT_LANGUAGE        = English
+BRIEF_MEMBER_DESC      = YES
+REPEAT_BRIEF           = YES
+TAB_SIZE               = 4
+OPTIMIZE_OUTPUT_FOR_C  = YES
+MARKDOWN_SUPPORT       = YES
+EXTRACT_ALL            = NO
+EXTRACT_PRIVATE        = YES
+EXTRACT_PACKAGE        = NO
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = NO
+EXTRACT_LOCAL_METHODS  = NO
+EXTRACT_ANON_NSPACES   = NO
+
+FILE_PATTERNS          = *.cpp \
+                         *.h \
+                         *.md \
+                         *.py
+RECURSIVE              = YES
+
+# TODO: set these up?
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_FILE_EXTENSION    = .html
+HTML_HEADER            =
+HTML_FOOTER            =
+HTML_STYLESHEET        =
+HTML_EXTRA_STYLESHEET  =
+HTML_EXTRA_FILES       =
+HTML_COLORSTYLE_HUE    = 220
+HTML_COLORSTYLE_SAT    = 100
+HTML_COLORSTYLE_GAMMA  = 80
+HTML_TIMESTAMP         = NO
+HTML_DYNAMIC_SECTIONS  = NO
+HTML_INDEX_NUM_ENTRIES = 100
+
+# TODO: We should turn this on based on a var, this only breaks doxygen if
+# it's viewed without an internet connection.
+USE_MATHJAX            = NO
+MATHJAX_FORMAT         = HTML-CSS
+MATHJAX_RELPATH        = http://cdn.mathjax.org/mathjax/latest
+MATHJAX_EXTENSIONS     =
+MATHJAX_CODEFILE       =
+
+GENERATE_LATEX         = NO
+
+GENERATE_RTF           = NO
+
+GENERATE_MAN           = NO
+
+GENERATE_XML           = NO
+
+GENERATE_DOCBOOK       = NO
+CLASS_DIAGRAMS         = YES
+# TODO: This should be turned off if dot is not installed
+HAVE_DOT               = YES
