@@ -28,6 +28,7 @@
 #include <maya/MSyntax.h>
 
 #include <hdmaya/delegates/delegateRegistry.h>
+#include "plugin/renderOverride.h"
 
 #include "renderGlobals.h"
 #include "renderOverride.h"
@@ -41,6 +42,9 @@ namespace {
 
 constexpr auto _listRenderers = "-lr";
 constexpr auto _listRenderersLong = "-listRenderers";
+
+constexpr auto _listActiveRenderers = "-lar";
+constexpr auto _listActiveRenderersLong = "-listActiveRenderers";
 
 constexpr auto _getRendererDisplayName = "-gn";
 constexpr auto _getRendererDisplayNameLong = "-getRendererDisplayName";
@@ -65,6 +69,7 @@ Usage: mtoh [flags]
     delegate.
 -listDelegates/-ld : Returns the names of available scene delegates.
 -listRenderers/-lr : Returns the names of available render delegates.
+-listActiveRenderers/-lar : Returns the names of render delegates that are in use in at least one viewport.
 -createRenderGlobals/-crg : Creates the render globals.
 -updateRenderGlobals/-urg : Forces the update of the render globals for the viewport.
 
@@ -76,6 +81,8 @@ MSyntax MtohViewCmd::createSyntax() {
     MSyntax syntax;
 
     syntax.addFlag(_listRenderers, _listRenderersLong);
+
+    syntax.addFlag(_listActiveRenderers, _listActiveRenderersLong);
 
     syntax.addFlag(
         _getRendererDisplayName, _getRendererDisplayNameLong, MSyntax::kString);
@@ -97,6 +104,11 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
     if (db.isFlagSet(_listRenderers)) {
         for (const auto& renderer : MtohGetRendererPlugins()) {
             appendToResult(renderer.GetText());
+        }
+    } else if (db.isFlagSet(_listActiveRenderers)) {
+        for (const auto& renderer :
+             MtohRenderOverride::AllActiveRendererNames()) {
+            appendToResult(renderer);
         }
     } else if (db.isFlagSet(_getRendererDisplayName)) {
         MString id;
