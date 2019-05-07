@@ -1,3 +1,5 @@
+### Contributing to Maya to Hydra
+
 ## Identation
 
 The project follows the 1TBS variant of K&R style, with a limit of 80 columns per line. To make sure your code follows our guidelines run `clang-format` (we use version 6.0.0) on the codebase before submitting a pull request.
@@ -81,3 +83,15 @@ We use c++11 as our c++ standard, and switching to c++14 once Maya caught up wit
 - Use RAII wherever it makes sense.
 - Prefer the use of lambdas and STL algorithms.
 - Prefer the use constexpr wherever possible.
+
+## Documentation
+
+Always precede public classes and functions with a Doxygen-style comment. Include a
+brief description every time.
+
+Doxygen commands and tags are prefixed with a backslash.
+
+Always and a short description to each header file after the license.
+
+Use three slashes `///` for C++ doxygen comments. After member documentation
+is done with `///<`.
