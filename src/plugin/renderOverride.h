@@ -41,6 +41,7 @@
 #include <pxr/imaging/hdx/rendererPlugin.h>
 #include <pxr/imaging/hdx/taskController.h>
 
+#include <maya/MCallbackIdArray.h>
 #include <maya/MMessage.h>
 #include <maya/MString.h>
 #include <maya/MViewport2Renderer.h>
@@ -89,22 +90,44 @@ public:
     bool nextRenderOperation() override;
 
 private:
+    typedef std::pair<MString, MCallbackIdArray> PanelCallbacks;
+    typedef std::vector<PanelCallbacks> PanelCallbacksList;
+
     void _InitHydraResources();
+    void _RemovePanel(MString panelName);
     void _SelectionChanged();
     void _DetectMayaDefaultLighting(const MHWRender::MDrawContext& drawContext);
     void _UpdateRenderGlobals();
     void _UpdateRenderDelegateOptions();
 
+    inline PanelCallbacksList::iterator _FindPanelCallbacks(MString panelName) {
+        // There should never be that many render panels, so linear iteration
+        // should be fine
+
+        return std::find_if(
+            _renderPanelCallbacks.begin(), _renderPanelCallbacks.end(),
+            [&panelName](const PanelCallbacks& item) {
+                return item.first == panelName;
+            });
+    }
+
     // Callbacks
     static void _ClearHydraCallback(void* data);
     static void _TimerCallback(float, float, void* data);
-    static void _ClearResourcesCallback(float, float, void* data);
     static void _SelectionChangedCallback(void* data);
+    static void _PanelDeletedCallback(const MString& panelName, void* data);
+    static void _RendererChangedCallback(
+        const MString& panelName, const MString& oldRenderer,
+        const MString& newRenderer, void* data);
+    static void _RenderOverrideChangedCallback(
+        const MString& panelName, const MString& oldOverride,
+        const MString& newOverride, void* data);
 
     MtohRendererDescription _rendererDesc;
 
     std::vector<MHWRender::MRenderOperation*> _operations;
     std::vector<MCallbackId> _callbacks;
+    PanelCallbacksList _renderPanelCallbacks;
     MtohRenderGlobals _globals;
 
     std::mutex _convergenceMutex;

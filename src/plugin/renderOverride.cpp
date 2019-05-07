@@ -44,6 +44,7 @@
 #include <maya/MSceneMessage.h>
 #include <maya/MSelectionList.h>
 #include <maya/MTimerMessage.h>
+#include <maya/MUiMessage.h>
 
 #include <atomic>
 #include <chrono>
@@ -71,7 +72,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    
+
     (HdStreamRendererPlugin)
 );
 // clang-format on
@@ -164,10 +165,6 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
         1.0f / 10.0f, _TimerCallback, this, &status);
     if (status) { _callbacks.push_back(id); }
 
-    id = MTimerMessage::addTimerCallback(
-        5.0f, _ClearResourcesCallback, this, &status);
-    if (status) { _callbacks.push_back(id); }
-
     _defaultLight.SetSpecular(GfVec4f(0.0f));
     _defaultLight.SetAmbient(GfVec4f(0.0f));
 
@@ -201,6 +198,9 @@ MtohRenderOverride::~MtohRenderOverride() {
     for (auto operation : _operations) { delete operation; }
 
     for (auto callback : _callbacks) { MMessage::removeCallback(callback); }
+    for (auto& panelAndCallbacks : _renderPanelCallbacks) {
+        MMessage::removeCallbacks(panelAndCallbacks.second);
+    }
 
     {
         std::lock_guard<std::mutex> lock(_allInstancesMutex);
@@ -577,6 +577,19 @@ void MtohRenderOverride::ClearHydraResources() {
     SelectionChanged();
 }
 
+void MtohRenderOverride::_RemovePanel(MString panelName) {
+    auto foundPanelCallbacks = _FindPanelCallbacks(panelName);
+    if (foundPanelCallbacks != _renderPanelCallbacks.end()) {
+        MMessage::removeCallbacks(foundPanelCallbacks->second);
+        _renderPanelCallbacks.erase(foundPanelCallbacks);
+    }
+
+    if (_renderPanelCallbacks.empty()) {
+        ClearHydraResources();
+        _UpdateRenderGlobals();
+    }
+}
+
 void MtohRenderOverride::SelectionChanged() { _selectionChanged = true; }
 
 void MtohRenderOverride::_SelectionChanged() {
@@ -618,6 +631,28 @@ MHWRender::DrawAPI MtohRenderOverride::supportedDrawAPIs() const {
 }
 
 MStatus MtohRenderOverride::setup(const MString& destination) {
+    MStatus status;
+
+    auto panelNameAndCallbacks = _FindPanelCallbacks(destination);
+    if (panelNameAndCallbacks == _renderPanelCallbacks.end()) {
+        // Install the panel callbacks
+        MCallbackIdArray newCallbacks;
+
+        auto id = MUiMessage::add3dViewDestroyMsgCallback(
+            destination, _PanelDeletedCallback, this, &status);
+        if (status) { newCallbacks.append(id); }
+
+        id = MUiMessage::add3dViewRendererChangedCallback(
+            destination, _RendererChangedCallback, this, &status);
+        if (status) { newCallbacks.append(id); }
+
+        id = MUiMessage::add3dViewRenderOverrideChangedCallback(
+            destination, _RenderOverrideChangedCallback, this, &status);
+        if (status) { newCallbacks.append(id); }
+
+        _renderPanelCallbacks.emplace_back(destination, newCallbacks);
+    }
+
     auto* renderer = MHWRender::MRenderer::theRenderer();
     if (renderer == nullptr) { return MStatus::kFailure; }
 
@@ -680,20 +715,30 @@ void MtohRenderOverride::_TimerCallback(float, float, void* data) {
     }
 }
 
-void MtohRenderOverride::_ClearResourcesCallback(float, float, void* data) {
+void MtohRenderOverride::_PanelDeletedCallback(
+    const MString& panelName, void* data) {
     auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
     if (!TF_VERIFY(instance)) { return; }
-    const auto num3dViews = M3dView::numberOf3dViews();
-    for (auto i = decltype(num3dViews){0}; i < num3dViews; ++i) {
-        M3dView view;
-        M3dView::get3dView(i, view);
-        if (view.renderOverrideName() ==
-            instance->_rendererDesc.overrideName.GetText()) {
-            return;
-        }
-    }
-    instance->ClearHydraResources();
-    instance->_UpdateRenderGlobals();
+
+    instance->_RemovePanel(panelName);
+}
+
+void MtohRenderOverride::_RendererChangedCallback(
+    const MString& panelName, const MString& oldRenderer,
+    const MString& newRenderer, void* data) {
+    auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
+    if (!TF_VERIFY(instance)) { return; }
+
+    if (newRenderer != oldRenderer) { instance->_RemovePanel(panelName); }
+}
+
+void MtohRenderOverride::_RenderOverrideChangedCallback(
+    const MString& panelName, const MString& oldOverride,
+    const MString& newOverride, void* data) {
+    auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
+    if (!TF_VERIFY(instance)) { return; }
+
+    if (newOverride != instance->name()) { instance->_RemovePanel(panelName); }
 }
 
 void MtohRenderOverride::_SelectionChangedCallback(void* data) {

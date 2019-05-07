@@ -1,6 +1,7 @@
 import maya.cmds as cmds
 import maya.utils
 
+import time
 import unittest
 
 
@@ -25,6 +26,22 @@ class TestCommand(unittest.TestCase):
         activeRenderers = cmds.mtoh(listActiveRenderers=1)
         self.assertEqual(activeRenderers, cmds.mtoh(lar=1))
         self.assertEqual(activeRenderers, ["HdStreamRendererPlugin"])
+
+        cmds.modelEditor(
+            activeEditor, e=1,
+            rendererOverrideName="mtohRenderOverride_HdEmbreeRendererPlugin")
+        cmds.refresh(f=1)
+
+        activeRenderers = cmds.mtoh(listActiveRenderers=1)
+        self.assertEqual(activeRenderers, cmds.mtoh(lar=1))
+        self.assertEqual(activeRenderers, ["HdEmbreeRendererPlugin"])
+
+        cmds.modelEditor(activeEditor, rendererOverrideName="", e=1)
+        cmds.refresh(f=1)
+
+        activeRenderers = cmds.mtoh(listActiveRenderers=1)
+        self.assertEqual(activeRenderers, cmds.mtoh(lar=1))
+        self.assertEqual(activeRenderers, [])
 
 
 if __name__ == "__main__":
