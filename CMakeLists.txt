@@ -18,6 +18,7 @@ set(MTOH_CXX_STD "11"
 
 option(LUMA_USD_BUILD "Build the plugin for Luma's version of USD." OFF)
 option(INSTALL_MAYA_MOD "Installs a maya module file for the plugin." OFF)
+option(HDMAYA_BUILD_TESTS "Build the maya-to-hydra tests" OFF)
 option(HDMAYA_UFE_BUILD "Whether to build with UFE support." OFF)
 option(BUILD_DOCS "Wether to build the Documentation." OFF)
 
@@ -36,6 +37,13 @@ add_subdirectory(src)
 if (BUILD_DOCS)
     add_subdirectory(docs)
 endif ()
+
+if (HDMAYA_BUILD_TESTS)
+    # Enable CTest - for some odd reason, this doesn't work if called
+    # from tests/CMakeLists.txt, even if it's the first thing
+    enable_testing()
+    add_subdirectory(tests)
+endif()
 
 install(
     FILES README.md
