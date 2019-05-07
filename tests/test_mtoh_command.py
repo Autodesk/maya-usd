@@ -6,6 +6,9 @@ import unittest
 
 
 class TestCommand(unittest.TestCase):
+    def test_invalidFlag(self):
+        self.assertRaises(TypeError, cmds.mtoh, nonExistantFlag=1)
+
     def test_listRenderers(self):
         renderers = cmds.mtoh(listRenderers=1)
         self.assertEqual(renderers, cmds.mtoh(lr=1))

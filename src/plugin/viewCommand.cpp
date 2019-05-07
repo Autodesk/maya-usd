@@ -101,7 +101,10 @@ MSyntax MtohViewCmd::createSyntax() {
 }
 
 MStatus MtohViewCmd::doIt(const MArgList& args) {
-    MArgDatabase db(syntax(), args);
+    MStatus status;
+
+    MArgDatabase db(syntax(), args, &status);
+    if (!status) { return status; }
 
     if (db.isFlagSet(_listRenderers)) {
         for (const auto& renderer : MtohGetRendererPlugins()) {
