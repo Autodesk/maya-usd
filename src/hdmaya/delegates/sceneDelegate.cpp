@@ -23,6 +23,8 @@
 //
 #include <hdmaya/delegates/sceneDelegate.h>
 
+#include <hdmaya/hdmaya.h>
+
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/range3d.h>
 #include <pxr/base/tf/type.h>
@@ -768,7 +770,7 @@ VtIntArray HdMayaSceneDelegate::GetInstanceIndices(
 }
 
 GfMatrix4d HdMayaSceneDelegate::GetInstancerTransform(
-#ifdef USD_001905_BUILD
+#ifdef HDMAYA_USD_001905_BUILD
     SdfPath const& instancerId
 #else
     SdfPath const& instancerId, SdfPath const& prototypeId

@@ -23,7 +23,9 @@
 //
 #include <pxr/pxr.h>
 
-#ifdef USD_001905_BUILD
+#include <hdmaya/hdmaya.h>
+
+#ifdef HDMAYA_USD_001905_BUILD
 #include <pxr/imaging/hio/glslfx.h>
 #else
 #include <pxr/imaging/glf/glslfx.h>

@@ -35,10 +35,6 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     target_compile_definitions(mtoh PRIVATE "OSMac_")
 endif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
-if (LUMA_USD_BUILD)
-    target_compile_definitions(mtoh PRIVATE LUMA_USD_BUILD)
-endif ()
-
 install(
     TARGETS mtoh
     DESTINATION plug-ins)

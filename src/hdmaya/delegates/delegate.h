@@ -26,6 +26,8 @@
 
 #include <pxr/pxr.h>
 
+#include <hdmaya/hdmaya.h>
+
 #include <pxr/imaging/glf/glew.h>
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/renderIndex.h>

@@ -21,7 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "lightAdapter.h"
+#include <hdmaya/adapters/lightAdapter.h>
+
+#include <hdmaya/hdmaya.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/type.h>
@@ -202,7 +204,7 @@ VtValue HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
             paramName.GetText(), GetDagPath().partialPathName().asChar());
 
     MFnLight light(GetDagPath());
-#ifdef USD_001905_BUILD
+#ifdef HDMAYA_USD_001905_BUILD
     if (paramName == HdLightTokens->color ||
         paramName == HdTokens->displayColor) {
 #else

@@ -1,4 +1,19 @@
+if (LUMA_USD_BUILD)
+    set(HDMAYA_LUMA_BUILD_INT 1)
+else ()
+    set(HDMAYA_LUMA_BUILD_INT 0)
+endif ()
+
+set(HDMAYA_H "${CMAKE_CURRENT_BINARY_DIR}/hdmaya.h")
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/hdmaya.h.in"
+    ${HDMAYA_H}
+    @ONLY
+)
+
 set(SRC
+    "${HDMAYA_H}"
     adapters/adapter.cpp
     adapters/adapterDebugCodes.cpp
     adapters/adapterRegistry.cpp
@@ -28,19 +43,6 @@ set(SRC
 
 add_library(hdmaya SHARED ${SRC})
 
-if (USD_001901_BUILD)
-    target_compile_definitions(hdmaya PUBLIC "USD_001901_BUILD")
-    if (USD_001903_BUILD)
-        target_compile_definitions(hdmaya PUBLIC "USD_001903_BUILD")
-        if (USD_001905_BUILD)
-            target_compile_definitions(hdmaya PUBLIC "USD_001905_BUILD")
-            if (USD_001907_BUILD)
-                target_compile_definitions(hdmaya PUBLIC "USD_001907_BUILD")
-            endif ()
-        endif ()
-    endif ()
-endif ()
-
 target_link_libraries(hdmaya PUBLIC ${OPENGL_gl_LIBRARY} ${MAYA_LIBS})
 target_link_libraries(hdmaya PUBLIC ${Boost_LIBRARIES} ${GLEW_LIBRARY})
 target_link_libraries(hdmaya PUBLIC arch gf plug tf vt)
@@ -57,6 +59,7 @@ endif ()
 
 target_include_directories(hdmaya PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/..")
 target_include_directories(hdmaya PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(hdmaya PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/..")
 target_include_directories(hdmaya SYSTEM PUBLIC ${MAYA_INCLUDE_DIRS} ${GLEW_INCLUDE_DIR})
 target_include_directories(hdmaya SYSTEM PUBLIC ${USD_INCLUDE_DIR} ${USD_MAYA_INCLUDE_DIR})
 target_include_directories(hdmaya SYSTEM PUBLIC ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
@@ -116,14 +119,6 @@ configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH}
 )
 
-set(HDMAYA_H "hdmaya.h")
-
-configure_file(
-    ${HDMAYA_H}.in
-    ${CMAKE_CURRENT_BINARY_DIR}/${HDMAYA_H}
-    @ONLY
-)
-
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH}
     DESTINATION lib)
@@ -160,6 +155,6 @@ install(
     FILES
         api.h
         utils.h
-        ${CMAKE_CURRENT_BINARY_DIR}/${HDMAYA_H}
+        ${HDMAYA_H}
 
     DESTINATION include/hdmaya)

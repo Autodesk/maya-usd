@@ -23,6 +23,8 @@
 //
 #include <hdmaya/adapters/materialAdapter.h>
 
+#include <hdmaya/hdmaya.h>
+
 #include <pxr/base/tf/fileUtils.h>
 
 #include <pxr/imaging/hd/instanceRegistry.h>
@@ -32,7 +34,7 @@
 #include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/glf/textureRegistry.h>
 
-#ifdef USD_001905_BUILD
+#ifdef HDMAYA_USD_001905_BUILD
 #include <pxr/imaging/hio/glslfx.h>
 #else
 #include <pxr/imaging/glf/glslfx.h>
@@ -42,7 +44,7 @@ auto& HioGlslfxTokens = PXR_NS::GlfGLSLFXTokens;
 }
 #endif // USD_001905_BUILD
 
-#ifdef USD_001901_BUILD
+#ifdef HDMAYA_USD_001901_BUILD
 #include <pxr/imaging/glf/udimTexture.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
 #endif
@@ -120,11 +122,11 @@ auto _PreviewShaderSource = []() -> const std::pair<std::string, std::string>& {
     return ret;
 };
 
-#ifndef USD_001901_BUILD
+#ifndef HDMAYA_USD_001901_BUILD
 enum class HdTextureType { Uv, Ptex, Udim };
 #endif
 
-#ifdef USD_001901_BUILD
+#ifdef HDMAYA_USD_001901_BUILD
 
 class UdimTextureFactory : public GlfTextureFactoryBase {
 public:
@@ -347,7 +349,7 @@ private:
                     HdMaterialParam::ParamTypeTexture, it.param.GetName(),
                     it.param.GetFallbackValue(),
                     GetID().AppendProperty(remappedName), _stSamplerCoords,
-#ifdef USD_001901_BUILD
+#ifdef HDMAYA_USD_001901_BUILD
                     textureType);
 #else
                     false);
@@ -415,7 +417,7 @@ private:
                 } else {
                     _textureResources[paramName] = textureInstance.GetValue();
                 }
-#ifdef USD_001901_BUILD
+#ifdef HDMAYA_USD_001901_BUILD
                 if (GlfIsSupportedUdimTexture(filePath)) {
                     if (TfDebug::IsEnabled(HDMAYA_ADAPTER_MATERIALS) &&
                         textureType != HdTextureType::Udim) {
@@ -522,7 +524,7 @@ private:
         const MObject& fileObj, const TfToken& filePath) {
         if (filePath.IsEmpty()) { return {}; }
         auto textureType = HdTextureType::Uv;
-#ifdef USD_001901_BUILD
+#ifdef HDMAYA_USD_001901_BUILD
         if (GlfIsSupportedUdimTexture(filePath)) {
             textureType = HdTextureType::Udim;
         }
@@ -534,7 +536,7 @@ private:
         const auto origin = GlfImage::OriginLowerLeft;
         GlfTextureHandleRefPtr texture = nullptr;
         if (textureType == HdTextureType::Udim) {
-#ifdef USD_001901_BUILD
+#ifdef HDMAYA_USD_001901_BUILD
             UdimTextureFactory factory;
             texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
                 filePath, origin, &factory);
@@ -552,7 +554,7 @@ private:
         // from the uv placement node, so we don't touch those for now.
         return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
             texture,
-#ifdef USD_001901_BUILD
+#ifdef HDMAYA_USD_001901_BUILD
             textureType,
 #else
             false,

@@ -23,6 +23,8 @@
 //
 #include "renderGlobals.h"
 
+#include <hdmaya/hdmaya.h>
+
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hdx/rendererPlugin.h>
 #include <pxr/imaging/hdx/rendererPluginRegistry.h>
@@ -55,7 +57,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 namespace {
 
-#ifdef USD_001901_BUILD
+#ifdef HDMAYA_USD_001901_BUILD
 std::unordered_map<TfToken, HdRenderSettingDescriptorList, TfToken::HashFunctor>
     _rendererAttributes;
 #endif
@@ -194,7 +196,7 @@ void _SetFromPlug<int>(const MPlug& plug, int& out) {
     out = plug.asInt();
 }
 
-#ifdef USD_001901_BUILD
+#ifdef HDMAYA_USD_001901_BUILD
 template <>
 void _SetFromPlug<float>(const MPlug& plug, float& out) {
     out = plug.asFloat();
@@ -223,7 +225,7 @@ void _SetColorAttribute(
     out[3] = plugA.asFloat();
 }
 
-#ifdef USD_001901_BUILD
+#ifdef HDMAYA_USD_001901_BUILD
 bool _IsSupportedAttribute(const VtValue& v) {
     return v.IsHolding<bool>() || v.IsHolding<int>() || v.IsHolding<float>() ||
            v.IsHolding<GfVec4f>();
@@ -275,7 +277,7 @@ void MtohInitializeRenderGlobals() {
                 "Error in render override option box command function: \n%s",
                 status.errorString().asChar());
         }
-#ifdef USD_001901_BUILD
+#ifdef HDMAYA_USD_001901_BUILD
         auto* rendererPlugin =
             HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(
                 rendererDesc.rendererName);
@@ -393,7 +395,7 @@ MObject MtohCreateRenderGlobals() {
         defGlobals.colorSelectionHighlightColor);
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
-#ifdef USD_001901_BUILD
+#ifdef HDMAYA_USD_001901_BUILD
     for (const auto& rit : _rendererAttributes) {
         const auto rendererName = rit.first;
         for (const auto& attr : rit.second) {
@@ -472,7 +474,7 @@ MtohRenderGlobals MtohGetRenderGlobals() {
         ret.colorSelectionHighlightColor);
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
-#ifdef USD_001901_BUILD
+#ifdef HDMAYA_USD_001901_BUILD
     for (const auto& rit : _rendererAttributes) {
         const auto rendererName = rit.first;
         auto& settings = ret.rendererSettings[rendererName];

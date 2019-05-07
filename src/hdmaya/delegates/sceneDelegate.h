@@ -26,6 +26,8 @@
 
 #include <pxr/pxr.h>
 
+#include <hdmaya/hdmaya.h>
+
 #include <pxr/base/gf/vec4d.h>
 
 #include <pxr/usd/sdf/path.h>
@@ -109,7 +111,7 @@ protected:
     VtIntArray GetInstanceIndices(
         const SdfPath& instancerId, const SdfPath& prototypeId) override;
     GfMatrix4d GetInstancerTransform(
-#if USD_001905_BUILD
+#ifdef HDMAYA_USD_001905_BUILD
         SdfPath const& instancerId
 #else
         SdfPath const& instancerId, SdfPath const& prototypeId

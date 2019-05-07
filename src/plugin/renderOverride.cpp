@@ -23,6 +23,8 @@
 //
 #include "renderOverride.h"
 
+#include <hdmaya/hdmaya.h>
+
 #include <pxr/base/gf/matrix4d.h>
 
 #include <pxr/base/tf/instantiateSingleton.h>
@@ -308,7 +310,7 @@ void MtohRenderOverride::_UpdateRenderGlobals() {
 }
 
 void MtohRenderOverride::_UpdateRenderDelegateOptions() {
-#ifdef USD_001901_BUILD
+#ifdef HDMAYA_USD_001901_BUILD
     if (_renderIndex == nullptr) { return; }
     auto* renderDelegate = _renderIndex->GetRenderDelegate();
     if (renderDelegate == nullptr) { return; }
@@ -353,16 +355,18 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
             GetGfMatrixFromMaya(drawContext.getMatrix(
                 MHWRender::MFrameContext::kProjectionMtx)));
         _taskController->SetCameraViewport(viewport);
-#if USD_001907_BUILD
+#ifdef HDMAYA_USD_001907_BUILD
         auto tasks = _taskController->GetTasks();
         _engine.Execute(_renderIndex, &tasks);
-#elif USD_001901_BUILD
+#else
+#ifdef HDMAYA_USD_001901_BUILD
         _engine.Execute(*_renderIndex, _taskController->GetTasks());
 #else
         _engine.Execute(
             *_renderIndex,
             _taskController->GetTasks(HdxTaskSetTokens->colorRender));
-#endif
+#endif // USD_001901_BUILD
+#endif // USD_001907_BUILD
     };
 
     _UpdateRenderGlobals();
@@ -482,7 +486,7 @@ void MtohRenderOverride::_InitHydraResources() {
         .Msg(
             "MtohRenderOverride::_InitHydraResources(%s)\n",
             _rendererDesc.rendererName.GetText());
-#ifdef USD_001905_BUILD
+#ifdef HDMAYA_USD_001905_BUILD
     GlfContextCaps::InitInstance();
 #endif
     _rendererPlugin =

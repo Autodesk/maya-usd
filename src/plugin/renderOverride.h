@@ -27,6 +27,8 @@
 #include <pxr/imaging/glf/glew.h>
 #include <pxr/pxr.h>
 
+#include <hdmaya/hdmaya.h>
+
 #include <pxr/base/tf/singleton.h>
 
 #include <pxr/imaging/hd/engine.h>

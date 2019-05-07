@@ -23,6 +23,8 @@
 //
 #include "defaultLightDelegate.h"
 
+#include <hdmaya/hdmaya.h>
+
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/gf/transform.h>
 
@@ -122,7 +124,7 @@ VtValue MtohDefaultLightDelegate::Get(const SdfPath& id, const TfToken& key) {
 VtValue MtohDefaultLightDelegate::GetLightParamValue(
     const SdfPath& id, const TfToken& paramName) {
     TF_UNUSED(id);
-#ifdef USD_001905_BUILD
+#ifdef HDMAYA_USD_001905_BUILD
     if (paramName == HdTokens->displayColor) {
 #else
     if (paramName == HdTokens->color) {
