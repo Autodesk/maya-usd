@@ -2,6 +2,7 @@
 .vscode
 .project
 .cproject
+.pydevproject
 .settings
 cmake-build-*
 /build/
