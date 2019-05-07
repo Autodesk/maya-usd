@@ -43,6 +43,35 @@ class TestCommand(unittest.TestCase):
         self.assertEqual(activeRenderers, cmds.mtoh(lar=1))
         self.assertEqual(activeRenderers, [])
 
+    def test_getRendererDisplayName(self):
+        displayName = cmds.mtoh(
+            getRendererDisplayName="HdStreamRendererPlugin")
+        self.assertEqual(displayName, cmds.mtoh(gn="HdStreamRendererPlugin"))
+        self.assertEqual(displayName, "GL")
+
+        displayName = cmds.mtoh(
+            getRendererDisplayName="HdEmbreeRendererPlugin")
+        self.assertEqual(displayName, cmds.mtoh(gn="HdEmbreeRendererPlugin"))
+        self.assertEqual(displayName, "Embree")
+
+    def test_listDelegates(self):
+        delegates = cmds.mtoh(listDelegates=1)
+        self.assertEqual(delegates, cmds.mtoh(ld=1))
+        self.assertIn("HdMayaSceneDelegate", delegates)
+
+    def test_createRenderGlobals(self):
+        for flag in ("createRenderGlobals", "crg"):
+            cmds.file(f=1, new=1)
+            self.assertFalse(cmds.objExists(
+                "defaultRenderGlobals.mtohEnableMotionSamples"))
+            cmds.mtoh(**{flag: 1})
+            self.assertTrue(cmds.objExists(
+                "defaultRenderGlobals.mtohEnableMotionSamples"))
+            self.assertFalse(cmds.getAttr(
+                "defaultRenderGlobals.mtohEnableMotionSamples"))
+
+    # TODO: test_updateRenderGlobals
+
 
 if __name__ == "__main__":
     unittest.main(argv=[""])
