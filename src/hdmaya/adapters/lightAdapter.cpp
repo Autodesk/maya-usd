@@ -209,7 +209,7 @@ VtValue HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
         paramName == HdTokens->displayColor) {
 #else
     if (paramName == HdTokens->color) {
-#endif // USD_001905_BUILD
+#endif // HDMAYA_USD_001905_BUILD
         const auto color = light.color();
         return VtValue(GfVec3f(color.r, color.g, color.b));
     } else if (paramName == HdLightTokens->intensity) {

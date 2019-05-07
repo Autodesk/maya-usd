@@ -32,7 +32,7 @@
 namespace {
 auto& HioGlslfxTokens = PXR_NS::GlfGLSLFXTokens;
 }
-#endif // USD_001905_BUILD
+#endif // HDMAYA_USD_001905_BUILD
 
 #include <pxr/usd/usdShade/connectableAPI.h>
 #include <pxr/usd/usdShade/shader.h>

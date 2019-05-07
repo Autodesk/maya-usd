@@ -128,7 +128,7 @@ VtValue MtohDefaultLightDelegate::GetLightParamValue(
     if (paramName == HdTokens->displayColor) {
 #else
     if (paramName == HdTokens->color) {
-#endif // USD_001905_BUILD
+#endif // HDMAYA_USD_001905_BUILD
         const auto diffuse = _light.GetDiffuse();
         return VtValue(GfVec3f(diffuse[0], diffuse[1], diffuse[2]));
     } else if (paramName == HdLightTokens->intensity) {

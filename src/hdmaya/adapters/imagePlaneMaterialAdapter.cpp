@@ -37,7 +37,7 @@
 #else
 #include <pxr/imaging/glf/glslfx.h>
 typedef PXR_NS::GlfGLSLFX HioGlslfx;
-#endif // USD_001905_BUILD
+#endif // HDMAYA_USD_001905_BUILD
 
 #include <pxr/imaging/glf/textureRegistry.h>
 

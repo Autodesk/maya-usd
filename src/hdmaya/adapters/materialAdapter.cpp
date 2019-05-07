@@ -42,7 +42,7 @@ typedef PXR_NS::GlfGLSLFX HioGlslfx;
 namespace {
 auto& HioGlslfxTokens = PXR_NS::GlfGLSLFXTokens;
 }
-#endif // USD_001905_BUILD
+#endif // HDMAYA_USD_001905_BUILD
 
 #ifdef HDMAYA_USD_001901_BUILD
 #include <pxr/imaging/glf/udimTexture.h>

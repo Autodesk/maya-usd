@@ -365,8 +365,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         _engine.Execute(
             *_renderIndex,
             _taskController->GetTasks(HdxTaskSetTokens->colorRender));
-#endif // USD_001901_BUILD
-#endif // USD_001907_BUILD
+#endif // HDMAYA_USD_001901_BUILD
+#endif // HDMAYA_USD_001907_BUILD
     };
 
     _UpdateRenderGlobals();
