@@ -65,13 +65,15 @@ constexpr auto _helpText = R"HELP(
 Maya to Hydra utility function.
 Usage: mtoh [flags]
 
--getRendererDisplayName/-gn : Returns the display name for the current render
+-getRendererDisplayName/-gn : Returns the display name for the given render
     delegate.
 -listDelegates/-ld : Returns the names of available scene delegates.
 -listRenderers/-lr : Returns the names of available render delegates.
--listActiveRenderers/-lar : Returns the names of render delegates that are in use in at least one viewport.
+-listActiveRenderers/-lar : Returns the names of render delegates that are in
+    use in at least one viewport.
 -createRenderGlobals/-crg : Creates the render globals.
--updateRenderGlobals/-urg : Forces the update of the render globals for the viewport.
+-updateRenderGlobals/-urg : Forces the update of the render globals for the
+    viewport.
 
 )HELP";
 
@@ -105,11 +107,15 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
         for (const auto& renderer : MtohGetRendererPlugins()) {
             appendToResult(renderer.GetText());
         }
+        // Want to return an empty list, not None
+        if (!isCurrentResultArray()) { setResult(MStringArray()); }
     } else if (db.isFlagSet(_listActiveRenderers)) {
         for (const auto& renderer :
              MtohRenderOverride::AllActiveRendererNames()) {
             appendToResult(renderer);
         }
+        // Want to return an empty list, not None
+        if (!isCurrentResultArray()) { setResult(MStringArray()); }
     } else if (db.isFlagSet(_getRendererDisplayName)) {
         MString id;
         if (db.getFlagArgument(_getRendererDisplayName, 0, id)) {
@@ -122,6 +128,8 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
              HdMayaDelegateRegistry::GetDelegateNames()) {
             appendToResult(delegate.GetText());
         }
+        // Want to return an empty list, not None
+        if (!isCurrentResultArray()) { setResult(MStringArray()); }
     } else if (db.isFlagSet(_help)) {
         MGlobal::displayInfo(MString(_helpText));
     } else if (db.isFlagSet(_createRenderGlobals)) {
