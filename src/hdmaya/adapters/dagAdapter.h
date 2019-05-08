@@ -76,8 +76,8 @@ public:
         size_t maxSampleCount, float* times, GfMatrix4d* samples);
     HDMAYA_API
     bool UpdateVisibility();
+    bool IsVisible(bool checkDirty = true);
     const MDagPath& GetDagPath() const { return _dagPath; }
-    bool IsVisible() const { return _isVisible; }
     void InvalidateTransform() { _invalidTransform = true; }
     bool IsInstanced() const { return _isInstanced; }
     HDMAYA_API
@@ -102,6 +102,7 @@ private:
     MDagPath _dagPath;
     GfMatrix4d _transform[2];
     bool _isVisible = true;
+    bool _visibilityDirty = true;
     bool _invalidTransform = true;
     bool _isInstanced = false;
 };

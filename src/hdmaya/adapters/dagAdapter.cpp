@@ -63,18 +63,31 @@ void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     TF_DEBUG(HDMAYA_ADAPTER_DAG_PLUG_DIRTY)
         .Msg(
-            "Dag adapter marking prim (%s) dirty because %s plug was "
+            "Dag adapter marking prim (%s) dirty because .%s plug was "
             "dirtied.\n",
             adapter->GetID().GetText(), plug.partialName().asChar());
     if (plug == MayaAttrs::dagNode::visibility) {
-        if (adapter->UpdateVisibility()) {
+        // Unfortunately, during this callback, we can't actually
+        // query the new object's visiblity - the plug dirty hasn't
+        // really propagated yet. So we just mark our own _visibility
+        // as dirty, and unconditionally dirty the hd bits
+
+        // If we're currently invisible, it's possible we were
+        // skipping transform updates (see below), so need to mark
+        // that dirty as well...
+        if (adapter->IsVisible(false)) {
             // Transform can change while dag path is hidden.
             adapter->MarkDirty(
                 HdChangeTracker::DirtyVisibility |
                 HdChangeTracker::DirtyTransform);
             adapter->InvalidateTransform();
+        } else {
+            adapter->MarkDirty(HdChangeTracker::DirtyVisibility);
         }
-    } else if (adapter->IsVisible()) {
+        // We use IsVisible(false) because we eed to make sure we DON'T update
+        // visibility from within this callback, since the change has't
+        // propagated yet
+    } else if (adapter->IsVisible(false)) {
         adapter->MarkDirty(HdChangeTracker::DirtyTransform);
         adapter->InvalidateTransform();
     }
@@ -139,6 +152,7 @@ HdMayaDagAdapter::HdMayaDagAdapter(
     : HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {
     // We shouldn't call virtual functions in constructors.
     _isVisible = GetDagPath().isVisible();
+    _visibilityDirty = false;
     _isInstanced = _dagPath.isInstanced() && _dagPath.instanceNumber() == 0;
 }
 
@@ -238,6 +252,9 @@ void HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
             GetDelegate()->GetChangeTracker().MarkInstancerDirty(
                 GetInstancerID(), dirtyBits);
         }
+        if (dirtyBits & HdChangeTracker::DirtyVisibility) {
+            _visibilityDirty = true;
+        }
     }
 }
 
@@ -254,11 +271,17 @@ void HdMayaDagAdapter::RemovePrim() {
 bool HdMayaDagAdapter::UpdateVisibility() {
     if (ARCH_UNLIKELY(!GetDagPath().isValid())) { return false; }
     const auto visible = _GetVisibility();
+    _visibilityDirty = false;
     if (visible != _isVisible) {
         _isVisible = visible;
         return true;
     }
     return false;
+}
+
+bool HdMayaDagAdapter::IsVisible(bool checkDirty) {
+    if (checkDirty && _visibilityDirty) { UpdateVisibility(); }
+    return _isVisible;
 }
 
 VtIntArray HdMayaDagAdapter::GetInstanceIndices(const SdfPath& prototypeId) {
