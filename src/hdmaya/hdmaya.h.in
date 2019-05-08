@@ -52,4 +52,8 @@
 
 #undef HDMAYA_USD_VERSION_GREATER_EQ
 
+#if defined(HDMAYA_USD_001907_BUILD) && defined(HDMAYA_LUMA_BUILD)
+#define HDMAYA_OIT_ENABLED
+#endif
+
 #endif // __HDMAYA_HDMAYA_H__

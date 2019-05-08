@@ -107,7 +107,8 @@ HdMayaShaderParams::const_iterator _FindPreviewParam(const TfToken& id) {
                ? (first->param.GetName() == id ? first
                                                : previewShaderParams.cend())
                : first;
-};
+}
+
 // We can't store the shader here explicitly, since it causes a deadlock
 // due to library dependencies.
 auto _PreviewShaderSource = []() -> const std::pair<std::string, std::string>& {
@@ -121,6 +122,22 @@ auto _PreviewShaderSource = []() -> const std::pair<std::string, std::string>& {
     }();
     return ret;
 };
+
+#ifdef HDMAYA_OIT_ENABLED
+auto _TranslucentPreviewShaderSource =
+    []() -> const std::pair<std::string, std::string>& {
+    static const auto ret = []() -> std::pair<std::string, std::string> {
+        auto& registry = SdrRegistry::GetInstance();
+        auto sdrNode = registry.GetShaderNodeByIdentifierAndType(
+            UsdImagingTokens->UsdPreviewSurfaceTranslucent,
+            HioGlslfxTokens->glslfx);
+        if (!sdrNode) { return {"", ""}; }
+        HioGlslfx gfx(sdrNode->GetSourceURI());
+        return {gfx.GetSurfaceSource(), gfx.GetDisplacementSource()};
+    }();
+    return ret;
+};
+#endif
 
 #ifndef HDMAYA_USD_001901_BUILD
 enum class HdTextureType { Uv, Ptex, Udim };
