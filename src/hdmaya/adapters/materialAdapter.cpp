@@ -640,6 +640,28 @@ private:
         return VtValue(materialNetworkMap);
     };
 
+#ifdef HDMAYA_OIT_ENABLED
+    bool IsTranslucent() {
+        if (_surfaceShaderType == UsdImagingTokens->UsdPreviewSurface ||
+            _surfaceShaderType == HdMayaAdapterTokens->pxrUsdPreviewSurface) {
+            MFnDependencyNode node(_surfaceShader);
+            const auto plug =
+                node.findPlug(HdMayaAdapterTokens->opacity.GetText(), true);
+            if (!plug.isNull() &&
+                (plug.asFloat() < 1.0f || plug.isConnected())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // std::string GetSurfaceShaderSource() override {
+    //     MFnDependencyNode node(_surfaceShader);
+    //     return IsTranslucent() ? _TranslucentPreviewShaderSource().first
+    //                            : _PreviewShaderSource().first;
+    // }
+#endif
+
     MObject _surfaceShader;
     TfToken _surfaceShaderType;
     // So they live long enough
