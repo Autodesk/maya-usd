@@ -1,4 +1,5 @@
 import maya.cmds as cmds
+import maya.mel as mel
 import maya.utils
 
 import time
@@ -47,6 +48,10 @@ class TestCommand(unittest.TestCase):
         self.assertEqual(activeRenderers, [])
 
     def test_getRendererDisplayName(self):
+        # needs at least one arg
+        self.assertRaises(RuntimeError, mel.eval,
+                          "moth -getRendererDisplayName")
+
         displayName = cmds.mtoh(
             getRendererDisplayName="HdStreamRendererPlugin")
         self.assertEqual(displayName, cmds.mtoh(gn="HdStreamRendererPlugin"))

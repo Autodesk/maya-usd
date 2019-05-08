@@ -121,11 +121,10 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
         if (!isCurrentResultArray()) { setResult(MStringArray()); }
     } else if (db.isFlagSet(_getRendererDisplayName)) {
         MString id;
-        if (db.getFlagArgument(_getRendererDisplayName, 0, id)) {
-            const auto dn =
-                MtohGetRendererPluginDisplayName(TfToken(id.asChar()));
-            setResult(MString(dn.c_str()));
-        }
+        CHECK_MSTATUS_AND_RETURN_IT(
+            db.getFlagArgument(_getRendererDisplayName, 0, id));
+        const auto dn = MtohGetRendererPluginDisplayName(TfToken(id.asChar()));
+        setResult(MString(dn.c_str()));
     } else if (db.isFlagSet(_listDelegates)) {
         for (const auto& delegate :
              HdMayaDelegateRegistry::GetDelegateNames()) {
