@@ -520,6 +520,31 @@ void unzipUVs(const float* const uv, float* const u, float* const v, const size_
 //----------------------------------------------------------------------------------------------------------------------
 bool MeshImportContext::applyVertexNormals()
 {
+  // Lambda to set vertex normals in unlocked state
+  auto setUnlockedVertexNormals = [&](MVectorArray& normals) -> bool
+  {
+    MIntArray vertexList(fnMesh.numVertices());
+    for(uint32_t i = 0, n = fnMesh.numVertices(); i < n; ++i)
+    {
+      vertexList[i] = i;
+    }
+    if (fnMesh.setVertexNormals(normals, vertexList, MSpace::kObject))
+    {
+      return fnMesh.unlockVertexNormals(vertexList);
+    }
+    return false;
+  };
+
+  // Lambda to set face vertex normals in unlocked state
+  auto setUnlockedFaceVertexNormals = [&](MVectorArray& normals, MIntArray& faceList, MIntArray& vertexList) -> bool
+  {
+    if (fnMesh.setFaceVertexNormals(normals, faceList, vertexList, MSpace::kObject))
+    {
+      return fnMesh.unlockFaceVertexNormals(faceList, vertexList);
+    }
+    return false;
+  };
+  
   if(normals.length())
   {
     // According to the docs for UsdGeomMesh: If 'normals' and 'primvars:normals' are both specified, the latter has precedence.
@@ -541,23 +566,11 @@ bool MeshImportContext::applyVertexNormals()
           {
             ns[i] = normals[indices[i]];
           }
-
-          MIntArray mayaIndices(fnMesh.numVertices());
-          for(uint32_t i = 0, n = fnMesh.numVertices(); i < n; ++i)
-          {
-            mayaIndices[i] = i;
-          }
-
-          return fnMesh.setVertexNormals(ns, mayaIndices);
+          return setUnlockedVertexNormals(ns);
         }
         else
         {
-          MIntArray mayaIndices(fnMesh.numVertices());
-          for(uint32_t i = 0, n = fnMesh.numVertices(); i < n; ++i)
-          {
-            mayaIndices[i] = i;
-          }
-          return fnMesh.setVertexNormals(normals, mayaIndices, MSpace::kObject);
+          return setUnlockedVertexNormals(normals);
         }
       }
       else
@@ -586,12 +599,11 @@ bool MeshImportContext::applyVertexNormals()
             ns[i] = normals[indices[i]];
           }
 
-          return fnMesh.setFaceVertexNormals(ns, normalsFaceIds, connects, MSpace::kObject);
-
+          return setUnlockedFaceVertexNormals(ns, normalsFaceIds, connects);
         }
         else
         {
-          return fnMesh.setFaceVertexNormals(normals, normalsFaceIds, connects, MSpace::kObject);
+          return setUnlockedFaceVertexNormals(normals, normalsFaceIds, connects);
         }
 
       }
@@ -600,12 +612,7 @@ bool MeshImportContext::applyVertexNormals()
     {
       if(mesh.GetNormalsInterpolation() == UsdGeomTokens->vertex)
       {
-        MIntArray mayaIndices(fnMesh.numVertices());
-        for(uint32_t i = 0, n = fnMesh.numVertices(); i < n; ++i)
-        {
-          mayaIndices[i] = i;
-        }
-        return fnMesh.setVertexNormals(normals, mayaIndices, MSpace::kObject);
+        return setUnlockedVertexNormals(normals);
       }
       else
       {
@@ -622,7 +629,7 @@ bool MeshImportContext::applyVertexNormals()
             }
           }
         }
-        return fnMesh.setFaceVertexNormals(normals, normalsFaceIds, connects, MSpace::kObject);
+        return setUnlockedFaceVertexNormals(normals, normalsFaceIds, connects);
       }
     }
   }
