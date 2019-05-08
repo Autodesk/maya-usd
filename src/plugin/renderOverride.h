@@ -69,7 +69,22 @@ public:
     ~MtohRenderOverride() override;
 
     static void UpdateRenderGlobals();
+
+    /// The names of all render delegates that are being used by at least
+    /// one modelEditor panel.
     static std::vector<MString> AllActiveRendererNames();
+
+    /// Returns a list of rprims in the render index for the given render
+    /// delegate.
+    ///
+    /// Intended mostly for use in debugging and testing.
+    static SdfPathVector RprimsForRenderer(
+        TfToken rendererName, bool visibleOnly = false);
+
+    /// Returns the scene delegate id for the given render delegate and
+    /// scene delegate names.
+    static SdfPath SceneDelegateId(
+        TfToken rendererName, TfToken sceneDelegateName);
 
     MStatus Render(const MHWRender::MDrawContext& drawContext);
 
@@ -92,6 +107,8 @@ public:
 private:
     typedef std::pair<MString, MCallbackIdArray> PanelCallbacks;
     typedef std::vector<PanelCallbacks> PanelCallbacksList;
+
+    static MtohRenderOverride* _GetByName(TfToken rendererName);
 
     void _InitHydraResources();
     void _RemovePanel(MString panelName);

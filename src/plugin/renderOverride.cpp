@@ -31,6 +31,7 @@
 
 #include <pxr/imaging/glf/contextCaps.h>
 
+#include <pxr/imaging/hd/rprim.h>
 #include <pxr/imaging/hdx/rendererPlugin.h>
 #include <pxr/imaging/hdx/rendererPluginRegistry.h>
 #include <pxr/imaging/hdx/tokens.h>
@@ -236,6 +237,41 @@ std::vector<MString> MtohRenderOverride::AllActiveRendererNames() {
         }
     }
     return renderers;
+}
+
+SdfPathVector MtohRenderOverride::RprimsForRenderer(
+    TfToken rendererName, bool visibleOnly) {
+    MtohRenderOverride* instance = _GetByName(rendererName);
+    if (!instance) { return SdfPathVector(); }
+
+    auto* renderIndex = instance->_renderIndex;
+    if (!renderIndex) { return SdfPathVector(); }
+    auto primIds = renderIndex->GetRprimIds();
+    if (visibleOnly) {
+        primIds.erase(
+            std::remove_if(
+                primIds.begin(), primIds.end(),
+                [renderIndex](const SdfPath& primId) {
+                    auto* rprim = renderIndex->GetRprim(primId);
+                    if (!rprim) return true;
+                    return !rprim->IsVisible();
+                }),
+            primIds.end());
+    }
+    return primIds;
+}
+
+SdfPath MtohRenderOverride::SceneDelegateId(
+    TfToken rendererName, TfToken sceneDelegateName) {
+    MtohRenderOverride* instance = _GetByName(rendererName);
+    if (!instance) { return SdfPath(); }
+
+    for (auto& delegate : instance->_delegates) {
+        if (delegate->GetName() == sceneDelegateName) {
+            return delegate->GetMayaDelegateID();
+        }
+    }
+    return SdfPath();
 }
 
 void MtohRenderOverride::_DetectMayaDefaultLighting(
@@ -483,6 +519,16 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     return MStatus::kSuccess;
 }
 
+MtohRenderOverride* MtohRenderOverride::_GetByName(TfToken rendererName) {
+    std::lock_guard<std::mutex> lock(_allInstancesMutex);
+    for (auto* instance : _allInstances) {
+        if (instance->_rendererDesc.rendererName == rendererName) {
+            return instance;
+        }
+    }
+    return nullptr;
+}
+
 void MtohRenderOverride::_InitHydraResources() {
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
         .Msg(
@@ -506,8 +552,8 @@ void MtohRenderOverride::_InitHydraResources() {
     _taskController->SetEnableShadows(true);
 
     HdMayaDelegate::InitData delegateInitData(
-        _engine, _renderIndex, _rendererPlugin, _taskController, SdfPath(),
-        _isUsingHdSt);
+        TfToken(), _engine, _renderIndex, _rendererPlugin, _taskController,
+        SdfPath(), _isUsingHdSt);
 
     auto delegateNames = HdMayaDelegateRegistry::GetDelegateNames();
     auto creators = HdMayaDelegateRegistry::GetDelegateCreators();
@@ -515,6 +561,7 @@ void MtohRenderOverride::_InitHydraResources() {
     for (size_t i = 0, n = creators.size(); i < n; ++i) {
         const auto& creator = creators[i];
         if (creator == nullptr) { continue; }
+        delegateInitData.name = delegateNames[i];
         delegateInitData.delegateID = _ID.AppendChild(TfToken(TfStringPrintf(
             "_Delegate_%s_%lu_%p", delegateNames[i].GetText(), i, this)));
         auto newDelegate = creator(delegateInitData);

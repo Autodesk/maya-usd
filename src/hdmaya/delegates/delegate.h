@@ -55,17 +55,19 @@ class HdMayaDelegate {
 public:
     struct InitData {
         inline InitData(
-            HdEngine& engineIn, HdRenderIndex* renderIndexIn,
+            TfToken nameIn, HdEngine& engineIn, HdRenderIndex* renderIndexIn,
             HdxRendererPlugin* rendererPluginIn,
             HdxTaskController* taskControllerIn, const SdfPath& delegateIDIn,
             bool isHdStIn)
-            : engine(engineIn),
+            : name(nameIn),
+              engine(engineIn),
               renderIndex(renderIndexIn),
               rendererPlugin(rendererPluginIn),
               taskController(taskControllerIn),
               delegateID(delegateIDIn),
               isHdSt(isHdStIn) {}
 
+        TfToken name;
         HdEngine& engine;
         HdRenderIndex* renderIndex;
         HdxRendererPlugin* rendererPlugin;
@@ -87,6 +89,8 @@ public:
     virtual void SetParams(const HdMayaParams& params);
     const HdMayaParams& GetParams() { return _params; }
 
+    const SdfPath& GetMayaDelegateID() { return _mayaDelegateID; }
+    TfToken GetName() { return _name; }
     bool IsHdSt() { return _isHdSt; }
 
     virtual void PopulateSelectedPaths(
@@ -106,6 +110,16 @@ public:
 
 private:
     HdMayaParams _params;
+
+    // Note that because there may not be a 1-to-1 relationship between
+    // a HdMayaDelegate and a HdSceneDelegate, this may be different than
+    // "the" scene delegate id.  In the case of HdMayaSceneDelegate,
+    // which inherits from HdSceneDelegate, they are the same; but for, ie,
+    // HdMayaALProxyDelegate, for which there are multiple HdSceneDelegates
+    // for each HdMayaDelegate, the _mayaDelegateID is different from each
+    // HdSceneDelegate's id.
+    const SdfPath _mayaDelegateID;
+    TfToken _name;
     bool _isHdSt = false;
     bool _lightsEnabled = true;
 };
