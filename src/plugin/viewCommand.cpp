@@ -191,7 +191,7 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
         CHECK_MSTATUS_AND_RETURN_IT(
             db.getFlagArgument(_listRenderIndex, 0, id));
         const TfToken rendererName(id.asChar());
-        auto rprimPaths = MtohRenderOverride::RprimsForRenderer(
+        auto rprimPaths = MtohRenderOverride::RendererRprims(
             rendererName, db.isFlagSet(_visibleOnly));
         for (auto& rprimPath : rprimPaths) {
             appendToResult(rprimPath.GetText());
@@ -206,7 +206,7 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
         CHECK_MSTATUS_AND_RETURN_IT(
             db.getFlagArgument(_sceneDelegateId, 1, sceneDelegateName));
 
-        SdfPath delegateId = MtohRenderOverride::SceneDelegateId(
+        SdfPath delegateId = MtohRenderOverride::RendererSceneDelegateId(
             TfToken(renderDelegateName.asChar()),
             TfToken(sceneDelegateName.asChar()));
         setResult(MString(delegateId.GetText()));

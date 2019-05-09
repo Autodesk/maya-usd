@@ -78,12 +78,12 @@ public:
     /// delegate.
     ///
     /// Intended mostly for use in debugging and testing.
-    static SdfPathVector RprimsForRenderer(
+    static SdfPathVector RendererRprims(
         TfToken rendererName, bool visibleOnly = false);
 
     /// Returns the scene delegate id for the given render delegate and
     /// scene delegate names.
-    static SdfPath SceneDelegateId(
+    static SdfPath RendererSceneDelegateId(
         TfToken rendererName, TfToken sceneDelegateName);
 
     MStatus Render(const MHWRender::MDrawContext& drawContext);

@@ -239,7 +239,7 @@ std::vector<MString> MtohRenderOverride::AllActiveRendererNames() {
     return renderers;
 }
 
-SdfPathVector MtohRenderOverride::RprimsForRenderer(
+SdfPathVector MtohRenderOverride::RendererRprims(
     TfToken rendererName, bool visibleOnly) {
     MtohRenderOverride* instance = _GetByName(rendererName);
     if (!instance) { return SdfPathVector(); }
@@ -261,7 +261,7 @@ SdfPathVector MtohRenderOverride::RprimsForRenderer(
     return primIds;
 }
 
-SdfPath MtohRenderOverride::SceneDelegateId(
+SdfPath MtohRenderOverride::RendererSceneDelegateId(
     TfToken rendererName, TfToken sceneDelegateName) {
     MtohRenderOverride* instance = _GetByName(rendererName);
     if (!instance) { return SdfPath(); }
