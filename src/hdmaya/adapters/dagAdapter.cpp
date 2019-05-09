@@ -95,8 +95,12 @@ void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
 
 void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData) {
     TF_UNUSED(child);
-    TF_UNUSED(parent);
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    TF_DEBUG(HDMAYA_ADAPTER_DAG_HIERARCHY)
+        .Msg(
+            "Dag hierarchy changed for prim (%s) dirty because parent %s "
+            "was added/removed.\n",
+            adapter->GetID().GetText(), parent.partialPathName().asChar());
     adapter->RemoveCallbacks();
     adapter->RemovePrim();
     adapter->GetDelegate()->RecreateAdapterOnIdle(
@@ -116,8 +120,12 @@ void _InstancerNodeDirty(MObject& node, MPlug& plug, void* clientData) {
 }
 
 void _InstancerNodePreRemoval(MObject& node, void* clientData) {
-    TF_UNUSED(node);
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    TF_DEBUG(HDMAYA_ADAPTER_DAG_HIERARCHY)
+        .Msg(
+            "Marking instancer (%s) dirty because node %s was deleted.\n",
+            adapter->GetID().GetText(),
+            MFnDagNode(node).partialPathName().asChar());
     adapter->MarkDirty(
         HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyInstanceIndex |
         HdChangeTracker::DirtyPrimvar);
@@ -129,8 +137,12 @@ void _InstancerNodePreRemoval(MObject& node, void* clientData) {
 
 void _MasterNodePreRemoval(MObject& node, void* clientData) {
     // The node points to the transform above the shape, not the shape itself.
-    TF_UNUSED(node);
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
+    TF_DEBUG(HDMAYA_ADAPTER_DAG_HIERARCHY)
+        .Msg(
+            "Recreating instancer (%s) because node %s was deleted.\n",
+            adapter->GetID().GetText(),
+            MFnDagNode(node).partialPathName().asChar());
     MDagPathArray dags;
     MDagPath::getAllPathsTo(adapter->GetNode(), dags);
     if (dags.length() < 2) { return; }
@@ -202,10 +214,19 @@ size_t HdMayaDagAdapter::SampleTransform(
 void HdMayaDagAdapter::CreateCallbacks() {
     MStatus status;
     if (IsInstanced()) {
+        TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+            .Msg(
+                "Creating instanced dag adapter callbacks for prim (%s).\n",
+                GetID().GetText());
+
         auto obj = GetDagPath().transform();
         auto id = MNodeMessage::addNodePreRemovalCallback(
             obj, _MasterNodePreRemoval, this, &status);
         if (status) { AddCallback(id); }
+        TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+            .Msg(
+                "- Added _MasterNodePreRemoval callback for dagPath (%s).\n",
+                MFnDagNode(obj).partialPathName().asChar());
         MDagPathArray dags;
         if (MDagPath::getAllPathsTo(GetDagPath().node(), dags)) {
             const auto numDags = dags.length();
@@ -216,18 +237,33 @@ void HdMayaDagAdapter::CreateCallbacks() {
                 id = MNodeMessage::addNodePreRemovalCallback(
                     obj, _InstancerNodePreRemoval, this, &status);
                 if (status) { AddCallback(id); }
+                TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+                    .Msg(
+                        "- Added _InstancerNodePreRemoval callback for dagPath "
+                        "(%s).\n",
+                        cdag.partialPathName().asChar());
                 for (; cdag.length() > 0; cdag.pop()) {
                     obj = cdag.node();
                     if (obj != MObject::kNullObj) {
                         id = MNodeMessage::addNodeDirtyPlugCallback(
                             obj, _InstancerNodeDirty, this, &status);
                         if (status) { AddCallback(id); }
+                        TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+                            .Msg(
+                                "- Added _InstancerNodeDirty callback for "
+                                "dagPath (%s).\n",
+                                cdag.partialPathName().asChar());
                         _AddHierarchyChangedCallback(cdag);
                     }
                 }
             }
         }
     } else {
+        TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+            .Msg(
+                "Creating non-instanced dag adapter callbacks for prim (%s).\n",
+                GetID().GetText());
+
         auto dag = GetDagPath();
         for (; dag.length() > 0; dag.pop()) {
             MObject obj = dag.node();
@@ -236,6 +272,11 @@ void HdMayaDagAdapter::CreateCallbacks() {
                     auto id = MNodeMessage::addNodeDirtyPlugCallback(
                         obj, _TransformNodeDirty, this, &status);
                     if (status) { AddCallback(id); }
+                    TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+                        .Msg(
+                            "- Added _TransformNodeDirty callback for "
+                            "dagPath (%s).\n",
+                            dag.partialPathName().asChar());
                 }
                 _AddHierarchyChangedCallback(dag);
             }
@@ -303,6 +344,10 @@ void HdMayaDagAdapter::_AddHierarchyChangedCallback(MDagPath& dag) {
     auto id = MDagMessage::addParentAddedDagPathCallback(
         dag, _HierarchyChanged, this, &status);
     if (status) { AddCallback(id); }
+    TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+        .Msg(
+            "- Added _HierarchyChanged callback for dagPath (%s).\n",
+            dag.partialPathName().asChar());
 }
 
 SdfPath HdMayaDagAdapter::GetInstancerID() const {

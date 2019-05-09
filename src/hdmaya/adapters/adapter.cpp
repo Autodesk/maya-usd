@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include <hdmaya/adapters/adapter.h>
+#include <hdmaya/adapters/adapterDebugCodes.h>
 
 #include <pxr/base/tf/type.h>
 
@@ -65,6 +66,11 @@ void HdMayaAdapter::AddCallback(MCallbackId callbackId) {
 
 void HdMayaAdapter::RemoveCallbacks() {
     if (_callbacks.empty()) { return; }
+
+    TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+        .Msg(
+            "Removing all adapter callbacks for prim (%s).\n",
+            GetID().GetText());
     for (auto c : _callbacks) { MMessage::removeCallback(c); }
     std::vector<MCallbackId>().swap(_callbacks);
 }
@@ -81,6 +87,11 @@ bool HdMayaAdapter::HasType(const TfToken& typeId) const {
 
 void HdMayaAdapter::CreateCallbacks() {
     if (_node != MObject::kNullObj) {
+        TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+            .Msg(
+                "Creating generic adapter callbacks for prim (%s).\n",
+                GetID().GetText());
+
         MStatus status;
         auto id = MNodeMessage::addNodePreRemovalCallback(
             _node, _preRemoval, this, &status);
