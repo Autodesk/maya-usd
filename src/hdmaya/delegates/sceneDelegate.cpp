@@ -950,6 +950,20 @@ HdTextureResourceSharedPtr HdMayaSceneDelegate::GetTextureResource(
         _materialAdapters);
 }
 
+VtDictionary HdMayaSceneDelegate::GetMaterialMetadata(
+    const SdfPath& materialId) {
+    TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_METADATA)
+        .Msg(
+            "HdMayaSceneDelegate::GetMaterialMetadata(%s)\n",
+            materialId.GetText());
+    return _GetValue<HdMayaMaterialAdapter, VtDictionary>(
+        materialId,
+        [](HdMayaMaterialAdapter* a) -> VtDictionary {
+            return a->GetMaterialMetadata();
+        },
+        _materialAdapters);
+}
+
 bool HdMayaSceneDelegate::_CreateMaterial(
     const SdfPath& id, const MObject& obj) {
     auto materialCreator =

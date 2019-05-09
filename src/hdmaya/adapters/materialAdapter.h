@@ -67,6 +67,11 @@ public:
         const TfToken& paramName);
     HDMAYA_API
     virtual VtValue GetMaterialResource();
+    /// \brief Gets the Metadata for the Material.
+    ///
+    /// \return Dictionary holding the metadata.
+    HDMAYA_API
+    virtual VtDictionary GetMaterialMetadata();
 
     HDMAYA_API
     static const HdMaterialParamVector& GetPreviewMaterialParams();

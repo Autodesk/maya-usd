@@ -456,7 +456,9 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     // all the required states.
     _taskController->SetCollection(_renderCollection);
     if (_isUsingHdSt) {
+#ifndef HDMAYA_OIT_ENABLED
         HdMayaSetRenderGLState state;
+#endif
         renderFrame();
     } else {
         renderFrame();

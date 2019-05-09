@@ -146,6 +146,11 @@ TF_REGISTRY_FUNCTION(TfDebug) {
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_SAMPLE_PRIMVAR,
         "Print information about 'SamplePrimvar' calls to the delegates.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_DELEGATE_GET_MATERIAL_METADATA,
+        "Print information about 'GetMaterialMetadata' calls to the "
+        "delegates.");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

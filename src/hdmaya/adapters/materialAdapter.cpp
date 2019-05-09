@@ -123,22 +123,6 @@ auto _PreviewShaderSource = []() -> const std::pair<std::string, std::string>& {
     return ret;
 };
 
-#ifdef HDMAYA_OIT_ENABLED
-auto _TranslucentPreviewShaderSource =
-    []() -> const std::pair<std::string, std::string>& {
-    static const auto ret = []() -> std::pair<std::string, std::string> {
-        auto& registry = SdrRegistry::GetInstance();
-        auto sdrNode = registry.GetShaderNodeByIdentifierAndType(
-            UsdImagingTokens->UsdPreviewSurfaceTranslucent,
-            HioGlslfxTokens->glslfx);
-        if (!sdrNode) { return {"", ""}; }
-        HioGlslfx gfx(sdrNode->GetSourceURI());
-        return {gfx.GetSurfaceSource(), gfx.GetDisplacementSource()};
-    }();
-    return ret;
-};
-#endif
-
 #ifndef HDMAYA_USD_001901_BUILD
 enum class HdTextureType { Uv, Ptex, Udim };
 #endif
@@ -232,6 +216,8 @@ VtValue HdMayaMaterialAdapter::GetMaterialResource() {
         .Msg("HdMayaMaterialAdapter::GetMaterialResource()\n");
     return GetPreviewMaterialResource(GetID());
 }
+
+VtDictionary HdMayaMaterialAdapter::GetMaterialMetadata() { return {}; }
 
 const HdMaterialParamVector& HdMayaMaterialAdapter::GetPreviewMaterialParams() {
     return HdMayaMaterialNetworkConverter::GetPreviewMaterialParamVector();
@@ -655,11 +641,21 @@ private:
         return false;
     }
 
-    // std::string GetSurfaceShaderSource() override {
-    //     MFnDependencyNode node(_surfaceShader);
-    //     return IsTranslucent() ? _TranslucentPreviewShaderSource().first
-    //                            : _PreviewShaderSource().first;
-    // }
+    VtDictionary GetMaterialMetadata() override {
+        if (IsTranslucent()) {
+            return {
+                { HdShaderTokens->materialTag,
+                  VtValue(HdxMaterialTagTokens->translucent) }};
+        } else {
+            return {};
+        }
+    };
+
+        // std::string GetSurfaceShaderSource() override {
+        //     MFnDependencyNode node(_surfaceShader);
+        //     return IsTranslucent() ? _TranslucentPreviewShaderSource().first
+        //                            : _PreviewShaderSource().first;
+        // }
 #endif
 
     MObject _surfaceShader;

@@ -133,6 +133,13 @@ protected:
         const SdfPath& textureId) override;
     HdTextureResourceSharedPtr GetTextureResource(
         const SdfPath& textureId) override;
+    /// \brief Gets the metadata from a material.
+    ///
+    /// For now we are only returning the materialTag for translucency.
+    ///
+    /// \param materialId Path to the material.
+    /// \return Dictionary storing the metadata.
+    VtDictionary GetMaterialMetadata(const SdfPath& materialId) override;
     bool _CreateMaterial(const SdfPath& id, const MObject& obj);
 
 private:
