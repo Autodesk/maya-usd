@@ -13,7 +13,7 @@ if THIS_DIR not in sys.path:
 
 from hdmaya_test_utils import HdMayaTestCase
 
-class TestReparent(HdMayaTestCase):
+class TestDagChanges(HdMayaTestCase):
     def setUp(self):
         self.makeCubeScene()
 
@@ -75,6 +75,15 @@ class TestReparent(HdMayaTestCase):
         index = self.getIndex()
         self.assertIn(self.cubeRprim, index)
         self.assertNotIn(grp1ShapeRprim, index)
+
+    def test_new_shape(self):
+        otherCube = cmds.polyCube()[0]
+        otherCubeShape = cmds.listRelatives(otherCube, fullPath=1)[0]
+        otherRprim = self.rprimPath(otherCubeShape)
+        cmds.refresh()
+        index = self.getIndex()
+        self.assertIn(self.cubeRprim, index)
+        self.assertIn(otherRprim, index)
 
 
 if __name__ == "__main__":
