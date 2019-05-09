@@ -109,16 +109,33 @@ HdMayaShaderParams::const_iterator _FindPreviewParam(const TfToken& id) {
                : first;
 }
 
+struct _ShaderSourceAndMeta {
+    std::string surfaceCode;
+    std::string displacementCode;
+    VtDictionary metadata;
+#ifdef HDMAYA_OIT_ENABLED
+    VtDictionary translucentMetadata;
+#endif
+};
 // We can't store the shader here explicitly, since it causes a deadlock
 // due to library dependencies.
-auto _PreviewShaderSource = []() -> const std::pair<std::string, std::string>& {
-    static const auto ret = []() -> std::pair<std::string, std::string> {
+auto _PreviewShader = []() -> const _ShaderSourceAndMeta& {
+    static const auto ret = []() -> _ShaderSourceAndMeta {
         auto& registry = SdrRegistry::GetInstance();
         auto sdrNode = registry.GetShaderNodeByIdentifierAndType(
             UsdImagingTokens->UsdPreviewSurface, HioGlslfxTokens->glslfx);
         if (!sdrNode) { return {"", ""}; }
         HioGlslfx gfx(sdrNode->GetSourceURI());
-        return {gfx.GetSurfaceSource(), gfx.GetDisplacementSource()};
+        _ShaderSourceAndMeta ret;
+        ret.surfaceCode = gfx.GetSurfaceSource();
+        ret.displacementCode = gfx.GetDisplacementSource();
+        ret.metadata = gfx.GetMetadata();
+#ifdef HDMAYA_OIT_ENABLED
+        ret.translucentMetadata = gfx.GetMetadata();
+        ret.translucentMetadata[HdShaderTokens->materialTag] =
+            VtValue(HdxMaterialTagTokens->translucent);
+#endif
+        return ret;
     }();
     return ret;
 };
@@ -217,18 +234,20 @@ VtValue HdMayaMaterialAdapter::GetMaterialResource() {
     return GetPreviewMaterialResource(GetID());
 }
 
-VtDictionary HdMayaMaterialAdapter::GetMaterialMetadata() { return {}; }
+VtDictionary HdMayaMaterialAdapter::GetMaterialMetadata() {
+    return _PreviewShader().metadata;
+}
 
 const HdMaterialParamVector& HdMayaMaterialAdapter::GetPreviewMaterialParams() {
     return HdMayaMaterialNetworkConverter::GetPreviewMaterialParamVector();
 }
 
 const std::string& HdMayaMaterialAdapter::GetPreviewSurfaceSource() {
-    return _PreviewShaderSource().first;
+    return _PreviewShader().surfaceCode;
 }
 
 const std::string& HdMayaMaterialAdapter::GetPreviewDisplacementSource() {
-    return _PreviewShaderSource().second;
+    return _PreviewShader().displacementCode;
 }
 
 const VtValue& HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
@@ -642,13 +661,8 @@ private:
     }
 
     VtDictionary GetMaterialMetadata() override {
-        if (IsTranslucent()) {
-            return {
-                { HdShaderTokens->materialTag,
-                  VtValue(HdxMaterialTagTokens->translucent) }};
-        } else {
-            return {};
-        }
+        return IsTranslucent() ? _PreviewShader().translucentMetadata
+                               : _PreviewShader().metadata;
     };
 
         // std::string GetSurfaceShaderSource() override {
