@@ -76,6 +76,119 @@ class TestDagChanges(HdMayaTestCase):
         self.assertIn(self.cubeRprim, index)
         self.assertIn(otherRprim, index)
 
+    def test_instances(self):
+        pCube2 = cmds.createNode('transform', name='pCube2')
+        cmds.setAttr('persp.rotate', -30, 45, 0, type='float3')
+        cmds.setAttr('persp.translate', 24, 18, 24, type='float3')
+
+        cmds.setAttr('{}.tz'.format(self.grp1), 5)
+        cmds.setAttr('{}.tx'.format(self.grp2), 8)
+        cmds.setAttr('{}.ty'.format(pCube2), 5)
+
+        # No instances to start
+        #   (1) |pCube1|pCubeShape1
+        cmds.refresh()
+        self.assertSnapshotClose("instances_1.png")
+
+        # Add |group1|pCube1 instance
+        #   (1) |pCube1|pCubeShape1
+        #   (2) |group1|pCube1|pCubeShape1
+        cmds.parent(self.cubeTrans, self.grp1, add=1, r=1)
+        cmds.select(clear=1)
+        cmds.refresh()
+        self.assertSnapshotClose("instances_12.png")
+
+        # Adding an instance shape directly isn't working
+#         # Add |pCube2|pCubeShape1 instance
+#         #   (1) |pCube1|pCubeShape1
+#         #   (2) |group1|pCube1|pCubeShape1
+#         #   (3) |pCube2|pCubeShape1
+#         cmds.parent(self.cubeShape, pCube2, add=1, r=1, shape=1)
+#         cmds.select(clear=1)
+#         cmds.refresh()
+#         self.assertSnapshotClose("instances_123.png")
+#
+#         # Add |group2|group1|pCube1 instance
+#         #   (1) |pCube1|pCubeShape1
+#         #   (2) |group1|pCube1|pCubeShape1
+#         #   (3) |pCube2|pCubeShape1
+#         #   (4) |group2||group1|pCube1|pCubeShape1
+#         cmds.parent(self.grp1, self.grp2, add=1, r=1)
+#         cmds.select(clear=1)
+#         cmds.refresh()
+#         self.assertSnapshotClose("instances_1234.png")
+#
+#         # Add |group1|pCube2 instance
+#         #   (1) |pCube1|pCubeShape1
+#         #   (3) |pCube2|pCubeShape1
+#         #   (2) |group1|pCube1|pCubeShape1
+#         #   (4) |group2||group1|pCube1|pCubeShape1
+#         #   (5) |group1|pCube2|pCubeShape1
+#         #   (6) |group2||group1|pCube2|pCubeShape1
+#         cmds.parent(pCube2, self.grp1, add=1, r=1)
+#         cmds.select(clear=1)
+#         cmds.refresh()
+#         self.assertSnapshotClose("instances_123456.png")
+#
+#         # Delete group2
+#         cmds.delete(self.grp2)
+#         cmds.refresh()
+#         self.assertNotIn(self.cubeRprim, self.getIndex())
+#         self.assertSnapshotClose("instances_0.png")
+#
+#         # Undo group2 deletion
+#         #   (1) |pCube1|pCubeShape1
+#         #   (3) |pCube2|pCubeShape1
+#         #   (2) |group1|pCube1|pCubeShape1
+#         #   (4) |group2||group1|pCube1|pCubeShape1
+#         #   (5) |group1|pCube2|pCubeShape1
+#         #   (6) |group2||group1|pCube2|pCubeShape1
+#         cmds.undo()
+#         cmds.refresh()
+#         self.assertSnapshotClose("instances_123456.png")
+#
+#         # Remove |group2|group1 instance
+#         #   (1) |pCube1|pCubeShape1
+#         #   (2) |group1|pCube1|pCubeShape1
+#         #   (3) |pCube2|pCubeShape1
+#         #   (5) |group1|pCube2|pCubeShape1
+#         cmds.parent('|{self.grp2}|{self.grp1}'.format(self=self),
+#                     removeObject=1)
+#         cmds.refresh()
+#         self.assertSnapshotClose("instances_1235.png")
+#
+#         # Remove pCube2|pCubeShape1 instance
+#         #   (1) |pCube1|pCubeShape1
+#         #   (2) |group1|pCube1|pCubeShape1
+#         cmds.parent('|{pCube2}|{self.cubeShapeName}'.format(self=self,
+#                                                             pCube2=pCube2),
+#                     removeObject=1, shape=1)
+#         cmds.refresh()
+#         self.assertSnapshotClose("instances_12.png")
+#
+#         # Undo remove pCube2|pCubeShape1 instance
+#         #   (1) |pCube1|pCubeShape1
+#         #   (2) |group1|pCube1|pCubeShape1
+#         #   (3) |pCube2|pCubeShape1
+#         #   (5) |group1|pCube2|pCubeShape1
+#         cmds.undo()
+#         cmds.refresh()
+#         self.assertSnapshotClose("instances_1235.png")
+#
+#         # Redo remove pCube2|pCubeShape1 instance
+#         #   (1) |pCube1|pCubeShape1
+#         #   (2) |group1|pCube1|pCubeShape1
+#         cmds.redo()
+#         cmds.refresh()
+#         self.assertSnapshotClose("instances_12.png")
+#
+#         # Remove |group1|pCube1 instance
+#         #   (1) |pCube1|pCubeShape1
+#         cmds.parent('{self.grp1}|{self.cubeTrans}'.format(self=self),
+#                     removeObject=1)
+#         cmds.refresh()
+#         self.assertSnapshotClose("instances_1.png")
+
 
 if __name__ == "__main__":
     unittest.main(argv=[""])

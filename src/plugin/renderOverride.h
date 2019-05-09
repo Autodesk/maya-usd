@@ -83,6 +83,8 @@ public:
 
     /// Returns the scene delegate id for the given render delegate and
     /// scene delegate names.
+    ///
+    /// Intended mostly for use in debugging and testing.
     static SdfPath RendererSceneDelegateId(
         TfToken rendererName, TfToken sceneDelegateName);
 

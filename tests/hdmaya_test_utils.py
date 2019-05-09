@@ -5,6 +5,10 @@ import os.path
 import unittest
 
 
+HD_STREAM = "HdStreamRendererPlugin"
+HD_STREAM_OVERRIDE = "mtohRenderOverride_HdStreamRendererPlugin"
+
+
 KNOWN_FORMATS = {
     'gif': 0,
     'tif': 3,
@@ -126,10 +130,10 @@ class HdMayaTestCase(unittest.TestCase):
         self.activeEditor = cmds.playblast(activeEditor=1)
         cmds.modelEditor(
             self.activeEditor, e=1,
-            rendererOverrideName="mtohRenderOverride_HdStreamRendererPlugin")
+            rendererOverrideName=HD_STREAM_OVERRIDE)
         cmds.refresh(f=1)
         self.delegateId = cmds.mtoh(sceneDelegateId=(
-            "HdStreamRendererPlugin", "HdMayaSceneDelegate"))
+            HD_STREAM, "HdMayaSceneDelegate"))
         self.cubeRprim = self.rprimPath(self.cubeShape)
         self.assertInIndex(self.cubeRprim)
         self.assertVisible(self.cubeRprim)
@@ -146,7 +150,7 @@ class HdMayaTestCase(unittest.TestCase):
                          fullPath.lstrip('|').replace('|', '/')])
 
     def getIndex(self, **kwargs):
-        return cmds.mtoh(listRenderIndex="HdStreamRendererPlugin", **kwargs)
+        return cmds.mtoh(listRenderIndex=HD_STREAM, **kwargs)
 
     def assertVisible(self, rprim):
         self.assertIn(rprim, self.getIndex(visibleOnly=1))
