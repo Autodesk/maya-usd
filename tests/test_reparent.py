@@ -56,6 +56,26 @@ class TestReparent(HdMayaTestCase):
         self.assertNotIn(grp2ShapeRprim, index)
         self.assertNotIn(grp1ShapeRprim, index)
 
+    def test_reparent_shape(self):
+        cmds.parent(self.cubeShapeName, self.grp1, shape=1, r=1)
+        grp1ShapeRprim = self.rprimPath(self.cubeShapeName)
+        self.assertEqual(
+            grp1ShapeRprim,
+            self.rprimPath("|{self.grp1}|{self.cubeShapeName}"
+                           .format(self=self)))
+        cmds.refresh()
+        index = self.getIndex()
+        self.assertIn(grp1ShapeRprim, index)
+        self.assertNotIn(self.cubeRprim, index)
+
+        cmds.parent(self.cubeShapeName, self.cubeTrans, shape=1, r=1)
+        origShapePrim = self.rprimPath(self.cubeShapeName)
+        self.assertEqual(origShapePrim, self.cubeRprim)
+        cmds.refresh()
+        index = self.getIndex()
+        self.assertIn(self.cubeRprim, index)
+        self.assertNotIn(grp1ShapeRprim, index)
+
 
 if __name__ == "__main__":
     unittest.main(argv=[""])
