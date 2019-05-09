@@ -1,29 +1,21 @@
 import maya.cmds as cmds
 
+import inspect
+import os
+import sys
 import unittest
 
+THIS_FILE = os.path.normpath(os.path.abspath(inspect.getsourcefile(lambda: None)))
+THIS_DIR = os.path.dirname(THIS_FILE)
 
-class TestCommand(unittest.TestCase):
+if THIS_DIR not in sys.path:
+    sys.path.append(THIS_DIR)
+
+from hdmaya_test_utils import HdMayaTestCase
+
+class TestCommand(HdMayaTestCase):
     def setUp(self):
-        cmds.file(f=1, new=1)
-        self.activeEditor = cmds.playblast(activeEditor=1)
-        cmds.modelEditor(
-            self.activeEditor, e=1,
-            rendererOverrideName="mtohRenderOverride_HdStreamRendererPlugin")
-        self.cubeTrans = cmds.polyCube()[0]
-        self.cubeShape = cmds.listRelatives(self.cubeTrans, fullPath=1)[0]
-        cmds.refresh(f=1)
-        self.delegateId = cmds.mtoh(sceneDelegateId=(
-            "HdStreamRendererPlugin", "HdMayaSceneDelegate"))
-        self.cubeRprim = '/'.join(
-            [self.delegateId, "rprims",
-             self.cubeShape.replace('|', '/').lstrip('/')])
-        self.assertIn(
-            self.cubeRprim,
-            cmds.mtoh(listRenderIndex="HdStreamRendererPlugin"))
-        self.assertIn(
-            self.cubeRprim,
-            cmds.mtoh(listRenderIndex="HdStreamRendererPlugin", visibleOnly=1))
+        self.makeCubeScene()
         self.assertTrue(cmds.getAttr("{}.visibility".format(self.cubeTrans)))
         self.assertTrue(cmds.getAttr("{}.visibility".format(self.cubeShape)))
 
