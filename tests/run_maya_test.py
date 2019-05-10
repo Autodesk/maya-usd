@@ -9,10 +9,11 @@ import inspect
 import json
 import os
 import platform
-import shutil
 import subprocess
+import shutil
 import sys
 import tempfile
+
 from subprocess import CalledProcessError
 
 
@@ -28,12 +29,13 @@ def mel_python_repr(input_str):
     mel_repr = repr(input_str).replace("\\", "\\\\").replace('"', '\\"')
     return '"{}"'.format(mel_repr)
 
+
 def write_wrapper_scripts(test_name, scriptpath, tempdir):
     # our call chain will be:
     #   1) maya -script melwrapper
     #   2) melwrapper calls pywrapper
     #   3) pywrapper calls original pythonscript
-    
+
     # We need the melwrapper because "maya -script" only accepts mel
     # We add the pywrapper because we want to add some standard code (for
     # exiting with an exitcode or not) to all scripts"
@@ -45,7 +47,7 @@ def write_wrapper_scripts(test_name, scriptpath, tempdir):
     py_wrapper_contents = pywrapper_contents.replace(
         '"<PY_SCRIPT_PATH>"', repr(scriptpath))
     py_wrapper_contents = py_wrapper_contents.replace(
-        '"<PY_TEST_NAME>"', repr(test_name))
+        '"<PY_TEST_SRC_DIR>"', repr(THIS_DIR))
     py_wrapper_path = os.path.join(tempdir, "run_maya_test_pywrapper.py")
     with open(py_wrapper_path, "w") as f:
         f.write(py_wrapper_contents)
@@ -59,7 +61,7 @@ def write_wrapper_scripts(test_name, scriptpath, tempdir):
     mel_wrapper_path = os.path.join(tempdir, "run_maya_test_melwrapper.py")
     with open(mel_wrapper_path, "w") as f:
         f.write(mel_wrapper_contents)
-        
+
     return mel_wrapper_path
 
 
@@ -69,7 +71,7 @@ def get_environ(tempdir):
     # TODO: make cross-platform
     env['MAYA_CMD_FILE_OUTPUT'] = "/dev/stdout"
     env['MAYA_APP_DIR'] = os.path.join(tempdir, "maya_app_dir")
-    
+
     TEST_ENV_PREFIX = "MAYA_TEST_ENV_"
     # cmake / ctest may be invoked in a "build" environment which
     # some env vars which are useful for building, but may not be
@@ -82,7 +84,17 @@ def get_environ(tempdir):
     return env
 
 
-def run_maya_test(scriptpath, gui=True, maya_bin=None, keep_tempdir=False):
+def find_test(test_name):
+    testdir = os.path.join(THIS_DIR, test_name)
+    if not os.path.isdir(testdir):
+        testdir = THIS_DIR
+    scriptpath = os.path.join(testdir, test_name + ".py")
+    if not os.path.isfile(scriptpath):
+        raise ValueError("Could not find test script at: {!r}".format(scriptpath))
+    return scriptpath
+
+
+def run_maya_test(test_name, gui=True, maya_bin=None, keep_tempdir=False):
     if maya_bin is None:
         maya_loc = os.environ.get('MAYA_LOCATION')
         if not maya_loc:
@@ -102,8 +114,8 @@ def run_maya_test(scriptpath, gui=True, maya_bin=None, keep_tempdir=False):
                 "MAYA_LOCATION as a hint: {}".format(maya_bin))
     elif not os.path.isfile(maya_bin):
         raise RuntimeError("given maya_bin not found: {}".format(maya_bin))
-    
-    test_name = os.path.splitext(os.path.basename(scriptpath))[0]
+
+    scriptpath = find_test(test_name)
 
     tempdir = tempfile.mkdtemp("run_maya_test_" + test_name)
     if keep_tempdir:
@@ -124,7 +136,7 @@ def get_parser():
     # optionally followed by two newlines and a more detailed description.
     # This ensure that it is parsed by our documentation generator.
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('script', help='Path to python test script to run')
+    parser.add_argument('test', help='Name of test to run')
     parser.add_argument('--nogui', dest='gui', action='store_false',
                         help="don't run inside of a gui maya session (use "
                         "mayapy)")
@@ -141,17 +153,19 @@ def main(argv=None):
     parser = get_parser()
     args = parser.parse_args(argv)
     try:
-        run_maya_test(args.script, gui=args.gui, maya_bin=args.maya_bin,
-                      keep_tempdir=args.keep_tempdir)
+        keep_tempdir = (args.keep_tempdir
+            or bool(os.environ.get('HDMAYA_TEST_KEEP_TEMPDIR')))
+        run_maya_test(args.test, gui=args.gui, maya_bin=args.maya_bin,
+                      keep_tempdir=keep_tempdir)
     except subprocess.CalledProcessError as e:
-        print "Test {!r} failed".format(args.script)
+        print "Test {!r} failed".format(args.test)
         return e.returncode
     except Exception:
-        print "Unknown error running test {!r}:".format(args.script)
+        print "Unknown error running test {!r}:".format(args.test)
         import traceback
         traceback.print_exc()
         return 987
-    print "Test {!r} finished successfully!".format(args.script)
+    print "Test {!r} finished successfully!".format(args.test)
     return 0
 
 

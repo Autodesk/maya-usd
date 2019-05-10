@@ -1,15 +1,6 @@
 import maya.cmds as cmds
 
-import inspect
-import os
-import sys
 import unittest
-
-THIS_FILE = os.path.normpath(os.path.abspath(inspect.getsourcefile(lambda: None)))
-THIS_DIR = os.path.dirname(THIS_FILE)
-
-if THIS_DIR not in sys.path:
-    sys.path.append(THIS_DIR)
 
 from hdmaya_test_utils import HdMayaTestCase
 

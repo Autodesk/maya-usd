@@ -21,7 +21,11 @@ try:
             cmds.loadPlugin(plugin)
     safeLoadPlugin("mtoh")
 
-    test_name = "<PY_TEST_NAME>"
+    # add test_src_dir to path, so we can import hdmaya_test_utils
+    test_src_dir = "<PY_TEST_SRC_DIR>"
+    if test_src_dir not in sys.path:
+        sys.path.append(test_src_dir)
+
     py_script_path = "<PY_SCRIPT_PATH>"
     print("executing: {}".format(py_script_path))
     execfile(py_script_path)
