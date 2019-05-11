@@ -65,18 +65,21 @@ def write_wrapper_scripts(test_name, scriptpath, tempdir):
     return mel_wrapper_path
 
 
-def get_environ(tempdir):
+def get_environ(test_script, tempdir):
     env = dict(os.environ)
     # Make things written to scriptEditor also go to stdout
     # TODO: make cross-platform
     env['MAYA_CMD_FILE_OUTPUT'] = "/dev/stdout"
     env['MAYA_APP_DIR'] = os.path.join(tempdir, "maya_app_dir")
+    env['HDMAYA_TEST_TEMPDIR'] = tempdir
+    env['HDMAYA_TEST_SCRIPT'] = test_script
 
-    TEST_ENV_PREFIX = "MAYA_TEST_ENV_"
+    TEST_ENV_PREFIX = "HDMAYA_TEST_ENV_"
     # cmake / ctest may be invoked in a "build" environment which
     # some env vars which are useful for building, but may not be
     # appropriate for running a maya session in - give users
-    # a chance to reset / alter vars with MAYA_TEST_ENV_* vars
+    # a chance to reset / alter vars with HDMAYA_TEST_ENV_* vars,
+    # that are ONLY set for test portion, not the build portion
     for key, value in os.environ.iteritems():
         if key.startswith(TEST_ENV_PREFIX):
             overrideKey = key[len(TEST_ENV_PREFIX):]
@@ -123,8 +126,9 @@ def run_maya_test(test_name, gui=True, maya_bin=None, keep_tempdir=False):
     try:
         mel_wrapper_path = write_wrapper_scripts(test_name, scriptpath,
                                                  tempdir)
+        env = get_environ(scriptpath, tempdir)
         subprocess.check_call([maya_bin, "-script", mel_wrapper_path],
-                              env=get_environ(tempdir))
+                              env=env, cwd=tempdir)
     finally:
         if not keep_tempdir:
             shutil.rmtree(tempdir)
