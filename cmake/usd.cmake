@@ -19,41 +19,27 @@
 #
 function(init_usd)
 
-    include(cmake/usd_version.info)
-
-    set(USD_VERSION "${USD_MAJOR_VERSION}.${USD_MINOR_VERSION}.${USD_PATCH_LEVEL}"
-        CACHE STRING "The version of USD used by AL_USDMaya")
-
-    set (USD_SMALL_VERSION "${USD_MAJOR_VERSION}_${USD_MINOR_VERSION}")
-
     #--------------------------------------------------------------------------
     # Allow a developer to override the USD Location to test using a local
-    # build of USD instead of one that has been download from Artifactory
+    # build of USD.
     set(USD_LOCATION_OVERRIDE "" CACHE PATH
         "Location of USD to use (in replacement of the Artifactory one.")
 
     if (USD_LOCATION_OVERRIDE)
-        set(AL_USDMAYA_USD_LOCATION "${USD_LOCATION_OVERRIDE}")
-    else()
-        peptide_artifactory_download_zip(
-            "usd-${USD_VERSION}-${PEPTIDE_SHORTVARIANT_DIR}-${PEPTIDE_SHORT_OSNAME}"
-            AL_USDMAYA_USD_LOCATION 
-            TARGET_DIR "usd" )
+        set(PXR_USD_LOCATION "${USD_LOCATION_OVERRIDE}")
     endif()
 
-    set(AL_USDMAYA_USD_LOCATION "${AL_USDMAYA_USD_LOCATION}" PARENT_SCOPE)
-    set(USD_ROOT "${AL_USDMAYA_USD_LOCATION}" PARENT_SCOPE)
+    set(PXR_USD_LOCATION "${PXR_USD_LOCATION}" PARENT_SCOPE)
+    set(PXR_USD_INCLUDE_DIR "${PXR_USD_LOCATION}/include" PARENT_SCOPE)
+    set(PXR_USD_LIB_DIR "${PXR_USD_LOCATION}/lib" PARENT_SCOPE)
+    set(USD_ROOT "${PXR_USD_LOCATION}" PARENT_SCOPE)
 
-    set(AL_USDMAYA_USD_INCLUDE_DIR  "${AL_USDMAYA_USD_LOCATION}/include")
-
-    if(PEPTIDE_IS_WINDOWS)
-        set(AL_USDMAYA_USD_LIB_DIR      "${AL_USDMAYA_USD_LOCATION}/bin")
-    else()
-        set(AL_USDMAYA_USD_LIB_DIR      "${AL_USDMAYA_USD_LOCATION}/lib")
+    # Adjust PYTHONPATH, PATH
+    append_path_to_env_var("PYTHONPATH" "${PXR_USD_LOCATION}/lib/python")
+    if(WIN32)
+        append_path_to_env_var("PATH" "${PXR_USD_LOCATION}/bin;${PXR_USD_LOCATION}/lib")
     endif()
-    set(AL_USDMAYA_USD_LIB_DIR "${AL_USDMAYA_USD_LIB_DIR}" PARENT_SCOPE)
 
-	
 endfunction()
 
 init_usd()

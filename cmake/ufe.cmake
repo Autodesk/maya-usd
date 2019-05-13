@@ -18,14 +18,6 @@
 # to be added to your target.
 #
 function(init_ufe)
-
-    include(cmake/ufe_version.info)
-
-    set(UFE_VERSION "${UFE_MAJOR_VERSION}.${UFE_MINOR_VERSION}.${UFE_PATCH_LEVEL}"
-        CACHE STRING "The version of UFE used by MayaUFEPlugin")
-
-    set (UFE_SMALL_VERSION "${UFE_MAJOR_VERSION}_${UFE_MINOR_VERSION}")
-
     #--------------------------------------------------------------------------
     # Allow a developer to override the UFE Location to test using a local
     # build of UFE instead of one that has been download from Artifactory
@@ -34,20 +26,14 @@ function(init_ufe)
 
     if (UFE_LOCATION_OVERRIDE)
         set(UFE_LOCATION "${UFE_LOCATION_OVERRIDE}")
-    else()
-        peptide_artifactory_download_zip(
-            "ufe-${UFE_VERSION}-${PEPTIDE_SHORTVARIANT_DIR}-${PEPTIDE_SHORT_OSNAME}"
-            UFE_LOCATION
-            TOP_LEVEL_DIR "ufe-${UFE_VERSION}")
     endif()
 
     set(UFE_LOCATION "${UFE_LOCATION}" PARENT_SCOPE)
-
     set(UFE_INCLUDE_DIR  "${UFE_LOCATION}/common/include")
     set(UFE_INCLUDE_DIR ${UFE_INCLUDE_DIR} PARENT_SCOPE)
 
-    if(PEPTIDE_IS_DEBUG)
-        set(UFE_VARIANT_NAME ${PEPTIDE_VARIANT_DIR})
+    if(CMAKE_BUILD_TYPE EQUAL "DEBUG")
+        set(UFE_VARIANT_NAME Debug)
     else()
         set(UFE_VARIANT_NAME RelWithDebInfo)
     endif()
@@ -55,7 +41,7 @@ function(init_ufe)
     set(UFE_LIBRARY_DIR "${UFE_LOCATION}/platform/${CMAKE_SYSTEM_NAME}/${UFE_VARIANT_NAME}/lib")
     set(UFE_LIBRARY_DIR ${UFE_LIBRARY_DIR} PARENT_SCOPE)
 
-    if(NOT PEPTIDE_IS_WINDOWS)
+    if(NOT WIN32)
         set(MAYA_UFE_PLUGIN_UFE_LIB_PREFIX "lib")
     else()
         set(MAYA_UFE_PLUGIN_UFE_LIB_PREFIX "")
@@ -66,14 +52,14 @@ function(init_ufe)
     set(IMPORTLIB "${UFE_LIBRARY_DIR}/${UFE_LIB_NAME}")
     set_property(TARGET UFE PROPERTY IMPORTED_LOCATION "${IMPORTLIB}")
     set_property(TARGET UFE PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${UFE_INCLUDE_DIR}")
-    if(PEPTIDE_IS_WINDOWS)
+    if(WIN32)
         set_property(TARGET UFE PROPERTY IMPORTED_IMPLIB "${UFE_LOCATION}/platform/${CMAKE_SYSTEM_NAME}/${UFE_VARIANT_NAME}/lib/UFE_${UFE_SMALL_VERSION}${CMAKE_STATIC_LIBRARY_SUFFIX}")
     endif()
 
-    if(PEPTIDE_IS_WINDOWS)
-        set(SHAREDLIB "${PEPTIDE_OUTPUT_BIN_DIR}/${UFE_LIB_NAME}")
+    if(WIN32)
+        set(SHAREDLIB "${CMAKE_CURRENT_BINARY_DIR}/bin/${UFE_LIB_NAME}")
     else()
-        set(SHAREDLIB "${PEPTIDE_OUTPUT_LIB_DIR}/${UFE_LIB_NAME}")
+        set(SHAREDLIB "${CMAKE_CURRENT_BINARY_DIR}/bin/${UFE_LIB_NAME}")
     endif()
 	
 endfunction()

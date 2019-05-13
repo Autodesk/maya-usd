@@ -44,6 +44,9 @@ find_library(UFE_LIBRARY
     NO_DEFAULT_PATH
 )
 
+message(STATUS "UFE Include directory: ${UFE_INCLUDE_DIR}")
+message(STATUS "         UFE Library : ${UFE_LIBRARY}")
+
 # Handle the QUIETLY and REQUIRED arguments and set UFE_FOUND to TRUE if
 # all listed variables are TRUE.
 include(FindPackageHandleStandardArgs)
