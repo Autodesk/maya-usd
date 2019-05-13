@@ -1232,7 +1232,7 @@ MStatus TransformationMatrix::translateTo(const MVector& vector, MSpace::Space s
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::translateTo %f %f %f\n", vector.x, vector.y, vector.z);
   if(isTranslateLocked())
-    return MS::kSuccess;
+    return MPxTransformationMatrix::translateTo(vector, space);
 
   MStatus status = MPxTransformationMatrix::translateTo(vector, space);
   if(status)
@@ -1263,6 +1263,7 @@ MStatus TransformationMatrix::translateTo(const MVector& vector, MSpace::Space s
 void TransformationMatrix::insertScaleOp()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::insertScaleOp\n");
+
   // generate our translate op, and insert into the correct stack location
   UsdGeomXformOp op = m_xform.AddScaleOp(UsdGeomXformOp::PrecisionFloat, TfToken("scale"));
 
@@ -1280,7 +1281,8 @@ MStatus TransformationMatrix::scaleTo(const MVector& scale, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::scaleTo %f %f %f\n", scale.x, scale.y, scale.z);
   if(isScaleLocked())
-    return MStatus::kSuccess;
+    return MPxTransformationMatrix::scaleTo(scale, space);
+
   MStatus status = MPxTransformationMatrix::scaleTo(scale, space);
   if(status)
   {
@@ -1325,6 +1327,8 @@ void TransformationMatrix::insertShearOp()
 MStatus TransformationMatrix::shearTo(const MVector& shear, MSpace::Space space)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::shearTo %f %f %f\n", shear.x, shear.y, shear.z);
+  if(isShearLocked())
+    return MPxTransformationMatrix::shearTo(shear, space);
   MStatus status = MPxTransformationMatrix::shearTo(shear, space);
   if(status)
   {
@@ -1580,7 +1584,7 @@ MStatus TransformationMatrix::rotateTo(const MQuaternion &q, MSpace::Space space
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::rotateTo %f %f %f %f\n", q.x, q.y, q.z, q.w);
   if(isRotateLocked())
-    return MS::kSuccess;
+    return MPxTransformationMatrix::rotateTo(q, space);;
   MStatus status = MPxTransformationMatrix::rotateTo(q, space);
   if(status)
   {
@@ -1608,7 +1612,7 @@ MStatus TransformationMatrix::rotateTo(const MEulerRotation &e, MSpace::Space sp
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::rotateTo %f %f %f\n", e.x, e.y, e.z);
   if(isRotateLocked())
-    return MS::kSuccess;
+    return MPxTransformationMatrix::rotateTo(e, space);;
   MStatus status = MPxTransformationMatrix::rotateTo(e, space);
   if(status)
   {

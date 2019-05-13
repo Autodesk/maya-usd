@@ -199,6 +199,17 @@ public:
              plug.child(2).isLocked();
     }
 
+  /// \brief  checks to see whether the shear attribute is locked
+  /// \return true if the shear attribute is locked
+  bool isShearLocked()
+    {
+      MPlug plug(m_transformNode.object(), MPxTransform::shear);
+      return plug.isLocked() ||
+             plug.child(0).isLocked() ||
+             plug.child(1).isLocked() ||
+             plug.child(2).isLocked();
+    }
+
   /// \brief  helper method. Reads a vector from the transform op specified at the requested timecode
   /// \param  result the returned result
   /// \param  op the transformation op to read from
