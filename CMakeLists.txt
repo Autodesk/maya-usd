@@ -10,22 +10,7 @@
 #*****************************************************************************
 #+
 
-if (WIN32)
-    cmake_minimum_required(VERSION 3.1.1)
-else()
-    cmake_minimum_required(VERSION 2.8.8)
-endif()
-
-if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
-    if (WIN32)
-        message(FATAL_ERROR "Compiler does not support 64-bit builds. "
-                "If you are using Visual Studio, make sure you are in the "
-                "x64 command prompt and have specified the Win64 cmake "
-                "generator (e.g., -G \"Visual Studio 14 2015 Win64\")")
-    else()
-        message(FATAL_ERROR "Compiler does not support 64-bit builds.")
-    endif()
-endif()
+cmake_minimum_required(VERSION 3.1.1)
 
 list(APPEND CMAKE_MODULE_PATH
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults
@@ -35,15 +20,7 @@ list(APPEND CMAKE_MODULE_PATH
 
 # This defines functions and macros that are used later on.
 include(cmake/utils.cmake)
-
 include(Options)
-
-# Versions prior to 3.1.0 on Unix platforms built archive libraries
-# incorrectly.  Require at least that version if necessary.
-if((NOT BUILD_SHARED_LIBS OR PXR_BUILD_MONOLITHIC) AND NOT WIN32)
-    cmake_minimum_required(VERSION 3.1.0)
-endif()
-
 include(ProjectDefaults)
 
 # CXXDefaults will set a variety of variables for the project.
@@ -52,65 +29,4 @@ include(ProjectDefaults)
 include(CXXDefaults)
 add_definitions(${_PXR_CXX_DEFINITIONS})
 set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
-
 include(Public)
-
-find_package(Maya REQUIRED)
-if (CMAKE_WANT_UFE_BUILD)
-    if (NOT UFE_MAJOR_VERSION)
-        if (NOT UFE_VERSION)
-            message(FATAL_ERROR "UFE_VERSION must be defined when CMAKE_WANT_UFE_BUILD is enabled")
-        endif()
-        string(REPLACE "." ";" UFE_VERSION_LIST ${UFE_VERSION})
-        list(GET UFE_VERSION_LIST 0 UFE_MAJOR_VERSION)
-        list(GET UFE_VERSION_LIST 1 UFE_MINOR_VERSION)
-        list(GET UFE_VERSION_LIST 2 UFE_PATCH_LEVEL)
-    endif()
-    find_package(UFE REQUIRED)
-endif()
-find_package(USD REQUIRED)
-
-#==============================================================================
-# PACKAGES USED WHILE BUILDING
-#==============================================================================
-
-if (NOT DEFINED PYTHON_INCLUDE_DIRS AND DEFINED PYTHON_INCLUDE_DIR)
-    set(PYTHON_INCLUDE_DIRS ${PYTHON_INCLUDE_DIR})
-endif()
-
-# Used to build the Python bindings of the SDK
-if(NOT(PYTHON_INCLUDE_DIRS AND PYTHON_LIBRARIES))
-	include(cmake/python.cmake)
-endif()
-include_directories(${PYTHON_INCLUDE_DIRS})
-
-# The building of the schemas requires some extra python packages which may or
-# may not be installed. If they aren't we manually set them up (from artifactory).
-if (BUILD_USDMAYA_SCHEMAS)
-	include(cmake/jinja.cmake)
-endif()
-
-#==============================================================================
-# AL_USDMAYA CMAKE VARS
-#==============================================================================
-
-set(BUILD_MAYAUSD ON CACHE BOOL "Build the Maya USD plugin and core libraries.")
-set(BUILD_AL_USDMAYA OFF CACHE BOOL "Build the Animal Logic plugin and libraries.")
-
-if (BUILD_MAYAUSD)
-    set(MAYAUSD_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD_PATCH_LEVEL}")
-endif()
-
-set(CMAKE_MODULE_PATH     "${CMAKE_SOURCE_DIR}/al_usdmaya/cmake/modules")
-set(MAYA_LOCATION         "${MAYA_LOCATION}")
-set(NO_TESTS 1 )
-set(SKIP_USDMAYA_TESTS ON CACHE BOOL "Skip tests")
-set(BOOST_LIBRARYDIR "${USD_ROOT}/lib" )
-if (WIN32)
-	set(BOOST_INCLUDEDIR "${USD_ROOT}/include/boost-1_61" )
-else()
-	set(BOOST_INCLUDEDIR "${USD_ROOT}/include" )
-endif()
-set(BOOST_ROOT "${USD_ROOT}" )
-
-add_subdirectory(AL_USDMaya)
