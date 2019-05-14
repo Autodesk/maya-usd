@@ -10,18 +10,7 @@
 #*****************************************************************************
 #+
 
-#------------------------------------------------------------------------------
-#
-# Creates an IMPORTED library named USD.
-#
-# Linking against USD will cause the proper include directories
-# to be added to your target.
-#
 function(init_usd)
-
-    #--------------------------------------------------------------------------
-    # Allow a developer to override the USD Location to test using a local
-    # build of USD.
     set(USD_LOCATION_OVERRIDE "" CACHE PATH
         "Location of USD to use (in replacement of the Artifactory one.")
 
@@ -39,7 +28,6 @@ function(init_usd)
     if(WIN32)
         append_path_to_env_var("PATH" "${PXR_USD_LOCATION}/bin;${PXR_USD_LOCATION}/lib")
     endif()
-
 endfunction()
 
 init_usd()

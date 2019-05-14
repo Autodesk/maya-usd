@@ -10,19 +10,8 @@
 #*****************************************************************************
 #+
 
-#------------------------------------------------------------------------------
-#
-# Creates an IMPORTED library named UFE.
-#
-# Linking against UFE will cause the proper include directories
-# to be added to your target.
-#
 function(init_ufe)
-    #--------------------------------------------------------------------------
-    # Allow a developer to override the UFE Location to test using a local
-    # build of UFE instead of one that has been download from Artifactory
-    set(UFE_LOCATION_OVERRIDE "" CACHE PATH
-        "Location of UFE to use (in replacement of the Artifactory one.")
+    set(UFE_LOCATION_OVERRIDE "" CACHE PATH "Location of UFE to use")
 
     if (UFE_LOCATION_OVERRIDE)
         set(UFE_LOCATION "${UFE_LOCATION_OVERRIDE}")
