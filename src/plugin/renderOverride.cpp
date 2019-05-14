@@ -453,7 +453,6 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     if (_needsClear.exchange(false)) { ClearHydraResources(); }
 
     if (!_initializedViewport) {
-        GlfGlewInit();
         _InitHydraResources();
 // This was required to work around an issue in HdSt
 // that didn't render lights the first time. Leaving it here
@@ -578,6 +577,7 @@ void MtohRenderOverride::_InitHydraResources() {
         .Msg(
             "MtohRenderOverride::_InitHydraResources(%s)\n",
             _rendererDesc.rendererName.GetText());
+    GlfGlewInit();
 #ifdef HDMAYA_USD_001905_BUILD
     GlfContextCaps::InitInstance();
 #endif
