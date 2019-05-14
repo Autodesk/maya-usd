@@ -11,8 +11,7 @@
 #+
 
 function(init_usd)
-    set(USD_LOCATION_OVERRIDE "" CACHE PATH
-        "Location of USD to use (in replacement of the Artifactory one.")
+    set(USD_LOCATION_OVERRIDE "" CACHE PATH "Location of USD to use")
 
     if (USD_LOCATION_OVERRIDE)
         set(PXR_USD_LOCATION "${USD_LOCATION_OVERRIDE}")

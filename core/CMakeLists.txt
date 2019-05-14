@@ -22,7 +22,6 @@ endif()
 # 
 #==============================================================================
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-include(CXXDefaults)
 
 if(WIN32)
     set(CMAKE_CXX_FLAGS
