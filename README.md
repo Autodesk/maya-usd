@@ -1,2 +1,5 @@
-# maya-usd
-Maya USD plug-in
+# What is maya_usd?
+
+## Detailed Documentation
+
++ [Building](docs/build.md)
