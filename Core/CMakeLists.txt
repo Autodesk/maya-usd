@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.1.1)
-
 project(mayaUsd)
 
 if (POLICY CMP0074)
@@ -7,12 +6,17 @@ if (POLICY CMP0074)
 endif()
 
 #==============================================================================
-# Modules
+# Modules and Definitions
 #==============================================================================
 list(APPEND CMAKE_MODULE_PATH
     ${PROJECT_SOURCE_DIR}/../cmake/defaults
     ${PROJECT_SOURCE_DIR}/../cmake/modules
 )
+
+if (APPLE)
+   set(CMAKE_MACOSX_RPATH 1)
+   add_definitions(-DOSMac_ -DMAC_PLUGIN)
+endif()
 
 #==============================================================================
 # 
@@ -34,7 +38,9 @@ endif()
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 #==============================================================================
-# 
+# Packages
 #==============================================================================
+find_package(Maya REQUIRED)
+
 add_subdirectory(include)
 add_subdirectory(src)

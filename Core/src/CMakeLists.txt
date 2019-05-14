@@ -32,6 +32,9 @@ target_include_directories(
 )
 
 target_link_libraries(${LIBRARY_NAME}
+    ${MAYA_Foundation_LIBRARY}
+    ${MAYA_OpenMayaAnim_LIBRARY}
+    ${MAYA_OpenMaya_LIBRARY}
 )
 
 install(TARGETS ${LIBRARY_NAME}
