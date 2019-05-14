@@ -51,7 +51,7 @@ set(MAYAUSD_INSTALL_DIR "${MAYAUSD_BUILD_ROOT}/mayausd-install/mayaUsd-${MAYAUSD
 if (NOT CMAKE_VERSION VERSION_LESS "3.1.3")
     set(MAYAUSD_BUILD_ALWAYS "BUILD_ALWAYS ON")
 endif()
-configure_file(Core/CMakeLists_MayaUsd.txt.in ${MAYAUSD_BUILD_ROOT}/mayausd-config/CMakeLists.txt)
+configure_file(core/CMakeLists_MayaUsd.txt.in ${MAYAUSD_BUILD_ROOT}/mayausd-config/CMakeLists.txt)
 
 # Execute the MayaUSD build right now.
 message(STATUS "========== Building MayaUSD_v${MAYAUSD_VERSION} ... ==========")

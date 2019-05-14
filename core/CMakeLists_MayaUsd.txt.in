@@ -13,7 +13,7 @@ ExternalProject_Add(mayaUsd
     PREFIX              "${MAYAUSD_BUILD_ROOT}"
     STAMP_DIR           "${MAYAUSD_BUILD_ROOT}/mayausd-stamp"
     TMP_DIR             "${MAYAUSD_BUILD_ROOT}/mayausd-temp"
-    SOURCE_DIR          "${CMAKE_CURRENT_SOURCE_DIR}/Core"
+    SOURCE_DIR          "${CMAKE_CURRENT_SOURCE_DIR}/core"
     BINARY_DIR          "${MAYAUSD_BUILD_ROOT}/mayausd-build"
     INSTALL_DIR         "${MAYAUSD_INSTALL_DIR}"
     DOWNLOAD_COMMAND    ""
