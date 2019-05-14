@@ -233,6 +233,8 @@ MObject ProxyShape::m_transformScale = MObject::kNullObj;
 MObject ProxyShape::m_stageDataDirty = MObject::kNullObj;
 MObject ProxyShape::m_stageCacheId = MObject::kNullObj;
 MObject ProxyShape::m_assetResolverConfig = MObject::kNullObj;
+MObject ProxyShape::m_visibleInReflections = MObject::kNullObj;
+MObject ProxyShape::m_visibleInRefractions = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 std::vector<MObjectHandle> ProxyShape::m_unloadedProxyShapes;
@@ -802,10 +804,14 @@ MStatus ProxyShape::initialise()
         "version", "vrs", getVersion(),
         kReadable | kStorable | kHidden);
 
-    MNodeClass nc("transform");
-    m_transformTranslate = nc.attribute("t");
-    m_transformRotate = nc.attribute("r");
-    m_transformScale = nc.attribute("s");
+    MNodeClass ncTransform("transform");
+    m_transformTranslate = ncTransform.attribute("t");
+    m_transformRotate = ncTransform.attribute("r");
+    m_transformScale = ncTransform.attribute("s");
+
+    MNodeClass ncProxyShape(kTypeId);
+    m_visibleInReflections = ncProxyShape.attribute("visibleInReflections");
+    m_visibleInRefractions = ncProxyShape.attribute("visibleInRefractions");
 
     m_stageDataDirty = addBoolAttr("stageDataDirty", "sdd", false, kWritable | kAffectsAppearance | kInternal);
 
@@ -1631,7 +1637,11 @@ void ProxyShape::constructLockPrims()
 void ProxyShape::postConstructor()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::postConstructor\n");
+
+  // Apply render defaults
   setRenderable(true);
+  MPlug(thisMObject(), m_visibleInReflections).setValue(true);
+  MPlug(thisMObject(), m_visibleInRefractions).setValue(true);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

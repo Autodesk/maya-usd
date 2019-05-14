@@ -1058,6 +1058,8 @@ private:
   static MObject m_transformTranslate;
   static MObject m_transformRotate;
   static MObject m_transformScale;
+  static MObject m_visibleInReflections;
+  static MObject m_visibleInRefractions;
   UsdStageRefPtr m_stage;
   SdfPath m_path;
   fileio::translators::TranslatorContextPtr m_context;
