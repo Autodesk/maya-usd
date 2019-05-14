@@ -1,3 +1,15 @@
+## AL_USDMaya-0.32.23 (2019-05-14)
+### Fixed
++ Transform attributes can no longer change when locked.
+
+## AL_USDMaya-0.32.22 (2019-05-07)
+### Changed
++ Import mesh normals in unlocked state
+
+## AL_USDMaya-0.32.21 (2019-05-07)
+### Fixed
++ Selection highlighting visible in wireframe mode.
+
 ## AL_USDMaya-0.32.20 (2019-05-02)
 ### Added
 + Added "AL_usdmaya_readAnimatedValues" option var to control default setting of readAnimatedValues attribute
