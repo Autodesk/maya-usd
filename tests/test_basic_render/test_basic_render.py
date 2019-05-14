@@ -50,8 +50,8 @@ class TestHdMayaRender(HdMayaTestCase):
         self.assertSnapshotClose("cube_unselected.png")
         # if we select everything with hdmaya enabled, then all playblast
         # renders after render black... even when playblasting normal vp2
-        #cmds.select(self.cubeTrans)
-        #self.assertSnapshotClose("cube_selected.png")
+        cmds.select(self.cubeTrans)
+        self.assertSnapshotClose("cube_selected.png")
 
 
 if __name__ == "__main__":
