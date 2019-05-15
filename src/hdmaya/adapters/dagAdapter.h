@@ -94,7 +94,9 @@ protected:
     HDMAYA_API
     void _CalculateTransform();
     HDMAYA_API
-    void _AddHierarchyChangedCallback(MDagPath& dag);
+    void _AddParentAddedCallback(MDagPath& dag);
+    HDMAYA_API
+    void _AddParentRemovedCallback(MDagPath& dag);
     HDMAYA_API
     virtual bool _GetVisibility() const;
 
