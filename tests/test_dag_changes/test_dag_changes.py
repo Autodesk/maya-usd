@@ -128,10 +128,11 @@ class TestDagChanges(HdMayaTestCase):
             cmds.select(clear=1)
             self.assertSnapshotClose("instances_123456.png")
 
+            # Delete group2
+            #   [no shapes]
             cmds.undoInfo(state=1)
             cmds.undoInfo(openChunk=1)
             try:
-                # Delete group2
                 cmds.delete(self.grp2)
                 self.assertNotIn(self.cubeRprim, self.getIndex())
                 self.assertSnapshotClose("instances_0.png")
@@ -157,11 +158,11 @@ class TestDagChanges(HdMayaTestCase):
                         removeObject=1)
             self.assertSnapshotClose("instances_1235.png")
 
+            # Remove pCube2|pCubeShape1 instance
+            #   (1) |pCube1|pCubeShape1
+            #   (2) |group1|pCube1|pCubeShape1
             cmds.undoInfo(openChunk=1)
             try:
-                # Remove pCube2|pCubeShape1 instance
-                #   (1) |pCube1|pCubeShape1
-                #   (2) |group1|pCube1|pCubeShape1
                 cmds.parent('|{pCube2}|{self.cubeShapeName}'.format(self=self,
                                                                     pCube2=pCube2),
                             removeObject=1, shape=1)
@@ -170,6 +171,25 @@ class TestDagChanges(HdMayaTestCase):
                 cmds.undoInfo(closeChunk=1)
 
             # Undo remove pCube2|pCubeShape1 instance
+            #   (1) |pCube1|pCubeShape1
+            #   (2) |group1|pCube1|pCubeShape1
+            #   (3) |pCube2|pCubeShape1
+            #   (5) |group1|pCube2|pCubeShape1
+            cmds.undo()
+            self.assertSnapshotClose("instances_1235.png")
+
+            # Remove pCube1|pCubeShape1 (the "master" instance)
+            #   (3) |pCube2|pCubeShape1
+            #   (5) |group1|pCube2|pCubeShape1
+            cmds.undoInfo(openChunk=1)
+            try:
+                cmds.parent('|{self.cubeTrans}|{self.cubeShapeName}'.format(self=self),
+                            removeObject=1, shape=1)
+                self.assertSnapshotClose("instances_35.png")
+            finally:
+                cmds.undoInfo(closeChunk=1)
+
+            # Undo remove pCube1|pCubeShape1 (the "master" instance)
             #   (1) |pCube1|pCubeShape1
             #   (2) |group1|pCube1|pCubeShape1
             #   (3) |pCube2|pCubeShape1
@@ -185,16 +205,17 @@ class TestDagChanges(HdMayaTestCase):
                 cmds.undoInfo(stateWithoutFlush=1)
 
             # Redo remove pCube2|pCubeShape1 instance
-            #   (1) |pCube1|pCubeShape1
-            #   (2) |group1|pCube1|pCubeShape1
+            #   (3) |pCube2|pCubeShape1
+            #   (5) |group1|pCube2|pCubeShape1
             cmds.redo()
-            self.assertSnapshotClose("instances_12.png")
+            self.assertSnapshotClose("instances_35.png")
 
-            # Remove |group1|pCube1 instance
-            #   (1) |pCube1|pCubeShape1
-            cmds.parent('{self.grp1}|{self.cubeTrans}'.format(self=self),
+            # Remove |group1|pCube2 instance
+            #   (3) |pCube2|pCubeShape1
+            cmds.parent('{self.grp1}|{pCube2}'.format(self=self,
+                                                      pCube2=pCube2),
                         removeObject=1)
-            self.assertSnapshotClose("instances_1.png")
+            self.assertSnapshotClose("instances_3.png")
         finally:
             cmds.undoInfo(state=undoWasEnabled)
 
