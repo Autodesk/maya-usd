@@ -9,6 +9,7 @@ Start with cloning the repository and creating the build directory:
 ```
 git clone <git_path_to_maya-usd>
 cd maya-usd
+git submodule update --init
 mkdir build
 cd build
 ```
@@ -28,7 +29,7 @@ cmake --build . --target install
 Append -- -j <NUM_CORES> or /m:%NUMBER_OF_PROCESSORS% based on your platform or CMake Generator.
 ```
 
-It is up to the users to select the CMake Generator based on the their preference:
+It is up to the users to select the CMake Generator based on their preference:
 
 ```
 -G Ninja -DCMAKE_MAKE_PROGRAM=<path to ninja executable>
@@ -37,5 +38,12 @@ It is up to the users to select the CMake Generator based on the their preferenc
 ```
 
 ### CMake Options
+
+Name                 | Description                                  | Default
+---                  | ---                                          | ---
+BUILD_MAYAUSD_CORE   | Build the Maya USD core libraries            | ON
+BUILD_MAYAUSD_PLUGIN | Build the Maya USD plugin                    | ON
+BUILD_AL_USD         | Build the Animal Logic plugin and libraries  | OFF
+BUILD_PXR_USD        | Build the Pixar plugin and libraries         | OFF
 
 ### Prerequisites
