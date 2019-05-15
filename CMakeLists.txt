@@ -36,6 +36,7 @@ if (BUILD_MAYAUSD_CORE)
     set(MAYAUSD_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD_PATCH_LEVEL}")
 endif()
 
+include(cmake/python.cmake)
 include(cmake/utils.cmake)
 include(cmake/usd.cmake)
 include(cmake/ufe.cmake)
