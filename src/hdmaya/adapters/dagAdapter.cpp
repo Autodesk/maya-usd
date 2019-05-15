@@ -220,6 +220,7 @@ void HdMayaDagAdapter::CreateCallbacks() {
             }
         }
     }
+    HdMayaAdapter::CreateCallbacks();
 }
 
 void HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
