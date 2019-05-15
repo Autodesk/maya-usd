@@ -78,8 +78,8 @@ def imageDiff(imagePath1, imagePath2):
     # TODO: write a c++ tool to do this faster...
 
     # Considered having a maxDiff, and aborting early if it was exceeded...
-    # the the "normal" case is that whole image is compared (since it's the
-    # same, so we'd only get speedups when things are going wrong - and it's
+    # but the "normal" case is that whole image is compared (since it's the
+    # same), so we'd only get speedups when things are going wrong - and it's
     # useful to have a utility to return the total diff
 
     # We use QImage because we know we should have access to
