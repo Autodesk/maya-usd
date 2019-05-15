@@ -98,9 +98,10 @@ void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData) {
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     TF_DEBUG(HDMAYA_ADAPTER_DAG_HIERARCHY)
         .Msg(
-            "Dag hierarchy changed for prim (%s) dirty because parent %s "
-            "was added/removed.\n",
-            adapter->GetID().GetText(), parent.partialPathName().asChar());
+            "Dag hierarchy changed for prim (%s) because %s had parent %s "
+            "added/removed.\n",
+            adapter->GetID().GetText(), child.partialPathName().asChar(),
+            parent.partialPathName().asChar());
     adapter->RemoveCallbacks();
     adapter->RemovePrim();
     adapter->GetDelegate()->RecreateAdapterOnIdle(
