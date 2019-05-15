@@ -146,7 +146,10 @@ public:
 
         GetDelegate()->InsertRprim(
             HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty);
+        _isPopulated = true;
+    }
 
+    void CreateCallbacks() override {
         MStatus status;
         auto obj = GetNode();
         auto id = MNodeMessage::addNodeDirtyPlugCallback(
@@ -158,7 +161,6 @@ public:
                 _camera, _CameraNodeDirtiedCallback, this, &status);
             if (status) { AddCallback(id); }
         }
-        _isPopulated = true;
     }
 
     // note: could remove if made a header for meshAdapter
