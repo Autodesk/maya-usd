@@ -4,5 +4,6 @@
 .cproject
 .pydevproject
 .settings
+*.pyc
 cmake-build-*
 /build/
