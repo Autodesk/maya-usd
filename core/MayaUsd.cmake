@@ -7,7 +7,6 @@ file(TO_CMAKE_PATH ${MAYA_LOCATION} MAYA_LOCATION)
 file(TO_CMAKE_PATH ${MAYAUSD_BUILD_ROOT} MAYAUSD_BUILD_ROOT)
 
 message("CMAKE_MAKE_PROGRAM = ${CMAKE_MAKE_PROGRAM}")
-message("MAYA_LOCATION = ${MAYA_LOCATION}")
 message("MAYAUSD_BUILD_ROOT = ${MAYAUSD_BUILD_ROOT}")
 
 # Helper macro to add the needed defines to a list so that we can easily pass
@@ -19,6 +18,7 @@ macro(add_mayausd_define var)
     endif()
 endmacro(add_mayausd_define)
 
+add_mayausd_define(MAYA_LOCATION)
 add_mayausd_define(BUILD_USDMAYA_TRANSLATORS)
 if (CMAKE_WANT_UFE_BUILD)
     add_mayausd_define(UFE_VERSION)
@@ -44,6 +44,7 @@ message("PYTHON_EXECUTABLE		    = ${PYTHON_EXECUTABLE}")
 message("PYTHON_INCLUDE_DIR		    = ${PYTHON_INCLUDE_DIR}")
 message("PYTHON_LIBRARIES		    = ${PYTHON_LIBRARIES}")
 message("CMAKE_INSTALL_PREFIX		= ${CMAKE_INSTALL_PREFIX}")
+message("MAYA_LOCATION              = ${MAYA_LOCATION}")
 
 set(MAYAUSD_INSTALL_DIR "${MAYAUSD_BUILD_ROOT}/mayausd-install/mayaUsd-${MAYAUSD_MAJOR_VERSION}-${MAYAUSD_MINOR_VERSION}-${MAYAUSD_PATCH_LEVEL}")
 
