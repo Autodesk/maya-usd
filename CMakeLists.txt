@@ -21,8 +21,6 @@ set(BUILD_MAYAUSD_PLUGIN ON CACHE BOOL "Build the Maya USD plugin.")
 set(BUILD_AL_USD OFF CACHE BOOL "Build the Animal Logic plugin and libraries.")
 set(BUILD_PXR_USD OFF CACHE BOOL "Build the Pixar plugin and libraries.")
 
-set(CMAKE_WANT_UFE_BUILD OFF)
-
 #==============================================================================
 # Modules and Definitions
 #==============================================================================
@@ -39,7 +37,6 @@ endif()
 include(cmake/python.cmake)
 include(cmake/utils.cmake)
 include(cmake/usd.cmake)
-include(cmake/ufe.cmake)
 
 #==============================================================================
 # 

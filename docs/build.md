@@ -20,6 +20,7 @@ Fill out the paths below and run the following commands to build and install.
 cmake \
       -DCMAKE_INSTALL_PREFIX="<path to where you want to install the plugins and libraries>" \
       -DMAYA_LOCATION="<path to maya binary directory>" \
+      -DMAYA_DEVKIT_LOCATION="<path to devkit directory>"  \
       -DUSD_LOCATION_OVERRIDE="<path to usd directory>" \
       -DUSD_CONFIG_FILE="<path_to_usd_location/pxrConfig.cmake>"\
       ..

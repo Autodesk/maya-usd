@@ -25,6 +25,26 @@ find_path(UFE_INCLUDE_DIR
         "UFE header path"
 )
 
+# get UFE_VERSION from ufe.h
+if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/ufe.h")
+    foreach(_ufe_comp MAJOR MINOR)
+        file(STRINGS
+            "${UFE_INCLUDE_DIR}/ufe/ufe.h"
+            _ufe_tmp
+            REGEX "#define UFE_${_ufe_comp}_VERSION .*$")
+        string(REGEX MATCHALL "[0-9]+" UFE_${_ufe_comp}_VERSION ${_ufe_tmp})
+    endforeach()
+    foreach(_ufe_comp PATCH)
+        file(STRINGS
+            "${UFE_INCLUDE_DIR}/ufe/ufe.h"
+            _ufe_tmp
+            REGEX "#define UFE_${_ufe_comp}_LEVEL .*$")
+        string(REGEX MATCHALL "[0-9]+" UFE_${_ufe_comp}_LEVEL ${_ufe_tmp})
+    endforeach()
+
+    set(UFE_VERSION ${UFE_MAJOR_VERSION}.${UFE_MINOR_VERSION}.${UFE_PATCH_LEVEL})
+endif()
+
 find_library(UFE_LIBRARY
     NAMES
         ufe_${UFE_MAJOR_VERSION}
@@ -44,8 +64,9 @@ find_library(UFE_LIBRARY
     NO_DEFAULT_PATH
 )
 
-message(STATUS "UFE Include directory: ${UFE_INCLUDE_DIR}")
-message(STATUS "         UFE Library : ${UFE_LIBRARY}")
+message("         UFE_VERSION : ${UFE_VERSION}")
+message("     UFE_INCLUDE_DIR: ${UFE_INCLUDE_DIR}")
+message("         UFE_LIBRARY : ${UFE_LIBRARY}")
 
 # Handle the QUIETLY and REQUIRED arguments and set UFE_FOUND to TRUE if
 # all listed variables are TRUE.
@@ -55,4 +76,5 @@ find_package_handle_standard_args(UFE
     REQUIRED_VARS
         UFE_INCLUDE_DIR
         UFE_LIBRARY
+        UFE_VERSION
 )
