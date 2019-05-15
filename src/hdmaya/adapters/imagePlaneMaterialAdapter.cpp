@@ -114,6 +114,12 @@ public:
     }
 
     void CreateCallbacks() override {
+        TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+            .Msg(
+                "Creating image plane material adapter callbacks for prim "
+                "(%s).\n",
+                GetID().GetText());
+
         MStatus status;
         auto obj = GetNode();
         auto id = MNodeMessage::addNodeDirtyPlugCallback(

@@ -225,6 +225,11 @@ VtValue HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
 }
 
 void HdMayaLightAdapter::CreateCallbacks() {
+    TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+        .Msg(
+            "Creating light adapter callbacks for prim (%s).\n",
+            GetID().GetText());
+
     MStatus status;
     auto dag = GetDagPath();
     auto obj = dag.node();

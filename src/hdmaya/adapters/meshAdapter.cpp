@@ -53,7 +53,7 @@ namespace {
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    
+
     (st)
 );
 // clang-format on
@@ -100,6 +100,11 @@ public:
         MStatus status;
         auto obj = GetNode();
         if (obj != MObject::kNullObj) {
+            TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+                .Msg(
+                    "Creating mesh adapter callbacks for prim (%s).\n",
+                    GetID().GetText());
+
             auto id = MNodeMessage::addNodeDirtyPlugCallback(
                 obj, NodeDirtiedCallback, this, &status);
             if (status) { AddCallback(id); }

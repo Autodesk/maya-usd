@@ -78,6 +78,11 @@ public:
         MStatus status;
         auto obj = GetNode();
         if (obj != MObject::kNullObj) {
+            TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+                .Msg(
+                    "Creating nurbs curve adapter callbacks for prim (%s).\n",
+                    GetID().GetText());
+
             auto id = MNodeMessage::addNodeDirtyPlugCallback(
                 obj, NodeDirtiedCallback, this, &status);
             if (status) { AddCallback(id); }
