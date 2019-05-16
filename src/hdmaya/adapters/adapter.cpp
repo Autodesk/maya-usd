@@ -40,6 +40,10 @@ namespace {
 void _preRemoval(MObject& node, void* clientData) {
     TF_UNUSED(node);
     auto* adapter = reinterpret_cast<HdMayaAdapter*>(clientData);
+    TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+        .Msg(
+            "Pre-removal callback triggered for prim (%s)\n",
+            adapter->GetID().GetText());
     adapter->GetDelegate()->RemoveAdapter(adapter->GetID());
 }
 
@@ -47,6 +51,10 @@ void _nameChanged(MObject& node, const MString& str, void* clientData) {
     TF_UNUSED(node);
     TF_UNUSED(str);
     auto* adapter = reinterpret_cast<HdMayaAdapter*>(clientData);
+    TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+        .Msg(
+            "Name-changed callback triggered for prim (%s)\n",
+            adapter->GetID().GetText());
     adapter->RemoveCallbacks();
     adapter->GetDelegate()->RecreateAdapterOnIdle(
         adapter->GetID(), adapter->GetNode());

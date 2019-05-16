@@ -31,6 +31,7 @@
 #include <pxr/imaging/pxOsd/tokens.h>
 
 #include <maya/MAnimControl.h>
+#include <maya/MCallbackIdArray.h>
 #include <maya/MDGContext.h>
 #include <maya/MDGContextGuard.h>
 #include <maya/MFloatArray.h>
@@ -38,6 +39,7 @@
 #include <maya/MIntArray.h>
 #include <maya/MItMeshPolygon.h>
 #include <maya/MNodeMessage.h>
+#include <maya/MObjectHandle.h>
 #include <maya/MPlug.h>
 #include <maya/MPolyMessage.h>
 
@@ -96,6 +98,10 @@ public:
         _isPopulated = true;
     }
 
+    void AddBuggyCallback(MCallbackId id) {
+        _buggyCallbacks.append(id);
+    }
+
     void CreateCallbacks() override {
         MStatus status;
         auto obj = GetNode();
@@ -117,12 +123,25 @@ public:
             bool wantModifications[3] = {true, true, true};
             id = MPolyMessage::addPolyComponentIdChangedCallback(
                 obj, wantModifications, 3, ComponentIdChanged, this, &status);
-            if (status) { AddCallback(id); }
+            if (status) { AddBuggyCallback(id); }
             id = MPolyMessage::addUVSetChangedCallback(
                 obj, UVSetChangedCallback, this, &status);
-            if (status) { AddCallback(id); }
+            if (status) { AddBuggyCallback(id); }
         }
         HdMayaDagAdapter::CreateCallbacks();
+    }
+
+    HDMAYA_API
+    void RemoveCallbacks() override {
+        if (_buggyCallbacks.length() > 0) {
+            TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+                .Msg("Removing buggy PolyComponentIdChangedCallbacks\n");
+            if (_node != MObject::kNullObj && MObjectHandle(_node).isValid()) {
+                MMessage::removeCallbacks(_buggyCallbacks);
+            }
+            _buggyCallbacks.clear();
+        }
+        HdMayaAdapter::RemoveCallbacks();
     }
 
     bool IsSupported() const override {
@@ -414,6 +433,16 @@ private:
         auto* adapter = reinterpret_cast<HdMayaMeshAdapter*>(clientData);
         adapter->MarkDirty(HdChangeTracker::DirtyPrimvar);
     }
+
+    // Maya has a bug with removing some MPolyMessage callbacks. Known
+    // problem callbacks include:
+    //     MPolyMessage::addPolyComponentIdChangedCallback
+    //     MPolyMessage::addUVSetChangedCallback
+    // Reproduction code can be found here:
+    //    https://gist.github.com/elrond79/668d9809873125f608e0f7360fff7fac
+    // To work around this, we register these callbacks specially, and only
+    // remove them if the underlying node is currently valid.
+    MCallbackIdArray _buggyCallbacks;
 };
 
 TF_REGISTRY_FUNCTION(TfType) {
