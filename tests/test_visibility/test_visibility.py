@@ -71,6 +71,34 @@ class TestCommand(HdMayaTestCase):
             self.cubeRprim,
             self.getVisibleIndex())
 
+    def doGroupVisibilityTest(self, makeNodeVis, makeNodeInvis):
+        lowGroup = cmds.group(self.cubeTrans, name='lowGroup')
+        midGroup = cmds.group(lowGroup, name='midGroup')
+        highGroup = cmds.group(midGroup, name='highGroup')
+        hier = [midGroup, midGroup, lowGroup, self.cubeTrans, self.cubeShape]
+        cmds.refresh()
+
+        self.cubeRprim = self.rprimPath(self.cubeShape)
+        visIndex = [self.cubeRprim]
+        self.assertEqual(self.getVisibleIndex(), visIndex)
+
+        for obj in hier:
+            makeNodeInvis(obj)
+            cmds.refresh()
+            self.assertEqual(self.getVisibleIndex(), [])
+            makeNodeVis(obj)
+            cmds.refresh()
+            self.assertEqual(self.getVisibleIndex(), visIndex)
+
+    def test_groupVisibility(self):
+        def makeNodeVis(obj):
+            cmds.setAttr("{}.visibility".format(obj), True)
+
+        def makeNodeInvis(obj):
+            cmds.setAttr("{}.visibility".format(obj), False)
+
+        self.doGroupVisibilityTest(makeNodeVis, makeNodeInvis)
+
 
 if __name__ == "__main__":
     unittest.main(argv=[""])
