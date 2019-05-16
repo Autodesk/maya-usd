@@ -61,7 +61,7 @@ if (BUILD_MAYAUSD_CORE)
     set(MAYAUSD_INCLUDE_ROOT ${MAYAUSD_INSTALL_DIR})
     set(MAYAUSD_LIB_ROOT ${MAYAUSD_INSTALL_DIR})
 
-    # Install the entire MayaUsd folder into the same folder as AL_USDMaya.
+    # Install the entire MayaUsd folder into the same folder as ${CMAKE_INSTALL_PREFIX}.
     # Note: the trailing slash is intentional so we won't end up with a 'mayaUsd' sub-folder.
     #       we also exlude the *.lib files.
     install(
