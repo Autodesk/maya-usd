@@ -3,10 +3,15 @@ message("MayaUsd.cmake")
 # Convert some vars to forward slashes (if required) to fix invalid escape
 # sequence parsing errors.
 file(TO_CMAKE_PATH ${CMAKE_MAKE_PROGRAM} CMAKE_MAKE_PROGRAM)
+file(TO_CMAKE_PATH ${MAYA_LOCATION} MAYA_LOCATION)
 file(TO_CMAKE_PATH ${MAYAUSD_BUILD_ROOT} MAYAUSD_BUILD_ROOT)
 
+message("CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}")
 message("CMAKE_MAKE_PROGRAM = ${CMAKE_MAKE_PROGRAM}")
+message("MAYA_LOCATION = ${MAYA_LOCATION}")
 message("MAYAUSD_BUILD_ROOT = ${MAYAUSD_BUILD_ROOT}")
+message("PXR_USD_LOCATION = ${PXR_USD_LOCATION}")
+message("USD_CONFIG_FILE = ${USD_CONFIG_FILE}")
 
 # Helper macro to add the needed defines to a list so that we can easily pass
 # them to the external project. That external project is executed in a separate
@@ -17,11 +22,8 @@ macro(add_mayausd_define var)
     endif()
 endmacro(add_mayausd_define)
 
-message("USD_CONFIG_FILE		    = ${USD_CONFIG_FILE}")
-message("PXR_USD_LOCATION           = ${PXR_USD_LOCATION}")
-message("BOOST_LIBRARYDIR		    = ${BOOST_LIBRARYDIR}")
-message("BOOST_ROOT				    = ${BOOST_ROOT}")
-message("CMAKE_INSTALL_PREFIX		= ${CMAKE_INSTALL_PREFIX}")
+# 
+add_mayausd_define(MAYA_LOCATION)
 
 set(MAYAUSD_INSTALL_DIR "${MAYAUSD_BUILD_ROOT}/mayausd-install/mayaUsd-${MAYAUSD_MAJOR_VERSION}-${MAYAUSD_MINOR_VERSION}-${MAYAUSD_PATCH_LEVEL}")
 
