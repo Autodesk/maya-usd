@@ -33,6 +33,16 @@ TF_REGISTRY_FUNCTION(TfDebug) {
         "Print information adding and removal of adapter callbacks.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_ADAPTER_CURVE_PLUG_DIRTY,
+        "Print information when a nurbs curve prim is dirtied due to a plug "
+        "being dirtied.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_ADAPTER_CURVE_UNHANDLED_PLUG_DIRTY,
+        "Print information when a nurbs curve prim is NOT dirtied, even though "
+        "a plug was dirtied.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_ADAPTER_DAG_HIERARCHY,
         "Print information related to dag hierarchy changes.");
 
