@@ -18,7 +18,7 @@ class TestCommand(HdMayaTestCase):
         cmds.refresh()
         self.assertIn(
             self.cubeRprim,
-            cmds.mtoh(listRenderIndex="HdStreamRendererPlugin", visibleOnly=1))
+            self.getVisibleIndex())
         self.assertSnapshotClose("cube_unselected.png")
 
         cmds.setAttr("{}.visibility".format(self.cubeTrans), False)
@@ -26,7 +26,7 @@ class TestCommand(HdMayaTestCase):
         cmds.refresh()
         self.assertNotIn(
             self.cubeRprim,
-            cmds.mtoh(listRenderIndex="HdStreamRendererPlugin", visibleOnly=1))
+            self.getVisibleIndex())
         self.assertSnapshotClose("nothing.png")
 
         cmds.setAttr("{}.visibility".format(self.cubeTrans), True)
@@ -34,7 +34,7 @@ class TestCommand(HdMayaTestCase):
         cmds.refresh()
         self.assertIn(
             self.cubeRprim,
-            cmds.mtoh(listRenderIndex="HdStreamRendererPlugin", visibleOnly=1))
+            self.getVisibleIndex())
         self.assertSnapshotClose("cube_unselected.png")
 
     def test_toggleShapeVis(self):
@@ -43,14 +43,14 @@ class TestCommand(HdMayaTestCase):
         cmds.refresh()
         self.assertNotIn(
             self.cubeRprim,
-            cmds.mtoh(listRenderIndex="HdStreamRendererPlugin", visibleOnly=1))
+            self.getVisibleIndex())
 
         cmds.setAttr("{}.visibility".format(self.cubeShape), True)
         self.assertTrue(cmds.getAttr("{}.visibility".format(self.cubeShape)))
         cmds.refresh()
         self.assertIn(
             self.cubeRprim,
-            cmds.mtoh(listRenderIndex="HdStreamRendererPlugin", visibleOnly=1))
+            self.getVisibleIndex())
 
     def test_toggleBothVis(self):
         cmds.setAttr("{}.visibility".format(self.cubeTrans), False)
@@ -60,7 +60,7 @@ class TestCommand(HdMayaTestCase):
         cmds.refresh()
         self.assertNotIn(
             self.cubeRprim,
-            cmds.mtoh(listRenderIndex="HdStreamRendererPlugin", visibleOnly=1))
+            self.getVisibleIndex())
 
         cmds.setAttr("{}.visibility".format(self.cubeTrans), True)
         self.assertTrue(cmds.getAttr("{}.visibility".format(self.cubeTrans)))
@@ -69,7 +69,7 @@ class TestCommand(HdMayaTestCase):
         cmds.refresh()
         self.assertIn(
             self.cubeRprim,
-            cmds.mtoh(listRenderIndex="HdStreamRendererPlugin", visibleOnly=1))
+            self.getVisibleIndex())
 
 
 if __name__ == "__main__":

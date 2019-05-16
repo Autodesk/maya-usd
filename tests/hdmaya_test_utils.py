@@ -161,11 +161,15 @@ class HdMayaTestCase(unittest.TestCase):
     def getIndex(self, **kwargs):
         return cmds.mtoh(listRenderIndex=HD_STREAM, **kwargs)
 
+    def getVisibleIndex(self, **kwargs):
+        kwargs['visibleOnly'] = True
+        return self.getIndex(**kwargs)
+
     def assertVisible(self, rprim):
-        self.assertIn(rprim, self.getIndex(visibleOnly=1))
+        self.assertIn(rprim, self.getVisibleIndex())
 
     def assertInIndex(self, rprim):
-        self.assertIn(rprim, self.getIndex(visibleOnly=1))
+        self.assertIn(rprim, self.getIndex())
 
     # 1e-04 equates to at most 16 pixels in a 400x400 image
     # are "completely wrong" - ie, pure black/white, when they
