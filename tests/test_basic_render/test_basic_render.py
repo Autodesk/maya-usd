@@ -44,9 +44,7 @@ class TestSnapshot(HdMayaTestCase):
 
 class TestHdMayaRender(HdMayaTestCase):
     def test_cube(self):
-        self.makeCubeScene()
-        cmds.setAttr('persp.rotate', -30, 45, 0, type='float3')
-        cmds.setAttr('persp.translate', 6, 4.5, 6, type='float3')
+        self.makeCubeScene(camDist=6)
         self.assertSnapshotClose("cube_unselected.png")
         # if we select everything with hdmaya enabled, then all playblast
         # renders after render black... even when playblasting normal vp2

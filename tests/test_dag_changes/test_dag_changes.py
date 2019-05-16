@@ -82,8 +82,6 @@ class TestDagChanges(HdMayaTestCase):
         cmds.undoInfo(state=0)
         try:
             pCube2 = cmds.createNode('transform', name='pCube2')
-            cmds.setAttr('persp.rotate', -30, 45, 0, type='float3')
-            cmds.setAttr('persp.translate', 24, 18, 24, type='float3')
 
             cmds.setAttr('{}.tz'.format(self.grp1), 5)
             cmds.setAttr('{}.tx'.format(self.grp2), 8)
@@ -226,8 +224,7 @@ class TestUndo(HdMayaTestCase):
         cmds.undoInfo(state=0)
         try:
             cmds.file(new=1, f=1)
-            cmds.setAttr('persp.rotate', -30, 45, 0, type='float3')
-            cmds.setAttr('persp.translate', 24, 18, 24, type='float3')
+            self.setBasicCam()
 
             self.setHdStreamRenderer()
 

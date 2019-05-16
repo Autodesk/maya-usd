@@ -122,6 +122,8 @@ def imageDiff(imagePath1, imagePath2):
 
 
 class HdMayaTestCase(unittest.TestCase):
+    DEFAULT_CAM_DIST = 24
+
     def setHdStreamRenderer(self):
         self.activeEditor = cmds.playblast(activeEditor=1)
         cmds.modelEditor(
@@ -131,7 +133,11 @@ class HdMayaTestCase(unittest.TestCase):
         self.delegateId = cmds.mtoh(sceneDelegateId=(
             HD_STREAM, "HdMayaSceneDelegate"))
 
-    def makeCubeScene(self):
+    def setBasicCam(self, dist=DEFAULT_CAM_DIST):
+        cmds.setAttr('persp.rotate', -30, 45, 0, type='float3')
+        cmds.setAttr('persp.translate', dist, .75 * dist, dist, type='float3')
+
+    def makeCubeScene(self, camDist=DEFAULT_CAM_DIST):
         cmds.file(f=1, new=1)
         self.cubeTrans = cmds.polyCube()[0]
         self.cubeShape = cmds.listRelatives(self.cubeTrans)[0]
@@ -139,6 +145,7 @@ class HdMayaTestCase(unittest.TestCase):
         self.cubeRprim = self.rprimPath(self.cubeShape)
         self.assertInIndex(self.cubeRprim)
         self.assertVisible(self.cubeRprim)
+        self.setBasicCam(dist=camDist)
         cmds.select(clear=True)
 
     def rprimPath(self, fullPath):
