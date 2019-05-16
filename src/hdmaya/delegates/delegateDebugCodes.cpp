@@ -141,6 +141,10 @@ TF_REGISTRY_FUNCTION(TfDebug) {
         "Print information about 'IsEnabled' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_DELEGATE_RECREATE_ADAPTER,
+        "Print information when the delegate recreates adapters.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_REGISTRY,
         "Print information about registration of HdMayaDelegates.");
 

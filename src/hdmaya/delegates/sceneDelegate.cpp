@@ -47,6 +47,7 @@
 #include <maya/MDagPathArray.h>
 #include <maya/MItDag.h>
 #include <maya/MMatrixArray.h>
+#include <maya/MObjectHandle.h>
 #include <maya/MString.h>
 
 #include <hdmaya/adapters/adapterRegistry.h>
@@ -373,7 +374,19 @@ void HdMayaSceneDelegate::RecreateAdapter(
         MFnDagNode dgNode(obj);
         MDagPath path;
         dgNode.getPath(path);
-        if (path.isValid()) { InsertDag(path); }
+        if (path.isValid() && MObjectHandle(obj).isValid()) {
+            TF_DEBUG(HDMAYA_DELEGATE_RECREATE_ADAPTER)
+                .Msg(
+                    "Shape/light prim (%s) re-created for dag path (%s)\n",
+                    id.GetText(), path.fullPathName().asChar());
+            InsertDag(path);
+        } else {
+            TF_DEBUG(HDMAYA_DELEGATE_RECREATE_ADAPTER)
+                .Msg(
+                    "Shape/light prim (%s) not re-created because node no "
+                    "longer valid\n",
+                    id.GetText());
+        }
         return;
     }
     if (_RemoveAdapter<HdMayaMaterialAdapter>(
@@ -392,7 +405,19 @@ void HdMayaSceneDelegate::RecreateAdapter(
                     rprimId, HdChangeTracker::DirtyMaterialId);
             }
         }
-        _CreateMaterial(GetMaterialPath(obj), obj);
+        if (MObjectHandle(obj).isValid()) {
+            TF_DEBUG(HDMAYA_DELEGATE_RECREATE_ADAPTER)
+                .Msg(
+                    "Material prim (%s) re-created for node (%s)\n",
+                    id.GetText(), MFnDependencyNode(obj).name().asChar());
+            _CreateMaterial(GetMaterialPath(obj), obj);
+        } else {
+            TF_DEBUG(HDMAYA_DELEGATE_RECREATE_ADAPTER)
+                .Msg(
+                    "Material prim (%s) not re-created because node no "
+                    "longer valid\n",
+                    id.GetText());
+        }
 
     } else {
         TF_WARN(

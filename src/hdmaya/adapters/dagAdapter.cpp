@@ -204,7 +204,6 @@ void HdMayaDagAdapter::CreateCallbacks() {
                                 "- Added _InstancerNodeDirty callback for "
                                 "dagPath (%s).\n",
                                 dag.partialPathName().asChar());
-                        _AddParentRemovedCallback(dag);
                     } else {
                         auto id = MNodeMessage::addNodeDirtyPlugCallback(
                             obj, _TransformNodeDirty, this, &status);
@@ -215,7 +214,7 @@ void HdMayaDagAdapter::CreateCallbacks() {
                                 "dagPath (%s).\n",
                                 dag.partialPathName().asChar());
                     }
-                    _AddParentAddedCallback(dag);
+                    _AddHierarchyChangedCallbacks(dag);
                 }
             }
         }
@@ -277,7 +276,7 @@ VtIntArray HdMayaDagAdapter::GetInstanceIndices(const SdfPath& prototypeId) {
     return ret;
 }
 
-void HdMayaDagAdapter::_AddParentAddedCallback(MDagPath& dag) {
+void HdMayaDagAdapter::_AddHierarchyChangedCallbacks(MDagPath& dag) {
     MStatus status;
     auto id = MDagMessage::addParentAddedDagPathCallback(
         dag, _HierarchyChanged, this, &status);
@@ -286,19 +285,20 @@ void HdMayaDagAdapter::_AddParentAddedCallback(MDagPath& dag) {
         .Msg(
             "- Added parent added callback for dagPath (%s).\n",
             dag.partialPathName().asChar());
-}
 
-void HdMayaDagAdapter::_AddParentRemovedCallback(MDagPath& dag) {
-    MStatus status;
-    if (dag.length() > 1) {
-        auto id = MDagMessage::addParentRemovedDagPathCallback(
-            dag, _HierarchyChanged, this, &status);
-        if (status) { AddCallback(id); }
-        TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
-            .Msg(
-                "- Added parent removed callback for dagPath (%s).\n",
-                dag.partialPathName().asChar());
-    }
+    // We need a parent removed callback, even for non-instances,
+    // because when an object is removed from the scene due to an
+    // undo, no pre-removal (or about-to-delete, or destroyed)
+    // callbacks are triggered. The parent-removed callback IS
+    // triggered, though, so it's a way to catch deletion due to
+    // undo...
+    id = MDagMessage::addParentRemovedDagPathCallback(
+        dag, _HierarchyChanged, this, &status);
+    if (status) { AddCallback(id); }
+    TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+        .Msg(
+            "- Added parent removed callback for dagPath (%s).\n",
+            dag.partialPathName().asChar());
 }
 
 SdfPath HdMayaDagAdapter::GetInstancerID() const {

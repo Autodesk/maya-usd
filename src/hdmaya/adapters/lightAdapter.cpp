@@ -248,7 +248,7 @@ void HdMayaLightAdapter::CreateCallbacks() {
             id = MNodeMessage::addNodeDirtyCallback(
                 obj, _dirtyTransform, this, &status);
             if (status) { AddCallback(id); }
-            _AddParentAddedCallback(dag);
+            _AddHierarchyChangedCallbacks(dag);
         }
     }
     HdMayaAdapter::CreateCallbacks();

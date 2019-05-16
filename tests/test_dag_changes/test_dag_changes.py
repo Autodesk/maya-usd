@@ -219,6 +219,56 @@ class TestDagChanges(HdMayaTestCase):
         finally:
             cmds.undoInfo(state=undoWasEnabled)
 
+class TestUndo(HdMayaTestCase):
+    def test_node_creation_undo(self):
+        undoWasEnabled = cmds.undoInfo(q=1, state=1)
+
+        cmds.undoInfo(state=0)
+        try:
+            cmds.file(new=1, f=1)
+            cmds.setAttr('persp.rotate', -30, 45, 0, type='float3')
+            cmds.setAttr('persp.translate', 24, 18, 24, type='float3')
+
+            self.setHdStreamRenderer()
+
+            cmds.undoInfo(state=1)
+            cmds.undoInfo(openChunk=1)
+            try:
+                cubeTrans = cmds.polyCube()
+                cubeShape = cmds.listRelatives(cubeTrans)[0]
+                cubeRprim = self.rprimPath(cubeShape)
+                cmds.select(clear=1)
+                cmds.refresh()
+                self.assertEqual([cubeRprim], self.getIndex())
+                self.assertSnapshotClose("instances_1.png")
+            finally:
+                cmds.undoInfo(closeChunk=1)
+
+            cmds.undo()
+
+            # the playblast command is entered into the undo queue, so we
+            # need to disable without flusing the queue, so we can test redo
+            cmds.undoInfo(stateWithoutFlush=0)
+            try:
+                cmds.refresh()
+                self.assertEqual([], self.getIndex())
+                self.assertSnapshotClose("instances_0.png")
+            finally:
+                cmds.undoInfo(stateWithoutFlush=1)
+
+            cmds.redo()
+
+            cmds.undoInfo(stateWithoutFlush=0)
+            try:
+                cmds.refresh()
+                self.assertEqual([cubeRprim], self.getIndex())
+                self.assertSnapshotClose("instances_1.png")
+            finally:
+                cmds.undoInfo(stateWithoutFlush=1)
+
+        finally:
+            cmds.undoInfo(state=undoWasEnabled)
+
 
 if __name__ == "__main__":
     unittest.main(argv=[""])

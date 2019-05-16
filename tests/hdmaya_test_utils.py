@@ -122,11 +122,7 @@ def imageDiff(imagePath1, imagePath2):
 
 
 class HdMayaTestCase(unittest.TestCase):
-    def makeCubeScene(self):
-        cmds.file(f=1, new=1)
-        self.cubeTrans = cmds.polyCube()[0]
-        self.cubeShape = cmds.listRelatives(self.cubeTrans, fullPath=1)[0]
-        self.cubeShapeName = self.cubeShape.split('|')[-1]
+    def setHdStreamRenderer(self):
         self.activeEditor = cmds.playblast(activeEditor=1)
         cmds.modelEditor(
             self.activeEditor, e=1,
@@ -134,6 +130,13 @@ class HdMayaTestCase(unittest.TestCase):
         cmds.refresh(f=1)
         self.delegateId = cmds.mtoh(sceneDelegateId=(
             HD_STREAM, "HdMayaSceneDelegate"))
+
+    def makeCubeScene(self):
+        cmds.file(f=1, new=1)
+        self.cubeTrans = cmds.polyCube()[0]
+        self.cubeShape = cmds.listRelatives(self.cubeTrans, fullPath=1)[0]
+        self.cubeShapeName = self.cubeShape.split('|')[-1]
+        self.setHdStreamRenderer()
         self.cubeRprim = self.rprimPath(self.cubeShape)
         self.assertInIndex(self.cubeRprim)
         self.assertVisible(self.cubeRprim)
