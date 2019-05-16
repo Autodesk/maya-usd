@@ -16,10 +16,10 @@ class TestDagChanges(HdMayaTestCase):
 
     def test_reparent_transform(self):
         cmds.parent(self.cubeTrans, self.grp1)
-        grp1ShapeRprim = self.rprimPath(self.cubeShapeName)
+        grp1ShapeRprim = self.rprimPath(self.cubeShape)
         self.assertEqual(
             grp1ShapeRprim,
-            self.rprimPath("|{self.grp1}|{self.cubeTrans}|{self.cubeShapeName}"
+            self.rprimPath("|{self.grp1}|{self.cubeTrans}|{self.cubeShape}"
                            .format(self=self)))
         cmds.refresh()
         index = self.getIndex()
@@ -27,10 +27,10 @@ class TestDagChanges(HdMayaTestCase):
         self.assertNotIn(self.cubeRprim, index)
 
         cmds.parent(self.grp1, self.grp2)
-        grp2ShapeRprim = self.rprimPath(self.cubeShapeName)
+        grp2ShapeRprim = self.rprimPath(self.cubeShape)
         self.assertEqual(
             grp2ShapeRprim,
-            self.rprimPath("|{self.grp2}|{self.grp1}|{self.cubeTrans}|{self.cubeShapeName}"
+            self.rprimPath("|{self.grp2}|{self.grp1}|{self.cubeTrans}|{self.cubeShape}"
                            .format(self=self)))
         cmds.refresh()
         index = self.getIndex()
@@ -39,7 +39,7 @@ class TestDagChanges(HdMayaTestCase):
         self.assertNotIn(self.cubeRprim, index)
 
         cmds.parent(self.cubeTrans, world=True)
-        origShapePrim = self.rprimPath(self.cubeShapeName)
+        origShapePrim = self.rprimPath(self.cubeShape)
         self.assertEqual(origShapePrim, self.cubeRprim)
         cmds.refresh()
         index = self.getIndex()
@@ -48,19 +48,19 @@ class TestDagChanges(HdMayaTestCase):
         self.assertNotIn(grp1ShapeRprim, index)
 
     def test_reparent_shape(self):
-        cmds.parent(self.cubeShapeName, self.grp1, shape=1, r=1)
-        grp1ShapeRprim = self.rprimPath(self.cubeShapeName)
+        cmds.parent(self.cubeShape, self.grp1, shape=1, r=1)
+        grp1ShapeRprim = self.rprimPath(self.cubeShape)
         self.assertEqual(
             grp1ShapeRprim,
-            self.rprimPath("|{self.grp1}|{self.cubeShapeName}"
+            self.rprimPath("|{self.grp1}|{self.cubeShape}"
                            .format(self=self)))
         cmds.refresh()
         index = self.getIndex()
         self.assertIn(grp1ShapeRprim, index)
         self.assertNotIn(self.cubeRprim, index)
 
-        cmds.parent(self.cubeShapeName, self.cubeTrans, shape=1, r=1)
-        origShapePrim = self.rprimPath(self.cubeShapeName)
+        cmds.parent(self.cubeShape, self.cubeTrans, shape=1, r=1)
+        origShapePrim = self.rprimPath(self.cubeShape)
         self.assertEqual(origShapePrim, self.cubeRprim)
         cmds.refresh()
         index = self.getIndex()
@@ -163,7 +163,7 @@ class TestDagChanges(HdMayaTestCase):
             #   (2) |group1|pCube1|pCubeShape1
             cmds.undoInfo(openChunk=1)
             try:
-                cmds.parent('|{pCube2}|{self.cubeShapeName}'.format(self=self,
+                cmds.parent('|{pCube2}|{self.cubeShape}'.format(self=self,
                                                                     pCube2=pCube2),
                             removeObject=1, shape=1)
                 self.assertSnapshotClose("instances_12.png")
@@ -183,7 +183,7 @@ class TestDagChanges(HdMayaTestCase):
             #   (5) |group1|pCube2|pCubeShape1
             cmds.undoInfo(openChunk=1)
             try:
-                cmds.parent('|{self.cubeTrans}|{self.cubeShapeName}'.format(self=self),
+                cmds.parent('|{self.cubeTrans}|{self.cubeShape}'.format(self=self),
                             removeObject=1, shape=1)
                 self.assertSnapshotClose("instances_35.png")
             finally:
