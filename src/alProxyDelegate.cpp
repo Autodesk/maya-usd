@@ -337,7 +337,7 @@ static bool FindPickedPrimsMtoh(
             viewMatrix, projectionMatrix, worldToLocalSpace, paths, params,
             intersectionMode, pickResolution, intersectCollect,
             *alProxyDelegate->GetTaskController(), alProxyDelegate->GetEngine(),
-            renderTags, hdxHits)) {
+            hdxHits)) {
         return false;
     }
 
