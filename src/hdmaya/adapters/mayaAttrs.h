@@ -52,6 +52,8 @@ extern MObject visibility;
 extern MObject worldMatrix;
 extern MObject intermediateObject;
 extern MObject instObjGroups;
+extern MObject overrideEnabled;
+extern MObject overrideVisibility;
 
 } // namespace dagNode
 

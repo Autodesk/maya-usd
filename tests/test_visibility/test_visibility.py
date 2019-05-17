@@ -71,16 +71,22 @@ class TestCommand(HdMayaTestCase):
             self.cubeRprim,
             self.getVisibleIndex())
 
-    def doGroupVisibilityTest(self, makeNodeVis, makeNodeInvis):
+    def doHierarchicalVisibilityTest(self, makeNodeVis, makeNodeInvis, prep=None):
         lowGroup = cmds.group(self.cubeTrans, name='lowGroup')
         midGroup = cmds.group(lowGroup, name='midGroup')
         highGroup = cmds.group(midGroup, name='highGroup')
         hier = [midGroup, midGroup, lowGroup, self.cubeTrans, self.cubeShape]
+        cmds.select(clear=1)
         cmds.refresh()
 
         self.cubeRprim = self.rprimPath(self.cubeShape)
         visIndex = [self.cubeRprim]
         self.assertEqual(self.getVisibleIndex(), visIndex)
+
+        if prep is not None:
+            for obj in hier:
+                prep(obj)
+            self.assertEqual(self.getVisibleIndex(), visIndex)
 
         for obj in hier:
             makeNodeInvis(obj)
@@ -90,14 +96,55 @@ class TestCommand(HdMayaTestCase):
             cmds.refresh()
             self.assertEqual(self.getVisibleIndex(), visIndex)
 
-    def test_groupVisibility(self):
+    def test_hierarchicalVisibility(self):
         def makeNodeVis(obj):
             cmds.setAttr("{}.visibility".format(obj), True)
 
         def makeNodeInvis(obj):
             cmds.setAttr("{}.visibility".format(obj), False)
 
-        self.doGroupVisibilityTest(makeNodeVis, makeNodeInvis)
+        self.doHierarchicalVisibilityTest(makeNodeVis, makeNodeInvis)
+
+    def test_hierarchicalIntermediateObject(self):
+        def makeNodeVis(obj):
+            cmds.setAttr("{}.intermediateObject".format(obj), False)
+
+        def makeNodeInvis(obj):
+            cmds.setAttr("{}.intermediateObject".format(obj), True)
+
+        self.doHierarchicalVisibilityTest(makeNodeVis, makeNodeInvis)
+
+    def test_hierarchicalOverrideEnabled(self):
+        def makeNodeVis(obj):
+            cmds.setAttr("{}.overrideEnabled".format(obj), False)
+
+        def makeNodeInvis(obj):
+            cmds.setAttr("{}.overrideEnabled".format(obj), True)
+
+        def prep(obj):
+            # set the overrideVisibility to False - as long as the
+            # overrideEnabled is NOT set, the object should still
+            # be visible
+            cmds.setAttr("{}.overrideVisibility".format(obj), False)
+            cmds.setAttr("{}.overrideEnabled".format(obj), False)
+
+        self.doHierarchicalVisibilityTest(makeNodeVis, makeNodeInvis, prep=prep)
+
+    def test_hierarchicalOverrideVisibility(self):
+        def makeNodeVis(obj):
+            cmds.setAttr("{}.overrideVisibility".format(obj), True)
+
+        def makeNodeInvis(obj):
+            cmds.setAttr("{}.overrideVisibility".format(obj), False)
+
+        def prep(obj):
+            # set the overrideEnabled to True - as long as the
+            # overrideVisibility is True, the object should still
+            # be visible
+            cmds.setAttr("{}.overrideEnabled".format(obj), True)
+            cmds.setAttr("{}.overrideVisibility".format(obj), True)
+
+        self.doHierarchicalVisibilityTest(makeNodeVis, makeNodeInvis, prep=prep)
 
 
 if __name__ == "__main__":

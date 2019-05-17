@@ -53,6 +53,8 @@ MObject visibility;
 MObject worldMatrix;
 MObject intermediateObject;
 MObject instObjGroups;
+MObject overrideEnabled;
+MObject overrideVisibility;
 
 } // namespace dagNode
 
@@ -183,6 +185,8 @@ MStatus initialize() {
         SET_ATTR_OBJ(worldMatrix);
         SET_ATTR_OBJ(intermediateObject);
         SET_ATTR_OBJ(instObjGroups);
+        SET_ATTR_OBJ(overrideEnabled);
+        SET_ATTR_OBJ(overrideVisibility);
     }
 
     {

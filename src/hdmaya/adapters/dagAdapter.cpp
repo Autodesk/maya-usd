@@ -66,7 +66,10 @@ void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
             "Dag adapter marking prim (%s) dirty because .%s plug was "
             "dirtied.\n",
             adapter->GetID().GetText(), plug.partialName().asChar());
-    if (plug == MayaAttrs::dagNode::visibility) {
+    if (plug == MayaAttrs::dagNode::visibility ||
+        plug == MayaAttrs::dagNode::intermediateObject ||
+        plug == MayaAttrs::dagNode::overrideEnabled ||
+        plug == MayaAttrs::dagNode::overrideVisibility) {
         // Unfortunately, during this callback, we can't actually
         // query the new object's visiblity - the plug dirty hasn't
         // really propagated yet. So we just mark our own _visibility
@@ -84,9 +87,9 @@ void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
         } else {
             adapter->MarkDirty(HdChangeTracker::DirtyVisibility);
         }
-        // We use IsVisible(false) because we eed to make sure we DON'T update
-        // visibility from within this callback, since the change has't
-        // propagated yet
+        // We use IsVisible(checkDirty=false) because we need to make sure we
+        // DON'T update visibility from within this callback, since the change
+        // has't propagated yet
     } else if (adapter->IsVisible(false)) {
         adapter->MarkDirty(HdChangeTracker::DirtyTransform);
         adapter->InvalidateTransform();
