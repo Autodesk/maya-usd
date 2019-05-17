@@ -1,0 +1,9 @@
+.idea
+.vscode
+.project
+.cproject
+.pydevproject
+.settings
+*.pyc
+cmake-build-*
+/build/
