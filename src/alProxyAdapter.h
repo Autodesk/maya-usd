@@ -1,3 +1,8 @@
+#ifndef __HDMAYA_AL_PROXY_ADAPTER_H__
+#define __HDMAYA_AL_PROXY_ADAPTER_H__
+
+#include "alProxyUsdImagingDelegate.h"
+
 #include <hdmaya/adapters/shapeAdapter.h>
 
 #include <AL/usdmaya/nodes/ProxyShape.h>
@@ -13,6 +18,8 @@ public:
     HdMayaALProxyAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag);
 
     ~HdMayaALProxyAdapter();
+
+    virtual void MarkDirty(HdDirtyBits dirtyBits) override;
 
     void Populate() override;
 
@@ -53,7 +60,9 @@ public:
 private:
     std::vector<AL::event::CallbackId> _proxyShapeCallbacks;
     AL::usdmaya::nodes::ProxyShape* _proxy = nullptr;
-    std::unique_ptr<UsdImagingDelegate> _usdDelegate;
+    std::unique_ptr<HdMayaAlProxyUsdImagingDelegate> _usdDelegate;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // __HDMAYA_AL_PROXY_ADAPTER_H__

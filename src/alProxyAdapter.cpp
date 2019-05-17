@@ -308,15 +308,27 @@ void HdMayaALProxyAdapter::Populate() {
     if (!_usdDelegate) { CreateUsdImagingDelegate(); }
     if (!TF_VERIFY(_usdDelegate)) { return; }
 
-    _usdDelegate->SetRootTransform(
-        GfMatrix4d(_proxy->parentTransform().inclusiveMatrix().matrix));
-
     _usdDelegate->Populate(stage->GetPseudoRoot());
 
     _isPopulated = true;
 }
 
 bool HdMayaALProxyAdapter::IsSupported() const { return _proxy != nullptr; }
+
+void HdMayaALProxyAdapter::MarkDirty(HdDirtyBits dirtyBits) {
+    if (dirtyBits != 0) {
+        if (dirtyBits & HdChangeTracker::DirtyTransform) {
+            // At the time this is called, the proxy shape's transform may not
+            // yet be in a state where it's "new" xform can be queried...
+            // however, we call UpdateRootTransform anyway. Why? Because doing
+            // so will mark all sub-prim's transforms dirty, so that they will
+            // then call _usdDelegate's GetTransform, which will then calculate
+            // the "updated" root xform at "render time."
+            _usdDelegate->UpdateRootTransform();
+            _usdDelegate->SetRootTransformDirty();
+        }
+    }
+}
 
 VtValue HdMayaALProxyAdapter::Get(const TfToken& key) {
     TF_DEBUG(HDMAYA_ADAPTER_GET)
@@ -366,10 +378,11 @@ void HdMayaALProxyAdapter::CreateUsdImagingDelegate() {
     // - if so, the delete may clear out items from the renderIndex that the
     // constructor potentially adds
     _usdDelegate.release();
-    _usdDelegate.reset(new UsdImagingDelegate(
+    _usdDelegate.reset(new HdMayaAlProxyUsdImagingDelegate(
         &GetDelegate()->GetRenderIndex(),
         _id.AppendChild(TfToken(TfStringPrintf(
-            "ALProxyDelegate_%s_%p", _proxy->name().asChar(), _proxy)))));
+            "ALProxyDelegate_%s_%p", _proxy->name().asChar(), _proxy))),
+        _proxy));
     _isPopulated = false;
 }
 

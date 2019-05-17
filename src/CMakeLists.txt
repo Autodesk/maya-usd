@@ -18,6 +18,7 @@ set(MAYA_LIBS OpenMaya Foundation)
 set(HDMAYA_AL_SRC
     alProxyAdapter.cpp
     alProxyDelegate.cpp
+    alProxyUsdImagingDelegate.cpp
     debugCodes.cpp
 )
 
