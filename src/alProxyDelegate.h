@@ -70,7 +70,6 @@ public:
         HdSelection* selection) override;
 
     inline HdRenderIndex* GetRenderIndex() { return _renderIndex; }
-    inline const SdfPath& GetDelegateID() { return _delegateID; }
     inline HdEngine& GetEngine() { return _engine; }
     inline HdxTaskController* GetTaskController() { return _taskController; }
 
@@ -94,7 +93,6 @@ private:
 
     std::unordered_map<ProxyShape*, HdMayaALProxyData> _proxiesData;
     HdEngine& _engine;
-    SdfPath const _delegateID;
     HdRenderIndex* _renderIndex;
     HdxTaskController* _taskController;
     MCallbackId _nodeAddedCBId;

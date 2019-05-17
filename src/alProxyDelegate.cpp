@@ -386,13 +386,12 @@ static bool FindPickedPrimsMtoh(
 HdMayaALProxyDelegate::HdMayaALProxyDelegate(const InitData& initData)
     : HdMayaDelegate(initData),
       _engine(initData.engine),
-      _delegateID(initData.delegateID),
       _renderIndex(initData.renderIndex),
       _taskController(initData.taskController) {
     TF_DEBUG(HDMAYA_AL_PROXY_DELEGATE)
         .Msg(
             "HdMayaALProxyDelegate - creating with delegateID %s\n",
-            _delegateID.GetText());
+            GetMayaDelegateID().GetText());
 
 #ifdef HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
     if (IsHdSt()) {
@@ -471,7 +470,7 @@ HdMayaALProxyDelegate::~HdMayaALProxyDelegate() {
     TF_DEBUG(HDMAYA_AL_PROXY_DELEGATE)
         .Msg(
             "HdMayaALProxyDelegate - destroying with delegateID %s\n",
-            _delegateID.GetText());
+            GetMayaDelegateID().GetText());
 
     TF_DEBUG(HDMAYA_AL_CALLBACKS)
         .Msg("~HdMayaALProxyDelegate - removing all callbacks\n");
@@ -844,7 +843,7 @@ void HdMayaALProxyDelegate::CreateUsdImagingDelegate(
     proxyData.delegate.release();
     proxyData.delegate.reset(new UsdImagingDelegate(
         _renderIndex,
-        _delegateID.AppendChild(TfToken(TfStringPrintf(
+        GetMayaDelegateID().AppendChild(TfToken(TfStringPrintf(
             "ALProxyDelegate_%s_%p", proxy->name().asChar(), proxy)))));
     proxyData.populated = false;
 }
