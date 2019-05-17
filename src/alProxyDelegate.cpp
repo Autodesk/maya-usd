@@ -24,6 +24,7 @@
 
 #include "alProxyDelegate.h"
 
+#include "alProxyAdapter.h"
 #include "debugCodes.h"
 
 #include <hdmaya/delegates/delegateRegistry.h>
@@ -37,19 +38,10 @@
 #include <maya/MItDependencyNodes.h>
 #include <maya/MNodeClass.h>
 #include <maya/MObject.h>
-#include <maya/MTime.h>
 
 #include <atomic>
-
-#ifdef HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
-#include <AL/usdmaya/nodes/Engine.h>
-
-#include <pxr/imaging/hdx/pickTask.h>
-#include <pxr/imaging/hdx/tokens.h>
-#include <pxr/usdImaging/usdImagingGL/engine.h>
-
-#include <maya/M3dView.h>
-#endif // HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
+#include <mutex>
+#include <unordered_set>
 
 #if HDMAYA_UFE_BUILD
 #include <ufe/rtid.h>
@@ -85,129 +77,10 @@ static UFE_NS::Rtid usdUfeRtid = 0;
 // I prefer to default to thread-safety for global variables.
 std::atomic<bool> isALPluginLoaded(false);
 
-void StageLoadedCallback(void* userData, AL::event::NodeEvents* node) {
-    // Bunch of conversions + sanity checks...
-    auto* delegate = static_cast<HdMayaALProxyDelegate*>(userData);
-    if (!TF_VERIFY(
-            delegate, "StageLoadedCallback called with null userData ptr")) {
-        return;
-    }
-    auto* proxy = dynamic_cast<ProxyShape*>(node);
-    if (!TF_VERIFY(
-            proxy,
-            "StageLoadedCallback called with null or non-ProxyShape* ptr")) {
-        return;
-    }
-
-    // Real work done by delegate->createUsdImagingDelegate
-    TF_DEBUG(HDMAYA_AL_CALLBACKS)
-        .Msg(
-            "HdMayaALProxyDelegate - called StageLoadedCallback (ProxyShape: "
-            "%s)\n",
-            proxy->name().asChar());
-    delegate->CreateUsdImagingDelegate(proxy);
-}
-
-void ProxyShapeDestroyedCallback(void* userData, AL::event::NodeEvents* node) {
-    // Bunch of conversions + sanity checks...
-    auto* delegate = static_cast<HdMayaALProxyDelegate*>(userData);
-    if (!TF_VERIFY(
-            delegate,
-            "ProxyShapeDestroyedCallback called with null userData ptr")) {
-        return;
-    }
-    auto* proxy = dynamic_cast<ProxyShape*>(node);
-    if (!TF_VERIFY(
-            proxy,
-            "ProxyShapeDestroyedCallback called with null or non-ProxyShape* "
-            "ptr")) {
-        return;
-    }
-
-    // Real work done by delegate->removeProxy
-    TF_DEBUG(HDMAYA_AL_CALLBACKS)
-        .Msg(
-            "HdMayaALProxyDelegate - called ProxyShapeDestroyedCallback "
-            "(ProxyShape: %s)\n",
-            proxy->name().asChar());
-    delegate->RemoveProxy(proxy);
-}
-
-void ProxyShapeAddedCallback(MObject& node, void* clientData) {
-    // Bunch of conversions + sanity checks...
-    auto delegate = static_cast<HdMayaALProxyDelegate*>(clientData);
-    if (!TF_VERIFY(
-            delegate,
-            "ProxyShapeAddedCallback called with null HdMayaALProxyDelegate "
-            "ptr")) {
-        return;
-    }
-
-    MStatus status;
-    MFnDependencyNode mfnNode(node, &status);
-    if (!TF_VERIFY(status, "Error getting MFnDependencyNode")) { return; }
-
-    TF_DEBUG(HDMAYA_AL_CALLBACKS)
-        .Msg(
-            "HdMayaALProxyDelegate - called ProxyShapeAddedCallback "
-            "(ProxyShape: %s)\n",
-            mfnNode.name().asChar());
-
-    if (!TF_VERIFY(
-            mfnNode.typeId() == ProxyShape::kTypeId,
-            "ProxyShapeAddedCallback called on non-%s node",
-            ProxyShape::kTypeName.asChar())) {
-        return;
-    }
-
-    auto* proxy = dynamic_cast<ProxyShape*>(mfnNode.userNode());
-    if (!TF_VERIFY(
-            proxy, "Error getting ProxyShape* for %s",
-            mfnNode.name().asChar())) {
-        return;
-    }
-
-    // Real work done by delegate->addProxy
-    delegate->AddProxy(proxy);
-}
-
-void ProxyShapeRemovedCallback(MObject& node, void* clientData) {
-    // Bunch of conversions + sanity checks...
-    auto delegate = static_cast<HdMayaALProxyDelegate*>(clientData);
-    if (!TF_VERIFY(
-            delegate,
-            "ProxyShapeRemovedCallback called with null HdMayaALProxyDelegate "
-            "ptr")) {
-        return;
-    }
-
-    MStatus status;
-    MFnDependencyNode mfnNode(node, &status);
-    if (!TF_VERIFY(status, "Error getting MFnDependencyNode")) { return; }
-
-    TF_DEBUG(HDMAYA_AL_CALLBACKS)
-        .Msg(
-            "HdMayaALProxyDelegate - called ProxyShapeRemovedCallback "
-            "(ProxyShape: %s)\n",
-            mfnNode.name().asChar());
-
-    if (!TF_VERIFY(
-            mfnNode.typeId() == ProxyShape::kTypeId,
-            "ProxyShapeRemovedCallback called on non-%s node",
-            ProxyShape::kTypeName.asChar())) {
-        return;
-    }
-
-    auto* proxy = dynamic_cast<ProxyShape*>(mfnNode.userNode());
-    if (!TF_VERIFY(
-            proxy, "Error getting ProxyShape* for %s",
-            mfnNode.name().asChar())) {
-        return;
-    }
-
-    // Real work done by delegate->deleteUsdImagingDelegate
-    delegate->DeleteUsdImagingDelegate(proxy);
-}
+// Not sure if we actually need a mutex guarding _allAdapters, but
+// I'd rather be safe....
+std::mutex _allAdaptersMutex;
+std::unordered_set<HdMayaALProxyAdapter*> _allAdapters;
 
 bool IsALPluginLoaded() {
     auto nodeClass = MNodeClass(ProxyShape::kTypeId);
@@ -264,196 +137,16 @@ void SetupPluginCallbacks() {
     TF_VERIFY(status, "Could not set pluginUnloaded callback");
 }
 
-#ifdef HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
-
-ProxyShape::FindPickedPrimsRunner oldFindPickedPrimsRunner(nullptr, nullptr);
-HdMayaALProxyDelegate* hdStAlProxyDelegate;
-
-/// Alternate picking mechanism for the AL proxy shape, which
-/// uses our own renderIndex
-bool FindPickedPrimsMtoh(
-    ProxyShape& proxy, const MDagPath& proxyDagPath,
-    const GfMatrix4d& viewMatrix, const GfMatrix4d& projectionMatrix,
-    const GfMatrix4d& worldToLocalSpace, const SdfPathVector& paths,
-    const UsdImagingGLRenderParams& params, bool nearestOnly,
-    unsigned int pickResolution, ProxyShape::HitBatch& outHit, void* userData) {
-    TF_UNUSED(userData);
-
-    TF_DEBUG(HDMAYA_AL_SELECTION).Msg("FindPickedPrimsMtoh\n");
-
-    auto doOldFindPickedPrims = [&]() {
-        if (!oldFindPickedPrimsRunner) {
-            TF_WARN(
-                "called FindPickedPrimsMtoh before oldFindPickedPrimsRunner "
-                "set");
-            return false;
-        }
-        return oldFindPickedPrimsRunner(
-            proxy, proxyDagPath, viewMatrix, projectionMatrix,
-            worldToLocalSpace, paths, params, nearestOnly, pickResolution,
-            outHit);
-    };
-
-    // Unless the current viewport renderer is an mtoh HdStream one, use
-    // the normal AL picking function.
-    MStatus status;
-    auto view = M3dView::active3dView(&status);
-    if (!status) {
-        TF_WARN("Error getting active3dView\n");
-        return doOldFindPickedPrims();
-    }
-    auto rendererEnum = view.getRendererName(&status);
-    if (!status) {
-        TF_WARN("Error calling getRendererName\n");
-        return doOldFindPickedPrims();
-    }
-    if (rendererEnum != M3dView::kViewport2Renderer) {
-        return doOldFindPickedPrims();
-    }
-    MString overrideName = view.renderOverrideName(&status);
-    if (!status) {
-        TF_WARN("Error calling renderOverrideName\n");
-        return doOldFindPickedPrims();
-    }
-    if (overrideName != "mtohRenderOverride_HdStreamRendererPlugin") {
-        return doOldFindPickedPrims();
-    }
-
-    // Ok, we have an Mtoh StreamRenderer view - find the HdMayaALProxyDelegate
-    // with the HdStream render delegate
-
-    HdMayaALProxyDelegate* alProxyDelegate = hdStAlProxyDelegate;
-    if (!TF_VERIFY(alProxyDelegate->IsHdSt())) { doOldFindPickedPrims(); }
-
-    TF_DEBUG(HDMAYA_AL_SELECTION)
-        .Msg("FindPickedPrimsMtoh - using mtoh's render index\n");
-
-    auto* proxyData = alProxyDelegate->FindProxyData(&proxy);
-    if (!TF_VERIFY(proxyData)) { return false; }
-    const SdfPath& proxyDelegateID = proxyData->delegate->GetDelegateID();
-
-    // We found the HdSt proxy delegate, use it's engine / renderIndex to do
-    // selection!
-
-    HdRprimCollection intersectCollect;
-    TfTokenVector renderTags;
-    HdxPickHitVector hdxHits;
-    auto& intersectionMode = nearestOnly ? HdxPickTokens->resolveNearestToCamera
-                                         : HdxPickTokens->resolveUnique;
-
-    if (!AL::usdmaya::nodes::Engine::TestIntersectionBatch(
-            viewMatrix, projectionMatrix, worldToLocalSpace, paths, params,
-            intersectionMode, pickResolution, intersectCollect,
-            *alProxyDelegate->GetTaskController(), alProxyDelegate->GetEngine(),
-            hdxHits)) {
-        return false;
-    }
-
-    bool foundHit = false;
-    for (const auto& hit : hdxHits) {
-        const SdfPath primPath = hit.objectId;
-
-        // TODO: improve handling of multiple AL proxy shapes
-        // if we have multiple proxy shapes, we will run a selection
-        // query once for each shape, and then we throw any results that
-        // aren't in our proxy - clearly, this is wasteful - we should run
-        // the selection once, cache it, and use that for all shapes...
-        if (!primPath.HasPrefix(proxyDelegateID)) { continue; }
-
-        foundHit = true;
-
-        const SdfPath instancerPath = hit.instancerId;
-        const int instanceIndex = hit.instanceIndex;
-
-        // auto instancePath = proxy.engine()->GetPrimPathFromInstanceIndex(
-        auto usdPath = proxyData->delegate->GetPathForInstanceIndex(
-            primPath, instanceIndex, nullptr);
-
-        if (usdPath.IsEmpty()) {
-            usdPath = primPath.StripAllVariantSelections();
-        }
-        usdPath = proxyData->delegate->ConvertIndexPathToCachePath(usdPath);
-
-        TF_DEBUG(HDMAYA_AL_SELECTION)
-            .Msg(
-                "FindPickedPrimsMtoh - hit (usdPath): %s\n", usdPath.GetText());
-
-        auto& worldSpaceHitPoint = outHit[usdPath];
-        worldSpaceHitPoint = GfVec3d(
-            hit.worldSpaceHitPoint[0], hit.worldSpaceHitPoint[1],
-            hit.worldSpaceHitPoint[2]);
-    }
-
-    return foundHit;
-}
-
-#endif // HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
-
 } // namespace
 
 HdMayaALProxyDelegate::HdMayaALProxyDelegate(const InitData& initData)
-    : HdMayaDelegate(initData), _renderIndex(initData.renderIndex) {
+    : HdMayaDelegate(initData) {
     TF_DEBUG(HDMAYA_AL_PROXY_DELEGATE)
         .Msg(
             "HdMayaALProxyDelegate - creating with delegateID %s\n",
             GetMayaDelegateID().GetText());
 
-#ifdef HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
-    if (IsHdSt()) {
-        TF_DEBUG(HDMAYA_AL_SELECTION)
-            .Msg(
-                "HdMayaALProxyDelegate - installing alt "
-                "FindPickedPrimsFunction\n");
-        if (TF_VERIFY(!oldFindPickedPrimsRunner)) {
-            oldFindPickedPrimsRunner = ProxyShape::getFindPickedPrimsRunner();
-            ProxyShape::setFindPickedPrimsFunction(FindPickedPrimsMtoh);
-            hdStAlProxyDelegate = this;
-        }
-    }
-#endif // HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
-
     MStatus status;
-
-    // Add all pre-existing proxy shapes
-    MFnDependencyNode fn;
-    MItDependencyNodes iter(MFn::kPluginShape);
-    for (; !iter.isDone(); iter.next()) {
-        MObject mobj = iter.thisNode();
-        fn.setObject(mobj);
-        if (fn.typeId() != ProxyShape::kTypeId) { continue; }
-
-        auto proxyShape = static_cast<ProxyShape*>(fn.userNode());
-        if (!TF_VERIFY(
-                proxyShape, "ProxyShape had no mpx data: %s",
-                fn.name().asChar())) {
-            continue;
-        }
-
-        AddProxy(proxyShape);
-    }
-
-    // Set up callback to add any new ProxyShapes
-    TF_DEBUG(HDMAYA_AL_CALLBACKS)
-        .Msg(
-            "HdMayaALProxyDelegate - creating ProxyShapeAddedCallback callback "
-            "for all ProxyShapes\n");
-    _nodeAddedCBId = MDGMessage::addNodeAddedCallback(
-        ProxyShapeAddedCallback, ProxyShape::kTypeName, this, &status);
-    if (!TF_VERIFY(status, "Could not set nodeAdded callback")) {
-        _nodeAddedCBId = 0;
-    }
-
-    // Set up callback to remove ProxyShapes from the index
-    TF_DEBUG(HDMAYA_AL_CALLBACKS)
-        .Msg(
-            "HdMayaALProxyDelegate - creating ProxyShapeRemovedCallback "
-            "callback "
-            "for all ProxyShapes\n");
-    _nodeRemovedCBId = MDGMessage::addNodeRemovedCallback(
-        ProxyShapeRemovedCallback, ProxyShape::kTypeName, this, &status);
-    if (!TF_VERIFY(status, "Could not set nodeRemoved callback")) {
-        _nodeRemovedCBId = 0;
-    }
 
 #if HDMAYA_UFE_BUILD
     if (usdUfeRtid == 0) {
@@ -475,35 +168,6 @@ HdMayaALProxyDelegate::~HdMayaALProxyDelegate() {
         .Msg(
             "HdMayaALProxyDelegate - destroying with delegateID %s\n",
             GetMayaDelegateID().GetText());
-
-    TF_DEBUG(HDMAYA_AL_CALLBACKS)
-        .Msg("~HdMayaALProxyDelegate - removing all callbacks\n");
-    if (_nodeAddedCBId) { MMessage::removeCallback(_nodeAddedCBId); }
-    if (_nodeRemovedCBId) { MMessage::removeCallback(_nodeRemovedCBId); }
-
-    // If the delegate is destroyed before the proxy shapes, clean up their
-    // callbacks
-    for (auto& proxyAndData : _proxiesData) {
-        auto& proxy = proxyAndData.first;
-        auto& proxyData = proxyAndData.second;
-        for (auto& callbackId : proxyData.proxyShapeCallbacks) {
-            proxy->scheduler()->unregisterCallback(callbackId);
-        }
-    }
-
-#ifdef HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
-    if (IsHdSt()) {
-        TF_DEBUG(HDMAYA_AL_SELECTION)
-            .Msg(
-                "~HdMayaALProxyDelegate - uninstalling alt "
-                "FindPickedPrimsFunction\n");
-        TF_VERIFY(oldFindPickedPrimsRunner);
-        ProxyShape::setFindPickedPrimsRunner(oldFindPickedPrimsRunner);
-        oldFindPickedPrimsRunner.func = nullptr;
-        oldFindPickedPrimsRunner.userData = nullptr;
-        hdStAlProxyDelegate = nullptr;
-    }
-#endif // HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
 }
 
 HdMayaDelegatePtr HdMayaALProxyDelegate::Creator(const InitData& initData) {
@@ -515,50 +179,24 @@ HdMayaDelegatePtr HdMayaALProxyDelegate::Creator(const InitData& initData) {
         std::make_shared<HdMayaALProxyDelegate>(initData));
 }
 
-void HdMayaALProxyDelegate::Populate() {
-    TF_DEBUG(HDMAYA_AL_POPULATE).Msg("HdMayaALProxyDelegate::Populate\n");
-    for (auto& proxyAndData : _proxiesData) {
-        PopulateSingleProxy(proxyAndData.first, proxyAndData.second);
-    }
+void HdMayaALProxyDelegate::AddAdapter(HdMayaALProxyAdapter* adapter) {
+    std::lock_guard<std::mutex> lock(_allAdaptersMutex);
+    _allAdapters.insert(adapter);
 }
 
-bool HdMayaALProxyDelegate::PopulateSingleProxy(
-    ProxyShape* proxy, HdMayaALProxyData& proxyData) {
-    if (!proxyData.delegate) { return false; }
+void HdMayaALProxyDelegate::RemoveAdapter(HdMayaALProxyAdapter* adapter) {
+    std::lock_guard<std::mutex> lock(_allAdaptersMutex);
+    _allAdapters.erase(adapter);
+}
 
-    proxyData.delegate->SetRootTransform(
-        GfMatrix4d(proxy->parentTransform().inclusiveMatrix().matrix));
-
-    if (!proxyData.populated) {
-        TF_DEBUG(HDMAYA_AL_POPULATE)
-            .Msg(
-                "HdMayaALProxyDelegate::Populating %s\n",
-                proxy->name().asChar());
-
-        auto stage = proxy->getUsdStage();
-        if (!stage) {
-            MGlobal::displayError(
-                MString("Could not get stage for proxyShape: ") +
-                proxy->name());
-            return false;
-        }
-        proxyData.delegate->Populate(stage->GetPseudoRoot());
-        proxyData.populated = true;
-    }
-    return true;
+void HdMayaALProxyDelegate::Populate() {
+    // Does nothing - delegate exists only for PreFrame and
+    // PopulateSelectedPaths
 }
 
 void HdMayaALProxyDelegate::PreFrame(const MHWRender::MDrawContext& context) {
-    for (auto& proxyAndData : _proxiesData) {
-        auto& proxy = proxyAndData.first;
-        auto& proxyData = proxyAndData.second;
-        if (PopulateSingleProxy(proxy, proxyData)) {
-            proxyData.delegate->ApplyPendingUpdates();
-            proxyData.delegate->SetTime(UsdTimeCode(
-                proxy->outTimePlug().asMTime().as(MTime::uiUnit())));
-            proxyData.delegate->PostSyncCleanup();
-        }
-    }
+    std::lock_guard<std::mutex> lock(_allAdaptersMutex);
+    for (auto adapter : _allAdapters) { adapter->PreFrame(); }
 }
 
 void HdMayaALProxyDelegate::PopulateSelectedPaths(
@@ -567,42 +205,32 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
     MStatus status;
     MObject proxyMObj;
     MFnDagNode proxyMFnDag;
-    MDagPathArray proxyDagPaths;
 
-    for (auto& proxyAndData : _proxiesData) {
-        auto& proxy = proxyAndData.first;
-        auto& proxyData = proxyAndData.second;
-
-        // First, we check to see if the entire proxy shape is selected
-        proxyDagPaths.clear();
+    std::lock_guard<std::mutex> lock(_allAdaptersMutex);
+    for (auto adapter : _allAdapters) {
+        auto* proxy = adapter->GetProxy();
+        if (!TF_VERIFY(proxy)) { continue; }
         proxyMObj = proxy->thisMObject();
         if (!TF_VERIFY(!proxyMObj.isNull())) { continue; }
         if (!TF_VERIFY(proxyMFnDag.setObject(proxyMObj))) { continue; }
-        if (!TF_VERIFY(proxyMFnDag.getAllPaths(proxyDagPaths))) { continue; }
-        if (!TF_VERIFY(proxyDagPaths.length())) { continue; }
 
+        // First, we check to see if the entire proxy shape is selected
         bool wholeProxySelected = false;
-        // Loop over all instances
-        for (unsigned int i = 0, n = proxyDagPaths.length(); i < n; ++i) {
-            MDagPath& dagPath = proxyDagPaths[i];
-            // Loop over all parents
-            while (dagPath.length()) {
-                if (mayaSelection.hasItem(dagPath)) {
-                    TF_DEBUG(HDMAYA_AL_SELECTION)
-                        .Msg(
-                            "proxy node %s was selected\n",
-                            dagPath.fullPathName().asChar());
-                    wholeProxySelected = true;
-                    selectedSdfPaths.push_back(
-                        proxyData.delegate->GetDelegateID());
-                    selection->AddRprim(
-                        HdSelection::HighlightModeSelect,
-                        selectedSdfPaths.back());
-                    break;
-                }
-                dagPath.pop();
+        MDagPath dagPath = adapter->GetDagPath();
+        // Loop over all parents
+        while (dagPath.length()) {
+            if (mayaSelection.hasItem(dagPath)) {
+                // The whole proxy is selected - HdMayaAlProxyAdapter's
+                // PopulateSelectedPaths will handle this case. we can
+                // skip this shape...
+                TF_DEBUG(HDMAYA_AL_SELECTION)
+                    .Msg(
+                        "proxy node %s was selected\n",
+                        dagPath.fullPathName().asChar());
+                wholeProxySelected = true;
+                break;
             }
-            if (wholeProxySelected) { break; }
+            dagPath.pop();
         }
         if (wholeProxySelected) { continue; }
 
@@ -620,7 +248,7 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
         if (TfDebug::IsEnabled(HDMAYA_AL_SELECTION)) {
             TfDebug::Helper().Msg(
                 "proxy %s has %lu selectedPaths",
-                proxyDagPaths[0].fullPathName().asChar(), paths1.size());
+                dagPath.fullPathName().asChar(), paths1.size());
             if (!paths1.empty()) {
                 TfDebug::Helper().Msg(" (1st: %s)", paths1.begin()->GetText());
             }
@@ -634,14 +262,14 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
 
         for (auto& usdPath : paths1) {
             selectedSdfPaths.push_back(
-                proxyData.delegate->ConvertCachePathToIndexPath(usdPath));
+                adapter->ConvertCachePathToIndexPath(usdPath));
             selection->AddRprim(
                 HdSelection::HighlightModeSelect, selectedSdfPaths.back());
         }
 
         for (auto& usdPath : paths2) {
             selectedSdfPaths.push_back(
-                proxyData.delegate->ConvertCachePathToIndexPath(usdPath));
+                adapter->ConvertCachePathToIndexPath(usdPath));
             selection->AddRprim(
                 HdSelection::HighlightModeSelect, selectedSdfPaths.back());
         }
@@ -656,7 +284,6 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
     MStatus status;
     MObject proxyMObj;
     MFnDagNode proxyMFnDag;
-    MDagPathArray proxyDagPaths;
 
     TF_DEBUG(HDMAYA_AL_SELECTION)
         .Msg(
@@ -669,55 +296,39 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
     MSelectionList mayaSel;
     MGlobal::getActiveSelectionList(mayaSel);
 
-    std::unordered_map<std::string, HdMayaALProxyData*> proxyPathToData;
+    std::unordered_map<std::string, HdMayaALProxyAdapter*> proxyPathToAdapter;
 
-    for (auto& proxyAndData : _proxiesData) {
-        auto& proxy = proxyAndData.first;
-        auto& proxyData = proxyAndData.second;
-
-        // First, we check to see if the entire proxy shape is selected
-        proxyDagPaths.clear();
-        proxyMObj = proxy->thisMObject();
-        if (!TF_VERIFY(!proxyMObj.isNull())) { continue; }
-        if (!TF_VERIFY(proxyMFnDag.setObject(proxyMObj))) { continue; }
-        if (!TF_VERIFY(proxyMFnDag.getAllPaths(proxyDagPaths))) { continue; }
-        if (!TF_VERIFY(proxyDagPaths.length())) { continue; }
-
-        bool wholeProxySelected = false;
-        // Loop over all instances
-        for (unsigned int i = 0, n = proxyDagPaths.length(); i < n; ++i) {
-            // Make a copy because we're modifying it
-            MDagPath dagPath = proxyDagPaths[i];
+    {
+        // new context for the _allAdaptersMutex lock
+        std::lock_guard<std::mutex> lock(_allAdaptersMutex);
+        for (auto adapter : _allAdapters) {
+            // First, we check to see if the entire proxy shape is selected
+            bool wholeProxySelected = false;
+            const MDagPath& dagPath = adapter->GetDagPath();
             // Loop over all parents
-            while (dagPath.length()) {
-                if (mayaSel.hasItem(dagPath)) {
+            MDagPath parentDag = dagPath;
+            while (parentDag.length()) {
+                if (mayaSel.hasItem(parentDag)) {
+                    // The whole proxy is selected - HdMayaAlProxyAdapter's
+                    // PopulateSelectedPaths will handle this case. we can
+                    // skip this shape...
                     TF_DEBUG(HDMAYA_AL_SELECTION)
                         .Msg(
                             "proxy node %s was selected\n",
-                            dagPath.fullPathName().asChar());
+                            parentDag.fullPathName().asChar());
                     wholeProxySelected = true;
-                    selectedSdfPaths.push_back(
-                        proxyData.delegate->GetDelegateID());
-                    selection->AddRprim(
-                        HdSelection::HighlightModeSelect,
-                        selectedSdfPaths.back());
                     break;
                 }
-                dagPath.pop();
+                parentDag.pop();
             }
-            if (wholeProxySelected) { break; }
-        }
-        if (!wholeProxySelected) {
-            for (unsigned int i = 0, n = proxyDagPaths.length(); i < n; ++i) {
-                MDagPath& dagPath = proxyDagPaths[i];
-
+            if (!wholeProxySelected) {
                 TF_DEBUG(HDMAYA_AL_SELECTION)
                     .Msg(
                         "HdMayaALProxyDelegate::PopulateSelectedPaths - adding "
                         "proxy to lookup: %s\n",
                         dagPath.fullPathName().asChar());
-                proxyPathToData.emplace(
-                    dagPath.fullPathName().asChar(), &proxyData);
+                proxyPathToAdapter.emplace(
+                    dagPath.fullPathName().asChar(), adapter);
             }
         }
     }
@@ -737,7 +348,7 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
         auto mayaPathSegment = pathSegments[0].popHead();
         auto& usdPathSegment = pathSegments[1];
 
-        auto findResult = proxyPathToData.find(mayaPathSegment.string());
+        auto findResult = proxyPathToAdapter.find(mayaPathSegment.string());
 
         TF_DEBUG(HDMAYA_AL_SELECTION)
             .Msg(
@@ -745,13 +356,12 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
                 "proxy: %s\n",
                 mayaPathSegment.string().c_str());
 
-        if (findResult == proxyPathToData.cend()) { continue; }
+        if (findResult == proxyPathToAdapter.cend()) { continue; }
 
-        auto& proxyData = *(findResult->second);
+        auto proxyAdapter = findResult->second;
 
-        selectedSdfPaths.push_back(
-            proxyData.delegate->ConvertCachePathToIndexPath(
-                SdfPath(usdPathSegment.string())));
+        selectedSdfPaths.push_back(proxyAdapter->ConvertCachePathToIndexPath(
+            SdfPath(usdPathSegment.string())));
         selection->AddRprim(
             HdSelection::HighlightModeSelect, selectedSdfPaths.back());
         TF_DEBUG(HDMAYA_AL_SELECTION)
@@ -764,106 +374,5 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
 bool HdMayaALProxyDelegate::SupportsUfeSelection() { return usdUfeRtid != 0; }
 
 #endif // HDMAYA_UFE_BUILD
-
-HdMayaALProxyData& HdMayaALProxyDelegate::AddProxy(ProxyShape* proxy) {
-    // Our ProxyShapeAdded callback is triggered every time the node is added
-    // to the DG, NOT when the C++ ProxyShape object is created; due to the
-    // undo queue, it's possible for the same ProxyShape to be added (and
-    // removed) from the DG several times throughout it's lifetime. However,
-    // we only call removeProxy() when the C++ ProxyShape object is actually
-    // destroyed - so it's possible that the given proxy has already been
-    // added to this delegate!
-    auto emplaceResult = _proxiesData.emplace(
-        std::piecewise_construct, std::forward_as_tuple(proxy),
-        std::forward_as_tuple());
-    auto& proxyData = emplaceResult.first->second;
-    if (emplaceResult.second) {
-        // Okay, we have an actual insertion! Set up callbacks...
-        auto* scheduler = proxy->scheduler();
-        if (!TF_VERIFY(
-                scheduler, "Error getting scheduler for %s",
-                proxy->name().asChar())) {
-            return proxyData;
-        }
-
-        TF_DEBUG(HDMAYA_AL_CALLBACKS)
-            .Msg(
-                "HdMayaALProxyDelegate - creating PreStageLoaded callback "
-                "for %s\n",
-                proxy->name().asChar());
-        proxyData.proxyShapeCallbacks.push_back(scheduler->registerCallback(
-            proxy->getId("PreStageLoaded"),      // eventId
-            "HdMayaALProxyDelegate_onStageLoad", // tag
-            StageLoadedCallback,                 // functionPointer
-            10000,                               // weight
-            this                                 // userData
-            ));
-
-        TF_DEBUG(HDMAYA_AL_CALLBACKS)
-            .Msg(
-                "HdMayaALProxyDelegate - creating PreDestroyProxyShape "
-                "callback for %s\n",
-                proxy->name().asChar());
-        proxyData.proxyShapeCallbacks.push_back(scheduler->registerCallback(
-            proxy->getId("PreDestroyProxyShape"),   // eventId
-            "HdMayaALProxyDelegate_onProxyDestroy", // tag
-            ProxyShapeDestroyedCallback,            // functionPointer
-            10000,                                  // weight
-            this                                    // userData
-            ));
-    }
-    CreateUsdImagingDelegate(proxy, proxyData);
-    return proxyData;
-}
-
-void HdMayaALProxyDelegate::RemoveProxy(ProxyShape* proxy) {
-    // Note that we don't bother unregistering the proxyShapeCallbacks,
-    // as this is called when the ProxyShape is about to be destroyed anyway
-    _proxiesData.erase(proxy);
-}
-
-HdMayaALProxyData* HdMayaALProxyDelegate::FindProxyData(ProxyShape* proxy) {
-    auto findResult = _proxiesData.find(proxy);
-    if (findResult == _proxiesData.end()) { return nullptr; }
-    return &(findResult->second);
-}
-
-void HdMayaALProxyDelegate::CreateUsdImagingDelegate(ProxyShape* proxy) {
-    auto proxyDataIter = _proxiesData.find(proxy);
-    if (!TF_VERIFY(
-            proxyDataIter != _proxiesData.end(),
-            "Proxy not found in delegate: %s", proxy->name().asChar())) {
-        return;
-    }
-    CreateUsdImagingDelegate(proxy, proxyDataIter->second);
-}
-
-void HdMayaALProxyDelegate::CreateUsdImagingDelegate(
-    ProxyShape* proxy, HdMayaALProxyData& proxyData) {
-    // Why do this release when we do a reset right below? Because we want
-    // to make sure we delete the old delegate before creating a new one
-    // (the reset statement below will first create a new one, THEN delete
-    // the old one). Why do we care? In case they have the same _renderIndex
-    // - if so, the delete may clear out items from the renderIndex that the
-    // constructor potentially adds
-    proxyData.delegate.release();
-    proxyData.delegate.reset(new UsdImagingDelegate(
-        _renderIndex,
-        GetMayaDelegateID().AppendChild(TfToken(TfStringPrintf(
-            "ALProxyDelegate_%s_%p", proxy->name().asChar(), proxy)))));
-    proxyData.populated = false;
-}
-
-void HdMayaALProxyDelegate::DeleteUsdImagingDelegate(ProxyShape* proxy) {
-    auto proxyDataIter = _proxiesData.find(proxy);
-    if (!TF_VERIFY(
-            proxyDataIter != _proxiesData.end(),
-            "Proxy not found in delegate: %s", proxy->name().asChar())) {
-        return;
-    }
-    auto& proxyData = proxyDataIter->second;
-    proxyData.delegate.reset(nullptr);
-    proxyData.populated = false;
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE

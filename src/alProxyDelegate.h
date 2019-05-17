@@ -39,7 +39,6 @@
 #include <maya/MMessage.h>
 
 #include <memory>
-#include <unordered_map>
 
 #if HDMAYA_UFE_BUILD
 #include <ufe/selection.h>
@@ -49,11 +48,7 @@ using AL::usdmaya::nodes::ProxyShape;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HdMayaALProxyData {
-    std::vector<AL::event::CallbackId> proxyShapeCallbacks;
-    std::unique_ptr<UsdImagingDelegate> delegate;
-    bool populated = false;
-};
+class HdMayaALProxyAdapter;
 
 class HdMayaALProxyDelegate : public HdMayaDelegate {
 public:
@@ -63,13 +58,14 @@ public:
 
     static HdMayaDelegatePtr Creator(const InitData& initData);
 
+    static void AddAdapter(HdMayaALProxyAdapter* adapter);
+    static void RemoveAdapter(HdMayaALProxyAdapter* adapter);
+
     void Populate() override;
     void PreFrame(const MHWRender::MDrawContext& context) override;
     void PopulateSelectedPaths(
         const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
         const HdSelectionSharedPtr& selection) override;
-
-    inline HdRenderIndex* GetRenderIndex() { return _renderIndex; }
 
 #if HDMAYA_UFE_BUILD
     void PopulateSelectedPaths(
@@ -77,22 +73,6 @@ public:
         const HdSelectionSharedPtr& selection) override;
     bool SupportsUfeSelection() override;
 #endif // HDMAYA_UFE_BUILD
-
-    HdMayaALProxyData& AddProxy(ProxyShape* proxy);
-    void RemoveProxy(ProxyShape* proxy);
-    HdMayaALProxyData* FindProxyData(ProxyShape* proxy);
-    void CreateUsdImagingDelegate(ProxyShape* proxy);
-    void DeleteUsdImagingDelegate(ProxyShape* proxy);
-
-private:
-    bool PopulateSingleProxy(ProxyShape* proxy, HdMayaALProxyData& proxyData);
-    void CreateUsdImagingDelegate(
-        ProxyShape* proxy, HdMayaALProxyData& proxyData);
-
-    std::unordered_map<ProxyShape*, HdMayaALProxyData> _proxiesData;
-    HdRenderIndex* _renderIndex;
-    MCallbackId _nodeAddedCBId;
-    MCallbackId _nodeRemovedCBId;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

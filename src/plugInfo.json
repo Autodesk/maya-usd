@@ -3,11 +3,19 @@
         {
             "Info": {
                 "Types": {
+                    # Delegates
                     "HdMayaALProxyDelegate": {
                         "bases": [
                             "HdMayaDelegate"
                         ],
                         "displayName": "Animal Logic Proxy Shapes in Hydra for Maya"
+                    },
+                    # Adapters
+                    "HdMayaALProxyAdapter": {
+                        "bases": [
+                            "HdMayaDagAdapter"
+                        ],
+                        "displayName": "AL Proxy Shapes in Hydra for Maya."
                     }
                 }
             },

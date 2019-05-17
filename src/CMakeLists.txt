@@ -16,6 +16,7 @@ link_directories(${ALUSDMAYA_LIBRARY_DIR})
 set(MAYA_LIBS OpenMaya Foundation)
 
 set(HDMAYA_AL_SRC
+    alProxyAdapter.cpp
     alProxyDelegate.cpp
     debugCodes.cpp
 )
