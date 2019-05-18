@@ -327,6 +327,11 @@ void HdMayaALProxyAdapter::MarkDirty(HdDirtyBits dirtyBits) {
             _usdDelegate->UpdateRootTransform();
             _usdDelegate->SetRootTransformDirty();
         }
+        if (dirtyBits & HdChangeTracker::DirtyVisibility) {
+            // See note above for DirtyTransform - same logic applies here
+            _usdDelegate->UpdateRootVisibility();
+            _usdDelegate->SetRootVisibilityDirty();
+        }
     }
 }
 
@@ -382,7 +387,7 @@ void HdMayaALProxyAdapter::CreateUsdImagingDelegate() {
         &GetDelegate()->GetRenderIndex(),
         _id.AppendChild(TfToken(TfStringPrintf(
             "ALProxyDelegate_%s_%p", _proxy->name().asChar(), _proxy))),
-        _proxy));
+        _proxy, GetDagPath()));
     _isPopulated = false;
 }
 

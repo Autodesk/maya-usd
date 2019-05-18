@@ -35,7 +35,7 @@ class HdMayaAlProxyUsdImagingDelegate : public UsdImagingDelegate {
 public:
     HdMayaAlProxyUsdImagingDelegate(
         HdRenderIndex* parentIndex, SdfPath const& delegateID,
-        AL::usdmaya::nodes::ProxyShape* proxy);
+        AL::usdmaya::nodes::ProxyShape* proxy, const MDagPath& dagPath);
     virtual ~HdMayaAlProxyUsdImagingDelegate();
 
     // We override this just because it's point that we can
@@ -47,17 +47,29 @@ public:
     // this override is then called.)
     virtual GfMatrix4d GetTransform(SdfPath const& id) override;
 
+    // Same logic for overriding visibility as with transform, above
+    virtual bool GetVisible(SdfPath const& id) override;
+
     void SetRootTransformDirty() { _rootTransformDirty = true; }
+    void SetRootVisibilityDirty() { _rootVisibilityDirty = true; }
 
     /// Calls SetRootTransform with the current proxy shape's transform.
     ///
     /// Also has the side-effect of marking all sub-prim's transforms
-    /// dirty.
+    /// dirty, and marking root transform clean.
     void UpdateRootTransform();
 
+    /// Calls SetRootVisibility with the current proxy shape's visibility.
+    ///
+    /// Also has the side-effect of marking all sub-prim's visibility
+    /// dirty, and marking root visibility clean.
+    void UpdateRootVisibility();
+
 private:
+    const MDagPath& _dagPath;
     AL::usdmaya::nodes::ProxyShape* _proxy = nullptr;
     bool _rootTransformDirty = false;
+    bool _rootVisibilityDirty = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

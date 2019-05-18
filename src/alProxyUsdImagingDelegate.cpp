@@ -30,8 +30,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdMayaAlProxyUsdImagingDelegate::HdMayaAlProxyUsdImagingDelegate(
     HdRenderIndex* parentIndex, SdfPath const& delegateID,
-    AL::usdmaya::nodes::ProxyShape* proxy)
-    : UsdImagingDelegate(parentIndex, delegateID), _proxy(proxy) {
+    AL::usdmaya::nodes::ProxyShape* proxy, const MDagPath& dagPath)
+    : UsdImagingDelegate(parentIndex, delegateID),
+      _dagPath(dagPath),
+      _proxy(proxy) {
     // TODO Auto-generated constructor stub
 }
 
@@ -44,10 +46,20 @@ GfMatrix4d HdMayaAlProxyUsdImagingDelegate::GetTransform(SdfPath const& id) {
     return UsdImagingDelegate::GetTransform(id);
 }
 
+bool HdMayaAlProxyUsdImagingDelegate::GetVisible(SdfPath const& id) {
+    if (_rootVisibilityDirty) { UpdateRootVisibility(); }
+    return UsdImagingDelegate::GetVisible(id);
+}
+
 void HdMayaAlProxyUsdImagingDelegate::UpdateRootTransform() {
     SetRootTransform(
         GfMatrix4d(_proxy->parentTransform().inclusiveMatrix().matrix));
     _rootTransformDirty = false;
+}
+
+void HdMayaAlProxyUsdImagingDelegate::UpdateRootVisibility() {
+    SetRootVisibility(_dagPath.isVisible());
+    _rootVisibilityDirty = false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
