@@ -108,6 +108,9 @@ public:
     void SetLightsEnabled(const bool enabled) { _lightsEnabled = enabled; }
     bool GetLightsEnabled() { return _lightsEnabled; }
 
+    inline HdEngine& GetEngine() { return _engine; }
+    inline HdxTaskController* GetTaskController() { return _taskController; }
+
 private:
     HdMayaParams _params;
 
@@ -120,6 +123,8 @@ private:
     // HdSceneDelegate's id.
     const SdfPath _mayaDelegateID;
     TfToken _name;
+    HdEngine& _engine;
+    HdxTaskController* _taskController;
     bool _isHdSt = false;
     bool _lightsEnabled = true;
 };
