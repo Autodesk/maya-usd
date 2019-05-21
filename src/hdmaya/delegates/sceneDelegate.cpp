@@ -227,6 +227,21 @@ void HdMayaSceneDelegate::Populate() {
 }
 
 void HdMayaSceneDelegate::PreFrame(const MHWRender::MDrawContext& context) {
+    if (!_materialTagsChanged.empty()) {
+        if (IsHdSt()) {
+            for (const auto& id : _materialTagsChanged) {
+                auto& renderIndex = GetRenderIndex();
+                for (const auto& rprimId : renderIndex.GetRprimIds()) {
+                    const auto* rprim = renderIndex.GetRprim(rprimId);
+                    if (rprim != nullptr && rprim->GetMaterialId() == id) {
+                        RebuildAdapterOnIdle(
+                            rprim->GetId(), HdMayaDelegateCtx::RebuildFlagPrim);
+                    }
+                }
+            }
+        }
+        _materialTagsChanged.clear();
+    }
     if (!_addedNodes.empty()) {
         for (const auto& obj : _addedNodes) {
             if (obj.isNull()) { continue; }
@@ -271,7 +286,7 @@ void HdMayaSceneDelegate::PreFrame(const MHWRender::MDrawContext& context) {
         for (const auto& it : _adaptersToRebuild) {
             _FindAdapter<HdMayaAdapter>(
                 std::get<0>(it),
-                [it](HdMayaAdapter* a) {
+                [&](HdMayaAdapter* a) {
                     if (std::get<1>(it) &
                         HdMayaDelegateCtx::RebuildFlagCallbacks) {
                         a->RemoveCallbacks();
@@ -347,6 +362,14 @@ void HdMayaSceneDelegate::RecreateAdapterOnIdle(
         }
     }
     _adaptersToRecreate.emplace_back(id, obj);
+}
+
+void HdMayaSceneDelegate::MaterialTagChanged(const SdfPath& id) {
+    if (std::find(
+            _materialTagsChanged.begin(), _materialTagsChanged.end(), id) ==
+        _materialTagsChanged.end()) {
+        _materialTagsChanged.push_back(id);
+    }
 }
 
 void HdMayaSceneDelegate::RebuildAdapterOnIdle(

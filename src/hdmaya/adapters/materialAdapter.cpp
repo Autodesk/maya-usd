@@ -310,20 +310,23 @@ public:
         HdMayaAdapter::CreateCallbacks();
     }
 
+    void Populate() override {
+        HdMayaMaterialAdapter::Populate();
+        _isTranslucent = IsTranslucent();
+    }
+
 private:
     static void _DirtyMaterialParams(MObject& /*node*/, void* clientData) {
         auto* adapter =
             reinterpret_cast<HdMayaShadingEngineAdapter*>(clientData);
         adapter->_CreateSurfaceMaterialCallback();
-        adapter->MarkDirty(
-            HdMaterial::AllDirty);
+        adapter->MarkDirty(HdMaterial::AllDirty);
     }
 
     static void _DirtyShaderParams(MObject& /*node*/, void* clientData) {
         auto* adapter =
             reinterpret_cast<HdMayaShadingEngineAdapter*>(clientData);
-        adapter->MarkDirty(
-            HdMaterial::AllDirty);
+        adapter->MarkDirty(HdMaterial::AllDirty);
     }
 
     void _CacheNodeAndTypes() {
@@ -664,15 +667,14 @@ private:
     }
 
     VtDictionary GetMaterialMetadata() override {
+        const auto isTranslucent = IsTranslucent();
+        if (GetDelegate()->IsHdSt() && isTranslucent != _isTranslucent) {
+            _isTranslucent = isTranslucent;
+            GetDelegate()->MaterialTagChanged(GetID());
+        }
         return IsTranslucent() ? _PreviewShader().translucentMetadata
                                : _PreviewShader().metadata;
     };
-
-        // std::string GetSurfaceShaderSource() override {
-        //     MFnDependencyNode node(_surfaceShader);
-        //     return IsTranslucent() ? _TranslucentPreviewShaderSource().first
-        //                            : _PreviewShaderSource().first;
-        // }
 #endif
 
     MObject _surfaceShader;
@@ -682,6 +684,7 @@ private:
         TfToken, HdTextureResourceSharedPtr, TfToken::HashFunctor>
         _textureResources;
     MCallbackId _surfaceShaderCallback;
+    bool _isTranslucent = false;
 };
 
 TF_REGISTRY_FUNCTION(TfType) {

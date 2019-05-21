@@ -71,6 +71,10 @@ public:
     virtual void RecreateAdapter(const SdfPath& id, const MObject& obj) {}
     virtual void RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj) {}
     virtual void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags) {}
+    /// \brief Notifies the scene delegate when a material tag changes.
+    ///
+    /// \param id Id of the Material that changed its tag.
+    virtual void MaterialTagChanged(const SdfPath& id) {}
     const HdRprimCollection& GetRprimCollection() { return _rprimCollection; }
     HDMAYA_API
     SdfPath GetPrimPath(const MDagPath& dg, bool isLight);

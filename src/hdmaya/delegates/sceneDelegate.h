@@ -74,6 +74,14 @@ public:
     void RecreateAdapter(const SdfPath& id, const MObject& obj) override;
     void RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj) override;
     void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags) override;
+    /// \brief Notifies the scene delegate when a material tag changes.
+    ///
+    /// This function is only affects the render index when its using HdSt.
+    /// HdSt requires rebuilding the shapes whenever the tags affecting
+    /// translucency change.
+    ///
+    /// \param id Id of the Material that changed its tag.
+    void MaterialTagChanged(const SdfPath& id) override;
     void InsertDag(const MDagPath& dag);
     void NodeAdded(const MObject& obj);
     void UpdateLightVisibility(const MDagPath& dag);
@@ -153,6 +161,7 @@ private:
     std::vector<std::tuple<SdfPath, MObject>> _adaptersToRecreate;
     std::vector<std::tuple<SdfPath, uint32_t>> _adaptersToRebuild;
     std::vector<MObject> _addedNodes;
+    std::vector<SdfPath> _materialTagsChanged;
 
     SdfPath _fallbackMaterial;
 };
