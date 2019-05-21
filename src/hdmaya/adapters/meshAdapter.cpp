@@ -98,9 +98,7 @@ public:
         _isPopulated = true;
     }
 
-    void AddBuggyCallback(MCallbackId id) {
-        _buggyCallbacks.append(id);
-    }
+    void AddBuggyCallback(MCallbackId id) { _buggyCallbacks.append(id); }
 
     void CreateCallbacks() override {
         MStatus status;
