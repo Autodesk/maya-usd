@@ -393,10 +393,7 @@ bool FindPickedPrimsMtoh(
 } // namespace
 
 HdMayaALProxyDelegate::HdMayaALProxyDelegate(const InitData& initData)
-    : HdMayaDelegate(initData),
-      _engine(initData.engine),
-      _renderIndex(initData.renderIndex),
-      _taskController(initData.taskController) {
+    : HdMayaDelegate(initData), _renderIndex(initData.renderIndex) {
     TF_DEBUG(HDMAYA_AL_PROXY_DELEGATE)
         .Msg(
             "HdMayaALProxyDelegate - creating with delegateID %s\n",

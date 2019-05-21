@@ -70,8 +70,6 @@ public:
         HdSelection* selection) override;
 
     inline HdRenderIndex* GetRenderIndex() { return _renderIndex; }
-    inline HdEngine& GetEngine() { return _engine; }
-    inline HdxTaskController* GetTaskController() { return _taskController; }
 
 #if HDMAYA_UFE_BUILD
     void PopulateSelectedPaths(
@@ -92,9 +90,7 @@ private:
         ProxyShape* proxy, HdMayaALProxyData& proxyData);
 
     std::unordered_map<ProxyShape*, HdMayaALProxyData> _proxiesData;
-    HdEngine& _engine;
     HdRenderIndex* _renderIndex;
-    HdxTaskController* _taskController;
     MCallbackId _nodeAddedCBId;
     MCallbackId _nodeRemovedCBId;
 };
