@@ -266,7 +266,7 @@ void SetupPluginCallbacks() {
 
 #ifdef HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
 
-ProxyShape::FindPickedPrimsFunction oldFindPickedPrimsFunction = nullptr;
+ProxyShape::FindPickedPrimsRunner oldFindPickedPrimsRunner(nullptr, nullptr);
 HdMayaALProxyDelegate* hdStAlProxyDelegate;
 
 /// Alternate picking mechanism for the AL proxy shape, which
@@ -276,11 +276,19 @@ bool FindPickedPrimsMtoh(
     const GfMatrix4d& viewMatrix, const GfMatrix4d& projectionMatrix,
     const GfMatrix4d& worldToLocalSpace, const SdfPathVector& paths,
     const UsdImagingGLRenderParams& params, bool nearestOnly,
-    unsigned int pickResolution, ProxyShape::HitBatch& outHit) {
+    unsigned int pickResolution, ProxyShape::HitBatch& outHit, void* userData) {
+    TF_UNUSED(userData);
+
     TF_DEBUG(HDMAYA_AL_SELECTION).Msg("FindPickedPrimsMtoh\n");
 
     auto doOldFindPickedPrims = [&]() {
-        return oldFindPickedPrimsFunction(
+        if (!oldFindPickedPrimsRunner) {
+            TF_WARN(
+                "called FindPickedPrimsMtoh before oldFindPickedPrimsRunner "
+                "set");
+            return false;
+        }
+        return oldFindPickedPrimsRunner(
             proxy, proxyDagPath, viewMatrix, projectionMatrix,
             worldToLocalSpace, paths, params, nearestOnly, pickResolution,
             outHit);
@@ -400,9 +408,8 @@ HdMayaALProxyDelegate::HdMayaALProxyDelegate(const InitData& initData)
             .Msg(
                 "HdMayaALProxyDelegate - installing alt "
                 "FindPickedPrimsFunction\n");
-        if (TF_VERIFY(oldFindPickedPrimsFunction == nullptr)) {
-            oldFindPickedPrimsFunction =
-                ProxyShape::getFindPickedPrimsFunction();
+        if (TF_VERIFY(!oldFindPickedPrimsRunner)) {
+            oldFindPickedPrimsRunner = ProxyShape::getFindPickedPrimsRunner();
             ProxyShape::setFindPickedPrimsFunction(FindPickedPrimsMtoh);
             hdStAlProxyDelegate = this;
         }
@@ -494,9 +501,10 @@ HdMayaALProxyDelegate::~HdMayaALProxyDelegate() {
             .Msg(
                 "~HdMayaALProxyDelegate - uninstalling alt "
                 "FindPickedPrimsFunction\n");
-        TF_VERIFY(oldFindPickedPrimsFunction != nullptr);
-        ProxyShape::setFindPickedPrimsFunction(oldFindPickedPrimsFunction);
-        oldFindPickedPrimsFunction = nullptr;
+        TF_VERIFY(oldFindPickedPrimsRunner);
+        ProxyShape::setFindPickedPrimsRunner(oldFindPickedPrimsRunner);
+        oldFindPickedPrimsRunner.func = nullptr;
+        oldFindPickedPrimsRunner.userData = nullptr;
         hdStAlProxyDelegate = nullptr;
     }
 #endif // HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
