@@ -316,16 +316,14 @@ private:
             reinterpret_cast<HdMayaShadingEngineAdapter*>(clientData);
         adapter->_CreateSurfaceMaterialCallback();
         adapter->MarkDirty(
-            HdMaterial::DirtyParams | HdMaterial::DirtySurfaceShader |
-            HdMaterial::DirtyResource);
+            HdMaterial::AllDirty);
     }
 
     static void _DirtyShaderParams(MObject& /*node*/, void* clientData) {
         auto* adapter =
             reinterpret_cast<HdMayaShadingEngineAdapter*>(clientData);
         adapter->MarkDirty(
-            HdMaterial::DirtyParams | HdMaterial::DirtySurfaceShader |
-            HdMaterial::DirtyResource);
+            HdMaterial::AllDirty);
     }
 
     void _CacheNodeAndTypes() {
