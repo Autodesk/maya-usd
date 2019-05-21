@@ -1302,6 +1302,7 @@ MSyntax TranslatePrim::createSyntax()
   syntax.addFlag("-fi", "-forceImport", MSyntax::kNoArg);
   syntax.addFlag("-fd", "-forceDefault", MSyntax::kNoArg);
   syntax.addFlag("-ptp", "-pushToPrim", MSyntax::kBoolean);
+  syntax.addFlag("-rav", "-readAnimatedValues", MSyntax::kBoolean);
   return syntax;
 }
 
@@ -1341,6 +1342,14 @@ MStatus TranslatePrim::doIt(const MArgList& args)
       bool value = true;
       db.getFlagArgument("-ptp", 0, value);
       tp.setPushToPrim(value);
+    }
+
+    // should pushToPrim be enabled on transforms when translating?
+    if(db.isFlagSet("-rav"))
+    {
+      bool value = true;
+      db.getFlagArgument("-rav", 0, value);
+      tp.setReadAnimatedValues(value);
     }
 
     // change the translator context to read default value

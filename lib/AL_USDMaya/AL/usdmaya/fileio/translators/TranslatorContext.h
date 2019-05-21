@@ -70,9 +70,18 @@ struct TranslatorParameters
   inline bool pushToPrim() const 
     { return m_pushToPrim; }
 
+  /// \brief  should readAnimatedValues be enabled on created transforms
+  inline void setReadAnimatedValues(bool value) 
+    { m_readAnimatedValues = value; }
+
+  /// \brief  should readAnimatedValues be enabled on created transforms
+  inline bool readAnimatedValues() const 
+    { return m_readAnimatedValues; }
+
 private:
   bool m_forcePrimImport = false;
   bool m_pushToPrim = true;
+  bool m_readAnimatedValues = false;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

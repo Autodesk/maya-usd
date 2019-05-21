@@ -389,7 +389,8 @@ MObject ProxyShape::makeUsdTransformChain_internal(
     MDGModifier* modifier2,
     uint32_t* createCount,
     MString* resultingPath,
-    bool pushToPrim)
+    bool pushToPrim,
+    bool readAnimatedValues)
 {
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChain_internal\n");
 
@@ -399,7 +400,7 @@ MObject ProxyShape::makeUsdTransformChain_internal(
   // makes the assumption that instancing isn't supported.
   MFnDagNode fn(thisMObject());
   const MObject parent = fn.parent(0);
-  auto ret = makeUsdTransformChain(usdPrim, outStageAttr, outTimeAttr, parent, modifier, reason, modifier2, createCount, resultingPath, pushToPrim);
+  auto ret = makeUsdTransformChain(usdPrim, outStageAttr, outTimeAttr, parent, modifier, reason, modifier2, createCount, resultingPath, pushToPrim, readAnimatedValues);
   return ret;
 }
 
@@ -410,7 +411,8 @@ MObject ProxyShape::makeUsdTransformChain(
     TransformReason reason,
     MDGModifier* modifier2,
     uint32_t* createCount,
-    bool pushToPrim)
+    bool pushToPrim,
+    bool readAnimatedValues)
 {
   if(!usdPrim)
   {
@@ -429,7 +431,7 @@ MObject ProxyShape::makeUsdTransformChain(
   }
 
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::makeUsdTransformChain on %s\n", usdPrim.GetPath().GetText());
-  MObject newNode = makeUsdTransformChain_internal(usdPrim, modifier, reason, modifier2, createCount, 0, pushToPrim);
+  MObject newNode = makeUsdTransformChain_internal(usdPrim, modifier, reason, modifier2, createCount, 0, pushToPrim, readAnimatedValues);
   insertTransformRefs( { std::pair<SdfPath, MObject>(usdPrim.GetPath(), newNode) }, reason);
   return newNode;
 }
@@ -445,7 +447,8 @@ MObject ProxyShape::makeUsdTransformChain(
     MDGModifier* modifier2,
     uint32_t* createCount,
     MString* resultingPath,
-    bool pushToPrim)
+    bool pushToPrim,
+    bool readAnimatedValues)
 {
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChain %s\n", usdPrim.GetPath().GetText());
 
@@ -527,7 +530,7 @@ MObject ProxyShape::makeUsdTransformChain(
   if(path.GetPathElementCount() > 1)
   {
     // if there is a parent to this node, continue building the chain.
-    parentPath = makeUsdTransformChain(usdPrim.GetParent(), outStage, outTime, parentXForm, modifier, reason, modifier2, createCount, resultingPath, pushToPrim);
+    parentPath = makeUsdTransformChain(usdPrim.GetParent(), outStage, outTime, parentXForm, modifier, reason, modifier2, createCount, resultingPath, pushToPrim, readAnimatedValues);
   }
 
   // if we've hit the top of the chain, make sure we get the correct parent
@@ -590,7 +593,7 @@ MObject ProxyShape::makeUsdTransformChain(
     if(modifier2)
     {
       modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), pushToPrim);
-      modifier2->newPlugValueBool(ptrNode->readAnimatedValuesPlug(), MGlobal::optionVarIntValue("AL_usdmaya_readAnimatedValues") );
+      modifier2->newPlugValueBool(ptrNode->readAnimatedValuesPlug(), readAnimatedValues); //MGlobal::optionVarIntValue("AL_usdmaya_readAnimatedValues") );
     }
 
     if(!isTransform)
@@ -643,7 +646,14 @@ MObject ProxyShape::makeUsdTransforms(const UsdPrim& usdPrim, MDagModifier& modi
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::makeUsdTransformsInternal(const UsdPrim& usdPrim, const MObject& parentNode, MDagModifier& modifier, TransformReason reason, MDGModifier* modifier2, bool pushToPrim)
+void ProxyShape::makeUsdTransformsInternal(
+    const UsdPrim& usdPrim, 
+    const MObject& parentNode, 
+    MDagModifier& modifier,
+    TransformReason reason,
+    MDGModifier* modifier2,
+    bool pushToPrim,
+    bool readAnimatedValues)
 {
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformsInternal\n");
   MFnDagNode fn;
@@ -671,7 +681,7 @@ void ProxyShape::makeUsdTransformsInternal(const UsdPrim& usdPrim, const MObject
       if(modifier2)
       {
         modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), pushToPrim);
-        modifier2->newPlugValueBool(ptrNode->readAnimatedValuesPlug(), MGlobal::optionVarIntValue("AL_usdmaya_readAnimatedValues"));
+        modifier2->newPlugValueBool(ptrNode->readAnimatedValuesPlug(), readAnimatedValues);
       }
 
       // set the primitive path

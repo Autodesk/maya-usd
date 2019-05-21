@@ -179,7 +179,8 @@ void ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(
     const std::vector<UsdPrim>& schemaPrims,
     const MDagPath& proxyTransformPath,
     ProxyShapePostLoadProcess::MObjectToPrim& objsToCreate,
-    bool pushToPrim)
+    bool pushToPrim,
+    bool readAnimatedValues)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims\n");
   AL_BEGIN_PROFILE_SECTION(CreateTransformChains);
@@ -205,11 +206,11 @@ void ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(
         {
           if(!parentUnmerged)
           {
-            newpath = ptrNode->makeUsdTransformChain(usdPrim, modifier, nodes::ProxyShape::kRequired, &modifier2, 0, pushToPrim);
+            newpath = ptrNode->makeUsdTransformChain(usdPrim, modifier, nodes::ProxyShape::kRequired, &modifier2, 0, pushToPrim, readAnimatedValues);
           }
           else
           {
-            newpath = ptrNode->makeUsdTransformChain(usdPrim.GetParent(), modifier, nodes::ProxyShape::kRequired, &modifier2, 0, pushToPrim);
+            newpath = ptrNode->makeUsdTransformChain(usdPrim.GetParent(), modifier, nodes::ProxyShape::kRequired, &modifier2, 0, pushToPrim, readAnimatedValues);
           }
         }
         objsToCreate.push_back(std::make_pair(newpath, usdPrim));
