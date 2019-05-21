@@ -271,18 +271,19 @@ HdMayaALProxyDelegate* hdStAlProxyDelegate;
 
 /// Alternate picking mechanism for the AL proxy shape, which
 /// uses our own renderIndex
-static bool FindPickedPrimsMtoh(
-    ProxyShape& proxy, const GfMatrix4d& viewMatrix,
-    const GfMatrix4d& projectionMatrix, const GfMatrix4d& worldToLocalSpace,
-    const SdfPathVector& paths, const UsdImagingGLRenderParams& params,
-    bool nearestOnly, unsigned int pickResolution,
-    ProxyShape::HitBatch& outHit) {
+bool FindPickedPrimsMtoh(
+    ProxyShape& proxy, const MDagPath& proxyDagPath,
+    const GfMatrix4d& viewMatrix, const GfMatrix4d& projectionMatrix,
+    const GfMatrix4d& worldToLocalSpace, const SdfPathVector& paths,
+    const UsdImagingGLRenderParams& params, bool nearestOnly,
+    unsigned int pickResolution, ProxyShape::HitBatch& outHit) {
     TF_DEBUG(HDMAYA_AL_SELECTION).Msg("FindPickedPrimsMtoh\n");
 
     auto doOldFindPickedPrims = [&]() {
         return oldFindPickedPrimsFunction(
-            proxy, viewMatrix, projectionMatrix, worldToLocalSpace, paths,
-            params, nearestOnly, pickResolution, outHit);
+            proxy, proxyDagPath, viewMatrix, projectionMatrix,
+            worldToLocalSpace, paths, params, nearestOnly, pickResolution,
+            outHit);
     };
 
     // Unless the current viewport renderer is an mtoh HdStream one, use
