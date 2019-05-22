@@ -72,7 +72,10 @@ public:
     /// \return Dictionary holding the metadata.
     HDMAYA_API
     virtual VtDictionary GetMaterialMetadata();
-
+    /// \brief Updates the material tag for the material.
+    ///
+    /// \return True if the material tag have changed, false otherwise.
+    virtual bool UpdateMaterialTag() { return false; }
     HDMAYA_API
     static const HdMaterialParamVector& GetPreviewMaterialParams();
     HDMAYA_API

@@ -230,12 +230,16 @@ void HdMayaSceneDelegate::PreFrame(const MHWRender::MDrawContext& context) {
     if (!_materialTagsChanged.empty()) {
         if (IsHdSt()) {
             for (const auto& id : _materialTagsChanged) {
-                auto& renderIndex = GetRenderIndex();
-                for (const auto& rprimId : renderIndex.GetRprimIds()) {
-                    const auto* rprim = renderIndex.GetRprim(rprimId);
-                    if (rprim != nullptr && rprim->GetMaterialId() == id) {
-                        RebuildAdapterOnIdle(
-                            rprim->GetId(), HdMayaDelegateCtx::RebuildFlagPrim);
+                if (_GetValue<HdMayaMaterialAdapter, bool>(id, [](HdMayaMaterialAdapter* a) {
+                    return a->UpdateMaterialTag();
+                }, _materialAdapters)) {
+                    auto& renderIndex = GetRenderIndex();
+                    for (const auto& rprimId : renderIndex.GetRprimIds()) {
+                        const auto* rprim = renderIndex.GetRprim(rprimId);
+                        if (rprim != nullptr && rprim->GetMaterialId() == id) {
+                            RebuildAdapterOnIdle(
+                                rprim->GetId(), HdMayaDelegateCtx::RebuildFlagPrim);
+                        }
                     }
                 }
             }

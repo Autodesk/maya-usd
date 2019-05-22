@@ -151,12 +151,14 @@ protected:
     bool _CreateMaterial(const SdfPath& id, const MObject& obj);
 
 private:
-    std::unordered_map<SdfPath, HdMayaShapeAdapterPtr, SdfPath::Hash>
-        _shapeAdapters;
-    std::unordered_map<SdfPath, HdMayaLightAdapterPtr, SdfPath::Hash>
-        _lightAdapters;
-    std::unordered_map<SdfPath, HdMayaMaterialAdapterPtr, SdfPath::Hash>
-        _materialAdapters;
+    template <typename T>
+    using AdapterMap = std::unordered_map<SdfPath, T, SdfPath::Hash>;
+    /// \brief Unordered Map storing the shape adapters.
+    AdapterMap<HdMayaShapeAdapterPtr> _shapeAdapters;
+    /// \brief Unordered Map storing the light adapters.
+    AdapterMap<HdMayaLightAdapterPtr> _lightAdapters;
+    /// \brief Unordered Map storing the material adapters.
+    AdapterMap<HdMayaMaterialAdapterPtr> _materialAdapters;
     std::vector<MCallbackId> _callbacks;
     std::vector<std::tuple<SdfPath, MObject>> _adaptersToRecreate;
     std::vector<std::tuple<SdfPath, uint32_t>> _adaptersToRebuild;

@@ -327,6 +327,9 @@ private:
         auto* adapter =
             reinterpret_cast<HdMayaShadingEngineAdapter*>(clientData);
         adapter->MarkDirty(HdMaterial::AllDirty);
+        if (adapter->GetDelegate()->IsHdSt()) {
+            adapter->GetDelegate()->MaterialTagChanged(adapter->GetID());
+        }
     }
 
     void _CacheNodeAndTypes() {
@@ -651,6 +654,14 @@ private:
         return VtValue(materialNetworkMap);
     };
 
+    bool UpdateMaterialTag() override {
+        if (IsTranslucent() != _isTranslucent) {
+            _isTranslucent = !_isTranslucent;
+            return true;
+        }
+        return false;
+    }
+
 #ifdef HDMAYA_OIT_ENABLED
     bool IsTranslucent() {
         if (_surfaceShaderType == UsdImagingTokens->UsdPreviewSurface ||
@@ -667,13 +678,12 @@ private:
     }
 
     VtDictionary GetMaterialMetadata() override {
-        const auto isTranslucent = IsTranslucent();
-        if (GetDelegate()->IsHdSt() && isTranslucent != _isTranslucent) {
-            _isTranslucent = isTranslucent;
-            GetDelegate()->MaterialTagChanged(GetID());
+        // We only need the delayed update of the tag for the HdSt backend.
+        if (!GetDelegate()->IsHdSt()) {
+            _isTranslucent = IsTranslucent();
         }
-        return IsTranslucent() ? _PreviewShader().translucentMetadata
-                               : _PreviewShader().metadata;
+        return _isTranslucent ? _PreviewShader().translucentMetadata
+                              : _PreviewShader().metadata;
     };
 #endif
 
