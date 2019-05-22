@@ -149,6 +149,7 @@ install(
         delegates/delegateDebugCodes.h
         delegates/delegateRegistry.h
         delegates/params.h
+        delegates/sceneDelegate.h
     DESTINATION include/hdmaya/delegates)
 
 install(
