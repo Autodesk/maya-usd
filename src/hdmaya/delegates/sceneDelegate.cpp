@@ -449,6 +449,22 @@ void HdMayaSceneDelegate::RecreateAdapter(
     }
 }
 
+HdMayaShapeAdapterPtr HdMayaSceneDelegate::GetShapeAdapter(const SdfPath& id) {
+    auto iter = _shapeAdapters.find(id);
+    return iter == _shapeAdapters.end() ? nullptr : iter->second;
+}
+
+HdMayaLightAdapterPtr HdMayaSceneDelegate::GetLightAdapter(const SdfPath& id) {
+    auto iter = _lightAdapters.find(id);
+    return iter == _lightAdapters.end() ? nullptr : iter->second;
+}
+
+HdMayaMaterialAdapterPtr HdMayaSceneDelegate::GetMaterialAdapter(
+    const SdfPath& id) {
+    auto iter = _materialAdapters.find(id);
+    return iter == _materialAdapters.end() ? nullptr : iter->second;
+}
+
 void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
     TF_DEBUG(HDMAYA_DELEGATE_INSERTDAG)
         .Msg(

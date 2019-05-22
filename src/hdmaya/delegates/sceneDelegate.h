@@ -99,6 +99,15 @@ public:
     void MaterialTagChanged(const SdfPath& id) override;
 
     HDMAYA_API
+    HdMayaShapeAdapterPtr GetShapeAdapter(const SdfPath& id);
+
+    HDMAYA_API
+    HdMayaLightAdapterPtr GetLightAdapter(const SdfPath& id);
+
+    HDMAYA_API
+    HdMayaMaterialAdapterPtr GetMaterialAdapter(const SdfPath& id);
+
+    HDMAYA_API
     void InsertDag(const MDagPath& dag);
 
     HDMAYA_API
