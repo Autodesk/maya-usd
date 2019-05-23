@@ -162,15 +162,6 @@ inline void _MapAdapter(
     _MapAdapter<T>(f, m...);
 }
 
-inline bool _dagIsSelected(
-    const MDagPath& dag, const MSelectionList& selection) {
-    for (auto dagCopy = dag; dagCopy.length() > 0; dagCopy.pop()) {
-        if (selection.hasItem(dagCopy)) { return true; }
-    }
-
-    return false;
-}
-
 } // namespace
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -230,15 +221,19 @@ void HdMayaSceneDelegate::PreFrame(const MHWRender::MDrawContext& context) {
     if (!_materialTagsChanged.empty()) {
         if (IsHdSt()) {
             for (const auto& id : _materialTagsChanged) {
-                if (_GetValue<HdMayaMaterialAdapter, bool>(id, [](HdMayaMaterialAdapter* a) {
-                    return a->UpdateMaterialTag();
-                }, _materialAdapters)) {
+                if (_GetValue<HdMayaMaterialAdapter, bool>(
+                        id,
+                        [](HdMayaMaterialAdapter* a) {
+                            return a->UpdateMaterialTag();
+                        },
+                        _materialAdapters)) {
                     auto& renderIndex = GetRenderIndex();
                     for (const auto& rprimId : renderIndex.GetRprimIds()) {
                         const auto* rprim = renderIndex.GetRprim(rprimId);
                         if (rprim != nullptr && rprim->GetMaterialId() == id) {
                             RebuildAdapterOnIdle(
-                                rprim->GetId(), HdMayaDelegateCtx::RebuildFlagPrim);
+                                rprim->GetId(),
+                                HdMayaDelegateCtx::RebuildFlagPrim);
                         }
                     }
                 }
@@ -611,35 +606,42 @@ void HdMayaSceneDelegate::PopulateSelectedPaths(
             "HdMayaSceneDelegate::PopulateSelectedPaths - %s\n",
             GetMayaDelegateID().GetText());
 
-    _MapAdapter<HdMayaDagAdapter>(
-        [&mayaSelection, &selectedSdfPaths, &selection](HdMayaDagAdapter* a) {
-            if (a->IsInstanced()) {
-                const auto& dagPath = a->GetDagPath();
-                MDagPathArray dags;
-                MDagPath::getAllPathsTo(dagPath.node(), dags);
-                const auto dagCount = dags.length();
-                VtIntArray indices(1);
-                auto selected = false;
-                for (auto i = decltype(dagCount){0}; i < dagCount; ++i) {
-                    if (_dagIsSelected(dags[i], mayaSelection)) {
-                        indices[0] = i;
-                        // This doesn't work with a single call.
-                        selection->AddInstance(
-                            HdSelection::HighlightModeSelect, a->GetID(),
-                            indices);
-                        selected = true;
-                    }
+    // While there may be a LOT of instances, hopefully there shouldn't
+    // be a huge number of different types of instances, so tracking this
+    // won't be too bad...
+    std::unordered_set<SdfPath, SdfPath::Hash> selectedMasters;
+    VtIntArray indices(1);
+    MapSelectionDescendents(
+        mayaSelection,
+        [this, &indices, &selectedSdfPaths, &selectedMasters,
+         &selection](const MDagPath& dagPath) {
+            if (dagPath.isInstanced()) {
+                auto masterDag = MDagPath();
+                if (!TF_VERIFY(
+                        MDagPath::getAPathTo(dagPath.node(), masterDag))) {
+                    return;
                 }
-                if (selected) { selectedSdfPaths.push_back(a->GetID()); }
+                auto primId = GetPrimPath(masterDag, false);
+                if (_shapeAdapters.find(primId) == _shapeAdapters.end()) {
+                    return;
+                }
+                indices[0] = dagPath.instanceNumber();
+                selection->AddInstance(
+                    HdSelection::HighlightModeSelect, primId, indices);
+                if (selectedMasters.find(primId) == selectedMasters.end()) {
+                    selectedSdfPaths.push_back(primId);
+                    selectedMasters.insert(primId);
+                }
             } else {
-                if (_dagIsSelected(a->GetDagPath(), mayaSelection)) {
-                    selection->AddRprim(
-                        HdSelection::HighlightModeSelect, a->GetID());
-                    selectedSdfPaths.push_back(a->GetID());
+                auto primId = GetPrimPath(dagPath, false);
+                if (_shapeAdapters.find(primId) == _shapeAdapters.end()) {
+                    return;
                 }
+                selection->AddRprim(HdSelection::HighlightModeSelect, primId);
+                selectedSdfPaths.push_back(primId);
             }
         },
-        _shapeAdapters);
+        MFn::kShape);
 }
 
 HdMeshTopology HdMayaSceneDelegate::GetMeshTopology(const SdfPath& id) {

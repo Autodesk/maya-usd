@@ -28,11 +28,17 @@
 
 #include <pxr/base/gf/matrix4d.h>
 
+#include <maya/MDagPathArray.h>
 #include <maya/MFnDependencyNode.h>
+#include <maya/MItDag.h>
+#include <maya/MItSelectionList.h>
 #include <maya/MMatrix.h>
 #include <maya/MRenderUtil.h>
+#include <maya/MSelectionList.h>
 
 #include <hdmaya/adapters/mayaAttrs.h>
+
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -61,6 +67,57 @@ inline MString GetTextureFilePath(const MFnDependencyNode& fileNode) {
         }
     }
     return ret;
+}
+
+/// \brief Runs a function on all recursive descendents of a selection list
+///        May optionally filter by node type. The items in the list
+///        are also included in the set of items that are iterated over
+///        (assuming they pass the filter).
+inline void MapSelectionDescendents(
+    const MSelectionList& sel, std::function<void(const MDagPath&)> func,
+    MFn::Type filterType = MFn::kInvalid) {
+    MStatus status;
+    MItDag itDag;
+    MDagPath currentSelDag;
+    MDagPath currentDescendentDag;
+    for (MItSelectionList itSel(sel); !itSel.isDone(); itSel.next()) {
+        if (itSel.itemType() != MItSelectionList::kDagSelectionItem) {
+            continue;
+        }
+        if (!itSel.getDagPath(currentSelDag)) {
+            // our check against itemType means that we should always
+            // succeed in getting the dag path, so warn if we don't
+            TF_WARN("Error getting dag path from selection");
+            continue;
+        }
+
+        // We make sure that no parent of the selected item is
+        // also selected - otherwise, we would end up re-traversing the
+        // same subtree
+        bool parentSelected = false;
+        MDagPath parentDag = currentSelDag;
+        parentDag.pop();
+        for (; parentDag.length() > 0; parentDag.pop()) {
+            if (sel.hasItem(parentDag)) {
+                parentSelected = true;
+                break;
+            }
+        }
+        if (parentSelected) { continue; }
+
+        // Now we iterate through all dag descendents of the current
+        // selected item
+        itDag.reset(currentSelDag, MItDag::kDepthFirst, filterType);
+        for (; !itDag.isDone(); itDag.next()) {
+            status = itDag.getPath(currentDescendentDag);
+            if (!status) {
+                // just to print an error
+                CHECK_MSTATUS(status);
+                continue;
+            }
+            func(currentDescendentDag);
+        }
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
