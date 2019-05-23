@@ -193,30 +193,21 @@ void HdMayaDagAdapter::CreateCallbacks() {
     MDagPathArray dags;
     if (MDagPath::getAllPathsTo(GetDagPath().node(), dags)) {
         const auto numDags = dags.length();
+        auto dagNodeDirtyCallback =
+            numDags > 1 ? _InstancerNodeDirty : _TransformNodeDirty;
         for (auto i = decltype(numDags){0}; i < numDags; ++i) {
             auto dag = dags[i];
             for (; dag.length() > 0; dag.pop()) {
                 MObject obj = dag.node();
                 if (obj != MObject::kNullObj) {
-                    if (dag.isInstanced()) {
-                        auto id = MNodeMessage::addNodeDirtyPlugCallback(
-                            obj, _InstancerNodeDirty, this, &status);
-                        if (status) { AddCallback(id); }
-                        TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
-                            .Msg(
-                                "- Added _InstancerNodeDirty callback for "
-                                "dagPath (%s).\n",
-                                dag.partialPathName().asChar());
-                    } else {
-                        auto id = MNodeMessage::addNodeDirtyPlugCallback(
-                            obj, _TransformNodeDirty, this, &status);
-                        if (status) { AddCallback(id); }
-                        TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
-                            .Msg(
-                                "- Added _TransformNodeDirty callback for "
-                                "dagPath (%s).\n",
-                                dag.partialPathName().asChar());
-                    }
+                    auto id = MNodeMessage::addNodeDirtyPlugCallback(
+                        obj, dagNodeDirtyCallback, this, &status);
+                    if (status) { AddCallback(id); }
+                    TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
+                        .Msg(
+                            "- Added _InstancerNodeDirty callback for "
+                            "dagPath (%s).\n",
+                            dag.partialPathName().asChar());
                     _AddHierarchyChangedCallbacks(dag);
                 }
             }

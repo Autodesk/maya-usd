@@ -217,6 +217,27 @@ class TestDagChanges(HdMayaTestCase):
         finally:
             cmds.undoInfo(state=undoWasEnabled)
 
+    def test_move(self):
+        self.assertSnapshotClose("instances_1.png")
+        cmds.setAttr('{}.ty'.format(self.cubeTrans), 5)
+        self.assertSnapshotClose("instances_3.png")
+
+    def test_instance_move(self):
+        # Add |group1|pCube1 instance
+        #   (1) |pCube1|pCubeShape1
+        #   (2) |group1|pCube1|pCubeShape1
+        cmds.parent(self.cubeTrans, self.grp1, add=1, r=1)
+        cmds.select(clear=1)
+
+        # because we haven't moved anything, it should initially look like only
+        # one cube...
+        self.assertSnapshotClose("instances_1.png")
+
+        cmds.setAttr('{}.tz'.format(self.grp1), 5)
+        # Now that we moved one, it should look like 2 cubes
+        self.assertSnapshotClose("instances_12.png")
+
+
 class TestUndo(HdMayaTestCase):
     def test_node_creation_undo(self):
         undoWasEnabled = cmds.undoInfo(q=1, state=1)
