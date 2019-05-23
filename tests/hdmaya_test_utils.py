@@ -93,11 +93,14 @@ def imageDiff(imagePath1, imagePath2):
     img2.load(imagePath2)
 
     if img1.size() != img2.size():
-        raise ValueError("cannot compare images of different size")
+        raise ValueError("cannot compare images of different size: {} - {}"
+                         .format(imagePath1, imagePath2))
     if img1.format() != img2.format():
-        raise ValueError("cannot compare images of different format")
+        raise ValueError("cannot compare images of different format: {} - {}"
+                         .format(imagePath1, imagePath2))
     if img1.hasAlphaChannel() != img2.hasAlphaChannel():
-        raise ValueError("cannot compare images with alpha to one without ")
+        raise ValueError("cannot compare images with alpha to one without: {} - {}"
+                         .format(imagePath1, imagePath2))
 
     height = img1.height()
     width = img1.width()
@@ -194,10 +197,13 @@ class HdMayaTestCase(unittest.TestCase):
 
     def assertSnapshotClose(self, refImage, maxAvgChannelDiff=AVG_CHANNEL_DIFF):
         if not os.path.isabs(refImage):
-            test_dir = os.path.dirname(os.environ['HDMAYA_TEST_SCRIPT'])
-            refImage = os.path.join(test_dir, refImage)
+            testDir = os.path.dirname(os.environ['HDMAYA_TEST_SCRIPT'])
+            refImage = os.path.join(testDir, refImage)
 
-        snapImage = os.path.basename(refImage)
+        snapDir = self._testMethodName
+        if not os.path.isdir(snapDir):
+            os.makedirs(snapDir)
+        snapImage = os.path.join(snapDir, os.path.basename(refImage))
         snapshot(snapImage)
         return self.assertImagesClose(refImage, snapImage,
                                       maxAvgChannelDiff=maxAvgChannelDiff)
