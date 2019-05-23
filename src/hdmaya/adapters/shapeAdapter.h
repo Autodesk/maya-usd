@@ -72,6 +72,12 @@ public:
     HDMAYA_API
     virtual TfToken GetRenderTag() const;
 
+    HDMAYA_API
+    virtual void PopulateSelectedPaths(
+        const MDagPath& selectedDag, SdfPathVector& selectedSdfPaths,
+        std::unordered_set<SdfPath, SdfPath::Hash>& selectedMasters,
+        HdSelection* selection);
+
 protected:
     HDMAYA_API
     void _CalculateExtent();

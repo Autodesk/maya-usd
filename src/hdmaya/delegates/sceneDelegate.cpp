@@ -606,40 +606,41 @@ void HdMayaSceneDelegate::PopulateSelectedPaths(
             "HdMayaSceneDelegate::PopulateSelectedPaths - %s\n",
             GetMayaDelegateID().GetText());
 
+    // We need to track selected masters (but not non-instanced prims)
+    // because they may not be unique when we iterate over selected items -
+    // each dag path should only be iterated over once, but multiple dag
+    // paths might map to the same master prim. So we use selectedMasters
+    // to ensure we don't add the same master prim to selectedSdfPaths
+    // more than once.
     // While there may be a LOT of instances, hopefully there shouldn't
     // be a huge number of different types of instances, so tracking this
     // won't be too bad...
     std::unordered_set<SdfPath, SdfPath::Hash> selectedMasters;
-    VtIntArray indices(1);
     MapSelectionDescendents(
         mayaSelection,
-        [this, &indices, &selectedSdfPaths, &selectedMasters,
+        [this, &selectedSdfPaths, &selectedMasters,
          &selection](const MDagPath& dagPath) {
+            SdfPath primId;
             if (dagPath.isInstanced()) {
                 auto masterDag = MDagPath();
                 if (!TF_VERIFY(
                         MDagPath::getAPathTo(dagPath.node(), masterDag))) {
                     return;
                 }
-                auto primId = GetPrimPath(masterDag, false);
-                if (_shapeAdapters.find(primId) == _shapeAdapters.end()) {
-                    return;
-                }
-                indices[0] = dagPath.instanceNumber();
-                selection->AddInstance(
-                    HdSelection::HighlightModeSelect, primId, indices);
-                if (selectedMasters.find(primId) == selectedMasters.end()) {
-                    selectedSdfPaths.push_back(primId);
-                    selectedMasters.insert(primId);
-                }
+                primId = GetPrimPath(masterDag, false);
             } else {
-                auto primId = GetPrimPath(dagPath, false);
-                if (_shapeAdapters.find(primId) == _shapeAdapters.end()) {
-                    return;
-                }
-                selection->AddRprim(HdSelection::HighlightModeSelect, primId);
-                selectedSdfPaths.push_back(primId);
+                primId = GetPrimPath(dagPath, false);
             }
+            auto adapter = _shapeAdapters.find(primId);
+            if (adapter == _shapeAdapters.end()) { return; }
+
+            TF_DEBUG(HDMAYA_DELEGATE_SELECTION)
+                .Msg(
+                    "HdMayaSceneDelegate::PopulateSelectedPaths - calling "
+                    "adapter PopulateSelectedPaths for: %s\n",
+                    adapter->second->GetID().GetText());
+            adapter->second->PopulateSelectedPaths(
+                dagPath, selectedSdfPaths, selectedMasters, selection);
         },
         MFn::kShape);
 }
