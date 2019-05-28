@@ -616,7 +616,7 @@ void HdMayaSceneDelegate::SetParams(const HdMayaParams& params) {
 
 void HdMayaSceneDelegate::PopulateSelectedPaths(
     const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
-    HdSelection* selection) {
+    const HdSelectionSharedPtr& selection) {
     TF_DEBUG(HDMAYA_DELEGATE_SELECTION)
         .Msg(
             "HdMayaSceneDelegate::PopulateSelectedPaths - %s\n",

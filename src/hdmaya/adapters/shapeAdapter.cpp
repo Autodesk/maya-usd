@@ -119,7 +119,7 @@ TfToken HdMayaShapeAdapter::GetRenderTag() const { return HdTokens->geometry; }
 void HdMayaShapeAdapter::PopulateSelectedPaths(
     const MDagPath& selectedDag, SdfPathVector& selectedSdfPaths,
     std::unordered_set<SdfPath, SdfPath::Hash>& selectedMasters,
-    HdSelection* selection) {
+    const HdSelectionSharedPtr& selection) {
     VtIntArray indices(1);
     if (IsInstanced()) {
         indices[0] = selectedDag.instanceNumber();

@@ -95,12 +95,12 @@ public:
 
     virtual void PopulateSelectedPaths(
         const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
-        HdSelection* selection) {}
+        const HdSelectionSharedPtr& selection) {}
 
 #if HDMAYA_UFE_BUILD
     virtual void PopulateSelectedPaths(
         const UFE_NS::Selection& ufeSelection, SdfPathVector& selectedSdfPaths,
-        HdSelection* selection) {}
+        const HdSelectionSharedPtr& selection) {}
 
     virtual bool SupportsUfeSelection() { return false; }
 #endif // HDMAYA_UFE_BUILD

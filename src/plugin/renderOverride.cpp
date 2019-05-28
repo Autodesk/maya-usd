@@ -691,7 +691,7 @@ void MtohRenderOverride::_SelectionChanged() {
     MSelectionList sel;
     if (!TF_VERIFY(MGlobal::getActiveSelectionList(sel))) { return; }
     SdfPathVector selectedPaths;
-    auto* selection = new HdSelection;
+    auto selection = boost::make_shared<HdSelection>();
 
 #if HDMAYA_UFE_BUILD
     const UFE_NS::GlobalSelection::Ptr& ufeSelection =

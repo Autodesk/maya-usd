@@ -76,7 +76,7 @@ public:
     virtual void PopulateSelectedPaths(
         const MDagPath& selectedDag, SdfPathVector& selectedSdfPaths,
         std::unordered_set<SdfPath, SdfPath::Hash>& selectedMasters,
-        HdSelection* selection);
+        const HdSelectionSharedPtr& selection);
 
 protected:
     HDMAYA_API

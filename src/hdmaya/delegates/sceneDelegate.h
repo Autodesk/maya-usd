@@ -125,7 +125,7 @@ public:
     HDMAYA_API
     void PopulateSelectedPaths(
         const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
-        HdSelection* selection) override;
+        const HdSelectionSharedPtr& selection) override;
 
 protected:
     HDMAYA_API
