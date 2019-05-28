@@ -626,7 +626,7 @@ public:
   /// \param  usdPrim a prim that has been brought into maya
   /// \return  a dag path to the maya object
   AL_USDMAYA_PUBLIC
-  MString getMayaPathFromUsdPrim(const UsdPrim& usdPrim);
+  MString getMayaPathFromUsdPrim(const UsdPrim& usdPrim) const;
 
   /// \brief aggregates logic that needs to iterate through the hierarchy looking for properties/metdata on prims
   AL_USDMAYA_PUBLIC

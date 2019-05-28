@@ -1684,8 +1684,8 @@ MString ProxyShape::recordUsdPrimToMayaPath(const UsdPrim &usdPrim,
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MString ProxyShape::getMayaPathFromUsdPrim(const UsdPrim& usdPrim){
-  PrimPathToDagPath::iterator itr = m_primPathToDagPath.find(usdPrim.GetPath());
+MString ProxyShape::getMayaPathFromUsdPrim(const UsdPrim& usdPrim) const {
+  PrimPathToDagPath::const_iterator itr = m_primPathToDagPath.find(usdPrim.GetPath());
   if (itr == m_primPathToDagPath.end()){
     TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::getMayaPathFromUsdPrim could not find stored MayaPath\n");
     return MString();
