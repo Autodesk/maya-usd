@@ -564,7 +564,7 @@ void HdMayaALProxyDelegate::PreFrame(const MHWRender::MDrawContext& context) {
 
 void HdMayaALProxyDelegate::PopulateSelectedPaths(
     const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
-    HdSelection* selection) {
+    const HdSelectionSharedPtr& selection) {
     MStatus status;
     MObject proxyMObj;
     MFnDagNode proxyMFnDag;
@@ -653,7 +653,7 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
 
 void HdMayaALProxyDelegate::PopulateSelectedPaths(
     const UFE_NS::Selection& ufeSelection, SdfPathVector& selectedSdfPaths,
-    HdSelection* selection) {
+    const HdSelectionSharedPtr& selection) {
     MStatus status;
     MObject proxyMObj;
     MFnDagNode proxyMFnDag;

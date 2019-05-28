@@ -67,14 +67,14 @@ public:
     void PreFrame(const MHWRender::MDrawContext& context) override;
     void PopulateSelectedPaths(
         const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
-        HdSelection* selection) override;
+        const HdSelectionSharedPtr& selection) override;
 
     inline HdRenderIndex* GetRenderIndex() { return _renderIndex; }
 
 #if HDMAYA_UFE_BUILD
     void PopulateSelectedPaths(
         const UFE_NS::Selection& ufeSelection, SdfPathVector& selectedSdfPaths,
-        HdSelection* selection) override;
+        const HdSelectionSharedPtr& selection) override;
     bool SupportsUfeSelection() override;
 #endif // HDMAYA_UFE_BUILD
 
