@@ -373,7 +373,7 @@ bool FindPickedPrimsMtoh(
         if (usdPath.IsEmpty()) {
             usdPath = primPath.StripAllVariantSelections();
         }
-        usdPath = proxyData->delegate->GetPathForUsd(usdPath);
+        usdPath = proxyData->delegate->ConvertIndexPathToCachePath(usdPath);
 
         TF_DEBUG(HDMAYA_AL_SELECTION)
             .Msg(
@@ -635,14 +635,14 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
 
         for (auto& usdPath : paths1) {
             selectedSdfPaths.push_back(
-                proxyData.delegate->GetPathForIndex(usdPath));
+                proxyData.delegate->ConvertCachePathToIndexPath(usdPath));
             selection->AddRprim(
                 HdSelection::HighlightModeSelect, selectedSdfPaths.back());
         }
 
         for (auto& usdPath : paths2) {
             selectedSdfPaths.push_back(
-                proxyData.delegate->GetPathForIndex(usdPath));
+                proxyData.delegate->ConvertCachePathToIndexPath(usdPath));
             selection->AddRprim(
                 HdSelection::HighlightModeSelect, selectedSdfPaths.back());
         }
