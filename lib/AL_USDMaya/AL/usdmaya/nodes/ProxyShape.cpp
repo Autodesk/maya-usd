@@ -1159,10 +1159,12 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     constructLockPrims();
   }
 
-  if(m_compositionHasChanged)
+  // If redraw wasn't requested from Maya i.e. external stage modification
+  // We need to request redraw on idle, so viewport is updated
+  if (!m_requestedRedraw)
   {
-    // Manually trigger a viewport redraw
-    MGlobal::executeCommand("refresh");
+    m_requestedRedraw = true;
+    MGlobal::executeCommandOnIdle("refresh");
   }
 }
 
@@ -1847,7 +1849,8 @@ MStatus ProxyShape::computeOutputTime(const MPlug& plug, MDataBlock& dataBlock, 
 MStatus ProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::compute %s\n", plug.name().asChar());
-
+  // When shape is computed Maya will request redraw by itself
+  m_requestedRedraw = true;
   MTime currentTime;
   if(plug == m_outTime)
   {

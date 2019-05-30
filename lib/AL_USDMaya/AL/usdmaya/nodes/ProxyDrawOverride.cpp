@@ -169,6 +169,7 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
   RenderUserData* ptr = (RenderUserData*)data;
   if(ptr && ptr->m_rootPrim)
   {
+    ptr->m_shape->onRedraw();
     auto* engine = ptr->m_shape->engine();
     if (!engine)
     {

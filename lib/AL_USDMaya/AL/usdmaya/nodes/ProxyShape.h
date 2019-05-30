@@ -1013,7 +1013,7 @@ private:
   void onEditTargetChanged(UsdNotice::StageEditTargetChanged const& notice, UsdStageWeakPtr const& sender);
   void trackEditTargetLayer(LayerManager* layerManager=nullptr);
   void validateTransforms();
-
+  void onRedraw() { m_requestedRedraw = false; }
 
   TfToken getTypeForPath(const SdfPath& path) override
     { return m_context->getTypeForPath(path); }
@@ -1074,6 +1074,7 @@ private:
   bool m_pleaseIgnoreSelection = false;
   bool m_hasChangedSelection = false;
   bool m_filePathDirty = false;
+  bool m_requestedRedraw = false;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
