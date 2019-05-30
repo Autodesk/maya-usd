@@ -750,8 +750,9 @@ void HdMayaALProxyDelegate::PopulateSelectedPaths(
 
         auto& proxyData = *(findResult->second);
 
-        selectedSdfPaths.push_back(proxyData.delegate->GetPathForIndex(
-            SdfPath(usdPathSegment.string())));
+        selectedSdfPaths.push_back(
+            proxyData.delegate->ConvertCachePathToIndexPath(
+                SdfPath(usdPathSegment.string())));
         selection->AddRprim(
             HdSelection::HighlightModeSelect, selectedSdfPaths.back());
         TF_DEBUG(HDMAYA_AL_SELECTION)
