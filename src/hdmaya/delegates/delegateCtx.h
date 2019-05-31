@@ -27,7 +27,6 @@
 #include <pxr/pxr.h>
 
 #include <pxr/imaging/hd/renderIndex.h>
-#include <pxr/imaging/hd/rprimCollection.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 
 #include <pxr/usd/sdf/path.h>
@@ -75,14 +74,12 @@ public:
     ///
     /// \param id Id of the Material that changed its tag.
     virtual void MaterialTagChanged(const SdfPath& id) {}
-    const HdRprimCollection& GetRprimCollection() { return _rprimCollection; }
     HDMAYA_API
     SdfPath GetPrimPath(const MDagPath& dg, bool isLight);
     HDMAYA_API
     SdfPath GetMaterialPath(const MObject& obj);
 
 private:
-    HdRprimCollection _rprimCollection;
     SdfPath _rprimPath;
     SdfPath _sprimPath;
     SdfPath _materialPath;

@@ -81,9 +81,6 @@ HdMayaDelegateCtx::HdMayaDelegateCtx(const InitData& initData)
           initData.delegateID.AppendPath(SdfPath(std::string("sprims")))),
       _materialPath(
           initData.delegateID.AppendPath(SdfPath(std::string("materials")))) {
-    _rprimCollection.SetName(TfToken("visible"));
-    _rprimCollection.SetRootPath(_rprimPath);
-    _rprimCollection.SetRenderTags({HdTokens->geometry});
     GetChangeTracker().AddCollection(TfToken("visible"));
 }
 
