@@ -187,7 +187,6 @@ VtValue HdMayaLightAdapter::Get(const TfToken& key) {
     } else if (key == HdLightTokens->shadowCollection) {
         HdRprimCollection coll(
             HdTokens->geometry, HdReprSelector(HdReprTokens->refined));
-        coll.SetRenderTags({HdTokens->geometry});
         return VtValue(coll);
     } else if (key == HdLightTokens->shadowParams) {
         HdxShadowParams shadowParams;

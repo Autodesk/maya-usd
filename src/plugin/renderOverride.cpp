@@ -434,7 +434,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
                 MHWRender::MFrameContext::kProjectionMtx)));
         _taskController->SetCameraViewport(viewport);
 #ifdef HDMAYA_USD_001907_BUILD
-        auto tasks = _taskController->GetTasks();
+        auto tasks = _taskController->GetRenderingTasks();
         _engine.Execute(_renderIndex, &tasks);
 #else
 #ifdef HDMAYA_USD_001901_BUILD
