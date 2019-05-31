@@ -44,7 +44,7 @@
 #ifdef HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
 #include <AL/usdmaya/nodes/Engine.h>
 
-#include <pxr/imaging/hdx/intersector.h>
+#include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/imaging/hdx/tokens.h>
 #include <pxr/usdImaging/usdImagingGL/engine.h>
 
@@ -337,10 +337,9 @@ bool FindPickedPrimsMtoh(
 
     HdRprimCollection intersectCollect;
     TfTokenVector renderTags;
-    HdxIntersector::HitVector hdxHits;
-    auto& intersectionMode = nearestOnly
-                                 ? HdxIntersectionModeTokens->nearestToCamera
-                                 : HdxIntersectionModeTokens->unique;
+    HdxPickHitVector hdxHits;
+    auto& intersectionMode = nearestOnly ? HdxPickTokens->resolveNearestToCamera
+                                         : HdxPickTokens->resolveUnique;
 
     if (!AL::usdmaya::nodes::Engine::TestIntersectionBatch(
             viewMatrix, projectionMatrix, worldToLocalSpace, paths, params,
