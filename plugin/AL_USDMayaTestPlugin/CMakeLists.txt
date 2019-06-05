@@ -109,3 +109,7 @@ add_test(
             ${CMAKE_INSTALL_PREFIX}
             ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+if(NOT SKIP_USDMAYA_TESTS)
+    add_subdirectory(AL/usdmaya/py)
+endif()
