@@ -1071,11 +1071,6 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   SdfPathVector newUnselectables;
   SdfPathVector removeUnselectables;
   auto recordSelectablePrims = [&newUnselectables, &removeUnselectables, this](const UsdPrim& prim){
-    if(!prim.IsValid())
-    {
-      return;
-    }
-
     TfToken unselectablePropertyValue;
     if(prim.GetMetadata(Metadata::selectability, &unselectablePropertyValue))
     {
@@ -1095,10 +1090,6 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   SdfPathSet lockInheritedPrims;
   SdfPathSet unlockedPrims;
   auto recordPrimsLockStatus = [&lockTransformPrims, &lockInheritedPrims, &unlockedPrims](const UsdPrim& prim) {
-    if (!prim.IsValid())
-    {
-      return;
-    }
     TfToken lockPropertyValue;
     if (prim.GetMetadata(Metadata::locked, &lockPropertyValue))
     {
@@ -1124,8 +1115,33 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   for(const SdfPath& path : resyncedPaths)
   {
     UsdPrim newPrim = m_stage->GetPrimAtPath(path);
-    recordSelectablePrims(newPrim);
-    recordPrimsLockStatus(newPrim);
+    if(newPrim && newPrim.IsActive())
+    {
+      recordSelectablePrims(newPrim);
+      recordPrimsLockStatus(newPrim);
+    }
+    else
+    {
+      auto iter = m_lockTransformPrims.lower_bound(path);
+      if(iter != m_lockTransformPrims.end() && *iter == path)
+      {
+        auto end = iter;
+        auto len = iter->GetString().size();
+        while(++end != m_lockTransformPrims.end())
+        {
+          if(len < end->GetString().size())
+          {
+            if(!std::equal(iter->GetString().begin(), iter->GetString().end(), end->GetString().begin()))
+            {
+              break;
+            }
+          }
+          else break;
+        }
+        // remove paths from the locked prim set
+        m_lockTransformPrims.erase(iter, end);
+      }
+    }
   }
 
   const UsdNotice::ObjectsChanged::PathRange changedInfoOnlyPaths = notice.GetChangedInfoOnlyPaths();
@@ -1154,11 +1170,8 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     m_selectabilityDB.addPathsAsUnselectable(newUnselectables);
   }
 
-  bool lockChanged = updateLockPrims(lockTransformPrims, lockInheritedPrims, unlockedPrims);
-  if (lockChanged)
-  {
-    constructLockPrims();
-  }
+  updateLockPrims(lockTransformPrims, lockInheritedPrims, unlockedPrims);
+  constructLockPrims();
 
   // If redraw wasn't requested from Maya i.e. external stage modification
   // We need to request redraw on idle, so viewport is updated
