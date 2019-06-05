@@ -1,3 +1,19 @@
+## AL_USDMaya-0.32.26 (2019-06-05)
+### Added
++ added ability to set the readAnimatedValues flag from the translate prim command
+### Fixed
++ Ensure prims get correctly relocked when reactivating a prim
++ Refresh viewport when external changes are made to the stage
+
+## AL_USDMaya-0.32.25 (2019-05-23)
+### Changed
++ previously if a namespace was not provided for a maya reference, the reference would not be loaded. Now we
+  generate a fallback namespace based on the prim path, so "/root/mayaRef" will use the namespace "root_mayaRef"
+
+## AL_USDMaya-0.32.24 (2019-05-14)
+### Fixed
++ Visible in reflections/refractions now enabled by default when translating a mesh
+
 ## AL_USDMaya-0.32.23 (2019-05-14)
 ### Fixed
 + Transform attributes can no longer change when locked.
