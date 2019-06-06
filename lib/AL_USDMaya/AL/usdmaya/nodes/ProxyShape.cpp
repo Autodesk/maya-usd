@@ -1156,9 +1156,17 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     {
       changedPrim = m_stage->GetPrimAtPath(path);
     }
-    recordSelectablePrims(changedPrim);
-    recordPrimsLockStatus(changedPrim);
+    if(changedPrim)
+    {
+      recordSelectablePrims(changedPrim);
+      recordPrimsLockStatus(changedPrim);
+    }
+    else
+    {
+      TF_DEBUG(ALUSDMAYA_EVENTS).Msg("invalid prim path found: %s\n", path.GetText());
+    }
   }
+
 
   if(!removeUnselectables.empty())
   {
