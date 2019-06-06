@@ -1,3 +1,7 @@
+## AL_USDMaya-0.32.27 (2019-06-06)
+### Fixed
++ Potential crash when importing a scene 
+
 ## AL_USDMaya-0.32.26 (2019-06-05)
 ### Added
 + added ability to set the readAnimatedValues flag from the translate prim command
