@@ -1,0 +1,13 @@
+#usda 1.0
+
+over "main" 
+(
+    references = [@./template_root.usda@</main>]
+    clips = {
+        dictionary default = {
+            double templateStartTime = 103
+        }
+    }
+)
+{
+}

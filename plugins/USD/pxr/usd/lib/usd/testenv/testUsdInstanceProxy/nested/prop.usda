@@ -1,0 +1,20 @@
+#usda 1.0
+
+def Scope "Prop"
+{
+    def Scope "geom"
+    {
+        double x = 1.0
+        rel y
+    }
+
+    def Scope "anim"
+    {
+    }
+
+    def Scope "inactive" (
+        active = False
+    )
+    {
+    }
+}

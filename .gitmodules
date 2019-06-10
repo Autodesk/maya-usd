@@ -1,7 +1,3 @@
-[submodule "plugins/USD"]
-	path = plugins/USD
-	url = https://git.autodesk.com/autodesk-forks/USD
-	branch = develop_maya_usd
 [submodule "plugins/AL_USDMaya"]
 	path = plugins/AL_USDMaya
 	url = https://git.autodesk.com/autodesk-forks/AL_USDMaya

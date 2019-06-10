@@ -1,0 +1,21 @@
+#usda 1.0
+(
+    startTimeCode = 101
+    endTimeCode = 105
+)
+
+def "main" 
+(
+    clips = {
+        dictionary default = {
+            string primPath = "/clip"
+            string templateAssetPath = "./#.usda"
+            double templateEndTime = 103 
+            double templateStartTime = 101
+            double templateStride = 1
+        }
+    }
+)
+{
+    double foo
+}

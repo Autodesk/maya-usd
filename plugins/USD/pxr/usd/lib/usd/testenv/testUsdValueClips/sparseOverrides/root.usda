@@ -1,0 +1,20 @@
+#usda 1.0
+(
+    startTimeCode = 101
+    endTimeCode = 105
+)
+
+def "main" 
+(
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./a.usda@, @./b.usda@]
+            double2[] times = [(101, 101), (103, 103)]
+            double2[] active = [(101, 0), (103, 1)]
+            string primPath = "/clip"
+        }
+    }
+)
+{
+    double foo
+}

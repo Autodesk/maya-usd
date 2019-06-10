@@ -1,0 +1,5 @@
+@@ -3,2 +3,2 @@
+-def Scope "Foo" (
+-    payload = @p1.usda@</Foo>
++def "refSphere" (
++    payload = @helloworld.usda@</hello>
