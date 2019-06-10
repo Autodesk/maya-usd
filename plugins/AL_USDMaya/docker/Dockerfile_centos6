@@ -1,0 +1,16 @@
+FROM knockout:5000/usd-docker/usd:latest-centos6-maya2017
+
+LABEL alusdmaya.version="0.20.2" maintainer="Animal Logic"
+
+COPY ./ /tmp/usd-build/AL_USDMaya
+COPY ./docker/build_alusdmaya.sh /tmp/
+RUN /tmp/build_alusdmaya.sh
+
+# Setup the environment using the location where AL_USDMaya is installed
+ENV PATH $BUILD_DIR/src:$PATH \
+    PYTHONPATH $BUILD_DIR/lib/python:$PYTHONPATH \
+    LD_LIBRARY_PATH $BUILD_DIR/lib:$LD_LIBRARY_PATH \
+    MAYA_PLUG_IN_PATH $BUILD_DIR/plugin:$MAYA_PLUG_IN_PATH \
+    MAYA_SCRIPT_PATH $BUILD_DIR/lib:$BUILD_DIR/share/usd/plugins/usdMaya/resources:$MAYA_SCRIPT_PATH \
+    $BUILD_DIR/share/usd/plugins:$PXR_PLUGINPATH_NAME
+
