@@ -1,2 +1,0 @@
-src/a.txt
-src/b.png

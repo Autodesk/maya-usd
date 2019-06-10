@@ -1,7 +1,0 @@
-{
-    "Types" : {
-        "MoverBend::MultiMode" : {
-            "isMenvaPluginType": true,
-        }
-    }
-}

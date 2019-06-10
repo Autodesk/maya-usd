@@ -1,4 +1,0 @@
-// Expect: #1 Diag Notice
-Listener #1: ProcessNotice got a diagnostic notice
-// Expect: #1 Diag Notice
-Listener #1: ProcessNotice got a diagnostic notice

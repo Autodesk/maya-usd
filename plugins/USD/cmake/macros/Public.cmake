@@ -64,7 +64,7 @@ function(pxr_python_bin BIN_NAME)
         COMMENT "Substituting Python shebang"
         COMMAND
             ${PYTHON_EXECUTABLE}
-            ${PROJECT_SOURCE_DIR}/cmake/macros/shebang.py
+            ${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros/shebang.py
             ${PXR_PYTHON_SHEBANG}
             ${infile}
             ${outfile}
@@ -86,7 +86,7 @@ function(pxr_python_bin BIN_NAME)
             COMMENT "Creating Python cmd wrapper"
             COMMAND
                 ${PYTHON_EXECUTABLE}
-                ${PROJECT_SOURCE_DIR}/cmake/macros/shebang.py
+                ${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros/shebang.py
                 ${BIN_NAME}
                 ${outfile}.cmd
         )
@@ -592,7 +592,7 @@ function(pxr_register_test TEST_NAME)
 
         # This harness is a filter which allows us to manipulate the test run, 
         # e.g. by changing the environment, changing the expected return code, etc.
-        set(testWrapperCmd ${PROJECT_SOURCE_DIR}/cmake/macros/testWrapper.py --verbose)
+        set(testWrapperCmd ${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros/testWrapper.py --verbose)
 
         if (bt_STDOUT_REDIRECT)
             set(testWrapperCmd ${testWrapperCmd} --stdout-redirect=${bt_STDOUT_REDIRECT})
@@ -819,7 +819,7 @@ endfunction() # pxr_katana_nodetypes
 function(pxr_toplevel_prologue)
     # Generate a namespace declaration header, pxr.h, at the top level of
     # pxr at configuration time.
-    configure_file(${CMAKE_SOURCE_DIR}/pxr/pxr.h.in
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pxr/pxr.h.in
         ${CMAKE_BINARY_DIR}/include/pxr/pxr.h     
     )  
     install(
