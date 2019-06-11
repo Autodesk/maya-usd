@@ -139,21 +139,8 @@ endif()
 
 # Third Party Plugin Package Requirements
 # ----------------------------------------------
-if (PXR_BUILD_KATANA_PLUGIN)
-    find_package(KatanaAPI REQUIRED)
-    find_package(Boost
-        COMPONENTS
-        thread
-        REQUIRED
-        )
-endif()
-
 if (PXR_BUILD_MAYA_PLUGIN)
     find_package(Maya REQUIRED)
-endif()
-
-if (PXR_BUILD_HOUDINI_PLUGIN)
-    find_package(Houdini REQUIRED)
 endif()
 
 if (PXR_BUILD_ALEMBIC_PLUGIN)

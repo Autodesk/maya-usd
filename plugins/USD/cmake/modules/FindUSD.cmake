@@ -51,46 +51,6 @@ find_file(USD_CONFIG_FILE
                 $ENV{USD_ROOT}
           DOC "USD cmake configuration file")
 
-
-# USD Katana components
-
-find_path(USD_KATANA_INCLUDE_DIR usdKatana/api.h
-          PATHS ${USD_ROOT}/third_party/katana/include
-                $ENV{USD_ROOT}/third_party/katana/include
-                ${USD_KATANA_ROOT}/third_party/katana/include
-                $ENV{USD_KATANA_ROOT}/third_party/katana/include
-          DOC "USD Katana Include directory")
-
-find_library(USD_KATANA_LIBRARY usdKatana
-          PATHS ${USD_ROOT}/third_party/katana/lib
-                $ENV{USD_ROOT}/third_party/katana/lib
-                ${USD_KATANA_ROOT}/third_party/katana/lib
-                $ENV{USD_KATANA_ROOT}/third_party/katana/lib
-          DOC "USD Katana Library")
-
-get_filename_component(USD_KATANA_LIBRARY_DIR "${USD_KATANA_LIBRARY}" DIRECTORY)
-option(USD_KATANA_LIBRARY_DIR "USD Katana Library directory" "${USD_KATANA_LIBRARY_DIR}")
-
-# USD Houdini components
-
-find_path(USD_HOUDINI_INCLUDE_DIR gusd/api.h
-          PATHS ${USD_ROOT}/third_party/houdini/include
-                $ENV{USD_ROOT}/third_party/houdini/include
-                ${USD_HOUDINI_ROOT}/third_party/houdini/include
-                $ENV{USD_HOUDINI_ROOT}/third_party/houdini/include
-          DOC "USD Houdini Include directory")
-
-find_library(USD_HOUDINI_LIBRARY gusd
-          PATHS ${USD_ROOT}/third_party/houdini/lib
-                $ENV{USD_ROOT}/third_party/houdini/lib
-                ${USD_HOUDINI_ROOT}/third_party/houdini/lib
-                $ENV{USD_HOUDINI_ROOT}/third_party/houdini/lib
-          DOC "USD Houdini Library")
-
-get_filename_component(USD_HOUDINI_LIBRARY_DIR "${USD_HOUDINI_LIBRARY}" DIRECTORY)
-option(USD_HOUDINI_LIBRARY_DIR "USD Houdini Library directory" "${USD_HOUDINI_LIBRARY_DIR}")
-
-
 if(USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/pxr.h")
     foreach(_usd_comp MAJOR MINOR PATCH)
         file(STRINGS

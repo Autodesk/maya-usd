@@ -168,7 +168,6 @@ endfunction()
 function(pxr_library NAME)
     set(options
         DISABLE_PRECOMPILED_HEADERS
-        KATANA_PLUGIN
         MAYA_PLUGIN
     )
     set(oneValueArgs
@@ -252,12 +251,6 @@ function(pxr_library NAME)
 
         set(prefix "")
         set(suffix ${CMAKE_SHARED_LIBRARY_SUFFIX})
-
-        # Katana plugins install into a specific sub directory structure.
-        # In particular, shared objects install into plugin/Libs
-        if(args_KATANA_PLUGIN)
-            set(subdir "Libs")
-        endif()
 
         # Maya plugins require the .mll suffix on Windows and .bundle on OSX.
         if(args_MAYA_PLUGIN)
@@ -789,32 +782,6 @@ function(pxr_add_extra_plugins PLUGIN_AREAS)
 
     set(PXR_EXTRA_PLUGINS "${PXR_EXTRA_PLUGINS}" CACHE INTERNAL "${help}")
 endfunction() # pxr_setup_third_plugins
-
-function(pxr_katana_nodetypes NODE_TYPES)
-    set(installDir ${PXR_INSTALL_SUBDIR}/plugin/Plugins/NodeTypes)
-
-    set(pyFiles "")
-    set(importLines "")
-
-    foreach (nodeType ${NODE_TYPES})
-        list(APPEND pyFiles ${nodeType}.py)
-        set(importLines "import ${nodeType}\n")
-    endforeach()
-
-    install(
-        PROGRAMS ${pyFiles}
-        DESTINATION ${installDir}
-    )
-
-    # Install a __init__.py that imports all the known node types
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated_NodeTypes_init.py"
-         "${importLines}")
-    install(
-        FILES "${CMAKE_CURRENT_BINARY_DIR}/generated_NodeTypes_init.py"
-        DESTINATION "${installDir}"
-        RENAME "__init__.py"
-    )
-endfunction() # pxr_katana_nodetypes
 
 function(pxr_toplevel_prologue)
     # Generate a namespace declaration header, pxr.h, at the top level of
