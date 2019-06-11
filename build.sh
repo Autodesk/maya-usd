@@ -13,7 +13,6 @@ cmake .. \
 -DCMAKE_INSTALL_PREFIX='path to where you want to install the plugins and libraries' \
 -DUSD_LOCATION_OVERRIDE=$CORE_USD_BUILD_DIRECTORY \
 -DMAYA_LOCATION='path to maya runtime' \
--DBUILD_PXR_USD=TRUE \
 -DPXR_BUILD_MAYA_PLUGIN=TRUE \
 
 cmake --build . --target install -j 'core#'
