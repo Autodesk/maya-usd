@@ -2,7 +2,6 @@
 export CORE_USD_BUILD_DIRECTORY='path to core usd directory'
 
 export MAYA_USD_BUILD_DIRECTORY=$PWD
-echo $MAYA_USD_BUILD_DIRECTORY
 if [[ ! -e build ]]; then
     mkdir build
 fi
