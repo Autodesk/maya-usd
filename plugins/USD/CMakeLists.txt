@@ -9,9 +9,13 @@ if(NOT WIN32)
 endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
+    ${PROJECT_SOURCE_DIR}/cmake/modules
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros)
+
+if (PXR_BUILD_MAYA_PLUGIN)
+    find_package(Maya REQUIRED)
+endif()
 
 find_package(USD REQUIRED)
 include(${USD_CONFIG_FILE})
@@ -19,8 +23,6 @@ include(${USD_CONFIG_FILE})
 # find_package(MayaCoreUSD REQUIRED)
 
 include(Options)
-include(Packages)
-include(ProjectDefaults)
 include(Public)
 
 # This has to be defined after Packages is included, because it relies on the

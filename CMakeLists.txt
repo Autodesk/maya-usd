@@ -19,7 +19,6 @@ cmake_minimum_required(VERSION 3.1.1)
 set(BUILD_MAYAUSD_CORE ON CACHE BOOL "Build the Maya USD core libraries.")
 set(BUILD_MAYAUSD_PLUGIN ON CACHE BOOL "Build the Maya USD plugin.")
 set(BUILD_AL_USD OFF CACHE BOOL "Build the Animal Logic plugin and libraries.")
-set(BUILD_PXR_USD OFF CACHE BOOL "Build the Pixar plugin and libraries.")
 
 #==============================================================================
 # Modules and Definitions
@@ -63,7 +62,7 @@ endif()
 #==============================================================================
 # PLUGINS
 #==============================================================================
-if (BUILD_PXR_USD)
+if (PXR_BUILD_MAYA_PLUGIN)
     add_subdirectory(plugins/USD)
 endif()
 

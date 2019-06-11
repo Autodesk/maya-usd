@@ -40,11 +40,11 @@ It is up to the users to select the CMake Generator based on their preference:
 
 ### CMake Options
 
-Name                 | Description                                  | Default
----                  | ---                                          | ---
-BUILD_MAYAUSD_CORE   | Build the Maya USD core libraries            | ON
-BUILD_MAYAUSD_PLUGIN | Build the Maya USD plugin                    | ON
-BUILD_AL_USD         | Build the Animal Logic plugin and libraries  | OFF
-BUILD_PXR_USD        | Build the Pixar plugin and libraries         | OFF
+Name                  | Description                                  | Default
+---                   | ---                                          | ---
+BUILD_MAYAUSD_CORE    | Build the Maya USD core libraries            | ON
+BUILD_MAYAUSD_PLUGIN  | Build the Maya USD plugin                    | ON
+BUILD_AL_USD          | Build the Animal Logic plugin and libraries  | OFF
+PXR_BUILD_MAYA_PLUGIN | Build the Pixar plugin and libraries         | OFF
 
 ### Prerequisites
