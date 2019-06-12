@@ -1,7 +1,7 @@
-message("========== Building mayaUsdPlugin ... ==========")
+message("========== Building MayaUSD Plugin ==========")
 
 #==============================================================================
-# Definitions
+# Modules and Definitions
 #==============================================================================
 if (APPLE)
    add_definitions(-DOSMac_ -DMAC_PLUGIN)
