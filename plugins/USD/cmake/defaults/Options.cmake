@@ -29,15 +29,4 @@ option(PXR_ENABLE_GL_SUPPORT "Enable OpenGL based components" ON)
 option(PXR_ENABLE_PYTHON_SUPPORT "Enable Python based components for USD" ON)
 option(PXR_MAYA_TBB_BUG_WORKAROUND "Turn on linker flag (-Wl,-Bsymbolic) to work around a Maya TBB bug" OFF)
 option(PXR_ENABLE_NAMESPACES "Enable C++ namespaces." ON)
-
-# Precompiled headers are a win on Windows, not on gcc.
-set(pxr_enable_pch "OFF")
-if(MSVC)
-    set(pxr_enable_pch "ON")
-endif()
-option(PXR_ENABLE_PRECOMPILED_HEADERS "Enable precompiled headers." "${pxr_enable_pch}")
-set(PXR_PRECOMPILED_HEADER_NAME "pch.h"
-    CACHE
-    STRING
-    "Default name of precompiled header files"
-)
+option(BUILD_SHARED_LIBS "Build shared libraries." ON)
