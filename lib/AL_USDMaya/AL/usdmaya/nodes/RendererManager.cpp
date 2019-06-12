@@ -53,9 +53,7 @@ MStatus RendererManager::initialise()
     addFrame("Renderer plugin");
 
     // hydra renderer plugin discovery
-    // create dummy imaging engine to get renderer names
-    Engine imagingEngine(SdfPath(), {});
-    m_rendererPluginsTokens = imagingEngine.GetRendererPlugins();
+    m_rendererPluginsTokens = UsdImagingGLEngine::GetRendererPlugins();
     const size_t numTokens = m_rendererPluginsTokens.size();
     m_rendererPluginsNames = MStringArray(numTokens, MString());
 
@@ -66,7 +64,7 @@ MStatus RendererManager::initialise()
     std::vector<int16_t> enumValues(numTokens, -1);
     for (size_t i = 0; i < numTokens; ++i)
     {
-      pluginNames[i] = imagingEngine.GetRendererDisplayName(m_rendererPluginsTokens[i]);
+      pluginNames[i] = UsdImagingGLEngine::GetRendererDisplayName(m_rendererPluginsTokens[i]);
       m_rendererPluginsNames[i] = MString(pluginNames[i].data(), pluginNames[i].size());
       enumNames[i] = pluginNames[i].data();
       enumValues[i] = i;
