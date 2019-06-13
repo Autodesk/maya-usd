@@ -87,7 +87,7 @@ if (BUILD_ADSK_USD_PLUGIN)
 endif()
 
 if (BUILD_PXR_USD_PLUGIN)
-    add_subdirectory(plugins/USD)
+    add_subdirectory(plugins/PXR_USDMaya)
 endif()
 
 if (BUILD_AL_USD_PLUGIN)
