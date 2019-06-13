@@ -1,6 +1,6 @@
 #-
 #*****************************************************************************
-# Copyright 2018 Autodesk, Inc. All rights reserved.
+# Copyright 2019 Autodesk, Inc. All rights reserved.
 #
 # These coded instructions, statements, and computer programs contain
 # unpublished proprietary information written by Autodesk, Inc. and are
@@ -19,10 +19,9 @@ endif()
 #==============================================================================
 # Define common build variables
 #==============================================================================
-
 set(BUILD_MAYAUSD_CORE ON CACHE BOOL "Build the Maya USD core libraries.")
 set(BUILD_MAYAUSD_PLUGIN ON CACHE BOOL "Build the Maya USD plugin.")
-set(BUILD_AL_USD OFF CACHE BOOL "Build the Animal Logic plugin and libraries.")
+set(BUILD_AL_USD ON CACHE BOOL "Build the Animal Logic plugin and libraries.")
 
 #==============================================================================
 # Modules and Definitions
@@ -38,7 +37,7 @@ if (BUILD_MAYAUSD_CORE)
 endif()
 
 if (APPLE)
-   set(CMAKE_MACOSX_RPATH ON)
+   set(OSX_ARCHITECTURES "x86_64")
    add_definitions(-DOSMac_ -DMAC_PLUGIN)
    add_definitions(-D_BOOL -DREQUIRE_IOSTREAM)
 endif()
@@ -48,10 +47,8 @@ include(cmake/utils.cmake)
 include(cmake/usd.cmake)
 
 #==============================================================================
-# 
+# Compiler
 #==============================================================================
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
 if(WIN32)
     set(CMAKE_CXX_FLAGS
         "${CMAKE_CXX_FLAGS} ${_PXR_CXX_FLAGS}"
@@ -65,9 +62,8 @@ else()
 endif()
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
-
 #==============================================================================
-# Build Core
+# CORE
 #==============================================================================
 if (BUILD_MAYAUSD_CORE)
 

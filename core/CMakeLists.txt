@@ -13,6 +13,10 @@ list(APPEND CMAKE_MODULE_PATH
     ${PROJECT_SOURCE_DIR}/../cmake/modules
 )
 
+if (APPLE)
+   set(CMAKE_MACOSX_RPATH ON)
+endif()
+
 #==============================================================================
 # Packages
 #==============================================================================

@@ -1,4 +1,4 @@
-message("========== Building USD PLUGINS ==========")
+message("========== Pixar USD Plugin ==========")
 
 #==============================================================================
 # Modules and Definitions
@@ -27,7 +27,6 @@ find_package(USD REQUIRED)
 include(${USD_CONFIG_FILE})
 
 # find_package(MayaCoreUSD REQUIRED)
-
 
 pxr_toplevel_prologue()
     add_subdirectory(third_party/maya)

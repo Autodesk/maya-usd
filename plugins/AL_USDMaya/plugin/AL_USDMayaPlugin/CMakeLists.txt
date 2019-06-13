@@ -31,6 +31,8 @@ target_include_directories(${PXR_PACKAGE}
 
 if(MSVC)
     set_target_properties(${PXR_PACKAGE} PROPERTIES SUFFIX ".mll")
+elseif(APPLE)
+    set_target_properties(${PXR_PACKAGE} PROPERTIES SUFFIX ".bundle")
 else()
     # This puts the paths into RUNPATH instead of RPATH.
     # They are the same except that RPATH is searched before LD_LIBRARY_PATH whereas RUNPATH is searched after.
