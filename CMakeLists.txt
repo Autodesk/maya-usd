@@ -37,6 +37,12 @@ if (BUILD_MAYAUSD_CORE)
     set(MAYAUSD_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD_PATCH_LEVEL}")
 endif()
 
+if (APPLE)
+   set(CMAKE_MACOSX_RPATH ON)
+   add_definitions(-DOSMac_ -DMAC_PLUGIN)
+   add_definitions(-D_BOOL -DREQUIRE_IOSTREAM)
+endif()
+
 include(cmake/python.cmake)
 include(cmake/utils.cmake)
 include(cmake/usd.cmake)
@@ -44,8 +50,21 @@ include(cmake/usd.cmake)
 #==============================================================================
 # 
 #==============================================================================
-set(BOOST_LIBRARYDIR "${PXR_USD_LIB_DIR}" )
-set(BOOST_ROOT       "${PXR_USD_LOCATION}" )
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+if(WIN32)
+    set(CMAKE_CXX_FLAGS
+        "${CMAKE_CXX_FLAGS} ${_PXR_CXX_FLAGS}"
+    )
+else()
+    set(CMAKE_CXX_FLAGS
+        -std=c++11
+        -msse3
+        "${CMAKE_CXX_FLAGS} ${_PXR_CXX_FLAGS}"
+    )
+endif()
+string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
 
 #==============================================================================
 # Build Core
