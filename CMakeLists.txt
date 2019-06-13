@@ -83,7 +83,7 @@ endif()
 # PLUGINS
 #==============================================================================
 if (BUILD_ADSK_USD_PLUGIN)
-    add_subdirectory(plugins/mayaUSD)
+    add_subdirectory(plugins/ADSK_USDMaya)
 endif()
 
 if (BUILD_PXR_USD_PLUGIN)
