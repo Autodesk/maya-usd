@@ -13,6 +13,10 @@ list(APPEND CMAKE_MODULE_PATH
     ${PROJECT_SOURCE_DIR}/../cmake/modules
 )
 
+if (WIN32)
+	set(CMAKE_INCLUDE_CURRENT_DIR ON)
+endif()
+
 if (APPLE)
    set(CMAKE_MACOSX_RPATH ON)
 endif()
