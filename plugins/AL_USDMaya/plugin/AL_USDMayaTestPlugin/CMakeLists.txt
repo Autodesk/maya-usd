@@ -73,6 +73,7 @@ target_include_directories(${PXR_PACKAGE}
 PRIVATE
     ${GTEST_INCLUDE_DIRS}
     ${MAYA_INCLUDE_DIRS}
+    ${MAYAUSD_INCLUDE_DIR}
     "../../lib/AL_USDMaya"    
     ${MAYATEST_INCLUDE_LOCATION}
 )
