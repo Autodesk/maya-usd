@@ -39,7 +39,7 @@
 #include <vector>
 #include "AL/usdmaya/nodes/Engine.h"
 
-#include "pxr/imaging/hdx/intersector.h"
+#include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/imaging/hdx/taskController.h"
 
 namespace AL {
@@ -63,40 +63,31 @@ bool Engine::TestIntersectionBatch(
   }
   _UpdateHydraCollection(&_intersectCollection, paths, params);
 
-  HdxIntersector::HitVector allHits;
-  HdxIntersector::Params qparams;
-  qparams.viewMatrix = worldToLocalSpace * viewMatrix;
-  qparams.projectionMatrix = projectionMatrix;
-  qparams.alphaThreshold = params.alphaThreshold;
-  switch (params.cullStyle) {
-    case UsdImagingGLCullStyle::CULL_STYLE_NO_OPINION:
-      qparams.cullStyle = HdCullStyleDontCare;
-      break;
-    case UsdImagingGLCullStyle::CULL_STYLE_NOTHING:
-      qparams.cullStyle = HdCullStyleNothing;
-      break;
-    case UsdImagingGLCullStyle::CULL_STYLE_BACK:
-      qparams.cullStyle = HdCullStyleBack;
-      break;
-    case UsdImagingGLCullStyle::CULL_STYLE_FRONT:
-      qparams.cullStyle = HdCullStyleFront;
-      break;
-    case UsdImagingGLCullStyle::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED:
-      qparams.cullStyle = HdCullStyleBackUnlessDoubleSided;
-      break;
-    default:
-      qparams.cullStyle = HdCullStyleDontCare;
-  }
-  qparams.renderTags = _intersectCollection.GetRenderTags();
-  qparams.enableSceneMaterials = params.enableSceneMaterials;
+  TfTokenVector renderTags;
+  _ComputeRenderTags(params, &renderTags);
+  _taskController->SetRenderTags(renderTags);
 
-  _taskController->SetPickResolution(pickResolution);
-  if (!_taskController->TestIntersection(
-      &_engine,
-      _intersectCollection,
-      qparams,
-      HdxIntersectionModeTokens->unique,
-      &allHits)) {
+  HdxPickHitVector allHits;
+
+  HdxRenderTaskParams hdParams = _MakeHydraUsdImagingGLRenderParams(params);
+  _taskController->SetRenderParams(hdParams);
+
+  HdxPickTaskContextParams pickParams;
+  pickParams.resolution = GfVec2i(pickResolution, pickResolution);
+  pickParams.hitMode = HdxPickTokens->hitAll;
+  pickParams.resolveMode = HdxPickTokens->resolveUnique;
+  pickParams.viewMatrix = worldToLocalSpace * viewMatrix;
+  pickParams.projectionMatrix = projectionMatrix;
+  pickParams.clipPlanes = params.clipPlanes;
+  pickParams.collection = _intersectCollection;
+  pickParams.outHits = &allHits;
+  VtValue vtPickParams(pickParams);
+
+  _engine.SetTaskContextData(HdxPickTokens->pickParams, vtPickParams);
+  auto pickingTasks = _taskController->GetPickingTasks();
+  _engine.Execute(_taskController->GetRenderIndex(), &pickingTasks);
+
+  if (allHits.size() == 0) {
     return false;
   }
 
