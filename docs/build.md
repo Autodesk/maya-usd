@@ -14,37 +14,23 @@ mkdir build
 cd build
 ```
 
-Fill out the paths below and run the following commands to build and install.
+Fill out the following variables below in build scripts:
 
 ```
-cmake \
-      -DCMAKE_INSTALL_PREFIX="<path to where you want to install the plugins and libraries>" \
-      -DMAYA_LOCATION="<path to maya binary directory>" \
-      -DMAYA_DEVKIT_LOCATION="<path to devkit directory>"  \
-      -DUSD_LOCATION_OVERRIDE="<path to usd directory>" \
-      -DUSD_CONFIG_FILE="<path_to_usd_location/pxrConfig.cmake>"\
-      ..
-
-cmake --build . --target install
-
-Append -- -j <NUM_CORES> or /m:%NUMBER_OF_PROCESSORS% based on your platform or CMake Generator.
-```
-
-It is up to the users to select the CMake Generator based on their preference:
-
-```
--G Ninja -DCMAKE_MAKE_PROGRAM=<path to ninja executable>
--G "Visual Studio 14 2015 Win64" 
--G "Xcode" 
+	CORE_USD_BUILD_DIRECTORY='path to core usd directory'
+	MAYA_RUNTIME='path to maya runtime'
+	INSTALL_LOCATION='path to where you want to install the plugins and libraries'
+	BUILD_TYPE='Debug, Release, RelWithDebInfo'
+	CORE_NUM='core#'
 ```
 
 ### CMake Options
 
-Name                  | Description                                  | Default
----                   | ---                                          | ---
-BUILD_MAYAUSD_CORE    | Build the Maya USD core libraries            | ON
-BUILD_MAYAUSD_PLUGIN  | Build the Maya USD plugin                    | ON
-BUILD_AL_USD          | Build the Animal Logic plugin and libraries  | OFF
-PXR_BUILD_MAYA_PLUGIN | Build the Pixar plugin and libraries         | OFF
+Name                    | Description                                  | Default
+---                     | ---                                          | ---
+BUILD_CORE_USD_LIBRARY  | Build the Maya USD core libraries            | ON
+BUILD_ADSK_USD_PLUGIN   | Build the Maya USD plugin                    | ON
+BUILD_AL_USD_PLUGIN     | Build the Animal Logic plugin and libraries  | ON
+BUILD_PXR_USD_PLUGIN    | Build the Pixar plugin and libraries         | ON
 
 ### Prerequisites

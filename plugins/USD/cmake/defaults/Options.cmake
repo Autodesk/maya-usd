@@ -24,7 +24,6 @@
 option(PXR_STRICT_BUILD_MODE "Turn on additional warnings. Enforce all warnings as errors." OFF)
 option(PXR_VALIDATE_GENERATED_CODE "Validate script generated code" OFF)
 option(PXR_BUILD_TESTS "Build tests" ON)
-option(PXR_BUILD_MAYA_PLUGIN "Build usd maya plugin" OFF)
 option(PXR_ENABLE_GL_SUPPORT "Enable OpenGL based components" ON)
 option(PXR_ENABLE_PYTHON_SUPPORT "Enable Python based components for USD" ON)
 option(PXR_MAYA_TBB_BUG_WORKAROUND "Turn on linker flag (-Wl,-Bsymbolic) to work around a Maya TBB bug" OFF)

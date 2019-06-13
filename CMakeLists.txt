@@ -19,9 +19,10 @@ endif()
 #==============================================================================
 # Define common build variables
 #==============================================================================
-set(BUILD_MAYAUSD_CORE ON CACHE BOOL "Build the Maya USD core libraries.")
-set(BUILD_MAYAUSD_PLUGIN ON CACHE BOOL "Build the Maya USD plugin.")
-set(BUILD_AL_USD ON CACHE BOOL "Build the Animal Logic plugin and libraries.")
+set(BUILD_CORE_USD_LIBRARY ON CACHE BOOL "Build Core USD libraries.")
+set(BUILD_ADSK_USD_PLUGIN ON CACHE BOOL "Build Autodesk USD plugin.")
+set(BUILD_PXR_USD_PLUGIN ON CACHE BOOL "Build the Pixar USD plugin and libraries.")
+set(BUILD_AL_USD_PLUGIN OFF CACHE BOOL "Build the Animal Logic USD plugin and libraries.")
 
 #==============================================================================
 # Modules and Definitions
@@ -31,7 +32,7 @@ list(APPEND CMAKE_MODULE_PATH
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules
 )
 
-if (BUILD_MAYAUSD_CORE)
+if (BUILD_CORE_USD_LIBRARY)
     include(cmake/mayausd_version.info)
     set(MAYAUSD_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD_PATCH_LEVEL}")
 endif()
@@ -65,7 +66,7 @@ string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 #==============================================================================
 # CORE
 #==============================================================================
-if (BUILD_MAYAUSD_CORE)
+if (BUILD_CORE_USD_LIBRARY)
 
     # set build location
     set(MAYAUSD_BUILD_ROOT "${CMAKE_CURRENT_BINARY_DIR}/build-mayaUsd")
@@ -81,14 +82,14 @@ endif()
 #==============================================================================
 # PLUGINS
 #==============================================================================
-if (PXR_BUILD_MAYA_PLUGIN)
+if (BUILD_ADSK_USD_PLUGIN)
+    add_subdirectory(plugins/mayaUSD)
+endif()
+
+if (BUILD_PXR_USD_PLUGIN)
     add_subdirectory(plugins/USD)
 endif()
 
-if (BUILD_AL_USD)
+if (BUILD_AL_USD_PLUGIN)
     add_subdirectory(plugins/AL_USDMaya)
-endif()
-
-if (BUILD_MAYAUSD_PLUGIN)
-    add_subdirectory(plugins/mayaUSD)
 endif()
