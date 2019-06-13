@@ -2,6 +2,11 @@ message("========== AL USD Plugin ==========")
 
 project(AL_USDMaya)
 
+# Disallow use of the LOCATION property for build targets
+if (POLICY CMP0026)
+    cmake_policy(SET CMP0026 OLD)
+endif()
+
 set(NEED_BOOST_FILESYSTEM ON)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -95,15 +100,18 @@ if(NOT SKIP_USDMAYA_TESTS)
       endif()
 
       message(STATUS "========== Installing GoogleTest... ==========")
-
-      execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} .
+      set(FORCE_SHARED_CRT "")
+      if(MSVC)
+        set(FORCE_SHARED_CRT -DFORCE_SHARED_CRT=OFF)
+      endif()
+      execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} . ${FORCE_SHARED_CRT}
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${GOOGLETEST_BUILD_ROOT}/googletest-config )
       if(result)
         message(FATAL_ERROR "CMake step for googletest failed: ${result}")
       endif()
 
-      execute_process(COMMAND ${CMAKE_COMMAND} --build .
+      execute_process(COMMAND ${CMAKE_COMMAND} --build . --config ${CMAKE_BUILD_TYPE}
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${GOOGLETEST_BUILD_ROOT}/googletest-config )
       if(result)
