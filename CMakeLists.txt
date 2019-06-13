@@ -22,7 +22,7 @@ endif()
 set(BUILD_CORE_USD_LIBRARY ON CACHE BOOL "Build Core USD libraries.")
 set(BUILD_ADSK_USD_PLUGIN ON CACHE BOOL "Build Autodesk USD plugin.")
 set(BUILD_PXR_USD_PLUGIN ON CACHE BOOL "Build the Pixar USD plugin and libraries.")
-set(BUILD_AL_USD_PLUGIN OFF CACHE BOOL "Build the Animal Logic USD plugin and libraries.")
+set(BUILD_AL_USD_PLUGIN ON CACHE BOOL "Build the Animal Logic USD plugin and libraries.")
 
 #==============================================================================
 # Modules and Definitions

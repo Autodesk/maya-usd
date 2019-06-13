@@ -70,7 +70,9 @@ target_compile_definitions(AL_USDMayaSchemas
         AL_USDMAYASCHEMAS_EXPORTS
 )
 
-target_link_libraries(AL_USDMayaSchemas ${DEPENDANT_LIBRARIES})
+# Hamed 2019 
+# https://stackoverflow.com/questions/25617839/undefined-reference-to-symbol-pthread-key-deleteglibc-2-2-5
+target_link_libraries(AL_USDMayaSchemas ${DEPENDANT_LIBRARIES} -lpthread -lm)
 
 install(
     TARGETS AL_USDMayaSchemas
