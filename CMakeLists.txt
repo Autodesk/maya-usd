@@ -24,6 +24,7 @@ set(BUILD_ADSK_USD_PLUGIN ON CACHE BOOL "Build Autodesk USD plugin.")
 set(BUILD_PXR_USD_PLUGIN ON CACHE BOOL "Build the Pixar USD plugin and libraries.")
 set(BUILD_AL_USD_PLUGIN ON CACHE BOOL "Build the Animal Logic USD plugin and libraries.")
 
+set(CMAKE_WANT_UFE_BUILD ON)
 #==============================================================================
 # Modules and Definitions
 #==============================================================================
