@@ -57,7 +57,7 @@ if(result)
 endif()
 message(STATUS "========== ...  MayaUSD installed. ==========")
 
-if (BUILD_MAYAUSD_CORE)
+if (BUILD_CORE_USD_LIBRARY)
     set(MAYAUSD_INCLUDE_ROOT ${MAYAUSD_INSTALL_DIR})
     set(MAYAUSD_LIB_ROOT ${MAYAUSD_INSTALL_DIR})
 
