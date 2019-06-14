@@ -10,6 +10,7 @@ endif()
 set(NEED_BOOST_FILESYSTEM ON)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_WANT_UFE_BUILD ON)
 
 option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
@@ -33,18 +34,13 @@ find_package(PythonInterp)
 # find_package(MayaCoreUSD REQUIRED)
 
 if(CMAKE_WANT_UFE_BUILD)
-    add_definitions(-DWANT_UFE_BUILD)	
-    message(STATUS "UFE Build Enabled")
-    if (NOT UFE_VERSION)
-        message(FATAL_ERROR "UFE_VERSION must be defined when WANT_UFE_BUILD is enabled")
-    endif()
-    message(STATUS "Using UFE version : ${UFE_VERSION}")
-    string(REPLACE "." ";" UFE_VERSION_LIST ${UFE_VERSION})
-    list(GET UFE_VERSION_LIST 0 UFE_MAJOR_VERSION)
-    list(GET UFE_VERSION_LIST 1 UFE_MINOR_VERSION)
-    list(GET UFE_VERSION_LIST 2 UFE_PATCH_LEVEL)
+    add_definitions(-DWANT_UFE_BUILD)
+
     find_package(UFE REQUIRED)
     include_directories(${UFE_INCLUDE_DIR})
+
+    message("UFE Build Enabled")
+    message("Using UFE version : ${UFE_VERSION}")
 endif()
 
 # FindBoost is particularly buggy, and doesn't like custom boost locations.
