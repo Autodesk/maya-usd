@@ -73,7 +73,7 @@ target_compile_definitions(AL_USDMayaSchemas
 # Hamed 2019 
 # https://stackoverflow.com/questions/25617839/undefined-reference-to-symbol-pthread-key-deleteglibc-2-2-5
 set(PTHREAD_LINK "")
-if(LINUX)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     set(PTHREAD_LINK -lpthread -lm)
 endif()
 

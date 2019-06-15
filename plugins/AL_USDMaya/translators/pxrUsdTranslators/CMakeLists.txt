@@ -39,7 +39,10 @@ add_library(${PXR_TRANSLATORS_PACKAGE}
 if(MSVC)
     set_target_properties(${PXR_TRANSLATORS_PACKAGE} PROPERTIES SUFFIX ".mll")
 elseif(APPLE)
-    set_target_properties(${PXR_TRANSLATORS_PACKAGE} PROPERTIES SUFFIX ".bundle")
+    set_target_properties(${PXR_TRANSLATORS_PACKAGE}
+        PROPERTIES
+            PREFIX ""
+            SUFFIX ".bundle")
 else()
     set(rpath "$ORIGIN:$ORIGIN/../lib")
     if (CMAKE_INSTALL_RPATH)

@@ -81,8 +81,10 @@ PRIVATE
 if(MSVC)
     set_target_properties(${PXR_PACKAGE} PROPERTIES SUFFIX ".mll")
 elseif(APPLE)
-    set_target_properties(${PXR_PACKAGE} PROPERTIES SUFFIX ".bundle")
-
+    set_target_properties(${PXR_PACKAGE}
+        PROPERTIES
+            PREFIX ""
+            SUFFIX ".bundle")
 else()
     set(rpath "$ORIGIN:$ORIGIN/../lib")
     if (CMAKE_INSTALL_RPATH)

@@ -5,7 +5,8 @@ message("========== Pixar USD Plugin ==========")
 #==============================================================================
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
     ${PROJECT_SOURCE_DIR}/cmake/modules
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros)
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros
+)
 
 include(Options)
 include(Public)

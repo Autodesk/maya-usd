@@ -10,11 +10,7 @@
 #*****************************************************************************
 #+
 
-if (WIN32)
-    cmake_minimum_required(VERSION 3.1.1)
-else()
-    cmake_minimum_required(VERSION 2.8.8)
-endif()
+cmake_minimum_required(VERSION 3.1.1)
 
 #==============================================================================
 # Define common build variables
@@ -28,7 +24,7 @@ set(BUILD_AL_USD_PLUGIN ON CACHE BOOL "Build the Animal Logic USD plugin and lib
 # Modules and Definitions
 #==============================================================================
 list(APPEND CMAKE_MODULE_PATH
-    ${PROJECT_SOURCE_DIR}/cmake/modules
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules
 )
@@ -85,14 +81,14 @@ endif()
 #==============================================================================
 # PLUGINS
 #==============================================================================
-if (BUILD_ADSK_USD_PLUGIN)
-    add_subdirectory(plugins/ADSK_USDMaya)
-endif()
-
 if (BUILD_PXR_USD_PLUGIN)
     add_subdirectory(plugins/PXR_USDMaya)
 endif()
 
 if (BUILD_AL_USD_PLUGIN)
     add_subdirectory(plugins/AL_USDMaya)
+endif()
+
+if (BUILD_ADSK_USD_PLUGIN)
+    add_subdirectory(plugins/ADSK_USDMaya)
 endif()
