@@ -2,19 +2,24 @@
 setlocal
 
 :: path to core usd directory
-set CORE_USD_BUILD_DIRECTORY=''
+set CORE_USD_LOCATION=''
 :: path to maya runtime
 set MAYA_RUNTIME=''
 :: path to maya devkit
 set MAYA_DEVKIT_LOCATION=''
-:: path to where you want to install the plugins and libraries
+:: path to where you want to install the project
 set INSTALL_LOCATION=''
 :: Debug, Release, RelWithDebInfo
-set BUILD_TYPE=''
+set BUILD_TYPE=RelWithDebInfo
 :: core num
 set CORE_NUM=%NUMBER_OF_PROCESSORS%
 :: Genrators (Ninja|VS2017)
 set GENRATOR_NAME=Ninja
+:: Want flags
+set WANT_CORE_USD=ON
+set WANT_ADSK_PLUGIN=ON
+set WANT_PXRUSD_PLUGIN=ON
+set WANT_ALUSD_PLUGIN=ON
 
 :: ----------------------------------------------------------
 
@@ -35,10 +40,14 @@ cmake .. %G% ^
 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
 -DCMAKE_INSTALL_PREFIX=%INSTALL_LOCATION% ^
 -DMAYA_LOCATION=%MAYA_RUNTIME% ^
--DUSD_LOCATION_OVERRIDE=%CORE_USD_BUILD_DIRECTORY% ^
--DUSD_CONFIG_FILE=%CORE_USD_BUILD_DIRECTORY%/pxrConfig.cmake ^
--DBOOST_ROOT=%CORE_USD_BUILD_DIRECTORY% ^
--DMAYA_DEVKIT_LOCATION=%MAYA_DEVKIT_LOCATION% 
+-DUSD_LOCATION_OVERRIDE=%CORE_USD_LOCATION% ^
+-DUSD_CONFIG_FILE=%CORE_USD_LOCATION%/pxrConfig.cmake ^
+-DBOOST_ROOT=%CORE_USD_LOCATION% ^
+-DMAYA_DEVKIT_LOCATION=%MAYA_DEVKIT_LOCATION% ^
+-DBUILD_CORE_USD_LIBRARY=%WANT_CORE_USD% ^
+-DBUILD_ADSK_USD_PLUGIN=%WANT_ADSK_PLUGIN% ^
+-DBUILD_PXR_USD_PLUGIN=%WANT_PXRUSD_PLUGIN% ^
+-DBUILD_AL_USD_PLUGIN=%WANT_ALUSD_PLUGIN%
 
 cmake --build . --config %BUILD_TYPE% --target install %THREAD_FLAG% %CORE_NUM%
 
