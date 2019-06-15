@@ -32,7 +32,7 @@ if "%GENRATOR_NAME%"=="Ninja" (
     set THREAD_FLAG=-j
 )
 if "%GENRATOR_NAME%"=="VS2017" (
-    set G=-G Visual Studio 15 2017 Win64
+    set G=-G "Visual Studio 15 2017 Win64"
     set THREAD_FLAG=--/m:
 )
 
