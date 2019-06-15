@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 
-# variables to be set
-export CORE_USD_BUILD_DIRECTORY='path to core usd directory'
-export MAYA_RUNTIME='path to maya runtime'
-export MAYA_DEVKIT_LOCATION='path to maya devkit'
-export INSTALL_LOCATION='path to where you want to install the plugins and libraries'
-export BUILD_TYPE='Debug, Release, RelWithDebInfo'
-export CORE_NUM='core#'
+# path to core usd directory
+export CORE_USD_BUILD_DIRECTORY=''
+# path to maya runtime
+export MAYA_RUNTIME=''
+# path to maya devkit
+export MAYA_DEVKIT_LOCATION=''
+# path to where you want to install the plugins and libraries
+export INSTALL_LOCATION=''
+# Debug, Release, RelWithDebInfo
+export BUILD_TYPE=''
+# core numbers
+export CORE_NUM=4
 
 export MAYA_USD_BUILD_DIRECTORY=$PWD
 if [[ ! -e build ]]; then

@@ -1,12 +1,17 @@
-rem @echo off
+:: @echo off
 setlocal
 
-rem variables to be set
-set CORE_USD_BUILD_DIRECTORY='path to core usd directory'
-set MAYA_RUNTIME='path to maya runtime'
-set MAYA_DEVKIT_LOCATION='path to maya devkit'
-set INSTALL_LOCATION='path to where you want to install the plugins and libraries'
-set BUILD_TYPE='Debug, Release, RelWithDebInfo'
+:: path to core usd directory
+set CORE_USD_BUILD_DIRECTORY=''
+:: path to maya runtime
+set MAYA_RUNTIME=''
+:: path to maya devkit
+set MAYA_DEVKIT_LOCATION=''
+:: path to where you want to install the plugins and libraries
+set INSTALL_LOCATION=''
+:: Debug, Release, RelWithDebInfo
+set BUILD_TYPE=''
+:: core #
 set CORE_NUM=%NUMBER_OF_PROCESSORS%
 
 set MAYA_USD_BUILD_DIRECTORY=%cd%
