@@ -17,6 +17,23 @@ else()
   set(CMAKE_WANT_UFE_BUILD ON)
 endif()
 
+# set USD_MAYA_INCLUDE_DIR, USD_MAYA_LIBRARY
+# pxrUsdTranslators depends on third_party/maya
+set(USD_MAYA_INCLUDE_DIR ${CMAKE_BINARY_DIR}/third_party/maya/include)
+set(USD_MAYA_LIBARY_PATH "${CMAKE_BINARY_DIR}/plugins/PXR_USDMaya/third_party/maya/lib/usdMaya")
+set(USD_MAYA_LIB_NAME "")
+if(MSVC OR XCODE)
+  set(USD_MAYA_LIBARY_PATH ${USD_MAYA_LIBARY_PATH}/${CMAKE_BUILD_TYPE})
+endif()
+if(WIN32)
+  set(USD_MAYA_LIB_NAME "usdMaya.lib") 
+elseif(APPLE)
+  set(USD_MAYA_LIB_NAME "libusdMaya.dylib")
+else()
+  set(USD_MAYA_LIB_NAME "libusdMaya.so")
+endif()
+set(USD_MAYA_LIBRARY ${USD_MAYA_LIBARY_PATH}/${USD_MAYA_LIB_NAME})
+
 option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
 option(SKIP_USDMAYA_TESTS "Build tests" OFF)
