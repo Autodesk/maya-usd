@@ -10,16 +10,35 @@ export MAYA_DEVKIT_LOCATION=''
 export INSTALL_LOCATION=''
 # Debug, Release, RelWithDebInfo
 export BUILD_TYPE=''
-# core numbers
-export CORE_NUM=4
+# core num
+export CORE_NUM=8
+# Genrators (Ninja|XCode|Make)
+export GENERATOR_NAME=Ninja
 
-export MAYA_USD_BUILD_DIRECTORY=$PWD
+# ----------------------------------------------------------
+
+export CUR_DIR=$PWD
 if [[ ! -e build ]]; then
     mkdir build
 fi
-cd $MAYA_USD_BUILD_DIRECTORY/build
+cd $CUR_DIR/build
 
-cmake .. \
+if [[ "$GENERATOR_NAME" == "Ninja" ]]; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        export platform=mac
+    fi
+    if [[ "$OSTYPE" == "linux-gnu" ]]; then
+        export platform=linux
+    fi
+    export G="-G Ninja -DCMAKE_MAKE_PROGRAM=$CUR_DIR/bin/$platform/ninja"
+    echo $G
+elif [[ $GENERATOR_NAME == "XCode" ]]; then
+    export G='-G Xcode'
+elif [[ $GENERATOR_NAME == "Make" ]]; then
+  export G=''
+fi
+
+cmake .. $G \
 -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
 -DCMAKE_INSTALL_PREFIX=$INSTALL_LOCATION \
 -DMAYA_LOCATION=$MAYA_RUNTIME \
@@ -28,6 +47,4 @@ cmake .. \
 -DBOOST_ROOT=$CORE_USD_BUILD_DIRECTORY \
 -DMAYA_DEVKIT_LOCATION=$MAYA_DEVKIT_LOCATION 
 
-
 cmake --build . --config $BUILD_TYPE --target install -j $CORE_NUM
-
