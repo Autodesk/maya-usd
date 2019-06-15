@@ -29,3 +29,56 @@ option(PXR_ENABLE_PYTHON_SUPPORT "Enable Python based components for USD" ON)
 option(PXR_MAYA_TBB_BUG_WORKAROUND "Turn on linker flag (-Wl,-Bsymbolic) to work around a Maya TBB bug" OFF)
 option(PXR_ENABLE_NAMESPACES "Enable C++ namespaces." ON)
 option(BUILD_SHARED_LIBS "Build shared libraries." ON)
+option(PXR_BUILD_MONOLITHIC "Build a monolithic library." OFF)
+
+set(PXR_INSTALL_LOCATION ""
+    CACHE
+    STRING
+    "Intended final location for plugin resource files."
+)
+
+set(PXR_OVERRIDE_PLUGINPATH_NAME ""
+    CACHE
+    STRING
+    "Name of the environment variable that will be used to get plugin paths."
+)
+
+set(PXR_ALL_LIBS ""
+    CACHE
+    INTERNAL
+    "Aggregation of all built libraries."
+)
+set(PXR_STATIC_LIBS ""
+    CACHE
+    INTERNAL
+    "Aggregation of all built explicitly static libraries."
+)
+set(PXR_CORE_LIBS ""
+    CACHE
+    INTERNAL
+    "Aggregation of all built core libraries."
+)
+set(PXR_OBJECT_LIBS ""
+    CACHE
+    INTERNAL
+    "Aggregation of all core libraries built as OBJECT libraries."
+)
+
+set(PXR_LIB_PREFIX "lib"
+    CACHE
+    STRING
+    "Prefix for build library name"
+)
+
+option(BUILD_SHARED_LIBS "Build shared libraries." ON)
+option(PXR_BUILD_MONOLITHIC "Build a monolithic library." OFF)
+set(PXR_MONOLITHIC_IMPORT ""
+    CACHE
+    STRING
+    "Path to cmake file that imports a usd_ms target"
+)
+
+set(PXR_EXTRA_PLUGINS ""
+    CACHE
+    INTERNAL
+    "Aggregation of extra plugin directories containing a plugInfo.json.")
