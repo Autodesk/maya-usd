@@ -33,7 +33,7 @@ if "%GENRATOR_NAME%"=="Ninja" (
 )
 if "%GENRATOR_NAME%"=="VS2017" (
     set G=-G "Visual Studio 15 2017 Win64"
-    set THREAD_FLAG=--/m:
+    set THREAD_FLAG=-- /m:
 )
 
 cmake .. %G% ^
