@@ -29,11 +29,11 @@ cd %CUR_DIR%/build
 
 if "%GENRATOR_NAME%"=="Ninja" (
     set G=-G Ninja -DCMAKE_MAKE_PROGRAM=%CUR_DIR%/bin/win/ninja.exe
-    set THREAD_FLAG=-j
+    set THREAD_FLAG=-j%CORE_NUM%
 )
 if "%GENRATOR_NAME%"=="VS2017" (
     set G=-G "Visual Studio 15 2017 Win64"
-    set THREAD_FLAG=-- /m:
+    set THREAD_FLAG="/m:%CORE_NUM%"
 )
 
 cmake .. %G% ^
@@ -49,7 +49,7 @@ cmake .. %G% ^
 -DBUILD_PXR_USD_PLUGIN=%WANT_PXRUSD_PLUGIN% ^
 -DBUILD_AL_USD_PLUGIN=%WANT_ALUSD_PLUGIN%
 
-cmake --build . --config %BUILD_TYPE% --target install %THREAD_FLAG% %CORE_NUM%
+cmake --build . --config %BUILD_TYPE% --target install -- %THREAD_FLAG%
 
 endlocal
 exit /b %errorlevel%

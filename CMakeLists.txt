@@ -26,7 +26,6 @@ set(BUILD_AL_USD_PLUGIN ON CACHE BOOL "Build the Animal Logic USD plugin and lib
 list(APPEND CMAKE_MODULE_PATH
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules
 )
 
 if (BUILD_CORE_USD_LIBRARY)
