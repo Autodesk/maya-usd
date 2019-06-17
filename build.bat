@@ -1,10 +1,10 @@
 @echo off
 setlocal
 
-:: path to core usd directory
-set CORE_USD_LOCATION=''
-:: path to maya runtime
-set MAYA_RUNTIME=''
+:: path to pixar's usd build location 
+set USD_LOCATION_PATH=''
+:: path to maya location
+set MAYA_LOCATION_PATH=''
 :: path to maya devkit
 set MAYA_DEVKIT_LOCATION=''
 :: path to where you want to install the project
@@ -39,10 +39,10 @@ if "%GENRATOR_NAME%"=="VS2017" (
 cmake .. %G% ^
 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
 -DCMAKE_INSTALL_PREFIX=%INSTALL_LOCATION% ^
--DMAYA_LOCATION=%MAYA_RUNTIME% ^
--DUSD_LOCATION_OVERRIDE=%CORE_USD_LOCATION% ^
--DUSD_CONFIG_FILE=%CORE_USD_LOCATION%/pxrConfig.cmake ^
--DBOOST_ROOT=%CORE_USD_LOCATION% ^
+-DMAYA_LOCATION=%MAYA_LOCATION_PATH% ^
+-DUSD_LOCATION_OVERRIDE=%USD_LOCATION_PATH% ^
+-DUSD_CONFIG_FILE=%USD_LOCATION_PATH%/pxrConfig.cmake ^
+-DBOOST_ROOT=%USD_LOCATION_PATH% ^
 -DMAYA_DEVKIT_LOCATION=%MAYA_DEVKIT_LOCATION% ^
 -DBUILD_CORE_USD_LIBRARY=%WANT_CORE_USD% ^
 -DBUILD_ADSK_USD_PLUGIN=%WANT_ADSK_PLUGIN% ^

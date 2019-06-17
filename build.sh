@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-# path to core usd directory
-export CORE_USD_LOCATION=''
-# path to maya runtime
-export MAYA_RUNTIME=''
+# path to pixar's usd build location 
+export USD_LOCATION_PATH=''
+# path to maya location
+export MAYA_LOCATION_PATH=''
 # path to maya devkit
 export MAYA_DEVKIT_LOCATION=''
 # path to where you want to install the project
@@ -46,10 +46,10 @@ fi
 cmake .. $G \
 -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
 -DCMAKE_INSTALL_PREFIX=$INSTALL_LOCATION \
--DMAYA_LOCATION=$MAYA_RUNTIME \
--DUSD_LOCATION_OVERRIDE=$CORE_USD_LOCATION \
--DUSD_CONFIG_FILE=$CORE_USD_LOCATION/pxrConfig.cmake \
--DBOOST_ROOT=$CORE_USD_LOCATION \
+-DMAYA_LOCATION=$MAYA_LOCATION_PATH \
+-DUSD_LOCATION_OVERRIDE=$USD_LOCATION_PATH \
+-DUSD_CONFIG_FILE=$USD_LOCATION_PATH/pxrConfig.cmake \
+-DBOOST_ROOT=$USD_LOCATION_PATH \
 -DMAYA_DEVKIT_LOCATION=$MAYA_DEVKIT_LOCATION \
 -DBUILD_CORE_USD_LIBRARY=$WANT_CORE_USD \
 -DBUILD_ADSK_USD_PLUGIN=$WANT_ADSK_PLUGIN \
