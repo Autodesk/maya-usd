@@ -1,4 +1,4 @@
-set(PLUGIN_PACKAGE mayaUsdPlugin)
+set(PLUGIN_PACKAGE mayaUsd)
 
 add_library(${PLUGIN_PACKAGE} MODULE
     plugin.cpp

@@ -2,13 +2,13 @@
 setlocal
 
 :: path to pixar's usd build location 
-set USD_LOCATION_PATH=''
+set USD_LOCATION_PATH=C:\Users\sabrih\Desktop\PXR-MASTER
 :: path to maya location
-set MAYA_LOCATION_PATH=''
+set MAYA_LOCATION_PATH=C:/Users/sabrih/Desktop/201906031615-ea8884a1a3-RUNTIME/runTime
 :: path to maya devkit
-set MAYA_DEVKIT_LOCATION=''
+set MAYA_DEVKIT_LOCATION=C:/Devkit2019/devkitBase
 :: path to where you want to install the project
-set INSTALL_LOCATION=''
+set INSTALL_LOCATION=C:/Users/sabrih/Desktop/BUILD_FINAL
 :: Debug, Release, RelWithDebInfo
 set BUILD_TYPE=RelWithDebInfo
 :: core num
@@ -16,7 +16,7 @@ set CORE_NUM=%NUMBER_OF_PROCESSORS%
 :: Genrators (Ninja|VS2017)
 set GENRATOR_NAME=Ninja
 :: Want flags
-set WANT_CORE_USD=ON
+set WANT_MAYAUSD_CORE=ON
 set WANT_ADSK_PLUGIN=ON
 set WANT_PXRUSD_PLUGIN=ON
 set WANT_ALUSD_PLUGIN=ON
@@ -44,7 +44,7 @@ cmake .. %G% ^
 -DUSD_CONFIG_FILE=%USD_LOCATION_PATH%/pxrConfig.cmake ^
 -DBOOST_ROOT=%USD_LOCATION_PATH% ^
 -DMAYA_DEVKIT_LOCATION=%MAYA_DEVKIT_LOCATION% ^
--DBUILD_CORE_USD_LIBRARY=%WANT_CORE_USD% ^
+-DBUILD_MAYAUSD_CORE_LIBRARY=%WANT_MAYAUSD_CORE% ^
 -DBUILD_ADSK_USD_PLUGIN=%WANT_ADSK_PLUGIN% ^
 -DBUILD_PXR_USD_PLUGIN=%WANT_PXRUSD_PLUGIN% ^
 -DBUILD_AL_USD_PLUGIN=%WANT_ALUSD_PLUGIN%

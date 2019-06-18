@@ -12,13 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if(NOT USD_MAYA_LIBRARY)
-    message(FATAL_ERROR
-        "Cannot compile ${PXR_TRANSLATORS_PACKAGE} - could not find usdMaya library\n\
-Either set USD_MAYA_ROOT so it may be found, or disable building this package by setting BUILD_USDMAYA_PXR_TRANSLATORS to false")
-endif()
-
-list(APPEND DEPENDANT_LIBRARIES AL_USDMaya "${USD_MAYA_LIBRARY}")
+list(APPEND DEPENDANT_LIBRARIES AL_USDMaya usdMaya)
 
 set(DIRECTORY_PATH AL/usdmaya/fileio/translators/pxrUsd)
 
