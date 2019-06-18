@@ -31,6 +31,12 @@ endif()
 
 if (LINUX)
     string(APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--no-undefined")
+
+    # Use RUNPATH, not RPATH - otherwise, LD_LIBRARY_PATH can't override the
+    # built in path - this can create problems, for instance, if using a
+    # different maya point release than the one you built against
+    string(APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--enable-new-dtags")
+    string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--enable-new-dtags")
 endif ()
 
 add_subdirectory(src)
