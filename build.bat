@@ -2,13 +2,13 @@
 setlocal
 
 :: path to pixar's usd build location 
-set USD_LOCATION_PATH=C:\Users\sabrih\Desktop\PXR-MASTER
+set USD_LOCATION_PATH=''
 :: path to maya location
-set MAYA_LOCATION_PATH=C:/Users/sabrih/Desktop/201906031615-ea8884a1a3-RUNTIME/runTime
+set MAYA_LOCATION_PATH=''
 :: path to maya devkit
-set MAYA_DEVKIT_LOCATION=C:/Devkit2019/devkitBase
+set MAYA_DEVKIT_LOCATION=''
 :: path to where you want to install the project
-set INSTALL_LOCATION=C:/Users/sabrih/Desktop/BUILD_FINAL
+set INSTALL_LOCATION=''
 :: Debug, Release, RelWithDebInfo
 set BUILD_TYPE=RelWithDebInfo
 :: core num
@@ -40,9 +40,7 @@ cmake .. %G% ^
 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
 -DCMAKE_INSTALL_PREFIX=%INSTALL_LOCATION% ^
 -DMAYA_LOCATION=%MAYA_LOCATION_PATH% ^
--DUSD_LOCATION_OVERRIDE=%USD_LOCATION_PATH% ^
--DUSD_CONFIG_FILE=%USD_LOCATION_PATH%/pxrConfig.cmake ^
--DBOOST_ROOT=%USD_LOCATION_PATH% ^
+-DPXR_USD_LOCATION=%USD_LOCATION_PATH% ^
 -DMAYA_DEVKIT_LOCATION=%MAYA_DEVKIT_LOCATION% ^
 -DBUILD_MAYAUSD_CORE_LIBRARY=%WANT_MAYAUSD_CORE% ^
 -DBUILD_ADSK_USD_PLUGIN=%WANT_ADSK_PLUGIN% ^

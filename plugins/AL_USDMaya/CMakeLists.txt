@@ -10,6 +10,7 @@ endif()
 set(NEED_BOOST_FILESYSTEM ON)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(BOOST_ROOT ${PXR_USD_LOCATION})
 
 option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
@@ -26,7 +27,7 @@ if (APPLE)
 endif()
 
 # AL_USDMAYA uses pxrConfig.cmake exported targets
-# find_package(USD) can use either ${USD_ROOT}, or ${USD_CONFIG_FILE} (which should be ${USD_ROOT}/pxrConfig.cmake)
+# find_package(USD) can use either ${PXR_USD_LOCATION}, or ${USD_CONFIG_FILE} (which should be ${PXR_USD_LOCATION}/pxrConfig.cmake)
 # to find USD, defined as either Cmake var or env var
 find_package(USD REQUIRED)
 include(${USD_CONFIG_FILE})
