@@ -273,7 +273,7 @@ def RunCMake(context, force, extraArgs=None):
 
 ############################################################
 # Maya USD
-def InstallMayaUSD(context, force):
+def InstallMayaUSD(context, force, buildArgs):
     with CurrentWorkingDirectory(context.mayaUsdSrcDir):
         extraArgs = []
 
@@ -284,6 +284,9 @@ def InstallMayaUSD(context, force):
         if context.pxrUsdLocation:
             extraArgs.append('-DPXR_USD_LOCATION="{pxrUsdLocation}"'
                              .format(pxrUsdLocation=context.pxrUsdLocation))
+
+        # Add on any user-specified extra arguments.
+        extraArgs += buildArgs
 
         RunCMake(context, force, extraArgs)
 
@@ -318,6 +321,10 @@ parser.add_argument("--build-release", dest="build_release", action="store_true"
 
 parser.add_argument("--build-relwithdebug", dest="build_relwithdebug", action="store_true",
                     help="Build in RelWithDebInfo mode")
+
+parser.add_argument("--build-args", type=str, nargs="*", default=[],
+                   help=("Custom arguments to pass to build system when "
+                         "building libraries"))
 
 parser.add_argument("-j", "--jobs", type=int, default=GetCPUCount(),
                     help=("Number of build jobs to run in parallel. "
@@ -369,6 +376,13 @@ class InstallContext:
         # - PXR USD Location
         self.pxrUsdLocation = (os.path.abspath(args.pxrusd_location)
                                if args.pxrusd_location else None)
+
+        # Build arguments
+        self.buildArgs = list()
+        for args in args.build_args:
+            argList = args.split(",")
+            for arg in argList:
+                self.buildArgs.append(arg)
 try:
     context = InstallContext(args)
 except Exception as e:
@@ -385,10 +399,15 @@ Building with settings:
   CMake generator           {cmakeGenerator}
   Build Log                 {buildDir}/build_log.txt"""
 
+if context.buildArgs:
+  summaryMsg += """
+  Extra Build arguments     {buildArgs}"""
+
 summaryMsg = summaryMsg.format(
     mayaUsdSrcDir=context.mayaUsdSrcDir,
     mayaUsdInstDir=context.mayaUsdInstDir,
     buildDir=context.buildDir,
+    buildArgs=context.buildArgs,
     buildVariant=BuildVariant(context),
     cmakeGenerator=("Default" if not context.cmakeGenerator
                     else context.cmakeGenerator)
@@ -397,7 +416,7 @@ summaryMsg = summaryMsg.format(
 Print(summaryMsg)
 
 # Install MayaUSD
-InstallMayaUSD(context, context.forceBuild)
+InstallMayaUSD(context, context.forceBuild, context.buildArgs)
 
 # Ensure directory structure is created and is writable.
 for dir in [context.mayaUsdInstDir, context.buildDir]:
