@@ -25,6 +25,8 @@
 
 #include <hdmaya/hdmaya.h>
 
+#include <hdmaya/delegates/delegateDebugCodes.h>
+
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/gf/transform.h>
 
@@ -86,6 +88,10 @@ void MtohDefaultLightDelegate::SetDefaultLight(const GlfSimpleLight& light) {
 
 GfMatrix4d MtohDefaultLightDelegate::GetTransform(const SdfPath& id) {
     TF_UNUSED(id);
+
+    TF_DEBUG(HDMAYA_DELEGATE_GET_TRANSFORM)
+        .Msg("MtohDefaultLightDelegate::GetTransform(%s)\n", id.GetText());
+
     // We have to rotate the distant to match the simple light's direction
     // stored in it's position. Otherwise, the matrix needs to be an identity
     // matrix.
@@ -102,6 +108,12 @@ GfMatrix4d MtohDefaultLightDelegate::GetTransform(const SdfPath& id) {
 
 VtValue MtohDefaultLightDelegate::Get(const SdfPath& id, const TfToken& key) {
     TF_UNUSED(id);
+
+    TF_DEBUG(HDMAYA_DELEGATE_GET)
+        .Msg(
+            "MtohDefaultLightDelegate::Get(%s, %s)\n", id.GetText(),
+            key.GetText());
+
     if (key == HdLightTokens->params) {
         return VtValue(_light);
     } else if (key == HdTokens->transform) {
@@ -123,6 +135,12 @@ VtValue MtohDefaultLightDelegate::Get(const SdfPath& id, const TfToken& key) {
 VtValue MtohDefaultLightDelegate::GetLightParamValue(
     const SdfPath& id, const TfToken& paramName) {
     TF_UNUSED(id);
+
+    TF_DEBUG(HDMAYA_DELEGATE_GET_LIGHT_PARAM_VALUE)
+        .Msg(
+            "MtohDefaultLightDelegate::GetLightParamValue(%s, %s)\n",
+            id.GetText(), paramName.GetText());
+
 #ifdef HDMAYA_USD_001905_BUILD
     if (paramName == HdTokens->displayColor) {
 #else
@@ -152,6 +170,8 @@ VtValue MtohDefaultLightDelegate::GetLightParamValue(
 
 bool MtohDefaultLightDelegate::GetVisible(const SdfPath& id) {
     TF_UNUSED(id);
+    TF_DEBUG(HDMAYA_DELEGATE_GET_VISIBLE)
+        .Msg("MtohDefaultLightDelegate::GetVisible(%s)\n", id.GetText());
     return true;
 }
 
