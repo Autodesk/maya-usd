@@ -189,6 +189,15 @@ def Run(cmd, logCommandOutput=True):
         raise RuntimeError("Failed to run '{cmd}'\nSee {log} for more details."
                            .format(cmd=cmd, log=os.path.abspath("build_log.txt")))
 
+def BuildVariant(context): 
+    if context.buildDebug:
+        return "Debug"
+    elif context.buildRelease:
+        return "Release"
+    elif context.buildRelWithDebug:
+        return "RelWithDebInfo"
+
+    return "RelWithDebInfo"
 ############################################################
 # contextmanager
 @contextlib.contextmanager
@@ -238,28 +247,25 @@ def RunCMake(context, force, extraArgs=None):
     if MacOS():
         osx_rpath = "-DCMAKE_MACOSX_RPATH=ON"
 
-    # We use -DCMAKE_BUILD_TYPE for single-configuration generators
-    # (Ninja, make), and --config for multi-configuration generators
-    # (Visual Studio); technically we don't need BOTH at the same
-    # time, but specifying both is simpler than branching
-    config = ("Debug" if context.buildDebug else "Release")
+    # get build variant 
+    variant= BuildVariant(context)
 
     with CurrentWorkingDirectory(buildDir):
         Run('cmake '
             '-DCMAKE_INSTALL_PREFIX="{instDir}" '
-            '-DCMAKE_BUILD_TYPE={config} '
+            '-DCMAKE_BUILD_TYPE={variant} '
             '{osx_rpath} '
             '{generator} '
             '{extraArgs} '
             '"{srcDir}"'
             .format(instDir=instDir,
-                    config=config,
+                    variant=variant,
                     srcDir=srcDir,
                     osx_rpath=(osx_rpath or ""),
                     generator=(generator or ""),
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
-        Run("cmake --build . --config {config} --target install -- {multiproc}"
-            .format(config=config,
+        Run("cmake --build . --config {variant} --target install -- {multiproc}"
+            .format(variant=variant,
                     multiproc=("/M:{procs}"
                                if generator and "Visual Studio" in generator
                                else "-j{procs}")
@@ -270,11 +276,11 @@ def RunCMake(context, force, extraArgs=None):
 def InstallMayaUSD(context, force):
     with CurrentWorkingDirectory(context.mayaUsdSrcDir):
         extraArgs = []
-  
+
         if context.mayaLocation:
             extraArgs.append('-DMAYA_LOCATION="{mayaLocation}"'
                              .format(mayaLocation=context.mayaLocation))
-    
+
         if context.pxrUsdLocation:
             extraArgs.append('-DPXR_USD_LOCATION="{pxrUsdLocation}"'
                              .format(pxrUsdLocation=context.pxrUsdLocation))
@@ -304,8 +310,14 @@ parser.add_argument("--maya-location", type=str,
 parser.add_argument("--pxrusd-location", type=str,
                     help="Directory where Pixar USD is is installed.")
 
-parser.add_argument("--debug", dest="build_debug", action="store_true",
-                    help="Build with debugging information")
+parser.add_argument("--build-debug", dest="build_debug", action="store_true",
+                    help="Build in Debug mode")
+
+parser.add_argument("--build-release", dest="build_release", action="store_true",
+                    help="Build in Release mode")
+
+parser.add_argument("--build-relwithdebug", dest="build_relwithdebug", action="store_true",
+                    help="Build in RelWithDebInfo mode")
 
 parser.add_argument("-j", "--jobs", type=int, default=GetCPUCount(),
                     help=("Number of build jobs to run in parallel. "
@@ -336,6 +348,8 @@ class InstallContext:
 
         # Build type
         self.buildDebug = args.build_debug
+        self.buildRelease = args.build_release
+        self.buildRelWithDebug = args.build_relwithdebug
 
         # Forced to be built
         self.forceBuild = args.force_clean_build
@@ -367,7 +381,7 @@ Building with settings:
   Source directory          {mayaUsdSrcDir}
   Install directory         {mayaUsdInstDir}
   Build directory           {buildDir}
-  Config                    {buildConfig}
+  Variant                   {buildVariant}
   CMake generator           {cmakeGenerator}
   Build Log                 {buildDir}/build_log.txt"""
 
@@ -375,7 +389,7 @@ summaryMsg = summaryMsg.format(
     mayaUsdSrcDir=context.mayaUsdSrcDir,
     mayaUsdInstDir=context.mayaUsdInstDir,
     buildDir=context.buildDir,
-    buildConfig=("Debug" if context.buildDebug else "Release"),
+    buildVariant=BuildVariant(context),
     cmakeGenerator=("Default" if not context.cmakeGenerator
                     else context.cmakeGenerator)
 )
