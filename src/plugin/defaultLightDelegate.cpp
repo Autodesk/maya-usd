@@ -142,7 +142,8 @@ VtValue MtohDefaultLightDelegate::GetLightParamValue(
             id.GetText(), paramName.GetText());
 
 #ifdef HDMAYA_USD_001905_BUILD
-    if (paramName == HdTokens->displayColor) {
+    if (paramName == HdLightTokens->color ||
+        paramName == HdTokens->displayColor) {
 #else
     if (paramName == HdTokens->color) {
 #endif // HDMAYA_USD_001905_BUILD
@@ -164,6 +165,8 @@ VtValue MtohDefaultLightDelegate::GetLightParamValue(
         return VtValue(false);
     } else if (paramName == HdLightTokens->shadowColor) {
         return VtValue(GfVec3f(0.0f, 0.0f, 0.0f));
+    } else if (paramName == HdLightTokens->enableColorTemperature) {
+        return VtValue(false);
     }
     return {};
 }

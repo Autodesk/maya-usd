@@ -219,6 +219,10 @@ VtValue HdMayaLightAdapter::GetLightParamValue(const TfToken& paramName) {
         return VtValue(true);
     } else if (paramName == HdLightTokens->enableColorTemperature) {
         return VtValue(false);
+    } else if (paramName == HdLightTokens->diffuse) {
+        return VtValue(light.lightDiffuse() ? 1.0f : 0.0f);
+    } else if (paramName == HdLightTokens->specular) {
+        return VtValue(light.lightSpecular() ? 1.0f : 0.0f);
     }
     return {};
 }
