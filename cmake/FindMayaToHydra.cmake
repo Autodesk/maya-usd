@@ -19,6 +19,15 @@ if(HDMAYA_INCLUDE_DIR AND EXISTS "${HDMAYA_INCLUDE_DIR}/hdmaya/hdmaya.h")
         string(REGEX REPLACE "#define HDMAYA_UFE_BUILD (.*)$" "\\1"
             HDMAYA_UFE_BUILD ${_hdmaya_ufe_tmp})
     endif()
+
+    file(STRINGS
+        "${HDMAYA_INCLUDE_DIR}/hdmaya/hdmaya.h"
+        _hdmaya_luma_tmp
+        REGEX "#define HDMAYA_LUMA_BUILD (.*)$")
+    if (NOT "${_hdmaya_luma_tmp}" STREQUAL "")
+        string(REGEX REPLACE "#define HDMAYA_LUMA_BUILD (.*)$" "\\1"
+            HDMAYA_LUMA_BUILD ${_hdmaya_luma_tmp})
+    endif()
 endif()
 
 

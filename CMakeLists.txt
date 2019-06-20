@@ -20,6 +20,15 @@ if (LINUX)
     # different maya point release than the one you built against
     string(APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--enable-new-dtags")
     string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--enable-new-dtags")
+
+    if (NOT HDMAYA_LUMA_BUILD)
+        # On Linux, USD will try to use <ext/hash_set> instead of <unordered_set>,
+        # which will trigger a deprecation warning - so disable them. (In USD,
+        # this is automatically done in gccclangshareddefaults, via:
+        #     _disable_warning("deprecated")
+        #     _disable_warning("deprecated-declarations")
+        add_compile_options(-Wno-deprecated -Wno-deprecated-declarations)
+    endif()
 endif ()
 
 add_subdirectory(src)
