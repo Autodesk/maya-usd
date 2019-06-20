@@ -23,7 +23,7 @@
 //
 #include <hdmaya/hdmaya.h>
 
-#ifdef HDMAYA_LUMA_BUILD
+#if HDMAYA_LUMA_BUILD
 #include <hdmaya/adapters/materialAdapter.h>
 
 #include <pxr/base/tf/fileUtils.h>

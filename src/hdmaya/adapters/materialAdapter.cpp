@@ -312,7 +312,9 @@ public:
 
     void Populate() override {
         HdMayaMaterialAdapter::Populate();
+#ifdef HDMAYA_OIT_ENABLED
         _isTranslucent = IsTranslucent();
+#endif
     }
 
 private:
@@ -654,6 +656,7 @@ private:
         return VtValue(materialNetworkMap);
     };
 
+#ifdef HDMAYA_OIT_ENABLED
     bool UpdateMaterialTag() override {
         if (IsTranslucent() != _isTranslucent) {
             _isTranslucent = !_isTranslucent;
@@ -662,7 +665,6 @@ private:
         return false;
     }
 
-#ifdef HDMAYA_OIT_ENABLED
     bool IsTranslucent() {
         if (_surfaceShaderType == UsdImagingTokens->UsdPreviewSurface ||
             _surfaceShaderType == HdMayaAdapterTokens->pxrUsdPreviewSurface) {
@@ -679,9 +681,7 @@ private:
 
     VtDictionary GetMaterialMetadata() override {
         // We only need the delayed update of the tag for the HdSt backend.
-        if (!GetDelegate()->IsHdSt()) {
-            _isTranslucent = IsTranslucent();
-        }
+        if (!GetDelegate()->IsHdSt()) { _isTranslucent = IsTranslucent(); }
         return _isTranslucent ? _PreviewShader().translucentMetadata
                               : _PreviewShader().metadata;
     };
@@ -694,7 +694,9 @@ private:
         TfToken, HdTextureResourceSharedPtr, TfToken::HashFunctor>
         _textureResources;
     MCallbackId _surfaceShaderCallback;
+#ifdef HDMAYA_OIT_ENABLED
     bool _isTranslucent = false;
+#endif
 };
 
 TF_REGISTRY_FUNCTION(TfType) {
