@@ -291,6 +291,10 @@ def InstallMayaUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_USD_LOCATION="{pxrUsdLocation}"'
                              .format(pxrUsdLocation=context.pxrUsdLocation))
 
+        if context.devkitLocation:
+            extraArgs.append('-DMAYA_DEVKIT_LOCATION="{devkitLocation}"'
+                             .format(devkitLocation=context.devkitLocation))
+
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
 
@@ -317,7 +321,10 @@ parser.add_argument("--maya-location", type=str,
                     help="Directory where Maya is installed.")
 
 parser.add_argument("--pxrusd-location", type=str,
-                    help="Directory where Pixar USD is is installed.")
+                    help="Directory where Pixar USD is installed.")
+
+parser.add_argument("--devkit-location", type=str,
+                    help="Directory where Maya Devkit is installed.")
 
 parser.add_argument("--build-debug", dest="build_debug", action="store_true",
                     help="Build in Debug mode")
@@ -377,11 +384,15 @@ class InstallContext:
 
         # - Maya Location
         self.mayaLocation = (os.path.abspath(args.maya_location)
-                             if args.maya_location else None)
+                                if args.maya_location else None)
 
         # - PXR USD Location
         self.pxrUsdLocation = (os.path.abspath(args.pxrusd_location)
-                               if args.pxrusd_location else None)
+                                if args.pxrusd_location else None)
+
+        # - Maya Devkit Location
+        self.devkitLocation = (os.path.abspath(args.devkit_location)
+                                if args.devkit_location else None)
 
         # Build arguments
         self.buildArgs = list()
