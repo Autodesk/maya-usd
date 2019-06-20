@@ -50,11 +50,19 @@ public:
     }
 
     SdfPath ConvertIndexPathToCachePath(SdfPath const& indexPath) {
+#ifdef HDMAYA_USD_001907_BUILD
         return _usdDelegate->ConvertIndexPathToCachePath(indexPath);
+#else
+        return _usdDelegate->GetPathForUsd(indexPath);
+#endif
     }
 
     SdfPath ConvertCachePathToIndexPath(SdfPath const& cachePath) {
+#ifdef HDMAYA_USD_001907_BUILD
         return _usdDelegate->ConvertCachePathToIndexPath(cachePath);
+#else
+        return _usdDelegate->GetPathForIndex(cachePath);
+#endif
     }
 
 private:

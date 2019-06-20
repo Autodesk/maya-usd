@@ -29,16 +29,23 @@
 
 #include <hdmaya/adapters/adapterRegistry.h>
 #include <hdmaya/delegates/sceneDelegate.h>
+#include <hdmaya/hdmaya.h>
+
+#include <maya/MTime.h>
 
 #ifdef HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
 #include <AL/usdmaya/nodes/Engine.h>
 
+#ifdef HDMAYA_USD_001907_BUILD
 #include <pxr/imaging/hdx/pickTask.h>
+#else
+#include <pxr/imaging/hdx/intersector.h>
+#endif
+
 #include <pxr/imaging/hdx/tokens.h>
 #include <pxr/usdImaging/usdImagingGL/engine.h>
 
 #include <maya/M3dView.h>
-#include <maya/MTime.h>
 #endif // HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
 
 #if HDMAYA_UFE_BUILD
@@ -142,9 +149,17 @@ bool FindPickedPrimsMtoh(
 
     HdRprimCollection intersectCollect;
     TfTokenVector renderTags;
+
+#ifdef HDMAYA_USD_001907_BUILD
     HdxPickHitVector hdxHits;
     auto& intersectionMode = nearestOnly ? HdxPickTokens->resolveNearestToCamera
                                          : HdxPickTokens->resolveUnique;
+#else
+    HdxIntersector::HitVector hdxHits;
+    auto& intersectionMode = nearestOnly
+                                 ? HdxIntersectionModeTokens->nearestToCamera
+                                 : HdxIntersectionModeTokens->unique;
+#endif
 
     if (!AL::usdmaya::nodes::Engine::TestIntersectionBatch(
             viewMatrix, projectionMatrix, worldToLocalSpace, paths, params,
