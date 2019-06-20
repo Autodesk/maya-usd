@@ -44,7 +44,6 @@ def PrintError(error):
     print "ERROR:", error
 
 ############################################################
-# Helpers for determining platform
 
 def Windows():
     return platform.system() == "Windows"
@@ -196,8 +195,18 @@ def BuildVariant(context):
         return "Release"
     elif context.buildRelWithDebug:
         return "RelWithDebInfo"
-
     return "RelWithDebInfo"
+
+def FormatMultiProcs(numJobs, generator):
+    tag = "-j"
+    if generator:
+        if "Visual Studio" in generator:
+            tag = "/M:"
+        elif "Xcode" in generator:
+            tag = "-j "
+
+    return "{tag}{procs}".format(tag=tag, procs=numJobs)
+
 ############################################################
 # contextmanager
 @contextlib.contextmanager
@@ -266,10 +275,7 @@ def RunCMake(context, force, extraArgs=None):
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
         Run("cmake --build . --config {variant} --target install -- {multiproc}"
             .format(variant=variant,
-                    multiproc=("/M:{procs}"
-                               if generator and "Visual Studio" in generator
-                               else "-j{procs}")
-                    .format(procs=context.numJobs)))
+                    multiproc=FormatMultiProcs(context.numJobs, generator)))
 
 ############################################################
 # Maya USD
