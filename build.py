@@ -157,7 +157,7 @@ def Run(cmd, logCommandOutput=True):
     """Run the specified command in a subprocess."""
     PrintInfo('Running "{cmd}"'.format(cmd=cmd))
 
-    with open("build_log.txt", "a") as logfile:
+    with open(context.logFileName, "a") as logfile:
         logfile.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
         logfile.write("\n")
         logfile.write(cmd)
@@ -183,10 +183,10 @@ def Run(cmd, logCommandOutput=True):
         # If verbosity >= 3, we'll have already been printing out command output
         # so no reason to print the log file again.
         if verbosity < 3:
-            with open("build_log.txt", "r") as logfile:
+            with open(context.logFileName, "r") as logfile:
                 Print(logfile.read())
         raise RuntimeError("Failed to run '{cmd}'\nSee {log} for more details."
-                           .format(cmd=cmd, log=os.path.abspath("build_log.txt")))
+                           .format(cmd=cmd, log=os.path.abspath(context.logFileName)))
 
 def BuildVariant(context): 
     if context.buildDebug:
@@ -382,17 +382,20 @@ class InstallContext:
         if self.numJobs <= 0:
             raise ValueError("Number of jobs must be greater than 0")
 
-        # - Maya Location
+        # Maya Location
         self.mayaLocation = (os.path.abspath(args.maya_location)
                                 if args.maya_location else None)
 
-        # - PXR USD Location
+        # PXR USD Location
         self.pxrUsdLocation = (os.path.abspath(args.pxrusd_location)
                                 if args.pxrusd_location else None)
 
-        # - Maya Devkit Location
+        # Maya Devkit Location
         self.devkitLocation = (os.path.abspath(args.devkit_location)
                                 if args.devkit_location else None)
+
+        # Log File Name
+        self.logFileName="build_log.txt"
 
         # Build arguments
         self.buildArgs = list()
@@ -414,7 +417,7 @@ Building with settings:
   Build directory           {buildDir}
   Variant                   {buildVariant}
   CMake generator           {cmakeGenerator}
-  Build Log                 {buildDir}/build_log.txt"""
+  Build Log                 {logFileName}"""
 
 if context.buildArgs:
   summaryMsg += """
@@ -424,6 +427,7 @@ summaryMsg = summaryMsg.format(
     mayaUsdSrcDir=context.mayaUsdSrcDir,
     mayaUsdInstDir=context.mayaUsdInstDir,
     buildDir=context.buildDir,
+    logFileName=os.path.join(context.buildDir,context.logFileName),
     buildArgs=context.buildArgs,
     buildVariant=BuildVariant(context),
     cmakeGenerator=("Default" if not context.cmakeGenerator
