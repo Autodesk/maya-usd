@@ -23,5 +23,5 @@ set(python_script_files
     ufeScripts/__init__.py
 )
 
-install(FILES ${python_plugin_files} DESTINATION python)
-install(FILES ${python_script_files} DESTINATION python/ufeScripts)
+install(FILES ${python_plugin_files} DESTINATION ${INSTALL_DIR_SUFFIX}/python)
+install(FILES ${python_script_files} DESTINATION ${INSTALL_DIR_SUFFIX}/python/ufeScripts)

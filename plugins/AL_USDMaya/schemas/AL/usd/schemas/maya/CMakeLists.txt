@@ -1,3 +1,6 @@
+
+set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
+
 set(
     resources_install_path
     ${CMAKE_INSTALL_PREFIX}/lib/usd/AL_USDMayaSchemas/resources

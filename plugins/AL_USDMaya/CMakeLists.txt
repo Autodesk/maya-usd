@@ -11,6 +11,7 @@ set(NEED_BOOST_FILESYSTEM ON)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(BOOST_ROOT ${PXR_USD_LOCATION})
+set(INSTALL_DIR_SUFFIX AL_USDMaya)
 
 option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
@@ -191,11 +192,6 @@ endif()
 get_property(LIBRARY_LOCATION GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION)
 get_property(PYTHON_LIBRARY_LOCATION GLOBAL PROPERTY GLOBAL_PYTHON_LIBRARY_LOCATION)
 configure_file(ALUsdMayaConfig.cmake.in ${PROJECT_BINARY_DIR}/ALUsdMayaConfig.cmake @ONLY)
-
-install(FILES ${PROJECT_BINARY_DIR}/ALUsdMayaConfig.cmake
-  DESTINATION ${CMAKE_INSTALL_PREFIX}
-  COMPONENT dev
-)
 
 install(CODE "message(STATUS \"POST INSTALL: Compiling python/pyc for ${CMAKE_INSTALL_PREFIX} ... \")")
 install(CODE "execute_process(COMMAND python -m compileall ${CMAKE_INSTALL_PREFIX} )")

@@ -23,148 +23,6 @@
 #
 include(Private)
 
-function(pxr_python_bin BIN_NAME)
-    set(oneValueArgs
-        PYTHON_FILE
-    )
-    set(multiValueArgs
-        DEPENDENCIES
-    )
-    cmake_parse_arguments(pb
-        ""
-        "${oneValueArgs}"
-        "${multiValueArgs}"
-        ${ARGN}
-    )
-
-    # If we can't build Python modules then do nothing.
-    if(NOT TARGET python)
-        message(STATUS "Skipping Python program ${BIN_NAME}, Python modules required")
-        return()
-    endif()
-
-    _get_install_dir(bin installDir)
-
-    # Source file.
-    if( "${pb_PYTHON_FILE}" STREQUAL "")
-        set(infile ${CMAKE_CURRENT_SOURCE_DIR}/${BIN_NAME}.py)
-    else()
-        set(infile ${CMAKE_CURRENT_SOURCE_DIR}/${pb_PYTHON_FILE})
-    endif()
-
-    # Destination file.
-    set(outfile ${CMAKE_CURRENT_BINARY_DIR}/${BIN_NAME})
-
-    # /pxrpythonsubst will be replaced with the full path to the configured
-    # python executable. This doesn't use the CMake ${...} or @...@ syntax
-    # for backwards compatibility with other build systems.
-    add_custom_command(
-        OUTPUT ${outfile}
-        DEPENDS ${infile}
-        COMMENT "Substituting Python shebang"
-        COMMAND
-            ${PYTHON_EXECUTABLE}
-            ${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros/shebang.py
-            ${PXR_PYTHON_SHEBANG}
-            ${infile}
-            ${outfile}
-    )
-    list(APPEND outputs ${outfile})
-
-    install(
-        PROGRAMS ${outfile}
-        DESTINATION ${installDir}
-        RENAME ${BIN_NAME}
-    )
-
-    # Windows by default cannot execute Python files so here
-    # we create a batch file wrapper that invokes the python
-    # files.
-    if(WIN32)
-        add_custom_command(
-            OUTPUT ${outfile}.cmd
-            COMMENT "Creating Python cmd wrapper"
-            COMMAND
-                ${PYTHON_EXECUTABLE}
-                ${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros/shebang.py
-                ${BIN_NAME}
-                ${outfile}.cmd
-        )
-        list(APPEND outputs ${outfile}.cmd)
-
-        install(
-            PROGRAMS ${outfile}.cmd
-            DESTINATION ${installDir}
-            RENAME ${BIN_NAME}.cmd
-        )
-    endif()
-
-    # Add the target.
-    add_custom_target(${BIN_NAME}_script
-        DEPENDS ${outputs} ${pb_DEPENDENCIES}
-    )
-    add_dependencies(python ${BIN_NAME}_script)
-
-    _get_folder("" folder)
-    set_target_properties(${BIN_NAME}_script
-        PROPERTIES
-            FOLDER "${folder}"
-    )
-endfunction() # pxr_python_bin
-
-function(pxr_cpp_bin BIN_NAME)
-    _get_install_dir(bin installDir)
-    
-    set(multiValueArgs
-        LIBRARIES
-        INCLUDE_DIRS
-    )
-
-    cmake_parse_arguments(cb
-        ""  
-        ""
-        "${multiValueArgs}"
-        ${ARGN}
-    )
-
-    add_executable(${BIN_NAME} ${BIN_NAME}.cpp)
-
-    # Turn PIC ON otherwise ArchGetAddressInfo() on Linux may yield
-    # unexpected results.
-    _get_folder("" folder)
-    set_target_properties(${BIN_NAME}
-        PROPERTIES
-            FOLDER "${folder}"
-            POSITION_INDEPENDENT_CODE ON
-    )
-
-    # Install and include headers from the build directory.
-    get_filename_component(
-        PRIVATE_INC_DIR
-        "${CMAKE_BINARY_DIR}/include"
-        ABSOLUTE
-    )
-
-    target_include_directories(${BIN_NAME}
-        PRIVATE 
-        ${PRIVATE_INC_DIR}
-        ${cb_INCLUDE_DIRS}
-    )
-
-    _pxr_init_rpath(rpath "${installDir}")
-    _pxr_install_rpath(rpath ${BIN_NAME})
-
-    _pxr_target_link_libraries(${BIN_NAME}
-        ${cb_LIBRARIES}
-        ${PXR_MALLOC_LIBRARY}
-    )
-
-    install(
-        TARGETS ${BIN_NAME}
-        DESTINATION ${installDir}
-    )
-endfunction()
-
 function(pxr_library NAME)
     set(options
         DISABLE_PRECOMPILED_HEADERS
@@ -348,7 +206,7 @@ function(pxr_setup_python)
 
     install(
         FILES "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
-        DESTINATION ${installPrefix}
+        DESTINATION ${INSTALL_DIR_SUFFIX}/{${installPrefix}
         RENAME "__init__.py"
     )
 endfunction() # pxr_setup_python
@@ -382,7 +240,7 @@ function (pxr_create_test_module MODULE_NAME)
             RENAME 
                 __init__.py
             DESTINATION 
-                tests/${tm_INSTALL_PREFIX}/lib/python/${MODULE_NAME}
+                ${INSTALL_DIR_SUFFIX}/tests/${tm_INSTALL_PREFIX}/lib/python/${MODULE_NAME}
         )
     endif()
     if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${plugInfoFile}")
@@ -392,7 +250,7 @@ function (pxr_create_test_module MODULE_NAME)
             RENAME 
                 plugInfo.json
             DESTINATION 
-                tests/${tm_INSTALL_PREFIX}/lib/python/${MODULE_NAME}
+                ${INSTALL_DIR_SUFFIX}/tests/${tm_INSTALL_PREFIX}/lib/python/${MODULE_NAME}
         )
     endif()
 endfunction() # pxr_create_test_module
@@ -448,7 +306,7 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
             # XXX -- We shouldn't have to install to run tests.
             install(
                 FILES ${testPlugInfoPath}
-                DESTINATION ${testPlugInfoResourceDir})
+                DESTINATION ${INSTALL_DIR_SUFFIX}/${testPlugInfoResourceDir})
         endif()
 
         # We always want this test to build after the package it's under, even if
@@ -465,9 +323,9 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
         # XXX -- We shouldn't have to install to run tests.
         install(
             TARGETS ${LIBRARY_NAME}
-            LIBRARY DESTINATION "tests/lib"
-            ARCHIVE DESTINATION "tests/lib"
-            RUNTIME DESTINATION "tests/lib"
+            LIBRARY DESTINATION "${INSTALL_DIR_SUFFIX}/tests/lib"
+            ARCHIVE DESTINATION "${INSTALL_DIR_SUFFIX}/tests/lib"
+            RUNTIME DESTINATION "${INSTALL_DIR_SUFFIX}/tests/lib"
         )
     endif()
 endfunction() # pxr_build_test_shared_lib
@@ -507,7 +365,7 @@ function(pxr_build_test TEST_NAME)
 
         # XXX -- We shouldn't have to install to run tests.
         install(TARGETS ${TEST_NAME}
-            RUNTIME DESTINATION "tests"
+            RUNTIME DESTINATION "${INSTALL_DIR_SUFFIX}/tests"
         )
     endif()
 endfunction() # pxr_build_test
@@ -527,7 +385,7 @@ function(pxr_test_scripts)
         # XXX -- We shouldn't have to install to run tests.
         install(
             PROGRAMS ${file}
-            DESTINATION tests
+            DESTINATION ${INSTALL_DIR_SUFFIX}/tests
             RENAME ${destFile}
         )
     endforeach()
@@ -545,7 +403,7 @@ function(pxr_install_test_dir)
         # XXX -- We shouldn't have to install to run tests.
         install(
             DIRECTORY ${bt_SRC}/
-            DESTINATION tests/ctest/${bt_DEST}
+            DESTINATION ${INSTALL_DIR_SUFFIX}/tests/ctest/${bt_DEST}
         )
     endif()
 endfunction() # pxr_install_test_dir
@@ -748,7 +606,7 @@ function(pxr_setup_plugins)
          "${plugInfoContents}")
     install(
         FILES "${CMAKE_CURRENT_BINARY_DIR}/plugins_plugInfo.json"
-        DESTINATION lib/usd
+        DESTINATION ${INSTALL_DIR_SUFFIX}/lib/usd
         RENAME "plugInfo.json"
     )
 
@@ -757,7 +615,7 @@ function(pxr_setup_plugins)
          "${plugInfoContents}")
     install(
         FILES "${CMAKE_CURRENT_BINARY_DIR}/usd_plugInfo.json"
-        DESTINATION plugin/usd
+        DESTINATION ${INSTALL_DIR_SUFFIX}/plugin/usd
         RENAME "plugInfo.json"
     )
 endfunction() # pxr_setup_plugins
@@ -774,7 +632,7 @@ function(pxr_add_extra_plugins PLUGIN_AREAS)
             "${plugInfoContents}")
         install(
             FILES "${CMAKE_CURRENT_BINARY_DIR}/${area}_plugInfo.json"
-            DESTINATION "${PXR_INSTALL_SUBDIR}/${area}"
+            DESTINATION "${INSTALL_DIR_SUFFIX}/${PXR_INSTALL_SUBDIR}/${area}"
             RENAME "plugInfo.json"
         )
         list(APPEND PXR_EXTRA_PLUGINS "${PXR_INSTALL_SUBDIR}/${area}")
@@ -788,10 +646,6 @@ function(pxr_toplevel_prologue)
     # pxr at configuration time.
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pxr/pxr.h.in
         ${CMAKE_BINARY_DIR}/include/pxr/pxr.h     
-    )  
-    install(
-        FILES ${CMAKE_BINARY_DIR}/include/pxr/pxr.h
-        DESTINATION include/pxr
     )
 
     # Create a monolithic shared library target if we should import one
@@ -861,14 +715,14 @@ function(pxr_toplevel_prologue)
             _get_install_dir("lib" libInstallPrefix)
             install(
                 TARGETS usd_ms
-                LIBRARY DESTINATION ${libInstallPrefix}
-                ARCHIVE DESTINATION ${libInstallPrefix}
-                RUNTIME DESTINATION ${libInstallPrefix}
+                LIBRARY DESTINATION ${INSTALL_DIR_SUFFIX}/${libInstallPrefix}
+                ARCHIVE DESTINATION ${INSTALL_DIR_SUFFIX}/${libInstallPrefix}
+                RUNTIME DESTINATION ${INSTALL_DIR_SUFFIX}/${libInstallPrefix}
             )
             if(WIN32)
                 install(
                     FILES $<TARGET_PDB_FILE:usd_ms>
-                    DESTINATION ${libInstallPrefix}
+                    DESTINATION ${INSTALL_DIR_SUFFIX}/${libInstallPrefix}
                     OPTIONAL
                 )
             endif()

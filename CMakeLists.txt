@@ -99,3 +99,11 @@ endif()
 if (BUILD_ADSK_USD_PLUGIN)
     add_subdirectory(plugins/ADSK_USDMaya)
 endif()
+
+#==============================================================================
+# Install Maya-USD.module
+#==============================================================================
+configure_file(Maya-USD.module.template ${PROJECT_BINARY_DIR}/Maya-USD.module)
+install(FILES ${PROJECT_BINARY_DIR}/Maya-USD.module
+    DESTINATION ${CMAKE_INSTALL_PREFIX}
+)
