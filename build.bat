@@ -2,17 +2,30 @@
 setlocal
 
 :: path to core usd directory
-set CORE_USD_LOCATION=''
+if not defined CORE_USD_LOCATION (
+    set CORE_USD_LOCATION=''
+)
 :: path to maya runtime
-set MAYA_RUNTIME=''
+if not defined MAYA_RUNTIME (
+    set MAYA_RUNTIME=''
+)
 :: path to maya devkit
-set MAYA_DEVKIT_LOCATION=''
+if not defined MAYA_DEVKIT_LOCATION (
+    set MAYA_DEVKIT_LOCATION=''
+)
 :: path to where you want to install the project
-set INSTALL_LOCATION=''
+if not defined INSTALL_LOCATION (
+    set INSTALL_LOCATION=''
+)
 :: Debug, Release, RelWithDebInfo
-set BUILD_TYPE=RelWithDebInfo
+if not defined BUILD_TYPE (
+    set BUILD_TYPE=RelWithDebInfo
+)
 :: core num
-set CORE_NUM=%NUMBER_OF_PROCESSORS%
+if not defined CORE_NUM (
+    set CORE_NUM=%NUMBER_OF_PROCESSORS%
+)
+
 :: Genrators (Ninja|VS2017)
 set GENRATOR_NAME=Ninja
 :: Want flags
@@ -47,7 +60,8 @@ cmake .. %G% ^
 -DBUILD_CORE_USD_LIBRARY=%WANT_CORE_USD% ^
 -DBUILD_ADSK_USD_PLUGIN=%WANT_ADSK_PLUGIN% ^
 -DBUILD_PXR_USD_PLUGIN=%WANT_PXRUSD_PLUGIN% ^
--DBUILD_AL_USD_PLUGIN=%WANT_ALUSD_PLUGIN%
+-DBUILD_AL_USD_PLUGIN=%WANT_ALUSD_PLUGIN% ^
+-DBUILD_USDMAYA_PXR_TRANSLATORS=OFF
 
 cmake --build . --config %BUILD_TYPE% --target install %THREAD_FLAG% %CORE_NUM%
 

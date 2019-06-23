@@ -6,19 +6,41 @@
 // otherwise accompanies this software in either electronic or hard copy form.
 // ===========================================================================
 
-#include "mayaUsd/MayaUsdApi.h"
+#include "base/api.h"
+#include "importTranslator.h"
 
 #include <maya/MFnPlugin.h>
 #include <maya/MStatus.h>
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 MAYAUSD_PLUGIN_PUBLIC
 MStatus initializePlugin(MObject obj)
 {
-   return MS::kSuccess;
+    MFnPlugin plugin(obj, "Autodesk", "1.0", "Any");
+
+    MStatus status = plugin.registerFileTranslator(
+        "mayaUsdImport",
+        "",
+        UsdMayaImportTranslator::creator,
+        "usdTranslatorImport", // options script name
+        const_cast<char*>(UsdMayaImportTranslator::GetDefaultOptions().c_str()),
+        false);
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to register USD Import translator.");
+    }
+
+    return status;
 }
 
 MAYAUSD_PLUGIN_PUBLIC
 MStatus uninitializePlugin(MObject obj)
 {
-   return MS::kSuccess;
+    MFnPlugin plugin(obj);
+
+    MStatus status = plugin.deregisterFileTranslator("mayaUsdImport");
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to deregister USD Import translator.");
+    }
+    return status;
 }

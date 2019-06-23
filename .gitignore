@@ -3,6 +3,7 @@
 *.cproject
 *.pydevproject
 *.settings/
+*.vs
 CMakeCache.txt
 CMakeLists.txt.user
 CMakeFiles/cmake.check_cache

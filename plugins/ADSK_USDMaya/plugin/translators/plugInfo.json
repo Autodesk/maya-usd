@@ -1,0 +1,59 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "UsdMaya": {
+                    "PrimReader": {
+                        "mayaPlugin": "mayaUsdTranslators",
+                        "providesTranslator": [
+                            "UsdGeomCamera",
+                            "UsdGeomMesh",
+                            "UsdGeomNurbsCurves",
+                            "UsdGeomNurbsPatch",
+                            "UsdGeomScope",
+                            "UsdGeomXform",
+                            "UsdLuxDiskLight",
+                            "UsdLuxDistantLight",
+                            "UsdLuxDomeLight",
+                            "UsdLuxGeometryLight",
+                            "UsdLuxRectLight",
+                            "UsdLuxSphereLight",
+                            "UsdRiPxrAovLight",
+                            "UsdRiPxrEnvDayLight",
+                            "UsdShadeMaterial",
+                            "UsdSkelRoot",
+                            "UsdSkelSkeleton",
+                            "AL_usd_MayaReference"
+                        ]
+                    },
+                    "PrimWriter": {
+                        "mayaPlugin": "mayaUsdTranslators",
+                        "providesTranslator": [
+                            "camera",
+                            "file",
+                            "instancer",
+                            "joint",
+                            "locator",
+                            "mesh",
+                            "nParticle",
+                            "nurbsCurve",
+                            "nurbsSurface",
+                            "particle",
+                            "PxrAovLight",
+                            "PxrDiskLight",
+                            "PxrDistantLight",
+                            "PxrDomeLight",
+                            "PxrEnvDayLight",
+                            "PxrMeshLight",
+                            "PxrRectLight",
+                            "PxrSphereLight"
+                        ]
+                    }
+                }
+            },
+            "LibraryPath": "../../mayaUsdTranslators.mll",
+            "Name": "@PLUG_INFO_PLUGIN_NAME@",
+            "Type": "library"
+        }
+    ]
+}
