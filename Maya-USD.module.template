@@ -4,6 +4,7 @@ PATH+:=bin
 PATH+:=lib
 
 + PixarMayaUSD <USD_VER> <RELATIVE_PATH>/USD
+PYTHONPATH+:=lib/python
 PATH+:=third_party/maya/lib
 XBMLANGPATH+:=third_party/maya/lib/usd/usdMaya/resources
 MAYA_SCRIPT_PATH+:=third_party/maya/lib/usd/usdMaya/resources
