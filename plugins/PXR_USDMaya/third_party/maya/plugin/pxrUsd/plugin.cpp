@@ -154,7 +154,7 @@ initializePlugin(MObject obj)
 
     // Attribute Editor Templates
     MString attribEditorCmd(
-        "from pxr.UsdMaya import AEpxrUsdReferenceAssemblyTemplate\n"
+        "from pxrUsdMaya.UsdMaya import AEpxrUsdReferenceAssemblyTemplate\n"
         "AEpxrUsdReferenceAssemblyTemplate.addMelFunctionStubs()");
     status = MGlobal::executePythonCommand(attribEditorCmd);
     CHECK_MSTATUS(status);

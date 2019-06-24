@@ -189,7 +189,8 @@ endmacro(pxr_plugin)
 function(pxr_setup_python)
     # Install a pxr __init__.py in order to have Python 
     # see UsdMaya module inside pxr subdirectory 
-    _get_install_dir(lib/python/pxr installPrefix)
+    _get_install_dir(lib/python/pxrUsdMaya installPrefix)
+
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py""\n")
     install(
         FILES "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"

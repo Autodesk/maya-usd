@@ -22,7 +22,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxr import UsdMaya
+from pxrUsdMaya import UsdMaya
 
 from maya import cmds
 from maya import mel
