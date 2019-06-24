@@ -35,7 +35,7 @@ import usdXformOpCmds
 
 from pxr import Sdf
 from pxr import UsdGeom
-from pxr import UsdMaya
+from pxrUsdMaya import UsdMaya
 
 import maya.cmds as cmds
 
