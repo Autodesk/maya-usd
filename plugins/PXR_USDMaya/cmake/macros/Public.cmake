@@ -187,26 +187,13 @@ macro(pxr_plugin NAME)
 endmacro(pxr_plugin)
 
 function(pxr_setup_python)
-    get_property(pxrPythonModules GLOBAL PROPERTY PXR_PYTHON_MODULES)
-
-    # A new list where each python module is quoted
-    set(converted "")
-    foreach(module ${pxrPythonModules})
-        list(APPEND converted "'${module}'")
-    endforeach()
-
-    # Join these with a ', '
-    string(REPLACE ";" ", " pyModulesStr "${converted}")
-
-    # Install a pxr __init__.py with an appropriate __all__
+    # Install a pxr __init__.py in order to have Python 
+    # see UsdMaya module inside pxr subdirectory 
     _get_install_dir(lib/python/pxr installPrefix)
-
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
-         "__all__ = [${pyModulesStr}]\n")
-
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py""\n")
     install(
         FILES "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
-        DESTINATION ${INSTALL_DIR_SUFFIX}/{${installPrefix}
+        DESTINATION ${INSTALL_DIR_SUFFIX}/${installPrefix}
         RENAME "__init__.py"
     )
 endfunction() # pxr_setup_python
@@ -913,23 +900,3 @@ function(pxr_monolithic_epilogue)
         COMMAND ${CMAKE_COMMAND} -E echo Import file: ${CMAKE_BINARY_DIR}/usd-imports-$<CONFIG>.cmake
     )
 endfunction() # pxr_monolithic_epilogue
-
-function(pxr_core_prologue)
-    set(_building_core TRUE PARENT_SCOPE)
-    if(PXR_BUILD_MONOLITHIC)
-        set(_building_monolithic TRUE PARENT_SCOPE)
-    endif()
-endfunction() # pxr_core_prologue
-
-function(pxr_core_epilogue)
-    if(_building_core)
-        if(_building_monolithic)
-            pxr_monolithic_epilogue()
-            set(_building_monolithic FALSE PARENT_SCOPE)
-        endif()
-        if(PXR_ENABLE_PYTHON_SUPPORT)
-            pxr_setup_python()
-        endif()
-        set(_building_core FALSE PARENT_SCOPE)
-    endif()
-endfunction() # pxr_core_epilogue
