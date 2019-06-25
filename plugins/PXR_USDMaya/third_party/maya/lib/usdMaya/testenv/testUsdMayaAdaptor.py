@@ -23,7 +23,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from pxrUsdMaya import UsdMaya
+from pxr import UsdMaya
 
 from pxr import Sdf
 from pxr import Tf

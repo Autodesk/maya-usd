@@ -23,7 +23,7 @@
 #
 import json
 
-from pxrUsdMaya import UsdMaya
+from pxr import UsdMaya
 
 from pxr import UsdGeom
 

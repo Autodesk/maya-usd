@@ -129,7 +129,7 @@ function(_install_python LIBRARY_NAME)
     foreach(file ${ip_FILES})
         set(filesToInstall "")
         set(installDest
-            "${libPythonPrefix}/pxrUsdMaya/${LIBRARY_INSTALLNAME}")
+            "${libPythonPrefix}/pxr/${LIBRARY_INSTALLNAME}")
 
         # Only attempt to compile .py files. Files like plugInfo.json may also
         # be in this list
@@ -275,7 +275,7 @@ function(_install_pyside_ui_files LIBRARY_NAME)
 
     install(
         FILES ${uiFiles}
-        DESTINATION "${INSTALL_DIR_SUFFIX}/${libPythonPrefix}/pxrUsdMaya/${LIBRARY_INSTALLNAME}"
+        DESTINATION "${INSTALL_DIR_SUFFIX}/${libPythonPrefix}/pxr/${LIBRARY_INSTALLNAME}"
     )
 endfunction() # _install_pyside_ui_files
 
@@ -944,9 +944,12 @@ function(_pxr_python_module NAME)
         APPEND PROPERTY PXR_PYTHON_MODULES ${pyModuleName}
     )
 
-    # Install under the 'pxrUsdMaya' module. 
-    # e.g.'from pxrUsdMaya import UsdMaya'
-    set(libInstallPrefix "lib/python/pxrUsdMaya/${pyModuleName}")
+    # Always install under the 'pxr' module, rather than base on the
+    # project name. This makes importing consistent, e.g.
+    # 'from pxr import X'. Additionally, python libraries always install
+    # into the default lib install, not into the third_party subdirectory
+    # or similar.
+    set(libInstallPrefix "lib/python/pxr/${pyModuleName}")
 
     # Python modules need to be able to access their corresponding
     # wrapped library and the install lib directory.
