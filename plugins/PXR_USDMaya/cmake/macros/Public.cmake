@@ -190,7 +190,8 @@ function(pxr_setup_python)
     # Install a pxr __init__.py in order to have Python 
     # see UsdMaya module inside pxr subdirectory 
     _get_install_dir(lib/python/pxr installPrefix)
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py""\n")
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
+    "try:\n  __import__('pkg_resources').declare_namespace(__name__)\nexcept:\n  from pkgutil import extend_path\n  __path__ = extend_path(__path__, __name__)\n")
     install(
         FILES "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
         DESTINATION ${INSTALL_DIR_SUFFIX}/${installPrefix}
