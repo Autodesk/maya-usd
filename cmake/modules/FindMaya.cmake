@@ -26,6 +26,66 @@
 # (To distribute this file outside of CMake, substitute the full
 #  License text for the above reference.)
 
+#=============================================================================
+# Macro for setting up typical plugin properties. These include:
+#  - OS-specific plugin suffix (.mll, .so, .bundle)
+#  - Removal of 'lib' prefix on osx/linux
+#  - OS-specific defines
+#  - Post-commnad for correcting Qt library linking on osx
+#  - Windows link flags for exporting initializePlugin/uninitializePlugin
+macro(MAYA_SET_PLUGIN_PROPERTIES target)
+    set_target_properties(${target} PROPERTIES
+                          SUFFIX ${MAYA_PLUGIN_SUFFIX})
+
+    set(_maya_DEFINES REQUIRE_IOSTREAM _BOOL)
+
+    if(APPLE)
+        set(_maya_DEFINES "${_maya_DEFINES}" MAC_PLUGIN OSMac_ OSMac_MachO)
+        set_target_properties(${target} PROPERTIES
+                              PREFIX ""
+                              COMPILE_DEFINITIONS "${_maya_DEFINES}")
+
+        if(QT_LIBRARIES)
+            set(_changes "")
+            foreach(_lib ${QT_LIBRARIES})
+                if("${_lib}" MATCHES ".*framework.*")
+                    get_filename_component(_shortname ${_lib} NAME)
+                    string(REPLACE ".framework" "" _shortname ${_shortname})
+                    # FIXME: QT_LIBRARIES does not provide the entire path to the lib.
+                    #  it provides /usr/local/qt/4.7.2/lib/QtGui.framework
+                    #  but we need /usr/local/qt/4.7.2/lib/QtGui.framework/Versions/4/QtGui
+                    # below is a hack, likely to break on other configurations
+                    set(_changes ${_changes} "-change" "${_lib}/Versions/4/${_shortname}" "@executable_path/${_shortname}")
+                endif()
+            endforeach()
+
+            add_custom_command(TARGET ${target}
+                               POST_BUILD
+                               COMMAND install_name_tool ${_changes} $<TARGET_FILE:${target}>)
+        endif()
+
+    elseif(WIN32)
+        set(_maya_DEFINES "${_maya_DEFINES}" _AFXDLL _MBCS NT_PLUGIN)
+        set_target_properties( ${target} PROPERTIES
+                               LINK_FLAGS "/export:initializePlugin /export:uninitializePlugin"
+                               COMPILE_DEFINITIONS "${_maya_DEFINES}")
+    else()
+        set(_maya_DEFINES "${_maya_DEFINES}" LINUX LINUX_64)
+        set_target_properties( ${target} PROPERTIES
+                               PREFIX ""
+                               COMPILE_DEFINITIONS "${_maya_DEFINES}")
+    endif()
+endmacro(MAYA_SET_PLUGIN_PROPERTIES)
+#=============================================================================
+
+if(APPLE)
+    set(MAYA_PLUGIN_SUFFIX ".bundle")
+elseif(WIN32)
+    set(MAYA_PLUGIN_SUFFIX ".mll")
+else() #LINUX
+    set(MAYA_PLUGIN_SUFFIX ".so")
+endif()
+
 if(APPLE)
     find_path(MAYA_BASE_DIR
             include/maya/MFn.h

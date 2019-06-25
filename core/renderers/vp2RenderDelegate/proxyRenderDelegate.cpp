@@ -29,7 +29,7 @@ namespace
 
 //! \brief  Draw classification used during plugin load to register in VP2
 const MString ProxyRenderDelegate::drawDbClassification(
-    TfStringPrintf("drawdb/subscene/pxrUsdMayaGL/%s",
+    TfStringPrintf("drawdb/subscene/vp2RenderDelegate/%s",
         MayaUsdProxyShapeBaseTokens->MayaTypeName.GetText()).c_str());
 
 //! \brief  Factory method registered at plugin load

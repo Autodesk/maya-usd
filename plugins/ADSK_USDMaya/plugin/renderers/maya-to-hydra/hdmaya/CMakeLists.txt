@@ -43,13 +43,13 @@ set(SRC
 
 add_library(hdmaya SHARED ${SRC})
 
-target_link_libraries(hdmaya PUBLIC ${OPENGL_gl_LIBRARY} ${MAYA_LIBS})
+target_link_libraries(hdmaya PUBLIC ${OPENGL_gl_LIBRARY} ${MAYA_LIBRARIES})
 target_link_libraries(hdmaya PUBLIC ${Boost_LIBRARIES} ${GLEW_LIBRARY})
 target_link_libraries(hdmaya PUBLIC arch gf plug tf vt)
 target_link_libraries(hdmaya PUBLIC glf hd hdSt hdx hf pxOsd)
 target_link_libraries(hdmaya PUBLIC usd sdf sdr usdGeom usdLux)
 target_link_libraries(hdmaya PUBLIC usdHydra usdImaging usdImagingGL)
-target_link_libraries(hdmaya PUBLIC usdMaya)
+target_link_libraries(hdmaya PUBLIC ${MAYAUSD_LIBRARIES})
 target_link_libraries(hdmaya PUBLIC ${TBB_LIBRARIES})
 target_link_libraries(hdmaya PUBLIC ${PYTHON_LIBRARIES})
 
@@ -61,7 +61,8 @@ target_include_directories(hdmaya PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/..")
 target_include_directories(hdmaya PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(hdmaya PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/..")
 target_include_directories(hdmaya SYSTEM PUBLIC ${MAYA_INCLUDE_DIRS} ${GLEW_INCLUDE_DIR})
-target_include_directories(hdmaya SYSTEM PUBLIC ${USD_INCLUDE_DIR} ${USD_MAYA_INCLUDE_DIR})
+target_include_directories(hdmaya SYSTEM PUBLIC ${USD_INCLUDE_DIR})
+target_include_directories(hdmaya SYSTEM PUBLIC ${MAYAUSD_INCLUDE_DIR})
 target_include_directories(hdmaya SYSTEM PUBLIC ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
 target_include_directories(hdmaya SYSTEM PUBLIC ${TBB_INCLUDE_DIRS})
 
@@ -121,11 +122,11 @@ configure_file(
 
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH}
-    DESTINATION lib)
+    DESTINATION plugin/usd/hdmaya/resources)
 
 install(
     TARGETS hdmaya
-    DESTINATION lib)
+    DESTINATION plugin/usd)
 
 install(
     FILES

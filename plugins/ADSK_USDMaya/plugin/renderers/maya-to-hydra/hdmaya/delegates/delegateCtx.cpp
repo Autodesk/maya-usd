@@ -38,7 +38,7 @@
 #include <pxr/imaging/glf/glslfx.h>
 #endif // HDMAYA_USD_001905_BUILD
 
-#include <usdMaya/util.h>
+#include <mayaUsdCore/utils/util.h>
 
 #include <maya/MFnLight.h>
 
