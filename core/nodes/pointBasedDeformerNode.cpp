@@ -23,7 +23,7 @@
 //
 #include "pointBasedDeformerNode.h"
 
-#include "../fileio/stageData.h"
+#include "stageData.h"
 
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/vec3f.h"

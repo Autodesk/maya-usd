@@ -27,8 +27,8 @@
 /// \file usdMaya/proxyShapeBase.h
 
 #include "../base/api.h"
-#include "usdMaya/stageNoticeListener.h"
-#include "usdMaya/usdPrimProvider.h"
+#include "../listeners/stageNoticeListener.h"
+#include "usdPrimProvider.h"
 
 #include "pxr/pxr.h"
 
@@ -65,7 +65,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((MayaTypeName, "mayaUsdProxyShapeBase"))
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdProxyShapeBaseTokens,
-                         PXRUSDMAYA_API,
+                         MAYAUSD_CORE_PUBLIC,
                          MAYAUSD_PROXY_SHAPE_BASE_TOKENS);
 
 
@@ -75,38 +75,38 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
     public:
         typedef MayaUsdProxyShapeBase ThisClass;
 
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static const MTypeId typeId;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static const MString typeName;
 
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static const MString displayFilterName;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static const MString displayFilterLabel;
 
         // Attributes
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static MObject filePathAttr;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static MObject primPathAttr;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static MObject excludePrimPathsAttr;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static MObject timeAttr;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static MObject complexityAttr;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static MObject inStageDataAttr;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static MObject inStageDataCachedAttr;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static MObject outStageDataAttr;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static MObject drawRenderPurposeAttr;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static MObject drawProxyPurposeAttr;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static MObject drawGuidePurposeAttr;
 
         /// Delegate function for computing the closest point and surface normal
@@ -119,16 +119,16 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         typedef std::function<bool(const MayaUsdProxyShapeBase&, const GfRay&,
                 GfVec3d*, GfVec3d*)> ClosestPointDelegate;
 
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static void* creator();
 
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static MStatus initialize();
 
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static MayaUsdProxyShapeBase* GetShapeAtDagPath(const MDagPath& dagPath);
 
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         static void SetClosestPointDelegate(ClosestPointDelegate delegate);
 
         // UsdMayaUsdPrimProvider overrides:
@@ -139,29 +139,29 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
          * the dependencies necessary to do so. It should be called instead of
          * pulling on the data directly.
          */
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         UsdPrim usdPrim() const override;
 
         // Virtual function overrides
 
         // A ProxyShapeBase node cannot be created directly; it only exists
         // as a base class.
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         bool isAbstractClass() const override;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         void postConstructor() override;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         MStatus compute(
                 const MPlug& plug,
                 MDataBlock& dataBlock) override;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         bool isBounded() const override;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         MBoundingBox boundingBox() const override;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         MSelectionMask getShapeSelectionMask() const override;
 
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         bool closestPoint(
                 const MPoint& raySource,
                 const MVector& rayDirection,
@@ -170,19 +170,19 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
                 bool findClosestOnMiss,
                 double tolerance) override;
 
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         bool canMakeLive() const override;
 
         // Public functions
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         virtual SdfPathVector getExcludePrimPaths() const;
 
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         int getComplexity() const;
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         UsdTimeCode getTime() const;
 
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         bool GetAllRenderAttributes(
                 UsdPrim* usdPrimOut,
                 SdfPathVector* excludePrimPathsOut,
@@ -192,50 +192,50 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
                 bool* drawProxyPurpose,
                 bool* drawGuidePurpose);
 
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         MStatus setDependentsDirty(
                 const MPlug& plug,
                 MPlugArray& plugArray) override;
 
         /// \brief  Clears the bounding box cache of the shape
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         void clearBoundingBoxCache();
 
     protected:
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         MayaUsdProxyShapeBase();
 
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         ~MayaUsdProxyShapeBase() override;
 
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         bool isStageValid() const;
 
         // Hook method for derived classes.  This class returns a nullptr.
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         virtual SdfLayerRefPtr computeSessionLayer(MDataBlock&);
 
         // Hook method for derived classes: can this object be soft selected?
         // This class returns false.
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         virtual bool canBeSoftSelected() const;
 
         // Hook method for derived classes: is soft select enabled?  This
         // class returns false.
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         virtual bool GetObjectSoftSelectEnabled() const;
 
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         UsdPrim _GetUsdPrim(MDataBlock dataBlock) const;
 
         // Hook method for derived classes: cache an empty computed bounding
         // box.  This class does nothing.
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         virtual void CacheEmptyBoundingBox(MBoundingBox&);
 
         // Return the output time.  This class returns the value of the 
         // input time attribute.
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         virtual UsdTimeCode GetOutputTime(MDataBlock) const;
 
     private:

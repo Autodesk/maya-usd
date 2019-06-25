@@ -1,0 +1,57 @@
+<!--
+===========================================================================
+Copyright 2019 Autodesk, Inc. All rights reserved.
+
+Use of this software is subject to the terms of the Autodesk license
+agreement provided at the time of installation or download, or which
+otherwise accompanies this software in either electronic or hard copy form.
+===========================================================================
+-->
+<fragment  uiName="customFileTextureOutputTransparency" name="customFileTextureOutputTransparency" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0" >
+    <description>
+        <![CDATA[Extract the outTransparency member from the mayaFileTextureOutput structure.]]>
+    </description>
+    <properties>
+        <struct  name="input" struct_name="mayaFileTextureOutput" />
+    </properties>
+    <values>
+    </values>
+    <outputs>
+        <float3  name="outTransparency" />
+    </outputs>
+    <implementation  >
+    <implementation  render="OGSRenderer" language="Cg" lang_version="2.100000" >
+        <function_name val="customFileTextureOutputTransparency" />
+        <source>
+            <![CDATA[
+float3 customFileTextureOutputTransparency(mayaFileTextureOutput input) 
+{ 
+    return input.outTransparency; 
+} 
+            ]]>
+        </source>
+    </implementation>
+    <implementation  render="OGSRenderer" language="HLSL" lang_version="11.000000" >
+        <function_name val="customFileTextureOutputTransparency" />
+        <source>
+            <![CDATA[
+float3 customFileTextureOutputTransparency(mayaFileTextureOutput input) 
+{ 
+    return input.outTransparency; 
+} 
+            ]]>
+        </source>
+    </implementation>
+    <implementation  render="OGSRenderer" language="GLSL" lang_version="3.000000" >
+        <function_name val="customFileTextureOutputTransparency" />
+        <source>
+            <![CDATA[
+vec3 customFileTextureOutputTransparency(mayaFileTextureOutput input_GLSL)
+{ 
+    return input_GLSL.outTransparency;
+} 
+            ]]>
+        </source>
+    </implementation>
+    </implementation>
+</fragment>

@@ -26,7 +26,7 @@
 #include "../primReaderArgs.h"
 #include "../primReaderContext.h"
 #include "../primReaderRegistry.h"
-#include "../stageCache.h"
+#include "../../utils/stageCache.h"
 //#include "usdMaya/translatorModelAssembly.h"
 #include "../translators/translatorUtil.h"
 

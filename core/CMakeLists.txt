@@ -94,10 +94,6 @@ list(APPEND mayaUsdCore_src
 	fileio/instancedNodeWriter.cpp
 	fileio/transformWriter.cpp
 	fileio/shaderWriter.cpp
-	fileio/stageCache.cpp
-	fileio/stageData.cpp
-	fileio/stageNode.cpp
-	fileio/notice.cpp
 	#
 	fileio/chaser/chaser.cpp
 	fileio/chaser/chaserRegistry.cpp
@@ -142,8 +138,29 @@ list(APPEND mayaUsdCore_src
 	#
 	utils/colorSpace.cpp
 	utils/util.cpp
+	utils/blockSceneModificationContext.cpp
+	utils/stageCache.cpp
 	#
 	nodes/pointBasedDeformerNode.cpp
+	nodes/hdImagingShape.cpp
+	nodes/usdPrimProvider.cpp
+	nodes/proxyShapeBase.cpp
+	nodes/stageData.cpp
+	nodes/stageNode.cpp
+	#
+	listeners/stageNoticeListener.cpp
+	listeners/notice.cpp
+	#
+	renderers/vp2RenderDelegate/render_param.cpp
+	renderers/vp2RenderDelegate/instancer.cpp
+	renderers/vp2RenderDelegate/draw_item.cpp
+	renderers/vp2RenderDelegate/material.cpp
+	renderers/vp2RenderDelegate/mesh.cpp
+	renderers/vp2RenderDelegate/proxyRenderDelegate.cpp
+	renderers/vp2RenderDelegate/render_delegate.cpp
+	renderers/vp2RenderDelegate/sampler.cpp
+	renderers/vp2RenderDelegate/texture.cpp
+	renderers/vp2RenderDelegate/textureResource.cpp
 )
 
 list(APPEND mayaUsdCoreBase_headers
@@ -168,10 +185,6 @@ list(APPEND mayaUsdCoreFileio_headers
 	fileio/instancedNodeWriter.h
 	fileio/transformWriter.h
 	fileio/shaderWriter.h
-	fileio/stageCache.h
-	fileio/stageData.h
-	fileio/stageNode.h
-	fileio/notice.h
 )
 
 list(APPEND mayaUsdCoreChaser_headers
@@ -223,10 +236,26 @@ list(APPEND mayaUsdCoreTranslators_headers
 list(APPEND mayaUsdCoreUtils_headers
 	utils/colorSpace.h
 	utils/util.h
+	utils/blockSceneModificationContext.h
+	utils/stageCache.h
 )
 
 list(APPEND mayaUsdCoreNodes_headers
 	nodes/pointBasedDeformerNode.h
+	nodes/hdImagingShape.h
+	nodes/usdPrimProvider.h
+	nodes/proxyShapeBase.h
+	nodes/stageData.h
+	nodes/stageNode.h
+)
+
+list(APPEND mayaUsdCoreListeners_headers
+	listeners/stageNoticeListener.h
+	listeners/notice.h
+)
+
+list(APPEND mayaUsdCoreVP2RenderDelegate_headers
+	renderers/vp2RenderDelegate/proxyRenderDelegate.h
 )
 
 add_library(${LIBRARY_NAME}
@@ -261,6 +290,8 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMayaRender_LIBRARY}
     ar
     gf
+	hd
+	hdx
     js
     kind
     plug
@@ -268,6 +299,7 @@ target_link_libraries(${LIBRARY_NAME}
     tf
     usd
     usdGeom
+	usdImaging
     usdLux
     usdRi
     usdShade
@@ -326,6 +358,14 @@ install(FILES ${mayaUsdCoreUtils_headers}
 
 install(FILES ${mayaUsdCoreNodes_headers}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsdCore/nodes/
+)
+
+install(FILES ${mayaUsdCoreListeners_headers}
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsdCore/listeners/
+)
+
+install(FILES ${mayaUsdCoreVP2RenderDelegate_headers}
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsdCore/renderers/vp2RenderDelegate
 )
 
 add_subdirectory(schemas)

@@ -23,7 +23,7 @@
 //
 #include "stageNode.h"
 
-#include "stageCache.h"
+#include "../utils/stageCache.h"
 #include "stageData.h"
 
 #include "pxr/base/tf/staticTokens.h"

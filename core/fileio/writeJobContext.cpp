@@ -29,7 +29,7 @@
 #include "primWriter.h"
 #include "primWriterRegistry.h"
 #include "translators/skelBindingsProcessor.h"
-#include "stageCache.h"
+#include "../utils/stageCache.h"
 #include "transformWriter.h"
 #include "../utils/util.h"
 

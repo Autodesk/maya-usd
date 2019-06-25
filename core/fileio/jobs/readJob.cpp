@@ -25,8 +25,8 @@
 
 #include "../primReaderRegistry.h"
 #include "../shading/shadingModeRegistry.h"
-#include "../stageCache.h"
-#include "../stageNode.h"
+#include "../../utils/stageCache.h"
+#include "../../nodes/stageNode.h"
 #include "../translators/translatorMaterial.h"
 //#include "usdMaya/translatorModelAssembly.h"
 #include "../translators/translatorXformable.h"

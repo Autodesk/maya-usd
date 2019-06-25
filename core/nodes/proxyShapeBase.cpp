@@ -21,12 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "usdMaya/proxyShapeBase.h"
+#include "proxyShapeBase.h"
 
-#include "usdMaya/hdImagingShape.h"
-#include "usdMaya/query.h"
-#include "usdMaya/stageCache.h"
-#include "usdMaya/stageData.h"
+#include "hdImagingShape.h"
+#include "../utils/query.h"
+#include "../utils/stageCache.h"
+#include "stageData.h"
 
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/range3d.h"
@@ -205,7 +205,7 @@ MayaUsdProxyShapeBase::initialize()
     inStageDataAttr = typedAttrFn.create(
         "inStageData",
         "id",
-        MayaUsdStageData::mayaTypeId,
+        UsdMayaStageData::mayaTypeId,
         MObject::kNullObj,
         &retValue);
     typedAttrFn.setReadable(false);
@@ -220,7 +220,7 @@ MayaUsdProxyShapeBase::initialize()
     inStageDataCachedAttr = typedAttrFn.create(
         "inStageDataCached",
         "idc",
-        MayaUsdStageData::mayaTypeId,
+        UsdMayaStageData::mayaTypeId,
         MObject::kNullObj,
         &retValue);
     typedAttrFn.setStorable(false);
@@ -233,7 +233,7 @@ MayaUsdProxyShapeBase::initialize()
     outStageDataAttr = typedAttrFn.create(
         "outStageData",
         "od",
-        MayaUsdStageData::mayaTypeId,
+        UsdMayaStageData::mayaTypeId,
         MObject::kNullObj,
         &retValue);
     typedAttrFn.setStorable(false);
@@ -350,7 +350,7 @@ MayaUsdProxyShapeBase::GetObjectSoftSelectEnabled() const
 bool
 MayaUsdProxyShapeBase::isAbstractClass() const
 {
-    return true;
+    return false;
 }
 
 /* virtual */
@@ -463,11 +463,11 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         // Create the output outData ========
         MFnPluginData pluginDataFn;
         MObject stageDataObj =
-            pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
+            pluginDataFn.create(UsdMayaStageData::mayaTypeId, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-        MayaUsdStageData* stageData =
-            reinterpret_cast<MayaUsdStageData*>(pluginDataFn.data(&retValue));
+        UsdMayaStageData* stageData =
+            reinterpret_cast<UsdMayaStageData*>(pluginDataFn.data(&retValue));
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
         // Set the outUsdStageData
@@ -504,8 +504,8 @@ MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
 
     UsdStageRefPtr usdStage;
 
-    MayaUsdStageData* inData =
-        dynamic_cast<MayaUsdStageData*>(inDataCachedHandle.asPluginData());
+    UsdMayaStageData* inData =
+        dynamic_cast<UsdMayaStageData*>(inDataCachedHandle.asPluginData());
     if(inData)
     {
         usdStage = inData->stage;
@@ -551,11 +551,11 @@ MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
     // Create the output outData
     MFnPluginData pluginDataFn;
     MObject stageDataObj =
-        pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
+        pluginDataFn.create(UsdMayaStageData::mayaTypeId, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    MayaUsdStageData* stageData =
-        reinterpret_cast<MayaUsdStageData*>(pluginDataFn.data(&retValue));
+    UsdMayaStageData* stageData =
+        reinterpret_cast<UsdMayaStageData*>(pluginDataFn.data(&retValue));
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     // Set the outUsdStageData
@@ -693,8 +693,8 @@ MayaUsdProxyShapeBase::isStageValid() const
     MDataHandle outDataHandle = dataBlock.inputValue(outStageDataAttr, &localStatus);
     CHECK_MSTATUS_AND_RETURN(localStatus, false);
 
-    MayaUsdStageData* outData =
-        dynamic_cast<MayaUsdStageData*>(outDataHandle.asPluginData());
+    UsdMayaStageData* outData =
+        dynamic_cast<UsdMayaStageData*>(outDataHandle.asPluginData());
     if(!outData || !outData->stage) {
         return false;
     }
@@ -724,7 +724,7 @@ MayaUsdProxyShapeBase::_GetUsdPrim(MDataBlock dataBlock) const
         dataBlock.inputValue(outStageDataAttr, &localStatus);
     CHECK_MSTATUS_AND_RETURN(localStatus, usdPrim);
 
-    MayaUsdStageData* outData = dynamic_cast<MayaUsdStageData*>(outDataHandle.asPluginData());
+    UsdMayaStageData* outData = dynamic_cast<UsdMayaStageData*>(outDataHandle.asPluginData());
     if(!outData) {
         return usdPrim; // empty UsdPrim
     }

@@ -23,7 +23,7 @@
 //
 #include "stageCache.h"
 
-#include "notice.h"
+#include "../listeners/notice.h"
 
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/layer.h"

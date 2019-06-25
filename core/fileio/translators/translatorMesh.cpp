@@ -29,7 +29,7 @@
 #include "../primReaderContext.h"
 #include "../utils/readUtil.h"
 #include "../utils/roundTripUtil.h"
-#include "../stageNode.h"
+#include "../../nodes/stageNode.h"
 #include "translatorGprim.h"
 #include "translatorMaterial.h"
 #include "translatorUtil.h"
