@@ -4,7 +4,7 @@ add_test(
     COMMAND
         testPxrTranslators.sh
         ${CMAKE_INSTALL_PREFIX}
-        USD_LIBRARY_DIR
+        ${USD_LIBRARY_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${USD_MAYA_ROOT}
     )
