@@ -181,6 +181,50 @@ private:
     const VtValue _value;
 };
 
+class HdMayaUvAttrConverter : public HdMayaMaterialAttrConverter {
+public:
+    HdMayaUvAttrConverter() : _value(GfVec2f(0.0f, 0.0f)) {}
+
+    SdfValueTypeName GetType() override {
+        return SdfValueTypeNames->TexCoord2f;
+    }
+
+    TfToken GetPlugName(const TfToken& usdName) override {
+        return HdMayaAdapterTokens->uvCoord;
+    }
+
+    VtValue GetValue(
+        MFnDependencyNode& node, const TfToken& paramName,
+        const SdfValueTypeName& type, const VtValue* fallback = nullptr,
+        MPlug* outPlug = nullptr) override {
+        if (outPlug) {
+            // TODO: create a UsdPrimvarReader_float2 even if there's no
+            // connected maya place2dTexture node
+
+            // Find a connected place2dTexture node, and set that as the
+            // outPlug, so that the place2dTexture node will trigger
+            // creation of a UsdPrimvarReader_float2
+            MStatus status;
+            MPlugArray connections;
+            status = node.getConnections(connections);
+            if (status) {
+                for (size_t i = 0, len = connections.length(); i < len; ++i) {
+                    MPlug source = connections[i].source();
+                    if (source.isNull()) { continue; }
+                    if (source.node().hasFn(MFn::kPlace2dTexture)) {
+                        *outPlug = connections[i];
+                        break;
+                    }
+                }
+            }
+        }
+        return _value;
+    }
+
+private:
+    const VtValue _value;
+}; // namespace
+
 class HdMayaCosinePowerMaterialAttrConverter
     : public HdMayaComputedMaterialAttrConverter {
 public:
@@ -276,8 +320,7 @@ void HdMayaMaterialNetworkConverter::initialize() {
     auto eccentricityConverter =
         std::make_shared<HdMayaRemappingMaterialAttrConverter>(
             HdMayaAdapterTokens->eccentricity, SdfValueTypeNames->Float);
-    auto uvConverter = std::make_shared<HdMayaRemappingMaterialAttrConverter>(
-        HdMayaAdapterTokens->uvCoord, SdfValueTypeNames->TexCoord2f);
+    auto uvConverter = std::make_shared<HdMayaUvAttrConverter>();
 
     auto fixedZeroFloat =
         std::make_shared<HdMayaFixedMaterialAttrConverter>(0.0f);
@@ -476,10 +519,9 @@ void HdMayaMaterialNetworkConverter::ConvertParameter(
 
     material.parameters[paramName] = val;
     if (plug.isNull()) { return; }
-    MPlugArray conns;
-    plug.connectedTo(conns, true, false);
-    if (conns.length() > 0) {
-        const auto sourceNodePath = GetMaterial(conns[0].node());
+    MPlug source = plug.source();
+    if (!source.isNull()) {
+        const auto sourceNodePath = GetMaterial(source.node());
         if (sourceNodePath.IsEmpty()) { return; }
         HdMaterialRelationship rel;
         rel.inputId = sourceNodePath;
