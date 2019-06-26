@@ -3,6 +3,8 @@
 # Setup 
 ####################################################################################################
 
+set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
+
 set(MAYAUTILS_LIBRARY_NAME "AL_MayaUtils")
 set(MAYAUTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
 
@@ -53,7 +55,9 @@ target_include_directories(${MAYAUTILS_LIBRARY_NAME}
     PUBLIC 
     ${UTILS_INCLUDE_LOCATION}
     ${MAYAUTILS_INCLUDE_LOCATION}
-    )
+    ${MAYA_INCLUDE_DIRS}
+    ${MAYAUSD_INCLUDE_DIR}
+)
 
 target_link_libraries(${MAYAUTILS_LIBRARY_NAME}
   AL_EventSystem

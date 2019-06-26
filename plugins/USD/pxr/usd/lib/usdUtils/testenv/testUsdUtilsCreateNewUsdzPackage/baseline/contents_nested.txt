@@ -1,3 +1,0 @@
-combined.usda
-0/simpleMesh.usdz
-0/simpleMaterial.usdz

@@ -26,35 +26,42 @@ target_link_libraries(${PXR_PACKAGE}
 target_include_directories(${PXR_PACKAGE}
     PRIVATE
         ${MAYA_INCLUDE_DIRS}
+        ${MAYAUSD_INCLUDE_DIR}
         "../../lib/AL_USDMaya"
 )
 
 if(MSVC)
     set_target_properties(${PXR_PACKAGE} PROPERTIES SUFFIX ".mll")
+elseif(APPLE)
+    set(CMAKE_MACOSX_RPATH ON)
+    set_target_properties(${PXR_PACKAGE}
+        PROPERTIES
+            PREFIX ""
+            SUFFIX ".bundle"
+            BUILD_WITH_INSTALL_RPATH TRUE
+            INSTALL_RPATH "@loader_path/../lib;@loader_path/../../USD/lib;@loader_path/../../USD/third_party/maya/lib;${PXR_USD_LOCATION}/lib"
+    )
 else()
     # This puts the paths into RUNPATH instead of RPATH.
     # They are the same except that RPATH is searched before LD_LIBRARY_PATH whereas RUNPATH is searched after.
     # Using RUNPATH will give users the ability to override a shared library.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
 
-    set(rpath "$ORIGIN:$ORIGIN/../lib")
-    if (CMAKE_INSTALL_RPATH)
-        set(rpath "${CMAKE_INSTALL_RPATH}:${rpath}")
-    endif()
     set_target_properties(${PXR_PACKAGE}
         PROPERTIES
             PREFIX ""
-            INSTALL_RPATH "${rpath}"
+            INSTALL_RPATH "$ORIGIN/../lib:$ORIGIN/../../USD/lib:$ORIGIN/../../USD/third_party/maya/lib:${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64"
+            BUILD_WITH_INSTALL_RPATH TRUE
     )
 endif()
 
 install(TARGETS
     ${PXR_PACKAGE}
     LIBRARY
-        DESTINATION plugin
+        DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
     RUNTIME
-        DESTINATION plugin
+        DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
 )
 if(MSVC)
-    install(FILES $<TARGET_PDB_FILE:${PXR_PACKAGE}> DESTINATION plugin OPTIONAL)
+    install(FILES $<TARGET_PDB_FILE:${PXR_PACKAGE}> DESTINATION ${INSTALL_DIR_SUFFIX}/plugin OPTIONAL)
 endif()

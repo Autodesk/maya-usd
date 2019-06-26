@@ -1,5 +1,7 @@
 set(arDirPath AL/usdmaya)
 
+set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
+
 set(LIBRARY_NAME AL_USDMaya)
 
 list(APPEND AL_usdmaya_headers
@@ -173,6 +175,7 @@ target_include_directories(
 set(Boost_LINK_LIBRARIES
     ${Boost_PYTHON_LIBRARY}
     ${Boost_THREAD_LIBRARY}
+    ${Boost_SYSTEM_LIBRARY}
 )
 if(WIN32)
     list(APPEND Boost_LINK_LIBRARIES

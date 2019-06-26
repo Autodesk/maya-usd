@@ -1,3 +1,6 @@
+
+set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
+
 set(
     resources_install_path
     ${CMAKE_INSTALL_PREFIX}/lib/usd/AL_USDMayaSchemas/resources
@@ -70,7 +73,14 @@ target_compile_definitions(AL_USDMayaSchemas
         AL_USDMAYASCHEMAS_EXPORTS
 )
 
-target_link_libraries(AL_USDMayaSchemas ${DEPENDANT_LIBRARIES})
+# Hamed 2019 
+# https://stackoverflow.com/questions/25617839/undefined-reference-to-symbol-pthread-key-deleteglibc-2-2-5
+set(PTHREAD_LINK "")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    set(PTHREAD_LINK -lpthread -lm)
+endif()
+
+target_link_libraries(AL_USDMayaSchemas ${DEPENDANT_LIBRARIES} ${PTHREAD_LINK})
 
 install(
     TARGETS AL_USDMayaSchemas

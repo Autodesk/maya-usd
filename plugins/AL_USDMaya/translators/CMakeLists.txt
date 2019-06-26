@@ -1,5 +1,7 @@
 list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas gf plug tf)
 
+set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
+
 set(DIRECTORY_PATH AL/usdmaya/fileio/translators)
 
 configure_file (

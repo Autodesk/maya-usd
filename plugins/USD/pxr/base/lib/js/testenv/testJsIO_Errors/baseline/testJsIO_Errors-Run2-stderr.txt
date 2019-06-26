@@ -1,1 +1,0 @@
-Error: parse error at bad-mismatchedBraces.json:5:9: Missing a name for object member.
