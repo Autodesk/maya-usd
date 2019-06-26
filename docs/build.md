@@ -85,3 +85,41 @@ BUILD_MAYAUSD_CORE_LIBRARY  | Builds the Autodesk Maya Core USD libraries.      
 BUILD_ADSK_USD_PLUGIN       | Builds the Autodesk Maya USD plugin.              | ON
 BUILD_AL_USD_PLUGIN         | Builds the Animal Logic USD plugin and libraries. | ON
 BUILD_PXR_USD_PLUGIN        | Builds the Pixar USD plugin and libraries.        | ON
+
+# Building USD
+
+##### MacOS:
+
+Some DCCs (most notably, Maya) may ship with and run using their own version of Python. In that case, it is important that USD and the plugins for that DCC are built using the DCC's version of Python and not the system version. Note that this is primarily an issue on macOS, where a DCC's version of Python is likely to conflict with the version provided by the system. 
+
+To build USD and the Maya plugins on macOS for Maya 2019, run:
+```
+/Applications/Autodesk/maya2019/Maya.app/Contents/bin/mayapy build_usd.py --no-maya ~/Desktop/BUILD
+```
+By default ``usdview`` is built which has a dependency on PyOpenGL. Since Python version of Maya doesn't ship with PyOpenGL you will be prompted with following error message:
+```
+PyOpenGL is not installed. If you have pip installed, run "pip install PyOpenGL" to install it, then re-run this script.
+If PyOpenGL is already installed, you may need to update your PYTHONPATH to indicate where it is located.
+```
+The easiest way to bypass this error is but setting up PYTHONPATH to point at your system python or third-party python package manager that has PyOpenGL already installed.
+e.g
+```
+export PYTHONPATH=$PYTHONPATH:Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages
+```
+Use `pip list` to see the list of installed packages with your python's package manager.
+
+e.g
+```
+➜ pip list
+DEPRECATION: Python 2.7 will reach the end of its life on January 1st, 2020. Please upgrade your Python as Python 2.7 won't be maintained after that date. A future version of pip will drop support for Python 2.7.
+Package    Version
+---------- -------
+Jinja2     2.10   
+MarkupSafe 1.1.0  
+pip        19.1.1 
+PyOpenGL   3.1.0  
+PySide2    5.12.1 
+PyYAML     3.13   
+setuptools 39.0.1 
+shiboken2  5.12.1 
+```
