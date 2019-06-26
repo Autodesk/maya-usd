@@ -2,6 +2,13 @@ message("========== ADSK USD Plugin ==========")
 
 set(INSTALL_DIR_SUFFIX MayaUSD)
 
+list(APPEND CMAKE_MODULE_PATH
+    ${PROJECT_SOURCE_DIR}/plugins/PXR_USDMaya/cmake/macros
+)
+
+include(Options)
+include(Public)
+
 # Setup the Rpath
 if (APPLE)
     set(CMAKE_MACOSX_RPATH ON)
