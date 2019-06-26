@@ -3,6 +3,8 @@
 # Setup 
 ####################################################################################################
 
+set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
+
 set(USDUTILS_LIBRARY_NAME "AL_USDUtils")
 set(USDUTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
 

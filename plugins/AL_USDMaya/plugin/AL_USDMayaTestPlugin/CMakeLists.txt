@@ -100,9 +100,9 @@ endif()
 install(TARGETS
     ${PXR_PACKAGE}
     LIBRARY
-        DESTINATION plugin
+        DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
     RUNTIME
-        DESTINATION plugin
+        DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
 )
 
 add_test(

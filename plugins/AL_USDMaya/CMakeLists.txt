@@ -10,40 +10,28 @@ endif()
 set(NEED_BOOST_FILESYSTEM ON)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-if ("${MAYA_DEVKIT_LOCATION}" STREQUAL "")
-  set(CMAKE_WANT_UFE_BUILD OFF)
-else()
-  set(CMAKE_WANT_UFE_BUILD ON)
-endif()
-
-# set USD_MAYA_INCLUDE_DIR, USD_MAYA_LIBRARY
-# pxrUsdTranslators depends on third_party/maya
-set(USD_MAYA_INCLUDE_DIR ${CMAKE_BINARY_DIR}/third_party/maya/include)
-set(USD_MAYA_LIBARY_PATH "${CMAKE_BINARY_DIR}/plugins/PXR_USDMaya/third_party/maya/lib/usdMaya")
-set(USD_MAYA_LIB_NAME "")
-if(MSVC OR XCODE)
-  set(USD_MAYA_LIBARY_PATH ${USD_MAYA_LIBARY_PATH}/${CMAKE_BUILD_TYPE})
-endif()
-if(WIN32)
-  set(USD_MAYA_LIB_NAME "usdMaya.dll") 
-elseif(APPLE)
-  set(USD_MAYA_LIB_NAME "libusdMaya.dylib")
-else()
-  set(USD_MAYA_LIB_NAME "libusdMaya.so")
-endif()
-set(USD_MAYA_LIBRARY ${USD_MAYA_LIBARY_PATH}/${USD_MAYA_LIB_NAME})
+set(BOOST_ROOT ${PXR_USD_LOCATION})
+set(INSTALL_DIR_SUFFIX AL_USDMaya)
 
 option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
 option(SKIP_USDMAYA_TESTS "Build tests" OFF)
 
+if ("${MAYA_DEVKIT_LOCATION}" STREQUAL "")
+    set(CMAKE_WANT_UFE_BUILD OFF)
+else()
+    set(CMAKE_WANT_UFE_BUILD ON)
+endif()
+
+# Setup the Rpath
 if (APPLE)
-   set(CMAKE_MACOSX_RPATH ON)
+    set(CMAKE_MACOSX_RPATH ON)
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    set(CMAKE_INSTALL_RPATH "@loader_path/../lib;@loader_path/../../USD/lib;@loader_path/../../USD/third_party/maya/lib;${PXR_USD_LOCATION}/lib")
 endif()
 
 # AL_USDMAYA uses pxrConfig.cmake exported targets
-# find_package(USD) can use either ${USD_ROOT}, or ${USD_CONFIG_FILE} (which should be ${USD_ROOT}/pxrConfig.cmake)
+# find_package(USD) can use either ${PXR_USD_LOCATION}, or ${USD_CONFIG_FILE} (which should be ${PXR_USD_LOCATION}/pxrConfig.cmake)
 # to find USD, defined as either Cmake var or env var
 find_package(USD REQUIRED)
 include(${USD_CONFIG_FILE})
@@ -86,59 +74,59 @@ find_package(Boost COMPONENTS
 
 if(NOT SKIP_USDMAYA_TESTS)
     if (NOT GTEST_FOUND)
-      # First see if we can find a gtest that was downloaded and built.
-      if (NOT GOOGLETEST_BUILD_ROOT)
-          set(GOOGLETEST_BUILD_ROOT ${CMAKE_CURRENT_BINARY_DIR})
-      endif()
-      if (NOT GTEST_ROOT)
-        set(GTEST_ROOT "${GOOGLETEST_BUILD_ROOT}/googletest-install")
-      endif()
-      find_package(GTest QUIET)
-      # At this point GTEST_FOUND is set to True in Release but False in Debug.
+        # First see if we can find a gtest that was downloaded and built.
+        if (NOT GOOGLETEST_BUILD_ROOT)
+            set(GOOGLETEST_BUILD_ROOT ${CMAKE_CURRENT_BINARY_DIR})
+        endif()
+        if (NOT GTEST_ROOT)
+            set(GTEST_ROOT "${GOOGLETEST_BUILD_ROOT}/googletest-install")
+        endif()
+        find_package(GTest QUIET)
+        # At this point GTEST_FOUND is set to True in Release but False in Debug.
     endif()
 
     enable_testing()
     if (NOT GTEST_FOUND)
-      #======================================================================
-      # Download and unpack googletest at configure time.  Adapted from
-      #
-      # https://github.com/abseil/googletest/blob/master/googletest/README.md
-      #
-      # PPT, 22-Nov-2018.
+        #======================================================================
+        # Download and unpack googletest at configure time.  Adapted from
+        #
+        # https://github.com/abseil/googletest/blob/master/googletest/README.md
+        #
+        # PPT, 22-Nov-2018.
 
-      # Immediately convert CMAKE_MAKE_PROGRAM to forward slashes (if required).
-      # Attempting to do so in execute_process fails with string invalid escape
-      # sequence parsing errors.  PPT, 22-Nov-2018.
-      file(TO_CMAKE_PATH ${CMAKE_MAKE_PROGRAM} CMAKE_MAKE_PROGRAM)
+        # Immediately convert CMAKE_MAKE_PROGRAM to forward slashes (if required).
+        # Attempting to do so in execute_process fails with string invalid escape
+        # sequence parsing errors.  PPT, 22-Nov-2018.
+        file(TO_CMAKE_PATH ${CMAKE_MAKE_PROGRAM} CMAKE_MAKE_PROGRAM)
 
-      if (GOOGLETEST_SRC_DIR)
-          configure_file(CMakeLists_googletest_src.txt.in ${GOOGLETEST_BUILD_ROOT}/googletest-config/CMakeLists.txt)
-      else()
-          configure_file(CMakeLists_googletest_download.txt.in ${GOOGLETEST_BUILD_ROOT}/googletest-config/CMakeLists.txt)
-      endif()
+        if (GOOGLETEST_SRC_DIR)
+            configure_file(CMakeLists_googletest_src.txt.in ${GOOGLETEST_BUILD_ROOT}/googletest-config/CMakeLists.txt)
+        else()
+            configure_file(CMakeLists_googletest_download.txt.in ${GOOGLETEST_BUILD_ROOT}/googletest-config/CMakeLists.txt)
+        endif()
 
-      message(STATUS "========== Installing GoogleTest... ==========")
-      set(FORCE_SHARED_CRT "")
-      if(MSVC)
-        set(FORCE_SHARED_CRT -DFORCE_SHARED_CRT=OFF)
-      endif()
-      execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} . ${FORCE_SHARED_CRT}
+        message(STATUS "========== Installing GoogleTest... ==========")
+        set(FORCE_SHARED_CRT "")
+        if(MSVC)
+            set(FORCE_SHARED_CRT -DFORCE_SHARED_CRT=OFF)
+        endif()
+        execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} . ${FORCE_SHARED_CRT}
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${GOOGLETEST_BUILD_ROOT}/googletest-config )
-      if(result)
-        message(FATAL_ERROR "CMake step for googletest failed: ${result}")
-      endif()
+        if(result)
+            message(FATAL_ERROR "CMake step for googletest failed: ${result}")
+        endif()
 
-      execute_process(COMMAND ${CMAKE_COMMAND} --build . --config ${CMAKE_BUILD_TYPE}
+        execute_process(COMMAND ${CMAKE_COMMAND} --build . --config ${CMAKE_BUILD_TYPE}
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${GOOGLETEST_BUILD_ROOT}/googletest-config )
-      if(result)
-        message(FATAL_ERROR "Build step for googletest failed: ${result}")
-      endif()
-      message(STATUS "========== ...  GoogleTest installed. ==========")
+        if(result)
+            message(FATAL_ERROR "Build step for googletest failed: ${result}")
+        endif()
+        message(STATUS "========== ...  GoogleTest installed. ==========")
 
-      set(GTEST_ROOT ${GOOGLETEST_BUILD_ROOT}/googletest-install CACHE path "GoogleTest installation root")
-      #======================================================================
+        set(GTEST_ROOT ${GOOGLETEST_BUILD_ROOT}/googletest-install CACHE path "GoogleTest installation root")
+        #======================================================================
     endif()
 
     # https://gitlab.kitware.com/cmake/cmake/issues/17799
@@ -147,18 +135,18 @@ if(NOT SKIP_USDMAYA_TESTS)
         message("Setting GTest libraries with debug...")
 
         if (GTEST_LIBRARY_DEBUG MATCHES GTEST_LIBRARY_DEBUG-NOTFOUND)
-          set(gtest_library "")
-          set(gtest_main_library "")
-          if(WIN32)
-            set(gtest_library lib/gtestd.lib)
-            set(gtest_main_library lib/gtest_maind.lib)
-          else()
-            set(gtest_library lib64/libgtestd.a)
-            set(gtest_main_library lib64/libgtest_maind.a)
-          endif()
-          set(GTEST_INCLUDE_DIRS ${GOOGLETEST_BUILD_ROOT}/googletest-install/include)
-          set(GTEST_LIBRARY_DEBUG ${GOOGLETEST_BUILD_ROOT}/googletest-install/${gtest_library})
-          set(GTEST_MAIN_LIBRARY_DEBUG ${GOOGLETEST_BUILD_ROOT}/googletest-install/${gtest_main_library})
+                set(gtest_library "")
+                set(gtest_main_library "")
+            if(WIN32)
+                set(gtest_library lib/gtestd.lib)
+                set(gtest_main_library lib/gtest_maind.lib)
+            else()
+                set(gtest_library lib64/libgtestd.a)
+                set(gtest_main_library lib64/libgtest_maind.a)
+            endif()
+                set(GTEST_INCLUDE_DIRS ${GOOGLETEST_BUILD_ROOT}/googletest-install/include)
+                set(GTEST_LIBRARY_DEBUG ${GOOGLETEST_BUILD_ROOT}/googletest-install/${gtest_library})
+                set(GTEST_MAIN_LIBRARY_DEBUG ${GOOGLETEST_BUILD_ROOT}/googletest-install/${gtest_main_library})
         endif()
 
         set(GTEST_LIBRARY ${GTEST_LIBRARY_DEBUG})
@@ -198,6 +186,7 @@ if(BUILD_USDMAYA_SCHEMAS)
     add_subdirectory(schemas)
     if(BUILD_USDMAYA_TRANSLATORS)
         message(STATUS "Building AL_USDMayaTranslators")
+        set(USD_MAYA_INCLUDE_DIR ${CMAKE_BINARY_DIR}/third_party/maya/include)
         set(TRANSLATORS_PACKAGE AL_USDMayaTranslators)
         add_subdirectory(translators)
     endif()
@@ -206,11 +195,6 @@ endif()
 get_property(LIBRARY_LOCATION GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION)
 get_property(PYTHON_LIBRARY_LOCATION GLOBAL PROPERTY GLOBAL_PYTHON_LIBRARY_LOCATION)
 configure_file(ALUsdMayaConfig.cmake.in ${PROJECT_BINARY_DIR}/ALUsdMayaConfig.cmake @ONLY)
-
-install(FILES ${PROJECT_BINARY_DIR}/ALUsdMayaConfig.cmake
-  DESTINATION ${CMAKE_INSTALL_PREFIX}
-  COMPONENT dev
-)
 
 install(CODE "message(STATUS \"POST INSTALL: Compiling python/pyc for ${CMAKE_INSTALL_PREFIX} ... \")")
 install(CODE "execute_process(COMMAND python -m compileall ${CMAKE_INSTALL_PREFIX} )")

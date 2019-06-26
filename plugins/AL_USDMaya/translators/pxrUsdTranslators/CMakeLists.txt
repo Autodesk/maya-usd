@@ -12,13 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if(NOT USD_MAYA_LIBRARY)
-    message(FATAL_ERROR
-        "Cannot compile ${PXR_TRANSLATORS_PACKAGE} - could not find usdMaya library\n\
-Either set USD_MAYA_ROOT so it may be found, or disable building this package by setting BUILD_USDMAYA_PXR_TRANSLATORS to false")
-endif()
-
-list(APPEND DEPENDANT_LIBRARIES AL_USDMaya "${USD_MAYA_LIBRARY}")
+list(APPEND DEPENDANT_LIBRARIES AL_USDMaya usdMaya)
 
 set(DIRECTORY_PATH AL/usdmaya/fileio/translators/pxrUsd)
 
@@ -66,12 +60,12 @@ target_link_libraries(${PXR_TRANSLATORS_PACKAGE} PRIVATE ${DEPENDANT_LIBRARIES})
 
 install(TARGETS ${PXR_TRANSLATORS_PACKAGE}
  LIBRARY
- DESTINATION plugin
+ DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
  RUNTIME
- DESTINATION plugin
+ DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
 )
 if(MSVC)
- install(FILES $<TARGET_PDB_FILE:${PXR_TRANSLATORS_PACKAGE}> DESTINATION plugin OPTIONAL)
+ install(FILES $<TARGET_PDB_FILE:${PXR_TRANSLATORS_PACKAGE}> DESTINATION ${INSTALL_DIR_SUFFIX}/plugin OPTIONAL)
 endif()
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json

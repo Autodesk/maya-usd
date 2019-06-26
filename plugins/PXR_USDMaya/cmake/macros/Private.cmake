@@ -23,6 +23,8 @@
 #
 include(Version)
 
+set(INSTALL_DIR_SUFFIX USD)
+
 # Copy headers to the build tree.  In the source tree we find headers in
 # paths like pxr/base/lib/tf but we #include using paths like pxr/base/tf,
 # i.e. without 'lib/'.  So we copy the headers (public and private) into
@@ -171,7 +173,7 @@ function(_install_python LIBRARY_NAME)
             FILES
                 ${filesToInstall}
             DESTINATION
-                "${installDest}"
+                "${INSTALL_DIR_SUFFIX}/${installDest}"
         )
     endforeach()
 
@@ -232,7 +234,7 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
 
         install(
             FILES ${resourceFile}
-            DESTINATION ${resourcesPath}/${dirPath}
+            DESTINATION ${INSTALL_DIR_SUFFIX}/${resourcesPath}/${dirPath}
             RENAME ${destFileName}
         )
     endforeach()
@@ -273,7 +275,7 @@ function(_install_pyside_ui_files LIBRARY_NAME)
 
     install(
         FILES ${uiFiles}
-        DESTINATION "${libPythonPrefix}/pxr/${LIBRARY_INSTALLNAME}"
+        DESTINATION "${INSTALL_DIR_SUFFIX}/${libPythonPrefix}/pxr/${LIBRARY_INSTALLNAME}"
     )
 endfunction() # _install_pyside_ui_files
 
@@ -1022,8 +1024,8 @@ function(_pxr_python_module NAME)
 
     install(
         TARGETS ${LIBRARY_NAME}
-        LIBRARY DESTINATION ${libInstallPrefix}
-        RUNTIME DESTINATION ${libInstallPrefix}
+        LIBRARY DESTINATION ${INSTALL_DIR_SUFFIX}/${libInstallPrefix}
+        RUNTIME DESTINATION ${INSTALL_DIR_SUFFIX}/${libInstallPrefix}
     )
 
     if(NOT "${PXR_PREFIX}" STREQUAL "")
@@ -1258,12 +1260,12 @@ function(_pxr_library NAME)
     # XXX -- May want some plugins to be baked into monolithic.
     _pxr_target_link_libraries(${NAME} ${args_LIBRARIES})
 
-    # Rpath has libraries under the third party prefix and the install prefix.
+    # Rpath has libraries under the USD/third party prefix and the install prefix.
     # The former is for helper libraries for a third party application and
     # the latter for core USD libraries.
     _pxr_init_rpath(rpath "${libInstallPrefix}")
-    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib")
-    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/USD/${PXR_INSTALL_SUBDIR}/lib")
+    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/USD/lib")
     _pxr_install_rpath(rpath ${NAME})
 
     #
@@ -1275,7 +1277,7 @@ function(_pxr_library NAME)
         if (install_headers)
             install(
                 FILES ${install_headers}
-                DESTINATION ${headerInstallPrefix}
+                DESTINATION ${INSTALL_DIR_SUFFIX}/${headerInstallPrefix}
             )
         endif()
     else()
@@ -1283,10 +1285,10 @@ function(_pxr_library NAME)
             install(
                 TARGETS ${NAME}
                 EXPORT pxrTargets
-                LIBRARY DESTINATION ${libInstallPrefix}
-                ARCHIVE DESTINATION ${libInstallPrefix}
-                RUNTIME DESTINATION ${libInstallPrefix}
-                PUBLIC_HEADER DESTINATION ${headerInstallPrefix}
+                LIBRARY DESTINATION ${INSTALL_DIR_SUFFIX}/${libInstallPrefix}
+                ARCHIVE DESTINATION ${INSTALL_DIR_SUFFIX}/${libInstallPrefix}
+                RUNTIME DESTINATION ${INSTALL_DIR_SUFFIX}/${libInstallPrefix}
+                PUBLIC_HEADER DESTINATION ${INSTALL_DIR_SUFFIX}/${headerInstallPrefix}
             )
 
             # Install target's PDB
@@ -1294,7 +1296,7 @@ function(_pxr_library NAME)
                 install(
                     FILES $<TARGET_PDB_FILE:${NAME}>
                     EXPORT pxrTargets
-                    DESTINATION ${libInstallPrefix}
+                    DESTINATION ${INSTALL_DIR_SUFFIX}/${libInstallPrefix}
                     OPTIONAL
                 )
             endif()
@@ -1302,10 +1304,10 @@ function(_pxr_library NAME)
             install(
                 TARGETS ${NAME}
                 EXPORT pxrTargets
-                LIBRARY DESTINATION ${libInstallPrefix}
-                ARCHIVE DESTINATION ${libInstallPrefix}
-                RUNTIME DESTINATION ${libInstallPrefix}
-                PUBLIC_HEADER DESTINATION ${headerInstallPrefix}
+                LIBRARY DESTINATION ${INSTALL_DIR_SUFFIX}/${libInstallPrefix}
+                ARCHIVE DESTINATION ${INSTALL_DIR_SUFFIX}/${libInstallPrefix}
+                RUNTIME DESTINATION ${INSTALL_DIR_SUFFIX}/${libInstallPrefix}
+                PUBLIC_HEADER DESTINATION ${INSTALL_DIR_SUFFIX}/${headerInstallPrefix}
             )
         endif()
 

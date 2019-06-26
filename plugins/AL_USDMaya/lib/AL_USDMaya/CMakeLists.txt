@@ -1,5 +1,7 @@
 set(arDirPath AL/usdmaya)
 
+set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
+
 set(LIBRARY_NAME AL_USDMaya)
 
 list(APPEND AL_usdmaya_headers

@@ -57,16 +57,18 @@ if(result)
 endif()
 message(STATUS "========== ...  MayaUSD installed. ==========")
 
-if (BUILD_CORE_USD_LIBRARY)
-    set(MAYAUSD_INCLUDE_ROOT ${MAYAUSD_INSTALL_DIR})
-    set(MAYAUSD_LIB_ROOT ${MAYAUSD_INSTALL_DIR})
 
-    # Install the entire MayaUsd folder into the same folder as ${CMAKE_INSTALL_PREFIX}.
-    # Note: the trailing slash is intentional so we won't end up with a 'mayaUsd' sub-folder.
-    #       we also exlude the *.lib files.
-    install(
-        DIRECTORY ${MAYAUSD_INSTALL_DIR}/
-        DESTINATION ${CMAKE_INSTALL_PREFIX}
-        PATTERN *.lib EXCLUDE
-    )
-endif()
+set(MAYAUSD_INCLUDE_ROOT ${MAYAUSD_INSTALL_DIR})
+set(MAYAUSD_LIB_ROOT ${MAYAUSD_INSTALL_DIR})
+
+set(INSTALL_DIR_SUFFIX MayaUSD)
+
+# Install the entire MayaUsd folder into the same folder as ${CMAKE_INSTALL_PREFIX}.
+# Note: the trailing slash is intentional so we won't end up with a 'mayaUsd' sub-folder.
+#       we also exlude the *.lib files.
+install(
+    DIRECTORY ${MAYAUSD_INSTALL_DIR}/
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}
+    PATTERN *.lib EXCLUDE
+    PATTERN include EXCLUDE
+)

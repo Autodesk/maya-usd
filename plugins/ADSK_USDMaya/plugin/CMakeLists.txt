@@ -1,4 +1,4 @@
-set(PLUGIN_PACKAGE mayaUsdPlugin)
+set(PLUGIN_PACKAGE mayaUsd)
 
 #==============================================================================
 # Configuration for maya-to-hydra
@@ -85,12 +85,12 @@ endif()
 install(TARGETS
     ${PLUGIN_PACKAGE}
     LIBRARY
-        DESTINATION plugin/mayaUsd
+        DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
     RUNTIME
-        DESTINATION plugin/mayaUsd
+        DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
 )
 if(MSVC)
-    install(FILES $<TARGET_PDB_FILE:${PLUGIN_PACKAGE}> DESTINATION plugin/mayaUSD OPTIONAL)
+    install(FILES $<TARGET_PDB_FILE:${PLUGIN_PACKAGE}> DESTINATION ${INSTALL_DIR_SUFFIX}/plugin OPTIONAL)
 endif()
 
 add_subdirectory(translators)
