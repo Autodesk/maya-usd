@@ -22,8 +22,11 @@ macro(add_mayausd_define var)
     endif()
 endmacro(add_mayausd_define)
 
-# 
+# Add top level variabels here 
 add_mayausd_define(MAYA_LOCATION)
+add_mayausd_define(PXR_USD_LOCATION)
+add_mayausd_define(USD_CONFIG_FILE)
+add_mayausd_define(CMAKE_CXX_FLAGS)
 
 set(MAYAUSD_INSTALL_DIR "${MAYAUSD_BUILD_ROOT}/mayausd-install/mayaUsd-${MAYAUSD_MAJOR_VERSION}-${MAYAUSD_MINOR_VERSION}-${MAYAUSD_PATCH_LEVEL}")
 

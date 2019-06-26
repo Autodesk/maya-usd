@@ -43,12 +43,13 @@ if(NOT WIN32)
 endif()
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
-if (WIN32)
-    set(CMAKE_INCLUDE_CURRENT_DIR ON)
-endif()
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 if (APPLE)
    set(CMAKE_MACOSX_RPATH ON)
+   set(OSX_ARCHITECTURES "x86_64")
+   add_definitions(-DOSMac_ -DMAC_PLUGIN)
+   add_definitions(-D_BOOL -DREQUIRE_IOSTREAM)
 endif()
 
 #==============================================================================
