@@ -161,21 +161,23 @@ public:
         HdMaterialNetwork materialNetwork;
         HdMayaMaterialNetworkConverter converter(
             materialNetwork, materialPrim.GetPath());
-        SdfPath hdSurf = converter.GetMaterial(context.GetSurfaceShader());
+        auto* hdSurfMat = converter.GetMaterial(context.GetSurfaceShader());
+        if(!hdSurfMat) { return; }
+        SdfPath hdSurfPath = hdSurfMat->path;
 
         // TODO: add support for volume / displacement
-        // SdfPath hdVol = converter.GetMaterial(context.GetVolumeShader());
+        // SdfPath hdVol = converter.GetMaterial(context.GetVolumeShader()).path;
         // SdfPath hdDisp =
-        // converter.GetMaterial(context.GetDisplacementShader());
+        // converter.GetMaterial(context.GetDisplacementShader()).path;
 
-        if (hdSurf.IsEmpty()) { return; }
+        if (hdSurfPath.IsEmpty()) { return; }
 
         UsdStagePtr stage = materialPrim.GetStage();
 
         // Generate nodes
         for (auto& hdNode : materialNetwork.nodes) {
             if (!TF_VERIFY(_ExportNode(stage, hdNode))) { continue; }
-            if (hdNode.path == hdSurf) {
+            if (hdNode.path == hdSurfPath) {
                 UsdShadeOutput surfaceOutput =
                     material.CreateSurfaceOutput(HioGlslfxTokens->glslfx);
                 if (TF_VERIFY(surfaceOutput)) {

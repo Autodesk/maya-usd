@@ -131,7 +131,7 @@ public:
         HdMaterialNetwork& network, const SdfPath& prefix);
 
     HDMAYA_API
-    SdfPath GetMaterial(const MObject& mayaNode);
+    HdMaterialNode* GetMaterial(const MObject& mayaNode);
 
     HDMAYA_API
     void AddPrimvar(const TfToken& primvar);

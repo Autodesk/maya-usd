@@ -420,12 +420,13 @@ HdMayaMaterialNetworkConverter::HdMayaMaterialNetworkConverter(
     HdMaterialNetwork& network, const SdfPath& prefix)
     : _network(network), _prefix(prefix) {}
 
-SdfPath HdMayaMaterialNetworkConverter::GetMaterial(const MObject& mayaNode) {
+HdMaterialNode* HdMayaMaterialNetworkConverter::GetMaterial(
+    const MObject& mayaNode) {
     MStatus status;
     MFnDependencyNode node(mayaNode, &status);
-    if (ARCH_UNLIKELY(!status)) { return {}; }
+    if (ARCH_UNLIKELY(!status)) { return nullptr; }
     const auto* chr = node.name().asChar();
-    if (chr == nullptr || chr[0] == '\0') { return {}; }
+    if (chr == nullptr || chr[0] == '\0') { return nullptr; }
     TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
         .Msg("HdMayaMaterialNetworkConverter::GetMaterial(node=%s)\n", chr);
     std::string usdPathStr(chr);
@@ -433,17 +434,16 @@ SdfPath HdMayaMaterialNetworkConverter::GetMaterial(const MObject& mayaNode) {
     std::replace(usdPathStr.begin(), usdPathStr.end(), ':', '_');
     const auto materialPath = _prefix.AppendPath(SdfPath(usdPathStr));
 
-    if (std::find_if(
-            _network.nodes.begin(), _network.nodes.end(),
-            [&materialPath](const HdMaterialNode& m) -> bool {
-                return m.path == materialPath;
-            }) != _network.nodes.end()) {
-        return materialPath;
-    }
+    auto findResult = std::find_if(
+        _network.nodes.begin(), _network.nodes.end(),
+        [&materialPath](const HdMaterialNode& m) -> bool {
+            return m.path == materialPath;
+        });
+    if (findResult != _network.nodes.end()) { return &(*findResult); }
 
     auto* nodeConverter = HdMayaMaterialNodeConverter::GetNodeConverter(
         TfToken(node.typeName().asChar()));
-    if (!nodeConverter) { return SdfPath(); }
+    if (!nodeConverter) { return nullptr; }
     HdMaterialNode material{};
     material.path = materialPath;
     material.identifier = nodeConverter->GetIdentifier();
@@ -482,7 +482,7 @@ SdfPath HdMayaMaterialNetworkConverter::GetMaterial(const MObject& mayaNode) {
         }
     }
     _network.nodes.push_back(material);
-    return materialPath;
+    return &_network.nodes.back();
 }
 
 void HdMayaMaterialNetworkConverter::AddPrimvar(const TfToken& primvar) {
@@ -521,10 +521,12 @@ void HdMayaMaterialNetworkConverter::ConvertParameter(
     if (plug.isNull()) { return; }
     MPlug source = plug.source();
     if (!source.isNull()) {
-        const auto sourceNodePath = GetMaterial(source.node());
-        if (sourceNodePath.IsEmpty()) { return; }
+        auto* sourceMat = GetMaterial(source.node());
+        if (!sourceMat) { return; }
+        const auto& sourceMatPath = sourceMat->path;
+        if (sourceMatPath.IsEmpty()) { return; }
         HdMaterialRelationship rel;
-        rel.inputId = sourceNodePath;
+        rel.inputId = sourceMatPath;
         if (type == SdfValueTypeNames->Vector3f) {
             rel.inputName = HdMayaAdapterTokens->rgb;
         } else {
