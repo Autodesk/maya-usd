@@ -382,8 +382,8 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
 
     engine->SetCameraState(
         GfMatrix4d(context.getMatrix(MHWRender::MFrameContext::kViewMtx).matrix),
-        GfMatrix4d(context.getMatrix(MHWRender::MFrameContext::kProjectionMtx).matrix),
-        GfVec4d(originX, originY, width, height));
+        GfMatrix4d(context.getMatrix(MHWRender::MFrameContext::kProjectionMtx).matrix));
+    engine->SetRenderViewport(GfVec4d(originX, originY, width, height));
 
     engine->SetRootTransform(GfMatrix4d(ptr->m_objPath.inclusiveMatrix().matrix));
 
