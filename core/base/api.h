@@ -57,4 +57,4 @@
 
 // Convenience symbol versioning include: because MayaUsdApi.h is widely
 // included, this reduces the need to explicitly include MayaUsd.h.
-#include "mayaUsdCore/MayaUsd.h"
+#include "mayaUsdCore/mayaUsd.h"

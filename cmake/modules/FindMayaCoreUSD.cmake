@@ -59,7 +59,7 @@ elseif(WIN32)
 endif()
 
 find_path(MAYAUSD_INCLUDE_DIR
-        mayaUsdCore/MayaUsd.h
+        mayaUsdCore/mayaUsd.h
     HINTS
         "${MAYAUSD_INCLUDE_ROOT}"
         "$ENV{MAYAUSD_INCLUDE_ROOT}"

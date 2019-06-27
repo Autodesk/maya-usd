@@ -1,11 +1,10 @@
-message("MayaUsd.cmake")
+include(ProcessorCount)
 
 # Convert some vars to forward slashes (if required) to fix invalid escape
 # sequence parsing errors.
 file(TO_CMAKE_PATH ${CMAKE_MAKE_PROGRAM} CMAKE_MAKE_PROGRAM)
 file(TO_CMAKE_PATH ${MAYA_LOCATION} MAYA_LOCATION)
 file(TO_CMAKE_PATH ${PXR_USD_LOCATION} PXR_USD_LOCATION)
-file(TO_CMAKE_PATH ${USD_CONFIG_FILE} USD_CONFIG_FILE)
 file(TO_CMAKE_PATH ${MAYAUSD_BUILD_ROOT} MAYAUSD_BUILD_ROOT)
 
 message("CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}")
@@ -13,7 +12,6 @@ message("CMAKE_MAKE_PROGRAM = ${CMAKE_MAKE_PROGRAM}")
 message("MAYA_LOCATION = ${MAYA_LOCATION}")
 message("MAYAUSD_BUILD_ROOT = ${MAYAUSD_BUILD_ROOT}")
 message("PXR_USD_LOCATION = ${PXR_USD_LOCATION}")
-message("USD_CONFIG_FILE = ${USD_CONFIG_FILE}")
 
 # Helper macro to add the needed defines to a list so that we can easily pass
 # them to the external project. That external project is executed in a separate
@@ -27,7 +25,6 @@ endmacro(add_mayausd_define)
 # Add top level variabels here 
 add_mayausd_define(MAYA_LOCATION)
 add_mayausd_define(PXR_USD_LOCATION)
-add_mayausd_define(USD_CONFIG_FILE)
 add_mayausd_define(CMAKE_CXX_FLAGS)
 
 set(MAYAUSD_INSTALL_DIR "${MAYAUSD_BUILD_ROOT}/mayausd-install/mayaUsd-${MAYAUSD_MAJOR_VERSION}-${MAYAUSD_MINOR_VERSION}-${MAYAUSD_PATCH_LEVEL}")
@@ -54,14 +51,26 @@ endif()
 #       How to pass this var just as a plain string?
 # execute_process(COMMAND ${CMAKE_COMMAND} --build . -- ${MAYAUSD_CMAKE_BUILD_FLAGS}
 #
-execute_process(COMMAND ${CMAKE_COMMAND} --build . --config ${CMAKE_BUILD_TYPE}
-    RESULT_VARIABLE result
-    WORKING_DIRECTORY ${MAYAUSD_BUILD_ROOT}/mayausd-config )
-if(result)
-    message(FATAL_ERROR "Build step for MayaUSD failed: ${result}")
-endif()
-message(STATUS "========== ...  MayaUSD installed. ==========")
 
+ProcessorCount(N)
+# TODO: execute_process doesn't like it's argument to be passed as cmake variables?
+if( CMAKE_GENERATOR MATCHES "Make" OR CMAKE_GENERATOR MATCHES "Unix Makefiles" OR CMAKE_GENERATOR MATCHES "Ninja")
+    execute_process(COMMAND ${CMAKE_COMMAND} --build . --config ${CMAKE_BUILD_TYPE} -j ${N}
+        RESULT_VARIABLE result
+        WORKING_DIRECTORY ${MAYAUSD_BUILD_ROOT}/mayausd-config )
+    if(result)
+        message(FATAL_ERROR "Build step for MayaUSD failed: ${result}")
+    endif()
+else()
+    execute_process(COMMAND ${CMAKE_COMMAND} --build . --config ${CMAKE_BUILD_TYPE} /M:${N}
+        RESULT_VARIABLE result
+        WORKING_DIRECTORY ${MAYAUSD_BUILD_ROOT}/mayausd-config )
+    if(result)
+        message(FATAL_ERROR "Build step for MayaUSD failed: ${result}")
+    endif()
+endif()
+
+message(STATUS "========== ...  MayaUSD installed. ==========")
 
 set(MAYAUSD_INCLUDE_ROOT ${MAYAUSD_INSTALL_DIR})
 set(MAYAUSD_LIB_ROOT ${MAYAUSD_INSTALL_DIR})

@@ -109,7 +109,7 @@ list(APPEND mayaUsdCore_src
 	fileio/translators/translatorXformable.cpp
 	fileio/translators/translatorXformable_decompose.cpp
 	fileio/translators/translatorPrim.cpp
-	fileio/translators/translatorGPrim.cpp
+	fileio/translators/translatorGprim.cpp
 	fileio/translators/skelBindingsProcessor.cpp
 	fileio/translators/translatorMaterial.cpp
 	fileio/translators/translatorCamera.cpp
@@ -222,7 +222,7 @@ list(APPEND mayaUsdCoreTranslators_headers
 	fileio/translators/translatorUtil.h
 	fileio/translators/translatorXformable.h
 	fileio/translators/translatorPrim.h
-	fileio/translators/translatorGPrim.h
+	fileio/translators/translatorGprim.h
 	fileio/translators/skelBindingsProcessor.h
 	fileio/translators/translatorMaterial.h
 	fileio/translators/translatorCamera.h
