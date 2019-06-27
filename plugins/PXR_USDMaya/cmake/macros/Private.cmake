@@ -627,9 +627,6 @@ function(_pxr_install_rpath rpathRef NAME)
             if("${path}/" MATCHES "^[$]ORIGIN/")
                 # Replace with origin path.
                 string(REPLACE "$ORIGIN/" "@loader_path/" path "${path}/")
-
-                # Simplify.
-                get_filename_component(path "${path}" REALPATH)
             endif()
         endif()
 
