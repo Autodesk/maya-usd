@@ -24,10 +24,13 @@ target_link_libraries(${PLUGIN_PACKAGE}
 if(MSVC)
     set_target_properties(${PLUGIN_PACKAGE} PROPERTIES SUFFIX ".mll")
 elseif(APPLE)
+    set(CMAKE_MACOSX_RPATH ON)
     set_target_properties(${PLUGIN_PACKAGE}
         PROPERTIES
             PREFIX ""
-            SUFFIX ".bundle")
+            SUFFIX ".bundle"
+            BUILD_WITH_INSTALL_RPATH TRUE
+            INSTALL_RPATH "@loader_path/../lib")
 else()
     set(rpath "$ORIGIN:$ORIGIN/../lib")
     if (CMAKE_INSTALL_RPATH)

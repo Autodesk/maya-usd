@@ -622,15 +622,13 @@ function(_pxr_install_rpath rpathRef NAME)
     # Canonicalize and uniquify paths.
     set(final "")
     foreach(path ${rpath})
-        # Absolutize on Mac.  SIP disallows relative rpaths.
-        if(APPLE)
-            if("${path}/" MATCHES "^[$]ORIGIN/")
-                # Replace with origin path.
-                string(REPLACE "$ORIGIN/" "${origin}/" path "${path}/")
+        # Absolutize on Mac/Linux ( TODO: Fix me )
+        if("${path}/" MATCHES "^[$]ORIGIN/")
+            # Replace with origin path.
+            string(REPLACE "$ORIGIN/" "${origin}/" path "${path}/")
 
-                # Simplify.
-                get_filename_component(path "${path}" REALPATH)
-            endif()
+            # Simplify.
+            get_filename_component(path "${path}" REALPATH)
         endif()
 
         # Strip trailing slashes.
