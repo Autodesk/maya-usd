@@ -585,7 +585,7 @@ endfunction()
 # to CMAKE_INSTALL_PREFIX.
 function(_pxr_init_rpath rpathRef origin)
     if(NOT IS_ABSOLUTE ${origin})
-        set(origin "${CMAKE_INSTALL_PREFIX}/${origin}")
+        set(origin "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/${origin}")
         get_filename_component(origin "${origin}" REALPATH)
     endif()
     set(${rpathRef} "${origin}" PARENT_SCOPE)
@@ -622,13 +622,15 @@ function(_pxr_install_rpath rpathRef NAME)
     # Canonicalize and uniquify paths.
     set(final "")
     foreach(path ${rpath})
-        # Absolutize on Mac/Linux ( TODO: Fix me )
-        if("${path}/" MATCHES "^[$]ORIGIN/")
-            # Replace with origin path.
-            string(REPLACE "$ORIGIN/" "${origin}/" path "${path}/")
+        # Replace $ORIGIN with @loader_path
+        if(APPLE)
+            if("${path}/" MATCHES "^[$]ORIGIN/")
+                # Replace with origin path.
+                string(REPLACE "$ORIGIN/" "@loader_path/" path "${path}/")
 
-            # Simplify.
-            get_filename_component(path "${path}" REALPATH)
+                # Simplify.
+                get_filename_component(path "${path}" REALPATH)
+            endif()
         endif()
 
         # Strip trailing slashes.
@@ -1262,8 +1264,8 @@ function(_pxr_library NAME)
     # The former is for helper libraries for a third party application and
     # the latter for core USD libraries.
     _pxr_init_rpath(rpath "${libInstallPrefix}")
-    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/USD/${PXR_INSTALL_SUBDIR}/lib")
-    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/USD/lib")
+    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/${PXR_INSTALL_SUBDIR}/lib")
+    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/lib")
     _pxr_install_rpath(rpath ${NAME})
 
     #
