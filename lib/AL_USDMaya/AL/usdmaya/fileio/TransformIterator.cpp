@@ -76,6 +76,12 @@ MDagPath TransformIterator::currentPath() const
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void TransformIterator::prune()
+{
+  m_primStack.pop_back();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 bool TransformIterator::next()
 {
   if(done())
@@ -170,6 +176,24 @@ TransformIterator::StackRef::StackRef()
     m_currentChild(-1),
     m_numChildren(0)
 {
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+UsdPrim TransformIterator::parentPrim() const
+{
+  UsdPrim parentPrim = m_stage->GetPseudoRoot();
+  if(m_primStack.size() > 1)
+  {
+    parentPrim = (m_primStack.end() - 2)->m_prim;
+    if(parentPrim.IsMaster())
+    {
+      if(m_primStack.size() > 2)
+      {
+        parentPrim = (m_primStack.end() - 3)->m_prim;
+      }
+    }
+  }
+  return parentPrim;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

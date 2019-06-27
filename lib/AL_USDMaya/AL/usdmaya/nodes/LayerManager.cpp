@@ -29,12 +29,9 @@
 #include "maya/MItDependencyNodes.h"
 #include "maya/MPlugArray.h"
 
-#if MAYA_API_VERSION < 201800
-//@todo: Not sure where these are being pulled in from in Maya 2018+, but we should replace with more standard fare
 #include <boost/thread.hpp>
 #include <boost/thread/shared_lock_guard.hpp>
 #include <mutex>
-#endif
 
 namespace {
   // Global mutex protecting _findNode / findOrCreateNode.

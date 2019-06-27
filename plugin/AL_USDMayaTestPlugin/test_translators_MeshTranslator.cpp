@@ -973,16 +973,138 @@ TEST(translators_MeshTranslator, faceVaryingColourExport)
 };
 
 
+TEST(translators_MeshTranslator, reverseNormalsFlag)
+{
+  MFileIO::newFile(true);
 
+  {
+    const MString temp_path = buildTempPath("AL_USDMayaTests_shouldHaveOppositeFlag.usda");
+    MString cmd = 
+    "polyCube -w 1 -h 1 -d 1 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -cuv 4 -ch 1;\n"
+    "setAttr \"pCubeShape1.doubleSided\" 0;\n"
+    "setAttr \"pCubeShape1.opposite\" 1;\n"
+    "file -force -options \"Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Activate_all_Plugin_Translators=1;Meshes=1;Mesh_Face_Connects=1;Mesh_Points=1;"
+    "Mesh_Normals=1;Mesh_Vertex_Creases=0;Mesh_Edge_Creases=0;Mesh_UVs=0;Mesh_UV_Only=0;Mesh_Points_as_PRef=0;Mesh_Colours=0;Mesh_Holes=0;"
+    "Write_Normals_as_Primvars=0;Reverse_Opposite_Normals=0;Compaction_Level=3;\" -typ \"AL usdmaya export\" -pr -es \"";
+    cmd += temp_path;
+    cmd += "\";\n";
 
+    EXPECT_TRUE(MGlobal::executeCommand(cmd));
 
+    UsdStageRefPtr stage = UsdStage::Open(temp_path.asChar());
+    ASSERT_TRUE(stage);
 
+    UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
+    ASSERT_TRUE(prim);
 
+    UsdGeomMesh mesh(prim);
 
+    const GfVec3f expectedNormals[] = {
+      GfVec3f(0, 0, 1), 
+      GfVec3f(0, 0, 1), 
+      GfVec3f(0, 0, 1), 
+      GfVec3f(0, 0, 1),
+      GfVec3f(0, 1, 0), 
+      GfVec3f(0, 1, 0), 
+      GfVec3f(0, 1, 0), 
+      GfVec3f(0, 1, 0),
+      GfVec3f(0, 0, -1), 
+      GfVec3f(0, 0, -1),
+      GfVec3f(0, 0, -1),
+      GfVec3f(0, 0, -1),
+      GfVec3f(0, -1, 0),
+      GfVec3f(0, -1, 0), 
+      GfVec3f(0, -1, 0), 
+      GfVec3f(0, -1, 0), 
+      GfVec3f(1, 0, 0), 
+      GfVec3f(1, 0, 0), 
+      GfVec3f(1, 0, 0), 
+      GfVec3f(1, 0, 0), 
+      GfVec3f(-1, 0, 0), 
+      GfVec3f(-1, 0, 0), 
+      GfVec3f(-1, 0, 0), 
+      GfVec3f(-1, 0, 0)
+    };
 
+    VtArray<GfVec3f> normals;
+    mesh.GetNormalsAttr().Get(&normals);
 
+    ASSERT_EQ(24, normals.size());
+    for(size_t i = 0; i < 24; ++i)
+    {
+      EXPECT_EQ(expectedNormals[i], normals[i]);
+    }
 
+    auto attr = mesh.GetOrientationAttr();
+    EXPECT_TRUE(attr);
+    TfToken value;
+    attr.Get(&value);
+    EXPECT_EQ(UsdGeomTokens->leftHanded, value);
+  }
 
+  MFileIO::newFile(true);
+  {
+    const MString temp_path = buildTempPath("AL_USDMayaTests_shouldNotHaveOppositeFlag.usda");
+    MString cmd = 
+    "polyCube -w 1 -h 1 -d 1 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -cuv 4 -ch 1;\n"
+    "setAttr \"pCubeShape1.doubleSided\" 0;\n"
+    "setAttr \"pCubeShape1.opposite\" 1;\n"
+    "file -force -options \"Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Activate_all_Plugin_Translators=1;Meshes=1;Mesh_Face_Connects=1;Mesh_Points=1;"
+    "Mesh_Normals=1;Mesh_Vertex_Creases=0;Mesh_Edge_Creases=0;Mesh_UVs=0;Mesh_UV_Only=0;Mesh_Points_as_PRef=0;Mesh_Colours=0;Mesh_Holes=0;"
+    "Write_Normals_as_Primvars=0;Reverse_Opposite_Normals=1;Compaction_Level=3;\" -typ \"AL usdmaya export\" -pr -es \"";
+    cmd += temp_path;
+    cmd += "\";\n";
 
+    EXPECT_TRUE(MGlobal::executeCommand(cmd));
 
+    UsdStageRefPtr stage = UsdStage::Open(temp_path.asChar());
+    ASSERT_TRUE(stage);
 
+    UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
+    ASSERT_TRUE(prim);
+
+    UsdGeomMesh mesh(prim);
+
+    const GfVec3f expectedNormals[] = {
+      GfVec3f(0, 0, -1), 
+      GfVec3f(0, 0, -1), 
+      GfVec3f(0, 0, -1), 
+      GfVec3f(0, 0, -1),
+      GfVec3f(0, -1, 0), 
+      GfVec3f(0, -1, 0), 
+      GfVec3f(0, -1, 0), 
+      GfVec3f(0, -1, 0),
+      GfVec3f(0, 0, 1), 
+      GfVec3f(0, 0, 1),
+      GfVec3f(0, 0, 1),
+      GfVec3f(0, 0, 1),
+      GfVec3f(0, 1, 0),
+      GfVec3f(0, 1, 0), 
+      GfVec3f(0, 1, 0), 
+      GfVec3f(0, 1, 0), 
+      GfVec3f(-1, 0, 0), 
+      GfVec3f(-1, 0, 0), 
+      GfVec3f(-1, 0, 0), 
+      GfVec3f(-1, 0, 0), 
+      GfVec3f(1, 0, 0), 
+      GfVec3f(1, 0, 0), 
+      GfVec3f(1, 0, 0), 
+      GfVec3f(1, 0, 0)
+    };
+
+    VtArray<GfVec3f> normals;
+    mesh.GetNormalsAttr().Get(&normals);
+
+    ASSERT_EQ(24, normals.size());
+    for(size_t i = 0; i < 24; ++i)
+    {
+      EXPECT_EQ(expectedNormals[i], normals[i]);
+    }
+
+    auto attr = mesh.GetOrientationAttr();
+    EXPECT_TRUE(attr);
+    TfToken value;
+    attr.Get(&value);
+    EXPECT_EQ(UsdGeomTokens->rightHanded, value);
+  }
+}

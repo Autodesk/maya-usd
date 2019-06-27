@@ -20,7 +20,6 @@
 #include "AL/maya/utils/MenuBuilder.h"
 #include "AL/usdmaya/Global.h"
 #include "AL/usdmaya/StageData.h"
-#include "AL/usdmaya/DrivenTransformsData.h"
 #include "AL/usdmaya/cmds/CreateUsdPrim.h"
 #include "AL/usdmaya/cmds/DebugCommands.h"
 #include "AL/usdmaya/cmds/EventCommand.h"
@@ -38,6 +37,7 @@
 #include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/nodes/MeshAnimCreator.h"
 #include "AL/usdmaya/nodes/MeshAnimDeformer.h"
+#include "AL/usdmaya/nodes/ProxyUsdGeomCamera.h"
 #include "AL/usdmaya/nodes/ProxyDrawOverride.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/ProxyShapeUI.h"
@@ -210,7 +210,6 @@ MStatus registerPlugin(AFnPlugin& plugin)
   }
 
   AL_REGISTER_DATA(plugin, AL::usdmaya::StageData);
-  AL_REGISTER_DATA(plugin, AL::usdmaya::DrivenTransformsData);
   AL_REGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::CreateUsdPrim);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCreateLayer);
@@ -256,6 +255,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::Layer);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::MeshAnimCreator);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::MeshAnimDeformer);
+  AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::ProxyUsdGeomCamera);
 
   // Since AL_MAYA_DECLARE_NODE / AL_MAYA_DEFINE_NODE declare/define "creator"
   // method, and AL_REGISTER_DEPEND_NODE registers "creator", in order to
@@ -374,7 +374,6 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Layer);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::LayerManager);
-  AL_UNREGISTER_DATA(plugin, AL::usdmaya::DrivenTransformsData);
   AL_UNREGISTER_DATA(plugin, AL::usdmaya::StageData);
 
   AL::usdmaya::Global::onPluginUnload();

@@ -212,7 +212,8 @@ public:
     UsdGeomMesh& mesh,
     UsdTimeCode timeCode,
     bool performDiff = false,
-    CompactionLevel compactionLevel = kFull);
+    CompactionLevel compactionLevel = kFull,
+    bool reverseNormals = false);
 
   /// \brief  returns true if it's ok to continue exporting the data
   operator bool () const
@@ -229,8 +230,10 @@ public:
 
   /// \brief  copies the normal data from maya into the usd prim.
   /// \param  timeCode the time code at which to extract the samples
+  /// \param  writeAsPrimvars if true the normals will be written as a primvar, if false it will be written into 
+  ////        the normals atttribute. primvars support indexed normals, the normals attr does not. 
   AL_USDMAYA_UTILS_PUBLIC
-  void copyNormalData(UsdTimeCode timeCode);
+  void copyNormalData(UsdTimeCode timeCode, bool writeAsPrimvars = false);
 
   /// \brief  copies the vertex crease information from maya into the usd prim.
   AL_USDMAYA_UTILS_PUBLIC
@@ -279,6 +282,7 @@ private:
   CompactionLevel compaction;
   bool valid; ///< true if the function set is ok
   bool performDiff; ///< true if performing a diff on export
+  bool reverseNormals; ///< true if reversing normals on 'opposite' meshes
 };
 
 

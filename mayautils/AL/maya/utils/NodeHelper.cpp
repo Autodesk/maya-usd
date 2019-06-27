@@ -132,6 +132,17 @@ void NodeHelper::addFrame(const char* frameTitle)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void NodeHelper::addInheritedAttr(const char* longName)
+{
+  if(m_internal)
+  {
+    Frame& frame = *m_internal->m_frames.begin();
+    frame.m_attributes.push_back(longName);
+    frame.m_attributeTypes.push_back(Frame::kNormal);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addEnumAttr(const char* longName, const char* shortName, uint32_t flags, const char* const * strings, const int16_t* values)
 {
   if(m_internal)
@@ -1042,6 +1053,15 @@ MObject NodeHelper::addVec4dAttr(const char* longName, const char* shortName, ui
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addCompoundAttr(const char* longName, const char* shortName, uint32_t flags, std::initializer_list<MObject> objs)
 {
+  if(m_internal)
+  {
+    Frame& frame = *m_internal->m_frames.begin();
+    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
+    {
+      frame.m_attributes.push_back(longName);
+      frame.m_attributeTypes.push_back(Frame::kNormal);
+    }
+  }
   MFnCompoundAttribute fn;
   MObject obj = fn.create(longName, shortName);
   for(auto it : objs)

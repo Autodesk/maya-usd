@@ -340,9 +340,6 @@ public:
   /// Open the stage unloaded.
   AL_DECL_ATTRIBUTE(unloaded);
 
-  /// an array of MPxData for the driven transforms
-  AL_DECL_ATTRIBUTE(inDrivenTransformsData);
-
   /// ambient display colour
   AL_DECL_ATTRIBUTE(ambient);
 
@@ -489,7 +486,8 @@ public:
       MDagModifier& modifier,
       TransformReason reason,
       MDGModifier* modifier2 = 0,
-      uint32_t* createCount = 0);
+      uint32_t* createCount = 0,
+      bool pushToPrim = true);
 
   /// \brief  Will construct AL_usdmaya_Transform nodes for all of the prims from the specified usdPrim and down.
   /// \param  usdPrim the root for the transforms to be created
@@ -689,14 +687,10 @@ public:
   /// \name   UsdImaging
   //--------------------------------------------------------------------------------------------------------------------
 
-  /// \brief  constructs the USD imaging engine for this shape
+  /// \brief  returns and optionally constructs the usd imaging engine for this proxy shape
+  /// \return the imagine engine instance for this shape (shared between draw override and shape ui)
   AL_USDMAYA_PUBLIC
-  void constructGLImagingEngine();
-
-  /// \brief  returns the usd imaging engine for this proxy shape
-  /// \return the imagine engin instance for this shape (shared between draw override and shape ui)
-  inline Engine* engine() const
-    { return m_engine; }
+  Engine* engine(bool construct=true);
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Miscellaneous
@@ -866,6 +860,11 @@ public:
     { m_boundingBoxCache.clear(); }
 
 private:
+  /// \brief  constructs the USD imaging engine for this shape
+  void constructGLImagingEngine();
+
+  /// \brief destroys the USD imaging engine for this shape
+  void destroyGLImagingEngine();
 
   static void onSelectionChanged(void* ptr);
   bool removeAllSelectedNodes(SelectionUndoHelper& helper);
@@ -883,7 +882,8 @@ private:
       TransformReason reason,
       MDGModifier* modifier2 = 0,
       uint32_t* createCount = 0,
-      MString* newPath = 0);
+      MString* newPath = 0,
+      bool pushToPrim = true);
 
   void removeUsdTransformChain_internal(
       const UsdPrim& usdPrim,
@@ -899,14 +899,16 @@ private:
       TransformReason reason,
       MDGModifier* modifier2,
       uint32_t* createCount,
-      MString* newPath = 0);
+      MString* newPath = 0,
+      bool pushToPrim = true);
 
   void makeUsdTransformsInternal(
       const UsdPrim& usdPrim,
       const MObject& parentXForm,
       MDagModifier& modifier,
       TransformReason reason,
-      MDGModifier* modifier2);
+      MDGModifier* modifier2,
+      bool pushToPrim = true);
 
   void removeUsdTransformsInternal(
       const UsdPrim& usdPrim,
@@ -996,7 +998,6 @@ private:
   MStatus computeInStageDataCached(const MPlug& plug, MDataBlock& dataBlock);
   MStatus computeOutStageData(const MPlug& plug, MDataBlock& dataBlock);
   MStatus computeOutputTime(const MPlug& plug, MDataBlock& dataBlock, MTime&);
-  MStatus computeDrivenAttributes(const MPlug& plug, MDataBlock& dataBlock, const MTime&);
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Utils
@@ -1015,20 +1016,20 @@ private:
   void variantSelectionListener(SdfNotice::LayersDidChange const& notice);
   void onEditTargetChanged(UsdNotice::StageEditTargetChanged const& notice, UsdStageWeakPtr const& sender);
   void trackEditTargetLayer(LayerManager* layerManager=nullptr);
-  static void onAttributeChanged(MNodeMessage::AttributeMessage, MPlug&, MPlug&, void*);
   void validateTransforms();
 
 
   TfToken getTypeForPath(const SdfPath& path) override
     { return m_context->getTypeForPath(path); }
 
-  bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent) override
+  bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent, bool& importableByDefault) override
     {
       auto translator = m_translatorManufacture.get(type);
       if(translator)
       {
         supportsUpdate = translator->supportsUpdate();
         requiresParent = translator->needsTransformParent();
+        importableByDefault = translator->importableByDefault();
       }
       return translator != 0;
     }
@@ -1072,9 +1073,9 @@ private:
 
   uint32_t m_engineRefCount = 0;
   bool m_compositionHasChanged = false;
-  bool m_drivenTransformsDirty = false;
   bool m_pleaseIgnoreSelection = false;
   bool m_hasChangedSelection = false;
+  bool m_filePathDirty = false;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

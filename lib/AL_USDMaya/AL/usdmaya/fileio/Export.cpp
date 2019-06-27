@@ -397,6 +397,8 @@ UsdPrim Export::exportMeshUV(MDagPath path, const SdfPath& usdPath)
 UsdPrim Export::exportAssembly(MDagPath path, const SdfPath& usdPath)
 {
   UsdGeomXform mesh = UsdGeomXform::Define(m_impl->stage(), usdPath);
+  if(!m_params.m_mergeTransforms)
+    mesh.GetPrim().SetMetadata<TfToken>(AL::usdmaya::Metadata::mergedTransform, AL::usdmaya::Metadata::unmerged);
   return mesh.GetPrim();
 }
 
@@ -404,6 +406,8 @@ UsdPrim Export::exportAssembly(MDagPath path, const SdfPath& usdPath)
 UsdPrim Export::exportPluginLocatorNode(MDagPath path, const SdfPath& usdPath)
 {
   UsdGeomXform mesh = UsdGeomXform::Define(m_impl->stage(), usdPath);
+  if(!m_params.m_mergeTransforms)
+    mesh.GetPrim().SetMetadata<TfToken>(AL::usdmaya::Metadata::mergedTransform, AL::usdmaya::Metadata::unmerged);
   return mesh.GetPrim();
 }
 
@@ -411,6 +415,8 @@ UsdPrim Export::exportPluginLocatorNode(MDagPath path, const SdfPath& usdPath)
 UsdPrim Export::exportPluginShape(MDagPath path, const SdfPath& usdPath)
 {
   UsdGeomXform mesh = UsdGeomXform::Define(m_impl->stage(), usdPath);
+  if(!m_params.m_mergeTransforms)
+    mesh.GetPrim().SetMetadata<TfToken>(AL::usdmaya::Metadata::mergedTransform, AL::usdmaya::Metadata::unmerged);
   return mesh.GetPrim();
 }
 
@@ -601,7 +607,9 @@ SdfPath Export::determineUsdPath(MDagPath path, const SdfPath& usdPath, Referenc
       SdfPath masterTransformPath = makeMasterPath(m_impl->instancesPrim(), getParentPath(path));
       if (!stage->GetPrimAtPath(masterTransformPath))
       {
-        UsdGeomXform::Define(stage, masterTransformPath);
+        auto parentPrim = UsdGeomXform::Define(stage, masterTransformPath);
+        if(!m_params.m_mergeTransforms)
+          parentPrim.GetPrim().SetMetadata<TfToken>(AL::usdmaya::Metadata::mergedTransform, AL::usdmaya::Metadata::unmerged);
       }
       TfToken shapeName(MFnDagNode(path).name().asChar());
       return masterTransformPath.AppendChild(shapeName);

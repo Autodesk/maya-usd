@@ -5,7 +5,6 @@ set(LIBRARY_NAME AL_USDMaya)
 list(APPEND AL_usdmaya_headers
         AL/usdmaya/Api.h
         AL/usdmaya/DebugCodes.h
-        AL/usdmaya/DrivenTransformsData.h
         AL/usdmaya/Metadata.h
         AL/usdmaya/PluginRegister.h
         AL/usdmaya/SelectabilityDB.h
@@ -19,7 +18,6 @@ list(APPEND AL_usdmaya_headers
 
 list(APPEND AL_usdmaya_source
         AL/usdmaya/DebugCodes.cpp
-        AL/usdmaya/DrivenTransformsData.cpp
         AL/usdmaya/Global.cpp
         AL/usdmaya/Metadata.cpp
         AL/usdmaya/SelectabilityDB.cpp
@@ -111,13 +109,13 @@ list(APPEND AL_usdmaya_nodes_headers
         AL/usdmaya/nodes/ProxyDrawOverride.h
         AL/usdmaya/nodes/ProxyShape.h
         AL/usdmaya/nodes/ProxyShapeUI.h
+        AL/usdmaya/nodes/ProxyUsdGeomCamera.h
         AL/usdmaya/nodes/RendererManager.h
         AL/usdmaya/nodes/Transform.h
         AL/usdmaya/nodes/TransformationMatrix.h
 )
 
 list(APPEND AL_usdmaya_nodes_proxy_headers
-        AL/usdmaya/nodes/proxy/DrivenTransforms.h
         AL/usdmaya/nodes/proxy/PrimFilter.h
 )
 
@@ -131,10 +129,10 @@ list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/ProxyShape.cpp
         AL/usdmaya/nodes/ProxyShapeSelection.cpp
         AL/usdmaya/nodes/ProxyShapeUI.cpp
+        AL/usdmaya/nodes/ProxyUsdGeomCamera.cpp
         AL/usdmaya/nodes/RendererManager.cpp
         AL/usdmaya/nodes/Transform.cpp
         AL/usdmaya/nodes/TransformationMatrix.cpp
-        AL/usdmaya/nodes/proxy/DrivenTransforms.cpp
         AL/usdmaya/nodes/proxy/PrimFilter.cpp
 )
 

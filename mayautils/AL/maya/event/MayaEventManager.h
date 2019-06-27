@@ -363,7 +363,7 @@ enum UiMessage
 class MayaEventHandler
   : public AL::event::CustomEventHandler
 {
-  typedef std::unordered_map<AL::event::EventId, uint32_t> EventToMaya;
+  typedef std::unordered_map<AL::event::EventId, size_t> EventToMaya;
 public:
 
   /// \brief  a structure to store some binding info for the MMessage event info

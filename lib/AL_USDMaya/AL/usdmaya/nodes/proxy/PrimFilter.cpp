@@ -23,7 +23,11 @@ namespace nodes {
 namespace proxy {
 
 //----------------------------------------------------------------------------------------------------------------------
-PrimFilter::PrimFilter(const SdfPathVector& previousPrims, const std::vector<UsdPrim>& newPrimSet, PrimFilterInterface* proxy)
+PrimFilter::PrimFilter(
+  const SdfPathVector& previousPrims,
+  const std::vector<UsdPrim>& newPrimSet,
+  PrimFilterInterface* proxy,
+  bool forceImport)
         : m_newPrimSet(newPrimSet), m_transformsToCreate(), m_updatablePrimSet(), m_removedPrimSet()
 {
   // copy over original prims
@@ -44,34 +48,42 @@ PrimFilter::PrimFilter(const SdfPathVector& previousPrims, const std::vector<Usd
 
     bool supportsUpdate = false;
     bool requiresParent = false;
-    proxy->getTypeInfo(newType, supportsUpdate, requiresParent);
+    bool importableByDefault = false;
+    proxy->getTypeInfo(newType, supportsUpdate, requiresParent, importableByDefault);
 
-    // if the type remains the same, and the type supports update
-    if(type == newType)
+    if(importableByDefault || forceImport)
     {
-      if(supportsUpdate)
+      // if the type remains the same, and the type supports update
+      if(type == newType)
       {
-        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg(
-                  "PrimFilter::PrimFilter %s prim has not changed type and supports updates or inactive.\n", path.GetText());
-        // locate the path and delete from the removed set (we do not want to delete this prim!
-        // Note that m_removedPrimSet is reverse sorted
-        auto iter = std::lower_bound(m_removedPrimSet.begin(), m_removedPrimSet.end(), path, [](const SdfPath& a, const SdfPath& b){ return b < a; } );
-        if(iter != removedPrimSet().end() && *iter == path)
+        if(supportsUpdate)
         {
-          m_removedPrimSet.erase(iter);
-          m_updatablePrimSet.push_back(prim);
-          // skip creating transforms in this case.
-          requiresParent = false;
+          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg(
+                    "PrimFilter::PrimFilter %s prim has not changed type and supports updates or inactive.\n", path.GetText());
+          // locate the path and delete from the removed set (we do not want to delete this prim!
+          // Note that m_removedPrimSet is reverse sorted
+          auto iter = std::lower_bound(m_removedPrimSet.begin(), m_removedPrimSet.end(), path, [](const SdfPath& a, const SdfPath& b){ return b < a; } );
+          if(iter != removedPrimSet().end() && *iter == path)
+          {
+            m_removedPrimSet.erase(iter);
+            m_updatablePrimSet.push_back(prim);
+            // skip creating transforms in this case.
+            requiresParent = false;
+          }
         }
-      }
 
-      //If the prim is still already there with the same type, it isn't new.
-      it = m_newPrimSet.erase(lastIt);
+        //If the prim is still already there with the same type, it isn't new.
+        it = m_newPrimSet.erase(lastIt);
+      }
+      // if we need a transform, make a note of it now
+      if(requiresParent)
+      {
+        m_transformsToCreate.push_back(prim);
+      }
     }
-    // if we need a transform, make a note of it now
-    if(requiresParent)
+    else
     {
-      m_transformsToCreate.push_back(prim);
+      it = m_newPrimSet.erase(lastIt);
     }
   }
 }

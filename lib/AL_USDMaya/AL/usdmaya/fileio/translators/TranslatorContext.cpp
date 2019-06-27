@@ -32,7 +32,9 @@ TranslatorContext::~TranslatorContext()
 //----------------------------------------------------------------------------------------------------------------------
 UsdStageRefPtr TranslatorContext::getUsdStage() const
 {
-  return m_proxyShape->usdStage();
+  if(m_proxyShape)
+    return m_proxyShape->usdStage();
+  return UsdStageRefPtr();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -294,7 +296,6 @@ void TranslatorContext::removeItems(const SdfPath& path)
       else
       {
         TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeItems Invalid MObject was registered with the primPath \"%s\"\n", path.GetText());
-
       }
     }
     nodes.clear();
@@ -343,7 +344,7 @@ MString TranslatorContext::serialise() const
   std::ostringstream oss;
   for(auto& path : m_excludedGeometry)
   {
-    oss << path.GetString() << ",";
+    oss << path.first.GetString() << ",";
   }
 
   m_proxyShape->excludedTranslatedGeometryPlug().setString(MString(oss.str().c_str()));
@@ -400,7 +401,10 @@ void TranslatorContext::deserialise(const MString& string)
   }
 
   SdfPathVector vec = m_proxyShape->getPrimPathsFromCommaJoinedString(m_proxyShape->excludedTranslatedGeometryPlug().asString());
-  m_excludedGeometry.insert(vec.begin(), vec.end());
+  for(auto& it : vec)
+  {
+    m_excludedGeometry.emplace(it, it);
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -470,6 +474,11 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
   {
     auto path = *iter;
     auto node = std::lower_bound(m_primMapping.begin(), m_primMapping.end(), path, value_compare());
+    if(node == m_primMapping.end())
+    {
+      ++iter;
+      continue;
+    }
     bool isInTransformChain = isPrimInTransformChain(path);
 
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries removing: %s\n", iter->GetText());
@@ -688,6 +697,52 @@ bool TranslatorContext::isPrimInTransformChain(const SdfPath& path)
 
   return false;
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+bool TranslatorContext::addExcludedGeometry(const SdfPath& newPath)
+{
+  if(m_proxyShape)
+  {
+    auto foundPath = m_excludedGeometry.find(newPath);
+    if(foundPath != m_excludedGeometry.end())
+    {
+      return false;
+    }
+
+    UsdStageRefPtr stage = getUsdStage();
+    SdfPath pathToAdd = newPath;
+    bool hasInstanceParent = false;
+    {
+      UsdPrim parentPrim;
+      do
+      {
+        pathToAdd = pathToAdd.GetParentPath();
+        parentPrim = stage->GetPrimAtPath(pathToAdd);
+        if(!parentPrim)
+          break;
+
+        if(parentPrim.IsInstance())
+        {
+          hasInstanceParent = true;
+          break;
+        }
+      }
+      while(!pathToAdd.IsEmpty());
+    }
+    if(hasInstanceParent)
+    {
+      m_excludedGeometry.emplace(newPath, pathToAdd);
+    }
+    else
+    {
+      m_excludedGeometry.emplace(newPath, newPath);
+    }
+    m_isExcludedGeometryDirty = true;
+    return true;
+  }
+  return false;
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 } // translators
 } // fileio

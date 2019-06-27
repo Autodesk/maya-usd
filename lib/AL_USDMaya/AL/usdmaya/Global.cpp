@@ -373,7 +373,6 @@ static void postFileRead(void*)
       proxy->deserialiseTranslatorContext();
       proxy->findTaggedPrims();
       proxy->deserialiseTransformRefs();
-      proxy->constructGLImagingEngine();
     }
     unloadedProxies.clear();
   }
@@ -460,6 +459,7 @@ static void postFileSave(void*)
 //----------------------------------------------------------------------------------------------------------------------
 static void preFileExport(void* p)
 {
+  storeSelection();
   nodes::ProxyShape::serializeAll();
 }
 

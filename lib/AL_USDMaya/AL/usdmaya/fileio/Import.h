@@ -58,6 +58,10 @@ private:
     const UsdPrim& prim, 
     MObject parent, 
     bool parentUnmerged);
+MObject createParentTransform(
+  const UsdPrim& prim,
+  TransformIterator& it,
+  translators::TranslatorManufacture manufacture);
 
   const ImporterParams& m_params;
   TfHashMap<SdfPath, MObject, SdfPath::Hash> m_instanceObjects;

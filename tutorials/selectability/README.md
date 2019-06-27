@@ -27,13 +27,13 @@ Now lets change the selectability of the Cube so it and it's child can be select
 
 ```
 from AL import usdmaya
-from AL.usd import schemas
+from AL.usd.schemas import maya as maya_schemas
 stageCache = usdmaya.StageCache.Get()
 stage = stageCache.GetAllStages()[0]
 cube = stage.GetPrimAtPath("/root/cube")
 
-cubeApi = schemas.ModelAPI(cube)
-cubeApi.SetSelectability(schemas.Tokens.selectability_selectable)
+cubeApi = maya_schemas.ModelAPI(cube)
+cubeApi.SetSelectability(maya_schemas.Tokens.selectability_selectable)
 ```
 The cube and it's children are now Selectable.
 
@@ -44,8 +44,8 @@ The cube and it's children are now Selectable.
 Now lets turn off selectability on everything by making the root node unselectable!
 ```
 root = stage.GetPrimAtPath("/root")
-rootApi = schemas.ModelAPI(root)
-rootApi.SetSelectability(schemas.Tokens.selectability_unselectable)
+rootApi = maya_schemas.ModelAPI(root)
+rootApi.SetSelectability(maya_schemas.Tokens.selectability_unselectable)
 ```
 
 ***
@@ -53,9 +53,9 @@ rootApi.SetSelectability(schemas.Tokens.selectability_unselectable)
 To determine the selectability of a prim you can use the ModelAPI::ComputeSelectability method
 
 ```
-cubeApi.ComputeSelectability()
+s = cubeApi.ComputeSelectability()
 
-if(s != schemas.Tokens.selectability_unselectable):
+if(s != maya_schemas.Tokens.selectability_unselectable):
   print "The Cone's selectable!"
 ```
 

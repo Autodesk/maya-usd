@@ -1,3 +1,58 @@
+## AL_USDMaya-0.32.15 (2019-04-04)
+### Added
++ Flag to exporter to revese normals if opposite has been set to true.
+
+### Changed
++ passing correct maya dag into the ExtraData import process
+
+### Fixed
++ Ensure that the PreSelectionChanged and PostSelectionChanged events are always triggered.
++ TRS values not updating in the GUI when the xform is matrix based.
++ Selection is now retained after auto save
++ Stopped the proxy shape from constantly trying to load corrupt files, or invalid file paths
++ unit test crash in docker as a result of a buffer overrun
+
+## AL_USDMaya-0.32.14 (2019-04-03)
+### Added
++ Exposed ModelAPI's ComputeSelectability method to Python
+### Changed
++ Selectability tutorial 
+
+## AL_USDMaya-0.32.13 (2019-04-02)
+### Fixed
++ When importing meshes, primVar indices could end up being lost.
++ Correctly exclude instance paths when translating an instanced prim
+
+## AL_USDMaya-0.32.12 (2019-04-02)
+### Added
++ A node to act as a proxy between Maya and USD cameras to enable interactive updates to the USD scene see [docs](docs/cameraProxy.md) for more info
++ Added a new flag to the AL_usdmaya_TranslatePrim command to control whether pushToPrim is enabled on newly created transforms.
++ Ability to import nested instances into Maya from USD.
+
+### Fixed
++ Potential problems when importing/exporting surface normals.
++ Bug where a transform chain would be incorrectly created for prims not being translated (When translating a prim into the maya scene, if the forceImport flag was disabled, then a transform chain would end up being created for a non existent prim (and could never be removed again). The PrimFilter now respects the forceImport flag.)
++ crash on AL_USDMaya Plugin Registration
+
+
+## AL_USDMaya-0.32.11 (2019-03-26)
+### Removed
++ DrivenTransformData MPxData type
++ DrivenTransforms.h/.cpp
++ DrivenTransformData.h/.cpp
++ test_DrivenTransforms.cpp
++ ProxyShape::computeDrivenAttributes method
++ related maya attribute on Proxy Shape etc
+
+
+
+## AL_USDMaya-0.32.10 (2019-03-25)
+### Fixed
+* consolidate MayaReference update logic to make it more resilient: Combine the similar logic from update() and LoadMayaReference() to make the maya reference translator more resilient to imported references and stage changes [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/138) (#138 - @[nxkb](//github.com/nxkb))
++ Fixes a crash that happens when using AL_usdmayaProxyShapeSelect with pseudo-root "/" [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/145) (#145 - @[elrond79](//github.com/elrond79))
++ usd-0.19.3 fix: filesystem library needs system lib - need to explicitly link now that usd doesn't [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/146) (#146 - @[elrond79](//github.com/elrond79))
++ convert onAttributeChanged callbacks to setInternalValue, for performance [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/89) (#89 - @[elrond79](//github.com/elrond79))
+
 ## AL_USDMaya-0.32.9 (2019-03-14)
 ### Fixed
 + Fixed crash when modifying rotation attributes
