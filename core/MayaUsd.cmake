@@ -62,7 +62,7 @@ if( CMAKE_GENERATOR MATCHES "Make" OR CMAKE_GENERATOR MATCHES "Unix Makefiles" O
         message(FATAL_ERROR "Build step for MayaUSD failed: ${result}")
     endif()
 else()
-    execute_process(COMMAND ${CMAKE_COMMAND} --build . --config ${CMAKE_BUILD_TYPE} /M:${N}
+    execute_process(COMMAND ${CMAKE_COMMAND} --build . --config ${CMAKE_BUILD_TYPE} -- /M:${N}
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${MAYAUSD_BUILD_ROOT}/mayausd-config )
     if(result)
