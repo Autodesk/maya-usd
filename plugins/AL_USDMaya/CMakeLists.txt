@@ -23,13 +23,6 @@ else()
     set(CMAKE_WANT_UFE_BUILD ON)
 endif()
 
-# Setup the Rpath
-if (APPLE)
-    set(CMAKE_MACOSX_RPATH ON)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    set(CMAKE_INSTALL_RPATH "@loader_path/../lib;@loader_path/../../USD/lib;@loader_path/../../USD/third_party/maya/lib;${PXR_USD_LOCATION}/lib")
-endif()
-
 # AL_USDMAYA uses pxrConfig.cmake exported targets
 # find_package(USD) can use either ${PXR_USD_LOCATION}, or ${USD_CONFIG_FILE} (which should be ${PXR_USD_LOCATION}/pxrConfig.cmake)
 # to find USD, defined as either Cmake var or env var
