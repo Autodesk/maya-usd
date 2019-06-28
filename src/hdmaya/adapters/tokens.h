@@ -56,10 +56,14 @@ PXR_NAMESPACE_OPEN_SCOPE
     (color)                                   \
     (incandescence)                           \
     (out)                                     \
+    (output)                                  \
     (st)                                      \
+    (uv)                                      \
     (uvCoord)                                 \
     (rgb)                                     \
     (r)                                       \
+    (xyz)                                     \
+    (x)                                       \
     (varname)                                 \
     (result)                                  \
     (eccentricity)                            \

@@ -28,6 +28,8 @@
 #include <hdmaya/adapters/mayaAttrs.h>
 #include <hdmaya/adapters/tokens.h>
 
+#include <pxr/usd/sdr/registry.h>
+#include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usdHydra/tokens.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
@@ -42,6 +44,133 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace {
 
 constexpr float defaultTextureMemoryLimit = 1e8f;
+
+// Lists of preferred shader output names, from SdfValueTypeName to list of
+// preferred output names for that type.  The list that has an empty token for
+// SdfValueTypeName is used as a default.
+const std::vector<std::pair<SdfValueTypeName, std::vector<TfToken>>>
+    preferredOutputNamesByType{
+        {SdfValueTypeNames->Float3,
+         {HdMayaAdapterTokens->result, HdMayaAdapterTokens->out,
+          HdMayaAdapterTokens->output, HdMayaAdapterTokens->rgb,
+          HdMayaAdapterTokens->xyz}},
+        {SdfValueTypeNames->Float2,
+         {HdMayaAdapterTokens->result, HdMayaAdapterTokens->out,
+          HdMayaAdapterTokens->output, HdMayaAdapterTokens->st,
+          HdMayaAdapterTokens->uv}},
+        {SdfValueTypeNames->Float,
+         {HdMayaAdapterTokens->result, HdMayaAdapterTokens->out,
+          HdMayaAdapterTokens->output, HdMayaAdapterTokens->r,
+          HdMayaAdapterTokens->x}}};
+
+// Default set of preferred output names, if type not in
+// preferredOutputNamesByType
+const std::vector<TfToken> defaultPreferredOutputNames{
+    HdMayaAdapterTokens->result, HdMayaAdapterTokens->out,
+    HdMayaAdapterTokens->output};
+
+SdfValueTypeName GetStandardTypeName(SdfValueTypeName type) {
+    // Will map, ie, Vector3f to Float3, TexCoord2f to Float2
+    return SdfGetValueTypeNameForValue(type.GetDefaultValue());
+}
+
+const std::vector<TfToken>& GetPreferredOutputNames(
+    SdfValueTypeName type, bool useStandardType = true) {
+    for (const auto& typeAndNames : preferredOutputNamesByType) {
+        if (typeAndNames.first == type) { return typeAndNames.second; }
+    }
+
+    if (useStandardType) {
+        // If we were given, ie, Vector3f, check to see if there's an entry for
+        // Float3
+        auto standardType = GetStandardTypeName(type);
+        if (type != standardType) {
+            return GetPreferredOutputNames(standardType, false);
+        }
+    }
+    return defaultPreferredOutputNames;
+}
+
+TfToken GetOutputName(const HdMaterialNode& material, SdfValueTypeName type) {
+    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+        .Msg(
+            "GetOutputName(%s - %s, %s)\n", material.path.GetText(),
+            material.identifier.GetText(), type.GetAsToken().GetText());
+    auto& shaderReg = SdrRegistry::GetInstance();
+    if (SdrShaderNodeConstPtr sdrNode =
+            shaderReg.GetShaderNodeByIdentifier(material.identifier)) {
+        // First, get the list off all outputs of the correct type.
+        std::vector<TfToken> validOutputs;
+        auto outputNames = sdrNode->GetOutputNames();
+
+        auto addMatchingOutputs = [&](SdfValueTypeName matchingType) {
+            for (const auto& outName : outputNames) {
+                auto* sdrInfo = sdrNode->GetShaderOutput(outName);
+                if (sdrInfo &&
+                    sdrInfo->GetTypeAsSdfType().first == matchingType) {
+                    validOutputs.push_back(outName);
+                }
+            }
+        };
+
+        addMatchingOutputs(type);
+        if (validOutputs.empty()) {
+            auto standardType = GetStandardTypeName(type);
+            if (standardType != type) { addMatchingOutputs(standardType); }
+        }
+
+        // If there's only one, use that
+        if (validOutputs.size() == 1) {
+            TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+                .Msg(
+                    "  found exactly one output of correct type in "
+                    "registry: "
+                    "%s\n",
+                    validOutputs[0].GetText());
+            return validOutputs[0];
+        }
+
+        // Then see if any preferred names are found
+        if (!validOutputs.empty()) {
+            const auto& preferredNames = GetPreferredOutputNames(type);
+            for (const auto preferredName : preferredNames) {
+                if (std::find(
+                        validOutputs.begin(), validOutputs.end(),
+                        preferredName) != validOutputs.end()) {
+                    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+                        .Msg(
+                            "  found preferred name of correct type in "
+                            "registry: %s\n",
+                            preferredName.GetText());
+                    return preferredName;
+                }
+            }
+            // No preferred names were found, use the first valid name
+            TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+                .Msg(
+                    "  found no preferred names of correct type in "
+                    "registry, returning first valid name: %s\n",
+                    validOutputs[0].GetText());
+            return validOutputs[0];
+        }
+    }
+
+    // We either couldn't find the entry in the SdrRegistry, or there were
+    // no outputs of the right type - make a guess, use the first preferred
+    // name
+    const auto& preferredNames = GetPreferredOutputNames(type);
+    if (TF_VERIFY(!preferredNames.empty())) {
+        TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+            .Msg(
+                "  found no valid entries in registry, returning guess: "
+                "%s\n",
+                preferredNames[0].GetText());
+        return preferredNames[0];
+    }
+
+    // We should never get here - preferredNames should never be empty!
+    return HdMayaAdapterTokens->result;
+}
 
 const auto _previewShaderParams = []() -> HdMayaShaderParams {
     // TODO: Use SdrRegistry, but it seems PreviewSurface is not there yet?
@@ -527,11 +656,7 @@ void HdMayaMaterialNetworkConverter::ConvertParameter(
         if (sourceMatPath.IsEmpty()) { return; }
         HdMaterialRelationship rel;
         rel.inputId = sourceMatPath;
-        if (type == SdfValueTypeNames->Vector3f) {
-            rel.inputName = HdMayaAdapterTokens->rgb;
-        } else {
-            rel.inputName = HdMayaAdapterTokens->result;
-        }
+        rel.inputName = GetOutputName(*sourceMat, type);
         rel.outputId = material.path;
         rel.outputName = paramName;
         _network.relationships.push_back(rel);
