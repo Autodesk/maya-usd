@@ -44,13 +44,21 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
+MObject Mesh::m_visible = MObject::kNullObj;
+
 AL_USDMAYA_DEFINE_TRANSLATOR(Mesh, PXR_NS::UsdGeomMesh)
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Mesh::initialize()
 {
+  MNodeClass fn("transform");
+  MStatus status;
+
+  m_visible = fn.attribute("v", &status);
+  AL_MAYA_CHECK_ERROR(status, "Unable to add `visibility` attribute");
+
   //Initialise all the class plugs
-  return MStatus::kSuccess;
+  return status;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -97,6 +105,11 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
     ctx->addExcludedGeometry(prim.GetPath());
     ctx->insertItem(prim, createdObj);
   }
+
+  TfToken vis = mesh.ComputeVisibility(timeCode);
+  // if the visibility token is not `invisible` then, make it visible
+  DgNodeTranslator::setBool(createdObj, m_visible, vis != UsdGeomTokens->invisible);
+ 
   return MStatus::kSuccess;
 }
 

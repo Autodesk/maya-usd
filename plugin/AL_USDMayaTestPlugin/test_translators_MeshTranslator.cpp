@@ -25,6 +25,92 @@
 using namespace AL::usdmaya::fileio::translators;
 using AL::maya::test::buildTempPath;
 
+
+std::string constructSingleCubeUsdFile(const std::string& fileSuffix)
+{
+  // create a cube, and apply a planar projection to it (UV's should now be per vertex)
+  MString command =
+  "polyCube -w 1 -h 1 -d 1 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -cuv 2 -ch 1;"
+  "select -r pCube1.f[0:5];"
+  "polyProjection -ch 1 -type Planar -ibd on -md x  pCube1.f[0:5];"
+  "select -r pCube1";
+  MGlobal::executeCommand(command);
+
+  const MString tempPath = buildTempPath(fileSuffix.c_str());
+
+  // select the cube, and export (this should compact the UV coordinates)
+  MGlobal::executeCommand(
+    MString("select -r pCube1;"
+    "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
+    "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + tempPath + "\";");
+
+  return tempPath.asChar();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  Test that the mesh Translator correctly translates the visibility onto the Shape
+//----------------------------------------------------------------------------------------------------------------------
+TEST(translators_MeshTranslator, meshVisibilityOffImport)
+{
+  MFileIO::newFile(true);
+  std::string layerFile = constructSingleCubeUsdFile("meshVisibilityOffImport.usda");
+  
+  // Load the layer and set the visibility flag to be invisible
+  UsdStageRefPtr stage = UsdStage::Open(layerFile);
+  UsdGeomImageable imageCube(stage->GetPrimAtPath(SdfPath("/pCube1")));
+  imageCube.CreateVisibilityAttr().Set(UsdGeomTokens->invisible);
+  stage->Save();
+
+  // translate the prim into Maya
+  MString command;
+  command.format(MString("AL_usdmaya_ImportCommand -f \"^1s\""), layerFile.c_str());
+  MGlobal::executeCommand(command, false, false);  
+
+  MSelectionList sl;
+  EXPECT_EQ(MStatus(MS::kSuccess), sl.add("pCube1Shape"));
+  MObject obj;
+  sl.getDependNode(0, obj);
+
+  MFnDependencyNode dag;
+  dag.setObject(obj);
+
+  MPlug primPathPlug = dag.findPlug("v");
+  // validate that the visibility is actually ON
+  ASSERT_FALSE(primPathPlug.asBool());
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  Test that the mesh Translator correctly translates the visibility onto the Shape
+//----------------------------------------------------------------------------------------------------------------------
+TEST(translators_MeshTranslator, meshVisibilityOnImport)
+{
+  MFileIO::newFile(true);
+  std::string layerFile = constructSingleCubeUsdFile("meshVisibilityOnImport.usda");
+  
+  // Load the layer and set the visibility flag to be invisible
+  UsdStageRefPtr stage = UsdStage::Open(layerFile);
+  UsdGeomImageable imageCube(stage->GetPrimAtPath(SdfPath("/pCube1")));
+  imageCube.CreateVisibilityAttr().Set(UsdGeomTokens->inherited);
+  stage->Save();
+  
+  // translate the prim into Maya
+  MString command;
+  command.format(MString("AL_usdmaya_ImportCommand -f \"^1s\""), layerFile.c_str());
+  MGlobal::executeCommand(command, false, false);  
+
+  MSelectionList sl;
+  EXPECT_EQ(MStatus(MS::kSuccess), sl.add("pCube1Shape"));
+  MObject obj;
+  sl.getDependNode(0, obj);
+
+  MFnDependencyNode dag;
+  dag.setObject(obj);
+
+  MPlug primPathPlug = dag.findPlug("v");
+  // validate that the visibility is actually ON
+  ASSERT_TRUE(primPathPlug.asBool());
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Test some of the functionality of the mesh translator
 //----------------------------------------------------------------------------------------------------------------------
