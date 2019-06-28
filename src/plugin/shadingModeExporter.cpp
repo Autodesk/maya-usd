@@ -178,15 +178,24 @@ public:
         for (auto& hdNode : materialNetwork.nodes) {
             if (!TF_VERIFY(_ExportNode(stage, hdNode))) { continue; }
             if (hdNode.path == hdSurfPath) {
+                // Hook up the glslfx surface output
                 UsdShadeOutput surfaceOutput =
                     material.CreateSurfaceOutput(HioGlslfxTokens->glslfx);
+                auto outputProperty = hdNode.path.IsPropertyPath()
+                        ? hdNode.path
+                        : hdNode.path.AppendProperty(
+                                _tokens->defaultOutputName);
                 if (TF_VERIFY(surfaceOutput)) {
                     UsdShadeConnectableAPI::ConnectToSource(
-                        surfaceOutput, hdNode.path.IsPropertyPath()
-                                           ? hdNode.path
-                                           : hdNode.path.AppendProperty(
-                                                 _tokens->defaultOutputName));
+                        surfaceOutput, outputProperty);
                 }
+
+                // If there is no universal surface output, hook that up too
+                if (surfaceOutput = material.GetSurfaceOutput()) {
+                    UsdShadeConnectableAPI::ConnectToSource(
+                        surfaceOutput, outputProperty);
+                }
+
             }
         }
 
