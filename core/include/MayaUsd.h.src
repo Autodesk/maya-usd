@@ -1,0 +1,38 @@
+#pragma once
+
+// ===========================================================================
+// Copyright 2019 Autodesk, Inc. All rights reserved.
+//
+// Use of this software is subject to the terms of the Autodesk license
+// agreement provided at the time of installation or download, or which
+// otherwise accompanies this software in either electronic or hard copy form.
+// ===========================================================================
+
+#define MAYAUSD_MAJOR_VERSION ${MAYAUSD_MAJOR_VERSION}
+#define MAYAUSD_MINOR_VERSION ${MAYAUSD_MINOR_VERSION}
+#define MAYAUSD_PATCH_LEVEL   ${MAYAUSD_PATCH_LEVEL}
+
+// MayaUsd public namespace string will never change.
+#define MAYAUSD_NS MayaUsd
+// C preprocessor trickery to expand arguments.
+#define MAYAUSD_CONCAT(A, B) MAYAUSD_CONCAT_IMPL(A, B)
+#define MAYAUSD_CONCAT_IMPL(A, B) A##B
+// Versioned namespace includes the major version number.
+#define MAYAUSD_VERSIONED_NS MAYAUSD_CONCAT(MAYAUSD_NS, _v${MAYAUSD_MAJOR_VERSION})
+
+namespace MAYAUSD_VERSIONED_NS {}
+
+// With a using namespace declaration, pull in the versioned namespace into the
+// MayaUsd public namespace, to allow client code to use the plain MayaUsd
+// namespace, e.g. MayaUsd::Class.
+namespace MAYAUSD_NS {
+    using namespace MAYAUSD_VERSIONED_NS;
+}
+ 
+// Macros to place the MayaUsd symbols in the versioned namespace, which is how
+// they will appear in the shared library, e.g. MayaUsd_v1::Class.
+#ifdef DOXYGEN
+#define MAYAUSD_NS_DEF namespace MAYAUSD_NS
+#else
+#define MAYAUSD_NS_DEF namespace MAYAUSD_VERSIONED_NS
+#endif

@@ -1,0 +1,15 @@
+*build/
+*.project
+*.cproject
+*.pydevproject
+*.settings/
+CMakeCache.txt
+CMakeLists.txt.user
+CMakeFiles/cmake.check_cache
+*~
+*.orig
+
+*.DS_Store
+*.xcuserstate
+*.pbxuser
+*.swp

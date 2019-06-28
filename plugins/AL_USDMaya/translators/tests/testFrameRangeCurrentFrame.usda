@@ -1,0 +1,12 @@
+#usda 1.0
+(
+    defaultPrim = "shot_name"    
+)
+
+def Xform "shot_name" ()
+{
+    def ALFrameRange "frame_range" ()
+    {
+      double currentFrame = 10
+    }
+}
