@@ -140,7 +140,7 @@ MStatus Transform::initialise()
       // even on the BASE transform class!
       // See this gist for full reproduction details:
       //   https://gist.github.com/elrond79/f9ddb277da3eab2948d27ddb1f84aba0
-#if MAYA_API_VERSION >= 20190000
+#if MAYA_API_VERSION >= 20180600
       AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, rotateAxis), errorString);
 #endif
       AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, matrix), errorString);

@@ -25,7 +25,7 @@
 #include "maya/MFnDagNode.h"
 #include "maya/MTime.h"
 
-#if MAYA_API_VERSION >= 20190000
+#if MAYA_API_VERSION >= 20180600
 #include "maya/MPointArray.h"
 #include "maya/MSelectionContext.h"
 #endif
@@ -74,7 +74,11 @@ MUint64 ProxyDrawOverride::s_lastRefreshFrameStamp = 0;
 
 //----------------------------------------------------------------------------------------------------------------------
 ProxyDrawOverride::ProxyDrawOverride(const MObject& obj)
-#if MAYA_API_VERSION >= 201700
+#if MAYA_API_VERSION >= 20190000
+  : MHWRender::MPxDrawOverride(obj, draw, true)
+#elif MAYA_API_VERSION >= 20180600
+  : MHWRender::MPxDrawOverride2(obj, draw, true)
+#elif MAYA_API_VERSION >= 201700
   : MHWRender::MPxDrawOverride(obj, draw, true)
 #else
   : MHWRender::MPxDrawOverride(obj, draw)
@@ -506,7 +510,7 @@ public:
 SdfPathVector ProxyDrawOverrideSelectionHelper::m_paths;
 
 
-#if MAYA_API_VERSION >= 20190000
+#if MAYA_API_VERSION >= 20180600
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyDrawOverride::userSelect(
     const MHWRender::MSelectionInfo& selectInfo,
@@ -518,7 +522,8 @@ bool ProxyDrawOverride::userSelect(
 {
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyDrawOverride::userSelect\n");
 
-  if (!selectInfo.selectable(MSelectionMask(ProxyShape::s_selectionMaskName)))
+  MSelectionMask mask(MString(ProxyShape::s_selectionMaskName));
+  if (!selectInfo.selectable(mask))
     return false;
 
   MStatus status;
