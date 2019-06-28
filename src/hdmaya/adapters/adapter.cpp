@@ -113,7 +113,7 @@ void HdMayaAdapter::CreateCallbacks() {
 MStatus HdMayaAdapter::Initialize() {
     auto status = MayaAttrs::initialize();
     if (status) { HdMayaMaterialNetworkConverter::initialize(); }
-    return MayaAttrs::initialize();
+    return status;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
