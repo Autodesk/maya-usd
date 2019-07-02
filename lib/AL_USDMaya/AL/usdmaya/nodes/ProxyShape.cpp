@@ -1055,10 +1055,10 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   // These paths are subtree-roots representing entire subtrees that may have
   // changed. In this case, we must dump all cached data below these points
   // and repopulate those trees.
+  const bool compositionChanged = m_compositionHasChanged;
   if(m_compositionHasChanged)
   {
     m_compositionHasChanged = false;
-
     onPrimResync(m_changedPath, m_variantSwitchedPrims);
     m_variantSwitchedPrims.clear();
     m_changedPath = SdfPath();
@@ -1178,8 +1178,11 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     m_selectabilityDB.addPathsAsUnselectable(newUnselectables);
   }
 
-  updateLockPrims(lockTransformPrims, lockInheritedPrims, unlockedPrims);
-  constructLockPrims();
+  if(compositionChanged)
+  {
+    updateLockPrims(lockTransformPrims, lockInheritedPrims, unlockedPrims);
+    constructLockPrims();
+  }
 
   // If redraw wasn't requested from Maya i.e. external stage modification
   // We need to request redraw on idle, so viewport is updated
@@ -1555,12 +1558,12 @@ void ProxyShape::constructExcludedPrims()
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::lockTransformAttribute\n");
+  TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute Setting lock for '%s'\n", path.GetText());
 
   UsdPrim prim = m_stage->GetPrimAtPath(path);
   if(!prim.IsValid())
   {
-    TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute prim path not valid '%s'\n", prim.GetPath().GetText());
+    TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute prim path not valid '%s'\n", path.GetText());
     return false;
   }
 
@@ -1594,7 +1597,10 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
   }
 
   if (lockObject.isNull())
+  {
+    TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute NOT setting lock for '%s' - lockObject not valid\n", path.GetText());
     return false;
+  }
 
 
   MPlug t(lockObject, m_transformTranslate);
@@ -1609,7 +1615,7 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
   {
     MPlug(lockObject, Transform::pushToPrim()).setBool(false);
   }
-  TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute Setting lock for '%s'\n", prim.GetPath().GetText());
+  TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute Set lock for '%s'\n", prim.GetPath().GetText());
   return true;
 }
 
@@ -1641,6 +1647,7 @@ void ProxyShape::constructLockPrims()
                       m_currentLockedPrims.end(), std::back_inserter(primsToLock));
   std::set_difference(m_currentLockedPrims.begin(), m_currentLockedPrims.end(), primsNeedLock.begin(),
                       primsNeedLock.end(), std::back_inserter(primsToUnlock));
+
 
   for (auto lock : primsToLock)
   {
