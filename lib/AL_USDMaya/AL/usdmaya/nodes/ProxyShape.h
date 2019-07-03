@@ -463,7 +463,8 @@ public:
   std::vector<UsdPrim> huntForNativeNodesUnderPrim(
       const MDagPath& proxyTransformPath,
       SdfPath startPath,
-      fileio::translators::TranslatorManufacture& manufacture);
+      fileio::translators::TranslatorManufacture& manufacture,
+      bool importAll = false);
 
   /// \brief  constructs a single chain of transform nodes from the usdPrim to the root of this proxy shape.
   /// \param  usdPrim  the leaf of the prim we wish to create
@@ -778,7 +779,7 @@ public:
 
   /// \brief  change the status of the composition changed status
   /// \param  hasObjectsChanged
-  inline void setHaveObjectsChangedAtPath(bool hasObjectsChanged)
+  inline void setHaveObjectsChangedAtPath(const bool hasObjectsChanged)
     { m_compositionHasChanged = hasObjectsChanged; }
 
   /// \brief  provides access to the selection list on this proxy shape
@@ -787,9 +788,9 @@ public:
     { return m_selectionList; }
 
   /// \brief  internal method used to correctly schedule changes to the selection list
-  /// \param  v the state
-  inline void setChangedSelectionState(bool v)
-    { m_hasChangedSelection = v; }
+  /// \param  hasSelectabilityChanged the state
+  inline void setChangedSelectionState(const bool hasSelectabilityChanged)
+    { m_hasChangedSelection = hasSelectabilityChanged; }
 
   /// \brief Returns the SelectionDatabase owned by the ProxyShape
   /// \return A SelectableDB owned by the ProxyShape

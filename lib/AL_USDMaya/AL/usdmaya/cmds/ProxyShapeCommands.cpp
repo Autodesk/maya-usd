@@ -1299,10 +1299,12 @@ MSyntax TranslatePrim::createSyntax()
   MSyntax syntax = setUpCommonSyntax();
   syntax.addFlag("-ip", "-importPaths", MSyntax::kString);
   syntax.addFlag("-tp", "-teardownPaths", MSyntax::kString);
+  syntax.addFlag("-up", "-updatePaths", MSyntax::kString);
   syntax.addFlag("-fi", "-forceImport", MSyntax::kNoArg);
   syntax.addFlag("-fd", "-forceDefault", MSyntax::kNoArg);
   syntax.addFlag("-ptp", "-pushToPrim", MSyntax::kBoolean);
   syntax.addFlag("-rav", "-readAnimatedValues", MSyntax::kBoolean);
+  syntax.addFlag("-r", "-recursive");
   return syntax;
 }
 
@@ -1316,6 +1318,8 @@ MStatus TranslatePrim::doIt(const MArgList& args)
     AL_MAYA_COMMAND_HELP(db, g_helpText);
     m_proxy = getShapeNode(db);
 
+    m_recursive = db.isFlagSet("-r");
+
     if(db.isFlagSet("-ip"))
     {
       MString pathsCsv;
@@ -1328,6 +1332,13 @@ MStatus TranslatePrim::doIt(const MArgList& args)
       MString pathsCsv;
       db.getFlagArgument("-tp", 0, pathsCsv);
       m_teardownPaths = m_proxy->getPrimPathsFromCommaJoinedString(pathsCsv);
+    }
+
+    if(db.isFlagSet("-up"))
+    {
+      MString pathsCsv;
+      db.getFlagArgument("-up", 0, pathsCsv);
+      m_updatePaths = m_proxy->getPrimPathsFromCommaJoinedString(pathsCsv);
     }
 
     // change the translator context to force import
@@ -1357,6 +1368,81 @@ MStatus TranslatePrim::doIt(const MArgList& args)
     {
       m_proxy->context()->setForceDefaultRead(true);
     }
+
+    if(m_recursive)
+    {
+      const bool forceImport = db.isFlagSet("-fi");
+      MFnDagNode fn(m_proxy->thisMObject());
+      MDagPath proxyTransformPath;
+      fn.getPath(proxyTransformPath);
+      proxyTransformPath.pop();
+
+      auto& manufacture = m_proxy->translatorManufacture();
+
+      auto stage = m_proxy->usdStage();
+      SdfPathVector newImportPaths;
+      for(auto importPath : m_importPaths)
+      {
+        {
+          auto prim = stage->GetPrimAtPath(importPath);
+          if(prim)
+          {
+            if(manufacture.get(prim.GetTypeName()))
+            {
+              newImportPaths.push_back(importPath);
+            }
+          }
+        }
+        auto newPrimSet = m_proxy->huntForNativeNodesUnderPrim(proxyTransformPath, importPath, manufacture, forceImport);
+        for(auto it : newPrimSet)
+        {
+          newImportPaths.push_back(it.GetPath());
+        }
+      }
+      std::swap(m_importPaths, newImportPaths);
+
+      SdfPathVector newTeardownPaths;
+      for(auto teardownPath : m_teardownPaths)
+      {
+        {
+          auto prim = stage->GetPrimAtPath(teardownPath);
+          if(prim)
+          {
+            if(manufacture.get(prim.GetTypeName()))
+            {
+              newTeardownPaths.push_back(teardownPath);
+            }
+          }
+        }
+        auto newPrimSet = m_proxy->huntForNativeNodesUnderPrim(proxyTransformPath, teardownPath, manufacture, true);
+        for(auto it : newPrimSet)
+        {
+          newTeardownPaths.push_back(it.GetPath());
+        }
+      }
+      std::swap(m_teardownPaths, newTeardownPaths);
+
+      SdfPathVector newUpdatePaths;
+      for(auto updatePath : m_updatePaths)
+      {
+        {
+          auto prim = stage->GetPrimAtPath(updatePath);
+          if(prim)
+          {
+            if(manufacture.get(prim.GetTypeName()))
+            {
+              newUpdatePaths.push_back(updatePath);
+            }
+          }
+        }
+        auto newPrimSet = m_proxy->huntForNativeNodesUnderPrim(proxyTransformPath, updatePath, manufacture, true);
+        for(auto it : newPrimSet)
+        {
+          newUpdatePaths.push_back(it.GetPath());
+        }
+      }
+      std::swap(m_updatePaths, newUpdatePaths);
+    }
   }
   catch(const MStatus& status)
   {
@@ -1379,6 +1465,28 @@ MStatus TranslatePrim::redoIt()
 
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("TranslatePrim::redoIt\n");
   m_proxy->translatePrimPathsIntoMaya(m_importPaths, m_teardownPaths, tp);
+
+  auto stage = m_proxy->usdStage();
+  auto manufacture = m_proxy->translatorManufacture();
+  for(auto it : m_updatePaths)
+  { 
+    auto prim = stage->GetPrimAtPath(it);
+    if(prim)
+    {
+      auto translator = manufacture.get(prim.GetTypeName());
+      if(translator->supportsUpdate())
+      { 
+        translator->update(prim);
+      }
+      else
+      {
+        MString err = "Update requested on prim that does not support update: ";
+        err += it.GetText();
+        MGlobal::displayWarning(err);
+      }
+    }
+  }
+
   return MStatus::kSuccess;
 }
 

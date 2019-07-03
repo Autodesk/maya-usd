@@ -278,6 +278,8 @@ class TranslatePrim
   nodes::ProxyShape* m_proxy;
   SdfPathVector m_importPaths;
   SdfPathVector m_teardownPaths;
+  SdfPathVector m_updatePaths;
+  bool m_recursive;
 
 public:
   AL_MAYA_DECLARE_COMMAND();

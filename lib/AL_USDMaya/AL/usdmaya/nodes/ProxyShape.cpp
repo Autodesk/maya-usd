@@ -1242,7 +1242,8 @@ void ProxyShape::validateTransforms()
 std::vector<UsdPrim> ProxyShape::huntForNativeNodesUnderPrim(
     const MDagPath& proxyTransformPath,
     SdfPath startPath,
-    fileio::translators::TranslatorManufacture& manufacture)
+    fileio::translators::TranslatorManufacture& manufacture,
+    const bool importAll)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::huntForNativeNodesUnderPrim\n");
   std::vector<UsdPrim> prims;
@@ -1258,7 +1259,7 @@ std::vector<UsdPrim> ProxyShape::huntForNativeNodesUnderPrim(
     }
 
     fileio::translators::TranslatorRefPtr trans = utils.isSchemaPrim(prim);
-    if(trans && trans->importableByDefault())
+    if(trans && (trans->importableByDefault() || importAll))
     {
       prims.push_back(prim);
     }
