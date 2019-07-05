@@ -290,3 +290,48 @@ over "root" {
      EXPECT_NEAR(3.4, translation.z, EPSILON);
    }
 }
+
+TEST(ProxyShapeImport, stageLoadWithCacheId)
+{
+  auto createTestUSDStage = [] ()
+  {
+
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomXform root = UsdGeomXform::Define(stage, SdfPath("/root"));
+    stage->DefinePrim(SdfPath("/root/parent"), TfToken("xform"));
+    return stage;
+  };
+
+  const MString proxyName = "testProxy";
+  auto constructProxyImportCommand = [proxyName] (int stageId)
+  {
+    MString cmd = "AL_usdmaya_ProxyShapeImport ";
+    cmd += " -name \"" + proxyName + "\"";
+    cmd += MString(" -stageId ") + stageId;
+    return cmd;
+  };
+
+  MFileIO::newFile(true);
+
+  auto stage = createTestUSDStage();
+  auto stageCacheId = AL::usdmaya::StageCache::Get().Insert(stage);
+
+  EXPECT_TRUE(stageCacheId.IsValid());
+  ASSERT_TRUE(MGlobal::executeCommand(constructProxyImportCommand(stageCacheId.ToLongInt()), false, false) == MS::kSuccess);
+
+  MSelectionList sel;
+  EXPECT_TRUE(sel.add(proxyName + "Shape") == MS::kSuccess);
+  MObject proxyShapeObj;
+  EXPECT_TRUE(sel.getDependNode(0, proxyShapeObj) == MS::kSuccess);
+
+  MStatus stat;
+  MFnDependencyNode fn(proxyShapeObj, &stat);
+  EXPECT_TRUE(stat);
+  AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode(&stat);
+  ASSERT_TRUE(stat);
+
+  auto proxyStage = proxy->getUsdStage();
+  auto proxyStageCacheId = AL::usdmaya::StageCache::Get().GetId(proxyStage);
+
+  ASSERT_EQ(stageCacheId.ToLongInt(), proxyStageCacheId.ToLongInt());
+}

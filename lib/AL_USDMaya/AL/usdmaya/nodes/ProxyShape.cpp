@@ -816,7 +816,7 @@ MStatus ProxyShape::initialise()
 
     m_stageDataDirty = addBoolAttr("stageDataDirty", "sdd", false, kWritable | kAffectsAppearance | kInternal);
 
-    m_stageCacheId = addInt32Attr("stageCacheId", "stcid", -1, kCached | kConnectable | kReadable  );
+    m_stageCacheId = addInt32Attr("stageCacheId", "stcid", -1, kCached | kConnectable | kReadable | kInternal );
 
     m_assetResolverConfig = addStringAttr("assetResolverConfig", "arc", kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance | kInternal);
 
@@ -1338,138 +1338,165 @@ void ProxyShape::loadStage()
   {
     trackEditTargetLayer();
   }
-  m_stage = UsdStageRefPtr();
 
-  // Get input attr values
-  const MString file = inputStringValue(dataBlock, m_filePath);
-  const MString sessionLayerName = inputStringValue(dataBlock, m_sessionLayerName);
+  const int stageIdVal = inputInt32Value(dataBlock, m_stageCacheId);
+  UsdStageCache::Id stageId = UsdStageCache::Id().FromLongInt(stageIdVal);
+  MString file;
 
-  const MString populationMaskIncludePaths = inputStringValue(dataBlock, m_populationMaskIncludePaths);
-  UsdStagePopulationMask mask = constructStagePopulationMask(populationMaskIncludePaths);
-
-  // TODO initialise the context using the serialised attribute
-
-  // let the usd stage cache deal with caching the usd stage data
-  std::string fileString = TfStringTrimRight(file.asChar());
-
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage original USD file path is %s\n", fileString.c_str());
-
-  AL::filesystem::path filestringPath (fileString);
-  if(filestringPath.is_absolute())
+  if (stageId.IsValid())
   {
-    fileString = resolvePath(fileString);
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the USD file path to %s\n", fileString.c_str());
+    // Load stage from cache.
+    if (StageCache::Get().Contains(stageId))
+    {
+      m_stage = StageCache::Get().Find(stageId);
+      file = AL::maya::utils::convert(m_stage->GetRootLayer()->GetIdentifier());
+      outputStringValue(dataBlock, m_filePath, file);
+      // Save the initial edit target
+      trackEditTargetLayer();
+    }
+    else
+    {
+      MGlobal::displayError("ProxyShape::loadStage called with non-existent stageCacheId.");
+      stageId = UsdStageCache::Id();
+    }
   }
   else
   {
-    fileString = resolveRelativePathWithinMayaContext(thisMObject(), fileString);
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the relative USD file path to %s\n", fileString.c_str());
-  }
+    m_stage = UsdStageRefPtr();
 
-  // Fall back on providing the path "as is" to USD
-  if (fileString.empty())
-  {
-    fileString.assign(file.asChar(), file.length());
-  }
+    // Get input attr values
+    file = inputStringValue(dataBlock, m_filePath);
+    const MString sessionLayerName = inputStringValue(dataBlock, m_sessionLayerName);
 
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage called for the usd file: %s\n", fileString.c_str());
+    const MString populationMaskIncludePaths = inputStringValue(dataBlock, m_populationMaskIncludePaths);
+    UsdStagePopulationMask mask = constructStagePopulationMask(populationMaskIncludePaths);
 
-  // Only try to create a stage for layers that can be opened.
-  if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString))
-  {
-    MStatus status;
-    SdfLayerRefPtr sessionLayer;
+    // TODO initialise the context using the serialised attribute
 
-    AL_BEGIN_PROFILE_SECTION(OpeningUsdStage);
-      AL_BEGIN_PROFILE_SECTION(OpeningSessionLayer);
+    // let the usd stage cache deal with caching the usd stage data
+    std::string fileString = TfStringTrimRight(file.asChar());
+
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage original USD file path is %s\n", fileString.c_str());
+
+    AL::filesystem::path filestringPath(fileString);
+    if (filestringPath.is_absolute())
+    {
+      fileString = resolvePath(fileString);
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the USD file path to %s\n",
+                                          fileString.c_str());
+    }
+    else
+    {
+      fileString = resolveRelativePathWithinMayaContext(thisMObject(), fileString);
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the relative USD file path to %s\n",
+                                          fileString.c_str());
+    }
+
+    // Fall back on providing the path "as is" to USD
+    if (fileString.empty())
+    {
+      fileString.assign(file.asChar(), file.length());
+    }
+
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage called for the usd file: %s\n", fileString.c_str());
+
+    // Only try to create a stage for layers that can be opened.
+    if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString))
+    {
+      MStatus status;
+      SdfLayerRefPtr sessionLayer;
+
+      AL_BEGIN_PROFILE_SECTION(OpeningUsdStage);
+        AL_BEGIN_PROFILE_SECTION(OpeningSessionLayer);
         {
           // Grab the session layer from the layer manager
-          if(sessionLayerName.length() > 0)
+          if (sessionLayerName.length() > 0)
           {
             auto layerManager = LayerManager::findManager();
-            if(layerManager)
+            if (layerManager)
             {
               sessionLayer = layerManager->findLayer(AL::maya::utils::convert(sessionLayerName));
-              if(!sessionLayer)
+              if (!sessionLayer)
               {
                 MGlobal::displayError(MString("ProxyShape \"") + name() + "\" had a serialized session layer"
-                    " named \"" + sessionLayerName + "\", but no matching layer could be found in the layerManager");
+                                                                          " named \"" + sessionLayerName +
+                                      "\", but no matching layer could be found in the layerManager");
               }
             }
             else
             {
               MGlobal::displayError(MString("ProxyShape \"") + name() + "\" had a serialized session layer,"
-                  " but no layerManager node was found");
+                                                                        " but no layerManager node was found");
             }
           }
 
           // If we still have no sessionLayer, but there's data in serializedSessionLayer, then
           // assume we're reading an "old" file, and read it for backwards compatibility.
-          if(!sessionLayer)
+          if (!sessionLayer)
           {
             const MString serializedSessionLayer = inputStringValue(dataBlock, m_serializedSessionLayer);
-            if(serializedSessionLayer.length() != 0)
+            if (serializedSessionLayer.length() != 0)
             {
               sessionLayer = SdfLayer::CreateAnonymous();
               sessionLayer->ImportFromString(AL::maya::utils::convert(serializedSessionLayer));
             }
           }
         }
-      AL_END_PROFILE_SECTION();
+        AL_END_PROFILE_SECTION();
 
-      AL_BEGIN_PROFILE_SECTION(OpenRootLayer);
+        AL_BEGIN_PROFILE_SECTION(OpenRootLayer);
 
-      const MString assetResolverConfig = inputStringValue(dataBlock, m_assetResolverConfig);
+        const MString assetResolverConfig = inputStringValue(dataBlock, m_assetResolverConfig);
 
-      if (assetResolverConfig.length()==0)
-      {
-        // Initialise the asset resolver with the filepath
-        PXR_NS::ArGetResolver().ConfigureResolverForAsset(fileString);
-      }
-      else
-      {
-        // Initialise the asset resolver with the resolverConfig string
-        PXR_NS::ArGetResolver().ConfigureResolverForAsset(assetResolverConfig.asChar());
-      }
-      AL_END_PROFILE_SECTION();
-
-      AL_BEGIN_PROFILE_SECTION(UsdStageOpen);
-      {
-        UsdStageCacheContext ctx(StageCache::Get());
-
-        bool unloadedFlag = inputBoolValue(dataBlock, m_unloaded);
-        UsdStage::InitialLoadSet loadOperation = unloadedFlag ? UsdStage::LoadNone : UsdStage::LoadAll;
-
-        if (sessionLayer)
+        if (assetResolverConfig.length()==0)
         {
-          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage is called with extra session layer.\n");
-          m_stage = UsdStage::OpenMasked(rootLayer, sessionLayer, mask, loadOperation);
+          // Initialise the asset resolver with the filepath
+          PXR_NS::ArGetResolver().ConfigureResolverForAsset(fileString);
         }
         else
         {
-          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage is called without any session layer.\n");
-          m_stage = UsdStage::OpenMasked(rootLayer, mask, loadOperation);
+          // Initialise the asset resolver with the resolverConfig string
+          PXR_NS::ArGetResolver().ConfigureResolverForAsset(assetResolverConfig.asChar());
         }
+        AL_END_PROFILE_SECTION();
 
-        // Expand the mask, since we do not really want to mask the possible relation targets.
-        m_stage->ExpandPopulationMask();
+        AL_BEGIN_PROFILE_SECTION(UsdStageOpen);
+        {
+          UsdStageCacheContext ctx(StageCache::Get());
 
-        UsdStageCache::Id stageId = StageCache::Get().Insert(m_stage);
-        outputInt32Value(dataBlock, m_stageCacheId, stageId.ToLongInt());
+          bool unloadedFlag = inputBoolValue(dataBlock, m_unloaded);
+          UsdStage::InitialLoadSet loadOperation = unloadedFlag ? UsdStage::LoadNone : UsdStage::LoadAll;
 
-        // Set the edit target to the session layer so any user interaction will wind up there
-        m_stage->SetEditTarget(m_stage->GetSessionLayer());
-        // Save the initial edit target
-        trackEditTargetLayer();
-      }
+          if (sessionLayer)
+          {
+            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage is called with extra session layer.\n");
+            m_stage = UsdStage::OpenMasked(rootLayer, sessionLayer, mask, loadOperation);
+          }
+          else
+          {
+            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage is called without any session layer.\n");
+            m_stage = UsdStage::OpenMasked(rootLayer, mask, loadOperation);
+          }
+
+          // Expand the mask, since we do not really want to mask the possible relation targets.
+          m_stage->ExpandPopulationMask();
+
+          stageId = StageCache::Get().Insert(m_stage);
+          outputInt32Value(dataBlock, m_stageCacheId, stageId.ToLongInt());
+
+          // Set the edit target to the session layer so any user interaction will wind up there
+          m_stage->SetEditTarget(m_stage->GetSessionLayer());
+          // Save the initial edit target
+          trackEditTargetLayer();
+        }
+        AL_END_PROFILE_SECTION();
       AL_END_PROFILE_SECTION();
-    AL_END_PROFILE_SECTION();
-  }
-  else
-  if(!fileString.empty())
-  {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage failed to open the usd file: %s.\n", file.asChar());
-    MGlobal::displayWarning(MString("Failed to open usd file \"") + file + "\"");
+    }
+    else if (!fileString.empty())
+    {
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage failed to open the usd file: %s.\n", file.asChar());
+      MGlobal::displayWarning(MString("Failed to open usd file \"") + file + "\"");
+    }
   }
 
   // Get the prim
@@ -1905,16 +1932,25 @@ bool ProxyShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHand
   // the datablock for us, but this would be too late for these subfunctions
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::setInternalValue %s\n", plug.name().asChar());
 
-  // Delay stage creation if opening a file, because we haven't created the LayerManager node yet
-  if(plug == m_filePath || plug == m_assetResolverConfig)
+  if(plug == m_filePath || plug == m_assetResolverConfig || plug == m_stageCacheId)
   {
     m_filePathDirty = true;
     
     // can't use dataHandle.datablock(), as this is a temporary datahandle
     MDataBlock datablock = forceCache();
-    AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, plug, dataHandle.asString()),
-        false, "ProxyShape::setInternalValue - error setting filePath or assetResolverConfig");
-
+    if (plug == m_filePath || plug == m_assetResolverConfig)
+    {
+      AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, plug, dataHandle.asString()),
+                                     false,
+                                     "ProxyShape::setInternalValue - error setting filePath or assetResolverConfig");
+    }
+    else
+    {
+      AL_MAYA_CHECK_ERROR_RETURN_VAL(outputInt32Value(datablock, plug, dataHandle.asInt()),
+                                     false,
+                                     "ProxyShape::setInternalValue - error setting stageCacheId");
+    }
+    // Delay stage creation if opening a file, because we haven't created the LayerManager node yet
     if (MFileIO::isReadingFile())
     {
       m_unloadedProxyShapes.push_back(MObjectHandle(thisMObject()));

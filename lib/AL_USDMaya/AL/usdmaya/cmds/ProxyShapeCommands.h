@@ -23,6 +23,7 @@
 
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
+#include "AL/usdmaya/StageCache.h"
 
 #include "pxr/usd/usd/stage.h"
 

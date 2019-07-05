@@ -186,6 +186,7 @@ MSyntax ProxyShapeImport::createSyntax()
   syntax.useSelectionAsDefault(true);
   syntax.setObjectType(MSyntax::kSelectionList, 0);
   syntax.addFlag("-f", "-file", MSyntax::kString);
+  syntax.addFlag("-sid", "-stageId", MSyntax::kLong);
   syntax.addFlag("-s", "-session", MSyntax::kString);
   syntax.addFlag("-n", "-name", MSyntax::kString);
   syntax.addFlag("-pp", "-primPath", MSyntax::kString);
@@ -302,6 +303,7 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   }
 
   MString filePath;
+  int stageId;
   MString sessionLayerSerialized;
   MString primPath;
   MString excludePrimPath;
@@ -310,11 +312,30 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   bool connectToTime = true;
 
   // extract command args
-  if(!database.isFlagSet("-f") || !database.getFlagArgument("-f", 0, filePath))
+  bool hasFilePath = database.isFlagSet("-f") && database.getFlagArgument("-f", 0, filePath);
+  bool hasStageCacheId = database.isFlagSet("-sid") && database.getFlagArgument("-sid", 0, stageId) && (stageId != -1);
+  if(!hasFilePath && !hasStageCacheId)
   {
-    MGlobal::displayError("No file path specified");
+    MGlobal::displayError("Neither file path nor stage Id specified.");
     return MS::kFailure;
   }
+  else
+  if (hasFilePath && hasStageCacheId)
+  {
+    MGlobal::displayError("Cannot specify both file path and stage cache Id.");
+    return MS::kFailure;
+  }
+
+  if (hasStageCacheId)
+  {
+    UsdStageCache::Id stageCacheId = UsdStageCache::Id().FromLongInt(stageId);
+    if (!StageCache::Get().Contains(stageCacheId))
+    {
+      MGlobal::displayError(MString("Cannot find stage with Id ") + stageId + " in stage cache.");
+      return MS::kFailure;
+    }
+  }
+
   bool hasName = database.isFlagSet("-n");
   bool hasPrimPath = database.isFlagSet("-pp");
   bool hasExclPrimPath = database.isFlagSet("-epp");
@@ -395,7 +416,15 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
 
   if(hasStagePopulationMaskInclude) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::populationMaskIncludePaths()), populationMaskIncludePath);
 
-  m_modifier2.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::filePath()), filePath);
+  // Prefer stage cache Id over file path.
+  if (hasStageCacheId)
+  {
+    m_modifier2.newPlugValueInt(MPlug(m_shape, nodes::ProxyShape::stageCacheId()), stageId);
+  }
+  else
+  {
+    m_modifier2.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::filePath()), filePath);
+  }
 
   if(connectToTime)
   {
@@ -1496,7 +1525,8 @@ void constructProxyShapeCommandGuis()
 {
   {
     AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImport", "Proxy Shape Import", "Import", "USD/Proxy Shape/Import", false);
-    commandGui.addFilePathOption("file", "File Path", AL::maya::utils::CommandGuiHelper::kLoad, "USD all (*.usdc *.usda *.usd);;USD crate (*.usdc) (*.usdc);;USD Ascii (*.usda) (*.usda);;USD (*.usd) (*.usd)", AL::maya::utils::CommandGuiHelper::kStringMustHaveValue);
+    commandGui.addFilePathOption("file", "File Path", AL::maya::utils::CommandGuiHelper::kLoad, "USD all (*.usdc *.usda *.usd);;USD crate (*.usdc) (*.usdc);;USD Ascii (*.usda) (*.usda);;USD (*.usd) (*.usd)", AL::maya::utils::CommandGuiHelper::kStringOptional);
+    commandGui.addIntOption("stageId", "Stage cache Id", -1, false);
     commandGui.addStringOption("primPath", "USD Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
     commandGui.addStringOption("excludePrimPath", "Exclude Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
     commandGui.addStringOption("name", "Proxy Shape Node Name", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
