@@ -1,3 +1,21 @@
+## AL_USDMaya-0.32.30 (2019-07-05)
+### Added
++ Menu item to control whether selection is enabled in the viewport (controlled via the AL_usdmaya_selectionEnabled optionVar)
+### Fixed
++ constructLockPrims could end up in an infinite loop
+
+## AL_USDMaya-0.32.29 (2019-07-03)
+### Added 
++ AL_usdmaya_TranslatePrim can now recurse through a hierarchy of prims
++ AL_usdmaya_TranslatePrim can now update a set of prims
+### Fixed
++ Failing animation export unit tests 
+
+## AL_USDMaya-0.32.28 (2019-06-28)
+### Changed
++ VP2 election API now suppported in Maya2018 (20180600)
++ visibility flag now correctly handled by the mesh translator
+
 ## AL_USDMaya-0.32.27 (2019-06-06)
 ### Fixed
 + Potential crash when importing a scene 
