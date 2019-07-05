@@ -1,0 +1,41 @@
+#usda 1.0
+(
+    """ This file contains an example schemata for code generation using
+        usdGenSchema.
+    """
+    subLayers = [
+        @@USD_SCHEMA_PATH@@,
+        @@USDGEOM_SCHEMA_PATH@@,
+    ]
+) 
+
+over "GLOBAL" (
+    customData = {
+        string libraryName        = "MayaUsd_Schemas"
+        string libraryPath        = "."
+        string libraryPrefix      = "AL_usd_"#This AL_ is here to get around that the Jinja template doesn't generate a template that supports namespaces. If we had a AL namespace then I could remove this AL.
+        string tokensPrefix       = "MayaUsd_Schemas"
+    }
+) {}
+
+
+###################################################################################################
+
+class ALMayaReference "ALMayaReference"(
+  doc = "Data used to import a maya reference."
+  inherits = </Xformable>
+  customData = {
+        string className = "MayaReference"
+        string fileName = "MayaReference"
+      }
+)
+{
+  asset mayaReference(
+    doc = "Path to the maya reference."
+  )
+  string mayaNamespace (
+    doc = "Namespace which the maya reference will be imported under."
+  )
+}
+
+###################################################################################################

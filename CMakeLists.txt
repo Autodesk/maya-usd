@@ -15,10 +15,10 @@ cmake_minimum_required(VERSION 3.1.1)
 #==============================================================================
 # Define common build variables
 #==============================================================================
-set(BUILD_MAYAUSD_CORE_LIBRARY ON CACHE BOOL "Build Core USD libraries.")
-set(BUILD_ADSK_USD_PLUGIN ON CACHE BOOL "Build Autodesk USD plugin.")
-set(BUILD_PXR_USD_PLUGIN ON CACHE BOOL "Build the Pixar USD plugin and libraries.")
-set(BUILD_AL_USD_PLUGIN ON CACHE BOOL "Build the Animal Logic USD plugin and libraries.")
+set(BUILD_MAYAUSD_LIBRARY ON CACHE BOOL "Build Core USD libraries.")
+set(BUILD_ADSK_PLUGIN ON CACHE BOOL "Build Autodesk USD plugin.")
+set(BUILD_PXR_PLUGIN ON CACHE BOOL "Build the Pixar USD plugin and libraries.")
+set(BUILD_AL_PLUGIN ON CACHE BOOL "Build the Animal Logic USD plugin and libraries.")
 
 #==============================================================================
 # Modules and Definitions
@@ -28,7 +28,7 @@ list(APPEND CMAKE_MODULE_PATH
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults
 )
 
-if (BUILD_MAYAUSD_CORE_LIBRARY)
+if (BUILD_MAYAUSD_LIBRARY)
     include(cmake/mayausd_version.info)
     set(MAYAUSD_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD_PATCH_LEVEL}")
 endif()
@@ -64,7 +64,7 @@ string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 #==============================================================================
 # CORE
 #==============================================================================
-if (BUILD_MAYAUSD_CORE_LIBRARY)
+if (BUILD_MAYAUSD_LIBRARY)
 
     # set build location
     set(MAYAUSD_BUILD_ROOT "${CMAKE_CURRENT_BINARY_DIR}/build-mayaUsd")
@@ -74,30 +74,30 @@ if (BUILD_MAYAUSD_CORE_LIBRARY)
     # during the 'configure' phase of the AL_USDMaya cmake. This means that MayaUSD
     # will perform the cmake config/build/install steps all at once. This is needed
     # because AL_USDMaya needs to find an 'install' of MayaUSD.
-    include("core/MayaUsd.cmake")
+    include("lib/MayaUsd.cmake")
 endif()
 
 #==============================================================================
 # PLUGINS
 #==============================================================================
-if (BUILD_PXR_USD_PLUGIN)
-    add_subdirectory(plugins/PXR_USDMaya)
+if (BUILD_PXR_PLUGIN)
+    add_subdirectory(plugin/pxr)
 endif()
 
-if (BUILD_AL_USD_PLUGIN)
-    if(BUILD_USDMAYA_PXR_TRANSLATORS AND NOT BUILD_PXR_USD_PLUGIN)
+if (BUILD_AL_PLUGIN)
+    if(BUILD_USDMAYA_PXR_TRANSLATORS AND NOT BUILD_PXR_PLUGIN)
         message(FATAL_ERROR "Animal logic's pixar translator depends on pixar plugin!")
     endif()
 
-    add_subdirectory(plugins/AL_USDMaya)
+    add_subdirectory(plugin/al)
 
     if(BUILD_USDMAYA_PXR_TRANSLATORS)
         add_dependencies(AL_USDMayaPxrTranslators usdMaya)
     endif()
 endif()
 
-if (BUILD_ADSK_USD_PLUGIN)
-    add_subdirectory(plugins/ADSK_USDMaya)
+if (BUILD_ADSK_PLUGIN)
+    add_subdirectory(plugin/adsk)
 endif()
 
 #==============================================================================

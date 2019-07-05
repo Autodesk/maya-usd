@@ -1,0 +1,29 @@
+cmake_minimum_required(VERSION 2.8.12)
+
+project(mayaUsd NONE)
+
+# Not specifying CONFIGURE_COMMAND, BUILD_COMMAND, or INSTALL_COMMAND means use
+# CMake.  Specifying a XXX_COMMAND as empty string means omit the step.
+
+include(ExternalProject)
+
+message(STATUS "MayaUSD install dir = ${MAYAUSD_INSTALL_DIR}")
+
+ExternalProject_Add(mayaUsd
+    PREFIX              "${MAYAUSD_BUILD_ROOT}"
+    STAMP_DIR           "${MAYAUSD_BUILD_ROOT}/mayausd-stamp"
+    TMP_DIR             "${MAYAUSD_BUILD_ROOT}/mayausd-temp"
+    SOURCE_DIR          "${CMAKE_CURRENT_SOURCE_DIR}/lib"
+    BINARY_DIR          "${MAYAUSD_BUILD_ROOT}/mayausd-build"
+    INSTALL_DIR         "${MAYAUSD_INSTALL_DIR}"
+    DOWNLOAD_COMMAND    ""
+    UPDATE_COMMAND      ""
+    ${MAYAUSD_BUILD_ALWAYS}
+    CMAKE_ARGS
+        "-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
+        "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+        "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+        "-DCMAKE_INSTALL_PREFIX=${MAYAUSD_INSTALL_DIR}"
+        "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+        "${MAYAUSD_DEFINES}"
+)
