@@ -522,6 +522,9 @@ bool ProxyDrawOverride::userSelect(
 {
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyDrawOverride::userSelect\n");
 
+  if(!MGlobal::optionVarIntValue("AL_usdmaya_selectionEnabled"))
+    return false;
+
   MSelectionMask mask(MString(ProxyShape::s_selectionMaskName));
   if (!selectInfo.selectable(mask))
     return false;

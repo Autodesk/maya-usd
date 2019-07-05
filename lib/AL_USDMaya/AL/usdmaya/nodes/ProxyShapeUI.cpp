@@ -302,6 +302,9 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 {
   TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyShapeUI::select\n");
 
+  if(!MGlobal::optionVarIntValue("AL_usdmaya_selectionEnabled"))
+    return false;
+
   float clearCol[4];
   glGetFloatv(GL_COLOR_CLEAR_VALUE, clearCol);
 
