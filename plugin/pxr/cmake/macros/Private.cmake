@@ -52,7 +52,7 @@ function(_copy_headers LIBRARY_NAME)
             add_custom_command(
                 OUTPUT ${outfile}
                 COMMAND ${CMAKE_COMMAND} -E make_directory "${dir_to_create}"
-                COMMAND ${CMAKE_COMMAND} -Dinfile="${infile}" -Doutfile="${outfile}" -P "${PROJECT_SOURCE_DIR}/plugins/PXR_USDMaya/cmake/macros/copyHeaderForBuild.cmake"
+                COMMAND ${CMAKE_COMMAND} -Dinfile="${infile}" -Doutfile="${outfile}" -P "${PROJECT_SOURCE_DIR}/plugin/pxr/cmake/macros/copyHeaderForBuild.cmake"
                 MAIN_DEPENDENCY "${infile}"
                 COMMENT "Copying ${f} ..."
                 VERBATIM
@@ -151,7 +151,7 @@ function(_install_python LIBRARY_NAME)
             add_custom_command(OUTPUT ${outfile}
                 COMMAND
                     ${PYTHON_EXECUTABLE}
-                    ${PROJECT_SOURCE_DIR}/plugins/PXR_USDMaya/cmake/macros/compilePython.py
+                    ${PROJECT_SOURCE_DIR}/plugin/pxr/cmake/macros/compilePython.py
                     ${CMAKE_CURRENT_SOURCE_DIR}/${file}
                     ${CMAKE_CURRENT_SOURCE_DIR}/${file}
                     ${CMAKE_CURRENT_BINARY_DIR}/${file_we}.pyc

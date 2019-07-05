@@ -6,7 +6,7 @@
 // otherwise accompanies this software in either electronic or hard copy form.
 // ===========================================================================
 
-#include "mayaUsd/MayaUsdApi.h"
+#include "mayaUsd/api.h"
 
 #include <maya/MFnPlugin.h>
 #include <maya/MStatus.h>

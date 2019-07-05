@@ -10,7 +10,7 @@
 
 if(APPLE)
     find_path(MAYAUSD_LIBRARY_DIR 
-        libmayaUsdCore.dylib
+        libmayaUsd.dylib
         HINTS
             "${MAYAUSD_LIB_ROOT}"
             "$ENV{MAYAUSD_LIB_ROOT}"
@@ -26,7 +26,7 @@ if(APPLE)
     )
 elseif(UNIX)
     find_path(MAYAUSD_LIBRARY_DIR
-            libmayaUsdCore.so
+            libmayaUsd.so
          HINTS
             "${MAYAUSD_LIB_ROOT}"
             "$ENV{MAYAUSD_LIB_ROOT}"
@@ -42,7 +42,7 @@ elseif(UNIX)
     )
 elseif(WIN32)
     find_path(MAYAUSD_LIBRARY_DIR
-            mayaUsdCore.lib
+            mayaUsd.lib
          HINTS
             "${MAYAUSD_LIB_ROOT}"
             "$ENV{MAYAUSD_LIB_ROOT}"
@@ -59,7 +59,7 @@ elseif(WIN32)
 endif()
 
 find_path(MAYAUSD_INCLUDE_DIR
-        mayaUsd/MayaUsdApi.h
+        mayaUsd/mayaUsd.h
     HINTS
         "${MAYAUSD_INCLUDE_ROOT}"
         "$ENV{MAYAUSD_INCLUDE_ROOT}"
@@ -74,12 +74,9 @@ find_path(MAYAUSD_INCLUDE_DIR
         "MayaUSD's headers path"
 )
 
-message(STATUS "MayaUSD Include directory: ${MAYAUSD_INCLUDE_DIR}")
-message(STATUS "MayaUSD Library directory: ${MAYAUSD_LIBRARY_DIR}")
-
 # Use find_library to account for platform-specific library name prefixes
 # (e.g. lib) and suffixes (e.g. .lib, .so, .dylib).
-foreach(MAYAUSD_LIB mayaUsdCore)
+foreach(MAYAUSD_LIB mayaUsd)
 
     find_library(MAYAUSD_LIBRARY
         NAMES
@@ -97,7 +94,7 @@ endforeach(MAYAUSD_LIB)
 
 # If we weren't passed in the MayaUsd version info, read it from the header file.
 if (NOT DEFINED MAYAUSD_MAJOR_VERSION)
-    file(READ ${MAYAUSD_INCLUDE_DIR}/mayaUsd/MayaUsd.h MAYAUSD_MAIN_HEADER)
+    file(READ ${MAYAUSD_INCLUDE_DIR}/mayaUsd/mayaUsd.h MAYAUSD_MAIN_HEADER)
     string(REGEX REPLACE ".*\#define MAYAUSD_MAJOR_VERSION[ ]+([0-9]+).*" "\\1" MAYAUSD_MAJOR_VERSION ${MAYAUSD_MAIN_HEADER})
     string(REGEX REPLACE ".*\#define MAYAUSD_MINOR_VERSION[ ]+([0-9]+).*" "\\1" MAYAUSD_MINOR_VERSION ${MAYAUSD_MAIN_HEADER})
     string(REGEX REPLACE ".*\#define MAYAUSD_PATCH_LEVEL[ ]+([0-9]+).*" "\\1" MAYAUSD_PATCH_LEVEL ${MAYAUSD_MAIN_HEADER})

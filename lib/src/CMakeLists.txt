@@ -1,16 +1,16 @@
-set(LIBRARY_NAME mayaUsdCore)
+set(LIBRARY_NAME mayaUsd)
 
-list(APPEND mayaUsdCore_src
+list(APPEND src
     core.cpp
 )
 
-list(APPEND mayaUsdCore_headers
-    ../include/MayaUsdApi.h
+list(APPEND header_install
+    ../include/api.h
 )
 
 add_library(${LIBRARY_NAME}
     SHARED
-        ${mayaUsdCore_src}
+        ${src}
 )
 
 target_compile_definitions(${LIBRARY_NAME}
@@ -19,7 +19,7 @@ target_compile_definitions(${LIBRARY_NAME}
         MAYAUSD_CORE_EXPORT
         MFB_PACKAGE_NAME="${LIBRARY_NAME}"
         MFB_ALT_PACKAGE_NAME="${LIBRARY_NAME}"
-        MFB_PACKAGE_MODULE=mayaUsdCore
+        MFB_PACKAGE_MODULE=mayaUsd
 )
 
 target_include_directories(
@@ -28,7 +28,7 @@ target_include_directories(
     ${MAYA_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
-    # MayaUsd.h is generated in the build area
+    # mayaUsd.h is generated in the build area
     ${CMAKE_CURRENT_BINARY_DIR}/../include
 )
 
@@ -53,10 +53,10 @@ endif()
 set_property(GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 
 # install public headers
-install(FILES ${mayaUsdCore_headers}
+install(FILES ${header_install}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd
 )
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/../include/MayaUsd.h
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/../include/mayaUsd.h
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd
 )

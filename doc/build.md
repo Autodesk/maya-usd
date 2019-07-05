@@ -39,7 +39,7 @@ When builidng Pixar USD Core, you need to pass ```--no-maya``` to ensure that ``
 Custom arguments can be also passed to build system using ```--build-args```.
 e.g
 ```
-python build.py --build-args="-DBUILD_ADSK_USD_PLUGIN=ON,-DBUILD_PXR_USD_PLUGIN=OFF"
+python build.py --build-args="-DBUILD_ADSK_PLUGIN=ON,-DBUILD_PXR_PLUGIN=OFF"
 ```
 
 #### 4. CMake Generator
@@ -81,10 +81,10 @@ C:\> python build.py --maya-location "C:\Program Files\Autodesk\maya2019" --pxru
 
 Name                        | Description                                       | Default
 ---                         | ---                                               | ---
-BUILD_MAYAUSD_CORE_LIBRARY  | Builds the Autodesk Maya Core USD libraries.      | ON
-BUILD_ADSK_USD_PLUGIN       | Builds the Autodesk Maya USD plugin.              | ON
-BUILD_AL_USD_PLUGIN         | Builds the Animal Logic USD plugin and libraries. | ON
-BUILD_PXR_USD_PLUGIN        | Builds the Pixar USD plugin and libraries.        | ON
+BUILD_MAYAUSD_LIBRARY       | Builds the Autodesk Maya Core USD libraries.      | ON
+BUILD_ADSK_PLUGIN           | Builds the Autodesk Maya USD plugin.              | ON
+BUILD_AL_PLUGIN             | Builds the Animal Logic USD plugin and libraries. | ON
+BUILD_PXR_PLUGIN            | Builds the Pixar USD plugin and libraries.        | ON
 
 # Building USD
 

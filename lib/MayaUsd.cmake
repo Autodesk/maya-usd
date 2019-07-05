@@ -1,17 +1,8 @@
-message("MayaUsd.cmake")
-
 # Convert some vars to forward slashes (if required) to fix invalid escape
 # sequence parsing errors.
 file(TO_CMAKE_PATH ${CMAKE_MAKE_PROGRAM} CMAKE_MAKE_PROGRAM)
 file(TO_CMAKE_PATH ${MAYA_LOCATION} MAYA_LOCATION)
 file(TO_CMAKE_PATH ${MAYAUSD_BUILD_ROOT} MAYAUSD_BUILD_ROOT)
-
-message("CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}")
-message("CMAKE_MAKE_PROGRAM = ${CMAKE_MAKE_PROGRAM}")
-message("MAYA_LOCATION = ${MAYA_LOCATION}")
-message("MAYAUSD_BUILD_ROOT = ${MAYAUSD_BUILD_ROOT}")
-message("PXR_USD_LOCATION = ${PXR_USD_LOCATION}")
-message("USD_CONFIG_FILE = ${USD_CONFIG_FILE}")
 
 # Helper macro to add the needed defines to a list so that we can easily pass
 # them to the external project. That external project is executed in a separate
@@ -31,7 +22,7 @@ set(MAYAUSD_INSTALL_DIR "${MAYAUSD_BUILD_ROOT}/mayausd-install/mayaUsd-${MAYAUSD
 if (NOT CMAKE_VERSION VERSION_LESS "3.1.3")
     set(MAYAUSD_BUILD_ALWAYS "BUILD_ALWAYS ON")
 endif()
-configure_file(core/CMakeLists_MayaUsd.txt.in ${MAYAUSD_BUILD_ROOT}/mayausd-config/CMakeLists.txt)
+configure_file(lib/CMakeLists_MayaUsd.txt.in ${MAYAUSD_BUILD_ROOT}/mayausd-config/CMakeLists.txt)
 
 # Execute the MayaUSD build right now.
 message(STATUS "========== Building MayaUSD_v${MAYAUSD_VERSION} ... ==========")
