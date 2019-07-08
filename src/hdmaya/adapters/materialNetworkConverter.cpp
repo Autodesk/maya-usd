@@ -39,6 +39,8 @@
 
 #include <hdmaya/utils.h>
 
+#include <mutex>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -172,48 +174,14 @@ TfToken GetOutputName(const HdMaterialNode& material, SdfValueTypeName type) {
     return HdMayaAdapterTokens->result;
 }
 
-const auto _previewShaderParams = []() -> HdMayaShaderParams {
-    // TODO: Use SdrRegistry, but it seems PreviewSurface is not there yet?
-    HdMayaShaderParams ret = {
-        {HdMayaAdapterTokens->roughness, VtValue(0.01f),
-         SdfValueTypeNames->Float},
-        {HdMayaAdapterTokens->clearcoat, VtValue(0.0f),
-         SdfValueTypeNames->Float},
-        {HdMayaAdapterTokens->clearcoatRoughness, VtValue(0.01f),
-         SdfValueTypeNames->Float},
-        {HdMayaAdapterTokens->emissiveColor, VtValue(GfVec3f(0.0f, 0.0f, 0.0f)),
-         SdfValueTypeNames->Vector3f},
-        {HdMayaAdapterTokens->specularColor, VtValue(GfVec3f(1.0f, 1.0f, 1.0f)),
-         SdfValueTypeNames->Vector3f},
-        {HdMayaAdapterTokens->metallic, VtValue(0.0f),
-         SdfValueTypeNames->Float},
-        {HdMayaAdapterTokens->useSpecularWorkflow, VtValue(0),
-         SdfValueTypeNames->Int},
-        {HdMayaAdapterTokens->occlusion, VtValue(1.0f),
-         SdfValueTypeNames->Float},
-        {HdMayaAdapterTokens->ior, VtValue(1.5f), SdfValueTypeNames->Float},
-        {HdMayaAdapterTokens->normal, VtValue(GfVec3f(0.0f, 0.0f, 1.0f)),
-         SdfValueTypeNames->Vector3f},
-        {HdMayaAdapterTokens->opacity, VtValue(1.0f), SdfValueTypeNames->Float},
-        {HdMayaAdapterTokens->diffuseColor,
-         VtValue(GfVec3f(0.18f, 0.18f, 0.18f)), SdfValueTypeNames->Vector3f},
-        {HdMayaAdapterTokens->displacement, VtValue(0.0f),
-         SdfValueTypeNames->Float},
-    };
-    std::sort(
-        ret.begin(), ret.end(),
-        [](const HdMayaShaderParam& a, const HdMayaShaderParam& b) -> bool {
-            return a.param.GetName() < b.param.GetName();
-        });
-    return ret;
-}();
+std::mutex _previewShaderParams_mutex;
+bool _previewShaderParams_initialized = false;
+HdMayaShaderParams _previewShaderParams;
 
 // This is required quite often, so we precalc.
-const auto _previewMaterialParamVector = []() -> HdMaterialParamVector {
-    HdMaterialParamVector ret;
-    for (const auto& it : _previewShaderParams) { ret.emplace_back(it.param); }
-    return ret;
-}();
+std::mutex _previewMaterialParamVector_mutex;
+bool _previewMaterialParamVector_initialized = false;
+HdMaterialParamVector _previewMaterialParamVector;
 
 class HdMayaGenericMaterialAttrConverter : public HdMayaMaterialAttrConverter {
 public:
@@ -577,7 +545,8 @@ HdMaterialNode* HdMayaMaterialNetworkConverter::GetMaterial(
     material.path = materialPath;
     material.identifier = nodeConverter->GetIdentifier();
     if (material.identifier == UsdImagingTokens->UsdPreviewSurface) {
-        for (const auto& param : _previewShaderParams) {
+        for (const auto& param :
+             HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
             this->ConvertParameter(
                 node, *nodeConverter, material, param.param.GetName(),
                 param.type, &param.param.GetFallbackValue());
@@ -713,11 +682,54 @@ VtValue HdMayaMaterialNetworkConverter::ConvertPlugToValue(
 
 const HdMayaShaderParams&
 HdMayaMaterialNetworkConverter::GetPreviewShaderParams() {
+    if (!_previewShaderParams_initialized) {
+        std::lock_guard<std::mutex> lock(_previewShaderParams_mutex);
+        // Once we have the lock, recheck to make sure it's still
+        // uninitialized...
+        if (!_previewShaderParams_initialized) {
+            auto& shaderReg = SdrRegistry::GetInstance();
+            SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(
+                UsdImagingTokens->UsdPreviewSurface);
+            if (TF_VERIFY(sdrNode)) {
+                auto inputNames = sdrNode->GetInputNames();
+                _previewShaderParams.reserve(inputNames.size());
+
+                for (auto& inputName : inputNames) {
+                    auto property = sdrNode->GetInput(inputName);
+                    if (!TF_VERIFY(property)) { continue; }
+                    _previewShaderParams.emplace_back(
+                        inputName, property->GetDefaultValue(),
+                        property->GetTypeAsSdfType().first);
+                }
+                std::sort(
+                    _previewShaderParams.begin(), _previewShaderParams.end(),
+                    [](const HdMayaShaderParam& a,
+                       const HdMayaShaderParam& b) -> bool {
+                        return a.param.GetName() < b.param.GetName();
+                    });
+                _previewShaderParams_initialized = true;
+            }
+        }
+    }
     return _previewShaderParams;
 }
 
 const HdMaterialParamVector&
 HdMayaMaterialNetworkConverter::GetPreviewMaterialParamVector() {
+    if (!_previewMaterialParamVector_initialized) {
+        std::lock_guard<std::mutex> lock(_previewMaterialParamVector_mutex);
+        // Once we have the lock, recheck to make sure it's still
+        // uninitialized...
+        if (!_previewMaterialParamVector_initialized) {
+            auto& shaderParams =
+                HdMayaMaterialNetworkConverter::GetPreviewShaderParams();
+            _previewMaterialParamVector.reserve(shaderParams.size());
+            for (const auto& it : shaderParams) {
+                _previewMaterialParamVector.emplace_back(it.param);
+            }
+            _previewMaterialParamVector_initialized = true;
+        }
+    }
     return _previewMaterialParamVector;
 }
 
