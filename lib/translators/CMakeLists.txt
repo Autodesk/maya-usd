@@ -1,6 +1,16 @@
-set(TRANSLATORS_PLUGIN mayaUsdTranslators)
+set(TRANSLATORS_PLUGIN mayaUsd_Translators)
 
-set(INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}/plugin)
+set(INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd)
+
+set(
+    resources_install_path
+    ${CMAKE_INSTALL_PREFIX}/lib/usd/${TRANSLATORS_PLUGIN}/resources
+)
+
+set(
+    library_install_path
+    ${CMAKE_INSTALL_PREFIX}/lib/
+)
 
 list(APPEND DEPENDANT_LIBRARIES 
     arch
@@ -19,6 +29,7 @@ list(APPEND DEPENDANT_LIBRARIES
     ${Boost_PYTHON_LIBRARY}
     ${MAYA_LIBRARIES}
     mayaUsd
+	mayaUsd_Schemas
 )
 
 list(APPEND source
@@ -32,6 +43,7 @@ list(APPEND source
     locatorWriter.cpp
     materialReader.cpp
     mayaReferenceReader.cpp
+    mayaReferenceUpdater.cpp
     meshReader.cpp
     meshWriter.cpp
     meshWriter_Primvars.cpp
@@ -97,7 +109,7 @@ configure_file (
 )
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
-    DESTINATION ${INSTALL_DESTINATION}/${TRANSLATORS_PLUGIN}/resources
+    DESTINATION ${resources_install_path}
 )
 
 #install top level plugInfo.json that includes the configured plugInfo.json
@@ -108,14 +120,16 @@ install(CODE
 #======================================================================
 # INSTALL
 #======================================================================
-# TODO header files? 
 
-install(TARGETS ${TRANSLATORS_PLUGIN}
+install(
+    TARGETS ${TRANSLATORS_PLUGIN}
     LIBRARY
-    DESTINATION ${INSTALL_DESTINATION}
+    DESTINATION ${library_install_path}
+	ARCHIVE
+    DESTINATION ${library_install_path}
     RUNTIME
-    DESTINATION ${INSTALL_DESTINATION}
+    DESTINATION ${library_install_path}
 )
 if(MSVC)
-    install(FILES $<TARGET_PDB_FILE:${TRANSLATORS_PLUGIN}> DESTINATION ${INSTALL_DESTINATION} OPTIONAL)
+    install(FILES $<TARGET_PDB_FILE:${TRANSLATORS_PLUGIN}> DESTINATION ${library_install_path} OPTIONAL)
 endif()

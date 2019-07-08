@@ -59,7 +59,6 @@ endif()
 add_library(AL_USDMayaSchemas
     SHARED
     ModelAPI.cpp
-    MayaReference.cpp
     FrameRange.cpp
     tokens.cpp
     ModuleDeps.cpp
@@ -101,7 +100,6 @@ add_library(_AL_USDMayaSchemas
     SHARED
     module.cpp
     wrapModelAPI.cpp
-    wrapMayaReference.cpp
     wrapTokens.cpp
     wrapFrameRange.cpp
 )
@@ -184,7 +182,6 @@ install(CODE "execute_process(COMMAND python -m compileall ${CMAKE_INSTALL_PREFI
 install(
     FILES
         ModelAPI.h
-        MayaReference.h
         FrameRange.h
         api.h
         tokens.h

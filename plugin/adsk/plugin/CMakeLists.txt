@@ -1,4 +1,4 @@
-set(PLUGIN_PACKAGE mayaUsd)
+set(PLUGIN_PACKAGE mayaUsdPlugin)
 
 #==============================================================================
 # Configuration for maya-to-hydra

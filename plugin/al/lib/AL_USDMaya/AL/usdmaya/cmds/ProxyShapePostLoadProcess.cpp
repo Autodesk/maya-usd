@@ -53,6 +53,8 @@
 #include <string>
 #include "AL/usdmaya/utils/Utils.h"
 
+#include <mayaUsd/fileio/primUpdaterRegistry.h>
+
 namespace AL {
 namespace usdmaya {
 namespace cmds {
@@ -338,6 +340,33 @@ void ProxyShapePostLoadProcess::updateSchemaPrims(
 
       MObject object = proxy->findRequiredPath(prim.GetPath());
 
+      auto primUpdaterFactory = std::get<1>(UsdMayaPrimUpdaterRegistry::Find(prim.GetTypeName()));
+      if (primUpdaterFactory && context->hasEntry(prim.GetPath(), prim.GetTypeName()))
+      {
+          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::updateSchemaPrims [primUpdater] : hasEntry(%s, %s)=%d\n", prim.GetPath().GetText(), prim.GetTypeName().GetText(), context->hasEntry(prim.GetPath(), prim.GetTypeName()));
+          
+          auto stage = proxy->getUsdStage();
+          UsdMayaPrimUpdaterContext updaterContext(UsdTimeCode::Default(), stage);
+
+          MFnDependencyNode fn(object);
+          auto primUpdater = primUpdaterFactory(fn, prim.GetPath());
+          primUpdater->Pull(&updaterContext);
+
+          std::vector<MObjectHandle> returned;
+          if (context->getMObjects(prim, returned) && !returned.empty())
+          {
+              auto dataPlugins = translatorManufacture.getExtraDataPlugins(returned[0].object());
+              for (auto dataPlugin : dataPlugins)
+              {
+                  dataPlugin->update(prim);
+              }
+          }
+
+          AL_END_PROFILE_SECTION();
+          return;
+      }
+      
+      
       fileio::translators::TranslatorRefPtr translator = translatorManufacture.get(prim.GetTypeName());
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::updateSchemaPrims: hasEntry(%s, %s)=%d\n", prim.GetPath().GetText(), prim.GetTypeName().GetText(), context->hasEntry(prim.GetPath(), prim.GetTypeName()));
 

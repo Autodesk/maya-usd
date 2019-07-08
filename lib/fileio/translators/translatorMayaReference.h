@@ -61,10 +61,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct UsdMayaTranslatorMayaReference
 {
     MAYAUSD_CORE_PUBLIC
-    static MStatus LoadMayaReference(const UsdPrim& prim, MObject& parent, UsdMayaPrimReaderContext* context);
+    static MStatus LoadMayaReference(const UsdPrim& prim, MObject& parent);
     
     MAYAUSD_CORE_PUBLIC
-    static MStatus UnloadMayaReference(MObject& parent);
+    static MStatus UnloadMayaReference(const MObject& parent);
     
     MAYAUSD_CORE_PUBLIC
     static MStatus update(const UsdPrim& prim, MObject parent, MObject refNode = MObject::kNullObj);

@@ -37,7 +37,7 @@ endif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
 install(
     TARGETS mtoh
-    DESTINATION plugin/mayaUsd)
+    DESTINATION MayaUsd/plugin)
 
 #install(
 #    DIRECTORY scripts

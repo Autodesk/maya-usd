@@ -24,6 +24,7 @@ set(SRC
     adapters/imagePlaneAdapter.cpp
     adapters/imagePlaneMaterialAdapter.cpp
     adapters/lightAdapter.cpp
+    adapters/proxyAdapter.cpp
     adapters/materialAdapter.cpp
     adapters/materialNetworkConverter.cpp
     adapters/mayaAttrs.cpp
@@ -39,7 +40,11 @@ set(SRC
     delegates/delegateDebugCodes.cpp
     delegates/delegateRegistry.cpp
     delegates/sceneDelegate.cpp
-    delegates/testDelegate.cpp)
+    delegates/proxyDelegate.cpp
+	delegates/proxyUsdImagingDelegate.cpp
+    delegates/testDelegate.cpp
+	
+	debugCodes.cpp)
 
 add_library(hdmaya SHARED ${SRC})
 
@@ -122,11 +127,11 @@ configure_file(
 
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH}
-    DESTINATION plugin/usd/hdmaya/resources)
+    DESTINATION MayaUSD/lib/usd/hdmaya/resources)
 
 install(
     TARGETS hdmaya
-    DESTINATION plugin/usd)
+    DESTINATION MayaUSD/lib)
 
 install(
     FILES
@@ -136,12 +141,13 @@ install(
         adapters/constantShadowMatrix.h
         adapters/dagAdapter.h
         adapters/lightAdapter.h
+        adapters/proxyAdapter.h
         adapters/materialAdapter.h
         adapters/materialNetworkConverter.h
         adapters/mayaAttrs.h
         adapters/shapeAdapter.h
         adapters/tokens.h
-    DESTINATION include/hdmaya/adapters)
+    DESTINATION MayaUSD/include/hdmaya/adapters)
 
 install(
     FILES
@@ -150,13 +156,16 @@ install(
         delegates/delegateDebugCodes.h
         delegates/delegateRegistry.h
         delegates/params.h
+        delegates/proxyDelegate.h
+		delegates/proxyUsdImagingDelegate.h
         delegates/sceneDelegate.h
-    DESTINATION include/hdmaya/delegates)
+    DESTINATION MayaUSD/include/hdmaya/delegates)
 
 install(
     FILES
         api.h
         utils.h
+		debugCodes.h
         ${HDMAYA_H}
 
-    DESTINATION include/hdmaya)
+    DESTINATION MayaUSD/include/hdmaya)

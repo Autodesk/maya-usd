@@ -137,7 +137,7 @@ const TfToken UsdMayaTranslatorMayaReference::m_referenceName = TfToken("mayaRef
 const char* const UsdMayaTranslatorMayaReference::m_primNSAttr = "usdPrimNamespace";
 
 MStatus 
-UsdMayaTranslatorMayaReference::LoadMayaReference(const UsdPrim& prim, MObject& parent, UsdMayaPrimReaderContext* context) {
+UsdMayaTranslatorMayaReference::LoadMayaReference(const UsdPrim& prim, MObject& parent) {
     TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::LoadMayaReference prim=%s\n", prim.GetPath().GetText());
     const TfToken maya_associatedReferenceNode("maya_associatedReferenceNode");
     MStatus status;
@@ -290,7 +290,7 @@ UsdMayaTranslatorMayaReference::LoadMayaReference(const UsdPrim& prim, MObject& 
 }
 
 MStatus 
-UsdMayaTranslatorMayaReference::UnloadMayaReference(MObject& parent) {
+UsdMayaTranslatorMayaReference::UnloadMayaReference(const MObject& parent) {
     TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::UnloadMayaReference\n");
     MStatus status;
     MFnDependencyNode fnParent(parent, &status);

@@ -180,7 +180,9 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         MAYAUSD_CORE_PUBLIC
         int getComplexity() const;
         MAYAUSD_CORE_PUBLIC
-        UsdTimeCode getTime() const;
+        virtual UsdTimeCode     getTime() const;
+        MAYAUSD_CORE_PUBLIC
+        virtual UsdStageRefPtr  getUsdStage() const;
 
         MAYAUSD_CORE_PUBLIC
         bool GetAllRenderAttributes(
@@ -200,6 +202,10 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         /// \brief  Clears the bounding box cache of the shape
         MAYAUSD_CORE_PUBLIC
         void clearBoundingBoxCache();
+
+        // returns the shape's parent transform
+        MAYAUSD_CORE_PUBLIC
+        MDagPath parentTransform();
 
     protected:
         MAYAUSD_CORE_PUBLIC

@@ -34,7 +34,7 @@ find_package(Maya REQUIRED)
 # to get PYTHON_EXECUTABLE
 find_package(PythonInterp)
 
-# find_package(MayaUSD REQUIRED)
+find_package(MayaUSD REQUIRED)
 
 if(CMAKE_WANT_UFE_BUILD)
     add_definitions(-DWANT_UFE_BUILD)

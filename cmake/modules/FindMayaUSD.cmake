@@ -79,18 +79,17 @@ message(STATUS "MayaUSD Library directory: ${MAYAUSD_LIBRARY_DIR}")
 
 # Use find_library to account for platform-specific library name prefixes
 # (e.g. lib) and suffixes (e.g. .lib, .so, .dylib).
-foreach(MAYAUSD_LIB mayaUsd)
+foreach(MAYAUSD_LIB mayaUsd mayaUsd_Schemas)
 
-    find_library(MAYAUSD_LIBRARY
-        NAMES
-            ${MAYAUSD_LIB}
-        PATHS
+    find_library(MAYAUSD_${MAYAUSD_LIB}_LIBRARY
+			${MAYAUSD_LIB}
+        HINTS
             ${MAYAUSD_LIBRARY_DIR}
         NO_DEFAULT_PATH
     )
 
-    if (MAYAUSD_LIBRARY)
-        list(APPEND MAYAUSD_LIBRARIES ${MAYAUSD_LIBRARY})
+    if (MAYAUSD_${MAYAUSD_LIB}_LIBRARY)
+        list(APPEND MAYAUSD_LIBRARIES ${MAYAUSD_${MAYAUSD_LIB}_LIBRARY})
     endif()
 
 endforeach(MAYAUSD_LIB)

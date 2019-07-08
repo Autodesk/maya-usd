@@ -26,6 +26,12 @@
                             "AL_usd_MayaReference"
                         ]
                     },
+                    "PrimUpdater": {
+                        "mayaPlugin": "mayaUsdTranslators",
+                        "providesTranslator": [
+                            "AL_usd_MayaReference"
+                        ]
+                    },
                     "PrimWriter": {
                         "mayaPlugin": "mayaUsdTranslators",
                         "providesTranslator": [

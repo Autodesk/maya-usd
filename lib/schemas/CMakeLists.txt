@@ -1,11 +1,13 @@
+set(SCHEMA_PLUGIN mayaUsd_Schemas)
+
 set(
     resources_install_path
-    ${CMAKE_INSTALL_PREFIX}/plugin/usd/mayaUsd_Schemas/resources
+    ${CMAKE_INSTALL_PREFIX}/lib/usd/${SCHEMA_PLUGIN}/resources
 )
 
 set(
     library_install_path
-    ${CMAKE_INSTALL_PREFIX}/plugin/usd/
+    ${CMAKE_INSTALL_PREFIX}/lib/
 )
 
 # Bake library name
@@ -48,19 +50,19 @@ endif()
 # Usd plugin
 ####################################################################################################
 
-add_library(MayaUsd_Schemas
+add_library(${SCHEMA_PLUGIN}
     SHARED
     MayaReference.cpp
     tokens.cpp
     ModuleDeps.cpp
 )
 
-target_compile_definitions(MayaUsd_Schemas
+target_compile_definitions(${SCHEMA_PLUGIN}
     PRIVATE
-        MFB_PACKAGE_NAME=MayaUsd_Schemas
-        MFB_ALT_PACKAGE_NAME=MayaUsd_Schemas
+        MFB_PACKAGE_NAME=${SCHEMA_PLUGIN}
+        MFB_ALT_PACKAGE_NAME=${SCHEMA_PLUGIN}
         MFB_PACKAGE_MODULE=AL.usd.schemas.maya
-        MAYAUSD_CORE_SCHEMAS_EXPORTS
+        MAYAUSDCORE_SCHEMAS_EXPORTS
 )
 
 # Hamed 2019 
@@ -70,17 +72,19 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     set(PTHREAD_LINK -lpthread -lm)
 endif()
 
-target_link_libraries(MayaUsd_Schemas ${DEPENDANT_LIBRARIES} ${PTHREAD_LINK})
+target_link_libraries(${SCHEMA_PLUGIN} ${DEPENDANT_LIBRARIES} ${PTHREAD_LINK})
 
 install(
-    TARGETS MayaUsd_Schemas
+    TARGETS ${SCHEMA_PLUGIN}
     LIBRARY
+    DESTINATION ${library_install_path}
+	ARCHIVE
     DESTINATION ${library_install_path}
     RUNTIME
     DESTINATION ${library_install_path}
 )
 if(MSVC)
-    install(FILES $<TARGET_PDB_FILE:MayaUsd_Schemas> DESTINATION ${library_install_path} OPTIONAL)
+    install(FILES $<TARGET_PDB_FILE:${SCHEMA_PLUGIN}> DESTINATION ${library_install_path} OPTIONAL)
 endif()
 
 ####################################################################################################

@@ -13,6 +13,12 @@
                         ],
                         "displayName": "Maya Shapes in Hydra for Maya."
                     },
+                    "HdMayaProxyDelegate": {
+                        "bases": [
+                            "HdMayaDelegate"
+                        ],
+                        "displayName": "Proxy Shapes in Hydra for Maya"
+                    },
                     # Adapters
                     "HdMayaAdapter": {
                         "displayName": "Base type for all node adapters in Hydra for Maya."
@@ -82,6 +88,12 @@
                             "HdMayaLightAdapter"
                         ],
                         "displayName": "Ai SkyDome Light in Hydra for Maya."
+                    },
+                    "HdMayaProxyAdapter": {
+                        "bases": [
+                            "HdMayaDagAdapter"
+                        ],
+                        "displayName": "Proxy Shapes in Hydra for Maya."
                     },
                     # Materials
                     "HdMayaMaterialAdapter": {

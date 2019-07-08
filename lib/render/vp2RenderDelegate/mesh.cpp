@@ -435,14 +435,17 @@ void HdVP2Mesh::_UpdateDrawItem(
                 adjacency.get(), topology.GetNumPoints(), pointsData
             );
 
-            stateToCommit._normalsBufferData = static_cast<float*>(
-                drawItemData._normalsBuffer->acquire(points.size(), writeOnly)
-            );
-            memcpy(
-                stateToCommit._normalsBufferData,
-                reinterpret_cast<const float*>(smoothNormals.cdata()),
-                points.size() * sizeof(float) * 3
-            );
+            if(smoothNormals.size() == points.size())
+            {
+                stateToCommit._normalsBufferData = static_cast<float*>(
+                    drawItemData._normalsBuffer->acquire(points.size(), writeOnly)
+                    );
+                memcpy(
+                    stateToCommit._normalsBufferData,
+                    reinterpret_cast<const float*>(smoothNormals.cdata()),
+                    points.size() * sizeof(float) * 3
+                );
+            }
         }
     }
 

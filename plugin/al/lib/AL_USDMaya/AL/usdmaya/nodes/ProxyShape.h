@@ -49,6 +49,8 @@
 #include <functional>
 #include "AL/usd/utils/ForwardDeclares.h"
 
+#include <mayaUsd/nodes/proxyShapeBase.h>
+
 #if defined(WANT_UFE_BUILD)
 #include "ufe/ufe.h"
 UFE_NS_DEF {
@@ -250,7 +252,7 @@ extern AL::event::EventId kPostClearStageCache;
 /// \ingroup nodes
 //----------------------------------------------------------------------------------------------------------------------
 class ProxyShape
-  : public MPxSurfaceShape,
+  : public MayaUsdProxyShapeBase,
     public AL::maya::utils::NodeHelper,
     public proxy::PrimFilterInterface,
     public AL::event::NodeEvents,
@@ -261,9 +263,6 @@ class ProxyShape
   friend class StageReloadGuard;
   friend class ProxyDrawOverride;
 public:
-
-  // returns the shape's parent transform
-  MDagPath parentTransform();
 
   /// a method that registers all of the events in the ProxyShape
   AL_USDMAYA_PUBLIC
@@ -400,7 +399,10 @@ public:
   ///         on the output stage.
   /// \return the proxy shape
   AL_USDMAYA_PUBLIC
-  UsdStageRefPtr getUsdStage() const;
+  UsdStageRefPtr getUsdStage() const override;
+
+  AL_USDMAYA_PUBLIC
+  UsdTimeCode    getTime() const override;
 
   /// \brief  provides access to the UsdStage that this proxy shape is currently representing
   /// \return the proxy shape

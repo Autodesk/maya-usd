@@ -19,6 +19,8 @@
 #include "maya/MSelectionList.h"
 #include "maya/MFnDagNode.h"
 
+#include <mayaUsd/fileio/primUpdaterRegistry.h>
+
 namespace AL {
 namespace usdmaya {
 namespace fileio {
@@ -497,8 +499,21 @@ void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
   {
     TfToken type = m_proxyShape->context()->getTypeForPath(prim.GetPath());
 
+    auto primUpdaterFactory = std::get<1>(UsdMayaPrimUpdaterRegistry::Find(type));
+    if(primUpdaterFactory)
+    {
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim [preTearDown] [primUpdater] prim=%s\n", prim.GetPath().GetText());
+        UsdMayaPrimUpdaterContext context(UsdTimeCode::Default(), stage);
+        
+        MFnDependencyNode fn(primObj);
+        auto primUpdater = primUpdaterFactory(fn, prim.GetPath());
+        primUpdater->Push(&context);
+
+        return;
+    }
+
     fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().get(type);
-    if(translator)
+    if (translator)
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim [preTearDown] prim=%s\n", prim.GetPath().GetText());
       translator->preTearDown(prim);
@@ -525,6 +540,36 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
   {
     MDagModifier modifier;
     TfToken type = m_proxyShape->context()->getTypeForPath(path);
+
+    auto primUpdaterFactory = std::get<1>(UsdMayaPrimUpdaterRegistry::Find(type));
+    if (primUpdaterFactory)
+    {
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::unloadPrim [tearDown] [primUpdater] prim=%s\n Using PrimUpdater!\n", path.GetText());
+
+        UsdPrim prim = stage->GetPrimAtPath(path);
+        if(prim)
+        {
+            // run through the extra data plugins to apply to this prim
+            auto dataPlugins = m_proxyShape->translatorManufacture().getExtraDataPlugins(primObj);
+            for (auto dataPlugin : dataPlugins)
+            {
+                dataPlugin->preTearDown(prim);
+            }
+        }
+
+        UsdMayaPrimUpdaterContext context(UsdTimeCode::Default(), stage);
+
+        MFnDependencyNode fn(primObj);
+        auto primUpdater = primUpdaterFactory(fn, prim.GetPath());
+        primUpdater->Push(&context);
+        if(primUpdater->Clear(&context))
+        {
+            removeItems(path);
+            removeExcludedGeometry(path);
+        }
+
+        return;
+    }
 
     fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().get(type);
     if(translator)

@@ -82,24 +82,7 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
         return;
     
     if (!_usdStage) {
-        MPlug stagePlug(_mObject, MayaUsdProxyShapeBase::outStageDataAttr);
-
-        MObject stageObject;
-        {
-            MProfilingScope subProfilingScope(_profilerCategory, MProfiler::kColorD_L1, "Evaluate Stage");
-            status = stagePlug.getValue(stageObject);
-        }
-
-        if (!status)
-            return;
-
-        MFnPluginData pluginDataFn(stageObject);
-        UsdMayaStageData* stageData = reinterpret_cast<UsdMayaStageData*>(pluginDataFn.data(&status));
-
-        if (!status)
-            return;
-
-        _usdStage = stageData->stage;
+        _usdStage = usdSubSceneShape->getUsdStage();
     }
 
     if (!_renderDelegate) {

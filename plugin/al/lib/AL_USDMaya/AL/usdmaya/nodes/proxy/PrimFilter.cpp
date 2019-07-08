@@ -2,6 +2,8 @@
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 
+#include <mayaUsd/fileio/primUpdaterRegistry.h>
+
 namespace AL {
 namespace usdmaya {
 namespace nodes {
@@ -29,7 +31,17 @@ PrimFilter::PrimFilter(const SdfPathVector& previousPrims, const std::vector<Usd
 
     bool supportsUpdate = false;
     bool requiresParent = false;
-    proxy->getTypeInfo(newType, supportsUpdate, requiresParent);
+    
+    auto primUpdaterRegistry = UsdMayaPrimUpdaterRegistry::Find(newType);
+    if (std::get<1>(primUpdaterRegistry))
+    {
+        supportsUpdate = (std::get<0>(primUpdaterRegistry) & UsdMayaPrimUpdater::Supports::Push) == UsdMayaPrimUpdater::Supports::Push;
+#ifdef KXL_TO_FINISH
+#endif
+        requiresParent = true;
+    }
+    else
+        proxy->getTypeInfo(newType, supportsUpdate, requiresParent);
 
     // if the type remains the same, and the type supports update
     if(type == newType)

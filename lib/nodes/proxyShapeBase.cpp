@@ -771,6 +771,26 @@ MayaUsdProxyShapeBase::_GetTime(MDataBlock dataBlock) const
     return UsdTimeCode(dataBlock.inputValue(timeAttr, &status).asTime().value());
 }
 
+UsdStageRefPtr
+MayaUsdProxyShapeBase::getUsdStage() const
+{
+    MStatus localStatus;
+    MayaUsdProxyShapeBase* nonConstThis = const_cast<MayaUsdProxyShapeBase*>(this);
+    MDataBlock dataBlock = nonConstThis->forceCache();
+
+    MDataHandle outDataHandle = dataBlock.inputValue(outStageDataAttr, &localStatus);
+    CHECK_MSTATUS_AND_RETURN(localStatus, UsdStageRefPtr());
+
+    UsdMayaStageData* outData =
+        dynamic_cast<UsdMayaStageData*>(outDataHandle.asPluginData());
+    
+    if (outData && outData->stage)
+        return outData->stage;
+    else
+        return {};
+
+}
+
 SdfPathVector
 MayaUsdProxyShapeBase::getExcludePrimPaths() const
 {
@@ -863,6 +883,16 @@ UsdPrim
 MayaUsdProxyShapeBase::usdPrim() const
 {
     return _GetUsdPrim( const_cast<MayaUsdProxyShapeBase*>(this)->forceCache() );
+}
+
+MDagPath 
+MayaUsdProxyShapeBase::parentTransform()
+{
+    MFnDagNode fn(thisMObject());
+    MDagPath proxyTransformPath;
+    fn.getPath(proxyTransformPath);
+    proxyTransformPath.pop();
+    return proxyTransformPath;
 }
 
 MayaUsdProxyShapeBase::MayaUsdProxyShapeBase() :

@@ -97,6 +97,9 @@ list(APPEND mayaUsd_src
 	fileio/instancedNodeWriter.cpp
 	fileio/transformWriter.cpp
 	fileio/shaderWriter.cpp
+	fileio/primUpdater.cpp
+	fileio/primUpdaterContext.cpp
+	fileio/primUpdaterRegistry.cpp
 	#
 	fileio/chaser/chaser.cpp
 	fileio/chaser/chaserRegistry.cpp
@@ -148,6 +151,7 @@ list(APPEND mayaUsd_src
 	nodes/hdImagingShape.cpp
 	nodes/usdPrimProvider.cpp
 	nodes/proxyShapeBase.cpp
+	nodes/proxyShapePlugin.cpp
 	nodes/stageData.cpp
 	nodes/stageNode.cpp
 	#
@@ -188,6 +192,9 @@ list(APPEND mayaUsdFileio_headers
 	fileio/instancedNodeWriter.h
 	fileio/transformWriter.h
 	fileio/shaderWriter.h
+	fileio/primUpdater.h
+	fileio/primUpdaterContext.h
+	fileio/primUpdaterRegistry.h
 )
 
 list(APPEND mayaUsdChaser_headers
@@ -248,6 +255,7 @@ list(APPEND mayaUsdNodes_headers
 	nodes/hdImagingShape.h
 	nodes/usdPrimProvider.h
 	nodes/proxyShapeBase.h
+	nodes/proxyShapePlugin.h
 	nodes/stageData.h
 	nodes/stageNode.h
 )

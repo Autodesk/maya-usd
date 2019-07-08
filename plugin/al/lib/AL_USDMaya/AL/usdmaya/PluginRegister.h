@@ -48,6 +48,8 @@
 #include "maya/MGlobal.h"
 #include "maya/MStatus.h"
 
+#include <mayaUsd/nodes/proxyShapePlugin.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
@@ -237,7 +239,27 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
   AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ExportTranslator);
   AL_REGISTER_DRAW_OVERRIDE(plugin, AL::usdmaya::nodes::ProxyDrawOverride);
-  AL_REGISTER_SHAPE_NODE(plugin, AL::usdmaya::nodes::ProxyShape, AL::usdmaya::nodes::ProxyShapeUI, AL::usdmaya::nodes::ProxyDrawOverride);
+
+  status = MayaUsdProxyShapePlugin::initialize(plugin);
+  CHECK_MSTATUS(status);
+
+  // ADSK draw override (hybrid VP2 / Hydra USD rendering) renders nothing,
+  // keep AL code in use for that case.  PPT, 22-May-2019.
+  if (MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
+      status = plugin.registerShape(
+          AL::usdmaya::nodes::ProxyShape::kTypeName,
+          AL::usdmaya::nodes::ProxyShape::kTypeId,
+          AL::usdmaya::nodes::ProxyShape::creator,
+          AL::usdmaya::nodes::ProxyShape::initialise,
+          AL::usdmaya::nodes::ProxyShapeUI::creator,
+          MayaUsdProxyShapePlugin::getProxyShapeClassification()
+      );
+      CHECK_MSTATUS(status);
+  }
+  else {
+      AL_REGISTER_SHAPE_NODE(plugin, AL::usdmaya::nodes::ProxyShape, AL::usdmaya::nodes::ProxyShapeUI, AL::usdmaya::nodes::ProxyDrawOverride);
+  }
+
   AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Transform, AL::usdmaya::nodes::TransformationMatrix);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::Layer);
@@ -346,6 +368,10 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimDeformer);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimCreator);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::ProxyShape);
+
+  status = MayaUsdProxyShapePlugin::finalize(plugin);
+  CHECK_MSTATUS(status);
+
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Transform);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Layer);

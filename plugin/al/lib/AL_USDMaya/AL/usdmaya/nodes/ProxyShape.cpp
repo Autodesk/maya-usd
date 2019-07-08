@@ -89,15 +89,6 @@ typedef void (*proxy_function_prototype)(void* userData, AL::usdmaya::nodes::Pro
 
 const char* ProxyShape::s_selectionMaskName = "al_ProxyShape";
 
-MDagPath ProxyShape::parentTransform()
-{
-  MFnDagNode fn(thisMObject());
-  MDagPath proxyTransformPath;
-  fn.getPath(proxyTransformPath);
-  proxyTransformPath.pop();
-  return proxyTransformPath;
-}
-
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialiseTranslatorContext()
 {
@@ -597,7 +588,7 @@ bool ProxyShape::getRenderAttris(UsdImagingGLRenderParams& attribs, const MHWRen
 
 //----------------------------------------------------------------------------------------------------------------------
 ProxyShape::ProxyShape()
-  : MPxSurfaceShape(), AL::maya::utils::NodeHelper(), AL::event::NodeEvents(&AL::event::EventScheduler::getScheduler()),
+  : MayaUsdProxyShapeBase(), AL::maya::utils::NodeHelper(), AL::event::NodeEvents(&AL::event::EventScheduler::getScheduler()),
     m_context(fileio::translators::TranslatorContext::create(this)),
     m_translatorManufacture(context())
 {
@@ -1874,6 +1865,11 @@ UsdStageRefPtr ProxyShape::getUsdStage() const
     return outData->stage;
   }
   return UsdStageRefPtr();
+}
+
+UsdTimeCode ProxyShape::getTime() const
+{
+    return UsdTimeCode(outTimePlug().asMTime().as(MTime::uiUnit()));
 }
 
 //----------------------------------------------------------------------------------------------------------------------

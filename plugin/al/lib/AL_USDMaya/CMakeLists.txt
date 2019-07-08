@@ -209,6 +209,7 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_OpenMayaRender_LIBRARY}
     ${UFE_LIBRARY}
+    ${MAYAUSD_LIBRARIES}
 )
 
 if(NEED_BOOST_FILESYSTEM)
