@@ -22,6 +22,7 @@
 #include "maya/MArgDatabase.h"
 
 #include <cmath>
+#include <iostream>
 
 namespace AL {
 namespace maya {

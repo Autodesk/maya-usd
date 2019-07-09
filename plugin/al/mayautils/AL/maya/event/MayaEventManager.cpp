@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <iostream>
 #include <maya/MGlobal.h>
 #include <maya/MAnimMessage.h>
 #include <maya/MCameraSetMessage.h>

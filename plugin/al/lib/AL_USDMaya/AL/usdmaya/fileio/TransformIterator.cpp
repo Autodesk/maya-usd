@@ -20,6 +20,8 @@
 
 #include "pxr/usd/usd/stage.h"
 
+#include <iostream>
+
 namespace AL {
 namespace usdmaya {
 namespace fileio {

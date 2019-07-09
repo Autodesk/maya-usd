@@ -38,6 +38,7 @@
 #include "maya/MFnFloatArrayData.h"
 #include "maya/MFloatArray.h"
 
+#include <iostream>
 #include <unordered_map>
 #include <cstring>
 

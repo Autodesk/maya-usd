@@ -21,6 +21,7 @@
 #include "maya/MString.h"
 #include "maya/MGlobal.h"
 
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>

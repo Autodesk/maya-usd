@@ -27,6 +27,8 @@
 #include "maya/MPointArray.h"
 #include "maya/MGlobal.h"
 
+#include <iostream>
+
 namespace AL {
 namespace usdmaya {
 namespace utils {

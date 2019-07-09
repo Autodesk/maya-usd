@@ -32,6 +32,10 @@
 #include "maya/MPoint.h"
 #include "maya/MObjectArray.h"
 #include "maya/MPointArray.h"
+#include "maya/MDrawInfo.h"
+#include "maya/MDrawRequest.h"
+#include "maya/MDrawRequestQueue.h"
+#include "maya/MSelectInfo.h"
 
 #if defined(WANT_UFE_BUILD)
 #include "AL/usdmaya/TypeIDs.h"

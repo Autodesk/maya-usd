@@ -40,6 +40,7 @@
 #include "maya/MTime.h"
 #include "maya/MFnDoubleArrayData.h"
 
+#include <iostream>
 #include <sstream>
 #include <cassert>
 #include <cctype>
