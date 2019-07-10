@@ -22,6 +22,8 @@
 #include <maya/MModelMessage.h>
 #include <maya/MGlobal.h>
 
+#include <iostream>
+
 namespace AL {
 namespace maya {
 namespace event {

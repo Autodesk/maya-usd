@@ -19,6 +19,7 @@
 
 #include "maya/MGlobal.h"
 
+#include <iostream>
 #include <set>
 #include <sstream>
 #include <string>

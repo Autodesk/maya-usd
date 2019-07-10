@@ -30,6 +30,8 @@
 
 #include "pxr/usd/usdUtils/pipeline.h"
 
+#include <iostream>
+
 namespace AL {
 namespace usdmaya {
 namespace utils {

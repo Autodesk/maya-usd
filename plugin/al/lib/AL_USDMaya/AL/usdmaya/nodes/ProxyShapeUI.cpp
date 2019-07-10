@@ -23,6 +23,10 @@
 #include "maya/MFnDagNode.h"
 #include "maya/MMatrix.h"
 #include "maya/MTime.h"
+#include "maya/MDrawInfo.h"
+#include "maya/MDrawRequest.h"
+#include "maya/MDrawRequestQueue.h"
+#include "maya/MSelectInfo.h"
 
 #if defined(WANT_UFE_BUILD)
 #include "AL/usdmaya/TypeIDs.h"

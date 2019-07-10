@@ -33,6 +33,8 @@
 #include "maya/MMatrix.h"
 #include "maya/MMatrixArray.h"
 
+#include <iostream>
+
 namespace AL {
 namespace usdmaya {
 namespace utils {

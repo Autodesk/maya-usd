@@ -42,6 +42,8 @@
 #include <hdmaya/adapters/constantShadowMatrix.h>
 #include <hdmaya/adapters/mayaAttrs.h>
 
+#include <iostream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {

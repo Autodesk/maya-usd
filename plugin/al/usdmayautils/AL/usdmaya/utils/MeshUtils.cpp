@@ -24,6 +24,8 @@
 #include "maya/MItMeshPolygon.h"
 #include "maya/MGlobal.h"
 
+#include <iostream>
+
 namespace AL {
 namespace usdmaya {
 namespace utils {

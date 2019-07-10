@@ -24,6 +24,8 @@
 #include "maya/MString.h"
 #include "maya/MGlobal.h"
 
+#include <iostream>
+
 namespace AL {
 namespace maya {
 namespace tests {
