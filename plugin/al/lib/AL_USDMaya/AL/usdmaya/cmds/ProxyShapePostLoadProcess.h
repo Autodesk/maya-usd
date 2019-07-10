@@ -15,12 +15,9 @@
 //
 #pragma once
 #include "AL/usdmaya/ForwardDeclares.h"
-#include "AL/usdmaya/fileio/ImportParams.h"
-#include "maya/MPxCommand.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 
 #include "pxr/pxr.h"
-#include "pxr/usd/usd/common.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -68,7 +65,8 @@ public:
       nodes::ProxyShape* shape,
       const std::vector<UsdPrim>& schemaPrims,
       const MDagPath& proxyTransformPath,
-      MObjectToPrim& objsToCreate);
+      MObjectToPrim& objsToCreate,
+      bool pushToPrim = true);
 
   /// \brief  After transforms exist to parent the custom plugin-prim types (i.e. after a call to
   ///         createTranformChainsForSchemaPrims), this method should be called to call the plugin translators for all

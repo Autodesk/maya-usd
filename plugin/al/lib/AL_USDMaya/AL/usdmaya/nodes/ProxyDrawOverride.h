@@ -15,19 +15,14 @@
 //
 #pragma once
 
-#include "../Api.h"
+#include "AL/usdmaya/Api.h"
 
 #include "maya/MPxDrawOverride.h"
-#include "AL/usdmaya/ForwardDeclares.h"
 
-#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/version.h"
-
-#include "AL/usd/utils/ForwardDeclares.h"
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
 
 namespace AL {
 namespace usdmaya {

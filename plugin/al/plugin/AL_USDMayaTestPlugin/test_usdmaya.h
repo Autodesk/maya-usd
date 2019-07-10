@@ -32,9 +32,13 @@ extern AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(std::function<UsdSta
 /// \return AL::usdmaya::nodes::ProxyShape
 extern AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(const std::string& rootLayerPath);
 
-/// \brief  Creates a ProxyShape with the a single root node Mesh typed prim that contains geometry that represents a sphere.
+/// \brief  Creates a ProxyShape with the a Mesh typed prim with parent transform (using unmerged export)
 /// \return AL::usdmaya::nodes::ProxyShape
 AL::usdmaya::nodes::ProxyShape* SetupProxyShapeWithMesh();
+
+/// \brief  Creates a ProxyShape with the a single root node Mesh typed prim that contains geometry that represents a sphere.
+/// \return AL::usdmaya::nodes::ProxyShape
+AL::usdmaya::nodes::ProxyShape* SetupProxyShapeWithMergedMesh();
 
 /// \brief  Creates a ProxyShape with multiple root node Mesh typed prim that contains geometry that represents a sphere.
 /// \return AL::usdmaya::nodes::ProxyShape

@@ -16,19 +16,12 @@
 
 #pragma once
 
-#include "./Api.h"
+#include "AL/usdmaya/utils/Api.h"
 
-#include "maya/MObject.h"
 #include "maya/MString.h"
-#include "maya/MFnDependencyNode.h"
 
-#include <string>
-
-#include "pxr/pxr.h"
-#include "pxr/base/tf/token.h"
 #include "AL/maya/utils/ForwardDeclares.h"
 #include "AL/usd/utils/ForwardDeclares.h"
-#include "AL/maya/utils/Utils.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -61,7 +54,7 @@ MString mapUsdPrimToMayaNode(const UsdPrim& usdPrim,
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
 AL_USDMAYA_UTILS_PUBLIC
-void matrixToSRT(GfMatrix4d& value,
+void matrixToSRT(const GfMatrix4d& value,
                  double S[3],
                  MEulerRotation& R,
                  double T[3]);
@@ -81,7 +74,6 @@ void convertDoubleVec4ArrayToFloatVec3Array(const double* const input, float* co
 /// \return the MString
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
-AL_USDMAYA_UTILS_PUBLIC
 inline MString convert(const TfToken& token)
 {
   return MString(token.GetText(), token.size());

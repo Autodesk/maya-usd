@@ -58,6 +58,8 @@ private:
                   const UsdAttribute &attr,
                   const TfToken &fallbackMetadataKey,
                   double *frame)const;
+  bool canBeOverridden() override
+    { return true; }
 };
 
 } // translators

@@ -13,28 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/utils/CommandGuiHelper.h"
-#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
-#include "AL/usdmaya/fileio/TransformIterator.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
-#include "AL/usdmaya/nodes/ProxyShape.h"
-#include "AL/usdmaya/nodes/Transform.h"
+
+#include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/maya/utils/MenuBuilder.h"
+#include "AL/maya/utils/Utils.h"
 
 #include "maya/MArgDatabase.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MGlobal.h"
-#include "maya/MSelectionList.h"
-#include "maya/MStatus.h"
-#include "maya/MStringArray.h"
-#include "maya/MSyntax.h"
-#include "maya/MDagPath.h"
 #include "maya/MArgList.h"
-
-#include <sstream>
-#include <algorithm>
-#include "AL/usdmaya/utils/Utils.h"
+#include "maya/MDagPathArray.h"
+#include "maya/MFnDagNode.h"
+#include "maya/MSyntax.h"
 
 namespace {
     typedef void (AL::usdmaya::nodes::SelectionList::*SelectionListModifierFunc)(SdfPath);
@@ -1317,6 +1307,7 @@ MSyntax TranslatePrim::createSyntax()
   syntax.addFlag("-tp", "-teardownPaths", MSyntax::kString);
   syntax.addFlag("-fi", "-forceImport", MSyntax::kNoArg);
   syntax.addFlag("-fd", "-forceDefault", MSyntax::kNoArg);
+  syntax.addFlag("-ptp", "-pushToPrim", MSyntax::kBoolean);
   return syntax;
 }
 
@@ -1348,6 +1339,14 @@ MStatus TranslatePrim::doIt(const MArgList& args)
     if(db.isFlagSet("-fi"))
     {
       tp.setForcePrimImport(true);
+    }
+
+    // should pushToPrim be enabled on transforms when translating?
+    if(db.isFlagSet("-ptp"))
+    {
+      bool value = true;
+      db.getFlagArgument("-ptp", 0, value);
+      tp.setPushToPrim(value);
     }
 
     // change the translator context to read default value

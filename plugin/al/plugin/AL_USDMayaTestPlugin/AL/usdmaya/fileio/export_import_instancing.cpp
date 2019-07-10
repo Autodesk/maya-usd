@@ -4,6 +4,7 @@
 #include <maya/MFnDagNode.h>
 #include <maya/MFnTransform.h>
 #include <maya/MDagPath.h>
+#include <maya/MDagPathArray.h>
 
 #include "test_usdmaya.h"
 #include "AL/usdmaya/Metadata.h"

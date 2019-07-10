@@ -26,17 +26,20 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/fileio/export_nonlinear.cpp
         AL/usdmaya/fileio/export_unmerged.cpp
         AL/usdmaya/fileio/export_multiple_shapes.cpp
+        AL/usdmaya/fileio/import_instances.cpp
+        AL/usdmaya/fileio/test_activeInActiveTranslators.cpp
         AL/usdmaya/nodes/test_ActiveInactive.cpp
         AL/usdmaya/nodes/test_LayerManager.cpp
         AL/usdmaya/nodes/test_ProxyShape.cpp
+        AL/usdmaya/nodes/test_ProxyUsdGeomCamera.cpp
         AL/usdmaya/nodes/test_Transform.cpp
         AL/usdmaya/nodes/test_TransformMatrix.cpp
         AL/usdmaya/nodes/test_TranslatorContext.cpp
         AL/usdmaya/nodes/test_ExtraDataPlugin.cpp
         AL/usdmaya/nodes/test_ProxyShapeSelectabilityDB.cpp
-        AL/usdmaya/nodes/proxy/test_DrivenTransforms.cpp
         AL/usdmaya/nodes/proxy/test_PrimFilter.cpp
         AL/usdmaya/test_SelectabilityDB.cpp
+        AL/usdmaya/test_DiffGeom.cpp
         AL/usdmaya/test_DiffPrimVar.cpp
         AL/usdmaya/commands/test_TranslateCommand.cpp
         test_translators_AnimationTranslator.cpp
@@ -73,37 +76,30 @@ target_include_directories(${PXR_PACKAGE}
 PRIVATE
     ${GTEST_INCLUDE_DIRS}
     ${MAYA_INCLUDE_DIRS}
-    ${MAYAUSD_INCLUDE_DIR}
     "../../lib/AL_USDMaya"    
     ${MAYATEST_INCLUDE_LOCATION}
 )
 
 if(MSVC)
     set_target_properties(${PXR_PACKAGE} PROPERTIES SUFFIX ".mll")
-elseif(APPLE)
-    set(CMAKE_MACOSX_RPATH ON)
-    set_target_properties(${PXR_PACKAGE}
-        PROPERTIES
-            PREFIX ""
-            SUFFIX ".bundle"
-            BUILD_WITH_INSTALL_RPATH TRUE
-            INSTALL_RPATH "@loader_path/../lib;@loader_path/../../USD/lib;@loader_path/../../USD/third_party/maya/lib;${PXR_USD_LOCATION}/lib"
-    )
 else()
+    set(rpath "$ORIGIN:$ORIGIN/../lib")
+    if (CMAKE_INSTALL_RPATH)
+        set(rpath "${CMAKE_INSTALL_RPATH}:${rpath}")
+    endif()
     set_target_properties(${PXR_PACKAGE}
-        PROPERTIES
+            PROPERTIES
             PREFIX ""
-            BUILD_WITH_INSTALL_RPATH TRUE
-            INSTALL_RPATH "$ORIGIN/../lib:$ORIGIN/../../USD/lib:$ORIGIN/../../USD/third_party/maya/lib:${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64"
+            INSTALL_RPATH "${rpath}"
     )
 endif()
 
 install(TARGETS
     ${PXR_PACKAGE}
     LIBRARY
-        DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/plugin
     RUNTIME
-        DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/plugin
 )
 
 add_test(

@@ -1,7 +1,5 @@
 list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas ${MAYAUSD_LIBRARIES} gf plug tf)
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
-
 set(DIRECTORY_PATH AL/usdmaya/fileio/translators)
 
 configure_file (
@@ -14,6 +12,7 @@ configure_file (
 add_library(${TRANSLATORS_PACKAGE}
     SHARED
     Camera.cpp
+    CommonTranslatorOptions.cpp
     MayaReference.cpp
     Mesh.cpp
     NurbsCurve.cpp

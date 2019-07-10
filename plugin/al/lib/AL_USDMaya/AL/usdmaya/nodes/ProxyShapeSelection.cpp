@@ -13,20 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "AL/maya/utils/Utils.h"
+
+#include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
-#include "AL/usdmaya/TypeIDs.h"
-#include "AL/usdmaya/Metadata.h"
-#include "AL/usdmaya/DebugCodes.h"
 
 #include "maya/MFnDagNode.h"
 #include "maya/MPxCommand.h"
-
-#include <set>
-#include <algorithm>
-#include "AL/usdmaya/utils/Utils.h"
-
 
 namespace AL {
 namespace usdmaya {
@@ -318,13 +313,13 @@ inline bool ProxyShape::TransformReference::checkRef(const TransformReason reaso
 //----------------------------------------------------------------------------------------------------------------------
 inline ProxyShape::TransformReference::TransformReference(const MObject& node, const TransformReason reason)
   : m_node(node)
+  , m_transform(nullptr)
 {
   m_required = 0;
   m_selected = 0;
   m_selectedTemp = 0;
   m_refCount = 0;
-  MFnDependencyNode fn(node);
-  m_transform = (Transform*)fn.userNode();
+  m_transform = transform();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -353,6 +348,7 @@ void ProxyShape::makeTransformReference(const SdfPath& path, const MObject& node
         TransformReference ref(tempNode, reason);
         ref.incRef(reason);
         m_requiredPaths.emplace(tempPath, ref);
+        TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeTransformReference m_requiredPaths added TransformReference: %s\n", tempPath.GetText());
       }
       status = dagPath.pop();
       tempPath = tempPath.GetParentPath();
@@ -392,7 +388,8 @@ MObject ProxyShape::makeUsdTransformChain_internal(
     TransformReason reason,
     MDGModifier* modifier2,
     uint32_t* createCount,
-    MString* resultingPath)
+    MString* resultingPath,
+    bool pushToPrim)
 {
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChain_internal\n");
 
@@ -402,7 +399,7 @@ MObject ProxyShape::makeUsdTransformChain_internal(
   // makes the assumption that instancing isn't supported.
   MFnDagNode fn(thisMObject());
   const MObject parent = fn.parent(0);
-  auto ret = makeUsdTransformChain(usdPrim, outStageAttr, outTimeAttr, parent, modifier, reason, modifier2, createCount, resultingPath);
+  auto ret = makeUsdTransformChain(usdPrim, outStageAttr, outTimeAttr, parent, modifier, reason, modifier2, createCount, resultingPath, pushToPrim);
   return ret;
 }
 
@@ -412,7 +409,8 @@ MObject ProxyShape::makeUsdTransformChain(
     MDagModifier& modifier,
     TransformReason reason,
     MDGModifier* modifier2,
-    uint32_t* createCount)
+    uint32_t* createCount,
+    bool pushToPrim)
 {
   if(!usdPrim)
   {
@@ -431,7 +429,7 @@ MObject ProxyShape::makeUsdTransformChain(
   }
 
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::makeUsdTransformChain on %s\n", usdPrim.GetPath().GetText());
-  MObject newNode = makeUsdTransformChain_internal(usdPrim, modifier, reason, modifier2, createCount);
+  MObject newNode = makeUsdTransformChain_internal(usdPrim, modifier, reason, modifier2, createCount, 0, pushToPrim);
   insertTransformRefs( { std::pair<SdfPath, MObject>(usdPrim.GetPath(), newNode) }, reason);
   return newNode;
 }
@@ -446,11 +444,13 @@ MObject ProxyShape::makeUsdTransformChain(
     TransformReason reason,
     MDGModifier* modifier2,
     uint32_t* createCount,
-    MString* resultingPath)
+    MString* resultingPath,
+    bool pushToPrim)
 {
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChain %s\n", usdPrim.GetPath().GetText());
 
-  SdfPath path = usdPrim.GetPath();
+  const SdfPath path{usdPrim.GetPath()};
+
   auto iter = m_requiredPaths.find(path);
 
   // If this path has been found.
@@ -514,9 +514,9 @@ MObject ProxyShape::makeUsdTransformChain(
     if(resultingPath)
     {
       MFnDagNode fn(nodeToReturn);
-      MDagPath path;
-      fn.getPath(path);
-      *resultingPath = path.fullPathName();
+      MDagPath mpath;
+      fn.getPath(mpath);
+      *resultingPath = mpath.fullPathName();
     }
     // return the lowest point on the found chain.
     return nodeToReturn;
@@ -527,7 +527,7 @@ MObject ProxyShape::makeUsdTransformChain(
   if(path.GetPathElementCount() > 1)
   {
     // if there is a parent to this node, continue building the chain.
-    parentPath = makeUsdTransformChain(usdPrim.GetParent(), outStage, outTime, parentXForm, modifier, reason, modifier2, createCount);
+    parentPath = makeUsdTransformChain(usdPrim.GetParent(), outStage, outTime, parentXForm, modifier, reason, modifier2, createCount, resultingPath, pushToPrim);
   }
 
   // if we've hit the top of the chain, make sure we get the correct parent
@@ -589,7 +589,7 @@ MObject ProxyShape::makeUsdTransformChain(
 
     if(modifier2)
     {
-      modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), true);
+      modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), pushToPrim);
     }
 
     if(!isTransform)
@@ -620,6 +620,7 @@ MObject ProxyShape::makeUsdTransformChain(
   TransformReference ref(node, reason);
   ref.checkIncRef(reason);
   m_requiredPaths.emplace(path, ref);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChain m_requiredPaths added TransformReference: %s\n", path.GetText());
   return node;
 }
 
@@ -641,7 +642,7 @@ MObject ProxyShape::makeUsdTransforms(const UsdPrim& usdPrim, MDagModifier& modi
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::makeUsdTransformsInternal(const UsdPrim& usdPrim, const MObject& parentNode, MDagModifier& modifier, TransformReason reason, MDGModifier* modifier2)
+void ProxyShape::makeUsdTransformsInternal(const UsdPrim& usdPrim, const MObject& parentNode, MDagModifier& modifier, TransformReason reason, MDGModifier* modifier2, bool pushToPrim)
 {
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformsInternal\n");
   MFnDagNode fn;
@@ -668,7 +669,7 @@ void ProxyShape::makeUsdTransformsInternal(const UsdPrim& usdPrim, const MObject
 
       if(modifier2)
       {
-        modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), true);
+        modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), pushToPrim);
       }
 
       // set the primitive path
@@ -676,6 +677,7 @@ void ProxyShape::makeUsdTransformsInternal(const UsdPrim& usdPrim, const MObject
       TransformReference transformRef(node, reason);
       transformRef.incRef(reason);
       m_requiredPaths.emplace(prim.GetPath(), transformRef);
+      TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformsInternal m_requiredPaths added TransformReference: %s\n", prim.GetPath().GetText());
 
       makeUsdTransformsInternal(prim, node, modifier, reason, modifier2);
     }
@@ -758,6 +760,7 @@ void ProxyShape::removeUsdTransformChain(
 
       m_currentLockedPrims.erase(parentPrim);
       m_requiredPaths.erase(it);
+      TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeUsdTransformChain m_requiredPaths removed TransformReference: %s\n", it->first.GetText());
     }
 
     parentPrim = parentPrim.GetParentPath();
@@ -809,6 +812,7 @@ void ProxyShape::removeUsdTransformChain(
         modifier.deleteNode(object);
       }
 
+      TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeUsdTransformChain m_requiredPaths removed TransformReference: %s\n", it->first.GetText());
       m_requiredPaths.erase(it);
     }
 
@@ -841,6 +845,7 @@ void ProxyShape::removeUsdTransformsInternal(
     // work around for Maya's love of deleting the parent transforms of custom transform nodes :(
     modifier.reparentNode(it->second.node());
     modifier.deleteNode(it->second.node());
+    TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeUsdTransformsInternal m_requiredPaths removed TransformReference: %s\n", it->first.GetText());
     m_requiredPaths.erase(it);
   }
 }
@@ -939,6 +944,7 @@ void ProxyShape::removeTransformRefs(const std::vector<std::pair<SdfPath, MObjec
       {
         if(it->second.decRef(reason))
         {
+          TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::removeTransformRefs m_requiredPaths removed TransformReference: %s\n", it->first.GetText());
           m_requiredPaths.erase(it);
         }
       }
@@ -1044,6 +1050,20 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
   }
   MStringArray newlySelectedPaths;
 
+  auto removeFromMSel = [](MSelectionList& sel, const MObject& toRemove) -> bool {
+    for(uint32_t i = 0, n = sel.length(); i < n; ++i)
+    {
+      MObject obj;
+      sel.getDependNode(i, obj);
+      if(obj == toRemove)
+      {
+        sel.remove(i);
+        return true;
+      }
+    }
+    return false;
+  };
+
   switch(helper.m_mode)
   {
   case MGlobal::kReplaceList:
@@ -1067,6 +1087,8 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
       if(keepPrims.empty() && insertPrims.empty())
       {
         m_pleaseIgnoreSelection = false;
+        triggerEvent("PreSelectionChanged");
+        triggerEvent("PostSelectionChanged");
         triggerEvent("SelectionEnded");
         return false;
       }
@@ -1078,6 +1100,14 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
       uint32_t hasNodesToCreate = 0;
       for(auto prim : insertPrims)
       {
+        if(prim.IsPseudoRoot())
+        {
+          // For pseudo root, just modify maya's selection, don't alter
+          // our internal paths
+          newlySelectedPaths.append(MFnDagNode(thisMObject()).fullPathName());
+          addObjToSelectionList(helper.m_newSelection, thisMObject());
+          continue;
+        }
         m_selectedPaths.insert(prim.GetPath());
         MString pathName;
         MObject object = makeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection, &helper.m_modifier2, &hasNodesToCreate, &pathName);
@@ -1130,6 +1160,19 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
       uint32_t hasNodesToCreate = 0;
       for(auto prim : prims)
       {
+        if(prim.IsPseudoRoot())
+        {
+          // For pseudo root, just modify maya's selection
+          // However, since we don't want the pseudo root to "pollute" our
+          // internal selected paths, we also need to make sure we clear
+          // it from m_paths.  (We don't need to do those in other modes,
+          // because those set m_paths to m_selectePaths).
+          newlySelectedPaths.append(MFnDagNode(thisMObject()).fullPathName());
+          addObjToSelectionList(helper.m_newSelection, thisMObject());
+          helper.m_paths.erase(prim.GetPath());
+          continue;
+        }
+
         m_selectedPaths.insert(prim.GetPath());
         MString pathName;
         MObject object = makeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection, &helper.m_modifier2, &hasNodesToCreate, &pathName);
@@ -1152,7 +1195,16 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
       // newlySelectedPaths - which is not altered in this branch
       for(auto path : helper.m_paths)
       {
-        bool alreadySelected = m_selectedPaths.count(path) > 0;
+        bool alreadySelected;
+        if(path == SdfPath::AbsoluteRootPath())
+        {
+          // For pseudo-root, remove proxy shape from maya's selection
+          alreadySelected = removeFromMSel(helper.m_newSelection, thisMObject());
+        }
+        else
+        {
+          alreadySelected = m_selectedPaths.count(path) > 0;
+        }
 
         if(alreadySelected)
         {
@@ -1168,39 +1220,31 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
       if(prims.empty())
       {
         m_pleaseIgnoreSelection = false;
+        triggerEvent("PreSelectionChanged");
+        triggerEvent("PostSelectionChanged");
         triggerEvent("SelectionEnded");
         return false;
       }
 
-      if(!prims.empty())
+      for(auto prim : prims)
       {
-        for(auto prim : prims)
+        if(prim.IsPseudoRoot())
         {
-          auto temp = m_requiredPaths.find(prim.GetPath());
-          MObject object = temp->second.node();
-
-          m_selectedPaths.erase(prim.GetPath());
-
-          removeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection);
-          for(uint32_t i = 0; i < helper.m_newSelection.length(); ++i)
-          {
-            MObject obj;
-            helper.m_newSelection.getDependNode(i, object);
-
-            if(object == obj)
-            {
-              helper.m_newSelection.remove(i);
-              break;
-            }
-          }
-          helper.m_paths = m_selectedPaths;
-          helper.m_removedRefs.emplace_back(prim.GetPath(), object);
+          // We've already removed this when iterating helper.m_paths,
+          // we just added to prims so the "prims.empty" early-exit test wouldn't
+          // fire
+          continue;
         }
+        auto temp = m_requiredPaths.find(prim.GetPath());
+        MObject object = temp->second.node();
+
+        m_selectedPaths.erase(prim.GetPath());
+
+        removeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection);
+        removeFromMSel(helper.m_newSelection, object);
+        helper.m_removedRefs.emplace_back(prim.GetPath(), object);
       }
-      else
-      {
-        helper.m_paths.clear();
-      }
+      helper.m_paths = m_selectedPaths;
     }
     break;
 
@@ -1210,7 +1254,16 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
       std::vector<UsdPrim> insertPrims;
       for(auto path : orderedPaths)
       {
-        bool alreadySelected = m_selectedPaths.count(path) > 0;
+        bool alreadySelected;
+        if(path == SdfPath::AbsoluteRootPath())
+        {
+          // For pseudo-root, remove proxy shape from maya's selection
+          alreadySelected = removeFromMSel(helper.m_newSelection, thisMObject());
+        }
+        else
+        {
+          alreadySelected = m_selectedPaths.count(path) > 0;
+        }
 
         auto prim = stage->GetPrimAtPath(path);
         if(prim)
@@ -1227,34 +1280,42 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
       if(removePrims.empty() && insertPrims.empty())
       {
         m_pleaseIgnoreSelection = false;
+        triggerEvent("PreSelectionChanged");
+        triggerEvent("PostSelectionChanged");
+        triggerEvent("SelectionEnded");
         return false;
       }
 
       for(auto prim : removePrims)
       {
+        if(prim.IsPseudoRoot())
+        {
+          // We've already removed this when iterating orderedPaths,
+          // we just added to removePrims so the "removePrims.empty" early-exit test
+          // wouldn't fire
+          continue;
+        }
         auto temp = m_requiredPaths.find(prim.GetPath());
         MObject object = temp->second.node();
 
         m_selectedPaths.erase(prim.GetPath());
 
         removeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection);
-        for(uint32_t i = 0; i < helper.m_newSelection.length(); ++i)
-        {
-          MObject obj;
-          helper.m_newSelection.getDependNode(i, object);
-
-          if(object == obj)
-          {
-            helper.m_newSelection.remove(i);
-            break;
-          }
-        }
+        removeFromMSel(helper.m_newSelection, object);
         helper.m_removedRefs.emplace_back(prim.GetPath(), object);
       }
 
       uint32_t hasNodesToCreate = 0;
       for(auto prim : insertPrims)
       {
+        if(prim.IsPseudoRoot())
+        {
+          // For pseudo root, just modify maya's selection, don't alter
+          // our internal paths
+          newlySelectedPaths.append(MFnDagNode(thisMObject()).fullPathName());
+          addObjToSelectionList(helper.m_newSelection, thisMObject());
+          continue;
+        }
         m_selectedPaths.insert(prim.GetPath());
         MString pathName;
         MObject object = makeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection, &helper.m_modifier2, &hasNodesToCreate, &pathName);
@@ -1267,14 +1328,12 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
     break;
   }
 
+  triggerEvent("PreSelectionChanged");
   if(newlySelectedPaths.length())
   {
-    triggerEvent("PreSelectionChanged");
-
     MPxCommand::setResult(newlySelectedPaths);
-
-    triggerEvent("PostSelectionChanged");
   }
+  triggerEvent("PostSelectionChanged");
 
   m_pleaseIgnoreSelection = false;
   triggerEvent("SelectionEnded");

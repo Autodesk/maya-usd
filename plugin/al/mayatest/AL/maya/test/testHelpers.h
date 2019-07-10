@@ -28,7 +28,7 @@
 #include <iostream>
 #include <functional>
 
-#include "./Api.h"
+#include "AL/maya/test/Api.h"
 
 namespace AL {
 namespace maya {

@@ -50,8 +50,9 @@ struct PrimFilterInterface
   /// \param  type the type to query
   /// \param  supportsUpdate returned value that indicates if the type in question can be updated
   /// \param  requiresParent returned value that indicates whether the type in question needs a DAG path to be created
+  /// \param  importableByDefault returned value that indicates whether the prim needs to be forced into being
   /// \return returns false if the type is unknown, true otherwise
-  virtual bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent) = 0;
+  virtual bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent, bool& importableByDefault) = 0;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -65,8 +66,9 @@ public:
   /// \param  previousPrims the previous set of prims that existed in the stage
   /// \param  newPrimSet the new set of prims that have been created
   /// \param  proxy the proxy shape
+  /// \param  forceImport mirrors the status of the -fi flag
   AL_USDMAYA_PUBLIC
-  PrimFilter(const SdfPathVector& previousPrims, const AL::usd::utils::UsdPrimVector& newPrimSet, PrimFilterInterface* proxy);
+  PrimFilter(const SdfPathVector& previousPrims, const AL::usd::utils::UsdPrimVector& newPrimSet, PrimFilterInterface* proxy, bool forceImport = false);
 
   /// \brief  returns the set of prims to create
   inline const std::vector<UsdPrim>& newPrimSet() const

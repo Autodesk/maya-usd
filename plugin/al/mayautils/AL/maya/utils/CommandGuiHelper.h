@@ -16,16 +16,13 @@
 
 #pragma once
 
-#include "./Api.h"
+#include "AL/maya/utils/Api.h"
 
-#include "AL/maya/utils/ForwardDeclares.h"
 #include "AL/maya/utils/MayaHelperMacros.h"
 
-#include "maya/MString.h"
 #include "maya/MPxCommand.h"
 
 #include <sstream>
-#include <string>
 #include <vector>
 
 namespace AL {

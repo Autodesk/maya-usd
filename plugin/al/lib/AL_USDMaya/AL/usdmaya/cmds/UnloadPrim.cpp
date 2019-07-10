@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "AL/maya/utils/CommandGuiHelper.h"
-#include "AL/usdmaya/utils/Utils.h"
+#include "AL/maya/utils/Utils.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/cmds/UnloadPrim.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"

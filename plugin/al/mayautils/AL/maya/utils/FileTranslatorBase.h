@@ -90,7 +90,6 @@
 
 #include "maya/MPxFileTranslator.h"
 #include "maya/MGlobal.h"
-#include "maya/MFileObject.h"
 
 namespace AL {
 namespace maya {
@@ -104,10 +103,10 @@ namespace utils {
     static constexpr const char* const kClassName = #ClassName; \
     static void* creator() { return new ClassName; } \
   private: \
-    bool haveReadMethod() const { return HaveRead; } \
-    bool haveWriteMethod() const { return HaveWrite; } \
-    MString defaultExtension() const { return DefaultExtension; } \
-    MString filter() const { return FilterString; } \
+    bool haveReadMethod() const override { return HaveRead; } \
+    bool haveWriteMethod() const override { return HaveWrite; } \
+    MString defaultExtension() const override { return DefaultExtension; } \
+    MString filter() const override { return FilterString; } \
   public:
 
 /// \brief  Macro to wrap some boiler plate creation of a file translator
@@ -127,10 +126,9 @@ public:
   template<typename FnPlugin>
   static MStatus registerTranslator(FnPlugin& plugin)
     {
-      FileTranslatorOptions options(T::kClassName);
-      if(MS::kSuccess == T::specifyOptions(options))
+      if(MS::kSuccess == T::specifyOptions(m_options))
       {
-        options.generateScript(m_optionParser, m_defaultOptionString);
+        m_options.generateScript(m_optionParser, m_defaultOptionString);
 
         MStatus status = plugin.registerFileTranslator(
             T::kTranslatorName,
@@ -152,12 +150,30 @@ public:
   /// \param  plugin the MFnPlugin function set
   template<typename FnPlugin>
   static MStatus deregisterTranslator(FnPlugin& plugin)
-    { return plugin.deregisterFileTranslator(T::kTranslatorName); }
+  {
+    if(MS::kSuccess == T::cleanupOptions(m_options))
+    {
+      MStatus status = plugin.deregisterFileTranslator(T::kTranslatorName);
+      if(!status)
+      {
+        MGlobal::displayError(MString("Failed to deregister translator: ") + T::kTranslatorName);
+      }
+      return status;
+    }
+    MGlobal::displayError(MString("Failed to remove options for translator: ") + T::kTranslatorName);
+    return MS::kFailure;
+  }
 
   /// \brief  default fall back in case no options are needed in the derived translator
   /// \param  options the file translator options
   /// \return MS::kSuccess if options were correctly specified
   static MStatus specifyOptions(FileTranslatorOptions& options)
+    { return MS::kSuccess; }
+
+  /// \brief  default fall back in case no options are needed in the derived translator
+  /// \param  options the file translator options
+  /// \return MS::kSuccess if options were correctly cleaned up
+  static MStatus cleanupOptions(FileTranslatorOptions& options)
     { return MS::kSuccess; }
 
   /// \brief  Override this method to read your files (do not use the version from MPxFileTranslator!)
@@ -176,10 +192,21 @@ public:
   virtual MStatus writer(const MFileObject& file, const OptionsParser& options, FileAccessMode mode)
     { return MS::kFailure; }
 
+  /// \brief  access the registered translator options
+  /// \return the options
+  static FileTranslatorOptions& options()
+    { return m_options; }
+
+protected:
+  static void setPluginOptionsContext(PluginTranslatorOptionsInstance* pluginOptions)
+  {
+    m_optionParser.setPluginOptionsContext(pluginOptions);
+  }
 private:
 
   MStatus reader(const MFileObject &file, const MString &optionsString, FileAccessMode mode) override
     {
+      prepPluginOptions();
       MStatus status = m_optionParser.parse(optionsString);
       if(MS::kSuccess == status)
       {
@@ -191,6 +218,7 @@ private:
 
   MStatus writer(const MFileObject &file, const MString &optionsString, FileAccessMode mode) override
     {
+      prepPluginOptions();
       MStatus status = m_optionParser.parse(optionsString);
       if(MS::kSuccess == status)
       {
@@ -200,12 +228,16 @@ private:
       return status;
     }
 
+  virtual void prepPluginOptions() {}
+
   static MString m_defaultOptionString;
   static OptionsParser m_optionParser;
+  static FileTranslatorOptions m_options;
 };
 
 template<typename T> MString FileTranslatorBase<T>::m_defaultOptionString;
 template<typename T> OptionsParser FileTranslatorBase<T>::m_optionParser;
+template<typename T> FileTranslatorOptions FileTranslatorBase<T>::m_options(T::kClassName);
 
 //----------------------------------------------------------------------------------------------------------------------
 } // utils

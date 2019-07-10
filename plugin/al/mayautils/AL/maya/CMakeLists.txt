@@ -3,8 +3,6 @@
 # Setup 
 ####################################################################################################
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
-
 set(MAYAUTILS_LIBRARY_NAME "AL_MayaUtils")
 set(MAYAUTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
 
@@ -24,6 +22,7 @@ list(APPEND maya_utils_headers
     utils/NodeHelper.h
     utils/Utils.h
     utils/DebugCodes.h
+    utils/PluginTranslatorOptions.h
 )
 
 list(APPEND maya_event_headers
@@ -36,6 +35,8 @@ list(APPEND maya_source
     utils/MenuBuilder.cpp
     utils/NodeHelper.cpp
     utils/CommandGuiHelper.cpp
+    utils/PluginTranslatorOptions.cpp
+    utils/Utils.cpp
     event/MayaEventManager.cpp
 )
 
@@ -56,8 +57,8 @@ target_include_directories(${MAYAUTILS_LIBRARY_NAME}
     ${UTILS_INCLUDE_LOCATION}
     ${MAYAUTILS_INCLUDE_LOCATION}
     ${MAYA_INCLUDE_DIRS}
-    ${MAYAUSD_INCLUDE_DIR}
-)
+	${MAYAUSD_INCLUDE_DIR}
+    )
 
 target_link_libraries(${MAYAUTILS_LIBRARY_NAME}
   AL_EventSystem

@@ -124,10 +124,7 @@ MStatus MayaReference::initialize()
 MStatus MayaReference::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::import prim=%s\n", prim.GetPath().GetText());
-  MStatus status;
-  status = UsdMayaTranslatorMayaReference::LoadMayaReference(prim, parent);
-
-  return status;
+  return UsdMayaTranslatorMayaReference::update(prim, parent);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

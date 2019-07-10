@@ -26,7 +26,6 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
-
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorContext::~TranslatorContext()
 {
@@ -35,7 +34,9 @@ TranslatorContext::~TranslatorContext()
 //----------------------------------------------------------------------------------------------------------------------
 UsdStageRefPtr TranslatorContext::getUsdStage() const
 {
-  return m_proxyShape->usdStage();
+  if(m_proxyShape)
+    return m_proxyShape->usdStage();
+  return UsdStageRefPtr();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -223,6 +224,12 @@ void TranslatorContext::insertItem(const UsdPrim& prim, MObjectHandle object)
   {
     iter = m_primMapping.insert(iter, PrimLookup(prim.GetPath(), prim.GetTypeName(), object.object()));
   }
+  
+  if(object.object() == MObject::kNullObj)
+  {
+    return;
+  }
+
   iter->createdNodes().push_back(object);
 
   if(object.object() == MObject::kNullObj)
@@ -264,6 +271,7 @@ void TranslatorContext::removeItems(const SdfPath& path)
           hasDagNodes = true;
           modifier2.reparentNode(obj);
           status = modifier2.deleteNode(obj);
+          status = modifier2.doIt();
           AL_MAYA_CHECK_ERROR2(status, "failed to delete transform node");
         }
         else
@@ -283,6 +291,7 @@ void TranslatorContext::removeItems(const SdfPath& path)
         {
           hasDependNodes = true;
           status = modifier1.deleteNode(obj);
+          status = modifier1.doIt();
           AL_MAYA_CHECK_ERROR2(status, MString("failed to delete node"));
         }
       }
@@ -337,7 +346,7 @@ MString TranslatorContext::serialise() const
   std::ostringstream oss;
   for(auto& path : m_excludedGeometry)
   {
-    oss << path.GetString() << ",";
+    oss << path.first.GetString() << ",";
   }
 
   m_proxyShape->excludedTranslatedGeometryPlug().setString(MString(oss.str().c_str()));
@@ -394,7 +403,10 @@ void TranslatorContext::deserialise(const MString& string)
   }
 
   SdfPathVector vec = m_proxyShape->getPrimPathsFromCommaJoinedString(m_proxyShape->excludedTranslatedGeometryPlug().asString());
-  m_excludedGeometry.insert(vec.begin(), vec.end());
+  for(auto& it : vec)
+  {
+    m_excludedGeometry.emplace(it, it);
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -464,6 +476,11 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
   {
     auto path = *iter;
     auto node = std::lower_bound(m_primMapping.begin(), m_primMapping.end(), path, value_compare());
+    if(node == m_primMapping.end())
+    {
+      ++iter;
+      continue;
+    }
     bool isInTransformChain = isPrimInTransformChain(path);
 
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries removing: %s\n", iter->GetText());
@@ -513,7 +530,7 @@ void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
     }
 
     fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().get(type);
-    if (translator)
+    if(translator)
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim [preTearDown] prim=%s\n", prim.GetPath().GetText());
       translator->preTearDown(prim);
@@ -725,6 +742,52 @@ bool TranslatorContext::isPrimInTransformChain(const SdfPath& path)
 
   return false;
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+bool TranslatorContext::addExcludedGeometry(const SdfPath& newPath)
+{
+  if(m_proxyShape)
+  {
+    auto foundPath = m_excludedGeometry.find(newPath);
+    if(foundPath != m_excludedGeometry.end())
+    {
+      return false;
+    }
+
+    UsdStageRefPtr stage = getUsdStage();
+    SdfPath pathToAdd = newPath;
+    bool hasInstanceParent = false;
+    {
+      UsdPrim parentPrim;
+      do
+      {
+        pathToAdd = pathToAdd.GetParentPath();
+        parentPrim = stage->GetPrimAtPath(pathToAdd);
+        if(!parentPrim)
+          break;
+
+        if(parentPrim.IsInstance())
+        {
+          hasInstanceParent = true;
+          break;
+        }
+      }
+      while(!pathToAdd.IsEmpty());
+    }
+    if(hasInstanceParent)
+    {
+      m_excludedGeometry.emplace(newPath, pathToAdd);
+    }
+    else
+    {
+      m_excludedGeometry.emplace(newPath, newPath);
+    }
+    m_isExcludedGeometryDirty = true;
+    return true;
+  }
+  return false;
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 } // translators
 } // fileio

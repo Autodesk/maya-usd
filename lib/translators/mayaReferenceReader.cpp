@@ -57,7 +57,7 @@ PXRUSDMAYA_DEFINE_READER(AL_usd_MayaReference, args, context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
     MObject parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
-    return UsdMayaTranslatorMayaReference::LoadMayaReference(
+    return UsdMayaTranslatorMayaReference::update(
         usdPrim,
         parentNode);
 }

@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <algorithm>
 #include "AL/maya/utils/FileTranslatorOptions.h"
-#include "AL/maya/utils/DebugCodes.h"
 
 #include "maya/MGlobal.h"
 
@@ -25,8 +25,8 @@ namespace utils {
 const MString OptionsParser::kNullString;
 
 //----------------------------------------------------------------------------------------------------------------------
-OptionsParser::OptionsParser()
-  : m_optionNameToValue(), m_niceNameToValue()
+OptionsParser::OptionsParser(PluginTranslatorOptionsInstance* const pluginOptions)
+  : m_optionNameToValue(), m_niceNameToValue(), m_pluginOptions(pluginOptions)
 {
 }
 
@@ -39,6 +39,35 @@ OptionsParser::~OptionsParser()
     delete it->second;
   m_optionNameToValue.clear();
   m_niceNameToValue.clear();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void OptionsParser::construct(MString& optionString)
+{
+  optionString.clear();
+
+  for(auto& r : m_optionNameToValue)
+  {
+    optionString += r.first.c_str();
+    optionString += "=";
+    switch(r.second->m_type)
+    {
+    case kBool:
+      optionString += r.second->m_bool;
+      break;
+    case kEnum:
+    case kInt:
+      optionString += r.second->m_int;
+      break;
+    case kFloat:
+      optionString += r.second->m_float;
+      break;
+    case kString:
+      optionString += r.second->m_string.c_str();
+      break;
+    }
+    optionString += ";";
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -74,6 +103,11 @@ MStatus OptionsParser::parse(const MString& optionString)
         it->second->parse(theOption[1]);
       }
       else
+      if(m_pluginOptions)
+      {
+        m_pluginOptions->parse(theOption[0], theOption[1]);
+      }
+      else
       {
         MGlobal::displayError(MString("Unknown option: ") + theOption[0] + " { " + theOption[1] + " }");
         status = MS::kFailure;
@@ -98,10 +132,27 @@ bool FileTranslatorOptions::addFrame(const char* frameName)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+bool FileTranslatorOptions::removeFrame(const char* frameName)
+{
+  auto iter = std::find_if(m_frames.begin(),
+                           m_frames.end(),
+                           [&](FrameLayout& frame) {
+                             return frame.m_frameName == frameName;
+                           });
+  if (iter != m_frames.end())
+  {
+    m_frames.erase(iter);
+    return true;
+  }
+  MGlobal::displayError((std::string("FileTranslatorOptions: failed to remove frame: ") + frameName).c_str());
+  return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MString niceNameToOptionString(MString n)
 {
-  std::string str = n.asChar();
-  for(uint32_t i = 0; i < str.size(); ++i)
+  char* str = (char*)n.asChar();
+  for(uint32_t i = 0, len = n.length(); i < len; ++i)
   {
     const char c = str[i];
     if(!isalnum(c) && c != '_')
@@ -109,7 +160,7 @@ MString niceNameToOptionString(MString n)
       str[i] = '_';
     }
   }
-  return str.c_str();
+  return n;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -121,7 +172,7 @@ bool FileTranslatorOptions::boolControlsVisibility(const char* controller, const
   {
     MString controllerControl = m_translatorName + "_" + opt_controller;
     MString controlledControl = m_translatorName + "_" + opt_controlled;
-    m_visibility.push_back(std::make_pair(controllerControl, controlledControl));
+    m_visibility.emplace_back(controllerControl, controlledControl);
     return true;
   }
   MGlobal::displayError("FileTranslatorOptions: unknown option name");
@@ -144,8 +195,9 @@ bool FileTranslatorOptions::addBool(const char* niceName, bool defaultValue)
   option.enumValues = 0;
   if(hasOption(option.optionName))
   {
-    MGlobal::displayError("FileTranslatorOptions: cannot register the same option twice");
-    return false;
+    MString msg("FileTranslatorOptions: cannot register the same bool option twice: ^1");
+    msg.format(option.optionName);
+    MGlobal::displayError(msg);    return false;
   }
 
   frame.m_options.push_back(option);
@@ -168,8 +220,9 @@ bool FileTranslatorOptions::addInt(const char* niceName, int defaultValue)
   option.enumValues = 0;
   if(hasOption(option.optionName))
   {
-    MGlobal::displayError("FileTranslatorOptions: cannot register the same option twice");
-    return false;
+    MString msg("FileTranslatorOptions: cannot register the same int option twice: ^1");
+    msg.format(option.optionName);
+    MGlobal::displayError(msg);    return false;
   }
   frame.m_options.push_back(option);
   return true;
@@ -191,8 +244,9 @@ bool FileTranslatorOptions::addFloat(const char* niceName, float defaultValue)
   option.enumValues = 0;
   if(hasOption(option.optionName))
   {
-    MGlobal::displayError("FileTranslatorOptions: cannot register the same option twice");
-    return false;
+    MString msg("FileTranslatorOptions: cannot register the same float option twice: ^1");
+    msg.format(option.optionName);
+    MGlobal::displayError(msg);    return false;
   }
   frame.m_options.push_back(option);
   return true;
@@ -214,8 +268,9 @@ bool FileTranslatorOptions::addString(const char* niceName, const char* const de
   option.enumValues = 0;
   if(hasOption(option.optionName))
   {
-    MGlobal::displayError("FileTranslatorOptions: cannot register the same option twice");
-    return false;
+    MString msg("FileTranslatorOptions: cannot register the same string option twice: ^1");
+    msg.format(option.optionName);
+    MGlobal::displayError(msg);    return false;
   }
   frame.m_options.push_back(option);
   return true;
@@ -238,7 +293,9 @@ bool FileTranslatorOptions::addEnum(const char* niceName, const char* const enum
 
   if(hasOption(option.optionName))
   {
-    MGlobal::displayError("FileTranslatorOptions: cannot register the same option twice");
+    MString msg("FileTranslatorOptions: cannot register the same enum option twice: ^1");
+    msg.format(option.optionName);
+    MGlobal::displayError(msg);
     return false;
   }
   frame.m_options.push_back(option);
@@ -249,7 +306,7 @@ bool FileTranslatorOptions::addEnum(const char* niceName, const char* const enum
 void FileTranslatorOptions::generateBoolGlobals(const MString& niceName, const MString& optionName, bool defaultValue)
 {
   MString controlName = m_translatorName + "_" + optionName;
-  MString createCommand = MString("global proc create_") + controlName + "() {" + MString("checkBox -l \"") + niceName + "\" " + controlName + ";}\n";
+  MString createCommand = MString("global proc create_") + controlName + "() {" + MString("checkBox -l \"") + niceName + "\" -v " + defaultValue + " " + controlName + ";}\n";
   MString postCommand = MString("global proc post_") + controlName + "(string $value){ eval (\"checkBox -e -v \" + $value + \" " + controlName + "\");}\n";
   MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + optionName + "=\"; if(` checkBox -q -v " + controlName + "`) $str = $str + \"1;\"; else $str = $str + \"0;\"; return $str;}\n";
 
@@ -263,7 +320,7 @@ void FileTranslatorOptions::generateBoolGlobals(const MString& niceName, const M
 void FileTranslatorOptions::generateIntGlobals(const MString& niceName, const MString& optionName, int defaultValue)
 {
   MString controlName = m_translatorName + "_" + optionName;
-  MString createCommand = MString("global proc create_") + controlName + "() {" + MString("intFieldGrp -l \"") + niceName + "\" " + controlName + ";}\n";
+  MString createCommand = MString("global proc create_") + controlName + "() {" + MString("intFieldGrp -l \"") + niceName + "\" -v1 " + defaultValue + " " + controlName + ";}\n";
   MString postCommand = MString("global proc post_") + controlName + "(string $value){ eval (\"intFieldGrp -e -v1 \" + $value + \" " + controlName + "\");}\n";
   MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + optionName + "=\" + `intFieldGrp -q -v1 " + controlName + "` + \";\"; return $str;}\n";
 
@@ -277,7 +334,7 @@ void FileTranslatorOptions::generateIntGlobals(const MString& niceName, const MS
 void FileTranslatorOptions::generateFloatGlobals(const MString& niceName, const MString& optionName, float defaultValue)
 {
   MString controlName = m_translatorName + "_" + optionName;
-  MString createCommand = MString("global proc create_") + controlName + "() {" + MString("floatFieldGrp -l \"") + niceName + "\" " + controlName + ";}\n";
+  MString createCommand = MString("global proc create_") + controlName + "() {" + MString("floatFieldGrp -l \"") + niceName + "\" -v1 " + defaultValue + " " + controlName + ";}\n";
   MString postCommand = MString("global proc post_") + controlName + "(string $value){ eval (\"floatFieldGrp -e -v1 \" + $value + \" " + controlName + "\");}\n";
   MString buildCommand = MString("global proc string build_") + controlName + "(){ string $str = \"" + optionName + "=\" + `floatFieldGrp -q -v1 " + controlName + "` + \";\"; return $str;}\n";
 
@@ -359,8 +416,89 @@ std::string stringify(const char* str)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+MStatus FileTranslatorOptions::initParser(OptionsParser& optionParser)
+{
+  // first generate a collection of methods to create, edit, and query each separate option. For each exporter/importer
+  // option, we will generate three methods:
+  //
+  //   proc create_myOptionName();              ///< creates the GUI control for the option
+  //   proc post_myOptionName(string $value);   ///< set the value in the control from the parsed option string
+  //   proc string build_myOptionName();        ///< get the value from the control, and return it as a text string "myOptionName=<value>"
+  //
+  // We will also add in some entries into the optionParser, which will be used later on when using the exporter.
+  // This option parser will know about the option names (both the 'nice' names and the actual option name), as well as
+  // the associated data type. This will be able to split apart the option string of the form "option1=10;option2=hello;option3=true"
+  //
+  auto itf = m_frames.begin();
+  auto endf = m_frames.end();
+  for(; itf != endf; ++itf)
+  {
+    auto ito = itf->m_options.begin();
+    auto endo = itf->m_options.end();
+    for(; ito != endo; ++ito)
+    {
+      switch(ito->type)
+      {
+      case kBool:
+        {
+          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
+          value->m_type = OptionsParser::kBool;
+          value->m_defaultBool = ito->defaultBool;
+          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
+          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
+        }
+        break;
+
+      case kInt:
+        {
+          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
+          value->m_type = OptionsParser::kInt;
+          value->m_defaultInt = ito->defaultInt;
+          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
+          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
+        }
+        break;
+
+      case kFloat:
+        {
+          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
+          value->m_type = OptionsParser::kFloat;
+          value->m_defaultFloat = ito->defaultFloat;
+          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
+          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
+        }
+        break;
+
+      case kString:
+        {
+          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
+          value->m_type = OptionsParser::kString;
+          value->m_defaultString = ito->defaultString;
+          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
+          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
+        }
+        break;
+
+      case kEnum:
+        {
+          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
+          value->m_type = OptionsParser::kEnum;
+          value->m_defaultInt = ito->defaultInt;
+          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
+          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
+        }
+        break;
+      }
+    }
+  }
+  return MS::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MString& defaultOptionString)
 {
+  initParser(optionParser);
+
   // first generate a collection of methods to create, edit, and query each separate option. For each exporter/importer
   // option, we will generate three methods:
   //
@@ -390,12 +528,6 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
             defaultOptionString += "1;";
           else
             defaultOptionString += "0;";
-
-          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
-          value->m_type = OptionsParser::kBool;
-          value->m_defaultBool = ito->defaultBool;
-          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
-          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
         }
         break;
 
@@ -403,12 +535,6 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
         {
           generateIntGlobals(ito->niceName, ito->optionName, ito->defaultInt);
           defaultOptionString += ito->optionName + "=" + (MString() + ito->defaultInt) + ";";
-
-          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
-          value->m_type = OptionsParser::kInt;
-          value->m_defaultInt = ito->defaultInt;
-          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
-          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
         }
         break;
 
@@ -416,12 +542,6 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
         {
           generateFloatGlobals(ito->niceName, ito->optionName, ito->defaultFloat);
           defaultOptionString += ito->optionName + "=" + (MString() + ito->defaultFloat) + ";";
-
-          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
-          value->m_type = OptionsParser::kFloat;
-          value->m_defaultFloat = ito->defaultFloat;
-          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
-          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
         }
         break;
 
@@ -429,12 +549,6 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
         {
           generateStringGlobals(ito->niceName, ito->optionName, ito->defaultString);
           defaultOptionString += ito->optionName + "=" + ito->defaultString + ";";
-
-          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
-          value->m_type = OptionsParser::kString;
-          value->m_defaultString = ito->defaultString;
-          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
-          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
         }
         break;
 
@@ -442,17 +556,28 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
         {
           generateEnumGlobals(ito->niceName, ito->optionName, ito->enumValues, ito->defaultInt);
           defaultOptionString += ito->optionName + "=" + (MString() + ito->defaultInt) + ";";
-
-          OptionsParser::OptionValue* value = new OptionsParser::OptionValue;
-          value->m_type = OptionsParser::kEnum;
-          value->m_defaultInt = ito->defaultInt;
-          optionParser.m_niceNameToValue.insert(std::make_pair(ito->niceName.asChar(), value));
-          optionParser.m_optionNameToValue.insert(std::make_pair(ito->optionName.asChar(), value));
         }
         break;
       }
     }
   }
+
+  m_code += "global proc fromOptionVars_";
+  m_code += m_translatorName;
+  m_code += "() {}\n";
+
+  m_code += "global proc create_";
+  m_code += m_translatorName;
+  m_code += "(string $parent) {}\n";
+
+  m_code += "global proc post_";
+  m_code += m_translatorName;
+  m_code += "(string $name, string $value) {}\n";
+
+  m_code += "global proc string query_";
+  m_code += m_translatorName;
+  m_code += "() { return \"\"; }\n";
+
 
   // generate the actual entry point for our option dialog, e.g.
   //
@@ -466,7 +591,8 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
             "  int $index;\n"
             "  if ($action == \"post\")\n  {\n"  //< start of the 'post' section of the script (set control values from option string)
             "    setParent $parent;\n"
-            "    columnLayout -adj true;\n";
+            "    columnLayout -adj true;\n"
+            "    AL_usdmaya_SyncFileIOGui \"" + m_translatorName + "\";\n";
 
   itf = m_frames.begin();
   for(; itf != endf; ++itf)
@@ -479,6 +605,10 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
       m_code += MString("    create_") + controlName + "();\n";
     }
   }
+
+  m_code += "    create_";
+  m_code += m_translatorName;
+  m_code += "($parent);\n";
 
   // generate the code to split apart the key-value pairs of options.
   m_code += "    if (size($initialSettings) > 0) {\n"
@@ -500,7 +630,8 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
     }
   }
 
-  m_code += "        {}\n"
+  m_code += "        {\n          post_";
+  m_code += m_translatorName + "($optionBreakDown[0], $optionBreakDown[1]);\n        }\n"
             "      }\n    }\n"
             "  }\n  else\n  if ($action == \"query\")\n  {\n";  //< start of 'query' section - return all control values as key-value pairs in an option string.
 
@@ -516,12 +647,21 @@ MStatus FileTranslatorOptions::generateScript(OptionsParser& optionParser, MStri
     }
   }
 
+  m_code += MString("    $currentOptions = $currentOptions + `query_") + m_translatorName + "`;\n";
   m_code += "    eval($resultCallback+\" \\\"\"+$currentOptions+\"\\\"\");\n"
             "  }\n  else\n  {\n"
             "    $result = 0;\n  }\n"
             "  return $result;\n}\n";
 
-  //TF_DEBUG(ALUSDMAYA_GUIHELPER).Msg("%s\n", m_code.asChar());
+#if 0
+  std::cout << "--------------------------------------------------------\n";
+  std::cout << "--------------------------------------------------------\n";
+  std::cout << "--------------------------------------------------------\n";
+  std::cout << m_code.asChar() << std::endl;
+  std::cout << "--------------------------------------------------------\n";
+  std::cout << "--------------------------------------------------------\n";
+  std::cout << "--------------------------------------------------------\n";
+#endif
 
   return MGlobal::executeCommand(m_code, false, false);
 }

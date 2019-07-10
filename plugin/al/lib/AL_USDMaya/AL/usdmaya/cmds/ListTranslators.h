@@ -13,38 +13,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/utils/CommandGuiHelper.h"
-#include "AL/usdmaya/DebugCodes.h"
-#include "AL/usdmaya/cmds/ProxyShapeCommands.h"
-#include "AL/usdmaya/fileio/TransformIterator.h"
-#include "AL/usdmaya/nodes/ProxyShape.h"
-#include "AL/usdmaya/nodes/Transform.h"
+#pragma once
+
+#include "../Api.h"
+
+#include "AL/maya/utils/MayaHelperMacros.h"
+#include "maya/MPxCommand.h"
+
+#if MAYA_API_VERSION < 201800
 #include "maya/MArgDatabase.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MGlobal.h"
-#include "maya/MSelectionList.h"
-#include "maya/MStatus.h"
-#include "maya/MStringArray.h"
-#include "maya/MSyntax.h"
-#include "maya/MDagPath.h"
-#include "maya/MArgList.h"
-
-#include <sstream>
-#include <algorithm>
-
-#include <AL/usdmaya/cmds/ProxyShapeSelectCommands.h>
-#include <AL/usdmaya/SelectabilityDB.h>
-#include "AL/usdmaya/utils/Utils.h"
+#endif
 
 namespace AL {
 namespace usdmaya {
 namespace cmds {
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief  A command that allows you to query all of the translator plugins that are currently registered with AL_usdmaya
+/// \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
+class ListTranslators
+  : public MPxCommand
+{
+  MArgDatabase makeDatabase(const MArgList& args);
+public:
+  AL_MAYA_DECLARE_COMMAND();
+private:
+  bool isUndoable() const override;
+  MStatus doIt(const MArgList& args) override;
+};
 
-//----------------------------------------------------------------------------------------------------------------------
 } // cmds
 } // usdmaya
 } // AL
-//----------------------------------------------------------------------------------------------------------------------
+
+
+

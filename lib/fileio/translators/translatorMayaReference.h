@@ -61,13 +61,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct UsdMayaTranslatorMayaReference
 {
     MAYAUSD_CORE_PUBLIC
-    static MStatus LoadMayaReference(const UsdPrim& prim, MObject& parent);
+    static MStatus LoadMayaReference(const UsdPrim& prim, MObject& parent, MString& mayaReferencePath, MString& rigNamespaceM);
     
     MAYAUSD_CORE_PUBLIC
     static MStatus UnloadMayaReference(const MObject& parent);
     
     MAYAUSD_CORE_PUBLIC
-    static MStatus update(const UsdPrim& prim, MObject parent, MObject refNode = MObject::kNullObj);
+    static MStatus update(const UsdPrim& prim, MObject parent);
 
 private:
     static MStatus connectReferenceAssociatedNode(MFnDagNode& dagNode, MFnReference& refNode);

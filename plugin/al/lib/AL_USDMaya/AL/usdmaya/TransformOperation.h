@@ -15,14 +15,14 @@
 //
 #pragma once
 
-#include "./Api.h"
+#include "AL/usdmaya/Api.h"
 
 #include "pxr/pxr.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include "pxr/usd/usdGeom/mesh.h"
 
+#include <cstdint>
 #include <string>
 #include <vector>
-#include "AL/usd/utils/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
