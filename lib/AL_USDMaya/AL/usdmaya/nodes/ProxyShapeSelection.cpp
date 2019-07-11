@@ -593,7 +593,7 @@ MObject ProxyShape::makeUsdTransformChain(
     if(modifier2)
     {
       if(pushToPrim) modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), pushToPrim);
-      modifier2->newPlugValueBool(ptrNode->readAnimatedValuesPlug(), readAnimatedValues); //MGlobal::optionVarIntValue("AL_usdmaya_readAnimatedValues") );
+      modifier2->newPlugValueBool(ptrNode->readAnimatedValuesPlug(), readAnimatedValues);
     }
 
     if(!isTransform)

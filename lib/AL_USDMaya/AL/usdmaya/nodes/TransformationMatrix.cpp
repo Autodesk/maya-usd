@@ -980,15 +980,14 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
       {
         m_flags |= kPrimHasRotateAxes;
         if(readFromPrim) {
-          MVector vec;
-          internal_readVector(vec, op);
-          MEulerRotation eulers(vec.x, vec.y, vec.z);
+          MEulerRotation eulers;
+          internal_readRotation(eulers, op);
           m_rotateOrientationFromUsd = eulers.asQuaternion();
           if(transformNode)
           {
-            MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisX).setValue(vec.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisY).setValue(vec.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisZ).setValue(vec.z);
+            MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisX).setValue(eulers.x);
+            MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisY).setValue(eulers.y);
+            MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisZ).setValue(eulers.z);
           }
         }
       }
