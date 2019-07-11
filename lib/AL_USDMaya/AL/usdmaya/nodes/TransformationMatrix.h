@@ -451,6 +451,8 @@ public:
   /// \brief  pushes any modifications on the matrix back onto the UsdPrim
   void pushToPrim();
 
+  void notifyProxyShapeOfRedraw();
+
 private:
   /// \brief  sets the SRT values from a matrix
   void setFromMatrix(MObject thisNode, const MMatrix& m);
@@ -484,6 +486,18 @@ private:
   //  Compute matrix result
   MMatrix asMatrix() const override;
   MMatrix asMatrix(double percent) const override;
+public:
+  void pushTranslateToPrim();
+  void pushPivotToPrim();
+  void pushRotatePivotTranslateToPrim();
+  void pushRotatePivotToPrim();
+  void pushRotateToPrim();
+  void pushRotateAxisToPrim();
+  void pushScalePivotTranslateToPrim();
+  void pushScalePivotToPrim();
+  void pushScaleToPrim();
+  void pushShearToPrim();
+  void pushTransformToPrim();
 };
 
 //----------------------------------------------------------------------------------------------------------------------

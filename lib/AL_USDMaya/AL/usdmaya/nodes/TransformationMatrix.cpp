@@ -1252,7 +1252,7 @@ MStatus TransformationMatrix::translateTo(const MVector& vector, MSpace::Space s
     {
       insertTranslateOp();
     }
-    pushToPrim();
+    pushTranslateToPrim();
   }
   return status;
 }
@@ -1300,7 +1300,7 @@ MStatus TransformationMatrix::scaleTo(const MVector& scale, MSpace::Space space)
       // rare case: add a new scale op into the prim
       insertScaleOp();
     }
-    pushToPrim();
+    pushScaleToPrim();
   }
   return status;
 }
@@ -1346,7 +1346,7 @@ MStatus TransformationMatrix::shearTo(const MVector& shear, MSpace::Space space)
       // rare case: add a new scale op into the prim
       insertShearOp();
     }
-    pushToPrim();
+    pushShearToPrim();
   }
   return status;
 }
@@ -1395,7 +1395,7 @@ MStatus TransformationMatrix::setScalePivot(const MPoint& sp, MSpace::Space spac
     {
       insertScalePivotOp();
     }
-    pushToPrim();
+    pushScalePivotToPrim();
   }
   return status;
 }
@@ -1435,7 +1435,7 @@ MStatus TransformationMatrix::setScalePivotTranslation(const MVector& sp, MSpace
     {
       insertScalePivotTranslationOp();
     }
-    pushToPrim();
+    pushScalePivotTranslateToPrim();
   }
   return status;
 }
@@ -1464,7 +1464,6 @@ void TransformationMatrix::insertRotatePivotOp()
   m_flags |= kPrimHasRotatePivot;
 }
 
-
 //----------------------------------------------------------------------------------------------------------------------
 MStatus TransformationMatrix::setRotatePivot(const MPoint& pivot, MSpace::Space space, bool balance)
 {
@@ -1485,7 +1484,7 @@ MStatus TransformationMatrix::setRotatePivot(const MPoint& pivot, MSpace::Space 
     {
       insertRotatePivotOp();
     }
-    pushToPrim();
+    pushRotatePivotToPrim();
   }
   return status;
 }
@@ -1525,7 +1524,7 @@ MStatus TransformationMatrix::setRotatePivotTranslation(const MVector &vector, M
     {
       insertRotatePivotTranslationOp();
     }
-    pushToPrim();
+    pushRotatePivotTranslateToPrim();
   }
   return status;
 }
@@ -1602,7 +1601,7 @@ MStatus TransformationMatrix::rotateTo(const MQuaternion &q, MSpace::Space space
     {
       insertRotateOp();
     }
-    pushToPrim();
+    pushRotateToPrim();
   }
   return status;
 }
@@ -1630,7 +1629,7 @@ MStatus TransformationMatrix::rotateTo(const MEulerRotation &e, MSpace::Space sp
     {
       insertRotateOp();
     }
-    pushToPrim();
+    pushRotateToPrim();
   }
   return status;
 }
@@ -1679,7 +1678,7 @@ MStatus TransformationMatrix::setRotateOrientation(const MQuaternion &q, MSpace:
     {
       insertRotateAxesOp();
     }
-    pushToPrim();
+    pushRotateAxisToPrim();
   }
   return status;
 }
@@ -1703,9 +1702,271 @@ MStatus TransformationMatrix::setRotateOrientation(const MEulerRotation& euler, 
     {
       insertRotateAxesOp();
     }
-    pushToPrim();
+    pushRotateAxisToPrim();
   }
   return status;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TransformationMatrix::notifyProxyShapeOfRedraw()
+{
+  // Anytime we update the xform, we need to tell the proxy shape that it
+  // needs to redraw itself
+  MObject tn(m_transformNode.object());
+  if (!tn.isNull())
+  {
+    MStatus status;
+    MFnDependencyNode mfn(tn, &status);
+    if (status && mfn.typeId() == Transform::kTypeId)
+    {
+      auto xform = static_cast<Transform*>(mfn.userNode());
+      MObject proxyObj = xform->getProxyShape();
+      if (!proxyObj.isNull())
+      {
+        MFnDependencyNode proxyMfn(proxyObj);
+        if (proxyMfn.typeId() == ProxyShape::kTypeId)
+        {
+          GfMatrix4d oldMatrix;
+          bool oldResetsStack;
+          m_xform.GetLocalTransformation(&oldMatrix, &oldResetsStack, getTimeCode());
+
+          // We check that the matrix actually HAS changed, as this function will be
+          // called when, ie, pushToPrim is toggled, which often happens on node
+          // creation, when nothing has actually changed
+          GfMatrix4d newMatrix;
+          bool newResetsStack;
+          m_xform.GetLocalTransformation(&newMatrix, &newResetsStack, getTimeCode());
+          if (newMatrix != oldMatrix || newResetsStack != oldResetsStack)
+          {
+            MHWRender::MRenderer::setGeometryDrawDirty(proxyObj);
+          }
+        }
+      }
+    }
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TransformationMatrix::pushTranslateToPrim()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushTranslateToPrim\n");
+  auto opIt = m_orderedOps.begin();
+  for(std::vector<UsdGeomXformOp>::iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
+  {
+    if(*opIt == kTranslate)
+    {
+      UsdGeomXformOp& op = *it;
+      internal_pushVector(MPxTransformationMatrix::translationValue, op);
+      m_translationFromUsd = MPxTransformationMatrix::translationValue;
+      m_translationTweak = MVector(0, 0, 0);
+      return;
+    }
+  }
+  // incase not found
+  pushTransformToPrim();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TransformationMatrix::pushPivotToPrim()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushPivotToPrim\n");
+  auto opIt = m_orderedOps.begin();
+  for(std::vector<UsdGeomXformOp>::iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
+  {
+    if(*opIt == kPivot)
+    {
+      UsdGeomXformOp& op = *it;
+      // is this a bug?
+      internal_pushPoint(MPxTransformationMatrix::rotatePivotValue, op);
+      m_rotatePivotFromUsd = MPxTransformationMatrix::rotatePivotValue;
+      m_rotatePivotTweak = MPoint(0, 0, 0);
+      m_scalePivotFromUsd = MPxTransformationMatrix::scalePivotValue;
+      m_scalePivotTweak = MVector(0, 0, 0);
+      return;
+    }
+  }
+  // incase not found
+  pushTransformToPrim();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TransformationMatrix::pushRotatePivotToPrim()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushRotatePivotToPrim\n");
+  auto opIt = m_orderedOps.begin();
+  for(std::vector<UsdGeomXformOp>::iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
+  {
+    if(*opIt == kRotatePivot)
+    {
+      UsdGeomXformOp& op = *it;
+      internal_pushPoint(MPxTransformationMatrix::rotatePivotValue, op);
+      m_rotatePivotFromUsd = MPxTransformationMatrix::rotatePivotValue;
+      m_rotatePivotTweak = MVector(0, 0, 0);
+      return;
+    }
+  }
+  // incase not found
+  pushTransformToPrim();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TransformationMatrix::pushRotatePivotTranslateToPrim()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushRotatePivotTranslateToPrim\n");
+  auto opIt = m_orderedOps.begin();
+  for(std::vector<UsdGeomXformOp>::iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
+  {
+    if(*opIt == kRotatePivotTranslate)
+    {
+      UsdGeomXformOp& op = *it;
+      internal_pushPoint(MPxTransformationMatrix::rotatePivotTranslationValue, op);
+      m_rotatePivotTranslationFromUsd = MPxTransformationMatrix::rotatePivotTranslationValue;
+      m_rotatePivotTranslationTweak = MVector(0, 0, 0);
+      return;
+    }
+  }
+  // incase not found
+  pushTransformToPrim();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TransformationMatrix::pushRotateToPrim()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushRotateToPrim\n");
+  auto opIt = m_orderedOps.begin();
+  for(std::vector<UsdGeomXformOp>::iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
+  {
+    if(*opIt == kRotate)
+    {
+      UsdGeomXformOp& op = *it;
+      internal_pushRotation(MPxTransformationMatrix::rotationValue, op);
+      m_rotationFromUsd = MPxTransformationMatrix::rotationValue;
+      m_rotationTweak = MEulerRotation(0, 0, 0);
+      return;
+    }
+  }
+  // incase not found
+  pushTransformToPrim();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TransformationMatrix::pushRotateAxisToPrim()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushRotateAxisToPrim\n");
+  auto opIt = m_orderedOps.begin();
+  for(std::vector<UsdGeomXformOp>::iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
+  {
+    if(*opIt == kRotateAxis)
+    {
+      UsdGeomXformOp& op = *it;
+      const double radToDeg = 180.0 / 3.141592654;
+      MEulerRotation e = m_rotateOrientationFromUsd.asEulerRotation();
+      MVector vec(e.x * radToDeg, e.y * radToDeg, e.z * radToDeg);
+      internal_pushVector(vec, op);
+      return;
+    }
+  }
+  // incase not found
+  pushTransformToPrim();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TransformationMatrix::pushScalePivotTranslateToPrim()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushScalePivotTranslateToPrim\n");
+  auto opIt = m_orderedOps.begin();
+  for(std::vector<UsdGeomXformOp>::iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
+  {
+    if(*opIt == kScalePivotTranslate)
+    {
+      UsdGeomXformOp& op = *it;
+      internal_pushVector(MPxTransformationMatrix::scalePivotTranslationValue, op);
+      m_scalePivotTranslationFromUsd = MPxTransformationMatrix::scalePivotTranslationValue;
+      m_scalePivotTranslationTweak = MVector(0, 0, 0);
+      return;
+    }
+  }
+  // incase not found
+  pushTransformToPrim();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TransformationMatrix::pushScalePivotToPrim()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushScalePivotToPrim\n");
+  auto opIt = m_orderedOps.begin();
+  for(std::vector<UsdGeomXformOp>::iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
+  {
+    if(*opIt == kScalePivot)
+    {
+      UsdGeomXformOp& op = *it;
+      internal_pushPoint(MPxTransformationMatrix::scalePivotValue, op);
+      m_scalePivotFromUsd = MPxTransformationMatrix::scalePivotValue;
+      m_scalePivotTweak = MPoint(0, 0, 0);
+      return;
+    }
+  }
+  // incase not found
+  pushTransformToPrim();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TransformationMatrix::pushScaleToPrim()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushScaleToPrim\n");
+  auto opIt = m_orderedOps.begin();
+  for(std::vector<UsdGeomXformOp>::iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
+  {
+    if(*opIt == kScale)
+    {
+      UsdGeomXformOp& op = *it;
+      internal_pushVector(MPxTransformationMatrix::scaleValue, op);
+      m_scaleFromUsd = MPxTransformationMatrix::scaleValue;
+      m_scaleTweak = MVector(0, 0, 0);
+      return;
+    }
+  }
+  // incase not found
+  pushTransformToPrim();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TransformationMatrix::pushShearToPrim()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushShearToPrim\n");
+  auto opIt = m_orderedOps.begin();
+  for(std::vector<UsdGeomXformOp>::iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
+  {
+    if(*opIt == kShear)
+    {
+      UsdGeomXformOp& op = *it;
+      internal_pushShear(MPxTransformationMatrix::shearValue, op);
+      m_shearFromUsd = MPxTransformationMatrix::shearValue;
+      m_shearTweak = MVector(0, 0, 0);
+      return;
+    }
+  }
+  // incase not found
+  pushTransformToPrim();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TransformationMatrix::pushTransformToPrim()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::pushTransformToPrim\n");
+  auto opIt = m_orderedOps.begin();
+  for(std::vector<UsdGeomXformOp>::iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
+  {
+    if(*opIt == kTransform)
+    {
+      UsdGeomXformOp& op = *it;
+      if(pushPrimToMatrix())
+      {
+        internal_pushMatrix(asMatrix(), op);
+      }
+      return;
+    }
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1840,44 +2101,12 @@ void TransformationMatrix::pushToPrim()
       break;
     }
   }
-
-
-  // Anytime we update the xform, we need to tell the proxy shape that it
-  // needs to redraw itself
-  MObject tn(m_transformNode.object());
-  if (!tn.isNull())
-  {
-    MStatus status;
-    MFnDependencyNode mfn(tn, &status);
-    if (status && mfn.typeId() == Transform::kTypeId)
-    {
-      auto xform = static_cast<Transform*>(mfn.userNode());
-      MObject proxyObj = xform->getProxyShape();
-      if (!proxyObj.isNull())
-      {
-        MFnDependencyNode proxyMfn(proxyObj);
-        if (proxyMfn.typeId() == ProxyShape::kTypeId)
-        {
-          // We check that the matrix actually HAS changed, as this function will be
-          // called when, ie, pushToPrim is toggled, which often happens on node
-          // creation, when nothing has actually changed
-          GfMatrix4d newMatrix;
-          bool newResetsStack;
-          m_xform.GetLocalTransformation(&newMatrix, &newResetsStack, getTimeCode());
-          if (newMatrix != oldMatrix || newResetsStack != oldResetsStack)
-          {
-            MHWRender::MRenderer::setGeometryDrawDirty(proxyObj);
-          }
-        }
-      }
-    }
-  }
+  notifyProxyShapeOfRedraw();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MMatrix TransformationMatrix::asMatrix() const
 {
-  // Get the current transform matrix
   MMatrix m = MPxTransformationMatrix::asMatrix();
 
   const double x = m_localTranslateOffset.x;
