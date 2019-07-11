@@ -14,6 +14,8 @@
 
 #include "render_delegate.h"
 
+#include <maya/MHWGeometry.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
@@ -57,6 +59,10 @@ private:
         HdSceneDelegate*, HdVP2DrawItem*, HdDirtyBits*,
         const HdMeshReprDesc&, bool requireSmoothNormals, bool requireFlatNormals);
 
+    MHWRender::MRenderItem* _CreateSmoothHullRenderItem(const MString& name) const;
+
+    MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name) const;
+
     //! Custom dirty bits used by this mesh
     enum DirtyBits : HdDirtyBits {
         DirtySmoothNormals = HdChangeTracker::CustomBitsBegin,
@@ -69,6 +75,9 @@ private:
     
     HdVP2RenderDelegate* _delegate{ nullptr };          //!< VP2 render delegate for which this material was created
     HdDirtyBits          _customDirtyBitsInUse{ 0 };    //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
+
+    // TODO: Define HdVP2MeshSharedData to hold extra shared data specific to VP2?
+    std::unique_ptr<MHWRender::MVertexBuffer> _positionsBuffer; //!< Per-Rprim position buffer to be shared among render items
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

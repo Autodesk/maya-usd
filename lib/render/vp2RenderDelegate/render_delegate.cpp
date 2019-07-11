@@ -77,8 +77,11 @@ namespace
     std::unordered_map<MColor, MHWRender::MShaderInstance*, MColorHash>    _fallbackShaders;        //!< Shader registry used by fallback shader method
     tbb::reader_writer_lock                                                _mutexFallbackShaders;   //!< Synchronization used to protect concurrent read from serial writes
 
-    const MString        _diffuseColorParameterName = "diffuseColor";   //!< Shader instance color parameter name
-    int                    _profilerCategory = MProfiler::addCategory("HdVP2RenderDelegate", "HdVP2RenderDelegate");    //!< Profiler category
+    const MString _diffuseColorParameterName = "diffuseColor";   //!< Shader parameter name
+    const MString _solidColorParameterName   = "solidColor";     //!< Shader parameter name
+    const MString _pointSizeParameterName    = "pointSize";      //!< Shader parameter name
+
+    int _profilerCategory = MProfiler::addCategory("HdVP2RenderDelegate", "HdVP2RenderDelegate");    //!< Profiler category
 } // namespace
 
 std::mutex HdVP2RenderDelegate::_mutexResourceRegistry;
@@ -420,6 +423,35 @@ MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackShader(MColor color)
     _fallbackShaders[color] = fallbackShader;
     
     return fallbackShader;
+}
+
+/*! \brief  Returns a white 3d fat point shader.
+*/
+MHWRender::MShaderInstance* HdVP2RenderDelegate::Get3dFatPointShader() const
+{
+    static MHWRender::MShaderInstance* s3dFatPointShader = nullptr;
+
+    if (!s3dFatPointShader)
+    {
+        if (MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer())
+        {
+            if (const MHWRender::MShaderManager* shaderMgr = renderer->getShaderManager())
+            {
+                s3dFatPointShader = shaderMgr->getStockShader(MHWRender::MShaderManager::k3dFatPointShader);
+
+                if (s3dFatPointShader)
+                {
+                    const float white[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+                    const float point[] = { 5.0, 5.0 };
+
+                    s3dFatPointShader->setParameter(_solidColorParameterName, white);
+                    s3dFatPointShader->setParameter(_pointSizeParameterName, point);
+                }
+            }
+        }
+    }
+
+    return s3dFatPointShader;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

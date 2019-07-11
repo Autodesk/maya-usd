@@ -61,6 +61,11 @@ find_package(Maya REQUIRED)
 find_package(USD REQUIRED)
 include(${USD_CONFIG_FILE})
 
+if (NOT "${MAYA_DEVKIT_LOCATION}" STREQUAL "")
+    find_package(UFE REQUIRED)
+    add_definitions(-DWANT_UFE_BUILD)
+endif()
+
 #==============================================================================
 # Generate namespace declaration header
 #==============================================================================
@@ -287,6 +292,7 @@ target_include_directories(
     ${LIBRARY_NAME}
     PUBLIC
     ${MAYA_INCLUDE_DIRS}
+    ${UFE_INCLUDE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/../base
     # mayaUsd.h is generated in the build area
@@ -299,6 +305,7 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMayaAnim_LIBRARY}
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_OpenMayaRender_LIBRARY}
+    ${UFE_LIBRARY}
     ar
     gf
 	hd

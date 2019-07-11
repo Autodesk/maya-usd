@@ -57,6 +57,19 @@
 
 #include <map>
 
+#if defined(WANT_UFE_BUILD)
+#include <ufe/ufe.h>
+
+UFE_NS_DEF {
+    class Path;
+}
+
+constexpr int MAYA_UFE_RUNTIME_ID = 1;
+constexpr char MAYA_UFE_SEPARATOR = '|';
+constexpr int USD_UFE_RUNTIME_ID = 2;
+constexpr char USD_UFE_SEPARATOR = '/';
+#endif
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -206,6 +219,12 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         // returns the shape's parent transform
         MAYAUSD_CORE_PUBLIC
         MDagPath parentTransform();
+
+        // Is this required if there is parentTransform?
+#if defined(WANT_UFE_BUILD)
+        MAYAUSD_CORE_PUBLIC
+        Ufe::Path ufePath() const;
+#endif
 
     protected:
         MAYAUSD_CORE_PUBLIC

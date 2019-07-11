@@ -4,12 +4,14 @@ include(ProcessorCount)
 # sequence parsing errors.
 file(TO_CMAKE_PATH ${CMAKE_MAKE_PROGRAM} CMAKE_MAKE_PROGRAM)
 file(TO_CMAKE_PATH ${MAYA_LOCATION} MAYA_LOCATION)
+file(TO_CMAKE_PATH ${MAYA_DEVKIT_LOCATION} MAYA_DEVKIT_LOCATION)
 file(TO_CMAKE_PATH ${PXR_USD_LOCATION} PXR_USD_LOCATION)
 file(TO_CMAKE_PATH ${MAYAUSD_BUILD_ROOT} MAYAUSD_BUILD_ROOT)
 
 message("CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}")
 message("CMAKE_MAKE_PROGRAM = ${CMAKE_MAKE_PROGRAM}")
 message("MAYA_LOCATION = ${MAYA_LOCATION}")
+message("MAYA_DEVKIT_LOCATION = ${MAYA_DEVKIT_LOCATION}")
 message("MAYAUSD_BUILD_ROOT = ${MAYAUSD_BUILD_ROOT}")
 message("PXR_USD_LOCATION = ${PXR_USD_LOCATION}")
 
@@ -24,6 +26,7 @@ endmacro(add_mayausd_define)
 
 # Add top level variabels here 
 add_mayausd_define(MAYA_LOCATION)
+add_mayausd_define(MAYA_DEVKIT_LOCATION)
 add_mayausd_define(PXR_USD_LOCATION)
 add_mayausd_define(CMAKE_CXX_FLAGS)
 

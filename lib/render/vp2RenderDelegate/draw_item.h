@@ -21,8 +21,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdRenderIndex;
-class HdVP2RenderDelegate;
+class HdMeshReprDesc;
 
 /*! \brief  Draw Item holds information necessary for accessing and updating VP2 render items
     \class  HdVP2DrawItem
@@ -38,8 +37,6 @@ public:
 
     //! Helper struct providing storage for render item data
     struct RenderItemData {
-        //! Render item position buffer pointer - use when updating data
-        std::unique_ptr<MHWRender::MVertexBuffer>   _positionsBuffer;
         //! Render item normals buffer pointer - use when updating data
         std::unique_ptr<MHWRender::MVertexBuffer>   _normalsBuffer;
         //! Render item UV buffer pointer - use when updating data
@@ -58,7 +55,7 @@ public:
     };
 
 public:
-    HdVP2DrawItem(HdVP2RenderDelegate*, const HdRprimSharedData*);
+    HdVP2DrawItem(const HdRprimSharedData*, const HdMeshReprDesc& desc);
 
     ~HdVP2DrawItem();
 
@@ -73,7 +70,6 @@ public:
     const MString& GetRenderItemName() const { return _renderItemName; }
 
 private:
-    HdVP2RenderDelegate*    _delegate{ nullptr };   //!< VP2 render delegate for which this draw item was created
     RenderItemData          _mesh;                  //!< VP2 render item data
     SdfPath                 _renderItemId;          //!< Unique Id
     MString                 _renderItemName;        //!< Unique name. Use this when searching for render item in subscene override container

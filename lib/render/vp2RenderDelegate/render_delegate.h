@@ -100,6 +100,8 @@ public:
 
     MHWRender::MShaderInstance* GetFallbackShader(MColor color=MColor(0.0f,0.0f,1.0f,1.0f)) const;
 
+    MHWRender::MShaderInstance* Get3dFatPointShader() const;
+
 private:
     HdVP2RenderDelegate(const HdVP2RenderDelegate&) = delete;
     HdVP2RenderDelegate& operator=(const HdVP2RenderDelegate&) = delete;

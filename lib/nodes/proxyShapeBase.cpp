@@ -83,6 +83,10 @@
 #include <utility>
 #include <vector>
 
+#if defined(WANT_UFE_BUILD)
+#include <ufe/path.h>
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -980,5 +984,19 @@ MayaUsdProxyShapeBase::closestPoint(
 bool MayaUsdProxyShapeBase::canMakeLive() const {
     return (bool) _sharedClosestPointDelegate;
 }
+
+#if defined(WANT_UFE_BUILD)
+Ufe::Path MayaUsdProxyShapeBase::ufePath() const
+{
+    // Build a path segment to proxyShape
+    MDagPath thisPath;
+    MDagPath::getAPathTo(thisMObject(), thisPath);
+
+    // MDagPath does not include |world to its full path name
+    MString fullpath = "|world" + thisPath.fullPathName();
+
+    return Ufe::Path(Ufe::PathSegment(fullpath.asChar(), MAYA_UFE_RUNTIME_ID, MAYA_UFE_SEPARATOR));
+}
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

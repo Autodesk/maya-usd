@@ -21,13 +21,14 @@
 
 #include "pxr/imaging/hd/vertexAdjacency.h"
 
-#include <maya/MProfiler.h>
 #include <maya/MMatrix.h>
+#include <maya/MProfiler.h>
+#include <maya/MSelectionMask.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-    
+
     //! Helper utility function to get number of draw items required for given representation
     size_t _GetNumDrawItemsForDesc(const HdMeshReprDesc& reprDesc)
     {
@@ -55,7 +56,9 @@ namespace {
 HdVP2Mesh::HdVP2Mesh(HdVP2RenderDelegate* delegate, const SdfPath& id, const SdfPath& instancerId)
  : HdMesh(id, instancerId)
  , _delegate(delegate) {
-
+    const MHWRender::MVertexBufferDescriptor vbDesc(
+        "", MHWRender::MGeometry::kPosition, MHWRender::MGeometry::kFloat, 3);
+    _positionsBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
 }
 
 //! \brief  Destructor
@@ -154,16 +157,16 @@ HdDirtyBits HdVP2Mesh::_PropagateDirtyBits(HdDirtyBits bits) const {
         bits |= HdChangeTracker::DirtyPoints;
     }
 
-	// Sometimes we don't get dirty extent notification
-	if (bits & (HdChangeTracker::DirtyPoints)) {
-		bits |= HdChangeTracker::DirtyExtent;
-	}
+    // Sometimes we don't get dirty extent notification
+    if (bits & (HdChangeTracker::DirtyPoints)) {
+        bits |= HdChangeTracker::DirtyExtent;
+    }
 
     return bits;
 }
 
 /*! \brief  Initialize the given representation of this Rprim.
-    
+
     This is called prior to syncing the prim, the first time the repr
     is used.
 
@@ -171,19 +174,17 @@ HdDirtyBits HdVP2Mesh::_PropagateDirtyBits(HdDirtyBits bits) const {
                         resolved the reprName to its final value.
 
     \param  dirtyBits   an in/out value.  It is initialized to the dirty bits
-                        from the change tracker.  InitRepr can then set additional 
-                        dirty bits if additional data is required from the scene 
-                        delegate when this repr is synced.  
-    
+                        from the change tracker.  InitRepr can then set additional
+                        dirty bits if additional data is required from the scene
+                        delegate when this repr is synced.
+
     InitRepr occurs before dirty bit propagation.
 
     See HdRprim::InitRepr()
 */
 void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
-    TF_UNUSED(dirtyBits);
-
     _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(), _ReprComparator(reprToken));
-    
+
     // If it's not new, nothing to init
     if (it != _reprs.end())
         return;
@@ -202,7 +203,6 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
         return;
 
     _MeshReprConfig::DescArray descs = _GetReprDesc(reprToken);
-    const auto& id = GetId();
 
     for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
         const HdMeshReprDesc& desc = descs[descIdx];
@@ -211,49 +211,42 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
         if (numDrawItems == 0) continue;
 
         for (size_t itemId = 0; itemId < numDrawItems; itemId++) {
-            auto* drawItem = new HdVP2DrawItem(_delegate, &_sharedData);
+            auto* drawItem = new HdVP2DrawItem(&_sharedData, desc);
             repr->AddDrawItem(drawItem);
 
             const MString& renderItemName = drawItem->GetRenderItemName();
-            MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
-                renderItemName,
-                MHWRender::MRenderItem::MaterialSceneItem,
-                MHWRender::MGeometry::kTriangles
-            );
 
-            renderItem->setDrawMode(static_cast<MHWRender::MGeometry::DrawMode>(
-                MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured
-            ));
-            renderItem->setExcludedFromPostEffects(false);
-            renderItem->castsShadows(true);
-            renderItem->receivesShadows(true);
-			renderItem->setWantConsolidation(true);
-			renderItem->setShader(_delegate->GetFallbackShader());
-            
-			_delegate->GetVP2ResourceRegistry().EnqueueCommit(
+            MHWRender::MRenderItem* const renderItem =
+                (desc.geomStyle == HdMeshGeomStylePoints) ?
+                _CreatePointsRenderItem(renderItemName) :
+                _CreateSmoothHullRenderItem(renderItemName);
+
+            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
                 [subSceneContainer, renderItem]() {
                     subSceneContainer->add(renderItem);
                 }
             );
         }
 
-        if (desc.flatShadingEnabled) {
-            if (!(_customDirtyBitsInUse & DirtyFlatNormals)) {
-                _customDirtyBitsInUse |= DirtyFlatNormals;
-                *dirtyBits |= DirtyFlatNormals;
+        if (desc.geomStyle != HdMeshGeomStylePoints) {
+            if (desc.flatShadingEnabled) {
+                if (!(_customDirtyBitsInUse & DirtyFlatNormals)) {
+                    _customDirtyBitsInUse |= DirtyFlatNormals;
+                    *dirtyBits |= DirtyFlatNormals;
+                }
             }
-        }
-        else {
-            if (!(_customDirtyBitsInUse & DirtySmoothNormals)) {
-                _customDirtyBitsInUse |= DirtySmoothNormals;
-                *dirtyBits |= DirtySmoothNormals;
+            else {
+                if (!(_customDirtyBitsInUse & DirtySmoothNormals)) {
+                    _customDirtyBitsInUse |= DirtySmoothNormals;
+                    *dirtyBits |= DirtySmoothNormals;
+                }
             }
         }
     }
 }
 
 /*! \brief  Update the named repr object for this Rprim.
-    
+
     Repr objects are created to support specific reprName tokens, and contain a list of
     HdVP2DrawItems and corresponding RenderItems.
 */
@@ -266,18 +259,20 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate *sceneDelegate, const TfToken& reprT
 
     _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprToken);
 
-    // Iterate through all reprdescs for the current repr to figure out if any 
+    // Iterate through all reprdescs for the current repr to figure out if any
     // of them requires smooth normals or flat normals. If either (or both)
     // are required, we will calculate them once and clean the bits.
     bool requireSmoothNormals = false;
     bool requireFlatNormals = false;
     for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
         const HdMeshReprDesc &desc = reprDescs[descIdx];
-        if (desc.flatShadingEnabled) {
-            requireFlatNormals = true;
-        }
-        else {
-            requireSmoothNormals = true;
+        if (desc.geomStyle != HdMeshGeomStylePoints) {
+            if (desc.flatShadingEnabled) {
+                requireFlatNormals = true;
+            }
+            else {
+                requireSmoothNormals = true;
+            }
         }
     }
 
@@ -302,12 +297,12 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate *sceneDelegate, const TfToken& reprT
 }
 
 namespace {
-	//! \brief  Helper struct used to package all the changes into single commit task
+    //! \brief  Helper struct used to package all the changes into single commit task
     //!         (such commit task will be executed on main-thread)
     struct CommitState {
-		HdVP2DrawItem::RenderItemData& _drawItemData;
-		
-		//! If valid, new position buffer data to commit
+        HdVP2DrawItem::RenderItemData& _drawItemData;
+
+        //! If valid, new position buffer data to commit
         float*	_positionBufferData{ nullptr };
         //! If valid, new index buffer data to commit
         int*	_indexBufferData{ nullptr };
@@ -317,24 +312,20 @@ namespace {
         float*	_uvBufferData{ nullptr };
         //! If valid, new shader instance to set
         MHWRender::MShaderInstance* _surfaceShader{ nullptr };
-		//! Instancing doesn't have dirty bits, every time we do update, we must update instance transforms
+        //! Instancing doesn't have dirty bits, every time we do update, we must update instance transforms
         MMatrixArray	_instanceTransforms;
-		//! Bounding box for this commit
-        MBoundingBox	_bounds{ MPoint(1.0, 1.0, 1.0), MPoint(-1.0, -1.0, -1.0) };
-		//! Transform matrix
-        MMatrix			_matrix;
-		//! Is this object transparent
+        //! Is this object transparent
         bool			_isTransparent{ false };
         //! Capture of what has changed on this rprim
-		HdDirtyBits _dirtyBits;
+        HdDirtyBits _dirtyBits;
 
-		//! No empty constructor, we need draw item and dirty bits.
+        //! No empty constructor, we need draw item and dirty bits.
         CommitState() = delete;
         //! Construct valid commit state
-		CommitState(HdVP2DrawItem& drawItem, HdDirtyBits& dirtyBits) 
-			: _drawItemData(drawItem.GetRenderItemData())
-			, _dirtyBits(dirtyBits) {}
-	};
+        CommitState(HdVP2DrawItem& drawItem, HdDirtyBits& dirtyBits)
+            : _drawItemData(drawItem.GetRenderItemData())
+            , _dirtyBits(dirtyBits) {}
+    };
 }
 
 /*! \brief  Update the draw item
@@ -355,10 +346,10 @@ void HdVP2Mesh::_UpdateDrawItem(
     if (!subSceneContainer)
         return;
 
-	CommitState stateToCommit(*drawItem, *dirtyBits);
-	HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
+    CommitState stateToCommit(*drawItem, *dirtyBits);
+    HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
 
-	static constexpr bool writeOnly = true;
+    static constexpr bool writeOnly = true;
 
     VtValue valuePoints;
     HdMeshTopology meshTopology;
@@ -376,6 +367,8 @@ void HdVP2Mesh::_UpdateDrawItem(
         return meshTopology;
     };
 
+    // Position buffer is shared among all render items of this rprim and will
+    // be updated only once.
     const auto& meshId = GetId();
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, meshId, HdTokens->points)) {
         valuePoints = sceneDelegate->Get(meshId, HdTokens->points);
@@ -384,7 +377,7 @@ void HdVP2Mesh::_UpdateDrawItem(
             const GfVec3f* pointsData = points.cdata();
 
             stateToCommit._positionBufferData = static_cast<float*>(
-                drawItemData._positionsBuffer->acquire(points.size(), writeOnly)
+                _positionsBuffer->acquire(points.size(), writeOnly)
             );
             memcpy(
                 stateToCommit._positionBufferData,
@@ -394,7 +387,8 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
     }
 
-    if (HdChangeTracker::IsTopologyDirty(*dirtyBits, meshId)) {
+    // Points don't need an index buffer.
+    if (HdChangeTracker::IsTopologyDirty(*dirtyBits, meshId) && (desc.geomStyle != HdMeshGeomStylePoints)) {
         HdMeshTopology& topology = getTopologyFn();
 
         HdMeshUtil meshUtil(&topology, meshId);
@@ -410,7 +404,7 @@ void HdVP2Mesh::_UpdateDrawItem(
         memcpy(stateToCommit._indexBufferData, trianglesFaceVertexIndices.data(), numIndex * sizeof(int));
     }
 
-    if (requireSmoothNormals && (*dirtyBits & DirtySmoothNormals)) {
+    if (requireSmoothNormals && (*dirtyBits & DirtySmoothNormals) && drawItemData._normalsBuffer) {
         // note: normals gets dirty when points are marked as dirty,
         // at change tracker.
         // clear DirtySmoothNormals (this is not a scene dirtybit)
@@ -449,11 +443,9 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
     }
 
-    auto material = static_cast<const HdVP2Material*>(
-        sceneDelegate->GetRenderIndex().GetSprim(
-            HdPrimTypeTokens->material, GetMaterialId()
-        )
-    );
+    auto material = drawItemData._uvBuffer ? 
+        static_cast<const HdVP2Material*>(sceneDelegate->GetRenderIndex().GetSprim(HdPrimTypeTokens->material, GetMaterialId())) :
+        nullptr;
 
     if (material)
     {
@@ -509,19 +501,10 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
     }
 
-    if (HdChangeTracker::IsExtentDirty(*dirtyBits, meshId)) {
-        GfRange3d boundingBoxRange = GetExtent(sceneDelegate);
-        if (!boundingBoxRange.IsEmpty())
-        {
-            MPoint corner1(boundingBoxRange.GetMin()[0], boundingBoxRange.GetMin()[1], boundingBoxRange.GetMin()[2]);
-            MPoint corner2(boundingBoxRange.GetMax()[0], boundingBoxRange.GetMax()[1], boundingBoxRange.GetMax()[2]);
-            stateToCommit._bounds = MBoundingBox(corner1, corner2);
-        }
-    }
-
-    if ((*dirtyBits & (HdChangeTracker::DirtyMaterialId | HdChangeTracker::NewRepr))
+    if ((desc.shadingTerminal == HdMeshReprDescTokens->surfaceShader) &&
+        ((*dirtyBits & (HdChangeTracker::DirtyMaterialId | HdChangeTracker::NewRepr))
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, meshId, HdTokens->displayColor)
-        || HdChangeTracker::IsPrimvarDirty(*dirtyBits, meshId, HdTokens->displayOpacity)
+        || HdChangeTracker::IsPrimvarDirty(*dirtyBits, meshId, HdTokens->displayOpacity))
     ) {
         if (material && drawItemData._hasUVs)
         {
@@ -534,7 +517,7 @@ void HdVP2Mesh::_UpdateDrawItem(
         {
             bool foundColor = false;
             //bool foundOpacity = false;
-            
+
             MColor mayaColor;
 
             const VtValue colorValue = sceneDelegate->Get(meshId, HdTokens->displayColor);
@@ -564,115 +547,189 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
     }
 
-	if (HdChangeTracker::IsTransformDirty(*dirtyBits, meshId)) {
-		double matrix[4][4];
-		sceneDelegate->GetTransform(meshId).Get(matrix);
-		stateToCommit._matrix = MMatrix(matrix);
-	}
+    // Bounding box is per-prim shared data.
+    GfRange3d range;
+
+    if (HdChangeTracker::IsExtentDirty(*dirtyBits, meshId)) {
+        range = GetExtent(sceneDelegate);
+        if (!range.IsEmpty()) {
+            _sharedData.bounds.SetRange(range);
+        }
+
+        *dirtyBits &= ~HdChangeTracker::DirtyExtent;
+    }
+    else {
+        range = _sharedData.bounds.GetRange();
+    }
+
+    const GfVec3d& min = range.GetMin();
+    const GfVec3d& max = range.GetMax();
+    const MBoundingBox bounds(MPoint(min[0], min[1], min[2]), MPoint(max[0], max[1], max[2]));
+
+    // World matrix is per-prim shared data.
+    GfMatrix4d transform;
+
+    if (HdChangeTracker::IsTransformDirty(*dirtyBits, meshId)) {
+        transform = sceneDelegate->GetTransform(meshId);
+        _sharedData.bounds.SetMatrix(transform);
+
+        *dirtyBits &= ~HdChangeTracker::DirtyTransform;
+    }
+    else {
+        transform = _sharedData.bounds.GetMatrix();
+    }
+
+    MMatrix worldMatrix;
+    transform.Get(worldMatrix.matrix);
 
     if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, meshId)) {
         _UpdateVisibility(sceneDelegate, dirtyBits);
     }
 
-	// If the mesh is instanced, create one new instance per transform.
-	// The current instancer invalidation tracking makes it hard for
-	// us to tell whether transforms will be dirty, so this code
-	// pulls them every time something changes.
-	if (!GetInstancerId().IsEmpty()) {
+    // If the mesh is instanced, create one new instance per transform.
+    // The current instancer invalidation tracking makes it hard for
+    // us to tell whether transforms will be dirty, so this code
+    // pulls them every time something changes.
+    if (!GetInstancerId().IsEmpty()) {
 
-		// Retrieve instance transforms from the instancer.
-		HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
-		HdInstancer *instancer =
-			renderIndex.GetInstancer(GetInstancerId());
-		VtMatrix4dArray transforms =
-			static_cast<HdVP2Instancer*>(instancer)->
-			ComputeInstanceTransforms(GetId());
+        // Retrieve instance transforms from the instancer.
+        HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
+        HdInstancer *instancer =
+            renderIndex.GetInstancer(GetInstancerId());
+        VtMatrix4dArray transforms =
+            static_cast<HdVP2Instancer*>(instancer)->
+            ComputeInstanceTransforms(GetId());
 
-		double instanceMatrix[4][4];
-		for (size_t i = 0; i < transforms.size(); ++i) {
-			transforms[i].Get(instanceMatrix);
-			stateToCommit._instanceTransforms.append(MMatrix(instanceMatrix));
-		}
-	}
+        double instanceMatrix[4][4];
+        for (size_t i = 0; i < transforms.size(); ++i) {
+            transforms[i].Get(instanceMatrix);
+            stateToCommit._instanceTransforms.append(MMatrix(instanceMatrix));
+        }
+    }
 
-	_delegate->GetVP2ResourceRegistry().EnqueueCommit([drawItem, stateToCommit, param]()
-	{ 
-		MProfilingScope profilingScope(
+    // Capture class member for lambda
+    MHWRender::MVertexBuffer* const positionsBuffer = _positionsBuffer.get();
+
+    _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+        [drawItem, stateToCommit, param, positionsBuffer, bounds, worldMatrix]()
+    {
+        MProfilingScope profilingScope(
             _profilerCategory, MProfiler::kColorC_L2,
             drawItem->GetRenderItemId().GetText(), "HdVP2Mesh Commit Buffers"
         );
 
-		MHWRender::MRenderItem* renderItem = param->GetContainer()->find(drawItem->GetRenderItemName());
-		if(!renderItem) {
-			TF_CODING_ERROR("Invalid render item: %s\n", drawItem->GetRenderItemId().GetText());
-			return;
-		}
-		
-		MHWRender::MVertexBuffer* positionsBuffer = stateToCommit._drawItemData._positionsBuffer.get();
-		MHWRender::MVertexBuffer* normalsBuffer = stateToCommit._drawItemData._normalsBuffer.get();
+        MHWRender::MRenderItem* renderItem = param->GetContainer()->find(drawItem->GetRenderItemName());
+        if(!renderItem) {
+            TF_CODING_ERROR("Invalid render item: %s\n", drawItem->GetRenderItemId().GetText());
+            return;
+        }
+
+        MHWRender::MVertexBuffer* normalsBuffer = stateToCommit._drawItemData._normalsBuffer.get();
 
         MHWRender::MVertexBuffer* uvBuffer = stateToCommit._drawItemData._hasUVs
             ? stateToCommit._drawItemData._uvBuffer.get() : nullptr;
 
-		MHWRender::MIndexBuffer* indexBuffer = stateToCommit._drawItemData._indexBuffer.get();
+        MHWRender::MIndexBuffer* indexBuffer = stateToCommit._drawItemData._indexBuffer.get();
 
-		MHWRender::MVertexBufferArray vertexBuffers;
-		vertexBuffers.addBuffer("positions", positionsBuffer);
-		vertexBuffers.addBuffer("normals", normalsBuffer);
+        MHWRender::MVertexBufferArray vertexBuffers;
+        vertexBuffers.addBuffer("positions", positionsBuffer);
+
+        if (normalsBuffer)
+            vertexBuffers.addBuffer("normals", normalsBuffer);
 
         if (uvBuffer)
             vertexBuffers.addBuffer("UVs", uvBuffer);
 
-		// If available, something changed
+        // If available, something changed
         if(stateToCommit._positionBufferData)
-			positionsBuffer->commit(stateToCommit._positionBufferData);
+            positionsBuffer->commit(stateToCommit._positionBufferData);
 
         // If available, something changed
-        if (stateToCommit._normalsBufferData)
-			normalsBuffer->commit(stateToCommit._normalsBufferData);
+        if (stateToCommit._normalsBufferData && normalsBuffer)
+            normalsBuffer->commit(stateToCommit._normalsBufferData);
 
         // If available, something changed
         if (stateToCommit._uvBufferData && uvBuffer)
             uvBuffer->commit(stateToCommit._uvBufferData);
 
         // If available, something changed
-        if (stateToCommit._indexBufferData)
-			indexBuffer->commit(stateToCommit._indexBufferData);
+        if (stateToCommit._indexBufferData && indexBuffer)
+            indexBuffer->commit(stateToCommit._indexBufferData);
 
-		// If available, something changed
-		if (stateToCommit._surfaceShader) {
-			renderItem->setShader(stateToCommit._surfaceShader);
-			renderItem->setTreatAsTransparent(stateToCommit._isTransparent);
-		}
-		
-		if ((stateToCommit._dirtyBits & HdChangeTracker::DirtyTransform) != 0)
-			renderItem->setMatrix(&stateToCommit._matrix);
+        // If available, something changed
+        if (stateToCommit._surfaceShader) {
+            renderItem->setShader(stateToCommit._surfaceShader);
+            renderItem->setTreatAsTransparent(stateToCommit._isTransparent);
+        }
 
         if ((stateToCommit._dirtyBits & HdChangeTracker::DirtyVisibility) != 0) {
             renderItem->enable(drawItem->GetVisible());
         }
 
-		param->GetDrawScene().setGeometryForRenderItem(*renderItem, vertexBuffers, *indexBuffer, &stateToCommit._bounds);
+        param->GetDrawScene().setGeometryForRenderItem(*renderItem, vertexBuffers, *indexBuffer, &bounds);
+        renderItem->setMatrix(&worldMatrix);
 
-		// Important, update instance transforms after setting geometry on render items!
+        // Important, update instance transforms after setting geometry on render items!
         auto& oldInstanceCount = stateToCommit._drawItemData._instanceCount;
-		auto newInstanceCount = stateToCommit._instanceTransforms.length();
-		if(newInstanceCount > 0) {
-			renderItem->setWantConsolidation(false);
-			if(oldInstanceCount == newInstanceCount) {
-				for (unsigned int i = 0; i < newInstanceCount; i++) {
-					param->GetDrawScene().updateInstanceTransform(*renderItem, i, stateToCommit._instanceTransforms[i]);
-				}
-			} else {
-				param->GetDrawScene().setInstanceTransformArray(*renderItem, stateToCommit._instanceTransforms);
-			}
-			oldInstanceCount = newInstanceCount;
-		} else if(oldInstanceCount > 0) {
-			renderItem->setWantConsolidation(true);
-			param->GetDrawScene().removeAllInstances(*renderItem);
-			oldInstanceCount = 0;
-		}
-	});
+        auto newInstanceCount = stateToCommit._instanceTransforms.length();
+        if(newInstanceCount > 0) {
+            renderItem->setWantConsolidation(false);
+            if(oldInstanceCount == newInstanceCount) {
+                for (unsigned int i = 0; i < newInstanceCount; i++) {
+                    param->GetDrawScene().updateInstanceTransform(*renderItem, i, stateToCommit._instanceTransforms[i]);
+                }
+            } else {
+                param->GetDrawScene().setInstanceTransformArray(*renderItem, stateToCommit._instanceTransforms);
+            }
+            oldInstanceCount = newInstanceCount;
+        } else if(oldInstanceCount > 0) {
+            renderItem->setWantConsolidation(true);
+            param->GetDrawScene().removeAllInstances(*renderItem);
+            oldInstanceCount = 0;
+        }
+    });
+}
+
+/*! \brief  Create render item for points repr.
+*/
+MHWRender::MRenderItem* HdVP2Mesh::_CreatePointsRenderItem(const MString& name) const
+{
+    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
+        name,
+        MHWRender::MRenderItem::DecorationItem,
+        MHWRender::MGeometry::kPoints
+    );
+
+    renderItem->setDrawMode(MHWRender::MGeometry::kSelectionOnly);
+    renderItem->castsShadows(false);
+    renderItem->receivesShadows(false);
+    renderItem->setWantConsolidation(true);
+    renderItem->setShader(_delegate->Get3dFatPointShader());
+
+    MSelectionMask selectionMask(MSelectionMask::kSelectPointsForGravity);
+    selectionMask.addMask(MSelectionMask::kSelectMeshVerts);
+    renderItem->setSelectionMask(selectionMask);
+
+    return renderItem;
+}
+
+/*! \brief  Create render item for smoothHull repr.
+*/
+MHWRender::MRenderItem* HdVP2Mesh::_CreateSmoothHullRenderItem(const MString& name) const
+{
+    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
+        name,
+        MHWRender::MRenderItem::MaterialSceneItem,
+        MHWRender::MGeometry::kTriangles
+    );
+
+    renderItem->setExcludedFromPostEffects(false);
+    renderItem->castsShadows(true);
+    renderItem->receivesShadows(true);
+    renderItem->setWantConsolidation(true);
+    renderItem->setShader(_delegate->GetFallbackShader());
+    renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
+    return renderItem;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

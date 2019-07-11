@@ -6,35 +6,34 @@
 // otherwise accompanies this software in either electronic or hard copy form.
 // ===========================================================================
 
-#include "draw_item.h"
+#include "pxr/imaging/hd/mesh.h"
 
+#include "draw_item.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//! \brief  Constructor. Will allocate vertex, normals and index buffers for render item.
-HdVP2DrawItem::HdVP2DrawItem(HdVP2RenderDelegate* delegate, const HdRprimSharedData* sharedData)
- : HdDrawItem(sharedData)
- , _delegate(delegate) {
-    _renderItemId = GetRprimID().GetPrimPath().AppendChild(TfToken(TfStringPrintf("DrawItem_%p", this)));
-    _renderItemName = MString(GetRenderItemId().GetText());
+/*! \brief  Constructor.
 
-    {
-        const MHWRender::MVertexBufferDescriptor
-            vbDesc("", MHWRender::MGeometry::kPosition, MHWRender::MGeometry::kFloat, 3);
-        _mesh._positionsBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
-    }
+Data holder for its corresponding render item to facilitate parallelized evaluation.
+
+Position buffer is held by HdVP2Mesh and shared among its render items.
+*/
+HdVP2DrawItem::HdVP2DrawItem(const HdRprimSharedData* sharedData, const HdMeshReprDesc& desc)
+: HdDrawItem(sharedData)
+{
+    _renderItemId = GetRprimID().GetPrimPath().AppendChild(TfToken(TfStringPrintf("DrawItem_%p", this)));
+    _renderItemName = GetRenderItemId().GetText();
 
     _mesh._indexBuffer.reset(new MHWRender::MIndexBuffer(MHWRender::MGeometry::kUnsignedInt32));
 
+    if (desc.geomStyle != HdMeshGeomStylePoints)
     {
-        const MHWRender::MVertexBufferDescriptor
-            nbDesc("", MHWRender::MGeometry::kNormal, MHWRender::MGeometry::kFloat, 3);
+        const MHWRender::MVertexBufferDescriptor nbDesc("",
+            MHWRender::MGeometry::kNormal, MHWRender::MGeometry::kFloat, 3);
         _mesh._normalsBuffer.reset(new MHWRender::MVertexBuffer(nbDesc));
-    }
 
-    {
-        const MHWRender::MVertexBufferDescriptor
-            uvBufferDesc("", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 2);
+        const MHWRender::MVertexBufferDescriptor uvBufferDesc(
+            "", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 2);
         _mesh._uvBuffer.reset(new MHWRender::MVertexBuffer(uvBufferDesc));
     }
 }

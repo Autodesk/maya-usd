@@ -21,13 +21,20 @@
 #include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
 #include <maya/MFrameContext.h>
+#include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MPxSubSceneOverride.h>
+
+// TODO: Waiting for Maya 2020 to include the required API.
+#if MAYA_API_VERSION >= 99999999 // 20200000
+#define MAYA_ENABLE_UPDATE_FOR_SELECTION
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRenderDelegate;
 class HdRenderIndex;
+class HdRprimCollection;
 class UsdImagingDelegate;
 class MayaUsdProxyShapeBase;
 class HdxTaskController;
@@ -56,15 +63,30 @@ public:
     MAYAUSD_CORE_PUBLIC
     static MHWRender::MPxSubSceneOverride* Creator(const MObject& obj);
 
-
     MAYAUSD_CORE_PUBLIC
     MHWRender::DrawAPI supportedDrawAPIs() const override;
+
+#if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
+    MAYAUSD_CORE_PUBLIC
+    bool enableUpdateForSelection() const override;
+#endif
 
     MAYAUSD_CORE_PUBLIC
     bool requiresUpdate(const MSubSceneContainer& container, const MFrameContext& frameContext) const override;
 
     MAYAUSD_CORE_PUBLIC
     void update(MSubSceneContainer& container, const MFrameContext& frameContext) override;
+
+    MAYAUSD_CORE_PUBLIC
+    void updateSelectionGranularity(
+        const MDagPath& path,
+        MSelectionContext& selectionContext) override;
+
+    MAYAUSD_CORE_PUBLIC
+    bool getInstancedSelectionPath(
+        const MRenderItem& renderItem,
+        const MIntersection& intersection,
+        MDagPath& dagPath) const override;
 
     MAYAUSD_CORE_PUBLIC
     MayaUsdProxyShapeBase* getProxyShape() const;
@@ -76,7 +98,7 @@ private:
     void _InitRenderDelegate();
     void _Populate();
     void _UpdateTime();
-    void _Execute();
+    void _Execute(const MHWRender::MFrameContext& frameContext);
 
     bool _isInitialized();
 
@@ -87,10 +109,15 @@ private:
     UsdStageRefPtr      _usdStage;                  //!< USD stage pointer
     HdRenderDelegate*   _renderDelegate{ nullptr }; //!< VP2RenderDelegate
     HdRenderIndex*      _renderIndex{ nullptr };    //!< Flattened representation of client scene graph
+    HdRprimCollection*  _renderCollection{nullptr}; //!< Global switch of display representations
     HdxTaskController*  _taskController{ nullptr }; //!< Task controller necessary for execution with hydra engine (we don't really need it, but there doesn't seem to be a way to get synchronization running without it)
     UsdImagingDelegate* _sceneDelegate{ nullptr };  //!< USD scene delegate
 
     bool                _isPopulated{ false };      //!< If false, scene delegate wasn't populated yet within render index
+
+#if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
+    MGlobal::ListAdjustment _globalListAdjustment;  //!< Adjustment mode for global selection list: ADD, REMOVE, REPLACE, XOR
+#endif
 };
 
 /*! \brief  Is this object properly initialized and can start receiving updates. Once this is done, render index needs to be populated and then we rely on change tracker.

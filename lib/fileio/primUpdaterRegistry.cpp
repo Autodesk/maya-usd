@@ -35,6 +35,8 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/token.h"
 
+#include "pxr/usd/usd/schemaBase.h"
+
 #include <map>
 #include <string>
 #include <utility>
