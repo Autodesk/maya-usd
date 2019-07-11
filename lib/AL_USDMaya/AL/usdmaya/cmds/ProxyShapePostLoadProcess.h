@@ -66,7 +66,7 @@ public:
       const std::vector<UsdPrim>& schemaPrims,
       const MDagPath& proxyTransformPath,
       MObjectToPrim& objsToCreate,
-      bool pushToPrim = true,
+      bool pushToPrim = false,
       bool readAnimatedValues = MGlobal::optionVarIntValue("AL_usdmaya_readAnimatedValues"));
 
   /// \brief  After transforms exist to parent the custom plugin-prim types (i.e. after a call to

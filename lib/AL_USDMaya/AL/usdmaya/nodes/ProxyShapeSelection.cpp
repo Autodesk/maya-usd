@@ -592,7 +592,7 @@ MObject ProxyShape::makeUsdTransformChain(
 
     if(modifier2)
     {
-      modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), pushToPrim);
+      if(pushToPrim) modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), pushToPrim);
       modifier2->newPlugValueBool(ptrNode->readAnimatedValuesPlug(), readAnimatedValues); //MGlobal::optionVarIntValue("AL_usdmaya_readAnimatedValues") );
     }
 
@@ -680,7 +680,7 @@ void ProxyShape::makeUsdTransformsInternal(
 
       if(modifier2)
       {
-        modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), pushToPrim);
+        if(pushToPrim) modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), pushToPrim);
         modifier2->newPlugValueBool(ptrNode->readAnimatedValuesPlug(), readAnimatedValues);
       }
 
@@ -691,15 +691,14 @@ void ProxyShape::makeUsdTransformsInternal(
       m_requiredPaths.emplace(prim.GetPath(), transformRef);
       TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformsInternal m_requiredPaths added TransformReference: %s\n", prim.GetPath().GetText());
 
-      makeUsdTransformsInternal(prim, node, modifier, reason, modifier2);
+      makeUsdTransformsInternal(prim, node, modifier, reason, modifier2, pushToPrim, readAnimatedValues);
     }
     else
     {
-      makeUsdTransformsInternal(prim, check->second.node(), modifier, reason, modifier2);
+      makeUsdTransformsInternal(prim, check->second.node(), modifier, reason, modifier2, pushToPrim, readAnimatedValues);
     }
   }
 }
-
 
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::removeUsdTransformChain_internal(

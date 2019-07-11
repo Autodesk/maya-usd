@@ -140,6 +140,7 @@ private:
   MBoundingBox boundingBox() const override;
   MStatus connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
   MStatus connectionBroken(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
+  bool setInternalValue(const MPlug& plug, const MDataHandle& dataHandle) override;
   bool isBounded() const override
     { return true; }
   bool treatAsTransform() const override

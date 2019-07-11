@@ -1661,7 +1661,8 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
 
   if (lock && MFnDependencyNode(lockObject).typeId() == AL_USDMAYA_TRANSFORM)
   {
-    MPlug(lockObject, Transform::pushToPrim()).setBool(false);
+    MPlug plug(lockObject, Transform::pushToPrim());
+    if(plug.asBool()) plug.setBool(false);
   }
   TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute Set lock for '%s'\n", prim.GetPath().GetText());
   return true;
