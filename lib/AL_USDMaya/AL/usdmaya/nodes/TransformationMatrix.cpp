@@ -2236,13 +2236,13 @@ void TransformationMatrix::enablePushToPrim(bool enabled)
     if(!pushPrimToMatrix())
     {
       if(primHasTranslation() || translation() != nullVec)
-        translateBy(nullVec);
+        translateTo(translation());
 
       if(primHasScale() || scale() != oneVec)
-        scaleBy(oneVec);
+        scaleTo(scale());
 
       if(primHasShear() || shear() != nullVec)
-        shearBy(nullVec);
+        shearTo(shear());
 
       if(primHasScalePivot() || scalePivot() != nullPoint)
         setScalePivot(scalePivot(), MSpace::kTransform, false);
@@ -2257,7 +2257,7 @@ void TransformationMatrix::enablePushToPrim(bool enabled)
         setRotatePivotTranslation(rotatePivotTranslation(), MSpace::kTransform);
 
       if(primHasRotation() || rotation() != nullQuat)
-        rotateBy(nullQuat);
+        rotateTo(rotation());
 
       if(primHasRotateAxes() || rotateOrientation() != nullQuat)
         setRotateOrientation(rotateOrientation(), MSpace::kTransform, false);
