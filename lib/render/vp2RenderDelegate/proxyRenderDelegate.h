@@ -25,8 +25,9 @@
 #include <maya/MObject.h>
 #include <maya/MPxSubSceneOverride.h>
 
-// TODO: Waiting for Maya 2020 to include the required API.
-#if MAYA_API_VERSION >= 99999999 // 20200000
+// Maya 2020 adds new API to enable subscene update in selection passes for
+// deferred update of selection render items.
+#if MAYA_API_VERSION >= 20200000
 #define MAYA_ENABLE_UPDATE_FOR_SELECTION
 #endif
 
