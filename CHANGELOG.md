@@ -1,3 +1,7 @@
+## AL_USDMaya-0.32.31 (2019-07-12)
+### Fixed
++ invalid array access when diffing mesh edge creases
+
 ## AL_USDMaya-0.32.30 (2019-07-05)
 ### Added
 + Menu item to control whether selection is enabled in the viewport (controlled via the AL_usdmaya_selectionEnabled optionVar)
