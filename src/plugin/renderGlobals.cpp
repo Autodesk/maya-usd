@@ -157,12 +157,18 @@ void _CreateColorAttribute(
     }
 }
 
-MObject _CreateBoolAttribute(const TfToken& attrName, bool defValue) {
-    MFnNumericAttribute nAttr;
-    const auto o = nAttr.create(
-        attrName.GetText(), attrName.GetText(), MFnNumericData::kBoolean);
-    nAttr.setDefault(defValue);
-    return o;
+void _CreateBoolAttribute(
+    MFnDependencyNode& node, const TfToken& attrName, bool defValue) {
+    _CreateNumericAttribute(
+        node, attrName, MFnNumericData::kBoolean,
+        [&attrName, &defValue]() -> MObject {
+            MFnNumericAttribute nAttr;
+            const auto o = nAttr.create(
+                attrName.GetText(), attrName.GetText(),
+                MFnNumericData::kBoolean);
+            nAttr.setDefault(defValue);
+            return o;
+        });
 }
 
 /*void _SetToken(
@@ -338,11 +344,9 @@ MObject MtohCreateRenderGlobals() {
     MFnDependencyNode node(ret, &status);
     if (!status) { return MObject(); }
     static const MtohRenderGlobals defGlobals;
-    _CreateNumericAttribute(
-        node, _tokens->mtohEnableMotionSamples, MFnNumericData::kBoolean,
-        std::bind(
-            _CreateBoolAttribute, _tokens->mtohEnableMotionSamples,
-            defGlobals.delegateParams.enableMotionSamples));
+    _CreateBoolAttribute(
+        node, _tokens->mtohEnableMotionSamples,
+        defGlobals.delegateParams.enableMotionSamples);
     _CreateNumericAttribute(
         node, _tokens->mtohTextureMemoryPerTexture, MFnNumericData::kInt,
         []() -> MObject {
@@ -378,17 +382,12 @@ MObject MtohCreateRenderGlobals() {
     _CreateEnumAttribute(
         node, _tokens->mtohSelectionOverlay, selectionOverlays,
         defGlobals.selectionOverlay);
-    _CreateNumericAttribute(
+    _CreateBoolAttribute(
         node, _tokens->mtohWireframeSelectionHighlight,
-        MFnNumericData::kBoolean,
-        std::bind(
-            _CreateBoolAttribute, _tokens->mtohWireframeSelectionHighlight,
-            defGlobals.wireframeSelectionHighlight));
-    _CreateNumericAttribute(
-        node, _tokens->mtohColorSelectionHighlight, MFnNumericData::kBoolean,
-        std::bind(
-            _CreateBoolAttribute, _tokens->mtohColorSelectionHighlight,
-            defGlobals.colorSelectionHighlight));
+        defGlobals.wireframeSelectionHighlight);
+    _CreateBoolAttribute(
+        node, _tokens->mtohColorSelectionHighlight,
+        defGlobals.colorSelectionHighlight);
     _CreateColorAttribute(
         node, _tokens->mtohColorSelectionHighlightColor,
         _tokens->mtohColorSelectionHighlightColorA,
@@ -402,11 +401,8 @@ MObject MtohCreateRenderGlobals() {
             const TfToken attrName(TfStringPrintf(
                 "%s%s", rendererName.GetText(), attr.key.GetText()));
             if (attr.defaultValue.IsHolding<bool>()) {
-                _CreateNumericAttribute(
-                    node, attrName, MFnNumericData::kBoolean,
-                    std::bind(
-                        _CreateBoolAttribute, attrName,
-                        attr.defaultValue.UncheckedGet<bool>()));
+                _CreateBoolAttribute(
+                    node, attrName, attr.defaultValue.UncheckedGet<bool>());
             } else if (attr.defaultValue.IsHolding<int>()) {
                 _CreateNumericAttribute(
                     node, attrName, MFnNumericData::kInt,
