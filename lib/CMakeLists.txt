@@ -61,7 +61,13 @@ find_package(Maya REQUIRED)
 find_package(USD REQUIRED)
 include(${USD_CONFIG_FILE})
 
-if (NOT "${MAYA_DEVKIT_LOCATION}" STREQUAL "")
+if("${MAYA_DEVKIT_LOCATION}" STREQUAL "")
+    set(CMAKE_WANT_UFE_BUILD OFF)
+else()
+    set(CMAKE_WANT_UFE_BUILD ON)
+endif()
+
+if(CMAKE_WANT_UFE_BUILD)
     find_package(UFE REQUIRED)
     add_definitions(-DWANT_UFE_BUILD)
 endif()
@@ -84,96 +90,127 @@ set(LIBRARY_NAME mayaUsd)
 
 list(APPEND mayaUsd_src
     #
-	base/debugCodes.cpp
-	#
-	fileio/registryHelper.cpp
-	fileio/primReaderContext.cpp
-	fileio/primReaderArgs.cpp
-	fileio/primReader.cpp
-	fileio/primReaderRegistry.cpp
-	fileio/functorPrimReader.cpp
-	fileio/fallbackPrimReader.cpp
-	fileio/primWriterContext.cpp
-	fileio/primWriterArgs.cpp
-	fileio/primWriter.cpp
-	fileio/primWriterRegistry.cpp
-	fileio/functorPrimWriter.cpp
-	fileio/writeJobContext.cpp
-	fileio/instancedNodeWriter.cpp
-	fileio/transformWriter.cpp
-	fileio/shaderWriter.cpp
-	fileio/primUpdater.cpp
-	fileio/primUpdaterContext.cpp
-	fileio/primUpdaterRegistry.cpp
-	#
-	fileio/chaser/chaser.cpp
-	fileio/chaser/chaserRegistry.cpp
-	#
-	fileio/jobs/jobArgs.cpp
-	fileio/jobs/readJob.cpp
-	fileio/jobs/readJob_ImportWithProxies.cpp
-	fileio/jobs/writeJob.cpp
-	fileio/jobs/modelKindProcessor.cpp
-	#
-	fileio/translators/translatorUtil.cpp
-	fileio/translators/translatorXformable.cpp
-	fileio/translators/translatorXformable_decompose.cpp
-	fileio/translators/translatorPrim.cpp
-	fileio/translators/translatorGprim.cpp
-	fileio/translators/skelBindingsProcessor.cpp
-	fileio/translators/translatorMaterial.cpp
-	fileio/translators/translatorCamera.cpp
-	fileio/translators/translatorCurves.cpp
-	fileio/translators/translatorMesh.cpp
-	fileio/translators/translatorMesh_SubDiv.cpp
-	fileio/translators/translatorMesh_PrimVars.cpp
-	fileio/translators/translatorNurbsPatch.cpp
-	fileio/translators/translatorRfMLight.cpp
-	fileio/translators/translatorSkel.cpp
-	fileio/translators/translatorMayaReference.cpp
-	#
-	fileio/shading/shadingModeExporterContext.cpp
-	fileio/shading/shadingModeExporter.cpp
-	fileio/shading/shadingModeImporter.cpp
-	fileio/shading/shadingModeRegistry.cpp
-	fileio/shading/shadingModeUseRegistry.cpp
-	#
-	fileio/utils/adaptor.cpp
-	fileio/utils/readUtil.cpp
-	fileio/utils/userTaggedAttribute.cpp
-	fileio/utils/writeUtil.cpp
-	fileio/utils/shadingUtil.cpp
-	fileio/utils/meshUtil.cpp
-	fileio/utils/roundTripUtil.cpp
-	fileio/utils/xformStack.cpp
-	#
-	utils/colorSpace.cpp
-	utils/util.cpp
-	utils/blockSceneModificationContext.cpp
-	utils/stageCache.cpp
-	#
-	nodes/pointBasedDeformerNode.cpp
-	nodes/hdImagingShape.cpp
-	nodes/usdPrimProvider.cpp
-	nodes/proxyShapeBase.cpp
-	nodes/proxyShapePlugin.cpp
-	nodes/stageData.cpp
-	nodes/stageNode.cpp
-	#
-	listeners/stageNoticeListener.cpp
-	listeners/notice.cpp
-	#
-	render/vp2RenderDelegate/render_param.cpp
-	render/vp2RenderDelegate/instancer.cpp
-	render/vp2RenderDelegate/draw_item.cpp
-	render/vp2RenderDelegate/material.cpp
-	render/vp2RenderDelegate/mesh.cpp
-	render/vp2RenderDelegate/proxyRenderDelegate.cpp
-	render/vp2RenderDelegate/render_delegate.cpp
-	render/vp2RenderDelegate/sampler.cpp
-	render/vp2RenderDelegate/texture.cpp
-	render/vp2RenderDelegate/textureResource.cpp
+    base/debugCodes.cpp
+    #
+    fileio/registryHelper.cpp
+    fileio/primReaderContext.cpp
+    fileio/primReaderArgs.cpp
+    fileio/primReader.cpp
+    fileio/primReaderRegistry.cpp
+    fileio/functorPrimReader.cpp
+    fileio/fallbackPrimReader.cpp
+    fileio/primWriterContext.cpp
+    fileio/primWriterArgs.cpp
+    fileio/primWriter.cpp
+    fileio/primWriterRegistry.cpp
+    fileio/functorPrimWriter.cpp
+    fileio/writeJobContext.cpp
+    fileio/instancedNodeWriter.cpp
+    fileio/transformWriter.cpp
+    fileio/shaderWriter.cpp
+    fileio/primUpdater.cpp
+    fileio/primUpdaterContext.cpp
+    fileio/primUpdaterRegistry.cpp
+    #
+    fileio/chaser/chaser.cpp
+    fileio/chaser/chaserRegistry.cpp
+    #
+    fileio/jobs/jobArgs.cpp
+    fileio/jobs/readJob.cpp
+    fileio/jobs/readJob_ImportWithProxies.cpp
+    fileio/jobs/writeJob.cpp
+    fileio/jobs/modelKindProcessor.cpp
+    #
+    fileio/translators/translatorUtil.cpp
+    fileio/translators/translatorXformable.cpp
+    fileio/translators/translatorXformable_decompose.cpp
+    fileio/translators/translatorPrim.cpp
+    fileio/translators/translatorGprim.cpp
+    fileio/translators/skelBindingsProcessor.cpp
+    fileio/translators/translatorMaterial.cpp
+    fileio/translators/translatorCamera.cpp
+    fileio/translators/translatorCurves.cpp
+    fileio/translators/translatorMesh.cpp
+    fileio/translators/translatorMesh_SubDiv.cpp
+    fileio/translators/translatorMesh_PrimVars.cpp
+    fileio/translators/translatorNurbsPatch.cpp
+    fileio/translators/translatorRfMLight.cpp
+    fileio/translators/translatorSkel.cpp
+    fileio/translators/translatorMayaReference.cpp
+    #
+    fileio/shading/shadingModeExporterContext.cpp
+    fileio/shading/shadingModeExporter.cpp
+    fileio/shading/shadingModeImporter.cpp
+    fileio/shading/shadingModeRegistry.cpp
+    fileio/shading/shadingModeUseRegistry.cpp
+    #
+    fileio/utils/adaptor.cpp
+    fileio/utils/readUtil.cpp
+    fileio/utils/userTaggedAttribute.cpp
+    fileio/utils/writeUtil.cpp
+    fileio/utils/shadingUtil.cpp
+    fileio/utils/meshUtil.cpp
+    fileio/utils/roundTripUtil.cpp
+    fileio/utils/xformStack.cpp
+    #
+    utils/colorSpace.cpp
+    utils/util.cpp
+    utils/blockSceneModificationContext.cpp
+    utils/stageCache.cpp
+    utils/query.cpp
+    #
+    nodes/pointBasedDeformerNode.cpp
+    nodes/hdImagingShape.cpp
+    nodes/usdPrimProvider.cpp
+    nodes/proxyShapeBase.cpp
+    nodes/proxyShapePlugin.cpp
+    nodes/stageData.cpp
+    nodes/stageNode.cpp
+    #
+    listeners/stageNoticeListener.cpp
+    listeners/notice.cpp
+    #
+    render/vp2RenderDelegate/render_param.cpp
+    render/vp2RenderDelegate/instancer.cpp
+    render/vp2RenderDelegate/draw_item.cpp
+    render/vp2RenderDelegate/material.cpp
+    render/vp2RenderDelegate/mesh.cpp
+    render/vp2RenderDelegate/proxyRenderDelegate.cpp
+    render/vp2RenderDelegate/render_delegate.cpp
+    render/vp2RenderDelegate/sampler.cpp
+    render/vp2RenderDelegate/texture.cpp
+    render/vp2RenderDelegate/textureResource.cpp
 )
+
+if(CMAKE_WANT_UFE_BUILD)
+    list(APPEND mayaUsd_src
+        ufe/Global.cpp
+        ufe/Utils.cpp
+        ufe/ProxyShapeHandler.cpp
+        ufe/ProxyShapeHierarchy.cpp
+        ufe/ProxyShapeHierarchyHandler.cpp
+        ufe/StagesSubject.cpp
+        ufe/UsdHierarchy.cpp
+        ufe/UsdHierarchyHandler.cpp
+        ufe/UsdRootChildHierarchy.cpp
+        ufe/UsdRotatePivotTranslateUndoableCommand.cpp
+        ufe/UsdRotateUndoableCommand.cpp
+        ufe/UsdScaleUndoableCommand.cpp
+        ufe/UsdSceneItem.cpp
+        ufe/UsdSceneItemOps.cpp
+        ufe/UsdSceneItemOpsHandler.cpp
+        ufe/UsdStageMap.cpp
+        ufe/UsdTransform3d.cpp
+        ufe/UsdTransform3dHandler.cpp
+        ufe/UsdTranslateUndoableCommand.cpp
+        ufe/UsdUndoCreateGroupCommand.cpp
+        ufe/UsdUndoDeleteCommand.cpp
+        ufe/UsdUndoDuplicateCommand.cpp
+        ufe/UsdUndoRenameCommand.cpp
+        #
+        ufe/private/Utils.cpp
+    )
+endif()
 
 list(APPEND mayaUsdBase_headers
     base/api.h
@@ -181,98 +218,127 @@ list(APPEND mayaUsdBase_headers
 )
 
 list(APPEND mayaUsdFileio_headers
-	fileio/registryHelper.h
-	fileio/primReaderContext.h
-	fileio/primReaderArgs.h
-	fileio/primReader.h
-	fileio/primReaderRegistry.h
-	fileio/functorPrimReader.h
-	fileio/fallbackPrimReader.h
-	fileio/primWriterContext.h
-	fileio/primWriterArgs.h
-	fileio/primWriter.h
-	fileio/primWriterRegistry.h
-	fileio/functorPrimWriter.h
-	fileio/writeJobContext.h
-	fileio/instancedNodeWriter.h
-	fileio/transformWriter.h
-	fileio/shaderWriter.h
-	fileio/primUpdater.h
-	fileio/primUpdaterContext.h
-	fileio/primUpdaterRegistry.h
+    fileio/registryHelper.h
+    fileio/primReaderContext.h
+    fileio/primReaderArgs.h
+    fileio/primReader.h
+    fileio/primReaderRegistry.h
+    fileio/functorPrimReader.h
+    fileio/fallbackPrimReader.h
+    fileio/primWriterContext.h
+    fileio/primWriterArgs.h
+    fileio/primWriter.h
+    fileio/primWriterRegistry.h
+    fileio/functorPrimWriter.h
+    fileio/writeJobContext.h
+    fileio/instancedNodeWriter.h
+    fileio/transformWriter.h
+    fileio/shaderWriter.h
+    fileio/primUpdater.h
+    fileio/primUpdaterContext.h
+    fileio/primUpdaterRegistry.h
 )
 
 list(APPEND mayaUsdChaser_headers
-	fileio/chaser/chaser.h
-	fileio/chaser/chaserRegistry.h
+    fileio/chaser/chaser.h
+    fileio/chaser/chaserRegistry.h
 )
 
 list(APPEND mayaUsdJobs_headers
-	fileio/jobs/jobArgs.h
-	fileio/jobs/readJob.h
-	fileio/jobs/writeJob.h
-	fileio/jobs/modelKindProcessor.h
+    fileio/jobs/jobArgs.h
+    fileio/jobs/readJob.h
+    fileio/jobs/writeJob.h
+    fileio/jobs/modelKindProcessor.h
 )
 
 list(APPEND mayaUsdShading_headers
-	fileio/shading/shadingModeExporterContext.h
-	fileio/shading/shadingModeExporter.h
-	fileio/shading/shadingModeImporter.h
-	fileio/shading/shadingModeRegistry.h
+    fileio/shading/shadingModeExporterContext.h
+    fileio/shading/shadingModeExporter.h
+    fileio/shading/shadingModeImporter.h
+    fileio/shading/shadingModeRegistry.h
 )
 
 list(APPEND mayaUsdUtilsIO_headers
-	fileio/utils/adaptor.h
-	fileio/utils/readUtil.h
-	fileio/utils/userTaggedAttribute.h
-	fileio/utils/writeUtil.h
-	fileio/utils/shadingUtil.h
-	fileio/utils/meshUtil.h
-	fileio/utils/roundTripUtil.h
-	fileio/utils/xformStack.h
+    fileio/utils/adaptor.h
+    fileio/utils/readUtil.h
+    fileio/utils/userTaggedAttribute.h
+    fileio/utils/writeUtil.h
+    fileio/utils/shadingUtil.h
+    fileio/utils/meshUtil.h
+    fileio/utils/roundTripUtil.h
+    fileio/utils/xformStack.h
 )
 
 list(APPEND mayaUsdTranslators_headers
-	fileio/translators/translatorUtil.h
-	fileio/translators/translatorXformable.h
-	fileio/translators/translatorPrim.h
-	fileio/translators/translatorGprim.h
-	fileio/translators/skelBindingsProcessor.h
-	fileio/translators/translatorMaterial.h
-	fileio/translators/translatorCamera.h
-	fileio/translators/translatorCurves.h
-	fileio/translators/translatorMesh.h
-	fileio/translators/translatorNurbsPatch.h
-	fileio/translators/translatorRfMLight.h
-	fileio/translators/translatorSkel.h
-	fileio/translators/translatorMayaReference.h
+    fileio/translators/translatorUtil.h
+    fileio/translators/translatorXformable.h
+    fileio/translators/translatorPrim.h
+    fileio/translators/translatorGprim.h
+    fileio/translators/skelBindingsProcessor.h
+    fileio/translators/translatorMaterial.h
+    fileio/translators/translatorCamera.h
+    fileio/translators/translatorCurves.h
+    fileio/translators/translatorMesh.h
+    fileio/translators/translatorNurbsPatch.h
+    fileio/translators/translatorRfMLight.h
+    fileio/translators/translatorSkel.h
+    fileio/translators/translatorMayaReference.h
 )
 
 list(APPEND mayaUsdUtils_headers
-	utils/colorSpace.h
-	utils/util.h
-	utils/blockSceneModificationContext.h
-	utils/stageCache.h
+    utils/colorSpace.h
+    utils/util.h
+    utils/blockSceneModificationContext.h
+    utils/stageCache.h
+    utils/query.h
 )
 
 list(APPEND mayaUsdNodes_headers
-	nodes/pointBasedDeformerNode.h
-	nodes/hdImagingShape.h
-	nodes/usdPrimProvider.h
-	nodes/proxyShapeBase.h
-	nodes/proxyShapePlugin.h
-	nodes/stageData.h
-	nodes/stageNode.h
+    nodes/pointBasedDeformerNode.h
+    nodes/hdImagingShape.h
+    nodes/usdPrimProvider.h
+    nodes/proxyShapeBase.h
+    nodes/proxyShapePlugin.h
+    nodes/stageData.h
+    nodes/stageNode.h
 )
 
 list(APPEND mayaUsdListeners_headers
-	listeners/stageNoticeListener.h
-	listeners/notice.h
+    listeners/stageNoticeListener.h
+    listeners/notice.h
 )
 
 list(APPEND mayaUsdVP2RenderDelegate_headers
-	render/vp2RenderDelegate/proxyRenderDelegate.h
+    render/vp2RenderDelegate/proxyRenderDelegate.h
 )
+
+if(CMAKE_WANT_UFE_BUILD)
+    list(APPEND mayaUsdUfe_headers
+        ufe/Global.h
+        ufe/Utils.h
+        ufe/ProxyShapeHandler.h
+        ufe/ProxyShapeHierarchy.h
+        ufe/ProxyShapeHierarchyHandler.h
+        ufe/StagesSubject.h
+        ufe/UsdHierarchy.h
+        ufe/UsdHierarchyHandler.h
+        ufe/UsdRootChildHierarchy.h
+        ufe/UsdRotatePivotTranslateUndoableCommand.h
+        ufe/UsdRotateUndoableCommand.h
+        ufe/UsdScaleUndoableCommand.h
+        ufe/UsdSceneItem.h
+        ufe/UsdSceneItemOps.h
+        ufe/UsdSceneItemOpsHandler.h
+        ufe/UsdStageMap.h
+        ufe/UsdTransform3d.h
+        ufe/UsdTransform3dHandler.h
+        ufe/UsdTranslateUndoableCommand.h
+        ufe/UsdUndoCreateGroupCommand.h
+        ufe/UsdUndoDeleteCommand.h
+        ufe/UsdUndoDuplicateCommand.h
+        ufe/UsdUndoRenameCommand.h
+    )
+endif()
 
 add_library(${LIBRARY_NAME}
     SHARED
@@ -297,7 +363,7 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/../base
     # mayaUsd.h is generated in the build area
     ${CMAKE_CURRENT_BINARY_DIR}/../base
-	${PXR_INCLUDE_DIRS}
+    ${PXR_INCLUDE_DIRS}
 )
 
 target_link_libraries(${LIBRARY_NAME}
@@ -308,8 +374,8 @@ target_link_libraries(${LIBRARY_NAME}
     ${UFE_LIBRARY}
     ar
     gf
-	hd
-	hdx
+    hd
+    hdx
     js
     kind
     plug
@@ -317,14 +383,13 @@ target_link_libraries(${LIBRARY_NAME}
     tf
     usd
     usdGeom
-	usdImaging
+    usdImaging
     usdLux
     usdRi
     usdShade
     usdSkel
     usdUtils
     vt
-	
 )
 
 install(TARGETS ${LIBRARY_NAME}
@@ -385,6 +450,12 @@ install(FILES ${mayaUsdListeners_headers}
 install(FILES ${mayaUsdVP2RenderDelegate_headers}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/render/vp2RenderDelegate
 )
+
+if(CMAKE_WANT_UFE_BUILD)
+    install(FILES ${mayaUsdUfe_headers}
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/ufe
+    )
+endif()
 
 #add_subdirectory(render/pxrUsdMayaGL)
 add_subdirectory(translators)

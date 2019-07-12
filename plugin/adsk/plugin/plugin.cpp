@@ -14,6 +14,10 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/stageData.h>
 
+#if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/Global.h>
+#endif
+
 #include <maya/MFnPlugin.h>
 #include <maya/MStatus.h>
 #include <maya/MDrawRegistry.h>
@@ -84,6 +88,13 @@ MStatus initializePlugin(MObject obj)
         status.perror("mayaUsdPlugin: unable to register proxy shape.");
     }
 
+#if defined(WANT_UFE_BUILD)
+    status = MayaUsd::ufe::initialize();
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to initialize ufe.");
+    }
+#endif
+
     return status;
 }
 
@@ -112,6 +123,11 @@ MStatus uninitializePlugin(MObject obj)
 
     status = plugin.deregisterData(UsdMayaStageData::mayaTypeId);
     CHECK_MSTATUS(status);
+
+#if defined(WANT_UFE_BUILD)
+    status = MayaUsd::ufe::finalize();
+    CHECK_MSTATUS(status);
+#endif
 
     return status;
 }
