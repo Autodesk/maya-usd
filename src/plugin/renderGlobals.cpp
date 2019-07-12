@@ -171,13 +171,13 @@ void _CreateBoolAttribute(
         });
 }
 
-/*void _SetToken(
+/*void _GetToken(
     const MFnDependencyNode& node, const TfToken& attrName, TfToken& out) {
     const auto plug = node.findPlug(attrName.GetText(), true);
     if (!plug.isNull()) { out = TfToken(plug.asString().asChar()); }
 }*/
 
-void _SetEnum(
+void _GetEnum(
     const MFnDependencyNode& node, const TfToken& attrName, TfToken& out) {
     const auto plug = node.findPlug(attrName.GetText(), true);
     if (plug.isNull()) { return; }
@@ -188,37 +188,37 @@ void _SetEnum(
 }
 
 template <typename T>
-void _SetFromPlug(const MPlug& plug, T& out) {
+void _GetFromPlug(const MPlug& plug, T& out) {
     assert(false);
 }
 
 template <>
-void _SetFromPlug<bool>(const MPlug& plug, bool& out) {
+void _GetFromPlug<bool>(const MPlug& plug, bool& out) {
     out = plug.asBool();
 }
 
 template <>
-void _SetFromPlug<int>(const MPlug& plug, int& out) {
+void _GetFromPlug<int>(const MPlug& plug, int& out) {
     out = plug.asInt();
 }
 
 #ifdef HDMAYA_USD_001901_BUILD
 template <>
-void _SetFromPlug<float>(const MPlug& plug, float& out) {
+void _GetFromPlug<float>(const MPlug& plug, float& out) {
     out = plug.asFloat();
 }
 #endif
 
 template <typename T>
-bool _SetNumericAttribute(
+bool _GetAttribute(
     const MFnDependencyNode& node, const TfToken& attrName, T& out) {
     const auto plug = node.findPlug(attrName.GetText(), true);
     if (plug.isNull()) { return false; }
-    _SetFromPlug<T>(plug, out);
+    _GetFromPlug<T>(plug, out);
     return true;
 }
 
-void _SetColorAttribute(
+void _GetColorAttribute(
     const MFnDependencyNode& node, const TfToken& attrName,
     const TfToken& attrAName, GfVec4f& out) {
     const auto plug = node.findPlug(attrName.GetText(), true);
@@ -446,25 +446,25 @@ MtohRenderGlobals MtohGetRenderGlobals() {
     MStatus status;
     MFnDependencyNode node(obj, &status);
     if (!status) { return ret; }
-    if (_SetNumericAttribute(
+    if (_GetAttribute(
             node, _tokens->mtohTextureMemoryPerTexture,
             ret.delegateParams.textureMemoryPerTexture)) {
         ret.delegateParams.textureMemoryPerTexture *= 1024;
     }
-    _SetNumericAttribute(
+    _GetAttribute(
         node, _tokens->mtohEnableMotionSamples,
         ret.delegateParams.enableMotionSamples);
-    _SetNumericAttribute(
+    _GetAttribute(
         node, _tokens->mtohMaximumShadowMapResolution,
         ret.delegateParams.maximumShadowMapResolution);
-    _SetEnum(node, _tokens->mtohSelectionOverlay, ret.selectionOverlay);
-    _SetNumericAttribute(
+    _GetEnum(node, _tokens->mtohSelectionOverlay, ret.selectionOverlay);
+    _GetAttribute(
         node, _tokens->mtohWireframeSelectionHighlight,
         ret.wireframeSelectionHighlight);
-    _SetNumericAttribute(
+    _GetAttribute(
         node, _tokens->mtohColorSelectionHighlight,
         ret.colorSelectionHighlight);
-    _SetColorAttribute(
+    _GetColorAttribute(
         node, _tokens->mtohColorSelectionHighlightColor,
         _tokens->mtohColorSelectionHighlightColorA,
         ret.colorSelectionHighlightColor);
@@ -480,21 +480,21 @@ MtohRenderGlobals MtohGetRenderGlobals() {
                 "%s%s", rendererName.GetText(), attr.key.GetText()));
             if (attr.defaultValue.IsHolding<bool>()) {
                 auto v = attr.defaultValue.UncheckedGet<bool>();
-                _SetNumericAttribute(node, attrName, v);
+                _GetAttribute(node, attrName, v);
                 settings.emplace_back(attr.key, v);
             } else if (attr.defaultValue.IsHolding<int>()) {
                 auto v = attr.defaultValue.UncheckedGet<int>();
-                _SetNumericAttribute(node, attrName, v);
+                _GetAttribute(node, attrName, v);
                 settings.emplace_back(attr.key, v);
             } else if (attr.defaultValue.IsHolding<float>()) {
                 auto v = attr.defaultValue.UncheckedGet<float>();
-                _SetNumericAttribute(node, attrName, v);
+                _GetAttribute(node, attrName, v);
                 settings.emplace_back(attr.key, v);
             } else if (attr.defaultValue.IsHolding<GfVec4f>()) {
                 auto v = attr.defaultValue.UncheckedGet<GfVec4f>();
                 const TfToken attrAName(
                     TfStringPrintf("%sA", attrName.GetText()));
-                _SetColorAttribute(node, attrName, attrAName, v);
+                _GetColorAttribute(node, attrName, attrAName, v);
                 settings.emplace_back(attr.key, v);
             }
         }
