@@ -90,7 +90,7 @@ void _CreateEnumAttribute(
     node.addAttribute(o);
 }
 
-/*void _CreateTypedAttribute(
+void _CreateTypedAttribute(
     MFnDependencyNode& node, const TfToken& attrName, MFnData::Type type,
     const std::function<MObject()>& creator) {
     const auto attr = node.attribute(attrName.GetText());
@@ -101,7 +101,7 @@ void _CreateEnumAttribute(
         node.removeAttribute(attr);
     }
     node.addAttribute(creator());
-}*/
+}
 
 void _CreateNumericAttribute(
     MFnDependencyNode& node, const TfToken& attrName, MFnNumericData::Type type,
@@ -171,11 +171,22 @@ void _CreateBoolAttribute(
         });
 }
 
-/*void _GetToken(
-    const MFnDependencyNode& node, const TfToken& attrName, TfToken& out) {
-    const auto plug = node.findPlug(attrName.GetText(), true);
-    if (!plug.isNull()) { out = TfToken(plug.asString().asChar()); }
-}*/
+void _CreateStringAttribute(
+    MFnDependencyNode& node, const TfToken& attrName,
+    const std::string& defValue) {
+    _CreateTypedAttribute(
+        node, attrName, MFnData::kString, [&attrName, &defValue]() -> MObject {
+            MFnTypedAttribute tAttr;
+            const auto o = tAttr.create(
+                attrName.GetText(), attrName.GetText(), MFnData::kString);
+            if (!defValue.empty()) {
+                MFnStringData strData;
+                MObject defObj = strData.create(defValue.c_str());
+                tAttr.setDefault(defObj);
+            }
+            return o;
+        });
+}
 
 void _GetEnum(
     const MFnDependencyNode& node, const TfToken& attrName, TfToken& out) {
@@ -209,6 +220,11 @@ void _GetFromPlug<float>(const MPlug& plug, float& out) {
 }
 #endif
 
+template <>
+void _GetFromPlug<std::string>(const MPlug& plug, std::string& out) {
+    out = plug.asString().asChar();
+}
+
 template <typename T>
 bool _GetAttribute(
     const MFnDependencyNode& node, const TfToken& attrName, T& out) {
@@ -234,7 +250,7 @@ void _GetColorAttribute(
 #ifdef HDMAYA_USD_001901_BUILD
 bool _IsSupportedAttribute(const VtValue& v) {
     return v.IsHolding<bool>() || v.IsHolding<int>() || v.IsHolding<float>() ||
-           v.IsHolding<GfVec4f>();
+           v.IsHolding<GfVec4f>() || v.IsHolding<std::string>();
 }
 #endif
 
@@ -432,9 +448,14 @@ MObject MtohCreateRenderGlobals() {
                 _CreateColorAttribute(
                     node, attrName, attrAName,
                     attr.defaultValue.UncheckedGet<GfVec4f>());
+            } else if (attr.defaultValue.IsHolding<std::string>()) {
+                _CreateStringAttribute(
+                    node, attrName,
+                    attr.defaultValue.UncheckedGet<std::string>());
             }
         }
     }
+
 #endif
     return ret;
 }
@@ -495,6 +516,10 @@ MtohRenderGlobals MtohGetRenderGlobals() {
                 const TfToken attrAName(
                     TfStringPrintf("%sA", attrName.GetText()));
                 _GetColorAttribute(node, attrName, attrAName, v);
+                settings.emplace_back(attr.key, v);
+            } else if (attr.defaultValue.IsHolding<std::string>()) {
+                auto v = attr.defaultValue.UncheckedGet<std::string>();
+                _GetAttribute(node, attrName, v);
                 settings.emplace_back(attr.key, v);
             }
         }
