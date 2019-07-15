@@ -15,6 +15,10 @@ option(HDMAYA_BUILD_TESTS "Build the maya-to-hydra tests" OFF)
 option(HDMAYA_UFE_BUILD "Build UFE support for the maya-to-hydra plugin." OFF)
 option(BUILD_DOCS "Wether to build the Documentation." OFF)
 
+# HDMAYA_UFE_BUILD is used in maya-to-hydra plugin for #if test.
+# Make sure HDMAYA_UFE_BUILD_INT is an int.
+set(HDMAYA_UFE_BUILD_INT 0)
+
 if (NOT "${MAYA_DEVKIT_LOCATION}" STREQUAL "")
     find_package(UFE REQUIRED)
     include_directories(${UFE_INCLUDE_DIR})
@@ -26,8 +30,6 @@ if (NOT "${MAYA_DEVKIT_LOCATION}" STREQUAL "")
     # Make sure HDMAYA_UFE_BUILD_INT is an int.
     if(HDMAYA_UFE_BUILD)
         set(HDMAYA_UFE_BUILD_INT 1)
-    else()
-        set(HDMAYA_UFE_BUILD_INT 0)
     endif()
 
     message(STATUS "Found UFE version: ${UFE_VERSION}")
