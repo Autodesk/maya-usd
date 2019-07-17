@@ -34,6 +34,8 @@ add_mayausd_define(MAYA_LOCATION)
 add_mayausd_define(MAYA_DEVKIT_LOCATION)
 add_mayausd_define(PXR_USD_LOCATION)
 add_mayausd_define(CMAKE_CXX_FLAGS)
+add_mayausd_define(PYTHON_INCLUDE_DIR)
+add_mayausd_define(PYTHON_LIBRARIES)
 
 set(MAYAUSD_INSTALL_DIR "${MAYAUSD_BUILD_ROOT}/mayausd-install/mayaUsd-${MAYAUSD_MAJOR_VERSION}-${MAYAUSD_MINOR_VERSION}-${MAYAUSD_PATCH_LEVEL}")
 
