@@ -1,9 +1,9 @@
-+ PXR_USD <USD_VER> <RELATIVE_PATH>
++ PXR_USD <USD_VER> <PATH_TO_PXR_USD_DIR>
 PYTHONPATH+:=lib/python
 PATH+:=bin
 PATH+:=lib
 
-+ PXR_USDMAYA <USD_VER> <RELATIVE_PATH>/USD
++ PXR_USDMAYA <USD_VER> <PATH_TO_PXR_USDMAYA_DIR>
 PYTHONPATH+:=lib/python
 PATH+:=third_party/maya/lib
 XBMLANGPATH+:=third_party/maya/lib/usd/usdMaya/resources
@@ -11,7 +11,7 @@ MAYA_SCRIPT_PATH+:=third_party/maya/lib/usd/usdMaya/resources
 MAYA_PLUG_IN_PATH+:=third_party/maya/plugin
 PXR_PLUGINPATH_NAME+:=lib/usd
 
-+ AL_USDMaya <AL_MAYAUSD_VER> <RELATIVE_PATH>/AL_USDMaya
++ AL_USDMaya <AL_MAYAUSD_VER> <PATH_TO_AL_USDMaya_DIR>
 PYTHONPATH+:=lib/python
 PATH+:=lib
 MAYA_PLUG_IN_PATH+:=plugin
