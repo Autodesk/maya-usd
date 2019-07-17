@@ -55,15 +55,11 @@ public:
     };
 
 public:
-    HdVP2DrawItem(const HdRprimSharedData*, const HdMeshReprDesc& desc);
+    HdVP2DrawItem(const HdRprimSharedData* sharedData, const HdMeshReprDesc& desc);
 
     ~HdVP2DrawItem();
 
     RenderItemData& GetRenderItemData();
-
-    /*! \brief  Get render item id
-    */
-    const SdfPath& GetRenderItemId() const { return _renderItemId; }
 
     /*! \brief  Get render item name
     */
@@ -71,7 +67,6 @@ public:
 
 private:
     RenderItemData          _mesh;                  //!< VP2 render item data
-    SdfPath                 _renderItemId;          //!< Unique Id
     MString                 _renderItemName;        //!< Unique name. Use this when searching for render item in subscene override container
 };
 

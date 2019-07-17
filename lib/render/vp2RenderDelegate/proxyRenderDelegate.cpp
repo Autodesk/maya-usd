@@ -83,9 +83,6 @@ MHWRender::MPxSubSceneOverride* ProxyRenderDelegate::Creator(const MObject& obj)
 ProxyRenderDelegate::ProxyRenderDelegate(const MObject& obj)
  : MHWRender::MPxSubSceneOverride(obj)
  , _mObject(obj) {
-#if MAYA_API_VERSION >= 20200000 && !defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
-    TF_WARN("Enable update for selection for ProxyRenderDelegate.");
-#endif
 }
 
 //! \brief  Destructor
@@ -267,19 +264,25 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     if (proxyShape == nullptr)
         return false;
 
-    // TODO: Supporting selection for instancing and nested instancing would
-    // require HdVP2Instancer to provide a map from draw instance ID to the
-    // instance path when computing the instance transformation matrices. For
-    // now let's still have the code to run through in this case and it will
-    // end up with the prototype instance to be selected.
+    // Extract id of the owner Rprim. A SdfPath directly created from the render
+    // item name could be ill-formed if the render item represents instancing:
+    // "/TreePatch/Tree_1.proto_leaves_id0/DrawItem_xxxxxxxx". Thus std::string
+    // is used instead to extract Rprim id.
+    const std::string renderItemName = renderItem.name().asChar();
+    const auto pos = renderItemName.find_last_of(USD_UFE_SEPARATOR);
+    SdfPath rprimId(renderItemName.substr(0, pos));
+
+    // If the selection hit comes from an instanced render item, its instance
+    // transform matrices should have been sorted according to USD instance ID,
+    // therefore drawInstID is usdInstID plus 1 considering VP2 defines the
+    // instance ID of the first instance as 1.
     const int drawInstID = intersection.instanceID();
-    if (drawInstID > 0)
-    {
-        TF_WARN("Selection for instancing is not yet supported.");
+    if (drawInstID > 0) {
+        const int usdInstID = drawInstID - 1;
+        rprimId = _sceneDelegate->GetPathForInstanceIndex(rprimId, usdInstID, nullptr);
     }
 
-    const SdfPath renderItemPath(renderItem.name().asChar());
-    const SdfPath usdPath(_sceneDelegate->GetPathForUsd(renderItemPath.GetParentPath()));
+    const SdfPath usdPath(_sceneDelegate->GetPathForUsd(rprimId));
 
     const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
     const Ufe::SceneItem::Ptr& si = handler->createItem(proxyShape->ufePath() + pathSegment);

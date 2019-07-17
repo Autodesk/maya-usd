@@ -18,11 +18,20 @@ Data holder for its corresponding render item to facilitate parallelized evaluat
 
 Position buffer is held by HdVP2Mesh and shared among its render items.
 */
-HdVP2DrawItem::HdVP2DrawItem(const HdRprimSharedData* sharedData, const HdMeshReprDesc& desc)
+HdVP2DrawItem::HdVP2DrawItem(
+    const HdRprimSharedData* sharedData,
+    const HdMeshReprDesc& desc)
 : HdDrawItem(sharedData)
 {
-    _renderItemId = GetRprimID().GetPrimPath().AppendChild(TfToken(TfStringPrintf("DrawItem_%p", this)));
-    _renderItemName = GetRenderItemId().GetText();
+    // In the case of instancing, the ID of a proto has an attribute at the end,
+    // we keep this info in _renderItemName so if needed we can extract proto ID
+    // and use it to figure out Rprim path for each instance. For example:
+    //
+    //   "/Proxy/TreePatch/Tree_1.proto_leaves_id0"
+    //
+    std::string uniqueName = GetRprimID().GetText();
+    uniqueName += TfStringPrintf("/DrawItem_%p", this);
+    _renderItemName = uniqueName.c_str();
 
     _mesh._indexBuffer.reset(new MHWRender::MIndexBuffer(MHWRender::MGeometry::kUnsignedInt32));
 

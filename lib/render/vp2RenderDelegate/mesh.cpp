@@ -613,14 +613,16 @@ void HdVP2Mesh::_UpdateDrawItem(
     _delegate->GetVP2ResourceRegistry().EnqueueCommit(
         [drawItem, stateToCommit, param, positionsBuffer, bounds, worldMatrix]()
     {
+        const MString& renderItemName = drawItem->GetRenderItemName();
+
         MProfilingScope profilingScope(
             _profilerCategory, MProfiler::kColorC_L2,
-            drawItem->GetRenderItemId().GetText(), "HdVP2Mesh Commit Buffers"
+            renderItemName.asChar(), "HdVP2Mesh Commit Buffers"
         );
 
-        MHWRender::MRenderItem* renderItem = param->GetContainer()->find(drawItem->GetRenderItemName());
+        MHWRender::MRenderItem* renderItem = param->GetContainer()->find(renderItemName);
         if(!renderItem) {
-            TF_CODING_ERROR("Invalid render item: %s\n", drawItem->GetRenderItemId().GetText());
+            TF_CODING_ERROR("Invalid render item: %s\n", renderItemName.asChar());
             return;
         }
 
@@ -676,7 +678,8 @@ void HdVP2Mesh::_UpdateDrawItem(
             renderItem->setWantConsolidation(false);
             if(oldInstanceCount == newInstanceCount) {
                 for (unsigned int i = 0; i < newInstanceCount; i++) {
-                    param->GetDrawScene().updateInstanceTransform(*renderItem, i, stateToCommit._instanceTransforms[i]);
+                    // VP2 defines instance ID of the first instance to be 1.
+                    param->GetDrawScene().updateInstanceTransform(*renderItem, i+1, stateToCommit._instanceTransforms[i]);
                 }
             } else {
                 param->GetDrawScene().setInstanceTransformArray(*renderItem, stateToCommit._instanceTransforms);
