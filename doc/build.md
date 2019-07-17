@@ -86,7 +86,14 @@ BUILD_PXR_PLUGIN            | Builds the Pixar USD plugin and libraries.        
 
 # Building USD
 
-##### MacOS:
+##### Boost:
+
+Currently Animal Logic plugin has a dependency on some of the boost components ( e.g thread, filesystem ). When building Pixar USD, one needs to pass following key,value paired arguments for boost to include those components: 
+e.g 
+
+```python build_usd.py --build-args boost,"--with-date_time --with-thread --with-system --with-filesystem" --no-maya ~/Desktop/BUILD```
+
+##### Python:
 
 Some DCCs (most notably, Maya) may ship with and run using their own version of Python. In that case, it is important that USD and the plugins for that DCC are built using the DCC's version of Python and not the system version. Note that this is primarily an issue on macOS, where a DCC's version of Python is likely to conflict with the version provided by the system. 
 
