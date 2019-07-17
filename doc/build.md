@@ -2,9 +2,9 @@
 
 ## Getting and Building the Code
 
-The simplest way to build the plugins is to run the supplied ```build.py``` script. This script will build and install the libraries and plugins into three separate directories (USD, AL_USDMaya, MayaUSD).
+The simplest way to build the plugins is to run the supplied ```build.py``` script. This script will build and install the libraries and plugins into separate directories (e.g plugin/al, plugin/pxr).
 
-Follow the instructions below to run the script with its default behavior, which will build the USD Core libraries, ADSK_USDMaya, AL_USDMaya, PXR_USDMaya plugins/libraries. For more options and documentation, run the script with the ```--help``` parameter.
+Follow the instructions below to run the script with its default behavior, which will build Animal Logic and Pixar plugins/libraries. For more options and documentation, run the script with the ```--help``` parameter.
 
 #### 1. Install prerequisites
 
@@ -34,7 +34,7 @@ There are four arguments that must be passed to the script:
 - --devkit-location ---> Directory where Maya Devkit is installed.
 - install_dir       ---> Directory where project will be installed
 
-When builidng Pixar USD Core, you need to pass ```--no-maya``` to ensure that ```third_party/maya``` plugin doesn't get built.
+When building Pixar USD Core, you need to pass ```--no-maya``` to ensure that ```third_party/maya``` plugin doesn't get built.
 
 Custom arguments can be also passed to build system using ```--build-args```.
 e.g
@@ -44,7 +44,7 @@ python build.py --build-args="-DBUILD_ADSK_PLUGIN=ON,-DBUILD_PXR_PLUGIN=OFF"
 
 #### 4. CMake Generator
 
-It is up to the user to select the Cmake Generator of choice but we encourage the use of Ninja genrator.
+It is up to the user to select the CMake Generator of choice but we encourage the use of the Ninja generator.
 
 To use the Ninja Generator, you need to first install the Ninja binary from https://ninja-build.org/
 
@@ -62,27 +62,25 @@ Build log is written into ```build_log.txt``` inside the build directory.
 
 #### 7. Run the script
 
-For example, the following will build and install ADSK_USDMaya, AL_USDMaya,PXR_USDMaya plugins/libraries into install_dir.
+For example, the following will build and install Animal Logic and Pixar plugins/libraries into install_dir.
 
 ##### Linux:
 ```
-➜ python build.py --maya-location /usr/autodesk/maya2019 --pxrusd-location /usr/local/USD-Master /usr/local/BUILD-USD
+➜ python build.py --maya-location /usr/autodesk/maya2019 --pxrusd-location /usr/local/USD-Master /usr/local/Install-USD
 ```
 ##### MacOS:
 ```
-➜ python build.py --maya-location /Applications/Autodesk/maya2019 --pxrusd-location /opt/local/USD-Master /opt/local/BUILD-USD
+➜ python build.py --maya-location /Applications/Autodesk/maya2019 --pxrusd-location /opt/local/USD-Master /opt/local/Install-USD
 ```
 ##### Windows:
 ```
-C:\> python build.py --maya-location "C:\Program Files\Autodesk\maya2019" --pxrusd-location C:\USD-Master C:\BUILD-USD
+C:\> python build.py --maya-location "C:\Program Files\Autodesk\maya2019" --pxrusd-location C:\USD-Master C:\Install-USD
 ```
 
 ## CMake Options
 
 Name                        | Description                                       | Default
 ---                         | ---                                               | ---
-BUILD_MAYAUSD_LIBRARY       | Builds the Autodesk Maya Core USD libraries.      | ON
-BUILD_ADSK_PLUGIN           | Builds the Autodesk Maya USD plugin.              | ON
 BUILD_AL_PLUGIN             | Builds the Animal Logic USD plugin and libraries. | ON
 BUILD_PXR_PLUGIN            | Builds the Pixar USD plugin and libraries.        | ON
 

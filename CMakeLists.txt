@@ -15,8 +15,6 @@ cmake_minimum_required(VERSION 3.1.1)
 #==============================================================================
 # Define common build variables
 #==============================================================================
-set(BUILD_MAYAUSD_LIBRARY ON CACHE BOOL "Build Core USD libraries.")
-set(BUILD_ADSK_PLUGIN ON CACHE BOOL "Build Autodesk USD plugin.")
 set(BUILD_PXR_PLUGIN ON CACHE BOOL "Build the Pixar USD plugin and libraries.")
 set(BUILD_AL_PLUGIN ON CACHE BOOL "Build the Animal Logic USD plugin and libraries.")
 
@@ -27,11 +25,6 @@ list(APPEND CMAKE_MODULE_PATH
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults
 )
-
-if (BUILD_MAYAUSD_LIBRARY)
-    include(cmake/mayausd_version.info)
-    set(MAYAUSD_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD_PATCH_LEVEL}")
-endif()
 
 if (APPLE)
    set(OSX_ARCHITECTURES "x86_64")
@@ -62,22 +55,6 @@ endif()
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 #==============================================================================
-# CORE
-#==============================================================================
-if (BUILD_MAYAUSD_LIBRARY)
-
-    # set build location
-    set(MAYAUSD_BUILD_ROOT "${CMAKE_CURRENT_BINARY_DIR}/build-mayaUsd")
-
-    # Including this file will end up calling ExternalProjet_Add which we use to
-    # perform the MayaUSD build. Note: That external project is executed immediately
-    # during the 'configure' phase of the AL_USDMaya cmake. This means that MayaUSD
-    # will perform the cmake config/build/install steps all at once. This is needed
-    # because AL_USDMaya needs to find an 'install' of MayaUSD.
-    include("lib/MayaUsd.cmake")
-endif()
-
-#==============================================================================
 # PLUGINS
 #==============================================================================
 if (BUILD_PXR_PLUGIN)
@@ -95,15 +72,3 @@ if (BUILD_AL_PLUGIN)
         add_dependencies(AL_USDMayaPxrTranslators usdMaya)
     endif()
 endif()
-
-if (BUILD_ADSK_PLUGIN)
-    add_subdirectory(plugin/adsk)
-endif()
-
-#==============================================================================
-# Install Maya-USD.module
-#==============================================================================
-configure_file(Maya-USD.module.template ${PROJECT_BINARY_DIR}/Maya-USD.module)
-install(FILES ${PROJECT_BINARY_DIR}/Maya-USD.module
-    DESTINATION ${CMAKE_INSTALL_PREFIX}
-)
