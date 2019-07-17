@@ -202,6 +202,7 @@ void ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(
         TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims checking %s\n", path.GetText());
         MObject newpath = MObject::kNullObj;
         bool parentUnmerged = parentNodeIsUnmerged(usdPrim);
+
         if(schemaPrimUtils.needsTransformParent(usdPrim))
         {
           if(!parentUnmerged)
@@ -268,7 +269,7 @@ void ProxyShapePostLoadProcess::createSchemaPrims(
         object = proxy->findRequiredPath(prim.GetPath());
       }
 
-      fileio::translators::TranslatorRefPtr translator = translatorManufacture.get(prim.GetTypeName());
+      fileio::translators::TranslatorRefPtr translator = translatorManufacture.get(prim);
 
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createSchemaPrims prim=%s\n", prim.GetPath().GetText());
 
@@ -310,9 +311,7 @@ void ProxyShapePostLoadProcess::updateSchemaPrims(
     {
       UsdPrim prim = *it;
 
-      MObject object = proxy->findRequiredPath(prim.GetPath());
-
-      fileio::translators::TranslatorRefPtr translator = translatorManufacture.get(prim.GetTypeName());
+      fileio::translators::TranslatorRefPtr translator = translatorManufacture.get(prim);
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::updateSchemaPrims: hasEntry(%s, %s)=%d\n", prim.GetPath().GetText(), prim.GetTypeName().GetText(), context->hasEntry(prim.GetPath(), prim.GetTypeName()));
 
       if(!context->hasEntry(prim.GetPath(), prim.GetTypeName()))
@@ -320,6 +319,7 @@ void ProxyShapePostLoadProcess::updateSchemaPrims(
         TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createSchemaPrims prim=%s hasEntry=false\n", prim.GetPath().GetText());
         AL_BEGIN_PROFILE_SECTION(SchemaPrims);
         MObject created;
+        MObject object = proxy->findRequiredPath(prim.GetPath());
         fileio::importSchemaPrim(prim, object, created, context, translator);
         AL_END_PROFILE_SECTION();
       }
@@ -371,7 +371,7 @@ void ProxyShapePostLoadProcess::connectSchemaPrims(
   for(; it != end; ++it)
   {
     UsdPrim prim = *it;
-    fileio::translators::TranslatorRefPtr torBase = translatorManufacture.get(prim.GetTypeName());
+    fileio::translators::TranslatorRefPtr torBase = translatorManufacture.get(prim);
     if(torBase)
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::connectSchemaPrims [postImport] prim=%s\n", prim.GetPath().GetText());

@@ -76,17 +76,23 @@ void TranslatorContext::updatePrimTypes()
   {
     SdfPath path(it->path());
     UsdPrim prim = stage->GetPrimAtPath(path);
+    bool modifiedIt = false;
     if(!prim)
     {
       it = m_primMapping.erase(it);
+      modifiedIt=true;
     }
     else
-    if(it->type() != prim.GetTypeName())
     {
-      it->type() = prim.GetTypeName();
-      ++it;
+      std::string translatorId = m_proxyShape->translatorManufacture().generateTranslatorId(prim);
+      if(it->translatorId()!= translatorId)
+      {
+        it->translatorId() = translatorId;
+        ++it;
+        modifiedIt=true;
+      }
     }
-    else
+    if (!modifiedIt)
     {
       ++it;
     }
@@ -200,7 +206,10 @@ void TranslatorContext::registerItem(const UsdPrim& prim, MObjectHandle object)
   auto iter = findLocation(prim.GetPath());
   if(iter == m_primMapping.end() || iter->path() != prim.GetPath())
   {
-    iter = m_primMapping.insert(iter, PrimLookup(prim.GetPath(), prim.GetTypeName(), object.object()));
+    //We keep around this legacy plugin identification by type only to allow tests which don't create a proxy shape to run..
+    std::string translatorId = m_proxyShape ? m_proxyShape->translatorManufacture().generateTranslatorId(prim) : "schematype:" + prim.GetTypeName().GetString();
+
+    iter = m_primMapping.insert(iter, PrimLookup(prim.GetPath(), translatorId, object.object()));
   }
   else
   {
@@ -209,11 +218,11 @@ void TranslatorContext::registerItem(const UsdPrim& prim, MObjectHandle object)
 
   if(object.object() == MObject::kNullObj)
   {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::registerItem primPath=%s primType=%s to null MObject\n", prim.GetPath().GetText(), iter->type().GetText());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::registerItem primPath=%s translatorId=%s to null MObject\n", prim.GetPath().GetText(), iter->translatorId().c_str());
   }
   else
   {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::registerItem primPath=%s primType=%s to MObject type %s\n", prim.GetPath().GetText(), iter->type().GetText(), object.object().apiTypeStr());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::registerItem primPath=%s translatorId=%s to MObject type %s\n", prim.GetPath().GetText(), iter->translatorId().c_str(), object.object().apiTypeStr());
   }
 }
 
@@ -221,10 +230,14 @@ void TranslatorContext::registerItem(const UsdPrim& prim, MObjectHandle object)
 void TranslatorContext::insertItem(const UsdPrim& prim, MObjectHandle object)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::insertItem adding entry %s[%s]\n", prim.GetPath().GetText(), object.object().apiTypeStr());
+
   auto iter = findLocation(prim.GetPath());
   if(iter == m_primMapping.end() || iter->path() != prim.GetPath())
   {
-    iter = m_primMapping.insert(iter, PrimLookup(prim.GetPath(), prim.GetTypeName(), MObject()));
+    //We keep around this legacy plugin identification by type only to allow tests which don't create a proxy shape to run..
+    std::string translatorId = m_proxyShape ? m_proxyShape->translatorManufacture().generateTranslatorId(prim) : "schematype:" + prim.GetTypeName().GetString();
+
+    iter = m_primMapping.insert(iter, PrimLookup(prim.GetPath(), translatorId, MObject()));
   }
   
   if(object.object() == MObject::kNullObj)
@@ -236,11 +249,11 @@ void TranslatorContext::insertItem(const UsdPrim& prim, MObjectHandle object)
 
   if(object.object() == MObject::kNullObj)
   {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::insertItem primPath=%s primType=%s to null MObject\n", prim.GetPath().GetText(), iter->type().GetText());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::insertItem primPath=%s translatorId=%s to null MObject\n", prim.GetPath().GetText(), iter->translatorId().c_str());
   }
   else
   {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::insertItem primPath=%s primType=%s to MObject type %s\n", prim.GetPath().GetText(), iter->type().GetText(), object.object().apiTypeStr());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::insertItem primPath=%s translatorId=%s to MObject type %s\n", prim.GetPath().GetText(), iter->translatorId().c_str(), object.object().apiTypeStr());
   }
 }
 
@@ -359,7 +372,7 @@ MString getNodeName(MObject obj)
 //----------------------------------------------------------------------------------------------------------------------
 MString TranslatorContext::serialise() const
 {
-
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext:serialise\n");
   std::ostringstream oss;
   for(auto& path : m_excludedGeometry)
   {
@@ -373,7 +386,7 @@ MString TranslatorContext::serialise() const
 
   for(auto it : m_primMapping)
   {
-    oss << it.path() << "=" << it.type().GetText() << ",";
+    oss << it.path() << "=" << it.translatorId() << ",";
     oss << getNodeName(it.object());
     for(uint32_t i = 0; i < it.createdNodes().size(); ++i)
     {
@@ -387,6 +400,7 @@ MString TranslatorContext::serialise() const
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::deserialise(const MString& string)
 {
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext:deserialise\n");
   MStringArray strings;
   string.split(';', strings);
 
@@ -405,7 +419,7 @@ void TranslatorContext::deserialise(const MString& string)
       sl.getDependNode(0, obj);
     }
 
-    PrimLookup lookup(SdfPath(strings2[0].asChar()), TfToken(strings3[0].asChar()), obj);
+    PrimLookup lookup(SdfPath(strings2[0].asChar()), strings3[0].asChar(), obj);
 
     for(uint32_t j = 2; j < strings3.length(); ++j)
     {
@@ -530,9 +544,9 @@ void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
   auto stage = m_proxyShape->getUsdStage();
   if(stage)
   {
-    TfToken type = m_proxyShape->context()->getTypeForPath(prim.GetPath());
+    std::string translatorId = m_proxyShape->context()->getTranslatorIdForPath(prim.GetPath());
 
-    fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().get(type);
+    fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().getTranslatorFromId(translatorId);
     if(translator)
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim [preTearDown] prim=%s\n", prim.GetPath().GetText());
@@ -541,7 +555,7 @@ void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
     else
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim [preTearDown] prim=%s\n. Could not find usd translator plugin instance for prim!", prim.GetPath().GetText());
-      MGlobal::displayError(MString("TranslatorContext::preUnloadPrim could not find usd translator plugin instance for prim: ") + prim.GetPath().GetText() + " type: " + type.GetText());
+      MGlobal::displayError(MString("TranslatorContext::preUnloadPrim could not find usd translator plugin instance for prim: ") + prim.GetPath().GetText() + " type: " + translatorId.c_str());
     }
   }
   else
@@ -558,9 +572,9 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
   auto stage = m_proxyShape->usdStage();
   if(stage)
   {
-    TfToken type = m_proxyShape->context()->getTypeForPath(path);
 
-    fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().get(type);
+
+    fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().getTranslatorFromId(translatorId);
     if(translator)
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::unloadPrim [tearDown] prim=%s\n", path.GetText());
@@ -590,14 +604,14 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
 
       case MStatus::kNotImplemented:
         MGlobal::displayError(
-          MString("A variant switch has occurred on a NON-CONFORMING prim, of type: ") + type.GetText() +
+          MString("A variant switch has occurred on a NON-CONFORMING prim, of type: ") + translatorId.c_str() +
           MString(" located at prim path \"") + path.GetText() + MString("\"")
           );
         break;
 
       default:
         MGlobal::displayError(
-          MString("A variant switch has caused an error on tear down on prim, of type: ") + type.GetText() +
+          MString("A variant switch has caused an error on tear down on prim, of type: ") + translatorId.c_str() +
           MString(" located at prim path \"") + path.GetText() + MString("\"")
           );
         break;
@@ -605,7 +619,7 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
     }
     else
     {
-      MGlobal::displayError(MString("could not find usd translator plugin instance for prim: ") + path.GetText() + " type: " + type.GetText());
+      MGlobal::displayError(MString("could not find usd translator plugin instance for prim: ") + path.GetText() + " translatorId: " + translatorId.c_str());
     }
   }
   else

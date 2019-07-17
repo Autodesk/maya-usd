@@ -245,7 +245,7 @@ public:
   /// \brief  deactivate this translator
   void deactivate()
     { m_active = false; }
-
+    
   /// \brief  internal method. Used within AL_USDMAYA_DEFINE_TRANSLATOR macro to set the translation context
   /// \param  context the internal context
   virtual void setContext(const TranslatorContextPtr context)
@@ -278,24 +278,46 @@ public:
   typedef TfRefPtr<TranslatorBase> RefPtr; ///< handle to a plug-in transla
   typedef TfRefPtr<ExtraDataPluginBase> ExtraDataPluginPtr; ///< handle to a plug-in transla
   typedef std::vector<RefPtr> RefPtrVector;
+  static TfToken TranslatorPrefixAssetType;
+  static TfToken TranslatorPrefixSchemaType;
+  
 
   /// \brief  constructs a registry of translator plugins that are currently registered within usd maya. This construction
   ///         should only happen once per-proxy shape.
   /// \param  context the translator context for this registry
   AL_USDMAYA_PUBLIC
   TranslatorManufacture(TranslatorContextPtr context);
-
-  /// \brief  returns a translator for the specified prim type.
-  /// \param  type_name the schema name
-  /// \return returns the requested translator type
+  
+  /// \brief  returns a translator for the specified prim.
+  /// \param  prim 
+  /// \return the requested translator type
   AL_USDMAYA_PUBLIC
-  TranslatorRefPtr get(const TfToken type_name);
+  TranslatorRefPtr get(const UsdPrim &prim);
 
-  /// \brief  returns a translator for the specified prim type.
+  /// \brief  returns a translator for the specified  MObject (used for Import)
   /// \param  mayaObject the maya object for which you wish to check for a plugin node translator
   /// \return returns the requested translator type
   AL_USDMAYA_PUBLIC
   TranslatorRefPtr get(const MObject& mayaObject);
+
+  /// \brief we have a string encoding scheme like "schematype:Mesh", "assettype:foo" to record which translator was used to translate a specific prim
+  /// \param the string encoding
+  /// \return returns the requested translator type
+  AL_USDMAYA_PUBLIC
+  TranslatorRefPtr getTranslatorFromId(const std::string& translatorId );
+
+  /// \brief generates the string encoding about what translator will be used to import a prim based off what translators are currently registered/loaded
+  /// \param USD prim
+  /// \return the string encoding
+  AL_USDMAYA_PUBLIC
+  std::string generateTranslatorId(const UsdPrim& prim );
+
+  /// \brief  returns a translator for the specified schema
+  /// \param  type_name the schema name
+  /// \return returns the requested translator type
+  /// \note any codes that using this probably needs to change to support assettype metadata lookup also!!! (mostly related to update, not done for POC)
+  AL_USDMAYA_PUBLIC
+  TranslatorRefPtr getTranslatorBySchemaType(const TfToken type_name);
 
   /// \brief  returns a list of extra data plugins that may apply to this node type
   /// \param  mayaObject 
@@ -333,7 +355,7 @@ public:
   AL_USDMAYA_PUBLIC
   static TranslatorRefPtr getPythonTranslator(const TfToken type_name);
 
-  /// \brief  check to see if a python translator has been registered for the specified maya node
+  /// \brief  check to see if a python translator has been registered for the specified maya node (used for Export)
   /// \param  mayaObject the maya object to locate a translator for
   /// \return returns the python translator (if one is available)
   AL_USDMAYA_PUBLIC
@@ -350,6 +372,11 @@ public:
   AL_USDMAYA_PUBLIC
   static void addPythonTranslator(TranslatorRefPtr traslatorHandle);
 
+  /// \brief  add a new python translator into the context
+  /// \param  traslatorHandle the translator to register
+  AL_USDMAYA_PUBLIC
+  static void addPythonTranslatorByAssetTypeMetadata(TranslatorRefPtr traslatorHandle, const TfToken& assetTypeValue);
+
   /// \brief delete all registered python translators 
   AL_USDMAYA_PUBLIC
   static void clearPythonTranslators();
@@ -365,7 +392,14 @@ public:
   void updatePythonTranslators(TranslatorContext::RefPtr context);
 
 private:
+
+  /// \brief  returns a translator for the specified metadata value
+  /// \param  assetTypeValue the metadata value
+  /// \return returns the requested translator type
+  TranslatorRefPtr getTranslatorByAssetTypeMetadata(const std::string& assetTypeValue);
+
   std::unordered_map<std::string, TranslatorRefPtr> m_translatorsMap;
+  static std::unordered_map<std::string, TranslatorRefPtr> m_assetTypeToPythonTranslatorsMap;
   std::vector<ExtraDataPluginPtr> m_extraDataPlugins;
   static TranslatorRefPtrVector m_pythonTranslators;
   TranslatorRefPtrVector m_contextualisedPythonTranslators;

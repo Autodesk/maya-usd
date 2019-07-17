@@ -185,6 +185,11 @@ public:
     }
   }
 
+  static void registerTranslatorForAssetType(refptr_t plugin, const TfToken& assetTypeValue)
+   {
+     manufacture_t::addPythonTranslatorByAssetTypeMetadata(plugin, assetTypeValue);
+   }
+
   static bool unregisterTranslator(const std::string& typeName)
   {
     auto type = TfType::FindByName(typeName);
@@ -270,6 +275,8 @@ void wrapTranslatorBase()
     .def("getMObjects", &TranslatorBaseWrapper::getMObjects)
     .def("registerTranslator", &TranslatorBaseWrapper::registerTranslator)
         .staticmethod("registerTranslator")
+     .def("registerTranslatorForAssetType", &TranslatorBaseWrapper::registerTranslatorForAssetType)
+        .staticmethod("registerTranslatorForAssetType")
     .def("clearTranslators", &TranslatorBaseWrapper::clearTranslators)
         .staticmethod("clearTranslators")
     .def("unregisterTranslator", &TranslatorBaseWrapper::unregisterTranslator)

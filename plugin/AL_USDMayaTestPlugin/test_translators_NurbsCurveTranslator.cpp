@@ -104,7 +104,7 @@ MObject createNurbStage(bool useSingleWidth=false)
 
   UsdPrim prim = nurb.GetPrim();
   AL::usdmaya::fileio::translators::TranslatorManufacture manufacture(nullptr);
-  AL::usdmaya::fileio::translators::TranslatorRefPtr translator = manufacture.get(prim.GetTypeName());
+  AL::usdmaya::fileio::translators::TranslatorRefPtr translator = manufacture.getTranslatorBySchemaType(prim.GetTypeName());
   if (translator)
   {
     MObject createdNode;

@@ -76,6 +76,10 @@ struct Metadata
   /// Value used in the lock property that tags prim unlocked regardless of its parent state
   AL_USDMAYA_PUBLIC
   static const TfToken lockUnlocked;
+
+  /// This represents the medata key that plugins can be registered against as an alternative to typed schemas
+  AL_USDMAYA_PUBLIC
+  static const TfToken assetType;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

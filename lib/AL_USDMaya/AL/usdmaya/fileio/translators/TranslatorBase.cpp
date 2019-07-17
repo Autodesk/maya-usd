@@ -20,6 +20,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/usd/usd/schemaBase.h"
+#include "AL/usdmaya/Metadata.h"
 
 namespace AL {
 namespace usdmaya {
@@ -27,6 +28,10 @@ namespace fileio {
 namespace translators {
 
 std::vector<TranslatorRefPtr > TranslatorManufacture::m_pythonTranslators;
+std::unordered_map<std::string, TranslatorRefPtr> TranslatorManufacture::m_assetTypeToPythonTranslatorsMap;
+
+TfToken TranslatorManufacture::TranslatorPrefixAssetType("assettype:");
+TfToken TranslatorManufacture::TranslatorPrefixSchemaType("schematype:");
 
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
@@ -91,20 +96,66 @@ TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TranslatorRefPtr TranslatorManufacture::get(const TfToken type_name)
+
+TranslatorRefPtr TranslatorManufacture::get(const UsdPrim &prim)
+{
+  TranslatorRefPtr translator = TfNullPtr;
+
+  //Try metadata first
+  std::string assetType;
+  prim.GetMetadata(Metadata::assetType, &assetType);
+  if (!assetType.empty())
+  {
+    translator = getTranslatorByAssetTypeMetadata(assetType);
+  }
+
+  //Then try schema - which tries C++ then python
+  if (!translator)
+  {
+    translator = getTranslatorBySchemaType(prim.GetTypeName() );
+  }
+  return translator;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TranslatorManufacture::RefPtr TranslatorManufacture::getTranslatorByAssetTypeMetadata(const std::string& assetTypeValue)
+{
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getTranslatorByAssetTypeMetadata:: looking for type %s\n",assetTypeValue);
+
+    //Look it up in our map of translators
+    auto it = m_assetTypeToPythonTranslatorsMap.find(assetTypeValue);
+    if (it != m_assetTypeToPythonTranslatorsMap.end())
+    {
+      if(it->second->active())
+      {
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getTranslatorByAssetTypeMetadata:: found python translator for type %s\n",assetTypeValue);
+        return it->second;
+      }
+    }
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getTranslatorByAssetTypeMetadata:: no translator found for %s\n",assetTypeValue);
+    return TfNullPtr;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TranslatorRefPtr TranslatorManufacture::getTranslatorBySchemaType(const TfToken type_name)
 {
   TfType type = TfType::FindDerivedByName<UsdSchemaBase>(type_name);
   std::string typeName(type.GetTypeName());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getTranslatorBySchemaType:: found schema %s\n",typeName.c_str());
+
+  //Look it up in our map of translators
   auto it = m_translatorsMap.find(typeName);
   if (it != m_translatorsMap.end())
   {
     if(it->second->active())
     {
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getTranslatorBySchemaType:: found active C++ translator for schema %s\n",typeName.c_str());
       return it->second;
     }
   }
   return getPythonTranslator(type_name);
 }
+
 
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorRefPtr TranslatorManufacture::get(const MObject& mayaObject)
@@ -134,6 +185,58 @@ TranslatorRefPtr TranslatorManufacture::get(const MObject& mayaObject)
   }
   auto py = TranslatorManufacture::getPythonTranslator(mayaObject);
   return py;
+}
+
+
+TranslatorRefPtr TranslatorManufacture::getTranslatorFromId(const std::string& translatorId )
+{
+  TranslatorRefPtr translator;
+
+  if (translatorId.find(TranslatorManufacture::TranslatorPrefixAssetType.GetString(), 0) == 0)
+  {
+    //cover the assettype use case
+    translator = getTranslatorByAssetTypeMetadata(translatorId.substr(10));
+  }
+  else if (translatorId.find(TranslatorManufacture::TranslatorPrefixSchemaType.GetString(), 0) == 0)
+  {
+    //cover the schema type use case,
+    translator = getTranslatorBySchemaType(TfToken(translatorId.substr(11)));
+  }
+  else
+  {
+    // support backward compatibility (where the schema type was stored with no prefix
+    translator = getTranslatorBySchemaType(TfToken(translatorId));
+  }
+  return translator;
+}
+
+std::string TranslatorManufacture::generateTranslatorId(const UsdPrim& prim )
+{
+   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::generateTranslatorId %s\n", prim.GetPath().GetText());
+   std::string translatorId;
+   TranslatorRefPtr translator = TfNullPtr;
+
+   //Try metadata first
+   std::string assetType;
+   prim.GetMetadata(Metadata::assetType, &assetType);
+   if (!assetType.empty())
+   {
+     translator = getTranslatorByAssetTypeMetadata(assetType);
+     if (translator)
+     {
+       translatorId = TranslatorManufacture::TranslatorPrefixAssetType.GetString() + assetType;
+     }
+   }
+   //Then try schema - which tries C++ then python
+   if (!translator)
+   {
+     translator = getTranslatorBySchemaType(prim.GetTypeName());
+     if (translator)
+     {
+       translatorId = TranslatorManufacture::TranslatorPrefixSchemaType.GetString() + prim.GetTypeName().GetString();
+     }
+   }
+   return translatorId;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -225,6 +328,14 @@ void TranslatorManufacture::deactivateAll()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void TranslatorManufacture::addPythonTranslatorByAssetTypeMetadata(TranslatorRefPtr tb, const TfToken& assetTypeValue)
+{
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::addPythonTranslatorByAssetTypeMetadata\n");
+  m_pythonTranslators.push_back(tb); //This allows export to work, but also registers the translator by schema type..possibly unintended?
+  m_assetTypeToPythonTranslatorsMap.emplace(assetTypeValue.GetString(), tb);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void TranslatorManufacture::addPythonTranslator(TranslatorRefPtr tb)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::addPythonTranslator\n");
@@ -236,6 +347,7 @@ void TranslatorManufacture::addPythonTranslator(TranslatorRefPtr tb)
 void TranslatorManufacture::clearPythonTranslators()
 {
   m_pythonTranslators.clear();
+  m_assetTypeToPythonTranslatorsMap.clear();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -248,9 +360,11 @@ TranslatorRefPtr TranslatorManufacture::getPythonTranslator(const TfToken type_n
     auto thetype = it->getTranslatedType();
     if(type == thetype)
     {
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslator:: found a  translator for %s\n", type_name.GetText());
       return it;
     }
   }
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslator:: :didn't find any translator::returning nothing");
   return 0;
 }
 
@@ -304,6 +418,10 @@ void TranslatorManufacture::preparePythonTranslators(TranslatorContext::RefPtr c
   {
     it->setContext(context);
   }
+  for(auto it : TranslatorManufacture::m_assetTypeToPythonTranslatorsMap)
+   {
+     (it.second)->setContext(context);
+   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -316,6 +434,7 @@ void TranslatorManufacture::updatePythonTranslators(TranslatorContext::RefPtr co
     m_contextualisedPythonTranslators.back()->setContext(context);
   }
 }
+
 
 //----------------------------------------------------------------------------------------------------------------------
 TF_REGISTRY_FUNCTION(TfType)

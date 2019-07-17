@@ -1027,12 +1027,13 @@ private:
   void validateTransforms();
   void onRedraw() { m_requestedRedraw = false; }
 
-  TfToken getTypeForPath(const SdfPath& path) override
-    { return m_context->getTypeForPath(path); }
+  /// get the stored Translator ID for a Path
+  std::string getTranslatorIdForPath(const SdfPath& path) override
+    { return m_context->getTranslatorIdForPath(path); }
 
-  bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent, bool& importableByDefault) override
+  bool getTranslatorInfo(const std::string& translatorId, bool& supportsUpdate, bool& requiresParent, bool& importableByDefault) override
     {
-      auto translator = m_translatorManufacture.get(type);
+      auto translator = m_translatorManufacture.getTranslatorFromId(translatorId);
       if(translator)
       {
         supportsUpdate = translator->supportsUpdate();
@@ -1041,6 +1042,12 @@ private:
       }
       return translator != 0;
     }
+
+  /// generate the Translator ID for a Path - this is used for testing only
+  std::string generateTranslatorId(UsdPrim prim) override
+   { return m_translatorManufacture.generateTranslatorId(prim); }
+
+
 
 private:
   SdfPathVector m_pathsOrdered;

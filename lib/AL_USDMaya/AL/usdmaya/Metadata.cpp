@@ -34,6 +34,7 @@ const TfToken Metadata::lockTransform("transform");
 const TfToken Metadata::lockInherited("inherited");
 const TfToken Metadata::lockUnlocked("unlocked");
 
+const TfToken Metadata::assetType("assettype");
 //----------------------------------------------------------------------------------------------------------------------
 } // usdmaya
 } // AL

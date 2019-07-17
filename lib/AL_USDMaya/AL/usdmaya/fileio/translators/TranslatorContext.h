@@ -217,18 +217,18 @@ public:
   AL_USDMAYA_PUBLIC
   ~TranslatorContext();
    
-  /// \brief  given a path to a prim, return the prim type we are aware of at that path
+  /// \brief  given a path to a prim, return the translator we are aware of at that path
   /// \param  path the prim path of a prim that was imported via a custom translator plug-in
   /// \return the type name for that prim
-  TfToken getTypeForPath(SdfPath path) const
+  std::string getTranslatorIdForPath(SdfPath path) const
   {
     const auto it = find(path);
     if(it != m_primMapping.end())
     {
-      return it->type();
+      return it->translatorId();
     }
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getTypeForPath did not find item in mapping.%s\n", path.GetText());
-    return TfToken();
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getTranslatorForPath did not find item in mapping.%s\n", path.GetText());
+    return std::string();
   }
 
   /// \brief  this method is used after a variant switch to check to see if the prim types have changed in the
@@ -258,17 +258,17 @@ public:
   AL_USDMAYA_PUBLIC
   void validatePrims();
 
-  /// \brief  This method is used to determine whether this DB has an entry for the specified prim path and the given type.
+  /// \brief  This method is used to determine whether this DB has an entry for the specified prim path and the given translator.
   ///         This is used within a variant switch to determine if a node can be updated, or whether it needs to be imported.
   /// \param  path the path to the prim to query
-  /// \param  type the type of prim
+  /// \param  translatorId
   /// \return true if an entry is found that matches, false otherwise
-  bool hasEntry(const SdfPath& path, const TfToken& type)
+  bool hasEntry(const SdfPath& path, const std::string& translatorId)
   {
     auto it = find(path);
     if(it != m_primMapping.end())
     {
-      return type == it->type();
+      return translatorId == it->translatorId();
     }
     return false;
   }
@@ -293,11 +293,11 @@ public:
   {
     /// \brief  ctor
     /// \param  path the prim path of the items we will be tracking
-    /// \param  type the USD typename of the prim at the specified path. Used to help us determine which translator plugin
+    /// \param  translatorId. Used to help us determine which translator plugin
     ///         to call to tear down this prim.
     /// \param  mayaObj the maya transform
-    PrimLookup(const SdfPath& path, const TfToken& type, MObject mayaObj)
-      : m_path(path), m_type(type), m_object(mayaObj), m_createdNodes() {}
+    PrimLookup(const SdfPath& path, const std::string& translatorId, MObject mayaObj)
+      : m_path(path), m_translatorId(translatorId), m_object(mayaObj), m_createdNodes() { }
 
     /// \brief  dtor
     ~PrimLookup() {}
@@ -316,6 +316,11 @@ public:
     /// \return the maya node for this reference
     MObject object() const
       { return m_object.object(); }
+
+    /// \brief  get the schema type of the prim
+    /// \return the schema type stored for this prim
+    std::string translatorId() const
+      { return m_translatorId; }
 
     /// \brief  get the prim type
     /// \return the type stored for this prim
@@ -339,6 +344,7 @@ public:
 
   private:
     SdfPath m_path;
+    std::string m_translatorId;
     TfToken m_type;
     MObjectHandle m_object;
     MObjectHandleArray m_createdNodes;

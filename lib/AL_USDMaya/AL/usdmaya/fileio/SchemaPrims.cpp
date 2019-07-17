@@ -49,30 +49,6 @@ void huntForParentCamera(MObject& cameraNode, const MDagPath &dagPath)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool isSchemaOfType(const UsdPrim& prim, const TfToken& typeToken)
-{
-  if(prim.GetTypeName() == typeToken)
-  {
-    return true;
-  }
-
-  // Check to see if the prim has been tagged with an ALType.
-  if(prim.HasCustomDataKey(ALSchemaType))
-  {
-    VtValue typeValue = prim.GetCustomDataByKey(ALSchemaType);
-
-    // Check to see if the custom dataType matches the typeName passed in
-    std::string foundFutureSchemaType = typeValue.Get<std::string>();
-    if(foundFutureSchemaType == typeToken)
-    {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 bool importSchemaPrim(
     const UsdPrim& prim,
     MObject& parent,
@@ -118,18 +94,14 @@ SchemaPrimsUtils::SchemaPrimsUtils(fileio::translators::TranslatorManufacture& m
 //----------------------------------------------------------------------------------------------------------------------
 bool SchemaPrimsUtils::needsTransformParent(const UsdPrim& prim)
 {
-  TfType type = TfType::FindDerivedByName<UsdSchemaBase>(prim.GetTypeName());
-  auto translator = m_manufacture.get(TfToken(type.GetTypeName()));
+  auto translator = m_manufacture.get(prim);
   return translator->needsTransformParent();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 fileio::translators::TranslatorRefPtr SchemaPrimsUtils::isSchemaPrim(const UsdPrim& prim)
 {
-  // the plugin system will return a null pointer if it doesn't know how to
-  // translate this prim type
-  fileio::translators::TranslatorRefPtr torBase = m_manufacture.get(prim.GetTypeName());
-  return torBase;
+  return m_manufacture.get(prim);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

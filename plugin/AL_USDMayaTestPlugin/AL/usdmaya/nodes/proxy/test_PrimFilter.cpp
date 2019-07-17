@@ -19,6 +19,8 @@
 #include "AL/usdmaya/nodes/Layer.h"
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
 #include "AL/usdmaya/StageCache.h"
+#include "AL/usdmaya/Metadata.h"
+
 #include "maya/MFnTransform.h"
 #include "maya/MSelectionList.h"
 #include "maya/MGlobal.h"
@@ -33,6 +35,7 @@
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
+
 #include <fstream>
 
 using AL::maya::test::buildTempPath;
@@ -42,26 +45,51 @@ struct MockPrimFilterInterface : public AL::usdmaya::nodes::proxy::PrimFilterInt
   SdfPathVector refPaths;
   SdfPathVector cameraPaths;
 
-  TfToken getTypeForPath(const SdfPath& path) override
+  std::string getTranslatorIdForPath(const SdfPath& path) override
   {
     if(std::find(refPaths.cbegin(), refPaths.cend(), path) != refPaths.cend())
     {
-      return TfToken("Xform");
+      return std::string("schematype:Xform");
     }
     if (std::find(cameraPaths.cbegin(), cameraPaths.cend(), path) != cameraPaths.cend())
     {
-      return TfToken("Camera");
+      return std::string("schematype:Camera");
     }
-    return TfToken("");
+    return std::string();
   }
 
-  bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent, bool& forceImport) override
+  bool getTranslatorInfo(const std::string& translatorInfo, bool& supportsUpdate, bool& requiresParent, bool& forceImport) override
   {
     supportsUpdate = true;
     requiresParent = true;
     forceImport = false;
     return true;
   }
+
+  /// mimick behaviour of TranslatorManufacture::getTranslatorFromId without needing translators registered
+  std::string generateTranslatorId(UsdPrim prim)
+  {
+    std::string translatorId;
+
+     //Try metadata first
+     std::string assetType;
+     prim.GetMetadata(AL::usdmaya::Metadata::assetType, &assetType);
+     if (!assetType.empty())
+     {
+         translatorId = "assettype:" + assetType;
+     }
+     //Then try schema - which tries C++ then python
+     if (translatorId.empty())
+     {
+       std::string typeName = prim.GetTypeName().GetString();
+       if (!typeName.empty())
+       {
+         translatorId = std::string("schematype:") + typeName;
+       }
+     }
+     return translatorId;
+  }
+
 };
 
 static const char* const g_removedPaths =

@@ -1416,7 +1416,7 @@ MStatus TranslatePrim::doIt(const MArgList& args)
           auto prim = stage->GetPrimAtPath(importPath);
           if(prim)
           {
-            if(manufacture.get(prim.GetTypeName()))
+            if(manufacture.get(prim))
             {
               newImportPaths.push_back(importPath);
             }
@@ -1437,7 +1437,7 @@ MStatus TranslatePrim::doIt(const MArgList& args)
           auto prim = stage->GetPrimAtPath(teardownPath);
           if(prim)
           {
-            if(manufacture.get(prim.GetTypeName()))
+            if(manufacture.get(prim))
             {
               newTeardownPaths.push_back(teardownPath);
             }
@@ -1458,7 +1458,7 @@ MStatus TranslatePrim::doIt(const MArgList& args)
           auto prim = stage->GetPrimAtPath(updatePath);
           if(prim)
           {
-            if(manufacture.get(prim.GetTypeName()))
+            if(manufacture.get(prim))
             {
               newUpdatePaths.push_back(updatePath);
             }
@@ -1514,7 +1514,7 @@ MStatus TranslatePrim::redoIt()
     auto prim = stage->GetPrimAtPath(it);
     if(prim)
     {
-      auto translator = manufacture.get(prim.GetTypeName());
+      auto translator = manufacture.get(prim);
       if(translator->supportsUpdate())
       { 
         translator->update(prim);

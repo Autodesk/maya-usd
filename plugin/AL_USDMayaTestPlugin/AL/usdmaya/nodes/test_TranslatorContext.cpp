@@ -54,12 +54,12 @@ TEST(TranslatorContext, PrimLookup)
   nref.createdNodes().push_back(obj2);
   EXPECT_TRUE(obj == nref.object());
   EXPECT_TRUE(path == nref.path());
-  EXPECT_TRUE(TfToken("transform") == nref.type());
+  EXPECT_TRUE(TfToken("transform") == nref.translatorId());
 
   AL::usdmaya::fileio::translators::TranslatorContext::PrimLookup cnref(nref);
   EXPECT_TRUE(obj == cnref.object());
   EXPECT_TRUE(path == cnref.path());
-  EXPECT_TRUE(TfToken("transform") == cnref.type());
+  EXPECT_TRUE(TfToken("transform") == cnref.translatorId());
   EXPECT_EQ(1, cnref.createdNodes().size());
   EXPECT_TRUE(obj2 == cnref.createdNodes()[0].object());
 }
@@ -167,8 +167,8 @@ TEST(TranslatorContext, TranslatorContext)
       EXPECT_TRUE(transformHandle.object() == rigObj);
     }
 
-    TfToken token = context->getTypeForPath(SdfPath("/root/rig"));
-    EXPECT_TRUE(TfToken("ALMayaReference") == token);
+    std::string translatorId = context->getTranslatorIdForPath(SdfPath("/root/rig"));
+    EXPECT_TRUE("schematype:ALMayaReference" == translatorId);
 
     MObject obj = fnd.create("polyCube");
     {
@@ -225,8 +225,8 @@ TEST(TranslatorContext, TranslatorContext)
         ASSERT_EQ(handles.size(), 1);
         EXPECT_TRUE(handles[0].object() == obj);
       }
-      token = context->getTypeForPath(SdfPath("/root/rig"));
-      EXPECT_TRUE(TfToken("ALMayaReference") == token);
+      translatorId = context->getTranslatorIdForPath(SdfPath("/root/rig"));
+      EXPECT_TRUE("schematype:ALMayaReference"  == translatorId);
       {
         MObjectHandle handle;
         context->getTransform(SdfPath("/root/rig"), handle);
@@ -254,8 +254,8 @@ TEST(TranslatorContext, TranslatorContext)
       context->removeEntries(itemsToRemove);
 
       // context's prim mapping should be empty and it should not find type or transform
-      token = context->getTypeForPath(SdfPath("/root/rig"));
-      EXPECT_TRUE(TfToken("") == token);
+      translatorId = context->getTranslatorIdForPath(SdfPath("/root/rig"));
+      EXPECT_TRUE(translatorId.empty());
       MObjectHandle handle;
       EXPECT_FALSE(context->getTransform(SdfPath("/root/rig"), handle));
     }

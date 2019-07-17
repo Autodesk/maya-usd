@@ -43,8 +43,9 @@ PrimFilter::PrimFilter(
     SdfPath path = prim.GetPath();
 
     // check previous prim type (if it exists at all?)
-    TfToken type = proxy->getTypeForPath(path);
-    TfToken newType = prim.GetTypeName();
+    std::string existingTranslatorId = proxy->getTranslatorIdForPath(path);
+    
+    std::string newTranslatorId = proxy->generateTranslatorId(prim);
 
     // inactive prims should be removed
     if (!prim.IsActive())
@@ -56,12 +57,12 @@ PrimFilter::PrimFilter(
     bool supportsUpdate = false;
     bool requiresParent = false;
     bool importableByDefault = false;
-    proxy->getTypeInfo(newType, supportsUpdate, requiresParent, importableByDefault);
+    proxy->getTranslatorInfo(newTranslatorId, supportsUpdate, requiresParent, importableByDefault);
 
     if(importableByDefault || forceImport)
     {
       // if the type remains the same, and the type supports update
-      if(type == newType)
+      if(existingTranslatorId == newTranslatorId)
       {
         if(supportsUpdate)
         {

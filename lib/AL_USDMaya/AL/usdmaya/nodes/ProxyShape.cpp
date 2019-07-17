@@ -265,7 +265,6 @@ SdfPathVector ProxyShape::getExcludePrimPaths() const
   SdfPathVector paths = getPrimPathsFromCommaJoinedString(excludePrimPathsPlug().asString());
   SdfPathVector temp = getPrimPathsFromCommaJoinedString(excludedTranslatedGeometryPlug().asString());
   paths.insert(paths.end(), temp.begin(), temp.end());
-
   return paths;
 }
 
