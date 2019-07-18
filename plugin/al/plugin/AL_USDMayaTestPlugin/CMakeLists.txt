@@ -82,15 +82,21 @@ PRIVATE
 
 if(MSVC)
     set_target_properties(${PXR_PACKAGE} PROPERTIES SUFFIX ".mll")
-else()
-    set(rpath "$ORIGIN:$ORIGIN/../lib")
-    if (CMAKE_INSTALL_RPATH)
-        set(rpath "${CMAKE_INSTALL_RPATH}:${rpath}")
-    endif()
+elseif(APPLE)
+    set(CMAKE_MACOSX_RPATH ON)
     set_target_properties(${PXR_PACKAGE}
-            PROPERTIES
+        PROPERTIES
             PREFIX ""
-            INSTALL_RPATH "${rpath}"
+            SUFFIX ".bundle"
+            BUILD_WITH_INSTALL_RPATH TRUE
+            INSTALL_RPATH "@loader_path/../lib;@loader_path/../../USD/lib;@loader_path/../../USD/third_party/maya/lib;${PXR_USD_LOCATION}/lib"
+    )
+else()
+    set_target_properties(${PXR_PACKAGE}
+        PROPERTIES
+            PREFIX ""
+            BUILD_WITH_INSTALL_RPATH TRUE
+            INSTALL_RPATH "$ORIGIN/../lib:$ORIGIN/../../USD/lib:$ORIGIN/../../USD/third_party/maya/lib:${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64"
     )
 endif()
 

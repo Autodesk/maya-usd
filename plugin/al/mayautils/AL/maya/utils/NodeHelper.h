@@ -27,6 +27,7 @@
 
 #include <deque>
 #include <vector>
+#include <string>
 
 namespace AL {
 namespace maya {

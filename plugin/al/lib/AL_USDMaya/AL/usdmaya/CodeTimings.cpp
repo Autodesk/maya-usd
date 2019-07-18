@@ -114,7 +114,9 @@ void Profiler::pushTime(const AL::usdmaya::ProfilerSectionTag* entry)
 {
   assert(MAX_TIMESTAMP_STACK_SIZE > m_stackPos);
   m_timeStack[m_stackPos].m_entry = entry;
+  #ifdef _WIN32
   while(clock_gettime(CLOCK_REALTIME_COARSE, &m_timeStack[m_stackPos].m_time) != 0) /* deliberately empty */;
+  #endif
 
   const timespec null_ts = {0, 0};
   if(m_stackPos)
@@ -156,7 +158,10 @@ void Profiler::popTime()
   assert(m_stackPos > 0);
   --m_stackPos;
   timespec endtime;
+  #ifdef _WIN32
   while(clock_gettime(CLOCK_REALTIME_COARSE, &endtime) != 0) /* deliberately empty */;
+  #endif
+
   // compute time difference
   timespec diff = timeDiff(m_timeStack[m_stackPos].m_time, endtime);
   m_timeStack[m_stackPos].m_path->second = timeAdd(diff, m_timeStack[m_stackPos].m_path->second);
