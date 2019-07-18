@@ -79,8 +79,8 @@ pxr_register_test(testPxrUsdPreviewSurfaceExport
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdPreviewSurfaceExport"
     TESTENV testPxrUsdPreviewSurfaceExport
     ENV
-        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
-        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugins/pxrUsdPreviewSurface/resources
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/maya/plugins/pxrUsdPreviewSurface/resources
         MAYA_DISABLE_CIP=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
 )

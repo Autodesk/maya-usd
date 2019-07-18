@@ -5,10 +5,10 @@ PATH+:=lib
 
 + PXR_USDMAYA <USD_VERSION> <PATH_TO_PXR_USDMAYA_DIR>
 PYTHONPATH+:=lib/python
-PATH+:=third_party/maya/lib
-XBMLANGPATH+:=third_party/maya/lib/usd/usdMaya/resources
-MAYA_SCRIPT_PATH+:=third_party/maya/lib/usd/usdMaya/resources
-MAYA_PLUG_IN_PATH+:=third_party/maya/plugin
+PATH+:=maya/lib
+XBMLANGPATH+:=maya/lib/usd/usdMaya/resources
+MAYA_SCRIPT_PATH+:=maya/lib/usd/usdMaya/resources
+MAYA_PLUG_IN_PATH+:=maya/plugin
 PXR_PLUGINPATH_NAME+:=lib/usd
 
 + AL_USDMaya <AL_MAYAUSD_VER> <PATH_TO_AL_USDMaya_DIR>
