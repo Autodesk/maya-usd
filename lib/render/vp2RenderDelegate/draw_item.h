@@ -22,6 +22,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMeshReprDesc;
+class HdVP2RenderDelegate;
 
 /*! \brief  Draw Item holds information necessary for accessing and updating VP2 render items
     \class  HdVP2DrawItem
@@ -55,7 +56,7 @@ public:
     };
 
 public:
-    HdVP2DrawItem(const HdRprimSharedData* sharedData, const HdMeshReprDesc& desc);
+    HdVP2DrawItem(HdVP2RenderDelegate* delegate, const HdRprimSharedData* sharedData, const HdMeshReprDesc& desc);
 
     ~HdVP2DrawItem();
 
@@ -66,8 +67,9 @@ public:
     const MString& GetRenderItemName() const { return _renderItemName; }
 
 private:
-    RenderItemData          _mesh;                  //!< VP2 render item data
-    MString                 _renderItemName;        //!< Unique name. Use this when searching for render item in subscene override container
+    HdVP2RenderDelegate* _delegate{ nullptr };  //!< VP2 render delegate for which this draw item was created
+    RenderItemData      _mesh;                  //!< VP2 render item data
+    MString             _renderItemName;        //!< Unique name. Use this when searching for render item in subscene override container
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

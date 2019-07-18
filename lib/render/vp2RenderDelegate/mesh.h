@@ -73,11 +73,15 @@ private:
         DirtyBoundingBox = (DirtyPointsIndices << 1)
     };
     
-    HdVP2RenderDelegate* _delegate{ nullptr };          //!< VP2 render delegate for which this material was created
+    HdVP2RenderDelegate* _delegate{ nullptr };          //!< VP2 render delegate for which this mesh was created
     HdDirtyBits          _customDirtyBitsInUse{ 0 };    //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
 
     // TODO: Define HdVP2MeshSharedData to hold extra shared data specific to VP2?
     std::unique_ptr<MHWRender::MVertexBuffer> _positionsBuffer; //!< Per-Rprim position buffer to be shared among render items
+
+    using HdVP2DrawItemCollection = std::vector<std::unique_ptr<HdVP2DrawItem>>;
+    HdVP2DrawItemCollection _createdDrawItems;          //!< In current design, HdRepr doesn't take the ownership of draw items.
+                                                        //!< (even if documentation states it does)
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

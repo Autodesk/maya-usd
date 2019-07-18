@@ -9,6 +9,7 @@
 #include "pxr/imaging/hd/mesh.h"
 
 #include "draw_item.h"
+#include "render_delegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -19,9 +20,11 @@ Data holder for its corresponding render item to facilitate parallelized evaluat
 Position buffer is held by HdVP2Mesh and shared among its render items.
 */
 HdVP2DrawItem::HdVP2DrawItem(
+    HdVP2RenderDelegate* delegate,
     const HdRprimSharedData* sharedData,
     const HdMeshReprDesc& desc)
 : HdDrawItem(sharedData)
+, _delegate(delegate)
 {
     // In the case of instancing, the ID of a proto has an attribute at the end,
     // we keep this info in _renderItemName so if needed we can extract proto ID
@@ -49,6 +52,13 @@ HdVP2DrawItem::HdVP2DrawItem(
 
 //! \brief  Destructor.
 HdVP2DrawItem::~HdVP2DrawItem() {
+    if (_delegate) {
+        auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+        MSubSceneContainer* subSceneContainer = param ? param->GetContainer() : nullptr;
+        if(subSceneContainer) {
+            subSceneContainer->remove(GetRenderItemName());
+        }
+    }
 }
 
 //! \brief  Get access to render item data.

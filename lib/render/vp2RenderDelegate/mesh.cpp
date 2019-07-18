@@ -211,7 +211,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
         if (numDrawItems == 0) continue;
 
         for (size_t itemId = 0; itemId < numDrawItems; itemId++) {
-            auto* drawItem = new HdVP2DrawItem(&_sharedData, desc);
+            auto* drawItem = new HdVP2DrawItem(_delegate, &_sharedData, desc);
             repr->AddDrawItem(drawItem);
 
             const MString& renderItemName = drawItem->GetRenderItemName();
@@ -226,6 +226,10 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
                     subSceneContainer->add(renderItem);
                 }
             );
+
+            // Temporary workaround until USD will handle the destruction
+            // properly based on what is documented in HdRepr::AddDrawItem
+            _createdDrawItems.emplace_back(std::unique_ptr<HdVP2DrawItem>(drawItem));
         }
 
         if (desc.geomStyle != HdMeshGeomStylePoints) {
