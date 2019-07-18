@@ -49,8 +49,11 @@ public:
 	Ufe::SceneItemList children() const override;
 	Ufe::SceneItem::Ptr parent() const override;
 	Ufe::AppendedChild appendChild(const Ufe::SceneItem::Ptr& child) override;
+
+#ifdef UFE_GROUP_INTERFACE_AVAILABLE
 	Ufe::SceneItem::Ptr createGroup(const Ufe::PathComponent& name) const override;
 	Ufe::Group createGroupCmd(const Ufe::PathComponent& name) const override;
+#endif
 
 private:
 	UsdSceneItem::Ptr fItem;

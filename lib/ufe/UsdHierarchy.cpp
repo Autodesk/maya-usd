@@ -133,6 +133,7 @@ Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
 	return Ufe::AppendedChild(ufeDstItem, ufeSrcPath, 0);
 }
 
+#ifdef UFE_GROUP_INTERFACE_AVAILABLE
 // Create a transform.
 Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::PathComponent& name) const
 {
@@ -168,6 +169,7 @@ Ufe::Group UsdHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
 	createGroupCmd->execute();
 	return Ufe::Group(createGroupCmd->group(), createGroupCmd);
 }
+#endif
 
 } // namespace ufe
 } // namespace MayaUsd

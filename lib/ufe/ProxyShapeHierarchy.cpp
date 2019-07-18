@@ -117,6 +117,7 @@ Ufe::AppendedChild ProxyShapeHierarchy::appendChild(const Ufe::SceneItem::Ptr& c
 	throw std::runtime_error("ProxyShapeHierarchy::appendChild() not implemented");
 }
 
+#ifdef UFE_GROUP_INTERFACE_AVAILABLE
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(const Ufe::PathComponent& name) const
 {
 	throw std::runtime_error("ProxyShapeHierarchy::createGroup() not implemented");
@@ -126,6 +127,7 @@ Ufe::Group ProxyShapeHierarchy::createGroupCmd(const Ufe::PathComponent& name) c
 {
 	throw std::runtime_error("ProxyShapeHierarchy::createGroupCmd not implemented");
 }
+#endif
 
 } // namespace ufe
 } // namespace MayaUsd

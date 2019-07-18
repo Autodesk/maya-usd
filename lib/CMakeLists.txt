@@ -70,6 +70,15 @@ endif()
 if(CMAKE_WANT_UFE_BUILD)
     find_package(UFE REQUIRED)
     add_definitions(-DWANT_UFE_BUILD)
+
+    # UFE Group interface is available on 2.0+ and 0.2+ but not 1.x.
+    if((NOT UFE_VERSION VERSION_LESS 2.0.0) OR
+       ((UFE_VERSION VERSION_LESS 1.0.0) AND (NOT UFE_VERSION VERSION_LESS 0.2.0)))
+        set(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE ON)
+        add_definitions(-DUFE_GROUP_INTERFACE_AVAILABLE)
+    else()
+        set(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE OFF)
+    endif()
 endif()
 
 #==============================================================================
@@ -203,13 +212,16 @@ if(CMAKE_WANT_UFE_BUILD)
         ufe/UsdTransform3d.cpp
         ufe/UsdTransform3dHandler.cpp
         ufe/UsdTranslateUndoableCommand.cpp
-        ufe/UsdUndoCreateGroupCommand.cpp
         ufe/UsdUndoDeleteCommand.cpp
         ufe/UsdUndoDuplicateCommand.cpp
         ufe/UsdUndoRenameCommand.cpp
         #
         ufe/private/Utils.cpp
     )
+
+    if(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE)
+        list(APPEND mayaUsd_src ufe/UsdUndoCreateGroupCommand.cpp)
+    endif()
 endif()
 
 list(APPEND mayaUsdBase_headers
@@ -333,11 +345,14 @@ if(CMAKE_WANT_UFE_BUILD)
         ufe/UsdTransform3d.h
         ufe/UsdTransform3dHandler.h
         ufe/UsdTranslateUndoableCommand.h
-        ufe/UsdUndoCreateGroupCommand.h
         ufe/UsdUndoDeleteCommand.h
         ufe/UsdUndoDuplicateCommand.h
         ufe/UsdUndoRenameCommand.h
     )
+
+    if(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE)
+        list(APPEND mayaUsdUfe_headers ufe/UsdUndoCreateGroupCommand.h)
+    endif()
 endif()
 
 add_library(${LIBRARY_NAME}

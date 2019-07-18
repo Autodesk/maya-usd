@@ -8,6 +8,7 @@
 # UFE_FOUND           Defined if a UFE installation has been detected
 # UFE_LIBRARY         Path to UFE library
 # UFE_INCLUDE_DIR     Path to the UFE include directory
+# UFE_VERSION         UFE version (major.minor.patch) from ufe.h
 #
 
 find_path(UFE_INCLUDE_DIR
