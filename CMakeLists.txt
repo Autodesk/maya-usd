@@ -72,3 +72,12 @@ if (BUILD_AL_PLUGIN)
         add_dependencies(AL_USDMayaPxrTranslators usdMaya)
     endif()
 endif()
+
+
+#==============================================================================
+# Install mayaUSD.mod
+#==============================================================================
+configure_file(mayaUSD.mod.template ${PROJECT_BINARY_DIR}/mayaUSD.mod)
+install(FILES ${PROJECT_BINARY_DIR}/mayaUSD.mod
+    DESTINATION ${CMAKE_INSTALL_PREFIX}
+)

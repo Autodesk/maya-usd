@@ -260,6 +260,10 @@ def RunCMake(context, force, extraArgs=None):
     variant= BuildVariant(context)
 
     with CurrentWorkingDirectory(buildDir):
+        # recreate build_log.txt everytime the script runs
+        if os.path.isfile(context.logFileLocation):
+            os.remove(context.logFileLocation)
+
         Run('cmake '
             '-DCMAKE_INSTALL_PREFIX="{instDir}" '
             '-DCMAKE_BUILD_TYPE={variant} '
@@ -306,16 +310,16 @@ def InstallMayaUSD(context, force, buildArgs):
 parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter)
 
-parser.add_argument("install_dir", type=str,
+parser.add_argument("install_location", type=str,
                     help="Directory where project will be installed")
 
 parser.add_argument("--generator", type=str,
                     help=("CMake generator to use when building libraries with "
                           "cmake"))
 
-parser.add_argument("--build_dir", type=str,
+parser.add_argument("--build-location", type=str,
                     help=("Build directory for project"
-                          "(default: <install_dir>/build_dir)"))
+                          "(default: <install-location>/build-location)"))
 
 parser.add_argument("--maya-location", type=str,
                     help="Directory where Maya is installed.")
@@ -360,10 +364,10 @@ class InstallContext:
             os.path.join(os.path.abspath(os.path.dirname(__file__))))
 
         # Directory where plugins and libraries  will be installed
-        self.mayaUsdInstDir = os.path.abspath(args.install_dir)
+        self.mayaUsdInstDir = os.path.abspath(args.install_location)
 
         # Directory where plugins and libraries will be built
-        self.buildDir = (os.path.abspath(args.build_dir) if args.build_dir
+        self.buildDir = (os.path.abspath(args.build_location) if args.build_location
                          else os.path.join(self.mayaUsdInstDir, "build"))
 
         # Build type
@@ -396,6 +400,7 @@ class InstallContext:
 
         # Log File Name
         self.logFileName="build_log.txt"
+        self.logFileLocation=os.path.join(self.buildDir, os.path.basename(os.getcwd()),self.logFileName)
 
         # Build arguments
         self.buildArgs = list()
@@ -417,7 +422,7 @@ Building with settings:
   Build directory           {buildDir}
   Variant                   {buildVariant}
   CMake generator           {cmakeGenerator}
-  Build Log                 {logFileName}"""
+  Build Log                 {logFileLocation}"""
 
 if context.buildArgs:
   summaryMsg += """
@@ -427,7 +432,7 @@ summaryMsg = summaryMsg.format(
     mayaUsdSrcDir=context.mayaUsdSrcDir,
     mayaUsdInstDir=context.mayaUsdInstDir,
     buildDir=context.buildDir,
-    logFileName=os.path.join(context.buildDir, os.path.basename(os.getcwd()),context.logFileName),
+    logFileLocation=context.logFileLocation,
     buildArgs=context.buildArgs,
     buildVariant=BuildVariant(context),
     cmakeGenerator=("Default" if not context.cmakeGenerator

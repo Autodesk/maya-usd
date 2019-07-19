@@ -32,7 +32,7 @@ There are four arguments that must be passed to the script:
 - --maya-location   ---> Directory where Maya is installed.
 - --pxrusd-location ---> Directory where Pixar USD Core is installed.
 - --devkit-location ---> Directory where Maya Devkit is installed.
-- install_dir       ---> Directory where project will be installed
+- install_location  ---> Directory where project will be installed
 
 When building Pixar USD Core, you need to pass ```--no-maya``` to ensure that ```third_party/maya``` plugin doesn't get built.
 
@@ -54,7 +54,7 @@ python build.py --generator Ninja --build-args=-DCMAKE_MAKE_PROGRAM='path to nin
 ```
 #### 5. Build location
 
-By default the build directory is created in the install_dir but you can change the location to where ever you want by setting the ```--build_dir``` flag.
+By default the build directory is created in the install directory but you can change the location to where ever you want by setting the ```--build-location``` flag.
 
 #### 6. Build Log
 
@@ -62,7 +62,7 @@ Build log is written into ```build_log.txt``` inside the build directory.
 
 #### 7. Run the script
 
-For example, the following will build and install Animal Logic and Pixar plugins/libraries into install_dir.
+For example, the following will build and install Animal Logic and Pixar plugins/libraries into install directory.
 
 ##### Linux:
 ```

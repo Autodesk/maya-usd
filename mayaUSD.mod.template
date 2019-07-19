@@ -1,9 +1,9 @@
-+ PXR_USD <USD_VER> <PATH_TO_PXR_USD_DIR>
++ PXR_USD <USD_VERSION> <PATH_TO_PXR_USD_DIR>
 PYTHONPATH+:=lib/python
 PATH+:=bin
 PATH+:=lib
 
-+ PXR_USDMAYA <USD_VER> <PATH_TO_PXR_USDMAYA_DIR>
++ PXR_USDMAYA <USD_VERSION> <PATH_TO_PXR_USDMAYA_DIR>
 PYTHONPATH+:=lib/python
 PATH+:=third_party/maya/lib
 XBMLANGPATH+:=third_party/maya/lib/usd/usdMaya/resources
