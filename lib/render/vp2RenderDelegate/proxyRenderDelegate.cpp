@@ -11,6 +11,7 @@
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/taskController.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/mesh.h"
@@ -167,6 +168,12 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
 #endif
         );
         _taskController->SetCollection(*_renderCollection);
+
+        // TODO: Temp fix for the "Token selectionState missing from task context" error
+        // message shown in Output window for every refresh. This might not be required
+        // after implementing selection highlight support.
+        HdxSelectionTrackerSharedPtr _selectionTracker(new HdxSelectionTracker);
+        _engine.SetTaskContextData(HdxTokens->selectionState, VtValue(_selectionTracker));
     }
 }
 
