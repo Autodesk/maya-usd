@@ -173,7 +173,8 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
         // message shown in Output window for every refresh. This might not be required
         // after implementing selection highlight support.
         HdxSelectionTrackerSharedPtr _selectionTracker(new HdxSelectionTracker);
-        _engine.SetTaskContextData(HdxTokens->selectionState, VtValue(_selectionTracker));
+        VtValue data(_selectionTracker);
+        _engine.SetTaskContextData(HdxTokens->selectionState, data);
     }
 }
 
