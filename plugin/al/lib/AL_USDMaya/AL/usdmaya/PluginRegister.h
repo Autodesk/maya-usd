@@ -16,6 +16,9 @@
 #pragma once
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
+#include "pxr/imaging/glf/contextCaps.h"
+#include "pxr/imaging/glf/glContext.h"
+
 #include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/maya/utils/MenuBuilder.h"
 #include "AL/usdmaya/Global.h"
@@ -158,6 +161,11 @@ template<typename AFnPlugin>
 MStatus registerPlugin(AFnPlugin& plugin)
 {
   GlfGlewInit();
+  // We may be in a non-gui maya... if so,
+  // GlfContextCaps::InitInstance() will error
+  if (GlfGLContext::GetCurrentGLContext()->IsValid()) {
+    GlfContextCaps::InitInstance();
+  }
 
   if(!MGlobal::optionVarExists("AL_usdmaya_selectMode"))
   {
