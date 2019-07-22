@@ -73,9 +73,13 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
 	// the second the USD segment.
 	const Ufe::Path::Segments& segments = path.getSegments();
 	TEST_USD_PATH(segments, path);
-	auto dagSegment = segments[0];
-	auto stage = getStage(Ufe::Path(dagSegment));
-	return stage->GetPrimAtPath(SdfPath(segments[1].string()));
+
+	UsdPrim prim;
+	if (auto stage = getStage(Ufe::Path(segments[0])))
+	{
+		prim = stage->GetPrimAtPath(SdfPath(segments[1].string()));
+	}
+	return prim;
 }
 
 bool isRootChild(const Ufe::Path& path)

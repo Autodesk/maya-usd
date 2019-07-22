@@ -51,7 +51,8 @@ Ufe::Hierarchy::Ptr UsdHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& it
 
 Ufe::SceneItem::Ptr UsdHierarchyHandler::createItem(const Ufe::Path& path) const
 {
-	return UsdSceneItem::create(path, ufePathToPrim(path));
+	const UsdPrim prim = ufePathToPrim(path);
+	return prim.IsValid() ? UsdSceneItem::create(path, prim) : nullptr;
 }
 
 } // namespace ufe

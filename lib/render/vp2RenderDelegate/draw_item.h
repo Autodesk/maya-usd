@@ -21,7 +21,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMeshReprDesc;
+struct HdMeshReprDesc;
 class HdVP2RenderDelegate;
 
 /*! \brief  Draw Item holds information necessary for accessing and updating VP2 render items

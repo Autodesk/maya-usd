@@ -294,6 +294,10 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 
     const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
     const Ufe::SceneItem::Ptr& si = handler->createItem(proxyShape->ufePath() + pathSegment);
+    if (!si) {
+        TF_WARN("UFE runtime is not updated for the USD stage. Please save scene and reopen.");
+        return false;
+    }
 
     auto globalSelection = Ufe::GlobalSelection::get();
 
