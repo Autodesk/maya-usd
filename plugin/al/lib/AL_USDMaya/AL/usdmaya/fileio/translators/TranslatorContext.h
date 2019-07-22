@@ -34,6 +34,8 @@
 #include <string>
 #include "AL/usd/utils/ForwardDeclares.h"
 
+#include <mayaUsd/fileio/primUpdaterContext.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 
@@ -472,6 +474,22 @@ private:
 };
 
 typedef TfRefPtr<TranslatorContext> TranslatorContextPtr;
+
+class PrimUpdaterContext : public UsdMayaPrimUpdaterContext {
+public:
+    PrimUpdaterContext(TranslatorContextPtr context, const UsdTimeCode& timeCode, const UsdStageRefPtr& stage)
+        : UsdMayaPrimUpdaterContext(timeCode,stage)
+        , m_translatorContext(context) {}
+
+    // Use context as a bridge between stateless translator and stateful translator context.
+    void Clear(const SdfPath& path) override {
+        m_translatorContext->removeItems(path);
+        m_translatorContext->removeExcludedGeometry(path); 
+    }
+
+private:
+    TranslatorContextPtr m_translatorContext;
+};
 
 //----------------------------------------------------------------------------------------------------------------------
 } // translators

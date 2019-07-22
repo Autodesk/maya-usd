@@ -319,7 +319,7 @@ void ProxyShapePostLoadProcess::updateSchemaPrims(
           TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::updateSchemaPrims [primUpdater] : hasEntry(%s, %s)=%d\n", prim.GetPath().GetText(), prim.GetTypeName().GetText(), context->hasEntry(prim.GetPath(), prim.GetTypeName()));
           
           auto stage = proxy->getUsdStage();
-          UsdMayaPrimUpdaterContext updaterContext(UsdTimeCode::Default(), stage);
+          fileio::translators::PrimUpdaterContext updaterContext(proxy->context(), UsdTimeCode::Default(), stage);
 
           MFnDependencyNode fn(object);
           auto primUpdater = primUpdaterFactory(fn, prim.GetPath());

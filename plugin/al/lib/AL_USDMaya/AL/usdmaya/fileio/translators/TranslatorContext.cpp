@@ -520,11 +520,11 @@ void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
     if(primUpdaterFactory)
     {
         TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim [preTearDown] [primUpdater] prim=%s\n", prim.GetPath().GetText());
-        UsdMayaPrimUpdaterContext context(UsdTimeCode::Default(), stage);
-        
+        PrimUpdaterContext updaterContext(m_proxyShape->context(), UsdTimeCode::Default(), stage);
+
         MFnDependencyNode fn(primObj);
         auto primUpdater = primUpdaterFactory(fn, prim.GetPath());
-        primUpdater->Push(&context);
+        primUpdater->Push(&updaterContext);
 
         return;
     }
@@ -574,16 +574,12 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
             }
         }
 
-        UsdMayaPrimUpdaterContext context(UsdTimeCode::Default(), stage);
+        PrimUpdaterContext updaterContext(m_proxyShape->context(), UsdTimeCode::Default(), stage);
 
         MFnDependencyNode fn(primObj);
         auto primUpdater = primUpdaterFactory(fn, prim.GetPath());
-        primUpdater->Push(&context);
-        if(primUpdater->Clear(&context))
-        {
-            removeItems(path);
-            removeExcludedGeometry(path);
-        }
+        primUpdater->Push(&updaterContext);
+        primUpdater->Clear(&updaterContext);
 
         return;
     }

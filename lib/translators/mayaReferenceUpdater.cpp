@@ -64,15 +64,13 @@ PxrUsdTranslators_MayaReferenceUpdater::Pull(UsdMayaPrimUpdaterContext* context)
 }
 
 /* virtual */
-bool
+void
 PxrUsdTranslators_MayaReferenceUpdater::Clear(UsdMayaPrimUpdaterContext* context)
 {
     const UsdPrim& usdPrim = GetUsdPrim<AL_usd_MayaReference>(*context);
     const MObject& parentNode = GetMayaObject();
 
     UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
-
-    return false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

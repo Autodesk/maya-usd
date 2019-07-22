@@ -47,7 +47,7 @@ class PxrUsdTranslators_MayaReferenceUpdater : public UsdMayaPrimUpdater
                 const SdfPath& usdPath);
 
         bool Pull(UsdMayaPrimUpdaterContext* context) override;
-        bool Clear(UsdMayaPrimUpdaterContext* context) override;
+        void Clear(UsdMayaPrimUpdaterContext* context) override;
 
     protected:
 };

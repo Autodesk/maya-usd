@@ -59,7 +59,7 @@ public:
     virtual bool Pull(UsdMayaPrimUpdaterContext* context);
 
     MAYAUSD_CORE_PUBLIC
-    virtual bool Clear(UsdMayaPrimUpdaterContext* context);
+    virtual void Clear(UsdMayaPrimUpdaterContext* context);
 
     /// The source Maya DAG path that we are consuming.
     ///

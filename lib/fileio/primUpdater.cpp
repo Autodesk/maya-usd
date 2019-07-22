@@ -92,9 +92,8 @@ bool UsdMayaPrimUpdater::Pull(UsdMayaPrimUpdaterContext* context)
     return false;
 }
 
-bool UsdMayaPrimUpdater::Clear(UsdMayaPrimUpdaterContext* context)
+void UsdMayaPrimUpdater::Clear(UsdMayaPrimUpdaterContext* context)
 {
-    return false;
 }
 
 const MDagPath&
