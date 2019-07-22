@@ -65,14 +65,18 @@ if(USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/pxr.h")
     set(USD_VERSION ${USD_MAJOR_VERSION}.${USD_MINOR_VERSION}.${USD_PATCH_VERSION})
 endif()
 
+message(STATUS "USD include dir: ${USD_INCLUDE_DIR}")
+message(STATUS "USD library dir: ${USD_LIBRARY_DIR}")
+message(STATUS "USD version: ${USD_VERSION}")
+
 include(FindPackageHandleStandardArgs)
 
-find_package_handle_standard_args(
-    USD
+find_package_handle_standard_args(USD
     REQUIRED_VARS
-    USD_INCLUDE_DIR
-    USD_LIBRARY_DIR
-    USD_GENSCHEMA
-    USD_CONFIG_FILE
+        USD_INCLUDE_DIR
+        USD_LIBRARY_DIR
+        USD_GENSCHEMA
+        USD_CONFIG_FILE
     VERSION_VAR
-    USD_VERSION)
+        USD_VERSION
+)

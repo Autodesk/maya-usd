@@ -50,7 +50,7 @@ include(cmake/usd.cmake)
 # Consume them here. This is an effort to keep the most common
 # build files readable.
 include(CXXDefaults)
-add_definitions(${_PXR_CXX_DEFINITIONS})
+add_definitions(${_PXR_CXX_DEFINITIONS} -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE)
 set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 if(NOT WIN32)
@@ -103,7 +103,7 @@ endif()
 #==============================================================================
 # Install Maya-USD.module
 #==============================================================================
-configure_file(Maya-USD.module.template ${PROJECT_BINARY_DIR}/Maya-USD.module)
-install(FILES ${PROJECT_BINARY_DIR}/Maya-USD.module
+configure_file(Maya-USD.module.template ${PROJECT_BINARY_DIR}/Maya-USD.mod)
+install(FILES ${PROJECT_BINARY_DIR}/Maya-USD.mod
     DESTINATION ${CMAKE_INSTALL_PREFIX}
 )

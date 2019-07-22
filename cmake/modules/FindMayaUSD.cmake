@@ -74,9 +74,6 @@ find_path(MAYAUSD_INCLUDE_DIR
         "MayaUSD's headers path"
 )
 
-message(STATUS "MayaUSD Include directory: ${MAYAUSD_INCLUDE_DIR}")
-message(STATUS "MayaUSD Library directory: ${MAYAUSD_LIBRARY_DIR}")
-
 # Use find_library to account for platform-specific library name prefixes
 # (e.g. lib) and suffixes (e.g. .lib, .so, .dylib).
 foreach(MAYAUSD_LIB mayaUsd mayaUsd_Schemas)
@@ -102,6 +99,10 @@ if (NOT DEFINED MAYAUSD_MAJOR_VERSION)
     string(REGEX REPLACE ".*\#define MAYAUSD_PATCH_LEVEL[ ]+([0-9]+).*" "\\1" MAYAUSD_PATCH_LEVEL ${MAYAUSD_MAIN_HEADER})
 endif()
 set(MAYAUSD_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD_PATCH_LEVEL}")
+
+message(STATUS "MayaUSD include dir: ${MAYAUSD_INCLUDE_DIR}")
+message(STATUS "MayaUSD libraries: ${MAYAUSD_LIBRARIES}")
+message(STATUS "MayaUSD version: ${MAYAUSD_VERSION}")
 
 # handle the QUIETLY and REQUIRED arguments and set MAYAUSD_FOUND to TRUE if
 # all listed variables are TRUE

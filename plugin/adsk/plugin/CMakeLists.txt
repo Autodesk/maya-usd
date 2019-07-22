@@ -34,7 +34,7 @@ if (NOT "${MAYA_DEVKIT_LOCATION}" STREQUAL "")
 
     message(STATUS "Found UFE version: ${UFE_VERSION}")
     message(STATUS "UFE Include directory: ${UFE_INCLUDE_DIR}")
-    message(STATUS "UFE Library directory: ${UFE_LIBRARY}")
+    message(STATUS "UFE Library: ${UFE_LIBRARY}")
 endif()
 
 add_library(${PLUGIN_PACKAGE} MODULE

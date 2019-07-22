@@ -33,7 +33,7 @@ list(APPEND CMAKE_MODULE_PATH
 # Consume them here. This is an effort to keep the most common
 # build files readable.
 include(CXXDefaults)
-add_definitions(${_PXR_CXX_DEFINITIONS})
+add_definitions(${_PXR_CXX_DEFINITIONS} -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE)
 set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 if(NOT WIN32)
@@ -78,6 +78,11 @@ if(CMAKE_WANT_UFE_BUILD)
         add_definitions(-DUFE_GROUP_INTERFACE_AVAILABLE)
     else()
         set(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE OFF)
+    endif()
+
+    if(MSVC)
+        # Silence this warning until we fix it in UFE.
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
     endif()
 endif()
 

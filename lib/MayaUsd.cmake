@@ -15,10 +15,7 @@ endif()
 
 message("CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}")
 message("CMAKE_MAKE_PROGRAM = ${CMAKE_MAKE_PROGRAM}")
-message("MAYA_LOCATION = ${MAYA_LOCATION}")
-message("MAYA_DEVKIT_LOCATION = ${MAYA_DEVKIT_LOCATION}")
 message("MAYAUSD_BUILD_ROOT = ${MAYAUSD_BUILD_ROOT}")
-message("PXR_USD_LOCATION = ${PXR_USD_LOCATION}")
 
 # Helper macro to add the needed defines to a list so that we can easily pass
 # them to the external project. That external project is executed in a separate
@@ -26,6 +23,7 @@ message("PXR_USD_LOCATION = ${PXR_USD_LOCATION}")
 macro(add_mayausd_define var)
     if (DEFINED ${var})
         list(APPEND MAYAUSD_DEFINES -D${var}=${${var}})
+        message("${var} = ${${var}}")
     endif()
 endmacro(add_mayausd_define)
 
@@ -36,6 +34,9 @@ add_mayausd_define(PXR_USD_LOCATION)
 add_mayausd_define(CMAKE_CXX_FLAGS)
 add_mayausd_define(PYTHON_INCLUDE_DIR)
 add_mayausd_define(PYTHON_LIBRARIES)
+add_mayausd_define(PYTHON_EXECUTABLE)
+add_mayausd_define(UFE_INCLUDE_ROOT)
+add_mayausd_define(UFE_LIB_ROOT)
 
 set(MAYAUSD_INSTALL_DIR "${MAYAUSD_BUILD_ROOT}/mayausd-install/mayaUsd-${MAYAUSD_MAJOR_VERSION}-${MAYAUSD_MINOR_VERSION}-${MAYAUSD_PATCH_LEVEL}")
 
