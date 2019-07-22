@@ -3,6 +3,8 @@ message("========== Pixar USD Plugin ==========")
 #==============================================================================
 # Modules and Definitions
 #==============================================================================
+set(INSTALL_DIR_SUFFIX plugin/pxr)
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
     ${PROJECT_SOURCE_DIR}/cmake/modules
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros

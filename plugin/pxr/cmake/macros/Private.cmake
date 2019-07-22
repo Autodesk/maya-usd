@@ -23,8 +23,6 @@
 #
 include(Version)
 
-set(INSTALL_DIR_SUFFIX plugin/pxr)
-
 # Copy headers to the build tree.  In the source tree we find headers in
 # paths like pxr/base/lib/tf but we #include using paths like pxr/base/tf,
 # i.e. without 'lib/'.  So we copy the headers (public and private) into
