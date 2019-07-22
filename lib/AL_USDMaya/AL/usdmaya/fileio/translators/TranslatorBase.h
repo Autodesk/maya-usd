@@ -251,6 +251,15 @@ public:
   virtual void setContext(const TranslatorContextPtr context)
     { m_context = context; }
 
+  void setRegistrationType(const TfToken& registrationType)
+  {
+    m_registrationType = registrationType;
+  }
+  TfToken getRegistrationType() const
+  {
+    return m_registrationType;
+  }
+
 protected:
 
   /// \brief  internal method. Used within AL_USDMAYA_DEFINE_TRANSLATOR macro to set the schema type of the node we
@@ -263,6 +272,7 @@ private:
   TfType m_translatedType;
   TranslatorContextPtr m_context;
   bool m_active = true;
+  TfToken m_registrationType; /// how was this plugin registered (e.g by schematype or by assettype)
 };
 
 typedef TfRefPtr<TranslatorBase> TranslatorRefPtr;
@@ -312,12 +322,6 @@ public:
   AL_USDMAYA_PUBLIC
   std::string generateTranslatorId(const UsdPrim& prim );
 
-  /// \brief  returns a translator for the specified schema
-  /// \param  type_name the schema name
-  /// \return returns the requested translator type
-  /// \note any codes that using this probably needs to change to support assettype metadata lookup also!!! (mostly related to update, not done for POC)
-  AL_USDMAYA_PUBLIC
-  TranslatorRefPtr getTranslatorBySchemaType(const TfToken type_name);
 
   /// \brief  returns a list of extra data plugins that may apply to this node type
   /// \param  mayaObject 
@@ -349,11 +353,6 @@ public:
   AL_USDMAYA_PUBLIC
   void deactivateAll();
 
-  /// \brief  check to see if a python translator has been registered for the given type name 
-  /// \param  type_name the type of the traslator to query 
-  /// \return returns the python translator (if one is available)
-  AL_USDMAYA_PUBLIC
-  static TranslatorRefPtr getPythonTranslator(const TfToken type_name);
 
   /// \brief  check to see if a python translator has been registered for the specified maya node (used for Export)
   /// \param  mayaObject the maya object to locate a translator for
@@ -393,11 +392,21 @@ public:
   static std::vector<TranslatorRefPtr> getPythonTranslators();
 
 private:
+  /// \brief  returns a translator for the specified schema
+  /// \param  type_name the schema name
+  /// \return returns the requested translator type
+  /// \note any codes that using this probably needs to change to support assettype metadata lookup also!!! (mostly related to update, not done for POC)
+  TranslatorRefPtr getTranslatorBySchemaType(const TfToken type_name);
 
   /// \brief  returns a translator for the specified metadata value
   /// \param  assetTypeValue the metadata value
   /// \return returns the requested translator type
   TranslatorRefPtr getTranslatorByAssetTypeMetadata(const std::string& assetTypeValue);
+
+  /// \brief  check to see if a python translator has been registered for the given type name
+  /// \param  type_name the type of the traslator to query
+  /// \return returns the python translator (if one is available)
+  static TranslatorRefPtr getPythonTranslatorBySchemaType(const TfToken type_name);
 
   std::unordered_map<std::string, TranslatorRefPtr> m_translatorsMap;
   static std::unordered_map<std::string, TranslatorRefPtr> m_assetTypeToPythonTranslatorsMap;

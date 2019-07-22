@@ -62,6 +62,7 @@ TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
             if(it == m_translatorsMap.end())
             {
               m_translatorsMap.emplace(ptr->getTranslatedType().GetTypeName(), ptr);
+              ptr->setRegistrationType(TranslatorManufacture::TranslatorPrefixSchemaType);
             }
             else
             {
@@ -70,6 +71,7 @@ TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
               if(previous->canBeOverridden() && !ptr->canBeOverridden())
               {
                 m_translatorsMap[ptr->getTranslatedType().GetTypeName()] = ptr;
+                ptr->setRegistrationType(TranslatorManufacture::TranslatorPrefixSchemaType);
               }
             }
           }
@@ -120,7 +122,7 @@ TranslatorRefPtr TranslatorManufacture::get(const UsdPrim &prim)
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorManufacture::RefPtr TranslatorManufacture::getTranslatorByAssetTypeMetadata(const std::string& assetTypeValue)
 {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getTranslatorByAssetTypeMetadata:: looking for type %s\n",assetTypeValue);
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getTranslatorByAssetTypeMetadata:: looking for type %s\n",assetTypeValue.c_str());
 
     //Look it up in our map of translators
     auto it = m_assetTypeToPythonTranslatorsMap.find(assetTypeValue);
@@ -128,11 +130,11 @@ TranslatorManufacture::RefPtr TranslatorManufacture::getTranslatorByAssetTypeMet
     {
       if(it->second->active())
       {
-        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getTranslatorByAssetTypeMetadata:: found python translator for type %s\n",assetTypeValue);
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getTranslatorByAssetTypeMetadata:: found python translator for type %s\n",assetTypeValue.c_str());
         return it->second;
       }
     }
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getTranslatorByAssetTypeMetadata:: no translator found for %s\n",assetTypeValue);
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getTranslatorByAssetTypeMetadata:: no translator found for %s\n",assetTypeValue.c_str());
     return TfNullPtr;
 }
 
@@ -153,7 +155,7 @@ TranslatorRefPtr TranslatorManufacture::getTranslatorBySchemaType(const TfToken 
       return it->second;
     }
   }
-  return getPythonTranslator(type_name);
+  return getPythonTranslatorBySchemaType(type_name);
 }
 
 
@@ -340,6 +342,13 @@ bool TranslatorManufacture::addPythonTranslator(TranslatorRefPtr tb, const TfTok
   if(!assetType.IsEmpty())
   {
     m_assetTypeToPythonTranslatorsMap.emplace(assetType.GetString(), tb);
+    tb->setRegistrationType(TranslatorManufacture::TranslatorPrefixAssetType);
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::addPythonTranslator added by asset type %s\n", assetType.GetText());
+  }
+  else 
+  {
+    tb->setRegistrationType(TranslatorManufacture::TranslatorPrefixSchemaType);
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::addPythonTranslator added by schema type %s\n", tb->getTranslatedType().GetTypeName().c_str());
   }
   return true;
 }
@@ -352,20 +361,20 @@ void TranslatorManufacture::clearPythonTranslators()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TranslatorRefPtr TranslatorManufacture::getPythonTranslator(const TfToken type_name)
+TranslatorRefPtr TranslatorManufacture::getPythonTranslatorBySchemaType(const TfToken type_name)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslator %s\n", type_name.GetText());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslatorBySchemaType %s\n", type_name.GetText());
   TfType type = TfType::FindDerivedByName<UsdSchemaBase>(type_name);
+
   for(auto it : TranslatorManufacture::m_pythonTranslators)
   {
-    auto thetype = it->getTranslatedType();
-    if(type == thetype)
+    if((it->getRegistrationType()==TranslatorManufacture::TranslatorPrefixSchemaType) && (type == it->getTranslatedType()))
     {
-      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslator:: found a  translator for %s\n", type_name.GetText());
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslatorBySchemaType:: found a  translator for %s\n", type_name.GetText());
       return it;
     }
   }
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslator:: :didn't find any translator::returning nothing");
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslatorBySchemaType:: :didn't find any translator::returning nothing");
   return 0;
 }
 
