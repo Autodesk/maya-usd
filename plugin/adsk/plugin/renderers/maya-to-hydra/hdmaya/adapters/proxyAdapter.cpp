@@ -266,9 +266,6 @@ HdMayaProxyAdapter::HdMayaProxyAdapter(
 }
 
 HdMayaProxyAdapter::~HdMayaProxyAdapter() {
-    //for (auto& callbackId : _proxyShapeCallbacks) {
-    //    _proxy->scheduler()->unregisterCallback(callbackId);
-    //}
     HdMayaProxyDelegate::RemoveAdapter(this);
 }
 

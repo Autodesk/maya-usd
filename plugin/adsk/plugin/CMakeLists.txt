@@ -23,14 +23,16 @@ if (NOT "${MAYA_DEVKIT_LOCATION}" STREQUAL "")
     find_package(UFE REQUIRED)
     include_directories(${UFE_INCLUDE_DIR})
 
+    # Currently we control whether or not we want UFE by setting MAYA_DEVKIT_LOCATION
+    # It will then force maya-to-hyra to build with UFE.
+    set(HDMAYA_UFE_BUILD ON)
+
     # WANT_UFE_BUILD is used in mayaUsdPlugin for #ifdef test.
     add_definitions(-DWANT_UFE_BUILD)
 
     # HDMAYA_UFE_BUILD is used in maya-to-hydra plugin for #if test.
     # Make sure HDMAYA_UFE_BUILD_INT is an int.
-    if(HDMAYA_UFE_BUILD)
-        set(HDMAYA_UFE_BUILD_INT 1)
-    endif()
+    set(HDMAYA_UFE_BUILD_INT 1)
 
     message(STATUS "Found UFE version: ${UFE_VERSION}")
     message(STATUS "UFE Include directory: ${UFE_INCLUDE_DIR}")

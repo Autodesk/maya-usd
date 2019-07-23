@@ -37,6 +37,7 @@
 #include <maya/MDGMessage.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
+#include <maya/MGlobal.h>
 #include <maya/MItDependencyNodes.h>
 #include <maya/MNodeClass.h>
 #include <maya/MObject.h>
