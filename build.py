@@ -225,12 +225,11 @@ def CurrentWorkingDirectory(dir):
 def RunCMake(context, force, extraArgs=None):
     """Invoke CMake to configure, build, and install a library whose 
     source code is located in the current working directory."""
-    # Create a directory for out-of-source builds in the build directory
-    # using the name of the current working directory.
+
     srcDir = os.getcwd()
-    instDir = (context.mayaUsdInstDir if srcDir == context.mayaUsdSrcDir
-               else srcDir == context.mayaUsdSrcDir)
+    instDir = context.instDir
     buildDir = os.path.join(context.buildDir, os.path.split(srcDir)[1])
+
     if force and os.path.isdir(buildDir):
         shutil.rmtree(buildDir)
 
@@ -260,6 +259,10 @@ def RunCMake(context, force, extraArgs=None):
     variant= BuildVariant(context)
 
     with CurrentWorkingDirectory(buildDir):
+        # recreate build_log.txt everytime the script runs
+        if os.path.isfile(context.logFileLocation):
+            os.remove(context.logFileLocation)
+
         Run('cmake '
             '-DCMAKE_INSTALL_PREFIX="{instDir}" '
             '-DCMAKE_BUILD_TYPE={variant} '
@@ -306,16 +309,20 @@ def InstallMayaUSD(context, force, buildArgs):
 parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter)
 
-parser.add_argument("install_dir", type=str,
-                    help="Directory where project will be installed")
+parser.add_argument("workspace_location", type=str,
+                    help="Directory where the project use as a workspace to build and install plugin/libraries.")
 
 parser.add_argument("--generator", type=str,
                     help=("CMake generator to use when building libraries with "
                           "cmake"))
 
-parser.add_argument("--build_dir", type=str,
-                    help=("Build directory for project"
-                          "(default: <install_dir>/build_dir)"))
+parser.add_argument("--build-location", type=str,
+                    help=("Set Build directory"
+                          "(default: <workspace_location>/build-location)"))
+
+parser.add_argument("--install-location", type=str,
+                    help=("Set Install directory"
+                          "(default: <workspace_location>/install-location)"))
 
 parser.add_argument("--maya-location", type=str,
                     help="Directory where Maya is installed.")
@@ -359,12 +366,16 @@ class InstallContext:
         self.mayaUsdSrcDir = os.path.normpath(
             os.path.join(os.path.abspath(os.path.dirname(__file__))))
 
-        # Directory where plugins and libraries  will be installed
-        self.mayaUsdInstDir = os.path.abspath(args.install_dir)
+        # Workspace directory 
+        self.workspaceDir = os.path.abspath(args.workspace_location)
 
-        # Directory where plugins and libraries will be built
-        self.buildDir = (os.path.abspath(args.build_dir) if args.build_dir
-                         else os.path.join(self.mayaUsdInstDir, "build"))
+        # Build directory
+        self.buildDir = (os.path.abspath(args.build_location) if args.build_location
+                         else os.path.join(self.workspaceDir, "build"))
+
+        # Install directory
+        self.instDir = (os.path.abspath(args.install_location) if args.install_location
+                         else os.path.join(self.workspaceDir, "install"))
 
         # Build type
         self.buildDebug = args.build_debug
@@ -396,6 +407,7 @@ class InstallContext:
 
         # Log File Name
         self.logFileName="build_log.txt"
+        self.logFileLocation=os.path.join(self.buildDir, os.path.basename(os.getcwd()),self.logFileName)
 
         # Build arguments
         self.buildArgs = list()
@@ -413,11 +425,12 @@ except Exception as e:
 summaryMsg = """
 Building with settings:
   Source directory          {mayaUsdSrcDir}
-  Install directory         {mayaUsdInstDir}
+  Workspace directory       {workspaceDir}
   Build directory           {buildDir}
+  Install directory         {instDir}
   Variant                   {buildVariant}
   CMake generator           {cmakeGenerator}
-  Build Log                 {logFileName}"""
+  Build Log                 {logFileLocation}"""
 
 if context.buildArgs:
   summaryMsg += """
@@ -425,9 +438,10 @@ if context.buildArgs:
 
 summaryMsg = summaryMsg.format(
     mayaUsdSrcDir=context.mayaUsdSrcDir,
-    mayaUsdInstDir=context.mayaUsdInstDir,
+    workspaceDir=context.workspaceDir,
     buildDir=context.buildDir,
-    logFileName=os.path.join(context.buildDir,context.logFileName),
+    instDir=context.instDir,
+    logFileLocation=context.logFileLocation,
     buildArgs=context.buildArgs,
     buildVariant=BuildVariant(context),
     cmakeGenerator=("Default" if not context.cmakeGenerator
@@ -440,7 +454,7 @@ Print(summaryMsg)
 InstallMayaUSD(context, context.forceBuild, context.buildArgs)
 
 # Ensure directory structure is created and is writable.
-for dir in [context.mayaUsdInstDir, context.buildDir]:
+for dir in [context.workspaceDir, context.buildDir]:
     try:
         if os.path.isdir(dir):
             testFile = os.path.join(dir, "canwrite")
