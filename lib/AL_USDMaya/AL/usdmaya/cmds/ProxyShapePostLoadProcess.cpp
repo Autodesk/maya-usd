@@ -312,9 +312,12 @@ void ProxyShapePostLoadProcess::updateSchemaPrims(
       UsdPrim prim = *it;
 
       fileio::translators::TranslatorRefPtr translator = translatorManufacture.get(prim);
-      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::updateSchemaPrims: hasEntry(%s, %s)=%d\n", prim.GetPath().GetText(), prim.GetTypeName().GetText(), context->hasEntry(prim.GetPath(), prim.GetTypeName()));
+      std::string translatorId = translatorManufacture.generateTranslatorId(prim);
+      bool hasMatchingEntry = context->hasEntry(prim.GetPath(), translatorId);
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::updateSchemaPrims: hasEntry(%s, %s)=%d\n", prim.GetPath().GetText(), translatorId.c_str(), hasMatchingEntry);
 
-      if(!context->hasEntry(prim.GetPath(), prim.GetTypeName()))
+
+      if(!hasMatchingEntry)
       {
         TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createSchemaPrims prim=%s hasEntry=false\n", prim.GetPath().GetText());
         AL_BEGIN_PROFILE_SECTION(SchemaPrims);
