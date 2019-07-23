@@ -44,7 +44,7 @@ python build.py --build-args="-DBUILD_ADSK_PLUGIN=ON,-DBUILD_PXR_PLUGIN=OFF"
 
 #### 4. CMake Generator
 
-It is up to the user to select the CMake Generator of choice but we encourage the use of the Ninja generator.
+It is up to the user to select the CMake Generator of choice but, we encourage the use of the Ninja generator.
 
 To use the Ninja Generator, you need to first install the Ninja binary from https://ninja-build.org/
 
@@ -54,7 +54,7 @@ python build.py --generator Ninja --build-args=-DCMAKE_MAKE_PROGRAM='path to nin
 ```
 #### 5. Build location
 
-By default the build directory is created inside the workspace directory but you can change the location to where ever you want by setting the ```--build-location``` flag.
+By default, the build directory is created inside the workspace directory but you can change the location to where ever you want by setting the ```--build-location``` flag.
 
 #### 6. Build Log
 
@@ -101,7 +101,7 @@ To build USD and the Maya plugins on macOS for Maya 2019, run:
 ```
 /Applications/Autodesk/maya2019/Maya.app/Contents/bin/mayapy build_usd.py --no-maya ~/Desktop/BUILD
 ```
-By default ``usdview`` is built which has a dependency on PyOpenGL. Since Python version of Maya doesn't ship with PyOpenGL you will be prompted with following error message:
+By default, ``usdview`` is built which has a dependency on PyOpenGL. Since Python version of Maya doesn't ship with PyOpenGL you will be prompted with following error message:
 ```
 PyOpenGL is not installed. If you have pip installed, run "pip install PyOpenGL" to install it, then re-run this script.
 If PyOpenGL is already installed, you may need to update your PYTHONPATH to indicate where it is located.
