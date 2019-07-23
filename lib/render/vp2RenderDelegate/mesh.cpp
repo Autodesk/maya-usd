@@ -516,39 +516,6 @@ void HdVP2Mesh::_UpdateDrawItem(
             // TODO: how to determine transparency for a Hydra material?
             stateToCommit._isTransparent = false;
         }
-
-        if (!stateToCommit._surfaceShader)
-        {
-            bool foundColor = false;
-            //bool foundOpacity = false;
-
-            MColor mayaColor;
-
-            const VtValue colorValue = sceneDelegate->Get(meshId, HdTokens->displayColor);
-            if (!colorValue.IsEmpty()) {
-                const VtVec3fArray colors = colorValue.Get<VtVec3fArray>();
-                if (!colors.empty()) {
-                    const float* colorPtr = colors.front().data();
-                    mayaColor = MColor(colorPtr[0], colorPtr[1], colorPtr[2]);
-                    foundColor = true;
-                }
-            }
-#ifdef KXL_TO_FINISH // Something weird is happening when no displayOpacity is set on a prim, we are getting array with [0.0] instead of an empty array
-            const VtValue opacityValue = sceneDelegate->Get(meshId, HdTokens->displayOpacity);
-            if (!opacityValue.IsEmpty()) {
-                const VtFloatArray opacitArray = opacityValue.Get<VtFloatArray>();
-                if (!opacitArray.empty()) {
-                    mayaColor.a = opacitArray[0];
-                    foundOpacity = true;
-                }
-            }
-#endif
-
-            if (foundColor) {
-                stateToCommit._surfaceShader = _delegate->GetFallbackShader(mayaColor);
-                stateToCommit._isTransparent = (mayaColor.a < 1.0f);
-            }
-        }
     }
 
     // Bounding box is per-prim shared data.
@@ -608,6 +575,46 @@ void HdVP2Mesh::_UpdateDrawItem(
         for (size_t i = 0; i < transforms.size(); ++i) {
             transforms[i].Get(instanceMatrix);
             stateToCommit._instanceTransforms.append(MMatrix(instanceMatrix));
+        }
+    }
+
+    if (*dirtyBits & HdChangeTracker::DirtyPrimvar) {
+        // If no material is found and no display color will be found we will fallback to default color (i.e. black)
+        // I don't know if this even possible and legal...if so, we may want to pick a better color.
+        bool foundColor = false;
+        MColor mayaColor;
+
+        for (const auto& primvar : sceneDelegate->GetPrimvarDescriptors(meshId, HdInterpolation::HdInterpolationConstant)) {
+            if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, meshId, primvar.name))
+                continue;
+            
+            if (!stateToCommit._surfaceShader) {
+                if (primvar.name == HdTokens->displayColor) {
+                    const VtValue colorValue = GetPrimvar(sceneDelegate, primvar.name);
+                    if (!colorValue.IsEmpty()) {
+                        const VtVec3fArray colors = colorValue.Get<VtVec3fArray>();
+                        if (!colors.empty()) {
+                            const float* colorPtr = colors.front().data();
+                            mayaColor = MColor(colorPtr[0], colorPtr[1], colorPtr[2]);
+                            foundColor = true;
+                        }
+                    }
+                }
+                else if (primvar.name == HdTokens->displayOpacity) {
+                    const VtValue opacityValue = GetPrimvar(sceneDelegate, primvar.name);
+                    if (!opacityValue.IsEmpty()) {
+                        const VtFloatArray opacitArray = opacityValue.Get<VtFloatArray>();
+                        if (!opacitArray.empty()) {
+                            mayaColor.a = opacitArray[0];
+                        }
+                    }
+                }
+            }
+        }
+
+        if (foundColor) {
+            stateToCommit._surfaceShader = _delegate->GetFallbackShader(mayaColor);
+            stateToCommit._isTransparent = (mayaColor.a < 1.0f);
         }
     }
 
