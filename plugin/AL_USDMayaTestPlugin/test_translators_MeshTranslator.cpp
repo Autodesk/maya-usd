@@ -669,13 +669,10 @@ TEST(translators_MeshTranslator, constantColourExport)
   MFnMesh fn(obj);
   MString name = fn.createColorSetWithName("test");
 
-  MColorArray colours;
-  colours.setLength(24);
-  for(int i = 0; i < 24; ++i)
-  {
-    colours[i] = MColor(0.3f, 0.4f, 0.5f, 1.0f);
-  }
+  MColorArray colours(1, MColor(0.3f, 0.4f, 0.5f, 1.0f));
+  MIntArray indices(24, 0);
   fn.setColors(colours, &name);
+  fn.assignColors(indices, &name);
 
 
   const MString temp_path = buildTempPath("AL_USDMayaTests_exportConstColour.usda");
@@ -766,12 +763,13 @@ TEST(translators_MeshTranslator, vertexColourExport)
     MIntArray counts, indices;
     fn.getVertices(counts, indices);
     MColorArray colours;
-    colours.setLength(24);
-    for(int i = 0; i < 24; ++i)
+    colours.setLength(8);
+    for(int i = 0; i < 8; ++i)
     {
-      colours[i] = MColor(0.3f * float(indices[i]), 0.4f, 0.5f, 1.0f);
+      colours[i] = MColor(0.3f * i, 0.4f, 0.5f, 1.0f);
     }
     fn.setColors(colours, &name);
+    fn.assignColors(indices, &name);
   }
 
   const MString temp_path = buildTempPath("AL_USDMayaTests_exportVertexColour.usda");
@@ -870,15 +868,18 @@ TEST(translators_MeshTranslator, uniformColourExport)
     fn.getVertices(counts, indices);
 
     MColorArray colours;
-    colours.setLength(24);
+    colours.setLength(6);
     for(int i = 0; i < 6; i++)
     {
-      for(int j = 0; j < 4; ++j)
-      {
-        colours[4 * i + j] = MColor(0.3f * float(i), 0.4f, 0.5f, 1.0f);
-      }
+      colours[i] = MColor(0.3f * float(i), 0.4f, 0.5f, 1.0f);
+    }
+    indices.setLength(24);
+    for(int i = 0; i < 24; i++)
+    {
+      indices[i] = i / 4;
     }
     fn.setColors(colours, &name);
+    fn.assignColors(indices, &name);
   }
 
   const MString temp_path = buildTempPath("AL_USDMayaTests_exportUniformColour.usda");
@@ -978,11 +979,14 @@ TEST(translators_MeshTranslator, faceVaryingColourExport)
 
     MColorArray colours;
     colours.setLength(24);
+    indices.setLength(24);
     for(int i = 0; i < 24; i++)
     {
       colours[i] = MColor(0.01f * i, 0.4f, 0.5f, 1.0f);
+      indices[i] = i;
     }
     fn.setColors(colours, &name);
+    fn.assignColors(indices, &name);
   }
 
   const MString temp_path = buildTempPath("AL_USDMayaTests_exportFaceVaryingColour.usda");
