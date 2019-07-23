@@ -5,14 +5,17 @@
 #include <hdmaya/adapters/shapeAdapter.h>
 
 #include <pxr/pxr.h>
+#include <pxr/base/tf/weakBase.h>
 
 #include <pxr/usdImaging/usdImaging/delegate.h>
+
+#include <mayaUsd/listeners/proxyShapeNotice.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class MayaUsdProxyShapeBase;
 
-class HdMayaProxyAdapter : public HdMayaShapeAdapter {
+class HdMayaProxyAdapter : public HdMayaShapeAdapter, public TfWeakBase {
 public:
     HdMayaProxyAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag);
 
@@ -65,9 +68,9 @@ public:
     }
 
 private:
-#ifdef KXL_TO_FINISH
-    //std::vector<AL::event::CallbackId> _proxyShapeCallbacks;
-#endif
+    /// Notice listener method for proxy stage set
+    void _OnStageSet(const UsdMayaProxyStageSetNotice& notice);
+
     MayaUsdProxyShapeBase* _proxy{ nullptr };
     std::unique_ptr<HdMayaProxyUsdImagingDelegate> _usdDelegate;
 };

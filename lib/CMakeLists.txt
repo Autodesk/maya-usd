@@ -183,6 +183,7 @@ list(APPEND mayaUsd_src
     #
     listeners/stageNoticeListener.cpp
     listeners/notice.cpp
+    listeners/proxyShapeNotice.cpp
     #
     render/vp2RenderDelegate/render_param.cpp
     render/vp2RenderDelegate/instancer.cpp
@@ -323,6 +324,7 @@ list(APPEND mayaUsdNodes_headers
 list(APPEND mayaUsdListeners_headers
     listeners/stageNoticeListener.h
     listeners/notice.h
+    listeners/proxyShapeNotice.h
 )
 
 list(APPEND mayaUsdVP2RenderDelegate_headers

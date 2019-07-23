@@ -8,6 +8,7 @@
 #pragma once
 
 #include "../base/api.h"
+#include "../listeners/proxyShapeNotice.h"
 
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/usd/usd/stage.h"
@@ -64,6 +65,9 @@ private:
 	void stageChanged(UsdNotice::ObjectsChanged const& notice, UsdStageWeakPtr const& sender);
 
 private:
+	// Notice listener method for proxy stage set
+	void onStageSet(const UsdMayaProxyStageSetNotice& notice);
+
 	// Map of per-stage listeners, indexed by stage.
 	typedef TfHashMap<UsdStageWeakPtr, TfNotice::Key, TfHash> StageListenerMap;
 	StageListenerMap fStageListeners;

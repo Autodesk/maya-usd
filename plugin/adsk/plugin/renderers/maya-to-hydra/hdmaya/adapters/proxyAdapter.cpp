@@ -63,24 +63,6 @@ constexpr auto USD_UFE_RUNTIME_NAME = "USD";
 // static UFE_NS::Rtid usdUfeRtid = 0;
 #endif // HDMAYA_UFE_BUILD
 
-//void StageLoadedCallback(void* userData) {
-//    // Bunch of conversions + sanity checks...
-//    auto* adapter = static_cast<PXR_NS::HdMayaProxyAdapter*>(userData);
-//    if (!TF_VERIFY(
-//            adapter, "StageLoadedCallback called with null userData ptr")) {
-//        return;
-//    }
-//
-//    // Real work done by delegate->createUsdImagingDelegate
-//    TF_DEBUG(HDMAYA_AL_CALLBACKS)
-//        .Msg(
-//            "HdMayaProxyAdapter - called StageLoadedCallback "
-//            "(ProxyShape: "
-//            "%s)\n",
-//            adapter->GetDagPath().partialPathName().asChar());
-//    adapter->CreateUsdImagingDelegate();
-//}
-
 #ifdef HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
 
 constexpr auto HD_STREAM_OVERRIDE_NAME =
@@ -277,28 +259,9 @@ HdMayaProxyAdapter::HdMayaProxyAdapter(
         return;
     }
 
-    /*
-    auto* scheduler = _proxy->scheduler();
-    if (!TF_VERIFY(
-            scheduler, "Error getting scheduler for %s",
-            _proxy->name().asChar())) {
-        _proxy = nullptr;
-        return;
-    }
+    TfWeakPtr<HdMayaProxyAdapter> me(this);
+    TfNotice::Register(me, &HdMayaProxyAdapter::_OnStageSet);
 
-    TF_DEBUG(HDMAYA_AL_CALLBACKS)
-        .Msg(
-            "HdMayaProxyAdapter - creating PreStageLoaded callback "
-            "for %s\n",
-            _proxy->name().asChar());
-    _proxyShapeCallbacks.push_back(scheduler->registerCallback(
-        _proxy->getId("PreStageLoaded"),     // eventId
-        "HdMayaProxyDelegate_onStageLoad", // tag
-        StageLoadedCallback,                 // functionPointer
-        10000,                               // weight
-        this                                 // userData
-        ));
-    */
     HdMayaProxyDelegate::AddAdapter(this);
 }
 
@@ -413,6 +376,21 @@ void HdMayaProxyAdapter::PreFrame() {
     // TODO: set this only when time is actually changed
     _usdDelegate->SetTime(_proxy->getTime());
     _usdDelegate->PostSyncCleanup();
+}
+
+void HdMayaProxyAdapter::_OnStageSet(const UsdMayaProxyStageSetNotice& notice)
+{
+    if(&notice.GetProxyShape() == _proxy)
+    {
+        // Real work done by delegate->createUsdImagingDelegate
+        TF_DEBUG(HDMAYA_AL_CALLBACKS)
+            .Msg(
+                "HdMayaProxyAdapter - called StageLoadedCallback "
+                "(ProxyShape: "
+                "%s)\n",
+                GetDagPath().partialPathName().asChar());
+        CreateUsdImagingDelegate();
+    }
 }
 
 TF_REGISTRY_FUNCTION(TfType) {

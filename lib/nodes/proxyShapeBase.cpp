@@ -26,6 +26,7 @@
 #include "hdImagingShape.h"
 #include "../utils/query.h"
 #include "../utils/stageCache.h"
+#include "../listeners/proxyShapeNotice.h"
 #include "stageData.h"
 
 #include "pxr/base/gf/bbox3d.h"
@@ -583,6 +584,8 @@ MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
         std::bind(&MayaUsdProxyShapeBase::_OnStageContentsChanged,
                   this,
                   std::placeholders::_1));
+
+    UsdMayaProxyStageSetNotice(*this).Send();
 
     return MS::kSuccess;
 }

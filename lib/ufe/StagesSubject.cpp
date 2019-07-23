@@ -58,6 +58,9 @@ StagesSubject::StagesSubject()
 	fCbIds.append(MSceneMessage::addCallback(
 					MSceneMessage::kAfterNew, afterNewCallback, this, &res));
 	CHECK_MSTATUS(res);
+
+	TfWeakPtr<StagesSubject> me(this);
+	TfNotice::Register(me, &StagesSubject::onStageSet);
 }
 
 StagesSubject::~StagesSubject()
@@ -195,6 +198,11 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 			Ufe::Transform3d::notify(ufePath);
 		}
 	}
+}
+
+void StagesSubject::onStageSet(const UsdMayaProxyStageSetNotice& notice)
+{
+	afterOpen();
 }
 
 } // namespace ufe
