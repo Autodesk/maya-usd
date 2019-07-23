@@ -1566,7 +1566,18 @@ void MeshExportContext::copyColourSetData()
   for (uint32_t i = 0; i < colourSetNames.length(); i++)
   {
     MFnMesh::MColorRepresentation representation = fnMesh.getColorRepresentation(colourSetNames[i]);
-    fnMesh.getColors(colours, &colourSetNames[i]);
+    MItMeshPolygon it(fnMesh.object());
+    while(!it.isDone())
+    {
+      MColorArray faceColours;
+      it.getColors(faceColours, &colourSetNames[i]);
+      it.next();
+      // Append face colours
+      uint32_t offset = colours.length();
+      colours.setLength(offset+faceColours.length());
+      for (uint32_t j = 0, n = faceColours.length(); j < n; ++j)
+        colours[offset+j] = faceColours[j];
+    }
     TfToken interpolation= UsdGeomTokens->faceVarying;
 
     switch(compaction)
@@ -1616,6 +1627,7 @@ void MeshExportContext::copyColourSetData()
           colourValues.resize(indicesToExtract.size());
           for (uint32_t j = 0; j < indicesToExtract.size(); j++)
           {
+            assert(indicesToExtract[j] < colours.length());
             auto& colour = colours[indicesToExtract[j]];
             colourValues[j] = GfVec3f(colour.r, colour.g, colour.b);
           }
