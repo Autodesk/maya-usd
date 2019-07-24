@@ -612,6 +612,25 @@ void HdVP2Mesh::_UpdateDrawItem(
             }
         }
 
+        for (const auto& primvar : sceneDelegate->GetPrimvarDescriptors(meshId, HdInterpolation::HdInterpolationUniform)) {
+            if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, meshId, primvar.name))
+                continue;
+
+            if (!stateToCommit._surfaceShader && !foundColor) {
+                if (primvar.name == HdTokens->displayColor) {
+                    const VtValue colorValue = GetPrimvar(sceneDelegate, primvar.name);
+                    if (!colorValue.IsEmpty()) {
+                        const VtVec3fArray colors = colorValue.Get<VtVec3fArray>();
+                        if (!colors.empty()) {
+                            const float* colorPtr = colors.front().data();
+                            mayaColor = MColor(colorPtr[0], colorPtr[1], colorPtr[2]);
+                            foundColor = true;
+                        }
+                    }
+                }
+            }
+        }
+
         if (foundColor) {
             stateToCommit._surfaceShader = _delegate->GetFallbackShader(mayaColor);
             stateToCommit._isTransparent = (mayaColor.a < 1.0f);

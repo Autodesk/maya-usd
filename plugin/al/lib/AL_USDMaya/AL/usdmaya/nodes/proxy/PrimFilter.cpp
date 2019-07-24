@@ -56,8 +56,9 @@ PrimFilter::PrimFilter(
     if (std::get<1>(primUpdaterRegistry))
     {
         supportsUpdate = (std::get<0>(primUpdaterRegistry) & UsdMayaPrimUpdater::Supports::Push) == UsdMayaPrimUpdater::Supports::Push;
-#ifdef KXL_TO_FINISH
-#endif
+        // We will need to find a better place for these two. The first one, requiresParent,  is dependent on workflow and DG node type. 
+        // The importableByDefault is fully decided by workflow and by decoupling it from translators we can avoid creating methods
+        // to force the import even if translator is not importable by default.
         requiresParent = true;
         importableByDefault = true;
     }
