@@ -3,6 +3,7 @@ import maya.mel as mel
 
 import unittest
 
+import hdmaya_test_utils
 
 class TestCommand(unittest.TestCase):
     def test_invalidFlag(self):
@@ -11,7 +12,7 @@ class TestCommand(unittest.TestCase):
     def test_listRenderers(self):
         renderers = cmds.mtoh(listRenderers=1)
         self.assertEqual(renderers, cmds.mtoh(lr=1))
-        self.assertIn("HdStreamRendererPlugin", renderers)
+        self.assertIn(hdmaya_test_utils.HD_STORM, renderers)
         self.assertIn("HdEmbreeRendererPlugin", renderers)
 
     def test_listActiveRenderers(self):
@@ -22,12 +23,12 @@ class TestCommand(unittest.TestCase):
         activeEditor = cmds.playblast(ae=1)
         cmds.modelEditor(
             activeEditor, e=1,
-            rendererOverrideName="mtohRenderOverride_HdStreamRendererPlugin")
+            rendererOverrideName=hdmaya_test_utils.HD_STORM_OVERRIDE)
         cmds.refresh(f=1)
 
         activeRenderers = cmds.mtoh(listActiveRenderers=1)
         self.assertEqual(activeRenderers, cmds.mtoh(lar=1))
-        self.assertEqual(activeRenderers, ["HdStreamRendererPlugin"])
+        self.assertEqual(activeRenderers, [hdmaya_test_utils.HD_STORM])
 
         cmds.modelEditor(
             activeEditor, e=1,
@@ -51,8 +52,8 @@ class TestCommand(unittest.TestCase):
                           "moth -getRendererDisplayName")
 
         displayName = cmds.mtoh(
-            getRendererDisplayName="HdStreamRendererPlugin")
-        self.assertEqual(displayName, cmds.mtoh(gn="HdStreamRendererPlugin"))
+            getRendererDisplayName=hdmaya_test_utils.HD_STORM)
+        self.assertEqual(displayName, cmds.mtoh(gn=hdmaya_test_utils.HD_STORM))
         self.assertEqual(displayName, "GL")
 
         displayName = cmds.mtoh(

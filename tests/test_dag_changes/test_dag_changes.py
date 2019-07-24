@@ -247,7 +247,7 @@ class TestUndo(HdMayaTestCase):
             cmds.file(new=1, f=1)
             self.setBasicCam()
 
-            self.setHdStreamRenderer()
+            self.setHdStormRenderer()
 
             cmds.undoInfo(state=1)
             cmds.undoInfo(openChunk=1)

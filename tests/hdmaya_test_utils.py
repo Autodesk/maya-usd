@@ -3,11 +3,16 @@ import maya.cmds as cmds
 import math
 import os.path
 import unittest
+from __builtin__ import None
 
+HD_STORM = "HdStormRendererPlugin"
 
-HD_STREAM = "HdStreamRendererPlugin"
-HD_STREAM_OVERRIDE = "mtohRenderOverride_HdStreamRendererPlugin"
-
+knownRenderers = cmds.mtoh(listRenderers=1)
+if HD_STORM not in knownRenderers:
+    HD_STORM = "HdStreamRendererPlugin"
+    if HD_STORM not in knownRenderers:
+        raise RuntimeError("Could not find HdStorm (or HdStream) renderer plugin")
+HD_STORM_OVERRIDE = "mtohRenderOverride_" + HD_STORM
 
 KNOWN_FORMATS = {
     'gif': 0,
@@ -126,15 +131,14 @@ def imageDiff(imagePath1, imagePath2):
 
 class HdMayaTestCase(unittest.TestCase):
     DEFAULT_CAM_DIST = 24
-
-    def setHdStreamRenderer(self):
+    def setHdStormRenderer(self):
         self.activeEditor = cmds.playblast(activeEditor=1)
         cmds.modelEditor(
             self.activeEditor, e=1,
-            rendererOverrideName=HD_STREAM_OVERRIDE)
+            rendererOverrideName=HD_STORM_OVERRIDE)
         cmds.refresh(f=1)
         self.delegateId = cmds.mtoh(sceneDelegateId=(
-            HD_STREAM, "HdMayaSceneDelegate"))
+            HD_STORM, "HdMayaSceneDelegate"))
 
     def setBasicCam(self, dist=DEFAULT_CAM_DIST):
         cmds.setAttr('persp.rotate', -30, 45, 0, type='float3')
@@ -144,7 +148,7 @@ class HdMayaTestCase(unittest.TestCase):
         cmds.file(f=1, new=1)
         self.cubeTrans = cmds.polyCube()[0]
         self.cubeShape = cmds.listRelatives(self.cubeTrans)[0]
-        self.setHdStreamRenderer()
+        self.setHdStormRenderer()
         self.cubeRprim = self.rprimPath(self.cubeShape)
         self.assertInIndex(self.cubeRprim)
         self.assertVisible(self.cubeRprim)
@@ -162,7 +166,7 @@ class HdMayaTestCase(unittest.TestCase):
                          fullPath.lstrip('|').replace('|', '/')])
 
     def getIndex(self, **kwargs):
-        return cmds.mtoh(listRenderIndex=HD_STREAM, **kwargs)
+        return cmds.mtoh(listRenderIndex=HD_STORM, **kwargs)
 
     def getVisibleIndex(self, **kwargs):
         kwargs['visibleOnly'] = True

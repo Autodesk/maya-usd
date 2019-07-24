@@ -70,14 +70,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    (HdStreamRendererPlugin)
-);
-// clang-format on
-
 namespace {
 
 // Not sure if we actually need a mutex guarding _allInstances, but
@@ -179,7 +171,7 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
           SdfPath::AbsoluteRootPath()),
       _selectionCollection(
           HdReprTokens->wire, HdReprSelector(HdReprTokens->wire)),
-      _isUsingHdSt(desc.rendererName == _tokens->HdStreamRendererPlugin) {
+      _isUsingHdSt(desc.rendererName == MtohTokens->HdStormRendererPlugin) {
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
         .Msg(
             "MtohRenderOverride created (%s - %s - %s)\n",
@@ -539,8 +531,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     _taskController->SetSelectionColor(_globals.colorSelectionHighlightColor);
     _taskController->SetEnableSelection(_globals.colorSelectionHighlight);
 
-    // This is required for HdStream to display transparency.
-    // We should fix this upstream, so HdStream can setup
+    // This is required for HdStorm to display transparency.
+    // We should fix this upstream, so HdStorm can setup
     // all the required states.
     _taskController->SetCollection(_renderCollection);
     if (_isUsingHdSt) {
