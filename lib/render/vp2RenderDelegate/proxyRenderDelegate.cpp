@@ -179,16 +179,19 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
 }
 
 //! \brief  Populate render index with prims coming from scene delegate.
-void ProxyRenderDelegate::_Populate() {
+//! \return True when delegate is ready to draw
+bool ProxyRenderDelegate::_Populate() {
     if (!_isInitialized())
-        return;
+        return false;
 
-    if (!_isPopulated) {
+    if (!_isPopulated && _usdStage) {
         MProfilingScope subProfilingScope(_profilerCategory, MProfiler::kColorD_L1, "Populate");
         _sceneDelegate->Populate(_usdStage->GetPseudoRoot());
 
         _isPopulated = true;
     }
+
+    return _isPopulated;
 }
 
 //! \brief  Synchronize USD scene delegate time with Maya's scene time.
@@ -228,16 +231,16 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     MProfilingScope profilingScope(_profilerCategory, MProfiler::kColorD_L1, "ProxyRenderDelegate::update");
 
     _InitRenderDelegate();
-    _Populate();
+    if (_Populate()) {
+        // Give access to current time and subscene container to the rest of render delegate world via render param's.
+        auto* param = reinterpret_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
+        param->BeginUpdate(container, _sceneDelegate->GetTime());
 
-    // Give access to current time and subscene container to the rest of render delegate world via render param's.
-    auto* param = reinterpret_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
-    param->BeginUpdate(container, _sceneDelegate->GetTime());
+        _UpdateTime();
+        _Execute(frameContext);
 
-    _UpdateTime();
-    _Execute(frameContext);
-
-    param->EndUpdate();
+        param->EndUpdate();
+    }
 }
 
 //! \brief  Switch to component-level selection for point snapping.

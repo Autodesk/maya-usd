@@ -97,7 +97,7 @@ private:
     ProxyRenderDelegate& operator=(const ProxyRenderDelegate&) = delete;
 
     void _InitRenderDelegate();
-    void _Populate();
+    bool _Populate();
     void _UpdateTime();
     void _Execute(const MHWRender::MFrameContext& frameContext);
 
