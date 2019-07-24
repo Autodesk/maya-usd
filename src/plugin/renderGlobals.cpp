@@ -47,13 +47,21 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (defaultRenderGlobals)(mtohTextureMemoryPerTexture)(
-        mtohMaximumShadowMapResolution)(mtohColorSelectionHighlight)(
-        mtohColorSelectionHighlightColor)(mtohColorSelectionHighlightColorA)(
-        mtohWireframeSelectionHighlight)(mtohSelectionOverlay)(
-        mtohEnableMotionSamples)(HdStreamRendererPlugin));
+    (defaultRenderGlobals)
+    (mtohTextureMemoryPerTexture)
+    (mtohMaximumShadowMapResolution)
+    (mtohColorSelectionHighlight)
+    (mtohColorSelectionHighlightColor)
+    (mtohColorSelectionHighlightColorA)
+    (mtohWireframeSelectionHighlight)
+    (mtohSelectionOverlay)
+    (mtohEnableMotionSamples)
+    (HdStreamRendererPlugin)
+    );
+// clang-format on
 
 namespace {
 
