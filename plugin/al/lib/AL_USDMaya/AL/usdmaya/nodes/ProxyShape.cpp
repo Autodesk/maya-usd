@@ -75,6 +75,8 @@ typedef boost::filesystem::path path;
 #include "pxr/usd/usdUtils/stageCache.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
+#include <mayaUsd/listeners/proxyShapeNotice.h>
+
 #if defined(WANT_UFE_BUILD)
 #include "ufe/path.h"
 #endif
@@ -1765,6 +1767,9 @@ MStatus ProxyShape::computeOutStageData(const MPlug& plug, MDataBlock& dataBlock
   {
     return MS::kFailure;
   }
+
+  UsdMayaProxyStageSetNotice(*this).Send();
+
   return status;
 }
 
