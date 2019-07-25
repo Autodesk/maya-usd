@@ -30,6 +30,8 @@
 
 #include <maya/MFnDependencyNode.h>
 
+#include <mayaUsd/nodes/proxyShapeBase.h>
+
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -47,6 +49,22 @@ HdMayaAdapterRegistry::GetShapeAdapterCreator(const MDagPath& dag) {
     ShapeAdapterCreator ret = nullptr;
     TfMapLookup(
         GetInstance()._dagAdapters, TfToken(depNode.typeName().asChar()), &ret);
+
+    return ret;
+}
+
+HdMayaAdapterRegistry::ShapeAdapterCreator
+HdMayaAdapterRegistry::GetProxyShapeAdapterCreator(const MDagPath& dag) {
+    MFnDependencyNode depNode(dag.node());
+    ShapeAdapterCreator ret = nullptr;
+    
+    // Temporary workaround for proxy shapes which may not have exact matching type in registration
+    auto* proxyBase = dynamic_cast<MayaUsdProxyShapeBase*>(depNode.userNode());
+    if (proxyBase) {
+        TfMapLookup(
+            GetInstance()._dagAdapters, TfToken(MayaUsdProxyShapeBase::typeName.asChar()), &ret);
+    }
+
     return ret;
 }
 

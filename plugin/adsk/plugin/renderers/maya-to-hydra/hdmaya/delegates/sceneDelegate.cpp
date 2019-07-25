@@ -506,7 +506,13 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag) {
     // instancer for every instanced mesh.
     if (dag.isInstanced() && dag.instanceNumber() > 0) { return; }
     auto adapterCreator = HdMayaAdapterRegistry::GetShapeAdapterCreator(dag);
-    if (adapterCreator == nullptr) { return; }
+    if (adapterCreator == nullptr) { 
+        // Proxy shape is registered as base class type but plugins can derrive from it
+        // Check the object type and if matches proxy base class find an adapter for it.
+        adapterCreator = HdMayaAdapterRegistry::GetProxyShapeAdapterCreator(dag);
+        if(adapterCreator == nullptr)
+            return; 
+    }
     const auto id = GetPrimPath(dag, false);
     if (TfMapLookupPtr(_shapeAdapters, id) != nullptr) { return; }
     auto adapter = adapterCreator(this, dag);

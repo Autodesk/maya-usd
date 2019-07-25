@@ -52,6 +52,8 @@ public:
 
     HDMAYA_API
     static ShapeAdapterCreator GetShapeAdapterCreator(const MDagPath& dag);
+    HDMAYA_API
+    static ShapeAdapterCreator GetProxyShapeAdapterCreator(const MDagPath& dag);
 
     using LightAdapterCreator = std::function<HdMayaLightAdapterPtr(
         HdMayaDelegateCtx*, const MDagPath&)>;
