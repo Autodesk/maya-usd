@@ -90,14 +90,21 @@ message(STATUS "========== ...  MayaUSD installed. ==========")
 set(MAYAUSD_INCLUDE_ROOT ${MAYAUSD_INSTALL_DIR})
 set(MAYAUSD_LIB_ROOT ${MAYAUSD_INSTALL_DIR})
 
-set(INSTALL_DIR_SUFFIX MayaUSD)
+#==============================================================================
+# Install
+#==============================================================================
+set(INSTALL_MAYAUSD_INCLUDE_DIR ${MAYAUSD_INSTALL_DIR}/include)
+set(INSTALL_MAYAUSD_LIB_DIR ${MAYAUSD_INSTALL_DIR}/lib)
 
-# Install the entire MayaUsd folder into the same folder as ${CMAKE_INSTALL_PREFIX}.
-# Note: the trailing slash is intentional so we won't end up with a 'mayaUsd' sub-folder.
-#       we also exlude the *.lib files.
+# install header
 install(
-    DIRECTORY ${MAYAUSD_INSTALL_DIR}/
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}
+    DIRECTORY ${INSTALL_MAYAUSD_INCLUDE_DIR}/
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+)
+
+# install lib
+install(
+    DIRECTORY ${INSTALL_MAYAUSD_LIB_DIR}/
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
     PATTERN *.lib EXCLUDE
-    PATTERN include EXCLUDE
 )

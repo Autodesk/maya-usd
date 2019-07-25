@@ -1,14 +1,20 @@
-#-
-#*****************************************************************************
+#
+# =======================================================================
 # Copyright 2019 Autodesk, Inc. All rights reserved.
 #
-# These coded instructions, statements, and computer programs contain
-# unpublished proprietary information written by Autodesk, Inc. and are
-# protected by Federal copyright law. They may not be disclosed to third
-# parties or copied or duplicated in any form, in whole or in part, without
-# the prior written consent of Autodesk, Inc.
-#*****************************************************************************
-#+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# =======================================================================
+#
 
 cmake_minimum_required(VERSION 3.1.1)
 project(mayaUsd)
@@ -459,6 +465,21 @@ target_link_libraries(${LIBRARY_NAME}
     usdUtils
     vt
 )
+
+if(APPLE)
+    set(CMAKE_MACOSX_RPATH ON)
+    set_target_properties(${LIBRARY_NAME}
+        PROPERTIES
+            BUILD_WITH_INSTALL_RPATH TRUE
+            INSTALL_RPATH "${PXR_USD_LOCATION}/lib;${PXR_USD_LOCATION}/lib64"
+    )
+else()
+    set_target_properties(${LIBRARY_NAME}
+        PROPERTIES
+            BUILD_WITH_INSTALL_RPATH TRUE
+            INSTALL_RPATH "${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64"
+    )
+endif()
 
 install(TARGETS ${LIBRARY_NAME}
     LIBRARY

@@ -88,15 +88,16 @@ elseif(APPLE)
         PROPERTIES
             PREFIX ""
             SUFFIX ".bundle"
-            BUILD_WITH_INSTALL_RPATH TRUE
-            INSTALL_RPATH "@loader_path/../lib;@loader_path/../../USD/lib;@loader_path/../../USD/third_party/maya/lib;${PXR_USD_LOCATION}/lib"
+            MACOSX_RPATH TRUE
+            INSTALL_RPATH_USE_LINK_PATH TRUE
+            INSTALL_RPATH "@loader_path/../lib;@loader_path/../../lib;@loader_path/../../pxr/lib;@loader_path/../../pxr/maya/lib;${PXR_USD_LOCATION}/lib"
     )
 else()
     set_target_properties(${PXR_PACKAGE}
         PROPERTIES
             PREFIX ""
-            BUILD_WITH_INSTALL_RPATH TRUE
-            INSTALL_RPATH "$ORIGIN/../lib:$ORIGIN/../../USD/lib:$ORIGIN/../../USD/third_party/maya/lib:${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64"
+            INSTALL_RPATH_USE_LINK_PATH TRUE
+            INSTALL_RPATH "$ORIGIN/../lib:$ORIGIN/../../lib:$ORIGIN/../../pxr/lib:$ORIGIN/../../pxr/maya/lib:${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64"
     )
 endif()
 

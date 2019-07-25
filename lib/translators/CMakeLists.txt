@@ -73,13 +73,13 @@ elseif(APPLE)
             PREFIX ""
             SUFFIX ".bundle"
             BUILD_WITH_INSTALL_RPATH TRUE
-            INSTALL_RPATH "@loader_path/../lib;@loader_path/../../USD/lib;@loader_path/../../USD/third_party/maya/lib;${PXR_USD_LOCATION}/lib"
+            INSTALL_RPATH "@loader_path/../lib;@loader_path/../../USD/lib;@loader_path/../../USD/maya/lib;${PXR_USD_LOCATION}/lib"
     )
 else()
     set_target_properties(${TRANSLATORS_PLUGIN}
             PROPERTIES
             PREFIX ""
-            INSTALL_RPATH "$ORIGIN/../lib:$ORIGIN/../../USD/lib:$ORIGIN/../../USD/third_party/maya/lib:${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64"
+            INSTALL_RPATH "$ORIGIN/../lib:$ORIGIN/../../USD/lib:$ORIGIN/../../USD/maya/lib:${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64"
             BUILD_WITH_INSTALL_RPATH TRUE
     )
 endif()

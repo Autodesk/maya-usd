@@ -1,3 +1,5 @@
+set(TARGET_NAME hdmaya)
+
 if (LUMA_USD_BUILD)
     set(HDMAYA_LUMA_BUILD_INT 1)
 else ()
@@ -46,56 +48,82 @@ set(SRC
 	
 	debugCodes.cpp)
 
-add_library(hdmaya SHARED ${SRC})
+add_library(${TARGET_NAME} SHARED ${SRC})
 
-target_link_libraries(hdmaya PUBLIC ${OPENGL_gl_LIBRARY} ${MAYA_LIBRARIES})
-target_link_libraries(hdmaya PUBLIC ${Boost_LIBRARIES} ${GLEW_LIBRARY})
-target_link_libraries(hdmaya PUBLIC arch gf plug tf vt)
-target_link_libraries(hdmaya PUBLIC glf hd hdSt hdx hf pxOsd)
-target_link_libraries(hdmaya PUBLIC usd sdf sdr usdGeom usdLux)
-target_link_libraries(hdmaya PUBLIC usdHydra usdImaging usdImagingGL)
-target_link_libraries(hdmaya PUBLIC ${MAYAUSD_LIBRARIES})
-target_link_libraries(hdmaya PUBLIC ${TBB_LIBRARIES})
-target_link_libraries(hdmaya PUBLIC ${PYTHON_LIBRARIES})
+target_link_libraries(${TARGET_NAME} PUBLIC 
+    ${OPENGL_gl_LIBRARY} 
+    ${MAYA_LIBRARIES}
+    ${Boost_LIBRARIES} 
+    ${GLEW_LIBRARY}
+    arch 
+    gf 
+    plug
+    tf
+    vt
+    glf
+    hd
+    hdSt
+    hdx
+    hf
+    pxOsd
+    usd
+    sdf
+    sdr
+    usdGeom
+    usdLux
+    usdHydra
+    usdImaging
+    usdImagingGL
+    ${MAYAUSD_LIBRARIES}
+    ${TBB_LIBRARIES}
+    ${PYTHON_LIBRARIES}
+)
 
 if (USD_001905_BUILD)
-    target_link_libraries(hdmaya PUBLIC hio)
+    target_link_libraries(${TARGET_NAME} PUBLIC hio)
 endif ()
 
-target_include_directories(hdmaya PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/..")
-target_include_directories(hdmaya PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(hdmaya PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/..")
-target_include_directories(hdmaya SYSTEM PUBLIC ${MAYA_INCLUDE_DIRS} ${GLEW_INCLUDE_DIR})
-target_include_directories(hdmaya SYSTEM PUBLIC ${USD_INCLUDE_DIR})
-target_include_directories(hdmaya SYSTEM PUBLIC ${MAYAUSD_INCLUDE_DIR})
-target_include_directories(hdmaya SYSTEM PUBLIC ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
-target_include_directories(hdmaya SYSTEM PUBLIC ${TBB_INCLUDE_DIRS})
+target_include_directories(${TARGET_NAME} 
+    PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/.."
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        "${CMAKE_CURRENT_BINARY_DIR}/.."
+    SYSTEM PUBLIC
+        ${MAYA_INCLUDE_DIRS} 
+        ${GLEW_INCLUDE_DIR}
+        ${USD_INCLUDE_DIR}
+        ${MAYAUSD_INCLUDE_DIR}
+        ${Boost_INCLUDE_DIRS}
+        ${PYTHON_INCLUDE_DIRS}
+        ${TBB_INCLUDE_DIRS}
+)
 
 if (HDMAYA_UFE_BUILD)
-    target_link_libraries(hdmaya PUBLIC ${UFE_LIBRARY})
+    target_link_libraries(${TARGET_NAME} PUBLIC ${UFE_LIBRARY})
 endif()
 
 if (MTOH_CXX_STD MATCHES "^11$")
-    target_compile_features(hdmaya PUBLIC cxx_std_11)
+    target_compile_features(${TARGET_NAME} PUBLIC cxx_std_11)
 elseif (MTOH_CXX_STD MATCHES "^14$")
-    target_compile_features(hdmaya PUBLIC cxx_std_14)
+    target_compile_features(${TARGET_NAME} PUBLIC cxx_std_14)
 endif ()
 
-target_compile_definitions(hdmaya PRIVATE "HDMAYA_EXPORT=1")
-set_target_properties(hdmaya PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
+target_compile_definitions(${TARGET_NAME} PRIVATE "HDMAYA_EXPORT=1")
+set_target_properties(${TARGET_NAME} PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
 if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    set_target_properties(hdmaya PROPERTIES INSTALL_NAME_DIR "@loader_path/../lib")
+    set_target_properties(${TARGET_NAME} PROPERTIES INSTALL_NAME_DIR "@loader_path/../lib")
 endif ()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     # Prevent windows.h from defining min and max macros.
-    target_compile_definitions(hdmaya PUBLIC "NOMINMAX=1")
+    target_compile_definitions(${TARGET_NAME} PUBLIC "NOMINMAX=1")
 elseif (APPLE)
-    target_compile_definitions(hdmaya PUBLIC "OSMac_")
+    target_compile_definitions(${TARGET_NAME} PUBLIC "OSMac_")
 endif ()
 
 if (LUMA_USD_BUILD)
-    target_compile_definitions(hdmaya PRIVATE LUMA_USD_BUILD)
+    target_compile_definitions(${TARGET_NAME} PRIVATE LUMA_USD_BUILD)
 endif ()
 
 # Wanted to do this:
@@ -106,12 +134,12 @@ endif ()
 # the generator expression "$<TARGET_FILE_NAME:hdmaya>" outside of special
 # commands, like add_custom_command...
 # So just building "manually" with PREFIX / SUFFIX
-get_target_property(LIB_PREFIX hdmaya PREFIX)
+get_target_property(LIB_PREFIX ${TARGET_NAME} PREFIX)
 if (LIB_PREFIX STREQUAL LIB_PREFIX-NOTFOUND OR LIB_PREFIX STREQUAL NOTFOUND)
     set(LIB_PREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
 endif (LIB_PREFIX STREQUAL LIB_PREFIX-NOTFOUND OR LIB_PREFIX STREQUAL NOTFOUND)
 
-get_target_property(LIB_SUFFIX hdmaya SUFFIX)
+get_target_property(LIB_SUFFIX ${TARGET_NAME} SUFFIX)
 if (LIB_SUFFIX STREQUAL LIB_SUFFIX-NOTFOUND OR LIB_SUFFIX STREQUAL NOTFOUND)
     set(LIB_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
 endif (LIB_SUFFIX STREQUAL LIB_SUFFIX-NOTFOUND OR LIB_SUFFIX STREQUAL NOTFOUND)
@@ -125,13 +153,16 @@ configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH}
 )
 
+#==============================================================================
+# Install
+#==============================================================================
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH}
-    DESTINATION MayaUSD/lib/usd/hdmaya/resources)
+    DESTINATION lib/usd/hdmaya/resources)
 
 install(
     TARGETS hdmaya
-    DESTINATION MayaUSD/lib)
+    DESTINATION lib)
 
 install(
     FILES
@@ -147,7 +178,7 @@ install(
         adapters/mayaAttrs.h
         adapters/shapeAdapter.h
         adapters/tokens.h
-    DESTINATION MayaUSD/include/hdmaya/adapters)
+    DESTINATION include/hdmaya/adapters)
 
 install(
     FILES
@@ -159,7 +190,7 @@ install(
         delegates/proxyDelegate.h
 		delegates/proxyUsdImagingDelegate.h
         delegates/sceneDelegate.h
-    DESTINATION MayaUSD/include/hdmaya/delegates)
+    DESTINATION include/hdmaya/delegates)
 
 install(
     FILES
@@ -168,4 +199,4 @@ install(
 		debugCodes.h
         ${HDMAYA_H}
 
-    DESTINATION MayaUSD/include/hdmaya)
+    DESTINATION include/hdmaya)

@@ -1,6 +1,6 @@
 message("========== ADSK USD Plugin ==========")
 
-set(INSTALL_DIR_SUFFIX MayaUSD)
+set(INSTALL_DIR_SUFFIX plugin/adsk)
 
 #==============================================================================
 # Packages 
