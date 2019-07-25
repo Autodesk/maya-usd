@@ -24,9 +24,9 @@
 
 #include "pxr/imaging/glf/glew.h" // This header must absolutely come first.
 
-#include "pxrUsdMayaGL/batchRenderer.h"
+#include "./batchRenderer.h"
 
-#include "usdMaya/proxyShape.h"
+#include "../../nodes/proxyShapeBase.h"
 
 #include "pxr/base/gf/rotation.h"
 #include "pxr/base/gf/frustum.h"
@@ -52,11 +52,11 @@ static HdRprimCollection _sharedRprimCollection(
         TfToken("UsdMayaGL_ClosestPointOnProxyShape"),
         HdReprSelector(HdReprTokens->refined));
 
-/// Delegate for computing a ray intersection against a UsdMayaProxyShape by
+/// Delegate for computing a ray intersection against a MayaUsdProxyShapeBase by
 /// rendering using Hydra via the UsdMayaGLBatchRenderer.
 bool
 UsdMayaGL_ClosestPointOnProxyShape(
-    const UsdMayaProxyShape& shape,
+    const MayaUsdProxyShapeBase& shape,
     const GfRay& ray,
     GfVec3d* outClosestPoint,
     GfVec3d* outClosestNormal)
@@ -207,12 +207,14 @@ UsdMayaGL_ObjectSoftSelectEnabled()
 }
 
 
-TF_REGISTRY_FUNCTION(UsdMayaProxyShape)
+TF_REGISTRY_FUNCTION(MayaUsdProxyShapeBase)
 {
-    UsdMayaProxyShape::SetClosestPointDelegate(
+    MayaUsdProxyShapeBase::SetClosestPointDelegate(
             UsdMayaGL_ClosestPointOnProxyShape);
-    UsdMayaProxyShape::SetObjectSoftSelectEnabledDelegate(
+#ifdef REFACTOR_PROXY_SHAPE
+    MayaUsdProxyShapeBase::SetObjectSoftSelectEnabledDelegate(
             UsdMayaGL_ObjectSoftSelectEnabled);
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

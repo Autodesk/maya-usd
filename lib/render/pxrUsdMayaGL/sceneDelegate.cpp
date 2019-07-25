@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxrUsdMayaGL/sceneDelegate.h"
+#include "./sceneDelegate.h"
 
 #include "pxr/pxr.h"
-#include "pxrUsdMayaGL/api.h"
-#include "pxrUsdMayaGL/renderParams.h"
+#include "../../base/api.h"
+#include "./renderParams.h"
 
-#include "px_vp20/utils.h"
+#include "../px_vp20/utils.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2f.h"

@@ -25,35 +25,19 @@ pxr_shared_library(${PXR_PACKAGE}
         vt
         ${Boost_LIBRARIES}
         ${MAYA_LIBRARIES}
+        ${MAYAUSD_LIBRARIES}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
         ${MAYA_INCLUDE_DIRS}
+        ${MAYAUSD_INCLUDE_DIR}
 
     PUBLIC_HEADERS
         api.h
-        renderParams.h
-
-    PUBLIC_CLASSES
-        batchRenderer
-        debugCodes
-        hdImagingShapeDrawOverride
-        hdImagingShapeUI
-        hdRenderer
-        proxyDrawOverride
-        proxyShapeUI
-        sceneDelegate
-        shapeAdapter
-        softSelectHelper
-        usdProxyShapeAdapter
-        userData
 
     PRIVATE_CLASSES
         instancerImager
         instancerShapeAdapter
-
-    CPPFILES
-        proxyShapeDelegate
 
     DISABLE_PRECOMPILED_HEADERS
 )

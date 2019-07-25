@@ -26,7 +26,7 @@
 #include "pxrUsdMayaGL/batchRenderer.h"
 #include "pxrUsdMayaGL/debugCodes.h"
 
-#include "usdMaya/hdImagingShape.h"
+#include <mayaUsd/nodes/hdImagingShape.h>
 #include "usdMaya/referenceAssembly.h"
 
 #include "pxr/base/tf/instantiateSingleton.h"

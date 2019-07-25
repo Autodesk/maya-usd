@@ -27,7 +27,7 @@
 /// \file pxrUsdMayaGL/userData.h
 
 #include "pxr/pxr.h"
-#include "pxrUsdMayaGL/api.h"
+#include "../../base/api.h"
 
 #include "pxr/base/gf/vec4f.h"
 
@@ -55,10 +55,10 @@ class PxrMayaHdUserData : public MUserData
         std::unique_ptr<MBoundingBox> boundingBox;
         std::unique_ptr<GfVec4f> wireframeColor;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         PxrMayaHdUserData();
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         ~PxrMayaHdUserData() override;
 };
 

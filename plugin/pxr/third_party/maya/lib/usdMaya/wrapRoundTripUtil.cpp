@@ -23,7 +23,7 @@
 //
 
 #include "pxr/pxr.h"
-#include "usdMaya/roundTripUtil.h"
+#include <mayaUsd/fileio/utils/roundTripUtil.h>
 
 #include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usd/attribute.h"

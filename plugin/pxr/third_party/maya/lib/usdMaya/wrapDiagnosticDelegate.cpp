@@ -23,7 +23,7 @@
 //
 
 #include "pxr/pxr.h"
-#include "usdMaya/diagnosticDelegate.h"
+#include <mayaUsd/utils/diagnosticDelegate.h>
 
 #include <boost/noncopyable.hpp>
 #include <boost/python.hpp>

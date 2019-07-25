@@ -22,12 +22,12 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxrUsdMayaGL/proxyShapeUI.h"
+#include "./proxyShapeUI.h"
 
-#include "pxrUsdMayaGL/batchRenderer.h"
-#include "pxrUsdMayaGL/renderParams.h"
-#include "pxrUsdMayaGL/usdProxyShapeAdapter.h"
-#include "usdMaya/proxyShape.h"
+#include "./batchRenderer.h"
+#include "./renderParams.h"
+#include "./usdProxyShapeAdapter.h"
+#include "../../nodes/proxyShapeBase.h"
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
@@ -73,8 +73,8 @@ UsdMayaProxyShapeUI::getDrawRequests(
         MDrawRequestQueue& requests)
 {
     const MDagPath shapeDagPath = drawInfo.multiPath();
-    UsdMayaProxyShape* shape =
-        UsdMayaProxyShape::GetShapeAtDagPath(shapeDagPath);
+    MayaUsdProxyShapeBase* shape =
+        MayaUsdProxyShapeBase::GetShapeAtDagPath(shapeDagPath);
     if (!shape) {
         return;
     }
@@ -116,7 +116,7 @@ UsdMayaProxyShapeUI::getDrawRequests(
 void
 UsdMayaProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
 {
-    if (!view.pluginObjectDisplay(UsdMayaProxyShape::displayFilterName)) {
+    if (!view.pluginObjectDisplay(MayaUsdProxyShapeBase::displayFilterName)) {
         return;
     }
 
@@ -140,7 +140,7 @@ UsdMayaProxyShapeUI::select(
 {
     M3dView view = selectInfo.view();
 
-    if (!view.pluginObjectDisplay(UsdMayaProxyShape::displayFilterName)) {
+    if (!view.pluginObjectDisplay(MayaUsdProxyShapeBase::displayFilterName)) {
         return false;
     }
 
@@ -151,10 +151,10 @@ UsdMayaProxyShapeUI::select(
         return false;
     }
 
-    // Note that we cannot use UsdMayaProxyShape::GetShapeAtDagPath() here.
+    // Note that we cannot use MayaUsdProxyShapeBase::GetShapeAtDagPath() here.
     // selectInfo.selectPath() returns the dag path to the assembly node, not
     // the shape node, so we don't have the shape node's path readily available.
-    UsdMayaProxyShape* shape = static_cast<UsdMayaProxyShape*>(surfaceShape());
+    MayaUsdProxyShapeBase* shape = static_cast<MayaUsdProxyShapeBase*>(surfaceShape());
     if (!shape) {
         return false;
     }
@@ -209,7 +209,7 @@ UsdMayaProxyShapeUI::UsdMayaProxyShapeUI() : MPxSurfaceShapeUI()
     MStatus status;
     _onNodeRemovedCallbackId = MDGMessage::addNodeRemovedCallback(
         _OnNodeRemoved,
-        UsdMayaProxyShapeTokens->MayaTypeName.GetText(),
+        MayaUsdProxyShapeBaseTokens->MayaTypeName.GetText(),
         this,
         &status);
     CHECK_MSTATUS(status);

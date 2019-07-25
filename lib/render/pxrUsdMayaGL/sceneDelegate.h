@@ -28,8 +28,8 @@
 
 #include "pxr/pxr.h"
 
-#include "pxrUsdMayaGL/api.h"
-#include "pxrUsdMayaGL/renderParams.h"
+#include "../../base/api.h"
+#include "./renderParams.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec4d.h"
@@ -56,43 +56,43 @@ PXR_NAMESPACE_OPEN_SCOPE
 class PxrMayaHdSceneDelegate : public HdSceneDelegate
 {
     public:
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         PxrMayaHdSceneDelegate(
                 HdRenderIndex* renderIndex,
                 const SdfPath& delegateID);
 
         // HdSceneDelegate interface
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         VtValue Get(const SdfPath& id, const TfToken& key) override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         void SetCameraState(
                 const GfMatrix4d& worldToViewMatrix,
                 const GfMatrix4d& projectionMatrix,
                 const GfVec4d& viewport);
 
         // VP 1.0 only.
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         void SetLightingStateFromVP1(
                 const GfMatrix4d& worldToViewMatrix,
                 const GfMatrix4d& projectionMatrix);
 
         // VP 2.0 only.
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         void SetLightingStateFromMayaDrawContext(
                 const MHWRender::MDrawContext& context);
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         HdTaskSharedPtrVector GetSetupTasks();
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         HdTaskSharedPtrVector GetRenderTasks(
                 const size_t hash,
                 const PxrMayaHdRenderParams& renderParams,
                 const HdRprimCollectionVector& rprimCollections);
 
     protected:
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         void _SetLightingStateFromLightingContext();
 
         template <typename T>

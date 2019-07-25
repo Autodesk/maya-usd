@@ -138,8 +138,8 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   auto stage = shape->getUsdStage();
   UsdImagingGLRenderParams params;
 
-  params.showGuides = shape->displayGuidesPlug().asBool();
-  params.showRender = shape->displayRenderGuidesPlug().asBool();
+  params.showGuides = shape->drawGuidePurposePlug().asBool();
+  params.showRender = shape->drawRenderPurposePlug().asBool();
 
   params.frame = UsdTimeCode(shape->outTimePlug().asMTime().as(MTime::uiUnit()));
   params.complexity = 1.0f;

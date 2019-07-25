@@ -30,9 +30,9 @@
 // gl.h
 #include "pxr/imaging/glf/glew.h"
 
-#include "pxrUsdMayaGL/hdRenderer.h"
-#include "px_vp20/utils.h"
-#include "px_vp20/utils_legacy.h"
+#include "./hdRenderer.h"
+#include "../px_vp20/utils.h"
+#include "../px_vp20/utils_legacy.h"
 
 #include <maya/M3dView.h>
 #include <maya/MColor.h>

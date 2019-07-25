@@ -64,6 +64,7 @@ public:
     /// Gets (or creates) a shared session layer tied with the given variant
     /// selections and draw mode on the given root path.
     /// The stage is cached for the lifetime of the current Maya scene.
+    MAYAUSD_CORE_PUBLIC
     static SdfLayerRefPtr GetSharedSessionLayer(
             const SdfPath& rootPath,
             const std::map<std::string, std::string>& variantSelections,

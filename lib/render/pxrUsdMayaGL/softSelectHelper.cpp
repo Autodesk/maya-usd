@@ -23,7 +23,7 @@
 //
 
 #include "pxr/pxr.h"
-#include "pxrUsdMayaGL/softSelectHelper.h"
+#include "./softSelectHelper.h"
 
 #include "pxr/base/tf/stl.h"
 

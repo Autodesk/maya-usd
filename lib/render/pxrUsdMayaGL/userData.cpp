@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxrUsdMayaGL/userData.h"
+#include "./userData.h"
 
 #include "pxr/pxr.h"
-#include "pxrUsdMayaGL/api.h"
+#include "../../base/api.h"
 
 #include <maya/MUserData.h>
 

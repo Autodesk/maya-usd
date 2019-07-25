@@ -23,16 +23,16 @@
 //
 #include "usdMaya/translatorModelAssembly.h"
 
-#include "usdMaya/jobArgs.h"
-#include "usdMaya/primReaderArgs.h"
-#include "usdMaya/primReaderContext.h"
-#include "usdMaya/primWriterArgs.h"
-#include "usdMaya/primWriterContext.h"
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/primWriterArgs.h>
+#include <mayaUsd/fileio/primWriterContext.h>
 #include "usdMaya/referenceAssembly.h"
-#include "usdMaya/stageCache.h"
-#include "usdMaya/translatorUtil.h"
-#include "usdMaya/translatorXformable.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/tf/token.h"
 

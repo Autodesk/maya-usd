@@ -23,8 +23,8 @@
 //
 
 #include "pxr/pxr.h"
-#include "usdMaya/util.h"
-#include "usdMaya/writeUtil.h"
+#include <mayaUsd/utils/util.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/usd/usd/attribute.h"

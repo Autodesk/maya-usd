@@ -27,7 +27,7 @@
 /// \file pxrUsdMayaGL/hdImagingShapeUI.h
 
 #include "pxr/pxr.h"
-#include "pxrUsdMayaGL/api.h"
+#include "../../base/api.h"
 
 // XXX: On Linux, some Maya headers (notably M3dView.h) end up indirectly
 //      including X11/Xlib.h, which #define's "Bool" as int. This can cause
@@ -57,16 +57,16 @@ class PxrMayaHdImagingShapeUI : public MPxSurfaceShapeUI
 {
     public:
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         static void* creator();
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         void getDrawRequests(
                 const MDrawInfo& drawInfo,
                 bool objectAndActiveOnly,
                 MDrawRequestQueue& requests) override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         void draw(const MDrawRequest& request, M3dView& view) const override;
 
     private:

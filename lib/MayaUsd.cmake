@@ -28,6 +28,10 @@ macro(add_mayausd_define var)
 endmacro(add_mayausd_define)
 
 # Add top level variabels here 
+add_mayausd_define(MAYAUSD_VERSION)
+add_mayausd_define(MAYAUSD_MAJOR_VERSION)
+add_mayausd_define(MAYAUSD_MINOR_VERSION)
+add_mayausd_define(MAYAUSD_PATCH_LEVEL)
 add_mayausd_define(MAYA_LOCATION)
 add_mayausd_define(MAYA_DEVKIT_LOCATION)
 add_mayausd_define(PXR_USD_LOCATION)

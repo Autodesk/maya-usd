@@ -27,14 +27,14 @@
 /// \file pxrUsdMayaGL/batchRenderer.h
 
 #include "pxr/pxr.h"
-#include "pxrUsdMayaGL/api.h"
-#include "pxrUsdMayaGL/renderParams.h"
-#include "pxrUsdMayaGL/sceneDelegate.h"
-#include "pxrUsdMayaGL/shapeAdapter.h"
-#include "pxrUsdMayaGL/softSelectHelper.h"
-#include "usdMaya/diagnosticDelegate.h"
-#include "usdMaya/notice.h"
-#include "usdMaya/util.h"
+#include "../../base/api.h"
+#include "./renderParams.h"
+#include "./sceneDelegate.h"
+#include "./shapeAdapter.h"
+#include "./softSelectHelper.h"
+#include "../../utils/diagnosticDelegate.h"
+#include "../../listeners/notice.h"
+#include "../../utils/util.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
@@ -100,18 +100,18 @@ public:
     ///
     /// This should be called at least once and it is OK to call it multiple
     /// times. This handles things like initializing OpenGL/Glew.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     static void Init();
 
     /// Get the singleton instance of the batch renderer.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     static UsdMayaGLBatchRenderer& GetInstance();
 
     /// Get the render index owned by the batch renderer.
     ///
     /// Clients of the batch renderer should use this render index to construct
     /// their delegates.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     HdRenderIndex* GetRenderIndex() const;
 
     /// Get the delegate ID prefix for the specified viewport.
@@ -121,21 +121,21 @@ public:
     /// the legacy viewport or for Viewport 2.0. Shape adapters should use this
     /// method to request the appropriate prefix from the batch renderer when
     /// building the ID for their delegate.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     SdfPath GetDelegatePrefix(const bool isViewport2) const;
 
     /// Add the given shape adapter for batched rendering and selection.
     ///
     /// Returns true if the shape adapter had not been previously added, or
     /// false otherwise.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     bool AddShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter);
 
     /// Remove the given shape adapter from batched rendering and selection.
     ///
     /// Returns true if the shape adapter was removed from internal caches, or
     /// false otherwise.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     bool RemoveShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter);
 
     /// Reset the internal state of the global UsdMayaGLBatchRenderer.
@@ -144,7 +144,7 @@ public:
     /// Maya scene so that any UsdImagingDelegates held by shape adapters that
     /// have been populated with USD stages can have those stages released,
     /// since the delegates hold a strong pointer to their stages.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     static void Reset();
 
     /// Replaces the contents of the given \p collection with \p dagPath, if
@@ -154,17 +154,17 @@ public:
     /// Note that the VP2 shape adapters are searched first, followed by the
     /// Legacy shape adapters. You cannot rely on the shape adapters being
     /// associated with a specific viewport.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     bool PopulateCustomCollection(
             const MDagPath& dagPath,
             HdRprimCollection& collection);
 
     /// Render batch or bounding box in the legacy viewport based on \p request
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     void Draw(const MDrawRequest& request, M3dView& view);
 
     /// Render batch or bounding box in Viewport 2.0 based on \p userData
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     void Draw(
             const MHWRender::MDrawContext& context,
             const MUserData* userData);
@@ -174,7 +174,7 @@ public:
     /// The caller is responsible for ensuring that an appropriate OpenGL
     /// context is available; this function is not appropriate for drawing into
     /// the native Maya viewport.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     void DrawCustomCollection(
             const HdRprimCollection& collection,
             const GfMatrix4d& viewMatrix,
@@ -191,7 +191,7 @@ public:
     /// The returned HitSet is owned by the batch renderer, and it will be
     /// erased at the next selection, so clients should make copies if they
     /// need the data to persist.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     const HdxIntersector::HitSet* TestIntersection(
             const PxrMayaHdShapeAdapter* shapeAdapter,
             MSelectInfo& selectInfo);
@@ -205,7 +205,7 @@ public:
     /// The returned HitSet is owned by the batch renderer, and it will be
     /// erased at the next selection, so clients should make copies if they
     /// need the data to persist.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     const HdxIntersector::HitSet* TestIntersection(
             const PxrMayaHdShapeAdapter* shapeAdapter,
             const MHWRender::MSelectionInfo& selectionInfo,
@@ -220,7 +220,7 @@ public:
     ///
     /// If hit(s) are found, returns \c true and populates \p *outResult with
     /// the intersection result.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     bool TestIntersectionCustomCollection(
             const HdRprimCollection& collection,
             const GfMatrix4d& viewMatrix,
@@ -232,41 +232,41 @@ public:
     ///
     /// If \p hitSet is nullptr or is empty, nullptr is returned. Otherwise a
     /// pointer to the nearest hit in \p hitSet is returned.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     static const HdxIntersector::Hit* GetNearestHit(
             const HdxIntersector::HitSet* hitSet);
 
     /// Returns the absoluteInstanceIndex (index within the point instancer) for \c hit.
     ///
     /// Returns -1 if unable to get the absoluteInstanceIndex.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     int GetAbsoluteInstanceIndexForHit(const HdxIntersector::Hit& hit) const;
 
     /// Returns whether soft selection for proxy shapes is currently enabled.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     inline bool GetObjectSoftSelectEnabled()
     { return _objectSoftSelectEnabled; }
 
     /// Starts batching all diagnostics until the end of the current frame draw.
     /// The batch renderer will automatically release the diagnostics when Maya
     /// is done rendering the frame.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     void StartBatchingFrameDiagnostics();
 
 private:
 
     friend class TfSingleton<UsdMayaGLBatchRenderer>;
 
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     UsdMayaGLBatchRenderer();
 
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     virtual ~UsdMayaGLBatchRenderer();
 
     /// Gets the UsdMayaGLSoftSelectHelper that this batchRenderer maintains.
     ///
     /// This should only be used by PxrMayaHdShapeAdapter.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     const UsdMayaGLSoftSelectHelper& GetSoftSelectHelper();
 
     /// Allow shape adapters access to the soft selection helper.
@@ -467,7 +467,7 @@ private:
     std::unique_ptr<UsdMayaDiagnosticBatchContext> _sharedDiagBatchCtx;
 };
 
-PXRUSDMAYAGL_API_TEMPLATE_CLASS(TfSingleton<UsdMayaGLBatchRenderer>);
+MAYAUSD_TEMPLATE_CLASS(TfSingleton<UsdMayaGLBatchRenderer>);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

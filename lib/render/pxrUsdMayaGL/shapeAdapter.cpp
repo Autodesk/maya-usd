@@ -21,15 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxrUsdMayaGL/shapeAdapter.h"
+#include "./shapeAdapter.h"
 
 #include "pxr/pxr.h"
-#include "pxrUsdMayaGL/api.h"
-#include "pxrUsdMayaGL/batchRenderer.h"
-#include "pxrUsdMayaGL/debugCodes.h"
-#include "pxrUsdMayaGL/renderParams.h"
-#include "pxrUsdMayaGL/softSelectHelper.h"
-#include "pxrUsdMayaGL/userData.h"
+#include "../../base/api.h"
+#include "./batchRenderer.h"
+#include "./debugCodes.h"
+#include "./renderParams.h"
+#include "./softSelectHelper.h"
+#include "./userData.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/matrix4d.h"

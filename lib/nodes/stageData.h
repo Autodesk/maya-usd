@@ -45,15 +45,15 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-#define PXRUSDMAYA_STAGE_DATA_TOKENS \
+#define PXRMAYAUSD_STAGE_DATA_TOKENS \
     ((MayaTypeName, "pxrUsdStageData"))
 
-TF_DECLARE_PUBLIC_TOKENS(UsdMayaStageDataTokens,
+TF_DECLARE_PUBLIC_TOKENS(MayaUsdStageDataTokens,
                          MAYAUSD_CORE_PUBLIC,
-                         PXRUSDMAYA_STAGE_DATA_TOKENS);
+                         PXRMAYAUSD_STAGE_DATA_TOKENS);
 
 
-class UsdMayaStageData : public MPxGeometryData
+class MayaUsdStageData : public MPxGeometryData
 {
     public:
         /// Unlike other Maya node types, MPxData/MPxGeometryData declare
@@ -83,10 +83,6 @@ class UsdMayaStageData : public MPxGeometryData
         MString name() const override;
         //@}
 
-        MAYAUSD_CORE_PUBLIC
-        void registerExitCallback();
-
-        MAYAUSD_CORE_PUBLIC
         void unregisterExitCallback();
 
         /**
@@ -94,17 +90,51 @@ class UsdMayaStageData : public MPxGeometryData
          */
         //@{
 
-        UsdStageRefPtr stage;
+        // The original Pixar code was the following:
+        //
+        // UsdStageRefPtr stage;
+        //
+        // Now using a weak pointer instead of a referencing pointer.  The AL
+        // plugin originally used a referencing pointer, but ran into problems.
+        // From a Rob Bateman @ AL e-mail, 7-Apr-2019:
+        // 
+        // "The reason for the weak pointer was that we found that Maya seemed
+        // to have a memory leak (as in, the MPxData derived objects were being
+        // created, but never deleted when we expected them to be - possibly by
+        // design?). We had originally used a direct mirror of the Pixar data
+        // object, but because the data objects were never freed (even after
+        // file new), the original stage would be retained. This meant the
+        // internal SdfLayerCache in USD would keep hold of the previously
+        // loaded layers. So we found we had this problem: 
+        // 
+        // 1. Import some.usda file into a proxy shape.
+        // 2. Make some modifications
+        // 3. File New
+        // 4. Import the same "some.usda" file into a proxy shape.
+        // 
+        // At this point, USD would essentially hand you back the stage
+        // composed of the modified layers, rather than a clean stage composed
+        // from the files on disk. Switching the type from a shared_ptr to a
+        // weak_ptr worked around this issue. Basically if we use a shared
+        // pointer here, the only way to reload a scene, would be to restart
+        // Maya."
+
+        UsdStageWeakPtr stage;
         SdfPath primPath;
 
         //@}
 
-    private:
-        UsdMayaStageData();
-        ~UsdMayaStageData() override;
+    protected:
+        MAYAUSD_CORE_PUBLIC
+        MayaUsdStageData();
+        MAYAUSD_CORE_PUBLIC
+        ~MayaUsdStageData() override;
 
-        UsdMayaStageData(const UsdMayaStageData&);
-        UsdMayaStageData& operator=(const UsdMayaStageData&);
+    private:
+        MayaUsdStageData(const MayaUsdStageData&);
+        MayaUsdStageData& operator=(const MayaUsdStageData&);
+
+        void registerExitCallback();
 
         MCallbackId _exitCallbackId;
 };

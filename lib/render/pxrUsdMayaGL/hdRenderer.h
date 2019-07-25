@@ -27,7 +27,7 @@
 /// \file pxrUsdMayaGL/hdRenderer.h
 
 #include "pxr/pxr.h"
-#include "pxrUsdMayaGL/api.h"
+#include "../../base/api.h"
 
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec4f.h"
@@ -122,14 +122,14 @@ public:
 
     /// \brief Should be called when the prim to \p usdPrim to draw or \p
     /// excludePaths change
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     void CheckRendererSetup(
             const UsdPrim& usdPrim,
             const SdfPathVector& excludePaths);
 
     /// \brief Generate an array of draw requests based on the selection status
     /// of \c objPath
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     void GenerateDefaultVp2DrawRequests(
             const MDagPath& objPath,
             const MHWRender::MFrameContext& frameContext,
@@ -139,7 +139,7 @@ public:
     ///
     /// This function overrides some of the members of \p params, in particular,
     /// the \c drawMode.
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     void Render(
             const MDrawRequest& aRequest,
             M3dView& aView,
@@ -150,14 +150,14 @@ public:
     /// This function assumes that you have already set your desired values for
     /// \c complexity \c shotGuides and \c showRenderGuides members of
     /// \p params
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     void RenderVp2(
         const RequestDataArray &requests,
         const MHWRender::MDrawContext& context,
         UsdImagingGLRenderParams params) const;
 
     /// \brief Test for intersection, for use in \c select().
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     bool TestIntersection(
             MSelectInfo& selectInfo,
             UsdImagingGLRenderParams params,
@@ -165,7 +165,7 @@ public:
 
     /// \brief Helper function to convert from \p subdLevel (int) into Hydra's
     /// \p complexity parameter (\p float)
-    PXRUSDMAYAGL_API
+    MAYAUSD_CORE_PUBLIC
     static float SubdLevelToComplexity(int subdLevel);
 
 private:

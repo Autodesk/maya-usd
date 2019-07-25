@@ -26,16 +26,12 @@
 #include "pxr/imaging/glf/glew.h"
 
 #include "pxr/pxr.h"
-#include "pxrUsdMayaGL/batchRenderer.h"
-#include "pxrUsdMayaGL/debugCodes.h"
-#include "pxrUsdMayaGL/renderParams.h"
-#include "pxrUsdMayaGL/sceneDelegate.h"
-#include "pxrUsdMayaGL/shapeAdapter.h"
-#include "pxrUsdMayaGL/softSelectHelper.h"
-#include "pxrUsdMayaGL/userData.h"
+#include "./batchRenderer.h"
+#include "./debugCodes.h"
+#include "./userData.h"
 
-#include "px_vp20/utils.h"
-#include "px_vp20/utils_legacy.h"
+#include "../px_vp20/utils.h"
+#include "../px_vp20/utils_legacy.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2i.h"

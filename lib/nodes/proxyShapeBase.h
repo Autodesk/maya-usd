@@ -157,10 +157,6 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
 
         // Virtual function overrides
 
-        // A ProxyShapeBase node cannot be created directly; it only exists
-        // as a base class.
-        MAYAUSD_CORE_PUBLIC
-        bool isAbstractClass() const override;
         MAYAUSD_CORE_PUBLIC
         void postConstructor() override;
         MAYAUSD_CORE_PUBLIC

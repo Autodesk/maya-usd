@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "usdMaya/colorSpace.h"
-#include "usdMaya/shadingModeExporter.h"
-#include "usdMaya/shadingModeExporterContext.h"
-#include "usdMaya/shadingModeRegistry.h"
-#include "usdMaya/translatorMaterial.h"
+#include "../../utils/colorSpace.h"
+#include "./shadingModeExporter.h"
+#include "./shadingModeExporterContext.h"
+#include "./shadingModeRegistry.h"
+#include "../translators/translatorMaterial.h"
 
 #include "pxr/pxr.h"
 

@@ -21,16 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxrUsdMayaGL/instancerShapeAdapter.h"
+#include "./instancerShapeAdapter.h"
 
-#include "pxrUsdMayaGL/batchRenderer.h"
-#include "pxrUsdMayaGL/debugCodes.h"
-#include "pxrUsdMayaGL/renderParams.h"
-#include "pxrUsdMayaGL/shapeAdapter.h"
+#include "./batchRenderer.h"
+#include "./debugCodes.h"
+#include "./renderParams.h"
+#include "./shapeAdapter.h"
 
+#ifdef REFACTOR_REFERENCE_ASSEMBLY
 #include "usdMaya/referenceAssembly.h"
-#include "usdMaya/util.h"
-#include "usdMaya/writeUtil.h"
+#endif
+#include "../../utils/util.h"
+#include "../../fileio/utils/writeUtil.h"
 
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -192,6 +194,7 @@ UsdMayaGL_InstancerShapeAdapter::_SyncInstancerPrototypes(
             continue;
         }
 
+#ifdef REFACTOR_REFERENCE_ASSEMBLY
         // If this is a non-full-representation USD reference assembly, add a
         // reference. Otherwise, leave the prim empty.
         if (sourceNode.typeId() != UsdMayaReferenceAssembly::typeId) {
@@ -260,6 +263,7 @@ UsdMayaGL_InstancerShapeAdapter::_SyncInstancerPrototypes(
 
         UsdGeomXformable xformable(prototypePrim);
         xformable.MakeMatrixXform().Set(gfMat);
+#endif
     }
 
     // Actually do all the muting in a batch.

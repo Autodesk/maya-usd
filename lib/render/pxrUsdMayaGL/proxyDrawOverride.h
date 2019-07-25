@@ -27,8 +27,8 @@
 /// \file pxrUsdMayaGL/proxyDrawOverride.h
 
 #include "pxr/pxr.h"
-#include "pxrUsdMayaGL/api.h"
-#include "pxrUsdMayaGL/usdProxyShapeAdapter.h"
+#include "../../base/api.h"
+#include "./usdProxyShapeAdapter.h"
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
@@ -50,37 +50,37 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
 {
     public:
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         static const MString drawDbClassification;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         static MHWRender::MPxDrawOverride* Creator(const MObject& obj);
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         ~UsdMayaProxyDrawOverride() override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         MHWRender::DrawAPI supportedDrawAPIs() const override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         MMatrix transform(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath) const override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         MBoundingBox boundingBox(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath) const override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         bool isBounded(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath) const override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         bool disableInternalBoundingBoxDraw() const override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         MUserData* prepareForDraw(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath,
@@ -88,10 +88,10 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
                 MUserData* oldData) override;
 
 #if MAYA_API_VERSION >= 20180000
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         bool wantUserSelection() const override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         bool userSelect(
                 MHWRender::MSelectionInfo& selectionInfo,
                 const MHWRender::MDrawContext& context,
@@ -99,7 +99,7 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
                 const MUserData* data) override;
 #endif
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         static void draw(
                 const MHWRender::MDrawContext& context,
                 const MUserData* data);

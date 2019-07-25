@@ -38,43 +38,44 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(UsdMayaStageDataTokens,
-                        PXRUSDMAYA_STAGE_DATA_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(MayaUsdStageDataTokens,
+                        PXRMAYAUSD_STAGE_DATA_TOKENS);
 
 
-const MTypeId UsdMayaStageData::mayaTypeId(0x0010A257);
-const MString UsdMayaStageData::typeName(
-    UsdMayaStageDataTokens->MayaTypeName.GetText());
+const MTypeId MayaUsdStageData::mayaTypeId(0x0010A257);
+const MString MayaUsdStageData::typeName(
+    MayaUsdStageDataTokens->MayaTypeName.GetText());
 
 
 /* This exists solely to make sure that the usdStage instance
- * gets discarded when Maya exits, so that an temporary files
+ * gets discarded when Maya exits, so that any temporary files
  * that might have been created are unlinked.
  */
-static
+namespace {
 void
 _cleanUp(void *gdPtr)
 {
-    UsdMayaStageData *gd = (UsdMayaStageData *)gdPtr;
+    MayaUsdStageData *gd = (MayaUsdStageData *)gdPtr;
 
     gd->unregisterExitCallback();
 
     gd->stage = UsdStageRefPtr();
 }
+}
 
 /* static */
 void*
-UsdMayaStageData::creator()
+MayaUsdStageData::creator()
 {
-    return new UsdMayaStageData();
+    return new MayaUsdStageData();
 }
 
 /* virtual */
 void
-UsdMayaStageData::copy(const MPxData& src)
+MayaUsdStageData::copy(const MPxData& src)
 {
-    const UsdMayaStageData* stageData =
-        dynamic_cast<const UsdMayaStageData*>(&src);
+    const MayaUsdStageData* stageData =
+        dynamic_cast<const MayaUsdStageData*>(&src);
 
     if (stageData) {
         stage = stageData->stage;
@@ -84,25 +85,25 @@ UsdMayaStageData::copy(const MPxData& src)
 
 /* virtual */
 MTypeId
-UsdMayaStageData::typeId() const
+MayaUsdStageData::typeId() const
 {
     return mayaTypeId;
 }
 
 /* virtual */
 MString
-UsdMayaStageData::name() const
+MayaUsdStageData::name() const
 {
     return typeName;
 }
 
-UsdMayaStageData::UsdMayaStageData() : MPxGeometryData()
+MayaUsdStageData::MayaUsdStageData() : MPxGeometryData()
 {
     registerExitCallback();
 }
 
 void
-UsdMayaStageData::registerExitCallback()
+MayaUsdStageData::registerExitCallback()
 {
     _exitCallbackId = MSceneMessage::addCallback(MSceneMessage::kMayaExiting,
                                                  _cleanUp,
@@ -110,13 +111,13 @@ UsdMayaStageData::registerExitCallback()
 }
 
 void
-UsdMayaStageData::unregisterExitCallback()
+MayaUsdStageData::unregisterExitCallback()
 {
     MSceneMessage::removeCallback(_exitCallbackId);
 }
 
 /* virtual */
-UsdMayaStageData::~UsdMayaStageData() {
+MayaUsdStageData::~MayaUsdStageData() {
 
     unregisterExitCallback();
 }

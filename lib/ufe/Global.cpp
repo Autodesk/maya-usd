@@ -22,6 +22,10 @@
 #include <string>
 #include <cassert>
 
+namespace {
+	int gRegistrationCount = 0;
+}
+
 MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -57,6 +61,10 @@ bool InPathChange::fInPathChange = false;
 // initialize the stage model.
 MStatus initialize()
 {
+	// If we're already registered, do nothing.
+	if (gRegistrationCount++ > 0)
+		return MS::kSuccess;
+
 	// Replace the Maya hierarchy handler with ours.
 	g_MayaRtid = Ufe::RunTimeMgr::instance().getId(kMayaRunTimeName);
 #if !defined(NDEBUG)
@@ -87,6 +95,10 @@ MStatus initialize()
 
 MStatus finalize()
 {
+	// If more than one plugin still has us registered, do nothing.
+	if (gRegistrationCount-- > 1)
+		return MS::kSuccess;
+
 	// Restore the normal Maya hierarchy handler, and unregister.
 	Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, g_MayaHierarchyHandler);
 	Ufe::RunTimeMgr::instance().unregister(g_USDRtid);

@@ -9,10 +9,13 @@
 
 #include "base/api.h"
 #include "importTranslator.h"
+#include "ProxyShape.h"
 
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/nodes/proxyShapePlugin.h>
+#include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/Global.h>
@@ -24,19 +27,10 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
-    const MString _RegistrantId("mayaUsd");
-    bool _useVP2RenderDelegate = false;
-
-    TF_DEFINE_ENV_SETTING(VP2_RENDER_DELEGATE_PROXY, false,
-        "Switch proxy shape rendering to VP2 render delegate.");
-}
-
 MAYAUSD_PLUGIN_PUBLIC
 MStatus initializePlugin(MObject obj)
 {
     MStatus status;
-    
     MFnPlugin plugin(obj, "Autodesk", "1.0", "Any");
 
     status = plugin.registerFileTranslator(
@@ -50,43 +44,8 @@ MStatus initializePlugin(MObject obj)
         status.perror("mayaUsdPlugin: unable to register import translator.");
     }
 
-    _useVP2RenderDelegate = TfGetEnvSetting(VP2_RENDER_DELEGATE_PROXY);
-
-    status = plugin.registerData(
-        UsdMayaStageData::typeName,
-        UsdMayaStageData::mayaTypeId,
-        UsdMayaStageData::creator);
-    if (!status) {
-        status.perror("mayaUsdPlugin: unable to register stage data.");
-    }
-
-    const MString* drawClassification = nullptr;
-    
-    // Hybrid Hydra / VP2 rendering uses a draw override to draw the proxy
-    // shape.  The Pixar and MayaUsd plugins use the UsdMayaProxyDrawOverride,
-    // so register it here.  Native USD VP2 rendering uses a sub-scene override.
-    if (_useVP2RenderDelegate) {
-        status = MHWRender::MDrawRegistry::registerSubSceneOverrideCreator(
-            ProxyRenderDelegate::drawDbClassification,
-            _RegistrantId,
-            ProxyRenderDelegate::Creator);
-        if (!status) {
-            status.perror("mayaUsdPlugin: unable to register proxy render delegate.");
-        }
-
-        drawClassification = &ProxyRenderDelegate::drawDbClassification;
-    }
-
-    status = plugin.registerShape(
-        MayaUsdProxyShapeBase::typeName,
-        MayaUsdProxyShapeBase::typeId,
-        MayaUsdProxyShapeBase::creator,
-        MayaUsdProxyShapeBase::initialize,
-        nullptr,
-        drawClassification);
-    if (!status) {
-        status.perror("mayaUsdPlugin: unable to register proxy shape.");
-    }
+    status = MayaUsdProxyShapePlugin::initialize(plugin);
+    CHECK_MSTATUS(status);
 
 #if defined(WANT_UFE_BUILD)
     status = MayaUsd::ufe::initialize();
@@ -95,6 +54,15 @@ MStatus initializePlugin(MObject obj)
     }
 #endif
 
+    status = plugin.registerShape(
+        MayaUsd::ProxyShape::typeName,
+        MayaUsd::ProxyShape::typeId,
+        MayaUsd::ProxyShape::creator,
+        MayaUsd::ProxyShape::initialize,
+        UsdMayaProxyShapeUI::creator,
+        MayaUsdProxyShapePlugin::getProxyShapeClassification());
+    CHECK_MSTATUS(status);
+
     return status;
 }
 
@@ -102,7 +70,6 @@ MAYAUSD_PLUGIN_PUBLIC
 MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin(obj);
-
     MStatus status;
 
     status = plugin.deregisterFileTranslator("mayaUsdImport");
@@ -110,18 +77,10 @@ MStatus uninitializePlugin(MObject obj)
         status.perror("mayaUsdPlugin: unable to deregister import translator.");
     }
 
-
-    if (_useVP2RenderDelegate) {
-        status = MHWRender::MDrawRegistry::deregisterSubSceneOverrideCreator(
-            ProxyRenderDelegate::drawDbClassification,
-            _RegistrantId);
-        CHECK_MSTATUS(status);
-    }
-
-    status = plugin.deregisterNode(MayaUsdProxyShapeBase::typeId);
+    status = plugin.deregisterNode(MayaUsd::ProxyShape::typeId);
     CHECK_MSTATUS(status);
 
-    status = plugin.deregisterData(UsdMayaStageData::mayaTypeId);
+    status = MayaUsdProxyShapePlugin::finalize(plugin);
     CHECK_MSTATUS(status);
 
 #if defined(WANT_UFE_BUILD)

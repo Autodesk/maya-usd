@@ -23,10 +23,9 @@
 //
 #include "usdMaya/importTranslator.h"
 
-#include "usdMaya/jobArgs.h"
-#include "usdMaya/readJob.h"
-#include "usdMaya/shadingModeRegistry.h"
-#include "usdMaya/writeJob.h"
+#include "usdMaya/readJobWithSceneAssembly.h"
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/jobs/writeJob.h>
 
 #include "pxr/base/gf/interval.h"
 #include "pxr/base/vt/dictionary.h"
@@ -120,8 +119,8 @@ UsdMayaImportTranslator::reader(
             userArgs,
             /* importWithProxyShapes = */ false,
             timeInterval);
-    UsdMaya_ReadJob* mUsdReadJob =
-        new UsdMaya_ReadJob(fileName,
+    UsdMaya_ReadJobWithSceneAssembly* mUsdReadJob =
+        new UsdMaya_ReadJobWithSceneAssembly(fileName,
                        primPath,
                        variants,
                        jobArgs);

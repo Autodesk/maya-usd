@@ -26,40 +26,20 @@ const MString StageData::kName("AL_usdmaya_StageData");
 
 
 //----------------------------------------------------------------------------------------------------------------------
-static void _cleanUp(void* gdPtr)
-{
-  StageData *gd = (StageData*)gdPtr;
-  gd->stage = UsdStageRefPtr();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 void* StageData::creator()
 {
   return new StageData;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void StageData::copy(const MPxData& data)
+StageData::StageData() : ParentClass()
 {
-  const StageData* stageData = dynamic_cast<const StageData*>(&data);
-  if(stageData)
-  {
-    stage = stageData->stage;
-    primPath = stageData->primPath;
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-StageData::StageData()
-{
-  m_exitCallbackId = AL::maya::event::MayaEventManager::instance().registerCallback(_cleanUp, "MayaExiting", "DestroyStageDataOnExit", 0x10000, this);
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("StageData::StageData() created: %p\n", this);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 StageData::~StageData()
 {
-  AL::maya::event::MayaEventManager::instance().unregisterCallback(m_exitCallbackId);
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("StageData::StageData() deleted: %p\n", this);
 }
 

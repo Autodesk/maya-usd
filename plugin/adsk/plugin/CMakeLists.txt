@@ -42,6 +42,7 @@ endif()
 add_library(${PLUGIN_PACKAGE} MODULE
     plugin.cpp
     importTranslator.cpp
+    ProxyShape.cpp
 )
 
 target_compile_definitions(${PLUGIN_PACKAGE}
@@ -53,7 +54,7 @@ target_include_directories(${PLUGIN_PACKAGE}
     PRIVATE
         ${MAYA_INCLUDE_DIRS}
         ${MAYAUSD_INCLUDE_DIR}
-		${PXR_INCLUDE_DIRS}
+        ${PXR_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PLUGIN_PACKAGE}

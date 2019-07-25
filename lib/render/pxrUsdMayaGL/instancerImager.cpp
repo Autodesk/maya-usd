@@ -21,13 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxrUsdMayaGL/instancerImager.h"
+#include "./instancerImager.h"
 
-#include "pxrUsdMayaGL/batchRenderer.h"
-#include "pxrUsdMayaGL/debugCodes.h"
+#include "./batchRenderer.h"
+#include "./debugCodes.h"
 
-#include "usdMaya/hdImagingShape.h"
+#include "../../nodes/hdImagingShape.h"
+#ifdef REFACTOR_REFERENCE_ASSEMBLY
 #include "usdMaya/referenceAssembly.h"
+#endif
 
 #include "pxr/base/tf/instantiateSingleton.h"
 
@@ -390,11 +392,13 @@ UsdMayaGL_InstancerImager::_OnDisconnection(
             continue;
         }
 
+#ifdef REFACTOR_REFERENCE_ASSEMBLY
         if (sourceNode.typeId() == UsdMayaReferenceAssembly::typeId) {
             // There's at least one USD reference assembly still connected to
             // this point instancer, so continue tracking the instancer node.
             return;
         }
+#endif
     }
 
     // Queue the instancer for removal. We don't remove it right away because
@@ -427,9 +431,11 @@ UsdMayaGL_InstancerImager::_InstancerEntry::~_InstancerEntry()
     MMessage::removeCallbacks(callbacks);
 }
 
+#ifdef REFACTOR_REFERENCE_ASSEMBLY
 TF_REGISTRY_FUNCTION(UsdMayaReferenceAssembly)
 {
     TfSingleton<UsdMayaGL_InstancerImager>::GetInstance();
 }
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

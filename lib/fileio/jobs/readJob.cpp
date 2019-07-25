@@ -82,8 +82,8 @@ UsdMaya_ReadJob::UsdMaya_ReadJob(
         const UsdMayaJobImportArgs &iArgs) :
     mArgs(iArgs),
     mFileName(iFileName),
-    mPrimPath(iPrimPath),
     mVariants(iVariants),
+    mPrimPath(iPrimPath),
     mDagModifierUndo(),
     mDagModifierSeeded(false),
     mMayaRootDagPath()
@@ -261,11 +261,7 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         CHECK_MSTATUS_AND_RETURN(status, false);
     }
 
-    if (mArgs.importWithProxyShapes) {
-        _DoImportWithProxies(range);
-    } else {
-        _DoImport(range, usdRootPrim);
-    }
+    DoImport(range, usdRootPrim);
 
     SdfPathSet topImportedPaths;
     if (isImportingPsuedoRoot) {
@@ -290,6 +286,22 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     return (status == MS::kSuccess);
 }
 
+bool
+UsdMaya_ReadJob::DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
+{
+    return _DoImport(rootRange, usdRootPrim);
+}
+
+bool UsdMaya_ReadJob::OverridePrimReader(
+    const UsdPrim&               usdRootPrim,
+    const UsdPrim&               prim,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext&    readCtx,
+    UsdPrimRange::iterator&      primIt
+)
+{
+    return false;
+}
 
 bool
 UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
@@ -315,51 +327,9 @@ UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
                 UsdMayaPrimReaderArgs args(prim, mArgs);
                 UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
 
-                // If we are NOT importing on behalf of an assembly, then we'll
-                // create reference assembly nodes that target the asset file
-                // and the root prims of those assets directly. This ensures
-                // that a re-export will work correctly, since USD references
-                // can only target root prims.
-                
-#ifdef KXL_TO_FINISH
-                std::string assetIdentifier;
-                SdfPath assetPrimPath;
-                if (UsdMayaTranslatorModelAssembly::ShouldImportAsAssembly(
-                        usdRootPrim,
-                        prim,
-                        &assetIdentifier,
-                        &assetPrimPath)) {
-                    const bool isSceneAssembly =
-                            mMayaRootDagPath.node().hasFn(MFn::kAssembly);
-                    if (isSceneAssembly) {
-                        // If we ARE importing on behalf of an assembly, we use
-                        // the file path of the top-level assembly and the path
-                        // to the prim within that file when creating the
-                        // reference assembly.
-                        assetIdentifier = mFileName;
-                        assetPrimPath = prim.GetPath();
-                    }
-
-                    // Note that if assemblyRep == "Import", the assembly reader
-                    // will NOT run and we will fall through to the prim reader
-                    // below.
-                    MObject parentNode = readCtx.GetMayaNode(
-                            prim.GetPath().GetParentPath(), false);
-                    if (UsdMayaTranslatorModelAssembly::Read(
-                            prim,
-                            assetIdentifier,
-                            assetPrimPath,
-                            parentNode,
-                            args,
-                            &readCtx,
-                            mArgs.assemblyRep)) {
-                        if (readCtx.GetPruneChildren()) {
-                            primIt.PruneChildren();
-                        }
-                        continue;
-                    }
+                if (OverridePrimReader(usdRootPrim, prim, args, readCtx, primIt)) {
+                    continue;
                 }
-#endif
 
                 TfToken typeName = prim.GetTypeName();
                 if (UsdMayaPrimReaderRegistry::ReaderFactoryFn factoryFn
@@ -438,5 +408,10 @@ UsdMaya_ReadJob::SetMayaRootDagPath(const MDagPath &mayaRootDagPath)
     mMayaRootDagPath = mayaRootDagPath;
 }
 
+const MDagPath&
+UsdMaya_ReadJob::GetMayaRootDagPath() const
+{
+    return mMayaRootDagPath;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

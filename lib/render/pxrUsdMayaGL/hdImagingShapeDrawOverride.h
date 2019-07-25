@@ -27,7 +27,7 @@
 /// \file pxrUsdMayaGL/hdImagingShapeDrawOverride.h
 
 #include "pxr/pxr.h"
-#include "pxrUsdMayaGL/api.h"
+#include "../../base/api.h"
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
@@ -60,44 +60,44 @@ class PxrMayaHdImagingShapeDrawOverride : public MHWRender::MPxDrawOverride
 {
     public:
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         static const MString drawDbClassification;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         static MHWRender::MPxDrawOverride* creator(const MObject& obj);
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         ~PxrMayaHdImagingShapeDrawOverride() override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         MHWRender::DrawAPI supportedDrawAPIs() const override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         MMatrix transform(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath) const override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         MBoundingBox boundingBox(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath) const override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         bool isBounded(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath) const override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         bool disableInternalBoundingBoxDraw() const override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         MUserData* prepareForDraw(
                 const MDagPath& objPath,
                 const MDagPath& cameraPath,
                 const MHWRender::MFrameContext& frameContext,
                 MUserData* oldData) override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         static void draw(
                 const MHWRender::MDrawContext& context,
                 const MUserData* data);

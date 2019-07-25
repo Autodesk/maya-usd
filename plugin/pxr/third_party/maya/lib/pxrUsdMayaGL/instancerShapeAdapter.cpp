@@ -29,8 +29,8 @@
 #include "pxrUsdMayaGL/shapeAdapter.h"
 
 #include "usdMaya/referenceAssembly.h"
-#include "usdMaya/util.h"
-#include "usdMaya/writeUtil.h"
+#include <mayaUsd/utils/util.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"

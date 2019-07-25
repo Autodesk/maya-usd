@@ -27,8 +27,8 @@
 /// \file pxrUsdMayaGL/proxyShapeUI.h
 
 #include "pxr/pxr.h"
-#include "pxrUsdMayaGL/api.h"
-#include "pxrUsdMayaGL/usdProxyShapeAdapter.h"
+#include "../../base/api.h"
+#include "./usdProxyShapeAdapter.h"
 
 #include <maya/M3dView.h>
 #include <maya/MDrawInfo.h>
@@ -49,21 +49,21 @@ class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
 {
     public:
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         static void* creator();
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         void getDrawRequests(
                 const MDrawInfo& drawInfo,
                 bool objectAndActiveOnly,
                 MDrawRequestQueue& requests) override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         void draw(
                 const MDrawRequest& request,
                 M3dView& view) const override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         bool select(
                 MSelectInfo& selectInfo,
                 MSelectionList& selectionList,

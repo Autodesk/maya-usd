@@ -19,7 +19,7 @@
 
 #include "AL/event/EventHandler.h"
 
-#include "maya/MPxGeometryData.h"
+#include <mayaUsd/nodes/stageData.h>
 
 #include "pxr/usd/usd/stage.h"
 
@@ -32,10 +32,19 @@ namespace usdmaya {
 /// \brief  This code is effectively copied from the pixar plugin. It's just used to pass the usd stage through the DG
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
+
+// At time of writing, we keep this class for AL backward compatibility only,
+// because it's registered with a different type ID than its base class, and
+// existing Maya files with "requires" statements depend on it.  It should be
+// unused otherwise.  To investigate: mark StageData attributes as
+// non-storable.  PPT, 8-Apr-2019.
+
 class StageData
-  : public MPxGeometryData
+  : public MayaUsdStageData
 {
 public:
+
+  typedef MayaUsdStageData ParentClass;
 
   /// \brief  ctor
   StageData();
@@ -47,10 +56,6 @@ public:
   AL_USDMAYA_PUBLIC
   static void* creator();
 
-  /// \brief  copy the input stage data into this node
-  /// \param  aDatum the data to copy
-  void copy(const MPxData& aDatum) override;
-
   /// the type id of the stage data
   AL_USDMAYA_PUBLIC
   static const MTypeId kTypeId;
@@ -59,16 +64,9 @@ public:
   AL_USDMAYA_PUBLIC
   static const MString kName;
 
-  /// the stage passed through the DG
-  UsdStageWeakPtr stage;
-
-  /// the prim path root
-  SdfPath primPath;
-
 private:
   MTypeId typeId() const override;
   MString name() const override;
-  AL::event::CallbackId m_exitCallbackId;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

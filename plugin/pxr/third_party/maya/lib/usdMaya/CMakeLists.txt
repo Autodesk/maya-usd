@@ -24,63 +24,19 @@ pxr_shared_library(${PXR_PACKAGE}
         ${MAYA_OpenMayaFX_LIBRARY}
         ${MAYA_OpenMayaRender_LIBRARY}
         ${MAYA_OpenMayaUI_LIBRARY}
+        ${MAYAUSD_LIBRARIES}
 
     INCLUDE_DIRS
         ${MAYA_INCLUDE_DIRS}
+        ${MAYAUSD_INCLUDE_DIR}
 
     PUBLIC_HEADERS
         api.h
 
     PUBLIC_CLASSES
-        adaptor
-        blockSceneModificationContext
-        colorSpace
-        diagnosticDelegate
         editUtil
-        hdImagingShape
-        jobArgs
-        meshUtil
-        notice
-        pointBasedDeformerNode
-        primReader
-        primReaderArgs
-        primReaderContext
-        primReaderRegistry
-        primWriter
-        primWriterArgs
-        primWriterContext
-        primWriterRegistry
-        query
-        readUtil
-        roundTripUtil
-        shaderWriter
-        shadingModeExporter
-        shadingModeExporterContext
-        shadingModeImporter
-        shadingModeRegistry
-        shadingUtil
-        stageCache
-        stageData
-        stageNode
         stageNoticeListener
-        transformWriter
-        translatorCamera
-        translatorCurves
-        translatorGprim
-        translatorMaterial
-        translatorMesh
-        translatorModelAssembly
-        translatorNurbsPatch
-        translatorPrim
-        translatorRfMLight
-        translatorSkel
-        translatorUtil
-        translatorXformable
-        util
-        usdPrimProvider
-        writeJobContext
-        writeUtil
-        xformStack
+		translatorModelAssembly
 
         exportCommand
         exportTranslator
@@ -91,33 +47,10 @@ pxr_shared_library(${PXR_PACKAGE}
         referenceAssembly
         undoHelperCommand
 
-        chaser
-        chaserRegistry
-
-        userTaggedAttribute
-
     PRIVATE_CLASSES
-        debugCodes
-        fallbackPrimReader
-        functorPrimReader
-        functorPrimWriter
-        instancedNodeWriter
-        modelKindProcessor
-        readJob
-        registryHelper
-        skelBindingsProcessor
-        writeJob
-
-    PRIVATE_HEADERS
-        shadingModePxrRis_rfm_map.h
+        readJobWithSceneAssembly
 
     CPPFILES
-        shadingModeDisplayColor.cpp
-        shadingModePxrRis.cpp
-        shadingModeUseRegistry.cpp
-        translatorMesh_PrimVars.cpp
-        translatorMesh_SubDiv.cpp
-        translatorXformable_decompose.cpp
         readJob_ImportWithProxies.cpp
 
     PYMODULE_CPPFILES

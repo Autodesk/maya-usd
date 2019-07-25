@@ -26,6 +26,8 @@
 
 /// \file usdMaya/writeJob.h
 
+#include "../../base/api.h"
+
 #include "../chaser/chaser.h"
 #include "../../utils/util.h"
 #include "../writeJobContext.h"
@@ -45,8 +47,10 @@ class UsdMaya_ModelKindProcessor;
 class UsdMaya_WriteJob
 {
 public:
+    MAYAUSD_CORE_PUBLIC
     UsdMaya_WriteJob(const UsdMayaJobExportArgs & iArgs);
 
+    MAYAUSD_CORE_PUBLIC
     ~UsdMaya_WriteJob();
 
     /// Writes the Maya stage to the given USD file name, If \p append is
@@ -54,6 +58,7 @@ public:
     /// file.
     /// This will write the entire frame range specified by the export args.
     /// Returns \c true if successful, or \c false if an error was encountered.
+    MAYAUSD_CORE_PUBLIC
     bool Write(const std::string& fileName, bool append);
 
 private:

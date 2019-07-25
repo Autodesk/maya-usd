@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "usdMaya/translatorModelAssembly.h"
-#include "usdMaya/primWriterRegistry.h"
+#include <mayaUsd/fileio/primWriterRegistry.h>
 
 #include "pxr/pxr.h"
 

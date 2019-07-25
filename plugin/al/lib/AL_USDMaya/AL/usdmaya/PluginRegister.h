@@ -56,6 +56,10 @@
 
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 
+#if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/Global.h>
+#endif
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
@@ -272,6 +276,13 @@ MStatus registerPlugin(AFnPlugin& plugin)
       AL_REGISTER_SHAPE_NODE(plugin, AL::usdmaya::nodes::ProxyShape, AL::usdmaya::nodes::ProxyShapeUI, AL::usdmaya::nodes::ProxyDrawOverride);
   }
 
+#if defined(WANT_UFE_BUILD)
+  status = MayaUsd::ufe::initialize();
+  if (!status) {
+    status.perror("Unable to initialize ufe.");
+  }
+#endif
+
   AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Transform, AL::usdmaya::nodes::TransformationMatrix);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::Layer);
@@ -311,10 +322,11 @@ MStatus registerPlugin(AFnPlugin& plugin)
 
   // Force all plugins to be loaded at startup time. Unless we load plugins upfront
   // options will not be registered until the start of import or export, and won't be available in the GUI
+  const TfType& translatorType = TfType::Find<AL::usdmaya::fileio::translators::TranslatorBase>();
   PlugPluginPtrVector plugins = PlugRegistry::GetInstance().GetAllPlugins();
   for(auto& plugin : plugins)
   {
-    if(!plugin->IsLoaded())
+    if(!plugin->IsLoaded() && plugin->DeclaresType(translatorType, true))
       plugin->Load();
   }
   return status;
@@ -331,6 +343,11 @@ template<typename AFnPlugin>
 MStatus unregisterPlugin(AFnPlugin& plugin)
 {
   MStatus status;
+
+#if defined(WANT_UFE_BUILD)
+  status = MayaUsd::ufe::finalize();
+  CHECK_MSTATUS(status);
+#endif
 
   // gpuCachePluginMain used as an example.
   if (MGlobal::kInteractive == MGlobal::mayaState()) {

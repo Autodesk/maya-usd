@@ -26,14 +26,14 @@
 
 /// \file pxrUsdMayaGL/instancerImager.h
 
-#include "pxrUsdMayaGL/api.h"
-#include "pxrUsdMayaGL/instancerShapeAdapter.h"
+#include "../../base/api.h"
+#include "./instancerShapeAdapter.h"
 
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/weakBase.h"
 
-#include "usdMaya/notice.h"
-#include "usdMaya/util.h"
+#include "../../listeners/notice.h"
+#include "../../utils/util.h"
 
 #include <maya/MCallbackIdArray.h>
 #include <maya/MDagMessage.h>

@@ -6,6 +6,8 @@
 // otherwise accompanies this software in either electronic or hard copy form.
 // ===========================================================================
 
+#include "pxr/base/arch/export.h"
+
 #if defined _WIN32 || defined __CYGWIN__
 
   // The main export symbol used for the core library.
@@ -53,6 +55,14 @@
     #define MAYAUSD_MACROS_PUBLIC
     #define MAYAUSD_MACROS_LOCAL
 #endif
+#endif
+
+#ifdef MAYAUSD_CORE_EXPORT
+  #define MAYAUSD_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+  #define MAYAUSD_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#else
+  #define MAYAUSD_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+  #define MAYAUSD_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
 #endif
 
 // Convenience symbol versioning include: because api.h is widely

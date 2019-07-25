@@ -28,7 +28,7 @@
 
 #include "usdMaya/api.h"
 #include "usdMaya/proxyShape.h"
-#include "usdMaya/usdPrimProvider.h"
+#include <mayaUsd/nodes/usdPrimProvider.h>
 
 #include "pxr/pxr.h"
 

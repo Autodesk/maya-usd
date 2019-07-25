@@ -22,15 +22,15 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxrUsdMayaGL/proxyDrawOverride.h"
+#include "./proxyDrawOverride.h"
 
-#include "pxrUsdMayaGL/batchRenderer.h"
-#include "pxrUsdMayaGL/renderParams.h"
-#include "pxrUsdMayaGL/usdProxyShapeAdapter.h"
+#include "./batchRenderer.h"
+#include "./renderParams.h"
+#include "./usdProxyShapeAdapter.h"
 
-#include "px_vp20/utils.h"
+#include "../px_vp20/utils.h"
 
-#include "usdMaya/proxyShape.h"
+#include "../../nodes/proxyShapeBase.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
@@ -59,7 +59,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 const MString UsdMayaProxyDrawOverride::drawDbClassification(
     TfStringPrintf("drawdb/geometry/pxrUsdMayaGL/%s",
-                   UsdMayaProxyShapeTokens->MayaTypeName.GetText()).c_str());
+                   MayaUsdProxyShapeBaseTokens->MayaTypeName.GetText()).c_str());
 
 /* static */
 MHWRender::MPxDrawOverride*
@@ -131,7 +131,7 @@ UsdMayaProxyDrawOverride::boundingBox(
         return MBoundingBox();
     }
 
-    UsdMayaProxyShape* pShape = UsdMayaProxyShape::GetShapeAtDagPath(objPath);
+    MayaUsdProxyShapeBase* pShape = MayaUsdProxyShapeBase::GetShapeAtDagPath(objPath);
     if (!pShape) {
         return MBoundingBox();
     }
@@ -165,7 +165,7 @@ UsdMayaProxyDrawOverride::isBounded(
     // remove PIXMAYA_ENABLE_BOUNDING_BOX_MODE.
     return true;
 
-    // UsdMayaProxyShape* pShape = UsdMayaProxyShape::GetShapeAtDagPath(objPath);
+    // MayaUsdProxyShapeBase* pShape = MayaUsdProxyShapeBase::GetShapeAtDagPath(objPath);
     // if (!pShape) {
     //     return false;
     // }
@@ -199,7 +199,7 @@ UsdMayaProxyDrawOverride::prepareForDraw(
         return nullptr;
     }
 
-    UsdMayaProxyShape* shape = UsdMayaProxyShape::GetShapeAtDagPath(objPath);
+    MayaUsdProxyShapeBase* shape = MayaUsdProxyShapeBase::GetShapeAtDagPath(objPath);
     if (!shape) {
         return nullptr;
     }
@@ -258,7 +258,7 @@ UsdMayaProxyDrawOverride::userSelect(
     M3dView view;
     const bool hasView = px_vp20Utils::GetViewFromDrawContext(context, view);
     if (hasView &&
-            !view.pluginObjectDisplay(UsdMayaProxyShape::displayFilterName)) {
+            !view.pluginObjectDisplay(MayaUsdProxyShapeBase::displayFilterName)) {
         return false;
     }
 

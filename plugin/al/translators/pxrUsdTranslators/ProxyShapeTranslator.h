@@ -19,8 +19,8 @@
 
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
-#include "usdMaya/primWriterArgs.h"
-#include "usdMaya/primWriterContext.h"
+#include <mayaUsd/fileio/primWriterArgs.h>
+#include <mayaUsd/fileio/primWriterContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

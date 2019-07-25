@@ -43,7 +43,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+class UsdMayaPrimReaderArgs;
 
 class UsdMaya_ReadJob
 {
@@ -56,7 +56,7 @@ public:
             const UsdMayaJobImportArgs & iArgs);
 
     MAYAUSD_CORE_PUBLIC
-    ~UsdMaya_ReadJob();
+    virtual ~UsdMaya_ReadJob();
 
     /// Reads the USD stage specified by the job file name and prim path.
     /// Newly-created DAG paths are inserted into the vector \p addedDagPaths.
@@ -75,34 +75,43 @@ public:
     // Getters/Setters
     MAYAUSD_CORE_PUBLIC
     void SetMayaRootDagPath(const MDagPath &mayaRootDagPath);
+    MAYAUSD_CORE_PUBLIC
+    const MDagPath& GetMayaRootDagPath() const;
 
-private:
-    // XXX: Activating the 'Expanded' representation of a USD reference
-    // assembly node is very much like performing a regular UsdMaya_ReadJob but with
-    // a few key differences (e.g. creating proxy shapes at collapse points).
-    // These private helper methods cover the functionality of a regular
-    // usdImport, and an 'Expanded' representation-style import, respectively.
-    // It would be great if we could combine these into a single traversal at
-    // some point.
+protected:
+
+    MAYAUSD_CORE_PUBLIC
+    virtual bool DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim);
+
+    // Hook for derived classes to override the prim reader.  Returns true if
+    // override was done, false otherwise.  Implementation in this class
+    // returns false.
+    MAYAUSD_CORE_PUBLIC
+    virtual bool OverridePrimReader(
+        const UsdPrim&               usdRootPrim,
+        const UsdPrim&               prim,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext&    readCtx,
+        UsdPrimRange::iterator&      primIt
+    );
+
+    // Engine method for DoImport().  Covers the functionality of a regular
+    // usdImport.
+    MAYAUSD_CORE_PUBLIC
     bool _DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim);
-    bool _DoImportWithProxies(UsdPrimRange& range);
-
-    // These are helper methods for the proxy import method.
-    bool _ProcessProxyPrims(
-            const std::vector<UsdPrim>& proxyPrims,
-            const UsdPrim& pxrGeomRoot,
-            const std::vector<std::string>& collapsePointPathStrings);
-    bool _ProcessSubAssemblyPrims(const std::vector<UsdPrim>& subAssemblyPrims);
-    bool _ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims);
 
     // Data
     UsdMayaJobImportArgs mArgs;
     std::string mFileName;
-    std::string mPrimPath;
     std::map<std::string,std::string> mVariants;
+    UsdMayaPrimReaderContext::ObjectRegistry mNewNodeRegistry;
+
+private:
+
+    // Data
+    std::string mPrimPath;
     MDagModifier mDagModifierUndo;
     bool mDagModifierSeeded;
-    UsdMayaPrimReaderContext::ObjectRegistry mNewNodeRegistry;
     MDagPath mMayaRootDagPath;
 };
 

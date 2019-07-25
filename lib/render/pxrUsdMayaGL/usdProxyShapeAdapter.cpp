@@ -21,15 +21,15 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxrUsdMayaGL/usdProxyShapeAdapter.h"
+#include "./usdProxyShapeAdapter.h"
 
 #include "pxr/pxr.h"
-#include "pxrUsdMayaGL/api.h"
-#include "pxrUsdMayaGL/batchRenderer.h"
-#include "pxrUsdMayaGL/debugCodes.h"
-#include "pxrUsdMayaGL/renderParams.h"
-#include "pxrUsdMayaGL/shapeAdapter.h"
-#include "usdMaya/proxyShape.h"
+#include "../../base/api.h"
+#include "./batchRenderer.h"
+#include "./debugCodes.h"
+#include "./renderParams.h"
+#include "./shapeAdapter.h"
+#include "../../nodes/proxyShapeBase.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec4f.h"
@@ -79,7 +79,7 @@ PxrMayaHdUsdProxyShapeAdapter::UpdateVisibility(const M3dView* view)
     M3dView* nonConstView = const_cast<M3dView*>(view);
 
     if (nonConstView &&
-            !nonConstView->pluginObjectDisplay(UsdMayaProxyShape::displayFilterName)) {
+            !nonConstView->pluginObjectDisplay(MayaUsdProxyShapeBase::displayFilterName)) {
         // USD proxy shapes are being filtered from this view, so don't bother
         // checking any other visibility state.
         isVisible = false;
@@ -131,11 +131,11 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
         const unsigned int displayStyle,
         const MHWRender::DisplayStatus displayStatus)
 {
-    UsdMayaProxyShape* usdProxyShape =
-            UsdMayaProxyShape::GetShapeAtDagPath(shapeDagPath);
+    MayaUsdProxyShapeBase* usdProxyShape = 
+            MayaUsdProxyShapeBase::GetShapeAtDagPath(shapeDagPath);
     if (!usdProxyShape) {
         TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-                "Failed to get UsdMayaProxyShape for '%s'\n",
+                "Failed to get MayaUsdProxyShapeBase for '%s'\n",
                 shapeDagPath.fullPathName().asChar());
         return false;
     }
@@ -155,7 +155,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
                                                &drawProxyPurpose,
                                                &drawGuidePurpose)) {
         TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-                "Failed to get render attributes for UsdMayaProxyShape '%s'\n",
+                "Failed to get render attributes for MayaUsdProxyShapeBase '%s'\n",
                 shapeDagPath.fullPathName().asChar());
         return false;
     }
@@ -319,7 +319,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
     // shapes with different Maya types.
     const TfToken delegateName(
         TfStringPrintf("%s_%zx",
-                       UsdMayaProxyShapeTokens->MayaTypeName.GetText(),
+                       MayaUsdProxyShapeBaseTokens->MayaTypeName.GetText(),
                        shapeHash));
 
     const SdfPath delegateId = delegatePrefix.AppendChild(delegateName);

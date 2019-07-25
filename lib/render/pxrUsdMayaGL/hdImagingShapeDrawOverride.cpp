@@ -22,14 +22,14 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxrUsdMayaGL/hdImagingShapeDrawOverride.h"
+#include "./hdImagingShapeDrawOverride.h"
 
-#include "pxrUsdMayaGL/batchRenderer.h"
-#include "pxrUsdMayaGL/debugCodes.h"
-#include "pxrUsdMayaGL/instancerImager.h"
-#include "pxrUsdMayaGL/userData.h"
+#include "./batchRenderer.h"
+#include "./debugCodes.h"
+#include "./instancerImager.h"
+#include "./userData.h"
 
-#include "usdMaya/hdImagingShape.h"
+#include "../../nodes/hdImagingShape.h"
 
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/stringUtils.h"

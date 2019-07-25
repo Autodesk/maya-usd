@@ -28,8 +28,8 @@
 
 #include "pxr/pxr.h"
 
-#include "pxrUsdMayaGL/api.h"
-#include "pxrUsdMayaGL/shapeAdapter.h"
+#include "../../base/api.h"
+#include "./shapeAdapter.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -72,20 +72,20 @@ class PxrMayaHdUsdProxyShapeAdapter : public PxrMayaHdShapeAdapter
         ///
         /// Returns true if the visibility state was changed, or false
         /// otherwise.
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         bool UpdateVisibility(const M3dView* view = nullptr) override;
 
         /// Gets whether the shape adapter's shape is visible.
         ///
         /// This should be called after a call to UpdateVisibility() to ensure
         /// that the returned value is correct. 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         bool IsVisible() const override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         void SetRootXform(const GfMatrix4d& transform) override;
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         const SdfPath& GetDelegateID() const override;
 
     protected:
@@ -98,7 +98,7 @@ class PxrMayaHdUsdProxyShapeAdapter : public PxrMayaHdShapeAdapter
         /// legacy viewport and Viewport 2.0. The legacy viewport Sync() method
         /// "promotes" the display state parameters to their Viewport 2.0
         /// equivalents before calling this method.
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         bool _Sync(
                 const MDagPath& shapeDagPath,
                 const unsigned int displayStyle,
@@ -108,10 +108,10 @@ class PxrMayaHdUsdProxyShapeAdapter : public PxrMayaHdShapeAdapter
         ///
         /// Note that only friends of this class are able to construct
         /// instances of this class.
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         PxrMayaHdUsdProxyShapeAdapter();
 
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         ~PxrMayaHdUsdProxyShapeAdapter() override;
 
     private:
@@ -125,7 +125,7 @@ class PxrMayaHdUsdProxyShapeAdapter : public PxrMayaHdShapeAdapter
         /// The shape adapter will then query the batch renderer for its render
         /// index and use that to re-create its delegate and re-add its rprim
         /// collection, if necessary.
-        PXRUSDMAYAGL_API
+        MAYAUSD_CORE_PUBLIC
         bool _Init(HdRenderIndex* renderIndex);
 
         UsdPrim _rootPrim;

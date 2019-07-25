@@ -26,8 +26,8 @@
 
 /// \file pxrUsdMayaGL/instancerShapeAdapter.h
 
-#include "pxrUsdMayaGL/api.h"
-#include "pxrUsdMayaGL/shapeAdapter.h"
+#include "../../base/api.h"
+#include "./shapeAdapter.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/imaging/hd/renderIndex.h"

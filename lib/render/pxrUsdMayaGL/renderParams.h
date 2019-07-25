@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 
-#include "pxrUsdMayaGL/api.h"
+#include "../../base/api.h"
 
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/token.h"

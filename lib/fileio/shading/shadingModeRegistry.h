@@ -68,15 +68,19 @@ class UsdMayaShadingModeRegistry : public TfWeakBase
 {
 public:
 
+    MAYAUSD_CORE_PUBLIC
     static UsdMayaShadingModeExporterCreator GetExporter(const TfToken& name) {
         return GetInstance()._GetExporter(name);
     }
+    MAYAUSD_CORE_PUBLIC
     static UsdMayaShadingModeImporter GetImporter(const TfToken& name) {
         return GetInstance()._GetImporter(name);
     }
+    MAYAUSD_CORE_PUBLIC
     static TfTokenVector ListExporters() {
         return GetInstance()._ListExporters();
     }
+    MAYAUSD_CORE_PUBLIC
     static TfTokenVector ListImporters() {
         return GetInstance()._ListImporters();
     }

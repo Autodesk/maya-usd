@@ -31,7 +31,7 @@
 #include "pxr/base/vt/value.h"
 
 #include "usdMaya/api.h"
-#include "usdMaya/adaptor.h"
+#include <mayaUsd/fileio/utils/adaptor.h>
 
 #include <maya/MDGModifier.h>
 #include <maya/MGlobal.h>
