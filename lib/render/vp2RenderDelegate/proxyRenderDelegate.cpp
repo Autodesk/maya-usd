@@ -11,6 +11,7 @@
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/taskController.h"
 #include "pxr/imaging/hd/enums.h"
@@ -22,6 +23,7 @@
 #include "../../nodes/stageData.h"
 #include "../../utils/util.h"
 
+#include <maya/MFileIO.h>
 #include <maya/MFnPluginData.h>
 #include <maya/MProfiler.h>
 #include <maya/MSelectionContext.h>
@@ -31,6 +33,7 @@
 #include "ufe/runTimeMgr.h"
 #include "ufe/globalSelection.h"
 #include "ufe/observableSelection.h"
+#include "ufe/selectionNotification.h"
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -68,6 +71,37 @@ namespace
 
         return listAdjustment;
     }
+
+#if defined(WANT_UFE_BUILD)
+    class UfeSelectionObserver : public Ufe::Observer
+    {
+    public:
+        UfeSelectionObserver(ProxyRenderDelegate& proxyRenderDelegate)
+            : Ufe::Observer()
+            , _proxyRenderDelegate(proxyRenderDelegate)
+        {
+        }
+
+        void operator()(const Ufe::Notification& notification) override
+        {
+            // During Maya file read, each node will be selected in turn, so we get
+            // notified for each node in the scene.  Prune this out.
+            if (MFileIO::isOpeningFile()) {
+                return;
+            }
+
+            auto selectionChanged =
+                dynamic_cast<const Ufe::SelectionChanged*>(&notification);
+            if (selectionChanged != nullptr) {
+                _proxyRenderDelegate.SelectionChanged();
+            }
+        }
+
+    private:
+        ProxyRenderDelegate& _proxyRenderDelegate;
+    };
+#endif
+
 } // namespace
 
 //! \brief  Draw classification used during plugin load to register in VP2
@@ -92,7 +126,6 @@ ProxyRenderDelegate::~ProxyRenderDelegate() {
     delete _taskController;
     delete _renderIndex;
     delete _renderDelegate;
-    delete _renderCollection;
 }
 
 //! \brief  This drawing routine supports all devices (DirectX and OpenGL)
@@ -160,21 +193,42 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
         // for selection is enabled, the draw data for the "points" repr won't
         // be prepared until point snapping is activated; otherwise they have
         // to be early prepared for potential activation of point snapping.
-        _renderCollection = new HdRprimCollection(HdTokens->geometry,
+        _defaultCollection.reset(new HdRprimCollection(HdTokens->geometry,
 #if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
             HdReprSelector(HdReprTokens->smoothHull)
 #else
             HdReprSelector(HdReprTokens->smoothHull, TfToken(), HdReprTokens->points)
 #endif
-        );
-        _taskController->SetCollection(*_renderCollection);
+        ));
 
-        // TODO: Temp fix for the "Token selectionState missing from task context" error
-        // message shown in Output window for every refresh. This might not be required
-        // after implementing selection highlight support.
-        HdxSelectionTrackerSharedPtr _selectionTracker(new HdxSelectionTracker);
-        VtValue data(_selectionTracker);
-        _engine.SetTaskContextData(HdxTokens->selectionState, data);
+        _taskController->SetCollection(*_defaultCollection);
+
+        _selectionHighlightCollection.reset(new HdRprimCollection(HdTokens->geometry,
+            HdReprSelector(HdReprTokens->wire)
+        ));
+
+        _selection.reset(new HdSelection);
+
+#if defined(WANT_UFE_BUILD)
+        if (!_ufeSelectionObserver) {
+            auto globalSelection = Ufe::GlobalSelection::get();
+            if (globalSelection) {
+                _ufeSelectionObserver = std::make_shared<UfeSelectionObserver>(*this);
+                globalSelection->addObserver(_ufeSelectionObserver);
+            }
+        }
+#endif
+
+        // We don't really need any HdTask because VP2RenderDelegate uses Hydra
+        // engine for data preparation only, but we have to add a dummy render
+        // task to bootstrap data preparation.
+        const HdTaskSharedPtrVector tasks = _taskController->GetTasks();
+        for (const HdTaskSharedPtr& task : tasks) {
+            if (dynamic_cast<const HdxRenderTask*>(task.get())) {
+                _dummyTasks.push_back(task);
+                break;
+            }
+        }
     }
 }
 
@@ -210,20 +264,48 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     MProfilingScope profilingScope(_profilerCategory, MProfiler::kColorC_L1, "Execute");
 
 #if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
-    // Query selection adjustment mode only if the update is triggered in a selection pass.
+    // Since Maya 2020, subscene update can be invoked in a selection pass.
     const bool inSelectionPass = (frameContext.getSelectionInfo() != nullptr);
     const bool inPointSnapping = pointSnappingActive();
-    _globalListAdjustment = (inSelectionPass && !inPointSnapping) ? GetListAdjustment() : MGlobal::kReplaceList;
 
-    // Update display reprs at the first frame where point snapping is activated.
-    if (inPointSnapping && !_renderCollection->GetReprSelector().Contains(HdReprTokens->points)) {
-        const HdReprSelector reprSelector(HdReprTokens->smoothHull, TfToken(), HdReprTokens->points);
-        _renderCollection->SetReprSelector(reprSelector);
-        _taskController->SetCollection(*_renderCollection);
-    }
+    // Query selection adjustment mode only if the update is triggered in a selection pass.
+    _globalListAdjustment = (inSelectionPass && !inPointSnapping) ? GetListAdjustment() : MGlobal::kReplaceList;
+#else
+    // Before Maya 2020, subscene update would never be invoked in a selection pass.
+    constexpr bool inSelectionPass = false;
+    constexpr bool inPointSnapping = false;
 #endif
 
-    _engine.Execute( *_renderIndex, _taskController->GetTasks());
+    // HdC_TODO: we need to figure out how to use Hydra repr more effectively
+    // when more reprs are coming.
+    if (inSelectionPass) {
+        if (inPointSnapping) {
+            // Update display reprs at the first frame where point snapping is activated.
+            if (!_defaultCollection->GetReprSelector().Contains(HdReprTokens->points)) {
+                const HdReprSelector under(TfToken(), TfToken(), HdReprTokens->points);
+                const HdReprSelector reprSelector =
+                    _defaultCollection->GetReprSelector().CompositeOver(under);
+                _defaultCollection->SetReprSelector(reprSelector);
+                _taskController->SetCollection(*_defaultCollection);
+            }
+        }
+    }
+    else if (_selectionChanged) {
+        _selectionChanged = false;
+
+        if (_UpdateSelectionHighlight()) {
+            // Update display reprs at the first frame where selection highlight is activated.
+            if (!_defaultCollection->GetReprSelector().Contains(HdReprTokens->wire)) {
+                const HdReprSelector under(TfToken(), HdReprTokens->wire, TfToken());
+                const HdReprSelector reprSelector =
+                    _defaultCollection->GetReprSelector().CompositeOver(under);
+                _defaultCollection->SetReprSelector(reprSelector);
+                _taskController->SetCollection(*_defaultCollection);
+            }
+        }
+    }
+
+    _engine.Execute(*_renderIndex, _dummyTasks);
 }
 
 //! \brief  Main update entry from subscene override.
@@ -341,6 +423,85 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 #else
     return false;
 #endif
+}
+
+//! \brief  Notify of selection change.
+void ProxyRenderDelegate::SelectionChanged()
+{
+    _selectionChanged = true;
+}
+
+//! \brief  Filter selection for Rprims under the proxy shape.
+void ProxyRenderDelegate::_FilterSelection()
+{
+#if defined(WANT_UFE_BUILD)
+    // HdC_TODO: add selection highlight support:
+    // - Maya proxy and its DAG parents.
+    // - USD Xform prims.
+    // - Instancing prims.
+
+    MayaUsdProxyShapeBase* proxyShape = getProxyShape();
+    if (proxyShape == nullptr) {
+        return;
+    }
+
+    _selection.reset(new HdSelection);
+
+    const auto proxyPath = proxyShape->ufePath();
+    const auto globalSelection = Ufe::GlobalSelection::get();
+
+    for (const Ufe::SceneItem::Ptr& item : *globalSelection) {
+        if (item->runTimeId() != USD_UFE_RUNTIME_ID) {
+            continue;
+        }
+
+        const Ufe::Path::Segments& segments = item->path().getSegments();
+        if ((segments.size() != 2) || (proxyPath != segments[0])) {
+            continue;
+        }
+
+        const SdfPath usdPath(segments[1].string());
+        const SdfPath idxPath(_sceneDelegate->GetPathForIndex(usdPath));
+        _selection->AddRprim(HdSelection::HighlightModeSelect, idxPath);
+    }
+#endif
+}
+
+/*! \brief  Update for selection highlight
+
+    \return True if selection highlight needs to be shown.
+*/
+bool ProxyRenderDelegate::_UpdateSelectionHighlight()
+{
+    SdfPathVector oldSelection =
+        _selection->GetSelectedPrimPaths(HdSelection::HighlightModeSelect);
+
+    _FilterSelection();
+
+    SdfPathVector newSelection =
+        _selection->GetSelectedPrimPaths(HdSelection::HighlightModeSelect);
+
+    if (!oldSelection.empty() || !newSelection.empty()) {
+        SdfPathVector rootPaths = std::move(oldSelection);
+        rootPaths.reserve(rootPaths.size() + newSelection.size());
+        rootPaths.insert(rootPaths.end(), newSelection.begin(), newSelection.end());
+
+        _selectionHighlightCollection->SetRootPaths(rootPaths);
+        _taskController->SetCollection(*_selectionHighlightCollection);
+        _engine.Execute(*_renderIndex, _dummyTasks);
+        _taskController->SetCollection(*_defaultCollection);
+    }
+
+    return !newSelection.empty();
+}
+
+//! \brief  Query whether the given prim is selected
+bool ProxyRenderDelegate::IsFullySelected(const SdfPath& path) const
+{
+    const HdSelection::PrimSelectionState* selectionState =
+        _selection->GetPrimSelectionState(HdSelection::HighlightModeSelect, path);
+
+    return (selectionState && selectionState->fullySelected);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

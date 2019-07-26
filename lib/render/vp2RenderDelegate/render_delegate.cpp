@@ -425,6 +425,32 @@ MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackShader(MColor color)
     return fallbackShader;
 }
 
+/*! \brief  Returns a 3d green shader that can be used for selection highlight.
+*/
+MHWRender::MShaderInstance* HdVP2RenderDelegate::Get3dSolidShader() const
+{
+    static MHWRender::MShaderInstance* s3dSolidShader = nullptr;
+
+    if (!s3dSolidShader)
+    {
+        if (MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer())
+        {
+            if (const MHWRender::MShaderManager* shaderMgr = renderer->getShaderManager())
+            {
+                s3dSolidShader = shaderMgr->getStockShader(MHWRender::MShaderManager::k3dSolidShader);
+
+                if (s3dSolidShader)
+                {
+                    constexpr float color[] = { 0.056f, 1.0f, 0.366f, 1.0f };
+                    s3dSolidShader->setParameter(_solidColorParameterName, color);
+                }
+            }
+        }
+    }
+
+    return s3dSolidShader;
+}
+
 /*! \brief  Returns a white 3d fat point shader.
 */
 MHWRender::MShaderInstance* HdVP2RenderDelegate::Get3dFatPointShader() const

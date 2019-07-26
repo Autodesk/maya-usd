@@ -25,6 +25,7 @@ HdVP2DrawItem::HdVP2DrawItem(
     const HdMeshReprDesc& desc)
 : HdDrawItem(sharedData)
 , _delegate(delegate)
+, _reprDesc(desc)
 {
     // In the case of instancing, the ID of a proto has an attribute at the end,
     // we keep this info in _renderItemName so if needed we can extract proto ID
@@ -38,7 +39,7 @@ HdVP2DrawItem::HdVP2DrawItem(
 
     _mesh._indexBuffer.reset(new MHWRender::MIndexBuffer(MHWRender::MGeometry::kUnsignedInt32));
 
-    if (desc.geomStyle != HdMeshGeomStylePoints)
+    if (_reprDesc.geomStyle == HdMeshGeomStyleHull)
     {
         const MHWRender::MVertexBufferDescriptor nbDesc("",
             MHWRender::MGeometry::kNormal, MHWRender::MGeometry::kFloat, 3);

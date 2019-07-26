@@ -48,6 +48,41 @@ namespace {
         return numDrawItems;
     }
 
+    //! Helper utility function to get number of edge indices
+    unsigned int _GetNumOfEdgeIndices(const HdMeshTopology& topology)
+    {
+        const VtIntArray &faceVertexCounts = topology.GetFaceVertexCounts();
+
+        unsigned int numIndex = 0;
+        for (int i = 0; i < faceVertexCounts.size(); i++)
+        {
+            numIndex += faceVertexCounts[i];
+        }
+        numIndex *= 2; // each edge has two ends.
+        return numIndex;
+    }
+
+    //! Helper utility function to extract edge indices
+    void _FillEdgeIndices(int* indices, const HdMeshTopology& topology)
+    {
+        const VtIntArray &faceVertexCounts = topology.GetFaceVertexCounts();
+        const int* currentFaceStart = topology.GetFaceVertexIndices().cdata();
+        for (int faceId = 0; faceId < faceVertexCounts.size(); faceId++)
+        {
+            int numVertexIndicesInFace = faceVertexCounts[faceId];
+            if (numVertexIndicesInFace >= 2)
+            {
+                for (int faceVertexId = 0; faceVertexId < numVertexIndicesInFace; faceVertexId++)
+                {
+                    bool isLastVertex = faceVertexId == numVertexIndicesInFace - 1;
+                    *(indices++) = *(currentFaceStart + faceVertexId);
+                    *(indices++) = isLastVertex ? *currentFaceStart : *(currentFaceStart + faceVertexId + 1);
+                }
+            }
+            currentFaceStart += numVertexIndicesInFace;
+        }
+    }
+
     int _profilerCategory = MProfiler::addCategory("HdVP2RenderDelegate", "HdVP2RenderDelegate");   //!< Profiler category
 } //namespace
 
@@ -185,22 +220,37 @@ HdDirtyBits HdVP2Mesh::_PropagateDirtyBits(HdDirtyBits bits) const {
 void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
     _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(), _ReprComparator(reprToken));
 
-    // If it's not new, nothing to init
-    if (it != _reprs.end())
-        return;
+    HdReprSharedPtr repr;
 
-    // else we have a new repr
-    _reprs.emplace_back(reprToken, boost::make_shared<HdRepr>());
-    HdReprSharedPtr &repr = _reprs.back().second;
-
-    // set dirty bit to say we need to sync a new repr (buffer array
-    // ranges may change)
-    *dirtyBits |= HdChangeTracker::NewRepr;
+    const bool isNew = (it == _reprs.end());
+    if (isNew) {
+        _reprs.emplace_back(reprToken, boost::make_shared<HdRepr>());
+        repr = _reprs.back().second;
+    }
+    else {
+        repr = it->second;
+    }
 
     auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     MSubSceneContainer* subSceneContainer = param->GetContainer();
     if (!subSceneContainer)
         return;
+
+    // Selection highlight uses the wire repr for now, hoping it will be able
+    // to share draw items with future implementation of wireframe mode. If
+    // it won't, we can then define a customized "selectionHighlight" repr.
+    if (reprToken == HdReprTokens->wire) {
+        bool fullySelected = param->GetDrawScene().IsFullySelected(GetId());
+        if (_UpdateSelectedState(repr, dirtyBits, fullySelected))
+            return;
+    }
+    else if (!isNew) {
+        return;
+    }
+
+    // set dirty bit to say we need to sync a new repr (buffer array
+    // ranges may change)
+    *dirtyBits |= HdChangeTracker::NewRepr;
 
     _MeshReprConfig::DescArray descs = _GetReprDesc(reprToken);
 
@@ -217,9 +267,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
             const MString& renderItemName = drawItem->GetRenderItemName();
 
             MHWRender::MRenderItem* const renderItem =
-                (desc.geomStyle == HdMeshGeomStylePoints) ?
-                _CreatePointsRenderItem(renderItemName) :
-                _CreateSmoothHullRenderItem(renderItemName);
+                _CreateRenderItem(renderItemName, desc);
 
             _delegate->GetVP2ResourceRegistry().EnqueueCommit(
                 [subSceneContainer, renderItem]() {
@@ -232,7 +280,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
             _createdDrawItems.emplace_back(std::unique_ptr<HdVP2DrawItem>(drawItem));
         }
 
-        if (desc.geomStyle != HdMeshGeomStylePoints) {
+        if (desc.geomStyle == HdMeshGeomStyleHull) {
             if (desc.flatShadingEnabled) {
                 if (!(_customDirtyBitsInUse & DirtyFlatNormals)) {
                     _customDirtyBitsInUse |= DirtyFlatNormals;
@@ -245,6 +293,9 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
                     *dirtyBits |= DirtySmoothNormals;
                 }
             }
+        }
+        else if (desc.geomStyle == HdMeshGeomStyleHullEdgeOnly) {
+            *dirtyBits |= HdChangeTracker::DirtyTopology;
         }
     }
 }
@@ -270,7 +321,7 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate *sceneDelegate, const TfToken& reprT
     bool requireFlatNormals = false;
     for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
         const HdMeshReprDesc &desc = reprDescs[descIdx];
-        if (desc.geomStyle != HdMeshGeomStylePoints) {
+        if (desc.geomStyle == HdMeshGeomStyleHull) {
             if (desc.flatShadingEnabled) {
                 requireFlatNormals = true;
             }
@@ -281,18 +332,11 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate *sceneDelegate, const TfToken& reprT
     }
 
     // For each relevant draw item, update dirty buffer sources.
-    int drawItemIndex = 0;
-    for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
-        const HdMeshReprDesc &desc = reprDescs[descIdx];
-        size_t numDrawItems = _GetNumDrawItemsForDesc(desc);
-        if (numDrawItems == 0) continue;
-
-        for (size_t itemId = 0; itemId < numDrawItems; itemId++) {
-            auto* drawItem = static_cast<HdVP2DrawItem*>(
-                curRepr->GetDrawItem(drawItemIndex++)
-            );
-
-            if (HdChangeTracker::IsDirty(*dirtyBits)) {
+    const HdRepr::DrawItems& items = curRepr->GetDrawItems();
+    for (HdDrawItem* item : items) {
+        if (HdChangeTracker::IsDirty(*dirtyBits)) {
+            if (auto* drawItem = static_cast<HdVP2DrawItem*>(item)) {
+                const HdMeshReprDesc &desc = drawItem->GetReprDesc();
                 _UpdateDrawItem(sceneDelegate, drawItem, dirtyBits, desc,
                     requireSmoothNormals, requireFlatNormals);
             }
@@ -392,20 +436,29 @@ void HdVP2Mesh::_UpdateDrawItem(
     }
 
     // Points don't need an index buffer.
-    if (HdChangeTracker::IsTopologyDirty(*dirtyBits, meshId) && (desc.geomStyle != HdMeshGeomStylePoints)) {
+    if (HdChangeTracker::IsTopologyDirty(*dirtyBits, meshId)) {
         HdMeshTopology& topology = getTopologyFn();
 
-        HdMeshUtil meshUtil(&topology, meshId);
-        VtVec3iArray trianglesFaceVertexIndices;
-        VtIntArray primitiveParam;
-        VtVec3iArray trianglesEdgeIndices;
-        meshUtil.ComputeTriangleIndices(&trianglesFaceVertexIndices, &primitiveParam, &trianglesEdgeIndices);
+        if (desc.geomStyle == HdMeshGeomStyleHull) {
+            HdMeshUtil meshUtil(&topology, meshId);
+            VtVec3iArray trianglesFaceVertexIndices;
+            VtIntArray primitiveParam;
+            VtVec3iArray trianglesEdgeIndices;
+            meshUtil.ComputeTriangleIndices(&trianglesFaceVertexIndices, &primitiveParam, &trianglesEdgeIndices);
 
-        const int numIndex = trianglesFaceVertexIndices.size() * 3;
-        stateToCommit._indexBufferData = static_cast<int*>(
-            drawItemData._indexBuffer->acquire(numIndex, writeOnly)
-        );
-        memcpy(stateToCommit._indexBufferData, trianglesFaceVertexIndices.data(), numIndex * sizeof(int));
+            const int numIndex = trianglesFaceVertexIndices.size() * 3;
+            stateToCommit._indexBufferData = static_cast<int*>(
+                drawItemData._indexBuffer->acquire(numIndex, writeOnly)
+            );
+            memcpy(stateToCommit._indexBufferData, trianglesFaceVertexIndices.data(), numIndex * sizeof(int));
+        }
+        else if (desc.geomStyle == HdMeshGeomStyleHullEdgeOnly) {
+            unsigned int numIndex = _GetNumOfEdgeIndices(topology);
+            stateToCommit._indexBufferData = static_cast<int*>(
+                drawItemData._indexBuffer->acquire(numIndex, writeOnly)
+            );
+            _FillEdgeIndices(stateToCommit._indexBufferData, topology);
+        }
     }
 
     if (requireSmoothNormals && (*dirtyBits & DirtySmoothNormals) && drawItemData._normalsBuffer) {
@@ -505,16 +558,73 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
     }
 
-    if ((desc.shadingTerminal == HdMeshReprDescTokens->surfaceShader) &&
-        ((*dirtyBits & (HdChangeTracker::DirtyMaterialId | HdChangeTracker::NewRepr))
-        || HdChangeTracker::IsPrimvarDirty(*dirtyBits, meshId, HdTokens->displayColor)
-        || HdChangeTracker::IsPrimvarDirty(*dirtyBits, meshId, HdTokens->displayOpacity))
+    if ((desc.geomStyle == HdMeshGeomStyleHull) &&
+        (*dirtyBits & (HdChangeTracker::DirtyMaterialId | HdChangeTracker::NewRepr | HdChangeTracker::DirtyPrimvar))
     ) {
         if (material && drawItemData._hasUVs)
         {
             stateToCommit._surfaceShader = material->GetSurfaceShader();
             // TODO: how to determine transparency for a Hydra material?
             stateToCommit._isTransparent = false;
+        }
+
+        if (!stateToCommit._surfaceShader) {
+            // If no material is found and no display color will be found we will fallback to default color (i.e. blue)
+            // I don't know if this even possible and legal...if so, we may want to pick a better color.
+            bool foundColor = false;
+            MColor mayaColor;
+
+            for (const auto& primvar : sceneDelegate->GetPrimvarDescriptors(meshId, HdInterpolation::HdInterpolationConstant)) {
+                if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, meshId, primvar.name))
+                    continue;
+
+                if (primvar.name == HdTokens->displayColor) {
+                    const VtValue colorValue = GetPrimvar(sceneDelegate, primvar.name);
+                    if (!colorValue.IsEmpty()) {
+                        const VtVec3fArray colors = colorValue.Get<VtVec3fArray>();
+                        if (!colors.empty()) {
+                            const float* colorPtr = colors.front().data();
+                            mayaColor = MColor(colorPtr[0], colorPtr[1], colorPtr[2]);
+                            foundColor = true;
+                        }
+                    }
+                }
+                else if (primvar.name == HdTokens->displayOpacity) {
+                    const VtValue opacityValue = GetPrimvar(sceneDelegate, primvar.name);
+                    if (!opacityValue.IsEmpty()) {
+                        const VtFloatArray opacitArray = opacityValue.Get<VtFloatArray>();
+                        if (!opacitArray.empty()) {
+                            mayaColor.a = opacitArray[0];
+                        }
+                    }
+                }
+            }
+
+            if (!foundColor) {
+                for (const auto& primvar : sceneDelegate->GetPrimvarDescriptors(meshId, HdInterpolation::HdInterpolationUniform)) {
+                    if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, meshId, primvar.name))
+                        continue;
+
+                    if (primvar.name == HdTokens->displayColor) {
+                        const VtValue colorValue = GetPrimvar(sceneDelegate, primvar.name);
+                        if (!colorValue.IsEmpty()) {
+                            const VtVec3fArray colors = colorValue.Get<VtVec3fArray>();
+                            if (!colors.empty()) {
+                                const float* colorPtr = colors.front().data();
+                                mayaColor = MColor(colorPtr[0], colorPtr[1], colorPtr[2]);
+                                foundColor = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (foundColor)
+            {
+                stateToCommit._surfaceShader = _delegate->GetFallbackShader(mayaColor);
+                stateToCommit._isTransparent = (mayaColor.a < 1.0f);
+            }
         }
     }
 
@@ -578,65 +688,6 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
     }
 
-    if (*dirtyBits & HdChangeTracker::DirtyPrimvar) {
-        // If no material is found and no display color will be found we will fallback to default color (i.e. black)
-        // I don't know if this even possible and legal...if so, we may want to pick a better color.
-        bool foundColor = false;
-        MColor mayaColor;
-
-        for (const auto& primvar : sceneDelegate->GetPrimvarDescriptors(meshId, HdInterpolation::HdInterpolationConstant)) {
-            if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, meshId, primvar.name))
-                continue;
-            
-            if (!stateToCommit._surfaceShader) {
-                if (primvar.name == HdTokens->displayColor) {
-                    const VtValue colorValue = GetPrimvar(sceneDelegate, primvar.name);
-                    if (!colorValue.IsEmpty()) {
-                        const VtVec3fArray colors = colorValue.Get<VtVec3fArray>();
-                        if (!colors.empty()) {
-                            const float* colorPtr = colors.front().data();
-                            mayaColor = MColor(colorPtr[0], colorPtr[1], colorPtr[2]);
-                            foundColor = true;
-                        }
-                    }
-                }
-                else if (primvar.name == HdTokens->displayOpacity) {
-                    const VtValue opacityValue = GetPrimvar(sceneDelegate, primvar.name);
-                    if (!opacityValue.IsEmpty()) {
-                        const VtFloatArray opacitArray = opacityValue.Get<VtFloatArray>();
-                        if (!opacitArray.empty()) {
-                            mayaColor.a = opacitArray[0];
-                        }
-                    }
-                }
-            }
-        }
-
-        for (const auto& primvar : sceneDelegate->GetPrimvarDescriptors(meshId, HdInterpolation::HdInterpolationUniform)) {
-            if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, meshId, primvar.name))
-                continue;
-
-            if (!stateToCommit._surfaceShader && !foundColor) {
-                if (primvar.name == HdTokens->displayColor) {
-                    const VtValue colorValue = GetPrimvar(sceneDelegate, primvar.name);
-                    if (!colorValue.IsEmpty()) {
-                        const VtVec3fArray colors = colorValue.Get<VtVec3fArray>();
-                        if (!colors.empty()) {
-                            const float* colorPtr = colors.front().data();
-                            mayaColor = MColor(colorPtr[0], colorPtr[1], colorPtr[2]);
-                            foundColor = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (foundColor) {
-            stateToCommit._surfaceShader = _delegate->GetFallbackShader(mayaColor);
-            stateToCommit._isTransparent = (mayaColor.a < 1.0f);
-        }
-    }
-
     // Capture class member for lambda
     MHWRender::MVertexBuffer* const positionsBuffer = _positionsBuffer.get();
 
@@ -695,7 +746,7 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
 
         if ((stateToCommit._dirtyBits & HdChangeTracker::DirtyVisibility) != 0) {
-            renderItem->enable(drawItem->GetVisible());
+            renderItem->enable(drawItem->IsEnabled() && drawItem->GetVisible());
         }
 
         param->GetDrawScene().setGeometryForRenderItem(*renderItem, vertexBuffers, *indexBuffer, &bounds);
@@ -746,6 +797,25 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreatePointsRenderItem(const MString& name) 
     return renderItem;
 }
 
+/*! \brief  Create render item for wireframe repr.
+*/
+MHWRender::MRenderItem* HdVP2Mesh::_CreateWireframeRenderItem(const MString& name) const
+{
+    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
+        name,
+        MHWRender::MRenderItem::DecorationItem,
+        MHWRender::MGeometry::kLines
+    );
+
+    renderItem->depthPriority(MHWRender::MRenderItem::sActiveWireDepthPriority);
+    renderItem->castsShadows(false);
+    renderItem->receivesShadows(false);
+    renderItem->setWantConsolidation(true);
+    renderItem->setShader(_delegate->Get3dSolidShader());
+    renderItem->setSelectionMask(MSelectionMask());
+    return renderItem;
+}
+
 /*! \brief  Create render item for smoothHull repr.
 */
 MHWRender::MRenderItem* HdVP2Mesh::_CreateSmoothHullRenderItem(const MString& name) const
@@ -763,6 +833,64 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSmoothHullRenderItem(const MString& na
     renderItem->setShader(_delegate->GetFallbackShader());
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
     return renderItem;
+}
+
+/*! \brief  Create render item for the specified desc.
+*/
+MHWRender::MRenderItem* HdVP2Mesh::_CreateRenderItem(
+    const MString& name,
+    const HdMeshReprDesc& desc) const
+{
+    MHWRender::MRenderItem* renderItem = nullptr;
+
+    switch (desc.geomStyle) {
+    case HdMeshGeomStyleHull:
+        renderItem = _CreateSmoothHullRenderItem(name);
+        break;
+    case HdMeshGeomStyleHullEdgeOnly:
+        renderItem = _CreateWireframeRenderItem(name);
+        break;
+    case HdMeshGeomStylePoints:
+        renderItem = _CreatePointsRenderItem(name);
+        break;
+    default:
+        TF_WARN("Unexpected geomStyle");
+        break;
+    }
+
+    return renderItem;
+}
+
+/*! \brief  Update the selected state and enable/disable the wireframe draw item.
+
+    \return True if no draw items should be created for the repr.
+*/
+bool HdVP2Mesh::_UpdateSelectedState(
+    const HdReprSharedPtr& repr,
+    HdDirtyBits* dirtyBits,
+    bool fullySelected)
+{
+    if (_fullySelected == fullySelected) {
+        return true;
+    }
+
+    _fullySelected = fullySelected;
+
+    if (repr) {
+        const HdRepr::DrawItems& items = repr->GetDrawItems();
+        for (HdDrawItem* item : items) {
+            if (auto drawItem = static_cast<HdVP2DrawItem*>(item)) {
+                const HdMeshReprDesc& reprDesc = drawItem->GetReprDesc();
+                if (reprDesc.geomStyle == HdMeshGeomStyleHullEdgeOnly) {
+                    drawItem->Enable(fullySelected);
+                    *dirtyBits |= HdChangeTracker::DirtyVisibility;
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

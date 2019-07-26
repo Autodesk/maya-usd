@@ -59,8 +59,11 @@ private:
         HdSceneDelegate*, HdVP2DrawItem*, HdDirtyBits*,
         const HdMeshReprDesc&, bool requireSmoothNormals, bool requireFlatNormals);
 
-    MHWRender::MRenderItem* _CreateSmoothHullRenderItem(const MString& name) const;
+    bool _UpdateSelectedState(const HdReprSharedPtr& repr, HdDirtyBits* dirtyBits, bool fullySelected);
 
+    MHWRender::MRenderItem* _CreateRenderItem(const MString& name, const HdMeshReprDesc& desc) const;
+    MHWRender::MRenderItem* _CreateSmoothHullRenderItem(const MString& name) const;
+    MHWRender::MRenderItem* _CreateWireframeRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name) const;
 
     //! Custom dirty bits used by this mesh
@@ -78,6 +81,7 @@ private:
 
     // TODO: Define HdVP2MeshSharedData to hold extra shared data specific to VP2?
     std::unique_ptr<MHWRender::MVertexBuffer> _positionsBuffer; //!< Per-Rprim position buffer to be shared among render items
+    bool _fullySelected { false };                      //!< Whether the Rprim is fully selected.
 
     using HdVP2DrawItemCollection = std::vector<std::unique_ptr<HdVP2DrawItem>>;
     HdVP2DrawItemCollection _createdDrawItems;          //!< In current design, HdRepr doesn't take the ownership of draw items.

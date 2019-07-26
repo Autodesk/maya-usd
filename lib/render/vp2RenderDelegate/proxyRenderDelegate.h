@@ -13,6 +13,8 @@
 #include "pxr/pxr.h"
 
 #include "pxr/imaging/hd/engine.h"
+#include "pxr/imaging/hd/selection.h"
+#include "pxr/imaging/hd/task.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 
@@ -24,6 +26,12 @@
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MPxSubSceneOverride.h>
+
+#include <memory>
+
+#if defined(WANT_UFE_BUILD)
+#include "ufe/observer.h"
+#endif
 
 // Maya 2020 adds new API to enable subscene update in selection passes for
 // deferred update of selection render items.
@@ -92,6 +100,12 @@ public:
     MAYAUSD_CORE_PUBLIC
     MayaUsdProxyShapeBase* getProxyShape() const;
 
+    MAYAUSD_CORE_PUBLIC
+    void SelectionChanged();
+
+    MAYAUSD_CORE_PUBLIC
+    bool ProxyRenderDelegate::IsFullySelected(const SdfPath& path) const;
+
 private:
     ProxyRenderDelegate(const ProxyRenderDelegate&) = delete;
     ProxyRenderDelegate& operator=(const ProxyRenderDelegate&) = delete;
@@ -103,21 +117,40 @@ private:
 
     bool _isInitialized();
 
+    void _FilterSelection();
+    bool _UpdateSelectionHighlight();
+
     MObject             _mObject;                   //!< Proxy shape MObject
 
     // USD & Hydra Objects
     HdEngine            _engine;                    //!< Hydra engine responsible for running synchronization between scene delegate and VP2RenderDelegate
+    HdTaskSharedPtrVector _dummyTasks;              //!< Dummy task to bootstrap data preparation inside Hydra engine
     UsdStageRefPtr      _usdStage;                  //!< USD stage pointer
     HdRenderDelegate*   _renderDelegate{ nullptr }; //!< VP2RenderDelegate
     HdRenderIndex*      _renderIndex{ nullptr };    //!< Flattened representation of client scene graph
-    HdRprimCollection*  _renderCollection{nullptr}; //!< Global switch of display representations
     HdxTaskController*  _taskController{ nullptr }; //!< Task controller necessary for execution with hydra engine (we don't really need it, but there doesn't seem to be a way to get synchronization running without it)
     UsdImagingDelegate* _sceneDelegate{ nullptr };  //!< USD scene delegate
 
     bool                _isPopulated{ false };      //!< If false, scene delegate wasn't populated yet within render index
+    bool                _selectionChanged{ false }; //!< Whether there is any selection change or not
+
+    //! A collection of Rprims to prepare render data for specified reprs
+    std::unique_ptr<HdRprimCollection> _defaultCollection;
+
+    //! A collection of Rprims to update selection highlight
+    std::unique_ptr<HdRprimCollection> _selectionHighlightCollection;
+
+    //! A collection of Rprims being selected
+    std::unique_ptr<HdSelection>       _selection;
+
+#if defined(WANT_UFE_BUILD)
+    //! Observer for UFE global selection change
+    Ufe::Observer::Ptr  _ufeSelectionObserver;
+#endif
 
 #if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
-    MGlobal::ListAdjustment _globalListAdjustment;  //!< Adjustment mode for global selection list: ADD, REMOVE, REPLACE, XOR
+    //! Adjustment mode for global selection list: ADD, REMOVE, REPLACE, XOR
+    MGlobal::ListAdjustment _globalListAdjustment;
 #endif
 };
 

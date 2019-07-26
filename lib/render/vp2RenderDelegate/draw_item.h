@@ -66,10 +66,24 @@ public:
     */
     const MString& GetRenderItemName() const { return _renderItemName; }
 
+    /*! \brief  Whether the draw item is enabled.
+    */
+    bool IsEnabled() const { return _enabled; }
+
+    /*! \brief  Enable or disable the draw item.
+    */
+    void Enable(bool v) { _enabled = v; }
+
+    /*! \brief  Get the repr desc for which the draw item was created.
+    */
+    const HdMeshReprDesc& GetReprDesc() const { return _reprDesc; }
+
 private:
     HdVP2RenderDelegate* _delegate{ nullptr };  //!< VP2 render delegate for which this draw item was created
-    RenderItemData      _mesh;                  //!< VP2 render item data
-    MString             _renderItemName;        //!< Unique name. Use this when searching for render item in subscene override container
+    const HdMeshReprDesc _reprDesc;             //!< The repr desc for which the draw item was created.
+    RenderItemData       _mesh;                 //!< VP2 render item data
+    MString              _renderItemName;       //!< Unique name. Use this when searching for render item in subscene override container
+    bool                 _enabled{ true };      //!< Whether the draw item is enabled.
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
