@@ -433,8 +433,6 @@ target_include_directories(
     ${UFE_INCLUDE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/../base
-    # mayaUsd.h is generated in the build area
-    ${CMAKE_CURRENT_BINARY_DIR}/../base
 	${PXR_INCLUDE_DIRS}
 )
 
@@ -546,10 +544,11 @@ if(CMAKE_WANT_UFE_BUILD)
     )
 endif()
 
-add_subdirectory(translators)
-
 install(FILES ${mayaUsdPxrUsdMayaGL_headers}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/render/pxrUsdMayaGL
 )
+ 
+add_subdirectory(usd)
 
-add_subdirectory(schemas)
+add_subdirectory(render/mayaToHydra)
+add_dependencies(mtoh hdmaya)

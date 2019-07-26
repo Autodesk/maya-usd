@@ -227,7 +227,7 @@ def RunCMake(context, force, extraArgs=None):
     source code is located in the current working directory."""
 
     srcDir = os.getcwd()
-    instDir = context.instDir
+    instDir = os.path.join(context.instDir, BuildVariant(context))
     buildDir = os.path.join(context.buildDir, os.path.split(srcDir)[1])
 
     if force and os.path.isdir(buildDir):
