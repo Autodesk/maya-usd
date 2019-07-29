@@ -157,7 +157,7 @@ def Run(cmd, logCommandOutput=True):
     """Run the specified command in a subprocess."""
     PrintInfo('Running "{cmd}"'.format(cmd=cmd))
 
-    with open(context.logFileName, "a") as logfile:
+    with open(context.logFileLocation, "a") as logfile:
         logfile.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
         logfile.write("\n")
         logfile.write(cmd)
@@ -183,10 +183,10 @@ def Run(cmd, logCommandOutput=True):
         # If verbosity >= 3, we'll have already been printing out command output
         # so no reason to print the log file again.
         if verbosity < 3:
-            with open(context.logFileName, "r") as logfile:
+            with open(context.logFileLocation, "r") as logfile:
                 Print(logfile.read())
         raise RuntimeError("Failed to run '{cmd}'\nSee {log} for more details."
-                           .format(cmd=cmd, log=os.path.abspath(context.logFileName)))
+                           .format(cmd=cmd, log=os.path.abspath(context.logFileLocation)))
 
 def BuildVariant(context): 
     if context.buildDebug:
@@ -228,10 +228,12 @@ def RunCMake(context, force, extraArgs=None):
 
     srcDir = os.getcwd()
     instDir = context.instDir
-    buildDir = os.path.join(context.buildDir, os.path.split(srcDir)[1])
+    buildDir = context.buildDir
 
     if force and os.path.isdir(buildDir):
         shutil.rmtree(buildDir)
+    if force and os.path.isdir(instDir):
+        shutil.rmtree(instDir)
 
     if not os.path.isdir(buildDir):
         os.makedirs(buildDir)
@@ -367,21 +369,22 @@ class InstallContext:
         self.mayaUsdSrcDir = os.path.normpath(
             os.path.join(os.path.abspath(os.path.dirname(__file__))))
 
+        # Build type
+        # Must be done early, so we can call BuildVariant(self)
+        self.buildDebug = args.build_debug
+        self.buildRelease = args.build_release
+        self.buildRelWithDebug = args.build_relwithdebug
+
         # Workspace directory 
         self.workspaceDir = os.path.abspath(args.workspace_location)
 
         # Build directory
         self.buildDir = (os.path.abspath(args.build_location) if args.build_location
-                         else os.path.join(self.workspaceDir, "build"))
+                         else os.path.join(self.workspaceDir, "build", BuildVariant(self)))
 
         # Install directory
         self.instDir = (os.path.abspath(args.install_location) if args.install_location
-                         else os.path.join(self.workspaceDir, "install"))
-
-        # Build type
-        self.buildDebug = args.build_debug
-        self.buildRelease = args.build_release
-        self.buildRelWithDebug = args.build_relwithdebug
+                         else os.path.join(self.workspaceDir, "install", BuildVariant(self)))
 
         # Forced to be built
         self.forceBuild = args.force_clean_build
@@ -407,8 +410,8 @@ class InstallContext:
                                 if args.devkit_location else None)
 
         # Log File Name
-        self.logFileName="build_log.txt"
-        self.logFileLocation=os.path.join(self.buildDir, os.path.basename(os.getcwd()),self.logFileName)
+        logFileName="build_log.txt"
+        self.logFileLocation=os.path.join(self.buildDir, logFileName)
 
         # Build arguments
         self.buildArgs = list()
@@ -455,7 +458,7 @@ Print(summaryMsg)
 InstallMayaUSD(context, context.forceBuild, context.buildArgs)
 
 # Ensure directory structure is created and is writable.
-for dir in [context.workspaceDir, context.buildDir]:
+for dir in [context.workspaceDir, context.buildDir, context.instDir]:
     try:
         if os.path.isdir(dir):
             testFile = os.path.join(dir, "canwrite")
