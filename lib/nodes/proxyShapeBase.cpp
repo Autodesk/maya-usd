@@ -348,10 +348,6 @@ void
 MayaUsdProxyShapeBase::postConstructor()
 {
     setRenderable(true);
-
-    // This shape uses Hydra for imaging, so make sure that the
-    // pxrHdImagingShape is setup.
-    PxrMayaHdImagingShape::GetOrCreateInstance();
 }
 
 /* virtual */

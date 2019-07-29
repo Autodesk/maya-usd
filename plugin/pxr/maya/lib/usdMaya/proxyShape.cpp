@@ -16,6 +16,7 @@
 #include "usdMaya/proxyShape.h"
 
 #include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/nodes/proxyShapePlugin.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/nodes/stageData.h>
@@ -308,5 +309,18 @@ UsdMayaProxyShape::canBeSoftSelected() const
 
     return softSelHandle.asBool();
 }
+
+void UsdMayaProxyShape::postConstructor()
+{
+    ParentClass::postConstructor();
+
+    if (!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+    {
+        // This shape uses Hydra for imaging, so make sure that the
+        // pxrHdImagingShape is setup.
+        PxrMayaHdImagingShape::GetOrCreateInstance();
+    }
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -110,6 +110,8 @@ class UsdMayaProxyShape : public MayaUsdProxyShapeBase
                 MDataHandle& dataHandle,
                 MDGContext& ctx) override;
 
+        void postConstructor() override;
+
     protected:
         // Use the variant key to get the session layer from the prim path.
         PXRUSDMAYA_API
