@@ -1608,7 +1608,7 @@ void ProxyShape::constructLockPrims()
 void ProxyShape::postConstructor()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::postConstructor\n");
-  setRenderable(true);
+  ParentClass::postConstructor();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

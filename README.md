@@ -16,7 +16,7 @@ Pixar maintains a list of contributors to USD in their documentation [here](http
 Both Animal Logic and Pixar have their own Google interest groups which will remain great places to go with questions.
 
 Pixar forum is [here](https://groups.google.com/forum/#!forum/usd-interest)  
-Animal Lock forum is [here](https://groups.google.com/forum/#!forum/al_usdmaya-discussion)
+Animal Logic forum is [here](https://groups.google.com/forum/#!forum/al_usdmaya-discussion)
 
 
 ## Detailed Documentation

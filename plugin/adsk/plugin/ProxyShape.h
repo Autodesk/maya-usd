@@ -41,6 +41,8 @@ class ProxyShape : public MayaUsdProxyShapeBase
         MAYAUSD_PLUGIN_PUBLIC
         static MStatus initialize();
 
+        void postConstructor() override;
+
     private:
         ProxyShape();
 

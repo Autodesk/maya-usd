@@ -260,6 +260,8 @@ class ProxyShape
   friend class ProxyShapeUI;
   friend class StageReloadGuard;
   friend class ProxyDrawOverride;
+
+  typedef MayaUsdProxyShapeBase ParentClass;
 public:
 
   /// a method that registers all of the events in the ProxyShape

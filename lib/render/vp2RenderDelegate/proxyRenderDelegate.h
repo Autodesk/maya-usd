@@ -104,7 +104,7 @@ public:
     void SelectionChanged();
 
     MAYAUSD_CORE_PUBLIC
-    bool ProxyRenderDelegate::IsFullySelected(const SdfPath& path) const;
+    bool IsFullySelected(const SdfPath& path) const;
 
 private:
     ProxyRenderDelegate(const ProxyRenderDelegate&) = delete;
