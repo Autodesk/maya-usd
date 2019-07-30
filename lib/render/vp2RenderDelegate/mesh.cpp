@@ -240,8 +240,9 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
     // to share draw items with future implementation of wireframe mode. If
     // it won't, we can then define a customized "selectionHighlight" repr.
     if (reprToken == HdReprTokens->wire) {
-        bool fullySelected = param->GetDrawScene().IsFullySelected(GetId());
-        if (_UpdateSelectedState(repr, dirtyBits, fullySelected))
+        const bool selected = param->GetDrawScene().IsProxySelected() ||
+            (param->GetDrawScene().GetPrimSelectionState(GetId()) != nullptr);
+        if (_EnableWireDrawItems(repr, dirtyBits, selected))
             return;
     }
     else if (!isNew) {
@@ -679,12 +680,26 @@ void HdVP2Mesh::_UpdateDrawItem(
             renderIndex.GetInstancer(GetInstancerId());
         VtMatrix4dArray transforms =
             static_cast<HdVP2Instancer*>(instancer)->
-            ComputeInstanceTransforms(GetId());
+            ComputeInstanceTransforms(meshId);
 
         double instanceMatrix[4][4];
-        for (size_t i = 0; i < transforms.size(); ++i) {
-            transforms[i].Get(instanceMatrix);
-            stateToCommit._instanceTransforms.append(MMatrix(instanceMatrix));
+
+        if ((desc.geomStyle == HdMeshGeomStyleHullEdgeOnly) &&
+            !param->GetDrawScene().IsProxySelected()) {
+            if (auto state = param->GetDrawScene().GetPrimSelectionState(meshId)) {
+                for (const auto& indexArray : state->instanceIndices) {
+                    for (const auto index : indexArray) {
+                        transforms[index].Get(instanceMatrix);
+                        stateToCommit._instanceTransforms.append(MMatrix(instanceMatrix));
+                    }
+                }
+            }
+        }
+        else {
+            for (size_t i = 0; i < transforms.size(); ++i) {
+                transforms[i].Get(instanceMatrix);
+                stateToCommit._instanceTransforms.append(MMatrix(instanceMatrix));
+            }
         }
     }
 
@@ -861,20 +876,20 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateRenderItem(
     return renderItem;
 }
 
-/*! \brief  Update the selected state and enable/disable the wireframe draw item.
+/*! \brief  Enable or disable the wireframe draw item.
 
     \return True if no draw items should be created for the repr.
 */
-bool HdVP2Mesh::_UpdateSelectedState(
+bool HdVP2Mesh::_EnableWireDrawItems(
     const HdReprSharedPtr& repr,
     HdDirtyBits* dirtyBits,
-    bool fullySelected)
+    bool enable)
 {
-    if (_fullySelected == fullySelected) {
+    if (_wireItemsEnabled == enable) {
         return true;
     }
 
-    _fullySelected = fullySelected;
+    _wireItemsEnabled = enable;
 
     if (repr) {
         const HdRepr::DrawItems& items = repr->GetDrawItems();
@@ -882,7 +897,7 @@ bool HdVP2Mesh::_UpdateSelectedState(
             if (auto drawItem = static_cast<HdVP2DrawItem*>(item)) {
                 const HdMeshReprDesc& reprDesc = drawItem->GetReprDesc();
                 if (reprDesc.geomStyle == HdMeshGeomStyleHullEdgeOnly) {
-                    drawItem->Enable(fullySelected);
+                    drawItem->Enable(enable);
                     *dirtyBits |= HdChangeTracker::DirtyVisibility;
                     return true;
                 }
