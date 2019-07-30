@@ -104,7 +104,10 @@ public:
     void SelectionChanged();
 
     MAYAUSD_CORE_PUBLIC
-    bool IsFullySelected(const SdfPath& path) const;
+    bool IsProxySelected() const;
+
+    MAYAUSD_CORE_PUBLIC
+    const HdSelection::PrimSelectionState* GetPrimSelectionState(const SdfPath& path) const;
 
 private:
     ProxyRenderDelegate(const ProxyRenderDelegate&) = delete;
@@ -133,6 +136,7 @@ private:
 
     bool                _isPopulated{ false };      //!< If false, scene delegate wasn't populated yet within render index
     bool                _selectionChanged{ false }; //!< Whether there is any selection change or not
+    bool                _isProxySelected{ false };  //!< Whether the proxy shape is selected
 
     //! A collection of Rprims to prepare render data for specified reprs
     std::unique_ptr<HdRprimCollection> _defaultCollection;
@@ -141,7 +145,7 @@ private:
     std::unique_ptr<HdRprimCollection> _selectionHighlightCollection;
 
     //! A collection of Rprims being selected
-    std::unique_ptr<HdSelection>       _selection;
+    HdSelectionSharedPtr               _selection;
 
 #if defined(WANT_UFE_BUILD)
     //! Observer for UFE global selection change

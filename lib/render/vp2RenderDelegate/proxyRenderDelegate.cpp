@@ -25,6 +25,7 @@
 
 #include <maya/MFileIO.h>
 #include <maya/MFnPluginData.h>
+#include <maya/MHWGeometryUtilities.h>
 #include <maya/MProfiler.h>
 #include <maya/MSelectionContext.h>
 
@@ -435,11 +436,6 @@ void ProxyRenderDelegate::SelectionChanged()
 void ProxyRenderDelegate::_FilterSelection()
 {
 #if defined(WANT_UFE_BUILD)
-    // HdC_TODO: add selection highlight support:
-    // - Maya proxy and its DAG parents.
-    // - USD Xform prims.
-    // - Instancing prims.
-
     MayaUsdProxyShapeBase* proxyShape = getProxyShape();
     if (proxyShape == nullptr) {
         return;
@@ -462,7 +458,9 @@ void ProxyRenderDelegate::_FilterSelection()
 
         const SdfPath usdPath(segments[1].string());
         const SdfPath idxPath(_sceneDelegate->GetPathForIndex(usdPath));
-        _selection->AddRprim(HdSelection::HighlightModeSelect, idxPath);
+
+        _sceneDelegate->PopulateSelection(HdSelection::HighlightModeSelect,
+            idxPath, UsdImagingDelegate::ALL_INSTANCES, _selection);
     }
 #endif
 }
@@ -473,35 +471,64 @@ void ProxyRenderDelegate::_FilterSelection()
 */
 bool ProxyRenderDelegate::_UpdateSelectionHighlight()
 {
-    SdfPathVector oldSelection =
-        _selection->GetSelectedPrimPaths(HdSelection::HighlightModeSelect);
+    bool retVal = false;
 
-    _FilterSelection();
+    const bool wasProxySelected = _isProxySelected;
 
-    SdfPathVector newSelection =
-        _selection->GetSelectedPrimPaths(HdSelection::HighlightModeSelect);
+    MDagPath proxyDagPath;
+    MDagPath::getAPathTo(_mObject, proxyDagPath);
+    auto status = MHWRender::MGeometryUtilities::displayStatus(proxyDagPath);
+    _isProxySelected = ((status == MHWRender::kHilite) || (status == MHWRender::kLead));
 
-    if (!oldSelection.empty() || !newSelection.empty()) {
-        SdfPathVector rootPaths = std::move(oldSelection);
-        rootPaths.reserve(rootPaths.size() + newSelection.size());
-        rootPaths.insert(rootPaths.end(), newSelection.begin(), newSelection.end());
+    constexpr HdSelection::HighlightMode mode = HdSelection::HighlightModeSelect;
 
+    SdfPathVector rootPaths;
+
+    if (_isProxySelected) {
+        rootPaths.push_back(SdfPath::AbsoluteRootPath());
+        retVal = true;
+    }
+    else if (wasProxySelected) {
+        rootPaths.push_back(SdfPath::AbsoluteRootPath());
+        _FilterSelection();
+        retVal = !_selection->GetSelectedPrimPaths(mode).empty();
+    }
+    else {
+        SdfPathVector oldPaths = _selection->GetSelectedPrimPaths(mode);
+        _FilterSelection();
+        SdfPathVector newPaths = _selection->GetSelectedPrimPaths(mode);
+
+        if (!oldPaths.empty() || !newPaths.empty()) {
+            rootPaths = std::move(oldPaths);
+            rootPaths.reserve(rootPaths.size() + newPaths.size());
+            rootPaths.insert(rootPaths.end(), newPaths.begin(), newPaths.end());
+        }
+
+        retVal = !newPaths.empty();
+    }
+
+    if (!rootPaths.empty()) {
         _selectionHighlightCollection->SetRootPaths(rootPaths);
         _taskController->SetCollection(*_selectionHighlightCollection);
         _engine.Execute(*_renderIndex, _dummyTasks);
         _taskController->SetCollection(*_defaultCollection);
     }
 
-    return !newSelection.empty();
+    return retVal;
 }
 
-//! \brief  Query whether the given prim is selected
-bool ProxyRenderDelegate::IsFullySelected(const SdfPath& path) const
+//! \brief  Query whether the proxy is selected.
+bool ProxyRenderDelegate::IsProxySelected() const
 {
-    const HdSelection::PrimSelectionState* selectionState =
-        _selection->GetPrimSelectionState(HdSelection::HighlightModeSelect, path);
+    return _isProxySelected;
+}
 
-    return (selectionState && selectionState->fullySelected);
+//! \brief  Query the selection state of a given prim.
+const HdSelection::PrimSelectionState*
+ProxyRenderDelegate::GetPrimSelectionState(const SdfPath& path) const
+{
+    return (_selection == nullptr) ? nullptr :
+        _selection->GetPrimSelectionState(HdSelection::HighlightModeSelect, path);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
