@@ -268,6 +268,7 @@ def RunCMake(context, force, extraArgs=None):
         Run('cmake '
             '-DCMAKE_INSTALL_PREFIX="{instDir}" '
             '-DCMAKE_BUILD_TYPE={variant} '
+            '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON'
             '{osx_rpath} '
             '{generator} '
             '{extraArgs} '
