@@ -13,10 +13,13 @@ Follow the instructions below to run the script with its default behavior, which
        - GCC
        - Xcode
        - Microsoft Visual Studio
+  - USD, v19.05
   - CMake 
   - Python
 - Optional
   - Ninja
+
+When building Pixar USD Core, you need to pass ```--no-maya``` to ensure that ```third_party/maya``` plugin doesn't get built.
 
 #### 2. Download the source code
 
@@ -34,7 +37,7 @@ There are four arguments that must be passed to the script:
 - --devkit-location ---> Directory where Maya Devkit is installed.
 - workspace_location  ---> Directory where the project use as a workspace to build and install plugin/libraries.
 
-When building Pixar USD Core, you need to pass ```--no-maya``` to ensure that ```third_party/maya``` plugin doesn't get built.
+
 
 Custom arguments can be also passed to build system using ```--build-args```.
 e.g
