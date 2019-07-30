@@ -656,15 +656,13 @@ VtValue HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
 
 VtValue HdMayaMaterialNetworkConverter::ConvertPlugToValue(
     const MPlug& plug, const SdfValueTypeName& type, const VtValue* fallback) {
-    if (type == SdfValueTypeNames->Vector3f) {
+    if (type.GetType() == SdfValueTypeNames->Vector3f.GetType()) {
         return VtValue(GfVec3f(
             plug.child(0).asFloat(), plug.child(1).asFloat(),
             plug.child(2).asFloat()));
     } else if (type == SdfValueTypeNames->Float) {
         return VtValue(plug.asFloat());
-    } else if (
-        type == SdfValueTypeNames->Float2 ||
-        type == SdfValueTypeNames->TexCoord2f) {
+    } else if (type.GetType() == SdfValueTypeNames->Float2.GetType()) {
         return VtValue(
             GfVec2f(plug.child(0).asFloat(), plug.child(1).asFloat()));
     } else if (type == SdfValueTypeNames->Int) {
@@ -673,8 +671,7 @@ VtValue HdMayaMaterialNetworkConverter::ConvertPlugToValue(
     TF_DEBUG(HDMAYA_ADAPTER_GET)
         .Msg(
             "HdMayaMaterialNetworkConverter::ConvertPlugToValue(): do not "
-            "know "
-            "how to handle type: %s (cpp type: %s)\n",
+            "know how to handle type: %s (cpp type: %s)\n",
             type.GetAsToken().GetText(), type.GetCPPTypeName().c_str());
     if (fallback) { return *fallback; }
     return {};
