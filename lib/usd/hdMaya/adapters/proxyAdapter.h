@@ -9,7 +9,7 @@
 
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
-#include <../../../listeners/proxyShapeNotice.h>
+#include "../../../listeners/proxyShapeNotice.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

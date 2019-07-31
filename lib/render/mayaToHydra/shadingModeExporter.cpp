@@ -23,7 +23,7 @@
 //
 #include <pxr/pxr.h>
 
-#include <hdmaya/hdmaya.h>
+#include <hdMaya/hdMaya.h>
 
 #ifdef HDMAYA_USD_001905_BUILD
 #include <pxr/imaging/hio/glslfx.h>

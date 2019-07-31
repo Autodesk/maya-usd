@@ -54,14 +54,18 @@ add_library(${SCHEMA_PLUGIN}
     SHARED
     MayaReference.cpp
     tokens.cpp
-    ModuleDeps.cpp
+# Python wrappers are not yet defined for this library.  See
+# plugin/al/schemas/AL/usd/schemas/maya/CMakeLists.txt
+# for the existing AL schema Python wrappers.  PPT, 26-Jul-2019.
+#    ModuleDeps.cpp
 )
 
 target_compile_definitions(${SCHEMA_PLUGIN}
     PRIVATE
         MFB_PACKAGE_NAME=${SCHEMA_PLUGIN}
         MFB_ALT_PACKAGE_NAME=${SCHEMA_PLUGIN}
-        MFB_PACKAGE_MODULE=AL.usd.schemas.maya
+# Python wrappers are not yet defined for this library.  PPT, 26-Jul-2019.
+#        MFB_PACKAGE_MODULE=AL.usd.schemas.maya
         MAYAUSDCORE_SCHEMAS_EXPORTS
 )
 
@@ -71,6 +75,12 @@ set(PTHREAD_LINK "")
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     set(PTHREAD_LINK -lpthread -lm)
 endif()
+
+#======================================================================
+# TARGET PROPERTIES
+#======================================================================
+
+set_translators_plugin_properties("${SCHEMA_PLUGIN}")
 
 target_link_libraries(${SCHEMA_PLUGIN} ${DEPENDANT_LIBRARIES} ${PTHREAD_LINK})
 

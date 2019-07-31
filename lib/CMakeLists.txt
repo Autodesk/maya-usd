@@ -551,4 +551,4 @@ install(FILES ${mayaUsdPxrUsdMayaGL_headers}
 add_subdirectory(usd)
 
 add_subdirectory(render/mayaToHydra)
-add_dependencies(mtoh hdmaya)
+add_dependencies(mtoh hdMaya)

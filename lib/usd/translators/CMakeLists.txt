@@ -64,25 +64,8 @@ add_library(${TRANSLATORS_PLUGIN} SHARED ${source})
 #======================================================================
 # TARGET PROPERTIES
 #======================================================================
-if(MSVC)
-    set_target_properties(${TRANSLATORS_PLUGIN} PROPERTIES SUFFIX ".mll")
-elseif(APPLE)
-    set(CMAKE_MACOSX_RPATH ON)
-    set_target_properties(${TRANSLATORS_PLUGIN}
-        PROPERTIES
-            PREFIX ""
-            SUFFIX ".bundle"
-            BUILD_WITH_INSTALL_RPATH TRUE
-            INSTALL_RPATH "@loader_path/../lib;@loader_path/../../USD/lib;@loader_path/../../USD/maya/lib;${PXR_USD_LOCATION}/lib"
-    )
-else()
-    set_target_properties(${TRANSLATORS_PLUGIN}
-            PROPERTIES
-            PREFIX ""
-            INSTALL_RPATH "$ORIGIN/../lib:$ORIGIN/../../USD/lib:$ORIGIN/../../USD/maya/lib:${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64"
-            BUILD_WITH_INSTALL_RPATH TRUE
-    )
-endif()
+
+set_translators_plugin_properties("${TRANSLATORS_PLUGIN}")
 
 #======================================================================
 # INCLUDE, LINK

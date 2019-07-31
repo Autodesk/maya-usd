@@ -23,7 +23,7 @@
 //
 #include "materialAdapter.h"
 
-#include <hdmaya/hdmaya.h>
+#include <hdMaya/hdMaya.h>
 
 #include <pxr/base/tf/fileUtils.h>
 

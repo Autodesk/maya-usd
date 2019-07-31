@@ -16,7 +16,7 @@ set(SRC
 add_library(${TARGET_NAME} SHARED ${SRC})
 
 target_link_libraries(${TARGET_NAME} PRIVATE 
-    hdmaya 
+    hdMaya 
     usdShade
     ${MAYA_LIBRARIES}
 )

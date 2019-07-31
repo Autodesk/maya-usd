@@ -4,7 +4,6 @@
         "Info": {
           "UsdMaya": {
             "PrimReader": {
-              "mayaPlugin": "mayaUsdTranslators",
               "providesTranslator": [
                 "UsdGeomCamera",
                 "UsdGeomMesh",
@@ -27,13 +26,11 @@
               ]
             },
             "PrimUpdater": {
-              "mayaPlugin": "mayaUsdTranslators",
               "providesTranslator": [
                 "AL_usd_MayaReference"
               ]
             },
             "PrimWriter": {
-              "mayaPlugin": "mayaUsdTranslators",
               "providesTranslator": [
                 "camera",
                 "file",
@@ -57,8 +54,8 @@
             }
           }
         },
-        "LibraryPath": "../../../mayaUsd_Translators.mll",
-        "Name": "mayaUsd_Translators",
+        "LibraryPath": "../../../@CMAKE_SHARED_LIBRARY_PREFIX@@TRANSLATORS_PLUGIN@@CMAKE_SHARED_LIBRARY_SUFFIX@",
+        "Name": "@TRANSLATORS_PLUGIN@",
         "Type": "library"
       }
     ]

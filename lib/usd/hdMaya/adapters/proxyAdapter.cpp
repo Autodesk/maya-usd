@@ -30,9 +30,9 @@
 #include "../delegates/proxyDelegate.h"
 #include "../delegates/sceneDelegate.h"
 
-#include <hdmaya/hdmaya.h>
+#include <hdMaya/hdMaya.h>
 
-#include <../../../nodes/proxyShapeBase.h>
+#include "../../../nodes/proxyShapeBase.h"
 
 #include <maya/MTime.h>
 #include <maya/MGlobal.h>

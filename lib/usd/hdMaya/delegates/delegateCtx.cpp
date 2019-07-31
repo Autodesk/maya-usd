@@ -23,7 +23,7 @@
 //
 #include "delegateCtx.h"
 
-#include <hdmaya/hdmaya.h>
+#include <hdMaya/hdMaya.h>
 
 #include <pxr/base/gf/frustum.h>
 #include <pxr/base/gf/plane.h>
@@ -38,7 +38,7 @@
 #include <pxr/imaging/glf/glslfx.h>
 #endif // HDMAYA_USD_001905_BUILD
 
-#include <../../../utils/util.h>
+#include "../../../utils/util.h"
 
 #include <maya/MFnLight.h>
 
