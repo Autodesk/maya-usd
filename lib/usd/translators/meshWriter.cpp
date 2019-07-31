@@ -16,13 +16,13 @@
 #include "pxr/pxr.h"
 #include "meshWriter.h"
 
-#include <../../fileio/utils/adaptor.h>
-#include <../../fileio/utils/meshUtil.h>
-#include <../../fileio/primWriter.h>
-#include <../../fileio/primWriterRegistry.h>
-#include <../../utils/util.h>
-#include <../../fileio/utils/writeUtil.h>
-#include <../../fileio/writeJobContext.h>
+#include "../../fileio/utils/adaptor.h"
+#include "../../fileio/utils/meshUtil.h"
+#include "../../fileio/primWriter.h"
+#include "../../fileio/primWriterRegistry.h"
+#include "../../utils/util.h"
+#include "../../fileio/utils/writeUtil.h"
+#include "../../fileio/writeJobContext.h"
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"

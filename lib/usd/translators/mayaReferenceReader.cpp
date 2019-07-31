@@ -32,9 +32,9 @@
 
 #include "pxr/pxr.h"
 
-#include <../../fileio/primReaderRegistry.h>
-#include <../../fileio/translators/translatorMayaReference.h>
-#include <../schemas/MayaReference.h>
+#include "../../fileio/primReaderRegistry.h"
+#include "../../fileio/translators/translatorMayaReference.h"
+#include "../schemas/MayaReference.h"
 
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/camera.h"

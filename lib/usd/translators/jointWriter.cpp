@@ -16,13 +16,13 @@
 #include "pxr/pxr.h"
 #include "jointWriter.h"
 
-#include <../../fileio/utils/adaptor.h>
-#include <../../fileio/primWriter.h>
-#include <../../fileio/primWriterRegistry.h>
-#include <../../fileio/translators/translatorSkel.h>
-#include <../../fileio/translators/translatorUtil.h>
-#include <../../utils/util.h>
-#include <../../fileio/writeJobContext.h>
+#include "../../fileio/utils/adaptor.h"
+#include "../../fileio/primWriter.h"
+#include "../../fileio/primWriterRegistry.h"
+#include "../../fileio/translators/translatorSkel.h"
+#include "../../fileio/translators/translatorUtil.h"
+#include "../../utils/util.h"
+#include "../../fileio/writeJobContext.h"
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"

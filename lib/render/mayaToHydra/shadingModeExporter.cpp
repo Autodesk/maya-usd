@@ -37,8 +37,8 @@ auto& HioGlslfxTokens = PXR_NS::GlfGLSLFXTokens;
 #include <pxr/usd/usdShade/connectableAPI.h>
 #include <pxr/usd/usdShade/shader.h>
 
-#include <../../fileio/shading/shadingModeExporter.h>
-#include <../../fileio/shading/shadingModeRegistry.h>
+#include "../../fileio/shading/shadingModeExporter.h"
+#include "../../fileio/shading/shadingModeRegistry.h"
 
 #include "../../usd/hdMaya/adapters/materialNetworkConverter.h"
 

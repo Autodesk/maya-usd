@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#include <../../fileio/translators/translatorRfMLight.h>
-#include <../../fileio/primReaderRegistry.h>
+#include "../../fileio/translators/translatorRfMLight.h"
+#include "../../fileio/primReaderRegistry.h"
 
 #include "pxr/usd/usdLux/diskLight.h"
 #include "pxr/usd/usdLux/distantLight.h"

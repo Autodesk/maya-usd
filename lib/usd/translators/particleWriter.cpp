@@ -16,10 +16,10 @@
 #include "pxr/pxr.h"
 #include "particleWriter.h"
 
-#include <../../fileio/utils/adaptor.h>
-#include <../../fileio/primWriterRegistry.h>
-#include <../../fileio/transformWriter.h>
-#include <../../fileio/writeJobContext.h>
+#include "../../fileio/utils/adaptor.h"
+#include "../../fileio/primWriterRegistry.h"
+#include "../../fileio/transformWriter.h"
+#include "../../fileio/writeJobContext.h"
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/stringUtils.h"

@@ -15,8 +15,8 @@
 //
 #include "pxr/pxr.h"
 
-#include <../../fileio/primReaderRegistry.h>
-#include <../../fileio/translators/translatorMaterial.h>
+#include "../../fileio/primReaderRegistry.h"
+#include "../../fileio/translators/translatorMaterial.h"
 
 #include "pxr/usd/usdShade/material.h"
 

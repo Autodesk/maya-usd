@@ -15,8 +15,8 @@
 //
 #include "pxr/pxr.h"
 
-#include <../../fileio/primReaderRegistry.h>
-#include <../../fileio/translators/translatorCamera.h>
+#include "../../fileio/primReaderRegistry.h"
+#include "../../fileio/translators/translatorCamera.h"
 
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdGeom/camera.h"
