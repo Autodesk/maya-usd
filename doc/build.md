@@ -36,11 +36,14 @@ There are four arguments that must be passed to the script:
 
 When building Pixar USD Core, you need to pass ```--no-maya``` to ensure that ```third_party/maya``` plugin doesn't get built.
 
-Custom arguments can be also passed to build system using ```--build-args```.
+Comma-separated list of cmake variables can be also passed to build system using ```--build-args```.
 e.g
 ```
 python build.py --build-args="-DBUILD_ADSK_PLUGIN=ON,-DBUILD_PXR_PLUGIN=OFF"
 ```
+
+Comma-separated list of stages can also be passed to the build system using ```--stages```. By default 
+'clean','configure','build','install' stages are executed if this argument is not set.
 
 #### 4. CMake Generator
 
