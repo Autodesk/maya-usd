@@ -285,12 +285,11 @@ def RunCMake(context, extraArgs=None, stages=None):
         installArg = ""
         if 'install' in stages:
             installArg = "--target install"
-
-        if 'build' in stages:
-            Run("cmake --build . --config {variant} {installArg} -- {multiproc}"
-                .format(variant=variant,
-                        installArg=installArg,
-                        multiproc=FormatMultiProcs(context.numJobs, generator)))
+  
+        Run("cmake --build . --config {variant} {installArg} -- {multiproc}"
+            .format(variant=variant,
+                    installArg=installArg,
+                    multiproc=FormatMultiProcs(context.numJobs, generator)))
 
 ############################################################
 # Maya USD
