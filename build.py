@@ -285,11 +285,12 @@ def RunCMake(context, extraArgs=None, stages=None):
         installArg = ""
         if 'install' in stages:
             installArg = "--target install"
-  
-        Run("cmake --build . --config {variant} {installArg} -- {multiproc}"
-            .format(variant=variant,
-                    installArg=installArg,
-                    multiproc=FormatMultiProcs(context.numJobs, generator)))
+
+        if 'build' in stages or 'install' in stages:
+            Run("cmake --build . --config {variant} {installArg} -- {multiproc}"
+                .format(variant=variant,
+                        installArg=installArg,
+                        multiproc=FormatMultiProcs(context.numJobs, generator)))
 
 ############################################################
 # Maya USD
@@ -421,18 +422,15 @@ class InstallContext:
 
         # Build arguments
         self.buildArgs = list()
-        for args in args.build_args:
-            argList = args.split(",")
-            for arg in argList:
+        for argList in args.build_args:
+            for arg in argList.split(","):
                 self.buildArgs.append(arg)
 
         # Stages arguments
         self.stagesArgs = list()
-        for args in args.stages:
-            argList = args.split(",")
-            for arg in argList:
+        for argList in args.stages:
+            for arg in argList.split(","):
                 self.stagesArgs.append(arg)
-
 try:
     context = InstallContext(args)
 except Exception as e:
