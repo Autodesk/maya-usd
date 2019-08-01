@@ -202,6 +202,10 @@ void TranslatorContext::registerItem(const UsdPrim& prim, MObjectHandle object)
   {
     iter = m_primMapping.insert(iter, PrimLookup(prim.GetPath(), prim.GetTypeName(), object.object()));
   }
+  else
+  {
+    iter->setNode(object.object());
+  }
 
   if(object.object() == MObject::kNullObj)
   {
@@ -220,7 +224,7 @@ void TranslatorContext::insertItem(const UsdPrim& prim, MObjectHandle object)
   auto iter = findLocation(prim.GetPath());
   if(iter == m_primMapping.end() || iter->path() != prim.GetPath())
   {
-    iter = m_primMapping.insert(iter, PrimLookup(prim.GetPath(), prim.GetTypeName(), object.object()));
+    iter = m_primMapping.insert(iter, PrimLookup(prim.GetPath(), prim.GetTypeName(), MObject()));
   }
   
   if(object.object() == MObject::kNullObj)
@@ -256,6 +260,9 @@ void TranslatorContext::removeItems(const SdfPath& path)
     bool hasDagNodes = false;
     bool hasDependNodes = false;
 
+    // Store the DAG nodes to delete in a vector which we will sort via their path length
+    std::vector<std::pair<int, MObject>> dagNodesToDelete;
+
     auto& nodes = it->createdNodes();
     for(std::size_t j = 0, n = nodes.size(); j < n; ++j)
     {
@@ -264,30 +271,17 @@ void TranslatorContext::removeItems(const SdfPath& path)
         // Need to reparent nodes first to avoid transform getting deleted and triggering ancestor deletion
         // rather than just deleting directly.
         MObject obj = nodes[j].object();
-        if(obj.hasFn(MFn::kTransform))
-        {
-          hasDagNodes = true;
-          modifier2.reparentNode(obj);
-          status = modifier2.deleteNode(obj);
-          status = modifier2.doIt();
-          AL_MAYA_CHECK_ERROR2(status, "failed to delete transform node");
-        }
-        else
+
         if(obj.hasFn(MFn::kDagNode))
         {
-          hasDagNodes = true;
-          MObject temp = modifier2.createNode("transform");
-          MObjectHandle tempHandle(temp);
-          tempXforms.push_back(temp);
-          modifier2.reparentNode(obj, temp);
-          modifier2.doIt();  // removing this caused crashes
-          modifier2.deleteNode(obj);
-          status = modifier2.doIt();
+          MFnDagNode fn(obj);
+          MDagPath path;
+          fn.getPath(path);
+          dagNodesToDelete.emplace_back(path.fullPathName().length(), obj);
           AL_MAYA_CHECK_ERROR2(status, "failed to delete dag node");
         }
         else
         {
-          hasDependNodes = true;
           status = modifier1.deleteNode(obj);
           status = modifier1.doIt();
           AL_MAYA_CHECK_ERROR2(status, MString("failed to delete node"));
@@ -300,19 +294,36 @@ void TranslatorContext::removeItems(const SdfPath& path)
     }
     nodes.clear();
 
-    if(hasDependNodes)
+    if(!dagNodesToDelete.empty())
     {
-      status = modifier1.doIt();
-      AL_MAYA_CHECK_ERROR2(status, "failed to delete dg nodes");
-    }
-    if(hasDagNodes)
-    {
-      for (size_t i = 0, n = tempXforms.size(); i < n; ++i)
+      std::sort(dagNodesToDelete.begin(), dagNodesToDelete.end(), 
+        [](const std::pair<int, MObject>& a, const std::pair<int, MObject>& b) { return a.first > b.first; });
+
+      for(auto it : dagNodesToDelete)
       {
-        // Check if these xforms have already been deleted automatically when we deleted their child shape.
-        if(tempXforms[i].isAlive() && tempXforms[i].isValid())
+        MObjectHandle handle(it.second);
+        if(handle.isAlive() && handle.isValid())
         {
-          modifier2.deleteNode(tempXforms[i].object());
+          if(it.second.hasFn(MFn::kPluginEmitterNode) || 
+             it.second.hasFn(MFn::kPluginTransformNode)|| 
+             it.second.hasFn(MFn::kPluginConstraintNode))
+          {
+            // reparent custom transform nodes under the world prior to deletion. 
+            // This avoids the problem where deleting a custom transform node automatically 
+            // deletes the parent transform (which cascades up the hierarchy until the entire
+            // scene has been deleted)
+            status = modifier2.reparentNode(it.second);
+          }
+          else
+          if(it.second.hasFn(MFn::kPluginShape) || 
+             it.second.hasFn(MFn::kPluginImagePlaneNode))
+          {
+            // same issue exists with custom shape nodes, except that we need to create a temp transform
+            // node to parent the shape under (otherwise the reparent operation will fail!)
+            MObject node = modifier2.createNode("transform");
+            status = modifier2.reparentNode(it.second, node);
+          }
+          modifier2.deleteNode(it.second);
         }
       }
       status = modifier2.doIt();
@@ -455,8 +466,6 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
       }
     }
   }
-
-
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -508,6 +517,7 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
 {
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim %s");
   assert(m_proxyShape);
   auto stage = m_proxyShape->getUsdStage();
   if(stage)
@@ -540,7 +550,6 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
   auto stage = m_proxyShape->usdStage();
   if(stage)
   {
-    MDagModifier modifier;
     TfToken type = m_proxyShape->context()->getTypeForPath(path);
 
     fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().get(type);
@@ -590,7 +599,6 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
     {
       MGlobal::displayError(MString("could not find usd translator plugin instance for prim: ") + path.GetText() + " type: " + type.GetText());
     }
-    modifier.doIt();
   }
   else
   {

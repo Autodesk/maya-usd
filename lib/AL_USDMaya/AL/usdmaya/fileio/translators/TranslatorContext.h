@@ -321,6 +321,11 @@ public:
     /// \return the type stored for this prim
     TfToken type() const
       { return m_type; }
+      
+    /// \brief  get the maya object of the node
+    /// \return the maya node for this reference
+    void setNode(MObject node)
+      { m_object = node; }
 
     /// \brief  get created maya nodes
     /// \return the created maya nodes for this prim translator

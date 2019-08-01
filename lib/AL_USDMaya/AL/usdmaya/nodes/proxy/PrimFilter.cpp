@@ -46,6 +46,13 @@ PrimFilter::PrimFilter(
     TfToken type = proxy->getTypeForPath(path);
     TfToken newType = prim.GetTypeName();
 
+    // inactive prims should be removed
+    if (!prim.IsActive())
+    {
+        it = m_newPrimSet.erase(lastIt);
+        continue;
+    }
+
     bool supportsUpdate = false;
     bool requiresParent = false;
     bool importableByDefault = false;
@@ -67,13 +74,15 @@ PrimFilter::PrimFilter(
           {
             m_removedPrimSet.erase(iter);
             m_updatablePrimSet.push_back(prim);
+
+            // supporting update means it's not a new prim,
+            // otherwise we still want the prim to be re-created.
+            it = m_newPrimSet.erase(lastIt);
+
             // skip creating transforms in this case.
             requiresParent = false;
           }
         }
-
-        //If the prim is still already there with the same type, it isn't new.
-        it = m_newPrimSet.erase(lastIt);
       }
       // if we need a transform, make a note of it now
       if(requiresParent)

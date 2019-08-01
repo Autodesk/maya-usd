@@ -348,7 +348,7 @@ TEST_F(ActiveInactive, customTransformType)
     EXPECT_NE(MObject::kNullObj, node);
     EXPECT_EQ(MFn::kJoint, node.apiType());
 
-    // activate the prim
+    // deactivate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a false -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
 
     EXPECT_FALSE(bool(sl.add("cube:pCube1")));
@@ -390,7 +390,7 @@ TEST_F(ActiveInactive, customTransformType)
     EXPECT_EQ(3, sl.length());
     sl.clear();
 
-    // activate the prim
+    // deactivate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a false -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
     EXPECT_FALSE(bool(sl.add("cube:pCube1")));
     EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
@@ -416,8 +416,8 @@ TEST_F(ActiveInactive, customTransformType)
 
     AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
     MObject node = proxy->findRequiredPath(SdfPath("/root/rig"));
-    EXPECT_NE(MObject::kNullObj, node);
-    EXPECT_EQ(MFn::kJoint, node.apiType());
+    // inactive prim should not be "seen" by AL_USDMaya
+    EXPECT_EQ(MObject::kNullObj, node);
 
     // should not be able to select the items in the reference file
     MSelectionList sl;
@@ -426,7 +426,7 @@ TEST_F(ActiveInactive, customTransformType)
     EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
     EXPECT_EQ(0, sl.length());
 
-    // deactivate the prim
+    // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
     EXPECT_TRUE(bool(sl.add("cube:pCube1")));
     EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
@@ -434,7 +434,7 @@ TEST_F(ActiveInactive, customTransformType)
     EXPECT_EQ(3, sl.length());
     sl.clear();
 
-    // activate the prim
+    // deactivate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a false -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
     EXPECT_FALSE(bool(sl.add("cube:pCube1")));
     EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));

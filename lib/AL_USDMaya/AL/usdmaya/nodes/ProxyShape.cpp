@@ -351,6 +351,12 @@ void ProxyShape::translatePrimsIntoMaya(
     }
   }
 
+  // content to remove needs to be dealt with first
+  // as some nodes might be re-imported and we have
+  // to make sure their "old" version is gone before
+  // recreating them.
+  context()->removeEntries(filter.removedPrimSet());
+
   cmds::ProxyShapePostLoadProcess::MObjectToPrim objsToCreate;
   if(!filter.transformsToCreate().empty())
   {
@@ -363,7 +369,6 @@ void ProxyShape::translatePrimsIntoMaya(
         param.readAnimatedValues());
   }
 
-  context()->removeEntries(filter.removedPrimSet());
 
   if(!filter.newPrimSet().empty())
   {
@@ -1205,6 +1210,12 @@ void ProxyShape::validateTransforms()
       TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("validateTransforms %s\n", it.first.GetText());
 
       MObject node = it.second.node();
+      MObjectHandle handle(node);
+      if(!handle.isValid() || !handle.isAlive())
+      {
+        continue;
+      }
+
       if(node.isNull())
       {
         continue;
@@ -1213,12 +1224,11 @@ void ProxyShape::validateTransforms()
       Transform* tm = it.second.transform();
       if(!tm)
       {
-        continue;
-      }
-
-      TransformationMatrix* tmm = tm->transform();
-      if(!tmm)
-      {
+        UsdPrim newPrim = m_stage->GetPrimAtPath(it.first);
+        if(!newPrim)
+        {
+          pathsToNuke.push_back(it.first);
+        }
         continue;
       }
 
@@ -2235,6 +2245,7 @@ ProxyShape::TransformReference::TransformReference(MObject mayaNode, Transform* 
 {
   m_required = r;
   m_selected = s;
+  m_selectedTemp = 0;
   m_refCount = rc;
   m_transform = transform();
 }

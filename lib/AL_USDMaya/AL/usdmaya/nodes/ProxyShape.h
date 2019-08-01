@@ -448,7 +448,12 @@ public:
       const auto it = m_requiredPaths.find(path);
       if(it != m_requiredPaths.end())
       {
-        return it->second.node();
+        const MObject& object = it->second.node();
+        const MObjectHandle handle(object);
+        if(handle.isValid() && handle.isAlive())
+        {
+            return object;
+        }
       }
       return MObject::kNullObj;
     }
@@ -930,6 +935,8 @@ private:
 
     void printRefCounts() const
     {
+      MObjectHandle handle(m_node);
+      std::cout << "[valid = " << handle.isValid() << ", alive = " << handle.isAlive() << "] ";
       std::cout
                 << m_required << ":"
                 << m_selectedTemp << ":"

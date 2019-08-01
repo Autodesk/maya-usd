@@ -105,7 +105,7 @@ bool importSchemaPrim(
   }
 
   if(context)
-    context->registerItem(prim, parent);
+    context->registerItem(prim, created == MObject::kNullObj ? parent : created);
   return true;
 }
 

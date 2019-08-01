@@ -1492,8 +1492,20 @@ MStatus TranslatePrim::redoIt()
 {
   MDagPath parentTransform = m_proxy->parentTransform();
 
+  // This makes sure we cannot run import twice.
+  SdfPathVector newImportPaths;
+  for(auto importPath : m_importPaths)
+  {
+    MObject transformObject = m_proxy->findRequiredPath(importPath);
+    if (transformObject == MObject::kNullObj)
+    {
+      newImportPaths.push_back(importPath);
+    }
+  }
+
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("TranslatePrim::redoIt\n");
-  m_proxy->translatePrimPathsIntoMaya(m_importPaths, m_teardownPaths, tp);
+  m_proxy->translatePrimPathsIntoMaya(newImportPaths, m_teardownPaths, tp);
+
 
   auto stage = m_proxy->usdStage();
   auto manufacture = m_proxy->translatorManufacture();
