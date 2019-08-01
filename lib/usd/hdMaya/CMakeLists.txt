@@ -1,9 +1,7 @@
 set(TARGET_NAME hdMaya)
 
 if (LUMA_USD_BUILD)
-    set(HDMAYA_LUMA_BUILD_INT 1)
-else ()
-    set(HDMAYA_LUMA_BUILD_INT 0)
+    set(HDMAYA_LUMA_BUILD 1)
 endif ()
 
 set(HDMAYA_H "${CMAKE_CURRENT_BINARY_DIR}/hdMaya.h")
@@ -98,7 +96,7 @@ target_include_directories(${TARGET_NAME}
         ${CMAKE_BINARY_DIR}
 )
 
-if (HDMAYA_UFE_BUILD)
+if (UFE_FOUND)
     target_link_libraries(${TARGET_NAME} PUBLIC ${UFE_LIBRARY})
 endif()
 

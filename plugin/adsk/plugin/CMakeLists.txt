@@ -1,11 +1,14 @@
 set(PLUGIN_PACKAGE mayaUsdPlugin)
 
-if (NOT "${MAYA_DEVKIT_LOCATION}" STREQUAL "")
-    find_package(UFE REQUIRED)
-    include_directories(${UFE_INCLUDE_DIR})
-
-    # WANT_UFE_BUILD is used in mayaUsdPlugin for #ifdef test.
-    add_definitions(-DWANT_UFE_BUILD)
+if(CMAKE_WANT_UFE_BUILD)
+    find_package(UFE QUIET)
+    if(UFE_FOUND)
+        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
+        include_directories(${UFE_INCLUDE_DIR})
+        add_definitions(-DWANT_UFE_BUILD)
+    else()
+        message(STATUS "UFE not found. UFE features will be disabled.")
+    endif()
 endif()
 
 add_library(${PLUGIN_PACKAGE} MODULE

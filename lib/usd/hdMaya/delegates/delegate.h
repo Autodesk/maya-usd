@@ -45,9 +45,9 @@
 #include "../api.h"
 #include "params.h"
 
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
 #include <ufe/selection.h>
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -97,13 +97,13 @@ public:
         const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
         const HdSelectionSharedPtr& selection) {}
 
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
     virtual void PopulateSelectedPaths(
         const UFE_NS::Selection& ufeSelection, SdfPathVector& selectedSdfPaths,
         const HdSelectionSharedPtr& selection) {}
 
     virtual bool SupportsUfeSelection() { return false; }
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
 
     void SetLightsEnabled(const bool enabled) { _lightsEnabled = enabled; }
     bool GetLightsEnabled() { return _lightsEnabled; }
