@@ -29,7 +29,7 @@ using AL::maya::test::buildTempPath;
 //----------------------------------------------------------------------------------------------------------------------
 
 // test manufacturing of a TranslatorTest translator
-// its instanciation looks for a TranslatorTestType TfType
+// its instantiation looks for a TranslatorTestType TfType
 TEST(translators_PythonBindings, import)
 {
   auto filepath = buildTempPath("examplepolycube.usda");
@@ -41,7 +41,7 @@ TEST(translators_PythonBindings, import)
   stage->Save();
 
   auto pythonscript = MString("\"") + AL_USDMAYA_TEST_DATA +
-                      MString("/examplecubetranslator.py\"");
+                      MString("/../py/examplecubetranslator.py\"");
 
   auto status = MGlobal::executePythonCommand(
       MString {"execfile("} + pythonscript + ")\n"

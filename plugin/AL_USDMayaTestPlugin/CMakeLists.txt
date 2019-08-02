@@ -114,5 +114,5 @@ add_test(
 )
 
 if(NOT SKIP_USDMAYA_TESTS)
-    add_subdirectory(AL/usdmaya/py)
+    add_subdirectory(py)
 endif()

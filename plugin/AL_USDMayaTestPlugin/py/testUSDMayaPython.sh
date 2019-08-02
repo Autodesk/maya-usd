@@ -8,6 +8,6 @@ export PYTHONPATH=$AL_USDMAYA_LOCATION/lib/python:$USD_LIBRARY_PATH/python:$3:$P
 export PXR_PLUGINPATH_NAME=$AL_USDMAYA_LOCATION/lib/usd:$PXR_PLUGINPATH_NAME
 export PATH=$MAYA_LOCATION/bin:$PATH
 
-maya -batch -command "python(\"execfile(\\\"$3/testUSDMayaPython.py\\\")\")"
+maya -batch -command "python(\"execfile(\\\"$3/testProxyShape.py\\\")\nexecfile(\\\"$3/testTranslators.py\\\")\")"
 
 exit $?

@@ -1,6 +1,6 @@
 from AL import usd, usdmaya
 
-from pxr import Tf, Usd, Sdf, UsdGeom, Gf, Vt
+from pxr import Tf, UsdGeom, Gf, Vt
 
 import maya.api.OpenMaya as om
 

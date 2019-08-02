@@ -36,6 +36,7 @@
 #include "pxr/base/tf/pyPolymorphic.h"
 #include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
+#include "pxr/base/tf/pyContainerConversions.h"
 
 #include <memory>
 
@@ -204,7 +205,7 @@ public:
   {
     return context()->getUsdStage();
   }
-    
+
   void insertItem(const boost::shared_ptr<UsdPrim>& primBeingImported, const std::string& nodeNameOrPath)
   {
     MSelectionList sl;
@@ -247,6 +248,7 @@ TranslatorBaseWrapper::~TranslatorBaseWrapper()
 void wrapTranslatorBase()
 {
   typedef TfWeakPtr<TranslatorBaseWrapper> TranslatorBaseWrapperPtr;
+  typedef TfRefPtr<AL::usdmaya::fileio::translators::TranslatorBase> TranslatorBasePtr;
 
   boost::python::import("maya");
 
@@ -281,7 +283,11 @@ void wrapTranslatorBase()
     .def("unregisterTranslator", &TranslatorBaseWrapper::unregisterTranslator)
         .staticmethod("unregisterTranslator")
     .def("insertItem", &TranslatorBaseWrapper::insertItem)
-    .def("removeItems", &TranslatorBaseWrapper::removeItems);
+    .def("removeItems", &TranslatorBaseWrapper::removeItems)
+    .def("getPythonTranslators", &TranslatorManufacture::getPythonTranslators)
+        .staticmethod("getPythonTranslators");
+
+    boost::python::to_python_converter< std::vector<TranslatorBasePtr>,TfPySequenceToPython< std::vector<TranslatorBasePtr> > >();
 
     MStatusFromPythonBool::Register();
 }

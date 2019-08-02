@@ -572,7 +572,7 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
   auto stage = m_proxyShape->usdStage();
   if(stage)
   {
-
+    std::string translatorId = m_proxyShape->context()->getTranslatorIdForPath(path);
 
     fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().getTranslatorFromId(translatorId);
     if(translator)

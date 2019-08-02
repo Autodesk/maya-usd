@@ -291,13 +291,13 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
 
         # Cleanup
         os.remove(_file.name)
-
+        
 
 if __name__ == "__main__":
 
     tests = [unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeGetUsdPrimFromMayaPath),
-             unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeGetMayaPathFromUsdPrim),
-             ]
+             unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeGetMayaPathFromUsdPrim)
+              ]
     results = [unittest.TextTestRunner(verbosity=2).run(test) for test in tests]
     exitCode = int(not all([result.wasSuccessful() for result in results]))
     cmds.quit(exitCode=(exitCode))

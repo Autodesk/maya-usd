@@ -21,6 +21,7 @@
 #include <pxr/base/tf/pyPtrHelpers.h>
 
 #include <maya/MObjectHandle.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MFnDagNode.h>
 
 #include <boost/python.hpp>
@@ -93,8 +94,8 @@ static std::vector<std::string> _getMObjectsPath(TranslatorContext &self, const 
 
   for(const auto& handle: array)
   {
-    MFnDagNode fn(handle.object());
-    paths.push_back(fn.fullPathName().asChar());
+    MFnDependencyNode fn(handle.object());
+    paths.push_back(fn.name().asChar());
   }
 
   return paths;
