@@ -320,11 +320,11 @@ parser.add_argument("--generator", type=str,
                           "cmake"))
 
 parser.add_argument("--build-location", type=str,
-                    help=("Set Build directory"
+                    help=("Set Build directory "
                           "(default: <workspace_location>/build-location)"))
 
 parser.add_argument("--install-location", type=str,
-                    help=("Set Install directory"
+                    help=("Set Install directory "
                           "(default: <workspace_location>/install-location)"))
 
 parser.add_argument("--maya-location", type=str,
