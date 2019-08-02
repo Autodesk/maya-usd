@@ -22,6 +22,7 @@ find_package(Maya REQUIRED)
 
 find_package(USD REQUIRED)
 include(${USD_CONFIG_FILE})
+include_directories(${USD_INCLUDE_DIR})
 
 pxr_toplevel_prologue()
     add_subdirectory(maya)
