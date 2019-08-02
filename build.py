@@ -331,6 +331,12 @@ parser.add_argument("--generator", type=str,
                     help=("CMake generator to use when building libraries with "
                           "cmake"))
 
+parser.add_argument("-v", "--verbosity", type=int, default=verbosity,
+                    help=("How much output to print while building: 0 = no "
+                          "output; 1 = warnings + status; 2 = info; 3 = "
+                          "command output and tracebacks (default: "
+                          "%(default)s)"))
+
 parser.add_argument("--build-location", type=str,
                     help=("Set Build directory "
                           "(default: <workspace_location>/build-location)"))
@@ -369,6 +375,7 @@ parser.add_argument("-j", "--jobs", type=int, default=GetCPUCount(),
                           .format(GetCPUCount())))
 
 args = parser.parse_args()
+verbosity = args.verbosity
 
 ############################################################
 # InstallContext
