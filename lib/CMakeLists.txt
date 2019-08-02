@@ -431,7 +431,6 @@ target_include_directories(
     PUBLIC
     ${MAYA_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/../base
 	${PXR_INCLUDE_DIRS}
 )
 
