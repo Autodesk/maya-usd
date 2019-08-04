@@ -335,3 +335,50 @@ TEST(ProxyShapeImport, stageLoadWithCacheId)
 
   ASSERT_EQ(stageCacheId.ToLongInt(), proxyStageCacheId.ToLongInt());
 }
+
+TEST(ProxyShapeImport, stageLoadAndChangeFilePath)
+{
+  MFileIO::newFile(true);
+  auto createNewStageInMemory = [] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomXform root = UsdGeomXform::Define(stage, SdfPath("/root"));
+    return stage;
+  };
+
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_ImportCommands_changeFilePath.usda");
+
+  // Export stage to disk to load later.
+  {
+    auto stage = createNewStageInMemory();
+    stage->Export(temp_path, false);
+  }
+
+  MFileIO::newFile(true);
+  auto stage = createNewStageInMemory();
+  auto stageCacheId = AL::usdmaya::StageCache::Get().Insert(stage);
+  MString importCmd;
+
+  // Import stage using cache Id.
+  importCmd.format(MString("AL_usdmaya_ProxyShapeImport -stageId ") + stageCacheId.ToString().c_str());
+  MGlobal::executeCommand(importCmd);
+
+  MFnDagNode fn;
+  MObject xform = fn.create("transform");
+  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+
+  AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+  auto preFilePathUpdateStage = proxy->getUsdStage();
+  auto preFilePathUpdatePath = proxy->filePathPlug().asString();
+
+  // Force the proxy to load another stage from disk.
+  proxy->filePathPlug().setString(temp_path.c_str());
+
+  auto postFilePathUpdateStage = proxy->getUsdStage();
+  auto postFilePathUpdatePath = proxy->filePathPlug().asString();
+
+  EXPECT_NE(preFilePathUpdateStage, postFilePathUpdateStage);
+  EXPECT_NE(preFilePathUpdatePath, postFilePathUpdatePath);
+  ASSERT_EQ(AL::maya::utils::convert(temp_path), postFilePathUpdatePath);
+}

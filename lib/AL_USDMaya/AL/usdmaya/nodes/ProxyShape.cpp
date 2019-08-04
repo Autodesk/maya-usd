@@ -1343,15 +1343,29 @@ void ProxyShape::loadStage()
 
   AL_BEGIN_PROFILE_SECTION(LoadStage);
   MDataBlock dataBlock = forceCache();
-  // in case there was already a stage in m_stage, check to see if it's edit target has been altered
-  if (m_stage)
-  {
-    trackEditTargetLayer();
-  }
 
   const int stageIdVal = inputInt32Value(dataBlock, m_stageCacheId);
   UsdStageCache::Id stageId = UsdStageCache::Id().FromLongInt(stageIdVal);
-  MString file;
+  MString file = inputStringValue(dataBlock, m_filePath);
+
+  if (m_stage)
+  {
+    // In case there was already a stage in m_stage, check to see if it's edit target has been altered.
+    trackEditTargetLayer();
+
+    if (StageCache::Get().Contains(stageId))
+    {
+      auto stageFromId = StageCache::Get().Find(stageId);
+      const MString stageFilePath = AL::maya::utils::convert(stageFromId->GetRootLayer()->GetIdentifier());
+      if (file != stageFilePath)
+      {
+        // When we have an existing stage and a valid stageCacheId, if file paths of the stage from cache
+        // doesn't match that the one we are holding on to, then looks like file path was changed. Drop the current
+        // cache Id.
+        stageId = UsdStageCache::Id();
+      }
+    }
+  }
 
   if (stageId.IsValid())
   {
@@ -1359,14 +1373,12 @@ void ProxyShape::loadStage()
     if (StageCache::Get().Contains(stageId))
     {
       m_stage = StageCache::Get().Find(stageId);
-      file = AL::maya::utils::convert(m_stage->GetRootLayer()->GetIdentifier());
+      file.set(m_stage->GetRootLayer()->GetIdentifier().c_str());
       outputStringValue(dataBlock, m_filePath, file);
-      // Save the initial edit target
-      trackEditTargetLayer();
     }
     else
     {
-      MGlobal::displayError("ProxyShape::loadStage called with non-existent stageCacheId.");
+      MGlobal::displayError(MString("ProxyShape::loadStage called with non-existent stageCacheId ") + stageId.ToString().c_str());
       stageId = UsdStageCache::Id();
     }
   }
@@ -1375,7 +1387,6 @@ void ProxyShape::loadStage()
     m_stage = UsdStageRefPtr();
 
     // Get input attr values
-    file = inputStringValue(dataBlock, m_filePath);
     const MString sessionLayerName = inputStringValue(dataBlock, m_sessionLayerName);
 
     const MString populationMaskIncludePaths = inputStringValue(dataBlock, m_populationMaskIncludePaths);
