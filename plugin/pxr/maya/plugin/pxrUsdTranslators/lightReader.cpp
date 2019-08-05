@@ -13,20 +13,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "usdMaya/translatorRfMLight.h"
+#include "usdMaya/primReaderRegistry.h"
+
+#include "pxr/usd/usdLux/cylinderLight.h"
 #include "pxr/usd/usdLux/diskLight.h"
 #include "pxr/usd/usdLux/distantLight.h"
 #include "pxr/usd/usdLux/domeLight.h"
 #include "pxr/usd/usdLux/geometryLight.h"
 #include "pxr/usd/usdLux/rectLight.h"
 #include "pxr/usd/usdLux/sphereLight.h"
-
 #include "pxr/usd/usdRi/pxrAovLight.h"
 #include "pxr/usd/usdRi/pxrEnvDayLight.h"
 
-#include "usdMaya/translatorRfMLight.h"
-#include "usdMaya/primReaderRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+PXRUSDMAYA_DEFINE_READER(UsdLuxCylinderLight, args, context)
+{
+    return UsdMayaTranslatorRfMLight::Read(args, context);
+}
 
 PXRUSDMAYA_DEFINE_READER(UsdLuxDiskLight, args, context)
 {
@@ -67,5 +74,6 @@ PXRUSDMAYA_DEFINE_READER(UsdRiPxrEnvDayLight, args, context)
 {
     return UsdMayaTranslatorRfMLight::Read(args, context);
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
