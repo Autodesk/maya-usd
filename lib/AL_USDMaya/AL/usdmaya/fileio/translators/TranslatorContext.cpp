@@ -306,27 +306,35 @@ void TranslatorContext::removeItems(const SdfPath& path)
         {
           if(it.second.hasFn(MFn::kPluginEmitterNode) || 
              it.second.hasFn(MFn::kPluginTransformNode)|| 
-             it.second.hasFn(MFn::kPluginConstraintNode))
+             it.second.hasFn(MFn::kPluginConstraintNode)|| 
+             it.second.hasFn(MFn::kTransform))
           {
             // reparent custom transform nodes under the world prior to deletion. 
             // This avoids the problem where deleting a custom transform node automatically 
             // deletes the parent transform (which cascades up the hierarchy until the entire
             // scene has been deleted)
             status = modifier2.reparentNode(it.second);
+            modifier2.deleteNode(it.second);
           }
           else
           if(it.second.hasFn(MFn::kPluginShape) || 
-             it.second.hasFn(MFn::kPluginImagePlaneNode))
+             it.second.hasFn(MFn::kPluginImagePlaneNode)|| 
+             it.second.hasFn(MFn::kShape))
           {
             // same issue exists with custom shape nodes, except that we need to create a temp transform
             // node to parent the shape under (otherwise the reparent operation will fail!)
             MObject node = modifier2.createNode("transform");
             status = modifier2.reparentNode(it.second, node);
+            status = modifier2.doIt();
+            modifier2.deleteNode(node);
           }
-          modifier2.deleteNode(it.second);
+          else
+          {
+            modifier2.deleteNode(it.second);
+          }
+          status = modifier2.doIt();
         }
       }
-      status = modifier2.doIt();
       AL_MAYA_CHECK_ERROR2(status, "failed to delete dag nodes");
     }
     m_primMapping.erase(it);
