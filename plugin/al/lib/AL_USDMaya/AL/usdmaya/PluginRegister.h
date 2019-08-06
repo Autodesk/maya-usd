@@ -50,6 +50,8 @@
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
+#include "pxr/imaging/glf/contextCaps.h"
+#include "pxr/imaging/glf/glContext.h"
 
 #include "maya/MDrawRegistry.h"
 #include "maya/MGlobal.h"
