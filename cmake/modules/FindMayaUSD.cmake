@@ -76,7 +76,7 @@ find_path(MAYAUSD_INCLUDE_DIR
 
 # Use find_library to account for platform-specific library name prefixes
 # (e.g. lib) and suffixes (e.g. .lib, .so, .dylib).
-foreach(MAYAUSD_LIB mayaUsd mayaUsd_Schemas)
+foreach(MAYAUSD_LIB mayaUsd)
 
     find_library(MAYAUSD_${MAYAUSD_LIB}_LIBRARY
 			${MAYAUSD_LIB}
@@ -87,6 +87,23 @@ foreach(MAYAUSD_LIB mayaUsd mayaUsd_Schemas)
 
     if (MAYAUSD_${MAYAUSD_LIB}_LIBRARY)
         list(APPEND MAYAUSD_LIBRARIES ${MAYAUSD_${MAYAUSD_LIB}_LIBRARY})
+    endif()
+
+endforeach(MAYAUSD_LIB)
+
+# Schema libraries are PxrPlugin plugins, but are also linked against by plugins
+# providing import, export or updater behavior for the types they provide.
+foreach(MAYAUSD_LIB mayaUsd_Schemas)
+
+    find_library(MAYAUSD_${MAYAUSD_LIB}_LIBRARY
+			${MAYAUSD_LIB}
+        HINTS
+            ${MAYAUSD_LIBRARY_DIR}
+        NO_DEFAULT_PATH
+    )
+
+    if (MAYAUSD_${MAYAUSD_LIB}_LIBRARY)
+        list(APPEND MAYAUSD_SCHEMA_LIBRARIES ${MAYAUSD_${MAYAUSD_LIB}_LIBRARY})
     endif()
 
 endforeach(MAYAUSD_LIB)
@@ -102,6 +119,7 @@ set(MAYAUSD_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD
 
 message(STATUS "MayaUSD include dir: ${MAYAUSD_INCLUDE_DIR}")
 message(STATUS "MayaUSD libraries: ${MAYAUSD_LIBRARIES}")
+message(STATUS "MayaUSD schema libraries: ${MAYAUSD_SCHEMA_LIBRARIES}")
 message(STATUS "MayaUSD version: ${MAYAUSD_VERSION}")
 
 # handle the QUIETLY and REQUIRED arguments and set MAYAUSD_FOUND to TRUE if
@@ -112,6 +130,7 @@ find_package_handle_standard_args(MAYAUSD
     REQUIRED_VARS
         MAYAUSD_INCLUDE_DIR
         MAYAUSD_LIBRARIES
+        MAYAUSD_SCHEMA_LIBRARIES
     VERSION_VAR
         MAYAUSD_VERSION
 )

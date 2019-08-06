@@ -1,4 +1,8 @@
-list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas ${MAYAUSD_LIBRARIES} gf plug tf)
+# MayaReference provides import translation for AL_usd_MayaReference.
+# As such, its AL_USDMAYA_DEFINE_TRANSLATOR does a
+# TfType::Find<AL_usd_MayaReference>, which requires AL_usd_MayaReference's
+# typeid.  We must therefore link against mayaUsd_Schemas.
+list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas ${MAYAUSD_LIBRARIES} ${MAYAUSD_SCHEMA_LIBRARIES} gf plug tf)
 
 set(DIRECTORY_PATH AL/usdmaya/fileio/translators)
 
@@ -65,10 +69,33 @@ set_target_properties(${TRANSLATORS_PACKAGE}
      "MFB_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE};MFB_ALT_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}"
 )
 
-set_target_properties(${TRANSLATORS_PACKAGE}
-        PROPERTIES COMPILE_DEFINITIONS
-        "MFB_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE};MFB_ALT_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}"
-        )
+# ${PXR_USD_LOCATION}/lib is added to the RPATH only if PXR_USD_LOCATION
+# is set.
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+	set(TARGET_RPATH "@loader_path/../lib;@loader_path/../../../lib")
+	if(DEFINED PXR_USD_LOCATION)
+	    string(APPEND TARGET_RPATH ";${PXR_USD_LOCATION}/lib")
+    endif()
+    set(CMAKE_MACOSX_RPATH ON)
+    set_target_properties(${TRANSLATORS_PACKAGE}
+        PROPERTIES
+            SUFFIX ".bundle"
+            BUILD_WITH_INSTALL_RPATH TRUE
+            INSTALL_RPATH "${TARGET_RPATH}"
+    )
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	set(TARGET_RPATH "$ORIGIN/../lib:$ORIGIN/../../../lib")
+	if(DEFINED PXR_USD_LOCATION)
+	    string(APPEND TARGET_RPATH ":${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64")
+    endif()
+	# Use RUNPATH instead of RPATH.
+	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags" PARENT_SCOPE)
+    set_target_properties(${TRANSLATORS_PACKAGE}
+            PROPERTIES
+            INSTALL_RPATH "${TARGET_RPATH}"
+            BUILD_WITH_INSTALL_RPATH TRUE
+    )
+endif()
 
 target_link_libraries(${TRANSLATORS_PACKAGE} ${DEPENDANT_LIBRARIES})
 

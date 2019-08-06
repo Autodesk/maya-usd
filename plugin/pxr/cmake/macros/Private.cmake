@@ -1258,12 +1258,13 @@ function(_pxr_library NAME)
     # XXX -- May want some plugins to be baked into monolithic.
     _pxr_target_link_libraries(${NAME} ${args_LIBRARIES})
 
-    # Rpath has libraries under the USD/third party prefix and the install prefix.
-    # The former is for helper libraries for a third party application and
-    # the latter for core USD libraries.
     _pxr_init_rpath(rpath "${libInstallPrefix}")
+	# Add path for Pixar-specific Maya shared libraries.  As of 1-Aug-2019, 
+	# this is only the usdMaya shared library.
     _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/${PXR_INSTALL_SUBDIR}/lib")
-    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/lib")
+	# Add path for common mayaUsd shared libraries.  As of 1-Aug-2019, this is
+	# only the mayaUsd shared library.
+    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     _pxr_install_rpath(rpath ${NAME})
 
     #
