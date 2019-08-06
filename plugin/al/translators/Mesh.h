@@ -46,6 +46,8 @@ private:
 
   ExportFlag canExport(const MObject& obj) override
     { return obj.hasFn(MFn::kMesh) ? ExportFlag::kFallbackSupport : ExportFlag::kNotSupported; }
+  bool canBeOverridden() override
+    { return true; }
 
 private:
   enum WriteOptions

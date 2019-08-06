@@ -17,15 +17,10 @@
 #pragma once
 
 #include "maya/MObject.h"
-#include "maya/MString.h"
 #include "maya/MUuid.h"
 #include "maya/MFnDependencyNode.h"
 
 #include <map>
-#include <string>
-
-#include "AL/maya/utils/ForwardDeclares.h"
-#include "AL/maya/utils/ForwardDeclares.h"
 
 namespace AL {
 namespace maya {

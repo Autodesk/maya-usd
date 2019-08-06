@@ -24,6 +24,8 @@
 #include "maya/MArgDatabase.h"
 #include "maya/MStringArray.h"
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 namespace AL {
 namespace usdmaya {
 namespace cmds {

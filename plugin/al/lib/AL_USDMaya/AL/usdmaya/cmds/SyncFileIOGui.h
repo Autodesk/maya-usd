@@ -1,8 +1,8 @@
 //
-// Copyright 2017 Animal Logic
+// Copyright 2019 Animal Logic
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// you may not use this file except in compliance with the License.//
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -14,30 +14,39 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/fileio/ImportParams.h"
+
+#include "../Api.h"
+
 #include "maya/MPxCommand.h"
-#include "maya/MSelectionList.h"
 
-#include "pxr/pxr.h"
-#include "pxr/usd/usd/stage.h"
+#if MAYA_API_VERSION < 201800
+#include "maya/MArgDatabase.h"
+#endif
 
-PXR_NAMESPACE_USING_DIRECTIVE
+#include "AL/maya/utils/MayaHelperMacros.h"
 
 namespace AL {
 namespace usdmaya {
 namespace cmds {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  Modifies the SelectDatabase owned by the ProxyShape. These modifications typically affects if prims are
-///         are selectable or not.
+/// \brief  A command that is used to pre-sync the auto generated GUI for the plugin options to a translator. 
 /// \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
+class SyncFileIOGui
+  : public MPxCommand
+{
+  MArgDatabase makeDatabase(const MArgList& args);
+public:
+  AL_MAYA_DECLARE_COMMAND();
+private:
+  bool isUndoable() const override;
+  MStatus doIt(const MArgList& args) override;
+};
 
-//----------------------------------------------------------------------------------------------------------------------
 } // cmds
 } // usdmaya
 } // AL
-//----------------------------------------------------------------------------------------------------------------------
 
 
 

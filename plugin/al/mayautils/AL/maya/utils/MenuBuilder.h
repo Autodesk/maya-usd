@@ -15,19 +15,16 @@
 //
 #pragma once
 
-#include "./Api.h"
+#include "AL/maya/utils/Api.h"
 
-#include "maya/MStatus.h"
-#include "maya/MString.h"
 #include "maya/MGlobal.h"
 
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <set>
 
-#include "AL/maya/utils/ForwardDeclares.h"
 #include "AL/maya/utils/DebugCodes.h"
 
 namespace AL {

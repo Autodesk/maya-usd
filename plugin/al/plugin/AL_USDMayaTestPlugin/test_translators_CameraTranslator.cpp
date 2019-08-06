@@ -29,6 +29,7 @@
 
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/camera.h"
+#include "pxr/usd/usdGeom/xform.h"
 
 using AL::usdmaya::fileio::ExporterParams;
 using AL::usdmaya::fileio::ImporterParams;

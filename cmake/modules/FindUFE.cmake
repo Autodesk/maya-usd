@@ -72,5 +72,6 @@ find_package_handle_standard_args(UFE
     REQUIRED_VARS
         UFE_INCLUDE_DIR
         UFE_LIBRARY
+    VERSION_VAR
         UFE_VERSION
 )

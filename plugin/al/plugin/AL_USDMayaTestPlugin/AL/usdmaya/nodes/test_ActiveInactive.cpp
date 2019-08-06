@@ -624,7 +624,7 @@ TEST_F(ActiveInactive, disable)
         // should be able to set the variant back to a sphere
         EXPECT_TRUE(actualSet.SetVariantSelection("sphere"));
 
-        // sphere should not be there, but the cube should be
+        // sphere should be there, but the cube should not be
         EXPECT_TRUE(bool(sl.add("dave:pSphere1")));
         EXPECT_TRUE(bool(sl.add("dave:pSphereShape1")));
         EXPECT_TRUE(bool(sl.add("dave:polySphere1")));
@@ -634,7 +634,7 @@ TEST_F(ActiveInactive, disable)
         EXPECT_EQ(3, sl.length());
         sl.clear();
 
-        // should be able to set the variant back to a sphere
+        // should be able to set the variant back to a cube
         EXPECT_TRUE(actualSet.SetVariantSelection("cube"));
 
         // sphere should not be there, but the cube should be
@@ -647,10 +647,12 @@ TEST_F(ActiveInactive, disable)
         EXPECT_EQ(3, sl.length());
         sl.clear();
 
-        // should be able to set the variant back to a sphere
+        // should be able to set the variant to cube with ns fred
+        // Make sure the same prim will only bring in one copy of a reference.
+        // "cube" -> "fredcube: same filepath, but new ns
         EXPECT_TRUE(actualSet.SetVariantSelection("fredcube"));
 
-        // sphere should not be there, but the cube should be
+        // cube ref should be loaded under ns fred
         EXPECT_FALSE(bool(sl.add("dave:pSphere1")));
         EXPECT_FALSE(bool(sl.add("dave:pSphereShape1")));
         EXPECT_FALSE(bool(sl.add("dave:polySphere1")));
@@ -662,7 +664,7 @@ TEST_F(ActiveInactive, disable)
         EXPECT_TRUE(bool(sl.add("fred:polyCube1")));
         sl.clear();
 
-        // should be able to set the variant back to a sphere
+        // should be able to set the variant back to a cube with ns dave
         EXPECT_TRUE(actualSet.SetVariantSelection("cube"));
 
         // sphere should not be there, but the cube should be
@@ -678,10 +680,10 @@ TEST_F(ActiveInactive, disable)
         EXPECT_EQ(3, sl.length());
         sl.clear();
 
-        // should be able to set the variant back to a sphere
+        // should be able to set the variant back to a cached sphere
         EXPECT_TRUE(actualSet.SetVariantSelection("cache"));
 
-        // sphere should not be there, but the cube should be
+        // no refs should be loaded anymore
         EXPECT_FALSE(bool(sl.add("dave:pSphere1")));
         EXPECT_FALSE(bool(sl.add("dave:pSphereShape1")));
         EXPECT_FALSE(bool(sl.add("dave:polySphere1")));
@@ -704,7 +706,7 @@ TEST_F(ActiveInactive, disable)
         // transform chain has re-appeared, and the correct reference has been imported into the scene
         EXPECT_TRUE(actualSet.SetVariantSelection("cube"));
 
-        // sphere should not be there, but the cube should be
+        // only the cube should be loaded
         EXPECT_FALSE(bool(sl.add("dave:pSphere1")));
         EXPECT_FALSE(bool(sl.add("dave:pSphereShape1")));
         EXPECT_FALSE(bool(sl.add("dave:polySphere1")));
@@ -722,6 +724,23 @@ TEST_F(ActiveInactive, disable)
           MItDependencyNodes iter(MFn::kPluginTransformNode);
           EXPECT_FALSE(iter.isDone());
         }
+
+        // import a reference, and make sure a new ref is created on a resync.
+        EXPECT_TRUE(bool(sl.add("dave:pCube1")));
+        EXPECT_FALSE(bool(sl.add("dave1:pCube1")));
+        MString command;
+        command = "file -importReference \"";
+        command += temp_path_cube.asChar();
+        command += "\";";
+        MStatus status = MGlobal::executeCommand(command);
+        EXPECT_EQ(MStatus(MS::kSuccess), status);
+        // old reference is now imported
+        EXPECT_TRUE(bool(sl.add("dave:pCube1")));
+        EXPECT_FALSE(bool(sl.add("dave1:pCube1")));
+        proxy->resync(SdfPath("/"));
+        // old will still exist and a new reference has been created
+        EXPECT_TRUE(bool(sl.add("dave:pCube1")));
+        EXPECT_TRUE(bool(sl.add("dave1:pCube1")));
       }
     }
   }

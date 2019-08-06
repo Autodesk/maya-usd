@@ -26,17 +26,20 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/fileio/export_nonlinear.cpp
         AL/usdmaya/fileio/export_unmerged.cpp
         AL/usdmaya/fileio/export_multiple_shapes.cpp
+        AL/usdmaya/fileio/import_instances.cpp
+        AL/usdmaya/fileio/test_activeInActiveTranslators.cpp
         AL/usdmaya/nodes/test_ActiveInactive.cpp
         AL/usdmaya/nodes/test_LayerManager.cpp
         AL/usdmaya/nodes/test_ProxyShape.cpp
+        AL/usdmaya/nodes/test_ProxyUsdGeomCamera.cpp
         AL/usdmaya/nodes/test_Transform.cpp
         AL/usdmaya/nodes/test_TransformMatrix.cpp
         AL/usdmaya/nodes/test_TranslatorContext.cpp
         AL/usdmaya/nodes/test_ExtraDataPlugin.cpp
         AL/usdmaya/nodes/test_ProxyShapeSelectabilityDB.cpp
-        AL/usdmaya/nodes/proxy/test_DrivenTransforms.cpp
         AL/usdmaya/nodes/proxy/test_PrimFilter.cpp
         AL/usdmaya/test_SelectabilityDB.cpp
+        AL/usdmaya/test_DiffGeom.cpp
         AL/usdmaya/test_DiffPrimVar.cpp
         AL/usdmaya/commands/test_TranslateCommand.cpp
         test_translators_AnimationTranslator.cpp

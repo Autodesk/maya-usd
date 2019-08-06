@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <algorithm>
+#include "AL/event/EventHandler.h"
 #include <cstring>
 #include <iostream>
-#include "AL/event/EventHandler.h"
+#include <algorithm>
 
 namespace AL {
 namespace event {

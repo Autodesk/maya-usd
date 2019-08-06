@@ -1,8 +1,8 @@
 //
-// Copyright 2017 Animal Logic
+// Copyright 2019 Animal Logic
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// you may not use this file except in compliance with the License.//
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
@@ -13,38 +13,53 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/utils/CommandGuiHelper.h"
-#include "AL/usdmaya/DebugCodes.h"
-#include "AL/usdmaya/cmds/ProxyShapeCommands.h"
-#include "AL/usdmaya/fileio/TransformIterator.h"
-#include "AL/usdmaya/nodes/ProxyShape.h"
-#include "AL/usdmaya/nodes/Transform.h"
-#include "maya/MArgDatabase.h"
+#include "AL/maya/utils/Utils.h"
 #include "maya/MFnDagNode.h"
+#include "maya/MFnPlugin.h"
 #include "maya/MGlobal.h"
 #include "maya/MSelectionList.h"
-#include "maya/MStatus.h"
-#include "maya/MStringArray.h"
-#include "maya/MSyntax.h"
-#include "maya/MDagPath.h"
-#include "maya/MArgList.h"
-
-#include <sstream>
-#include <algorithm>
-
-#include <AL/usdmaya/cmds/ProxyShapeSelectCommands.h>
-#include <AL/usdmaya/SelectabilityDB.h>
-#include "AL/usdmaya/utils/Utils.h"
 
 namespace AL {
-namespace usdmaya {
-namespace cmds {
+namespace maya {
+namespace utils {
 
 //----------------------------------------------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------------------------------------------
+MDagPath getDagPath(const MObject& object)
+{
+  MFnDagNode fnDag(object);
+  MDagPath dagPath;
+  fnDag.getPath(dagPath);
+  return dagPath;
+}
 
 //----------------------------------------------------------------------------------------------------------------------
-} // cmds
-} // usdmaya
+bool ensureMayaPluginIsLoaded(const MString& pluginName)
+{
+  if(MFnPlugin::findPlugin(pluginName) == MObject::kNullObj)
+  {
+    MGlobal::executeCommand(MString("catchQuiet( `loadPlugin -quiet \"") + pluginName + "\"`)", false, false);
+    if(MFnPlugin::findPlugin(pluginName) == MObject::kNullObj)
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MObject findMayaObject(const MString& objectName)
+{
+  MSelectionList selList;
+  MObject mayaObj;
+  if (selList.add(objectName) == MS::kSuccess && selList.getDependNode(0, mayaObj) == MS::kSuccess)
+  {
+    return mayaObj;
+  }
+  return MObject::kNullObj;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+} // utils
+} // maya
 } // AL
 //----------------------------------------------------------------------------------------------------------------------
