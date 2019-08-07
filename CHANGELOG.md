@@ -1,3 +1,24 @@
+## AL_USDMaya-0.32.35 (2019-07-12)
+### Fixed
++ Crashes when deleting nodes as a result of a variant switch
+### Changed
++ Meshes with time bounds are treated as animated
++ Reduced the amount of work done under the hood when transform nodes are manipulated in the viewport.
+
+## AL_USDMaya-0.32.34 (2019-07-12)
+### Fixed
++ Regression that no longer reloaded the stage when filePath changes
+
+## AL_USDMaya-0.32.33 (2019-07-12)
+### Added
++ Ability to load proxy shape from the stage cache
+### Fixed
++ various bugs within the plugin translator system
+
+## AL_USDMaya-0.32.32 (2019-07-12)
+### Fixed
++ import/export of vertex colours
+
 ## AL_USDMaya-0.32.31 (2019-07-12)
 ### Fixed
 + invalid array access when diffing mesh edge creases
