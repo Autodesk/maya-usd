@@ -40,6 +40,8 @@ endif()
 
 include(cmake/python.cmake)
 include(cmake/utils.cmake)
+
+find_package(USD REQUIRED)
 include(cmake/usd.cmake)
 
 #==============================================================================
