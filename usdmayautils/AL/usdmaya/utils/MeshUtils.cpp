@@ -754,6 +754,7 @@ bool MeshImportContext::applyEdgeCreases()
 //----------------------------------------------------------------------------------------------------------------------
 void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
 {
+  const TfToken prefToken("pref");
   const std::vector<UsdGeomPrimvar> primvars = mesh.GetPrimvars();
   for(auto it = primvars.begin(), end = primvars.end(); it != end; ++it)
   {
@@ -762,6 +763,9 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
     SdfValueTypeName typeName;
     int elementSize;
     primvar.GetDeclarationInfo(&name, &typeName, &interpolation, &elementSize);
+    // Prevent pref data from being displayed as colorset
+    if (name == prefToken)
+      continue;
     VtValue vtValue;
 
     if (primvar.Get(&vtValue, m_timeCode))
