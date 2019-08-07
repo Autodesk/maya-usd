@@ -15,10 +15,11 @@
 //
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/DebugCodes.h"
-#include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
+
+#include <mayaUsd/nodes/stageData.h>
 
 #include "maya/MBoundingBox.h"
 #include "maya/MGlobal.h"
@@ -97,7 +98,7 @@ MStatus Transform::initialise()
 
     addFrame("USD Prim Information");
     m_primPath = addStringAttr("primPath", "pp", kReadable | kWritable | kStorable | kConnectable | kAffectsWorldSpace, true);
-    m_inStageData = addDataAttr("inStageData", "isd", StageData::kTypeId, kWritable | kStorable | kConnectable | kHidden | kAffectsWorldSpace);
+    m_inStageData = addDataAttr("inStageData", "isd", MayaUsdStageData::mayaTypeId, kWritable | kStorable | kConnectable | kHidden | kAffectsWorldSpace);
 
     addFrame("USD Timing Information");
     m_time = addTimeAttr("time", "tm", MTime(0.0), kKeyable | kConnectable | kReadable | kWritable | kStorable | kAffectsWorldSpace);
@@ -177,7 +178,7 @@ MStatus Transform::compute(const MPlug& plug, MDataBlock& dataBlock)
     // This should only be computed if there's no connection, so set it to an empty stage
     // create new stage data
     MObject data;
-    StageData* usdStageData = createData<StageData>(StageData::kTypeId, data);
+    auto* usdStageData = createData<MayaUsdStageData>(MayaUsdStageData::mayaTypeId, data);
     if(!usdStageData)
     {
       return MS::kFailure;
@@ -435,7 +436,7 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
   if(plug == m_inStageData)
   {
     MDataBlock dataBlock = forceCache(*(MDGContext *)&context);
-    StageData* data = inputDataValue<StageData>(dataBlock, m_inStageData);
+    auto* data = inputDataValue<MayaUsdStageData>(dataBlock, m_inStageData);
     if (data && data->stage)
     {
       MString path = inputStringValue(dataBlock, m_primPath);
@@ -461,7 +462,7 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
     MString path = handle.asString();
     outputStringValue(dataBlock, m_primPath, path);
 
-    StageData* data = inputDataValue<StageData>(dataBlock, m_inStageData);
+    auto* data = inputDataValue<MayaUsdStageData>(dataBlock, m_inStageData);
     if (data && data->stage)
     {
       SdfPath primPath;

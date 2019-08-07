@@ -9,7 +9,6 @@ list(APPEND AL_usdmaya_headers
         AL/usdmaya/PluginRegister.h
         AL/usdmaya/SelectabilityDB.h
         AL/usdmaya/StageCache.h
-        AL/usdmaya/StageData.h
         AL/usdmaya/TransformOperation.h
         AL/usdmaya/TypeIDs.h
         AL/usdmaya/ForwardDeclares.h
@@ -22,7 +21,6 @@ list(APPEND AL_usdmaya_source
         AL/usdmaya/Metadata.cpp
         AL/usdmaya/SelectabilityDB.cpp
         AL/usdmaya/StageCache.cpp
-        AL/usdmaya/StageData.cpp
         AL/usdmaya/TransformOperation.cpp
         AL/usdmaya/CodeTimings.cpp
         AL/usdmaya/moduleDeps.cpp
