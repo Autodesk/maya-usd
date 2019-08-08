@@ -36,7 +36,7 @@
 
 #include <memory>
 
-#include "../../usd/hdMaya/delegates/delegateCtx.h"
+#include "../../usd/hdmaya/delegates/delegateCtx.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

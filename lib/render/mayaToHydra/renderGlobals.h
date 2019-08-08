@@ -32,7 +32,7 @@
 
 #include <maya/MObject.h>
 
-#include "../../usd/hdMaya/delegates/params.h"
+#include "../../usd/hdmaya/delegates/params.h"
 
 #include <tuple>
 #include <unordered_map>

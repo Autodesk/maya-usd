@@ -40,7 +40,7 @@ auto& HioGlslfxTokens = PXR_NS::GlfGLSLFXTokens;
 #include <../../fileio/shading/shadingModeExporter.h>
 #include <../../fileio/shading/shadingModeRegistry.h>
 
-#include "../../usd/hdMaya/adapters/materialNetworkConverter.h"
+#include "../../usd/hdmaya/adapters/materialNetworkConverter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

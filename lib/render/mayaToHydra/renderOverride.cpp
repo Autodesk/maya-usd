@@ -51,10 +51,10 @@
 #include <chrono>
 #include <exception>
 
-#include "../../usd/hdMaya/delegates/delegateRegistry.h"
-#include "../../usd/hdMaya/delegates/sceneDelegate.h"
+#include "../../usd/hdmaya/delegates/delegateRegistry.h"
+#include "../../usd/hdmaya/delegates/sceneDelegate.h"
 
-#include "../../usd/hdMaya/utils.h"
+#include "../../usd/hdmaya/utils.h"
 
 #include "pluginDebugCodes.h"
 #include "renderOverrideUtils.h"

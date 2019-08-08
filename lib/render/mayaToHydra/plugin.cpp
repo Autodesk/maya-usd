@@ -34,7 +34,7 @@
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/envSetting.h>
 
-#include "../../usd/hdMaya/adapters/adapter.h"
+#include "../../usd/hdmaya/adapters/adapter.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

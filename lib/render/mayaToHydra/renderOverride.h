@@ -46,8 +46,8 @@
 #include <maya/MString.h>
 #include <maya/MViewport2Renderer.h>
 
-#include "../../usd/hdMaya/delegates/delegate.h"
-#include "../../usd/hdMaya/delegates/params.h"
+#include "../../usd/hdmaya/delegates/delegate.h"
+#include "../../usd/hdmaya/delegates/params.h"
 
 #include "defaultLightDelegate.h"
 #include "renderGlobals.h"

@@ -27,7 +27,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MSyntax.h>
 
-#include "../../usd/hdMaya/delegates/delegateRegistry.h"
+#include "../../usd/hdmaya/delegates/delegateRegistry.h"
 
 #include "renderGlobals.h"
 #include "renderOverride.h"

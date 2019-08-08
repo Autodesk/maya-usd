@@ -37,7 +37,7 @@ if (NOT "${MAYA_DEVKIT_LOCATION}" STREQUAL "")
     message(STATUS "UFE Library: ${UFE_LIBRARY}")
 endif()
 
-add_subdirectory(hdMaya)
+add_subdirectory(hdmaya)
 
 add_subdirectory(translators)
 add_subdirectory(schemas)
