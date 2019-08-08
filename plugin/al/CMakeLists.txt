@@ -28,6 +28,7 @@ endif()
 # to find USD, defined as either Cmake var or env var
 find_package(USD REQUIRED)
 include(${USD_CONFIG_FILE})
+include_directories(${USD_INCLUDE_DIR})
 
 find_package(Maya REQUIRED)
 
