@@ -32,7 +32,7 @@
 
 #include <hdmaya/hdmaya.h>
 
-#include <../../../nodes/proxyShapeBase.h>
+#include "../../../nodes/proxyShapeBase.h"
 
 #include <maya/MTime.h>
 #include <maya/MGlobal.h>

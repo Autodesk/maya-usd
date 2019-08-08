@@ -29,7 +29,7 @@
 
 #include "delegateRegistry.h"
 
-#include <../../../nodes/proxyShapeBase.h>
+#include "../../../nodes/proxyShapeBase.h"
 
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/type.h>

@@ -19,7 +19,7 @@
 #include <../../fileio/utils/adaptor.h>
 #include <../../fileio/primUpdaterRegistry.h>
 #include <../../utils/util.h>
-#include <../../schemas/MayaReference.h>
+#include <../schemas/MayaReference.h>
 #include <../../fileio/translators/translatorMayaReference.h>
 
 #include "pxr/base/gf/vec2f.h"
