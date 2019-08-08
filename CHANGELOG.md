@@ -1,21 +1,27 @@
-## AL_USDMaya-0.32.35 (2019-07-12)
+## AL_USDMaya-0.32.36 (2019-08-08)
+### Fixed
++ Prevent pref data being displayed as a colour set
+- Incorrect time value used when evaluating the proxy shape bounding box
+- Bounding box cache not updated when transform values change
+
+## AL_USDMaya-0.32.35 (2019-08-07)
 ### Fixed
 + Crashes when deleting nodes as a result of a variant switch
 ### Changed
 + Meshes with time bounds are treated as animated
 + Reduced the amount of work done under the hood when transform nodes are manipulated in the viewport.
 
-## AL_USDMaya-0.32.34 (2019-07-12)
+## AL_USDMaya-0.32.34 (2019-08-05)
 ### Fixed
 + Regression that no longer reloaded the stage when filePath changes
 
-## AL_USDMaya-0.32.33 (2019-07-12)
+## AL_USDMaya-0.32.33 (2019-08-02)
 ### Added
 + Ability to load proxy shape from the stage cache
 ### Fixed
 + various bugs within the plugin translator system
 
-## AL_USDMaya-0.32.32 (2019-07-12)
+## AL_USDMaya-0.32.32 (2019-07-26)
 ### Fixed
 + import/export of vertex colours
 
