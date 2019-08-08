@@ -1040,6 +1040,9 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
       return;
 
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::onObjectsChanged called m_compositionHasChanged=%i\n", m_compositionHasChanged);
+
+  bool shouldCleanBBoxCache = false;
+
   const UsdNotice::ObjectsChanged::PathRange resyncedPaths = notice.GetResyncedPaths();
   for(const SdfPath& path : resyncedPaths)
   {
@@ -1055,6 +1058,43 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
         continue;
       tmm->setPrim(newPrim, tm); // Might be (invalid/nullptr) but that's OK at least it won't crash
     }
+    else
+    {
+      UsdPrim newPrim = m_stage->GetPrimAtPath(path);
+      if(newPrim && newPrim.IsA<UsdGeomXformable>())
+      {
+        shouldCleanBBoxCache = true;
+      }
+    }
+  }
+
+  // check to see if any transform ops have been modified (update the bounds accordingly)
+  if(!shouldCleanBBoxCache)
+  {
+    const UsdNotice::ObjectsChanged::PathRange changedOnlyPaths = notice.GetChangedInfoOnlyPaths();
+    for(const SdfPath& path : changedOnlyPaths)
+    {
+      UsdPrim changedPrim = m_stage->GetPrimAtPath(path);
+      if(path.IsPrimPropertyPath())
+      {
+        const std::string tokenString = path.GetElementString();
+        if(std::strncmp(tokenString.c_str(), ".xformOp", 8) == 0)
+        {
+          shouldCleanBBoxCache = true;
+          break;
+        }
+      }
+    }
+  }
+
+  // do we need to clear the bounding box cache?
+  if(shouldCleanBBoxCache)
+  {
+    m_boundingBoxCache.clear();
+
+    // Ideally we want to have a way to force maya to call ProxyShape::boundingBox() again to update the bbox attributes. 
+    // This may lead to a delay in the bbox updates (e.g. usually you need to reselect the proxy before the bounds will 
+    // be updated).
   }
 
   // These paths are subtree-roots representing entire subtrees that may have
