@@ -66,6 +66,8 @@ typedef boost::filesystem::path path;
 #include "AL/usdmaya/Version.h"
 #include "AL/usdmaya/utils/Utils.h"
 
+#include "AL/usd/transaction/TransactionManager.h"
+
 #include "pxr/usd/ar/resolver.h"
 
 #include "pxr/usd/usdGeom/imageable.h"
@@ -623,6 +625,9 @@ ProxyShape::ProxyShape()
   m_objectsChangedNoticeKey = TfNotice::Register(me, &ProxyShape::onObjectsChanged, m_stage);
   m_editTargetChanged = TfNotice::Register(me, &ProxyShape::onEditTargetChanged, m_stage);
 
+  TfWeakPtr<UsdStage> stage(m_stage);
+  m_transactionNoticeKey = TfNotice::Register(me, &ProxyShape::onTransactionNotice, stage);
+
   registerEvents();
 
   m_findExcludedPrims.preIteration = [this]() {
@@ -730,6 +735,7 @@ ProxyShape::~ProxyShape()
   TfNotice::Revoke(m_variantChangedNoticeKey);
   TfNotice::Revoke(m_objectsChangedNoticeKey);
   TfNotice::Revoke(m_editTargetChanged);
+  TfNotice::Revoke(m_transactionNoticeKey);
   destroyGLImagingEngine();
   triggerEvent("PostDestroyProxyShape");
 }
@@ -1241,7 +1247,7 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
 
   // If redraw wasn't requested from Maya i.e. external stage modification
   // We need to request redraw on idle, so viewport is updated
-  if (!m_requestedRedraw)
+  if (!m_requestedRedraw && !AL::usd::transaction::TransactionManager::InProgress(sender))
   {
     m_requestedRedraw = true;
     MGlobal::executeCommandOnIdle("refresh");
@@ -1299,6 +1305,16 @@ void ProxyShape::validateTransforms()
     }
   }
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("/validateTransforms\n");
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::onTransactionNotice(AL::usd::transaction::CloseNotice const &notice, const UsdStageWeakPtr& stage)
+{
+  if (!m_requestedRedraw)
+  {
+    m_requestedRedraw = true;
+    MGlobal::executeCommandOnIdle("refresh");
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------

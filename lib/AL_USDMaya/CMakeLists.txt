@@ -189,6 +189,7 @@ target_link_libraries(${LIBRARY_NAME}
     AL_USDMayaUtils
     AL_MayaUtils
     AL_USDUtils
+    AL_USDTransaction
     ar 
     gf 
     kind

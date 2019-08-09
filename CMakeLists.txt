@@ -105,6 +105,7 @@ if(NOT SKIP_USDMAYA_TESTS)
 endif()	
 add_subdirectory(mayautils)
 add_subdirectory(usdmayautils)
+add_subdirectory(usdtransaction)
 
 add_subdirectory(lib)
 add_subdirectory(plugin)

@@ -28,6 +28,8 @@
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
 #include "AL/usdmaya/SelectabilityDB.h"
 
+#include "AL/usd/transaction/Notice.h"
+
 #include "maya/MDagModifier.h"
 #include "maya/MDagPath.h"
 #include "maya/MGlobal.h"
@@ -1025,6 +1027,7 @@ private:
   void onEditTargetChanged(UsdNotice::StageEditTargetChanged const& notice, UsdStageWeakPtr const& sender);
   void trackEditTargetLayer(LayerManager* layerManager=nullptr);
   void validateTransforms();
+  void onTransactionNotice(AL::usd::transaction::CloseNotice const &notice, const UsdStageWeakPtr& stage);
   void onRedraw() { m_requestedRedraw = false; }
 
   /// get the stored Translator ID for a Path
@@ -1066,6 +1069,7 @@ private:
   TfNotice::Key m_objectsChangedNoticeKey;
   TfNotice::Key m_variantChangedNoticeKey;
   TfNotice::Key m_editTargetChanged;
+  TfNotice::Key m_transactionNoticeKey;
 
   mutable std::map<UsdTimeCode, MBoundingBox> m_boundingBoxCache;
   MCallbackId m_onSelectionChanged = 0;
