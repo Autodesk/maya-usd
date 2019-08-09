@@ -1,3 +1,7 @@
+## AL_USDMaya-0.32.36 (2019-08-09)
+### Added
++ optionVar and menu item to control the default state of pushToPrim
+
 ## AL_USDMaya-0.32.36 (2019-08-08)
 ### Fixed
 + Prevent pref data being displayed as a colour set
