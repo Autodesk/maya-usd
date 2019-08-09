@@ -77,6 +77,10 @@ set_target_properties(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
+if(NOT SKIP_USDMAYA_TESTS)
+  add_subdirectory(tests)
+endif()
+
 ####################################################################################################
 # Install 
 ####################################################################################################
