@@ -224,7 +224,7 @@ install(TARGETS ${LIBRARY_NAME}
     RUNTIME
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
-if(MSVC)
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${LIBRARY_NAME}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL)
 endif()
 
@@ -251,7 +251,7 @@ set_target_properties(${PYTHON_LIBRARY_NAME}
     PROPERTIES 
         PREFIX ""
 )
-if(MSVC)
+if(IS_WINDOWS)
 set_target_properties(${PYTHON_LIBRARY_NAME}
     PROPERTIES
         SUFFIX ".pyd"

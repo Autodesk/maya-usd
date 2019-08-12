@@ -8,7 +8,7 @@
 # MAYAUSD_INCLUDE_DIR     Path to the MAYAUSD's include directories
 #
 
-if(APPLE)
+if(IS_MACOSX)
     find_path(MAYAUSD_LIBRARY_DIR 
         libmayaUsd.dylib
         HINTS
@@ -24,7 +24,7 @@ if(APPLE)
         DOC
             "MayaUSD's libraries path"
     )
-elseif(UNIX)
+elseif(IS_LINUX)
     find_path(MAYAUSD_LIBRARY_DIR
             libmayaUsd.so
          HINTS
@@ -40,7 +40,7 @@ elseif(UNIX)
         DOC
             "MayaUSD's libraries path"
     )
-elseif(WIN32)
+elseif(IS_WINDOWS)
     find_path(MAYAUSD_LIBRARY_DIR
             mayaUsd.lib
          HINTS

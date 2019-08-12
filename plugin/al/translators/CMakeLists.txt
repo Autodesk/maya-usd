@@ -69,32 +69,16 @@ set_target_properties(${TRANSLATORS_PACKAGE}
      "MFB_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE};MFB_ALT_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}"
 )
 
-# ${PXR_USD_LOCATION}/lib is added to the RPATH only if PXR_USD_LOCATION
-# is set.
-if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-	set(TARGET_RPATH "@loader_path/../lib;@loader_path/../../../lib")
-	if(DEFINED PXR_USD_LOCATION)
-	    string(APPEND TARGET_RPATH ";${PXR_USD_LOCATION}/lib")
-    endif()
-    set(CMAKE_MACOSX_RPATH ON)
-    set_target_properties(${TRANSLATORS_PACKAGE}
-        PROPERTIES
-            SUFFIX ".bundle"
-            BUILD_WITH_INSTALL_RPATH TRUE
-            INSTALL_RPATH "${TARGET_RPATH}"
-    )
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-	set(TARGET_RPATH "$ORIGIN/../lib:$ORIGIN/../../../lib")
-	if(DEFINED PXR_USD_LOCATION)
-	    string(APPEND TARGET_RPATH ":${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64")
-    endif()
-	# Use RUNPATH instead of RPATH.
-	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags" PARENT_SCOPE)
-    set_target_properties(${TRANSLATORS_PACKAGE}
-            PROPERTIES
-            INSTALL_RPATH "${TARGET_RPATH}"
-            BUILD_WITH_INSTALL_RPATH TRUE
-    )
+# rpath setup
+if(IS_MACOSX OR IS_LINUX) 
+    init_rpath(rpath "plugin")
+    add_rpath(rpath "../lib")
+    add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    install_rpath(rpath ${TRANSLATORS_PACKAGE})
+endif()
+
+if (IS_LINUX)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags" PARENT_SCOPE)
 endif()
 
 target_link_libraries(${TRANSLATORS_PACKAGE} ${DEPENDANT_LIBRARIES})
@@ -105,7 +89,7 @@ install(TARGETS ${TRANSLATORS_PACKAGE}
  RUNTIME
  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
-if(MSVC)
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TRANSLATORS_PACKAGE}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL)
 endif()
 

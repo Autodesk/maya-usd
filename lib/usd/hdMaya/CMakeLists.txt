@@ -107,15 +107,11 @@ elseif (MTOH_CXX_STD MATCHES "^14$")
 endif ()
 
 target_compile_definitions(${TARGET_NAME} PRIVATE "HDMAYA_EXPORT=1")
-set_target_properties(${TARGET_NAME} PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
-if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    set_target_properties(${TARGET_NAME} PROPERTIES INSTALL_NAME_DIR "@loader_path/../lib")
-endif ()
 
-if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+if (IS_WINDOWS)
     # Prevent windows.h from defining min and max macros.
     target_compile_definitions(${TARGET_NAME} PUBLIC "NOMINMAX=1")
-elseif (APPLE)
+elseif (IS_MACOSX)
     target_compile_definitions(${TARGET_NAME} PUBLIC "OSMac_")
 endif ()
 
@@ -198,6 +194,6 @@ install(
 
     DESTINATION include/hdMaya)
 
-if(MSVC)
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL)
 endif()

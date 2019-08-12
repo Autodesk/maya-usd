@@ -25,39 +25,5 @@ endif()
 
 add_subdirectory(hdMaya)
 
-# Adds the proper RPATH (on Mac OS) or RUNPATH (on Linux) for PlugPlugin
-# translator plugins.  RUNPATH is preferable to RPATH on Linux, as it is
-# overridable with LD_LIBRARY_PATH.  There is no RUNPATH on Mac OS.
-function(set_translators_plugin_properties plugin)
-    # ${PXR_USD_LOCATION}/lib is added to the RPATH only if PXR_USD_LOCATION
-    # is set.
-    if(APPLE)
-    	set(TARGET_RPATH "@loader_path/../lib;@loader_path/../../USD/lib")
-    	if(DEFINED PXR_USD_LOCATION)
-    	    string(APPEND TARGET_RPATH ";${PXR_USD_LOCATION}/lib")
-        endif()
-        set(CMAKE_MACOSX_RPATH ON)
-        set_target_properties(${plugin}
-            PROPERTIES
-                SUFFIX ".bundle"
-                BUILD_WITH_INSTALL_RPATH TRUE
-                INSTALL_RPATH "${TARGET_RPATH}"
-        )
-    # No such thing as a CMake LINUX variable, contrary to APPLE and MSVC.
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    	set(TARGET_RPATH "$ORIGIN/../lib:$ORIGIN/../../USD/lib")
-    	if(DEFINED PXR_USD_LOCATION)
-    	    string(APPEND TARGET_RPATH ":${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64")
-        endif()
-		# Use RUNPATH instead of RPATH.
-    	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags" PARENT_SCOPE)
-        set_target_properties(${plugin}
-                PROPERTIES
-                INSTALL_RPATH "${TARGET_RPATH}"
-                BUILD_WITH_INSTALL_RPATH TRUE
-        )
-    endif()
-endfunction(set_translators_plugin_properties)
-
 add_subdirectory(translators)
 add_subdirectory(schemas)

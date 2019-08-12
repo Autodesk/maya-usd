@@ -39,7 +39,7 @@ macro(MAYA_SET_PLUGIN_PROPERTIES target)
 
     set(_maya_DEFINES REQUIRE_IOSTREAM _BOOL)
 
-    if(APPLE)
+    if(IS_MACOSX)
         set(_maya_DEFINES "${_maya_DEFINES}" MAC_PLUGIN OSMac_ OSMac_MachO)
         set_target_properties(${target} PROPERTIES
                               PREFIX ""
@@ -78,15 +78,15 @@ macro(MAYA_SET_PLUGIN_PROPERTIES target)
 endmacro(MAYA_SET_PLUGIN_PROPERTIES)
 #=============================================================================
 
-if(APPLE)
+if(IS_MACOSX)
     set(MAYA_PLUGIN_SUFFIX ".bundle")
-elseif(WIN32)
+elseif(IS_WINDOWS)
     set(MAYA_PLUGIN_SUFFIX ".mll")
-else() #LINUX
+else(IS_LINUX)
     set(MAYA_PLUGIN_SUFFIX ".so")
 endif()
 
-if(APPLE)
+if(IS_MACOSX)
     find_path(MAYA_BASE_DIR
             include/maya/MFn.h
         HINTS
@@ -111,7 +111,7 @@ if(APPLE)
         DOC
             "Maya's libraries path"
     )
-elseif(UNIX)
+elseif(IS_LINUX)
     find_path(MAYA_BASE_DIR
             include/maya/MFn.h
         HINTS
@@ -136,7 +136,7 @@ elseif(UNIX)
         DOC
             "Maya's libraries path"
     )
-elseif(WIN32)
+elseif(IS_WINDOWS)
     find_path(MAYA_BASE_DIR
             include/maya/MFn.h
         HINTS

@@ -32,6 +32,8 @@ list(APPEND CMAKE_MODULE_PATH
     ${PROJECT_SOURCE_DIR}/../cmake/modules
 )
 
+include(${PROJECT_SOURCE_DIR}/../cmake/utils.cmake)
+
 #==============================================================================
 # Compiler
 #==============================================================================
@@ -53,8 +55,7 @@ string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 if (APPLE)
-   set(CMAKE_MACOSX_RPATH ON)
-   set(OSX_ARCHITECTURES "x86_64")
+   set(CMAKE_OSX_ARCHITECTURES "x86_64")
    add_definitions(-DOSMac_ -DMAC_PLUGIN)
    add_definitions(-D_BOOL -DREQUIRE_IOSTREAM)
 endif()
@@ -83,7 +84,7 @@ if(CMAKE_WANT_UFE_BUILD)
             set(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE OFF)
         endif()
 
-        if(MSVC)
+        if(IS_WINDOWS)
             # Silence this warning until we fix it in UFE.
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
         endif()
@@ -465,8 +466,7 @@ if (UFE_FOUND)
     target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
 endif()
 
-if(APPLE)
-    set(CMAKE_MACOSX_RPATH ON)
+if(IS_MACOSX)
     set_target_properties(${LIBRARY_NAME}
         PROPERTIES
             BUILD_WITH_INSTALL_RPATH TRUE
@@ -488,7 +488,7 @@ install(TARGETS ${LIBRARY_NAME}
     RUNTIME
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
-if(MSVC)
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${LIBRARY_NAME}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL)
 endif()
 

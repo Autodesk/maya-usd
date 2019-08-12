@@ -95,7 +95,7 @@ if(NOT SKIP_USDMAYA_TESTS)
 
         message(STATUS "========== Installing GoogleTest... ==========")
         set(FORCE_SHARED_CRT "")
-        if(MSVC)
+        if(IS_WINDOWS)
             set(FORCE_SHARED_CRT -DFORCE_SHARED_CRT=OFF)
         endif()
         execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} . ${FORCE_SHARED_CRT}

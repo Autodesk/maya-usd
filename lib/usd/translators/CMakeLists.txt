@@ -64,8 +64,16 @@ add_library(${TRANSLATORS_PLUGIN} SHARED ${source})
 #======================================================================
 # TARGET PROPERTIES
 #======================================================================
+if(IS_MACOSX OR IS_LINUX)
+    # rpath setup
+    init_rpath(rpath "plugin")
+    add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    install_rpath(rpath ${TRANSLATORS_PLUGIN})
+endif()
 
-set_translators_plugin_properties("${TRANSLATORS_PLUGIN}")
+if(IS_LINUX)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags" PARENT_SCOPE)
+endif()
 
 #======================================================================
 # INCLUDE, LINK
@@ -113,6 +121,6 @@ install(
     RUNTIME
     DESTINATION ${library_install_path}
 )
-if(MSVC)
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TRANSLATORS_PLUGIN}> DESTINATION ${library_install_path} OPTIONAL)
 endif()

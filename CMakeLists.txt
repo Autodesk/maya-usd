@@ -42,7 +42,7 @@ if (BUILD_MAYAUSD_LIBRARY)
 endif()
 
 if (APPLE)
-   set(OSX_ARCHITECTURES "x86_64")
+   set(CMAKE_OSX_ARCHITECTURES "x86_64")
    add_definitions(-DOSMac_ -DMAC_PLUGIN)
    add_definitions(-D_BOOL -DREQUIRE_IOSTREAM)
 endif()
