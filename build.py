@@ -222,7 +222,7 @@ def CurrentWorkingDirectory(dir):
 
 ############################################################
 # CMAKE
-def RunCMake(context, force, extraArgs=None):
+def RunCMake(context, extraArgs=None, stages=None):
     """Invoke CMake to configure, build, and install a library whose 
     source code is located in the current working directory."""
 
@@ -230,9 +230,10 @@ def RunCMake(context, force, extraArgs=None):
     instDir = context.instDir
     buildDir = context.buildDir
 
-    if force and os.path.isdir(buildDir):
+    if 'clean' in stages and os.path.isdir(buildDir):
         shutil.rmtree(buildDir)
-    if force and os.path.isdir(instDir):
+
+    if 'clean' in stages and os.path.isdir(instDir):
         shutil.rmtree(instDir)
 
     if not os.path.isdir(buildDir):
@@ -265,30 +266,38 @@ def RunCMake(context, force, extraArgs=None):
         if os.path.isfile(context.logFileLocation):
             os.remove(context.logFileLocation)
 
-        Run('cmake '
-            '-DCMAKE_INSTALL_PREFIX="{instDir}" '
-            '-DCMAKE_BUILD_TYPE={variant} '
-            '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON'
-            '{osx_rpath} '
-            '{generator} '
-            '{extraArgs} '
-            '"{srcDir}"'
-            .format(instDir=instDir,
-                    variant=variant,
-                    srcDir=srcDir,
-                    osx_rpath=(osx_rpath or ""),
-                    generator=(generator or ""),
-                    extraArgs=(" ".join(extraArgs) if extraArgs else "")))
-        Run("cmake --build . --config {variant} --target install -- {multiproc}"
-            .format(variant=variant,
-                    multiproc=FormatMultiProcs(context.numJobs, generator)))
+        if 'configure' in stages:
+            Run('cmake '
+                '-DCMAKE_INSTALL_PREFIX="{instDir}" '
+                '-DCMAKE_BUILD_TYPE={variant} '
+                '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON'
+                '{osx_rpath} '
+                '{generator} '
+                '{extraArgs} '
+                '"{srcDir}"'
+                .format(instDir=instDir,
+                        variant=variant,
+                        srcDir=srcDir,
+                        osx_rpath=(osx_rpath or ""),
+                        generator=(generator or ""),
+                        extraArgs=(" ".join(extraArgs) if extraArgs else "")))
+ 
+        installArg = ""
+        if 'install' in stages:
+            installArg = "--target install"
+
+        if 'build' in stages or 'install' in stages:
+            Run("cmake --build . --config {variant} {installArg} -- {multiproc}"
+                .format(variant=variant,
+                        installArg=installArg,
+                        multiproc=FormatMultiProcs(context.numJobs, generator)))
 
 ############################################################
 # Maya USD
-def InstallMayaUSD(context, force, buildArgs):
+def InstallMayaUSD(context, buildArgs, stages):
     with CurrentWorkingDirectory(context.mayaUsdSrcDir):
         extraArgs = []
-
+        stagesArgs = []
         if context.mayaLocation:
             extraArgs.append('-DMAYA_LOCATION="{mayaLocation}"'
                              .format(mayaLocation=context.mayaLocation))
@@ -304,7 +313,10 @@ def InstallMayaUSD(context, force, buildArgs):
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
 
-        RunCMake(context, force, extraArgs)
+        # Add on any user-specified stages arguments.
+        stagesArgs += stages
+
+        RunCMake(context, extraArgs, stagesArgs)
 
 ############################################################
 # ArgumentParser
@@ -346,17 +358,15 @@ parser.add_argument("--build-relwithdebug", dest="build_relwithdebug", action="s
                     help="Build in RelWithDebInfo mode")
 
 parser.add_argument("--build-args", type=str, nargs="*", default=[],
-                   help=("Custom arguments to pass to build system when "
-                         "building libraries"))
+                   help=("Comma-separated list of arguments passed into CMake when building libraries"))
+
+parser.add_argument("--stages", type=str, nargs="*", default=['clean','configure','build','install'],
+                   help=("Comma-separated list of stages to execute.( possible stages: clean, configure, build, install)"))
 
 parser.add_argument("-j", "--jobs", type=int, default=GetCPUCount(),
                     help=("Number of build jobs to run in parallel. "
                           "(default: # of processors [{0}])"
                           .format(GetCPUCount())))
-
-parser.add_argument("--force", type=str, action="append", dest="force_clean_build",
-                    default=[],
-                    help=("Force clean build."))
 
 args = parser.parse_args()
 
@@ -386,9 +396,6 @@ class InstallContext:
         self.instDir = (os.path.abspath(args.install_location) if args.install_location
                          else os.path.join(self.workspaceDir, "install", BuildVariant(self)))
 
-        # Forced to be built
-        self.forceBuild = args.force_clean_build
-
         # CMake generator
         self.cmakeGenerator = args.generator
 
@@ -415,10 +422,15 @@ class InstallContext:
 
         # Build arguments
         self.buildArgs = list()
-        for args in args.build_args:
-            argList = args.split(",")
-            for arg in argList:
+        for argList in args.build_args:
+            for arg in argList.split(","):
                 self.buildArgs.append(arg)
+
+        # Stages arguments
+        self.stagesArgs = list()
+        for argList in args.stages:
+            for arg in argList.split(","):
+                self.stagesArgs.append(arg)
 try:
     context = InstallContext(args)
 except Exception as e:
@@ -438,7 +450,11 @@ Building with settings:
 
 if context.buildArgs:
   summaryMsg += """
-  Extra Build arguments     {buildArgs}"""
+  Extra Build arguments {buildArgs}"""
+
+if context.stagesArgs:
+  summaryMsg += """
+  Stages arguments      {stagesArgs}"""
 
 summaryMsg = summaryMsg.format(
     mayaUsdSrcDir=context.mayaUsdSrcDir,
@@ -447,6 +463,7 @@ summaryMsg = summaryMsg.format(
     instDir=context.instDir,
     logFileLocation=context.logFileLocation,
     buildArgs=context.buildArgs,
+    stagesArgs=context.stagesArgs,
     buildVariant=BuildVariant(context),
     cmakeGenerator=("Default" if not context.cmakeGenerator
                     else context.cmakeGenerator)
@@ -455,7 +472,7 @@ summaryMsg = summaryMsg.format(
 Print(summaryMsg)
 
 # Install MayaUSD
-InstallMayaUSD(context, context.forceBuild, context.buildArgs)
+InstallMayaUSD(context, context.buildArgs, context.stagesArgs)
 
 # Ensure directory structure is created and is writable.
 for dir in [context.workspaceDir, context.buildDir, context.instDir]:
