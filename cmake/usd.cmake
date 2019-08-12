@@ -18,10 +18,6 @@
 
 
 function(init_usd)
-    set(PXR_USD_LOCATION "${PXR_USD_LOCATION}" PARENT_SCOPE)
-    set(PXR_USD_INCLUDE_DIR "${PXR_USD_LOCATION}/include" PARENT_SCOPE)
-    set(PXR_USD_LIB_DIR "${PXR_USD_LOCATION}/lib" PARENT_SCOPE)
-
     # Adjust PYTHONPATH, PATH
     append_path_to_env_var("PYTHONPATH" "${PXR_USD_LOCATION}/lib/python")
     if(WIN32)
