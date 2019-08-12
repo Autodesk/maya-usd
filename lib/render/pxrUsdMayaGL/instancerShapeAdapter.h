@@ -94,6 +94,15 @@ class UsdMayaGL_InstancerShapeAdapter : public PxrMayaHdShapeAdapter
         /// instances of this class.
         UsdMayaGL_InstancerShapeAdapter();
 
+        // Derived class hook to allow derived classes to augment
+        // _SyncInstancerPrototypes(), for each prototype.  The implementation
+        // in this class clears references on the argument prototypePrim.
+        virtual void SyncInstancerPerPrototypePostHook(
+            const MPlug&              hierarchyPlug,
+            UsdPrim&                  prototypePrim,
+            std::vector<std::string>& layerIdsToMute
+        );
+
     private:
 
         /// Initialize the shape adapter using the given \p renderIndex.

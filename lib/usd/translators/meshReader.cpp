@@ -15,8 +15,8 @@
 //
 #include "pxr/pxr.h"
 
-#include <../../fileio/primReaderRegistry.h>
-#include <../../fileio/translators/translatorMesh.h>
+#include "../../fileio/primReaderRegistry.h"
+#include "../../fileio/translators/translatorMesh.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
 

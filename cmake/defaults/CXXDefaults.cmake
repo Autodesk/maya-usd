@@ -32,12 +32,13 @@ _add_define(GLX_GLXEXT_PROTOTYPES)
 _add_define(BOOST_PYTHON_NO_PY_SIGNATURES)
 
 # Maya seems to require this
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if (IS_LINUX)
     _add_define(LINUX)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     _add_define(BUILD_OPTLEVEL_DEV)
+    _add_define(TBB_USE_DEBUG)
 endif()
 
 # Set plugin path environment variable name

@@ -111,13 +111,10 @@ UsdMayaImportTranslator::reader(
             userArgs,
             /* importWithProxyShapes = */ false,
             timeInterval);
-    UsdMaya_ReadJobWithSceneAssembly* mUsdReadJob =
-        new UsdMaya_ReadJobWithSceneAssembly(fileName,
-                       primPath,
-                       variants,
-                       jobArgs);
+    UsdMaya_ReadJobWithSceneAssembly mUsdReadJob(
+        fileName, primPath, variants, jobArgs);
     std::vector<MDagPath> addedDagPaths;
-    bool success = mUsdReadJob->Read(&addedDagPaths);
+    bool success = mUsdReadJob.Read(&addedDagPaths);
     return (success) ? MS::kSuccess : MS::kFailure;
 }
 

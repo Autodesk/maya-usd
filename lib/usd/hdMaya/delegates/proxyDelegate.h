@@ -38,9 +38,9 @@
 
 #include <memory>
 
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
 #include <ufe/selection.h>
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -64,12 +64,12 @@ public:
         const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
         const HdSelectionSharedPtr& selection) override;
 
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
     void PopulateSelectedPaths(
         const UFE_NS::Selection& ufeSelection, SdfPathVector& selectedSdfPaths,
         const HdSelectionSharedPtr& selection) override;
     bool SupportsUfeSelection() override;
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

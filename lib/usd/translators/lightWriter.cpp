@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#include <../../fileio/translators/translatorRfMLight.h>
-#include <../../fileio/primWriterRegistry.h>
+#include "../../fileio/translators/translatorRfMLight.h"
+#include "../../fileio/primWriterRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -19,8 +19,8 @@
 /// \file pxrUsdTranslators/fileTextureWriter.h
 
 #include "pxr/pxr.h"
-#include <../../fileio/shaderWriter.h>
-#include <../../fileio/writeJobContext.h>
+#include "../../fileio/shaderWriter.h"
+#include "../../fileio/writeJobContext.h"
 
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/sdf/path.h"

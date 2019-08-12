@@ -114,7 +114,7 @@ function(pxr_library NAME)
         if(args_MAYA_PLUGIN)
             if (WIN32)
                 set(suffix ".mll")
-            elseif(APPLE)
+            elseif(IS_MACOSX)
                 set(suffix ".bundle")
             endif()
         endif()
@@ -267,9 +267,9 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
 
         # Find libraries under the install prefix, which has the core USD
         # libraries.
-        _pxr_init_rpath(rpath "tests/lib")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-        _pxr_install_rpath(rpath ${LIBRARY_NAME})
+        init_rpath(rpath "tests/lib")
+        add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+        install_rpath(rpath ${LIBRARY_NAME})
 
         if (NOT bt_SOURCE_DIR)
             set(bt_SOURCE_DIR testenv)
@@ -347,9 +347,9 @@ function(pxr_build_test TEST_NAME)
 
         # Find libraries under the install prefix, which has the core USD
         # libraries.
-        _pxr_init_rpath(rpath "tests")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-        _pxr_install_rpath(rpath ${TEST_NAME})
+        init_rpath(rpath "tests")
+        add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+        install_rpath(rpath ${TEST_NAME})
 
         # XXX -- We shouldn't have to install to run tests.
         install(TARGETS ${TEST_NAME}
@@ -738,7 +738,7 @@ function(pxr_toplevel_epilogue)
         # that we carefully avoid adding the usd_m target itself by using
         # TARGET_FILE.  Linking the usd_m target would link usd_m and
         # everything it links to.
-        if(MSVC)
+        if(IS_WINDOWS)
             target_link_libraries(usd_ms
                 PRIVATE
                     -WHOLEARCHIVE:$<TARGET_FILE:usd_m>
@@ -783,10 +783,10 @@ function(pxr_toplevel_epilogue)
                 ${PXR_THREAD_LIBS}
         )
 
-        _pxr_init_rpath(rpath "${libInstallPrefix}")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-        _pxr_install_rpath(rpath usd_ms)
+        init_rpath(rpath "${libInstallPrefix}")
+        add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib")
+        add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+        install_rpath(rpath usd_ms)
     endif()
 
     # Setup the plugins in the top epilogue to ensure that everybody has had a

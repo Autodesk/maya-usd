@@ -20,8 +20,8 @@
 
 #include "pxr/pxr.h"
 
-#include <../../fileio/primWriter.h>
-#include <../../fileio/writeJobContext.h>
+#include "../../fileio/primWriter.h"
+#include "../../fileio/writeJobContext.h"
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"

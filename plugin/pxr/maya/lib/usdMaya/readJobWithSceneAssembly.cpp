@@ -13,10 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+
 #include "usdMaya/readJobWithSceneAssembly.h"
 #include "usdMaya/translatorModelAssembly.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+// For now, we hard code this to use displayColor.  But maybe the more
+// appropriate thing to do is just to leave shadingMode alone and pass
+// "displayColor" in from the UsdMayaRepresentationFull
+// (usdMaya/referenceAssembly.cpp)
+const static TfToken ASSEMBLY_SHADING_MODE = UsdMayaShadingModeTokens->displayColor;
 
 UsdMaya_ReadJobWithSceneAssembly::UsdMaya_ReadJobWithSceneAssembly(
         const std::string &iFileName,
@@ -88,6 +96,22 @@ bool UsdMaya_ReadJobWithSceneAssembly::OverridePrimReader(
         }
     }
     return false;
+}
+
+void UsdMaya_ReadJobWithSceneAssembly::PreImport()
+{
+    const bool isSceneAssembly = mMayaRootDagPath.node().hasFn(MFn::kAssembly);
+    if (isSceneAssembly) {
+        mArgs.shadingMode = ASSEMBLY_SHADING_MODE;
+    }
+}
+
+bool UsdMaya_ReadJobWithSceneAssembly::SkipRootPrim(bool isImportingPseudoRoot)
+{
+    // Skip the root prim if it is the pseudoroot, or if we are importing
+    // on behalf of a scene assembly.
+    return isImportingPseudoRoot ||
+        mMayaRootDagPath.node().hasFn(MFn::kAssembly);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -24,7 +24,6 @@ namespace usdmaya {
 struct guid;
 class Global;
 struct MObjectMap;
-class StageData;
 class StageCache;
 
 namespace cmds {

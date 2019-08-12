@@ -41,8 +41,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
-    int _profilerCategory = MProfiler::addCategory("HdVP2RenderDelegate", "HdVP2RenderDelegate");   //!< Profiler category
-
     MGlobal::ListAdjustment GetListAdjustment()
     {
         // Keyboard modifiers can be queried from QApplication::keyboardModifiers()
@@ -169,17 +167,20 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
     }
 
     if (!_renderDelegate) {
-        MProfilingScope subProfilingScope(_profilerCategory, MProfiler::kColorD_L1, "Allocate VP2RenderDelegate");
+        MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorD_L1, "Allocate VP2RenderDelegate");
         _renderDelegate = new HdVP2RenderDelegate(*this);
     }
 
     if (!_renderIndex) {
-        MProfilingScope subProfilingScope(_profilerCategory, MProfiler::kColorD_L1, "Allocate RenderIndex");
+        MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorD_L1, "Allocate RenderIndex");
         _renderIndex = HdRenderIndex::New(_renderDelegate);
     }
 
     if (!_sceneDelegate) {
-        MProfilingScope subProfilingScope(_profilerCategory, MProfiler::kColorD_L1, "Allocate SceneDelegate");
+        MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorD_L1, "Allocate SceneDelegate");
 
         SdfPath delegateID = SdfPath::AbsoluteRootPath().AppendChild(TfToken(TfStringPrintf(
             "Proxy_%s_%p", usdSubSceneShape->name().asChar(), usdSubSceneShape)));
@@ -240,7 +241,8 @@ bool ProxyRenderDelegate::_Populate() {
         return false;
 
     if (!_isPopulated && _usdStage) {
-        MProfilingScope subProfilingScope(_profilerCategory, MProfiler::kColorD_L1, "Populate");
+        MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorD_L1, "Populate");
         _sceneDelegate->Populate(_usdStage->GetPseudoRoot());
 
         _isPopulated = true;
@@ -251,7 +253,8 @@ bool ProxyRenderDelegate::_Populate() {
 
 //! \brief  Synchronize USD scene delegate time with Maya's scene time.
 void ProxyRenderDelegate::_UpdateTime() {
-    MProfilingScope profilingScope(_profilerCategory, MProfiler::kColorC_L1, "Update Time");
+    MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorC_L1, "Update Time");
 
     MayaUsdProxyShapeBase* usdSubSceneShape = getProxyShape();
     if(usdSubSceneShape && _sceneDelegate) {
@@ -262,7 +265,8 @@ void ProxyRenderDelegate::_UpdateTime() {
 
 //! \brief  Execute Hydra engine which will performe minimal update VP2 state update based on change tracker.
 void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext) {
-    MProfilingScope profilingScope(_profilerCategory, MProfiler::kColorC_L1, "Execute");
+    MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorC_L1, "Execute");
 
 #if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
     // Since Maya 2020, subscene update can be invoked in a selection pass.
@@ -311,7 +315,8 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 
 //! \brief  Main update entry from subscene override.
 void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameContext& frameContext) {
-    MProfilingScope profilingScope(_profilerCategory, MProfiler::kColorD_L1, "ProxyRenderDelegate::update");
+    MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorD_L1, "ProxyRenderDelegate::update");
 
     _InitRenderDelegate();
     if (_Populate()) {

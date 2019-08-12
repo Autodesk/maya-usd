@@ -158,7 +158,7 @@ TF_REGISTRY_FUNCTION(TfDebug) {
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_SELECTION,
-        "Print information about hdmaya delegate selection.");
+        "Print information about hdMaya delegate selection.");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

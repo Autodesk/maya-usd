@@ -23,7 +23,7 @@
 //
 #include "materialAdapter.h"
 
-#include <hdmaya/hdmaya.h>
+#include <hdMaya/hdMaya.h>
 
 #include <pxr/base/tf/fileUtils.h>
 
@@ -599,7 +599,7 @@ private:
 
     inline std::tuple<HdWrap, HdWrap> _GetWrappingParams(
         const MObject& fileObj) {
-        constexpr std::tuple<HdWrap, HdWrap> def{HdWrapClamp, HdWrapClamp};
+        const std::tuple<HdWrap, HdWrap> def{HdWrapClamp, HdWrapClamp};
         MStatus status;
         MFnDependencyNode fileNode(fileObj, &status);
         if (!status) { return def; }

@@ -1,15 +1,13 @@
-set(TARGET_NAME hdmaya)
+set(TARGET_NAME hdMaya)
 
 if (LUMA_USD_BUILD)
-    set(HDMAYA_LUMA_BUILD_INT 1)
-else ()
-    set(HDMAYA_LUMA_BUILD_INT 0)
+    set(HDMAYA_LUMA_BUILD 1)
 endif ()
 
-set(HDMAYA_H "${CMAKE_CURRENT_BINARY_DIR}/hdmaya.h")
+set(HDMAYA_H "${CMAKE_CURRENT_BINARY_DIR}/hdMaya.h")
 
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/hdmaya.h.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/hdMaya.h.in"
     ${HDMAYA_H}
     @ONLY
 )
@@ -98,7 +96,7 @@ target_include_directories(${TARGET_NAME}
         ${CMAKE_BINARY_DIR}
 )
 
-if (HDMAYA_UFE_BUILD)
+if (UFE_FOUND)
     target_link_libraries(${TARGET_NAME} PUBLIC ${UFE_LIBRARY})
 endif()
 
@@ -109,15 +107,11 @@ elseif (MTOH_CXX_STD MATCHES "^14$")
 endif ()
 
 target_compile_definitions(${TARGET_NAME} PRIVATE "HDMAYA_EXPORT=1")
-set_target_properties(${TARGET_NAME} PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
-if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    set_target_properties(${TARGET_NAME} PROPERTIES INSTALL_NAME_DIR "@loader_path/../lib")
-endif ()
 
-if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+if (IS_WINDOWS)
     # Prevent windows.h from defining min and max macros.
     target_compile_definitions(${TARGET_NAME} PUBLIC "NOMINMAX=1")
-elseif (APPLE)
+elseif (IS_MACOSX)
     target_compile_definitions(${TARGET_NAME} PUBLIC "OSMac_")
 endif ()
 
@@ -126,11 +120,11 @@ if (LUMA_USD_BUILD)
 endif ()
 
 # Wanted to do this:
-#   get_target_property(LIB_FULLPATH hdmaya LOCATION)
+#   get_target_property(LIB_FULLPATH hdMaya LOCATION)
 #   get_filename_component(LIB_NAME ${LIB_FULLPATH} NAME)
 #   set(PLUG_INFO_LIBRARY_PATH ${LIB_NAME})
 # But apparently you can't look up LOCATION in cmake-2.8.0... nor can you use
-# the generator expression "$<TARGET_FILE_NAME:hdmaya>" outside of special
+# the generator expression "$<TARGET_FILE_NAME:hdMaya>" outside of special
 # commands, like add_custom_command...
 # So just building "manually" with PREFIX / SUFFIX
 get_target_property(LIB_PREFIX ${TARGET_NAME} PREFIX)
@@ -143,7 +137,7 @@ if (LIB_SUFFIX STREQUAL LIB_SUFFIX-NOTFOUND OR LIB_SUFFIX STREQUAL NOTFOUND)
     set(LIB_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
 endif (LIB_SUFFIX STREQUAL LIB_SUFFIX-NOTFOUND OR LIB_SUFFIX STREQUAL NOTFOUND)
 
-set(PLUG_INFO_LIBRARY_PATH ${LIB_PREFIX}hdmaya${LIB_SUFFIX})
+set(PLUG_INFO_LIBRARY_PATH ${LIB_PREFIX}hdMaya${LIB_SUFFIX})
 
 set(PLUG_INFO_PATH "plugInfo.json")
 
@@ -157,7 +151,7 @@ configure_file(
 #==============================================================================
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH}
-    DESTINATION lib/usd/hdmaya/resources)
+    DESTINATION lib/usd/hdMaya/resources)
 
 install(
     TARGETS ${TARGET_NAME}
@@ -177,7 +171,7 @@ install(
         adapters/mayaAttrs.h
         adapters/shapeAdapter.h
         adapters/tokens.h
-    DESTINATION include/hdmaya/adapters)
+    DESTINATION include/hdMaya/adapters)
 
 install(
     FILES
@@ -189,7 +183,7 @@ install(
         delegates/proxyDelegate.h
 		delegates/proxyUsdImagingDelegate.h
         delegates/sceneDelegate.h
-    DESTINATION include/hdmaya/delegates)
+    DESTINATION include/hdMaya/delegates)
 
 install(
     FILES
@@ -198,8 +192,8 @@ install(
 		debugCodes.h
         ${HDMAYA_H}
 
-    DESTINATION include/hdmaya)
+    DESTINATION include/hdMaya)
 
-if(MSVC)
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL)
 endif()

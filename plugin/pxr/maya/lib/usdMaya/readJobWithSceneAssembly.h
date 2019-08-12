@@ -44,6 +44,11 @@ private:
         UsdPrimRange::iterator&      primIt
     ) override;
 
+    // Hook to set the shading mode if dealing with scene assembly.
+    void PreImport() override;
+
+    bool SkipRootPrim(bool isImportingPseudoRoot) override;
+
     // XXX: Activating the 'Expanded' representation of a USD reference assembly
     // node is very much like performing a regular UsdMaya_ReadJob but with
     // a few key differences (e.g. creating proxy shapes at collapse points).

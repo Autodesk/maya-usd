@@ -54,22 +54,40 @@ add_library(${SCHEMA_PLUGIN}
     SHARED
     MayaReference.cpp
     tokens.cpp
-    ModuleDeps.cpp
+# Python wrappers are not yet defined for this library.  See
+# plugin/al/schemas/AL/usd/schemas/maya/CMakeLists.txt
+# for the existing AL schema Python wrappers.  PPT, 26-Jul-2019.
+#    ModuleDeps.cpp
 )
 
 target_compile_definitions(${SCHEMA_PLUGIN}
     PRIVATE
         MFB_PACKAGE_NAME=${SCHEMA_PLUGIN}
         MFB_ALT_PACKAGE_NAME=${SCHEMA_PLUGIN}
-        MFB_PACKAGE_MODULE=AL.usd.schemas.maya
+# Python wrappers are not yet defined for this library.  PPT, 26-Jul-2019.
+#        MFB_PACKAGE_MODULE=AL.usd.schemas.maya
         MAYAUSDCORE_SCHEMAS_EXPORTS
 )
 
 # Hamed 2019 
 # https://stackoverflow.com/questions/25617839/undefined-reference-to-symbol-pthread-key-deleteglibc-2-2-5
 set(PTHREAD_LINK "")
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+if(IS_LINUX)
     set(PTHREAD_LINK -lpthread -lm)
+endif()
+
+#======================================================================
+# TARGET PROPERTIES
+#======================================================================
+if(IS_MACOSX OR IS_LINUX)
+    # rpath setup
+    init_rpath(rpath "plugin")
+    add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    install_rpath(rpath ${SCHEMA_PLUGIN})
+endif()
+
+if(IS_LINUX)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags" PARENT_SCOPE)
 endif()
 
 target_link_libraries(${SCHEMA_PLUGIN} ${DEPENDANT_LIBRARIES} ${PTHREAD_LINK})
@@ -83,7 +101,7 @@ install(
     RUNTIME
     DESTINATION ${library_install_path}
 )
-if(MSVC)
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${SCHEMA_PLUGIN}> DESTINATION ${library_install_path} OPTIONAL)
 endif()
 

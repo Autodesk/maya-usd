@@ -102,6 +102,8 @@ public:
     MHWRender::MShaderInstance* Get3dSolidShader() const;
     MHWRender::MShaderInstance* Get3dFatPointShader() const;
 
+    static const int sProfilerCategory;                             //!< Profiler category
+
 private:
     HdVP2RenderDelegate(const HdVP2RenderDelegate&) = delete;
     HdVP2RenderDelegate& operator=(const HdVP2RenderDelegate&) = delete;

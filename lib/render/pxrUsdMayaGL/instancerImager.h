@@ -29,6 +29,9 @@
 
 #include <maya/MCallbackIdArray.h>
 #include <maya/MDagMessage.h>
+#include <maya/MApiNamespace.h>
+
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -59,6 +62,20 @@ public:
     /// If \p vp2 is set, destroys the VP2 adapters. Otherwise, destroys the
     /// Legacy Viewport adapters.
     void RemoveShapeAdapters(bool vp2);
+
+    /// Delegate function for returning whether we should continue tracking the
+    /// instancer node on disconnect.
+    typedef std::function<bool(const MFnDependencyNode&)> ContinueTrackingOnDisconnectDelegate;
+
+    static void SetContinueTrackingOnDisconnectDelegate(
+        ContinueTrackingOnDisconnectDelegate delegate);
+
+    /// Factory function for creating instancer shape adapters.
+    typedef std::function<UsdMayaGL_InstancerShapeAdapter*()> InstancerShapeAdapterFactory;
+
+    /// Set the factory function for creating instancer shape adapters.
+    static void SetInstancerShapeAdapterFactory(
+        InstancerShapeAdapterFactory factory);
 
 private:
     /// Helper struct that owns all the data needed to track and draw a
@@ -151,10 +168,23 @@ private:
 
     /// @}
 
+    // Invoke the delegate, if present, else return false.
+    static bool ContinueTrackingOnDisconnect(const MFnDependencyNode&);
+
+    /// Invoke the factory function for creating instancer shape adapters.  If
+    /// no factory has been set, returns a UsdMayaGL_InstancerShapeAdapter base
+    /// class object.  The caller must manage the lifescope of the returned
+    /// object.
+    static UsdMayaGL_InstancerShapeAdapter* CreateInstancerShapeAdapter();
+
     UsdMayaGL_InstancerImager();
     ~UsdMayaGL_InstancerImager();
 
     friend class TfSingleton<UsdMayaGL_InstancerImager>;
+
+    static ContinueTrackingOnDisconnectDelegate _continueTrackingOnDisconnectDelegate;
+
+    static InstancerShapeAdapterFactory _instancerShapeAdapterFactory;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

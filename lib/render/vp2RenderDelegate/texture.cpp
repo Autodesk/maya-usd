@@ -14,10 +14,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
-    int _profilerCategory = MProfiler::addCategory("HdVP2RenderDelegate", "HdVP2RenderDelegate");   //!< Profiler category
-} //namespace
-
 /*! \brief  Constructor
 */
 HdVP2Texture::HdVP2Texture(
