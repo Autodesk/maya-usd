@@ -188,25 +188,10 @@ UsdMayaGL_ClosestPointOnProxyShape(
     return true;
 }
 
-/// Delegate for returning whether object soft-select mode is currently on
-/// Technically, we could make ProxyShape track this itself, but then that would
-/// be making two callbacks to track the same thing... so we use BatchRenderer
-/// implementation
-bool
-UsdMayaGL_ObjectSoftSelectEnabled()
-{
-    return UsdMayaGLBatchRenderer::GetInstance().GetObjectSoftSelectEnabled();
-}
-
-
 TF_REGISTRY_FUNCTION(MayaUsdProxyShapeBase)
 {
     MayaUsdProxyShapeBase::SetClosestPointDelegate(
             UsdMayaGL_ClosestPointOnProxyShape);
-#ifdef REFACTOR_PROXY_SHAPE
-    MayaUsdProxyShapeBase::SetObjectSoftSelectEnabledDelegate(
-            UsdMayaGL_ObjectSoftSelectEnabled);
-#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

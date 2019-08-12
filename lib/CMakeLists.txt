@@ -395,8 +395,10 @@ endif()
 
 list(APPEND mayaUsdPxrUsdMayaGL_headers
 	render/pxrUsdMayaGL/batchRenderer.h
+	render/pxrUsdMayaGL/debugCodes.h
 	render/pxrUsdMayaGL/hdImagingShapeUI.h
 	render/pxrUsdMayaGL/hdImagingShapeDrawOverride.h
+	render/pxrUsdMayaGL/instancerImager.h
 	render/pxrUsdMayaGL/instancerShapeAdapter.h
 	render/pxrUsdMayaGL/proxyShapeUI.h
 	render/pxrUsdMayaGL/proxyDrawOverride.h

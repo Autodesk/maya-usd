@@ -49,6 +49,7 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PRIVATE_CLASSES
         readJobWithSceneAssembly
+        instancerShapeAdapterWithSceneAssembly
 
     CPPFILES
         readJob_ImportWithProxies.cpp
