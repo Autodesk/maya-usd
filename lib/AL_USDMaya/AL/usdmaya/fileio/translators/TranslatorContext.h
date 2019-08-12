@@ -80,7 +80,7 @@ struct TranslatorParameters
 
 private:
   bool m_forcePrimImport = false;
-  bool m_pushToPrim = false;
+  bool m_pushToPrim = MGlobal::optionVarIntValue("AL_usdmaya_pushToPrim");
   bool m_readAnimatedValues = false;
 };
 

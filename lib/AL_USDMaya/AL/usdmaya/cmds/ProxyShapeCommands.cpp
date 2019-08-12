@@ -1379,7 +1379,7 @@ MStatus TranslatePrim::doIt(const MArgList& args)
     // should pushToPrim be enabled on transforms when translating?
     if(db.isFlagSet("-ptp"))
     {
-      bool value = true;
+      bool value = MGlobal::optionVarIntValue("AL_usdmaya_pushToPrim");
       db.getFlagArgument("-ptp", 0, value);
       tp.setPushToPrim(value);
     }

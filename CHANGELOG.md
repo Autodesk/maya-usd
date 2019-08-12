@@ -1,4 +1,8 @@
-## AL_USDMaya-0.32.36 (2019-08-09)
+## AL_USDMaya-0.32.38 (2019-08-12)
+### Changed
++ pushToPrim flag default now controlled by AL_usdmaya_pushToPrim primvar
+
+## AL_USDMaya-0.32.37 (2019-08-09)
 ### Added
 + optionVar and menu item to control the default state of pushToPrim
 
