@@ -1563,7 +1563,7 @@ UsdMayaGL_InstancerImager_InstancerShapeAdapterFactory()
 
 TF_REGISTRY_FUNCTION(UsdMayaReferenceAssembly)
 {
-    TfSingleton<UsdMayaGL_InstancerImager>::GetInstance();
+    UsdMayaGL_InstancerImager::GetInstance();
     UsdMayaGL_InstancerImager::SetContinueTrackingOnDisconnectDelegate(
         UsdMayaGL_InstancerImager_ContinueTrackingOnDisconnect);
     UsdMayaGL_InstancerImager::SetInstancerShapeAdapterFactory(

@@ -59,19 +59,24 @@ class UsdMayaGL_InstancerShapeAdapter : public PxrMayaHdShapeAdapter
         ///
         /// Returns true if the visibility state was changed, or false
         /// otherwise.
+        MAYAUSD_CORE_PUBLIC
         bool UpdateVisibility(const M3dView* view = nullptr) override;
 
         /// Gets whether the shape adapter's shape is visible.
         ///
         /// This should be called after a call to UpdateVisibility() to ensure
         /// that the returned value is correct. 
+        MAYAUSD_CORE_PUBLIC
         bool IsVisible() const override;
 
+        MAYAUSD_CORE_PUBLIC
         void SetRootXform(const GfMatrix4d& transform) override;
 
+        MAYAUSD_CORE_PUBLIC
         const SdfPath& GetDelegateID() const override;
 
-        ~UsdMayaGL_InstancerShapeAdapter() override;
+        MAYAUSD_CORE_PUBLIC
+            ~UsdMayaGL_InstancerShapeAdapter() override;
 
     protected:
 
@@ -83,6 +88,7 @@ class UsdMayaGL_InstancerShapeAdapter : public PxrMayaHdShapeAdapter
         /// legacy viewport and Viewport 2.0. The legacy viewport Sync() method
         /// "promotes" the display state parameters to their Viewport 2.0
         /// equivalents before calling this method.
+        MAYAUSD_CORE_PUBLIC
         bool _Sync(
                 const MDagPath& shapeDagPath,
                 const unsigned int displayStyle,
@@ -92,6 +98,7 @@ class UsdMayaGL_InstancerShapeAdapter : public PxrMayaHdShapeAdapter
         ///
         /// Note that only friends of this class are able to construct
         /// instances of this class.
+        MAYAUSD_CORE_PUBLIC
         UsdMayaGL_InstancerShapeAdapter();
 
         // Derived class hook to allow derived classes to augment

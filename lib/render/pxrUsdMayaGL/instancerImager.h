@@ -45,6 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// gets drawn by the draw override.
 class UsdMayaGL_InstancerImager : public TfWeakBase {
 public:
+    MAYAUSD_CORE_PUBLIC
     static UsdMayaGL_InstancerImager& GetInstance();
 
     /// Sync all dirty instancer shape adapters for Viewport 2.0.
@@ -67,6 +68,7 @@ public:
     /// instancer node on disconnect.
     typedef std::function<bool(const MFnDependencyNode&)> ContinueTrackingOnDisconnectDelegate;
 
+    MAYAUSD_CORE_PUBLIC
     static void SetContinueTrackingOnDisconnectDelegate(
         ContinueTrackingOnDisconnectDelegate delegate);
 
@@ -74,6 +76,7 @@ public:
     typedef std::function<UsdMayaGL_InstancerShapeAdapter*()> InstancerShapeAdapterFactory;
 
     /// Set the factory function for creating instancer shape adapters.
+    MAYAUSD_CORE_PUBLIC
     static void SetInstancerShapeAdapterFactory(
         InstancerShapeAdapterFactory factory);
 
