@@ -42,7 +42,7 @@ MStatus initializePlugin(MObject obj)
         "mayaUsdImport",
         "",
         UsdMayaImportTranslator::creator,
-        "usdTranslatorImport", // options script name
+        "mayaUsdTranslatorImport", // options script name
         const_cast<char*>(UsdMayaImportTranslator::GetDefaultOptions().c_str()),
         false);
     if (!status) {
