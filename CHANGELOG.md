@@ -1,3 +1,7 @@
+## AL_USDMaya-0.32.39 (2019-08-14)
+### Fixed
++ Changed way that rotation values were being set on the custom transform nodes to work around a maya bug
+
 ## AL_USDMaya-0.32.38 (2019-08-12)
 ### Changed
 + pushToPrim flag default now controlled by AL_usdmaya_pushToPrim primvar
