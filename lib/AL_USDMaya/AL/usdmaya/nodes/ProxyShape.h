@@ -1026,6 +1026,7 @@ private:
   void variantSelectionListener(SdfNotice::LayersDidChange const& notice);
   void onEditTargetChanged(UsdNotice::StageEditTargetChanged const& notice, UsdStageWeakPtr const& sender);
   void trackEditTargetLayer(LayerManager* layerManager=nullptr);
+  void trackAllDirtyLayers(LayerManager* layerManager=nullptr);
   void validateTransforms();
   void onTransactionNotice(AL::usd::transaction::CloseNotice const &notice, const UsdStageWeakPtr& stage);
   void onRedraw() { m_requestedRedraw = false; }

@@ -18,6 +18,7 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/StageCache.h"
+#include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/maya/utils/Utils.h"
 
 #include "pxr/usd/usdGeom/xform.h"
@@ -382,3 +383,74 @@ TEST(ProxyShapeImport, stageLoadAndChangeFilePath)
   EXPECT_NE(preFilePathUpdatePath, postFilePathUpdatePath);
   ASSERT_EQ(AL::maya::utils::convert(temp_path), postFilePathUpdatePath);
 }
+
+
+TEST(ProxyShapeImport, layerManagerTracksCurrentEditTargetWhenLoadingFromStageCacheId)
+{
+  MFileIO::newFile(true);
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  UsdStageCache::Id stageCacheId = AL::usdmaya::StageCache::Get().Insert(stage);
+
+  // Current edit target that will be tracked.
+  auto targetLayer = stage->GetEditTarget().GetLayer();
+
+  // Import stage using cache Id.
+  MString importCmd = MString("AL_usdmaya_ProxyShapeImport -stageId ") + AL::maya::utils::convert(stageCacheId.ToString());
+  MStatus status = MGlobal::executeCommand(importCmd);
+  ASSERT_TRUE(status);
+
+  // After creating proxy, we should have a layerManager.
+  AL::usdmaya::nodes::LayerManager* layerManager = AL::usdmaya::nodes::LayerManager::findManager();
+  ASSERT_TRUE(layerManager);
+
+  // Make an edit to dirty the current edit target, for layerManager to acknowledge the tracked layer.
+  stage->DefinePrim(SdfPath("/test"));
+
+  auto trackedLayer = layerManager->findLayer(targetLayer->GetIdentifier());
+  ASSERT_TRUE(trackedLayer);
+}
+
+TEST(ProxyShapeImport, layerManagerTracksAllDirtyLayersWhenLoadingFromStageCacheId)
+{
+  MFileIO::newFile(true);
+  UsdStageRefPtr stage = UsdStage::CreateInMemory();
+  UsdStageCache::Id stageCacheId = AL::usdmaya::StageCache::Get().Insert(stage);
+
+  auto rootLayer = stage->GetRootLayer();
+  auto sessionLayer = stage->GetSessionLayer();
+  // Create a sub layer to make sure non-dirty layers are not being tracked.
+  auto subLayer = SdfLayer::CreateAnonymous("test_sub_layer");
+
+  rootLayer->InsertSubLayerPath(subLayer->GetIdentifier());
+
+  // Set target and make an edit on root layer.
+  stage->SetEditTarget(UsdEditTarget(rootLayer));
+  auto testPrim = UsdGeomXform::Define(stage, SdfPath("/test")).GetPrim();
+
+  // Override testPrim in session layer.
+  stage->SetEditTarget(UsdEditTarget(sessionLayer));
+  testPrim.GetAttribute(UsdGeomTokens->visibility).Set(UsdGeomTokens->invisible);
+
+  // Import stage using cache Id.
+  MString importCmd = MString("AL_usdmaya_ProxyShapeImport -stageId ") + AL::maya::utils::convert(stageCacheId.ToString());
+  MStatus status = MGlobal::executeCommand(importCmd);
+  ASSERT_TRUE(status);
+
+  // After creating proxy, we should have a layerManager.
+  AL::usdmaya::nodes::LayerManager* layerManager = AL::usdmaya::nodes::LayerManager::findManager();
+  ASSERT_TRUE(layerManager);
+
+  MStringArray trackedLayerIds;
+  layerManager->getLayerIdentifiers(trackedLayerIds);
+  ASSERT_EQ(trackedLayerIds.length(), 2);
+
+  auto trackedLayer = layerManager->findLayer(rootLayer->GetIdentifier());
+  ASSERT_TRUE(trackedLayer);
+
+  trackedLayer = layerManager->findLayer(sessionLayer->GetIdentifier());
+  ASSERT_TRUE(trackedLayer);
+
+  trackedLayer = layerManager->findLayer(subLayer->GetIdentifier());
+  ASSERT_FALSE(trackedLayer);
+}
+

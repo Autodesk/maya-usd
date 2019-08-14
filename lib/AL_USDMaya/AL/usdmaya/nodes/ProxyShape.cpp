@@ -905,6 +905,20 @@ void ProxyShape::trackEditTargetLayer(LayerManager* layerManager)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::trackAllDirtyLayers(LayerManager* layerManager)
+{
+  trackEditTargetLayer(layerManager);
+  if (!layerManager)
+    layerManager = LayerManager::findOrCreateManager();
+  auto usedLayer = m_stage->GetUsedLayers();
+  for (auto& _layer: usedLayer)
+  {
+    if (_layer->IsDirty())
+      layerManager->addLayer(_layer);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onPrimResync(SdfPath primPath, SdfPathVector& previousPrims)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::onPrimResync checking %s\n", primPath.GetText());
@@ -1439,6 +1453,8 @@ void ProxyShape::loadStage()
     if (StageCache::Get().Contains(stageId))
     {
       m_stage = StageCache::Get().Find(stageId);
+      // Save the initial edit target and all dirty layers.
+      trackAllDirtyLayers();
       file.set(m_stage->GetRootLayer()->GetIdentifier().c_str());
       outputStringValue(dataBlock, m_filePath, file);
     }

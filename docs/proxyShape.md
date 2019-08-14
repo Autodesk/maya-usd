@@ -32,6 +32,7 @@ see [code docs](https://animallogic.github.io/AL_USDMaya/classAL_1_1usdmaya_1_1n
 **Some additional facts:**
 + When additional things are imported, the proxyShape is the root node in maya under which other things will be parented.
 + Stage that is available in StageCache can be loaded by providing it's Id to AL_usdmaya_ProxyShapeImport command.
++ When loading stage from StageCache, other than current EditTarget, all dirty layers composing onto the stage are being tracked internally.
 + You can create as many proxy shapes as you like in the maya scene.
 + A proxyShape contains a handle to a live USD Stage. This stage, and the handle - are recreated on scene open/load
 + You can define Hydra renderer plugin with AL_usdmaya_LayerManager.rendererPlugin. It affects rendering of all proxy shapes in the scene.
