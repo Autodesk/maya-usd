@@ -19,6 +19,8 @@
 
 #include "AL/maya/utils/PluginTranslatorOptions.h"
 
+#include <iostream>
+
 namespace AL {
 namespace maya {
 namespace utils {
