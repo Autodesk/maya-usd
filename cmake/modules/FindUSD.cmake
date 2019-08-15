@@ -28,7 +28,7 @@ find_library(USD_LIBRARY
     PATH_SUFFIXES
         lib
     DOC
-        "USD Librarires directory"
+        "Main USD library"
 )
 
 get_filename_component(USD_LIBRARY_DIR ${USD_LIBRARY} DIRECTORY)
@@ -54,6 +54,21 @@ find_file(USD_CONFIG_FILE
     DOC "USD cmake configuration file"
 )
 
+# ensure PXR_USD_LOCATION is defined
+if(NOT DEFINED PXR_USD_LOCATION)
+    if(DEFINED ENV{PXR_USD_LOCATION})
+        set(PXR_USD_LOCATION "$ENV{PXR_USD_LOCATION}")
+    else()
+        get_filename_component(PXR_USD_LOCATION "${USD_CONFIG_FILE}" DIRECTORY)
+    endif()
+endif()
+
+# account for possibility that PXR_USD_LOCATION was passed in as a hint-list
+list(LENGTH PXR_USD_LOCATION listlen)
+if(listlen GREATER 1)
+    get_filename_component(PXR_USD_LOCATION "${USD_CONFIG_FILE}" DIRECTORY)
+endif()
+
 if(USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/pxr.h")
     foreach(_usd_comp MAJOR MINOR PATCH)
         file(STRINGS
@@ -73,6 +88,7 @@ include(FindPackageHandleStandardArgs)
 
 find_package_handle_standard_args(USD
     REQUIRED_VARS
+        PXR_USD_LOCATION
         USD_INCLUDE_DIR
         USD_LIBRARY_DIR
         USD_GENSCHEMA
