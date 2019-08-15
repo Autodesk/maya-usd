@@ -34,13 +34,14 @@ There are four arguments that must be passed to the script:
 - --devkit-location ---> Directory where Maya Devkit is installed.
 - workspace_location  ---> Directory where the project use as a workspace to build and install plugin/libraries.
 
-When building Pixar USD Core, you need to pass ```--no-maya``` to ensure that ```third_party/maya``` plugin doesn't get built.
-
-Custom arguments can be also passed to build system using ```--build-args```.
+Comma-separated list of cmake variables can be also passed to build system using ```--build-args```.
 e.g
 ```
 python build.py --build-args="-DBUILD_ADSK_PLUGIN=ON,-DBUILD_PXR_PLUGIN=OFF"
 ```
+
+Comma-separated list of stages can also be passed to the build system using ```--stages```. By default 
+'clean','configure','build','install' stages are executed if this argument is not set.
 
 #### 4. CMake Generator
 
@@ -85,6 +86,12 @@ BUILD_AL_PLUGIN             | Builds the Animal Logic USD plugin and libraries. 
 BUILD_PXR_PLUGIN            | Builds the Pixar USD plugin and libraries.        | ON
 
 # Building USD
+
+##### Flags, Version
+
+When building Pixar USD, you need to pass ```--no-maya``` flag to ensure that ```third_party/maya``` plugin doesn't get built since this plugin is now part of maya-usd.
+
+It is important that the version between ```Pixar USD``` and ```Maya USD plugin```match. We are currently using ```v19.05``` for Maya plugin in ```master``` branch and therefore ```Pixar USD``` build should match this version.
 
 ##### Boost:
 

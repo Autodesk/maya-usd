@@ -47,6 +47,8 @@ endif()
 
 include(cmake/python.cmake)
 include(cmake/utils.cmake)
+
+find_package(USD REQUIRED)
 include(cmake/usd.cmake)
 
 # The building of the schemas requires some extra python packages which may or
