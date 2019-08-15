@@ -87,14 +87,14 @@ void _connectionChanged(
     }
 }
 
-template <typename T>
-inline bool _FindAdapter(const SdfPath&, const std::function<void(T*)>&) {
+template <typename T, typename F>
+inline bool _FindAdapter(const SdfPath&, F) {
     return false;
 }
 
-template <typename T, typename M0, typename... M>
+template <typename T, typename M0, typename F, typename... M>
 inline bool _FindAdapter(
-    const SdfPath& id, const std::function<void(T*)>& f, const M0& m0,
+    const SdfPath& id, F f, const M0& m0,
     const M&... m) {
     auto* adapterPtr = TfMapLookupPtr(m0, id);
     if (adapterPtr == nullptr) {
@@ -105,14 +105,14 @@ inline bool _FindAdapter(
     }
 }
 
-template <typename T>
-inline bool _RemoveAdapter(const SdfPath&, const std::function<void(T*)>&) {
+template <typename T, typename F>
+inline bool _RemoveAdapter(const SdfPath&, F) {
     return false;
 }
 
-template <typename T, typename M0, typename... M>
+template <typename T, typename M0, typename F, typename... M>
 inline bool _RemoveAdapter(
-    const SdfPath& id, const std::function<void(T*)>& f, M0& m0, M&... m) {
+    const SdfPath& id, F f, M0& m0, M&... m) {
     auto* adapterPtr = TfMapLookupPtr(m0, id);
     if (adapterPtr == nullptr) {
         return _RemoveAdapter<T>(id, f, m...);
@@ -125,14 +125,14 @@ inline bool _RemoveAdapter(
 
 // This will be nicer to use with automatic parameter deduction for lambdas in
 // C++14.
-template <typename T, typename R>
-inline R _GetValue(const SdfPath&, const std::function<R(T*)>&) {
+template <typename T, typename R, typename F>
+inline R _GetValue(const SdfPath&, F) {
     return {};
 }
 
-template <typename T, typename R, typename M0, typename... M>
+template <typename T, typename R, typename F, typename M0, typename... M>
 inline R _GetValue(
-    const SdfPath& id, const std::function<R(T*)>& f, const M0& m0,
+    const SdfPath& id, F f, const M0& m0,
     const M&... m) {
     auto* adapterPtr = TfMapLookupPtr(m0, id);
     if (adapterPtr == nullptr) {
@@ -142,14 +142,14 @@ inline R _GetValue(
     }
 }
 
-template <typename T>
-inline void _MapAdapter(const std::function<void(T*)>&) {
+template <typename T, typename F>
+inline void _MapAdapter(F) {
     // Do nothing.
 }
 
-template <typename T, typename M0, typename... M>
+template <typename T, typename M0, typename F, typename... M>
 inline void _MapAdapter(
-    const std::function<void(T*)>& f, const M0& m0, const M&... m) {
+    F f, const M0& m0, const M&... m) {
     for (auto& it : m0) { f(static_cast<T*>(it.second.get())); }
     _MapAdapter<T>(f, m...);
 }
