@@ -16,9 +16,9 @@
 #include "pxr/pxr.h"
 #include "locatorWriter.h"
 
-#include <../../fileio/utils/adaptor.h>
-#include <../../fileio/primWriterRegistry.h>
-#include <../../fileio/writeJobContext.h>
+#include "../../fileio/utils/adaptor.h"
+#include "../../fileio/primWriterRegistry.h"
+#include "../../fileio/writeJobContext.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usdGeom/xform.h"

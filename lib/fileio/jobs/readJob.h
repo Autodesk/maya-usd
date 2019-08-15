@@ -92,11 +92,22 @@ protected:
     MAYAUSD_CORE_PUBLIC
     bool _DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim);
 
+    // Hook for derived classes to perform processing before import.
+    // Method in this class is a no-op.
+    MAYAUSD_CORE_PUBLIC
+    virtual void PreImport();
+
+    // Hook for derived classes to determine whether to skip the root prim
+    // on prim traversal.  This class returns the argument unchanged.
+    MAYAUSD_CORE_PUBLIC
+    virtual bool SkipRootPrim(bool isImportingPseudoRoot);
+
     // Data
     UsdMayaJobImportArgs mArgs;
     std::string mFileName;
     std::map<std::string,std::string> mVariants;
     UsdMayaPrimReaderContext::ObjectRegistry mNewNodeRegistry;
+    MDagPath mMayaRootDagPath;
 
 private:
 
@@ -104,7 +115,6 @@ private:
     std::string mPrimPath;
     MDagModifier mDagModifierUndo;
     bool mDagModifierSeeded;
-    MDagPath mMayaRootDagPath;
 };
 
 

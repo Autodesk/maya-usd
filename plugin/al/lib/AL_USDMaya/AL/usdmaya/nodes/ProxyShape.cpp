@@ -61,7 +61,6 @@ typedef boost::filesystem::path path;
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "AL/usdmaya/StageCache.h"
-#include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/Version.h"
 #include "AL/usdmaya/utils/Utils.h"
@@ -76,6 +75,7 @@ typedef boost::filesystem::path path;
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
 #include <mayaUsd/listeners/proxyShapeNotice.h>
+#include <mayaUsd/nodes/stageData.h>
 
 #if defined(WANT_UFE_BUILD)
 #include "ufe/path.h"

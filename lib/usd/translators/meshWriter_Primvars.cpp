@@ -15,10 +15,10 @@
 //
 #include "meshWriter.h"
 
-#include <../../utils/colorSpace.h>
-#include <../../fileio/utils/roundTripUtil.h>
-#include <../../utils/util.h>
-#include <../../fileio/utils/writeUtil.h>
+#include "../../utils/colorSpace.h"
+#include "../../fileio/utils/roundTripUtil.h"
+#include "../../utils/util.h"
+#include "../../fileio/utils/writeUtil.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/math.h"

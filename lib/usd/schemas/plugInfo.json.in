@@ -17,8 +17,8 @@
                     }
                 }
             }, 
-            "LibraryPath": "${SCHEMAS_LIBRARY_DIR}/@CMAKE_SHARED_LIBRARY_PREFIX@MayaUsd_Schemas@CMAKE_SHARED_LIBRARY_SUFFIX@", 
-            "Name": "MayaUsd_Schemas", 
+            "LibraryPath": "${SCHEMAS_LIBRARY_DIR}/@CMAKE_SHARED_LIBRARY_PREFIX@@SCHEMA_PLUGIN@@CMAKE_SHARED_LIBRARY_SUFFIX@", 
+            "Name": "@SCHEMA_PLUGIN@", 
             "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@", 
             "Root": "..", 
             "Type": "library"

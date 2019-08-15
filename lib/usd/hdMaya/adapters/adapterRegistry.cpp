@@ -30,7 +30,7 @@
 
 #include <maya/MFnDependencyNode.h>
 
-#include <../../../nodes/proxyShapeBase.h>
+#include "../../../nodes/proxyShapeBase.h"
 
 #include <mutex>
 

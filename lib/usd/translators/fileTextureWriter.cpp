@@ -16,10 +16,10 @@
 #include "pxr/pxr.h"
 #include "fileTextureWriter.h"
 
-#include <../../fileio/primWriterRegistry.h>
-#include <../../fileio/shaderWriter.h>
-#include <../../utils/util.h>
-#include <../../fileio/writeJobContext.h>
+#include "../../fileio/primWriterRegistry.h"
+#include "../../fileio/shaderWriter.h"
+#include "../../utils/util.h"
+#include "../../fileio/writeJobContext.h"
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"

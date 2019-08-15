@@ -11,3 +11,4 @@ find_package(USD REQUIRED)
 include(${USD_CONFIG_FILE})
 
 add_subdirectory(plugin)
+add_subdirectory(scripts)

@@ -23,9 +23,9 @@
 //
 #include "defaultLightDelegate.h"
 
-#include <hdmaya/hdmaya.h>
+#include <hdMaya/hdMaya.h>
 
-#include "../../usd/hdmaya/delegates/delegateDebugCodes.h"
+#include "../../usd/hdMaya/delegates/delegateDebugCodes.h"
 
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/gf/transform.h>

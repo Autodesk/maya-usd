@@ -457,11 +457,11 @@ Building with settings:
 
 if context.buildArgs:
   summaryMsg += """
-  Extra Build arguments {buildArgs}"""
+  Extra Build arguments     {buildArgs}"""
 
 if context.stagesArgs:
   summaryMsg += """
-  Stages arguments      {stagesArgs}"""
+  Stages arguments          {stagesArgs}"""
 
 summaryMsg = summaryMsg.format(
     mayaUsdSrcDir=context.mayaUsdSrcDir,

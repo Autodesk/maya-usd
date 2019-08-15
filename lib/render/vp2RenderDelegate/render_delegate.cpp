@@ -80,9 +80,15 @@ namespace
     const MString _diffuseColorParameterName = "diffuseColor";   //!< Shader parameter name
     const MString _solidColorParameterName   = "solidColor";     //!< Shader parameter name
     const MString _pointSizeParameterName    = "pointSize";      //!< Shader parameter name
-
-    int _profilerCategory = MProfiler::addCategory("HdVP2RenderDelegate", "HdVP2RenderDelegate");    //!< Profiler category
 } // namespace
+
+const int HdVP2RenderDelegate::sProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "HdVP2RenderDelegate", "HdVP2RenderDelegate"
+#else
+    "HdVP2RenderDelegate"
+#endif
+);
 
 std::mutex HdVP2RenderDelegate::_mutexResourceRegistry;
 std::atomic_int HdVP2RenderDelegate::_counterResourceRegistry;
@@ -130,7 +136,7 @@ HdRenderParam* HdVP2RenderDelegate::GetRenderParam() const {
 void HdVP2RenderDelegate::CommitResources(HdChangeTracker* tracker) {
     TF_UNUSED(tracker);
 
-    MProfilingScope profilingScope(_profilerCategory, MProfiler::kColorC_L2, "Commit resources");
+    MProfilingScope profilingScope(sProfilerCategory, MProfiler::kColorC_L2, "Commit resources");
 
     // --------------------------------------------------------------------- //
     // RESOLVE, COMPUTE & COMMIT PHASE

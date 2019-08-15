@@ -15,8 +15,8 @@
 //
 #include "pxr/pxr.h"
 
-#include <../../fileio/primReaderRegistry.h>
-#include <../../fileio/translators/translatorCurves.h>
+#include "../../fileio/primReaderRegistry.h"
+#include "../../fileio/translators/translatorCurves.h"
 
 #include "pxr/usd/usdGeom/nurbsCurves.h"
 

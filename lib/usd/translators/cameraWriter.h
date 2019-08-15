@@ -20,8 +20,8 @@
 
 #include "pxr/pxr.h"
 
-#include <../../fileio/primWriter.h>
-#include <../../fileio/writeJobContext.h>
+#include "../../fileio/primWriter.h"
+#include "../../fileio/writeJobContext.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/timeCode.h"

@@ -18,8 +18,9 @@
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 #include "AL/usdmaya/fileio/translators/TranslatorTestType.h"
-#include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
+
+#include <mayaUsd/nodes/stageData.h>
 
 #include "maya/MDagModifier.h"
 

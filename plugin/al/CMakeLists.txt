@@ -17,12 +17,10 @@ option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
 option(SKIP_USDMAYA_TESTS "Build tests" ON)
 
-if ("${MAYA_DEVKIT_LOCATION}" STREQUAL "")
-    set(CMAKE_WANT_UFE_BUILD OFF)
-else()
-    set(CMAKE_WANT_UFE_BUILD ON)
-endif()
-
+# AL_USDMAYA uses pxrConfig.cmake exported targets
+# find_package(USD) can use either ${PXR_USD_LOCATION}, or ${USD_CONFIG_FILE} (which should be ${PXR_USD_LOCATION}/pxrConfig.cmake)
+# to find USD, defined as either Cmake var or env var
+find_package(USD REQUIRED)
 include(${USD_CONFIG_FILE})
 
 find_package(Maya REQUIRED)
@@ -33,13 +31,14 @@ find_package(PythonInterp)
 find_package(MayaUSD REQUIRED)
 
 if(CMAKE_WANT_UFE_BUILD)
-    add_definitions(-DWANT_UFE_BUILD)
-
-    find_package(UFE REQUIRED)
-    include_directories(${UFE_INCLUDE_DIR})
-
-    message("UFE Build Enabled")
-    message("Using UFE version : ${UFE_VERSION}")
+    find_package(UFE QUIET)
+    if(UFE_FOUND)
+        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
+        include_directories(${UFE_INCLUDE_DIR})
+        add_definitions(-DWANT_UFE_BUILD)
+    else()
+        message(STATUS "UFE not found. UFE features will be disabled.")
+    endif()
 endif()
 
 # FindBoost is particularly buggy, and doesn't like custom boost locations.
@@ -96,7 +95,7 @@ if(NOT SKIP_USDMAYA_TESTS)
 
         message(STATUS "========== Installing GoogleTest... ==========")
         set(FORCE_SHARED_CRT "")
-        if(MSVC)
+        if(IS_WINDOWS)
             set(FORCE_SHARED_CRT -DFORCE_SHARED_CRT=OFF)
         endif()
         execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} . ${FORCE_SHARED_CRT}

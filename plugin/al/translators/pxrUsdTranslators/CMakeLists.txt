@@ -30,24 +30,22 @@ add_library(${PXR_TRANSLATORS_PACKAGE}
   plugin.cpp
 )
 
-if(MSVC)
+if(IS_WINDOWS)
     set_target_properties(${PXR_TRANSLATORS_PACKAGE} PROPERTIES SUFFIX ".mll")
-elseif(APPLE)
-    set_target_properties(${PXR_TRANSLATORS_PACKAGE}
-        PROPERTIES
-            PREFIX ""
-            SUFFIX ".bundle"
-            MACOSX_RPATH TRUE
-            INSTALL_RPATH_USE_LINK_PATH TRUE
-            INSTALL_RPATH "@loader_path/../lib;@loader_path/../../../lib;@loader_path/../../pxr/lib;@loader_path/../../pxr/maya/lib;${PXR_USD_LOCATION}/lib"
-    )
-else()
-    set_target_properties(${PXR_TRANSLATORS_PACKAGE}
-            PROPERTIES
-            PREFIX ""
-            INSTALL_RPATH_USE_LINK_PATH TRUE
-            INSTALL_RPATH "$ORIGIN/../lib:$ORIGIN/../../../lib:$ORIGIN/../../pxr/lib:$ORIGIN/../../pxr/maya/lib:${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64"
-    )
+elseif(IS_MACOSX)
+    set_target_properties(${PXR_TRANSLATORS_PACKAGE} PROPERTIES PREFIX "" SUFFIX ".bundle")
+elseif(IS_LINUX)
+    set_target_properties(${PXR_TRANSLATORS_PACKAGE} PROPERTIES PREFIX "")
+endif()
+
+# rpath setup
+if(IS_MACOSX OR IS_LINUX) 
+    init_rpath(rpath "plugin")
+    add_rpath(rpath "../lib")
+    add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib")
+    add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib")
+    install_rpath(rpath ${PXR_TRANSLATORS_PACKAGE})
 endif()
 
 target_include_directories(
@@ -65,7 +63,7 @@ install(TARGETS ${PXR_TRANSLATORS_PACKAGE}
  RUNTIME
  DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
 )
-if(MSVC)
+if(IS_WINDOWS)
  install(FILES $<TARGET_PDB_FILE:${PXR_TRANSLATORS_PACKAGE}> DESTINATION ${INSTALL_DIR_SUFFIX}/plugin OPTIONAL)
 endif()
 

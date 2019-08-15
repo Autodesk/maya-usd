@@ -83,7 +83,15 @@ namespace {
         }
     }
 
-    int _profilerCategory = MProfiler::addCategory("HdVP2RenderDelegate", "HdVP2RenderDelegate");   //!< Profiler category
+    //! Helper utility function to adapt Maya API changes.
+    void setWantConsolidation(MHWRender::MRenderItem& renderItem, bool state)
+    {
+#if MAYA_API_VERSION >= 20190000
+        renderItem.setWantConsolidation(state);
+#else
+        renderItem.setWantSubSceneConsolidation(state);
+#endif
+    }
 } //namespace
 
 
@@ -105,7 +113,8 @@ void HdVP2Mesh::Sync(
     HdSceneDelegate* delegate, HdRenderParam* renderParam,
     HdDirtyBits* dirtyBits, const TfToken& reprToken) {
 
-    MProfilingScope profilingScope(_profilerCategory, MProfiler::kColorC_L2, GetId().GetText(), "HdVP2Mesh Sync");
+    MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorC_L2, GetId().GetText(), "HdVP2Mesh Sync");
 
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         _SetMaterialId(delegate->GetRenderIndex().GetChangeTracker(),
@@ -711,10 +720,8 @@ void HdVP2Mesh::_UpdateDrawItem(
     {
         const MString& renderItemName = drawItem->GetRenderItemName();
 
-        MProfilingScope profilingScope(
-            _profilerCategory, MProfiler::kColorC_L2,
-            renderItemName.asChar(), "HdVP2Mesh Commit Buffers"
-        );
+        MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2, renderItemName.asChar(), "HdVP2Mesh Commit Buffers");
 
         MHWRender::MRenderItem* renderItem = param->GetContainer()->find(renderItemName);
         if(!renderItem) {
@@ -771,7 +778,7 @@ void HdVP2Mesh::_UpdateDrawItem(
         auto& oldInstanceCount = stateToCommit._drawItemData._instanceCount;
         auto newInstanceCount = stateToCommit._instanceTransforms.length();
         if(newInstanceCount > 0) {
-            renderItem->setWantConsolidation(false);
+            setWantConsolidation(*renderItem, false);
             if(oldInstanceCount == newInstanceCount) {
                 for (unsigned int i = 0; i < newInstanceCount; i++) {
                     // VP2 defines instance ID of the first instance to be 1.
@@ -782,7 +789,7 @@ void HdVP2Mesh::_UpdateDrawItem(
             }
             oldInstanceCount = newInstanceCount;
         } else if(oldInstanceCount > 0) {
-            renderItem->setWantConsolidation(true);
+            setWantConsolidation(*renderItem, true);
             param->GetDrawScene().removeAllInstances(*renderItem);
             oldInstanceCount = 0;
         }
@@ -802,12 +809,13 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreatePointsRenderItem(const MString& name) 
     renderItem->setDrawMode(MHWRender::MGeometry::kSelectionOnly);
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
-    renderItem->setWantConsolidation(true);
     renderItem->setShader(_delegate->Get3dFatPointShader());
 
     MSelectionMask selectionMask(MSelectionMask::kSelectPointsForGravity);
     selectionMask.addMask(MSelectionMask::kSelectMeshVerts);
     renderItem->setSelectionMask(selectionMask);
+
+    setWantConsolidation(*renderItem, true);
 
     return renderItem;
 }
@@ -825,9 +833,12 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateWireframeRenderItem(const MString& nam
     renderItem->depthPriority(MHWRender::MRenderItem::sActiveWireDepthPriority);
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
-    renderItem->setWantConsolidation(true);
     renderItem->setShader(_delegate->Get3dSolidShader());
+
     renderItem->setSelectionMask(MSelectionMask());
+
+    setWantConsolidation(*renderItem, true);
+
     return renderItem;
 }
 
@@ -844,9 +855,12 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSmoothHullRenderItem(const MString& na
     renderItem->setExcludedFromPostEffects(false);
     renderItem->castsShadows(true);
     renderItem->receivesShadows(true);
-    renderItem->setWantConsolidation(true);
     renderItem->setShader(_delegate->GetFallbackShader());
+
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
+
+    setWantConsolidation(*renderItem, true);
+
     return renderItem;
 }
 

@@ -29,7 +29,7 @@
 
 #include "delegateRegistry.h"
 
-#include <../../../nodes/proxyShapeBase.h>
+#include "../../../nodes/proxyShapeBase.h"
 
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/type.h>
@@ -47,10 +47,10 @@
 #include <mutex>
 #include <unordered_set>
 
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -71,10 +71,10 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaProxyDelegate) {
 
 namespace {
 
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
 constexpr auto USD_UFE_RUNTIME_NAME = "USD";
 static UFE_NS::Rtid usdUfeRtid = 0;
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
 
 // Don't know if this variable would be accessed from multiple threads, but
 // plugin load/unload is infrequent enough that performance isn't an issue, and
@@ -152,7 +152,7 @@ HdMayaProxyDelegate::HdMayaProxyDelegate(const InitData& initData)
 
     MStatus status;
 
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
     if (usdUfeRtid == 0) {
         try {
             usdUfeRtid =
@@ -164,7 +164,7 @@ HdMayaProxyDelegate::HdMayaProxyDelegate(const InitData& initData)
             TF_WARN("USD UFE Runtime plugin not loaded!\n");
         }
     }
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
 }
 
 HdMayaProxyDelegate::~HdMayaProxyDelegate() {
@@ -282,7 +282,7 @@ void HdMayaProxyDelegate::PopulateSelectedPaths(
 #endif
 }
 
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
 
 void HdMayaProxyDelegate::PopulateSelectedPaths(
     const UFE_NS::Selection& ufeSelection, SdfPathVector& selectedSdfPaths,
@@ -379,6 +379,6 @@ void HdMayaProxyDelegate::PopulateSelectedPaths(
 
 bool HdMayaProxyDelegate::SupportsUfeSelection() { return usdUfeRtid != 0; }
 
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_CLOSE_SCOPE

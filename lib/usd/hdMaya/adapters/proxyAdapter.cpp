@@ -30,9 +30,9 @@
 #include "../delegates/proxyDelegate.h"
 #include "../delegates/sceneDelegate.h"
 
-#include <hdmaya/hdmaya.h>
+#include <hdMaya/hdMaya.h>
 
-#include <../../../nodes/proxyShapeBase.h>
+#include "../../../nodes/proxyShapeBase.h"
 
 #include <maya/MTime.h>
 #include <maya/MGlobal.h>
@@ -52,17 +52,17 @@
 #include <maya/M3dView.h>
 #endif // HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
 
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
 
 namespace {
 
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
 constexpr auto USD_UFE_RUNTIME_NAME = "USD";
 // static UFE_NS::Rtid usdUfeRtid = 0;
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
 
 #ifdef HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
 

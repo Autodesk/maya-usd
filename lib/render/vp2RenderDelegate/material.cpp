@@ -26,7 +26,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-int _profilerCategory = MProfiler::addCategory("HdVP2RenderDelegate", "HdVP2RenderDelegate");   //!< Profiler category
 
 /* \brief  Finds the path to an XML shader fragment file based on plugin.json.
 */

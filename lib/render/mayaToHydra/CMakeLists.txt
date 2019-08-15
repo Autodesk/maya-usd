@@ -16,7 +16,7 @@ set(SRC
 add_library(${TARGET_NAME} SHARED ${SRC})
 
 target_link_libraries(${TARGET_NAME} PRIVATE 
-    hdmaya 
+    hdMaya 
     usdShade
     ${MAYA_LIBRARIES}
 )
@@ -27,31 +27,28 @@ target_include_directories(${TARGET_NAME} PRIVATE
     ${CMAKE_BINARY_DIR}/usd
 )
 
-set_target_properties(${TARGET_NAME} PROPERTIES 
-    PREFIX ""
-    INSTALL_RPATH_USE_LINK_PATH ON
-)
-
-if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    set_target_properties(${TARGET_NAME} PROPERTIES INSTALL_RPATH "@loader_path/../lib")
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set_target_properties(${TARGET_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/../lib")
-endif ()
-
-maya_set_plugin_properties(${TARGET_NAME})
+# rpath setup
+if(IS_MACOSX OR IS_LINUX) 
+    init_rpath(rpath "plugin")
+    add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    install_rpath(rpath ${TARGET_NAME})
+endif()
 
 # M3dView needs this (technically, MNativeWindowHdl.h)
 # private atm because M3dView is only used in .cpp right now
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if (IS_LINUX)
+    set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
     # gcc will NOT set this automatically
     target_compile_definitions(${TARGET_NAME} PRIVATE "LINUX")
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+elseif (IS_WINDOWS)
+    set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".mll")
     # Not sure if msvcc sets this automatically, but won't hurt to redefine
     target_compile_definitions(${TARGET_NAME} PRIVATE "_WIN32")
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+elseif (IS_MACOSX)
+    set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "" SUFFIX ".bundle")
     # Not sure if osx sets this automatically, but won't hurt to redefine
     target_compile_definitions(${TARGET_NAME} PRIVATE "OSMac_")
-endif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+endif()
 
 #==============================================================================
 # Install
@@ -60,7 +57,7 @@ install(
     TARGETS ${TARGET_NAME}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/maya)
 
-if(MSVC)
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/maya OPTIONAL)
 endif()
 

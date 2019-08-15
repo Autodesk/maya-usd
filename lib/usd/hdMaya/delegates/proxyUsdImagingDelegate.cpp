@@ -24,7 +24,7 @@
 
 #include "proxyUsdImagingDelegate.h"
 
-#include <../../../nodes/proxyShapeBase.h>
+#include "../../../nodes/proxyShapeBase.h"
 
 #include <maya/MMatrix.h>
 

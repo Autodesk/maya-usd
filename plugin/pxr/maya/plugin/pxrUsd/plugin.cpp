@@ -43,6 +43,8 @@
 #include <mayaUsd/ufe/Global.h>
 #endif
 
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/registry.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -184,6 +186,30 @@ initializePlugin(MObject obj)
 
     UsdMayaSceneResetNotice::InstallListener();
     UsdMayaDiagnosticDelegate::InstallDelegate();
+
+    // As of 2-Aug-2019, these PlugPlugin translators are not loaded
+    // automatically.  To be investigated.  A duplicate of this code is in the
+    // Autodesk plugin.cpp.
+    const std::vector<std::string> translatorPluginNames{
+        "mayaUsd_Schemas", "mayaUsd_Translators"};
+    const auto& plugRegistry = PlugRegistry::GetInstance();
+    std::stringstream msg("mayaUsdPlugin: ");
+    for (const auto& pluginName : translatorPluginNames) {
+        auto plugin = plugRegistry.GetPluginWithName(pluginName);
+        if (!plugin) {
+            status = MStatus::kFailure;
+            msg << "translator " << pluginName << " not found.";
+            status.perror(msg.str().c_str());
+        }
+        else {
+            // Load is a no-op if already loaded.
+            if (!plugin->Load()) {
+                status = MStatus::kFailure;
+                msg << pluginName << " translator load failed.";
+                status.perror(msg.str().c_str());
+            }
+        }
+    }
 
     return status;
 }
