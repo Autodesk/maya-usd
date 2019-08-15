@@ -23,10 +23,6 @@ else()
     set(CMAKE_WANT_UFE_BUILD ON)
 endif()
 
-# AL_USDMAYA uses pxrConfig.cmake exported targets
-# find_package(USD) can use either ${PXR_USD_LOCATION}, or ${USD_CONFIG_FILE} (which should be ${PXR_USD_LOCATION}/pxrConfig.cmake)
-# to find USD, defined as either Cmake var or env var
-find_package(USD REQUIRED)
 include(${USD_CONFIG_FILE})
 
 find_package(Maya REQUIRED)

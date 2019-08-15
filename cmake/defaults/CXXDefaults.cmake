@@ -38,6 +38,7 @@ endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     _add_define(BUILD_OPTLEVEL_DEV)
+    _add_define(TBB_USE_DEBUG)
 endif()
 
 # Set plugin path environment variable name
