@@ -957,8 +957,19 @@ void ProxyShape::serialize(UsdStageRefPtr stage, LayerManager* layerManager)
       // Make sure the sessionLayer is always serialized (even if it's never an edit target)
       auto sessionLayer = stage->GetSessionLayer();
       layerManager->addLayer(sessionLayer);
-      // ...and store the name for the (anonymous) session layer so we can find it!
-      sessionLayerNamePlug().setValue(AL::maya::utils::convert(sessionLayer->GetIdentifier()));
+      
+      auto identifier = sessionLayer->GetIdentifier();
+      if(layerManager->findLayer(identifier))
+      {
+        // ...and store the name for the (anonymous) session layer so we can find it!
+        sessionLayerNamePlug().setValue(AL::maya::utils::convert(identifier));
+      }
+      else
+      {
+        // ...make sure for the old Maya scene, we clear the sessionLayerName plug so there is no
+        // complaint when we open it.
+        sessionLayerNamePlug().setValue("");
+      }      
 
       // Then add in the current edit target
       trackEditTargetLayer(layerManager);
