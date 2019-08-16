@@ -369,13 +369,9 @@ public:
   
   /// \brief  add a new python translator into the context
   /// \param  traslatorHandle the translator to register
+  /// \return true if the translator returns a valid TfType
   AL_USDMAYA_PUBLIC
-  static void addPythonTranslator(TranslatorRefPtr traslatorHandle);
-
-  /// \brief  add a new python translator into the context
-  /// \param  traslatorHandle the translator to register
-  AL_USDMAYA_PUBLIC
-  static void addPythonTranslatorByAssetTypeMetadata(TranslatorRefPtr traslatorHandle, const TfToken& assetTypeValue);
+  static bool addPythonTranslator(TranslatorRefPtr translatorHandle, const TfToken& assetTypeValue=TfToken());
 
   /// \brief delete all registered python translators 
   AL_USDMAYA_PUBLIC
@@ -390,6 +386,11 @@ public:
   /// \param  context the translator context 
   AL_USDMAYA_PUBLIC
   void updatePythonTranslators(TranslatorContext::RefPtr context);
+
+  /// \brief  Register python translators with this manufacture.
+  /// \param  context the translator context 
+  AL_USDMAYA_PUBLIC
+  static std::vector<TranslatorRefPtr> getPythonTranslators();
 
 private:
 

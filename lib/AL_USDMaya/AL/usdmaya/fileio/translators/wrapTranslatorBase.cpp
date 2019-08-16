@@ -165,9 +165,13 @@ public:
     return this->CallVirtual<UsdPrim>("exportObject", &This::exportObject)(stage, dagPath, usdPath, params);
   }
 
-  static void registerTranslator(refptr_t plugin)
+  static void registerTranslator(refptr_t plugin, const TfToken& assetType=TfToken())
   {
-    manufacture_t::addPythonTranslator(plugin);
+    if(!manufacture_t::addPythonTranslator(plugin, assetType))
+    {
+      MGlobal::displayWarning("Cannot register python translator because of unknown type");
+      return;
+    }
 
     MFnDependencyNode fn;
     MItDependencyNodes iter(MFn::kPluginShape);
@@ -184,11 +188,6 @@ public:
       }
     }
   }
-
-  static void registerTranslatorForAssetType(refptr_t plugin, const TfToken& assetTypeValue)
-   {
-     manufacture_t::addPythonTranslatorByAssetTypeMetadata(plugin, assetTypeValue);
-   }
 
   static bool unregisterTranslator(const std::string& typeName)
   {
@@ -263,6 +262,7 @@ void wrapTranslatorBase()
     .def(TfMakePyConstructor(&TranslatorBaseWrapper::New))
     .def("initialize", &TranslatorBase::initialize, &TranslatorBaseWrapper::initialize)
     .def("getTranslatedType", boost::python::pure_virtual(&TranslatorBase::getTranslatedType))
+    .def("context", &TranslatorBase::context)
     .def("needsTransformParent", &TranslatorBase::needsTransformParent, &TranslatorBaseWrapper::needsTransformParent)
     .def("importableByDefault", &TranslatorBase::importableByDefault, &TranslatorBaseWrapper::importableByDefault)
     .def("importObject", &TranslatorBase::import, &TranslatorBaseWrapper::import)
@@ -273,10 +273,9 @@ void wrapTranslatorBase()
     .def("canExport", &TranslatorBase::canExport, &TranslatorBaseWrapper::canExport)
     .def("stage", &TranslatorBaseWrapper::stage)
     .def("getMObjects", &TranslatorBaseWrapper::getMObjects)
-    .def("registerTranslator", &TranslatorBaseWrapper::registerTranslator)
+    .def("registerTranslator", &TranslatorBaseWrapper::registerTranslator,
+          (boost::python::arg("translator"), boost::python::arg("assetType")=TfToken()))
         .staticmethod("registerTranslator")
-     .def("registerTranslatorForAssetType", &TranslatorBaseWrapper::registerTranslatorForAssetType)
-        .staticmethod("registerTranslatorForAssetType")
     .def("clearTranslators", &TranslatorBaseWrapper::clearTranslators)
         .staticmethod("clearTranslators")
     .def("unregisterTranslator", &TranslatorBaseWrapper::unregisterTranslator)

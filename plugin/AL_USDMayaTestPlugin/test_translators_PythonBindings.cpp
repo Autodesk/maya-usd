@@ -66,4 +66,23 @@ TEST(translators_PythonBindings, import)
   ASSERT_EQ(renderBoxDep.findPlug("sizeX").asFloat(), 0.5f);
   ASSERT_EQ(renderBoxDep.findPlug("sizeY").asFloat(), 1.2f);
   ASSERT_EQ(renderBoxDep.findPlug("sizeZ").asFloat(), 3.4f);
+
+  TranslatorManufacture::clearPythonTranslators();
+}
+
+TEST(translators_PythonBindings, unknownType)
+{
+  auto pythonscript = MString("\"") + AL_USDMAYA_TEST_DATA +
+                      MString("/unknowntypetranslator.py\"");
+
+  auto status = MGlobal::executePythonCommand(
+      MString {"execfile("} + pythonscript + ")\n"
+  );
+  ASSERT_TRUE(status);
+
+  auto pythonTranslators = TranslatorManufacture::getPythonTranslators();
+
+  ASSERT_EQ(pythonTranslators.size(), 1);
+
+  TranslatorManufacture::clearPythonTranslators();
 }

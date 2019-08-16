@@ -328,19 +328,20 @@ void TranslatorManufacture::deactivateAll()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void TranslatorManufacture::addPythonTranslatorByAssetTypeMetadata(TranslatorRefPtr tb, const TfToken& assetTypeValue)
+bool TranslatorManufacture::addPythonTranslator(TranslatorRefPtr tb, const TfToken& assetType)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::addPythonTranslatorByAssetTypeMetadata\n");
-  m_pythonTranslators.push_back(tb); //This allows export to work, but also registers the translator by schema type..possibly unintended?
-  m_assetTypeToPythonTranslatorsMap.emplace(assetTypeValue.GetString(), tb);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void TranslatorManufacture::addPythonTranslator(TranslatorRefPtr tb)
-{
+  if(tb->getTranslatedType().IsUnknown() && assetType.IsEmpty())
+  {
+    return false;
+  }
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::addPythonTranslator\n");
   tb->initialize();
   m_pythonTranslators.push_back(tb);
+  if(!assetType.IsEmpty())
+  {
+    m_assetTypeToPythonTranslatorsMap.emplace(assetType.GetString(), tb);
+  }
+  return true;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -435,6 +436,11 @@ void TranslatorManufacture::updatePythonTranslators(TranslatorContext::RefPtr co
   }
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+std::vector<TranslatorRefPtr> TranslatorManufacture::getPythonTranslators()
+{
+  return m_pythonTranslators;
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 TF_REGISTRY_FUNCTION(TfType)

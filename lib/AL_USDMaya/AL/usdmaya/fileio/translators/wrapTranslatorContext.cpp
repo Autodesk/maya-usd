@@ -15,6 +15,7 @@
 //
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
+#include "AL/maya/utils/Utils.h"
 
 #include <pxr/base/tf/makePyConstructor.h>
 #include <pxr/base/tf/pyPtrHelpers.h>
@@ -26,14 +27,11 @@
 
 using namespace AL::usdmaya::fileio::translators;
 using namespace AL::usdmaya::nodes;
+using namespace AL::maya::utils;
 
 using namespace boost::python;
 
 namespace {
-
-static void _insertItem(TranslatorContext &self, const UsdPrim& prim)
-{
-}
 
 static std::string _getTransform(TranslatorContext &self, const SdfPath &path)
 {
@@ -83,6 +81,35 @@ static std::string _getMObjectPathWithFnType(TranslatorContext &self, const UsdP
   return _getMObjectPathWithFnType(self, prim.GetPath(), type);
 }
 
+static std::vector<std::string> _getMObjectsPath(TranslatorContext &self, const SdfPath& path)
+{
+  std::vector<std::string> paths;
+
+  MObjectHandleArray array;
+  if(!self.getMObjects(path, array))
+  {
+    return {};
+  }
+
+  for(const auto& handle: array)
+  {
+    MFnDagNode fn(handle.object());
+    paths.push_back(fn.fullPathName().asChar());
+  }
+
+  return paths;
+}
+
+static std::vector<std::string> _getMObjectsPath(TranslatorContext &self, const UsdPrim& prim)
+{
+  return _getMObjectsPath(self, prim.GetPath());
+}
+
+static void _insertItem(TranslatorContext &self, const UsdPrim& prim, const std::string& path)
+{
+  self.insertItem(prim, findMayaObject(MString(path.c_str())));
+}
+
 } // namespace
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -130,8 +157,14 @@ void wrapTranslatorContext()
       &_getMObjectPathWithFnType,
       (arg("prim"),
        arg("fnType")))
+    .def("getMObjectsPath",
+      (std::vector<std::string> (*)(TranslatorContext&, const SdfPath&))
+      &_getMObjectsPath,
+      (arg("sdfPath")))
+    .def("getMObjectsPath",
+      (std::vector<std::string> (*)(TranslatorContext&, const UsdPrim&))
+      &_getMObjectsPath,
+      (arg("prim")))
     .def("insertItem",
-      &_insertItem,
-      (arg("prim"),
-       arg("object")));
+      &_insertItem);
 }
