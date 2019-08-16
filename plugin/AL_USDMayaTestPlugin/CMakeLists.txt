@@ -49,6 +49,7 @@ list(APPEND AL_maya_test_source
         test_translators_NurbsCurveTranslator.cpp
         test_translators_TransformTranslator.cpp
         test_translators_Translator.cpp
+        test_translators_PythonBindings.cpp
         test_usdmaya_AttributeType.cpp
         test_usdmaya.cpp
 )
@@ -69,6 +70,7 @@ target_link_libraries(${PXR_PACKAGE}
     AL_USDUtils
     AL_USDMaya   #Adding this recursively pulls in lots of things
     AL_MayaTest
+    AL_USDMayaSchemasTest
     ${GTEST_LIBRARIES}
 )
 
@@ -77,6 +79,7 @@ PRIVATE
     ${GTEST_INCLUDE_DIRS}
     ${MAYA_INCLUDE_DIRS}
     "../../lib/AL_USDMaya"    
+    "../../schemas"
     ${MAYATEST_INCLUDE_LOCATION}
 )
 

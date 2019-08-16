@@ -957,6 +957,9 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
 //----------------------------------------------------------------------------------------------------------------------
 void Export::doExport()
 {
+  auto context = translators::TranslatorContext::create(nullptr);
+  translators::TranslatorManufacture::preparePythonTranslators(context);
+
   // make sure the node factory has been initialised as least once prior to use
   getNodeFactory();
 

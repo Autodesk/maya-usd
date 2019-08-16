@@ -26,6 +26,8 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
+std::vector<TranslatorRefPtr > TranslatorManufacture::m_pythonTranslators;
+
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
 {
@@ -89,7 +91,7 @@ TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TranslatorManufacture::RefPtr TranslatorManufacture::get(const TfToken type_name)
+TranslatorRefPtr TranslatorManufacture::get(const TfToken type_name)
 {
   TfType type = TfType::FindDerivedByName<UsdSchemaBase>(type_name);
   std::string typeName(type.GetTypeName());
@@ -101,13 +103,13 @@ TranslatorManufacture::RefPtr TranslatorManufacture::get(const TfToken type_name
       return it->second;
     }
   }
-  return TfNullPtr;
+  return getPythonTranslator(type_name);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TranslatorManufacture::RefPtr TranslatorManufacture::get(const MObject& mayaObject)
+TranslatorRefPtr TranslatorManufacture::get(const MObject& mayaObject)
 {
-  TranslatorManufacture::RefPtr base;
+  TranslatorRefPtr base;
   TranslatorManufacture::RefPtr derived;
   for(auto& it : m_translatorsMap)
   {
@@ -123,8 +125,15 @@ TranslatorManufacture::RefPtr TranslatorManufacture::get(const MObject& mayaObje
         break;
       }
     }
+  }  
+  if(derived) {
+    return derived;
   }
-  return derived ? derived : base;
+  else if(base) {
+    return base;
+  }
+  auto py = TranslatorManufacture::getPythonTranslator(mayaObject);
+  return py;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -212,6 +221,99 @@ void TranslatorManufacture::deactivateAll()
   for(auto& it : m_translatorsMap)
   {
     it.second->deactivate();
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TranslatorManufacture::addPythonTranslator(TranslatorRefPtr tb)
+{
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::addPythonTranslator\n");
+  tb->initialize();
+  m_pythonTranslators.push_back(tb);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TranslatorManufacture::clearPythonTranslators()
+{
+  m_pythonTranslators.clear();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TranslatorRefPtr TranslatorManufacture::getPythonTranslator(const TfToken type_name)
+{
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslator %s\n", type_name.GetText());
+  TfType type = TfType::FindDerivedByName<UsdSchemaBase>(type_name);
+  for(auto it : TranslatorManufacture::m_pythonTranslators)
+  {
+    auto thetype = it->getTranslatedType();
+    if(type == thetype)
+    {
+      return it;
+    }
+  }
+  return 0;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TranslatorRefPtr TranslatorManufacture::getPythonTranslator(const MObject& mayaObject)
+{
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslator %s\n", mayaObject.apiTypeStr());
+  TranslatorRefPtr base;
+  for(auto it : TranslatorManufacture::m_pythonTranslators)
+  {
+    auto canExport = it->canExport(mayaObject);
+    switch(canExport)
+    {
+    case ExportFlag::kSupported:
+      return it;
+
+    case ExportFlag::kFallbackSupport:
+      base = it;
+      break;
+
+    default:
+      break;
+    }
+  }
+  return base;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool TranslatorManufacture::deletePythonTranslator(const TfType type_name)
+{
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::deletePythonTranslator\n");
+  for(auto it = TranslatorManufacture::m_pythonTranslators.begin(), end = TranslatorManufacture::m_pythonTranslators.end(); it != end; ++it)
+  {
+    auto state_ = PyGILState_Ensure();
+    auto thetype = (*it)->getTranslatedType();
+    PyGILState_Release(state_);
+    if(type_name == thetype)
+    {
+      TranslatorManufacture::m_pythonTranslators.erase(it);
+      return true;
+    }
+  }
+  return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TranslatorManufacture::preparePythonTranslators(TranslatorContext::RefPtr context)
+{  
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::preparePythonTranslators\n");
+  for(auto it : TranslatorManufacture::m_pythonTranslators)
+  {
+    it->setContext(context);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TranslatorManufacture::updatePythonTranslators(TranslatorContext::RefPtr context)
+{
+  m_contextualisedPythonTranslators.clear();
+  for(const auto &tr : m_pythonTranslators)
+  {
+    m_contextualisedPythonTranslators.push_back(tr);
+    m_contextualisedPythonTranslators.back()->setContext(context);
   }
 }
 

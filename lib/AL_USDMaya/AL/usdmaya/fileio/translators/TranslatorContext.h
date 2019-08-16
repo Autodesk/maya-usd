@@ -90,7 +90,7 @@ private:
 /// \ingroup translators
 //----------------------------------------------------------------------------------------------------------------------
 struct TranslatorContext
-  : public TfRefBase
+  : public TfRefBase, TfWeakBase
 {
 public:
   typedef TranslatorContext This; ///< this type

@@ -237,6 +237,8 @@ add_library(${PYTHON_LIBRARY_NAME}
     AL/usdmaya/wrapStageCache.cpp
     AL/usdmaya/nodes/wrapLayerManager.cpp
     AL/usdmaya/nodes/wrapProxyShape.cpp
+    AL/usdmaya/fileio/translators/wrapTranslatorBase.cpp
+    AL/usdmaya/fileio/translators/wrapTranslatorContext.cpp
 )
 
 target_compile_definitions(${PYTHON_LIBRARY_NAME}

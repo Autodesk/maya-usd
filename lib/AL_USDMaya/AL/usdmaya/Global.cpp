@@ -371,6 +371,7 @@ static void postFileRead(void*)
       proxy->loadStage();
       auto stage = proxy->getUsdStage();
       proxy->deserialiseTranslatorContext();
+      proxy->translatorManufacture().preparePythonTranslators(proxy->context());
       proxy->findTaggedPrims();
       proxy->deserialiseTransformRefs();
     }
