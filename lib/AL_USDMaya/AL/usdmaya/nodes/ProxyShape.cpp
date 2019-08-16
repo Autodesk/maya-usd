@@ -2233,14 +2233,23 @@ void ProxyShape::serialiseTransformRefs()
   std::ostringstream oss;
   for(auto iter : m_requiredPaths)
   {
-    MFnDagNode fn(iter.second.node());
-    MDagPath path;
-    fn.getPath(path);
-    oss << path.fullPathName() << " "
-        << iter.first.GetText() << " "
-        << uint32_t(iter.second.required()) << " "
-        << uint32_t(iter.second.selected()) << " "
-        << uint32_t(iter.second.refCount()) << ";";
+    MStatus status;
+    MObjectHandle handle(iter.second.node());
+
+    if(handle.isAlive() && handle.isValid())
+    {
+      MFnDagNode fn(handle.object(), &status);
+      if(status)
+      {
+        MDagPath path;
+        fn.getPath(path);
+        oss << path.fullPathName() << " "
+            << iter.first.GetText() << " "
+            << uint32_t(iter.second.required()) << " "
+            << uint32_t(iter.second.selected()) << " "
+            << uint32_t(iter.second.refCount()) << ";";
+      }
+    }
   }
   serializedRefCountsPlug().setString(oss.str().c_str());
 
