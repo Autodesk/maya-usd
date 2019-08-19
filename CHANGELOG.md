@@ -1,3 +1,7 @@
+## AL_USDMaya-0.33.5 (2019-08-19)
+### Fixed
++ Potential crash when serialising internal transform references
+
 ## AL_USDMaya-0.32.39 (2019-08-14)
 ### Fixed
 + Changed way that rotation values were being set on the custom transform nodes to work around a maya bug
