@@ -6,11 +6,14 @@
 from __future__ import print_function
 
 import argparse
+import inspect
 import os
+
+THIS_FILE = os.path.normpath(os.path.abspath(inspect.getsourcefile(lambda: None)))
 
 parser = argparse.ArgumentParser(description=__doc__)
 mode_group = parser.add_mutually_exclusive_group()
-mode_group.add_argument('--mode', choices=['pxr', 'al'], default='pxr',
+mode_group.add_argument('--mode', choices=['pxr', 'al', 'both'], default='both',
     help="Which repo we're trying to replace lics for")
 mode_group.add_argument('--al', help='Replace al lics',
     action='store_const', const='al', dest='mode')
@@ -107,9 +110,12 @@ new_py_lic = """#
 old_al_cpp_lic_line = """// you may not use this file except in compliance with the License.//"""
 new_cpp_lic_line = """// you may not use this file except in compliance with the License."""
 
+old_al_py_lic_line = """# you may not use this file except in compliance with the License.//"""
+new_py_lic_line = """# you may not use this file except in compliance with the License."""
+
 if args.mode == 'pxr':
     replacement_pairs = [
-        (old_pxr_cpp_lic, new_cpp_lic)
+        (old_pxr_cpp_lic, new_cpp_lic),
         (old_pxr_py_lic, new_py_lic),
     ]
 elif args.mode == 'al':
@@ -117,13 +123,24 @@ elif args.mode == 'al':
         (old_al_cpp_lic_line, new_cpp_lic_line),
         (old_al_py_lic, new_py_lic),
         (old_pxr_py_lic, new_py_lic),
+        (old_al_py_lic_line, new_py_lic_line),
+    ]
+elif args.mode == 'both':
+    replacement_pairs = [
+        (old_pxr_cpp_lic, new_cpp_lic),
+        (old_pxr_py_lic, new_py_lic),
+        (old_al_cpp_lic_line, new_cpp_lic_line),
+        (old_al_py_lic, new_py_lic),
+        (old_al_py_lic_line, new_py_lic_line),
     ]
 else:
     raise ValueError("Unrecognized mode: {}".format(args.mode))
 
 for dirpath, dirnames, filenames in os.walk('.'):
     for filename in filenames:
-        filepath = os.path.join(dirpath, filename)
+        filepath = os.path.normpath(os.path.abspath(os.path.join(dirpath, filename)))
+        if filepath == THIS_FILE:
+            continue
         with open(filepath, 'rb') as f:
             text = f.read()
         altered = False
