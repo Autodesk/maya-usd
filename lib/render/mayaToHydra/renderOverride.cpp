@@ -23,7 +23,7 @@
 //
 #include "renderOverride.h"
 
-#include <hdmaya/hdmaya.h>
+#include <hdMaya/hdMaya.h>
 
 #include <pxr/base/gf/matrix4d.h>
 
@@ -61,12 +61,12 @@
 #include "tokens.h"
 #include "utils.h"
 
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
 #include <maya/MFileIO.h>
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
 #include <ufe/selectionNotification.h>
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -86,7 +86,7 @@ namespace {
 std::mutex _allInstancesMutex;
 std::vector<MtohRenderOverride*> _allInstances;
 
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
 
 // Observe UFE scene items for transformation changed only when they are
 // selected.
@@ -117,7 +117,7 @@ private:
     MtohRenderOverride& _mtohRenderOverride;
 };
 
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
 
 /// Simple RAII class to save uniform buffer bindings, to deal with a maya
 /// issue.
@@ -218,14 +218,14 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
 
     _globals = MtohGetRenderGlobals();
 
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
     const UFE_NS::GlobalSelection::Ptr& ufeSelection =
         UFE_NS::GlobalSelection::get();
     if (ufeSelection) {
         _ufeSelectionObserver = std::make_shared<UfeSelectionObserver>(*this);
         ufeSelection->addObserver(_ufeSelectionObserver);
     }
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
 }
 
 MtohRenderOverride::~MtohRenderOverride() {
@@ -252,14 +252,14 @@ MtohRenderOverride::~MtohRenderOverride() {
             _allInstances.end());
     }
 
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
     const UFE_NS::GlobalSelection::Ptr& ufeSelection =
         UFE_NS::GlobalSelection::get();
     if (ufeSelection) {
         ufeSelection->removeObserver(_ufeSelectionObserver);
         _ufeSelectionObserver = nullptr;
     }
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
 }
 
 void MtohRenderOverride::UpdateRenderGlobals() {
@@ -693,13 +693,13 @@ void MtohRenderOverride::_SelectionChanged() {
     SdfPathVector selectedPaths;
     auto selection = boost::make_shared<HdSelection>();
 
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
     const UFE_NS::GlobalSelection::Ptr& ufeSelection =
         UFE_NS::GlobalSelection::get();
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
 
     for (auto& it : _delegates) {
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
         if (it->SupportsUfeSelection()) {
             if (ufeSelection) {
                 it->PopulateSelectedPaths(
@@ -708,7 +708,7 @@ void MtohRenderOverride::_SelectionChanged() {
             // skip non-ufe PopulateSelectedPaths call
             continue;
         }
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
         it->PopulateSelectedPaths(sel, selectedPaths, selection);
     }
     _selectionCollection.SetRootPaths(selectedPaths);

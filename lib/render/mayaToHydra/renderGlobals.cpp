@@ -23,7 +23,7 @@
 //
 #include "renderGlobals.h"
 
-#include <hdmaya/hdmaya.h>
+#include <hdMaya/hdMaya.h>
 
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hdx/rendererPlugin.h>

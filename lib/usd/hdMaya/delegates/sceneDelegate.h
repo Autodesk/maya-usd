@@ -26,7 +26,7 @@
 
 #include <pxr/pxr.h>
 
-#include <hdmaya/hdmaya.h>
+#include <hdMaya/hdMaya.h>
 
 #include <pxr/base/gf/vec4d.h>
 

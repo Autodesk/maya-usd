@@ -117,7 +117,7 @@
                 }
             },
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
-            "Name": "hdmaya",
+            "Name": "@TARGET_NAME@",
             "Root": ".",
             "Type": "library"
         }

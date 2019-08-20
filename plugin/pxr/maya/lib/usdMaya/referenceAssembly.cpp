@@ -23,6 +23,8 @@
 #include "usdMaya/readJobWithSceneAssembly.h"
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/render/pxrUsdMayaGL/instancerImager.h>
+#include "usdMaya/instancerShapeAdapterWithSceneAssembly.h"
 
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/registryManager.h"
@@ -1544,5 +1546,28 @@ const MString UsdMayaRepresentationExpanded::_assemblyType("Expanded");
 
 const MString UsdMayaRepresentationFull::_assemblyType("Full");
 
-PXR_NAMESPACE_CLOSE_SCOPE
+bool UsdMayaGL_InstancerImager_ContinueTrackingOnDisconnect(
+    const MFnDependencyNode& fn
+)
+{
+    // There's at least one USD reference assembly still connected to
+    // this point instancer, so continue tracking the instancer node.
+    return (fn.typeId() == UsdMayaReferenceAssembly::typeId);
+}
 
+UsdMayaGL_InstancerShapeAdapter*
+UsdMayaGL_InstancerImager_InstancerShapeAdapterFactory()
+{
+    return new UsdMayaGL_InstancerShapeAdapterWithSceneAssembly();
+}
+
+TF_REGISTRY_FUNCTION(UsdMayaReferenceAssembly)
+{
+    UsdMayaGL_InstancerImager::GetInstance();
+    UsdMayaGL_InstancerImager::SetContinueTrackingOnDisconnectDelegate(
+        UsdMayaGL_InstancerImager_ContinueTrackingOnDisconnect);
+    UsdMayaGL_InstancerImager::SetInstancerShapeAdapterFactory(
+        UsdMayaGL_InstancerImager_InstancerShapeAdapterFactory);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

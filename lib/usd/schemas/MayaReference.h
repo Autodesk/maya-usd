@@ -19,11 +19,11 @@
 /// \file MayaUsd_Schemas/MayaReference.h
 
 #include "pxr/pxr.h"
-#include "./api.h"
+#include "api.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "./tokens.h"
+#include "tokens.h"
 
 #include "pxr/base/vt/value.h"
 

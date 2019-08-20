@@ -16,11 +16,11 @@
 #include "pxr/pxr.h"
 #include "cameraWriter.h"
 
-#include <../../fileio/utils/adaptor.h>
-#include <../../fileio/primWriter.h>
-#include <../../fileio/primWriterRegistry.h>
-#include <../../utils/util.h>
-#include <../../fileio/writeJobContext.h>
+#include "../../fileio/utils/adaptor.h"
+#include "../../fileio/primWriter.h"
+#include "../../fileio/primWriterRegistry.h"
+#include "../../utils/util.h"
+#include "../../fileio/writeJobContext.h"
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/tf/diagnostic.h"

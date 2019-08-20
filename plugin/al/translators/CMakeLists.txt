@@ -1,4 +1,8 @@
-list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas ${MAYAUSD_LIBRARIES} gf plug tf)
+# MayaReference provides import translation for AL_usd_MayaReference.
+# As such, its AL_USDMAYA_DEFINE_TRANSLATOR does a
+# TfType::Find<AL_usd_MayaReference>, which requires AL_usd_MayaReference's
+# typeid.  We must therefore link against mayaUsd_Schemas.
+list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas ${MAYAUSD_LIBRARIES} ${MAYAUSD_SCHEMA_LIBRARIES} gf plug tf)
 
 set(DIRECTORY_PATH AL/usdmaya/fileio/translators)
 
@@ -65,10 +69,17 @@ set_target_properties(${TRANSLATORS_PACKAGE}
      "MFB_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE};MFB_ALT_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}"
 )
 
-set_target_properties(${TRANSLATORS_PACKAGE}
-        PROPERTIES COMPILE_DEFINITIONS
-        "MFB_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE};MFB_ALT_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}"
-        )
+# rpath setup
+if(IS_MACOSX OR IS_LINUX) 
+    init_rpath(rpath "plugin")
+    add_rpath(rpath "../lib")
+    add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    install_rpath(rpath ${TRANSLATORS_PACKAGE})
+endif()
+
+if (IS_LINUX)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags" PARENT_SCOPE)
+endif()
 
 target_link_libraries(${TRANSLATORS_PACKAGE} ${DEPENDANT_LIBRARIES})
 
@@ -78,7 +89,7 @@ install(TARGETS ${TRANSLATORS_PACKAGE}
  RUNTIME
  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
-if(MSVC)
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TRANSLATORS_PACKAGE}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL)
 endif()
 

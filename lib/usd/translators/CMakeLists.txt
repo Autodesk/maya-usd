@@ -64,24 +64,15 @@ add_library(${TRANSLATORS_PLUGIN} SHARED ${source})
 #======================================================================
 # TARGET PROPERTIES
 #======================================================================
-if(MSVC)
-    set_target_properties(${TRANSLATORS_PLUGIN} PROPERTIES SUFFIX ".mll")
-elseif(APPLE)
-    set(CMAKE_MACOSX_RPATH ON)
-    set_target_properties(${TRANSLATORS_PLUGIN}
-        PROPERTIES
-            PREFIX ""
-            SUFFIX ".bundle"
-            BUILD_WITH_INSTALL_RPATH TRUE
-            INSTALL_RPATH "@loader_path/../lib;@loader_path/../../USD/lib;@loader_path/../../USD/maya/lib;${PXR_USD_LOCATION}/lib"
-    )
-else()
-    set_target_properties(${TRANSLATORS_PLUGIN}
-            PROPERTIES
-            PREFIX ""
-            INSTALL_RPATH "$ORIGIN/../lib:$ORIGIN/../../USD/lib:$ORIGIN/../../USD/maya/lib:${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64"
-            BUILD_WITH_INSTALL_RPATH TRUE
-    )
+if(IS_MACOSX OR IS_LINUX)
+    # rpath setup
+    init_rpath(rpath "plugin")
+    add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    install_rpath(rpath ${TRANSLATORS_PLUGIN})
+endif()
+
+if(IS_LINUX)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags" PARENT_SCOPE)
 endif()
 
 #======================================================================
@@ -130,6 +121,6 @@ install(
     RUNTIME
     DESTINATION ${library_install_path}
 )
-if(MSVC)
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TRANSLATORS_PLUGIN}> DESTINATION ${library_install_path} OPTIONAL)
 endif()

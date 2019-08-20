@@ -11,7 +11,7 @@
 
 over "GLOBAL" (
     customData = {
-        string libraryName        = "MayaUsd_Schemas"
+        string libraryName        = "@SCHEMA_PLUGIN@"
         string libraryPath        = "."
         string libraryPrefix      = "AL_usd_"#This AL_ is here to get around that the Jinja template doesn't generate a template that supports namespaces. If we had a AL namespace then I could remove this AL.
         string tokensPrefix       = "MayaUsd_Schemas"

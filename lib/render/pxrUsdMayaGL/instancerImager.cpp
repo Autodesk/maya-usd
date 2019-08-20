@@ -19,9 +19,6 @@
 #include "./debugCodes.h"
 
 #include "../../nodes/hdImagingShape.h"
-#ifdef REFACTOR_REFERENCE_ASSEMBLY
-#include "usdMaya/referenceAssembly.h"
-#endif
 
 #include "pxr/base/tf/instantiateSingleton.h"
 
@@ -35,6 +32,12 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(UsdMayaGL_InstancerImager);
+
+UsdMayaGL_InstancerImager::ContinueTrackingOnDisconnectDelegate
+UsdMayaGL_InstancerImager::_continueTrackingOnDisconnectDelegate = nullptr;
+
+UsdMayaGL_InstancerImager::InstancerShapeAdapterFactory
+UsdMayaGL_InstancerImager::_instancerShapeAdapterFactory = nullptr;
 
 /* static */
 UsdMayaGL_InstancerImager&
@@ -97,7 +100,7 @@ UsdMayaGL_InstancerImager::_SyncShapeAdapters(
             std::unique_ptr<UsdMayaGL_InstancerShapeAdapter>& adapter =
                     entry.adapterVp2;
             if (!adapter) {
-                adapter.reset(new UsdMayaGL_InstancerShapeAdapter());
+                adapter.reset(CreateInstancerShapeAdapter());
             }
 
             if (adapter->Sync(
@@ -112,7 +115,7 @@ UsdMayaGL_InstancerImager::_SyncShapeAdapters(
             std::unique_ptr<UsdMayaGL_InstancerShapeAdapter>& adapter =
                     entry.adapterLegacy;
             if (!adapter) {
-                adapter.reset(new UsdMayaGL_InstancerShapeAdapter());
+                adapter.reset(CreateInstancerShapeAdapter());
             }
 
             if (adapter->Sync(
@@ -384,13 +387,10 @@ UsdMayaGL_InstancerImager::_OnDisconnection(
             continue;
         }
 
-#ifdef REFACTOR_REFERENCE_ASSEMBLY
-        if (sourceNode.typeId() == UsdMayaReferenceAssembly::typeId) {
-            // There's at least one USD reference assembly still connected to
-            // this point instancer, so continue tracking the instancer node.
+        if (ContinueTrackingOnDisconnect(sourceNode)) {
+            // Continue tracking the instancer node.
             return;
         }
-#endif
     }
 
     // Queue the instancer for removal. We don't remove it right away because
@@ -418,16 +418,40 @@ UsdMayaGL_InstancerImager::~UsdMayaGL_InstancerImager()
             _instancers.size());
 }
 
+void UsdMayaGL_InstancerImager::SetContinueTrackingOnDisconnectDelegate(
+    ContinueTrackingOnDisconnectDelegate delegate)
+{
+    _continueTrackingOnDisconnectDelegate = delegate;
+}
+
+bool UsdMayaGL_InstancerImager::ContinueTrackingOnDisconnect(
+    const MFnDependencyNode& fn
+)
+{
+    if (!_continueTrackingOnDisconnectDelegate) {
+        return false;
+    }
+    return _continueTrackingOnDisconnectDelegate(fn);
+}
+
+void UsdMayaGL_InstancerImager::SetInstancerShapeAdapterFactory(
+    InstancerShapeAdapterFactory factory)
+{
+    _instancerShapeAdapterFactory = factory;
+}
+
+UsdMayaGL_InstancerShapeAdapter*
+UsdMayaGL_InstancerImager::CreateInstancerShapeAdapter()
+{
+    if (!_instancerShapeAdapterFactory) {
+        return new UsdMayaGL_InstancerShapeAdapter();
+    }
+    return _instancerShapeAdapterFactory();
+}
+
 UsdMayaGL_InstancerImager::_InstancerEntry::~_InstancerEntry()
 {
     MMessage::removeCallbacks(callbacks);
 }
-
-#ifdef REFACTOR_REFERENCE_ASSEMBLY
-TF_REGISTRY_FUNCTION(UsdMayaReferenceAssembly)
-{
-    TfSingleton<UsdMayaGL_InstancerImager>::GetInstance();
-}
-#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

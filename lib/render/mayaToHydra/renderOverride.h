@@ -27,7 +27,7 @@
 #include <pxr/imaging/glf/glew.h>
 #include <pxr/pxr.h>
 
-#include <hdmaya/hdmaya.h>
+#include <hdMaya/hdMaya.h>
 
 #include <pxr/base/tf/singleton.h>
 
@@ -57,9 +57,9 @@
 #include <chrono>
 #include <mutex>
 
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
 #include <ufe/observer.h>
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -176,9 +176,9 @@ private:
     bool _selectionChanged = true;
     bool _isConverged = false;
 
-#if HDMAYA_UFE_BUILD
+#if WANT_UFE_BUILD
     UFE_NS::Observer::Ptr _ufeSelectionObserver;
-#endif // HDMAYA_UFE_BUILD
+#endif // WANT_UFE_BUILD
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

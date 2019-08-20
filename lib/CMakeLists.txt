@@ -32,6 +32,8 @@ list(APPEND CMAKE_MODULE_PATH
     ${PROJECT_SOURCE_DIR}/../cmake/modules
 )
 
+include(${PROJECT_SOURCE_DIR}/../cmake/utils.cmake)
+
 #==============================================================================
 # Compiler
 #==============================================================================
@@ -53,8 +55,7 @@ string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 if (APPLE)
-   set(CMAKE_MACOSX_RPATH ON)
-   set(OSX_ARCHITECTURES "x86_64")
+   set(CMAKE_OSX_ARCHITECTURES "x86_64")
    add_definitions(-DOSMac_ -DMAC_PLUGIN)
    add_definitions(-D_BOOL -DREQUIRE_IOSTREAM)
 endif()
@@ -67,28 +68,28 @@ find_package(Maya REQUIRED)
 find_package(USD REQUIRED)
 include(${USD_CONFIG_FILE})
 
-if("${MAYA_DEVKIT_LOCATION}" STREQUAL "")
-    set(CMAKE_WANT_UFE_BUILD OFF)
-else()
-    set(CMAKE_WANT_UFE_BUILD ON)
-endif()
-
 if(CMAKE_WANT_UFE_BUILD)
-    find_package(UFE REQUIRED)
-    add_definitions(-DWANT_UFE_BUILD)
+    find_package(UFE QUIET)
+    if(UFE_FOUND)
+        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
+        include_directories(${UFE_INCLUDE_DIR})
+        add_definitions(-DWANT_UFE_BUILD)
 
-    # UFE Group interface is available on 2.0+ and 0.2+ but not 1.x.
-    if((NOT UFE_VERSION VERSION_LESS 2.0.0) OR
-       ((UFE_VERSION VERSION_LESS 1.0.0) AND (NOT UFE_VERSION VERSION_LESS 0.2.0)))
-        set(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE ON)
-        add_definitions(-DUFE_GROUP_INTERFACE_AVAILABLE)
+        # UFE Group interface is available on 2.0+ and 0.2+ but not 1.x.
+        if((NOT UFE_VERSION VERSION_LESS 2.0.0) OR
+           ((UFE_VERSION VERSION_LESS 1.0.0) AND (NOT UFE_VERSION VERSION_LESS 0.2.0)))
+            set(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE ON)
+            add_definitions(-DUFE_GROUP_INTERFACE_AVAILABLE)
+        else()
+            set(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE OFF)
+        endif()
+
+        if(IS_WINDOWS)
+            # Silence this warning until we fix it in UFE.
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
+        endif()
     else()
-        set(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE OFF)
-    endif()
-
-    if(MSVC)
-        # Silence this warning until we fix it in UFE.
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
+        message(STATUS "UFE not found. UFE features will be disabled.")
     endif()
 endif()
 
@@ -225,7 +226,7 @@ list(APPEND mayaUsd_src
 	render/px_vp20/utils_legacy.cpp
 )
 
-if(CMAKE_WANT_UFE_BUILD)
+if(UFE_FOUND)
     list(APPEND mayaUsd_src
         ufe/Global.cpp
         ufe/Utils.cpp
@@ -361,7 +362,7 @@ list(APPEND mayaUsdVP2RenderDelegate_headers
 	render/vp2RenderDelegate/proxyRenderDelegate.h
 )
 
-if(CMAKE_WANT_UFE_BUILD)
+if(UFE_FOUND)
     list(APPEND mayaUsdUfe_headers
         ufe/Global.h
         ufe/Utils.h
@@ -394,8 +395,10 @@ endif()
 
 list(APPEND mayaUsdPxrUsdMayaGL_headers
 	render/pxrUsdMayaGL/batchRenderer.h
+	render/pxrUsdMayaGL/debugCodes.h
 	render/pxrUsdMayaGL/hdImagingShapeUI.h
 	render/pxrUsdMayaGL/hdImagingShapeDrawOverride.h
+	render/pxrUsdMayaGL/instancerImager.h
 	render/pxrUsdMayaGL/instancerShapeAdapter.h
 	render/pxrUsdMayaGL/proxyShapeUI.h
 	render/pxrUsdMayaGL/proxyDrawOverride.h
@@ -430,9 +433,7 @@ target_include_directories(
     ${LIBRARY_NAME}
     PUBLIC
     ${MAYA_INCLUDE_DIRS}
-    ${UFE_INCLUDE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/../base
 	${PXR_INCLUDE_DIRS}
 )
 
@@ -442,7 +443,6 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_OpenMayaRender_LIBRARY}
     ${MAYA_OpenMayaUI_LIBRARY}
-    ${UFE_LIBRARY}
     ar
     gf
 	hd
@@ -464,8 +464,11 @@ target_link_libraries(${LIBRARY_NAME}
     vt
 )
 
-if(APPLE)
-    set(CMAKE_MACOSX_RPATH ON)
+if (UFE_FOUND)
+    target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
+endif()
+
+if(IS_MACOSX)
     set_target_properties(${LIBRARY_NAME}
         PROPERTIES
             BUILD_WITH_INSTALL_RPATH TRUE
@@ -487,7 +490,7 @@ install(TARGETS ${LIBRARY_NAME}
     RUNTIME
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
-if(MSVC)
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${LIBRARY_NAME}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL)
 endif()
 
@@ -538,7 +541,7 @@ install(FILES ${mayaUsdVP2RenderDelegate_headers}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/render/vp2RenderDelegate
 )
 
-if(CMAKE_WANT_UFE_BUILD)
+if(UFE_FOUND)
     install(FILES ${mayaUsdUfe_headers}
         DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/ufe
     )
@@ -551,4 +554,4 @@ install(FILES ${mayaUsdPxrUsdMayaGL_headers}
 add_subdirectory(usd)
 
 add_subdirectory(render/mayaToHydra)
-add_dependencies(mtoh hdmaya)
+add_dependencies(mtoh hdMaya)

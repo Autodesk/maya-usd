@@ -1,11 +1,14 @@
 set(PLUGIN_PACKAGE mayaUsdPlugin)
 
-if (NOT "${MAYA_DEVKIT_LOCATION}" STREQUAL "")
-    find_package(UFE REQUIRED)
-    include_directories(${UFE_INCLUDE_DIR})
-
-    # WANT_UFE_BUILD is used in mayaUsdPlugin for #ifdef test.
-    add_definitions(-DWANT_UFE_BUILD)
+if(CMAKE_WANT_UFE_BUILD)
+    find_package(UFE QUIET)
+    if(UFE_FOUND)
+        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
+        include_directories(${UFE_INCLUDE_DIR})
+        add_definitions(-DWANT_UFE_BUILD)
+    else()
+        message(STATUS "UFE not found. UFE features will be disabled.")
+    endif()
 endif()
 
 add_library(${PLUGIN_PACKAGE} MODULE
@@ -41,24 +44,19 @@ target_link_libraries(${PLUGIN_PACKAGE}
 		usdUtils
 )
 
-if(MSVC)
+if(IS_WINDOWS)
     set_target_properties(${PLUGIN_PACKAGE} PROPERTIES SUFFIX ".mll")
-elseif(APPLE)
-    set_target_properties(${PLUGIN_PACKAGE}
-        PROPERTIES
-            PREFIX ""
-            SUFFIX ".bundle"
-            MACOSX_RPATH TRUE
-            INSTALL_RPATH_USE_LINK_PATH TRUE
-            INSTALL_RPATH "@loader_path/../../../lib"
-    )
-else()
-    set_target_properties(${PLUGIN_PACKAGE}
-        PROPERTIES
-            PREFIX ""
-            INSTALL_RPATH_USE_LINK_PATH TRUE
-            INSTALL_RPATH "$ORIGIN/../../../lib"
-    )
+elseif(IS_MACOSX)
+    set_target_properties(${PLUGIN_PACKAGE} PROPERTIES PREFIX "" SUFFIX ".bundle")
+elseif(IS_LINUX)
+    set_target_properties(${PLUGIN_PACKAGE} PROPERTIES PREFIX "")
+endif()
+
+# rpath setup
+if(IS_MACOSX OR IS_LINUX) 
+    init_rpath(rpath "plugin")
+    add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    install_rpath(rpath ${PLUGIN_PACKAGE})
 endif()
 
 install(TARGETS
@@ -68,7 +66,8 @@ install(TARGETS
     RUNTIME
         DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
 )
-if(MSVC)
+
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${PLUGIN_PACKAGE}> DESTINATION ${INSTALL_DIR_SUFFIX}/plugin OPTIONAL)
 endif()
 

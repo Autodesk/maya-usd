@@ -27,7 +27,8 @@ macro(add_mayausd_define var)
     endif()
 endmacro(add_mayausd_define)
 
-# Add top level variabels here 
+# Add top level variabels here
+add_mayausd_define(CMAKE_WANT_UFE_BUILD)
 add_mayausd_define(MAYAUSD_VERSION)
 add_mayausd_define(MAYAUSD_MAJOR_VERSION)
 add_mayausd_define(MAYAUSD_MINOR_VERSION)

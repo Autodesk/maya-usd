@@ -5,7 +5,6 @@
 // agreement provided at the time of installation or download, or which
 // otherwise accompanies this software in either electronic or hard copy form.
 // ===========================================================================
-#include "pxr/base/tf/envSetting.h"
 
 #include "base/api.h"
 #include "importTranslator.h"
@@ -25,6 +24,12 @@
 #include <maya/MStatus.h>
 #include <maya/MDrawRegistry.h>
 
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/registry.h"
+
+#include <sstream>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 MAYAUSD_PLUGIN_PUBLIC
@@ -37,7 +42,7 @@ MStatus initializePlugin(MObject obj)
         "mayaUsdImport",
         "",
         UsdMayaImportTranslator::creator,
-        "usdTranslatorImport", // options script name
+        "mayaUsdTranslatorImport", // options script name
         const_cast<char*>(UsdMayaImportTranslator::GetDefaultOptions().c_str()),
         false);
     if (!status) {
@@ -62,6 +67,30 @@ MStatus initializePlugin(MObject obj)
         UsdMayaProxyShapeUI::creator,
         MayaUsdProxyShapePlugin::getProxyShapeClassification());
     CHECK_MSTATUS(status);
+
+    // As of 2-Aug-2019, these PlugPlugin translators are not loaded
+    // automatically.  To be investigated.  A duplicate of this code is in the
+    // Pixar plugin.cpp.
+    const std::vector<std::string> translatorPluginNames{
+        "mayaUsd_Schemas", "mayaUsd_Translators"};
+    const auto& plugRegistry = PlugRegistry::GetInstance();
+    std::stringstream msg("mayaUsdPlugin: ");
+    for (const auto& pluginName : translatorPluginNames) {
+        auto plugin = plugRegistry.GetPluginWithName(pluginName);
+        if (!plugin) {
+            status = MStatus::kFailure;
+            msg << "translator " << pluginName << " not found.";
+            status.perror(msg.str().c_str());
+        }
+        else {
+            // Load is a no-op if already loaded.
+            if (!plugin->Load()) {
+                status = MStatus::kFailure;
+                msg << pluginName << " translator load failed.";
+                status.perror(msg.str().c_str());
+            }
+        }
+    }
 
     return status;
 }

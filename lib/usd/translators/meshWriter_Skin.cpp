@@ -18,9 +18,9 @@
 #include "meshWriter.h"
 #include "jointWriter.h"
 
-#include <../../fileio/translators/translatorSkel.h>
-#include <../../fileio/translators/translatorUtil.h>
-#include <../../fileio/writeJobContext.h>
+#include "../../fileio/translators/translatorSkel.h"
+#include "../../fileio/translators/translatorUtil.h"
+#include "../../fileio/writeJobContext.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/staticTokens.h"

@@ -23,7 +23,7 @@
 //
 #include "sceneDelegate.h"
 
-#include <hdmaya/hdmaya.h>
+#include <hdMaya/hdMaya.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/range3d.h>

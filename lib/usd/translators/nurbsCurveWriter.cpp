@@ -16,10 +16,10 @@
 #include "pxr/pxr.h"
 #include "nurbsCurveWriter.h"
 
-#include <../../fileio/utils/adaptor.h>
-#include <../../fileio/primWriter.h>
-#include <../../fileio/primWriterRegistry.h>
-#include <../../fileio/writeJobContext.h>
+#include "../../fileio/utils/adaptor.h"
+#include "../../fileio/primWriter.h"
+#include "../../fileio/primWriterRegistry.h"
+#include "../../fileio/writeJobContext.h"
 
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec3f.h"

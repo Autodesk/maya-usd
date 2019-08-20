@@ -16,11 +16,9 @@
 #include "readJob.h"
 
 #include "../primReaderRegistry.h"
-#include "../shading/shadingModeRegistry.h"
 #include "../../utils/stageCache.h"
 #include "../../nodes/stageNode.h"
 #include "../translators/translatorMaterial.h"
-//#include "usdMaya/translatorModelAssembly.h"
 #include "../translators/translatorXformable.h"
 #include "../../utils/util.h"
 
@@ -58,14 +56,6 @@
 
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-// for now, we hard code this to use displayColor.  But maybe the more
-// appropriate thing to do is just to leave shadingMode a lone and pass
-// "displayColor" in from the UsdMayaRepresentationFull
-// (usdMaya/referenceAssembly.cpp)
-const static TfToken ASSEMBLY_SHADING_MODE = UsdMayaShadingModeTokens->displayColor;
-
 
 UsdMaya_ReadJob::UsdMaya_ReadJob(
         const std::string &iFileName,
@@ -175,7 +165,7 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         usdRootPrim = stage->GetPseudoRoot();
     }
 
-    bool isImportingPsuedoRoot = (usdRootPrim == stage->GetPseudoRoot());
+    bool isImportingPseudoRoot = (usdRootPrim == stage->GetPseudoRoot());
 
     if (!usdRootPrim) {
         TF_RUNTIME_ERROR(
@@ -191,10 +181,7 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
                 .SetVariantSelection(variant.second);
     }
 
-    bool isSceneAssembly = mMayaRootDagPath.node().hasFn(MFn::kAssembly);
-    if (isSceneAssembly) {
-        mArgs.shadingMode = ASSEMBLY_SHADING_MODE;
-    }
+    PreImport();
 
     UsdPrimRange range(usdRootPrim);
     if (range.empty()) {
@@ -211,9 +198,7 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     // usdRootPrim's path.
     SdfPath rootPathToRegister = usdRootPrim.GetPath();
 
-    if (isImportingPsuedoRoot || isSceneAssembly) {
-        // Skip the root prim if it is the pseudoroot, or if we are importing
-        // on behalf of a scene assembly.
+    if (SkipRootPrim(isImportingPseudoRoot)) {
         range.increment_begin();
     } else {
         // Otherwise, associate the usdRootPrim's *parent* with the root Maya
@@ -256,7 +241,7 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     DoImport(range, usdRootPrim);
 
     SdfPathSet topImportedPaths;
-    if (isImportingPsuedoRoot) {
+    if (isImportingPseudoRoot) {
         // get all the dag paths for the root prims
         TF_FOR_ALL(childIter, stage->GetPseudoRoot().GetChildren()) {
             topImportedPaths.insert(childIter->GetPath());
@@ -351,6 +336,14 @@ UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
     }
 
     return true;
+}
+
+void UsdMaya_ReadJob::PreImport()
+{}
+
+bool UsdMaya_ReadJob::SkipRootPrim(bool isImportingPseudoRoot)
+{
+    return isImportingPseudoRoot;
 }
 
 bool

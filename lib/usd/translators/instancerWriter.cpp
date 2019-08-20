@@ -15,11 +15,11 @@
 //
 #include "instancerWriter.h"
 
-#include <../../fileio/utils/adaptor.h>
-#include <../../fileio/primWriterRegistry.h>
-#include <../../utils/util.h>
-#include <../../fileio/writeJobContext.h>
-#include <../../fileio/utils/writeUtil.h>
+#include "../../fileio/utils/adaptor.h"
+#include "../../fileio/primWriterRegistry.h"
+#include "../../utils/util.h"
+#include "../../fileio/writeJobContext.h"
+#include "../../fileio/utils/writeUtil.h"
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"

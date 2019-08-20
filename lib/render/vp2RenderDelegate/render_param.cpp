@@ -12,10 +12,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
-    int _profilerCategory = MProfiler::addCategory("HdVP2RenderDelegate", "HdVP2RenderDelegate");    //!< Profiler category
-} //namespace
-
 /*! \brief  Begin update before rendering of VP2 starts. 
 */
 void HdVP2RenderParam::BeginUpdate(MSubSceneContainer& container, UsdTimeCode frame) {

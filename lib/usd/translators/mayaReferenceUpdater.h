@@ -20,7 +20,7 @@
 
 #include "pxr/pxr.h"
 
-#include <../../fileio/primUpdater.h>
+#include "../../fileio/primUpdater.h"
 
 #include <maya/MFnDependencyNode.h>
 
