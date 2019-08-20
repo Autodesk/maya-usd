@@ -15,7 +15,7 @@
 //
 #pragma once
 #include "maya/MPxCommand.h"
-#include "./Api.h"
+#include "AL/maya/test/Api.h"
 
 
 namespace AL {

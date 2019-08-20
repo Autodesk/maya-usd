@@ -15,16 +15,17 @@
 //
 #include "AL/usdmaya/cmds/EventCommand.h"
 #include "AL/usdmaya/DebugCodes.h"
-#include "AL/usdmaya/nodes/ProxyShape.h"
-#include "AL/maya/utils/MenuBuilder.h"
+#include "pxr/pxr.h"
 
-#include "pxr/base/tf/debug.h"
-
-#include "maya/MSyntax.h"
-#include "maya/MGlobal.h"
 #include "maya/MArgDatabase.h"
 #include "maya/MArgList.h"
-#include "maya/MStringArray.h"
+#include "maya/MFnDependencyNode.h"
+#include "maya/MGlobal.h"
+#include "maya/MPxNode.h"
+#include "maya/MSelectionList.h"
+#include "maya/MSyntax.h"
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
 namespace usdmaya {

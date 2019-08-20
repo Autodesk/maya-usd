@@ -15,17 +15,19 @@
 //
 #pragma once
 
-#include "../Api.h"
+#include "AL/usdmaya/Api.h"
 
+#include "AL/maya/utils/MayaHelperMacros.h"
 #include "AL/maya/utils/NodeHelper.h"
-#include "pxr/pxr.h"
+
+#include "maya/MPxNode.h"
+
+#if MAYA_API_VERSION < 201800
+#include "maya/MDGModifier.h"
+#endif
+
 #include "pxr/usd/usd/stage.h"
 
-#include "maya/MPxLocatorNode.h"
-#include "maya/MNodeMessage.h"
-#include "AL/maya/utils/MayaHelperMacros.h"
-
-#include <iterator>
 #include <map>
 #include <set>
 #include <boost/thread.hpp>
@@ -238,8 +240,6 @@ public:
   /// \brief  ctor
   inline LayerManager()
     : MPxNode(), NodeHelper() {}
-
-  ~LayerManager();
 
   /// \brief  Find the already-existing non-referenced LayerManager node in the scene, or return a null MObject
   /// \return the found LayerManager node, or a null MObject

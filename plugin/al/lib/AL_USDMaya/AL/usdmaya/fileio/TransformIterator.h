@@ -14,15 +14,11 @@
 // limitations under the License.
 //
 #pragma once
-#include "maya/MObject.h"
+
+#include "AL/usdmaya/Api.h"
 #include "maya/MDagPath.h"
 
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
-
-#include <vector>
-#include "AL/usd/utils/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -41,11 +37,13 @@ public:
   /// \brief  ctor. Initialises the iterator to the root of the stage
   /// \param  stage the stage to iterate over
   /// \param  parentPath the DAG path of the proxy shape
+  AL_USDMAYA_PUBLIC
   TransformIterator(UsdStageRefPtr stage, const MDagPath& parentPath = MDagPath());
 
   /// \brief  ctor. Initialises the iterator to the root of the stage
   /// \param  startPrim a prim in a stage where the iteration should start
   /// \param  startMayaPath the DAG path of the proxy shape
+  AL_USDMAYA_PUBLIC
   TransformIterator(const UsdPrim& startPrim, const MDagPath& startMayaPath);
 
   /// \brief  return true if the iteration is complete
@@ -63,11 +61,18 @@ public:
   inline const UsdPrim& prim() const
     { return (m_primStack.end() - 1)->m_prim; }
 
+  /// \brief  return the current prim
+  /// \return the current prim
+  AL_USDMAYA_PUBLIC
+  UsdPrim parentPrim() const;
+
   /// \brief  do not iterate over the children of this node
+  AL_USDMAYA_PUBLIC
   void prune();
 
   /// \brief  move to the next item in the stage
   /// \return true if we managed to move to the next prim, false if we have finished traversal
+  AL_USDMAYA_PUBLIC
   bool next();
 
   /// \brief  in order to keep the maya path in sync with the USD prim, at each iteration step you
@@ -104,6 +109,7 @@ public:
 
   /// \brief  returns the current maya path equivalent of the current USD prim.
   /// \return the maya dag path
+  AL_USDMAYA_PUBLIC
   MDagPath currentPath() const;
 
 private:

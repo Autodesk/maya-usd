@@ -14,6 +14,7 @@ configure_file (
 add_library(${TRANSLATORS_PACKAGE}
     SHARED
     Camera.cpp
+    CommonTranslatorOptions.cpp
     MayaReference.cpp
     Mesh.cpp
     NurbsCurve.cpp

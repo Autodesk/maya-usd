@@ -15,34 +15,13 @@
 //
 #include "AL/maya/event/MayaEventManager.h"
 
-#include <string>
-#include <vector>
-#include <algorithm>
 #include <iostream>
-#include <maya/MGlobal.h>
 #include <maya/MAnimMessage.h>
 #include <maya/MCameraSetMessage.h>
-#include <maya/MCommandMessage.h>
-#include <maya/MConditionMessage.h>
 #include <maya/MContainerMessage.h>
-#include <maya/MDagMessage.h>
 #include <maya/MDGMessage.h>
-#include <maya/MEventMessage.h>
-#include <maya/MLockMessage.h>
 #include <maya/MModelMessage.h>
-#include <maya/MNodeMessage.h>
-#include <maya/MObjectSetMessage.h>
-#include <maya/MPaintMessage.h>
-#include <maya/MPolyMessage.h>
-#include <maya/MSceneMessage.h>
-#include <maya/MTimerMessage.h>
-#include <maya/MUiMessage.h>
-#include <maya/MUserEventMessage.h>
-#include <maya/MFileObject.h>
-#include <maya/MTime.h>
-#include <maya/MPlug.h>
-#include <maya/MString.h>
-#include <maya/MStringArray.h>
+#include <maya/MGlobal.h>
 
 namespace AL {
 namespace maya {

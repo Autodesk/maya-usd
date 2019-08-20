@@ -13,17 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/utils/CommandGuiHelper.h"
+
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
+#include "AL/usdmaya/utils/AttributeType.h"
+#include "AL/usdmaya/utils/Utils.h"
 
 #include "maya/MFileIO.h"
 #include "maya/MViewport2Renderer.h"
-#include "AL/usdmaya/utils/AttributeType.h"
-#include "AL/usdmaya/utils/Utils.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -474,6 +474,33 @@ bool TransformationMatrix::pushMatrix(const MMatrix& result, UsdGeomXformOp& op,
   }
 
   return true;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TransformationMatrix::setFromMatrix(MObject thisNode, const MMatrix& m)
+{
+  double S[3];
+  MEulerRotation R;
+  double T[3];
+  utils::matrixToSRT(*(const GfMatrix4d*)&m, S, R, T);
+  m_scaleFromUsd.x = S[0];
+  m_scaleFromUsd.y = S[1];
+  m_scaleFromUsd.z = S[2];
+  m_rotationFromUsd.x = R.x;
+  m_rotationFromUsd.y = R.y;
+  m_rotationFromUsd.z = R.z;
+  m_translationFromUsd.x = T[0];
+  m_translationFromUsd.y = T[1];
+  m_translationFromUsd.z = T[2];
+  MPlug(thisNode, MPxTransform::scaleX).setValue(m_scaleFromUsd.x);
+  MPlug(thisNode, MPxTransform::scaleY).setValue(m_scaleFromUsd.y);
+  MPlug(thisNode, MPxTransform::scaleZ).setValue(m_scaleFromUsd.z);
+  MPlug(thisNode, MPxTransform::rotateX).setValue(m_rotationFromUsd.x);
+  MPlug(thisNode, MPxTransform::rotateY).setValue(m_rotationFromUsd.y);
+  MPlug(thisNode, MPxTransform::rotateZ).setValue(m_rotationFromUsd.z);
+  MPlug(thisNode, MPxTransform::translateX).setValue(m_translationFromUsd.x);
+  MPlug(thisNode, MPxTransform::translateY).setValue(m_translationFromUsd.y);
+  MPlug(thisNode, MPxTransform::translateZ).setValue(m_translationFromUsd.z);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1053,16 +1080,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
         {
           MMatrix m;
           internal_readMatrix(m, op);
-          decomposeMatrix(m);
-          m_scaleFromUsd = scaleValue;
-          m_rotationFromUsd = rotationValue;
-          m_translationFromUsd = translationValue;
-          m_shearFromUsd = shearValue;
-          m_scalePivotFromUsd = scalePivotValue;
-          m_scalePivotTranslationFromUsd = scalePivotTranslationValue;
-          m_rotatePivotFromUsd = rotatePivotValue;
-          m_rotatePivotTranslationFromUsd = rotatePivotTranslationValue;
-          m_rotateOrientationFromUsd = rotateOrientationValue;
+          setFromMatrix(transformNode->thisMObject(), m);
         }
       }
       break;
@@ -1804,10 +1822,11 @@ void TransformationMatrix::pushToPrim()
 
   // Anytime we update the xform, we need to tell the proxy shape that it
   // needs to redraw itself
-  if (!m_transformNode.isNull())
+  MObject tn(m_transformNode.object());
+  if (!tn.isNull())
   {
     MStatus status;
-    MFnDependencyNode mfn(m_transformNode, &status);
+    MFnDependencyNode mfn(tn, &status);
     if (status && mfn.typeId() == Transform::kTypeId)
     {
       auto xform = static_cast<Transform*>(mfn.userNode());

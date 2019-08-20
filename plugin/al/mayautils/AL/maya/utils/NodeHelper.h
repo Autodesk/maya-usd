@@ -15,15 +15,15 @@
 //
 #pragma once
 
-#include "./Api.h"
+#include "AL/maya/utils/Api.h"
 
-#include "maya/MFnNumericAttribute.h"
-#include "maya/MFnData.h"
-#include "maya/MTypeId.h"
 #include "maya/MColor.h"
-#include "maya/MFloatPoint.h"
 #include "maya/MFloatVector.h"
-#include "AL/maya/utils/ForwardDeclares.h"
+#include "maya/MFnNumericAttribute.h"
+
+#if MAYA_API_VERSION < 201800
+#include "maya/MDataBlock.h"
+#endif
 
 #include <deque>
 #include <vector>
@@ -618,6 +618,11 @@ public:
   /// \note   You MUST call this method at least once before adding any attributes
   AL_MAYA_UTILS_PUBLIC
   static void addFrame(const char* frameTitle);
+
+  /// \brief  add an inherited attribute to this node type
+  /// \param  longName  long name of the attribute
+  AL_MAYA_UTILS_PUBLIC
+  static void addInheritedAttr(const char* longName);
 
   /// \brief  add a new compound attribute to this node type
   /// \param  longName  long name for the attribute

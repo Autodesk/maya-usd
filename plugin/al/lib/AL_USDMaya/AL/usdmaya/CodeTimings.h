@@ -19,8 +19,8 @@
 #include <ostream>
 #include <ctime>
 #include <cassert>
-#include <stdint.h>
-#include <time.h>
+#include <cstdint>
+#include <ctime>
 
 namespace AL {
 namespace usdmaya {

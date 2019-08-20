@@ -46,11 +46,11 @@ public:
   MStatus updateMayaAttributes(MObject mayaObj, const UsdPrim& prim);
   bool updateUsdPrim(const UsdStageRefPtr& stage, const SdfPath& path, const MObject& mayaObj);
   bool supportsUpdate() const override
-  { return true; }
-
+    { return true; }
   ExportFlag canExport(const MObject &obj) override
-  { return obj.hasFn(MFn::kDirectionalLight) ? ExportFlag::kFallbackSupport : ExportFlag::kNotSupported; }
-
+    { return obj.hasFn(MFn::kDirectionalLight) ? ExportFlag::kFallbackSupport : ExportFlag::kNotSupported; }
+  bool canBeOverridden() override
+    { return true; }
 private:
   static MObject m_pointWorld;
   static MObject m_lightAngle;

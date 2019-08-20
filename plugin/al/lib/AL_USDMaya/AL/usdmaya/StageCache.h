@@ -15,11 +15,11 @@
 //
 #pragma once
 
-#include "./Api.h"
+#include "AL/usdmaya/Api.h"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stageCache.h"
-#include "AL/maya/event/MayaEventManager.h"
+#include "AL/event/EventHandler.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -38,7 +38,6 @@ public:
   /// \todo we need to offer a way of mapping from a specific ProxyShape to a specific stage
   AL_USDMAYA_PUBLIC
   static UsdStageCache& Get();
-
 
   /// \brief  Clear the cache
   AL_USDMAYA_PUBLIC

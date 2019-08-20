@@ -17,32 +17,25 @@
 #include "AL/maya/utils/MayaHelperMacros.h"
 #include "AL/maya/utils/DebugCodes.h"
 
-#include "maya/MPxNode.h"
-#include "maya/MFnNumericAttribute.h"
+#include "maya/MDataBlock.h"
+#include "maya/MEulerRotation.h"
+#include "maya/MFnCompoundAttribute.h"
+#include "maya/MFnDependencyNode.h"
+#include "maya/MFnEnumAttribute.h"
 #include "maya/MFnMatrixAttribute.h"
+#include "maya/MFnMessageAttribute.h"
+#include "maya/MFnPluginData.h"
+#include "maya/MFnStringData.h"
 #include "maya/MFnTypedAttribute.h"
 #include "maya/MFnUnitAttribute.h"
-#include "maya/MFnMessageAttribute.h"
-#include "maya/MFnCompoundAttribute.h"
-#include "maya/MFnEnumAttribute.h"
-#include "maya/MFnDependencyNode.h"
-#include "maya/MFnStringData.h"
 #include "maya/MGlobal.h"
 #include "maya/MMatrix.h"
-#include "maya/MVector.h"
-#include "maya/MPoint.h"
+#include "maya/MPxNode.h"
 #include "maya/MTime.h"
-#include "maya/MEulerRotation.h"
-#include "maya/MDataBlock.h"
-#include "maya/MPxData.h"
-#include "maya/MDataHandle.h"
-#include "maya/MFnPluginData.h"
-#include "maya/MTime.h"
-#include "maya/MFnDoubleArrayData.h"
 
+#include <cassert>
 #include <iostream>
 #include <sstream>
-#include <cassert>
 #include <cctype>
 
 namespace AL {
@@ -137,6 +130,17 @@ void NodeHelper::addFrame(const char* frameTitle)
   if(!m_internal)
     m_internal = new InternalData;
   m_internal->m_frames.push_front(Frame(frameTitle));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void NodeHelper::addInheritedAttr(const char* longName)
+{
+  if(m_internal)
+  {
+    Frame& frame = *m_internal->m_frames.begin();
+    frame.m_attributes.push_back(longName);
+    frame.m_attributeTypes.push_back(Frame::kNormal);
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1050,6 +1054,15 @@ MObject NodeHelper::addVec4dAttr(const char* longName, const char* shortName, ui
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addCompoundAttr(const char* longName, const char* shortName, uint32_t flags, std::initializer_list<MObject> objs)
 {
+  if(m_internal)
+  {
+    Frame& frame = *m_internal->m_frames.begin();
+    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
+    {
+      frame.m_attributes.push_back(longName);
+      frame.m_attributeTypes.push_back(Frame::kNormal);
+    }
+  }
   MFnCompoundAttribute fn;
   MObject obj = fn.create(longName, shortName);
   for(auto it : objs)

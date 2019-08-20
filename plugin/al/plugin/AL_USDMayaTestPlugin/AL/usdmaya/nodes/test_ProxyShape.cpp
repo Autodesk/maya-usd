@@ -1043,6 +1043,25 @@ TEST(ManualTranslate, importMeshPrim)
   param.setForcePrimImport(true);
 
   SdfPathVector importPaths;
+  SdfPath meshPath("/pSphere1/pSphereShape1");
+  importPaths.push_back(meshPath);
+  proxyShape->translatePrimPathsIntoMaya(importPaths, SdfPathVector(), param);
+
+  // Select the shape, if it's there, it worked
+  MObjectHandle translatedObject;
+  MStatus s = MGlobal::selectByName("pSphereShape1");
+  ASSERT_TRUE(s == MStatus::kSuccess);
+}
+
+// Test translating a Mesh Prim via the command
+TEST(ManualTranslate, importMergedMeshPrim)
+{
+  AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMergedMesh();
+
+  AL::usdmaya::fileio::translators::TranslatorParameters param;
+  param.setForcePrimImport(true);
+
+  SdfPathVector importPaths;
   SdfPath meshPath("/pSphere1");
   importPaths.push_back(meshPath);
   proxyShape->translatePrimPathsIntoMaya(importPaths, SdfPathVector(), param);
@@ -1050,13 +1069,42 @@ TEST(ManualTranslate, importMeshPrim)
   // Select the shape, if it's there, it worked
   MObjectHandle translatedObject;
   MStatus s = MGlobal::selectByName("pSphere1Shape");
-  ASSERT_TRUE( s.statusCode() == MStatus::kSuccess);
+  ASSERT_TRUE(s == MStatus::kSuccess);
 }
 
 //// Test translating a Mesh Prim via the command
 TEST(ManualTranslate, roundtripMeshPrim)
 {
   AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMesh();
+  SdfPath meshPath("/pSphere1/pSphereShape1");
+
+  AL::usdmaya::fileio::translators::TranslatorParameters tp;
+  tp.setForcePrimImport(true);
+
+  // Import Mesh, test that it actually got imported
+  SdfPathVector importPaths;
+  importPaths.push_back(meshPath);
+  proxyShape->translatePrimPathsIntoMaya(importPaths, SdfPathVector(), tp);
+  MStatus s = MGlobal::selectByName("pSphereShape1");
+  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+
+  // Tear down Mesh
+  SdfPathVector teardownPaths;
+  teardownPaths.push_back(meshPath);
+  proxyShape->translatePrimPathsIntoMaya(SdfPathVector(), teardownPaths, tp);
+  s = MGlobal::selectByName("pSphereShape1");
+  ASSERT_FALSE(s.statusCode() == MStatus::kSuccess);
+
+  // Import Mesh, test that it actually got imported
+  proxyShape->translatePrimPathsIntoMaya(importPaths, SdfPathVector(), tp);
+  s = MGlobal::selectByName("pSphereShape1");
+  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+}
+
+//// Test translating a Mesh Prim via the command
+TEST(ManualTranslate, roundtripMergedMeshPrim)
+{
+  AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMergedMesh();
   SdfPath meshPath("/pSphere1");
 
   AL::usdmaya::fileio::translators::TranslatorParameters tp;

@@ -60,7 +60,23 @@ AL::usdmaya::nodes::ProxyShape* SetupProxyShapeWithMesh()
   MGlobal::executeCommand("polySphere");
   const MString scene = buildTempPath("AL_USDMayaTests_SceneWithMesh.usda");
   MString command;
-  command.format("file -force -typ \"AL usdmaya export\" -pr -ea \"^1s\"", scene.asChar());
+  command.format("file -force -typ \"AL usdmaya export\" -options \"Merge_Transforms=0;Meshes=1;\" -pr -ea \"^1s\"", scene.asChar());
+
+  MGlobal::executeCommand(command, true);
+
+  //clear scene then create ProxyShape
+  MFileIO::newFile(true);
+  AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(scene.asChar());
+  return proxyShape;
+}
+
+AL::usdmaya::nodes::ProxyShape* SetupProxyShapeWithMergedMesh()
+{
+  MFileIO::newFile(true);
+  MGlobal::executeCommand("polySphere");
+  const MString scene = buildTempPath("AL_USDMayaTests_SceneWithMergedMesh.usda");
+  MString command;
+  command.format("file -force -typ \"AL usdmaya export\" -options \"Merge_Transforms=1;Meshes=1;\" -pr -ea \"^1s\"", scene.asChar());
 
   MGlobal::executeCommand(command, true);
 

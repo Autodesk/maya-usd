@@ -20,7 +20,9 @@
 #include "AL/usdmaya/StageCache.h"
 #include "AL/maya/utils/Utils.h"
 
+#include "pxr/usd/usdGeom/xform.h"
 #include "pxr/base/tf/stringUtils.h"
+
 #include "maya/MFnTransform.h"
 #include "maya/MSelectionList.h"
 #include "maya/MGlobal.h"

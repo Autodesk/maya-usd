@@ -13,32 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usdmaya/TypeIDs.h"
-#include "AL/usdmaya/DebugCodes.h"
-#include "AL/usdmaya/nodes/LayerManager.h"
-#include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/maya/utils/Utils.h"
-#include "AL/maya/utils/MayaHelperMacros.h"
 
-#include "pxr/usd/sdf/fileFormat.h"
+#include "AL/usdmaya/DebugCodes.h"
+#include "AL/usdmaya/TypeIDs.h"
+#include "AL/usdmaya/nodes/LayerManager.h"
+
 #include "pxr/usd/sdf/textFileFormat.h"
 #include "pxr/usd/usd/usdaFileFormat.h"
-#include "pxr/usdImaging/usdImaging/version.h"
-#include "pxr/usdImaging/usdImagingGL/engine.h"
 
-#include "maya/MBoundingBox.h"
-#include "maya/MGlobal.h"
-#include "maya/MPlugArray.h"
+#include "maya/MArrayDataBuilder.h"
 #include "maya/MDGModifier.h"
 #include "maya/MFnDependencyNode.h"
-#include "maya/MArrayDataBuilder.h"
-#include "maya/MArrayDataHandle.h"
-#include "maya/MSelectionList.h"
+#include "maya/MGlobal.h"
 #include "maya/MItDependencyNodes.h"
+#include "maya/MPlugArray.h"
 
 #include <boost/thread.hpp>
 #include <boost/thread/shared_lock_guard.hpp>
-
 #include <mutex>
 
 namespace {
@@ -47,8 +39,8 @@ namespace {
   // but that may be triggered by the node creation inside of findOrCreateNode.
 
   // Note on layerManager / multithreading:
-  // I don't know that layerManager will be used in a multihreaded manenr... but I also don't know it COULDN'T be.
-  // (I haven't really looked into the way maya's new multi-threaded node evaluation works, for instance.) This is
+  // I don't know that layerManager will be used in a multithreaded manner... but I also don't know it COULDN'T be.
+  // (I haven't really looked into the way maya's new multithreaded node evaluation works, for instance.) This is
   // essentially a globally shared resource, so I figured better be safe...
   static std::recursive_mutex _findNodeMutex;
 
@@ -113,10 +105,6 @@ namespace {
 namespace AL {
 namespace usdmaya {
 namespace nodes {
-
-LayerManager::~LayerManager()
-{
-}
 
 //----------------------------------------------------------------------------------------------------------------------
 bool LayerDatabase::addLayer(SdfLayerRefPtr layer, const std::string& identifier)

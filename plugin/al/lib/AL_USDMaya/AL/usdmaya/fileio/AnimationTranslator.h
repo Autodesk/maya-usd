@@ -17,23 +17,13 @@
 
 #include "../Api.h"
 
-#include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
-#include "AL/usdmaya/fileio/translators/TranslatorBase.h"
-
+#include "maya/MDagPath.h"
 #include "maya/MPlug.h"
 #include "maya/MString.h"
-#include "maya/MDagPath.h"
-#include "maya/MObjectHandle.h"
 
-#include <vector>
-#include <array>
-#include <map>
+#include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
-#include <utility>
-
-#include "pxr/pxr.h"
-#include "pxr/usd/usd/stage.h"
-
+#include "pxr/usd/usd/attribute.h"
 PXR_NAMESPACE_USING_DIRECTIVE
 
 /// \brief  operator to compare MPlugs with < operator
@@ -68,6 +58,7 @@ struct ScaledPair
 typedef std::map<MPlug, UsdAttribute, compare_MPlug> PlugAttrVector;
 typedef std::map<MDagPath, UsdAttribute, compare_MDagPath> MeshAttrVector;
 typedef std::map<MPlug, ScaledPair, compare_MPlug> PlugAttrScaledVector;
+typedef std::map<MDagPath, UsdAttribute, compare_MDagPath> WorldSpaceAttrVector;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A utility class to help with exporting animated plugs from maya
@@ -202,6 +193,15 @@ public:
       m_animatedMeshes.emplace(path, attribute);
   }
 
+  /// \brief  add a dag path to be exported as a set of world space matrix keyframes. 
+  /// \param  path the path to the animated maya mesh
+  /// \param  attribute the corresponding maya attribute to write the anim data into if the plug is animated
+  inline void addWorldSpace(const MDagPath& path, const UsdAttribute& attribute)
+  {
+    if(m_worldSpaceOutputs.find(path) == m_worldSpaceOutputs.end())
+      m_worldSpaceOutputs.emplace(path, attribute);
+  }
+
   /// \brief  After the scene has been exported, call this method to export the animation data on various attributes
   /// \param  params the export options
   AL_USDMAYA_PUBLIC
@@ -230,6 +230,7 @@ private:
   PlugAttrScaledVector m_scaledAnimatedPlugs;
   PlugAttrVector m_animatedTransformPlugs;
   MeshAttrVector m_animatedMeshes;
+  WorldSpaceAttrVector m_worldSpaceOutputs;
 };
 
 
