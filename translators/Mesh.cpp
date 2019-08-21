@@ -108,7 +108,7 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 
   TfToken vis = mesh.ComputeVisibility(timeCode);
   // if the visibility token is not `invisible` then, make it visible
-  DgNodeTranslator::setBool(createdObj, m_visible, vis != UsdGeomTokens->invisible);
+  DgNodeTranslator::setBool(parent, m_visible, vis != UsdGeomTokens->invisible);
  
   return MStatus::kSuccess;
 }
