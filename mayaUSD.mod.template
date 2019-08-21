@@ -9,6 +9,7 @@ PATH+:=maya/lib
 XBMLANGPATH+:=maya/lib/usd/usdMaya/resources
 MAYA_SCRIPT_PATH+:=maya/lib/usd/usdMaya/resources
 MAYA_PLUG_IN_PATH+:=maya/plugin
+PXR_PLUGINPATH_NAME+:=lib/usd
 
 + MayaUSD_LIB <MAYAUSD_VER> <PATH_TO_MAYAUSD_LIB_DIR>
 PATH+:=lib
