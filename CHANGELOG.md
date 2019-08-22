@@ -1,6 +1,45 @@
+## v0.34.1 (2019-08-21)
+
+### Changed
+
+* Visibility state is now applied to transforms during mesh import.
+
+## v0.34.0 (2019-08-19)
+
+### Added
+
+Introduce AL_USDTransaction module
+
 ## AL_USDMaya-0.33.5 (2019-08-19)
 ### Fixed
+
 + Potential crash when serialising internal transform references
+
+## AL_USDMaya-0.33.4 (2019-08-16)
+### Added
+
++ Add tests to cover the editTarget and session layer serialisation and deserialisation issues
+
+### Changed
++ During serialisation do not store session layer name on proxyshape node if it is clean 
++ Make layer deserialised by layerManager reloadable and simplify the lengthy layer debugging message 
+
+## AL_USDMaya-0.33.3 (2019-08-14)
+### Fixed
++ Setting maya rotation values via attributes causes nonsense values to appear only when using ZXY rotation orders. Use an MFnTransform instead
+
+## AL_USDMaya-0.33.2 (2019-08-12)
+### Added
++ added option var to control pushToPrim 
++ use the pushToPrim option var within the translate prim command
+
+## AL_USDMaya-0.33.0 (2019-08-12)
+### Added 
++ Support for Python Translators
++ TranslatorBase/TranslatorContext python bindings
++ Register Python Translators against AssetType Metadata (#915)
++ Allow Filtering of python plugins by registration type (#918)
++ python translator unittests (#923)
 
 ## AL_USDMaya-0.32.39 (2019-08-14)
 ### Fixed
