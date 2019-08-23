@@ -16,6 +16,7 @@ list(APPEND AL_usdmaya_headers
         AL/usdmaya/TypeIDs.h
         AL/usdmaya/ForwardDeclares.h
         AL/usdmaya/Global.h
+        AL/usdmaya/Version.h
 )
 
 list(APPEND AL_usdmaya_source
