@@ -2,20 +2,20 @@
 
 ### Changed
 
-* Visibility state is now applied to transforms during mesh import.
++ Visibility state is now applied to transforms during mesh import.
 
 ## v0.34.0 (2019-08-19)
 
 ### Added
 
-Introduce AL_USDTransaction module
++ Introduce AL_USDTransaction module, see [docs](usdtransaction/AL/usd/transaction/README.md)
 
-## AL_USDMaya-0.33.5 (2019-08-19)
+## v0.33.5 (2019-08-19)
 ### Fixed
 
 + Potential crash when serialising internal transform references
 
-## AL_USDMaya-0.33.4 (2019-08-16)
+## v0.33.4 (2019-08-16)
 ### Added
 
 + Add tests to cover the editTarget and session layer serialisation and deserialisation issues
@@ -24,16 +24,16 @@ Introduce AL_USDTransaction module
 + During serialisation do not store session layer name on proxyshape node if it is clean 
 + Make layer deserialised by layerManager reloadable and simplify the lengthy layer debugging message 
 
-## AL_USDMaya-0.33.3 (2019-08-14)
+## v0.33.3 (2019-08-14)
 ### Fixed
 + Setting maya rotation values via attributes causes nonsense values to appear only when using ZXY rotation orders. Use an MFnTransform instead
 
-## AL_USDMaya-0.33.2 (2019-08-12)
+## v0.33.2 (2019-08-12)
 ### Added
 + added option var to control pushToPrim 
 + use the pushToPrim option var within the translate prim command
 
-## AL_USDMaya-0.33.0 (2019-08-12)
+## v0.33.0 (2019-08-12)
 ### Added 
 + Support for Python Translators
 + TranslatorBase/TranslatorContext python bindings
@@ -41,104 +41,104 @@ Introduce AL_USDTransaction module
 + Allow Filtering of python plugins by registration type (#918)
 + python translator unittests (#923)
 
-## AL_USDMaya-0.32.39 (2019-08-14)
+## v0.32.39 (2019-08-14)
 ### Fixed
 + Changed way that rotation values were being set on the custom transform nodes to work around a maya bug
 
-## AL_USDMaya-0.32.38 (2019-08-12)
+## v0.32.38 (2019-08-12)
 ### Changed
 + pushToPrim flag default now controlled by AL_usdmaya_pushToPrim primvar
 
-## AL_USDMaya-0.32.37 (2019-08-09)
+## v0.32.37 (2019-08-09)
 ### Added
 + optionVar and menu item to control the default state of pushToPrim
 
-## AL_USDMaya-0.32.36 (2019-08-08)
+## v0.32.36 (2019-08-08)
 ### Fixed
 + Prevent pref data being displayed as a colour set
 - Incorrect time value used when evaluating the proxy shape bounding box
 - Bounding box cache not updated when transform values change
 
-## AL_USDMaya-0.32.35 (2019-08-07)
+## v0.32.35 (2019-08-07)
 ### Fixed
 + Crashes when deleting nodes as a result of a variant switch
 ### Changed
 + Meshes with time bounds are treated as animated
 + Reduced the amount of work done under the hood when transform nodes are manipulated in the viewport.
 
-## AL_USDMaya-0.32.34 (2019-08-05)
+## v0.32.34 (2019-08-05)
 ### Fixed
 + Regression that no longer reloaded the stage when filePath changes
 
-## AL_USDMaya-0.32.33 (2019-08-02)
+## v0.32.33 (2019-08-02)
 ### Added
 + Ability to load proxy shape from the stage cache
 ### Fixed
 + various bugs within the plugin translator system
 
-## AL_USDMaya-0.32.32 (2019-07-26)
+## v0.32.32 (2019-07-26)
 ### Fixed
 + import/export of vertex colours
 
-## AL_USDMaya-0.32.31 (2019-07-12)
+## v0.32.31 (2019-07-12)
 ### Fixed
 + invalid array access when diffing mesh edge creases
 
-## AL_USDMaya-0.32.30 (2019-07-05)
+## v0.32.30 (2019-07-05)
 ### Added
 + Menu item to control whether selection is enabled in the viewport (controlled via the AL_usdmaya_selectionEnabled optionVar)
 ### Fixed
 + constructLockPrims could end up in an infinite loop
 
-## AL_USDMaya-0.32.29 (2019-07-03)
+## v0.32.29 (2019-07-03)
 ### Added 
 + AL_usdmaya_TranslatePrim can now recurse through a hierarchy of prims
 + AL_usdmaya_TranslatePrim can now update a set of prims
 ### Fixed
 + Failing animation export unit tests 
 
-## AL_USDMaya-0.32.28 (2019-06-28)
+## v0.32.28 (2019-06-28)
 ### Changed
-+ VP2 election API now suppported in Maya2018 (20180600)
++ VP2 selection API now suppported in Maya2018 (20180600)
 + visibility flag now correctly handled by the mesh translator
 
-## AL_USDMaya-0.32.27 (2019-06-06)
+## v0.32.27 (2019-06-06)
 ### Fixed
 + Potential crash when importing a scene 
 
-## AL_USDMaya-0.32.26 (2019-06-05)
+## v0.32.26 (2019-06-05)
 ### Added
 + added ability to set the readAnimatedValues flag from the translate prim command
 ### Fixed
 + Ensure prims get correctly relocked when reactivating a prim
 + Refresh viewport when external changes are made to the stage
 
-## AL_USDMaya-0.32.25 (2019-05-23)
+## v0.32.25 (2019-05-23)
 ### Changed
 + previously if a namespace was not provided for a maya reference, the reference would not be loaded. Now we
   generate a fallback namespace based on the prim path, so "/root/mayaRef" will use the namespace "root_mayaRef"
 
-## AL_USDMaya-0.32.24 (2019-05-14)
+## v0.32.24 (2019-05-14)
 ### Fixed
 + Visible in reflections/refractions now enabled by default when translating a mesh
 
-## AL_USDMaya-0.32.23 (2019-05-14)
+## v0.32.23 (2019-05-14)
 ### Fixed
 + Transform attributes can no longer change when locked.
 
-## AL_USDMaya-0.32.22 (2019-05-07)
+## v0.32.22 (2019-05-07)
 ### Changed
 + Import mesh normals in unlocked state
 
-## AL_USDMaya-0.32.21 (2019-05-07)
+## v0.32.21 (2019-05-07)
 ### Fixed
 + Selection highlighting visible in wireframe mode.
 
-## AL_USDMaya-0.32.20 (2019-05-02)
+## v0.32.20 (2019-05-02)
 ### Added
 + Added "AL_usdmaya_readAnimatedValues" option var to control default setting of readAnimatedValues attribute
 
-## AL_USDMaya-0.32.19 (2019-04-18)
+## v0.32.19 (2019-04-18)
 ### Added
 + Added "serializedArCtx" attribute as non-storable, to prevent errors when loading old files. 
 ### Fixed
@@ -146,24 +146,24 @@ Introduce AL_USDTransaction module
 + Ensure transform values are correctly updated when scrubbing through the timeline.
 + Wireframe selection rendering trailed behind the geom by 1 frame when scrubbing throught the timeline
 
-## AL_USDMaya-0.32.18 (2019-04-15)
+## v0.32.18 (2019-04-15)
 ### Fixed
 + Curve width export now supports widths that are MFn::kFloatArray or MFn::kDoubleArray
 
-## AL_USDMaya-0.32.17 (2019-04-10)
+## v0.32.17 (2019-04-10)
 ### Removed
 + Removed "serializedArCtx" attribute and related code from the proxy shape
 
 ### Fixed
 + Fixes potential crash when using the translate tool to move prims
 
-## AL_USDMaya-0.32.16 (2019-04-08)
+## v0.32.16 (2019-04-08)
 ### Fixed
 + fix issue where proxy shape wasn't redrawn when filepath was changed
 + Fixes compilation against maya 2018+
 
 
-## AL_USDMaya-0.32.15 (2019-04-04)
+## v0.32.15 (2019-04-04)
 ### Added
 + Flag to exporter to revese normals if opposite has been set to true.
 
@@ -177,18 +177,18 @@ Introduce AL_USDTransaction module
 + Stopped the proxy shape from constantly trying to load corrupt files, or invalid file paths
 + unit test crash in docker as a result of a buffer overrun
 
-## AL_USDMaya-0.32.14 (2019-04-03)
+## v0.32.14 (2019-04-03)
 ### Added
 + Exposed ModelAPI's ComputeSelectability method to Python
 ### Changed
 + Selectability tutorial 
 
-## AL_USDMaya-0.32.13 (2019-04-02)
+## v0.32.13 (2019-04-02)
 ### Fixed
 + When importing meshes, primVar indices could end up being lost.
 + Correctly exclude instance paths when translating an instanced prim
 
-## AL_USDMaya-0.32.12 (2019-04-02)
+## v0.32.12 (2019-04-02)
 ### Added
 + A node to act as a proxy between Maya and USD cameras to enable interactive updates to the USD scene see [docs](docs/cameraProxy.md) for more info
 + Added a new flag to the AL_usdmaya_TranslatePrim command to control whether pushToPrim is enabled on newly created transforms.
@@ -200,7 +200,7 @@ Introduce AL_USDTransaction module
 + crash on AL_USDMaya Plugin Registration
 
 
-## AL_USDMaya-0.32.11 (2019-03-26)
+## v0.32.11 (2019-03-26)
 ### Removed
 + DrivenTransformData MPxData type
 + DrivenTransforms.h/.cpp
@@ -211,31 +211,31 @@ Introduce AL_USDTransaction module
 
 
 
-## AL_USDMaya-0.32.10 (2019-03-25)
+## v0.32.10 (2019-03-25)
 ### Fixed
 * consolidate MayaReference update logic to make it more resilient: Combine the similar logic from update() and LoadMayaReference() to make the maya reference translator more resilient to imported references and stage changes [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/138) (#138 - @[nxkb](//github.com/nxkb))
 + Fixes a crash that happens when using AL_usdmayaProxyShapeSelect with pseudo-root "/" [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/145) (#145 - @[elrond79](//github.com/elrond79))
 + usd-0.19.3 fix: filesystem library needs system lib - need to explicitly link now that usd doesn't [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/146) (#146 - @[elrond79](//github.com/elrond79))
 + convert onAttributeChanged callbacks to setInternalValue, for performance [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/89) (#89 - @[elrond79](//github.com/elrond79))
 
-## AL_USDMaya-0.32.9 (2019-03-14)
+## v0.32.9 (2019-03-14)
 ### Fixed
 + Fixed crash when modifying rotation attributes
 + Fixed erratic rotate tool
 
-## AL_USDMaya-0.32.8 (2019-03-13)
+## v0.32.8 (2019-03-13)
 ### Fixed
 + Fixed potential crash on variant switch
 + Fixed problem where plugin translator options would not post the previous settings to the import/export GUI. 
 
-## AL_USDMaya-0.32.7 (2019-03-11)
+## v0.32.7 (2019-03-11)
 ### Changed
 + Reverted the TransformReference struct to the state prior to 0.32.2 . This may re-introduce variant switch crashes.
 
 ### Fixed
 + No longer incorrectly expanding normals in the per-vertex case.
 
-## AL_USDMaya-0.32.6 (2019-03-11)
+## v0.32.6 (2019-03-11)
 ### Changed
 + Refresh command call added at the end of ProxyShape::onObjectsChanged [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/144) (#144 - @[pilarmolinalopez](//github.com/pilarmolinalopez))
 + Some c++11 style foreach loops changed to iterate over refs, instead of values, to avoid copy [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/142) (#142 - @[elrond79](//github.com/elrond79))
@@ -252,16 +252,16 @@ root anytime you clicked on anything [PR](https://github.com/AnimalLogic/AL_USDM
 + ufe selection: check for correct proxy shape before drawing sel highlight [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/141) (#141 - @[elrond79](//github.com/elrond79))
 + Fixed deselect mode of the proxy shape command [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/12) (#12 - @[elrond79](//github.com/elrond79))
 
-## AL_USDMaya-0.32.5 (2019-03-04)
+## v0.32.5 (2019-03-04)
 ### Fixed
 + In Maya 2019, The File translator GUI's could end up failing due to an incorrect early return.
 + Bug when exporting normals, for cases where normalIDs need to be considered
 
-## AL_USDMaya-0.32.4 (2019-03-04)
+## v0.32.4 (2019-03-04)
 ### Added
 + canBeOverridden method to the translator plugin to identify which plugins can be overridden
 
-## AL_USDMaya-0.32.3 (2019-03-01)
+## v0.32.3 (2019-03-01)
 
 ### Changed
 
@@ -269,7 +269,7 @@ root anytime you clicked on anything [PR](https://github.com/AnimalLogic/AL_USDM
 + Nurbs Curve: width was never being written
 + Nurbs Curve: Maya dynamic attribute written from Curve shape (consistent with mesh behaviour)
 
-## AL_USDMaya-0.32.2 (2019-03-01)
+## v0.32.2 (2019-03-01)
 ### Added
 
 + 3 utility functions used by our internal translators to AL/maya/utils
@@ -278,7 +278,7 @@ root anytime you clicked on anything [PR](https://github.com/AnimalLogic/AL_USDM
 
 + Fixed crashes during variant switches and prim activation/deactivation
 
-## AL_USDMaya-0.32.0 (2019-02-25)
+## v0.32.0 (2019-02-25)
 ### Added
 
 * added exportDescendants virtual method to TranslatorBase - this checks whether children of the exported node should be exported, and early outs if false (defaults to true)
@@ -297,12 +297,12 @@ root anytime you clicked on anything [PR](https://github.com/AnimalLogic/AL_USDM
 
 * Removed old (and no longer used) legacy translators
 
-## AL_USDMaya-0.31.1 (2019-02-21)
+## v0.31.1 (2019-02-21)
 ### Added
 
 * Maya directional light import/export [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/137) (#137 - @[wengn](//github.com/wengn))
 
-## AL_USDMaya-0.31.0 (2019-02-07)
+## v0.31.0 (2019-02-07)
 ### Added
 
 * Option for the exporter to output transforms in world space.
@@ -312,13 +312,13 @@ root anytime you clicked on anything [PR](https://github.com/AnimalLogic/AL_USDM
 * Avoid reconstruction of imaging engine on prim resync
 * Updated to work with USD 0.19.01, see [PR](https://github.com/AnimalLogic/AL_USDMaya/pull/133/) (#133 - @[elrond79](//github.com/elrond79))
 
-## AL_USDMaya-0.30.5 (2019-01-30)
+## v0.30.5 (2019-01-30)
 ### Added
 
 * AL_usdmaya_MeshAnimCreator node. Used to read mesh data directly from USD into the Maya DG. Avoids the need to store mesh data (translated from USD) in the maya files on save.
 * AL_usdmaya_MeshAnimDeformer node. Used to modify a mesh by updating the points/normals to the values from USD (at a given time)
 
-## AL_USDMaya-0.30.4 (2019-01-18)
+## v0.30.4 (2019-01-18)
 ### Added
 
 * Added a [AL_MayaTest docs](docs/testing.md) file explaining how to use the AL_MayaTest library, run AL_USDMaya tests etc
@@ -327,12 +327,12 @@ root anytime you clicked on anything [PR](https://github.com/AnimalLogic/AL_USDM
 
 * googletest updated to 1.8 - no code change
 
-## AL_USDMaya-0.30.3 (2019-01-16)
+## v0.30.3 (2019-01-16)
 ### Added
 
 * Strings can now be exported
 
-## AL_USDMaya-0.30.2 (2019-01-14)
+## v0.30.2 (2019-01-14)
 ### Changed
 
 * update root cmake file to not build new mayaTest library
@@ -342,7 +342,7 @@ root anytime you clicked on anything [PR](https://github.com/AnimalLogic/AL_USDM
 
 * Extra Data Plugins not called on file import.
 
-## AL_USDMaya-0.30.1 (2019-01-04)
+## v0.30.1 (2019-01-04)
 ### Added
 
 * Created AL_MayaTest library to store reusable test utility and test "harness" code
@@ -357,12 +357,12 @@ root anytime you clicked on anything [PR](https://github.com/AnimalLogic/AL_USDM
 
 * Test boilerplate from mayautils and AL_USDMayaTestPlugin
 
-## AL_USDMaya-0.30.0 (2018-12-21)
+## v0.30.0 (2018-12-21)
 ### Changed
 
 * Updated schema python module path to be AL.usd.schemas.maya
 
-## AL_USDMaya-0.29.9 (2018-12-19)
+## v0.29.9 (2018-12-19)
 ### Added
 * Autodesk UFE selection integration (Maya 2019+)
 * When building with UFE is enabled, you will still get the default AL selection behavior. To enable UFE selection, you also need to set the env var MAYA_WANT_UFE_SELECTION. For now this is checked at run-time allowing you to enable/disable it to switch between the different selection modes. Note: this UFE selection is supported in the old VP1 code and also in VP2. When UFE selection is enabled, perform an extra wireframe draw to show selection.
@@ -376,22 +376,22 @@ root anytime you clicked on anything [PR](https://github.com/AnimalLogic/AL_USDM
 * Some minor Windows build fixes.
 * Update bounding box when UFE selection occurs.
 
-## AL_USDMaya-0.29.8 (2018-12-18)
+## v0.29.8 (2018-12-18)
 ### Fixed
 
 * Fixed incorrect export mode of polygon normals
 
-## AL_USDMaya-0.29.7 (2018-12-16)
+## v0.29.7 (2018-12-16)
 ### Added
 
 * Added "Duplicate_Mesh_Points_as_PRef" export flag to export first frame of points as "pref" attribute (a duplicate of the first sample of "P")
 
-## AL_USDMaya-0.29.5 (2018-11-21)
+## v0.29.5 (2018-11-21)
 ### Fixed
 
 * Ensure custom animation nodes being processed.
 
-## AL_USDMaya-0.29.4 (2018-11-01)
+## v0.29.4 (2018-11-01)
 ### Added
 
 * Built against USD-0.18.11
@@ -438,7 +438,7 @@ Overs are no longer applied to prims by selecting them in the viewport.
 * Animated caches were no longer animating in the viewport - fixed by setting the time in the draw method (rather than the now infrequently called prepareForDraw method)
 * The mesh translator does not respect the internal exporting mesh params.
 
-## AL_USDMaya-0.29.2 (2018-09-21)
+## v0.29.2 (2018-09-21)
 
 ### Added
 * AL proxy shape will now probably respect the light decay properties (ie, linear, quadratic, none) of lights in the viewport (#116 - @[elrond79](//github.com/elrond79))
@@ -460,7 +460,7 @@ Overs are no longer applied to prims by selecting them in the viewport.
 * Fixed setting of shearTweak (#114 - @[elrond79](//github.com/elrond79))
 * check for whether scalePivotTranslate needs to be set enableReadAnimatedValues was checking if scalePivot was set, not scalePivotTranslate (#115 - @[elrond79](//github.com/elrond79))
 
-## AL_USDMaya-0.29.1 (2018-08-28)
+## v0.29.1 (2018-08-28)
 
 ### Added
 
@@ -489,7 +489,7 @@ Overs are no longer applied to prims by selecting them in the viewport.
 * Fixed warning about signed/unsigned comparsion (#110 - @[elrond79](//github.com/elrond79))
 * Fixed warning about unused errorString (#110 - @[elrond79](//github.com/elrond79))
 
-## AL_USDMaya-0.29.0 (2018-08-06)
+## v0.29.0 (2018-08-06)
 
 ### Added
 
@@ -520,7 +520,7 @@ Overs are no longer applied to prims by selecting them in the viewport.
 * A number of compiler warnings fixed, so PXR_STRICT_BUILD_MODE may be used (#97 - @[elrond79](//github.com/elrond79))
 * added missing triggers for Pre/PostStageLoaded events (#103 - @[elrond79](//github.com/elrond79))
 
-## AL_USDMaya-0.28.5 (2018-07-10)
+## v0.28.5 (2018-07-10)
 
 ### Added
 
@@ -532,7 +532,7 @@ Overs are no longer applied to prims by selecting them in the viewport.
 
 * Over-decref in transform chain during some prim tear-down.
 
-## AL_USDMaya-0.28.4 (2018-07-05)
+## v0.28.4 (2018-07-05)
 
 ### Added
 
@@ -556,7 +556,7 @@ Overs are no longer applied to prims by selecting them in the viewport.
 * When you duplicate a proxy shape, you wont see anything in the viewport and it wont be fully initialize until you reopen maya or find a hack (like changing the usd path) to trigger a load stage. (#98 - @[nxkb](//github.com/nxkb))
 * Add missing newlines to some TF_DEBUG statements in ProxyShapeUI (#92 - @[elrond79](//github.com/elrond79))
 
-## AL_USDMaya-0.28.3 (2018-06-18)
+## v0.28.3 (2018-06-18)
 
 ### Added
 * AL_usdmaya_CreateUsdPrim command added to insert a new prim into the UsdStage of a proxy shape.
@@ -567,7 +567,7 @@ Overs are no longer applied to prims by selecting them in the viewport.
 ### Fixed
 * The internal mapping between a maya object and a prim now works correctly when specifying the -name flag of AL_usdmaya_ProxyShapeImport.
 
-## AL_USDMaya-0.28.2 (2018-06-14)
+## v0.28.2 (2018-06-14)
 
 ### Added
 * Viewport will continue to refresh to show updated progressive renderers (like embree) until converged (#91 - @[elrond79](//github.com/elrond79))
@@ -579,7 +579,7 @@ Overs are no longer applied to prims by selecting them in the viewport.
 * Tweaks to allow builds to work with just rpath. (#88 - @[elrond79](//github.com/elrond79))
 * When importing left handed geometry that has no normals, compute the correct set of inverted normals.
 
-## AL_USDMaya-0.28.1 (2018-06-06)
+## v0.28.1 (2018-06-06)
 
 ### Added
 * Documentation for mesh export, interpolation modes, and diffing.
@@ -616,7 +616,7 @@ Overs are no longer applied to prims by selecting them in the viewport.
 ### Removed
 * Removed the code that reversed polygon windings if the 'leftHanded' meta data flag was encountered. Instead, the 'opposite' flag is set on the maya mesh.
 
-## AL_USDMaya-0.27.10 (2018-05-07)
+## v0.27.10 (2018-05-07)
 
 ### Added
 
@@ -630,14 +630,14 @@ Overs are no longer applied to prims by selecting them in the viewport.
 
 * Windows build
 
-## AL_USDMaya-0.27.8 (2018-05-02)
+## v0.27.8 (2018-05-02)
 
 ### Changed
 
 * ExportCommand will now export time samples for the visibility attribute.
 * ImportCommand will now correctly import time samples for the visibility attribute.
 
-## AL_USDMaya-0.27.7 (2018-05-01)
+## v0.27.7 (2018-05-01)
 
 ### Added
 
@@ -647,7 +647,7 @@ Overs are no longer applied to prims by selecting them in the viewport.
 
 * Qt dependency (Thanks to Sebastien Dalgo from Autodesk)
 
-## AL_USDMaya-0.27.6 (2018-04-13)
+## v0.27.6 (2018-04-13)
 
 ### Added
 
@@ -656,7 +656,7 @@ Overs are no longer applied to prims by selecting them in the viewport.
 * Import detects shared master geometry prim, ensures maya transform nodes parenting the instancing shape.
 * Layer manager is now serialised on file export
 
-## AL_USDMaya-0.27.5 (2018-04-10)
+## v0.27.5 (2018-04-10)
 
 ### Added
 
@@ -667,7 +667,7 @@ Overs are no longer applied to prims by selecting them in the viewport.
 * Built against USD-0.8.4
 * Move initialisation of maya event handler from AL_USDMaya library to mayaUtils library
 
-## AL_USDMaya-0.27.4 (2018-04-04)
+## v0.27.4 (2018-04-04)
 
 ### Added
 
@@ -680,7 +680,7 @@ Overs are no longer applied to prims by selecting them in the viewport.
 * fileio/Import.cpp will now check for the mergedTransform metadata on the parent transform, which prevents mesh import from creating the parent transform.
 * fileio/Export.cpp has re-enabled functionality for "mergeTransforms", which will export the Xform prim and then the children mesh prims separately when set to '0'. The parent transform will have the metadata "al_usdmaya_mergedTransform = unmerged" added to tag it as an unmerged node.
 
-## AL_USDMaya-0.27.3 (2018-03-29)
+## v0.27.3 (2018-03-29)
 
 ### Added
 
@@ -697,14 +697,14 @@ Overs are no longer applied to prims by selecting them in the viewport.
 
 * Mesh surface normals were not importing correctly
 
-## AL_USDMaya-0.27.2 (2018-03-27)
+## v0.27.2 (2018-03-27)
 
 ### Added
 
 * Internal AL build fixes
 * Small fix to nurb width import
 
-## AL_USDMaya-0.27.1 (2018-03-23)
+## v0.27.1 (2018-03-23)
 
 ### Added
 
@@ -732,7 +732,7 @@ Overs are no longer applied to prims by selecting them in the viewport.
 * Crash fix for MeshTranslator crash when variant switching
 * Fixes several issues with selection in the maya viewport - https://github.com/AnimalLogic/AL_USDMaya/pull/42
 
-## AL_USDMaya-0.27.0 (2018-03-12)
+## v0.27.0 (2018-03-12)
 
 ### Added
 * Mesh Translation: Add support for glimpse user data attributes during import / export
@@ -759,7 +759,7 @@ Overs are no longer applied to prims by selecting them in the viewport.
 
 
 
-## AL_USDMaya-0.26.1 (2018-03-02)
+## v0.26.1 (2018-03-02)
 
 ### Added
 
@@ -783,7 +783,7 @@ Change default lock behaviour of al_usdmaya_lock metadata. "transform" will lock
 * Locking not working on maya hierarchies that appear and disappear on selection
 * "Error : No proxyShape specified/selected " when attempting to add a sublayer via the UI
 
-## AL_USDMaya-0.26.0 (2018-02-09)
+## v0.26.0 (2018-02-09)
 
 ### Added
 
@@ -823,7 +823,7 @@ Change default lock behaviour of al_usdmaya_lock metadata. "transform" will lock
 * Crash when pushToPrim is triggered but the prim is invalid
 * Crash fix for when switching back + forth between a usd-camera and a maya-referenced camera
 
-## AL_USDMaya-0.25.0 (2017-11-28)
+## v0.25.0 (2017-11-28)
 
 ### Added
 
@@ -841,32 +841,32 @@ Change default lock behaviour of al_usdmaya_lock metadata. "transform" will lock
 
 * Host Driven Transforms
 
-## AL_USDMaya-0.24.5 (2017-11-06)
+## v0.24.5 (2017-11-06)
 
 ### Fixed
 
 * Remove leftover file
 
-## AL_USDMaya-0.24.4 (2017-10-18)
+## v0.24.4 (2017-10-18)
 
 ### Changed
 
 * Update to USD-0.8.1
 
-## AL_USDMaya-0.24.3 (2017-10-18)
+## v0.24.3 (2017-10-18)
 
 ### Fixed
 
 In same cases when there was geometry in VP2 behind some maya objects, some maya objects wouldn't be selected
 
-## AL_USDMaya-0.24.2 (2017-10-17)
+## v0.24.2 (2017-10-17)
 
 ### Fixed
 
 * Fix for [#24](https://github.com/AnimalLogic/AL_USDMaya/issues/24). This is really to avoid poping objects while selecting and does not represent a long term solution.
 Selecting maya nodes that were outside of the proxyshape were causing a "Root path must be absolute (<>) " error.
 
-## AL_USDMaya-0.24.1 (2017-10-10)
+## v0.24.1 (2017-10-10)
 
 ### Added
 
@@ -876,58 +876,58 @@ SelectionDB that stores all the paths that are selectable.
 
 Move all the selection commands into a different cpp file.
 
-## AL_USDMaya-0.24.0 (2017-10-09)
+## v0.24.0 (2017-10-09)
 
 ### Fixed
 
 * Update test_PrimFilter to not rely on external files
 
-## AL_USDMaya-0.23.9 (2017-09-20)
+## v0.23.9 (2017-09-20)
 ### Added
 * Added missing header files from nodes/proxy directory into released package
 * AL_usdmaya_UsdDebugCommand to allow you to modify and query the TfDebug notifications
 * Added a new Debug GUI that lets you enable/disable which TfDebug notices are output to the command prompt
 * ProxyShape now calls ConfigureResolverForAsset with the USD file path that is being open, which is similar to what usdview does.
 
-## AL_USDMaya-0.23.7 (2017-09-15)
+## v0.23.7 (2017-09-15)
 ### Fixed
 * bug where enabling/disabling certain prims could cause an infinite loop.
 
-## AL_USDMaya-0.23.6 (2017-09-12)
+## v0.23.6 (2017-09-12)
 ### Fixed
 * Bug where if the variant selection is called twice before it gets processed
 
-## AL_USDMaya-0.23.5
+## v0.23.5
 * Prevent viewport refresh at end of animation export that can cause a VP2 crash.
 
-## AL_USDMaya-0.23.2
+## v0.23.2
 * Consolidated debug traces to use TF_DEBUG, see developers documentation for available flags.
 
-## AL_USDMaya-0.23.1
+## v0.23.1
 * Bug Fix: Maya 2016 build.
 
-## AL_USDMaya-0.22.1
+## v0.22.1
 * Bug Fix: Fixed playblast issue that caused drift in caches when using animated film offsets on the camera
 
-## AL_USDMaya-0.22.0
+## v0.22.0
 * Bug Fix: Fixed crash in prim resync command when passed an invalid prim path
 * Removed unused pxr directory
 * Bug Fix: Schemas generation
 * Bug Fix: the maya reference update code was double-loading references when switching paths.
 
-## AL_USDMaya-0.21.0
+## v0.21.0
 * Removed legacy TRA Array attributes from the proxy shape
 * Bug Fix: Fixed issue that could cause translator plugins to be uninitialised when proxy shape was first created
 * Updated to USD 0.8.0
 * Various cmake/build improvements
 
-## AL_USDMaya-0.20.1
+## v0.20.1
 * Improvements to colour set export on mesh geometry
 * Bug Fix: Force parallel evaluation when running unit tests
 * Removed unused asset resolver config
 * Bug Fix: Improve selection between maya geometry and usd geometry
 
-## AL_USDMaya-0.20.0
+## v0.20.0
 * Hooked up display Guides + displayRenderGuides attributes to usdImaging
 * Added MEL command to provide a simple selection mechanism in USD imaging layer
 * Reduced the number of times the translators were being initialized to once per proxy shape instance.
@@ -941,20 +941,20 @@ Move all the selection commands into a different cpp file.
 * Added the AL_usdmaya_ProxyShapeSelect command to select prims via a command (supports undo/redo).
 * Promoted the CameraTranslator to a properly implemented translator plugin
 
-## AL_USDMaya-0.19.0
+## v0.19.0
 * Added Open Source Licencing
 * Documentation Refactor
 * Addded End-to-End Tutorial
 * Added MayaReference and HostDrivenTransformInfo schema (_the opensource repository is now deprecated_)
 * Added MayaReference translator (_the opensource repository is now deprecated_)
 
-## AL_USDMaya-0.18.1
+## v0.18.1
 **Change Log**
 * Bug Fix: Fixed issue with custom transform types not being correctly serialised on file Save
 * Bug Fix: Fixed issue with transforms with identical names not being correctly deserialised
 * Added support for the Intel F16C half-float conversion intrinsics
 
-## AL_USDMaya-0.18.0
+## v0.18.0
 **Change Log**
 * AL_usdmaya_LayerCurrentEditTarget command can now take a layer identifier to specify the target layer
 * New command AL_usdmaya_LayerCreateLayer added
@@ -964,7 +964,7 @@ Move all the selection commands into a different cpp file.
 * Bug Fix: Colour sets now correctly applied on import
 * Bug Fix: Maya 2018 compatibility changes
 
-## AL_USDMaya-0.17.0
+## v0.17.0
 **Change Log**
 * Built against usd-0.7.5
 * Switching StageData to use a UsdStageWeakPtr to avoid keeping some stages alive forever.
@@ -975,7 +975,7 @@ Move all the selection commands into a different cpp file.
 * Bug Fix: Fixing a possible crash with the curve importer.
 * Bug Fix: Avoiding a crash when importing a camera.
 
-## AL_USDMaya-0.16.9
+## v0.16.9
 **Change Log**
 * Bug Fix: Previous selection crash-fix, that re-parented custom transforms under a temporary, would cause a change in the
            selection list, which resulted in a crash.
@@ -984,11 +984,11 @@ Move all the selection commands into a different cpp file.
 * The proxy shape now responds to changes of the Active state of plugin translator prims
 * Maya 2016 now supported
 
-## AL_USDMaya-0.16.8
+## v0.16.8
 **Change Log**
 * Bug Fix: fixing a regression that would cause the transform hierarchy to be incorrect
 
-## AL_USDMaya-0.16.7
+## v0.16.7
 **Change Log**
 * Changes to the driven transforms on the proxy shape
 * Ported from CPP unit to googletest, and moved all tests into a test plugin.
@@ -1007,14 +1007,14 @@ Move all the selection commands into a different cpp file.
 * Bug Fix: AL_usdmaya_TransformationMatrix could fail to update if frame 0 was the first animation frame in a sequence.
 * Bug Fix: Selecting a parent of a selected transform, would cause a crash in Maya.
 
-## AL_USDMaya-0.16.6
+## v0.16.6
 **Change Log**
 * Bug Fix: Matrix driven transform node could write an invalid key into the session layer, nuking animation cache data.
 * Bug Fix: Excluded geometry became visible on reload.
 * Bug Fix: Removed option box from Import Proxy Shape (was causing a crash).
 * Improvement: Proxy Shape now runs the post-load process immediately, rather than waiting on a defferred MEL call.
 
-## AL_USDMaya-0.16.5
+## v0.16.5
 **Change Log**
 * Ability to set Edit Targets with a map function
 * Bug Fix: Edit Targets not correctly preserved during selection changes
@@ -1022,59 +1022,59 @@ Move all the selection commands into a different cpp file.
 * Bug Fix: Camera transforms now correctly animate
 * readFromTimeline attribute added to AL_usdmaya_Transform to control when transforms display custom or animated values.
 
-## AL_USDMaya-0.16.4
+## v0.16.4
 **Change Log**
 * Bug Fix: playblasts were coming out black
 * Bug Fix: OpenGL state not preserved in VP1
 
-## AL_USDMaya-0.16.3
+## v0.16.3
 **Change Log**
 * Bug Fix: excluded objects not hidden after file load
 * Bug Fix: Prevented crash within draw override.
 
-## AL_USDMaya-0.16.2
+## v0.16.2
 **Change Log**
 * Bug Fix: excluded objects not hidden after variant switch
 
-## AL_USDMaya-0.16.1
+## v0.16.1
 **Change Log**
 * Bug Fix: Fixed incorrect depth settings when rendering in Hydra
 * Bug Fix: Fixed complexity issue that caused warnings to be spammed into the command prompt.
 
-## AL_USDMaya-0.16.0
+## v0.16.0
 **Change Log**
 * Switched code over to use UsdImaging rather than UsdMayaGL library
 * Updated USD base to 0.7.4
 * Selection highlighting now visible in the maya viewport.
 
-## AL_USDMaya-0.12.1
+## v0.12.1
 **Change Log**
 * Variant Switching now supported
 * Minor Menu GUI improvements
 * Dead code removal
 * open sourcing prep work, and documentation
 
-## AL_USDMaya-0.9.14
+## v0.9.14
 **Change Log**
 * Updated to support ALMayaReferences
 
 **Known Issues**
 * Having objects that have a MayaReference to the same path on disk has been reported to cause problems.
 
-## AL_USDMaya-0.9.13
+## v0.9.13
 **Change Log**
 * Disabled Asset Resolver Configuration
 
-## AL_USDMaya-0.9.12
+## v0.9.12
 **Change Log**
 * "add AL_USDMaya library to python bindings linked libraries"
 * Importing of animated attributes
 
-## AL_USDMaya-0.9.10
+## v0.9.10
 **Change Log**
 * Updated the AL/__init__.py to merge in with the existing AL module to avoid  UsdMaya from stomping on PythongLibs' AL module.
 
-## AL_USDMaya-0.9.8
+## v0.9.8
 **Change Log**
 * Bug Fix: Scenes no longer crash in parallel evaluation mode. http://github.al.com.au/rnd/usdMaya/issues/41
 * Bug Fix: Maya no longer crashes when modifying the filepath attribute of a proxyshape node. http://github.al.com.au/rnd/usdMaya/issues/121
@@ -1089,7 +1089,7 @@ Move all the selection commands into a different cpp file.
 * Missing usdImport and usdExport command for animated data - http://github.al.com.au/rnd/usdMaya/issues/108
 * TLS Problem in maya 2017 - you may have to switch off other plugins when working with our USD Plugin. See https://groups.google.com/forum/#!topic/usd-interest/wJr8c_iTO7k
 
-## AL_USDMaya-0.9.6
+## v0.9.6
 **Change Log**
 * Prim->MayaPath: Prim's that translate into a corresponding maya shape now point to the transform above the shape instead of ths shape
 * Enabled backface culling in the proxyshapeUi
@@ -1102,7 +1102,7 @@ Move all the selection commands into a different cpp file.
 * Frame Range http://github.al.com.au/rnd/usdMaya/issues/72
 * Crash if ref rig missing http://github.al.com.au/rnd/usdMaya/issues/84
 
-## AL_USDMaya-0.9.5
+## v0.9.5
 **Change Log**
 * Simple profiler
 * Global Command Executor problems
@@ -1115,7 +1115,7 @@ Move all the selection commands into a different cpp file.
 * Frame Range http://github.al.com.au/rnd/usdMaya/issues/72
 * Crash if ref rig missing http://github.al.com.au/rnd/usdMaya/issues/84
 
-## AL_USDMaya-0.9.4
+## v0.9.4
 **Change Log**
 * New patch for Maya PR71
 
@@ -1125,7 +1125,7 @@ Move all the selection commands into a different cpp file.
 * Frame Range http://github.al.com.au/rnd/usdMaya/issues/72
 * Crash if ref rig missing http://github.al.com.au/rnd/usdMaya/issues/84
 
-## AL_USDMaya-0.9.3
+## v0.9.3
 **Change Log**
 * Added all_tests target which will be the target ran by the usdMaya_BUILD jenkins job.
 * BugFix: Fixed MayaCache: http://github.al.com.au/rnd/usdMaya/issues/37
@@ -1136,7 +1136,7 @@ Move all the selection commands into a different cpp file.
 * Frame Range http://github.al.com.au/rnd/usdMaya/issues/72
 * Crash if ref rig missing http://github.al.com.au/rnd/usdMaya/issues/84
 
-## AL_USDMaya-0.9.2
+## v0.9.2
 **Documentation**
 http://github.al.com.au/rnd/usdMaya/wiki
 
