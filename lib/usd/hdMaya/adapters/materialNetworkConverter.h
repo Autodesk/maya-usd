@@ -121,7 +121,7 @@ public:
 
 private:
     NameToAttrConverterMap _attrConverters;
-    mutable TfToken _identifier;
+    const TfToken _identifier;
 };
 
 class HdMayaMaterialNetworkConverter {
@@ -131,7 +131,7 @@ public:
         HdMaterialNetwork& network, const SdfPath& prefix);
 
     HDMAYA_API
-    SdfPath GetMaterial(const MObject& mayaNode);
+    HdMaterialNode* GetMaterial(const MObject& mayaNode);
 
     HDMAYA_API
     void AddPrimvar(const TfToken& primvar);

@@ -599,7 +599,7 @@ private:
 
     inline std::tuple<HdWrap, HdWrap> _GetWrappingParams(
         const MObject& fileObj) {
-        const std::tuple<HdWrap, HdWrap> def{HdWrapClamp, HdWrapClamp};
+        constexpr std::tuple<HdWrap, HdWrap> def{HdWrapClamp, HdWrapClamp};
         MStatus status;
         MFnDependencyNode fileNode(fileObj, &status);
         if (!status) { return def; }
@@ -643,7 +643,7 @@ private:
             .Msg("HdMayaShadingEngineAdapter::GetMaterialResource()\n");
         HdMaterialNetwork materialNetwork;
         HdMayaMaterialNetworkConverter converter(materialNetwork, GetID());
-        if (converter.GetMaterial(_surfaceShader).IsEmpty()) {
+        if (!converter.GetMaterial(_surfaceShader)) {
             return GetPreviewMaterialResource(GetID());
         }
 
