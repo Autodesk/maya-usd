@@ -427,12 +427,12 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         drawContext.getRenderTargetSize(width, height);
 
         GfVec4d viewport(originX, originY, width, height);
-        _taskController->SetCameraMatrices(
+        _taskController->SetFreeCameraMatrices(
             GetGfMatrixFromMaya(
                 drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
             GetGfMatrixFromMaya(drawContext.getMatrix(
                 MHWRender::MFrameContext::kProjectionMtx)));
-        _taskController->SetCameraViewport(viewport);
+        _taskController->SetRenderViewport(viewport);
 #ifdef HDMAYA_USD_001907_BUILD
         auto tasks = _taskController->GetRenderingTasks();
         _engine.Execute(_renderIndex, &tasks);

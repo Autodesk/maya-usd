@@ -27,6 +27,7 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/primFlags.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/stageCacheContext.h"
@@ -181,9 +182,11 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
                 .SetVariantSelection(variant.second);
     }
 
-    PreImport();
+    Usd_PrimFlagsPredicate predicate = UsdPrimDefaultPredicate;
 
-    UsdPrimRange range(usdRootPrim);
+    PreImport(predicate);
+
+    UsdPrimRange range(usdRootPrim, predicate);
     if (range.empty()) {
         // XXX: This shouldn't really be possible, but it currently is because
         // combinations of nested assembly nodes with variant set selections
@@ -338,7 +341,7 @@ UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
     return true;
 }
 
-void UsdMaya_ReadJob::PreImport()
+void UsdMaya_ReadJob::PreImport(Usd_PrimFlagsPredicate& returnPredicate)
 {}
 
 bool UsdMaya_ReadJob::SkipRootPrim(bool isImportingPseudoRoot)

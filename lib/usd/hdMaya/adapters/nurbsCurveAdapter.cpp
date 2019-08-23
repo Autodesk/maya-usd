@@ -155,7 +155,7 @@ public:
         return {};
     }
 
-    TfToken GetRenderTag() const override { return HdTokens->guide; }
+    TfToken GetRenderTag() const override { return HdRenderTagTokens->guide; }
 
 private:
     static void NodeDirtiedCallback(
