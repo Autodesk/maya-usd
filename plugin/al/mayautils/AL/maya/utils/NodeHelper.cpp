@@ -33,8 +33,8 @@
 #include "maya/MPxNode.h"
 #include "maya/MTime.h"
 
-#include <iostream>
 #include <cassert>
+#include <iostream>
 #include <sstream>
 #include <cctype>
 

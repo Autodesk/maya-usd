@@ -28,6 +28,8 @@
 #include "mayaAttrs.h"
 #include "tokens.h"
 
+#include <pxr/usd/sdr/registry.h>
+#include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usdHydra/tokens.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
@@ -37,54 +39,149 @@
 
 #include "../utils.h"
 
+#include <mutex>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
 constexpr float defaultTextureMemoryLimit = 1e8f;
 
-const auto _previewShaderParams = []() -> HdMayaShaderParams {
-    // TODO: Use SdrRegistry, but it seems PreviewSurface is not there yet?
-    HdMayaShaderParams ret = {
-        {HdMayaAdapterTokens->roughness, VtValue(0.01f),
-         SdfValueTypeNames->Float},
-        {HdMayaAdapterTokens->clearcoat, VtValue(0.0f),
-         SdfValueTypeNames->Float},
-        {HdMayaAdapterTokens->clearcoatRoughness, VtValue(0.01f),
-         SdfValueTypeNames->Float},
-        {HdMayaAdapterTokens->emissiveColor, VtValue(GfVec3f(0.0f, 0.0f, 0.0f)),
-         SdfValueTypeNames->Vector3f},
-        {HdMayaAdapterTokens->specularColor, VtValue(GfVec3f(1.0f, 1.0f, 1.0f)),
-         SdfValueTypeNames->Vector3f},
-        {HdMayaAdapterTokens->metallic, VtValue(0.0f),
-         SdfValueTypeNames->Float},
-        {HdMayaAdapterTokens->useSpecularWorkflow, VtValue(0),
-         SdfValueTypeNames->Int},
-        {HdMayaAdapterTokens->occlusion, VtValue(1.0f),
-         SdfValueTypeNames->Float},
-        {HdMayaAdapterTokens->ior, VtValue(1.5f), SdfValueTypeNames->Float},
-        {HdMayaAdapterTokens->normal, VtValue(GfVec3f(0.0f, 0.0f, 1.0f)),
-         SdfValueTypeNames->Vector3f},
-        {HdMayaAdapterTokens->opacity, VtValue(1.0f), SdfValueTypeNames->Float},
-        {HdMayaAdapterTokens->diffuseColor,
-         VtValue(GfVec3f(0.18f, 0.18f, 0.18f)), SdfValueTypeNames->Vector3f},
-        {HdMayaAdapterTokens->displacement, VtValue(0.0f),
-         SdfValueTypeNames->Float},
+// Lists of preferred shader output names, from SdfValueTypeName to list of
+// preferred output names for that type.  The list that has an empty token for
+// SdfValueTypeName is used as a default.
+const std::vector<std::pair<SdfValueTypeName, std::vector<TfToken>>>
+    preferredOutputNamesByType{
+        {SdfValueTypeNames->Float3,
+         {HdMayaAdapterTokens->result, HdMayaAdapterTokens->out,
+          HdMayaAdapterTokens->output, HdMayaAdapterTokens->rgb,
+          HdMayaAdapterTokens->xyz}},
+        {SdfValueTypeNames->Float2,
+         {HdMayaAdapterTokens->result, HdMayaAdapterTokens->out,
+          HdMayaAdapterTokens->output, HdMayaAdapterTokens->st,
+          HdMayaAdapterTokens->uv}},
+        {SdfValueTypeNames->Float,
+         {HdMayaAdapterTokens->result, HdMayaAdapterTokens->out,
+          HdMayaAdapterTokens->output, HdMayaAdapterTokens->r,
+          HdMayaAdapterTokens->x}}};
+
+// Default set of preferred output names, if type not in
+// preferredOutputNamesByType
+const std::vector<TfToken> defaultPreferredOutputNames{
+    HdMayaAdapterTokens->result, HdMayaAdapterTokens->out,
+    HdMayaAdapterTokens->output};
+
+SdfValueTypeName GetStandardTypeName(SdfValueTypeName type) {
+    // Will map, ie, Vector3f to Float3, TexCoord2f to Float2
+    return SdfGetValueTypeNameForValue(type.GetDefaultValue());
+}
+
+const std::vector<TfToken>& GetPreferredOutputNames(
+    SdfValueTypeName type, bool useStandardType = true) {
+    for (const auto& typeAndNames : preferredOutputNamesByType) {
+        if (typeAndNames.first == type) { return typeAndNames.second; }
+    }
+
+    if (useStandardType) {
+        // If we were given, ie, Vector3f, check to see if there's an entry for
+        // Float3
+        auto standardType = GetStandardTypeName(type);
+        if (type != standardType) {
+            return GetPreferredOutputNames(standardType, false);
+        }
+    }
+    return defaultPreferredOutputNames;
+}
+
+TfToken GetOutputName(const HdMaterialNode& material, SdfValueTypeName type) {
+    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+        .Msg(
+            "GetOutputName(%s - %s, %s)\n", material.path.GetText(),
+            material.identifier.GetText(), type.GetAsToken().GetText());
+    auto& shaderReg = SdrRegistry::GetInstance();
+    if (SdrShaderNodeConstPtr sdrNode =
+            shaderReg.GetShaderNodeByIdentifier(material.identifier)) {
+        // First, get the list off all outputs of the correct type.
+        std::vector<TfToken> validOutputs;
+        auto outputNames = sdrNode->GetOutputNames();
+
+        auto addMatchingOutputs = [&](SdfValueTypeName matchingType) {
+            for (const auto& outName : outputNames) {
+                auto* sdrInfo = sdrNode->GetShaderOutput(outName);
+                if (sdrInfo &&
+                    sdrInfo->GetTypeAsSdfType().first == matchingType) {
+                    validOutputs.push_back(outName);
+                }
+            }
     };
-    std::sort(
-        ret.begin(), ret.end(),
-        [](const HdMayaShaderParam& a, const HdMayaShaderParam& b) -> bool {
-            return a.param.GetName() < b.param.GetName();
-        });
-    return ret;
-}();
+
+        addMatchingOutputs(type);
+        if (validOutputs.empty()) {
+            auto standardType = GetStandardTypeName(type);
+            if (standardType != type) { addMatchingOutputs(standardType); }
+        }
+
+        // If there's only one, use that
+        if (validOutputs.size() == 1) {
+            TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+                .Msg(
+                    "  found exactly one output of correct type in "
+                    "registry: "
+                    "%s\n",
+                    validOutputs[0].GetText());
+            return validOutputs[0];
+        }
+
+        // Then see if any preferred names are found
+        if (!validOutputs.empty()) {
+            const auto& preferredNames = GetPreferredOutputNames(type);
+            for (const auto preferredName : preferredNames) {
+                if (std::find(
+                        validOutputs.begin(), validOutputs.end(),
+                        preferredName) != validOutputs.end()) {
+                    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+                        .Msg(
+                            "  found preferred name of correct type in "
+                            "registry: %s\n",
+                            preferredName.GetText());
+                    return preferredName;
+                }
+            }
+            // No preferred names were found, use the first valid name
+            TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+                .Msg(
+                    "  found no preferred names of correct type in "
+                    "registry, returning first valid name: %s\n",
+                    validOutputs[0].GetText());
+            return validOutputs[0];
+        }
+    }
+
+    // We either couldn't find the entry in the SdrRegistry, or there were
+    // no outputs of the right type - make a guess, use the first preferred
+    // name
+    const auto& preferredNames = GetPreferredOutputNames(type);
+    if (TF_VERIFY(!preferredNames.empty())) {
+        TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+            .Msg(
+                "  found no valid entries in registry, returning guess: "
+                "%s\n",
+                preferredNames[0].GetText());
+        return preferredNames[0];
+    }
+
+    // We should never get here - preferredNames should never be empty!
+    return HdMayaAdapterTokens->result;
+}
+
+std::mutex _previewShaderParams_mutex;
+bool _previewShaderParams_initialized = false;
+HdMayaShaderParams _previewShaderParams;
 
 // This is required quite often, so we precalc.
-const auto _previewMaterialParamVector = []() -> HdMaterialParamVector {
-    HdMaterialParamVector ret;
-    for (const auto& it : _previewShaderParams) { ret.emplace_back(it.param); }
-    return ret;
-}();
+std::mutex _previewMaterialParamVector_mutex;
+bool _previewMaterialParamVector_initialized = false;
+HdMaterialParamVector _previewMaterialParamVector;
 
 class HdMayaGenericMaterialAttrConverter : public HdMayaMaterialAttrConverter {
 public:
@@ -181,6 +278,50 @@ private:
     const VtValue _value;
 };
 
+class HdMayaUvAttrConverter : public HdMayaMaterialAttrConverter {
+public:
+    HdMayaUvAttrConverter() : _value(GfVec2f(0.0f, 0.0f)) {}
+
+    SdfValueTypeName GetType() override {
+        return SdfValueTypeNames->TexCoord2f;
+    }
+
+    TfToken GetPlugName(const TfToken& usdName) override {
+        return HdMayaAdapterTokens->uvCoord;
+    }
+
+    VtValue GetValue(
+        MFnDependencyNode& node, const TfToken& paramName,
+        const SdfValueTypeName& type, const VtValue* fallback = nullptr,
+        MPlug* outPlug = nullptr) override {
+        if (outPlug) {
+            // TODO: create a UsdPrimvarReader_float2 even if there's no
+            // connected maya place2dTexture node
+
+            // Find a connected place2dTexture node, and set that as the
+            // outPlug, so that the place2dTexture node will trigger
+            // creation of a UsdPrimvarReader_float2
+            MStatus status;
+            MPlugArray connections;
+            status = node.getConnections(connections);
+            if (status) {
+                for (size_t i = 0, len = connections.length(); i < len; ++i) {
+                    MPlug source = connections[i].source();
+                    if (source.isNull()) { continue; }
+                    if (source.node().hasFn(MFn::kPlace2dTexture)) {
+                        *outPlug = connections[i];
+                        break;
+                    }
+                }
+            }
+        }
+        return _value;
+    }
+
+private:
+    const VtValue _value;
+}; // namespace
+
 class HdMayaCosinePowerMaterialAttrConverter
     : public HdMayaComputedMaterialAttrConverter {
 public:
@@ -276,8 +417,7 @@ void HdMayaMaterialNetworkConverter::initialize() {
     auto eccentricityConverter =
         std::make_shared<HdMayaRemappingMaterialAttrConverter>(
             HdMayaAdapterTokens->eccentricity, SdfValueTypeNames->Float);
-    auto uvConverter = std::make_shared<HdMayaRemappingMaterialAttrConverter>(
-        HdMayaAdapterTokens->uvCoord, SdfValueTypeNames->TexCoord2f);
+    auto uvConverter = std::make_shared<HdMayaUvAttrConverter>();
 
     auto fixedZeroFloat =
         std::make_shared<HdMayaFixedMaterialAttrConverter>(0.0f);
@@ -377,12 +517,13 @@ HdMayaMaterialNetworkConverter::HdMayaMaterialNetworkConverter(
     HdMaterialNetwork& network, const SdfPath& prefix)
     : _network(network), _prefix(prefix) {}
 
-SdfPath HdMayaMaterialNetworkConverter::GetMaterial(const MObject& mayaNode) {
+HdMaterialNode* HdMayaMaterialNetworkConverter::GetMaterial(
+    const MObject& mayaNode) {
     MStatus status;
     MFnDependencyNode node(mayaNode, &status);
-    if (ARCH_UNLIKELY(!status)) { return {}; }
+    if (ARCH_UNLIKELY(!status)) { return nullptr; }
     const auto* chr = node.name().asChar();
-    if (chr == nullptr || chr[0] == '\0') { return {}; }
+    if (chr == nullptr || chr[0] == '\0') { return nullptr; }
     TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
         .Msg("HdMayaMaterialNetworkConverter::GetMaterial(node=%s)\n", chr);
     std::string usdPathStr(chr);
@@ -390,22 +531,22 @@ SdfPath HdMayaMaterialNetworkConverter::GetMaterial(const MObject& mayaNode) {
     std::replace(usdPathStr.begin(), usdPathStr.end(), ':', '_');
     const auto materialPath = _prefix.AppendPath(SdfPath(usdPathStr));
 
-    if (std::find_if(
+    auto findResult = std::find_if(
             _network.nodes.begin(), _network.nodes.end(),
             [&materialPath](const HdMaterialNode& m) -> bool {
                 return m.path == materialPath;
-            }) != _network.nodes.end()) {
-        return materialPath;
-    }
+        });
+    if (findResult != _network.nodes.end()) { return &(*findResult); }
 
     auto* nodeConverter = HdMayaMaterialNodeConverter::GetNodeConverter(
         TfToken(node.typeName().asChar()));
-    if (!nodeConverter) { return SdfPath(); }
+    if (!nodeConverter) { return nullptr; }
     HdMaterialNode material{};
     material.path = materialPath;
     material.identifier = nodeConverter->GetIdentifier();
     if (material.identifier == UsdImagingTokens->UsdPreviewSurface) {
-        for (const auto& param : _previewShaderParams) {
+        for (const auto& param :
+             HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
             this->ConvertParameter(
                 node, *nodeConverter, material, param.param.GetName(),
                 param.type, &param.param.GetFallbackValue());
@@ -439,7 +580,7 @@ SdfPath HdMayaMaterialNetworkConverter::GetMaterial(const MObject& mayaNode) {
         }
     }
     _network.nodes.push_back(material);
-    return materialPath;
+    return &_network.nodes.back();
 }
 
 void HdMayaMaterialNetworkConverter::AddPrimvar(const TfToken& primvar) {
@@ -476,18 +617,15 @@ void HdMayaMaterialNetworkConverter::ConvertParameter(
 
     material.parameters[paramName] = val;
     if (plug.isNull()) { return; }
-    MPlugArray conns;
-    plug.connectedTo(conns, true, false);
-    if (conns.length() > 0) {
-        const auto sourceNodePath = GetMaterial(conns[0].node());
-        if (sourceNodePath.IsEmpty()) { return; }
+    MPlug source = plug.source();
+    if (!source.isNull()) {
+        auto* sourceMat = GetMaterial(source.node());
+        if (!sourceMat) { return; }
+        const auto& sourceMatPath = sourceMat->path;
+        if (sourceMatPath.IsEmpty()) { return; }
         HdMaterialRelationship rel;
-        rel.inputId = sourceNodePath;
-        if (type == SdfValueTypeNames->Vector3f) {
-            rel.inputName = HdMayaAdapterTokens->rgb;
-        } else {
-            rel.inputName = HdMayaAdapterTokens->result;
-        }
+        rel.inputId = sourceMatPath;
+        rel.inputName = GetOutputName(*sourceMat, type);
         rel.outputId = material.path;
         rel.outputName = paramName;
         _network.relationships.push_back(rel);
@@ -518,15 +656,13 @@ VtValue HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
 
 VtValue HdMayaMaterialNetworkConverter::ConvertPlugToValue(
     const MPlug& plug, const SdfValueTypeName& type, const VtValue* fallback) {
-    if (type == SdfValueTypeNames->Vector3f) {
+    if (type.GetType() == SdfValueTypeNames->Vector3f.GetType()) {
         return VtValue(GfVec3f(
             plug.child(0).asFloat(), plug.child(1).asFloat(),
             plug.child(2).asFloat()));
     } else if (type == SdfValueTypeNames->Float) {
         return VtValue(plug.asFloat());
-    } else if (
-        type == SdfValueTypeNames->Float2 ||
-        type == SdfValueTypeNames->TexCoord2f) {
+    } else if (type.GetType() == SdfValueTypeNames->Float2.GetType()) {
         return VtValue(
             GfVec2f(plug.child(0).asFloat(), plug.child(1).asFloat()));
     } else if (type == SdfValueTypeNames->Int) {
@@ -535,8 +671,7 @@ VtValue HdMayaMaterialNetworkConverter::ConvertPlugToValue(
     TF_DEBUG(HDMAYA_ADAPTER_GET)
         .Msg(
             "HdMayaMaterialNetworkConverter::ConvertPlugToValue(): do not "
-            "know "
-            "how to handle type: %s (cpp type: %s)\n",
+            "know how to handle type: %s (cpp type: %s)\n",
             type.GetAsToken().GetText(), type.GetCPPTypeName().c_str());
     if (fallback) { return *fallback; }
     return {};
@@ -544,11 +679,54 @@ VtValue HdMayaMaterialNetworkConverter::ConvertPlugToValue(
 
 const HdMayaShaderParams&
 HdMayaMaterialNetworkConverter::GetPreviewShaderParams() {
+    if (!_previewShaderParams_initialized) {
+        std::lock_guard<std::mutex> lock(_previewShaderParams_mutex);
+        // Once we have the lock, recheck to make sure it's still
+        // uninitialized...
+        if (!_previewShaderParams_initialized) {
+            auto& shaderReg = SdrRegistry::GetInstance();
+            SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(
+                UsdImagingTokens->UsdPreviewSurface);
+            if (TF_VERIFY(sdrNode)) {
+                auto inputNames = sdrNode->GetInputNames();
+                _previewShaderParams.reserve(inputNames.size());
+
+                for (auto& inputName : inputNames) {
+                    auto property = sdrNode->GetInput(inputName);
+                    if (!TF_VERIFY(property)) { continue; }
+                    _previewShaderParams.emplace_back(
+                        inputName, property->GetDefaultValue(),
+                        property->GetTypeAsSdfType().first);
+                }
+                std::sort(
+                    _previewShaderParams.begin(), _previewShaderParams.end(),
+                    [](const HdMayaShaderParam& a,
+                       const HdMayaShaderParam& b) -> bool {
+                        return a.param.GetName() < b.param.GetName();
+                    });
+                _previewShaderParams_initialized = true;
+            }
+        }
+    }
     return _previewShaderParams;
 }
 
 const HdMaterialParamVector&
 HdMayaMaterialNetworkConverter::GetPreviewMaterialParamVector() {
+    if (!_previewMaterialParamVector_initialized) {
+        std::lock_guard<std::mutex> lock(_previewMaterialParamVector_mutex);
+        // Once we have the lock, recheck to make sure it's still
+        // uninitialized...
+        if (!_previewMaterialParamVector_initialized) {
+            auto& shaderParams =
+                HdMayaMaterialNetworkConverter::GetPreviewShaderParams();
+            _previewMaterialParamVector.reserve(shaderParams.size());
+            for (const auto& it : shaderParams) {
+                _previewMaterialParamVector.emplace_back(it.param);
+            }
+            _previewMaterialParamVector_initialized = true;
+        }
+    }
     return _previewMaterialParamVector;
 }
 

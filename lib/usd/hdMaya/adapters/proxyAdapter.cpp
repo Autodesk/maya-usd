@@ -66,8 +66,12 @@ constexpr auto USD_UFE_RUNTIME_NAME = "USD";
 
 #ifdef HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
 
-constexpr auto HD_STREAM_OVERRIDE_NAME =
+constexpr auto HD_STORM_OVERRIDE_NAME =
+#ifdef HDMAYA_USD_001910_BUILD
+    "mtohRenderOverride_HdStormRendererPlugin";
+#else
     "mtohRenderOverride_HdStreamRendererPlugin";
+#endif
 
 ProxyShape::FindPickedPrimsRunner oldFindPickedPrimsRunner(nullptr, nullptr);
 
@@ -100,7 +104,7 @@ bool FindPickedPrimsMtoh(
 
     if (!delegateCtx->IsHdSt()) { return doOldFindPickedPrims(); }
 
-    // Unless the current viewport renderer is an mtoh HdStream one, use
+    // Unless the current viewport renderer is an mtoh HdStorm one, use
     // the normal AL picking function.
     MStatus status;
     auto view = M3dView::active3dView(&status);
@@ -121,7 +125,7 @@ bool FindPickedPrimsMtoh(
         TF_WARN("Error calling renderOverrideName\n");
         return doOldFindPickedPrims();
     }
-    if (overrideName != HD_STREAM_OVERRIDE_NAME) {
+    if (overrideName != HD_STORM_OVERRIDE_NAME) {
         return doOldFindPickedPrims();
     }
 

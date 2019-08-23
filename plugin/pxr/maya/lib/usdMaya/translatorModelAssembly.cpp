@@ -16,18 +16,22 @@
 #include "usdMaya/translatorModelAssembly.h"
 
 #include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/primWriterArgs.h>
 #include <mayaUsd/fileio/primWriterContext.h>
-#include "usdMaya/referenceAssembly.h"
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/translators/translatorXformable.h>
 #include <mayaUsd/utils/util.h>
 
-#include "pxr/base/tf/token.h"
+#include "usdMaya/editUtil.h"
+#include "usdMaya/referenceAssembly.h"
 
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/usd/kind/registry.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/listOp.h"
@@ -207,16 +211,54 @@ UsdMayaTranslatorModelAssembly::Create(
         }
     }
 
-    bool makeInstanceable = args.GetExportRefsAsInstanceable();
-    if (makeInstanceable) {
+    // Apply assembly edits, if any are present.
+    UsdMayaEditUtil::PathEditMap assemblyEdits;
+    std::vector<std::string> invalidEdits;
+    UsdMayaEditUtil::GetEditsForAssembly(
+        assemblyNode.object(),
+        &assemblyEdits,
+        &invalidEdits);
+
+    if (!invalidEdits.empty()) {
+        TF_WARN(
+            "The following invalid assembly edits were found while exporting "
+            "%s node '%s':\n"
+            "    %s",
+            UsdMayaReferenceAssemblyTokens->MayaTypeName.GetText(),
+            assemblyNode.fullPathName().asChar(),
+            TfStringJoin(invalidEdits, "\n    ").c_str());
+    }
+
+    if (!assemblyEdits.empty()) {
+        std::vector<std::string> failedEdits;
+        UsdMayaEditUtil::ApplyEditsToProxy(
+            assemblyEdits,
+            prim,
+            &failedEdits);
+
+        if (!failedEdits.empty()) {
+            TF_WARN(
+                "The following assembly edits could not be applied under the "
+                "USD prim '%s' while exporting %s node '%s':\n"
+                "    %s",
+                prim.GetPath().GetText(),
+                UsdMayaReferenceAssemblyTokens->MayaTypeName.GetText(),
+                assemblyNode.fullPathName().asChar(),
+                TfStringJoin(failedEdits, "\n    ").c_str());
+        }
+    } else if (args.GetExportRefsAsInstanceable()) {
+        // Note that assemblies with edits cannot be instanceable.
+
         // When bug/128076 is addressed, the IsGroup() check will become
         // unnecessary and obsolete.
-        // XXX This test also needs to fail if there are sub-root overs
-        // on the referenceAssembly!
+        // Until then, we have to check the "group"-ness of the prim's kind
+        // explicitly, since UsdPrim::IsGroup() can only return true if
+        // IsModel() also returns true, and that will not be the case until the
+        // end of the export after the model hierarchy has been fixed up.
         TfToken kind;
         UsdModelAPI(prim).GetKind(&kind);
         if (!prim.HasAuthoredInstanceable() &&
-            !KindRegistry::GetInstance().IsA(kind, KindTokens->group)) {
+                !KindRegistry::GetInstance().IsA(kind, KindTokens->group)) {
             prim.SetInstanceable(true);
         }
     }

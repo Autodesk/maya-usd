@@ -47,13 +47,20 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (defaultRenderGlobals)(mtohTextureMemoryPerTexture)(
-        mtohMaximumShadowMapResolution)(mtohColorSelectionHighlight)(
-        mtohColorSelectionHighlightColor)(mtohColorSelectionHighlightColorA)(
-        mtohWireframeSelectionHighlight)(mtohSelectionOverlay)(
-        mtohEnableMotionSamples)(HdStreamRendererPlugin));
+    (defaultRenderGlobals)
+    (mtohTextureMemoryPerTexture)
+    (mtohMaximumShadowMapResolution)
+    (mtohColorSelectionHighlight)
+    (mtohColorSelectionHighlightColor)
+    (mtohColorSelectionHighlightColorA)
+    (mtohWireframeSelectionHighlight)
+    (mtohSelectionOverlay)
+    (mtohEnableMotionSamples)
+    );
+// clang-format on
 
 namespace {
 
@@ -90,7 +97,7 @@ void _CreateEnumAttribute(
     node.addAttribute(o);
 }
 
-/*void _CreateTypedAttribute(
+void _CreateTypedAttribute(
     MFnDependencyNode& node, const TfToken& attrName, MFnData::Type type,
     const std::function<MObject()>& creator) {
     const auto attr = node.attribute(attrName.GetText());
@@ -101,7 +108,7 @@ void _CreateEnumAttribute(
         node.removeAttribute(attr);
     }
     node.addAttribute(creator());
-}*/
+}
 
 void _CreateNumericAttribute(
     MFnDependencyNode& node, const TfToken& attrName, MFnNumericData::Type type,
@@ -157,21 +164,38 @@ void _CreateColorAttribute(
     }
 }
 
-MObject _CreateBoolAttribute(const TfToken& attrName, bool defValue) {
+void _CreateBoolAttribute(
+    MFnDependencyNode& node, const TfToken& attrName, bool defValue) {
+    _CreateNumericAttribute(
+        node, attrName, MFnNumericData::kBoolean,
+        [&attrName, &defValue]() -> MObject {
     MFnNumericAttribute nAttr;
     const auto o = nAttr.create(
-        attrName.GetText(), attrName.GetText(), MFnNumericData::kBoolean);
+                attrName.GetText(), attrName.GetText(),
+                MFnNumericData::kBoolean);
     nAttr.setDefault(defValue);
     return o;
+        });
 }
 
-/*void _SetToken(
-    const MFnDependencyNode& node, const TfToken& attrName, TfToken& out) {
-    const auto plug = node.findPlug(attrName.GetText(), true);
-    if (!plug.isNull()) { out = TfToken(plug.asString().asChar()); }
-}*/
+void _CreateStringAttribute(
+    MFnDependencyNode& node, const TfToken& attrName,
+    const std::string& defValue) {
+    _CreateTypedAttribute(
+        node, attrName, MFnData::kString, [&attrName, &defValue]() -> MObject {
+            MFnTypedAttribute tAttr;
+            const auto o = tAttr.create(
+                attrName.GetText(), attrName.GetText(), MFnData::kString);
+            if (!defValue.empty()) {
+                MFnStringData strData;
+                MObject defObj = strData.create(defValue.c_str());
+                tAttr.setDefault(defObj);
+            }
+            return o;
+        });
+}
 
-void _SetEnum(
+void _GetEnum(
     const MFnDependencyNode& node, const TfToken& attrName, TfToken& out) {
     const auto plug = node.findPlug(attrName.GetText(), true);
     if (plug.isNull()) { return; }
@@ -182,37 +206,42 @@ void _SetEnum(
 }
 
 template <typename T>
-void _SetFromPlug(const MPlug& plug, T& out) {
+void _GetFromPlug(const MPlug& plug, T& out) {
     assert(false);
 }
 
 template <>
-void _SetFromPlug<bool>(const MPlug& plug, bool& out) {
+void _GetFromPlug<bool>(const MPlug& plug, bool& out) {
     out = plug.asBool();
 }
 
 template <>
-void _SetFromPlug<int>(const MPlug& plug, int& out) {
+void _GetFromPlug<int>(const MPlug& plug, int& out) {
     out = plug.asInt();
 }
 
 #ifdef HDMAYA_USD_001901_BUILD
 template <>
-void _SetFromPlug<float>(const MPlug& plug, float& out) {
+void _GetFromPlug<float>(const MPlug& plug, float& out) {
     out = plug.asFloat();
 }
 #endif
 
+template <>
+void _GetFromPlug<std::string>(const MPlug& plug, std::string& out) {
+    out = plug.asString().asChar();
+}
+
 template <typename T>
-bool _SetNumericAttribute(
+bool _GetAttribute(
     const MFnDependencyNode& node, const TfToken& attrName, T& out) {
     const auto plug = node.findPlug(attrName.GetText(), true);
     if (plug.isNull()) { return false; }
-    _SetFromPlug<T>(plug, out);
+    _GetFromPlug<T>(plug, out);
     return true;
 }
 
-void _SetColorAttribute(
+void _GetColorAttribute(
     const MFnDependencyNode& node, const TfToken& attrName,
     const TfToken& attrAName, GfVec4f& out) {
     const auto plug = node.findPlug(attrName.GetText(), true);
@@ -228,7 +257,7 @@ void _SetColorAttribute(
 #ifdef HDMAYA_USD_001901_BUILD
 bool _IsSupportedAttribute(const VtValue& v) {
     return v.IsHolding<bool>() || v.IsHolding<int>() || v.IsHolding<float>() ||
-           v.IsHolding<GfVec4f>();
+           v.IsHolding<GfVec4f>() || v.IsHolding<std::string>();
 }
 #endif
 
@@ -305,7 +334,7 @@ void MtohInitializeRenderGlobals() {
                << "\" -attribute \"defaultRenderGlobals." << attrName
                << "\" -changeCommand $cc;\n";
         }
-        if (rendererDesc.rendererName == _tokens->HdStreamRendererPlugin) {
+        if (rendererDesc.rendererName == MtohTokens->HdStormRendererPlugin) {
             ss << "\tattrControlGrp -label \"Maximum shadow map size"
                << "\" -attribute \"defaultRenderGlobals."
                << _tokens->mtohMaximumShadowMapResolution.GetString()
@@ -338,11 +367,9 @@ MObject MtohCreateRenderGlobals() {
     MFnDependencyNode node(ret, &status);
     if (!status) { return MObject(); }
     static const MtohRenderGlobals defGlobals;
-    _CreateNumericAttribute(
-        node, _tokens->mtohEnableMotionSamples, MFnNumericData::kBoolean,
-        std::bind(
-            _CreateBoolAttribute, _tokens->mtohEnableMotionSamples,
-            defGlobals.delegateParams.enableMotionSamples));
+    _CreateBoolAttribute(
+        node, _tokens->mtohEnableMotionSamples,
+        defGlobals.delegateParams.enableMotionSamples);
     _CreateNumericAttribute(
         node, _tokens->mtohTextureMemoryPerTexture, MFnNumericData::kInt,
         []() -> MObject {
@@ -378,17 +405,12 @@ MObject MtohCreateRenderGlobals() {
     _CreateEnumAttribute(
         node, _tokens->mtohSelectionOverlay, selectionOverlays,
         defGlobals.selectionOverlay);
-    _CreateNumericAttribute(
+    _CreateBoolAttribute(
         node, _tokens->mtohWireframeSelectionHighlight,
-        MFnNumericData::kBoolean,
-        std::bind(
-            _CreateBoolAttribute, _tokens->mtohWireframeSelectionHighlight,
-            defGlobals.wireframeSelectionHighlight));
-    _CreateNumericAttribute(
-        node, _tokens->mtohColorSelectionHighlight, MFnNumericData::kBoolean,
-        std::bind(
-            _CreateBoolAttribute, _tokens->mtohColorSelectionHighlight,
-            defGlobals.colorSelectionHighlight));
+        defGlobals.wireframeSelectionHighlight);
+    _CreateBoolAttribute(
+        node, _tokens->mtohColorSelectionHighlight,
+        defGlobals.colorSelectionHighlight);
     _CreateColorAttribute(
         node, _tokens->mtohColorSelectionHighlightColor,
         _tokens->mtohColorSelectionHighlightColorA,
@@ -402,11 +424,8 @@ MObject MtohCreateRenderGlobals() {
             const TfToken attrName(TfStringPrintf(
                 "%s%s", rendererName.GetText(), attr.key.GetText()));
             if (attr.defaultValue.IsHolding<bool>()) {
-                _CreateNumericAttribute(
-                    node, attrName, MFnNumericData::kBoolean,
-                    std::bind(
-                        _CreateBoolAttribute, attrName,
-                        attr.defaultValue.UncheckedGet<bool>()));
+                _CreateBoolAttribute(
+                    node, attrName, attr.defaultValue.UncheckedGet<bool>());
             } else if (attr.defaultValue.IsHolding<int>()) {
                 _CreateNumericAttribute(
                     node, attrName, MFnNumericData::kInt,
@@ -436,9 +455,14 @@ MObject MtohCreateRenderGlobals() {
                 _CreateColorAttribute(
                     node, attrName, attrAName,
                     attr.defaultValue.UncheckedGet<GfVec4f>());
+            } else if (attr.defaultValue.IsHolding<std::string>()) {
+                _CreateStringAttribute(
+                    node, attrName,
+                    attr.defaultValue.UncheckedGet<std::string>());
             }
         }
     }
+
 #endif
     return ret;
 }
@@ -450,25 +474,25 @@ MtohRenderGlobals MtohGetRenderGlobals() {
     MStatus status;
     MFnDependencyNode node(obj, &status);
     if (!status) { return ret; }
-    if (_SetNumericAttribute(
+    if (_GetAttribute(
             node, _tokens->mtohTextureMemoryPerTexture,
             ret.delegateParams.textureMemoryPerTexture)) {
         ret.delegateParams.textureMemoryPerTexture *= 1024;
     }
-    _SetNumericAttribute(
+    _GetAttribute(
         node, _tokens->mtohEnableMotionSamples,
         ret.delegateParams.enableMotionSamples);
-    _SetNumericAttribute(
+    _GetAttribute(
         node, _tokens->mtohMaximumShadowMapResolution,
         ret.delegateParams.maximumShadowMapResolution);
-    _SetEnum(node, _tokens->mtohSelectionOverlay, ret.selectionOverlay);
-    _SetNumericAttribute(
+    _GetEnum(node, _tokens->mtohSelectionOverlay, ret.selectionOverlay);
+    _GetAttribute(
         node, _tokens->mtohWireframeSelectionHighlight,
         ret.wireframeSelectionHighlight);
-    _SetNumericAttribute(
+    _GetAttribute(
         node, _tokens->mtohColorSelectionHighlight,
         ret.colorSelectionHighlight);
-    _SetColorAttribute(
+    _GetColorAttribute(
         node, _tokens->mtohColorSelectionHighlightColor,
         _tokens->mtohColorSelectionHighlightColorA,
         ret.colorSelectionHighlightColor);
@@ -484,21 +508,25 @@ MtohRenderGlobals MtohGetRenderGlobals() {
                 "%s%s", rendererName.GetText(), attr.key.GetText()));
             if (attr.defaultValue.IsHolding<bool>()) {
                 auto v = attr.defaultValue.UncheckedGet<bool>();
-                _SetNumericAttribute(node, attrName, v);
+                _GetAttribute(node, attrName, v);
                 settings.emplace_back(attr.key, v);
             } else if (attr.defaultValue.IsHolding<int>()) {
                 auto v = attr.defaultValue.UncheckedGet<int>();
-                _SetNumericAttribute(node, attrName, v);
+                _GetAttribute(node, attrName, v);
                 settings.emplace_back(attr.key, v);
             } else if (attr.defaultValue.IsHolding<float>()) {
                 auto v = attr.defaultValue.UncheckedGet<float>();
-                _SetNumericAttribute(node, attrName, v);
+                _GetAttribute(node, attrName, v);
                 settings.emplace_back(attr.key, v);
             } else if (attr.defaultValue.IsHolding<GfVec4f>()) {
                 auto v = attr.defaultValue.UncheckedGet<GfVec4f>();
                 const TfToken attrAName(
                     TfStringPrintf("%sA", attrName.GetText()));
-                _SetColorAttribute(node, attrName, attrAName, v);
+                _GetColorAttribute(node, attrName, attrAName, v);
+                settings.emplace_back(attr.key, v);
+            } else if (attr.defaultValue.IsHolding<std::string>()) {
+                auto v = attr.defaultValue.UncheckedGet<std::string>();
+                _GetAttribute(node, attrName, v);
                 settings.emplace_back(attr.key, v);
             }
         }

@@ -155,7 +155,13 @@ public:
         return {};
     }
 
-    TfToken GetRenderTag() const override { return HdTokens->guide; }
+    TfToken GetRenderTag() const override {
+#ifdef HDMAYA_USD_001910_BUILD
+        return HdRenderTagTokens->guide;
+#else
+        return HdTokens->guide;
+#endif
+    }
 
 private:
     static void NodeDirtiedCallback(

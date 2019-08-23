@@ -95,7 +95,7 @@ protected:
     // Hook for derived classes to perform processing before import.
     // Method in this class is a no-op.
     MAYAUSD_CORE_PUBLIC
-    virtual void PreImport();
+    virtual void PreImport(Usd_PrimFlagsPredicate& returnPredicate);
 
     // Hook for derived classes to determine whether to skip the root prim
     // on prim traversal.  This class returns the argument unchanged.

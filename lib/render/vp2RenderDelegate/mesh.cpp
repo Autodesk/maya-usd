@@ -284,10 +284,6 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
                     subSceneContainer->add(renderItem);
                 }
             );
-
-            // Temporary workaround until USD will handle the destruction
-            // properly based on what is documented in HdRepr::AddDrawItem
-            _createdDrawItems.emplace_back(std::unique_ptr<HdVP2DrawItem>(drawItem));
         }
 
         if (desc.geomStyle == HdMeshGeomStyleHull) {
