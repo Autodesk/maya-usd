@@ -138,17 +138,21 @@ function(install_rpath rpathRef NAME)
 endfunction()
 
 function(promoteMayaUsdHeader)
-    message("promoting: " ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/base/mayaUsd.h.src 
-        ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h
-    )
+    set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/base/mayaUsd.h.src)
+    set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h)
+    if (NOT EXISTS ${dstFile})
+        message(STATUS "promoting: " ${srcFile})
+        configure_file(${srcFile} ${dstFile})
+    endif()
 endfunction()
 
 function(promoteHeaderList)
     foreach(header ${ARGV})
-      message("promoting: " ${CMAKE_CURRENT_SOURCE_DIR}/${header})
-      configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${header}
-          ${CMAKE_BINARY_DIR}/include/mayaUsd/${header}
-      )
+        set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/${header})
+        set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/${header})
+        if (NOT EXISTS ${dstFile})
+            message(STATUS "promoting: " ${srcFile})
+            configure_file(${srcFile} ${dstFile})
+        endif()
     endforeach()
 endfunction()
