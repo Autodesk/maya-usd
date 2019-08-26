@@ -82,18 +82,8 @@ string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 # CORE
 #==============================================================================
 if (BUILD_MAYAUSD_LIBRARY)
-
-    # set build location
-    set(MAYAUSD_BUILD_ROOT "${CMAKE_CURRENT_BINARY_DIR}/build-mayaUsd")
-
-    # Including this file will end up calling ExternalProjet_Add which we use to
-    # perform the MayaUSD build. Note: That external project is executed immediately
-    # during the 'configure' phase of the AL_USDMaya cmake. This means that MayaUSD
-    # will perform the cmake config/build/install steps all at once. This is needed
-    # because AL_USDMaya needs to find an 'install' of MayaUSD.
-    include("lib/MayaUsd.cmake")
+    add_subdirectory(lib)
 endif()
-
 
 #==============================================================================
 # PLUGINS

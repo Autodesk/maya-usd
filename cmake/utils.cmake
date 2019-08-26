@@ -136,3 +136,19 @@ function(install_rpath rpathRef NAME)
             INSTALL_RPATH "${final}"
     )
 endfunction()
+
+function(promoteMayaUsdHeader)
+    message("promoting: " ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/base/mayaUsd.h.src 
+        ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h
+    )
+endfunction()
+
+function(promoteHeaderList)
+    foreach(header ${ARGV})
+      message("promoting: " ${CMAKE_CURRENT_SOURCE_DIR}/${header})
+      configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${header}
+          ${CMAKE_BINARY_DIR}/include/mayaUsd/${header}
+      )
+    endforeach()
+endfunction()

@@ -205,7 +205,7 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMayaUI_LIBRARY}
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_OpenMayaRender_LIBRARY}
-    ${MAYAUSD_LIBRARIES}
+    mayaUsd
 )
 
 if(UFE_FOUND)

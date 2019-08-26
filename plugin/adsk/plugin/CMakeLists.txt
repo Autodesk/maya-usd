@@ -32,7 +32,7 @@ target_include_directories(${PLUGIN_PACKAGE}
 target_link_libraries(${PLUGIN_PACKAGE}
     PRIVATE
         ${MAYA_LIBRARIES}
-        ${MAYAUSD_LIBRARIES}
+        mayaUsd
 		ar 
 		gf 
 		kind

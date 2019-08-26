@@ -4,7 +4,7 @@ pxr_plugin(${PXR_PACKAGE}
     MAYA_PLUGIN
 
     LIBRARIES
-        ${MAYAUSD_LIBRARIES}
+        mayaUsd
         sdf
         tf
         usd
