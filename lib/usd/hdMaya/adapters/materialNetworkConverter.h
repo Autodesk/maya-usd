@@ -121,7 +121,7 @@ public:
 
 private:
     NameToAttrConverterMap _attrConverters;
-    const TfToken _identifier;
+    mutable TfToken _identifier;
 };
 
 class HdMayaMaterialNetworkConverter {
