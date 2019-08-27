@@ -457,18 +457,14 @@ if (UFE_FOUND)
     target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
 endif()
 
-if(IS_MACOSX)
-    set_target_properties(${LIBRARY_NAME}
-        PROPERTIES
-            BUILD_WITH_INSTALL_RPATH TRUE
-            INSTALL_RPATH "${PXR_USD_LOCATION}/lib;${PXR_USD_LOCATION}/lib64"
-    )
-else()
-    set_target_properties(${LIBRARY_NAME}
-        PROPERTIES
-            BUILD_WITH_INSTALL_RPATH TRUE
-            INSTALL_RPATH "${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64"
-    )
+if(IS_MACOSX OR IS_LINUX)
+    init_rpath(rpath "plugin")
+    if(DEFINED WANT_USD_RELATIVE_PATH)
+        add_rpath(rpath "../../USD/lib")
+    elseif(DEFINED PXR_USD_LOCATION)
+        add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+    endif()
+    install_rpath(rpath ${LIBRARY_NAME})
 endif()
 
 install(TARGETS ${LIBRARY_NAME}
