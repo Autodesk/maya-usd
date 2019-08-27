@@ -5,7 +5,6 @@ set(INSTALL_DIR_SUFFIX plugin/adsk)
 #==============================================================================
 # Packages 
 #==============================================================================
-find_package(MayaUSD REQUIRED)
 find_package(Maya REQUIRED)
 find_package(USD REQUIRED)
 include(${USD_CONFIG_FILE})

@@ -15,7 +15,6 @@ target_include_directories(testMayaSchemas
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../schemas
     ${GTEST_INCLUDE_DIRS}
-    ${MAYAUSD_INCLUDE_DIR}
     )
 
 target_link_libraries(testMayaSchemas

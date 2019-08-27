@@ -82,6 +82,7 @@ string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 # CORE
 #==============================================================================
 if (BUILD_MAYAUSD_LIBRARY)
+    include_directories(${CMAKE_BINARY_DIR}/include)
     add_subdirectory(lib)
 endif()
 

@@ -24,7 +24,6 @@ target_compile_definitions(${PLUGIN_PACKAGE}
 
 target_include_directories(${PLUGIN_PACKAGE}
     PRIVATE
-        ${MAYA_INCLUDE_DIRS}
         ${MAYAUSD_INCLUDE_DIR}
         ${PXR_INCLUDE_DIRS}
 )

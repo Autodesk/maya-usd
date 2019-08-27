@@ -28,7 +28,6 @@ pxr_shared_library(${PXR_PACKAGE}
 
     INCLUDE_DIRS
         ${MAYA_INCLUDE_DIRS}
-        ${MAYAUSD_INCLUDE_DIR}
 
     PUBLIC_HEADERS
         api.h
