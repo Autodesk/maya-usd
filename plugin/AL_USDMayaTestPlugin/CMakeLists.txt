@@ -70,6 +70,7 @@ target_link_libraries(${PXR_PACKAGE}
     AL_USDUtils
     AL_USDMaya   #Adding this recursively pulls in lots of things
     AL_MayaTest
+    AL_USDMayaSchemas
     AL_USDMayaSchemasTest
     ${GTEST_LIBRARIES}
 )

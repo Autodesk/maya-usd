@@ -22,7 +22,7 @@ target_link_libraries(${USDTRANSACTION_TEST_EXECUTABLE_NAME}
     arch
     usd
     vt
-    ALboost_python
+    ${boost_python_LIBRARIES}
     ${USDTRANSACTION_LIBRARY_NAME}
 )
 
