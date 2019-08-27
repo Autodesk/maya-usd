@@ -424,7 +424,6 @@ target_include_directories(
     PUBLIC
     ${MAYA_INCLUDE_DIRS}
     ${PXR_INCLUDE_DIRS}
-    ${CMAKE_BINARY_DIR}/include
 )
 
 target_link_libraries(${LIBRARY_NAME}
