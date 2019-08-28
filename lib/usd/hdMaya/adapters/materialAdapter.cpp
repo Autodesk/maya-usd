@@ -572,24 +572,6 @@ private:
             GetDelegate()->GetParams().textureMemoryPerTexture);
     }
 
-    MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName) {
-        MStatus status;
-        MFnDependencyNode node(obj, &status);
-        if (ARCH_UNLIKELY(!status)) { return MObject::kNullObj; }
-        return GetConnectedFileNode(node, paramName);
-    }
-
-    MObject GetConnectedFileNode(
-        const MFnDependencyNode& node, const TfToken& paramName) {
-        MPlugArray conns;
-        node.findPlug(paramName.GetText(), true)
-            .connectedTo(conns, true, false);
-        if (conns.length() == 0) { return MObject::kNullObj; }
-        const auto ret = conns[0].node();
-        if (ret.apiType() == MFn::kFileTexture) { return ret; }
-        return MObject::kNullObj;
-    }
-
     VtValue GetMaterialResource() override {
         TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
             .Msg("HdMayaShadingEngineAdapter::GetMaterialResource()\n");

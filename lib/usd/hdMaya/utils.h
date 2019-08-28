@@ -41,11 +41,23 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// \brief Converts a Maya matrix to a double precision GfMatrix.
 inline GfMatrix4d GetGfMatrixFromMaya(const MMatrix& mayaMat) {
     GfMatrix4d mat;
     memcpy(mat.GetArray(), mayaMat[0], sizeof(double) * 16);
     return mat;
 }
+
+/// \brief Returns a connected "file" shader object to another shader node's
+//        parameter.
+HDMAYA_API
+MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName);
+
+/// \brief Returns a connected "file" shader node to another shader node's
+//        parameter.
+HDMAYA_API
+MObject GetConnectedFileNode(
+    const MFnDependencyNode& node, const TfToken& paramName);
 
 /// \brief Returns the texture file path from a "file" shader node.
 HDMAYA_API

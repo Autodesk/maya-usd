@@ -32,6 +32,8 @@
 
 #include <pxr/imaging/hdSt/textureResource.h>
 
+#include <maya/MPlugArray.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -59,6 +61,23 @@ public:
 #endif // HDMAYA_USD_001901_BUILD
 
 } // namespace
+
+MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName) {
+    MStatus status;
+    MFnDependencyNode node(obj, &status);
+    if (ARCH_UNLIKELY(!status)) { return MObject::kNullObj; }
+    return GetConnectedFileNode(node, paramName);
+}
+
+MObject GetConnectedFileNode(
+    const MFnDependencyNode& node, const TfToken& paramName) {
+    MPlugArray conns;
+    node.findPlug(paramName.GetText(), true).connectedTo(conns, true, false);
+    if (conns.length() == 0) { return MObject::kNullObj; }
+    const auto ret = conns[0].node();
+    if (ret.apiType() == MFn::kFileTexture) { return ret; }
+    return MObject::kNullObj;
+}
 
 TfToken GetFileTexturePath(const MFnDependencyNode& fileNode) {
     if (fileNode.findPlug(MayaAttrs::file::uvTilingMode, true).asShort() != 0) {
