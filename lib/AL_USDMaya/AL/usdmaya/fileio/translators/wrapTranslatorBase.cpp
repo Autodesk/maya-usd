@@ -291,3 +291,6 @@ void wrapTranslatorBase()
 
     MStatusFromPythonBool::Register();
 }
+
+TF_REFPTR_CONST_VOLATILE_GET(TranslatorBaseWrapper)
+TF_REFPTR_CONST_VOLATILE_GET(TranslatorBase)
