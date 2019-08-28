@@ -882,7 +882,7 @@ function(_pxr_python_module NAME)
     # Add path for usd core
     if(DEFINED WANT_USD_RELATIVE_PATH)
         add_rpath(rpath "../../../../../USD/lib")
-    else()
+    elseif(DEFINED PXR_USD_LOCATION)
         add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
 
