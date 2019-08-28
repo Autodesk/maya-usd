@@ -26,6 +26,8 @@ option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." ON)
 option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
 option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
 
+option(WANT_USD_RELATIVE_PATH "Use relative rpaths for USD libraries" OFF)
+
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
 
 #==============================================================================

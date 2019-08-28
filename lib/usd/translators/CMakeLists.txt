@@ -68,7 +68,7 @@ if(IS_MACOSX OR IS_LINUX)
     # rpath setup
     init_rpath(rpath "plugin")
     add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-    if(DEFINED WANT_USD_RELATIVE_PATH)
+    if(WANT_USD_RELATIVE_PATH)
         add_rpath(rpath "../../USD/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         add_rpath(rpath "${PXR_USD_LOCATION}/lib")

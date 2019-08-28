@@ -880,7 +880,7 @@ function(_pxr_python_module NAME)
     add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
 
     # Add path for usd core
-    if(DEFINED WANT_USD_RELATIVE_PATH)
+    if(WANT_USD_RELATIVE_PATH)
         add_rpath(rpath "../../../../../USD/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         add_rpath(rpath "${PXR_USD_LOCATION}/lib")
