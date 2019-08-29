@@ -1,3 +1,17 @@
+## v0.34.2 (2019-08-29)
+
+### Added
++ Track editTarget and dirty layers when opening from stageCacheId 
+
+### Fixed
++ #155/OSS tests were using the string "USD_LIBRARY_DIR" instead of the variable
++ #154/OSS Methods to query information about renderer plugins are now static
++ #153/OSS fix boolean return value of DirectionalLight::updateUsdPrim
++ #152/OSS if renderGuides are shown, they should be selectable ToTest
++ OSS Linux and Windows Build fixes (DSO Exports, CMake, etc)
+
+
+
 ## v0.34.1 (2019-08-21)
 
 ### Changed
