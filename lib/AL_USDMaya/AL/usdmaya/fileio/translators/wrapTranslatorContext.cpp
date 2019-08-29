@@ -169,3 +169,6 @@ void wrapTranslatorContext()
     .def("insertItem",
       &_insertItem);
 }
+
+
+TF_REFPTR_CONST_VOLATILE_GET(TranslatorContext)

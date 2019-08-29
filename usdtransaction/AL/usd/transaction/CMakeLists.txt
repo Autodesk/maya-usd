@@ -14,6 +14,7 @@ set(USDTRANSACTION_PYTHON_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/python/AL
 ####################################################################################################
 
 list(APPEND usdtransaction_headers
+  Api.h
   Notice.h
   Transaction.h
   TransactionManager.h
@@ -28,6 +29,11 @@ list(APPEND usdtransaction_source
 add_library(${USDTRANSACTION_LIBRARY_NAME}
   SHARED
     ${usdtransaction_source}
+)
+
+target_compile_definitions(${USDTRANSACTION_LIBRARY_NAME}
+    PRIVATE
+        AL_USD_TRANSACTION_EXPORT
 )
 
 target_include_directories(${USDTRANSACTION_LIBRARY_NAME} 
@@ -93,7 +99,9 @@ install(FILES ${usdtransaction_headers}
 # install the library
 install(TARGETS ${USDTRANSACTION_LIBRARY_NAME}
   LIBRARY
-    DESTINATION ${USDTRANSACTION_LIBRARY_LOCATION}
+  DESTINATION ${USDTRANSACTION_LIBRARY_LOCATION}
+  RUNTIME
+  DESTINATION ${USDTRANSACTION_LIBRARY_LOCATION}
 )
 if(MSVC)
   install(FILES $<TARGET_PDB_FILE:${USDTRANSACTION_LIBRARY_NAME}> DESTINATION ${USDTRANSACTION_LIBRARY_LOCATION} OPTIONAL)
@@ -102,5 +110,7 @@ endif()
 # install python library
 install(TARGETS ${USDTRANSACTION_PYTHON_LIBRARY_NAME}
   LIBRARY
-    DESTINATION ${USDTRANSACTION_PYTHON_LIBRARY_LOCATION}
+  DESTINATION ${USDTRANSACTION_PYTHON_LIBRARY_LOCATION}
+  RUNTIME
+  DESTINATION ${USDTRANSACTION_PYTHON_LIBRARY_LOCATION}
 )

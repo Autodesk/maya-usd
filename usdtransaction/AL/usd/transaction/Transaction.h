@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #pragma once
+#include "AL/usd/transaction/Api.h"
 #include <pxr/usd/usd/stage.h>
 
 namespace AL {
@@ -34,22 +35,26 @@ public:
   /// \brief  the ctor retrieves manager for given stage and sets layer for tracking
   /// \param  stage that will be notified about transaction open/close
   /// \param  layer that will be tracked for changes
+  AL_USD_TRANSACTION_PUBLIC
   Transaction(const pxr::UsdStageWeakPtr& stage, const pxr::SdfLayerHandle& layer);
 
   /// \brief  opens transaction, when transaction is opened for the first time OpenNotice is emitted and current 
   ///         state of layer is recorded.
   /// \note   It's valid to call Open multiple times, but they need to balance Close calls
   /// \return true on success, false when layer or stage became invalid
+  AL_USD_TRANSACTION_PUBLIC
   bool Open() const;
 
   /// \brief  closes transaction, when transaction is closed for the last time CloseNotice is emitted with change
   ///         information based of difference between current and recorded layer states.
   /// \note   It's valid to call Close multiple times, but they need to balance Open calls
   /// \return true on success, false when layer or stage became invalid or transaction wasn't opened
+  AL_USD_TRANSACTION_PUBLIC
   bool Close() const;
 
   /// \brief  provides information whether transaction was opened and wasn't closed yet.
   /// \return true when transaction is in progress, otherwise false
+  AL_USD_TRANSACTION_PUBLIC
   bool InProgress() const;
 
 private:
@@ -67,14 +72,14 @@ public:
   /// \brief  the ctor initializes transaction and opens it
   /// \param  stage that will be notified about transaction open/close
   /// \param  layer that will be tracked for changes
-  ScopedTransaction(const pxr::UsdStageWeakPtr& stage, const pxr::SdfLayerHandle& layer)
+  inline ScopedTransaction(const pxr::UsdStageWeakPtr& stage, const pxr::SdfLayerHandle& layer)
     :m_transaction(stage, layer)
   {
     m_transaction.Open();
   }
 
   /// \brief  the dtor closes transaction
-  ~ScopedTransaction()
+  inline ~ScopedTransaction()
   {
     m_transaction.Close();
   }

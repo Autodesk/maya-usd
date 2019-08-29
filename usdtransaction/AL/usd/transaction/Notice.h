@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #pragma once
+#include "AL/usd/transaction/Api.h"
 #include <pxr/base/tf/notice.h>
 #include <pxr/usd/usd/stage.h>
 
@@ -29,11 +30,12 @@ class OpenNotice : public pxr::TfNotice
 public:
   /// \brief  the ctor sets tracked by transaction
   /// \param  layer that transaction is tracking
+  AL_USD_TRANSACTION_PUBLIC
   OpenNotice(const pxr::SdfLayerHandle& layer):m_layer(layer) {}
 
   /// \brief  gets layer tracked by transaction
   /// \return layer that transaction is tracking
-  const pxr::SdfLayerHandle& GetLayer() const { return m_layer; }
+  inline const pxr::SdfLayerHandle& GetLayer() const { return m_layer; }
 private:
   pxr::SdfLayerHandle m_layer;
 };
@@ -48,24 +50,24 @@ public:
   /// \param  layer that transaction is tracking
   /// \param  changed vector of paths that changed properties
   /// \param  resynced vector of topmost paths for which hierarchy has changed
-  CloseNotice(const pxr::SdfLayerHandle& layer, pxr::SdfPathVector changed, pxr::SdfPathVector resynced)
+  inline CloseNotice(const pxr::SdfLayerHandle& layer, pxr::SdfPathVector changed, pxr::SdfPathVector resynced)
     :m_layer(layer),m_changed(std::move(changed)),m_resynced(std::move(resynced)) {}
 
   /// \brief  gets layer tracked by transaction
   /// \return layer that transaction is tracking
-  const pxr::SdfLayerHandle& GetLayer() const { return m_layer; }
+  inline const pxr::SdfLayerHandle& GetLayer() const { return m_layer; }
 
   /// \brief  gets vector of paths that changed properties
   /// \return const reference to vector of paths
-  const pxr::SdfPathVector& GetChangedInfoOnlyPaths() const { return m_changed; }
+  inline const pxr::SdfPathVector& GetChangedInfoOnlyPaths() const { return m_changed; }
 
   /// \brief  gets vector of topmost paths for which hierarchy has changed
   /// \return const reference to vector of paths
-  const pxr::SdfPathVector& GetResyncedPaths() const { return m_resynced; }
+  inline const pxr::SdfPathVector& GetResyncedPaths() const { return m_resynced; }
 
   /// \brief  provides information if any changes were registered
   /// \return true when any changes were registered, otherwise false
-  bool AnyChanges() const { return !m_changed.empty() || !m_resynced.empty(); }
+  inline bool AnyChanges() const { return !m_changed.empty() || !m_resynced.empty(); }
 private:
   pxr::SdfLayerHandle m_layer;
   pxr::SdfPathVector m_changed, m_resynced;

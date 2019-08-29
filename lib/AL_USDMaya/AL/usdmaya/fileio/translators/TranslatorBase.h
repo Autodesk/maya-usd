@@ -289,7 +289,7 @@ public:
   typedef TfRefPtr<ExtraDataPluginBase> ExtraDataPluginPtr; ///< handle to a plug-in transla
   typedef std::vector<RefPtr> RefPtrVector;
   static TfToken TranslatorPrefixAssetType;
-  static TfToken TranslatorPrefixSchemaType;
+  AL_USDMAYA_PUBLIC static TfToken TranslatorPrefixSchemaType;
   
 
   /// \brief  constructs a registry of translator plugins that are currently registered within usd maya. This construction

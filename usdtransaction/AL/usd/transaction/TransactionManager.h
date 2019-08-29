@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #pragma once
+#include "AL/usd/transaction/Api.h"
 #include "AL/usd/transaction/Notice.h"
 
 #include <pxr/base/tf/weakPtr.h>
@@ -42,6 +43,7 @@ public:
   /// \brief  provides information whether transaction was opened and wasn't closed yet.
   /// \param  layer targetted by transaction
   /// \return true when transaction is in progress, otherwise false
+  AL_USD_TRANSACTION_PUBLIC
   bool InProgress(const pxr::SdfLayerHandle& layer) const;
 
   /// \brief  opens transaction, when transaction is opened for the first time OpenNotice is emitted and current 
@@ -49,6 +51,7 @@ public:
   /// \note   It's valid to call Open multiple times, but they need to balance Close calls
   /// \param  layer targetted by transaction
   /// \return true on success, false when layer or stage became invalid
+  AL_USD_TRANSACTION_PUBLIC
   bool Open(const pxr::SdfLayerHandle& layer);
 
   /// \brief  closes transaction, when transaction is closed for the last time CloseNotice is emitted with change
@@ -56,10 +59,12 @@ public:
   /// \note   It's valid to call Close multiple times, but they need to balance Open calls
   /// \param  layer targetted by transaction
   /// \return true on success, false when layer or stage became invalid or transaction wasn't opened
+  AL_USD_TRANSACTION_PUBLIC
   bool Close(const pxr::SdfLayerHandle& layer);
   
   /// \brief  provides information whether any transaction was opened and wasn't closed yet.
   /// \return true when any transaction is in progress, otherwise false
+  AL_USD_TRANSACTION_PUBLIC
   bool AnyInProgress() const;
 
   /// static inteface ///
@@ -67,17 +72,20 @@ public:
   /// \brief  provides reference for TransactionManager dealing with given stage.
   /// \param  stage that is managed by TransactionManager
   /// \return reference to shared TransactionManager for given stage
+  AL_USD_TRANSACTION_PUBLIC
   static TransactionManager& Get(const pxr::UsdStageWeakPtr& stage);
   
   /// \brief  provides information whether any transaction was opened and wasn't closed yet.
   /// \param  stage that is managed by TransactionManager
   /// \return true when any transaction is in progress, otherwise false
+  AL_USD_TRANSACTION_PUBLIC
   static bool InProgress(const pxr::UsdStageWeakPtr& stage);
 
   /// \brief  provides information whether transaction was opened and wasn't closed yet.
   /// \param  stage that is managed by TransactionManager
   /// \param  layer targetted by transaction
   /// \return true when transaction is in progress, otherwise false
+  AL_USD_TRANSACTION_PUBLIC
   static bool InProgress(const pxr::UsdStageWeakPtr& stage, const pxr::SdfLayerHandle& layer);
   
   /// \brief  opens transaction, when transaction is opened for the first time OpenNotice is emitted and current 
@@ -86,6 +94,7 @@ public:
   /// \param  stage that will be notified about transaction open/close
   /// \param  layer targetted by transaction
   /// \return true on success, false when layer or stage became invalid
+  AL_USD_TRANSACTION_PUBLIC
   static bool Open(const pxr::UsdStageWeakPtr& stage, const pxr::SdfLayerHandle& layer);
 
   /// \brief  closes transaction, when transaction is closed for the last time CloseNotice is emitted with change
@@ -94,6 +103,7 @@ public:
   /// \param  stage that will be notified about transaction open/close
   /// \param  layer targetted by transaction
   /// \return true on success, false when layer or stage became invalid or transaction wasn't opened
+  AL_USD_TRANSACTION_PUBLIC
   static bool Close(const pxr::UsdStageWeakPtr& stage, const pxr::SdfLayerHandle& layer);
 private:
   typedef std::map<pxr::UsdStageWeakPtr, TransactionManager> StageManagerMap;
