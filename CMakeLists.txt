@@ -26,6 +26,8 @@ option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." ON)
 option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
 option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
 
+option(WANT_USD_RELATIVE_PATH "Use relative rpaths for USD libraries" OFF)
+
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
 
 #==============================================================================
@@ -47,7 +49,17 @@ if (APPLE)
    add_definitions(-D_BOOL -DREQUIRE_IOSTREAM)
 endif()
 
-include(cmake/python.cmake)
+if (DEFINED PYTHON_INCLUDE_DIR AND DEFINED PYTHON_LIBRARIES AND DEFINED PYTHON_EXECUTABLE)
+    SET(PYTHON_INCLUDE_DIRS "${PYTHON_INCLUDE_DIR}")
+    SET(PYTHONLIBS_FOUND TRUE)
+    find_package(PythonInterp 2.7 REQUIRED)
+    if(NOT PYTHONINTERP_FOUND)
+        set(PYTHONLIBS_FOUND FALSE)
+    endif()
+endif()
+if (NOT PYTHONLIBS_FOUND)
+    include(cmake/python.cmake)
+endif()
 include(cmake/utils.cmake)
 
 find_package(USD REQUIRED)
@@ -82,18 +94,9 @@ string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 # CORE
 #==============================================================================
 if (BUILD_MAYAUSD_LIBRARY)
-
-    # set build location
-    set(MAYAUSD_BUILD_ROOT "${CMAKE_CURRENT_BINARY_DIR}/build-mayaUsd")
-
-    # Including this file will end up calling ExternalProjet_Add which we use to
-    # perform the MayaUSD build. Note: That external project is executed immediately
-    # during the 'configure' phase of the AL_USDMaya cmake. This means that MayaUSD
-    # will perform the cmake config/build/install steps all at once. This is needed
-    # because AL_USDMaya needs to find an 'install' of MayaUSD.
-    include("lib/MayaUsd.cmake")
+    include_directories(${CMAKE_BINARY_DIR}/include)
+    add_subdirectory(lib)
 endif()
-
 
 #==============================================================================
 # PLUGINS

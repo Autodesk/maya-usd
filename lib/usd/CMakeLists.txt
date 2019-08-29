@@ -23,7 +23,15 @@ if(CMAKE_WANT_UFE_BUILD)
     endif()
 endif()
 
-add_subdirectory(hdMaya)
+# promote headers
+list(APPEND schemas_headers
+    schemas/MayaReference.h
+    schemas/api.h
+    schemas/tokens.h
+)
 
+promoteHeaderList(${schemas_headers})
+
+add_subdirectory(hdMaya)
 add_subdirectory(translators)
 add_subdirectory(schemas)

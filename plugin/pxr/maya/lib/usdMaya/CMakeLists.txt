@@ -24,11 +24,10 @@ pxr_shared_library(${PXR_PACKAGE}
         ${MAYA_OpenMayaFX_LIBRARY}
         ${MAYA_OpenMayaRender_LIBRARY}
         ${MAYA_OpenMayaUI_LIBRARY}
-        ${MAYAUSD_LIBRARIES}
+        mayaUsd
 
     INCLUDE_DIRS
         ${MAYA_INCLUDE_DIRS}
-        ${MAYAUSD_INCLUDE_DIR}
 
     PUBLIC_HEADERS
         api.h
