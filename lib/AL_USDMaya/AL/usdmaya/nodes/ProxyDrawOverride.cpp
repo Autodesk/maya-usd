@@ -564,12 +564,15 @@ bool ProxyDrawOverride::userSelect(
   MMatrix invMatrix = objPath.inclusiveMatrixInverse();
   GfMatrix4d worldToLocalSpace(invMatrix.matrix);
 
-  UsdImagingGLRenderParams params;
 
   auto* proxyShape = static_cast<ProxyShape*>(getShape(objPath));
   auto engine = proxyShape->engine();
   if (!engine) return false;
   proxyShape->m_pleaseIgnoreSelection = true;
+
+  UsdImagingGLRenderParams params;
+  // Mostly want to get render params to set renderGuides/proxyGuides/etc
+  proxyShape->getRenderAttris(params, context, objPath);
 
   UsdPrim root = proxyShape->getUsdStage()->GetPseudoRoot();
 
