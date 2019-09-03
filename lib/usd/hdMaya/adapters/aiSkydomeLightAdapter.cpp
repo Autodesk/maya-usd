@@ -15,6 +15,8 @@
 //
 #include <pxr/pxr.h>
 
+#include <hdMaya/hdMaya.h>
+
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/light.h>
 
@@ -94,6 +96,7 @@ public:
                     .asChar()));
         } else if (paramName == HdLightTokens->enableColorTemperature) {
             return VtValue(false);
+#ifdef HDMAYA_USD_001910_BUILD
         } else if (paramName == HdLightTokens->textureResource) {
             auto fileObj =
                 GetConnectedFileNode(GetNode(), HdMayaAdapterTokens->color);
@@ -105,6 +108,7 @@ public:
                 fileObj, GetFileTexturePath(MFnDependencyNode(fileObj)),
                 GetDelegate()->GetParams().textureMemoryPerTexture)};
         }
+#endif // HDMAYA_USD_001910_BUILD
         return {};
     }
 };
