@@ -13,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+/// \file hdmaya/utils.h
+///
+/// Utilities for Maya to Hydra, including for adapters and delegates.
 #ifndef __HDMAYA_UTILS_H__
 #define __HDMAYA_UTILS_H__
 
@@ -42,6 +45,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \brief Converts a Maya matrix to a double precision GfMatrix.
+/// \param mayaMat Maya `MMatrix` to be converted.
+/// \return `GfMatrix4d` equal to \p mayaMat.
 inline GfMatrix4d GetGfMatrixFromMaya(const MMatrix& mayaMat) {
     GfMatrix4d mat;
     memcpy(mat.GetArray(), mayaMat[0], sizeof(double) * 16);
@@ -49,34 +54,56 @@ inline GfMatrix4d GetGfMatrixFromMaya(const MMatrix& mayaMat) {
 }
 
 /// \brief Returns a connected "file" shader object to another shader node's
-//        parameter.
+///  parameter.
+/// \param obj Maya shader object.
+/// \param paramName Name of the parameter to be inspected for connections on
+///  \p node shader object.
+/// \return Maya object to a "file" shader node, `MObject::kNullObj` if there is
+///  no valid connection.
 HDMAYA_API
 MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName);
 
 /// \brief Returns a connected "file" shader node to another shader node's
-//        parameter.
+///  parameter.
+/// \param node Maya shader node.
+/// \param paramName Name of the parameter to be inspected for connections on
+///  \p node shader node.
+/// \return Maya object to a "file" shader node, `MObject::kNullObj` if there is
+///  no valid connection.
 HDMAYA_API
 MObject GetConnectedFileNode(
     const MFnDependencyNode& node, const TfToken& paramName);
 
 /// \brief Returns the texture file path from a "file" shader node.
+/// \param fileNode "file" shader node.
+/// \return Full path to the texture pointed used by the file node. `<UDIM>`
+///  tags are kept intact.
 HDMAYA_API
 TfToken GetFileTexturePath(const MFnDependencyNode& fileNode);
 
 /// \brief Returns the texture resource from a "file" shader node.
+/// \param fileObj "file" shader object.
+/// \param filePath Path to the texture file held by "file" shader node.
+/// \param maxTextureMemory Maximum texture memory in bytes available for
+///  loading the texture. If the texture requires more memory
+///  than \p maxTextureMemory, higher mip-map levels are discarded until the
+///  memory required is less than \p maxTextureMemory.
+/// \return Pointer to the Hydra Texture resource.
 HDMAYA_API
 HdTextureResourceSharedPtr GetFileTextureResource(
     const MObject& fileObj, const TfToken& filePath,
     int maxTextureMemory = 4 * 1024 * 1024);
 
 /// \brief Returns the texture wrapping parameters from a "file" shader node.
+/// \param fileObj "file" shader object.
+/// \return A `std::tuple<HdWrap, HdWrap>` holding the wrapping parameters
+///  for s and t axis.
 HDMAYA_API
 std::tuple<HdWrap, HdWrap> GetFileTextureWrappingParams(const MObject& fileObj);
 
 /// \brief Runs a function on all recursive descendents of a selection list
-///        May optionally filter by node type. The items in the list
-///        are also included in the set of items that are iterated over
-///        (assuming they pass the filter).
+///  May optionally filter by node type. The items in the list are also included
+///  in the set of items that are iterated over (assuming they pass the filter).
 template <typename FUNC>
 inline void MapSelectionDescendents(
     const MSelectionList& sel, FUNC func,
