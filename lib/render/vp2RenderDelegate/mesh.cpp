@@ -124,6 +124,11 @@ void HdVP2Mesh::Sync(
     _UpdateRepr(delegate, reprToken, dirtyBits);
 
     auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    // HdC_TODO: Currently we are running selection highlighting update in a separate execution
+    // and this execution will update only wire representation. The next execution will update
+    // remaining representations, but if we clear dirty bits, nothing will get updated.
+    // We leave the dirty bits unmodified during selection highlighting to workaround the issue, 
+    // but this is not ideal - we shouldn't have to evaluate the same data twice.
     if (!param->GetDrawScene().InSelectionHighlightUpdate())
         *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
