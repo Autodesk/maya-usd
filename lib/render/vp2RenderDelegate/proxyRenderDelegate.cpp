@@ -513,10 +513,14 @@ bool ProxyRenderDelegate::_UpdateSelectionHighlight()
     }
 
     if (!rootPaths.empty()) {
+        _inSelectionHighlightUpdate = true;
+
         _selectionHighlightCollection->SetRootPaths(rootPaths);
         _taskController->SetCollection(*_selectionHighlightCollection);
         _engine.Execute(_renderIndex, &_dummyTasks);
         _taskController->SetCollection(*_defaultCollection);
+        
+        _inSelectionHighlightUpdate = false;
     }
 
     return retVal;

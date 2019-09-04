@@ -107,6 +107,9 @@ public:
     bool IsProxySelected() const;
 
     MAYAUSD_CORE_PUBLIC
+    bool InSelectionHighlightUpdate() const { return _inSelectionHighlightUpdate; }
+
+    MAYAUSD_CORE_PUBLIC
     const HdSelection::PrimSelectionState* GetPrimSelectionState(const SdfPath& path) const;
 
 private:
@@ -137,6 +140,7 @@ private:
     bool                _isPopulated{ false };      //!< If false, scene delegate wasn't populated yet within render index
     bool                _selectionChanged{ false }; //!< Whether there is any selection change or not
     bool                _isProxySelected{ false };  //!< Whether the proxy shape is selected
+    bool                _inSelectionHighlightUpdate{ false };//!< Set to true when selection highlight update is executing
 
     //! A collection of Rprims to prepare render data for specified reprs
     std::unique_ptr<HdRprimCollection> _defaultCollection;
