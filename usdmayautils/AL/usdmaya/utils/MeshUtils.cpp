@@ -899,21 +899,24 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
           if(s)
           {
             // Prepare maya colours array
+            MFnMesh::MColorRepresentation representation;
             if (vtValue.IsHolding<VtArray<GfVec3f> >())
             {
               const VtArray<GfVec3f> rawVal = vtValue.UncheckedGet<VtArray<GfVec3f> >();
               colours.setLength(rawVal.size());
               for (uint32_t i = 0, n = rawVal.size(); i < n; ++i)
                 colours[i] = MColor(rawVal[i][0], rawVal[i][1], rawVal[i][2]);
+              representation = MFnMesh::kRGB;
             }
             else
             {
               const VtArray<GfVec4f> rawVal = vtValue.UncheckedGet<VtArray<GfVec4f> >();
               colours.setLength(rawVal.size());
               memcpy(&colours[0], (const float*)rawVal.cdata(), sizeof(float) * 4 * rawVal.size());
+              representation = MFnMesh::kRGBA;
             }
             // Set colors
-            if (!fnMesh.setColors(colours, &colourSetName))
+            if (!fnMesh.setColors(colours, &colourSetName, representation))
             {
               TF_DEBUG(ALUTILS_INFO).Msg("Failed to set colours for colour set \"%s\" on mesh \"%s\", error: %s\n",
               colourSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
