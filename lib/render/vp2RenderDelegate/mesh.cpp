@@ -123,7 +123,9 @@ void HdVP2Mesh::Sync(
 
     _UpdateRepr(delegate, reprToken, dirtyBits);
 
-    *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
+    auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    if (!param->GetDrawScene().InSelectionHighlightUpdate())
+        *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
 }
 
 /*! \brief  Returns the minimal set of dirty bits to place in the
