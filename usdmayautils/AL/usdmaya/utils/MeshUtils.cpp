@@ -1624,7 +1624,7 @@ void MeshExportContext::copyColourSetData()
         }
       }
       UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(colourSetNames[i].asChar()), SdfValueTypeNames->Float3Array, interpolation);
-      colourSet.Set(colourValues);
+      colourSet.Set(colourValues, m_timeCode);
     }
     else
     {
