@@ -1467,7 +1467,12 @@ MStatus TranslatePrim::doIt(const MArgList& args)
         auto newPrimSet = m_proxy->huntForNativeNodesUnderPrim(proxyTransformPath, updatePath, manufacture, true);
         for(auto it : newPrimSet)
         {
-          newUpdatePaths.push_back(it.GetPath());
+          // We only want to list the prims that are actually updateable.
+          auto translator = manufacture.get(it);
+          if(translator && translator->supportsUpdate())
+          {
+            newUpdatePaths.push_back(it.GetPath());
+          }
         }
       }
       std::swap(m_updatePaths, newUpdatePaths);
