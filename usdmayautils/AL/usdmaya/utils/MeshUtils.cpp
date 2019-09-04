@@ -1699,7 +1699,8 @@ void MeshExportContext::copyColourSetData()
           colourValues.resize(indicesToExtract.size());
           for (uint32_t j = 0; j < indicesToExtract.size(); j++)
           {
-            auto& colour = colours[indicesToExtract[i]];
+            assert(indicesToExtract[j] < colours.length());
+            auto& colour = colours[indicesToExtract[j]];
             colourValues[j] = GfVec3f(colour.r, colour.g, colour.b);
           }
         }
@@ -1729,7 +1730,8 @@ void MeshExportContext::copyColourSetData()
           colourValues.resize(indicesToExtract.size());
           for (uint32_t j = 0; j < indicesToExtract.size(); j++)
           {
-            auto& colour = colours[indicesToExtract[i]];
+            assert(indicesToExtract[j] < colours.length());
+            auto& colour = colours[indicesToExtract[j]];
             colourValues[j] = GfVec4f(colour.r, colour.g, colour.b, colour.a);
           }
         }
