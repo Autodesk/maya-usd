@@ -35,6 +35,7 @@ struct ImporterParams
 {
   AL::maya::utils::OptionsParser* m_parser = 0;
   MDagPath m_parentPath; ///< the parent transform under which the USD file will be imported
+  MString m_primPath; ///< the prim path which importing will start from
   MString m_fileName; ///< the name of the file to import
   bool m_animations = true; ///< true to import animation data, false to ignore animation data import
   bool m_dynamicAttributes = true; ///< if true, attributes in the USD file marked as 'custom' will be imported as dynamic attributes.

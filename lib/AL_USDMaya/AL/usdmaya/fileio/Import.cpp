@@ -159,7 +159,19 @@ void Import::doImport()
     }
 
     std::map<SdfPath, MObject> masterMap;
-    for(TransformIterator it(stage, m_params.m_parentPath); !it.done(); it.next())
+    TransformIterator it(stage, m_params.m_parentPath);
+    // start from the assigned prim
+    const std::string importPrimPath = AL::maya::utils::convert(m_params.m_primPath);
+    if(!importPrimPath.empty())
+    {
+      UsdPrim importPrim = stage->GetPrimAtPath(SdfPath(importPrimPath));
+      if(importPrim)
+      {
+        it = TransformIterator(importPrim, m_params.m_parentPath);
+      }
+    }
+
+    for(; !it.done(); it.next())
     {
       const UsdPrim& prim = it.prim();
       if(prim.IsInstance())
@@ -245,7 +257,7 @@ void Import::doImport()
 
 //----------------------------------------------------------------------------------------------------------------------
 MObject Import::createShape(
-  translators::TranslatorRefPtr translator, 
+  translators::TranslatorRefPtr translator,
   translators::TranslatorManufacture& manufacture,
   const UsdPrim& prim,
   MObject parent,
@@ -271,14 +283,14 @@ MObject Import::createShape(
     translator->import(prim, parent, shapeObj);
     NodeFactory::setupNode(prim, shapeObj, parent, parentUnmerged);
   }
-  
+
   auto dataPlugins = manufacture.getExtraDataPlugins(shapeObj);
   for(auto dataPlugin : dataPlugins)
   {
     // special case
     dataPlugin->import(prim, parent);
   }
-  
+
   return shapeObj;
 }
 
@@ -319,6 +331,11 @@ MStatus ImportCommand::doIt(const MArgList& args)
     {
       sl2.getDagPath(0, m_params.m_parentPath);
     }
+  }
+
+  if (argData.isFlagSet("-pp", &status))
+  {
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("-pp", 0, m_params.m_primPath), "ImportCommand, Unable to fetch \"primPath\" argument");
   }
 
   if(argData.isFlagSet("-un", &status))
@@ -370,7 +387,7 @@ MStatus ImportCommand::doIt(const MArgList& args)
     MGlobal::displayError("ImportCommand: cannot enable all translators, AND disable all translators, at the same time");
   }
   else
-  if(dat) 
+  if(dat)
   {
     m_params.m_activateAllTranslators = false;
   }
@@ -380,7 +397,7 @@ MStatus ImportCommand::doIt(const MArgList& args)
     MString arg;
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("ept", 0, arg), "ALUSDExport: Unable to fetch \"enablePluginTranslators\" argument");
     MStringArray strings;
-    arg.split(',', strings); 
+    arg.split(',', strings);
     for(uint32_t i = 0, n = strings.length(); i < n; ++i)
     {
       m_params.m_activePluginTranslators.emplace_back(strings[i].asChar());
@@ -392,7 +409,7 @@ MStatus ImportCommand::doIt(const MArgList& args)
     MString arg;
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("dpt", 0, arg), "ALUSDExport: Unable to fetch \"disablePluginTranslators\" argument");
     MStringArray strings;
-    arg.split(',', strings); 
+    arg.split(',', strings);
     for(uint32_t i = 0, n = strings.length(); i < n; ++i)
     {
       m_params.m_inactivePluginTranslators.emplace_back(strings[i].asChar());
@@ -425,6 +442,7 @@ MSyntax ImportCommand::createSyntax()
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-f", "-file", MSyntax::kString), errorString);
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-un", "-unloaded", MSyntax::kBoolean), errorString);
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-p", "-parent", MSyntax::kString), errorString);
+  AL_MAYA_CHECK_ERROR2(syntax.addFlag("-pp", "-primPath", MSyntax::kString), errorString);
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-da", "-dynamicAttribute", MSyntax::kBoolean), errorString);
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-m", "-meshes", MSyntax::kBoolean), errorString);
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-nc", "-nurbsCurves", MSyntax::kBoolean), errorString);
