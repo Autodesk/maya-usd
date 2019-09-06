@@ -23,42 +23,7 @@ if (POLICY CMP0074)
     cmake_policy(SET CMP0074 OLD)
 endif()
 
-#==============================================================================
-# Modules and Definitions
-#==============================================================================
-list(APPEND CMAKE_MODULE_PATH
-    ${PROJECT_SOURCE_DIR}/../cmake/defaults
-    ${PROJECT_SOURCE_DIR}/../cmake/macros
-    ${PROJECT_SOURCE_DIR}/../cmake/modules
-)
-
-include(${PROJECT_SOURCE_DIR}/../cmake/utils.cmake)
-
-#==============================================================================
-# Compiler
-#==============================================================================
-# CXXDefaults will set a variety of variables for the project.
-# Consume them here. This is an effort to keep the most common
-# build files readable.
-include(CXXDefaults)
-add_definitions(${_PXR_CXX_DEFINITIONS} -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE)
-set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
-
-if(NOT WIN32)
-    set(CMAKE_CXX_FLAGS
-        -msse3
-        "${CMAKE_CXX_FLAGS} ${_PXR_CXX_FLAGS}"
-    )
-endif()
-string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-if (APPLE)
-   set(CMAKE_OSX_ARCHITECTURES "x86_64")
-   add_definitions(-DOSMac_ -DMAC_PLUGIN)
-   add_definitions(-D_BOOL -DREQUIRE_IOSTREAM)
-endif()
 
 #==============================================================================
 # Packages
