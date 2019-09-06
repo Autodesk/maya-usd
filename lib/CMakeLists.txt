@@ -23,42 +23,7 @@ if (POLICY CMP0074)
     cmake_policy(SET CMP0074 OLD)
 endif()
 
-#==============================================================================
-# Modules and Definitions
-#==============================================================================
-list(APPEND CMAKE_MODULE_PATH
-    ${PROJECT_SOURCE_DIR}/../cmake/defaults
-    ${PROJECT_SOURCE_DIR}/../cmake/macros
-    ${PROJECT_SOURCE_DIR}/../cmake/modules
-)
-
-include(${PROJECT_SOURCE_DIR}/../cmake/utils.cmake)
-
-#==============================================================================
-# Compiler
-#==============================================================================
-# CXXDefaults will set a variety of variables for the project.
-# Consume them here. This is an effort to keep the most common
-# build files readable.
-include(CXXDefaults)
-add_definitions(${_PXR_CXX_DEFINITIONS} -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE)
-set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
-
-if(NOT WIN32)
-    set(CMAKE_CXX_FLAGS
-        -msse3
-        "${CMAKE_CXX_FLAGS} ${_PXR_CXX_FLAGS}"
-    )
-endif()
-string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-if (APPLE)
-   set(CMAKE_OSX_ARCHITECTURES "x86_64")
-   add_definitions(-DOSMac_ -DMAC_PLUGIN)
-   add_definitions(-D_BOOL -DREQUIRE_IOSTREAM)
-endif()
 
 #==============================================================================
 # Packages
@@ -94,16 +59,6 @@ if(CMAKE_WANT_UFE_BUILD)
 endif()
 
 #==============================================================================
-# Generate namespace declaration header
-#==============================================================================
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/base/mayaUsd.h.src ${CMAKE_CURRENT_BINARY_DIR}/mayaUsd/mayaUsd.h)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/mayaUsd/mayaUsd.h
-     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/
-)
-
-#==============================================================================
 # Library
 #==============================================================================
 
@@ -111,119 +66,119 @@ set(LIBRARY_NAME mayaUsd)
 
 list(APPEND mayaUsd_src
     #
-	base/debugCodes.cpp
-	#
-	fileio/registryHelper.cpp
-	fileio/primReaderContext.cpp
-	fileio/primReaderArgs.cpp
-	fileio/primReader.cpp
-	fileio/primReaderRegistry.cpp
-	fileio/functorPrimReader.cpp
-	fileio/fallbackPrimReader.cpp
-	fileio/primWriterContext.cpp
-	fileio/primWriterArgs.cpp
-	fileio/primWriter.cpp
-	fileio/primWriterRegistry.cpp
-	fileio/functorPrimWriter.cpp
-	fileio/writeJobContext.cpp
-	fileio/instancedNodeWriter.cpp
-	fileio/transformWriter.cpp
-	fileio/shaderWriter.cpp
-	fileio/primUpdater.cpp
-	fileio/primUpdaterContext.cpp
-	fileio/primUpdaterRegistry.cpp
-	#
-	fileio/chaser/chaser.cpp
-	fileio/chaser/chaserRegistry.cpp
-	#
-	fileio/jobs/jobArgs.cpp
-	fileio/jobs/readJob.cpp
-	fileio/jobs/writeJob.cpp
-	fileio/jobs/modelKindProcessor.cpp
-	#
-	fileio/translators/translatorUtil.cpp
-	fileio/translators/translatorXformable.cpp
-	fileio/translators/translatorXformable_decompose.cpp
-	fileio/translators/translatorPrim.cpp
-	fileio/translators/translatorGprim.cpp
-	fileio/translators/skelBindingsProcessor.cpp
-	fileio/translators/translatorMaterial.cpp
-	fileio/translators/translatorCamera.cpp
-	fileio/translators/translatorCurves.cpp
-	fileio/translators/translatorMesh.cpp
-	fileio/translators/translatorMesh_SubDiv.cpp
-	fileio/translators/translatorMesh_PrimVars.cpp
-	fileio/translators/translatorNurbsPatch.cpp
-	fileio/translators/translatorRfMLight.cpp
-	fileio/translators/translatorSkel.cpp
-	fileio/translators/translatorMayaReference.cpp
-	#
-	fileio/shading/shadingModeDisplayColor.cpp
-	fileio/shading/shadingModeExporterContext.cpp
-	fileio/shading/shadingModeExporter.cpp
-	fileio/shading/shadingModeImporter.cpp
-	fileio/shading/shadingModeRegistry.cpp
-	fileio/shading/shadingModeUseRegistry.cpp
-	#
-	fileio/utils/adaptor.cpp
-	fileio/utils/readUtil.cpp
-	fileio/utils/userTaggedAttribute.cpp
-	fileio/utils/writeUtil.cpp
-	fileio/utils/shadingUtil.cpp
-	fileio/utils/meshUtil.cpp
-	fileio/utils/roundTripUtil.cpp
-	fileio/utils/xformStack.cpp
-	#
-	utils/colorSpace.cpp
-	utils/diagnosticDelegate.cpp
-	utils/query.cpp
-	utils/util.cpp
-	utils/blockSceneModificationContext.cpp
-	utils/stageCache.cpp
+    base/debugCodes.cpp
+    #
+    fileio/registryHelper.cpp
+    fileio/primReaderContext.cpp
+    fileio/primReaderArgs.cpp
+    fileio/primReader.cpp
+    fileio/primReaderRegistry.cpp
+    fileio/functorPrimReader.cpp
+    fileio/fallbackPrimReader.cpp
+    fileio/primWriterContext.cpp
+    fileio/primWriterArgs.cpp
+    fileio/primWriter.cpp
+    fileio/primWriterRegistry.cpp
+    fileio/functorPrimWriter.cpp
+    fileio/writeJobContext.cpp
+    fileio/instancedNodeWriter.cpp
+    fileio/transformWriter.cpp
+    fileio/shaderWriter.cpp
+    fileio/primUpdater.cpp
+    fileio/primUpdaterContext.cpp
+    fileio/primUpdaterRegistry.cpp
+    #
+    fileio/chaser/chaser.cpp
+    fileio/chaser/chaserRegistry.cpp
+    #
+    fileio/jobs/jobArgs.cpp
+    fileio/jobs/readJob.cpp
+    fileio/jobs/writeJob.cpp
+    fileio/jobs/modelKindProcessor.cpp
+    #
+    fileio/translators/translatorUtil.cpp
+    fileio/translators/translatorXformable.cpp
+    fileio/translators/translatorXformable_decompose.cpp
+    fileio/translators/translatorPrim.cpp
+    fileio/translators/translatorGprim.cpp
+    fileio/translators/skelBindingsProcessor.cpp
+    fileio/translators/translatorMaterial.cpp
+    fileio/translators/translatorCamera.cpp
+    fileio/translators/translatorCurves.cpp
+    fileio/translators/translatorMesh.cpp
+    fileio/translators/translatorMesh_SubDiv.cpp
+    fileio/translators/translatorMesh_PrimVars.cpp
+    fileio/translators/translatorNurbsPatch.cpp
+    fileio/translators/translatorRfMLight.cpp
+    fileio/translators/translatorSkel.cpp
+    fileio/translators/translatorMayaReference.cpp
+    #
+    fileio/shading/shadingModeDisplayColor.cpp
+    fileio/shading/shadingModeExporterContext.cpp
+    fileio/shading/shadingModeExporter.cpp
+    fileio/shading/shadingModeImporter.cpp
+    fileio/shading/shadingModeRegistry.cpp
+    fileio/shading/shadingModeUseRegistry.cpp
+    #
+    fileio/utils/adaptor.cpp
+    fileio/utils/readUtil.cpp
+    fileio/utils/userTaggedAttribute.cpp
+    fileio/utils/writeUtil.cpp
+    fileio/utils/shadingUtil.cpp
+    fileio/utils/meshUtil.cpp
+    fileio/utils/roundTripUtil.cpp
+    fileio/utils/xformStack.cpp
+    #
+    utils/colorSpace.cpp
+    utils/diagnosticDelegate.cpp
     utils/query.cpp
-	#
-	nodes/pointBasedDeformerNode.cpp
-	nodes/hdImagingShape.cpp
-	nodes/usdPrimProvider.cpp
-	nodes/proxyShapeBase.cpp
-	nodes/proxyShapePlugin.cpp
-	nodes/stageData.cpp
-	nodes/stageNode.cpp
-	#
-	listeners/stageNoticeListener.cpp
-	listeners/notice.cpp
+    utils/util.cpp
+    utils/blockSceneModificationContext.cpp
+    utils/stageCache.cpp
+    utils/query.cpp
+    #
+    nodes/pointBasedDeformerNode.cpp
+    nodes/hdImagingShape.cpp
+    nodes/usdPrimProvider.cpp
+    nodes/proxyShapeBase.cpp
+    nodes/proxyShapePlugin.cpp
+    nodes/stageData.cpp
+    nodes/stageNode.cpp
+    #
+    listeners/stageNoticeListener.cpp
+    listeners/notice.cpp
     listeners/proxyShapeNotice.cpp
-	#
-	render/vp2RenderDelegate/render_param.cpp
-	render/vp2RenderDelegate/instancer.cpp
-	render/vp2RenderDelegate/draw_item.cpp
-	render/vp2RenderDelegate/material.cpp
-	render/vp2RenderDelegate/mesh.cpp
-	render/vp2RenderDelegate/proxyRenderDelegate.cpp
-	render/vp2RenderDelegate/render_delegate.cpp
-	render/vp2RenderDelegate/sampler.cpp
-	render/vp2RenderDelegate/texture.cpp
-	render/vp2RenderDelegate/textureResource.cpp
-	#
-	render/pxrUsdMayaGL/batchRenderer.cpp
-	render/pxrUsdMayaGL/debugCodes.cpp
-	render/pxrUsdMayaGL/hdImagingShapeDrawOverride.cpp
-	render/pxrUsdMayaGL/hdImagingShapeUI.cpp
-	render/pxrUsdMayaGL/hdRenderer.cpp
-	render/pxrUsdMayaGL/proxyDrawOverride.cpp
-	render/pxrUsdMayaGL/proxyShapeUI.cpp
-	render/pxrUsdMayaGL/sceneDelegate.cpp
-	render/pxrUsdMayaGL/shapeAdapter.cpp
-	render/pxrUsdMayaGL/softSelectHelper.cpp
-	render/pxrUsdMayaGL/usdProxyShapeAdapter.cpp
-	render/pxrUsdMayaGL/userData.cpp
-	render/pxrUsdMayaGL/instancerImager.cpp
-	render/pxrUsdMayaGL/instancerShapeAdapter.cpp
-	render/pxrUsdMayaGL/proxyShapeDelegate.cpp
-	#
-	render/px_vp20/glslProgram.cpp
-	render/px_vp20/utils.cpp
-	render/px_vp20/utils_legacy.cpp
+    #
+    render/vp2RenderDelegate/render_param.cpp
+    render/vp2RenderDelegate/instancer.cpp
+    render/vp2RenderDelegate/draw_item.cpp
+    render/vp2RenderDelegate/material.cpp
+    render/vp2RenderDelegate/mesh.cpp
+    render/vp2RenderDelegate/proxyRenderDelegate.cpp
+    render/vp2RenderDelegate/render_delegate.cpp
+    render/vp2RenderDelegate/sampler.cpp
+    render/vp2RenderDelegate/texture.cpp
+    render/vp2RenderDelegate/textureResource.cpp
+    #
+    render/pxrUsdMayaGL/batchRenderer.cpp
+    render/pxrUsdMayaGL/debugCodes.cpp
+    render/pxrUsdMayaGL/hdImagingShapeDrawOverride.cpp
+    render/pxrUsdMayaGL/hdImagingShapeUI.cpp
+    render/pxrUsdMayaGL/hdRenderer.cpp
+    render/pxrUsdMayaGL/proxyDrawOverride.cpp
+    render/pxrUsdMayaGL/proxyShapeUI.cpp
+    render/pxrUsdMayaGL/sceneDelegate.cpp
+    render/pxrUsdMayaGL/shapeAdapter.cpp
+    render/pxrUsdMayaGL/softSelectHelper.cpp
+    render/pxrUsdMayaGL/usdProxyShapeAdapter.cpp
+    render/pxrUsdMayaGL/userData.cpp
+    render/pxrUsdMayaGL/instancerImager.cpp
+    render/pxrUsdMayaGL/instancerShapeAdapter.cpp
+    render/pxrUsdMayaGL/proxyShapeDelegate.cpp
+    #
+    render/px_vp20/glslProgram.cpp
+    render/px_vp20/utils.cpp
+    render/px_vp20/utils_legacy.cpp
 )
 
 if(UFE_FOUND)
@@ -265,101 +220,101 @@ list(APPEND mayaUsdBase_headers
 )
 
 list(APPEND mayaUsdFileio_headers
-	fileio/registryHelper.h
-	fileio/primReaderContext.h
-	fileio/primReaderArgs.h
-	fileio/primReader.h
-	fileio/primReaderRegistry.h
-	fileio/functorPrimReader.h
-	fileio/fallbackPrimReader.h
-	fileio/primWriterContext.h
-	fileio/primWriterArgs.h
-	fileio/primWriter.h
-	fileio/primWriterRegistry.h
-	fileio/functorPrimWriter.h
-	fileio/writeJobContext.h
-	fileio/instancedNodeWriter.h
-	fileio/transformWriter.h
-	fileio/shaderWriter.h
-	fileio/primUpdater.h
-	fileio/primUpdaterContext.h
-	fileio/primUpdaterRegistry.h
+    fileio/registryHelper.h
+    fileio/primReaderContext.h
+    fileio/primReaderArgs.h
+    fileio/primReader.h
+    fileio/primReaderRegistry.h
+    fileio/functorPrimReader.h
+    fileio/fallbackPrimReader.h
+    fileio/primWriterContext.h
+    fileio/primWriterArgs.h
+    fileio/primWriter.h
+    fileio/primWriterRegistry.h
+    fileio/functorPrimWriter.h
+    fileio/writeJobContext.h
+    fileio/instancedNodeWriter.h
+    fileio/transformWriter.h
+    fileio/shaderWriter.h
+    fileio/primUpdater.h
+    fileio/primUpdaterContext.h
+    fileio/primUpdaterRegistry.h
 )
 
 list(APPEND mayaUsdChaser_headers
-	fileio/chaser/chaser.h
-	fileio/chaser/chaserRegistry.h
+    fileio/chaser/chaser.h
+    fileio/chaser/chaserRegistry.h
 )
 
 list(APPEND mayaUsdJobs_headers
-	fileio/jobs/jobArgs.h
-	fileio/jobs/readJob.h
-	fileio/jobs/writeJob.h
-	fileio/jobs/modelKindProcessor.h
+    fileio/jobs/jobArgs.h
+    fileio/jobs/readJob.h
+    fileio/jobs/writeJob.h
+    fileio/jobs/modelKindProcessor.h
 )
 
 list(APPEND mayaUsdShading_headers
-	fileio/shading/shadingModeExporterContext.h
-	fileio/shading/shadingModeExporter.h
-	fileio/shading/shadingModeImporter.h
-	fileio/shading/shadingModeRegistry.h
+    fileio/shading/shadingModeExporterContext.h
+    fileio/shading/shadingModeExporter.h
+    fileio/shading/shadingModeImporter.h
+    fileio/shading/shadingModeRegistry.h
 )
 
 list(APPEND mayaUsdUtilsIO_headers
-	fileio/utils/adaptor.h
-	fileio/utils/readUtil.h
-	fileio/utils/userTaggedAttribute.h
-	fileio/utils/writeUtil.h
-	fileio/utils/shadingUtil.h
-	fileio/utils/meshUtil.h
-	fileio/utils/roundTripUtil.h
-	fileio/utils/xformStack.h
+    fileio/utils/adaptor.h
+    fileio/utils/readUtil.h
+    fileio/utils/userTaggedAttribute.h
+    fileio/utils/writeUtil.h
+    fileio/utils/shadingUtil.h
+    fileio/utils/meshUtil.h
+    fileio/utils/roundTripUtil.h
+    fileio/utils/xformStack.h
 )
 
 list(APPEND mayaUsdTranslators_headers
-	fileio/translators/translatorUtil.h
-	fileio/translators/translatorXformable.h
-	fileio/translators/translatorPrim.h
-	fileio/translators/translatorGprim.h
-	fileio/translators/skelBindingsProcessor.h
-	fileio/translators/translatorMaterial.h
-	fileio/translators/translatorCamera.h
-	fileio/translators/translatorCurves.h
-	fileio/translators/translatorMesh.h
-	fileio/translators/translatorNurbsPatch.h
-	fileio/translators/translatorRfMLight.h
-	fileio/translators/translatorSkel.h
-	fileio/translators/translatorMayaReference.h
+    fileio/translators/translatorUtil.h
+    fileio/translators/translatorXformable.h
+    fileio/translators/translatorPrim.h
+    fileio/translators/translatorGprim.h
+    fileio/translators/skelBindingsProcessor.h
+    fileio/translators/translatorMaterial.h
+    fileio/translators/translatorCamera.h
+    fileio/translators/translatorCurves.h
+    fileio/translators/translatorMesh.h
+    fileio/translators/translatorNurbsPatch.h
+    fileio/translators/translatorRfMLight.h
+    fileio/translators/translatorSkel.h
+    fileio/translators/translatorMayaReference.h
 )
 
 list(APPEND mayaUsdUtils_headers
-	utils/colorSpace.h
-	utils/diagnosticDelegate.h
-	utils/query.h
-	utils/util.h
-	utils/blockSceneModificationContext.h
-	utils/stageCache.h
+    utils/colorSpace.h
+    utils/diagnosticDelegate.h
+    utils/query.h
+    utils/util.h
+    utils/blockSceneModificationContext.h
+    utils/stageCache.h
     utils/query.h
 )
 
 list(APPEND mayaUsdNodes_headers
-	nodes/pointBasedDeformerNode.h
-	nodes/hdImagingShape.h
-	nodes/usdPrimProvider.h
-	nodes/proxyShapeBase.h
-	nodes/proxyShapePlugin.h
-	nodes/stageData.h
-	nodes/stageNode.h
+    nodes/pointBasedDeformerNode.h
+    nodes/hdImagingShape.h
+    nodes/usdPrimProvider.h
+    nodes/proxyShapeBase.h
+    nodes/proxyShapePlugin.h
+    nodes/stageData.h
+    nodes/stageNode.h
 )
 
 list(APPEND mayaUsdListeners_headers
-	listeners/stageNoticeListener.h
-	listeners/notice.h
+    listeners/stageNoticeListener.h
+    listeners/notice.h
     listeners/proxyShapeNotice.h
 )
 
 list(APPEND mayaUsdVP2RenderDelegate_headers
-	render/vp2RenderDelegate/proxyRenderDelegate.h
+    render/vp2RenderDelegate/proxyRenderDelegate.h
 )
 
 if(UFE_FOUND)
@@ -394,25 +349,25 @@ if(UFE_FOUND)
 endif()
 
 list(APPEND mayaUsdPxrUsdMayaGL_headers
-	render/pxrUsdMayaGL/batchRenderer.h
-	render/pxrUsdMayaGL/debugCodes.h
-	render/pxrUsdMayaGL/hdImagingShapeUI.h
-	render/pxrUsdMayaGL/hdImagingShapeDrawOverride.h
-	render/pxrUsdMayaGL/instancerImager.h
-	render/pxrUsdMayaGL/instancerShapeAdapter.h
-	render/pxrUsdMayaGL/proxyShapeUI.h
-	render/pxrUsdMayaGL/proxyDrawOverride.h
-	render/pxrUsdMayaGL/renderParams.h
-	render/pxrUsdMayaGL/sceneDelegate.h
-	render/pxrUsdMayaGL/shapeAdapter.h
-	render/pxrUsdMayaGL/softSelectHelper.h
-	render/pxrUsdMayaGL/usdProxyShapeAdapter.h
-	render/pxrUsdMayaGL/userData.h
+    render/pxrUsdMayaGL/batchRenderer.h
+    render/pxrUsdMayaGL/debugCodes.h
+    render/pxrUsdMayaGL/hdImagingShapeUI.h
+    render/pxrUsdMayaGL/hdImagingShapeDrawOverride.h
+    render/pxrUsdMayaGL/instancerImager.h
+    render/pxrUsdMayaGL/instancerShapeAdapter.h
+    render/pxrUsdMayaGL/proxyShapeUI.h
+    render/pxrUsdMayaGL/proxyDrawOverride.h
+    render/pxrUsdMayaGL/renderParams.h
+    render/pxrUsdMayaGL/sceneDelegate.h
+    render/pxrUsdMayaGL/shapeAdapter.h
+    render/pxrUsdMayaGL/softSelectHelper.h
+    render/pxrUsdMayaGL/usdProxyShapeAdapter.h
+    render/pxrUsdMayaGL/userData.h
 )
 
 list(APPEND mayaUsdPxVP20_headers
-	render/px_vp20/utils.h
-	render/px_vp20/utils_legacy.h
+    render/px_vp20/utils.h
+    render/px_vp20/utils_legacy.h
 )
 
 add_library(${LIBRARY_NAME}
@@ -433,8 +388,7 @@ target_include_directories(
     ${LIBRARY_NAME}
     PUBLIC
     ${MAYA_INCLUDE_DIRS}
-    ${CMAKE_CURRENT_SOURCE_DIR}
-	${PXR_INCLUDE_DIRS}
+    ${PXR_INCLUDE_DIRS}
 )
 
 target_link_libraries(${LIBRARY_NAME}
@@ -445,8 +399,8 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMayaUI_LIBRARY}
     ar
     gf
-	hd
-	hdx
+    hd
+    hdx
     js
     kind
     plug
@@ -454,8 +408,8 @@ target_link_libraries(${LIBRARY_NAME}
     tf
     usd
     usdGeom
-	usdImaging
-	usdImagingGL
+    usdImaging
+    usdImagingGL
     usdLux
     usdRi
     usdShade
@@ -468,18 +422,14 @@ if (UFE_FOUND)
     target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
 endif()
 
-if(IS_MACOSX)
-    set_target_properties(${LIBRARY_NAME}
-        PROPERTIES
-            BUILD_WITH_INSTALL_RPATH TRUE
-            INSTALL_RPATH "${PXR_USD_LOCATION}/lib;${PXR_USD_LOCATION}/lib64"
-    )
-else()
-    set_target_properties(${LIBRARY_NAME}
-        PROPERTIES
-            BUILD_WITH_INSTALL_RPATH TRUE
-            INSTALL_RPATH "${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64"
-    )
+if(IS_MACOSX OR IS_LINUX)
+    init_rpath(rpath "plugin")
+    if(WANT_USD_RELATIVE_PATH)
+        add_rpath(rpath "../../USD/lib")
+    elseif(DEFINED PXR_USD_LOCATION)
+        add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+    endif()
+    install_rpath(rpath ${LIBRARY_NAME})
 endif()
 
 install(TARGETS ${LIBRARY_NAME}
@@ -496,7 +446,29 @@ endif()
 
 set_property(GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 
+# promote headers
+promoteMayaUsdHeader()
+promoteHeaderList(${mayaUsdBase_headers})
+promoteHeaderList(${mayaUsdFileio_headers})
+promoteHeaderList(${mayaUsdChaser_headers})
+promoteHeaderList(${mayaUsdJobs_headers})
+promoteHeaderList(${mayaUsdUtilsIO_headers})
+promoteHeaderList(${mayaUsdShading_headers})
+promoteHeaderList(${mayaUsdTranslators_headers})
+promoteHeaderList(${mayaUsdUtils_headers})
+promoteHeaderList(${mayaUsdNodes_headers})
+promoteHeaderList(${mayaUsdListeners_headers})
+promoteHeaderList(${mayaUsdVP2RenderDelegate_headers})
+if(UFE_FOUND)
+    promoteHeaderList(${mayaUsdUfe_headers})
+endif()
+promoteHeaderList(${mayaUsdPxrUsdMayaGL_headers})
+
 # install public headers
+install(FILES ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/
+)
+
 install(FILES ${mayaUsdBase_headers}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/base/
 )

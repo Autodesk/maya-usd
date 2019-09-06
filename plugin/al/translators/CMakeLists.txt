@@ -2,7 +2,7 @@
 # As such, its AL_USDMAYA_DEFINE_TRANSLATOR does a
 # TfType::Find<AL_usd_MayaReference>, which requires AL_usd_MayaReference's
 # typeid.  We must therefore link against mayaUsd_Schemas.
-list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas ${MAYAUSD_LIBRARIES} ${MAYAUSD_SCHEMA_LIBRARIES} gf plug tf)
+list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas mayaUsd mayaUsd_Schemas gf plug tf)
 
 set(DIRECTORY_PATH AL/usdmaya/fileio/translators)
 
@@ -73,6 +73,11 @@ set_target_properties(${TRANSLATORS_PACKAGE}
 if(IS_MACOSX OR IS_LINUX) 
     init_rpath(rpath "plugin")
     add_rpath(rpath "../lib")
+    if(WANT_USD_RELATIVE_PATH)
+        add_rpath(rpath "../../../../USD/lib")
+    elseif(DEFINED PXR_USD_LOCATION)
+        add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+    endif()
     add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     install_rpath(rpath ${TRANSLATORS_PACKAGE})
 endif()

@@ -24,13 +24,23 @@
 #ifndef __MTOH_TOKENS_H__
 #define __MTOH_TOKENS_H__
 
+#include <hdMaya/hdMaya.h>
+
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#ifdef HDMAYA_USD_001910_BUILD
+#define HD_STORM_PLUGIN_NAME "HdStormRendererPlugin"
+#else
+#define HD_STORM_PLUGIN_NAME "HdStreamRendererPlugin"
+#endif
+
 // clang-format off
-#define MTOH_TOKENS (UseHdSt) \
+#define MTOH_TOKENS \
+    ((HdStormRendererPlugin, HD_STORM_PLUGIN_NAME)) \
+    (UseHdSt) \
                     (UseVp2)
 // clang-format on
 

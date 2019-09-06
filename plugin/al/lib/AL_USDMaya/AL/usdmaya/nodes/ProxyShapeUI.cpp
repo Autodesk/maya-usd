@@ -26,7 +26,10 @@
 #include "maya/MDrawInfo.h"
 #include "maya/MDrawRequest.h"
 #include "maya/MDrawRequestQueue.h"
+#include "maya/MFnDagNode.h"
+#include "maya/MMatrix.h"
 #include "maya/MSelectInfo.h"
+#include "maya/MTime.h"
 
 #if defined(WANT_UFE_BUILD)
 #include "AL/usdmaya/TypeIDs.h"
@@ -155,8 +158,8 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   view.viewport(x, y, w, h);
   engine->SetCameraState(
       GfMatrix4d((model.inverse() * viewMatrix).matrix),
-      GfMatrix4d(projection.matrix),
-      GfVec4d(x, y, w, h));
+      GfMatrix4d(projection.matrix));
+  engine->SetRenderViewport(GfVec4d(x, y, w, h));
 
   switch(request.displayStyle())
   {

@@ -82,10 +82,6 @@ private:
     // TODO: Define HdVP2MeshSharedData to hold extra shared data specific to VP2?
     std::unique_ptr<MHWRender::MVertexBuffer> _positionsBuffer; //!< Per-Rprim position buffer to be shared among render items
     bool _wireItemsEnabled{ false };                    //!< Whether draw items for the wire repr are enabled
-
-    using HdVP2DrawItemCollection = std::vector<std::unique_ptr<HdVP2DrawItem>>;
-    HdVP2DrawItemCollection _createdDrawItems;          //!< In current design, HdRepr doesn't take the ownership of draw items.
-                                                        //!< (even if documentation states it does)
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

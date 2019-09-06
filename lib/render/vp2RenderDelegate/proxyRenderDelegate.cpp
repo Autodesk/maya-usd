@@ -224,7 +224,7 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
         // We don't really need any HdTask because VP2RenderDelegate uses Hydra
         // engine for data preparation only, but we have to add a dummy render
         // task to bootstrap data preparation.
-        const HdTaskSharedPtrVector tasks = _taskController->GetTasks();
+        const HdTaskSharedPtrVector tasks = _taskController->GetRenderingTasks();
         for (const HdTaskSharedPtr& task : tasks) {
             if (dynamic_cast<const HdxRenderTask*>(task.get())) {
                 _dummyTasks.push_back(task);
@@ -310,7 +310,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         }
     }
 
-    _engine.Execute(*_renderIndex, _dummyTasks);
+    _engine.Execute(_renderIndex, &_dummyTasks);
 }
 
 //! \brief  Main update entry from subscene override.
@@ -381,7 +381,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         rprimId = _sceneDelegate->GetPathForInstanceIndex(rprimId, usdInstID, nullptr);
     }
 
-    const SdfPath usdPath(_sceneDelegate->GetPathForUsd(rprimId));
+    const SdfPath usdPath(_sceneDelegate->ConvertIndexPathToCachePath(rprimId));
 
     const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
     const Ufe::SceneItem::Ptr& si = handler->createItem(proxyShape->ufePath() + pathSegment);
@@ -462,7 +462,7 @@ void ProxyRenderDelegate::_FilterSelection()
         }
 
         const SdfPath usdPath(segments[1].string());
-        const SdfPath idxPath(_sceneDelegate->GetPathForIndex(usdPath));
+        const SdfPath idxPath(_sceneDelegate->ConvertCachePathToIndexPath(usdPath));
 
         _sceneDelegate->PopulateSelection(HdSelection::HighlightModeSelect,
             idxPath, UsdImagingDelegate::ALL_INSTANCES, _selection);
@@ -513,10 +513,14 @@ bool ProxyRenderDelegate::_UpdateSelectionHighlight()
     }
 
     if (!rootPaths.empty()) {
+        _inSelectionHighlightUpdate = true;
+
         _selectionHighlightCollection->SetRootPaths(rootPaths);
         _taskController->SetCollection(*_selectionHighlightCollection);
-        _engine.Execute(*_renderIndex, _dummyTasks);
+        _engine.Execute(_renderIndex, &_dummyTasks);
         _taskController->SetCollection(*_defaultCollection);
+        
+        _inSelectionHighlightUpdate = false;
     }
 
     return retVal;

@@ -1856,6 +1856,7 @@ bool ProxyShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHand
     
     // can't use dataHandle.datablock(), as this is a temporary datahandle
     MDataBlock datablock = forceCache();
+
     AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, filePath(), dataHandle.asString()),
         false, "ProxyShape::setInternalValue - error setting filePath");
 

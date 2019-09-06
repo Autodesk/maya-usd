@@ -24,7 +24,6 @@ target_compile_definitions(${PLUGIN_PACKAGE}
 
 target_include_directories(${PLUGIN_PACKAGE}
     PRIVATE
-        ${MAYA_INCLUDE_DIRS}
         ${MAYAUSD_INCLUDE_DIR}
         ${PXR_INCLUDE_DIRS}
 )
@@ -32,7 +31,7 @@ target_include_directories(${PLUGIN_PACKAGE}
 target_link_libraries(${PLUGIN_PACKAGE}
     PRIVATE
         ${MAYA_LIBRARIES}
-        ${MAYAUSD_LIBRARIES}
+        mayaUsd
 		ar 
 		gf 
 		kind
@@ -55,6 +54,11 @@ endif()
 # rpath setup
 if(IS_MACOSX OR IS_LINUX) 
     init_rpath(rpath "plugin")
+    if(WANT_USD_RELATIVE_PATH)
+        add_rpath(rpath "../../../../USD/lib")
+    elseif(DEFINED PXR_USD_LOCATION)
+        add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+    endif()
     add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     install_rpath(rpath ${PLUGIN_PACKAGE})
 endif()

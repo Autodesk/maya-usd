@@ -98,11 +98,20 @@ bool UsdMaya_ReadJobWithSceneAssembly::OverridePrimReader(
     return false;
 }
 
-void UsdMaya_ReadJobWithSceneAssembly::PreImport()
+void UsdMaya_ReadJobWithSceneAssembly::PreImport(Usd_PrimFlagsPredicate& returnPredicate)
 {
     const bool isSceneAssembly = mMayaRootDagPath.node().hasFn(MFn::kAssembly);
     if (isSceneAssembly) {
         mArgs.shadingMode = ASSEMBLY_SHADING_MODE;
+
+        // When importing on behalf of a scene assembly, we want to make sure
+        // that we traverse down into instances. The expectation is that the
+        // user switched an assembly to its Expanded or Full representation
+        // because they want to see the hierarchy underneath it, possibly with
+        // the intention of making modifications down there. As a result, we
+        // don't really want to try to preserve instancing, but we do need to
+        // be able to access the scene description below the root prim.
+        returnPredicate.TraverseInstanceProxies(true);
     }
 }
 

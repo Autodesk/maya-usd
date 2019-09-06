@@ -45,7 +45,7 @@ private:
     ) override;
 
     // Hook to set the shading mode if dealing with scene assembly.
-    void PreImport() override;
+    void PreImport(Usd_PrimFlagsPredicate& returnPredicate) override;
 
     bool SkipRootPrim(bool isImportingPseudoRoot) override;
 

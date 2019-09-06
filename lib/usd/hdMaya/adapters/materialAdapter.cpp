@@ -643,7 +643,7 @@ private:
             .Msg("HdMayaShadingEngineAdapter::GetMaterialResource()\n");
         HdMaterialNetwork materialNetwork;
         HdMayaMaterialNetworkConverter converter(materialNetwork, GetID());
-        if (converter.GetMaterial(_surfaceShader).IsEmpty()) {
+        if (!converter.GetMaterial(_surfaceShader)) {
             return GetPreviewMaterialResource(GetID());
         }
 

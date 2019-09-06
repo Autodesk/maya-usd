@@ -24,11 +24,10 @@ pxr_shared_library(${PXR_PACKAGE}
         ${MAYA_OpenMayaFX_LIBRARY}
         ${MAYA_OpenMayaRender_LIBRARY}
         ${MAYA_OpenMayaUI_LIBRARY}
-        ${MAYAUSD_LIBRARIES}
+        mayaUsd
 
     INCLUDE_DIRS
         ${MAYA_INCLUDE_DIRS}
-        ${MAYAUSD_INCLUDE_DIR}
 
     PUBLIC_HEADERS
         api.h
@@ -91,6 +90,7 @@ pxr_test_scripts(
         testenv/testUsdExportAsClip.py
         testenv/testPointBasedDeformerNode.py
         testenv/testUsdExportAssembly.py
+        testenv/testUsdExportAssemblyEdits.py
         testenv/testUsdExportCamera.py
         testenv/testUsdExportColorSets.py
         testenv/testUsdExportConnected.py
@@ -203,6 +203,21 @@ pxr_register_test(testUsdExportAssembly
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdExportAssemblyEditsTest
+    DEST testUsdExportAssemblyEdits
+)
+pxr_register_test(testUsdExportAssemblyEdits
+    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdExportAssemblyEdits"
+    TESTENV testUsdExportAssemblyEdits
+    ENV
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
 )

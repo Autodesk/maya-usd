@@ -1,7 +1,7 @@
 # Copyright 2018 Animal Logic
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.//
+# you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
@@ -42,6 +42,13 @@ endif()
 if(IS_MACOSX OR IS_LINUX) 
     init_rpath(rpath "plugin")
     add_rpath(rpath "../lib")
+
+    if(WANT_USD_RELATIVE_PATH)
+        add_rpath(rpath "../../../../USD/lib")
+    elseif(DEFINED PXR_USD_LOCATION)
+        add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+    endif()
+
     add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib")
     add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib")

@@ -82,8 +82,8 @@ UsdGeomCamera ProxyUsdGeomCamera::getCamera() const
   {
     // Pull in stage data
     MFnPluginData fnData(stageObject);
-    auto* stageData = static_cast<MayaUsdStageData*>(fnData.data());
 
+    auto* stageData = static_cast<MayaUsdStageData*>(fnData.data());
     if (stageData != nullptr)
     {
       // Get prim path
