@@ -65,7 +65,7 @@ TEST(import_instances, merged)
   {
     auto it = expectedTransforms.find(xformResults[i].asChar());
     ASSERT_TRUE(it != expectedTransforms.end());
-    expectedTransforms.erase(it);
+    expectedTransforms.erase(*it);
   }
 
   EXPECT_EQ(0, expectedTransforms.size());
@@ -128,7 +128,7 @@ TEST(import_instances, unmerged)
   {
     auto it = expectedTransforms.find(xformResults[i].asChar());
     ASSERT_TRUE(it != expectedTransforms.end());
-    expectedTransforms.erase(it);
+    expectedTransforms.erase(*it);
   }
 
   EXPECT_EQ(0, expectedTransforms.size());
