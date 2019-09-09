@@ -702,6 +702,16 @@ MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray& plugArr
     return MPxSurfaceShape::setDependentsDirty(plug, plugArray);
 }
 
+/* virtual */
+bool
+MayaUsdProxyShapeBase::setInternalValue(const MPlug& plug, const MDataHandle& dataHandle)
+{
+    if (plug == excludePrimPathsAttr) {
+        _IncreaseExcludePrimPathsVersion();
+    }
+    return MPxSurfaceShape::setInternalValue(plug, dataHandle);
+}
+
 UsdPrim
 MayaUsdProxyShapeBase::_GetUsdPrim(MDataBlock dataBlock) const
 {
@@ -783,6 +793,11 @@ SdfPathVector
 MayaUsdProxyShapeBase::getExcludePrimPaths() const
 {
     return _GetExcludePrimPaths( const_cast<MayaUsdProxyShapeBase*>(this)->forceCache() );
+}
+
+size_t
+MayaUsdProxyShapeBase::getExcludePrimPathsVersion() const {
+    return _excludePrimPathsVersion;
 }
 
 SdfPathVector
