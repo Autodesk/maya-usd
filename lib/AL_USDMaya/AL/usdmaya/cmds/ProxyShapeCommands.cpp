@@ -1501,8 +1501,11 @@ MStatus TranslatePrim::redoIt()
   SdfPathVector newImportPaths;
   for(auto importPath : m_importPaths)
   {
-    MObject transformObject = m_proxy->findRequiredPath(importPath);
-    if (transformObject == MObject::kNullObj)
+    uint32_t selected = 0;
+    uint32_t required = 0;
+    uint32_t refCount = 0;
+    m_proxy->getCounts(importPath, selected, required, refCount);
+    if(!required && !refCount)
     {
       newImportPaths.push_back(importPath);
     }
