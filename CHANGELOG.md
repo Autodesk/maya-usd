@@ -1,3 +1,15 @@
+## v0.34.3 (2019-09-11)
+
+### Added
++ Use new MPxTransform_BoundingBox class in Maya2019 update 2 (and successive 2019 versions) to allow framing of objects under Custom Transforms
++ File Import - a prim path ("Prim Path") argument to allow import from a specific prim
+
+### Fixed
++ AL_usdmaya_TranslatePrim with the recursive flag turned on will not complain about non-updateable prims anymore.
++ Translation of colourSets
++ uuid comparision when plug names are identical - with Maya References, two nodes under different dag paths could share the same name including the namespace. Try to resolve to the nodes' uuids to avoid missing the animated attributes and fix
++ Unable to translate prims that have been selected.
+
 ## v0.34.2 (2019-08-29)
 
 ### Added
