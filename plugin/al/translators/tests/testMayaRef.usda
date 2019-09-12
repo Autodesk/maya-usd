@@ -13,3 +13,11 @@ def ALMayaReference "otherCube"
     double3 xformOp:translate = (3, 2, 1)
     uniform token[] xformOpOrder = ["xformOp:translate"]
 }
+
+def Xform 'test'
+{
+    def ALMayaReference "cubeWithDefaultNamespace"
+    {
+        asset mayaReference = @./cube.ma@
+    }
+}

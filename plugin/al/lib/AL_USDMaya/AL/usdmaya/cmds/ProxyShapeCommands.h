@@ -23,6 +23,7 @@
 
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
+#include "AL/usdmaya/StageCache.h"
 
 #include "pxr/usd/usd/stage.h"
 
@@ -278,6 +279,8 @@ class TranslatePrim
   nodes::ProxyShape* m_proxy;
   SdfPathVector m_importPaths;
   SdfPathVector m_teardownPaths;
+  SdfPathVector m_updatePaths;
+  bool m_recursive;
 
 public:
   AL_MAYA_DECLARE_COMMAND();

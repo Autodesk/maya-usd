@@ -212,7 +212,7 @@ uint32_t diffFaceVertices(UsdGeomMesh& geom, MFnMesh& mesh, UsdTimeCode timeCode
       const uint32_t numCreaseIndices = creasesIndices.size();
       MUintArray mayaCreaseIndices;
       mayaCreaseIndices.setLength(mayaEdgeCreaseIndices.length() * 2);
-      for(uint32_t i = 0; i < numCreaseIndices; ++i)
+      for(uint32_t i = 0, n = mayaEdgeCreaseIndices.length(); i < n; ++i)
       {
         int2 edge;
         mesh.getEdgeVertices(mayaEdgeCreaseIndices[i], edge);
