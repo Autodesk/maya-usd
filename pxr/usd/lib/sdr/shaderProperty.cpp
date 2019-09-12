@@ -31,7 +31,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(SdrPropertyTypes, SDR_PROPERTY_TYPE_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(SdrPropertyMetadata, SDR_PROPERTY_METADATA_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(SdrPropertyRole,
+                        SDR_PROPERTY_ROLE_TOKENS);
 
+using ShaderMetadataHelpers::GetRoleFromMetadata;
 using ShaderMetadataHelpers::IsTruthy;
 using ShaderMetadataHelpers::IsPropertyAnAssetIdentifier;
 using ShaderMetadataHelpers::StringVal;
@@ -76,6 +79,45 @@ namespace {
         return tokenTypeToSdfArrayType;
     }
 
+
+    // -------------------------------------------------------------------------
+
+    // The following typedefs are only needed to support the table below that
+    // indicates how to convert an SdrPropertyType given a particular "role"
+    // value
+    typedef std::unordered_map<
+            TfToken, std::pair<TfToken, size_t>, TfToken::HashFunctor>
+        TokenToPairTable;
+
+    typedef std::unordered_map<TfToken, TokenToPairTable, TfToken::HashFunctor>
+            TokenToMapTable;
+
+    // Establishes exact mappings for converting SdrPropertyTypes using "role"
+    // The keys are original SdrPropertyTypes, and the value is another map,
+    // keyed by the "role" metadata value. The value of that map is the
+    // converted SdrPropertyType and array size.
+    const TokenToMapTable _convertedSdrTypes = {
+        {SdrPropertyTypes->Color,
+            {
+                {SdrPropertyRole->None, {SdrPropertyTypes->Float, 3}}
+            }
+        },
+        {SdrPropertyTypes->Point,
+            {
+                {SdrPropertyRole->None, {SdrPropertyTypes->Float, 3}}
+            }
+        },
+        {SdrPropertyTypes->Normal,
+            {
+                {SdrPropertyRole->None, {SdrPropertyTypes->Float, 3}}
+            }
+        },
+        {SdrPropertyTypes->Vector,
+            {
+                {SdrPropertyRole->None, {SdrPropertyTypes->Float, 3}}
+            }
+        }
+    };
 
     // -------------------------------------------------------------------------
 
@@ -160,6 +202,16 @@ namespace {
             return std::make_pair(SdfValueTypeNames->Asset, TfToken());
         }
 
+        // We have several special SdrPropertyTypes that we want to map to
+        // 'token', which is the type we otherwise reserve for unknown types.
+        // We call out this conversion here so it is explicitly documented
+        // rather than happening implicitly.
+        if (type == SdrPropertyTypes->Terminal ||
+            type == SdrPropertyTypes->Struct ||
+            type == SdrPropertyTypes->Vstruct) {
+            return std::make_pair(SdfValueTypeNames->Token, type);
+        }
+
         bool conversionSuccessful = false;
 
         // If the conversion can't be made, it defaults to the 'Token' type
@@ -184,6 +236,38 @@ namespace {
 
     // -------------------------------------------------------------------------
 
+    // This method converts a given SdrPropertyType to a new SdrPropertyType
+    // and appropriate array size if the metadata indicates that such a
+    // conversion is necessary.  The conversion is based on the value of the
+    // "role" metadata
+    std::pair<TfToken, size_t>
+    _ConvertSdrPropertyTypeAndArraySize(
+        const TfToken& type,
+        const size_t& arraySize,
+        const NdrTokenMap& metadata)
+    {
+        TfToken role = GetRoleFromMetadata(metadata);
+
+        if (!type.IsEmpty() && !role.IsEmpty()) {
+            // Look up using original type and role declaration
+            const TokenToMapTable::const_iterator& typeSearch =
+                _convertedSdrTypes.find(type);
+            if (typeSearch != _convertedSdrTypes.end()) {
+                const TokenToPairTable::const_iterator& roleSearch =
+                    typeSearch->second.find(role);
+                if (roleSearch != typeSearch->second.end()) {
+                    // Return converted type and size
+                    return roleSearch->second;
+                }
+            }
+        }
+
+        // No conversion needed or found
+        return std::pair<TfToken, size_t>(type, arraySize);
+    }
+
+    // -------------------------------------------------------------------------
+
     template <class T>
     bool
     _GetValue(const VtValue& defaultValue, T* val)
@@ -193,7 +277,7 @@ namespace {
             return true;
         }
         return false;
-    };
+    }
 
     // This methods conforms the given default value's type with the property's
     // SdfValueTypeName.  This step is important because a Sdr parser should not
@@ -283,7 +367,7 @@ namespace {
         // Default value's type was not conformant, but no special translation
         // step was found
         return defaultValue;
-    };
+    }
 }
 
 SdrShaderProperty::SdrShaderProperty(
@@ -297,10 +381,12 @@ SdrShaderProperty::SdrShaderProperty(
     const NdrOptionVec& options)
     : NdrProperty(
         name,
-        type,
+        /* type= */ _ConvertSdrPropertyTypeAndArraySize(
+            type, arraySize, metadata).first,
         _ConformDefaultValue(defaultValue, type, arraySize, metadata),
         isOutput,
-        arraySize,
+        /* arraySize= */ _ConvertSdrPropertyTypeAndArraySize(
+            type, arraySize, metadata).second,
         /* isDynamicArray= */false,
         metadata),
 
@@ -310,9 +396,15 @@ SdrShaderProperty::SdrShaderProperty(
     _isDynamicArray =
         IsTruthy(SdrPropertyMetadata->IsDynamicArray, _metadata);
 
-    _isConnectable = _metadata.count(SdrPropertyMetadata->Connectable)
-        ? IsTruthy(SdrPropertyMetadata->Connectable, _metadata)
-        : true;
+    // Note that outputs are always connectable. If "connectable" metadata is
+    // found on outputs, ignore it.
+    if (isOutput) {
+        _isConnectable = true;
+    } else {
+        _isConnectable = _metadata.count(SdrPropertyMetadata->Connectable)
+            ? IsTruthy(SdrPropertyMetadata->Connectable, _metadata)
+            : true;
+    }
 
     // Indicate a "default" widget if one was not assigned
     _metadata.insert({SdrPropertyMetadata->Widget, "default"});
@@ -325,6 +417,8 @@ SdrShaderProperty::SdrShaderProperty(
         SdrPropertyMetadata->VstructMemberOf, _metadata);
     _vstructMemberName = TokenVal(
         SdrPropertyMetadata->VstructMemberName, _metadata);
+    _vstructConditionalExpr = TokenVal(
+        SdrPropertyMetadata->VstructConditionalExpr, _metadata);
     _validConnectionTypes = TokenVecVal(
         SdrPropertyMetadata->ValidConnectionTypes, _metadata);
 }
@@ -361,8 +455,16 @@ SdrShaderProperty::CanConnectTo(const NdrProperty& other) const
     size_t outputArraySize = output->GetArraySize();
     const NdrTokenMap& outputMetadata = output->GetMetadata();
 
-    // Connections are always possible if the types match exactly
+    // Connections are always possible if the types match exactly and the
+    // array size matches
     if ((inputType == outputType) && (inputArraySize == outputArraySize)) {
+        return true;
+    }
+
+    // Connections are also possible if the types match exactly and the input
+    // is a dynamic array
+    if ((inputType == outputType) && !output->IsArray()
+            && input->IsDynamicArray()) {
         return true;
     }
 
