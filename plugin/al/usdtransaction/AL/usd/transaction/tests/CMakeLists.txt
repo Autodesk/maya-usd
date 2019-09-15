@@ -24,6 +24,7 @@ target_link_libraries(${USDTRANSACTION_TEST_EXECUTABLE_NAME}
     vt
     ${boost_python_LIBRARIES}
     ${USDTRANSACTION_LIBRARY_NAME}
+    -lpthread -lm
 )
 
 target_include_directories(${USDTRANSACTION_TEST_EXECUTABLE_NAME}
