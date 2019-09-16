@@ -1467,7 +1467,12 @@ MStatus TranslatePrim::doIt(const MArgList& args)
         auto newPrimSet = m_proxy->huntForNativeNodesUnderPrim(proxyTransformPath, updatePath, manufacture, true);
         for(auto it : newPrimSet)
         {
-          newUpdatePaths.push_back(it.GetPath());
+          // We only want to list the prims that are actually updateable.
+          auto translator = manufacture.get(it);
+          if(translator && translator->supportsUpdate())
+          {
+            newUpdatePaths.push_back(it.GetPath());
+          }
         }
       }
       std::swap(m_updatePaths, newUpdatePaths);
@@ -1496,8 +1501,11 @@ MStatus TranslatePrim::redoIt()
   SdfPathVector newImportPaths;
   for(auto importPath : m_importPaths)
   {
-    MObject transformObject = m_proxy->findRequiredPath(importPath);
-    if (transformObject == MObject::kNullObj)
+    uint32_t selected = 0;
+    uint32_t required = 0;
+    uint32_t refCount = 0;
+    m_proxy->getCounts(importPath, selected, required, refCount);
+    if(!required && !refCount)
     {
       newImportPaths.push_back(importPath);
     }

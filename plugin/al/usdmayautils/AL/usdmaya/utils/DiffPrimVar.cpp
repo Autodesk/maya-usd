@@ -19,6 +19,7 @@
 #include "maya/MDoubleArray.h"
 #include "maya/MFloatArray.h"
 #include "maya/MIntArray.h"
+#include "maya/MItMeshPolygon.h"
 #include "maya/MUintArray.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -317,7 +318,18 @@ struct UsdColourSetDefinition
     isRGB = MFnMesh::kRGB == representation;
     MIntArray faceCounts, pointIndices;
     mesh.getVertices(faceCounts, pointIndices);
-    mesh.getColors(m_colours, mayaSetNamePtr);
+    MItMeshPolygon it(mesh.object());
+    while(!it.isDone())
+    {
+      MColorArray faceColours;
+      it.getColors(faceColours, mayaSetNamePtr);
+      it.next();
+      // Append face colours
+      uint32_t offset = m_colours.length();
+      m_colours.setLength(offset+faceColours.length());
+      for (uint32_t j = 0, n = faceColours.length(); j < n; ++j)
+        m_colours[offset+j] = faceColours[j];
+    }
     m_mayaInterpolation = guessColourSetInterpolationTypeExtensive(
         &m_colours[0].r,
         m_colours.length(),
@@ -387,7 +399,7 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void ColourSetBuilder::constructNewlyAddedSets(MStringArray& setNames, const std::vector<UsdGeomPrimvar>& primvars)
 {
-  for(int i = 0, n = setNames.length(); i < n; )
+  for(int i = 0; i < setNames.length(); ++i)
   {
     for(auto it = primvars.begin(), end = primvars.end(); it != end; ++it)
     {
@@ -398,10 +410,10 @@ void ColourSetBuilder::constructNewlyAddedSets(MStringArray& setNames, const std
         m_existingSetNames.append(setNames[i]);
         m_existingSetDefinitions.push_back(definition);
         setNames.remove(i);
-        continue;
+        --i;
+        break;
       }
     }
-    ++i;
   }
 }
 
@@ -569,7 +581,7 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void UvSetBuilder::constructNewlyAddedSets(MStringArray& setNames, const std::vector<UsdGeomPrimvar>& primvars)
 {
-  for(uint32_t i = 0; i < setNames.length(); )
+  for(uint32_t i = 0; i < setNames.length(); ++i)
   {
     for(auto it = primvars.begin(), end = primvars.end(); it != end; ++it)
     {
@@ -586,10 +598,10 @@ void UvSetBuilder::constructNewlyAddedSets(MStringArray& setNames, const std::ve
         m_existingSetNames.append(setNames[i]);
         m_existingSetDefinitions.push_back(definition);
         setNames.remove(i);
-        continue;
+        --i;
+        break;
       }
     }
-    ++i;
   }
 }
 

@@ -901,21 +901,24 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
           if(s)
           {
             // Prepare maya colours array
+            MFnMesh::MColorRepresentation representation;
             if (vtValue.IsHolding<VtArray<GfVec3f> >())
             {
               const VtArray<GfVec3f> rawVal = vtValue.UncheckedGet<VtArray<GfVec3f> >();
               colours.setLength(rawVal.size());
               for (uint32_t i = 0, n = rawVal.size(); i < n; ++i)
                 colours[i] = MColor(rawVal[i][0], rawVal[i][1], rawVal[i][2]);
+              representation = MFnMesh::kRGB;
             }
             else
             {
               const VtArray<GfVec4f> rawVal = vtValue.UncheckedGet<VtArray<GfVec4f> >();
               colours.setLength(rawVal.size());
               memcpy(&colours[0], (const float*)rawVal.cdata(), sizeof(float) * 4 * rawVal.size());
+              representation = MFnMesh::kRGBA;
             }
             // Set colors
-            if (!fnMesh.setColors(colours, &colourSetName))
+            if (!fnMesh.setColors(colours, &colourSetName, representation))
             {
               TF_DEBUG(ALUTILS_INFO).Msg("Failed to set colours for colour set \"%s\" on mesh \"%s\", error: %s\n",
               colourSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
@@ -1626,7 +1629,7 @@ void MeshExportContext::copyColourSetData()
         }
       }
       UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(colourSetNames[i].asChar()), SdfValueTypeNames->Float3Array, interpolation);
-      colourSet.Set(colourValues);
+      colourSet.Set(colourValues, m_timeCode);
     }
     else
     {
@@ -1701,7 +1704,8 @@ void MeshExportContext::copyColourSetData()
           colourValues.resize(indicesToExtract.size());
           for (uint32_t j = 0; j < indicesToExtract.size(); j++)
           {
-            auto& colour = colours[indicesToExtract[i]];
+            assert(indicesToExtract[j] < colours.length());
+            auto& colour = colours[indicesToExtract[j]];
             colourValues[j] = GfVec3f(colour.r, colour.g, colour.b);
           }
         }
@@ -1731,7 +1735,8 @@ void MeshExportContext::copyColourSetData()
           colourValues.resize(indicesToExtract.size());
           for (uint32_t j = 0; j < indicesToExtract.size(); j++)
           {
-            auto& colour = colours[indicesToExtract[i]];
+            assert(indicesToExtract[j] < colours.length());
+            auto& colour = colours[indicesToExtract[j]];
             colourValues[j] = GfVec4f(colour.r, colour.g, colour.b, colour.a);
           }
         }
