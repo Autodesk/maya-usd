@@ -140,7 +140,7 @@ HdDirtyBits HdVP2Mesh::GetInitialDirtyBitsMask() const {
     return HdChangeTracker::Clean | HdChangeTracker::InitRepr |
         HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyTopology |
         HdChangeTracker::DirtyTransform | HdChangeTracker::DirtyMaterialId |
-        HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyVisibility;
+        HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyInstanceIndex;
 }
 
 /*! \brief  Add additional dirty bits

@@ -30,6 +30,21 @@ namespace usdmaya {
 namespace utils {
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief  Helper class used to stop proxy shape from processing any USD notifications (this affects all threads)
+/// \ingroup usdmaya
+class BlockNotifications {
+public:
+    AL_USDMAYA_UTILS_PUBLIC
+    BlockNotifications();
+
+    AL_USDMAYA_UTILS_PUBLIC
+    ~BlockNotifications();
+
+    AL_USDMAYA_UTILS_PUBLIC
+    static bool isBlockingNotifications();
+};
+
+//----------------------------------------------------------------------------------------------------------------------
 /// \brief  Returns the dagPath result of mapping UsdPrim -> Maya Object.
 ///         proxyShapeNode is an optional argument, if it is passed and the passed in mayaObject's path couldn't be determined,
 ///         then the corresponding maya path is determined using this AL::usdmaya::nodes::ProxyShape and the usdPrim path.

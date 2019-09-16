@@ -239,7 +239,19 @@ SdfPathVector ProxyShape::getExcludePrimPaths() const
   SdfPathVector temp = getPrimPathsFromCommaJoinedString(excludedTranslatedGeometryPlug().asString());
   paths.insert(paths.end(), temp.begin(), temp.end());
 
-  return paths;
+  const auto& translatedGeo = m_context->excludedGeometry();
+
+  // combine the excluded paths
+  SdfPathVector excludedGeometryPaths;
+  excludedGeometryPaths.reserve(m_excludedTaggedGeometry.size() + paths.size() + translatedGeo.size());
+  excludedGeometryPaths.assign(m_excludedTaggedGeometry.begin(), m_excludedTaggedGeometry.end());
+  excludedGeometryPaths.insert(excludedGeometryPaths.end(), m_excludedGeometry.begin(), m_excludedGeometry.end());
+  for (auto& it : translatedGeo)
+  {
+      excludedGeometryPaths.push_back(it.second);
+  }
+
+  return excludedGeometryPaths;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -365,7 +377,7 @@ void ProxyShape::translatePrimsIntoMaya(
   if(context()->isExcludedGeometryDirty())
   {
     TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimsIntoMaya excluded geometry has been modified, reconstructing imaging engine \n");
-    constructGLImagingEngine();
+    constructExcludedPrims(); //if excluded prims changed, this will call constructGLImagingEngine
   }
 }
 //----------------------------------------------------------------------------------------------------------------------
@@ -427,19 +439,7 @@ void ProxyShape::constructGLImagingEngine()
       // delete previous instance
       destroyGLImagingEngine();
 
-      const auto& translatedGeo = m_context->excludedGeometry();
-
-      // combine the excluded paths
-      SdfPathVector excludedGeometryPaths;
-      excludedGeometryPaths.reserve(m_excludedTaggedGeometry.size() + m_excludedGeometry.size() + translatedGeo.size());
-      excludedGeometryPaths.assign(m_excludedTaggedGeometry.begin(), m_excludedTaggedGeometry.end());
-      excludedGeometryPaths.insert(excludedGeometryPaths.end(), m_excludedGeometry.begin(), m_excludedGeometry.end());
-      for(auto& it : translatedGeo)
-      {
-        excludedGeometryPaths.push_back(it.second);  
-      }
-
-      m_engine = new Engine(m_path, excludedGeometryPaths);
+      m_engine = new Engine(m_path, m_excludedGeometry);
       // set renderer plugin based on RendererManager setting
       RendererManager* manager = RendererManager::findManager();
       if(manager && m_engine)
@@ -997,7 +997,7 @@ void ProxyShape::serializeAll()
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdStageWeakPtr const& sender)
 {
-  if(MFileIO::isReadingFile())
+  if(MFileIO::isReadingFile() || AL::usdmaya::utils::BlockNotifications::isBlockingNotifications())
     return;
 
   if (!sender || sender != m_stage)
@@ -1493,6 +1493,8 @@ void ProxyShape::constructExcludedPrims()
   auto excludedPaths = getExcludePrimPaths();
   if (m_excludedGeometry != excludedPaths)
   {
+    _IncreaseExcludePrimPathsVersion();
+    
     std::swap(m_excludedGeometry, excludedPaths);
     constructGLImagingEngine();
   }
