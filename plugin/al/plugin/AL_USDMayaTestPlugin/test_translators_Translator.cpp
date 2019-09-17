@@ -47,7 +47,7 @@ TEST(translators_Translator, manufactureTranslator)
   TranslatorContextPtr context = TranslatorContext::create(0);
 
   TranslatorManufacture manufacture(context);
-  TranslatorRefPtr torBase = manufacture.get(m_prim.GetTypeName());
+  TranslatorRefPtr torBase = manufacture.getTranslatorFromId(TranslatorManufacture::TranslatorPrefixSchemaType.GetString() + m_prim.GetTypeName().GetString());
 
   EXPECT_TRUE(torBase);
 }

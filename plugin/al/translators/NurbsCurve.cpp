@@ -19,6 +19,7 @@
 
 #include "maya/MDoubleArray.h"
 #include "maya/MFnDoubleArrayData.h"
+#include "maya/MFnFloatArrayData.h"
 #include "maya/MFnNurbsCurve.h"
 #include "maya/MPointArray.h"
 #include "maya/MStatus.h"
@@ -227,10 +228,12 @@ void NurbsCurve::writeEdits(UsdGeomNurbsCurves& nurbsCurvesPrim, MFnNurbsCurve& 
   }
   if(diff_curves & AL::usdmaya::utils::kWidths)
   {
+    /*TODO: Move into AL internal ExtraData translator code as this Width/Widths attribute follows 
+      internal render conventions*/
     MObject widthObj;
     MPlug widthPlug;
-    MFnDoubleArrayData widthArray;
-    if(!AL::usdmaya::utils::getMayaCurveWidth(fnCurve, widthObj, widthPlug, widthArray))
+
+    if(!AL::usdmaya::utils::getMayaCurveWidth(fnCurve, widthObj, widthPlug))
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::No width/s attribute found for path '%s' \n",
                                           nurbsCurvesPrim.GetPath().GetText());
@@ -240,7 +243,29 @@ void NurbsCurve::writeEdits(UsdGeomNurbsCurves& nurbsCurvesPrim, MFnNurbsCurve& 
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::Exporting width/s for path '%s' \n",
                                           nurbsCurvesPrim.GetPath().GetText());
     }
-    AL::usdmaya::utils::copyWidths(widthObj, widthPlug, widthArray, nurbsCurvesPrim.GetWidthsAttr());
+
+    if(widthObj.apiType() != MFn::kInvalid)
+    {
+      if(widthObj.apiType() == MFn::kDoubleArrayData)
+      {
+        MFnDoubleArrayData widthArray;
+        widthArray.setObject(widthObj);
+        AL::usdmaya::utils::copyWidths(widthObj, widthPlug, widthArray, nurbsCurvesPrim.GetWidthsAttr());
+      }
+      else if (widthObj.apiType() == MFn::kFloatArrayData)
+      {
+        MFnFloatArrayData widthArray;
+        widthArray.setObject(widthObj);
+        AL::usdmaya::utils::copyWidths(widthObj, widthPlug, widthArray, nurbsCurvesPrim.GetWidthsAttr());
+      }
+    }
+    else if ( MFnNumericAttribute(widthPlug.attribute()).unitType() == MFnNumericData::kDouble ||
+              MFnNumericAttribute(widthPlug.attribute()).unitType() == MFnNumericData::kFloat)
+    {
+      VtArray<float> dataWidths;
+      dataWidths.push_back(widthPlug.asFloat());
+      nurbsCurvesPrim.GetWidthsAttr().Set(dataWidths);
+    }
   }
 }
 

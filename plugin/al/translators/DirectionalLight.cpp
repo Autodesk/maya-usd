@@ -127,7 +127,7 @@ UsdPrim DirectionalLight::exportObject(UsdStageRefPtr stage, MDagPath dagPath, c
   const MObject direLightObj = fnDireLight.object(&status);
   AL_MAYA_CHECK_ERROR2(status, "Export: Failed to retrieve object.");
 
-  bool result = updateUsdPrim(stage, usdPath, direLightObj);
+  updateUsdPrim(stage, usdPath, direLightObj);
 
   //If there is animation keyed on this light
   AnimationTranslator* animTranslator = params.m_animTranslator;
@@ -256,31 +256,31 @@ bool DirectionalLight::updateUsdPrim(const UsdStageRefPtr& stage, const SdfPath&
   AL_MAYA_CHECK_ERROR2(AL::usdmaya::utils::DgNodeHelper::getBool(mayaObj, m_normalize, normalize), errorString);
   AL_MAYA_CHECK_ERROR2(AL::usdmaya::utils::DgNodeHelper::getBool(mayaObj, m_enableColorTemperature, enableColorTemperature), errorString);
 
-  bool result;
+  bool result = true;
   UsdLuxDistantLight usdLight = UsdLuxDistantLight::Define(stage, usdPath);
 
   if(!(pointWorld[0] == 1.0f && pointWorld[1]== 1.0f && pointWorld[2]==1.0f))
   {
     //Need to create an attribute for "pointWorld" if it does not exist yet
     if( UsdAttribute pwAttr = usdLight.GetPrim().CreateAttribute(TfToken("pointWorld"), SdfValueTypeNames->Float3))
-      result = pwAttr.Set(GfVec3f(pointWorld));
+      result &= pwAttr.Set(GfVec3f(pointWorld));
   }
   if(angle.asRadians() != 0.0f)
-    result = usdLight.GetAngleAttr().Set(float(angle.asRadians()));
+    result &= usdLight.GetAngleAttr().Set(float(angle.asRadians()));
   if(!(color[0]== 1.0f && color[1] == 1.0f && color[2] == 1.0f))
-    result = usdLight.GetColorAttr().Set(GfVec3f(color));
+    result &= usdLight.GetColorAttr().Set(GfVec3f(color));
   if(intensity != 1.0f)
-    result = usdLight.GetIntensityAttr().Set(intensity);
+    result &= usdLight.GetIntensityAttr().Set(intensity);
   if(exposure != 0.0f)
-    result = usdLight.GetExposureAttr().Set(exposure);
+    result &= usdLight.GetExposureAttr().Set(exposure);
   if(diffuse != 1.0f)
-    result = usdLight.GetDiffuseAttr().Set(diffuse);
+    result &= usdLight.GetDiffuseAttr().Set(diffuse);
   if(specular != 1.0f)
-    result = usdLight.GetSpecularAttr().Set(specular);
+    result &= usdLight.GetSpecularAttr().Set(specular);
   if(normalize != false)
-    result = usdLight.GetNormalizeAttr().Set(normalize);
+    result &= usdLight.GetNormalizeAttr().Set(normalize);
   if(enableColorTemperature != false)
-    result = usdLight.GetEnableColorTemperatureAttr().Set(enableColorTemperature);
+    result &= usdLight.GetEnableColorTemperatureAttr().Set(enableColorTemperature);
 
   return result;
 }

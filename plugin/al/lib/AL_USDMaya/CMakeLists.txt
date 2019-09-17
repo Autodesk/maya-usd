@@ -192,6 +192,7 @@ target_link_libraries(${LIBRARY_NAME}
     AL_USDMayaUtils
     AL_MayaUtils
     AL_USDUtils
+    AL_USDTransaction
     ar 
     gf 
     kind
@@ -240,6 +241,8 @@ add_library(${PYTHON_LIBRARY_NAME}
     AL/usdmaya/wrapStageCache.cpp
     AL/usdmaya/nodes/wrapLayerManager.cpp
     AL/usdmaya/nodes/wrapProxyShape.cpp
+    AL/usdmaya/fileio/translators/wrapTranslatorBase.cpp
+    AL/usdmaya/fileio/translators/wrapTranslatorContext.cpp
 )
 
 target_compile_definitions(${PYTHON_LIBRARY_NAME}

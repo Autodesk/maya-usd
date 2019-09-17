@@ -28,6 +28,8 @@
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
 #include "AL/usdmaya/SelectabilityDB.h"
 
+#include "AL/usd/transaction/Notice.h"
+
 #include "maya/MDagModifier.h"
 #include "maya/MDagPath.h"
 #include "maya/MGlobal.h"
@@ -330,10 +332,6 @@ public:
   /// name of serialized session layer (on the LayerManager)
   AL_DECL_ATTRIBUTE(sessionLayerName);
 
-  /// serialised asset resolver context
-  // @note currently not used
-  AL_DECL_ATTRIBUTE(serializedArCtx);
-
   /// serialised translator context
   AL_DECL_ATTRIBUTE(serializedTrCtx);
 
@@ -452,7 +450,12 @@ public:
       const auto it = m_requiredPaths.find(path);
       if(it != m_requiredPaths.end())
       {
-        return it->second.node();
+        const MObject& object = it->second.node();
+        const MObjectHandle handle(object);
+        if(handle.isValid() && handle.isAlive())
+        {
+            return object;
+        }
       }
       return MObject::kNullObj;
     }
@@ -467,7 +470,8 @@ public:
   std::vector<UsdPrim> huntForNativeNodesUnderPrim(
       const MDagPath& proxyTransformPath,
       SdfPath startPath,
-      fileio::translators::TranslatorManufacture& manufacture);
+      fileio::translators::TranslatorManufacture& manufacture,
+      bool importAll = false);
 
   /// \brief  constructs a single chain of transform nodes from the usdPrim to the root of this proxy shape.
   /// \param  usdPrim  the leaf of the prim we wish to create
@@ -487,7 +491,8 @@ public:
       TransformReason reason,
       MDGModifier* modifier2 = 0,
       uint32_t* createCount = 0,
-      bool pushToPrim = true);
+      bool pushToPrim = MGlobal::optionVarIntValue("AL_usdmaya_pushToPrim"),
+      bool readAnimatedValues = MGlobal::optionVarIntValue("AL_usdmaya_readAnimatedValues"));
 
   /// \brief  Will construct AL_usdmaya_Transform nodes for all of the prims from the specified usdPrim and down.
   /// \param  usdPrim the root for the transforms to be created
@@ -630,7 +635,7 @@ public:
   /// \param  usdPrim a prim that has been brought into maya
   /// \return  a dag path to the maya object
   AL_USDMAYA_PUBLIC
-  MString getMayaPathFromUsdPrim(const UsdPrim& usdPrim);
+  MString getMayaPathFromUsdPrim(const UsdPrim& usdPrim) const;
 
   /// \brief aggregates logic that needs to iterate through the hierarchy looking for properties/metdata on prims
   AL_USDMAYA_PUBLIC
@@ -781,7 +786,7 @@ public:
 
   /// \brief  change the status of the composition changed status
   /// \param  hasObjectsChanged
-  inline void setHaveObjectsChangedAtPath(bool hasObjectsChanged)
+  inline void setHaveObjectsChangedAtPath(const bool hasObjectsChanged)
     { m_compositionHasChanged = hasObjectsChanged; }
 
   /// \brief  provides access to the selection list on this proxy shape
@@ -790,9 +795,9 @@ public:
     { return m_selectionList; }
 
   /// \brief  internal method used to correctly schedule changes to the selection list
-  /// \param  v the state
-  inline void setChangedSelectionState(bool v)
-    { m_hasChangedSelection = v; }
+  /// \param  hasSelectabilityChanged the state
+  inline void setChangedSelectionState(const bool hasSelectabilityChanged)
+    { m_hasChangedSelection = hasSelectabilityChanged; }
 
   /// \brief Returns the SelectionDatabase owned by the ProxyShape
   /// \return A SelectableDB owned by the ProxyShape
@@ -883,7 +888,8 @@ private:
       MDGModifier* modifier2 = 0,
       uint32_t* createCount = 0,
       MString* newPath = 0,
-      bool pushToPrim = true);
+      bool pushToPrim = MGlobal::optionVarIntValue("AL_usdmaya_pushToPrim"),
+      bool readAnimatedValues = MGlobal::optionVarIntValue("AL_usdmaya_readAnimatedValues"));
 
   void removeUsdTransformChain_internal(
       const UsdPrim& usdPrim,
@@ -900,7 +906,8 @@ private:
       MDGModifier* modifier2,
       uint32_t* createCount,
       MString* newPath = 0,
-      bool pushToPrim = true);
+      bool pushToPrim = MGlobal::optionVarIntValue("AL_usdmaya_pushToPrim"),
+      bool readAnimatedValues = MGlobal::optionVarIntValue("AL_usdmaya_readAnimatedValues"));
 
   void makeUsdTransformsInternal(
       const UsdPrim& usdPrim,
@@ -908,7 +915,8 @@ private:
       MDagModifier& modifier,
       TransformReason reason,
       MDGModifier* modifier2,
-      bool pushToPrim = true);
+      bool pushToPrim = MGlobal::optionVarIntValue("AL_usdmaya_pushToPrim"),
+      bool readAnimatedValues = MGlobal::optionVarIntValue("AL_usdmaya_readAnimatedValues"));
 
   void removeUsdTransformsInternal(
       const UsdPrim& usdPrim,
@@ -929,6 +937,8 @@ private:
 
     void printRefCounts() const
     {
+      MObjectHandle handle(m_node);
+      std::cout << "[valid = " << handle.isValid() << ", alive = " << handle.isAlive() << "] ";
       std::cout
                 << m_required << ":"
                 << m_selectedTemp << ":"
@@ -1016,15 +1026,18 @@ private:
   void variantSelectionListener(SdfNotice::LayersDidChange const& notice);
   void onEditTargetChanged(UsdNotice::StageEditTargetChanged const& notice, UsdStageWeakPtr const& sender);
   void trackEditTargetLayer(LayerManager* layerManager=nullptr);
+  void trackAllDirtyLayers(LayerManager* layerManager=nullptr);
   void validateTransforms();
+  void onTransactionNotice(AL::usd::transaction::CloseNotice const &notice, const UsdStageWeakPtr& stage);
+  void onRedraw() { m_requestedRedraw = false; }
 
+  /// get the stored Translator ID for a Path
+  std::string getTranslatorIdForPath(const SdfPath& path) override
+    { return m_context->getTranslatorIdForPath(path); }
 
-  TfToken getTypeForPath(const SdfPath& path) override
-    { return m_context->getTypeForPath(path); }
-
-  bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent, bool& importableByDefault) override
+  bool getTranslatorInfo(const std::string& translatorId, bool& supportsUpdate, bool& requiresParent, bool& importableByDefault) override
     {
-      auto translator = m_translatorManufacture.get(type);
+      auto translator = m_translatorManufacture.getTranslatorFromId(translatorId);
       if(translator)
       {
         supportsUpdate = translator->supportsUpdate();
@@ -1033,6 +1046,12 @@ private:
       }
       return translator != 0;
     }
+
+  /// generate the Translator ID for a Path - this is used for testing only
+  std::string generateTranslatorId(UsdPrim prim) override
+   { return m_translatorManufacture.generateTranslatorId(prim); }
+
+
 
 private:
   SdfPathVector m_pathsOrdered;
@@ -1051,6 +1070,7 @@ private:
   TfNotice::Key m_objectsChangedNoticeKey;
   TfNotice::Key m_variantChangedNoticeKey;
   TfNotice::Key m_editTargetChanged;
+  TfNotice::Key m_transactionNoticeKey;
 
   mutable std::map<UsdTimeCode, MBoundingBox> m_boundingBoxCache;
   MCallbackId m_onSelectionChanged = 0;
@@ -1062,6 +1082,8 @@ private:
   static MObject m_transformTranslate;
   static MObject m_transformRotate;
   static MObject m_transformScale;
+  static MObject m_visibleInReflections;
+  static MObject m_visibleInRefractions;
   UsdStageRefPtr m_stage;
   SdfPath m_path;
   fileio::translators::TranslatorContextPtr m_context;
@@ -1076,6 +1098,7 @@ private:
   bool m_pleaseIgnoreSelection = false;
   bool m_hasChangedSelection = false;
   bool m_filePathDirty = false;
+  bool m_requestedRedraw = false;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

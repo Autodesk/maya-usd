@@ -21,6 +21,8 @@
 #include "maya/MPlug.h"
 #include "maya/MString.h"
 
+#include "AL/maya/utils/Utils.h"
+
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
 #include "pxr/usd/usd/attribute.h"
@@ -31,7 +33,36 @@ struct compare_MPlug
 {
   bool operator () (const MPlug& a, const MPlug& b) const
   {
-    return strcmp(a.name().asChar(), b.name().asChar()) < 0;;
+    int nameCmp = strcmp(a.name().asChar(), b.name().asChar());
+    if(nameCmp != 0)
+    {
+      return nameCmp < 0;
+    }
+
+    #if AL_UTILS_ENABLE_SIMD
+    union
+    {
+      __m128i sseA;
+      AL::maya::utils::guid uuidA;
+    };
+    union
+    {
+      __m128i sseB;
+      AL::maya::utils::guid uuidB;
+    };
+    #else
+    AL::maya::utils::guid uuidA;
+    AL::maya::utils::guid uuidB;
+    #endif
+
+    MFnDependencyNode(a.node()).uuid().get(uuidA.uuid);
+    MFnDependencyNode(b.node()).uuid().get(uuidB.uuid);
+
+    #if AL_UTILS_ENABLE_SIMD
+    return AL::maya::utils::guid_compare()(sseA, sseB);
+    #else
+    return AL::maya::utils::guid_compare()(uuidA, uuidB);
+    #endif
   }
 };
 

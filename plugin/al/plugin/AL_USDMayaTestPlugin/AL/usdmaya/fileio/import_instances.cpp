@@ -63,9 +63,8 @@ TEST(import_instances, merged)
   uint32_t i = 0;
   for(; i < xformResults.length(); ++i)
   {
-    auto it = expectedTransforms.find(xformResults[i].asChar());
-    ASSERT_TRUE(it != expectedTransforms.end());
-    expectedTransforms.erase(it);
+    uint32_t removed = expectedTransforms.erase(xformResults[i].asChar());
+    ASSERT_TRUE(removed != 0);
   }
 
   EXPECT_EQ(0, expectedTransforms.size());
@@ -126,9 +125,8 @@ TEST(import_instances, unmerged)
   uint32_t i = 0;
   for(; i < xformResults.length(); ++i)
   {
-    auto it = expectedTransforms.find(xformResults[i].asChar());
-    ASSERT_TRUE(it != expectedTransforms.end());
-    expectedTransforms.erase(it);
+    uint32_t removed = expectedTransforms.erase(xformResults[i].asChar());
+    ASSERT_TRUE(removed != 0);
   }
 
   EXPECT_EQ(0, expectedTransforms.size());
