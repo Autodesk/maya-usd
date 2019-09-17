@@ -391,7 +391,14 @@ target_include_directories(
     ${PXR_INCLUDE_DIRS}
 )
 
+find_package(Boost COMPONENTS
+                filesystem
+                REQUIRED
+)
+
 target_link_libraries(${LIBRARY_NAME}
+    ${Boost_FILESYSTEM_LIBRARY}
+    ${Boost_SYSTEM_LIBRARY}
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
     ${MAYA_OpenMaya_LIBRARY}

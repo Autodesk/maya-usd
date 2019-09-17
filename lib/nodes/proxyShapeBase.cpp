@@ -16,9 +16,10 @@
 #include "proxyShapeBase.h"
 
 #include "hdImagingShape.h"
+#include "../base/debugCodes.h"
+#include "../listeners/proxyShapeNotice.h"
 #include "../utils/query.h"
 #include "../utils/stageCache.h"
-#include "../listeners/proxyShapeNotice.h"
 #include "stageData.h"
 
 #include "pxr/base/gf/bbox3d.h"
@@ -51,6 +52,9 @@
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
 #include <maya/MDGContext.h>
+#include <maya/MFileIO.h>
+#include <maya/MItDependencyNodes.h>
+#include <maya/MFnReference.h>
 #include <maya/MFnCompoundAttribute.h>
 #include <maya/MFnData.h>
 #include <maya/MFnDependencyNode.h>
@@ -76,12 +80,98 @@
 #include <utility>
 #include <vector>
 
+#include <boost/filesystem.hpp>
+
 #if defined(WANT_UFE_BUILD)
 #include <ufe/path.h>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace
+{
+    std::string resolvePath(const std::string& filePath)
+    {
+        ArResolver& resolver = ArGetResolver();
+        return resolver.Resolve(filePath);
+    }
+
+    std::string getDir(const std::string &fullFilePath)
+    {
+        return boost::filesystem::path(fullFilePath).parent_path().string();
+    }
+
+    std::string getMayaReferencedFileDir(const MObject &proxyShapeNode)
+    {
+        // Can not use MFnDependencyNode(proxyShapeNode).isFromReferencedFile() to test if it is reference node or not,
+        // which always return false even the proxyShape node is referenced...
+
+        MStatus stat;
+        MFnReference refFn;
+        MItDependencyNodes dgIter(MFn::kReference, &stat);
+        for (; !dgIter.isDone(); dgIter.next())
+        {
+            MObject cRefNode = dgIter.thisNode();
+            refFn.setObject(cRefNode);
+            if(refFn.containsNodeExactly(proxyShapeNode, &stat))
+            {
+                // According to Maya API document, the second argument is 'includePath' and set it to true to include the file path.
+                // However, I have to set it to false to return the full file path otherwise I get a file name only...
+                MString refFilePath = refFn.fileName(true, false, false, &stat);
+                if(!refFilePath.length())
+                return std::string();
+
+                std::string referencedFilePath = refFilePath.asChar();
+                TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("getMayaReferencedFileDir: The reference file that contains the proxyShape node is : %s\n", referencedFilePath.c_str());
+
+                return getDir(referencedFilePath);
+            }
+        }
+
+        return std::string();
+    }
+
+    std::string getMayaSceneFileDir()
+    {
+        std::string currentFile = std::string(MFileIO::currentFile().asChar(), MFileIO::currentFile().length());
+        size_t filePathSize = currentFile.size();
+        if(filePathSize < 4)
+            return std::string();
+
+        // If scene is untitled, the maya file will be MayaWorkspaceDir/untitled :
+        constexpr char ma_ext[] = ".ma";
+        constexpr char mb_ext[] = ".mb";
+        auto ext_start = currentFile.end() - 3;
+        if(std::equal(ma_ext, ma_ext + 3, ext_start) || std::equal(mb_ext, mb_ext + 3, ext_start))
+            return getDir(currentFile);
+
+        return std::string();
+    }
+
+    std::string resolveRelativePathWithinMayaContext(const MObject &proxyShape, const std::string& relativeFilePath)
+    {
+        if (relativeFilePath.length() < 3)
+            return relativeFilePath;
+
+        std::string currentFileDir = getMayaReferencedFileDir(proxyShape);
+
+        if(currentFileDir.empty())
+            currentFileDir = getMayaSceneFileDir();
+
+        if(currentFileDir.empty())
+            return relativeFilePath;
+
+        boost::system::error_code errorCode;
+        auto path = boost::filesystem::canonical(relativeFilePath, currentFileDir, errorCode);
+        if (errorCode)
+        {
+            // file does not exist
+            return std::string();
+        }
+
+        return path.string();
+    }
+}
 
 TF_DEFINE_PUBLIC_TOKENS(MayaUsdProxyShapeBaseTokens,
                         MAYAUSD_PROXY_SHAPE_BASE_TOKENS);
@@ -422,6 +512,28 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         // let the usd stage cache deal with caching the usd stage data
         //
         std::string fileString = TfStringTrimRight(file.asChar());
+
+        TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::reloadStage original USD file path is %s\n", fileString.c_str());
+
+        boost::filesystem::path filestringPath(fileString);
+        if(filestringPath.is_absolute())
+        {
+            fileString = resolvePath(fileString);
+            TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::reloadStage resolved the USD file path to %s\n", fileString.c_str());
+        }
+        else
+        {
+            fileString = resolveRelativePathWithinMayaContext(thisMObject(), fileString);
+            TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::reloadStage resolved the relative USD file path to %s\n", fileString.c_str());
+        }
+
+        // Fall back on providing the path "as is" to USD
+        if (fileString.empty())
+        {
+            fileString.assign(file.asChar(), file.length());
+        }
+
+        TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::loadStage called for the usd file: %s\n", fileString.c_str());
 
         // == Load the Stage
         UsdStageRefPtr usdStage;
