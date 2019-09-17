@@ -48,6 +48,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ImportTranslator, "AL usdmaya import", true, false, "*.
 
   // specify the option names (These will uniquely identify the exporter options)
   static constexpr const char* const kParentPath = "Parent Path"; ///< the parent path option name
+  static constexpr const char* const kPrimPath = "Prim Path"; ///< the prim path option name
   static constexpr const char* const kAnimations = "Import Animations"; ///< the import animation option name
   static constexpr const char* const kDynamicAttributes = "Import Dynamic Attributes"; ///< the import dynamic attributes option name
   static constexpr const char* const kStageUnload = "Load None"; ///< the import animation option name
@@ -55,7 +56,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ImportTranslator, "AL usdmaya import", true, false, "*.
   static constexpr const char* const kActivateAllTranslators = "Activate all Plugin Translators";
   static constexpr const char* const kActiveTranslatorList = "Active Translator List";
   static constexpr const char* const kInactiveTranslatorList = "Inactive Translator List";
-  
+
   /// \brief  provide a method to specify the import options
   /// \param  options a set of options that are constructed and later used for option parsing
   /// \return MS::kSuccess if ok
@@ -63,6 +64,7 @@ AL_MAYA_TRANSLATOR_BEGIN(ImportTranslator, "AL usdmaya import", true, false, "*.
   {
     if(!options.addFrame("AL USD Importer Options")) return MS::kFailure;
     if(!options.addString(kParentPath, "")) return MS::kFailure;
+    if(!options.addString(kPrimPath, "")) return MS::kFailure;
     if(!options.addBool(kAnimations, true)) return MS::kFailure;
     if(!options.addBool(kDynamicAttributes, true)) return MS::kFailure;
     if(!options.addBool(kStageUnload, false)) return MS::kFailure;
@@ -119,4 +121,3 @@ AL_MAYA_TRANSLATOR_END();
 } // usdmaya
 } // AL
 //----------------------------------------------------------------------------------------------------------------------
-

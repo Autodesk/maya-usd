@@ -76,17 +76,23 @@ void TranslatorContext::updatePrimTypes()
   {
     SdfPath path(it->path());
     UsdPrim prim = stage->GetPrimAtPath(path);
+    bool modifiedIt = false;
     if(!prim)
     {
       it = m_primMapping.erase(it);
+      modifiedIt=true;
     }
     else
-    if(it->type() != prim.GetTypeName())
     {
-      it->type() = prim.GetTypeName();
-      ++it;
+      std::string translatorId = m_proxyShape->translatorManufacture().generateTranslatorId(prim);
+      if(it->translatorId()!= translatorId)
+      {
+        it->translatorId() = translatorId;
+        ++it;
+        modifiedIt=true;
+      }
     }
-    else
+    if (!modifiedIt)
     {
       ++it;
     }
@@ -200,16 +206,23 @@ void TranslatorContext::registerItem(const UsdPrim& prim, MObjectHandle object)
   auto iter = findLocation(prim.GetPath());
   if(iter == m_primMapping.end() || iter->path() != prim.GetPath())
   {
-    iter = m_primMapping.insert(iter, PrimLookup(prim.GetPath(), prim.GetTypeName(), object.object()));
+    //We keep around this legacy plugin identification by type only to allow tests which don't create a proxy shape to run..
+    std::string translatorId = m_proxyShape ? m_proxyShape->translatorManufacture().generateTranslatorId(prim) : "schematype:" + prim.GetTypeName().GetString();
+
+    iter = m_primMapping.insert(iter, PrimLookup(prim.GetPath(), translatorId, object.object()));
+  }
+  else
+  {
+    iter->setNode(object.object());
   }
 
   if(object.object() == MObject::kNullObj)
   {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::registerItem primPath=%s primType=%s to null MObject\n", prim.GetPath().GetText(), iter->type().GetText());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::registerItem primPath=%s translatorId=%s to null MObject\n", prim.GetPath().GetText(), iter->translatorId().c_str());
   }
   else
   {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::registerItem primPath=%s primType=%s to MObject type %s\n", prim.GetPath().GetText(), iter->type().GetText(), object.object().apiTypeStr());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::registerItem primPath=%s translatorId=%s to MObject type %s\n", prim.GetPath().GetText(), iter->translatorId().c_str(), object.object().apiTypeStr());
   }
 }
 
@@ -217,10 +230,14 @@ void TranslatorContext::registerItem(const UsdPrim& prim, MObjectHandle object)
 void TranslatorContext::insertItem(const UsdPrim& prim, MObjectHandle object)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::insertItem adding entry %s[%s]\n", prim.GetPath().GetText(), object.object().apiTypeStr());
+
   auto iter = findLocation(prim.GetPath());
   if(iter == m_primMapping.end() || iter->path() != prim.GetPath())
   {
-    iter = m_primMapping.insert(iter, PrimLookup(prim.GetPath(), prim.GetTypeName(), object.object()));
+    //We keep around this legacy plugin identification by type only to allow tests which don't create a proxy shape to run..
+    std::string translatorId = m_proxyShape ? m_proxyShape->translatorManufacture().generateTranslatorId(prim) : "schematype:" + prim.GetTypeName().GetString();
+
+    iter = m_primMapping.insert(iter, PrimLookup(prim.GetPath(), translatorId, MObject()));
   }
   
   if(object.object() == MObject::kNullObj)
@@ -232,11 +249,11 @@ void TranslatorContext::insertItem(const UsdPrim& prim, MObjectHandle object)
 
   if(object.object() == MObject::kNullObj)
   {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::insertItem primPath=%s primType=%s to null MObject\n", prim.GetPath().GetText(), iter->type().GetText());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::insertItem primPath=%s translatorId=%s to null MObject\n", prim.GetPath().GetText(), iter->translatorId().c_str());
   }
   else
   {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::insertItem primPath=%s primType=%s to MObject type %s\n", prim.GetPath().GetText(), iter->type().GetText(), object.object().apiTypeStr());
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::insertItem primPath=%s translatorId=%s to MObject type %s\n", prim.GetPath().GetText(), iter->translatorId().c_str(), object.object().apiTypeStr());
   }
 }
 
@@ -256,6 +273,9 @@ void TranslatorContext::removeItems(const SdfPath& path)
     bool hasDagNodes = false;
     bool hasDependNodes = false;
 
+    // Store the DAG nodes to delete in a vector which we will sort via their path length
+    std::vector<std::pair<int, MObject>> dagNodesToDelete;
+
     auto& nodes = it->createdNodes();
     for(std::size_t j = 0, n = nodes.size(); j < n; ++j)
     {
@@ -264,30 +284,17 @@ void TranslatorContext::removeItems(const SdfPath& path)
         // Need to reparent nodes first to avoid transform getting deleted and triggering ancestor deletion
         // rather than just deleting directly.
         MObject obj = nodes[j].object();
-        if(obj.hasFn(MFn::kTransform))
-        {
-          hasDagNodes = true;
-          modifier2.reparentNode(obj);
-          status = modifier2.deleteNode(obj);
-          status = modifier2.doIt();
-          AL_MAYA_CHECK_ERROR2(status, "failed to delete transform node");
-        }
-        else
+
         if(obj.hasFn(MFn::kDagNode))
         {
-          hasDagNodes = true;
-          MObject temp = modifier2.createNode("transform");
-          MObjectHandle tempHandle(temp);
-          tempXforms.push_back(temp);
-          modifier2.reparentNode(obj, temp);
-          modifier2.doIt();  // removing this caused crashes
-          modifier2.deleteNode(obj);
-          status = modifier2.doIt();
+          MFnDagNode fn(obj);
+          MDagPath path;
+          fn.getPath(path);
+          dagNodesToDelete.emplace_back(path.fullPathName().length(), obj);
           AL_MAYA_CHECK_ERROR2(status, "failed to delete dag node");
         }
         else
         {
-          hasDependNodes = true;
           status = modifier1.deleteNode(obj);
           status = modifier1.doIt();
           AL_MAYA_CHECK_ERROR2(status, MString("failed to delete node"));
@@ -300,22 +307,47 @@ void TranslatorContext::removeItems(const SdfPath& path)
     }
     nodes.clear();
 
-    if(hasDependNodes)
+    if(!dagNodesToDelete.empty())
     {
-      status = modifier1.doIt();
-      AL_MAYA_CHECK_ERROR2(status, "failed to delete dg nodes");
-    }
-    if(hasDagNodes)
-    {
-      for (size_t i = 0, n = tempXforms.size(); i < n; ++i)
+      std::sort(dagNodesToDelete.begin(), dagNodesToDelete.end(), 
+        [](const std::pair<int, MObject>& a, const std::pair<int, MObject>& b) { return a.first > b.first; });
+
+      for(auto it : dagNodesToDelete)
       {
-        // Check if these xforms have already been deleted automatically when we deleted their child shape.
-        if(tempXforms[i].isAlive() && tempXforms[i].isValid())
+        MObjectHandle handle(it.second);
+        if(handle.isAlive() && handle.isValid())
         {
-          modifier2.deleteNode(tempXforms[i].object());
+          if(it.second.hasFn(MFn::kPluginEmitterNode) || 
+             it.second.hasFn(MFn::kPluginTransformNode)|| 
+             it.second.hasFn(MFn::kPluginConstraintNode)|| 
+             it.second.hasFn(MFn::kTransform))
+          {
+            // reparent custom transform nodes under the world prior to deletion. 
+            // This avoids the problem where deleting a custom transform node automatically 
+            // deletes the parent transform (which cascades up the hierarchy until the entire
+            // scene has been deleted)
+            status = modifier2.reparentNode(it.second);
+            modifier2.deleteNode(it.second);
+          }
+          else
+          if(it.second.hasFn(MFn::kPluginShape) || 
+             it.second.hasFn(MFn::kPluginImagePlaneNode)|| 
+             it.second.hasFn(MFn::kShape))
+          {
+            // same issue exists with custom shape nodes, except that we need to create a temp transform
+            // node to parent the shape under (otherwise the reparent operation will fail!)
+            MObject node = modifier2.createNode("transform");
+            status = modifier2.reparentNode(it.second, node);
+            status = modifier2.doIt();
+            modifier2.deleteNode(node);
+          }
+          else
+          {
+            modifier2.deleteNode(it.second);
+          }
+          status = modifier2.doIt();
         }
       }
-      status = modifier2.doIt();
       AL_MAYA_CHECK_ERROR2(status, "failed to delete dag nodes");
     }
     m_primMapping.erase(it);
@@ -340,7 +372,7 @@ MString getNodeName(MObject obj)
 //----------------------------------------------------------------------------------------------------------------------
 MString TranslatorContext::serialise() const
 {
-
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext:serialise\n");
   std::ostringstream oss;
   for(auto& path : m_excludedGeometry)
   {
@@ -354,7 +386,7 @@ MString TranslatorContext::serialise() const
 
   for(auto it : m_primMapping)
   {
-    oss << it.path() << "=" << it.type().GetText() << ",";
+    oss << it.path() << "=" << it.translatorId() << ",";
     oss << getNodeName(it.object());
     for(uint32_t i = 0; i < it.createdNodes().size(); ++i)
     {
@@ -368,6 +400,7 @@ MString TranslatorContext::serialise() const
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::deserialise(const MString& string)
 {
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext:deserialise\n");
   MStringArray strings;
   string.split(';', strings);
 
@@ -386,7 +419,7 @@ void TranslatorContext::deserialise(const MString& string)
       sl.getDependNode(0, obj);
     }
 
-    PrimLookup lookup(SdfPath(strings2[0].asChar()), TfToken(strings3[0].asChar()), obj);
+    PrimLookup lookup(SdfPath(strings2[0].asChar()), strings3[0].asChar(), obj);
 
     for(uint32_t j = 2; j < strings3.length(); ++j)
     {
@@ -455,8 +488,6 @@ void TranslatorContext::preRemoveEntry(const SdfPath& primPath, SdfPathVector& i
       }
     }
   }
-
-
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -508,13 +539,14 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
 {
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim %s");
   assert(m_proxyShape);
   auto stage = m_proxyShape->getUsdStage();
   if(stage)
   {
-    TfToken type = m_proxyShape->context()->getTypeForPath(prim.GetPath());
+    std::string translatorId = m_proxyShape->context()->getTranslatorIdForPath(prim.GetPath());
 
-    fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().get(type);
+    fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().getTranslatorFromId(translatorId);
     if(translator)
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim [preTearDown] prim=%s\n", prim.GetPath().GetText());
@@ -523,7 +555,7 @@ void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
     else
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim [preTearDown] prim=%s\n. Could not find usd translator plugin instance for prim!", prim.GetPath().GetText());
-      MGlobal::displayError(MString("TranslatorContext::preUnloadPrim could not find usd translator plugin instance for prim: ") + prim.GetPath().GetText() + " type: " + type.GetText());
+      MGlobal::displayError(MString("TranslatorContext::preUnloadPrim could not find usd translator plugin instance for prim: ") + prim.GetPath().GetText() + " type: " + translatorId.c_str());
     }
   }
   else
@@ -540,10 +572,9 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
   auto stage = m_proxyShape->usdStage();
   if(stage)
   {
-    MDagModifier modifier;
-    TfToken type = m_proxyShape->context()->getTypeForPath(path);
+    std::string translatorId = m_proxyShape->context()->getTranslatorIdForPath(path);
 
-    fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().get(type);
+    fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().getTranslatorFromId(translatorId);
     if(translator)
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::unloadPrim [tearDown] prim=%s\n", path.GetText());
@@ -573,14 +604,14 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
 
       case MStatus::kNotImplemented:
         MGlobal::displayError(
-          MString("A variant switch has occurred on a NON-CONFORMING prim, of type: ") + type.GetText() +
+          MString("A variant switch has occurred on a NON-CONFORMING prim, of type: ") + translatorId.c_str() +
           MString(" located at prim path \"") + path.GetText() + MString("\"")
           );
         break;
 
       default:
         MGlobal::displayError(
-          MString("A variant switch has caused an error on tear down on prim, of type: ") + type.GetText() +
+          MString("A variant switch has caused an error on tear down on prim, of type: ") + translatorId.c_str() +
           MString(" located at prim path \"") + path.GetText() + MString("\"")
           );
         break;
@@ -588,9 +619,8 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
     }
     else
     {
-      MGlobal::displayError(MString("could not find usd translator plugin instance for prim: ") + path.GetText() + " type: " + type.GetText());
+      MGlobal::displayError(MString("could not find usd translator plugin instance for prim: ") + path.GetText() + " translatorId: " + translatorId.c_str());
     }
-    modifier.doIt();
   }
   else
   {

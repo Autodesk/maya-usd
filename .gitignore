@@ -8,6 +8,7 @@ CMakeLists.txt.user
 CMakeFiles/cmake.check_cache
 *~
 *.orig
+*.vs
 
 *.DS_Store
 *.xcuserstate

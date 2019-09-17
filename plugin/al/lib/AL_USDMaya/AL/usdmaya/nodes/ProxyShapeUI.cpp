@@ -306,6 +306,9 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 {
   TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyShapeUI::select\n");
 
+  if(!MGlobal::optionVarIntValue("AL_usdmaya_selectionEnabled"))
+    return false;
+
   float clearCol[4];
   glGetFloatv(GL_COLOR_CLEAR_VALUE, clearCol);
 
@@ -320,7 +323,6 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
   MDagPath selectPath = selectInfo.selectPath();
   MMatrix invMatrix = selectPath.inclusiveMatrixInverse();
 
-  UsdImagingGLRenderParams params;
   MMatrix viewMatrix, projectionMatrix;
   GfMatrix4d worldToLocalSpace(invMatrix.matrix);
 
@@ -334,6 +336,10 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
   auto engine = proxyShape->engine();
   if (!engine) return false;
   proxyShape->m_pleaseIgnoreSelection = true;
+
+  UsdImagingGLRenderParams params;
+  params.showGuides = proxyShape->displayGuidesPlug().asBool();
+  params.showRender = proxyShape->displayRenderGuidesPlug().asBool();
 
   UsdPrim root = proxyShape->getUsdStage()->GetPseudoRoot();
 
