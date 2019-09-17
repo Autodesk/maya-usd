@@ -137,6 +137,8 @@ private:
     HdxTaskController*  _taskController{ nullptr }; //!< Task controller necessary for execution with hydra engine (we don't really need it, but there doesn't seem to be a way to get synchronization running without it)
     UsdImagingDelegate* _sceneDelegate{ nullptr };  //!< USD scene delegate
 
+    size_t              _excludePrimPathsVersion{ 0 }; //!< Last version of exluded prims used during render index populate
+
     bool                _isPopulated{ false };      //!< If false, scene delegate wasn't populated yet within render index
     bool                _selectionChanged{ false }; //!< Whether there is any selection change or not
     bool                _isProxySelected{ false };  //!< Whether the proxy shape is selected

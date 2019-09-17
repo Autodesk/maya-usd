@@ -177,6 +177,8 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         // Public functions
         MAYAUSD_CORE_PUBLIC
         virtual SdfPathVector getExcludePrimPaths() const;
+        MAYAUSD_CORE_PUBLIC
+        size_t                getExcludePrimPathsVersion() const;
 
         MAYAUSD_CORE_PUBLIC
         int getComplexity() const;
@@ -251,6 +253,12 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         MAYAUSD_CORE_PUBLIC
         virtual UsdTimeCode GetOutputTime(MDataBlock) const;
 
+        MAYAUSD_CORE_PUBLIC
+        void _IncreaseExcludePrimPathsVersion() { _excludePrimPathsVersion++; }
+
+        MAYAUSD_CORE_PUBLIC
+        bool setInternalValue(const MPlug& plug, const MDataHandle& dataHandle) override;
+
     private:
         MayaUsdProxyShapeBase(const MayaUsdProxyShapeBase&);
         MayaUsdProxyShapeBase& operator=(const MayaUsdProxyShapeBase&);
@@ -274,6 +282,7 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         UsdMayaStageNoticeListener _stageNoticeListener;
 
         std::map<UsdTimeCode, MBoundingBox> _boundingBoxCache;
+        size_t                              _excludePrimPathsVersion{ 1 };
 
         static ClosestPointDelegate _sharedClosestPointDelegate;
 };
