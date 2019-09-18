@@ -55,6 +55,7 @@ list(APPEND source
     nurbsSurfaceWriter.cpp
     particleWriter.cpp
     scopeReader.cpp
+    strokeWriter.cpp
     skelReader.cpp
     xformReader.cpp
 )
