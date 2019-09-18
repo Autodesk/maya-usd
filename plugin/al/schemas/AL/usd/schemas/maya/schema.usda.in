@@ -56,6 +56,10 @@ over "GLOBAL" (
                 string value = "unlocked"
                 string doc = """State which makes the Prim unlocked regardless of its parent's state"""
             }
+            dictionary assettype = {
+                string value = "assettype"
+                string doc = """asset type used to map python translators"""
+            }
         }
     }
 ) {}

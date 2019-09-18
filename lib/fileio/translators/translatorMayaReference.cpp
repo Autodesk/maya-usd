@@ -318,8 +318,10 @@ UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject parent)
     {
         if (!rigNamespaceAttribute.Get<std::string>(&rigNamespace))
         {
-            MGlobal::displayError(MString("Cannot load reference: Missing namespace on prim ") + MString(prim.GetPath().GetText()));
-            return MS::kFailure;
+            TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update Missing namespace on prim \"%s\". Will create one from prim path.", prim.GetPath().GetText());
+            // Creating default namespace from prim path. Converts /a/b/c to a_b_c.
+            rigNamespace = prim.GetPath().GetString();
+            std::replace(rigNamespace.begin() + 1, rigNamespace.end(), '/', '_');
         }
     }
 

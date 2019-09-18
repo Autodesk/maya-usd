@@ -25,7 +25,7 @@
 #include "maya/MFnDagNode.h"
 #include "maya/MTime.h"
 
-#if MAYA_API_VERSION >= 20190000
+#if MAYA_API_VERSION >= 20180600
 #include "maya/MPointArray.h"
 #include "maya/MSelectionContext.h"
 #endif
@@ -74,7 +74,11 @@ MUint64 ProxyDrawOverride::s_lastRefreshFrameStamp = 0;
 
 //----------------------------------------------------------------------------------------------------------------------
 ProxyDrawOverride::ProxyDrawOverride(const MObject& obj)
-#if MAYA_API_VERSION >= 201700
+#if MAYA_API_VERSION >= 20190000
+  : MHWRender::MPxDrawOverride(obj, draw, true)
+#elif MAYA_API_VERSION >= 20180600
+  : MHWRender::MPxDrawOverride2(obj, draw, true)
+#elif MAYA_API_VERSION >= 201700
   : MHWRender::MPxDrawOverride(obj, draw, true)
 #else
   : MHWRender::MPxDrawOverride(obj, draw)
@@ -169,6 +173,7 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
   RenderUserData* ptr = (RenderUserData*)data;
   if(ptr && ptr->m_rootPrim)
   {
+    ptr->m_shape->onRedraw();
     auto* engine = ptr->m_shape->engine();
     if (!engine)
     {
@@ -399,6 +404,8 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
     engine->SetSelectionColor(GfVec4f(1.0f, 2.0f/3.0f, 0.0f, 1.0f));
 
     ptr->m_params.frame = ptr->m_shape->outTimePlug().asMTime().as(MTime::uiUnit());
+    engine->Render(ptr->m_rootPrim, ptr->m_params);
+
     if(combined.size())
     {
       UsdImagingGLRenderParams params = ptr->m_params;
@@ -406,10 +413,13 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
       MColor colour = M3dView::leadColor();
       params.wireframeColor = GfVec4f(colour.r, colour.g, colour.b, 1.0f);
       glDepthFunc(GL_LEQUAL);
+      // Geometry already rendered, can't offset it deeper.  Push
+      // lines in front with negative offset.
+      glEnable(GL_POLYGON_OFFSET_LINE);
+      glPolygonOffset(-1.0, -1.0);
       engine->RenderBatch(combined, params);
+      glDisable(GL_POLYGON_OFFSET_LINE);
     }
-
-    engine->Render(ptr->m_rootPrim, ptr->m_params);
 
 #if defined(WANT_UFE_BUILD)
     if (ArchHasEnv("MAYA_WANT_UFE_SELECTION"))
@@ -500,7 +510,7 @@ public:
 SdfPathVector ProxyDrawOverrideSelectionHelper::m_paths;
 
 
-#if MAYA_API_VERSION >= 20190000
+#if MAYA_API_VERSION >= 20180600
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyDrawOverride::userSelect(
     const MHWRender::MSelectionInfo& selectInfo,
@@ -512,7 +522,12 @@ bool ProxyDrawOverride::userSelect(
 {
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyDrawOverride::userSelect\n");
 
-  if (!selectInfo.selectable(MSelectionMask(ProxyShape::s_selectionMaskName)))
+  if(!MGlobal::optionVarIntValue("AL_usdmaya_selectionEnabled"))
+    return false;
+
+  MString selectionMaskName(ProxyShape::s_selectionMaskName);
+  MSelectionMask mask(selectionMaskName);
+  if (!selectInfo.selectable(mask))
     return false;
 
   MStatus status;
@@ -550,12 +565,15 @@ bool ProxyDrawOverride::userSelect(
   MMatrix invMatrix = objPath.inclusiveMatrixInverse();
   GfMatrix4d worldToLocalSpace(invMatrix.matrix);
 
-  UsdImagingGLRenderParams params;
 
   auto* proxyShape = static_cast<ProxyShape*>(getShape(objPath));
   auto engine = proxyShape->engine();
   if (!engine) return false;
   proxyShape->m_pleaseIgnoreSelection = true;
+
+  UsdImagingGLRenderParams params;
+  // Mostly want to get render params to set renderGuides/proxyGuides/etc
+  proxyShape->getRenderAttris(params, context, objPath);
 
   UsdPrim root = proxyShape->getUsdStage()->GetPseudoRoot();
 

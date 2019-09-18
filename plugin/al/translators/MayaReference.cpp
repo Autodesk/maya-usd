@@ -40,73 +40,6 @@
 
 #include <pxr/usd/usd/attribute.h>
 
-
-//namespace {
-//  // If the given source and destArrayPlug are already connected, returns the index they are
-//  // connected at; otherwise, returns the lowest index in the destArray that does not already
-//  // have a connection
-//  MStatus connectedOrFirstAvailableIndex(
-//      MPlug srcPlug,
-//      MPlug destArrayPlug,
-//      unsigned int& foundIndex,
-//      bool& wasConnected)
-//  {
-//    // Want to find the lowest unconnected (as dest) open logical index... so we add to
-//    // a list, then sort
-//    MStatus status;
-//    foundIndex = 0;
-//    wasConnected = false;
-//    unsigned int numConnected = destArrayPlug.numConnectedElements(&status);
-//    AL_MAYA_CHECK_ERROR(status, MString("failed to get numConnectedElements on ") + destArrayPlug.name());
-//    if (numConnected > 0)
-//    {
-//      std::vector<unsigned int> usedLogicalIndices;
-//      usedLogicalIndices.reserve(numConnected);
-//      MPlug elemPlug;
-//      MPlug elemSrcPlug;
-//      for (unsigned int connectedI = 0; connectedI < numConnected; ++connectedI)
-//      {
-//        elemPlug = destArrayPlug.connectionByPhysicalIndex(connectedI, &status);
-//        AL_MAYA_CHECK_ERROR(status, MString("failed to get connection ") + connectedI + " on "+ destArrayPlug.name());
-//        elemSrcPlug = elemPlug.source(&status);
-//        AL_MAYA_CHECK_ERROR(status, MString("failed to get source for ") + elemPlug.name());
-//        if (!elemSrcPlug.isNull())
-//        {
-//          if (elemSrcPlug == srcPlug)
-//          {
-//            foundIndex = elemPlug.logicalIndex();
-//            wasConnected = true;
-//            return status;
-//          }
-//          usedLogicalIndices.push_back(elemPlug.logicalIndex());
-//        }
-//      }
-//      if (!usedLogicalIndices.empty())
-//      {
-//        std::sort(usedLogicalIndices.begin(), usedLogicalIndices.end());
-//        // after sorting, since we assume no repeated indices, if the number of
-//        // elements = value of last element + 1, then we know it's tightly packed...
-//        if (usedLogicalIndices.size() - 1 == usedLogicalIndices.back())
-//        {
-//          foundIndex = usedLogicalIndices.size();
-//        }
-//        else
-//        {
-//          // If it's not tightly packed, just iterate through from start until we
-//          // find an element whose index != it's value
-//          for (foundIndex = 0;
-//              foundIndex < usedLogicalIndices.size();
-//              ++foundIndex)
-//          {
-//            if (usedLogicalIndices[foundIndex] != foundIndex) break;
-//          }
-//        }
-//      }
-//    }
-//    return status;
-//  }
-//}
-
 namespace AL {
 namespace usdmaya {
 namespace fileio {
@@ -125,6 +58,31 @@ MStatus MayaReference::initialize()
 MStatus MayaReference::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::import prim=%s\n", prim.GetPath().GetText());
+  return UsdMayaTranslatorMayaReference::update(prim, parent);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus MayaReference::tearDown(const SdfPath& primPath)
+{
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::tearDown prim=%s\n", primPath.GetText());
+  MObject mayaObject;
+  MObjectHandle handle;
+  context()->getTransform(primPath, handle);
+  mayaObject = handle.object();
+  UsdMayaTranslatorMayaReference::UnloadMayaReference(mayaObject);
+  return MS::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus MayaReference::update(const UsdPrim& prim)
+{
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::update prim=%s\n", prim.GetPath().GetText());
+  MObjectHandle handle;
+  if(!context()->getTransform(prim, handle))
+  {
+    MGlobal::displayError(MString("MayaReference::update unable to find the transform node for prim: ") + prim.GetPath().GetText());
+  }
+  MObject parent = handle.object();
   return UsdMayaTranslatorMayaReference::update(prim, parent);
 }
 

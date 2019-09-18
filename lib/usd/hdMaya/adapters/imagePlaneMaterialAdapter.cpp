@@ -219,6 +219,9 @@ private:
         // the uv placement node, so we don't touch those for now.
         return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
             texture, HdTextureType::Uv, HdWrapClamp, HdWrapClamp,
+#ifdef HDMAYA_USD_001910_BUILD
+            HdWrapClamp,
+#endif
             HdMinFilterLinearMipmapLinear, HdMagFilterLinear,
             GetDelegate()->GetParams().textureMemoryPerTexture));
     }

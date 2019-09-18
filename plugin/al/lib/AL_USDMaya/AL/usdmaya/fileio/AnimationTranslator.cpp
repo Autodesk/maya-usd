@@ -184,8 +184,8 @@ bool AnimationTranslator::isAnimatedMesh(const MDagPath& mesh)
   for (; !iter.isDone(); iter.next())
   {
     MObject currNode = iter.thisPlug().node();
-    if ((currNode.hasFn(MFn::kTransform) || currNode.hasFn(MFn::kPluginTransformNode))
-        && MAnimUtil::isAnimated(currNode, true))
+    if (((currNode.hasFn(MFn::kTransform) || currNode.hasFn(MFn::kPluginTransformNode))
+        && MAnimUtil::isAnimated(currNode, true)) || currNode.hasFn(MFn::kTime))
     {
       return true;
     }

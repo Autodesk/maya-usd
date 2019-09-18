@@ -32,8 +32,14 @@ namespace nodes {
 /// \brief  This class provides the draw override for the USD proxy shape node.
 /// \ingroup nodes
 //----------------------------------------------------------------------------------------------------------------------
-class ProxyDrawOverride
-  : public MHWRender::MPxDrawOverride
+
+#if MAYA_API_VERSION >= 20190000
+class ProxyDrawOverride : public MHWRender::MPxDrawOverride
+#elif MAYA_API_VERSION >= 20180600
+class ProxyDrawOverride : public MHWRender::MPxDrawOverride2
+#else
+class ProxyDrawOverride : public MHWRender::MPxDrawOverride
+#endif
 {
 public:
 
@@ -113,7 +119,7 @@ public:
 private:
   static MUint64 s_lastRefreshFrameStamp;
   
-#if MAYA_API_VERSION >= 20190000
+#if MAYA_API_VERSION >= 20180600
   bool wantUserSelection() const override {return true;}
   
   bool userSelect(

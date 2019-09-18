@@ -65,6 +65,8 @@ typedef boost::filesystem::path path;
 #include "AL/usdmaya/Version.h"
 #include "AL/usdmaya/utils/Utils.h"
 
+#include "AL/usd/transaction/TransactionManager.h"
+
 #include "pxr/usd/ar/resolver.h"
 
 #include "pxr/usd/usdGeom/imageable.h"
@@ -203,7 +205,6 @@ MObject ProxyShape::m_outTime = MObject::kNullObj;
 MObject ProxyShape::m_layers = MObject::kNullObj;
 MObject ProxyShape::m_serializedSessionLayer = MObject::kNullObj;
 MObject ProxyShape::m_sessionLayerName = MObject::kNullObj;
-MObject ProxyShape::m_serializedArCtx = MObject::kNullObj;
 MObject ProxyShape::m_serializedTrCtx = MObject::kNullObj;
 MObject ProxyShape::m_unloaded = MObject::kNullObj;
 MObject ProxyShape::m_ambient = MObject::kNullObj;
@@ -219,6 +220,8 @@ MObject ProxyShape::m_transformScale = MObject::kNullObj;
 MObject ProxyShape::m_stageDataDirty = MObject::kNullObj;
 MObject ProxyShape::m_stageCacheId = MObject::kNullObj;
 MObject ProxyShape::m_assetResolverConfig = MObject::kNullObj;
+MObject ProxyShape::m_visibleInReflections = MObject::kNullObj;
+MObject ProxyShape::m_visibleInRefractions = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 std::vector<MObjectHandle> ProxyShape::m_unloadedProxyShapes;
@@ -336,6 +339,12 @@ void ProxyShape::translatePrimsIntoMaya(
     }
   }
 
+  // content to remove needs to be dealt with first
+  // as some nodes might be re-imported and we have
+  // to make sure their "old" version is gone before
+  // recreating them.
+  context()->removeEntries(filter.removedPrimSet());
+
   cmds::ProxyShapePostLoadProcess::MObjectToPrim objsToCreate;
   if(!filter.transformsToCreate().empty())
   {
@@ -344,10 +353,10 @@ void ProxyShape::translatePrimsIntoMaya(
         filter.transformsToCreate(),
         parentTransform(),
         objsToCreate,
-        param.pushToPrim());
+        param.pushToPrim(),
+        param.readAnimatedValues());
   }
 
-  context()->removeEntries(filter.removedPrimSet());
 
   if(!filter.newPrimSet().empty())
   {
@@ -591,6 +600,9 @@ ProxyShape::ProxyShape()
   m_objectsChangedNoticeKey = TfNotice::Register(me, &ProxyShape::onObjectsChanged, m_stage);
   m_editTargetChanged = TfNotice::Register(me, &ProxyShape::onEditTargetChanged, m_stage);
 
+  TfWeakPtr<UsdStage> stage(m_stage);
+  m_transactionNoticeKey = TfNotice::Register(me, &ProxyShape::onTransactionNotice, stage);
+
   registerEvents();
 
   m_findExcludedPrims.preIteration = [this]() {
@@ -698,6 +710,7 @@ ProxyShape::~ProxyShape()
   TfNotice::Revoke(m_variantChangedNoticeKey);
   TfNotice::Revoke(m_objectsChangedNoticeKey);
   TfNotice::Revoke(m_editTargetChanged);
+  TfNotice::Revoke(m_transactionNoticeKey);
   destroyGLImagingEngine();
   triggerEvent("PostDestroyProxyShape");
 }
@@ -742,7 +755,8 @@ MStatus ProxyShape::initialise()
     m_serializedSessionLayer = addStringAttr("serializedSessionLayer", "ssl", kCached|kReadable|kWritable|kStorable|kHidden);
     m_sessionLayerName = addStringAttr("sessionLayerName", "sln", kCached|kReadable|kWritable|kStorable|kHidden);
 
-    m_serializedArCtx = addStringAttr("serializedArCtx", "arcd", kCached|kReadable|kWritable|kStorable|kHidden);
+    //for backward compatibility (or at least to stop maya spewing out errors on scene open). This attribute was removed in 0.32.17
+    addStringAttr("serializedArCtx", "arcd", kReadable|kWritable|kHidden);
     // m_filePath / m_primPath / m_excludePrimPaths are internal just so we get notification on change
     inheritFilePathAttr("filePath", kCached | kReadable | kWritable | kStorable | kAffectsAppearance | kInternal, kLoad, "USD Files (*.usd*) (*.usd*);;Alembic Files (*.abc)");
 
@@ -778,16 +792,20 @@ MStatus ProxyShape::initialise()
         "version", "vrs", getVersion(),
         kReadable | kStorable | kHidden);
 
-    MNodeClass nc("transform");
-    m_transformTranslate = nc.attribute("t");
-    m_transformRotate = nc.attribute("r");
-    m_transformScale = nc.attribute("s");
+    MNodeClass ncTransform("transform");
+    m_transformTranslate = ncTransform.attribute("t");
+    m_transformRotate = ncTransform.attribute("r");
+    m_transformScale = ncTransform.attribute("s");
+
+    MNodeClass ncProxyShape(kTypeId);
+    m_visibleInReflections = ncProxyShape.attribute("visibleInReflections");
+    m_visibleInRefractions = ncProxyShape.attribute("visibleInRefractions");
 
     m_stageDataDirty = addBoolAttr("stageDataDirty", "sdd", false, kWritable | kAffectsAppearance | kInternal);
 
-    m_stageCacheId = addInt32Attr("stageCacheId", "stcid", -1, kCached | kConnectable | kReadable  );
+    m_stageCacheId = addInt32Attr("stageCacheId", "stcid", -1, kCached | kConnectable | kReadable | kInternal );
 
-    m_assetResolverConfig = addStringAttr("assetResolverConfig", "arc", kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance);
+    m_assetResolverConfig = addStringAttr("assetResolverConfig", "arc", kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance | kInternal);
 
     AL_MAYA_CHECK_ERROR(attributeAffects(time(), m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, m_outTime), errorString);
@@ -864,6 +882,20 @@ void ProxyShape::trackEditTargetLayer(LayerManager* layerManager)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::trackAllDirtyLayers(LayerManager* layerManager)
+{
+  trackEditTargetLayer(layerManager);
+  if (!layerManager)
+    layerManager = LayerManager::findOrCreateManager();
+  auto usedLayer = m_stage->GetUsedLayers();
+  for (auto& _layer: usedLayer)
+  {
+    if (_layer->IsDirty())
+      layerManager->addLayer(_layer);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onPrimResync(SdfPath primPath, SdfPathVector& previousPrims)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::onPrimResync checking %s\n", primPath.GetText());
@@ -922,8 +954,19 @@ void ProxyShape::serialize(UsdStageRefPtr stage, LayerManager* layerManager)
       // Make sure the sessionLayer is always serialized (even if it's never an edit target)
       auto sessionLayer = stage->GetSessionLayer();
       layerManager->addLayer(sessionLayer);
-      // ...and store the name for the (anonymous) session layer so we can find it!
-      sessionLayerNamePlug().setValue(AL::maya::utils::convert(sessionLayer->GetIdentifier()));
+      
+      auto identifier = sessionLayer->GetIdentifier();
+      if(layerManager->findLayer(identifier))
+      {
+        // ...and store the name for the (anonymous) session layer so we can find it!
+        sessionLayerNamePlug().setValue(AL::maya::utils::convert(identifier));
+      }
+      else
+      {
+        // ...make sure for the old Maya scene, we clear the sessionLayerName plug so there is no
+        // complaint when we open it.
+        sessionLayerNamePlug().setValue("");
+      }      
 
       // Then add in the current edit target
       trackEditTargetLayer(layerManager);
@@ -1004,6 +1047,9 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
       return;
 
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::onObjectsChanged called m_compositionHasChanged=%i\n", m_compositionHasChanged);
+
+  bool shouldCleanBBoxCache = false;
+
   const UsdNotice::ObjectsChanged::PathRange resyncedPaths = notice.GetResyncedPaths();
   for(const SdfPath& path : resyncedPaths)
   {
@@ -1019,15 +1065,52 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
         continue;
       tmm->setPrim(newPrim, tm); // Might be (invalid/nullptr) but that's OK at least it won't crash
     }
+    else
+    {
+      UsdPrim newPrim = m_stage->GetPrimAtPath(path);
+      if(newPrim && newPrim.IsA<UsdGeomXformable>())
+      {
+        shouldCleanBBoxCache = true;
+      }
+    }
+  }
+
+  // check to see if any transform ops have been modified (update the bounds accordingly)
+  if(!shouldCleanBBoxCache)
+  {
+    const UsdNotice::ObjectsChanged::PathRange changedOnlyPaths = notice.GetChangedInfoOnlyPaths();
+    for(const SdfPath& path : changedOnlyPaths)
+    {
+      UsdPrim changedPrim = m_stage->GetPrimAtPath(path);
+      if(path.IsPrimPropertyPath())
+      {
+        const std::string tokenString = path.GetElementString();
+        if(std::strncmp(tokenString.c_str(), ".xformOp", 8) == 0)
+        {
+          shouldCleanBBoxCache = true;
+          break;
+        }
+      }
+    }
+  }
+
+  // do we need to clear the bounding box cache?
+  if(shouldCleanBBoxCache)
+  {
+      clearBoundingBoxCache();
+
+    // Ideally we want to have a way to force maya to call ProxyShape::boundingBox() again to update the bbox attributes. 
+    // This may lead to a delay in the bbox updates (e.g. usually you need to reselect the proxy before the bounds will 
+    // be updated).
   }
 
   // These paths are subtree-roots representing entire subtrees that may have
   // changed. In this case, we must dump all cached data below these points
   // and repopulate those trees.
+  const bool compositionChanged = m_compositionHasChanged;
   if(m_compositionHasChanged)
   {
     m_compositionHasChanged = false;
-
     onPrimResync(m_changedPath, m_variantSwitchedPrims);
     m_variantSwitchedPrims.clear();
     m_changedPath = SdfPath();
@@ -1040,11 +1123,6 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   SdfPathVector newUnselectables;
   SdfPathVector removeUnselectables;
   auto recordSelectablePrims = [&newUnselectables, &removeUnselectables, this](const UsdPrim& prim){
-    if(!prim.IsValid())
-    {
-      return;
-    }
-
     TfToken unselectablePropertyValue;
     if(prim.GetMetadata(Metadata::selectability, &unselectablePropertyValue))
     {
@@ -1064,10 +1142,6 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   SdfPathSet lockInheritedPrims;
   SdfPathSet unlockedPrims;
   auto recordPrimsLockStatus = [&lockTransformPrims, &lockInheritedPrims, &unlockedPrims](const UsdPrim& prim) {
-    if (!prim.IsValid())
-    {
-      return;
-    }
     TfToken lockPropertyValue;
     if (prim.GetMetadata(Metadata::locked, &lockPropertyValue))
     {
@@ -1093,8 +1167,33 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   for(const SdfPath& path : resyncedPaths)
   {
     UsdPrim newPrim = m_stage->GetPrimAtPath(path);
-    recordSelectablePrims(newPrim);
-    recordPrimsLockStatus(newPrim);
+    if(newPrim && newPrim.IsActive())
+    {
+      recordSelectablePrims(newPrim);
+      recordPrimsLockStatus(newPrim);
+    }
+    else
+    {
+      auto iter = m_lockTransformPrims.lower_bound(path);
+      if(iter != m_lockTransformPrims.end() && *iter == path)
+      {
+        auto end = iter;
+        auto len = iter->GetString().size();
+        while(++end != m_lockTransformPrims.end())
+        {
+          if(len < end->GetString().size())
+          {
+            if(!std::equal(iter->GetString().begin(), iter->GetString().end(), end->GetString().begin()))
+            {
+              break;
+            }
+          }
+          else break;
+        }
+        // remove paths from the locked prim set
+        m_lockTransformPrims.erase(iter, end);
+      }
+    }
   }
 
   const UsdNotice::ObjectsChanged::PathRange changedInfoOnlyPaths = notice.GetChangedInfoOnlyPaths();
@@ -1109,9 +1208,17 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     {
       changedPrim = m_stage->GetPrimAtPath(path);
     }
-    recordSelectablePrims(changedPrim);
-    recordPrimsLockStatus(changedPrim);
+    if(changedPrim)
+    {
+      recordSelectablePrims(changedPrim);
+      recordPrimsLockStatus(changedPrim);
+    }
+    else
+    {
+      TF_DEBUG(ALUSDMAYA_EVENTS).Msg("invalid prim path found: %s\n", path.GetText());
+    }
   }
+
 
   if(!removeUnselectables.empty())
   {
@@ -1123,16 +1230,18 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     m_selectabilityDB.addPathsAsUnselectable(newUnselectables);
   }
 
-  bool lockChanged = updateLockPrims(lockTransformPrims, lockInheritedPrims, unlockedPrims);
-  if (lockChanged)
+  if(compositionChanged)
   {
+    updateLockPrims(lockTransformPrims, lockInheritedPrims, unlockedPrims);
     constructLockPrims();
   }
 
-  if(m_compositionHasChanged)
+  // If redraw wasn't requested from Maya i.e. external stage modification
+  // We need to request redraw on idle, so viewport is updated
+  if (!m_requestedRedraw && !AL::usd::transaction::TransactionManager::InProgress(sender))
   {
-    // Manually trigger a viewport redraw
-    MGlobal::executeCommand("refresh");
+    m_requestedRedraw = true;
+    MGlobal::executeCommandOnIdle("refresh");
   }
 }
 
@@ -1148,6 +1257,12 @@ void ProxyShape::validateTransforms()
       TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("validateTransforms %s\n", it.first.GetText());
 
       MObject node = it.second.node();
+      MObjectHandle handle(node);
+      if(!handle.isValid() || !handle.isAlive())
+      {
+        continue;
+      }
+
       if(node.isNull())
       {
         continue;
@@ -1156,12 +1271,11 @@ void ProxyShape::validateTransforms()
       Transform* tm = it.second.transform();
       if(!tm)
       {
-        continue;
-      }
-
-      TransformationMatrix* tmm = tm->transform();
-      if(!tmm)
-      {
+        UsdPrim newPrim = m_stage->GetPrimAtPath(it.first);
+        if(!newPrim)
+        {
+          pathsToNuke.push_back(it.first);
+        }
         continue;
       }
 
@@ -1185,10 +1299,21 @@ void ProxyShape::validateTransforms()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::onTransactionNotice(AL::usd::transaction::CloseNotice const &notice, const UsdStageWeakPtr& stage)
+{
+  if (!m_requestedRedraw)
+  {
+    m_requestedRedraw = true;
+    MGlobal::executeCommandOnIdle("refresh");
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 std::vector<UsdPrim> ProxyShape::huntForNativeNodesUnderPrim(
     const MDagPath& proxyTransformPath,
     SdfPath startPath,
-    fileio::translators::TranslatorManufacture& manufacture)
+    fileio::translators::TranslatorManufacture& manufacture,
+    const bool importAll)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::huntForNativeNodesUnderPrim\n");
   std::vector<UsdPrim> prims;
@@ -1204,7 +1329,7 @@ std::vector<UsdPrim> ProxyShape::huntForNativeNodesUnderPrim(
     }
 
     fileio::translators::TranslatorRefPtr trans = utils.isSchemaPrim(prim);
-    if(trans && trans->importableByDefault())
+    if(trans && (trans->importableByDefault() || importAll))
     {
       prims.push_back(prim);
     }
@@ -1275,144 +1400,183 @@ void ProxyShape::loadStage()
 
   AL_BEGIN_PROFILE_SECTION(LoadStage);
   MDataBlock dataBlock = forceCache();
-  // in case there was already a stage in m_stage, check to see if it's edit target has been altered
+
+  const int stageIdVal = inputInt32Value(dataBlock, m_stageCacheId);
+  UsdStageCache::Id stageId = UsdStageCache::Id().FromLongInt(stageIdVal);
+  MString file = inputStringValue(dataBlock, filePath());
+
   if (m_stage)
   {
+    // In case there was already a stage in m_stage, check to see if it's edit target has been altered.
     trackEditTargetLayer();
+
+    if (StageCache::Get().Contains(stageId))
+    {
+      auto stageFromId = StageCache::Get().Find(stageId);
+      const MString stageFilePath = AL::maya::utils::convert(stageFromId->GetRootLayer()->GetIdentifier());
+      if (file != stageFilePath)
+      {
+        // When we have an existing stage and a valid stageCacheId, if file paths of the stage from cache
+        // doesn't match that the one we are holding on to, then looks like file path was changed. Drop the current
+        // cache Id.
+        stageId = UsdStageCache::Id();
+      }
+    }
   }
-  m_stage = UsdStageRefPtr();
 
-  // Get input attr values
-  const MString file = inputStringValue(dataBlock, filePath());
-  const MString sessionLayerName = inputStringValue(dataBlock, m_sessionLayerName);
-  const MString serializedArCtx = inputStringValue(dataBlock, m_serializedArCtx);
-
-  const MString populationMaskIncludePaths = inputStringValue(dataBlock, m_populationMaskIncludePaths);
-  UsdStagePopulationMask mask = constructStagePopulationMask(populationMaskIncludePaths);
-
-  // TODO initialise the context using the serialised attribute
-
-  // let the usd stage cache deal with caching the usd stage data
-  std::string fileString = TfStringTrimRight(file.asChar());
-
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage original USD file path is %s\n", fileString.c_str());
-
-  AL::filesystem::path filestringPath (fileString);
-  if(filestringPath.is_absolute())
+  if (stageId.IsValid())
   {
-    fileString = resolvePath(fileString);
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the USD file path to %s\n", fileString.c_str());
+    // Load stage from cache.
+    if (StageCache::Get().Contains(stageId))
+    {
+      m_stage = StageCache::Get().Find(stageId);
+      // Save the initial edit target and all dirty layers.
+      trackAllDirtyLayers();
+      file.set(m_stage->GetRootLayer()->GetIdentifier().c_str());
+      outputStringValue(dataBlock, filePath(), file);
+    }
+    else
+    {
+      MGlobal::displayError(MString("ProxyShape::loadStage called with non-existent stageCacheId ") + stageId.ToString().c_str());
+      stageId = UsdStageCache::Id();
+    }
   }
   else
   {
-    fileString = resolveRelativePathWithinMayaContext(thisMObject(), fileString);
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the relative USD file path to %s\n", fileString.c_str());
-  }
+    m_stage = UsdStageRefPtr();
 
-  // Fall back on providing the path "as is" to USD
-  if (fileString.empty())
-  {
-    fileString.assign(file.asChar(), file.length());
-  }
+    // Get input attr values
+    const MString sessionLayerName = inputStringValue(dataBlock, m_sessionLayerName);
 
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage called for the usd file: %s\n", fileString.c_str());
+    const MString populationMaskIncludePaths = inputStringValue(dataBlock, m_populationMaskIncludePaths);
+    UsdStagePopulationMask mask = constructStagePopulationMask(populationMaskIncludePaths);
 
-  // Only try to create a stage for layers that can be opened.
-  if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString))
-  {
-    MStatus status;
-    SdfLayerRefPtr sessionLayer;
+    // TODO initialise the context using the serialised attribute
 
-    AL_BEGIN_PROFILE_SECTION(OpeningUsdStage);
-      AL_BEGIN_PROFILE_SECTION(OpeningSessionLayer);
+    // let the usd stage cache deal with caching the usd stage data
+    std::string fileString = TfStringTrimRight(file.asChar());
+
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage original USD file path is %s\n", fileString.c_str());
+
+    AL::filesystem::path filestringPath(fileString);
+    if (filestringPath.is_absolute())
+    {
+      fileString = resolvePath(fileString);
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the USD file path to %s\n",
+                                          fileString.c_str());
+    }
+    else
+    {
+      fileString = resolveRelativePathWithinMayaContext(thisMObject(), fileString);
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the relative USD file path to %s\n",
+                                          fileString.c_str());
+    }
+
+    // Fall back on providing the path "as is" to USD
+    if (fileString.empty())
+    {
+      fileString.assign(file.asChar(), file.length());
+    }
+
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage called for the usd file: %s\n", fileString.c_str());
+
+    // Only try to create a stage for layers that can be opened.
+    if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString))
+    {
+      MStatus status;
+      SdfLayerRefPtr sessionLayer;
+
+      AL_BEGIN_PROFILE_SECTION(OpeningUsdStage);
+        AL_BEGIN_PROFILE_SECTION(OpeningSessionLayer);
         {
           // Grab the session layer from the layer manager
-          if(sessionLayerName.length() > 0)
+          if (sessionLayerName.length() > 0)
           {
             auto layerManager = LayerManager::findManager();
-            if(layerManager)
+            if (layerManager)
             {
               sessionLayer = layerManager->findLayer(AL::maya::utils::convert(sessionLayerName));
-              if(!sessionLayer)
+              if (!sessionLayer)
               {
                 MGlobal::displayError(MString("ProxyShape \"") + name() + "\" had a serialized session layer"
-                    " named \"" + sessionLayerName + "\", but no matching layer could be found in the layerManager");
+                                                                          " named \"" + sessionLayerName +
+                                      "\", but no matching layer could be found in the layerManager");
               }
             }
             else
             {
               MGlobal::displayError(MString("ProxyShape \"") + name() + "\" had a serialized session layer,"
-                  " but no layerManager node was found");
+                                                                        " but no layerManager node was found");
             }
           }
 
           // If we still have no sessionLayer, but there's data in serializedSessionLayer, then
           // assume we're reading an "old" file, and read it for backwards compatibility.
-          if(!sessionLayer)
+          if (!sessionLayer)
           {
             const MString serializedSessionLayer = inputStringValue(dataBlock, m_serializedSessionLayer);
-            if(serializedSessionLayer.length() != 0)
+            if (serializedSessionLayer.length() != 0)
             {
               sessionLayer = SdfLayer::CreateAnonymous();
               sessionLayer->ImportFromString(AL::maya::utils::convert(serializedSessionLayer));
             }
           }
         }
-      AL_END_PROFILE_SECTION();
+        AL_END_PROFILE_SECTION();
 
-      AL_BEGIN_PROFILE_SECTION(OpenRootLayer);
+        AL_BEGIN_PROFILE_SECTION(OpenRootLayer);
 
-      const MString assetResolverConfig = inputStringValue(dataBlock, m_assetResolverConfig);
+        const MString assetResolverConfig = inputStringValue(dataBlock, m_assetResolverConfig);
 
-      if (assetResolverConfig.length()==0)
-      {
-        // Initialise the asset resolver with the filepath
-        PXR_NS::ArGetResolver().ConfigureResolverForAsset(fileString);
-      }
-      else
-      {
-        // Initialise the asset resolver with the resolverConfig string
-        PXR_NS::ArGetResolver().ConfigureResolverForAsset(assetResolverConfig.asChar());
-      }
-      AL_END_PROFILE_SECTION();
-
-      AL_BEGIN_PROFILE_SECTION(UsdStageOpen);
-      {
-        UsdStageCacheContext ctx(StageCache::Get());
-
-        bool unloadedFlag = inputBoolValue(dataBlock, m_unloaded);
-        UsdStage::InitialLoadSet loadOperation = unloadedFlag ? UsdStage::LoadNone : UsdStage::LoadAll;
-
-        if (sessionLayer)
+        if (assetResolverConfig.length()==0)
         {
-          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage is called with extra session layer.\n");
-          m_stage = UsdStage::OpenMasked(rootLayer, sessionLayer, mask, loadOperation);
+          // Initialise the asset resolver with the filepath
+          PXR_NS::ArGetResolver().ConfigureResolverForAsset(fileString);
         }
         else
         {
-          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage is called without any session layer.\n");
-          m_stage = UsdStage::OpenMasked(rootLayer, mask, loadOperation);
+          // Initialise the asset resolver with the resolverConfig string
+          PXR_NS::ArGetResolver().ConfigureResolverForAsset(assetResolverConfig.asChar());
         }
+        AL_END_PROFILE_SECTION();
 
-        // Expand the mask, since we do not really want to mask the possible relation targets.
-        m_stage->ExpandPopulationMask();
+        AL_BEGIN_PROFILE_SECTION(UsdStageOpen);
+        {
+          UsdStageCacheContext ctx(StageCache::Get());
 
-        UsdStageCache::Id stageId = StageCache::Get().Insert(m_stage);
-        outputInt32Value(dataBlock, m_stageCacheId, stageId.ToLongInt());
+          bool unloadedFlag = inputBoolValue(dataBlock, m_unloaded);
+          UsdStage::InitialLoadSet loadOperation = unloadedFlag ? UsdStage::LoadNone : UsdStage::LoadAll;
 
-        // Set the edit target to the session layer so any user interaction will wind up there
-        m_stage->SetEditTarget(m_stage->GetSessionLayer());
-        // Save the initial edit target
-        trackEditTargetLayer();
-      }
+          if (sessionLayer)
+          {
+            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage is called with extra session layer.\n");
+            m_stage = UsdStage::OpenMasked(rootLayer, sessionLayer, mask, loadOperation);
+          }
+          else
+          {
+            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage is called without any session layer.\n");
+            m_stage = UsdStage::OpenMasked(rootLayer, mask, loadOperation);
+          }
+
+          // Expand the mask, since we do not really want to mask the possible relation targets.
+          m_stage->ExpandPopulationMask();
+
+          stageId = StageCache::Get().Insert(m_stage);
+          outputInt32Value(dataBlock, m_stageCacheId, stageId.ToLongInt());
+
+          // Set the edit target to the session layer so any user interaction will wind up there
+          m_stage->SetEditTarget(m_stage->GetSessionLayer());
+          // Save the initial edit target
+          trackEditTargetLayer();
+        }
+        AL_END_PROFILE_SECTION();
       AL_END_PROFILE_SECTION();
-    AL_END_PROFILE_SECTION();
-  }
-  else
-  if(!fileString.empty())
-  {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage failed to open the usd file: %s.\n", file.asChar());
-    MGlobal::displayWarning(MString("Failed to open usd file \"") + file + "\"");
+    }
+    else if (!fileString.empty())
+    {
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage failed to open the usd file: %s.\n", file.asChar());
+      MGlobal::displayWarning(MString("Failed to open usd file \"") + file + "\"");
+    }
   }
 
   // Get the prim
@@ -1503,12 +1667,12 @@ void ProxyShape::constructExcludedPrims()
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::lockTransformAttribute\n");
+  TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute Setting lock for '%s'\n", path.GetText());
 
   UsdPrim prim = m_stage->GetPrimAtPath(path);
   if(!prim.IsValid())
   {
-    TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute prim path not valid '%s'\n", prim.GetPath().GetText());
+    TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute prim path not valid '%s'\n", path.GetText());
     return false;
   }
 
@@ -1542,7 +1706,10 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
   }
 
   if (lockObject.isNull())
+  {
+    TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute NOT setting lock for '%s' - lockObject not valid\n", path.GetText());
     return false;
+  }
 
 
   MPlug t(lockObject, m_transformTranslate);
@@ -1555,9 +1722,10 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
 
   if (lock && MFnDependencyNode(lockObject).typeId() == AL_USDMAYA_TRANSFORM)
   {
-    MPlug(lockObject, Transform::pushToPrim()).setBool(false);
+    MPlug plug(lockObject, Transform::pushToPrim());
+    if(plug.asBool()) plug.setBool(false);
   }
-  TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute Setting lock for '%s'\n", prim.GetPath().GetText());
+  TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute Set lock for '%s'\n", prim.GetPath().GetText());
   return true;
 }
 
@@ -1590,6 +1758,7 @@ void ProxyShape::constructLockPrims()
   std::set_difference(m_currentLockedPrims.begin(), m_currentLockedPrims.end(), primsNeedLock.begin(),
                       primsNeedLock.end(), std::back_inserter(primsToUnlock));
 
+
   for (auto lock : primsToLock)
   {
     if (lockTransformAttribute(lock, true))
@@ -1610,7 +1779,12 @@ void ProxyShape::constructLockPrims()
 void ProxyShape::postConstructor()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::postConstructor\n");
+
   ParentClass::postConstructor();
+
+  // Apply render defaults
+  MPlug(thisMObject(), m_visibleInReflections).setValue(true);
+  MPlug(thisMObject(), m_visibleInRefractions).setValue(true);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1653,8 +1827,8 @@ MString ProxyShape::recordUsdPrimToMayaPath(const UsdPrim &usdPrim,
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MString ProxyShape::getMayaPathFromUsdPrim(const UsdPrim& usdPrim){
-  PrimPathToDagPath::iterator itr = m_primPathToDagPath.find(usdPrim.GetPath());
+MString ProxyShape::getMayaPathFromUsdPrim(const UsdPrim& usdPrim) const {
+  PrimPathToDagPath::const_iterator itr = m_primPathToDagPath.find(usdPrim.GetPath());
   if (itr == m_primPathToDagPath.end()){
     TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::getMayaPathFromUsdPrim could not find stored MayaPath\n");
     return MString();
@@ -1824,7 +1998,8 @@ MStatus ProxyShape::computeOutputTime(const MPlug& plug, MDataBlock& dataBlock, 
 MStatus ProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::compute %s\n", plug.name().asChar());
-
+  // When shape is computed Maya will request redraw by itself
+  m_requestedRedraw = true;
   MTime currentTime;
   if(plug == m_outTime)
   {
@@ -1851,17 +2026,26 @@ bool ProxyShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHand
   // the datablock for us, but this would be too late for these subfunctions
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::setInternalValue %s\n", plug.name().asChar());
 
-  // Delay stage creation if opening a file, because we haven't created the LayerManager node yet
-  if(plug == filePath() || plug == m_assetResolverConfig)
+  if(plug == filePath() || plug == m_assetResolverConfig || plug == m_stageCacheId)
   {
     m_filePathDirty = true;
     
     // can't use dataHandle.datablock(), as this is a temporary datahandle
     MDataBlock datablock = forceCache();
 
-    AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, filePath(), dataHandle.asString()),
-        false, "ProxyShape::setInternalValue - error setting filePath");
-
+    if (plug == filePath() || plug == m_assetResolverConfig)
+    {
+      AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, plug, dataHandle.asString()),
+                                     false,
+                                     "ProxyShape::setInternalValue - error setting filePath or assetResolverConfig");
+    }
+    else
+    {
+      AL_MAYA_CHECK_ERROR_RETURN_VAL(outputInt32Value(datablock, plug, dataHandle.asInt()),
+                                     false,
+                                     "ProxyShape::setInternalValue - error setting stageCacheId");
+    }
+    // Delay stage creation if opening a file, because we haven't created the LayerManager node yet
     if (MFileIO::isReadingFile())
     {
       m_unloadedProxyShapes.push_back(MObjectHandle(thisMObject()));
@@ -1991,14 +2175,23 @@ void ProxyShape::serialiseTransformRefs()
   std::ostringstream oss;
   for(auto iter : m_requiredPaths)
   {
-    MFnDagNode fn(iter.second.node());
-    MDagPath path;
-    fn.getPath(path);
-    oss << path.fullPathName() << " "
-        << iter.first.GetText() << " "
-        << uint32_t(iter.second.required()) << " "
-        << uint32_t(iter.second.selected()) << " "
-        << uint32_t(iter.second.refCount()) << ";";
+    MStatus status;
+    MObjectHandle handle(iter.second.node());
+
+    if(handle.isAlive() && handle.isValid())
+    {
+      MFnDagNode fn(handle.object(), &status);
+      if(status)
+      {
+        MDagPath path;
+        fn.getPath(path);
+        oss << path.fullPathName() << " "
+            << iter.first.GetText() << " "
+            << uint32_t(iter.second.required()) << " "
+            << uint32_t(iter.second.selected()) << " "
+            << uint32_t(iter.second.refCount()) << ";";
+      }
+    }
   }
   serializedRefCountsPlug().setString(oss.str().c_str());
 
@@ -2065,6 +2258,7 @@ ProxyShape::TransformReference::TransformReference(MObject mayaNode, Transform* 
 {
   m_required = r;
   m_selected = s;
+  m_selectedTemp = 0;
   m_refCount = rc;
   m_transform = transform();
 }

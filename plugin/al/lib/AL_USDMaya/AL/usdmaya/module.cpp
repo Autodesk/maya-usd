@@ -22,4 +22,6 @@ TF_WRAP_MODULE {
     TF_WRAP(LayerManager);
     TF_WRAP(ProxyShape);
     TF_WRAP(StageCache);
+    TF_WRAP(TranslatorBase);
+    TF_WRAP(TranslatorContext);
 }

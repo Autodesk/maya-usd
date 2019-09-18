@@ -89,6 +89,9 @@ TEST(Transform, animationWithTransform)
   MFileIO::newFile(true);
   MGlobal::viewFrame(1);
 
+  int optionVarValue = MGlobal::optionVarIntValue("AL_usdmaya_readAnimatedValues");
+  MGlobal::setOptionVarValue("AL_usdmaya_readAnimatedValues", true);
+
 //  MString importCommand = "AL_usdmaya_ProxyShapeImport -connectToTime 1 -f \"" +
   MString importCommand = "AL_usdmaya_ProxyShapeImport -f \"" +
                           MString(AL_USDMAYA_TEST_DATA) +
@@ -160,6 +163,8 @@ TEST(Transform, animationWithTransform)
 
   MGlobal::viewFrame(24);
   { SCOPED_TRACE(""); assertTranslate(0.0, 2.0, -20.0); }
+
+  MGlobal::setOptionVarValue("AL_usdmaya_readAnimatedValues", optionVarValue);
 }
 
 

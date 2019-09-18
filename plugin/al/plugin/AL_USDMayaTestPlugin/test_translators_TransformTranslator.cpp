@@ -104,6 +104,8 @@ TEST(translators_TranformTranslator, animated_io)
   {
     MFnDagNode fn;
 
+    MFileIO::newFile(true);
+
     MObject node = fn.create("transform");
 
     const char* const attributeNames[] = {
