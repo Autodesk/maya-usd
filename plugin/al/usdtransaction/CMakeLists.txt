@@ -1,5 +1,3 @@
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
-
 add_subdirectory(AL/usd/transaction)
 set(LIBRARY_NAME AL_USDTransaction)
 
