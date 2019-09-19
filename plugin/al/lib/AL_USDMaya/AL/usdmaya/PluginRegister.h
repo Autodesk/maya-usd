@@ -190,6 +190,20 @@ MStatus registerPlugin(AFnPlugin& plugin)
     MGlobal::setOptionVarValue("AL_usdmaya_pickMode", static_cast<int>(nodes::ProxyShape::PickMode::kPrims));
   }
 
+  if(!MGlobal::optionVarExists("AL_usdmaya_readAnimatedValues"))
+  {
+    MGlobal::setOptionVarValue("AL_usdmaya_readAnimatedValues", false);
+  }
+
+  if(!MGlobal::optionVarExists("AL_usdmaya_selectionEnabled"))
+  {
+    MGlobal::setOptionVarValue("AL_usdmaya_selectionEnabled", true);
+  }
+
+  if(!MGlobal::optionVarExists("AL_usdmaya_pushToPrim"))
+  {
+    MGlobal::setOptionVarValue("AL_usdmaya_pushToPrim", false);
+  }
 
   MStatus status;
 
@@ -315,6 +329,8 @@ MStatus registerPlugin(AFnPlugin& plugin)
   MGlobal::executeCommand(g_geom_deformer_code);
   AL::maya::utils::MenuBuilder::addEntry("USD/Animated Geometry/Connect selected meshes to USD (static)", "AL_usdmaya_meshStaticImport");
   AL::maya::utils::MenuBuilder::addEntry("USD/Animated Geometry/Connect selected meshes to USD (animated)", "AL_usdmaya_meshAnimImport");
+  AL::maya::utils::MenuBuilder::addEntry("USD/Selection Enabled", "optionVar -iv \\\"AL_usdmaya_selectionEnabled\\\" #1", true, MGlobal::optionVarIntValue("AL_usdmaya_selectionEnabled"));
+  AL::maya::utils::MenuBuilder::addEntry("USD/Enable pushToPrim", "optionVar -iv \\\"AL_usdmaya_pushToPrim\\\" #1", true, MGlobal::optionVarIntValue("AL_usdmaya_pushToPrim"));
   CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
   AL::usdmaya::Global::onPluginLoad();
 

@@ -25,7 +25,6 @@
 #include "maya/MGlobal.h"
 #include "maya/MTime.h"
 
-
 namespace {
   // Simple RAII class to ensure boolean gets set to false when done.
   struct TempBoolLock
@@ -68,6 +67,7 @@ MObject Transform::m_readAnimatedValues = MObject::kNullObj;
 void Transform::postConstructor()
 {
   transform()->setMObject(thisMObject());
+  transform()->enablePushToPrim(pushToPrimPlug().asBool());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -85,6 +85,16 @@ MPxTransformationMatrix* Transform::createTransformationMatrix()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::createTransformationMatrix\n");
   return new TransformationMatrix;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool Transform::setInternalValue(const MPlug& plug, const MDataHandle& dataHandle)
+{
+  if(plug == m_pushToPrim)
+  {
+    transform()->enablePushToPrim(dataHandle.asBool());
+  }
+  return MPxTransform::setInternalValue(plug, dataHandle);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -108,7 +118,7 @@ MStatus Transform::initialise()
 
     addFrame("USD Experimental Features");
     m_localTranslateOffset = addVectorAttr("localTranslateOffset", "lto", MVector(0,0,0), kReadable | kWritable | kStorable | kConnectable | kAffectsWorldSpace);
-    m_pushToPrim = addBoolAttr("pushToPrim", "ptp", false, kReadable | kWritable | kStorable);
+    m_pushToPrim = addBoolAttr("pushToPrim", "ptp", false, kReadable | kWritable | kStorable | kInternal);
     m_readAnimatedValues = addBoolAttr("readAnimatedValues", "rav", true, kReadable | kWritable | kStorable | kAffectsWorldSpace);
 
     mustCallValidateAndSet(m_time);
@@ -141,7 +151,7 @@ MStatus Transform::initialise()
       // even on the BASE transform class!
       // See this gist for full reproduction details:
       //   https://gist.github.com/elrond79/f9ddb277da3eab2948d27ddb1f84aba0
-#if MAYA_API_VERSION >= 20190000
+#if MAYA_API_VERSION >= 20180600
       AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, rotateAxis), errorString);
 #endif
       AL_MAYA_CHECK_ERROR(attributeAffects(inAttr, matrix), errorString);
@@ -378,6 +388,7 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
     {
       outputDoubleValue(dataBlock, m_timeScalar, handle.asDouble());
     }
+    
 
     updateTransform(dataBlock);
     return MS::kSuccess;

@@ -603,14 +603,17 @@ TEST(DiffPrimVar, diffColourSetNames)
     EXPECT_TRUE(status == MS::kSuccess);
 
     MColorArray colours;
+    MIntArray indices(fn.numFaceVertices());
     MString setName = "firstSet";
     fn.createColorSetWithName(setName);
     colours.setLength(fn.numFaceVertices());
     for(uint32_t i = 0; i < colours.length(); ++i)
     {
       colours[i] = MColor(0, 0, 0, 1);
+      indices[i] = i;
     }
     fn.setColors(colours, &setName);
+    fn.assignColors(indices, &setName);
 
     const MString temp_path = buildTempPath("AL_USDMayaTests_diffColourSetNames.usda");
 
