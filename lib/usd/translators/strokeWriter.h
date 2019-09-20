@@ -19,9 +19,9 @@
 /// \file pxrUsdTranslators/strokeWriter.h
 
 #include "pxr/pxr.h"
-#include "usdMaya/primWriter.h"
 
-#include "usdMaya/writeJobContext.h"
+#include "../../fileio/primWriter.h"
+#include "../../fileio/writeJobContext.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/timeCode.h"

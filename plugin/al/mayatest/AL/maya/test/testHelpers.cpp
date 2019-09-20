@@ -633,6 +633,13 @@ void randomNode(MObject node, const char* const attributeNames[], const uint32_t
 //----------------------------------------------------------------------------------------------------------------------
 void randomAnimatedValue(MPlug plug, double startFrame, double endFrame)
 {
+  // If value is not keyable, set it to be a random value
+  if (!plug.isKeyable())
+  {
+    randomPlug(plug);
+    return;
+  }
+
   MStatus status;
   // Create animation curve and set keys for current attribute in time range
   MFnAnimCurve fnCurve;
@@ -674,25 +681,25 @@ void randomAnimatedNode(MObject node, const char* const attributeNames[], const 
     MPlug plug = fn.findPlug(attributeNames[i], &status);
     EXPECT_EQ(MStatus(MS::kSuccess), status);
 
-    // If value is not keyable, set it to be a random value
-    if (!plug.isKeyable())
-    {
-      randomPlug(plug);
-      continue;
-    }
-
     switch(plug.attribute().apiType())
     {
       case MFn::kNumericAttribute:
       {
         MFnNumericAttribute unAttr(plug.attribute());
-
         switch(unAttr.unitType())
         {
           case MFnNumericData::kDouble:
           case MFnNumericData::kBoolean:
           {
             randomAnimatedValue(plug, startFrame, endFrame);
+            break;
+          }
+          case MFnNumericData::k3Float:
+          case MFnNumericData::k3Double:
+          {
+            randomAnimatedValue(plug.child(0), startFrame, endFrame);
+            randomAnimatedValue(plug.child(1), startFrame, endFrame);
+            randomAnimatedValue(plug.child(2), startFrame, endFrame);
             break;
           }
           default:
@@ -709,10 +716,23 @@ void randomAnimatedNode(MObject node, const char* const attributeNames[], const 
         randomAnimatedValue(plug, startFrame, endFrame);
         break;
       }
+      case MFn::kAttribute3Double:
+      case MFn::kAttribute3Float:
+      {
+        randomAnimatedValue(plug.child(0), startFrame, endFrame);
+        randomAnimatedValue(plug.child(1), startFrame, endFrame);
+        randomAnimatedValue(plug.child(2), startFrame, endFrame);
+        break;
+      }
+      case MFn::kEnumAttribute:
+      case MFn::kMessageAttribute:
+      {
+        break;
+      }
       default:
       {
-          std::cout << ("Unknown attribute type \"") << plug.name().asChar() << "\" " << plug.attribute().apiTypeStr() << std::endl;
-          break;
+        std::cout << ("Unknown attribute type \"") << plug.name().asChar() << "\" " << plug.attribute().apiTypeStr() << std::endl;
+        break;
       }
     }
   }

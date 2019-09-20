@@ -14,11 +14,9 @@
 // limitations under the License.
 //
 #include "pxr/pxr.h"
-#include "pxrUsdTranslators/strokeWriter.h"
+#include "strokeWriter.h"
 
-#include "usdMaya/primWriter.h"
-#include "usdMaya/primWriterRegistry.h"
-#include "usdMaya/writeJobContext.h"
+#include "../../fileio/primWriterRegistry.h"
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/diagnostic.h"
