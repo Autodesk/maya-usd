@@ -15,10 +15,12 @@
 //
 #include "proxyShapeBase.h"
 
-#include "hdImagingShape.h"
+#include "../base/debugCodes.h"
+#include "../listeners/proxyShapeNotice.h"
 #include "../utils/query.h"
 #include "../utils/stageCache.h"
-#include "../listeners/proxyShapeNotice.h"
+#include "../utils/utilFileSystem.h"
+#include "hdImagingShape.h"
 #include "stageData.h"
 
 #include "pxr/base/gf/bbox3d.h"
@@ -51,6 +53,9 @@
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
 #include <maya/MDGContext.h>
+#include <maya/MFileIO.h>
+#include <maya/MItDependencyNodes.h>
+#include <maya/MFnReference.h>
 #include <maya/MFnCompoundAttribute.h>
 #include <maya/MFnData.h>
 #include <maya/MFnDependencyNode.h>
@@ -81,7 +86,6 @@
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEFINE_PUBLIC_TOKENS(MayaUsdProxyShapeBaseTokens,
                         MAYAUSD_PROXY_SHAPE_BASE_TOKENS);
@@ -422,6 +426,28 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         // let the usd stage cache deal with caching the usd stage data
         //
         std::string fileString = TfStringTrimRight(file.asChar());
+
+        TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::reloadStage original USD file path is %s\n", fileString.c_str());
+
+        boost::filesystem::path filestringPath(fileString);
+        if(filestringPath.is_absolute())
+        {
+            fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
+            TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::reloadStage resolved the USD file path to %s\n", fileString.c_str());
+        }
+        else
+        {
+            fileString = UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(thisMObject(), fileString);
+            TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::reloadStage resolved the relative USD file path to %s\n", fileString.c_str());
+        }
+
+        // Fall back on providing the path "as is" to USD
+        if (fileString.empty())
+        {
+            fileString.assign(file.asChar(), file.length());
+        }
+
+        TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::loadStage called for the usd file: %s\n", fileString.c_str());
 
         // == Load the Stage
         UsdStageRefPtr usdStage;

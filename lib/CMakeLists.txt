@@ -133,6 +133,7 @@ list(APPEND mayaUsd_src
     utils/diagnosticDelegate.cpp
     utils/query.cpp
     utils/util.cpp
+    utils/utilFileSystem.cpp
     utils/blockSceneModificationContext.cpp
     utils/stageCache.cpp
     utils/query.cpp
@@ -292,6 +293,7 @@ list(APPEND mayaUsdUtils_headers
     utils/diagnosticDelegate.h
     utils/query.h
     utils/util.h
+    utils/utilFileSystem.h
     utils/blockSceneModificationContext.h
     utils/stageCache.h
     utils/query.h
@@ -391,7 +393,14 @@ target_include_directories(
     ${PXR_INCLUDE_DIRS}
 )
 
+find_package(Boost COMPONENTS
+                filesystem
+                REQUIRED
+)
+
 target_link_libraries(${LIBRARY_NAME}
+    ${Boost_FILESYSTEM_LIBRARY}
+    ${Boost_SYSTEM_LIBRARY}
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
     ${MAYA_OpenMaya_LIBRARY}
