@@ -593,6 +593,9 @@ private:
             false,
 #endif
             std::get<0>(wrapping), std::get<1>(wrapping),
+#ifdef HDMAYA_USD_001910_BUILD
+            HdWrapClamp,
+#endif
             HdMinFilterLinearMipmapLinear, HdMagFilterLinear,
             GetDelegate()->GetParams().textureMemoryPerTexture));
     }

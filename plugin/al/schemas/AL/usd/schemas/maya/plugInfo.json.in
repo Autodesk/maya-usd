@@ -53,6 +53,14 @@
                         "default": "", 
                         "documentation": "A custom maya transform type name to use instead of the built-in AL_usdmaya_Transform node type", 
                         "type": "string"
+                    },
+                    "assettype": {
+                        "appliesTo": [
+                            "prims"
+                        ], 
+                        "default": "", 
+                        "documentation": "Animal Logic AssetType used as a key to register AL_USDMaya Translators against", 
+                        "type": "string"
                     }
                 }, 
                 "Types": {

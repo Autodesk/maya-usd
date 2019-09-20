@@ -45,13 +45,23 @@ PrimFilter::PrimFilter(
     SdfPath path = prim.GetPath();
 
     // check previous prim type (if it exists at all?)
-    TfToken type = proxy->getTypeForPath(path);
-    TfToken newType = prim.GetTypeName();
+    std::string existingTranslatorId = proxy->getTranslatorIdForPath(path);
+    
+    std::string newTranslatorId = proxy->generateTranslatorId(prim);
+
+    // inactive prims should be removed
+    if (!prim.IsActive())
+    {
+        it = m_newPrimSet.erase(lastIt);
+        continue;
+    }
 
     bool supportsUpdate = false;
     bool requiresParent = false;
     bool importableByDefault = false;
-    
+
+    // (KxL) In 0.34 this no longer makes sense - we have to recognize different types of translatorId
+#if KXL_TO_FINISH__CHANGED_WITH_NEW_UPDATE
     auto primUpdaterRegistry = UsdMayaPrimUpdaterRegistry::Find(newType);
     if (std::get<1>(primUpdaterRegistry))
     {
@@ -63,12 +73,13 @@ PrimFilter::PrimFilter(
         importableByDefault = true;
     }
     else
-        proxy->getTypeInfo(newType, supportsUpdate, requiresParent, importableByDefault);
+#endif
+    proxy->getTranslatorInfo(newTranslatorId, supportsUpdate, requiresParent, importableByDefault);
 
     if(importableByDefault || forceImport)
     {
       // if the type remains the same, and the type supports update
-      if(type == newType)
+      if(existingTranslatorId == newTranslatorId)
       {
         if(supportsUpdate)
         {
@@ -81,13 +92,15 @@ PrimFilter::PrimFilter(
           {
             m_removedPrimSet.erase(iter);
             m_updatablePrimSet.push_back(prim);
+
+            // supporting update means it's not a new prim,
+            // otherwise we still want the prim to be re-created.
+            it = m_newPrimSet.erase(lastIt);
+
             // skip creating transforms in this case.
             requiresParent = false;
           }
         }
-
-        //If the prim is still already there with the same type, it isn't new.
-        it = m_newPrimSet.erase(lastIt);
       }
       // if we need a transform, make a note of it now
       if(requiresParent)

@@ -40,6 +40,27 @@ myShape = usdmaya.ProxyShape.getByName('name_of_my_Proxy_Shape')
 theStage = myShape.getUsdStage()
 ```
 
+Search for associated types:
++ getMayaPathFromUsdPrim
++ getUsdPrimFromMayaPath
+
+Example:
+```python
+from maya import cmds
+from AL import usdmaya
+
+# Prim for Maya path
+prim = usdmaya.ProxyShape.getUsdPrimFromMayaPath(cmds.ls(selected=True, long=True)[0])
+
+# Maya path for Prim
+proxy = usdmaya.ProxyShape.getByName("AL_usdmaya_ProxyShape")
+assert proxy is not None
+node = proxy.getMayaPathFromUsdPrim(prim)
+
+# Compare
+assert cmds.getAttr("{}.primPath".format(node)) == str(prim.GetPath())
+```
+
 As well as a number of methods to manipulate a shape instance:
 + boundingBox
 + destroyTransformReferences

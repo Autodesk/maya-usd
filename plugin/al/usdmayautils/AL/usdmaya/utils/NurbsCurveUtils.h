@@ -22,6 +22,7 @@
 
 #if MAYA_API_VERSION < 201800
 #include "maya/MFnDoubleArrayData.h"
+#include "maya/MFnFloatArrayData.h"
 #endif
 
 #include "pxr/usd/usd/attribute.h"
@@ -58,6 +59,14 @@ void copyWidths(
   const MFnDoubleArrayData& widthArray,
   const UsdAttribute& widthsAttr,
   UsdTimeCode time = UsdTimeCode::Default());
+
+AL_USDMAYA_UTILS_PUBLIC
+void copyWidths(
+  const MObject& widthObj, 
+  const MPlug& widthPlug,
+  const MFnFloatArrayData& widthArray,
+  const UsdAttribute& widthsAttr,
+  UsdTimeCode time = UsdTimeCode::Default());
    
 AL_USDMAYA_UTILS_PUBLIC
 bool getMayaCurveWidth(
@@ -65,6 +74,12 @@ bool getMayaCurveWidth(
   MObject& object,
   MPlug& plug,
   MFnDoubleArrayData& array);
+
+AL_USDMAYA_UTILS_PUBLIC
+bool getMayaCurveWidth(
+  const MFnNurbsCurve& fnCurve,
+  MObject& object,
+  MPlug& plug);
 
 AL_USDMAYA_UTILS_PUBLIC
 bool createMayaCurves(

@@ -79,9 +79,16 @@ namespace nodes {
 ///            scale/rotate pivot in maya will result in an undefined behavior.
 /// \ingroup nodes
 //----------------------------------------------------------------------------------------------------------------------
+
+#if MAYA_API_VERSION >= 20190200 && MAYA_API_VERSION < 20200000
+class Transform
+  : public MPxTransform_BoundingBox,
+    public AL::maya::utils::NodeHelper
+#else
 class Transform
   : public MPxTransform,
     public AL::maya::utils::NodeHelper
+#endif
 {
 public:
 
@@ -140,6 +147,7 @@ private:
   MBoundingBox boundingBox() const override;
   MStatus connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
   MStatus connectionBroken(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
+  bool setInternalValue(const MPlug& plug, const MDataHandle& dataHandle) override;
   bool isBounded() const override
     { return true; }
   bool treatAsTransform() const override
