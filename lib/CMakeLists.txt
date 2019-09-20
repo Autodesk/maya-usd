@@ -471,6 +471,12 @@ if(IS_MACOSX OR IS_LINUX)
     mayaUsd_install_rpath(rpath ${LIBRARY_NAME})
 endif()
 
+if (IS_LINUX)
+    if(WANT_USD_RELATIVE_PATH)
+        add_rpath(rpath "../../USD/lib64")
+    endif()
+endif()
+
 install(TARGETS ${LIBRARY_NAME}
     LIBRARY
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib

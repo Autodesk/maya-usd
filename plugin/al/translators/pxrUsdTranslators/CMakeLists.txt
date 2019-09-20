@@ -55,6 +55,12 @@ if(IS_MACOSX OR IS_LINUX)
     mayaUsd_install_rpath(rpath ${PXR_TRANSLATORS_PACKAGE})
 endif()
 
+if (IS_LINUX)
+  if(WANT_USD_RELATIVE_PATH)
+      add_rpath(rpath "../../../../USD/lib64")
+  endif()
+endif()
+
 target_include_directories(
   ${PXR_TRANSLATORS_PACKAGE}
   PUBLIC

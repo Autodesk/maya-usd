@@ -39,6 +39,12 @@ if(IS_MACOSX OR IS_LINUX)
     mayaUsd_install_rpath(rpath ${TARGET_NAME})
 endif()
 
+if (IS_LINUX)
+    if(WANT_USD_RELATIVE_PATH)
+        add_rpath(rpath "../../../USD/lib64")
+    endif()
+endif()
+
 # M3dView needs this (technically, MNativeWindowHdl.h)
 # private atm because M3dView is only used in .cpp right now
 if (IS_LINUX)
