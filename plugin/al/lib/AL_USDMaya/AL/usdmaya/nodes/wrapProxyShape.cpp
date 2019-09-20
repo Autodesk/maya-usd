@@ -496,4 +496,17 @@ void wrapProxyShape()
 //    boost::python::to_python_converter<MBoundingBox, MBoundingBoxConverter>();
 }
 
-TF_REFPTR_CONST_VOLATILE_GET(ProxyShape)
+// This workaround for a VS compiler bug where we need to explicitly specify 
+// the conversion to pointer of your our class seems no longer needed for VS2017. 
+// What it means, is that compiler will properly generate this conversion
+// implicitly and cause linker error LNK2005. 
+//
+// In this particular case we got wrapTranslatorContext.obj generating error for 
+// already defined conversion to a pointer for ProxyShape in wrapProxyShape.obj
+//
+// The best place to put this fix would be in pxr/base/lib/tf/refPtr.h
+// where TF_REFPTR_CONST_VOLATILE_GET is defined, but for now we are 
+// patching it locally.
+#if defined(ARCH_COMPILER_MSVC) && ARCH_COMPILER_MSVC_VERSION <= 1910 
+    TF_REFPTR_CONST_VOLATILE_GET(ProxyShape)
+#endif
