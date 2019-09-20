@@ -16,17 +16,17 @@ namespace UsdMayaUtilFileSystem
     MAYAUSD_CORE_PUBLIC
     std::string resolvePath(const std::string& filePath);
 
-    /*! \brief returns the path to the parent directory
+    /*! \brief returns the path to the
     */
     MAYAUSD_CORE_PUBLIC
     std::string getDir(const std::string &fullFilePath);
 
-    /*! \brief 
+    /*! \brief returns parent directory of a maya scene file opened by reference
     */
     MAYAUSD_CORE_PUBLIC
     std::string getMayaReferencedFileDir(const MObject& proxyShapeNode);
 
-    /*! \brief returns maya scene file directory
+    /*! \brief returns parent directory of opened maya scene file 
     */
     MAYAUSD_CORE_PUBLIC
     std::string getMayaSceneFileDir();
