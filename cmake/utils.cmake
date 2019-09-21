@@ -156,3 +156,8 @@ function(promoteHeaderList)
         configure_file(${srcFile} ${dstFile} COPYONLY)
     endforeach()
 endfunction()
+
+function(get_unittest_target unittest_target unittest_basename)
+    get_filename_component(unittest_name ${unittest_basename} NAME_WE)
+    set(${unittest_target} "${unittest_name}" PARENT_SCOPE)
+endfunction()

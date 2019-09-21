@@ -391,6 +391,7 @@ target_include_directories(
     PUBLIC
     ${MAYA_INCLUDE_DIRS}
     ${PXR_INCLUDE_DIRS}
+    ${CMAKE_BINARY_DIR}/include
 )
 
 find_package(Boost COMPONENTS
@@ -531,7 +532,58 @@ endif()
 install(FILES ${mayaUsdPxrUsdMayaGL_headers}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/render/pxrUsdMayaGL
 )
- 
+
+if(UFE_FOUND)
+    # UFE Python Bindings
+    set(PYTHON_LIBRARY_NAME ufe)
+
+    add_library(${PYTHON_LIBRARY_NAME}
+        SHARED
+        ufe/wrapUtils.cpp
+    )
+
+    target_compile_definitions(${PYTHON_LIBRARY_NAME}
+        PRIVATE
+            MFB_PACKAGE_NAME=${LIBRARY_NAME}
+            MFB_ALT_PACKAGE_NAME=${LIBRARY_NAME}
+            MFB_PACKAGE_MODULE=ufe
+    )
+    set_target_properties(${PYTHON_LIBRARY_NAME} 
+        PROPERTIES 
+            PREFIX ""
+    )
+    if(IS_WINDOWS)
+        set_target_properties(${PYTHON_LIBRARY_NAME}
+            PROPERTIES
+                SUFFIX ".pyd"
+        )
+    elseif(IS_MACOSX)
+        set_target_properties(${PYTHON_LIBRARY_NAME}
+            PROPERTIES
+                SUFFIX ".so"
+        )
+    endif()
+
+    target_link_libraries(${PYTHON_LIBRARY_NAME}
+        ${LIBRARY_NAME}
+    )
+
+    install(TARGETS ${PYTHON_LIBRARY_NAME}
+        LIBRARY
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
+        RUNTIME
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
+    )
+
+    if(IS_WINDOWS)
+        install(FILES $<TARGET_PDB_FILE:${PYTHON_LIBRARY_NAME}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME} OPTIONAL)
+    endif()
+
+    install(FILES ufe/__init__.py
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
+    )
+endif()
+
 add_subdirectory(usd)
 
 add_subdirectory(render/mayaToHydra)
