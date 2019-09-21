@@ -33,6 +33,12 @@ find_package(Maya REQUIRED)
 find_package(USD REQUIRED)
 include(${USD_CONFIG_FILE})
 
+set(BOOST_ROOT ${PXR_USD_LOCATION})
+find_package(Boost COMPONENTS
+                filesystem
+                REQUIRED
+)
+
 if(CMAKE_WANT_UFE_BUILD)
     find_package(UFE QUIET)
     if(UFE_FOUND)
@@ -391,11 +397,6 @@ target_include_directories(
     PUBLIC
     ${MAYA_INCLUDE_DIRS}
     ${PXR_INCLUDE_DIRS}
-)
-
-find_package(Boost COMPONENTS
-                filesystem
-                REQUIRED
 )
 
 target_link_libraries(${LIBRARY_NAME}
