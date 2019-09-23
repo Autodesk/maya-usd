@@ -27,7 +27,7 @@
 #include <atomic>
 
 namespace {
-    std::atomic_int32_t _blockingCount;
+    std::atomic<std::int32_t> _blockingCount;
 }
 
 namespace AL {
