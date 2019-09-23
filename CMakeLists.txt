@@ -65,15 +65,17 @@ if (NOT PYTHONLIBS_FOUND)
 endif()
 include(cmake/utils.cmake)
 
-find_package(USD REQUIRED)
-include(cmake/usd.cmake)
-
 # The building of the schemas requires some extra python packages which may or
 # may not be installed. If they aren't we provide an option to add them from
 # a python egg.
 if (BUILD_USDMAYA_SCHEMAS)
     include(cmake/jinja.cmake)
 endif()
+
+find_package(Maya REQUIRED)
+find_package(USD REQUIRED)
+include(cmake/usd.cmake)
+include(${USD_CONFIG_FILE})
 
 #==============================================================================
 # Compiler

@@ -17,17 +17,8 @@ option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
 option(SKIP_USDMAYA_TESTS "Build tests" ON)
 
-# AL_USDMAYA uses pxrConfig.cmake exported targets
-# find_package(USD) can use either ${PXR_USD_LOCATION}, or ${USD_CONFIG_FILE} (which should be ${PXR_USD_LOCATION}/pxrConfig.cmake)
-# to find USD, defined as either Cmake var or env var
-find_package(USD REQUIRED)
-include(${USD_CONFIG_FILE})
-
-find_package(Maya REQUIRED)
-
 # to get PYTHON_EXECUTABLE
 find_package(PythonInterp)
-
 
 if(CMAKE_WANT_UFE_BUILD)
     find_package(UFE QUIET)

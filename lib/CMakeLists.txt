@@ -28,11 +28,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #==============================================================================
 # Packages
 #==============================================================================
-
-find_package(Maya REQUIRED)
-find_package(USD REQUIRED)
-include(${USD_CONFIG_FILE})
-
 if(CMAKE_WANT_UFE_BUILD)
     find_package(UFE QUIET)
     if(UFE_FOUND)
