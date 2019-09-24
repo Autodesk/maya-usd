@@ -1,0 +1,20 @@
+#usda 1.0
+(
+    defaultPrim = "sphereXform"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Y"
+)
+
+def Xform "sphereXform"
+{
+    double3 xformOp:translate = (10.0, 0.0, 0.0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Sphere "sphere"
+    {
+        double radius = 2
+		float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+		color3f[] primvars:displayColor = [(0, 1, 0)]
+    }
+}

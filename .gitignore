@@ -15,3 +15,4 @@ CMakeFiles/cmake.check_cache
 *.xcuserstate
 *.pbxuser
 *.swp
+*.pyc

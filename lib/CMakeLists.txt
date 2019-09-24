@@ -28,11 +28,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #==============================================================================
 # Packages
 #==============================================================================
-
-find_package(Maya REQUIRED)
-find_package(USD REQUIRED)
-include(${USD_CONFIG_FILE})
-
 set(BOOST_ROOT ${PXR_USD_LOCATION})
 find_package(Boost COMPONENTS
                 filesystem
@@ -397,6 +392,7 @@ target_include_directories(
     PUBLIC
     ${MAYA_INCLUDE_DIRS}
     ${PXR_INCLUDE_DIRS}
+    ${CMAKE_BINARY_DIR}/include
 )
 
 target_link_libraries(${LIBRARY_NAME}
@@ -532,7 +528,64 @@ endif()
 install(FILES ${mayaUsdPxrUsdMayaGL_headers}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/render/pxrUsdMayaGL
 )
- 
+
+if(UFE_FOUND)
+    # UFE Python Bindings
+    set(UFE_PYTHON_LIBRARY_NAME ufe)
+
+    add_library(${UFE_PYTHON_LIBRARY_NAME}
+        SHARED
+        ufe/wrapUtils.cpp
+    )
+
+    target_compile_definitions(${UFE_PYTHON_LIBRARY_NAME}
+        PRIVATE
+            MFB_PACKAGE_NAME=${LIBRARY_NAME}
+            MFB_ALT_PACKAGE_NAME=${LIBRARY_NAME}
+            MFB_PACKAGE_MODULE=ufe
+    )
+    set_target_properties(${UFE_PYTHON_LIBRARY_NAME} 
+        PROPERTIES 
+            PREFIX ""
+    )
+    if(IS_WINDOWS)
+        set_target_properties(${UFE_PYTHON_LIBRARY_NAME}
+            PROPERTIES
+                SUFFIX ".pyd"
+        )
+    elseif(IS_MACOSX)
+        set_target_properties(${UFE_PYTHON_LIBRARY_NAME}
+            PROPERTIES
+                SUFFIX ".so"
+        )
+    endif()
+
+    target_link_libraries(${UFE_PYTHON_LIBRARY_NAME}
+        ${LIBRARY_NAME}
+    )
+
+    if(IS_MACOSX OR IS_LINUX)
+        init_rpath(rpath "${PROJECT_NAME}")
+        add_rpath(rpath "../..")
+        install_rpath(rpath ${UFE_PYTHON_LIBRARY_NAME})
+    endif()
+
+    install(TARGETS ${UFE_PYTHON_LIBRARY_NAME}
+        LIBRARY
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
+        RUNTIME
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
+    )
+
+    if(IS_WINDOWS)
+        install(FILES $<TARGET_PDB_FILE:${UFE_PYTHON_LIBRARY_NAME}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME} OPTIONAL)
+    endif()
+
+    install(FILES ufe/__init__.py
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
+    )
+endif()
+
 add_subdirectory(usd)
 
 add_subdirectory(render/mayaToHydra)
