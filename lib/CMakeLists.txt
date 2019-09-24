@@ -530,40 +530,46 @@ install(FILES ${mayaUsdPxrUsdMayaGL_headers}
 
 if(UFE_FOUND)
     # UFE Python Bindings
-    set(PYTHON_LIBRARY_NAME ufe)
+    set(UFE_PYTHON_LIBRARY_NAME ufe)
 
-    add_library(${PYTHON_LIBRARY_NAME}
+    add_library(${UFE_PYTHON_LIBRARY_NAME}
         SHARED
         ufe/wrapUtils.cpp
     )
 
-    target_compile_definitions(${PYTHON_LIBRARY_NAME}
+    target_compile_definitions(${UFE_PYTHON_LIBRARY_NAME}
         PRIVATE
             MFB_PACKAGE_NAME=${LIBRARY_NAME}
             MFB_ALT_PACKAGE_NAME=${LIBRARY_NAME}
             MFB_PACKAGE_MODULE=ufe
     )
-    set_target_properties(${PYTHON_LIBRARY_NAME} 
+    set_target_properties(${UFE_PYTHON_LIBRARY_NAME} 
         PROPERTIES 
             PREFIX ""
     )
     if(IS_WINDOWS)
-        set_target_properties(${PYTHON_LIBRARY_NAME}
+        set_target_properties(${UFE_PYTHON_LIBRARY_NAME}
             PROPERTIES
                 SUFFIX ".pyd"
         )
     elseif(IS_MACOSX)
-        set_target_properties(${PYTHON_LIBRARY_NAME}
+        set_target_properties(${UFE_PYTHON_LIBRARY_NAME}
             PROPERTIES
                 SUFFIX ".so"
         )
     endif()
 
-    target_link_libraries(${PYTHON_LIBRARY_NAME}
+    target_link_libraries(${UFE_PYTHON_LIBRARY_NAME}
         ${LIBRARY_NAME}
     )
 
-    install(TARGETS ${PYTHON_LIBRARY_NAME}
+    if(IS_MACOSX OR IS_LINUX)
+        init_rpath(rpath "${PROJECT_NAME}")
+        add_rpath(rpath "../..")
+        install_rpath(rpath ${UFE_PYTHON_LIBRARY_NAME})
+    endif()
+
+    install(TARGETS ${UFE_PYTHON_LIBRARY_NAME}
         LIBRARY
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
         RUNTIME
@@ -571,7 +577,7 @@ if(UFE_FOUND)
     )
 
     if(IS_WINDOWS)
-        install(FILES $<TARGET_PDB_FILE:${PYTHON_LIBRARY_NAME}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME} OPTIONAL)
+        install(FILES $<TARGET_PDB_FILE:${UFE_PYTHON_LIBRARY_NAME}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME} OPTIONAL)
     endif()
 
     install(FILES ufe/__init__.py

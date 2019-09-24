@@ -79,9 +79,4 @@ foreach(script ${test_script_files})
         "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/plugin/adsk/plugin"
         "PXR_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
     )
-    if(IS_LINUX)
-        set_property(TEST ${target} APPEND PROPERTY ENVIRONMENT 
-            "LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib:${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64"
-        )
-    endif()
 endforeach()
