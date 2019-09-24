@@ -28,6 +28,12 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #==============================================================================
 # Packages
 #==============================================================================
+set(BOOST_ROOT ${PXR_USD_LOCATION})
+find_package(Boost COMPONENTS
+                filesystem
+                REQUIRED
+)
+
 if(CMAKE_WANT_UFE_BUILD)
     find_package(UFE QUIET)
     if(UFE_FOUND)
@@ -387,11 +393,6 @@ target_include_directories(
     ${MAYA_INCLUDE_DIRS}
     ${PXR_INCLUDE_DIRS}
     ${CMAKE_BINARY_DIR}/include
-)
-
-find_package(Boost COMPONENTS
-                filesystem
-                REQUIRED
 )
 
 target_link_libraries(${LIBRARY_NAME}
