@@ -19,6 +19,11 @@
 #include "ufe/hierarchyHandler.h"
 #include "ufe/ProxyShapeHierarchyHandler.h"
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
+// Note: must come after include of ufe files so we have the define.
+#include "UsdAttributesHandler.h"
+#endif
+
 #include <string>
 #include <cassert>
 
@@ -79,9 +84,15 @@ MStatus initialize()
 
 	auto usdHierHandler = UsdHierarchyHandler::create();
 	auto usdTrans3dHandler = UsdTransform3dHandler::create();
-	auto usdSceneHandler = UsdSceneItemOpsHandler::create();
+	auto usdSceneItemOpsHandler = UsdSceneItemOpsHandler::create();
+#ifdef UFE_V2_FEATURES_AVAILABLE
+	auto usdAttributesHandler = UsdAttributesHandler::create();
 	g_USDRtid = Ufe::RunTimeMgr::instance().register_(
-		kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, usdSceneHandler);
+		kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, usdSceneItemOpsHandler, usdAttributesHandler);
+#else
+	g_USDRtid = Ufe::RunTimeMgr::instance().register_(
+		kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, usdSceneItemOpsHandler);
+#endif
 #if !defined(NDEBUG)
 	assert(g_USDRtid != 0);
 #endif

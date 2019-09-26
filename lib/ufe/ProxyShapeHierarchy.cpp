@@ -47,6 +47,13 @@ ProxyShapeHierarchy::Ptr ProxyShapeHierarchy::create(Ufe::HierarchyHandler::Ptr 
 
 void ProxyShapeHierarchy::setItem(const Ufe::SceneItem::Ptr& item)
 {
+	// Our USD root prim is from the stage, which is from the item. So if we are
+	// changing the item, it's possible that we won't have the same stage (and
+	// thus the same root prim). To be safe, clear our stored root prim.
+	if (fItem != item)
+	{
+		fUsdRootPrim = UsdPrim();
+	}
 	fItem = item;
 	fMayaHierarchy = fMayaHierarchyHandler->hierarchy(item);
 }
@@ -117,7 +124,7 @@ Ufe::AppendedChild ProxyShapeHierarchy::appendChild(const Ufe::SceneItem::Ptr& c
 	throw std::runtime_error("ProxyShapeHierarchy::appendChild() not implemented");
 }
 
-#ifdef UFE_GROUP_INTERFACE_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(const Ufe::PathComponent& name) const
 {
 	throw std::runtime_error("ProxyShapeHierarchy::createGroup() not implemented");

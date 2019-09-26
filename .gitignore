@@ -4,6 +4,7 @@
 *.pydevproject
 *.settings/
 *.vs
+CMakeSettings.json
 CMakeCache.txt
 CMakeLists.txt.user
 CMakeFiles/cmake.check_cache

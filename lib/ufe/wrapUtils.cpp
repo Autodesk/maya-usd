@@ -11,21 +11,47 @@
 #include "UsdSceneItem.h"
 #include "Utils.h"
 
+#include "ufe/runTimeMgr.h"
+#include "ufe/rtid.h"
+
 using namespace MayaUsd;
 using namespace boost::python;
 
-UsdPrim ufePathToPrim(Ufe::Rtid id1, const std::string& sep1, const std::string& seg1, Ufe::Rtid id2, const std::string& sep2, const std::string& seg2)
+UsdPrim getPrimFromRawItem(uint64_t rawItem)
 {
-	Ufe::PathSegment ps1(seg1, id1, sep1[0]);
-	Ufe::PathSegment ps2(seg2, id2, sep2[0]);
-	Ufe::Path::Segments segs;
-	segs.push_back(ps1);
-	segs.push_back(ps2);
-	Ufe::Path path(segs);
-	return ufe::ufePathToPrim(path);
+	Ufe::SceneItem* item = reinterpret_cast<Ufe::SceneItem*>(rawItem);
+	ufe::UsdSceneItem* usdItem = dynamic_cast<ufe::UsdSceneItem*>(item);
+	if (nullptr != usdItem)
+	{
+		return usdItem->prim();
+	}
+	return UsdPrim();
+}
+
+std::string getNodeNameFromRawItem(uint64_t rawItem)
+{
+	std::string name;
+	Ufe::SceneItem* item = reinterpret_cast<Ufe::SceneItem*>(rawItem);
+	if (nullptr != item)
+		name = item->nodeName();
+	return name;
+}
+
+std::string getNodeTypeFromRawItem(uint64_t rawItem)
+{
+	std::string type;
+	Ufe::SceneItem* item = reinterpret_cast<Ufe::SceneItem*>(rawItem);
+	if (nullptr != item)
+	{
+		// Prepend the name of the runtime manager of this item to the type.
+		type = Ufe::RunTimeMgr::instance().getName(item->runTimeId()) + item->nodeType();
+	}
+	return type;
 }
 
 BOOST_PYTHON_MODULE(ufe)
 {
-	def("ufePathToPrim", ufePathToPrim);
+	def("getPrimFromRawItem", getPrimFromRawItem);
+	def("getNodeNameFromRawItem", getNodeNameFromRawItem);
+	def("getNodeTypeFromRawItem", getNodeTypeFromRawItem);
 }

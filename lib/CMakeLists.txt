@@ -41,17 +41,8 @@ if(CMAKE_WANT_UFE_BUILD)
         include_directories(${UFE_INCLUDE_DIR})
         add_definitions(-DWANT_UFE_BUILD)
 
-        # UFE Group interface is available on 2.0+ and 0.2+ but not 1.x.
-        if((NOT UFE_VERSION VERSION_LESS 2.0.0) OR
-           ((UFE_VERSION VERSION_LESS 1.0.0) AND (NOT UFE_VERSION VERSION_LESS 0.2.0)))
-            set(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE ON)
-            add_definitions(-DUFE_GROUP_INTERFACE_AVAILABLE)
-        else()
-            set(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE OFF)
-        endif()
-
-        if(IS_WINDOWS)
-            # Silence this warning until we fix it in UFE.
+        if(MSVC)
+            # Some of the UFE classes are exporting STL classes which causes this warning.
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
         endif()
     else()
@@ -236,8 +227,13 @@ if(UFE_FOUND)
         ufe/private/Utils.cpp
     )
 
-    if(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE)
-        list(APPEND mayaUsd_src ufe/UsdUndoCreateGroupCommand.cpp)
+    if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
+        list(APPEND mayaUsd_src
+            ufe/UsdUndoCreateGroupCommand.cpp
+            ufe/UsdAttribute.cpp
+            ufe/UsdAttributes.cpp
+            ufe/UsdAttributesHandler.cpp
+        )
     endif()
 endif()
 
@@ -371,8 +367,13 @@ if(UFE_FOUND)
         ufe/UsdUndoRenameCommand.h
     )
 
-    if(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE)
-        list(APPEND mayaUsdUfe_headers ufe/UsdUndoCreateGroupCommand.h)
+    if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
+        list(APPEND mayaUsdUfe_headers
+            ufe/UsdUndoCreateGroupCommand.h
+            ufe/UsdAttribute.h
+            ufe/UsdAttributes.h
+            ufe/UsdAttributesHandler.h
+        )
     endif()
 endif()
 
@@ -558,7 +559,7 @@ install(FILES ${mayaUsdShaderFragments_xmls}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/mayaUsd_ShaderFragments/resources
 )
 
-if(UFE_FOUND)
+if(UFE_FOUND AND CMAKE_UFE_V2_FEATURES_AVAILABLE)
     # UFE Python Bindings
     set(UFE_PYTHON_LIBRARY_NAME ufe)
 
@@ -613,6 +614,19 @@ if(UFE_FOUND)
     install(FILES ufe/__init__.py
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
     )
+
+	# Maya Attribute Editor python template files
+	install(FILES ae/mesh/ae_template.py
+		 DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes/mesh
+	)
+	# We need an empty __init__.py file in each subfolder so it is considered a python module.
+	set(_INIT_PY_DEST ${CMAKE_INSTALL_PREFIX}/lib/python/)
+	foreach(_SUBDIR ufe_ae usd nodes mesh)
+		string(APPEND _INIT_PY_DEST "/${_SUBDIR}")
+		install(FILES ae/__init__.py
+			 DESTINATION ${_INIT_PY_DEST}
+		)
+	endforeach()
 endif()
 
 add_subdirectory(usd)
