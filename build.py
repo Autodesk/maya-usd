@@ -322,9 +322,24 @@ def RunMakeZipArchive(context):
     installDir = context.instDir
     buildDir = context.buildDir
     pkgDir = context.pkgDir
-    pkgName = 'maya-usd' + '-' + (platform.system()).lower()
     variant = BuildVariant(context)
 
+    # extract version from mayausd_version.info
+    mayaUsdVerion = [] 
+    cmakeInfoDir = os.path.join(context.mayaUsdSrcDir, 'cmake')
+    filename = os.path.join(cmakeInfoDir, 'mayausd_version.info')
+    with open(filename, 'r') as filehandle:
+        content = filehandle.readlines()
+        for current_line in content:
+            digitList = re.findall(r'\d+', current_line)
+            versionStr = ''.join(str(e) for e in digitList)
+            mayaUsdVerion.append(versionStr)
+
+    majorVersion = mayaUsdVerion[0]
+    minorVersion = mayaUsdVerion[1]
+    patchLevel   = mayaUsdVerion[2]  
+
+    pkgName = 'MayaUsd' + '-' + majorVersion + '.' + minorVersion + '.' + patchLevel + '-' + (platform.system()) + '-' + variant
     with CurrentWorkingDirectory(buildDir):
         shutil.make_archive(pkgName, 'zip', installDir)
 
