@@ -38,6 +38,8 @@ public:
 
     //! Helper struct providing storage for render item data
     struct RenderItemData {
+        //! Render item color buffer - use when updating data
+        std::unique_ptr<MHWRender::MVertexBuffer>   _colorBuffer;
         //! Render item normals buffer pointer - use when updating data
         std::unique_ptr<MHWRender::MVertexBuffer>   _normalsBuffer;
         //! Render item UV buffer pointer - use when updating data

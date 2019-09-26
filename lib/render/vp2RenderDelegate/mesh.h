@@ -61,6 +61,8 @@ private:
 
     bool _EnableWireDrawItems(const HdReprSharedPtr& repr, HdDirtyBits* dirtyBits, bool enable);
 
+    void _UpdatePrimvarSources(HdSceneDelegate* sceneDelegate, HdDirtyBits dirtyBits);
+
     MHWRender::MRenderItem* _CreateRenderItem(const MString& name, const HdMeshReprDesc& desc) const;
     MHWRender::MRenderItem* _CreateSmoothHullRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateWireframeRenderItem(const MString& name) const;
@@ -82,6 +84,20 @@ private:
     // TODO: Define HdVP2MeshSharedData to hold extra shared data specific to VP2?
     std::unique_ptr<MHWRender::MVertexBuffer> _positionsBuffer; //!< Per-Rprim position buffer to be shared among render items
     bool _wireItemsEnabled{ false };                    //!< Whether draw items for the wire repr are enabled
+
+    //! Cached scene data. VtArrays are reference counted, so as long as we
+    //! only call const accessors keeping them around doesn't incur a buffer
+    //! copy.
+    HdMeshTopology _topology;
+
+    //! A local cache of primvar scene data. "data" is a copy-on-write handle to
+    //! the actual primvar buffer, and "interpolation" is the interpolation mode
+    //! to be used.
+    struct PrimvarSource {
+        VtValue data;
+        HdInterpolation interpolation;
+    };
+    TfHashMap<TfToken, PrimvarSource, TfToken::HashFunctor> _primvarSourceMap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

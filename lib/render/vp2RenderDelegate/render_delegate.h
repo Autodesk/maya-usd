@@ -98,9 +98,13 @@ public:
 
     MString GetLocalNodeName(const MString& name) const;
 
-    MHWRender::MShaderInstance* GetFallbackShader(MColor color=MColor(0.0f,0.0f,1.0f,1.0f)) const;
+    MHWRender::MShaderInstance* GetFallbackShader(MColor color=MColor(0.18f,0.18f,0.18f,1.0f)) const;
+    MHWRender::MShaderInstance* GetColorPerVertexShader() const;
     MHWRender::MShaderInstance* Get3dSolidShader() const;
     MHWRender::MShaderInstance* Get3dFatPointShader() const;
+
+    const MHWRender::MSamplerState* GetSamplerState(
+        const MHWRender::MSamplerStateDesc& desc) const;
 
     static const int sProfilerCategory;                             //!< Profiler category
 

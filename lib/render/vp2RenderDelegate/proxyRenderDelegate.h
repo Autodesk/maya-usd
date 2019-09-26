@@ -33,8 +33,7 @@
 #include "ufe/observer.h"
 #endif
 
-// Maya 2020 adds new API to enable subscene update in selection passes for
-// deferred update of selection render items.
+// Conditional compilation due to Maya API gap.
 #if MAYA_API_VERSION >= 20200000
 #define MAYA_ENABLE_UPDATE_FOR_SELECTION
 #endif

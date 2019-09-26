@@ -151,6 +151,7 @@ list(APPEND mayaUsd_src
     listeners/notice.cpp
     listeners/proxyShapeNotice.cpp
     #
+    render/vp2RenderDelegate/debugCodes.cpp
     render/vp2RenderDelegate/render_param.cpp
     render/vp2RenderDelegate/instancer.cpp
     render/vp2RenderDelegate/draw_item.cpp
@@ -159,8 +160,8 @@ list(APPEND mayaUsd_src
     render/vp2RenderDelegate/proxyRenderDelegate.cpp
     render/vp2RenderDelegate/render_delegate.cpp
     render/vp2RenderDelegate/sampler.cpp
-    render/vp2RenderDelegate/texture.cpp
-    render/vp2RenderDelegate/textureResource.cpp
+    #
+    render/vp2ShaderFragments/shaderFragments.cpp
     #
     render/pxrUsdMayaGL/batchRenderer.cpp
     render/pxrUsdMayaGL/debugCodes.cpp
@@ -181,6 +182,30 @@ list(APPEND mayaUsd_src
     render/px_vp20/glslProgram.cpp
     render/px_vp20/utils.cpp
     render/px_vp20/utils_legacy.cpp
+)
+
+list(APPEND mayaUsdShaderFragments_xmls
+    # Copied from pxrUsdPreviewSurface with change to support multiple lights
+    render/vp2ShaderFragments/float4ToFloatX.xml
+    render/vp2ShaderFragments/float4ToFloatY.xml
+    render/vp2ShaderFragments/float4ToFloatZ.xml
+    render/vp2ShaderFragments/float4ToFloatW.xml
+    render/vp2ShaderFragments/lightingContributions.xml
+    render/vp2ShaderFragments/opacityToTransparency.xml
+    render/vp2ShaderFragments/scaledDiffusePassThrough.xml
+    render/vp2ShaderFragments/scaledSpecularPassThrough.xml
+    render/vp2ShaderFragments/usdPreviewSurfaceCombiner.xml
+    render/vp2ShaderFragments/usdPreviewSurfaceLighting.xml
+    render/vp2ShaderFragments/UsdPreviewSurface.xml
+    # New fragments
+    render/vp2ShaderFragments/float4ToFloat3.xml
+    render/vp2ShaderFragments/UsdPrimvarReader_float.xml
+    render/vp2ShaderFragments/UsdPrimvarReader_float2.xml
+    render/vp2ShaderFragments/UsdPrimvarReader_float3.xml
+    render/vp2ShaderFragments/UsdPrimvarReader_float4.xml
+    render/vp2ShaderFragments/UsdUVTexture.xml
+    # USD plug info
+    render/vp2ShaderFragments/plugInfo.json
 )
 
 if(UFE_FOUND)
@@ -527,6 +552,10 @@ endif()
 
 install(FILES ${mayaUsdPxrUsdMayaGL_headers}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/render/pxrUsdMayaGL
+)
+
+install(FILES ${mayaUsdShaderFragments_xmls}
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/mayaUsd_ShaderFragments/resources
 )
 
 if(UFE_FOUND)

@@ -52,13 +52,13 @@ public:
 
     HdDirtyBits GetInitialDirtyBitsMask() const override;
     void Reload() override;
-    MHWRender::MShaderInstance* GetSurfaceShader() const;
-    MHWRender::MShaderInstance* GetDisplacementShader() const;
 
-    /*! \brief  Gets primvar names used as UVs for textures in this material.
+    MHWRender::MShaderInstance* GetSurfaceShader() const;
+
+    /*! \brief  Get primvar requirements required by this material.
     */
-    const std::set<TfToken>& GetUVPrimvarNames() const {
-        return _uvPrimvarNames;
+    const TfTokenVector& GetRequiredPrimvars() const {
+        return _requiredPrimvars;
     }
 
     /*! \brief  A deleter for Maya shaders, for use with smart pointers.
@@ -74,17 +74,15 @@ public:
     >;
 
 private:
-    HdVP2TextureResourceSharedPtr _GetTextureResource(
-        HdSceneDelegate *sceneDelegate,
-        HdMaterialParam const& param
-    );
+    MHWRender::MShaderInstance* _CreateShaderInstance(const HdMaterialNetwork& mat);
+    void _UpdateShaderInstance(const HdMaterialNetwork& mat);
 
-    HdVP2RenderDelegate* const _renderDelegate;		//!< VP2 render delegate for which this material was created
+    HdVP2RenderDelegate* const _renderDelegate; //!< VP2 render delegate for which this material was created
 
-	VP2ShaderUniquePtr  _surfaceShader;         //!< VP2 surface shader instance
-	VP2ShaderUniquePtr  _displacementShader;    //!< VP2 displacement shader instance
+    VP2ShaderUniquePtr  _surfaceShader;         //!< VP2 surface shader instance
+    SdfPath _surfaceShaderId;
 
-    std::set<TfToken>   _uvPrimvarNames;    //!< primvar names used as UVs for textures in this material
+    TfTokenVector _requiredPrimvars;            //!< primvars required by this material
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

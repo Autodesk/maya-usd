@@ -10,12 +10,12 @@
 
 #include "material.h"
 #include "mesh.h"
-#include "texture.h"
 
 #include "render_pass.h"
 #include "instancer.h"
 
 #include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/envSetting.h"
 
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/hd/bprim.h"
@@ -76,6 +76,69 @@ namespace
 
     std::unordered_map<MColor, MHWRender::MShaderInstance*, MColorHash>    _fallbackShaders;        //!< Shader registry used by fallback shader method
     tbb::reader_writer_lock                                                _mutexFallbackShaders;   //!< Synchronization used to protect concurrent read from serial writes
+
+    /*! \brief  Sampler state desc hash helper class, used by sampler state cache.
+    */
+    struct MSamplerStateDescHash
+    {
+        std::size_t operator()(const MHWRender::MSamplerStateDesc& desc) const
+        {
+            std::size_t seed = 0;
+            boost::hash_combine(seed, desc.filter);
+            boost::hash_combine(seed, desc.comparisonFn);
+            boost::hash_combine(seed, desc.addressU);
+            boost::hash_combine(seed, desc.addressV);
+            boost::hash_combine(seed, desc.addressW);
+            boost::hash_combine(seed, desc.borderColor[0]);
+            boost::hash_combine(seed, desc.borderColor[1]);
+            boost::hash_combine(seed, desc.borderColor[2]);
+            boost::hash_combine(seed, desc.borderColor[3]);
+            boost::hash_combine(seed, desc.mipLODBias);
+            boost::hash_combine(seed, desc.minLOD);
+            boost::hash_combine(seed, desc.maxLOD);
+            boost::hash_combine(seed, desc.maxAnisotropy);
+            boost::hash_combine(seed, desc.coordCount);
+            boost::hash_combine(seed, desc.elementIndex);
+            return seed;
+        }
+    };
+
+    /*! Sampler state desc equality helper class, used by sampler state cache.
+    */
+    struct MSamplerStateDescEquality
+    {
+        bool operator() (
+            const MHWRender::MSamplerStateDesc& a,
+            const MHWRender::MSamplerStateDesc& b) const
+        {
+            return (
+                a.filter == b.filter &&
+                a.comparisonFn == b.comparisonFn &&
+                a.addressU == b.addressU &&
+                a.addressV == b.addressV &&
+                a.addressW == b.addressW &&
+                a.borderColor[0] == b.borderColor[0] &&
+                a.borderColor[1] == b.borderColor[1] &&
+                a.borderColor[2] == b.borderColor[2] &&
+                a.borderColor[3] == b.borderColor[3] &&
+                a.mipLODBias == b.mipLODBias &&
+                a.minLOD == b.minLOD &&
+                a.maxLOD == b.maxLOD &&
+                a.maxAnisotropy == b.maxAnisotropy &&
+                a.coordCount == b.coordCount &&
+                a.elementIndex == b.elementIndex
+            );
+        }
+    };
+
+    using MSamplerStateCache = std::unordered_map<
+        MHWRender::MSamplerStateDesc,
+        const MHWRender::MSamplerState*,
+        MSamplerStateDescHash,
+        MSamplerStateDescEquality
+    >;
+
+    MSamplerStateCache _samplerStates;                           //!< Sampler state cache
 
     const MString _diffuseColorParameterName = "diffuseColor";   //!< Shader parameter name
     const MString _solidColorParameterName   = "solidColor";     //!< Shader parameter name
@@ -327,10 +390,10 @@ void HdVP2RenderDelegate::DestroySprim(HdSprim* sPrim) {
 */
 HdBprim* HdVP2RenderDelegate::CreateBprim(
     const TfToken& typeId, const SdfPath& bprimId) {
+    /*
     if (typeId == HdPrimTypeTokens->texture) {
         return new HdVP2Texture(this, bprimId);
     }
-    /*
     if (typeId == HdPrimTypeTokens->renderBuffer) {
         return new HdVP2RenderBuffer(bprimId);
     }
@@ -352,10 +415,10 @@ HdBprim* HdVP2RenderDelegate::CreateBprim(
     \return A pointer to the new prim or nullptr on error.
 */
 HdBprim* HdVP2RenderDelegate::CreateFallbackBprim(const TfToken& typeId) {
+    /*
     if (typeId == HdPrimTypeTokens->texture) {
         return new HdVP2Texture(this, SdfPath::EmptyPath());
     }
-    /*
     if (typeId == HdPrimTypeTokens->renderBuffer) {
         return new HdVP2RenderBuffer(SdfPath::EmptyPath());
     }
@@ -373,10 +436,13 @@ void HdVP2RenderDelegate::DestroyBprim(HdBprim* bPrim) {
     delete bPrim; 
 }
 
-/*! \brief  Returns a token that indicates material bindings purpose, i.e. preview
+/*! \brief  Returns a token that indicates material bindings purpose.
+
+    The full material purpose is suggested according to
+      https://github.com/PixarAnimationStudios/USD/pull/853
 */
 TfToken HdVP2RenderDelegate::GetMaterialBindingPurpose() const {
-    return HdTokens->preview;
+    return HdTokens->full;
 }
 
 /*! \brief  Returns a node name made as a child of delegate's id.
@@ -431,20 +497,44 @@ MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackShader(MColor color)
     return fallbackShader;
 }
 
+/*! \brief  Returns a fallback shader instance when no material is found to support color per vertex.
+
+    \return A new copy of shader instance
+*/
+MHWRender::MShaderInstance* HdVP2RenderDelegate::GetColorPerVertexShader() const
+{
+    static MHWRender::MShaderInstance* sCPVShader = nullptr;
+
+    if (sCPVShader == nullptr) {
+        MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
+        if (renderer) {
+            const MHWRender::MShaderManager* shaderMgr = renderer->getShaderManager();
+            if (shaderMgr) {
+                sCPVShader = shaderMgr->getStockShader(
+                    MHWRender::MShaderManager::k3dBlinnShader);
+
+                sCPVShader->addInputFragment(
+                    "mayaCPVPassing", "C_4F", "diffuseColor", "colorIn");
+            }
+        }
+    }
+
+    return sCPVShader;
+}
+
 /*! \brief  Returns a 3d green shader that can be used for selection highlight.
 */
 MHWRender::MShaderInstance* HdVP2RenderDelegate::Get3dSolidShader() const
 {
     static MHWRender::MShaderInstance* s3dSolidShader = nullptr;
 
-    if (!s3dSolidShader)
-    {
-        if (MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer())
-        {
-            if (const MHWRender::MShaderManager* shaderMgr = renderer->getShaderManager())
-            {
-                s3dSolidShader = shaderMgr->getStockShader(MHWRender::MShaderManager::k3dSolidShader);
-
+    if (!s3dSolidShader) {
+        MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
+        if (renderer) {
+            const MHWRender::MShaderManager* shaderMgr = renderer->getShaderManager();
+            if (shaderMgr) {
+                s3dSolidShader = shaderMgr->getStockShader(
+                    MHWRender::MShaderManager::k3dSolidShader);
                 if (s3dSolidShader)
                 {
                     constexpr float color[] = { 0.056f, 1.0f, 0.366f, 1.0f };
@@ -484,6 +574,25 @@ MHWRender::MShaderInstance* HdVP2RenderDelegate::Get3dFatPointShader() const
     }
 
     return s3dFatPointShader;
+}
+
+/*! \brief  Returns a sampler state as required.
+*/
+const MHWRender::MSamplerState* HdVP2RenderDelegate::GetSamplerState(
+    const MHWRender::MSamplerStateDesc& desc) const
+{
+    const MHWRender::MSamplerState* samplerState;
+
+    auto it = _samplerStates.find(desc);
+    if (it != _samplerStates.end()) {
+        samplerState = it->second;
+    }
+    else {
+        samplerState = MHWRender::MStateManager::acquireSamplerState(desc);
+        _samplerStates[desc] = samplerState;
+    }
+ 
+    return samplerState;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

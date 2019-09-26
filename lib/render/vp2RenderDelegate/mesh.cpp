@@ -25,6 +25,8 @@
 #include <maya/MProfiler.h>
 #include <maya/MSelectionMask.h>
 
+#include <numeric>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -46,6 +48,83 @@ namespace {
         }
 
         return numDrawItems;
+    }
+
+    //! Helper utility function to fill primvar data to vertex buffer.
+    template <class DEST_TYPE, class SRC_TYPE>
+    void _FillPrimvarData(DEST_TYPE* vertexBuffer, size_t numVertices, int channelIndex,
+        const VtArray<SRC_TYPE>& primvarData, HdInterpolation interpolation,
+        const HdMeshTopology& topology, bool requiresUnsharedVertices)
+    {
+        const VtIntArray& faceVertexCounts = topology.GetFaceVertexCounts();
+        const VtIntArray& faceVertexIndices = topology.GetFaceVertexIndices();
+
+        switch (interpolation) {
+        case HdInterpolationConstant:
+            for (size_t v = 0; v < numVertices; v++) {
+                SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
+                    reinterpret_cast<float*>(&vertexBuffer[v]) + channelIndex);
+                *pointer = primvarData[0];
+            }
+            break;
+        case HdInterpolationVarying:
+        case HdInterpolationVertex:
+            if (requiresUnsharedVertices) {
+                for (size_t v = 0; v < numVertices; v++) {
+                    SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
+                        reinterpret_cast<float*>(&vertexBuffer[v]) + channelIndex);
+                    *pointer = primvarData[faceVertexIndices[v]];
+                }
+            }
+            else if (channelIndex == 0 && sizeof(DEST_TYPE) == sizeof(SRC_TYPE)) {
+                memcpy(vertexBuffer, primvarData.cdata(), sizeof(DEST_TYPE) * numVertices);
+            }
+            else {
+                for (size_t v = 0; v < numVertices; v++) {
+                    SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
+                        reinterpret_cast<float*>(&vertexBuffer[v]) + channelIndex);
+                    *pointer = primvarData[v];
+                }
+            }
+            break;
+        case HdInterpolationUniform:
+            if (requiresUnsharedVertices) {
+                const size_t numFaces = faceVertexCounts.size();
+                for (size_t f = 0, v = 0; f < numFaces; f++) {
+                    const size_t faceVertexCount = faceVertexCounts[f];
+                    const size_t faceVertexEnd = v + faceVertexCount;
+                    for (; v < faceVertexEnd; v++) {
+                        SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
+                            reinterpret_cast<float*>(&vertexBuffer[v]) + channelIndex);
+                        *pointer = primvarData[f];
+                    }
+                }
+            }
+            else {
+                TF_WARN("Unshared vertices are required for uniform primvar.");
+            }
+            break;
+        case HdInterpolationFaceVarying:
+            if (requiresUnsharedVertices) {
+                if (channelIndex == 0 && sizeof(DEST_TYPE) == sizeof(SRC_TYPE)) {
+                    memcpy(vertexBuffer, primvarData.cdata(), sizeof(DEST_TYPE) * numVertices);
+                }
+                else {
+                    for (size_t v = 0; v < numVertices; v++) {
+                        SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
+                            reinterpret_cast<float*>(&vertexBuffer[v]) + channelIndex);
+                        *pointer = primvarData[v];
+                    }
+                }
+            }
+            else {
+                TF_WARN("Unshared vertices are required for face-varying primvar.");
+            }
+            break;
+        default:
+            TF_WARN("Unsupported interpolation.");
+            break;
+        }
     }
 
     //! Helper utility function to get number of edge indices
@@ -367,6 +446,8 @@ namespace {
         float*	_positionBufferData{ nullptr };
         //! If valid, new index buffer data to commit
         int*	_indexBufferData{ nullptr };
+        //! If valid, new color buffer data to commit
+        float*	_colorBufferData{ nullptr };
         //! If valid, new normals buffer data to commit
         float*	_normalsBufferData{ nullptr };
         //! If valid, new UV buffer data to commit
@@ -412,231 +493,370 @@ void HdVP2Mesh::_UpdateDrawItem(
 
     static constexpr bool writeOnly = true;
 
-    VtValue valuePoints;
-    HdMeshTopology meshTopology;
-    bool hasMeshTopology = false;
+    const SdfPath& id = GetId();
+    const bool isTopologyDirty = HdChangeTracker::IsTopologyDirty(*dirtyBits, id);
 
-    auto getTopologyFn = [
-        this, sceneDelegate, &meshTopology, &hasMeshTopology
-    ]() -> HdMeshTopology&
-    {
-        if (!hasMeshTopology) {
-            meshTopology = GetMeshTopology(sceneDelegate);
-            hasMeshTopology = true;
-        }
+    if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
+        _UpdatePrimvarSources(sceneDelegate, *dirtyBits);
+    }
 
-        return meshTopology;
-    };
+    if (isTopologyDirty) {
+        _topology = GetMeshTopology(sceneDelegate);
+    }
 
-    // Position buffer is shared among all render items of this rprim and will
-    // be updated only once.
-    const auto& meshId = GetId();
-    if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, meshId, HdTokens->points)) {
-        valuePoints = sceneDelegate->Get(meshId, HdTokens->points);
-        if(ARCH_LIKELY(valuePoints.IsHolding<VtVec3fArray>())) {
-            const auto& points = valuePoints.Get<VtVec3fArray>();
-            const GfVec3f* pointsData = points.cdata();
+    TfTokenVector matPrimvars;
 
-            stateToCommit._positionBufferData = static_cast<float*>(
-                _positionsBuffer->acquire(points.size(), writeOnly)
-            );
-            memcpy(
-                stateToCommit._positionBufferData,
-                reinterpret_cast<const float*>(pointsData),
-                points.size() * sizeof(float) * 3
-            );
+    const HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
+    const HdVP2Material* material = static_cast<const HdVP2Material*>(
+        renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
+    if (material) {
+        matPrimvars = material->GetRequiredPrimvars();
+    }
+    else {
+        matPrimvars.push_back(HdTokens->displayColor);
+        matPrimvars.push_back(HdTokens->displayOpacity);
+        matPrimvars.push_back(HdTokens->normals);
+    }
+
+    // If there is uniform or face-varying primvar, we have to expand shared
+    // vertices in CPU because OpenGL SSBO technique is not widely supported
+    // on GPUs and 3D APIs.
+    bool requiresUnsharedVertices = false;
+    for (const TfToken& pv : matPrimvars) {
+        const auto it = _primvarSourceMap.find(pv);
+        if (it != _primvarSourceMap.end()) {
+            const HdInterpolation interpolation = it->second.interpolation;
+            if (interpolation == HdInterpolationUniform ||
+                interpolation == HdInterpolationFaceVarying) {
+                requiresUnsharedVertices = true;
+                break;
+            }
         }
     }
 
-    // Points don't need an index buffer.
-    if (HdChangeTracker::IsTopologyDirty(*dirtyBits, meshId)) {
-        HdMeshTopology& topology = getTopologyFn();
+    // Prepare index buffer.
+    if (isTopologyDirty) {
+        const HdMeshTopology* topologyToUse = &_topology;
+        HdMeshTopology unsharedTopology;
+
+        if (requiresUnsharedVertices) {
+            // Fill with sequentially increasing values, starting from 0.
+            VtIntArray newFaceVtxIds;
+            newFaceVtxIds.resize(_topology.GetFaceVertexIndices().size());
+            std::iota(newFaceVtxIds.begin(), newFaceVtxIds.end(), 0);
+
+            unsharedTopology = HdMeshTopology(
+                _topology.GetScheme(),
+                _topology.GetOrientation(),
+                _topology.GetFaceVertexCounts(),
+                newFaceVtxIds,
+                _topology.GetHoleIndices(),
+                _topology.GetRefineLevel()
+            );
+
+            topologyToUse = &unsharedTopology;
+        }
 
         if (desc.geomStyle == HdMeshGeomStyleHull) {
-            HdMeshUtil meshUtil(&topology, meshId);
+            HdMeshUtil meshUtil(topologyToUse, id);
             VtVec3iArray trianglesFaceVertexIndices;
             VtIntArray primitiveParam;
-            VtVec3iArray trianglesEdgeIndices;
-            meshUtil.ComputeTriangleIndices(&trianglesFaceVertexIndices, &primitiveParam, &trianglesEdgeIndices);
+            meshUtil.ComputeTriangleIndices(&trianglesFaceVertexIndices, &primitiveParam, nullptr);
 
             const int numIndex = trianglesFaceVertexIndices.size() * 3;
+
             stateToCommit._indexBufferData = static_cast<int*>(
-                drawItemData._indexBuffer->acquire(numIndex, writeOnly)
-            );
+                drawItemData._indexBuffer->acquire(numIndex, writeOnly));
+
             memcpy(stateToCommit._indexBufferData, trianglesFaceVertexIndices.data(), numIndex * sizeof(int));
         }
         else if (desc.geomStyle == HdMeshGeomStyleHullEdgeOnly) {
-            unsigned int numIndex = _GetNumOfEdgeIndices(topology);
+            unsigned int numIndex = _GetNumOfEdgeIndices(*topologyToUse);
+
             stateToCommit._indexBufferData = static_cast<int*>(
-                drawItemData._indexBuffer->acquire(numIndex, writeOnly)
-            );
-            _FillEdgeIndices(stateToCommit._indexBufferData, topology);
+                drawItemData._indexBuffer->acquire(numIndex, writeOnly));
+
+            _FillEdgeIndices(stateToCommit._indexBufferData, *topologyToUse);
+        }
+        else {
+            // We don't need an index buffer for points repr.
         }
     }
 
-    if (requireSmoothNormals && (*dirtyBits & DirtySmoothNormals) && drawItemData._normalsBuffer) {
-        // note: normals gets dirty when points are marked as dirty,
-        // at change tracker.
-        // clear DirtySmoothNormals (this is not a scene dirtybit)
-        *dirtyBits &= ~DirtySmoothNormals;
+    // Prepare position buffer. It is shared among all render items of the rprim
+    // so it should be updated only once when it gets dirty.
+    if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)) {
+        const auto it = _primvarSourceMap.find(HdTokens->points);
+        if (ARCH_LIKELY(it != _primvarSourceMap.end())) {
+            const VtValue& value = it->second.data;
+            if(ARCH_LIKELY(value.IsHolding<VtVec3fArray>())) {
+                const VtVec3fArray& points = value.UncheckedGet<VtVec3fArray>();
 
-        if (!valuePoints.IsHolding<VtVec3fArray>())
-            valuePoints = sceneDelegate->Get(meshId, HdTokens->points);
+                const size_t numVertices = requiresUnsharedVertices ?
+                    _topology.GetFaceVertexIndices().size() : points.size();
 
-        HdMeshTopology& topology = getTopologyFn();
+                void* bufferData = _positionsBuffer->acquire(numVertices, writeOnly);
 
-        if (ARCH_LIKELY(valuePoints.IsHolding<VtVec3fArray>())) {
-            const auto& points = valuePoints.Get<VtVec3fArray>();
-            const GfVec3f* pointsData = points.cdata();
+                if (bufferData) {
+                    _FillPrimvarData(static_cast<GfVec3f*>(bufferData), numVertices, 0,
+                        points, HdInterpolationVertex, _topology, requiresUnsharedVertices);
 
-            Hd_VertexAdjacencySharedPtr adjacency(new Hd_VertexAdjacency());
-            HdBufferSourceSharedPtr adjacencyComputation =
-                adjacency->GetSharedAdjacencyBuilderComputation(&topology);
-
-            adjacencyComputation->Resolve(); // IS the adjacency updated now?
-
-            VtArray<GfVec3f> smoothNormals = Hd_SmoothNormals::ComputeSmoothNormals(
-                adjacency.get(), topology.GetNumPoints(), pointsData
-            );
-
-            if(smoothNormals.size() == points.size())
-            {
-                stateToCommit._normalsBufferData = static_cast<float*>(
-                    drawItemData._normalsBuffer->acquire(points.size(), writeOnly)
-                    );
-                memcpy(
-                    stateToCommit._normalsBufferData,
-                    reinterpret_cast<const float*>(smoothNormals.cdata()),
-                    points.size() * sizeof(float) * 3
-                );
+                    stateToCommit._positionBufferData = static_cast<float*>(bufferData);
+                }
             }
         }
     }
 
-    auto material = drawItemData._uvBuffer ? 
-        static_cast<const HdVP2Material*>(sceneDelegate->GetRenderIndex().GetSprim(HdPrimTypeTokens->material, GetMaterialId())) :
-        nullptr;
+    // Prepare normals.
+    if (drawItemData._normalsBuffer) {
+        VtVec3fArray normals;
+        HdInterpolation interp;
 
-    if (material)
+        const auto it = _primvarSourceMap.find(HdTokens->normals);
+        if (it != _primvarSourceMap.end()) {
+            const VtValue& value = it->second.data;
+            if (ARCH_LIKELY(value.IsHolding<VtVec3fArray>())) {
+                normals = value.UncheckedGet<VtVec3fArray>();
+                interp = it->second.interpolation;
+            }
+        }
+
+        bool prepareNormals = false;
+
+        // If there is authored normals, prepare buffer only when it is dirty.
+        // otherwise, compute smooth normals from points and adjacency and we
+        // have a custom dirty bit to determine whether update is needed.
+        if (!normals.empty()) {
+            prepareNormals = HdChangeTracker::IsPrimvarDirty(
+                *dirtyBits, id, HdTokens->normals);
+        }
+        else if (requireSmoothNormals && (*dirtyBits & DirtySmoothNormals)) {
+            // note: normals gets dirty when points are marked as dirty,
+            // at change tracker.
+            // clear DirtySmoothNormals (this is not a scene dirtybit)
+            *dirtyBits &= ~DirtySmoothNormals;
+
+            prepareNormals = true;
+
+            VtValue valuePoints;
+            const auto it = _primvarSourceMap.find(HdTokens->points);
+            if (it != _primvarSourceMap.end()) {
+                valuePoints = it->second.data;
+            }
+
+            if (ARCH_LIKELY(valuePoints.IsHolding<VtVec3fArray>())) {
+                const VtVec3fArray& points = valuePoints.UncheckedGet<VtVec3fArray>();
+
+                Hd_VertexAdjacencySharedPtr adjacency(new Hd_VertexAdjacency());
+                HdBufferSourceSharedPtr adjacencyComputation =
+                    adjacency->GetSharedAdjacencyBuilderComputation(&_topology);
+                adjacencyComputation->Resolve(); // IS the adjacency updated now?
+
+                normals = Hd_SmoothNormals::ComputeSmoothNormals(
+                    adjacency.get(), _topology.GetNumPoints(), points.cdata());
+
+                interp = HdInterpolationVertex;
+            }
+        }
+
+        if (prepareNormals && !normals.empty()) {
+            const size_t numVertices = requiresUnsharedVertices ?
+                _topology.GetFaceVertexIndices().size() : normals.size();
+
+            void* bufferData = drawItemData._normalsBuffer->acquire(numVertices, writeOnly);
+            if (bufferData) {
+                _FillPrimvarData(static_cast<GfVec3f*>(bufferData), numVertices, 0,
+                    normals, interp, _topology, requiresUnsharedVertices);
+
+                stateToCommit._normalsBufferData = static_cast<float*>(bufferData);
+            }
+        }
+    }
+
+    // Prepare other primvars required by the material.
+    // HdC_TODO: per-instance constant data support.
+    // HdC_TODO: multi uv
+    if (material && drawItemData._uvBuffer)
     {
-        const std::set<TfToken>& uvPrimvarNames =
-            material->GetUVPrimvarNames();
+        for (const TfToken& pv : matPrimvars) {
+            if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, pv))
+                continue;
 
-        if (!uvPrimvarNames.empty()) {
-            auto createUVs = [
-                sceneDelegate, &meshId, dirtyBits,
-                &stateToCommit, &drawItemData, &uvPrimvarNames
-            ](
-                HdInterpolation interpolation
-            ) -> bool
-            {
-                for (const HdPrimvarDescriptor& primvar :
-                    sceneDelegate->GetPrimvarDescriptors(meshId, interpolation)
-                ) {
-                    if (uvPrimvarNames.find(primvar.name) != uvPrimvarNames.end()
-                        && HdChangeTracker::IsPrimvarDirty(
-                            *dirtyBits, meshId, primvar.name
-                        )
-                    ) {
-                        const auto& vt = sceneDelegate->Get(meshId, primvar.name);
-                        if (vt.IsHolding<VtVec2fArray>()) {
-                            const auto& uvArray = vt.UncheckedGet<VtVec2fArray>();
-                            const GfVec2f* uvData = uvArray.cdata();
+            const auto it = _primvarSourceMap.find(pv);
+            if (it == _primvarSourceMap.end())
+                continue;
 
-                            stateToCommit._uvBufferData = static_cast<float*>(
-                                drawItemData._uvBuffer->acquire(
-                                    uvArray.size(), writeOnly
-                                )
-                            );
-                            memcpy(
-                                stateToCommit._uvBufferData,
-                                reinterpret_cast<const float*>(uvData),
-                                uvArray.size() * sizeof(float) * 2
-                            );
+            const VtValue& value = it->second.data;
+            const HdInterpolation& interp = it->second.interpolation;
 
-                            return true;
-                        }
-                    }
+            if (!value.IsArrayValued() || value.GetArraySize() == 0)
+                continue;
+
+            // HdC_TODO: support other vector types.
+            if (!value.IsHolding<VtVec2fArray>())
+                continue;
+
+            size_t numVertices = 0;
+
+            if (requiresUnsharedVertices) {
+                numVertices = _topology.GetFaceVertexIndices().size();
+            }
+            else {
+                VtValue valuePoints;
+                const auto it = _primvarSourceMap.find(HdTokens->points);
+                if (it != _primvarSourceMap.end()) {
+                    valuePoints = it->second.data;
                 }
 
-                return false;
-            };
-
-            if (createUVs(HdInterpolation::HdInterpolationVertex)
-                // MAYA-98542:
-                // || createUVs(HdInterpolation::HdInterpolationFaceVarying)
-            ) {
-                drawItemData._hasUVs = true;
+                if (ARCH_LIKELY(valuePoints.IsHolding<VtVec3fArray>())) {
+                    numVertices = valuePoints.UncheckedGet<VtVec3fArray>().size();
+                }
             }
+
+            if (numVertices == 0)
+                continue;
+
+            void* bufferData = drawItemData._uvBuffer->acquire(numVertices, writeOnly);
+
+            if (value.IsHolding<VtFloatArray>()) {
+                _FillPrimvarData(
+                    static_cast<float*>(bufferData), numVertices, 0,
+                    value.UncheckedGet<VtFloatArray>(), interp,
+                    _topology, requiresUnsharedVertices);
+            }
+            else if (value.IsHolding<VtVec2fArray>()) {
+                _FillPrimvarData(
+                    static_cast<GfVec2f*>(bufferData), numVertices, 0,
+                    value.UncheckedGet<VtVec2fArray>(), interp,
+                    _topology, requiresUnsharedVertices);
+            }
+            else if (value.IsHolding<VtVec3fArray>()) {
+                _FillPrimvarData(
+                    static_cast<GfVec3f*>(bufferData), numVertices, 0,
+                    value.UncheckedGet<VtVec3fArray>(), interp,
+                    _topology, requiresUnsharedVertices);
+            }
+            else if (value.IsHolding<VtVec4fArray>()) {
+                _FillPrimvarData(
+                    static_cast<GfVec4f*>(bufferData), numVertices, 0,
+                    value.UncheckedGet<VtVec4fArray>(), interp,
+                    _topology, requiresUnsharedVertices);
+            }
+            else {
+                TF_WARN("Unsupported primvar array");
+            }
+
+            stateToCommit._uvBufferData = static_cast<float*>(bufferData);
+            drawItemData._hasUVs = true;
+            break;
         }
     }
 
-    if ((desc.geomStyle == HdMeshGeomStyleHull) &&
-        (*dirtyBits & (HdChangeTracker::DirtyMaterialId | HdChangeTracker::NewRepr | HdChangeTracker::DirtyPrimvar))
-    ) {
-        if (material && drawItemData._hasUVs)
-        {
-            stateToCommit._surfaceShader = material->GetSurfaceShader();
-            // TODO: how to determine transparency for a Hydra material?
-            stateToCommit._isTransparent = false;
+    // Prepare color buffer.
+    if (desc.geomStyle == HdMeshGeomStyleHull) {
+        if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
+            if (material) {
+                stateToCommit._surfaceShader = material->GetSurfaceShader();
+
+                // HdC_TODO
+                drawItemData._colorBuffer.reset(nullptr);
+            }
+
+            // HdC_TODO: can also need the fallback shader for constant color.
+            if (!stateToCommit._surfaceShader) {
+                stateToCommit._surfaceShader = _delegate->GetColorPerVertexShader();
+            }
         }
 
-        if (!stateToCommit._surfaceShader) {
-            // If no material is found and no display color will be found we will fallback to default color (i.e. blue)
-            // I don't know if this even possible and legal...if so, we may want to pick a better color.
-            bool foundColor = false;
-            MColor mayaColor;
+        if (drawItemData._colorBuffer && (*dirtyBits & HdChangeTracker::DirtyPrimvar)) {
+            const size_t numFaces = _topology.GetFaceVertexCounts().size();
 
-            for (const auto& primvar : sceneDelegate->GetPrimvarDescriptors(meshId, HdInterpolation::HdInterpolationConstant)) {
-                if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, meshId, primvar.name))
-                    continue;
+            // If color/opacity is not found, the 18% gray color will be used
+            // to match the default color of Hydra Storm.
+            VtVec3fArray colorArray(1, GfVec3f(0.18f, 0.18f, 0.18f));
+            VtFloatArray alphaArray(1, 1.0f);
 
-                if (primvar.name == HdTokens->displayColor) {
-                    const VtValue colorValue = GetPrimvar(sceneDelegate, primvar.name);
-                    if (!colorValue.IsEmpty()) {
-                        const VtVec3fArray colors = colorValue.Get<VtVec3fArray>();
-                        if (!colors.empty()) {
-                            const float* colorPtr = colors.front().data();
-                            mayaColor = MColor(colorPtr[0], colorPtr[1], colorPtr[2]);
-                            foundColor = true;
-                        }
+            HdInterpolation colorInterp = HdInterpolationConstant;
+            HdInterpolation alphaInterp = HdInterpolationConstant;
+
+            auto it = _primvarSourceMap.find(HdTokens->displayColor);
+            if (it != _primvarSourceMap.end()) {
+                const VtValue& value = it->second.data;
+                if (value.IsHolding<VtVec3fArray>() && value.GetArraySize() > 0) {
+                    if (value.GetArraySize() != numFaces &&
+                        it->second.interpolation == HdInterpolationUniform) {
+                        TF_WARN("# of faces mismatch (%d != %d) for %s.%s",
+                            (int)value.GetArraySize(), numFaces,
+                            id.GetText(), it->first.GetText());
                     }
-                }
-                else if (primvar.name == HdTokens->displayOpacity) {
-                    const VtValue opacityValue = GetPrimvar(sceneDelegate, primvar.name);
-                    if (!opacityValue.IsEmpty()) {
-                        const VtFloatArray opacitArray = opacityValue.Get<VtFloatArray>();
-                        if (!opacitArray.empty()) {
-                            mayaColor.a = opacitArray[0];
-                        }
+                    else {
+                        colorArray = value.UncheckedGet<VtVec3fArray>();
+                        colorInterp = it->second.interpolation;
                     }
                 }
             }
 
-            if (!foundColor) {
-                for (const auto& primvar : sceneDelegate->GetPrimvarDescriptors(meshId, HdInterpolation::HdInterpolationUniform)) {
-                    if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, meshId, primvar.name))
-                        continue;
-
-                    if (primvar.name == HdTokens->displayColor) {
-                        const VtValue colorValue = GetPrimvar(sceneDelegate, primvar.name);
-                        if (!colorValue.IsEmpty()) {
-                            const VtVec3fArray colors = colorValue.Get<VtVec3fArray>();
-                            if (!colors.empty()) {
-                                const float* colorPtr = colors.front().data();
-                                mayaColor = MColor(colorPtr[0], colorPtr[1], colorPtr[2]);
-                                foundColor = true;
-                                break;
-                            }
-                        }
+            it = _primvarSourceMap.find(HdTokens->displayOpacity);
+            if (it != _primvarSourceMap.end()) {
+                const VtValue& value = it->second.data;
+                if (value.IsHolding<VtFloatArray>() && value.GetArraySize() > 0) {
+                    if (value.GetArraySize() != numFaces &&
+                        it->second.interpolation == HdInterpolationUniform) {
+                        TF_WARN("# of faces mismatch (%d != %d) for %s.%s",
+                            (int)value.GetArraySize(), numFaces,
+                            id.GetText(), it->first.GetText());
+                    }
+                    else {
+                        alphaArray = value.UncheckedGet<VtFloatArray>();
+                        alphaInterp = it->second.interpolation;
                     }
                 }
             }
 
-            if (foundColor)
-            {
+            if (colorInterp == HdInterpolationConstant &&
+                alphaInterp == HdInterpolationConstant) {
+                const GfVec3f& color = colorArray[0];
+
+                MColor mayaColor(color[0], color[1], color[2], alphaArray[0]);
+
+                // Pre-multiplied with alpha
+                mayaColor *= mayaColor.a;
+
                 stateToCommit._surfaceShader = _delegate->GetFallbackShader(mayaColor);
-                stateToCommit._isTransparent = (mayaColor.a < 1.0f);
+                stateToCommit._isTransparent = (mayaColor.a < 0.99f);
+
+                // HdC_TODO: allocate on demand.
+                drawItemData._colorBuffer.reset(nullptr);
+            }
+            else {
+                size_t numVertices = 0;
+
+                if (requiresUnsharedVertices) {
+                    numVertices = _topology.GetFaceVertexIndices().size();
+                }
+                else {
+                    VtValue valuePoints;
+                    const auto it = _primvarSourceMap.find(HdTokens->points);
+                    if (it != _primvarSourceMap.end()) {
+                        valuePoints = it->second.data;
+                    }
+
+                    if (ARCH_LIKELY(valuePoints.IsHolding<VtVec3fArray>())) {
+                        numVertices = valuePoints.UncheckedGet<VtVec3fArray>().size();
+                    }
+                }
+
+                void* bufferData = drawItemData._colorBuffer->acquire(numVertices, writeOnly);
+
+                if (bufferData) {
+                    _FillPrimvarData(static_cast<GfVec4f*>(bufferData), numVertices, 0,
+                        colorArray, colorInterp, _topology, requiresUnsharedVertices);
+
+                    _FillPrimvarData(static_cast<GfVec4f*>(bufferData), numVertices, 3,
+                        alphaArray, alphaInterp, _topology, requiresUnsharedVertices);
+
+                    stateToCommit._colorBufferData = static_cast<float*>(bufferData);
+                }
             }
         }
     }
@@ -644,7 +864,7 @@ void HdVP2Mesh::_UpdateDrawItem(
     // Bounding box is per-prim shared data.
     GfRange3d range;
 
-    if (HdChangeTracker::IsExtentDirty(*dirtyBits, meshId)) {
+    if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) {
         range = GetExtent(sceneDelegate);
         if (!range.IsEmpty()) {
             _sharedData.bounds.SetRange(range);
@@ -663,8 +883,8 @@ void HdVP2Mesh::_UpdateDrawItem(
     // World matrix is per-prim shared data.
     GfMatrix4d transform;
 
-    if (HdChangeTracker::IsTransformDirty(*dirtyBits, meshId)) {
-        transform = sceneDelegate->GetTransform(meshId);
+    if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
+        transform = sceneDelegate->GetTransform(id);
         _sharedData.bounds.SetMatrix(transform);
 
         *dirtyBits &= ~HdChangeTracker::DirtyTransform;
@@ -676,7 +896,7 @@ void HdVP2Mesh::_UpdateDrawItem(
     MMatrix worldMatrix;
     transform.Get(worldMatrix.matrix);
 
-    if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, meshId)) {
+    if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {
         _UpdateVisibility(sceneDelegate, dirtyBits);
     }
 
@@ -687,18 +907,16 @@ void HdVP2Mesh::_UpdateDrawItem(
     if (!GetInstancerId().IsEmpty()) {
 
         // Retrieve instance transforms from the instancer.
-        HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
-        HdInstancer *instancer =
-            renderIndex.GetInstancer(GetInstancerId());
+        HdInstancer *instancer = renderIndex.GetInstancer(GetInstancerId());
         VtMatrix4dArray transforms =
             static_cast<HdVP2Instancer*>(instancer)->
-            ComputeInstanceTransforms(meshId);
+            ComputeInstanceTransforms(id);
 
         double instanceMatrix[4][4];
 
         if ((desc.geomStyle == HdMeshGeomStyleHullEdgeOnly) &&
             !param->GetDrawScene().IsProxySelected()) {
-            if (auto state = param->GetDrawScene().GetPrimSelectionState(meshId)) {
+            if (auto state = param->GetDrawScene().GetPrimSelectionState(id)) {
                 for (const auto& indexArray : state->instanceIndices) {
                     for (const auto index : indexArray) {
                         transforms[index].Get(instanceMatrix);
@@ -732,15 +950,19 @@ void HdVP2Mesh::_UpdateDrawItem(
             return;
         }
 
+        MHWRender::MVertexBuffer* colorBuffer = stateToCommit._drawItemData._colorBuffer.get();
         MHWRender::MVertexBuffer* normalsBuffer = stateToCommit._drawItemData._normalsBuffer.get();
-
-        MHWRender::MVertexBuffer* uvBuffer = stateToCommit._drawItemData._hasUVs
-            ? stateToCommit._drawItemData._uvBuffer.get() : nullptr;
+        MHWRender::MVertexBuffer* uvBuffer =
+            stateToCommit._drawItemData._hasUVs ?
+            stateToCommit._drawItemData._uvBuffer.get() : nullptr;
 
         MHWRender::MIndexBuffer* indexBuffer = stateToCommit._drawItemData._indexBuffer.get();
 
         MHWRender::MVertexBufferArray vertexBuffers;
         vertexBuffers.addBuffer("positions", positionsBuffer);
+
+        if (colorBuffer)
+            vertexBuffers.addBuffer("diffuseColor", colorBuffer);
 
         if (normalsBuffer)
             vertexBuffers.addBuffer("normals", normalsBuffer);
@@ -751,6 +973,10 @@ void HdVP2Mesh::_UpdateDrawItem(
         // If available, something changed
         if(stateToCommit._positionBufferData)
             positionsBuffer->commit(stateToCommit._positionBufferData);
+
+        // If available, something changed
+        if (stateToCommit._colorBufferData && colorBuffer)
+            colorBuffer->commit(stateToCommit._colorBufferData);
 
         // If available, something changed
         if (stateToCommit._normalsBufferData && normalsBuffer)
@@ -797,6 +1023,34 @@ void HdVP2Mesh::_UpdateDrawItem(
             oldInstanceCount = 0;
         }
     });
+}
+
+void HdVP2Mesh::_UpdatePrimvarSources(
+    HdSceneDelegate* sceneDelegate,
+    HdDirtyBits dirtyBits)
+{
+    const SdfPath& id = GetId();
+
+    // Update _primvarSourceMap, our local cache of raw primvar data.
+    // This function pulls data from the scene delegate, but defers processing.
+    //
+    // We only call GetPrimvar on primvars that have been marked dirty.
+    //
+    // Currently, hydra doesn't have a good way of communicating changes in
+    // the set of primvars, so we only ever add and update to the primvar set.
+
+    for (size_t i = 0; i < HdInterpolationCount; i++) {
+        const HdInterpolation interpolation = static_cast<HdInterpolation>(i);
+        const HdPrimvarDescriptorVector primvars =
+            GetPrimvarDescriptors(sceneDelegate, interpolation);
+
+        for (const HdPrimvarDescriptor& pv: primvars) {
+            if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
+                const VtValue value = GetPrimvar(sceneDelegate, pv.name);
+                _primvarSourceMap[pv.name] = { value, interpolation };
+            }
+        }
+    }
 }
 
 /*! \brief  Create render item for points repr.

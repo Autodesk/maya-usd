@@ -33,14 +33,17 @@ HdVP2DrawItem::HdVP2DrawItem(
     //
     //   "/Proxy/TreePatch/Tree_1.proto_leaves_id0"
     //
-    std::string uniqueName = GetRprimID().GetText();
-    uniqueName += TfStringPrintf("/DrawItem_%p", this);
-    _renderItemName = uniqueName.c_str();
+    std::string name = GetRprimID().GetText() + TfStringPrintf("/DrawItem_%p", this);
+    _renderItemName = name.c_str();
 
     _mesh._indexBuffer.reset(new MHWRender::MIndexBuffer(MHWRender::MGeometry::kUnsignedInt32));
 
     if (_reprDesc.geomStyle == HdMeshGeomStyleHull)
     {
+        const MHWRender::MVertexBufferDescriptor colorBufferDesc("",
+            MHWRender::MGeometry::kColor, MHWRender::MGeometry::kFloat, 4);
+        _mesh._colorBuffer.reset(new MHWRender::MVertexBuffer(colorBufferDesc));
+
         const MHWRender::MVertexBufferDescriptor nbDesc("",
             MHWRender::MGeometry::kNormal, MHWRender::MGeometry::kFloat, 3);
         _mesh._normalsBuffer.reset(new MHWRender::MVertexBuffer(nbDesc));
