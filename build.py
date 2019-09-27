@@ -12,6 +12,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import distutils.util
 
 ############################################################
 # Helpers for printing output
@@ -153,7 +154,7 @@ def GetCPUCount():
     except NotImplementedError:
         return 1
 
-def Run(cmd, logCommandOutput=True):
+def Run(context, cmd):
     """Run the specified command in a subprocess."""
     PrintInfo('Running "{cmd}"'.format(cmd=cmd))
 
@@ -165,7 +166,7 @@ def Run(cmd, logCommandOutput=True):
 
         # Let exceptions escape from subprocess calls -- higher level
         # code will handle them.
-        if logCommandOutput:
+        if context.redirectOutstreamFile:
             p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
             while True:
@@ -279,7 +280,8 @@ def RunCMake(context, extraArgs=None, stages=None):
             os.remove(context.logFileLocation)
 
         if 'configure' in stages:
-            Run('cmake '
+            Run(context,
+                'cmake '
                 '-DCMAKE_INSTALL_PREFIX="{instDir}" '
                 '-DCMAKE_BUILD_TYPE={variant} '
                 '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON'
@@ -299,7 +301,7 @@ def RunCMake(context, extraArgs=None, stages=None):
             installArg = "--target install"
 
         if 'build' in stages or 'install' in stages:
-            Run("cmake --build . --config {variant} {installArg} -- {multiproc}"
+            Run(context, "cmake --build . --config {variant} {installArg} -- {multiproc}"
                 .format(variant=variant,
                         installArg=installArg,
                         multiproc=FormatMultiProcs(context.numJobs, generator)))
@@ -310,7 +312,8 @@ def RunCTest(context, extraArgs=None):
     numJobs = context.numJobs
 
     with CurrentWorkingDirectory(buildDir):
-        Run('ctest '
+        Run(context,
+            'ctest '
             '-j {numJobs} '
             '-C {variant} '
             '{extraArgs} '
@@ -466,6 +469,9 @@ parser.add_argument("-j", "--jobs", type=int, default=GetCPUCount(),
                           "(default: # of processors [{0}])"
                           .format(GetCPUCount())))
 
+parser.add_argument("--redirect-outstream-file", type=distutils.util.strtobool, dest="redirect_outstream_file", default=True,
+                    help="Redirect output stream to a file. Set this flag to false to redirect output stream to console instead.")
+
 args = parser.parse_args()
 verbosity = args.verbosity
 
@@ -540,6 +546,8 @@ class InstallContext:
             for arg in argList.split(","):
                 self.ctestArgs.append(arg)
 
+        # Redirect output stream to file
+        self.redirectOutstreamFile = args.redirect_outstream_file
 try:
     context = InstallContext(args)
 except Exception as e:
@@ -555,20 +563,23 @@ if __name__ == "__main__":
       Build directory           {buildDir}
       Install directory         {instDir}
       Variant                   {buildVariant}
-      CMake generator           {cmakeGenerator}
+      CMake generator           {cmakeGenerator}"""
+
+    if context.redirectOutstreamFile:
+      summaryMsg += """
       Build Log                 {logFileLocation}"""
 
     if context.buildArgs:
       summaryMsg += """
-      Build arguments     {buildArgs}"""
+      Build arguments           {buildArgs}"""
 
     if context.stagesArgs:
       summaryMsg += """
-      Stages arguments    {stagesArgs}"""
+      Stages arguments          {stagesArgs}"""
 
     if context.ctestArgs:
       summaryMsg += """
-      CTest arguments     {ctestArgs}"""
+      CTest arguments           {ctestArgs}"""
 
     summaryMsg = summaryMsg.format(
         mayaUsdSrcDir=context.mayaUsdSrcDir,
