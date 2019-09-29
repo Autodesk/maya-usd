@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 
+set(TARGET_NAME UFE_TEST)
+
 # unit test scripts
 set(test_script_files
     testDeleteCmd.py
@@ -36,12 +38,17 @@ if(IS_WINDOWS)
 endif()
 
 # copy ufe tests to ${CMAKE_CURRENT_BINARY_DIR} and run them from there
-file(COPY test-samples DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ufeScripts DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ufeTestUtils DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-foreach(test_file ${test_script_files})
-    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${test_file} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-endforeach()
+
+add_custom_target(${TARGET_NAME} ALL)
+
+copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+                             DIRECTORY test-samples)
+copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+                             DIRECTORY ufeScripts)
+copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+                             DIRECTORY ufeTestUtils)
+copyFiles(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+                         FILES ${test_script_files})
 
 # unit tests
 set(pythonPath

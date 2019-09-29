@@ -16,6 +16,8 @@
 # =======================================================================
 #
 
+include(CMakeParseArguments)
+
 # The name of the operating system for which CMake is to build
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     set(IS_WINDOWS TRUE)
@@ -169,4 +171,99 @@ endfunction()
 function(get_unittest_target unittest_target unittest_basename)
     get_filename_component(unittest_name ${unittest_basename} NAME_WE)
     set(${unittest_target} "${unittest_name}" PARENT_SCOPE)
+endfunction()
+
+#
+# copyFiles( <target>
+#            [DESTINATION <destination>]
+#            [FILES <list of files>])
+#
+#   DESTINATION   - destination where files will be copied into.
+#   FILES         - list of files to copy
+#
+function(copyFiles target)
+    cmake_parse_arguments(PREFIX 
+        "TARGET" 
+        "DESTINATION"
+        "FILES" 
+        ${ARGN}
+    )
+
+    if(PREFIX_DESTINATION)
+        set(destination ${PREFIX_DESTINATION})
+    endif()
+    if(NOT PREFIX_DESTINATION)
+        message(FATAL_ERROR "DESTINATION keyword is not specified.")
+    endif()
+
+     if(PREFIX_FILES)
+        set(srcFiles ${PREFIX_FILES})
+    endif()
+    if(NOT PREFIX_FILES)
+        message(FATAL_ERROR "FILES keyword is not specified.")
+    endif()
+
+    foreach(file ${srcFiles})
+        get_filename_component(input_file "${file}" ABSOLUTE)
+        get_filename_component(output_file "${destination}/${file}" ABSOLUTE)
+
+        add_custom_command(
+            TARGET ${target}
+            PRE_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${input_file} ${output_file}
+            DEPENDS "${srcFiles}"
+        )
+    endforeach()
+endfunction()
+
+#
+# copyDirectory( <target>
+#            [DESTINATION <destination>]
+#            [DIRECTORY <directory>])
+#
+#   DESTINATION   - destination where directory will be copied into.
+#   DIRECTORY     - directory to be copied.
+#
+function(copyDirectory target)
+    cmake_parse_arguments(PREFIX
+        "TARGET" 
+        "DESTINATION"
+        "DIRECTORY" 
+        ${ARGN}
+    )
+
+    if(PREFIX_DESTINATION)
+        set(destination ${PREFIX_DESTINATION})
+    endif()
+    if(NOT PREFIX_DESTINATION)
+        message(FATAL_ERROR "DESTINATION keyword is not specified.")
+    endif()
+
+     if(PREFIX_DIRECTORY)
+        set(directory ${PREFIX_DIRECTORY})
+        get_filename_component(directory "${directory}" ABSOLUTE)
+        get_filename_component(dir_name "${directory}" NAME)
+    endif()
+    if(NOT PREFIX_DIRECTORY)
+        message(FATAL_ERROR "DIRECTORY keyword is not specified.")
+    endif()
+
+    # figure out files in directories by traversing all the subdirectories 
+    # relative to directory
+    file(GLOB_RECURSE srcFiles RELATIVE ${directory} ${directory}/*)
+ 
+    foreach(file ${srcFiles})
+        get_filename_component(input_file "${dir_name}/${file}" ABSOLUTE)
+        get_filename_component(output_file "${destination}/${dir_name}/${file}" ABSOLUTE)
+
+        add_custom_command(
+            TARGET ${target}
+            PRE_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${input_file} ${output_file}
+            DEPENDS "${input_file}"
+        )
+
+    endforeach()
 endfunction()
