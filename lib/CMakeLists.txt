@@ -34,22 +34,6 @@ find_package(Boost COMPONENTS
                 REQUIRED
 )
 
-if(CMAKE_WANT_UFE_BUILD)
-    find_package(UFE QUIET)
-    if(UFE_FOUND)
-        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
-        include_directories(${UFE_INCLUDE_DIR})
-        add_definitions(-DWANT_UFE_BUILD)
-
-        if(MSVC)
-            # Some of the UFE classes are exporting STL classes which causes this warning.
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
-        endif()
-    else()
-        message(STATUS "UFE not found. UFE features will be disabled.")
-    endif()
-endif()
-
 #==============================================================================
 # Library
 #==============================================================================
@@ -411,7 +395,15 @@ target_compile_definitions(${LIBRARY_NAME}
         MFB_PACKAGE_NAME="${LIBRARY_NAME}"
         MFB_ALT_PACKAGE_NAME="${LIBRARY_NAME}"
         MFB_PACKAGE_MODULE=mayaUsd
+        WANT_UFE_BUILD=UFE_FOUND
 )
+
+# Some of the UFE classes are exporting STL classes which causes this warning.
+if(UFE_FOUND AND MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
+    string(REPLACE " " ";" REPLACED_FLAGS ${CMAKE_CXX_FLAGS})
+    target_compile_options(${LIBRARY_NAME} INTERFACE ${REPLACED_FLAGS})
+endif()
 
 target_include_directories(
     ${LIBRARY_NAME}
@@ -419,6 +411,7 @@ target_include_directories(
     ${MAYA_INCLUDE_DIRS}
     ${PXR_INCLUDE_DIRS}
     ${CMAKE_BINARY_DIR}/include
+    ${UFE_INCLUDE_DIR}
 )
 
 target_link_libraries(${LIBRARY_NAME}
@@ -450,18 +443,18 @@ target_link_libraries(${LIBRARY_NAME}
     vt
 )
 
-if (UFE_FOUND)
+if(UFE_FOUND)
     target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
 endif()
 
 if(IS_MACOSX OR IS_LINUX)
-    init_rpath(rpath "plugin")
+    mayaUsd_init_rpath(rpath "plugin")
     if(WANT_USD_RELATIVE_PATH)
-        add_rpath(rpath "../../USD/lib")
+        mayaUsd_add_rpath(rpath "../../USD/lib")
     elseif(DEFINED PXR_USD_LOCATION)
-        add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+        mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
-    install_rpath(rpath ${LIBRARY_NAME})
+    mayaUsd_install_rpath(rpath ${LIBRARY_NAME})
 endif()
 
 install(TARGETS ${LIBRARY_NAME}
@@ -479,22 +472,22 @@ endif()
 set_property(GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 
 # promote headers
-promoteMayaUsdHeader()
-promoteHeaderList(${mayaUsdBase_headers})
-promoteHeaderList(${mayaUsdFileio_headers})
-promoteHeaderList(${mayaUsdChaser_headers})
-promoteHeaderList(${mayaUsdJobs_headers})
-promoteHeaderList(${mayaUsdUtilsIO_headers})
-promoteHeaderList(${mayaUsdShading_headers})
-promoteHeaderList(${mayaUsdTranslators_headers})
-promoteHeaderList(${mayaUsdUtils_headers})
-promoteHeaderList(${mayaUsdNodes_headers})
-promoteHeaderList(${mayaUsdListeners_headers})
-promoteHeaderList(${mayaUsdVP2RenderDelegate_headers})
+mayaUsd_promoteMayaUsdHeader()
+mayaUsd_promoteHeaderList(${mayaUsdBase_headers})
+mayaUsd_promoteHeaderList(${mayaUsdFileio_headers})
+mayaUsd_promoteHeaderList(${mayaUsdChaser_headers})
+mayaUsd_promoteHeaderList(${mayaUsdJobs_headers})
+mayaUsd_promoteHeaderList(${mayaUsdUtilsIO_headers})
+mayaUsd_promoteHeaderList(${mayaUsdShading_headers})
+mayaUsd_promoteHeaderList(${mayaUsdTranslators_headers})
+mayaUsd_promoteHeaderList(${mayaUsdUtils_headers})
+mayaUsd_promoteHeaderList(${mayaUsdNodes_headers})
+mayaUsd_promoteHeaderList(${mayaUsdListeners_headers})
+mayaUsd_promoteHeaderList(${mayaUsdVP2RenderDelegate_headers})
 if(UFE_FOUND)
-    promoteHeaderList(${mayaUsdUfe_headers})
+    mayaUsd_promoteHeaderList(${mayaUsdUfe_headers})
 endif()
-promoteHeaderList(${mayaUsdPxrUsdMayaGL_headers})
+mayaUsd_promoteHeaderList(${mayaUsdPxrUsdMayaGL_headers})
 
 # install public headers
 install(FILES ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h
@@ -595,9 +588,9 @@ if(UFE_FOUND)
     )
 
     if(IS_MACOSX OR IS_LINUX)
-        init_rpath(rpath "${PROJECT_NAME}")
-        add_rpath(rpath "../..")
-        install_rpath(rpath ${UFE_PYTHON_LIBRARY_NAME})
+        mayaUsd_init_rpath(rpath "${PROJECT_NAME}")
+        mayaUsd_add_rpath(rpath "../..")
+        mayaUsd_install_rpath(rpath ${UFE_PYTHON_LIBRARY_NAME})
     endif()
 
     install(TARGETS ${UFE_PYTHON_LIBRARY_NAME}

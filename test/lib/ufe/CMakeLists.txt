@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 
+set(TARGET_NAME UFE_TEST)
+
 # unit test scripts
 set(test_script_files
     testDeleteCmd.py
@@ -27,7 +29,7 @@ set(test_script_files
     testTRSBase.py
 )
 
-if(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE)
+if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND test_script_files testGroupCmd.py)
 endif()
 
@@ -36,12 +38,17 @@ if(IS_WINDOWS)
 endif()
 
 # copy ufe tests to ${CMAKE_CURRENT_BINARY_DIR} and run them from there
-file(COPY test-samples DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ufeScripts DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ufeTestUtils DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-foreach(test_file ${test_script_files})
-    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${test_file} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-endforeach()
+
+add_custom_target(${TARGET_NAME} ALL)
+
+mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+                             DIRECTORY test-samples)
+mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+                             DIRECTORY ufeScripts)
+mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+                             DIRECTORY ufeTestUtils)
+mayaUsd_copyFiles(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+                         FILES ${test_script_files})
 
 # unit tests
 set(pythonPath
@@ -67,7 +74,7 @@ else()
 endif()
 
 foreach(script ${test_script_files})
-    get_unittest_target(target ${script})
+    mayaUsd_get_unittest_target(target ${script})
     add_test(
         NAME ${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}

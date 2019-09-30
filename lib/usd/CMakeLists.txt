@@ -30,7 +30,7 @@ list(APPEND schemas_headers
     schemas/tokens.h
 )
 
-promoteHeaderList(${schemas_headers})
+mayaUsd_promoteHeaderList(${schemas_headers})
 
 add_subdirectory(hdMaya)
 add_subdirectory(translators)
