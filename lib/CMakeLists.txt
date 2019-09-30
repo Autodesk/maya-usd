@@ -400,7 +400,9 @@ target_compile_definitions(${LIBRARY_NAME}
 
 # Some of the UFE classes are exporting STL classes which causes this warning.
 if(UFE_FOUND AND MSVC)
-    target_compile_options(${LIBRARY_NAME} "${CMAKE_CXX_FLAGS} /wd4251")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
+    string(REPLACE " " ";" REPLACED_FLAGS ${CMAKE_CXX_FLAGS})
+    target_compile_options(${LIBRARY_NAME} INTERFACE ${REPLACED_FLAGS})
 endif()
 
 target_include_directories(
