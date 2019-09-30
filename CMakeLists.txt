@@ -77,6 +77,15 @@ find_package(USD REQUIRED)
 include(cmake/usd.cmake)
 include(${USD_CONFIG_FILE})
 
+if(CMAKE_WANT_UFE_BUILD)
+    find_package(UFE QUIET)
+    if(UFE_FOUND)
+        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
+    else()
+        message(STATUS "UFE not found. UFE features will be disabled.")
+    endif()
+endif()
+
 #==============================================================================
 # Compiler
 #==============================================================================

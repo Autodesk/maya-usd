@@ -34,22 +34,6 @@ find_package(Boost COMPONENTS
                 REQUIRED
 )
 
-if(CMAKE_WANT_UFE_BUILD)
-    find_package(UFE QUIET)
-    if(UFE_FOUND)
-        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
-        include_directories(${UFE_INCLUDE_DIR})
-        add_definitions(-DWANT_UFE_BUILD)
-
-        if(MSVC)
-            # Some of the UFE classes are exporting STL classes which causes this warning.
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
-        endif()
-    else()
-        message(STATUS "UFE not found. UFE features will be disabled.")
-    endif()
-endif()
-
 #==============================================================================
 # Library
 #==============================================================================
@@ -411,7 +395,13 @@ target_compile_definitions(${LIBRARY_NAME}
         MFB_PACKAGE_NAME="${LIBRARY_NAME}"
         MFB_ALT_PACKAGE_NAME="${LIBRARY_NAME}"
         MFB_PACKAGE_MODULE=mayaUsd
+        WANT_UFE_BUILD=UFE_FOUND
 )
+
+# Some of the UFE classes are exporting STL classes which causes this warning.
+if(UFE_FOUND AND MSVC)
+    target_compile_options(${LIBRARY_NAME} "${CMAKE_CXX_FLAGS} /wd4251")
+endif()
 
 target_include_directories(
     ${LIBRARY_NAME}
@@ -419,6 +409,7 @@ target_include_directories(
     ${MAYA_INCLUDE_DIRS}
     ${PXR_INCLUDE_DIRS}
     ${CMAKE_BINARY_DIR}/include
+    ${UFE_INCLUDE_DIR}
 )
 
 target_link_libraries(${LIBRARY_NAME}
@@ -450,7 +441,7 @@ target_link_libraries(${LIBRARY_NAME}
     vt
 )
 
-if (UFE_FOUND)
+if(UFE_FOUND)
     target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
 endif()
 

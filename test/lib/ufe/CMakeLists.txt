@@ -29,7 +29,7 @@ set(test_script_files
     testTRSBase.py
 )
 
-if(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE)
+if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND test_script_files testGroupCmd.py)
 endif()
 
