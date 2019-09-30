@@ -1,12 +1,12 @@
-<fragment uiName="UsdPrimvarReader_float3" name="UsdPrimvarReader_float3" type="interpolant" class="ShadeFragment" version="1.0" feature_level="0">
+<fragment uiName="UsdPrimvarReader_float3" name="UsdPrimvarReader_float3" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
     <description>
         <![CDATA[VP2 implementation for primvar reader]]>
     </description>
     <properties>
-        <float3 name="st" semantic="uvCoord" flags="varyingInputParam" />
+        <float3 name="primvar" semantic="uvCoord" flags="varyingInputParam" />
     </properties>
     <outputs>
-        <float3 name="result" semantic="TEXCOORD" />
+        <float3 name="result" />
     </outputs>
     <implementation>
         <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
@@ -19,14 +19,6 @@ vec3 UsdPrimvarReader_float3(vec3 input)
 }
                 ]]>
             </source>
-            <vertex_source>
-                <![CDATA[
-vec3 iUsdPrimvarReader_float3(vec3 input)
-{
-    return input;
-}
-                ]]>
-            </vertex_source>
         </implementation>
         <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
             <function_name val="UsdPrimvarReader_float3" />
@@ -38,14 +30,6 @@ float3 UsdPrimvarReader_float3(float3 input)
 }
                 ]]>
             </source>
-            <vertex_source>
-                <![CDATA[
-float3 iUsdPrimvarReader_float3(float3 input)
-{
-    return input;
-}
-                ]]>
-            </vertex_source>
         </implementation>
         <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
             <function_name val="UsdPrimvarReader_float3" />
@@ -57,14 +41,6 @@ float3 UsdPrimvarReader_float3(float3 input)
 }
                 ]]>
             </source>
-            <vertex_source>
-                <![CDATA[
-float3 iUsdPrimvarReader_float3(float3 input)
-{
-    return input;
-}
-                ]]>
-            </vertex_source>
         </implementation>
     </implementation>
 </fragment>
