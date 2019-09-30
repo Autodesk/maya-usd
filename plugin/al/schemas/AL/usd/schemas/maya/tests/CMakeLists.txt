@@ -27,7 +27,7 @@ target_link_libraries(testMayaSchemas
     ${Boost_PYTHON_LIBRARY}
     )
 
-# install(TARGETS testMayaSchemas DESTINATION bin)
+install(TARGETS testMayaSchemas DESTINATION bin)
 
 add_test(
     NAME TestAdditionalSchemas
