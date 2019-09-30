@@ -71,15 +71,15 @@ set_target_properties(${TRANSLATORS_PACKAGE}
 
 # rpath setup
 if(IS_MACOSX OR IS_LINUX) 
-    init_rpath(rpath "plugin")
-    add_rpath(rpath "../lib")
+    mayaUsd_init_rpath(rpath "plugin")
+    mayaUsd_add_rpath(rpath "../lib")
     if(WANT_USD_RELATIVE_PATH)
-        add_rpath(rpath "../../../../USD/lib")
+        mayaUsd_add_rpath(rpath "../../../../USD/lib")
     elseif(DEFINED PXR_USD_LOCATION)
-        add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+        mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
-    add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-    install_rpath(rpath ${TRANSLATORS_PACKAGE})
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    mayaUsd_install_rpath(rpath ${TRANSLATORS_PACKAGE})
 endif()
 
 if (IS_LINUX)

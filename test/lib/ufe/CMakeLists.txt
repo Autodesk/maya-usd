@@ -41,13 +41,13 @@ endif()
 
 add_custom_target(${TARGET_NAME} ALL)
 
-copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
                              DIRECTORY test-samples)
-copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
                              DIRECTORY ufeScripts)
-copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
                              DIRECTORY ufeTestUtils)
-copyFiles(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+mayaUsd_copyFiles(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
                          FILES ${test_script_files})
 
 # unit tests
@@ -74,7 +74,7 @@ else()
 endif()
 
 foreach(script ${test_script_files})
-    get_unittest_target(target ${script})
+    mayaUsd_get_unittest_target(target ${script})
     add_test(
         NAME ${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}

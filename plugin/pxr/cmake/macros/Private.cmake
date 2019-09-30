@@ -874,19 +874,19 @@ function(_pxr_python_module NAME)
 
     # Python modules need to be able to access their corresponding
     # wrapped library and the install lib directory.
-    init_rpath(rpath "${libInstallPrefix}")
-    add_rpath(rpath
+    mayaUsd_init_rpath(rpath "${libInstallPrefix}")
+    mayaUsd_add_rpath(rpath
         "${CMAKE_INSTALL_PREFIX}/${args_WRAPPED_LIB_INSTALL_PREFIX}")
-    add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
 
     # Add path for usd core
     if(WANT_USD_RELATIVE_PATH)
-        add_rpath(rpath "../../../../../USD/lib")
+        mayaUsd_add_rpath(rpath "../../../../../USD/lib")
     elseif(DEFINED PXR_USD_LOCATION)
-        add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+        mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
 
-    install_rpath(rpath ${LIBRARY_NAME})
+    mayaUsd_install_rpath(rpath ${LIBRARY_NAME})
 
     _get_folder("_python" folder)
     set_target_properties(${LIBRARY_NAME}
@@ -1192,14 +1192,14 @@ function(_pxr_library NAME)
     # XXX -- May want some plugins to be baked into monolithic.
     _pxr_target_link_libraries(${NAME} ${args_LIBRARIES})
 
-    init_rpath(rpath "${libInstallPrefix}")
+    mayaUsd_init_rpath(rpath "${libInstallPrefix}")
 	# Add path for Pixar-specific Maya shared libraries.  As of 1-Aug-2019, 
 	# this is only the usdMaya shared library.
-    add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/${PXR_INSTALL_SUBDIR}/lib")
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/${PXR_INSTALL_SUBDIR}/lib")
 	# Add path for common mayaUsd shared libraries.  As of 1-Aug-2019, this is
 	# only the mayaUsd shared library.
-    add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-    install_rpath(rpath ${NAME})
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    mayaUsd_install_rpath(rpath ${NAME})
 
     #
     # Set up the install.

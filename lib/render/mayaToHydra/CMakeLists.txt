@@ -29,14 +29,14 @@ target_include_directories(${TARGET_NAME} PRIVATE
 
 # rpath setup
 if(IS_MACOSX OR IS_LINUX) 
-    init_rpath(rpath "plugin")
+    mayaUsd_init_rpath(rpath "plugin")
     if(WANT_USD_RELATIVE_PATH)
-        add_rpath(rpath "../../../USD/lib")
+        mayaUsd_add_rpath(rpath "../../../USD/lib")
     elseif(DEFINED PXR_USD_LOCATION)
-        add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+        mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
-    add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-    install_rpath(rpath ${TARGET_NAME})
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    mayaUsd_install_rpath(rpath ${TARGET_NAME})
 endif()
 
 # M3dView needs this (technically, MNativeWindowHdl.h)

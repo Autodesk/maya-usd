@@ -259,9 +259,9 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
 
         # Find libraries under the install prefix, which has the core USD
         # libraries.
-        init_rpath(rpath "tests/lib")
-        add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-        install_rpath(rpath ${LIBRARY_NAME})
+        mayaUsd_init_rpath(rpath "tests/lib")
+        mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+        mayaUsd_install_rpath(rpath ${LIBRARY_NAME})
 
         if (NOT bt_SOURCE_DIR)
             set(bt_SOURCE_DIR testenv)
@@ -339,9 +339,9 @@ function(pxr_build_test TEST_NAME)
 
         # Find libraries under the install prefix, which has the core USD
         # libraries.
-        init_rpath(rpath "tests")
-        add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-        install_rpath(rpath ${TEST_NAME})
+        mayaUsd_init_rpath(rpath "tests")
+        mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+        mayaUsd_install_rpath(rpath ${TEST_NAME})
 
         # XXX -- We shouldn't have to install to run tests.
         install(TARGETS ${TEST_NAME}
@@ -775,10 +775,10 @@ function(pxr_toplevel_epilogue)
                 ${PXR_THREAD_LIBS}
         )
 
-        init_rpath(rpath "${libInstallPrefix}")
-        add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib")
-        add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-        install_rpath(rpath usd_ms)
+        mayaUsd_init_rpath(rpath "${libInstallPrefix}")
+        mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib")
+        mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+        mayaUsd_install_rpath(rpath usd_ms)
     endif()
 
     # Setup the plugins in the top epilogue to ensure that everybody has had a

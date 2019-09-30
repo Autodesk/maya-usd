@@ -34,7 +34,7 @@ endif()
 #   envVar         The environment variable to modify
 #   pathToAppend   The path to append
 #
-function(append_path_to_env_var envVar pathToAppend)
+function(mayaUsd_append_path_to_env_var envVar pathToAppend)
     file(TO_NATIVE_PATH "${pathToAppend}" nativePathToAppend)
     if(DEFINED ENV{${envVar}})
         if(IS_WINDOWS)
@@ -54,7 +54,7 @@ endfunction()
 #
 # module           The python module to find
 #
-function(find_python_module module)
+function(mayaUsd_find_python_module module)
     string(TOUPPER ${module} module_upper)
     set(module_found "${module_upper}_FOUND")
     if(NOT ${module_found})
@@ -71,12 +71,12 @@ function(find_python_module module)
                 "Location of Python module ${module}")
         endif(NOT _${module}_status)
     endif(NOT ${module_found})
-endfunction(find_python_module)
+endfunction(mayaUsd_find_python_module)
 
 # Initialize a variable to accumulate an rpath.  The origin is the
 # RUNTIME DESTINATION of the target.  If not absolute it's appended
 # to CMAKE_INSTALL_PREFIX.
-function(init_rpath rpathRef origin)
+function(mayaUsd_init_rpath rpathRef origin)
     if(NOT IS_ABSOLUTE ${origin})
         set(origin "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/${origin}")
         get_filename_component(origin "${origin}" REALPATH)
@@ -86,10 +86,10 @@ endfunction()
 
 # Add a relative target path to the rpath.  If target is absolute compute
 # and add a relative path from the origin to the target.
-function(add_rpath rpathRef target)
+function(mayaUsd_add_rpath rpathRef target)
     if(IS_ABSOLUTE "${target}")
         # Make target relative to $ORIGIN (which is the first element in
-        # rpath when initialized with _pxr_init_rpath()).
+        # rpath when initialized with _pxr_mayaUsd_init_rpath()).
         list(GET ${rpathRef} 0 origin)
         file(RELATIVE_PATH
             target
@@ -106,7 +106,7 @@ function(add_rpath rpathRef target)
     set(${rpathRef} "${new_rpath}" PARENT_SCOPE)
 endfunction()
 
-function(install_rpath rpathRef NAME)
+function(mayaUsd_install_rpath rpathRef NAME)
     # Get and remove the origin.
     list(GET ${rpathRef} 0 origin)
     set(rpath ${${rpathRef}})
@@ -139,7 +139,7 @@ function(install_rpath rpathRef NAME)
     )
 endfunction()
 
-function(promoteMayaUsdHeader)
+function(mayaUsd_promoteMayaUsdHeader)
     set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/base/mayaUsd.h.src)
     set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h)
     if (NOT EXISTS ${dstFile})
@@ -148,7 +148,7 @@ function(promoteMayaUsdHeader)
     configure_file(${srcFile} ${dstFile})
 endfunction()
 
-function(promoteHeaderList)
+function(mayaUsd_promoteHeaderList)
     foreach(header ${ARGV})
         set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/${header})
         set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/${header})
@@ -168,20 +168,20 @@ function(promoteHeaderList)
     endforeach()
 endfunction()
 
-function(get_unittest_target unittest_target unittest_basename)
+function(mayaUsd_get_unittest_target unittest_target unittest_basename)
     get_filename_component(unittest_name ${unittest_basename} NAME_WE)
     set(${unittest_target} "${unittest_name}" PARENT_SCOPE)
 endfunction()
 
 #
-# copyFiles( <target>
-#            [DESTINATION <destination>]
-#            [FILES <list of files>])
+# mayaUsd_copyFiles( <target>
+#                    [DESTINATION <destination>]
+#                    [FILES <list of files>])
 #
 #   DESTINATION   - destination where files will be copied into.
 #   FILES         - list of files to copy
 #
-function(copyFiles target)
+function(mayaUsd_copyFiles target)
     cmake_parse_arguments(PREFIX 
         "TARGET" 
         "DESTINATION"
@@ -191,15 +191,13 @@ function(copyFiles target)
 
     if(PREFIX_DESTINATION)
         set(destination ${PREFIX_DESTINATION})
-    endif()
-    if(NOT PREFIX_DESTINATION)
+    else()
         message(FATAL_ERROR "DESTINATION keyword is not specified.")
     endif()
 
      if(PREFIX_FILES)
         set(srcFiles ${PREFIX_FILES})
-    endif()
-    if(NOT PREFIX_FILES)
+    else()
         message(FATAL_ERROR "FILES keyword is not specified.")
     endif()
 
@@ -218,14 +216,14 @@ function(copyFiles target)
 endfunction()
 
 #
-# copyDirectory( <target>
-#            [DESTINATION <destination>]
-#            [DIRECTORY <directory>])
+# mayaUsd_copyDirectory( <target>
+#                        [DESTINATION <destination>]
+#                        [DIRECTORY <directory>])
 #
 #   DESTINATION   - destination where directory will be copied into.
 #   DIRECTORY     - directory to be copied.
 #
-function(copyDirectory target)
+function(mayaUsd_copyDirectory target)
     cmake_parse_arguments(PREFIX
         "TARGET" 
         "DESTINATION"
