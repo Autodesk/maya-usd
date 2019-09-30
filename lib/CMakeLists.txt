@@ -559,7 +559,7 @@ install(FILES ${mayaUsdShaderFragments_xmls}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/mayaUsd_ShaderFragments/resources
 )
 
-if(UFE_FOUND AND CMAKE_UFE_V2_FEATURES_AVAILABLE)
+if(UFE_FOUND)
     # UFE Python Bindings
     set(UFE_PYTHON_LIBRARY_NAME ufe)
 
@@ -615,18 +615,21 @@ if(UFE_FOUND AND CMAKE_UFE_V2_FEATURES_AVAILABLE)
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
     )
 
-	# Maya Attribute Editor python template files
-	install(FILES ae/mesh/ae_template.py
-		 DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes/mesh
-	)
-	# We need an empty __init__.py file in each subfolder so it is considered a python module.
-	set(_INIT_PY_DEST ${CMAKE_INSTALL_PREFIX}/lib/python/)
-	foreach(_SUBDIR ufe_ae usd nodes mesh)
-		string(APPEND _INIT_PY_DEST "/${_SUBDIR}")
-		install(FILES ae/__init__.py
-			 DESTINATION ${_INIT_PY_DEST}
-		)
-	endforeach()
+    if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
+        # Maya Attribute Editor python template files
+        install(FILES ae/mesh/ae_template.py
+             DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes/mesh
+        )
+        # We need an empty __init__.py file in each subfolder so it is considered a python module.
+        set(_INIT_PY_DEST ${CMAKE_INSTALL_PREFIX}/lib/python/)
+        foreach(_SUBDIR ufe_ae usd nodes mesh)
+            string(APPEND _INIT_PY_DEST "/${_SUBDIR}")
+            install(FILES ae/__init__.py
+                 DESTINATION ${_INIT_PY_DEST}
+            )
+        endforeach()
+    endif()
+
 endif()
 
 add_subdirectory(usd)
