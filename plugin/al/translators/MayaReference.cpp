@@ -114,7 +114,7 @@ namespace {
   {
     MString name = nodeFn.fullPathName();
     name.substitute("|", "_");
-    name = MString(&(name.asChar())[1]);
+    name = MString(name.asChar() + 1);
     return name;
   }
 }
@@ -207,7 +207,7 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
   MFnDagNode parentDag(parent, &status);
   AL_MAYA_CHECK_ERROR(status, "failed to attach function set to parent transform for reference.");
 
-  MString rigNamespaceM(rigNamespace.c_str());
+  MString rigNamespaceM(rigNamespace.c_str(), rigNamespace.size());
 
   MObject refNode;
 
@@ -254,7 +254,7 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
         // matches the prim we are processing.  Strip off the "_RN" suffix.
         //
         MString refNodeName = tempRefFn.name();
-        MString refName = refNodeName.substring(0, refNodeName.numChars()-4);
+        MString refName(refNodeName.asChar(), refNodeName.numChars()-3);
 
         // What reference node name is the prim expecting?
         MString expectedRefName = refNameFromPath(parentDag);
