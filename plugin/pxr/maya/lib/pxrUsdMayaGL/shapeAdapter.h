@@ -36,6 +36,7 @@
 #include "pxr/usd/sdf/types.h"
 
 #include <maya/M3dView.h>
+#undef Always // Defined in /usr/lib/X11/X.h (eventually included by M3dView.h) - breaks pxr/usd/lib/usdUtils/registeredVariantSet.h
 #include <maya/MBoundingBox.h>
 #include <maya/MColor.h>
 #include <maya/MDagPath.h>
