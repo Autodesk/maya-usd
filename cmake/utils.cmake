@@ -88,6 +88,10 @@ endfunction()
 # and add a relative path from the origin to the target.
 function(mayaUsd_add_rpath rpathRef target)
     if(IS_ABSOLUTE "${target}")
+	    # init_rpath calls get_filename_component([...] REALPATH), which does
+		# symlink resolution, so we must do the same, otherwise relative path
+		# determination below will fail.
+        get_filename_component(target "${target}" REALPATH)
         # Make target relative to $ORIGIN (which is the first element in
         # rpath when initialized with _pxr_mayaUsd_init_rpath()).
         list(GET ${rpathRef} 0 origin)

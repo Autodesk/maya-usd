@@ -115,13 +115,10 @@ class MayaUFEPickWalkTesting(unittest.TestCase):
             self.assertEqual(m[0], mayaUtils.getMayaSelectionList())
             self.assertEqual(m[1], ufeUtils.getUfeGlobalSelectionList())
     
-    # TODO: HS 2019 : test fails
-    """
     def test_pickWalk(self):
         '''
             This test will be verify the use of Maya's pickWalk into Maya objects and Usd objects.  
         '''
-        
         # Initial state check up 
         self.snapShotAndTest()
         
@@ -167,9 +164,11 @@ class MayaUFEPickWalkTesting(unittest.TestCase):
         self.snapShotAndTest((["pCube1.e[6]"], ["pCubeShape1"]))
         self.assertTrue(next(iter(ufe.GlobalSelection.get())).isProperty())
         
-        cmds.pickWalk(type="edgeloop", d="right")
-        self.snapShotAndTest((["pCube1.e[10]"], ["pCubeShape1"]))
-        self.assertTrue(next(iter(ufe.GlobalSelection.get())).isProperty()) # pCubeShape1 in ufe selection is a property
+        # TODO: HS 2019 : test fails
+#        cmds.pickWalk(type="edgeloop", d="right")
+#        import pdb; pdb.set_trace()
+#        self.snapShotAndTest((["pCube1.e[10]"], ["pCubeShape1"]))
+#        self.assertTrue(next(iter(ufe.GlobalSelection.get())).isProperty()) # pCubeShape1 in ufe selection is a property
         
         
         # Pickwalk on Non-Mixed Maya items is already tested in Maya regression tests
@@ -210,4 +209,3 @@ class MayaUFEPickWalkTesting(unittest.TestCase):
         self.rewindMemento()
         self.fforwardMemento()
         '''
-    """

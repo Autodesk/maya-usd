@@ -26,6 +26,8 @@ import sys, os
 
 import ufe
 
+ALL_PLUGINS = ["mayaUsdPlugin", "ufeTestCmdsPlugin"]
+
 mayaRuntimeID = 1
 mayaSeparator = "|"
 
@@ -58,12 +60,13 @@ def isPluginLoaded(pluginName):
     
 def isMayaUsdPluginLoaded():
     """ 
-        Load plugin needed by maya-ufe-plugin 
+        Load plugins needed by UFE tests.
         Returns:
-            True if plugin is loaded successfully. False if a plugin failed to load
+            True if plugins loaded successfully. False if a plugin failed to load
     """
     successLoad = True
-    successLoad = successLoad and loadPlugin("mayaUsdPlugin")
+    for plugin in ALL_PLUGINS:
+        successLoad = successLoad and loadPlugin(plugin)
     return successLoad
 
 def createUfePathSegment(mayaPath):

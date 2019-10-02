@@ -873,7 +873,11 @@ function(_pxr_python_module NAME)
     set(libInstallPrefix "lib/python/pxr/${pyModuleName}")
 
     # Python modules need to be able to access their corresponding
-    # wrapped library and the install lib directory.
+    # wrapped library and the install lib directory.  The wrapped library
+	# is the C++ library (e.g. libusdMaya.so on Linux) for which we're
+    # providing Python wrappers (e.g. _usdMaya.so on Linux).
+	# Do not prepend INSTALL_DIR_SUFFIX, init_rpath does this for relative
+	# paths.
     mayaUsd_init_rpath(rpath "${libInstallPrefix}")
     mayaUsd_add_rpath(rpath
         "${CMAKE_INSTALL_PREFIX}/${args_WRAPPED_LIB_INSTALL_PREFIX}")
