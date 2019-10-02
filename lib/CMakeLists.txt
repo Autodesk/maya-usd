@@ -383,19 +383,24 @@ list(APPEND mayaUsdPxVP20_headers
     render/px_vp20/utils_legacy.h
 )
 
-add_library(${LIBRARY_NAME}
-    SHARED
-        ${mayaUsd_src}
+add_library(${LIBRARY_NAME} SHARED
+    ${mayaUsd_src}
 )
 
-target_compile_definitions(${LIBRARY_NAME}
-    PRIVATE
-        MAYAUSD_MACROS_EXPORT
-        MAYAUSD_CORE_EXPORT
-        MFB_PACKAGE_NAME="${LIBRARY_NAME}"
-        MFB_ALT_PACKAGE_NAME="${LIBRARY_NAME}"
-        MFB_PACKAGE_MODULE=mayaUsd
-        WANT_UFE_BUILD=UFE_FOUND
+set(compile_definitions_list
+    MAYAUSD_MACROS_EXPORT
+    MAYAUSD_CORE_EXPORT
+    MFB_PACKAGE_NAME="${LIBRARY_NAME}"
+    MFB_ALT_PACKAGE_NAME="${LIBRARY_NAME}"
+    MFB_PACKAGE_MODULE=mayaUsd
+)
+
+if(UFE_FOUND)
+    list(APPEND compile_definitions_list WANT_UFE_BUILD=1)
+endif()
+
+target_compile_definitions(${LIBRARY_NAME} PRIVATE
+    ${compile_definitions_list}
 )
 
 # Some of the UFE classes are exporting STL classes which causes this warning.
@@ -405,13 +410,18 @@ if(UFE_FOUND AND MSVC)
     target_compile_options(${LIBRARY_NAME} INTERFACE ${REPLACED_FLAGS})
 endif()
 
-target_include_directories(
-    ${LIBRARY_NAME}
-    PUBLIC
+set(include_directories_list
     ${MAYA_INCLUDE_DIRS}
     ${PXR_INCLUDE_DIRS}
     ${CMAKE_BINARY_DIR}/include
-    ${UFE_INCLUDE_DIR}
+)
+
+if(UFE_FOUND)
+    list(APPEND include_directories_list ${UFE_INCLUDE_DIR})
+endif()
+
+target_include_directories( ${LIBRARY_NAME} PUBLIC
+    ${include_directories_list}
 )
 
 target_link_libraries(${LIBRARY_NAME}
