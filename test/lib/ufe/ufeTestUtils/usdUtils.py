@@ -36,6 +36,6 @@ def createUfePathSegment(usdPath):
     return ufe.PathSegment(usdPath, usdRuntimeID, usdSeparator)
 
 def getPrimFromSceneItem(item):
-    rawItem.getRawAddress()
-    prim = mayaUsd.ufe.ufePathToPrim.getPrimFromRawItem(rawItem)
+    rawItem = item.getRawAddress()
+    prim = mayaUsd.ufe.getPrimFromRawItem(rawItem)
     return prim
