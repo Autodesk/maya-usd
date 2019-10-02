@@ -8,4 +8,4 @@ export PATH=$MAYA_LOCATION/bin:$PATH
 export MAYA_PLUG_IN_PATH=$AL_USDMAYA_LOCATION/plugin:$MAYA_PLUG_IN_PATH
 export PYTHONPATH=$1/lib/python:$PYTHONPATH
 
-maya -batch -script "$2/run_mayaplugin_tests.mel"
+maya -batch -script "$3/run_mayaplugin_tests.mel"
