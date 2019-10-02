@@ -16,6 +16,7 @@ list(APPEND AL_usdmaya_headers
         AL/usdmaya/TypeIDs.h
         AL/usdmaya/ForwardDeclares.h
         AL/usdmaya/Global.h
+        AL/usdmaya/Version.h
 )
 
 list(APPEND AL_usdmaya_source
@@ -335,3 +336,14 @@ install( FILES
             ${AL_usdmaya_fileio_translators_headers}
         DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/usdmaya/fileio/translators
 )
+
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/AL/usdmaya/Version.h")
+    foreach(_version_comp MAJOR MINOR PATCH)
+        file(STRINGS
+            "${CMAKE_CURRENT_LIST_DIR}/AL/usdmaya/Version.h"
+            _version_comp_def
+            REGEX "#define AL_USDMAYA_VERSION_${_version_comp} .*$")
+        string(REGEX MATCHALL "[0-9]+" AL_USDMAYA_${_version_comp}_VERSION ${_version_comp_def})
+    endforeach()
+    set(AL_USDMAYA_VERSION ${AL_USDMAYA_MAJOR_VERSION}.${AL_USDMAYA_MINOR_VERSION}.${AL_USDMAYA_PATCH_VERSION} CACHE INTERNAL "AL_USDMaya Version String")
+endif()
