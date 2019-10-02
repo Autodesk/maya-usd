@@ -1152,7 +1152,13 @@ void HdVP2Mesh::_UpdateDrawItem(
         // Important, update instance transforms after setting geometry on render items!
         auto& oldInstanceCount = stateToCommit._drawItemData._instanceCount;
         auto newInstanceCount = stateToCommit._instanceTransforms.length();
-        if(newInstanceCount > 0) {
+
+        // Special case for single instance prims. We will keep the original render item
+        // to allow consolidation. We also keep drawItemData._instanceCount at 0, since
+        // we can't remove instancing without recreating the render item.
+        if(newInstanceCount == 1 && oldInstanceCount == 0) {
+            setWantConsolidation(*renderItem, true);
+        } else if(newInstanceCount > 0) {
             setWantConsolidation(*renderItem, false);
             if(oldInstanceCount == newInstanceCount) {
                 for (unsigned int i = 0; i < newInstanceCount; i++) {
