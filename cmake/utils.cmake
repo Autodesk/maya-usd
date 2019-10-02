@@ -215,6 +215,7 @@ function(mayaUsd_copyFiles target)
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 ${input_file} ${output_file}
             DEPENDS "${srcFiles}"
+            COMMENT "copying file from ${input_file} to ${output_file}"
         )
     endforeach()
 endfunction()
