@@ -72,7 +72,7 @@ set(path
 if(IS_WINDOWS)
     string(REPLACE ";" "\;" pythonPath "${pythonPath}")
     string(REPLACE ";" "\;" path "${path}")
-    string(REPLACE ";" "\;" path "${mayaPluginPath}")
+    string(REPLACE ";" "\;" mayaPluginPath "${mayaPluginPath}")
 else()
     separate_arguments(pythonPath NATIVE_COMMAND "${pythonPath}")
     separate_arguments(path NATIVE_COMMAND "${path}")
