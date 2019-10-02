@@ -17,13 +17,14 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/envSetting.h"
 
-#include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/hd/bprim.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/tokens.h"
+
+#include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include <maya/MProfiler.h>
 
@@ -141,8 +142,12 @@ namespace
     MSamplerStateCache _samplerStates;                           //!< Sampler state cache
 
     const MString _diffuseColorParameterName = "diffuseColor";   //!< Shader parameter name
+    const MString _opacityParameterName      = "opacity";        //!< Shader parameter name
     const MString _solidColorParameterName   = "solidColor";     //!< Shader parameter name
     const MString _pointSizeParameterName    = "pointSize";      //!< Shader parameter name
+
+    const MString _fallbackShaderName = UsdImagingTokens->UsdPreviewSurface.GetText(); //! Name of fallback shader
+    const MString _structOutputName   = "outSurfaceFinal";                             //! Name of shader output struct
 } // namespace
 
 const int HdVP2RenderDelegate::sProfilerCategory = MProfiler::addCategory(
@@ -472,16 +477,17 @@ MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackShader(MColor color)
     }
 
     MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
-    const MHWRender::MShaderManager* shaderMgr = renderer ? renderer->getShaderManager() : nullptr;
-    MHWRender::MShaderInstance* fallbackShader = nullptr;
-
-    if (shaderMgr) {
-        fallbackShader = shaderMgr->getStockShader(MHWRender::MShaderManager::k3dBlinnShader);
-        float solidColor[] = { color.r, color.g, color.b, color.a };
-        fallbackShader->setParameter(_diffuseColorParameterName, solidColor);
-    }
-    else
+    const MHWRender::MShaderManager* shaderMgr =
+        renderer ? renderer->getShaderManager() : nullptr;
+    if (shaderMgr == nullptr)
         return nullptr;
+
+    MHWRender::MShaderInstance* fallbackShader = shaderMgr->getFragmentShader(
+        _fallbackShaderName, _structOutputName, true);
+
+    float diffuseColor[] = { color.r, color.g, color.b };
+    fallbackShader->setParameter(_diffuseColorParameterName, diffuseColor);
+    fallbackShader->setParameter(_opacityParameterName, color.a);
 
     // Time to lock for write
     tbb::reader_writer_lock::scoped_lock lockThisForWrite(_mutexFallbackShaders);
@@ -497,27 +503,43 @@ MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackShader(MColor color)
     return fallbackShader;
 }
 
-/*! \brief  Returns a fallback shader instance when no material is found to support color per vertex.
+/*! \brief  Returns a fallback shader instance which supports color per vertex.
 
     \return A new copy of shader instance
 */
-MHWRender::MShaderInstance* HdVP2RenderDelegate::GetColorPerVertexShader() const
+MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackCPVShader() const
 {
     static MHWRender::MShaderInstance* sCPVShader = nullptr;
 
-    if (sCPVShader == nullptr) {
-        MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
-        if (renderer) {
-            const MHWRender::MShaderManager* shaderMgr = renderer->getShaderManager();
-            if (shaderMgr) {
-                sCPVShader = shaderMgr->getStockShader(
-                    MHWRender::MShaderManager::k3dBlinnShader);
+    // Return the shader instance if it has been created.
+    if (sCPVShader)
+        return sCPVShader;
 
-                sCPVShader->addInputFragment(
-                    "mayaCPVPassing", "C_4F", "diffuseColor", "colorIn");
-            }
-        }
-    }
+    MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
+    const MHWRender::MShaderManager* shaderMgr =
+        renderer ? renderer->getShaderManager() : nullptr;
+    if (shaderMgr == nullptr)
+        return nullptr;
+
+    // Create a fragment graph that feeds CPV to UsdPreviewSurface.
+    //
+    // mayaCPVPassing - float4ToFloat3 (color)
+    //                                         \
+    //                                           UsdPreviewSurface
+    //                                         /
+    // mayaCPVPassing - float4ToFloatW (alpha)
+    //
+    sCPVShader = shaderMgr->getFragmentShader(
+        _fallbackShaderName, _structOutputName, true);
+
+    sCPVShader->addInputFragment(
+        "float4ToFloat3", "output", _diffuseColorParameterName, "input");
+    sCPVShader->addInputFragment(
+        "mayaCPVPassing", "C_4F", _diffuseColorParameterName);
+    sCPVShader->addInputFragment(
+        "float4ToFloatW", "output", _opacityParameterName, "input");
+    sCPVShader->addInputFragment(
+        "mayaCPVPassing", "C_4F", _opacityParameterName);
 
     return sCPVShader;
 }

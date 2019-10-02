@@ -829,10 +829,6 @@ void HdVP2Mesh::_UpdateDrawItem(
 
                 MColor mayaColor(color[0], color[1], color[2], alpha);
 
-                // Pre-multiplied with alpha
-                // HdC_TODO: investigate why it is needed.
-                mayaColor *= alpha;
-
                 // Use fallback shader if there is no material binding or we
                 // failed to create a shader instance from the material.
                 if (!stateToCommit._surfaceShader) {
@@ -870,7 +866,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                 // Use fallback CPV shader if there is no material binding or
                 // we failed to create a shader instance from the material.
                 if (!stateToCommit._surfaceShader) {
-                    stateToCommit._surfaceShader = _delegate->GetColorPerVertexShader();
+                    stateToCommit._surfaceShader = _delegate->GetFallbackCPVShader();
                     stateToCommit._isTransparent =
                         (alphaInterp != HdInterpolationConstant || alphaArray[0] < 0.999f);
                 }
