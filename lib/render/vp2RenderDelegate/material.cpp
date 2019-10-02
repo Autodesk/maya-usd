@@ -285,7 +285,7 @@ void HdVP2Material::Sync(
                 // Create a shader instance for the material network.
                 _surfaceShader = VP2ShaderUniquePtr(_CreateShaderInstance(vp2BxdfNet));
 
-                if (TfDebug::IsEnabled(HDVP2_MATERIALS)) {
+                if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
                     _PrintMaterialNetwork("BXDF", id, bxdfNet);
                     _PrintMaterialNetwork("BXDF (with VP2 fixes)", id, vp2BxdfNet);
                     _PrintMaterialNetwork("Displacement", id, dispNet);
@@ -529,10 +529,6 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
 void
 HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
 {
-    if (!TF_VERIFY(_surfaceShader)) {
-        return;
-    }
-
     MHWRender::MRenderer* const renderer = MHWRender::MRenderer::theRenderer();
     if (!TF_VERIFY(renderer)) {
         return;
@@ -540,6 +536,10 @@ HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
 
     MHWRender::MTextureManager* const textureMgr = renderer->getTextureManager();
     if (!TF_VERIFY(textureMgr)) {
+        return;
+    }
+
+    if (!_surfaceShader) {
         return;
     }
 
@@ -591,9 +591,9 @@ HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
 
             if (!samplerState ||
                 !_surfaceShader->setParameter(parameterName, *samplerState)) {
-                if (TfDebug::IsEnabled(HDVP2_MATERIALS)) {
-                    std::cout << "Failed to set shader parameter " << parameterName << "\n";
-                }
+
+                TF_DEBUG(HDVP2_DEBUG_MATERIAL).Msg(
+                    "Failed to set shader parameter %s\n", parameterName.asChar());
             }
         }
 
@@ -662,8 +662,9 @@ HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                 }
             }
 
-            if (!status && TfDebug::IsEnabled(HDVP2_MATERIALS)) {
-                std::cout << "Failed to set shader parameter " << parameterName << "\n";
+            if (!status) {
+                TF_DEBUG(HDVP2_DEBUG_MATERIAL).Msg(
+                    "Failed to set shader parameter %s\n", parameterName.asChar());
             }
         }
     }

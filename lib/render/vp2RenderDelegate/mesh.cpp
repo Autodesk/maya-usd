@@ -15,19 +15,18 @@
 //
 
 #include "mesh.h"
+#include "debugCodes.h"
 #include "draw_item.h"
 #include "material.h"
 #include "instancer.h"
 #include "proxyRenderDelegate.h"
 
+#include "pxr/base/gf/matrix4d.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/smoothNormals.h"
-#include "pxr/imaging/pxOsd/tokens.h"
-#include "pxr/base/gf/matrix4f.h"
-#include "pxr/base/gf/matrix4d.h"
-
 #include "pxr/imaging/hd/vertexAdjacency.h"
+#include "pxr/imaging/pxOsd/tokens.h"
 
 #include <maya/MMatrix.h>
 #include <maya/MProfiler.h>
@@ -105,17 +104,16 @@ namespace {
     //! Helper utility function to fill primvar data to vertex buffer.
     template <class DEST_TYPE, class SRC_TYPE>
     void _FillPrimvarData(DEST_TYPE* vertexBuffer,
-        const VtArray<SRC_TYPE>& primvarData,
-        const HdMeshTopology& topology,
         size_t numVertices,
-        int channelOffset,
-        HdInterpolation interpolation,
-        bool requiresUnsharedVertices)
+        size_t channelOffset,
+        bool requiresUnsharedVertices,
+        const SdfPath& meshId,
+        const HdMeshTopology& topology,
+        const TfToken& primvarName,
+        const VtArray<SRC_TYPE>& primvarData,
+        const HdInterpolation& primvarInterp)
     {
-        const VtIntArray& faceVertexCounts = topology.GetFaceVertexCounts();
-        const VtIntArray& faceVertexIndices = topology.GetFaceVertexIndices();
-
-        switch (interpolation) {
+        switch (primvarInterp) {
         case HdInterpolationConstant:
             for (size_t v = 0; v < numVertices; v++) {
                 SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
@@ -126,42 +124,35 @@ namespace {
         case HdInterpolationVarying:
         case HdInterpolationVertex:
             if (requiresUnsharedVertices) {
-                for (size_t v = 0; v < numVertices; v++) {
-                    SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
-                        reinterpret_cast<float*>(&vertexBuffer[v]) + channelOffset);
-                    *pointer = primvarData[faceVertexIndices[v]];
-                }
-            }
-            else if (channelOffset == 0 && sizeof(DEST_TYPE) == sizeof(SRC_TYPE)) {
-                memcpy(vertexBuffer, primvarData.cdata(), sizeof(DEST_TYPE) * numVertices);
-            }
-            else {
-                for (size_t v = 0; v < numVertices; v++) {
-                    SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
-                        reinterpret_cast<float*>(&vertexBuffer[v]) + channelOffset);
-                    *pointer = primvarData[v];
-                }
-            }
-            break;
-        case HdInterpolationUniform:
-            if (requiresUnsharedVertices) {
-                const size_t numFaces = faceVertexCounts.size();
-                for (size_t f = 0, v = 0; f < numFaces; f++) {
-                    const size_t faceVertexCount = faceVertexCounts[f];
-                    const size_t faceVertexEnd = v + faceVertexCount;
-                    for (; v < faceVertexEnd; v++) {
+                const VtIntArray& faceVertexIndices = topology.GetFaceVertexIndices();
+                if (numVertices == faceVertexIndices.size()) {
+                    for (size_t v = 0; v < numVertices; v++) {
                         SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
                             reinterpret_cast<float*>(&vertexBuffer[v]) + channelOffset);
-                        *pointer = primvarData[f];
+                        *pointer = primvarData[faceVertexIndices[v]];
                     }
                 }
+                else {
+                    // numVertices must have been assigned with the number of
+                    // face vertices as required by vertex unsharing.
+                    TF_CODING_ERROR("Invalid Hydra prim '%s': primvar %s "
+                        "requires %zu unshared elements, while the number of "
+                        "face vertices is %zu. Skipping primvar update.",
+                        meshId.GetText(), primvarName.GetText(),
+                        numVertices, faceVertexIndices.size());
+                }
             }
-            else {
-                TF_WARN("Unshared vertices are required for uniform primvar.");
-            }
-            break;
-        case HdInterpolationFaceVarying:
-            if (requiresUnsharedVertices) {
+            else if (numVertices <= primvarData.size()) {
+                // The primvar has more data than needed, we issue a warning but
+                // don't skip update. Truncate the buffer to the expected length.
+                if (numVertices < primvarData.size()) {
+                    TF_DEBUG(HDVP2_DEBUG_MESH).Msg("Invalid Hydra prim '%s': "
+                        "primvar %s has %zu elements, while its topology "
+                        "references only upto element index %zu.\n",
+                        meshId.GetText(), primvarName.GetText(),
+                        primvarData.size(), numVertices);
+                }
+
                 if (channelOffset == 0 && sizeof(DEST_TYPE) == sizeof(SRC_TYPE)) {
                     memcpy(vertexBuffer, primvarData.cdata(), sizeof(DEST_TYPE) * numVertices);
                 }
@@ -174,11 +165,107 @@ namespace {
                 }
             }
             else {
-                TF_WARN("Unshared vertices are required for face-varying primvar.");
+                // The primvar has less data than needed. Issue warning and skip
+                // update like what is done in HdStMesh.
+                TF_DEBUG(HDVP2_DEBUG_MESH).Msg("Invalid Hydra prim '%s': "
+                    "primvar %s has only %zu elements, while its topology expects "
+                    "at least %zu elements. Skipping primvar update.\n",
+                    meshId.GetText(), primvarName.GetText(),
+                    primvarData.size(), numVertices);
+
+                memset(vertexBuffer, 0, sizeof(DEST_TYPE) * numVertices);
+            }
+            break;
+        case HdInterpolationUniform:
+            if (requiresUnsharedVertices) {
+                const VtIntArray& faceVertexCounts = topology.GetFaceVertexCounts();
+                const size_t numFaces = faceVertexCounts.size();
+                if (numFaces <= primvarData.size()) {
+                    // The primvar has more data than needed, we issue a warning but
+                    // don't skip update. Truncate the buffer to the expected length.
+                    if (numFaces < primvarData.size()) {
+                        TF_DEBUG(HDVP2_DEBUG_MESH).Msg("Invalid Hydra prim '%s': "
+                            "primvar %s has %zu elements, while its topology "
+                            "references only upto element index %zu.\n",
+                            meshId.GetText(), primvarName.GetText(),
+                            primvarData.size(), numFaces);
+                    }
+
+                    for (size_t f = 0, v = 0; f < numFaces; f++) {
+                        const size_t faceVertexCount = faceVertexCounts[f];
+                        const size_t faceVertexEnd = v + faceVertexCount;
+                        for (; v < faceVertexEnd; v++) {
+                            SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
+                                reinterpret_cast<float*>(&vertexBuffer[v]) + channelOffset);
+                            *pointer = primvarData[f];
+                        }
+                    }
+                }
+                else {
+                    // The primvar has less data than needed. Issue warning and skip
+                    // update like what is done in HdStMesh.
+                    TF_DEBUG(HDVP2_DEBUG_MESH).Msg("Invalid Hydra prim '%s': "
+                        "primvar %s has only %zu elements, while its topology expects "
+                        "at least %zu elements. Skipping primvar update.\n",
+                        meshId.GetText(), primvarName.GetText(),
+                        primvarData.size(), numFaces);
+
+                    memset(vertexBuffer, 0, sizeof(DEST_TYPE) * numVertices);
+                }
+            }
+            else {
+                TF_CODING_ERROR("Invalid Hydra prim '%s': "
+                    "vertex unsharing is required for uniform primvar %s",
+                    meshId.GetText(), primvarName.GetText());
+            }
+            break;
+        case HdInterpolationFaceVarying:
+            if (requiresUnsharedVertices) {
+                if (numVertices <= primvarData.size()) {
+                    // If the primvar has more data than needed, we issue a warning,
+                    // but don't skip the primvar update. Truncate the buffer to the
+                    // expected length.
+                    if (numVertices < primvarData.size()) {
+                        TF_DEBUG(HDVP2_DEBUG_MESH).Msg("Invalid Hydra prim '%s': "
+                            "primvar %s has %zu elements, while its topology references "
+                            "only upto element index %zu.\n",
+                            meshId.GetText(), primvarName.GetText(),
+                            primvarData.size(), numVertices);
+                    }
+
+                    if (channelOffset == 0 && sizeof(DEST_TYPE) == sizeof(SRC_TYPE)) {
+                        memcpy(vertexBuffer, primvarData.cdata(), sizeof(DEST_TYPE) * numVertices);
+                    }
+                    else {
+                        for (size_t v = 0; v < numVertices; v++) {
+                            SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
+                                reinterpret_cast<float*>(&vertexBuffer[v]) + channelOffset);
+                            *pointer = primvarData[v];
+                        }
+                    }
+                }
+                else {
+                    // It is unexpected to have less data than we index into. Issue
+                    // a warning and skip update.
+                    TF_DEBUG(HDVP2_DEBUG_MESH).Msg("Invalid Hydra prim '%s': "
+                        "primvar %s has only %zu elements, while its topology expects "
+                        "at least %zu elements. Skipping primvar update.\n",
+                        meshId.GetText(), primvarName.GetText(),
+                        primvarData.size(), numVertices);
+
+                    memset(vertexBuffer, 0, sizeof(DEST_TYPE) * numVertices);
+                }
+            }
+            else {
+                TF_CODING_ERROR("Invalid Hydra prim '%s': "
+                    "vertex unsharing is required face-varying primvar %s",
+                    meshId.GetText(), primvarName.GetText());
             }
             break;
         default:
-            TF_WARN("Unsupported interpolation.");
+            TF_CODING_ERROR("Invalid Hydra prim '%s': "
+                "unimplemented interpolation %zu for primvar %s",
+                meshId.GetText(), (int)primvarInterp, primvarName.GetText());
             break;
         }
     }
@@ -570,7 +657,7 @@ void HdVP2Mesh::_UpdateDrawItem(
     }
 
     const size_t numVertices = requiresUnsharedVertices ?
-        _topology.GetFaceVertexIndices().size() : _points.size();
+        _topology.GetFaceVertexIndices().size() : _topology.GetNumPoints();
 
     // Prepare index buffer.
     if (topologyDirty) {
@@ -628,8 +715,9 @@ void HdVP2Mesh::_UpdateDrawItem(
     if (pointsDirty) {
         void* bufferData = _positionsBuffer->acquire(numVertices, writeOnly);
         if (bufferData) {
-            _FillPrimvarData(static_cast<GfVec3f*>(bufferData), _points, _topology,
-                numVertices, 0, HdInterpolationVertex, requiresUnsharedVertices);
+            _FillPrimvarData(static_cast<GfVec3f*>(bufferData),
+                numVertices, 0, requiresUnsharedVertices,
+                id, _topology, HdTokens->points, _points, HdInterpolationVertex);
 
             stateToCommit._positionBufferData = static_cast<float*>(bufferData);
         }
@@ -670,8 +758,10 @@ void HdVP2Mesh::_UpdateDrawItem(
                 adjacency->GetSharedAdjacencyBuilderComputation(&_topology);
             adjacencyComputation->Resolve(); // IS the adjacency updated now?
 
+            // The topology doesn't have to reference all of the points, thus
+            // we compute the number of normals as required by the topology.
             normals = Hd_SmoothNormals::ComputeSmoothNormals(
-                adjacency.get(), _points.size(), _points.cdata());
+                adjacency.get(), _topology.GetNumPoints(), _points.cdata());
 
             interp = HdInterpolationVertex;
         }
@@ -679,8 +769,9 @@ void HdVP2Mesh::_UpdateDrawItem(
         if (prepareNormals && !normals.empty()) {
             void* bufferData = drawItemData._normalsBuffer->acquire(numVertices, writeOnly);
             if (bufferData) {
-                _FillPrimvarData(static_cast<GfVec3f*>(bufferData), normals, _topology,
-                    numVertices, 0, interp, requiresUnsharedVertices);
+                _FillPrimvarData(static_cast<GfVec3f*>(bufferData),
+                    numVertices, 0, requiresUnsharedVertices,
+                    id, _topology, HdTokens->normals, normals, interp);
 
                 stateToCommit._normalsBufferData = static_cast<float*>(bufferData);
             }
@@ -717,17 +808,8 @@ void HdVP2Mesh::_UpdateDrawItem(
             if (it != _primvarSourceMap.end()) {
                 const VtValue& value = it->second.data;
                 if (value.IsHolding<VtVec3fArray>() && value.GetArraySize() > 0) {
-                    size_t numFaces = _topology.GetFaceVertexCounts().size();
-                    if (it->second.interpolation == HdInterpolationUniform &&
-                        value.GetArraySize() != numFaces) {
-                        TF_WARN("# of faces mismatch (%d != %d) for %s.%s",
-                            (int)value.GetArraySize(), numFaces,
-                            id.GetText(), it->first.GetText());
-                    }
-                    else {
-                        colorArray = value.UncheckedGet<VtVec3fArray>();
-                        colorInterp = it->second.interpolation;
-                    }
+                    colorArray = value.UncheckedGet<VtVec3fArray>();
+                    colorInterp = it->second.interpolation;
                 }
             }
 
@@ -735,17 +817,8 @@ void HdVP2Mesh::_UpdateDrawItem(
             if (it != _primvarSourceMap.end()) {
                 const VtValue& value = it->second.data;
                 if (value.IsHolding<VtFloatArray>() && value.GetArraySize() > 0) {
-                    size_t numFaces = _topology.GetFaceVertexCounts().size();
-                    if (it->second.interpolation == HdInterpolationUniform &&
-                        value.GetArraySize() != numFaces) {
-                        TF_WARN("# of faces mismatch (%d != %d) for %s.%s",
-                            (int)value.GetArraySize(), numFaces,
-                            id.GetText(), it->first.GetText());
-                    }
-                    else {
-                        alphaArray = value.UncheckedGet<VtFloatArray>();
-                        alphaInterp = it->second.interpolation;
-                    }
+                    alphaArray = value.UncheckedGet<VtFloatArray>();
+                    alphaInterp = it->second.interpolation;
                 }
             }
 
@@ -783,11 +856,13 @@ void HdVP2Mesh::_UpdateDrawItem(
 
                 // Fill color and opacity into the float4 color stream.
                 if (bufferData) {
-                    _FillPrimvarData(static_cast<GfVec4f*>(bufferData), colorArray, _topology,
-                        numVertices, 0, colorInterp, requiresUnsharedVertices);
+                    _FillPrimvarData(static_cast<GfVec4f*>(bufferData),
+                        numVertices, 0, requiresUnsharedVertices,
+                        id, _topology, HdTokens->displayColor, colorArray, colorInterp);
 
-                    _FillPrimvarData(static_cast<GfVec4f*>(bufferData), alphaArray, _topology,
-                        numVertices, 3, alphaInterp, requiresUnsharedVertices);
+                    _FillPrimvarData(static_cast<GfVec4f*>(bufferData),
+                        numVertices, 3, requiresUnsharedVertices,
+                        id, _topology, HdTokens->displayOpacity, alphaArray, alphaInterp);
 
                     stateToCommit._colorBufferData = static_cast<float*>(bufferData);
                 }
@@ -844,8 +919,9 @@ void HdVP2Mesh::_UpdateDrawItem(
                     bufferData = buffer->acquire(numVertices, writeOnly);
                     if (bufferData) {
                         _FillPrimvarData(static_cast<float*>(bufferData),
-                            value.UncheckedGet<VtFloatArray>(), _topology,
-                            numVertices, 0, interp, requiresUnsharedVertices);
+                            numVertices, 0, requiresUnsharedVertices,
+                            id, _topology,
+                            pv, value.UncheckedGet<VtFloatArray>(), interp);
                     }
                 }
             }
@@ -863,8 +939,9 @@ void HdVP2Mesh::_UpdateDrawItem(
                     bufferData = buffer->acquire(numVertices, writeOnly);
                     if (bufferData) {
                         _FillPrimvarData(static_cast<GfVec2f*>(bufferData),
-                            value.UncheckedGet<VtVec2fArray>(), _topology,
-                            numVertices, 0, interp, requiresUnsharedVertices);
+                            numVertices, 0, requiresUnsharedVertices,
+                            id, _topology,
+                            pv, value.UncheckedGet<VtVec2fArray>(), interp);
                     }
                 }
             }
@@ -882,8 +959,9 @@ void HdVP2Mesh::_UpdateDrawItem(
                     bufferData = buffer->acquire(numVertices, writeOnly);
                     if (bufferData) {
                         _FillPrimvarData(static_cast<GfVec3f*>(bufferData),
-                            value.UncheckedGet<VtVec3fArray>(), _topology,
-                            numVertices, 0, interp, requiresUnsharedVertices);
+                            numVertices, 0, requiresUnsharedVertices,
+                            id, _topology,
+                            pv, value.UncheckedGet<VtVec3fArray>(), interp);
                     }
                 }
             }
@@ -901,8 +979,9 @@ void HdVP2Mesh::_UpdateDrawItem(
                     bufferData = buffer->acquire(numVertices, writeOnly);
                     if (bufferData) {
                         _FillPrimvarData(static_cast<GfVec4f*>(bufferData),
-                            value.UncheckedGet<VtVec4fArray>(), _topology,
-                            numVertices, 0, interp, requiresUnsharedVertices);
+                            numVertices, 0, requiresUnsharedVertices,
+                            id, _topology,
+                            pv, value.UncheckedGet<VtVec4fArray>(), interp);
                     }
                 }
             }
