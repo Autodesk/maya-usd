@@ -837,7 +837,6 @@ void HdVP2Mesh::_UpdateDrawItem(
                 // failed to create a shader instance from the material.
                 if (!stateToCommit._surfaceShader) {
                     stateToCommit._surfaceShader = _delegate->GetFallbackShader(mayaColor);
-                    stateToCommit._isTransparent = (alpha < 0.999f);
                 }
             }
             else {
@@ -871,8 +870,23 @@ void HdVP2Mesh::_UpdateDrawItem(
                 // we failed to create a shader instance from the material.
                 if (!stateToCommit._surfaceShader) {
                     stateToCommit._surfaceShader = _delegate->GetColorPerVertexShader();
-                    stateToCommit._isTransparent =
-                        (alphaInterp != HdInterpolationConstant || alphaArray[0] < 0.999f);
+                }
+            }
+
+            // It is possible that all elements in the opacity array are 1.
+            // Due to the performance indication about transparency, we have to
+            // traverse the array and enable transparency only when needed.
+            if (!stateToCommit._isTransparent) {
+                if (alphaInterp == HdInterpolationConstant) {
+                    stateToCommit._isTransparent = (alphaArray[0] < 0.999f);
+                }
+                else {
+                    for (size_t i = 0; i < alphaArray.size(); i++) {
+                        if (alphaArray[i] < 0.999f) {
+                            stateToCommit._isTransparent = true;
+                            break;
+                        }
+                    }
                 }
             }
         }

@@ -598,8 +598,10 @@ HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
         }
 
         for (auto const& entry: node.parameters) {
-            const MString parameterName = nodeName + entry.first.GetText();
+            const TfToken& token = entry.first;
             const VtValue& value = entry.second;
+
+            const MString parameterName = nodeName + token.GetText();
 
             MStatus status = MStatus::kFailure;
 
@@ -614,6 +616,13 @@ HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
             else if (value.IsHolding<float>()) {
                 const float& val = value.UncheckedGet<float>();
                 status = _surfaceShader->setParameter(parameterName, val);
+
+                // The opacity parameter can be found and updated only when it
+                // has no connection. In this case, transparency of the shader
+                // is solely determined by the opacity value.
+                if (nodeName.length() == 0 && token == _tokens->opacity) {
+                    _surfaceShader->setIsTransparent(!status || val < 0.999f);
+                }
             }
             else if (value.IsHolding<GfVec2f>()) {
                 const float* val = value.UncheckedGet<GfVec2f>().data();
@@ -640,8 +649,8 @@ HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
             else if (value.IsHolding<TfToken>()) {
                 // The two parameters have been converted to sampler state
                 // before entering this loop.
-                if (entry.first == UsdHydraTokens->wrapS ||
-                    entry.first == UsdHydraTokens->wrapT) {
+                if (token == UsdHydraTokens->wrapS ||
+                    token == UsdHydraTokens->wrapT) {
                     status = MStatus::kSuccess;
                 }
             }
