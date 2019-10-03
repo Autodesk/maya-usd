@@ -1044,23 +1044,25 @@ void HdVP2Mesh::_UpdateDrawItem(
             static_cast<HdVP2Instancer*>(instancer)->
             ComputeInstanceTransforms(id);
 
-        double instanceMatrix[4][4];
+        MMatrix instanceMatrix;
 
         if ((desc.geomStyle == HdMeshGeomStyleHullEdgeOnly) &&
             !param->GetDrawScene().IsProxySelected()) {
             if (auto state = param->GetDrawScene().GetPrimSelectionState(id)) {
                 for (const auto& indexArray : state->instanceIndices) {
                     for (const auto index : indexArray) {
-                        transforms[index].Get(instanceMatrix);
-                        stateToCommit._instanceTransforms.append(MMatrix(instanceMatrix));
+                        transforms[index].Get(instanceMatrix.matrix);
+                        instanceMatrix = worldMatrix * instanceMatrix;
+                        stateToCommit._instanceTransforms.append(instanceMatrix);
                     }
                 }
             }
         }
         else {
             for (size_t i = 0; i < transforms.size(); ++i) {
-                transforms[i].Get(instanceMatrix);
-                stateToCommit._instanceTransforms.append(MMatrix(instanceMatrix));
+                transforms[i].Get(instanceMatrix.matrix);
+                instanceMatrix = worldMatrix * instanceMatrix;
+                stateToCommit._instanceTransforms.append(instanceMatrix);
             }
         }
     }
