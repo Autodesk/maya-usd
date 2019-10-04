@@ -824,19 +824,12 @@ void HdVP2Mesh::_UpdateDrawItem(
 
             if (colorInterp == HdInterpolationConstant &&
                 alphaInterp == HdInterpolationConstant) {
-                const GfVec3f& color = colorArray[0];
-                const float alpha = alphaArray[0];
-
-                MColor mayaColor(color[0], color[1], color[2], alpha);
-
-                // Pre-multiplied with alpha
-                // HdC_TODO: investigate why it is needed.
-                mayaColor *= alpha;
-
                 // Use fallback shader if there is no material binding or we
                 // failed to create a shader instance from the material.
                 if (!stateToCommit._surfaceShader) {
-                    stateToCommit._surfaceShader = _delegate->GetFallbackShader(mayaColor);
+                    const GfVec3f& color = colorArray[0];
+                    stateToCommit._surfaceShader = _delegate->GetFallbackShader(
+                        MColor(color[0], color[1], color[2], alphaArray[0]));
                 }
             }
             else {
@@ -869,7 +862,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                 // Use fallback CPV shader if there is no material binding or
                 // we failed to create a shader instance from the material.
                 if (!stateToCommit._surfaceShader) {
-                    stateToCommit._surfaceShader = _delegate->GetColorPerVertexShader();
+                    stateToCommit._surfaceShader = _delegate->GetFallbackCPVShader();
                 }
             }
 

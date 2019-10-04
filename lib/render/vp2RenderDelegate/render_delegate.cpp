@@ -1,10 +1,18 @@
-// ===========================================================================
+//
 // Copyright 2019 Autodesk, Inc. All rights reserved.
 //
-// Use of this software is subject to the terms of the Autodesk license
-// agreement provided at the time of installation or download, or which
-// otherwise accompanies this software in either electronic or hard copy form.
-// ===========================================================================
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
 #include "render_delegate.h"
 
@@ -14,10 +22,6 @@
 #include "render_pass.h"
 #include "instancer.h"
 
-#include "pxr/base/tf/getenv.h"
-#include "pxr/base/tf/envSetting.h"
-
-#include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/hd/bprim.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/instancer.h"
@@ -28,8 +32,8 @@
 #include <maya/MProfiler.h>
 
 #include <unordered_map>
-#include <unordered_set>
 
+#include "tbb/spin_rw_mutex.h"
 #include <tbb/reader_writer_lock.h>
 #include <boost/functional/hash.hpp>
 
@@ -59,6 +63,12 @@ namespace
         return r;
     }
 
+    const MString _diffuseColorParameterName = "diffuseColor";    //!< Shader parameter name
+    const MString _solidColorParameterName   = "solidColor";      //!< Shader parameter name
+    const MString _pointSizeParameterName    = "pointSize";       //!< Shader parameter name
+    const MString _fallbackShaderName        = "FallbackShader";  //!< Name of the fallback shader
+    const MString _structOutputName          = "outSurfaceFinal"; //!< Output struct name of the fallback shader
+
     /*! \brief  Color hash helper class, used by shader registry
     */
     struct MColorHash
@@ -74,8 +84,139 @@ namespace
         }
     };
 
-    std::unordered_map<MColor, MHWRender::MShaderInstance*, MColorHash>    _fallbackShaders;        //!< Shader registry used by fallback shader method
-    tbb::reader_writer_lock                                                _mutexFallbackShaders;   //!< Synchronization used to protect concurrent read from serial writes
+    /*! \brief  Color-indexed shader map.
+    */
+    using MShaderMap = std::unordered_map<
+        MColor,
+        MHWRender::MShaderInstance*,
+        MColorHash
+    >;
+
+    /*! \brief  Shader cache.
+    */
+    class MShaderCache final
+    {
+    public:
+        /*! \brief  Initialize shaders.
+        */
+        void Initialize()
+        {
+            if (_isInitialized)
+                return;
+
+            MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
+            const MHWRender::MShaderManager* shaderMgr =
+                renderer ? renderer->getShaderManager() : nullptr;
+            if (!TF_VERIFY(shaderMgr))
+                return;
+
+            _fallbackCPVShader = shaderMgr->getFragmentShader(
+                "FallbackCPVShader", _structOutputName, true);
+
+            TF_VERIFY(_fallbackCPVShader);
+
+            _3dSolidShader = shaderMgr->getStockShader(
+                MHWRender::MShaderManager::k3dSolidShader);
+
+            if (TF_VERIFY(_3dSolidShader)) {
+                constexpr float color[] = { 0.056f, 1.0f, 0.366f, 1.0f };
+                _3dSolidShader->setParameter(_solidColorParameterName, color);
+            }
+
+            _3dFatPointShader = shaderMgr->getStockShader(
+                MHWRender::MShaderManager::k3dFatPointShader);
+
+            if (TF_VERIFY(_3dFatPointShader)) {
+                constexpr float white[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+                constexpr float size[] = { 5.0, 5.0 };
+
+                _3dFatPointShader->setParameter(_solidColorParameterName, white);
+                _3dFatPointShader->setParameter(_pointSizeParameterName, size);
+            }
+
+            _isInitialized = true;
+        }
+
+        /*! \brief  Returns a fallback CPV shader instance when no material is bound.
+        */
+        MHWRender::MShaderInstance* GetFallbackCPVShader() const {
+            return _fallbackCPVShader;
+        }
+
+        /*! \brief  Returns a 3d green shader that can be used for selection highlight.
+        */
+        MHWRender::MShaderInstance* Get3dSolidShader() const {
+            return _3dSolidShader;
+        }
+
+        /*! \brief  Returns a white 3d fat point shader.
+        */
+        MHWRender::MShaderInstance* Get3dFatPointShader() const {
+            return _3dFatPointShader;
+        }
+
+        /*! \brief  Returns a fallback shader instance when no material is bound.
+
+            This method is keeping registry of all fallback shaders generated,
+            allowing only one instance per color which enables consolidation of
+            draw calls with same shader instance.
+
+            \param color    Color to set on given shader instance
+
+            \return A new or existing copy of shader instance with given color
+        */
+        MHWRender::MShaderInstance* GetFallbackShader(const MColor& color)
+        {
+            // Look for it first with reader lock
+            {
+                tbb::reader_writer_lock::scoped_lock_read lockToRead(_fallbackShaderMutex);
+
+                auto it = _fallbackShaders.find(color);
+                if (it != _fallbackShaders.end()) {
+                    return it->second;
+                }
+            }
+
+            MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
+            const MHWRender::MShaderManager* shaderMgr =
+                renderer ? renderer->getShaderManager() : nullptr;
+            if (!TF_VERIFY(shaderMgr))
+                return nullptr;
+
+            MHWRender::MShaderInstance* shader = shaderMgr->getFragmentShader(
+                _fallbackShaderName, _structOutputName, true);
+
+            if (TF_VERIFY(shader)) {
+                float diffuseColor[] = { color.r, color.g, color.b, color.a };
+                shader->setParameter(_diffuseColorParameterName, diffuseColor);
+
+                tbb::reader_writer_lock::scoped_lock lockToWrite(_fallbackShaderMutex);
+
+                // Double check that it wasn't inserted by another thread
+                auto it = _fallbackShaders.find(color);
+                if (it != _fallbackShaders.end()) {
+                    return it->second;
+                }
+
+                // Insert instance we just created
+                _fallbackShaders[color] = shader;
+            }
+
+            return shader;
+        }
+
+    private:
+        bool                    _isInitialized { false };  //!< Whether the shader cache is initialized
+
+        tbb::reader_writer_lock _fallbackShaderMutex;      //!< Synchronization used to protect concurrent read from serial writes
+        MShaderMap              _fallbackShaders;          //!< Shader registry used by fallback shaders
+
+        MHWRender::MShaderInstance*  _fallbackCPVShader { nullptr }; //!< Fallback shader with CPV support
+        MHWRender::MShaderInstance*  _3dSolidShader { nullptr };     //!< 3d shader for solid color
+        MHWRender::MShaderInstance*  _3dFatPointShader { nullptr };  //!< 3d shader for points
+    };
+
+    MShaderCache sShaderCache;  //!< Global shader cache to minimize the number of unique shaders.
 
     /*! \brief  Sampler state desc hash helper class, used by sampler state cache.
     */
@@ -138,11 +279,9 @@ namespace
         MSamplerStateDescEquality
     >;
 
-    MSamplerStateCache _samplerStates;                           //!< Sampler state cache
+    MSamplerStateCache sSamplerStates;  //!< Sampler state cache
+    tbb::spin_rw_mutex sSamplerRWMutex; //!< Synchronization used to protect concurrent read from serial writes
 
-    const MString _diffuseColorParameterName = "diffuseColor";   //!< Shader parameter name
-    const MString _solidColorParameterName   = "solidColor";     //!< Shader parameter name
-    const MString _pointSizeParameterName    = "pointSize";      //!< Shader parameter name
 } // namespace
 
 const int HdVP2RenderDelegate::sProfilerCategory = MProfiler::addCategory(
@@ -168,6 +307,9 @@ HdVP2RenderDelegate::HdVP2RenderDelegate(ProxyRenderDelegate& drawScene) {
     }
 
     _renderParam.reset(new HdVP2RenderParam(drawScene));
+
+    // The shader cache should be initialized after mayaUsd loads shader fragments.
+    sShaderCache.Initialize();
 }
 
 /*! \brief  Destructor.
@@ -451,8 +593,8 @@ MString HdVP2RenderDelegate::GetLocalNodeName(const MString& name) const {
     return MString(_id.AppendChild(TfToken(name.asChar())).GetText());
 }
 
-/*! \brief  Returns a fallback shader instance when no material is found.
-            
+/*! \brief  Returns a fallback shader instance when no material is bound.
+
     This method is keeping registry of all fallback shaders generated, allowing only
     one instance per color which enables consolidation of render calls with same shader
     instance.
@@ -461,137 +603,58 @@ MString HdVP2RenderDelegate::GetLocalNodeName(const MString& name) const {
 
     \return A new or existing copy of shader instance with given color parameter set
 */
-MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackShader(MColor color) const {
-    // Look for it first with reader lock
-    {
-        tbb::reader_writer_lock::scoped_lock_read lockThisForRead(_mutexFallbackShaders);
-    
-        auto it = _fallbackShaders.find(color);
-        if (it != _fallbackShaders.end())
-            return it->second;
-    }
-
-    MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
-    const MHWRender::MShaderManager* shaderMgr = renderer ? renderer->getShaderManager() : nullptr;
-    MHWRender::MShaderInstance* fallbackShader = nullptr;
-
-    if (shaderMgr) {
-        fallbackShader = shaderMgr->getStockShader(MHWRender::MShaderManager::k3dBlinnShader);
-        float solidColor[] = { color.r, color.g, color.b, color.a };
-        fallbackShader->setParameter(_diffuseColorParameterName, solidColor);
-    }
-    else
-        return nullptr;
-
-    // Time to lock for write
-    tbb::reader_writer_lock::scoped_lock lockThisForWrite(_mutexFallbackShaders);
-
-    // Double check that it wasn't inserted by another thread
-    auto it = _fallbackShaders.find(color);
-    if (it != _fallbackShaders.end())
-        return it->second;
-
-    // Insert instance we just created
-    _fallbackShaders[color] = fallbackShader;
-    
-    return fallbackShader;
+MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackShader(MColor color) const
+{
+    return sShaderCache.GetFallbackShader(color);
 }
 
-/*! \brief  Returns a fallback shader instance when no material is found to support color per vertex.
-
-    \return A new copy of shader instance
+/*! \brief  Returns a fallback CPV shader instance when no material is bound.
 */
-MHWRender::MShaderInstance* HdVP2RenderDelegate::GetColorPerVertexShader() const
+MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackCPVShader() const
 {
-    static MHWRender::MShaderInstance* sCPVShader = nullptr;
-
-    if (sCPVShader == nullptr) {
-        MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
-        if (renderer) {
-            const MHWRender::MShaderManager* shaderMgr = renderer->getShaderManager();
-            if (shaderMgr) {
-                sCPVShader = shaderMgr->getStockShader(
-                    MHWRender::MShaderManager::k3dBlinnShader);
-
-                sCPVShader->addInputFragment(
-                    "mayaCPVPassing", "C_4F", "diffuseColor", "colorIn");
-            }
-        }
-    }
-
-    return sCPVShader;
+    return sShaderCache.GetFallbackCPVShader();
 }
 
 /*! \brief  Returns a 3d green shader that can be used for selection highlight.
 */
 MHWRender::MShaderInstance* HdVP2RenderDelegate::Get3dSolidShader() const
 {
-    static MHWRender::MShaderInstance* s3dSolidShader = nullptr;
-
-    if (!s3dSolidShader) {
-        MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
-        if (renderer) {
-            const MHWRender::MShaderManager* shaderMgr = renderer->getShaderManager();
-            if (shaderMgr) {
-                s3dSolidShader = shaderMgr->getStockShader(
-                    MHWRender::MShaderManager::k3dSolidShader);
-                if (s3dSolidShader)
-                {
-                    constexpr float color[] = { 0.056f, 1.0f, 0.366f, 1.0f };
-                    s3dSolidShader->setParameter(_solidColorParameterName, color);
-                }
-            }
-        }
-    }
-
-    return s3dSolidShader;
+    return sShaderCache.Get3dSolidShader();
 }
 
 /*! \brief  Returns a white 3d fat point shader.
 */
 MHWRender::MShaderInstance* HdVP2RenderDelegate::Get3dFatPointShader() const
 {
-    static MHWRender::MShaderInstance* s3dFatPointShader = nullptr;
-
-    if (!s3dFatPointShader)
-    {
-        if (MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer())
-        {
-            if (const MHWRender::MShaderManager* shaderMgr = renderer->getShaderManager())
-            {
-                s3dFatPointShader = shaderMgr->getStockShader(MHWRender::MShaderManager::k3dFatPointShader);
-
-                if (s3dFatPointShader)
-                {
-                    const float white[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-                    const float point[] = { 5.0, 5.0 };
-
-                    s3dFatPointShader->setParameter(_solidColorParameterName, white);
-                    s3dFatPointShader->setParameter(_pointSizeParameterName, point);
-                }
-            }
-        }
-    }
-
-    return s3dFatPointShader;
+    return sShaderCache.Get3dFatPointShader();
 }
 
-/*! \brief  Returns a sampler state as required.
+/*! \brief  Returns a sampler state as specified by the description.
 */
 const MHWRender::MSamplerState* HdVP2RenderDelegate::GetSamplerState(
     const MHWRender::MSamplerStateDesc& desc) const
 {
-    const MHWRender::MSamplerState* samplerState;
+    // Look for it first with reader lock
+    tbb::spin_rw_mutex::scoped_lock lock(sSamplerRWMutex, false/*write*/);
 
-    auto it = _samplerStates.find(desc);
-    if (it != _samplerStates.end()) {
-        samplerState = it->second;
+    auto it = sSamplerStates.find(desc);
+    if (it != sSamplerStates.end()) {
+        return it->second;
     }
-    else {
-        samplerState = MHWRender::MStateManager::acquireSamplerState(desc);
-        _samplerStates[desc] = samplerState;
+
+    // Upgrade to writer lock.
+    lock.upgrade_to_writer();
+
+    // Double check that it wasn't inserted by another thread
+    it = sSamplerStates.find(desc);
+    if (it != sSamplerStates.end()) {
+        return it->second;
     }
- 
+
+    // Create and cache.
+    const MHWRender::MSamplerState* samplerState =
+        MHWRender::MStateManager::acquireSamplerState(desc);
+    sSamplerStates[desc] = samplerState;
     return samplerState;
 }
 

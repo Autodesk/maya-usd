@@ -173,7 +173,10 @@ list(APPEND mayaUsdShaderFragments_xmls
     render/vp2ShaderFragments/usdPreviewSurfaceLighting.xml
     render/vp2ShaderFragments/UsdPreviewSurface.xml
     # New fragments
+    render/vp2ShaderFragments/FallbackCPVShader.xml
+    render/vp2ShaderFragments/FallbackShader.xml
     render/vp2ShaderFragments/float4ToFloat3.xml
+    render/vp2ShaderFragments/float4ToFloat4.xml
     render/vp2ShaderFragments/UsdPrimvarReader_float.xml
     render/vp2ShaderFragments/UsdPrimvarReader_float2.xml
     render/vp2ShaderFragments/UsdPrimvarReader_float3.xml

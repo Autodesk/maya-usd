@@ -32,11 +32,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
+    (FallbackCPVShader)
+    (FallbackShader)
+
     (float4ToFloatX)
     (float4ToFloatY)
     (float4ToFloatZ)
     (float4ToFloatW)
     (float4ToFloat3)
+    (float4ToFloat4)
 
     (lightingContributions)
     (scaledDiffusePassThrough)
@@ -68,6 +72,7 @@ static const TfTokenVector _FragmentNames = {
     _tokens->float4ToFloatZ,
     _tokens->float4ToFloatW,
     _tokens->float4ToFloat3,
+    _tokens->float4ToFloat4,
 
     _tokens->lightingContributions,
     _tokens->scaledDiffusePassThrough,
@@ -78,6 +83,8 @@ static const TfTokenVector _FragmentNames = {
 };
 
 static const TfTokenVector _FragmentGraphNames = {
+    _tokens->FallbackCPVShader,
+    _tokens->FallbackShader,
     _tokens->UsdPreviewSurface
 };
 
