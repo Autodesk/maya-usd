@@ -16,7 +16,8 @@
 
 set(TARGET_NAME UFE_TEST)
 
-# unit test scripts
+# unit test scripts.  Note that testTRSBase.py is not a test case, but rather
+# a module providing a base class for other tests.
 set(test_script_files
     testDeleteCmd.py
     testDuplicateCmd.py
@@ -26,7 +27,6 @@ set(test_script_files
     testRotateCmd.py
     testRotatePivot.py
     testScaleCmd.py
-    testTRSBase.py
 )
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
@@ -38,7 +38,6 @@ if(IS_WINDOWS)
 endif()
 
 # copy ufe tests to ${CMAKE_CURRENT_BINARY_DIR} and run them from there
-
 add_custom_target(${TARGET_NAME} ALL)
 
 mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}

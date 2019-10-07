@@ -55,6 +55,13 @@ class MayaUFEPickWalkTesting(unittest.TestCase):
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
     
+    @classmethod
+    def tearDownClass(cls):
+        # Clearing the undo stack with file new avoids mayapy crashing on
+        # exit while cleaning out the undo stack, because the Python commands 
+        # we use in this test are destroyed after the Python interpreter exits.
+        cmds.file(new=True, force=True)
+
     def setUp(self):
         ''' Called initially to set up the maya test environment '''
         # Load plugins

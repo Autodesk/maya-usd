@@ -93,6 +93,7 @@ list(APPEND mayaUsd_src
     fileio/shading/shadingModeExporterContext.cpp
     fileio/shading/shadingModeExporter.cpp
     fileio/shading/shadingModeImporter.cpp
+    fileio/shading/shadingModePxrRis.cpp
     fileio/shading/shadingModeRegistry.cpp
     fileio/shading/shadingModeUseRegistry.cpp
     #
