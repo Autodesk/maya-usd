@@ -1203,6 +1203,13 @@ function(_pxr_library NAME)
 	# Add path for common mayaUsd shared libraries.  As of 1-Aug-2019, this is
 	# only the mayaUsd shared library.
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+
+    if(WANT_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../USD/lib")
+    elseif(DEFINED PXR_USD_LOCATION)
+        mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+    endif()
+
     mayaUsd_install_rpath(rpath ${NAME})
 
     #
