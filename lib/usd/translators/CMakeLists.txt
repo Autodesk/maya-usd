@@ -80,7 +80,7 @@ endif()
 if(IS_LINUX)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags" PARENT_SCOPE)
     if(WANT_USD_RELATIVE_PATH)
-        add_rpath(rpath "../../USD/lib64")
+        mayaUsd_add_rpath(rpath "../../USD/lib64")
     endif()
 endif()
 

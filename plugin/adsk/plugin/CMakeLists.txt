@@ -65,7 +65,7 @@ endif()
 
 if(IS_LINUX)
     if(WANT_USD_RELATIVE_PATH)
-        add_rpath(rpath "../../../../USD/lib64")
+        mayaUsd_add_rpath(rpath "../../../../USD/lib64")
     endif()
 endif()
 
