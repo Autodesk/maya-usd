@@ -29,26 +29,45 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdSceneDelegate;
 class HdVP2RenderDelegate;
 
-using HdVP2TextureResourceSharedPtr = boost::shared_ptr<class HdVP2TextureResource>;
-using HdVP2TextureResourceSharedPtrVector = std::vector<HdVP2TextureResourceSharedPtr>;
+/*! \brief  A deleter for MShaderInstance, for use with smart pointers.
+*/
+struct HdVP2ShaderDeleter
+{
+    void operator () (MHWRender::MShaderInstance*);
+};
+
+/*! \brief  A MShaderInstance owned by a std unique pointer.
+*/
+using HdVP2ShaderUniquePtr = std::unique_ptr<
+    MHWRender::MShaderInstance,
+    HdVP2ShaderDeleter
+>;
+
+/*! \brief  A deleter for MTexture, for use with smart pointers.
+*/
+struct HdVP2TextureDeleter
+{
+    void operator () (MHWRender::MTexture*);
+};
+
+/*! \brief  A MTexture owned by a std unique pointer.
+*/
+using HdVP2TextureUniquePtr = std::unique_ptr<
+    MHWRender::MTexture,
+    HdVP2TextureDeleter
+>;
+
+/*! \brief  A string-indexed texture map.
+*/
+using HdVP2TextureMap = std::unordered_map<
+    std::string,
+    HdVP2TextureUniquePtr
+>;
 
 /*! \brief  A VP2-specific implementation for a Hydra material prim.
     \class  HdVP2Material
 
     Provides a basic implementation of a Hydra material.
-
-    A Blinn fragment is used to prototype the surface preview node, but it
-    should eventually be replaced with pxrUsdPreviewSurface (see MAYA-98711).
-
-    Only one texture named diffuseColor is currently supported. More work is
-    required to support multiple textures (to work around Maya API limitations
-    around sharable fragment parameters).
-
-    Transparency is not currently supported.
-
-    Mapping different color channels of the same texture to different surface
-    shader inputs (e.g. RGB to color, A to opacity) without duplication
-    requires new Maya APIs.
 */
 class HdVP2Material final : public HdMaterial {
 public:
@@ -69,28 +88,16 @@ public:
         return _requiredPrimvars;
     }
 
-    /*! \brief  A deleter for Maya shaders, for use with smart pointers.
-    */
-    struct VP2ShaderDeleter
-    {
-        void operator () (MHWRender::MShaderInstance*);
-    };
-
-    using VP2ShaderUniquePtr = std::unique_ptr<
-        MHWRender::MShaderInstance,
-        VP2ShaderDeleter
-    >;
-
 private:
     MHWRender::MShaderInstance* _CreateShaderInstance(const HdMaterialNetwork& mat);
     void _UpdateShaderInstance(const HdMaterialNetwork& mat);
 
     HdVP2RenderDelegate* const _renderDelegate; //!< VP2 render delegate for which this material was created
 
-    VP2ShaderUniquePtr  _surfaceShader;         //!< VP2 surface shader instance
-    SdfPath _surfaceShaderId;
-
-    TfTokenVector _requiredPrimvars;            //!< primvars required by this material
+    HdVP2ShaderUniquePtr  _surfaceShader;       //!< VP2 surface shader instance
+    SdfPath               _surfaceShaderId;     //!< Path of the surface shader
+    HdVP2TextureMap       _textureMap;          //!< Textures used by this material
+    TfTokenVector         _requiredPrimvars;    //!< primvars required by this material
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

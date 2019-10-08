@@ -18,7 +18,9 @@
 #include "material.h"
 #include "render_delegate.h"
 
+#include "pxr/imaging/glf/image.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/usdHydra/tokens.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -28,10 +30,7 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
-#include "pxr/base/plug/plugin.h"
-#include "pxr/base/plug/thisPlugin.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/fileUtils.h"
 
 #include <maya/MProfiler.h>
 #include <maya/MStatus.h>
@@ -84,14 +83,19 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 //! Helper utility function to test whether a node is a UsdShade primvar reader.
-bool _IsPrimvarReader(const TfToken& identifier)
+inline bool _IsUsdPrimvarReader(const HdMaterialNode& node)
 {
-    return (
-        identifier == UsdImagingTokens->UsdPrimvarReader_float ||
-        identifier == UsdImagingTokens->UsdPrimvarReader_float2 ||
-        identifier == UsdImagingTokens->UsdPrimvarReader_float3 ||
-        identifier == UsdImagingTokens->UsdPrimvarReader_float4
-    );
+    const TfToken& id = node.identifier;
+    return (id == UsdImagingTokens->UsdPrimvarReader_float ||
+            id == UsdImagingTokens->UsdPrimvarReader_float2 ||
+            id == UsdImagingTokens->UsdPrimvarReader_float3 ||
+            id == UsdImagingTokens->UsdPrimvarReader_float4);
+}
+
+//! Helper utility function to test whether a node is a UsdShade UV texture.
+inline bool _IsUsdUVTexture(const HdMaterialNode& node)
+{
+    return (node.identifier == UsdImagingTokens->UsdUVTexture);
 }
 
 //! Helper utility function to print nodes, connections and primvars in the
@@ -193,7 +197,7 @@ void _ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet)
         // UsdImagingMaterialAdapter doesn't create primvar requirements as
         // expected. Workaround by manually looking up "varname" parameter.
         // https://groups.google.com/forum/#!msg/usd-interest/z-14AgJKOcU/1uJJ1thXBgAJ
-        else if (_IsPrimvarReader(node.identifier)) {
+        else if (_IsUsdPrimvarReader(node)) {
             auto it = node.parameters.find(_tokens->varname);
             if (it != node.parameters.end()) {
                 outNet.primvars.push_back(TfToken(TfStringify(it->second)));
@@ -224,25 +228,153 @@ MHWRender::MSamplerState::TextureAddress _ConvertToTextureSamplerAddressEnum(
     return address;
 }
 
+//! Get sampler state description as required by the material node.
+MHWRender::MSamplerStateDesc _GetSamplerStateDesc(const HdMaterialNode& node)
+{
+    TF_VERIFY(_IsUsdUVTexture(node));
+
+    MHWRender::MSamplerStateDesc desc;
+    desc.filter = MHWRender::MSamplerState::kMinMagMipLinear;
+
+    auto it = node.parameters.find(UsdHydraTokens->wrapS);
+    if (it != node.parameters.end()) {
+        const VtValue& value = it->second;
+        if (value.IsHolding<TfToken>()) {
+            const TfToken& token = value.UncheckedGet<TfToken>();
+            desc.addressU = _ConvertToTextureSamplerAddressEnum(token);
+        }
+    }
+
+    it = node.parameters.find(UsdHydraTokens->wrapT);
+    if (it != node.parameters.end()) {
+        const VtValue& value = it->second;
+        if (value.IsHolding<TfToken>()) {
+            const TfToken& token = value.UncheckedGet<TfToken>();
+            desc.addressV = _ConvertToTextureSamplerAddressEnum(token);
+        }
+    }
+
+    return desc;
+}
+
+//! Load texture from the specified path
+MHWRender::MTexture* _AcquireTexture(const std::string& imagePath)
+{
+    MHWRender::MRenderer* const renderer = MHWRender::MRenderer::theRenderer();
+    MHWRender::MTextureManager* const textureMgr =
+        renderer ? renderer->getTextureManager() : nullptr;
+    if (!TF_VERIFY(textureMgr)) {
+        return nullptr;
+    }
+
+    MHWRender::MTexture* texture = nullptr;
+
+    const MString path = imagePath.c_str();
+
+    // Load from disk directly if the image is not in usdz.
+    if (!ArIsPackageRelativePath(imagePath)) {
+        MHWRender::MTextureArguments textureArgs(path);
+        texture = textureMgr->acquireTexture(textureArgs);
+    }
+    else if (GlfImageSharedPtr image = GlfImage::OpenForReading(imagePath)) {
+        // GlfImage is used for loading pixel data from usdz only and should
+        // not trigger any OpenGL call. VP2RenderDelegate will transfer the
+        // texels to GPU memory with VP2 API which is 3D API agnostic.
+        GlfImage::StorageSpec spec;
+        spec.width = image->GetWidth();
+        spec.height = image->GetHeight();
+        spec.depth = 1;
+        spec.format = image->GetFormat();
+        spec.type = image->GetType();
+        spec.flipped = false;
+
+        const int bpp = image->GetBytesPerPixel();
+        std::vector<unsigned char> storage(spec.width * spec.height * bpp);
+        spec.data = storage.data();
+
+        if (image->Read(spec)) {
+            MHWRender::MTextureDescription desc;
+            desc.setToDefault2DTexture();
+            desc.fWidth = spec.width;
+            desc.fHeight = spec.height;
+            desc.fBytesPerRow = spec.width * bpp;
+            desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+            switch (spec.format)
+            {
+            case GL_RED:
+                desc.fFormat = (spec.type == GL_FLOAT ?
+                    MHWRender::kR32_FLOAT : MHWRender::kR8_UNORM);
+                texture = textureMgr->acquireTexture(path, desc, spec.data);
+                break;
+            case GL_RGB:
+                if (spec.type == GL_FLOAT) {
+                    desc.fFormat = MHWRender::kR32G32B32_FLOAT;
+                    texture = textureMgr->acquireTexture(path, desc, spec.data);
+                }
+                else {
+                    // R8G8B8 is not supported by VP2. Converted to R8G8B8A8.
+                    constexpr int bpp_4 = 4;
+
+                    desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
+                    desc.fBytesPerRow = spec.width * bpp_4;
+                    desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+                    std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+                    for (int y = 0; y < spec.height; y++) {
+                        for (int x = 0; x < spec.width; x++) {
+                            const int t = spec.width * y + x;
+                            texels[t*bpp_4]     = storage[t*bpp];
+                            texels[t*bpp_4 + 1] = storage[t*bpp + 1];
+                            texels[t*bpp_4 + 2] = storage[t*bpp + 2];
+                            texels[t*bpp_4 + 3] = 255;
+                        }
+                    }
+
+                    texture = textureMgr->acquireTexture(path, desc, texels.data());
+                }
+                break;
+            case GL_RGBA:
+                desc.fFormat = (spec.type == GL_FLOAT ?
+                    MHWRender::kR32G32B32A32_FLOAT : MHWRender::kR8G8B8A8_UNORM);
+                texture = textureMgr->acquireTexture(path, desc, spec.data);
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
+    return texture;
+}
+
 } //anonymous namespace
 
-/* !\brief Releases the reference to the VP2 shader owned by a smart pointer.
+/*! \brief  Releases the reference to the shader owned by a smart pointer.
 */
 void
-HdVP2Material::VP2ShaderDeleter::operator()(MHWRender::MShaderInstance* shader)
+HdVP2ShaderDeleter::operator()(MHWRender::MShaderInstance* shader)
 {
-    if (!shader)
-        return;
-
     MRenderer* const renderer = MRenderer::theRenderer();
-    if (!TF_VERIFY(renderer))
-        return;
+    const MShaderManager* const shaderMgr =
+        renderer ? renderer->getShaderManager() : nullptr;
+    if (TF_VERIFY(shaderMgr)) {
+        shaderMgr->releaseShader(shader);
+    }
+}
 
-    const MShaderManager* const shaderMgr = renderer->getShaderManager();
-    if (!TF_VERIFY(shaderMgr))
-        return;
-
-    shaderMgr->releaseShader(shader);
+/*! \brief  Releases the reference to the texture owned by a smart pointer.
+*/
+void
+HdVP2TextureDeleter::operator()(MHWRender::MTexture* texture)
+{
+    MRenderer* const renderer = MRenderer::theRenderer();
+    MHWRender::MTextureManager* const textureMgr =
+        renderer ? renderer->getTextureManager() : nullptr;
+    if (TF_VERIFY(textureMgr)) {
+        textureMgr->releaseTexture(texture);
+    }
 }
 
 /*! \brief  Constructor
@@ -283,7 +415,7 @@ void HdVP2Material::Sync(
                 _ApplyVP2Fixes(vp2BxdfNet, bxdfNet);
 
                 // Create a shader instance for the material network.
-                _surfaceShader = VP2ShaderUniquePtr(_CreateShaderInstance(vp2BxdfNet));
+                _surfaceShader = HdVP2ShaderUniquePtr(_CreateShaderInstance(vp2BxdfNet));
 
                 if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
                     _PrintMaterialNetwork("BXDF", id, bxdfNet);
@@ -303,7 +435,6 @@ void HdVP2Material::Sync(
                 }
 
                 // Store primvar requirements.
-                // HdC_TODO: if we store vp2BxdfNet, we don't need another store.
                 _requiredPrimvars = std::move(vp2BxdfNet.primvars);
             }
 
@@ -407,7 +538,7 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
             MStatus status = shaderInstance->addInputFragmentForMultiParams(
                 nodeId, nodeName, outputNames, inputNames, &invalidParamIndices);
 
-            if (!status) {
+            if (!status && TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
                 TF_WARN("Error %s happened when connecting shader %s",
                     status.errorString().asChar(), node.path.GetText());
 
@@ -419,7 +550,7 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
                 }
             }
 
-            if (_IsPrimvarReader(node.identifier)) {
+            if (_IsUsdPrimvarReader(node)) {
                 auto it = node.parameters.find(_tokens->varname);
                 if (it != node.parameters.end()) {
                     const MString paramName = HdTokens->primvar.GetText();
@@ -429,7 +560,8 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
             }
         }
         else {
-            TF_WARN("Failed to connect shader %s", node.path.GetText());
+            TF_DEBUG(HDVP2_DEBUG_MATERIAL).Msg("Failed to connect shader %s\n",
+                node.path.GetText());
         }
     }
 
@@ -471,11 +603,11 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
                 }
             }
 
-            if (node.identifier == UsdImagingTokens->UsdUVTexture) {
+            if (_IsUsdUVTexture(node)) {
                 if (rel.outputId == node.path &&
                     rel.outputName == _tokens->st) {
                     for (const HdMaterialNode& n : mat.nodes) {
-                        if (n.path == rel.inputId && _IsPrimvarReader(n.identifier)) {
+                        if (n.path == rel.inputId && _IsUsdPrimvarReader(n)) {
                             auto it = n.parameters.find(_tokens->varname);
                             if (it != n.parameters.end()) {
                                 primvarname = TfStringify(it->second);
@@ -496,11 +628,12 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
                 nodeId, outputNames[0], inputNames[0]);
 
             if (!status) {
-                TF_WARN("Error %s happened when connecting shader %s",
+                TF_DEBUG(HDVP2_DEBUG_MATERIAL).Msg(
+                    "Error %s happened when connecting shader %s\n",
                     status.errorString().asChar(), node.path.GetText());
             }
 
-            if (node.identifier == UsdImagingTokens->UsdUVTexture) {
+            if (_IsUsdUVTexture(node)) {
                 const MString paramNames[] = {
                     "file", "fileSampler", "isColorSpaceSRGB", "fallback", "scale", "bias"
                 };
@@ -517,7 +650,8 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
             }
         }
         else {
-            TF_WARN("Failed to connect shader %s", node.path.GetText());
+            TF_DEBUG(HDVP2_DEBUG_MATERIAL).Msg(
+                "Failed to connect shader %s\n", node.path.GetText());
         }
     }
 
@@ -529,71 +663,23 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
 void
 HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
 {
-    MHWRender::MRenderer* const renderer = MHWRender::MRenderer::theRenderer();
-    if (!TF_VERIFY(renderer)) {
-        return;
-    }
-
-    MHWRender::MTextureManager* const textureMgr = renderer->getTextureManager();
-    if (!TF_VERIFY(textureMgr)) {
-        return;
-    }
-
     if (!_surfaceShader) {
         return;
     }
-
-    // HdC_TODO: add dirty check for each parameter, which can avoid expensive
-    // texture loading when editing non-texture parameters.
 
     for (const HdMaterialNode& node : mat.nodes) {
         const MString nodeName =
             node.path != _surfaceShaderId ? node.path.GetName().c_str() : "";
 
-        if (node.identifier == UsdImagingTokens->UsdUVTexture) {
-            MHWRender::MSamplerStateDesc desc;
-            desc.addressW = MHWRender::MSamplerState::kTexWrap;
-            desc.filter = MHWRender::MSamplerState::kMinMagMipLinear;
-            desc.comparisonFn = MHWRender::MStateManager::kCompareAlways;
-            desc.borderColor[0] = 0.0f;
-            desc.borderColor[1] = 0.0f;
-            desc.borderColor[2] = 0.0f;
-            desc.borderColor[3] = 1.0f;
-            desc.mipLODBias = 0.0f;
-            desc.minLOD = 0;
-            desc.maxLOD = 16;
-            desc.maxAnisotropy = 1;
-            desc.coordCount = 2;
-            desc.elementIndex = 0;
+        MStatus samplerStatus = MStatus::kFailure;
 
-            auto it = node.parameters.find(UsdHydraTokens->wrapS);
-            if (it != node.parameters.end()) {
-                const VtValue& value = it->second;
-                if (value.IsHolding<TfToken>()) {
-                    desc.addressU = _ConvertToTextureSamplerAddressEnum(
-                        value.UncheckedGet<TfToken>());
-                }
-            }
-
-            it = node.parameters.find(UsdHydraTokens->wrapT);
-            if (it != node.parameters.end()) {
-                const VtValue& value = it->second;
-                if (value.IsHolding<TfToken>()) {
-                    desc.addressV = _ConvertToTextureSamplerAddressEnum(
-                        value.UncheckedGet<TfToken>());
-                }
-            }
-
-            const MString parameterName = nodeName + "fileSampler";
-
-            const MHWRender::MSamplerState* samplerState =
+        if (_IsUsdUVTexture(node)) {
+            const MHWRender::MSamplerStateDesc desc = _GetSamplerStateDesc(node);
+            const MHWRender::MSamplerState* sampler =
                 _renderDelegate->GetSamplerState(desc);
-
-            if (!samplerState ||
-                !_surfaceShader->setParameter(parameterName, *samplerState)) {
-
-                TF_DEBUG(HDVP2_DEBUG_MATERIAL).Msg(
-                    "Failed to set shader parameter %s\n", parameterName.asChar());
+            if (sampler) {
+                const MString paramName = nodeName + "fileSampler";
+                samplerStatus = _surfaceShader->setParameter(paramName, *sampler);
             }
         }
 
@@ -601,21 +687,21 @@ HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
             const TfToken& token = entry.first;
             const VtValue& value = entry.second;
 
-            const MString parameterName = nodeName + token.GetText();
+            const MString paramName = nodeName + token.GetText();
 
             MStatus status = MStatus::kFailure;
 
             if (value.IsHolding<bool>()) {
                 const bool& val = value.UncheckedGet<bool>();
-                status = _surfaceShader->setParameter(parameterName, val);
+                status = _surfaceShader->setParameter(paramName, val);
             }
             else if (value.IsHolding<int>()) {
                 const int& val = value.UncheckedGet<bool>();
-                status = _surfaceShader->setParameter(parameterName, val);
+                status = _surfaceShader->setParameter(paramName, val);
             }
             else if (value.IsHolding<float>()) {
                 const float& val = value.UncheckedGet<float>();
-                status = _surfaceShader->setParameter(parameterName, val);
+                status = _surfaceShader->setParameter(paramName, val);
 
                 // The opacity parameter can be found and updated only when it
                 // has no connection. In this case, transparency of the shader
@@ -626,54 +712,61 @@ HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
             }
             else if (value.IsHolding<GfVec2f>()) {
                 const float* val = value.UncheckedGet<GfVec2f>().data();
-                status = _surfaceShader->setParameter(parameterName, val);
+                status = _surfaceShader->setParameter(paramName, val);
             }
             else if (value.IsHolding<GfVec3f>()) {
                 const float* val = value.UncheckedGet<GfVec3f>().data();
-                status = _surfaceShader->setParameter(parameterName, val);
+                status = _surfaceShader->setParameter(paramName, val);
             }
             else if (value.IsHolding<GfVec4f>()) {
                 const float* val = value.UncheckedGet<GfVec4f>().data();
-                status = _surfaceShader->setParameter(parameterName, val);
+                status = _surfaceShader->setParameter(paramName, val);
             }
             else if (value.IsHolding<GfMatrix4d>()) {
                 MMatrix matrix;
                 value.UncheckedGet<GfMatrix4d>().Get(matrix.matrix);
-                status = _surfaceShader->setParameter(parameterName, matrix);
+                status = _surfaceShader->setParameter(paramName, matrix);
             }
             else if (value.IsHolding<GfMatrix4f>()) {
                 MFloatMatrix matrix;
                 value.UncheckedGet<GfMatrix4f>().Get(matrix.matrix);
-                status = _surfaceShader->setParameter(parameterName, matrix);
+                status = _surfaceShader->setParameter(paramName, matrix);
             }
             else if (value.IsHolding<TfToken>()) {
                 // The two parameters have been converted to sampler state
                 // before entering this loop.
-                if (token == UsdHydraTokens->wrapS ||
-                    token == UsdHydraTokens->wrapT) {
-                    status = MStatus::kSuccess;
+                if (_IsUsdUVTexture(node) &&
+                    (token == UsdHydraTokens->wrapS ||
+                     token == UsdHydraTokens->wrapT)) {
+                    status = samplerStatus;
                 }
             }
             else if (value.IsHolding<SdfAssetPath>()) {
                 const SdfAssetPath& val = value.UncheckedGet<SdfAssetPath>();
+                const std::string& resolvedPath = val.GetResolvedPath();
+                const std::string& assetPath = val.GetAssetPath();
+                if (_IsUsdUVTexture(node) && token == _tokens->file) {
+                    const std::string& path =
+                        !resolvedPath.empty() ? resolvedPath : assetPath;
 
-                // HdC_TODO: load texture from usdz package
-                MString assetPath = val.GetResolvedPath().c_str();
-                if (assetPath.length() == 0) {
-                    assetPath = val.GetAssetPath().c_str();
-                }
-
-                if (assetPath.length() > 0) {
-                    MHWRender::MTextureArguments textureArgs(assetPath);
                     MHWRender::MTextureAssignment assignment;
-                    assignment.texture = textureMgr->acquireTexture(textureArgs);
-                    status = _surfaceShader->setParameter(parameterName, assignment);
+
+                    const auto it = _textureMap.find(path);
+                    if (it != _textureMap.end()) {
+                        assignment.texture = it->second.get();
+                    }
+                    else {
+                        assignment.texture = _AcquireTexture(path);
+                        _textureMap[path].reset(assignment.texture);
+                    }
+
+                    status = _surfaceShader->setParameter(paramName, assignment);
                 }
             }
 
             if (!status) {
                 TF_DEBUG(HDVP2_DEBUG_MATERIAL).Msg(
-                    "Failed to set shader parameter %s\n", parameterName.asChar());
+                    "Failed to set shader parameter %s\n", paramName.asChar());
             }
         }
     }

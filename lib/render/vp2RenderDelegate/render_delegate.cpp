@@ -542,8 +542,8 @@ HdBprim* HdVP2RenderDelegate::CreateBprim(
     if (typeId == _tokens->openvdbAsset) {
         return new HdVP2OpenvdbAsset(this, bprimId);
     }
-    */
     TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
+    */
     return nullptr;
 }
 
@@ -567,8 +567,8 @@ HdBprim* HdVP2RenderDelegate::CreateFallbackBprim(const TfToken& typeId) {
     if (typeId == _tokens->openvdbAsset) {
         return new HdVP2OpenvdbAsset(this, SdfPath::EmptyPath());
     }
-    */
     TF_CODING_ERROR("Unknown Bprim Type %s", typeId.GetText());
+    */
     return nullptr;
 }
 
