@@ -314,6 +314,8 @@ def RunCTest(context, extraArgs=None):
     with CurrentWorkingDirectory(buildDir):
         Run(context,
             'ctest '
+            '--output-on-failure ' 
+            '--timeout 300 '
             '-j {numJobs} '
             '-C {variant} '
             '{extraArgs} '
