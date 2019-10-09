@@ -16,7 +16,7 @@
 
 #include "pxr/pxr.h"
 #include <mayaUsd/fileio/utils/adaptor.h>
-#include "usdMaya/undoHelperCommand.h"
+#include <mayaUsd/utils/undoHelperCommand.h>
 #include <mayaUsd/utils/util.h>
 
 #include "pxr/base/tf/pyResultConversions.h"

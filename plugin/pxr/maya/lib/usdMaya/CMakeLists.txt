@@ -46,7 +46,6 @@ pxr_shared_library(${PXR_PACKAGE}
         listShadingModesCommand
         proxyShape
         referenceAssembly
-        undoHelperCommand
 
     PRIVATE_CLASSES
         readJobWithSceneAssembly
@@ -58,19 +57,7 @@ pxr_shared_library(${PXR_PACKAGE}
     PYMODULE_CPPFILES
         module.cpp
         wrapAssembly.cpp
-        wrapBlockSceneModificationContext.cpp
-        wrapColorSpace.cpp
-        wrapDiagnosticDelegate.cpp
         wrapEditUtil.cpp
-        wrapMeshUtil.cpp
-        wrapQuery.cpp
-        wrapReadUtil.cpp
-        wrapRoundTripUtil.cpp
-        wrapStageCache.cpp
-        wrapAdaptor.cpp
-        wrapUserTaggedAttribute.cpp
-        wrapWriteUtil.cpp
-        wrapXformStack.cpp
 
     PYMODULE_FILES
         __init__.py

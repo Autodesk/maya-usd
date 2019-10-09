@@ -13,16 +13,72 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "usdMaya/undoHelperCommand.h"
+#include "undoHelperCommand.h"
 
 #include "pxr/base/tf/errorMark.h"
 
 #include <maya/MSyntax.h>
+#include <maya/MFnPlugin.h>
+
+namespace {
+#define CMD_NAME "usdUndoHelperCmd"
+
+int _registrationCount = 0;
+
+// Name of the plugin registering the command.
+MString _registrantPluginName;
+}
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 const UsdMayaUndoHelperCommand::UndoableFunction*
 UsdMayaUndoHelperCommand::_dgModifierFunc = nullptr;
+
+/* static */
+MStatus
+UsdMayaUndoHelperCommand::initialize(MFnPlugin& plugin)
+{
+    // If we're already registered, do nothing.
+    if (_registrationCount++ > 0) {
+        return MS::kSuccess;
+    }
+
+    _registrantPluginName = plugin.name();
+
+    return plugin.registerCommand(
+        CMD_NAME,
+        UsdMayaUndoHelperCommand::creator,
+        UsdMayaUndoHelperCommand::createSyntax);
+}
+
+/* static */
+MStatus
+UsdMayaUndoHelperCommand::finalize(MFnPlugin& plugin)
+{
+    // If more than one plugin still has us registered, do nothing.
+    if (_registrationCount-- > 1) {
+        return MS::kSuccess;
+    }
+
+    // Maya requires deregistration to be done by the same plugin that
+    // performed the registration.  If this isn't possible, warn and don't
+    // deregister.
+    if (plugin.name() != _registrantPluginName) {
+        MGlobal::displayWarning(
+            CMD_NAME " cannot be deregistered, registering plugin "
+            + _registrantPluginName + " is unloaded.");
+        return MS::kSuccess;
+    }
+
+    return plugin.deregisterCommand(CMD_NAME);
+}
+
+/* static */
+const char*
+UsdMayaUndoHelperCommand::name()
+{
+    return CMD_NAME;
+}
 
 UsdMayaUndoHelperCommand::UsdMayaUndoHelperCommand() : _undoable(false)
 {
@@ -85,9 +141,9 @@ void
 UsdMayaUndoHelperCommand::ExecuteWithUndo(const UndoableFunction& func)
 {
     int cmdExists = 0;
-    MGlobal::executeCommand("exists usdUndoHelperCmd", cmdExists);
+    MGlobal::executeCommand("exists " CMD_NAME, cmdExists);
     if (!cmdExists) {
-        TF_WARN("usdUndoHelperCmd is unavailable; "
+        TF_WARN(CMD_NAME " is unavailable; "
                 "function will run without undo support");
         MDGModifier modifier;
         func(modifier);
@@ -96,7 +152,7 @@ UsdMayaUndoHelperCommand::ExecuteWithUndo(const UndoableFunction& func)
 
     // Run function through command if it is available to get undo support!
     _dgModifierFunc = &func;
-    MGlobal::executeCommand("usdUndoHelperCmd", false, true);
+    MGlobal::executeCommand(CMD_NAME, false, true);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

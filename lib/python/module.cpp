@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2019 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,21 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "usdMaya/colorSpace.h"
-
-#include "pxr/base/tf/envSetting.h"
+#include "pxr/pxr.h"
+#include "pxr/base/tf/pyModule.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_DEFINE_ENV_SETTING(PIXMAYA_LINEAR_COLORS, false,
-        "If colors from maya should be treated as linear.  "
-        "When false, colors are assumed to be gamma-corrected.");
-
-bool
-UsdMayaColorSpace::IsColorManaged()
-{
-    // in theory this could vary per scene, but we think mixing that within any
-    // given pipeline is likely confusing.  Also, we want to avoid this function
-    // calling out to mel.
-    return TfGetEnvSetting(PIXMAYA_LINEAR_COLORS);
+TF_WRAP_MODULE {
+    TF_WRAP(Adaptor);
+    TF_WRAP(BlockSceneModificationContext);
+    TF_WRAP(ColorSpace);
+    TF_WRAP(DiagnosticDelegate);
+    TF_WRAP(MeshUtil);
+    TF_WRAP(Query);
+    TF_WRAP(ReadUtil);
+    TF_WRAP(RoundTripUtil);
+    TF_WRAP(StageCache);
+    TF_WRAP(UserTaggedAttribute);
+    TF_WRAP(WriteUtil);
+    TF_WRAP(XformStack);
 }

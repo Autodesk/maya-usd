@@ -15,10 +15,10 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
-
 from pxr import Usd
 from pxr import UsdGeom
+
+import mayaUsd.lib as mayaUsdLib
 
 from maya import cmds
 from maya import standalone
@@ -124,7 +124,7 @@ class testUsdMayaAdaptorMetadata(unittest.TestCase):
         cmds.usdImport(file=usdFile, shadingMode='none',
                 apiSchema=['GeomModelAPI'])
 
-        worldProxy = UsdMaya.Adaptor('World')
+        worldProxy = mayaUsdLib.Adaptor('World')
         modelAPI = worldProxy.GetSchema(UsdGeom.ModelAPI)
 
         # model:cardGeometry

@@ -15,10 +15,10 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
-
 from pxr import Gf
 from pxr import Tf
+
+import mayaUsd.lib as mayaUsdLib
 
 from maya import cmds
 from maya import standalone
@@ -72,7 +72,7 @@ class testUsdImportUVSets(unittest.TestCase):
         cmds.loadPlugin('pxrUsd')
 
         usdFile = ""
-        if UsdMaya.ReadUtil.ReadFloat2AsUV(): 
+        if mayaUsdLib.ReadUtil.ReadFloat2AsUV(): 
             usdFile = os.path.abspath('UsdImportUVSetsTest_Float.usda')
         else:
             usdFile = os.path.abspath('UsdImportUVSetsTest.usda')
@@ -301,7 +301,7 @@ class testUsdImportUVSets(unittest.TestCase):
         # We need to load this mesh from a separate USD file because importing
         # it caused a crash (that this test verifies should no longer happen).
         usdFile = ""
-        if UsdMaya.ReadUtil.ReadFloat2AsUV():
+        if mayaUsdLib.ReadUtil.ReadFloat2AsUV():
             usdFile = os.path.abspath('UsdImportUVSetsTestWithCreases_Float.usda')
         else:
             usdFile = os.path.abspath('UsdImportUVSetsTestWithCreases.usda')

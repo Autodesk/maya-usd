@@ -22,12 +22,13 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
 
-#include "usdMaya/api.h"
+#include "../base/api.h"
 #include <mayaUsd/fileio/utils/adaptor.h>
 
 #include <maya/MDGModifier.h>
 #include <maya/MGlobal.h>
 #include <maya/MPxCommand.h>
+#include <maya/MApiNamespace.h> // For MFnPlugin
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -43,23 +44,32 @@ public:
     using UndoableResultFunction = std::function<T (MDGModifier&)>;
     using UndoableFunction = UndoableResultFunction<void>;
 
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
+    static const char* name();
+
+    MAYAUSD_CORE_PUBLIC
+    static MStatus initialize(MFnPlugin&);
+
+    MAYAUSD_CORE_PUBLIC
+    static MStatus finalize(MFnPlugin&);
+
+    MAYAUSD_CORE_PUBLIC
     UsdMayaUndoHelperCommand();
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     ~UsdMayaUndoHelperCommand() override;
 
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     MStatus doIt(const MArgList& args) override;
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     MStatus redoIt() override;
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     MStatus undoIt() override;
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     bool isUndoable() const override;
 
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     static MSyntax createSyntax();
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     static void* creator();
 
     /// Calls \p func with an MDGModifier, saving the modifier for future undo
@@ -67,7 +77,7 @@ public:
     /// \p func directly without undo support and issues a warning. If \p func
     /// raises any Tf errors when it is called, it will not be added to Maya's
     /// undo stack.
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     static void ExecuteWithUndo(const UndoableFunction& func);
 
     /// This overload of ExecuteWithUndo() supports a \p func that returns a

@@ -114,6 +114,7 @@ list(APPEND mayaUsd_src
     utils/blockSceneModificationContext.cpp
     utils/stageCache.cpp
     utils/query.cpp
+    utils/undoHelperCommand
     #
     nodes/pointBasedDeformerNode.cpp
     nodes/hdImagingShape.cpp
@@ -307,6 +308,7 @@ list(APPEND mayaUsdUtils_headers
     utils/blockSceneModificationContext.h
     utils/stageCache.h
     utils/query.h
+    utils/undoHelperCommand.h
 )
 
 list(APPEND mayaUsdNodes_headers
@@ -644,6 +646,96 @@ if(UFE_FOUND)
     endif()
 
 endif()
+
+# Python extension library for mayaUsd library bindings.  Capitalize leading
+# character of library name.  Pixar's TF_WRAP_MODULE macro expects the library
+# name to be prefixed with _, but adds an underscore to the package name when
+# creating the Python extension module initialization function (see Pixar's
+# pyModule.h).  Create a package name without the leading underscore, and
+# prefix our library name with a leading underscore, to match this convention.
+string(TOUPPER "${LIBRARY_NAME}" LIBRARY_NAME_CAPS)
+string(SUBSTRING "${LIBRARY_NAME}" 1 -1 LIBRARY_NAME_END)
+string(SUBSTRING "${LIBRARY_NAME_CAPS}" 0 1 LIBRARY_NAME_BEGIN)
+string(CONCAT PACKAGE_NAME "Py" "${LIBRARY_NAME_BEGIN}" "${LIBRARY_NAME_END}")
+string(CONCAT PYTHON_LIBRARY_NAME "_" "${PACKAGE_NAME}")
+
+add_library(${PYTHON_LIBRARY_NAME}
+    SHARED
+    python/module.cpp
+    python/wrapAdaptor.cpp
+    python/wrapBlockSceneModificationContext.cpp
+    python/wrapColorSpace.cpp
+    python/wrapDiagnosticDelegate.cpp
+    python/wrapMeshUtil.cpp
+    python/wrapQuery.cpp
+    python/wrapReadUtil.cpp
+    python/wrapRoundTripUtil.cpp
+    python/wrapStageCache.cpp
+    python/wrapUserTaggedAttribute.cpp
+    python/wrapWriteUtil.cpp
+    python/wrapXformStack.cpp
+)
+
+target_compile_definitions(${PYTHON_LIBRARY_NAME}
+    PRIVATE
+        MFB_PACKAGE_NAME=${PACKAGE_NAME}
+        MFB_ALT_PACKAGE_NAME=${PACKAGE_NAME}
+        MFB_PACKAGE_MODULE=${PROJECT_NAME}
+)
+set_target_properties(${PYTHON_LIBRARY_NAME} 
+    PROPERTIES 
+        PREFIX ""
+)
+if(IS_WINDOWS)
+set_target_properties(${PYTHON_LIBRARY_NAME}
+    PROPERTIES
+        SUFFIX ".pyd"
+)
+elseif(IS_MACOSX)
+    set_target_properties(${UFE_PYTHON_LIBRARY_NAME}
+        PROPERTIES
+            SUFFIX ".so"
+    )
+endif()
+
+target_link_libraries(${PYTHON_LIBRARY_NAME}
+    ${LIBRARY_NAME}
+)
+
+# We will use the following Python package structure:
+#
+# mayaUsd: top-level package
+# mayaUsd.lib: Python wrappers for mayaUsd library functionality.
+#
+# We re-map the Python library namespace to mayaUsd.lib through a simple
+# __init__.py.
+
+set(PYLIB_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/lib)
+
+if(IS_MACOSX OR IS_LINUX)
+    mayaUsd_init_rpath(rpath "lib")
+    mayaUsd_add_rpath(rpath "../../..")
+    mayaUsd_install_rpath(rpath ${PYTHON_LIBRARY_NAME})
+endif()
+
+install(TARGETS ${PYTHON_LIBRARY_NAME}
+    LIBRARY
+    DESTINATION ${PYLIB_INSTALL_PREFIX}
+    ARCHIVE
+    DESTINATION ${PYLIB_INSTALL_PREFIX}
+    RUNTIME
+    DESTINATION ${PYLIB_INSTALL_PREFIX}
+)
+if(IS_WINDOWS)
+    install(FILES $<TARGET_PDB_FILE:${PYTHON_LIBRARY_NAME}> DESTINATION ${PYLIB_INSTALL_PREFIX} OPTIONAL)
+endif()
+
+install(CODE
+    "file(TOUCH \"${PYLIB_INSTALL_PREFIX}/../__init__.py\")")
+
+install(CODE
+    "file(WRITE \"${PYLIB_INSTALL_PREFIX}/__init__.py\"
+    \"from ${PYTHON_LIBRARY_NAME} import *\")")
 
 add_subdirectory(usd)
 
