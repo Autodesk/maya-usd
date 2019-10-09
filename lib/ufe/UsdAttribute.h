@@ -55,7 +55,6 @@ public:
 
 	// Ufe::Attribute overrides
 	UFE_ATTRIBUTE_OVERRIDES
-	Ufe::Attribute::Type type() const override { return Ufe::Attribute::kGeneric; }
 
 	// Ufe::AttributeGeneric overrides
 	std::string nativeType() const override;
@@ -74,7 +73,6 @@ public:
 
 	// Ufe::Attribute overrides
 	UFE_ATTRIBUTE_OVERRIDES
-	Ufe::Attribute::Type type() const override { return Ufe::Attribute::kEnumString; }
 
 	// Ufe::AttributeEnumString overrides
 	std::string get() const override;
@@ -107,9 +105,6 @@ public:
 
 	//! Create a UsdAttributeBool.
 	static UsdAttributeBool::Ptr create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
-
-	// Ufe::Attribute overrides
-	Ufe::Attribute::Type type() const override { return Ufe::Attribute::kBool; }
 }; // UsdAttributeBool
 
 //! \brief Interface for USD int attributes.
@@ -122,9 +117,6 @@ public:
 
 	//! Create a UsdAttributeInt.
 	static UsdAttributeInt::Ptr create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
-
-	// Ufe::Attribute overrides
-	Ufe::Attribute::Type type() const override { return Ufe::Attribute::kInt; }
 }; // UsdAttributeInt
 
 //! \brief Interface for USD float attributes.
@@ -137,9 +129,6 @@ public:
 
 	//! Create a UsdAttributeFloat.
 	static UsdAttributeFloat::Ptr create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
-
-	// Ufe::Attribute overrides
-	Ufe::Attribute::Type type() const override { return Ufe::Attribute::kFloat; }
 }; // UsdAttributeFloat
 
 //! \brief Interface for USD double attributes.
@@ -152,9 +141,6 @@ public:
 
 	//! Create a UsdAttributeDouble.
 	static UsdAttributeDouble::Ptr create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
-
-	// Ufe::Attribute overrides
-	Ufe::Attribute::Type type() const override { return Ufe::Attribute::kDouble; }
 }; // UsdAttributeDouble
 
 //! \brief Interface for USD string/token attributes.
@@ -167,9 +153,6 @@ public:
 
 	//! Create a UsdAttributeString.
 	static UsdAttributeString::Ptr create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
-
-	// Ufe::Attribute overrides
-	Ufe::Attribute::Type type() const override { return Ufe::Attribute::kString; }
 }; // UsdAttributeString
 
 //! \brief Interface for USD RGB color (float) attributes.
@@ -182,9 +165,6 @@ public:
 
 	//! Create a UsdAttributeColorFloat3.
 	static UsdAttributeColorFloat3::Ptr create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
-
-	// Ufe::Attribute overrides
-	Ufe::Attribute::Type type() const override { return Ufe::Attribute::kColorFloat3; }
 }; // UsdAttributeColorFloat3
 
 //! \brief Interface for USD Vector3i (int) attributes.
@@ -197,9 +177,6 @@ public:
 
 	//! Create a UsdAttributeInt3.
 	static UsdAttributeInt3::Ptr create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
-
-	// Ufe::Attribute overrides
-	Ufe::Attribute::Type type() const override { return Ufe::Attribute::kInt3; }
 }; // UsdAttributeInt3
 
 //! \brief Interface for USD Vector3f (float) attributes.
@@ -212,9 +189,6 @@ public:
 
 	//! Create a UsdAttributeFloat3.
 	static UsdAttributeFloat3::Ptr create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
-
-	// Ufe::Attribute overrides
-	Ufe::Attribute::Type type() const override { return Ufe::Attribute::kFloat3; }
 }; // UsdAttributeFloat3
 
 //! \brief Interface for USD Vector3d (double) attributes.
@@ -227,9 +201,6 @@ public:
 
 	//! Create a UsdAttributeDouble3.
 	static UsdAttributeDouble3::Ptr create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
-
-	// Ufe::Attribute overrides
-	Ufe::Attribute::Type type() const override { return Ufe::Attribute::kDouble3; }
 }; // UsdAttributeDouble3
 
 } // namespace ufe

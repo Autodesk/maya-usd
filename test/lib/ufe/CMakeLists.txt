@@ -30,7 +30,11 @@ set(test_script_files
 )
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
-    list(APPEND test_script_files testGroupCmd.py)
+    list(APPEND test_script_files
+        testGroupCmd.py
+        testAttribute.py
+        testAttributes.py
+    )
 endif()
 
 if(IS_WINDOWS)
