@@ -18,6 +18,9 @@
 #include "pxr/base/tf/errorMark.h"
 
 #include <maya/MSyntax.h>
+
+// This is added to prevent multiple definitions of the MApiVersion string.
+#define MNoVersionString
 #include <maya/MFnPlugin.h>
 
 namespace {
