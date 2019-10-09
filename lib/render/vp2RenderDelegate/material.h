@@ -57,12 +57,17 @@ using HdVP2TextureUniquePtr = std::unique_ptr<
     HdVP2TextureDeleter
 >;
 
-/*! \brief  A string-indexed texture map.
+/*! \brief  Information about the texture.
 */
-using HdVP2TextureMap = std::unordered_map<
-    std::string,
-    HdVP2TextureUniquePtr
->;
+struct HdVP2TextureInfo
+{
+    HdVP2TextureUniquePtr  _texture;          //!< Unique pointer of the texture
+    bool                   _isColorSpaceSRGB; //!< Whether sRGB linearization is needed
+};
+
+/*! \brief  An unordered string-indexed map to cache texture information.
+*/
+using HdVP2TextureMap = std::unordered_map<std::string, HdVP2TextureInfo>;
 
 /*! \brief  A VP2-specific implementation for a Hydra material prim.
     \class  HdVP2Material
@@ -91,6 +96,7 @@ public:
 private:
     MHWRender::MShaderInstance* _CreateShaderInstance(const HdMaterialNetwork& mat);
     void _UpdateShaderInstance(const HdMaterialNetwork& mat);
+    const HdVP2TextureInfo& _AcquireTexture(const std::string& path);
 
     HdVP2RenderDelegate* const _renderDelegate; //!< VP2 render delegate for which this material was created
 

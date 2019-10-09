@@ -83,7 +83,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 //! Helper utility function to test whether a node is a UsdShade primvar reader.
-inline bool _IsUsdPrimvarReader(const HdMaterialNode& node)
+bool _IsUsdPrimvarReader(const HdMaterialNode& node)
 {
     const TfToken& id = node.identifier;
     return (id == UsdImagingTokens->UsdPrimvarReader_float ||
@@ -258,8 +258,12 @@ MHWRender::MSamplerStateDesc _GetSamplerStateDesc(const HdMaterialNode& node)
 }
 
 //! Load texture from the specified path
-MHWRender::MTexture* _AcquireTexture(const std::string& imagePath)
+MHWRender::MTexture* _LoadTexture(
+    const std::string& path,
+    bool& isColorSpaceSRGB)
 {
+    isColorSpaceSRGB = false;
+
     MHWRender::MRenderer* const renderer = MHWRender::MRenderer::theRenderer();
     MHWRender::MTextureManager* const textureMgr =
         renderer ? renderer->getTextureManager() : nullptr;
@@ -267,83 +271,90 @@ MHWRender::MTexture* _AcquireTexture(const std::string& imagePath)
         return nullptr;
     }
 
+    GlfImageSharedPtr image = GlfImage::OpenForReading(path);
+    if (!TF_VERIFY(image)) {
+        return nullptr;
+    }
+
+    // GlfImage is used for loading pixel data from usdz only and should
+    // not trigger any OpenGL call. VP2RenderDelegate will transfer the
+    // texels to GPU memory with VP2 API which is 3D API agnostic.
+    GlfImage::StorageSpec spec;
+    spec.width = image->GetWidth();
+    spec.height = image->GetHeight();
+    spec.depth = 1;
+    spec.format = image->GetFormat();
+    spec.type = image->GetType();
+    spec.flipped = false;
+
+    const int bpp = image->GetBytesPerPixel();
+    const int bytesPerRow = spec.width * bpp;
+    const int bytesPerSlice = bytesPerRow * spec.height;
+
+    std::vector<unsigned char> storage(bytesPerSlice);
+    spec.data = storage.data();
+
+    if (!image->Read(spec)) {
+        return nullptr;
+    }
+
     MHWRender::MTexture* texture = nullptr;
 
-    const MString path = imagePath.c_str();
+    MHWRender::MTextureDescription desc;
+    desc.setToDefault2DTexture();
+    desc.fWidth = spec.width;
+    desc.fHeight = spec.height;
+    desc.fBytesPerRow = bytesPerRow;
+    desc.fBytesPerSlice = bytesPerSlice;
 
-    // Load from disk directly if the image is not in usdz.
-    if (!ArIsPackageRelativePath(imagePath)) {
-        MHWRender::MTextureArguments textureArgs(path);
-        texture = textureMgr->acquireTexture(textureArgs);
-    }
-    else if (GlfImageSharedPtr image = GlfImage::OpenForReading(imagePath)) {
-        // GlfImage is used for loading pixel data from usdz only and should
-        // not trigger any OpenGL call. VP2RenderDelegate will transfer the
-        // texels to GPU memory with VP2 API which is 3D API agnostic.
-        GlfImage::StorageSpec spec;
-        spec.width = image->GetWidth();
-        spec.height = image->GetHeight();
-        spec.depth = 1;
-        spec.format = image->GetFormat();
-        spec.type = image->GetType();
-        spec.flipped = false;
+    switch (spec.format)
+    {
+    case GL_RED:
+        desc.fFormat = (spec.type == GL_FLOAT ?
+            MHWRender::kR32_FLOAT : MHWRender::kR8_UNORM);
+        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+        break;
+    case GL_RGB:
+        if (spec.type == GL_FLOAT) {
+            desc.fFormat = MHWRender::kR32G32B32_FLOAT;
+            texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+        }
+        else {
+            // R8G8B8 is not supported by VP2. Converted to R8G8B8A8.
+            constexpr int bpp_4 = 4;
 
-        const int bpp = image->GetBytesPerPixel();
-        std::vector<unsigned char> storage(spec.width * spec.height * bpp);
-        spec.data = storage.data();
-
-        if (image->Read(spec)) {
-            MHWRender::MTextureDescription desc;
-            desc.setToDefault2DTexture();
-            desc.fWidth = spec.width;
-            desc.fHeight = spec.height;
-            desc.fBytesPerRow = spec.width * bpp;
+            desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
+            desc.fBytesPerRow = spec.width * bpp_4;
             desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
 
-            switch (spec.format)
-            {
-            case GL_RED:
-                desc.fFormat = (spec.type == GL_FLOAT ?
-                    MHWRender::kR32_FLOAT : MHWRender::kR8_UNORM);
-                texture = textureMgr->acquireTexture(path, desc, spec.data);
-                break;
-            case GL_RGB:
-                if (spec.type == GL_FLOAT) {
-                    desc.fFormat = MHWRender::kR32G32B32_FLOAT;
-                    texture = textureMgr->acquireTexture(path, desc, spec.data);
+            std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+            for (int y = 0; y < spec.height; y++) {
+                for (int x = 0; x < spec.width; x++) {
+                    const int t = spec.width * y + x;
+                    texels[t*bpp_4]     = storage[t*bpp];
+                    texels[t*bpp_4 + 1] = storage[t*bpp + 1];
+                    texels[t*bpp_4 + 2] = storage[t*bpp + 2];
+                    texels[t*bpp_4 + 3] = 255;
                 }
-                else {
-                    // R8G8B8 is not supported by VP2. Converted to R8G8B8A8.
-                    constexpr int bpp_4 = 4;
-
-                    desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
-                    desc.fBytesPerRow = spec.width * bpp_4;
-                    desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
-
-                    std::vector<unsigned char> texels(desc.fBytesPerSlice);
-
-                    for (int y = 0; y < spec.height; y++) {
-                        for (int x = 0; x < spec.width; x++) {
-                            const int t = spec.width * y + x;
-                            texels[t*bpp_4]     = storage[t*bpp];
-                            texels[t*bpp_4 + 1] = storage[t*bpp + 1];
-                            texels[t*bpp_4 + 2] = storage[t*bpp + 2];
-                            texels[t*bpp_4 + 3] = 255;
-                        }
-                    }
-
-                    texture = textureMgr->acquireTexture(path, desc, texels.data());
-                }
-                break;
-            case GL_RGBA:
-                desc.fFormat = (spec.type == GL_FLOAT ?
-                    MHWRender::kR32G32B32A32_FLOAT : MHWRender::kR8G8B8A8_UNORM);
-                texture = textureMgr->acquireTexture(path, desc, spec.data);
-                break;
-            default:
-                break;
             }
+
+            texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+            isColorSpaceSRGB = image->IsColorSpaceSRGB();
         }
+        break;
+    case GL_RGBA:
+        if (spec.type == GL_FLOAT) {
+            desc.fFormat = MHWRender::kR32G32B32A32_FLOAT;
+        }
+        else {
+            desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
+            isColorSpaceSRGB = image->IsColorSpaceSRGB();
+        }
+        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+        break;
+    default:
+        break;
     }
 
     return texture;
@@ -415,7 +426,7 @@ void HdVP2Material::Sync(
                 _ApplyVP2Fixes(vp2BxdfNet, bxdfNet);
 
                 // Create a shader instance for the material network.
-                _surfaceShader = HdVP2ShaderUniquePtr(_CreateShaderInstance(vp2BxdfNet));
+                _surfaceShader.reset(_CreateShaderInstance(vp2BxdfNet));
 
                 if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
                     _PrintMaterialNetwork("BXDF", id, bxdfNet);
@@ -470,7 +481,7 @@ HdVP2Material::GetSurfaceShader() const {
     return _surfaceShader.get();
 }
 
-/*! \brief  
+/*! \brief  Creates a shader instance for the surface shader.
 */
 MHWRender::MShaderInstance*
 HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
@@ -660,8 +671,9 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
     return shaderInstance;
 }
 
-void
-HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
+/*! \brief  Updates parameters for the surface shader.
+*/
+void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
 {
     if (!_surfaceShader) {
         return;
@@ -687,7 +699,7 @@ HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
             const TfToken& token = entry.first;
             const VtValue& value = entry.second;
 
-            const MString paramName = nodeName + token.GetText();
+            MString paramName = nodeName + token.GetText();
 
             MStatus status = MStatus::kFailure;
 
@@ -746,21 +758,18 @@ HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                 const std::string& resolvedPath = val.GetResolvedPath();
                 const std::string& assetPath = val.GetAssetPath();
                 if (_IsUsdUVTexture(node) && token == _tokens->file) {
-                    const std::string& path =
-                        !resolvedPath.empty() ? resolvedPath : assetPath;
+                    const HdVP2TextureInfo& info = _AcquireTexture(
+                        !resolvedPath.empty() ? resolvedPath : assetPath);
 
                     MHWRender::MTextureAssignment assignment;
-
-                    const auto it = _textureMap.find(path);
-                    if (it != _textureMap.end()) {
-                        assignment.texture = it->second.get();
-                    }
-                    else {
-                        assignment.texture = _AcquireTexture(path);
-                        _textureMap[path].reset(assignment.texture);
-                    }
-
+                    assignment.texture = info._texture.get();
                     status = _surfaceShader->setParameter(paramName, assignment);
+
+                    if (status) {
+                        paramName = nodeName + "isColorSpaceSRGB";
+                        status = _surfaceShader->setParameter(paramName,
+                            info._isColorSpaceSRGB);
+                    }
                 }
             }
 
@@ -770,6 +779,25 @@ HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
             }
         }
     }
+}
+
+/*! \brief  Acquires a texture for the given image path.
+*/
+const HdVP2TextureInfo&
+HdVP2Material::_AcquireTexture(const std::string& path)
+{
+    const auto it = _textureMap.find(path);
+    if (it != _textureMap.end()) {
+        return it->second;
+    }
+
+    bool isSRGB = false;
+    MHWRender::MTexture* texture = _LoadTexture(path, isSRGB);
+
+    HdVP2TextureInfo& info = _textureMap[path];
+    info._texture.reset(texture);
+    info._isColorSpaceSRGB = isSRGB;
+    return info;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
