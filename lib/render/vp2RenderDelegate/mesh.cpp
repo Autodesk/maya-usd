@@ -1155,34 +1155,46 @@ void HdVP2Mesh::_UpdateDrawItem(
             renderItem->enable(drawItem->IsEnabled() && drawItem->GetVisible());
         }
 
-        param->GetDrawScene().setGeometryForRenderItem(*renderItem, vertexBuffers, *indexBuffer, &bounds);
-        renderItem->setMatrix(&worldMatrix);
+        ProxyRenderDelegate& drawScene = param->GetDrawScene();
+        drawScene.setGeometryForRenderItem(*renderItem, vertexBuffers, *indexBuffer, &bounds);
 
         // Important, update instance transforms after setting geometry on render items!
         auto& oldInstanceCount = stateToCommit._drawItemData._instanceCount;
         auto newInstanceCount = stateToCommit._instanceTransforms.length();
 
-        // Special case for single instance prims. We will keep the original render item
-        // to allow consolidation. We also keep drawItemData._instanceCount at 0, since
-        // we can't remove instancing without recreating the render item.
-        if(newInstanceCount == 1 && oldInstanceCount == 0) {
-            setWantConsolidation(*renderItem, true);
-        } else if(newInstanceCount > 0) {
-            setWantConsolidation(*renderItem, false);
-            if(oldInstanceCount == newInstanceCount) {
+        if (oldInstanceCount > 1) {
+            // GPU instancing has been enabled. We cannot switch to consolidation
+            // without recreating render item, so we keep using GPU instancing.
+            if (oldInstanceCount == newInstanceCount) {
                 for (unsigned int i = 0; i < newInstanceCount; i++) {
                     // VP2 defines instance ID of the first instance to be 1.
-                    param->GetDrawScene().updateInstanceTransform(*renderItem, i+1, stateToCommit._instanceTransforms[i]);
+                    drawScene.updateInstanceTransform(*renderItem,
+                        i+1, stateToCommit._instanceTransforms[i]);
                 }
             } else {
-                param->GetDrawScene().setInstanceTransformArray(*renderItem, stateToCommit._instanceTransforms);
+                drawScene.setInstanceTransformArray(*renderItem,
+                    stateToCommit._instanceTransforms);
             }
-            oldInstanceCount = newInstanceCount;
-        } else if(oldInstanceCount > 0) {
-            setWantConsolidation(*renderItem, true);
-            param->GetDrawScene().removeAllInstances(*renderItem);
-            oldInstanceCount = 0;
         }
+        else if (newInstanceCount > 1) {
+            // Turn off consolidation to allow GPU instancing to be used for
+            // multiple instances.
+            setWantConsolidation(*renderItem, false);
+            drawScene.setInstanceTransformArray(*renderItem,
+                stateToCommit._instanceTransforms);
+        }
+        else if (newInstanceCount == 1) {
+            // Special case for single instance prims. We will keep the original
+            // render item to allow consolidation.
+            renderItem->setMatrix(&stateToCommit._instanceTransforms[0]);
+        }
+        else {
+            // Regular non-instanced prims. Consolidation has been turned on by
+            // default and will be kept enabled on this case.
+            renderItem->setMatrix(&worldMatrix);
+        }
+
+        oldInstanceCount = newInstanceCount;
     });
 }
 
