@@ -7,7 +7,7 @@
 #include <gtest/gtest.h>
 
 using namespace AL::usd::transaction;
-using namespace pxr;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Test some of the functionality of the AL_USDTransaction

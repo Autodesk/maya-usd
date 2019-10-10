@@ -44,7 +44,7 @@ public:
   /// \param  layer targetted by transaction
   /// \return true when transaction is in progress, otherwise false
   AL_USD_TRANSACTION_PUBLIC
-  bool InProgress(const pxr::SdfLayerHandle& layer) const;
+  bool InProgress(const PXR_NS::SdfLayerHandle& layer) const;
 
   /// \brief  opens transaction, when transaction is opened for the first time OpenNotice is emitted and current 
   ///         state of layer is recorded.
@@ -52,7 +52,7 @@ public:
   /// \param  layer targetted by transaction
   /// \return true on success, false when layer or stage became invalid
   AL_USD_TRANSACTION_PUBLIC
-  bool Open(const pxr::SdfLayerHandle& layer);
+  bool Open(const PXR_NS::SdfLayerHandle& layer);
 
   /// \brief  closes transaction, when transaction is closed for the last time CloseNotice is emitted with change
   ///         information based of difference between current and recorded layer states.
@@ -60,7 +60,7 @@ public:
   /// \param  layer targetted by transaction
   /// \return true on success, false when layer or stage became invalid or transaction wasn't opened
   AL_USD_TRANSACTION_PUBLIC
-  bool Close(const pxr::SdfLayerHandle& layer);
+  bool Close(const PXR_NS::SdfLayerHandle& layer);
   
   /// \brief  provides information whether any transaction was opened and wasn't closed yet.
   /// \return true when any transaction is in progress, otherwise false
@@ -73,20 +73,20 @@ public:
   /// \param  stage that is managed by TransactionManager
   /// \return reference to shared TransactionManager for given stage
   AL_USD_TRANSACTION_PUBLIC
-  static TransactionManager& Get(const pxr::UsdStageWeakPtr& stage);
+  static TransactionManager& Get(const PXR_NS::UsdStageWeakPtr& stage);
   
   /// \brief  provides information whether any transaction was opened and wasn't closed yet.
   /// \param  stage that is managed by TransactionManager
   /// \return true when any transaction is in progress, otherwise false
   AL_USD_TRANSACTION_PUBLIC
-  static bool InProgress(const pxr::UsdStageWeakPtr& stage);
+  static bool InProgress(const PXR_NS::UsdStageWeakPtr& stage);
 
   /// \brief  provides information whether transaction was opened and wasn't closed yet.
   /// \param  stage that is managed by TransactionManager
   /// \param  layer targetted by transaction
   /// \return true when transaction is in progress, otherwise false
   AL_USD_TRANSACTION_PUBLIC
-  static bool InProgress(const pxr::UsdStageWeakPtr& stage, const pxr::SdfLayerHandle& layer);
+  static bool InProgress(const PXR_NS::UsdStageWeakPtr& stage, const PXR_NS::SdfLayerHandle& layer);
   
   /// \brief  opens transaction, when transaction is opened for the first time OpenNotice is emitted and current 
   ///         state of layer is recorded.
@@ -95,7 +95,7 @@ public:
   /// \param  layer targetted by transaction
   /// \return true on success, false when layer or stage became invalid
   AL_USD_TRANSACTION_PUBLIC
-  static bool Open(const pxr::UsdStageWeakPtr& stage, const pxr::SdfLayerHandle& layer);
+  static bool Open(const PXR_NS::UsdStageWeakPtr& stage, const PXR_NS::SdfLayerHandle& layer);
 
   /// \brief  closes transaction, when transaction is closed for the last time CloseNotice is emitted with change
   ///         information based of difference between current and recorded layer states.
@@ -104,19 +104,19 @@ public:
   /// \param  layer targetted by transaction
   /// \return true on success, false when layer or stage became invalid or transaction wasn't opened
   AL_USD_TRANSACTION_PUBLIC
-  static bool Close(const pxr::UsdStageWeakPtr& stage, const pxr::SdfLayerHandle& layer);
+  static bool Close(const PXR_NS::UsdStageWeakPtr& stage, const PXR_NS::SdfLayerHandle& layer);
 private:
-  typedef std::map<pxr::UsdStageWeakPtr, TransactionManager> StageManagerMap;
+  typedef std::map<PXR_NS::UsdStageWeakPtr, TransactionManager> StageManagerMap;
   static StageManagerMap& GetManagers();
 private:
-  TransactionManager(const pxr::UsdStageWeakPtr& stage):m_stage(stage) {}
+  TransactionManager(const PXR_NS::UsdStageWeakPtr& stage):m_stage(stage) {}
   struct TransactionData
   {
-    pxr::SdfLayerRefPtr base;
+    PXR_NS::SdfLayerRefPtr base;
     int count;
   };
-  const pxr::UsdStageWeakPtr m_stage;
-  std::unordered_map<pxr::SdfLayer*, TransactionData> m_transactions;
+  const PXR_NS::UsdStageWeakPtr m_stage;
+  std::unordered_map<PXR_NS::SdfLayer*, TransactionData> m_transactions;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

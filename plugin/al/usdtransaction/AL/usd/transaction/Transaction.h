@@ -36,7 +36,7 @@ public:
   /// \param  stage that will be notified about transaction open/close
   /// \param  layer that will be tracked for changes
   AL_USD_TRANSACTION_PUBLIC
-  Transaction(const pxr::UsdStageWeakPtr& stage, const pxr::SdfLayerHandle& layer);
+  Transaction(const PXR_NS::UsdStageWeakPtr& stage, const PXR_NS::SdfLayerHandle& layer);
 
   /// \brief  opens transaction, when transaction is opened for the first time OpenNotice is emitted and current 
   ///         state of layer is recorded.
@@ -59,7 +59,7 @@ public:
 
 private:
   TransactionManager& m_manager;
-  pxr::SdfLayerHandle m_layer;
+  PXR_NS::SdfLayerHandle m_layer;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -72,7 +72,7 @@ public:
   /// \brief  the ctor initializes transaction and opens it
   /// \param  stage that will be notified about transaction open/close
   /// \param  layer that will be tracked for changes
-  inline ScopedTransaction(const pxr::UsdStageWeakPtr& stage, const pxr::SdfLayerHandle& layer)
+  inline ScopedTransaction(const PXR_NS::UsdStageWeakPtr& stage, const PXR_NS::SdfLayerHandle& layer)
     :m_transaction(stage, layer)
   {
     m_transaction.Open();
