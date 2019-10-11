@@ -51,28 +51,6 @@ set(_PXR_CXX_FLAGS ${_PXR_CXX_FLAGS} ${_PXR_CXX_WARNING_FLAGS})
 # CMake list to string.
 string(REPLACE ";" " "  _PXR_CXX_FLAGS "${_PXR_CXX_FLAGS}")
 
-# Set namespace configuration.
-if (PXR_ENABLE_NAMESPACES)
-    set(PXR_USE_NAMESPACES "1")
-
-    if (PXR_SET_EXTERNAL_NAMESPACE)
-        set(PXR_EXTERNAL_NAMESPACE ${PXR_SET_EXTERNAL_NAMESPACE})
-    else()
-        set(PXR_EXTERNAL_NAMESPACE "pxr")
-    endif()
-
-    if (PXR_SET_INTERNAL_NAMESPACE)
-        set(PXR_INTERNAL_NAMESPACE ${PXR_SET_INTERNAL_NAMESPACE})
-    else()
-        set(PXR_INTERNAL_NAMESPACE "pxrInternal_v${PXR_MAJOR_VERSION}_${PXR_MINOR_VERSION}")
-    endif()
-
-    message(STATUS "C++ namespace configured to (external) ${PXR_EXTERNAL_NAMESPACE}, (internal) ${PXR_INTERNAL_NAMESPACE}")
-else()
-    set(PXR_USE_NAMESPACES "0")
-    message(STATUS "C++ namespaces disabled.")
-endif()
-
 # Set Python configuration
 if (PXR_ENABLE_PYTHON_SUPPORT)
     set(PXR_PYTHON_SUPPORT_ENABLED "1")

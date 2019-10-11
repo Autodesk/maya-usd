@@ -622,11 +622,6 @@ function(pxr_add_extra_plugins PLUGIN_AREAS)
 endfunction() # pxr_setup_third_plugins
 
 function(pxr_toplevel_prologue)
-    # Generate a namespace declaration header, pxr.h, at the top level of
-    # pxr at configuration time.
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pxr/pxr.h.in
-        ${CMAKE_BINARY_DIR}/include/pxr/pxr.h     
-    )
 
     # Create a monolithic shared library target if we should import one
     # or create one.
