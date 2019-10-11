@@ -171,7 +171,7 @@ class MayaUFEPickWalkTesting(unittest.TestCase):
         self.snapShotAndTest((["pCube1.e[6]"], ["pCubeShape1"]))
         self.assertTrue(next(iter(ufe.GlobalSelection.get())).isProperty())
         
-        # TODO: HS 2019 : test fails
+        # TODO: HS 2019 : test fails.  MAYA-101373
 #        cmds.pickWalk(type="edgeloop", d="right")
 #        import pdb; pdb.set_trace()
 #        self.snapShotAndTest((["pCube1.e[10]"], ["pCubeShape1"]))

@@ -179,8 +179,6 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestRotate(rotation)
 
-    # TODO: HS 2019 : test fails
-    """
     def testRotateUSD(self):
         '''Rotate USD object, read through the Transform3d interface.'''
 
@@ -223,7 +221,6 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         #Temporarily disabling undo redo until we fix it for PR 94
         self.runTestRotate(expected)
-    """
 
     def _testMultiSelectRotateUSD(self):
         '''Rotate multiple USD objects, read through Transform3d interface.'''

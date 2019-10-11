@@ -16,8 +16,6 @@
 # limitations under the License.
 #
 
-# TODO: HS 2019 : test fails
-"""
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
 
@@ -234,10 +232,9 @@ class Transform3dTranslateTestCase(unittest.TestCase):
         ufe.GlobalSelection.get().append(ball35Item)
 
         # Move the prim.
-        ball35Prim = usdUtils.getPrimFromSceneItem(
+        ball35Prim = usdUtils.getPrimFromSceneItem(ball35Item)
         ball35Prim.GetAttribute('xformOp:translate').Set(
             Gf.Vec3d(10, 20, 30))
 
         # Notified.
         self.assertEqual(t3dObs.notifications(), 1)
-"""

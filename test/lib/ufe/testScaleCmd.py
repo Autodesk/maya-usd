@@ -177,8 +177,6 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestScale(expected)
 
-    # TODO: HS 2019 : test fails
-    """
     def testScaleUSD(self):
         '''Scale USD object, read through the Transform3d interface.'''
 
@@ -219,7 +217,6 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
         cmds.setToolTo(manipCtx)
 
         self.runTestScale(expected)
-    """
 
     def _testMultiSelectScaleUSD(self):
         '''Scale multiple USD objects, read through Transform3d interface.'''
