@@ -17,6 +17,8 @@
 
 from pxr import UsdMaya
 
+import mayaUsd.lib as mayaUsdLib
+
 from pxr import Sdf
 
 from maya import cmds
@@ -63,7 +65,7 @@ class testUsdMayaReferenceAssemblyEdits(unittest.TestCase):
         It is assumed that there is only ever one edit per editPath, and no
         invalid edits.
         """
-        (assemEdits, invalidEdits) = UsdMaya.EditUtil.GetEditsForAssembly(
+        (assemEdits, invalidEdits) = mayaUsdLib.EditUtil.GetEditsForAssembly(
             assemblyNodeName)
         self.assertEqual(len(assemEdits), 1)
         self.assertEqual(invalidEdits, [])

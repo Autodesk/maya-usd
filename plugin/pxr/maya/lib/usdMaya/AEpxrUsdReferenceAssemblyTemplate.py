@@ -16,6 +16,8 @@
 
 from pxr import UsdMaya
 
+import mayaUsd.lib as mayaUsdLib
+
 from maya import cmds
 from maya import mel
 
@@ -84,7 +86,7 @@ def variantSets_changeCommmand(unused, omg, node, variantSetName):
 
     # Add the resolved variant selection as a UI label
     resolvedVariant = ''
-    usdPrim = UsdMaya.GetPrim(node)
+    usdPrim = mayaUsdLib.GetPrim(node)
     if usdPrim:
         variantSet = usdPrim.GetVariantSet(variantSetName)
         if variantSet:
@@ -113,7 +115,7 @@ def variantSets_Replace(nodeAttr, new):
 
     # Create variantSetsDict
     variantSetsDict = {}
-    usdPrim = UsdMaya.GetPrim(node)
+    usdPrim = mayaUsdLib.GetPrim(node)
     from pxr import Usd, UsdUtils
 
     regVarSetNames = [regVarSet.name
