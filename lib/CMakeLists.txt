@@ -692,7 +692,7 @@ set_target_properties(${PYTHON_LIBRARY_NAME}
         SUFFIX ".pyd"
 )
 elseif(IS_MACOSX)
-    set_target_properties(${UFE_PYTHON_LIBRARY_NAME}
+    set_target_properties(${PYTHON_LIBRARY_NAME}
         PROPERTIES
             SUFFIX ".so"
     )
