@@ -454,18 +454,18 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
         command += "\"";
       }
 
-      MFnDependencyNode fn(proxyShape->thisMObject());
+      MFnDagNode fn(proxyShape->thisMObject());
       command += " \"";
-      command += fn.name();
+      command += fn.fullPathName();
       command += "\"";
       MGlobal::executeCommandOnIdle(command, false);
     }
     else
     {
       MString command = "AL_usdmaya_ProxyShapeSelect -cl ";
-      MFnDependencyNode fn(proxyShape->thisMObject());
+      MFnDagNode fn(proxyShape->thisMObject());
       command += " \"";
-      command += fn.name();
+      command += fn.fullPathName();
       command += "\"";
       MGlobal::executeCommandOnIdle(command, false);
     }
@@ -619,9 +619,9 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
         if(!proxyShape->selectedPaths().empty())
         {
           command = "AL_usdmaya_ProxyShapeSelect -i -cl ";
-          MFnDependencyNode fn(proxyShape->thisMObject());
+          MFnDagNode fn(proxyShape->thisMObject());
           command += " \"";
-          command += fn.name();
+          command += fn.fullPathName();
           command += "\";";
         }
 
@@ -634,9 +634,9 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
             command += it.GetText();
             command += "\"";
           }
-          MFnDependencyNode fn(proxyShape->thisMObject());
+          MFnDagNode fn(proxyShape->thisMObject());
           command += " \"";
-          command += fn.name();
+          command += fn.fullPathName();
           command += "\"";
 
         }
@@ -661,9 +661,9 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
             command += it.GetText();
             command += "\"";
           }
-          MFnDependencyNode fn(proxyShape->thisMObject());
+          MFnDagNode fn(proxyShape->thisMObject());
           command += " \"";
-          command += fn.name();
+          command += fn.fullPathName();
           command += "\"";
         }
 
@@ -686,9 +686,9 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
             command += it.GetText();
             command += "\"";
           }
-          MFnDependencyNode fn(proxyShape->thisMObject());
+          MFnDagNode fn(proxyShape->thisMObject());
           command += " \"";
-          command += fn.name();
+          command += fn.fullPathName();
           command += "\"";
           MGlobal::executeCommandOnIdle(command, false);
         }
@@ -729,12 +729,12 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
             hasSelectedItems = true;
           }
         }
-        MFnDependencyNode fn(proxyShape->thisMObject());
+        MFnDagNode fn(proxyShape->thisMObject());
         selectcommand += " \"";
-        selectcommand += fn.name();
+        selectcommand += fn.fullPathName();
         selectcommand += "\"";
         deselectcommand += " \"";
-        deselectcommand += fn.name();
+        deselectcommand += fn.fullPathName();
         deselectcommand += "\"";
 
         if(hasSelectedItems)
@@ -751,8 +751,8 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     }
 
     MString final_command = "AL_usdmaya_ProxyShapePostSelect \"";
-    MFnDependencyNode fn(proxyShape->thisMObject());
-    final_command += fn.name();
+    MFnDagNode fn(proxyShape->thisMObject());
+    final_command += fn.fullPathName();
     final_command += "\"";
     proxyShape->setChangedSelectionState(true);
     MGlobal::executeCommandOnIdle(final_command, false);
