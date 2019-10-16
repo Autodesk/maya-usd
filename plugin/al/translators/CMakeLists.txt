@@ -24,6 +24,21 @@ add_library(${TRANSLATORS_PACKAGE}
     DirectionalLight.cpp
 )
 
+if(IS_MACOSX)
+    list(APPEND _macDef OSMac_)
+endif()
+
+target_compile_definitions(${TRANSLATORS_PACKAGE}
+    PRIVATE
+        ${_macDef}
+        AL_MAYA_MACROS_EXPORT
+)
+
+set_target_properties(${TRANSLATORS_PACKAGE}
+        PROPERTIES COMPILE_DEFINITIONS
+        "MFB_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE};MFB_ALT_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}"
+)
+
 set(arg_PUBLIC_HEADER_FILES
     Camera.h
 )
@@ -57,20 +72,6 @@ target_include_directories(
     PUBLIC
     ../schemas
     ../lib/AL_USDMaya
-)
-
-set(_targetDefs
-    AL_MAYA_MACROS_EXPORT
-    MFB_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}
-    MFB_ALT_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}
-)
-if(IS_MACOSX)
-    list(APPEND _targetDefs OSMac_)
-endif()    
-
-target_compile_definitions(${TRANSLATORS_PACKAGE}
-    PRIVATE
-        ${_targetDefs}
 )
 
 # rpath setup
