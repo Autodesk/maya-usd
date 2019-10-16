@@ -25,7 +25,7 @@ add_library(${TRANSLATORS_PACKAGE}
 )
 
 if(IS_MACOSX)
-    list(APPEND _macDef OSMac_)
+    set(_macDef OSMac_)
 endif()
 
 target_compile_definitions(${TRANSLATORS_PACKAGE}
