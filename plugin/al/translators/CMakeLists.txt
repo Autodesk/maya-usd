@@ -28,15 +28,9 @@ if(IS_MACOSX)
     set(_macDef OSMac_)
 endif()
 
-target_compile_definitions(${TRANSLATORS_PACKAGE}
-    PRIVATE
-        ${_macDef}
-        AL_MAYA_MACROS_EXPORT
-)
-
 set_target_properties(${TRANSLATORS_PACKAGE}
         PROPERTIES COMPILE_DEFINITIONS
-        "MFB_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE};MFB_ALT_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}"
+        "AL_MAYA_MACROS_EXPORT;${_macDef}"
 )
 
 set(arg_PUBLIC_HEADER_FILES
