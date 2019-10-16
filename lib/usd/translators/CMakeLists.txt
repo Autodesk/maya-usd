@@ -84,6 +84,12 @@ if(IS_LINUX)
     endif()
 endif()
 
+if(IS_MACOSX)
+    target_compile_definitions(${TRANSLATORS_PLUGIN} PRIVATE
+        OSMac_
+    )
+endif()
+
 #======================================================================
 # INCLUDE, LINK
 #======================================================================

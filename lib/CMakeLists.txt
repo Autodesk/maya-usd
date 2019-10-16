@@ -404,6 +404,9 @@ set(compile_definitions_list
 if(UFE_FOUND)
     list(APPEND compile_definitions_list WANT_UFE_BUILD=1)
 endif()
+if(IS_MACOSX)
+    list(APPEND compile_definitions_list OSMac_)
+endif()
 
 target_compile_definitions(${LIBRARY_NAME} PRIVATE
     ${compile_definitions_list}
@@ -676,8 +679,13 @@ add_library(${PYTHON_LIBRARY_NAME}
     python/wrapXformStack.cpp
 )
 
+if(IS_MACOSX)
+    set(_macDef OSMac_)
+endif()
+
 target_compile_definitions(${PYTHON_LIBRARY_NAME}
     PRIVATE
+        ${_macDef}
         MFB_PACKAGE_NAME=${PACKAGE_NAME}
         MFB_ALT_PACKAGE_NAME=${PACKAGE_NAME}
         MFB_PACKAGE_MODULE=${PROJECT_NAME}

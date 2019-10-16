@@ -35,8 +35,13 @@ add_library(${USDMAYA_UTILS_LIBRARY_NAME}
         ${usdmaya_utils_source}
 )
 
+if(IS_MACOSX)
+    set(_macDef OSMac_)
+endif()
+
 target_compile_definitions(${USDMAYA_UTILS_LIBRARY_NAME}
     PRIVATE
+        ${_macDef}
         AL_USDMAYA_UTILS_EXPORT
 )
 

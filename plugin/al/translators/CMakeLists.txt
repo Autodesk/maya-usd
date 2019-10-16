@@ -28,11 +28,6 @@ set(arg_PUBLIC_HEADER_FILES
     Camera.h
 )
 
-target_compile_definitions(${TRANSLATORS_PACKAGE}
-  PRIVATE
-    AL_MAYA_MACROS_EXPORT
-)
-
 # Copy the plugin metadata file in a hierarchy replicating the install hierarchy.
 # The file will be used by the unittests.
 get_target_property(LIBRARY_LOCATION
@@ -64,9 +59,18 @@ target_include_directories(
     ../lib/AL_USDMaya
 )
 
-set_target_properties(${TRANSLATORS_PACKAGE}
- PROPERTIES COMPILE_DEFINITIONS
-     "MFB_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE};MFB_ALT_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}"
+set(_targetDefs
+    AL_MAYA_MACROS_EXPORT
+    MFB_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}
+    MFB_ALT_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}
+)
+if(IS_MACOSX)
+    list(APPEND _targetDefs OSMac_)
+endif()    
+
+target_compile_definitions(${TRANSLATORS_PACKAGE}
+    PRIVATE
+        ${_targetDefs}
 )
 
 # rpath setup

@@ -48,18 +48,13 @@ endif()
 # M3dView needs this (technically, MNativeWindowHdl.h)
 # private atm because M3dView is only used in .cpp right now
 if (IS_LINUX)
-    set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
     # gcc will NOT set this automatically
     target_compile_definitions(${TARGET_NAME} PRIVATE "LINUX")
 elseif (IS_WINDOWS)
-    set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".mll")
     # Not sure if msvcc sets this automatically, but won't hurt to redefine
     target_compile_definitions(${TARGET_NAME} PRIVATE "_WIN32")
-elseif (IS_MACOSX)
-    set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "" SUFFIX ".bundle")
-    # Not sure if osx sets this automatically, but won't hurt to redefine
-    target_compile_definitions(${TARGET_NAME} PRIVATE "OSMac_")
 endif()
+MAYA_SET_PLUGIN_PROPERTIES(${TARGET_NAME})
 
 #==============================================================================
 # Install

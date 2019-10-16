@@ -43,13 +43,7 @@ target_link_libraries(${PLUGIN_PACKAGE}
 		usdUtils
 )
 
-if(IS_WINDOWS)
-    set_target_properties(${PLUGIN_PACKAGE} PROPERTIES SUFFIX ".mll")
-elseif(IS_MACOSX)
-    set_target_properties(${PLUGIN_PACKAGE} PROPERTIES PREFIX "" SUFFIX ".bundle")
-elseif(IS_LINUX)
-    set_target_properties(${PLUGIN_PACKAGE} PROPERTIES PREFIX "")
-endif()
+MAYA_SET_PLUGIN_PROPERTIES(${PLUGIN_PACKAGE})
 
 # rpath setup
 if(IS_MACOSX OR IS_LINUX) 

@@ -918,10 +918,12 @@ function(_pxr_python_module NAME)
             PROPERTIES
                 SUFFIX ".so"
         )
+        set(_macDef OSMac_)
     endif()
 
     target_compile_definitions(${LIBRARY_NAME}
         PRIVATE
+            ${_macDef}
             MFB_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_PACKAGE_MODULE=${pyModuleName}
@@ -1167,11 +1169,15 @@ function(_pxr_library NAME)
     if(TARGET shared_libs)
         set(pythonModulesEnabled "PXR_PYTHON_MODULES_ENABLED=1")
     endif()
+    if(IS_MACOSX)
+        set(_macDef OSMac_)
+    endif()
     target_compile_definitions(${NAME}
         PUBLIC
             ${pythonEnabled}
             ${apiPublic}
         PRIVATE
+            ${_macDef}
             MFB_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_PACKAGE_MODULE=${pythonModuleName}
