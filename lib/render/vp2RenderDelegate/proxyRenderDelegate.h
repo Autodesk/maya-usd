@@ -1,6 +1,3 @@
-#ifndef PROXY_RENDER_DELEGATE
-#define PROXY_RENDER_DELEGATE
-
 //
 // Copyright 2019 Autodesk
 //
@@ -17,6 +14,8 @@
 // limitations under the License.
 //
 
+#ifndef PROXY_RENDER_DELEGATE
+#define PROXY_RENDER_DELEGATE
 
 #include "pxr/pxr.h"
 

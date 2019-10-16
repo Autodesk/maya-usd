@@ -1,6 +1,3 @@
-#ifndef HD_VP2_TASK_COMMIT
-#define HD_VP2_TASK_COMMIT
-
 //
 // Copyright 2019 Autodesk
 //
@@ -16,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
+#ifndef HD_VP2_TASK_COMMIT
+#define HD_VP2_TASK_COMMIT
 
 #include <tbb/tbb_allocator.h>
 

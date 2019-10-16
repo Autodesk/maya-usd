@@ -1,6 +1,3 @@
-#ifndef HD_VP2_RESOURCE_REGISTRY
-#define HD_VP2_RESOURCE_REGISTRY
-
 //
 // Copyright 2019 Autodesk
 //
@@ -17,6 +14,8 @@
 // limitations under the License.
 //
 
+#ifndef HD_VP2_RESOURCE_REGISTRY
+#define HD_VP2_RESOURCE_REGISTRY
 
 #include "task_commit.h"
 
