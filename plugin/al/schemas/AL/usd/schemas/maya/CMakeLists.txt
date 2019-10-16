@@ -63,9 +63,6 @@ add_library(AL_USDMayaSchemas
 
 target_compile_definitions(AL_USDMayaSchemas
     PRIVATE
-        MFB_PACKAGE_NAME=AL_USDMayaSchemas
-        MFB_ALT_PACKAGE_NAME=AL_USDMayaSchemas
-        MFB_PACKAGE_MODULE=AL.usd.schemas.maya
         AL_USDMAYASCHEMAS_EXPORTS
 )
 
@@ -99,13 +96,6 @@ add_library(_AL_USDMayaSchemas
     wrapModelAPI.cpp
     wrapTokens.cpp
     wrapFrameRange.cpp
-)
-
-target_compile_definitions(_AL_USDMayaSchemas
-    PRIVATE
-        MFB_PACKAGE_NAME=AL_USDMayaSchemas
-        MFB_ALT_PACKAGE_NAME=AL_USDMayaSchemas
-        MFB_PACKAGE_MODULE=AL.usd.schemas.maya
 )
 
 set_target_properties(_AL_USDMayaSchemas

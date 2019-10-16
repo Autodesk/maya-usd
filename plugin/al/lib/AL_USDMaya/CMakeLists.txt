@@ -162,9 +162,6 @@ target_compile_definitions(${LIBRARY_NAME}
         ${_macDef}
         AL_MAYA_MACROS_EXPORT
         AL_USDMAYA_EXPORT
-        MFB_PACKAGE_NAME="${LIBRARY_NAME}"
-        MFB_ALT_PACKAGE_NAME="${LIBRARY_NAME}"
-        MFB_PACKAGE_MODULE=usdmaya
         AL_USDMAYA_LOCATION_NAME="${AL_USDMAYA_LOCATION_NAME}"
 )
 
@@ -257,9 +254,6 @@ endif()
 target_compile_definitions(${PYTHON_LIBRARY_NAME}
     PRIVATE
         ${_macDef}
-        MFB_PACKAGE_NAME=${LIBRARY_NAME}
-        MFB_ALT_PACKAGE_NAME=${LIBRARY_NAME}
-        MFB_PACKAGE_MODULE=usdmaya
 )
 set_target_properties(${PYTHON_LIBRARY_NAME} 
     PROPERTIES 
