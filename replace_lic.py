@@ -20,6 +20,11 @@ mode_group.add_argument('--al', help='Replace al lics',
 mode_group.add_argument('--pxr', help='Replace pixar lics',
     action='store_const', const='pxr', dest='mode')
 
+parser.add_argument('--reverse', action='store_true',
+    help=("Replace lics in reverse, removing new and inserting old. "
+        "Can only be used for one repo at a time (mode 'pxr' or mode 'al', "
+        "but not mode 'both'"))
+
 args = parser.parse_args()
 
 old_pxr_cpp_lic = """// Licensed under the Apache License, Version 2.0 (the "Apache License")
@@ -126,6 +131,9 @@ elif args.mode == 'al':
         (old_al_py_lic_line, new_py_lic_line),
     ]
 elif args.mode == 'both':
+    if args.reverse:
+        raise ValueError("--reverse cannot be used with mode 'both'")
+
     replacement_pairs = [
         (old_pxr_cpp_lic, new_cpp_lic),
         (old_pxr_py_lic, new_py_lic),
@@ -135,6 +143,9 @@ elif args.mode == 'both':
     ]
 else:
     raise ValueError("Unrecognized mode: {}".format(args.mode))
+
+if args.reverse:
+    replacement_pairs = [(pair[1], pair[0]) for pair in replacement_pairs]
 
 for dirpath, dirnames, filenames in os.walk('.'):
     for filename in filenames:
