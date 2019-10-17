@@ -17,6 +17,7 @@
 #include "AL/usd/transaction/Api.h"
 #include "AL/usd/transaction/Notice.h"
 
+#include <pxr/pxr.h>
 #include <pxr/base/tf/weakPtr.h>
 
 namespace AL {

@@ -23,7 +23,7 @@ namespace AL {
 namespace usd {
 namespace transaction {
 
-Transaction::Transaction(const PXR_NS::UsdStageWeakPtr& stage, const PXR_NS::SdfLayerHandle& layer)
+Transaction::Transaction(const UsdStageWeakPtr& stage, const SdfLayerHandle& layer)
   :m_manager(TransactionManager::Get(stage)), m_layer(layer) {}
 
 //----------------------------------------------------------------------------------------------------------------------

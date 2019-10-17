@@ -2,6 +2,7 @@
 #include "AL/usd/transaction/Transaction.h"
 #include "AL/usd/transaction/TransactionManager.h"
 
+#include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <gtest/gtest.h>

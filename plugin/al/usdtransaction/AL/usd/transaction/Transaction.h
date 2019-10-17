@@ -15,6 +15,7 @@
 //
 #pragma once
 #include "AL/usd/transaction/Api.h"
+#include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
 
 namespace AL {
