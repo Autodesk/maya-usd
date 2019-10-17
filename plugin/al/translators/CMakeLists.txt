@@ -28,10 +28,14 @@ if(IS_MACOSX)
     set(_macDef OSMac_)
 endif()
 
-set_target_properties(${TRANSLATORS_PACKAGE}
-        PROPERTIES COMPILE_DEFINITIONS
-        "AL_MAYA_MACROS_EXPORT;${_macDef}"
-)
+# HS OCT 2019, do we really need to define 
+# AL_MAYA_MACROS_EXPORT for this target?
+if(NOT IS_WINDOWS)
+    set_target_properties(${TRANSLATORS_PACKAGE}
+          PROPERTIES COMPILE_DEFINITIONS
+          "AL_MAYA_MACROS_EXPORT;${_macDef}"
+    )
+endif()
 
 set(arg_PUBLIC_HEADER_FILES
     Camera.h
