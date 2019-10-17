@@ -309,16 +309,7 @@ class testUsdImportUVSets(unittest.TestCase):
         # We also need to load it using the Maya file import command because
         # going through the usdImport command works fine but using the file
         # translator caused a crash.
-
-        # Using file import with mayapy causes an undefined png_sig_cmp symbol
-        # in IMFPNG.so on Linux, at IMF image plugin load time.  With
-        # interactive Maya everything is fine.  This is caused by 
-        # MAYA-101166, incorrect linking of IMFPNG.so in Maya.  When this bug
-        # is fixed, the workaround below should be removed.   PPT, 4-Oct-2019.
-        if cmds.about(batch=1):
-            cmds.usdImport(file=usdFile)
-        else:
-            cmds.file(usdFile, i=True)
+        cmds.file(usdFile, i=True)
 
         mayaCubeMesh = self._GetMayaMesh('CreasedCubeShape')
 

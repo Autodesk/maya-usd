@@ -26,7 +26,7 @@ from maya import OpenMaya as OM
 import unittest
 
 
-class testUsdMayaReadWriteUtils(unittest.TestCase):
+class testUsdMayaDiagnosticDelegate(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         standalone.initialize('usd')
