@@ -115,13 +115,13 @@ void ProxyShape::onSelectionChanged(void* ptr)
     fnDag.setObject(proxy->thisMObject());
 
     command += " \"";
-    command += fnDag.name().asChar();
+    command += fnDag.fullPathName();
     command += "\"";
 
     if(hasNewItems)
     {
       precommand += " \"";
-      precommand += fnDag.name().asChar();
+      precommand += fnDag.fullPathName();
       precommand += "\";";
       if(!unselectedSet.empty())
       {
@@ -178,7 +178,6 @@ void ProxyShape::onSelectionChanged(void* ptr)
     for(auto selected : proxy->selectedPaths())
     {
       MObject obj = proxy->findRequiredPath(selected);
-      MFnDependencyNode fn(obj);
       if(!hasObject(sl, obj))
       {
         hasItems = true;
@@ -193,7 +192,6 @@ void ProxyShape::onSelectionChanged(void* ptr)
     {
       MObject obj;
       sl.getDependNode(i, obj);
-      MFnDependencyNode fn(obj);
       SdfPath path;
       if(!proxy->isSelectedMObject(obj, path))
       {
@@ -211,12 +209,12 @@ void ProxyShape::onSelectionChanged(void* ptr)
     {
       MFnDagNode fnDag(proxy->thisMObject());
       command += " \"";
-      command += fnDag.name().asChar();
+      command += fnDag.fullPathName();
       command += "\"";
       if(hasNewItems)
       {
         precommand += " \"";
-        precommand += fnDag.name().asChar();
+        precommand += fnDag.fullPathName();
         precommand += "\";";
         command = precommand + command;
       }
@@ -229,7 +227,7 @@ void ProxyShape::onSelectionChanged(void* ptr)
     {
       MFnDagNode fnDag(proxy->thisMObject());
       precommand += " \"";
-      precommand += fnDag.name().asChar();
+      precommand += fnDag.fullPathName();
       precommand += "\";";
       proxy->m_pleaseIgnoreSelection = true;
       MGlobal::executeCommand(precommand, false, true);

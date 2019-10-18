@@ -1161,7 +1161,7 @@ MStatus ProxyShapePostSelect::redoIt()
   MSelectionList sl;
   MGlobal::getActiveSelectionList(sl);
   MString command;
-  MFnDependencyNode depNode(m_proxy->thisMObject());
+  MFnDagNode fn(m_proxy->thisMObject());
   for (const auto& path : m_proxy->selectedPaths()) {
     auto obj = m_proxy->findRequiredPath(path);
     if (obj != MObject::kNullObj) {
@@ -1172,7 +1172,7 @@ MStatus ProxyShapePostSelect::redoIt()
         command += "AL_usdmaya_ProxyShapeSelect -i -d -pp \"";
         command += path.GetText();
         command += "\" \"";
-        command += depNode.name();
+        command += fn.fullPathName();
         command += "\";";
       }
     }

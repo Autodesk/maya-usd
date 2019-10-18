@@ -8,12 +8,11 @@
 | plugin/al     | The Animal Logic Maya plugin                                                                     |
 
 
-## Branch versions
+## Source Versions
 
-| Branch              | Pixar USD         | AL_USDMaya          |
+|                     | Pixar USD         | AL_USDMaya          |
 | ------------------- | ----------------- | ------------------- |
-| master              | 19.05             | 0.31.1              |
-| dev                 | b85ddac2 (>19.07) | 631a2911 (>0.34.0)  |
-| refactoring_sandbox | b85ddac2 (>19.07) | 631a2911 (>0.34.0)  |
+| commit/tag          | 1d08054  (>19.07) | 631a2911 (>0.34.0)  |
+
 
  
