@@ -18,6 +18,8 @@
 
 cmake_minimum_required(VERSION 3.1.1)
 
+project(maya-usd)
+
 #==============================================================================
 # Define common build variables
 #==============================================================================
@@ -25,11 +27,12 @@ option(BUILD_MAYAUSD_LIBRARY "Build Core USD libraries." ON)
 option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." ON)
 option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
 option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
-
+option(BUILD_TESTS "Build tests." ON)
 option(WANT_USD_RELATIVE_PATH "Use relative rpaths for USD libraries" OFF)
-
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
 
+# Avoid noisy install messages
+set(CMAKE_INSTALL_MESSAGE "NEVER")
 #==============================================================================
 # Modules and Definitions
 #==============================================================================
@@ -45,8 +48,6 @@ endif()
 
 if (APPLE)
    set(CMAKE_OSX_ARCHITECTURES "x86_64")
-   add_definitions(-DOSMac_ -DMAC_PLUGIN)
-   add_definitions(-D_BOOL -DREQUIRE_IOSTREAM)
 endif()
 
 if (DEFINED PYTHON_INCLUDE_DIR AND DEFINED PYTHON_LIBRARIES AND DEFINED PYTHON_EXECUTABLE)
@@ -62,14 +63,25 @@ if (NOT PYTHONLIBS_FOUND)
 endif()
 include(cmake/utils.cmake)
 
-find_package(USD REQUIRED)
-include(cmake/usd.cmake)
-
 # The building of the schemas requires some extra python packages which may or
 # may not be installed. If they aren't we provide an option to add them from
 # a python egg.
 if (BUILD_USDMAYA_SCHEMAS)
     include(cmake/jinja.cmake)
+endif()
+
+find_package(Maya REQUIRED)
+find_package(USD REQUIRED)
+include(cmake/usd.cmake)
+include(${USD_CONFIG_FILE})
+
+if(CMAKE_WANT_UFE_BUILD)
+    find_package(UFE QUIET)
+    if(UFE_FOUND)
+        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
+    else()
+        message(STATUS "UFE not found. UFE features will be disabled.")
+    endif()
 endif()
 
 #==============================================================================
@@ -91,10 +103,20 @@ endif()
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 #==============================================================================
+# Tests
+#==============================================================================
+if (BUILD_TESTS)
+    include(cmake/Googletest.cmake)
+    fetch_googletest()
+
+    enable_testing()
+    add_subdirectory(test/lib/ufe)
+endif()
+
+#==============================================================================
 # CORE
 #==============================================================================
 if (BUILD_MAYAUSD_LIBRARY)
-    include_directories(${CMAKE_BINARY_DIR}/include)
     add_subdirectory(lib)
 endif()
 
@@ -128,3 +150,4 @@ configure_file(mayaUSD.mod.template ${PROJECT_BINARY_DIR}/mayaUSD.mod)
 install(FILES ${PROJECT_BINARY_DIR}/mayaUSD.mod
     DESTINATION ${CMAKE_INSTALL_PREFIX}
 )
+

@@ -16,6 +16,8 @@
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 
+#include <mayaUsd/utils/undoHelperCommand.h>
+
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/Global.h>
 #endif
@@ -68,6 +70,12 @@ MStatus initializePlugin(MObject obj)
         MayaUsdProxyShapePlugin::getProxyShapeClassification());
     CHECK_MSTATUS(status);
 
+    status = UsdMayaUndoHelperCommand::initialize(plugin);
+    if (!status) {
+        status.perror(std::string("registerCommand ").append(
+                          UsdMayaUndoHelperCommand::name()).c_str());
+    }
+
     // As of 2-Aug-2019, these PlugPlugin translators are not loaded
     // automatically.  To be investigated.  A duplicate of this code is in the
     // Pixar plugin.cpp.
@@ -100,6 +108,12 @@ MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin(obj);
     MStatus status;
+
+    status = UsdMayaUndoHelperCommand::finalize(plugin);
+    if (!status) {
+        status.perror(std::string("deregisterCommand ").append(
+                          UsdMayaUndoHelperCommand::name()).c_str());
+    }
 
     status = plugin.deregisterFileTranslator("mayaUsdImport");
     if (!status) {

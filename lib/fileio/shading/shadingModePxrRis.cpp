@@ -13,16 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "usdMaya/roundTripUtil.h"
-#include "usdMaya/shadingModeExporter.h"
-#include "usdMaya/shadingModeExporterContext.h"
-#include "usdMaya/shadingModeImporter.h"
+#include "../utils/roundTripUtil.h"
+#include "shadingModeExporter.h"
+#include "shadingModeExporterContext.h"
+#include "shadingModeImporter.h"
 // Defines the RenderMan for Maya mapping between Pxr objects and Maya internal nodes
-#include "usdMaya/shadingModePxrRis_rfm_map.h"
-#include "usdMaya/shadingModeRegistry.h"
-#include "usdMaya/translatorUtil.h"
-#include "usdMaya/util.h"
-#include "usdMaya/writeUtil.h"
+#include "shadingModePxrRis_rfm_map.h"
+#include "shadingModeRegistry.h"
+#include "../translators/translatorUtil.h"
+#include "../../utils/util.h"
+#include "../utils/writeUtil.h"
 
 #include "pxr/pxr.h"
 

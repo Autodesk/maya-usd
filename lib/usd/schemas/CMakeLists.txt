@@ -81,18 +81,22 @@ endif()
 #======================================================================
 if(IS_MACOSX OR IS_LINUX)
     # rpath setup
-    init_rpath(rpath "plugin")
+    mayaUsd_init_rpath(rpath "plugin")
     if(WANT_USD_RELATIVE_PATH)
-        add_rpath(rpath "../../USD/lib")
+        mayaUsd_add_rpath(rpath "../../USD/lib")
     elseif(DEFINED PXR_USD_LOCATION)
-        add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+        mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
-    add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-    install_rpath(rpath ${SCHEMA_PLUGIN})
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    mayaUsd_install_rpath(rpath ${SCHEMA_PLUGIN})
 endif()
 
 if(IS_LINUX)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags" PARENT_SCOPE)
+
+    if(WANT_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../USD/lib64")
+    endif()
 endif()
 
 target_link_libraries(${SCHEMA_PLUGIN} ${DEPENDANT_LIBRARIES} ${PTHREAD_LINK})

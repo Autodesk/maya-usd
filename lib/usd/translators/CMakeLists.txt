@@ -67,18 +67,27 @@ add_library(${TRANSLATORS_PLUGIN} SHARED ${source})
 #======================================================================
 if(IS_MACOSX OR IS_LINUX)
     # rpath setup
-    init_rpath(rpath "plugin")
-    add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    mayaUsd_init_rpath(rpath "plugin")
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     if(WANT_USD_RELATIVE_PATH)
-        add_rpath(rpath "../../USD/lib")
+        mayaUsd_add_rpath(rpath "../../USD/lib")
     elseif(DEFINED PXR_USD_LOCATION)
-        add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+        mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
-    install_rpath(rpath ${TRANSLATORS_PLUGIN})
+    mayaUsd_install_rpath(rpath ${TRANSLATORS_PLUGIN})
 endif()
 
 if(IS_LINUX)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags" PARENT_SCOPE)
+    if(WANT_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../USD/lib64")
+    endif()
+endif()
+
+if(IS_MACOSX)
+    target_compile_definitions(${TRANSLATORS_PLUGIN} PRIVATE
+        OSMac_
+    )
 endif()
 
 #======================================================================

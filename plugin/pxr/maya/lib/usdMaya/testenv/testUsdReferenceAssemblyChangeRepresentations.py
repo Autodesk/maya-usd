@@ -15,9 +15,9 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
-
 from pxr import UsdGeom
+
+import mayaUsd.lib as mayaUsdLib
 
 from maya import cmds
 from maya import standalone
@@ -122,7 +122,7 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         drawModeAttr = cmds.getAttr('%s.drawMode' % nodeName)
         self.assertEqual(drawModeAttr, 'cards')
 
-        prim = UsdMaya.GetPrim(nodeName)
+        prim = mayaUsdLib.GetPrim(nodeName)
         primModelAPI = UsdGeom.ModelAPI(prim)
         self.assertEqual(primModelAPI.ComputeModelDrawMode(), 'cards')
 
@@ -771,12 +771,12 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         cmds.setAttr('%s.usdVariantSet_shadingVariant' % cube1,
                 'Blue', type='string')
 
-        prim1 = UsdMaya.GetPrim(cube1)
+        prim1 = mayaUsdLib.GetPrim(cube1)
         self.assertEqual(
                 prim1.GetVariantSet('shadingVariant').GetVariantSelection(),
                 'Blue')
 
-        prim2 = UsdMaya.GetPrim(cube2)
+        prim2 = mayaUsdLib.GetPrim(cube2)
         self.assertEqual(
                 prim2.GetVariantSet('shadingVariant').GetVariantSelection(),
                 'Default')

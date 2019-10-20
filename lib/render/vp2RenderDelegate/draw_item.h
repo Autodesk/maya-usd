@@ -1,13 +1,21 @@
-#ifndef HD_VP2_DRAW_ITEM
-#define HD_VP2_DRAW_ITEM
-
-// ===========================================================================
+//
 // Copyright 2019 Autodesk, Inc. All rights reserved.
 //
-// Use of this software is subject to the terms of the Autodesk license
-// agreement provided at the time of installation or download, or which
-// otherwise accompanies this software in either electronic or hard copy form.
-// ===========================================================================
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+#ifndef HD_VP2_DRAW_ITEM
+#define HD_VP2_DRAW_ITEM
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec3f.h"
@@ -36,23 +44,29 @@ public:
         VtArray<GfVec3f>    _normals;       //!< Normals cache
     };
 
+    //! A primvar vertex buffer map indexed by primvar name.
+    using PrimvarBufferMap = std::unordered_map<
+        TfToken,
+        std::unique_ptr<MHWRender::MVertexBuffer>,
+        TfToken::HashFunctor
+    >;
+
     //! Helper struct providing storage for render item data
     struct RenderItemData {
-        //! Render item normals buffer pointer - use when updating data
+        //! Render item color buffer - use when updating data
+        std::unique_ptr<MHWRender::MVertexBuffer>   _colorBuffer;
+        //! Render item normals buffer - use when updating data
         std::unique_ptr<MHWRender::MVertexBuffer>   _normalsBuffer;
-        //! Render item UV buffer pointer - use when updating data
-        std::unique_ptr<MHWRender::MVertexBuffer>   _uvBuffer;
-        //! Render item index buffer pointer - use when updating data
+        //! Render item primvar buffers - use when updating data
+        PrimvarBufferMap                            _primvarBuffers;
+        //! Render item index buffer - use when updating data
         std::unique_ptr<MHWRender::MIndexBuffer>    _indexBuffer;
-        
+
         //! Number of instances currently allocated for render item
         unsigned int                                _instanceCount{ 0 };
 
         //! Per frame cache
         std::map<UsdTimeCode, CachedData>           _cache;
-
-        //! Does this render item have valid UVs?
-        bool    _hasUVs{ false };
     };
 
 public:

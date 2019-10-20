@@ -1,10 +1,18 @@
-// ===========================================================================
+//
 // Copyright 2019 Autodesk, Inc. All rights reserved.
 //
-// Use of this software is subject to the terms of the Autodesk license
-// agreement provided at the time of installation or download, or which
-// otherwise accompanies this software in either electronic or hard copy form.
-// ===========================================================================
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
 #include "pxr/imaging/hd/mesh.h"
 
@@ -33,21 +41,16 @@ HdVP2DrawItem::HdVP2DrawItem(
     //
     //   "/Proxy/TreePatch/Tree_1.proto_leaves_id0"
     //
-    std::string uniqueName = GetRprimID().GetText();
-    uniqueName += TfStringPrintf("/DrawItem_%p", this);
-    _renderItemName = uniqueName.c_str();
+    _renderItemName  = GetRprimID().GetText();
+    _renderItemName += TfStringPrintf("/DrawItem_%p", this).c_str();
 
-    _mesh._indexBuffer.reset(new MHWRender::MIndexBuffer(MHWRender::MGeometry::kUnsignedInt32));
+    _mesh._indexBuffer.reset(
+        new MHWRender::MIndexBuffer(MHWRender::MGeometry::kUnsignedInt32));
 
-    if (_reprDesc.geomStyle == HdMeshGeomStyleHull)
-    {
-        const MHWRender::MVertexBufferDescriptor nbDesc("",
+    if (desc.geomStyle == HdMeshGeomStyleHull) {
+        const MHWRender::MVertexBufferDescriptor desc("",
             MHWRender::MGeometry::kNormal, MHWRender::MGeometry::kFloat, 3);
-        _mesh._normalsBuffer.reset(new MHWRender::MVertexBuffer(nbDesc));
-
-        const MHWRender::MVertexBufferDescriptor uvBufferDesc(
-            "", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 2);
-        _mesh._uvBuffer.reset(new MHWRender::MVertexBuffer(uvBufferDesc));
+        _mesh._normalsBuffer.reset(new MHWRender::MVertexBuffer(desc));
     }
 }
 

@@ -31,7 +31,7 @@
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/referenceAssembly.h"
 #include <mayaUsd/nodes/stageNode.h>
-#include "usdMaya/undoHelperCommand.h"
+#include <mayaUsd/utils/undoHelperCommand.h>
 
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
@@ -154,12 +154,10 @@ initializePlugin(MObject obj)
         status.perror("registerCommand usdListShadingModes");
     }
 
-    status = plugin.registerCommand(
-        "usdUndoHelperCmd",
-        UsdMayaUndoHelperCommand::creator,
-        UsdMayaUndoHelperCommand::createSyntax);
+    status = UsdMayaUndoHelperCommand::initialize(plugin);
     if (!status) {
-        status.perror("registerCommand usdUndoHelperCmd");
+        status.perror(std::string("registerCommand ").append(
+                          UsdMayaUndoHelperCommand::name()).c_str());
     }
 
     status = plugin.registerFileTranslator(
@@ -241,9 +239,10 @@ uninitializePlugin(MObject obj)
         status.perror("deregisterCommand usdListShadingModes");
     }
 
-    status = plugin.deregisterCommand("usdUndoHelperCmd");
+    status = UsdMayaUndoHelperCommand::finalize(plugin);
     if (!status) {
-        status.perror("deregisterCommand usdUndoHelperCmd");
+        status.perror(std::string("deregisterCommand ").append(
+                          UsdMayaUndoHelperCommand::name()).c_str());
     }
 
     status = plugin.deregisterFileTranslator("pxrUsdImport");

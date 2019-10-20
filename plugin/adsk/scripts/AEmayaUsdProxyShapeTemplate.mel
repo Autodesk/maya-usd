@@ -1,0 +1,11 @@
+global proc AEmayaUsdProxyShapeTemplate( string $nodeName )
+{
+	editorTemplate -beginScrollLayout;
+
+		// include/call base class/node attributes
+		AEsurfaceShapeTemplate $nodeName;
+
+	editorTemplate -addExtraControls;
+
+	editorTemplate -endScrollLayout;
+}

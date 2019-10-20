@@ -17,6 +17,8 @@ import json
 
 from pxr import UsdMaya
 
+import mayaUsd.lib as mayaUsdLib
+
 from pxr import UsdGeom
 
 from maya import OpenMaya as OM
@@ -227,7 +229,7 @@ class ExportedAttribute(object):
         self._usdAttrName = None
         self._primvarInterpolation = None
         self._translateMayaDoubleToUsdSinglePrecision = (
-            UsdMaya.UserTaggedAttribute.GetFallbackTranslateMayaDoubleToUsdSinglePrecision())
+            mayaUsdLib.UserTaggedAttribute.GetFallbackTranslateMayaDoubleToUsdSinglePrecision())
 
     def __eq__(self, other):
         # Note that _primvarInterpolation and
@@ -347,7 +349,7 @@ class ExportedAttribute(object):
             exportedAttr.translateMayaDoubleToUsdSinglePrecision = (
                 attrMetadata.get(
                     'translateMayaDoubleToUsdSinglePrecision',
-                    UsdMaya.UserTaggedAttribute.GetFallbackTranslateMayaDoubleToUsdSinglePrecision()))
+                    mayaUsdLib.UserTaggedAttribute.GetFallbackTranslateMayaDoubleToUsdSinglePrecision()))
             result.append(exportedAttr)
 
         return result

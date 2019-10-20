@@ -1,13 +1,21 @@
-#ifndef HD_VP2_MESH
-#define HD_VP2_MESH
-
-// ===========================================================================
+//
 // Copyright 2019 Autodesk, Inc. All rights reserved.
 //
-// Use of this software is subject to the terms of the Autodesk license
-// agreement provided at the time of installation or download, or which
-// otherwise accompanies this software in either electronic or hard copy form.
-// ===========================================================================
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+#ifndef HD_VP2_MESH
+#define HD_VP2_MESH
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/mesh.h"
@@ -61,6 +69,8 @@ private:
 
     bool _EnableWireDrawItems(const HdReprSharedPtr& repr, HdDirtyBits* dirtyBits, bool enable);
 
+    void _UpdatePrimvarSources(HdSceneDelegate* sceneDelegate, HdDirtyBits dirtyBits);
+
     MHWRender::MRenderItem* _CreateRenderItem(const MString& name, const HdMeshReprDesc& desc) const;
     MHWRender::MRenderItem* _CreateSmoothHullRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateWireframeRenderItem(const MString& name) const;
@@ -82,6 +92,21 @@ private:
     // TODO: Define HdVP2MeshSharedData to hold extra shared data specific to VP2?
     std::unique_ptr<MHWRender::MVertexBuffer> _positionsBuffer; //!< Per-Rprim position buffer to be shared among render items
     bool _wireItemsEnabled{ false };                    //!< Whether draw items for the wire repr are enabled
+
+    //! Cached scene data. VtArrays are reference counted, so as long as we
+    //! only call const accessors keeping them around doesn't incur a buffer
+    //! copy.
+    HdMeshTopology _topology;
+    VtVec3fArray _points;
+
+    //! A local cache of primvar scene data. "data" is a copy-on-write handle to
+    //! the actual primvar buffer, and "interpolation" is the interpolation mode
+    //! to be used.
+    struct PrimvarSource {
+        VtValue data;
+        HdInterpolation interpolation;
+    };
+    TfHashMap<TfToken, PrimvarSource, TfToken::HashFunctor> _primvarSourceMap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

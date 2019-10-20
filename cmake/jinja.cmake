@@ -17,7 +17,7 @@
 #
 function(init_markupsafe)
 
-    find_python_module(markupsafe)
+    mayaUsd_find_python_module(markupsafe)
 
     if (NOT MARKUPSAFE_FOUND)
         if (NOT MARKUPSAFE_LOCATION)
@@ -27,14 +27,14 @@ function(init_markupsafe)
         set(MARKUPSAFE_ROOT "${MARKUPSAFE_LOCATION}/src")
 
         # Add MarkupSafe to the python path so that Jinja2 can run properly.
-        append_path_to_env_var("PYTHONPATH" "${MARKUPSAFE_ROOT}")
+        mayaUsd_append_path_to_env_var("PYTHONPATH" "${MARKUPSAFE_ROOT}")
     endif()
 
 endfunction()
 
 function(init_jinja)
 
-    find_python_module(jinja2)
+    mayaUsd_find_python_module(jinja2)
 
     if (NOT JINJA2_FOUND)
         if (NOT JINJA_LOCATION)
@@ -44,7 +44,7 @@ function(init_jinja)
         set(JINJA_ROOT "${JINJA_LOCATION}")
 
         # Add Jinja2 to the python path so that usdGenSchemas can run properly.
-        append_path_to_env_var("PYTHONPATH" "${JINJA_ROOT}")
+        mayaUsd_append_path_to_env_var("PYTHONPATH" "${JINJA_ROOT}")
     endif()
 
 endfunction()

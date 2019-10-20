@@ -15,12 +15,12 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
-
 from pxr import Gf
 from pxr import Usd
 from pxr import UsdGeom
 from pxr import UsdShade
+
+import mayaUsd.lib as mayaUsdLib
 
 from maya import cmds
 from maya import standalone
@@ -73,7 +73,7 @@ class testUsdExportShadingModeDisplayColor(unittest.TestCase):
         meshDisplayColors = cubeMesh.GetDisplayColorPrimvar().Get()
         self.assertEqual(len(meshDisplayColors), 1)
         self.assertTrue(Gf.IsClose(meshDisplayColors[0], 
-            UsdMaya.ConvertMayaToLinear(self.RED_COLOR), 
+            mayaUsdLib.ConvertMayaToLinear(self.RED_COLOR), 
             1e-6))
 
         # Validate the Material prim bound to the Mesh prim.
@@ -88,7 +88,7 @@ class testUsdExportShadingModeDisplayColor(unittest.TestCase):
         materialInput = material.GetInput('displayColor')
         matDisplayColor = materialInput.Get()
         self.assertTrue(Gf.IsClose(matDisplayColor,
-            UsdMaya.ConvertMayaToLinear(self.RED_COLOR), 
+            mayaUsdLib.ConvertMayaToLinear(self.RED_COLOR), 
             1e-6))
 
         # Just verify that displayOpacity and transparency exist.

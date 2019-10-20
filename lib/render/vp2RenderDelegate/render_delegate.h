@@ -1,17 +1,24 @@
+//
+// Copyright 2019 Autodesk, Inc. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
 #ifndef HD_VP2_RENDER_DELEGATE
 #define HD_VP2_RENDER_DELEGATE
 
-// ===========================================================================
-// Copyright 2019 Autodesk, Inc. All rights reserved.
-//
-// Use of this software is subject to the terms of the Autodesk license
-// agreement provided at the time of installation or download, or which
-// otherwise accompanies this software in either electronic or hard copy form.
-// ===========================================================================
-
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderDelegate.h"
-#include "pxr/imaging/hd/renderThread.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 
 #include "render_param.h"
@@ -98,9 +105,13 @@ public:
 
     MString GetLocalNodeName(const MString& name) const;
 
-    MHWRender::MShaderInstance* GetFallbackShader(MColor color=MColor(0.0f,0.0f,1.0f,1.0f)) const;
+    MHWRender::MShaderInstance* GetFallbackShader(MColor color=MColor(0.18f,0.18f,0.18f,1.0f)) const;
+    MHWRender::MShaderInstance* GetFallbackCPVShader() const;
     MHWRender::MShaderInstance* Get3dSolidShader() const;
     MHWRender::MShaderInstance* Get3dFatPointShader() const;
+
+    const MHWRender::MSamplerState* GetSamplerState(
+        const MHWRender::MSamplerStateDesc& desc) const;
 
     static const int sProfilerCategory;                             //!< Profiler category
 

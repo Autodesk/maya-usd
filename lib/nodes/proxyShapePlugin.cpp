@@ -20,6 +20,7 @@
 #include "../render/pxrUsdMayaGL/proxyDrawOverride.h"
 #include "../render/pxrUsdMayaGL/proxyShapeUI.h"
 #include "../render/vp2RenderDelegate/proxyRenderDelegate.h"
+#include "../render/vp2ShaderFragments/shaderFragments.h"
 
 #include "stageData.h"
 #include "hdImagingShape.h"
@@ -120,6 +121,9 @@ MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
         CHECK_MSTATUS(status);
     }
 
+    status = HdVP2ShaderFragments::registerFragments();
+    CHECK_MSTATUS(status);
+
     return status;
 }
 
@@ -142,7 +146,8 @@ MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
         return MS::kSuccess;
     }
 
-    MStatus status;
+    MStatus status = HdVP2ShaderFragments::deregisterFragments();
+    CHECK_MSTATUS(status);
     
     if (_useVP2RenderDelegate) {
         status = MHWRender::MDrawRegistry::deregisterSubSceneOverrideCreator(

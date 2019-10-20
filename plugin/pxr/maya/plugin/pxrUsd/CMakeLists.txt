@@ -52,13 +52,16 @@ pxr_install_test_dir(
     SRC testenv/AlembicChaser
     DEST testPxrUsdAlembicChaser
 )
+set(TEST_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/plugin/pxr")
+
 pxr_register_test(testPxrUsdAlembicChaser
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdAlembicChaser"
+    COMMAND "${TEST_INSTALL_PREFIX}/tests/testPxrUsdAlembicChaser"
     TESTENV testPxrUsdAlembicChaser
     ENV
-        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
         MAYA_DISABLE_CIP=1
+        MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
 )

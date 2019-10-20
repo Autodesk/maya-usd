@@ -28,35 +28,11 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #==============================================================================
 # Packages
 #==============================================================================
-
-find_package(Maya REQUIRED)
-find_package(USD REQUIRED)
-include(${USD_CONFIG_FILE})
-
-if(CMAKE_WANT_UFE_BUILD)
-    find_package(UFE QUIET)
-    if(UFE_FOUND)
-        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
-        include_directories(${UFE_INCLUDE_DIR})
-        add_definitions(-DWANT_UFE_BUILD)
-
-        # UFE Group interface is available on 2.0+ and 0.2+ but not 1.x.
-        if((NOT UFE_VERSION VERSION_LESS 2.0.0) OR
-           ((UFE_VERSION VERSION_LESS 1.0.0) AND (NOT UFE_VERSION VERSION_LESS 0.2.0)))
-            set(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE ON)
-            add_definitions(-DUFE_GROUP_INTERFACE_AVAILABLE)
-        else()
-            set(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE OFF)
-        endif()
-
-        if(IS_WINDOWS)
-            # Silence this warning until we fix it in UFE.
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
-        endif()
-    else()
-        message(STATUS "UFE not found. UFE features will be disabled.")
-    endif()
-endif()
+set(BOOST_ROOT ${PXR_USD_LOCATION})
+find_package(Boost COMPONENTS
+                filesystem
+                REQUIRED
+)
 
 #==============================================================================
 # Library
@@ -117,6 +93,7 @@ list(APPEND mayaUsd_src
     fileio/shading/shadingModeExporterContext.cpp
     fileio/shading/shadingModeExporter.cpp
     fileio/shading/shadingModeImporter.cpp
+    fileio/shading/shadingModePxrRis.cpp
     fileio/shading/shadingModeRegistry.cpp
     fileio/shading/shadingModeUseRegistry.cpp
     #
@@ -133,9 +110,11 @@ list(APPEND mayaUsd_src
     utils/diagnosticDelegate.cpp
     utils/query.cpp
     utils/util.cpp
+    utils/utilFileSystem.cpp
     utils/blockSceneModificationContext.cpp
     utils/stageCache.cpp
     utils/query.cpp
+    utils/undoHelperCommand
     #
     nodes/pointBasedDeformerNode.cpp
     nodes/hdImagingShape.cpp
@@ -149,6 +128,7 @@ list(APPEND mayaUsd_src
     listeners/notice.cpp
     listeners/proxyShapeNotice.cpp
     #
+    render/vp2RenderDelegate/debugCodes.cpp
     render/vp2RenderDelegate/render_param.cpp
     render/vp2RenderDelegate/instancer.cpp
     render/vp2RenderDelegate/draw_item.cpp
@@ -157,8 +137,8 @@ list(APPEND mayaUsd_src
     render/vp2RenderDelegate/proxyRenderDelegate.cpp
     render/vp2RenderDelegate/render_delegate.cpp
     render/vp2RenderDelegate/sampler.cpp
-    render/vp2RenderDelegate/texture.cpp
-    render/vp2RenderDelegate/textureResource.cpp
+    #
+    render/vp2ShaderFragments/shaderFragments.cpp
     #
     render/pxrUsdMayaGL/batchRenderer.cpp
     render/pxrUsdMayaGL/debugCodes.cpp
@@ -179,6 +159,33 @@ list(APPEND mayaUsd_src
     render/px_vp20/glslProgram.cpp
     render/px_vp20/utils.cpp
     render/px_vp20/utils_legacy.cpp
+)
+
+list(APPEND mayaUsdShaderFragments_xmls
+    # Copied from pxrUsdPreviewSurface with change to support multiple lights
+    render/vp2ShaderFragments/float4ToFloatX.xml
+    render/vp2ShaderFragments/float4ToFloatY.xml
+    render/vp2ShaderFragments/float4ToFloatZ.xml
+    render/vp2ShaderFragments/float4ToFloatW.xml
+    render/vp2ShaderFragments/lightingContributions.xml
+    render/vp2ShaderFragments/opacityToTransparency.xml
+    render/vp2ShaderFragments/scaledDiffusePassThrough.xml
+    render/vp2ShaderFragments/scaledSpecularPassThrough.xml
+    render/vp2ShaderFragments/usdPreviewSurfaceCombiner.xml
+    render/vp2ShaderFragments/usdPreviewSurfaceLighting.xml
+    render/vp2ShaderFragments/UsdPreviewSurface.xml
+    # New fragments
+    render/vp2ShaderFragments/FallbackCPVShader.xml
+    render/vp2ShaderFragments/FallbackShader.xml
+    render/vp2ShaderFragments/float4ToFloat3.xml
+    render/vp2ShaderFragments/float4ToFloat4.xml
+    render/vp2ShaderFragments/UsdPrimvarReader_float.xml
+    render/vp2ShaderFragments/UsdPrimvarReader_float2.xml
+    render/vp2ShaderFragments/UsdPrimvarReader_float3.xml
+    render/vp2ShaderFragments/UsdPrimvarReader_float4.xml
+    render/vp2ShaderFragments/UsdUVTexture.xml
+    # USD plug info
+    render/vp2ShaderFragments/plugInfo.json
 )
 
 if(UFE_FOUND)
@@ -209,8 +216,13 @@ if(UFE_FOUND)
         ufe/private/Utils.cpp
     )
 
-    if(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE)
-        list(APPEND mayaUsd_src ufe/UsdUndoCreateGroupCommand.cpp)
+    if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
+        list(APPEND mayaUsd_src
+            ufe/UsdUndoCreateGroupCommand.cpp
+            ufe/UsdAttribute.cpp
+            ufe/UsdAttributes.cpp
+            ufe/UsdAttributesHandler.cpp
+        )
     endif()
 endif()
 
@@ -292,9 +304,11 @@ list(APPEND mayaUsdUtils_headers
     utils/diagnosticDelegate.h
     utils/query.h
     utils/util.h
+    utils/utilFileSystem.h
     utils/blockSceneModificationContext.h
     utils/stageCache.h
     utils/query.h
+    utils/undoHelperCommand.h
 )
 
 list(APPEND mayaUsdNodes_headers
@@ -343,8 +357,13 @@ if(UFE_FOUND)
         ufe/UsdUndoRenameCommand.h
     )
 
-    if(CMAKE_UFE_GROUP_INTERFACE_AVAILABLE)
-        list(APPEND mayaUsdUfe_headers ufe/UsdUndoCreateGroupCommand.h)
+    if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
+        list(APPEND mayaUsdUfe_headers
+            ufe/UsdUndoCreateGroupCommand.h
+            ufe/UsdAttribute.h
+            ufe/UsdAttributes.h
+            ufe/UsdAttributesHandler.h
+        )
     endif()
 endif()
 
@@ -370,28 +389,53 @@ list(APPEND mayaUsdPxVP20_headers
     render/px_vp20/utils_legacy.h
 )
 
-add_library(${LIBRARY_NAME}
-    SHARED
-        ${mayaUsd_src}
+add_library(${LIBRARY_NAME} SHARED
+    ${mayaUsd_src}
 )
 
-target_compile_definitions(${LIBRARY_NAME}
-    PRIVATE
-        MAYAUSD_MACROS_EXPORT
-        MAYAUSD_CORE_EXPORT
-        MFB_PACKAGE_NAME="${LIBRARY_NAME}"
-        MFB_ALT_PACKAGE_NAME="${LIBRARY_NAME}"
-        MFB_PACKAGE_MODULE=mayaUsd
+set(compile_definitions_list
+    MAYAUSD_MACROS_EXPORT
+    MAYAUSD_CORE_EXPORT
+    MFB_PACKAGE_NAME="${LIBRARY_NAME}"
+    MFB_ALT_PACKAGE_NAME="${LIBRARY_NAME}"
+    MFB_PACKAGE_MODULE=mayaUsd
 )
 
-target_include_directories(
-    ${LIBRARY_NAME}
-    PUBLIC
+if(UFE_FOUND)
+    list(APPEND compile_definitions_list WANT_UFE_BUILD=1)
+endif()
+if(IS_MACOSX)
+    list(APPEND compile_definitions_list OSMac_)
+endif()
+
+target_compile_definitions(${LIBRARY_NAME} PRIVATE
+    ${compile_definitions_list}
+)
+
+# Some of the UFE classes are exporting STL classes which causes this warning.
+if(UFE_FOUND AND MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
+    string(REPLACE " " ";" REPLACED_FLAGS ${CMAKE_CXX_FLAGS})
+    target_compile_options(${LIBRARY_NAME} INTERFACE ${REPLACED_FLAGS})
+endif()
+
+set(include_directories_list
     ${MAYA_INCLUDE_DIRS}
     ${PXR_INCLUDE_DIRS}
+    ${CMAKE_BINARY_DIR}/include
+)
+
+if(UFE_FOUND)
+    list(APPEND include_directories_list ${UFE_INCLUDE_DIR})
+endif()
+
+target_include_directories( ${LIBRARY_NAME} PUBLIC
+    ${include_directories_list}
 )
 
 target_link_libraries(${LIBRARY_NAME}
+    ${Boost_FILESYSTEM_LIBRARY}
+    ${Boost_SYSTEM_LIBRARY}
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
     ${MAYA_OpenMaya_LIBRARY}
@@ -418,18 +462,24 @@ target_link_libraries(${LIBRARY_NAME}
     vt
 )
 
-if (UFE_FOUND)
+if(UFE_FOUND)
     target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
 endif()
 
 if(IS_MACOSX OR IS_LINUX)
-    init_rpath(rpath "plugin")
+    mayaUsd_init_rpath(rpath "plugin")
     if(WANT_USD_RELATIVE_PATH)
-        add_rpath(rpath "../../USD/lib")
+        mayaUsd_add_rpath(rpath "../../USD/lib")
     elseif(DEFINED PXR_USD_LOCATION)
-        add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+        mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
-    install_rpath(rpath ${LIBRARY_NAME})
+    mayaUsd_install_rpath(rpath ${LIBRARY_NAME})
+endif()
+
+if (IS_LINUX)
+    if(WANT_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../USD/lib64")
+    endif()
 endif()
 
 install(TARGETS ${LIBRARY_NAME}
@@ -447,22 +497,22 @@ endif()
 set_property(GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 
 # promote headers
-promoteMayaUsdHeader()
-promoteHeaderList(${mayaUsdBase_headers})
-promoteHeaderList(${mayaUsdFileio_headers})
-promoteHeaderList(${mayaUsdChaser_headers})
-promoteHeaderList(${mayaUsdJobs_headers})
-promoteHeaderList(${mayaUsdUtilsIO_headers})
-promoteHeaderList(${mayaUsdShading_headers})
-promoteHeaderList(${mayaUsdTranslators_headers})
-promoteHeaderList(${mayaUsdUtils_headers})
-promoteHeaderList(${mayaUsdNodes_headers})
-promoteHeaderList(${mayaUsdListeners_headers})
-promoteHeaderList(${mayaUsdVP2RenderDelegate_headers})
+mayaUsd_promoteMayaUsdHeader()
+mayaUsd_promoteHeaderList(${mayaUsdBase_headers})
+mayaUsd_promoteHeaderList(${mayaUsdFileio_headers})
+mayaUsd_promoteHeaderList(${mayaUsdChaser_headers})
+mayaUsd_promoteHeaderList(${mayaUsdJobs_headers})
+mayaUsd_promoteHeaderList(${mayaUsdUtilsIO_headers})
+mayaUsd_promoteHeaderList(${mayaUsdShading_headers})
+mayaUsd_promoteHeaderList(${mayaUsdTranslators_headers})
+mayaUsd_promoteHeaderList(${mayaUsdUtils_headers})
+mayaUsd_promoteHeaderList(${mayaUsdNodes_headers})
+mayaUsd_promoteHeaderList(${mayaUsdListeners_headers})
+mayaUsd_promoteHeaderList(${mayaUsdVP2RenderDelegate_headers})
 if(UFE_FOUND)
-    promoteHeaderList(${mayaUsdUfe_headers})
+    mayaUsd_promoteHeaderList(${mayaUsdUfe_headers})
 endif()
-promoteHeaderList(${mayaUsdPxrUsdMayaGL_headers})
+mayaUsd_promoteHeaderList(${mayaUsdPxrUsdMayaGL_headers})
 
 # install public headers
 install(FILES ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h
@@ -522,7 +572,179 @@ endif()
 install(FILES ${mayaUsdPxrUsdMayaGL_headers}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/render/pxrUsdMayaGL
 )
- 
+
+install(FILES ${mayaUsdShaderFragments_xmls}
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/mayaUsd_ShaderFragments/resources
+)
+
+if(UFE_FOUND)
+    # UFE Python Bindings
+    set(UFE_PYTHON_LIBRARY_NAME ufe)
+
+    add_library(${UFE_PYTHON_LIBRARY_NAME}
+        SHARED
+        ufe/wrapUtils.cpp
+    )
+
+    target_compile_definitions(${UFE_PYTHON_LIBRARY_NAME}
+        PRIVATE
+            MFB_PACKAGE_NAME=${LIBRARY_NAME}
+            MFB_ALT_PACKAGE_NAME=${LIBRARY_NAME}
+            MFB_PACKAGE_MODULE=ufe
+    )
+    set_target_properties(${UFE_PYTHON_LIBRARY_NAME} 
+        PROPERTIES 
+            PREFIX ""
+    )
+    if(IS_WINDOWS)
+        set_target_properties(${UFE_PYTHON_LIBRARY_NAME}
+            PROPERTIES
+                SUFFIX ".pyd"
+        )
+    elseif(IS_MACOSX)
+        set_target_properties(${UFE_PYTHON_LIBRARY_NAME}
+            PROPERTIES
+                SUFFIX ".so"
+        )
+    endif()
+
+    target_link_libraries(${UFE_PYTHON_LIBRARY_NAME}
+        ${LIBRARY_NAME}
+    )
+
+    if(IS_MACOSX OR IS_LINUX)
+        mayaUsd_init_rpath(rpath "${PROJECT_NAME}")
+        mayaUsd_add_rpath(rpath "../..")
+        mayaUsd_install_rpath(rpath ${UFE_PYTHON_LIBRARY_NAME})
+    endif()
+
+    install(TARGETS ${UFE_PYTHON_LIBRARY_NAME}
+        LIBRARY
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
+        RUNTIME
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
+    )
+
+    if(IS_WINDOWS)
+        install(FILES $<TARGET_PDB_FILE:${UFE_PYTHON_LIBRARY_NAME}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME} OPTIONAL)
+    endif()
+
+    install(FILES ufe/__init__.py
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
+    )
+
+    if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
+        # Maya Attribute Editor python template files
+        install(FILES ae/mesh/ae_template.py
+             DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes/mesh
+        )
+        # We need an empty __init__.py file in each subfolder so it is considered a python module.
+        set(_INIT_PY_DEST ${CMAKE_INSTALL_PREFIX}/lib/python/)
+        foreach(_SUBDIR ufe_ae usd nodes mesh)
+            string(APPEND _INIT_PY_DEST "/${_SUBDIR}")
+            install(FILES ae/__init__.py
+                 DESTINATION ${_INIT_PY_DEST}
+            )
+        endforeach()
+    endif()
+
+endif()
+
+# Python extension library for mayaUsd library bindings.  Capitalize leading
+# character of library name.  Pixar's TF_WRAP_MODULE macro expects the library
+# name to be prefixed with _, but adds an underscore to the package name when
+# creating the Python extension module initialization function (see Pixar's
+# pyModule.h).  Create a package name without the leading underscore, and
+# prefix our library name with a leading underscore, to match this convention.
+string(TOUPPER "${LIBRARY_NAME}" LIBRARY_NAME_CAPS)
+string(SUBSTRING "${LIBRARY_NAME}" 1 -1 LIBRARY_NAME_END)
+string(SUBSTRING "${LIBRARY_NAME_CAPS}" 0 1 LIBRARY_NAME_BEGIN)
+string(CONCAT PACKAGE_NAME "Py" "${LIBRARY_NAME_BEGIN}" "${LIBRARY_NAME_END}")
+string(CONCAT PYTHON_LIBRARY_NAME "_" "${PACKAGE_NAME}")
+
+add_library(${PYTHON_LIBRARY_NAME}
+    SHARED
+    python/module.cpp
+    python/wrapAdaptor.cpp
+    python/wrapBlockSceneModificationContext.cpp
+    python/wrapColorSpace.cpp
+    python/wrapDiagnosticDelegate.cpp
+    python/wrapMeshUtil.cpp
+    python/wrapQuery.cpp
+    python/wrapReadUtil.cpp
+    python/wrapRoundTripUtil.cpp
+    python/wrapStageCache.cpp
+    python/wrapUserTaggedAttribute.cpp
+    python/wrapWriteUtil.cpp
+    python/wrapXformStack.cpp
+)
+
+if(IS_MACOSX)
+    set(_macDef OSMac_)
+endif()
+
+target_compile_definitions(${PYTHON_LIBRARY_NAME}
+    PRIVATE
+        ${_macDef}
+        MFB_PACKAGE_NAME=${PACKAGE_NAME}
+        MFB_ALT_PACKAGE_NAME=${PACKAGE_NAME}
+        MFB_PACKAGE_MODULE=${PROJECT_NAME}
+)
+set_target_properties(${PYTHON_LIBRARY_NAME} 
+    PROPERTIES 
+        PREFIX ""
+)
+if(IS_WINDOWS)
+set_target_properties(${PYTHON_LIBRARY_NAME}
+    PROPERTIES
+        SUFFIX ".pyd"
+)
+elseif(IS_MACOSX)
+    set_target_properties(${PYTHON_LIBRARY_NAME}
+        PROPERTIES
+            SUFFIX ".so"
+    )
+endif()
+
+target_link_libraries(${PYTHON_LIBRARY_NAME}
+    ${LIBRARY_NAME}
+)
+
+# We will use the following Python package structure:
+#
+# mayaUsd: top-level package
+# mayaUsd.lib: Python wrappers for mayaUsd library functionality.
+#
+# We re-map the Python library namespace to mayaUsd.lib through a simple
+# __init__.py.
+
+set(PYLIB_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/lib)
+
+if(IS_MACOSX OR IS_LINUX)
+    mayaUsd_init_rpath(rpath "lib")
+    mayaUsd_add_rpath(rpath "../../..")
+    mayaUsd_install_rpath(rpath ${PYTHON_LIBRARY_NAME})
+endif()
+
+install(TARGETS ${PYTHON_LIBRARY_NAME}
+    LIBRARY
+    DESTINATION ${PYLIB_INSTALL_PREFIX}
+    ARCHIVE
+    DESTINATION ${PYLIB_INSTALL_PREFIX}
+    RUNTIME
+    DESTINATION ${PYLIB_INSTALL_PREFIX}
+)
+if(IS_WINDOWS)
+    install(FILES $<TARGET_PDB_FILE:${PYTHON_LIBRARY_NAME}> DESTINATION ${PYLIB_INSTALL_PREFIX} OPTIONAL)
+endif()
+
+install(CODE
+    "file(TOUCH \"${PYLIB_INSTALL_PREFIX}/../__init__.py\")")
+
+install(CODE
+    "file(WRITE \"${PYLIB_INSTALL_PREFIX}/__init__.py\"
+    \"from ${PYTHON_LIBRARY_NAME} import *\")")
+
 add_subdirectory(usd)
 
 add_subdirectory(render/mayaToHydra)

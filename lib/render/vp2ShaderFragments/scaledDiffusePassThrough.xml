@@ -1,0 +1,57 @@
+<fragment uiName="scaledDiffusePassThrough" name="scaledDiffusePassThrough" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
+    <description>
+    </description>
+    <properties>
+        <struct name="lightingContributions" struct_name="LightingContributions"/>
+    </properties>
+    <values/>
+    <outputs>
+        <float3 name="scaledDiffuse"/>
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
+            <function_name val="scaledDiffusePassThrough"/>
+            <source>
+                <![CDATA[
+float3 scaledDiffusePassThrough(LightingContributions lightingContributions)
+{
+    return lightingContributions.diffuse;
+}
+]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
+            <function_name val="scaledDiffusePassThrough"/>
+            <source>
+                <![CDATA[
+vec3 scaledDiffusePassThrough(LightingContributions lightingContributions)
+{
+    return lightingContributions.diffuse;
+}
+]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="10.0">
+            <function_name val="scaledDiffusePassThrough"/>
+            <source>
+                <![CDATA[
+float3 scaledDiffusePassThrough(LightingContributions lightingContributions)
+{
+    return lightingContributions.diffuse;
+}
+]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
+            <function_name val="scaledDiffusePassThrough"/>
+            <source>
+                <![CDATA[
+float3 scaledDiffusePassThrough(LightingContributions lightingContributions)
+{
+    return lightingContributions.diffuse;
+}
+]]>
+            </source>
+        </implementation>
+    </implementation>
+</fragment>
