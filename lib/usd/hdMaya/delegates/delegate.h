@@ -32,7 +32,7 @@
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/selection.h>
-#include <pxr/imaging/hdx/rendererPlugin.h>
+#include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hdx/taskController.h>
 #include <pxr/usd/sdf/path.h>
 
@@ -56,7 +56,7 @@ public:
     struct InitData {
         inline InitData(
             TfToken nameIn, HdEngine& engineIn, HdRenderIndex* renderIndexIn,
-            HdxRendererPlugin* rendererPluginIn,
+            HdRendererPlugin* rendererPluginIn,
             HdxTaskController* taskControllerIn, const SdfPath& delegateIDIn,
             bool isHdStIn)
             : name(nameIn),
@@ -70,7 +70,7 @@ public:
         TfToken name;
         HdEngine& engine;
         HdRenderIndex* renderIndex;
-        HdxRendererPlugin* rendererPlugin;
+        HdRendererPlugin* rendererPlugin;
         HdxTaskController* taskController;
         SdfPath delegateID;
         bool isHdSt;

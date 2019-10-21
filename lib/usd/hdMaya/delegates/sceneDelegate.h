@@ -223,9 +223,6 @@ protected:
     VtValue GetMaterialResource(const SdfPath& id) override;
 
     HDMAYA_API
-    TfTokenVector GetMaterialPrimvars(const SdfPath& id) override;
-
-    HDMAYA_API
     HdTextureResource::ID GetTextureResourceID(
         const SdfPath& textureId) override;
 

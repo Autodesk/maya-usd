@@ -417,8 +417,8 @@ void HdVP2Material::Sync(
                 vtMatResource.UncheckedGet<HdMaterialNetworkMap>();
 
             HdMaterialNetwork bxdfNet, dispNet;
-            TfMapLookup(networkMap.map, UsdImagingTokens->bxdf, &bxdfNet);
-            TfMapLookup(networkMap.map, UsdImagingTokens->displacement, &dispNet);
+            TfMapLookup(networkMap.map, HdMaterialTerminalTokens->surface, &bxdfNet);
+            TfMapLookup(networkMap.map, HdMaterialTerminalTokens->displacement, &dispNet);
 
             if (*dirtyBits & HdMaterial::DirtyResource) {
                 // Apply VP2 fixes to the material network

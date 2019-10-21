@@ -84,11 +84,6 @@ TF_REGISTRY_FUNCTION(TfDebug) {
         "Print information about 'GetMaterialParams' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_GET_MATERIAL_PRIMVARS,
-        "Print information about 'GetMaterialPrimvars' calls to the "
-        "delegates.");
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_GET_MATERIAL_RESOURCE,
         "Print information about 'GetMaterialResource' calls to the "
         "delegates.");

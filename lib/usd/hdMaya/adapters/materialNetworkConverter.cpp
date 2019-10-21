@@ -548,8 +548,8 @@ HdMaterialNode* HdMayaMaterialNetworkConverter::GetMaterial(
         for (const auto& param :
              HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
             this->ConvertParameter(
-                node, *nodeConverter, material, param.param.GetName(),
-                param.type, &param.param.GetFallbackValue());
+                node, *nodeConverter, material, param.param.name,
+                param.type, &param.param.fallbackValue);
         }
     } else {
         for (auto& nameAttrConverterPair : nodeConverter->GetAttrConverters()) {
@@ -702,7 +702,7 @@ HdMayaMaterialNetworkConverter::GetPreviewShaderParams() {
                     _previewShaderParams.begin(), _previewShaderParams.end(),
                     [](const HdMayaShaderParam& a,
                        const HdMayaShaderParam& b) -> bool {
-                        return a.param.GetName() < b.param.GetName();
+                        return a.param.name < b.param.name;
                     });
                 _previewShaderParams_initialized = true;
             }

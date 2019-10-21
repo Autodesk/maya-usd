@@ -96,7 +96,7 @@ HdMayaShaderParams::const_iterator _FindPreviewParam(const TfToken& id) {
         it = first;
         step = count / 2;
         std::advance(it, step);
-        if (it->param.GetName() < id) {
+        if (it->param.name < id) {
             first = ++it;
             count -= step + 1;
         } else {
@@ -104,7 +104,7 @@ HdMayaShaderParams::const_iterator _FindPreviewParam(const TfToken& id) {
         }
     }
     return first != previewShaderParams.cend()
-               ? (first->param.GetName() == id ? first
+               ? (first->param.name == id ? first
                                                : previewShaderParams.cend())
                : first;
 }
@@ -261,7 +261,7 @@ const VtValue& HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
             paramName.GetText());
         return _emptyValue;
     }
-    return it->param.GetFallbackValue();
+    return it->param.fallbackValue;
 }
 
 VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(
@@ -274,10 +274,10 @@ VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(
     for (const auto& it :
          HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
         node.parameters.emplace(
-            it.param.GetName(), it.param.GetFallbackValue());
+            it.param.name, it.param.fallbackValue);
     }
     network.nodes.push_back(node);
-    map.map.emplace(UsdImagingTokens->bxdf, network);
+    map.map.emplace(HdMaterialTerminalTokens->surface, network);
     return VtValue(map);
 }
 
@@ -370,7 +370,7 @@ private:
         for (const auto& it :
              HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
             auto textureType = HdTextureType::Uv;
-            auto remappedName = it.param.GetName();
+            auto remappedName = it.param.name;
             auto attrConverter = nodeConverter->GetAttrConverter(remappedName);
             if (attrConverter) {
                 TfToken tempName = attrConverter->GetPlugName(remappedName);
@@ -379,8 +379,8 @@ private:
 
             if (_RegisterTexture(node, remappedName, textureType)) {
                 ret.emplace_back(
-                    HdMaterialParam::ParamTypeTexture, it.param.GetName(),
-                    it.param.GetFallbackValue(),
+                    HdMaterialParam::ParamTypeTexture, it.param.name,
+                    it.param.fallbackValue,
                     GetID().AppendProperty(remappedName), _stSamplerCoords,
 #ifdef HDMAYA_USD_001901_BUILD
                     textureType);
@@ -391,7 +391,7 @@ private:
                     .Msg(
                         "HdMayaShadingEngineAdapter: registered texture with "
                         "connection path: %s\n",
-                        ret.back().GetConnection().GetText());
+                        ret.back().connection.GetText());
             } else {
                 ret.emplace_back(it.param);
             }
@@ -502,8 +502,8 @@ private:
         auto attrConverter = nodeConverter->GetAttrConverter(paramName);
         if (attrConverter) {
             return attrConverter->GetValue(
-                node, previewIt->param.GetName(), previewIt->type,
-                &previewIt->param.GetFallbackValue());
+                node, previewIt->param.name, previewIt->type,
+                &previewIt->param.fallbackValue);
         } else {
             return GetPreviewMaterialParamValue(paramName);
         }
@@ -651,9 +651,9 @@ private:
         }
 
         HdMaterialNetworkMap materialNetworkMap;
-        materialNetworkMap.map[UsdImagingTokens->bxdf] = materialNetwork;
+        materialNetworkMap.map[HdMaterialTerminalTokens->surface] = materialNetwork;
         // HdMaterialNetwork displacementNetwork;
-        // materialNetworkMap.map[UsdImagingTokens->displacement] =
+        // materialNetworkMap.map[HdMaterialTerminalTokens->displacement] =
         // displacementNetwork;
 
         return VtValue(materialNetworkMap);

@@ -998,12 +998,6 @@ VtValue HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id) {
                          : ret;
 }
 
-TfTokenVector HdMayaSceneDelegate::GetMaterialPrimvars(const SdfPath& id) {
-    TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_PRIMVARS)
-        .Msg("HdMayaSceneDelegate::GetMaterialPrimvars(%s)\n", id.GetText());
-    return {};
-}
-
 HdTextureResource::ID HdMayaSceneDelegate::GetTextureResourceID(
     const SdfPath& textureId) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE_ID)
