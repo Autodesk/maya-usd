@@ -62,6 +62,12 @@ public:
 private:
     bool writeMeshAttrs(const UsdTimeCode& usdTime, UsdGeomMesh& primSchema);
 
+    void writeMotionVectors(
+        UsdGeomMesh&       primSchema,
+        const UsdTimeCode& usdTime,
+        MFnMesh&           mesh,
+        const std::string& colorSetName);
+
     /// Cleans up any extra data authored by SetPrimvar().
     void cleanupPrimvars();
 
@@ -74,6 +80,9 @@ private:
     MObject writeBlendShapeData(UsdGeomMesh& primSchema);
     bool    writeBlendShapeAnimation(const UsdTimeCode& usdTime);
     bool    writeAnimatedMeshExtents(const MObject& deformedMesh, const UsdTimeCode& usdTime);
+
+    /// Names for color sets that are interpreted as motion vectors.
+    static const std::vector<std::string> motionVectorNames;
 
     /// Input mesh before any skeletal deformations, cached between iterations.
     MObject _skelInputMesh;

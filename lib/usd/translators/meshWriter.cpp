@@ -51,6 +51,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
 #include <maya/MItDependencyGraph.h>
+#include <maya/MItMeshVertex.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 #include <maya/MStatus.h>
@@ -274,6 +275,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((skelGeomBindTransform, "skel:geomBindTransform"))
 );
 // clang-format on
+
+const std::vector<std::string> PxrUsdTranslators_MeshWriter::motionVectorNames
+    = { "velocityPV", "velocity", "v" };
 
 PxrUsdTranslators_MeshWriter::PxrUsdTranslators_MeshWriter(
     const MFnDependencyNode& depNodeFn,
@@ -646,6 +650,11 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         if (_excludeColorSets.count(colorSetName) > 0)
             continue;
 
+        if (std::find(motionVectorNames.begin(), motionVectorNames.end(), colorSetName)
+            != motionVectorNames.end()) {
+            writeMotionVectors(primSchema, usdTime, finalMesh, colorSetName);
+            continue;
+        }
         bool isDisplayColor = false;
 
         if (colorSetName == UsdMayaMeshPrimvarTokens->DisplayColorColorSetName.GetString()) {
@@ -782,6 +791,53 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     }
 
     return true;
+}
+
+void PxrUsdTranslators_MeshWriter::writeMotionVectors(
+    UsdGeomMesh&       primSchema,
+    const UsdTimeCode& usdTime,
+    MFnMesh&           mesh,
+    const std::string& colorSetName)
+{
+    const MString    colorSetNameMS(colorSetName.c_str());
+    VtArray<GfVec3f> motionVectors;
+    motionVectors.resize(static_cast<size_t>(mesh.numVertices()));
+
+    // We need to average the color out here, because we need per vertex velocity.
+    MObject   meshObject = mesh.object();
+    MIntArray faces;
+
+    for (MItMeshVertex itVertex(meshObject); !itVertex.isDone(); itVertex.next()) {
+        faces.clear();
+        itVertex.getConnectedFaces(faces);
+
+        const auto flen = faces.length();
+        if (flen > 0) {
+            const auto scale = 1.0f / static_cast<float>(flen);
+            const auto id = itVertex.index();
+
+            auto& v = motionVectors[id];
+            v[0] = 0.0f;
+            v[1] = 0.0f;
+            v[2] = 0.0f;
+
+            for (auto f = decltype(flen) { 0 }; f < flen; ++f) {
+                MColor col;
+                if (itVertex.getColor(col, faces[f], &colorSetNameMS)) {
+                    v[0] += col[0];
+                    v[1] += col[1];
+                    v[2] += col[2];
+                }
+            }
+
+            v[0] *= scale;
+            v[1] *= scale;
+            v[2] *= scale;
+        }
+    }
+
+    UsdMayaWriteUtil::SetAttribute(
+        primSchema.GetVelocitiesAttr(), motionVectors, usdTime, _GetSparseValueWriter());
 }
 
 bool PxrUsdTranslators_MeshWriter::ExportsGprims() const { return true; }
