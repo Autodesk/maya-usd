@@ -39,10 +39,15 @@ UsdMaya_ReadJobWithSceneAssembly::~UsdMaya_ReadJobWithSceneAssembly()
 }
 
 bool
-UsdMaya_ReadJobWithSceneAssembly::DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
+UsdMaya_ReadJobWithSceneAssembly::DoImport(
+    UsdPrimRange& rootRange,
+    const UsdPrim& usdRootPrim,
+    const UsdStageRefPtr& stage
+)
 {
     return mArgs.importWithProxyShapes ?
-        _DoImportWithProxies(rootRange) : _DoImport(rootRange, usdRootPrim);
+        _DoImportWithProxies(rootRange) :
+        _DoImport(rootRange, usdRootPrim, stage);
 }
 
 bool UsdMaya_ReadJobWithSceneAssembly::OverridePrimReader(

@@ -21,6 +21,7 @@
 #include "jobArgs.h"
 #include "../primReaderContext.h"
 #include "../importData.h"
+#include "mayaUsd/fileio/primReaderRegistry.h"
 
 #include "pxr/pxr.h"
 
@@ -70,9 +71,13 @@ public:
     const MDagPath& GetMayaRootDagPath() const;
 
 protected:
+    // Types
+    using _PrimReaderMap =
+        std::unordered_map<SdfPath, UsdMayaPrimReaderSharedPtr, SdfPath::Hash>;
 
     MAYAUSD_CORE_PUBLIC
-    virtual bool DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim);
+    virtual bool DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim,
+        const UsdStageRefPtr& stage);
 
     // Hook for derived classes to override the prim reader.  Returns true if
     // override was done, false otherwise.  Implementation in this class
@@ -89,7 +94,8 @@ protected:
     // Engine method for DoImport().  Covers the functionality of a regular
     // usdImport.
     MAYAUSD_CORE_PUBLIC
-    bool _DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim);
+    bool _DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim,
+        const UsdStageRefPtr& stage);
 
     // Hook for derived classes to perform processing before import.
     // Method in this class is a no-op.
@@ -108,6 +114,9 @@ protected:
     MDagPath mMayaRootDagPath;
 
 private:
+    void _DoImportPrimIt(
+        UsdPrimRange::iterator& primIt, const UsdPrim& usdRootPrim,
+        UsdMayaPrimReaderContext& readCtx, _PrimReaderMap& primReaders);
 
     // Data
     MDagModifier mDagModifierUndo;
