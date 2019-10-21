@@ -314,6 +314,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , exportReferenceObjects(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportReferenceObjects))
     , exportRefsAsInstanceable(
           _Boolean(userArgs, UsdMayaJobExportArgsTokens->exportRefsAsInstanceable))
+    , exportRootPath(_String(userArgs, UsdMayaJobExportArgsTokens->root))
     , exportSkels(_Token(
           userArgs,
           UsdMayaJobExportArgsTokens->exportSkels,
@@ -391,6 +392,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "exportNurbsExplicitUV: " << TfStringify(exportArgs.exportNurbsExplicitUV) << std::endl
         << "exportRefsAsInstanceable: " << TfStringify(exportArgs.exportRefsAsInstanceable)
         << std::endl
+        << "exportRootPath: " << exportArgs.exportRootPath << std::endl
         << "exportSkels: " << TfStringify(exportArgs.exportSkels) << std::endl
         << "exportSkin: " << TfStringify(exportArgs.exportSkin) << std::endl
         << "exportBlendShapes: " << TfStringify(exportArgs.exportBlendShapes) << std::endl
@@ -476,6 +478,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->exportMaterialCollections] = false;
         d[UsdMayaJobExportArgsTokens->exportReferenceObjects] = false;
         d[UsdMayaJobExportArgsTokens->exportRefsAsInstanceable] = false;
+        d[UsdMayaJobExportArgsTokens->root] = std::string();
         d[UsdMayaJobExportArgsTokens->exportSkin] = UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->exportSkels] = UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->exportBlendShapes] = false;

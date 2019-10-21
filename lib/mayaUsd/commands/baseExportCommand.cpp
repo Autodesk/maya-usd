@@ -115,6 +115,7 @@ MSyntax MayaUSDExportCommand::createSyntax()
         kExportReferenceObjectsFlag,
         UsdMayaJobExportArgsTokens->exportReferenceObjects.GetText(),
         MSyntax::kBoolean);
+    syntax.addFlag(kExportRootFlag, UsdMayaJobExportArgsTokens->root.GetText(), MSyntax::kString);
     syntax.addFlag(
         kExportSkelsFlag, UsdMayaJobExportArgsTokens->exportSkels.GetText(), MSyntax::kString);
     syntax.addFlag(
@@ -232,6 +233,22 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
             argData, UsdMayaJobExportArgs::GetDefaultDictionary());
 
         // Now read all of the other args that are specific to this command.
+        if (argData.isFlagSet("root")) {
+            MString stringVal;
+            argData.getFlagArgument("root", 0, stringVal);
+            std::string rootPath = stringVal.asChar();
+
+            if (!rootPath.empty()) {
+                MDagPath rootDagPath;
+                UsdMayaUtil::GetDagPathByName(rootPath, rootDagPath);
+                if (!rootDagPath.isValid()) {
+                    MGlobal::displayError(
+                        MString("Invalid dag path provided for root: ") + stringVal);
+                    return MS::kFailure;
+                }
+            }
+        }
+
         bool        append = false;
         std::string fileName;
 

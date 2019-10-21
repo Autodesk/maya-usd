@@ -85,6 +85,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (pythonPostCallback) \
     (renderableOnly) \
     (renderLayerMode) \
+    (root) \
     (shadingMode) \
     (convertMaterialsTo) \
     (stripNamespaces) \
@@ -148,16 +149,21 @@ struct UsdMayaJobExportArgs
     /// material-collections are created and bindings are made to the
     /// collections at \p materialCollectionsPath, instead of direct
     /// per-gprim bindings.
-    const bool        exportCollectionBasedBindings;
-    const bool        exportColorSets;
-    const bool        exportDefaultCameras;
-    const bool        exportDisplayColor;
-    const bool        exportInstances;
-    const bool        exportMaterialCollections;
-    const bool        exportMeshUVs;
-    const bool        exportNurbsExplicitUV;
-    const bool        exportReferenceObjects;
-    const bool        exportRefsAsInstanceable;
+    const bool exportCollectionBasedBindings;
+    const bool exportColorSets;
+    const bool exportDefaultCameras;
+    const bool exportDisplayColor;
+    const bool exportInstances;
+    const bool exportMaterialCollections;
+    const bool exportMeshUVs;
+    const bool exportNurbsExplicitUV;
+    const bool exportReferenceObjects;
+    const bool exportRefsAsInstanceable;
+
+    // Optionally specified path to use as top level prim in
+    // place of the scene root.
+    std::string exportRootPath;
+
     const TfToken     exportSkels;
     const TfToken     exportSkin;
     const bool        exportBlendShapes;
