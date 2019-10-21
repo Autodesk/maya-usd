@@ -45,6 +45,7 @@
                 "nurbsCurve",
                 "nurbsSurface",
                 "particle",
+                "pointLight",
                 "PxrAovLight",
                 "PxrCylinderLight",
                 "PxrDiskLight",
@@ -54,6 +55,7 @@
                 "PxrMeshLight",
                 "PxrRectLight",
                 "PxrSphereLight",
+                "spotLight",                
                 "stroke"
               ]
             }
