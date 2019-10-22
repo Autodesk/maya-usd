@@ -89,6 +89,13 @@ add_library(_AL_USDMayaSchemasTest
     ${CMAKE_CURRENT_BINARY_DIR}/wrapExamplePolyCubeNode.cpp
 )
 
+target_compile_definitions(_AL_USDMayaSchemasTest
+    PRIVATE
+        MFB_PACKAGE_NAME=AL_USDMayaSchemasTest
+        MFB_ALT_PACKAGE_NAME=AL_USDMayaSchemasTest
+        MFB_PACKAGE_MODULE=AL.usd.schemas.mayatest
+)
+
 set_target_properties(_AL_USDMayaSchemasTest
     PROPERTIES 
         PREFIX ""

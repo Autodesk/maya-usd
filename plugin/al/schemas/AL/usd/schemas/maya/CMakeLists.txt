@@ -98,6 +98,13 @@ add_library(_AL_USDMayaSchemas
     wrapFrameRange.cpp
 )
 
+target_compile_definitions(_AL_USDMayaSchemas
+    PRIVATE
+        MFB_PACKAGE_NAME=AL_USDMayaSchemas
+        MFB_ALT_PACKAGE_NAME=AL_USDMayaSchemas
+        MFB_PACKAGE_MODULE=AL.usd.schemas.maya
+)
+
 set_target_properties(_AL_USDMayaSchemas
     PROPERTIES 
         PREFIX ""
