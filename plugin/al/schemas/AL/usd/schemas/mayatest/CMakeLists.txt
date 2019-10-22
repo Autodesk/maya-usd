@@ -70,6 +70,11 @@ target_compile_definitions(AL_USDMayaSchemasTest
         AL_USDMAYASCHEMASTEST_EXPORTS
 )
 
+target_include_directories(AL_USDMayaSchemasTest 
+  PUBLIC
+    ${USD_INCLUDE_DIR}
+)
+
 target_link_libraries(AL_USDMayaSchemasTest ${DEPENDANT_LIBRARIES})
 
 install(
