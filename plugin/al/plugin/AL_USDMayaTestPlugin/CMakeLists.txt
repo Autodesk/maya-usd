@@ -117,7 +117,8 @@ add_test(
     NAME TestAL_USDMaya
     COMMAND
         ${CMAKE_CURRENT_SOURCE_DIR}/run_mayaplugin_tests.sh
-            ${CMAKE_INSTALL_PREFIX}
+            ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}
+            ${USD_LIBRARY_DIR}
             ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
