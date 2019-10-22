@@ -527,7 +527,8 @@ function(pxr_register_test TEST_NAME)
         endif()
 
         set(testWrapperCmd ${testWrapperCmd} --env-var=${_plugSearchPathEnvName}=${CMAKE_INSTALL_PREFIX}/lib/usd)
-
+        set(testWrapperCmd ${testWrapperCmd} --env-var=PATH=${PXR_USD_LOCATION}/lib)
+ 
         # Ensure that Python imports the Python files built by this build.
         # On Windows convert backslash to slash and don't change semicolons
         # to colons.

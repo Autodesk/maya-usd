@@ -15,6 +15,7 @@ target_include_directories(testMayaSchemas
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../schemas
     ${GTEST_INCLUDE_DIRS}
+    ${USD_INCLUDE_DIR}
     )
 
 target_link_libraries(testMayaSchemas
@@ -28,7 +29,8 @@ target_link_libraries(testMayaSchemas
     ${Boost_PYTHON_LIBRARY}
     )
 
-# install(TARGETS testMayaSchemas DESTINATION bin)
+install(TARGETS testMayaSchemas DESTINATION ${INSTALL_DIR_SUFFIX}/bin)
+
 
 add_test(
     NAME TestAdditionalSchemas
