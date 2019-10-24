@@ -21,9 +21,9 @@
 #include "usdMaya/primWriter.h"
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/skelBindingsProcessor.h"
-#include "usdMaya/stageCache.h"
+#include <mayaUsd/utils/stageCache.h>
 #include "usdMaya/transformWriter.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"

@@ -17,7 +17,7 @@
 
 #include "usdMaya/readUtil.h"
 #include "usdMaya/translatorUtil.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/usd/usdGeom/imageable.h"
 

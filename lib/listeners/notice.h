@@ -20,7 +20,7 @@
 
 #include "pxr/base/tf/notice.h"
 
-#include "usdMaya/api.h"
+#include "../base/api.h"
 
 #include <maya/MMessage.h>
 #include <maya/MObject.h>
@@ -34,15 +34,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdMayaSceneResetNotice : public TfNotice
 {
 public:
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     UsdMayaSceneResetNotice();
 
     /// Registers the proper Maya callbacks for recognizing stage resets.
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     static void InstallListener();
 
     /// Removes any Maya callbacks for recognizing stage resets.
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     static void RemoveListener();
 
 private:
@@ -53,17 +53,17 @@ private:
 class UsdMaya_AssemblyInstancerNoticeBase : public TfNotice
 {
 public:
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     virtual ~UsdMaya_AssemblyInstancerNoticeBase() = default;
 
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     MObject GetAssembly() const;
 
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     MObject GetInstancer() const;
 
 protected:
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     UsdMaya_AssemblyInstancerNoticeBase(
             const MObject& assembly,
             const MObject& instancer);
@@ -79,7 +79,7 @@ class UsdMayaAssemblyConnectedToInstancerNotice
         : public UsdMaya_AssemblyInstancerNoticeBase
 {
 public:
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     UsdMayaAssemblyConnectedToInstancerNotice(
             const MObject& assembly,
             const MObject& instancer);
@@ -91,7 +91,7 @@ class UsdMayaAssemblyDisconnectedFromInstancerNotice
         : public UsdMaya_AssemblyInstancerNoticeBase
 {
 public:
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     UsdMayaAssemblyDisconnectedFromInstancerNotice(
             const MObject& assembly,
             const MObject& instancer);

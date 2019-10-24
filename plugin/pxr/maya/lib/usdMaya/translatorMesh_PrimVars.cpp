@@ -15,7 +15,7 @@
 //
 #include "usdMaya/translatorMesh.h"
 
-#include "usdMaya/colorSpace.h"
+#include <mayaUsd/utils/colorSpace.h>
 #include "usdMaya/meshUtil.h"
 #include "usdMaya/readUtil.h"
 #include "usdMaya/roundTripUtil.h"

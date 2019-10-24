@@ -22,6 +22,7 @@ pxr_shared_library(${PXR_PACKAGE}
         ${MAYA_OpenMaya_LIBRARY}
         ${MAYA_OpenMayaAnim_LIBRARY}
         ${MAYA_OpenMayaRender_LIBRARY}
+        mayaUsd
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
@@ -33,13 +34,11 @@ pxr_shared_library(${PXR_PACKAGE}
     PUBLIC_CLASSES
         adaptor
         blockSceneModificationContext
-        colorSpace
         diagnosticDelegate
         editUtil
         hdImagingShape
         jobArgs
         meshUtil
-        notice
         pointBasedDeformerNode
         primReader
         primReaderArgs
@@ -49,7 +48,6 @@ pxr_shared_library(${PXR_PACKAGE}
         primWriterArgs
         primWriterContext
         primWriterRegistry
-        query
         readUtil
         roundTripUtil
         shaderWriter
@@ -58,10 +56,7 @@ pxr_shared_library(${PXR_PACKAGE}
         shadingModeImporter
         shadingModeRegistry
         shadingUtil
-        stageCache
-        stageData
         stageNode
-        stageNoticeListener
         transformWriter
         translatorCamera
         translatorCurves
@@ -75,8 +70,6 @@ pxr_shared_library(${PXR_PACKAGE}
         translatorSkel
         translatorUtil
         translatorXformable
-        util
-        usdPrimProvider
         writeJobContext
         writeUtil
         xformStack
@@ -96,7 +89,6 @@ pxr_shared_library(${PXR_PACKAGE}
         userTaggedAttribute
 
     PRIVATE_CLASSES
-        debugCodes
         fallbackPrimReader
         functorPrimReader
         functorPrimWriter

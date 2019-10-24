@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "usdMaya/stageCache.h"
+#include "stageCache.h"
 
-#include "usdMaya/notice.h"
+#include "../listeners/notice.h"
 
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/layer.h"

@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "usdMaya/query.h"
+#include "query.h"
 
-#include "usdMaya/usdPrimProvider.h"
-#include "usdMaya/util.h"
+#include "../nodes/usdPrimProvider.h"
+#include "util.h"
 
 #include "pxr/base/arch/systemInfo.h"
 

@@ -18,7 +18,7 @@
 
 /// \file usdMaya/stageCache.h
 
-#include "usdMaya/api.h"
+#include "../base/api.h"
 
 #include "pxr/pxr.h"
 
@@ -38,24 +38,25 @@ public:
     /// Return the singleton stage cache for use by all USD clients within Maya.
     /// 2 stage caches are maintained; 1 for stages that have been
     /// force-populated, and 1 for stages that have not been force-populated.
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     static UsdStageCache& Get(const bool forcePopulate=true);
 
     /// Clear the cache
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     static void Clear();
 
     /// Erase all stages from the stage caches whose root layer path is
     /// \p layerPath.
     ///
     /// The number of stages erased from the caches is returned.
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     static size_t EraseAllStagesWithRootLayerPath(
             const std::string& layerPath);
 
     /// Gets (or creates) a shared session layer tied with the given variant
     /// selections and draw mode on the given root path.
     /// The stage is cached for the lifetime of the current Maya scene.
+    MAYAUSD_CORE_PUBLIC
     static SdfLayerRefPtr GetSharedSessionLayer(
             const SdfPath& rootPath,
             const std::map<std::string, std::string>& variantSelections,

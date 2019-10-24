@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "usdMaya/colorSpace.h"
+#include "colorSpace.h"
 
 #include "pxr/base/tf/envSetting.h"
 

@@ -123,8 +123,8 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
         const unsigned int displayStyle,
         const MHWRender::DisplayStatus displayStatus)
 {
-    UsdMayaProxyShape* usdProxyShape =
-            UsdMayaProxyShape::GetShapeAtDagPath(shapeDagPath);
+    MayaUsdProxyShapeBase* usdProxyShape =
+            MayaUsdProxyShapeBase::GetShapeAtDagPath(shapeDagPath);
     if (!usdProxyShape) {
         TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
                 "Failed to get UsdMayaProxyShape for '%s'\n",

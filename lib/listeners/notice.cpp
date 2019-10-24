@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "usdMaya/notice.h"
+#include "notice.h"
 
 #include "pxr/base/tf/instantiateType.h"
 

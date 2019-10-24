@@ -20,7 +20,7 @@
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/translatorXformable.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 #include "usdMaya/xformStack.h"
 
 #include "pxr/usd/sdf/schema.h"

@@ -5,6 +5,7 @@ pxr_plugin(${PXR_PACKAGE}
 
     LIBRARIES
         pxrUsdMayaGL
+        mayaUsd
         sdf
         tf
         usd

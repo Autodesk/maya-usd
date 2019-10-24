@@ -21,7 +21,7 @@
 #include "usdMaya/shadingModePxrRis_rfm_map.h"
 #include "usdMaya/shadingModeRegistry.h"
 #include "usdMaya/translatorUtil.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 #include "usdMaya/writeUtil.h"
 
 #include "pxr/pxr.h"

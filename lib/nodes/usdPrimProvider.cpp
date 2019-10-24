@@ -13,21 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef PXRUSDMAYA_DEBUGCODES_H
-#define PXRUSDMAYA_DEBUGCODES_H
-
 #include "pxr/pxr.h"
-#include "pxr/base/tf/debug.h"
+#include "usdPrimProvider.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEBUG_CODES(
-    PXRUSDMAYA_REGISTRY,
-    PXRUSDMAYA_DIAGNOSTICS
-);
-
+UsdMayaUsdPrimProvider::~UsdMayaUsdPrimProvider()
+{
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif

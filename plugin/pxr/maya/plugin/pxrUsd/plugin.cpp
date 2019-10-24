@@ -16,6 +16,8 @@
 #include "pxr/pxr.h"
 #include "pxrUsd/api.h"
 
+#include <mayaUsd/nodes/proxyShapePlugin.h>
+
 #include "pxrUsdMayaGL/hdImagingShapeDrawOverride.h"
 #include "pxrUsdMayaGL/hdImagingShapeUI.h"
 #include "pxrUsdMayaGL/proxyDrawOverride.h"
@@ -28,11 +30,11 @@
 #include "usdMaya/importCommand.h"
 #include "usdMaya/importTranslator.h"
 #include "usdMaya/listShadingModesCommand.h"
-#include "usdMaya/notice.h"
+#include <mayaUsd/listeners/notice.h>
 #include "usdMaya/pointBasedDeformerNode.h"
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/referenceAssembly.h"
-#include "usdMaya/stageData.h"
+#include <mayaUsd/nodes/stageData.h>
 #include "usdMaya/stageNode.h"
 #include "usdMaya/undoHelperCommand.h"
 
@@ -57,10 +59,7 @@ initializePlugin(MObject obj)
     MStatus status;
     MFnPlugin plugin(obj, "Pixar", "1.0", "Any");
 
-    status = plugin.registerData(
-        UsdMayaStageData::typeName,
-        UsdMayaStageData::mayaTypeId,
-        UsdMayaStageData::creator);
+    status = MayaUsdProxyShapePlugin::initialize(plugin);
     CHECK_MSTATUS(status);
 
     status = plugin.registerNode(
@@ -280,7 +279,7 @@ uninitializePlugin(MObject obj)
     status = plugin.deregisterNode(UsdMayaStageNode::typeId);
     CHECK_MSTATUS(status);
 
-    status = plugin.deregisterData(UsdMayaStageData::mayaTypeId);
+    status = MayaUsdProxyShapePlugin::finalize(plugin);
     CHECK_MSTATUS(status);
 
     UsdMayaSceneResetNotice::RemoveListener();

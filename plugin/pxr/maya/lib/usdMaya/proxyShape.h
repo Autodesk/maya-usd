@@ -19,12 +19,10 @@
 /// \file usdMaya/proxyShape.h
 
 #include "usdMaya/api.h"
-#include "usdMaya/stageNoticeListener.h"
-#include "usdMaya/usdPrimProvider.h"
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include "pxr/pxr.h"
 
-#include "pxr/base/gf/ray.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/tf/staticTokens.h"
 
@@ -61,64 +59,26 @@ TF_DECLARE_PUBLIC_TOKENS(UsdMayaProxyShapeTokens,
                          PXRUSDMAYA_PROXY_SHAPE_TOKENS);
 
 
-class UsdMayaProxyShape : public MPxSurfaceShape,
-                          public UsdMayaUsdPrimProvider
+class UsdMayaProxyShape : public MayaUsdProxyShapeBase
 {
     public:
+        typedef MayaUsdProxyShapeBase ParentClass;
+
         PXRUSDMAYA_API
         static const MTypeId typeId;
         PXRUSDMAYA_API
         static const MString typeName;
 
         PXRUSDMAYA_API
-        static const MString displayFilterName;
-        PXRUSDMAYA_API
-        static const MString displayFilterLabel;
-
-        // Attributes
-        PXRUSDMAYA_API
-        static MObject filePathAttr;
-        PXRUSDMAYA_API
-        static MObject primPathAttr;
-        PXRUSDMAYA_API
-        static MObject excludePrimPathsAttr;
-        PXRUSDMAYA_API
-        static MObject timeAttr;
-        PXRUSDMAYA_API
         static MObject variantKeyAttr;
-        PXRUSDMAYA_API
-        static MObject complexityAttr;
-        PXRUSDMAYA_API
-        static MObject inStageDataAttr;
-        PXRUSDMAYA_API
-        static MObject inStageDataCachedAttr;
         PXRUSDMAYA_API
         static MObject fastPlaybackAttr;
         PXRUSDMAYA_API
-        static MObject outStageDataAttr;
-        PXRUSDMAYA_API
-        static MObject drawRenderPurposeAttr;
-        PXRUSDMAYA_API
-        static MObject drawProxyPurposeAttr;
-        PXRUSDMAYA_API
-        static MObject drawGuidePurposeAttr;
-        
-        PXRUSDMAYA_API
         static MObject softSelectableAttr;
-
-        /// Delegate function for computing the closest point and surface normal
-        /// on the proxy shape to a given ray.
-        /// The input ray, output point, and output normal should be in the
-        /// proxy shape's local space.
-        /// Should return true if a point was found, and false otherwise.
-        /// (You could just treat this as a ray intersection and return true
-        /// if intersected, false if missed.)
-        typedef std::function<bool(const UsdMayaProxyShape&, const GfRay&,
-                GfVec3d*, GfVec3d*)> ClosestPointDelegate;
 
         /// Delegate function for returning whether object soft select mode is
         /// currently on
-        typedef std::function<bool(void)> ObjectSoftSelectEnabledDelgate;
+        typedef std::function<bool(void)> ObjectSoftSelectEnabledDelegate;
 
         PXRUSDMAYA_API
         static void* creator();
@@ -127,80 +87,17 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         static MStatus initialize();
 
         PXRUSDMAYA_API
-        static UsdMayaProxyShape* GetShapeAtDagPath(const MDagPath& dagPath);
-
-        PXRUSDMAYA_API
-        static void SetClosestPointDelegate(ClosestPointDelegate delegate);
-
-        PXRUSDMAYA_API
         static void SetObjectSoftSelectEnabledDelegate(
-                ObjectSoftSelectEnabledDelgate delegate);
-
-        PXRUSDMAYA_API
-        static bool GetObjectSoftSelectEnabled();
+                ObjectSoftSelectEnabledDelegate delegate);
 
         // Virtual function overrides
-        PXRUSDMAYA_API
-        void postConstructor() override;
-        PXRUSDMAYA_API
-        MStatus compute(
-                const MPlug& plug,
-                MDataBlock& dataBlock) override;
+
         PXRUSDMAYA_API
         bool isBounded() const override;
         PXRUSDMAYA_API
         MBoundingBox boundingBox() const override;
-        PXRUSDMAYA_API
-        MSelectionMask getShapeSelectionMask() const override;
-
-        PXRUSDMAYA_API
-        bool closestPoint(
-                const MPoint& raySource,
-                const MVector& rayDirection,
-                MPoint& theClosestPoint,
-                MVector& theClosestNormal,
-                bool findClosestOnMiss,
-                double tolerance) override;
-
-        PXRUSDMAYA_API
-        bool canMakeLive() const override;
-
-        // UsdMayaUsdPrimProvider overrides:
-        /**
-         * accessor to get the usdprim
-         *
-         * This method pulls the usdstage data from outData, and will evaluate
-         * the dependencies necessary to do so. It should be called instead of
-         * pulling on the data directly.
-         */
-        PXRUSDMAYA_API
-        UsdPrim usdPrim() const override;
 
         // Public functions
-        PXRUSDMAYA_API
-        SdfPathVector getExcludePrimPaths() const;
-
-        PXRUSDMAYA_API
-        int getComplexity() const;
-
-        PXRUSDMAYA_API
-        UsdTimeCode getTime() const;
-
-        PXRUSDMAYA_API
-        bool GetAllRenderAttributes(
-                UsdPrim* usdPrimOut,
-                SdfPathVector* excludePrimPathsOut,
-                int* complexityOut,
-                UsdTimeCode* timeOut,
-                bool* drawRenderPurpose,
-                bool* drawProxyPurpose,
-                bool* drawGuidePurpose);
-
-        PXRUSDMAYA_API
-        MStatus setDependentsDirty(
-                const MPlug& plug,
-                MPlugArray& plugArray) override;
-
         PXRUSDMAYA_API
         bool setInternalValueInContext(
                 const MPlug& plug,
@@ -213,9 +110,18 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
                 MDataHandle& dataHandle,
                 MDGContext& ctx) override;
 
+        void postConstructor() override;
+
     protected:
+        // Use the variant key to get the session layer from the prim path.
         PXRUSDMAYA_API
-        bool isStageValid() const;
+        SdfLayerRefPtr computeSessionLayer(MDataBlock&) override;
+
+        PXRUSDMAYA_API
+        bool canBeSoftSelected() const override;
+
+        PXRUSDMAYA_API
+        bool GetObjectSoftSelectEnabled() const override;
 
     private:
         UsdMayaProxyShape();
@@ -224,34 +130,10 @@ class UsdMayaProxyShape : public MPxSurfaceShape,
         ~UsdMayaProxyShape() override;
         UsdMayaProxyShape& operator=(const UsdMayaProxyShape&);
 
-        MStatus computeInStageDataCached(MDataBlock& dataBlock);
-        MStatus computeOutStageData(MDataBlock& dataBlock);
-
-        UsdPrim _GetUsdPrim(MDataBlock dataBlock) const;
-        SdfPathVector _GetExcludePrimPaths(MDataBlock dataBlock) const;
-        int _GetComplexity(MDataBlock dataBlock) const;
-        UsdTimeCode _GetTime(MDataBlock dataBlock) const;
-
-        bool _GetDrawPurposeToggles(
-                MDataBlock dataBlock,
-                bool* drawRenderPurpose,
-                bool* drawProxyPurpose,
-                bool* drawGuidePurpose) const;
-
-        bool _CanBeSoftSelected() const;
-
-        void _OnStageContentsChanged(
-                const UsdNotice::StageContentsChanged& notice);
-
-        UsdMayaStageNoticeListener _stageNoticeListener;
-
-        std::map<UsdTimeCode, MBoundingBox> _boundingBoxCache;
-
         bool _useFastPlayback;
 
-        static ClosestPointDelegate _sharedClosestPointDelegate;
-        static ObjectSoftSelectEnabledDelgate
-            _sharedObjectSoftSelectEnabledDelgate;
+        static ObjectSoftSelectEnabledDelegate
+            _sharedObjectSoftSelectEnabledDelegate;
 };
 
 

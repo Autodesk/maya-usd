@@ -13,32 +13,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef PXRUSDMAYA_QUERY_H
-#define PXRUSDMAYA_QUERY_H
-
-/// \file usdMaya/query.h
-
-#include "usdMaya/api.h"
+#ifndef PXRUSDMAYA_USD_PRIM_PROVIDER_H
+#define PXRUSDMAYA_USD_PRIM_PROVIDER_H
 
 #include "pxr/pxr.h"
-
-#include "pxr/usd/usd/stage.h"
+#include "../base/api.h"
 #include "pxr/usd/usd/prim.h"
-
-#include <string>
-#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-struct UsdMayaQuery
+// interface class 
+class UsdMayaUsdPrimProvider
 {
-    /*! \brief converts a dagPath of a usdStageShapeNode into a usdprim
-     */
-    PXRUSDMAYA_API
-    static UsdPrim GetPrim(const std::string& shapeName);
-    PXRUSDMAYA_API
-    static void ReloadStage(const std::string& shapeName);
+public:
+    // returns the prim that this node is holding
+    virtual UsdPrim usdPrim() const = 0;
+
+    MAYAUSD_CORE_PUBLIC
+    virtual ~UsdMayaUsdPrimProvider();
 };
 
 

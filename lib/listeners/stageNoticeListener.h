@@ -18,7 +18,7 @@
 
 /// \file usdMaya/stageNoticeListener.h
 
-#include "usdMaya/api.h"
+#include "../base/api.h"
 
 #include "pxr/pxr.h"
 
@@ -43,14 +43,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdMayaStageNoticeListener : public TfWeakBase
 {
     public:
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         UsdMayaStageNoticeListener();
 
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         virtual ~UsdMayaStageNoticeListener();
 
         /// Set the USD stage for which this instance will listen for notices.
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         void SetStage(const UsdStageWeakPtr& stage);
 
         /// Callback type for StageContentsChanged notices.
@@ -59,7 +59,7 @@ class UsdMayaStageNoticeListener : public TfWeakBase
 
         /// Sets the callback to be invoked when the listener receives a
         /// StageContentsChanged notice.
-        PXRUSDMAYA_API
+        MAYAUSD_CORE_PUBLIC
         void SetStageContentsChangedCallback(
                 const StageContentsChangedCallback& callback);
 

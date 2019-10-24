@@ -13,20 +13,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "usdMaya/debugCodes.h"
+#ifndef PXRUSDMAYA_QUERY_H
+#define PXRUSDMAYA_QUERY_H
 
-#include "pxr/base/tf/registryManager.h"
+/// \file usdMaya/query.h
+
+#include "../base/api.h"
+
+#include "pxr/pxr.h"
+
+#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/prim.h"
+
+#include <string>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_REGISTRY_FUNCTION(TfDebug)
+struct UsdMayaQuery
 {
-    TF_DEBUG_ENVIRONMENT_SYMBOL(PXRUSDMAYA_REGISTRY,
-            "UsdMaya registration for usd types.");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(PXRUSDMAYA_DIAGNOSTICS,
-            "Debugging of the the diagnostics batching system in UsdMaya.");
-}
+    /*! \brief converts a dagPath of a usdStageShapeNode into a usdprim
+     */
+    MAYAUSD_CORE_PUBLIC
+    static UsdPrim GetPrim(const std::string& shapeName);
+    MAYAUSD_CORE_PUBLIC
+    static void ReloadStage(const std::string& shapeName);
+};
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
+#endif

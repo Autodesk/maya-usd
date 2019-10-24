@@ -17,12 +17,12 @@
 
 #include "usdMaya/primReaderRegistry.h"
 #include "usdMaya/shadingModeRegistry.h"
-#include "usdMaya/stageCache.h"
+#include <mayaUsd/utils/stageCache.h>
 #include "usdMaya/stageNode.h"
 #include "usdMaya/translatorMaterial.h"
 #include "usdMaya/translatorModelAssembly.h"
 #include "usdMaya/translatorXformable.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/tf/token.h"
 

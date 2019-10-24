@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
 
-#include "usdMaya/colorSpace.h"
-#include "usdMaya/util.h"
+#include "util.h"
+
+#include "colorSpace.h"
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/vec2f.h"
@@ -738,7 +738,7 @@ _getAttachedMayaShaderObjects(
     for (unsigned int i=0; i < setObjs.length(); ++i) {
         // Get associated Set and Shading Group
         MFnSet setFn(setObjs[i], &status);
-        MPlug seSurfaceShaderPlg = setFn.findPlug("surfaceShader", &status);
+        MPlug seSurfaceShaderPlg = setFn.findPlug("surfaceShader", true, &status);
 
         // Find connection shader->shadingGroup
         MPlugArray plgCons;
@@ -811,11 +811,11 @@ _GetColorAndTransparencyFromDepNode(
 {
     MStatus status;
     MFnDependencyNode d(shaderObj);
-    MPlug colorPlug = d.findPlug("color", &status);
+    MPlug colorPlug = d.findPlug("color", true, &status);
     if (!status) {
         return false;
     }
-    MPlug transparencyPlug = d.findPlug("transparency", &status);
+    MPlug transparencyPlug = d.findPlug("transparency", true, &status);
     if (!status) {
         return false;
     }
@@ -1358,12 +1358,12 @@ UsdMayaUtil::getPlugMatrix(
         MMatrix* outVal)
 {
     MStatus status;
-    MPlug plug = depNode.findPlug(attr, &status);
+    MPlug plug = depNode.findPlug(attr, true, &status);
     if (!status) {
         return false;
     }
 
-    MObject plugObj = plug.asMObject(MDGContext::fsNormal, &status);
+    MObject plugObj = plug.asMObject(&status);
     if (!status) {
         return false;
     }
@@ -1384,7 +1384,7 @@ UsdMayaUtil::setPlugMatrix(
         const GfMatrix4d& mx)
 {
     MStatus status;
-    MPlug plug = depNode.findPlug(attr, &status);
+    MPlug plug = depNode.findPlug(attr, true, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     return setPlugMatrix(mx, plug);
 }

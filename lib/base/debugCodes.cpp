@@ -13,28 +13,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef PXRUSDMAYA_USD_PRIM_PROVIDER_H
-#define PXRUSDMAYA_USD_PRIM_PROVIDER_H
+#include "base/debugCodes.h"
 
-#include "pxr/pxr.h"
-#include "usdMaya/api.h"
-#include "pxr/usd/usd/prim.h"
+#include "pxr/base/tf/registryManager.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-// interface class 
-class UsdMayaUsdPrimProvider
+TF_REGISTRY_FUNCTION(TfDebug)
 {
-public:
-    // returns the prim that this node is holding
-    virtual UsdPrim usdPrim() const = 0;
-
-    PXRUSDMAYA_API
-    virtual ~UsdMayaUsdPrimProvider();
-};
-
+    TF_DEBUG_ENVIRONMENT_SYMBOL(PXRUSDMAYA_REGISTRY,
+            "UsdMaya registration for usd types.");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(PXRUSDMAYA_DIAGNOSTICS,
+            "Debugging of the the diagnostics batching system in UsdMaya.");
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif

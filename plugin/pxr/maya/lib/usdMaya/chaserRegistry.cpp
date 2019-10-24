@@ -15,7 +15,7 @@
 //
 #include "usdMaya/chaserRegistry.h"
 
-#include "usdMaya/debugCodes.h"
+#include <mayaUsd/base/debugCodes.h>
 #include "usdMaya/registryHelper.h"
 
 #include "pxr/base/tf/instantiateSingleton.h"

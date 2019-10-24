@@ -1,6 +1,6 @@
 #
 # =======================================================================
-# Copyright 2019 Autodesk, Inc. All rights reserved.
+# Copyright 2019 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -61,3 +61,32 @@ function(find_python_module module)
 		endif(NOT _${module}_status)
 	endif(NOT ${module_found})
 endfunction(find_python_module)
+
+function(mayaUsd_promoteMayaUsdHeader)
+    set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/base/mayaUsd.h.src)
+    set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h)
+    if (NOT EXISTS ${dstFile})
+        message(STATUS "promoting: " ${srcFile})
+    endif()
+    configure_file(${srcFile} ${dstFile})
+endfunction()
+
+function(mayaUsd_promoteHeaderList)
+    foreach(header ${ARGV})
+        set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/${header})
+        set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/${header})
+
+        set(content "#pragma once\n#include \"${srcFile}\"\n")
+
+        if (NOT EXISTS ${dstFile})
+            message(STATUS "promoting: " ${srcFile})
+            file(WRITE ${dstFile} "${content}")
+        else()
+            file(READ ${dstFile} oldContent)
+            if (NOT "${content}" STREQUAL "${oldContent}")
+                message(STATUS "Promoting ${srcfile}")
+                file(WRITE ${dstFile} "${content}")
+            endif()
+        endif()
+    endforeach()
+endfunction()

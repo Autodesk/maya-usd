@@ -18,7 +18,7 @@
 
 /// \file usdMaya/colorSpace.h
 
-#include "usdMaya/api.h"
+#include "../base/api.h"
 
 #include "pxr/pxr.h"
 
@@ -50,7 +50,7 @@ namespace UsdMayaColorSpace
 /// You should only be setting that if you've more or less fully switched to
 /// Viewport 2.0 (as proper color management is only supported there).
 ///
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool
 IsColorManaged();
 

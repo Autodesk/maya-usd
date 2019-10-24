@@ -19,7 +19,7 @@
 /// \file usdMaya/util.h
 
 #include "pxr/pxr.h"
-#include "usdMaya/api.h"
+#include "../base/api.h"
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"
@@ -113,9 +113,9 @@ class MDataHandleHolder : public TfRefBase
     MDataHandle _dataHandle;
 
 public:
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     static TfRefPtr<MDataHandleHolder> New(const MPlug& plug);
-    PXRUSDMAYA_API
+    MAYAUSD_CORE_PUBLIC
     MDataHandle GetDataHandle() { return _dataHandle; }
 
 private:
@@ -165,13 +165,13 @@ ConvertCMToMM(const double cm)
 
 /// Converts the given value \p mdistance in Maya's MDistance units to the 
 /// equivalent value in USD's metersPerUnit.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 double ConvertMDistanceUnitToUsdGeomLinearUnit(
     const MDistance::Unit mdistanceUnit);
 
 /// Coverts the given value \p linearUnit in USD's metersPerUnit to the 
 /// equivalent value in Maya's MDistance units.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 MDistance::Unit ConvertUsdGeomLinearUnitToMDistanceUnit(
     const double linearUnit);
 
@@ -185,21 +185,21 @@ MDistance::Unit ConvertUsdGeomLinearUnitToMDistanceUnit(
 ///
 /// If \p mayaNode is not one of these or if an error is encountered, an
 /// empty string will be returned.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 std::string GetMayaNodeName(const MObject& mayaNode);
 
 /// Gets the Maya MObject for the node named \p nodeName.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
 
 /// Gets the Maya MDagPath for the node named \p nodeName.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 MStatus GetDagPathByName(const std::string& nodeName, MDagPath& dagPath);
 
 /// Gets the Maya MPlug for the given \p attrPath.
 /// The attribute path should be specified as "nodeName.attrName" (the format
 /// used by MEL).
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 MStatus GetPlugByName(const std::string& attrPath, MPlug& plug);
 
 /// Get the MPlug for the output time attribute of Maya's global time object
@@ -214,36 +214,36 @@ MStatus GetPlugByName(const std::string& attrPath, MPlug& plug);
 /// all MFn::kTime function set objects in the scene and returning the one whose
 /// outTime attribute matches the current time. If no such object can be found,
 /// an invalid plug is returned.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 MPlug GetMayaTimePlug();
 
 /// Get the MPlug for the shaders attribute of Maya's defaultShaderList
 ///
 /// This is an accessor for the "defaultShaderList1.shaders" plug.  Similar to
 /// GetMayaTimePlug(), it will traverse through MFn::kShaderList objects.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 MPlug GetMayaShaderListPlug();
 
 /// Get the MObject for the DefaultLightSet, which should add any light nodes
 /// as members for them to take effect in the scene
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 MObject GetDefaultLightSetObject();
 
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool isAncestorDescendentRelationship(
         const MDagPath& path1,
         const MDagPath& path2);
 
 // returns 0 if static, 1 if sampled, and 2 if a curve
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 int getSampledType(const MPlug& iPlug, const bool includeConnectedChildren);
 
 /// Determine if the Maya object \p mayaObject is animated or not
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool isAnimated(const MObject& mayaObject, const bool checkParent = false);
 
 // Determine if a specific Maya plug is animated or not.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool isPlugAnimated(const MPlug& plug);
 
 /// Determine if a Maya object is an intermediate object.
@@ -251,11 +251,11 @@ bool isPlugAnimated(const MPlug& plug);
 /// Only objects with the MFnDagNode function set can be intermediate objects.
 /// Objects whose intermediate object status cannot be determined are assumed
 /// not to be intermediate objects.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool isIntermediate(const MObject& object);
 
 // returns true for visible and lod invisible and not templated objects
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool isRenderable(const MObject& object);
 
 /// Determine whether a Maya object can be saved to or exported from the Maya
@@ -263,7 +263,7 @@ bool isRenderable(const MObject& object);
 ///
 /// Objects whose "default node" or "do not write" status cannot be determined
 /// using the MFnDependencyNode function set are assumed to be writable.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool isWritable(const MObject& object);
 
 /// This is the delimiter that Maya uses to identify levels of hierarchy in the
@@ -279,16 +279,16 @@ const std::string MayaNamespaceDelimiter(":");
 /// This will turn "taco:foo:bar" into "foo:bar" for \p nsDepth == 1, or
 /// "taco:foo:bar" into "bar" for \p nsDepth > 1.
 /// If \p nsDepth is -1, all namespaces are stripped.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 std::string stripNamespaces(
         const std::string& nodeName,
         const int nsDepth = -1);
 
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 std::string SanitizeName(const std::string& name);
 
 // This to allow various pipeline to sanitize the colorset name for output
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 std::string SanitizeColorSetName(const std::string& name);
 
 /// Get the base colors and opacities from the shader(s) bound to \p node.
@@ -297,7 +297,7 @@ std::string SanitizeColorSetName(const std::string& name);
 /// A single value for each of color and alpha will be returned,
 /// interpolation will be constant, and assignmentIndices will be empty.
 ///
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool GetLinearShaderColor(
         const MFnDagNode& node,
         PXR_NS::VtVec3fArray* RGBData,
@@ -318,7 +318,7 @@ bool GetLinearShaderColor(
 /// representing per-face assignments. Faces with no assigned shader will have
 /// a value of -1 in \p assignmentIndices. \p interpolation will be uniform.
 ///
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool GetLinearShaderColor(
         const MFnMesh& mesh,
         PXR_NS::VtVec3fArray* RGBData,
@@ -328,28 +328,28 @@ bool GetLinearShaderColor(
 
 /// Combine distinct indices that point to the same values to all point to the
 /// same index for that value. This will potentially shrink the data array.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 void MergeEquivalentIndexedValues(
         PXR_NS::VtFloatArray* valueData,
         PXR_NS::VtIntArray* assignmentIndices);
 
 /// Combine distinct indices that point to the same values to all point to the
 /// same index for that value. This will potentially shrink the data array.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 void MergeEquivalentIndexedValues(
         PXR_NS::VtVec2fArray* valueData,
         PXR_NS::VtIntArray* assignmentIndices);
 
 /// Combine distinct indices that point to the same values to all point to the
 /// same index for that value. This will potentially shrink the data array.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 void MergeEquivalentIndexedValues(
         PXR_NS::VtVec3fArray* valueData,
         PXR_NS::VtIntArray* assignmentIndices);
 
 /// Combine distinct indices that point to the same values to all point to the
 /// same index for that value. This will potentially shrink the data array.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 void MergeEquivalentIndexedValues(
         PXR_NS::VtVec4fArray* valueData,
         PXR_NS::VtIntArray* assignmentIndices);
@@ -358,7 +358,7 @@ void MergeEquivalentIndexedValues(
 /// constant interpolation if possible. This will potentially shrink the
 /// indices array and will update the interpolation if any compression was
 /// possible.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 void CompressFaceVaryingPrimvarIndices(
         const MFnMesh& mesh,
         PXR_NS::TfToken* interpolation,
@@ -370,20 +370,20 @@ void CompressFaceVaryingPrimvarIndices(
 /// default (or since being brought in from a reference for plugs on nodes from
 /// referenced files), or if the plug is the destination of a connection.
 /// Otherwise, it is considered unauthored.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool IsAuthored(const MPlug& plug);
 
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 MPlug GetConnected(const MPlug& plug);
 
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 void Connect(
         const MPlug& srcPlug,
         const MPlug& dstPlug,
         const bool clearDstPlug);
 
 /// Get a named child plug of \p plug by name.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 MPlug FindChildPlugByName(const MPlug& plug, const MString& name);
 
 /// Converts the given Maya node name \p nodeName into an SdfPath.
@@ -391,8 +391,8 @@ MPlug FindChildPlugByName(const MPlug& plug, const MString& name);
 /// Elements of the path will be sanitized such that it is a valid SdfPath.
 /// This means it will replace Maya's namespace delimiter (':') with
 /// underscores ('_').
-PXRUSDMAYA_API
-PXR_NS::SdfPath MayaNodeNameToSdfPath(
+MAYAUSD_CORE_PUBLIC
+SdfPath MayaNodeNameToSdfPath(
         const std::string& nodeName,
         const bool stripNamespaces);
 
@@ -405,14 +405,14 @@ PXR_NS::SdfPath MayaNodeNameToSdfPath(
 /// Elements of the path will be sanitized such that it is a valid SdfPath.
 /// This means it will replace Maya's namespace delimiter (':') with
 /// underscores ('_').
-PXRUSDMAYA_API
-PXR_NS::SdfPath MDagPathToUsdPath(
+MAYAUSD_CORE_PUBLIC
+SdfPath MDagPathToUsdPath(
         const MDagPath& dagPath,
         const bool mergeTransformAndShape,
         const bool stripNamespaces);
 
 /// Convenience function to retrieve custom data
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool GetBoolCustomData(
         const PXR_NS::UsdAttribute& obj,
         const PXR_NS::TfToken& key,
@@ -439,13 +439,13 @@ bool getPlugValue(
 }
 
 /// Convert a Gf matrix to an MMatrix.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 MMatrix GfMatrixToMMatrix(const GfMatrix4d& mx);
 
 // Like getPlugValue, but gets the matrix stored inside the MFnMatrixData on a
 // plug.
 // Returns true upon success, placing the matrix in the outVal parameter.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool getPlugMatrix(
         const MFnDependencyNode& depNode,
         const MString& attr,
@@ -453,13 +453,13 @@ bool getPlugMatrix(
 
 /// Set a matrix value on plug name \p attr, of \p depNode.
 /// Returns true if the value was set on the plug successfully, false otherwise.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool setPlugMatrix(
         const MFnDependencyNode& depNode,
         const MString& attr,
         const GfMatrix4d& mx);
 
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool setPlugMatrix(const GfMatrix4d& mx, MPlug& plug);
 
 /// Given an \p usdAttr , extract the value at the default timecode and write
@@ -467,7 +467,7 @@ bool setPlugMatrix(const GfMatrix4d& mx, MPlug& plug);
 /// This will make sure that color values (which are linear in usd) get
 /// gamma corrected (display in maya).
 /// Returns true if the value was set on the plug successfully, false otherwise.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool setPlugValue(const PXR_NS::UsdAttribute& attr, MPlug& attrPlug);
 
 /// Given an \p usdAttr , extract the value at timecode \p time and write it
@@ -475,7 +475,7 @@ bool setPlugValue(const PXR_NS::UsdAttribute& attr, MPlug& attrPlug);
 /// This will make sure that color values (which are linear in usd) get
 /// gamma corrected (display in maya).
 /// Returns true if the value was set on the plug successfully, false otherwise.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool setPlugValue(
         const PXR_NS::UsdAttribute& attr,
         const PXR_NS::UsdTimeCode time,
@@ -501,20 +501,20 @@ bool setPlugValue(
 /// plug. When the helper object goes out of scope, the data handle will be
 /// destructed.
 /// If the plug's data handle could not be obtained, returns nullptr.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 TfRefPtr<MDataHandleHolder> GetPlugDataHandle(const MPlug& plug);
 
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool SetNotes(MFnDependencyNode& depNode, const std::string& notes);
 
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool SetHiddenInOutliner(MFnDependencyNode& depNode, const bool hidden);
 
 /// Reads values from the given \p argData into a VtDictionary, using the
 /// \p guideDict to figure out which keys and what type of values should be read
 /// from \p argData.
 /// Mainly useful for parsing arguments in commands all at once.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 VtDictionary GetDictionaryFromArgDatabase(
         const MArgDatabase& argData,
         const VtDictionary& guideDict);
@@ -525,7 +525,7 @@ VtDictionary GetDictionaryFromArgDatabase(
 /// Mainly useful for parsing arguments one-by-one in translators' option
 /// strings. If you have an MArgList/MArgParser/MArgDatabase, it's going to be
 /// way simpler to use GetDictionaryFromArgDatabase() instead.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 VtValue ParseArgumentValue(
         const std::string& key,
         const std::string& value,
@@ -537,18 +537,18 @@ VtValue ParseArgumentValue(
 /// The returned list is sorted from furthest to closest ancestor. The returned
 /// list will always have the given type \p ty as the last item.
 /// Note that this calls out to MEL.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 std::vector<std::string> GetAllAncestorMayaNodeTypes(const std::string& ty);
 
 /// If dagPath is a scene assembly node or is the descendant of one, populates
 /// the \p *assemblyPath with the assembly path and returns \c true.
 /// Otherwise, returns \c false.
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 bool FindAncestorSceneAssembly(
         const MDagPath& dagPath,
         MDagPath* assemblyPath = nullptr);
 
-PXRUSDMAYA_API
+MAYAUSD_CORE_PUBLIC
 MBoundingBox GetInfiniteBoundingBox();
 
 } // namespace UsdMayaUtil

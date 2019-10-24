@@ -27,7 +27,7 @@
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
 #include "usdMaya/primWriterRegistry.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/kind/registry.h"

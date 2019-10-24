@@ -15,7 +15,7 @@
 //
 #include "usdMaya/translatorGprim.h"
 
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include <maya/MFnDagNode.h>
 
