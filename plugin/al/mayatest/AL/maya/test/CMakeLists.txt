@@ -44,8 +44,8 @@ target_link_libraries(${MAYA_TEST_LIBRARY_NAME}
 target_include_directories(${MAYA_TEST_LIBRARY_NAME} 
     PRIVATE
     ${MAYATEST_INCLUDE_LOCATION}
-    ${MAYA_INCLUDE_DIRS}
     ${GTEST_INCLUDE_DIRS}
+    ${MAYA_INCLUDE_DIRS}
     ${USD_INCLUDE_DIR}
 )
 

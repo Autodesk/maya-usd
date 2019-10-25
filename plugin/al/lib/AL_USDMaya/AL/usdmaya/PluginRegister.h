@@ -22,7 +22,6 @@
 #include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/maya/utils/MenuBuilder.h"
 #include "AL/usdmaya/Global.h"
-#include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/cmds/CreateUsdPrim.h"
 #include "AL/usdmaya/cmds/DebugCommands.h"
 #include "AL/usdmaya/cmds/EventCommand.h"
@@ -59,6 +58,8 @@
 #include "maya/MDrawRegistry.h"
 #include "maya/MGlobal.h"
 #include "maya/MStatus.h"
+
+#include <mayaUsd/nodes/proxyShapePlugin.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -232,7 +233,6 @@ MStatus registerPlugin(AFnPlugin& plugin)
     }
   }
 
-  AL_REGISTER_DATA(plugin, AL::usdmaya::StageData);
   AL_REGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::CreateUsdPrim);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCreateLayer);
@@ -272,7 +272,12 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
   AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ExportTranslator);
   AL_REGISTER_DRAW_OVERRIDE(plugin, AL::usdmaya::nodes::ProxyDrawOverride);
+
+  status = MayaUsdProxyShapePlugin::initialize(plugin);
+  CHECK_MSTATUS(status);
+
   AL_REGISTER_SHAPE_NODE(plugin, AL::usdmaya::nodes::ProxyShape, AL::usdmaya::nodes::ProxyShapeUI, AL::usdmaya::nodes::ProxyDrawOverride);
+
   AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Transform, AL::usdmaya::nodes::TransformationMatrix);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::Layer);
@@ -395,11 +400,14 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimDeformer);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimCreator);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::ProxyShape);
+
+  status = MayaUsdProxyShapePlugin::finalize(plugin);
+  CHECK_MSTATUS(status);
+
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Transform);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Layer);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::LayerManager);
-  AL_UNREGISTER_DATA(plugin, AL::usdmaya::StageData);
 
   AL::usdmaya::Global::onPluginUnload();
   return status;

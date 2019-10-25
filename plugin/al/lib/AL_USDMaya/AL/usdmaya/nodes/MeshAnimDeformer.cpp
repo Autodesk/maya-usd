@@ -19,13 +19,14 @@
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/MeshAnimDeformer.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
-#include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/utils/Utils.h"
 
 #include "maya/MFnMesh.h"
 #include "maya/MTime.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
+
+#include <mayaUsd/nodes/stageData.h>
 
 namespace AL {
 namespace usdmaya {
@@ -52,7 +53,7 @@ MStatus MeshAnimDeformer::initialise()
     // do not write these nodes to the file. They will be created automagically by the proxy shape
     m_primPath = addStringAttr("primPath", "pp", kReadable | kWritable);
     m_inTime = addTimeAttr("inTime", "it", MTime(), kReadable | kWritable | kStorable | kConnectable);
-    m_inStageData = addDataAttr("inStageData", "isd", StageData::kTypeId, kWritable | kStorable | kConnectable);
+    m_inStageData = addDataAttr("inStageData", "isd", MayaUsdStageData::mayaTypeId, kWritable | kStorable | kConnectable);
     m_outMesh = addMeshAttr("outMesh", "out", kReadable | kStorable | kConnectable);
     m_inMesh = addMeshAttr("inMesh", "in", kWritable | kStorable | kConnectable);
     attributeAffects(m_primPath, m_outMesh);
