@@ -163,10 +163,10 @@ list(APPEND mayaUsd_src
 
 list(APPEND mayaUsdShaderFragments_xmls
     # Copied from pxrUsdPreviewSurface with change to support multiple lights
-    render/vp2ShaderFragments/float4ToFloatX.xml
-    render/vp2ShaderFragments/float4ToFloatY.xml
-    render/vp2ShaderFragments/float4ToFloatZ.xml
-    render/vp2ShaderFragments/float4ToFloatW.xml
+    render/vp2ShaderFragments/Float4ToFloatX.xml
+    render/vp2ShaderFragments/Float4ToFloatY.xml
+    render/vp2ShaderFragments/Float4ToFloatZ.xml
+    render/vp2ShaderFragments/Float4ToFloatW.xml
     render/vp2ShaderFragments/lightingContributions.xml
     render/vp2ShaderFragments/opacityToTransparency.xml
     render/vp2ShaderFragments/scaledDiffusePassThrough.xml
@@ -177,8 +177,8 @@ list(APPEND mayaUsdShaderFragments_xmls
     # New fragments
     render/vp2ShaderFragments/FallbackCPVShader.xml
     render/vp2ShaderFragments/FallbackShader.xml
-    render/vp2ShaderFragments/float4ToFloat3.xml
-    render/vp2ShaderFragments/float4ToFloat4.xml
+    render/vp2ShaderFragments/Float4ToFloat3.xml
+    render/vp2ShaderFragments/Float4ToFloat4.xml
     render/vp2ShaderFragments/UsdPrimvarReader_float.xml
     render/vp2ShaderFragments/UsdPrimvarReader_float2.xml
     render/vp2ShaderFragments/UsdPrimvarReader_float3.xml

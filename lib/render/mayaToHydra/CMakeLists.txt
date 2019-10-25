@@ -27,6 +27,17 @@ target_include_directories(${TARGET_NAME} PRIVATE
     ${CMAKE_BINARY_DIR}/usd
 )
 
+if(CMAKE_WANT_UFE_BUILD)
+    find_package(UFE QUIET)
+    if(UFE_FOUND)
+        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
+        include_directories(${UFE_INCLUDE_DIR})
+        add_definitions(-DWANT_UFE_BUILD)
+    else()
+        message(STATUS "UFE not found. UFE features will be disabled.")
+    endif()
+endif()
+
 # rpath setup
 if(IS_MACOSX OR IS_LINUX) 
     mayaUsd_init_rpath(rpath "plugin")

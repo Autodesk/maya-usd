@@ -35,12 +35,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     (FallbackCPVShader)
     (FallbackShader)
 
-    (float4ToFloatX)
-    (float4ToFloatY)
-    (float4ToFloatZ)
-    (float4ToFloatW)
-    (float4ToFloat3)
-    (float4ToFloat4)
+    (Float4ToFloatX)
+    (Float4ToFloatY)
+    (Float4ToFloatZ)
+    (Float4ToFloatW)
+    (Float4ToFloat3)
+    (Float4ToFloat4)
 
     (lightingContributions)
     (scaledDiffusePassThrough)
@@ -67,12 +67,12 @@ static const TfTokenVector _FragmentNames = {
     _tokens->UsdPrimvarReader_float3,
     _tokens->UsdPrimvarReader_float4,
 
-    _tokens->float4ToFloatX,
-    _tokens->float4ToFloatY,
-    _tokens->float4ToFloatZ,
-    _tokens->float4ToFloatW,
-    _tokens->float4ToFloat3,
-    _tokens->float4ToFloat4,
+    _tokens->Float4ToFloatX,
+    _tokens->Float4ToFloatY,
+    _tokens->Float4ToFloatZ,
+    _tokens->Float4ToFloatW,
+    _tokens->Float4ToFloat3,
+    _tokens->Float4ToFloat4,
 
     _tokens->lightingContributions,
     _tokens->scaledDiffusePassThrough,
