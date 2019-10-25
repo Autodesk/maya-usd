@@ -6,5 +6,5 @@ add_test(
         ${CMAKE_INSTALL_PREFIX}
         ${USD_LIBRARY_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${USD_MAYA_ROOT}
+        ${CMAKE_INSTALL_PREFIX}/../../plugin/pxr
     )
