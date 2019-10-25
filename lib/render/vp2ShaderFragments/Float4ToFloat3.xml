@@ -1,4 +1,4 @@
-<fragment uiName="float4ToFloat3" name="float4ToFloat3" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
+<fragment uiName="Float4ToFloat3" name="Float4ToFloat3" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
     <description>
         Extracts the XYZ component of a 4D float vector.
     </description>
@@ -11,10 +11,10 @@
     </outputs>
     <implementation>
         <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
-            <function_name val="float4ToFloat3"/>
+            <function_name val="Float4ToFloat3"/>
             <source>
                 <![CDATA[
-float3 float4ToFloat3(float4 input)
+float3 Float4ToFloat3(float4 input)
 {
     return input.xyz;
 }
@@ -22,10 +22,10 @@ float3 float4ToFloat3(float4 input)
             </source>
         </implementation>
         <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
-            <function_name val="float4ToFloat3"/>
+            <function_name val="Float4ToFloat3"/>
             <source>
                 <![CDATA[
-vec3 float4ToFloat3(vec4 input)
+vec3 Float4ToFloat3(vec4 input)
 {
     return input.xyz;
 }
@@ -33,10 +33,10 @@ vec3 float4ToFloat3(vec4 input)
             </source>
         </implementation>
         <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
-            <function_name val="float4ToFloat3"/>
+            <function_name val="Float4ToFloat3"/>
             <source>
                 <![CDATA[
-float3 float4ToFloat3(float4 input)
+float3 Float4ToFloat3(float4 input)
 {
     return input.xyz;
 }
@@ -44,10 +44,10 @@ float3 float4ToFloat3(float4 input)
             </source>
         </implementation>
         <implementation render="OGSRenderer" language="HLSL" lang_version="10.0">
-            <function_name val="float4ToFloat3"/>
+            <function_name val="Float4ToFloat3"/>
             <source>
                 <![CDATA[
-float3 float4ToFloat3(float4 input)
+float3 Float4ToFloat3(float4 input)
 {
     return input.xyz;
 }
