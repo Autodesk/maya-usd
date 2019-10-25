@@ -77,14 +77,51 @@ initializePlugin(MObject obj)
         MPxNode::kDeformerNode);
     CHECK_MSTATUS(status);
 
-    status = plugin.registerShape(
-        UsdMayaProxyShape::typeName,
-        UsdMayaProxyShape::typeId,
-        UsdMayaProxyShape::creator,
-        UsdMayaProxyShape::initialize,
-        UsdMayaProxyShapeUI::creator,
-        &UsdMayaProxyDrawOverride::drawDbClassification);
-    CHECK_MSTATUS(status);
+  if (MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
+        status = plugin.registerShape(
+            UsdMayaProxyShape::typeName,
+            UsdMayaProxyShape::typeId,
+            UsdMayaProxyShape::creator,
+            UsdMayaProxyShape::initialize,
+            UsdMayaProxyShapeUI::creator,
+            MayaUsdProxyShapePlugin::getProxyShapeClassification());
+        CHECK_MSTATUS(status);
+    }
+    else {
+        status = plugin.registerShape(
+            UsdMayaProxyShape::typeName,
+            UsdMayaProxyShape::typeId,
+            UsdMayaProxyShape::creator,
+            UsdMayaProxyShape::initialize,
+            UsdMayaProxyShapeUI::creator,
+            &UsdMayaProxyDrawOverride::drawDbClassification);
+        CHECK_MSTATUS(status);
+        status = plugin.registerShape(
+            PxrMayaHdImagingShape::typeName,
+            PxrMayaHdImagingShape::typeId,
+            PxrMayaHdImagingShape::creator,
+            PxrMayaHdImagingShape::initialize,
+            PxrMayaHdImagingShapeUI::creator,
+            &PxrMayaHdImagingShapeDrawOverride::drawDbClassification);
+        CHECK_MSTATUS(status);
+        status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
+            PxrMayaHdImagingShapeDrawOverride::drawDbClassification,
+            _RegistrantId,
+            PxrMayaHdImagingShapeDrawOverride::creator);
+        CHECK_MSTATUS(status);
+
+        status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
+            UsdMayaProxyDrawOverride::drawDbClassification,
+            _RegistrantId,
+            UsdMayaProxyDrawOverride::Creator);
+        CHECK_MSTATUS(status);
+
+        status = plugin.registerDisplayFilter(
+            UsdMayaProxyShape::displayFilterName,
+            UsdMayaProxyShape::displayFilterLabel,
+            UsdMayaProxyDrawOverride::drawDbClassification);
+        CHECK_MSTATUS(status);
+    }
 
     status = plugin.registerNode(
         UsdMayaReferenceAssembly::typeName,
@@ -93,33 +130,6 @@ initializePlugin(MObject obj)
         UsdMayaReferenceAssembly::initialize,
         MPxNode::kAssembly,
         &UsdMayaReferenceAssembly::_classification);
-    CHECK_MSTATUS(status);
-
-    status = plugin.registerShape(
-        PxrMayaHdImagingShape::typeName,
-        PxrMayaHdImagingShape::typeId,
-        PxrMayaHdImagingShape::creator,
-        PxrMayaHdImagingShape::initialize,
-        PxrMayaHdImagingShapeUI::creator,
-        &PxrMayaHdImagingShapeDrawOverride::drawDbClassification);
-    CHECK_MSTATUS(status);
-
-    status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
-        PxrMayaHdImagingShapeDrawOverride::drawDbClassification,
-        _RegistrantId,
-        PxrMayaHdImagingShapeDrawOverride::creator);
-    CHECK_MSTATUS(status);
-
-    status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
-        UsdMayaProxyDrawOverride::drawDbClassification,
-        _RegistrantId,
-        UsdMayaProxyDrawOverride::Creator);
-    CHECK_MSTATUS(status);
-
-    status = plugin.registerDisplayFilter(
-        UsdMayaProxyShape::displayFilterName,
-        UsdMayaProxyShape::displayFilterLabel,
-        UsdMayaProxyDrawOverride::drawDbClassification);
     CHECK_MSTATUS(status);
 
     status = MGlobal::sourceFile("usdMaya.mel");

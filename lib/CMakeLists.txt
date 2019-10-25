@@ -58,6 +58,46 @@ list(APPEND mayaUsd_src
     listeners/stageNoticeListener.cpp
     listeners/notice.cpp
     listeners/proxyShapeNotice.cpp
+    #
+    render/vp2RenderDelegate/debugCodes.cpp
+    render/vp2RenderDelegate/render_param.cpp
+    render/vp2RenderDelegate/instancer.cpp
+    render/vp2RenderDelegate/draw_item.cpp
+    render/vp2RenderDelegate/material.cpp
+    render/vp2RenderDelegate/mesh.cpp
+    render/vp2RenderDelegate/proxyRenderDelegate.cpp
+    render/vp2RenderDelegate/render_delegate.cpp
+    render/vp2RenderDelegate/sampler.cpp
+    #
+    render/vp2ShaderFragments/shaderFragments.cpp
+    #
+)
+
+list(APPEND mayaUsdShaderFragments_xmls
+    # Copied from pxrUsdPreviewSurface with change to support multiple lights
+    render/vp2ShaderFragments/float4ToFloatX.xml
+    render/vp2ShaderFragments/float4ToFloatY.xml
+    render/vp2ShaderFragments/float4ToFloatZ.xml
+    render/vp2ShaderFragments/float4ToFloatW.xml
+    render/vp2ShaderFragments/lightingContributions.xml
+    render/vp2ShaderFragments/opacityToTransparency.xml
+    render/vp2ShaderFragments/scaledDiffusePassThrough.xml
+    render/vp2ShaderFragments/scaledSpecularPassThrough.xml
+    render/vp2ShaderFragments/usdPreviewSurfaceCombiner.xml
+    render/vp2ShaderFragments/usdPreviewSurfaceLighting.xml
+    render/vp2ShaderFragments/UsdPreviewSurface.xml
+    # New fragments
+    render/vp2ShaderFragments/FallbackCPVShader.xml
+    render/vp2ShaderFragments/FallbackShader.xml
+    render/vp2ShaderFragments/float4ToFloat3.xml
+    render/vp2ShaderFragments/float4ToFloat4.xml
+    render/vp2ShaderFragments/UsdPrimvarReader_float.xml
+    render/vp2ShaderFragments/UsdPrimvarReader_float2.xml
+    render/vp2ShaderFragments/UsdPrimvarReader_float3.xml
+    render/vp2ShaderFragments/UsdPrimvarReader_float4.xml
+    render/vp2ShaderFragments/UsdUVTexture.xml
+    # USD plug info
+    render/vp2ShaderFragments/plugInfo.json
 )
 
 list(APPEND mayaUsdBase_headers
@@ -85,6 +125,10 @@ list(APPEND mayaUsdListeners_headers
     listeners/stageNoticeListener.h
     listeners/notice.h
     listeners/proxyShapeNotice.h
+)
+
+list(APPEND mayaUsdVP2RenderDelegate_headers
+    render/vp2RenderDelegate/proxyRenderDelegate.h
 )
 
 add_library(${LIBRARY_NAME} SHARED
@@ -182,6 +226,7 @@ mayaUsd_promoteHeaderList(${mayaUsdBase_headers})
 mayaUsd_promoteHeaderList(${mayaUsdUtils_headers})
 mayaUsd_promoteHeaderList(${mayaUsdNodes_headers})
 mayaUsd_promoteHeaderList(${mayaUsdListeners_headers})
+mayaUsd_promoteHeaderList(${mayaUsdVP2RenderDelegate_headers})
 
 # install public headers
 install(FILES ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h
@@ -202,6 +247,19 @@ install(FILES ${mayaUsdNodes_headers}
 
 install(FILES ${mayaUsdListeners_headers}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/listeners/
+)
+
+install(FILES ${mayaUsdVP2RenderDelegate_headers}
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/render/vp2RenderDelegate
+)
+
+install(FILES ${mayaUsdShaderFragments_xmls}
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/mayaUsd_ShaderFragments/resources
+)
+
+#install top level plugInfo.json that includes the configured plugInfo.json
+install(CODE
+    "file(WRITE \"${CMAKE_INSTALL_PREFIX}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
 )
 
 if(IS_MACOSX)

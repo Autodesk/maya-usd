@@ -15,6 +15,9 @@
 //
 #include "proxyShapePlugin.h"
 
+#include "../render/vp2RenderDelegate/proxyRenderDelegate.h"
+#include "../render/vp2ShaderFragments/shaderFragments.h"
+
 #include "stageData.h"
 #include "proxyShapeBase.h"
 
@@ -33,6 +36,11 @@ int _registrationCount = 0;
 
 // Name of the plugin registering the proxy shape base class.
 MString _registrantPluginName;
+
+bool _useVP2RenderDelegate = false;
+
+TF_DEFINE_ENV_SETTING(VP2_RENDER_DELEGATE_PROXY, false,
+    "Switch proxy shape rendering to VP2 render delegate.");
 }
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -47,6 +55,8 @@ MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
     }
 
     _registrantPluginName = plugin.name();
+
+    _useVP2RenderDelegate = TfGetEnvSetting(VP2_RENDER_DELEGATE_PROXY);
 
     MStatus status;
 
@@ -64,6 +74,15 @@ MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
         MayaUsdProxyShapeBase::initialize,
         nullptr,
         getProxyShapeClassification());
+    CHECK_MSTATUS(status);
+
+        status = MHWRender::MDrawRegistry::registerSubSceneOverrideCreator(
+            ProxyRenderDelegate::drawDbClassification,
+            _RegistrantId,
+            ProxyRenderDelegate::Creator);
+        CHECK_MSTATUS(status);
+
+    status = HdVP2ShaderFragments::registerFragments();
     CHECK_MSTATUS(status);
 
     return status;
@@ -88,7 +107,13 @@ MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
         return MS::kSuccess;
     }
 
-    MStatus status;
+    MStatus status = HdVP2ShaderFragments::deregisterFragments();
+    CHECK_MSTATUS(status);
+    
+        status = MHWRender::MDrawRegistry::deregisterSubSceneOverrideCreator(
+            ProxyRenderDelegate::drawDbClassification,
+            _RegistrantId);
+        CHECK_MSTATUS(status);
 
     status = plugin.deregisterNode(MayaUsdProxyShapeBase::typeId);
     CHECK_MSTATUS(status);
@@ -101,12 +126,13 @@ MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
 
 const MString* MayaUsdProxyShapePlugin::getProxyShapeClassification()
 {
-    return nullptr;
+    return _useVP2RenderDelegate ? &ProxyRenderDelegate::drawDbClassification : 
+        nullptr;
 }
 
 bool MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()
 {
-    return false;
+    return _useVP2RenderDelegate;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

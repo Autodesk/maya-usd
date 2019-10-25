@@ -276,7 +276,20 @@ MStatus registerPlugin(AFnPlugin& plugin)
   status = MayaUsdProxyShapePlugin::initialize(plugin);
   CHECK_MSTATUS(status);
 
-  AL_REGISTER_SHAPE_NODE(plugin, AL::usdmaya::nodes::ProxyShape, AL::usdmaya::nodes::ProxyShapeUI, AL::usdmaya::nodes::ProxyDrawOverride);
+  if (MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
+      status = plugin.registerShape(
+          AL::usdmaya::nodes::ProxyShape::kTypeName,
+          AL::usdmaya::nodes::ProxyShape::kTypeId,
+          AL::usdmaya::nodes::ProxyShape::creator,
+          AL::usdmaya::nodes::ProxyShape::initialise,
+          AL::usdmaya::nodes::ProxyShapeUI::creator,
+          MayaUsdProxyShapePlugin::getProxyShapeClassification()
+      );
+      CHECK_MSTATUS(status);
+  }
+  else {
+      AL_REGISTER_SHAPE_NODE(plugin, AL::usdmaya::nodes::ProxyShape, AL::usdmaya::nodes::ProxyShapeUI, AL::usdmaya::nodes::ProxyDrawOverride);
+  }
 
   AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Transform, AL::usdmaya::nodes::TransformationMatrix);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::RendererManager);
