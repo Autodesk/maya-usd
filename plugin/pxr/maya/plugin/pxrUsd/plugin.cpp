@@ -67,14 +67,14 @@ initializePlugin(MObject obj)
 #endif
 
     status = MayaUsdProxyShapePlugin::initialize(plugin);
-    CHECK_MSTATUS(status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     status = plugin.registerNode(
         UsdMayaStageNode::typeName,
         UsdMayaStageNode::typeId,
         UsdMayaStageNode::creator,
         UsdMayaStageNode::initialize);
-    CHECK_MSTATUS(status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     status = plugin.registerNode(
         UsdMayaPointBasedDeformerNode::typeName,
@@ -82,7 +82,7 @@ initializePlugin(MObject obj)
         UsdMayaPointBasedDeformerNode::creator,
         UsdMayaPointBasedDeformerNode::initialize,
         MPxNode::kDeformerNode);
-    CHECK_MSTATUS(status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     status = plugin.registerShape(
         UsdMayaProxyShape::typeName,
@@ -91,7 +91,7 @@ initializePlugin(MObject obj)
         UsdMayaProxyShape::initialize,
         UsdMayaProxyShapeUI::creator,
         MayaUsdProxyShapePlugin::getProxyShapeClassification());
-    CHECK_MSTATUS(status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     status = plugin.registerNode(
         UsdMayaReferenceAssembly::typeName,
@@ -100,10 +100,10 @@ initializePlugin(MObject obj)
         UsdMayaReferenceAssembly::initialize,
         MPxNode::kAssembly,
         &UsdMayaReferenceAssembly::_classification);
-    CHECK_MSTATUS(status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     status = MGlobal::sourceFile("usdMaya.mel");
-    CHECK_MSTATUS(status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     // Set the label for the assembly node type so that it appears correctly
     // in the 'Create -> Scene Assembly' menu.
@@ -112,23 +112,23 @@ initializePlugin(MObject obj)
     status = setLabelCmd.format("assembly -e -type ^1s -label ^2s",
                                 UsdMayaReferenceAssembly::typeName,
                                 assemblyTypeLabel);
-    CHECK_MSTATUS(status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
     status = MGlobal::executeCommand(setLabelCmd);
-    CHECK_MSTATUS(status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     // Procs stored in usdMaya.mel
     // Add assembly callbacks for accessing data without creating an MPxAssembly instance
     status = MGlobal::executeCommand("assembly -e -repTypeLabelProc usdMaya_UsdMayaReferenceAssembly_repTypeLabel -type " + UsdMayaReferenceAssembly::typeName);
-    CHECK_MSTATUS(status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
     status = MGlobal::executeCommand("assembly -e -listRepTypesProc usdMaya_UsdMayaReferenceAssembly_listRepTypes -type " + UsdMayaReferenceAssembly::typeName);
-    CHECK_MSTATUS(status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     // Attribute Editor Templates
     MString attribEditorCmd(
         "from pxr.UsdMaya import AEpxrUsdReferenceAssemblyTemplate\n"
         "AEpxrUsdReferenceAssemblyTemplate.addMelFunctionStubs()");
     status = MGlobal::executePythonCommand(attribEditorCmd);
-    CHECK_MSTATUS(status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     status = plugin.registerCommand(
         "usdExport",
