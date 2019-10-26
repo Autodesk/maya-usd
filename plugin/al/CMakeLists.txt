@@ -17,24 +17,18 @@ option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
 option(SKIP_USDMAYA_TESTS "Build tests" OFF)
 
-if ("${MAYA_DEVKIT_LOCATION}" STREQUAL "")
-    set(CMAKE_WANT_UFE_BUILD OFF)
-else()
-    set(CMAKE_WANT_UFE_BUILD ON)
-endif()
-
-
 # to get PYTHON_EXECUTABLE
 find_package(PythonInterp)
 
 if(CMAKE_WANT_UFE_BUILD)
-    add_definitions(-DWANT_UFE_BUILD)
-
-    find_package(UFE REQUIRED)
-    include_directories(${UFE_INCLUDE_DIR})
-
-    message("UFE Build Enabled")
-    message("Using UFE version : ${UFE_VERSION}")
+    find_package(UFE QUIET)
+    if(UFE_FOUND)
+        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
+        include_directories(${UFE_INCLUDE_DIR})
+        add_definitions(-DWANT_UFE_BUILD)
+    else()
+        message(STATUS "UFE not found. UFE features will be disabled.")
+    endif()
 endif()
 
 # FindBoost is particularly buggy, and doesn't like custom boost locations.

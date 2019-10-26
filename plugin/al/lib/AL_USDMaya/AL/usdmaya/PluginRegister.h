@@ -61,6 +61,10 @@
 
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 
+#if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/Global.h>
+#endif
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
@@ -291,6 +295,13 @@ MStatus registerPlugin(AFnPlugin& plugin)
       AL_REGISTER_SHAPE_NODE(plugin, AL::usdmaya::nodes::ProxyShape, AL::usdmaya::nodes::ProxyShapeUI, AL::usdmaya::nodes::ProxyDrawOverride);
   }
 
+#if defined(WANT_UFE_BUILD)
+  status = MayaUsd::ufe::initialize();
+  if (!status) {
+    status.perror("Unable to initialize ufe.");
+  }
+#endif
+
   AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Transform, AL::usdmaya::nodes::TransformationMatrix);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::Layer);
@@ -352,6 +363,11 @@ template<typename AFnPlugin>
 MStatus unregisterPlugin(AFnPlugin& plugin)
 {
   MStatus status;
+
+#if defined(WANT_UFE_BUILD)
+  status = MayaUsd::ufe::finalize();
+  CHECK_MSTATUS(status);
+#endif
 
   // gpuCachePluginMain used as an example.
   if (MGlobal::kInteractive == MGlobal::mayaState()) {

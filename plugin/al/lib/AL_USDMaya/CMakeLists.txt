@@ -215,9 +215,12 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMayaUI_LIBRARY}
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_OpenMayaRender_LIBRARY}
-    ${UFE_LIBRARY}
     mayaUsd
 )
+
+if(UFE_FOUND)
+    target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
+endif()
 
 if(NEED_BOOST_FILESYSTEM)
     target_link_libraries(${LIBRARY_NAME}

@@ -45,6 +45,9 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
+#if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/Global.h>
+#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -58,6 +61,13 @@ initializePlugin(MObject obj)
 {
     MStatus status;
     MFnPlugin plugin(obj, "Pixar", "1.0", "Any");
+
+#if defined(WANT_UFE_BUILD)
+    status = MayaUsd::ufe::initialize();
+    if (!status) {
+        status.perror("Unable to initialize ufe.");
+    }
+#endif
 
     status = MayaUsdProxyShapePlugin::initialize(plugin);
     CHECK_MSTATUS(status);
@@ -226,6 +236,11 @@ uninitializePlugin(MObject obj)
 {
     MStatus status;
     MFnPlugin plugin(obj);
+
+#if defined(WANT_UFE_BUILD)
+    status = MayaUsd::ufe::finalize();
+    CHECK_MSTATUS(status);
+#endif
 
     status = plugin.deregisterCommand("usdImport");
     if (!status) {

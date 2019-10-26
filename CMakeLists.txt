@@ -27,6 +27,7 @@ option(BUILD_MAYAUSD_LIBRARY "Build Core USD libraries." ON)
 option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
 option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
 option(WANT_USD_RELATIVE_PATH "Use relative rpaths for USD libraries" OFF)
+option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
 
 # Avoid noisy install messages
 set(CMAKE_INSTALL_MESSAGE "NEVER")
@@ -66,6 +67,15 @@ find_package(Maya REQUIRED)
 find_package(USD REQUIRED)
 include(cmake/usd.cmake)
 include(${USD_CONFIG_FILE})
+
+if(CMAKE_WANT_UFE_BUILD)
+    find_package(UFE QUIET)
+    if(UFE_FOUND)
+        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
+    else()
+        message(STATUS "UFE not found. UFE features will be disabled.")
+    endif()
+endif()
 
 #==============================================================================
 # Compiler
