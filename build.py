@@ -306,6 +306,24 @@ def RunCMake(context, extraArgs=None, stages=None):
                         installArg=installArg,
                         multiproc=FormatMultiProcs(context.numJobs, generator)))
 
+def RunCTest(context, extraArgs=None):
+    buildDir = context.buildDir
+    variant = BuildVariant(context)
+    numJobs = context.numJobs
+
+    with CurrentWorkingDirectory(buildDir):
+        Run(context,
+            'ctest '
+            '--output-on-failure ' 
+            '--timeout 300 '
+            '-j {numJobs} '
+            '-C {variant} '
+            '{extraArgs} '
+            .format(numJobs=numJobs,
+                    variant=variant,
+                    extraArgs=(" ".join(extraArgs) if extraArgs else "")))
+
+
 def BuildAndInstall(context, buildArgs, stages):
     with CurrentWorkingDirectory(context.mayaUsdSrcDir):
         extraArgs = []
@@ -342,6 +360,10 @@ def BuildAndInstall(context, buildArgs, stages):
                            .format(dir=dir))
                 sys.exit(1)
         Print("""Success MayaUSD build and install !!!!""")
+
+def RunTests(context,extraArgs):
+    RunCTest(context,extraArgs)
+    Print("""Success running MayaUSD tests !!!!""")
 
 ############################################################
 # ArgumentParser
@@ -390,8 +412,11 @@ parser.add_argument("--build-relwithdebug", dest="build_relwithdebug", action="s
 parser.add_argument("--build-args", type=str, nargs="*", default=[],
                    help=("Comma-separated list of arguments passed into CMake when building libraries"))
 
+parser.add_argument("--ctest-args", type=str, nargs="*", default=[],
+                   help=("Comma-separated list of arguments passed into CTest.(e.g -VV, --output-on-failure)"))
+
 parser.add_argument("--stages", type=str, nargs="*", default=['clean','configure','build','install'],
-                   help=("Comma-separated list of stages to execute.( possible stages: clean, configure, build, install)"))
+                   help=("Comma-separated list of stages to execute.(possible stages: clean, configure, build, install, test)"))
 
 parser.add_argument("-j", "--jobs", type=int, default=GetCPUCount(),
                     help=("Number of build jobs to run in parallel. "
@@ -466,6 +491,12 @@ class InstallContext:
             for arg in argList.split(","):
                 self.stagesArgs.append(arg)
 
+        # CTest arguments
+        self.ctestArgs = list()
+        for argList in args.ctest_args:
+            for arg in argList.split(","):
+                self.ctestArgs.append(arg)
+
         # Redirect output stream to file
         self.redirectOutstreamFile = args.redirect_outstream_file
 try:
@@ -497,6 +528,10 @@ if __name__ == "__main__":
       summaryMsg += """
       Stages arguments          {stagesArgs}"""
 
+    if context.ctestArgs:
+      summaryMsg += """
+      CTest arguments           {ctestArgs}"""
+
     summaryMsg = summaryMsg.format(
     mayaUsdSrcDir=context.mayaUsdSrcDir,
     workspaceDir=context.workspaceDir,
@@ -505,6 +540,7 @@ if __name__ == "__main__":
     logFileLocation=context.logFileLocation,
     buildArgs=context.buildArgs,
     stagesArgs=context.stagesArgs,
+        ctestArgs=context.ctestArgs,
     buildVariant=BuildVariant(context),
     cmakeGenerator=("Default" if not context.cmakeGenerator
                     else context.cmakeGenerator)
@@ -515,3 +551,8 @@ if __name__ == "__main__":
     # BuildAndInstall
     if any(stage in ['clean', 'configure', 'build', 'install'] for stage in context.stagesArgs):
         BuildAndInstall(context, context.buildArgs, context.stagesArgs)
+
+    # Run Tests
+    if 'test' in context.stagesArgs:
+        RunTests(context, context.ctestArgs)
+
