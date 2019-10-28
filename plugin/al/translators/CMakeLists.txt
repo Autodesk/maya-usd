@@ -1,7 +1,5 @@
 list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas mayaUsd gf plug tf)
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
-
 set(DIRECTORY_PATH AL/usdmaya/fileio/translators)
 
 configure_file (
@@ -22,13 +20,21 @@ add_library(${TRANSLATORS_PACKAGE}
     DirectionalLight.cpp
 )
 
+if(IS_MACOSX)
+    set(_macDef OSMac_)
+endif()
+
+# HS OCT 2019, do we really need to define 
+# AL_MAYA_MACROS_EXPORT for this target?
+if(NOT IS_WINDOWS)
+    set_target_properties(${TRANSLATORS_PACKAGE}
+          PROPERTIES COMPILE_DEFINITIONS
+          "AL_MAYA_MACROS_EXPORT;${_macDef}"
+    )
+endif()
+
 set(arg_PUBLIC_HEADER_FILES
     Camera.h
-)
-
-target_compile_definitions(${TRANSLATORS_PACKAGE}
-  PRIVATE
-    AL_MAYA_MACROS_EXPORT
 )
 
 # Copy the plugin metadata file in a hierarchy replicating the install hierarchy.

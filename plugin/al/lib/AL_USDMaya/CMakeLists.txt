@@ -1,7 +1,5 @@
 set(arDirPath AL/usdmaya)
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
-
 set(LIBRARY_NAME AL_USDMaya)
 
 list(APPEND AL_usdmaya_headers
@@ -164,9 +162,6 @@ target_compile_definitions(${LIBRARY_NAME}
         ${_macDef}
         AL_MAYA_MACROS_EXPORT
         AL_USDMAYA_EXPORT
-        MFB_PACKAGE_NAME="${LIBRARY_NAME}"
-        MFB_ALT_PACKAGE_NAME="${LIBRARY_NAME}"
-        MFB_PACKAGE_MODULE=usdmaya
         AL_USDMAYA_LOCATION_NAME="${AL_USDMAYA_LOCATION_NAME}"
 )
 

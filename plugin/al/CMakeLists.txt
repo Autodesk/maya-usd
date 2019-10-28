@@ -57,6 +57,8 @@ set(AL_USDMAYA_LOCATION_NAME
     "Name of the environment variable used to store AL_USDMaya installation location"
 )
 
+set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
+
 # Build all the utils
 set(EVENTS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/utils)
 set(USDUTILS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/usdutils)

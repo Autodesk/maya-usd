@@ -108,9 +108,9 @@ endif()
 install(TARGETS
     ${PXR_PACKAGE}
     LIBRARY
-        DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/plugin
     RUNTIME
-        DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/plugin
 )
 
 add_test(

@@ -3,8 +3,6 @@
 # Setup 
 ####################################################################################################
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
-
 set(MAYAUTILS_LIBRARY_NAME "AL_MayaUtils")
 set(MAYAUTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
 

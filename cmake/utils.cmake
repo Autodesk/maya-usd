@@ -34,7 +34,7 @@ endif()
 #   envVar         The environment variable to modify
 #   pathToAppend   The path to append
 #
-function(append_path_to_env_var envVar pathToAppend)
+function(mayaUsd_append_path_to_env_var envVar pathToAppend)
     file(TO_NATIVE_PATH "${pathToAppend}" nativePathToAppend)
     if(DEFINED ENV{${envVar}})
         if(IS_WINDOWS)
@@ -54,7 +54,7 @@ endfunction()
 #
 # module           The python module to find
 #
-function(find_python_module module)
+function(mayaUsd_find_python_module module)
 	string(TOUPPER ${module} module_upper)
 	set(module_found "${module_upper}_FOUND")
 	if(NOT ${module_found})
@@ -71,7 +71,7 @@ function(find_python_module module)
 				"Location of Python module ${module}")
 		endif(NOT _${module}_status)
 	endif(NOT ${module_found})
-endfunction(find_python_module)
+endfunction(mayaUsd_find_python_module)
 
 # Initialize a variable to accumulate an rpath.  The origin is the
 # RUNTIME DESTINATION of the target.  If not absolute it's appended

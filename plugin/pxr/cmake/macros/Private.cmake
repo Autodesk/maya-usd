@@ -438,7 +438,7 @@ function(_pxr_enable_precompiled_header TARGET_NAME)
 
     # Additional compile flags to use precompiled header.  This will be
     set(compile_flags "")
-    if(MSVC)
+    if(IS_WINDOWS)
         # Build with precompiled header (/Yu, /Fp) and automatically
         # include the header (/FI).
         set(compile_flags "/Yu\"${rel_output_header_path}\" /FI\"${rel_output_header_path}\" /Fp\"${abs_precompiled_path}\"")
@@ -450,7 +450,7 @@ function(_pxr_enable_precompiled_header TARGET_NAME)
 
     # Use FALSE if we have an external precompiled header we can use.
     if(TRUE)
-        if(MSVC)
+        if(IS_WINDOWS)
             # Copy the header to precompile.
             add_custom_command(
                 OUTPUT "${abs_output_header_path}"
@@ -817,7 +817,7 @@ function(_pxr_target_link_libraries NAME)
                 if(";${PXR_STATIC_LIBS};" MATCHES ";${lib};")
                     # The library is explicitly static.
                     list(APPEND final ${lib})
-                elseif(MSVC)
+                elseif(IS_WINDOWS)
                     # The syntax here is -WHOLEARCHIVE[:lib] but CMake will
                     # treat that as a link flag and not "see" the library.
                     # As a result it won't replace a target with the path
@@ -958,16 +958,18 @@ function(_pxr_python_module NAME)
             PROPERTIES
                 SUFFIX ".pyd"
         )
-    elseif(APPLE)
+    elseif(IS_MACOSX)
         # Python modules must be suffixed with .so on Mac.
         set_target_properties(${LIBRARY_NAME}
             PROPERTIES
                 SUFFIX ".so"
         )
+        set(_macDef OSMac_)
     endif()
 
     target_compile_definitions(${LIBRARY_NAME}
         PRIVATE
+            ${_macDef}
             MFB_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_PACKAGE_MODULE=${pyModuleName}
@@ -1213,11 +1215,15 @@ function(_pxr_library NAME)
     if(TARGET shared_libs)
         set(pythonModulesEnabled "PXR_PYTHON_MODULES_ENABLED=1")
     endif()
+    if(IS_MACOSX)
+        set(_macDef OSMac_)
+    endif()
     target_compile_definitions(${NAME}
         PUBLIC
             ${pythonEnabled}
             ${apiPublic}
         PRIVATE
+            ${_macDef}
             MFB_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_PACKAGE_MODULE=${pythonModuleName}

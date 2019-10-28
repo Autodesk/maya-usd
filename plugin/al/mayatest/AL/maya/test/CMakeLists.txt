@@ -4,8 +4,6 @@
 ####################################################################################################
 find_package(GTest REQUIRED)
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
-
 set(MAYA_TEST_LIBRARY_NAME "AL_MayaTest")
 set(MAYA_TEST_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
 

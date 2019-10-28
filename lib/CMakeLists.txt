@@ -380,6 +380,11 @@ install(FILES ${mayaUsdShaderFragments_xmls}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/mayaUsd_ShaderFragments/resources
 )
 
+#install top level plugInfo.json that includes the configured plugInfo.json
+install(CODE
+    "file(WRITE \"${CMAKE_INSTALL_PREFIX}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+)
+
 if(UFE_FOUND)
     # UFE Python Bindings
     set(UFE_PYTHON_LIBRARY_NAME ufe)

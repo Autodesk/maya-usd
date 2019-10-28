@@ -69,13 +69,16 @@ pxr_test_scripts(
     testenv/testPxrUsdTranslatorsStroke.py
 )
 
+set(TEST_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/plugin/pxr")
+
 pxr_register_test(testPxrUsdTranslators
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdTranslators"
+    COMMAND "${TEST_INSTALL_PREFIX}/tests/testPxrUsdTranslators"
     ENV
-        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin
-        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib/usd/usdMaya/resources
+        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
+        MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
 )
 
@@ -85,12 +88,13 @@ pxr_install_test_dir(
 )
 pxr_register_test(testPxrUsdTranslatorsScope
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdTranslatorsScope"
+    COMMAND "${TEST_INSTALL_PREFIX}/tests/testPxrUsdTranslatorsScope"
     TESTENV testPxrUsdTranslatorsScope
     ENV
-        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin
-        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib/usd/usdMaya/resources
+        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
+        MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
 )
 
@@ -100,11 +104,12 @@ pxr_install_test_dir(
 )
 pxr_register_test(testPxrUsdTranslatorsStroke
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdTranslatorsStroke"
+    COMMAND "${TEST_INSTALL_PREFIX}/tests/testPxrUsdTranslatorsStroke"
     TESTENV testPxrUsdTranslatorsStroke
     ENV
-        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin
-        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib/usd/usdMaya/resources
+        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
+        MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
 )
