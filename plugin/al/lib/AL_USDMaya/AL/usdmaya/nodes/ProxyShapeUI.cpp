@@ -154,7 +154,7 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   unsigned int x, y, w, h;
   view.viewport(x, y, w, h);
   
-  #if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION >= 7) 
+  #if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION > 7) 
   engine->SetCameraState(
       GfMatrix4d((model.inverse() * viewMatrix).matrix),
       GfMatrix4d(projection.matrix));
