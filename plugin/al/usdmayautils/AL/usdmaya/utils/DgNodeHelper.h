@@ -16,6 +16,7 @@
 #pragma once
 
 #include "AL/usdmaya/utils/Api.h"
+#include "AL/usdmaya/utils/AnimationTranslator.h"
 
 #include "maya/MAngle.h"
 #include "maya/MDistance.h"
@@ -1644,7 +1645,7 @@ public:
   /// \param  prim the USD prim to copy the attributes from
   /// \return MS::kSuccess if succeeded, error code otherwise
   AL_USDMAYA_UTILS_PUBLIC
-  static MStatus copyDynamicAttributes(MObject node, UsdPrim& prim);
+  static MStatus copyDynamicAttributes(MObject node, UsdPrim& prim, AnimationTranslator* translator = 0);
 
   /// \brief  copy the attribute value from the plug specified, at the given time, and store the data on the usdAttr.
   /// \param  attr the attribute to be copied

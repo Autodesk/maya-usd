@@ -4865,7 +4865,7 @@ MStatus DgNodeHelper::convertSpecialValueToUSDAttribute(const MPlug& plug, UsdAt
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim)
+MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim, AnimationTranslator* translator)
 {
   MFnDependencyNode fn(node);
   uint32_t numAttributes = fn.attributeCount();
@@ -4908,6 +4908,7 @@ MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim)
             getVec2(node, attribute, (double*)&m);
             usdAttr.Set(m);
             usdAttr.SetCustom(true);
+            if(translator) translator->addPlug(MPlug(node, attribute), usdAttr, true);
           }
           else
           {
@@ -4930,6 +4931,7 @@ MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim)
             getVec2(node, attribute, (float*)&m);
             usdAttr.Set(m);
             usdAttr.SetCustom(true);
+            if(translator) translator->addPlug(MPlug(node, attribute), usdAttr, true);
           }
           else
           {
@@ -4953,6 +4955,7 @@ MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim)
             getVec2(node, attribute, (int32_t*)&m);
             usdAttr.Set(m);
             usdAttr.SetCustom(true);
+            if(translator) translator->addPlug(MPlug(node, attribute), usdAttr, true);
           }
           else
           {
@@ -4975,6 +4978,7 @@ MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim)
             getVec3(node, attribute, (double*)&m);
             usdAttr.Set(m);
             usdAttr.SetCustom(true);
+            if(translator) translator->addPlug(MPlug(node, attribute), usdAttr, true);
           }
           else
           {
@@ -4997,6 +5001,7 @@ MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim)
             getVec3(node, attribute, (float*)&m);
             usdAttr.Set(m);
             usdAttr.SetCustom(true);
+            if(translator) translator->addPlug(MPlug(node, attribute), usdAttr, true);
           }
           else
           {
@@ -5020,6 +5025,7 @@ MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim)
             getVec3(node, attribute, (int32_t*)&m);
             usdAttr.Set(m);
             usdAttr.SetCustom(true);
+            if(translator) translator->addPlug(MPlug(node, attribute), usdAttr, true);
           }
           else
           {
@@ -5042,6 +5048,7 @@ MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim)
             getVec4(node, attribute, (double*)&m);
             usdAttr.Set(m);
             usdAttr.SetCustom(true);
+            if(translator) translator->addPlug(MPlug(node, attribute), usdAttr, true);
           }
           else
           {
@@ -5069,6 +5076,7 @@ MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim)
                 getBool(node, attribute, value);
                 usdAttr.Set(value);
                 usdAttr.SetCustom(true);
+                if(translator) translator->addPlug(MPlug(node, attribute), usdAttr, true);
               }
               else
               {
@@ -5091,6 +5099,7 @@ MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim)
                 getFloat(node, attribute, value);
                 usdAttr.Set(value);
                 usdAttr.SetCustom(true);
+                if(translator) translator->addPlug(MPlug(node, attribute), usdAttr, true);
               }
               else
               {
@@ -5113,6 +5122,7 @@ MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim)
                 getDouble(node, attribute, value);
                 usdAttr.Set(value);
                 usdAttr.SetCustom(true);
+                if(translator) translator->addPlug(MPlug(node, attribute), usdAttr, true);
               }
               else
               {
@@ -5136,6 +5146,7 @@ MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim)
                 getInt32(node, attribute, value);
                 usdAttr.Set(value);
                 usdAttr.SetCustom(true);
+                if(translator) translator->addPlug(MPlug(node, attribute), usdAttr, true);
               }
               else
               {
@@ -5158,6 +5169,7 @@ MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim)
                 getInt64(node, attribute, value);
                 usdAttr.Set(value);
                 usdAttr.SetCustom(true);
+                if(translator) translator->addPlug(MPlug(node, attribute), usdAttr, true);
               }
               else
               {
@@ -5181,6 +5193,7 @@ MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim)
                 getInt16(node, attribute, value);
                 usdAttr.Set(uint8_t(value));
                 usdAttr.SetCustom(true);
+                if(translator) translator->addPlug(MPlug(node, attribute), usdAttr, true);
               }
               else
               {
