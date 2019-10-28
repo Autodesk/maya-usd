@@ -1376,12 +1376,18 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
 // nodes based on the contents of the new variant selection.
 {
   if(MFileIO::isReadingFile())
-  {
     return;
-  }
+
+  if (!m_stage)
+    return;
+
+  const SdfLayerHandleVector stack = m_stage->GetLayerStack();
 
   TF_FOR_ALL(itr, notice.GetChangeListMap())
   {
+    if (std::find(stack.begin(), stack.end(), itr->first) == stack.end())
+      continue;
+
     TF_FOR_ALL(entryIter, itr->second.GetEntryList())
     {
       const SdfPath &path = entryIter->first;
