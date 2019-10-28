@@ -24,6 +24,7 @@
 #include "maya/MGlobal.h"
 #include "maya/MPlug.h"
 #include "maya/MTime.h"
+#include "maya/MObjectArray.h"
 
 #include "pxr/usd/usdGeom/xformOp.h"
 
@@ -1208,34 +1209,64 @@ public:
   /// \param  attr the attribute handle
   /// \param  op the USD geometry operation that contains the animation data
   /// \param  conversionFactor a scaling factor to apply to the source key frames on import.
+  /// \param  newAnimCurves The MObjectArray to contain possibly created animCurve nodes.
   /// \return MS::kSuccess on success, error code otherwise
   template<typename T>
-  static MStatus setVec3Anim(MObject node, MObject attr, const UsdGeomXformOp op, double conversionFactor = 1.0);
+  static MStatus setVec3Anim(MObject node, MObject attr, const UsdGeomXformOp op, double conversionFactor = 1.0, MObjectArray *newAnimCurves=nullptr);
+  
+  /// \brief  creates animation curves in maya for the specified attribute
+  /// \param  node the node instance the animated attribute belongs to
+  /// \param  attr the attribute handle
+  /// \param  times the precollected time samples
+  /// \param  values the precollected values each maps to the time sample element in times argument
+  /// \param  conversionFactor a scaling factor to apply to the source key frames on import.
+  /// \param  newAnimCurves The MObjectArray to contain possibly created animCurve nodes.
+  /// \return MS::kSuccess on success, error code otherwise
+  template<typename T>
+  static MStatus setVec3Anim(MObject node, MObject attr, const std::vector<double>& times, VtArray<T>& values, double conversionFactor, MObjectArray *newAnimCurves=nullptr);
 
   /// \brief  creates animation curves to animate the specified angle attribute
   /// \param  node the node instance the animated attribute belongs to
   /// \param  attr the attribute handle
   /// \param  op the USD transform op that contains the keyframe data
+  /// \param  newAnimCurves The MObjectArray to contain possibly created animCurve nodes.
   /// \return MS::kSuccess on success, error code otherwise
   AL_USDMAYA_UTILS_PUBLIC
-  static MStatus setAngleAnim(MObject node, MObject attr, const UsdGeomXformOp op);
+  static MStatus setAngleAnim(MObject node, MObject attr, const UsdGeomXformOp op, MObjectArray *newAnimCurves=nullptr);
 
   /// \brief  creates animation curves in maya for the specified attribute
   /// \param  node the node instance the animated attribute belongs to
   /// \param  attr the attribute handle
   /// \param  usdAttr the USD attribute that contains the keyframe data
   /// \param  conversionFactor a scaling to apply to the key frames on import
+  /// \param  newAnimCurves The MObjectArray to contain possibly created animCurve nodes.
   /// \return MS::kSuccess on success, error code otherwise
   AL_USDMAYA_UTILS_PUBLIC
-  static MStatus setFloatAttrAnim(MObject node, MObject attr, UsdAttribute usdAttr, double conversionFactor = 1.0);
+  static MStatus setFloatAttrAnim(MObject node, MObject attr, UsdAttribute usdAttr, double conversionFactor = 1.0, MObjectArray *newAnimCurves=nullptr);
 
   /// \brief  creates animation curves in maya for the visibility attribute
   /// \param  node the node instance the animated attribute belongs to
   /// \param  attr the visibility attribute handle
   /// \param  usdAttr the USD attribute that contains the keyframe data
+  /// \param  newAnimCurves The MObjectArray to contain possibly created animCurve nodes.
   /// \return MS::kSuccess on success, error code otherwise
   AL_USDMAYA_UTILS_PUBLIC
-  static MStatus setVisAttrAnim(const MObject node, const MObject attr, const UsdAttribute & usdAttr);
+  static MStatus setVisAttrAnim(const MObject node, const MObject attr, const UsdAttribute & usdAttr, MObjectArray *newAnimCurves=nullptr);
+
+  /// \brief  check if an animation curves type is supported for DgNodeHelper::set*Anim functions.
+  /// \param  animCurveFn the MFnAnimCurve object that holds a animCurve MObject.
+  /// \return MS::kSuccess if it is supported, error code otherwise
+  AL_USDMAYA_UTILS_PUBLIC
+  static bool isAnimCurveTypeSupported(const MFnAnimCurve &animCurveFn);
+  
+  /// \brief  create or reuse the existing animCurve on the plug.
+  /// \param  plug the plug that we are trying to prepare the animCurve for.
+  /// \param  animCurveFn the MFnAnimCurve object that holds a animCurve MObject.
+  /// \param  checkAnimCurveType the MObjectArray to contain the possibly new animCurve nodes.
+  /// \param  newAnimCurves The MObjectArray to contain possibly created animCurve nodes.
+  /// \return MS::kSuccess on success, error code otherwise
+  AL_USDMAYA_UTILS_PUBLIC
+  static MStatus prepareAnimCurve(const MPlug &plug, MFnAnimCurve &animCurveFn, MObjectArray *newAnimCurves);
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Methods to set single values on non-array attributes
@@ -1938,62 +1969,67 @@ inline MStatus DgNodeHelper::setUsdDoubleArray(const MObject& node, const MObjec
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-template<typename T>
-MStatus DgNodeHelper::setVec3Anim(MObject node, MObject attr, const UsdGeomXformOp op, double conversionFactor)
+inline bool DgNodeHelper::isAnimCurveTypeSupported(const MFnAnimCurve &animCurveFn)
 {
-  MPlug plug(node, attr);
-  MStatus status;
-  const char* const xformErrorCreate = "DgNodeTranslator:setVec3Anim error creating animation curve";
+  auto type =  animCurveFn.animCurveType();
+  return (type == MFnAnimCurve::kAnimCurveTL ||  // time->distance: translation
+          type == MFnAnimCurve::kAnimCurveTA ||  // time->angle: rotation
+          type == MFnAnimCurve::kAnimCurveTU);   // time->double: scale or boolean 
+}
 
-  MFnAnimCurve acFnSetX;
-  acFnSetX.create(plug.child(0), NULL, &status);
-  AL_MAYA_CHECK_ERROR(status, xformErrorCreate);
-
-  MFnAnimCurve acFnSetY;
-  acFnSetY.create(plug.child(1), NULL, &status);
-  AL_MAYA_CHECK_ERROR(status, xformErrorCreate);
-
-  MFnAnimCurve acFnSetZ;
-  acFnSetZ.create(plug.child(2), NULL, &status);
-  AL_MAYA_CHECK_ERROR(status, xformErrorCreate);
-
+//----------------------------------------------------------------------------------------------------------------------
+template<typename T>
+MStatus DgNodeHelper::setVec3Anim(MObject node, MObject attr, const UsdGeomXformOp op, double conversionFactor, MObjectArray *newAnimCurves)
+{
   std::vector<double> times;
   op.GetTimeSamples(&times);
 
-  const char* const xformErrorKey = "DgNodeTranslator:setVec3Anim error setting key on animation curve";
-
+  VtArray<T> values;
   T value(0);
   for(auto const& timeValue: times)
   {
     const bool retValue = op.GetAs<T>(&value, timeValue);
     if (!retValue) continue;
+    values.push_back(value);
+  }
 
+  return setVec3Anim<T>(node, attr, times, values, conversionFactor, newAnimCurves);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+template<typename T>
+MStatus DgNodeHelper::setVec3Anim(MObject node, MObject attr, const std::vector<double>& times, VtArray<T>& values, double conversionFactor, MObjectArray *newAnimCurves)
+{
+  MPlug plug(node, attr);
+  MStatus status;
+
+  MFnAnimCurve xFn, yFn, zFn;
+  status = prepareAnimCurve(plug.child(0), xFn, newAnimCurves);
+  if(!status)return MS::kFailure;
+
+  status = prepareAnimCurve(plug.child(1), yFn, newAnimCurves);
+  if(!status)return MS::kFailure;
+
+  status = prepareAnimCurve(plug.child(2), zFn, newAnimCurves);
+  if(!status)return MS::kFailure;
+
+  const char* const xformErrorEdit = "DgNodeTranslator:setVec3Anim error setting animation curve";
+  size_t timeIndex = 0;
+  for(auto const& timeValue: times)
+  {
     MTime tm(timeValue, MTime::kFilm);
-
-    switch (acFnSetX.animCurveType())
-    {
-      case MFnAnimCurve::kAnimCurveTL: // time->distance: translation
-      case MFnAnimCurve::kAnimCurveTA: // time->angle: rotation
-      case MFnAnimCurve::kAnimCurveTU: // time->double: scale
-      {
-        acFnSetX.addKey(tm, value[0] * conversionFactor, MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
-        AL_MAYA_CHECK_ERROR(status, xformErrorKey);
-        acFnSetY.addKey(tm, value[1] * conversionFactor, MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
-        AL_MAYA_CHECK_ERROR(status, xformErrorKey);
-        acFnSetZ.addKey(tm, value[2] * conversionFactor, MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
-        AL_MAYA_CHECK_ERROR(status, xformErrorKey);
-        break;
-      }
-      default:
-      {
-        break;
-      }
-    }
+    T &value =  values[timeIndex];
+    xFn.addKey(tm, value[0] * conversionFactor, MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
+    AL_MAYA_CHECK_ERROR(status, xformErrorEdit); 
+    yFn.addKey(tm, value[1] * conversionFactor, MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
+    AL_MAYA_CHECK_ERROR(status, xformErrorEdit); 
+    zFn.addKey(tm, value[2] * conversionFactor, MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
+    AL_MAYA_CHECK_ERROR(status, xformErrorEdit); 
+    timeIndex ++;
   }
 
   return MS::kSuccess;
 }
-
 
 //----------------------------------------------------------------------------------------------------------------------
 } // utils

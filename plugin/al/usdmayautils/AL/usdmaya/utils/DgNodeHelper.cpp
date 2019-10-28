@@ -32,6 +32,7 @@
 #include "maya/MFnTypedAttribute.h"
 #include "maya/MMatrix.h"
 #include "maya/MMatrixArray.h"
+#include "maya/MObjectArray.h"
 
 #include <iostream>
 
@@ -990,15 +991,66 @@ MStatus DgNodeHelper::setUsdBoolArray(const MObject& node, const MObject& attrib
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus DgNodeHelper::setAngleAnim(MObject node, MObject attr, const UsdGeomXformOp op)
+MStatus DgNodeHelper::prepareAnimCurve(const MPlug &plug, MFnAnimCurve &animCurveFn, MObjectArray *newAnimCurves)
+{
+  if(plug.isNull())
+    return MS::kFailure;
+
+  MStatus status = MS::kSuccess;  
+  const char* const errorCreate = "DgNodeTranslator:prepareAnimCurve(): error creating animation curve";
+  MDGModifier dgmod;
+  if(plug.isDestination())
+  {
+    MPlug sourcePlug = plug.source();
+    if(sourcePlug.node().hasFn(MFn::kAnimCurve))
+    {
+      animCurveFn.setObject(sourcePlug.node());
+      if(isAnimCurveTypeSupported(animCurveFn))
+      {
+        unsigned int keyNumber = animCurveFn.numKeys();
+        for(int i=keyNumber-1; i>=0; --i)
+        {
+          animCurveFn.remove(i);
+        }
+        return MS::kSuccess;
+      }
+    }
+    
+    dgmod.disconnect(sourcePlug, plug);
+    dgmod.doIt();
+  }
+
+  animCurveFn.create(plug, NULL, &status);
+  AL_MAYA_CHECK_ERROR(status, errorCreate);
+
+  if(!isAnimCurveTypeSupported(animCurveFn))
+  {
+    // If we don't support the animCurve type, we rollback and clean up.
+    dgmod.undoIt();
+    MDGModifier anotherDGMod;
+    anotherDGMod.deleteNode(animCurveFn.object());
+    anotherDGMod.doIt();
+    MGlobal::displayError("DgNodeTranslator:prepareAnimCurve(): The animCurve to create was not supported. ");
+    return MS::kFailure;
+  }
+
+  if(newAnimCurves != nullptr)
+  {
+    newAnimCurves->append(animCurveFn.object());
+  }
+  return status;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus DgNodeHelper::setAngleAnim(MObject node, MObject attr, const UsdGeomXformOp op, MObjectArray *newAnimCurves)
 {
   MStatus status;
   const char* const errorString = "DgNodeHelper::setAngleAnim";
 
   MPlug plug(node, attr);
   MFnAnimCurve fnCurve;
-  fnCurve.create(plug, NULL, &status);
-  AL_MAYA_CHECK_ERROR(status, errorString);
+  status = prepareAnimCurve(plug, fnCurve, newAnimCurves);
+  if(!status)return MS::kFailure;
 
   std::vector<double> times;
   op.GetTimeSamples(&times);
@@ -1013,22 +1065,8 @@ MStatus DgNodeHelper::setAngleAnim(MObject node, MObject attr, const UsdGeomXfor
 
     MTime tm(timeValue, MTime::kFilm);
 
-    switch (fnCurve.animCurveType())
-    {
-      case MFnAnimCurve::kAnimCurveTL:
-      case MFnAnimCurve::kAnimCurveTA:
-      case MFnAnimCurve::kAnimCurveTU:
-      {
-        fnCurve.addKey(tm, value * conversionFactor, MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
-        AL_MAYA_CHECK_ERROR(status, errorString);
-        break;
-      }
-      default:
-      {
-        std::cout << "[DgNodeHelper::setAngleAnim] Unexpected anim curve type: " << fnCurve.animCurveType() << std::endl;
-        break;
-      }
-    }
+    fnCurve.addKey(tm, value * conversionFactor, MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
+    AL_MAYA_CHECK_ERROR(status, errorString);
   }
 
   return MS::kSuccess;
@@ -1036,7 +1074,7 @@ MStatus DgNodeHelper::setAngleAnim(MObject node, MObject attr, const UsdGeomXfor
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setFloatAttrAnim(const MObject node, const MObject attr, UsdAttribute usdAttr,
-                                           double conversionFactor)
+                                           double conversionFactor, MObjectArray *newAnimCurves)
 {
   if (!usdAttr.GetNumTimeSamples())
   {
@@ -1047,20 +1085,9 @@ MStatus DgNodeHelper::setFloatAttrAnim(const MObject node, const MObject attr, U
   MStatus status;
 
   MPlug plug(node, attr);
-  MPlug srcPlug;
   MFnAnimCurve fnCurve;
-  MDGModifier dgmod;
-
-  srcPlug = plug.source(&status);
-  AL_MAYA_CHECK_ERROR(status, errorString);
-  if(!srcPlug.isNull())
-  {
-    std::cout << "[DgNodeTranslator::setFloatAttrAnim] disconnecting curve! = " << srcPlug.name().asChar() << std::endl;
-    dgmod.disconnect(srcPlug, plug);
-    dgmod.doIt();
-  }
-  fnCurve.create(plug, NULL, &status);
-  AL_MAYA_CHECK_ERROR(status, errorString);
+  status = prepareAnimCurve(plug, fnCurve, newAnimCurves);
+  if(!status)return MS::kFailure;
 
   std::vector<double> times;
   usdAttr.GetTimeSamples(&times);
@@ -1072,54 +1099,28 @@ MStatus DgNodeHelper::setFloatAttrAnim(const MObject node, const MObject attr, U
     if(!retValue) continue;
 
     MTime tm(timeValue, MTime::kFilm);
-
-    switch(fnCurve.animCurveType())
-    {
-      case MFnAnimCurve::kAnimCurveTL:
-      case MFnAnimCurve::kAnimCurveTA:
-      case MFnAnimCurve::kAnimCurveTU:
-      {
-        fnCurve.addKey(tm, value * conversionFactor, MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
-        AL_MAYA_CHECK_ERROR(status, errorString);
-        break;
-      }
-      default:
-      {
-        std::cout << "[DgNodeTranslator::setFloatAttrAnim] OTHER ANIM CURVE TYPE! = " << fnCurve.animCurveType() << std::endl;
-        break;
-      }
-    }
+    fnCurve.addKey(tm, value * conversionFactor, MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
+    AL_MAYA_CHECK_ERROR(status, errorString);
   }
 
   return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus DgNodeHelper::setVisAttrAnim(const MObject node, const MObject attr, const UsdAttribute &usdAttr)
+MStatus DgNodeHelper::setVisAttrAnim(const MObject node, const MObject attr, const UsdAttribute &usdAttr, MObjectArray *newAnimCurves)
 {
   if (!usdAttr.GetNumTimeSamples())
   {
     return MS::kFailure;
   }
 
-  const char* const errorString = "DgNodeTranslator::setVisAttrAnim";
+  const char* const errorString = "DgNodeTranslator::setVisAttrAnim: Error adding keyframes";
   MStatus status;
 
   MPlug plug(node, attr);
-  MPlug srcPlug;
   MFnAnimCurve fnCurve;
-  MDGModifier dgmod;
-
-  srcPlug = plug.source(&status);
-  AL_MAYA_CHECK_ERROR(status, errorString);
-  if(!srcPlug.isNull())
-  {
-    std::cout << "[DgNodeTranslator::setVisAttrAnim] disconnecting curve! = " << srcPlug.name().asChar() << std::endl;
-    dgmod.disconnect(srcPlug, plug);
-    dgmod.doIt();
-  }
-  fnCurve.create(plug, NULL, &status);
-  AL_MAYA_CHECK_ERROR(status, errorString);
+  status = prepareAnimCurve(plug, fnCurve, newAnimCurves);
+  if(!status)return MS::kFailure;
 
   std::vector<double> times;
   usdAttr.GetTimeSamples(&times);
