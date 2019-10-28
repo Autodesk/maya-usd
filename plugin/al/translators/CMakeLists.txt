@@ -68,15 +68,26 @@ target_include_directories(
     ../lib/AL_USDMaya
 )
 
-set_target_properties(${TRANSLATORS_PACKAGE}
- PROPERTIES COMPILE_DEFINITIONS
-     "MFB_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE};MFB_ALT_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}"
-)
+# rpath setup
+if(IS_MACOSX OR IS_LINUX) 
+    mayaUsd_init_rpath(rpath "plugin")
+    mayaUsd_add_rpath(rpath "../lib")
+    if(WANT_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../USD/lib")
+    elseif(DEFINED PXR_USD_LOCATION)
+        mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+    endif()
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    mayaUsd_install_rpath(rpath ${TRANSLATORS_PACKAGE})
+endif()
 
-set_target_properties(${TRANSLATORS_PACKAGE}
-        PROPERTIES COMPILE_DEFINITIONS
-        "MFB_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE};MFB_ALT_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}"
-        )
+if (IS_LINUX)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags" PARENT_SCOPE)
+
+  if(WANT_USD_RELATIVE_PATH)
+      mayaUsd_add_rpath(rpath "../../../../USD/lib64")
+  endif()
+endif()
 
 target_link_libraries(${TRANSLATORS_PACKAGE} ${DEPENDANT_LIBRARIES})
 

@@ -570,72 +570,6 @@ function(_pxr_enable_precompiled_header TARGET_NAME)
     endforeach()
 endfunction()
 
-# Initialize a variable to accumulate an rpath.  The origin is the
-# RUNTIME DESTINATION of the target.  If not absolute it's appended
-# to CMAKE_INSTALL_PREFIX.
-function(_pxr_init_rpath rpathRef origin)
-    if(NOT IS_ABSOLUTE ${origin})
-        set(origin "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/${origin}")
-        get_filename_component(origin "${origin}" REALPATH)
-    endif()
-    set(${rpathRef} "${origin}" PARENT_SCOPE)
-endfunction()
-
-# Add a relative target path to the rpath.  If target is absolute compute
-# and add a relative path from the origin to the target.
-function(_pxr_add_rpath rpathRef target)
-    if(IS_ABSOLUTE "${target}")
-        # Make target relative to $ORIGIN (which is the first element in
-        # rpath when initialized with _pxr_init_rpath()).
-        list(GET ${rpathRef} 0 origin)
-        file(RELATIVE_PATH
-            target
-            "${origin}"
-            "${target}"
-        )
-        if("x${target}" STREQUAL "x")
-            set(target ".")
-        endif()
-    endif()
-    file(TO_CMAKE_PATH "${target}" target)
-    set(new_rpath "${${rpathRef}}")
-    list(APPEND new_rpath "$ORIGIN/${target}")
-    set(${rpathRef} "${new_rpath}" PARENT_SCOPE)
-endfunction()
-
-function(_pxr_install_rpath rpathRef NAME)
-    # Get and remove the origin.
-    list(GET ${rpathRef} 0 origin)
-    set(rpath ${${rpathRef}})
-    list(REMOVE_AT rpath 0)
-
-    # Canonicalize and uniquify paths.
-    set(final "")
-    foreach(path ${rpath})
-        # Replace $ORIGIN with @loader_path
-        if(APPLE)
-            if("${path}/" MATCHES "^[$]ORIGIN/")
-                # Replace with origin path.
-                string(REPLACE "$ORIGIN/" "@loader_path/" path "${path}/")
-            endif()
-        endif()
-
-        # Strip trailing slashes.
-        string(REGEX REPLACE "/+$" "" path "${path}")
-
-        # Ignore paths we already have.
-        if (NOT ";${final};" MATCHES ";${path};")
-            list(APPEND final "${path}")
-        endif()
-    endforeach()
-
-    set_target_properties(${NAME}
-        PROPERTIES
-            INSTALL_RPATH_USE_LINK_PATH TRUE
-            INSTALL_RPATH "${final}"
-    )
-endfunction()
-
 # Split the library (target) names in libs into internal-to-the-monolithic-
 # library and external-of-it lists.
 function(_pxr_split_libraries libs internal_result external_result)
@@ -939,12 +873,32 @@ function(_pxr_python_module NAME)
     set(libInstallPrefix "lib/python/pxr/${pyModuleName}")
 
     # Python modules need to be able to access their corresponding
-    # wrapped library and the install lib directory.
-    _pxr_init_rpath(rpath "${libInstallPrefix}")
-    _pxr_add_rpath(rpath
+    # wrapped library and the install lib directory.  The wrapped library
+	# is the C++ library (e.g. libusdMaya.so on Linux) for which we're
+    # providing Python wrappers (e.g. _usdMaya.so on Linux).
+	# Do not prepend INSTALL_DIR_SUFFIX, init_rpath does this for relative
+	# paths.
+    mayaUsd_init_rpath(rpath "${libInstallPrefix}")
+    mayaUsd_add_rpath(rpath
         "${CMAKE_INSTALL_PREFIX}/${args_WRAPPED_LIB_INSTALL_PREFIX}")
-    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-    _pxr_install_rpath(rpath ${LIBRARY_NAME})
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+
+    # Add path for usd core
+    if(WANT_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../USD/lib")
+    elseif(DEFINED PXR_USD_LOCATION)
+        mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+    endif()
+
+    if(IS_LINUX)
+        if(WANT_USD_RELATIVE_PATH)
+            mayaUsd_add_rpath(rpath "../../../../../USD/lib64")
+        elseif(DEFINED PXR_USD_LOCATION)
+            mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib64")
+        endif()
+    endif()
+
+    mayaUsd_install_rpath(rpath ${LIBRARY_NAME})
 
     _get_folder("_python" folder)
     set_target_properties(${LIBRARY_NAME}
@@ -1270,13 +1224,29 @@ function(_pxr_library NAME)
     # XXX -- May want some plugins to be baked into monolithic.
     _pxr_target_link_libraries(${NAME} ${args_LIBRARIES})
 
-    # Rpath has libraries under the USD/third party prefix and the install prefix.
-    # The former is for helper libraries for a third party application and
-    # the latter for core USD libraries.
-    _pxr_init_rpath(rpath "${libInstallPrefix}")
-    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/${PXR_INSTALL_SUBDIR}/lib")
-    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/lib")
-    _pxr_install_rpath(rpath ${NAME})
+    mayaUsd_init_rpath(rpath "${libInstallPrefix}")
+	# Add path for Pixar-specific Maya shared libraries.  As of 1-Aug-2019, 
+	# this is only the usdMaya shared library.
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/${PXR_INSTALL_SUBDIR}/lib")
+	# Add path for common mayaUsd shared libraries.  As of 1-Aug-2019, this is
+	# only the mayaUsd shared library.
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+
+    if(WANT_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../USD/lib")
+    elseif(DEFINED PXR_USD_LOCATION)
+        mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+    endif()
+
+    if(IS_LINUX)
+        if(WANT_USD_RELATIVE_PATH)
+            mayaUsd_add_rpath(rpath "../../../../../USD/lib64")
+        elseif(DEFINED PXR_USD_LOCATION)
+            mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib64")
+        endif()
+    endif()
+
+    mayaUsd_install_rpath(rpath ${NAME})
 
     #
     # Set up the install.

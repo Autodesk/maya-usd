@@ -157,7 +157,7 @@ function(pxr_library NAME)
     if(PXR_ENABLE_PYTHON_SUPPORT AND (args_PYMODULE_CPPFILES OR args_PYMODULE_FILES OR args_PYSIDE_UI_FILES))
         _pxr_python_module(
             ${NAME}
-            WRAPPED_LIB_INSTALL_PREFIX "${libInstallPrefix}"
+            WRAPPED_LIB_INSTALL_PREFIX "plugin/pxr/${libInstallPrefix}"
             PYTHON_FILES ${args_PYMODULE_FILES}
             PYSIDE_UI_FILES ${args_PYSIDE_UI_FILES}
             CPPFILES ${args_PYMODULE_CPPFILES}
@@ -261,9 +261,9 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
 
         # Find libraries under the install prefix, which has the core USD
         # libraries.
-        _pxr_init_rpath(rpath "tests/lib")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-        _pxr_install_rpath(rpath ${LIBRARY_NAME})
+        mayaUsd_init_rpath(rpath "tests/lib")
+        mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+        mayaUsd_install_rpath(rpath ${LIBRARY_NAME})
 
         if (NOT bt_SOURCE_DIR)
             set(bt_SOURCE_DIR testenv)
@@ -341,9 +341,9 @@ function(pxr_build_test TEST_NAME)
 
         # Find libraries under the install prefix, which has the core USD
         # libraries.
-        _pxr_init_rpath(rpath "tests")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-        _pxr_install_rpath(rpath ${TEST_NAME})
+        mayaUsd_init_rpath(rpath "tests")
+        mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+        mayaUsd_install_rpath(rpath ${TEST_NAME})
 
         # XXX -- We shouldn't have to install to run tests.
         install(TARGETS ${TEST_NAME}
@@ -774,10 +774,10 @@ function(pxr_toplevel_epilogue)
                 ${PXR_THREAD_LIBS}
         )
 
-        _pxr_init_rpath(rpath "${libInstallPrefix}")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-        _pxr_install_rpath(rpath usd_ms)
+        mayaUsd_init_rpath(rpath "${libInstallPrefix}")
+        mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib")
+        mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+        mayaUsd_install_rpath(rpath usd_ms)
     endif()
 
     # Setup the plugins in the top epilogue to ensure that everybody has had a
