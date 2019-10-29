@@ -15,8 +15,8 @@
 //
 #include "utils.h"
 
-#include <pxr/imaging/hdx/rendererPlugin.h>
-#include <pxr/imaging/hdx/rendererPluginRegistry.h>
+#include <pxr/imaging/hd/rendererPlugin.h>
+#include <pxr/imaging/hd/rendererPluginRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -28,7 +28,7 @@ constexpr auto MTOH_DEFAULT_RENDERER_PLUGIN_NAME =
 TfTokenVector MtohGetRendererPlugins() {
     static const auto ret = []() -> TfTokenVector {
         HfPluginDescVector pluginDescs;
-        HdxRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescs);
+        HdRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescs);
 
         TfTokenVector r;
         r.reserve(pluginDescs.size());
@@ -41,7 +41,7 @@ TfTokenVector MtohGetRendererPlugins() {
 
 std::string MtohGetRendererPluginDisplayName(const TfToken& id) {
     HfPluginDesc pluginDesc;
-    if (!TF_VERIFY(HdxRendererPluginRegistry::GetInstance().GetPluginDesc(
+    if (!TF_VERIFY(HdRendererPluginRegistry::GetInstance().GetPluginDesc(
             id, &pluginDesc))) {
         return {};
     }

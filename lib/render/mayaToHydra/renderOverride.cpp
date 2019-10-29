@@ -24,8 +24,8 @@
 #include <pxr/imaging/glf/contextCaps.h>
 
 #include <pxr/imaging/hd/rprim.h>
-#include <pxr/imaging/hdx/rendererPlugin.h>
-#include <pxr/imaging/hdx/rendererPluginRegistry.h>
+#include <pxr/imaging/hd/rendererPlugin.h>
+#include <pxr/imaging/hd/rendererPluginRegistry.h>
 #include <pxr/imaging/hdx/tokens.h>
 
 #include <maya/M3dView.h>
@@ -575,7 +575,7 @@ void MtohRenderOverride::_InitHydraResources() {
     GlfContextCaps::InitInstance();
 #endif
     _rendererPlugin =
-        HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(
+        HdRendererPluginRegistry::GetInstance().GetRendererPlugin(
             _rendererDesc.rendererName);
     auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
     _renderIndex = HdRenderIndex::New(renderDelegate);
@@ -655,7 +655,7 @@ void MtohRenderOverride::ClearHydraResources() {
         if (renderDelegate != nullptr) {
             _rendererPlugin->DeleteRenderDelegate(renderDelegate);
         }
-        HdxRendererPluginRegistry::GetInstance().ReleasePlugin(_rendererPlugin);
+        HdRendererPluginRegistry::GetInstance().ReleasePlugin(_rendererPlugin);
         _rendererPlugin = nullptr;
     }
 

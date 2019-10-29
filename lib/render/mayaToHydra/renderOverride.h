@@ -30,7 +30,7 @@
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/rprimCollection.h>
 
-#include <pxr/imaging/hdx/rendererPlugin.h>
+#include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hdx/taskController.h>
 
 #include <maya/MCallbackIdArray.h>
@@ -146,7 +146,7 @@ private:
     std::atomic<bool> _needsClear;
 
     HdEngine _engine;
-    HdxRendererPlugin* _rendererPlugin = nullptr;
+    HdRendererPlugin* _rendererPlugin = nullptr;
     HdxTaskController* _taskController = nullptr;
     HdRenderIndex* _renderIndex = nullptr;
     std::unique_ptr<MtohDefaultLightDelegate> _defaultLightDelegate = nullptr;

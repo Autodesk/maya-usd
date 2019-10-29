@@ -12,7 +12,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
 #pragma once
 
@@ -23,7 +22,7 @@
 
 #define AL_USDMAYA_VERSION_MAJOR 0
 #define AL_USDMAYA_VERSION_MINOR 34
-#define AL_USDMAYA_VERSION_PATCH 2
+#define AL_USDMAYA_VERSION_PATCH 6
 
 #define AL_USDMAYA_VERSION_STR xstr(AL_USDMAYA_VERSION_MAJOR) "." \
                                xstr(AL_USDMAYA_VERSION_MINOR) "." \
