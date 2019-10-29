@@ -25,25 +25,14 @@ float4 Float4ToFloat4(float4 input)
             <function_name val="Float4ToFloat4"/>
             <source>
                 <![CDATA[
-vec4 Float4ToFloat4(vec4 input)
+vec4 Float4ToFloat4(vec4 input_is_glsl_kw)
 {
-    return input;
+    return input_is_glsl_kw;
 }
 ]]>
             </source>
         </implementation>
         <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
-            <function_name val="Float4ToFloat4"/>
-            <source>
-                <![CDATA[
-float4 Float4ToFloat4(float4 input)
-{
-    return input;
-}
-]]>
-            </source>
-        </implementation>
-        <implementation render="OGSRenderer" language="HLSL" lang_version="10.0">
             <function_name val="Float4ToFloat4"/>
             <source>
                 <![CDATA[
