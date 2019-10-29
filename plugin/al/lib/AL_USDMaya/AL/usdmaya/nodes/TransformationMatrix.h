@@ -367,7 +367,7 @@ class TransformationMatrix : public BasicTransformationMatrix
     /// \brief  pushes any modifications on the matrix back onto the UsdPrim
     void pushToPrim();
 
-    void notifyProxyShapeOfRedraw();
+    void notifyProxyShapeOfRedraw(GfMatrix4d& oldMatrix, bool oldResetsStack);
 
     /// \brief  sets the SRT values from a matrix
     void setFromMatrix(MObject thisNode, const MMatrix& m);
