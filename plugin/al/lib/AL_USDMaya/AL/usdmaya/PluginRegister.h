@@ -51,7 +51,7 @@
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 
-#if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION >= 5) 
+#if USD_VERSION_NUM >= 1903
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/glContext.h"
 #endif
@@ -171,7 +171,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
 {
   GlfGlewInit();
 
-  #if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION >= 5) 
+  #if USD_VERSION_NUM >= 1903
   // We may be in a non-gui maya... if so,
   // GlfContextCaps::InitInstance() will error
   if (GlfGLContext::GetCurrentGLContext()->IsValid()) {
