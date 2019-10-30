@@ -13,9 +13,9 @@
             <function_name val="UsdPrimvarReader_float4" />
             <source>
                 <![CDATA[
-vec4 UsdPrimvarReader_float4(vec4 input)
+vec4 UsdPrimvarReader_float4(vec4 input_is_glsl_kw)
 {
-    return input;
+    return input_is_glsl_kw;
 }
                 ]]>
             </source>
