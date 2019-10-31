@@ -41,10 +41,10 @@ set(SRC
     delegates/delegateRegistry.cpp
     delegates/sceneDelegate.cpp
     delegates/proxyDelegate.cpp
-	delegates/proxyUsdImagingDelegate.cpp
+    delegates/proxyUsdImagingDelegate.cpp
     delegates/testDelegate.cpp
-	
-	debugCodes.cpp)
+    
+    debugCodes.cpp)
 
 add_library(${TARGET_NAME} SHARED ${SRC})
 
@@ -119,27 +119,10 @@ if (LUMA_USD_BUILD)
     target_compile_definitions(${TARGET_NAME} PRIVATE LUMA_USD_BUILD)
 endif ()
 
-# Wanted to do this:
-#   get_target_property(LIB_FULLPATH hdMaya LOCATION)
-#   get_filename_component(LIB_NAME ${LIB_FULLPATH} NAME)
-#   set(PLUG_INFO_LIBRARY_PATH ${LIB_NAME})
-# But apparently you can't look up LOCATION in cmake-2.8.0... nor can you use
-# the generator expression "$<TARGET_FILE_NAME:hdMaya>" outside of special
-# commands, like add_custom_command...
-# So just building "manually" with PREFIX / SUFFIX
-get_target_property(LIB_PREFIX ${TARGET_NAME} PREFIX)
-if (LIB_PREFIX STREQUAL LIB_PREFIX-NOTFOUND OR LIB_PREFIX STREQUAL NOTFOUND)
-    set(LIB_PREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
-endif (LIB_PREFIX STREQUAL LIB_PREFIX-NOTFOUND OR LIB_PREFIX STREQUAL NOTFOUND)
-
-get_target_property(LIB_SUFFIX ${TARGET_NAME} SUFFIX)
-if (LIB_SUFFIX STREQUAL LIB_SUFFIX-NOTFOUND OR LIB_SUFFIX STREQUAL NOTFOUND)
-    set(LIB_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
-endif (LIB_SUFFIX STREQUAL LIB_SUFFIX-NOTFOUND OR LIB_SUFFIX STREQUAL NOTFOUND)
-
-set(PLUG_INFO_LIBRARY_PATH ${LIB_PREFIX}hdMaya${LIB_SUFFIX})
-
+set(libFileName ${CMAKE_SHARED_LIBRARY_PREFIX}${TARGET_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(PLUG_INFO_PATH "plugInfo.json")
+set(PLUG_INFO_LIBRARY_PATH "../../../${libFileName}")
+set(PLUG_INFO_RESOURCE_PATH "resources")
 
 configure_file(
     ${PLUG_INFO_PATH}
@@ -149,13 +132,16 @@ configure_file(
 #==============================================================================
 # Install
 #==============================================================================
-install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH}
-    DESTINATION lib/usd/hdMaya/resources)
+install(TARGETS ${TARGET_NAME}
+    LIBRARY
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    RUNTIME
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
 
 install(
-    TARGETS ${TARGET_NAME}
-    DESTINATION lib)
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/hdMaya/resources)
 
 install(
     FILES
@@ -171,7 +157,7 @@ install(
         adapters/mayaAttrs.h
         adapters/shapeAdapter.h
         adapters/tokens.h
-    DESTINATION include/hdMaya/adapters)
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/hdMaya/adapters)
 
 install(
     FILES
@@ -181,18 +167,18 @@ install(
         delegates/delegateRegistry.h
         delegates/params.h
         delegates/proxyDelegate.h
-		delegates/proxyUsdImagingDelegate.h
+        delegates/proxyUsdImagingDelegate.h
         delegates/sceneDelegate.h
-    DESTINATION include/hdMaya/delegates)
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/hdMaya/delegates)
 
 install(
     FILES
         api.h
         utils.h
-		debugCodes.h
+        debugCodes.h
         ${HDMAYA_H}
 
-    DESTINATION include/hdMaya)
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/hdMaya)
 
 if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL)
