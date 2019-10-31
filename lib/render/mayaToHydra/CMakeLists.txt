@@ -40,13 +40,13 @@ endif()
 
 # rpath setup
 if(IS_MACOSX OR IS_LINUX) 
-    mayaUsd_init_rpath(rpath "plugin")
+    mayaUsd_init_rpath(rpath "${TARGET_NAME}")
     if(WANT_USD_RELATIVE_PATH)
         mayaUsd_add_rpath(rpath "../../../USD/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
-    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    mayaUsd_add_rpath(rpath "../")
     mayaUsd_install_rpath(rpath ${TARGET_NAME})
 endif()
 
