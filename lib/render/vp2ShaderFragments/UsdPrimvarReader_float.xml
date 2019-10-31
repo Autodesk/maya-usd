@@ -30,9 +30,9 @@ limitations under the License.
             <function_name val="UsdPrimvarReader_float" />
             <source>
                 <![CDATA[
-float UsdPrimvarReader_float(float input)
+float UsdPrimvarReader_float(float input_is_glsl_kw)
 {
-    return input;
+    return input_is_glsl_kw;
 }
                 ]]>
             </source>

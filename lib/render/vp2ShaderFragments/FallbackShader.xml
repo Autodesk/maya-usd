@@ -19,16 +19,16 @@ limitations under the License.
     <fragments>
         <fragment_ref name="mayaBlinnSurface" ref="mayaBlinnSurface" />
         <fragment_ref name="opacityToTransparency" ref="opacityToTransparency" />
-        <fragment_ref name="float4ToFloat3" ref="float4ToFloat3" />
-        <fragment_ref name="float4ToFloatW" ref="float4ToFloatW" />
-        <fragment_ref name="float4ToFloat4" ref="float4ToFloat4" />
+        <fragment_ref name="Float4ToFloat3" ref="Float4ToFloat3" />
+        <fragment_ref name="Float4ToFloatW" ref="Float4ToFloatW" />
+        <fragment_ref name="Float4ToFloat4" ref="Float4ToFloat4" />
     </fragments>
     <connections>
-        <connect from="float4ToFloat3.output" to="mayaBlinnSurface.color" name="color" />
+        <connect from="Float4ToFloat3.output" to="mayaBlinnSurface.color" name="color" />
         <connect from="opacityToTransparency.transparency" to="mayaBlinnSurface.transparency" name="transparency" />
-        <connect from="float4ToFloatW.output" to="opacityToTransparency.opacity" name="opacity" />
-        <connect from="float4ToFloat4.output" to="float4ToFloat3.input" name="rgb" />
-        <connect from="float4ToFloat4.output" to="float4ToFloatW.input" name="a" />
+        <connect from="Float4ToFloatW.output" to="opacityToTransparency.opacity" name="opacity" />
+        <connect from="Float4ToFloat4.output" to="Float4ToFloat3.input" name="rgb" />
+        <connect from="Float4ToFloat4.output" to="Float4ToFloatW.input" name="a" />
     </connections>
     <properties>
         <undefined name="GPUStage" ref="mayaBlinnSurface.GPUStage" semantic="GPUStage" />
@@ -65,7 +65,7 @@ limitations under the License.
         <float name="fogDensity" ref="mayaBlinnSurface.fogDensity" />
         <float4 name="fogColor" ref="mayaBlinnSurface.fogColor" />
         <float name="fogMultiplier" ref="mayaBlinnSurface.fogMultiplier" />
-        <float4 name="diffuseColor" ref="float4ToFloat4.input" />
+        <float4 name="diffuseColor" ref="Float4ToFloat4.input" />
     </properties>
     <values>
         <float3 name="Lw" value="0.000000,0.000000,0.000000"  />

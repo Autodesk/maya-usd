@@ -18,8 +18,8 @@
 #include <hdMaya/hdMaya.h>
 
 #include <pxr/imaging/hd/renderDelegate.h>
-#include <pxr/imaging/hdx/rendererPlugin.h>
-#include <pxr/imaging/hdx/rendererPluginRegistry.h>
+#include <pxr/imaging/hd/rendererPlugin.h>
+#include <pxr/imaging/hd/rendererPluginRegistry.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
@@ -300,7 +300,7 @@ void MtohInitializeRenderGlobals() {
         }
 #ifdef HDMAYA_USD_001901_BUILD
         auto* rendererPlugin =
-            HdxRendererPluginRegistry::GetInstance().GetRendererPlugin(
+            HdRendererPluginRegistry::GetInstance().GetRendererPlugin(
                 rendererDesc.rendererName);
         if (rendererPlugin == nullptr) { continue; }
         auto* renderDelegate = rendererPlugin->CreateRenderDelegate();
