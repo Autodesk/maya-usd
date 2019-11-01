@@ -1380,7 +1380,7 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
     return;
   }
 
-  TF_FOR_ALL(itr, notice.GetChangeListMap())
+  TF_FOR_ALL(itr, notice.GetChangeListVec())
   {
     TF_FOR_ALL(entryIter, itr->second.GetEntryList())
     {
