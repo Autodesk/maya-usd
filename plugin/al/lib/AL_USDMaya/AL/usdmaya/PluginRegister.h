@@ -277,8 +277,6 @@ MStatus registerPlugin(AFnPlugin& plugin)
   status = MayaUsdProxyShapePlugin::initialize(plugin);
   CHECK_MSTATUS(status);
 
-  // ADSK draw override (hybrid VP2 / Hydra USD rendering) renders nothing,
-  // keep AL code in use for that case.  PPT, 22-May-2019.
   if (MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
       status = plugin.registerShape(
           AL::usdmaya::nodes::ProxyShape::kTypeName,
