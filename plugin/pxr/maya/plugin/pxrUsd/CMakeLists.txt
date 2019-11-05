@@ -41,7 +41,7 @@ pxr_install_test_dir(
 )
 pxr_register_test(testPxrUsdAlembicChaser
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdAlembicChaser"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/tests/testPxrUsdAlembicChaser"
     TESTENV testPxrUsdAlembicChaser
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin

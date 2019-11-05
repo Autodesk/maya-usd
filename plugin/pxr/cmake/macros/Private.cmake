@@ -942,8 +942,8 @@ function(_pxr_python_module NAME)
     # wrapped library and the install lib directory.
     _pxr_init_rpath(rpath "${libInstallPrefix}")
     _pxr_add_rpath(rpath
-        "${CMAKE_INSTALL_PREFIX}/${args_WRAPPED_LIB_INSTALL_PREFIX}")
-    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+        "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/${args_WRAPPED_LIB_INSTALL_PREFIX}")
+    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/lib")
     _pxr_install_rpath(rpath ${LIBRARY_NAME})
 
     _get_folder("_python" folder)
@@ -1184,8 +1184,8 @@ function(_pxr_library NAME)
    	if(NOT (";${PXR_CORE_LIBS};" MATCHES ";${NAME};" AND _building_monolithic))
             file(RELATIVE_PATH
                 pluginToLibraryPath
-                ${CMAKE_INSTALL_PREFIX}/${pluginInstallPrefix}/${NAME}
-                ${CMAKE_INSTALL_PREFIX}/${libInstallPrefix}/${libraryFilename})
+                ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/${pluginInstallPrefix}/${NAME}
+                ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/${libInstallPrefix}/${libraryFilename})
         endif()
     endif()
 

@@ -78,7 +78,7 @@ pxr_install_test_dir(
 )
 pxr_register_test(testPxrUsdPreviewSurfaceExport
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdPreviewSurfaceExport"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/tests/testPxrUsdPreviewSurfaceExport"
     TESTENV testPxrUsdPreviewSurfaceExport
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin

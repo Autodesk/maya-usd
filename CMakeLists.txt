@@ -24,6 +24,8 @@ cmake_minimum_required(VERSION 3.1.1)
 set(BUILD_PXR_PLUGIN ON CACHE BOOL "Build the Pixar USD plugin and libraries.")
 set(BUILD_AL_PLUGIN ON CACHE BOOL "Build the Animal Logic USD plugin and libraries.")
 
+option(BUILD_TESTS "Build tests." ON)
+
 #==============================================================================
 # Modules and Definitions
 #==============================================================================
@@ -62,6 +64,12 @@ if(NOT WIN32)
 endif()
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
+#==============================================================================
+# Tests
+#==============================================================================
+if (BUILD_TESTS)
+    enable_testing()
+endif()
 
 #==============================================================================
 # PLUGINS

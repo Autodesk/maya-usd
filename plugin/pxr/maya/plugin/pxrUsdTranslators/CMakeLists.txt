@@ -71,7 +71,7 @@ pxr_test_scripts(
 
 pxr_register_test(testPxrUsdTranslators
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdTranslators"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/tests/testPxrUsdTranslators"
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin
         MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib/usd/usdMaya/resources
@@ -85,7 +85,7 @@ pxr_install_test_dir(
 )
 pxr_register_test(testPxrUsdTranslatorsScope
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdTranslatorsScope"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/tests/testPxrUsdTranslatorsScope"
     TESTENV testPxrUsdTranslatorsScope
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin
@@ -100,7 +100,7 @@ pxr_install_test_dir(
 )
 pxr_register_test(testPxrUsdTranslatorsStroke
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdTranslatorsStroke"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/tests/testPxrUsdTranslatorsStroke"
     TESTENV testPxrUsdTranslatorsStroke
     ENV
         MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin

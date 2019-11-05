@@ -262,7 +262,7 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
         # Find libraries under the install prefix, which has the core USD
         # libraries.
         _pxr_init_rpath(rpath "tests/lib")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/lib")
         _pxr_install_rpath(rpath ${LIBRARY_NAME})
 
         if (NOT bt_SOURCE_DIR)
@@ -281,8 +281,8 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
 
             file(RELATIVE_PATH 
                 TEST_PLUG_INFO_LIBRARY_PATH
-                "${CMAKE_INSTALL_PREFIX}/${testPlugInfoLibDir}"
-                "${CMAKE_INSTALL_PREFIX}/tests/lib/${LIBRARY_FILE}")
+                "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/${testPlugInfoLibDir}"
+                "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/tests/lib/${LIBRARY_FILE}")
 
             configure_file("${testPlugInfoSrcPath}" "${testPlugInfoPath}")
             # XXX -- We shouldn't have to install to run tests.
@@ -342,7 +342,7 @@ function(pxr_build_test TEST_NAME)
         # Find libraries under the install prefix, which has the core USD
         # libraries.
         _pxr_init_rpath(rpath "tests")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/lib")
         _pxr_install_rpath(rpath ${TEST_NAME})
 
         # XXX -- We shouldn't have to install to run tests.
@@ -425,7 +425,7 @@ function(pxr_register_test TEST_NAME)
 
         # This harness is a filter which allows us to manipulate the test run, 
         # e.g. by changing the environment, changing the expected return code, etc.
-        set(testWrapperCmd ${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros/testWrapper.py --verbose)
+        set(testWrapperCmd ${PROJECT_SOURCE_DIR}/plugin/pxr/cmake/macros/testWrapper.py --verbose)
 
         if (bt_STDOUT_REDIRECT)
             set(testWrapperCmd ${testWrapperCmd} --stdout-redirect=${bt_STDOUT_REDIRECT})
@@ -456,9 +456,9 @@ function(pxr_register_test TEST_NAME)
         # assume the testenv has the same name as the test but allow it to be
         # overridden by specifying TESTENV.
         if (bt_TESTENV)
-            set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${bt_TESTENV})
+            set(testenvDir ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/tests/ctest/${bt_TESTENV})
         else()
-            set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${TEST_NAME})
+            set(testenvDir ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/tests/ctest/${TEST_NAME})
         endif()
 
         set(testWrapperCmd ${testWrapperCmd} --testenv-dir=${testenvDir})
@@ -529,13 +529,13 @@ function(pxr_register_test TEST_NAME)
                 set(_plugSearchPathEnvName ${PXR_OVERRIDE_PLUGINPATH_NAME})
             endif()
 
-            set(testWrapperCmd ${testWrapperCmd} --env-var=${_plugSearchPathEnvName}=${CMAKE_INSTALL_PREFIX}/lib/usd)
+            set(testWrapperCmd ${testWrapperCmd} --env-var=${_plugSearchPathEnvName}=${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/lib/usd)
         endif()
 
         # Ensure that Python imports the Python files built by this build.
         # On Windows convert backslash to slash and don't change semicolons
         # to colons.
-        set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;$ENV{PYTHONPATH}")
+        set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/lib/python;$ENV{PYTHONPATH}")
         if(WIN32)
             string(REGEX REPLACE "\\\\" "/" _testPythonPath "${_testPythonPath}")
         else()
@@ -550,7 +550,7 @@ function(pxr_register_test TEST_NAME)
         else()
             set(testCmd "${bt_COMMAND}")
         endif()
-
+        
         add_test(
             NAME ${TEST_NAME}
             COMMAND ${PYTHON_EXECUTABLE} ${testWrapperCmd}
@@ -577,8 +577,8 @@ function(pxr_setup_plugins)
     foreach(dirName ${PXR_EXTRA_PLUGINS})
         file(RELATIVE_PATH
             relDirName
-            "${CMAKE_INSTALL_PREFIX}/lib/usd"
-            "${CMAKE_INSTALL_PREFIX}/${dirName}"
+            "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/lib/usd"
+            "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/${dirName}"
         )
         set(extraIncludes "${extraIncludes},\n        \"${relDirName}/\"")
     endforeach()
@@ -660,9 +660,9 @@ function(pxr_toplevel_prologue)
                     get_filename_component(parent "${location}" PATH)
                     get_filename_component(parent "${parent}" PATH)
                     get_filename_component(parent "${parent}" ABSOLUTE)
-                    get_filename_component(prefix "${CMAKE_INSTALL_PREFIX}" ABSOLUTE)
+                    get_filename_component(prefix "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}" ABSOLUTE)
                     if(NOT "${parent}" STREQUAL "${prefix}")
-                        message("IMPORTED_LOCATION for usd_ms ${location} inconsistent with install directory ${CMAKE_INSTALL_PREFIX}.")
+                        message("IMPORTED_LOCATION for usd_ms ${location} inconsistent with install directory ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}.")
                         message(WARNING "May not find plugins at runtime.")
                     endif()
                 endif()
@@ -773,8 +773,8 @@ function(pxr_toplevel_epilogue)
         )
 
         _pxr_init_rpath(rpath "${libInstallPrefix}")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/${PXR_INSTALL_SUBDIR}/lib")
+        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/lib")
         _pxr_install_rpath(rpath usd_ms)
     endif()
 
