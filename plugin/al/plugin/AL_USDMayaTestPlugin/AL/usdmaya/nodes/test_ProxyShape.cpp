@@ -991,7 +991,7 @@ TEST(ProxyShape, editTargetChangeAndSave)
     auto stage = proxy->getUsdStage();
 
     auto newLayer = SdfLayer::New(SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id),
-        "/tmp/AL_USDMayaTests_fresh_layer.usda");
+        buildTempPath("AL_USDMayaTests_fresh_layer.usda"));
 
     stage->GetSessionLayer()->InsertSubLayerPath(newLayer->GetIdentifier());
     // At the time newLayer is made the edit target, it shouldn't be dirty!
