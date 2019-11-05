@@ -10,7 +10,9 @@ pxr_plugin(${PXR_PACKAGE}
         usd
         usdGeom
         usdMaya
-        ${MAYA_LIBRARIES}
+        ${MAYA_Foundation_LIBRARY}
+        ${MAYA_OpenMaya_LIBRARY}
+        ${MAYA_OpenMayaRender_LIBRARY}
 
     INCLUDE_DIRS
         ${MAYA_INCLUDE_DIRS}
@@ -60,7 +62,7 @@ pxr_register_test(testPxrUsdAlembicChaser
     TESTENV testPxrUsdAlembicChaser
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile

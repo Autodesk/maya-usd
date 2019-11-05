@@ -385,10 +385,17 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
     int originX, originY, width, height;
     context.getViewportDimensions(originX, originY, width, height);
 
+    #if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION >= 7) 
     engine->SetCameraState(
         GfMatrix4d(context.getMatrix(MHWRender::MFrameContext::kViewMtx).matrix),
         GfMatrix4d(context.getMatrix(MHWRender::MFrameContext::kProjectionMtx).matrix));
     engine->SetRenderViewport(GfVec4d(originX, originY, width, height));
+    #else
+    engine->SetCameraState(
+        GfMatrix4d(context.getMatrix(MHWRender::MFrameContext::kViewMtx).matrix),
+        GfMatrix4d(context.getMatrix(MHWRender::MFrameContext::kProjectionMtx).matrix),
+        GfVec4d(originX, originY, width, height));
+    #endif
 
     engine->SetRootTransform(GfMatrix4d(ptr->m_objPath.inclusiveMatrix().matrix));
 
@@ -522,6 +529,8 @@ bool ProxyDrawOverride::userSelect(
 {
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyDrawOverride::userSelect\n");
 
+  MString fullSelPath = objPath.fullPathName();
+
   if(!MGlobal::optionVarIntValue("AL_usdmaya_selectionEnabled"))
     return false;
 
@@ -569,6 +578,10 @@ bool ProxyDrawOverride::userSelect(
   auto* proxyShape = static_cast<ProxyShape*>(getShape(objPath));
   auto engine = proxyShape->engine();
   if (!engine) return false;
+
+  // The commands we execute inside this function shouldn't do special
+  // processing of the proxy we are currently handling here if they
+  // should run across it.
   proxyShape->m_pleaseIgnoreSelection = true;
 
   UsdImagingGLRenderParams params;
@@ -630,7 +643,7 @@ bool ProxyDrawOverride::userSelect(
         MDagPath dg;
         dagNode.getPath(dg);
         const double* p = it.second.worldSpaceHitPoint.GetArray();
-        
+
         selectionList.add(dg);
         worldSpaceHitPts.append(MPoint(p[0], p[1], p[2]));
       }
@@ -684,18 +697,16 @@ bool ProxyDrawOverride::userSelect(
         command += "\"";
       }
 
-      MFnDependencyNode fn(proxyShape->thisMObject());
       command += " \"";
-      command += fn.name();
+      command += fullSelPath;
       command += "\"";
       MGlobal::executeCommandOnIdle(command, false);
     }
     else
     {
       MString command = "AL_usdmaya_ProxyShapeSelect -cl ";
-      MFnDependencyNode fn(proxyShape->thisMObject());
       command += " \"";
-      command += fn.name();
+      command += fullSelPath;
       command += "\"";
       MGlobal::executeCommandOnIdle(command, false);
     }
@@ -712,7 +723,7 @@ bool ProxyDrawOverride::userSelect(
         paths.push_back(getHitPath(it));
       };
 
-      // Do to the inaccuracies in the selection method in gl engine
+      // Due to the inaccuracies in the selection method in gl engine
       // we still need to find the closest selection.
       // Around the edges it often selects two or more prims.
       if (selectInfo.singleSelection())
@@ -758,7 +769,8 @@ bool ProxyDrawOverride::userSelect(
     if (ArchHasEnv("MAYA_WANT_UFE_SELECTION"))
     {
       // Get the Hierarchy Handler of USD - Id = 2
-      auto handler{ Ufe::RunTimeMgr::instance().hierarchyHandler(2) };
+      Ufe::HierarchyHandler::Ptr handler =
+        Ufe::RunTimeMgr::instance().hierarchyHandler(2);
       if (handler == nullptr)
       {
         MGlobal::displayError("USD Hierarchy handler has not been loaded - Picking is not possible");
@@ -813,9 +825,8 @@ bool ProxyDrawOverride::userSelect(
         if(!proxyShape->selectedPaths().empty())
         {
           command = "AL_usdmaya_ProxyShapeSelect -i -cl ";
-          MFnDependencyNode fn(proxyShape->thisMObject());
           command += " \"";
-          command += fn.name();
+          command += fullSelPath;
           command += "\";";
         }
 
@@ -828,9 +839,8 @@ bool ProxyDrawOverride::userSelect(
             command += it.GetText();
             command += "\"";
           }
-          MFnDependencyNode fn(proxyShape->thisMObject());
           command += " \"";
-          command += fn.name();
+          command += fullSelPath;
           command += "\"";
 
         }
@@ -855,9 +865,8 @@ bool ProxyDrawOverride::userSelect(
             command += it.GetText();
             command += "\"";
           }
-          MFnDependencyNode fn(proxyShape->thisMObject());
           command += " \"";
-          command += fn.name();
+          command += fullSelPath;
           command += "\"";
         }
 
@@ -880,12 +889,10 @@ bool ProxyDrawOverride::userSelect(
             command += it.GetText();
             command += "\"";
           }
-          MFnDependencyNode fn(proxyShape->thisMObject());
           command += " \"";
-          command += fn.name();
+          command += fullSelPath;
           command += "\"";
           MGlobal::executeCommandOnIdle(command, false);
-          
         }
       }
       break;
@@ -924,12 +931,11 @@ bool ProxyDrawOverride::userSelect(
             hasSelectedItems = true;
           }
         }
-        MFnDependencyNode fn(proxyShape->thisMObject());
         selectcommand += " \"";
-        selectcommand += fn.name();
+        selectcommand += fullSelPath;
         selectcommand += "\"";
         deselectcommand += " \"";
-        deselectcommand += fn.name();
+        deselectcommand += fullSelPath;
         deselectcommand += "\"";
 
         if(hasSelectedItems)
@@ -946,8 +952,7 @@ bool ProxyDrawOverride::userSelect(
       }
 
       MString final_command = "AL_usdmaya_ProxyShapePostSelect \"";
-      MFnDependencyNode fn(proxyShape->thisMObject());
-      final_command += fn.name();
+      final_command += fullSelPath;
       final_command += "\"";
       proxyShape->setChangedSelectionState(true);
       MGlobal::executeCommandOnIdle(final_command, false);
@@ -957,6 +962,10 @@ bool ProxyDrawOverride::userSelect(
   }
 
   ProxyDrawOverrideSelectionHelper::m_paths.clear();
+
+  // We are done executing commands that needed to handle our current
+  // proxy as a special case.  Unset the ignore state on the proxy.
+  proxyShape->m_pleaseIgnoreSelection = false;
   
   return selected;
 }

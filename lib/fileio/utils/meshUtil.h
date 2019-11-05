@@ -59,7 +59,7 @@ namespace UsdMayaMeshUtil
     /// Helper method for getting Maya mesh normals as a VtVec3fArray.
     MAYAUSD_CORE_PUBLIC
     bool GetMeshNormals(
-        const MFnMesh& mesh,
+        const MObject& mesh,
         VtArray<GfVec3f>* normalsArray,
         TfToken* interpolation);
 

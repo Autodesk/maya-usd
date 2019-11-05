@@ -128,6 +128,7 @@ public:
             (TfPyCall<bool>(o))(prim, path.fullPathName().asChar());
         return res ? MS::kSuccess : MS::kFailure;
     }
+    return MS::kSuccess;
   }
 
   MStatus postImport(const UsdPrim& prim) override
@@ -136,6 +137,7 @@ public:
         auto res = std::function<bool (const UsdPrim&)>(TfPyCall<bool>(o))(prim);
         return res ? MS::kSuccess : MS::kFailure;
     }
+    return MS::kSuccess;
   }
     
   MStatus preTearDown(UsdPrim& prim) override

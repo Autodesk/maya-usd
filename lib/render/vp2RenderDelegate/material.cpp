@@ -75,11 +75,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     (z)
     (w)
 
-    (float4ToFloatX)
-    (float4ToFloatY)
-    (float4ToFloatZ)
-    (float4ToFloatW)
-    (float4ToFloat3)
+    (Float4ToFloatX)
+    (Float4ToFloatY)
+    (Float4ToFloatZ)
+    (Float4ToFloatW)
+    (Float4ToFloat3)
 );
 
 //! Helper utility function to test whether a node is a UsdShade primvar reader.
@@ -150,19 +150,19 @@ void _ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet)
 
             TfToken passThroughId;
             if (rel.inputName == _tokens->rgb || rel.inputName == _tokens->xyz) {
-                passThroughId = _tokens->float4ToFloat3;
+                passThroughId = _tokens->Float4ToFloat3;
             }
             else if (rel.inputName == _tokens->r || rel.inputName == _tokens->x) {
-                passThroughId = _tokens->float4ToFloatX;
+                passThroughId = _tokens->Float4ToFloatX;
             }
             else if (rel.inputName == _tokens->g || rel.inputName == _tokens->y) {
-                passThroughId = _tokens->float4ToFloatY;
+                passThroughId = _tokens->Float4ToFloatY;
             }
             else if (rel.inputName == _tokens->b || rel.inputName == _tokens->z) {
-                passThroughId = _tokens->float4ToFloatZ;
+                passThroughId = _tokens->Float4ToFloatZ;
             }
             else if (rel.inputName == _tokens->a || rel.inputName == _tokens->w) {
-                passThroughId = _tokens->float4ToFloatW;
+                passThroughId = _tokens->Float4ToFloatW;
             }
             else {
                 outNet.relationships.push_back(rel);
@@ -417,8 +417,8 @@ void HdVP2Material::Sync(
                 vtMatResource.UncheckedGet<HdMaterialNetworkMap>();
 
             HdMaterialNetwork bxdfNet, dispNet;
-            TfMapLookup(networkMap.map, UsdImagingTokens->bxdf, &bxdfNet);
-            TfMapLookup(networkMap.map, UsdImagingTokens->displacement, &dispNet);
+            TfMapLookup(networkMap.map, HdMaterialTerminalTokens->surface, &bxdfNet);
+            TfMapLookup(networkMap.map, HdMaterialTerminalTokens->displacement, &dispNet);
 
             if (*dirtyBits & HdMaterial::DirtyResource) {
                 // Apply VP2 fixes to the material network

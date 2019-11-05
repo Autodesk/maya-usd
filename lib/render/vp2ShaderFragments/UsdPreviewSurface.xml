@@ -21,10 +21,10 @@ limitations under the License.
         <fragment_ref name="mayaShaderGeom" ref="mayaShaderGeom"/>
 
         <!-- Fragments for extracting computed dot products. -->
-        <fragment_ref name="mayaShaderGeom_Float4GetX" ref="float4ToFloatX"/>
-        <fragment_ref name="mayaShaderGeom_Float4GetY" ref="float4ToFloatY"/>
-        <fragment_ref name="mayaShaderGeom_Float4GetZ" ref="float4ToFloatZ"/>
-        <fragment_ref name="mayaShaderGeom_Float4GetW" ref="float4ToFloatW"/>
+        <fragment_ref name="mayaShaderGeom_Float4GetX" ref="Float4ToFloatX"/>
+        <fragment_ref name="mayaShaderGeom_Float4GetY" ref="Float4ToFloatY"/>
+        <fragment_ref name="mayaShaderGeom_Float4GetZ" ref="Float4ToFloatZ"/>
+        <fragment_ref name="mayaShaderGeom_Float4GetW" ref="Float4ToFloatW"/>
 
         <!-- Fragments for computing and accumulating lighting contributions
              and combining them with material properties. -->

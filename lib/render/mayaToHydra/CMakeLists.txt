@@ -27,15 +27,26 @@ target_include_directories(${TARGET_NAME} PRIVATE
     ${CMAKE_BINARY_DIR}/usd
 )
 
+if(CMAKE_WANT_UFE_BUILD)
+    find_package(UFE QUIET)
+    if(UFE_FOUND)
+        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
+        include_directories(${UFE_INCLUDE_DIR})
+        add_definitions(-DWANT_UFE_BUILD)
+    else()
+        message(STATUS "UFE not found. UFE features will be disabled.")
+    endif()
+endif()
+
 # rpath setup
 if(IS_MACOSX OR IS_LINUX) 
-    mayaUsd_init_rpath(rpath "plugin")
+    mayaUsd_init_rpath(rpath "${TARGET_NAME}")
     if(WANT_USD_RELATIVE_PATH)
         mayaUsd_add_rpath(rpath "../../../USD/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
-    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    mayaUsd_add_rpath(rpath "../")
     mayaUsd_install_rpath(rpath ${TARGET_NAME})
 endif()
 

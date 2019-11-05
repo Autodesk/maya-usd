@@ -17,12 +17,10 @@ pxr_shared_library(${PXR_PACKAGE}
         usdSkel
         usdUtils
         vt
-        ${Boost_LIBRARIES}
         ${Boost_PYTHON_LIBRARY}
         ${MAYA_Foundation_LIBRARY}
         ${MAYA_OpenMaya_LIBRARY}
         ${MAYA_OpenMayaAnim_LIBRARY}
-        ${MAYA_OpenMayaFX_LIBRARY}
         ${MAYA_OpenMayaRender_LIBRARY}
         ${MAYA_OpenMayaUI_LIBRARY}
         mayaUsd
@@ -168,7 +166,7 @@ pxr_register_test(testPointBasedDeformerNode
     TESTENV testPointBasedDeformerNode
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -184,7 +182,7 @@ pxr_register_test(testUsdExportAsClip
     TESTENV testUsdExportAsClip
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -200,7 +198,7 @@ pxr_register_test(testUsdExportAssembly
     TESTENV testUsdExportAssembly
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -215,8 +213,8 @@ pxr_register_test(testUsdExportAssemblyEdits
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdExportAssemblyEdits"
     TESTENV testUsdExportAssemblyEdits
     ENV
-        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/third_party/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/third_party/maya/share/usd/plugins/usdMaya/resources
+        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -232,7 +230,7 @@ pxr_register_test(testUsdExportCamera
     TESTENV testUsdExportCamera
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -248,7 +246,7 @@ pxr_register_test(testUsdExportColorSets
     TESTENV testUsdExportColorSets
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -264,7 +262,7 @@ pxr_register_test(testUsdExportConnected
     TESTENV testUsdExportConnected
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -281,7 +279,7 @@ pxr_register_test(testUsdExportDisplayColor
     TESTENV testUsdExportDisplayColor
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -297,7 +295,7 @@ pxr_register_test(testUsdExportEulerFilter
     TESTENV testUsdExportEulerFilter
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -313,7 +311,7 @@ pxr_register_test(testUsdExportFilterTypes
     TESTENV testUsdExportFilterTypes
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -329,7 +327,7 @@ pxr_register_test(testUsdExportFrameOffset
     TESTENV testUsdExportFrameOffset
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -345,7 +343,7 @@ pxr_register_test(testUsdExportInstances
     TESTENV testUsdExportInstances
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -361,7 +359,7 @@ pxr_register_test(testUsdExportLocator
     TESTENV testUsdExportLocator
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -377,7 +375,7 @@ pxr_register_test(testUsdExportMesh
     TESTENV testUsdExportMesh
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -393,7 +391,7 @@ pxr_register_test(testUsdExportNurbsCurve
     TESTENV testUsdExportNurbsCurve
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -404,7 +402,7 @@ pxr_register_test(testUsdExportOpenLayer
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdExportOpenLayer"
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -420,7 +418,7 @@ pxr_register_test(testUsdExportOverImport
     TESTENV testUsdExportOverImport
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -436,7 +434,7 @@ pxr_register_test(testUsdExportPackage
     TESTENV testUsdExportPackage
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -452,7 +450,7 @@ pxr_register_test(testUsdExportParentScope
     TESTENV testUsdExportParentScope
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -468,7 +466,7 @@ pxr_register_test(testUsdExportParticles
     TESTENV testUsdExportParticles
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -484,7 +482,7 @@ pxr_register_test(testUsdExportPointInstancer
     TESTENV testUsdExportPointInstancer
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -500,7 +498,7 @@ pxr_register_test(testUsdExportPref
     TESTENV testUsdExportPref
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -516,7 +514,7 @@ pxr_register_test(testUsdExportRenderLayerMode
     TESTENV testUsdExportRenderLayerMode
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -535,7 +533,7 @@ pxr_register_test(testUsdExportRenderLayerMode
 #     TESTENV testUsdExportRfMLight
 #     ENV
 #         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-#         MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+#         MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
 #         MAYA_DISABLE_CIP=1
 #         MAYA_NO_STANDALONE_ATEXIT=1
 #         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -551,7 +549,7 @@ pxr_register_test(testUsdExportSelection
     TESTENV testUsdExportSelection
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -567,7 +565,7 @@ pxr_register_test(testUsdExportShadingInstanced
     TESTENV testUsdExportShadingInstanced
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -583,7 +581,7 @@ pxr_register_test(testUsdExportShadingModeDisplayColor
     TESTENV testUsdExportShadingModeDisplayColor
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -599,7 +597,7 @@ pxr_register_test(testUsdExportShadingModePxrRis
     TESTENV testUsdExportShadingModePxrRis
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -615,7 +613,7 @@ pxr_register_test(testUsdExportSkeleton
     TESTENV testUsdExportSkeleton
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -627,7 +625,7 @@ pxr_register_test(testUsdExportStripNamespaces
     TESTENV testUsdExportStripNamespaces
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -644,7 +642,7 @@ pxr_register_test(testUsdExportUVSets
     ENV
         PIXMAYA_WRITE_UV_AS_FLOAT2=0
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -661,7 +659,7 @@ pxr_register_test(testUsdExportUVSetsFloat
     ENV
         PIXMAYA_WRITE_UV_AS_FLOAT2=1
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -678,7 +676,7 @@ pxr_register_test(testUsdExportVisibilityDefault
     ENV
         PIXMAYA_WRITE_UV_AS_FLOAT2=1
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -694,7 +692,7 @@ pxr_register_test(testUsdImportAsAssemblies
     TESTENV testUsdImportAsAssemblies
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -710,7 +708,7 @@ pxr_register_test(testUsdImportCamera
     TESTENV testUsdImportCamera
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -726,7 +724,7 @@ pxr_register_test(testUsdImportColorSets
     TESTENV testUsdImportColorSets
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -742,7 +740,7 @@ pxr_register_test(testUsdImportFrameRange
     TESTENV testUsdImportFrameRange
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -758,7 +756,7 @@ pxr_register_test(testUsdImportMesh
     TESTENV testUsdImportMesh
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -774,7 +772,7 @@ pxr_register_test(testUsdImportNestedAssemblyAnimation
     TESTENV testUsdImportNestedAssemblyAnimation
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -792,7 +790,7 @@ pxr_register_test(testUsdImportNestedAssemblyAnimation
 #     TESTENV testUsdImportRfMLight
 #     ENV
 #         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-#         MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+#         MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
 #         MAYA_DISABLE_CIP=1
 #         MAYA_NO_STANDALONE_ATEXIT=1
 #         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -808,7 +806,7 @@ pxr_register_test(testUsdImportSessionLayer
     TESTENV testUsdImportSessionLayer
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -824,7 +822,7 @@ pxr_register_test(testUsdImportShadingModeDisplayColor
     TESTENV testUsdImportShadingModeDisplayColor
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -840,7 +838,7 @@ pxr_register_test(testUsdImportShadingModePxrRis
     TESTENV testUsdImportShadingModePxrRis
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -856,7 +854,7 @@ pxr_register_test(testUsdImportSkeleton
     TESTENV testUsdImportSkeleton
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -872,7 +870,7 @@ pxr_register_test(testUsdTranslateTypelessDefs
     TESTENV testUsdTranslateTypelessDefs
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -889,7 +887,7 @@ pxr_register_test(testUsdImportUVSets
     ENV
         PIXMAYA_READ_FLOAT2_AS_UV=0
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -906,7 +904,7 @@ pxr_register_test(testUsdImportUVSetsFloat
     ENV
         PIXMAYA_READ_FLOAT2_AS_UV=1
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -922,7 +920,7 @@ pxr_register_test(testUsdImportXforms
     TESTENV testUsdImportXforms
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -938,7 +936,7 @@ pxr_register_test(testUsdMayaAppDir
     TESTENV testUsdMayaAppDir
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -949,7 +947,7 @@ pxr_register_test(testUsdMayaBlockSceneModificationContext
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaBlockSceneModificationContext"
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -960,7 +958,7 @@ pxr_register_test(testUsdMayaDiagnosticDelegate
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaDiagnosticDelegate"
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -976,7 +974,7 @@ pxr_register_test(testUsdMayaGetVariantSetSelections
     TESTENV testUsdMayaGetVariantSetSelections
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -992,7 +990,7 @@ pxr_register_test(testUsdMayaModelKindProcessor
     TESTENV testUsdMayaModelKindProcessor
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -1008,18 +1006,7 @@ pxr_register_test(testUsdMayaProxyShape
     TESTENV testUsdMayaProxyShape
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
-        MAYA_DISABLE_CIP=1
-        MAYA_NO_STANDALONE_ATEXIT=1
-        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-)
-
-pxr_register_test(testUsdMayaReadWriteUtils
-    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaReadWriteUtils"
-    ENV
-        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -1035,7 +1022,7 @@ pxr_register_test(testUsdMayaReferenceAssemblyEdits
     TESTENV testUsdMayaReferenceAssemblyEdits
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -1051,18 +1038,7 @@ pxr_register_test(testUsdMayaUserExportedAttributes
     TESTENV testUsdMayaUserExportedAttributes
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
-        MAYA_DISABLE_CIP=1
-        MAYA_NO_STANDALONE_ATEXIT=1
-        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-)
-
-pxr_register_test(testUsdMayaAdaptor
-    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaAdaptor"
-    ENV
-        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -1078,7 +1054,7 @@ pxr_register_test(testUsdMayaAdaptorGeom
     TESTENV testUsdMayaAdaptorGeom
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -1094,7 +1070,7 @@ pxr_register_test(testUsdMayaAdaptorMetadata
     TESTENV testUsdMayaAdaptorMetadata
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -1110,7 +1086,7 @@ pxr_register_test(testUsdReferenceAssemblyChangeRepresentations
     TESTENV testUsdReferenceAssemblyChangeRepresentations
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -1126,7 +1102,7 @@ pxr_register_test(testUsdReferenceAssemblySelection
     TESTENV testUsdReferenceAssemblySelection
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
@@ -1138,7 +1114,7 @@ pxr_register_test(testUsdMayaXformStack
     TESTENV testUsdMayaXformStack
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/share/usd/plugins/usdMaya/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile

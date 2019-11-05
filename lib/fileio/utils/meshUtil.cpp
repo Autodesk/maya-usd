@@ -97,11 +97,12 @@ UsdMayaMeshUtil::SetEmitNormalsTag(
 
 bool
 UsdMayaMeshUtil::GetMeshNormals(
-        const MFnMesh& mesh,
+        const MObject& meshObj,
         VtArray<GfVec3f>* normalsArray,
         TfToken* interpolation)
 {
     MStatus status;
+    MFnMesh mesh(meshObj);
 
     // Sanity check first to make sure we can get this mesh's normals.
     int numNormals = mesh.numNormals(&status);
@@ -125,8 +126,8 @@ UsdMayaMeshUtil::GetMeshNormals(
 
     normalsArray->resize(numFaceVertices);
     *interpolation = UsdGeomTokens->faceVarying;
-
-    MItMeshFaceVertex itFV(mesh.object());
+    
+    MItMeshFaceVertex itFV(meshObj);
     unsigned int fvi = 0;
     for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
         int normalId = itFV.normalId();
