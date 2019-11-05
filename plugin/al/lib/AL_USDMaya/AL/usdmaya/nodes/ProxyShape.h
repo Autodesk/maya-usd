@@ -1005,6 +1005,7 @@ private:
   MStatus preEvaluation(const MDGContext & context, const MEvaluationNode& evaluationNode) override;
   void CacheEmptyBoundingBox(MBoundingBox&) override;
   UsdTimeCode GetOutputTime(MDataBlock) const override;
+  void copyInternalData(MPxNode* srcNode) override;
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Compute methods
