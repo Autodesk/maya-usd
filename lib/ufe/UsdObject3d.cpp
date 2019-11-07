@@ -7,6 +7,7 @@
 // ===========================================================================
 
 #include "UsdObject3d.h"
+#include "Utils.h"
 
 #include "ufe/types.h"
 
@@ -54,10 +55,13 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
     // an extent computation; this should be explored.
     //
     // UsdGeomImageable::ComputeLocalBound() just calls UsdGeomBBoxCache, so do
-    // this here as well.  Using the default value through
-    // UsdTimeCode::Default() is incorrect: need to get time from Maya.
+    // this here as well.
+    //
+    // Would be nice to know if the object extents are animated or not, so
+    // we can bypass time computation and simply use UsdTimeCode::Default()
+    // as the time.
     TfTokenVector purposes{UsdGeomTokens->default_};
-    UsdGeomBBoxCache bboxCache(UsdTimeCode::Default(), purposes);
+    UsdGeomBBoxCache bboxCache(getTime(sceneItem()->path()), purposes);
     auto bbox = bboxCache.ComputeLocalBound(fPrim);
     auto range = bbox.GetRange();
     auto min = range.GetMin();
