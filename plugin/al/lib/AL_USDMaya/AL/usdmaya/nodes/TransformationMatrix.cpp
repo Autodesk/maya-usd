@@ -164,6 +164,9 @@ void TransformationMatrix::setPrim(const UsdPrim& prim, Transform* transformNode
 bool TransformationMatrix::readVector(MVector& result, const UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::readVector\n");
+  if (!op.IsDefined())
+    return false;
+
   const SdfValueTypeName vtn = op.GetTypeName();
   UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
@@ -236,6 +239,9 @@ bool TransformationMatrix::readVector(MVector& result, const UsdGeomXformOp& op,
 bool TransformationMatrix::pushVector(const MVector& result, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::pushVector %f %f %f [@%f]\n%s\n", result.x, result.y, result.z, timeCode.GetValue(), op.GetOpName().GetText());
+  if (!op.IsDefined())
+    return false;
+
   auto attr = op.GetAttr();
   if(!attr)
   {
@@ -307,6 +313,9 @@ bool TransformationMatrix::pushVector(const MVector& result, UsdGeomXformOp& op,
 bool TransformationMatrix::pushShear(const MVector& result, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::pushShear %f %f %f\n%s\n", result.x, result.y, result.z, op.GetOpName().GetText());
+  if (!op.IsDefined())
+    return false;
+
   const SdfValueTypeName vtn = op.GetTypeName();
   UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
@@ -335,6 +344,9 @@ bool TransformationMatrix::pushShear(const MVector& result, UsdGeomXformOp& op, 
 bool TransformationMatrix::readShear(MVector& result, const UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::readShear\n");
+  if (!op.IsDefined())
+    return false;
+
   const SdfValueTypeName vtn = op.GetTypeName();
   UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
@@ -364,6 +376,9 @@ bool TransformationMatrix::readShear(MVector& result, const UsdGeomXformOp& op, 
 bool TransformationMatrix::readPoint(MPoint& result, const UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::readPoint\n");
+  if (!op.IsDefined())
+    return false;
+
   const SdfValueTypeName vtn = op.GetTypeName();
   UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
@@ -436,6 +451,9 @@ bool TransformationMatrix::readPoint(MPoint& result, const UsdGeomXformOp& op, U
 bool TransformationMatrix::readMatrix(MMatrix& result, const UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::readMatrix\n");
+  if (!op.IsDefined())
+    return false;
+
   const SdfValueTypeName vtn = op.GetTypeName();
   UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
@@ -465,6 +483,9 @@ bool TransformationMatrix::readMatrix(MMatrix& result, const UsdGeomXformOp& op,
 bool TransformationMatrix::pushMatrix(const MMatrix& result, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::pushMatrix\n");
+  if (!op.IsDefined())
+    return false;
+
   const SdfValueTypeName vtn = op.GetTypeName();
   UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
@@ -523,6 +544,9 @@ void TransformationMatrix::setFromMatrix(MObject thisNode, const MMatrix& m)
 bool TransformationMatrix::pushPoint(const MPoint& result, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::pushPoint %f %f %f\n%s\n", result.x, result.y, result.z, op.GetOpName().GetText());
+  if (!op.IsDefined())
+    return false;
+
   const SdfValueTypeName vtn = op.GetTypeName();
   UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
@@ -579,6 +603,9 @@ double TransformationMatrix::readDouble(const UsdGeomXformOp& op, UsdTimeCode ti
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::readDouble\n");
   double result = 0;
+  if (!op.IsDefined())
+    return result;
+
   UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(op.GetTypeName());
   switch(attr_type)
   {
@@ -637,6 +664,9 @@ double TransformationMatrix::readDouble(const UsdGeomXformOp& op, UsdTimeCode ti
 void TransformationMatrix::pushDouble(const double value, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::pushDouble %f\n%s\n", value, op.GetOpName().GetText());
+  if (!op.IsDefined())
+    return;
+
   UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(op.GetTypeName());
   switch(attr_type)
   {
@@ -685,6 +715,9 @@ void TransformationMatrix::pushDouble(const double value, UsdGeomXformOp& op, Us
 bool TransformationMatrix::readRotation(MEulerRotation& result, const UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::readRotation %f %f %f\n%s\n", result.x, result.y, result.z, op.GetOpName().GetText());
+  if (!op.IsDefined())
+    return false;
+
   const double degToRad = 3.141592654 / 180.0;
   switch(op.GetOpType())
   {
@@ -815,6 +848,9 @@ bool TransformationMatrix::readRotation(MEulerRotation& result, const UsdGeomXfo
 bool TransformationMatrix::pushRotation(const MEulerRotation& value, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::pushRotation %f %f %f\n%s\n", value.x, value.y, value.z, op.GetOpName().GetText());
+  if (!op.IsDefined())
+    return false;
+
   const double radToDeg = 180.0 / 3.141592654;
   switch(op.GetOpType())
   {
@@ -883,6 +919,22 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
   for(std::vector<UsdGeomXformOp>::const_iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
   {
     const UsdGeomXformOp& op = *it;
+
+    // For some reason, invalid xform ops sometimes make it here.  What
+    // underlying issue could possibly be causing this?  Or could problems with
+    // the usd file be the cause?  In any case, verify the op is valid before
+    // accessing data through it in order to avoid crashes.  Just ignore bad
+    // ops.
+    // 
+    if (!op.IsDefined())
+    {
+        TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg
+                ("TransformationMatrix::initialiseToPrim - Warning: Prim <%s> "
+                 "processing encountered an undefined UsdGeomXformOp!\n",
+                 m_prim.GetPrimPath().GetText());
+        continue;
+    }
+
     switch(*opIt)
     {
     case kTranslate:
@@ -1141,6 +1193,20 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
       for(std::vector<UsdGeomXformOp>::const_iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
       {
         const UsdGeomXformOp& op = *it;
+
+        // For some reason, invalid xform ops sometimes make it here.  Verify
+        // the op is valid before accessing data through it in order to avoid
+        // crashes.  Just ignore bad ops.
+        //
+        if (!op.IsDefined())
+        {
+            TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg
+                    ("TransformationMatrix::updateToTime - Warning: Prim <%s> "
+                     "processing encountered an undefined UsdGeomXformOp!\n",
+                     m_prim.GetPrimPath().GetText());
+            continue;
+        }
+
         switch(*opIt)
         {
         case kTranslate:
