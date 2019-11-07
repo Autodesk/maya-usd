@@ -112,8 +112,9 @@ public:
         const MIntersection& intersection,
         MDagPath& dagPath) const override;
 
+    //! \brief  Return pointer to DG proxy shape node
     MAYAUSD_CORE_PUBLIC
-    MayaUsdProxyShapeBase* getProxyShape() const;
+    const MayaUsdProxyShapeBase* getProxyShape() const { return _proxyShape; }
 
     MAYAUSD_CORE_PUBLIC
     void SelectionChanged();
@@ -133,7 +134,7 @@ private:
 
     void _InitRenderDelegate();
     bool _Populate();
-    void _UpdateTime();
+    void _UpdateSceneDelegate();
     void _Execute(const MHWRender::MFrameContext& frameContext);
 
     bool _isInitialized();
@@ -141,7 +142,8 @@ private:
     void _FilterSelection();
     void _UpdateSelectionStates();
 
-    MObject             _mObject;                   //!< Proxy shape MObject
+    const MayaUsdProxyShapeBase*  _proxyShape{ nullptr }; //!< DG proxy shape node
+    MDagPath                      _proxyDagPath;          //!< DAG path of the proxy shape (assuming no DAG instancing)
 
     // USD & Hydra Objects
     HdEngine            _engine;                    //!< Hydra engine responsible for running synchronization between scene delegate and VP2RenderDelegate

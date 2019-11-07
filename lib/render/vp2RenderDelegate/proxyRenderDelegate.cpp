@@ -177,8 +177,12 @@ MHWRender::MPxSubSceneOverride* ProxyRenderDelegate::Creator(const MObject& obj)
 
 //! \brief  Constructor
 ProxyRenderDelegate::ProxyRenderDelegate(const MObject& obj)
- : MHWRender::MPxSubSceneOverride(obj)
- , _mObject(obj) {
+: MHWRender::MPxSubSceneOverride(obj)
+{
+    MDagPath::getAPathTo(obj, _proxyDagPath);
+
+    const MFnDependencyNode fnDepNode(obj);
+    _proxyShape = static_cast<MayaUsdProxyShapeBase*>(fnDepNode.userNode());
 }
 
 //! \brief  Destructor
@@ -212,26 +216,17 @@ bool ProxyRenderDelegate::requiresUpdate(const MSubSceneContainer& container, co
     return true;
 }
 
-//! \brief  Return pointer to DG proxy shape node
-MayaUsdProxyShapeBase* ProxyRenderDelegate::getProxyShape() const {
-    const MFnDependencyNode depNodeFn(_mObject);
-    MayaUsdProxyShapeBase* usdSubSceneShape = static_cast<MayaUsdProxyShapeBase*>(depNodeFn.userNode());
-    return usdSubSceneShape;
-}
-
 //! \brief  One time initialization of this drawing routine
 void ProxyRenderDelegate::_InitRenderDelegate() {
     // No need to run all the checks if we got till the end
     if (_isInitialized())
         return;
 
-    MStatus status;
-    MayaUsdProxyShapeBase* usdSubSceneShape = getProxyShape();
-    if (!usdSubSceneShape)
+    if (_proxyShape == nullptr)
         return;
 
     if (!_usdStage) {
-        _usdStage = usdSubSceneShape->getUsdStage();
+        _usdStage = _proxyShape->getUsdStage();
     }
 
     if (!_renderDelegate) {
@@ -255,7 +250,7 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
             MProfiler::kColorD_L1, "Allocate SceneDelegate");
 
         SdfPath delegateID = SdfPath::AbsoluteRootPath().AppendChild(TfToken(TfStringPrintf(
-            "Proxy_%s_%p", usdSubSceneShape->name().asChar(), usdSubSceneShape)));
+            "Proxy_%s_%p", _proxyShape->name().asChar(), _proxyShape)));
 
         _sceneDelegate = new UsdImagingDelegate(_renderIndex, delegateID);
 
@@ -300,13 +295,12 @@ bool ProxyRenderDelegate::_Populate() {
     if (!_isInitialized())
         return false;
 
-    auto* proxyShape = getProxyShape();
-    if (_usdStage && (!_isPopulated || proxyShape->getExcludePrimPathsVersion() != _excludePrimPathsVersion) ) {
+    if (_usdStage && (!_isPopulated || _proxyShape->getExcludePrimPathsVersion() != _excludePrimPathsVersion) ) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorD_L1, "Populate");
 
         // It might have been already populated, clear it if so.
-        SdfPathVector excludePrimPaths = proxyShape->getExcludePrimPaths();
+        SdfPathVector excludePrimPaths = _proxyShape->getExcludePrimPaths();
         for (auto& excludePrim : excludePrimPaths) {
             SdfPath indexPath = _sceneDelegate->ConvertCachePathToIndexPath(excludePrim);
             if (_renderIndex->HasRprim(indexPath)) {
@@ -317,21 +311,47 @@ bool ProxyRenderDelegate::_Populate() {
         _sceneDelegate->Populate(_usdStage->GetPseudoRoot(),excludePrimPaths);
         
         _isPopulated = true;
-        _excludePrimPathsVersion = proxyShape->getExcludePrimPathsVersion();
+        _excludePrimPathsVersion = _proxyShape->getExcludePrimPathsVersion();
     }
 
     return _isPopulated;
 }
 
-//! \brief  Synchronize USD scene delegate time with Maya's scene time.
-void ProxyRenderDelegate::_UpdateTime() {
-    MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
-        MProfiler::kColorC_L1, "Update Time");
+//! \brief  Synchronize USD scene delegate with Maya's proxy shape.
+void ProxyRenderDelegate::_UpdateSceneDelegate()
+{
+    if (!_proxyShape || !_sceneDelegate) {
+        return;
+    }
 
-    MayaUsdProxyShapeBase* usdSubSceneShape = getProxyShape();
-    if(usdSubSceneShape && _sceneDelegate) {
-        UsdTimeCode timeCode = usdSubSceneShape->getTime();
+    MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorC_L1, "UpdateSceneDelegate");
+
+    {
+        MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L1, "SetTime");
+
+        const UsdTimeCode timeCode = _proxyShape->getTime();
         _sceneDelegate->SetTime(timeCode);
+    }
+
+    {
+        MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L1, "SetRootTransform");
+
+        // Rprim sync will be triggered only if root transform is changed.
+        const MMatrix inclusiveMatrix = _proxyDagPath.inclusiveMatrix();
+        const GfMatrix4d rootTransform(inclusiveMatrix.matrix);
+        _sceneDelegate->SetRootTransform(rootTransform);
+    }
+
+    {
+        MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L1, "SetRootVisibility");
+
+        // Rprim sync will be triggered only if root visibility is changed.
+        const bool isVisible = _proxyDagPath.isVisible();
+        _sceneDelegate->SetRootVisibility(isVisible);
     }
 }
 
@@ -377,9 +397,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             MHWRender::MFrameContext::kBoundingBox |
             MHWRender::MFrameContext::kWireFrame))
         {
-            MDagPath proxyPath;
-            MDagPath::getAPathTo(_mObject, proxyPath);
-            _wireframeColor = MHWRender::MGeometryUtilities::wireframeColor(proxyPath);
+            _wireframeColor = MHWRender::MGeometryUtilities::wireframeColor(_proxyDagPath);
         }
 
         // Update repr selector based on display style of the current viewport
@@ -425,7 +443,7 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     param->BeginUpdate(container, _sceneDelegate->GetTime());
 
     if (_Populate()) {
-        _UpdateTime();
+        _UpdateSceneDelegate();
         _Execute(frameContext);
     }
     param->EndUpdate();
@@ -459,8 +477,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     if (handler == nullptr)
         return false;
 
-    MayaUsdProxyShapeBase* proxyShape = getProxyShape();
-    if (proxyShape == nullptr)
+    if (_proxyShape == nullptr)
         return false;
 
     // Extract id of the owner Rprim. A SdfPath directly created from the render
@@ -484,7 +501,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const SdfPath usdPath(_sceneDelegate->ConvertIndexPathToCachePath(rprimId));
 
     const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
-    const Ufe::SceneItem::Ptr& si = handler->createItem(proxyShape->ufePath() + pathSegment);
+    const Ufe::SceneItem::Ptr& si = handler->createItem(_proxyShape->ufePath() + pathSegment);
     if (!si) {
         TF_WARN("UFE runtime is not updated for the USD stage. Please save scene and reopen.");
         return false;
@@ -541,14 +558,13 @@ void ProxyRenderDelegate::SelectionChanged()
 void ProxyRenderDelegate::_FilterSelection()
 {
 #if defined(WANT_UFE_BUILD)
-    MayaUsdProxyShapeBase* proxyShape = getProxyShape();
-    if (proxyShape == nullptr) {
+    if (_proxyShape == nullptr) {
         return;
     }
 
     _selection.reset(new HdSelection);
 
-    const auto proxyPath = proxyShape->ufePath();
+    const auto proxyPath = _proxyShape->ufePath();
     const auto globalSelection = Ufe::GlobalSelection::get();
 
     for (const Ufe::SceneItem::Ptr& item : *globalSelection) {
@@ -574,9 +590,7 @@ void ProxyRenderDelegate::_FilterSelection()
 */
 void ProxyRenderDelegate::_UpdateSelectionStates()
 {
-    MDagPath proxyDagPath;
-    MDagPath::getAPathTo(_mObject, proxyDagPath);
-    auto status = MHWRender::MGeometryUtilities::displayStatus(proxyDagPath);
+    auto status = MHWRender::MGeometryUtilities::displayStatus(_proxyDagPath);
 
     const bool wasProxySelected = _isProxySelected;
     _isProxySelected = ((status == MHWRender::kHilite) || (status == MHWRender::kLead));
