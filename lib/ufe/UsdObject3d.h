@@ -22,7 +22,7 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdObject3d : public Ufe::Object3d
 {
 public:
-	typedef std::shared_ptr<UsdObject3d> Ptr;
+	using Ptr = std::shared_ptr<UsdObject3d>;
 
 	UsdObject3d(const UsdSceneItem::Ptr& item);
 	~UsdObject3d() override;
