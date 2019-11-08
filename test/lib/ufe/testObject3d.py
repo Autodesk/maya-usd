@@ -105,3 +105,48 @@ class Object3dTestCase(unittest.TestCase):
 
         # Remove the test file.
         os.remove(usdFilePath)
+
+    def testAnimatedBoundingBox(self):
+        '''Test the Object3d bounding box interface for animated geometry.'''
+
+        # Load up a scene with a sphere that has an animated radius, with
+        # time connected to the proxy shape.
+        filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test-samples", "sphereAnimatedRadius", "sphereAnimatedRadiusProxyShape.ma" )
+
+        cmds.file(filePath, force=True, open=True)
+
+        # The extents of the sphere are copied from the .usda file.
+        expected = [
+            [(-1.0000002, -1, -1.0000005), (1, 1, 1.0000001)],
+            [(-1.3086424, -1.308642, -1.3086426), (1.308642, 1.308642, 1.3086421)],
+            [(-2.135803, -2.1358025, -2.1358035), (2.1358025, 2.1358025, 2.1358027)],
+            [(-3.333334, -3.3333333, -3.333335), (3.3333333, 3.3333333, 3.3333337)],
+            [(-4.7530875, -4.7530866, -4.753089), (4.7530866, 4.7530866, 4.753087)],
+            [(-6.246915, -6.2469134, -6.2469163), (6.2469134, 6.2469134, 6.2469144)],
+            [(-7.6666684, -7.6666665, -7.6666703), (7.6666665, 7.6666665, 7.6666675)],
+            [(-8.8642, -8.864198, -8.864202), (8.864198, 8.864198, 8.864199)],
+            [(-9.6913595, -9.691358, -9.691362), (9.691358, 9.691358, 9.691359)],
+            [(-10.000002, -10, -10.000005), (10, 10, 10.000001)]]
+
+        # Create an Object3d interface for USD sphere.
+        mayaPathSegment = mayaUtils.createUfePathSegment(
+            '|world|transform1|proxyShape1')
+        usdPathSegment = usdUtils.createUfePathSegment('/pSphere1')
+
+        spherePath = ufe.Path([mayaPathSegment, usdPathSegment])
+        sphereItem = ufe.Hierarchy.createItem(spherePath)
+
+        object3d = ufe.Object3d.object3d(sphereItem)
+
+        # Loop over frames 1 to 10, and compare the values returned to the
+        # expected values.
+        for frame in xrange(1,11):
+            cmds.currentTime(frame)
+
+            ufeBBox = object3d.boundingBox()
+
+            # Compare it to known extents.
+            assertVectorAlmostEqual(self, ufeBBox.min.vector,
+                                    expected[frame-1][0], places=6)
+            assertVectorAlmostEqual(self, ufeBBox.max.vector,
+                                    expected[frame-1][1], places=6)
