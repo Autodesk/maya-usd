@@ -1,25 +1,17 @@
 #
 # Copyright 2016 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 include(Private)
 
@@ -79,14 +71,16 @@ function(pxr_library NAME)
     endif()
 
     # Collect libraries.
-    get_property(help CACHE PXR_ALL_LIBS PROPERTY HELPSTRING)
-    list(APPEND PXR_ALL_LIBS ${NAME})
-    set(PXR_ALL_LIBS "${PXR_ALL_LIBS}" CACHE INTERNAL "${help}")
-    if(args_TYPE STREQUAL "STATIC")
-        # Note if this library is explicitly STATIC.
-        get_property(help CACHE PXR_STATIC_LIBS PROPERTY HELPSTRING)
-        list(APPEND PXR_STATIC_LIBS ${NAME})
-        set(PXR_STATIC_LIBS "${PXR_STATIC_LIBS}" CACHE INTERNAL "${help}")
+    if(NOT args_TYPE STREQUAL "PLUGIN")
+        get_property(help CACHE PXR_ALL_LIBS PROPERTY HELPSTRING)
+        list(APPEND PXR_ALL_LIBS ${NAME})
+        set(PXR_ALL_LIBS "${PXR_ALL_LIBS}" CACHE INTERNAL "${help}")
+        if(args_TYPE STREQUAL "STATIC")
+            # Note if this library is explicitly STATIC.
+            get_property(help CACHE PXR_STATIC_LIBS PROPERTY HELPSTRING)
+            list(APPEND PXR_STATIC_LIBS ${NAME})
+            set(PXR_STATIC_LIBS "${PXR_STATIC_LIBS}" CACHE INTERNAL "${help}")
+        endif()
     endif()
 
     # Expand classes into filenames.
@@ -630,11 +624,6 @@ function(pxr_add_extra_plugins PLUGIN_AREAS)
 endfunction() # pxr_setup_third_plugins
 
 function(pxr_toplevel_prologue)
-    # Generate a namespace declaration header, pxr.h, at the top level of
-    # pxr at configuration time.
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pxr/pxr.h.in
-        ${CMAKE_BINARY_DIR}/include/pxr/pxr.h     
-    )
 
     # Create a monolithic shared library target if we should import one
     # or create one.

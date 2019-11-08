@@ -15,10 +15,9 @@
 //
 #pragma once
 
-#include "../Api.h"
+#include "AL/usdmaya/Api.h"
 
 #include "maya/MPxSurfaceShapeUI.h"
-#include "AL/usd/utils/ForwardDeclares.h"
 
 namespace AL {
 namespace usdmaya {

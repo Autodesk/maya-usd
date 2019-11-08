@@ -15,9 +15,8 @@
 //
 #pragma once
 
-#include "./Api.h"
+#include "AL/usdmaya/Api.h"
 
-#include "maya/MSceneMessage.h"
 #include "AL/usd/utils/ForwardDeclares.h"
 #include "AL/event/EventHandler.h"
 

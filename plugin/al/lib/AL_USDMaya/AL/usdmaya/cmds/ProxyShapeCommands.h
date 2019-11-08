@@ -17,18 +17,14 @@
 
 #include "../Api.h"
 
+#include "maya/MDagModifier.h"
+#include "maya/MObjectArray.h"
+#include "maya/MPxCommand.h"
+
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
+#include "AL/usdmaya/StageCache.h"
 
-#include <map>
-
-#include "maya/MPxCommand.h"
-#include "maya/MDagModifier.h"
-#include "maya/MObject.h"
-#include "maya/MObjectArray.h"
-#include "maya/MSelectionList.h"
-
-#include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -283,6 +279,8 @@ class TranslatePrim
   nodes::ProxyShape* m_proxy;
   SdfPathVector m_importPaths;
   SdfPathVector m_teardownPaths;
+  SdfPathVector m_updatePaths;
+  bool m_recursive;
 
 public:
   AL_MAYA_DECLARE_COMMAND();

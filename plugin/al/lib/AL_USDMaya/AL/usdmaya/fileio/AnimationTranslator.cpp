@@ -13,21 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <algorithm>
-#include <iterator>
 
-#include "AL/usdmaya/utils/MeshUtils.h"
-#include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
+#include "AL/usdmaya/utils/MeshUtils.h"
 
-#include "maya/MItDependencyGraph.h"
-#include "maya/MFnAnimCurve.h"
 #include "maya/MAnimControl.h"
-#include "maya/MGlobal.h"
-#include "maya/MFnMesh.h"
 #include "maya/MAnimUtil.h"
+#include "maya/MFnAnimCurve.h"
+#include "maya/MFnDagNode.h"
+#include "maya/MItDependencyGraph.h"
+#include "maya/MMatrix.h"
 #include "maya/MNodeClass.h"
 
 namespace AL {
@@ -187,8 +184,8 @@ bool AnimationTranslator::isAnimatedMesh(const MDagPath& mesh)
   for (; !iter.isDone(); iter.next())
   {
     MObject currNode = iter.thisPlug().node();
-    if ((currNode.hasFn(MFn::kTransform) || currNode.hasFn(MFn::kPluginTransformNode))
-        && MAnimUtil::isAnimated(currNode, true))
+    if (((currNode.hasFn(MFn::kTransform) || currNode.hasFn(MFn::kPluginTransformNode))
+        && MAnimUtil::isAnimated(currNode, true)) || currNode.hasFn(MFn::kTime))
     {
       return true;
     }
@@ -249,7 +246,9 @@ bool AnimationTranslator::isAnimatedTransform(const MObject& transformNode)
   while(currPath.pop() == MStatus::kSuccess && currPath.hasFn(MFn::kTransform) && inheritTransform(currPath))
   {
     if(areTransformAttributesConnected(currPath))
+    {
       return true;
+    }
   }
 
   return false;
@@ -266,10 +265,14 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
   auto const endTransformAttrib = m_animatedTransformPlugs.end();
   auto const startMesh = m_animatedMeshes.begin();
   auto const endMesh = m_animatedMeshes.end();
+  auto const startWSM = m_worldSpaceOutputs.begin();
+  auto const endWSM = m_worldSpaceOutputs.end();
+
   if((startAttrib != endAttrib) ||
      (startAttribScaled != endAttribScaled) ||
      (startTransformAttrib != endTransformAttrib) ||
      (startMesh != endMesh) ||
+     (startWSM != endWSM) ||
      (!m_animatedNodes.empty()))
   {
     double increment = 1.0 / std::max(1U, params.m_subSamples);
@@ -306,6 +309,11 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
       for(auto nodeAnim : m_animatedNodes)
       {
         nodeAnim.m_translator->exportCustomAnim(nodeAnim.m_path, nodeAnim.m_prim, timeCode);
+      }
+      for(auto it = startWSM; it != endWSM; ++it)
+      {
+        MMatrix mat = it->first.inclusiveMatrix();
+        it->second.Set(*(const GfMatrix4d*)&mat, timeCode);
       }
     }
   }

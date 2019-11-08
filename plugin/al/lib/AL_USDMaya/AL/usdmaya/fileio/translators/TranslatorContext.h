@@ -43,6 +43,7 @@ namespace fileio {
 namespace translators {
 
 typedef std::vector<MObjectHandle> MObjectHandleArray;
+typedef std::map<SdfPath, SdfPath> SdfInstanceMap;
 
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -55,14 +56,32 @@ struct TranslatorParameters
 {
   /// \brief Flag that determines if all Prim schema types should be forced to be imported
   inline void setForcePrimImport(bool forceImport)
-    { forcePrimImport = forceImport; }
+    { m_forcePrimImport = forceImport; }
 
   /// \brief Retrieves the flag that determines if all the Prim schema types should be imported
   inline bool forceTranslatorImport() const
-    { return forcePrimImport; }
+    { return m_forcePrimImport; }
+
+  /// \brief  should pushToPrim be enabled on created transforms
+  inline void setPushToPrim(bool value) 
+    { m_pushToPrim = value; }
+
+  /// \brief  should pushToPrim be enabled on created transforms
+  inline bool pushToPrim() const 
+    { return m_pushToPrim; }
+
+  /// \brief  should readAnimatedValues be enabled on created transforms
+  inline void setReadAnimatedValues(bool value) 
+    { m_readAnimatedValues = value; }
+
+  /// \brief  should readAnimatedValues be enabled on created transforms
+  inline bool readAnimatedValues() const 
+    { return m_readAnimatedValues; }
 
 private:
-  bool forcePrimImport = false;
+  bool m_forcePrimImport = false;
+  bool m_pushToPrim = MGlobal::optionVarIntValue("AL_usdmaya_pushToPrim");
+  bool m_readAnimatedValues = false;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -71,7 +90,7 @@ private:
 /// \ingroup translators
 //----------------------------------------------------------------------------------------------------------------------
 struct TranslatorContext
-  : public TfRefBase
+  : public TfRefBase, TfWeakBase
 {
 public:
   typedef TranslatorContext This; ///< this type
@@ -198,18 +217,18 @@ public:
   AL_USDMAYA_PUBLIC
   ~TranslatorContext();
    
-  /// \brief  given a path to a prim, return the prim type we are aware of at that path
+  /// \brief  given a path to a prim, return the translator we are aware of at that path
   /// \param  path the prim path of a prim that was imported via a custom translator plug-in
   /// \return the type name for that prim
-  TfToken getTypeForPath(SdfPath path) const
+  std::string getTranslatorIdForPath(SdfPath path) const
   {
     const auto it = find(path);
     if(it != m_primMapping.end())
     {
-      return it->type();
+      return it->translatorId();
     }
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getTypeForPath did not find item in mapping.%s\n", path.GetText());
-    return TfToken();
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getTranslatorForPath did not find item in mapping.%s\n", path.GetText());
+    return std::string();
   }
 
   /// \brief  this method is used after a variant switch to check to see if the prim types have changed in the
@@ -239,17 +258,17 @@ public:
   AL_USDMAYA_PUBLIC
   void validatePrims();
 
-  /// \brief  This method is used to determine whether this DB has an entry for the specified prim path and the given type.
+  /// \brief  This method is used to determine whether this DB has an entry for the specified prim path and the given translator.
   ///         This is used within a variant switch to determine if a node can be updated, or whether it needs to be imported.
   /// \param  path the path to the prim to query
-  /// \param  type the type of prim
+  /// \param  translatorId
   /// \return true if an entry is found that matches, false otherwise
-  bool hasEntry(const SdfPath& path, const TfToken& type)
+  bool hasEntry(const SdfPath& path, const std::string& translatorId)
   {
     auto it = find(path);
     if(it != m_primMapping.end())
     {
-      return type == it->type();
+      return translatorId == it->translatorId();
     }
     return false;
   }
@@ -274,11 +293,11 @@ public:
   {
     /// \brief  ctor
     /// \param  path the prim path of the items we will be tracking
-    /// \param  type the USD typename of the prim at the specified path. Used to help us determine which translator plugin
+    /// \param  translatorId. Used to help us determine which translator plugin
     ///         to call to tear down this prim.
     /// \param  mayaObj the maya transform
-    PrimLookup(const SdfPath& path, const TfToken& type, MObject mayaObj)
-      : m_path(path), m_type(type), m_object(mayaObj), m_createdNodes() {}
+    PrimLookup(const SdfPath& path, const std::string& translatorId, MObject mayaObj)
+      : m_path(path), m_translatorId(translatorId), m_object(mayaObj), m_createdNodes() { }
 
     /// \brief  dtor
     ~PrimLookup() {}
@@ -298,10 +317,20 @@ public:
     MObject object() const
       { return m_object.object(); }
 
+    /// \brief  get the schema type of the prim
+    /// \return the schema type stored for this prim
+    std::string translatorId() const
+      { return m_translatorId; }
+
     /// \brief  get the prim type
     /// \return the type stored for this prim
     TfToken type() const
       { return m_type; }
+      
+    /// \brief  get the maya object of the node
+    /// \return the maya node for this reference
+    void setNode(MObject node)
+      { m_object = node; }
 
     /// \brief  get created maya nodes
     /// \return the created maya nodes for this prim translator
@@ -315,6 +344,7 @@ public:
 
   private:
     SdfPath m_path;
+    std::string m_translatorId;
     TfToken m_type;
     MObjectHandle m_object;
     MObjectHandleArray m_createdNodes;
@@ -357,19 +387,7 @@ public:
   /// \param  newPath the path to add as an excluded translator path
   /// \return true if the exclusion was added, false if it wasn't added since it might be already there
   AL_USDMAYA_PUBLIC
-  bool addExcludedGeometry(const SdfPath& newPath)
-  {
-    auto foundPath = m_excludedGeometry.find(newPath);
-
-    if(foundPath != m_excludedGeometry.end())
-    {
-      return false;
-    }
-
-    m_excludedGeometry.insert(newPath);
-    m_isExcludedGeometryDirty = true;
-    return true;
-  }
+  bool addExcludedGeometry(const SdfPath& newPath);
 
   /// \brief  remove geometry from the exclusion list
   /// \param  newPath the path to add as an excluded translator path
@@ -378,7 +396,6 @@ public:
   bool removeExcludedGeometry(const SdfPath& newPath)
   {
     auto foundPath = m_excludedGeometry.find(newPath);
-
     if(foundPath == m_excludedGeometry.end())
     {
       return false;
@@ -390,7 +407,7 @@ public:
 
   /// \brief  retrieve currently excluded translator geometries
   /// \return  retrieve currently excluded translator geometries
-  inline const SdfPathSet& excludedGeometry()
+  inline const SdfInstanceMap& excludedGeometry()
     {return m_excludedGeometry;}
 
   /// \brief Retrieves if the the excluded geometry has been pushed to the renderer
@@ -458,7 +475,7 @@ private:
   bool m_forcePrimImport;
 
   // list of geometry that has been request to be excluded during the translation
-  SdfPathSet m_excludedGeometry;
+  SdfInstanceMap m_excludedGeometry;
   bool m_isExcludedGeometryDirty;
 
 public:

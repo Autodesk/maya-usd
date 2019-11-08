@@ -26,6 +26,88 @@ using namespace AL::usdmaya::fileio::translators;
 using AL::maya::test::buildTempPath;
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief  Test that the mesh Translator correctly translates the visibility onto the transform
+//----------------------------------------------------------------------------------------------------------------------
+TEST(translators_MeshTranslator, meshVisibilityOffImport)
+{
+  MFileIO::newFile(true);
+  const std::string layerFile = buildTempPath("meshVisibilityOffImport.usda");
+
+  // Create cube
+  MString createCubeCommandBlock =
+  "polyCube -w 1 -h 1 -d 1 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -cuv 2 -ch 1;"
+  "select -r pCube1.f[0:5];"
+  "polyProjection -ch 1 -type Planar -ibd on -md x  pCube1.f[0:5];"
+  "setAttr pCube1.visibility 0;" // <-- hidden!
+  "select -r pCube1";
+  MGlobal::executeCommand(createCubeCommandBlock);
+
+  // Export
+  MGlobal::executeCommand(
+  MString("select -r pCube1;"
+          "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
+          "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + MString(layerFile.c_str()) + "\";");
+
+  // Translate the prim into Maya
+  MString command;
+  command.format(MString("AL_usdmaya_ImportCommand -f \"^1s\""), layerFile.c_str());
+  MGlobal::executeCommand(command, false, false);  
+
+  MSelectionList sl;
+  EXPECT_EQ(MStatus(MS::kSuccess), sl.add("pCube1"));
+  MObject obj;
+  sl.getDependNode(0, obj);
+
+  MFnDependencyNode dag;
+  dag.setObject(obj);
+
+  MPlug primPathPlug = dag.findPlug("v");
+  // validate that the visibility is actually OFF
+  ASSERT_FALSE(primPathPlug.asBool());
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  Test that the mesh Translator correctly translates the visibility onto the transform
+//----------------------------------------------------------------------------------------------------------------------
+TEST(translators_MeshTranslator, meshVisibilityOnImport)
+{
+  MFileIO::newFile(true);
+  const std::string layerFile = buildTempPath("meshVisibilityOnImport.usda");
+
+  // Create cube
+  MString createCubeCommandBlock =
+  "polyCube -w 1 -h 1 -d 1 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -cuv 2 -ch 1;"
+  "select -r pCube1.f[0:5];"
+  "polyProjection -ch 1 -type Planar -ibd on -md x  pCube1.f[0:5];"
+  "setAttr pCube1.visibility 1;" // <-- visible!
+  "select -r pCube1";
+  MGlobal::executeCommand(createCubeCommandBlock);
+
+  // Export
+  MGlobal::executeCommand(
+  MString("select -r pCube1;"
+          "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Compaction_Level=3;"
+          "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"") + MString(layerFile.c_str()) + "\";");
+
+  // Translate the prim into Maya
+  MString command;
+  command.format(MString("AL_usdmaya_ImportCommand -f \"^1s\""), layerFile.c_str());
+  MGlobal::executeCommand(command, false, false);  
+
+  MSelectionList sl;
+  EXPECT_EQ(MStatus(MS::kSuccess), sl.add("pCube1"));
+  MObject obj;
+  sl.getDependNode(0, obj);
+
+  MFnDependencyNode dag;
+  dag.setObject(obj);
+
+  MPlug primPathPlug = dag.findPlug("v");
+  // validate that the visibility is actually ON
+  ASSERT_TRUE(primPathPlug.asBool());
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 /// \brief  Test some of the functionality of the mesh translator
 //----------------------------------------------------------------------------------------------------------------------
 TEST(translators_MeshTranslator, convert3DArrayTo4DArray)
@@ -583,13 +665,10 @@ TEST(translators_MeshTranslator, constantColourExport)
   MFnMesh fn(obj);
   MString name = fn.createColorSetWithName("test");
 
-  MColorArray colours;
-  colours.setLength(24);
-  for(int i = 0; i < 24; ++i)
-  {
-    colours[i] = MColor(0.3f, 0.4f, 0.5f, 1.0f);
-  }
+  MColorArray colours(1, MColor(0.3f, 0.4f, 0.5f, 1.0f));
+  MIntArray indices(24, 0);
   fn.setColors(colours, &name);
+  fn.assignColors(indices, &name);
 
 
   const MString temp_path = buildTempPath("AL_USDMayaTests_exportConstColour.usda");
@@ -680,12 +759,13 @@ TEST(translators_MeshTranslator, vertexColourExport)
     MIntArray counts, indices;
     fn.getVertices(counts, indices);
     MColorArray colours;
-    colours.setLength(24);
-    for(int i = 0; i < 24; ++i)
+    colours.setLength(8);
+    for(int i = 0; i < 8; ++i)
     {
-      colours[i] = MColor(0.3f * float(indices[i]), 0.4f, 0.5f, 1.0f);
+      colours[i] = MColor(0.3f * i, 0.4f, 0.5f, 1.0f);
     }
     fn.setColors(colours, &name);
+    fn.assignColors(indices, &name);
   }
 
   const MString temp_path = buildTempPath("AL_USDMayaTests_exportVertexColour.usda");
@@ -784,15 +864,18 @@ TEST(translators_MeshTranslator, uniformColourExport)
     fn.getVertices(counts, indices);
 
     MColorArray colours;
-    colours.setLength(24);
+    colours.setLength(6);
     for(int i = 0; i < 6; i++)
     {
-      for(int j = 0; j < 4; ++j)
-      {
-        colours[4 * i + j] = MColor(0.3f * float(i), 0.4f, 0.5f, 1.0f);
-      }
+      colours[i] = MColor(0.3f * float(i), 0.4f, 0.5f, 1.0f);
+    }
+    indices.setLength(24);
+    for(int i = 0; i < 24; i++)
+    {
+      indices[i] = i / 4;
     }
     fn.setColors(colours, &name);
+    fn.assignColors(indices, &name);
   }
 
   const MString temp_path = buildTempPath("AL_USDMayaTests_exportUniformColour.usda");
@@ -892,11 +975,14 @@ TEST(translators_MeshTranslator, faceVaryingColourExport)
 
     MColorArray colours;
     colours.setLength(24);
+    indices.setLength(24);
     for(int i = 0; i < 24; i++)
     {
       colours[i] = MColor(0.01f * i, 0.4f, 0.5f, 1.0f);
+      indices[i] = i;
     }
     fn.setColors(colours, &name);
+    fn.assignColors(indices, &name);
   }
 
   const MString temp_path = buildTempPath("AL_USDMayaTests_exportFaceVaryingColour.usda");
@@ -973,16 +1059,138 @@ TEST(translators_MeshTranslator, faceVaryingColourExport)
 };
 
 
+TEST(translators_MeshTranslator, reverseNormalsFlag)
+{
+  MFileIO::newFile(true);
 
+  {
+    const MString temp_path = buildTempPath("AL_USDMayaTests_shouldHaveOppositeFlag.usda");
+    MString cmd = 
+    "polyCube -w 1 -h 1 -d 1 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -cuv 4 -ch 1;\n"
+    "setAttr \"pCubeShape1.doubleSided\" 0;\n"
+    "setAttr \"pCubeShape1.opposite\" 1;\n"
+    "file -force -options \"Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Activate_all_Plugin_Translators=1;Meshes=1;Mesh_Face_Connects=1;Mesh_Points=1;"
+    "Mesh_Normals=1;Mesh_Vertex_Creases=0;Mesh_Edge_Creases=0;Mesh_UVs=0;Mesh_UV_Only=0;Mesh_Points_as_PRef=0;Mesh_Colours=0;Mesh_Holes=0;"
+    "Write_Normals_as_Primvars=0;Reverse_Opposite_Normals=0;Compaction_Level=3;\" -typ \"AL usdmaya export\" -pr -es \"";
+    cmd += temp_path;
+    cmd += "\";\n";
 
+    EXPECT_TRUE(MGlobal::executeCommand(cmd));
 
+    UsdStageRefPtr stage = UsdStage::Open(temp_path.asChar());
+    ASSERT_TRUE(stage);
 
+    UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
+    ASSERT_TRUE(prim);
 
+    UsdGeomMesh mesh(prim);
 
+    const GfVec3f expectedNormals[] = {
+      GfVec3f(0, 0, 1), 
+      GfVec3f(0, 0, 1), 
+      GfVec3f(0, 0, 1), 
+      GfVec3f(0, 0, 1),
+      GfVec3f(0, 1, 0), 
+      GfVec3f(0, 1, 0), 
+      GfVec3f(0, 1, 0), 
+      GfVec3f(0, 1, 0),
+      GfVec3f(0, 0, -1), 
+      GfVec3f(0, 0, -1),
+      GfVec3f(0, 0, -1),
+      GfVec3f(0, 0, -1),
+      GfVec3f(0, -1, 0),
+      GfVec3f(0, -1, 0), 
+      GfVec3f(0, -1, 0), 
+      GfVec3f(0, -1, 0), 
+      GfVec3f(1, 0, 0), 
+      GfVec3f(1, 0, 0), 
+      GfVec3f(1, 0, 0), 
+      GfVec3f(1, 0, 0), 
+      GfVec3f(-1, 0, 0), 
+      GfVec3f(-1, 0, 0), 
+      GfVec3f(-1, 0, 0), 
+      GfVec3f(-1, 0, 0)
+    };
 
+    VtArray<GfVec3f> normals;
+    mesh.GetNormalsAttr().Get(&normals);
 
+    ASSERT_EQ(24, normals.size());
+    for(size_t i = 0; i < 24; ++i)
+    {
+      EXPECT_EQ(expectedNormals[i], normals[i]);
+    }
 
+    auto attr = mesh.GetOrientationAttr();
+    EXPECT_TRUE(attr);
+    TfToken value;
+    attr.Get(&value);
+    EXPECT_EQ(UsdGeomTokens->leftHanded, value);
+  }
 
+  MFileIO::newFile(true);
+  {
+    const MString temp_path = buildTempPath("AL_USDMayaTests_shouldNotHaveOppositeFlag.usda");
+    MString cmd = 
+    "polyCube -w 1 -h 1 -d 1 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -cuv 4 -ch 1;\n"
+    "setAttr \"pCubeShape1.doubleSided\" 0;\n"
+    "setAttr \"pCubeShape1.opposite\" 1;\n"
+    "file -force -options \"Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Activate_all_Plugin_Translators=1;Meshes=1;Mesh_Face_Connects=1;Mesh_Points=1;"
+    "Mesh_Normals=1;Mesh_Vertex_Creases=0;Mesh_Edge_Creases=0;Mesh_UVs=0;Mesh_UV_Only=0;Mesh_Points_as_PRef=0;Mesh_Colours=0;Mesh_Holes=0;"
+    "Write_Normals_as_Primvars=0;Reverse_Opposite_Normals=1;Compaction_Level=3;\" -typ \"AL usdmaya export\" -pr -es \"";
+    cmd += temp_path;
+    cmd += "\";\n";
 
+    EXPECT_TRUE(MGlobal::executeCommand(cmd));
 
+    UsdStageRefPtr stage = UsdStage::Open(temp_path.asChar());
+    ASSERT_TRUE(stage);
 
+    UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
+    ASSERT_TRUE(prim);
+
+    UsdGeomMesh mesh(prim);
+
+    const GfVec3f expectedNormals[] = {
+      GfVec3f(0, 0, -1), 
+      GfVec3f(0, 0, -1), 
+      GfVec3f(0, 0, -1), 
+      GfVec3f(0, 0, -1),
+      GfVec3f(0, -1, 0), 
+      GfVec3f(0, -1, 0), 
+      GfVec3f(0, -1, 0), 
+      GfVec3f(0, -1, 0),
+      GfVec3f(0, 0, 1), 
+      GfVec3f(0, 0, 1),
+      GfVec3f(0, 0, 1),
+      GfVec3f(0, 0, 1),
+      GfVec3f(0, 1, 0),
+      GfVec3f(0, 1, 0), 
+      GfVec3f(0, 1, 0), 
+      GfVec3f(0, 1, 0), 
+      GfVec3f(-1, 0, 0), 
+      GfVec3f(-1, 0, 0), 
+      GfVec3f(-1, 0, 0), 
+      GfVec3f(-1, 0, 0), 
+      GfVec3f(1, 0, 0), 
+      GfVec3f(1, 0, 0), 
+      GfVec3f(1, 0, 0), 
+      GfVec3f(1, 0, 0)
+    };
+
+    VtArray<GfVec3f> normals;
+    mesh.GetNormalsAttr().Get(&normals);
+
+    ASSERT_EQ(24, normals.size());
+    for(size_t i = 0; i < 24; ++i)
+    {
+      EXPECT_EQ(expectedNormals[i], normals[i]);
+    }
+
+    auto attr = mesh.GetOrientationAttr();
+    EXPECT_TRUE(attr);
+    TfToken value;
+    attr.Get(&value);
+    EXPECT_EQ(UsdGeomTokens->rightHanded, value);
+  }
+}

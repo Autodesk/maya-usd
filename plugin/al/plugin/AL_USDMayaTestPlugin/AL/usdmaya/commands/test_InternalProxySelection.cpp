@@ -22,6 +22,7 @@
 #include "maya/MGlobal.h"
 #include "maya/MItDependencyNodes.h"
 #include "maya/MFileIO.h"
+#include "pxr/usd/usdGeom/xform.h"
 
 using AL::maya::test::buildTempPath;
 

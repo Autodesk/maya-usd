@@ -16,17 +16,8 @@
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/Layer.h"
-#include "AL/usdmaya/nodes/ProxyShape.h"
 
-#include "maya/MBoundingBox.h"
-#include "maya/MGlobal.h"
-#include "maya/MPlugArray.h"
-#include "maya/MDGModifier.h"
-#include "maya/MFnDependencyNode.h"
-#include "maya/MArrayDataBuilder.h"
-#include "maya/MArrayDataHandle.h"
-#include "maya/MSelectionList.h"
-#include "AL/usdmaya/utils/Utils.h"
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
 namespace usdmaya {

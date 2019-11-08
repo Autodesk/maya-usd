@@ -13,28 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/utils/CommandGuiHelper.h"
-#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
-#include "AL/usdmaya/fileio/TransformIterator.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
-#include "AL/usdmaya/nodes/ProxyShape.h"
-#include "AL/usdmaya/nodes/Transform.h"
+
+#include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/maya/utils/MenuBuilder.h"
+#include "AL/maya/utils/Utils.h"
 
 #include "maya/MArgDatabase.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MGlobal.h"
-#include "maya/MSelectionList.h"
-#include "maya/MStatus.h"
-#include "maya/MStringArray.h"
-#include "maya/MSyntax.h"
-#include "maya/MDagPath.h"
 #include "maya/MArgList.h"
-
-#include <sstream>
-#include <algorithm>
-#include "AL/usdmaya/utils/Utils.h"
+#include "maya/MDagPathArray.h"
+#include "maya/MFnDagNode.h"
+#include "maya/MSyntax.h"
 
 namespace {
     typedef void (AL::usdmaya::nodes::SelectionList::*SelectionListModifierFunc)(SdfPath);
@@ -196,6 +186,7 @@ MSyntax ProxyShapeImport::createSyntax()
   syntax.useSelectionAsDefault(true);
   syntax.setObjectType(MSyntax::kSelectionList, 0);
   syntax.addFlag("-f", "-file", MSyntax::kString);
+  syntax.addFlag("-sid", "-stageId", MSyntax::kLong);
   syntax.addFlag("-s", "-session", MSyntax::kString);
   syntax.addFlag("-n", "-name", MSyntax::kString);
   syntax.addFlag("-pp", "-primPath", MSyntax::kString);
@@ -312,6 +303,7 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   }
 
   MString filePath;
+  int stageId;
   MString sessionLayerSerialized;
   MString primPath;
   MString excludePrimPath;
@@ -320,11 +312,30 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   bool connectToTime = true;
 
   // extract command args
-  if(!database.isFlagSet("-f") || !database.getFlagArgument("-f", 0, filePath))
+  bool hasFilePath = database.isFlagSet("-f") && database.getFlagArgument("-f", 0, filePath);
+  bool hasStageCacheId = database.isFlagSet("-sid") && database.getFlagArgument("-sid", 0, stageId) && (stageId != -1);
+  if(!hasFilePath && !hasStageCacheId)
   {
-    MGlobal::displayError("No file path specified");
+    MGlobal::displayError("Neither file path nor stage Id specified.");
     return MS::kFailure;
   }
+  else
+  if (hasFilePath && hasStageCacheId)
+  {
+    MGlobal::displayError("Cannot specify both file path and stage cache Id.");
+    return MS::kFailure;
+  }
+
+  if (hasStageCacheId)
+  {
+    UsdStageCache::Id stageCacheId = UsdStageCache::Id().FromLongInt(stageId);
+    if (!StageCache::Get().Contains(stageCacheId))
+    {
+      MGlobal::displayError(MString("Cannot find stage with Id ") + stageId + " in stage cache.");
+      return MS::kFailure;
+    }
+  }
+
   bool hasName = database.isFlagSet("-n");
   bool hasPrimPath = database.isFlagSet("-pp");
   bool hasExclPrimPath = database.isFlagSet("-epp");
@@ -358,8 +369,6 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
   {
     database.getFlagArgument("-pmi", 0, populationMaskIncludePath);
   }
-
-  // TODO - AssetResolver config - just take string arg and store it in arCtxStr
 
   // what are we parenting this node to?
   MObject firstParent;
@@ -407,11 +416,15 @@ MStatus ProxyShapeImport::doIt(const MArgList& args)
 
   if(hasStagePopulationMaskInclude) m_modifier.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::populationMaskIncludePaths()), populationMaskIncludePath);
 
-  std::string arCtxStr("ARconfigGoesHere");
-  m_modifier.newPlugValueString(
-      MPlug(m_shape, nodes::ProxyShape::serializedArCtx()),
-      MString(arCtxStr.c_str()));
-  m_modifier2.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::filePath()), filePath);
+  // Prefer stage cache Id over file path.
+  if (hasStageCacheId)
+  {
+    m_modifier2.newPlugValueInt(MPlug(m_shape, nodes::ProxyShape::stageCacheId()), stageId);
+  }
+  else
+  {
+    m_modifier2.newPlugValueString(MPlug(m_shape, nodes::ProxyShape::filePath()), filePath);
+  }
 
   if(connectToTime)
   {
@@ -1148,7 +1161,7 @@ MStatus ProxyShapePostSelect::redoIt()
   MSelectionList sl;
   MGlobal::getActiveSelectionList(sl);
   MString command;
-  MFnDependencyNode depNode(m_proxy->thisMObject());
+  MFnDagNode fn(m_proxy->thisMObject());
   for (const auto& path : m_proxy->selectedPaths()) {
     auto obj = m_proxy->findRequiredPath(path);
     if (obj != MObject::kNullObj) {
@@ -1159,7 +1172,7 @@ MStatus ProxyShapePostSelect::redoIt()
         command += "AL_usdmaya_ProxyShapeSelect -i -d -pp \"";
         command += path.GetText();
         command += "\" \"";
-        command += depNode.name();
+        command += fn.fullPathName();
         command += "\";";
       }
     }
@@ -1315,8 +1328,12 @@ MSyntax TranslatePrim::createSyntax()
   MSyntax syntax = setUpCommonSyntax();
   syntax.addFlag("-ip", "-importPaths", MSyntax::kString);
   syntax.addFlag("-tp", "-teardownPaths", MSyntax::kString);
+  syntax.addFlag("-up", "-updatePaths", MSyntax::kString);
   syntax.addFlag("-fi", "-forceImport", MSyntax::kNoArg);
   syntax.addFlag("-fd", "-forceDefault", MSyntax::kNoArg);
+  syntax.addFlag("-ptp", "-pushToPrim", MSyntax::kBoolean);
+  syntax.addFlag("-rav", "-readAnimatedValues", MSyntax::kBoolean);
+  syntax.addFlag("-r", "-recursive");
   return syntax;
 }
 
@@ -1329,6 +1346,8 @@ MStatus TranslatePrim::doIt(const MArgList& args)
     MArgDatabase db = makeDatabase(args);
     AL_MAYA_COMMAND_HELP(db, g_helpText);
     m_proxy = getShapeNode(db);
+
+    m_recursive = db.isFlagSet("-r");
 
     if(db.isFlagSet("-ip"))
     {
@@ -1344,16 +1363,119 @@ MStatus TranslatePrim::doIt(const MArgList& args)
       m_teardownPaths = m_proxy->getPrimPathsFromCommaJoinedString(pathsCsv);
     }
 
+    if(db.isFlagSet("-up"))
+    {
+      MString pathsCsv;
+      db.getFlagArgument("-up", 0, pathsCsv);
+      m_updatePaths = m_proxy->getPrimPathsFromCommaJoinedString(pathsCsv);
+    }
+
     // change the translator context to force import
     if(db.isFlagSet("-fi"))
     {
       tp.setForcePrimImport(true);
     }
 
+    // should pushToPrim be enabled on transforms when translating?
+    if(db.isFlagSet("-ptp"))
+    {
+      bool value = MGlobal::optionVarIntValue("AL_usdmaya_pushToPrim");
+      db.getFlagArgument("-ptp", 0, value);
+      tp.setPushToPrim(value);
+    }
+
+    // should pushToPrim be enabled on transforms when translating?
+    if(db.isFlagSet("-rav"))
+    {
+      bool value = true;
+      db.getFlagArgument("-rav", 0, value);
+      tp.setReadAnimatedValues(value);
+    }
+
     // change the translator context to read default value
     if(db.isFlagSet("-fd"))
     {
       m_proxy->context()->setForceDefaultRead(true);
+    }
+
+    if(m_recursive)
+    {
+      const bool forceImport = db.isFlagSet("-fi");
+      MFnDagNode fn(m_proxy->thisMObject());
+      MDagPath proxyTransformPath;
+      fn.getPath(proxyTransformPath);
+      proxyTransformPath.pop();
+
+      auto& manufacture = m_proxy->translatorManufacture();
+
+      auto stage = m_proxy->usdStage();
+      SdfPathVector newImportPaths;
+      for(auto importPath : m_importPaths)
+      {
+        {
+          auto prim = stage->GetPrimAtPath(importPath);
+          if(prim)
+          {
+            if(manufacture.get(prim))
+            {
+              newImportPaths.push_back(importPath);
+            }
+          }
+        }
+        auto newPrimSet = m_proxy->huntForNativeNodesUnderPrim(proxyTransformPath, importPath, manufacture, forceImport);
+        for(auto it : newPrimSet)
+        {
+          newImportPaths.push_back(it.GetPath());
+        }
+      }
+      std::swap(m_importPaths, newImportPaths);
+
+      SdfPathVector newTeardownPaths;
+      for(auto teardownPath : m_teardownPaths)
+      {
+        {
+          auto prim = stage->GetPrimAtPath(teardownPath);
+          if(prim)
+          {
+            if(manufacture.get(prim))
+            {
+              newTeardownPaths.push_back(teardownPath);
+            }
+          }
+        }
+        auto newPrimSet = m_proxy->huntForNativeNodesUnderPrim(proxyTransformPath, teardownPath, manufacture, true);
+        for(auto it : newPrimSet)
+        {
+          newTeardownPaths.push_back(it.GetPath());
+        }
+      }
+      std::swap(m_teardownPaths, newTeardownPaths);
+
+      SdfPathVector newUpdatePaths;
+      for(auto updatePath : m_updatePaths)
+      {
+        {
+          auto prim = stage->GetPrimAtPath(updatePath);
+          if(prim)
+          {
+            if(manufacture.get(prim))
+            {
+              newUpdatePaths.push_back(updatePath);
+            }
+          }
+        }
+        auto newPrimSet = m_proxy->huntForNativeNodesUnderPrim(proxyTransformPath, updatePath, manufacture, true);
+        for(auto it : newPrimSet)
+        {
+          // We only want to list the prims that are actually updateable.
+          auto translator = manufacture.get(it);
+          if(translator && translator->supportsUpdate())
+          {
+            newUpdatePaths.push_back(it.GetPath());
+          }
+        }
+      }
+      std::swap(m_updatePaths, newUpdatePaths);
     }
   }
   catch(const MStatus& status)
@@ -1375,8 +1497,45 @@ MStatus TranslatePrim::redoIt()
 {
   MDagPath parentTransform = m_proxy->parentTransform();
 
+  // This makes sure we cannot run import twice.
+  SdfPathVector newImportPaths;
+  for(auto importPath : m_importPaths)
+  {
+    uint32_t selected = 0;
+    uint32_t required = 0;
+    uint32_t refCount = 0;
+    m_proxy->getCounts(importPath, selected, required, refCount);
+    if(!required && !refCount)
+    {
+      newImportPaths.push_back(importPath);
+    }
+  }
+
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("TranslatePrim::redoIt\n");
-  m_proxy->translatePrimPathsIntoMaya(m_importPaths, m_teardownPaths, tp);
+  m_proxy->translatePrimPathsIntoMaya(newImportPaths, m_teardownPaths, tp);
+
+
+  auto stage = m_proxy->usdStage();
+  auto manufacture = m_proxy->translatorManufacture();
+  for(auto it : m_updatePaths)
+  { 
+    auto prim = stage->GetPrimAtPath(it);
+    if(prim)
+    {
+      auto translator = manufacture.get(prim);
+      if(translator->supportsUpdate())
+      { 
+        translator->update(prim);
+      }
+      else
+      {
+        MString err = "Update requested on prim that does not support update: ";
+        err += it.GetText();
+        MGlobal::displayWarning(err);
+      }
+    }
+  }
+
   return MStatus::kSuccess;
 }
 
@@ -1386,7 +1545,8 @@ void constructProxyShapeCommandGuis()
 {
   {
     AL::maya::utils::CommandGuiHelper commandGui("AL_usdmaya_ProxyShapeImport", "Proxy Shape Import", "Import", "USD/Proxy Shape/Import", false);
-    commandGui.addFilePathOption("file", "File Path", AL::maya::utils::CommandGuiHelper::kLoad, "USD all (*.usdc *.usda *.usd);;USD crate (*.usdc) (*.usdc);;USD Ascii (*.usda) (*.usda);;USD (*.usd) (*.usd)", AL::maya::utils::CommandGuiHelper::kStringMustHaveValue);
+    commandGui.addFilePathOption("file", "File Path", AL::maya::utils::CommandGuiHelper::kLoad, "USD all (*.usdc *.usda *.usd);;USD crate (*.usdc) (*.usdc);;USD Ascii (*.usda) (*.usda);;USD (*.usd) (*.usd)", AL::maya::utils::CommandGuiHelper::kStringOptional);
+    commandGui.addIntOption("stageId", "Stage cache Id", -1, false);
     commandGui.addStringOption("primPath", "USD Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
     commandGui.addStringOption("excludePrimPath", "Exclude Prim Path", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);
     commandGui.addStringOption("name", "Proxy Shape Node Name", "", false, AL::maya::utils::CommandGuiHelper::kStringOptional);

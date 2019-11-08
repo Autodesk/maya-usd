@@ -14,16 +14,13 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/utils/DiffPrimVar.h"
-#include "maya/MFnMesh.h"
+#include "AL/usd/utils/SIMD.h"
+
 #include "maya/MDoubleArray.h"
 #include "maya/MFloatArray.h"
 #include "maya/MIntArray.h"
+#include "maya/MItMeshPolygon.h"
 #include "maya/MUintArray.h"
-#include "maya/MItMeshFaceVertex.h"
-#include "maya/MGlobal.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/mesh.h"
-#include "pxr/usd/usd/attribute.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -35,7 +32,6 @@ namespace utils {
 uint32_t diffGeom(UsdGeomPointBased& geom, MFnMesh& mesh, UsdTimeCode timeCode, uint32_t exportMask)
 {
   uint32_t result = 0;
-
   if(exportMask & kPoints)
   {
     VtArray<GfVec3f> pointData;
@@ -46,6 +42,11 @@ uint32_t diffGeom(UsdGeomPointBased& geom, MFnMesh& mesh, UsdTimeCode timeCode, 
     const float* const mayaPoints = (const float* const)mesh.getRawPoints(&status);
     const size_t usdPointsCount = pointData.size();
     const size_t mayaPointsCount = mesh.numVertices();
+    if(mayaPointsCount != usdPointsCount)
+    {
+      result |= kPoints;
+    }
+    else
     if(!usd::utils::compareArray(usdPoints, mayaPoints, usdPointsCount * 3, mayaPointsCount * 3))
     {
       result |= kPoints;
@@ -57,14 +58,59 @@ uint32_t diffGeom(UsdGeomPointBased& geom, MFnMesh& mesh, UsdTimeCode timeCode, 
     VtArray<GfVec3f> normalData;
     geom.GetNormalsAttr().Get(&normalData, timeCode);
 
-    MStatus status;
-    const float* const usdNormals = (const float* const)normalData.cdata();
-    const float* const mayaNormals = (const float* const)mesh.getRawNormals(&status);
-    const size_t usdNormalsCount = normalData.size();
-    const size_t mayaNormalsCount = mesh.numVertices();
-    if(!usd::utils::compareArray(usdNormals, mayaNormals, usdNormalsCount * 3, mayaNormalsCount * 3))
+    if(geom.GetNormalsInterpolation() == UsdGeomTokens->vertex)
     {
-      result |= kNormals;
+      VtArray<int32_t> indexData;
+      UsdGeomMesh(geom.GetPrim()).GetFaceVertexIndicesAttr().Get(&indexData, timeCode);
+
+      MStatus status;
+      const float* const usdNormals = (const float*)normalData.cdata();
+      const int32_t* const usdNormalIndices = (const int32_t*)indexData.cdata();
+      if(usdNormals && usdNormalIndices)
+      {
+        if(mesh.numNormals() != normalData.size())
+        {
+          result |= kNormals;
+        }
+        else
+        {
+          MIntArray normalIds, normalCounts;
+          mesh.getNormalIds(normalCounts, normalIds);
+          const float* const mayaNormals = (const float*)mesh.getRawNormals(&status);
+          if(normalIds.length())
+          {
+            int32_t* const ptr = &normalIds[0];
+            const uint32_t n = indexData.size();
+            for(uint32_t i = 0; i < n; ++i)
+            {
+              const float* const n0 = usdNormals + 3 * usdNormalIndices[i];
+              const float* const n1 = mayaNormals + 3 * ptr[i];
+              const float dx = n0[0] - n1[0];
+              const float dy = n0[1] - n1[1];
+              const float dz = n0[2] - n1[2];
+              if(std::abs(dx) > 1e-5f || 
+                 std::abs(dy) > 1e-5f ||
+                 std::abs(dz) > 1e-5f)
+              {
+                result |= kNormals;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    else
+    {
+      MStatus status;
+      const float* const usdNormals = (const float* const)normalData.cdata();
+      const float* const mayaNormals = (const float* const)mesh.getRawNormals(&status);
+      const size_t usdNormalsCount = normalData.size();
+      const size_t mayaNormalsCount = mesh.numVertices();
+      if(!usd::utils::compareArray(usdNormals, mayaNormals, usdNormalsCount * 3, mayaNormalsCount * 3))
+      {
+        result |= kNormals;
+      }
     }
   }
   return result;
@@ -167,7 +213,7 @@ uint32_t diffFaceVertices(UsdGeomMesh& geom, MFnMesh& mesh, UsdTimeCode timeCode
       const uint32_t numCreaseIndices = creasesIndices.size();
       MUintArray mayaCreaseIndices;
       mayaCreaseIndices.setLength(mayaEdgeCreaseIndices.length() * 2);
-      for(uint32_t i = 0; i < numCreaseIndices; ++i)
+      for(uint32_t i = 0, n = mayaEdgeCreaseIndices.length(); i < n; ++i)
       {
         int2 edge;
         mesh.getEdgeVertices(mayaEdgeCreaseIndices[i], edge);
@@ -272,7 +318,18 @@ struct UsdColourSetDefinition
     isRGB = MFnMesh::kRGB == representation;
     MIntArray faceCounts, pointIndices;
     mesh.getVertices(faceCounts, pointIndices);
-    mesh.getColors(m_colours, mayaSetNamePtr);
+    MItMeshPolygon it(mesh.object());
+    while(!it.isDone())
+    {
+      MColorArray faceColours;
+      it.getColors(faceColours, mayaSetNamePtr);
+      it.next();
+      // Append face colours
+      uint32_t offset = m_colours.length();
+      m_colours.setLength(offset+faceColours.length());
+      for (uint32_t j = 0, n = faceColours.length(); j < n; ++j)
+        m_colours[offset+j] = faceColours[j];
+    }
     m_mayaInterpolation = guessColourSetInterpolationTypeExtensive(
         &m_colours[0].r,
         m_colours.length(),
@@ -342,7 +399,7 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void ColourSetBuilder::constructNewlyAddedSets(MStringArray& setNames, const std::vector<UsdGeomPrimvar>& primvars)
 {
-  for(int i = 0, n = setNames.length(); i < n; )
+  for(int i = 0; i < setNames.length(); ++i)
   {
     for(auto it = primvars.begin(), end = primvars.end(); it != end; ++it)
     {
@@ -353,10 +410,10 @@ void ColourSetBuilder::constructNewlyAddedSets(MStringArray& setNames, const std
         m_existingSetNames.append(setNames[i]);
         m_existingSetDefinitions.push_back(definition);
         setNames.remove(i);
-        continue;
+        --i;
+        break;
       }
     }
-    ++i;
   }
 }
 
@@ -524,7 +581,7 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void UvSetBuilder::constructNewlyAddedSets(MStringArray& setNames, const std::vector<UsdGeomPrimvar>& primvars)
 {
-  for(uint32_t i = 0; i < setNames.length(); )
+  for(uint32_t i = 0; i < setNames.length(); ++i)
   {
     for(auto it = primvars.begin(), end = primvars.end(); it != end; ++it)
     {
@@ -541,10 +598,10 @@ void UvSetBuilder::constructNewlyAddedSets(MStringArray& setNames, const std::ve
         m_existingSetNames.append(setNames[i]);
         m_existingSetDefinitions.push_back(definition);
         setNames.remove(i);
-        continue;
+        --i;
+        break;
       }
     }
-    ++i;
   }
 }
 
@@ -728,6 +785,17 @@ TfToken guessUVInterpolationTypeExtensive(
     MIntArray& faceCounts,
     std::vector<uint32_t>& indicesToExtract)
 {
+  // sanity check on input arrays
+  if(indices.length() == 0 ||
+     pointIndices.length() == 0 || 
+     u.length() == 0 || 
+     v.length() == 0 || 
+     faceCounts.length() == 0)
+  {
+    TF_RUNTIME_ERROR("Unable to process mesh UV's - Invalid array lengths provided");
+    return UsdGeomTokens->faceVarying;
+  }
+
   // if UV coords are all identical, we have a constant value
   if(usd::utils::vec2AreAllTheSame(&u[0], &v[0], u.length()))
   {

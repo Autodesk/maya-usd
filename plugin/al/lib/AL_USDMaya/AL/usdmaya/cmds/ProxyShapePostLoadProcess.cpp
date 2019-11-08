@@ -13,45 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "AL/usdmaya/cmds/ProxyShapePostLoadProcess.h"
+
 #include "AL/usdmaya/CodeTimings.h"
 #include "AL/usdmaya/Metadata.h"
-#include "AL/usdmaya/StageData.h"
-#include "AL/usdmaya/DebugCodes.h"
-#include "AL/usdmaya/cmds/LayerCommands.h"
-#include "AL/usdmaya/cmds/ProxyShapePostLoadProcess.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
-#include "AL/usdmaya/fileio/NodeFactory.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
-#include "AL/usdmaya/fileio/translators/TranslatorContext.h"
-
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 
-#include "maya/MArgList.h"
-#include "maya/MDagPath.h"
-#include "maya/MDagModifier.h"
-#include "maya/MDGModifier.h"
 #include "maya/MFnDagNode.h"
-#include "maya/MFnCamera.h"
-#include "maya/MFnTransform.h"
-#include "maya/MGlobal.h"
-#include "maya/MPlug.h"
-#include "maya/MPlugArray.h"
-#include "maya/MSelectionList.h"
-#include "maya/MString.h"
-#include "maya/MSyntax.h"
-#include "maya/MObjectHandle.h"
-
-#include <pxr/base/tf/type.h>
-#include <pxr/base/vt/dictionary.h>
-#include <pxr/usd/kind/registry.h>
-#include <pxr/usd/usd/modelAPI.h>
-#include <pxr/usd/usd/variantSets.h>
-
-#include <map>
-#include <string>
-#include "AL/usdmaya/utils/Utils.h"
 
 namespace AL {
 namespace usdmaya {
@@ -206,7 +178,9 @@ void ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(
     nodes::ProxyShape* ptrNode,
     const std::vector<UsdPrim>& schemaPrims,
     const MDagPath& proxyTransformPath,
-    ProxyShapePostLoadProcess::MObjectToPrim& objsToCreate)
+    ProxyShapePostLoadProcess::MObjectToPrim& objsToCreate,
+    bool pushToPrim,
+    bool readAnimatedValues)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims\n");
   AL_BEGIN_PROFILE_SECTION(CreateTransformChains);
@@ -228,15 +202,16 @@ void ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(
         TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims checking %s\n", path.GetText());
         MObject newpath = MObject::kNullObj;
         bool parentUnmerged = parentNodeIsUnmerged(usdPrim);
+
         if(schemaPrimUtils.needsTransformParent(usdPrim))
         {
           if(!parentUnmerged)
           {
-            newpath = ptrNode->makeUsdTransformChain(usdPrim, modifier, nodes::ProxyShape::kRequired, &modifier2);
+            newpath = ptrNode->makeUsdTransformChain(usdPrim, modifier, nodes::ProxyShape::kRequired, &modifier2, 0, pushToPrim, readAnimatedValues);
           }
           else
           {
-            newpath = ptrNode->makeUsdTransformChain(usdPrim.GetParent(), modifier, nodes::ProxyShape::kRequired, &modifier2);
+            newpath = ptrNode->makeUsdTransformChain(usdPrim.GetParent(), modifier, nodes::ProxyShape::kRequired, &modifier2, 0, pushToPrim, readAnimatedValues);
           }
         }
         objsToCreate.push_back(std::make_pair(newpath, usdPrim));
@@ -294,7 +269,7 @@ void ProxyShapePostLoadProcess::createSchemaPrims(
         object = proxy->findRequiredPath(prim.GetPath());
       }
 
-      fileio::translators::TranslatorRefPtr translator = translatorManufacture.get(prim.GetTypeName());
+      fileio::translators::TranslatorRefPtr translator = translatorManufacture.get(prim);
 
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createSchemaPrims prim=%s\n", prim.GetPath().GetText());
 
@@ -336,16 +311,18 @@ void ProxyShapePostLoadProcess::updateSchemaPrims(
     {
       UsdPrim prim = *it;
 
-      MObject object = proxy->findRequiredPath(prim.GetPath());
+      fileio::translators::TranslatorRefPtr translator = translatorManufacture.get(prim);
+      std::string translatorId = translatorManufacture.generateTranslatorId(prim);
+      bool hasMatchingEntry = context->hasEntry(prim.GetPath(), translatorId);
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::updateSchemaPrims: hasEntry(%s, %s)=%d\n", prim.GetPath().GetText(), translatorId.c_str(), hasMatchingEntry);
 
-      fileio::translators::TranslatorRefPtr translator = translatorManufacture.get(prim.GetTypeName());
-      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::updateSchemaPrims: hasEntry(%s, %s)=%d\n", prim.GetPath().GetText(), prim.GetTypeName().GetText(), context->hasEntry(prim.GetPath(), prim.GetTypeName()));
 
-      if(!context->hasEntry(prim.GetPath(), prim.GetTypeName()))
+      if(!hasMatchingEntry)
       {
         TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createSchemaPrims prim=%s hasEntry=false\n", prim.GetPath().GetText());
         AL_BEGIN_PROFILE_SECTION(SchemaPrims);
         MObject created;
+        MObject object = proxy->findRequiredPath(prim.GetPath());
         fileio::importSchemaPrim(prim, object, created, context, translator);
         AL_END_PROFILE_SECTION();
       }
@@ -397,7 +374,7 @@ void ProxyShapePostLoadProcess::connectSchemaPrims(
   for(; it != end; ++it)
   {
     UsdPrim prim = *it;
-    fileio::translators::TranslatorRefPtr torBase = translatorManufacture.get(prim.GetTypeName());
+    fileio::translators::TranslatorRefPtr torBase = translatorManufacture.get(prim);
     if(torBase)
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::connectSchemaPrims [postImport] prim=%s\n", prim.GetPath().GetText());
@@ -437,6 +414,7 @@ MStatus ProxyShapePostLoadProcess::initialise(nodes::ProxyShape* ptrNode)
   // make sure we unload all references prior to reloading them again
   ptrNode->unloadMayaReferences();
   ptrNode->destroyTransformReferences();
+  fileio::translators::TranslatorManufacture::preparePythonTranslators(ptrNode->context());
 
   // Now go and delete any child Transforms found directly underneath the shapes parent.
   // These nodes are likely to be driven by the output stage data of the shape.

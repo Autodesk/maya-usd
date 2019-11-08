@@ -23,14 +23,14 @@
 #include "AL/maya/utils/MenuBuilder.h"
 #include "AL/usdmaya/Global.h"
 #include "AL/usdmaya/StageData.h"
-#include "AL/usdmaya/DrivenTransformsData.h"
 #include "AL/usdmaya/cmds/CreateUsdPrim.h"
 #include "AL/usdmaya/cmds/DebugCommands.h"
 #include "AL/usdmaya/cmds/EventCommand.h"
 #include "AL/usdmaya/cmds/LayerCommands.h"
+#include "AL/usdmaya/cmds/ListTranslators.h"
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
-#include "AL/usdmaya/cmds/ProxyShapeSelectCommands.h"
 #include "AL/usdmaya/cmds/RendererCommands.h"
+#include "AL/usdmaya/cmds/SyncFileIOGui.h"
 #include "AL/usdmaya/cmds/UnloadPrim.h"
 #include "AL/usdmaya/fileio/Export.h"
 #include "AL/usdmaya/fileio/ExportTranslator.h"
@@ -40,12 +40,21 @@
 #include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/nodes/MeshAnimCreator.h"
 #include "AL/usdmaya/nodes/MeshAnimDeformer.h"
+#include "AL/usdmaya/nodes/ProxyUsdGeomCamera.h"
 #include "AL/usdmaya/nodes/ProxyDrawOverride.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/ProxyShapeUI.h"
 #include "AL/usdmaya/nodes/RendererManager.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
+
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/registry.h"
+
+#if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION >= 5) 
+#include "pxr/imaging/glf/contextCaps.h"
+#include "pxr/imaging/glf/glContext.h"
+#endif
 
 #include "maya/MDrawRegistry.h"
 #include "maya/MGlobal.h"
@@ -161,11 +170,14 @@ template<typename AFnPlugin>
 MStatus registerPlugin(AFnPlugin& plugin)
 {
   GlfGlewInit();
+
+  #if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION >= 5) 
   // We may be in a non-gui maya... if so,
   // GlfContextCaps::InitInstance() will error
   if (GlfGLContext::GetCurrentGLContext()->IsValid()) {
     GlfContextCaps::InitInstance();
   }
+  #endif
 
   if(!MGlobal::optionVarExists("AL_usdmaya_selectMode"))
   {
@@ -182,6 +194,20 @@ MStatus registerPlugin(AFnPlugin& plugin)
     MGlobal::setOptionVarValue("AL_usdmaya_pickMode", static_cast<int>(nodes::ProxyShape::PickMode::kPrims));
   }
 
+  if(!MGlobal::optionVarExists("AL_usdmaya_readAnimatedValues"))
+  {
+    MGlobal::setOptionVarValue("AL_usdmaya_readAnimatedValues", false);
+  }
+
+  if(!MGlobal::optionVarExists("AL_usdmaya_selectionEnabled"))
+  {
+    MGlobal::setOptionVarValue("AL_usdmaya_selectionEnabled", true);
+  }
+
+  if(!MGlobal::optionVarExists("AL_usdmaya_pushToPrim"))
+  {
+    MGlobal::setOptionVarValue("AL_usdmaya_pushToPrim", false);
+  }
 
   MStatus status;
 
@@ -207,7 +233,6 @@ MStatus registerPlugin(AFnPlugin& plugin)
   }
 
   AL_REGISTER_DATA(plugin, AL::usdmaya::StageData);
-  AL_REGISTER_DATA(plugin, AL::usdmaya::DrivenTransformsData);
   AL_REGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::CreateUsdPrim);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCreateLayer);
@@ -231,6 +256,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::UsdDebugCommand);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListEvents);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListCallbacks);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListTranslators);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::Callback);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::TriggerEvent);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::DeleteCallbacks);
@@ -240,6 +266,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventLookup);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::TranslatePrim);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerManager);
+  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::SyncFileIOGui);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
   AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
@@ -251,6 +278,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::Layer);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::MeshAnimCreator);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::MeshAnimDeformer);
+  AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::ProxyUsdGeomCamera);
 
   // Since AL_MAYA_DECLARE_NODE / AL_MAYA_DEFINE_NODE declare/define "creator"
   // method, and AL_REGISTER_DEPEND_NODE registers "creator", in order to
@@ -279,8 +307,19 @@ MStatus registerPlugin(AFnPlugin& plugin)
   MGlobal::executeCommand(g_geom_deformer_code);
   AL::maya::utils::MenuBuilder::addEntry("USD/Animated Geometry/Connect selected meshes to USD (static)", "AL_usdmaya_meshStaticImport");
   AL::maya::utils::MenuBuilder::addEntry("USD/Animated Geometry/Connect selected meshes to USD (animated)", "AL_usdmaya_meshAnimImport");
+  AL::maya::utils::MenuBuilder::addEntry("USD/Selection Enabled", "optionVar -iv \\\"AL_usdmaya_selectionEnabled\\\" #1", true, MGlobal::optionVarIntValue("AL_usdmaya_selectionEnabled"));
+  AL::maya::utils::MenuBuilder::addEntry("USD/Enable pushToPrim", "optionVar -iv \\\"AL_usdmaya_pushToPrim\\\" #1", true, MGlobal::optionVarIntValue("AL_usdmaya_pushToPrim"));
   CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
   AL::usdmaya::Global::onPluginLoad();
+
+  // Force all plugins to be loaded at startup time. Unless we load plugins upfront
+  // options will not be registered until the start of import or export, and won't be available in the GUI
+  PlugPluginPtrVector plugins = PlugRegistry::GetInstance().GetAllPlugins();
+  for(auto& plugin : plugins)
+  {
+    if(!plugin->IsLoaded())
+      plugin->Load();
+  }
   return status;
 }
 
@@ -314,6 +353,7 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
     }
   }
 
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::SyncFileIOGui);
   AL_UNREGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::InternalProxyShapeSelect);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePostSelect);
@@ -336,6 +376,7 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::Callback);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListCallbacks);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListEvents);
+  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListTranslators);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::TriggerEvent);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::DeleteCallbacks);
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::CallbackQuery);
@@ -358,7 +399,6 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Layer);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::LayerManager);
-  AL_UNREGISTER_DATA(plugin, AL::usdmaya::DrivenTransformsData);
   AL_UNREGISTER_DATA(plugin, AL::usdmaya::StageData);
 
   AL::usdmaya::Global::onPluginUnload();

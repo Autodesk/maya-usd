@@ -52,6 +52,9 @@ TransformIterator::TransformIterator(UsdStageRefPtr stage, const MDagPath& paren
 
 //----------------------------------------------------------------------------------------------------------------------
 TransformIterator::TransformIterator(const UsdPrim& usdStartPrim, const MDagPath& mayaStartPath)
+  : m_primStack()
+  , m_stage(usdStartPrim.GetStage())
+  , m_currentItem(0)
 {
   m_primStack.reserve(128);
   m_primStack.push_back(StackRef(usdStartPrim));
@@ -75,6 +78,12 @@ MDagPath TransformIterator::currentPath() const
     }
   }
   return p;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TransformIterator::prune()
+{
+  m_primStack.pop_back();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -175,9 +184,25 @@ TransformIterator::StackRef::StackRef()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+UsdPrim TransformIterator::parentPrim() const
+{
+  UsdPrim parentPrim = m_stage->GetPseudoRoot();
+  if(m_primStack.size() > 1)
+  {
+    parentPrim = (m_primStack.end() - 2)->m_prim;
+    if(parentPrim.IsMaster())
+    {
+      if(m_primStack.size() > 2)
+      {
+        parentPrim = (m_primStack.end() - 3)->m_prim;
+      }
+    }
+  }
+  return parentPrim;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 } // fileio
 } // usdmaya
 } // AL
 //----------------------------------------------------------------------------------------------------------------------
-
-

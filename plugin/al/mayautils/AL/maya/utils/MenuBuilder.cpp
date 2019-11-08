@@ -15,9 +15,6 @@
 //
 #include "AL/maya/utils/MenuBuilder.h"
 
-#include "maya/MGlobal.h"
-#include "AL/maya/utils/DebugCodes.h"
-
 namespace AL {
 namespace maya {
 namespace utils {

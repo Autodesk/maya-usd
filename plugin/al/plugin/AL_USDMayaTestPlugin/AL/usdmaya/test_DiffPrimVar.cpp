@@ -20,8 +20,10 @@
 #include "maya/MFnMesh.h"
 #include "maya/MSelectionList.h"
 #include "maya/MFileIO.h"
+#include "maya/MFloatArray.h"
 #include "maya/MFnDagNode.h"
 #include "maya/MGlobal.h"
+#include "maya/MUintArray.h"
 #include "maya/MStringArray.h"
 #include "maya/MPointArray.h"
 #include "maya/MVectorArray.h"
@@ -41,6 +43,7 @@ TEST(DiffPrimVar, diffGeomVerts)
   ASSERT_TRUE(MGlobal::executeCommand("polySphere  -r 1 -sx 20 -sy 20 -ax 0 1 0 -cuv 2 -ch 1", result) == MS::kSuccess);
 
   const MString temp_path = buildTempPath("AL_USDMayaTests_diffPrimVarVerts.usda");
+  const MString temp_path2 = buildTempPath("AL_USDMayaTests_diffPrimVarVerts2.usda");
 
   const MString exportCommand =
   "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Merge_Transforms=1;Animation=0;"
@@ -51,7 +54,8 @@ TEST(DiffPrimVar, diffGeomVerts)
 
   MSelectionList sl;
   EXPECT_TRUE(sl.add("pSphereShape1")  == MS::kSuccess);
-
+  MGlobal::setActiveSelectionList(sl);
+  
   MObject obj;
   sl.getDependNode(0, obj);
   MStatus status;
@@ -313,7 +317,7 @@ TEST(DiffPrimVar, diffCreaseEdges)
 
   ASSERT_TRUE(MGlobal::executeCommand("polyCrease -ch true -value 0.96 -vertexValue 0.96 pCube1.e[2]") == MS::kSuccess);
 
-  const MString temp_path = buildTempPath("AL_USDMayaTests_diffCreaseEdges.usda");
+  const MString temp_path = buildTempPath("AL_USDMayaTests_diffCreaseEdgesSSS.usda");
 
   const MString exportCommand =
   "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;Merge_Transforms=1;Animation=0;"
@@ -599,14 +603,17 @@ TEST(DiffPrimVar, diffColourSetNames)
     EXPECT_TRUE(status == MS::kSuccess);
 
     MColorArray colours;
+    MIntArray indices(fn.numFaceVertices());
     MString setName = "firstSet";
     fn.createColorSetWithName(setName);
     colours.setLength(fn.numFaceVertices());
     for(uint32_t i = 0; i < colours.length(); ++i)
     {
       colours[i] = MColor(0, 0, 0, 1);
+      indices[i] = i;
     }
     fn.setColors(colours, &setName);
+    fn.assignColors(indices, &setName);
 
     const MString temp_path = buildTempPath("AL_USDMayaTests_diffColourSetNames.usda");
 

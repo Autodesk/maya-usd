@@ -64,6 +64,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (outColorR)
     (outColorG)
     (outColorB)
+    (outTransparency)
+    (outTransparencyR)
+    (outTransparencyG)
+    (outTransparencyB)
     (wrapU)
     (wrapV)
 
@@ -97,7 +101,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (repeat)
 
     // UsdUVTexture Output Names
-    ((TextureOutputName, "rgba"))
+    ((RGBOutputName, "rgb"))
     ((RedOutputName, "r"))
     ((GreenOutputName, "g"))
     ((BlueOutputName, "b"))
@@ -130,12 +134,6 @@ PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
             texShaderSchema.GetPath().GetText())) {
         return;
     }
-
-    // We always create an rgba output for the shader. Other outputs for
-    // specific components will be created on demand if they have connections.
-    texShaderSchema.CreateOutput(
-        _tokens->TextureOutputName,
-        SdfValueTypeNames->Float4);
 
     // Now create a UsdPrimvarReader shader that the UsdUvTexture shader will
     // use.
@@ -435,15 +433,19 @@ PxrUsdTranslators_FileTextureWriter::GetShadingPropertyNameForMayaAttrName(
     SdfValueTypeName usdTypeName = SdfValueTypeNames->Float;
 
     if (mayaAttrName == _tokens->outColor) {
-        usdAttrName = _tokens->TextureOutputName;
-        usdTypeName = SdfValueTypeNames->Float4;
+        usdAttrName = _tokens->RGBOutputName;
+        usdTypeName = SdfValueTypeNames->Float3;
     } else if (mayaAttrName == _tokens->outColorR) {
         usdAttrName = _tokens->RedOutputName;
     } else if (mayaAttrName == _tokens->outColorG) {
         usdAttrName = _tokens->GreenOutputName;
     } else if (mayaAttrName == _tokens->outColorB) {
         usdAttrName = _tokens->BlueOutputName;
-    } else if (mayaAttrName == _tokens->outAlpha) {
+    } else if (mayaAttrName == _tokens->outAlpha ||
+            mayaAttrName == _tokens->outTransparency ||
+            mayaAttrName == _tokens->outTransparencyR ||
+            mayaAttrName == _tokens->outTransparencyG ||
+            mayaAttrName == _tokens->outTransparencyB) {
         usdAttrName = _tokens->AlphaOutputName;
     }
 

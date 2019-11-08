@@ -19,6 +19,8 @@
 #include "AL/usdmaya/nodes/Layer.h"
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
 #include "AL/usdmaya/StageCache.h"
+#include "AL/usdmaya/Metadata.h"
+
 #include "maya/MFnTransform.h"
 #include "maya/MSelectionList.h"
 #include "maya/MGlobal.h"
@@ -33,6 +35,7 @@
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
+
 #include <fstream>
 
 using AL::maya::test::buildTempPath;
@@ -42,25 +45,51 @@ struct MockPrimFilterInterface : public AL::usdmaya::nodes::proxy::PrimFilterInt
   SdfPathVector refPaths;
   SdfPathVector cameraPaths;
 
-  TfToken getTypeForPath(const SdfPath& path) override
+  std::string getTranslatorIdForPath(const SdfPath& path) override
   {
     if(std::find(refPaths.cbegin(), refPaths.cend(), path) != refPaths.cend())
     {
-      return TfToken("Xform");
+      return std::string("schematype:Xform");
     }
     if (std::find(cameraPaths.cbegin(), cameraPaths.cend(), path) != cameraPaths.cend())
     {
-      return TfToken("Camera");
+      return std::string("schematype:Camera");
     }
-    return TfToken("");
+    return std::string();
   }
 
-  bool getTypeInfo(TfToken type, bool& supportsUpdate, bool& requiresParent) override
+  bool getTranslatorInfo(const std::string& translatorInfo, bool& supportsUpdate, bool& requiresParent, bool& forceImport) override
   {
     supportsUpdate = true;
     requiresParent = true;
+    forceImport = false;
     return true;
   }
+
+  /// mimick behaviour of TranslatorManufacture::getTranslatorFromId without needing translators registered
+  std::string generateTranslatorId(UsdPrim prim)
+  {
+    std::string translatorId;
+
+     //Try metadata first
+     std::string assetType;
+     prim.GetMetadata(AL::usdmaya::Metadata::assetType, &assetType);
+     if (!assetType.empty())
+     {
+         translatorId = "assettype:" + assetType;
+     }
+     //Then try schema - which tries C++ then python
+     if (translatorId.empty())
+     {
+       std::string typeName = prim.GetTypeName().GetString();
+       if (!typeName.empty())
+       {
+         translatorId = std::string("schematype:") + typeName;
+       }
+     }
+     return translatorId;
+  }
+
 };
 
 static const char* const g_removedPaths =
@@ -166,7 +195,7 @@ TEST(PrimFilter, removedPaths)
       prims.emplace_back(stage->GetPrimAtPath(it));
     }
 
-    AL::usdmaya::nodes::proxy::PrimFilter filter(previous, prims, &mockInterface);
+    AL::usdmaya::nodes::proxy::PrimFilter filter(previous, prims, &mockInterface, true);
 
     EXPECT_TRUE(filter.removedPrimSet().empty());
     EXPECT_TRUE(filter.newPrimSet().empty());
@@ -197,7 +226,7 @@ TEST(PrimFilter, removedPaths)
     prims.emplace_back(stage->GetPrimAtPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
     prims.emplace_back(stage->GetPrimAtPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
 
-    AL::usdmaya::nodes::proxy::PrimFilter filter(previous, prims, &mockInterface);
+    AL::usdmaya::nodes::proxy::PrimFilter filter(previous, prims, &mockInterface, true);
     EXPECT_TRUE(filter.removedPrimSet().empty());
     EXPECT_TRUE(filter.newPrimSet().size() == 4);
     EXPECT_TRUE(filter.newPrimSet()[0].GetPath() == SdfPath("/root/hip1/knee1/ankle1/ltoe1"));
@@ -205,7 +234,7 @@ TEST(PrimFilter, removedPaths)
     EXPECT_TRUE(filter.newPrimSet()[2].GetPath() == SdfPath("/root/hip2/knee2/ankle2/ltoe2"));
     EXPECT_TRUE(filter.newPrimSet()[3].GetPath() == SdfPath("/root/hip2/knee2/ankle2/rtoe2"));
     EXPECT_TRUE(filter.updatablePrimSet().size() == previous.size());
-    EXPECT_EQ(4, filter.transformsToCreate().size());
+    ASSERT_EQ(4, filter.transformsToCreate().size());
     EXPECT_TRUE(filter.transformsToCreate()[0].GetPath() == SdfPath("/root/hip1/knee1/ankle1/ltoe1"));
     EXPECT_TRUE(filter.transformsToCreate()[1].GetPath() == SdfPath("/root/hip1/knee1/ankle1/rtoe1"));
     EXPECT_TRUE(filter.transformsToCreate()[2].GetPath() == SdfPath("/root/hip2/knee2/ankle2/ltoe2"));
@@ -237,7 +266,7 @@ TEST(PrimFilter, removedPaths)
     previous.emplace_back(SdfPath("/root/hip2/knee2/ankle2/rtoe3"));
     previous.emplace_back(SdfPath("/root/hip2/knee2/ankle2/rtoe4"));
 
-    AL::usdmaya::nodes::proxy::PrimFilter filter(previous, prims, &mockInterface);
+    AL::usdmaya::nodes::proxy::PrimFilter filter(previous, prims, &mockInterface, true);
     EXPECT_TRUE(filter.removedPrimSet().size() == 2);
     EXPECT_TRUE(filter.removedPrimSet()[0] == SdfPath("/root/hip2/knee2/ankle2/rtoe4"));
     EXPECT_TRUE(filter.removedPrimSet()[1] == SdfPath("/root/hip2/knee2/ankle2/rtoe3"));
@@ -258,7 +287,7 @@ TEST(PrimFilter, removedPaths)
       prims.emplace_back(stage->GetPrimAtPath(it));
     }
 
-    AL::usdmaya::nodes::proxy::PrimFilter filter(previous, prims, &mockInterface);
+    AL::usdmaya::nodes::proxy::PrimFilter filter(previous, prims, &mockInterface, true);
     EXPECT_TRUE(filter.removedPrimSet().size() == 1);
     EXPECT_TRUE(filter.removedPrimSet()[0] == SdfPath("/root/cam"));
     EXPECT_TRUE(filter.newPrimSet().size() == 1);
@@ -266,4 +295,3 @@ TEST(PrimFilter, removedPaths)
     EXPECT_TRUE(filter.transformsToCreate().size() == 1);
   }
 }
-

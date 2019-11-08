@@ -12,7 +12,9 @@ pxr_plugin(${PXR_PACKAGE}
         vt
         usdMaya
         usdShade
-        ${MAYA_LIBRARIES}
+        ${MAYA_Foundation_LIBRARY}
+        ${MAYA_OpenMaya_LIBRARY}
+        ${MAYA_OpenMayaRender_LIBRARY}
 
     INCLUDE_DIRS
         ${MAYA_INCLUDE_DIRS}
@@ -59,7 +61,7 @@ else()
         COMMAND
             ${PYTHON_EXECUTABLE}
                 ${CMAKE_CURRENT_SOURCE_DIR}/pxrUsdPreviewSurfaceGenFragments.py
-                ${CMAKE_SOURCE_DIR}/pxr/usdImaging/lib/usdShaders/shaders/previewSurface.glslfx
+                ${CMAKE_SOURCE_DIR}/pxr/usdImaging/plugin/usdShaders/shaders/previewSurface.glslfx
                 --srcDir ${CMAKE_CURRENT_SOURCE_DIR}
                 --schema ${MAYA_BASE_DIR}/bin/ShadeFragment/v2pFragment.xsd
                 --validate
@@ -79,8 +81,8 @@ pxr_register_test(testPxrUsdPreviewSurfaceExport
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPxrUsdPreviewSurfaceExport"
     TESTENV testPxrUsdPreviewSurfaceExport
     ENV
-        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/maya/plugins/pxrUsdPreviewSurface/resources
+        MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin
+        MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib/usd/usdMaya/resources:${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin/pxrUsdPreviewSurface/resources
         MAYA_DISABLE_CIP=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
 )

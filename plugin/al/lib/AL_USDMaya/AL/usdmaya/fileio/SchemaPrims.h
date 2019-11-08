@@ -16,14 +16,11 @@
 #pragma once
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
-
-#include "pxr/pxr.h"
-#include <pxr/base/tf/token.h>
-
-#include <unordered_set>
-#include <string>
 #include "AL/maya/utils/ForwardDeclares.h"
 #include "AL/usd/utils/ForwardDeclares.h"
+
+#include "pxr/pxr.h"
+#include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -34,6 +31,7 @@ namespace fileio {
 /// the prim typename tokens
 extern const TfToken ALSchemaType;
 extern const TfToken ALExcludedPrimSchema;
+extern const TfToken assetType;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a method called to import a schema prim into maya
@@ -53,15 +51,6 @@ bool importSchemaPrim(
     translators::TranslatorContextPtr context = TfNullPtr,
     const translators::TranslatorRefPtr translator = TfNullPtr,
     const fileio::translators::TranslatorParameters& param = fileio::translators::TranslatorParameters());
-
-//----------------------------------------------------------------------------------------------------------------------
-/// \brief  utility function to determine whether the prim specified is of the given type
-/// \param  prim the prim to query
-/// \param  typeToken the type
-/// \return true if the specified prim is of the specified type
-/// \ingroup   fileio
-//----------------------------------------------------------------------------------------------------------------------
-bool isSchemaOfType(const UsdPrim& prim, const TfToken& typeToken);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  utility class to determine whether a usd transform chain should be created

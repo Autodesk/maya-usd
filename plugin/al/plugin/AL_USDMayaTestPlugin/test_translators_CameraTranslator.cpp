@@ -29,6 +29,7 @@
 
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/camera.h"
+#include "pxr/usd/usdGeom/xform.h"
 
 using AL::usdmaya::fileio::ExporterParams;
 using AL::usdmaya::fileio::ImporterParams;
@@ -77,7 +78,7 @@ TEST(translators_CameraTranslator, io)
     MDagPath::getAPathTo(node, nodeDagPath);
 
     AL::usdmaya::fileio::translators::TranslatorManufacture manufacture(nullptr);
-    AL::usdmaya::fileio::translators::TranslatorRefPtr xtrans = manufacture.get(TfToken("Camera"));
+    AL::usdmaya::fileio::translators::TranslatorRefPtr xtrans = manufacture.getTranslatorFromId(AL::usdmaya::fileio::translators::TranslatorManufacture::TranslatorPrefixSchemaType.GetString() + TfToken("Camera").GetString());
     UsdPrim cameraPrim = xtrans->exportObject(stage, nodeDagPath, cameraPath, eparams);
     EXPECT_TRUE(cameraPrim.IsValid());
     MObject nodeB;
@@ -138,7 +139,7 @@ TEST(translators_CameraTranslator, animated_io)
     eparams.m_animTranslator = new AnimationTranslator;
 
     AL::usdmaya::fileio::translators::TranslatorManufacture manufacture(nullptr);
-    AL::usdmaya::fileio::translators::TranslatorRefPtr xtrans = manufacture.get(TfToken("Camera"));
+    AL::usdmaya::fileio::translators::TranslatorRefPtr xtrans = manufacture.getTranslatorFromId(AL::usdmaya::fileio::translators::TranslatorManufacture::TranslatorPrefixSchemaType.GetString() + TfToken("Camera").GetString());
     SdfPath cameraPath("/hello");
     MDagPath nodeDagPath;
     MDagPath::getAPathTo(node, nodeDagPath);

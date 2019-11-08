@@ -16,13 +16,16 @@
 
 #pragma once
 
+#include "AL/usdmaya/utils/Api.h"
+
 #include "maya/MFnNurbsCurve.h"
+
+#if MAYA_API_VERSION < 201800
 #include "maya/MFnDoubleArrayData.h"
-#include "maya/MObject.h"
-#include "maya/MPlug.h"
+#include "maya/MFnFloatArrayData.h"
+#endif
 
 #include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/nurbsCurves.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -47,10 +50,21 @@ AL_USDMAYA_UTILS_PUBLIC
 void copyOrder(const MFnNurbsCurve& fnCurve, const UsdAttribute& orderAttr, UsdTimeCode time = UsdTimeCode::Default());
 
 AL_USDMAYA_UTILS_PUBLIC
+void copyNurbsCurveBindPoseData(MFnNurbsCurve& fnCurve, UsdGeomNurbsCurves& usdCurves, UsdTimeCode time = UsdTimeCode::Default());
+
+AL_USDMAYA_UTILS_PUBLIC
 void copyWidths(
   const MObject& widthObj, 
   const MPlug& widthPlug,
   const MFnDoubleArrayData& widthArray,
+  const UsdAttribute& widthsAttr,
+  UsdTimeCode time = UsdTimeCode::Default());
+
+AL_USDMAYA_UTILS_PUBLIC
+void copyWidths(
+  const MObject& widthObj, 
+  const MPlug& widthPlug,
+  const MFnFloatArrayData& widthArray,
   const UsdAttribute& widthsAttr,
   UsdTimeCode time = UsdTimeCode::Default());
    
@@ -60,6 +74,12 @@ bool getMayaCurveWidth(
   MObject& object,
   MPlug& plug,
   MFnDoubleArrayData& array);
+
+AL_USDMAYA_UTILS_PUBLIC
+bool getMayaCurveWidth(
+  const MFnNurbsCurve& fnCurve,
+  MObject& object,
+  MPlug& plug);
 
 AL_USDMAYA_UTILS_PUBLIC
 bool createMayaCurves(

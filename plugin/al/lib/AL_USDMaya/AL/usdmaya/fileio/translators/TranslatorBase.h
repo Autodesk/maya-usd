@@ -38,11 +38,12 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
+/// \brief  Enum used to determine whether a given maya node type is supported for export
 enum class ExportFlag
 {
-  kNotSupported,
-  kFallbackSupport,
-  kSupported
+  kNotSupported, ///< no support available
+  kFallbackSupport, ///< support provided by the core ALUsdMaya plugin
+  kSupported ///< support provided by plugin translators 
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -87,7 +88,8 @@ public:
   typedef TfWeakPtr<This> Ptr; ///< weak pointer to this type
 
   /// \brief  dtor
-  virtual ~TranslatorAbstract() {}
+  virtual ~TranslatorAbstract() = default;
+  TranslatorAbstract() = default;
 
   /// \brief  Override to specify the schema type of the prim that this translator plugin is responsible for.
   /// \return the custom schema type associated with this prim
@@ -118,6 +120,12 @@ public:
   virtual MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
     { return MS::kSuccess; }
 
+  /// \brief  Override this method to export a Maya object into USD
+  /// \param  stage the stage to write the data into 
+  /// \param  dagPath the Maya dag path of the object to export
+  /// \param  usdPath the path in the USD stage where the prim should be created
+  /// \param  params the exporter params
+  /// \return the prim created
   virtual UsdPrim exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath, const ExporterParams& params)
     { return UsdPrim(); }
 
@@ -166,6 +174,14 @@ public:
   /// \brief  Method used to test a Maya node to see whether it can be exported.
   virtual ExportFlag canExport(const MObject& obj)
     { return ExportFlag::kNotSupported; }
+
+  /// \brief  The translator plugins that ship with AL_USDMaya specify this flag as true so that they can be overridden
+  virtual bool canBeOverridden()
+    { return false; }
+
+  /// \brief After exporting the current obj/dagPath, should we proceed to it's children?
+  virtual bool exportDescendants() const
+  { return true; }
 
 };
 
@@ -218,6 +234,32 @@ public:
       (void)timeCode;
     }
 
+  /// \brief  returns the active status of the translator
+  bool active() const
+    { return m_active; }
+
+  /// \brief  activate this translator
+  void activate()
+    { m_active = true; }
+
+  /// \brief  deactivate this translator
+  void deactivate()
+    { m_active = false; }
+    
+  /// \brief  internal method. Used within AL_USDMAYA_DEFINE_TRANSLATOR macro to set the translation context
+  /// \param  context the internal context
+  virtual void setContext(const TranslatorContextPtr context)
+    { m_context = context; }
+
+  void setRegistrationType(const TfToken& registrationType)
+  {
+    m_registrationType = registrationType;
+  }
+  TfToken getRegistrationType() const
+  {
+    return m_registrationType;
+  }
+
 protected:
 
   /// \brief  internal method. Used within AL_USDMAYA_DEFINE_TRANSLATOR macro to set the schema type of the node we
@@ -226,14 +268,11 @@ protected:
   virtual void setTranslatedType(const TfType& translatedType)
     { m_translatedType = translatedType; }
 
-  /// \brief  internal method. Used within AL_USDMAYA_DEFINE_TRANSLATOR macro to set the translation context
-  /// \param  context the internal context
-  virtual void setContext(const TranslatorContextPtr context)
-    { m_context = context; }
-
 private:
   TfType m_translatedType;
   TranslatorContextPtr m_context;
+  bool m_active = true;
+  TfToken m_registrationType; /// how was this plugin registered (e.g by schematype or by assettype)
 };
 
 typedef TfRefPtr<TranslatorBase> TranslatorRefPtr;
@@ -249,24 +288,40 @@ public:
   typedef TfRefPtr<TranslatorBase> RefPtr; ///< handle to a plug-in transla
   typedef TfRefPtr<ExtraDataPluginBase> ExtraDataPluginPtr; ///< handle to a plug-in transla
   typedef std::vector<RefPtr> RefPtrVector;
+  static TfToken TranslatorPrefixAssetType;
+  AL_USDMAYA_PUBLIC static TfToken TranslatorPrefixSchemaType;
+  
 
   /// \brief  constructs a registry of translator plugins that are currently registered within usd maya. This construction
   ///         should only happen once per-proxy shape.
   /// \param  context the translator context for this registry
   AL_USDMAYA_PUBLIC
   TranslatorManufacture(TranslatorContextPtr context);
-
-  /// \brief  returns a translator for the specified prim type.
-  /// \param  type_name the schema name
-  /// \return returns the requested translator type
+  
+  /// \brief  returns a translator for the specified prim.
+  /// \param  prim 
+  /// \return the requested translator type
   AL_USDMAYA_PUBLIC
-  RefPtr get(const TfToken type_name);
+  TranslatorRefPtr get(const UsdPrim &prim);
 
-  /// \brief  returns a translator for the specified prim type.
+  /// \brief  returns a translator for the specified  MObject (used for Import)
   /// \param  mayaObject the maya object for which you wish to check for a plugin node translator
   /// \return returns the requested translator type
   AL_USDMAYA_PUBLIC
-  RefPtr get(const MObject& mayaObject);
+  TranslatorRefPtr get(const MObject& mayaObject);
+
+  /// \brief we have a string encoding scheme like "schematype:Mesh", "assettype:foo" to record which translator was used to translate a specific prim
+  /// \param the string encoding
+  /// \return returns the requested translator type
+  AL_USDMAYA_PUBLIC
+  TranslatorRefPtr getTranslatorFromId(const std::string& translatorId );
+
+  /// \brief generates the string encoding about what translator will be used to import a prim based off what translators are currently registered/loaded
+  /// \param USD prim
+  /// \return the string encoding
+  AL_USDMAYA_PUBLIC
+  std::string generateTranslatorId(const UsdPrim& prim );
+
 
   /// \brief  returns a list of extra data plugins that may apply to this node type
   /// \param  mayaObject 
@@ -274,9 +329,90 @@ public:
   AL_USDMAYA_PUBLIC
   std::vector<ExtraDataPluginPtr> getExtraDataPlugins(const MObject& mayaObject);
 
+  /// \brief  activates the translator of the specified type
+  /// \param  type_name the name of the translator to activate
+  /// \return returns the requested translator type
+  AL_USDMAYA_PUBLIC
+  void activate(const TfTokenVector& types);
+
+  /// \brief  returns a translator for the specified prim type.
+  /// \param  type_name the schema name
+  /// \return returns the requested translator type
+  AL_USDMAYA_PUBLIC
+  void deactivate(const TfTokenVector& types);
+
+  /// \brief  activates the translator of the specified type
+  /// \param  type_name the name of the translator to activate
+  /// \return returns the requested translator type
+  AL_USDMAYA_PUBLIC
+  void activateAll();
+
+  /// \brief  returns a translator for the specified prim type.
+  /// \param  type_name the schema name
+  /// \return returns the requested translator type
+  AL_USDMAYA_PUBLIC
+  void deactivateAll();
+
+
+  /// \brief  check to see if a python translator has been registered for the specified maya node (used for Export)
+  /// \param  mayaObject the maya object to locate a translator for
+  /// \return returns the python translator (if one is available)
+  AL_USDMAYA_PUBLIC
+  static TranslatorRefPtr getPythonTranslator(const MObject& mayaObject);
+
+  /// \brief  If a translator is registered for the specified type, delete it.
+  /// \param  type_name the type of the traslator to query 
+  /// \return returns true if the translator was found and deleted, false otherwise
+  AL_USDMAYA_PUBLIC
+  static bool deletePythonTranslator(const TfType type_name);
+  
+  /// \brief  add a new python translator into the context
+  /// \param  traslatorHandle the translator to register
+  /// \return true if the translator returns a valid TfType
+  AL_USDMAYA_PUBLIC
+  static bool addPythonTranslator(TranslatorRefPtr translatorHandle, const TfToken& assetTypeValue=TfToken());
+
+  /// \brief delete all registered python translators 
+  AL_USDMAYA_PUBLIC
+  static void clearPythonTranslators();
+
+  /// \brief  prepare python translators for use prior to a USD import/export operation
+  /// \param  context the translator context 
+  AL_USDMAYA_PUBLIC
+  static void preparePythonTranslators(TranslatorContext::RefPtr context);
+
+  /// \brief  Register python translators with this manufacture.
+  /// \param  context the translator context 
+  AL_USDMAYA_PUBLIC
+  void updatePythonTranslators(TranslatorContext::RefPtr context);
+
+  /// \brief  Register python translators with this manufacture.
+  /// \param  context the translator context 
+  AL_USDMAYA_PUBLIC
+  static std::vector<TranslatorRefPtr> getPythonTranslators();
+
 private:
+  /// \brief  returns a translator for the specified schema
+  /// \param  type_name the schema name
+  /// \return returns the requested translator type
+  /// \note any codes that using this probably needs to change to support assettype metadata lookup also!!! (mostly related to update, not done for POC)
+  TranslatorRefPtr getTranslatorBySchemaType(const TfToken type_name);
+
+  /// \brief  returns a translator for the specified metadata value
+  /// \param  assetTypeValue the metadata value
+  /// \return returns the requested translator type
+  TranslatorRefPtr getTranslatorByAssetTypeMetadata(const std::string& assetTypeValue);
+
+  /// \brief  check to see if a python translator has been registered for the given type name
+  /// \param  type_name the type of the traslator to query
+  /// \return returns the python translator (if one is available)
+  static TranslatorRefPtr getPythonTranslatorBySchemaType(const TfToken type_name);
+
   std::unordered_map<std::string, TranslatorRefPtr> m_translatorsMap;
+  static std::unordered_map<std::string, TranslatorRefPtr> m_assetTypeToPythonTranslatorsMap;
   std::vector<ExtraDataPluginPtr> m_extraDataPlugins;
+  static TranslatorRefPtrVector m_pythonTranslators;
+  TranslatorRefPtrVector m_contextualisedPythonTranslators;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

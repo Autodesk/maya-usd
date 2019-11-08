@@ -46,6 +46,8 @@ private:
 
   ExportFlag canExport(const MObject& obj) override
     { return obj.hasFn(MFn::kMesh) ? ExportFlag::kFallbackSupport : ExportFlag::kNotSupported; }
+  bool canBeOverridden() override
+    { return true; }
 
 private:
   enum WriteOptions
@@ -54,6 +56,7 @@ private:
     kDynamicAttributes = 1 << 1
   };
   void writeEdits(MDagPath& dagPath, UsdGeomMesh& geomPrim, uint32_t options = kDynamicAttributes);
+  static MObject m_visible;
 
 };
 

@@ -14,22 +14,20 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/Global.h"
-#include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/DebugCodes.h"
-#include "AL/usdmaya/TypeIDs.h"
+#include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
 #include <pxr/base/plug/registry.h>
-#include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/getenv.h>
 #include <pxr/base/tf/stackTrace.h>
-#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdUtils/stageCache.h>
 
 #if defined(WANT_UFE_BUILD)
+#include "AL/usdmaya/TypeIDs.h"
 #include "ufe/globalSelection.h"
 #include "ufe/observer.h"
 #include "ufe/observableSelection.h"
@@ -40,12 +38,10 @@
 #include "ufe/transform3dNotification.h"
 #endif
 
+#include "maya/MFnDagNode.h"
 #include "maya/MGlobal.h"
-#include "maya/MFnDependencyNode.h"
 #include "maya/MItDependencyNodes.h"
 #include "maya/MSelectionList.h"
-
-#include <iostream>
 
 #ifndef AL_USDMAYA_LOCATION_NAME
   #define AL_USDMAYA_LOCATION_NAME "AL_USDMAYA_LOCATION"
@@ -317,43 +313,9 @@ static void preFileRead(void*)
 
   if(!readDepth)
   {
-    MFnDependencyNode fn;
-    {
-      MItDependencyNodes iter(MFn::kPluginShape);
-      for(; !iter.isDone(); iter.next())
-      {
-        fn.setObject(iter.item());
-        if(fn.typeId() == nodes::ProxyShape::kTypeId)
-        {
-          nodes::ProxyShape* proxy = (nodes::ProxyShape*)fn.userNode();
-          proxy->removeAttributeChangedCallback();
-        }
-      }
-    }
-
     Global::openingFile(true);
   }
-
   ++readDepth;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-static void disableAttributeChangedCallbacks()
-{
-  MFnDependencyNode fn;
-  {
-    MItDependencyNodes iter(MFn::kPluginShape);
-    for(; !iter.isDone(); iter.next())
-    {
-      fn.setObject(iter.item());
-      if(fn.typeId() == nodes::ProxyShape::kTypeId)
-      {
-        // execute a pull on each proxy shape to ensure that each one has a valid USD stage!
-        nodes::ProxyShape* proxy = (nodes::ProxyShape*)fn.userNode();
-        proxy->removeAttributeChangedCallback();
-      }
-    }
-  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -371,7 +333,6 @@ static void postFileRead(void*)
     // missed
     readDepth++;
     oldReadDepth++;
-    disableAttributeChangedCallbacks();
   }
 
   // oldReadDepth is the value BEFORE we decremented (with fetch_sub), so should be 1
@@ -410,10 +371,9 @@ static void postFileRead(void*)
       proxy->loadStage();
       auto stage = proxy->getUsdStage();
       proxy->deserialiseTranslatorContext();
+      proxy->translatorManufacture().preparePythonTranslators(proxy->context());
       proxy->findTaggedPrims();
       proxy->deserialiseTransformRefs();
-      proxy->constructGLImagingEngine();
-      proxy->addAttributeChangedCallback();
     }
     unloadedProxies.clear();
   }
@@ -500,6 +460,7 @@ static void postFileSave(void*)
 //----------------------------------------------------------------------------------------------------------------------
 static void preFileExport(void* p)
 {
+  storeSelection();
   nodes::ProxyShape::serializeAll();
 }
 

@@ -23,9 +23,14 @@ namespace AL {
 namespace usdmaya {
 namespace fileio {
 
+PluginTranslatorOptionsContext ImportTranslator::m_pluginContext;
+PluginTranslatorOptions* ImportTranslator::m_compatPluginOptions;
+PluginTranslatorOptionsInstance* ImportTranslator::m_pluginInstance;
+
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ImportTranslator::reader(const MFileObject& file, const AL::maya::utils::OptionsParser& options, FileAccessMode mode)
 {
+  m_params.m_parser = (maya::utils::OptionsParser*)&options;
   MString parentPath = options.getString(kParentPath);
   m_params.m_parentPath = MDagPath();
   if(parentPath.length())
@@ -41,12 +46,31 @@ MStatus ImportTranslator::reader(const MFileObject& file, const AL::maya::utils:
     }
   }
 
+  m_params.m_primPath = options.getString(kPrimPath);
+
+  m_params.m_activateAllTranslators = options.getBool(kActivateAllTranslators);
+  MStringArray strings;
+  options.getString(kActiveTranslatorList).split(',', strings);
+  for(uint32_t i = 0, n = strings.length(); i < n; ++i)
+  {
+    m_params.m_activePluginTranslators.emplace_back(strings[i].asChar());
+  }
+  strings.setLength(0);
+  options.getString(kInactiveTranslatorList).split(',', strings);
+  for(uint32_t i = 0, n = strings.length(); i < n; ++i)
+  {
+    m_params.m_inactivePluginTranslators.emplace_back(strings[i].asChar());
+  }
+
   m_params.m_fileName = file.fullName();
-  m_params.m_meshes = options.getBool(kMeshes);
-  m_params.m_nurbsCurves = options.getBool(kNurbsCurves);
   m_params.m_animations = options.getBool(kAnimations);
   m_params.m_stageUnloaded = options.getBool(kStageUnload);
   m_params.m_forceDefaultRead = options.getBool(kReadDefaultValues);
+
+  if(m_pluginInstance)
+  {
+    m_pluginInstance->toOptionVars("ImportTranslator");
+  }
   
   Import importer(m_params);
 

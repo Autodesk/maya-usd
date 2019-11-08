@@ -6,7 +6,9 @@ import maya.mel as mel
 from pxr import Tf, Usd, UsdGeom, Gf
 import translatortestutils
 
+
 class TestTranslator(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         mc.file(f=True, new=True)
@@ -41,7 +43,12 @@ class TestTranslator(unittest.TestCase):
         self.assertEqual('otherCube', mc.listRelatives('otherNS:pCube1', parent=1)[0])
         self.assertEqual((3.0, 2.0, 1.0), cmds.getAttr('otherCube.translate')[0])
         self.assertFalse(mc.getAttr('otherCube.translate', lock=1))
-     
+
+        # Fallback namespace for prim without an explicit namespace
+        expectedNamespace = 'test_cubeWithDefaultNamespace'
+        self.assertTrue(cmds.namespace(exists=expectedNamespace))
+        self.assertEqual(1, len(mc.ls('%s:pCube1' % expectedNamespace)))
+
     def testMayaReference_RefLoading(self):
         '''Test that Maya References are only loaded when they need to be.'''
         import os
@@ -49,16 +56,14 @@ class TestTranslator(unittest.TestCase):
         import AL.usdmaya
              
         loadHistory = {}
-             
-    def recordRefLoad(refNodeMobj, mFileObject, clientData):
-        '''Record when a reference path is loading.'''
-        path = mFileObject.resolvedFullName()
-        count = loadHistory.setdefault(path, 0)
-        loadHistory[path] = count + 1
-             
-        id = om.MSceneMessage.addReferenceCallback(
-        om.MSceneMessage.kBeforeLoadReference,
-        recordRefLoad)
+
+        def recordRefLoad(refNodeMobj, mFileObject, clientData):
+            '''Record when a reference path is loading.'''
+            path = mFileObject.resolvedFullName()
+            count = loadHistory.setdefault(path, 0)
+            loadHistory[path] = count + 1
+
+        id = om.MSceneMessage.addReferenceCallback(om.MSceneMessage.kBeforeLoadReference, recordRefLoad)
              
         mc.file(new=1, f=1)
         proxyName = mc.AL_usdmaya_ProxyShapeImport(file='./testMayaRefLoading.usda')[0]
@@ -81,7 +86,7 @@ class TestTranslator(unittest.TestCase):
         self.assertEqual(loadHistory[refPath], 3)  # ref should unload, but nothing else should load.
              
         om.MMessage.removeCallback(id)
-             
+
     def testMayaReference_RefKeepsRefEdits(self):
         '''Tests that, even if the MayaReference is swapped for a pure-usda representation, refedits are preserved'''
         import AL.usdmaya
@@ -92,16 +97,16 @@ class TestTranslator(unittest.TestCase):
         topPrim = stage.GetPrimAtPath('/usd_top')
         mayaLoadingStyle = topPrim.GetVariantSet('mayaLoadingStyle')
          
-    def assertUsingMayaReferenceVariant():
-        self.assertEqual(1, len(mc.ls('cubeNS:pCube1')))
-        self.assertFalse(stage.GetPrimAtPath('/usd_top/pCube1_usd').IsValid())
-        self.assertEqual('mayaReference', mayaLoadingStyle.GetVariantSelection())
-         
-    def assertUsingUsdVariant():
-        self.assertEqual(0, len(mc.ls('cubeNS:pCube1')))
-        self.assertTrue(stage.GetPrimAtPath('/usd_top/pCube1_usd').IsValid())
-        self.assertEqual('usd', mayaLoadingStyle.GetVariantSelection())
-             
+        def assertUsingMayaReferenceVariant():
+            self.assertEqual(1, len(mc.ls('cubeNS:pCube1')))
+            self.assertFalse(stage.GetPrimAtPath('/usd_top/pCube1_usd').IsValid())
+            self.assertEqual('mayaReference', mayaLoadingStyle.GetVariantSelection())
+
+        def assertUsingUsdVariant():
+            self.assertEqual(0, len(mc.ls('cubeNS:pCube1')))
+            self.assertTrue(stage.GetPrimAtPath('/usd_top/pCube1_usd').IsValid())
+            self.assertEqual('usd', mayaLoadingStyle.GetVariantSelection())
+
         # by default, variant should be set so that it's a maya reference
         assertUsingMayaReferenceVariant()
              
@@ -121,15 +126,13 @@ class TestTranslator(unittest.TestCase):
         assertUsingMayaReferenceVariant()
         # ...and then make sure that our ref edit was preserved
         self.assertEqual(mc.getAttr('cubeNS:pCube1.translate')[0], (4.0, 5.0, 6.0))
- 
-  
+
     def testMesh_TranslatorExists(self):
         """
         Test that the Maya Reference Translator exists
         """
         self.assertTrue(Tf.Type.Unknown != Tf.Type.FindByName('AL::usdmaya::fileio::translators::Mesh'))
- 
- 
+
     def testMesh_TranslateOff(self):
         """
         Test that by default that the the mesh isn't imported
@@ -179,8 +182,7 @@ class TestTranslator(unittest.TestCase):
         mc.file(f=True, new=True)
               
         mc.AL_usdmaya_ProxyShapeImport(file=tempFile.name)
-             
-     
+
         # force the import
         mc.AL_usdmaya_TranslatePrim(ip="/parent/pSphere1", fi=True, proxy="AL_usdmaya_Proxy")
         self.assertEqual(len(mc.ls('pSphere1')), 1)
@@ -198,8 +200,7 @@ class TestTranslator(unittest.TestCase):
         self.assertEqual(len(mc.ls('pSphere1')), 1)
         self.assertEqual(len(mc.ls(type='mesh')), 1)
         self.assertEqual(len(mc.ls('parent')), 1)
-              
-      
+
     def testMesh_PretearDownEditTargetWrite(self):
         """
         Simple test to determine if the edit target gets written to preteardown 
@@ -252,13 +253,11 @@ class TestTranslator(unittest.TestCase):
 
         variantSet.SetVariantSelection("ShowMeshB")
  
-        #print stage.ExportToString()
         mc.AL_usdmaya_TranslatePrim(ip="/TestVariantSwitch/MeshB", fi=True, proxy="AL_usdmaya_Proxy") # force the import
         self.assertEqual(len(mc.ls('MeshA')), 0)
         self.assertEqual(len(mc.ls('MeshB')), 1)
         self.assertEqual(len(mc.ls(type='mesh')), 1)
 
- 
         # the MeshA and MeshB should be in the scene
         variantSet.SetVariantSelection("ShowMeshAnB")
         mc.AL_usdmaya_TranslatePrim(ip="/TestVariantSwitch/MeshB", fi=True, proxy="AL_usdmaya_Proxy")
@@ -306,7 +305,7 @@ class TestTranslator(unittest.TestCase):
         # setup scene with nurbs circle
         # Create nurbs circle in Maya and export a .usda file
         mc.CreateNURBSCircle()
-        mc.group( 'nurbsCircle1', name='parent' )
+        mc.group('nurbsCircle1', name='parent')
         mc.select("parent")
         tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="test_NurbsCurveTranslator_", delete=True)
         mc.file(tempFile.name, exportSelected=True, force=True, type="AL usdmaya export")
@@ -332,6 +331,84 @@ class TestTranslator(unittest.TestCase):
         self.assertEqual(len(mc.ls('nurbsCircle1')), 1)
         self.assertEqual(len(mc.ls(type='nurbsCurve')), 1)
         self.assertEqual(len(mc.ls('parent')), 1)
+
+    def testNurbsCurve_curve_width_floatarray_export(self):
+        expectedWidths = [1.,2.,3.]
+        mc.CreateNURBSCircle()
+        mc.select("nurbsCircleShape1")
+        mc.addAttr(longName="width", dt="floatArray")
+        mc.setAttr("nurbsCircleShape1.width", expectedWidths ,type="floatArray")
+        self.assertEqual(mc.getAttr("nurbsCircleShape1.width"), expectedWidths)
+
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="testNurbsCurve_curve_width_export", delete=False)
+        mc.AL_usdmaya_ExportCommand(file=tempFile.name)
+        stage = Usd.Stage.Open(tempFile.name)
+        prim = stage.GetPrimAtPath("/nurbsCircle1")
+        nurbPrim = UsdGeom.NurbsCurves(prim)
+        assert(nurbPrim.GetWidthsAttr())
+        actualWidths = nurbPrim.GetWidthsAttr().Get()
+        self.assertTrue(actualWidths)
+        sure = any([a == b for a, b in zip(expectedWidths, actualWidths)])
+        self.assertTrue(sure)
+
+    def testNurbsCurve_curve_width_doublearray_export(self):
+        expectedWidths = [1.,2.,3.]
+        mc.CreateNURBSCircle()
+        mc.select("nurbsCircleShape1")
+        mc.addAttr(longName="width", dt="doubleArray")
+        mc.setAttr("nurbsCircleShape1.width", expectedWidths ,type="doubleArray")
+        self.assertEqual(mc.getAttr("nurbsCircleShape1.width"), expectedWidths)
+
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="testNurbsCurve_curve_width_export", delete=False)
+        mc.AL_usdmaya_ExportCommand(file=tempFile.name)
+        stage = Usd.Stage.Open(tempFile.name)
+        prim = stage.GetPrimAtPath("/nurbsCircle1")
+        nurbPrim = UsdGeom.NurbsCurves(prim)
+        assert(nurbPrim.GetWidthsAttr())
+        actualWidths = nurbPrim.GetWidthsAttr().Get()
+        self.assertTrue(actualWidths)
+        sure = any([a == b for a, b in zip(expectedWidths, actualWidths)])
+        self.assertTrue(sure)
+
+    def testNurbsCurve_curve_width_double_export(self):
+        expectedWidths = 1.
+        mc.CreateNURBSCircle()
+        mc.select("nurbsCircleShape1")
+        mc.addAttr(longName="width", at="double")
+        mc.setAttr("nurbsCircleShape1.width", expectedWidths)
+        self.assertEqual(mc.getAttr("nurbsCircleShape1.width"), expectedWidths)
+
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="testNurbsCurve_curve_width_double_export", delete=False)
+        mc.AL_usdmaya_ExportCommand(file=tempFile.name)
+        stage = Usd.Stage.Open(tempFile.name)
+        prim = stage.GetPrimAtPath("/nurbsCircle1")
+        nurbPrim = UsdGeom.NurbsCurves(prim)
+
+        assert(nurbPrim.GetWidthsAttr())
+        actualWidths = nurbPrim.GetWidthsAttr().Get()
+        self.assertTrue(actualWidths)
+        sure = any([a == b for a, b in zip([expectedWidths], actualWidths)])
+        self.assertTrue(sure)
+
+    def testNurbsCurve_curve_width_float_export(self):
+        expectedWidths = 1.
+        mc.CreateNURBSCircle()
+        mc.select("nurbsCircleShape1")
+        mc.addAttr(longName="width", at="float")
+        mc.setAttr("nurbsCircleShape1.width", expectedWidths)
+        self.assertEqual(mc.getAttr("nurbsCircleShape1.width"), expectedWidths)
+
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="testNurbsCurve_curve_width_float_export", delete=False)
+        mc.AL_usdmaya_ExportCommand(file=tempFile.name)
+        stage = Usd.Stage.Open(tempFile.name)
+        prim = stage.GetPrimAtPath("/nurbsCircle1")
+        nurbPrim = UsdGeom.NurbsCurves(prim)
+
+        assert(nurbPrim.GetWidthsAttr())
+        actualWidths = nurbPrim.GetWidthsAttr().Get()
+        self.assertTrue(actualWidths)
+        sure = any([a == b for a, b in zip([expectedWidths], actualWidths)])
+        self.assertTrue(sure)
 
     def testNurbsCurve_PretearDownEditTargetWrite(self):
         """

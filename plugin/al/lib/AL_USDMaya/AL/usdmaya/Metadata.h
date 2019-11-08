@@ -19,9 +19,8 @@
 /// \brief  This file contains the tokens for the USDMaya metadata.
 //----------------------------------------------------------------------------------------------------------------------
 
-#include "./Api.h"
+#include "AL/usdmaya/Api.h"
 
-#include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -77,6 +76,10 @@ struct Metadata
   /// Value used in the lock property that tags prim unlocked regardless of its parent state
   AL_USDMAYA_PUBLIC
   static const TfToken lockUnlocked;
+
+  /// This represents the medata key that plugins can be registered against as an alternative to typed schemas
+  AL_USDMAYA_PUBLIC
+  static const TfToken assetType;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

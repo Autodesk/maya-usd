@@ -13,13 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usd/utils/ForwardDeclares.h"
-#include "AL/usd/utils/SIMD.h"
-#include "AL/usd/utils/ALHalf.h"
 #include "AL/usd/utils/DiffCore.h"
-PXR_NAMESPACE_USING_DIRECTIVE
-#include <algorithm>
+#include "AL/usd/utils/SIMD.h"
 #include <cmath>
+#include <algorithm>
 
 namespace AL {
 namespace usd {

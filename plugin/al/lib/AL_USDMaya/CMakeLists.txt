@@ -7,7 +7,6 @@ set(LIBRARY_NAME AL_USDMaya)
 list(APPEND AL_usdmaya_headers
         AL/usdmaya/Api.h
         AL/usdmaya/DebugCodes.h
-        AL/usdmaya/DrivenTransformsData.h
         AL/usdmaya/Metadata.h
         AL/usdmaya/PluginRegister.h
         AL/usdmaya/SelectabilityDB.h
@@ -17,11 +16,11 @@ list(APPEND AL_usdmaya_headers
         AL/usdmaya/TypeIDs.h
         AL/usdmaya/ForwardDeclares.h
         AL/usdmaya/Global.h
+        AL/usdmaya/Version.h
 )
 
 list(APPEND AL_usdmaya_source
         AL/usdmaya/DebugCodes.cpp
-        AL/usdmaya/DrivenTransformsData.cpp
         AL/usdmaya/Global.cpp
         AL/usdmaya/Metadata.cpp
         AL/usdmaya/SelectabilityDB.cpp
@@ -37,10 +36,11 @@ list(APPEND AL_usdmaya_cmds_headers
         AL/usdmaya/cmds/DebugCommands.h
         AL/usdmaya/cmds/EventCommand.h
         AL/usdmaya/cmds/LayerCommands.h
+        AL/usdmaya/cmds/ListTranslators.h
         AL/usdmaya/cmds/ProxyShapeCommands.h
-        AL/usdmaya/cmds/ProxyShapeSelectCommands.h
         AL/usdmaya/cmds/ProxyShapePostLoadProcess.h
         AL/usdmaya/cmds/RendererCommands.h
+        AL/usdmaya/cmds/SyncFileIOGui.h
         AL/usdmaya/cmds/UnloadPrim.h
 )
 list(APPEND AL_usdmaya_cmds_source
@@ -48,10 +48,11 @@ list(APPEND AL_usdmaya_cmds_source
         AL/usdmaya/cmds/DebugCommands.cpp
         AL/usdmaya/cmds/EventCommand.cpp
         AL/usdmaya/cmds/LayerCommands.cpp
+        AL/usdmaya/cmds/ListTranslators.cpp
         AL/usdmaya/cmds/ProxyShapeCommands.cpp
-        AL/usdmaya/cmds/ProxyShapeSelectCommands.cpp
         AL/usdmaya/cmds/ProxyShapePostLoadProcess.cpp
         AL/usdmaya/cmds/RendererCommands.cpp
+        AL/usdmaya/cmds/SyncFileIOGui.cpp
         AL/usdmaya/cmds/UnloadPrim.cpp
 )
 
@@ -111,14 +112,16 @@ list(APPEND AL_usdmaya_nodes_headers
         AL/usdmaya/nodes/ProxyDrawOverride.h
         AL/usdmaya/nodes/ProxyShape.h
         AL/usdmaya/nodes/ProxyShapeUI.h
+        AL/usdmaya/nodes/ProxyUsdGeomCamera.h
         AL/usdmaya/nodes/RendererManager.h
         AL/usdmaya/nodes/Transform.h
         AL/usdmaya/nodes/TransformationMatrix.h
 )
+
 list(APPEND AL_usdmaya_nodes_proxy_headers
-        AL/usdmaya/nodes/proxy/DrivenTransforms.h
         AL/usdmaya/nodes/proxy/PrimFilter.h
 )
+
 list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/Engine.cpp
         AL/usdmaya/nodes/Layer.cpp
@@ -129,10 +132,10 @@ list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/ProxyShape.cpp
         AL/usdmaya/nodes/ProxyShapeSelection.cpp
         AL/usdmaya/nodes/ProxyShapeUI.cpp
+        AL/usdmaya/nodes/ProxyUsdGeomCamera.cpp
         AL/usdmaya/nodes/RendererManager.cpp
         AL/usdmaya/nodes/Transform.cpp
         AL/usdmaya/nodes/TransformationMatrix.cpp
-        AL/usdmaya/nodes/proxy/DrivenTransforms.cpp
         AL/usdmaya/nodes/proxy/PrimFilter.cpp
 )
 
@@ -190,6 +193,7 @@ target_link_libraries(${LIBRARY_NAME}
     AL_USDMayaUtils
     AL_MayaUtils
     AL_USDUtils
+    AL_USDTransaction
     ar 
     gf 
     kind
@@ -213,7 +217,8 @@ target_link_libraries(${LIBRARY_NAME}
 
 if(NEED_BOOST_FILESYSTEM)
     target_link_libraries(${LIBRARY_NAME}
-                        ${Boost_FILESYSTEM_LIBRARY})
+                        ${Boost_FILESYSTEM_LIBRARY}
+                        ${Boost_SYSTEM_LIBRARY})
 endif()
 
 install(TARGETS ${LIBRARY_NAME}
@@ -237,6 +242,8 @@ add_library(${PYTHON_LIBRARY_NAME}
     AL/usdmaya/wrapStageCache.cpp
     AL/usdmaya/nodes/wrapLayerManager.cpp
     AL/usdmaya/nodes/wrapProxyShape.cpp
+    AL/usdmaya/fileio/translators/wrapTranslatorBase.cpp
+    AL/usdmaya/fileio/translators/wrapTranslatorContext.cpp
 )
 
 target_compile_definitions(${PYTHON_LIBRARY_NAME}
@@ -329,3 +336,14 @@ install( FILES
             ${AL_usdmaya_fileio_translators_headers}
         DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/usdmaya/fileio/translators
 )
+
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/AL/usdmaya/Version.h")
+    foreach(_version_comp MAJOR MINOR PATCH)
+        file(STRINGS
+            "${CMAKE_CURRENT_LIST_DIR}/AL/usdmaya/Version.h"
+            _version_comp_def
+            REGEX "#define AL_USDMAYA_VERSION_${_version_comp} .*$")
+        string(REGEX MATCHALL "[0-9]+" AL_USDMAYA_${_version_comp}_VERSION ${_version_comp_def})
+    endforeach()
+    set(AL_USDMAYA_VERSION ${AL_USDMAYA_MAJOR_VERSION}.${AL_USDMAYA_MINOR_VERSION}.${AL_USDMAYA_PATCH_VERSION} CACHE INTERNAL "AL_USDMaya Version String")
+endif()

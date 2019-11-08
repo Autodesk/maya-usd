@@ -15,28 +15,19 @@
 //
 #pragma once
 
-#include "./Api.h"
+#include "AL/usdmaya/utils/Api.h"
 
-#include "maya/MPlug.h"
 #include "maya/MAngle.h"
 #include "maya/MDistance.h"
-#include "maya/MTime.h"
-#include "maya/MDoubleArray.h"
 #include "maya/MFnAnimCurve.h"
 #include "maya/MGlobal.h"
+#include "maya/MPlug.h"
+#include "maya/MTime.h"
 
-#include <string>
-#include <vector>
-
-#include "pxr/base/gf/half.h" //Just for convenient half support
-#include "pxr/pxr.h"
-#include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/xformOp.h"
 
-#include "AL/usdmaya/utils/ForwardDeclares.h"
-#include "AL/usdmaya/utils/AttributeType.h"
-
 #include "AL/maya/utils/MayaHelperMacros.h"
+#include "AL/usdmaya/utils/AttributeType.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

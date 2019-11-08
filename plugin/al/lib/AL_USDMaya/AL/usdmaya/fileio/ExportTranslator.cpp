@@ -29,6 +29,10 @@ namespace AL {
 namespace usdmaya {
 namespace fileio {
 
+PluginTranslatorOptionsContext ExportTranslator::m_pluginContext;
+PluginTranslatorOptions* ExportTranslator::m_compatPluginOptions;
+PluginTranslatorOptionsInstance* ExportTranslator::m_pluginInstance;
+
 //----------------------------------------------------------------------------------------------------------------------
 const char* const ExportTranslator::compactionLevels[] = {
     "None",
@@ -62,19 +66,6 @@ MStatus ExportTranslator::writer(const MFileObject& file, const AL::maya::utils:
   ExporterParams params;
   params.m_dynamicAttributes = options.getBool(kDynamicAttributes);
   params.m_duplicateInstances = options.getBool(kDuplicateInstances);
-  params.m_meshes = options.getBool(kMeshes);
-  params.m_meshConnects = options.getBool(kMeshConnects);
-  params.m_meshPoints = options.getBool(kMeshPoints);
-  params.m_meshNormals = options.getBool(kMeshNormals);
-  params.m_meshVertexCreases = options.getBool(kMeshVertexCreases);
-  params.m_meshEdgeCreases = options.getBool(kMeshEdgeCreases);
-  params.m_meshUvs = options.getBool(kMeshUvs);
-  params.m_meshUV = options.getBool(kMeshUvOnly);
-  params.m_meshPointsAsPref = options.getBool(kMeshPointsAsPref);
-  params.m_meshColours = options.getBool(kMeshColours);
-  params.m_meshHoles = options.getBool(kMeshHoles);
-  params.m_compactionLevel = options.getInt(kCompactionLevel);
-  params.m_nurbsCurves = options.getBool(kNurbsCurves);
   params.m_mergeTransforms = options.getBool(kMergeTransforms);
   params.m_fileName = file.fullName();
   params.m_selected = mode == MPxFileTranslator::kExportActiveAccessMode;
@@ -82,6 +73,25 @@ MStatus ExportTranslator::writer(const MFileObject& file, const AL::maya::utils:
   params.m_exportAtWhichTime = options.getBool(kExportAtWhichTime);
   params.m_exportInWorldSpace = options.getBool(kExportInWorldSpace);
   params.m_subSamples = options.getInt(kSubSamples);
+  params.m_parser = (maya::utils::OptionsParser*)&options;
+  params.m_activateAllTranslators = options.getBool(kActivateAllTranslators);
+  MStringArray strings;
+  options.getString(kActiveTranslatorList).split(',', strings); 
+  for(uint32_t i = 0, n = strings.length(); i < n; ++i)
+  {
+    params.m_activePluginTranslators.emplace_back(strings[i].asChar());
+  }
+  strings.setLength(0);
+  options.getString(kInactiveTranslatorList).split(',', strings);
+  for(uint32_t i = 0, n = strings.length(); i < n; ++i)
+  {
+    params.m_inactivePluginTranslators.emplace_back(strings[i].asChar());
+  }
+
+  if(m_pluginInstance)
+  {
+    m_pluginInstance->toOptionVars("ExportTranslator");
+  }
 
   if(params.m_animation)
   {

@@ -15,19 +15,14 @@
 //
 #pragma once
 
-#include "../Api.h"
+#include "AL/usdmaya/Api.h"
 
 #include "maya/MPxDrawOverride.h"
-#include "AL/usdmaya/ForwardDeclares.h"
 
-#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/version.h"
-
-#include "AL/usd/utils/ForwardDeclares.h"
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
 
 namespace AL {
 namespace usdmaya {
@@ -37,8 +32,14 @@ namespace nodes {
 /// \brief  This class provides the draw override for the USD proxy shape node.
 /// \ingroup nodes
 //----------------------------------------------------------------------------------------------------------------------
-class ProxyDrawOverride
-  : public MHWRender::MPxDrawOverride
+
+#if MAYA_API_VERSION >= 20190000
+class ProxyDrawOverride : public MHWRender::MPxDrawOverride
+#elif MAYA_API_VERSION >= 20180600
+class ProxyDrawOverride : public MHWRender::MPxDrawOverride2
+#else
+class ProxyDrawOverride : public MHWRender::MPxDrawOverride
+#endif
 {
 public:
 
@@ -118,7 +119,7 @@ public:
 private:
   static MUint64 s_lastRefreshFrameStamp;
   
-#if MAYA_API_VERSION >= 20190000
+#if MAYA_API_VERSION >= 20180600
   bool wantUserSelection() const override {return true;}
   
   bool userSelect(

@@ -1,8 +1,24 @@
+//
+// Copyright 2017 Animal Logic
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 #include <AL/usdmaya/SelectabilityDB.h>
 
 namespace AL {
 namespace usdmaya {
 
+//----------------------------------------------------------------------------------------------------------------------
 bool SelectabilityDB::isPathUnselectable(const SdfPath& path) const
 {
   for(SdfPath unselectablePath : m_unselectablePaths)
@@ -16,6 +32,7 @@ bool SelectabilityDB::isPathUnselectable(const SdfPath& path) const
   return false;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 void SelectabilityDB::removePathsAsUnselectable(const SdfPathVector& paths)
 {
   bool needsSort = false;
@@ -30,6 +47,7 @@ void SelectabilityDB::removePathsAsUnselectable(const SdfPathVector& paths)
   }
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 void SelectabilityDB::removePathAsUnselectable(const SdfPath& path)
 {
   if(removeUnselectablePath(path))
@@ -38,6 +56,7 @@ void SelectabilityDB::removePathAsUnselectable(const SdfPath& path)
   }
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 void SelectabilityDB::addPathsAsUnselectable(const SdfPathVector& paths)
 {
   bool needsSort = false;
@@ -52,6 +71,7 @@ void SelectabilityDB::addPathsAsUnselectable(const SdfPathVector& paths)
   }
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 void SelectabilityDB::addPathAsUnselectable(const SdfPath& path)
 {
   if(addUnselectablePath(path))
@@ -60,6 +80,7 @@ void SelectabilityDB::addPathAsUnselectable(const SdfPath& path)
   }
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 bool SelectabilityDB::removeUnselectablePath(const SdfPath& path)
 {
   auto foundPathEntry = std::find(m_unselectablePaths.begin(), m_unselectablePaths.end(), path);
@@ -71,6 +92,7 @@ bool SelectabilityDB::removeUnselectablePath(const SdfPath& path)
   return false;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 bool SelectabilityDB::addUnselectablePath(const SdfPath& path)
 {
   if(!std::binary_search(m_unselectablePaths.begin(), m_unselectablePaths.end(), path))

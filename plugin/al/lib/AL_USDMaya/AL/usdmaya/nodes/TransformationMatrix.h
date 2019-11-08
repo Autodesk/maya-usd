@@ -15,14 +15,12 @@
 //
 #pragma once
 
-#include "../Api.h"
-
+#include "AL/usdmaya/Api.h"
 #include "AL/usdmaya/TransformOperation.h"
 
 #include "maya/MPxTransformationMatrix.h"
 #include "maya/MPxTransform.h"
 
-#include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
@@ -46,7 +44,7 @@ class TransformationMatrix
   UsdTimeCode m_time;
   std::vector<UsdGeomXformOp> m_xformops;
   std::vector<TransformOperation> m_orderedOps;
-  MObject m_transformNode;
+  MObjectHandle m_transformNode;
 
   // tweak values. These are applied on top of the USD transform values to produce the final result.
   MVector m_scaleTweak;
@@ -72,6 +70,28 @@ class TransformationMatrix
 
   // post-transform translation value applied in object space after all other transformations
   MVector m_localTranslateOffset;
+
+  void print() const
+  {
+    std::cout << "m_scaleTweak " << m_scaleTweak << '\n';
+    std::cout << "m_rotationTweak " << m_rotationTweak << '\n';
+    std::cout << "m_translationTweak " << m_translationTweak << '\n';
+    std::cout << "m_shearTweak " << m_shearTweak << '\n';
+    std::cout << "m_scalePivotTweak " << m_scalePivotTweak << '\n';
+    std::cout << "m_scalePivotTranslationTweak " << m_scalePivotTranslationTweak << '\n';
+    std::cout << "m_rotatePivotTweak " << m_rotatePivotTweak << '\n';
+    std::cout << "m_rotatePivotTranslationTweak " << m_rotatePivotTranslationTweak << '\n';
+    std::cout << "m_rotateOrientationTweak " << m_rotateOrientationTweak << '\n';
+    std::cout << "m_scaleFromUsd " << m_scaleFromUsd << '\n';
+    std::cout << "m_rotationFromUsd " << m_rotationFromUsd << '\n';
+    std::cout << "m_translationFromUsd " << m_translationFromUsd << '\n';
+    std::cout << "m_shearFromUsd " << m_shearFromUsd << '\n';
+    std::cout << "m_scalePivotFromUsd " << m_scalePivotFromUsd << '\n';
+    std::cout << "m_scalePivotTranslationFromUsd " << m_scalePivotTranslationFromUsd << '\n';
+    std::cout << "m_rotatePivotFromUsd " << m_rotatePivotFromUsd << '\n';
+    std::cout << "m_rotatePivotTranslationFromUsd " << m_rotatePivotTranslationFromUsd << '\n';
+    std::cout << "m_rotateOrientationFromUsd " << m_rotateOrientationFromUsd << '\n' << std::endl;
+  }
 
   // methods that will insert a transform op into the ordered queue of operations, if for some.
   void insertTranslateOp();
@@ -123,7 +143,7 @@ class TransformationMatrix
     // when we're re-initializing (ie, in setPrim)
     kPreservationMask = kPushToPrimEnabled | kReadAnimatedValues
   };
-  uint32_t m_flags = 0;
+  uint32_t m_flags = kReadAnimatedValues;
 
   bool internal_readVector(MVector& result, const UsdGeomXformOp& op) { return readVector(result, op, getTimeCode()); }
   bool internal_readShear(MVector& result, const UsdGeomXformOp& op) { return readShear(result, op, getTimeCode()); }
@@ -150,7 +170,7 @@ public:
   /// \return true if the translate attribute is locked
   bool isTranslateLocked()
     {
-      MPlug plug(m_transformNode, MPxTransform::translate);
+      MPlug plug(m_transformNode.object(), MPxTransform::translate);
       return plug.isLocked() ||
              plug.child(0).isLocked() ||
              plug.child(1).isLocked() ||
@@ -161,7 +181,7 @@ public:
   /// \return true if the rotate attribute is locked
   bool isRotateLocked()
     {
-      MPlug plug(m_transformNode, MPxTransform::rotate);
+      MPlug plug(m_transformNode.object(), MPxTransform::rotate);
       return plug.isLocked() ||
              plug.child(0).isLocked() ||
              plug.child(1).isLocked() ||
@@ -172,7 +192,18 @@ public:
   /// \return true if the scale attribute is locked
   bool isScaleLocked()
     {
-      MPlug plug(m_transformNode, MPxTransform::scale);
+      MPlug plug(m_transformNode.object(), MPxTransform::scale);
+      return plug.isLocked() ||
+             plug.child(0).isLocked() ||
+             plug.child(1).isLocked() ||
+             plug.child(2).isLocked();
+    }
+
+  /// \brief  checks to see whether the shear attribute is locked
+  /// \return true if the shear attribute is locked
+  bool isShearLocked()
+    {
+      MPlug plug(m_transformNode.object(), MPxTransform::shear);
       return plug.isLocked() ||
              plug.child(0).isLocked() ||
              plug.child(1).isLocked() ||
@@ -311,7 +342,7 @@ public:
   /// \return the prim this transform matrix is controlling
   inline const UsdPrim& prim() const
     { return m_prim; }
-
+  
   //--------------------------------------------------------------------------------------------------------------------
   /// \name  Query flags
   //--------------------------------------------------------------------------------------------------------------------
@@ -420,7 +451,12 @@ public:
   /// \brief  pushes any modifications on the matrix back onto the UsdPrim
   void pushToPrim();
 
+  void notifyProxyShapeOfRedraw();
+
 private:
+  /// \brief  sets the SRT values from a matrix
+  void setFromMatrix(MObject thisNode, const MMatrix& m);
+
   //  Translation methods:
   MStatus translateTo(const MVector &vector, MSpace::Space = MSpace::kTransform) override;
 
@@ -450,6 +486,18 @@ private:
   //  Compute matrix result
   MMatrix asMatrix() const override;
   MMatrix asMatrix(double percent) const override;
+public:
+  void pushTranslateToPrim();
+  void pushPivotToPrim();
+  void pushRotatePivotTranslateToPrim();
+  void pushRotatePivotToPrim();
+  void pushRotateToPrim();
+  void pushRotateAxisToPrim();
+  void pushScalePivotTranslateToPrim();
+  void pushScalePivotToPrim();
+  void pushScaleToPrim();
+  void pushShearToPrim();
+  void pushTransformToPrim();
 };
 
 //----------------------------------------------------------------------------------------------------------------------

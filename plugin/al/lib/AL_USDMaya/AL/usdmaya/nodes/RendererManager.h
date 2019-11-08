@@ -15,17 +15,26 @@
 //
 #pragma once
 
-#include "../Api.h"
+#include "AL/usdmaya/Api.h"
 
+#include "AL/maya/utils/MayaHelperMacros.h"
 #include "AL/maya/utils/NodeHelper.h"
+
+#include "maya/MNodeMessage.h"
+#include "maya/MPxNode.h"
+
+#include "pxr/base/tf/token.h"
+
+/*
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
 
-#include "maya/MPxLocatorNode.h"
 #include "maya/MNodeMessage.h"
 #include "AL/maya/utils/MayaHelperMacros.h"
 
 #include <map>
+
+*/
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -49,8 +58,6 @@ public:
   /// \brief  ctor
   inline RendererManager()
     : MPxNode(), NodeHelper() {}
-
-  ~RendererManager();
 
   /// \brief  Find the already-existing non-referenced RendererManager node in the scene, or return a null MObject
   /// \return the found RendererManager node, or a null MObject
@@ -111,15 +118,6 @@ public:
 
 private:
   static MObject _findNode();
-  static void onAttributeChanged(MNodeMessage::AttributeMessage, MPlug&, MPlug&, void*);
-
-  /// \brief  adds the attribute changed callback to manager
-  void addAttributeChangedCallback();
-
-  /// \brief  removes the attribute changed callback from manager
-  void removeAttributeChangedCallback();
-
-  MCallbackId m_attributeChanged = 0;
 
   static TfTokenVector m_rendererPluginsTokens;
   static MStringArray m_rendererPluginsNames;
@@ -128,11 +126,9 @@ private:
   /// MPxNode overrides
   //--------------------------------------------------------------------------------------------------------------------
 
-  void postConstructor() override;
-
-  bool setInternalValueInContext(const MPlug& plug, const MDataHandle& dataHandle, MDGContext& ctx) override;
+  bool setInternalValue(const MPlug& plug, const MDataHandle& dataHandle) override;
   
-  bool getInternalValueInContext(const MPlug& plug, MDataHandle& dataHandle, MDGContext& ctx) override;
+  bool getInternalValue(const MPlug& plug, MDataHandle& dataHandle) override;
   
 };
 

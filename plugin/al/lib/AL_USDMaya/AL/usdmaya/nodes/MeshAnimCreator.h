@@ -14,12 +14,12 @@
 // limitations under the License.
 //
 #pragma once
-#include <AL/usdmaya/ForwardDeclares.h>
+
 #include "AL/maya/utils/NodeHelper.h"
 #include "AL/maya/utils/MayaHelperMacros.h"
-#include "AL/usdmaya/utils/ForwardDeclares.h"
-#include "pxr/pxr.h"
+
 #include "pxr/usd/usd/stage.h"
+
 #include "maya/MPxNode.h"
 #include "maya/MNodeMessage.h"
 #include "maya/MObjectHandle.h"

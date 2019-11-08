@@ -7,6 +7,7 @@ add_definitions(-DAL_EXTRAS_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data")
 list(APPEND mayaplugin_test_source
   utils/CommandGuiHelperTest.cpp
   utils/NodeHelperUnitTest.cpp
+  utils/PluginTranslatorOptionsTest.cpp
   plugin.cpp
   test_maya_MenuBuilder.cpp
   test_maya_NodeHelper.cpp

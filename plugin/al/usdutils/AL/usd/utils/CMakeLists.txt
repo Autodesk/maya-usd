@@ -40,6 +40,7 @@ target_include_directories(${USDUTILS_LIBRARY_NAME}
     PUBLIC
     ${UTILS_INCLUDE_LOCATION} 
     ${USDUTILS_INCLUDE_LOCATION} 
+    ${USD_INCLUDE_DIR}
     )
 
 target_link_libraries(${USDUTILS_LIBRARY_NAME}

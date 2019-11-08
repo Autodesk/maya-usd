@@ -14,11 +14,11 @@
 // limitations under the License.
 //
 #include "AL/maya/utils/Utils.h"
-#include "AL/usdmaya/utils/MeshUtils.h"
 #include "AL/usdmaya/utils/DiffPrimVar.h"
+#include "AL/usdmaya/utils/MeshUtils.h"
 #include "AL/usdmaya/utils/Utils.h"
 #include "AL/usd/utils/DebugCodes.h"
-#include "pxr/usd/usdGeom/tokens.h"
+
 #include "pxr/usd/usdUtils/pipeline.h"
 
 #include "maya/MItMeshPolygon.h"
@@ -198,9 +198,25 @@ void MeshImportContext::gatherFaceConnectsAndVertices()
   connects.setLength(faceVertexIndices.size());
 
   mesh.GetPointsAttr().Get(&pointData, m_timeCode);
+
+  // According to the docs for UsdGeomMesh: If 'normals' and 'primvars:normals' are both specified, the latter has precedence.
+  const TfToken primvarNormalsToken("primvars:normals");
+  TfToken interpolation = mesh.GetNormalsInterpolation();
+  bool isIndexed = false;
+  bool hasNormalsOpinion = false;
+  if(mesh.HasPrimvar(primvarNormalsToken))
+  {
+    UsdGeomPrimvar primvar = mesh.GetPrimvar(primvarNormalsToken);
+    interpolation = primvar.GetInterpolation();
+    isIndexed = primvar.IsIndexed();
+    hasNormalsOpinion = true;
+    primvar.Get(&normalsData, m_timeCode);
+  }
+  else    
   if(mesh.GetNormalsAttr().HasAuthoredValueOpinion())
   {
     mesh.GetNormalsAttr().Get(&normalsData, m_timeCode);
+    hasNormalsOpinion = mesh.GetNormalsAttr().HasAuthoredValueOpinion();
   }
 
   points.setLength(pointData.size());
@@ -209,10 +225,10 @@ void MeshImportContext::gatherFaceConnectsAndVertices()
   memcpy(&counts[0], (const int32_t*)faceVertexCounts.cdata(), sizeof(int32_t) * faceVertexCounts.size());
   memcpy(&connects[0], (const int32_t*)faceVertexIndices.cdata(), sizeof(int32_t) * faceVertexIndices.size());
 
-  if(mesh.GetNormalsAttr().HasAuthoredValueOpinion())
+  if(hasNormalsOpinion)
   {
-    if(mesh.GetNormalsInterpolation() == UsdGeomTokens->faceVarying ||
-       mesh.GetNormalsInterpolation() == UsdGeomTokens->varying)
+    if(interpolation == UsdGeomTokens->faceVarying ||
+       interpolation == UsdGeomTokens->varying)
     {
       normals.setLength(normalsData.size());
       double* const optr = &normals[0].x;
@@ -225,7 +241,7 @@ void MeshImportContext::gatherFaceConnectsAndVertices()
       }
     }
     else
-    if(mesh.GetNormalsInterpolation() == UsdGeomTokens->uniform)
+    if(interpolation == UsdGeomTokens->uniform)
     {
       const float* const iptr = (const float*)normalsData.cdata();
       normals.setLength(connects.length());
@@ -240,14 +256,13 @@ void MeshImportContext::gatherFaceConnectsAndVertices()
       }
     }
     else
-    if(mesh.GetNormalsInterpolation() == UsdGeomTokens->vertex)
+    if(interpolation == UsdGeomTokens->vertex)
     {
       const float* const iptr = (const float*)normalsData.cdata();
-      normals.setLength(connects.length());
-      for(uint32_t i = 0, nf = connects.length(); i < nf; ++i)
+      normals.setLength(normalsData.size());
+      for(uint32_t i = 0, nf = normalsData.size(); i < nf; ++i)
       {
-        int index = connects[i];
-        normals[i] = MVector(iptr[3 * index], iptr[3 * index + 1], iptr[3 * index + 2]);
+        normals[i] = MVector(iptr[3 * i], iptr[3 * i + 1], iptr[3 * i + 2]);
       }
     }
   }
@@ -507,23 +522,118 @@ void unzipUVs(const float* const uv, float* const u, float* const v, const size_
 //----------------------------------------------------------------------------------------------------------------------
 bool MeshImportContext::applyVertexNormals()
 {
+  // Lambda to set vertex normals in unlocked state
+  auto setUnlockedVertexNormals = [&](MVectorArray& normals) -> bool
+  {
+    MIntArray vertexList(fnMesh.numVertices());
+    for(uint32_t i = 0, n = fnMesh.numVertices(); i < n; ++i)
+    {
+      vertexList[i] = i;
+    }
+    if (fnMesh.setVertexNormals(normals, vertexList, MSpace::kObject))
+    {
+      return fnMesh.unlockVertexNormals(vertexList);
+    }
+    return false;
+  };
+
+  // Lambda to set face vertex normals in unlocked state
+  auto setUnlockedFaceVertexNormals = [&](MVectorArray& normals, MIntArray& faceList, MIntArray& vertexList) -> bool
+  {
+    if (fnMesh.setFaceVertexNormals(normals, faceList, vertexList, MSpace::kObject))
+    {
+      return fnMesh.unlockFaceVertexNormals(faceList, vertexList);
+    }
+    return false;
+  };
+  
   if(normals.length())
   {
-    MIntArray normalsFaceIds;
-    normalsFaceIds.setLength(connects.length());
-    int32_t* normalsFaceIdsPtr = &normalsFaceIds[0];
-    if (normals.length() == uint32_t(fnMesh.numFaceVertices()))
+    // According to the docs for UsdGeomMesh: If 'normals' and 'primvars:normals' are both specified, the latter has precedence.
+    TfToken primvarNormalsToken("primvars:normals");
+    if(mesh.HasPrimvar(primvarNormalsToken))
     {
-      for (uint32_t i = 0, k = 0, n = counts.length(); i < n; i++)
+      UsdGeomPrimvar primvar = mesh.GetPrimvar(primvarNormalsToken);
+      const TfToken interpolation = primvar.GetInterpolation();
+      const bool isIndexed = primvar.IsIndexed();
+      if(interpolation == UsdGeomTokens->vertex)
       {
-        for (uint32_t j = 0, m = counts[i]; j < m; j++, ++k)
+        if(isIndexed)
         {
-          normalsFaceIdsPtr[k] = i;
+          VtIntArray indices;
+          primvar.GetIndices(&indices, m_timeCode);
+
+          MVectorArray ns(indices.size());
+          for(uint32_t i = 0, n = indices.size(); i < n; ++i)
+          {
+            ns[i] = normals[indices[i]];
+          }
+          return setUnlockedVertexNormals(ns);
+        }
+        else
+        {
+          return setUnlockedVertexNormals(normals);
         }
       }
-    }
+      else
+      if(interpolation == UsdGeomTokens->faceVarying)
+      {
+        MIntArray normalsFaceIds;
+        normalsFaceIds.setLength(connects.length());
+        
+        int32_t* normalsFaceIdsPtr = &normalsFaceIds[0];
+        for (uint32_t i = 0, k = 0, n = counts.length(); i < n; i++)
+        {
+          for (uint32_t j = 0, m = counts[i]; j < m; j++, ++k)
+          {
+            normalsFaceIdsPtr[k] = i;
+          }
+        }
 
-    return fnMesh.setFaceVertexNormals(normals, normalsFaceIds, connects, MSpace::kObject) == MS::kSuccess;
+        if(isIndexed)
+        {
+          VtIntArray indices;
+          primvar.GetIndices(&indices, m_timeCode);
+
+          MVectorArray ns(indices.size());
+          for(uint32_t i = 0, n = indices.size(); i < n; ++i)
+          {
+            ns[i] = normals[indices[i]];
+          }
+
+          return setUnlockedFaceVertexNormals(ns, normalsFaceIds, connects);
+        }
+        else
+        {
+          return setUnlockedFaceVertexNormals(normals, normalsFaceIds, connects);
+        }
+
+      }
+    }
+    else
+    {
+      if(mesh.GetNormalsInterpolation() == UsdGeomTokens->vertex)
+      {
+        return setUnlockedVertexNormals(normals);
+      }
+      else
+      {
+        MIntArray normalsFaceIds;
+        normalsFaceIds.setLength(connects.length());
+        int32_t* normalsFaceIdsPtr = &normalsFaceIds[0];
+        if (normals.length() == uint32_t(fnMesh.numFaceVertices()))
+        {
+          for (uint32_t i = 0, k = 0, n = counts.length(); i < n; i++)
+          {
+            for (uint32_t j = 0, m = counts[i]; j < m; j++, ++k)
+            {
+              normalsFaceIdsPtr[k] = i;
+            }
+          }
+        }
+        return setUnlockedFaceVertexNormals(normals, normalsFaceIds, connects);
+      }
+    }
   }
   return false;
 }
@@ -646,9 +756,7 @@ bool MeshImportContext::applyEdgeCreases()
 //----------------------------------------------------------------------------------------------------------------------
 void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
 {
-  MIntArray mayaIndices;
-  MFloatArray u, v;
-  MColorArray colours;
+  const TfToken prefToken("pref");
   const std::vector<UsdGeomPrimvar> primvars = mesh.GetPrimvars();
   for(auto it = primvars.begin(), end = primvars.end(); it != end; ++it)
   {
@@ -657,6 +765,9 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
     SdfValueTypeName typeName;
     int elementSize;
     primvar.GetDeclarationInfo(&name, &typeName, &interpolation, &elementSize);
+    // Prevent pref data from being displayed as colorset
+    if (name == prefToken)
+      continue;
     VtValue vtValue;
 
     if (primvar.Get(&vtValue, m_timeCode))
@@ -665,6 +776,8 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
       {
         if(!createUvs)
           continue;
+        MIntArray mayaIndices;
+        MFloatArray u, v;
         const VtArray<GfVec2f> rawVal = vtValue.Get<VtArray<GfVec2f> >();
         u.setLength(rawVal.size());
         v.setLength(rawVal.size());
@@ -691,7 +804,7 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
             if(s)
             {
               VtIntArray usdindices;
-              primvar.GetIndices(&usdindices);
+              primvar.GetIndices(&usdindices, UsdTimeCode::EarliestTime());
               mayaIndices.setLength(usdindices.size());
               std::memcpy(&mayaIndices[0], usdindices.cdata(), sizeof(int) * usdindices.size());
               s = fnMesh.assignUVs(counts, mayaIndices, uv_set);
@@ -767,11 +880,12 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
         }
       }
       else
-      if (vtValue.IsHolding<VtArray<GfVec4f> >())
+      if (vtValue.IsHolding<VtArray<GfVec3f> >() || vtValue.IsHolding<VtArray<GfVec4f> >())
       {
         if(!createColours)
           continue;
-
+        
+        MColorArray colours;
         MString colourSetName(name.GetText());
         fnMesh.setDisplayColors(true);
 
@@ -786,102 +900,91 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
           s = fnMesh.setCurrentColorSetName(colourSetName);
           if(s)
           {
-            const VtArray<GfVec4f> rawVal = vtValue.Get<VtArray<GfVec4f> >();
-            colours.setLength(rawVal.size());
-            memcpy(&colours[0], (const float*)rawVal.cdata(), sizeof(float) * 4 * rawVal.size());
-
-            if (interpolation == UsdGeomTokens->faceVarying)
+            // Prepare maya colours array
+            MFnMesh::MColorRepresentation representation;
+            if (vtValue.IsHolding<VtArray<GfVec3f> >())
             {
-              s = fnMesh.setColors(colours, &colourSetName);
-              if(s)
-              {
-                if(primvar.IsIndexed())
-                {
-                  VtIntArray usdindices;
-                  primvar.GetIndices(&usdindices);
-                  mayaIndices.setLength(usdindices.size());
-                  std::memcpy(&mayaIndices[0], usdindices.cdata(), sizeof(int) * usdindices.size());
+              const VtArray<GfVec3f> rawVal = vtValue.UncheckedGet<VtArray<GfVec3f> >();
+              colours.setLength(rawVal.size());
+              for (uint32_t i = 0, n = rawVal.size(); i < n; ++i)
+                colours[i] = MColor(rawVal[i][0], rawVal[i][1], rawVal[i][2]);
+              representation = MFnMesh::kRGB;
+            }
+            else
+            {
+              const VtArray<GfVec4f> rawVal = vtValue.UncheckedGet<VtArray<GfVec4f> >();
+              colours.setLength(rawVal.size());
+              memcpy(&colours[0], (const float*)rawVal.cdata(), sizeof(float) * 4 * rawVal.size());
+              representation = MFnMesh::kRGBA;
+            }
+            // Set colors
+            if (!fnMesh.setColors(colours, &colourSetName, representation))
+            {
+              TF_DEBUG(ALUTILS_INFO).Msg("Failed to set colours for colour set \"%s\" on mesh \"%s\", error: %s\n",
+              colourSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
+              continue;
+            }
 
-                  s = fnMesh.assignColors(mayaIndices, &colourSetName);
-                  if(!s)
+            // When primvar is indexed assume these indices
+            MIntArray mayaIndices;
+            VtIntArray usdindices;
+            if (primvar.GetIndices(&usdindices, m_timeCode))
+            {
+              mayaIndices.setLength(usdindices.size());
+              std::memcpy(&mayaIndices[0], usdindices.cdata(), sizeof(int) * usdindices.size());
+              if (mayaIndices.length() != connects.length())
+              {
+                TF_DEBUG(ALUTILS_INFO).Msg("Retrieved indexed values are not compatible with topology for colour set \"%s\" on mesh \"%s\"\n",
+                colourSetName.asChar(), fnMesh.name().asChar());
+                continue;
+              }
+            }
+            
+            // Otherwise generate indices based on interpolation
+            if (mayaIndices.length() == 0)
+            {
+              if (interpolation == UsdGeomTokens->faceVarying)
+              {
+                generateIncrementingIndices(mayaIndices, colours.length());
+              }
+              else
+              if (interpolation == UsdGeomTokens->uniform)
+              {
+                if (colours.length() == counts.length())
+                {
+                  mayaIndices.setLength(connects.length());
+                  for (uint32_t i = 0, idx = 0, n = counts.length(); i < n; ++i)
                   {
-                    TF_DEBUG(ALUTILS_INFO).Msg("Failed to set colour indices for colour set \"%s\" on mesh \"%s\", error: %s\n",
-                        colourSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
+                    for (uint32_t j = 0; j < counts[i]; ++j)
+                    {
+                      mayaIndices[idx++] = i;
+                    }
                   }
                 }
               }
               else
+              if (interpolation == UsdGeomTokens->vertex)
               {
-                TF_DEBUG(ALUTILS_INFO).Msg("Failed to set colours for colour set \"%s\" on mesh \"%s\", error: %s\n",
-                    colourSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
-              }
-            }
-            else
-            if (interpolation == UsdGeomTokens->uniform)
-            {
-              if(primvar.IsIndexed())
-              {
-                VtIntArray usdindices;
-                primvar.GetIndices(&usdindices);
-                mayaIndices.setLength(usdindices.size());
-                std::memcpy(&mayaIndices[0], usdindices.cdata(), sizeof(int) * usdindices.size());
+                mayaIndices = connects;
               }
               else
+              if (interpolation == UsdGeomTokens->constant)
               {
-                generateIncrementingIndices(mayaIndices, rawVal.size());
-              }
-
-              s = fnMesh.setFaceColors(colours, mayaIndices, MFnMesh::kRGBA);
-              if(!s)
-              {
-                TF_DEBUG(ALUTILS_INFO).Msg("Failed to set colours for colour set \"%s\" on mesh \"%s\", error: %s\n",
-                    colourSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
+                mayaIndices = MIntArray(connects.length(), 0);
               }
             }
-            else
-            if (interpolation == UsdGeomTokens->vertex)
+            
+            if (mayaIndices.length() != fnMesh.numFaceVertices())
             {
-              MColorArray temp;
-              temp.setLength(fnMesh.numFaceVertices());
-              if(primvar.IsIndexed())
-              {
-                const MColor* pcolours = (const MColor*)rawVal.cdata();
-                VtIntArray usdindices;
-                primvar.GetIndices(&usdindices);
-                for(uint32_t i = 0, n = connects.length(); i < n; ++i)
-                {
-                  temp[i] = pcolours[usdindices[connects[i]]];
-                }
-              }
-              else
-              {
-                const MColor* pcolours = (const MColor*)rawVal.cdata();
-                for(uint32_t i = 0, n = connects.length(); i < n; ++i)
-                {
-                  temp[i] = pcolours[connects[i]];
-                }
-              }
-              s = fnMesh.setColors(temp, &colourSetName);
-              if(!s)
-              {
-                TF_DEBUG(ALUTILS_INFO).Msg("Failed to set colours for colour set \"%s\" on mesh \"%s\", error: %s\n",
-                    colourSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
-              }
+              TF_DEBUG(ALUTILS_INFO).Msg("Incompatible colour indices for colour set \"%s\" on mesh \"%s\"\n",
+              colourSetName.asChar(), fnMesh.name().asChar());
+              continue;
             }
-            else
-            if (interpolation == UsdGeomTokens->constant)
+            // Assign colors to indices
+            if (!fnMesh.assignColors(mayaIndices, &colourSetName))
             {
-              colours.setLength(fnMesh.numFaceVertices());
-              for(uint32_t i = 1; i < colours.length(); ++i)
-              {
-                colours[i] = colours[0];
-              }
-              s = fnMesh.setColors(colours, &colourSetName);
-              if(!s)
-              {
-                TF_DEBUG(ALUTILS_INFO).Msg("Failed to set colours for colour set \"%s\" on mesh \"%s\", error: %s\n",
-                    colourSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
-              }
+              TF_DEBUG(ALUTILS_INFO).Msg("Failed to assign colour indices for colour set \"%s\" on mesh \"%s\", error: %s\n",
+                  colourSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
             }
           }
         }
@@ -896,8 +999,10 @@ MeshExportContext::MeshExportContext(
     UsdGeomMesh& mesh,
     UsdTimeCode timeCode,
     bool performDiff,
-    CompactionLevel compactionLevel)
-  : fnMesh(), faceCounts(), faceConnects(), m_timeCode(timeCode), mesh(mesh), compaction(compactionLevel), performDiff(performDiff)
+    CompactionLevel compactionLevel,
+    bool reverseNormals)
+  : fnMesh(), faceCounts(), faceConnects(), m_timeCode(timeCode), mesh(mesh), compaction(compactionLevel), 
+    performDiff(performDiff), reverseNormals(reverseNormals)
 {
   MStatus status = fnMesh.setObject(path);
   valid = (status == MS::kSuccess);
@@ -907,7 +1012,7 @@ MeshExportContext::MeshExportContext(
     fnMesh.getVertices(faceCounts, faceConnects);
   }
 
-  if(fnMesh.findPlug("opposite", true).asBool())
+  if(!reverseNormals && fnMesh.findPlug("opposite", true).asBool())
   {
     mesh.CreateOrientationAttr().Set(UsdGeomTokens->leftHanded);
   }
@@ -1456,7 +1561,18 @@ void MeshExportContext::copyColourSetData()
   for (uint32_t i = 0; i < colourSetNames.length(); i++)
   {
     MFnMesh::MColorRepresentation representation = fnMesh.getColorRepresentation(colourSetNames[i]);
-    fnMesh.getColors(colours, &colourSetNames[i]);
+    MItMeshPolygon it(fnMesh.object());
+    while(!it.isDone())
+    {
+      MColorArray faceColours;
+      it.getColors(faceColours, &colourSetNames[i]);
+      it.next();
+      // Append face colours
+      uint32_t offset = colours.length();
+      colours.setLength(offset+faceColours.length());
+      for (uint32_t j = 0, n = faceColours.length(); j < n; ++j)
+        colours[offset+j] = faceColours[j];
+    }
     TfToken interpolation= UsdGeomTokens->faceVarying;
 
     switch(compaction)
@@ -1506,13 +1622,14 @@ void MeshExportContext::copyColourSetData()
           colourValues.resize(indicesToExtract.size());
           for (uint32_t j = 0; j < indicesToExtract.size(); j++)
           {
+            assert(indicesToExtract[j] < colours.length());
             auto& colour = colours[indicesToExtract[j]];
             colourValues[j] = GfVec3f(colour.r, colour.g, colour.b);
           }
         }
       }
       UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(colourSetNames[i].asChar()), SdfValueTypeNames->Float3Array, interpolation);
-      colourSet.Set(colourValues);
+      colourSet.Set(colourValues, m_timeCode);
     }
     else
     {
@@ -1587,7 +1704,8 @@ void MeshExportContext::copyColourSetData()
           colourValues.resize(indicesToExtract.size());
           for (uint32_t j = 0; j < indicesToExtract.size(); j++)
           {
-            auto& colour = colours[indicesToExtract[i]];
+            assert(indicesToExtract[j] < colours.length());
+            auto& colour = colours[indicesToExtract[j]];
             colourValues[j] = GfVec3f(colour.r, colour.g, colour.b);
           }
         }
@@ -1617,7 +1735,8 @@ void MeshExportContext::copyColourSetData()
           colourValues.resize(indicesToExtract.size());
           for (uint32_t j = 0; j < indicesToExtract.size(); j++)
           {
-            auto& colour = colours[indicesToExtract[i]];
+            assert(indicesToExtract[j] < colours.length());
+            auto& colour = colours[indicesToExtract[j]];
             colourValues[j] = GfVec4f(colour.r, colour.g, colour.b, colour.a);
           }
         }
@@ -1781,6 +1900,7 @@ void MeshExportContext::copyVertexData(UsdTimeCode time)
   }
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 void MeshExportContext::copyBindPoseData(UsdTimeCode time)
 {
   if(diffGeom & kPoints)
@@ -1789,7 +1909,7 @@ void MeshExportContext::copyBindPoseData(UsdTimeCode time)
     UsdGeomPrimvar pRefPrimVarAttr = mesh.CreatePrimvar(
             UsdUtilsGetPrefName(),
             SdfValueTypeNames->Point3fArray,
-            UsdGeomTokens->varying);
+            UsdGeomTokens->vertex);
 
     if(pRefPrimVarAttr)
     {
@@ -1812,31 +1932,196 @@ void MeshExportContext::copyBindPoseData(UsdTimeCode time)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void MeshExportContext::copyNormalData(UsdTimeCode time)
+void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
 {
+  const TfToken normalPrimvarName("primvars:normals");
   if(diffGeom & kNormals)
   {
-    if(UsdAttribute normalsAttr = mesh.GetNormalsAttr())
+    UsdAttribute normalsAttr = mesh.GetNormalsAttr();
+    UsdGeomPrimvar primvar;
+    if(copyAsPrimvar)
+    {
+      primvar = mesh.CreatePrimvar(normalPrimvarName, SdfValueTypeNames->Float3Array);
+      normalsAttr = primvar.GetAttr();
+    }
+
+    bool invertNormals = false;
+    if(fnMesh.findPlug("opposite", true).asBool())
+    {
+      invertNormals = reverseNormals;
+    }
+
     {
       MStatus status;
       const uint32_t numNormals = fnMesh.numNormals();
       const float* normalsData = fnMesh.getRawNormals(&status);
       if(status && numNormals)
       {
+        MIntArray normalCounts, normalIndices;
+        fnMesh.getNormalIds(normalCounts, normalIndices);
+
         // if prim vars are all identical, we have a constant value
         if(usd::utils::vec3AreAllTheSame(normalsData, numNormals))
         {
           VtArray<GfVec3f> normals(1);
-          mesh.SetNormalsInterpolation(UsdGeomTokens->constant);
+          if(copyAsPrimvar)
+          {
+            primvar.SetInterpolation(UsdGeomTokens->constant);
+          }
+          else
+          {
+            mesh.SetNormalsInterpolation(UsdGeomTokens->constant);
+          }
           normals[0][0] = normalsData[0];
           normals[0][1] = normalsData[1];
           normals[0][2] = normalsData[2];
+          normalsAttr.Set(normals, time);
+        }
+        else
+        if(numNormals != normalIndices.length())
+        {
+          if(usd::utils::compareArray(&normalIndices[0], &faceConnects[0], normalIndices.length(), faceConnects.length()))
+          {
+            VtArray<GfVec3f> normals(numNormals);
+            if(copyAsPrimvar)
+            {
+              primvar.SetInterpolation(UsdGeomTokens->vertex);
+            }
+            else
+            {
+              mesh.SetNormalsInterpolation(UsdGeomTokens->vertex);
+            }
+
+            memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
+            normalsAttr.Set(normals, time);
+          }
+          else
+          {
+            std::unordered_map<uint32_t, uint32_t> missing;
+            bool isPerVertex = true;
+            for(uint32_t i = 0, n = normalIndices.length(); isPerVertex && i < n; ++i)
+            {
+              if(normalIndices[i] != faceConnects[i])
+              {
+                auto it = missing.find(normalIndices[i]);
+                if(it == missing.end())
+                {
+                  missing[normalIndices[i]] = faceConnects[i];
+                }
+                else
+                if(it->second != faceConnects[i])
+                {
+                  isPerVertex = false;
+                }
+              }
+            }
+
+            if(isPerVertex)
+            {
+              VtArray<GfVec3f> normals(numNormals);
+              memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
+              for(auto& c : missing)
+              {
+                const uint32_t orig = c.first;
+                const uint32_t remapped = c.second;
+                const uint32_t index = 3 * orig;
+                const GfVec3f normal(normalsData[index], normalsData[index + 1], normalsData[index + 2]);
+                normals[remapped] = normal;
+              }
+              if(copyAsPrimvar)
+              {
+                primvar.SetInterpolation(UsdGeomTokens->vertex);
+              }
+              else
+              {
+                mesh.SetNormalsInterpolation(UsdGeomTokens->vertex);
+              }
+              normalsAttr.Set(normals, time);
+            }
+            else
+            {
+              if(copyAsPrimvar)
+              {
+                primvar.SetInterpolation(UsdGeomTokens->faceVarying);
+                VtArray<GfVec3f> normals(numNormals);
+                for(uint32_t i = 0, n = numNormals; i < n; ++i)
+                {
+                  const uint32_t index = 3 * i;
+                  normals[i] = GfVec3f(normalsData[index], normalsData[index + 1], normalsData[index + 2]);
+                }
+                normalsAttr.Set(normals, time);  
+                VtArray<int> normalIds(normalIndices.length());
+                memcpy(normalIds.data(), &normalIndices[0], sizeof(int) * normalIndices.length());
+                primvar.SetIndices(normalIds, time);  
+              }
+              else
+              {
+                VtArray<GfVec3f> normals(normalIndices.length());
+                for(uint32_t i = 0, n = normalIndices.length(); i < n; ++i)
+                {
+                  const uint32_t index = 3 * normalIndices[i];
+                  normals[i] = GfVec3f(normalsData[index], normalsData[index + 1], normalsData[index + 2]);
+                }
+                mesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
+                normalsAttr.Set(normals, time);  
+              }
+            }
+          }
         }
         else
         {
-          VtArray<GfVec3f> normals(numNormals);
-          mesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
-          memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
+          // run a check to see if the normalIds is relevant in this case.
+          bool isOrdered = true;
+          for(uint32_t i = 0, n = normalIndices.length(); i < n; ++i)
+          {
+            if(normalIndices[i] != i)
+            {
+              isOrdered = false;
+              break;
+            }
+          }
+          if(isOrdered)
+          {
+            if(copyAsPrimvar)
+            {
+              primvar.SetInterpolation(UsdGeomTokens->faceVarying);
+            }
+            else
+            {
+              mesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
+            }
+            VtArray<GfVec3f> normals(numNormals);
+            memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
+            normalsAttr.Set(normals, time);
+          }
+          else
+          {
+            if(copyAsPrimvar)
+            {
+              primvar.SetInterpolation(UsdGeomTokens->faceVarying);
+            }
+            else
+            {
+              mesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
+            }
+            VtArray<GfVec3f> normals(numNormals);
+            for(uint32_t i = 0, n = normalIndices.length(); i < n; ++i)
+            {
+              const uint32_t index = 3 * normalIndices[i];
+              normals[i] = GfVec3f(normalsData[index], normalsData[index + 1], normalsData[index + 2]);
+            }
+            normalsAttr.Set(normals, time);
+          }
+        }
+
+        if(invertNormals)
+        {
+          VtArray<GfVec3f> normals;
+          normalsAttr.Get(&normals, time);
+          for(size_t i = 0; i < normals.size(); ++i)
+          {
+            normals[i] = -normals[i]; 
+          }
           normalsAttr.Set(normals, time);
         }
       }

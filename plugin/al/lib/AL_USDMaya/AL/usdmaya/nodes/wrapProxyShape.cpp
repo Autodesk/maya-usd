@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/nodes/ProxyShape.h"
+#include "AL/usdmaya/nodes/Transform.h"
+#include "AL/maya/utils/MayaHelperMacros.h"
+#include "AL/usdmaya/StageData.h"
 #include "AL/maya/utils/Utils.h"
 
 #include <boost/python/args.hpp>
@@ -22,9 +25,12 @@
 
 #include "maya/MBoundingBox.h"
 #include "maya/MFnDagNode.h"
+#include "maya/MFnPluginData.h"
 #include "maya/MFnDependencyNode.h"
+#include "maya/MItDependencyNodes.h"
 #include "maya/MDagModifier.h"
 #include "maya/MDGModifier.h"
+#include "maya/MPlug.h"
 #include "maya/MSelectionList.h"
 
 #include "pxr/base/tf/pyEnum.h"
@@ -108,6 +114,61 @@ namespace {
 
   struct PyProxyShape
   {
+    //------------------------------------------------------------------------------------------------------------------
+    /// \brief Find Usd prim associated with Maya node.
+    /// \param dagPath Dag path of AL_usdmaya_Transform node.
+    /// \return The Usd prim if found, else an invalid prim.
+    static UsdPrim getUsdPrimFromMayaPath(const std::string& dagPath)
+    {
+      MStatus status;
+      MSelectionList sel;
+      status = sel.add(MString(dagPath.c_str()));
+      if (status)
+      {
+        MObject node;
+        status = sel.getDependNode(0, node);
+        if (status)
+        {
+          MFnDependencyNode depNode(node);
+          if (depNode.typeId() == AL::usdmaya::nodes::Transform::kTypeId)
+          {
+            // Get proxy shape
+            auto transform = static_cast<AL::usdmaya::nodes::Transform*>(depNode.userNode());
+            MPlug stageDataPlug(transform->getProxyShape(), AL::usdmaya::nodes::ProxyShape::outStageData());
+
+            // Get stage data
+            MObject stageObject;
+            status = stageDataPlug.getValue(stageObject);
+            MFnPluginData fnData(stageObject);
+            auto stageData = static_cast<AL::usdmaya::StageData*>(fnData.data());
+
+            // Validate stage
+            if (stageData && stageData->stage)
+            {
+
+              // Lookup prim path in stage
+              MPlug primPathPlug(node, AL::usdmaya::nodes::Transform::primPath());
+              MString primPath;
+              status = primPathPlug.getValue(primPath);
+              if (status)
+              {
+                return stageData->stage->GetPrimAtPath(SdfPath(primPath.asChar()));
+              }
+            }
+          }
+        }
+      }
+      return UsdPrim();
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+    /// \brief Find Maya node associated with Usd prim.
+    /// \param prim A valid Usd prim.
+    /// \return The full dag path of the Maya node if found, else an empty string.
+    static std::string getMayaPathFromUsdPrim(const ProxyShape& proxyShape, const UsdPrim& prim)
+    {
+      return prim.IsValid() ? AL::maya::utils::convert(proxyShape.getMayaPathFromUsdPrim(prim)) : std::string();
+    }
 
     //------------------------------------------------------------------------------------------------------------------
     /// \brief  Returns a python bounding box for the given proxy shape
@@ -373,7 +434,6 @@ void wrapProxyShape()
   void (*removeUsdTransformChain_path)(ProxyShape& proxyShape,
       const SdfPath& path, ProxyShape::TransformReason) = PyProxyShape::removeUsdTransformChain;
 
-
   boost::python::class_<ProxyShape, boost::noncopyable>
       proxyShapeCls("ProxyShape", boost::python::no_init);
 
@@ -390,6 +450,21 @@ void wrapProxyShape()
         boost::python::return_value_policy<reference_existing_object>())
         .staticmethod("getByName")
     .def("getUsdStage", &ProxyShape::getUsdStage)
+    .def("getUsdPrimFromMayaPath", PyProxyShape::getUsdPrimFromMayaPath,
+         ("Find Usd prim associated with Maya node.\n"
+         "Args:\n"
+         "\tdagPath (str): Dag path of AL_usdmaya_Transform node.\n"
+         "Returns:\n"
+         "\tThe Usd prim if found, else an invalid prim.\n"),
+        (boost::python::arg("dagPath")))
+        .staticmethod("getUsdPrimFromMayaPath")
+    .def("getMayaPathFromUsdPrim", &PyProxyShape::getMayaPathFromUsdPrim,
+       ("Find Maya node associated with Usd prim in Proxy's stage.\n"
+        "Args:\n"
+        "\tprim (pxr.Usd.Prim): A valid Usd prim.\n"
+        "Returns:\n"
+        "\tThe full dag path of the Maya node if found, else an empty string.\n"),
+       (boost::python::arg("prim")))
     .def("resync", &ProxyShape::resync,
          (boost::python::arg("path")))
     .def("boundingBox", PyProxyShape::boundingBox)
@@ -421,4 +496,17 @@ void wrapProxyShape()
 //    boost::python::to_python_converter<MBoundingBox, MBoundingBoxConverter>();
 }
 
-TF_REFPTR_CONST_VOLATILE_GET(ProxyShape)
+// This workaround for a VS compiler bug where we need to explicitly specify 
+// the conversion to pointer of your our class seems no longer needed for VS2017. 
+// What it means, is that compiler will properly generate this conversion
+// implicitly and cause linker error LNK2005. 
+//
+// In this particular case we got wrapTranslatorContext.obj generating error for 
+// already defined conversion to a pointer for ProxyShape in wrapProxyShape.obj
+//
+// The best place to put this fix would be in pxr/base/lib/tf/refPtr.h
+// where TF_REFPTR_CONST_VOLATILE_GET is defined, but for now we are 
+// patching it locally.
+#if defined(ARCH_COMPILER_MSVC) && ARCH_COMPILER_MSVC_VERSION <= 1910 
+    TF_REFPTR_CONST_VOLATILE_GET(ProxyShape)
+#endif

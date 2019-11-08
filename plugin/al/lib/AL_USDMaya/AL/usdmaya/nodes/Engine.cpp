@@ -16,29 +16,24 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //
+#include <vector>
 #include "AL/usdmaya/nodes/Engine.h"
 
-#include "pxr/imaging/hdx/intersector.h"
+#if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION >= 7) 
+#include "pxr/imaging/hdx/pickTask.h"
+#endif
 #include "pxr/imaging/hdx/taskController.h"
 
 namespace AL {
@@ -60,8 +55,42 @@ bool Engine::TestIntersectionBatch(
   if (ARCH_UNLIKELY(_legacyImpl)) {
     return false;
   }
-  _UpdateHydraCollection(&_intersectCollection, paths, params, &_renderTags);
 
+#if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION >= 7) 
+  _UpdateHydraCollection(&_intersectCollection, paths, params);
+
+  TfTokenVector renderTags;
+  _ComputeRenderTags(params, &renderTags);
+  _taskController->SetRenderTags(renderTags);
+
+  HdxPickHitVector allHits;
+
+  HdxRenderTaskParams hdParams = _MakeHydraUsdImagingGLRenderParams(params);
+  _taskController->SetRenderParams(hdParams);
+
+
+  HdxPickTaskContextParams pickParams;
+  pickParams.resolution = GfVec2i(pickResolution, pickResolution);
+  pickParams.hitMode = HdxPickTokens->hitAll;
+  pickParams.resolveMode = HdxPickTokens->resolveUnique;
+  pickParams.viewMatrix = worldToLocalSpace * viewMatrix;
+  pickParams.projectionMatrix = projectionMatrix;
+  pickParams.clipPlanes = params.clipPlanes;
+  pickParams.collection = _intersectCollection;
+  pickParams.outHits = &allHits;
+  VtValue vtPickParams(pickParams);
+
+  _engine.SetTaskContextData(HdxPickTokens->pickParams, vtPickParams);
+  auto pickingTasks = _taskController->GetPickingTasks();
+  _engine.Execute(_taskController->GetRenderIndex(), &pickingTasks);
+
+  if (allHits.size() == 0) {
+    return false;
+  }
+  #else 
+
+  _UpdateHydraCollection(&_intersectCollection, paths, params, &_renderTags);
+  
   HdxIntersector::HitVector allHits;
   HdxIntersector::Params qparams;
   qparams.viewMatrix = worldToLocalSpace * viewMatrix;
@@ -98,6 +127,9 @@ bool Engine::TestIntersectionBatch(
       &allHits)) {
     return false;
   }
+
+
+  #endif
 
   if (!outHit) {
     return true;

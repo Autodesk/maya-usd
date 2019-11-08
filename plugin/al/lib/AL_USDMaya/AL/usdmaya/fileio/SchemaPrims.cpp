@@ -13,29 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usdmaya/DebugCodes.h"
-#include "AL/usdmaya/fileio/NodeFactory.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
-#include "AL/usdmaya/fileio/TransformIterator.h"
-#include "AL/usdmaya/fileio/translators/TranslatorBase.h"
-#include "AL/usdmaya/fileio/translators/ExtraDataPlugin.h"
-#include "AL/usdmaya/nodes/ProxyShape.h"
 
-#include "maya/MAnimControl.h"
-#include "maya/MDagPath.h"
-#include "maya/MDGModifier.h"
-#include "maya/MGlobal.h"
-#include "maya/MObject.h"
-#include "maya/MPlug.h"
-#include "maya/MTime.h"
-#include "maya/MFileIO.h"
-#include "maya/MFnTransform.h"
+#include "maya/MFnDagNode.h"
 
-#include "pxr/base/plug/registry.h"
-#include "pxr/base/tf/type.h"
-#include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/schemaBase.h"
-#include "AL/usdmaya/utils/Utils.h"
 
 namespace AL {
 namespace usdmaya {
@@ -64,30 +46,6 @@ void huntForParentCamera(MObject& cameraNode, const MDagPath &dagPath)
       break;
     }
   }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-bool isSchemaOfType(const UsdPrim& prim, const TfToken& typeToken)
-{
-  if(prim.GetTypeName() == typeToken)
-  {
-    return true;
-  }
-
-  // Check to see if the prim has been tagged with an ALType.
-  if(prim.HasCustomDataKey(ALSchemaType))
-  {
-    VtValue typeValue = prim.GetCustomDataByKey(ALSchemaType);
-
-    // Check to see if the custom dataType matches the typeName passed in
-    std::string foundFutureSchemaType = typeValue.Get<std::string>();
-    if(foundFutureSchemaType == typeToken)
-    {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -123,7 +81,7 @@ bool importSchemaPrim(
   }
 
   if(context)
-    context->registerItem(prim, parent);
+    context->registerItem(prim, created == MObject::kNullObj ? parent : created);
   return true;
 }
 
@@ -136,18 +94,14 @@ SchemaPrimsUtils::SchemaPrimsUtils(fileio::translators::TranslatorManufacture& m
 //----------------------------------------------------------------------------------------------------------------------
 bool SchemaPrimsUtils::needsTransformParent(const UsdPrim& prim)
 {
-  TfType type = TfType::FindDerivedByName<UsdSchemaBase>(prim.GetTypeName());
-  auto translator = m_manufacture.get(TfToken(type.GetTypeName()));
+  auto translator = m_manufacture.get(prim);
   return translator->needsTransformParent();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 fileio::translators::TranslatorRefPtr SchemaPrimsUtils::isSchemaPrim(const UsdPrim& prim)
 {
-  // the plugin system will return a null pointer if it doesn't know how to
-  // translate this prim type
-  fileio::translators::TranslatorRefPtr torBase = m_manufacture.get(prim.GetTypeName());
-  return torBase;
+  return m_manufacture.get(prim);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

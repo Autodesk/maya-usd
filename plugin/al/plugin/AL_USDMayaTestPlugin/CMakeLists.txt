@@ -26,17 +26,20 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/fileio/export_nonlinear.cpp
         AL/usdmaya/fileio/export_unmerged.cpp
         AL/usdmaya/fileio/export_multiple_shapes.cpp
+        AL/usdmaya/fileio/import_instances.cpp
+        AL/usdmaya/fileio/test_activeInActiveTranslators.cpp
         AL/usdmaya/nodes/test_ActiveInactive.cpp
         AL/usdmaya/nodes/test_LayerManager.cpp
         AL/usdmaya/nodes/test_ProxyShape.cpp
+        AL/usdmaya/nodes/test_ProxyUsdGeomCamera.cpp
         AL/usdmaya/nodes/test_Transform.cpp
         AL/usdmaya/nodes/test_TransformMatrix.cpp
         AL/usdmaya/nodes/test_TranslatorContext.cpp
         AL/usdmaya/nodes/test_ExtraDataPlugin.cpp
         AL/usdmaya/nodes/test_ProxyShapeSelectabilityDB.cpp
-        AL/usdmaya/nodes/proxy/test_DrivenTransforms.cpp
         AL/usdmaya/nodes/proxy/test_PrimFilter.cpp
         AL/usdmaya/test_SelectabilityDB.cpp
+        AL/usdmaya/test_DiffGeom.cpp
         AL/usdmaya/test_DiffPrimVar.cpp
         AL/usdmaya/commands/test_TranslateCommand.cpp
         test_translators_AnimationTranslator.cpp
@@ -46,6 +49,7 @@ list(APPEND AL_maya_test_source
         test_translators_NurbsCurveTranslator.cpp
         test_translators_TransformTranslator.cpp
         test_translators_Translator.cpp
+        test_translators_PythonBindings.cpp
         test_usdmaya_AttributeType.cpp
         test_usdmaya.cpp
 )
@@ -66,6 +70,8 @@ target_link_libraries(${PXR_PACKAGE}
     AL_USDUtils
     AL_USDMaya   #Adding this recursively pulls in lots of things
     AL_MayaTest
+    AL_USDMayaSchemas
+    AL_USDMayaSchemasTest
     ${GTEST_LIBRARIES}
 )
 
@@ -75,6 +81,7 @@ PRIVATE
     ${MAYA_INCLUDE_DIRS}
     ${MAYAUSD_INCLUDE_DIR}
     "../../lib/AL_USDMaya"    
+    "../../schemas"
     ${MAYATEST_INCLUDE_LOCATION}
 )
 
@@ -110,6 +117,11 @@ add_test(
     NAME TestAL_USDMaya
     COMMAND
         ${CMAKE_CURRENT_SOURCE_DIR}/run_mayaplugin_tests.sh
-            ${CMAKE_INSTALL_PREFIX}
+            ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}
+            ${USD_LIBRARY_DIR}
             ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+if(NOT SKIP_USDMAYA_TESTS)
+    add_subdirectory(py)
+endif()

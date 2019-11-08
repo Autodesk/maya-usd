@@ -33,9 +33,9 @@ class MayaReferenceLogic
 {
 public:
 
-  MStatus LoadMayaReference(const UsdPrim& prim, MObject& parent, TranslatorContextPtr context) const;
+  MStatus LoadMayaReference(const UsdPrim& prim, MObject& parent, MString& mayaReferencePath, MString& rigNamespaceM) const;
   MStatus UnloadMayaReference(MObject& parent) const;
-  MStatus update(const UsdPrim& prim, MObject parent, MObject refNode=MObject::kNullObj) const;
+  MStatus update(const UsdPrim& prim, MObject parent) const;
 
 private:
   MStatus connectReferenceAssociatedNode(MFnDagNode& dagNode, MFnReference& refNode) const;
@@ -62,6 +62,9 @@ private:
   bool supportsUpdate() const override 
     { return true; }
 
+  bool canBeOverridden() override
+    { return true; }
+    
   MayaReferenceLogic m_mayaReferenceLogic;
 };
 

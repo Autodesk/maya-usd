@@ -13,32 +13,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usdmaya/TypeIDs.h"
-#include "AL/usdmaya/DebugCodes.h"
-#include "AL/usdmaya/nodes/LayerManager.h"
-#include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/maya/utils/Utils.h"
-#include "AL/maya/utils/MayaHelperMacros.h"
 
-#include "pxr/usd/sdf/fileFormat.h"
+#include "AL/usdmaya/DebugCodes.h"
+#include "AL/usdmaya/TypeIDs.h"
+#include "AL/usdmaya/nodes/LayerManager.h"
+
 #include "pxr/usd/sdf/textFileFormat.h"
 #include "pxr/usd/usd/usdaFileFormat.h"
-#include "pxr/usdImaging/usdImaging/version.h"
-#include "pxr/usdImaging/usdImagingGL/engine.h"
+#include "pxr/usd/usd/usdcFileFormat.h"
+#include "pxr/usd/usd/usdFileFormat.h"
 
-#include "maya/MBoundingBox.h"
-#include "maya/MGlobal.h"
-#include "maya/MPlugArray.h"
+#include "maya/MArrayDataBuilder.h"
 #include "maya/MDGModifier.h"
 #include "maya/MFnDependencyNode.h"
-#include "maya/MArrayDataBuilder.h"
-#include "maya/MArrayDataHandle.h"
-#include "maya/MSelectionList.h"
+#include "maya/MGlobal.h"
 #include "maya/MItDependencyNodes.h"
+#include "maya/MPlugArray.h"
 
 #include <boost/thread.hpp>
 #include <boost/thread/shared_lock_guard.hpp>
-
 #include <mutex>
 
 namespace {
@@ -47,8 +41,8 @@ namespace {
   // but that may be triggered by the node creation inside of findOrCreateNode.
 
   // Note on layerManager / multithreading:
-  // I don't know that layerManager will be used in a multihreaded manenr... but I also don't know it COULDN'T be.
-  // (I haven't really looked into the way maya's new multi-threaded node evaluation works, for instance.) This is
+  // I don't know that layerManager will be used in a multithreaded manner... but I also don't know it COULDN'T be.
+  // (I haven't really looked into the way maya's new multithreaded node evaluation works, for instance.) This is
   // essentially a globally shared resource, so I figured better be safe...
   static std::recursive_mutex _findNodeMutex;
 
@@ -113,10 +107,6 @@ namespace {
 namespace AL {
 namespace usdmaya {
 namespace nodes {
-
-LayerManager::~LayerManager()
-{
-}
 
 //----------------------------------------------------------------------------------------------------------------------
 bool LayerDatabase::addLayer(SdfLayerRefPtr layer, const std::string& identifier)
@@ -486,7 +476,7 @@ void LayerManager::loadAllLayers()
 {
   TF_DEBUG(ALUSDMAYA_LAYERS).Msg("LayerManager::loadAllLayers\n");
   const char* errorString = "LayerManager::loadAllLayers";
-
+  const char* identifierTempSuffix = "_tmp";
   MStatus status;
   MPlug allLayersPlug = layersPlug();
   MPlug singleLayerPlug;
@@ -548,48 +538,60 @@ void LayerManager::loadAllLayers()
         SdfFileFormatConstPtr fileFormat;
         if(TfStringStartsWith(serializedVal, "#usda "))
         {
-          fileFormat = SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id);
+          // In order to make the layer reloadable by SdfLayer::Reload(), we need the
+          // correct file format from identifier.
+          if(TfStringEndsWith(identifierVal, ".usd"))
+          {
+            fileFormat = SdfFileFormat::FindById(UsdUsdFileFormatTokens->Id);
+          }
+          else if(TfStringEndsWith(identifierVal, ".usdc"))
+          {
+            fileFormat = SdfFileFormat::FindById(UsdUsdcFileFormatTokens->Id);
+          }
+          else
+          {
+            fileFormat = SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id);
+          }
         }
         else
         {
           fileFormat = SdfFileFormat::FindById(SdfTextFileFormatTokens->Id);
         }
-        layer = SdfLayer::New(fileFormat, identifierVal);
+
+        // In order to make the layer reloadable by SdfLayer::Reload(), we hack the identifier 
+        // with temp one on creation and call layer->SetIdentifier() again to set the timestamp:
+        layer = SdfLayer::New(fileFormat, identifierVal+identifierTempSuffix);
         if (!layer)
         {
           MGlobal::displayError(MString("Error - failed to create new layer for identifier '") + identifierVal.c_str()
                         + "' for plug " + idPlug.partialName(true));
           continue;
         }
+        layer->SetIdentifier(identifierVal); // Make it reloadable by SdfLayer::Reload(true) 
+        layer->Clear();  // Mark it dirty to make it reloadable by SdfLayer::Reload() without force=true
       }
     }
 
-    // Don't print the entirety of layers > ~1MB
-    constexpr int MAX_LAYER_CHARS=1000000;
-
     TF_DEBUG(ALUSDMAYA_LAYERS).Msg(
         "################################################\n"
-        "Importing layer:\n"
+        "Importing layer from serialised data:\n"
         "old identifier: %s\n"
         "new identifier: %s\n"
-        "format: %s\n"
-        "################################################\n"
-        "%.*s\n%s"
-        "################################################\n",
+        "format: %s\n",
         identifierVal.c_str(),
         layer->GetIdentifier().c_str(),
-        layer->GetFileFormat()->GetFormatId().GetText(),
-        MAX_LAYER_CHARS,
-        serializedVal.c_str(),
-        serializedVal.length() > MAX_LAYER_CHARS ? "<truncated>\n" : ""
+        layer->GetFileFormat()->GetFormatId().GetText()
         );
+
     if(!layer->ImportFromString(serializedVal))
     {
-      TF_DEBUG(ALUSDMAYA_LAYERS).Msg("...layer import failed!\n");
+      TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Import result: failed!\n"
+                                    "################################################\n");
       MGlobal::displayError(MString("Failed to import serialized layer: ") + serializedVal.c_str());
       continue;
     }
-    TF_DEBUG(ALUSDMAYA_LAYERS).Msg("...layer import succeeded!\n");
+    TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Import result: success!\n"
+                                  "################################################\n");
     addLayer(layer, identifierVal);
   }
 }

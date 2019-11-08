@@ -1,25 +1,17 @@
 #
 # Copyright 2016 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
 include(Version)
 
@@ -1132,6 +1124,7 @@ function(_pxr_library NAME)
     #
 
     # Where do we install to?
+    _get_install_dir("include" headerInstallDir)
     _get_install_dir("include/${PXR_PREFIX}/${NAME}" headerInstallPrefix)
     _get_install_dir("lib" libInstallPrefix)
     if(isPlugin)
@@ -1187,8 +1180,8 @@ function(_pxr_library NAME)
     # these libraries are not separately loadable at runtime. In these cases,
     # we don't need to specify the library's location, so we leave
     # pluginToLibraryPath empty.
-    if(";${PXR_CORE_LIBS};" MATCHES ";${NAME};")
-        if (NOT _building_monolithic AND NOT args_TYPE STREQUAL "STATIC")
+    if(NOT args_TYPE STREQUAL "STATIC")
+   	if(NOT (";${PXR_CORE_LIBS};" MATCHES ";${NAME};" AND _building_monolithic))
             file(RELATIVE_PATH
                 pluginToLibraryPath
                 ${CMAKE_INSTALL_PREFIX}/${pluginInstallPrefix}/${NAME}
@@ -1244,13 +1237,29 @@ function(_pxr_library NAME)
         PREFIX
             ${PXR_PREFIX}
     )
-    target_include_directories(${NAME}
-        PRIVATE
-            "${CMAKE_BINARY_DIR}/include"
-            "${CMAKE_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include"
-        PUBLIC
-            ${args_INCLUDE_DIRS}
-    )
+
+    # XXX: Versions of CMake 2.8.11 and earlier complain about
+    # INTERFACE_INCLUDE_DIRECTORIES containing a relative path if we include
+    # the INTERFACE directory here, so only do so for more recent versions.
+    if(${CMAKE_VERSION} VERSION_GREATER 2.8.11.2)
+        target_include_directories(${NAME}
+            PRIVATE
+                "${CMAKE_BINARY_DIR}/include"
+                "${CMAKE_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include"
+            PUBLIC
+                ${args_INCLUDE_DIRS}
+            INTERFACE
+                $<INSTALL_INTERFACE:${headerInstallDir}>
+        )
+    else()
+        target_include_directories(${NAME}
+            PRIVATE
+                "${CMAKE_BINARY_DIR}/include"
+                "${CMAKE_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include"
+            PUBLIC
+                ${args_INCLUDE_DIRS}
+        )
+    endif()
 
     # XXX -- May want some plugins to be baked into monolithic.
     _pxr_target_link_libraries(${NAME} ${args_LIBRARIES})
@@ -1276,7 +1285,23 @@ function(_pxr_library NAME)
             )
         endif()
     else()
-        if(BUILD_SHARED_LIBS)
+        # Do not include plugins libs in externally linkable targets
+        if(isPlugin)
+            install(
+                TARGETS ${NAME}
+                LIBRARY DESTINATION ${INSTALL_DIR_SUFFIX}/${libInstallPrefix}
+                ARCHIVE DESTINATION ${INSTALL_DIR_SUFFIX}/${libInstallPrefix}
+                RUNTIME DESTINATION ${INSTALL_DIR_SUFFIX}/${libInstallPrefix}
+                PUBLIC_HEADER DESTINATION ${INSTALL_DIR_SUFFIX}/${headerInstallPrefix}
+            )
+            if(WIN32)
+                install(
+                    FILES $<TARGET_PDB_FILE:${NAME}>
+                    DESTINATION ${INSTALL_DIR_SUFFIX}/${libInstallPrefix}
+                    OPTIONAL
+                )
+            endif()
+        elseif(BUILD_SHARED_LIBS)
             install(
                 TARGETS ${NAME}
                 EXPORT pxrTargets
@@ -1305,11 +1330,13 @@ function(_pxr_library NAME)
                 PUBLIC_HEADER DESTINATION ${INSTALL_DIR_SUFFIX}/${headerInstallPrefix}
             )
         endif()
-
-        export(TARGETS ${NAME}
-            APPEND
-            FILE "${PROJECT_BINARY_DIR}/pxrTargets.cmake"
-        )
+        
+        if(NOT isPlugin)
+            export(TARGETS ${NAME}
+                APPEND
+                FILE "${PROJECT_BINARY_DIR}/pxrTargets.cmake"
+            )
+        endif()
 
     endif()
 
