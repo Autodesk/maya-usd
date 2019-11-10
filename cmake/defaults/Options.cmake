@@ -56,12 +56,6 @@ set(PXR_OBJECT_LIBS ""
     "Aggregation of all core libraries built as OBJECT libraries."
 )
 
-set(PXR_LIB_PREFIX "lib"
-    CACHE
-    STRING
-    "Prefix for build library name"
-)
-
 option(BUILD_SHARED_LIBS "Build shared libraries." ON)
 option(PXR_BUILD_MONOLITHIC "Build a monolithic library." OFF)
 set(PXR_MONOLITHIC_IMPORT ""

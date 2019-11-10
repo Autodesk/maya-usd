@@ -101,7 +101,7 @@ function(pxr_library NAME)
             return()
         endif()
 
-        set(prefix "")
+        set(prefix ${CMAKE_SHARED_LIBRARY_PREFIX})
         set(suffix ${CMAKE_SHARED_LIBRARY_SUFFIX})
 
         # Maya plugins require the .mll suffix on Windows and .bundle on OSX.
@@ -125,7 +125,7 @@ function(pxr_library NAME)
             endif()
         endif()
 
-        set(prefix "${PXR_LIB_PREFIX}")
+        set(prefix "${CMAKE_SHARED_LIBRARY_PREFIX}")
         if(args_TYPE STREQUAL "STATIC")
             set(suffix ${CMAKE_STATIC_LIBRARY_SUFFIX})
         else()
@@ -689,7 +689,7 @@ function(pxr_toplevel_prologue)
             set_target_properties(usd_ms
                 PROPERTIES
                     FOLDER "${folder}"
-                    PREFIX "${PXR_LIB_PREFIX}"
+                    PREFIX "${CMAKE_SHARED_LIBRARY_PREFIX}"
             )
             _get_install_dir("lib" libInstallPrefix)
             install(
@@ -823,7 +823,7 @@ function(pxr_monolithic_epilogue)
         PROPERTIES
             FOLDER "${folder}"
             POSITION_INDEPENDENT_CODE ON
-            PREFIX "${PXR_LIB_PREFIX}"
+            PREFIX "lib"
     )
 
     # Adding $<TARGET_OBJECTS:foo> will not bring along compile
