@@ -205,28 +205,6 @@ if(UFE_FOUND)
     endif()
 endif()
 
-list(APPEND mayaUsdPxrUsdMayaGL_headers
-    render/pxrUsdMayaGL/batchRenderer.h
-    render/pxrUsdMayaGL/debugCodes.h
-    render/pxrUsdMayaGL/hdImagingShapeUI.h
-    render/pxrUsdMayaGL/hdImagingShapeDrawOverride.h
-    render/pxrUsdMayaGL/instancerImager.h
-    render/pxrUsdMayaGL/instancerShapeAdapter.h
-    render/pxrUsdMayaGL/proxyShapeUI.h
-    render/pxrUsdMayaGL/proxyDrawOverride.h
-    render/pxrUsdMayaGL/renderParams.h
-    render/pxrUsdMayaGL/sceneDelegate.h
-    render/pxrUsdMayaGL/shapeAdapter.h
-    render/pxrUsdMayaGL/softSelectHelper.h
-    render/pxrUsdMayaGL/usdProxyShapeAdapter.h
-    render/pxrUsdMayaGL/userData.h
-)
-
-list(APPEND mayaUsdPxVP20_headers
-    render/px_vp20/utils.h
-    render/px_vp20/utils_legacy.h
-)
-
 add_library(${LIBRARY_NAME} SHARED
     ${mayaUsd_src}
 )
@@ -440,21 +418,6 @@ if(UFE_FOUND)
     install(FILES ufe/__init__.py
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
     )
-
-    if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
-        # Maya Attribute Editor python template files
-        install(FILES ae/mesh/ae_template.py
-             DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes/mesh
-        )
-        # We need an empty __init__.py file in each subfolder so it is considered a python module.
-        set(_INIT_PY_DEST ${CMAKE_INSTALL_PREFIX}/lib/python/)
-        foreach(_SUBDIR ufe_ae usd nodes mesh)
-            string(APPEND _INIT_PY_DEST "/${_SUBDIR}")
-            install(FILES ae/__init__.py
-                 DESTINATION ${_INIT_PY_DEST}
-            )
-        endforeach()
-    endif()
 
 endif()
 
