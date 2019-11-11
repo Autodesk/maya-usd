@@ -790,7 +790,9 @@ void HdVP2Mesh::_UpdateDrawItem(
     // We don't need to update the dedicated selection highlight item when there
     // is no selection highlight change and the mesh is not selected. Draw item
     // has its own dirty bits, so update will be doner when it shows in viewport.
-    if (drawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight) &&
+    const bool isDedicatedSelectionHighlightItem =
+        drawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight);
+    if (isDedicatedSelectionHighlightItem &&
         ((itemDirtyBits & DirtySelectionHighlight) == 0) &&
         (_selectionState == kUnselected)) {
         return;
@@ -1173,22 +1175,16 @@ void HdVP2Mesh::_UpdateDrawItem(
     // The bounding box draw item uses a globally-shared unit wire cube as the
     // geometry and transfers scale and offset of the bounds to world matrix.
     if (isBBoxItem) {
-        if (itemDirtyBits &
-            (HdChangeTracker::DirtyExtent | HdChangeTracker::DirtyTransform)) {
-            if (!range.IsEmpty()) {
-                const GfVec3d midpoint = range.GetMidpoint();
-                const GfVec3d size = range.GetSize();
+        if ((itemDirtyBits & (HdChangeTracker::DirtyExtent | HdChangeTracker::DirtyTransform)) &&
+            !range.IsEmpty()) {
+            const GfVec3d midpoint = range.GetMidpoint();
+            const GfVec3d size = range.GetSize();
 
-                MTransformationMatrix transformation;
-                transformation.setScale(size.data(), MSpace::kTransform);
-                transformation.setTranslation(midpoint.data(), MSpace::kTransform);
-                worldMatrix = transformation.asMatrix() * worldMatrix;
-                stateToCommit._worldMatrix = &drawItemData._worldMatrix;
-            }
-            else {
-                TF_DEBUG(HDVP2_DEBUG_MESH).Msg("Hydra prim '%s' has empty bounds\n",
-                    _rprimId.asChar());
-            }
+            MTransformationMatrix transformation;
+            transformation.setScale(size.data(), MSpace::kTransform);
+            transformation.setTranslation(midpoint.data(), MSpace::kTransform);
+            worldMatrix = transformation.asMatrix() * worldMatrix;
+            stateToCommit._worldMatrix = &drawItemData._worldMatrix;
         }
     }
     else if (itemDirtyBits & HdChangeTracker::DirtyTransform) {
@@ -1208,7 +1204,7 @@ void HdVP2Mesh::_UpdateDrawItem(
 
         MMatrix instanceMatrix;
 
-        if (drawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight)) {
+        if (isDedicatedSelectionHighlightItem) {
             if (_selectionState == kFullySelected) {
                 stateToCommit._instanceTransforms.setLength(transforms.size());
                 for (size_t i = 0; i < transforms.size(); ++i) {
@@ -1288,11 +1284,23 @@ void HdVP2Mesh::_UpdateDrawItem(
         stateToCommit._enabled = &drawItemData._enabled;
     }
 
-    if (drawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight)) {
+    if (isDedicatedSelectionHighlightItem) {
         if (itemDirtyBits & DirtySelectionHighlight) {
-            drawItemData._enabled =
+            const bool enable =
                 (_selectionState != kUnselected) && drawItem->GetVisible();
-            stateToCommit._enabled = &drawItemData._enabled;
+            if (drawItemData._enabled != enable) {
+                drawItemData._enabled = enable;
+                stateToCommit._enabled = &drawItemData._enabled;
+            }
+        }
+    }
+    else if (isBBoxItem) {
+        if (itemDirtyBits & HdChangeTracker::DirtyExtent) {
+            const bool enable = !range.IsEmpty() && drawItem->GetVisible();
+            if (drawItemData._enabled != enable) {
+                drawItemData._enabled = enable;
+                stateToCommit._enabled = &drawItemData._enabled;
+            }
         }
     }
 
