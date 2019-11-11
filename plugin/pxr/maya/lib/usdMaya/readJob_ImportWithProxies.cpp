@@ -18,7 +18,7 @@
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/primReaderRegistry.h"
-#include "usdMaya/stageCache.h"
+#include <mayaUsd/utils/stageCache.h>
 #include "usdMaya/translatorModelAssembly.h"
 #include "usdMaya/translatorUtil.h"
 

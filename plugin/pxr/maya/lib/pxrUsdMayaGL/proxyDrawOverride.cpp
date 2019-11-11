@@ -122,7 +122,7 @@ UsdMayaProxyDrawOverride::boundingBox(
         return MBoundingBox();
     }
 
-    UsdMayaProxyShape* pShape = UsdMayaProxyShape::GetShapeAtDagPath(objPath);
+    MayaUsdProxyShapeBase* pShape = MayaUsdProxyShapeBase::GetShapeAtDagPath(objPath);
     if (!pShape) {
         return MBoundingBox();
     }
@@ -156,7 +156,7 @@ UsdMayaProxyDrawOverride::isBounded(
     // remove PIXMAYA_ENABLE_BOUNDING_BOX_MODE.
     return true;
 
-    // UsdMayaProxyShape* pShape = UsdMayaProxyShape::GetShapeAtDagPath(objPath);
+    // MayaUsdProxyShapeBase* pShape = MayaUsdProxyShapeBase::GetShapeAtDagPath(objPath);
     // if (!pShape) {
     //     return false;
     // }
@@ -190,7 +190,7 @@ UsdMayaProxyDrawOverride::prepareForDraw(
         return nullptr;
     }
 
-    UsdMayaProxyShape* shape = UsdMayaProxyShape::GetShapeAtDagPath(objPath);
+    MayaUsdProxyShapeBase* shape = MayaUsdProxyShapeBase::GetShapeAtDagPath(objPath);
     if (!shape) {
         return nullptr;
     }

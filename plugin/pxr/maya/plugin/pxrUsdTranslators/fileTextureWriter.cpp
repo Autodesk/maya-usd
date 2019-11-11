@@ -18,7 +18,7 @@
 
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/shaderWriter.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 #include "usdMaya/writeJobContext.h"
 
 #include "pxr/base/gf/vec3f.h"

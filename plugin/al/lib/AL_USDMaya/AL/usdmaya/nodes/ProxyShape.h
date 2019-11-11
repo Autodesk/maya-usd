@@ -47,6 +47,8 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usdImaging/usdImagingGL/renderParams.h"
 
+#include <mayaUsd/nodes/proxyShapeBase.h>
+
 #if defined(WANT_UFE_BUILD)
 #include "ufe/ufe.h"
 
@@ -250,7 +252,7 @@ extern AL::event::EventId kPostClearStageCache;
 /// \ingroup nodes
 //----------------------------------------------------------------------------------------------------------------------
 class ProxyShape
-  : public MPxSurfaceShape,
+  : public MayaUsdProxyShapeBase,
     public AL::maya::utils::NodeHelper,
     public proxy::PrimFilterInterface,
     public AL::event::NodeEvents,
@@ -260,10 +262,9 @@ class ProxyShape
   friend class ProxyShapeUI;
   friend class StageReloadGuard;
   friend class ProxyDrawOverride;
-public:
 
-  // returns the shape's parent transform
-  MDagPath parentTransform();
+  typedef MayaUsdProxyShapeBase ParentClass;
+public:
 
   /// a method that registers all of the events in the ProxyShape
   AL_USDMAYA_PUBLIC
@@ -295,17 +296,25 @@ public:
   /// \name   Input Attributes
   //--------------------------------------------------------------------------------------------------------------------
 
+  // Convenience declarations for attributes inherited from proxy shape
+  // base class.
+#define AL_INHERIT_ATTRIBUTE(XX) \
+  AL_USDMAYA_PUBLIC \
+  static const MObject& XX() { return XX##Attr; } \
+  AL_USDMAYA_PUBLIC \
+  MPlug XX##Plug() const { return MPlug( thisMObject(), XX##Attr ); }
+
   /// the input USD file path for this proxy
-  AL_DECL_ATTRIBUTE(filePath);
+  AL_INHERIT_ATTRIBUTE(filePath);
 
   /// a path to a prim you want to view with this shape
-  AL_DECL_ATTRIBUTE(primPath);
+  AL_INHERIT_ATTRIBUTE(primPath);
 
   /// a comma seperated list of prims you *don't* want to see.
-  AL_DECL_ATTRIBUTE(excludePrimPaths);
+  AL_INHERIT_ATTRIBUTE(excludePrimPaths);
 
   /// the input time value (probably connected to time1.outTime)
-  AL_DECL_ATTRIBUTE(time);
+  AL_INHERIT_ATTRIBUTE(time);
 
   /// an offset, in GUI time units, where the animation should start playback
   AL_DECL_ATTRIBUTE(timeOffset);
@@ -315,13 +324,13 @@ public:
   AL_DECL_ATTRIBUTE(timeScalar);
 
   /// the subdiv complexity used
-  AL_DECL_ATTRIBUTE(complexity);
+  AL_INHERIT_ATTRIBUTE(complexity);
 
   /// display guide - sets shape to display geometry of purpose "guide". See <a href="https://github.com/PixarAnimationStudios/USD/blob/95eef7c9a6662a5362dfc312a186f50c58e27ecd/pxr/usd/lib/usdGeom/imageable.h#L165">imageable.h</a>
-  AL_DECL_ATTRIBUTE(displayGuides);
+  AL_INHERIT_ATTRIBUTE(drawGuidePurpose);
 
-  /// display render guide - sets hape to display geometry of purpose "render". See <a href="https://github.com/PixarAnimationStudios/USD/blob/95eef7c9a6662a5362dfc312a186f50c58e27ecd/pxr/usd/lib/usdGeom/imageable.h#L165">imageable.h</a>
-  AL_DECL_ATTRIBUTE(displayRenderGuides);
+  /// display render guide - sets shape to display geometry of purpose "render". See <a href="https://github.com/PixarAnimationStudios/USD/blob/95eef7c9a6662a5362dfc312a186f50c58e27ecd/pxr/usd/lib/usdGeom/imageable.h#L165">imageable.h</a>
+  AL_INHERIT_ATTRIBUTE(drawRenderPurpose);
 
   /// Connection to any layer DG nodes
   AL_DECL_ATTRIBUTE(layers);
@@ -381,8 +390,8 @@ public:
   /// outTime = (time - timeOffset) * timeScalar
   AL_DECL_ATTRIBUTE(outTime);
 
-  /// inStageData  --->  inStageDataCached  --->  outStageData
-  AL_DECL_ATTRIBUTE(outStageData);
+  /// Inject m_stage and m_path members into DG as a data attribute.
+  AL_INHERIT_ATTRIBUTE(outStageData);
 
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -393,8 +402,11 @@ public:
   ///         on the output stage.
   /// \return the proxy shape
   AL_USDMAYA_PUBLIC
-  UsdStageRefPtr getUsdStage() const;
+  UsdStageRefPtr getUsdStage() const override;
 
+  AL_USDMAYA_PUBLIC
+  UsdTimeCode    getTime() const override;  
+  
   /// \brief  provides access to the UsdStage that this proxy shape is currently representing
   /// \return the proxy shape
   UsdStageRefPtr usdStage() const
@@ -406,10 +418,6 @@ public:
   /// \param  dagPath the dag path of the node being rendered
   /// \return true if the attribs could be retrieved (i.e. is the stage is valid)
   bool getRenderAttris(UsdImagingGLRenderParams& attribs, const MHWRender::MFrameContext& frameContext, const MDagPath& dagPath);
-
-  /// \brief  compute bounds
-  AL_USDMAYA_PUBLIC
-  MBoundingBox boundingBox() const override;
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   AL_usdmaya_Transform utils
@@ -860,10 +868,6 @@ public:
   AL_USDMAYA_PUBLIC
   MSelectionMask getShapeSelectionMask() const override;
 
-  /// \brief  Clears the bounding box cache of the shape
-  inline void clearBoundingBoxCache()
-    { m_boundingBoxCache.clear(); }
-
 private:
   /// \brief  constructs the USD imaging engine for this shape
   void constructGLImagingEngine();
@@ -999,6 +1003,8 @@ private:
   MPxNode::SchedulingType schedulingType() const override { return kSerial; }
   #endif
   MStatus preEvaluation(const MDGContext & context, const MEvaluationNode& evaluationNode) override;
+  void CacheEmptyBoundingBox(MBoundingBox&) override;
+  UsdTimeCode GetOutputTime(MDataBlock) const override;
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Compute methods
@@ -1014,7 +1020,7 @@ private:
   //--------------------------------------------------------------------------------------------------------------------
 
   UsdPrim getUsdPrim(MDataBlock& dataBlock) const;
-  SdfPathVector getExcludePrimPaths() const;
+  SdfPathVector getExcludePrimPaths() const override;
   UsdStagePopulationMask constructStagePopulationMask(const MString &paths) const;
 
   bool isStageValid() const;
@@ -1072,7 +1078,6 @@ private:
   TfNotice::Key m_editTargetChanged;
   TfNotice::Key m_transactionNoticeKey;
 
-  mutable std::map<UsdTimeCode, MBoundingBox> m_boundingBoxCache;
   MCallbackId m_onSelectionChanged = 0;
   SdfPathVector m_excludedGeometry;
   SdfPathVector m_excludedTaggedGeometry;

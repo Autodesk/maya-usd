@@ -17,12 +17,12 @@
 
 #include "usdMaya/editUtil.h"
 #include "usdMaya/jobArgs.h"
-#include "usdMaya/notice.h"
+#include <mayaUsd/listeners/notice.h>
 #include "usdMaya/proxyShape.h"
-#include "usdMaya/query.h"
+#include <mayaUsd/utils/query.h>
 #include "usdMaya/readJob.h"
-#include "usdMaya/stageCache.h"
-#include "usdMaya/stageData.h"
+#include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/nodes/stageData.h>
 
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/registryManager.h"
@@ -176,7 +176,7 @@ UsdMayaReferenceAssembly::initialize()
     inStageDataAttr = typedAttrFn.create(
         "inStageData",
         "id",
-        UsdMayaStageData::mayaTypeId,
+        MayaUsdStageData::mayaTypeId,
         MObject::kNullObj,
         &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -220,7 +220,7 @@ UsdMayaReferenceAssembly::initialize()
     inStageDataCachedAttr = typedAttrFn.create(
         "inStageDataCached",
         "idc",
-        UsdMayaStageData::mayaTypeId,
+        MayaUsdStageData::mayaTypeId,
         MObject::kNullObj,
         &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -232,7 +232,7 @@ UsdMayaReferenceAssembly::initialize()
     outStageDataAttr = typedAttrFn.create(
         "outStageData",
         "od",
-        UsdMayaStageData::mayaTypeId,
+        MayaUsdStageData::mayaTypeId,
         MObject::kNullObj,
         &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -749,7 +749,7 @@ UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock)
         // issue an error. (If fileString is empty, it just means that the
         // reference assembly hasn't been set up yet.)
         // We'll still return a success code from this function because we can
-        // provide Maya with a sane result (an empty UsdMayaStageData).
+        // provide Maya with a sane result (an empty MayaUsdStageData).
         if (!fileString.empty() && !usdStage) {
             TF_RUNTIME_ERROR(
                 "Could not open USD stage with root layer '%s' for assembly %s",
@@ -760,11 +760,11 @@ UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock)
         // Create the output outData ========
         MFnPluginData pluginDataFn;
         MObject stageDataObj =
-            pluginDataFn.create(UsdMayaStageData::mayaTypeId, &retValue);
+            pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-        UsdMayaStageData* stageData =
-            reinterpret_cast<UsdMayaStageData*>(pluginDataFn.data(&retValue));
+        MayaUsdStageData* stageData =
+            reinterpret_cast<MayaUsdStageData*>(pluginDataFn.data(&retValue));
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
         // Set the outUsdStageData
@@ -795,8 +795,8 @@ UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
 
     UsdStageRefPtr usdStage;
 
-    UsdMayaStageData* inData =
-        dynamic_cast<UsdMayaStageData*>(inDataCachedHandle.asPluginData());
+    MayaUsdStageData* inData =
+        dynamic_cast<MayaUsdStageData*>(inDataCachedHandle.asPluginData());
     if(inData)
     {
         usdStage = inData->stage;
@@ -908,11 +908,11 @@ UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
     // Create the output outData
     MFnPluginData pluginDataFn;
     MObject stageDataObj =
-        pluginDataFn.create(UsdMayaStageData::mayaTypeId, &retValue);
+        pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    UsdMayaStageData* stageData =
-        reinterpret_cast<UsdMayaStageData*>(pluginDataFn.data(&retValue));
+    MayaUsdStageData* stageData =
+        reinterpret_cast<MayaUsdStageData*>(pluginDataFn.data(&retValue));
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     // Set the outUsdStageData
@@ -1066,7 +1066,7 @@ UsdPrim UsdMayaReferenceAssembly::usdPrim() const
     MDataHandle outDataHandle = dataBlock.inputValue(outStageDataAttr, &status);
     CHECK_MSTATUS_AND_RETURN(status, usdPrim);
 
-    UsdMayaStageData* outData = dynamic_cast<UsdMayaStageData*>(outDataHandle.asPluginData());
+    MayaUsdStageData* outData = dynamic_cast<MayaUsdStageData*>(outDataHandle.asPluginData());
     if(!outData) {
         return usdPrim; // empty UsdPrim
     }

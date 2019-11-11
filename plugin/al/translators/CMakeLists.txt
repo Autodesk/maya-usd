@@ -1,6 +1,4 @@
-list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas gf plug tf)
-
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
+list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas mayaUsd gf plug tf)
 
 set(DIRECTORY_PATH AL/usdmaya/fileio/translators)
 
@@ -22,13 +20,21 @@ add_library(${TRANSLATORS_PACKAGE}
     DirectionalLight.cpp
 )
 
+if(IS_MACOSX)
+    set(_macDef OSMac_)
+endif()
+
+# HS OCT 2019, do we really need to define 
+# AL_MAYA_MACROS_EXPORT for this target?
+if(NOT IS_WINDOWS)
+    set_target_properties(${TRANSLATORS_PACKAGE}
+          PROPERTIES COMPILE_DEFINITIONS
+          "AL_MAYA_MACROS_EXPORT;${_macDef}"
+    )
+endif()
+
 set(arg_PUBLIC_HEADER_FILES
     Camera.h
-)
-
-target_compile_definitions(${TRANSLATORS_PACKAGE}
-  PRIVATE
-    AL_MAYA_MACROS_EXPORT
 )
 
 # Copy the plugin metadata file in a hierarchy replicating the install hierarchy.
@@ -62,15 +68,26 @@ target_include_directories(
     ../lib/AL_USDMaya
 )
 
-set_target_properties(${TRANSLATORS_PACKAGE}
- PROPERTIES COMPILE_DEFINITIONS
-     "MFB_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE};MFB_ALT_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}"
-)
+# rpath setup
+if(IS_MACOSX OR IS_LINUX) 
+    mayaUsd_init_rpath(rpath "plugin")
+    mayaUsd_add_rpath(rpath "../lib")
+    if(WANT_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../USD/lib")
+    elseif(DEFINED PXR_USD_LOCATION)
+        mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+    endif()
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    mayaUsd_install_rpath(rpath ${TRANSLATORS_PACKAGE})
+endif()
 
-set_target_properties(${TRANSLATORS_PACKAGE}
-        PROPERTIES COMPILE_DEFINITIONS
-        "MFB_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE};MFB_ALT_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}"
-        )
+if (IS_LINUX)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags" PARENT_SCOPE)
+
+  if(WANT_USD_RELATIVE_PATH)
+      mayaUsd_add_rpath(rpath "../../../../USD/lib64")
+  endif()
+endif()
 
 target_link_libraries(${TRANSLATORS_PACKAGE} ${DEPENDANT_LIBRARIES})
 
@@ -80,7 +97,7 @@ install(TARGETS ${TRANSLATORS_PACKAGE}
  RUNTIME
  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
-if(MSVC)
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TRANSLATORS_PACKAGE}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL)
 endif()
 

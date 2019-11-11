@@ -3,8 +3,6 @@
 # Setup 
 ####################################################################################################
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
-
 set(USDUTILS_LIBRARY_NAME "AL_USDUtils")
 set(USDUTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
 
@@ -67,6 +65,6 @@ install(TARGETS ${USDUTILS_LIBRARY_NAME}
     RUNTIME
     DESTINATION ${USDUTILS_LIBRARY_LOCATION}
 )
-if(MSVC)
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${USDUTILS_LIBRARY_NAME}> DESTINATION ${USDUTILS_LIBRARY_LOCATION} OPTIONAL)
 endif()

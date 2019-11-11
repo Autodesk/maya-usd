@@ -15,7 +15,7 @@
 //
 #include "usdMaya/pointBasedDeformerNode.h"
 
-#include "usdMaya/stageData.h"
+#include <mayaUsd/nodes/stageData.h>
 
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/vec3f.h"
@@ -88,7 +88,7 @@ UsdMayaPointBasedDeformerNode::initialize()
 
     inUsdStageAttr = typedAttrFn.create("inUsdStage",
                                         "is",
-                                        UsdMayaStageData::mayaTypeId,
+                                        MayaUsdStageData::mayaTypeId,
                                         MObject::kNullObj,
                                         &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -149,8 +149,8 @@ UsdMayaPointBasedDeformerNode::deform(
         block.inputValue(inUsdStageAttr, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    UsdMayaStageData* stageData =
-        dynamic_cast<UsdMayaStageData*>(inUsdStageHandle.asPluginData());
+    MayaUsdStageData* stageData =
+        dynamic_cast<MayaUsdStageData*>(inUsdStageHandle.asPluginData());
     if (!stageData || !stageData->stage) {
         return MS::kFailure;
     }

@@ -16,8 +16,9 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/maya/utils/MayaHelperMacros.h"
-#include "AL/usdmaya/StageData.h"
 #include "AL/maya/utils/Utils.h"
+
+#include <mayaUsd/nodes/stageData.h>
 
 #include <boost/python/args.hpp>
 #include <boost/python/def.hpp>
@@ -140,7 +141,7 @@ namespace {
             MObject stageObject;
             status = stageDataPlug.getValue(stageObject);
             MFnPluginData fnData(stageObject);
-            auto stageData = static_cast<AL::usdmaya::StageData*>(fnData.data());
+            auto* stageData = static_cast<MayaUsdStageData*>(fnData.data());
 
             // Validate stage
             if (stageData && stageData->stage)

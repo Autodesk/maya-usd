@@ -19,7 +19,7 @@
 #include "usdMaya/shadingModeExporter.h"
 #include "usdMaya/shadingModeImporter.h"
 #include "usdMaya/shadingModeRegistry.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 #include "usdMaya/writeJobContext.h"
 
 #include "pxr/base/tf/diagnostic.h"

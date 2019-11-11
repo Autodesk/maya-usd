@@ -20,6 +20,9 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/ProxyShapeUI.h"
 
+#include "maya/MFnDagNode.h"
+#include "maya/MMatrix.h"
+#include "maya/MTime.h"
 #include "maya/MDrawInfo.h"
 #include "maya/MDrawRequest.h"
 #include "maya/MDrawRequestQueue.h"
@@ -138,8 +141,8 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   auto stage = shape->getUsdStage();
   UsdImagingGLRenderParams params;
 
-  params.showGuides = shape->displayGuidesPlug().asBool();
-  params.showRender = shape->displayRenderGuidesPlug().asBool();
+  params.showGuides = shape->drawGuidePurposePlug().asBool();
+  params.showRender = shape->drawRenderPurposePlug().asBool();
 
   params.frame = UsdTimeCode(shape->outTimePlug().asMTime().as(MTime::uiUnit()));
   params.complexity = 1.0f;
@@ -345,8 +348,8 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
   proxyShape->m_pleaseIgnoreSelection = true;
 
   UsdImagingGLRenderParams params;
-  params.showGuides = proxyShape->displayGuidesPlug().asBool();
-  params.showRender = proxyShape->displayRenderGuidesPlug().asBool();
+  params.showGuides = proxyShape->drawGuidePurposePlug().asBool();
+  params.showRender = proxyShape->drawRenderPurposePlug().asBool();
 
   UsdPrim root = proxyShape->getUsdStage()->GetPseudoRoot();
 

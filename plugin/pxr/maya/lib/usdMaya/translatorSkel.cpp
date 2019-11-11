@@ -17,7 +17,7 @@
 
 #include "usdMaya/translatorUtil.h"
 #include "usdMaya/translatorXformable.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"

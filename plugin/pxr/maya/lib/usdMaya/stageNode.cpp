@@ -15,8 +15,8 @@
 //
 #include "usdMaya/stageNode.h"
 
-#include "usdMaya/stageCache.h"
-#include "usdMaya/stageData.h"
+#include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/nodes/stageData.h>
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -92,7 +92,7 @@ UsdMayaStageNode::initialize()
 
     outUsdStageAttr = typedAttrFn.create("outUsdStage",
                                          "os",
-                                         UsdMayaStageData::mayaTypeId,
+                                         MayaUsdStageData::mayaTypeId,
                                          MObject::kNullObj,
                                          &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -141,11 +141,11 @@ UsdMayaStageNode::compute(const MPlug& plug, MDataBlock& dataBlock)
         // Create the output stage data object.
         MFnPluginData pluginDataFn;
         MObject stageDataObj =
-            pluginDataFn.create(UsdMayaStageData::mayaTypeId, &status);
+            pluginDataFn.create(MayaUsdStageData::mayaTypeId, &status);
         CHECK_MSTATUS_AND_RETURN_IT(status);
 
-        UsdMayaStageData* stageData =
-            reinterpret_cast<UsdMayaStageData*>(pluginDataFn.data(&status));
+        MayaUsdStageData* stageData =
+            reinterpret_cast<MayaUsdStageData*>(pluginDataFn.data(&status));
         CHECK_MSTATUS_AND_RETURN_IT(status);
 
         stageData->stage = usdStage;

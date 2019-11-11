@@ -24,9 +24,30 @@
 #include "maya/MMatrix.h"
 #include "maya/MVector.h"
 
+#include <atomic>
+
+namespace {
+    std::atomic<std::int32_t> _blockingCount;
+}
+
 namespace AL {
 namespace usdmaya {
 namespace utils {
+
+//----------------------------------------------------------------------------------------------------------------------
+BlockNotifications::BlockNotifications() {
+    _blockingCount++;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+BlockNotifications::~BlockNotifications() {
+    _blockingCount--;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool BlockNotifications::isBlockingNotifications() {
+    return _blockingCount.load() > 0;
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 void matrixToSRT(const GfMatrix4d& value, double S[3], MEulerRotation& R, double T[3])

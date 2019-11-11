@@ -108,7 +108,7 @@ function(pxr_library NAME)
         if(args_MAYA_PLUGIN)
             if (WIN32)
                 set(suffix ".mll")
-            elseif(APPLE)
+            elseif(IS_MACOSX)
                 set(suffix ".bundle")
             endif()
         endif()
@@ -157,7 +157,7 @@ function(pxr_library NAME)
     if(PXR_ENABLE_PYTHON_SUPPORT AND (args_PYMODULE_CPPFILES OR args_PYMODULE_FILES OR args_PYSIDE_UI_FILES))
         _pxr_python_module(
             ${NAME}
-            WRAPPED_LIB_INSTALL_PREFIX "${libInstallPrefix}"
+            WRAPPED_LIB_INSTALL_PREFIX "plugin/pxr/${libInstallPrefix}"
             PYTHON_FILES ${args_PYMODULE_FILES}
             PYSIDE_UI_FILES ${args_PYSIDE_UI_FILES}
             CPPFILES ${args_PYMODULE_CPPFILES}
@@ -261,9 +261,9 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
 
         # Find libraries under the install prefix, which has the core USD
         # libraries.
-        _pxr_init_rpath(rpath "tests/lib")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-        _pxr_install_rpath(rpath ${LIBRARY_NAME})
+        mayaUsd_init_rpath(rpath "tests/lib")
+        mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+        mayaUsd_install_rpath(rpath ${LIBRARY_NAME})
 
         if (NOT bt_SOURCE_DIR)
             set(bt_SOURCE_DIR testenv)
@@ -341,9 +341,9 @@ function(pxr_build_test TEST_NAME)
 
         # Find libraries under the install prefix, which has the core USD
         # libraries.
-        _pxr_init_rpath(rpath "tests")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-        _pxr_install_rpath(rpath ${TEST_NAME})
+        mayaUsd_init_rpath(rpath "tests")
+        mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+        mayaUsd_install_rpath(rpath ${TEST_NAME})
 
         # XXX -- We shouldn't have to install to run tests.
         install(TARGETS ${TEST_NAME}
@@ -425,7 +425,7 @@ function(pxr_register_test TEST_NAME)
 
         # This harness is a filter which allows us to manipulate the test run, 
         # e.g. by changing the environment, changing the expected return code, etc.
-        set(testWrapperCmd ${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros/testWrapper.py --verbose)
+        set(testWrapperCmd ${PROJECT_SOURCE_DIR}/plugin/pxr/cmake/macros/testWrapper.py --verbose)
 
         if (bt_STDOUT_REDIRECT)
             set(testWrapperCmd ${testWrapperCmd} --stdout-redirect=${bt_STDOUT_REDIRECT})
@@ -456,9 +456,9 @@ function(pxr_register_test TEST_NAME)
         # assume the testenv has the same name as the test but allow it to be
         # overridden by specifying TESTENV.
         if (bt_TESTENV)
-            set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${bt_TESTENV})
+            set(testenvDir ${CMAKE_INSTALL_PREFIX}/plugin/pxr/tests/ctest/${bt_TESTENV})
         else()
-            set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${TEST_NAME})
+            set(testenvDir ${CMAKE_INSTALL_PREFIX}/plugin/pxr/tests/ctest/${TEST_NAME})
         endif()
 
         set(testWrapperCmd ${testWrapperCmd} --testenv-dir=${testenvDir})
@@ -515,31 +515,32 @@ function(pxr_register_test TEST_NAME)
             endforeach()
         endif()
         
-        # If we're building static libraries, the C++ tests that link against
-        # these libraries will look for resource files in the "usd" subdirectory
-        # relative to where the tests are installed. However, the build installs
-        # these files in the "lib" directory where the libraries are installed. 
+        # Look for resource files in the "usd" subdirectory relative to the
+        # "lib" directory where the libraries are installed.
         #
         # We don't want to copy these resource files for each test, so instead
         # we set the PXR_PLUGINPATH_NAME env var to point to the "lib/usd"
         # directory where these files are installed.
-        if (NOT TARGET shared_libs)
-            set(_plugSearchPathEnvName "PXR_PLUGINPATH_NAME")
-            if (PXR_OVERRIDE_PLUGINPATH_NAME)
-                set(_plugSearchPathEnvName ${PXR_OVERRIDE_PLUGINPATH_NAME})
-            endif()
-
-            set(testWrapperCmd ${testWrapperCmd} --env-var=${_plugSearchPathEnvName}=${CMAKE_INSTALL_PREFIX}/lib/usd)
+        set(_plugSearchPathEnvName "PXR_PLUGINPATH_NAME")
+        if (PXR_OVERRIDE_PLUGINPATH_NAME)
+            set(_plugSearchPathEnvName ${PXR_OVERRIDE_PLUGINPATH_NAME})
         endif()
+
+        set(_testPluginPath "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin;${CMAKE_INSTALL_PREFIX}/lib/usd")
+        set(_testPrePath "$ENV{PATH};${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib;${CMAKE_INSTALL_PREFIX}/lib")
 
         # Ensure that Python imports the Python files built by this build.
         # On Windows convert backslash to slash and don't change semicolons
         # to colons.
-        set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;$ENV{PYTHONPATH}")
+        set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib/python;$ENV{PYTHONPATH}")
         if(WIN32)
             string(REGEX REPLACE "\\\\" "/" _testPythonPath "${_testPythonPath}")
+            string(REGEX REPLACE "\\\\" "/" _testPluginPath "${_testPluginPath}")
+            string(REGEX REPLACE "\\\\" "/" _testPrePath "${_testPrePath}")
         else()
             string(REPLACE ";" ":" _testPythonPath "${_testPythonPath}")
+            string(REPLACE ";" ":" _testPluginPath "${_testPluginPath}")
+            string(REPLACE ";" ":" _testPrePath "${_testPrePath}")
         endif()
 
         # Ensure we run with the appropriate python executable.
@@ -554,7 +555,9 @@ function(pxr_register_test TEST_NAME)
         add_test(
             NAME ${TEST_NAME}
             COMMAND ${PYTHON_EXECUTABLE} ${testWrapperCmd}
-                    "--env-var=PYTHONPATH=${_testPythonPath}" ${testCmd}
+                    "--env-var=PYTHONPATH=${_testPythonPath}" 
+                    "--env-var=${_plugSearchPathEnvName}=${_testPluginPath}" 
+                    "--pre-path=${_testPrePath}" ${testCmd}
         )
 
         # But in some cases, we need to pass cmake properties directly to cmake
@@ -727,7 +730,7 @@ function(pxr_toplevel_epilogue)
         # that we carefully avoid adding the usd_m target itself by using
         # TARGET_FILE.  Linking the usd_m target would link usd_m and
         # everything it links to.
-        if(MSVC)
+        if(IS_WINDOWS)
             target_link_libraries(usd_ms
                 PRIVATE
                     -WHOLEARCHIVE:$<TARGET_FILE:usd_m>
@@ -772,10 +775,10 @@ function(pxr_toplevel_epilogue)
                 ${PXR_THREAD_LIBS}
         )
 
-        _pxr_init_rpath(rpath "${libInstallPrefix}")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib")
-        _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-        _pxr_install_rpath(rpath usd_ms)
+        mayaUsd_init_rpath(rpath "${libInstallPrefix}")
+        mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib")
+        mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+        mayaUsd_install_rpath(rpath usd_ms)
     endif()
 
     # Setup the plugins in the top epilogue to ensure that everybody has had a

@@ -16,7 +16,7 @@
 #include "usdMaya/exportCommand.h"
 
 #include "usdMaya/shadingModeRegistry.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 #include "usdMaya/writeJob.h"
 #include "usdMaya/writeUtil.h"
 

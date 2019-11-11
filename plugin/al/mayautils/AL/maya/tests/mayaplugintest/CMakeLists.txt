@@ -22,6 +22,15 @@ add_library(${MAYAUTILS_TEST_LIBRARY_NAME}
 # Remove the lib prefix else Maya can't load the library
 SET_TARGET_PROPERTIES(${MAYAUTILS_TEST_LIBRARY_NAME} PROPERTIES PREFIX "")
 
+if(IS_MACOSX)
+    set(_macDef OSMac_)
+endif()
+
+target_compile_definitions(${MAYAUTILS_TEST_LIBRARY_NAME}
+    PRIVATE
+        ${_macDef}
+)
+
 target_link_libraries(${MAYAUTILS_TEST_LIBRARY_NAME}
   PRIVATE
       ${GTEST_LIBRARIES}

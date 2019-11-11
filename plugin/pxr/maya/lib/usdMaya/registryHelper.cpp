@@ -15,7 +15,7 @@
 //
 #include "usdMaya/registryHelper.h"
 
-#include "usdMaya/debugCodes.h"
+#include <mayaUsd/base/debugCodes.h>
 
 #include "pxr/base/js/converter.h"
 #include "pxr/base/plug/plugin.h"

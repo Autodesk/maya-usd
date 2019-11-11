@@ -20,7 +20,7 @@
 #include "usdMaya/shadingModeExporterContext.h"
 #include "usdMaya/shadingModeRegistry.h"
 #include "usdMaya/shadingUtil.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/token.h"

@@ -15,7 +15,7 @@
 //
 
 #include "pxr/pxr.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 #include "usdMaya/writeUtil.h"
 
 #include "pxr/base/tf/pyResultConversions.h"

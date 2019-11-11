@@ -19,7 +19,7 @@
 /// \file usdMaya/skelBindingsProcessor.h
 
 #include "usdMaya/api.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"

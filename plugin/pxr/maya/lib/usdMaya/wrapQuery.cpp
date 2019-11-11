@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/query.h"
+#include <mayaUsd/utils/query.h>
 
 #include <boost/python/def.hpp>
 #include <boost/python.hpp>

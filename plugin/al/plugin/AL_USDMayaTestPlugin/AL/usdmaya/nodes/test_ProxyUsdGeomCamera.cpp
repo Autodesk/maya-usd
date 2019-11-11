@@ -37,7 +37,7 @@
 #include "pxr/usd/usdGeom/xform.h"
 
 #include "AL/usdmaya/TypeIDs.h"
-#include <AL/usdmaya/StageData.h>
+#include <mayaUsd/nodes/stageData.h>
 #include <AL/maya/utils/MayaHelperMacros.h>
 
 using AL::usdmaya::nodes::ProxyShape;
