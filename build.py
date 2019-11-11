@@ -309,7 +309,7 @@ def RunCMake(context, extraArgs=None, stages=None):
 def RunCTest(context, extraArgs=None):
     buildDir = context.buildDir
     variant = BuildVariant(context)
-    numJobs = context.numJobs
+    numJobs = 1
 
     with CurrentWorkingDirectory(buildDir):
         Run(context,
