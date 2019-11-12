@@ -16,13 +16,13 @@
 
 #include "proxyRenderDelegate.h"
 #include "render_delegate.h"
+#include "tokens.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/taskController.h"
-#include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/repr.h"
@@ -57,8 +57,14 @@ namespace
     //! Representation selector for wireframe viewport mode
     const HdReprSelector kWireReprSelector(TfToken(), HdReprTokens->wire);
 
+    //! Representation selector for bounding box viewport mode
+    const HdReprSelector kBBoxReprSelector(TfToken(), HdVP2ReprTokens->bbox);
+
     //! Representation selector for point snapping
     const HdReprSelector kPointsReprSelector(TfToken(), TfToken(), HdReprTokens->points);
+
+    //! Representation selector for selection update
+    const HdReprSelector kSelectionReprSelector(HdVP2ReprTokens->selection);
 
     MGlobal::ListAdjustment GetListAdjustment()
     {
@@ -93,23 +99,30 @@ namespace
     //! \brief  Configure repr descriptions
     void _ConfigureReprs()
     {
-        // One desc for shaded display, the other desc for selection highlight.
-        HdMesh::ConfigureRepr(HdReprTokens->smoothHull,
-            HdMeshReprDesc(HdMeshGeomStyleHull,
-                HdCullStyleDontCare,
-                HdMeshReprDescTokens->surfaceShader,
-                /*flatShadingEnabled=*/false,
-                /*blendWireframeColor=*/false),
-            HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnly,
-                HdCullStyleDontCare,
-                HdMeshReprDescTokens->surfaceShader,
-                /*flatShadingEnabled=*/false,
-                /*blendWireframeColor=*/false)
+        const HdMeshReprDesc reprDescHull(
+            HdMeshGeomStyleHull,
+            HdCullStyleDontCare,
+            HdMeshReprDescTokens->surfaceShader,
+            /*flatShadingEnabled=*/false,
+            /*blendWireframeColor=*/false);
+
+        const HdMeshReprDesc reprDescEdge(
+            HdMeshGeomStyleHullEdgeOnly,
+            HdCullStyleDontCare,
+            HdMeshReprDescTokens->surfaceShader,
+            /*flatShadingEnabled=*/false,
+            /*blendWireframeColor=*/false
         );
+
+        // Hull desc for shaded display, edge desc for selection highlight.
+        HdMesh::ConfigureRepr(HdReprTokens->smoothHull, reprDescHull, reprDescEdge);
+
+        // Edge desc for bbox display.
+        HdMesh::ConfigureRepr(HdVP2ReprTokens->bbox, reprDescEdge);
 
         // Special token for selection update and no need to create repr. Adding
         // the empty desc to remove Hydra warning.
-        HdMesh::ConfigureRepr(HdxTokens->selection, HdMeshReprDesc());
+        HdMesh::ConfigureRepr(HdVP2ReprTokens->selection, HdMeshReprDesc());
     }
 
 #if defined(WANT_UFE_BUILD)
@@ -359,20 +372,36 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 
         const unsigned int displayStyle = frameContext.getDisplayStyle();
 
-        if (displayStyle & MHWRender::MFrameContext::kGouraudShaded) {
-            if (!reprSelector.Contains(HdReprTokens->smoothHull)) {
-                reprSelector = reprSelector.CompositeOver(kSmoothHullReprSelector);
-            }
+        // Query the wireframe color assigned to proxy shape.
+        if (displayStyle & (
+            MHWRender::MFrameContext::kBoundingBox |
+            MHWRender::MFrameContext::kWireFrame))
+        {
+            MDagPath proxyPath;
+            MDagPath::getAPathTo(_mObject, proxyPath);
+            _wireframeColor = MHWRender::MGeometryUtilities::wireframeColor(proxyPath);
         }
 
-        if (displayStyle & MHWRender::MFrameContext::kWireFrame) {
-            if (!reprSelector.Contains(HdReprTokens->wire)) {
-                reprSelector = reprSelector.CompositeOver(kWireReprSelector);
+        // Update repr selector based on display style of the current viewport
+        if (displayStyle & MHWRender::MFrameContext::kBoundingBox) {
+            if (!reprSelector.Contains(HdVP2ReprTokens->bbox)) {
+                reprSelector = reprSelector.CompositeOver(kBBoxReprSelector);
+            }
+        }
+        else {
+            // To support Wireframe on Shaded mode, the two displayStyle checks
+            // should not be mutually excluded.
+            if (displayStyle & MHWRender::MFrameContext::kGouraudShaded) {
+                if (!reprSelector.Contains(HdReprTokens->smoothHull)) {
+                    reprSelector = reprSelector.CompositeOver(kSmoothHullReprSelector);
+                }
             }
 
-            MDagPath proxyDagPath;
-            MDagPath::getAPathTo(_mObject, proxyDagPath);
-            _wireframeColor = MHWRender::MGeometryUtilities::wireframeColor(proxyDagPath);
+            if (displayStyle & MHWRender::MFrameContext::kWireFrame) {
+                if (!reprSelector.Contains(HdReprTokens->wire)) {
+                    reprSelector = reprSelector.CompositeOver(kWireReprSelector);
+                }
+            }
         }
     }
 
@@ -576,8 +605,7 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
     }
 
     if (!rootPaths.empty()) {
-        HdRprimCollection collection(HdTokens->geometry,
-            HdReprSelector(HdxTokens->selection));
+        HdRprimCollection collection(HdTokens->geometry, kSelectionReprSelector);
         collection.SetRootPaths(rootPaths);
         _taskController->SetCollection(collection);
         _engine.Execute(_renderIndex, &_dummyTasks);

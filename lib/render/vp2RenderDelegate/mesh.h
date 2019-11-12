@@ -110,6 +110,7 @@ private:
     MHWRender::MRenderItem* _CreateSmoothHullRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateWireframeRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name) const;
+    MHWRender::MRenderItem* _CreateBoundingBoxRenderItem(const MString& name) const;
 
     //! Custom dirty bits used by this mesh
     enum DirtyBits : HdDirtyBits {

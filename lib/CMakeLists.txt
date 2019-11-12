@@ -59,6 +59,7 @@ list(APPEND mayaUsd_src
     listeners/notice.cpp
     listeners/proxyShapeNotice.cpp
     #
+    render/vp2RenderDelegate/bboxGeom.cpp
     render/vp2RenderDelegate/debugCodes.cpp
     render/vp2RenderDelegate/render_param.cpp
     render/vp2RenderDelegate/instancer.cpp
@@ -68,6 +69,7 @@ list(APPEND mayaUsd_src
     render/vp2RenderDelegate/proxyRenderDelegate.cpp
     render/vp2RenderDelegate/render_delegate.cpp
     render/vp2RenderDelegate/sampler.cpp
+    render/vp2RenderDelegate/tokens.cpp
     #
     render/vp2ShaderFragments/shaderFragments.cpp
     #

@@ -16,6 +16,7 @@
 
 #include "render_delegate.h"
 
+#include "bboxGeom.h"
 #include "material.h"
 #include "mesh.h"
 
@@ -310,6 +311,17 @@ namespace
     MSamplerStateCache sSamplerStates;  //!< Sampler state cache
     tbb::spin_rw_mutex sSamplerRWMutex; //!< Synchronization used to protect concurrent read from serial writes
 
+    /*! \brief  Shared bounding box geometry
+
+        The shared bounding box geometry will be cached until the end of a Maya
+        session and used by all Rprims to display bounding boxes in VP2.
+
+        We use heap allocation without smart pointer to avoid the destructor to
+        be called after VP2 has destructed graphics device context when quiting
+        maya, otherwise it would crash.
+    */
+    const HdVP2BBoxGeom* const sSharedBBoxGeom = new HdVP2BBoxGeom;
+
 } // namespace
 
 const int HdVP2RenderDelegate::sProfilerCategory = MProfiler::addCategory(
@@ -320,8 +332,8 @@ const int HdVP2RenderDelegate::sProfilerCategory = MProfiler::addCategory(
 #endif
 );
 
-std::mutex HdVP2RenderDelegate::_mutexResourceRegistry;
-std::atomic_int HdVP2RenderDelegate::_counterResourceRegistry;
+std::mutex HdVP2RenderDelegate::_renderDelegateMutex;
+std::atomic_int HdVP2RenderDelegate::_renderDelegateCounter;
 HdResourceRegistrySharedPtr HdVP2RenderDelegate::_resourceRegistry;
 
 /*! \brief  Constructor.
@@ -329,8 +341,8 @@ HdResourceRegistrySharedPtr HdVP2RenderDelegate::_resourceRegistry;
 HdVP2RenderDelegate::HdVP2RenderDelegate(ProxyRenderDelegate& drawScene) {
     _id = SdfPath(TfToken(TfStringPrintf("/HdVP2RenderDelegate_%p", this)));
 
-    std::lock_guard<std::mutex> guard(_mutexResourceRegistry);
-    if (_counterResourceRegistry.fetch_add(1) == 0) {
+    std::lock_guard<std::mutex> guard(_renderDelegateMutex);
+    if (_renderDelegateCounter.fetch_add(1) == 0) {
         _resourceRegistry.reset(new HdResourceRegistry());
     }
 
@@ -343,9 +355,8 @@ HdVP2RenderDelegate::HdVP2RenderDelegate(ProxyRenderDelegate& drawScene) {
 /*! \brief  Destructor.
 */
 HdVP2RenderDelegate::~HdVP2RenderDelegate() {
-    std::lock_guard<std::mutex> guard(_mutexResourceRegistry);
-    
-    if (_counterResourceRegistry.fetch_sub(1) == 1) {
+    std::lock_guard<std::mutex> guard(_renderDelegateMutex);
+    if (_renderDelegateCounter.fetch_sub(1) == 1) {
         _resourceRegistry.reset();
     }
 }
@@ -686,6 +697,13 @@ const MHWRender::MSamplerState* HdVP2RenderDelegate::GetSamplerState(
         MHWRender::MStateManager::acquireSamplerState(desc);
     sSamplerStates[desc] = samplerState;
     return samplerState;
+}
+
+/*! \brief  Returns the shared bbox geometry.
+*/
+const HdVP2BBoxGeom& HdVP2RenderDelegate::GetSharedBBoxGeom() const
+{
+    return *sSharedBBoxGeom;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

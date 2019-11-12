@@ -15,19 +15,20 @@
 //
 
 #include "mesh.h"
+#include "bboxGeom.h"
 #include "debugCodes.h"
 #include "draw_item.h"
 #include "material.h"
 #include "instancer.h"
 #include "proxyRenderDelegate.h"
 #include "render_delegate.h"
+#include "tokens.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/smoothNormals.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
-#include "pxr/imaging/hdx/tokens.h"
 
 #include <maya/MMatrix.h>
 #include <maya/MProfiler.h>
@@ -609,7 +610,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
     // We don't create a repr for the selection token because it serves for
     // selection state update only. Mark DirtySelection bit that will be
     // automatically propagated to all draw items of the rprim.
-    if (reprToken == HdxTokens->selection) {
+    if (reprToken == HdVP2ReprTokens->selection) {
         const HdVP2SelectionStatus selectionState =
             param->GetDrawScene().GetPrimSelectionStatus(GetId());
         if (_selectionState != selectionState) {
@@ -672,10 +673,14 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
                     renderItem = _CreateSelectionHighlightRenderItem(renderItemName);
                     drawItem->SetUsage(HdVP2DrawItem::kSelectionHighlight);
                 }
-                // The wireframe item is used for both regular drawing and
-                // selection highlight.
-                else {
+                // The item is used for wireframe display and selection highlight.
+                else if (reprToken == HdReprTokens->wire) {
                     renderItem = _CreateWireframeRenderItem(renderItemName);
+                    drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
+                }
+                // The item is used for bbox display and selection highlight.
+                else if (reprToken == HdVP2ReprTokens->bbox) {
+                    renderItem = _CreateBoundingBoxRenderItem(renderItemName);
                     drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
                 }
                 break;
@@ -726,7 +731,7 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate *sceneDelegate, const TfToken& reprT
 {
     // We don't have a repr for the selection token because it serves as a tag
     // for selection update only.
-    if (reprToken == HdxTokens->selection) {
+    if (reprToken == HdVP2ReprTokens->selection) {
         return;
     }
 
@@ -775,8 +780,11 @@ void HdVP2Mesh::_UpdateDrawItem(
     bool requireSmoothNormals,
     bool requireFlatNormals)
 {
-    CommitState stateToCommit(*drawItem);
-    HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
+    const MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
+    if (ARCH_UNLIKELY(!renderItem)) {
+        return;
+    }
+
     const HdDirtyBits itemDirtyBits = drawItem->GetDirtyBits();
 
     // We don't need to update the dedicated selection highlight item when there
@@ -787,6 +795,9 @@ void HdVP2Mesh::_UpdateDrawItem(
         (_selectionState == kUnselected)) {
         return;
     }
+
+    CommitState stateToCommit(*drawItem);
+    HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
 
     const SdfPath& id = GetId();
     const HdMeshReprDesc &desc = drawItem->GetReprDesc();
@@ -804,11 +815,19 @@ void HdVP2Mesh::_UpdateDrawItem(
     const size_t numVertices = requiresUnsharedVertices ?
         topology.GetFaceVertexIndices().size() : topology.GetNumPoints();
 
+    // The bounding box item uses a globally-shared geometry data therefore it
+    // doesn't need to extract index data from topology. Points use non-indexed
+    // draw.
+    const bool isBBoxItem =
+        (renderItem->drawMode() == MHWRender::MGeometry::kBoundingBox);
+    const bool isPointSnappingItem =
+        (renderItem->primitive() == MHWRender::MGeometry::kPoints);
+    const bool requiresIndexUpdate = !isBBoxItem && !isPointSnappingItem;
+
     // Prepare index buffer.
-    if ((itemDirtyBits & HdChangeTracker::DirtyTopology) != 0) {
+    if (requiresIndexUpdate && (itemDirtyBits & HdChangeTracker::DirtyTopology)) {
         const HdMeshTopology* topologyToUse = unsharedTopology ? unsharedTopology : &topology;
 
-        // Index data is not required for points repr.
         if (desc.geomStyle == HdMeshGeomStyleHull) {
             HdMeshUtil meshUtil(topologyToUse, id);
             VtVec3iArray trianglesFaceVertexIndices;
@@ -1116,21 +1135,26 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
     }
 
-    // The Maya API to update bounding box of a render item is expensive, so we
-    // update it only when it is expanded.
+    // Local bounds
+    const GfRange3d& range = _sharedData.bounds.GetRange();
+
+    // Bounds are updated through MPxSubSceneOverride::setGeometryForRenderItem()
+    // which is expensive, so it is updated only when it gets expanded in order
+    // to reduce calling frequence.
     if (itemDirtyBits & HdChangeTracker::DirtyExtent) {
-        const GfRange3d& range = _sharedData.bounds.GetRange();
+        const GfRange3d& rangeToUse = isBBoxItem ?
+            _delegate->GetSharedBBoxGeom().GetRange() : range;
 
         bool boundingBoxExpanded = false;
 
-        const GfVec3d& min = range.GetMin();
+        const GfVec3d& min = rangeToUse.GetMin();
         const MPoint pntMin(min[0], min[1], min[2]);
         if (!drawItemData._boundingBox.contains(pntMin)) {
             drawItemData._boundingBox.expand(pntMin);
             boundingBoxExpanded = true;
         }
 
-        const GfVec3d& max = range.GetMax();
+        const GfVec3d& max = rangeToUse.GetMax();
         const MPoint pntMax(max[0], max[1], max[2]);
         if (!drawItemData._boundingBox.contains(pntMax)) {
             drawItemData._boundingBox.expand(pntMax);
@@ -1142,10 +1166,32 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
     }
 
+    // Local-to-world transformation
     MMatrix& worldMatrix = drawItemData._worldMatrix;
     _sharedData.bounds.GetMatrix().Get(worldMatrix.matrix);
 
-    if (itemDirtyBits & HdChangeTracker::DirtyTransform) {
+    // The bounding box draw item uses a globally-shared unit wire cube as the
+    // geometry and transfers scale and offset of the bounds to world matrix.
+    if (isBBoxItem) {
+        if (itemDirtyBits &
+            (HdChangeTracker::DirtyExtent | HdChangeTracker::DirtyTransform)) {
+            if (!range.IsEmpty()) {
+                const GfVec3d midpoint = range.GetMidpoint();
+                const GfVec3d size = range.GetSize();
+
+                MTransformationMatrix transformation;
+                transformation.setScale(size.data(), MSpace::kTransform);
+                transformation.setTranslation(midpoint.data(), MSpace::kTransform);
+                worldMatrix = transformation.asMatrix() * worldMatrix;
+                stateToCommit._worldMatrix = &drawItemData._worldMatrix;
+            }
+            else {
+                TF_DEBUG(HDVP2_DEBUG_MESH).Msg("Hydra prim '%s' has empty bounds\n",
+                    _rprimId.asChar());
+            }
+        }
+    }
+    else if (itemDirtyBits & HdChangeTracker::DirtyTransform) {
         stateToCommit._worldMatrix = &drawItemData._worldMatrix;
     }
 
@@ -1253,11 +1299,20 @@ void HdVP2Mesh::_UpdateDrawItem(
     // Reset dirty bits because we've prepared commit state for this draw item.
     drawItem->ResetDirtyBits();
 
-    // Capture class member for lambda
-    MHWRender::MVertexBuffer* const positionsBuffer = _meshSharedData._positionsBuffer.get();
+    // Capture the valid position buffer and index buffer
+    MHWRender::MVertexBuffer* positionsBuffer = _meshSharedData._positionsBuffer.get();
+    MHWRender::MIndexBuffer* indexBuffer = drawItemData._indexBuffer.get();
+
+    if (isBBoxItem) {
+        const HdVP2BBoxGeom& sharedBBoxGeom = _delegate->GetSharedBBoxGeom();
+        positionsBuffer = const_cast<MHWRender::MVertexBuffer*>(
+            sharedBBoxGeom.GetPositionBuffer());
+        indexBuffer = const_cast<MHWRender::MIndexBuffer*>(
+            sharedBBoxGeom.GetIndexBuffer());
+    }
 
     _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-        [drawItem, stateToCommit, param, positionsBuffer]()
+        [drawItem, stateToCommit, param, positionsBuffer, indexBuffer]()
     {
         MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
         if (ARCH_UNLIKELY(!renderItem))
@@ -1270,7 +1325,6 @@ void HdVP2Mesh::_UpdateDrawItem(
 
         MHWRender::MVertexBuffer* colorBuffer = drawItemData._colorBuffer.get();
         MHWRender::MVertexBuffer* normalsBuffer = drawItemData._normalsBuffer.get();
-        MHWRender::MIndexBuffer* indexBuffer = drawItemData._indexBuffer.get();
 
         const HdVP2DrawItem::PrimvarBufferMap& primvarBuffers = drawItemData._primvarBuffers;
 
@@ -1467,6 +1521,28 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateWireframeRenderItem(
 
     renderItem->setDrawMode(MHWRender::MGeometry::kWireframe);
     renderItem->depthPriority(MHWRender::MRenderItem::sDormantWireDepthPriority);
+    renderItem->castsShadows(false);
+    renderItem->receivesShadows(false);
+    renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
+    renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
+
+    setWantConsolidation(*renderItem, true);
+
+    return renderItem;
+}
+
+/*! \brief  Create render item for bbox repr.
+*/
+MHWRender::MRenderItem* HdVP2Mesh::_CreateBoundingBoxRenderItem(
+    const MString& name) const
+{
+    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
+        name,
+        MHWRender::MRenderItem::DecorationItem,
+        MHWRender::MGeometry::kLines
+    );
+
+    renderItem->setDrawMode(MHWRender::MGeometry::kBoundingBox);
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
