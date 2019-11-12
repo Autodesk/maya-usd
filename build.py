@@ -309,7 +309,8 @@ def RunCMake(context, extraArgs=None, stages=None):
 def RunCTest(context, extraArgs=None):
     buildDir = context.buildDir
     variant = BuildVariant(context)
-    numJobs = context.numJobs
+    #TODO we can't currently run tests in parallel, something to revisit.
+    numJobs = 1
 
     with CurrentWorkingDirectory(buildDir):
         Run(context,
