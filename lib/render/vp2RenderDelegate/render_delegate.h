@@ -105,9 +105,9 @@ public:
 
     MString GetLocalNodeName(const MString& name) const;
 
-    MHWRender::MShaderInstance* GetFallbackShader(MColor color=MColor(0.18f,0.18f,0.18f,1.0f)) const;
+    MHWRender::MShaderInstance* GetFallbackShader(const MColor& color) const;
     MHWRender::MShaderInstance* GetFallbackCPVShader() const;
-    MHWRender::MShaderInstance* Get3dSolidShader() const;
+    MHWRender::MShaderInstance* Get3dSolidShader(const MColor& color) const;
     MHWRender::MShaderInstance* Get3dFatPointShader() const;
 
     const MHWRender::MSamplerState* GetSamplerState(

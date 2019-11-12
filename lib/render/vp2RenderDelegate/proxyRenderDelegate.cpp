@@ -22,6 +22,7 @@
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/taskController.h"
+#include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/repr.h"
@@ -34,6 +35,7 @@
 #include <maya/MFileIO.h>
 #include <maya/MFnPluginData.h>
 #include <maya/MHWGeometryUtilities.h>
+#include <maya/MEventMessage.h>
 #include <maya/MProfiler.h>
 #include <maya/MSelectionContext.h>
 
@@ -49,6 +51,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
+    //! Representation selector for shaded and textured viewport mode
+    const HdReprSelector kSmoothHullReprSelector(HdReprTokens->smoothHull);
+
+    //! Representation selector for wireframe viewport mode
+    const HdReprSelector kWireReprSelector(TfToken(), HdReprTokens->wire);
+
+    //! Representation selector for point snapping
+    const HdReprSelector kPointsReprSelector(TfToken(), TfToken(), HdReprTokens->points);
+
     MGlobal::ListAdjustment GetListAdjustment()
     {
         // Keyboard modifiers can be queried from QApplication::keyboardModifiers()
@@ -79,6 +90,28 @@ namespace
         return listAdjustment;
     }
 
+    //! \brief  Configure repr descriptions
+    void _ConfigureReprs()
+    {
+        // One desc for shaded display, the other desc for selection highlight.
+        HdMesh::ConfigureRepr(HdReprTokens->smoothHull,
+            HdMeshReprDesc(HdMeshGeomStyleHull,
+                HdCullStyleDontCare,
+                HdMeshReprDescTokens->surfaceShader,
+                /*flatShadingEnabled=*/false,
+                /*blendWireframeColor=*/false),
+            HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnly,
+                HdCullStyleDontCare,
+                HdMeshReprDescTokens->surfaceShader,
+                /*flatShadingEnabled=*/false,
+                /*blendWireframeColor=*/false)
+        );
+
+        // Special token for selection update and no need to create repr. Adding
+        // the empty desc to remove Hydra warning.
+        HdMesh::ConfigureRepr(HdxTokens->selection, HdMeshReprDesc());
+    }
+
 #if defined(WANT_UFE_BUILD)
     class UfeSelectionObserver : public Ufe::Observer
     {
@@ -107,6 +140,14 @@ namespace
     private:
         ProxyRenderDelegate& _proxyRenderDelegate;
     };
+#else
+    void SelectionChangedCB(void* data)
+    {
+        ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(data);
+        if (prd) {
+            prd->SelectionChanged();
+        }
+    }
 #endif
 
 } // namespace
@@ -133,6 +174,12 @@ ProxyRenderDelegate::~ProxyRenderDelegate() {
     delete _taskController;
     delete _renderIndex;
     delete _renderDelegate;
+
+#if !defined(WANT_UFE_BUILD)
+    if (_mayaSelectionCallbackId != 0) {
+        MMessage::removeCallback(_mayaSelectionCallbackId);
+    }
+#endif
 }
 
 //! \brief  This drawing routine supports all devices (DirectX and OpenGL)
@@ -184,6 +231,10 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorD_L1, "Allocate RenderIndex");
         _renderIndex = HdRenderIndex::New(_renderDelegate);
+
+        // Add additional configurations after render index creation.
+        static std::once_flag reprsOnce;
+        std::call_once(reprsOnce, _ConfigureReprs);
     }
 
     if (!_sceneDelegate) {
@@ -198,24 +249,8 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
         _taskController = new HdxTaskController(_renderIndex,
             delegateID.AppendChild(TfToken(TfStringPrintf("_UsdImaging_VP2_%p", this))) );
 
-        // Assign a collection of active representations, then each Rprim will
-        // initialize and update draw data for these active repr(s). If update
-        // for selection is enabled, the draw data for the "points" repr won't
-        // be prepared until point snapping is activated; otherwise they have
-        // to be early prepared for potential activation of point snapping.
-        _defaultCollection.reset(new HdRprimCollection(HdTokens->geometry,
-#if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
-            HdReprSelector(HdReprTokens->smoothHull)
-#else
-            HdReprSelector(HdReprTokens->smoothHull, TfToken(), HdReprTokens->points)
-#endif
-        ));
-
-        _taskController->SetCollection(*_defaultCollection);
-
-        _selectionHighlightCollection.reset(new HdRprimCollection(HdTokens->geometry,
-            HdReprSelector(HdReprTokens->wire)
-        ));
+        _defaultCollection.reset(new HdRprimCollection());
+        _defaultCollection->SetName(HdTokens->geometry);
 
         _selection.reset(new HdSelection);
 
@@ -227,6 +262,10 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
                 globalSelection->addObserver(_ufeSelectionObserver);
             }
         }
+#else
+        // Without UFE, support basic selection highlight at proxy shape level.
+        _mayaSelectionCallbackId = MEventMessage::addEventCallback(
+            "SelectionChanged", SelectionChangedCB, this);
 #endif
 
         // We don't really need any HdTask because VP2RenderDelegate uses Hydra
@@ -283,51 +322,63 @@ void ProxyRenderDelegate::_UpdateTime() {
     }
 }
 
-//! \brief  Execute Hydra engine which will performe minimal update VP2 state update based on change tracker.
-void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext) {
+//! \brief  Execute Hydra engine to perform minimal VP2 draw data update based on change tracker.
+void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
+{
     MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
         MProfiler::kColorC_L1, "Execute");
 
+    // If update for selection is enabled, the draw data for the "points" repr
+    // won't be prepared until point snapping is activated; otherwise the draw
+    // data have to be prepared early for possible activation of point snapping.
 #if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
-    // Since Maya 2020, subscene update can be invoked in a selection pass.
+    HdReprSelector reprSelector;
+
     const bool inSelectionPass = (frameContext.getSelectionInfo() != nullptr);
     const bool inPointSnapping = pointSnappingActive();
 
     // Query selection adjustment mode only if the update is triggered in a selection pass.
     _globalListAdjustment = (inSelectionPass && !inPointSnapping) ? GetListAdjustment() : MGlobal::kReplaceList;
 #else
-    // Before Maya 2020, subscene update would never be invoked in a selection pass.
+    HdReprSelector reprSelector = kPointsReprSelector;
+
     constexpr bool inSelectionPass = false;
     constexpr bool inPointSnapping = false;
 #endif
 
-    // HdC_TODO: we need to figure out how to use Hydra repr more effectively
-    // when more reprs are coming.
     if (inSelectionPass) {
-        if (inPointSnapping) {
-            // Update display reprs at the first frame where point snapping is activated.
-            if (!_defaultCollection->GetReprSelector().Contains(HdReprTokens->points)) {
-                const HdReprSelector under(TfToken(), TfToken(), HdReprTokens->points);
-                const HdReprSelector reprSelector =
-                    _defaultCollection->GetReprSelector().CompositeOver(under);
-                _defaultCollection->SetReprSelector(reprSelector);
-                _taskController->SetCollection(*_defaultCollection);
-            }
+        if (inPointSnapping && !reprSelector.Contains(HdReprTokens->points)) {
+            reprSelector = reprSelector.CompositeOver(kPointsReprSelector);
         }
     }
-    else if (_selectionChanged) {
-        _selectionChanged = false;
+    else {
+        if (_selectionChanged) {
+            _UpdateSelectionStates();
+            _selectionChanged = false;
+        }
 
-        if (_UpdateSelectionHighlight()) {
-            // Update display reprs at the first frame where selection highlight is activated.
-            if (!_defaultCollection->GetReprSelector().Contains(HdReprTokens->wire)) {
-                const HdReprSelector under(TfToken(), HdReprTokens->wire, TfToken());
-                const HdReprSelector reprSelector =
-                    _defaultCollection->GetReprSelector().CompositeOver(under);
-                _defaultCollection->SetReprSelector(reprSelector);
-                _taskController->SetCollection(*_defaultCollection);
+        const unsigned int displayStyle = frameContext.getDisplayStyle();
+
+        if (displayStyle & MHWRender::MFrameContext::kGouraudShaded) {
+            if (!reprSelector.Contains(HdReprTokens->smoothHull)) {
+                reprSelector = reprSelector.CompositeOver(kSmoothHullReprSelector);
             }
         }
+
+        if (displayStyle & MHWRender::MFrameContext::kWireFrame) {
+            if (!reprSelector.Contains(HdReprTokens->wire)) {
+                reprSelector = reprSelector.CompositeOver(kWireReprSelector);
+            }
+
+            MDagPath proxyDagPath;
+            MDagPath::getAPathTo(_mObject, proxyDagPath);
+            _wireframeColor = MHWRender::MGeometryUtilities::wireframeColor(proxyDagPath);
+        }
+    }
+
+    if (_defaultCollection->GetReprSelector() != reprSelector) {
+        _defaultCollection->SetReprSelector(reprSelector);
+        _taskController->SetCollection(*_defaultCollection);
     }
 
     _engine.Execute(_renderIndex, &_dummyTasks);
@@ -490,35 +541,29 @@ void ProxyRenderDelegate::_FilterSelection()
 #endif
 }
 
-/*! \brief  Update for selection highlight
-
-    \return True if selection highlight needs to be shown.
+/*! \brief  Notify selection change to rprims.
 */
-bool ProxyRenderDelegate::_UpdateSelectionHighlight()
+void ProxyRenderDelegate::_UpdateSelectionStates()
 {
-    bool retVal = false;
-
-    const bool wasProxySelected = _isProxySelected;
-
     MDagPath proxyDagPath;
     MDagPath::getAPathTo(_mObject, proxyDagPath);
     auto status = MHWRender::MGeometryUtilities::displayStatus(proxyDagPath);
-    _isProxySelected = ((status == MHWRender::kHilite) || (status == MHWRender::kLead));
 
-    constexpr HdSelection::HighlightMode mode = HdSelection::HighlightModeSelect;
+    const bool wasProxySelected = _isProxySelected;
+    _isProxySelected = ((status == MHWRender::kHilite) || (status == MHWRender::kLead));
 
     SdfPathVector rootPaths;
 
     if (_isProxySelected) {
         rootPaths.push_back(SdfPath::AbsoluteRootPath());
-        retVal = true;
     }
     else if (wasProxySelected) {
         rootPaths.push_back(SdfPath::AbsoluteRootPath());
         _FilterSelection();
-        retVal = !_selection->GetSelectedPrimPaths(mode).empty();
     }
     else {
+        constexpr HdSelection::HighlightMode mode = HdSelection::HighlightModeSelect;
+
         SdfPathVector oldPaths = _selection->GetSelectedPrimPaths(mode);
         _FilterSelection();
         SdfPathVector newPaths = _selection->GetSelectedPrimPaths(mode);
@@ -528,28 +573,16 @@ bool ProxyRenderDelegate::_UpdateSelectionHighlight()
             rootPaths.reserve(rootPaths.size() + newPaths.size());
             rootPaths.insert(rootPaths.end(), newPaths.begin(), newPaths.end());
         }
-
-        retVal = !newPaths.empty();
     }
 
     if (!rootPaths.empty()) {
-        _inSelectionHighlightUpdate = true;
-
-        _selectionHighlightCollection->SetRootPaths(rootPaths);
-        _taskController->SetCollection(*_selectionHighlightCollection);
+        HdRprimCollection collection(HdTokens->geometry,
+            HdReprSelector(HdxTokens->selection));
+        collection.SetRootPaths(rootPaths);
+        _taskController->SetCollection(collection);
         _engine.Execute(_renderIndex, &_dummyTasks);
         _taskController->SetCollection(*_defaultCollection);
-        
-        _inSelectionHighlightUpdate = false;
     }
-
-    return retVal;
-}
-
-//! \brief  Query whether the proxy is selected.
-bool ProxyRenderDelegate::IsProxySelected() const
-{
-    return _isProxySelected;
 }
 
 //! \brief  Query the selection state of a given prim.
@@ -558,6 +591,28 @@ ProxyRenderDelegate::GetPrimSelectionState(const SdfPath& path) const
 {
     return (_selection == nullptr) ? nullptr :
         _selection->GetPrimSelectionState(HdSelection::HighlightModeSelect, path);
+}
+
+//! \brief  Query the selection status of a given prim.
+HdVP2SelectionStatus
+ProxyRenderDelegate::GetPrimSelectionStatus(const SdfPath& path) const
+{
+    if (_isProxySelected) {
+        return kFullySelected;
+    }
+
+    const HdSelection::PrimSelectionState* state = GetPrimSelectionState(path);
+    if (state && state->fullySelected) {
+        return kFullySelected;
+    }
+
+    return state ? kPartiallySelected : kUnselected;
+}
+
+//! \brief  Query the wireframe color assigned to the proxy shape.
+const MColor& ProxyRenderDelegate::GetWireframeColor() const
+{
+    return _wireframeColor;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

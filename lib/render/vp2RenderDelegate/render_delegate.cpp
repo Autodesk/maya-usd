@@ -86,11 +86,14 @@ namespace
 
     /*! \brief  Color-indexed shader map.
     */
-    using MShaderMap = std::unordered_map<
-        MColor,
-        MHWRender::MShaderInstance*,
-        MColorHash
-    >;
+    struct MShaderMap
+    {
+        //! Shader registry
+        std::unordered_map<MColor, MHWRender::MShaderInstance*, MColorHash> _map;
+
+        //! Synchronization used to protect concurrent read from serial writes
+        tbb::spin_rw_mutex _mutex;
+    };
 
     /*! \brief  Shader cache.
     */
@@ -115,14 +118,6 @@ namespace
 
             TF_VERIFY(_fallbackCPVShader);
 
-            _3dSolidShader = shaderMgr->getStockShader(
-                MHWRender::MShaderManager::k3dSolidShader);
-
-            if (TF_VERIFY(_3dSolidShader)) {
-                constexpr float color[] = { 0.056f, 1.0f, 0.366f, 1.0f };
-                _3dSolidShader->setParameter(_solidColorParameterName, color);
-            }
-
             _3dFatPointShader = shaderMgr->getStockShader(
                 MHWRender::MShaderManager::k3dFatPointShader);
 
@@ -143,16 +138,51 @@ namespace
             return _fallbackCPVShader;
         }
 
-        /*! \brief  Returns a 3d green shader that can be used for selection highlight.
-        */
-        MHWRender::MShaderInstance* Get3dSolidShader() const {
-            return _3dSolidShader;
-        }
-
         /*! \brief  Returns a white 3d fat point shader.
         */
         MHWRender::MShaderInstance* Get3dFatPointShader() const {
             return _3dFatPointShader;
+        }
+
+        /*! \brief  Returns a 3d green shader that can be used for selection highlight.
+        */
+        MHWRender::MShaderInstance* Get3dSolidShader(const MColor& color)
+        {
+            // Look for it first with reader lock
+            tbb::spin_rw_mutex::scoped_lock lock(_3dSolidShaders._mutex, false/*write*/);
+            auto it = _3dSolidShaders._map.find(color);
+            if (it != _3dSolidShaders._map.end()) {
+                return it->second;
+            }
+
+            // Upgrade to writer lock.
+            lock.upgrade_to_writer();
+
+            // Double check that it wasn't inserted by another thread
+            it = _3dSolidShaders._map.find(color);
+            if (it != _3dSolidShaders._map.end()) {
+                return it->second;
+            }
+
+            MHWRender::MShaderInstance* shader = nullptr;
+
+            MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
+            const MHWRender::MShaderManager* shaderMgr =
+                renderer ? renderer->getShaderManager() : nullptr;
+            if (TF_VERIFY(shaderMgr)) {
+                shader = shaderMgr->getStockShader(
+                    MHWRender::MShaderManager::k3dSolidShader);
+
+                if (TF_VERIFY(shader)) {
+                    const float solidColor[] = { color.r, color.g, color.b, color.a };
+                    shader->setParameter(_solidColorParameterName, solidColor);
+
+                    // Insert instance we just created
+                    _3dSolidShaders._map[color] = shader;
+                }
+            }
+
+            return shader;
         }
 
         /*! \brief  Returns a fallback shader instance when no material is bound.
@@ -168,38 +198,37 @@ namespace
         MHWRender::MShaderInstance* GetFallbackShader(const MColor& color)
         {
             // Look for it first with reader lock
-            {
-                tbb::reader_writer_lock::scoped_lock_read lockToRead(_fallbackShaderMutex);
-
-                auto it = _fallbackShaders.find(color);
-                if (it != _fallbackShaders.end()) {
-                    return it->second;
-                }
+            tbb::spin_rw_mutex::scoped_lock lock(_fallbackShaders._mutex, false/*write*/);
+            auto it = _fallbackShaders._map.find(color);
+            if (it != _fallbackShaders._map.end()) {
+                return it->second;
             }
+
+            // Upgrade to writer lock.
+            lock.upgrade_to_writer();
+
+            // Double check that it wasn't inserted by another thread
+            it = _fallbackShaders._map.find(color);
+            if (it != _fallbackShaders._map.end()) {
+                return it->second;
+            }
+
+            MHWRender::MShaderInstance* shader = nullptr;
 
             MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
             const MHWRender::MShaderManager* shaderMgr =
                 renderer ? renderer->getShaderManager() : nullptr;
-            if (!TF_VERIFY(shaderMgr))
-                return nullptr;
+            if (TF_VERIFY(shaderMgr)) {
+                shader = shaderMgr->getFragmentShader(_fallbackShaderName,
+                    _structOutputName, true);
 
-            MHWRender::MShaderInstance* shader = shaderMgr->getFragmentShader(
-                _fallbackShaderName, _structOutputName, true);
+                if (TF_VERIFY(shader)) {
+                    float diffuseColor[] = { color.r, color.g, color.b, color.a };
+                    shader->setParameter(_diffuseColorParameterName, diffuseColor);
 
-            if (TF_VERIFY(shader)) {
-                float diffuseColor[] = { color.r, color.g, color.b, color.a };
-                shader->setParameter(_diffuseColorParameterName, diffuseColor);
-
-                tbb::reader_writer_lock::scoped_lock lockToWrite(_fallbackShaderMutex);
-
-                // Double check that it wasn't inserted by another thread
-                auto it = _fallbackShaders.find(color);
-                if (it != _fallbackShaders.end()) {
-                    return it->second;
+                    // Insert instance we just created
+                    _fallbackShaders._map[color] = shader;
                 }
-
-                // Insert instance we just created
-                _fallbackShaders[color] = shader;
             }
 
             return shader;
@@ -208,11 +237,10 @@ namespace
     private:
         bool                    _isInitialized { false };  //!< Whether the shader cache is initialized
 
-        tbb::reader_writer_lock _fallbackShaderMutex;      //!< Synchronization used to protect concurrent read from serial writes
         MShaderMap              _fallbackShaders;          //!< Shader registry used by fallback shaders
+        MShaderMap              _3dSolidShaders;           //!< Shader registry used by fallback shaders
 
         MHWRender::MShaderInstance*  _fallbackCPVShader { nullptr }; //!< Fallback shader with CPV support
-        MHWRender::MShaderInstance*  _3dSolidShader { nullptr };     //!< 3d shader for solid color
         MHWRender::MShaderInstance*  _3dFatPointShader { nullptr };  //!< 3d shader for points
     };
 
@@ -603,7 +631,8 @@ MString HdVP2RenderDelegate::GetLocalNodeName(const MString& name) const {
 
     \return A new or existing copy of shader instance with given color parameter set
 */
-MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackShader(MColor color) const
+MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackShader(
+    const MColor& color) const
 {
     return sShaderCache.GetFallbackShader(color);
 }
@@ -617,9 +646,10 @@ MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackCPVShader() const
 
 /*! \brief  Returns a 3d green shader that can be used for selection highlight.
 */
-MHWRender::MShaderInstance* HdVP2RenderDelegate::Get3dSolidShader() const
+MHWRender::MShaderInstance* HdVP2RenderDelegate::Get3dSolidShader(
+    const MColor& color) const
 {
-    return sShaderCache.Get3dSolidShader();
+    return sShaderCache.Get3dSolidShader(color);
 }
 
 /*! \brief  Returns a white 3d fat point shader.

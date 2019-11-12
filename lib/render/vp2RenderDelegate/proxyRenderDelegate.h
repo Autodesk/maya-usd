@@ -31,6 +31,7 @@
 #include <maya/MDrawContext.h>
 #include <maya/MFrameContext.h>
 #include <maya/MGlobal.h>
+#include <maya/MMessage.h>
 #include <maya/MObject.h>
 #include <maya/MPxSubSceneOverride.h>
 
@@ -53,6 +54,14 @@ class HdRprimCollection;
 class UsdImagingDelegate;
 class MayaUsdProxyShapeBase;
 class HdxTaskController;
+
+/*! \brief  Enumerations for selection status
+*/
+enum HdVP2SelectionStatus {
+    kUnselected        = 0, //!< The Rprim is not selected
+    kPartiallySelected = 1, //!< The Rprim is partially selected (only applicable for instanced Rprims)
+    kFullySelected     = 2  //!< The Rprim is selected (meaning fully selected for instanced Rprims)
+};
 
 /*! \brief  USD Proxy rendering routine via VP2 MPxSubSceneOverride
 
@@ -110,13 +119,13 @@ public:
     void SelectionChanged();
 
     MAYAUSD_CORE_PUBLIC
-    bool IsProxySelected() const;
-
-    MAYAUSD_CORE_PUBLIC
-    bool InSelectionHighlightUpdate() const { return _inSelectionHighlightUpdate; }
+    const MColor& GetWireframeColor() const;
 
     MAYAUSD_CORE_PUBLIC
     const HdSelection::PrimSelectionState* GetPrimSelectionState(const SdfPath& path) const;
+
+    MAYAUSD_CORE_PUBLIC
+    HdVP2SelectionStatus GetPrimSelectionStatus(const SdfPath& path) const;
 
 private:
     ProxyRenderDelegate(const ProxyRenderDelegate&) = delete;
@@ -130,7 +139,7 @@ private:
     bool _isInitialized();
 
     void _FilterSelection();
-    bool _UpdateSelectionHighlight();
+    void _UpdateSelectionStates();
 
     MObject             _mObject;                   //!< Proxy shape MObject
 
@@ -148,13 +157,10 @@ private:
     bool                _isPopulated{ false };      //!< If false, scene delegate wasn't populated yet within render index
     bool                _selectionChanged{ false }; //!< Whether there is any selection change or not
     bool                _isProxySelected{ false };  //!< Whether the proxy shape is selected
-    bool                _inSelectionHighlightUpdate{ false };//!< Set to true when selection highlight update is executing
+    MColor              _wireframeColor;            //!< Wireframe color assigned to the proxy shape
 
     //! A collection of Rprims to prepare render data for specified reprs
     std::unique_ptr<HdRprimCollection> _defaultCollection;
-
-    //! A collection of Rprims to update selection highlight
-    std::unique_ptr<HdRprimCollection> _selectionHighlightCollection;
 
     //! A collection of Rprims being selected
     HdSelectionSharedPtr               _selection;
@@ -162,6 +168,9 @@ private:
 #if defined(WANT_UFE_BUILD)
     //! Observer for UFE global selection change
     Ufe::Observer::Ptr  _ufeSelectionObserver;
+#else
+    //! Support proxy selection highlight when UFE is not available.
+    MCallbackId         _mayaSelectionCallbackId{ 0 };
 #endif
 
 #if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
