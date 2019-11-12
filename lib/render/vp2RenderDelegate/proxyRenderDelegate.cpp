@@ -18,6 +18,7 @@
 #include "render_delegate.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
@@ -190,8 +191,16 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorD_L1, "Allocate SceneDelegate");
 
-        SdfPath delegateID = SdfPath::AbsoluteRootPath().AppendChild(TfToken(TfStringPrintf(
-            "Proxy_%s_%p", usdSubSceneShape->name().asChar(), usdSubSceneShape)));
+        // Make sure the delegate name is a valid identifier, since it may
+        // include colons if the proxy node is in a Maya namespace.
+        const std::string delegateName =
+            TfMakeValidIdentifier(
+                TfStringPrintf(
+                    "Proxy_%s_%p",
+                    usdSubSceneShape->name().asChar(),
+                    usdSubSceneShape));
+        const SdfPath delegateID =
+            SdfPath::AbsoluteRootPath().AppendChild(TfToken(delegateName));
 
         _sceneDelegate = new UsdImagingDelegate(_renderIndex, delegateID);
 
