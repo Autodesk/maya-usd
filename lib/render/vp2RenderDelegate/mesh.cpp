@@ -264,7 +264,7 @@ namespace {
             break;
         default:
             TF_CODING_ERROR("Invalid Hydra prim '%s': "
-                "unimplemented interpolation %zu for primvar %s",
+                "unimplemented interpolation %d for primvar %s",
                 meshId.GetText(), (int)primvarInterp, primvarName.GetText());
             break;
         }
@@ -726,7 +726,7 @@ void HdVP2Mesh::_UpdateDrawItem(
     // Prepare normal buffer.
     if (drawItemData._normalsBuffer) {
         VtVec3fArray normals;
-        HdInterpolation interp;
+        HdInterpolation interp = HdInterpolationConstant;
 
         const auto it = _primvarSourceMap.find(HdTokens->normals);
         if (it != _primvarSourceMap.end()) {

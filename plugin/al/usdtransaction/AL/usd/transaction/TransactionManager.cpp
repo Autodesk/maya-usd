@@ -15,7 +15,7 @@
 //
 #include "AL/usd/transaction/TransactionManager.h"
 
-using namespace pxr;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
 namespace usd {
