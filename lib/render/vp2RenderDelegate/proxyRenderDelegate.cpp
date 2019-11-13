@@ -256,8 +256,8 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
             TfMakeValidIdentifier(
                 TfStringPrintf(
                     "Proxy_%s_%p",
-                    usdSubSceneShape->name().asChar(),
-                    usdSubSceneShape));
+                    _proxyShape->name().asChar(),
+                    _proxyShape));
         const SdfPath delegateID =
             SdfPath::AbsoluteRootPath().AppendChild(TfToken(delegateName));
 
@@ -337,7 +337,7 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
         MProfiler::kColorC_L1, "UpdateSceneDelegate");
 
     {
-        MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
+        MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L1, "SetTime");
 
         const UsdTimeCode timeCode = _proxyShape->getTime();
@@ -348,14 +348,14 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
     const GfMatrix4d transform(inclusiveMatrix.matrix);
     constexpr double tolerance = 1e-9;
     if (!GfIsClose(transform, _sceneDelegate->GetRootTransform(), tolerance)) {
-        MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
+        MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L1, "SetRootTransform");
         _sceneDelegate->SetRootTransform(transform);
     }
 
     const bool isVisible = _proxyDagPath.isVisible();
     if (isVisible != _sceneDelegate->GetRootVisibility()) {
-        MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
+        MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L1, "SetRootVisibility");
         _sceneDelegate->SetRootVisibility(isVisible);
 
