@@ -112,14 +112,14 @@ void TransformationMatrix::setPrim(const UsdPrim& prim, Transform* transformNode
   {
     TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::setPrim %s\n", prim.GetName().GetText());
     m_prim = prim;
-    UsdGeomXform xform(prim);
+    UsdGeomXformable xform(prim);
     m_xform = xform;
   }
   else
   {
     TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::setPrim null\n");
     m_prim = UsdPrim();
-    m_xform = UsdGeomXform();
+    m_xform = UsdGeomXformable();
   }
   // Most of these flags are calculated based on reading the usd prim; however, a few are driven
   // "externally" (ie, from attributes on the controlling transform node), and should NOT be reset
