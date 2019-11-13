@@ -1262,7 +1262,11 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
     return;
   }
 
+#if USD_VERSION_NUM > 1911
   TF_FOR_ALL(itr, notice.GetChangeListVec())
+#else
+  TF_FOR_ALL(itr, notice.GetChangeListMap())
+#endif
   {
     TF_FOR_ALL(entryIter, itr->second.GetEntryList())
     {
