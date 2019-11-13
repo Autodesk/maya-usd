@@ -21,7 +21,7 @@
 #include "maya/MPxTransformationMatrix.h"
 #include "maya/MPxTransform.h"
 
-#include "pxr/usd/usdGeom/xform.h"
+#include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -40,7 +40,7 @@ class TransformationMatrix
   : public MPxTransformationMatrix
 {
   UsdPrim m_prim;
-  UsdGeomXform m_xform;
+  UsdGeomXformable m_xform;
   UsdTimeCode m_time;
   std::vector<UsdGeomXformOp> m_xformops;
   std::vector<TransformOperation> m_orderedOps;

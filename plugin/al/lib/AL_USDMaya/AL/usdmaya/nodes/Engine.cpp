@@ -31,7 +31,7 @@
 #include <vector>
 #include "AL/usdmaya/nodes/Engine.h"
 
-#if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION >= 7) 
+#if USD_VERSION_NUM >= 1907
 #include "pxr/imaging/hdx/pickTask.h"
 #endif
 #include "pxr/imaging/hdx/taskController.h"
@@ -56,7 +56,7 @@ bool Engine::TestIntersectionBatch(
     return false;
   }
 
-#if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION >= 7) 
+#if USD_VERSION_NUM >= 1907
   _UpdateHydraCollection(&_intersectCollection, paths, params);
 
   TfTokenVector renderTags;
@@ -87,7 +87,7 @@ bool Engine::TestIntersectionBatch(
   if (allHits.size() == 0) {
     return false;
   }
-  #else 
+  #else
 
   _UpdateHydraCollection(&_intersectCollection, paths, params, &_renderTags);
   
