@@ -32,6 +32,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdVP2BBoxGeom;
 class ProxyRenderDelegate;
 
 /*! \brief    VP2 render delegate
@@ -105,13 +106,15 @@ public:
 
     MString GetLocalNodeName(const MString& name) const;
 
-    MHWRender::MShaderInstance* GetFallbackShader(MColor color=MColor(0.18f,0.18f,0.18f,1.0f)) const;
+    MHWRender::MShaderInstance* GetFallbackShader(const MColor& color) const;
     MHWRender::MShaderInstance* GetFallbackCPVShader() const;
-    MHWRender::MShaderInstance* Get3dSolidShader() const;
+    MHWRender::MShaderInstance* Get3dSolidShader(const MColor& color) const;
     MHWRender::MShaderInstance* Get3dFatPointShader() const;
 
     const MHWRender::MSamplerState* GetSamplerState(
         const MHWRender::MSamplerStateDesc& desc) const;
+
+    const HdVP2BBoxGeom& GetSharedBBoxGeom() const;
 
     static const int sProfilerCategory;                             //!< Profiler category
 
@@ -119,13 +122,13 @@ private:
     HdVP2RenderDelegate(const HdVP2RenderDelegate&) = delete;
     HdVP2RenderDelegate& operator=(const HdVP2RenderDelegate&) = delete;
 
-    static std::mutex                   _mutexResourceRegistry;     //!< Mutex protecting construction/destruction of resource registry
-    static std::atomic_int              _counterResourceRegistry;   //!< Number of render delegates sharing this resource registry. Last one deletes the instance.
-    static HdResourceRegistrySharedPtr  _resourceRegistry;          //!< Shared and unused by VP2 resource registry
+    static std::atomic_int                _renderDelegateCounter;   //!< Number of render delegates. First one creates shared resources and last one deletes them.
+    static std::mutex                     _renderDelegateMutex;     //!< Mutex protecting construction/destruction of render delegate
+    static HdResourceRegistrySharedPtr    _resourceRegistry;        //!< Shared and unused by VP2 resource registry
 
-    std::unique_ptr<HdVP2RenderParam>   _renderParam;               //!< Render param used to provided access to VP2 during prim synchronization
-    SdfPath                             _id;                        //!< Render delegate IDs
-    HdVP2ResourceRegistry               _resourceRegistryVP2;       //!< VP2 resource registry used for enqueue and execution of commits
+    std::unique_ptr<HdVP2RenderParam>     _renderParam;             //!< Render param used to provided access to VP2 during prim synchronization
+    SdfPath                               _id;                      //!< Render delegate IDs
+    HdVP2ResourceRegistry                 _resourceRegistryVP2;     //!< VP2 resource registry used for enqueue and execution of commits
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
