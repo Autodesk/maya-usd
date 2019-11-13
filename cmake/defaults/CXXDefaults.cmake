@@ -19,7 +19,7 @@ include(Options)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
     include(gccdefaults)
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
     include(clangdefaults)
 elseif(MSVC)
     include(msvcdefaults)
@@ -32,7 +32,7 @@ _add_define(GLX_GLXEXT_PROTOTYPES)
 _add_define(BOOST_PYTHON_NO_PY_SIGNATURES)
 
 # Maya seems to require this
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if (IS_LINUX)
     _add_define(LINUX)
 endif()
 

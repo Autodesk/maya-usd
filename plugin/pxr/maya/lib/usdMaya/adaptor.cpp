@@ -18,7 +18,7 @@
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/readUtil.h"
 #include "usdMaya/registryHelper.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 #include "usdMaya/writeUtil.h"
 
 #include "pxr/usd/sdf/schema.h"

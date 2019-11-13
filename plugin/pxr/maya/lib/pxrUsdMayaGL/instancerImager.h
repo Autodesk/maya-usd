@@ -24,8 +24,8 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/weakBase.h"
 
-#include "usdMaya/notice.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/listeners/notice.h>
+#include <mayaUsd/utils/util.h>
 
 #include <maya/MCallbackIdArray.h>
 #include <maya/MDagMessage.h>

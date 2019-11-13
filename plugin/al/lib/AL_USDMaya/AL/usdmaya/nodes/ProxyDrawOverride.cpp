@@ -385,7 +385,7 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
     int originX, originY, width, height;
     context.getViewportDimensions(originX, originY, width, height);
 
-    #if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION >= 7) 
+    #if USD_VERSION_NUM > 1907
     engine->SetCameraState(
         GfMatrix4d(context.getMatrix(MHWRender::MFrameContext::kViewMtx).matrix),
         GfMatrix4d(context.getMatrix(MHWRender::MFrameContext::kProjectionMtx).matrix));

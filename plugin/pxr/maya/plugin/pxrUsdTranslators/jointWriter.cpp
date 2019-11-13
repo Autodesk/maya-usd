@@ -21,7 +21,7 @@
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/translatorSkel.h"
 #include "usdMaya/translatorUtil.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 #include "usdMaya/writeJobContext.h"
 
 #include "pxr/base/tf/staticTokens.h"

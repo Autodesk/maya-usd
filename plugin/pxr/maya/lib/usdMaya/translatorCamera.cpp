@@ -19,7 +19,7 @@
 #include "usdMaya/primReaderArgs.h"
 #include "usdMaya/primReaderContext.h"
 #include "usdMaya/translatorUtil.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/tf/token.h"

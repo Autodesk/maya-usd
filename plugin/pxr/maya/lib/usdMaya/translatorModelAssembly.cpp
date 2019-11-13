@@ -22,10 +22,10 @@
 #include "usdMaya/primWriterArgs.h"
 #include "usdMaya/primWriterContext.h"
 #include "usdMaya/referenceAssembly.h"
-#include "usdMaya/stageCache.h"
+#include <mayaUsd/utils/stageCache.h>
 #include "usdMaya/translatorUtil.h"
 #include "usdMaya/translatorXformable.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/stringUtils.h"

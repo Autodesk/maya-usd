@@ -18,7 +18,7 @@
 
 #include "usdMaya/adaptor.h"
 #include "usdMaya/primWriterRegistry.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 #include "usdMaya/writeJobContext.h"
 #include "usdMaya/xformStack.h"
 

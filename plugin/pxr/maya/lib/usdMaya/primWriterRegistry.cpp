@@ -16,7 +16,7 @@
 #include "pxr/pxr.h"
 #include "usdMaya/primWriterRegistry.h"
 
-#include "usdMaya/debugCodes.h"
+#include <mayaUsd/base/debugCodes.h>
 #include "usdMaya/functorPrimWriter.h"
 #include "usdMaya/registryHelper.h"
 

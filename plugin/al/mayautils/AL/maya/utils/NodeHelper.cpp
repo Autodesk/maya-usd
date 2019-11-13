@@ -194,7 +194,7 @@ MObject NodeHelper::addStringAttr(const char* longName, const char* shortName, u
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MObject NodeHelper::addStringAttr(const char* longName, const char* shortName, const char* defaultValue, uint32_t flags, bool forceShow)
+void NodeHelper::inheritStringAttr(const char* longName, uint32_t flags, bool forceShow)
 {
   if(m_internal)
   {
@@ -205,6 +205,11 @@ MObject NodeHelper::addStringAttr(const char* longName, const char* shortName, c
       frame.m_attributeTypes.push_back(Frame::kNormal);
     }
   }
+}
+//----------------------------------------------------------------------------------------------------------------------
+MObject NodeHelper::addStringAttr(const char* longName, const char* shortName, const char* defaultValue, uint32_t flags, bool forceShow)
+{
+  inheritStringAttr(longName, flags, forceShow);
 
   MFnTypedAttribute fn;
   MFnStringData stringData;
@@ -217,7 +222,7 @@ MObject NodeHelper::addStringAttr(const char* longName, const char* shortName, c
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MObject NodeHelper::addFilePathAttr(const char* longName, const char* shortName, uint32_t flags, FileMode fileMode, const char* fileFilter)
+void NodeHelper::inheritFilePathAttr(const char* longName, uint32_t flags, FileMode fileMode, const char* fileFilter)
 {
   if(m_internal)
   {
@@ -229,6 +234,12 @@ MObject NodeHelper::addFilePathAttr(const char* longName, const char* shortName,
       frame.m_attributeTypes.push_back((Frame::AttributeUiType)fileMode);
     }
   }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MObject NodeHelper::addFilePathAttr(const char* longName, const char* shortName, uint32_t flags, FileMode fileMode, const char* fileFilter)
+{
+  inheritFilePathAttr(longName, flags, fileMode, fileFilter);
   MFnTypedAttribute fn;
   MObject attribute = fn.create(longName, shortName, MFnData::kString);
   MStatus status = applyAttributeFlags(fn, flags);
@@ -278,7 +289,7 @@ MObject NodeHelper::addInt16Attr(const char* longName, const char* shortName, in
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MObject NodeHelper::addInt32Attr(const char* longName, const char* shortName, int32_t defaultValue, uint32_t flags)
+void NodeHelper::inheritInt32Attr(const char* longName, uint32_t flags)
 {
   if(m_internal)
   {
@@ -289,6 +300,13 @@ MObject NodeHelper::addInt32Attr(const char* longName, const char* shortName, in
       frame.m_attributeTypes.push_back(Frame::kNormal);
     }
   }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MObject NodeHelper::addInt32Attr(const char* longName, const char* shortName, int32_t defaultValue, uint32_t flags)
+{
+  inheritInt32Attr(longName, flags);
+
   MFnNumericAttribute fn;
   MObject attribute = fn.create(longName, shortName, MFnNumericData::kInt, defaultValue);
   MStatus status = applyAttributeFlags(fn, flags);
@@ -338,7 +356,7 @@ MObject NodeHelper::addFloatAttr(const char* longName, const char* shortName, fl
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MObject NodeHelper::addTimeAttr(const char* longName, const char* shortName, const MTime& defaultValue, uint32_t flags)
+void NodeHelper::inheritTimeAttr(const char* longName, uint32_t flags)
 {
   if(m_internal)
   {
@@ -349,6 +367,13 @@ MObject NodeHelper::addTimeAttr(const char* longName, const char* shortName, con
       frame.m_attributeTypes.push_back(Frame::kNormal);
     }
   }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MObject NodeHelper::addTimeAttr(const char* longName, const char* shortName, const MTime& defaultValue, uint32_t flags)
+{
+  inheritTimeAttr(longName, flags);
+
   MFnUnitAttribute fn;
   MObject attribute = fn.create(longName, shortName, defaultValue);
   MStatus status = applyAttributeFlags(fn, flags);
@@ -457,7 +482,7 @@ MObject NodeHelper::addDoubleAttr(const char* longName, const char* shortName, d
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MObject NodeHelper::addBoolAttr(const char* longName, const char* shortName, bool defaultValue, uint32_t flags)
+void NodeHelper::inheritBoolAttr(const char* longName, uint32_t flags)
 {
   if(m_internal)
   {
@@ -468,6 +493,13 @@ MObject NodeHelper::addBoolAttr(const char* longName, const char* shortName, boo
       frame.m_attributeTypes.push_back(Frame::kNormal);
     }
   }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MObject NodeHelper::addBoolAttr(const char* longName, const char* shortName, bool defaultValue, uint32_t flags)
+{
+  inheritBoolAttr(longName, flags);
+
   MFnNumericAttribute fn;
   MObject attribute = fn.create(longName, shortName, MFnNumericData::kBoolean, defaultValue);
   MStatus status = applyAttributeFlags(fn, flags);

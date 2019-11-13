@@ -18,7 +18,7 @@
 
 #include "usdMaya/blockSceneModificationContext.h"
 #include "usdMaya/translatorUtil.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"

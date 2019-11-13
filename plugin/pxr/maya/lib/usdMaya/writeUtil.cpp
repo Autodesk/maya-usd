@@ -17,7 +17,7 @@
 #include "usdMaya/writeUtil.h"
 
 #include "usdMaya/adaptor.h"
-#include "usdMaya/colorSpace.h"
+#include <mayaUsd/utils/colorSpace.h>
 #include "usdMaya/translatorUtil.h"
 #include "usdMaya/userTaggedAttribute.h"
 

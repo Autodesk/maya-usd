@@ -1,0 +1,47 @@
+<fragment uiName="Float4ToFloat3" name="Float4ToFloat3" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
+    <description>
+        Extracts the XYZ component of a 4D float vector.
+    </description>
+    <properties>
+        <float4 name="input"/>
+    </properties>
+    <values/>
+    <outputs>
+        <float3 name="output"/>
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
+            <function_name val="Float4ToFloat3"/>
+            <source>
+                <![CDATA[
+float3 Float4ToFloat3(float4 input)
+{
+    return input.xyz;
+}
+]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
+            <function_name val="Float4ToFloat3"/>
+            <source>
+                <![CDATA[
+vec3 Float4ToFloat3(vec4 input_is_glsl_kw)
+{
+    return input_is_glsl_kw.xyz;
+}
+]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
+            <function_name val="Float4ToFloat3"/>
+            <source>
+                <![CDATA[
+float3 Float4ToFloat3(float4 input)
+{
+    return input.xyz;
+}
+]]>
+            </source>
+        </implementation>
+    </implementation>
+</fragment>

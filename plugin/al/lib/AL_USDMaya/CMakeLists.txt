@@ -1,7 +1,5 @@
 set(arDirPath AL/usdmaya)
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
-
 set(LIBRARY_NAME AL_USDMaya)
 
 list(APPEND AL_usdmaya_headers
@@ -11,7 +9,6 @@ list(APPEND AL_usdmaya_headers
         AL/usdmaya/PluginRegister.h
         AL/usdmaya/SelectabilityDB.h
         AL/usdmaya/StageCache.h
-        AL/usdmaya/StageData.h
         AL/usdmaya/TransformOperation.h
         AL/usdmaya/TypeIDs.h
         AL/usdmaya/ForwardDeclares.h
@@ -25,7 +22,6 @@ list(APPEND AL_usdmaya_source
         AL/usdmaya/Metadata.cpp
         AL/usdmaya/SelectabilityDB.cpp
         AL/usdmaya/StageCache.cpp
-        AL/usdmaya/StageData.cpp
         AL/usdmaya/TransformOperation.cpp
         AL/usdmaya/CodeTimings.cpp
         AL/usdmaya/moduleDeps.cpp
@@ -157,14 +153,17 @@ add_library(${LIBRARY_NAME}
         ${AL_usdmaya_nodes_source}
 )
 
+if(IS_MACOSX)
+    set(_macDef OSMac_)
+endif()
+
 target_compile_definitions(${LIBRARY_NAME}
     PRIVATE
+        ${_macDef}
         AL_MAYA_MACROS_EXPORT
         AL_USDMAYA_EXPORT
-        MFB_PACKAGE_NAME="${LIBRARY_NAME}"
-        MFB_ALT_PACKAGE_NAME="${LIBRARY_NAME}"
-        MFB_PACKAGE_MODULE=usdmaya
         AL_USDMAYA_LOCATION_NAME="${AL_USDMAYA_LOCATION_NAME}"
+        USD_VERSION_NUM=${USD_VERSION_NUM}
 )
 
 # AL_USDMayaGL
@@ -212,8 +211,12 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMayaUI_LIBRARY}
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_OpenMayaRender_LIBRARY}
-    ${UFE_LIBRARY}
+    mayaUsd
 )
+
+if(UFE_FOUND)
+    target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
+endif()
 
 if(NEED_BOOST_FILESYSTEM)
     target_link_libraries(${LIBRARY_NAME}
@@ -227,7 +230,7 @@ install(TARGETS ${LIBRARY_NAME}
     RUNTIME
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
-if(MSVC)
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${LIBRARY_NAME}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL)
 endif()
 
@@ -246,8 +249,13 @@ add_library(${PYTHON_LIBRARY_NAME}
     AL/usdmaya/fileio/translators/wrapTranslatorContext.cpp
 )
 
+if(IS_MACOSX)
+    set(_macDef OSMac_)
+endif()
+
 target_compile_definitions(${PYTHON_LIBRARY_NAME}
     PRIVATE
+        ${_macDef}
         MFB_PACKAGE_NAME=${LIBRARY_NAME}
         MFB_ALT_PACKAGE_NAME=${LIBRARY_NAME}
         MFB_PACKAGE_MODULE=usdmaya
@@ -256,7 +264,7 @@ set_target_properties(${PYTHON_LIBRARY_NAME}
     PROPERTIES 
         PREFIX ""
 )
-if(MSVC)
+if(IS_WINDOWS)
 set_target_properties(${PYTHON_LIBRARY_NAME}
     PROPERTIES
         SUFFIX ".pyd"

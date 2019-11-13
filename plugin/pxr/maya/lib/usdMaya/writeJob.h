@@ -19,7 +19,7 @@
 /// \file usdMaya/writeJob.h
 
 #include "usdMaya/chaser.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 #include "usdMaya/writeJobContext.h"
 
 #include "pxr/pxr.h"

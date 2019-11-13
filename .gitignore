@@ -3,6 +3,8 @@
 *.cproject
 *.pydevproject
 *.settings/
+*.vs
+CMakeSettings.json
 CMakeCache.txt
 CMakeLists.txt.user
 CMakeFiles/cmake.check_cache
@@ -14,3 +16,4 @@ CMakeFiles/cmake.check_cache
 *.xcuserstate
 *.pbxuser
 *.swp
+*.pyc

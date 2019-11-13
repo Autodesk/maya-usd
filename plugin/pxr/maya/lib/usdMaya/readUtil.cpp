@@ -16,8 +16,8 @@
 #include "usdMaya/readUtil.h"
 
 #include "usdMaya/adaptor.h"
-#include "usdMaya/colorSpace.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/colorSpace.h>
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/matrix4d.h"

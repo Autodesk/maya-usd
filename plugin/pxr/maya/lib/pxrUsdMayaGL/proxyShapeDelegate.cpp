@@ -48,7 +48,7 @@ static PxrMayaHdPrimFilter _sharedPrimFilter = {
 /// rendering using Hydra via the UsdMayaGLBatchRenderer.
 bool
 UsdMayaGL_ClosestPointOnProxyShape(
-    const UsdMayaProxyShape& shape,
+    const MayaUsdProxyShapeBase& shape,
     const GfRay& ray,
     GfVec3d* outClosestPoint,
     GfVec3d* outClosestNormal)
@@ -137,7 +137,7 @@ UsdMayaGL_ObjectSoftSelectEnabled()
 
 TF_REGISTRY_FUNCTION(UsdMayaProxyShape)
 {
-    UsdMayaProxyShape::SetClosestPointDelegate(
+    MayaUsdProxyShapeBase::SetClosestPointDelegate(
             UsdMayaGL_ClosestPointOnProxyShape);
     UsdMayaProxyShape::SetObjectSoftSelectEnabledDelegate(
             UsdMayaGL_ObjectSoftSelectEnabled);

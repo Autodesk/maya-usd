@@ -16,7 +16,7 @@
 #include "usdMaya/shadingModeExporterContext.h"
 
 #include "usdMaya/jobArgs.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 #include "usdMaya/writeJobContext.h"
 
 #include "pxr/base/tf/diagnostic.h"
