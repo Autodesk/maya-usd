@@ -335,23 +335,25 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
         _sceneDelegate->SetTime(timeCode);
     }
 
-    {
+    const MMatrix inclusiveMatrix = _proxyDagPath.inclusiveMatrix();
+    const GfMatrix4d transform(inclusiveMatrix.matrix);
+    constexpr double tolerance = 1e-9;
+    if (!GfIsClose(transform, _sceneDelegate->GetRootTransform(), tolerance)) {
         MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L1, "SetRootTransform");
-
-        // Rprim sync will be triggered only if root transform is changed.
-        const MMatrix inclusiveMatrix = _proxyDagPath.inclusiveMatrix();
-        const GfMatrix4d rootTransform(inclusiveMatrix.matrix);
-        _sceneDelegate->SetRootTransform(rootTransform);
+        _sceneDelegate->SetRootTransform(transform);
     }
 
-    {
+    const bool isVisible = _proxyDagPath.isVisible();
+    if (isVisible != _sceneDelegate->GetRootVisibility()) {
         MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L1, "SetRootVisibility");
-
-        // Rprim sync will be triggered only if root visibility is changed.
-        const bool isVisible = _proxyDagPath.isVisible();
         _sceneDelegate->SetRootVisibility(isVisible);
+
+        // Trigger selection update when a hidden proxy shape gets shown.
+        if (isVisible) {
+            SelectionChanged();
+        }
     }
 }
 

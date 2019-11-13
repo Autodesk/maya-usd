@@ -364,6 +364,13 @@ void HdVP2Mesh::Sync(
     HdDirtyBits* dirtyBits,
     const TfToken& reprToken)
 {
+    // We don't create a repr for the selection token because this token serves
+    // for selection state update only. Return early to reserve dirty bits so
+    // they can be used to sync regular reprs later.
+    if (reprToken == HdVP2ReprTokens->selection) {
+        return;
+    }
+
     MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
         MProfiler::kColorC_L2, _rprimId.asChar(), "HdVP2Mesh::Sync");
 
@@ -729,12 +736,6 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
 */
 void HdVP2Mesh::_UpdateRepr(HdSceneDelegate *sceneDelegate, const TfToken& reprToken)
 {
-    // We don't have a repr for the selection token because it serves as a tag
-    // for selection update only.
-    if (reprToken == HdVP2ReprTokens->selection) {
-        return;
-    }
-
     HdReprSharedPtr const &curRepr = _GetRepr(reprToken);
     if (!curRepr) {
         return;

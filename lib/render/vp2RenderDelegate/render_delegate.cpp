@@ -311,16 +311,7 @@ namespace
     MSamplerStateCache sSamplerStates;  //!< Sampler state cache
     tbb::spin_rw_mutex sSamplerRWMutex; //!< Synchronization used to protect concurrent read from serial writes
 
-    /*! \brief  Shared bounding box geometry
-
-        The shared bounding box geometry will be cached until the end of a Maya
-        session and used by all Rprims to display bounding boxes in VP2.
-
-        We use heap allocation without smart pointer to avoid the destructor to
-        be called after VP2 has destructed graphics device context when quiting
-        maya, otherwise it would crash.
-    */
-    const HdVP2BBoxGeom* const sSharedBBoxGeom = new HdVP2BBoxGeom;
+    const HdVP2BBoxGeom* sSharedBBoxGeom = nullptr; //!< Shared geometry for all Rprims to display bounding box
 
 } // namespace
 
@@ -344,6 +335,14 @@ HdVP2RenderDelegate::HdVP2RenderDelegate(ProxyRenderDelegate& drawScene) {
     std::lock_guard<std::mutex> guard(_renderDelegateMutex);
     if (_renderDelegateCounter.fetch_add(1) == 0) {
         _resourceRegistry.reset(new HdResourceRegistry());
+
+        // HdVP2BBoxGeom can only be instantiated during the lifetime of VP2
+        // renderer from main thread. HdVP2RenderDelegate is created from main
+        // thread currently, if we need to make its creation parallel in the
+        // future we should move this code out.
+        if (TF_VERIFY(sSharedBBoxGeom == nullptr)) {
+            sSharedBBoxGeom = new HdVP2BBoxGeom();
+        }
     }
 
     _renderParam.reset(new HdVP2RenderParam(drawScene));
@@ -358,6 +357,11 @@ HdVP2RenderDelegate::~HdVP2RenderDelegate() {
     std::lock_guard<std::mutex> guard(_renderDelegateMutex);
     if (_renderDelegateCounter.fetch_sub(1) == 1) {
         _resourceRegistry.reset();
+
+        if (TF_VERIFY(sSharedBBoxGeom)) {
+            delete sSharedBBoxGeom;
+            sSharedBBoxGeom = nullptr;
+        }
     }
 }
 
