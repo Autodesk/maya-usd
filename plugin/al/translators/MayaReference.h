@@ -39,15 +39,11 @@ private:
   MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
   MStatus tearDown(const SdfPath& path) override;
   MStatus update(const UsdPrim& path) override;
-  bool supportsUpdate() const override
-  {
-      return true;
-  }
+  bool supportsUpdate() const override 
+    { return true; }
 
   bool canBeOverridden() override
-  {
-      return true;
-  }
+    { return true; }
 };
 
 //----------------------------------------------------------------------------------------------------------------------

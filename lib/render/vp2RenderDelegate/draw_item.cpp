@@ -44,13 +44,13 @@ HdVP2DrawItem::HdVP2DrawItem(
     _renderItemName  = GetRprimID().GetText();
     _renderItemName += TfStringPrintf("/DrawItem_%p", this).c_str();
 
-    _mesh._indexBuffer.reset(
+    _renderItemData._indexBuffer.reset(
         new MHWRender::MIndexBuffer(MHWRender::MGeometry::kUnsignedInt32));
 
     if (desc.geomStyle == HdMeshGeomStyleHull) {
         const MHWRender::MVertexBufferDescriptor desc("",
             MHWRender::MGeometry::kNormal, MHWRender::MGeometry::kFloat, 3);
-        _mesh._normalsBuffer.reset(new MHWRender::MVertexBuffer(desc));
+        _renderItemData._normalsBuffer.reset(new MHWRender::MVertexBuffer(desc));
     }
 }
 
@@ -67,7 +67,7 @@ HdVP2DrawItem::~HdVP2DrawItem() {
 
 //! \brief  Get access to render item data.
 HdVP2DrawItem::RenderItemData& HdVP2DrawItem::GetRenderItemData() {
-    return _mesh;
+    return _renderItemData;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
