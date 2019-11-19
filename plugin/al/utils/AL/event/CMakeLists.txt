@@ -14,4 +14,4 @@ set(utils_source ${utils_source} ${utils_event_source} PARENT_SCOPE)
 
 
 install( FILES ${utils_event_headers}
-          DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/event )
+          DESTINATION ${AL_INSTALL_PREFIX}/include/AL/event )
