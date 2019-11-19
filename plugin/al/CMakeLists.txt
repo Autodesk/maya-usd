@@ -42,6 +42,7 @@ set(Boost_FIND_COMPONENTS
 if(WIN32)
     list(APPEND Boost_FIND_COMPONENTS
         chrono
+        date_time
     )
 endif()
 

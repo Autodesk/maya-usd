@@ -20,15 +20,49 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/mesh.h"
 
-#include "render_delegate.h"
-
 #include <maya/MHWGeometry.h>
+
+#include "proxyRenderDelegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
 class HdVP2DrawItem;
-struct HdMeshReprDesc;
+class HdVP2RenderDelegate;
+
+/*! \brief  HdVP2Mesh-specific data shared among all its draw items.
+    \class  HdVP2MeshSharedData
+
+    A Rprim can have multiple draw items. The shared data are extracted from
+    USD scene delegate during synchronization. Then each draw item can prepare
+    draw data from these shared data as needed.
+*/
+struct HdVP2MeshSharedData {
+    //! Cached scene data. VtArrays are reference counted, so as long as we
+    //! only call const accessors keeping them around doesn't incur a buffer
+    //! copy.
+    HdMeshTopology _topology;
+
+    //! Optional topology which is computed for conversion from shared vertices
+    //! to unshared when needed.
+    std::unique_ptr<HdMeshTopology> _unsharedTopology;
+
+    //! A local cache of primvar scene data. "data" is a copy-on-write handle to
+    //! the actual primvar buffer, and "interpolation" is the interpolation mode
+    //! to be used.
+    struct PrimvarSource {
+        VtValue data;
+        HdInterpolation interpolation;
+    };
+    TfHashMap<TfToken, PrimvarSource, TfToken::HashFunctor> _primvarSourceMap;
+
+    //! A local cache of points. It is not cached in the above primvar map
+    //! but a separate VtArray for easier access.
+    VtVec3fArray _points;
+
+    //!< Position buffer of the Rprim to be shared among all its draw items.
+    std::unique_ptr<MHWRender::MVertexBuffer> _positionsBuffer;
+};
 
 /*! \brief  VP2 representation of poly-mesh object.
     \class  HdVP2Mesh
@@ -61,20 +95,22 @@ private:
 
     void _InitRepr(const TfToken&, HdDirtyBits*) override;
 
-    void _UpdateRepr(HdSceneDelegate*, const TfToken&, HdDirtyBits*);
+    void _UpdateRepr(HdSceneDelegate*, const TfToken&);
 
     void _UpdateDrawItem(
-        HdSceneDelegate*, HdVP2DrawItem*, HdDirtyBits*,
-        const HdMeshReprDesc&, bool requireSmoothNormals, bool requireFlatNormals);
+        HdSceneDelegate*, HdVP2DrawItem*,
+        bool requireSmoothNormals, bool requireFlatNormals);
 
-    bool _EnableWireDrawItems(const HdReprSharedPtr& repr, HdDirtyBits* dirtyBits, bool enable);
+    void _UpdatePrimvarSources(
+        HdSceneDelegate* sceneDelegate,
+        HdDirtyBits dirtyBits,
+        const TfTokenVector& requiredPrimvars);
 
-    void _UpdatePrimvarSources(HdSceneDelegate* sceneDelegate, HdDirtyBits dirtyBits);
-
-    MHWRender::MRenderItem* _CreateRenderItem(const MString& name, const HdMeshReprDesc& desc) const;
+    MHWRender::MRenderItem* _CreateSelectionHighlightRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateSmoothHullRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateWireframeRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name) const;
+    MHWRender::MRenderItem* _CreateBoundingBoxRenderItem(const MString& name) const;
 
     //! Custom dirty bits used by this mesh
     enum DirtyBits : HdDirtyBits {
@@ -83,30 +119,15 @@ private:
         DirtyIndices = (DirtyFlatNormals << 1),
         DirtyHullIndices = (DirtyIndices << 1),
         DirtyPointsIndices = (DirtyHullIndices << 1),
-        DirtyBoundingBox = (DirtyPointsIndices << 1)
+        DirtySelection = (DirtyPointsIndices << 1),
+        DirtySelectionHighlight = (DirtySelection << 1)
     };
     
     HdVP2RenderDelegate* _delegate{ nullptr };          //!< VP2 render delegate for which this mesh was created
     HdDirtyBits          _customDirtyBitsInUse{ 0 };    //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
-
-    // TODO: Define HdVP2MeshSharedData to hold extra shared data specific to VP2?
-    std::unique_ptr<MHWRender::MVertexBuffer> _positionsBuffer; //!< Per-Rprim position buffer to be shared among render items
-    bool _wireItemsEnabled{ false };                    //!< Whether draw items for the wire repr are enabled
-
-    //! Cached scene data. VtArrays are reference counted, so as long as we
-    //! only call const accessors keeping them around doesn't incur a buffer
-    //! copy.
-    HdMeshTopology _topology;
-    VtVec3fArray _points;
-
-    //! A local cache of primvar scene data. "data" is a copy-on-write handle to
-    //! the actual primvar buffer, and "interpolation" is the interpolation mode
-    //! to be used.
-    struct PrimvarSource {
-        VtValue data;
-        HdInterpolation interpolation;
-    };
-    TfHashMap<TfToken, PrimvarSource, TfToken::HashFunctor> _primvarSourceMap;
+    const MString        _rprimId;                      //!< Rprim id cached as a maya string for easier debugging and profiling
+    HdVP2MeshSharedData  _meshSharedData;               //!< Shared data for all draw items of the Rprim
+    HdVP2SelectionStatus _selectionState{ kUnselected };//!< Selection status of the Rprim
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
