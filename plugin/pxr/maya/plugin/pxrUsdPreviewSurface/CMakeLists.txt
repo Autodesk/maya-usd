@@ -54,6 +54,11 @@ pxr_plugin(${PXR_PACKAGE}
 if (NOT ${PXR_VALIDATE_GENERATED_CODE})
     message(STATUS "Skipping validation of Maya fragment XML files because PXR_VALIDATE_GENERATED_CODE=OFF")
 else()
+    if(USD_VERSION VERSION_LESS 0.19.11)
+        set(SHADERS_LOCATION ${PXR_USD_LOCATION}/lib/usd/usdShaders/resources/shaders)
+    else()
+        set(SHADERS_LOCATION ${PXR_USD_LOCATION}/plugin/usd/usdShaders/resources/shaders)
+    endif()
     add_custom_command(
         TARGET pxrUsdPreviewSurface
         POST_BUILD
@@ -61,7 +66,7 @@ else()
         COMMAND
             ${PYTHON_EXECUTABLE}
                 ${CMAKE_CURRENT_SOURCE_DIR}/pxrUsdPreviewSurfaceGenFragments.py
-                ${CMAKE_SOURCE_DIR}/pxr/usdImaging/plugin/usdShaders/shaders/previewSurface.glslfx
+                ${SHADERS_LOCATION}/previewSurface.glslfx
                 --srcDir ${CMAKE_CURRENT_SOURCE_DIR}
                 --schema ${MAYA_BASE_DIR}/bin/ShadeFragment/v2pFragment.xsd
                 --validate

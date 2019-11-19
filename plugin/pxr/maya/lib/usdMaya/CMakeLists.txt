@@ -34,7 +34,6 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PUBLIC_CLASSES
         editUtil
-        stageNoticeListener
 		translatorModelAssembly
 
         exportCommand

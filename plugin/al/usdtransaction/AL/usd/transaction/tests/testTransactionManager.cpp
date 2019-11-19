@@ -2,12 +2,13 @@
 #include "AL/usd/transaction/Transaction.h"
 #include "AL/usd/transaction/TransactionManager.h"
 
+#include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <gtest/gtest.h>
 
 using namespace AL::usd::transaction;
-using namespace pxr;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Test some of the functionality of the AL_USDTransaction

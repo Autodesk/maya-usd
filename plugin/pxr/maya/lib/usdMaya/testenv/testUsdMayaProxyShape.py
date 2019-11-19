@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-from pxr import Usd
+from pxr import Usd, Tf
 
 from maya import cmds
 from maya import standalone
@@ -42,21 +42,23 @@ class testUsdMayaProxyShape(unittest.TestCase):
         bboxSize = cmds.getAttr('Cube_usd.boundingBoxSize')[0]
         self.assertEqual(bboxSize, (1.0, 1.0, 1.0))
 
-        # The proxy shape is imaged by the pxrHdImagingShape, which should be
-        # created by the proxy shape's postConstructor() method. Make sure the
-        # pxrHdImagingShape (and its parent transform) exist.
-        hdImagingTransformPath = '|HdImaging'
-        hdImagingShapePath = '%s|HdImagingShape' % hdImagingTransformPath
+        # The VP2 render delegate doesn't use additional proxy shape
+        if not Tf.GetEnvSetting('VP2_RENDER_DELEGATE_PROXY'):
+            # The proxy shape is imaged by the pxrHdImagingShape, which should be
+            # created by the proxy shape's postConstructor() method. Make sure the
+            # pxrHdImagingShape (and its parent transform) exist.
+            hdImagingTransformPath = '|HdImaging'
+            hdImagingShapePath = '%s|HdImagingShape' % hdImagingTransformPath
 
-        self.assertTrue(cmds.objExists(hdImagingTransformPath))
-        self.assertEqual(cmds.nodeType(hdImagingTransformPath), 'transform')
+            self.assertTrue(cmds.objExists(hdImagingTransformPath))
+            self.assertEqual(cmds.nodeType(hdImagingTransformPath), 'transform')
 
-        self.assertTrue(cmds.objExists(hdImagingShapePath))
-        self.assertEqual(cmds.nodeType(hdImagingShapePath), 'pxrHdImagingShape')
+            self.assertTrue(cmds.objExists(hdImagingShapePath))
+            self.assertEqual(cmds.nodeType(hdImagingShapePath), 'pxrHdImagingShape')
 
-        self.assertNotEqual(
-                cmds.ls(hdImagingTransformPath, uuid=True),
-                cmds.ls(hdImagingShapePath, uuid=True))
+            self.assertNotEqual(
+                    cmds.ls(hdImagingTransformPath, uuid=True),
+                    cmds.ls(hdImagingShapePath, uuid=True))
 
         # The pxrHdImagingShape and its parent transform are set so that they
         # do not write to the Maya scene file and are not exported by

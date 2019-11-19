@@ -180,16 +180,26 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 		// These are considered as invalid null prims
 		if (prim.IsValid() && !InPathChange::inPathChange())
 		{
-			if (prim.IsActive())
-			{
-				auto notification = Ufe::ObjectAdd(Ufe::Hierarchy::createItem(ufePath));
-				Ufe::Scene::notifyObjectAdd(notification);
-			}
-			else
-			{
-				auto notification = Ufe::ObjectPostDelete(Ufe::Hierarchy::createItem(ufePath));
-				Ufe::Scene::notifyObjectDelete(notification);
-			}
+            auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
+
+            // AL LayerCommands.addSubLayer test will cause Maya to crash
+            // if we don't filter invalid sceneItems. This patch is provided
+            // to prevent crashes, but more investigation will have to be
+            // done to understand why ufePath in case of sub layer
+            // creation causes Ufe::Hierarchy::createItem to fail.
+            if (!sceneItem)
+                continue;
+
+            if (prim.IsActive())
+            {
+                auto notification = Ufe::ObjectAdd(sceneItem);
+                Ufe::Scene::notifyObjectAdd(notification);
+            }
+            else
+            {
+                auto notification = Ufe::ObjectPostDelete(sceneItem);
+                Ufe::Scene::notifyObjectDelete(notification);
+            }
 		}
 	}
 
