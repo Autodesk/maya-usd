@@ -17,13 +17,13 @@
 #include "AL/usd/transaction/TransactionManager.h"
 
 #include <iostream>
-using namespace pxr;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
 namespace usd {
 namespace transaction {
 
-Transaction::Transaction(const pxr::UsdStageWeakPtr& stage, const pxr::SdfLayerHandle& layer)
+Transaction::Transaction(const UsdStageWeakPtr& stage, const SdfLayerHandle& layer)
   :m_manager(TransactionManager::Get(stage)), m_layer(layer) {}
 
 //----------------------------------------------------------------------------------------------------------------------

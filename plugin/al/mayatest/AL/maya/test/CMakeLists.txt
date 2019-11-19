@@ -27,8 +27,13 @@ add_library(${MAYA_TEST_LIBRARY_NAME}
         ${maya_test_source}
 )
 
+if(IS_MACOSX)
+    set(_macDef OSMac_)
+endif()
+
 target_compile_definitions(${MAYA_TEST_LIBRARY_NAME}
     PRIVATE
+        ${_macDef}
         AL_MAYA_TEST_EXPORT
 )
 

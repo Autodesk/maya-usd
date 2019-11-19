@@ -526,17 +526,21 @@ function(pxr_register_test TEST_NAME)
             set(_plugSearchPathEnvName ${PXR_OVERRIDE_PLUGINPATH_NAME})
         endif()
 
-        set(testWrapperCmd ${testWrapperCmd} --env-var=${_plugSearchPathEnvName}=${CMAKE_INSTALL_PREFIX}/lib/usd)
-        set(testWrapperCmd ${testWrapperCmd} --env-var=PATH=${PXR_USD_LOCATION}/lib)
- 
+        set(_testPluginPath "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin;${CMAKE_INSTALL_PREFIX}/lib/usd")
+        set(_testPrePath "$ENV{PATH};${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib;${CMAKE_INSTALL_PREFIX}/lib")
+
         # Ensure that Python imports the Python files built by this build.
         # On Windows convert backslash to slash and don't change semicolons
         # to colons.
         set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib/python;$ENV{PYTHONPATH}")
         if(WIN32)
             string(REGEX REPLACE "\\\\" "/" _testPythonPath "${_testPythonPath}")
+            string(REGEX REPLACE "\\\\" "/" _testPluginPath "${_testPluginPath}")
+            string(REGEX REPLACE "\\\\" "/" _testPrePath "${_testPrePath}")
         else()
             string(REPLACE ";" ":" _testPythonPath "${_testPythonPath}")
+            string(REPLACE ";" ":" _testPluginPath "${_testPluginPath}")
+            string(REPLACE ";" ":" _testPrePath "${_testPrePath}")
         endif()
 
         # Ensure we run with the appropriate python executable.
@@ -551,7 +555,9 @@ function(pxr_register_test TEST_NAME)
         add_test(
             NAME ${TEST_NAME}
             COMMAND ${PYTHON_EXECUTABLE} ${testWrapperCmd}
-                    "--env-var=PYTHONPATH=${_testPythonPath}" ${testCmd}
+                    "--env-var=PYTHONPATH=${_testPythonPath}" 
+                    "--env-var=${_plugSearchPathEnvName}=${_testPluginPath}" 
+                    "--pre-path=${_testPrePath}" ${testCmd}
         )
 
         # But in some cases, we need to pass cmake properties directly to cmake
@@ -621,11 +627,6 @@ function(pxr_add_extra_plugins PLUGIN_AREAS)
 endfunction() # pxr_setup_third_plugins
 
 function(pxr_toplevel_prologue)
-    # Generate a namespace declaration header, pxr.h, at the top level of
-    # pxr at configuration time.
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pxr/pxr.h.in
-        ${CMAKE_BINARY_DIR}/include/pxr/pxr.h     
-    )
 
     # Create a monolithic shared library target if we should import one
     # or create one.
