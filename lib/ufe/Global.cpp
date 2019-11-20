@@ -96,7 +96,7 @@ MStatus initialize()
 #ifdef UFE_V2_FEATURES_AVAILABLE
 	auto usdAttributesHandler = UsdAttributesHandler::create();
 	g_USDRtid = Ufe::RunTimeMgr::instance().register_(
-		kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, usdSceneItemOpsHandler, usdAttributesHandler);
+		kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, usdSceneItemOpsHandler, usdAttributesHandler, nullptr);
 #else
 	g_USDRtid = Ufe::RunTimeMgr::instance().register_(
 		kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, usdSceneItemOpsHandler);
