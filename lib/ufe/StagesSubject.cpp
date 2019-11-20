@@ -25,6 +25,7 @@
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 #include <ufe/transform3d.h>
+#include <ufe/attributes.h>
 
 #include <maya/MSceneMessage.h>
 #include <maya/MMessage.h>
@@ -147,12 +148,12 @@ void StagesSubject::afterOpen()
 			me, &StagesSubject::stageChanged, stage);
 	}
 
-	// Set up our stage to AL_usdmaya_ProxyShape UFE path (and reverse)
+	// Set up our stage to proxy shape UFE path (and reverse)
 	// mapping.  We do this with the following steps:
 	// - get all proxyShape nodes in the scene.
-	// - get their AL Python wrapper
-	// - get their Dag paths
+	// - get their Dag paths.
 	// - convert the Dag paths to UFE paths.
+	// - get their stage.
 	g_StageMap.clear();
 	auto proxyShapeNames = ProxyShapeHandler::getAllNames();
 	for (const auto& psn : proxyShapeNames)
@@ -207,6 +208,14 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 	{
 		auto usdPrimPathStr = changedPath.GetPrimPath().GetString();
 		auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
+
+        // isPrimPropertyPath() does not consider relational attributes
+        // isPropertyPath() does consider relational attributes
+        // isRelationalAttributePath() considers only relational attributes
+        if (changedPath.IsPrimPropertyPath()) {
+            Ufe::Attributes::notify(ufePath, changedPath.GetName());
+        }
+
 		// We need to determine if the change is a Transform3d change.
 		// We must at least pick up xformOp:translate, xformOp:rotateXYZ, 
 		// and xformOp:scale.
