@@ -22,7 +22,7 @@
 #include "usdMaya/api.h"
 
 #include "usdMaya/jobArgs.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/vt/value.h"
 #include "pxr/usd/sdf/path.h"

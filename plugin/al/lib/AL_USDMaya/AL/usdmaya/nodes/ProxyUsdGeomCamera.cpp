@@ -31,8 +31,9 @@
 #include <pxr/usd/usd/attribute.h>
 
 #include "AL/usdmaya/TypeIDs.h"
-#include <AL/usdmaya/StageData.h>
 #include <AL/maya/utils/MayaHelperMacros.h>
+
+#include <mayaUsd/nodes/stageData.h>
 
 namespace AL {
 namespace usdmaya {
@@ -81,8 +82,8 @@ UsdGeomCamera ProxyUsdGeomCamera::getCamera() const
   {
     // Pull in stage data
     MFnPluginData fnData(stageObject);
-    AL::usdmaya::StageData* stageData = static_cast<AL::usdmaya::StageData*>(fnData.data());
 
+    auto* stageData = static_cast<MayaUsdStageData*>(fnData.data());
     if (stageData != nullptr)
     {
       // Get prim path
@@ -514,7 +515,7 @@ MStatus ProxyUsdGeomCamera::initialise()
 
   m_path = addStringAttr("path", "p", "", kStorable | kWritable);
   
-  m_stage = addDataAttr("stage", "s", AL::usdmaya::StageData::kTypeId, kWritable | kHidden | kConnectable, MFnNumericAttribute::kReset);
+  m_stage = addDataAttr("stage", "s", MayaUsdStageData::mayaTypeId, kWritable | kHidden | kConnectable, MFnNumericAttribute::kReset);
   
   m_time = addTimeAttr("time", "tm", MTime(0.0), kCached | kConnectable | kReadable | kWritable | kHidden | kStorable | kAffectsAppearance);
 

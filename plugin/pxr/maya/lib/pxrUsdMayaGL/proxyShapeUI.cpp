@@ -64,8 +64,8 @@ UsdMayaProxyShapeUI::getDrawRequests(
         MDrawRequestQueue& requests)
 {
     const MDagPath shapeDagPath = drawInfo.multiPath();
-    UsdMayaProxyShape* shape =
-        UsdMayaProxyShape::GetShapeAtDagPath(shapeDagPath);
+    MayaUsdProxyShapeBase* shape =
+        MayaUsdProxyShapeBase::GetShapeAtDagPath(shapeDagPath);
     if (!shape) {
         return;
     }
@@ -142,7 +142,7 @@ UsdMayaProxyShapeUI::select(
         return false;
     }
 
-    // Note that we cannot use UsdMayaProxyShape::GetShapeAtDagPath() here.
+    // Note that we cannot use MayaUsdProxyShapeBase::GetShapeAtDagPath() here.
     // selectInfo.selectPath() returns the dag path to the assembly node, not
     // the shape node, so we don't have the shape node's path readily available.
     UsdMayaProxyShape* shape = static_cast<UsdMayaProxyShape*>(surfaceShape());

@@ -26,7 +26,49 @@
 # (To distribute this file outside of CMake, substitute the full
 #  License text for the above reference.)
 
-if(APPLE)
+#=============================================================================
+# Macro for setting up typical plugin properties. These include:
+#  - OS-specific plugin suffix (.mll, .so, .bundle)
+#  - Removal of 'lib' prefix on osx/linux
+#  - OS-specific defines
+#  - Post-commnad for correcting Qt library linking on osx
+#  - Windows link flags for exporting initializePlugin/uninitializePlugin
+macro(MAYA_SET_PLUGIN_PROPERTIES target)
+    set_target_properties(${target} PROPERTIES
+                          SUFFIX ${MAYA_PLUGIN_SUFFIX})
+
+    set(_maya_DEFINES REQUIRE_IOSTREAM _BOOL)
+
+    if(IS_MACOSX)
+        set(_maya_DEFINES "${_maya_DEFINES}" MAC_PLUGIN OSMac_ OSMac_MachO)
+        set_target_properties(${target} PROPERTIES
+                              PREFIX "")
+    elseif(WIN32)
+        set(_maya_DEFINES "${_maya_DEFINES}" _AFXDLL _MBCS NT_PLUGIN)
+        set_target_properties( ${target} PROPERTIES
+                               LINK_FLAGS "/export:initializePlugin /export:uninitializePlugin")
+    else()
+        set(_maya_DEFINES "${_maya_DEFINES}" LINUX LINUX_64)
+        set_target_properties( ${target} PROPERTIES
+                               PREFIX "")
+    endif()
+    target_compile_definitions(${target}
+        PRIVATE
+            ${_maya_DEFINES}
+    )
+
+endmacro(MAYA_SET_PLUGIN_PROPERTIES)
+#=============================================================================
+
+if(IS_MACOSX)
+    set(MAYA_PLUGIN_SUFFIX ".bundle")
+elseif(IS_WINDOWS)
+    set(MAYA_PLUGIN_SUFFIX ".mll")
+else(IS_LINUX)
+    set(MAYA_PLUGIN_SUFFIX ".so")
+endif()
+
+if(IS_MACOSX)
     # Note: according to official Autodesk sources (and how it sets up
     # MAYA_LOCATION itself), MAYA_LOCATION should include Maya.app/Contents
     # on MacOS - ie:
@@ -62,7 +104,7 @@ if(APPLE)
         DOC
             "Maya's libraries path"
     )
-elseif(UNIX)
+elseif(IS_LINUX)
     find_path(MAYA_BASE_DIR
             include/maya/MFn.h
         HINTS
@@ -87,7 +129,7 @@ elseif(UNIX)
         DOC
             "Maya's libraries path"
     )
-elseif(WIN32)
+elseif(IS_WINDOWS)
     find_path(MAYA_BASE_DIR
             include/maya/MFn.h
         HINTS

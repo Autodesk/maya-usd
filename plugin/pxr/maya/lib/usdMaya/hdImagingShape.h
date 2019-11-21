@@ -21,7 +21,7 @@
 #include "pxr/pxr.h"
 
 #include "usdMaya/api.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/tf/staticTokens.h"
 

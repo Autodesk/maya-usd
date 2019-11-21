@@ -1,0 +1,46 @@
+<fragment uiName="UsdPrimvarReader_float4" name="UsdPrimvarReader_float4" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
+    <description>
+        <![CDATA[VP2 implementation for primvar reader]]>
+    </description>
+    <properties>
+        <float4 name="primvar" semantic="uvCoord" flags="varyingInputParam" />
+    </properties>
+    <outputs>
+        <float4 name="result" />
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
+            <function_name val="UsdPrimvarReader_float4" />
+            <source>
+                <![CDATA[
+vec4 UsdPrimvarReader_float4(vec4 input_is_glsl_kw)
+{
+    return input_is_glsl_kw;
+}
+                ]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
+            <function_name val="UsdPrimvarReader_float4" />
+            <source>
+                <![CDATA[
+float4 UsdPrimvarReader_float4(float4 input)
+{
+    return input;
+}
+                ]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
+            <function_name val="UsdPrimvarReader_float4" />
+            <source>
+                <![CDATA[
+float4 UsdPrimvarReader_float4(float4 input)
+{
+    return input;
+}
+                ]]>
+            </source>
+        </implementation>
+    </implementation>
+</fragment>

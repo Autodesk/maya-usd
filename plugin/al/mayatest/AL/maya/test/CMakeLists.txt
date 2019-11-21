@@ -4,8 +4,6 @@
 ####################################################################################################
 find_package(GTest REQUIRED)
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
-
 set(MAYA_TEST_LIBRARY_NAME "AL_MayaTest")
 set(MAYA_TEST_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
 
@@ -29,8 +27,13 @@ add_library(${MAYA_TEST_LIBRARY_NAME}
         ${maya_test_source}
 )
 
+if(IS_MACOSX)
+    set(_macDef OSMac_)
+endif()
+
 target_compile_definitions(${MAYA_TEST_LIBRARY_NAME}
     PRIVATE
+        ${_macDef}
         AL_MAYA_TEST_EXPORT
 )
 
@@ -44,8 +47,8 @@ target_link_libraries(${MAYA_TEST_LIBRARY_NAME}
 target_include_directories(${MAYA_TEST_LIBRARY_NAME} 
     PRIVATE
     ${MAYATEST_INCLUDE_LOCATION}
-    ${MAYA_INCLUDE_DIRS}
     ${GTEST_INCLUDE_DIRS}
+    ${MAYA_INCLUDE_DIRS}
     ${USD_INCLUDE_DIR}
 )
 

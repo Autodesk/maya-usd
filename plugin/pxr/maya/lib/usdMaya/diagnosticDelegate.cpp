@@ -15,7 +15,7 @@
 //
 #include "usdMaya/diagnosticDelegate.h"
 
-#include "usdMaya/debugCodes.h"
+#include <mayaUsd/base/debugCodes.h>
 
 #include "pxr/base/arch/threads.h"
 #include "pxr/base/tf/envSetting.h"

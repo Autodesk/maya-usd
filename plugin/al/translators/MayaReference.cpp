@@ -103,6 +103,20 @@ namespace {
     }
     return status;
   }
+
+  // Given a function set attached to a DAG node, create a string from the
+  // node's full path by replacing all the path dividers (|) by underscores
+  // and stripping off the first character so the name doesn't start with an
+  // underscore.  (We use this for creating unique names for Maya reference
+  // nodes created from ALUSD proxy nodes.)
+  //
+  MString refNameFromPath(const MFnDagNode &nodeFn)
+  {
+    MString name = nodeFn.fullPathName();
+    name.substitute("|", "_");
+    name = MString(name.asChar() + 1);
+    return name;
+  }
 }
 
 namespace AL {
@@ -115,7 +129,6 @@ AL_USDMAYA_DEFINE_TRANSLATOR(MayaReference, AL_usd_MayaReference)
 //----------------------------------------------------------------------------------------------------------------------
 const TfToken MayaReferenceLogic::m_namespaceName = TfToken("mayaNamespace");
 const TfToken MayaReferenceLogic::m_referenceName = TfToken("mayaReference");
-const char* const MayaReferenceLogic::m_primNSAttr = "usdPrimNamespace";
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReference::initialize()
@@ -191,10 +204,10 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
     }
   }
 
-  MString rigNamespaceM(rigNamespace.c_str(), rigNamespace.size());
-
   MFnDagNode parentDag(parent, &status);
   AL_MAYA_CHECK_ERROR(status, "failed to attach function set to parent transform for reference.");
+
+  MString rigNamespaceM(rigNamespace.c_str(), rigNamespace.size());
 
   MObject refNode;
 
@@ -213,23 +226,43 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
     }
   }
 
-  // Check to see if we already have a reference matching the prim's namespace.
+  // Check to see whether we have previously created a reference node for this
+  // prim.  If so, we can just reuse it.
+  //
+  // The check is based on comparing the prim's full path and the name of the
+  // reference node, which we had originally created from the prim's full
+  // path.  (Because of this, if the name or parentage of the prim has changed
+  // since we created the reference, we won't find the old reference node.
+  // The old one will be left orphaned, a new one will be created, and we will
+  // lose any reference edits we had made.  Ideally, this won't happen often.
+  // To prevent the problem, we could store the name of the reference node in
+  // an attribute on the prim node.  The reference node would never be renamed
+  // by the user, since it's locked.  If the user were to rename the prim
+  // node, we could update the reference node's name too, for consistency,
+  // when the two nodes got reattached.  Not doing this currently, but can
+  // revisit if renaming/reparenting of prims with reference nodes turns out
+  // to be a common thing in the workflow.)
+  //
   if(refNode.isNull())
   {
     for (MItDependencyNodes refIter(MFn::kReference); !refIter.isDone(); refIter.next()) {
       MObject tempRefNode = refIter.item();
       MFnReference tempRefFn(tempRefNode);
       if (!tempRefFn.isFromReferencedFile()) {
-        MPlug primNSPlug = tempRefFn.findPlug(MString(m_primNSAttr), true, &status);
-        if (status == MS::kInvalidParameter) {
-          // No prim NS attribute. These aren't the droids we're looking for.
-          continue;
-        }
 
-        // Test the namespace
-        if (primNSPlug.asString() == rigNamespaceM) {
-          // We found one with the same namespace - continue running an update
+        // Get the name of the reference node so we can check if this node
+        // matches the prim we are processing.  Strip off the "_RN" suffix.
+        //
+        MString refNodeName = tempRefFn.name();
+        MString refName(refNodeName.asChar(), refNodeName.numChars()-3);
 
+        // What reference node name is the prim expecting?
+        MString expectedRefName = refNameFromPath(parentDag);
+
+        // If found a match, reconnect the reference node's `associatedNode`
+        // attr before loading it, since the previous connection may be gone.
+        //
+        if (refName == expectedRefName) {
           // Reconnect the reference node's `associatedNode` attr before
           // loading it, since the previous connection may be gone.
           connectReferenceAssociatedNode(parentDag, tempRefFn);
@@ -338,6 +371,29 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
   AL_MAYA_CHECK_ERROR(status, "failed to attach function set to parent transform for reference.");
 
   // Need to create new reference (initially unloaded).
+  //
+  // When we create reference nodes, we want a separate reference node to be
+  // created for each proxy, even proxies that are duplicates of each other.
+  // This is to ensure that edits to each copy of an asset are preserved
+  // separately.  To this end, we must create a unique name for each proxy's
+  // reference node.  Simply including namespace information (if any) from the
+  // proxy node is not enough to guarantee uniqueness, since duplicates of a
+  // proxy node will all have the same namespace.  So we also include a string
+  // created from the full path to the proxy in the name of the reference
+  // node.  The resulting name may be long, but it will be unique and the user
+  // shouldn't be interacting directly with these nodes anyway.
+  //
+  // Note that the 'file' command will name the new reference node after the
+  // given namespace.  However, the command doesn't seem to provide a reference
+  // node name override option, so we will rename the node later.
+  //
+  // (Also note that a new namespace is currently created whenever there is
+  // already a reference node that uses the same one.  If, in the future, we
+  // find that reference-related workflows result in an overly large number
+  // of namespaces being created and/or we run into problems where Maya doesn't
+  // handle this number of workspaces efficiently, we might consider setting
+  // -mergeNamespacesOnClash to true.)
+  //
   MStringArray createdNodes;
   MString referenceCommand = MString("file"
                                      " -reference"
@@ -373,6 +429,15 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
   MFnReference refDependNode(referenceObject);
   connectReferenceAssociatedNode(parentDag, refDependNode);
 
+  // Rename the reference node.  We want a unique name so that multiple copies
+  // of a given prim can each have their own reference edits. We make a name
+  // from the full path to the prim for which the reference is being created
+  // (and append "_RN" to the end, to indicate it's a reference node, just
+  // because).
+  //
+  MString uniqueRefNodeName = refNameFromPath(parentDag) + "_RN";
+  refDependNode.setName(uniqueRefNodeName);
+
   // Now load the reference to properly trigger the kAfterReferenceLoad callback
   MFileIO::loadReferenceByNode(referenceObject, &status);
   AL_MAYA_CHECK_ERROR(status, MString("failed to load reference: ") + referenceCommand);
@@ -381,35 +446,6 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
     // we record it as custom data instead of creating an attribute.
     VtValue value(AL::maya::utils::convert(refDependNode.name()));
     prim.SetCustomDataByKey(maya_associatedReferenceNode, value);
-  }
-
-  // Add attribute to the reference node to track the namespace the prim was
-  // trying to use, since the actual namespace might be different.
-  MObject primNSAttr = refDependNode.attribute(MString(m_primNSAttr), &status);
-  if (status == MS::kInvalidParameter)
-  {
-    // Need to create the attribute
-    MFnTypedAttribute fnAttr;
-    primNSAttr = fnAttr.create(m_primNSAttr, "upns", MFnData::kString);
-    // Temporarily unlock reference node (will be locked by default).
-    refDependNode.setLocked(false);
-    status = refDependNode.addAttribute(primNSAttr);
-    refDependNode.setLocked(true);
-    AL_MAYA_CHECK_ERROR(status, "failed to add usdPrimPath attr to reference node");
-  }
-  else if (status == MS::kFailure)
-  {
-    // Something very wrong. Deal with this later
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("failed to query usdPrimNamespace attribute\n");
-  }
-
-  if (status == MS::kSuccess)
-  {
-    MDGModifier attrMod;
-    status = attrMod.newPlugValueString(MPlug(referenceObject, primNSAttr), rigNamespaceM);
-    AL_MAYA_CHECK_ERROR(status, "failed to set usdPrimPath attr on reference node");
-    status = attrMod.doIt();
-    AL_MAYA_CHECK_ERROR(status, "failed to execute reference attr modifier");
   }
 
   return MS::kSuccess;

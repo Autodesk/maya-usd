@@ -16,7 +16,7 @@
 #include "pxr/pxr.h"
 
 #include "usdMaya/meshUtil.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/pyResultConversions.h"

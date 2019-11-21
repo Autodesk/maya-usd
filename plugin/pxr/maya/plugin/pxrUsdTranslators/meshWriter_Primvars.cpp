@@ -15,9 +15,9 @@
 //
 #include "pxrUsdTranslators/meshWriter.h"
 
-#include "usdMaya/colorSpace.h"
+#include <mayaUsd/utils/colorSpace.h>
 #include "usdMaya/roundTripUtil.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 #include "usdMaya/writeUtil.h"
 
 #include "pxr/base/gf/gamma.h"

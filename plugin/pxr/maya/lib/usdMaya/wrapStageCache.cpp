@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/stageCache.h"
+#include <mayaUsd/utils/stageCache.h>
 
 #include <boost/python/args.hpp>
 #include <boost/python/def.hpp>

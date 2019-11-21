@@ -17,7 +17,7 @@
 #include "usdMaya/instancedNodeWriter.h"
 
 #include "usdMaya/primWriter.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 #include "usdMaya/writeJobContext.h"
 
 #include "pxr/usd/sdf/path.h"

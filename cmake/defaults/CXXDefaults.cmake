@@ -19,7 +19,7 @@ include(Options)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
     include(gccdefaults)
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
     include(clangdefaults)
 elseif(MSVC)
     include(msvcdefaults)
@@ -32,7 +32,7 @@ _add_define(GLX_GLXEXT_PROTOTYPES)
 _add_define(BOOST_PYTHON_NO_PY_SIGNATURES)
 
 # Maya seems to require this
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if (IS_LINUX)
     _add_define(LINUX)
 endif()
 
@@ -50,28 +50,6 @@ set(_PXR_CXX_FLAGS ${_PXR_CXX_FLAGS} ${_PXR_CXX_WARNING_FLAGS})
 
 # CMake list to string.
 string(REPLACE ";" " "  _PXR_CXX_FLAGS "${_PXR_CXX_FLAGS}")
-
-# Set namespace configuration.
-if (PXR_ENABLE_NAMESPACES)
-    set(PXR_USE_NAMESPACES "1")
-
-    if (PXR_SET_EXTERNAL_NAMESPACE)
-        set(PXR_EXTERNAL_NAMESPACE ${PXR_SET_EXTERNAL_NAMESPACE})
-    else()
-        set(PXR_EXTERNAL_NAMESPACE "pxr")
-    endif()
-
-    if (PXR_SET_INTERNAL_NAMESPACE)
-        set(PXR_INTERNAL_NAMESPACE ${PXR_SET_INTERNAL_NAMESPACE})
-    else()
-        set(PXR_INTERNAL_NAMESPACE "pxrInternal_v${PXR_MAJOR_VERSION}_${PXR_MINOR_VERSION}")
-    endif()
-
-    message(STATUS "C++ namespace configured to (external) ${PXR_EXTERNAL_NAMESPACE}, (internal) ${PXR_INTERNAL_NAMESPACE}")
-else()
-    set(PXR_USE_NAMESPACES "0")
-    message(STATUS "C++ namespaces disabled.")
-endif()
 
 # Set Python configuration
 if (PXR_ENABLE_PYTHON_SUPPORT)

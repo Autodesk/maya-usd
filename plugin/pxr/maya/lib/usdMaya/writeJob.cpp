@@ -23,7 +23,7 @@
 #include "usdMaya/shadingModeExporterContext.h"
 #include "usdMaya/transformWriter.h"
 #include "usdMaya/translatorMaterial.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "usdMaya/chaser.h"
 #include "usdMaya/chaserRegistry.h"

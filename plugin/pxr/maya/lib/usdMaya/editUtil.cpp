@@ -16,7 +16,7 @@
 #include "usdMaya/editUtil.h"
 
 #include "usdMaya/referenceAssembly.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/tf/stringUtils.h"
 

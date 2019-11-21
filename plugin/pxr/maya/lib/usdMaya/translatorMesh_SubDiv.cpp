@@ -15,7 +15,7 @@
 //
 #include "usdMaya/translatorMesh.h"
 
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/usd/usdGeom/mesh.h"
 

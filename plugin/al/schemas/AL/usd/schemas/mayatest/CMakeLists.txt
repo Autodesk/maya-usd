@@ -1,5 +1,3 @@
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
-
 set(
     resources_install_path
     ${CMAKE_INSTALL_PREFIX}/lib/usd/AL_USDMayaSchemasTest/resources
@@ -64,9 +62,6 @@ add_library(AL_USDMayaSchemasTest
 
 target_compile_definitions(AL_USDMayaSchemasTest
     PRIVATE
-        MFB_PACKAGE_NAME=AL_USDMayaSchemasTest
-        MFB_ALT_PACKAGE_NAME=AL_USDMayaSchemasTest
-        MFB_PACKAGE_MODULE=AL.usd.schemas.mayatest
         AL_USDMAYASCHEMASTEST_EXPORTS
 )
 

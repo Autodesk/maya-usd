@@ -3,8 +3,6 @@
 # Setup 
 ####################################################################################################
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
-
 set(MAYAUTILS_LIBRARY_NAME "AL_MayaUtils")
 set(MAYAUTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
 
@@ -47,8 +45,13 @@ add_library(${MAYAUTILS_LIBRARY_NAME}
         ${maya_source}
 )
 
+if(IS_MACOSX)
+    set(_macDef OSMac_)
+endif()
+
 target_compile_definitions(${MAYAUTILS_LIBRARY_NAME}
     PRIVATE
+        ${_macDef}
         AL_MAYA_EVENTS_EXPORT
         AL_MAYA_UTILS_EXPORT
         AL_MAYA_MACROS_EXPORT
@@ -88,7 +91,7 @@ install(TARGETS ${MAYAUTILS_LIBRARY_NAME}
     RUNTIME
     DESTINATION ${MAYAUTILS_LIBRARY_LOCATION}
 )
-if(MSVC)
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${MAYAUTILS_LIBRARY_NAME}> DESTINATION ${MAYAUTILS_LIBRARY_LOCATION} OPTIONAL)
 endif()
 

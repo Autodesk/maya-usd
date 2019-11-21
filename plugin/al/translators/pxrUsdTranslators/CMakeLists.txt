@@ -30,24 +30,29 @@ add_library(${PXR_TRANSLATORS_PACKAGE}
   plugin.cpp
 )
 
-if(MSVC)
-    set_target_properties(${PXR_TRANSLATORS_PACKAGE} PROPERTIES SUFFIX ".mll")
-elseif(APPLE)
-    set_target_properties(${PXR_TRANSLATORS_PACKAGE}
-        PROPERTIES
-            PREFIX ""
-            SUFFIX ".bundle"
-            MACOSX_RPATH TRUE
-            INSTALL_RPATH_USE_LINK_PATH TRUE
-            INSTALL_RPATH "@loader_path/../lib;@loader_path/../../pxr/lib;@loader_path/../../pxr/maya/lib;${PXR_USD_LOCATION}/lib"
-    )
-else()
-    set_target_properties(${PXR_TRANSLATORS_PACKAGE}
-            PROPERTIES
-            PREFIX ""
-            INSTALL_RPATH_USE_LINK_PATH TRUE
-            INSTALL_RPATH "$ORIGIN/../lib:$ORIGIN/../../pxr/lib:$ORIGIN/../../pxr/maya/lib:${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64"
-    )
+MAYA_SET_PLUGIN_PROPERTIES(${PXR_TRANSLATORS_PACKAGE})
+
+# rpath setup
+if(IS_MACOSX OR IS_LINUX) 
+    mayaUsd_init_rpath(rpath "plugin")
+    mayaUsd_add_rpath(rpath "../lib")
+
+    if(WANT_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../USD/lib")
+    elseif(DEFINED PXR_USD_LOCATION)
+        mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+    endif()
+
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib")
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib")
+    mayaUsd_install_rpath(rpath ${PXR_TRANSLATORS_PACKAGE})
+endif()
+
+if (IS_LINUX)
+  if(WANT_USD_RELATIVE_PATH)
+      mayaUsd_add_rpath(rpath "../../../../USD/lib64")
+  endif()
 endif()
 
 target_include_directories(
@@ -65,7 +70,7 @@ install(TARGETS ${PXR_TRANSLATORS_PACKAGE}
  RUNTIME
  DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
 )
-if(MSVC)
+if(IS_WINDOWS)
  install(FILES $<TARGET_PDB_FILE:${PXR_TRANSLATORS_PACKAGE}> DESTINATION ${INSTALL_DIR_SUFFIX}/plugin OPTIONAL)
 endif()
 

@@ -21,7 +21,7 @@
 #include "pxr/pxr.h"
 #include "usdMaya/api.h"
 #include "usdMaya/shadingModeExporterContext.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 #include "usdMaya/writeJobContext.h"
 
 #include "pxr/usd/sdf/path.h"

@@ -15,7 +15,7 @@
 //
 #include "usdMaya/primReaderRegistry.h"
 
-#include "usdMaya/debugCodes.h"
+#include <mayaUsd/base/debugCodes.h>
 #include "usdMaya/fallbackPrimReader.h"
 #include "usdMaya/functorPrimReader.h"
 #include "usdMaya/registryHelper.h"

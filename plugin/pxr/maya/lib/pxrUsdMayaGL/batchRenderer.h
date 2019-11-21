@@ -25,8 +25,8 @@
 #include "pxrUsdMayaGL/shapeAdapter.h"
 #include "pxrUsdMayaGL/softSelectHelper.h"
 #include "usdMaya/diagnosticDelegate.h"
-#include "usdMaya/notice.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/listeners/notice.h>
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2i.h"

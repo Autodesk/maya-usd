@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "pxr/pxr.h"
-#include "usdMaya/colorSpace.h"
+#include <mayaUsd/utils/colorSpace.h>
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec3d.h"

@@ -82,8 +82,11 @@ C:\> python build.py --maya-location "C:\Program Files\Autodesk\maya2019" --pxru
 
 Name                        | Description                                       | Default
 ---                         | ---                                               | ---
-BUILD_AL_PLUGIN             | Builds the Animal Logic USD plugin and libraries. | ON
+BUILD_MAYAUSD_LIBRARY       | Build Core USD libraries.                         | ON
+BUILD_ADSK_PLUGIN           | Build Autodesk USD plugin.                        | ON
 BUILD_PXR_PLUGIN            | Builds the Pixar USD plugin and libraries.        | ON
+BUILD_AL_PLUGIN             | Builds the Animal Logic USD plugin and libraries. | ON
+BUILD_TESTS                 | Build tests.                                      | ON
 
 # Building USD
 

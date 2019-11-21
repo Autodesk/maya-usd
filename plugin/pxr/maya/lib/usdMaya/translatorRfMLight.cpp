@@ -23,7 +23,7 @@
 #include "usdMaya/primWriterRegistry.h"
 #include "usdMaya/translatorUtil.h"
 #include "usdMaya/translatorXformable.h"
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/staticTokens.h"
