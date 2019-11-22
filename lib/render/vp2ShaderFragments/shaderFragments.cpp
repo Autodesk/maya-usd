@@ -110,6 +110,11 @@ namespace
 // Fragment registration
 MStatus HdVP2ShaderFragments::registerFragments()
 {
+    if (MGlobal::mayaState() != MGlobal::kInteractive) {
+        // Only register fragments in interactive Maya sessions.
+        return MS::kSuccess;
+    }
+
     MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
     if (!theRenderer) {
         return MS::kFailure;
@@ -176,6 +181,11 @@ MStatus HdVP2ShaderFragments::registerFragments()
 // Fragment deregistration
 MStatus HdVP2ShaderFragments::deregisterFragments()
 {
+    if (MGlobal::mayaState() != MGlobal::kInteractive) {
+        // Only deregister fragments in interactive Maya sessions.
+        return MS::kSuccess;
+    }
+
     MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
     if (!theRenderer) {
         return MS::kFailure;
