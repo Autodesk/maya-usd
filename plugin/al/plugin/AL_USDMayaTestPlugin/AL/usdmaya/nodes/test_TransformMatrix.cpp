@@ -1068,7 +1068,7 @@ TEST(Transform, checkXformByAndTo)
 
   MFileIO::newFile(true);
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_transform_checkXformByAndTo.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_transform_checkXformByAndTo.usda");
   std::string sessionLayerContents;
 
   // generate some data for the proxy shape
@@ -1349,7 +1349,7 @@ TEST(Transform, emptyOpsNotMade)
 
   MFileIO::newFile(true);
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_transform_emptyOpsNotMade.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_transform_emptyOpsNotMade.usda");
   std::string sessionLayerContents;
 
   // generate some data for the proxy shape
