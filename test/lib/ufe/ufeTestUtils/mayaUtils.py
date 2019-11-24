@@ -26,7 +26,7 @@ import sys, os
 
 import ufe
 
-ALL_PLUGINS = ["mayaUsdPlugin", "ufeTestCmdsPlugin"]
+ALL_PLUGINS = ["mayaUsdPlugin", "ufeSupport"]
 
 mayaRuntimeID = 1
 mayaSeparator = "|"

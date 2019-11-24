@@ -31,6 +31,14 @@
 #include <maya/MMessage.h>
 
 #include <vector>
+#include <unordered_map>
+
+namespace {
+bool inAttributeChangedNotificationGuard = false;
+
+std::unordered_map<Ufe::Path, std::string> pendingAttributeChangedNotifications;
+
+}
 
 MAYAUSD_NS_DEF {
 namespace ufe {
@@ -213,7 +221,13 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
         // isPropertyPath() does consider relational attributes
         // isRelationalAttributePath() considers only relational attributes
         if (changedPath.IsPrimPropertyPath()) {
-            Ufe::Attributes::notify(ufePath, changedPath.GetName());
+            if (inAttributeChangedNotificationGuard) {
+                pendingAttributeChangedNotifications[ufePath] =
+                    changedPath.GetName();
+            }
+            else {
+                Ufe::Attributes::notify(ufePath, changedPath.GetName());
+            }
         }
 
 		// We need to determine if the change is a Transform3d change.
@@ -230,6 +244,31 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 void StagesSubject::onStageSet(const UsdMayaProxyStageSetNotice& notice)
 {
 	afterOpen();
+}
+
+AttributeChangedNotificationGuard::AttributeChangedNotificationGuard()
+{
+    if (inAttributeChangedNotificationGuard) {
+        TF_CODING_ERROR("Attribute changed notification guard cannot be nested.");
+    }
+
+    if (!pendingAttributeChangedNotifications.empty()) {
+        TF_CODING_ERROR("Stale pending attribute changed notifications.");
+    }
+
+    inAttributeChangedNotificationGuard = true;
+
+}
+
+AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
+{
+    inAttributeChangedNotificationGuard = false;
+
+    for (const auto& notificationInfo : pendingAttributeChangedNotifications) {
+        Ufe::Attributes::notify(notificationInfo.first, notificationInfo.second);
+    }
+
+    pendingAttributeChangedNotifications.clear();
 }
 
 } // namespace ufe

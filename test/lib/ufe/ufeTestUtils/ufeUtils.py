@@ -22,7 +22,7 @@
 
 import ufe
 from maya import cmds
-from ufeScripts import ufeSelectCmd
+from maya.internal.ufeSupport import ufeSelectCmd
 
 def getUfeGlobalSelectionList():
     """ 
