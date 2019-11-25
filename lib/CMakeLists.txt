@@ -641,16 +641,15 @@ if(UFE_FOUND)
     )
 
     if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
-        # Maya Attribute Editor python template files
-        install(FILES ae/mesh/ae_template.py
-             DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes/mesh
-        )
         # We need an empty __init__.py file in each subfolder so it is considered a python module.
-        set(_INIT_PY_DEST ${CMAKE_INSTALL_PREFIX}/lib/python/)
-        foreach(_SUBDIR ufe_ae usd nodes mesh)
-            string(APPEND _INIT_PY_DEST "/${_SUBDIR}")
-            install(FILES ae/__init__.py
-                 DESTINATION ${_INIT_PY_DEST}
+        install(FILES ae/__init__.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae)
+        install(FILES ae/__init__.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd)
+        install(FILES ae/__init__.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes)
+
+        # Maya Attribute Editor python template files
+        foreach(_SUBDIR base camera material mesh scope shader xform)
+            install(FILES ae/__init__.py ae/${_SUBDIR}/ae_template.py
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes/${_SUBDIR}
             )
         endforeach()
     endif()
