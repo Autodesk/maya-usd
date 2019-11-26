@@ -22,6 +22,7 @@
 #include <pxr/imaging/hd/instanceRegistry.h>
 #include <pxr/imaging/hd/material.h>
 #include <pxr/imaging/hd/resourceRegistry.h>
+#include <pxr/imaging/hdSt/resourceRegistry.h>
 
 #include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/glf/textureRegistry.h>
@@ -429,6 +430,24 @@ private:
                     GetDelegate()->GetRenderIndex().GetTextureKey(textureId);
                 const auto& resourceRegistry =
                     GetDelegate()->GetRenderIndex().GetResourceRegistry();
+
+
+#if USD_VERSION_NUM > 1911
+                HdStResourceRegistrySharedPtr const& resourceRegistrySt =
+                    boost::dynamic_pointer_cast<HdStResourceRegistry>(resourceRegistry);
+                if (resourceRegistrySt) {
+                    HdInstance<HdStTextureResourceSharedPtr> textureInstance =
+                        resourceRegistrySt->RegisterTextureResource(textureKey);
+                    if (textureInstance.IsFirstInstance()) {
+                        auto textureResource = _GetTextureResource(connectedFileObj, filePath);
+                        _textureResources[paramName] = boost::static_pointer_cast<HdTextureResource>(textureResource);
+                        textureInstance.SetValue(textureResource);
+                    }
+                    else {
+                        _textureResources[paramName] = textureInstance.GetValue();
+                    }
+                }
+#else
                 HdInstance<
                     HdResourceRegistry::TextureKey, HdTextureResourceSharedPtr>
                     textureInstance;
@@ -437,11 +456,14 @@ private:
                 if (textureInstance.IsFirstInstance()) {
                     auto textureResource =
                         _GetTextureResource(connectedFileObj, filePath);
-                    _textureResources[paramName] = textureResource;
-                    textureInstance.SetValue(textureResource);
-                } else {
+                    _textureResources[paramName] = boost::static_pointer_cast<HdTextureResource>(textureResource);
+                    textureInstance.SetValue(boost::static_pointer_cast<HdTextureResource>(textureResource));
+                }
+                else {
                     _textureResources[paramName] = textureInstance.GetValue();
                 }
+#endif
+
 #ifdef HDMAYA_USD_001901_BUILD
                 if (GlfIsSupportedUdimTexture(filePath)) {
                     if (TfDebug::IsEnabled(HDMAYA_ADAPTER_MATERIALS) &&
@@ -541,11 +563,11 @@ private:
         const TfToken& paramName) override {
         auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
         if (fileObj == MObject::kNullObj) { return {}; }
-        return _GetTextureResource(
-            fileObj, _GetTextureFilePathToken(MFnDependencyNode(fileObj)));
+        return boost::static_pointer_cast<HdTextureResource>(_GetTextureResource(
+            fileObj, _GetTextureFilePathToken(MFnDependencyNode(fileObj))));
     }
 
-    inline HdTextureResourceSharedPtr _GetTextureResource(
+    inline HdStTextureResourceSharedPtr _GetTextureResource(
         const MObject& fileObj, const TfToken& filePath) {
         if (filePath.IsEmpty()) { return {}; }
         auto textureType = HdTextureType::Uv;
@@ -577,7 +599,7 @@ private:
 
         // We can't really mimic texture wrapping and mirroring settings
         // from the uv placement node, so we don't touch those for now.
-        return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
+        return HdStTextureResourceSharedPtr(new HdStSimpleTextureResource(
             texture,
 #ifdef HDMAYA_USD_001901_BUILD
             textureType,

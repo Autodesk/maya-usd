@@ -106,7 +106,11 @@ elseif (MTOH_CXX_STD MATCHES "^14$")
     target_compile_features(${TARGET_NAME} PUBLIC cxx_std_14)
 endif ()
 
-target_compile_definitions(${TARGET_NAME} PRIVATE "HDMAYA_EXPORT=1")
+target_compile_definitions(${TARGET_NAME} 
+    PRIVATE 
+        "HDMAYA_EXPORT=1"
+        USD_VERSION_NUM=${USD_VERSION_NUM}
+)
 
 if (IS_WINDOWS)
     # Prevent windows.h from defining min and max macros.
