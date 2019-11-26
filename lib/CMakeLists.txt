@@ -28,7 +28,9 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #==============================================================================
 # Packages
 #==============================================================================
-set(BOOST_ROOT ${PXR_USD_LOCATION})
+if(NOT DEFINED BOOST_ROOT)
+    set(BOOST_ROOT ${PXR_USD_LOCATION})
+endif()
 find_package(Boost COMPONENTS
                 filesystem
                 REQUIRED
