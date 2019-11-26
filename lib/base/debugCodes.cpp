@@ -26,6 +26,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
             "UsdMaya registration for usd types.");
     TF_DEBUG_ENVIRONMENT_SYMBOL(PXRUSDMAYA_DIAGNOSTICS,
             "Debugging of the the diagnostics batching system in UsdMaya.");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USDMAYA_PROXYSHAPEBASE,
+            "Base proxy shape evaluation");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

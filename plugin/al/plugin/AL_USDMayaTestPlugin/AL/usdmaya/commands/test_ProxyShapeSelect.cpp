@@ -1203,7 +1203,7 @@ TEST(ProxyShapeSelect, deselectNode)
     ASSERT_EQ(0, sl.length());
   };
 
-  const std::string temp_path = "/tmp/AL_USDMayaTests_deselectNode.usda";
+  const std::string temp_path = buildTempPath("AL_USDMayaTests_deselectNode.usda");
   std::string sessionLayerContents;
 
 

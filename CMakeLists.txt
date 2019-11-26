@@ -111,7 +111,9 @@ if (BUILD_TESTS)
     fetch_googletest()
 
     enable_testing()
-    add_subdirectory(test/lib/ufe)
+    if (UFE_FOUND)
+        add_subdirectory(test/lib/ufe)
+    endif()
 endif()
 
 #==============================================================================

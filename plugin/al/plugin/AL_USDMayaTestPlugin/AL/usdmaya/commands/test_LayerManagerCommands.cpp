@@ -48,7 +48,8 @@ void setup(std::string testName, UsdStageRefPtr* outStage = nullptr)
   };
 
   MFileIO::newFile(true);
-  const std::string tempPath = "/tmp/"+ testName + ".usda";
+  std::string testFilename = testName + ".usda";
+  const std::string tempPath = buildTempPath(testFilename.c_str());
   MObject shapeParent;
   AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(constructTransformChain, tempPath, &shapeParent);
 
