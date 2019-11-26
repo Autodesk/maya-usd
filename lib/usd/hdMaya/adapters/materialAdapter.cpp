@@ -431,6 +431,8 @@ private:
                 const auto& resourceRegistry =
                     GetDelegate()->GetRenderIndex().GetResourceRegistry();
 
+
+#if USD_VERSION_NUM > 1911
                 HdStResourceRegistrySharedPtr const& resourceRegistrySt =
                     boost::dynamic_pointer_cast<HdStResourceRegistry>(resourceRegistry);
                 if (resourceRegistrySt) {
@@ -445,6 +447,23 @@ private:
                         _textureResources[paramName] = textureInstance.GetValue();
                     }
                 }
+#else
+                HdInstance<
+                    HdResourceRegistry::TextureKey, HdTextureResourceSharedPtr>
+                    textureInstance;
+                auto regLock = resourceRegistry->RegisterTextureResource(
+                    textureKey, &textureInstance);
+                if (textureInstance.IsFirstInstance()) {
+                    auto textureResource =
+                        _GetTextureResource(connectedFileObj, filePath);
+                    _textureResources[paramName] = boost::static_pointer_cast<HdTextureResource>(textureResource);
+                    textureInstance.SetValue(boost::static_pointer_cast<HdTextureResource>(textureResource));
+                }
+                else {
+                    _textureResources[paramName] = textureInstance.GetValue();
+                }
+#endif
+
 #ifdef HDMAYA_USD_001901_BUILD
                 if (GlfIsSupportedUdimTexture(filePath)) {
                     if (TfDebug::IsEnabled(HDMAYA_ADAPTER_MATERIALS) &&
