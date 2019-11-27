@@ -74,7 +74,7 @@ bool setUsdAttr(const PXR_NS::UsdAttribute& attr, const T& value)
     // Therefore, we have implemented an attribute change block notification of
     // our own in the StagesSubject, which we invoke here, so that only a
     // single UFE attribute changed notification is generated. 
-    MayaUsd::ufe::AttributeChangedNotificationGuard guard; (void) guard;
+    MayaUsd::ufe::AttributeChangedNotificationGuard guard;
 	return attr.Set<T>(value);
 }
 

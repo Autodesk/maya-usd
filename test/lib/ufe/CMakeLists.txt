@@ -57,7 +57,11 @@ add_custom_target(${TARGET_NAME} ALL)
 mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
                              DIRECTORY test-samples)
 mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+                             DIRECTORY ufeScripts)
+mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
                              DIRECTORY ufeTestUtils)
+mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+                             DIRECTORY ufeTestPlugins)
 mayaUsd_copyFiles(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
                          FILES ${test_script_files})
 mayaUsd_copyFiles(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
@@ -71,6 +75,7 @@ set(pythonPath
 
 set(mayaPluginPath
     "${CMAKE_INSTALL_PREFIX}/plugin/adsk/plugin"
+    "${CMAKE_CURRENT_BINARY_DIR}/ufeTestPlugins"
 )
 
 set(path 

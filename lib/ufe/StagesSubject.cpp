@@ -34,7 +34,15 @@
 #include <unordered_map>
 
 namespace {
-bool inAttributeChangedNotificationGuard = false;
+
+// The attribute change notification guard is not meant to be nested, but
+// use a counter nonetheless to provide consistent behavior in such cases.
+int attributeChangedNotificationGuardCount = 0;
+
+bool inAttributeChangedNotificationGuard()
+{
+    return attributeChangedNotificationGuardCount > 0;
+}
 
 std::unordered_map<Ufe::Path, std::string> pendingAttributeChangedNotifications;
 
@@ -221,7 +229,7 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
         // isPropertyPath() does consider relational attributes
         // isRelationalAttributePath() considers only relational attributes
         if (changedPath.IsPrimPropertyPath()) {
-            if (inAttributeChangedNotificationGuard) {
+            if (inAttributeChangedNotificationGuard()) {
                 pendingAttributeChangedNotifications[ufePath] =
                     changedPath.GetName();
             }
@@ -248,21 +256,30 @@ void StagesSubject::onStageSet(const UsdMayaProxyStageSetNotice& notice)
 
 AttributeChangedNotificationGuard::AttributeChangedNotificationGuard()
 {
-    if (inAttributeChangedNotificationGuard) {
+    if (inAttributeChangedNotificationGuard()) {
         TF_CODING_ERROR("Attribute changed notification guard cannot be nested.");
     }
 
-    if (!pendingAttributeChangedNotifications.empty()) {
+    if (attributeChangedNotificationGuardCount == 0 &&
+        !pendingAttributeChangedNotifications.empty()) {
         TF_CODING_ERROR("Stale pending attribute changed notifications.");
     }
 
-    inAttributeChangedNotificationGuard = true;
+    ++attributeChangedNotificationGuardCount;
 
 }
 
 AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
 {
-    inAttributeChangedNotificationGuard = false;
+    --attributeChangedNotificationGuardCount;
+
+    if (attributeChangedNotificationGuardCount < 0) {
+        TF_CODING_ERROR("Corrupt attribute changed notification guard.");
+    }
+
+    if (attributeChangedNotificationGuardCount > 0 ) {
+        return;
+    }
 
     for (const auto& notificationInfo : pendingAttributeChangedNotifications) {
         Ufe::Attributes::notify(notificationInfo.first, notificationInfo.second);
