@@ -22,7 +22,11 @@
 
 import ufe
 from maya import cmds
-from maya.internal.ufeSupport import ufeSelectCmd
+try:
+    from maya.internal.ufeSupport import ufeSelectCmd
+except ImportError:
+    # Maya 2019 and 2020 don't have ufeSupport plugin, so use fallback.
+    from ufeScripts import ufeSelectCmd
 
 def getUfeGlobalSelectionList():
     """ 
