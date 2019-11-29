@@ -421,6 +421,20 @@ if(UFE_FOUND)
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
     )
 
+    if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
+        # We need an empty __init__.py file in each subfolder so it is considered a python module.
+        install(FILES ae/__init__.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae)
+        install(FILES ae/__init__.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd)
+        install(FILES ae/__init__.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes)
+
+        # Maya Attribute Editor python template files
+        foreach(_SUBDIR base camera material mesh scope shader xform)
+            install(FILES ae/__init__.py ae/${_SUBDIR}/ae_template.py
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes/${_SUBDIR}
+            )
+        endforeach()
+    endif()
+
 endif()
 
 if(IS_MACOSX)
