@@ -36,7 +36,7 @@ configure_file (
 
 execute_process(
     COMMAND
-        python
+        ${PYTHON_EXECUTABLE}
         ${USD_GENSCHEMA}
         ${CMAKE_CURRENT_BINARY_DIR}/schema.usda
         .
@@ -128,7 +128,7 @@ install(TARGETS _AL_USDMayaSchemasTest
 
 # configure_file has a nice feature where it will copy the __init__ file over when it gets modified, unlike file(COPY ...)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/__init__.py ${CMAKE_BINARY_DIR}/AL/usd/schemas/mayatest/__init__.py COPYONLY)
-install(CODE "execute_process(COMMAND python -m compileall ${CMAKE_BINARY_DIR}/AL/usd/schemas/mayatest/__init__.py )")
+install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} -m compileall ${CMAKE_BINARY_DIR}/AL/usd/schemas/mayatest/__init__.py )")
 
 string(REPLACE "/" ";" folderHierarchy "AL/usd/schemas/mayatest")
 
@@ -163,7 +163,7 @@ install(
 )
 
 install(CODE "message(STATUS \"POST INSTALL: Compiling python/pyc for ${CMAKE_INSTALL_PREFIX}/lib/python ... \")")
-install(CODE "execute_process(COMMAND python -m compileall ${CMAKE_INSTALL_PREFIX}/lib/python )")
+install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} -m compileall ${CMAKE_INSTALL_PREFIX}/lib/python )")
 
 ####################################################################################################
 # Install usd plugin resources

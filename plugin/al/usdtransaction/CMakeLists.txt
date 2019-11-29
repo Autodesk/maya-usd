@@ -31,7 +31,7 @@ configure_file(
 foreach(INPUT_FILE ${PY_INIT_FILES})
   string(REPLACE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_INSTALL_PREFIX}/lib/python OUTPUT_FILE ${INPUT_FILE})
   install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${INPUT_FILE} ${OUTPUT_FILE})")
-  install(CODE "execute_process(COMMAND python -m compileall ${OUTPUT_FILE} ${CMAKE_INSTALL_PREFIX})")
+  install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} -m compileall ${OUTPUT_FILE} ${CMAKE_INSTALL_PREFIX})")
 endforeach()
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
