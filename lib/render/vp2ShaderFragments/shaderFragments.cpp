@@ -110,15 +110,19 @@ namespace
 // Fragment registration
 MStatus HdVP2ShaderFragments::registerFragments()
 {
-    MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
+    // We do not force the renderer to initialize in case we're running in a
+    // headless context. If we cannot get a handle to the renderer or the
+    // fragment manager, we assume that's the case and simply return success.
+    MHWRender::MRenderer* theRenderer =
+        MHWRender::MRenderer::theRenderer(/* initializeRenderer = */ false);
     if (!theRenderer) {
-        return MS::kFailure;
+        return MS::kSuccess;
     }
 
     MHWRender::MFragmentManager* fragmentManager =
         theRenderer->getFragmentManager();
     if (!fragmentManager) {
-        return MS::kFailure;
+        return MS::kSuccess;
     }
 
     // Register all fragments.
@@ -176,15 +180,20 @@ MStatus HdVP2ShaderFragments::registerFragments()
 // Fragment deregistration
 MStatus HdVP2ShaderFragments::deregisterFragments()
 {
-    MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
+    // Similar to registration, we do not force the renderer to initialize in
+    // case we're running in a headless context. If we cannot get a handle to
+    // the renderer or the fragment manager, we assume that's the case and
+    // simply return success.
+    MHWRender::MRenderer* theRenderer =
+        MHWRender::MRenderer::theRenderer(/* initializeRenderer = */ false);
     if (!theRenderer) {
-        return MS::kFailure;
+        return MS::kSuccess;
     }
 
     MHWRender::MFragmentManager* fragmentManager =
         theRenderer->getFragmentManager();
     if (!fragmentManager) {
-        return MS::kFailure;
+        return MS::kSuccess;
     }
 
     // De-register all fragment graphs.
@@ -214,15 +223,15 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
 #if MAYA_API_VERSION >= 201700
     // Clear the shader manager's effect cache as well so that any changes to
     // the fragments will get picked up if they are re-registered.
-    const MHWRender::MShaderManager* shaderMgr = theRenderer->getShaderManager();
-    if (!shaderMgr) {
-        return MS::kFailure;
-    }
-
-    MStatus status = shaderMgr->clearEffectCache();
-    if (status != MS::kSuccess) {
-        MGlobal::displayWarning("Failed to clear shader manager effect cache");
-        return status;
+    const MHWRender::MShaderManager* shaderMgr =
+        theRenderer->getShaderManager();
+    if (shaderMgr) {
+        MStatus status = shaderMgr->clearEffectCache();
+        if (status != MS::kSuccess) {
+            MGlobal::displayWarning(
+                "Failed to clear shader manager effect cache");
+            return status;
+        }
     }
 #endif
 
