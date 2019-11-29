@@ -17,10 +17,10 @@
 
 #include "../base/api.h"
 
-#include "ufe/path.h"
+#include <ufe/path.h>
 
-#include "pxr/usd/usd/stage.h"
-#include "pxr/base/tf/hash.h"
+#include <pxr/usd/usd/stage.h>
+#include <pxr/base/tf/hash.h>
 
 #include <unordered_map>
 

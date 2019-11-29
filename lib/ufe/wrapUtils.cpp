@@ -19,8 +19,8 @@
 #include "UsdSceneItem.h"
 #include "Utils.h"
 
-#include "ufe/runTimeMgr.h"
-#include "ufe/rtid.h"
+#include <ufe/runTimeMgr.h>
+#include <ufe/rtid.h>
 
 using namespace MayaUsd;
 using namespace boost::python;

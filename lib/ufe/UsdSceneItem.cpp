@@ -25,19 +25,10 @@ UsdSceneItem::UsdSceneItem(const Ufe::Path& path, const UsdPrim& prim)
 {
 }
 
-UsdSceneItem::~UsdSceneItem()
-{
-}
-
 /*static*/
 UsdSceneItem::Ptr UsdSceneItem::create(const Ufe::Path& path, const UsdPrim& prim)
 {
 	return std::make_shared<UsdSceneItem>(path, prim);
-}
-
-const UsdPrim& UsdSceneItem::prim() const
-{
-	return fPrim;
 }
 
 //------------------------------------------------------------------------------

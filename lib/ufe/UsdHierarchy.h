@@ -18,8 +18,8 @@
 #include "../base/api.h"
 #include "UsdSceneItem.h"
 
-#include "ufe/hierarchy.h"
-#include "ufe/path.h"
+#include <ufe/hierarchy.h>
+#include <ufe/path.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

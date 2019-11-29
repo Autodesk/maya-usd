@@ -20,7 +20,7 @@
 #include "UsdHierarchy.h"
 #include "UsdRootChildHierarchy.h"
 
-#include "ufe/hierarchyHandler.h"
+#include <ufe/hierarchyHandler.h>
 
 //PXR_NAMESPACE_USING_DIRECTIVE
 
