@@ -17,10 +17,8 @@
 
 #include "../base/api.h"
 
-#include "ufe/hierarchyHandler.h"
-#include "ufe/ProxyShapeHierarchy.h"
-
-//PXR_NAMESPACE_USING_DIRECTIVE
+#include <ufe/hierarchyHandler.h>
+#include <ufe/ProxyShapeHierarchy.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

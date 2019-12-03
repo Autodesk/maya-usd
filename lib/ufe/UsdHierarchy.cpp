@@ -20,15 +20,15 @@
 #include "Utils.h"
 #include "private/InPathChange.h"
 
-#include "ufe/sceneNotification.h"
-#include "ufe/scene.h"
+#include <ufe/sceneNotification.h>
+#include <ufe/scene.h>
 
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/copyUtils.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/base/tf/stringUtils.h"
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/copyUtils.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/base/tf/stringUtils.h>
 
 #include <cassert>
 #include <stdexcept>
@@ -87,7 +87,7 @@ Ufe::SceneItemList UsdHierarchy::children() const
 	Ufe::SceneItemList children;
 	for (auto child : fPrim.GetChildren())
 	{
-		children.push_back(UsdSceneItem::create(fItem->path() + child.GetName(), child));
+		children.emplace_back(UsdSceneItem::create(fItem->path() + child.GetName(), child));
 	}
 	return children;
 }

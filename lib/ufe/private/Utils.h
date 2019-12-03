@@ -17,11 +17,11 @@
 
 #include "../../base/api.h"
 
-#include "ufe/path.h"
+#include <ufe/path.h>
 
-#include "pxr/usd/usd/prim.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include <pxr/usd/usd/prim.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

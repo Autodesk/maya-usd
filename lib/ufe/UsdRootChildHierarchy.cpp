@@ -16,7 +16,7 @@
 
 #include "UsdRootChildHierarchy.h"
 
-#include "ufe/runTimeMgr.h"
+#include <ufe/runTimeMgr.h>
 
 #include <cassert>
 
@@ -27,7 +27,7 @@ namespace ufe {
 // Global variables
 //------------------------------------------------------------------------------
 extern Ufe::Rtid g_MayaRtid;
-const std::string kNotGatewayNodePath = "Tail of path %s is not a gateway node.";
+const char* const kNotGatewayNodePath = "Tail of path %s is not a gateway node.";
 
 UsdRootChildHierarchy::UsdRootChildHierarchy()
 	: UsdHierarchy()
@@ -58,7 +58,7 @@ Ufe::SceneItem::Ptr UsdRootChildHierarchy::parent() const
 	assert(parentPath.runTimeId() == g_MayaRtid);
 #endif
 	if (parentPath.runTimeId() != g_MayaRtid)
-		TF_WARN(kNotGatewayNodePath.c_str(), path().string().c_str());
+		TF_WARN(kNotGatewayNodePath, path().string().c_str());
 
 	auto mayaHierarchyHandler = Ufe::RunTimeMgr::instance().hierarchyHandler(g_MayaRtid);
 	return mayaHierarchyHandler->createItem(parentPath);

@@ -17,9 +17,9 @@
 
 #include "../base/api.h"
 
-#include "ufe/sceneItem.h"
+#include <ufe/sceneItem.h>
 
-#include "pxr/usd/usd/prim.h"
+#include <pxr/usd/usd/prim.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -33,7 +33,7 @@ public:
 	typedef std::shared_ptr<UsdSceneItem> Ptr;
 
 	UsdSceneItem(const Ufe::Path& path, const UsdPrim& prim);
-	~UsdSceneItem() override;
+	~UsdSceneItem() override = default;
 
 	// Delete the copy/move constructors assignment operators.
 	UsdSceneItem(const UsdSceneItem&) = delete;
@@ -44,7 +44,7 @@ public:
 	//! Create a UsdSceneItem from a UFE path and a USD prim.
 	static UsdSceneItem::Ptr create(const Ufe::Path& path, const UsdPrim& prim);
 
-	const UsdPrim& prim() const;
+	const UsdPrim& prim() const { return fPrim; }
 
 	// Ufe::SceneItem overrides
 	std::string nodeType() const override;

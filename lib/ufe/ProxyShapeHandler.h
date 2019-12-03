@@ -17,8 +17,8 @@
 
 #include "../base/api.h"
 
-#include "pxr/pxr.h"
-#include "pxr/usd/usd/prim.h"
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/prim.h>
 
 #include <string>
 #include <vector>

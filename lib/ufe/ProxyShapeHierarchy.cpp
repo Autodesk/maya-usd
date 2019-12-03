@@ -17,11 +17,11 @@
 #include "ProxyShapeHierarchy.h"
 #include "Utils.h"
 
-#include "ufe/pathComponent.h"
-#include "ufe/pathSegment.h"
-#include "ufe/rtid.h"
+#include <ufe/pathComponent.h>
+#include <ufe/pathSegment.h>
+#include <ufe/rtid.h>
 
-#include "pxr/usd/usd/stage.h"
+#include <pxr/usd/usd/stage.h>
 
 #include <stdexcept>
 
@@ -77,7 +77,7 @@ const UsdPrim& ProxyShapeHierarchy::getUsdRootPrim() const
 		UsdStageWeakPtr stage = getStage(fItem->path());
 		if (stage)
 		{
-			fUsdRootPrim = stage->GetPrimAtPath(SdfPath("/"));
+			fUsdRootPrim = stage->GetPseudoRoot();
 		}
 	}
 	return fUsdRootPrim;
@@ -116,7 +116,7 @@ Ufe::SceneItemList ProxyShapeHierarchy::children() const
 	Ufe::SceneItemList children;
 	for (const auto& child : usdChildren)
 	{
-		children.push_back(UsdSceneItem::create(parentPath + Ufe::PathSegment(
+		children.emplace_back(UsdSceneItem::create(parentPath + Ufe::PathSegment(
 			Ufe::PathComponent(child.GetName().GetString()), g_USDRtid, '/'), child));
 	}
 	return children;

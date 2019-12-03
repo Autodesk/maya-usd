@@ -21,7 +21,7 @@
 #include "UsdRotatePivotTranslateUndoableCommand.h"
 #include "private/Utils.h"
 
-#include "pxr/usd/usdGeom/xformCache.h"
+#include <pxr/usd/usdGeom/xformCache.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {
@@ -29,6 +29,8 @@ namespace ufe {
 namespace {
 	Ufe::Matrix4d convertFromUsd(const GfMatrix4d& matrix)
 	{
+		// Even though memory layout of Ufe::Matrix4d and double[4][4] are identical
+		// we need to return a copy of the matrix so we cannot cast.
 		double m[4][4];
 		matrix.Get(m);
 		Ufe::Matrix4d uMat;
@@ -58,10 +60,6 @@ namespace {
 
 UsdTransform3d::UsdTransform3d()
 	: Transform3d()
-{
-}
-
-UsdTransform3d::~UsdTransform3d()
 {
 }
 

@@ -17,7 +17,7 @@
 
 #include "base/api.h"
 
-#include "mayaUsd/nodes/proxyShapeBase.h"
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include "pxr/pxr.h"
 

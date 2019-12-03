@@ -17,7 +17,7 @@
 
 #include "../base/api.h"
 
-#include "maya/MStatus.h"
+#include <maya/MStatus.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

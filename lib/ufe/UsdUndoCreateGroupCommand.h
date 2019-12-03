@@ -19,8 +19,8 @@
 
 #include "UsdSceneItem.h"
 
-#include "ufe/undoableCommand.h"
-#include "ufe/pathComponent.h"
+#include <ufe/undoableCommand.h>
+#include <ufe/pathComponent.h>
 
 //PXR_NAMESPACE_USING_DIRECTIVE
 

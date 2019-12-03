@@ -99,6 +99,9 @@ namespace {
         //! Color array to support per-instance color and selection highlight.
         MFloatArray _instanceColors;
 
+        //! If true, associate geometric buffers to the render item and trigger consolidation/instancing update
+        bool _geometryDirty{ false };
+
         //! Construct valid commit state
         CommitState(HdVP2DrawItem& item) : _drawItemData(item.GetRenderItemData())
         {}
@@ -1305,6 +1308,12 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
     }
 
+    stateToCommit._geometryDirty = (itemDirtyBits & (
+        HdChangeTracker::DirtyPoints |
+        HdChangeTracker::DirtyNormals |
+        HdChangeTracker::DirtyPrimvar |
+        HdChangeTracker::DirtyTopology));
+
     // Reset dirty bits because we've prepared commit state for this draw item.
     drawItem->ResetDirtyBits();
 
@@ -1377,10 +1386,7 @@ void HdVP2Mesh::_UpdateDrawItem(
 
         ProxyRenderDelegate& drawScene = param->GetDrawScene();
 
-        // Associate geometries with the render item only if the shader or the
-        // bounding box is changed.
-        if (stateToCommit._shader != nullptr ||
-            stateToCommit._boundingBox != nullptr) {
+        if (stateToCommit._geometryDirty || stateToCommit._boundingBox) {
             MHWRender::MVertexBufferArray vertexBuffers;
             vertexBuffers.addBuffer(kPositionsStr, positionsBuffer);
 
@@ -1398,6 +1404,10 @@ void HdVP2Mesh::_UpdateDrawItem(
                 }
             }
 
+            // The API call does three things:
+            // - Associate geometric buffers with the render item.
+            // - Update bounding box.
+            // - Trigger consolidation/instancing update.
             drawScene.setGeometryForRenderItem(*renderItem,
                 vertexBuffers, *indexBuffer, stateToCommit._boundingBox);
         }
