@@ -16,12 +16,12 @@
 
 #include "UsdUndoCreateGroupCommand.h"
 
-#include "ufe/scene.h"
-#include "ufe/hierarchy.h"
-#include "ufe/sceneNotification.h"
+#include <ufe/scene.h>
+#include <ufe/hierarchy.h>
+#include <ufe/sceneNotification.h>
 
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

@@ -38,7 +38,7 @@
 #include <memory>
 
 #if defined(WANT_UFE_BUILD)
-#include "ufe/observer.h"
+#include <ufe/observer.h>
 #endif
 
 // Conditional compilation due to Maya API gap.

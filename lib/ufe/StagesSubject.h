@@ -18,13 +18,13 @@
 #include "../base/api.h"
 #include "../listeners/proxyShapeNotice.h"
 
-#include "pxr/base/tf/weakBase.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/base/tf/hash.h"
-#include "pxr/base/tf/notice.h"
-#include "pxr/usd/usd/notice.h"
+#include <pxr/base/tf/weakBase.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/base/tf/hash.h>
+#include <pxr/base/tf/notice.h>
+#include <pxr/usd/usd/notice.h>
 
-#include "maya/MCallbackIdArray.h"
+#include <maya/MCallbackIdArray.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

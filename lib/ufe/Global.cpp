@@ -22,10 +22,10 @@
 #include "UsdTransform3dHandler.h"
 #include "UsdSceneItemOpsHandler.h"
 
-#include "ufe/rtid.h"
-#include "ufe/runTimeMgr.h"
-#include "ufe/hierarchyHandler.h"
-#include "ufe/ProxyShapeHierarchyHandler.h"
+#include <ufe/rtid.h>
+#include <ufe/runTimeMgr.h>
+#include <ufe/hierarchyHandler.h>
+#include <ufe/ProxyShapeHierarchyHandler.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 // Note: must come after include of ufe files so we have the define.

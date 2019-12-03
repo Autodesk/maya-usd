@@ -20,9 +20,9 @@
 #include "UsdSceneItem.h"
 #include "UsdAttribute.h"
 
-#include "ufe/attributes.h"
+#include <ufe/attributes.h>
 
-#include "pxr/usd/usd/prim.h"
+#include <pxr/usd/usd/prim.h>
 
 #include <unordered_map>
 

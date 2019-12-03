@@ -18,13 +18,13 @@
 #include "Utils.h"
 #include "private/InPathChange.h"
 
-#include "ufe/scene.h"
-#include "ufe/sceneNotification.h"
-#include "ufe/log.h"
+#include <ufe/scene.h>
+#include <ufe/sceneNotification.h>
+#include <ufe/log.h>
 
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/sdf/copyUtils.h"
-#include "pxr/base/tf/token.h"
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/sdf/copyUtils.h>
+#include <pxr/base/tf/token.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

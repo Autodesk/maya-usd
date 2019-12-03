@@ -16,10 +16,10 @@
 
 #include "UsdAttribute.h"
 
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/value.h"
-#include "pxr/usd/usd/schemaRegistry.h"
-#include "pxr/usd/sdf/attributeSpec.h"
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/usd/usd/schemaRegistry.h>
+#include <pxr/usd/sdf/attributeSpec.h>
 
 // We unconditionally want the UFE asserts here (even in release builds).
 // The UFE_ASSERT_MSG has a built-in throw which we want to use for error handling.
@@ -49,7 +49,7 @@ namespace
 
 std::string getUsdAttributeValueAsString(const PXR_NS::UsdAttribute& attr)
 {
-	if (!attr.HasValue()) return "";
+	if (!attr.HasValue()) return std::string();
 
 	PXR_NS::VtValue v;
 	if (attr.Get(&v))
@@ -66,7 +66,7 @@ std::string getUsdAttributeValueAsString(const PXR_NS::UsdAttribute& attr)
 	}
 
 	UFE_ASSERT_MSG(false, kErrorMsgFailedConvertToString);
-	return "";
+	return std::string();
 }
 
 template<typename T, typename U>
@@ -194,7 +194,7 @@ std::string UsdAttributeEnumString::get() const
 	}
 
 	UFE_ASSERT_MSG(false, kErrorMsgInvalidType);
-	return "";
+	return std::string();
 }
 
 void UsdAttributeEnumString::set(const std::string& value)
@@ -239,7 +239,7 @@ TypedUsdAttribute<T>::TypedUsdAttribute(const UsdSceneItem::Ptr& item, const PXR
 template<>
 std::string TypedUsdAttribute<std::string>::get() const
 {
-	if (!hasValue()) return "";
+	if (!hasValue()) return std::string();
 
 	PXR_NS::VtValue vt;
 	if (fUsdAttr.Get(&vt))
@@ -257,7 +257,7 @@ std::string TypedUsdAttribute<std::string>::get() const
 	}
 
 	UFE_ASSERT_MSG(false, kErrorMsgInvalidType);
-	return "";
+	return std::string();
 }
 
 template <>

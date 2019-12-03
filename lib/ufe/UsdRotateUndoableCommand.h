@@ -17,9 +17,9 @@
 
 #include "../base/api.h"
 
-#include "ufe/transform3dUndoableCommands.h"
+#include <ufe/transform3dUndoableCommands.h>
 
-#include "pxr/usd/usd/attribute.h"
+#include <pxr/usd/usd/attribute.h>
 
 #include <exception>
 

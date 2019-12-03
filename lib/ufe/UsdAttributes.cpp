@@ -18,9 +18,9 @@
 
 #include <ufe/ufeAssert.h>
 
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/usd/schemaRegistry.h"
-#include "pxr/usd/sdf/attributeSpec.h"
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/usd/schemaRegistry.h>
+#include <pxr/usd/sdf/attributeSpec.h>
 
 // Note: normally we would use this using directive, but here we cannot because
 //		 one of our classes is called UsdAttribute which is exactly the same as
@@ -122,8 +122,10 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
 
 std::vector<std::string> UsdAttributes::attributeNames() const
 {
+	auto primAttrs = fPrim.GetAttributes();
 	std::vector<std::string> names;
-	for (const auto& attr : fPrim.GetAttributes())
+	names.reserve(primAttrs.size());
+	for (const auto& attr : primAttrs)
 	{
 		names.push_back(attr.GetName());
 	}

@@ -16,10 +16,10 @@
 
 #include "Utils.h"
 
-#include "ufe/log.h"
+#include <ufe/log.h>
 
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/usd/usdGeom/xformable.h"
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/usd/usdGeom/xformable.h>
 
 #include <string>
 #include <memory>

@@ -19,10 +19,10 @@
 
 #include "UsdSceneItem.h"
 
-#include "ufe/path.h"
-#include "ufe/transform3d.h"
+#include <ufe/path.h>
+#include <ufe/transform3d.h>
 
-#include "pxr/usd/usd/prim.h"
+#include <pxr/usd/usd/prim.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -36,7 +36,7 @@ public:
 	typedef std::shared_ptr<UsdTransform3d> Ptr;
 
 	UsdTransform3d();
-	~UsdTransform3d() override;
+	~UsdTransform3d() override = default;
 
 	// Delete the copy/move constructors assignment operators.
 	UsdTransform3d(const UsdTransform3d&) = delete;

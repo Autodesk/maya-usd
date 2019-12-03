@@ -19,11 +19,11 @@
 #include "UsdStageMap.h"
 #include "ProxyShapeHandler.h"
 
-#include "pxr/base/tf/hashset.h"
-#include "pxr/usd/usd/stage.h"
+#include <pxr/base/tf/hashset.h>
+#include <pxr/usd/usd/stage.h>
 
-#include "maya/MGlobal.h"
-#include "maya/MSelectionList.h"
+#include <maya/MGlobal.h>
+#include <maya/MSelectionList.h>
 
 #include <cassert>
 #include <string>
@@ -151,7 +151,7 @@ std::string uniqueChildName(const Ufe::SceneItem::Ptr& parent, const Ufe::Path& 
 #if !defined(NDEBUG)
 	assert(usdParent);
 #endif
-	if (!usdParent) return "";
+	if (!usdParent) return std::string();
 
 	TfToken::HashSet childrenNames;
 	for (auto child : usdParent->prim().GetChildren())
