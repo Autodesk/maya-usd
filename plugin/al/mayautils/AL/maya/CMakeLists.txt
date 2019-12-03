@@ -62,8 +62,7 @@ target_include_directories(${MAYAUTILS_LIBRARY_NAME}
     ${UTILS_INCLUDE_LOCATION}
     ${MAYAUTILS_INCLUDE_LOCATION}
     ${MAYA_INCLUDE_DIRS}
-    ${MAYAUSD_INCLUDE_DIR}
-)
+    )
 
 target_link_libraries(${MAYAUTILS_LIBRARY_NAME}
   AL_EventSystem

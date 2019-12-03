@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#include "usdMaya/chaserRegistry.h"
-#include "usdMaya/writeUtil.h"
+#include <mayaUsd/fileio/chaser/chaserRegistry.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"

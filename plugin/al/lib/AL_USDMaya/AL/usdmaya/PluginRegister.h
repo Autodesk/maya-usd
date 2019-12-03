@@ -16,9 +16,6 @@
 #pragma once
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/glf/contextCaps.h"
-#include "pxr/imaging/glf/glContext.h"
-
 #include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/maya/utils/MenuBuilder.h"
 #include "AL/usdmaya/Global.h"
@@ -341,14 +338,40 @@ MStatus registerPlugin(AFnPlugin& plugin)
   CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
   AL::usdmaya::Global::onPluginLoad();
 
+  // As of 2-Aug-2019, these PlugPlugin translators are not loaded
+  // automatically.  To be investigated.  A duplicate of this code is in the
+  // Autodesk plugin.cpp.
+  const std::vector<std::string> translatorPluginNames{
+      "mayaUsd_Translators" };
+  const auto& plugRegistry = PlugRegistry::GetInstance();
+  std::stringstream msg("mayaUsdPlugin: ");
+  for (const auto& pluginName : translatorPluginNames) {
+      auto plugin = plugRegistry.GetPluginWithName(pluginName);
+      if (!plugin) {
+          status = MStatus::kFailure;
+          msg << "translator " << pluginName << " not found.";
+          status.perror(msg.str().c_str());
+      }
+      else {
+          // Load is a no-op if already loaded.
+          if (!plugin->Load()) {
+              status = MStatus::kFailure;
+              msg << pluginName << " translator load failed.";
+              status.perror(msg.str().c_str());
+          }
+      }
+  }
+
   // Force all plugins to be loaded at startup time. Unless we load plugins upfront
   // options will not be registered until the start of import or export, and won't be available in the GUI
+  const TfType& translatorType = TfType::Find<AL::usdmaya::fileio::translators::TranslatorBase>();
   PlugPluginPtrVector plugins = PlugRegistry::GetInstance().GetAllPlugins();
   for(auto& plugin : plugins)
   {
-    if(!plugin->IsLoaded())
+    if(!plugin->IsLoaded() && plugin->DeclaresType(translatorType, true))
       plugin->Load();
   }
+
   return status;
 }
 

@@ -15,9 +15,9 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
-
 from pxr import UsdGeom
+
+import mayaUsd.lib as mayaUsdLib
 
 from maya import cmds
 from maya import standalone
@@ -26,7 +26,7 @@ import os
 import unittest
 
 
-class testUsdExportMesh(unittest.TestCase):
+class testUsdImportMesh(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -44,7 +44,7 @@ class testUsdExportMesh(unittest.TestCase):
         mesh = 'PolyMeshShape'
         self.assertTrue(cmds.objExists(mesh))
 
-        schema = UsdMaya.Adaptor(mesh).GetSchema(UsdGeom.Mesh)
+        schema = mayaUsdLib.Adaptor(mesh).GetSchema(UsdGeom.Mesh)
         subdivisionScheme = schema.GetAttribute(
                 UsdGeom.Tokens.subdivisionScheme).Get()
         self.assertEqual(subdivisionScheme, UsdGeom.Tokens.none)
@@ -64,7 +64,7 @@ class testUsdExportMesh(unittest.TestCase):
         mesh = 'SubdivMeshShape'
         self.assertTrue(cmds.objExists(mesh))
 
-        schema = UsdMaya.Adaptor(mesh).GetSchema(UsdGeom.Mesh)
+        schema = mayaUsdLib.Adaptor(mesh).GetSchema(UsdGeom.Mesh)
         subdivisionScheme = \
                 schema.GetAttribute(UsdGeom.Tokens.subdivisionScheme).Get()
         self.assertIsNone(subdivisionScheme)

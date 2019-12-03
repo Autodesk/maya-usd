@@ -15,12 +15,13 @@
 //
 #include "usdMaya/proxyShape.h"
 
-#include "usdMaya/hdImagingShape.h"
+#include <mayaUsd/nodes/hdImagingShape.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
 
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/range3d.h"
@@ -322,5 +323,21 @@ void UsdMayaProxyShape::postConstructor()
     }
 }
 
+/// Delegate for returning whether object soft-select mode is currently on
+/// Technically, we could make ProxyShape track this itself, but then that would
+/// be making two callbacks to track the same thing... so we use BatchRenderer
+/// implementation
+bool
+UsdMayaGL_ObjectSoftSelectEnabled()
+{
+    return UsdMayaGLBatchRenderer::GetInstance().GetObjectSoftSelectEnabled();
+}
+
+
+TF_REGISTRY_FUNCTION(UsdMayaProxyShape)
+{
+    UsdMayaProxyShape::SetObjectSoftSelectEnabledDelegate(
+        UsdMayaGL_ObjectSoftSelectEnabled);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

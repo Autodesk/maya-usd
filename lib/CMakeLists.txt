@@ -44,16 +44,84 @@ list(APPEND mayaUsd_src
     #
     base/debugCodes.cpp
     #
+    fileio/registryHelper.cpp
+    fileio/primReaderContext.cpp
+    fileio/primReaderArgs.cpp
+    fileio/primReader.cpp
+    fileio/primReaderRegistry.cpp
+    fileio/functorPrimReader.cpp
+    fileio/fallbackPrimReader.cpp
+    fileio/primWriterContext.cpp
+    fileio/primWriterArgs.cpp
+    fileio/primWriter.cpp
+    fileio/primWriterRegistry.cpp
+    fileio/functorPrimWriter.cpp
+    fileio/writeJobContext.cpp
+    fileio/instancedNodeWriter.cpp
+    fileio/transformWriter.cpp
+    fileio/shaderWriter.cpp
+    fileio/primUpdater.cpp
+    fileio/primUpdaterContext.cpp
+    fileio/primUpdaterRegistry.cpp
+    #
+    fileio/chaser/chaser.cpp
+    fileio/chaser/chaserRegistry.cpp
+    #
+    fileio/jobs/jobArgs.cpp
+    fileio/jobs/readJob.cpp
+    fileio/jobs/writeJob.cpp
+    fileio/jobs/modelKindProcessor.cpp
+    #
+    fileio/translators/translatorUtil.cpp
+    fileio/translators/translatorXformable.cpp
+    fileio/translators/translatorXformable_decompose.cpp
+    fileio/translators/translatorPrim.cpp
+    fileio/translators/translatorGprim.cpp
+    fileio/translators/skelBindingsProcessor.cpp
+    fileio/translators/translatorMaterial.cpp
+    fileio/translators/translatorCamera.cpp
+    fileio/translators/translatorCurves.cpp
+    fileio/translators/translatorMesh.cpp
+    fileio/translators/translatorMesh_SubDiv.cpp
+    fileio/translators/translatorMesh_PrimVars.cpp
+    fileio/translators/translatorNurbsPatch.cpp
+    fileio/translators/translatorRfMLight.cpp
+    fileio/translators/translatorSkel.cpp
+    #
+    fileio/shading/shadingModeDisplayColor.cpp
+    fileio/shading/shadingModeExporterContext.cpp
+    fileio/shading/shadingModeExporter.cpp
+    fileio/shading/shadingModeImporter.cpp
+    fileio/shading/shadingModePxrRis.cpp
+    fileio/shading/shadingModeRegistry.cpp
+    fileio/shading/shadingModeUseRegistry.cpp
+    #
+    fileio/utils/adaptor.cpp
+    fileio/utils/readUtil.cpp
+    fileio/utils/userTaggedAttribute.cpp
+    fileio/utils/writeUtil.cpp
+    fileio/utils/shadingUtil.cpp
+    fileio/utils/meshUtil.cpp
+    fileio/utils/roundTripUtil.cpp
+    fileio/utils/xformStack.cpp
+    #
     utils/colorSpace.cpp
+    utils/diagnosticDelegate.cpp
     utils/query.cpp
     utils/util.cpp
     utils/utilFileSystem.cpp
+    utils/blockSceneModificationContext.cpp
     utils/stageCache.cpp
+    utils/query.cpp
+    utils/undoHelperCommand
     #
+    nodes/pointBasedDeformerNode.cpp
+    nodes/hdImagingShape.cpp
     nodes/usdPrimProvider.cpp
     nodes/proxyShapeBase.cpp
     nodes/proxyShapePlugin.cpp
     nodes/stageData.cpp
+    nodes/stageNode.cpp
     #
     listeners/stageNoticeListener.cpp
     listeners/notice.cpp
@@ -73,6 +141,25 @@ list(APPEND mayaUsd_src
     #
     render/vp2ShaderFragments/shaderFragments.cpp
     #
+    render/pxrUsdMayaGL/batchRenderer.cpp
+    render/pxrUsdMayaGL/debugCodes.cpp
+    render/pxrUsdMayaGL/hdImagingShapeDrawOverride.cpp
+    render/pxrUsdMayaGL/hdImagingShapeUI.cpp
+    render/pxrUsdMayaGL/hdRenderer.cpp
+    render/pxrUsdMayaGL/proxyDrawOverride.cpp
+    render/pxrUsdMayaGL/proxyShapeUI.cpp
+    render/pxrUsdMayaGL/sceneDelegate.cpp
+    render/pxrUsdMayaGL/shapeAdapter.cpp
+    render/pxrUsdMayaGL/softSelectHelper.cpp
+    render/pxrUsdMayaGL/usdProxyShapeAdapter.cpp
+    render/pxrUsdMayaGL/userData.cpp
+    render/pxrUsdMayaGL/instancerImager.cpp
+    render/pxrUsdMayaGL/instancerShapeAdapter.cpp
+    render/pxrUsdMayaGL/proxyShapeDelegate.cpp
+    #
+    render/px_vp20/glslProgram.cpp
+    render/px_vp20/utils.cpp
+    render/px_vp20/utils_legacy.cpp
 )
 
 list(APPEND mayaUsdShaderFragments_xmls
@@ -145,20 +232,93 @@ list(APPEND mayaUsdBase_headers
     base/debugCodes.h
 )
 
+list(APPEND mayaUsdFileio_headers
+    fileio/registryHelper.h
+    fileio/primReaderContext.h
+    fileio/primReaderArgs.h
+    fileio/primReader.h
+    fileio/primReaderRegistry.h
+    fileio/functorPrimReader.h
+    fileio/fallbackPrimReader.h
+    fileio/primWriterContext.h
+    fileio/primWriterArgs.h
+    fileio/primWriter.h
+    fileio/primWriterRegistry.h
+    fileio/functorPrimWriter.h
+    fileio/writeJobContext.h
+    fileio/instancedNodeWriter.h
+    fileio/transformWriter.h
+    fileio/shaderWriter.h
+    fileio/primUpdater.h
+    fileio/primUpdaterContext.h
+    fileio/primUpdaterRegistry.h
+)
+
+list(APPEND mayaUsdChaser_headers
+    fileio/chaser/chaser.h
+    fileio/chaser/chaserRegistry.h
+)
+
+list(APPEND mayaUsdJobs_headers
+    fileio/jobs/jobArgs.h
+    fileio/jobs/readJob.h
+    fileio/jobs/writeJob.h
+    fileio/jobs/modelKindProcessor.h
+)
+
+list(APPEND mayaUsdShading_headers
+    fileio/shading/shadingModeExporterContext.h
+    fileio/shading/shadingModeExporter.h
+    fileio/shading/shadingModeImporter.h
+    fileio/shading/shadingModeRegistry.h
+)
+
+list(APPEND mayaUsdUtilsIO_headers
+    fileio/utils/adaptor.h
+    fileio/utils/readUtil.h
+    fileio/utils/userTaggedAttribute.h
+    fileio/utils/writeUtil.h
+    fileio/utils/shadingUtil.h
+    fileio/utils/meshUtil.h
+    fileio/utils/roundTripUtil.h
+    fileio/utils/xformStack.h
+)
+
+list(APPEND mayaUsdTranslators_headers
+    fileio/translators/translatorUtil.h
+    fileio/translators/translatorXformable.h
+    fileio/translators/translatorPrim.h
+    fileio/translators/translatorGprim.h
+    fileio/translators/skelBindingsProcessor.h
+    fileio/translators/translatorMaterial.h
+    fileio/translators/translatorCamera.h
+    fileio/translators/translatorCurves.h
+    fileio/translators/translatorMesh.h
+    fileio/translators/translatorNurbsPatch.h
+    fileio/translators/translatorRfMLight.h
+    fileio/translators/translatorSkel.h
+)
+
 list(APPEND mayaUsdUtils_headers
     utils/colorSpace.h
+    utils/diagnosticDelegate.h
     utils/query.h
     utils/util.h
     utils/utilFileSystem.h
+    utils/blockSceneModificationContext.h
     utils/stageCache.h
     utils/query.h
+    utils/undoHelperCommand.h
 )
 
 list(APPEND mayaUsdNodes_headers
+    nodes/pointBasedDeformerNode.h
+    nodes/hdImagingShape.h
     nodes/usdPrimProvider.h
     nodes/proxyShapeBase.h
     nodes/proxyShapePlugin.h
     nodes/stageData.h
+    nodes/stageNode.h
 )
 
 list(APPEND mayaUsdListeners_headers
@@ -206,6 +366,28 @@ if(UFE_FOUND)
         )
     endif()
 endif()
+
+list(APPEND mayaUsdPxrUsdMayaGL_headers
+    render/pxrUsdMayaGL/batchRenderer.h
+    render/pxrUsdMayaGL/debugCodes.h
+    render/pxrUsdMayaGL/hdImagingShapeUI.h
+    render/pxrUsdMayaGL/hdImagingShapeDrawOverride.h
+    render/pxrUsdMayaGL/instancerImager.h
+    render/pxrUsdMayaGL/instancerShapeAdapter.h
+    render/pxrUsdMayaGL/proxyShapeUI.h
+    render/pxrUsdMayaGL/proxyDrawOverride.h
+    render/pxrUsdMayaGL/renderParams.h
+    render/pxrUsdMayaGL/sceneDelegate.h
+    render/pxrUsdMayaGL/shapeAdapter.h
+    render/pxrUsdMayaGL/softSelectHelper.h
+    render/pxrUsdMayaGL/usdProxyShapeAdapter.h
+    render/pxrUsdMayaGL/userData.h
+)
+
+list(APPEND mayaUsdPxVP20_headers
+    render/px_vp20/utils.h
+    render/px_vp20/utils_legacy.h
+)
 
 add_library(${LIBRARY_NAME} SHARED
     ${mayaUsd_src}
@@ -317,6 +499,12 @@ set_property(GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib
 # promote headers
 mayaUsd_promoteMayaUsdHeader()
 mayaUsd_promoteHeaderList(${mayaUsdBase_headers})
+mayaUsd_promoteHeaderList(${mayaUsdFileio_headers})
+mayaUsd_promoteHeaderList(${mayaUsdChaser_headers})
+mayaUsd_promoteHeaderList(${mayaUsdJobs_headers})
+mayaUsd_promoteHeaderList(${mayaUsdUtilsIO_headers})
+mayaUsd_promoteHeaderList(${mayaUsdShading_headers})
+mayaUsd_promoteHeaderList(${mayaUsdTranslators_headers})
 mayaUsd_promoteHeaderList(${mayaUsdUtils_headers})
 mayaUsd_promoteHeaderList(${mayaUsdNodes_headers})
 mayaUsd_promoteHeaderList(${mayaUsdListeners_headers})
@@ -324,6 +512,7 @@ mayaUsd_promoteHeaderList(${mayaUsdVP2RenderDelegate_headers})
 if(UFE_FOUND)
     mayaUsd_promoteHeaderList(${mayaUsdUfe_headers})
 endif()
+mayaUsd_promoteHeaderList(${mayaUsdPxrUsdMayaGL_headers})
 
 # install public headers
 install(FILES ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h
@@ -332,6 +521,30 @@ install(FILES ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h
 
 install(FILES ${mayaUsdBase_headers}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/base/
+)
+
+install(FILES ${mayaUsdFileio_headers}
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/fileio/
+)
+
+install(FILES ${mayaUsdChaser_headers}
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/fileio/chaser/
+)
+
+install(FILES ${mayaUsdJobs_headers}
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/fileio/jobs/
+)
+
+install(FILES ${mayaUsdUtilsIO_headers}
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/fileio/utils/
+)
+
+install(FILES ${mayaUsdShading_headers}
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/fileio/shading/
+)
+
+install(FILES ${mayaUsdTranslators_headers}
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/fileio/translators/
 )
 
 install(FILES ${mayaUsdUtils_headers}
@@ -355,6 +568,10 @@ if(UFE_FOUND)
         DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/ufe
     )
 endif()
+
+install(FILES ${mayaUsdPxrUsdMayaGL_headers}
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/render/pxrUsdMayaGL
+)
 
 install(FILES ${mayaUsdShaderFragments_xmls}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/mayaUsd_ShaderFragments/resources
@@ -437,6 +654,99 @@ if(UFE_FOUND)
 
 endif()
 
+# Python extension library for mayaUsd library bindings.  Capitalize leading
+# character of library name.  Pixar's TF_WRAP_MODULE macro expects the library
+# name to be prefixed with _, but adds an underscore to the package name when
+# creating the Python extension module initialization function (see Pixar's
+# pyModule.h).  Create a package name without the leading underscore, and
+# prefix our library name with a leading underscore, to match this convention.
+string(TOUPPER "${LIBRARY_NAME}" LIBRARY_NAME_CAPS)
+string(SUBSTRING "${LIBRARY_NAME}" 1 -1 LIBRARY_NAME_END)
+string(SUBSTRING "${LIBRARY_NAME_CAPS}" 0 1 LIBRARY_NAME_BEGIN)
+string(CONCAT PACKAGE_NAME "Py" "${LIBRARY_NAME_BEGIN}" "${LIBRARY_NAME_END}")
+string(CONCAT PYTHON_LIBRARY_NAME "_" "${PACKAGE_NAME}")
+
+add_library(${PYTHON_LIBRARY_NAME}
+    SHARED
+    python/module.cpp
+    python/wrapAdaptor.cpp
+    python/wrapBlockSceneModificationContext.cpp
+    python/wrapColorSpace.cpp
+    python/wrapDiagnosticDelegate.cpp
+    python/wrapMeshUtil.cpp
+    python/wrapQuery.cpp
+    python/wrapReadUtil.cpp
+    python/wrapRoundTripUtil.cpp
+    python/wrapStageCache.cpp
+    python/wrapUserTaggedAttribute.cpp
+    python/wrapWriteUtil.cpp
+    python/wrapXformStack.cpp
+)
+
 if(IS_MACOSX)
     set(_macDef OSMac_)
 endif()
+
+target_compile_definitions(${PYTHON_LIBRARY_NAME}
+    PRIVATE
+        ${_macDef}
+        MFB_PACKAGE_NAME=${PACKAGE_NAME}
+        MFB_ALT_PACKAGE_NAME=${PACKAGE_NAME}
+        MFB_PACKAGE_MODULE=${PROJECT_NAME}
+)
+set_target_properties(${PYTHON_LIBRARY_NAME} 
+    PROPERTIES 
+        PREFIX ""
+)
+if(IS_WINDOWS)
+set_target_properties(${PYTHON_LIBRARY_NAME}
+    PROPERTIES
+        SUFFIX ".pyd"
+)
+elseif(IS_MACOSX)
+    set_target_properties(${PYTHON_LIBRARY_NAME}
+        PROPERTIES
+            SUFFIX ".so"
+    )
+endif()
+
+target_link_libraries(${PYTHON_LIBRARY_NAME}
+    ${LIBRARY_NAME}
+)
+
+# We will use the following Python package structure:
+#
+# mayaUsd: top-level package
+# mayaUsd.lib: Python wrappers for mayaUsd library functionality.
+#
+# We re-map the Python library namespace to mayaUsd.lib through a simple
+# __init__.py.
+
+set(PYLIB_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/lib)
+
+if(IS_MACOSX OR IS_LINUX)
+    mayaUsd_init_rpath(rpath "lib")
+    mayaUsd_add_rpath(rpath "../../..")
+    mayaUsd_install_rpath(rpath ${PYTHON_LIBRARY_NAME})
+endif()
+
+install(TARGETS ${PYTHON_LIBRARY_NAME}
+    LIBRARY
+    DESTINATION ${PYLIB_INSTALL_PREFIX}
+    ARCHIVE
+    DESTINATION ${PYLIB_INSTALL_PREFIX}
+    RUNTIME
+    DESTINATION ${PYLIB_INSTALL_PREFIX}
+)
+if(IS_WINDOWS)
+    install(FILES $<TARGET_PDB_FILE:${PYTHON_LIBRARY_NAME}> DESTINATION ${PYLIB_INSTALL_PREFIX} OPTIONAL)
+endif()
+
+install(CODE
+    "file(TOUCH \"${PYLIB_INSTALL_PREFIX}/../__init__.py\")")
+
+install(CODE
+    "file(WRITE \"${PYLIB_INSTALL_PREFIX}/__init__.py\"
+    \"from ${PYTHON_LIBRARY_NAME} import *\")")
+
+add_subdirectory(usd)

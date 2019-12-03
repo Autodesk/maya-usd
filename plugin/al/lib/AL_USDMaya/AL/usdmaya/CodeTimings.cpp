@@ -161,6 +161,7 @@ void Profiler::popTime()
   #ifdef _WIN32
   while(clock_gettime(CLOCK_REALTIME_COARSE, &endtime) != 0) /* deliberately empty */;
   #endif
+
   // compute time difference
   timespec diff = timeDiff(m_timeStack[m_stackPos].m_time, endtime);
   m_timeStack[m_stackPos].m_path->second = timeAdd(diff, m_timeStack[m_stackPos].m_path->second);

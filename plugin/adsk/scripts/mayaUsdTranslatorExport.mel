@@ -1,0 +1,60 @@
+// Copyright 2019 Autodesk
+//
+// Copyright 2019 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+global proc int mayaUsdTranslatorExport (string $parent,
+                                     string $action,
+                                     string $initialSettings,
+                                     string $resultCallback )
+//
+//  Description:
+//    This script posts the mayaUsd export file translator options.
+//    The optionsString is of the form:
+//    varName1=value1;varName2=value2;...
+//
+//  Parameters:
+//    $parent - the elf parent layout for this options layout. It is
+//            always a scrollLayout.
+//    $action - the action that is to be performed with this invocation of this proc.
+//        Valid options are:
+//        "query" - construct the options string and pass it to the resultCallback.
+//        "post" - post all the elf controls.
+//    $initialSettings - the current options string in effect at the time this script is invoked.
+//    $resultCallback - This is the proc to be called with the result string.
+//            resultCallback ( string $optionsString )
+//
+//    Returns:
+//        1 if successful.
+//        0 otherwise.
+//
+{
+    int $bResult = 1;
+
+    if ($action == "post") {
+        setParent $parent;
+
+		text -label "Maya USD export options to be determined.";
+    } else if ($action == "query") {
+        string $currentOptions = "";
+
+        eval($resultCallback+" \""+$currentOptions+"\"");
+
+    } else {
+        $bResult = 0;
+    }
+
+    return $bResult;
+}

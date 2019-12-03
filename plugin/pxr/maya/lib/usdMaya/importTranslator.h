@@ -20,7 +20,7 @@
 
 #include "usdMaya/api.h"
 
-#include "usdMaya/jobArgs.h"
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 
 #include "pxr/pxr.h"
 
