@@ -540,7 +540,7 @@ MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
     // Get the prim
     // If no primPath string specified, then use the pseudo-root.
     UsdPrim usdPrim;
-    std::string primPathStr = primPath.asChar();
+    std::string primPathStr(primPath.asChar(), primPath.length());
     if ( !primPathStr.empty() ) {
         SdfPath primPath(primPathStr);
 

@@ -17,10 +17,10 @@
 
 #include "UsdSceneItem.h"
 
-#include "ufe/attribute.h"
+#include <ufe/attribute.h>
 
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/attribute.h"
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/attribute.h>
 
 // Ufe::Attribute overrides (minus the type method)
 #define UFE_ATTRIBUTE_OVERRIDES																\

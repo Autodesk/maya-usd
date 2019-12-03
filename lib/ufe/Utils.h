@@ -19,14 +19,14 @@
 
 #include "UsdSceneItem.h"
 
-#include "ufe/path.h"
-#include "ufe/pathSegment.h"
+#include <ufe/path.h>
+#include <ufe/pathSegment.h>
 
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/base/tf/token.h"
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/base/tf/token.h>
 
-#include "maya/MDagPath.h"
+#include <maya/MDagPath.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

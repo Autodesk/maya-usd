@@ -19,7 +19,7 @@
 
 #include "UsdAttributes.h"
 
-#include "ufe/attributesHandler.h"
+#include <ufe/attributesHandler.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

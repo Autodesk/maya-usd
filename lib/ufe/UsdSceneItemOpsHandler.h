@@ -19,7 +19,7 @@
 
 #include "UsdSceneItemOps.h"
 
-#include "ufe/sceneItemOpsHandler.h"
+#include <ufe/sceneItemOpsHandler.h>
 
 //PXR_NAMESPACE_USING_DIRECTIVE
 
