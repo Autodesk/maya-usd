@@ -211,7 +211,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
 
   if(!MGlobal::optionVarExists("AL_usdmaya_pushToPrim"))
   {
-    MGlobal::setOptionVarValue("AL_usdmaya_pushToPrim", false);
+    MGlobal::setOptionVarValue("AL_usdmaya_pushToPrim", true);
   }
 
   MStatus status;
