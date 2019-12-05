@@ -1203,7 +1203,18 @@ std::vector<UsdPrim> ProxyShape::huntForNativeNodesUnderPrim(
   std::vector<UsdPrim> prims;
   fileio::SchemaPrimsUtils utils(manufacture);
 
-  fileio::TransformIterator it(m_stage->GetPrimAtPath(startPath), proxyTransformPath);
+  const UsdPrim prim = m_stage->GetPrimAtPath(startPath);
+  if (!prim.IsValid())
+  {
+    MString errorString;
+    errorString.format(MString("'^1s' is not a valid prim path in proxy shape: '^2s'"),
+                               startPath.GetString().c_str(),
+                               proxyTransformPath.fullPathName());
+    MGlobal::displayError(errorString);
+    return prims;
+  }
+
+  fileio::TransformIterator it(prim, proxyTransformPath);
   for(; !it.done(); it.next())
   {
     UsdPrim prim = it.prim();
