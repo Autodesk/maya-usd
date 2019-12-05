@@ -1,5 +1,4 @@
-import AL.usd
-import AL.usd.utils
+
 from AL.usd.utils import MayaTransformAPI, RotationOrder
 from pxr import Usd, Sdf, Gf, UsdGeom
 import unittest

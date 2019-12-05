@@ -29,7 +29,6 @@ target_link_libraries(${USDUTILS_TEST_EXECUTABLE_NAME}
     usd
     usdGeom
     vt
-    AL_USDUtils
     ${USDUTILS_LIBRARY_NAME}
     -lpthread -lm
 )
@@ -56,7 +55,7 @@ add_test(
 
 set_tests_properties(${USDUTILS_PYTHON_TEST_NAME}
   PROPERTIES
-    ENVIRONMENT PYTHONPATH=${CMAKE_BINARY_DIR}/${INSTALL_DIR_SUFFIX}/utils:${CMAKE_BINARY_DIR}/src:$ENV{PYTHONPATH} 
+    ENVIRONMENT PYTHONPATH=${CMAKE_BINARY_DIR}/${INSTALL_DIR_SUFFIX}/usdutils:${CMAKE_BINARY_DIR}/src:$ENV{PYTHONPATH} 
 )
 
 

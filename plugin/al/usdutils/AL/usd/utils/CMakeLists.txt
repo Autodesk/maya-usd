@@ -52,8 +52,6 @@ target_link_libraries(${USDUTILS_LIBRARY_NAME}
   gf
   usd
   ${PYTHON_LIBRARIES}
-  ${MAYA_Foundation_LIBRARY}
-  ${MAYA_OpenMaya_LIBRARY}
 )
 
 list(APPEND usdutils_python_source
