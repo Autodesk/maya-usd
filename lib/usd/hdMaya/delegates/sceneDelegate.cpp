@@ -897,7 +897,7 @@ HdDisplayStyle HdMayaSceneDelegate::GetDisplayStyle(const SdfPath& id) {
 
 SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_ID)
-        .Msg("HdMayaSceneDelegate::GetDoubleSided(%s)\n", id.GetText());
+        .Msg("HdMayaSceneDelegate::GetMaterialId(%s)\n", id.GetText());
     auto shapeAdapter = TfMapLookupPtr(_shapeAdapters, id);
     if (shapeAdapter == nullptr) { return _fallbackMaterial; }
     auto material = shapeAdapter->get()->GetMaterial();
