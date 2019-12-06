@@ -286,14 +286,13 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
             // Set the rotate order
             AL_MAYA_CHECK_ERROR2(setInt32(to, m_rotateOrder, uint32_t(convertRotationOrder(op.GetOpType()))), xformError);
           }
-
           if (attr_type == utils::UsdDataType::kVec3f)
           {
-              AL_MAYA_CHECK_ERROR2(setVec3Anim<GfVec3f>(to, obj, op, conversionFactor), xformError);
+              AL_MAYA_CHECK_ERROR2(setVec3Anim<GfVec3f>(to, obj, op, conversionFactor, &params.m_newAnimCurves), xformError);
           }
           else
           {
-            AL_MAYA_CHECK_ERROR2(setVec3Anim<GfVec3d>(to, obj, op, conversionFactor), xformError);
+            AL_MAYA_CHECK_ERROR2(setVec3Anim<GfVec3d>(to, obj, op, conversionFactor, &params.m_newAnimCurves), xformError);
           }
         }
         else if(attr_type == utils::UsdDataType::kFloat)
@@ -328,7 +327,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
 
           if (!attr.isNull())
           {
-            setAngleAnim(to, attr, op);
+            setAngleAnim(to, attr, op, &params.m_newAnimCurves);
           }
         }
         else if(attr_type == utils::UsdDataType::kMatrix4d)
@@ -338,7 +337,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
             std::cerr << "[TransformTranslator::copyAttributes] Error: Animated shear not currently supported" << std::endl;
           }
         }
-
+        
         continue;
 
       }
@@ -495,7 +494,6 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
           AL_MAYA_CHECK_ERROR2(setVec3(to, m_shear, shearX, shearY, shearZ), xformError);
         }
       }
-
     }
   }
   else
@@ -520,7 +518,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
   processMetaData(from, to, params);
   if (UsdAttribute myAttr = from.GetAttribute(UsdGeomTokens->visibility))
   {
-    DgNodeHelper::setVisAttrAnim(to, m_visibility, myAttr);
+    DgNodeHelper::setVisAttrAnim(to, m_visibility, myAttr, &params.m_newAnimCurves);
   }
 
   return MS::kSuccess;

@@ -11,6 +11,7 @@ set(MAYA_UTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib)
 ####################################################################################################
 
 list(APPEND usdmaya_utils_headers
+    AnimationTranslator.h
     Api.h
     AttributeType.h
     DgNodeHelper.h
@@ -22,6 +23,7 @@ list(APPEND usdmaya_utils_headers
 )
 
 list(APPEND usdmaya_utils_source
+    AnimationTranslator.cpp
     AttributeType.cpp
     DgNodeHelper.cpp
     Utils.cpp

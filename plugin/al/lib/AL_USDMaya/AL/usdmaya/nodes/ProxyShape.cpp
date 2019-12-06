@@ -1258,9 +1258,12 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
 // nodes based on the contents of the new variant selection.
 {
   if(MFileIO::isReadingFile())
-  {
     return;
-  }
+
+  if (!m_stage)
+    return;
+
+  const SdfLayerHandleVector stack = m_stage->GetLayerStack();
 
 #if USD_VERSION_NUM > 1911
   TF_FOR_ALL(itr, notice.GetChangeListVec())
@@ -1268,6 +1271,9 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
   TF_FOR_ALL(itr, notice.GetChangeListMap())
 #endif
   {
+    if (std::find(stack.begin(), stack.end(), itr->first) == stack.end())
+      continue;
+
     TF_FOR_ALL(entryIter, itr->second.GetEntryList())
     {
       const SdfPath &path = entryIter->first;
