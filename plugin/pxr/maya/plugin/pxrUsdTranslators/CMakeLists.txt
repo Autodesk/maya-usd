@@ -69,7 +69,7 @@ pxr_test_scripts(
     testenv/testPxrUsdTranslatorsStroke.py
 )
 
-set(TEST_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/plugin/pxr")
+set(TEST_INSTALL_PREFIX "${PXR_INSTALL_PREFIX}")
 
 pxr_register_test(testPxrUsdTranslators
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}

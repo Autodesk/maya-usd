@@ -157,7 +157,7 @@ function(pxr_library NAME)
     if(PXR_ENABLE_PYTHON_SUPPORT AND (args_PYMODULE_CPPFILES OR args_PYMODULE_FILES OR args_PYSIDE_UI_FILES))
         _pxr_python_module(
             ${NAME}
-            WRAPPED_LIB_INSTALL_PREFIX "plugin/pxr/${libInstallPrefix}"
+            WRAPPED_LIB_INSTALL_PREFIX "${INSTALL_DIR_SUFFIX}/${libInstallPrefix}"
             PYTHON_FILES ${args_PYMODULE_FILES}
             PYSIDE_UI_FILES ${args_PYSIDE_UI_FILES}
             CPPFILES ${args_PYMODULE_CPPFILES}
@@ -425,7 +425,7 @@ function(pxr_register_test TEST_NAME)
 
         # This harness is a filter which allows us to manipulate the test run, 
         # e.g. by changing the environment, changing the expected return code, etc.
-        set(testWrapperCmd ${PROJECT_SOURCE_DIR}/plugin/pxr/cmake/macros/testWrapper.py --verbose)
+        set(testWrapperCmd ${PROJECT_SOURCE_DIR}/${INSTALL_DIR_SUFFIX}/cmake/macros/testWrapper.py --verbose)
 
         if (bt_STDOUT_REDIRECT)
             set(testWrapperCmd ${testWrapperCmd} --stdout-redirect=${bt_STDOUT_REDIRECT})
@@ -456,9 +456,9 @@ function(pxr_register_test TEST_NAME)
         # assume the testenv has the same name as the test but allow it to be
         # overridden by specifying TESTENV.
         if (bt_TESTENV)
-            set(testenvDir ${CMAKE_INSTALL_PREFIX}/plugin/pxr/tests/ctest/${bt_TESTENV})
+            set(testenvDir ${PXR_INSTALL_PREFIX}/tests/ctest/${bt_TESTENV})
         else()
-            set(testenvDir ${CMAKE_INSTALL_PREFIX}/plugin/pxr/tests/ctest/${TEST_NAME})
+            set(testenvDir ${PXR_INSTALL_PREFIX}/tests/ctest/${TEST_NAME})
         endif()
 
         set(testWrapperCmd ${testWrapperCmd} --testenv-dir=${testenvDir})
@@ -526,13 +526,13 @@ function(pxr_register_test TEST_NAME)
             set(_plugSearchPathEnvName ${PXR_OVERRIDE_PLUGINPATH_NAME})
         endif()
 
-        set(_testPluginPath "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin;${CMAKE_INSTALL_PREFIX}/lib/usd")
-        set(_testPrePath "$ENV{PATH};${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib;${CMAKE_INSTALL_PREFIX}/lib")
+        set(_testPluginPath "${PXR_INSTALL_PREFIX}/maya/plugin;${CMAKE_INSTALL_PREFIX}/lib/usd")
+        set(_testPrePath "$ENV{PATH};${PXR_INSTALL_PREFIX}/maya/lib;${CMAKE_INSTALL_PREFIX}/lib")
 
         # Ensure that Python imports the Python files built by this build.
         # On Windows convert backslash to slash and don't change semicolons
         # to colons.
-        set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib/python;$ENV{PYTHONPATH}")
+        set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;${PXR_INSTALL_PREFIX}/lib/python;$ENV{PYTHONPATH}")
         if(WIN32)
             string(REGEX REPLACE "\\\\" "/" _testPythonPath "${_testPythonPath}")
             string(REGEX REPLACE "\\\\" "/" _testPluginPath "${_testPluginPath}")

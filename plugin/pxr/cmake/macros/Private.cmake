@@ -42,7 +42,7 @@ function(_copy_headers LIBRARY_NAME)
             add_custom_command(
                 OUTPUT ${outfile}
                 COMMAND ${CMAKE_COMMAND} -E make_directory "${dir_to_create}"
-                COMMAND ${CMAKE_COMMAND} -Dinfile="${infile}" -Doutfile="${outfile}" -P "${PROJECT_SOURCE_DIR}/plugin/pxr/cmake/macros/copyHeaderForBuild.cmake"
+                COMMAND ${CMAKE_COMMAND} -Dinfile="${infile}" -Doutfile="${outfile}" -P "${PROJECT_SOURCE_DIR}/${INSTALL_DIR_SUFFIX}/cmake/macros/copyHeaderForBuild.cmake"
                 MAIN_DEPENDENCY "${infile}"
                 COMMENT "Copying ${f} ..."
                 VERBATIM
@@ -141,7 +141,7 @@ function(_install_python LIBRARY_NAME)
             add_custom_command(OUTPUT ${outfile}
                 COMMAND
                     ${PYTHON_EXECUTABLE}
-                    ${PROJECT_SOURCE_DIR}/plugin/pxr/cmake/macros/compilePython.py
+                    ${PROJECT_SOURCE_DIR}/${INSTALL_DIR_SUFFIX}/cmake/macros/compilePython.py
                     ${CMAKE_CURRENT_SOURCE_DIR}/${file}
                     ${CMAKE_CURRENT_SOURCE_DIR}/${file}
                     ${CMAKE_CURRENT_BINARY_DIR}/${file_we}.pyc
@@ -882,7 +882,7 @@ function(_pxr_python_module NAME)
     mayaUsd_add_rpath(rpath
         "${CMAKE_INSTALL_PREFIX}/${args_WRAPPED_LIB_INSTALL_PREFIX}")
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-
+    
     # Add path for usd core
     if(WANT_USD_RELATIVE_PATH)
         mayaUsd_add_rpath(rpath "../../../../../USD/lib")
@@ -1227,7 +1227,7 @@ function(_pxr_library NAME)
     mayaUsd_init_rpath(rpath "${libInstallPrefix}")
 	# Add path for Pixar-specific Maya shared libraries.  As of 1-Aug-2019, 
 	# this is only the usdMaya shared library.
-    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}/${PXR_INSTALL_SUBDIR}/lib")
+    mayaUsd_add_rpath(rpath "${PXR_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib")
 	# Add path for common mayaUsd shared libraries.  As of 1-Aug-2019, this is
 	# only the mayaUsd shared library.
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")

@@ -5,7 +5,7 @@
 find_package(GTest REQUIRED)
 
 set(MAYA_TEST_LIBRARY_NAME "AL_MayaTest")
-set(MAYA_TEST_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
+set(MAYA_TEST_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib) 
 
 ####################################################################################################
 # Source 
@@ -54,7 +54,7 @@ target_include_directories(${MAYA_TEST_LIBRARY_NAME}
 
 # install the public headers
 install( FILES ${maya_test_headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/maya/test
+        DESTINATION ${AL_INSTALL_PREFIX}/include/AL/maya/test
 )
 
 # install the library

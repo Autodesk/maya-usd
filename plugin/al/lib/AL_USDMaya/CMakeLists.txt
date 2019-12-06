@@ -226,15 +226,15 @@ endif()
 
 install(TARGETS ${LIBRARY_NAME}
     LIBRARY
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    DESTINATION ${AL_INSTALL_PREFIX}/lib
     RUNTIME
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    DESTINATION ${AL_INSTALL_PREFIX}/lib
 )
 if(IS_WINDOWS)
-    install(FILES $<TARGET_PDB_FILE:${LIBRARY_NAME}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL)
+    install(FILES $<TARGET_PDB_FILE:${LIBRARY_NAME}> DESTINATION ${AL_INSTALL_PREFIX}/lib OPTIONAL)
 endif()
 
-set_property(GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
+set_property(GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 
 # python bindings
 set(PYTHON_LIBRARY_NAME _${LIBRARY_NAME})
@@ -275,6 +275,13 @@ target_link_libraries(${PYTHON_LIBRARY_NAME}
     ${LIBRARY_NAME}
 )
 
+# rpath setup
+if(IS_MACOSX OR IS_LINUX) 
+    mayaUsd_init_rpath(rpath lib/python/${arDirPath})
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    mayaUsd_install_rpath(rpath ${PYTHON_LIBRARY_NAME})
+endif()
+
 set(libFile ${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(PLUG_INFO_RESOURCE_PATH "resources")
 set(PLUG_INFO_ROOT "..")
@@ -287,62 +294,62 @@ configure_file(
 
 install(TARGETS ${PYTHON_LIBRARY_NAME}
     LIBRARY
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${arDirPath}
+    DESTINATION ${AL_INSTALL_PREFIX}/lib/python/${arDirPath}
     RUNTIME
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${arDirPath}
+    DESTINATION ${AL_INSTALL_PREFIX}/lib/python/${arDirPath}
 )
 set_target_properties(${PYTHON_LIBRARY_LOCATION}
     PROPERTIES LOCATION
-    ${CMAKE_INSTALL_PREFIX}/lib/python/${arDirPath}/${PYTHON_LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}
+    ${AL_INSTALL_PREFIX}/lib/python/${arDirPath}/${PYTHON_LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}
 )
-set_property(GLOBAL PROPERTY GLOBAL_PYTHON_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/python/${arDirPath}/${PYTHON_LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
+set_property(GLOBAL PROPERTY GLOBAL_PYTHON_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib/python/${arDirPath}/${PYTHON_LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 
 install(FILES __init__.py
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${arDirPath}
+    DESTINATION ${AL_INSTALL_PREFIX}/lib/python/${arDirPath}
 )
 install(CODE
-    "file(WRITE \"${CMAKE_INSTALL_PREFIX}/lib/python/AL/__init__.py\"
+    "file(WRITE \"${AL_INSTALL_PREFIX}/lib/python/AL/__init__.py\"
     \"try:\n\t__import__('pkg_resources').declare_namespace(__name__)\nexcept:\n\tfrom pkgutil import extend_path\n\t__path__ = extend_path(__path__, __name__)\")"
 )
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/${LIBRARY_NAME}/resources
+    DESTINATION ${AL_INSTALL_PREFIX}/lib/usd/${LIBRARY_NAME}/resources
 )
 install(CODE
-    "file(WRITE \"${CMAKE_INSTALL_PREFIX}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+    "file(WRITE \"${AL_INSTALL_PREFIX}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
 )
 
 # install public headers
 install( FILES ${AL_maya_headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/maya
+        DESTINATION ${AL_INSTALL_PREFIX}/include/AL/maya
 )
 install( FILES
             ${AL_usdmaya_headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/usdmaya
+        DESTINATION ${AL_INSTALL_PREFIX}/include/AL/usdmaya
 )
 install( FILES
             ${AL_usdmaya_cmds_headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/usdmaya/cmds
+        DESTINATION ${AL_INSTALL_PREFIX}/include/AL/usdmaya/cmds
 )
 install( FILES
             ${AL_usdmaya_fileio_headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/usdmaya/fileio
+        DESTINATION ${AL_INSTALL_PREFIX}/include/AL/usdmaya/fileio
 )
 install( FILES
             ${AL_usdmaya_nodes_headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/usdmaya/nodes
+        DESTINATION ${AL_INSTALL_PREFIX}/include/AL/usdmaya/nodes
 )
 install( FILES
             ${AL_usdmaya_nodes_proxy_headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/usdmaya/nodes/proxy
+        DESTINATION ${AL_INSTALL_PREFIX}/include/AL/usdmaya/nodes/proxy
 )
 install( FILES
             ${AL_usdmaya_tests_headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/usdmaya/tests
+        DESTINATION ${AL_INSTALL_PREFIX}/include/AL/usdmaya/tests
 )
 install( FILES
             ${AL_usdmaya_fileio_translators_headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/usdmaya/fileio/translators
+        DESTINATION ${AL_INSTALL_PREFIX}/include/AL/usdmaya/fileio/translators
 )
 
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/AL/usdmaya/Version.h")

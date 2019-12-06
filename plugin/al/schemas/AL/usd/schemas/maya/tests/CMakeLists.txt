@@ -28,11 +28,11 @@ target_link_libraries(testMayaSchemas
     ${Boost_PYTHON_LIBRARY}
     )
 
-install(TARGETS testMayaSchemas DESTINATION ${INSTALL_DIR_SUFFIX}/bin)
+install(TARGETS testMayaSchemas DESTINATION ${AL_INSTALL_PREFIX}/bin)
 
 
 add_test(
     NAME TestAdditionalSchemas
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMAND RunTests.sh ${CMAKE_INSTALL_PREFIX} ${USD_LIBRARY_DIR}
+    COMMAND RunTests.sh ${AL_INSTALL_PREFIX} ${USD_LIBRARY_DIR}
 )

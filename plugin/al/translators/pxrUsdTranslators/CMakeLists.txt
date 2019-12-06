@@ -66,21 +66,21 @@ target_link_libraries(${PXR_TRANSLATORS_PACKAGE} PRIVATE ${DEPENDANT_LIBRARIES})
 
 install(TARGETS ${PXR_TRANSLATORS_PACKAGE}
  LIBRARY
- DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
+ DESTINATION ${AL_INSTALL_PREFIX}/plugin
  RUNTIME
- DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
+ DESTINATION ${AL_INSTALL_PREFIX}/plugin
 )
 if(IS_WINDOWS)
- install(FILES $<TARGET_PDB_FILE:${PXR_TRANSLATORS_PACKAGE}> DESTINATION ${INSTALL_DIR_SUFFIX}/plugin OPTIONAL)
+ install(FILES $<TARGET_PDB_FILE:${PXR_TRANSLATORS_PACKAGE}> DESTINATION ${AL_INSTALL_PREFIX}/plugin OPTIONAL)
 endif()
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
- DESTINATION ${CMAKE_INSTALL_PREFIX}/plugin/${PXR_TRANSLATORS_PACKAGE}/resources
+ DESTINATION ${AL_INSTALL_PREFIX}/plugin/${PXR_TRANSLATORS_PACKAGE}/resources
 )
 
 #install top level plugInfo.json that includes the configured plugInfo.json
 install(CODE
- "file(WRITE \"${CMAKE_INSTALL_PREFIX}/plugin/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+ "file(WRITE \"${AL_INSTALL_PREFIX}/plugin/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
 )
 
 if(NOT SKIP_USDMAYA_TESTS)
