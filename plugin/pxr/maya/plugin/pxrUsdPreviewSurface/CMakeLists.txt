@@ -81,7 +81,7 @@ pxr_install_test_dir(
     SRC testenv/PxrUsdPreviewSurfaceExportTest
     DEST testPxrUsdPreviewSurfaceExport
 )
-set(TEST_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/plugin/pxr")
+set(TEST_INSTALL_PREFIX "${PXR_INSTALL_PREFIX}")
 
 pxr_register_test(testPxrUsdPreviewSurfaceExport
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}

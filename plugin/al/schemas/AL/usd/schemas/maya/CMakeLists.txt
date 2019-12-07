@@ -1,16 +1,16 @@
 set(
     resources_install_path
-    ${CMAKE_INSTALL_PREFIX}/lib/usd/AL_USDMayaSchemas/resources
+    ${AL_INSTALL_PREFIX}/lib/usd/AL_USDMayaSchemas/resources
 )
 
 set(
     library_install_path
-    ${CMAKE_INSTALL_PREFIX}/lib
+    ${AL_INSTALL_PREFIX}/lib
 )
 
 set(
     bindings_install_path
-    ${CMAKE_INSTALL_PREFIX}/lib/python/AL/usd/schemas/maya
+    ${AL_INSTALL_PREFIX}/lib/python/AL/usd/schemas/maya
 )
 
 # Bake library name
@@ -168,11 +168,11 @@ install(
     DIRECTORY
         ${CMAKE_BINARY_DIR}/AL
     DESTINATION
-        ${CMAKE_INSTALL_PREFIX}/lib/python
+        ${AL_INSTALL_PREFIX}/lib/python
 )
 
-install(CODE "message(STATUS \"POST INSTALL: Compiling python/pyc for ${CMAKE_INSTALL_PREFIX}/lib/python ... \")")
-install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} -m compileall ${CMAKE_INSTALL_PREFIX}/lib/python )")
+install(CODE "message(STATUS \"POST INSTALL: Compiling python/pyc for ${AL_INSTALL_PREFIX}/lib/python ... \")")
+install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} -m compileall ${AL_INSTALL_PREFIX}/lib/python )")
 
 ####################################################################################################
 # Install public headers
@@ -185,7 +185,7 @@ install(
         api.h
         tokens.h
     DESTINATION
-        ${CMAKE_INSTALL_PREFIX}/include/AL/usd/schemas/maya
+        ${AL_INSTALL_PREFIX}/include/AL/usd/schemas/maya
 )
 
 ####################################################################################################

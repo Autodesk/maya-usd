@@ -97,26 +97,26 @@ target_link_libraries(${TRANSLATORS_PACKAGE} ${DEPENDANT_LIBRARIES})
 
 install(TARGETS ${TRANSLATORS_PACKAGE}
  LIBRARY
- DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+ DESTINATION ${AL_INSTALL_PREFIX}/lib
  RUNTIME
- DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+ DESTINATION ${AL_INSTALL_PREFIX}/lib
 )
 if(IS_WINDOWS)
-    install(FILES $<TARGET_PDB_FILE:${TRANSLATORS_PACKAGE}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL)
+    install(FILES $<TARGET_PDB_FILE:${TRANSLATORS_PACKAGE}> DESTINATION ${AL_INSTALL_PREFIX}/lib OPTIONAL)
 endif()
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
- DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/${TRANSLATORS_PACKAGE}/resources
+ DESTINATION ${AL_INSTALL_PREFIX}/lib/usd/${TRANSLATORS_PACKAGE}/resources
 )
 
 #install top level plugInfo.json that includes the configured plugInfo.json
 install(CODE
- "file(WRITE \"${CMAKE_INSTALL_PREFIX}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+ "file(WRITE \"${AL_INSTALL_PREFIX}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
 )
 
 # install public headers
 install(FILES ${arg_PUBLIC_HEADER_FILES}
-     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${DIRECTORY_PATH}
+     DESTINATION ${AL_INSTALL_PREFIX}/include/${DIRECTORY_PATH}
 )
 
 if(NOT SKIP_USDMAYA_TESTS)

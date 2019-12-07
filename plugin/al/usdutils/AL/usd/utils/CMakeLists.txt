@@ -4,7 +4,7 @@
 ####################################################################################################
 
 set(USDUTILS_LIBRARY_NAME "AL_USDUtils")
-set(USDUTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
+set(USDUTILS_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib) 
 
 ####################################################################################################
 # General 
@@ -55,7 +55,7 @@ target_link_libraries(${USDUTILS_LIBRARY_NAME}
 
 # install the public headers
 install( FILES ${usdutils_headers}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/usd/utils
+    DESTINATION ${AL_INSTALL_PREFIX}/include/AL/usd/utils
 )
 
 # install the library

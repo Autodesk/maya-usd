@@ -10,8 +10,12 @@ endif()
 set(NEED_BOOST_FILESYSTEM ON)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(BOOST_ROOT ${PXR_USD_LOCATION})
+if(NOT DEFINED BOOST_ROOT)
+    set(BOOST_ROOT ${PXR_USD_LOCATION})
+endif()
+
 set(INSTALL_DIR_SUFFIX plugin/al)
+set(AL_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX})
 
 option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
@@ -58,8 +62,6 @@ set(AL_USDMAYA_LOCATION_NAME
     "Name of the environment variable used to store AL_USDMaya installation location"
 )
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
-
 # Build all the utils
 set(EVENTS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/utils)
 set(USDUTILS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/usdutils)
@@ -95,5 +97,5 @@ get_property(LIBRARY_LOCATION GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION)
 get_property(PYTHON_LIBRARY_LOCATION GLOBAL PROPERTY GLOBAL_PYTHON_LIBRARY_LOCATION)
 configure_file(ALUsdMayaConfig.cmake.in ${PROJECT_BINARY_DIR}/ALUsdMayaConfig.cmake @ONLY)
 
-install(CODE "message(STATUS \"POST INSTALL: Compiling python/pyc for ${CMAKE_INSTALL_PREFIX} ... \")")
-install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} -m compileall ${CMAKE_INSTALL_PREFIX} )")
+install(CODE "message(STATUS \"POST INSTALL: Compiling python/pyc for ${AL_INSTALL_PREFIX} ... \")")
+install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} -m compileall ${AL_INSTALL_PREFIX} )")
