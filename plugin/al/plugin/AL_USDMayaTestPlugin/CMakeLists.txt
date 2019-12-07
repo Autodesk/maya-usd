@@ -110,16 +110,16 @@ endif()
 install(TARGETS
     ${PXR_PACKAGE}
     LIBRARY
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/plugin
+        DESTINATION ${AL_INSTALL_PREFIX}/plugin
     RUNTIME
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/plugin
+        DESTINATION ${AL_INSTALL_PREFIX}/plugin
 )
 
 add_test(
     NAME TestAL_USDMaya
     COMMAND
         ${CMAKE_CURRENT_SOURCE_DIR}/run_mayaplugin_tests.sh
-            ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX}
+            ${AL_INSTALL_PREFIX}
             ${USD_LIBRARY_DIR}
             ${CMAKE_CURRENT_SOURCE_DIR}
 )

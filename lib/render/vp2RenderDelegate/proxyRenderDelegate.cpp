@@ -604,7 +604,10 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
     auto status = MHWRender::MGeometryUtilities::displayStatus(_proxyDagPath);
 
     const bool wasProxySelected = _isProxySelected;
-    _isProxySelected = ((status == MHWRender::kHilite) || (status == MHWRender::kLead));
+    _isProxySelected =
+        (status == MHWRender::kHilite) ||
+        (status == MHWRender::kLead) ||
+        (status == MHWRender::kActive);
 
     SdfPathVector rootPaths;
 

@@ -4,10 +4,10 @@
 ####################################################################################################
 
 set(USDTRANSACTION_LIBRARY_NAME "AL_USDTransaction")
-set(USDTRANSACTION_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
+set(USDTRANSACTION_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib) 
 
 set(USDTRANSACTION_PYTHON_LIBRARY_NAME _${USDTRANSACTION_LIBRARY_NAME})
-set(USDTRANSACTION_PYTHON_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/python/AL/usd/transaction) 
+set(USDTRANSACTION_PYTHON_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib/python/AL/usd/transaction) 
 
 ####################################################################################################
 # General 
@@ -95,7 +95,7 @@ endif()
 
 # install the public headers
 install(FILES ${usdtransaction_headers}
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/usd/transaction
+  DESTINATION ${AL_INSTALL_PREFIX}/include/AL/usd/transaction
 )
 
 # install the library

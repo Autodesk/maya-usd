@@ -4,7 +4,7 @@
 ####################################################################################################
 
 set(MAYAUTILS_LIBRARY_NAME "AL_MayaUtils")
-set(MAYAUTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
+set(MAYAUTILS_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib) 
 
 ####################################################################################################
 # Source 
@@ -77,11 +77,11 @@ target_link_libraries(${MAYAUTILS_LIBRARY_NAME}
 ####################################################################################################
  
 install( FILES ${maya_utils_headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/maya/utils
+        DESTINATION ${AL_INSTALL_PREFIX}/include/AL/maya/utils
 )
 
 install( FILES ${maya_event_headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/maya/event
+        DESTINATION ${AL_INSTALL_PREFIX}/include/AL/maya/event
 )
 
 install(TARGETS ${MAYAUTILS_LIBRARY_NAME}

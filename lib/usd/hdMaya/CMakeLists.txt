@@ -109,7 +109,6 @@ endif ()
 target_compile_definitions(${TARGET_NAME} 
     PRIVATE 
         "HDMAYA_EXPORT=1"
-        USD_VERSION_NUM=${USD_VERSION_NUM}
 )
 
 if (IS_WINDOWS)
