@@ -27,6 +27,8 @@
 #include "maya/MMatrix.h"
 #include "maya/MNodeClass.h"
 
+#include <iostream>
+
 namespace AL {
 namespace usdmaya {
 namespace utils {
