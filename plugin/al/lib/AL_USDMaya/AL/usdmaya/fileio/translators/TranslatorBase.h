@@ -268,6 +268,25 @@ protected:
   virtual void setTranslatedType(const TfType& translatedType)
     { m_translatedType = translatedType; }
 
+  class NewNodesCollector
+  {
+  public:
+    NewNodesCollector(TranslatorContextPtr context, UsdPrim prim):m_context(context), m_prim(prim){}
+    ~NewNodesCollector()
+    {
+      if(!m_context)return;
+      for(unsigned int i=0; i<m_objectArray.length(); ++i)
+      {
+        m_context->insertItem(m_prim, m_objectArray[i]);
+      }
+    }
+    MObjectArray *nodeContainerPtr(){return &m_objectArray;}
+  private:
+    TranslatorContextPtr m_context;
+    UsdPrim m_prim;
+    MObjectArray m_objectArray;
+  };
+
 private:
   TfType m_translatedType;
   TranslatorContextPtr m_context;

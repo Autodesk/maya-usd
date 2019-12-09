@@ -1,5 +1,5 @@
 import unittest
-
+import tempfile
 
 from maya import cmds
 
@@ -326,6 +326,47 @@ class TestPythonTranslators(unittest.TestCase):
         self.assertEqual(CubeGenerator.getState()["updateCount"],0)
 
         self.assertFalse(cmds.objExists('|bobo|root|peter01|rig'))
+
+    def test_variantSwitch_listener_from_different_stage(self):
+        """Test listener only responds to changes made to layers found in proxy shape owned stages."""
+
+        usdmaya.TranslatorBase.registerTranslator(CubeGenerator(), 'beast_rig')
+
+        # Make a dummy stage that mimics prim path found in test data
+        otherHandle = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
+
+        # Scope
+        if True:
+            stage = Usd.Stage.CreateInMemory()
+            stage.DefinePrim("/root/peter01")
+            stage.Export(otherHandle.name)
+
+        # Open both stages
+        testStage = Usd.Stage.Open("../test_data/inactivetest.usda")
+        otherStage = Usd.Stage.Open(otherHandle.name)
+
+        # Cache
+        stageCache = UsdUtils.StageCache.Get()
+        stageCache.Insert(testStage)
+        stageCache.Insert(otherStage)
+        stageId = stageCache.GetId(testStage)
+
+        # Import legit test data
+        cmds.AL_usdmaya_ProxyShapeImport(stageId=stageId.ToLongInt(), name='bobo')
+
+        # Make sure both paths are valid
+        self.assertTrue(testStage.GetPrimAtPath("/root/peter01"))
+        self.assertTrue(otherStage.GetPrimAtPath("/root/peter01"))
+
+        # Modify stage that isn't loaded by AL_USDMaya
+        prim = otherStage.GetPrimAtPath("/root/peter01")
+        prim.SetActive(False)
+
+        # Ensure stage on proxy wasn't modified
+        self.assertEqual(CubeGenerator.getState()["tearDownCount"], 0)
+
+        # Cleanup
+        otherHandle.close()
 
     # this test is in progress... I cannot make it fail currently but
     # the motion translator in unicorn is definitely crashing Maya
