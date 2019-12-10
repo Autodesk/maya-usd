@@ -47,11 +47,32 @@ add_test(
     python -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-set_tests_properties(${USDTRANSACTION_PYTHON_TEST_NAME}
-  PROPERTIES
-    ENVIRONMENT PYTHONPATH=${CMAKE_BINARY_DIR}/${INSTALL_DIR_SUFFIX}/usdtransaction:${CMAKE_BINARY_DIR}/src:$ENV{PYTHONPATH} 
+# set the PYTHONPATH and PATH for the python unittests
+set(pythonPath
+    "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/python"
+    "$ENV{PYTHONPATH}"
 )
 
+set(path 
+    "${CMAKE_INSTALL_PREFIX}/plugin/al/lib"
+    "$ENV{PATH}"
+)
+
+if(IS_WINDOWS)
+    string(REPLACE ";" "\;" pythonPath "${pythonPath}")
+    string(REPLACE ";" "\;" path "${path}")
+else()
+    separate_arguments(pythonPath NATIVE_COMMAND "${pythonPath}")
+    separate_arguments(path NATIVE_COMMAND "${path}")
+
+    string(REPLACE "\;" ":" pythonPath "${pythonPath}")
+    string(REPLACE "\;" ":" path "${path}")
+endif()
+
+set_property(TEST ${USDTRANSACTION_PYTHON_TEST_NAME} APPEND PROPERTY ENVIRONMENT 
+    "PYTHONPATH=${pythonPath}"
+    "PATH=${path}"
+)
 
 if (TARGET all_tests)
   add_dependencies(all_tests ${USDTRANSACTION_TEST_EXECUTABLE_NAME} ${USDTRANSACTION_PYTHON_LIBRARY_NAME})

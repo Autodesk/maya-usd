@@ -85,6 +85,25 @@ set_target_properties(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
+# set the RPATH for _AL_USDTransaction
+if(IS_MACOSX OR IS_LINUX)
+    mayaUsd_init_rpath(rpath "${PROJECT_NAME}")
+    mayaUsd_add_rpath(rpath "../../../..")
+    mayaUsd_install_rpath(rpath ${USDTRANSACTION_PYTHON_LIBRARY_NAME})
+endif()
+
+if(IS_WINDOWS)
+    set_target_properties(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
+        PROPERTIES
+            SUFFIX ".pyd"
+    )
+elseif(IS_MACOSX)
+    set_target_properties(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
+        PROPERTIES
+            SUFFIX ".so"
+    )
+endif()
+
 if(NOT SKIP_USDMAYA_TESTS)
   add_subdirectory(tests)
 endif()

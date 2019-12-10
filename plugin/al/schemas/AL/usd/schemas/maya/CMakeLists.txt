@@ -118,12 +118,16 @@ set_target_properties(_AL_USDMayaSchemas
 )
 
 if(IS_WINDOWS)
-set_target_properties(_AL_USDMayaSchemas
-    PROPERTIES
-        SUFFIX ".pyd"
-)
+    set_target_properties(_AL_USDMayaSchemas
+        PROPERTIES
+            SUFFIX ".pyd"
+    )
+elseif(IS_MACOSX)
+    set_target_properties(_AL_USDMayaSchemas
+        PROPERTIES
+            SUFFIX ".so"
+    )
 endif()
-
 target_link_libraries(_AL_USDMayaSchemas AL_USDMayaSchemas ${DEPENDANT_LIBRARIES})
 
 install(TARGETS _AL_USDMayaSchemas
