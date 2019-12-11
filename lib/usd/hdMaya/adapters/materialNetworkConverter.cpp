@@ -698,6 +698,8 @@ HdMayaMaterialNetworkConverter::GetPreviewShaderParams() {
     return _previewShaderParams;
 }
 
+#if USD_VERSION_NUM <= 1911
+
 // This is required quite often, so we precalc.
 std::mutex _previewMaterialParamVector_mutex;
 bool _previewMaterialParamVector_initialized = false;
@@ -721,5 +723,7 @@ HdMayaMaterialNetworkConverter::GetPreviewMaterialParamVector() {
     }
     return _previewMaterialParamVector;
 }
+
+#endif // USD_VERSION_NUM <= 1911
 
 PXR_NAMESPACE_CLOSE_SCOPE

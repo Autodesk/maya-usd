@@ -150,8 +150,12 @@ public:
     HDMAYA_API
     static const HdMayaShaderParams& GetPreviewShaderParams();
 
+#if USD_VERSION_NUM <= 1911
+
     HDMAYA_API
     static const HdMaterialParamVector& GetPreviewMaterialParamVector();
+
+#endif // USD_VERSION_NUM <= 1911
 
 private:
     HdMaterialNetwork& _network;

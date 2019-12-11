@@ -97,14 +97,6 @@ public:
         const SdfPath& id, HdMayaDelegateCtx* delegate, const MObject& obj)
         : HdMayaMaterialAdapter(id, delegate, obj) {}
 
-    std::string GetSurfaceShaderSource() override {
-        return _textureShaderSource.first;
-    }
-
-    std::string GetDisplacementShaderSource() override {
-        return _textureShaderSource.second;
-    }
-
     void CreateCallbacks() override {
         TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
             .Msg(
@@ -118,6 +110,16 @@ public:
             obj, _DirtyMaterialParams, this, &status);
         if (ARCH_LIKELY(status)) { AddCallback(id); }
         HdMayaAdapter::CreateCallbacks();
+    }
+
+#if USD_VERSION_NUM <= 1911
+
+    std::string GetSurfaceShaderSource() override {
+        return _textureShaderSource.first;
+    }
+
+    std::string GetDisplacementShaderSource() override {
+        return _textureShaderSource.second;
     }
 
     inline bool _RegisterTexture(
@@ -172,6 +174,8 @@ public:
             .Msg("Unexpected call to GetMaterialParamValue\n");
         return VtValue(GfVec4f(0.0f, 0.0f, 0.0f, 1.0f));
     }
+
+#endif // USD_VERSION_NUM <= 1911
 
 private:
     static void _DirtyMaterialParams(
