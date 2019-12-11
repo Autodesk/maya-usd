@@ -268,6 +268,9 @@ VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(
     HdMaterialNode node;
     node.path = materialID;
     node.identifier = UsdImagingTokens->UsdPreviewSurface;
+#if USD_VERSION_NUM >= 1911
+    map.terminals.push_back(node.path);
+#endif
     for (const auto& it :
          HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
         node.parameters.emplace(
@@ -656,6 +659,10 @@ private:
 
         HdMaterialNetworkMap materialNetworkMap;
         materialNetworkMap.map[HdMaterialTerminalTokens->surface] = materialNetwork;
+#if USD_VERSION_NUM >= 1911
+        materialNetworkMap.terminals.push_back(
+            materialNetwork.nodes.back().path);
+#endif
         // HdMaterialNetwork displacementNetwork;
         // materialNetworkMap.map[HdMaterialTerminalTokens->displacement] =
         // displacementNetwork;
