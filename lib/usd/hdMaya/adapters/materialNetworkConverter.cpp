@@ -166,15 +166,6 @@ TfToken GetOutputName(const HdMaterialNode& material, SdfValueTypeName type) {
     return HdMayaAdapterTokens->result;
 }
 
-std::mutex _previewShaderParams_mutex;
-bool _previewShaderParams_initialized = false;
-HdMayaShaderParams _previewShaderParams;
-
-// This is required quite often, so we precalc.
-std::mutex _previewMaterialParamVector_mutex;
-bool _previewMaterialParamVector_initialized = false;
-HdMaterialParamVector _previewMaterialParamVector;
-
 class HdMayaGenericMaterialAttrConverter : public HdMayaMaterialAttrConverter {
 public:
     /// Generic attr converter has no fixed type
@@ -669,6 +660,10 @@ VtValue HdMayaMaterialNetworkConverter::ConvertPlugToValue(
     return {};
 };
 
+std::mutex _previewShaderParams_mutex;
+bool _previewShaderParams_initialized = false;
+HdMayaShaderParams _previewShaderParams;
+
 const HdMayaShaderParams&
 HdMayaMaterialNetworkConverter::GetPreviewShaderParams() {
     if (!_previewShaderParams_initialized) {
@@ -702,6 +697,11 @@ HdMayaMaterialNetworkConverter::GetPreviewShaderParams() {
     }
     return _previewShaderParams;
 }
+
+// This is required quite often, so we precalc.
+std::mutex _previewMaterialParamVector_mutex;
+bool _previewMaterialParamVector_initialized = false;
+HdMaterialParamVector _previewMaterialParamVector;
 
 const HdMaterialParamVector&
 HdMayaMaterialNetworkConverter::GetPreviewMaterialParamVector() {
