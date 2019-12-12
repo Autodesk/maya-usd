@@ -28,6 +28,10 @@ TF_REGISTRY_FUNCTION(TfDebug)
             "Debugging of the the diagnostics batching system in UsdMaya.");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDMAYA_PROXYSHAPEBASE,
             "Base proxy shape evaluation");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(MAYAUSD_UFE_MANIPULATORS,
+            "Debugging of the UFE manipulators within maya-usd.");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(MAYAUSD_UFE_TRANSFORMS,
+            "Debugging of the UFE transforms within maya-usd.");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

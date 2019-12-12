@@ -17,9 +17,9 @@
 
 #include "../base/api.h"
 
-#include <ufe/transform3dUndoableCommands.h>
+#include "ufe/transform3dUndoableCommands.h"
 
-#include <pxr/usd/usd/attribute.h>
+#include "pxr/usd/usd/attribute.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -30,22 +30,22 @@ namespace ufe {
 /*!
 	Ability to perform undo to restore the original pivot value.
  */
-class MAYAUSD_CORE_PUBLIC UsdRotatePivotTranslateUndoableCommand : public Ufe::TranslateUndoableCommand
+class MAYAUSD_CORE_PUBLIC UsdScalePivotTranslateUndoableCommand : public Ufe::TranslateUndoableCommand
 {
 public:
-	typedef std::shared_ptr<UsdRotatePivotTranslateUndoableCommand> Ptr;
+	typedef std::shared_ptr<UsdScalePivotTranslateUndoableCommand> Ptr;
 
-	UsdRotatePivotTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode);
-	~UsdRotatePivotTranslateUndoableCommand() override;
+	UsdScalePivotTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, UsdTimeCode timeCode);
+	~UsdScalePivotTranslateUndoableCommand() override;
 
 	// Delete the copy/move constructors assignment operators.
-	UsdRotatePivotTranslateUndoableCommand(const UsdRotatePivotTranslateUndoableCommand&) = delete;
-	UsdRotatePivotTranslateUndoableCommand& operator=(const UsdRotatePivotTranslateUndoableCommand&) = delete;
-	UsdRotatePivotTranslateUndoableCommand(UsdRotatePivotTranslateUndoableCommand&&) = delete;
-	UsdRotatePivotTranslateUndoableCommand& operator=(UsdRotatePivotTranslateUndoableCommand&&) = delete;
+	UsdScalePivotTranslateUndoableCommand(const UsdScalePivotTranslateUndoableCommand&) = delete;
+	UsdScalePivotTranslateUndoableCommand& operator=(const UsdScalePivotTranslateUndoableCommand&) = delete;
+	UsdScalePivotTranslateUndoableCommand(UsdScalePivotTranslateUndoableCommand&&) = delete;
+	UsdScalePivotTranslateUndoableCommand& operator=(UsdScalePivotTranslateUndoableCommand&&) = delete;
 
 	//! Create a UsdRotatePivotTranslateUndoableCommand from a USD prim, UFE path and UFE scene item.
-	static UsdRotatePivotTranslateUndoableCommand::Ptr create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode);
+	static UsdScalePivotTranslateUndoableCommand::Ptr create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, UsdTimeCode timeCode);
 
 	// Ufe::TranslateUndoableCommand overrides
 	void undo() override;

@@ -208,6 +208,7 @@ if(UFE_FOUND)
         ufe/UsdRootChildHierarchy.cpp
         ufe/UsdRotatePivotTranslateUndoableCommand.cpp
         ufe/UsdRotateUndoableCommand.cpp
+        ufe/UsdScalePivotTranslateUndoableCommand.cpp
         ufe/UsdScaleUndoableCommand.cpp
         ufe/UsdSceneItem.cpp
         ufe/UsdSceneItemOps.cpp
@@ -352,6 +353,7 @@ if(UFE_FOUND)
         ufe/UsdRootChildHierarchy.h
         ufe/UsdRotatePivotTranslateUndoableCommand.h
         ufe/UsdRotateUndoableCommand.h
+        ufe/UsdScalePivotTranslateUndoableCommand.h
         ufe/UsdScaleUndoableCommand.h
         ufe/UsdSceneItem.h
         ufe/UsdSceneItemOps.h
