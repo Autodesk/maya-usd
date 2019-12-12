@@ -47,9 +47,21 @@ add_test(
     python -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+set(pythonPath
+    "${CMAKE_BINARY_DIR}/${INSTALL_DIR_SUFFIX}/usdtransaction"
+    "${CMAKE_BINARY_DIR}/src"
+    "$ENV{PYTHONPATH}"
+)
+if(IS_WINDOWS)
+    string(REPLACE ";" "\;" pythonPath "${pythonPath}")
+else()
+    separate_arguments(pythonPath NATIVE_COMMAND "${pythonPath}")
+    string(REPLACE "\;" ":" pythonPath "${pythonPath}")
+endif()
+
 set_tests_properties(${USDTRANSACTION_PYTHON_TEST_NAME}
   PROPERTIES
-    ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}/${INSTALL_DIR_SUFFIX}/usdtransaction:${CMAKE_BINARY_DIR}/src:$ENV{PYTHONPATH}" 
+    ENVIRONMENT "PYTHONPATH=${pythonPath}"
 )
 
 
