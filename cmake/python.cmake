@@ -200,6 +200,6 @@ SET(PYTHON_DEBUG_LIBRARIES "${PYTHON_DEBUG_LIBRARY}")
 
 find_package_message(PYTHON
     "Found PythonLibs: ${PYTHON_LIBRARY}"
-    "${Python_EXECUTABLE}${PYTHON_VERSION}")
+    "${Python_EXECUTABLE}${Python_VERSION}")
 
 set(PYTHONLIBS_FOUND TRUE)
