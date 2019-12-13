@@ -21,9 +21,6 @@ option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
 option(SKIP_USDMAYA_TESTS "Build tests" OFF)
 
-# to get PYTHON_EXECUTABLE
-find_package(PythonInterp)
-
 if(CMAKE_WANT_UFE_BUILD)
     find_package(UFE QUIET)
     if(UFE_FOUND)
@@ -98,4 +95,4 @@ get_property(PYTHON_LIBRARY_LOCATION GLOBAL PROPERTY GLOBAL_PYTHON_LIBRARY_LOCAT
 configure_file(ALUsdMayaConfig.cmake.in ${PROJECT_BINARY_DIR}/ALUsdMayaConfig.cmake @ONLY)
 
 install(CODE "message(STATUS \"POST INSTALL: Compiling python/pyc for ${AL_INSTALL_PREFIX} ... \")")
-install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} -m compileall ${AL_INSTALL_PREFIX} )")
+install(CODE "execute_process(COMMAND ${Python_EXECUTABLE} -m compileall ${AL_INSTALL_PREFIX} )")
