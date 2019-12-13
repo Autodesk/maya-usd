@@ -1,6 +1,6 @@
 # - Find python libraries
 # This module finds the libraries corresponding to the Python interpreter
-# FindPythonInterp provides.
+# FindPython provides.
 # This code sets the following variables:
 #
 #  PYTHONLIBS_FOUND           - have the Python libs been found
@@ -56,10 +56,9 @@ if(PYTHONLIBS_FOUND AND PYTHON_MODULE_EXTENSION)
 endif()
 
 # Use the Python interpreter to find the libs.
-find_package(PythonInterp 2.7 REQUIRED)
+find_package(Python 2.7 EXACT REQUIRED COMPONENTS Interpreter)
 
-
-if(NOT PYTHONINTERP_FOUND)
+if(NOT Python_Interpreter_FOUND)
     set(PYTHONLIBS_FOUND FALSE)
     return()
 endif()
