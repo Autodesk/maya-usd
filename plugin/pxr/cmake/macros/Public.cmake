@@ -547,14 +547,14 @@ function(pxr_register_test TEST_NAME)
         if (bt_CUSTOM_PYTHON)
             set(testCmd "${bt_CUSTOM_PYTHON} ${bt_COMMAND}")
         elseif (bt_PYTHON)
-            set(testCmd "${PYTHON_EXECUTABLE} ${bt_COMMAND}")
+            set(testCmd "${Python_EXECUTABLE} ${bt_COMMAND}")
         else()
             set(testCmd "${bt_COMMAND}")
         endif()
 
         add_test(
             NAME ${TEST_NAME}
-            COMMAND ${PYTHON_EXECUTABLE} ${testWrapperCmd}
+            COMMAND ${Python_EXECUTABLE} ${testWrapperCmd}
                     "--env-var=PYTHONPATH=${_testPythonPath}" 
                     "--env-var=${_plugSearchPathEnvName}=${_testPluginPath}" 
                     "--pre-path=${_testPrePath}" ${testCmd}
