@@ -35,6 +35,30 @@ namespace nodes {
 using AL::usdmaya::utils::UsdDataType;
 
 //----------------------------------------------------------------------------------------------------------------------
+// Local helper functions.  Compare two doubles or vector types for being equal within the specified error value.
+// (For the vector types, each component is checked independently.)
+
+static bool apxEq(double val1, double val2, double epsilon=0.00001)
+{
+  return fabs(val2-val1) <= epsilon;
+}
+
+static bool apxEq(const MVector &val1, const MVector &val2, double epsilon=0.00001)
+{
+  return apxEq(val1.x, val2.x, epsilon) && apxEq(val1.y, val2.y, epsilon) && apxEq(val1.z, val2.z, epsilon);
+}
+
+static bool apxEq(const MPoint &val1, const MPoint &val2, double epsilon=0.00001)
+{
+  return apxEq(val1.x, val2.x, epsilon) && apxEq(val1.y, val2.y, epsilon) && apxEq(val1.z, val2.z, epsilon);
+}
+
+static bool apxEq(const MEulerRotation &val1, const MEulerRotation &val2, double epsilon=0.00001)
+{
+  return apxEq(val1.x, val2.x, epsilon) && apxEq(val1.y, val2.y, epsilon) && apxEq(val1.z, val2.z, epsilon);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 const MTypeId TransformationMatrix::kTypeId(AL_USDMAYA_TRANSFORMATION_MATRIX);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -870,37 +894,44 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
     m_flags |= kInheritsTransform;
 
   if(matchesMayaProfile(m_xformops.begin(), m_xformops.end(), m_orderedOps.begin()))
-  {
     m_flags |= kFromMayaSchema;
-  }
-  else
-  {
-  }
+
+  // Disable push to prim if enabled, otherwise MPlug value queries and setting
+  // in the switch statement below will trigger pushing to the prim, which
+  // will create undesirable usd "over"s.
+  //
+  bool pushOriginallyEnabled = pushToPrimEnabled();
+  m_flags &= ~kPushToPrimEnabled;
 
   auto opIt = m_orderedOps.begin();
   for(std::vector<UsdGeomXformOp>::const_iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
   {
     const UsdGeomXformOp& op = *it;
+
+    // How many time samples does the op have?  (This will be 0 if the op only has a constant
+    // value set or if it has no value set at all.)
+    //
+    int numTimeSamples = op.GetNumTimeSamples();
+
     switch(*opIt)
     {
     case kTranslate:
       {
         m_flags |= kPrimHasTranslation;
-        if(op.GetNumTimeSamples() > 1)
-        {
+        if(numTimeSamples > 0)
           m_flags |= kAnimatedTranslation;
-        }
+
         if(readFromPrim)
         {
-          MVector tempTranslation;
-          internal_readVector(tempTranslation, op);	
+          MVector vecFromUsd;
+          internal_readVector(vecFromUsd, op);
           if(transformNode)
           {
-            MPlug(transformNode->thisMObject(), MPxTransform::translateX).setValue(tempTranslation.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::translateY).setValue(tempTranslation.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::translateZ).setValue(tempTranslation.z);
+            MPlug(transformNode->thisMObject(), MPxTransform::translateX).setValue(vecFromUsd.x);
+            MPlug(transformNode->thisMObject(), MPxTransform::translateY).setValue(vecFromUsd.y);
+            MPlug(transformNode->thisMObject(), MPxTransform::translateZ).setValue(vecFromUsd.z);
             m_translationTweak[0] = m_translationTweak[1] = m_translationTweak[2] = 0;
-            m_translationFromUsd = tempTranslation;
+            m_translationFromUsd = vecFromUsd;
           }
         }
       }
@@ -911,16 +942,17 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
         m_flags |= kPrimHasPivot;
         if(readFromPrim)
         {
-          internal_readPoint(m_scalePivotFromUsd, op);
-          m_rotatePivotFromUsd = m_scalePivotFromUsd;
+          MPoint ptFromUsd;
+          internal_readPoint(ptFromUsd, op);
           if(transformNode)
           {
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotX).setValue(m_rotatePivotFromUsd.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotY).setValue(m_rotatePivotFromUsd.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotZ).setValue(m_rotatePivotFromUsd.z);
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotX).setValue(m_scalePivotFromUsd.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotY).setValue(m_scalePivotFromUsd.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotZ).setValue(m_scalePivotFromUsd.z);
+            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotX).setValue(ptFromUsd.x);
+            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotY).setValue(ptFromUsd.y);
+            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotZ).setValue(ptFromUsd.z);
+            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotX).setValue(ptFromUsd.x);
+            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotY).setValue(ptFromUsd.y);
+            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotZ).setValue(ptFromUsd.z);
+            m_rotatePivotFromUsd = m_scalePivotFromUsd = ptFromUsd;
           }
         }
       }
@@ -931,12 +963,14 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
         m_flags |= kPrimHasRotatePivotTranslate;
         if(readFromPrim)
         {
-          internal_readVector(m_rotatePivotTranslationFromUsd, op);
+          MVector vecFromUsd;
+          internal_readVector(vecFromUsd, op);
           if(transformNode)
           {
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotTranslateX).setValue(m_rotatePivotTranslationFromUsd.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotTranslateY).setValue(m_rotatePivotTranslationFromUsd.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotTranslateZ).setValue(m_rotatePivotTranslationFromUsd.z);
+            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotTranslateX).setValue(vecFromUsd.x);
+            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotTranslateY).setValue(vecFromUsd.y);
+            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotTranslateZ).setValue(vecFromUsd.z);
+            m_rotatePivotTranslationFromUsd = vecFromUsd;
           }
         }
       }
@@ -947,12 +981,14 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
         m_flags |= kPrimHasRotatePivot;
         if(readFromPrim)
         {
-          internal_readPoint(m_rotatePivotFromUsd, op);
+          MPoint ptFromUsd;
+          internal_readPoint(ptFromUsd, op);
           if(transformNode)
           {
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotX).setValue(m_rotatePivotFromUsd.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotY).setValue(m_rotatePivotFromUsd.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotZ).setValue(m_rotatePivotFromUsd.z);
+            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotX).setValue(ptFromUsd.x);
+            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotY).setValue(ptFromUsd.y);
+            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotZ).setValue(ptFromUsd.z);
+            m_rotatePivotFromUsd = ptFromUsd;
           }
         }
       }
@@ -961,20 +997,21 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
     case kRotate:
       {
         m_flags |= kPrimHasRotation;
-        if(op.GetNumTimeSamples() > 1)
-        {
+        if(numTimeSamples > 0)
           m_flags |= kAnimatedRotation;
-        }
+
         if(readFromPrim)
         {
-          internal_readRotation(m_rotationFromUsd, op);
+          MEulerRotation rotFromUsd;
+          internal_readRotation(rotFromUsd, op);
           if(transformNode)
           {
             m_rotationTweak[0] = m_rotationTweak[1] = m_rotationTweak[2] = 0;
             // attempting to set the rotation via the attributes can end up failing when using zxy rotation orders. 
             // The only reliable way to set this value would appeear to be via MFnTransform :(
             MFnTransform fn(m_transformNode.object());
-            fn.setRotation(m_rotationFromUsd);
+            fn.setRotation(rotFromUsd);
+            m_rotationFromUsd = rotFromUsd;
           }
         }
       }
@@ -983,15 +1020,16 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
     case kRotateAxis:
       {
         m_flags |= kPrimHasRotateAxes;
-        if(readFromPrim) {
-          MEulerRotation eulers;
-          internal_readRotation(eulers, op);
-          m_rotateOrientationFromUsd = eulers.asQuaternion();
+        if(readFromPrim)
+        {
+          MEulerRotation rotFromUsd;
+          internal_readRotation(rotFromUsd, op);
           if(transformNode)
           {
-            MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisX).setValue(eulers.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisY).setValue(eulers.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisZ).setValue(eulers.z);
+            MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisX).setValue(rotFromUsd.x);
+            MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisY).setValue(rotFromUsd.y);
+            MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisZ).setValue(rotFromUsd.z);
+            m_rotateOrientationFromUsd = rotFromUsd.asQuaternion();
           }
         }
       }
@@ -1007,12 +1045,14 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
         m_flags |= kPrimHasScalePivotTranslate;
         if(readFromPrim)
         {
-          internal_readVector(m_scalePivotTranslationFromUsd, op);
+          MVector vecFromUsd;
+          internal_readVector(vecFromUsd, op);
           if(transformNode)
           {
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotTranslateX).setValue(m_scalePivotTranslationFromUsd.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotTranslateY).setValue(m_scalePivotTranslationFromUsd.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotTranslateZ).setValue(m_scalePivotTranslationFromUsd.z);
+            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotTranslateX).setValue(vecFromUsd.x);
+            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotTranslateY).setValue(vecFromUsd.y);
+            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotTranslateZ).setValue(vecFromUsd.z);
+            m_scalePivotTranslationFromUsd = vecFromUsd;
           }
         }
       }
@@ -1023,12 +1063,14 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
         m_flags |= kPrimHasScalePivot;
         if(readFromPrim)
         {
-          internal_readPoint(m_scalePivotFromUsd, op);
+          MPoint ptFromUsd;
+          internal_readPoint(ptFromUsd, op);
           if(transformNode)
           {
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotX).setValue(m_scalePivotFromUsd.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotY).setValue(m_scalePivotFromUsd.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotZ).setValue(m_scalePivotFromUsd.z);
+            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotX).setValue(ptFromUsd.x);
+            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotY).setValue(ptFromUsd.y);
+            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotZ).setValue(ptFromUsd.z);
+            m_scalePivotFromUsd = ptFromUsd;
           }
         }
       }
@@ -1037,20 +1079,20 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
     case kShear:
       {
         m_flags |= kPrimHasShear;
-        if(op.GetNumTimeSamples() > 1)
-        {
+        if(numTimeSamples > 0)
           m_flags |= kAnimatedShear;
-        }
+
         if(readFromPrim)
         {
-          MVector tempShear;
-          internal_readShear(tempShear, op);	
+          MVector vecFromUsd;
+          internal_readShear(vecFromUsd, op);
           if(transformNode)
           {
-            MPlug(transformNode->thisMObject(), MPxTransform::shearXY).setValue(tempShear.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::shearXZ).setValue(tempShear.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::shearYZ).setValue(tempShear.z);
+            MPlug(transformNode->thisMObject(), MPxTransform::shearXY).setValue(vecFromUsd.x);
+            MPlug(transformNode->thisMObject(), MPxTransform::shearXZ).setValue(vecFromUsd.y);
+            MPlug(transformNode->thisMObject(), MPxTransform::shearYZ).setValue(vecFromUsd.z);
             m_shearTweak[0] = m_shearTweak[1] = m_shearTweak[2] = 0;
+            m_shearFromUsd = vecFromUsd;
           }
         }
       }
@@ -1059,21 +1101,20 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
     case kScale:
       {
         m_flags |= kPrimHasScale;
-        if(op.GetNumTimeSamples() > 1)
-        {
+        if(numTimeSamples > 0)
           m_flags |= kAnimatedScale;
-        }
+
         if(readFromPrim)
         {
-          MVector tempScale;
-          internal_readVector(tempScale, op);
+          MVector vecFromUsd(1.0,1.0,1.0);
+          internal_readVector(vecFromUsd, op);
           if(transformNode)
           {
-            MPlug(transformNode->thisMObject(), MPxTransform::scaleX).setValue(tempScale.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::scaleY).setValue(tempScale.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::scaleZ).setValue(tempScale.z);
+            MPlug(transformNode->thisMObject(), MPxTransform::scaleX).setValue(vecFromUsd.x);
+            MPlug(transformNode->thisMObject(), MPxTransform::scaleY).setValue(vecFromUsd.y);
+            MPlug(transformNode->thisMObject(), MPxTransform::scaleZ).setValue(vecFromUsd.z);
             m_scaleTweak[0] = m_scaleTweak[1] = m_scaleTweak[2] = 0;
-            m_scaleFromUsd = tempScale;
+            m_scaleFromUsd = vecFromUsd;
           }
         }
         
@@ -1095,10 +1136,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
         m_flags |= kPrimHasTransform;
         m_flags |= kFromMatrix;
         m_flags |= kPushPrimToMatrix;
-        if(op.GetNumTimeSamples() > 1)
-        {
+        if(numTimeSamples > 0)
           m_flags |= kAnimatedMatrix;
-        }
 
         if(readFromPrim)
         {
@@ -1116,12 +1155,15 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
     }
   }
 
-  // if some animation keys are found on the transform ops, assume we have a read only viewer of the transform data.
+  // Reenable push to prim if it was enabled before.
+  // (Note - I don't think we want to trigger an update of anything here, only
+  // reenable push for future operations, hence not calling enablePushToPrim.)
+  //
+  if(pushOriginallyEnabled)
+    m_flags |= kPushToPrimEnabled;
+
   if(m_flags & kAnimationMask)
-  {
-    m_flags &= ~kPushToPrimEnabled;
     m_flags |= kReadAnimatedValues;
-  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1141,11 +1183,15 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
       for(std::vector<UsdGeomXformOp>::const_iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
       {
         const UsdGeomXformOp& op = *it;
+
+        // How many time samples (if any) does the op have?
+        int numTimeSamples = op.GetNumTimeSamples();
+
         switch(*opIt)
         {
         case kTranslate:
           {
-            if(op.GetNumTimeSamples() >= 1)
+            if(numTimeSamples > 0)
             {
               m_flags |= kAnimatedTranslation;
               internal_readVector(m_translationFromUsd, op);
@@ -1156,7 +1202,7 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 
         case kRotate:
           {
-            if(op.GetNumTimeSamples() >= 1)
+            if(numTimeSamples > 0)
             {
               m_flags |= kAnimatedRotation;
               internal_readRotation(m_rotationFromUsd, op);
@@ -1170,7 +1216,7 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 
         case kScale:
           {
-            if(op.GetNumTimeSamples() >= 1)
+            if(numTimeSamples > 0)
             {
               m_flags |= kAnimatedScale;
               internal_readVector(m_scaleFromUsd, op);
@@ -1181,7 +1227,7 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 
         case kShear:
           {
-            if(op.GetNumTimeSamples() >= 1)
+            if(numTimeSamples > 0)
             {
               m_flags |= kAnimatedShear;
               internal_readShear(m_shearFromUsd, op);
@@ -1192,7 +1238,7 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 
         case kTransform:
           {
-            if(op.GetNumTimeSamples() >= 1)
+            if(numTimeSamples > 0)
             {
               m_flags |= kAnimatedMatrix;
               GfMatrix4d matrix;
@@ -1261,7 +1307,12 @@ MStatus TransformationMatrix::translateTo(const MVector& vector, MSpace::Space s
     {
       insertTranslateOp();
     }
-    pushTranslateToPrim();
+
+    // Push new value to prim, but only if it's changing, otherwise extra work and unintended
+    // side effects will happen.
+    //
+    if (!apxEq(vector, m_translationFromUsd))
+      pushTranslateToPrim();
   }
   return status;
 }
@@ -1309,7 +1360,9 @@ MStatus TransformationMatrix::scaleTo(const MVector& scale, MSpace::Space space)
       // rare case: add a new scale op into the prim
       insertScaleOp();
     }
-    pushScaleToPrim();
+    // Push new value to prim, but only if it's changing.
+    if (!apxEq(scale, m_scaleFromUsd))
+      pushScaleToPrim();
   }
   return status;
 }
@@ -1355,7 +1408,9 @@ MStatus TransformationMatrix::shearTo(const MVector& shear, MSpace::Space space)
       // rare case: add a new scale op into the prim
       insertShearOp();
     }
-    pushShearToPrim();
+    // Push new value to prim, but only if it's changing.
+    if (!apxEq(shear, m_shearFromUsd))
+      pushShearToPrim();
   }
   return status;
 }
@@ -1400,11 +1455,13 @@ MStatus TransformationMatrix::setScalePivot(const MPoint& sp, MSpace::Space spac
     {
     }
     else
-    if(!pushPrimToMatrix() && sp != MPoint(0.0, 0.0, 0.0, 1.0))
+    if(!pushPrimToMatrix() && sp != MPoint(0.0, 0.0, 0.0))
     {
       insertScalePivotOp();
     }
-    pushScalePivotToPrim();
+    // Push new value to prim, but only if it's changing.
+    if (!apxEq(sp, m_scalePivotFromUsd))
+      pushScalePivotToPrim();
   }
   return status;
 }
@@ -1444,7 +1501,9 @@ MStatus TransformationMatrix::setScalePivotTranslation(const MVector& sp, MSpace
     {
       insertScalePivotTranslationOp();
     }
-    pushScalePivotTranslateToPrim();
+    // Push new value to prim, but only if it's changing.
+    if (!apxEq(sp, m_scalePivotTranslationFromUsd))
+      pushScalePivotTranslateToPrim();
   }
   return status;
 }
@@ -1489,11 +1548,13 @@ MStatus TransformationMatrix::setRotatePivot(const MPoint& pivot, MSpace::Space 
     {
     }
     else
-    if(!pushPrimToMatrix() && pivot != MPoint(0.0, 0.0, 0.0, 1.0))
+    if(!pushPrimToMatrix() && pivot != MPoint(0.0, 0.0, 0.0))
     {
       insertRotatePivotOp();
     }
-    pushRotatePivotToPrim();
+    // Push new value to prim, but only if it's changing.
+    if (!apxEq(pivot, m_rotatePivotFromUsd))
+      pushRotatePivotToPrim();
   }
   return status;
 }
@@ -1529,11 +1590,13 @@ MStatus TransformationMatrix::setRotatePivotTranslation(const MVector &vector, M
     {
     }
     else
-    if(!pushPrimToMatrix() && vector != MPoint(0.0, 0.0, 0.0, 1.0))
+    if(!pushPrimToMatrix() && vector != MVector(0.0, 0.0, 0.0))
     {
       insertRotatePivotTranslationOp();
     }
-    pushRotatePivotTranslateToPrim();
+    // Push new value to prim, but only if it's changing.
+    if (!apxEq(vector, m_rotatePivotTranslationFromUsd))
+      pushRotatePivotTranslateToPrim();
   }
   return status;
 }
@@ -1612,7 +1675,9 @@ MStatus TransformationMatrix::rotateTo(const MQuaternion &q, MSpace::Space space
     }
     if(m_enableUsdWriteback)
     {
-      pushRotateToPrim();
+      // Push new value to prim, but only if it's changing.
+      if (!apxEq(MPxTransformationMatrix::rotationValue, m_rotationFromUsd))
+        pushRotateToPrim();
     }
   }
   return status;
@@ -1643,7 +1708,9 @@ MStatus TransformationMatrix::rotateTo(const MEulerRotation &e, MSpace::Space sp
     }
     if(m_enableUsdWriteback)
     {
-      pushRotateToPrim();
+      // Push new value to prim, but only if it's changing.
+      if (!apxEq(e, m_rotationFromUsd))
+        pushRotateToPrim();
     }
   }
   return status;
