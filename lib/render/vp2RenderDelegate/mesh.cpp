@@ -356,10 +356,6 @@ HdVP2Mesh::HdVP2Mesh(HdVP2RenderDelegate* delegate, const SdfPath& id, const Sdf
     _meshSharedData._positionsBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
 }
 
-//! \brief  Destructor
-HdVP2Mesh::~HdVP2Mesh() {
-}
-
 //! \brief  Synchronize VP2 state with scene delegate state based on dirty bits and representation
 void HdVP2Mesh::Sync(
     HdSceneDelegate* delegate,
