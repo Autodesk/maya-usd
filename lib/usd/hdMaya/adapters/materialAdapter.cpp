@@ -660,8 +660,10 @@ private:
         HdMaterialNetworkMap materialNetworkMap;
         materialNetworkMap.map[HdMaterialTerminalTokens->surface] = materialNetwork;
 #if USD_VERSION_NUM >= 1911
-        materialNetworkMap.terminals.push_back(
-            materialNetwork.nodes.back().path);
+        if (!materialNetwork.nodes.empty()) {
+            materialNetworkMap.terminals.push_back(
+                materialNetwork.nodes.back().path);
+        }
 #endif
         // HdMaterialNetwork displacementNetwork;
         // materialNetworkMap.map[HdMaterialTerminalTokens->displacement] =
