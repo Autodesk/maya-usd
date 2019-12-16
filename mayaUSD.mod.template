@@ -2,10 +2,12 @@
 PYTHONPATH+:=lib/python
 PATH+:=bin
 PATH+:=lib
+LD_LIBRARY_PATH+:=lib
 
 + PXR_USDMAYA ${USD_VERSION} ${CMAKE_INSTALL_PREFIX}/plugin/pxr
 PYTHONPATH+:=lib/python
 PATH+:=maya/lib
+LD_LIBRARY_PATH+:=maya/lib
 XBMLANGPATH+:=maya/lib/usd/usdMaya/resources
 MAYA_SCRIPT_PATH+:=maya/lib/usd/usdMaya/resources
 MAYA_PLUG_IN_PATH+:=maya/plugin
@@ -13,6 +15,7 @@ PXR_PLUGINPATH_NAME+:=lib/usd
 
 + MayaUSD_LIB ${MAYAUSD_VERSION} ${CMAKE_INSTALL_PREFIX}
 PATH+:=lib
+LD_LIBRARY_PATH+:=lib
 PYTHONPATH+:=lib/python
 PXR_PLUGINPATH_NAME+:=lib/usd
 VP2_RENDER_DELEGATE_PROXY=1
@@ -23,6 +26,7 @@ MAYA_PLUG_IN_PATH+:=plugin
 + AL_USDMaya ${AL_USDMAYA_VERSION} ${CMAKE_INSTALL_PREFIX}/plugin/al
 PYTHONPATH+:=lib/python
 PATH+:=lib
+LD_LIBRARY_PATH+:=lib
 MAYA_PLUG_IN_PATH+:=plugin
 PXR_PLUGINPATH_NAME+:=lib/usd
 PXR_PLUGINPATH_NAME+:=plugin
