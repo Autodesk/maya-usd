@@ -43,6 +43,8 @@ public:
     HDMAYA_API
     void Populate() override;
 
+#if USD_VERSION_NUM <= 1911
+
     HDMAYA_API
     virtual std::string GetSurfaceShaderSource();
     HDMAYA_API
@@ -51,23 +53,12 @@ public:
     virtual VtValue GetMaterialParamValue(const TfToken& paramName);
     HDMAYA_API
     virtual HdMaterialParamVector GetMaterialParams();
-    HDMAYA_API
-    virtual HdTextureResource::ID GetTextureResourceID(
-        const TfToken& paramName);
-    HDMAYA_API
-    virtual HdTextureResourceSharedPtr GetTextureResource(
-        const TfToken& paramName);
-    HDMAYA_API
-    virtual VtValue GetMaterialResource();
     /// \brief Gets the Metadata for the Material.
     ///
     /// \return Dictionary holding the metadata.
     HDMAYA_API
     virtual VtDictionary GetMaterialMetadata();
-    /// \brief Updates the material tag for the material.
-    ///
-    /// \return True if the material tag have changed, false otherwise.
-    virtual bool UpdateMaterialTag() { return false; }
+
     HDMAYA_API
     static const HdMaterialParamVector& GetPreviewMaterialParams();
     HDMAYA_API
@@ -77,6 +68,22 @@ public:
     HDMAYA_API
     static const VtValue& GetPreviewMaterialParamValue(
         const TfToken& paramName);
+
+#endif // USD_VERSION_NUM <= 1911
+
+    HDMAYA_API
+    virtual HdTextureResource::ID GetTextureResourceID(
+        const TfToken& paramName);
+    HDMAYA_API
+    virtual HdTextureResourceSharedPtr GetTextureResource(
+        const TfToken& paramName);
+    HDMAYA_API
+    virtual VtValue GetMaterialResource();
+
+    /// \brief Updates the material tag for the material.
+    ///
+    /// \return True if the material tag have changed, false otherwise.
+    virtual bool UpdateMaterialTag() { return false; }
 
     HDMAYA_API
     static VtValue GetPreviewMaterialResource(const SdfPath& materialID);

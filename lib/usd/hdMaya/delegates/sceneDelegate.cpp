@@ -895,21 +895,7 @@ HdDisplayStyle HdMayaSceneDelegate::GetDisplayStyle(const SdfPath& id) {
         _shapeAdapters);
 }
 
-SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id) {
-    TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_ID)
-        .Msg("HdMayaSceneDelegate::GetMaterialId(%s)\n", id.GetText());
-    auto shapeAdapter = TfMapLookupPtr(_shapeAdapters, id);
-    if (shapeAdapter == nullptr) { return _fallbackMaterial; }
-    auto material = shapeAdapter->get()->GetMaterial();
-    if (material == MObject::kNullObj) { return _fallbackMaterial; }
-    auto materialId = GetMaterialPath(material);
-    if (TfMapLookupPtr(_materialAdapters, materialId) != nullptr) {
-        return materialId;
-    }
-
-    return _CreateMaterial(materialId, material) ? materialId
-                                                 : _fallbackMaterial;
-}
+#if USD_VERSION_NUM <= 1911
 
 std::string HdMayaSceneDelegate::GetSurfaceShaderSource(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_SURFACE_SHADER_SOURCE)
@@ -974,6 +960,38 @@ HdMaterialParamVector HdMayaSceneDelegate::GetMaterialParams(
         _materialAdapters);
 }
 
+VtDictionary HdMayaSceneDelegate::GetMaterialMetadata(
+    const SdfPath& materialId) {
+    TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_METADATA)
+        .Msg(
+            "HdMayaSceneDelegate::GetMaterialMetadata(%s)\n",
+            materialId.GetText());
+    return _GetValue<HdMayaMaterialAdapter, VtDictionary>(
+        materialId,
+        [](HdMayaMaterialAdapter* a) -> VtDictionary {
+            return a->GetMaterialMetadata();
+        },
+        _materialAdapters);
+}
+
+#endif // USD_VERSION_NUM <= 1911
+
+SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id) {
+    TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_ID)
+        .Msg("HdMayaSceneDelegate::GetMaterialId(%s)\n", id.GetText());
+    auto shapeAdapter = TfMapLookupPtr(_shapeAdapters, id);
+    if (shapeAdapter == nullptr) { return _fallbackMaterial; }
+    auto material = shapeAdapter->get()->GetMaterial();
+    if (material == MObject::kNullObj) { return _fallbackMaterial; }
+    auto materialId = GetMaterialPath(material);
+    if (TfMapLookupPtr(_materialAdapters, materialId) != nullptr) {
+        return materialId;
+    }
+
+    return _CreateMaterial(materialId, material) ? materialId
+                                                 : _fallbackMaterial;
+}
+
 VtValue HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_RESOURCE)
         .Msg("HdMayaSceneDelegate::GetMaterialResource(%s)\n", id.GetText());
@@ -1014,20 +1032,6 @@ HdTextureResourceSharedPtr HdMayaSceneDelegate::GetTextureResource(
         textureId.GetPrimPath(),
         [&textureId](HdMayaMaterialAdapter* a) -> HdTextureResourceSharedPtr {
             return a->GetTextureResource(textureId.GetNameToken());
-        },
-        _materialAdapters);
-}
-
-VtDictionary HdMayaSceneDelegate::GetMaterialMetadata(
-    const SdfPath& materialId) {
-    TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_METADATA)
-        .Msg(
-            "HdMayaSceneDelegate::GetMaterialMetadata(%s)\n",
-            materialId.GetText());
-    return _GetValue<HdMayaMaterialAdapter, VtDictionary>(
-        materialId,
-        [](HdMayaMaterialAdapter* a) -> VtDictionary {
-            return a->GetMaterialMetadata();
         },
         _materialAdapters);
 }

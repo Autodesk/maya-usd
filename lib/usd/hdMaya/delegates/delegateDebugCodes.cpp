@@ -33,11 +33,6 @@ TF_REGISTRY_FUNCTION(TfDebug) {
         "Print information about 'GetCurveTopology' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_GET_DISPLACEMENT_SHADER_SOURCE,
-        "Print information about 'GetDisplacementShaderSource' calls to the "
-        "delegates.");
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_GET_DISPLAY_STYLE,
         "Print information about 'GetDisplayStyle' calls to the delegates.");
 
@@ -62,20 +57,6 @@ TF_REGISTRY_FUNCTION(TfDebug) {
         "Print information about 'GetMaterialId' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_GET_MATERIAL_METADATA,
-        "Print information about 'GetMaterialMetadata' calls to the "
-        "delegates.");
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_GET_MATERIAL_PARAM_VALUE,
-        "Print information about 'GetMaterialParamValue' calls to the "
-        "delegates.");
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_GET_MATERIAL_PARAMS,
-        "Print information about 'GetMaterialParams' calls to the delegates.");
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_GET_MATERIAL_RESOURCE,
         "Print information about 'GetMaterialResource' calls to the "
         "delegates.");
@@ -96,11 +77,6 @@ TF_REGISTRY_FUNCTION(TfDebug) {
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_GET_SUBDIV_TAGS,
         "Print information about 'GetSubdivTags' calls to the delegates.");
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_GET_SURFACE_SHADER_SOURCE,
-        "Print information about 'GetSurfaceShaderSource' calls to the "
-        "delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE,
@@ -146,6 +122,34 @@ TF_REGISTRY_FUNCTION(TfDebug) {
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_SELECTION,
         "Print information about hdMaya delegate selection.");
+
+#if USD_VERSION_NUM <= 1911
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_DELEGATE_GET_DISPLACEMENT_SHADER_SOURCE,
+        "Print information about 'GetDisplacementShaderSource' calls to the "
+        "delegates.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_DELEGATE_GET_MATERIAL_METADATA,
+        "Print information about 'GetMaterialMetadata' calls to the "
+        "delegates.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_DELEGATE_GET_MATERIAL_PARAM_VALUE,
+        "Print information about 'GetMaterialParamValue' calls to the "
+        "delegates.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_DELEGATE_GET_MATERIAL_PARAMS,
+        "Print information about 'GetMaterialParams' calls to the delegates.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_DELEGATE_GET_SURFACE_SHADER_SOURCE,
+        "Print information about 'GetSurfaceShaderSource' calls to the "
+        "delegates.");
+
+#endif // USD_VERSION_NUM <= 1911
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

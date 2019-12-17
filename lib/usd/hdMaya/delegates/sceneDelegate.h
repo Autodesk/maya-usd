@@ -195,8 +195,7 @@ protected:
         int* absoluteInstanceIndex, SdfPath* rprimPath,
         SdfPathVector* instanceContext) override;
 
-    HDMAYA_API
-    SdfPath GetMaterialId(const SdfPath& id) override;
+#if USD_VERSION_NUM <= 1911
 
     HDMAYA_API
     std::string GetSurfaceShaderSource(const SdfPath& id) override;
@@ -211,6 +210,20 @@ protected:
     HDMAYA_API
     HdMaterialParamVector GetMaterialParams(const SdfPath& id) override;
 
+    /// \brief Gets the metadata from a material.
+    ///
+    /// For now we are only returning the materialTag for translucency.
+    ///
+    /// \param materialId Path to the material.
+    /// \return Dictionary storing the metadata.
+    HDMAYA_API
+    VtDictionary GetMaterialMetadata(const SdfPath& materialId) override;
+
+#endif // USD_VERSION_NUM <= 1911
+
+    HDMAYA_API
+    SdfPath GetMaterialId(const SdfPath& id) override;
+
     HDMAYA_API
     VtValue GetMaterialResource(const SdfPath& id) override;
 
@@ -221,15 +234,6 @@ protected:
     HDMAYA_API
     HdTextureResourceSharedPtr GetTextureResource(
         const SdfPath& textureId) override;
-
-    /// \brief Gets the metadata from a material.
-    ///
-    /// For now we are only returning the materialTag for translucency.
-    ///
-    /// \param materialId Path to the material.
-    /// \return Dictionary storing the metadata.
-    HDMAYA_API
-    VtDictionary GetMaterialMetadata(const SdfPath& materialId) override;
 
 private:
     bool _CreateMaterial(const SdfPath& id, const MObject& obj);
