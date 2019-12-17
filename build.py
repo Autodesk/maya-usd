@@ -449,11 +449,11 @@ class InstallContext:
         self.workspaceDir = os.path.abspath(args.workspace_location)
 
         # Build directory
-        self.buildDir = (os.path.abspath(args.build_location) if args.build_location
+        self.buildDir = (os.path.abspath(os.path.join(args.build_location, BuildVariant(self))) if args.build_location
                          else os.path.join(self.workspaceDir, "build", BuildVariant(self)))
 
         # Install directory
-        self.instDir = (os.path.abspath(args.install_location) if args.install_location
+        self.instDir = (os.path.abspath(os.path.join(args.install_location, BuildVariant(self))) if args.install_location
                          else os.path.join(self.workspaceDir, "install", BuildVariant(self)))
 
         # CMake generator
