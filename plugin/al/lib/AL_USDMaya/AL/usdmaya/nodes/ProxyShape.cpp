@@ -486,6 +486,7 @@ bool ProxyShape::getRenderAttris(UsdImagingGLRenderParams& attribs, const MHWRen
   const float complexities[] = {1.05f, 1.15f, 1.25f, 1.35f, 1.45f, 1.55f, 1.65f, 1.75f, 1.9f}; 
   attribs.complexity = complexities[complexityPlug().asInt()];
   attribs.showGuides = drawGuidePurposePlug().asBool();
+  attribs.showProxy = drawProxyPurposePlug().asBool();
   attribs.showRender = drawRenderPurposePlug().asBool();
   return true;
 }
@@ -672,8 +673,9 @@ MStatus ProxyShape::initialise()
 
     inheritInt32Attr("complexity", kCached | kConnectable | kReadable | kWritable | kAffectsAppearance | kKeyable | kStorable);
     // outStageData attribute already added in base class.
-    inheritBoolAttr("displayGuides", kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
-    inheritBoolAttr("displayRenderGuides", kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
+    inheritBoolAttr("drawGuidePurpose", kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
+    inheritBoolAttr("drawProxyPurpose", kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
+    inheritBoolAttr("drawRenderPurpose", kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
     m_unloaded = addBoolAttr("unloaded", "ul", false, kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
     m_serializedTrCtx = addStringAttr("serializedTrCtx", "srtc", kReadable|kWritable|kStorable|kHidden);
 

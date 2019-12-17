@@ -142,6 +142,7 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   UsdImagingGLRenderParams params;
 
   params.showGuides = shape->drawGuidePurposePlug().asBool();
+  params.showProxy = shape->drawProxyPurposePlug().asBool();
   params.showRender = shape->drawRenderPurposePlug().asBool();
 
   params.frame = UsdTimeCode(shape->outTimePlug().asMTime().as(MTime::uiUnit()));
@@ -349,6 +350,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
   UsdImagingGLRenderParams params;
   params.showGuides = proxyShape->drawGuidePurposePlug().asBool();
+  params.showProxy = proxyShape->drawProxyPurposePlug().asBool();
   params.showRender = proxyShape->drawRenderPurposePlug().asBool();
 
   UsdPrim root = proxyShape->getUsdStage()->GetPseudoRoot();
