@@ -138,6 +138,14 @@ void _ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet)
 {
     unsigned int numPassThroughNodes = 0;
 
+    // To avoid relocation, reserve enough space for possible maximal size. The
+    // output network is temporary C++ object that will be released after use.
+    const size_t numNodes = inNet.nodes.size();
+    const size_t numRelationships = inNet.relationships.size();
+    outNet.nodes.reserve(numNodes + numRelationships);
+    outNet.relationships.reserve(numRelationships * 2);
+    outNet.primvars.reserve(numNodes);
+
     for (const HdMaterialNode &node : inNet.nodes)
     {
         outNet.nodes.push_back(node);
@@ -396,11 +404,6 @@ HdVP2Material::HdVP2Material(HdVP2RenderDelegate* renderDelegate, const SdfPath&
 {
 }
 
-/*! \brief  Destructor - will release allocated shader instances.
-*/
-HdVP2Material::~HdVP2Material() {
-}
-
 /*! \brief  Synchronize VP2 state with scene delegate state based on dirty bits
 */
 void HdVP2Material::Sync(
@@ -474,13 +477,6 @@ HdVP2Material::GetInitialDirtyBitsMask() const {
     return HdMaterial::AllDirty;
 }
 
-/*! \brief  Returns surface shader instance
-*/
-MHWRender::MShaderInstance*
-HdVP2Material::GetSurfaceShader() const {
-    return _surfaceShader.get();
-}
-
 /*! \brief  Creates a shader instance for the surface shader.
 */
 MHWRender::MShaderInstance*
@@ -497,6 +493,8 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
 
     MHWRender::MShaderInstance* shaderInstance = nullptr;
 
+    const auto rend = mat.nodes.rend();
+
     // Conditional compilation due to Maya API gaps.
 #if MAYA_API_VERSION >= 20200000
 
@@ -504,7 +502,7 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
     // and relationships in topological order to avoid forward-references, thus
     // we can run a reverse iteration to avoid connecting a fragment before any
     // of its downstream fragments.
-    for (auto rit = mat.nodes.rbegin(); rit != mat.nodes.rend(); rit++) {
+    for (auto rit = mat.nodes.rbegin(); rit != rend; rit++) {
         const HdMaterialNode& node = *rit;
 
         const MString nodeId = node.identifier.GetText();
@@ -553,7 +551,8 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
                 TF_WARN("Error %s happened when connecting shader %s",
                     status.errorString().asChar(), node.path.GetText());
 
-                for (unsigned int i = 0; i < invalidParamIndices.length(); i++) {
+                const unsigned int len = invalidParamIndices.length();
+                for (unsigned int i = 0; i < len; i++) {
                     unsigned int index = invalidParamIndices[i];
                     const MString& outputName = outputNames[index];
                     const MString& inputName = inputNames[index];
@@ -582,7 +581,7 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
     // and relationships in topological order to avoid forward-references, thus
     // we can run a reverse iteration to avoid connecting a fragment before any
     // of its downstream fragments.
-    for (auto rit = mat.nodes.rbegin(); rit != mat.nodes.rend(); rit++) {
+    for (auto rit = mat.nodes.rbegin(); rit != rend; rit++) {
         const HdMaterialNode& node = *rit;
 
         const MString nodeId = node.identifier.GetText();
@@ -703,15 +702,7 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
 
             MStatus status = MStatus::kFailure;
 
-            if (value.IsHolding<bool>()) {
-                const bool& val = value.UncheckedGet<bool>();
-                status = _surfaceShader->setParameter(paramName, val);
-            }
-            else if (value.IsHolding<int>()) {
-                const int& val = value.UncheckedGet<bool>();
-                status = _surfaceShader->setParameter(paramName, val);
-            }
-            else if (value.IsHolding<float>()) {
+            if (value.IsHolding<float>()) {
                 const float& val = value.UncheckedGet<float>();
                 status = _surfaceShader->setParameter(paramName, val);
 
@@ -733,16 +724,6 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
             else if (value.IsHolding<GfVec4f>()) {
                 const float* val = value.UncheckedGet<GfVec4f>().data();
                 status = _surfaceShader->setParameter(paramName, val);
-            }
-            else if (value.IsHolding<GfMatrix4d>()) {
-                MMatrix matrix;
-                value.UncheckedGet<GfMatrix4d>().Get(matrix.matrix);
-                status = _surfaceShader->setParameter(paramName, matrix);
-            }
-            else if (value.IsHolding<GfMatrix4f>()) {
-                MFloatMatrix matrix;
-                value.UncheckedGet<GfMatrix4f>().Get(matrix.matrix);
-                status = _surfaceShader->setParameter(paramName, matrix);
             }
             else if (value.IsHolding<TfToken>()) {
                 // The two parameters have been converted to sampler state
@@ -771,6 +752,24 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                             info._isColorSpaceSRGB);
                     }
                 }
+            }
+            else if (value.IsHolding<int>()) {
+                const int& val = value.UncheckedGet<int>();
+                status = _surfaceShader->setParameter(paramName, val);
+            }
+            else if (value.IsHolding<bool>()) {
+                const bool& val = value.UncheckedGet<bool>();
+                status = _surfaceShader->setParameter(paramName, val);
+            }
+            else if (value.IsHolding<GfMatrix4d>()) {
+                MMatrix matrix;
+                value.UncheckedGet<GfMatrix4d>().Get(matrix.matrix);
+                status = _surfaceShader->setParameter(paramName, matrix);
+            }
+            else if (value.IsHolding<GfMatrix4f>()) {
+                MFloatMatrix matrix;
+                value.UncheckedGet<GfMatrix4f>().Get(matrix.matrix);
+                status = _surfaceShader->setParameter(paramName, matrix);
             }
 
             if (!status) {
