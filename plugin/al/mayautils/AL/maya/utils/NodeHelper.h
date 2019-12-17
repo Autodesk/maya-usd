@@ -69,7 +69,7 @@ namespace utils {
 // element plug of the parent array... and defining it just
 // creates a confusing name
 #define AL_DECL_MULTI_CHILD_ATTRIBUTE(XX) \
-  private: \
+  protected: \
   AL_MAYA_MACROS_PUBLIC \
   static MObject m_##XX; \
   public: \

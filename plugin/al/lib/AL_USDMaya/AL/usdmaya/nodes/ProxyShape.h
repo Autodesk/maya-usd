@@ -933,9 +933,9 @@ private:
   struct TransformReference
   {
     TransformReference(const MObject& node, const TransformReason reason);
-    TransformReference(MObject mayaNode, Transform* node, uint32_t r, uint32_t s, uint32_t rc);
+    TransformReference(MObject mayaNode, Scope* node, uint32_t r, uint32_t s, uint32_t rc);
     MObject node() const { return m_node; }
-    Transform* transform() const;
+    Scope* getTransformNode() const;
 
     bool decRef(const TransformReason reason);
     void incRef(const TransformReason reason);
@@ -959,7 +959,7 @@ private:
       { m_selectedTemp = m_selected; }
   private:
     MObject m_node;
-    Transform* m_transform;
+    Scope* m_transform;
     // ref counting values
     struct
     {

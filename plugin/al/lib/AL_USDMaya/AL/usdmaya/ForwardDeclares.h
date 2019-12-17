@@ -74,7 +74,9 @@ class ProxyShape;
 class ProxyShapeUI;
 class SchemaNodeRefDB;
 class Transform;
+class Scope;
 class TransformationMatrix;
+class BasicTransformationMatrix;
 } // nodes
 
 } // usdmaya

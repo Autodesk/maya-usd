@@ -18,6 +18,7 @@
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
+#include "AL/usdmaya/nodes/Scope.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
 #include "maya/MFnDagNode.h"
@@ -241,7 +242,7 @@ void ProxyShape::printRefCounts() const
 {
   for(auto it = m_requiredPaths.begin(); it != m_requiredPaths.end(); ++it)
   {
-    std::cout << it->first.GetText() << " :- ";
+    std::cout << it->first.GetText() << " (" << MFnDagNode(it->second.node()).typeName() << ") :- ";
     it->second.printRefCounts();
   }
 }
@@ -317,7 +318,7 @@ inline ProxyShape::TransformReference::TransformReference(const MObject& node, c
   m_selected = 0;
   m_selectedTemp = 0;
   m_refCount = 0;
-  m_transform = transform();
+  m_transform = getTransformNode();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -434,6 +435,121 @@ MObject ProxyShape::makeUsdTransformChain(
   return newNode;
 }
 
+static void createMayaNode(
+    const UsdPrim& usdPrim,
+    MObject& node,
+    const MObject& parentNode,
+    MDagModifier& modifier,
+    MDGModifier* modifier2,
+    const MPlug& outStage,
+    const MPlug& outTime,
+    bool pushToPrim,
+    bool readAnimatedValues)
+{
+   MFnDagNode fn;
+
+   bool isUsdXFormable = usdPrim.IsA<UsdGeomXformable>();
+
+   enum MayaNodeTypeCreated { customMayaTransforn, AL_USDMayaScope, AL_USDMayaTransform };
+
+   std::string transformType;
+
+   MayaNodeTypeCreated createdNodeType = AL_USDMayaTransform;
+
+   bool hasMetadata = usdPrim.GetMetadata(Metadata::transformType, &transformType);
+   if(hasMetadata && !transformType.empty())
+   {
+     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::createMayaNode: creating custom transform node\n");
+     node = modifier.createNode(AL::maya::utils::convert(transformType), parentNode);
+     createdNodeType = customMayaTransforn;
+   }
+   else if (usdPrim.IsA<UsdGeomScope>())
+   {
+     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::createMayaNode: creating scope node\n");
+     node = modifier.createNode(Scope::kTypeId, parentNode);
+     transformType = "AL_usdmaya_Scope";
+     createdNodeType = AL_USDMayaScope;
+   }
+   else
+   {
+     //for any other USD type, we'll create an AL_USDMaya Transform node
+     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::createMayaNode: creating transform node\n");
+     node = modifier.createNode(Transform::kTypeId, parentNode);
+     transformType = "AL_usdmaya_Transform";
+     createdNodeType = AL_USDMayaTransform;
+   }
+
+   if(fn.setObject(node))
+   {
+      TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::createMayaNode created transformType=%s name=%s\n",
+                                        transformType.c_str(),
+                                        usdPrim.GetName().GetText());
+   }
+   else
+   {
+     MString err;
+     err.format("USDMaya is unable to create the node with transformType=^1s, name=^2s.",
+               transformType.c_str(),
+               usdPrim.GetName().GetText());
+     MGlobal::displayError(err);
+   }
+
+   fn.setName(AL::maya::utils::convert(usdPrim.GetName().GetString()));
+   const SdfPath path{usdPrim.GetPath()};
+
+   if(createdNodeType==AL_USDMayaTransform)
+   {
+     Transform* ptrNode = (Transform*)fn.userNode();
+     MPlug inStageData = ptrNode->inStageDataPlug();
+     MPlug inTime = ptrNode->timePlug();
+
+     if(modifier2)
+     {
+       if(pushToPrim) modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), pushToPrim);
+       modifier2->newPlugValueBool(ptrNode->readAnimatedValuesPlug(), readAnimatedValues);
+     }
+
+     if(!isUsdXFormable)
+     {
+       //It's not a USD Xform - so no point in allowing this stuff to be writeable
+       MPlug(node, MPxTransform::translate).setLocked(true);
+       MPlug(node, MPxTransform::rotate).setLocked(true);
+       MPlug(node, MPxTransform::scale).setLocked(true);
+       MPlug(node, MPxTransform::transMinusRotatePivot).setLocked(true);
+       MPlug(node, MPxTransform::rotateAxis).setLocked(true);
+       MPlug(node, MPxTransform::scalePivotTranslate).setLocked(true);
+       MPlug(node, MPxTransform::scalePivot).setLocked(true);
+       MPlug(node, MPxTransform::rotatePivotTranslate).setLocked(true);
+       MPlug(node, MPxTransform::rotatePivot).setLocked(true);
+       MPlug(node, MPxTransform::shearXY).setLocked(true);
+       MPlug(node, MPxTransform::shearXZ).setLocked(true);
+       MPlug(node, MPxTransform::shearYZ).setLocked(true);
+     }
+     else
+     {
+       // only connect time and stage if transform can change
+       modifier.connect(outTime, inTime);
+       modifier.connect(outStage, inStageData);
+     }
+
+     // set the primitive path
+
+     modifier.newPlugValueString(ptrNode->primPathPlug(), path.GetText());
+   }
+   else if (createdNodeType==AL_USDMayaScope)
+   {
+     Scope* ptrNode = (Scope*)fn.userNode();
+
+     // only connect stage if transform can change
+     MPlug inStageData = ptrNode->inStageDataPlug();
+     modifier.connect(outStage, inStageData);
+     modifier.newPlugValueString(ptrNode->primPathPlug(), path.GetText());
+   }
+
+}
+
+
+
 //----------------------------------------------------------------------------------------------------------------------
 MObject ProxyShape::makeUsdTransformChain(
     UsdPrim usdPrim,
@@ -542,86 +658,20 @@ MObject ProxyShape::makeUsdTransformChain(
   MFnDagNode fn;
   MObject parentNode = parentPath;
 
-  bool isTransform = usdPrim.IsA<UsdGeomXformable>();
-  bool isUsdTransform = true;
   MObject node;
-  std::string transformType;
-  bool hasMetadata = usdPrim.GetMetadata(Metadata::transformType, &transformType);
-  if(hasMetadata && !transformType.empty())
-  {
-    node = modifier.createNode(AL::maya::utils::convert(transformType), parentNode);
-    isTransform = false;
-    isUsdTransform = false;
-  }
-  else
-  {
-    node = modifier.createNode(Transform::kTypeId, parentNode);
-    transformType = "AL_usdmaya_Transform";
-  }
 
-  if(fn.setObject(node))
-  {
-     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::makeUsdTransformChain created transformType=%s name=%s\n",
-                                       transformType.c_str(),
-                                       usdPrim.GetName().GetText());
-  }
-  else
-  {
-    MString err;
-    err.format("USDMaya is unable to create the node with transformType=^1s, name=^2s.",
-              transformType.c_str(),
-              usdPrim.GetName().GetText());
-    MGlobal::displayError(err);
-  }
-
-  fn.setName(AL::maya::utils::convert(usdPrim.GetName().GetString()));
+  createMayaNode(usdPrim, node, parentNode, modifier, modifier2, outStage, outTime, pushToPrim, readAnimatedValues);
 
   if(resultingPath)
     *resultingPath = recordUsdPrimToMayaPath(usdPrim, node);
   else
     recordUsdPrimToMayaPath(usdPrim, node);
 
-  if(isUsdTransform)
-  {
-    Transform* ptrNode = (Transform*)fn.userNode();
-    MPlug inStageData = ptrNode->inStageDataPlug();
-    MPlug inTime = ptrNode->timePlug();
 
+  TransformReference transformRef(node, reason);
+  transformRef.checkIncRef(reason);
+  m_requiredPaths.emplace(path, transformRef);
 
-    if(modifier2)
-    {
-      if(pushToPrim) modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), pushToPrim);
-      modifier2->newPlugValueBool(ptrNode->readAnimatedValuesPlug(), readAnimatedValues);
-    }
-
-    if(!isTransform)
-    {
-      MPlug(node, MPxTransform::translate).setLocked(true);
-      MPlug(node, MPxTransform::rotate).setLocked(true);
-      MPlug(node, MPxTransform::scale).setLocked(true);
-      MPlug(node, MPxTransform::transMinusRotatePivot).setLocked(true);
-      MPlug(node, MPxTransform::rotateAxis).setLocked(true);
-      MPlug(node, MPxTransform::scalePivotTranslate).setLocked(true);
-      MPlug(node, MPxTransform::scalePivot).setLocked(true);
-      MPlug(node, MPxTransform::rotatePivotTranslate).setLocked(true);
-      MPlug(node, MPxTransform::rotatePivot).setLocked(true);
-      MPlug(node, MPxTransform::shearXY).setLocked(true);
-      MPlug(node, MPxTransform::shearXZ).setLocked(true);
-      MPlug(node, MPxTransform::shearYZ).setLocked(true);
-    }
-    else
-    {
-      // only connect time and stage if transform can change
-      modifier.connect(outTime, inTime);
-      modifier.connect(outStage, inStageData);
-    }
-
-    // set the primitive path
-    modifier.newPlugValueString(ptrNode->primPathPlug(), path.GetText());
-  }
-  TransformReference ref(node, reason);
-  ref.checkIncRef(reason);
-  m_requiredPaths.emplace(path, ref);
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformChain m_requiredPaths added TransformReference: %s\n", path.GetText());
   return node;
 }
@@ -667,27 +717,16 @@ void ProxyShape::makeUsdTransformsInternal(
     if(check == m_requiredPaths.end())
     {
       UsdPrim prim = *it;
-      MObject node = modifier.createNode(Transform::kTypeId, parentNode);
-      fn.setObject(node);
-      fn.setName(AL::maya::utils::convert(prim.GetName().GetString()));
-      Transform* ptrNode = (Transform*)fn.userNode();
-      MPlug inStageData = ptrNode->inStageDataPlug();
-      MPlug inTime = ptrNode->timePlug();
-      modifier.connect(outStageAttr, inStageData);
-      modifier.connect(outTimeAttr, inTime);
 
-      if(modifier2)
-      {
-        if(pushToPrim) modifier2->newPlugValueBool(ptrNode->pushToPrimPlug(), pushToPrim);
-        modifier2->newPlugValueBool(ptrNode->readAnimatedValuesPlug(), readAnimatedValues);
-      }
+      MObject node;
+      createMayaNode(prim, node, parentNode, modifier, modifier2, outStageAttr, outTimeAttr, pushToPrim, readAnimatedValues);
 
-      // set the primitive path
-      modifier.newPlugValueString(ptrNode->primPathPlug(), prim.GetPath().GetText());
       TransformReference transformRef(node, reason);
-      transformRef.incRef(reason);
-      m_requiredPaths.emplace(prim.GetPath(), transformRef);
-      TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformsInternal m_requiredPaths added TransformReference: %s\n", prim.GetPath().GetText());
+      transformRef.checkIncRef(reason);
+      const SdfPath path{usdPrim.GetPath()};
+      m_requiredPaths.emplace(path, transformRef);
+
+      TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransformsInternal m_requiredPaths added TransformReference: %s\n", path.GetText());
 
       makeUsdTransformsInternal(prim, node, modifier, reason, modifier2, pushToPrim, readAnimatedValues);
     }

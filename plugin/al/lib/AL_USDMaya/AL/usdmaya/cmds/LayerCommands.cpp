@@ -62,9 +62,10 @@ namespace {
 
       if(path.node().hasFn(MFn::kTransform))
       {
-        if(fn.typeId() == AL::usdmaya::nodes::Transform::kTypeId)
+        if(fn.typeId() == AL::usdmaya::nodes::Transform::kTypeId ||
+           fn.typeId() == AL::usdmaya::nodes::Scope::kTypeId)
         {
-          auto transform = (AL::usdmaya::nodes::Transform*)fn.userNode();
+          auto transform = (AL::usdmaya::nodes::Scope*)fn.userNode();
           if(transform)
           {
             MPlug sourcePlug = transform->inStageDataPlug().source();

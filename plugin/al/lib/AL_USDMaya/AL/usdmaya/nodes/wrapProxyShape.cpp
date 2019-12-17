@@ -131,7 +131,8 @@ namespace {
         if (status)
         {
           MFnDependencyNode depNode(node);
-          if (depNode.typeId() == AL::usdmaya::nodes::Transform::kTypeId)
+          if (depNode.typeId() == AL::usdmaya::nodes::Transform::kTypeId || 
+              depNode.typeId() == AL::usdmaya::nodes::Scope::kTypeId)
           {
             // Get proxy shape
             auto transform = static_cast<AL::usdmaya::nodes::Transform*>(depNode.userNode());

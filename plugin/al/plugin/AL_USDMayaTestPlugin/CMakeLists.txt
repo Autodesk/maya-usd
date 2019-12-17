@@ -34,6 +34,7 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/nodes/test_ProxyUsdGeomCamera.cpp
         AL/usdmaya/nodes/test_Transform.cpp
         AL/usdmaya/nodes/test_TransformMatrix.cpp
+        AL/usdmaya/nodes/test_ScopeMatrix.cpp
         AL/usdmaya/nodes/test_TranslatorContext.cpp
         AL/usdmaya/nodes/test_ExtraDataPlugin.cpp
         AL/usdmaya/nodes/test_ProxyShapeSelectabilityDB.cpp
