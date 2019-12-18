@@ -525,6 +525,10 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
             _lastRenderTime = std::chrono::system_clock::now();
         }
     };
+    if (_initializedViewport && !_taskController) {
+        // Initialization must have failed already, stop trying.
+        return MStatus::kFailure;
+    }
 
     _DetectMayaDefaultLighting(drawContext);
     if (_needsClear.exchange(false)) {
@@ -533,6 +537,13 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
 
     if (!_initializedViewport) {
         _InitHydraResources();
+
+        if (!_taskController) {
+            // No task controller means something has gone wrong, use this as a signal so we
+            // aren't endlessly failing to initialize.
+            _initializedViewport = true;
+            return MStatus::kFailure;
+        }
     }
 
     GLUniformBufferBindingsSaver bindingsSaver;
@@ -663,12 +674,20 @@ void MtohRenderOverride::_InitHydraResources()
     GlfContextCaps::InitInstance();
     _rendererPlugin
         = HdRendererPluginRegistry::GetInstance().GetRendererPlugin(_rendererDesc.rendererName);
+    if (!_rendererPlugin)
+        return;
+
     auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
+    if (!renderDelegate)
+        return;
+
 #if PXR_VERSION > 2002
     _renderIndex = HdRenderIndex::New(renderDelegate, { &_hgiDriver });
 #else
     _renderIndex = HdRenderIndex::New(renderDelegate);
 #endif
+    if (!_renderIndex)
+        return;
 
     _taskController = new HdxTaskController(
         _renderIndex,
