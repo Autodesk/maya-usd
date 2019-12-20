@@ -25,6 +25,8 @@
 
 #include <stdexcept>
 
+#include <iostream>
+
 MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -95,8 +97,10 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::sceneItem() const
 bool ProxyShapeHierarchy::hasChildren() const
 {
 	const UsdPrim& rootPrim = getUsdRootPrim();
-	if (!rootPrim.IsValid())
+	if (!rootPrim.IsValid()) {
+        std::cout << "PPT: invalid root prim in ProxyShapeHierarchy::hasChildren()" << std::endl;
 		return false;
+    }
 	return !rootPrim.GetChildren().empty();
 }
 

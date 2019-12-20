@@ -32,6 +32,8 @@
 #include <memory>
 #include <stdexcept>
 
+#include <iostream>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 #ifndef MAYA_MSTRINGARRAY_ITERATOR_CATEGORY
@@ -103,13 +105,32 @@ SdfLayerHandle defPrimSpecLayer(const UsdPrim& prim)
 	// The source layer is the one in which there exists a def primSpec, not
 	// an over.
 
+    std::cout << "PPT: in defPrimSpecLayer, argument prim is "
+              << (prim.IsValid() ? "" : "NOT ") << "valid" << std::endl;
+
 	SdfLayerHandle defLayer;
 	auto layerStack = prim.GetStage()->GetLayerStack();
+    auto stage = prim.GetStage();
+    auto primFromPath = stage->GetPrimAtPath(prim.GetPath());
+    std::cout << "PPT: stage.GetPrimAtPath() returns a "
+              << (prim.IsValid() ? "VALID " : "INVALID ") << "prim"
+              << std::endl;
+
 	for (auto layer : layerStack)
 	{
+        std::cout << "PPT: iterating over layer " << layer->GetIdentifier()
+                  << std::endl;
+        std::cout << "PPT: prim path is " << prim.GetPath().GetString()
+                  << std::endl;
 		auto primSpec = layer->GetPrimAtPath(prim.GetPath());
+        std::cout << "PPT: primSpec is " << (primSpec ? "NOT " : "") << "null"
+                  << std::endl;
+        std::cout << "PPT: layer->HasSpec() returns "
+                  << (layer->HasSpec(prim.GetPath()) ? "TRUE" : "FALSE")
+                  << std::endl;
 		if (primSpec && (primSpec->GetSpecifier() == SdfSpecifierDef))
 		{
+            std::cout << "PPT: found layer with def primSpec." << std::endl;
 			defLayer = layer;
 			break;
 		}

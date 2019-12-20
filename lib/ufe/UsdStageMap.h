@@ -22,7 +22,18 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/base/tf/hash.h>
 
+#include <maya/MObjectHandle.h>
+
 #include <unordered_map>
+
+// Allow for use of MObjectHandle with std::unordered_map.
+namespace std {
+template <> struct hash<MObjectHandle> {
+    std::size_t operator()(const MObjectHandle& handle) const {
+      return static_cast<std::size_t>(handle.hashCode());
+    }
+};
+}
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -31,13 +42,17 @@ namespace ufe {
 
 //! \brief USD Stage Map
 /*!
-	Map of AL_usdmaya_ProxyShape UFE path to corresponding stage.
+	Two-way map of proxy shape UFE path to corresponding stage.
 
-	Map of stage to corresponding AL_usdmaya_ProxyShape UFE path.  Ideally, we
-	would support dynamically computing the path for the AL_usdmaya_ProxyShape
-	node, but we assume here it will not be reparented.  We will also assume that
-	a USD stage will not be instanced (even though nothing in the data model
-	prevents it).
+	We will assume that	a USD proxy shape will not be instanced (even though
+	nothing in the data model prevents it).  To support renaming and repathing,
+	we store an MObjectHandle in the maps, which is invariant to renaming and
+	repathing, and compute the path on access.  This is slower than a scheme
+	where we cache using the Ufe::Path, but such a cache must be refreshed on
+	rename and repath, which is non-trivial, since there is no guarantee on the
+	order of notification of Ufe observers.  An earlier implementation with
+	rename observation had the Maya Outliner (which observes rename) access the
+	UsdStageMap on rename before the UsdStageMap had been updated.
 */
 class MAYAUSD_CORE_PUBLIC UsdStageMap
 {
@@ -64,8 +79,10 @@ public:
 
 private:
 	// We keep two maps for fast lookup when there are many proxy shapes.
-	std::unordered_map<Ufe::Path, UsdStageWeakPtr> fPathToStage;
-	TfHashMap<UsdStageWeakPtr, Ufe::Path, TfHash> fStageToPath;
+	using ObjectToStage = std::unordered_map<MObjectHandle, UsdStageWeakPtr>;
+	using StageToObject = TfHashMap<UsdStageWeakPtr, MObjectHandle, TfHash>;
+	ObjectToStage fObjectToStage;
+	StageToObject fStageToObject;
 
 }; // UsdStageMap
 

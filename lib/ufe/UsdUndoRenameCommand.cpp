@@ -41,7 +41,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
 	// prim, we must recreate them after every call to rename.
 	fUsdDstPath = prim.GetParent().GetPath().AppendChild(TfToken(newName.string()));
 	fLayer = defPrimSpecLayer(prim);
-	if (fLayer) {
+	if (!fLayer) {
 		std::string err = TfStringPrintf("No prim found at %s", prim.GetPath().GetString().c_str());
 		throw std::runtime_error(err.c_str());
 	}

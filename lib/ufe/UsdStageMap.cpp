@@ -15,6 +15,46 @@
 //
 
 #include "UsdStageMap.h"
+#include "Utils.h"
+
+#include <maya/MFnDagNode.h>
+
+#include <iostream>
+#include <cassert>
+
+namespace {
+
+int stageCalls = 0;
+int pathCalls = 0;
+
+MObjectHandle proxyShapeHandle(const Ufe::Path& path)
+{
+    // Get the MObjectHandle from the tail of the MDagPath.  Remove the leading
+    // '|world' component.
+    auto dagPath = MayaUsd::ufe::nameToDagPath(path.popHead().string());
+    MObjectHandle handle(dagPath.node());
+    if (!handle.isValid()) {
+        TF_CODING_ERROR("'%s' is not a path to a proxy shape node.",
+                        path.string().c_str());
+    }
+    return handle;
+}
+
+// Assuming proxy shape nodes cannot be instanced, simply return the first path.
+Ufe::Path firstPath(const MObjectHandle& handle)
+{
+    if (!TF_VERIFY(handle.isValid(),
+                   "Cannot get path from invalid object handle")) {
+        return Ufe::Path();
+    }
+
+    MDagPath dagPath;
+    auto status = MFnDagNode(handle.object()).getPath(dagPath);
+    CHECK_MSTATUS(status);
+    return MayaUsd::ufe::dagPathToUfe(dagPath);
+}
+
+}
 
 MAYAUSD_NS_DEF {
 namespace ufe {
@@ -31,32 +71,58 @@ UsdStageMap g_StageMap;
 
 void UsdStageMap::addItem(const Ufe::Path& path, UsdStageWeakPtr stage)
 {
-	fPathToStage[path] = stage;
-	fStageToPath[stage] = path;
+    // We expect a path to the proxy shape node, therefore a single segment.
+    auto nbSegments = path.nbSegments();
+    if (nbSegments != 1) {
+        TF_CODING_ERROR("A proxy shape node path can have only one segment, path '%s' has %d", path.string().c_str(), nbSegments);
+        return;
+    }
+            
+    // Convert the tail of the UFE path to an MObjectHandle.
+    auto proxyShape = proxyShapeHandle(path);
+    if (!proxyShape.isValid()) {
+        return;
+    }
+    
+    // Could get the stage from the proxy shape object in the stage() method,
+    // but since it's given here, simply store it.
+    fObjectToStage[proxyShape] = stage;
+    fStageToObject[stage] = proxyShape;
 }
 
 UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path) const
 {
+    ++stageCalls;
+    std::cout << "PPT: stage calls is " << stageCalls << std::endl;
+
+    auto proxyShape = proxyShapeHandle(path);
+    if (!proxyShape.isValid()) {
+        return nullptr;
+    }
+
 	// A stage is bound to a single Dag proxy shape.
-	auto iter = fPathToStage.find(path);
-	if (iter != std::end(fPathToStage))
+	auto iter = fObjectToStage.find(proxyShape);
+	if (iter != std::end(fObjectToStage))
 		return iter->second;
 	return nullptr;
 }
 
 Ufe::Path UsdStageMap::path(UsdStageWeakPtr stage) const
 {
+    ++pathCalls;
+    std::cout << "PPT: path calls is " << pathCalls << std::endl;
+
 	// A stage is bound to a single Dag proxy shape.
-	auto iter = fStageToPath.find(stage);
-	if (iter != std::end(fStageToPath))
-		return iter->second;
+	auto iter = fStageToObject.find(stage);
+	if (iter != std::end(fStageToObject))
+		return firstPath(iter->second);
 	return Ufe::Path();
 }
 
 void UsdStageMap::clear()
 {
-	fPathToStage.clear();
-	fStageToPath.clear();
+	fObjectToStage.clear();
+	fStageToObject.clear();
 }
 
 } // namespace ufe
