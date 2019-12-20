@@ -48,14 +48,11 @@
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "AL/usdmaya/nodes/Scope.h"
 
-#include <mayaUsd/nodes/stageData.h>
-#include <mayaUsd/nodes/proxyShapePlugin.h>
-#include <mayaUsd/ufe/Global.h>
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 
-#if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION >= 5) 
+#if USD_VERSION_NUM >= 1903
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/glContext.h"
 #endif
@@ -63,6 +60,13 @@
 #include "maya/MDrawRegistry.h"
 #include "maya/MGlobal.h"
 #include "maya/MStatus.h"
+
+#include <mayaUsd/nodes/proxyShapePlugin.h>
+#include <mayaUsd/nodes/stageData.h>
+
+#if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/Global.h>
+#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -241,7 +245,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
     }
   }
 
-  AL_REGISTER_DATA(plugin, pxr::MayaUsdStageData);
+  //AL_REGISTER_DATA(plugin, pxr::MayaUsdStageData);
   AL_REGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::CreateUsdPrim);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCreateLayer);
@@ -307,9 +311,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   }
 #endif
 
-
-
-  AL_REGISTER_SHAPE_NODE(plugin, AL::usdmaya::nodes::ProxyShape, AL::usdmaya::nodes::ProxyShapeUI, AL::usdmaya::nodes::ProxyDrawOverride);
+  //AL_REGISTER_SHAPE_NODE(plugin, AL::usdmaya::nodes::ProxyShape, AL::usdmaya::nodes::ProxyShapeUI, AL::usdmaya::nodes::ProxyDrawOverride);
   AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Scope, AL::usdmaya::nodes::BasicTransformationMatrix);
   AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Transform, AL::usdmaya::nodes::TransformationMatrix);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::RendererManager);
@@ -439,12 +441,16 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimDeformer);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimCreator);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::ProxyShape);
+
+  status = MayaUsdProxyShapePlugin::finalize(plugin);
+  CHECK_MSTATUS(status);
+
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Transform);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Scope);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Layer);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::LayerManager);
-  AL_UNREGISTER_DATA(plugin, pxr::MayaUsdStageData);
+  //AL_UNREGISTER_DATA(plugin, pxr::MayaUsdStageData);
 
   AL::usdmaya::Global::onPluginUnload();
   return status;

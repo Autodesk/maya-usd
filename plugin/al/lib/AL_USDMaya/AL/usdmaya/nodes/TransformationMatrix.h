@@ -299,7 +299,6 @@ class TransformationMatrix
   /// \param  enabled true to target animated values, false to target the default.
   void enableReadAnimatedValues(bool enabled);
 
-
   /// \brief  Applies a local space translation offset to the computed matrix. Useful for positioning objects on a
   ///         table.
   /// \param  localTranslateOffset the local space offset to apply to the transform.

@@ -24,7 +24,6 @@
 #include "maya/MObjectHandle.h"
 #include "maya/MPxTransform.h"
 
-
 namespace AL {
 namespace usdmaya {
 namespace nodes {
