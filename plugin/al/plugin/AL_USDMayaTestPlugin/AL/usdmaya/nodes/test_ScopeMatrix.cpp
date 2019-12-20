@@ -13,19 +13,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "test_usdmaya.h"
+
+
+#include "pxr/usd/usdGeom/xform.h"
+
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "AL/usdmaya/nodes/Scope.h"
 #include "AL/usdmaya/nodes/Layer.h"
 #include "AL/usdmaya/StageCache.h"
+
 #include "maya/MFileIO.h"
 #include "maya/MItDependencyNodes.h"
 #include "maya/MFnMatrixData.h"
 #include "maya/MString.h"
 
-//#include "pxr/usd/usd/stage.h"
+#include "test_usdmaya.h"
 
 using AL::maya::test::buildTempPath;
 

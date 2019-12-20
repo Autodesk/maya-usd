@@ -15,9 +15,10 @@
 //
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/DebugCodes.h"
-#include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Scope.h"
+
+#include <mayaUsd/nodes/stageData.h>
 
 #include "maya/MBoundingBox.h"
 #include "maya/MGlobal.h"
@@ -82,7 +83,7 @@ MStatus Scope::initialise()
 
     addFrame("USD Prim Information");
     m_primPath = addStringAttr("primPath", "pp", kReadable | kWritable | kStorable | kConnectable | kAffectsWorldSpace, true);
-    m_inStageData = addDataAttr("inStageData", "isd", StageData::kTypeId, kWritable | kStorable | kConnectable | kHidden | kAffectsWorldSpace);
+    m_inStageData = addDataAttr("inStageData", "isd", MayaUsdStageData::mayaTypeId, kWritable | kStorable | kConnectable | kHidden | kAffectsWorldSpace);
 
     mustCallValidateAndSet(m_primPath);
     mustCallValidateAndSet(m_inStageData);
@@ -134,7 +135,7 @@ MStatus Scope::compute(const MPlug& plug, MDataBlock& dataBlock)
     // This should only be computed if there's no connection, so set it to an empty stage
     // create new stage data
     MObject data;
-    StageData* usdStageData = createData<StageData>(StageData::kTypeId, data);
+    MayaUsdStageData* usdStageData = createData<MayaUsdStageData>(MayaUsdStageData::mayaTypeId, data);
     if(!usdStageData)
     {
       return MS::kFailure;
@@ -236,7 +237,7 @@ MStatus Scope::validateAndSetValue(const MPlug& plug, const MDataHandle& handle,
   if(plug == m_inStageData)
   {
     MDataBlock dataBlock = forceCache(*(MDGContext *)&context);
-    StageData* data = inputDataValue<StageData>(dataBlock, m_inStageData);
+    MayaUsdStageData* data = inputDataValue<MayaUsdStageData>(dataBlock, m_inStageData);
     if (data && data->stage)
     {
       MString path = inputStringValue(dataBlock, m_primPath);
@@ -262,7 +263,7 @@ MStatus Scope::validateAndSetValue(const MPlug& plug, const MDataHandle& handle,
     MString path = handle.asString();
     outputStringValue(dataBlock, m_primPath, path);
 
-    StageData* data = inputDataValue<StageData>(dataBlock, m_inStageData);
+    MayaUsdStageData* data = inputDataValue<MayaUsdStageData>(dataBlock, m_inStageData);
     if (data && data->stage)
     {
       SdfPath primPath;

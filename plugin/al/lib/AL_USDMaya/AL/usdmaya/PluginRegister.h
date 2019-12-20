@@ -22,7 +22,6 @@
 #include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/maya/utils/MenuBuilder.h"
 #include "AL/usdmaya/Global.h"
-#include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/cmds/CreateUsdPrim.h"
 #include "AL/usdmaya/cmds/DebugCommands.h"
 #include "AL/usdmaya/cmds/EventCommand.h"
@@ -48,6 +47,10 @@
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "AL/usdmaya/nodes/Scope.h"
+
+#include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/nodes/proxyShapePlugin.h>
+#include <mayaUsd/ufe/Global.h>
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
@@ -238,7 +241,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
     }
   }
 
-  AL_REGISTER_DATA(plugin, AL::usdmaya::StageData);
+  AL_REGISTER_DATA(plugin, pxr::MayaUsdStageData);
   AL_REGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::CreateUsdPrim);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCreateLayer);
@@ -441,7 +444,7 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Layer);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::LayerManager);
-  AL_UNREGISTER_DATA(plugin, AL::usdmaya::StageData);
+  AL_UNREGISTER_DATA(plugin, pxr::MayaUsdStageData);
 
   AL::usdmaya::Global::onPluginUnload();
   return status;
