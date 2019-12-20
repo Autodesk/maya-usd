@@ -62,7 +62,6 @@
 #include "maya/MStatus.h"
 
 #include <mayaUsd/nodes/proxyShapePlugin.h>
-#include <mayaUsd/nodes/stageData.h>
 
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/Global.h>
@@ -245,7 +244,6 @@ MStatus registerPlugin(AFnPlugin& plugin)
     }
   }
 
-  //AL_REGISTER_DATA(plugin, pxr::MayaUsdStageData);
   AL_REGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::CreateUsdPrim);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCreateLayer);
@@ -450,7 +448,6 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Layer);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::LayerManager);
-  //AL_UNREGISTER_DATA(plugin, pxr::MayaUsdStageData);
 
   AL::usdmaya::Global::onPluginUnload();
   return status;
