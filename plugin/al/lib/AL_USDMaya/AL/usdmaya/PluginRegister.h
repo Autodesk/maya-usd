@@ -48,7 +48,6 @@
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "AL/usdmaya/nodes/Scope.h"
 
-
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 
@@ -309,7 +308,6 @@ MStatus registerPlugin(AFnPlugin& plugin)
   }
 #endif
 
-  //AL_REGISTER_SHAPE_NODE(plugin, AL::usdmaya::nodes::ProxyShape, AL::usdmaya::nodes::ProxyShapeUI, AL::usdmaya::nodes::ProxyDrawOverride);
   AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Scope, AL::usdmaya::nodes::BasicTransformationMatrix);
   AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Transform, AL::usdmaya::nodes::TransformationMatrix);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::RendererManager);
