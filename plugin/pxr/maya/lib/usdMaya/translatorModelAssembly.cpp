@@ -374,6 +374,8 @@ bool UsdMayaTranslatorModelAssembly::Read(
     // opposed to using MDagModifier's createNode() or any other method. That
     // seems to be the only way to ensure that the assembly's namespace and
     // container are setup correctly.
+    //
+    // TODO UNDO: how to recording this in an OpUndoItem?
     const std::string assemblyCmd = TfStringPrintf(
         "import maya.cmds; maya.cmds.assembly(name=\'%s\', type=\'%s\')",
         prim.GetName().GetText(),
@@ -388,7 +390,7 @@ bool UsdMayaTranslatorModelAssembly::Read(
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // Re-parent the assembly node underneath parentNode.
-    MDagModifier dagMod;
+    MDagModifier& dagMod = MDagModifierUndoItem::create("Assembly reparenting", context->GetUndoInfo())();
     status = dagMod.reparentNode(assemblyObj, parentNode);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
@@ -499,7 +501,7 @@ bool UsdMayaTranslatorModelAssembly::ReadAsProxy(
     }
 
     // Create the proxy shape node.
-    MDagModifier dagMod;
+    MDagModifier& dagMod = MDagModifierUndoItem::create("Proxy shape creation", context->GetUndoInfo())();
     MObject      proxyObj
         = dagMod.createNode(UsdMayaProxyShapeTokens->MayaTypeName.GetText(), transformObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);

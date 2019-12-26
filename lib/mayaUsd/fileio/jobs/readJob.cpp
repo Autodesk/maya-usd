@@ -21,6 +21,9 @@
 #include <mayaUsd/fileio/translators/translatorXformable.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/nodes/stageNode.h>
+#include <mayaUsd/undo/OpUndoInfoMuting.h>
+#include <mayaUsd/undo/OpUndoItems.h>
+#include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
@@ -64,6 +67,8 @@
 #include <utility>
 #include <vector>
 
+using namespace MAYAUSD_NS_DEF;
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -97,6 +102,10 @@ UsdMaya_ReadJob::~UsdMaya_ReadJob() { }
 
 bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 {
+    // Do not use the global undo info recording system.
+    // The read job Undo() / redo() functions will handling all operations.
+    OpUndoInfoMuting undoMuting;
+
     MStatus status;
 
     if (!TF_VERIFY(!mImportData.empty())) {
@@ -254,8 +263,9 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         std::make_pair(rootPathToRegister.GetString(), mMayaRootDagPath.node()));
 
     if (mArgs.useAsAnimationCache) {
-        MDGModifier dgMod;
-        MObject     usdStageNode = dgMod.createNode(UsdMayaStageNode::typeId, &status);
+        auto&        undoInfo = UsdUndoManager::instance().getUndoInfo();
+        MDGModifier& dgMod = MDGModifierUndoItem::create("Read job stage node creation", undoInfo);
+        MObject      usdStageNode = dgMod.createNode(UsdMayaStageNode::typeId, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
         // We only ever create a single stage node per usdImport, so we can
@@ -509,7 +519,9 @@ bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootP
     }
 
     if (buildInstances) {
-        MDGModifier              deletePrototypeMod;
+        auto&        undoInfo = UsdUndoManager::instance().getUndoInfo();
+        MDGModifier& deletePrototypeMod
+            = MDGModifierUndoItem::create("Read job delete prototype", undoInfo);
         UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
         readCtx.SetTimeSampleMultiplier(mTimeSampleMultiplier);
 
@@ -528,7 +540,7 @@ bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootP
                         prototypeNode.removeChildAt(prototypeNode.childCount() - 1);
                     }
                 }
-                deletePrototypeMod.deleteNode(prototypeObject);
+                deletePrototypeMod.deleteNode(prototypeObject, false);
             }
         }
         deletePrototypeMod.doIt();
@@ -543,6 +555,10 @@ bool UsdMaya_ReadJob::SkipRootPrim(bool isImportingPseudoRoot) { return isImport
 
 bool UsdMaya_ReadJob::Redo()
 {
+    // Do not use the global undo info recording system.
+    // The read job Undo() / redo() functions will handling all operations.
+    OpUndoInfoMuting undoMuting;
+
     // Undo the undo
     MStatus status = mDagModifierUndo.undoIt();
 
@@ -560,6 +576,10 @@ bool UsdMaya_ReadJob::Redo()
 
 bool UsdMaya_ReadJob::Undo()
 {
+    // Do not use the global undo info recording system.
+    // The read job Undo() / redo() functions will handling all operations.
+    OpUndoInfoMuting undoMuting;
+
     // NOTE: (yliangsiew) All chasers need to have their Undo run as well.
     for (const UsdMayaImportChaserRefPtr& chaser : this->mImportChasers) {
         bool bStat = chaser->Undo();
@@ -588,7 +608,7 @@ bool UsdMaya_ReadJob::Undo()
                         }
                     }
                 }
-                mDagModifierUndo.deleteNode(it.second);
+                mDagModifierUndo.deleteNode(it.second, false);
             }
         }
     }

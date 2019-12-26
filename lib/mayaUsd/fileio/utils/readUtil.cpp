@@ -16,6 +16,8 @@
 #include "readUtil.h"
 
 #include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/undo/OpUndoItems.h>
+#include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/colorSpace.h>
 #include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
@@ -75,7 +77,9 @@ MObject UsdMayaReadUtil::FindOrCreateMayaAttr(
     const std::string&      attrName,
     const std::string&      attrNiceName)
 {
-    MDGModifier modifier;
+    auto&        undoInfo = UsdUndoManager::instance().getUndoInfo();
+    MDGModifier& modifier
+        = MDGModifierUndoItem::create("Generic attribute find or creation", undoInfo);
     return FindOrCreateMayaAttr(typeName, variability, depNode, attrName, attrNiceName, modifier);
 }
 
@@ -480,7 +484,9 @@ bool UsdMayaReadUtil::SetMayaAttr(
     const VtValue& newValue,
     const bool     unlinearizeColors)
 {
-    MDGModifier modifier;
+    auto&        undoInfo = UsdUndoManager::instance().getUndoInfo();
+    MDGModifier& modifier
+        = MDGModifierUndoItem::create("Generic Maya attribute modification", undoInfo);
     return SetMayaAttr(attrPlug, newValue, modifier, unlinearizeColors);
 }
 
@@ -788,7 +794,9 @@ bool UsdMayaReadUtil::SetMayaAttr(
 
 void UsdMayaReadUtil::SetMayaAttrKeyableState(MPlug& attrPlug, const SdfVariability variability)
 {
-    MDGModifier modifier;
+    auto&        undoInfo = UsdUndoManager::instance().getUndoInfo();
+    MDGModifier& modifier
+        = MDGModifierUndoItem::create("Generic Maya attribute keyable state", undoInfo);
     SetMayaAttrKeyableState(attrPlug, variability, modifier);
 }
 

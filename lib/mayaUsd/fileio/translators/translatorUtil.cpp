@@ -20,6 +20,8 @@
 #include <mayaUsd/fileio/translators/translatorXformable.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/xformStack.h>
+#include <mayaUsd/undo/OpUndoItems.h>
+#include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/pxr.h>
@@ -36,6 +38,8 @@
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
+
+using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -186,7 +190,8 @@ bool UsdMayaTranslatorUtil::CreateNode(
     // their edits to their parents-- if this is indeed the best pattern for
     // this, all Maya*Reader node creation needs to be adjusted accordingly (for
     // much less trivial cases like MFnMesh).
-    MDagModifier dagMod;
+    auto&         undoInfo = UsdUndoManager::instance().getUndoInfo();
+    MDagModifier& dagMod = MDagModifierUndoItem::create("Generic node creation", undoInfo);
     *mayaNodeObj = dagMod.createNode(nodeTypeName, parentNode, status);
     CHECK_MSTATUS_AND_RETURN(*status, false);
     *status = dagMod.renameNode(*mayaNodeObj, nodeName);
@@ -253,7 +258,7 @@ bool UsdMayaTranslatorUtil::CreateShaderNode(
     const MString createdNode = MGlobal::executeCommandStringResult(cmd, false, false, status);
     CHECK_MSTATUS_AND_RETURN(*status, false);
 
-    *status = UsdMayaUtil::GetMObjectByName(createdNode.asChar(), *shaderObj);
+    *status = UsdMayaUtil::GetMObjectByName(createdNode, *shaderObj);
     CHECK_MSTATUS_AND_RETURN(*status, false);
 
     // Lights are unique in that they're the only DAG nodes we might create in

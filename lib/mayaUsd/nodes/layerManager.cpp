@@ -19,6 +19,9 @@
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/OpUndoInfoMuting.h>
+#include <mayaUsd/undo/OpUndoItems.h>
+#include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
@@ -57,6 +60,8 @@
 #include <iostream>
 #include <set>
 
+using namespace MAYAUSD_NS_DEF;
+
 namespace {
 static std::recursive_mutex findNodeMutex;
 static MObjectHandle        layerManagerHandle;
@@ -67,11 +72,12 @@ static MObjectHandle        layerManagerHandle;
 // where compound/array plugs may be nested arbitrarily deep...
 MStatus disconnectCompoundArrayPlug(MPlug arrayPlug)
 {
-    MStatus     status;
-    MPlug       elemPlug;
-    MPlug       srcPlug;
-    MPlugArray  destPlugs;
-    MDGModifier dgmod;
+    MStatus      status;
+    MPlug        elemPlug;
+    MPlug        srcPlug;
+    MPlugArray   destPlugs;
+    auto&        undoInfo = UsdUndoManager::instance().getUndoInfo();
+    MDGModifier& dgmod = MDGModifierUndoItem::create("Compound array plug disconnection", undoInfo);
 
     auto disconnectPlug = [&](MPlug plug) -> MStatus {
         MStatus status;
@@ -136,8 +142,9 @@ MayaUsd::LayerManager* findOrCreateNode()
 {
     MayaUsd::LayerManager* lm = findNode();
     if (!lm) {
-        MDGModifier modifier;
-        MObject     manager = modifier.createNode(MayaUsd::LayerManager::typeId);
+        auto&        undoInfo = UsdUndoManager::instance().getUndoInfo();
+        MDGModifier& modifier = MDGModifierUndoItem::create("Node find or creation", undoInfo);
+        MObject      manager = modifier.createNode(MayaUsd::LayerManager::typeId);
         modifier.doIt();
 
         lm = static_cast<MayaUsd::LayerManager*>(MFnDependencyNode(manager).userNode());
@@ -337,11 +344,15 @@ void LayerDatabase::setBatchSaveDelegate(BatchSaveDelegate delegate)
 
 void LayerDatabase::prepareForSaveCheck(bool* retCode, void*)
 {
+    // This is called during a Maya notification callback, so no undo supported.
+    OpUndoInfoMuting muting;
     prepareForWriteCheck(retCode, false);
 }
 
 void LayerDatabase::prepareForExportCheck(bool* retCode, void*)
 {
+    // This is called during a Maya notification callback, so no undo supported.
+    OpUndoInfoMuting muting;
     prepareForWriteCheck(retCode, true);
 }
 
@@ -648,7 +659,9 @@ BatchSaveResult LayerDatabase::saveUsdToMayaFile()
     dataBlock.setClean(lm->layers);
 
     if (!atLeastOneDirty) {
-        MDGModifier modifier;
+        auto&        undoInfo = UsdUndoManager::instance().getUndoInfo();
+        MDGModifier& modifier
+            = MDGModifierUndoItem::create("Save USD to Maya node deletion", undoInfo);
         modifier.deleteNode(lm->thisMObject());
         modifier.doIt();
     }
@@ -870,6 +883,8 @@ void LayerDatabase::loadLayersPostRead(void*)
 
 void LayerDatabase::cleanUpNewScene(void*)
 {
+    // This is called during a Maya notification callback, so no undo supported.
+    OpUndoInfoMuting muting;
     LayerDatabase::instance().removeAllLayers();
     LayerDatabase::removeManagerNode();
 }
@@ -970,7 +985,8 @@ void LayerDatabase::removeManagerNode(MayaUsd::LayerManager* lm)
     layersArrayHandle.setAllClean();
     dataBlock.setClean(lm->layers);
 
-    MDGModifier modifier;
+    auto&        undoInfo = UsdUndoManager::instance().getUndoInfo();
+    MDGModifier& modifier = MDGModifierUndoItem::create("Manager node removal", undoInfo);
     modifier.deleteNode(lm->thisMObject());
     modifier.doIt();
 }

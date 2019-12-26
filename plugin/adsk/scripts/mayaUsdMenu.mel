@@ -589,13 +589,8 @@ global proc mayaUsdMenu_pushBackToUSD(string $obj)
         }
     }
     if (size($obj)) {
-        python("from mayaUsd.lib import PrimUpdaterManager; PrimUpdaterManager.mergeToUsd('" + $obj + "');");
+        mayaUsdMergeToUsd $obj;
     }
-}
-
-global proc mayaUsdMenu_pushClear(string $obj)
-{
-    python("from mayaUsd.lib import PrimUpdaterManager; PrimUpdaterManager.discardEdits('" + $obj + "');");
 }
 
 global proc mayaUsdMenu_duplicateToUSD( string $proxy, string $obj )
@@ -609,7 +604,7 @@ global proc mayaUsdMenu_duplicateToUSD( string $proxy, string $obj )
     string $objLong[] = `ls -l $obj`;
     string $proxyLong[] = `ls -l $proxy`;
     if (size($objLong) && size($proxyLong)) {
-        python("from mayaUsd.lib import PrimUpdaterManager; import maya.cmds as cmds; PrimUpdaterManager.duplicate('" + $objLong[0] + "', '"+ $proxyLong[0] +"');");
+        mayaUsdDuplicate $objLong[0] $proxyLong[0];
     }
 }
 
@@ -617,7 +612,7 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
 {
     if (isPulledUsdObject($obj)) {
         string $pushback = `menuItem -label "Merge Maya Edits to USD" -insertAfter "" -image "merge_to_USD.png" -command ("mayaUsdMenu_pushBackToUSD " + $obj)`;
-        string $pushclear = `menuItem -label "Discard Maya Edits" -insertAfter $pushback -image "discard_edits.png" -command ("mayaUsdMenu_pushClear " + $obj)`;
+        string $pushclear = `menuItem -label "Discard Maya Edits" -insertAfter $pushback -image "discard_edits.png" -command ("mayaUsdDiscardEdits " + $obj)`;
         menuItem -divider true -insertAfter $pushclear;
     }
     else {

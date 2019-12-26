@@ -71,16 +71,19 @@ public:
 
 private:
     PrimUpdaterManager();
+    
+    PrimUpdaterManager(PrimUpdaterManager&) = delete;
+    PrimUpdaterManager(PrimUpdaterManager&&) = delete;
 
     void onProxyContentChanged(const MayaUsdProxyStageObjectsChangedNotice& notice);
 
     //! Ensure the Dag pull root exists.  This is the child of the Maya world
     //! node under which all pulled nodes are created.
-    bool findOrCreatePullRoot();
+    MObject findOrCreatePullRoot();
 
     //! Create the pull parent for the pulled hierarchy.  This is the node
     //! which receives the pulled node's parent transformation.
-    MObject createPullParent(const Ufe::Path& pulledPath);
+    MObject createPullParent(const Ufe::Path& pulledPath, MObject pullRoot);
 
     //! Remove the pull parent for the pulled hierarchy.
     bool removePullParent(const MDagPath& pullParent);
@@ -88,18 +91,9 @@ private:
     //! Create the pull parent and set it into the prim updater context.
     MDagPath setupPullParent(const Ufe::Path& pulledPath, VtDictionary& args);
 
-    //! Maya scene message callback.
-    static void beforeNewOrOpenCallback(void* clientData);
-
     friend class TfSingleton<PrimUpdaterManager>;
 
     bool _inPushPull { false };
-
-    // Initialize pull root MObject to null object.
-    MObject _pullRoot {};
-
-    // Reset pull root on file new / file open.
-    MCallbackIdArray _cbIds;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

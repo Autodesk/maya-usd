@@ -75,6 +75,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
             PulledObjectHierarchyHandler.cpp
             UsdPathMappingHandler.cpp
             UsdUndoUngroupCommand.cpp
+            PullPushCommands.cpp
     )
 endif()
 
@@ -151,6 +152,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         PulledObjectHierarchyHandler.h
         UsdPathMappingHandler.h
         UsdUndoUngroupCommand.h
+        PullPushCommands.h
     )
 endif()
 

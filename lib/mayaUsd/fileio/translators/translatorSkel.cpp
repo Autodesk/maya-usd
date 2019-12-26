@@ -17,6 +17,8 @@
 
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/undo/OpUndoItems.h>
+#include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/staticData.h>
@@ -42,6 +44,8 @@
 #include <maya/MObjectHandle.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
+
+using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -723,8 +727,9 @@ bool _CreateDagPose(
     UsdMayaPrimReaderContext* context,
     MObject*                  dagPoseNode)
 {
-    MStatus     status;
-    MDGModifier dgMod;
+    MStatus      status;
+    auto&        undoInfo = UsdUndoManager::instance().getUndoInfo();
+    MDGModifier& dgMod = MDGModifierUndoItem::create("Skeleton DAG pose creation", undoInfo);
 
     *dagPoseNode = dgMod.createNode(_MayaTokens->dagPoseType, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
@@ -990,7 +995,11 @@ bool _ComputeAndSetJointInfluences(
 
 /// Create a copy of mesh \p inputMesh beneath \p parent,
 /// for use as an input mesh for deformers.
-bool _CreateRestMesh(const MObject& inputMesh, const MObject& parent, MObject* restMesh)
+bool _CreateRestMesh(
+    const MObject& inputMesh,
+    const MObject& parent,
+    MObject*       restMesh,
+    OpUndoInfo&    undoInfo)
 {
     MStatus status;
     MFnMesh meshFn(inputMesh, &status);
@@ -1002,7 +1011,7 @@ bool _CreateRestMesh(const MObject& inputMesh, const MObject& parent, MObject* r
     // Determine a new name for the rest mesh, and rename the copy.
     static const MString restSuffix("_rest");
     MString              restMeshName = meshFn.name() + restSuffix;
-    MDGModifier          dgMod;
+    MDGModifier& dgMod = MDGModifierUndoItem::create("Rename deformer input mesh", undoInfo);
     status = dgMod.renameNode(*restMesh, restMeshName);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
@@ -1013,12 +1022,12 @@ bool _CreateRestMesh(const MObject& inputMesh, const MObject& parent, MObject* r
 }
 
 /// Clear any incoming connections on \p plug.
-bool _ClearIncomingConnections(MPlug& plug)
+bool _ClearIncomingConnections(MPlug& plug, OpUndoInfo& undoInfo)
 {
     MPlugArray connections;
     if (plug.connectedTo(connections, /*asDst*/ true, /*asSrc*/ false)) {
-        MStatus     status;
-        MDGModifier dgMod;
+        MStatus      status;
+        MDGModifier& dgMod = MDGModifierUndoItem::create("Clear deformer connections", undoInfo);
         for (unsigned int i = 0; i < connections.length(); ++i) {
             status = dgMod.disconnect(plug, connections[i]);
             CHECK_MSTATUS_AND_RETURN(status, false);
@@ -1032,7 +1041,8 @@ bool _ClearIncomingConnections(MPlug& plug)
 /// Configure the transform node of a skinned object.
 bool _ConfigureSkinnedObjectTransform(
     const UsdSkelSkinningQuery& skinningQuery,
-    const MObject&              transform)
+    const MObject&              transform,
+    OpUndoInfo&                 undoInfo)
 {
     MStatus           status;
     MFnDependencyNode transformDep(transform, &status);
@@ -1061,7 +1071,7 @@ bool _ConfigureSkinnedObjectTransform(
                 // Before setting each plug, make sure there are no connections.
                 // Usd import may have already wired up some connections
                 // (eg., animation channels)
-                if (!_ClearIncomingConnections(plug))
+                if (!_ClearIncomingConnections(plug, undoInfo))
                     return false;
 
                 status = plug.setValue(pair.first[c]);
@@ -1099,6 +1109,8 @@ bool UsdMayaTranslatorSkel::CreateSkinCluster(
         return false;
     }
 
+    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
+
     // Resolve the input mesh.
     MObject objToSkin = context->GetMayaNode(primToSkin.GetPath(), false);
     if (objToSkin.isNull()) {
@@ -1125,15 +1137,15 @@ bool UsdMayaTranslatorSkel::CreateSkinCluster(
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     MObject restMesh;
-    if (!_CreateRestMesh(shapeToSkin, parentTransform, &restMesh)) {
+    if (!_CreateRestMesh(shapeToSkin, parentTransform, &restMesh, undoInfo)) {
         return false;
     }
 
-    if (!_ConfigureSkinnedObjectTransform(skinningQuery, parentTransform)) {
+    if (!_ConfigureSkinnedObjectTransform(skinningQuery, parentTransform, undoInfo)) {
         return false;
     }
 
-    MDGModifier dgMod;
+    MDGModifier& dgMod = MDGModifierUndoItem::create("Skin cluster creation", undoInfo);
 
     MObject skinCluster = dgMod.createNode(_MayaTokens->skinClusterType, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);

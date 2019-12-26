@@ -19,6 +19,7 @@
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/fileio/primUpdaterManager.h>
+#include <mayaUsd/ufe/PullPushCommands.h>
 #endif
 #include <mayaUsd/ufe/UsdObject3d.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
@@ -839,12 +840,12 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return std::make_shared<ClearAllReferencesUndoableCommand>(prim());
     } else if (itemPath[0] == kEditAsMayaItem) {
         MString script;
-        script.format("mayaUsdMenu_pullToDG \"^1s\"", Ufe::PathString::string(path()).c_str());
-        MGlobal::executeCommand(script);
+        script.format("^1s \"^2s\"", EditAsMayaCommand::commandName, Ufe::PathString::string(path()).c_str());
+        MGlobal::executeCommand(script, true, true);
     } else if (itemPath[0] == kDuplicateAsMayaItem) {
         MString script;
-        script.format("mayaUsdMenu_duplicateToDG \"^1s\"", Ufe::PathString::string(path()).c_str());
-        MGlobal::executeCommand(script);
+        script.format("^1s \"^2s\" \"|world\"", DuplicateCommand::commandName, Ufe::PathString::string(path()).c_str());
+        MGlobal::executeCommand(script, true, true);
     }
 
     return nullptr;
