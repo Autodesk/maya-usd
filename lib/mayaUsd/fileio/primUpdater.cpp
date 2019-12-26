@@ -23,6 +23,8 @@
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/OpUndoItems.h>
+#include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/traverseLayer.h>
 #include <mayaUsdUtils/MergePrims.h>
 
@@ -49,6 +51,8 @@ extern Ufe::Rtid g_MayaRtid;
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
 
+using namespace MAYAUSD_NS_DEF;
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMayaPrimUpdater::UsdMayaPrimUpdater(const MFnDependencyNode& depNodeFn, const Ufe::Path& path)
@@ -73,15 +77,32 @@ bool UsdMayaPrimUpdater::editAsMaya(const UsdMayaPrimUpdaterContext& context) { 
 bool UsdMayaPrimUpdater::discardEdits(const UsdMayaPrimUpdaterContext& context)
 {
     MObject objectToDelete = getMayaObject();
-    if (!objectToDelete.isNull()) {
-        MGlobal::deleteNode(objectToDelete);
+    if (objectToDelete.isNull())
+        return true;
+
+    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
+
+    MFnDependencyNode depNode(objectToDelete);
+
+    MStatus status = NodeDeletionUndoItem::deleteNode(
+        "Discard edits delete individual pulled node",
+        depNode.absoluteName(),
+        objectToDelete,
+        undoInfo);
+
+    if (status != MS::kSuccess) {
+        TF_WARN("Discard edits: cannot delete node.");
+        return false;
     }
-    return true;
+
+    return status == MS::kSuccess;
 }
 
 bool UsdMayaPrimUpdater::pushEnd(const UsdMayaPrimUpdaterContext& context)
 {
-    return discardEdits(context);
+    // Nothing. We will rely on the Maya scene cleaup code
+    // to delete the nodes in the correct order.
+    return true;
 }
 
 bool UsdMayaPrimUpdater::pushCopySpecs(

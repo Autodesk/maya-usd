@@ -35,6 +35,7 @@
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+#include <mayaUsd/ufe/PullPushCommands.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
@@ -222,6 +223,13 @@ MStatus initializePlugin(MObject obj)
     registerCommandCheck<MayaUsd::LayerEditorWindowCommand>(plugin);
 #endif
 
+#ifdef UFE_V3_FEATURES_AVAILABLE
+    registerCommandCheck<MayaUsd::ufe::EditAsMayaCommand>(plugin);
+    registerCommandCheck<MayaUsd::ufe::MergeToUsdCommand>(plugin);
+    registerCommandCheck<MayaUsd::ufe::DiscardEditsCommand>(plugin);
+    registerCommandCheck<MayaUsd::ufe::DuplicateCommand>(plugin);
+#endif
+
     status = plugin.registerCommand(
         MayaUsd::UsdUndoBlockCmd::commandName, MayaUsd::UsdUndoBlockCmd::creator);
     CHECK_MSTATUS(status);
@@ -385,6 +393,13 @@ MStatus uninitializePlugin(MObject obj)
 #if defined(WANT_QT_BUILD)
     deregisterCommandCheck<MayaUsd::LayerEditorWindowCommand>(plugin);
     MayaUsd::LayerEditorWindowCommand::cleanupOnPluginUnload();
+#endif
+
+#ifdef UFE_V3_FEATURES_AVAILABLE
+    deregisterCommandCheck<MayaUsd::ufe::EditAsMayaCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::ufe::MergeToUsdCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::ufe::DiscardEditsCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::ufe::DuplicateCommand>(plugin);
 #endif
 
     status = plugin.deregisterNode(MayaUsd::ProxyShape::typeId);

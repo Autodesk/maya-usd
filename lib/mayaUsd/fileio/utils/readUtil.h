@@ -102,8 +102,7 @@ struct UsdMayaReadUtil
     /// For plugs with color roles, the value will be converted from a linear
     /// color value before being set if \p unlinearizeColors is true.
     MAYAUSD_CORE_PUBLIC
-    static bool
-    SetMayaAttr(MPlug& attrPlug, const VtValue& newValue, const bool unlinearizeColors = true);
+    static bool SetMayaAttr(MPlug& attrPlug, const VtValue& newValue, const bool unlinearizeColors = true);
 
     /// An overload of SetMayaAttr that takes an MDGModifier.
     /// \note This function will call doIt() on the MDGModifier; thus the

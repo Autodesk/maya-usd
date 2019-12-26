@@ -22,6 +22,8 @@
 #include <mayaUsd/fileio/schemaApiAdaptorRegistry.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/undo/OpUndoItems.h>
+#include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/pxr.h>
@@ -33,6 +35,8 @@
 #include <maya/MFnAttribute.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MPlug.h>
+
+using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -312,8 +316,8 @@ UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::GetSchemaOrInheritedSchema(const TfType&
 
 UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::ApplySchema(const TfType& ty)
 {
-    MDGModifier modifier;
-    return ApplySchema(ty, modifier);
+    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
+    return ApplySchema(ty, MDGModifierUndoItem::create("Adaptor schema application", undoInfo));
 }
 
 UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::ApplySchema(const TfType& ty, MDGModifier& modifier)
@@ -329,8 +333,9 @@ UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::ApplySchema(const TfType& ty, MDGModifie
 
 UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::ApplySchemaByName(const TfToken& schemaName)
 {
-    MDGModifier modifier;
-    return ApplySchemaByName(schemaName, modifier);
+    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
+    return ApplySchemaByName(
+        schemaName, MDGModifierUndoItem::create("Adaptor schema application by name", undoInfo));
 }
 
 UsdMayaSchemaAdaptorPtr
@@ -413,8 +418,8 @@ UsdMayaAdaptor::ApplySchemaByName(const TfToken& schemaName, MDGModifier& modifi
 
 void UsdMayaAdaptor::UnapplySchema(const TfType& ty)
 {
-    MDGModifier modifier;
-    UnapplySchema(ty, modifier);
+    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
+    UnapplySchema(ty, MDGModifierUndoItem::create("Adaptor schema removal", undoInfo));
 }
 
 void UsdMayaAdaptor::UnapplySchema(const TfType& ty, MDGModifier& modifier)
@@ -430,8 +435,9 @@ void UsdMayaAdaptor::UnapplySchema(const TfType& ty, MDGModifier& modifier)
 
 void UsdMayaAdaptor::UnapplySchemaByName(const TfToken& schemaName)
 {
-    MDGModifier modifier;
-    UnapplySchemaByName(schemaName, modifier);
+    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
+    UnapplySchemaByName(
+        schemaName, MDGModifierUndoItem::create("Adaptor schema removal by name", undoInfo));
 }
 
 void UsdMayaAdaptor::UnapplySchemaByName(const TfToken& schemaName, MDGModifier& modifier)
@@ -533,8 +539,9 @@ bool UsdMayaAdaptor::GetMetadata(const TfToken& key, VtValue* value) const
 
 bool UsdMayaAdaptor::SetMetadata(const TfToken& key, const VtValue& value)
 {
-    MDGModifier modifier;
-    return SetMetadata(key, value, modifier);
+    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
+    return SetMetadata(
+        key, value, MDGModifierUndoItem::create("Adaptor metadata modification", undoInfo));
 }
 
 bool UsdMayaAdaptor::SetMetadata(const TfToken& key, const VtValue& value, MDGModifier& modifier)
@@ -580,8 +587,8 @@ bool UsdMayaAdaptor::SetMetadata(const TfToken& key, const VtValue& value, MDGMo
 
 void UsdMayaAdaptor::ClearMetadata(const TfToken& key)
 {
-    MDGModifier modifier;
-    ClearMetadata(key, modifier);
+    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
+    ClearMetadata(key, MDGModifierUndoItem::create("Adaptor metadata clearing", undoInfo));
 }
 
 void UsdMayaAdaptor::ClearMetadata(const TfToken& key, MDGModifier& modifier)
@@ -796,8 +803,9 @@ UsdMayaAttributeAdaptor UsdMayaSchemaAdaptor::GetAttribute(const TfToken& attrNa
 
 UsdMayaAttributeAdaptor UsdMayaSchemaAdaptor::CreateAttribute(const TfToken& attrName)
 {
-    MDGModifier modifier;
-    return CreateAttribute(attrName, modifier);
+    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
+    return CreateAttribute(
+        attrName, MDGModifierUndoItem::create("Adaptor attribute creation", undoInfo));
 }
 
 UsdMayaAttributeAdaptor
@@ -846,8 +854,8 @@ UsdMayaSchemaAdaptor::CreateAttribute(const TfToken& attrName, MDGModifier& modi
 
 void UsdMayaSchemaAdaptor::RemoveAttribute(const TfToken& attrName)
 {
-    MDGModifier modifier;
-    RemoveAttribute(attrName, modifier);
+    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
+    RemoveAttribute(attrName, MDGModifierUndoItem::create("Adaptor attribute removal", undoInfo));
 }
 
 void UsdMayaSchemaAdaptor::RemoveAttribute(const TfToken& attrName, MDGModifier& modifier)
@@ -993,8 +1001,8 @@ bool UsdMayaAttributeAdaptor::Get(VtValue* value) const
 
 bool UsdMayaAttributeAdaptor::Set(const VtValue& newValue)
 {
-    MDGModifier modifier;
-    return Set(newValue, modifier);
+    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
+    return Set(newValue, MDGModifierUndoItem::create("Adaptor attribute modification", undoInfo));
 }
 
 bool UsdMayaAttributeAdaptor::Set(const VtValue& newValue, MDGModifier& modifier)

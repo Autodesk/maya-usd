@@ -181,6 +181,10 @@ MString GetUniqueNameOfDagNode(const MObject& node);
 MAYAUSD_CORE_PUBLIC
 MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
 
+/// Gets the Maya MObject for the node named \p nodeName.
+MAYAUSD_CORE_PUBLIC
+MStatus GetMObjectByName(const MString& nodeName, MObject& mObj);
+
 /// Gets the UsdStage for the proxy shape  node named \p nodeName.
 MAYAUSD_CORE_PUBLIC
 UsdStageRefPtr GetStageByProxyName(const std::string& nodeName);
@@ -546,6 +550,11 @@ MString convert(const TfToken& token);
 
 MAYAUSD_CORE_PUBLIC
 std::string convert(const MString&);
+
+/// Retrieve all descendant nodes, including self, but starting from the most
+/// distant grand-children.
+MAYAUSD_CORE_PUBLIC
+std::vector<MDagPath> getDescendantsStartingWithChildren(const MDagPath& path);
 
 MAYAUSD_CORE_PUBLIC
 MDagPath getDagPath(const MFnDependencyNode& depNodeFn, const bool reportError = true);

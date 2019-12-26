@@ -190,8 +190,9 @@ bool UsdMaya_ReadJobWithSceneAssembly::_ProcessProxyPrims(
         std::string excludePathsString = TfStringJoin(collapsePointPathStrings, ",");
 
         // Set the excludePrimPaths attribute on the node.
-        MDagModifier dagMod;
-        MPlug        excludePathsPlug
+        auto&         undoInfo = UsdUndoManager::instance().getUndoInfo();
+        MDagModifier& dagMod = MDagModifierUndoItem::create("Read job prim exclusion", undoInfo);
+        MPlug         excludePathsPlug
             = depNodeFn.findPlug(_tokens->ExcludePrimPathsPlugName.GetText(), true, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
         status = dagMod.newPlugValueString(excludePathsPlug, excludePathsString.c_str());

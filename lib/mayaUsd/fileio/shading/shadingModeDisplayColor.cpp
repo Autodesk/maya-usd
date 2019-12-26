@@ -167,7 +167,9 @@ DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(
 
         MPlug opacityPlug = depNodeFn.findPlug(_tokens->opacity.GetText());
         UsdMayaReadUtil::SetMayaAttr(
-            opacityPlug, VtValue(1.0f - linearTransparency[0]), /*unlinearizeColors*/ false);
+            opacityPlug,
+            VtValue(1.0f - linearTransparency[0]),
+            /*unlinearizeColors*/ false);
 
         outputPlug = depNodeFn.findPlug("outColor", &status);
         CHECK_MSTATUS_AND_RETURN(status, MObject());

@@ -99,7 +99,7 @@ bool addCreaseSet(
     // .../lib/python2.7/site-packages/maya/app/general/creaseSetEditor.py
 
     MObject creasePartitionObj;
-    *statusOK = UsdMayaUtil::GetMObjectByName(":creasePartition", creasePartitionObj);
+    *statusOK = UsdMayaUtil::GetMObjectByName(MString(":creasePartition"), creasePartitionObj);
 
     if (creasePartitionObj.isNull()) {
         statusOK->clear();
