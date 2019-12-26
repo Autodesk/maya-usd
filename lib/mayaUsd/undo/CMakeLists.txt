@@ -3,16 +3,24 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
+        OpUndoItemList.cpp
+        OpUndoItemRecorder.cpp
+        OpUndoItems.cpp
         UsdUndoBlock.cpp
         UsdUndoManager.cpp
         UsdUndoStateDelegate.cpp
         UsdUndoableItem.cpp
+
 )
 
 # -----------------------------------------------------------------------------
 # promote headers
 # -----------------------------------------------------------------------------
 set(HEADERS
+    OpUndoItemList.h
+    OpUndoItemMuting.h
+    OpUndoItemRecorder.h
+    OpUndoItems.h
     UsdUndoBlock.h
     UsdUndoManager.h
     UsdUndoStateDelegate.h

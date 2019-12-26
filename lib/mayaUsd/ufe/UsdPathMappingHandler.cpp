@@ -95,6 +95,11 @@ Ufe::Path UsdPathMappingHandler::fromHost(const Ufe::Path& hostPath) const
         return found->data();
     }
 
+    // If nothing has been pulled, then there is no mapping to be done.
+    if (!PXR_NS::PrimUpdaterManager::getInstance().hasPulledPrims()) {
+        return {};
+    }
+
     // Start by getting the dag path from the input host path. The dag path is needed
     // to get the pull information (returned as a Ufe::Path) from the plug.
     Ufe::Path mayaHostPath(hostPath);

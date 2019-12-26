@@ -95,8 +95,7 @@ bool duplicate(const std::string& srcUfePathString, const std::string& dstUfePat
 
 void wrapPrimUpdaterManager()
 {
-    using This = PrimUpdaterManager;
-    class_<This>("PrimUpdaterManager", no_init)
+    class_<PrimUpdaterManager, noncopyable>("PrimUpdaterManager", no_init)
         .def("mergeToUsd", mergeToUsd)
         .def("editAsMaya", editAsMaya)
         .def("canEditAsMaya", canEditAsMaya)

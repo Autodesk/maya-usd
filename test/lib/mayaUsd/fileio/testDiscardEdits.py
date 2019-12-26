@@ -102,5 +102,56 @@ class MergeToUsdTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             om.MSelectionList().add(aMayaPathStr)
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    def testDiscardEditsUndoRedo(self):
+        '''Discard edits on a USD transform then undo and redo.'''
+
+        # Edit as Maya first.
+        (ps, xlateOp, usdXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+         _, _, _, _, _) = createSimpleXformScene()
+
+        cmds.mayaUsdEditAsMaya(aUsdUfePathStr)
+
+        # Modify the scene.
+        aMayaItem = ufe.GlobalSelection.get().front()
+        mayaXlation = om.MVector(4, 5, 6)
+        (aMayaPath, aMayaPathStr, aFn, mayaMatrix) = \
+            setMayaTranslation(aMayaItem, mayaXlation)
+
+        # Verify the scene modifications.
+        def verifyScenesModifications():
+            self.assertEqual(aFn.translation(om.MSpace.kObject), mayaXlation)
+            mayaToUsd = ufe.PathMappingHandler.pathMappingHandler(aMayaItem)
+            self.assertEqual(
+                ufe.PathString.string(mayaToUsd.fromHost(aMayaPath)),
+                ufe.PathString.string(aUsdUfePath))
+
+        verifyScenesModifications()
+
+        # Discard Maya edits.
+        cmds.mayaUsdDiscardEdits(aMayaPathStr)
+
+        def verifyDiscard():
+            # Original USD translation values are preserved.
+            usdMatrix = xlateOp.GetOpTransform(mayaUsd.ufe.getTime(aUsdUfePathStr))
+            self.assertEqual(usdMatrix.ExtractTranslation(), usdXlation)
+
+            # Maya node is removed.
+            with self.assertRaises(RuntimeError):
+                om.MSelectionList().add(aMayaPathStr)
+
+        verifyDiscard()
+
+        # undo
+        cmds.undo()
+
+        verifyScenesModifications()
+
+        # redo
+        cmds.redo()
+
+        verifyDiscard()
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
