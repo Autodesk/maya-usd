@@ -91,7 +91,7 @@ BUILD_PXR_PLUGIN            | Builds the Pixar USD plugin and libraries.        
 
 When building Pixar USD, you need to pass ```--no-maya``` flag to ensure that ```third_party/maya``` plugin doesn't get built since this plugin is now part of maya-usd.
 
-It is important that the version between ```Pixar USD``` and ```Maya USD plugin```match. We are currently using ```v19.05``` for Maya plugin in ```master``` branch and therefore ```Pixar USD``` build should match this version.
+It is important that the version between ```Pixar USD``` and ```Maya USD plugin``` match. See [`doc/DEVELOPER.md`](DEVELOPER.md#source-versions) for the compatible source versions.
 
 ##### Boost:
 
