@@ -148,7 +148,7 @@ function(mayaUsd_install_rpath rpathRef NAME)
 endfunction()
 
 function(mayaUsd_promoteMayaUsdHeader)
-    set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/base/mayaUsd.h.src)
+    set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/mayaUsd.h.src)
     set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h)
     if (NOT EXISTS ${dstFile})
         message(STATUS "promoting: " ${srcFile})
@@ -156,10 +156,29 @@ function(mayaUsd_promoteMayaUsdHeader)
     configure_file(${srcFile} ${dstFile})
 endfunction()
 
-function(mayaUsd_promoteHeaderList)
-    foreach(header ${ARGV})
+function(mayaUsd_promoteHeaderList target)
+    cmake_parse_arguments(PREFIX
+        "TARGET"
+        "DIRNAME"
+        "HEADERS"
+        ${ARGN}
+    )
+
+    if(PREFIX_DIRNAME)
+        set(dirName ${PREFIX_DIRNAME})
+    else()
+        message(FATAL_ERROR "DIRNAME keyword is not specified.")
+    endif()
+
+    if(PREFIX_HEADERS)
+        set(headerFiles ${PREFIX_HEADERS})
+    else()
+        message(FATAL_ERROR "HEADERS keyword is not specified.")
+    endif()
+
+    foreach(header ${headerFiles})
         set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/${header})
-        set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/${header})
+        set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/${dirName}/${header})
 
         set(content "#pragma once\n#include \"${srcFile}\"\n")
 
@@ -203,7 +222,7 @@ function(mayaUsd_copyFiles target)
         message(FATAL_ERROR "DESTINATION keyword is not specified.")
     endif()
 
-     if(PREFIX_FILES)
+    if(PREFIX_FILES)
         set(srcFiles ${PREFIX_FILES})
     else()
         message(FATAL_ERROR "FILES keyword is not specified.")

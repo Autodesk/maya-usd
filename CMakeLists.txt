@@ -1,5 +1,4 @@
 #
-# =======================================================================
 # Copyright 2019 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# =======================================================================
 #
 
-cmake_minimum_required(VERSION 3.12.0)
+cmake_minimum_required(VERSION 3.12...3.17)
 
 project(maya-usd)
 
@@ -51,8 +49,8 @@ if (APPLE)
 endif()
 
 if (DEFINED PYTHON_INCLUDE_DIR AND DEFINED PYTHON_LIBRARIES AND DEFINED Python_EXECUTABLE)
-    SET(PYTHON_INCLUDE_DIRS "${PYTHON_INCLUDE_DIR}")
-    SET(PYTHONLIBS_FOUND TRUE)
+    set(PYTHON_INCLUDE_DIRS "${PYTHON_INCLUDE_DIR}")
+    set(PYTHONLIBS_FOUND TRUE)
     find_package(Python 2.7 EXACT REQUIRED COMPONENTS Interpreter)
     if(NOT Python_Interpreter_FOUND)
         set(PYTHONLIBS_FOUND FALSE)
@@ -101,7 +99,6 @@ if(NOT WIN32)
     )
 endif()
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-
 
 #==============================================================================
 # Tests
