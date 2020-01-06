@@ -36,7 +36,7 @@ add_library(${TARGET_NAME} MODULE)
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
-target_sources(${TARGET_NAME} 
+target_sources(${TARGET_NAME}
     PRIVATE
         plugin.cpp
         ProxyShape.cpp
@@ -48,10 +48,6 @@ target_sources(${TARGET_NAME}
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         MAYAUSD_PLUGIN_EXPORT
-)
-
-target_compile_definitions(${TARGET_NAME} 
-    PRIVATE
         $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
 )
 
@@ -62,10 +58,6 @@ target_include_directories(${TARGET_NAME}
     PRIVATE
         ${MAYAUSD_INCLUDE_DIR}
         ${PXR_INCLUDE_DIRS}
-)
-
-target_include_directories(${TARGET_NAME} 
-    PRIVATE
         $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
 )
 
