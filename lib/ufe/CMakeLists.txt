@@ -109,7 +109,7 @@ target_link_libraries(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 # promote headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(${TARGET_NAME} HEADERS ${headers} DIRNAME ufe)
+mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR ufe)
 
 # -----------------------------------------------------------------------------
 # install

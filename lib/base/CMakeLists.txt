@@ -15,7 +15,7 @@ set(headers
 # promote headers
 # -----------------------------------------------------------------------------
 mayaUsd_promoteMayaUsdHeader()
-mayaUsd_promoteHeaderList(${TARGET_NAME} HEADERS ${headers} DIRNAME base)
+mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR base)
 
 # -----------------------------------------------------------------------------
 # install

@@ -22,7 +22,7 @@ set(headers
 # -----------------------------------------------------------------------------
 # promote headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(${TARGET_NAME} HEADERS ${headers} DIRNAME utils)
+mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR utils)
 
 # -----------------------------------------------------------------------------
 # install

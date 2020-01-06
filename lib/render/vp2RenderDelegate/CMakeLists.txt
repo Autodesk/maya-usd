@@ -23,7 +23,7 @@ set(headers
 # -----------------------------------------------------------------------------
 # promote headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(${TARGET_NAME} HEADERS ${headers} DIRNAME render/vp2RenderDelegate)
+mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR render/vp2RenderDelegate)
 
 # -----------------------------------------------------------------------------
 # install

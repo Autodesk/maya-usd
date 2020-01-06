@@ -50,12 +50,10 @@ target_compile_definitions(${TARGET_NAME}
         MAYAUSD_PLUGIN_EXPORT
 )
 
-if(UFE_FOUND)
-    target_compile_definitions(${TARGET_NAME} 
-        PRIVATE
-            -DWANT_UFE_BUILD
-    )
-endif()
+target_compile_definitions(${TARGET_NAME} 
+    PRIVATE
+        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
+)
 
 # -----------------------------------------------------------------------------
 # include directories
@@ -66,12 +64,10 @@ target_include_directories(${TARGET_NAME}
         ${PXR_INCLUDE_DIRS}
 )
 
-if(UFE_FOUND)
-    target_include_directories(${TARGET_NAME} 
-        PRIVATE
-            ${UFE_INCLUDE_DIR}
-    )
-endif()
+target_include_directories(${TARGET_NAME} 
+    PRIVATE
+        $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
+)
 
 # -----------------------------------------------------------------------------
 # link libraries

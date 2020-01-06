@@ -156,18 +156,18 @@ function(mayaUsd_promoteMayaUsdHeader)
     configure_file(${srcFile} ${dstFile})
 endfunction()
 
-function(mayaUsd_promoteHeaderList target)
+function(mayaUsd_promoteHeaderList)
     cmake_parse_arguments(PREFIX
-        "TARGET"
-        "DIRNAME"
-        "HEADERS"
+        ""
+        "SUBDIR" # one_value keywords
+        "HEADERS" # multi_value keywords
         ${ARGN}
     )
 
-    if(PREFIX_DIRNAME)
-        set(dirName ${PREFIX_DIRNAME})
+    if(PREFIX_SUBDIR)
+        set(subDir ${PREFIX_SUBDIR})
     else()
-        message(FATAL_ERROR "DIRNAME keyword is not specified.")
+        message(FATAL_ERROR "SUBDIR keyword is not specified.")
     endif()
 
     if(PREFIX_HEADERS)
@@ -178,7 +178,7 @@ function(mayaUsd_promoteHeaderList target)
 
     foreach(header ${headerFiles})
         set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/${header})
-        set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/${dirName}/${header})
+        set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/${subDir}/${header})
 
         set(content "#pragma once\n#include \"${srcFile}\"\n")
 

@@ -19,7 +19,7 @@ set(headers
 # -----------------------------------------------------------------------------
 # promote headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(${TARGET_NAME} HEADERS ${headers} DIRNAME nodes)
+mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR nodes)
 
 # -----------------------------------------------------------------------------
 # install
