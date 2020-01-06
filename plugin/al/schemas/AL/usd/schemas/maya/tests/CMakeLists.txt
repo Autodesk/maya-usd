@@ -28,6 +28,12 @@ target_link_libraries(testMayaSchemas
     ${Boost_PYTHON_LIBRARY}
     )
 
+if(IS_MACOSX OR IS_LINUX)
+    mayaUsd_init_rpath(rpath "bin")
+    mayaUsd_add_rpath(rpath "../lib")
+    mayaUsd_install_rpath(rpath testMayaSchemas)
+endif()
+
 install(TARGETS testMayaSchemas DESTINATION ${AL_INSTALL_PREFIX}/bin)
 
 
