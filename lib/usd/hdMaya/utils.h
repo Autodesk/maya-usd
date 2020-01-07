@@ -19,18 +19,25 @@
 #include <pxr/pxr.h>
 
 #include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/tf/token.h>
 
+#include <pxr/imaging/hd/textureResource.h>
+
+#include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MItDag.h>
 #include <maya/MItSelectionList.h>
 #include <maya/MMatrix.h>
+#include <maya/MPlug.h>
 #include <maya/MRenderUtil.h>
 #include <maya/MSelectionList.h>
 
+#include "api.h"
 #include "adapters/mayaAttrs.h"
 
 #include <functional>
+#include <tuple>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -40,33 +47,27 @@ inline GfMatrix4d GetGfMatrixFromMaya(const MMatrix& mayaMat) {
     return mat;
 }
 
-inline MString GetTextureFilePath(const MFnDependencyNode& fileNode) {
-    MString ret;
-    if (fileNode.findPlug(MayaAttrs::file::uvTilingMode, true).asShort() != 0) {
-        ret = fileNode.findPlug(MayaAttrs::file::fileTextureNamePattern, true)
-                  .asString();
-        if (ret.length() == 0) {
-            ret = fileNode
-                      .findPlug(
-                          MayaAttrs::file::computedFileTextureNamePattern, true)
-                      .asString();
-        }
-    } else {
-        ret = MRenderUtil::exactFileTextureName(fileNode.object());
-        if (ret.length() == 0) {
-            ret = fileNode.findPlug(MayaAttrs::file::fileTextureName, true)
-                      .asString();
-        }
-    }
-    return ret;
-}
+/// \brief Returns the texture file path from a "file" shader node.
+HDMAYA_API
+TfToken GetFileTexturePath(const MFnDependencyNode& fileNode);
+
+/// \brief Returns the texture resource from a "file" shader node.
+HDMAYA_API
+HdTextureResourceSharedPtr GetFileTextureResource(
+    const MObject& fileObj, const TfToken& filePath,
+    int maxTextureMemory = 4 * 1024 * 1024);
+
+/// \brief Returns the texture wrapping parameters from a "file" shader node.
+HDMAYA_API
+std::tuple<HdWrap, HdWrap> GetFileTextureWrappingParams(const MObject& fileObj);
 
 /// \brief Runs a function on all recursive descendents of a selection list
 ///        May optionally filter by node type. The items in the list
 ///        are also included in the set of items that are iterated over
 ///        (assuming they pass the filter).
+template <typename FUNC>
 inline void MapSelectionDescendents(
-    const MSelectionList& sel, std::function<void(const MDagPath&)> func,
+    const MSelectionList& sel, FUNC func,
     MFn::Type filterType = MFn::kInvalid) {
     MStatus status;
     MItDag itDag;

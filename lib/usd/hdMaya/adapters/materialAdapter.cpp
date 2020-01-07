@@ -106,30 +106,6 @@ auto _PreviewShader = []() -> const _ShaderSourceAndMeta& {
 enum class HdTextureType { Uv, Ptex, Udim };
 #endif
 
-#ifdef HDMAYA_USD_001901_BUILD
-
-class UdimTextureFactory : public GlfTextureFactoryBase {
-public:
-    virtual GlfTextureRefPtr New(
-        TfToken const& texturePath,
-        GlfImage::ImageOriginLocation originLocation =
-            GlfImage::OriginLowerLeft) const override {
-        const GlfContextCaps& caps = GlfContextCaps::GetInstance();
-        return GlfUdimTexture::New(
-            texturePath, originLocation,
-            UsdImaging_GetUdimTiles(texturePath, caps.maxArrayTextureLayers));
-    }
-
-    virtual GlfTextureRefPtr New(
-        TfTokenVector const& texturePaths,
-        GlfImage::ImageOriginLocation originLocation =
-            GlfImage::OriginLowerLeft) const override {
-        return nullptr;
-    }
-};
-
-#endif
-
 } // namespace
 
 HdMayaMaterialAdapter::HdMayaMaterialAdapter(
@@ -384,7 +360,7 @@ private:
         const auto connectedFileObj = GetConnectedFileNode(node, paramName);
         if (connectedFileObj != MObject::kNullObj) {
             const auto filePath =
-                _GetTextureFilePathToken(MFnDependencyNode(connectedFileObj));
+                GetFileTexturePath(MFnDependencyNode(connectedFileObj));
 
             if (TfDebug::IsEnabled(HDMAYA_ADAPTER_MATERIALS)) {
                 const char* textureTypeName;
@@ -422,8 +398,9 @@ private:
                 auto regLock = resourceRegistry->RegisterTextureResource(
                     textureKey, &textureInstance);
                 if (textureInstance.IsFirstInstance()) {
-                    auto textureResource =
-                        _GetTextureResource(connectedFileObj, filePath);
+                    auto textureResource = GetFileTextureResource(
+                        connectedFileObj, filePath,
+                        GetDelegate()->GetParams().textureMemoryPerTexture);
                     _textureResources[paramName] = boost::static_pointer_cast<HdTextureResource>(textureResource);
                     textureInstance.SetValue(boost::static_pointer_cast<HdTextureResource>(textureResource));
                 }
@@ -572,13 +549,13 @@ private:
         auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
         if (fileObj == MObject::kNullObj) { return HdTextureResource::ID(-1); }
         return _GetTextureResourceID(
-            fileObj, _GetTextureFilePathToken(MFnDependencyNode(fileObj)));
+            fileObj, GetFileTexturePath(MFnDependencyNode(fileObj)));
     }
 
     inline HdTextureResource::ID _GetTextureResourceID(
         const MObject& fileObj, const TfToken& filePath) {
         auto hash = filePath.Hash();
-        const auto wrapping = _GetWrappingParams(fileObj);
+        const auto wrapping = GetFileTextureWrappingParams(fileObj);
         boost::hash_combine(
             hash, GetDelegate()->GetParams().textureMemoryPerTexture);
         boost::hash_combine(hash, std::get<0>(wrapping));
@@ -586,87 +563,14 @@ private:
         return HdTextureResource::ID(hash);
     }
 
-    inline TfToken _GetTextureFilePathToken(const MFnDependencyNode& fileNode) {
-        return TfToken(GetTextureFilePath(fileNode).asChar());
-    }
-
     HdTextureResourceSharedPtr GetTextureResource(
         const TfToken& paramName) override {
         auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
         if (fileObj == MObject::kNullObj) { return {}; }
-        return boost::static_pointer_cast<HdTextureResource>(_GetTextureResource(
-            fileObj, _GetTextureFilePathToken(MFnDependencyNode(fileObj))));
+        return GetFileTextureResource(
+            fileObj, GetFileTexturePath(MFnDependencyNode(fileObj)),
+            GetDelegate()->GetParams().textureMemoryPerTexture);
     }
-
-    inline HdStTextureResourceSharedPtr _GetTextureResource(
-        const MObject& fileObj, const TfToken& filePath) {
-        if (filePath.IsEmpty()) { return {}; }
-        auto textureType = HdTextureType::Uv;
-#ifdef HDMAYA_USD_001901_BUILD
-        if (GlfIsSupportedUdimTexture(filePath)) {
-            textureType = HdTextureType::Udim;
-        }
-#endif
-        if (textureType != HdTextureType::Udim && !TfPathExists(filePath)) {
-            return {};
-        }
-        // TODO: handle origin
-        const auto origin = GlfImage::OriginLowerLeft;
-        GlfTextureHandleRefPtr texture = nullptr;
-        if (textureType == HdTextureType::Udim) {
-#ifdef HDMAYA_USD_001901_BUILD
-            UdimTextureFactory factory;
-            texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
-                filePath, origin, &factory);
-#else
-            return nullptr;
-#endif
-        } else {
-            texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
-                filePath, origin);
-        }
-
-        const auto wrapping = _GetWrappingParams(fileObj);
-
-        // We can't really mimic texture wrapping and mirroring settings
-        // from the uv placement node, so we don't touch those for now.
-        return HdStTextureResourceSharedPtr(new HdStSimpleTextureResource(
-            texture,
-#ifdef HDMAYA_USD_001901_BUILD
-            textureType,
-#else
-            false,
-#endif
-            std::get<0>(wrapping), std::get<1>(wrapping),
-#ifdef HDMAYA_USD_001910_BUILD
-            HdWrapClamp,
-#endif
-            HdMinFilterLinearMipmapLinear, HdMagFilterLinear,
-            GetDelegate()->GetParams().textureMemoryPerTexture));
-    }
-
-    inline std::tuple<HdWrap, HdWrap> _GetWrappingParams(
-        const MObject& fileObj) {
-        const std::tuple<HdWrap, HdWrap> def{HdWrapClamp, HdWrapClamp};
-        MStatus status;
-        MFnDependencyNode fileNode(fileObj, &status);
-        if (!status) { return def; }
-
-        auto getWrap = [&fileNode](MObject& wrapAttr, MObject& mirrorAttr) {
-            if (fileNode.findPlug(wrapAttr, true).asBool()) {
-                if (fileNode.findPlug(mirrorAttr, true).asBool()) {
-                    return HdWrapMirror;
-                } else {
-                    return HdWrapRepeat;
-                }
-            } else {
-                return HdWrapClamp;
-            }
-        };
-        return std::tuple<HdWrap, HdWrap>{
-            getWrap(MayaAttrs::file::wrapU, MayaAttrs::file::mirrorU),
-            getWrap(MayaAttrs::file::wrapV, MayaAttrs::file::mirrorV)};
-    };
 
     MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName) {
         MStatus status;

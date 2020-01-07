@@ -44,7 +44,8 @@ set(SRC
     delegates/proxyUsdImagingDelegate.cpp
     delegates/testDelegate.cpp
     
-    debugCodes.cpp)
+    debugCodes.cpp
+    utils.cpp)
 
 add_library(${TARGET_NAME} SHARED ${SRC})
 

@@ -345,8 +345,8 @@ public:
         MFnDependencyNode& node, const TfToken& paramName,
         const SdfValueTypeName& type, const VtValue* fallback = nullptr,
         MPlug* outPlug = nullptr) override {
-        auto path = GetTextureFilePath(node);
-        return VtValue(SdfAssetPath(path.asChar(), path.asChar()));
+        auto path = GetFileTexturePath(node);
+        return VtValue(SdfAssetPath(path.GetText(), path.GetText()));
     }
 };
 

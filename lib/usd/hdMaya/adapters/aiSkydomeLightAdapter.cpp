@@ -93,6 +93,8 @@ public:
                     .asChar()));
         } else if (paramName == HdLightTokens->enableColorTemperature) {
             return VtValue(false);
+        } else if (paramName == HdLightTokens->textureResource) {
+            return {};
         }
         return {};
     }

@@ -93,9 +93,7 @@ inline bool _FindAdapter(const SdfPath&, F) {
 }
 
 template <typename T, typename M0, typename F, typename... M>
-inline bool _FindAdapter(
-    const SdfPath& id, F f, const M0& m0,
-    const M&... m) {
+inline bool _FindAdapter(const SdfPath& id, F f, const M0& m0, const M&... m) {
     auto* adapterPtr = TfMapLookupPtr(m0, id);
     if (adapterPtr == nullptr) {
         return _FindAdapter<T>(id, f, m...);
@@ -111,8 +109,7 @@ inline bool _RemoveAdapter(const SdfPath&, F) {
 }
 
 template <typename T, typename M0, typename F, typename... M>
-inline bool _RemoveAdapter(
-    const SdfPath& id, F f, M0& m0, M&... m) {
+inline bool _RemoveAdapter(const SdfPath& id, F f, M0& m0, M&... m) {
     auto* adapterPtr = TfMapLookupPtr(m0, id);
     if (adapterPtr == nullptr) {
         return _RemoveAdapter<T>(id, f, m...);
@@ -131,9 +128,7 @@ inline R _GetValue(const SdfPath&, F) {
 }
 
 template <typename T, typename R, typename F, typename M0, typename... M>
-inline R _GetValue(
-    const SdfPath& id, F f, const M0& m0,
-    const M&... m) {
+inline R _GetValue(const SdfPath& id, F f, const M0& m0, const M&... m) {
     auto* adapterPtr = TfMapLookupPtr(m0, id);
     if (adapterPtr == nullptr) {
         return _GetValue<T, R>(id, f, m...);
@@ -148,8 +143,7 @@ inline void _MapAdapter(F) {
 }
 
 template <typename T, typename M0, typename F, typename... M>
-inline void _MapAdapter(
-    F f, const M0& m0, const M&... m) {
+inline void _MapAdapter(F f, const M0& m0, const M&... m) {
     for (auto& it : m0) { f(static_cast<T*>(it.second.get())); }
     _MapAdapter<T>(f, m...);
 }
