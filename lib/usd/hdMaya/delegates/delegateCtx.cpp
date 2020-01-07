@@ -24,11 +24,11 @@
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/rprim.h>
 
-#ifdef HDMAYA_USD_001905_BUILD
+#if USD_VERSION_NUM >= 1905
 #include <pxr/imaging/hio/glslfx.h>
 #else
 #include <pxr/imaging/glf/glslfx.h>
-#endif // HDMAYA_USD_001905_BUILD
+#endif // USD_VERSION_NUM >= 1905
 
 #include "../../../utils/util.h"
 

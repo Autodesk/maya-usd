@@ -52,7 +52,7 @@ public:
     }
 
     SdfPath ConvertIndexPathToCachePath(SdfPath const& indexPath) {
-#ifdef HDMAYA_USD_001907_BUILD
+#if USD_VERSION_NUM >= 1907
         return _usdDelegate->ConvertIndexPathToCachePath(indexPath);
 #else
         return _usdDelegate->GetPathForUsd(indexPath);
@@ -60,7 +60,7 @@ public:
     }
 
     SdfPath ConvertCachePathToIndexPath(SdfPath const& cachePath) {
-#ifdef HDMAYA_USD_001907_BUILD
+#if USD_VERSION_NUM >= 1907
         return _usdDelegate->ConvertCachePathToIndexPath(cachePath);
 #else
         return _usdDelegate->GetPathForIndex(cachePath);

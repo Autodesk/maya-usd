@@ -378,7 +378,7 @@ void MtohRenderOverride::_UpdateRenderGlobals() {
 }
 
 void MtohRenderOverride::_UpdateRenderDelegateOptions() {
-#ifdef HDMAYA_USD_001901_BUILD
+#if USD_VERSION_NUM >= 1901
     if (_renderIndex == nullptr) { return; }
     auto* renderDelegate = _renderIndex->GetRenderDelegate();
     if (renderDelegate == nullptr) { return; }
@@ -417,33 +417,33 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         drawContext.getRenderTargetSize(width, height);
 
         GfVec4d viewport(originX, originY, width, height);
-#ifdef HDMAYA_USD_001910_BUILD
+#if USD_VERSION_NUM >= 1910
         _taskController->SetFreeCameraMatrices(
 #else
         _taskController->SetCameraMatrices(
-#endif // HDMAYA_USD_001910_BUILD
+#endif // USD_VERSION_NUM >= 1910
             GetGfMatrixFromMaya(
                 drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
             GetGfMatrixFromMaya(drawContext.getMatrix(
                 MHWRender::MFrameContext::kProjectionMtx)));
-#ifdef HDMAYA_USD_001910_BUILD
+#if USD_VERSION_NUM >= 1910
         _taskController->SetRenderViewport(viewport);
 #else
         _taskController->SetCameraViewport(viewport);
-#endif // HDMAYA_USD_001910_BUILD
+#endif // USD_VERSION_NUM >= 1910
 
-#ifdef HDMAYA_USD_001907_BUILD
+#if USD_VERSION_NUM >= 1907
         auto tasks = _taskController->GetRenderingTasks();
         _engine.Execute(_renderIndex, &tasks);
 #else
-#ifdef HDMAYA_USD_001901_BUILD
+#if USD_VERSION_NUM >= 1901
         _engine.Execute(*_renderIndex, _taskController->GetTasks());
 #else
         _engine.Execute(
             *_renderIndex,
             _taskController->GetTasks(HdxTaskSetTokens->colorRender));
-#endif // HDMAYA_USD_001901_BUILD
-#endif // HDMAYA_USD_001907_BUILD
+#endif // USD_VERSION_NUM >= 1901
+#endif // USD_VERSION_NUM >= 1907
     };
 
     _UpdateRenderGlobals();
@@ -577,7 +577,7 @@ void MtohRenderOverride::_InitHydraResources() {
             "MtohRenderOverride::_InitHydraResources(%s)\n",
             _rendererDesc.rendererName.GetText());
     GlfGlewInit();
-#ifdef HDMAYA_USD_001905_BUILD
+#if USD_VERSION_NUM >= 1905
     GlfContextCaps::InitInstance();
 #endif
     _rendererPlugin =

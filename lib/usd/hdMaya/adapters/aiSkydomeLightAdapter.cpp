@@ -96,7 +96,7 @@ public:
                     .asChar()));
         } else if (paramName == HdLightTokens->enableColorTemperature) {
             return VtValue(false);
-#ifdef HDMAYA_USD_001910_BUILD
+#if USD_VERSION_NUM >= 1910
         } else if (paramName == HdLightTokens->textureResource) {
             auto fileObj =
                 GetConnectedFileNode(GetNode(), HdMayaAdapterTokens->color);
@@ -108,7 +108,7 @@ public:
                 fileObj, GetFileTexturePath(MFnDependencyNode(fileObj)),
                 GetDelegate()->GetParams().textureMemoryPerTexture)};
         }
-#endif // HDMAYA_USD_001910_BUILD
+#endif // USD_VERSION_NUM >= 1910
         return {};
     }
 };

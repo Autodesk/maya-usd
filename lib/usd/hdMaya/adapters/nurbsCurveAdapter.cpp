@@ -148,7 +148,7 @@ public:
     }
 
     TfToken GetRenderTag() const override {
-#ifdef HDMAYA_USD_001910_BUILD
+#if USD_VERSION_NUM >= 1910
         return HdRenderTagTokens->guide;
 #else
         return HdTokens->guide;

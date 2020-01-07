@@ -32,7 +32,7 @@
 #ifdef HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
 #include <AL/usdmaya/nodes/Engine.h>
 
-#ifdef HDMAYA_USD_001907_BUILD
+#if USD_VERSION_NUM >= 1907
 #include <pxr/imaging/hdx/pickTask.h>
 #else
 #include <pxr/imaging/hdx/intersector.h>
@@ -59,7 +59,7 @@ constexpr auto USD_UFE_RUNTIME_NAME = "USD";
 #ifdef HD_MAYA_AL_OVERRIDE_PROXY_SELECTION
 
 constexpr auto HD_STORM_OVERRIDE_NAME =
-#ifdef HDMAYA_USD_001910_BUILD
+#if USD_VERSION_NUM >= 1910
     "mtohRenderOverride_HdStormRendererPlugin";
 #else
     "mtohRenderOverride_HdStreamRendererPlugin";
@@ -130,7 +130,7 @@ bool FindPickedPrimsMtoh(
     HdRprimCollection intersectCollect;
     TfTokenVector renderTags;
 
-#ifdef HDMAYA_USD_001907_BUILD
+#if USD_VERSION_NUM >= 1907
     HdxPickHitVector hdxHits;
     auto& intersectionMode = nearestOnly ? HdxPickTokens->resolveNearestToCamera
                                          : HdxPickTokens->resolveUnique;

@@ -24,12 +24,12 @@
 #include <pxr/imaging/hd/material.h>
 #include <pxr/imaging/hd/resourceRegistry.h>
 
-#ifdef HDMAYA_USD_001905_BUILD
+#if USD_VERSION_NUM >= 1905
 #include <pxr/imaging/hio/glslfx.h>
 #else
 #include <pxr/imaging/glf/glslfx.h>
 typedef PXR_NS::GlfGLSLFX HioGlslfx;
-#endif // HDMAYA_USD_001905_BUILD
+#endif // USD_VERSION_NUM >= 1905
 
 #include <pxr/imaging/glf/textureRegistry.h>
 
@@ -215,7 +215,7 @@ private:
         // the uv placement node, so we don't touch those for now.
         return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
             texture, HdTextureType::Uv, HdWrapClamp, HdWrapClamp,
-#ifdef HDMAYA_USD_001910_BUILD
+#if USD_VERSION_NUM >= 1910
             HdWrapClamp,
 #endif
             HdMinFilterLinearMipmapLinear, HdMagFilterLinear,

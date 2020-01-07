@@ -23,7 +23,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#ifdef HDMAYA_USD_001910_BUILD
+#if USD_VERSION_NUM >= 1910
 #define HD_STORM_PLUGIN_NAME "HdStormRendererPlugin"
 #else
 #define HD_STORM_PLUGIN_NAME "HdStreamRendererPlugin"

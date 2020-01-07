@@ -25,10 +25,10 @@
 #include <pxr/imaging/glf/textureHandle.h>
 #include <pxr/imaging/glf/textureRegistry.h>
 
-#ifdef HDMAYA_USD_001901_BUILD
+#if USD_VERSION_NUM >= 1901
 #include <pxr/imaging/glf/udimTexture.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
-#endif // HDMAYA_USD_001901_BUILD
+#endif // USD_VERSION_NUM >= 1901
 
 #include <pxr/imaging/hdSt/textureResource.h>
 
@@ -38,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-#ifdef HDMAYA_USD_001901_BUILD
+#if USD_VERSION_NUM >= 1901
 class UdimTextureFactory : public GlfTextureFactoryBase {
 public:
     virtual GlfTextureRefPtr New(
@@ -58,7 +58,7 @@ public:
         return nullptr;
     }
 };
-#endif // HDMAYA_USD_001901_BUILD
+#endif // USD_VERSION_NUM >= 1901
 
 } // namespace
 
@@ -134,7 +134,7 @@ HdTextureResourceSharedPtr GetFileTextureResource(
     const MObject& fileObj, const TfToken& filePath, int maxTextureMemory) {
     if (filePath.IsEmpty()) { return {}; }
     auto textureType = HdTextureType::Uv;
-#ifdef HDMAYA_USD_001901_BUILD
+#if USD_VERSION_NUM >= 1901
     if (GlfIsSupportedUdimTexture(filePath)) {
         textureType = HdTextureType::Udim;
     }
@@ -146,7 +146,7 @@ HdTextureResourceSharedPtr GetFileTextureResource(
     const auto origin = GlfImage::OriginLowerLeft;
     GlfTextureHandleRefPtr texture = nullptr;
     if (textureType == HdTextureType::Udim) {
-#ifdef HDMAYA_USD_001901_BUILD
+#if USD_VERSION_NUM >= 1901
         UdimTextureFactory factory;
         texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
             filePath, origin, &factory);
@@ -164,13 +164,13 @@ HdTextureResourceSharedPtr GetFileTextureResource(
     // from the uv placement node, so we don't touch those for now.
     return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
         texture,
-#ifdef HDMAYA_USD_001901_BUILD
+#if USD_VERSION_NUM >= 1901
         textureType,
 #else
         false,
 #endif
         std::get<0>(wrapping), std::get<1>(wrapping),
-#ifdef HDMAYA_USD_001910_BUILD
+#if USD_VERSION_NUM >= 1910
         HdWrapClamp,
 #endif
         HdMinFilterLinearMipmapLinear, HdMagFilterLinear, maxTextureMemory));
