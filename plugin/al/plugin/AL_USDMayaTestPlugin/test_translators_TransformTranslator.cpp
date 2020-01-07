@@ -25,6 +25,8 @@
 #include "maya/MDagModifier.h"
 #include "maya/MFnDagNode.h"
 #include "maya/MFileIO.h"
+#include "maya/MObjectArray.h"
+#include "maya/MObjectHandle.h"
 
 using AL::usdmaya::fileio::ExporterParams;
 using AL::usdmaya::fileio::ImporterParams;
@@ -122,7 +124,21 @@ TEST(translators_TranformTranslator, animated_io)
         "rotateOrder",
         "visibility"
     };
+
+    const char* const keyableAttributeNames[] = {
+        "rotateX",
+        "rotateY",
+        "rotateZ",
+        "scaleX",
+        "scaleY",
+        "scaleZ",
+        "translateX",
+        "translateY",
+        "translateZ",
+        "visibility"
+    };
     const uint32_t numAttributes = sizeof(attributeNames) / sizeof(const char* const);
+    const uint32_t numKeyableAttributes = sizeof(keyableAttributeNames) / sizeof(const char* const);
 
     randomAnimatedNode(node, attributeNames, numAttributes, startFrame, endFrame);
 
@@ -160,8 +176,41 @@ TEST(translators_TranformTranslator, animated_io)
       MGlobal::viewFrame(t);
       compareNodes(node, nodeB, attributeNames, numAttributes, true);
     }
-
+    unsigned int initAnimCurveCount = iparams.m_newAnimCurves.length();
+    EXPECT_TRUE(initAnimCurveCount);
     MDagModifier mod;
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // animCurve nodes management
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+    MFnDependencyNode nodeFn(nodeB);
+
+    // Import for multiple times and we should still be reusing the original animCurves:
+    constexpr const uint32_t times {10};
+    for(uint32_t l=0; l<times; l++)
+    {
+      EXPECT_EQ(MStatus(MS::kSuccess), xlator.copyAttributes(prim, nodeB, iparams));
+      EXPECT_EQ(iparams.m_newAnimCurves.length(), initAnimCurveCount);
+      for(uint32_t i=0; i<numKeyableAttributes; ++i)
+      {
+        MPlug plug = nodeFn.findPlug(keyableAttributeNames[i], true);
+        MPlug sourcePlug = plug.source();
+        EXPECT_FALSE(sourcePlug.isNull());
+        MObject node = sourcePlug.node();
+        EXPECT_TRUE(MObjectHandle(node).isValid());
+        bool isOldNode = false;
+        for(unsigned int i=0; i < iparams.m_newAnimCurves.length(); ++i)
+        {
+          if(node == iparams.m_newAnimCurves[i])
+          {
+            isOldNode = true;
+            break;
+          }
+        }
+        EXPECT_TRUE(isOldNode);
+      }
+    }
+
     EXPECT_EQ(MStatus(MS::kSuccess), mod.deleteNode(node));
     EXPECT_EQ(MStatus(MS::kSuccess), mod.deleteNode(nodeB));
     EXPECT_EQ(MStatus(MS::kSuccess), mod.doIt());

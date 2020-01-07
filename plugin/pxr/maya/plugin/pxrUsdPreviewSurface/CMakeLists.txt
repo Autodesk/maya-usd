@@ -64,7 +64,7 @@ else()
         POST_BUILD
         COMMENT "Validating generated Maya fragments for ${PXR_PACKAGE}"
         COMMAND
-            ${PYTHON_EXECUTABLE}
+            ${Python_EXECUTABLE}
                 ${CMAKE_CURRENT_SOURCE_DIR}/pxrUsdPreviewSurfaceGenFragments.py
                 ${SHADERS_LOCATION}/previewSurface.glslfx
                 --srcDir ${CMAKE_CURRENT_SOURCE_DIR}

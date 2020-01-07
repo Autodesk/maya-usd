@@ -142,6 +142,7 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   UsdImagingGLRenderParams params;
 
   params.showGuides = shape->drawGuidePurposePlug().asBool();
+  params.showProxy = shape->drawProxyPurposePlug().asBool();
   params.showRender = shape->drawRenderPurposePlug().asBool();
 
   params.frame = UsdTimeCode(shape->outTimePlug().asMTime().as(MTime::uiUnit()));
@@ -157,7 +158,7 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   unsigned int x, y, w, h;
   view.viewport(x, y, w, h);
   
-  #if USD_VERSION_NUM > 1907
+  #if USD_VERSION_NUM > 190
   engine->SetCameraState(
       GfMatrix4d((model.inverse() * viewMatrix).matrix),
       GfMatrix4d(projection.matrix));
@@ -349,6 +350,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
   UsdImagingGLRenderParams params;
   params.showGuides = proxyShape->drawGuidePurposePlug().asBool();
+  params.showProxy = proxyShape->drawProxyPurposePlug().asBool();
   params.showRender = proxyShape->drawRenderPurposePlug().asBool();
 
   UsdPrim root = proxyShape->getUsdStage()->GetPseudoRoot();

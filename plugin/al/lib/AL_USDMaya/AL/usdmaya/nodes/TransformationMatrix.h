@@ -70,6 +70,7 @@ class TransformationMatrix
 
   // post-transform translation value applied in object space after all other transformations
   MVector m_localTranslateOffset;
+  bool m_enableUsdWriteback = true;
 
   void print() const
   {
