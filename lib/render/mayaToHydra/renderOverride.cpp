@@ -435,15 +435,13 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 #if USD_VERSION_NUM >= 1907
         auto tasks = _taskController->GetRenderingTasks();
         _engine.Execute(_renderIndex, &tasks);
-#else
-#if USD_VERSION_NUM >= 1901
+#elif USD_VERSION_NUM >= 1901
         _engine.Execute(*_renderIndex, _taskController->GetTasks());
 #else
         _engine.Execute(
             *_renderIndex,
             _taskController->GetTasks(HdxTaskSetTokens->colorRender));
-#endif // USD_VERSION_NUM >= 1901
-#endif // USD_VERSION_NUM >= 1907
+#endif // USD_VERSION_NUM
     };
 
     _UpdateRenderGlobals();
