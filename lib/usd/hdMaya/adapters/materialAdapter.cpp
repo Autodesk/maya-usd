@@ -174,43 +174,23 @@ const std::string& HdMayaMaterialAdapter::GetPreviewDisplacementSource() {
     return _PreviewShader().displacementCode;
 }
 
-// Specialized version of :
-// https://en.cppreference.com/w/cpp/algorithm/lower_bound
 HdMayaShaderParams::const_iterator _FindPreviewParam(const TfToken& id) {
     TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
         .Msg("_FindPreviewParam(id=%s)\n", id.GetText());
-    HdMayaShaderParams::const_iterator it;
-    typename std::iterator_traits<
-        HdMayaShaderParams::const_iterator>::difference_type count,
-        step;
+
     const auto& previewShaderParams =
         HdMayaMaterialNetworkConverter::GetPreviewShaderParams();
-    auto first = previewShaderParams.cbegin();
-    count = std::distance(first, previewShaderParams.cend());
 
-    while (count > 0) {
-        it = first;
-        step = count / 2;
-        std::advance(it, step);
+    return std::lower_bound(
+            previewShaderParams.cbegin(), previewShaderParams.cend(), id,
+            [](const HdMayaShaderParam& param, const TfToken& id){
 #if USD_VERSION_NUM >= 1911
-        if (it->param.name < id) {
+                return param.param.name < id;
 #else
-        if (it->param.GetName() < id) {
+                return param.param.GetName() < id;
 #endif
-            first = ++it;
-            count -= step + 1;
-        } else {
-            count = step;
-        }
-    }
-    return first != previewShaderParams.cend()
-#if USD_VERSION_NUM >= 1911
-               ? (first->param.name == id ? first
-#else
-               ? (first->param.GetName() == id ? first
-#endif
-                                               : previewShaderParams.cend())
-               : first;
+            }
+    );
 }
 
 const VtValue& HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
