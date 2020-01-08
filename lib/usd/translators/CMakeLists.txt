@@ -96,11 +96,6 @@ target_include_directories(${TRANSLATORS_PLUGIN}
     ${CMAKE_BINARY_DIR}
 )
 
-target_include_directories(${TRANSLATORS_PLUGIN}
-    PRIVATE
-    api.h
-)
-
 target_link_libraries(${TRANSLATORS_PLUGIN} PRIVATE ${DEPENDANT_LIBRARIES})
 
 #======================================================================

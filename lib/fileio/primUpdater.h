@@ -41,7 +41,6 @@ public:
     UsdMayaPrimUpdater() = default;
     virtual ~UsdMayaPrimUpdater() = default;
 
-    MAYAUSD_CORE_PUBLIC
     enum class Supports { Invalid = 0, Push = 1 << 0, Pull = 1 << 1, Clear = 1 << 2, All = Push | Pull | Clear};
     
     MAYAUSD_CORE_PUBLIC
