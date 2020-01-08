@@ -107,8 +107,8 @@ public:
             return VtValue{GetFileTextureResource(
                 fileObj, GetFileTexturePath(MFnDependencyNode(fileObj)),
                 GetDelegate()->GetParams().textureMemoryPerTexture)};
-        }
 #endif // USD_VERSION_NUM >= 1910
+        }
         return {};
     }
 };
