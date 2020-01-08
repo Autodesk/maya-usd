@@ -48,10 +48,6 @@ void setUp()
   m_outTime = time1Fn.findPlug("outTime");
 }
 
-void tearDown()
-{
-}
-
 }
 
 

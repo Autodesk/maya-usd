@@ -6065,6 +6065,10 @@ void DgNodeHelper::copyAttributeValue(const MPlug& plug, UsdAttribute& usdAttr, 
             usdAttr.Set(m, timeCode);
           }
         }
+        break;
+        default:
+        {}
+        break;
       }
     }
     break;

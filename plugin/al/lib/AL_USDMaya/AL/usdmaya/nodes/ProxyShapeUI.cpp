@@ -107,7 +107,10 @@ void ProxyShapeUI::getDrawRequests(const MDrawInfo& drawInfo, bool isObjectAndAc
 
   MDrawRequest request = drawInfo.getPrototype(*this);
 
+  // If there are no side effects to calling surfaceShape(), the following two
+  // lines can be removed, as they are unused.  PPT, 8-Jan-2020.
   ProxyShape* shape = static_cast<ProxyShape*>(surfaceShape());
+  (void) shape;
 
   // add the request to the queue
   requests.add(request);

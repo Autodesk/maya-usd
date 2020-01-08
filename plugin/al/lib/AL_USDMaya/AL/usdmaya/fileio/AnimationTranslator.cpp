@@ -313,7 +313,14 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
       for(auto it = startWSM; it != endWSM; ++it)
       {
         MMatrix mat = it->first.inclusiveMatrix();
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#endif
         it->second.Set(*(const GfMatrix4d*)&mat, timeCode);
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
       }
     }
   }

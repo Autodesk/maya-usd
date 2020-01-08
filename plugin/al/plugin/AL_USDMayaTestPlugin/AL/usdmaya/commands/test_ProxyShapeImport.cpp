@@ -442,7 +442,7 @@ TEST(ProxyShapeImport, layerManagerTracksAllDirtyLayersWhenLoadingFromStageCache
 
   MStringArray trackedLayerIds;
   layerManager->getLayerIdentifiers(trackedLayerIds);
-  ASSERT_EQ(trackedLayerIds.length(), 2);
+  ASSERT_EQ(trackedLayerIds.length(), 2u);
 
   auto trackedLayer = layerManager->findLayer(rootLayer->GetIdentifier());
   ASSERT_TRUE(trackedLayer);

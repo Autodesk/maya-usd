@@ -154,7 +154,7 @@ TEST(ExportCommands, extensiveAnimationCheck)
       for(auto op : ops)
       {
         auto attr = op.GetAttr();
-        EXPECT_EQ(10, attr.GetNumTimeSamples());
+        EXPECT_EQ(10u, attr.GetNumTimeSamples());
       }
     }
     else

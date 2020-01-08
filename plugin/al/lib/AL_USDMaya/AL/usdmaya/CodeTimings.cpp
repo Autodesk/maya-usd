@@ -160,6 +160,8 @@ void Profiler::popTime()
   timespec endtime;
   #ifdef _WIN32
   while(clock_gettime(CLOCK_REALTIME_COARSE, &endtime) != 0) /* deliberately empty */;
+  #else
+  timespec_get(&endtime, TIME_UTC);
   #endif
 
   // compute time difference
