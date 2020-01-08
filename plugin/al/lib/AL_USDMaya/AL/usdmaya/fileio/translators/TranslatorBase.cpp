@@ -214,7 +214,7 @@ TranslatorRefPtr TranslatorManufacture::getTranslatorFromId(const std::string& t
 
 std::string TranslatorManufacture::generateTranslatorId(const UsdPrim& prim )
 {
-   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::generateTranslatorId %s\n", prim.GetPath().GetText());
+   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::generateTranslatorId for prim %s\n", prim.GetPath().GetText());
    std::string translatorId;
    TranslatorRefPtr translator = TfNullPtr;
 
@@ -238,6 +238,7 @@ std::string TranslatorManufacture::generateTranslatorId(const UsdPrim& prim )
        translatorId = TranslatorManufacture::TranslatorPrefixSchemaType.GetString() + prim.GetTypeName().GetString();
      }
    }
+   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::generateTranslatorId generated ID %s\n", translatorId.c_str());
    return translatorId;
 }
 
@@ -363,14 +364,14 @@ void TranslatorManufacture::clearPythonTranslators()
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorRefPtr TranslatorManufacture::getPythonTranslatorBySchemaType(const TfToken type_name)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslatorBySchemaType %s\n", type_name.GetText());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslatorBySchemaType looking for translator for type %s\n", type_name.GetText());
   TfType type = TfType::FindDerivedByName<UsdSchemaBase>(type_name);
 
   for(auto it : TranslatorManufacture::m_pythonTranslators)
   {
     if((it->getRegistrationType()==TranslatorManufacture::TranslatorPrefixSchemaType) && (type == it->getTranslatedType()))
     {
-      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslatorBySchemaType:: found a  translator for %s\n", type_name.GetText());
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getPythonTranslatorBySchemaType:: found a translator for type %s\n", type_name.GetText());
       return it;
     }
   }
