@@ -1572,8 +1572,8 @@ MStatus TranslatePrim::redoIt()
     if(prim)
     {
       auto translator = manufacture.get(prim);
-      if(translator->supportsUpdate())
-      {
+      if(translator && translator->supportsUpdate())
+      { 
         translator->update(prim);
       }
       else
