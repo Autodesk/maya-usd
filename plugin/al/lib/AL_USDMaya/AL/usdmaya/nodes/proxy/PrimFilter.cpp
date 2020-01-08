@@ -64,24 +64,51 @@ PrimFilter::PrimFilter(
       // if the type remains the same, and the type supports update
       if(existingTranslatorId == newTranslatorId)
       {
-        if(supportsUpdate)
+        // locate the path and delete from the removed set (we do not want to delete this prim!
+        // Note that m_removedPrimSet is reverse sorted
+        auto iter = std::lower_bound(m_removedPrimSet.begin(), m_removedPrimSet.end(), path, [](const SdfPath& a, const SdfPath& b){ return b < a; } );
+        if(iter != removedPrimSet().end() && *iter == path)
         {
-          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg(
-                    "PrimFilter::PrimFilter %s prim has not changed type and supports updates or inactive.\n", path.GetText());
-          // locate the path and delete from the removed set (we do not want to delete this prim!
-          // Note that m_removedPrimSet is reverse sorted
-          auto iter = std::lower_bound(m_removedPrimSet.begin(), m_removedPrimSet.end(), path, [](const SdfPath& a, const SdfPath& b){ return b < a; } );
-          if(iter != removedPrimSet().end() && *iter == path)
+          if (supportsUpdate)
           {
             m_removedPrimSet.erase(iter);
-            m_updatablePrimSet.push_back(prim);
-
+            if (proxy->isPrimDirty(prim))
+            {
+              TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg(
+                  "PrimFilter::PrimFilter %s prim will be updated.\n", path.GetText());
+              m_updatablePrimSet.push_back(prim);
+            }
+            else
+            {
+              TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg(
+                  "PrimFilter::PrimFilter %s prim remains unchanged.\n", path.GetText());
+            }
             // supporting update means it's not a new prim,
             // otherwise we still want the prim to be re-created.
             it = m_newPrimSet.erase(lastIt);
 
             // skip creating transforms in this case.
             requiresParent = false;
+          }
+          else
+          {
+            if (proxy->isPrimDirty(prim))
+            {
+              // prim has been added in "remove prim set", nothing to do here
+              TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg(
+                    "PrimFilter::PrimFilter %s prim will be removed and recreated.\n", path.GetText());
+            }
+            else
+            {
+              // prim is clean, no need to remove nor recreate
+              TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg(
+                  "PrimFilter::PrimFilter %s prim remains unchanged.\n", path.GetText());
+
+              m_removedPrimSet.erase(iter);
+              it = m_newPrimSet.erase(lastIt);
+              // skip creating transforms in this case.
+              requiresParent = false;
+            }
           }
         }
       }
