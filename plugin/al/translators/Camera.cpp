@@ -116,6 +116,8 @@ MStatus Camera::updateAttributes(MObject to, const UsdPrim& prim)
   bool isOrthographic = (projection == UsdGeomTokens->orthographic);
   AL_MAYA_CHECK_ERROR(DgNodeTranslator::setBool(to, m_orthographic, isOrthographic), errorString);
 
+  NewNodesCollector collector{context(), prim};
+
   // Horizontal film aperture
   auto horizontalApertureAttr = usdCamera.GetHorizontalApertureAttr();
   if(!horizontalApertureAttr.GetNumTimeSamples() || forceDefaultRead)
@@ -129,7 +131,8 @@ MStatus Camera::updateAttributes(MObject to, const UsdPrim& prim)
     DgNodeTranslator::setFloatAttrAnim(to,
                                        m_horizontalFilmAperture,
                                        horizontalApertureAttr,
-                                       mm_to_inches);
+                                       mm_to_inches,
+                                       collector.nodeContainerPtr());
   }
 
   // Vertical film aperture
@@ -145,7 +148,8 @@ MStatus Camera::updateAttributes(MObject to, const UsdPrim& prim)
     DgNodeTranslator::setFloatAttrAnim(to,
                                        m_verticalFilmAperture,
                                        verticalApertureAttr,
-                                       mm_to_inches);
+                                       mm_to_inches,
+                                       collector.nodeContainerPtr());
   }
 
   // Horizontal film aperture offset
@@ -161,7 +165,8 @@ MStatus Camera::updateAttributes(MObject to, const UsdPrim& prim)
     DgNodeTranslator::setFloatAttrAnim(to,
                                        m_horizontalFilmApertureOffset,
                                        horizontalApertureOffsetAttr,
-                                       mm_to_inches);
+                                       mm_to_inches,
+                                       collector.nodeContainerPtr());
   }
 
   // Vertical film aperture offset
@@ -177,7 +182,8 @@ MStatus Camera::updateAttributes(MObject to, const UsdPrim& prim)
     DgNodeTranslator::setFloatAttrAnim(to,
                                        m_verticalFilmApertureOffset,
                                        verticalApertureOffsetAttr,
-                                       mm_to_inches);
+                                       mm_to_inches,
+                                       collector.nodeContainerPtr());
   }
 
   // Focal length
@@ -190,7 +196,7 @@ MStatus Camera::updateAttributes(MObject to, const UsdPrim& prim)
   }
   else
   {
-    DgNodeTranslator::setFloatAttrAnim(to, m_focalLength, focalLengthAttr);
+    DgNodeTranslator::setFloatAttrAnim(to, m_focalLength, focalLengthAttr, 1.0f, collector.nodeContainerPtr());
   }
 
   // Near/far clip planes
@@ -227,6 +233,7 @@ MStatus Camera::import(const UsdPrim& prim, MObject& parent, MObject& createdObj
   MObject to = fn.create("camera", name, parent, &status);
   createdObj = to;
   TranslatorContextPtr ctx = context();
+  NewNodesCollector collector{ctx, prim};
   UsdTimeCode timeCode = UsdTimeCode::EarliestTime();
   bool forceDefaultRead = false;
   if(ctx)
@@ -240,7 +247,7 @@ MStatus Camera::import(const UsdPrim& prim, MObject& parent, MObject& createdObj
   }
 
   // F-Stop
-  if (!DgNodeTranslator::setFloatAttrAnim(to, m_fstop, usdCamera.GetFStopAttr()))
+  if (!DgNodeTranslator::setFloatAttrAnim(to, m_fstop, usdCamera.GetFStopAttr(), 1.0f, collector.nodeContainerPtr()))
   {
     float fstop;
     usdCamera.GetFStopAttr().Get(&fstop, timeCode);
@@ -253,7 +260,7 @@ MStatus Camera::import(const UsdPrim& prim, MObject& parent, MObject& createdObj
     // TODO: What unit here?
     MDistance one(1.0, MDistance::kCentimeters);
     double conversionFactor = one.as(MDistance::kCentimeters);
-    DgNodeTranslator::setFloatAttrAnim(to, m_focusDistance, usdCamera.GetFocusDistanceAttr(), conversionFactor);
+    DgNodeTranslator::setFloatAttrAnim(to, m_focusDistance, usdCamera.GetFocusDistanceAttr(), conversionFactor, collector.nodeContainerPtr());
   }
   else
   {

@@ -78,17 +78,20 @@ class HdVP2Material final : public HdMaterial {
 public:
     HdVP2Material(HdVP2RenderDelegate*, const SdfPath&);
 
-    ~HdVP2Material() override;
+    //! Destructor.
+    ~HdVP2Material() override = default;
 
     void Sync(HdSceneDelegate*, HdRenderParam*, HdDirtyBits*) override;
 
     HdDirtyBits GetInitialDirtyBitsMask() const override;
     void Reload() override;
 
-    MHWRender::MShaderInstance* GetSurfaceShader() const;
+    //! Get the surface shader instance.
+    MHWRender::MShaderInstance* GetSurfaceShader() const {
+        return _surfaceShader.get();
+    }
 
-    /*! \brief  Get primvar requirements required by this material.
-    */
+    //! Get primvar tokens required by this material.
     const TfTokenVector& GetRequiredPrimvars() const {
         return _requiredPrimvars;
     }

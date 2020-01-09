@@ -619,10 +619,10 @@ public:
   AL_MAYA_UTILS_PUBLIC
   static void addFrame(const char* frameTitle);
 
-  /// \brief  add an inherited attribute to this node type
+  /// \brief  add an attribute to the current AE template frame
   /// \param  longName  long name of the attribute
   AL_MAYA_UTILS_PUBLIC
-  static void addInheritedAttr(const char* longName);
+  static bool addFrameAttr(const char* longName, uint32_t flags, bool forceShow = false, Frame::AttributeUiType attrType = Frame::kNormal);
 
   /// \brief  add a new compound attribute to this node type
   /// \param  longName  long name for the attribute

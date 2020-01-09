@@ -486,6 +486,7 @@ bool ProxyShape::getRenderAttris(UsdImagingGLRenderParams& attribs, const MHWRen
   const float complexities[] = {1.05f, 1.15f, 1.25f, 1.35f, 1.45f, 1.55f, 1.65f, 1.75f, 1.9f}; 
   attribs.complexity = complexities[complexityPlug().asInt()];
   attribs.showGuides = drawGuidePurposePlug().asBool();
+  attribs.showProxy = drawProxyPurposePlug().asBool();
   attribs.showRender = drawRenderPurposePlug().asBool();
   return true;
 }
@@ -672,8 +673,9 @@ MStatus ProxyShape::initialise()
 
     inheritInt32Attr("complexity", kCached | kConnectable | kReadable | kWritable | kAffectsAppearance | kKeyable | kStorable);
     // outStageData attribute already added in base class.
-    inheritBoolAttr("displayGuides", kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
-    inheritBoolAttr("displayRenderGuides", kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
+    inheritBoolAttr("drawGuidePurpose", kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
+    inheritBoolAttr("drawProxyPurpose", kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
+    inheritBoolAttr("drawRenderPurpose", kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
     m_unloaded = addBoolAttr("unloaded", "ul", false, kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
     m_serializedTrCtx = addStringAttr("serializedTrCtx", "srtc", kReadable|kWritable|kStorable|kHidden);
 
@@ -1258,9 +1260,12 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
 // nodes based on the contents of the new variant selection.
 {
   if(MFileIO::isReadingFile())
-  {
     return;
-  }
+
+  if (!m_stage)
+    return;
+
+  const SdfLayerHandleVector stack = m_stage->GetLayerStack();
 
 #if USD_VERSION_NUM > 1911
   TF_FOR_ALL(itr, notice.GetChangeListVec())
@@ -1268,6 +1273,9 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
   TF_FOR_ALL(itr, notice.GetChangeListMap())
 #endif
   {
+    if (std::find(stack.begin(), stack.end(), itr->first) == stack.end())
+      continue;
+
     TF_FOR_ALL(entryIter, itr->second.GetEntryList())
     {
       const SdfPath &path = entryIter->first;

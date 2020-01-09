@@ -61,7 +61,7 @@ function(mayaUsd_find_python_module module)
         if(ARGC GREATER 1 AND ARGV1 STREQUAL "REQUIRED")
             set(${module}_FIND_REQUIRED TRUE)
         endif()
-        execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c"
+        execute_process(COMMAND "${Python_EXECUTABLE}" "-c"
             "import re, ${module}; print re.compile('/__init__.py.*').sub('',${module}.__file__)"
             RESULT_VARIABLE _${module}_status
             OUTPUT_VARIABLE _${module}_location

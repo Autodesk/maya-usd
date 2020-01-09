@@ -42,7 +42,7 @@
 
 using AL::maya::test::buildTempPath;
 
-//#define TEST(X, Y) void X##Y()
+// #define TEST(X, Y) void X##Y()
 
 //  inline const UsdPrim& prim() const
 //  inline bool hasAnimation() const
@@ -1467,4 +1467,59 @@ TEST(Transform, emptyOpsNotMade)
 //  inline void setLocalTranslationOffset(const MVector& localTranslateOffset)
 //  void initialiseToPrim(bool readFromPrim = true, Transform* node = 0);
 //  inline bool pushPrimToMatrix() const
+
+// Check that simply querying the value of various xform attrs doesn't create do-nothing ops
+TEST(Transform, dontWriteToUsdOnSelection)
+{
+  std::string filePath = buildTempPath("AL_USDMayaTests_dontWriteToUsdOnSelection.usda");
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/transform1"));
+    UsdGeomMesh mesh = UsdGeomMesh::Define(stage, SdfPath("/transform1/shape"));
+
+    UsdAttribute points = mesh.CreatePointsAttr();
+    UsdAttribute indices = mesh.CreateFaceVertexIndicesAttr();
+    UsdAttribute counts = mesh.CreateFaceVertexCountsAttr();
+
+    VtArray<GfVec3f> pointData = { GfVec3f(0, 1.0f, 0), GfVec3f(-1.0f, 0, 0), GfVec3f(1.0f, 0, 0) };
+    VtArray<int> indexData = { 0, 1, 2 };
+    VtArray<int> countData = { 3 };
+
+    points.Set(pointData);
+    indices.Set(indexData);
+    counts.Set(countData);
+
+    xform.AddRotateZYXOp().Set(GfVec3f(0, 0, 90.0f), UsdTimeCode::Default());
+    stage->Export(filePath);
+  }
+  MFileIO::newFile(true);
+
+  MString command = "AL_usdmaya_ProxyShapeImport -f \"";
+  command += filePath.c_str();
+  command += "\" -name \"proxy\"";
+
+  ASSERT_TRUE(MGlobal::executeCommand(command));
+
+  MSelectionList sl;
+  sl.add("proxyShape");
+  MObject obj;
+  sl.getDependNode(0, obj);
+  ASSERT_TRUE(obj != MObject::kNullObj);
+
+  MFnDependencyNode fn(obj);
+  AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+  auto stage = proxy->usdStage();
+
+  auto session = stage->GetSessionLayer();
+  std::string postContents, priorContents;
+  session->ExportToString(&priorContents);
+
+  // make sure write backs to USD do not happen on selection.
+  ASSERT_TRUE(MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -p \"proxyShape\" -pp \"/transform1/shape\" -replace"));
+
+  session->ExportToString(&postContents);
+
+  EXPECT_EQ(priorContents, postContents);
+}
 

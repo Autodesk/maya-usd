@@ -125,7 +125,7 @@ function(pxr_library NAME)
             endif()
         endif()
 
-        set(prefix "${PXR_LIB_PREFIX}")
+        set(prefix "${CMAKE_SHARED_LIBRARY_PREFIX}")
         if(args_TYPE STREQUAL "STATIC")
             set(suffix ${CMAKE_STATIC_LIBRARY_SUFFIX})
         else()
@@ -547,14 +547,14 @@ function(pxr_register_test TEST_NAME)
         if (bt_CUSTOM_PYTHON)
             set(testCmd "${bt_CUSTOM_PYTHON} ${bt_COMMAND}")
         elseif (bt_PYTHON)
-            set(testCmd "${PYTHON_EXECUTABLE} ${bt_COMMAND}")
+            set(testCmd "${Python_EXECUTABLE} ${bt_COMMAND}")
         else()
             set(testCmd "${bt_COMMAND}")
         endif()
 
         add_test(
             NAME ${TEST_NAME}
-            COMMAND ${PYTHON_EXECUTABLE} ${testWrapperCmd}
+            COMMAND ${Python_EXECUTABLE} ${testWrapperCmd}
                     "--env-var=PYTHONPATH=${_testPythonPath}" 
                     "--env-var=${_plugSearchPathEnvName}=${_testPluginPath}" 
                     "--pre-path=${_testPrePath}" ${testCmd}
@@ -690,7 +690,6 @@ function(pxr_toplevel_prologue)
             set_target_properties(usd_ms
                 PROPERTIES
                     FOLDER "${folder}"
-                    PREFIX "${PXR_LIB_PREFIX}"
             )
             _get_install_dir("lib" libInstallPrefix)
             install(
@@ -824,7 +823,6 @@ function(pxr_monolithic_epilogue)
         PROPERTIES
             FOLDER "${folder}"
             POSITION_INDEPENDENT_CODE ON
-            PREFIX "${PXR_LIB_PREFIX}"
     )
 
     # Adding $<TARGET_OBJECTS:foo> will not bring along compile

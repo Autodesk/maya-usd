@@ -82,7 +82,8 @@ class HdVP2Mesh final : public HdMesh {
 public:
     HdVP2Mesh(HdVP2RenderDelegate*, const SdfPath&, const SdfPath& instancerId = SdfPath());
 
-    ~HdVP2Mesh() override;
+    //! Destructor.
+    ~HdVP2Mesh() override = default;
 
     void Sync(
         HdSceneDelegate*, HdRenderParam*,
