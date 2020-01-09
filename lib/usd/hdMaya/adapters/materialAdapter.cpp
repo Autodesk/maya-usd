@@ -381,8 +381,8 @@ private:
                     auto textureResource = GetFileTextureResource(
                         connectedFileObj, filePath,
                         GetDelegate()->GetParams().textureMemoryPerTexture);
-                    _textureResources[paramName] = boost::static_pointer_cast<HdTextureResource>(textureResource);
-                    textureInstance.SetValue(boost::static_pointer_cast<HdTextureResource>(textureResource));
+                    _textureResources[paramName] = textureResource;
+                    textureInstance.SetValue(textureResource);
                 }
                 else {
                     _textureResources[paramName] = textureInstance.GetValue();
