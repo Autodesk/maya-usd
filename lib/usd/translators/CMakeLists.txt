@@ -26,7 +26,6 @@ list(APPEND DEPENDANT_LIBRARIES
     usdSkel
     usdUtils
     vt
-    ${Boost_PYTHON_LIBRARY}
     ${MAYA_LIBRARIES}
     ${LIBRARY_NAME}
 )

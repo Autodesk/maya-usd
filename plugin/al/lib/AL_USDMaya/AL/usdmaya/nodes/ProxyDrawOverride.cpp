@@ -37,6 +37,7 @@
 #include "ufe/runTimeMgr.h"
 #include "ufe/globalSelection.h"
 #include "ufe/observableSelection.h"
+#include "ufe/log.h"
 #endif
 
 namespace AL {
@@ -809,6 +810,10 @@ bool ProxyDrawOverride::userSelect(
             {
               globalSelection->append(si);
             }
+            break;
+          case MGlobal::kAddToHeadOfList:
+            // No such operation on UFE selection.
+            UFE_LOG("UFE does not support prepend to selection.");
             break;
           }
         }

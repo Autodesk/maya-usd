@@ -1,5 +1,6 @@
 //
 // Copyright 2016 Pixar
+// Copyright 2019 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,8 +16,6 @@
 //
 #ifndef PXRUSDMAYA_PRIMUPDATERCONTEXT_H
 #define PXRUSDMAYA_PRIMUPDATERCONTEXT_H
-
-/// \file usdMaya/primUpdaterContext.h
 
 #include "../base/api.h"
 
@@ -40,12 +39,10 @@ public:
             const UsdStageRefPtr& stage);
 
     /// \brief returns the time frame where data should be edited.
-    MAYAUSD_CORE_PUBLIC
-    const UsdTimeCode& GetTimeCode() const;
+    const UsdTimeCode& GetTimeCode() const { return _timeCode; }
 
     /// \brief returns the usd stage that is being written to.
-    MAYAUSD_CORE_PUBLIC
-    UsdStageRefPtr GetUsdStage() const; 
+    UsdStageRefPtr GetUsdStage() const { return _stage; }
 
     MAYAUSD_CORE_PUBLIC
     virtual void Clear(const SdfPath&);

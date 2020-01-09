@@ -39,6 +39,7 @@
 #include "ufe/runTimeMgr.h"
 #include "ufe/globalSelection.h"
 #include "ufe/observableSelection.h"
+#include "ufe/log.h"
 #endif
 
 #include "pxr/usd/usd/modelAPI.h"
@@ -600,6 +601,12 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
                     if (!globalSelection->remove(si)) {
                         globalSelection->append(si);
                     }
+                }
+                break;
+                case MGlobal::kAddToHeadOfList:
+                {
+                    // No such operation on UFE selection.
+                    UFE_LOG("UFE does not support prepend to selection.");
                 }
                 break;
                 }
