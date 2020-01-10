@@ -104,6 +104,7 @@ class UsdMayaGL_InstancerShapeAdapter : public PxrMayaHdShapeAdapter
         // Derived class hook to allow derived classes to augment
         // _SyncInstancerPrototypes(), for each prototype.  The implementation
         // in this class clears references on the argument prototypePrim.
+        MAYAUSD_CORE_PUBLIC
         virtual void SyncInstancerPerPrototypePostHook(
             const MPlug&              hierarchyPlug,
             UsdPrim&                  prototypePrim,
