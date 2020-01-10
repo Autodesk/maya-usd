@@ -87,11 +87,13 @@ public:
             UsdMayaShadingModeImporter fn);
 
 private:
+    MAYAUSD_CORE_PUBLIC
     UsdMayaShadingModeExporterCreator _GetExporter(const TfToken& name);
+    MAYAUSD_CORE_PUBLIC
     UsdMayaShadingModeImporter _GetImporter(const TfToken& name);
 
-    TfTokenVector _ListExporters();
-    TfTokenVector _ListImporters();
+    MAYAUSD_CORE_PUBLIC TfTokenVector _ListExporters();
+    MAYAUSD_CORE_PUBLIC TfTokenVector _ListImporters();
 
     UsdMayaShadingModeRegistry();
     ~UsdMayaShadingModeRegistry();

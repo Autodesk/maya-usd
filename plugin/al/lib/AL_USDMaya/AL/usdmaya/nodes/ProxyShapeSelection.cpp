@@ -249,7 +249,7 @@ void ProxyShape::printRefCounts() const
 //----------------------------------------------------------------------------------------------------------------------
 inline bool ProxyShape::TransformReference::decRef(const TransformReason reason)
 {
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::decRef %lu %lu %lu\n", m_selected, m_refCount, m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::decRef %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", m_selected, m_refCount, m_required);
   switch(reason)
   {
   case kSelection: assert(m_selected); --m_selected; break;
@@ -260,14 +260,14 @@ inline bool ProxyShape::TransformReference::decRef(const TransformReason reason)
     break;
   }
 
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::decRefEnd %lu %lu %lu\n", m_selected, m_refCount, m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::decRefEnd %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", m_selected, m_refCount, m_required);
   return !m_required && !m_selected && !m_refCount;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 inline void ProxyShape::TransformReference::incRef(const TransformReason reason)
 {
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::incRef %lu %lu %lu\n", m_selected, m_refCount, m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::incRef %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", m_selected, m_refCount, m_required);
   switch(reason)
   {
   case kSelection: ++m_selected; break;
@@ -276,13 +276,13 @@ inline void ProxyShape::TransformReference::incRef(const TransformReason reason)
   default: assert(0); break;
   }
 
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::incRefEnd %lu %lu %lu\n", m_selected, m_refCount, m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::incRefEnd %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", m_selected, m_refCount, m_required);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 inline void ProxyShape::TransformReference::checkIncRef(const TransformReason reason)
 {
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::checkIncRef %lu %lu %lu\n", m_selected, m_refCount, m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::checkIncRef %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", m_selected, m_refCount, m_required);
   switch(reason)
   {
   case kSelection: ++m_selectedTemp; break;
@@ -293,7 +293,7 @@ inline void ProxyShape::TransformReference::checkIncRef(const TransformReason re
 //----------------------------------------------------------------------------------------------------------------------
 inline bool ProxyShape::TransformReference::checkRef(const TransformReason reason)
 {
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::checkRef %lu : %lu %lu %lu\n", m_selectedTemp, m_selected, m_refCount, m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::checkRef %" PRIu64 " : %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", m_selectedTemp, m_selected, m_refCount, m_required);
   uint32_t sl = m_selected;
   uint32_t rc = m_refCount;
   uint32_t rq = m_required;

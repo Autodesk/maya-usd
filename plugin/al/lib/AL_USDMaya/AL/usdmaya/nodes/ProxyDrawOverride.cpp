@@ -626,7 +626,7 @@ bool ProxyDrawOverride::userSelect(
   };
 
 
-  auto addSelection = [&hitBatch, &selectInfo, &selectionList,
+  auto addSelection = [&hitBatch, &selectionList,
     &worldSpaceHitPts, proxyShape, &selected,
     &getHitPath] (const MString& command)
   {
@@ -719,7 +719,7 @@ bool ProxyDrawOverride::userSelect(
     {
       paths.reserve(hitBatch.size());
 
-      auto addHit = [&engine, &paths, &getHitPath](Engine::HitBatch::const_reference& it)
+      auto addHit = [&paths, &getHitPath](Engine::HitBatch::const_reference& it)
       {
         paths.push_back(getHitPath(it));
       };

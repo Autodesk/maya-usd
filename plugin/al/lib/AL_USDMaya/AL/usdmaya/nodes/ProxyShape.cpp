@@ -536,7 +536,7 @@ ProxyShape::ProxyShape()
     constructExcludedPrims();
   };
 
-  m_findUnselectablePrims.preIteration = [this]() {
+  m_findUnselectablePrims.preIteration = []() {
 
   };
   m_findUnselectablePrims.iteration = [this]
@@ -619,30 +619,6 @@ ProxyShape::~ProxyShape()
   destroyGLImagingEngine();
   triggerEvent("PostDestroyProxyShape");
 }
-
-//----------------------------------------------------------------------------------------------------------------------
-static const char* const rotate_order_strings[] =
-{
-  "xyz",
-  "yzx",
-  "zxy",
-  "xzy",
-  "yxz",
-  "zyx",
-  0
-};
-
-//----------------------------------------------------------------------------------------------------------------------
-static const int16_t rotate_order_values[] =
-{
-  0,
-  1,
-  2,
-  3,
-  4,
-  5,
-  -1
-};
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShape::initialise()

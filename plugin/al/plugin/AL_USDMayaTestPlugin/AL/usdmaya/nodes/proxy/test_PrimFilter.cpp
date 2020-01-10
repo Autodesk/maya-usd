@@ -67,7 +67,7 @@ struct MockPrimFilterInterface : public AL::usdmaya::nodes::proxy::PrimFilterInt
   }
 
   /// mimick behaviour of TranslatorManufacture::getTranslatorFromId without needing translators registered
-  std::string generateTranslatorId(UsdPrim prim)
+  std::string generateTranslatorId(UsdPrim prim) override
   {
     std::string translatorId;
 

@@ -47,9 +47,9 @@ public:
   {
     switch(severity)
     {
-    case kInfo: MGlobal::displayInfo(text); break;
-    case kWarning: MGlobal::displayWarning(text); break;
-    case kError: MGlobal::displayError(text); break;
+    case EventSystemBinding::kInfo: MGlobal::displayInfo(text); break;
+    case EventSystemBinding::kWarning: MGlobal::displayWarning(text); break;
+    case EventSystemBinding::kError: MGlobal::displayError(text); break;
     }
   }
 };
