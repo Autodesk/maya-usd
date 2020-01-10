@@ -67,11 +67,19 @@ void DagNodeTranslator::initialiseDefaultShadingGroup(MObject& target)
 //----------------------------------------------------------------------------------------------------------------------
 MObject DagNodeTranslator::createNode(const UsdPrim& from, MObject parent, const char* nodeType, const ImporterParams& params)
 {
+  const char* const xformError = "DagNodeTranslator::createNode error creating node";
+  MStatus status;
   MFnDagNode fn;
-  MObject to = fn.create(nodeType);
 
-  MStatus status = copyAttributes(from, to, params);
-  AL_MAYA_CHECK_ERROR_RETURN_NULL_MOBJECT(status, "Dag node translator: unable t/o get attributes");
+  MObject to = fn.create(nodeType, parent, &status);
+  if (status!= MS::kSuccess) {
+    std::cerr << "DagNodeTranslator::createNode unable to create node of type " << nodeType << ". Create transform instead" << std::endl;
+    to = fn.create("transform", parent, &status);
+  }
+  AL_MAYA_CHECK_ERROR2(status, xformError);
+
+  status = copyAttributes(from, to, params);
+  AL_MAYA_CHECK_ERROR_RETURN_NULL_MOBJECT(status, "DagNodeTranslator::createNode unable to get attributes");
 
   return to;
 }
