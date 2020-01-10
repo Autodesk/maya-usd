@@ -1,5 +1,6 @@
 //
 // Copyright 2016 Pixar
+// Copyright 2019 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,8 +16,6 @@
 //
 #ifndef PXRUSDMAYA_IMPORT_TRANSLATOR_H
 #define PXRUSDMAYA_IMPORT_TRANSLATOR_H
-
-/// \file usdMaya/importTranslator.h
 
 #include "base/api.h"
 #include <mayaUsd/fileio/jobs/jobArgs.h>

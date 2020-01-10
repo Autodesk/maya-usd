@@ -34,7 +34,7 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PUBLIC_CLASSES
         editUtil
-		translatorModelAssembly
+        translatorModelAssembly
 
         exportCommand
         exportTranslator

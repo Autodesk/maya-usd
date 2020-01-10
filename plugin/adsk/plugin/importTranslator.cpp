@@ -1,5 +1,6 @@
 //
 // Copyright 2016 Pixar
+// Copyright 2019 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -58,7 +59,7 @@ UsdMayaImportTranslator::reader(
         const MString& optionsString,
         MPxFileTranslator::FileAccessMode  /*mode*/)
 {
-    std::string fileName(file.fullName().asChar());
+    std::string fileName(file.fullName().asChar(), file.fullName().length());
     std::string primPath("/");
     std::map<std::string, std::string> variants;
 
@@ -72,14 +73,14 @@ UsdMayaImportTranslator::reader(
         MStringArray optionList;
         MStringArray theOption;
         optionsString.split(';', optionList);
-        for(int i=0; i<(int)optionList.length(); ++i) {
+        for(int i=0, n=optionList.length(); i<n; ++i) {
             theOption.clear();
             optionList[i].split('=', theOption);
             if (theOption.length() != 2) {
                 continue;
             }
 
-            std::string argName(theOption[0].asChar());
+            std::string argName(theOption[0].asChar(), theOption[0].length());
             if (argName == "readAnimData") {
                 readAnimData = (theOption[1].asInt() != 0);
             } else if (argName == "useCustomFrameRange") {
