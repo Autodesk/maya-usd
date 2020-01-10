@@ -15,8 +15,6 @@
 //
 #include <pxr/pxr.h>
 
-#include <hdMaya/hdMaya.h>
-
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/light.h>
 

@@ -19,8 +19,6 @@
 #include <pxr/imaging/glf/glew.h>
 #include <pxr/pxr.h>
 
-#include <hdMaya/hdMaya.h>
-
 #include <pxr/base/tf/singleton.h>
 
 #include <pxr/imaging/hd/engine.h>

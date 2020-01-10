@@ -13,9 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/hdMaya.h>
-
-#if HDMAYA_LUMA_BUILD
 #include <pxr/pxr.h>
 
 #include <pxr/base/tf/type.h>
@@ -345,4 +342,3 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, imagePlane) {
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-#endif // HDMAYA_LUMA_BUILD

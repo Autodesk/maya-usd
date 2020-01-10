@@ -15,8 +15,6 @@
 //
 #include "defaultLightDelegate.h"
 
-#include <hdMaya/hdMaya.h>
-
 #include "../../usd/hdMaya/delegates/delegateDebugCodes.h"
 
 #include <pxr/base/gf/rotation.h>

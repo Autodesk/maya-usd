@@ -15,8 +15,6 @@
 //
 #include "renderOverride.h"
 
-#include <hdMaya/hdMaya.h>
-
 #include <pxr/base/gf/matrix4d.h>
 
 #include <pxr/base/tf/instantiateSingleton.h>

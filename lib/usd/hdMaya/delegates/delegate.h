@@ -18,8 +18,6 @@
 
 #include <pxr/pxr.h>
 
-#include <hdMaya/hdMaya.h>
-
 #include <pxr/imaging/glf/glew.h>
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/renderIndex.h>

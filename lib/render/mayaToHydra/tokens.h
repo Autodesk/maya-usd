@@ -16,8 +16,6 @@
 #ifndef __MTOH_TOKENS_H__
 #define __MTOH_TOKENS_H__
 
-#include <hdMaya/hdMaya.h>
-
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/pxr.h>
 

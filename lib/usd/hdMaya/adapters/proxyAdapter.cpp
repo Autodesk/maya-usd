@@ -22,8 +22,6 @@
 #include "../delegates/proxyDelegate.h"
 #include "../delegates/sceneDelegate.h"
 
-#include <hdMaya/hdMaya.h>
-
 #include "../../../nodes/proxyShapeBase.h"
 
 #include <maya/MTime.h>

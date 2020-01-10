@@ -15,8 +15,6 @@
 //
 #include "renderGlobals.h"
 
-#include <hdMaya/hdMaya.h>
-
 #include <pxr/imaging/hd/renderDelegate.h>
 #if USD_VERSION_NUM >= 1911
 #include <pxr/imaging/hd/rendererPlugin.h>

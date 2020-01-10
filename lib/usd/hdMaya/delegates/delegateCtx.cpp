@@ -15,8 +15,6 @@
 //
 #include "delegateCtx.h"
 
-#include <hdMaya/hdMaya.h>
-
 #include <pxr/base/gf/frustum.h>
 #include <pxr/base/gf/plane.h>
 #include <pxr/base/gf/range1d.h>

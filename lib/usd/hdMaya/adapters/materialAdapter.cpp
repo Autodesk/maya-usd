@@ -15,8 +15,6 @@
 //
 #include "materialAdapter.h"
 
-#include <hdMaya/hdMaya.h>
-
 #include <pxr/base/tf/fileUtils.h>
 
 #include <pxr/imaging/hd/instanceRegistry.h>

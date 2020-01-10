@@ -1,19 +1,6 @@
 set(TARGET_NAME hdMaya)
 
-if (LUMA_USD_BUILD)
-    set(HDMAYA_LUMA_BUILD 1)
-endif ()
-
-set(HDMAYA_H "${CMAKE_CURRENT_BINARY_DIR}/hdMaya.h")
-
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/hdMaya.h.in"
-    ${HDMAYA_H}
-    @ONLY
-)
-
 set(SRC
-    "${HDMAYA_H}"
     adapters/adapter.cpp
     adapters/adapterDebugCodes.cpp
     adapters/adapterRegistry.cpp
@@ -21,8 +8,6 @@ set(SRC
     adapters/areaLightAdapter.cpp
     adapters/dagAdapter.cpp
     adapters/directionalLightAdapter.cpp
-    adapters/imagePlaneAdapter.cpp
-    adapters/imagePlaneMaterialAdapter.cpp
     adapters/lightAdapter.cpp
     adapters/proxyAdapter.cpp
     adapters/materialAdapter.cpp
@@ -46,6 +31,13 @@ set(SRC
     
     debugCodes.cpp
     utils.cpp)
+
+if (HDMAYA_LUMA_BUILD)
+    set(SRC
+        ${SRC}
+        adapters/imagePlaneAdapter.cpp
+        adapters/imagePlaneMaterialAdapter.cpp)
+endif()
 
 add_library(${TARGET_NAME} SHARED ${SRC})
 
@@ -117,10 +109,6 @@ if (IS_WINDOWS)
     target_compile_definitions(${TARGET_NAME} PUBLIC "NOMINMAX=1")
 elseif (IS_MACOSX)
     target_compile_definitions(${TARGET_NAME} PUBLIC "OSMac_")
-endif ()
-
-if (LUMA_USD_BUILD)
-    target_compile_definitions(${TARGET_NAME} PRIVATE LUMA_USD_BUILD)
 endif ()
 
 set(libFileName ${CMAKE_SHARED_LIBRARY_PREFIX}${TARGET_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})

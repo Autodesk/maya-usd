@@ -15,8 +15,6 @@
 //
 #include "sceneDelegate.h"
 
-#include <hdMaya/hdMaya.h>
-
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/range3d.h>
 #include <pxr/base/tf/type.h>

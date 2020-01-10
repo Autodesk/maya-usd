@@ -50,6 +50,12 @@ if (DEFINED USD_VERSION_NUM)
     _add_define("USD_VERSION_NUM=${USD_VERSION_NUM}")
 endif()
 
+if (HDMAYA_LUMA_BUILD)
+	if (NOT USD_VERSION_NUM LESS 1907)
+		_add_define(HDMAYA_OIT_ENABLED)
+	endif()
+endif()
+
 set(_PXR_CXX_FLAGS ${_PXR_CXX_FLAGS} ${_PXR_CXX_WARNING_FLAGS})
 
 # CMake list to string.

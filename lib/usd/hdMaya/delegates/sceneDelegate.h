@@ -18,8 +18,6 @@
 
 #include <pxr/pxr.h>
 
-#include <hdMaya/hdMaya.h>
-
 #include <pxr/base/gf/vec4d.h>
 
 #include <pxr/usd/sdf/path.h>

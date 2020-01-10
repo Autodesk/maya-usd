@@ -15,8 +15,6 @@
 //
 #include <pxr/pxr.h>
 
-#include <hdMaya/hdMaya.h>
-
 #if USD_VERSION_NUM >= 1905
 #include <pxr/imaging/hio/glslfx.h>
 #else

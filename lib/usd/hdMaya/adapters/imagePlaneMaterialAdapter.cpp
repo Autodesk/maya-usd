@@ -13,9 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/hdMaya.h>
-
-#if HDMAYA_LUMA_BUILD
 #include "materialAdapter.h"
 
 #include <pxr/base/tf/fileUtils.h>
@@ -263,5 +260,3 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, shadingEngine) {
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // HDMAYA_LUMA_BUILD

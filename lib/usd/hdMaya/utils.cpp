@@ -16,8 +16,6 @@
 
 #include <hdMaya/utils.h>
 
-#include <hdMaya/hdMaya.h>
-
 #include <pxr/base/tf/fileUtils.h>
 
 #include <pxr/imaging/glf/contextCaps.h>
