@@ -96,7 +96,14 @@ endif()
 # Python bindings
 ####################################################################################################
 
-add_library(_AL_USDMayaSchemas
+if(IS_WINDOWS AND ${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+    # On Windows when compiling with debug python the library must be named with _d.
+    set(PYTHON_LIBRARY_NAME _AL_USDMayaSchemas_d)
+else()
+    set(PYTHON_LIBRARY_NAME _AL_USDMayaSchemas)
+endif()
+
+add_library(${PYTHON_LIBRARY_NAME}
     SHARED
     module.cpp
     wrapModelAPI.cpp
@@ -105,28 +112,28 @@ add_library(_AL_USDMayaSchemas
     wrapFrameRange.cpp
 )
 
-target_compile_definitions(_AL_USDMayaSchemas
+target_compile_definitions(${PYTHON_LIBRARY_NAME}
     PRIVATE
         MFB_PACKAGE_NAME=AL_USDMayaSchemas
         MFB_ALT_PACKAGE_NAME=AL_USDMayaSchemas
         MFB_PACKAGE_MODULE=AL.usd.schemas.maya
 )
 
-set_target_properties(_AL_USDMayaSchemas
+set_target_properties(${PYTHON_LIBRARY_NAME}
     PROPERTIES 
         PREFIX ""
 )
 
 if(IS_WINDOWS)
-set_target_properties(_AL_USDMayaSchemas
-    PROPERTIES
-        SUFFIX ".pyd"
-)
+    set_target_properties(${PYTHON_LIBRARY_NAME}
+        PROPERTIES
+            SUFFIX ".pyd"
+    )
 endif()
 
-target_link_libraries(_AL_USDMayaSchemas AL_USDMayaSchemas ${DEPENDANT_LIBRARIES})
+target_link_libraries(${PYTHON_LIBRARY_NAME} AL_USDMayaSchemas ${DEPENDANT_LIBRARIES})
 
-install(TARGETS _AL_USDMayaSchemas
+install(TARGETS ${PYTHON_LIBRARY_NAME}
     LIBRARY
     DESTINATION ${bindings_install_path}
     RUNTIME

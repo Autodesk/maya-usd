@@ -78,6 +78,16 @@ if (NOT Boost_USE_STATIC_LIBS)
     _add_define("BOOST_ALL_DYN_LINK")
 endif()
 
+if(${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+    # We should not have to add this define manually as it is added by the
+    # compiler when you specify the /MTd or /MDd option. But it is not - needs
+    # to be investigated.
+    _add_define(_DEBUG)
+
+    _add_define(BOOST_DEBUG_PYTHON)
+    _add_define(BOOST_LINKING_PYTHON)
+endif()
+
 # Need half::_toFloat and half::_eLut.
 _add_define("OPENEXR_DLL")
 

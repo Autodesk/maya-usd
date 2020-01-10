@@ -71,4 +71,4 @@ endif()
 # https://docs.python.org/2/c-api/intro.html#include-files
 #
 # The long term plan is to adhere to the required behavior.
-include_directories(SYSTEM ${PYTHON_INCLUDE_DIR})
+include_directories(SYSTEM ${PYTHON_INCLUDE_DIRS})
