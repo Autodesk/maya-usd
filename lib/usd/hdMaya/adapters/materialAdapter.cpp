@@ -47,6 +47,9 @@ auto& HioGlslfxTokens = PXR_NS::GlfGLSLFXTokens;
 #include <pxr/usdImaging/usdImagingGL/package.h>
 
 #include <pxr/imaging/hdSt/textureResource.h>
+#if USD_VERSION_NUM >= 1911
+#include <pxr/imaging/hdSt/textureResourceHandle.h>
+#endif
 
 #include <pxr/usd/sdf/types.h>
 
@@ -337,6 +340,7 @@ private:
     inline bool _RegisterTexture(
         const MFnDependencyNode& node, const TfToken& paramName,
         HdTextureType& textureType) {
+        if(!GetDelegate()->IsHdSt()) { return false; }
         const auto connectedFileObj = GetConnectedFileNode(node, paramName);
         if (connectedFileObj != MObject::kNullObj) {
             const auto filePath =
@@ -365,12 +369,15 @@ private:
                     "  texture filepath: %s\n", filePath.GetText());
             }
 
+            auto& renderIndex = GetDelegate()->GetRenderIndex();
+
             auto textureId = _GetTextureResourceID(connectedFileObj, filePath);
             if (textureId != HdTextureResource::ID(-1)) {
                 HdResourceRegistry::TextureKey textureKey =
-                    GetDelegate()->GetRenderIndex().GetTextureKey(textureId);
+                        renderIndex.GetTextureKey(textureId);
                 const auto& resourceRegistry =
-                    GetDelegate()->GetRenderIndex().GetResourceRegistry();
+                    boost::static_pointer_cast<HdStResourceRegistry>(
+                            renderIndex.GetResourceRegistry());
 
                 HdInstance<
                     HdResourceRegistry::TextureKey, HdTextureResourceSharedPtr>
@@ -381,12 +388,44 @@ private:
                     auto textureResource = GetFileTextureResource(
                         connectedFileObj, filePath,
                         GetDelegate()->GetParams().textureMemoryPerTexture);
-                    _textureResources[paramName] = textureResource;
                     textureInstance.SetValue(textureResource);
+#if USD_VERSION_NUM < 1911
+                    _textureResources[paramName] = textureResource;
                 }
                 else {
                     _textureResources[paramName] = textureInstance.GetValue();
                 }
+#else // USD_VERSION_NUM < 1911
+                }
+
+                HdStTextureResourceSharedPtr texResource =
+                    boost::static_pointer_cast<HdStTextureResource>(
+                            textureInstance.GetValue());
+
+                SdfPath connectionPath = GetID().AppendProperty(paramName);
+                HdResourceRegistry::TextureKey handleKey =
+                    HdStTextureResourceHandle::GetHandleKey(
+                        &renderIndex, connectionPath);
+
+                boost::hash_combine(textureId, &renderIndex);
+                HdInstance<HdResourceRegistry::TextureKey,
+                           HdStTextureResourceHandleSharedPtr> handleInstance;
+
+                std::unique_lock<std::mutex> regLock2 =
+                resourceRegistry->RegisterTextureResourceHandle(handleKey,
+                                                                &handleInstance);
+                if (handleInstance.IsFirstInstance()) {
+                    handleInstance.SetValue(
+                            HdStTextureResourceHandleSharedPtr(
+                                    new HdStTextureResourceHandle(
+                                            texResource)));
+                }
+                else {
+                    handleInstance.GetValue()->SetTextureResource(texResource);
+                }
+                _textureResourceHandles[paramName] = handleInstance.GetValue();
+#endif // USD_VERSION_NUM < 1911
+
 
 #if USD_VERSION_NUM >= 1901
                 if (GlfIsSupportedUdimTexture(filePath)) {
@@ -401,14 +440,18 @@ private:
                     .Msg(
                         "  ...successfully registered texture with id: %lu\n",
                         textureId);
-#endif
+#endif // USD_VERSION_NUM >= 1901
                 return true;
             } else {
                 TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
                     .Msg(
                         "  ...failed registering texture - could not get "
                         "textureID\n");
+#if USD_VERSION_NUM >= 1911
+                _textureResourceHandles[paramName].reset();
+#else // USD_VERSION_NUM >= 1911
                 _textureResources[paramName].reset();
+#endif // USD_VERSION_NUM >= 1911
             }
         }
         return false;
@@ -547,9 +590,12 @@ private:
         const TfToken& paramName) override {
         auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
         if (fileObj == MObject::kNullObj) { return {}; }
-        return GetFileTextureResource(
-            fileObj, GetFileTexturePath(MFnDependencyNode(fileObj)),
-            GetDelegate()->GetParams().textureMemoryPerTexture);
+        if(GetDelegate()->IsHdSt()) {
+            return GetFileTextureResource(
+                fileObj, GetFileTexturePath(MFnDependencyNode(fileObj)),
+                GetDelegate()->GetParams().textureMemoryPerTexture);
+        }
+        return {};
     }
 
     VtValue GetMaterialResource() override {
@@ -617,9 +663,16 @@ private:
     MObject _surfaceShader;
     TfToken _surfaceShaderType;
     // So they live long enough
+
+#if USD_VERSION_NUM >= 1911
+    std::unordered_map<
+        TfToken, HdStTextureResourceHandleSharedPtr, TfToken::HashFunctor>
+        _textureResourceHandles;
+#else // USD_VERSION_NUM >= 1911
     std::unordered_map<
         TfToken, HdTextureResourceSharedPtr, TfToken::HashFunctor>
         _textureResources;
+#endif
     MCallbackId _surfaceShaderCallback;
 #ifdef HDMAYA_OIT_ENABLED
     bool _isTranslucent = false;
