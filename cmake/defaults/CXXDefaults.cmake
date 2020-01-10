@@ -62,6 +62,11 @@ else()
     set(PXR_PYTHON_SUPPORT_ENABLED "0")
 endif()
 
+if(${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+    _add_define(BOOST_DEBUG_PYTHON)
+    _add_define(BOOST_LINKING_PYTHON)
+endif()
+
 # XXX: This is a workaround for an issue in which Python headers unequivocally
 # redefine macros defined in standard library headers. This behavior 
 # prevents users from running strict builds with PXR_STRICT_BUILD_MODE

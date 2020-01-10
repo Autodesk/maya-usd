@@ -83,9 +83,6 @@ if(${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
     # compiler when you specify the /MTd or /MDd option. But it is not - needs
     # to be investigated.
     _add_define(_DEBUG)
-
-    _add_define(BOOST_DEBUG_PYTHON)
-    _add_define(BOOST_LINKING_PYTHON)
 endif()
 
 # Need half::_toFloat and half::_eLut.
