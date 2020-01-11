@@ -97,6 +97,8 @@ install(FILES ${headers}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/ufe
 )
 
+set(UFE_PYTHON_MODULE_NAME ufe)
+
 # -----------------------------------------------------------------------------
 # subdirectories
 # -----------------------------------------------------------------------------
@@ -108,9 +110,9 @@ add_subdirectory(private)
 # UFE Python Bindings
 if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
     # On Windows when compiling with debug python the library must be named with _d.
-    set(UFE_PYTHON_TARGET_NAME ufe_d)
+    set(UFE_PYTHON_TARGET_NAME "_${UFE_PYTHON_MODULE_NAME}_d")
 else()
-    set(UFE_PYTHON_TARGET_NAME ufe)
+    set(UFE_PYTHON_TARGET_NAME "_${UFE_PYTHON_MODULE_NAME}")
 endif()
 
 add_library(${UFE_PYTHON_TARGET_NAME} SHARED)
@@ -120,6 +122,7 @@ add_library(${UFE_PYTHON_TARGET_NAME} SHARED)
 # -----------------------------------------------------------------------------
 target_sources(${UFE_PYTHON_TARGET_NAME} 
     PRIVATE
+        module.cpp
         wrapUtils.cpp
 )
 
@@ -128,9 +131,9 @@ target_sources(${UFE_PYTHON_TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_compile_definitions(${UFE_PYTHON_TARGET_NAME}
     PRIVATE
-        MFB_PACKAGE_NAME=${PROJECT_NAME}
-        MFB_ALT_PACKAGE_NAME=${PROJECT_NAME}
-        MFB_PACKAGE_MODULE=ufe
+        MFB_PACKAGE_NAME=${UFE_PYTHON_MODULE_NAME}
+        MFB_ALT_PACKAGE_NAME=${UFE_PYTHON_MODULE_NAME}
+        MFB_PACKAGE_MODULE="${PROJECT_NAME}.${UFE_PYTHON_MODULE_NAME}"
 )
 
 # -----------------------------------------------------------------------------
@@ -151,9 +154,9 @@ set_python_module_property(${UFE_PYTHON_TARGET_NAME})
 # -----------------------------------------------------------------------------
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "${PROJECT_NAME}")
-    mayaUsd_add_rpath(rpath "../..")
+    mayaUsd_add_rpath(rpath "../../..")
     if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
+        mayaUsd_add_rpath(rpath "../../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     endif()
     mayaUsd_install_rpath(rpath ${UFE_PYTHON_TARGET_NAME})
 endif()
@@ -163,12 +166,16 @@ endif()
 # -----------------------------------------------------------------------------
 install(TARGETS ${UFE_PYTHON_TARGET_NAME}
     LIBRARY
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${UFE_PYTHON_MODULE_NAME}
     RUNTIME
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${UFE_PYTHON_MODULE_NAME}
+)
+
+install(FILES __init__.py
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${UFE_PYTHON_MODULE_NAME}
 )
 
 if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${UFE_PYTHON_TARGET_NAME}> 
-            DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME} OPTIONAL)
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${UFE_PYTHON_MODULE_NAME} OPTIONAL)
 endif()
