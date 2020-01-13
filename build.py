@@ -98,56 +98,6 @@ def IsVisualStudio2017OrGreater():
         return version >= VISUAL_STUDIO_2017_VERSION
     return False
 
-def GetPythonInfo():
-    """Returns a tuple containing the path to the Python executable, shared
-    library, and include directory corresponding to the version of Python
-    currently running. Returns None if any path could not be determined. This
-    function always returns None on Windows or Linux.
-
-    This function is primarily used to determine which version of
-    Python USD should link against when multiple versions are installed.
-    """
-    # We just skip all this on Windows. Users on Windows are unlikely to have
-    # multiple copies of the same version of Python, so the problem this
-    # function is intended to solve doesn't arise on that platform.
-    if Windows():
-        return None
-
-    # We also skip all this on Linux. The below code gets the wrong answer on
-    # certain distributions like Ubuntu, which organizes libraries based on
-    # multiarch. The below code yields /usr/lib/libpython2.7.so, but
-    # the library is actually in /usr/lib/x86_64-linux-gnu. Since the problem
-    # this function is intended to solve primarily occurs on macOS, so it's
-    # simpler to just skip this for now.
-    if Linux():
-        return None
-
-    try:
-        import distutils.sysconfig
-
-        pythonExecPath = None
-        pythonLibPath = None
-
-        pythonPrefix = distutils.sysconfig.PREFIX
-        if pythonPrefix:
-            pythonExecPath = os.path.join(pythonPrefix, 'bin', 'python')
-            pythonLibPath = os.path.join(pythonPrefix, 'lib', 'libpython2.7.dylib')
-
-        pythonIncludeDir = distutils.sysconfig.get_python_inc()
-    except:
-        return None
-
-    if pythonExecPath and pythonIncludeDir and pythonLibPath:
-        # Ensure that the paths are absolute, since depending on the version of
-        # Python being run and the path used to invoke it, we may have gotten a
-        # relative path from distutils.sysconfig.PREFIX.
-        return (
-            os.path.abspath(pythonExecPath),
-            os.path.abspath(pythonLibPath),
-            os.path.abspath(pythonIncludeDir))
-
-    return None
-
 def GetCPUCount():
     try:
         return multiprocessing.cpu_count()
@@ -341,6 +291,13 @@ def BuildAndInstall(context, buildArgs, stages):
             extraArgs.append('-DMAYA_DEVKIT_LOCATION="{devkitLocation}"'
                              .format(devkitLocation=context.devkitLocation))
 
+        # Many people on Windows may not have python with the 
+        # debugging symbol (python27_d.lib) installed, this is the common case.
+        if context.buildDebug and context.debugPython:
+            extraArgs.append('-DMAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG=ON')
+        else:
+            extraArgs.append('-DMAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG=OFF')
+
         extraArgs += buildArgs
         stagesArgs += stages
 
@@ -401,14 +358,18 @@ parser.add_argument("--pxrusd-location", type=str,
 parser.add_argument("--devkit-location", type=str,
                     help="Directory where Maya Devkit is installed.")
 
-parser.add_argument("--build-debug", dest="build_debug", action="store_true",
-                    help="Build in Debug mode")
+varGroup = parser.add_mutually_exclusive_group()
+varGroup.add_argument("--build-debug", dest="build_debug", action="store_true",
+                    help="Build in Debug mode (default: %(default)s)")
 
-parser.add_argument("--build-release", dest="build_release", action="store_true",
-                    help="Build in Release mode")
+varGroup.add_argument("--build-release", dest="build_release", action="store_true",
+                    help="Build in Release mode (default: %(default)s)")
 
-parser.add_argument("--build-relwithdebug", dest="build_relwithdebug", action="store_true",
-                    help="Build in RelWithDebInfo mode")
+varGroup.add_argument("--build-relwithdebug", dest="build_relwithdebug", action="store_true", default=True,
+                    help="Build in RelWithDebInfo mode (default: %(default)s)")
+
+parser.add_argument("--debug-python", dest="debug_python", action="store_true",
+                      help="Define Boost Python Debug if your Python library comes with Debugging symbols (default: %(default)s).")
 
 parser.add_argument("--build-args", type=str, nargs="*", default=[],
                    help=("Comma-separated list of arguments passed into CMake when building libraries"))
@@ -444,6 +405,8 @@ class InstallContext:
         self.buildDebug = args.build_debug
         self.buildRelease = args.build_release
         self.buildRelWithDebug = args.build_relwithdebug
+
+        self.debugPython = args.debug_python
 
         # Workspace directory 
         self.workspaceDir = os.path.abspath(args.workspace_location)
@@ -515,6 +478,7 @@ if __name__ == "__main__":
       Build directory           {buildDir}
       Install directory         {instDir}
       Variant                   {buildVariant}
+      Python Debug              {debugPython}
       CMake generator           {cmakeGenerator}"""
 
     if context.redirectOutstreamFile:
@@ -534,17 +498,18 @@ if __name__ == "__main__":
       CTest arguments           {ctestArgs}"""
 
     summaryMsg = summaryMsg.format(
-    mayaUsdSrcDir=context.mayaUsdSrcDir,
-    workspaceDir=context.workspaceDir,
-    buildDir=context.buildDir,
-    instDir=context.instDir,
-    logFileLocation=context.logFileLocation,
-    buildArgs=context.buildArgs,
-    stagesArgs=context.stagesArgs,
+        mayaUsdSrcDir=context.mayaUsdSrcDir,
+        workspaceDir=context.workspaceDir,
+        buildDir=context.buildDir,
+        instDir=context.instDir,
+        logFileLocation=context.logFileLocation,
+        buildArgs=context.buildArgs,
+        stagesArgs=context.stagesArgs,
         ctestArgs=context.ctestArgs,
-    buildVariant=BuildVariant(context),
-    cmakeGenerator=("Default" if not context.cmakeGenerator
-                    else context.cmakeGenerator)
+        buildVariant=BuildVariant(context),
+        debugPython=("On" if context.debugPython else "Off"),
+        cmakeGenerator=("Default" if not context.cmakeGenerator
+                        else context.cmakeGenerator)
     )
 
     Print(summaryMsg)

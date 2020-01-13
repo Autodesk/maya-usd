@@ -31,6 +31,9 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 if(NOT DEFINED BOOST_ROOT)
     set(BOOST_ROOT ${PXR_USD_LOCATION})
 endif()
+if(MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
+    set(Boost_USE_DEBUG_PYTHON ON)
+endif()
 find_package(Boost COMPONENTS
                 filesystem
                 REQUIRED
@@ -369,7 +372,12 @@ install(CODE
 
 if(UFE_FOUND)
     # UFE Python Bindings
-    set(UFE_PYTHON_LIBRARY_NAME ufe)
+    if(IS_WINDOWS AND ${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+        # On Windows when compiling with debug python the library must be named with _d.
+        set(UFE_PYTHON_LIBRARY_NAME ufe_d)
+    else()
+        set(UFE_PYTHON_LIBRARY_NAME ufe)
+    endif()
 
     add_library(${UFE_PYTHON_LIBRARY_NAME}
         SHARED

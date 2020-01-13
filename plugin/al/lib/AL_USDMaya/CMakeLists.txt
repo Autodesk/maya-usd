@@ -236,7 +236,12 @@ endif()
 set_property(GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 
 # python bindings
-set(PYTHON_LIBRARY_NAME _${LIBRARY_NAME})
+if(IS_WINDOWS AND ${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+    # On Windows when compiling with debug python the library must be named with _d.
+    set(PYTHON_LIBRARY_NAME _${LIBRARY_NAME}_d)
+else()
+    set(PYTHON_LIBRARY_NAME _${LIBRARY_NAME})
+endif()
 
 add_library(${PYTHON_LIBRARY_NAME}
     SHARED
@@ -264,10 +269,10 @@ set_target_properties(${PYTHON_LIBRARY_NAME}
         PREFIX ""
 )
 if(IS_WINDOWS)
-set_target_properties(${PYTHON_LIBRARY_NAME}
-    PROPERTIES
-        SUFFIX ".pyd"
-)
+    set_target_properties(${PYTHON_LIBRARY_NAME}
+        PROPERTIES
+            SUFFIX ".pyd"
+    )
 endif()
 
 target_link_libraries(${PYTHON_LIBRARY_NAME}
