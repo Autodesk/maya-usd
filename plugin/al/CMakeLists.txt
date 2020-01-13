@@ -45,6 +45,9 @@ if(WIN32)
         chrono
         date_time
     )
+    if(MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
+        set(Boost_USE_DEBUG_PYTHON ON)
+    endif()
 endif()
 
 find_package(Boost COMPONENTS

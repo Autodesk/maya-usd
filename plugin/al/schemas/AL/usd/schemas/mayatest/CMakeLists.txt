@@ -86,36 +86,42 @@ endif()
 ####################################################################################################
 # Python bindings
 ####################################################################################################
+if(IS_WINDOWS AND ${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+    # On Windows when compiling with debug python the library must be named with _d.
+    set(PYTHON_LIBRARY_NAME _AL_USDMayaSchemasTest_d)
+else()
+    set(PYTHON_LIBRARY_NAME _AL_USDMayaSchemasTest)
+endif()
 
-add_library(_AL_USDMayaSchemasTest
+add_library(${PYTHON_LIBRARY_NAME}
     SHARED
     module.cpp
     wrapTokens.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/wrapExamplePolyCubeNode.cpp
 )
 
-target_compile_definitions(_AL_USDMayaSchemasTest
+target_compile_definitions(${PYTHON_LIBRARY_NAME}
     PRIVATE
         MFB_PACKAGE_NAME=AL_USDMayaSchemasTest
         MFB_ALT_PACKAGE_NAME=AL_USDMayaSchemasTest
         MFB_PACKAGE_MODULE=AL.usd.schemas.mayatest
 )
 
-set_target_properties(_AL_USDMayaSchemasTest
+set_target_properties(${PYTHON_LIBRARY_NAME}
     PROPERTIES 
         PREFIX ""
 )
 
 if(MSVC)
-set_target_properties(_AL_USDMayaSchemasTest
-    PROPERTIES
-        SUFFIX ".pyd"
-)
+    set_target_properties(${PYTHON_LIBRARY_NAME}
+        PROPERTIES
+            SUFFIX ".pyd"
+    )
 endif()
 
-target_link_libraries(_AL_USDMayaSchemasTest AL_USDMayaSchemasTest ${DEPENDANT_LIBRARIES})
+target_link_libraries(${PYTHON_LIBRARY_NAME} AL_USDMayaSchemasTest ${DEPENDANT_LIBRARIES})
 
-install(TARGETS _AL_USDMayaSchemasTest
+install(TARGETS ${PYTHON_LIBRARY_NAME}
     LIBRARY
     DESTINATION ${bindings_install_path}
     RUNTIME
