@@ -213,7 +213,9 @@ MStatus UnitTestHarness::doIt(const MArgList& args)
     #endif
     std::cout << happy_dino;
   }
-  return MS::kSuccess;
+  // return the status based on the error code
+  status = (error_code == 0) ? MS::kSuccess : MS::kFailure;
+  return status;
 }
 
 //------------------------------------------------------------------------------

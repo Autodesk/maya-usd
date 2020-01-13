@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "test_usdmaya.h"
+#include "AL/maya/test/testHelpers.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
@@ -40,6 +41,7 @@
 #include <fstream>
 
 using AL::maya::test::buildTempPath;
+using AL::maya::test::compareTempPaths;
 
 // UsdStageRefPtr ProxyShape::getUsdStage() const;
 // UsdPrim ProxyShape::getRootPrim()
@@ -100,7 +102,7 @@ TEST(ProxyShape, basicProxyShapeSetUp)
     EXPECT_TRUE(root);
 
     // make sure path is correct
-    EXPECT_EQ(temp_path, root->GetRealPath());
+    compareTempPaths(temp_path, root->GetRealPath());
 
     // UsdPrim ProxyShape::getRootPrim()
     UsdPrim rootPrim = proxy->getRootPrim();
@@ -123,7 +125,7 @@ TEST(ProxyShape, basicProxyShapeSetUp)
     std::vector<UsdGeomXformOp> ordered;
     ordered.push_back(scaleOp);
     rtoe1Geom.SetXformOpOrder(ordered);
-    
+
     EXPECT_TRUE(session->ExportToString(&sessionLayerContents));
     EXPECT_FALSE(sessionLayerContents.empty());
 
@@ -197,7 +199,7 @@ TEST(ProxyShape, basicProxyShapeSetUp)
     EXPECT_TRUE(root);
 
     // make sure path is correct
-    EXPECT_EQ(temp_path, root->GetRealPath());
+    compareTempPaths(temp_path, root->GetRealPath());
 
     AL::usdmaya::nodes::LayerManager* layerManager = AL::usdmaya::nodes::LayerManager::findManager();
     ASSERT_TRUE(layerManager);
@@ -1217,7 +1219,7 @@ void checkStageAndRootLayer(UsdStageRefPtr stage, const MString &expectedPath)
   EXPECT_TRUE(root);
 
   // make sure path is correct
-  EXPECT_EQ(root->GetRealPath(), expectedPath.asChar());
+  compareTempPaths(root->GetRealPath(), expectedPath.asChar());
 }
 }
 

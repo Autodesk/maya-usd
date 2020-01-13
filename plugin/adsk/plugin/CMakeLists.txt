@@ -44,7 +44,7 @@ target_link_libraries(${PLUGIN_PACKAGE}
 
 MAYA_SET_PLUGIN_PROPERTIES(${PLUGIN_PACKAGE})
 
-# rpath setup
+# handle run-time search paths
 if(IS_MACOSX OR IS_LINUX) 
     mayaUsd_init_rpath(rpath "plugin")
     if(WANT_USD_RELATIVE_PATH)

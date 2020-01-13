@@ -223,7 +223,7 @@ MSyntax Callback::createSyntax()
   syn.makeFlagMultiUse("-pne");
   syn.makeFlagMultiUse("-me");
   syn.makeFlagMultiUse("-mne");
-  syn.makeFlagMultiUse("-d");
+  syn.makeFlagMultiUse("-de");
   return syn;
 }
 

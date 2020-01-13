@@ -8,8 +8,6 @@ macro(fetch_googletest)
         if (NOT GTEST_ROOT)
             set(GTEST_ROOT "${GOOGLETEST_BUILD_ROOT}/googletest-install")
         endif()
-        find_package(GTest QUIET)
-        # At this point GTEST_FOUND is set to True in Release but False in Debug.
     endif()
 
     if (NOT GTEST_FOUND)
@@ -53,20 +51,26 @@ macro(fetch_googletest)
         set(GTEST_ROOT ${GOOGLETEST_BUILD_ROOT}/googletest-install CACHE path "GoogleTest installation root")
     endif()
 
+    # FindGTest should get call after GTEST_ROOT is set
+    find_package(GTest QUIET)
+
     # https://gitlab.kitware.com/cmake/cmake/issues/17799
-    # FindGtest is buggy when dealing with Debug build. 
+    # FindGtest is buggy when dealing with Debug build.
     if (CMAKE_BUILD_TYPE MATCHES Debug AND GTEST_FOUND MATCHES FALSE)
         message("Setting GTest libraries with debug...")
 
         if (GTEST_LIBRARY_DEBUG MATCHES GTEST_LIBRARY_DEBUG-NOTFOUND)
-                set(gtest_library "")
-                set(gtest_main_library "")
-            if(WIN32)
-                set(gtest_library lib/gtestd.lib)
-                set(gtest_main_library lib/gtest_maind.lib)
-            else()
-                set(gtest_library lib64/libgtestd.a)
-                set(gtest_main_library lib64/libgtest_maind.a)
+            set(gtest_library "")
+            set(gtest_main_library "")
+            if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+                set(gtest_library bin/gtestd.dll)
+                set(gtest_main_library bin/gtest_maind.dll)
+            elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+                set(gtest_library lib/libgtestd.dylib)
+                set(gtest_main_library lib/libgtest_maind.dylib)
+            elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+                set(gtest_library lib64/libgtestd.so)
+                set(gtest_main_library lib64/libgtest_maind.so)
             endif()
                 set(GTEST_INCLUDE_DIRS ${GOOGLETEST_BUILD_ROOT}/googletest-install/include)
                 set(GTEST_LIBRARY_DEBUG ${GOOGLETEST_BUILD_ROOT}/googletest-install/${gtest_library})
@@ -79,4 +83,10 @@ macro(fetch_googletest)
         set(GTEST_MAIN_LIBRARIES ${GTEST_MAIN_LIBRARY})
     endif()
 
+    set(GTEST_LIBS ${GTEST_LIBRARIES})
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows" AND NOT CMAKE_BUILD_TYPE MATCHES Debug)
+        set(GTEST_LIBS "${GTEST_ROOT}/bin/gtest.dll")
+    endif()
+
+    install(FILES ${GTEST_LIBS} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/gtest)
 endmacro()

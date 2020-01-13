@@ -289,6 +289,7 @@ if(UFE_FOUND)
     target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
 endif()
 
+# handle run-time search paths
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "plugin")
     if(WANT_USD_RELATIVE_PATH)
