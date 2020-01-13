@@ -68,9 +68,13 @@ endfunction() # _copy_headers
 # our naming conventions, e.g. Tf
 function(_get_python_module_name LIBRARY_FILENAME MODULE_NAME)
     # Library names are either something like tf.so for shared libraries
-    # or _tf.so for Python module libraries. We want to strip the leading
-    # "_" off.
-    string(REPLACE "_" "" LIBNAME ${LIBRARY_FILENAME})
+    # or _tf.pyd/_tf_d.pyd for Python module libraries.
+    # We want to strip off the leading "_" and the trailing "_d".
+    set(LIBNAME ${LIBRARY_FILENAME})
+    if(IS_WINDOWS AND ${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+        string(REGEX REPLACE "_d$" "" LIBNAME ${LIBNAME})
+    endif()
+    string(REGEX REPLACE "^_" "" LIBNAME ${LIBNAME})
     string(SUBSTRING ${LIBNAME} 0 1 LIBNAME_FL)
     string(TOUPPER ${LIBNAME_FL} LIBNAME_FL)
     string(SUBSTRING ${LIBNAME} 1 -1 LIBNAME_SUFFIX)
@@ -822,7 +826,12 @@ function(_pxr_python_module NAME)
         return()
     endif()
 
-    set(LIBRARY_NAME "_${NAME}")
+    if(IS_WINDOWS AND ${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+        # On Windows when compiling with debug python the library must be named with _d.
+        set(LIBRARY_NAME "_${NAME}_d")
+    else()
+        set(LIBRARY_NAME "_${NAME}")
+    endif()
 
     # Install .py files.
     if(args_PYTHON_FILES)
