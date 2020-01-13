@@ -358,13 +358,14 @@ parser.add_argument("--pxrusd-location", type=str,
 parser.add_argument("--devkit-location", type=str,
                     help="Directory where Maya Devkit is installed.")
 
-parser.add_argument("--build-debug", dest="build_debug", action="store_true",
+varGroup = parser.add_mutually_exclusive_group()
+varGroup.add_argument("--build-debug", dest="build_debug", action="store_true",
                     help="Build in Debug mode (default: %(default)s)")
 
-parser.add_argument("--build-release", dest="build_release", action="store_true",
+varGroup.add_argument("--build-release", dest="build_release", action="store_true",
                     help="Build in Release mode (default: %(default)s)")
 
-parser.add_argument("--build-relwithdebug", dest="build_relwithdebug", action="store_true", default=True,
+varGroup.add_argument("--build-relwithdebug", dest="build_relwithdebug", action="store_true", default=True,
                     help="Build in RelWithDebInfo mode (default: %(default)s)")
 
 parser.add_argument("--debug-python", dest="debug_python", action="store_true",
