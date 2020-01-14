@@ -1,5 +1,6 @@
 //
 // Copyright 2016 Pixar
+// Copyright 2019 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,18 +24,6 @@ UsdMayaPrimUpdaterContext::UsdMayaPrimUpdaterContext(
     _timeCode(timeCode),
     _stage(stage)
 {
-}
-
-const UsdTimeCode&
-UsdMayaPrimUpdaterContext::GetTimeCode() const 
-{
-    return _timeCode;
-}
-
-UsdStageRefPtr
-UsdMayaPrimUpdaterContext::GetUsdStage() const 
-{
-    return _stage;
 }
 
 void

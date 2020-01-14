@@ -128,7 +128,6 @@ private:
 
   std::vector<StackRef> m_primStack;
   UsdStageRefPtr m_stage;
-  size_t m_currentItem;
   MDagPath m_parentPath;
 
   TfHashSet<SdfPath, SdfPath::Hash> m_visitedMasterPrimPaths;

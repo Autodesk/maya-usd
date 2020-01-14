@@ -1,5 +1,6 @@
 //
 // Copyright 2016 Pixar
+// Copyright 2019 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,8 +16,6 @@
 //
 #ifndef PXRUSDMAYA_PRIM_UPDATER_REGISTRY_H
 #define PXRUSDMAYA_PRIM_UPDATER_REGISTRY_H
-
-/// \file usdMaya/primUpdaterRegistry.h
 
 #include "pxr/pxr.h"
 #include "../base/api.h"
@@ -95,18 +94,18 @@ struct UsdMayaPrimUpdaterRegistry
     static void Register(const TfType& type, UsdMayaPrimUpdater::Supports sup, UpdaterFactoryFn fn);
 
     /// \brief Register \p fn as a reader provider for \p T.
-///
-/// Example for registering a reader factory in your custom plugin, assuming
-/// that MyType is registered with the TfType system:
-/// \code{.cpp}
-/// class MyReader : public UsdMayaPrimUpdater {
-///     static UsdMayaPrimReaderSharedPtr Create(
-///             const UsdMayaPrimReaderArgs&);
-/// };
-/// TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimUpdaterRegistry, MyType) {
-///     UsdMayaPrimUpdaterRegistry::Register<MyType>(MyReader::Create);
-/// }
-/// \endcode
+    ///
+    /// Example for registering a reader factory in your custom plugin, assuming
+    /// that MyType is registered with the TfType system:
+    /// \code{.cpp}
+    /// class MyReader : public UsdMayaPrimUpdater {
+    ///     static UsdMayaPrimReaderSharedPtr Create(
+    ///             const UsdMayaPrimReaderArgs&);
+    /// };
+    /// TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimUpdaterRegistry, MyType) {
+    ///     UsdMayaPrimUpdaterRegistry::Register<MyType>(MyReader::Create);
+    /// }
+    /// \endcode
     template <typename T>
     static void Register(UsdMayaPrimUpdater::Supports sup, UpdaterFactoryFn fn)
     {

@@ -11,6 +11,7 @@
                 "UsdGeomNurbsPatch",
                 "UsdGeomScope",
                 "UsdGeomXform",
+                "UsdLuxCylinderLight",
                 "UsdLuxDiskLight",
                 "UsdLuxDistantLight",
                 "UsdLuxDomeLight",
@@ -43,13 +44,15 @@
                 "nurbsSurface",
                 "particle",
                 "PxrAovLight",
+                "PxrCylinderLight",
                 "PxrDiskLight",
                 "PxrDistantLight",
                 "PxrDomeLight",
                 "PxrEnvDayLight",
                 "PxrMeshLight",
                 "PxrRectLight",
-                "PxrSphereLight"
+                "PxrSphereLight",
+                "stroke"
               ]
             }
           }

@@ -34,7 +34,7 @@ pxr_shared_library(${PXR_PACKAGE}
 
     PUBLIC_CLASSES
         editUtil
-		translatorModelAssembly
+        translatorModelAssembly
 
         exportCommand
         exportTranslator
@@ -152,7 +152,7 @@ pxr_install_test_dir(
     SRC testenv/PointBasedDeformerNodeTest
     DEST testPointBasedDeformerNode
 )
-set(TEST_INSTALL_PREFIX "${PXR_INSTALL_PREFIX}")
+set(TEST_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/plugin/pxr")
 
 # MAYA-96273 (closed as by design) says that to obtain correct mayapy exit
 # codes starting with Maya 2018.4, the MAYA_NO_STANDALONE_ATEXIT environment

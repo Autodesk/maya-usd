@@ -47,9 +47,9 @@ public:
   {
     switch(severity)
     {
-    case kInfo: MGlobal::displayInfo(text); break;
-    case kWarning: MGlobal::displayWarning(text); break;
-    case kError: MGlobal::displayError(text); break;
+    case EventSystemBinding::kInfo: MGlobal::displayInfo(text); break;
+    case EventSystemBinding::kWarning: MGlobal::displayWarning(text); break;
+    case EventSystemBinding::kError: MGlobal::displayError(text); break;
     }
   }
 };
@@ -78,7 +78,7 @@ TEST(Callback, Callback)
 
   EXPECT_EQ(info1.tag(), "tag");
   EXPECT_EQ(info1.callbackId(),  makeCallbackId(1, 5, 3));
-  EXPECT_EQ(info1.eventId(), 1);
+  EXPECT_EQ(info1.eventId(), 1u);
   EXPECT_TRUE(info1 < info2);
   EXPECT_FALSE(info2 < info1);
   EXPECT_TRUE(info1.userData() == &value);
@@ -86,20 +86,20 @@ TEST(Callback, Callback)
   EXPECT_TRUE(info1.isCCallback());
   EXPECT_FALSE(info1.isMELCallback());
   EXPECT_FALSE(info1.isPythonCallback());
-  EXPECT_EQ(info1.weight(), 1000);
+  EXPECT_EQ(info1.weight(), 1000u);
 
   // test python command
   Callback info3("tag", "i am a command" , 1000, true, makeCallbackId(1, 5, 3));
 
   EXPECT_EQ(info3.tag(), "tag");
   EXPECT_EQ(info3.callbackId(), makeCallbackId(1, 5, 3));
-  EXPECT_EQ(info3.eventId(), 1);
+  EXPECT_EQ(info3.eventId(), 1u);
   EXPECT_TRUE(info3.userData() == nullptr);
   EXPECT_EQ(strcmp(info3.callbackText(), "i am a command"), 0);
   EXPECT_FALSE(info3.isCCallback());
   EXPECT_FALSE(info3.isMELCallback());
   EXPECT_TRUE(info3.isPythonCallback());
-  EXPECT_EQ(info3.weight(), 1000);
+  EXPECT_EQ(info3.weight(), 1000u);
 
   // test MEL command
   Callback info4("tag", "i am a command" , 1000, false, makeCallbackId(1, 5, 3));
@@ -125,8 +125,8 @@ TEST(EventDispatcher, EventDispatcher)
   int associated;
   EventDispatcher info(&g_eventSystem, "eventName", 42, kUserSpecifiedEventType, &associated, 23);
   EXPECT_EQ(info.name(), "eventName");
-  EXPECT_EQ(info.eventId(), 42);
-  EXPECT_EQ(info.parentCallbackId(), 23);
+  EXPECT_EQ(info.eventId(), 42u);
+  EXPECT_EQ(info.parentCallbackId(), 23u);
   EXPECT_EQ(info.associatedData(), &associated);
 
 
@@ -138,7 +138,7 @@ TEST(EventDispatcher, EventDispatcher)
     EXPECT_EQ(eventPart, 42);
     uint64_t callbackPart = extractCallbackId(id1);
 
-    EXPECT_EQ(callbackPart, 1);
+    EXPECT_EQ(callbackPart, 1u);
 
     ASSERT_FALSE(info.callbacks().empty());
     const Callback& callback = info.callbacks()[0];
@@ -150,7 +150,7 @@ TEST(EventDispatcher, EventDispatcher)
     EXPECT_TRUE(callback.isCCallback());
     EXPECT_FALSE(callback.isMELCallback());
     EXPECT_FALSE(callback.isPythonCallback());
-    EXPECT_EQ(callback.weight(), 1001);
+    EXPECT_EQ(callback.weight(), 1001u);
   }
 
   CallbackId id2 = info.registerCallback("tag2", "i am a command", 1003, false);
@@ -158,7 +158,7 @@ TEST(EventDispatcher, EventDispatcher)
   {
     uint64_t callbackPart = extractCallbackId(id2);
 
-    EXPECT_EQ(callbackPart, 2);
+    EXPECT_EQ(callbackPart, 2u);
 
     ASSERT_TRUE(info.callbacks().size() == 2);
     const Callback& callback = info.callbacks()[1];
@@ -170,7 +170,7 @@ TEST(EventDispatcher, EventDispatcher)
     EXPECT_FALSE(callback.isCCallback());
     EXPECT_TRUE(callback.isMELCallback());
     EXPECT_FALSE(callback.isPythonCallback());
-    EXPECT_EQ(callback.weight(), 1003);
+    EXPECT_EQ(callback.weight(), 1003u);
   }
 
   CallbackId id3 = info.registerCallback("tag3", "i am a command", 1002, true);
@@ -178,9 +178,9 @@ TEST(EventDispatcher, EventDispatcher)
   {
     uint64_t callbackPart = extractCallbackId(id3);
 
-    EXPECT_EQ(callbackPart, 3);
+    EXPECT_EQ(callbackPart, 3u);
 
-    ASSERT_TRUE(info.callbacks().size() == 3);
+    ASSERT_TRUE(info.callbacks().size() == 3u);
     const Callback& callback = info.callbacks()[1];
 
     EXPECT_EQ(callback.callbackId(), id3);
@@ -190,12 +190,12 @@ TEST(EventDispatcher, EventDispatcher)
     EXPECT_FALSE(callback.isCCallback());
     EXPECT_FALSE(callback.isMELCallback());
     EXPECT_TRUE(callback.isPythonCallback());
-    EXPECT_EQ(callback.weight(), 1002);
+    EXPECT_EQ(callback.weight(), 1002u);
   }
 
   EventDispatcher info2(std::move(info));
   EXPECT_TRUE(info2.name() == "eventName");
-  EXPECT_TRUE(info2.callbacks().size() == 3);
+  EXPECT_TRUE(info2.callbacks().size() == 3u);
   EXPECT_EQ(info2.associatedData(), &associated);
   EXPECT_TRUE(info.name().empty());
   EXPECT_TRUE(info.callbacks().empty());
@@ -203,7 +203,7 @@ TEST(EventDispatcher, EventDispatcher)
   info = std::move(info2);
   EXPECT_EQ(info.associatedData(), &associated);
   EXPECT_TRUE(info.name() == "eventName");
-  EXPECT_TRUE(info.callbacks().size() == 3);
+  EXPECT_TRUE(info.callbacks().size() == 3u);
   EXPECT_TRUE(info2.name().empty());
   EXPECT_TRUE(info2.callbacks().empty());
 
@@ -211,12 +211,12 @@ TEST(EventDispatcher, EventDispatcher)
   EXPECT_FALSE(info.unregisterCallback(488));
 
   EXPECT_TRUE(info.unregisterCallback(id1));
-  ASSERT_TRUE(info.callbacks().size() == 2);
+  ASSERT_TRUE(info.callbacks().size() == 2u);
   ASSERT_TRUE(info.callbacks()[0].callbackId() == id3);
   ASSERT_TRUE(info.callbacks()[1].callbackId() == id2);
 
   EXPECT_TRUE(info.unregisterCallback(id2));
-  ASSERT_TRUE(info.callbacks().size() == 1);
+  ASSERT_TRUE(info.callbacks().size() == 1u);
   ASSERT_TRUE(info.callbacks()[0].callbackId() == id3);
 
   EXPECT_TRUE(info.unregisterCallback(id3));
@@ -293,13 +293,13 @@ TEST(EventScheduler, registerEvent)
   EXPECT_TRUE(id1 != 0);
   auto eventInfo = registrar.event(id1);
   EXPECT_TRUE(eventInfo != nullptr);
-  EXPECT_EQ(eventInfo->eventId(), 1);
-  EXPECT_EQ(eventInfo->parentCallbackId(), 0);
+  EXPECT_EQ(eventInfo->eventId(), 1u);
+  EXPECT_EQ(eventInfo->parentCallbackId(), 0u);
   EXPECT_EQ(eventInfo->associatedData(), &associated);
 
   // This should fail to register a new event (since the name is not unique)
   EventId id2 = registrar.registerEvent("eventName", kUserSpecifiedEventType, &associated, 0);
-  EXPECT_EQ(id2, 0);
+  EXPECT_EQ(id2, 0u);
 
   // We should be able to register a new event (since the associated data is different)
   int associated2;
@@ -307,8 +307,8 @@ TEST(EventScheduler, registerEvent)
   EXPECT_TRUE(id3 != 0);
   eventInfo = registrar.event(id3);
   EXPECT_TRUE(eventInfo != nullptr);
-  EXPECT_EQ(eventInfo->eventId(), 2);
-  EXPECT_EQ(eventInfo->parentCallbackId(), 0);
+  EXPECT_EQ(eventInfo->eventId(), 2u);
+  EXPECT_EQ(eventInfo->parentCallbackId(), 0u);
   EXPECT_EQ(eventInfo->associatedData(), &associated2);
 
   EXPECT_TRUE(registrar.unregisterEvent(id1));
@@ -332,8 +332,8 @@ TEST(EventScheduler, registerChildEvent)
   EXPECT_TRUE(id1 != 0);
   auto parentEventInfo = registrar.event(id1);
   EXPECT_TRUE(parentEventInfo != nullptr);
-  EXPECT_EQ(parentEventInfo->eventId(), 1);
-  EXPECT_EQ(parentEventInfo->parentCallbackId(), 0);
+  EXPECT_EQ(parentEventInfo->eventId(), 1u);
+  EXPECT_EQ(parentEventInfo->parentCallbackId(), 0u);
   EXPECT_EQ(parentEventInfo->associatedData(), &associated);
 
   int value;
@@ -343,7 +343,7 @@ TEST(EventScheduler, registerChildEvent)
   EXPECT_TRUE(id2 != 0);
   auto eventInfo = registrar.event(id2);
   EXPECT_TRUE(eventInfo != nullptr);
-  EXPECT_EQ(eventInfo->eventId(), 2);
+  EXPECT_EQ(eventInfo->eventId(), 2u);
   EXPECT_EQ(eventInfo->parentCallbackId(), callbackId);
   EXPECT_EQ(eventInfo->associatedData(), &associated);
 
@@ -374,8 +374,8 @@ TEST(EventScheduler, registerCallback)
   EXPECT_TRUE(id1 != 0);
   auto parentEventInfo = registrar.event(id1);
   EXPECT_TRUE(parentEventInfo != nullptr);
-  EXPECT_EQ(parentEventInfo->eventId(), 1);
-  EXPECT_EQ(parentEventInfo->parentCallbackId(), 0);
+  EXPECT_EQ(parentEventInfo->eventId(), 1u);
+  EXPECT_EQ(parentEventInfo->parentCallbackId(), 0u);
   EXPECT_EQ(parentEventInfo->associatedData(), &associated);
 
   int value;
@@ -385,7 +385,7 @@ TEST(EventScheduler, registerCallback)
   EXPECT_TRUE(id2 != 0);
   auto eventInfo = registrar.event(id2);
   EXPECT_TRUE(eventInfo != nullptr);
-  EXPECT_EQ(eventInfo->eventId(), 2);
+  EXPECT_EQ(eventInfo->eventId(), 2u);
   EXPECT_EQ(eventInfo->parentCallbackId(), callbackId);
   EXPECT_EQ(eventInfo->associatedData(), &associated);
 
@@ -426,15 +426,15 @@ TEST(EventScheduler, registerCallbackAgainstEventThatDoesNotExist)
   EXPECT_TRUE(id1 != 0);
   auto eventInfo = registrar.event(id1);
   EXPECT_TRUE(eventInfo != nullptr);
-  EXPECT_EQ(eventInfo->eventId(), 1);
-  EXPECT_EQ(eventInfo->parentCallbackId(), 0);
+  EXPECT_EQ(eventInfo->eventId(), 1u);
+  EXPECT_EQ(eventInfo->parentCallbackId(), 0u);
   EXPECT_EQ(eventInfo->associatedData(), &associated);
 
   CallbackId callbackId = registrar.registerCallback(id1, "ChildCallback2", func_dispatch2, 1000, &value);
 
   EXPECT_TRUE(registrar.unregisterCallback(cb.callbackId()));
   eventInfo = registrar.event(id1);
-  EXPECT_EQ(1, eventInfo->callbacks().size());
+  EXPECT_EQ(1u, eventInfo->callbacks().size());
 
   EXPECT_TRUE(registrar.unregisterCallback(callbackId));
   eventInfo = registrar.event(id1);

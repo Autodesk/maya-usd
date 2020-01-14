@@ -1,5 +1,6 @@
 //
 // Copyright 2018 Pixar
+// Copyright 2019 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,8 +16,6 @@
 //
 #ifndef PXRUSDMAYA_MAYAPRIMUPDATER_H
 #define PXRUSDMAYA_MAYAPRIMUPDATER_H
-
-/// \file usdMaya/primUpdater.h
 
 #include "../base/api.h"
 #include "primUpdaterContext.h"
@@ -41,8 +40,13 @@ public:
     UsdMayaPrimUpdater() = default;
     virtual ~UsdMayaPrimUpdater() = default;
 
-    MAYAUSD_CORE_PUBLIC
-    enum class Supports { Invalid = 0, Push = 1 << 0, Pull = 1 << 1, Clear = 1 << 2, All = Push | Pull | Clear};
+    enum class Supports {
+        Invalid = 0,
+        Push    = 1 << 0,
+        Pull    = 1 << 1,
+        Clear   = 1 << 2,
+        All     = Push | Pull | Clear
+    };
     
     MAYAUSD_CORE_PUBLIC
     virtual bool Push(UsdMayaPrimUpdaterContext* context);
@@ -55,20 +59,20 @@ public:
 
     /// The source Maya DAG path that we are consuming.
     ///
-    /// If this prim writer is for a Maya DG node and not a DAG node, this will
+    /// If this prim updater is for a Maya DG node and not a DAG node, this will
     /// return an invalid MDagPath.
     MAYAUSD_CORE_PUBLIC
     const MDagPath& GetDagPath() const;
 
-    /// The MObject for the Maya node being written by this writer.
+    /// The MObject for the Maya node being updated by this updater.
     MAYAUSD_CORE_PUBLIC
     const MObject& GetMayaObject() const;
 
-    /// The path of the destination USD prim to which we are writing.
+    /// The path of the destination USD prim which we are updating.
     MAYAUSD_CORE_PUBLIC
     const SdfPath& GetUsdPath() const;
 
-    /// The destination USD prim to which we are writing.
+    /// The destination USD prim which we are updating.
     template<typename T>
     UsdPrim GetUsdPrim(UsdMayaPrimUpdaterContext& context) const
     {
@@ -98,12 +102,12 @@ public:
     }
 
 private:
-    /// The MDagPath for the Maya node being written, valid only for DAG node
-    /// prim writers.
+    /// The MDagPath for the Maya node being updated, valid only for DAG node
+    /// prim updaters.
     const MDagPath _dagPath;
 
-    /// The MObject for the Maya node being written, valid for both DAG and DG
-    /// node prim writers.
+    /// The MObject for the Maya node being updated, valid for both DAG and DG
+    /// node prim updaters.
     const MObject _mayaObject;
 
     const SdfPath _usdPath;

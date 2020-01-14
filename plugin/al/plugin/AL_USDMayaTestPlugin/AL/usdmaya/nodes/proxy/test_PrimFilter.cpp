@@ -67,7 +67,7 @@ struct MockPrimFilterInterface : public AL::usdmaya::nodes::proxy::PrimFilterInt
   }
 
   /// mimick behaviour of TranslatorManufacture::getTranslatorFromId without needing translators registered
-  std::string generateTranslatorId(UsdPrim prim)
+  std::string generateTranslatorId(UsdPrim prim) override
   {
     std::string translatorId;
 
@@ -234,7 +234,7 @@ TEST(PrimFilter, removedPaths)
     EXPECT_TRUE(filter.newPrimSet()[2].GetPath() == SdfPath("/root/hip2/knee2/ankle2/ltoe2"));
     EXPECT_TRUE(filter.newPrimSet()[3].GetPath() == SdfPath("/root/hip2/knee2/ankle2/rtoe2"));
     EXPECT_TRUE(filter.updatablePrimSet().size() == previous.size());
-    ASSERT_EQ(4, filter.transformsToCreate().size());
+    ASSERT_EQ(4u, filter.transformsToCreate().size());
     EXPECT_TRUE(filter.transformsToCreate()[0].GetPath() == SdfPath("/root/hip1/knee1/ankle1/ltoe1"));
     EXPECT_TRUE(filter.transformsToCreate()[1].GetPath() == SdfPath("/root/hip1/knee1/ankle1/rtoe1"));
     EXPECT_TRUE(filter.transformsToCreate()[2].GetPath() == SdfPath("/root/hip2/knee2/ankle2/ltoe2"));

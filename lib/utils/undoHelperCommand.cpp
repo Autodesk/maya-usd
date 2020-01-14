@@ -23,6 +23,8 @@
 #define MNoVersionString
 #include <maya/MFnPlugin.h>
 
+#include <maya/MGlobal.h>
+
 namespace {
 #define CMD_NAME "usdUndoHelperCmd"
 
@@ -41,6 +43,11 @@ UsdMayaUndoHelperCommand::_dgModifierFunc = nullptr;
 MStatus
 UsdMayaUndoHelperCommand::initialize(MFnPlugin& plugin)
 {
+    if (_registrationCount < 0) {
+        MGlobal::displayError("Illegal initialization of " CMD_NAME);
+        return MS::kFailure;
+    }
+
     // If we're already registered, do nothing.
     if (_registrationCount++ > 0) {
         return MS::kSuccess;
@@ -58,6 +65,11 @@ UsdMayaUndoHelperCommand::initialize(MFnPlugin& plugin)
 MStatus
 UsdMayaUndoHelperCommand::finalize(MFnPlugin& plugin)
 {
+    if (_registrationCount <= 0) {
+        MGlobal::displayError("Illegal finalization of " CMD_NAME);
+        return MS::kFailure;
+    }
+
     // If more than one plugin still has us registered, do nothing.
     if (_registrationCount-- > 1) {
         return MS::kSuccess;

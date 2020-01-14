@@ -196,7 +196,7 @@ void Import::doImport()
           if(!status) status.perror("Failed to access instance parent");
 
           // add each child from the instance transform, to the new transform
-          for(int i = 0; i < fnInstance.childCount(); ++i)
+          for(int i = 0; unsigned(i) < fnInstance.childCount(); ++i)
           {
             MObject child = fnInstance.child(i);
             status = fnParent.addChild(child, MFnDagNode::kNextPos, true);

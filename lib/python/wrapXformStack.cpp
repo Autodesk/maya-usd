@@ -176,7 +176,7 @@ namespace {
             {
                 result.append(convert_index_pair(idxPair));
             }
-            return result;
+            return move(result);
         }
 
         static object

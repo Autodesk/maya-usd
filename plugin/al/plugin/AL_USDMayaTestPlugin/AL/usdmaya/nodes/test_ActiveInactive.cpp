@@ -338,7 +338,7 @@ TEST_F(ActiveInactive, customTransformType)
     EXPECT_TRUE(bool(sl.add("cube:pCube1")));
     EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(3, sl.length());
+    EXPECT_EQ(3u, sl.length());
     sl.clear();
 
     MFileIO::saveAs(temp_ma_path.c_str(), 0, true);
@@ -354,7 +354,7 @@ TEST_F(ActiveInactive, customTransformType)
     EXPECT_FALSE(bool(sl.add("cube:pCube1")));
     EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(0, sl.length());
+    EXPECT_EQ(0u, sl.length());
 
     MFileIO::saveAs(temp_ma_path2.c_str(), 0, true);
 
@@ -365,7 +365,7 @@ TEST_F(ActiveInactive, customTransformType)
     EXPECT_TRUE(bool(sl.add("cube:pCube1")));
     EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(3, sl.length());
+    EXPECT_EQ(3u, sl.length());
     sl.clear();
   }
 
@@ -387,7 +387,7 @@ TEST_F(ActiveInactive, customTransformType)
     EXPECT_TRUE(bool(sl.add("cube:pCube1")));
     EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(3, sl.length());
+    EXPECT_EQ(3u, sl.length());
     sl.clear();
 
     // deactivate the prim
@@ -395,14 +395,14 @@ TEST_F(ActiveInactive, customTransformType)
     EXPECT_FALSE(bool(sl.add("cube:pCube1")));
     EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(0, sl.length());
+    EXPECT_EQ(0u, sl.length());
 
     // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
     EXPECT_TRUE(bool(sl.add("cube:pCube1")));
     EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(3, sl.length());
+    EXPECT_EQ(3u, sl.length());
     sl.clear();
   }
 
@@ -424,14 +424,14 @@ TEST_F(ActiveInactive, customTransformType)
     EXPECT_FALSE(bool(sl.add("cube:pCube1")));
     EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(0, sl.length());
+    EXPECT_EQ(0u, sl.length());
 
     // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
     EXPECT_TRUE(bool(sl.add("cube:pCube1")));
     EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(3, sl.length());
+    EXPECT_EQ(3u, sl.length());
     sl.clear();
 
     // deactivate the prim
@@ -439,7 +439,7 @@ TEST_F(ActiveInactive, customTransformType)
     EXPECT_FALSE(bool(sl.add("cube:pCube1")));
     EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(0, sl.length());
+    EXPECT_EQ(0u, sl.length());
   }
 }
 
@@ -488,7 +488,7 @@ TEST_F(ActiveInactive, disable)
     EXPECT_FALSE(bool(sl.add("cube:pCube1")));
     EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(0, sl.length());
+    EXPECT_EQ(0u, sl.length());
 
     // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
@@ -497,7 +497,7 @@ TEST_F(ActiveInactive, disable)
     EXPECT_TRUE(bool(sl.add("cube:pCube1")));
     EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(3, sl.length());
+    EXPECT_EQ(3u, sl.length());
     sl.clear();
 
     // activate the prim
@@ -507,7 +507,7 @@ TEST_F(ActiveInactive, disable)
     EXPECT_FALSE(bool(sl.add("cube:pCube1")));
     EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(0, sl.length());
+    EXPECT_EQ(0u, sl.length());
 
     // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
@@ -516,7 +516,7 @@ TEST_F(ActiveInactive, disable)
     EXPECT_TRUE(bool(sl.add("cube:pCube1")));
     EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(3, sl.length());
+    EXPECT_EQ(3u, sl.length());
     sl.clear();
   }
 
@@ -544,7 +544,7 @@ TEST_F(ActiveInactive, disable)
     EXPECT_TRUE(bool(sl.add("cube:pCube1")));
     EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(3, sl.length());
+    EXPECT_EQ(3u, sl.length());
     sl.clear();
 
     // activate the prim
@@ -553,7 +553,7 @@ TEST_F(ActiveInactive, disable)
     EXPECT_FALSE(bool(sl.add("cube:pCube1")));
     EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(0, sl.length());
+    EXPECT_EQ(0u, sl.length());
 
     // activate the prim
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
@@ -562,7 +562,7 @@ TEST_F(ActiveInactive, disable)
     EXPECT_TRUE(bool(sl.add("cube:pCube1")));
     EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(3, sl.length());
+    EXPECT_EQ(3u, sl.length());
     sl.clear();
 
     // activate the prim
@@ -572,7 +572,7 @@ TEST_F(ActiveInactive, disable)
     EXPECT_FALSE(bool(sl.add("cube:pCube1")));
     EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(0, sl.length());
+    EXPECT_EQ(0u, sl.length());
   }
 
   MFileIO::newFile(true);
@@ -599,7 +599,7 @@ TEST_F(ActiveInactive, disable)
     EXPECT_TRUE(bool(sl.add("dave:pSphere1")));
     EXPECT_TRUE(bool(sl.add("dave:pSphereShape1")));
     EXPECT_TRUE(bool(sl.add("dave:polySphere1")));
-    EXPECT_EQ(3, sl.length());
+    EXPECT_EQ(3u, sl.length());
     sl.clear();
 
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/root"));
@@ -618,7 +618,7 @@ TEST_F(ActiveInactive, disable)
         EXPECT_TRUE(bool(sl.add("dave:pCube1")));
         EXPECT_TRUE(bool(sl.add("dave:pCubeShape1")));
         EXPECT_TRUE(bool(sl.add("dave:polyCube1")));
-        EXPECT_EQ(3, sl.length());
+        EXPECT_EQ(3u, sl.length());
         sl.clear();
 
         // should be able to set the variant back to a sphere
@@ -631,7 +631,7 @@ TEST_F(ActiveInactive, disable)
         EXPECT_FALSE(bool(sl.add("dave:pCube1")));
         EXPECT_FALSE(bool(sl.add("dave:pCubeShape1")));
         EXPECT_FALSE(bool(sl.add("dave:polyCube1")));
-        EXPECT_EQ(3, sl.length());
+        EXPECT_EQ(3u, sl.length());
         sl.clear();
 
         // should be able to set the variant back to a cube
@@ -644,7 +644,7 @@ TEST_F(ActiveInactive, disable)
         EXPECT_TRUE(bool(sl.add("dave:pCube1")));
         EXPECT_TRUE(bool(sl.add("dave:pCubeShape1")));
         EXPECT_TRUE(bool(sl.add("dave:polyCube1")));
-        EXPECT_EQ(3, sl.length());
+        EXPECT_EQ(3u, sl.length());
         sl.clear();
 
         // should be able to set the variant to cube with ns fred
@@ -677,7 +677,7 @@ TEST_F(ActiveInactive, disable)
         EXPECT_FALSE(bool(sl.add("fred:pCube1")));
         EXPECT_FALSE(bool(sl.add("fred:pCubeShape1")));
         EXPECT_FALSE(bool(sl.add("fred:polyCube1")));
-        EXPECT_EQ(3, sl.length());
+        EXPECT_EQ(3u, sl.length());
         sl.clear();
 
         // should be able to set the variant back to a cached sphere
@@ -693,7 +693,7 @@ TEST_F(ActiveInactive, disable)
         EXPECT_FALSE(bool(sl.add("fred:pCube1")));
         EXPECT_FALSE(bool(sl.add("fred:pCubeShape1")));
         EXPECT_FALSE(bool(sl.add("fred:polyCube1")));
-        EXPECT_EQ(0, sl.length());
+        EXPECT_EQ(0u, sl.length());
 
         // With any luck, the transform chain above the prim should have been removed leaving us with no
         // AL_usdmaya_transforms in the scene
@@ -716,7 +716,7 @@ TEST_F(ActiveInactive, disable)
         EXPECT_FALSE(bool(sl.add("fred:pCube1")));
         EXPECT_FALSE(bool(sl.add("fred:pCubeShape1")));
         EXPECT_FALSE(bool(sl.add("fred:polyCube1")));
-        EXPECT_EQ(3, sl.length());
+        EXPECT_EQ(3u, sl.length());
         sl.clear();
 
         // check to make sure the transform chain is back
@@ -776,7 +776,7 @@ TEST_F(ActiveInactive, disable)
       EXPECT_TRUE(bool(sl.add("cube:pCube1")));
       EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
       EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
-      EXPECT_EQ(3, sl.length());
+      EXPECT_EQ(3u, sl.length());
       sl.clear();
 
       // activate the prim
@@ -786,7 +786,7 @@ TEST_F(ActiveInactive, disable)
       EXPECT_FALSE(bool(sl.add("cube:pCube1")));
       EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
       EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
-      EXPECT_EQ(0, sl.length());
+      EXPECT_EQ(0u, sl.length());
 
       EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs(temp_ma_path3.c_str(), 0, true));
 
@@ -810,7 +810,7 @@ TEST_F(ActiveInactive, disable)
     EXPECT_FALSE(bool(sl.add("cube:pCube1")));
     EXPECT_FALSE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_FALSE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(0, sl.length());
+    EXPECT_EQ(0u, sl.length());
 
     // activate the prim, this should ensure the
     MGlobal::executeCommand("AL_usdmaya_ActivatePrim -a true -pp \"/root/rig\" \"AL_usdmaya_ProxyShape1\"", false, false);
@@ -818,7 +818,7 @@ TEST_F(ActiveInactive, disable)
     EXPECT_TRUE(bool(sl.add("cube:pCube1")));
     EXPECT_TRUE(bool(sl.add("cube:pCubeShape1")));
     EXPECT_TRUE(bool(sl.add("cube:polyCube1")));
-    EXPECT_EQ(3, sl.length());
+    EXPECT_EQ(3u, sl.length());
     sl.clear();
   }
 }
@@ -868,7 +868,7 @@ TEST_F(ActiveInactive, variantChange)
   EXPECT_TRUE(bool(sl.add("switchable")));
   EXPECT_TRUE(bool(sl.add("switchable|top")));
   EXPECT_TRUE(bool(sl.add("cam")));
-  EXPECT_EQ(4, sl.length());
+  EXPECT_EQ(4u, sl.length());
   sl.clear();
 
   UsdPrim prim = stage->GetPrimAtPath(SdfPath("/root/switchable"));
@@ -885,7 +885,7 @@ TEST_F(ActiveInactive, variantChange)
       EXPECT_TRUE(bool(sl.add("cam_ns:camera_rigg_top")));
       EXPECT_TRUE(bool(sl.add("cam_ns:camera1")));
       EXPECT_TRUE(bool(sl.add("cam_ns:cameraShape1")));
-      EXPECT_EQ(5, sl.length());
+      EXPECT_EQ(5u, sl.length());
       sl.clear();
 
       // make sure we can switch back
@@ -895,7 +895,7 @@ TEST_F(ActiveInactive, variantChange)
       EXPECT_TRUE(bool(sl.add("switchable")));
       EXPECT_TRUE(bool(sl.add("switchable|top")));
       EXPECT_TRUE(bool(sl.add("cam")));
-      EXPECT_EQ(4, sl.length());
+      EXPECT_EQ(4u, sl.length());
       sl.clear();
 
       EXPECT_TRUE(optionSet.SetVariantSelection("no_translator"));
@@ -907,7 +907,7 @@ TEST_F(ActiveInactive, variantChange)
       EXPECT_FALSE(bool(sl.add("cam_ns:camera_rigg_top")));
       EXPECT_FALSE(bool(sl.add("cam_ns:camera1")));
       EXPECT_FALSE(bool(sl.add("cam_ns:cameraShape1")));
-      EXPECT_EQ(0, sl.length());
+      EXPECT_EQ(0u, sl.length());
       sl.clear();
     }
   }

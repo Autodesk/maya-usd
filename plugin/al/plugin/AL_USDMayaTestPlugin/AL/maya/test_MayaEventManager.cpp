@@ -67,7 +67,7 @@ TEST(maya_Event, registerEvent)
   EXPECT_EQ(std::string(""), std::string(callbackInfo->callbackText()));
   EXPECT_EQ(std::string("I'm a tag"), std::string(callbackInfo->tag()));
   EXPECT_EQ(callback, callbackInfo->callbackId());
-  EXPECT_EQ(1234, callbackInfo->weight());
+  EXPECT_EQ(1234u, callbackInfo->weight());
   EXPECT_FALSE(callbackInfo->isPythonCallback());
   EXPECT_FALSE(callbackInfo->isMELCallback());
   EXPECT_TRUE(callbackInfo->isCCallback());
@@ -96,7 +96,7 @@ TEST(maya_Event, invalidRegisteredEvent)
     1234,
     0);
 
-  EXPECT_EQ(id, 0);
+  EXPECT_EQ(id, 0u);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
