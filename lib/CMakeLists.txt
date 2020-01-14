@@ -675,7 +675,12 @@ string(TOUPPER "${LIBRARY_NAME}" LIBRARY_NAME_CAPS)
 string(SUBSTRING "${LIBRARY_NAME}" 1 -1 LIBRARY_NAME_END)
 string(SUBSTRING "${LIBRARY_NAME_CAPS}" 0 1 LIBRARY_NAME_BEGIN)
 string(CONCAT PACKAGE_NAME "Py" "${LIBRARY_NAME_BEGIN}" "${LIBRARY_NAME_END}")
-string(CONCAT PYTHON_LIBRARY_NAME "_" "${PACKAGE_NAME}")
+if(IS_WINDOWS AND ${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+    # On Windows when compiling with debug python the library must be named with _d.
+    set(PYTHON_LIBRARY_NAME _${PACKAGE_NAME}_d)
+else()
+    set(PYTHON_LIBRARY_NAME _${PACKAGE_NAME})
+endif()
 
 add_library(${PYTHON_LIBRARY_NAME}
     SHARED
@@ -710,10 +715,10 @@ set_target_properties(${PYTHON_LIBRARY_NAME}
         PREFIX ""
 )
 if(IS_WINDOWS)
-set_target_properties(${PYTHON_LIBRARY_NAME}
-    PROPERTIES
-        SUFFIX ".pyd"
-)
+    set_target_properties(${PYTHON_LIBRARY_NAME}
+        PROPERTIES
+            SUFFIX ".pyd"
+    )
 elseif(IS_MACOSX)
     set_target_properties(${PYTHON_LIBRARY_NAME}
         PROPERTIES
