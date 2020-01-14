@@ -68,7 +68,7 @@ uint32_t diffGeom(UsdGeomPointBased& geom, MFnMesh& mesh, UsdTimeCode timeCode, 
       const int32_t* const usdNormalIndices = (const int32_t*)indexData.cdata();
       if(usdNormals && usdNormalIndices)
       {
-        if(mesh.numNormals() != normalData.size())
+        if(size_t(mesh.numNormals()) != normalData.size())
         {
           result |= kNormals;
         }
@@ -399,7 +399,7 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void ColourSetBuilder::constructNewlyAddedSets(MStringArray& setNames, const std::vector<UsdGeomPrimvar>& primvars)
 {
-  for(int i = 0; i < setNames.length(); ++i)
+  for(int i = 0; unsigned(i) < setNames.length(); ++i)
   {
     for(auto it = primvars.begin(), end = primvars.end(); it != end; ++it)
     {

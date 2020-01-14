@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2019 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 #ifndef PXRUSDMAYAGL_INSTANCER_SHAPE_ADAPTER_WITH_SCENE_ASSEMBLY_H
 #define PXRUSDMAYAGL_INSTANCER_SHAPE_ADAPTER_WITH_SCENE_ASSEMBLY_H
 
-/// \file pxrUsdMayaGL/instancerShapeAdapter.h
+/// \file pxrUsdMayaGL/instancerShapeAdapterWithSceneAssembly.h
 
 #include <mayaUsd/render/pxrUsdMayaGL/instancerShapeAdapter.h>
 

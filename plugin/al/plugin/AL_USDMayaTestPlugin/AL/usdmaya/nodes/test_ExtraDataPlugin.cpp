@@ -81,7 +81,7 @@ TEST(ExtraDataPlugin, ExtraDataPlugin)
 
   auto dataPlugins = manufacture.getExtraDataPlugins(mayaObject);
   ASSERT_TRUE(!dataPlugins.empty());
-  EXPECT_EQ(1, dataPlugins.size());
+  EXPECT_EQ(1u, dataPlugins.size());
 
   // ensure correct extra data plugin returned
   auto first = dataPlugins[0];

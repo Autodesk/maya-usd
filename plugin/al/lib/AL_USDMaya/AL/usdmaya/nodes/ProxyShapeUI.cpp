@@ -39,6 +39,7 @@
 #include "ufe/runTimeMgr.h"
 #include "ufe/globalSelection.h"
 #include "ufe/observableSelection.h"
+#include "ufe/log.h"
 #endif
 
 #include "pxr/usd/usd/modelAPI.h"
@@ -107,7 +108,10 @@ void ProxyShapeUI::getDrawRequests(const MDrawInfo& drawInfo, bool isObjectAndAc
 
   MDrawRequest request = drawInfo.getPrototype(*this);
 
+  // If there are no side effects to calling surfaceShape(), the following two
+  // lines can be removed, as they are unused.  PPT, 8-Jan-2020.
   ProxyShape* shape = static_cast<ProxyShape*>(surfaceShape());
+  (void) shape;
 
   // add the request to the queue
   requests.add(request);
@@ -376,7 +380,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
   auto selected = false;
 
-  auto getHitPath = [&engine] (const Engine::HitBatch::const_reference& it) -> SdfPath
+  auto getHitPath = [&engine] (Engine::HitBatch::const_reference& it) -> SdfPath
   {
     const Engine::HitInfo& hit = it.second;
     auto path = engine->GetPrimPathFromInstanceIndex(it.first, hit.hitInstanceIndex);
@@ -505,7 +509,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     {
       paths.reserve(hitBatch.size());
 
-      auto addHit = [&engine, &paths, &getHitPath](Engine::HitBatch::const_reference& it)
+      auto addHit = [&paths, &getHitPath](Engine::HitBatch::const_reference& it)
       {
         paths.push_back(getHitPath(it));
       };
@@ -599,6 +603,12 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
                     if (!globalSelection->remove(si)) {
                         globalSelection->append(si);
                     }
+                }
+                break;
+                case MGlobal::kAddToHeadOfList:
+                {
+                    // No such operation on UFE selection.
+                    UFE_LOG("UFE does not support prepend to selection.");
                 }
                 break;
                 }

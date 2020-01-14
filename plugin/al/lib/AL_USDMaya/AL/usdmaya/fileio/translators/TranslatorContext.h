@@ -473,9 +473,6 @@ private:
   // a dependency node
   PrimLookups m_primMapping;
 
-  // true to make all translators that default to not importing Prims to always import Prims via the translators
-  bool m_forcePrimImport;
-
   // list of geometry that has been request to be excluded during the translation
   SdfInstanceMap m_excludedGeometry;
   bool m_isExcludedGeometryDirty;

@@ -67,11 +67,11 @@ TEST(import_instances, merged)
     ASSERT_TRUE(removed != 0);
   }
 
-  EXPECT_EQ(0, expectedTransforms.size());
+  EXPECT_EQ(0u, expectedTransforms.size());
   
   MStringArray meshResults;
   MGlobal::executeCommand("ls -type mesh", meshResults);
-  EXPECT_EQ(2, meshResults.length());
+  EXPECT_EQ(2u, meshResults.length());
 }
 
 TEST(import_instances, unmerged)
@@ -129,11 +129,11 @@ TEST(import_instances, unmerged)
     ASSERT_TRUE(removed != 0);
   }
 
-  EXPECT_EQ(0, expectedTransforms.size());
+  EXPECT_EQ(0u, expectedTransforms.size());
 
   MStringArray meshResults;
   MGlobal::executeCommand("ls -type mesh", meshResults);
-  EXPECT_EQ(2, meshResults.length());
+  EXPECT_EQ(2u, meshResults.length());
 }
 
 

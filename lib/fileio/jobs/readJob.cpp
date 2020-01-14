@@ -66,10 +66,10 @@ UsdMaya_ReadJob::UsdMaya_ReadJob(
     mArgs(iArgs),
     mFileName(iFileName),
     mVariants(iVariants),
+    mMayaRootDagPath(),
     mPrimPath(iPrimPath),
     mDagModifierUndo(),
-    mDagModifierSeeded(false),
-    mMayaRootDagPath()
+    mDagModifierSeeded(false)
 {
 }
 
