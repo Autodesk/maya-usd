@@ -4,7 +4,6 @@ pxr_plugin(${PXR_PACKAGE}
     MAYA_PLUGIN
 
     LIBRARIES
-        pxrUsdMayaGL
         mayaUsd
         sdf
         tf

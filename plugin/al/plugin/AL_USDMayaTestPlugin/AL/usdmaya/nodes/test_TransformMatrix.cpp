@@ -528,7 +528,7 @@ TEST(Transform, primValuesPushedToUsdMatchMaya)
 
     bool reset;
     std::vector<UsdGeomXformOp> ops = usd_xform.GetOrderedXformOps(&reset);
-    EXPECT_EQ(11, ops.size());
+    EXPECT_EQ(11u, ops.size());
 
     UsdGeomXformOp& translate = ops[0];
     UsdGeomXformOp& rotatePivotTranslate = ops[1];
@@ -835,7 +835,7 @@ TEST(Transform, animationValuesFromUsdAreCorrectlyRead)
 
     bool reset;
     std::vector<UsdGeomXformOp> ops = usd_xform.GetOrderedXformOps(&reset);
-    EXPECT_EQ(3, ops.size());
+    EXPECT_EQ(3u, ops.size());
 
     MPlug wsmPlug = fnx.findPlug("m");
 
@@ -1380,7 +1380,7 @@ TEST(Transform, emptyOpsNotMade)
       bool resetsXform;
       auto xformOps = xformGeom.GetOrderedXformOps(&resetsXform);
       EXPECT_FALSE(resetsXform);
-      EXPECT_EQ(xformOps.size(), 0);
+      EXPECT_EQ(xformOps.size(), 0u);
     };
 
     {
@@ -1396,7 +1396,7 @@ TEST(Transform, emptyOpsNotMade)
 
     MSelectionList sel;
     EXPECT_TRUE(MGlobal::getActiveSelectionList(sel));
-    EXPECT_EQ(1, sel.length());
+    EXPECT_EQ(1u, sel.length());
     MObject xformMobj;
     EXPECT_TRUE(sel.getDependNode(0, xformMobj));
     MFnTransform xformMfn(xformMobj);

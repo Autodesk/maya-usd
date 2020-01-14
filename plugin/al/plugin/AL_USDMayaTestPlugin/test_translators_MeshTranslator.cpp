@@ -285,7 +285,7 @@ TEST(translators_MeshTranslator, constantUvExport)
 
     VtArray<GfVec2f> received;
     pvar.Get(&received);
-    ASSERT_EQ(1, received.size());
+    ASSERT_EQ(1u, received.size());
     EXPECT_NEAR(0.5f, received[0][0], 1e-5f);
     EXPECT_NEAR(0.5f, received[0][1], 1e-5f);
   }
@@ -316,7 +316,7 @@ TEST(translators_MeshTranslator, constantUvExport)
 
     VtArray<GfVec2f> received;
     pvar.Get(&received);
-    ASSERT_EQ(1, received.size());
+    ASSERT_EQ(1u, received.size());
     EXPECT_NEAR(0.5f, received[0][0], 1e-5f);
     EXPECT_NEAR(0.5f, received[0][1], 1e-5f);
   }
@@ -694,7 +694,7 @@ TEST(translators_MeshTranslator, constantColourExport)
 
     VtArray<GfVec4f> received;
     pvar.Get(&received);
-    ASSERT_EQ(1, received.size());
+    ASSERT_EQ(1u, received.size());
     EXPECT_NEAR(0.3f, received[0][0], 1e-5f);
     EXPECT_NEAR(0.4f, received[0][1], 1e-5f);
     EXPECT_NEAR(0.5f, received[0][2], 1e-5f);
@@ -729,7 +729,7 @@ TEST(translators_MeshTranslator, constantColourExport)
 
     VtArray<GfVec4f> received;
     pvar.Get(&received);
-    ASSERT_EQ(1, received.size());
+    ASSERT_EQ(1u, received.size());
     EXPECT_NEAR(0.3f, received[0][0], 1e-5f);
     EXPECT_NEAR(0.4f, received[0][1], 1e-5f);
     EXPECT_NEAR(0.5f, received[0][2], 1e-5f);
@@ -791,7 +791,7 @@ TEST(translators_MeshTranslator, vertexColourExport)
 
     VtArray<GfVec4f> received;
     pvar.Get(&received);
-    ASSERT_EQ(8, received.size());
+    ASSERT_EQ(8u, received.size());
 
     for(int i = 0; i < 8; ++i)
     {
@@ -830,7 +830,7 @@ TEST(translators_MeshTranslator, vertexColourExport)
 
     VtArray<GfVec4f> received;
     pvar.Get(&received);
-    ASSERT_EQ(8, received.size());
+    ASSERT_EQ(8u, received.size());
     for(int i = 0; i < 8; ++i)
     {
       EXPECT_NEAR(0.3f * i, received[i][0], 1e-5f);
@@ -901,7 +901,7 @@ TEST(translators_MeshTranslator, uniformColourExport)
 
     VtArray<GfVec4f> received;
     pvar.Get(&received);
-    ASSERT_EQ(6, received.size());
+    ASSERT_EQ(6u, received.size());
 
     for(int i = 0; i < 6; ++i)
     {
@@ -940,7 +940,7 @@ TEST(translators_MeshTranslator, uniformColourExport)
 
     VtArray<GfVec4f> received;
     pvar.Get(&received);
-    ASSERT_EQ(6, received.size());
+    ASSERT_EQ(6u, received.size());
     for(int i = 0; i < 6; ++i)
     {
       EXPECT_NEAR(0.3f * float(i), received[i][0], 1e-5f);
@@ -1008,7 +1008,7 @@ TEST(translators_MeshTranslator, faceVaryingColourExport)
 
     VtArray<GfVec4f> received;
     pvar.Get(&received);
-    ASSERT_EQ(24, received.size());
+    ASSERT_EQ(24u, received.size());
 
     for(int i = 0; i < 24; ++i)
     {
@@ -1047,7 +1047,7 @@ TEST(translators_MeshTranslator, faceVaryingColourExport)
 
     VtArray<GfVec4f> received;
     pvar.Get(&received);
-    ASSERT_EQ(24, received.size());
+    ASSERT_EQ(24u, received.size());
     for(int i = 0; i < 24; ++i)
     {
       EXPECT_NEAR(0.01f * i, received[i][0], 1e-5f);
@@ -1115,7 +1115,7 @@ TEST(translators_MeshTranslator, reverseNormalsFlag)
     VtArray<GfVec3f> normals;
     mesh.GetNormalsAttr().Get(&normals);
 
-    ASSERT_EQ(24, normals.size());
+    ASSERT_EQ(24u, normals.size());
     for(size_t i = 0; i < 24; ++i)
     {
       EXPECT_EQ(expectedNormals[i], normals[i]);
@@ -1181,7 +1181,7 @@ TEST(translators_MeshTranslator, reverseNormalsFlag)
     VtArray<GfVec3f> normals;
     mesh.GetNormalsAttr().Get(&normals);
 
-    ASSERT_EQ(24, normals.size());
+    ASSERT_EQ(24u, normals.size());
     for(size_t i = 0; i < 24; ++i)
     {
       EXPECT_EQ(expectedNormals[i], normals[i]);

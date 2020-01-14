@@ -89,7 +89,7 @@ TEST(export_blendshape, non_animated_mesh)
   UsdAttribute pointsAttr = mesh.GetPointsAttr();
   ASSERT_TRUE(pointsAttr);
   size_t size = pointsAttr.GetNumTimeSamples();
-  EXPECT_EQ(0, size);
+  EXPECT_EQ(0u, size);
 }
 
 TEST(export_blendshape, animated_mesh)
@@ -127,7 +127,7 @@ TEST(export_blendshape, animated_mesh)
   UsdAttribute pointsAttr = mesh.GetPointsAttr();
   ASSERT_TRUE(pointsAttr);
   size_t size = pointsAttr.GetNumTimeSamples();
-  EXPECT_EQ(50, size);
+  EXPECT_EQ(50u, size);
 }
 
 TEST(export_blendshape, time_bound_animated_mesh)
@@ -165,5 +165,5 @@ TEST(export_blendshape, time_bound_animated_mesh)
   UsdAttribute pointsAttr = mesh.GetPointsAttr();
   ASSERT_TRUE(pointsAttr);
   size_t size = pointsAttr.GetNumTimeSamples();
-  EXPECT_EQ(50, size);
+  EXPECT_EQ(50u, size);
 }

@@ -33,8 +33,12 @@ class testPxrUsdTranslators(unittest.TestCase):
         standalone.uninitialize()
 
     def testLoads(self):
-        self.assertEqual(cmds.loadPlugin('pxrUsdTranslators'),
-                ["pxrUsdTranslators"])
+        # The pxrUsdTranslators plugin does absolutely nothing, registers no
+        # nodes, or commands.  Pending explanation from Pixar as to what its
+        # purpose is, remove the load test of this plugin.  PPT, 2-Oct-2019.
+        # self.assertEqual(cmds.loadPlugin('pxrUsdTranslators'),
+        #         ["pxrUsdTranslators"])
+        pass
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -80,11 +80,11 @@ TEST(export_ik, ikchain)
       auto attr = op.GetAttr();
       if(AL::usdmaya::xformOpToEnum(op.GetBaseName()) == AL::usdmaya::kTranslate)
       {
-        EXPECT_EQ(0, attr.GetNumTimeSamples());
+        EXPECT_EQ(0u, attr.GetNumTimeSamples());
       }
       else
       {
-        EXPECT_EQ(50, attr.GetNumTimeSamples());
+        EXPECT_EQ(50u, attr.GetNumTimeSamples());
       }
     }
   }
@@ -101,11 +101,11 @@ TEST(export_ik, ikchain)
       auto attr = op.GetAttr();
       if(AL::usdmaya::xformOpToEnum(op.GetBaseName()) == AL::usdmaya::kTranslate)
       {
-        EXPECT_EQ(0, attr.GetNumTimeSamples());
+        EXPECT_EQ(0u, attr.GetNumTimeSamples());
       }
       else
       {
-        EXPECT_EQ(50, attr.GetNumTimeSamples());
+        EXPECT_EQ(50u, attr.GetNumTimeSamples());
       }
     }
   }
@@ -116,11 +116,11 @@ TEST(export_ik, ikchain)
 
     bool resetsXformStack;
     std::vector<UsdGeomXformOp> ops = joint3.GetOrderedXformOps(&resetsXformStack);
-    EXPECT_EQ(ops.size(), 1);
+    EXPECT_EQ(ops.size(), 1u);
     for(auto op : ops)
     {
       auto attr = op.GetAttr();
-      EXPECT_EQ(0, attr.GetNumTimeSamples());
+      EXPECT_EQ(0u, attr.GetNumTimeSamples());
     }
   }
 }

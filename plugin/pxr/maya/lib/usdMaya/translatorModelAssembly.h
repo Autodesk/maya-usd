@@ -19,10 +19,10 @@
 /// \file usdMaya/translatorModelAssembly.h
 
 #include "usdMaya/api.h"
-#include "usdMaya/primReaderArgs.h"
-#include "usdMaya/primReaderContext.h"
-#include "usdMaya/primWriterArgs.h"
-#include "usdMaya/primWriterContext.h"
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/primWriterArgs.h>
+#include <mayaUsd/fileio/primWriterContext.h>
 
 #include "pxr/pxr.h"
 

@@ -176,7 +176,6 @@ target_include_directories(
 set(Boost_LINK_LIBRARIES
     ${Boost_PYTHON_LIBRARY}
     ${Boost_THREAD_LIBRARY}
-    ${Boost_SYSTEM_LIBRARY}
 )
 if(WIN32)
     list(APPEND Boost_LINK_LIBRARIES

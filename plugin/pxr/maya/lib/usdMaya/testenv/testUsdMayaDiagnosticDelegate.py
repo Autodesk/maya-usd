@@ -15,9 +15,9 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
-
 from pxr import Tf
+
+import mayaUsd.lib as mayaUsdLib
 
 from maya import cmds
 from maya import standalone
@@ -26,7 +26,7 @@ from maya import OpenMaya as OM
 import unittest
 
 
-class testUsdMayaReadWriteUtils(unittest.TestCase):
+class testUsdMayaDiagnosticDelegate(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         standalone.initialize('usd')
@@ -108,7 +108,7 @@ class testUsdMayaReadWriteUtils(unittest.TestCase):
 
     def testBatching(self):
         self._StartRecording()
-        with UsdMaya.DiagnosticBatchContext():
+        with mayaUsdLib.DiagnosticBatchContext():
             Tf.Warn("spooky warning")
             Tf.Status("informative status")
 
@@ -138,7 +138,7 @@ class testUsdMayaReadWriteUtils(unittest.TestCase):
         """Tests removing the diagnostic delegate when the batch context is
         still open."""
         self._StartRecording()
-        with UsdMaya.DiagnosticBatchContext():
+        with mayaUsdLib.DiagnosticBatchContext():
             Tf.Warn("this warning won't be lost")
             Tf.Status("this status won't be lost")
 
@@ -158,11 +158,11 @@ class testUsdMayaReadWriteUtils(unittest.TestCase):
     def testBatching_BatchCount(self):
         """Tests the GetBatchCount() debugging function."""
         count = -1
-        with UsdMaya.DiagnosticBatchContext():
-            with UsdMaya.DiagnosticBatchContext():
-                count = UsdMaya.DiagnosticDelegate.GetBatchCount()
+        with mayaUsdLib.DiagnosticBatchContext():
+            with mayaUsdLib.DiagnosticBatchContext():
+                count = mayaUsdLib.DiagnosticDelegate.GetBatchCount()
         self.assertEqual(count, 2)
-        count = UsdMaya.DiagnosticDelegate.GetBatchCount()
+        count = mayaUsdLib.DiagnosticDelegate.GetBatchCount()
         self.assertEqual(count, 0)
 
 if __name__ == '__main__':

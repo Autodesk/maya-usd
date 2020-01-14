@@ -202,13 +202,11 @@ void MeshImportContext::gatherFaceConnectsAndVertices()
   // According to the docs for UsdGeomMesh: If 'normals' and 'primvars:normals' are both specified, the latter has precedence.
   const TfToken primvarNormalsToken("primvars:normals");
   TfToken interpolation = mesh.GetNormalsInterpolation();
-  bool isIndexed = false;
   bool hasNormalsOpinion = false;
   if(mesh.HasPrimvar(primvarNormalsToken))
   {
     UsdGeomPrimvar primvar = mesh.GetPrimvar(primvarNormalsToken);
     interpolation = primvar.GetInterpolation();
-    isIndexed = primvar.IsIndexed();
     hasNormalsOpinion = true;
     primvar.Get(&normalsData, m_timeCode);
   }
@@ -955,7 +953,7 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
                   mayaIndices.setLength(connects.length());
                   for (uint32_t i = 0, idx = 0, n = counts.length(); i < n; ++i)
                   {
-                    for (uint32_t j = 0; j < counts[i]; ++j)
+                    for (uint32_t j = 0; j < uint32_t(counts[i]); ++j)
                     {
                       mayaIndices[idx++] = i;
                     }
@@ -974,7 +972,7 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
               }
             }
             
-            if (mayaIndices.length() != fnMesh.numFaceVertices())
+            if (mayaIndices.length() != unsigned(fnMesh.numFaceVertices()))
             {
               TF_DEBUG(ALUTILS_INFO).Msg("Incompatible colour indices for colour set \"%s\" on mesh \"%s\"\n",
               colourSetName.asChar(), fnMesh.name().asChar());
@@ -2009,7 +2007,7 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
                   missing[normalIndices[i]] = faceConnects[i];
                 }
                 else
-                if(it->second != faceConnects[i])
+                if(it->second != uint32_t(faceConnects[i]))
                 {
                   isPerVertex = false;
                 }
@@ -2074,7 +2072,7 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
           bool isOrdered = true;
           for(uint32_t i = 0, n = normalIndices.length(); i < n; ++i)
           {
-            if(normalIndices[i] != i)
+            if(uint32_t(normalIndices[i]) != i)
             {
               isOrdered = false;
               break;

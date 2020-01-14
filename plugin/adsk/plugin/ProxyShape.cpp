@@ -16,6 +16,7 @@
 #include "ProxyShape.h"
 
 #include <mayaUsd/nodes/proxyShapePlugin.h>
+#include <mayaUsd/nodes/hdImagingShape.h>
 
 MAYAUSD_NS_DEF {
 
@@ -59,6 +60,13 @@ ProxyShape::~ProxyShape()
 void ProxyShape::postConstructor()
 {
     ParentClass::postConstructor();
+
+    if (!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+    {
+        // This shape uses Hydra for imaging, so make sure that the
+        // pxrHdImagingShape is setup.
+        PXR_NS::PxrMayaHdImagingShape::GetOrCreateInstance();
+    }
 }
 
 } // MayaUsd

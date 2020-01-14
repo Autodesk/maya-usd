@@ -15,10 +15,15 @@
 //
 #include "proxyShapePlugin.h"
 
+#include "../render/pxrUsdMayaGL/hdImagingShapeDrawOverride.h"
+#include "../render/pxrUsdMayaGL/hdImagingShapeUI.h"
+#include "../render/pxrUsdMayaGL/proxyDrawOverride.h"
+#include "../render/pxrUsdMayaGL/proxyShapeUI.h"
 #include "../render/vp2RenderDelegate/proxyRenderDelegate.h"
 #include "../render/vp2ShaderFragments/shaderFragments.h"
 
 #include "stageData.h"
+#include "hdImagingShape.h"
 #include "proxyShapeBase.h"
 
 #include "pxr/base/tf/envSetting.h"
@@ -76,11 +81,45 @@ MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
         getProxyShapeClassification());
     CHECK_MSTATUS(status);
 
+    // Hybrid Hydra / VP2 rendering uses a draw override to draw the proxy
+    // shape.  The Pixar and MayaUsd plugins use the UsdMayaProxyDrawOverride,
+    // so register it here.  Native USD VP2 rendering uses a sub-scene override.
+    if (_useVP2RenderDelegate) {
         status = MHWRender::MDrawRegistry::registerSubSceneOverrideCreator(
             ProxyRenderDelegate::drawDbClassification,
             _RegistrantId,
             ProxyRenderDelegate::Creator);
         CHECK_MSTATUS(status);
+    } else {
+        status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
+            UsdMayaProxyDrawOverride::drawDbClassification,
+            _RegistrantId,
+            UsdMayaProxyDrawOverride::Creator);
+        CHECK_MSTATUS(status);
+
+        status = plugin.registerDisplayFilter(
+            MayaUsdProxyShapeBase::displayFilterName,
+            MayaUsdProxyShapeBase::displayFilterLabel,
+            UsdMayaProxyDrawOverride::drawDbClassification);
+        CHECK_MSTATUS(status);
+
+        // Hybrid Hydra / VP2 rendering uses the PxrMayaHdImagingShape for draw
+        // aggregation of all proxy shapes.
+        status = plugin.registerShape(
+            PxrMayaHdImagingShape::typeName,
+            PxrMayaHdImagingShape::typeId,
+            PxrMayaHdImagingShape::creator,
+            PxrMayaHdImagingShape::initialize,
+            PxrMayaHdImagingShapeUI::creator,
+            &PxrMayaHdImagingShapeDrawOverride::drawDbClassification);
+        CHECK_MSTATUS(status);
+
+        status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
+            PxrMayaHdImagingShapeDrawOverride::drawDbClassification,
+            _RegistrantId,
+            PxrMayaHdImagingShapeDrawOverride::creator);
+        CHECK_MSTATUS(status);
+    }
 
     status = HdVP2ShaderFragments::registerFragments();
     CHECK_MSTATUS(status);
@@ -110,10 +149,31 @@ MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
     MStatus status = HdVP2ShaderFragments::deregisterFragments();
     CHECK_MSTATUS(status);
     
+    if (_useVP2RenderDelegate) {
         status = MHWRender::MDrawRegistry::deregisterSubSceneOverrideCreator(
             ProxyRenderDelegate::drawDbClassification,
             _RegistrantId);
         CHECK_MSTATUS(status);
+    }
+    else
+    {
+        status = plugin.deregisterDisplayFilter(
+            MayaUsdProxyShapeBase::displayFilterName);
+        CHECK_MSTATUS(status);
+
+        status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(
+            UsdMayaProxyDrawOverride::drawDbClassification,
+            _RegistrantId);
+        CHECK_MSTATUS(status);
+
+        status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(
+            PxrMayaHdImagingShapeDrawOverride::drawDbClassification,
+            _RegistrantId);
+        CHECK_MSTATUS(status);
+
+        status = plugin.deregisterNode(PxrMayaHdImagingShape::typeId);
+        CHECK_MSTATUS(status);
+    }
 
     status = plugin.deregisterNode(MayaUsdProxyShapeBase::typeId);
     CHECK_MSTATUS(status);
@@ -127,7 +187,7 @@ MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
 const MString* MayaUsdProxyShapePlugin::getProxyShapeClassification()
 {
     return _useVP2RenderDelegate ? &ProxyRenderDelegate::drawDbClassification : 
-        nullptr;
+        &UsdMayaProxyDrawOverride::drawDbClassification;
 }
 
 bool MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()
