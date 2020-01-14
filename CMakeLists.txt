@@ -123,6 +123,8 @@ if (BUILD_TESTS)
     if (UFE_FOUND)
         add_subdirectory(test/lib/ufe)
     endif()
+
+    set(MAYAUSD_GTEST_PATH "PATH+:=lib/gtest")
 endif()
 
 #==============================================================================

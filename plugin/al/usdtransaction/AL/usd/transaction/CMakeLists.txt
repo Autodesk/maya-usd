@@ -6,7 +6,14 @@
 set(USDTRANSACTION_LIBRARY_NAME "AL_USDTransaction")
 set(USDTRANSACTION_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib) 
 
-set(USDTRANSACTION_PYTHON_LIBRARY_NAME _${USDTRANSACTION_LIBRARY_NAME})
+# Python bindings
+if(IS_WINDOWS AND ${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+  # On Windows when compiling with debug python the library must be named with _d.
+  set(USDTRANSACTION_PYTHON_LIBRARY_NAME _${USDTRANSACTION_LIBRARY_NAME}_d)
+  else()
+  set(USDTRANSACTION_PYTHON_LIBRARY_NAME _${USDTRANSACTION_LIBRARY_NAME})
+endif()
+
 set(USDTRANSACTION_PYTHON_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib/python/AL/usd/transaction) 
 
 ####################################################################################################

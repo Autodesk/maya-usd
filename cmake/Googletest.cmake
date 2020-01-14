@@ -8,6 +8,8 @@ macro(fetch_googletest)
         if (NOT GTEST_ROOT)
             set(GTEST_ROOT "${GOOGLETEST_BUILD_ROOT}/googletest-install")
         endif()
+        find_package(GTest QUIET)
+        # At this point GTEST_FOUND is set to True in Release but False in Debug.
     endif()
 
     if (NOT GTEST_FOUND)
