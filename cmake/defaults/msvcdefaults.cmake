@@ -56,6 +56,9 @@ _disable_warning("4180")
 # tbb/enumerable_thread_specific.h
 _disable_warning("4334")
 
+# suppress deprecation warning.
+_disable_warning("4996")
+
 # Disable warning C4996 regarding fopen(), strcpy(), etc.
 _add_define("_CRT_SECURE_NO_WARNINGS")
 
