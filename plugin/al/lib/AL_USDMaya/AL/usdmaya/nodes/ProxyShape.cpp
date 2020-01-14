@@ -1810,6 +1810,15 @@ void ProxyShape::findSelectablePrims()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::copyInternalData(MPxNode* srcNode)
+{
+  // On duplication, the ProxyShape has a null stage, and m_filePathDirty is
+  // false, even if the file path attribute is set.  We must ensure the next
+  // call to computeOutStageData() calls loadStage().
+  m_filePathDirty = true;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShape::computeOutStageData(const MPlug& plug, MDataBlock& dataBlock)
 {
   // create new stage data

@@ -1278,6 +1278,53 @@ TEST(ProxyShape, relativePathSupport)
 
   stage = stages[0];
   checkStageAndRootLayer(stage, bootstrapFullPath);
+
+  // Clear out the scene to avoid crashing in proxy shape code during idle
+  // redraw.
+  MFileIO::newFile(true);
+}
+
+// duplication
+TEST(ProxyShape, duplication)
+{
+  MFileIO::newFile(true);
+
+  MString tempDirString, bootstrapFullPath;
+  EXPECT_TRUE(prepareBootstrapUSDA(tempDirString, bootstrapFullPath));
+
+  MFnDagNode fn;
+  MObject xform = fn.create("transform");
+  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+
+  auto proxy = reinterpret_cast<AL::usdmaya::nodes::ProxyShape*>(fn.userNode());
+  // force the stage to load
+  proxy->filePathPlug().setString(bootstrapFullPath.asChar());
+
+  // Add the proxy shape to the selection, then duplicate the selection.
+  MSelectionList sl;
+  sl.add(shape);
+  EXPECT_TRUE(MGlobal::setActiveSelectionList(sl));
+  EXPECT_TRUE(MGlobal::executeCommand("duplicate"));
+
+  // Get the newly-created proxy shape from the selection.
+  sl.clear();
+  EXPECT_TRUE(MGlobal::getActiveSelectionList(sl));
+  MObject dupShape;
+  EXPECT_TRUE(sl.getDependNode(0, dupShape));
+
+  MFnDagNode dupFn(dupShape);
+  auto dupProxy = reinterpret_cast<AL::usdmaya::nodes::ProxyShape*>(
+    dupFn.userNode());
+
+  // The duplicate has the same USD file set in its file path plug.
+  EXPECT_EQ(dupProxy->filePathPlug().asString(), bootstrapFullPath);
+
+  // Its stage must not be null.
+  EXPECT_NE(dupProxy->getUsdStage(), nullptr);
+
+  // Clear out the scene to avoid crashing in proxy shape code during idle
+  // redraw.
+  MFileIO::newFile(true);
 }
 
 //
