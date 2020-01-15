@@ -274,6 +274,49 @@ def RunCTest(context, extraArgs=None):
                     variant=variant,
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
 
+def RunMakeZipArchive(context):
+    installDir = context.instDir
+    buildDir = context.buildDir
+    pkgDir = context.pkgDir
+    variant = BuildVariant(context)
+
+    # extract version from mayausd_version.info
+    mayaUsdVerion = [] 
+    cmakeInfoDir = os.path.join(context.mayaUsdSrcDir, 'cmake')
+    filename = os.path.join(cmakeInfoDir, 'mayausd_version.info')
+    with open(filename, 'r') as filehandle:
+        content = filehandle.readlines()
+        for current_line in content:
+            digitList = re.findall(r'\d+', current_line)
+            versionStr = ''.join(str(e) for e in digitList)
+            mayaUsdVerion.append(versionStr)
+
+    majorVersion = mayaUsdVerion[0]
+    minorVersion = mayaUsdVerion[1]
+    patchLevel   = mayaUsdVerion[2]  
+
+    pkgName = 'MayaUsd' + '-' + majorVersion + '.' + minorVersion + '.' + patchLevel + '-' + (platform.system()) + '-' + variant
+    with CurrentWorkingDirectory(buildDir):
+        shutil.make_archive(pkgName, 'zip', installDir)
+
+        # copy zip file to package directory
+        try:
+            if os.path.isdir(pkgDir):
+                testFile = os.path.join(pkgDir, "canwrite")
+                open(testFile, "w").close()
+                os.remove(testFile)
+            else:
+                os.makedirs(pkgDir)
+
+            for file in os.listdir(buildDir):
+                if file.endswith(".zip"):
+                    zipFile = os.path.join(buildDir, file)
+                    shutil.copy(zipFile, pkgDir)
+        except Exception as e:
+            PrintError("Could not write to directory {dir}. Change permissions "
+                       "or choose a different location to install to."
+                       .format(dir=dir))
+            sys.exit(1)
 
 def BuildAndInstall(context, buildArgs, stages):
     with CurrentWorkingDirectory(context.mayaUsdSrcDir):
@@ -322,6 +365,11 @@ def BuildAndInstall(context, buildArgs, stages):
 def RunTests(context,extraArgs):
     RunCTest(context,extraArgs)
     Print("""Success running MayaUSD tests !!!!""")
+
+def Package(context):
+    RunMakeZipArchive(context)
+    Print("""Success packaging MayaUSD !!!!""")
+    Print('Archived package is available in {pkgDir}'.format(pkgDir=context.pkgDir))
 
 ############################################################
 # ArgumentParser
@@ -378,7 +426,7 @@ parser.add_argument("--ctest-args", type=str, nargs="*", default=[],
                    help=("Comma-separated list of arguments passed into CTest.(e.g -VV, --output-on-failure)"))
 
 parser.add_argument("--stages", type=str, nargs="*", default=['clean','configure','build','install'],
-                   help=("Comma-separated list of stages to execute.(possible stages: clean, configure, build, install, test)"))
+                   help=("Comma-separated list of stages to execute.(possible stages: clean, configure, build, install, test, package)"))
 
 parser.add_argument("-j", "--jobs", type=int, default=GetCPUCount(),
                     help=("Number of build jobs to run in parallel. "
@@ -418,6 +466,9 @@ class InstallContext:
         # Install directory
         self.instDir = (os.path.abspath(args.install_location) if args.install_location
                          else os.path.join(self.workspaceDir, "install", BuildVariant(self)))
+
+        # Package directory
+        self.pkgDir = (os.path.join(self.workspaceDir, "package", BuildVariant(self)))
 
         # CMake generator
         self.cmakeGenerator = args.generator
@@ -522,3 +573,6 @@ if __name__ == "__main__":
     if 'test' in context.stagesArgs:
         RunTests(context, context.ctestArgs)
 
+    # Package
+    if 'package' in context.stagesArgs:
+        Package(context)
