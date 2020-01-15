@@ -1484,7 +1484,7 @@ void ProxyShape::loadStage()
           MayaUsdStageData* usdStageData = createData<MayaUsdStageData>(MayaUsdStageData::mayaTypeId, data);
           usdStageData->stage = m_stage;
           usdStageData->primPath = m_path;
-          MStatus status = outputDataValue(dataBlock, outStageData(), usdStageData);
+          outputDataValue(dataBlock, outStageData(), usdStageData);
           
           // Set the edit target to the session layer so any user interaction will wind up there
           m_stage->SetEditTarget(m_stage->GetSessionLayer());
