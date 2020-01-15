@@ -122,6 +122,8 @@ list(APPEND mayaUsd_src
     nodes/stageNode.cpp
     nodes/usdPrimProvider.cpp
     #
+    python/moduleDeps.cpp
+    #
     render/px_vp20/glslProgram.cpp
     render/px_vp20/utils.cpp
     render/px_vp20/utils_legacy.cpp
