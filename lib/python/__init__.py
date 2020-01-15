@@ -1,4 +1,4 @@
-from . import _PyMayaUsd
+from . import _mayaUsd
 from pxr import Tf
-Tf.PrepareModule(_PyMayaUsd, locals())
-del _PyMayaUsd, Tf
+Tf.PrepareModule(_mayaUsd, locals())
+del _mayaUsd, Tf
