@@ -25,6 +25,7 @@ target_sources(${PROJECT_NAME}
         UsdUndoDuplicateCommand.cpp
         UsdUndoRenameCommand.cpp
         Utils.cpp
+        moduleDeps.cpp
 )
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
