@@ -80,7 +80,6 @@ set(mayaPluginPath
 
 set(path 
     "${CMAKE_INSTALL_PREFIX}/lib"
-    "${MAYA_LOCATION}/bin"
     "$ENV{PATH}"
 )
 
@@ -103,7 +102,13 @@ foreach(script ${test_script_files})
     add_test(
         NAME ${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMAND ${MAYA_PY_EXECUTABLE} -c "from unittest import main;import maya.standalone;maya.standalone.initialize(name='python');import ${target};main(module=${target});maya.standalone.uninitialize()"
+        COMMAND ${MAYA_PY_EXECUTABLE} -c "from unittest import main; \
+                                          import maya.standalone; \
+                                          maya.standalone.initialize(name='python'); \
+                                          import ${target}; \
+                                          main(module=${target});\
+                                          maya.standalone.uninitialize() \
+                                          "
     )
     set_property(TEST ${target} APPEND PROPERTY ENVIRONMENT 
         "PYTHONPATH=${pythonPath}"

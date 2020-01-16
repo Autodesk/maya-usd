@@ -96,6 +96,7 @@ MStatus NodeHelperUnitTest::initialise()
   {
     setNodeType(kTypeName);
 
+    addFrame("Fabrice");
     // just for fabrice :)
     inPreFrame = addBoolAttr("perFrameAttr", "pfaattrh", true, kReadable | kWritable | kStorable | kKeyable | kHidden);
 

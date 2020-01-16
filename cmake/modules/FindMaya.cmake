@@ -11,7 +11,6 @@
 # MAYA_INCLUDE_DIRS   Path to the devkit's include directories
 # MAYA_API_VERSION    Maya version (6-8 digits)
 #
-# IMPORTANT: Currently, there's only support for OSX platform and Maya version 2017 because of ABI issues with libc++.
 
 #=============================================================================
 # Copyright 2011-2012 Francisco Requena <frarees@gmail.com>
@@ -69,14 +68,6 @@ else(IS_LINUX)
 endif()
 
 if(IS_MACOSX)
-    # Note: according to official Autodesk sources (and how it sets up
-    # MAYA_LOCATION itself), MAYA_LOCATION should include Maya.app/Contents
-    # on MacOS - ie:
-    #   /Applications/Autodesk/maya2019/Maya.app/Contents
-    # However, for legacy reasons, and for maximum compatibility, setting
-    # it to the installation root is also supported, ie:
-    #   /Applications/Autodesk/maya2019
-
     find_path(MAYA_BASE_DIR
             include/maya/MFn.h
         HINTS
@@ -84,6 +75,7 @@ if(IS_MACOSX)
             "$ENV{MAYA_LOCATION}/../.."
             "${MAYA_LOCATION}"
             "$ENV{MAYA_LOCATION}"
+            "/Applications/Autodesk/maya2020"
             "/Applications/Autodesk/maya2019"
             "/Applications/Autodesk/maya2018"
             "/Applications/Autodesk/maya2017"
@@ -110,6 +102,7 @@ elseif(IS_LINUX)
         HINTS
             "${MAYA_LOCATION}"
             "$ENV{MAYA_LOCATION}"
+            "/usr/autodesk/maya2020-x64"
             "/usr/autodesk/maya2019-x64"
             "/usr/autodesk/maya2018-x64"
             "/usr/autodesk/maya2017-x64"
@@ -135,6 +128,7 @@ elseif(IS_WINDOWS)
         HINTS
             "${MAYA_LOCATION}"
             "$ENV{MAYA_LOCATION}"
+            "C:/Program Files/Autodesk/Maya2020"
             "C:/Program Files/Autodesk/Maya2019"
             "C:/Program Files/Autodesk/Maya2018"
             "C:/Program Files/Autodesk/Maya2017"

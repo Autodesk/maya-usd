@@ -4,16 +4,18 @@ set(USDTRANSACTION_TEST_EXECUTABLE_NAME AL_USDTransactionTests)
 set(USDTRANSACTION_TEST_NAME GTest:AL_USDTransactionTests)
 set(USDTRANSACTION_PYTHON_TEST_NAME Python:AL_USDTransactionTests)
 
-add_definitions(-DAL_EXTRAS_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data")
+add_executable(${USDTRANSACTION_TEST_EXECUTABLE_NAME})
 
-list(APPEND usdtransaction_test_source
+target_sources(${USDTRANSACTION_TEST_EXECUTABLE_NAME}
+  PRIVATE
     testMain.cpp
     testTransactionManager.cpp
     testTransaction.cpp
 )
 
-add_executable(${USDTRANSACTION_TEST_EXECUTABLE_NAME}
-  ${usdtransaction_test_source}
+target_compile_definitions(${USDTRANSACTION_TEST_EXECUTABLE_NAME}
+  PRIVATE
+    AL_EXTRAS_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data"
 )
 
 target_link_libraries(${USDTRANSACTION_TEST_EXECUTABLE_NAME}
@@ -41,17 +43,55 @@ add_test(
     ${USDTRANSACTION_TEST_EXECUTABLE_NAME}
 )
 
+if(IS_WINDOWS)
+  set(path
+      "${CMAKE_INSTALL_PREFIX}/lib/gtest"
+      "${CMAKE_INSTALL_PREFIX}/plugin/al/lib"
+      "$ENV{PATH}"
+  )
+  string(REPLACE ";" "\;" path "${path}")
+
+  set_property(TEST ${USDTRANSACTION_TEST_NAME} APPEND PROPERTY ENVIRONMENT 
+      "PATH=${path}"
+  )
+endif()
+
 add_test(
   NAME ${USDTRANSACTION_PYTHON_TEST_NAME}
   COMMAND
     python -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-set_tests_properties(${USDTRANSACTION_PYTHON_TEST_NAME}
-  PROPERTIES
-    ENVIRONMENT PYTHONPATH=${CMAKE_BINARY_DIR}/${INSTALL_DIR_SUFFIX}/usdtransaction:${CMAKE_BINARY_DIR}/src:$ENV{PYTHONPATH} 
+# set the PYTHONPATH and PATH for the python unittests
+set(pythonPath
+    "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/python"
+    "$ENV{PYTHONPATH}"
 )
 
+set(path 
+    "${CMAKE_INSTALL_PREFIX}/plugin/al/lib"
+    "$ENV{PATH}"
+)
+
+if(IS_WINDOWS)
+  list(APPEND path "${CMAKE_INSTALL_PREFIX}/lib/gtest")
+endif()
+
+if(IS_WINDOWS)
+    string(REPLACE ";" "\;" pythonPath "${pythonPath}")
+    string(REPLACE ";" "\;" path "${path}")
+else()
+    separate_arguments(pythonPath NATIVE_COMMAND "${pythonPath}")
+    separate_arguments(path NATIVE_COMMAND "${path}")
+
+    string(REPLACE "\;" ":" pythonPath "${pythonPath}")
+    string(REPLACE "\;" ":" path "${path}")
+endif()
+
+set_property(TEST ${USDTRANSACTION_PYTHON_TEST_NAME} APPEND PROPERTY ENVIRONMENT 
+    "PYTHONPATH=${pythonPath}"
+    "PATH=${path}"
+)
 
 if (TARGET all_tests)
   add_dependencies(all_tests ${USDTRANSACTION_TEST_EXECUTABLE_NAME} ${USDTRANSACTION_PYTHON_LIBRARY_NAME})

@@ -36,6 +36,9 @@
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/pathUtils.h"
 
+#include <string>
+#include <algorithm>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
@@ -58,12 +61,23 @@ const char* buildTempPath(const char* const filename)
 
     _temp_subdir += AL_PATH_CHAR;
   }
-  
+
+  std::string full_path = _temp_subdir + filename;
+  std::replace(full_path.begin(), full_path.end(), '\\', '/');
+
   static char temp_file[512];
-  std::strcpy(temp_file, _temp_subdir.data());
-  std::strcpy(temp_file + _temp_subdir.size(), filename);
+  std::strcpy(temp_file, full_path.data());
 
   return temp_file;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void compareTempPaths(std::string pathA, std::string pathB)
+{
+  std::replace(pathA.begin(), pathA.end(), '\\', '/');
+  std::replace(pathB.begin(), pathB.end(), '\\', '/');
+
+  EXPECT_EQ(pathA, pathB);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

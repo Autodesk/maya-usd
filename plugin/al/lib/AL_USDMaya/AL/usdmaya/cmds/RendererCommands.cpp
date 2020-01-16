@@ -31,16 +31,6 @@ namespace cmds {
 AL_MAYA_DEFINE_COMMAND(ManageRenderer, AL_usdmaya);
 
 //----------------------------------------------------------------------------------------------------------------------
-MArgDatabase ManageRenderer::makeDatabase(const MArgList& args)
-{
-  MStatus status;
-  MArgDatabase database(createSyntax(), args, &status);
-  if(!status)
-    throw status;
-  return database;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 MSyntax ManageRenderer::createSyntax()
 {
   MSyntax syn;
@@ -60,7 +50,11 @@ MStatus ManageRenderer::doIt(const MArgList& argList)
 {
   try
   {
-    MArgDatabase args = makeDatabase(argList);
+    MStatus status;
+    MArgDatabase args(syntax(), argList, &status);
+    if(!status)
+      return status;
+
     AL_MAYA_COMMAND_HELP(args, g_helpText);
 
     if(args.isFlagSet("-sp"))

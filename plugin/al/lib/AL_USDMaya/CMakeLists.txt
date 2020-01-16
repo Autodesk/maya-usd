@@ -272,15 +272,21 @@ if(IS_WINDOWS)
         PROPERTIES
             SUFFIX ".pyd"
     )
+elseif(IS_MACOSX)
+    set_target_properties(${PYTHON_LIBRARY_NAME}
+        PROPERTIES
+            SUFFIX ".so"
+    )
 endif()
 
 target_link_libraries(${PYTHON_LIBRARY_NAME}
     ${LIBRARY_NAME}
 )
 
-# rpath setup
+# handle run-time search paths
 if(IS_MACOSX OR IS_LINUX) 
     mayaUsd_init_rpath(rpath lib/python/${arDirPath})
+    mayaUsd_add_rpath(rpath "../../../../lib")
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     mayaUsd_install_rpath(rpath ${PYTHON_LIBRARY_NAME})
 endif()
