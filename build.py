@@ -300,23 +300,17 @@ def RunMakeZipArchive(context):
         shutil.make_archive(pkgName, 'zip', installDir)
 
         # copy zip file to package directory
-        try:
-            if os.path.isdir(pkgDir):
-                testFile = os.path.join(pkgDir, "canwrite")
-                open(testFile, "w").close()
-                os.remove(testFile)
-            else:
-                os.makedirs(pkgDir)
+        if not os.path.exists(pkgDir):
+            os.makedirs(pkgDir)
 
-            for file in os.listdir(buildDir):
-                if file.endswith(".zip"):
-                    zipFile = os.path.join(buildDir, file)
+        for file in os.listdir(buildDir):
+            if file.endswith(".zip"):
+                zipFile = os.path.join(buildDir, file)
+                try:
                     shutil.copy(zipFile, pkgDir)
-        except Exception as e:
-            PrintError("Could not write to directory {dir}. Change permissions "
-                       "or choose a different location to install to."
-                       .format(dir=dir))
-            sys.exit(1)
+                except Exception as exp:
+                    PrintError("Failed to write to directory {pkgDir} : {exp}".format(pkgDir=pkgDir,exp=exp))
+                    sys.exit(1)
 
 def BuildAndInstall(context, buildArgs, stages):
     with CurrentWorkingDirectory(context.mayaUsdSrcDir):
