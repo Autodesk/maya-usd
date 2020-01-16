@@ -121,6 +121,7 @@ install(TARGETS ${TARGET_NAME}
 # unit tests
 set(path 
     "${CMAKE_INSTALL_PREFIX}/plugin/al/lib" # AL_MayaTest, AL_MayaUtils
+    "${CMAKE_INSTALL_PREFIX}/lib"
     "$ENV{PATH}"
 )
 

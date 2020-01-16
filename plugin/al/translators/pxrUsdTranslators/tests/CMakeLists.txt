@@ -1,6 +1,9 @@
 set(TEST_NAME TestPxrUsdTranslators)
 
 set(path 
+    "${CMAKE_INSTALL_PREFIX}/lib"
+    "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib"
+    "${CMAKE_INSTALL_PREFIX}/plugin/al/lib"
     "$ENV{PATH}"
 )
 

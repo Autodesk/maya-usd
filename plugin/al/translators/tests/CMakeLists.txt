@@ -1,6 +1,8 @@
 set(TEST_NAME TestAdditionalTranslators)
 
 set(path 
+    "${CMAKE_INSTALL_PREFIX}/lib"
+    "${CMAKE_INSTALL_PREFIX}/plugin/al/lib"
     "$ENV{PATH}"
 )
 

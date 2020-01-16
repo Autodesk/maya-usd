@@ -1,5 +1,6 @@
 import unittest
 import tempfile
+import os
 import maya.cmds as mc
 import maya.mel as mel
 
@@ -60,6 +61,8 @@ class TestTranslator(unittest.TestCase):
         def recordRefLoad(refNodeMobj, mFileObject, clientData):
             '''Record when a reference path is loading.'''
             path = mFileObject.resolvedFullName()
+            path = os.path.normpath(path)
+            path = os.path.normcase(path)            
             count = loadHistory.setdefault(path, 0)
             loadHistory[path] = count + 1
 
@@ -69,6 +72,8 @@ class TestTranslator(unittest.TestCase):
         proxyName = mc.AL_usdmaya_ProxyShapeImport(file='./testMayaRefLoading.usda')[0]
         proxy = AL.usdmaya.ProxyShape.getByName(proxyName)
         refPath = os.path.abspath('./cube.ma')
+        refPath = os.path.normpath(refPath)
+        refPath = os.path.normcase(refPath)        
         stage = AL.usdmaya.StageCache.Get().GetAllStages()[0]
         topPrim = stage.GetPrimAtPath('/world/optionalCube')
         loadVariantSet = topPrim.GetVariantSet('state')
@@ -341,6 +346,8 @@ class TestTranslator(unittest.TestCase):
         self.assertEqual(mc.getAttr("nurbsCircleShape1.width"), expectedWidths)
 
         tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="testNurbsCurve_curve_width_export", delete=False)
+        tempFile.close()
+
         mc.AL_usdmaya_ExportCommand(file=tempFile.name)
         stage = Usd.Stage.Open(tempFile.name)
         prim = stage.GetPrimAtPath("/nurbsCircle1")
@@ -350,6 +357,8 @@ class TestTranslator(unittest.TestCase):
         self.assertTrue(actualWidths)
         sure = any([a == b for a, b in zip(expectedWidths, actualWidths)])
         self.assertTrue(sure)
+
+        os.remove(tempFile.name)
 
     def testNurbsCurve_curve_width_doublearray_export(self):
         expectedWidths = [1.,2.,3.]
@@ -360,6 +369,8 @@ class TestTranslator(unittest.TestCase):
         self.assertEqual(mc.getAttr("nurbsCircleShape1.width"), expectedWidths)
 
         tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="testNurbsCurve_curve_width_export", delete=False)
+        tempFile.close()
+
         mc.AL_usdmaya_ExportCommand(file=tempFile.name)
         stage = Usd.Stage.Open(tempFile.name)
         prim = stage.GetPrimAtPath("/nurbsCircle1")
@@ -370,6 +381,8 @@ class TestTranslator(unittest.TestCase):
         sure = any([a == b for a, b in zip(expectedWidths, actualWidths)])
         self.assertTrue(sure)
 
+        os.remove(tempFile.name)
+
     def testNurbsCurve_curve_width_double_export(self):
         expectedWidths = 1.
         mc.CreateNURBSCircle()
@@ -379,6 +392,8 @@ class TestTranslator(unittest.TestCase):
         self.assertEqual(mc.getAttr("nurbsCircleShape1.width"), expectedWidths)
 
         tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="testNurbsCurve_curve_width_double_export", delete=False)
+        tempFile.close()
+
         mc.AL_usdmaya_ExportCommand(file=tempFile.name)
         stage = Usd.Stage.Open(tempFile.name)
         prim = stage.GetPrimAtPath("/nurbsCircle1")
@@ -389,6 +404,8 @@ class TestTranslator(unittest.TestCase):
         self.assertTrue(actualWidths)
         sure = any([a == b for a, b in zip([expectedWidths], actualWidths)])
         self.assertTrue(sure)
+
+        os.remove(tempFile.name)
 
     def testNurbsCurve_curve_width_float_export(self):
         expectedWidths = 1.
@@ -399,6 +416,8 @@ class TestTranslator(unittest.TestCase):
         self.assertEqual(mc.getAttr("nurbsCircleShape1.width"), expectedWidths)
 
         tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="testNurbsCurve_curve_width_float_export", delete=False)
+        tempFile.close()
+
         mc.AL_usdmaya_ExportCommand(file=tempFile.name)
         stage = Usd.Stage.Open(tempFile.name)
         prim = stage.GetPrimAtPath("/nurbsCircle1")
@@ -409,6 +428,8 @@ class TestTranslator(unittest.TestCase):
         self.assertTrue(actualWidths)
         sure = any([a == b for a, b in zip([expectedWidths], actualWidths)])
         self.assertTrue(sure)
+
+        os.remove(tempFile.name)
 
     def testNurbsCurve_PretearDownEditTargetWrite(self):
         """
@@ -440,8 +461,6 @@ class TestTranslator(unittest.TestCase):
         self.assertEqual(cvcAttr.Get()[0], 10)
 
     def testMeshTranslator_multipleTranslations(self):
-        path = tempfile.NamedTemporaryFile(suffix=".usda", prefix="test_MeshTranslator_multipleTranslations_", delete=True)
-
         d = translatortestutils.importStageWithSphere('AL_usdmaya_Proxy')
         sessionLayer = d.stage.GetSessionLayer()
         d.stage.SetEditTarget(sessionLayer)
@@ -493,7 +512,9 @@ class TestTranslator(unittest.TestCase):
         mel.eval('defaultDirectionalLight(3, 1,1,0, "0", 0,0,0, 0)')
         mc.setAttr('directionalLightShape1.lightAngle', 0.25)
         mc.setAttr('directionalLightShape1.pw', 6, 7 ,8)
-        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="test_DirectionalLightTranslator_", delete=True)
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="test_DirectionalLightTranslator_", delete=False)
+        tempFile.close()
+
         mc.AL_usdmaya_ExportCommand(file=tempFile.name)
               
         # clear scene
@@ -505,6 +526,8 @@ class TestTranslator(unittest.TestCase):
         self.assertEqual((1.0, 1.0, 0), mc.getAttr('directionalLightShape1.color')[0])
         self.assertEqual(3, mc.getAttr('directionalLightShape1.intensity'))
         self.assertEqual((6.0, 7.0, 8.0), mc.getAttr('directionalLightShape1.pointWorld')[0])
+
+        os.remove(tempFile.name)
 
     def testFrameRange_TranslatorExists(self):
         """
