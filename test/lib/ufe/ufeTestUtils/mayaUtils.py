@@ -26,8 +26,6 @@ import sys, os
 
 import ufe
 
-ALL_PLUGINS = ["mayaUsdPlugin", "ufeTestCmdsPlugin"]
-
 mayaRuntimeID = 1
 mayaSeparator = "|"
 
@@ -64,10 +62,14 @@ def isMayaUsdPluginLoaded():
         Returns:
             True if plugins loaded successfully. False if a plugin failed to load
     """
-    successLoad = True
-    for plugin in ALL_PLUGINS:
-        successLoad = successLoad and loadPlugin(plugin)
-    return successLoad
+    # Load the mayaUsdPlugin first.
+    if not loadPlugin("mayaUsdPlugin"):
+        return False
+
+    # Load the UFE support plugin, for ufeSelectCmd support.  If this plugin
+    # isn't included in the distribution of Maya (e.g. Maya 2019 or 2020), use
+    # fallback test plugin.
+    return loadPlugin("ufeSupport") or loadPlugin("ufeTestCmdsPlugin")
 
 def createUfePathSegment(mayaPath):
     """

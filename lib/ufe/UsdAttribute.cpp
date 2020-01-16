@@ -15,6 +15,7 @@
 //
 
 #include "UsdAttribute.h"
+#include "StagesSubject.h"
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
@@ -46,6 +47,36 @@ static constexpr char kErrorMsgEnumNoValue[] = "Enum string attribute has no val
 
 namespace
 {
+
+template<typename T>
+bool setUsdAttr(const PXR_NS::UsdAttribute& attr, const T& value)
+{
+    // As of 24-Nov-2019, calling Set() on a UsdAttribute causes two "info only"
+    // change notifications to be sent (see StagesSubject::stageChanged).  With
+    // the current USD implementation (USD 19.11), UsdAttribute::Set() ends up
+    // in UsdStage::_SetValueImpl().  This function calls in sequence:
+    // - UsdStage::_CreateAttributeSpecForEditing(), which has an SdfChangeBlock
+    //   whose expiry causes a notification to be sent.
+    // - SdfLayer::SetField(), which also has an SdfChangeBlock whose
+    //   expiry causes a notification to be sent.
+    // These two calls appear to be made on all calls to UsdAttribute::Set(),
+    // not just on the first call.
+    // 
+    // Trying to wrap the call to UsdAttribute::Set() inside an additional
+    // SdfChangeBlock fails: no notifications are sent at all.  This is most
+    // likely because of the warning given in the SdfChangeBlock documentation:
+    // 
+    // https://graphics.pixar.com/usd/docs/api/class_sdf_change_block.html
+    //
+    // which stages that "it is not safe to use [...] [a] downstream API [such
+    // as Usd] while a changeblock is open [...]".
+    //
+    // Therefore, we have implemented an attribute change block notification of
+    // our own in the StagesSubject, which we invoke here, so that only a
+    // single UFE attribute changed notification is generated. 
+    MayaUsd::ufe::AttributeChangedNotificationGuard guard;
+	return attr.Set<T>(value);
+}
 
 std::string getUsdAttributeValueAsString(const PXR_NS::UsdAttribute& attr)
 {
@@ -92,7 +123,7 @@ void setUsdAttributeVectorFromUfe(PXR_NS::UsdAttribute& attr, const U& value)
 	T vec;
 	UFE_ASSERT_MSG(attr.Get<T>(&vec), kErrorMsgInvalidType);
 	vec.Set(value.x(), value.y(), value.z());
-	bool b = attr.Set<T>(vec);
+	bool b = setUsdAttr<T>(attr, vec);
 	UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
 }
 
@@ -202,7 +233,7 @@ void UsdAttributeEnumString::set(const std::string& value)
 	PXR_NS::TfToken dummy;
 	UFE_ASSERT_MSG(fUsdAttr.Get<PXR_NS::TfToken>(&dummy), kErrorMsgInvalidType);
 	PXR_NS::TfToken tok(value);
-	bool b = fUsdAttr.Set<PXR_NS::TfToken>(tok);
+	bool b = setUsdAttr<PXR_NS::TfToken>(fUsdAttr, tok);
 	UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
 }
 
@@ -269,7 +300,7 @@ void TypedUsdAttribute<std::string>::set(const std::string& value)
 	{
 		std::string dummy;
 		UFE_ASSERT_MSG(fUsdAttr.Get<std::string>(&dummy), kErrorMsgInvalidType);
-		bool b = fUsdAttr.Set<std::string>(value);
+		bool b = setUsdAttr<std::string>(fUsdAttr, value);
 		UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
 		return;
 	}
@@ -278,7 +309,7 @@ void TypedUsdAttribute<std::string>::set(const std::string& value)
 		PXR_NS::TfToken dummy;
 		UFE_ASSERT_MSG(fUsdAttr.Get<PXR_NS::TfToken>(&dummy), kErrorMsgInvalidType);
 		PXR_NS::TfToken tok(value);
-		bool b = fUsdAttr.Set<PXR_NS::TfToken>(tok);
+		bool b = setUsdAttr<PXR_NS::TfToken>(fUsdAttr, tok);
 		UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
 		return;
 	}
@@ -300,7 +331,7 @@ void TypedUsdAttribute<Ufe::Color3f>::set(const Ufe::Color3f& value)
 	GfVec3f vec;
 	UFE_ASSERT_MSG(fUsdAttr.Get<GfVec3f>(&vec), kErrorMsgInvalidType);
 	vec.Set(value.r(), value.g(), value.b());
-	bool b = fUsdAttr.Set<GfVec3f>(vec);
+	bool b = setUsdAttr<GfVec3f>(fUsdAttr, vec);
 	UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
 }
 
@@ -360,7 +391,7 @@ void TypedUsdAttribute<T>::set(const T& value)
 {
 	T dummy;
 	UFE_ASSERT_MSG(fUsdAttr.Get<T>(&dummy), kErrorMsgInvalidType);
-	bool b = fUsdAttr.Set<T>(value);
+	bool b = setUsdAttr<T>(fUsdAttr, value);
 	UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
 }
 
@@ -481,7 +512,7 @@ bool UsdAttribute::setValue(const std::string& value)
 	if (!cast.IsEmpty())
 		cast.Swap(val);
 
-	return fUsdAttr.Set(val);
+	return setUsdAttr<PXR_NS::VtValue>(fUsdAttr, val);
 }
 #endif
 

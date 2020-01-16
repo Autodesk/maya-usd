@@ -86,5 +86,27 @@ private:
 
 }; // StagesSubject
 
+//! \brief Guard to delay attribute changed notifications.
+/*!
+	Instantiating an object of this class allows the attribute changed
+	notifications to be delayed until the guard expires.
+
+    The guard collapses down notifications for a given UFE path, which is
+	desirable to avoid duplicate notifications.  However, it is an error to
+	have notifications for more than one attribute within a single guard.
+ */
+class MAYAUSD_CORE_PUBLIC AttributeChangedNotificationGuard {
+public:
+
+    AttributeChangedNotificationGuard();
+    ~AttributeChangedNotificationGuard();
+
+    //@{
+    //! Cannot be copied or assigned.
+    AttributeChangedNotificationGuard(const AttributeChangedNotificationGuard&) = delete;
+    const AttributeChangedNotificationGuard& operator&(const AttributeChangedNotificationGuard&) = delete;
+    //@}
+};
+
 } // namespace ufe
 } // namespace MayaUsd
