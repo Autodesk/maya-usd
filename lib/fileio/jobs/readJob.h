@@ -20,6 +20,7 @@
 
 #include "jobArgs.h"
 #include "../primReaderContext.h"
+#include "../importData.h"
 
 #include "pxr/pxr.h"
 
@@ -43,8 +44,7 @@ public:
     MAYAUSD_CORE_PUBLIC
     UsdMaya_ReadJob(
             const std::string& iFileName,
-            const std::string& iPrimPath,
-            const std::map<std::string, std::string>& iVariants,
+            const MayaUsd::ImportData& iImportData,
             const UsdMayaJobImportArgs & iArgs);
 
     MAYAUSD_CORE_PUBLIC
@@ -105,14 +105,13 @@ protected:
     // Data
     UsdMayaJobImportArgs mArgs;
     std::string mFileName;
-    std::map<std::string,std::string> mVariants;
+    const MayaUsd::ImportData& mImportData;
     UsdMayaPrimReaderContext::ObjectRegistry mNewNodeRegistry;
     MDagPath mMayaRootDagPath;
 
 private:
 
     // Data
-    std::string mPrimPath;
     MDagModifier mDagModifierUndo;
     bool mDagModifierSeeded;
 };

@@ -29,10 +29,9 @@ const static TfToken ASSEMBLY_SHADING_MODE = UsdMayaShadingModeTokens->displayCo
 
 UsdMaya_ReadJobWithSceneAssembly::UsdMaya_ReadJobWithSceneAssembly(
         const std::string &iFileName,
-        const std::string &iPrimPath,
-        const std::map<std::string, std::string>& iVariants,
+        const MayaUsd::ImportData& iImportData,
         const UsdMayaJobImportArgs &iArgs) :
-    UsdMaya_ReadJob(iFileName, iPrimPath, iVariants, iArgs)
+    UsdMaya_ReadJob(iFileName, iImportData, iArgs)
 {
 }
 

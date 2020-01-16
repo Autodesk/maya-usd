@@ -30,6 +30,7 @@ option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
 option(BUILD_TESTS "Build tests." ON)
 option(WANT_USD_RELATIVE_PATH "Use relative rpaths for USD libraries" OFF)
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
+option(CMAKE_WANT_QT_BUILD "Enable building with Qt (if found)." ON)
 
 # Avoid noisy install messages
 set(CMAKE_INSTALL_MESSAGE "NEVER")

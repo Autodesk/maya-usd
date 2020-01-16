@@ -186,7 +186,7 @@ UsdMaya_ReadJobWithSceneAssembly::_ProcessProxyPrims(
 
         MObject parentNode = ctx.GetMayaNode(proxyPrim.GetPath().GetParentPath(), false);
         if (!UsdMayaTranslatorModelAssembly::ReadAsProxy(proxyPrim,
-                                                            mVariants,
+                                                            mImportData.rootVariantSelections(),
                                                             parentNode,
                                                             args,
                                                             &ctx)) {
