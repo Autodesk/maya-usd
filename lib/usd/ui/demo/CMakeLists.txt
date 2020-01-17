@@ -41,3 +41,11 @@ target_link_libraries(${PROJECT_NAME}
 		Qt5::Gui
 		Qt5::Widgets
 )
+
+if (IS_LINUX)
+	# On Linux there are many 'undefined reference to' errors from the OpenMaya* libs.
+	# This executable doesn't directly use Maya API and isn't installed. It is simply
+	# used for debugging purposes during development.
+	set_property(TARGET ${PROJECT_NAME}
+		APPEND_STRING PROPERTY LINK_FLAGS " -Wl,--unresolved-symbols=ignore-in-shared-libs")
+endif()
