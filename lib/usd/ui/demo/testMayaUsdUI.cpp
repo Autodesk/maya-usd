@@ -18,7 +18,7 @@
 #include <QtWidgets/QStyle>
 #include <QtCore/QProcessEnvironment>
 
-#include "views/USDImportDialog.h"
+#include <mayaUsd/ui/views/USDImportDialog.h>
 #include <mayaUsd/fileio/importData.h>
 
 #include <pxr/usd/usd/stagePopulationMask.h>
