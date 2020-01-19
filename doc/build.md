@@ -23,22 +23,26 @@ Before building the project, consult the following table to ensure you use the r
 
 #### 2. Download and Build Pixar USD 
 
-See Pixar's official github page for instructions on how to build USD: https://github.com/PixarAnimationStudios/USD
+See Pixar's official github page for instructions on how to build USD: https://github.com/PixarAnimationStudios/USD . Pixar has recently removed support for building Maya USD libraries/plug-ins in their github repository and ```build_usd.py```. When building the maya-usd project, it is important the recommended ```Pixar USD``` and ```Animal Logic``` commitID or tag from the table below are used: 
 
-For additional information on building USD, see the ***Building Pixar USD*** section below.
+|   Required    |      ![](images/pxr.png)          |         ![](images/al.png)            |
+|:------------: |:---------------:  |:-----------------:    |
+| CommitID/tag  | ceca736(>19.11)   | 631a2911(>0.34.0)     |
+
+
+For additional information on building Pixar USD, see the ***Additional Build Instruction*** section below.
 
 ***NOTE:*** Make sure that you don't have older USD locations in your ```PATH``` and ```PYTHONPATH``` environment settings. ```PATH``` and ```PYTHONPATH``` are automatically adjusted inside the project to point to the correct USD location. See ```cmake/usd.cmake```.
 
-#### 3. Download Universal Front End (UFE) 
+#### 3. Universal Front End (UFE)
 
-The Universal Front End (UFE) is a DCC-agnostic component that allows Maya to browse and edit data in multiple data models. This allows Maya to edit pipeline data such as USD.
-UFE is developed as a separate binary component, and is therefore versioned separately from Maya. UFE is installed as a built-in component of Maya.
+The Universal Front End (UFE) is a DCC-agnostic component that allows Maya to browse and edit data in multiple data models. This allows Maya to edit pipeline data such as USD. UFE comes installed as a built-in component with Maya 2019 and later. UFE is developed as a separate binary component, and therefore versioned separately from Maya. Current shipped version of UFE is **1.0.0**
 
-UFE headers and Doxygen documentation is shipped with Maya Devkit and can be downloaded from the link below: 
+To build the project with UFE support, you will need to use the headers and libraries included in the ***Maya Devkit***:
 
-https://www.autodesk.com/developer-network/platform-technologies/maya  
+https://www.autodesk.com/developer-network/platform-technologies/maya
 
-***NOTE:*** UFE is only supported for Maya 2019 and later. Earlier versions of Maya should still be able to load the plug-ins but without the features enabled by UFE.
+***NOTE:*** UFE is only supported in Maya 2019 and later. Earlier versions of Maya should still be able to load the plug-ins but without the features enabled by UFE.
 
 #### 4. Download the source code
 
@@ -47,6 +51,16 @@ Start by cloning the repository:
 git clone https://github.com/Autodesk/maya-usd.git
 cd maya-usd
 ```
+
+##### Repository Layout
+
+| Location      | Description                                                                                   |
+|-------------  |---------------------------------------------------------------------------------------------  |
+|     lib       | The libraries that all other plugins depend on. Will contain common utilities and features.   |
+| plugin/adsk   | The Autodesk Maya plugin                                                                      |
+|  plugin/pxr   | The Pixar Maya plugin                                                                         |
+|  plugin/al    | The Animal Logic Maya plugin                                                                  |
+
 #### 5. How To Use build.py Script
 
 ##### Arguments
@@ -61,9 +75,14 @@ There are four arguments that must be passed to the script:
 | workspace_location    | directory where the project use as a workspace to build and install plugin/libraries  |
 
 ```
-➜ maya-usd python build.py --maya-location /usr/autodesk/maya2020 --pxrusd-location /usr/local/USD-Master /usr/local/workspace
-➜ maya-usd python build.py --maya-location /Applications/Autodesk/maya2020 --pxrusd-location /opt/local/USD-Master /opt/local/workspace
-c:\maya-usd> python build.py --maya-location "C:\Program Files\Autodesk\maya2020" --pxrusd-location C:\USD-Master C:\workspace
+Linux:
+➜ maya-usd python build.py --maya-location /usr/autodesk/maya2020 --pxrusd-location /usr/local/USD-Master --devkit-location /usr/local/devkitBase /usr/local/workspace
+
+MacOSX:
+➜ maya-usd python build.py --maya-location /Applications/Autodesk/maya2020 --pxrusd-location /opt/local/USD-Master --devkit-location /opt/local/devkitBase /opt/local/workspace
+
+Windows:
+c:\maya-usd> python build.py --maya-location "C:\Program Files\Autodesk\Maya2020" --pxrusd-location C:\USD-Master --devkit-location C:\devkitBase C:\workspace
 ```
 
 ##### Build Arguments
@@ -160,11 +179,7 @@ Test project /Users/sabrih/Desktop/workspace/build/Debug/plugin/al
 100% tests passed, 0 tests failed out of 8
 ```
 
-# Building Pixar USD
-
-##### Flags, Version
-
-Pixar has recently removed support for building Maya USD libraries and plug-ins in their ```build_usd.py```. When building USD, it is important that the ```Pixar USD``` and ```Maya USD plug-in``` versions match. Consult the source versions table in the [Developer](DEVELOPER.md) document. 
+# Additional Build Instruction
 
 ##### Boost:
 
@@ -175,20 +190,22 @@ e.g
 python build_usd.py ~/Desktop/BUILD --build-args boost,"--with-date_time --with-thread --with-system --with-filesystem" 
 ```
 
+***NOTE:*** ```--build-args``` needs to be passed at the very end of command, after build/install location.
+
 ##### Python:
 
-Some DCCs (most notably, Maya) may ship with and run using their own version of Python. In that case, it is important that USD and the plugins for that DCC are built using the DCC's version of Python and not the system version. Note that this is primarily an issue on macOS, where a DCC's version of Python is likely to conflict with the version provided by the system. 
+It is important to use the Python version shipped with Maya and not the system version when building USD on MacOS. Note that this is primarily an issue on MacOS, where Maya's version of Python is likely to conflict with the version provided by the system. 
 
-To build USD and the Maya plug-ins on macOS for Maya(2018,2019,2020), run:
+To build USD and the Maya plug-ins on MacOS for Maya(2018,2019,2020), run:
 ```
 /Applications/Autodesk/maya2019/Maya.app/Contents/bin/mayapy build_usd.py ~/Desktop/BUILD
 ```
 By default, ``usdview`` is built which has a dependency on PyOpenGL. Since the Python version of Maya doesn't ship with PyOpenGL you will be prompted with the following error message:
 ```
 PyOpenGL is not installed. If you have pip installed, run "pip install PyOpenGL" to install it, then re-run this script.
-If PyOpenGL is already installed, you may need to update your PYTHONPATH to indicate where it is located.
+If PyOpenGL is already installed, you may need to update your ```PYTHONPATH``` to indicate where it is located.
 ```
-The easiest way to bypass this error is by setting PYTHONPATH to point at your system python or third-party python package manager that has PyOpenGL already installed.
+The easiest way to bypass this error is by setting ```PYTHONPATH``` to point at your system python or third-party python package manager that has PyOpenGL already installed.
 e.g
 ```
 export PYTHONPATH=$PYTHONPATH:Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages
@@ -219,6 +236,6 @@ Examples:
 set MAYA_MODULE_PATH=C:\workspace\install\RelWithDebInfo
 export MAYA_MODULE_PATH=/usr/local/workspace/install/RelWithDebInfo
 ```
-Once MAYA_MODULE_PATH is set, run maya and go to ```Windows->Setting/Preferences-->Plug-in Manager``` to load the plugins.
+Once MAYA_MODULE_PATH is set, run maya and go to ```Windows -> Setting/Preferences -> Plug-in Manager``` to load the plugins.
 
 ![](images/plugin_manager.png) 
