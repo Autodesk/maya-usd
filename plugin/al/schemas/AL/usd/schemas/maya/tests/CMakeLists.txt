@@ -13,7 +13,7 @@ target_sources(${TARGET_NAME}
 
 target_include_directories(${TARGET_NAME}
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../schemas
+        ${PROJECT_SOURCE_DIR}/schemas
         ${GTEST_INCLUDE_DIRS}
         ${USD_INCLUDE_DIR}
 )
