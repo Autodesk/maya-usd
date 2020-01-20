@@ -54,7 +54,7 @@ endif()
 add_test(
   NAME ${USDTRANSACTION_PYTHON_TEST_NAME}
   COMMAND
-    python -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR}
+    ${MAYA_PY_EXECUTABLE} -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 # set the PYTHONPATH and PATH for the python unittests
