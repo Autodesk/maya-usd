@@ -68,6 +68,11 @@ mayaUsd_copyFiles(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
                          FILES ${test_support_files})
 
 # unit tests
+set(path 
+    "${CMAKE_INSTALL_PREFIX}/lib"
+    "$ENV{PATH}"
+)
+
 set(pythonPath
     "${CMAKE_INSTALL_PREFIX}/lib/python"
     "$ENV{PYTHONPATH}"
@@ -78,24 +83,9 @@ set(mayaPluginPath
     "${CMAKE_CURRENT_BINARY_DIR}/ufeTestPlugins"
 )
 
-set(path 
-    "${CMAKE_INSTALL_PREFIX}/lib"
-    "$ENV{PATH}"
-)
-
-if(IS_WINDOWS)
-    string(REPLACE ";" "\;" pythonPath "${pythonPath}")
-    string(REPLACE ";" "\;" path "${path}")
-    string(REPLACE ";" "\;" mayaPluginPath "${mayaPluginPath}")
-else()
-    separate_arguments(pythonPath NATIVE_COMMAND "${pythonPath}")
-    separate_arguments(path NATIVE_COMMAND "${path}")
-    separate_arguments(mayaPluginPath NATIVE_COMMAND "${mayaPluginPath}")
-
-    string(REPLACE "\;" ":" pythonPath "${pythonPath}")
-    string(REPLACE "\;" ":" path "${path}")
-    string(REPLACE "\;" ":" mayaPluginPath "${mayaPluginPath}")
-endif()
+separate_argument_list(path)
+separate_argument_list(pythonPath)
+separate_argument_list(mayaPluginPath)
 
 foreach(script ${test_script_files})
     mayaUsd_get_unittest_target(target ${script})

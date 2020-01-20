@@ -395,17 +395,8 @@ if(UFE_FOUND)
         PROPERTIES 
             PREFIX ""
     )
-    if(IS_WINDOWS)
-        set_target_properties(${UFE_PYTHON_LIBRARY_NAME}
-            PROPERTIES
-                SUFFIX ".pyd"
-        )
-    elseif(IS_MACOSX)
-        set_target_properties(${UFE_PYTHON_LIBRARY_NAME}
-            PROPERTIES
-                SUFFIX ".so"
-        )
-    endif()
+
+    set_python_module_suffix(${UFE_PYTHON_LIBRARY_NAME})
 
     target_link_libraries(${UFE_PYTHON_LIBRARY_NAME}
         ${LIBRARY_NAME}

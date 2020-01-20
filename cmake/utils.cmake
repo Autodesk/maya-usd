@@ -274,3 +274,28 @@ function(mayaUsd_copyDirectory target)
 
     endforeach()
 endfunction()
+
+# parse list arguments into a new list separated by ";" or ":"
+function(separate_argument_list listName)
+    if(IS_WINDOWS)
+        string(REPLACE ";" "\;" ${listName} "${${listName}}")
+    else()
+        string(REPLACE ";" ":" ${listName} "${${listName}}")
+    endif()
+    set(${listName} "${${listName}}" PARENT_SCOPE)
+endfunction()
+
+# python extension module suffix
+function(set_python_module_suffix target)
+    if(IS_WINDOWS)
+        set_target_properties(${target}
+            PROPERTIES
+                SUFFIX ".pyd"
+        )
+    elseif()
+        set_target_properties(${target}
+            PROPERTIES
+                SUFFIX ".so"
+        )
+    endif()
+endfunction()

@@ -13,11 +13,6 @@ target_sources(${USDTRANSACTION_TEST_EXECUTABLE_NAME}
     testTransaction.cpp
 )
 
-target_compile_definitions(${USDTRANSACTION_TEST_EXECUTABLE_NAME}
-  PRIVATE
-    AL_EXTRAS_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data"
-)
-
 target_link_libraries(${USDTRANSACTION_TEST_EXECUTABLE_NAME}
   PRIVATE
     ${GTEST_LIBRARIES}
@@ -77,16 +72,8 @@ if(IS_WINDOWS)
   list(APPEND path "${CMAKE_INSTALL_PREFIX}/lib/gtest")
 endif()
 
-if(IS_WINDOWS)
-    string(REPLACE ";" "\;" pythonPath "${pythonPath}")
-    string(REPLACE ";" "\;" path "${path}")
-else()
-    separate_arguments(pythonPath NATIVE_COMMAND "${pythonPath}")
-    separate_arguments(path NATIVE_COMMAND "${path}")
-
-    string(REPLACE "\;" ":" pythonPath "${pythonPath}")
-    string(REPLACE "\;" ":" path "${path}")
-endif()
+separate_argument_list(path)
+separate_argument_list(pythonPath)
 
 set_property(TEST ${USDTRANSACTION_PYTHON_TEST_NAME} APPEND PROPERTY ENVIRONMENT 
     "PYTHONPATH=${pythonPath}"

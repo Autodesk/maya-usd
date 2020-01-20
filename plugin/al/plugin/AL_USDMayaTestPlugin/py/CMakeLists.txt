@@ -15,19 +15,9 @@ set(mayaPluginPath
     "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin"
 )
 
-if(IS_WINDOWS)
-    string(REPLACE ";" "\;" pythonPath "${pythonPath}")
-    string(REPLACE ";" "\;" path "${path}")
-    string(REPLACE ";" "\;" mayaPluginPath "${mayaPluginPath}")
-else()
-    separate_arguments(pythonPath NATIVE_COMMAND "${pythonPath}")
-    separate_arguments(path NATIVE_COMMAND "${path}")
-    separate_arguments(mayaPluginPath NATIVE_COMMAND "${mayaPluginPath}")
-
-    string(REPLACE "\;" ":" pythonPath "${pythonPath}")
-    string(REPLACE "\;" ":" path "${path}")
-    string(REPLACE "\;" ":" mayaPluginPath "${mayaPluginPath}")
-endif()
+separate_argument_list(path)
+separate_argument_list(pythonPath)
+separate_argument_list(mayaPluginPath)
 
 add_test(
     NAME ${TEST_NAME}

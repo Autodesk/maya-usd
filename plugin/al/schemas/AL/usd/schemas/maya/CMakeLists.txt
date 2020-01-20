@@ -124,17 +124,7 @@ set_target_properties(${PYTHON_LIBRARY_NAME}
         PREFIX ""
 )
 
-if(IS_WINDOWS)
-    set_target_properties(${PYTHON_LIBRARY_NAME}
-        PROPERTIES
-            SUFFIX ".pyd"
-    )
-elseif(IS_MACOSX)
-    set_target_properties(_AL_USDMayaSchemas
-        PROPERTIES
-            SUFFIX ".so"
-    )
-endif()
+set_python_module_suffix(${PYTHON_LIBRARY_NAME})
 
 target_link_libraries(${PYTHON_LIBRARY_NAME} AL_USDMayaSchemas ${DEPENDANT_LIBRARIES})
 

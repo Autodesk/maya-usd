@@ -56,28 +56,16 @@ set(mayaPluginPath
     "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin"
 )
 
-if(IS_WINDOWS)
-    string(REPLACE ";" "\;" pythonPath "${pythonPath}")
-    string(REPLACE ";" "\;" path "${path}")
-    string(REPLACE ";" "\;" pxr_pluginpath_name "${pxr_pluginpath_name}")
-    string(REPLACE ";" "\;" mayaPluginPath "${mayaPluginPath}")
-else()
-    separate_arguments(pythonPath NATIVE_COMMAND "${pythonPath}")
-    separate_arguments(path NATIVE_COMMAND "${path}")
-    separate_arguments(pxr_pluginpath_name NATIVE_COMMAND "${pxr_pluginpath_name}")
-    separate_arguments(mayaPluginPath NATIVE_COMMAND "${mayaPluginPath}")
-
-    string(REPLACE "\;" ":" pythonPath "${pythonPath}")
-    string(REPLACE "\;" ":" path "${path}")
-    string(REPLACE "\;" ":" pxr_pluginpath_name "${pxr_pluginpath_name}")
-    string(REPLACE "\;" ":" mayaPluginPath "${mayaPluginPath}")
-endif()
+separate_argument_list(path)
+separate_argument_list(pythonPath)
+separate_argument_list(pxr_pluginpath_name)
+separate_argument_list(mayaPluginPath)
 
 # handle run-time search paths
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "bin")
     if(BUILD_TESTS)
-        mayaUsd_add_rpath(rpath "../../../lib/gtest")
+        mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib/gtest")
     endif()
     mayaUsd_add_rpath(rpath "../lib")
     mayaUsd_install_rpath(rpath ${TARGET_NAME})
