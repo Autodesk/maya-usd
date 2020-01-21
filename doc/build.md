@@ -11,7 +11,7 @@ Before building the project, consult the following table to ensure you use the r
 |        Required       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
 |:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
 |    Operating System   |         Windows 10        | Catalina (10.15), Mojave (10.14), High Sierra (10.13)        |       CentOS 7              |
-| Minimum Compiler Version  | Microsoft VS 2017 or 2015 |                      Clang 9.0                           |       GCC 6.3.1             |
+|   Compiler Requirement| Maya 2018/2019 (VS 2015 update 3),  Maya2020 (VS 2017) | Maya 2018/2019 (Xcode 7.3.1), Maya 2020 (Xcode version 10.2.1) | Maya 2018 (gcc 4.8.2), Maya 2019/2020 (gcc 6.3.1) |
 | Minimum Cmake Version |           3.13            |                             3.13                             |         3.13                |
 |         Python        |           2.7.15          |                            2.7.15                            |        2.7.15               |
 |    Python Packages    | PyYAML, PySide, PyOpenGL, Jinja2        | PyYAML, PySide2, PyOpenGL, Jinja2              |      PyYAML, PySide, PyOpenGL, Jinja2             |
@@ -20,6 +20,8 @@ Before building the project, consult the following table to ensure you use the r
 | Supported Maya Version|      2018, 2019, 2020           |                      2018, 2019, 2020                  |        2018,2019, 2020      | 
 
 ***NOTE:*** We haven't fully tested the plug-ins on ```Catalina``` and it is still at the experimental stage.
+
+***NOTE:*** Visit the online Maya developer help document under ***Setting up your build environment*** for additional compiler requirements on different platforms.
 
 #### 2. Download and Build Pixar USD 
 
