@@ -90,7 +90,8 @@ public:
       nodes::ProxyShape* proxy,
       const std::vector<UsdPrim>& objsToCreate);
 
-  /// \brief  updates the list of UsdPrims after a variant switch (but when the nodes have not changed)
+  /// \brief  updates the list of UsdPrims after a USD change (but when the nodes have not changed).
+  ///         Note that if a prim is not found to exist, it will be imported rather than updated
   /// \param  proxy the proxy shape to update
   /// \param  objsToUpdate the list of prims to be updated
   static void updateSchemaPrims(

@@ -1,0 +1,31 @@
+#usda 1.0
+(
+    defaultPrim = "root"
+)
+
+def "root" () {
+
+    def Scope "peter01" (
+        variants = {
+            string prelit = "False"
+        }
+        prepend variantSets = "prelit"
+    )
+    {
+        def Scope "rig" (
+
+            assettype = "test"
+        )
+        {
+        }
+        variantSet "prelit" = {
+            "False" {
+                def "other" {}
+
+            }
+            "True" {
+                def "other2" {}
+            }
+        }
+    }
+}
