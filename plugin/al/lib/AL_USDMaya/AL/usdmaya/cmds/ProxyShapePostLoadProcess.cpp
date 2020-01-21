@@ -294,7 +294,7 @@ void ProxyShapePostLoadProcess::updateSchemaPrims(
             if (!hasMatchingEntry) {
                 TF_DEBUG(ALUSDMAYA_TRANSLATORS)
                     .Msg(
-                        "ProxyShapePostLoadProcess::createSchemaPrims prim=%s hasEntry=false\n",
+                        "ProxyShapePostLoadProcess::updateSchemaPrims prim=%s hasEntry=false\n",
                         prim.GetPath().GetText());
                 AL_BEGIN_PROFILE_SECTION(SchemaPrims);
                 MObject created;
@@ -304,21 +304,27 @@ void ProxyShapePostLoadProcess::updateSchemaPrims(
             } else {
                 TF_DEBUG(ALUSDMAYA_TRANSLATORS)
                     .Msg(
-                        "ProxyShapePostLoadProcess::createSchemaPrims [update] prim=%s\n",
+                        "ProxyShapePostLoadProcess::updateSchemaPrims [update] prim=%s\n",
                         prim.GetPath().GetText());
                 if (translator) {
-                    if (translator->update(prim).statusCode() == MStatus::kNotImplemented) {
-                        MGlobal::displayError(
-                            MString("Prim type has claimed that it supports variant switching via "
-                                    "update, but it does not! ")
-                            + prim.GetPath().GetText());
+                    if (!translator->supportsUpdate()) {
+                        MString err = "Update requested on prim that does not support update: ";
+                        err += prim.GetPath().GetText();
+                        MGlobal::displayWarning(err);
                     } else {
-                        std::vector<MObjectHandle> returned;
-                        if (context->getMObjects(prim, returned) && !returned.empty()) {
-                            auto dataPlugins
-                                = translatorManufacture.getExtraDataPlugins(returned[0].object());
-                            for (auto dataPlugin : dataPlugins) {
-                                dataPlugin->update(prim);
+                        if (translator->update(prim).statusCode() == MStatus::kNotImplemented) {
+                            MGlobal::displayError(
+                                MString("Prim type has claimed that it supports update, but it "
+                                        "does not! ")
+                                + prim.GetPath().GetText());
+                        } else {
+                            std::vector<MObjectHandle> returned;
+                            if (context->getMObjects(prim, returned) && !returned.empty()) {
+                                auto dataPlugins = translatorManufacture.getExtraDataPlugins(
+                                    returned[0].object());
+                                for (auto dataPlugin : dataPlugins) {
+                                    dataPlugin->update(prim);
+                                }
                             }
                         }
                     }

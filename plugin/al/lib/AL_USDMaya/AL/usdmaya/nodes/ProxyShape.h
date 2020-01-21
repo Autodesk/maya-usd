@@ -443,7 +443,7 @@ public:
     /// \param  proxyTransformPath the DAG path of the proxy shape
     /// \param  startPath the path from which iteration needs to start in the UsdStage
     /// \param  manufacture the translator registry
-    /// \return the array of prims found that will need to be imported
+    /// \return the array of prims found that will need to be imported (can include the startPath)
     AL_USDMAYA_PUBLIC
     std::vector<UsdPrim> huntForNativeNodesUnderPrim(
         const MDagPath&                             proxyTransformPath,
