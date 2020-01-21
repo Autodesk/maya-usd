@@ -92,12 +92,12 @@ foreach(script ${test_script_files})
     add_test(
         NAME ${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMAND ${MAYA_PY_EXECUTABLE} -c "from unittest import main; \
+        COMMAND ${MAYA_PY_EXECUTABLE} -c "import sys;from unittest import main; \
                                           import maya.standalone; \
                                           maya.standalone.initialize(name='python'); \
-                                          import ${target}; \
-                                          main(module=${target});\
-                                          maya.standalone.uninitialize() \
+                                          import ${target};testProg=main(module=${target},exit=False);\
+                                          maya.standalone.uninitialize(); \
+                                          sys.exit(not testProg.result.wasSuccessful());
                                           "
     )
     set_property(TEST ${target} APPEND PROPERTY ENVIRONMENT 
