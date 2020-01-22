@@ -596,7 +596,7 @@ install(CODE
 
 if(UFE_FOUND)
     # UFE Python Bindings
-    if(IS_WINDOWS AND ${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+    if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
         # On Windows when compiling with debug python the library must be named with _d.
         set(UFE_PYTHON_LIBRARY_NAME ufe_d)
     else()
@@ -671,7 +671,7 @@ endif()
 # macro expects the library name to be prefixed with _, but adds an underscore
 # to the package name when creating the Python extension module initialization
 # function (see Pixar's pyModule.h).
-if(IS_WINDOWS AND ${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
     # On Windows when compiling with debug python the library must be named with _d.
     set(PYTHON_LIBRARY_NAME _${LIBRARY_NAME}_d)
 else()

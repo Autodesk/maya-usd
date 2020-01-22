@@ -81,7 +81,7 @@ if (NOT Boost_USE_STATIC_LIBS)
     _add_define("BOOST_ALL_DYN_LINK")
 endif()
 
-if(${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+if(MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
     # We should not have to add this define manually as it is added by the
     # compiler when you specify the /MTd or /MDd option. But it is not - needs
     # to be investigated.
