@@ -36,12 +36,12 @@ configure_file (
 
 execute_process(
     COMMAND
-        ${Python_EXECUTABLE}
-        ${USD_GENSCHEMA}
-        ${CMAKE_CURRENT_BINARY_DIR}/schema.usda
+        "${Python_EXECUTABLE}"
+        "${USD_GENSCHEMA}"
+        "${CMAKE_CURRENT_BINARY_DIR}/schema.usda"
         .
     WORKING_DIRECTORY
-        ${CMAKE_CURRENT_BINARY_DIR}
+        "${CMAKE_CURRENT_BINARY_DIR}"
     RESULT_VARIABLE
         usdgen_res
 )

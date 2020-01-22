@@ -56,7 +56,7 @@ macro(MAYA_SET_PLUGIN_PROPERTIES target)
             ${_maya_DEFINES}
     )
 
-endmacro(MAYA_SET_PLUGIN_PROPERTIES)
+endmacro()
 #=============================================================================
 
 if(IS_MACOSX)
@@ -68,6 +68,9 @@ else(IS_LINUX)
 endif()
 
 if(IS_MACOSX)
+    # On OSX, setting MAYA_LOCATION to either the base installation dir (ie,
+    # `/Application/Autodesk/maya20xx`), or the Contents folder in the Maya.app dir
+    # (ie, `/Application/Autodesk/maya20xx/Maya.app/Contents`) are supported.
     find_path(MAYA_BASE_DIR
             include/maya/MFn.h
         HINTS
@@ -221,7 +224,7 @@ foreach(MAYA_LIB
     if (MAYA_${MAYA_LIB}_LIBRARY)
         list(APPEND MAYA_LIBRARIES ${MAYA_${MAYA_LIB}_LIBRARY})
     endif()
-endforeach(MAYA_LIB)
+endforeach()
 
 find_program(MAYA_EXECUTABLE
         maya

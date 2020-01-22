@@ -31,14 +31,14 @@ macro(fetch_googletest)
         endif()
 
         message(STATUS "========== Installing GoogleTest... ==========")
-           execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} .
+           execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} .
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${GOOGLETEST_BUILD_ROOT}/googletest-config )
         if(result)
             message(FATAL_ERROR "CMake step for googletest failed: ${result}")
         endif()
 
-        execute_process(COMMAND ${CMAKE_COMMAND} --build . --config ${CMAKE_BUILD_TYPE}
+        execute_process(COMMAND "${CMAKE_COMMAND}" --build . --config ${CMAKE_BUILD_TYPE}
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${GOOGLETEST_BUILD_ROOT}/googletest-config )
         if(result)
