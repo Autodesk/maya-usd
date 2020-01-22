@@ -95,18 +95,6 @@ UsdMayaWriteJobContext::UsdMayaWriteJobContext(const UsdMayaJobExportArgs& args)
 
 UsdMayaWriteJobContext::~UsdMayaWriteJobContext() = default;
 
-const UsdMayaJobExportArgs&
-UsdMayaWriteJobContext::GetArgs() const
-{
-    return mArgs;
-}
-
-const UsdStageRefPtr&
-UsdMayaWriteJobContext::GetUsdStage() const
-{
-    return mStage;
-}
-
 bool
 UsdMayaWriteJobContext::IsMergedTransform(const MDagPath& path) const
 {
