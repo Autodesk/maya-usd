@@ -335,6 +335,7 @@ class TestPythonTranslators(unittest.TestCase):
 
         # Make a dummy stage that mimics prim path found in test data
         otherHandle = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
+        otherHandle.close()
 
         # Scope
         if True:
@@ -367,7 +368,7 @@ class TestPythonTranslators(unittest.TestCase):
         self.assertEqual(CubeGenerator.getState()["tearDownCount"], 0)
 
         # Cleanup
-        otherHandle.close()
+        os.remove(otherHandle.name)
 
     # this test is in progress... I cannot make it fail currently but
     # the motion translator in unicorn is definitely crashing Maya

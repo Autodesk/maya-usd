@@ -26,16 +26,17 @@ class TestProxyShapeGetUsdPrimFromMayaPath(unittest.TestCase):
         cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
         self.assertTrue(cmds.pluginInfo("AL_USDMayaPlugin", query=True, loaded=True))
 
-        with tempfile.NamedTemporaryFile(delete=True, suffix=".usda") as _tmpfile:
+        _tmpfile = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
+        _tmpfile.close()
 
-            # Ensure sphere geometry exists
-            self._sphere = cmds.polySphere(constructionHistory=False, name="sphere")[0]
-            cmds.select(self._sphere)
+        # Ensure sphere geometry exists
+        self._sphere = cmds.polySphere(constructionHistory=False, name="sphere")[0]
+        cmds.select(self._sphere)
 
-            # Export, new scene, import
-            cmds.file(_tmpfile.name, exportSelected=True, force=True, type="AL usdmaya export")
-            cmds.file(force=True, new=True)
-            self._proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=_tmpfile.name)[0]
+        # Export, new scene, import
+        cmds.file(_tmpfile.name, exportSelected=True, force=True, type="AL usdmaya export")
+        cmds.file(force=True, new=True)
+        self._proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=_tmpfile.name)[0]
 
         # Ensure proxy exists
         self.assertIsNotNone(self._proxyName)
@@ -43,6 +44,8 @@ class TestProxyShapeGetUsdPrimFromMayaPath(unittest.TestCase):
         # Store stage
         proxy = AL.usdmaya.ProxyShape.getByName(self._proxyName)
         self._stage = proxy.getUsdStage()
+
+        os.remove(_tmpfile.name)
 
     def tearDown(self):
         """Unload plugin, new Maya scene, reset class member variables."""
@@ -129,6 +132,8 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
 
         stageA_file = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
         stageB_file = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
+        stageA_file.close()
+        stageB_file.close()
 
         cube = cmds.polyCube(constructionHistory=False, name="cube")[0]
         sphere = cmds.polySphere(constructionHistory=False, name="cube")[0]
@@ -156,8 +161,8 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         self._stageA.prim = self._stageA.stage.GetPrimAtPath("/{}".format(self._stageA.poly))
         self._stageB.prim = self._stageB.stage.GetPrimAtPath("/{}".format(self._stageB.poly))
 
-        stageA_file.close()
-        stageB_file.close()
+        os.remove(stageA_file.name)
+        os.remove(stageB_file.name)
 
     def tearDown(self):
         """New Maya scene, unload plugin, reset data."""
