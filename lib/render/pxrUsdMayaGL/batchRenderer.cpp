@@ -50,6 +50,10 @@
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/usd/sdf/path.h"
 
+#if USD_VERSION_NUM < 1911
+#include "pxr/usd/usdGeom/tokens.h"
+#endif
+
 #include <maya/M3dView.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
@@ -1032,8 +1036,13 @@ UsdMayaGLBatchRenderer::_GetIntersectionPrimFilters(
             PxrMayaHdPrimFilter {
                 collection,
                 TfTokenVector{
+#if USD_VERSION_NUM >= 1911
                     HdRenderTagTokens->geometry,
                     HdRenderTagTokens->proxy}
+#else
+                    HdTokens->geometry,
+                    UsdGeomTokens->proxy}
+#endif
         });
     }
 
