@@ -1457,6 +1457,13 @@ void ProxyShape::loadStage()
           stageId = StageCache::Get().Insert(m_stage);
           outputInt32Value(dataBlock, m_stageCacheId, stageId.ToLongInt());
 
+          // Set the stage in datablock so it's ready in case it needs to be accessed
+          MObject data;
+          MayaUsdStageData* usdStageData = createData<MayaUsdStageData>(MayaUsdStageData::mayaTypeId, data);
+          usdStageData->stage = m_stage;
+          usdStageData->primPath = m_path;
+          outputDataValue(dataBlock, outStageData(), usdStageData);
+          
           // Set the edit target to the session layer so any user interaction will wind up there
           m_stage->SetEditTarget(m_stage->GetSessionLayer());
           // Save the initial edit target
@@ -1807,6 +1814,15 @@ void ProxyShape::findSelectablePrims()
   }
 
   m_findUnselectablePrims.postIteration();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::copyInternalData(MPxNode* srcNode)
+{
+  // On duplication, the ProxyShape has a null stage, and m_filePathDirty is
+  // false, even if the file path attribute is set.  We must ensure the next
+  // call to computeOutStageData() calls loadStage().
+  m_filePathDirty = true;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
