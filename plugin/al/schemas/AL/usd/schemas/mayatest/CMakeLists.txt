@@ -37,7 +37,7 @@ configure_file (
 execute_process(
     COMMAND
         "${Python_EXECUTABLE}"
-        ${USD_GENSCHEMA}
+        "${USD_GENSCHEMA}"
         "${CMAKE_CURRENT_BINARY_DIR}/schema.usda"
         .
     WORKING_DIRECTORY
@@ -86,7 +86,7 @@ endif()
 ####################################################################################################
 # Python bindings
 ####################################################################################################
-if(IS_WINDOWS AND ${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
     # On Windows when compiling with debug python the library must be named with _d.
     set(PYTHON_LIBRARY_NAME _AL_USDMayaSchemasTest_d)
 else()
@@ -112,17 +112,7 @@ set_target_properties(${PYTHON_LIBRARY_NAME}
         PREFIX ""
 )
 
-if(IS_WINDOWS)
-    set_target_properties(${PYTHON_LIBRARY_NAME}
-        PROPERTIES
-            SUFFIX ".pyd"
-    )
-elseif(IS_MACOSX)
-    set_target_properties(${PYTHON_LIBRARY_NAME}
-        PROPERTIES
-            SUFFIX ".so"
-    )
-endif()
+set_python_module_suffix(${PYTHON_LIBRARY_NAME})
 
 target_link_libraries(${PYTHON_LIBRARY_NAME} AL_USDMayaSchemasTest ${DEPENDANT_LIBRARIES})
 

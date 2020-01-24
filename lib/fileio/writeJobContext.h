@@ -58,8 +58,15 @@ protected:
     ~UsdMayaWriteJobContext();
 
 public:
-    const UsdMayaJobExportArgs& GetArgs() const;
-    const UsdStageRefPtr& GetUsdStage() const;
+    const UsdMayaJobExportArgs& GetArgs() const
+    {
+        return mArgs;
+    }
+
+    const UsdStageRefPtr& GetUsdStage() const
+    {
+        return mStage;
+    }
 
     /// Whether we will merge the transform at \p path with its single
     /// exportable child shape, given its hierarchy and the current path

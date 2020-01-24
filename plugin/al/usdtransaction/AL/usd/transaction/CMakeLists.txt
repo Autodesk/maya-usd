@@ -99,17 +99,7 @@ if(IS_MACOSX OR IS_LINUX)
     mayaUsd_install_rpath(rpath ${USDTRANSACTION_PYTHON_LIBRARY_NAME})
 endif()
 
-if(IS_WINDOWS)
-    set_target_properties(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
-        PROPERTIES
-            SUFFIX ".pyd"
-    )
-elseif(IS_MACOSX)
-    set_target_properties(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
-        PROPERTIES
-            SUFFIX ".so"
-    )
-endif()
+set_python_module_suffix(${USDTRANSACTION_PYTHON_LIBRARY_NAME})
 
 if(NOT SKIP_USDMAYA_TESTS)
   add_subdirectory(tests)

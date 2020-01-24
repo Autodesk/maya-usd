@@ -10,12 +10,7 @@ include(ExternalProject)
 
 set(FORCE_SHARED_CRT "")
 if(MSVC)
-  set(FORCE_SHARED_CRT -DFORCE_SHARED_CRT=OFF)
-endif()
-
-set(OSX_RPATH "")
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  set(OSX_RPATH -DCMAKE_MACOSX_RPATH=1)
+  set(FORCE_SHARED_CRT "-DFORCE_SHARED_CRT=OFF")
 endif()
 
 ExternalProject_Add(googletest
@@ -23,5 +18,13 @@ ExternalProject_Add(googletest
   UPDATE_COMMAND    ""
   SOURCE_DIR        "${GOOGLETEST_SRC_DIR}"
   BINARY_DIR        "${GOOGLETEST_BUILD_ROOT}/googletest-build"
-  CMAKE_ARGS        "-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}" "-DCMAKE_INSTALL_PREFIX=${GOOGLETEST_BUILD_ROOT}/googletest-install" "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}" "-Dgtest_force_shared_crt=ON" "-DBUILD_SHARED_LIBS=1" "${OSX_RPATH}" -DCMAKE_POSITION_INDEPENDENT_CODE=ON" ${FORCE_SHARED_CRT}
+  CMAKE_ARGS
+                    "-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
+                    "-DCMAKE_INSTALL_PREFIX=${GOOGLETEST_BUILD_ROOT}/googletest-install"
+                    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+                    "-Dgtest_force_shared_crt=ON"
+                    "-DBUILD_SHARED_LIBS=ON"
+                    "-DCMAKE_MACOSX_RPATH=ON"
+                    "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"
+                    "${FORCE_SHARED_CRT}"
 )
