@@ -304,7 +304,7 @@ namespace {
         const VtIntArray &faceVertexCounts = topology.GetFaceVertexCounts();
 
         unsigned int numIndex = 0;
-        for (int i = 0; i < faceVertexCounts.size(); i++)
+        for (std::size_t i = 0; i < faceVertexCounts.size(); i++)
         {
             numIndex += faceVertexCounts[i];
         }
@@ -317,7 +317,7 @@ namespace {
     {
         const VtIntArray &faceVertexCounts = topology.GetFaceVertexCounts();
         const int* currentFaceStart = topology.GetFaceVertexIndices().cdata();
-        for (int faceId = 0; faceId < faceVertexCounts.size(); faceId++)
+        for (std::size_t faceId = 0; faceId < faceVertexCounts.size(); faceId++)
         {
             int numVertexIndicesInFace = faceVertexCounts[faceId];
             if (numVertexIndicesInFace >= 2)

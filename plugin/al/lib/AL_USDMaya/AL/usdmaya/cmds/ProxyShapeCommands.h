@@ -195,8 +195,6 @@ class ProxyShapeResync
   SdfPath m_resyncPrimPath;
   UsdPrim m_resyncPrim;
   nodes::ProxyShape* m_shapeNode;
-  bool m_runPrePrimChanged;
-  bool m_runPostPrimChanged;
 public:
   AL_MAYA_DECLARE_COMMAND();
 private:

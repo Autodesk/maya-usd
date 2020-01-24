@@ -144,7 +144,7 @@ TEST(export_constraint, constraints)
     for(auto op : ops)
     {
       auto attr = op.GetAttr();
-      EXPECT_EQ(50, attr.GetNumTimeSamples());
+      EXPECT_EQ(50u, attr.GetNumTimeSamples());
     }
     ++iter;
   }

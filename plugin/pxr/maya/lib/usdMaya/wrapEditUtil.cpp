@@ -207,7 +207,7 @@ _GetAvarEdits(boost::python::dict& assemEditDict)
         pathDict[pathEdits->first] = valueMap;
     }
 
-    return pathDict;
+    return std::move(pathDict);
 }
 
 

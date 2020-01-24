@@ -37,6 +37,7 @@
 #include "ufe/runTimeMgr.h"
 #include "ufe/globalSelection.h"
 #include "ufe/observableSelection.h"
+#include "ufe/log.h"
 #endif
 
 namespace AL {
@@ -625,7 +626,7 @@ bool ProxyDrawOverride::userSelect(
   };
 
 
-  auto addSelection = [&hitBatch, &selectInfo, &selectionList,
+  auto addSelection = [&hitBatch, &selectionList,
     &worldSpaceHitPts, proxyShape, &selected,
     &getHitPath] (const MString& command)
   {
@@ -718,7 +719,7 @@ bool ProxyDrawOverride::userSelect(
     {
       paths.reserve(hitBatch.size());
 
-      auto addHit = [&engine, &paths, &getHitPath](Engine::HitBatch::const_reference& it)
+      auto addHit = [&paths, &getHitPath](Engine::HitBatch::const_reference& it)
       {
         paths.push_back(getHitPath(it));
       };
@@ -809,6 +810,10 @@ bool ProxyDrawOverride::userSelect(
             {
               globalSelection->append(si);
             }
+            break;
+          case MGlobal::kAddToHeadOfList:
+            // No such operation on UFE selection.
+            UFE_LOG("UFE does not support prepend to selection.");
             break;
           }
         }

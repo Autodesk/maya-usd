@@ -537,7 +537,7 @@ ProxyShape::ProxyShape()
     constructExcludedPrims();
   };
 
-  m_findUnselectablePrims.preIteration = [this]() {
+  m_findUnselectablePrims.preIteration = []() {
 
   };
   m_findUnselectablePrims.iteration = [this]
@@ -620,30 +620,6 @@ ProxyShape::~ProxyShape()
   destroyGLImagingEngine();
   triggerEvent("PostDestroyProxyShape");
 }
-
-//----------------------------------------------------------------------------------------------------------------------
-static const char* const rotate_order_strings[] =
-{
-  "xyz",
-  "yzx",
-  "zxy",
-  "xzy",
-  "yxz",
-  "zyx",
-  0
-};
-
-//----------------------------------------------------------------------------------------------------------------------
-static const int16_t rotate_order_values[] =
-{
-  0,
-  1,
-  2,
-  3,
-  4,
-  5,
-  -1
-};
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShape::initialise()
@@ -1481,6 +1457,13 @@ void ProxyShape::loadStage()
           stageId = StageCache::Get().Insert(m_stage);
           outputInt32Value(dataBlock, m_stageCacheId, stageId.ToLongInt());
 
+          // Set the stage in datablock so it's ready in case it needs to be accessed
+          MObject data;
+          MayaUsdStageData* usdStageData = createData<MayaUsdStageData>(MayaUsdStageData::mayaTypeId, data);
+          usdStageData->stage = m_stage;
+          usdStageData->primPath = m_path;
+          outputDataValue(dataBlock, outStageData(), usdStageData);
+          
           // Set the edit target to the session layer so any user interaction will wind up there
           m_stage->SetEditTarget(m_stage->GetSessionLayer());
           // Save the initial edit target
@@ -1831,6 +1814,15 @@ void ProxyShape::findSelectablePrims()
   }
 
   m_findUnselectablePrims.postIteration();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::copyInternalData(MPxNode* srcNode)
+{
+  // On duplication, the ProxyShape has a null stage, and m_filePathDirty is
+  // false, even if the file path attribute is set.  We must ensure the next
+  // call to computeOutStageData() calls loadStage().
+  m_filePathDirty = true;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

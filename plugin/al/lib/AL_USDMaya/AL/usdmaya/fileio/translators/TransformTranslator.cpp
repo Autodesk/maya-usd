@@ -764,7 +764,14 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
   {
     MMatrix wsm = path.inclusiveMatrix();
     auto op = xformSchema.AddTransformOp(UsdGeomXformOp::PrecisionDouble, TfToken("transform"));
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#endif
     op.Set(*(const GfMatrix4d*)&wsm, params.m_timeCode);
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
     if(animTranslator) animTranslator->addWorldSpace(path, op.GetAttr());
   }
 

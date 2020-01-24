@@ -15,14 +15,14 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
-
 from pxr import Gf
 from pxr import Sdf
 from pxr import Tf
 from pxr import Usd
 from pxr import UsdGeom
 from pxr import Vt
+
+import mayaUsd.lib as mayaUsdLib
 
 from maya import cmds
 from maya import standalone
@@ -43,7 +43,7 @@ class testUsdExportUVSets(unittest.TestCase):
         if expectedUnauthoredValuesIndex is None:
             expectedUnauthoredValuesIndex = -1
 
-        if not UsdMaya.WriteUtil.WriteUVAsFloat2():
+        if not mayaUsdLib.WriteUtil.WriteUVAsFloat2():
             self.assertEqual(primvar.GetTypeName(), Sdf.ValueTypeNames.TexCoord2fArray)
         else: 
             self.assertEqual(primvar.GetTypeName(), Sdf.ValueTypeNames.Float2Array)
@@ -65,7 +65,7 @@ class testUsdExportUVSets(unittest.TestCase):
         standalone.initialize('usd')
         cmds.loadPlugin('pxrUsd')
 
-        if not UsdMaya.WriteUtil.WriteUVAsFloat2():
+        if not mayaUsdLib.WriteUtil.WriteUVAsFloat2():
             cmds.file(os.path.abspath('UsdExportUVSetsTest.ma'), open=True,
                        force=True)
         else:

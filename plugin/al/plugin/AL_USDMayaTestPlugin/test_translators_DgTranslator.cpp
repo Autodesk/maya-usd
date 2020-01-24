@@ -64,18 +64,6 @@ using AL::maya::test::comparePlugs;
 
 namespace {
 
-// comparisons between MPlugs require stream operators for cpp unit
-inline std::ostream& operator << (std::ostream& os, const MAngle& plug)
-{
-  return os << plug.value();
-}
-
-// comparisons between MPlugs require stream operators for cpp unit
-inline std::ostream& operator << (std::ostream& os, const MDistance& plug)
-{
-  return os << plug.value();
-}
-
 static MObject m_node = MObject::kNullObj;
 static MObject m_nodeB = MObject::kNullObj;
 

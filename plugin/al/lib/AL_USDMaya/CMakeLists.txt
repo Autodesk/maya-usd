@@ -176,7 +176,6 @@ target_include_directories(
 set(Boost_LINK_LIBRARIES
     ${Boost_PYTHON_LIBRARY}
     ${Boost_THREAD_LIBRARY}
-    ${Boost_SYSTEM_LIBRARY}
 )
 if(WIN32)
     list(APPEND Boost_LINK_LIBRARIES
@@ -236,7 +235,7 @@ endif()
 set_property(GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 
 # python bindings
-if(IS_WINDOWS AND ${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
     # On Windows when compiling with debug python the library must be named with _d.
     set(PYTHON_LIBRARY_NAME _${LIBRARY_NAME}_d)
 else()

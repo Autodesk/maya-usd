@@ -142,7 +142,6 @@ class LayerCurrentEditTarget
   UsdEditTarget next;
   UsdStageRefPtr stage;
   bool isQuery;
-  bool previouslyAnEditTarget;
   std::function<std::string(SdfLayerHandle)> getLayerId;
 
 public:

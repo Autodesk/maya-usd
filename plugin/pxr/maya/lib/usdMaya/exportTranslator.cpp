@@ -15,10 +15,10 @@
 //
 #include "usdMaya/exportTranslator.h"
 
-#include "usdMaya/jobArgs.h"
-#include "usdMaya/shadingModeRegistry.h"
-#include "usdMaya/writeJob.h"
-#include "usdMaya/writeUtil.h"
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/jobs/writeJob.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 
 #include <maya/MFileObject.h>
 #include <maya/MGlobal.h>

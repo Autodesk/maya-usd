@@ -31,7 +31,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class UsdMaya_ReadJob;
+class UsdMaya_ReadJobWithSceneAssembly;
 
 class UsdMayaImportCommand : public MPxCommand
 {
@@ -55,7 +55,7 @@ class UsdMayaImportCommand : public MPxCommand
     static void* creator();
 
   private:
-    UsdMaya_ReadJob* mUsdReadJob;
+    UsdMaya_ReadJobWithSceneAssembly* mUsdReadJob;
 };
 
 

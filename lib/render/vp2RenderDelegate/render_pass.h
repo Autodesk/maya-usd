@@ -32,7 +32,7 @@ class HdVP2RenderPass final : public HdRenderPass
 public:
     //! \brief  Constructor
     HdVP2RenderPass(HdVP2RenderDelegate* delegate, HdRenderIndex *index, HdRprimCollection const &collection)
-        : HdRenderPass(index, collection), _delegate(delegate)
+        : HdRenderPass(index, collection)
     {}
 
     //! \brief  Destructor
@@ -40,9 +40,6 @@ public:
 
     //! \brief  Empty execute
     void _Execute(HdRenderPassStateSharedPtr const &renderPassState, TfTokenVector const &renderTags) override {}
-
-private:
-    HdVP2RenderDelegate* _delegate{ nullptr };  // !< VP2 render delegate for which this render pass was created
 
 };
 
