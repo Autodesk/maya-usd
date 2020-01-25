@@ -61,12 +61,8 @@ std::vector<std::string> ProxyShapeHandler::getAllNames()
 /*static*/
 UsdStageWeakPtr ProxyShapeHandler::dagPathToStage(const std::string& dagPath)
 {
-    UsdStageWeakPtr stagePtr;
-
-    if (UsdPrim usdPrim = UsdMayaQuery::GetPrim(dagPath))
-        stagePtr = usdPrim.GetStage();
-
-    return stagePtr;
+	auto prim = UsdMayaQuery::GetPrim(dagPath);
+	return prim ? prim.GetStage() : nullptr;
 }
 
 /*static*/

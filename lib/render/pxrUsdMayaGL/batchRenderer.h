@@ -237,8 +237,8 @@ public:
             const GfMatrix4d& projectionMatrix,
             HdxPickHitVector* outResult);
 
-    /// Utility function for finding the nearest hit (in terms of ndcDepth) in
-    /// the given \p hitSet.
+    /// Utility function for finding the nearest hit (in terms of
+    /// normalizedDepth) in the given \p hitSet.
     ///
     /// If \p hitSet is nullptr or is empty, nullptr is returned. Otherwise a
     /// pointer to the nearest hit in \p hitSet is returned.

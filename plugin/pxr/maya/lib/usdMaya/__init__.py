@@ -27,6 +27,37 @@ except Exception:
     pass
 
 
+# XXX: Pull request #154 in the maya-usd repo relocates a bunch of Python
+# bindings from pxr.UsdMaya to mayaUsd.lib. To ease the transition for Python
+# code that uses the bindings from the old package namespace, we reintroduce
+# the migrated names back into the pxr.UsdMaya namespace by importing them from
+# mayaUsd.lib here. The try/except allows this to work both before and after
+# PR #154 is merged.
+#
+# https://github.com/Autodesk/maya-usd/pull/154
+#
+try:
+    from mayaUsd.lib import Adaptor
+    from mayaUsd.lib import BlockSceneModificationContext
+    from mayaUsd.lib import ConvertLinearToMaya
+    from mayaUsd.lib import ConvertMayaToLinear
+    from mayaUsd.lib import DiagnosticBatchContext
+    from mayaUsd.lib import DiagnosticDelegate
+    from mayaUsd.lib import GetPrim
+    from mayaUsd.lib import MeshUtil
+    from mayaUsd.lib import ReadUtil
+    from mayaUsd.lib import ReloadStage
+    from mayaUsd.lib import RoundTripUtil
+    from mayaUsd.lib import StageCache
+    from mayaUsd.lib import UserTaggedAttribute
+    from mayaUsd.lib import UserTaggedAttributeTokens
+    from mayaUsd.lib import WriteUtil
+    from mayaUsd.lib import XformOpClassification
+    from mayaUsd.lib import XformStack
+except ImportError:
+    pass
+
+
 from maya import cmds
 from maya import mel
 
