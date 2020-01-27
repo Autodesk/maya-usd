@@ -31,6 +31,8 @@
 // Note: must come after include of ufe files so we have the define.
 #include "UsdAttributesHandler.h"
 #include "UsdObject3dHandler.h"
+#else
+#include "UfeVersionCompat.h"
 #endif
 
 #include <string>
