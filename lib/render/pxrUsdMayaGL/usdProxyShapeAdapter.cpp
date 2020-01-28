@@ -59,7 +59,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 /* virtual */
 bool
 PxrMayaHdUsdProxyShapeAdapter::UpdateVisibility(const M3dView* view)
@@ -176,6 +175,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
 
     // Update Render Tags
     _renderTags.clear();
+#if USD_VERSION_NUM >= 1911
     _renderTags.push_back(HdRenderTagTokens->geometry);
     if (drawRenderPurpose) {
         _renderTags.push_back(HdRenderTagTokens->render);
@@ -186,6 +186,18 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     if (drawGuidePurpose) {
         _renderTags.push_back(HdRenderTagTokens->guide);
     }
+#else
+    _renderTags.push_back(HdTokens->geometry);
+    if (drawRenderPurpose) {
+        _renderTags.push_back(UsdGeomTokens->render);
+    }
+    if (drawProxyPurpose) {
+        _renderTags.push_back(UsdGeomTokens->proxy);
+    }
+    if (drawGuidePurpose) {
+        _renderTags.push_back(HdTokens->guide);
+    }
+#endif
 
     MStatus status;
     const MMatrix transform = _shapeDagPath.inclusiveMatrix(&status);
