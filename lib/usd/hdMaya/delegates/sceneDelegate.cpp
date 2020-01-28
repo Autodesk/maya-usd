@@ -118,11 +118,23 @@ inline bool _RemoveAdapter(const SdfPath& id, F f, M0& m0, M&... m) {
     }
 }
 
+template <typename R>
+inline R _GetDefaultValue() {
+    return {};
+}
+
+// Default return value for HdTextureResource::ID, if not found, should be
+// -1, not {} - which would be 0
+template <>
+inline HdTextureResource::ID _GetDefaultValue<HdTextureResource::ID>() {
+    return HdTextureResource::ID(-1);
+}
+
 // This will be nicer to use with automatic parameter deduction for lambdas in
 // C++14.
 template <typename T, typename R, typename F>
 inline R _GetValue(const SdfPath&, F) {
-    return {};
+    return _GetDefaultValue<R>();
 }
 
 template <typename T, typename R, typename F, typename M0, typename... M>
