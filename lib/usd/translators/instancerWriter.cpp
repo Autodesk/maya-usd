@@ -293,8 +293,14 @@ PxrUsdTranslators_InstancerWriter::writeInstancerAttrs(
 
             // Prototype names are guaranteed unique by virtue of having a
             // unique numerical suffix _# indicating the prototype index.
+
+            std::string sourceName(sourceNode.name().asChar());
+            if (_writeJobCtx.GetArgs().stripNamespaces){
+                sourceName = UsdMayaUtil::stripNamespaces(sourceName);
+            }
+            sourceName = TfMakeValidIdentifier(sourceName);
             const TfToken prototypeName(
-                    TfStringPrintf("%s_%d", sourceNode.name().asChar(), i));
+                    TfStringPrintf("%s_%d", sourceName.c_str(), i));
             const SdfPath prototypeUsdPath = prototypesGroupPrim.GetPath()
                     .AppendChild(prototypeName);
             UsdPrim prototypePrim = GetUsdStage()->DefinePrim(
