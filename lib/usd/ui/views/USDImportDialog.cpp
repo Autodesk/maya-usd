@@ -43,6 +43,13 @@ USDImportDialog::USDImportDialog(const std::string& filename, QWidget* parent)
 	fUI->findNext->setHidden(true);
 	fUI->findAll->setHidden(true);
 
+#ifndef SEAN_WIP_NOT_FULLY_IMPL
+	// WIP - the load payloads checkbox does not dymamically update the tree view
+	//		 so disable it for now.
+	fUI->label_2->setHidden(true);
+	fUI->loadPayloads->setHidden(true);
+#endif
+
 	// These calls must come after the UI is initialized via "setupUi()":
 	int nbItems = 0;
 	fTreeModel = TreeModelFactory::createFromStage(fStage, this, &nbItems);
@@ -89,11 +96,24 @@ USDImportDialog::USDImportDialog(const std::string& filename, QWidget* parent)
 	// Display the full path of the file to import:
 	fUI->usdFilePath->setText(QString::fromStdString(fFilename));
 
+#if SEAN_WIP_NOT_FULLY_IMPL
 	// Display the number of prims:
 	QString nbPrimText = fUI->primCount->text().arg(nbItems);
 	fUI->primCount->setText(nbPrimText);
+#else
+	// Hide the prim count for now as it is not dynamically updated.
+	fUI->primCount->setHidden(true);
+#endif
 
+#if SEAN_WIP_NOT_FULLY_IMPL
 	connect(fUI->filterLineEdit, &QLineEdit::textChanged, this, &USDImportDialog::onSearchFilterChanged);
+#else
+	fUI->filterLineEdit->setHidden(true);
+
+	// WIP - since we've hidden all the pieces of this layout (payloads, search)
+	//		 we'll disable this layout for now.
+	fUI->horizontalLayout_2->setEnabled(false);
+#endif
 	connect(fUI->treeView->selectionModel(), &QItemSelectionModel::selectionChanged, this,
 			&USDImportDialog::onTreeViewSelectionChanged);
 

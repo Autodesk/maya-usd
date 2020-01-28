@@ -53,7 +53,7 @@
        <property name="minimumSize">
         <size>
          <width>0</width>
-         <height>32</height>
+         <height>23</height>
         </size>
        </property>
        <property name="autoFillBackground">
@@ -72,7 +72,7 @@
        <property name="minimumSize">
         <size>
          <width>0</width>
-         <height>32</height>
+         <height>23</height>
         </size>
        </property>
        <property name="autoFillBackground">
@@ -104,7 +104,14 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="usdFilePath"/>
+      <widget class="QLineEdit" name="usdFilePath">
+        <property name="readOnly">
+          <bool>true</bool>
+        </property>
+        <property name="enabled">
+          <bool>false</bool>
+        </property>
+      </widget>
      </item>
     </layout>
    </item>

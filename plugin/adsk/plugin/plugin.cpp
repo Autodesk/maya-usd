@@ -52,7 +52,7 @@ MStatus initializePlugin(MObject obj)
     MFnPlugin plugin(obj, "Autodesk", "1.0", "Any");
 
     status = plugin.registerFileTranslator(
-        "mayaUsdImport",
+        "USD Import",
         "",
         UsdMayaImportTranslator::creator,
         "mayaUsdTranslatorImport", // options script name
@@ -142,7 +142,7 @@ MStatus uninitializePlugin(MObject obj)
     }
 #endif
 
-    status = plugin.deregisterFileTranslator("mayaUsdImport");
+    status = plugin.deregisterFileTranslator("USD Import");
     if (!status) {
         status.perror("mayaUsdPlugin: unable to deregister import translator.");
     }
