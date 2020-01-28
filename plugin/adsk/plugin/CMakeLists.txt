@@ -18,6 +18,7 @@ endif()
 add_library(${PLUGIN_PACKAGE} MODULE
     plugin.cpp
     importTranslator.cpp
+    exportTranslator.cpp
     ProxyShape.cpp
 )
 
