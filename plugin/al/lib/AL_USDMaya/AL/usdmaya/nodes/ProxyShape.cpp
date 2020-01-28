@@ -1638,7 +1638,10 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
   s.setLocked(lock);
 
   MFnDependencyNode fn(lockObject);
-  Scope* transformNode = static_cast<Scope*>(fn.userNode());
+  //Ideally we would not dynamic cast here, and it's likely not strictly necessary, given that
+  //getMayaPathFromUsdPrim uses data that originally gets populated via makeUsdTransformChain, but
+  //it's certainly safter
+  Scope* transformNode = dynamic_cast<Scope*>(fn.userNode());
   if (lock && transformNode)
   {
     MPlug plug(lockObject, Transform::pushToPrim());
@@ -2141,7 +2144,7 @@ void ProxyShape::deserialiseTransformRefs()
         if(sl.getDependNode(0, node))
         {
           MFnDependencyNode fn(node);
-          Scope* transformNode = static_cast<Scope*>(fn.userNode());
+          Scope* transformNode = dynamic_cast<Scope*>(fn.userNode());
           if(transformNode)
           {
             const uint32_t required = tstrs[2].asUnsigned();

@@ -107,8 +107,8 @@ MStatus Transform::initialise()
     inheritAttributesFrom("AL_usdmaya_Scope");
 
     addFrame("USD Prim Information");
-    addInheritedAttr("primPath");
-    addInheritedAttr("inStageData");
+    addFrameAttr("primPath", kReadable | kWritable | kStorable | kConnectable | kAffectsWorldSpace);
+    addFrameAttr("inStageData", kWritable | kStorable | kConnectable | kHidden | kAffectsWorldSpace);
 
     addFrame("USD Timing Information");
     m_time = addTimeAttr("time", "tm", MTime(0.0), kKeyable | kConnectable | kReadable | kWritable | kStorable | kAffectsWorldSpace);
