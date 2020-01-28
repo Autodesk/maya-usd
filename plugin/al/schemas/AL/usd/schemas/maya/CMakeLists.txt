@@ -36,12 +36,12 @@ configure_file (
 
 execute_process(
     COMMAND
-        ${Python_EXECUTABLE}
-        ${USD_GENSCHEMA}
-        ${CMAKE_CURRENT_BINARY_DIR}/schema.usda
+        "${Python_EXECUTABLE}"
+        "${USD_GENSCHEMA}"
+        "${CMAKE_CURRENT_BINARY_DIR}/schema.usda"
         .
     WORKING_DIRECTORY
-        ${CMAKE_CURRENT_BINARY_DIR}
+        "${CMAKE_CURRENT_BINARY_DIR}"
     RESULT_VARIABLE
         usdgen_res
 )
@@ -124,12 +124,7 @@ set_target_properties(${PYTHON_LIBRARY_NAME}
         PREFIX ""
 )
 
-if(IS_WINDOWS)
-    set_target_properties(${PYTHON_LIBRARY_NAME}
-        PROPERTIES
-            SUFFIX ".pyd"
-    )
-endif()
+set_python_module_suffix(${PYTHON_LIBRARY_NAME})
 
 target_link_libraries(${PYTHON_LIBRARY_NAME} AL_USDMayaSchemas ${DEPENDANT_LIBRARIES})
 
@@ -146,7 +141,7 @@ install(TARGETS ${PYTHON_LIBRARY_NAME}
 
 # configure_file has a nice feature where it will copy the __init__ file over when it gets modified, unlike file(COPY ...)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/__init__.py ${CMAKE_BINARY_DIR}/AL/usd/schemas/maya/__init__.py COPYONLY)
-install(CODE "execute_process(COMMAND ${Python_EXECUTABLE} -m compileall ${CMAKE_BINARY_DIR}/AL/usd/schemas/maya/__init__.py )")
+install(CODE "execute_process(COMMAND \"${Python_EXECUTABLE}\" -m compileall \"${CMAKE_BINARY_DIR}/AL/usd/schemas/maya/__init__.py\" )")
 
 string(REPLACE "/" ";" folderHierarchy "AL/usd/schemas/maya")
 
@@ -181,7 +176,7 @@ install(
 )
 
 install(CODE "message(STATUS \"POST INSTALL: Compiling python/pyc for ${AL_INSTALL_PREFIX}/lib/python ... \")")
-install(CODE "execute_process(COMMAND ${Python_EXECUTABLE} -m compileall ${AL_INSTALL_PREFIX}/lib/python )")
+install(CODE "execute_process(COMMAND \"${Python_EXECUTABLE}\" -m compileall \"${AL_INSTALL_PREFIX}/lib/python\" )")
 
 ####################################################################################################
 # Install public headers

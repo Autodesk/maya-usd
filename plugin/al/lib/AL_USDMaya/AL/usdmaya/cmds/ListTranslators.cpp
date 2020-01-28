@@ -35,16 +35,6 @@ namespace cmds {
 AL_MAYA_DEFINE_COMMAND(ListTranslators, AL_usdmaya);
 
 //----------------------------------------------------------------------------------------------------------------------
-MArgDatabase ListTranslators::makeDatabase(const MArgList& args)
-{
-  MStatus status;
-  MArgDatabase database(syntax(), args, &status);
-  if(!status)
-    throw status;
-  return database;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 MSyntax ListTranslators::createSyntax()
 {
   MSyntax syn;
@@ -64,7 +54,11 @@ MStatus ListTranslators::doIt(const MArgList& argList)
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("AL_usdmaya_ListTranslators::doIt\n");
   try
   {
-    MArgDatabase args = makeDatabase(argList);
+    MStatus status;
+    MArgDatabase args(syntax(), argList, &status);
+    if(!status)
+      return status;
+
     AL_MAYA_COMMAND_HELP(args, g_helpText);
 
 
@@ -97,9 +91,9 @@ MStatus ListTranslators::doIt(const MArgList& argList)
 const char* const ListTranslators::g_helpText =  R"(
     AL_usdmaya_ListTranslators Overview:
 
-      This command returns an array of strings which correspond to the translator plugins registered 
+      This command returns an array of strings which correspond to the translator plugins registered
     with AL_USDMaya. These strings can be passed (as a semi-colon seperated list) to the Active/Inactive
-    translator lists for export/import. 
+    translator lists for export/import.
 
 )";
 

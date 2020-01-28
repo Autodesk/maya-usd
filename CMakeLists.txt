@@ -106,6 +106,11 @@ if(NOT WIN32)
 endif()
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
+# Use RUNPATH instead of RPATH for all shared libs and executables on Linux
+if(IS_LINUX)
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
+endif()
 
 #==============================================================================
 # Tests
@@ -121,6 +126,8 @@ if (BUILD_TESTS)
     if (UFE_FOUND)
         add_subdirectory(test/lib/ufe)
     endif()
+
+    set(MAYAUSD_GTEST_PATH "PATH+:=lib/gtest")
 endif()
 
 #==============================================================================

@@ -473,6 +473,7 @@ if(UFE_FOUND)
     target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
 endif()
 
+# handle run-time search paths
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "plugin")
     if(WANT_USD_RELATIVE_PATH)
@@ -618,17 +619,8 @@ if(UFE_FOUND)
         PROPERTIES 
             PREFIX ""
     )
-    if(IS_WINDOWS)
-        set_target_properties(${UFE_PYTHON_LIBRARY_NAME}
-            PROPERTIES
-                SUFFIX ".pyd"
-        )
-    elseif(IS_MACOSX)
-        set_target_properties(${UFE_PYTHON_LIBRARY_NAME}
-            PROPERTIES
-                SUFFIX ".so"
-        )
-    endif()
+
+    set_python_module_suffix(${UFE_PYTHON_LIBRARY_NAME})
 
     target_link_libraries(${UFE_PYTHON_LIBRARY_NAME}
         ${LIBRARY_NAME}
