@@ -20,6 +20,8 @@
 #include "mayaAttrs.h"
 #include "tokens.h"
 
+#include "mayaUsd/utils/util.h"
+
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usdHydra/tokens.h>
@@ -509,10 +511,8 @@ HdMaterialNode* HdMayaMaterialNetworkConverter::GetMaterial(
     if (chr == nullptr || chr[0] == '\0') { return nullptr; }
     TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
         .Msg("HdMayaMaterialNetworkConverter::GetMaterial(node=%s)\n", chr);
-    std::string usdPathStr(chr);
-    // replace namespace ":" with "_"
-    std::replace(usdPathStr.begin(), usdPathStr.end(), ':', '_');
-    const auto materialPath = _prefix.AppendPath(SdfPath(usdPathStr));
+    std::string usdNameStr = UsdMayaUtil::SanitizeName(chr);
+    const auto materialPath = _prefix.AppendChild(TfToken(usdNameStr));
 
     auto findResult = std::find_if(
             _network.nodes.begin(), _network.nodes.end(),
