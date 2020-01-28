@@ -36,3 +36,13 @@ git add BranchHistory.md
 git commit -m "Adding Branch History file"
 git push
 ```
+
+```
+Jan 28, 2020:
+git merge --no-ff github/donnels/MAYA-101325/new_import_ui_feature_wip
+git merge --no-ff github/autodesk/MAYA-100225/fixes_al_unit_tests
+git merge --no-ff github/dev
+git merge --no-ff github/adsk/MAYA-102918/add_mayausd_export_translator
+git merge --no-ff github/ufe_bbox_support_dev
+git push
+```
