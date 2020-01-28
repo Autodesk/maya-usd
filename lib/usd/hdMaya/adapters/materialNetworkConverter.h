@@ -118,9 +118,12 @@ private:
 
 class HdMayaMaterialNetworkConverter {
 public:
+    typedef std::unordered_map<SdfPath, MObject, SdfPath::Hash> PathToMobjMap;
+
     HDMAYA_API
     HdMayaMaterialNetworkConverter(
-        HdMaterialNetwork& network, const SdfPath& prefix);
+        HdMaterialNetwork& network, const SdfPath& prefix,
+        PathToMobjMap* pathToMobj = nullptr);
 
     HDMAYA_API
     HdMaterialNode* GetMaterial(const MObject& mayaNode);
@@ -160,6 +163,7 @@ public:
 private:
     HdMaterialNetwork& _network;
     const SdfPath& _prefix;
+    PathToMobjMap* _pathToMobj;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

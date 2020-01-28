@@ -212,14 +212,21 @@ const VtValue& HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
 #endif
 }
 
-#endif // USD_VERSION_NUM <= 1911
-
-HdTextureResource::ID HdMayaMaterialAdapter::GetTextureResourceID(
+HdTextureResourceSharedPtr HdMayaMaterialAdapter::GetTextureResource(
     const TfToken& paramName) {
     return {};
 }
 
+#else // USD_VERSION_NUM > 1911
+
 HdTextureResourceSharedPtr HdMayaMaterialAdapter::GetTextureResource(
+        const SdfPath& textureShaderId) {
+    return {};
+}
+
+#endif // USD_VERSION_NUM <= 1911
+
+HdTextureResource::ID HdMayaMaterialAdapter::GetTextureResourceID(
     const TfToken& paramName) {
     return {};
 }
@@ -260,6 +267,8 @@ VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(
 
 class HdMayaShadingEngineAdapter : public HdMayaMaterialAdapter {
 public:
+    typedef HdMayaMaterialNetworkConverter::PathToMobjMap PathToMobjMap;
+
     HdMayaShadingEngineAdapter(
         const SdfPath& id, HdMayaDelegateCtx* delegate, const MObject& obj)
         : HdMayaMaterialAdapter(id, delegate, obj), _surfaceShaderCallback(0) {
@@ -550,6 +559,52 @@ private:
         }
     }
 
+    HdTextureResource::ID GetTextureResourceID(
+        const TfToken& paramName) override {
+        TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+            .Msg("HdMayaShadingEngineAdapter::GetTextureResourceID(%s): %s\n",
+                    paramName.GetText(), GetID().GetText());
+        auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
+        if (fileObj == MObject::kNullObj) { return HdTextureResource::ID(-1); }
+        return _GetTextureResourceID(
+            fileObj, GetFileTexturePath(MFnDependencyNode(fileObj)));
+    }
+
+
+    HdTextureResourceSharedPtr GetTextureResource(
+        const TfToken& paramName) override {
+        TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+            .Msg("HdMayaShadingEngineAdapter::GetTextureResource(%s): %s\n",
+                    paramName.GetText(), GetID().GetText());
+        auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
+        if (fileObj == MObject::kNullObj) { return {}; }
+        if(GetDelegate()->IsHdSt()) {
+            return GetFileTextureResource(
+                fileObj, GetFileTexturePath(MFnDependencyNode(fileObj)),
+                GetDelegate()->GetParams().textureMemoryPerTexture);
+        }
+        return {};
+    }
+
+#else // USD_VERSION_NUM > 1911
+
+    HdTextureResourceSharedPtr GetTextureResource(
+        const SdfPath& textureShaderId) override {
+        TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+            .Msg("HdMayaShadingEngineAdapter::GetTextureResource(%s): %s\n",
+                    textureShaderId.GetText(), GetID().GetText());
+        if(GetDelegate()->IsHdSt()) {
+            auto* mObjPtr = TfMapLookupPtr(_materialPathToMobj,
+                    textureShaderId);
+            if (!mObjPtr || (*mObjPtr) == MObject::kNullObj) { return {}; }
+            return GetFileTextureResource(
+                *mObjPtr, GetFileTexturePath(MFnDependencyNode(*mObjPtr)),
+                GetDelegate()->GetParams().textureMemoryPerTexture);
+        }
+        return {};
+    }
+
+
 #endif // USD_VERSION_NUM <= 1911
 
     void _CreateSurfaceMaterialCallback() {
@@ -565,14 +620,6 @@ private:
         }
     }
 
-    HdTextureResource::ID GetTextureResourceID(
-        const TfToken& paramName) override {
-        auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
-        if (fileObj == MObject::kNullObj) { return HdTextureResource::ID(-1); }
-        return _GetTextureResourceID(
-            fileObj, GetFileTexturePath(MFnDependencyNode(fileObj)));
-    }
-
     inline HdTextureResource::ID _GetTextureResourceID(
         const MObject& fileObj, const TfToken& filePath) {
         auto hash = filePath.Hash();
@@ -584,23 +631,13 @@ private:
         return HdTextureResource::ID(hash);
     }
 
-    HdTextureResourceSharedPtr GetTextureResource(
-        const TfToken& paramName) override {
-        auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
-        if (fileObj == MObject::kNullObj) { return {}; }
-        if(GetDelegate()->IsHdSt()) {
-            return GetFileTextureResource(
-                fileObj, GetFileTexturePath(MFnDependencyNode(fileObj)),
-                GetDelegate()->GetParams().textureMemoryPerTexture);
-        }
-        return {};
-    }
-
     VtValue GetMaterialResource() override {
         TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
-            .Msg("HdMayaShadingEngineAdapter::GetMaterialResource()\n");
+            .Msg("HdMayaShadingEngineAdapter::GetMaterialResource(): %s\n",
+                    GetID().GetText());
         HdMaterialNetwork materialNetwork;
-        HdMayaMaterialNetworkConverter converter(materialNetwork, GetID());
+        HdMayaMaterialNetworkConverter converter(materialNetwork, GetID(),
+                &_materialPathToMobj);
         if (!converter.GetMaterial(_surfaceShader)) {
             return GetPreviewMaterialResource(GetID());
         }
@@ -657,6 +694,8 @@ private:
 #endif // USD_VERSION_NUM <= 1911
 
 #endif // HDMAYA_OIT_ENABLED
+
+    PathToMobjMap _materialPathToMobj;
 
     MObject _surfaceShader;
     TfToken _surfaceShaderType;

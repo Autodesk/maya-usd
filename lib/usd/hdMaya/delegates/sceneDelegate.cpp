@@ -1032,16 +1032,55 @@ HdTextureResourceSharedPtr HdMayaSceneDelegate::GetTextureResource(
         .Msg(
             "HdMayaSceneDelegate::GetTextureResource(%s)\n",
             textureId.GetText());
+
+#if USD_VERSION_NUM <= 1911
+
     return _GetValue<HdMayaMaterialAdapter, HdTextureResourceSharedPtr>(
         textureId.GetPrimPath(),
         [&textureId](HdMayaMaterialAdapter* a) -> HdTextureResourceSharedPtr {
             return a->GetTextureResource(textureId.GetNameToken());
         },
         _materialAdapters);
+
+#else // USD_VERSION_NUM > 1911
+
+    auto* adapterPtr = TfMapLookupPtr(_materialAdapters, textureId);
+
+    if(!adapterPtr) {
+        // For texture nodes we may have only inserted an adapter for the material
+        // not for the texture itself.
+        //
+        // UsdShade has the rule that a UsdShade node must be nested inside the
+        // UsdMaterial scope. We traverse the parent paths to find the material.
+        //
+        // Example for texture prim:
+        //    /Materials/Woody/BootMaterial/UsdShadeNodeGraph/Tex
+        // We want to find Sprim:
+        //    /Materials/Woody/BootMaterial
+
+        // While-loop to account for nesting of UsdNodeGraphs and DrawMode
+        // adapter with prototypes.
+        SdfPath parentPath = textureId;
+        while (!adapterPtr && !parentPath.IsRootPrimPath()) {
+            parentPath = parentPath.GetParentPath();
+            adapterPtr = TfMapLookupPtr(_materialAdapters, parentPath);
+        }
+    }
+
+    if (adapterPtr) {
+        return adapterPtr->get()->GetTextureResource(textureId);
+    }
+    return nullptr;
+
+#endif // USD_VERSION_NUM <= 1911
 }
 
 bool HdMayaSceneDelegate::_CreateMaterial(
     const SdfPath& id, const MObject& obj) {
+    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+        .Msg(
+            "HdMayaSceneDelegate::_CreateMaterial(%s)\n",
+            id.GetText());
     auto materialCreator =
         HdMayaAdapterRegistry::GetMaterialAdapterCreator(obj);
     if (materialCreator == nullptr) { return false; }

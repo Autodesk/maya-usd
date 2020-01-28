@@ -68,14 +68,21 @@ public:
     HDMAYA_API
     static const VtValue& GetPreviewMaterialParamValue(
         const TfToken& paramName);
+    HDMAYA_API
+    virtual HdTextureResourceSharedPtr GetTextureResource(
+        const TfToken& paramName);
+
+#else // USD_VERSION_NUM > 1911
+
+    HDMAYA_API
+    virtual HdTextureResourceSharedPtr GetTextureResource(
+            const SdfPath& textureShaderId);
+
 
 #endif // USD_VERSION_NUM <= 1911
 
     HDMAYA_API
     virtual HdTextureResource::ID GetTextureResourceID(
-        const TfToken& paramName);
-    HDMAYA_API
-    virtual HdTextureResourceSharedPtr GetTextureResource(
         const TfToken& paramName);
     HDMAYA_API
     virtual VtValue GetMaterialResource();

@@ -499,8 +499,9 @@ HdMayaShaderParam::HdMayaShaderParam(
     : param(HdMaterialParam::ParamTypeFallback, name, value), type(type) {}
 
 HdMayaMaterialNetworkConverter::HdMayaMaterialNetworkConverter(
-    HdMaterialNetwork& network, const SdfPath& prefix)
-    : _network(network), _prefix(prefix) {}
+    HdMaterialNetwork& network, const SdfPath& prefix,
+    PathToMobjMap* pathToMobj)
+    : _network(network), _prefix(prefix), _pathToMobj(pathToMobj) {}
 
 HdMaterialNode* HdMayaMaterialNetworkConverter::GetMaterial(
     const MObject& mayaNode) {
@@ -567,6 +568,7 @@ HdMaterialNode* HdMayaMaterialNetworkConverter::GetMaterial(
             }
         }
     }
+    if(_pathToMobj) { (*_pathToMobj)[materialPath] = mayaNode; }
     _network.nodes.push_back(material);
     return &_network.nodes.back();
 }
