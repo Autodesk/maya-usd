@@ -65,7 +65,7 @@ class GroupCmdTestCase(unittest.TestCase):
         groupPath = propsPath + "newGroup"
 
         # Create new group.
-        group = propsHierarchy.createGroupCmd("newGroup")
+        group = propsHierarchy.createGroupCmd(ufe.PathComponent("newGroup"))
 
         self.assertIsNotNone(group.item)
         # MAYA-92350: must re-create hierarchy interface object.  Fix ASAP.

@@ -109,18 +109,18 @@ TEST(LayerCommands, addSubLayer)
 
   AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(constructTransformChain, temp_path);
 
-  EXPECT_EQ(proxyShape->getUsdStage()->GetLayerStack().size(), 2); //Session layer and RootLayer
+  EXPECT_EQ(proxyShape->getUsdStage()->GetLayerStack().size(), 2u); //Session layer and RootLayer
 
   // Add anonymous layer to the sublayers
   MGlobal::executeCommand("AL_usdmaya_LayerCreateLayer -s -o \"\" -p \"AL_usdmaya_ProxyShape1\"");
-  EXPECT_EQ(proxyShape->getUsdStage()->GetLayerStack().size(), 3); // With added anonymous layer
+  EXPECT_EQ(proxyShape->getUsdStage()->GetLayerStack().size(), 3u); // With added anonymous layer
 
   const MString testLayer = MString(AL_USDMAYA_TEST_DATA) + MString("/root.usda");
   MString c;
   c.format(MString("AL_usdmaya_LayerCreateLayer -s -o \"^1s\" -p \"AL_usdmaya_ProxyShape1\""), testLayer);
 
   MGlobal::executeCommand(c);
-  EXPECT_EQ(proxyShape->getUsdStage()->GetLayerStack().size(), 5); // With added named layer
+  EXPECT_EQ(proxyShape->getUsdStage()->GetLayerStack().size(), 5u); // With added named layer
 }
 
 

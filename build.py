@@ -98,56 +98,6 @@ def IsVisualStudio2017OrGreater():
         return version >= VISUAL_STUDIO_2017_VERSION
     return False
 
-def GetPythonInfo():
-    """Returns a tuple containing the path to the Python executable, shared
-    library, and include directory corresponding to the version of Python
-    currently running. Returns None if any path could not be determined. This
-    function always returns None on Windows or Linux.
-
-    This function is primarily used to determine which version of
-    Python USD should link against when multiple versions are installed.
-    """
-    # We just skip all this on Windows. Users on Windows are unlikely to have
-    # multiple copies of the same version of Python, so the problem this
-    # function is intended to solve doesn't arise on that platform.
-    if Windows():
-        return None
-
-    # We also skip all this on Linux. The below code gets the wrong answer on
-    # certain distributions like Ubuntu, which organizes libraries based on
-    # multiarch. The below code yields /usr/lib/libpython2.7.so, but
-    # the library is actually in /usr/lib/x86_64-linux-gnu. Since the problem
-    # this function is intended to solve primarily occurs on macOS, so it's
-    # simpler to just skip this for now.
-    if Linux():
-        return None
-
-    try:
-        import distutils.sysconfig
-
-        pythonExecPath = None
-        pythonLibPath = None
-
-        pythonPrefix = distutils.sysconfig.PREFIX
-        if pythonPrefix:
-            pythonExecPath = os.path.join(pythonPrefix, 'bin', 'python')
-            pythonLibPath = os.path.join(pythonPrefix, 'lib', 'libpython2.7.dylib')
-
-        pythonIncludeDir = distutils.sysconfig.get_python_inc()
-    except:
-        return None
-
-    if pythonExecPath and pythonIncludeDir and pythonLibPath:
-        # Ensure that the paths are absolute, since depending on the version of
-        # Python being run and the path used to invoke it, we may have gotten a
-        # relative path from distutils.sysconfig.PREFIX.
-        return (
-            os.path.abspath(pythonExecPath),
-            os.path.abspath(pythonLibPath),
-            os.path.abspath(pythonIncludeDir))
-
-    return None
-
 def GetCPUCount():
     try:
         return multiprocessing.cpu_count()
@@ -324,6 +274,43 @@ def RunCTest(context, extraArgs=None):
                     variant=variant,
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
 
+def RunMakeZipArchive(context):
+    installDir = context.instDir
+    buildDir = context.buildDir
+    pkgDir = context.pkgDir
+    variant = BuildVariant(context)
+
+    # extract version from mayausd_version.info
+    mayaUsdVerion = [] 
+    cmakeInfoDir = os.path.join(context.mayaUsdSrcDir, 'cmake')
+    filename = os.path.join(cmakeInfoDir, 'mayausd_version.info')
+    with open(filename, 'r') as filehandle:
+        content = filehandle.readlines()
+        for current_line in content:
+            digitList = re.findall(r'\d+', current_line)
+            versionStr = ''.join(str(e) for e in digitList)
+            mayaUsdVerion.append(versionStr)
+
+    majorVersion = mayaUsdVerion[0]
+    minorVersion = mayaUsdVerion[1]
+    patchLevel   = mayaUsdVerion[2]  
+
+    pkgName = 'MayaUsd' + '-' + majorVersion + '.' + minorVersion + '.' + patchLevel + '-' + (platform.system()) + '-' + variant
+    with CurrentWorkingDirectory(buildDir):
+        shutil.make_archive(pkgName, 'zip', installDir)
+
+        # copy zip file to package directory
+        if not os.path.exists(pkgDir):
+            os.makedirs(pkgDir)
+
+        for file in os.listdir(buildDir):
+            if file.endswith(".zip"):
+                zipFile = os.path.join(buildDir, file)
+                try:
+                    shutil.copy(zipFile, pkgDir)
+                except Exception as exp:
+                    PrintError("Failed to write to directory {pkgDir} : {exp}".format(pkgDir=pkgDir,exp=exp))
+                    sys.exit(1)
 
 def BuildAndInstall(context, buildArgs, stages):
     with CurrentWorkingDirectory(context.mayaUsdSrcDir):
@@ -340,6 +327,13 @@ def BuildAndInstall(context, buildArgs, stages):
         if context.devkitLocation:
             extraArgs.append('-DMAYA_DEVKIT_LOCATION="{devkitLocation}"'
                              .format(devkitLocation=context.devkitLocation))
+
+        # Many people on Windows may not have python with the 
+        # debugging symbol (python27_d.lib) installed, this is the common case.
+        if context.buildDebug and context.debugPython:
+            extraArgs.append('-DMAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG=ON')
+        else:
+            extraArgs.append('-DMAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG=OFF')
 
         extraArgs += buildArgs
         stagesArgs += stages
@@ -365,6 +359,11 @@ def BuildAndInstall(context, buildArgs, stages):
 def RunTests(context,extraArgs):
     RunCTest(context,extraArgs)
     Print("""Success running MayaUSD tests !!!!""")
+
+def Package(context):
+    RunMakeZipArchive(context)
+    Print("""Success packaging MayaUSD !!!!""")
+    Print('Archived package is available in {pkgDir}'.format(pkgDir=context.pkgDir))
 
 ############################################################
 # ArgumentParser
@@ -401,14 +400,18 @@ parser.add_argument("--pxrusd-location", type=str,
 parser.add_argument("--devkit-location", type=str,
                     help="Directory where Maya Devkit is installed.")
 
-parser.add_argument("--build-debug", dest="build_debug", action="store_true",
-                    help="Build in Debug mode")
+varGroup = parser.add_mutually_exclusive_group()
+varGroup.add_argument("--build-debug", dest="build_debug", action="store_true",
+                    help="Build in Debug mode (default: %(default)s)")
 
-parser.add_argument("--build-release", dest="build_release", action="store_true",
-                    help="Build in Release mode")
+varGroup.add_argument("--build-release", dest="build_release", action="store_true",
+                    help="Build in Release mode (default: %(default)s)")
 
-parser.add_argument("--build-relwithdebug", dest="build_relwithdebug", action="store_true",
-                    help="Build in RelWithDebInfo mode")
+varGroup.add_argument("--build-relwithdebug", dest="build_relwithdebug", action="store_true", default=True,
+                    help="Build in RelWithDebInfo mode (default: %(default)s)")
+
+parser.add_argument("--debug-python", dest="debug_python", action="store_true",
+                      help="Define Boost Python Debug if your Python library comes with Debugging symbols (default: %(default)s).")
 
 parser.add_argument("--build-args", type=str, nargs="*", default=[],
                    help=("Comma-separated list of arguments passed into CMake when building libraries"))
@@ -417,7 +420,7 @@ parser.add_argument("--ctest-args", type=str, nargs="*", default=[],
                    help=("Comma-separated list of arguments passed into CTest.(e.g -VV, --output-on-failure)"))
 
 parser.add_argument("--stages", type=str, nargs="*", default=['clean','configure','build','install'],
-                   help=("Comma-separated list of stages to execute.(possible stages: clean, configure, build, install, test)"))
+                   help=("Comma-separated list of stages to execute.(possible stages: clean, configure, build, install, test, package)"))
 
 parser.add_argument("-j", "--jobs", type=int, default=GetCPUCount(),
                     help=("Number of build jobs to run in parallel. "
@@ -445,6 +448,8 @@ class InstallContext:
         self.buildRelease = args.build_release
         self.buildRelWithDebug = args.build_relwithdebug
 
+        self.debugPython = args.debug_python
+
         # Workspace directory 
         self.workspaceDir = os.path.abspath(args.workspace_location)
 
@@ -455,6 +460,9 @@ class InstallContext:
         # Install directory
         self.instDir = (os.path.abspath(args.install_location) if args.install_location
                          else os.path.join(self.workspaceDir, "install", BuildVariant(self)))
+
+        # Package directory
+        self.pkgDir = (os.path.join(self.workspaceDir, "package", BuildVariant(self)))
 
         # CMake generator
         self.cmakeGenerator = args.generator
@@ -515,6 +523,7 @@ if __name__ == "__main__":
       Build directory           {buildDir}
       Install directory         {instDir}
       Variant                   {buildVariant}
+      Python Debug              {debugPython}
       CMake generator           {cmakeGenerator}"""
 
     if context.redirectOutstreamFile:
@@ -534,17 +543,18 @@ if __name__ == "__main__":
       CTest arguments           {ctestArgs}"""
 
     summaryMsg = summaryMsg.format(
-    mayaUsdSrcDir=context.mayaUsdSrcDir,
-    workspaceDir=context.workspaceDir,
-    buildDir=context.buildDir,
-    instDir=context.instDir,
-    logFileLocation=context.logFileLocation,
-    buildArgs=context.buildArgs,
-    stagesArgs=context.stagesArgs,
+        mayaUsdSrcDir=context.mayaUsdSrcDir,
+        workspaceDir=context.workspaceDir,
+        buildDir=context.buildDir,
+        instDir=context.instDir,
+        logFileLocation=context.logFileLocation,
+        buildArgs=context.buildArgs,
+        stagesArgs=context.stagesArgs,
         ctestArgs=context.ctestArgs,
-    buildVariant=BuildVariant(context),
-    cmakeGenerator=("Default" if not context.cmakeGenerator
-                    else context.cmakeGenerator)
+        buildVariant=BuildVariant(context),
+        debugPython=("On" if context.debugPython else "Off"),
+        cmakeGenerator=("Default" if not context.cmakeGenerator
+                        else context.cmakeGenerator)
     )
 
     Print(summaryMsg)
@@ -557,3 +567,6 @@ if __name__ == "__main__":
     if 'test' in context.stagesArgs:
         RunTests(context, context.ctestArgs)
 
+    # Package
+    if 'package' in context.stagesArgs:
+        Package(context)

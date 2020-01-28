@@ -17,11 +17,11 @@
 #include "pxrUsdPreviewSurface/usdPreviewSurfaceWriter.h"
 
 #include "pxrUsdPreviewSurface/usdPreviewSurface.h"
-#include "usdMaya/primWriterRegistry.h"
-#include "usdMaya/shaderWriter.h"
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/utils/util.h>
-#include "usdMaya/writeJobContext.h"
-#include "usdMaya/writeUtil.h"
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"

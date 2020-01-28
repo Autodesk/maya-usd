@@ -60,7 +60,7 @@ TEST(TranslatorContext, PrimLookup)
   EXPECT_TRUE(obj == cnref.object());
   EXPECT_TRUE(path == cnref.path());
   EXPECT_TRUE(TfToken("transform") == cnref.translatorId());
-  EXPECT_EQ(1, cnref.createdNodes().size());
+  EXPECT_EQ(1u, cnref.createdNodes().size());
   EXPECT_TRUE(obj2 == cnref.createdNodes()[0].object());
 }
 
@@ -186,14 +186,14 @@ TEST(TranslatorContext, TranslatorContext)
       {
         AL::usdmaya::fileio::translators::MObjectHandleArray handles;
         context->getMObjects(SdfPath("/root/rig"), handles);
-        ASSERT_EQ(handles.size(), 1);
+        ASSERT_EQ(handles.size(), 1u);
 
         EXPECT_TRUE(handles[0].object() == obj);
       }
       {
         AL::usdmaya::fileio::translators::MObjectHandleArray handles;
         context->getMObjects(prim, handles);
-        ASSERT_EQ(handles.size(), 1);
+        ASSERT_EQ(handles.size(), 1u);
         EXPECT_TRUE(handles[0].object() == obj);
       }
       context->removeItems(prim);
@@ -222,7 +222,7 @@ TEST(TranslatorContext, TranslatorContext)
       {
         AL::usdmaya::fileio::translators::MObjectHandleArray handles;
         context->getMObjects(SdfPath("/root/rig"), handles);
-        ASSERT_EQ(handles.size(), 1);
+        ASSERT_EQ(handles.size(), 1u);
         EXPECT_TRUE(handles[0].object() == obj);
       }
       translatorId = context->getTranslatorIdForPath(SdfPath("/root/rig"));
@@ -245,11 +245,11 @@ TEST(TranslatorContext, TranslatorContext)
 
       SdfPathVector itemsToRemove;
       context->preRemoveEntry(SdfPath("/root/rig"), itemsToRemove);
-      ASSERT_EQ(itemsToRemove.size(), 1);
+      ASSERT_EQ(itemsToRemove.size(), 1u);
       // preRemoveEntry is often called multiple times before changes are handled.
       context->preRemoveEntry(SdfPath("/root"), itemsToRemove);
       // Make sure prims have not been added twice
-      ASSERT_EQ(itemsToRemove.size(), 1);
+      ASSERT_EQ(itemsToRemove.size(), 1u);
 
       context->removeEntries(itemsToRemove);
 

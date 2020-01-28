@@ -22,6 +22,7 @@ pxr_shared_library(${PXR_PACKAGE}
         ${MAYA_OpenMaya_LIBRARY}
         ${MAYA_OpenMayaAnim_LIBRARY}
         ${MAYA_OpenMayaRender_LIBRARY}
+        ${MAYA_OpenMayaUI_LIBRARY}
         mayaUsd
 
     INCLUDE_DIRS
@@ -32,47 +33,8 @@ pxr_shared_library(${PXR_PACKAGE}
         api.h
 
     PUBLIC_CLASSES
-        adaptor
-        blockSceneModificationContext
-        diagnosticDelegate
         editUtil
-        hdImagingShape
-        jobArgs
-        meshUtil
-        pointBasedDeformerNode
-        primReader
-        primReaderArgs
-        primReaderContext
-        primReaderRegistry
-        primWriter
-        primWriterArgs
-        primWriterContext
-        primWriterRegistry
-        readUtil
-        roundTripUtil
-        shaderWriter
-        shadingModeExporter
-        shadingModeExporterContext
-        shadingModeImporter
-        shadingModeRegistry
-        shadingUtil
-        stageNode
-        transformWriter
-        translatorCamera
-        translatorCurves
-        translatorGprim
-        translatorMaterial
-        translatorMesh
         translatorModelAssembly
-        translatorNurbsPatch
-        translatorPrim
-        translatorRfMLight
-        translatorSkel
-        translatorUtil
-        translatorXformable
-        writeJobContext
-        writeUtil
-        xformStack
 
         exportCommand
         exportTranslator
@@ -81,52 +43,18 @@ pxr_shared_library(${PXR_PACKAGE}
         listShadingModesCommand
         proxyShape
         referenceAssembly
-        undoHelperCommand
-
-        chaser
-        chaserRegistry
-
-        userTaggedAttribute
 
     PRIVATE_CLASSES
-        fallbackPrimReader
-        functorPrimReader
-        functorPrimWriter
-        instancedNodeWriter
-        modelKindProcessor
-        readJob
-        registryHelper
-        skelBindingsProcessor
-        writeJob
-
-    PRIVATE_HEADERS
-        shadingModePxrRis_rfm_map.h
+        readJobWithSceneAssembly
+        instancerShapeAdapterWithSceneAssembly
 
     CPPFILES
-        shadingModeDisplayColor.cpp
-        shadingModePxrRis.cpp
-        shadingModeUseRegistry.cpp
-        translatorMesh_PrimVars.cpp
-        translatorMesh_SubDiv.cpp
-        translatorXformable_decompose.cpp
         readJob_ImportWithProxies.cpp
 
     PYMODULE_CPPFILES
         module.cpp
         wrapAssembly.cpp
-        wrapBlockSceneModificationContext.cpp
-        wrapColorSpace.cpp
-        wrapDiagnosticDelegate.cpp
         wrapEditUtil.cpp
-        wrapMeshUtil.cpp
-        wrapQuery.cpp
-        wrapReadUtil.cpp
-        wrapRoundTripUtil.cpp
-        wrapStageCache.cpp
-        wrapAdaptor.cpp
-        wrapUserTaggedAttribute.cpp
-        wrapWriteUtil.cpp
-        wrapXformStack.cpp
 
     PYMODULE_FILES
         __init__.py

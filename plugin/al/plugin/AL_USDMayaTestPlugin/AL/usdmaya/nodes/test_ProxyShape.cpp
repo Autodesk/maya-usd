@@ -332,7 +332,7 @@ TEST(ProxyShape, basicTransformChainOperations)
       // construct a chain of transform nodes
       MObject leafNode = proxy->makeUsdTransformChain(prim, modifier1, AL::usdmaya::nodes::ProxyShape::kSelection, &modifier2, &createCount);
 
-      EXPECT_EQ(1, proxy->selectedPaths().size());
+      EXPECT_EQ(1u, proxy->selectedPaths().size());
 
       // make sure we get some sane looking values.
       EXPECT_FALSE(leafNode == MObject::kNullObj);
@@ -389,7 +389,7 @@ TEST(ProxyShape, basicTransformChainOperations)
       MDGModifier modifier2b;
       createCount = 0;
       MObject leafNode2 = proxy->makeUsdTransformChain(prim, modifier1b, AL::usdmaya::nodes::ProxyShape::kSelection, &modifier2b, &createCount);
-      EXPECT_EQ(1, proxy->selectedPaths().size());
+      EXPECT_EQ(1u, proxy->selectedPaths().size());
 
       // hopefully not much will happen this time!
       EXPECT_FALSE(leafNode2 == MObject::kNullObj);
@@ -424,7 +424,7 @@ TEST(ProxyShape, basicTransformChainOperations)
       // now lets' go and remove all of those transforms for fun!
       proxy->removeUsdTransformChain(prim, modifier1, AL::usdmaya::nodes::ProxyShape::kSelection);
       EXPECT_EQ(MStatus(MS::kSuccess), modifier1.doIt());
-      EXPECT_EQ(0, proxy->selectedPaths().size());
+      EXPECT_EQ(0u, proxy->selectedPaths().size());
 
       // having removed those chains, we shouldn't have any more transform nodes left
       {
@@ -677,9 +677,9 @@ TEST(ProxyShape, basicTransformChainOperations)
       uint32_t createCount = 0;
 
       // construct a chain of transform nodes
-      EXPECT_EQ(0, proxy->selectedPaths().size());
+      EXPECT_EQ(0u, proxy->selectedPaths().size());
       MObject leafNode = proxy->makeUsdTransformChain(prim, modifier1, AL::usdmaya::nodes::ProxyShape::kSelection, &modifier2, &createCount);
-      EXPECT_EQ(1, proxy->selectedPaths().size());
+      EXPECT_EQ(1u, proxy->selectedPaths().size());
 
       // make sure we get some sane looking values.
       EXPECT_FALSE(leafNode == MObject::kNullObj);
@@ -691,7 +691,7 @@ TEST(ProxyShape, basicTransformChainOperations)
       UsdPrim kneeprim = stage->GetPrimAtPath(SdfPath("/root/hip1/knee1"));
       createCount = 0;
       MObject kneeNode = proxy->makeUsdTransformChain(kneeprim, modifier1, AL::usdmaya::nodes::ProxyShape::kRequired, &modifier2, &createCount);
-      EXPECT_EQ(1, proxy->selectedPaths().size());
+      EXPECT_EQ(1u, proxy->selectedPaths().size());
 
       // make sure we get some sane looking values.
       EXPECT_FALSE(kneeNode == MObject::kNullObj);
@@ -709,7 +709,7 @@ TEST(ProxyShape, basicTransformChainOperations)
       MDagModifier modifier1b;
       proxy->removeUsdTransformChain(prim, modifier1b, AL::usdmaya::nodes::ProxyShape::kSelection);
       EXPECT_EQ(MStatus(MS::kSuccess), modifier1b.doIt());
-      EXPECT_EQ(0, proxy->selectedPaths().size());
+      EXPECT_EQ(0u, proxy->selectedPaths().size());
 
       // We should now only have 3 TM's left
       {
@@ -720,7 +720,7 @@ TEST(ProxyShape, basicTransformChainOperations)
           it.next();
           count++;
         }
-        EXPECT_EQ(3, count);
+        EXPECT_EQ(3u, count);
       }
 
       {
@@ -730,7 +730,7 @@ TEST(ProxyShape, basicTransformChainOperations)
         EXPECT_EQ(MStatus(MS::kSuccess), status);
 
         // and we *should* find it has zero children
-        EXPECT_EQ(0, fnx.childCount());
+        EXPECT_EQ(0u, fnx.childCount());
       }
 
       // now remove the last transforms
@@ -852,7 +852,7 @@ TEST(ProxyShape, basicTransformChainOperations2)
         EXPECT_EQ(MStatus(MS::kSuccess), status);
 
         // we should have one child here (the ankle1)
-        EXPECT_EQ(0, fnx.childCount());
+        EXPECT_EQ(0u, fnx.childCount());
       }
 
       // construct a chain of transform nodes
@@ -887,13 +887,13 @@ TEST(ProxyShape, basicTransformChainOperations2)
         EXPECT_EQ(MStatus(MS::kSuccess), status);
 
         // we should have one child here (the ankle1)
-        EXPECT_EQ(1, fnx.childCount());
+        EXPECT_EQ(1u, fnx.childCount());
 
         MFnTransform fnAnkle(fnx.child(0), &status);
         EXPECT_EQ(MStatus(MS::kSuccess), status);
 
         // we should have two children here (ltoe1, rtoe1)
-        EXPECT_EQ(2, fnAnkle.childCount());
+        EXPECT_EQ(2u, fnAnkle.childCount());
 
         MFnTransform fnLToe(fnAnkle.child(0), &status);
         EXPECT_EQ(MStatus(MS::kSuccess), status);
@@ -936,7 +936,7 @@ TEST(ProxyShape, basicTransformChainOperations2)
         EXPECT_EQ(MStatus(MS::kSuccess), status);
 
         // we should have one child here (the ankle1)
-        EXPECT_EQ(0, fnx.childCount());
+        EXPECT_EQ(0u, fnx.childCount());
       }
 
       // construct a chain of transform nodes
@@ -1278,6 +1278,53 @@ TEST(ProxyShape, relativePathSupport)
 
   stage = stages[0];
   checkStageAndRootLayer(stage, bootstrapFullPath);
+
+  // Clear out the scene to avoid crashing in proxy shape code during idle
+  // redraw.
+  MFileIO::newFile(true);
+}
+
+// duplication
+TEST(ProxyShape, duplication)
+{
+  MFileIO::newFile(true);
+
+  MString tempDirString, bootstrapFullPath;
+  EXPECT_TRUE(prepareBootstrapUSDA(tempDirString, bootstrapFullPath));
+
+  MFnDagNode fn;
+  MObject xform = fn.create("transform");
+  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+
+  auto proxy = reinterpret_cast<AL::usdmaya::nodes::ProxyShape*>(fn.userNode());
+  // force the stage to load
+  proxy->filePathPlug().setString(bootstrapFullPath.asChar());
+
+  // Add the proxy shape to the selection, then duplicate the selection.
+  MSelectionList sl;
+  sl.add(shape);
+  EXPECT_TRUE(MGlobal::setActiveSelectionList(sl));
+  EXPECT_TRUE(MGlobal::executeCommand("duplicate"));
+
+  // Get the newly-created proxy shape from the selection.
+  sl.clear();
+  EXPECT_TRUE(MGlobal::getActiveSelectionList(sl));
+  MObject dupShape;
+  EXPECT_TRUE(sl.getDependNode(0, dupShape));
+
+  MFnDagNode dupFn(dupShape);
+  auto dupProxy = reinterpret_cast<AL::usdmaya::nodes::ProxyShape*>(
+    dupFn.userNode());
+
+  // The duplicate has the same USD file set in its file path plug.
+  EXPECT_EQ(dupProxy->filePathPlug().asString(), bootstrapFullPath);
+
+  // Its stage must not be null.
+  EXPECT_NE(dupProxy->getUsdStage(), nullptr);
+
+  // Clear out the scene to avoid crashing in proxy shape code during idle
+  // redraw.
+  MFileIO::newFile(true);
 }
 
 //

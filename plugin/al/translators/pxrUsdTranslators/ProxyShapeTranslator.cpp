@@ -23,10 +23,8 @@
 
 #include "maya/MTime.h"
 
-#include "usdMaya/jobArgs.h"
-#include "usdMaya/primWriterArgs.h"
-#include "usdMaya/primWriterContext.h"
-#include "usdMaya/primWriterRegistry.h"
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/utils/util.h>
 
 #include "pxr/base/tf/token.h"

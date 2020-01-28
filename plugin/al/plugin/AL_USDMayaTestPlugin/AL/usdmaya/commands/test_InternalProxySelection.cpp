@@ -76,124 +76,124 @@ TEST(InternalProxyShapeSelect, selectNode)
   MSelectionList sl;
 
   // make sure the path is contained in the selected paths (for hydra selection)
-  EXPECT_EQ(1, proxy->selectionList().size());
+  EXPECT_EQ(1u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
 
 
   // make sure undo clears the previous info
   MGlobal::executeCommand("undo", false, true);
-  EXPECT_EQ(0, proxy->selectionList().size());
+  EXPECT_EQ(0u, proxy->selectionList().size());
 
 
   // make sure redo works happily without side effects
   MGlobal::executeCommand("redo", false, true);
-  EXPECT_EQ(1, proxy->selectionList().size());
+  EXPECT_EQ(1u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
 
   // So now we have a single item selected. Let's see if we can replace this selection list
   // with two other paths. The previous selection should be removed, the two additional paths
   // should be selected
   MGlobal::executeCommand("AL_usdmaya_InternalProxyShapeSelect -r -pp \"/root/hip2/knee2/ankle2/ltoe2\" -pp \"/root/hip2/knee2/ankle2/rtoe2\" \"AL_usdmaya_ProxyShape1\"", false, true);
-  EXPECT_EQ(2, proxy->selectionList().size());
+  EXPECT_EQ(2u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
 
   // when undoing this command, the previous path should be selected
   MGlobal::executeCommand("undo", false, true);
-  EXPECT_EQ(1, proxy->selectionList().size());
+  EXPECT_EQ(1u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
 
   MGlobal::executeCommand("redo", false, true);
-  EXPECT_EQ(2, proxy->selectionList().size());
+  EXPECT_EQ(2u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
 
   // now attempt to clear the selection list
   MGlobal::executeCommand("AL_usdmaya_InternalProxyShapeSelect -cl \"AL_usdmaya_ProxyShape1\"", false, true);
-  EXPECT_EQ(0, proxy->selectionList().size());
+  EXPECT_EQ(0u, proxy->selectionList().size());
 
   // undoing this command should return selected items back into
   MGlobal::executeCommand("undo", false, true);
-  EXPECT_EQ(2, proxy->selectionList().size());
+  EXPECT_EQ(2u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
 
   MGlobal::executeCommand("redo", false, true);
-  EXPECT_EQ(0, proxy->selectionList().size());
+  EXPECT_EQ(0u, proxy->selectionList().size());
 
   // So now we have a single item selected. Let's see if we can replace this selection list
   // with two other paths. The previous selection should be removed, the two additional paths
   // should be selected
   MGlobal::executeCommand("AL_usdmaya_InternalProxyShapeSelect -a -pp \"/root/hip2/knee2/ankle2/ltoe2\" \"AL_usdmaya_ProxyShape1\"", false, true);
-  EXPECT_EQ(1, proxy->selectionList().size());
+  EXPECT_EQ(1u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
 
   MGlobal::executeCommand("AL_usdmaya_InternalProxyShapeSelect -a -pp \"/root/hip2/knee2/ankle2/rtoe2\" \"AL_usdmaya_ProxyShape1\"", false, true);
-  EXPECT_EQ(2, proxy->selectionList().size());
+  EXPECT_EQ(2u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
 
   MGlobal::executeCommand("undo", false, true);
-  EXPECT_EQ(1, proxy->selectionList().size());
+  EXPECT_EQ(1u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
 
   MGlobal::executeCommand("undo", false, true);
-  EXPECT_EQ(0, proxy->selectionList().size());
+  EXPECT_EQ(0u, proxy->selectionList().size());
 
   MGlobal::executeCommand("redo", false, true);
-  EXPECT_EQ(1, proxy->selectionList().size());
+  EXPECT_EQ(1u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
 
 
   MGlobal::executeCommand("redo", false, true);
-  EXPECT_EQ(2, proxy->selectionList().size());
+  EXPECT_EQ(2u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
 
   MGlobal::executeCommand("AL_usdmaya_InternalProxyShapeSelect -d -pp \"/root/hip2/knee2/ankle2/ltoe2\" \"AL_usdmaya_ProxyShape1\"", false, true);
-  EXPECT_EQ(1, proxy->selectionList().size());
+  EXPECT_EQ(1u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
 
   MGlobal::executeCommand("AL_usdmaya_InternalProxyShapeSelect -d -pp \"/root/hip2/knee2/ankle2/rtoe2\" \"AL_usdmaya_ProxyShape1\"", false, true);
-  EXPECT_EQ(0, proxy->selectionList().size());
+  EXPECT_EQ(0u, proxy->selectionList().size());
 
   MGlobal::executeCommand("undo", false, true);
-  EXPECT_EQ(1, proxy->selectionList().size());
+  EXPECT_EQ(1u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
 
   MGlobal::executeCommand("undo", false, true);
-  EXPECT_EQ(2, proxy->selectionList().size());
+  EXPECT_EQ(2u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
 
   MGlobal::executeCommand("redo", false, true);
-  EXPECT_EQ(1, proxy->selectionList().size());
+  EXPECT_EQ(1u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
 
   MGlobal::executeCommand("redo", false, true);
-  EXPECT_EQ(0, proxy->selectionList().size());
+  EXPECT_EQ(0u, proxy->selectionList().size());
 
   MGlobal::executeCommand("AL_usdmaya_InternalProxyShapeSelect -tgl -pp \"/root/hip2/knee2/ankle2/rtoe2\" -pp \"/root/hip2/knee2/ankle2/ltoe2\" \"AL_usdmaya_ProxyShape1\"", false, true);
-  EXPECT_EQ(2, proxy->selectionList().size());
+  EXPECT_EQ(2u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
 
   MGlobal::executeCommand("AL_usdmaya_InternalProxyShapeSelect -tgl -pp \"/root/hip2/knee2/ankle2/rtoe2\" -pp \"/root/hip2/knee2/ankle2/ltoe2\" \"AL_usdmaya_ProxyShape1\"", false, true);
-  EXPECT_EQ(0, proxy->selectionList().size());
+  EXPECT_EQ(0u, proxy->selectionList().size());
 
   MGlobal::executeCommand("undo", false, true);
-  EXPECT_EQ(2, proxy->selectionList().size());
+  EXPECT_EQ(2u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
 
   MGlobal::executeCommand("undo", false, true);
-  EXPECT_EQ(0, proxy->selectionList().size());
+  EXPECT_EQ(0u, proxy->selectionList().size());
 
   MGlobal::executeCommand("redo", false, true);
-  EXPECT_EQ(2, proxy->selectionList().size());
+  EXPECT_EQ(2u, proxy->selectionList().size());
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
   EXPECT_TRUE(proxy->selectionList().isSelected(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
 
   MGlobal::executeCommand("redo", false, true);
-  EXPECT_EQ(0, proxy->selectionList().size());
+  EXPECT_EQ(0u, proxy->selectionList().size());
 }

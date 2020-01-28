@@ -62,6 +62,10 @@ if (NOT PYTHONLIBS_FOUND)
     include(cmake/python.cmake)
 endif()
 include(cmake/utils.cmake)
+message(STATUS "Building with Python:")
+message(STATUS "   PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
+message(STATUS "   PYTHON_LIBRARIES    = ${PYTHON_LIBRARIES}")
+message(STATUS "   Python_EXECUTABLE   = ${Python_EXECUTABLE}")
 
 # The building of the schemas requires some extra python packages which may or
 # may not be installed. If they aren't we provide an option to add them from
@@ -111,6 +115,9 @@ if (BUILD_TESTS)
     fetch_googletest()
 
     enable_testing()
+
+    add_subdirectory(test/lib)
+
     if (UFE_FOUND)
         add_subdirectory(test/lib/ufe)
     endif()

@@ -43,44 +43,6 @@ typedef std::map<SdfLayerHandle, LayerSet, CompareLayerHandle > LayerMap;
 typedef std::map<SdfLayerHandle, MObject, CompareLayerHandle > LayerToObjectMap;
 
 //----------------------------------------------------------------------------------------------------------------------
-SdfLayerHandle findLayer(const SdfLayerHandleVector& layers, const std::string& name)
-{
-  for(auto it = layers.begin(); it != layers.end(); ++it)
-  {
-    if(name == (*it)->GetDisplayName() ||
-       name == (*it)->GetIdentifier())
-    {
-      return *it;
-    }
-  }
-  return SdfLayerHandle();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void buildTree(const SdfLayerHandle& layer, LayerMap& layerMap, const SdfLayerHandleVector& layers)
-{
-  auto iter = layerMap.find(layer);
-  if(iter == layerMap.end())
-  {
-    LayerSet kids;
-    std::set<std::string> refs = layer->GetExternalReferences();
-
-
-    for(auto it = refs.begin(); it != refs.end(); ++it)
-    {
-      SdfLayerHandle childHandle = findLayer(layers, *it);
-
-      if(childHandle)
-      {
-        kids.insert(childHandle);
-        buildTree(childHandle, layerMap, layers);
-      }
-    }
-    layerMap.insert(std::make_pair(layer, kids));
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 struct ImportCallback
 {
   enum ScriptType : uint32_t

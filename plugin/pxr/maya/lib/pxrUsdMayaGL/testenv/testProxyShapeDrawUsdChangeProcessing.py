@@ -17,6 +17,8 @@
 
 from pxr import UsdMaya
 
+import mayaUsd.lib as mayaUsdLib
+
 from maya import cmds
 
 import os
@@ -66,7 +68,7 @@ class testProxyShapeDrawUsdChangeProcessing(unittest.TestCase):
             height=540)
 
     def _RunTest(self, dagPathName):
-        rootPrim = UsdMaya.GetPrim(dagPathName)
+        rootPrim = mayaUsdLib.GetPrim(dagPathName)
         self.assertTrue(rootPrim)
 
         prim = rootPrim.GetChild('Geom').GetChild('Primitive')

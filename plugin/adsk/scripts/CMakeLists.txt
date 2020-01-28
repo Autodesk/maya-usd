@@ -1,4 +1,6 @@
 list(APPEND scripts_src
+    mayaUsdTranslatorImport.mel
+    mayaUsdTranslatorExport.mel
     AEmayaUsdProxyShapeTemplate.mel
 )
 

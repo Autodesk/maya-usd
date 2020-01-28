@@ -270,8 +270,6 @@ void TranslatorContext::removeItems(const SdfPath& path)
     MDagModifier modifier2;
     MObjectHandleArray tempXforms;
     MStatus status;
-    bool hasDagNodes = false;
-    bool hasDependNodes = false;
 
     // Store the DAG nodes to delete in a vector which we will sort via their path length
     std::vector<std::pair<int, MObject>> dagNodesToDelete;
@@ -539,7 +537,7 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim %s");
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim %s", prim.GetPath().GetText());
   assert(m_proxyShape);
   auto stage = m_proxyShape->getUsdStage();
   if(stage)
