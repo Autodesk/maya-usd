@@ -60,6 +60,15 @@ add_library(${SCHEMA_PLUGIN}
 #    ModuleDeps.cpp
 )
 
+# Before 0.19.11, pxrConfig.cmake did not properly add the USD_ROOT/include dir
+# the INTERFACE_INCLUDE_DIRECTORIES of it's created targets...
+if(USD_VERSION VERSION_LESS 0.19.11)
+target_include_directories(${SCHEMA_PLUGIN}
+  PUBLIC
+    ${USD_INCLUDE_DIR}
+)
+endif()
+
 target_compile_definitions(${SCHEMA_PLUGIN}
     PRIVATE
         MFB_PACKAGE_NAME=${SCHEMA_PLUGIN}

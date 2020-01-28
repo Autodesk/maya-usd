@@ -18,8 +18,16 @@
 #include <hdMaya/hdMaya.h>
 
 #include <pxr/imaging/hd/renderDelegate.h>
+#if USD_VERSION_NUM >= 1911
 #include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
+#else
+#include <pxr/imaging/hdx/rendererPlugin.h>
+#include <pxr/imaging/hdx/rendererPluginRegistry.h>
+PXR_NAMESPACE_OPEN_SCOPE
+using HdRendererPluginRegistry = HdxRendererPluginRegistry;
+PXR_NAMESPACE_CLOSE_SCOPE
+#endif
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>

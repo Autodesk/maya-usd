@@ -181,8 +181,12 @@ void UsdMayaGLHdRenderer::RenderVp2(
         glEnable(GL_LIGHTING);
     }
 
+#if USD_VERSION_NUM >= 1911
     _renderer->SetCameraState(modelViewMatrix, projectionMatrix);
     _renderer->SetRenderViewport(viewport);
+#else
+    _renderer->SetCameraState(modelViewMatrix, projectionMatrix, viewport);
+#endif
 
     _renderer->SetLightingStateFromOpenGL();
 
@@ -272,8 +276,12 @@ UsdMayaGLHdRenderer::Render(
     GfMatrix4d projectionMatrix(mayaProjMatrix.matrix);
     GfVec4d viewport(viewX, viewY, viewWidth, viewHeight);
 
+#if USD_VERSION_NUM >= 1911
     _renderer->SetCameraState(modelViewMatrix, projectionMatrix);
     _renderer->SetRenderViewport(viewport);
+#else
+    _renderer->SetCameraState(modelViewMatrix, projectionMatrix, viewport);
+#endif
     _renderer->SetLightingStateFromOpenGL();
 
 
