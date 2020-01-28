@@ -90,6 +90,7 @@ list(APPEND mayaUsd_src
     fileio/translators/translatorCurves.cpp
     fileio/translators/translatorGprim.cpp
     fileio/translators/translatorMaterial.cpp
+    fileio/translators/translatorMayaReference.cpp
     fileio/translators/translatorMesh.cpp
     fileio/translators/translatorMesh_PrimVars.cpp
     fileio/translators/translatorMesh_SubDiv.cpp
@@ -298,6 +299,7 @@ list(APPEND mayaUsdTranslators_headers
     fileio/translators/translatorCurves.h
     fileio/translators/translatorGprim.h
     fileio/translators/translatorMaterial.h
+    fileio/translators/translatorMayaReference.h
     fileio/translators/translatorMesh.h
     fileio/translators/translatorNurbsPatch.h
     fileio/translators/translatorPrim.h

@@ -3,3 +3,4 @@ if(BUILD_HDMAYA)
 endif()
 
 add_subdirectory(translators)
+add_subdirectory(schemas)

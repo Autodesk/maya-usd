@@ -13,17 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef AL_USDMAYASCHEMAS_GENERATED_MAYAREFERENCE_H
-#define AL_USDMAYASCHEMAS_GENERATED_MAYAREFERENCE_H
+#ifndef MAYAUSDCORE_SCHEMAS_GENERATED_MAYAREFERENCE_H
+#define MAYAUSDCORE_SCHEMAS_GENERATED_MAYAREFERENCE_H
 
-/// \file AL_USDMayaSchemas/MayaReference.h
+/// \file MayaUsd_Schemas/MayaReference.h
 
 #include "pxr/pxr.h"
-#include "./api.h"
+#include "api.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "./tokens.h"
+#include "tokens.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -72,13 +72,13 @@ public:
     }
 
     /// Destructor.
-    AL_USDMAYASCHEMAS_API
+    MAYAUSDCORE_SCHEMAS_API
     virtual ~AL_usd_MayaReference();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
-    AL_USDMAYASCHEMAS_API
+    MAYAUSDCORE_SCHEMAS_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
@@ -91,7 +91,7 @@ public:
     /// AL_usd_MayaReference(stage->GetPrimAtPath(path));
     /// \endcode
     ///
-    AL_USDMAYASCHEMAS_API
+    MAYAUSDCORE_SCHEMAS_API
     static AL_usd_MayaReference
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -117,7 +117,7 @@ public:
     /// specify this schema class, in case a stronger typeName opinion overrides
     /// the opinion at the current EditTarget.
     ///
-    AL_USDMAYASCHEMAS_API
+    MAYAUSDCORE_SCHEMAS_API
     static AL_usd_MayaReference
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
@@ -125,20 +125,20 @@ protected:
     /// Returns the type of schema this class belongs to.
     ///
     /// \sa UsdSchemaType
-    AL_USDMAYASCHEMAS_API
-    virtual UsdSchemaType _GetSchemaType() const;
+    MAYAUSDCORE_SCHEMAS_API
+    UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
-    AL_USDMAYASCHEMAS_API
+    MAYAUSDCORE_SCHEMAS_API
     static const TfType &_GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
-    AL_USDMAYASCHEMAS_API
-    virtual const TfType &_GetTfType() const;
+    MAYAUSDCORE_SCHEMAS_API
+    const TfType &_GetTfType() const override;
 
 public:
     // --------------------------------------------------------------------- //
@@ -150,7 +150,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->Asset
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
-    AL_USDMAYASCHEMAS_API
+    MAYAUSDCORE_SCHEMAS_API
     UsdAttribute GetMayaReferenceAttr() const;
 
     /// See GetMayaReferenceAttr(), and also 
@@ -158,7 +158,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
-    AL_USDMAYASCHEMAS_API
+    MAYAUSDCORE_SCHEMAS_API
     UsdAttribute CreateMayaReferenceAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
@@ -171,7 +171,7 @@ public:
     /// \n  Usd Type: SdfValueTypeNames->String
     /// \n  Variability: SdfVariabilityVarying
     /// \n  Fallback Value: No Fallback
-    AL_USDMAYASCHEMAS_API
+    MAYAUSDCORE_SCHEMAS_API
     UsdAttribute GetMayaNamespaceAttr() const;
 
     /// See GetMayaNamespaceAttr(), and also 
@@ -179,7 +179,7 @@ public:
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
-    AL_USDMAYASCHEMAS_API
+    MAYAUSDCORE_SCHEMAS_API
     UsdAttribute CreateMayaNamespaceAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:

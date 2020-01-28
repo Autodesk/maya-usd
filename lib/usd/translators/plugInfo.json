@@ -5,6 +5,7 @@
           "UsdMaya": {
             "PrimReader": {
               "providesTranslator": [
+                "AL_usd_MayaReference",
                 "UsdGeomCamera",
                 "UsdGeomMesh",
                 "UsdGeomNurbsCurves",
@@ -23,6 +24,11 @@
                 "UsdShadeMaterial",
                 "UsdSkelRoot",
                 "UsdSkelSkeleton"
+              ]
+            },
+            "PrimUpdater": {
+              "providesTranslator": [
+                "AL_usd_MayaReference"
               ]
             },
             "PrimWriter": {

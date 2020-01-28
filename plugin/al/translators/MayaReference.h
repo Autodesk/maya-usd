@@ -27,24 +27,6 @@ namespace fileio {
 namespace translators {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief Class that has the actual test-able logic for maintenance of the Maya Reference.
-//----------------------------------------------------------------------------------------------------------------------
-class MayaReferenceLogic
-{
-public:
-
-  MStatus LoadMayaReference(const UsdPrim& prim, MObject& parent, MString& mayaReferencePath, MString& rigNamespaceM) const;
-  MStatus UnloadMayaReference(MObject& parent) const;
-  MStatus update(const UsdPrim& prim, MObject parent) const;
-
-private:
-  MStatus connectReferenceAssociatedNode(MFnDagNode& dagNode, MFnReference& refNode) const;
-
-  static const TfToken m_namespaceName;
-  static const TfToken m_referenceName;
-};
-
-//----------------------------------------------------------------------------------------------------------------------
 /// \brief Class to translate an image plane in and out of maya.
 //----------------------------------------------------------------------------------------------------------------------
 class MayaReference : public TranslatorBase
@@ -62,8 +44,6 @@ private:
 
   bool canBeOverridden() override
     { return true; }
-    
-  MayaReferenceLogic m_mayaReferenceLogic;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

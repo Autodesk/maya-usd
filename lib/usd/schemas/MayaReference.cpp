@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "./MayaReference.h"
+#include "MayaReference.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -97,13 +97,13 @@ AL_usd_MayaReference::_GetTfType() const
 UsdAttribute
 AL_usd_MayaReference::GetMayaReferenceAttr() const
 {
-    return GetPrim().GetAttribute(AL_USDMayaSchemasTokens->mayaReference);
+    return GetPrim().GetAttribute(MayaUsd_SchemasTokens->mayaReference);
 }
 
 UsdAttribute
 AL_usd_MayaReference::CreateMayaReferenceAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(AL_USDMayaSchemasTokens->mayaReference,
+    return UsdSchemaBase::_CreateAttr(MayaUsd_SchemasTokens->mayaReference,
                        SdfValueTypeNames->Asset,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -114,13 +114,13 @@ AL_usd_MayaReference::CreateMayaReferenceAttr(VtValue const &defaultValue, bool 
 UsdAttribute
 AL_usd_MayaReference::GetMayaNamespaceAttr() const
 {
-    return GetPrim().GetAttribute(AL_USDMayaSchemasTokens->mayaNamespace);
+    return GetPrim().GetAttribute(MayaUsd_SchemasTokens->mayaNamespace);
 }
 
 UsdAttribute
 AL_usd_MayaReference::CreateMayaNamespaceAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(AL_USDMayaSchemasTokens->mayaNamespace,
+    return UsdSchemaBase::_CreateAttr(MayaUsd_SchemasTokens->mayaNamespace,
                        SdfValueTypeNames->String,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -145,8 +145,8 @@ const TfTokenVector&
 AL_usd_MayaReference::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        AL_USDMayaSchemasTokens->mayaReference,
-        AL_USDMayaSchemasTokens->mayaNamespace,
+        MayaUsd_SchemasTokens->mayaReference,
+        MayaUsd_SchemasTokens->mayaNamespace,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

@@ -56,7 +56,6 @@ endif()
 add_library(AL_USDMayaSchemas
     SHARED
     ModelAPI.cpp
-    MayaReference.cpp
     FrameRange.cpp
     tokens.cpp
     ModuleDeps.cpp
@@ -107,7 +106,6 @@ add_library(${PYTHON_LIBRARY_NAME}
     SHARED
     module.cpp
     wrapModelAPI.cpp
-    wrapMayaReference.cpp
     wrapTokens.cpp
     wrapFrameRange.cpp
 )
@@ -185,7 +183,6 @@ install(CODE "execute_process(COMMAND \"${Python_EXECUTABLE}\" -m compileall \"$
 install(
     FILES
         ModelAPI.h
-        MayaReference.h
         FrameRange.h
         api.h
         tokens.h
