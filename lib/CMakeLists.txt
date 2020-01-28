@@ -364,6 +364,7 @@ if(UFE_FOUND)
         ufe/UsdUndoDuplicateCommand.h
         ufe/UsdUndoRenameCommand.h
         ufe/Utils.h
+		ufe/UfeVersionCompat.h
     )
 
     if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
