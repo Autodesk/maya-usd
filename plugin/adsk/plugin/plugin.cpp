@@ -16,6 +16,7 @@
 
 #include "base/api.h"
 #include "importTranslator.h"
+#include "exportTranslator.h"
 #include "ProxyShape.h"
 
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
@@ -57,6 +58,17 @@ MStatus initializePlugin(MObject obj)
         false);
     if (!status) {
         status.perror("mayaUsdPlugin: unable to register import translator.");
+    }
+
+    status = plugin.registerFileTranslator(
+        MAYAUSD_NS::UsdMayaExportTranslator::translatorName,
+        "",
+        MAYAUSD_NS::UsdMayaExportTranslator::creator,
+        "mayaUsdTranslatorExport", // options script name
+        const_cast<char*>(MAYAUSD_NS::UsdMayaExportTranslator::GetDefaultOptions().c_str()),
+        false);
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to register export translator.");
     }
 
     status = MayaUsdProxyShapePlugin::initialize(plugin);
@@ -126,6 +138,11 @@ MStatus uninitializePlugin(MObject obj)
     status = plugin.deregisterFileTranslator("mayaUsdImport");
     if (!status) {
         status.perror("mayaUsdPlugin: unable to deregister import translator.");
+    }
+
+    status = plugin.deregisterFileTranslator(MAYAUSD_NS::UsdMayaExportTranslator::translatorName);
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to deregister export translator.");
     }
 
     status = plugin.deregisterNode(MayaUsd::ProxyShape::typeId);
