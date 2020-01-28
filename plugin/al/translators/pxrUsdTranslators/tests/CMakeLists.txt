@@ -39,6 +39,7 @@ set_property(TEST ${TEST_NAME} APPEND PROPERTY ENVIRONMENT
     "PYTHONPATH=${pythonPath}"
     "PATH=${path}"
     "MAYA_PLUG_IN_PATH=${mayaPluginPath}"
+    "MAYA_SCRIPT_PATH=${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib/usd/usdMaya/resources"
     "PXR_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/plugin/al/plugin"
     "TEST_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
     "MAYA_NO_STANDALONE_ATEXIT=1"
