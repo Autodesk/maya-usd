@@ -140,9 +140,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
                 menuItem -l "Loop" -ann "loop";
                 menuItem -l "Polygonal Mesh" -ann "none";
 
-            checkBoxGrp -l "Color Sets" exportColorSetsCheckBox;
+            checkBoxGrp -l "Color Sets:" exportColorSetsCheckBox;
 
-            checkBoxGrp -l "UV Sets" exportUVsCheckBox;
+            checkBoxGrp -l "UV Sets:" exportUVsCheckBox;
             
             separator -style "none";
         setParent ..;
@@ -154,13 +154,13 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
             columnLayout -width 100 animOptsCol;
                 rowLayout -numberOfColumns 2 -columnAttach 2 "left" 20;
-                    intFieldGrp -l "Frame Range Start/End:" -numberOfFields 2 -v1 1 -v2 200 framRangeFields;
+                    intFieldGrp -l "Frame Range Start/End:" -numberOfFields 2 -v1 1 -v2 200 -cw 1 175 framRangeFields;
                     button -l "Use Animation Range" -command ("mayausdTranslatorExport_AnimationRangeCB") animRangeButton;
                 setParent ..;
 
-                floatFieldGrp -l "Frame Step:" -v1 1 frameStrideField;
+                floatFieldGrp -l "Frame Step:" -v1 1 -cw 1 175 frameStrideField;
 
-                checkBoxGrp -l "Euler Filter:" eulerFilterCheckBox;
+                checkBoxGrp -l "Euler Filter:" -cw 1 175 eulerFilterCheckBox;
             setParent ..;
 
             separator -style "none";
@@ -169,13 +169,13 @@ global proc int mayaUsdTranslatorExport (string $parent,
         frameLayout -label "Advanced" -collapsable true -collapse true;
             separator -style "none";
 
-            checkBoxGrp -l "Visibility" exportVisibilityCheckBox;
+            checkBoxGrp -l "Visibility:" exportVisibilityCheckBox;
 
-            checkBoxGrp -l "Export Instances" exportInstancesCheckBox;
+            checkBoxGrp -l "Export Instances:" exportInstancesCheckBox;
 
-            checkBoxGrp -l "Merge Transform and Shapes" mergeTransformAndShapeCheckBox;
+            checkBoxGrp -l "Merge Transform and Shapes:" mergeTransformAndShapeCheckBox;
 
-            checkBoxGrp -l "Strip Namespaces" stripNamespacesCheckBox;
+            checkBoxGrp -l "Strip Namespaces:" stripNamespacesCheckBox;
 
             separator -style "none";
         setParent ..;
