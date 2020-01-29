@@ -127,7 +127,6 @@ TEST(Scope, checkWorksInChain)
       if (ptr->typeId()==AL::usdmaya::nodes::Transform::kTypeId)
       {
         //It's a transform
-        AL::usdmaya::nodes::BasicTransformationMatrix* matrix = ptr->transform();
         str = ptr->primPathPlug().asString();
 
         if(str == "/root")

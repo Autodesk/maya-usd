@@ -70,7 +70,7 @@ public:
 
   /// \brief  return the prim this transform matrix is attached to
   /// \return the prim this transform matrix is controlling
-  virtual const UsdPrim& prim() const
+  inline const UsdPrim& prim() const
   { return m_prim; }
 
   virtual void initialiseToPrim(bool readFromPrim = true, Scope* node = 0) {}

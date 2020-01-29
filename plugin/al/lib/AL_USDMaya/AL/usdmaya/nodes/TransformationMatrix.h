@@ -305,11 +305,6 @@ class TransformationMatrix
   inline void setLocalTranslationOffset(const MVector& localTranslateOffset)
     { m_localTranslateOffset = localTranslateOffset; }
 
-  /// \brief  return the prim this transform matrix is attached to
-  /// \return the prim this transform matrix is controlling
-  inline const UsdPrim& prim() const
-    { return m_prim; }
-
   /// \brief  this method updates the internal transformation components to the given time. Only the Transform node
   ///         should need to call this method
   /// \param  time the new timecode
