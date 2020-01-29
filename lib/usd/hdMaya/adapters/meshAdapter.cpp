@@ -39,18 +39,11 @@
 #include "adapterRegistry.h"
 #include "mayaAttrs.h"
 #include "shapeAdapter.h"
+#include "tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    (st)
-);
-// clang-format on
 
 constexpr int MAX_SMOOTH_LEVEL = 8;
 
@@ -178,7 +171,7 @@ public:
             MFnMesh mesh(GetDagPath(), &status);
             if (ARCH_UNLIKELY(!status)) { return {}; }
             return GetPoints(mesh);
-        } else if (key == _tokens->st) {
+        } else if (key == HdMayaAdapterTokens->st) {
             return GetUVs();
         }
         return {};
@@ -204,7 +197,7 @@ public:
             samples[1] = GetPoints(mesh);
             // FIXME: should we do this or in the render delegate?
             return samples[1] == samples[0] ? 1 : 2;
-        } else if (key == _tokens->st) {
+        } else if (key == HdMayaAdapterTokens->st) {
             times[0] = 0.0f;
             samples[0] = GetUVs();
             return 1;
@@ -340,7 +333,7 @@ public:
             MFnMesh mesh(GetDagPath());
             if (mesh.numUVs() > 0) {
                 HdPrimvarDescriptor desc;
-                desc.name = _tokens->st;
+                desc.name = HdMayaAdapterTokens->st;
                 desc.interpolation = interpolation;
                 desc.role = HdPrimvarRoleTokens->textureCoordinate;
                 return {desc};
