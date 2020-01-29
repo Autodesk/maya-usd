@@ -26,6 +26,8 @@
 
 #include <maya/MCallbackIdArray.h>
 
+#include <ufe/ufe.h>            // For UFE_V2_FEATURES_AVAILABLE
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 MAYAUSD_NS_DEF {
@@ -86,6 +88,7 @@ private:
 
 }; // StagesSubject
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
 //! \brief Guard to delay attribute changed notifications.
 /*!
 	Instantiating an object of this class allows the attribute changed
@@ -107,6 +110,7 @@ public:
     const AttributeChangedNotificationGuard& operator&(const AttributeChangedNotificationGuard&) = delete;
     //@}
 };
+#endif
 
 } // namespace ufe
 } // namespace MayaUsd
