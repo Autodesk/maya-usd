@@ -69,6 +69,7 @@
 
 #include <boost/functional/hash.hpp>
 
+#include <algorithm>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -1278,16 +1279,28 @@ UsdMayaUtil::MayaNodeNameToSdfPath(
         pathString = UsdMayaUtil::stripNamespaces(pathString);
     }
 
+    // Path dividers: replace '|' with '/'
     std::replace(
         pathString.begin(),
         pathString.end(),
         UsdMayaUtil::MayaDagDelimiter[0],
         SdfPathTokens->childDelimiter.GetString()[0]);
+    // Namespaces: replace ':' with '_'
     std::replace(
         pathString.begin(),
         pathString.end(),
         UsdMayaUtil::MayaNamespaceDelimiter[0],
         '_');
+    // Underworld: strip all '-' and '>'
+    //    So, ie, this:
+    //       "|foo|myCamera|myCameraShape->|imagePlane1|imagePlaneShape1"
+    //    becomes:
+    //       "|foo|myCamera|myCameraShape|imagePlane1|imagePlaneShape1"
+    auto newStrEnd = std::remove_if(pathString.begin(), pathString.end(),
+            [](unsigned char c){
+                return c == '-' || c == '>';
+            });
+    pathString.erase(newStrEnd, pathString.end());
 
     return SdfPath(pathString);
 }
