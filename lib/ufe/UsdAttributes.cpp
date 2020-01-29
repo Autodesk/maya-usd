@@ -27,6 +27,11 @@
 //		the one in USD.
 // PXR_NAMESPACE_USING_DIRECTIVE
 
+#ifdef UFE_ENABLE_ASSERTS
+static constexpr char kErrorMsgUnknown[] = "Unknown UFE attribute type encountered";
+static constexpr char kErrorMsgInvalidAttribute[] = "Invalid USDAttribute!";
+#endif
+
 MAYAUSD_NS_DEF {
 namespace ufe {
 
