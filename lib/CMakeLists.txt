@@ -757,3 +757,8 @@ install(CODE
 install(FILES python/__init__.py DESTINATION ${PYLIB_INSTALL_PREFIX})
 
 add_subdirectory(usd)
+
+if(BUILD_HDMAYA)
+    add_subdirectory(render/mayaToHydra)
+    add_dependencies(mtoh hdMaya)
+endif()
