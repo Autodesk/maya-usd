@@ -1,14 +1,8 @@
 #==============================================================================
 # Configuration hdMaya 
 #==============================================================================
-set(MTOH_CXX_STD "11"
-    CACHE
-    STRING
-    "Which C++ standard / version to use, as an integer - ie, 14 means use c++14."
-)
 
 option(INSTALL_MAYA_MOD "Installs a maya module file for the plugin." OFF)
-option(HDMAYA_BUILD_TESTS "Build the maya-to-hydra tests" OFF)
 option(BUILD_DOCS "Whether or not to build the documentation." OFF)
 
 if(CMAKE_WANT_UFE_BUILD)
@@ -31,6 +25,8 @@ list(APPEND schemas_headers
 
 mayaUsd_promoteHeaderList(${schemas_headers})
 
-add_subdirectory(hdMaya)
+if(BUILD_HDMAYA)
+    add_subdirectory(hdMaya)
+endif()
 add_subdirectory(translators)
 add_subdirectory(schemas)

@@ -1,5 +1,13 @@
 set(TARGET_NAME hdMaya)
 
+option(HDMAYA_BUILD_TESTS "Build the maya-to-hydra tests" OFF)
+
+set(MTOH_CXX_STD "11"
+    CACHE
+    STRING
+    "Which C++ standard / version to use, as an integer - ie, 14 means use c++14."
+)
+
 set(SRC
     adapters/adapter.cpp
     adapters/adapterDebugCodes.cpp
