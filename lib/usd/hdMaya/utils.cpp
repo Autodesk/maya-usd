@@ -107,7 +107,7 @@ TfToken GetFileTexturePath(const MFnDependencyNode& fileNode) {
 
 std::tuple<HdWrap, HdWrap> GetFileTextureWrappingParams(
     const MObject& fileObj) {
-    constexpr std::tuple<HdWrap, HdWrap> def{HdWrapClamp, HdWrapClamp};
+    const std::tuple<HdWrap, HdWrap> def{HdWrapClamp, HdWrapClamp};
     MStatus status;
     MFnDependencyNode fileNode(fileObj, &status);
     if (!status) { return def; }
