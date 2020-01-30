@@ -374,7 +374,7 @@ static void postFileRead(void*)
       auto stage = proxy->getUsdStage();
       proxy->deserialiseTranslatorContext();
       proxy->translatorManufacture().preparePythonTranslators(proxy->context());
-      proxy->findTaggedPrims();
+      proxy->findPrimsWithMetaData();
       proxy->deserialiseTransformRefs();
     }
     unloadedProxies.clear();

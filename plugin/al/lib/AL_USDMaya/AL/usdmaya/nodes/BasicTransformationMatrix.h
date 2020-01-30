@@ -39,7 +39,6 @@ class Scope;
 /// AL_USDMaya transformation matrix implementantations
 /// \ingroup nodes
 //----------------------------------------------------------------------------------------------------------------------
-
 class BasicTransformationMatrix
   : public MPxTransformationMatrix
 {
@@ -71,7 +70,7 @@ public:
   /// \brief  return the prim this transform matrix is attached to
   /// \return the prim this transform matrix is controlling
   inline const UsdPrim& prim() const
-  { return m_prim; }
+    { return m_prim; }
 
   virtual void initialiseToPrim(bool readFromPrim = true, Scope* node = 0) {}
 
@@ -84,7 +83,7 @@ public:
   AL_USDMAYA_PUBLIC
   static MPxTransformationMatrix* creator();
 
-private:
+protected:
 
   UsdPrim m_prim;
   UsdGeomScope m_scope;

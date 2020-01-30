@@ -1562,7 +1562,13 @@ MStatus TranslatePrim::redoIt()
 
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("TranslatePrim::redoIt\n");
   m_proxy->translatePrimPathsIntoMaya(newImportPaths, m_teardownPaths, tp);
-
+  
+  // construct locks and selectability for imported prims
+  if(m_proxy->isLockPrimFeatureActive())
+  {
+    m_proxy->removeMetaData(m_teardownPaths);
+    m_proxy->processChangedMetaData(SdfPathVector(), newImportPaths);
+  }
 
   auto stage = m_proxy->usdStage();
   auto manufacture = m_proxy->translatorManufacture();
