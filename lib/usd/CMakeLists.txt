@@ -2,9 +2,6 @@
 # Configuration hdMaya 
 #==============================================================================
 
-option(INSTALL_MAYA_MOD "Installs a maya module file for the plugin." OFF)
-option(BUILD_DOCS "Whether or not to build the documentation." OFF)
-
 if(CMAKE_WANT_UFE_BUILD)
     find_package(UFE QUIET)
     if(UFE_FOUND)

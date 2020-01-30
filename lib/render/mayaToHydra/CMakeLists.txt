@@ -77,18 +77,3 @@ install(
 if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/maya OPTIONAL)
 endif()
-
-
-#install(
-#    DIRECTORY scripts
-#    DESTINATION .
-#)
-
-#if (INSTALL_MAYA_MOD)
-#    install(CODE
-#    "file(WRITE \"${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.mod\"
-#\"+ ${TARGET_NAME} any ${CMAKE_INSTALL_PREFIX}
-#MAYA_SCRIPT_PATH +:= scripts
-#PYTHONPATH +:= scripts
-#\")")
-#endif ()
