@@ -771,6 +771,10 @@ void MeshImportContext::applyColourSetData()
     
     primvar.GetDeclarationInfo(&name, &typeName, &interpolation, &elementSize);
 
+    TfToken role = typeName.GetRole();
+    if(role != SdfValueRoleNames->Color)
+      continue;
+
     // early out for channels that are definitely not colourSets
     if (name == prefToken || name == displayOpacityToken)
       continue;
