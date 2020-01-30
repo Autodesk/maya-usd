@@ -32,6 +32,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
+    (BasisCurvesCubicDomain)
+    (BasisCurvesCubicFallbackShader)
+    (BasisCurvesCubicHull)
+    (BasisCurvesLinearDomain)
+    (BasisCurvesLinearFallbackShader)
+    (BasisCurvesLinearHull)
+
     (FallbackCPVShader)
     (FallbackShader)
 
@@ -59,7 +66,15 @@ TF_DEFINE_PRIVATE_TOKENS(
     (UsdPreviewSurface)
 );
 
+static const TfTokenVector _LanguageSpecificFragmentNames = {
+    _tokens->BasisCurvesLinearDomain,
+    _tokens->BasisCurvesCubicDomain
+};
+
 static const TfTokenVector _FragmentNames = {
+    _tokens->BasisCurvesLinearHull,
+    _tokens->BasisCurvesCubicHull,
+
     _tokens->UsdUVTexture,
 
     _tokens->UsdPrimvarReader_float,
@@ -83,6 +98,8 @@ static const TfTokenVector _FragmentNames = {
 };
 
 static const TfTokenVector _FragmentGraphNames = {
+    _tokens->BasisCurvesCubicFallbackShader,
+    _tokens->BasisCurvesLinearFallbackShader,
     _tokens->FallbackCPVShader,
     _tokens->FallbackShader,
     _tokens->UsdPreviewSurface
@@ -125,7 +142,41 @@ MStatus HdVP2ShaderFragments::registerFragments()
         return MS::kSuccess;
     }
 
+    std::string language;
+
+    switch (theRenderer->drawAPI()) {
+    case MHWRender::kOpenGLCoreProfile: language = "GLSL"; break;
+    case MHWRender::kDirectX11:         language = "HLSL"; break;
+    case MHWRender::kOpenGL:            language = "Cg";   break;
+    default: MGlobal::displayError("Unknown draw API");    break;
+    }
+
     // Register all fragments.
+    for (const TfToken& fragNameToken : _LanguageSpecificFragmentNames) {
+        const MString fragName(fragNameToken.GetText());
+
+        if (fragmentManager->hasFragment(fragName)) {
+            continue;
+        }
+
+        const std::string fragXmlFile =
+            TfStringPrintf("%s_%s.xml", fragName.asChar(), language.c_str());
+        const std::string fragXmlPath = _GetResourcePath(fragXmlFile);
+
+        const MString addedName =
+            fragmentManager->addShadeFragmentFromFile(
+                fragXmlPath.c_str(),
+                false);
+
+        if (addedName != fragName) {
+            MGlobal::displayError(
+                TfStringPrintf("Failed to register fragment '%s' from file: %s",
+                    fragName.asChar(),
+                    fragXmlPath.c_str()).c_str());
+            return MS::kFailure;
+        }
+    }
+
     for (const TfToken& fragNameToken : _FragmentNames) {
         const MString fragName(fragNameToken.GetText());
 

@@ -1,6 +1,6 @@
 #
 # =======================================================================
-# Copyright 2019 Autodesk
+# Copyright 2020 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -144,6 +144,7 @@ list(APPEND mayaUsd_src
     render/pxrUsdMayaGL/usdProxyShapeAdapter.cpp
     render/pxrUsdMayaGL/userData.cpp
     #
+    render/vp2RenderDelegate/basisCurves.cpp
     render/vp2RenderDelegate/bboxGeom.cpp
     render/vp2RenderDelegate/debugCodes.cpp
     render/vp2RenderDelegate/draw_item.cpp
@@ -182,6 +183,16 @@ list(APPEND mayaUsdShaderFragments_xmls
     render/vp2ShaderFragments/usdPreviewSurfaceCombiner.xml
     render/vp2ShaderFragments/usdPreviewSurfaceLighting.xml
     # New fragments
+    render/vp2ShaderFragments/BasisCurvesLinearDomain_GLSL.xml
+    render/vp2ShaderFragments/BasisCurvesLinearDomain_HLSL.xml
+    render/vp2ShaderFragments/BasisCurvesLinearDomain_Cg.xml
+    render/vp2ShaderFragments/BasisCurvesLinearFallbackShader.xml
+    render/vp2ShaderFragments/BasisCurvesLinearHull.xml
+    render/vp2ShaderFragments/BasisCurvesCubicDomain_GLSL.xml
+    render/vp2ShaderFragments/BasisCurvesCubicDomain_HLSL.xml
+    render/vp2ShaderFragments/BasisCurvesCubicDomain_Cg.xml
+    render/vp2ShaderFragments/BasisCurvesCubicFallbackShader.xml
+    render/vp2ShaderFragments/BasisCurvesCubicHull.xml
     render/vp2ShaderFragments/FallbackCPVShader.xml
     render/vp2ShaderFragments/FallbackShader.xml
     render/vp2ShaderFragments/Float4ToFloat3.xml

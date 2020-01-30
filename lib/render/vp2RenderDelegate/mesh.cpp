@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -109,25 +109,6 @@ namespace {
         //! No default constructor, we need draw item and dirty bits.
         CommitState() = delete;
     };
-
-    //! Helper utility function to get number of draw items required for given representation
-    size_t _GetNumDrawItemsForDesc(const HdMeshReprDesc& reprDesc)
-    {
-        // By default, each repr desc item maps to 1 draw item
-        size_t numDrawItems = 1;
-
-        // Different representations may require different number of draw items
-        // See HdSt for an example.
-        switch (reprDesc.geomStyle) {
-        case HdMeshGeomStyleInvalid:
-            numDrawItems = 0;
-            break;
-        default:
-            break;
-        }
-
-        return numDrawItems;
-    }
 
     //! Helper utility function to fill primvar data to vertex buffer.
     template <class DEST_TYPE, class SRC_TYPE>
@@ -656,59 +637,57 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
 
     for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
         const HdMeshReprDesc& desc = descs[descIdx];
+        if (desc.geomStyle == HdMeshGeomStyleInvalid) {
+            continue;
+        }
 
-        size_t numDrawItems = _GetNumDrawItemsForDesc(desc);
-        if (numDrawItems == 0) continue;
+        auto* drawItem = new HdVP2DrawItem(_delegate, &_sharedData);
+        repr->AddDrawItem(drawItem);
 
-        for (size_t itemId = 0; itemId < numDrawItems; itemId++) {
-            auto* drawItem = new HdVP2DrawItem(_delegate, &_sharedData, desc);
-            repr->AddDrawItem(drawItem);
+        const MString& renderItemName = drawItem->GetRenderItemName();
 
-            const MString& renderItemName = drawItem->GetRenderItemName();
+        MHWRender::MRenderItem* renderItem = nullptr;
 
-            MHWRender::MRenderItem* renderItem = nullptr;
-
-            switch (desc.geomStyle) {
-            case HdMeshGeomStyleHull:
-                renderItem = _CreateSmoothHullRenderItem(renderItemName);
-                break;
-            case HdMeshGeomStyleHullEdgeOnly:
-                // The smoothHull repr uses the wireframe item for selection
-                // highlight only.
-                if (reprToken == HdReprTokens->smoothHull) {
-                    renderItem = _CreateSelectionHighlightRenderItem(renderItemName);
-                    drawItem->SetUsage(HdVP2DrawItem::kSelectionHighlight);
-                }
-                // The item is used for wireframe display and selection highlight.
-                else if (reprToken == HdReprTokens->wire) {
-                    renderItem = _CreateWireframeRenderItem(renderItemName);
-                    drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
-                }
-                // The item is used for bbox display and selection highlight.
-                else if (reprToken == HdVP2ReprTokens->bbox) {
-                    renderItem = _CreateBoundingBoxRenderItem(renderItemName);
-                    drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
-                }
-                break;
-            case HdMeshGeomStylePoints:
-                renderItem = _CreatePointsRenderItem(renderItemName);
-                break;
-            default:
-                TF_WARN("Unsupported geomStyle");
-                break;
+        switch (desc.geomStyle) {
+        case HdMeshGeomStyleHull:
+            renderItem = _CreateSmoothHullRenderItem(renderItemName);
+            break;
+        case HdMeshGeomStyleHullEdgeOnly:
+            // The smoothHull repr uses the wireframe item for selection
+            // highlight only.
+            if (reprToken == HdReprTokens->smoothHull) {
+                renderItem = _CreateSelectionHighlightRenderItem(renderItemName);
+                drawItem->SetUsage(HdVP2DrawItem::kSelectionHighlight);
             }
-
-            if (renderItem) {
-                // Store the render item pointer to avoid expensive lookup in the
-                // subscene container.
-                drawItem->SetRenderItem(renderItem);
-
-                _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                    [subSceneContainer, renderItem]() {
-                        subSceneContainer->add(renderItem);
-                    }
-                );
+            // The item is used for wireframe display and selection highlight.
+            else if (reprToken == HdReprTokens->wire) {
+                renderItem = _CreateWireframeRenderItem(renderItemName);
+                drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
             }
+            // The item is used for bbox display and selection highlight.
+            else if (reprToken == HdVP2ReprTokens->bbox) {
+                renderItem = _CreateBoundingBoxRenderItem(renderItemName);
+                drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
+            }
+            break;
+        case HdMeshGeomStylePoints:
+            renderItem = _CreatePointsRenderItem(renderItemName);
+            break;
+        default:
+            TF_WARN("Unsupported geomStyle");
+            break;
+        }
+
+        if (renderItem) {
+            // Store the render item pointer to avoid expensive lookup in the
+            // subscene container.
+            drawItem->SetRenderItem(renderItem);
+
+            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+                [subSceneContainer, renderItem]() {
+                    subSceneContainer->add(renderItem);
+                }
+            );
         }
 
         if (desc.geomStyle == HdMeshGeomStyleHull) {
@@ -760,10 +739,17 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate *sceneDelegate, const TfToken& reprT
     }
 
     // For each relevant draw item, update dirty buffer sources.
-    const HdRepr::DrawItems& items = curRepr->GetDrawItems();
-    for (HdDrawItem* item : items) {
-        if (auto* drawItem = static_cast<HdVP2DrawItem*>(item)) {
-            _UpdateDrawItem(sceneDelegate, drawItem,
+    int drawItemIndex = 0;
+    for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
+        const HdMeshReprDesc &desc = reprDescs[descIdx];
+        if (desc.geomStyle == HdMeshGeomStyleInvalid) {
+            continue;
+        }
+
+        auto* drawItem = static_cast<HdVP2DrawItem*>(
+            curRepr->GetDrawItem(drawItemIndex++));
+        if (drawItem) {
+            _UpdateDrawItem(sceneDelegate, drawItem, desc,
                 requireSmoothNormals, requireFlatNormals);
         }
     }
@@ -777,6 +763,7 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate *sceneDelegate, const TfToken& reprT
 void HdVP2Mesh::_UpdateDrawItem(
     HdSceneDelegate* sceneDelegate,
     HdVP2DrawItem* drawItem,
+    const HdMeshReprDesc& desc,
     bool requireSmoothNormals,
     bool requireFlatNormals)
 {
@@ -802,7 +789,6 @@ void HdVP2Mesh::_UpdateDrawItem(
     HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
 
     const SdfPath& id = GetId();
-    const HdMeshReprDesc &desc = drawItem->GetReprDesc();
 
     auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
@@ -853,8 +839,8 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
     }
 
-    // Prepare normal buffer.
-    if (drawItemData._normalsBuffer) {
+    if (desc.geomStyle == HdMeshGeomStyleHull) {
+        // Prepare normal buffer.
         VtVec3fArray normals;
         HdInterpolation interp = HdInterpolationConstant;
 
@@ -897,6 +883,16 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
 
         if (prepareNormals) {
+            if (!drawItemData._normalsBuffer) {
+                const MHWRender::MVertexBufferDescriptor vbDesc("",
+                    MHWRender::MGeometry::kNormal,
+                    MHWRender::MGeometry::kFloat,
+                    3);
+
+                drawItemData._normalsBuffer.reset(
+                    new MHWRender::MVertexBuffer(vbDesc));
+            }
+
             void* bufferData = drawItemData._normalsBuffer->acquire(numVertices, true);
             if (bufferData) {
                 _FillPrimvarData(static_cast<GfVec3f*>(bufferData),
@@ -906,10 +902,8 @@ void HdVP2Mesh::_UpdateDrawItem(
                 stateToCommit._normalsBufferData = bufferData;
             }
         }
-    }
 
-    // Prepare color buffer.
-    if (desc.geomStyle == HdMeshGeomStyleHull) {
+        // Prepare color buffer.
         if ((itemDirtyBits & HdChangeTracker::DirtyMaterialId) != 0) {
             const HdVP2Material* material = static_cast<const HdVP2Material*>(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId())
