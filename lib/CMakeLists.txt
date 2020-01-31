@@ -228,6 +228,8 @@ if(UFE_FOUND)
             ufe/UsdAttribute.cpp
             ufe/UsdAttributes.cpp
             ufe/UsdAttributesHandler.cpp
+            ufe/UsdObject3d.cpp
+            ufe/UsdObject3dHandler.cpp
             ufe/UsdUndoCreateGroupCommand.cpp
         )
     endif()
@@ -360,6 +362,7 @@ if(UFE_FOUND)
         ufe/UsdUndoDuplicateCommand.h
         ufe/UsdUndoRenameCommand.h
         ufe/Utils.h
+		ufe/UfeVersionCompat.h
     )
 
     if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
@@ -367,6 +370,8 @@ if(UFE_FOUND)
             ufe/UsdAttribute.h
             ufe/UsdAttributes.h
             ufe/UsdAttributesHandler.h
+            ufe/UsdObject3d.h
+            ufe/UsdObject3dHandler.h
             ufe/UsdUndoCreateGroupCommand.h
         )
     endif()

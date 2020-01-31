@@ -21,6 +21,7 @@ import maya.cmds as cmds
 from math import radians
 
 from ufeTestUtils import usdUtils, mayaUtils, ufeUtils
+from ufeTestUtils.testUtils import assertVectorAlmostEqual
 import testTRSBase
 import ufe
 
@@ -102,7 +103,7 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
         '''
         runTimeVec = self.runTimeRotation()
         ufeVec  = self.ufeRotation()
-        self.assertVectorAlmostEqual(runTimeVec, ufeVec)
+        assertVectorAlmostEqual(self, runTimeVec, ufeVec)
         return (runTimeVec, ufeVec)
 
     def multiSelectSnapshotRunTimeUFE(self, items):
@@ -115,13 +116,9 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
         for item in items:
             runTimeVec = self.runTimeRotation(item)
             ufeVec  = self.ufeRotation(item)
-            self.assertVectorAlmostEqual(runTimeVec, ufeVec)
+            assertVectorAlmostEqual(self, runTimeVec, ufeVec)
             snapshot.append((runTimeVec, ufeVec))
         return snapshot
-
-    def assertVectorAlmostEqual(self, a, b):
-        for va, vb in zip(a, b):
-            self.assertAlmostEqual(va, vb)
 
     def runTestRotate(self, expected):
         '''Engine method to run rotate test.'''
@@ -268,7 +265,7 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
         backT3d = ufe.Transform3d.transform3d(backItem)
         initialRot = [-10, -20, -30]
         backT3d.rotate(*initialRot)
-        self.assertVectorAlmostEqual([radians(a) for a in initialRot], 
+        assertVectorAlmostEqual(self, [radians(a) for a in initialRot], 
                                      usdSceneItemRotation(backItem))
 
         # Save the initial positions to the memento list.
