@@ -67,6 +67,17 @@ def isMayaUsdPluginLoaded():
     successLoad = True
     for plugin in ALL_PLUGINS:
         successLoad = successLoad and loadPlugin(plugin)
+
+    # The renderSetup Python plugin registers a file new callback to Maya.  On
+    # test application exit (in TbaseApp::cleanUp()), a file new is done and
+    # thus the file new callback is invoked.  Unfortunately, this occurs after
+    # the Python interpreter has been finalized, which causes a crash.  Since
+    # renderSetup is not needed for mayaUsd tests, unload it.
+    rs = 'renderSetup'
+    if cmds.pluginInfo(rs, q=True, loaded=True):
+        unloaded = cmds.unloadPlugin(rs)
+        successLoad = successLoad and (unloaded[0] == rs)
+    
     return successLoad
 
 def createUfePathSegment(mayaPath):

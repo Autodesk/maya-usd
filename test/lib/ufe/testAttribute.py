@@ -17,7 +17,7 @@
 #
 
 from ufeTestUtils import usdUtils, mayaUtils
-from ufeTestUtils.testUtils import assertVectorAlmostEqual
+import ufeTestUtils.testUtils
 import ufe
 from pxr import UsdGeom
 import random
@@ -43,6 +43,10 @@ class AttributeTestCase(unittest.TestCase):
     def setUp(self):
         '''Called initially to set up the maya test environment'''
         self.assertTrue(self.pluginsLoaded)
+
+    def assertVectorAlmostEqual(self, ufeVector, usdVector):
+        ufeTestUtils.testUtils.assertVectorAlmostEqual(
+            self, ufeVector.vector, usdVector)
 
     def assertColorAlmostEqual(self, ufeColor, usdColor):
         for va, vb in zip(ufeColor.color, usdColor):
@@ -307,14 +311,14 @@ class AttributeTestCase(unittest.TestCase):
         # Now we test the Float3 specific methods.
 
         # Compare the initial UFE value to that directly from USD.
-        assertVectorAlmostEqual(self, ufeAttr.get(), usdAttr.Get())
+        self.assertVectorAlmostEqual(ufeAttr.get(), usdAttr.Get())
 
         # Set the attribute in UFE with some random color values.
         vec = ufe.Vector3f(random.random(), random.random(), random.random())
         ufeAttr.set(vec)
 
         # Then make sure that new UFE value matches what it in USD.
-        assertVectorAlmostEqual(self, ufeAttr.get(), usdAttr.Get())
+        self.assertVectorAlmostEqual(ufeAttr.get(), usdAttr.Get())
 
     def testAttributeDouble3(self):
         '''Test the Double3 attribute type.'''
@@ -331,11 +335,11 @@ class AttributeTestCase(unittest.TestCase):
         # Now we test the Double3 specific methods.
 
         # Compare the initial UFE value to that directly from USD.
-        assertVectorAlmostEqual(self, ufeAttr.get(), usdAttr.Get())
+        self.assertVectorAlmostEqual(ufeAttr.get(), usdAttr.Get())
 
         # Set the attribute in UFE with some random values.
         vec = ufe.Vector3d(random.uniform(-100, 100), random.uniform(-100, 100), random.uniform(-100, 100))
         ufeAttr.set(vec)
 
         # Then make sure that new UFE value matches what it in USD.
-        assertVectorAlmostEqual(self, ufeAttr.get(), usdAttr.Get())
+        self.assertVectorAlmostEqual(ufeAttr.get(), usdAttr.Get())
