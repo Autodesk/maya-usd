@@ -1,4 +1,4 @@
-set(TEST_NAME TestUSDMayaPython)
+set(MAIN_TEST_NAME TestUSDMayaPython)
 
 set(path 
     "${CMAKE_INSTALL_PREFIX}/lib"
@@ -20,7 +20,7 @@ separate_argument_list(pythonPath)
 separate_argument_list(mayaPluginPath)
 
 add_test(
-    NAME ${TEST_NAME}
+    NAME ${MAIN_TEST_NAME}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMAND ${MAYA_PY_EXECUTABLE} -c "import sys;from unittest import main;import maya.standalone; \
                                       maya.standalone.initialize(name='python'); \
@@ -35,7 +35,27 @@ add_test(
                                       "
 )
 
-set_property(TEST ${TEST_NAME} APPEND PROPERTY ENVIRONMENT 
+set_property(TEST ${MAIN_TEST_NAME} APPEND PROPERTY ENVIRONMENT
+    "PYTHONPATH=${pythonPath}"
+    "PATH=${path}"
+    "MAYA_PLUG_IN_PATH=${mayaPluginPath}"
+    "PXR_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
+    "MAYA_NO_STANDALONE_ATEXIT=1"
+)
+
+set(MODULE_ONLY_TEST_NAME TestUSDMayaPythonModuleOnly)
+
+add_test(
+    NAME ${MODULE_ONLY_TEST_NAME}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    # Note that, since this test does NOT call maya.standalone.initialize, we can
+    # just let unittest.main call sys.exit "normally"
+    COMMAND ${MAYA_PY_EXECUTABLE} -c "import sys;from unittest import main; \
+                                      import testUSDMayaPythonModuleOnly; main(module=testUSDMayaPythonModuleOnly); \
+                                      "
+)
+
+set_property(TEST ${MODULE_ONLY_TEST_NAME} APPEND PROPERTY ENVIRONMENT
     "PYTHONPATH=${pythonPath}"
     "PATH=${path}"
     "MAYA_PLUG_IN_PATH=${mayaPluginPath}"
