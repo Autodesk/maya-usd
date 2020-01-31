@@ -35,11 +35,6 @@
 #include <maya/MProfiler.h>
 #include <maya/MSelectionMask.h>
 
-// Conditional compilation due to Maya API gap.
-#if MAYA_API_VERSION >= 20210000
-#define MAYA_ALLOW_PRIMITIVE_TYPE_SWITCH
-#endif
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -691,6 +686,12 @@ HdVP2BasisCurves::_UpdateDrawItem(
     const TfToken type = topology.GetCurveType();
     const TfToken wrap = topology.GetCurveWrap();
 
+#if defined(MAYA_ALLOW_PRIMITIVE_TYPE_SWITCH)
+    const int refineLevel = _curvesSharedData._displayStyle.refineLevel;
+#else
+    const int refineLevel = 0;
+#endif
+
     const MHWRender::MGeometry::DrawMode drawMode = renderItem->drawMode();
 
     // The bounding box item uses a globally-shared geometry data therefore it
@@ -701,8 +702,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
     if (requiresIndexUpdate && (itemDirtyBits & HdChangeTracker::DirtyTopology)) {
 
         const bool forceLines =
-            (_curvesSharedData._displayStyle.refineLevel <= 0) ||
-            (drawMode == MHWRender::MGeometry::kWireframe);
+            (refineLevel <= 0) || (drawMode == MHWRender::MGeometry::kWireframe);
 
         VtValue result;
 
@@ -780,7 +780,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
         }
 
         // Prepare widths buffer.
-        if ((_curvesSharedData._displayStyle.refineLevel > 0) &&
+        if ((refineLevel > 0) &&
             (itemDirtyBits & (HdChangeTracker::DirtyPrimvar |
                               HdChangeTracker::DirtyDisplayStyle))) {
             VtFloatArray widths(1, 1.0f);
@@ -883,7 +883,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
                     auto primitiveType = MHWRender::MGeometry::kLines;
                     int primitiveStride = 0;
 
-                    if (_curvesSharedData._displayStyle.refineLevel <= 0) {
+                    if (refineLevel <= 0) {
                         shader = _delegate->Get3dSolidShader(clr);
                     }
                     else if (type == HdTokens->linear) {
@@ -1129,7 +1129,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
 
                 if (desc.geomStyle == HdBasisCurvesGeomStylePatch) {
                     if (_selectionState != kUnselected) {
-                        if (_curvesSharedData._displayStyle.refineLevel <= 0) {
+                        if (refineLevel <= 0) {
                             shader = _delegate->Get3dSolidShader(kSelectionHighlightColor);
                         }
                         else if (type == HdTokens->linear) {
