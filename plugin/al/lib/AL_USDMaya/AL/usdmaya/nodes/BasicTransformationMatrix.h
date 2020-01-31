@@ -84,9 +84,10 @@ public:
   AL_USDMAYA_PUBLIC
   static MPxTransformationMatrix* creator();
 
-private:
-
+protected:
   UsdPrim m_prim;
+
+private:
   UsdGeomScope m_scope;
   MObjectHandle m_transformNode;
 

@@ -46,7 +46,6 @@ class TransformationMatrix
 
   friend class Transform;
 
-  UsdPrim m_prim;
   UsdGeomXformable m_xform;
   UsdTimeCode m_time;
   std::vector<UsdGeomXformOp> m_xformops;
