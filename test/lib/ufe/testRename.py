@@ -24,10 +24,10 @@ import mayaUsd.ufe
 
 import unittest
 
-class RenameProxyShapeTestCase(unittest.TestCase):
-    '''Test renaming the proxy shape and its ancestors.
+class RenameTestCase(unittest.TestCase):
+    '''Test renaming a UFE scene item and its ancestors.
 
-    Renaming should not affect UFE lookup.
+    Renaming should not affect UFE lookup, including renaming the proxy shape.
     '''
 
     pluginsLoaded = False
@@ -37,6 +37,10 @@ class RenameProxyShapeTestCase(unittest.TestCase):
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
     
+    @classmethod
+    def tearDownClass(cls):
+        cmds.file(new=True, force=True)
+
     def setUp(self):
         ''' Called initially to set up the Maya test environment '''
         # Load plugins
@@ -90,3 +94,62 @@ class RenameProxyShapeTestCase(unittest.TestCase):
             [str(segment) for segment in ball35Path.segments])
 
         assertStageAndPrimAccess(mayaSegment, ball35PathStr, usdSegment)
+
+    def testRename(self):
+        '''Rename USD node.'''
+
+        # Select a USD object.
+        ball35Path = ufe.Path([
+            mayaUtils.createUfePathSegment(
+                "|world|transform1|proxyShape1"),
+             usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
+        ball35Item = ufe.Hierarchy.createItem(ball35Path)
+        ball35Hierarchy = ufe.Hierarchy.hierarchy(ball35Item)
+        propsItem = ball35Hierarchy.parent()
+
+        propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
+        propsChildrenPre = propsHierarchy.children()
+
+        ufe.GlobalSelection.get().append(ball35Item)
+
+        newName = 'Ball_35_Renamed'
+        cmds.rename(newName)
+
+        # The renamed item is in the selection.
+        snIter = iter(ufe.GlobalSelection.get())
+        ball35RenItem = next(snIter)
+        ball35RenName = str(ball35RenItem.path().back())
+
+        self.assertEqual(ball35RenName, newName)
+
+        # MAYA-92350: should not need to re-bind hierarchy interface objects
+        # with their item.
+        propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
+        propsChildren = propsHierarchy.children()
+
+        self.assertEqual(len(propsChildren), len(propsChildrenPre))
+        self.assertIn(ball35RenItem, propsChildren)
+
+        # Rename undo / redo does not work yet.  PPT, 28-Jan-2020.
+        return
+        cmds.undo()
+
+        def childrenNames(children):
+            return [str(child.path().back()) for child in children]
+
+        propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
+        propsChildren = propsHierarchy.children()
+        propsChildrenNames = childrenNames(propsChildren)
+
+        self.assertNotIn(ball35RenName, propsChildrenNames)
+        self.assertIn('Ball_35', propsChildrenNames)
+
+        cmds.redo()
+
+        propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
+        propsChildren = propsHierarchy.children()
+        propsChildrenNames = childrenNames(propsChildren)
+
+        self.assertIn(ball35RenName, propsChildrenNames)
+        self.assertNotIn('Ball_35', propsChildrenNames)
+

@@ -31,11 +31,12 @@ MObjectHandle proxyShapeHandle(const Ufe::Path& path)
 {
     // Get the MObjectHandle from the tail of the MDagPath.  Remove the leading
     // '|world' component.
-    auto dagPath = MayaUsd::ufe::nameToDagPath(path.popHead().string());
+    auto noWorld = path.popHead().string();
+    auto dagPath = MayaUsd::ufe::nameToDagPath(noWorld);
     MObjectHandle handle(dagPath.node());
     if (!handle.isValid()) {
         TF_CODING_ERROR("'%s' is not a path to a proxy shape node.",
-                        path.string().c_str());
+                        noWorld.c_str());
     }
     return handle;
 }
