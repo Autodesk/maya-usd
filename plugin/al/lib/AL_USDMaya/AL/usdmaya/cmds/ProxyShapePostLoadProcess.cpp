@@ -389,7 +389,8 @@ MStatus ProxyShapePostLoadProcess::initialise(nodes::ProxyShape* ptrNode)
       if(obj.hasFn(MFn::kPluginTransformNode))
       {
         MFnDagNode fnChild(obj);
-        if(fnChild.typeId() == nodes::Transform::kTypeId)
+        if(fnChild.typeId() == nodes::Transform::kTypeId ||
+           fnChild.typeId() == nodes::Scope::kTypeId)
         {
           modifier.deleteNode(obj);
         }

@@ -111,6 +111,8 @@ list(APPEND AL_usdmaya_nodes_headers
         AL/usdmaya/nodes/ProxyUsdGeomCamera.h
         AL/usdmaya/nodes/RendererManager.h
         AL/usdmaya/nodes/Transform.h
+        AL/usdmaya/nodes/Scope.h
+        AL/usdmaya/nodes/BasicTransformationMatrix.h
         AL/usdmaya/nodes/TransformationMatrix.h
 )
 
@@ -131,6 +133,8 @@ list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/ProxyUsdGeomCamera.cpp
         AL/usdmaya/nodes/RendererManager.cpp
         AL/usdmaya/nodes/Transform.cpp
+        AL/usdmaya/nodes/Scope.cpp
+        AL/usdmaya/nodes/BasicTransformationMatrix.cpp
         AL/usdmaya/nodes/TransformationMatrix.cpp
         AL/usdmaya/nodes/proxy/PrimFilter.cpp
 )

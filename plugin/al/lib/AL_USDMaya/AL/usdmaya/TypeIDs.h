@@ -28,6 +28,8 @@ const MTypeId AL_USDMAYA_STAGEDATA                  (0x00112A24);
 const MTypeId AL_USDMAYA_LAYERMANAGER               (0x00112A27);
 const MTypeId AL_USDMAYA_RENDERERMANAGER            (0x00112A28);
 const MTypeId AL_USDMAYA_USDGEOMCAMERAPROXY         (0x00112A2B);
+const MTypeId AL_USDMAYA_SCOPE                      (0x00112A31);
+const MTypeId AL_USDMAYA_IDENTITY_MATRIX            (0x00112A32);
 
 #if defined(WANT_UFE_BUILD)
 const int MAYA_UFE_RUNTIME_ID(1);

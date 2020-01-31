@@ -43,6 +43,7 @@
 #include "AL/usdmaya/nodes/RendererManager.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
+#include "AL/usdmaya/nodes/Scope.h"
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
@@ -208,7 +209,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
 
   if(!MGlobal::optionVarExists("AL_usdmaya_pushToPrim"))
   {
-    MGlobal::setOptionVarValue("AL_usdmaya_pushToPrim", false);
+    MGlobal::setOptionVarValue("AL_usdmaya_pushToPrim", true);
   }
 
   if(!MGlobal::optionVarExists("AL_usdmaya_ignoreLockPrims"))
@@ -278,7 +279,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
   AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ExportTranslator);
   AL_REGISTER_DRAW_OVERRIDE(plugin, AL::usdmaya::nodes::ProxyDrawOverride);
-
+  
   status = MayaUsdProxyShapePlugin::initialize(plugin);
   CHECK_MSTATUS(status);
 
@@ -304,6 +305,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
   }
 #endif
 
+  AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Scope, AL::usdmaya::nodes::BasicTransformationMatrix);
   AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Transform, AL::usdmaya::nodes::TransformationMatrix);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::Layer);
@@ -439,6 +441,7 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   CHECK_MSTATUS(status);
 
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Transform);
+  AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Scope);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Layer);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::LayerManager);
