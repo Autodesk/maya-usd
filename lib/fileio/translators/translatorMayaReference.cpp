@@ -68,7 +68,6 @@ namespace {
         foundIndex = 0;
         wasConnected = false;
         unsigned int numConnected = destArrayPlug.numConnectedElements(&status);
-        //AL_MAYA_CHECK_ERROR(status, MString("failed to get numConnectedElements on ") + destArrayPlug.name());
         CHECK_MSTATUS_AND_RETURN_IT(status);
         if (numConnected > 0)
         {
@@ -79,10 +78,8 @@ namespace {
             for (unsigned int connectedI = 0; connectedI < numConnected; ++connectedI)
             {
                 elemPlug = destArrayPlug.connectionByPhysicalIndex(connectedI, &status);
-                //AL_MAYA_CHECK_ERROR(status, MString("failed to get connection ") + connectedI + " on " + destArrayPlug.name());
                 CHECK_MSTATUS_AND_RETURN_IT(status);
                 elemSrcPlug = elemPlug.source(&status);
-                //AL_MAYA_CHECK_ERROR(status, MString("failed to get source for ") + elemPlug.name());
                 CHECK_MSTATUS_AND_RETURN_IT(status);
                 if (!elemSrcPlug.isNull())
                 {
@@ -135,9 +132,6 @@ namespace {
   }
 }
 
-//
-//TF_DEFINE_PUBLIC_TOKENS(UsdMayaStageNodeTokens,
-//    PXRUSDMAYA_STAGE_NODE_TOKENS);
 const TfToken UsdMayaTranslatorMayaReference::m_namespaceName = TfToken("mayaNamespace");
 const TfToken UsdMayaTranslatorMayaReference::m_referenceName = TfToken("mayaReference");
 
@@ -149,7 +143,6 @@ UsdMayaTranslatorMayaReference::LoadMayaReference(const UsdPrim& prim, MObject& 
     MStatus status;
 
     MFnDagNode parentDag(parent, &status);
-    //AL_MAYA_CHECK_ERROR(status, "failed to attach function set to parent transform for reference.");
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
   // Need to create new reference (initially unloaded).
@@ -191,7 +184,6 @@ UsdMayaTranslatorMayaReference::LoadMayaReference(const UsdPrim& prim, MObject& 
         prim.GetPath().GetText(),
         referenceCommand.asChar());
     status = MGlobal::executeCommand(referenceCommand, createdNodes);
-    //AL_MAYA_CHECK_ERROR(status, MString("failed to create maya reference: ") + referenceCommand);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     if (createdNodes.length() != 1)
@@ -223,7 +215,6 @@ UsdMayaTranslatorMayaReference::LoadMayaReference(const UsdPrim& prim, MObject& 
 
     // Now load the reference to properly trigger the kAfterReferenceLoad callback
     MFileIO::loadReferenceByNode(referenceObject, &status);
-    //AL_MAYA_CHECK_ERROR(status, MString("failed to load reference: ") + referenceCommand);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     {
         // To avoid the error that USD complains about editing to same layer simultaneously from different threads,
@@ -256,7 +247,6 @@ UsdMayaTranslatorMayaReference::UnloadMayaReference(const MObject& parent){
                 if (temp.hasFn(MFn::kReference))
                 {
                     MFileIO::unloadReferenceByNode(temp, &status);
-                    //AL_MAYA_CHECK_ERROR(status, "failed to unload maya reference");
                     CHECK_MSTATUS_AND_RETURN_IT(status);
                 }
             }
@@ -282,7 +272,6 @@ UsdMayaTranslatorMayaReference::connectReferenceAssociatedNode(MFnDagNode& dagNo
     bool wasConnected = false;
     unsigned int destIndex = 0;
     result = connectedOrFirstAvailableIndex(srcPlug, destArrayPlug, destIndex, wasConnected);
-    //AL_MAYA_CHECK_ERROR(result, MString("failed to calculate first available dest index for ") + destArrayPlug.name());
     CHECK_MSTATUS_AND_RETURN_IT(result);
     if (wasConnected)
     {
@@ -296,7 +285,6 @@ UsdMayaTranslatorMayaReference::connectReferenceAssociatedNode(MFnDagNode& dagNo
     {
         MDGModifier dgMod;
         result = dgMod.connect(srcPlug, destPlug);
-        //AL_MAYA_CHECK_ERROR(result, "failed to connect maya reference plug");
         CHECK_MSTATUS_AND_RETURN_IT(result);
         result = dgMod.doIt();
     }
@@ -324,14 +312,17 @@ UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject parent)
     {
         return MS::kFailure;
     }
+    TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update Looking for attribute on \"%s\".\"%s\"\n", prim.GetTypeName().GetText(), m_namespaceName.GetText());
 
     // Get required namespace attribute from prim
     std::string rigNamespace;
     if (UsdAttribute rigNamespaceAttribute = prim.GetAttribute(m_namespaceName))
     {
+        TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update Checking namespace on prim \"%s\".\n", prim.GetPath().GetText());
+
         if (!rigNamespaceAttribute.Get<std::string>(&rigNamespace))
         {
-            TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update Missing namespace on prim \"%s\". Will create one from prim path.", prim.GetPath().GetText());
+            TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update Missing namespace on prim \"%s\". Will create one from prim path.\n", prim.GetPath().GetText());
             // Creating default namespace from prim path. Converts /a/b/c to a_b_c.
             rigNamespace = prim.GetPath().GetString();
             std::replace(rigNamespace.begin() + 1, rigNamespace.end(), '/', '_');
@@ -339,7 +330,6 @@ UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject parent)
     }
 
   MFnDagNode parentDag(parent, &status);
-  //AL_MAYA_CHECK_ERROR(status, "failed to attach function set to parent transform for reference.");
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
   MString rigNamespaceM(rigNamespace.c_str(), rigNamespace.size());
@@ -444,7 +434,6 @@ UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject parent)
                     prim.GetPath().GetText(),
                     command.asChar());
                 status = MGlobal::executeCommand(command);
-                //AL_MAYA_CHECK_ERROR(status, MString("Failed to update reference with new path: ") + mayaReferencePath);
                 CHECK_MSTATUS_AND_RETURN_IT(status);
             }
             else

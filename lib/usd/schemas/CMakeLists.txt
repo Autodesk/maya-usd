@@ -75,7 +75,7 @@ target_compile_definitions(${SCHEMA_PLUGIN}
         MFB_ALT_PACKAGE_NAME=${SCHEMA_PLUGIN}
 # Python wrappers are not yet defined for this library.  PPT, 26-Jul-2019.
 #        MFB_PACKAGE_MODULE=AL.usd.schemas.maya
-        MAYAUSDCORE_SCHEMAS_EXPORTS
+        MAYAUSD_SCHEMAS_EXPORTS
 )
 
 # Hamed 2019 
