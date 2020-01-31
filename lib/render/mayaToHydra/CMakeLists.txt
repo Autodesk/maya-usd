@@ -28,7 +28,6 @@ target_include_directories(${TARGET_NAME} PRIVATE
 )
 
 if(CMAKE_WANT_UFE_BUILD)
-    find_package(UFE QUIET)
     if(UFE_FOUND)
         message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
         include_directories(${UFE_INCLUDE_DIR})

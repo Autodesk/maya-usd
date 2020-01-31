@@ -1,3 +1,7 @@
+#==============================================================================
+# Configuration hdMaya 
+#==============================================================================
+
 set(TARGET_NAME hdMaya)
 
 option(HDMAYA_BUILD_TESTS "Build the maya-to-hydra tests" OFF)
@@ -7,6 +11,16 @@ set(MTOH_CXX_STD "11"
     STRING
     "Which C++ standard / version to use, as an integer - ie, 14 means use c++14."
 )
+
+if(CMAKE_WANT_UFE_BUILD)
+    if(UFE_FOUND)
+        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
+        include_directories(${UFE_INCLUDE_DIR})
+        add_definitions(-DWANT_UFE_BUILD)
+    else()
+        message(STATUS "UFE not found. UFE features will be disabled.")
+    endif()
+endif()
 
 set(SRC
     adapters/adapter.cpp
