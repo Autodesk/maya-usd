@@ -68,8 +68,8 @@ def GetGitHeadInfo(context):
     """Returns HEAD commit id and date."""
     try:
         with CurrentWorkingDirectory(context.mayaUsdSrcDir):
-            commitSha = subprocess.check_output('git rev-parse HEAD').decode()
-            commitDate = subprocess.check_output('git log -1 --pretty=format:"%ad"'.split()).decode()
+            commitSha = subprocess.check_output('git rev-parse HEAD', shell = True).decode()
+            commitDate = subprocess.check_output('git show -s HEAD --format="%ad"', shell = True).decode()
             return commitSha, commitDate
     except Exception as exp:
         PrintError("Failed to run git commands : {exp}".format(exp=exp))
@@ -125,7 +125,6 @@ def Run(context, cmd):
         commitID,commitData = GetGitHeadInfo(context)
         logfile.write("commit sha: " + commitID)
         logfile.write("commit date: " + commitData)
-        logfile.write("\n")
         logfile.write("#####################################################################################" + "\n")
         logfile.write("\n")
         logfile.write(cmd)
