@@ -20,12 +20,12 @@
 #include "ProxyShapeHandler.h"
 #include "private/InPathChange.h"
 
-#include <ufe/path.h>
+#include <ufe/attributes.h>
 #include <ufe/hierarchy.h>
+#include <ufe/path.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 #include <ufe/transform3d.h>
-#include <ufe/attributes.h>
 
 #include <maya/MSceneMessage.h>
 #include <maya/MMessage.h>

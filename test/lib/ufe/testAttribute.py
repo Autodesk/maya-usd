@@ -29,14 +29,15 @@ import unittest
 class TestObserver(ufe.Observer):
     def __init__(self):
         super(TestObserver, self).__init__()
-        self.changed = 0
+        self._notifications = 0
 
     def __call__(self, notification):
         if isinstance(notification, ufe.AttributeChanged):
-            self.changed += 1
+            self._notifications += 1
 
+    @property
     def notifications(self):
-        return self.changed
+        return self._notifications
 
 class AttributeTestCase(unittest.TestCase):
     '''Verify the Attribute UFE interface, for multiple runtimes.
@@ -443,9 +444,9 @@ class AttributeTestCase(unittest.TestCase):
         self.assertFalse(ufe.Attributes.hasObserver(ball35, ball35Obs))
 
         # No notifications yet.
-        self.assertEqual(ball34Obs.notifications(), 0)
-        self.assertEqual(ball35Obs.notifications(), 0)
-        self.assertEqual(globalObs.notifications(), 0)
+        self.assertEqual(ball34Obs.notifications, 0)
+        self.assertEqual(ball35Obs.notifications, 0)
+        self.assertEqual(globalObs.notifications, 0)
 
         # Add a global observer.
         ufe.Attributes.addObserver(globalObs)
@@ -482,26 +483,26 @@ class AttributeTestCase(unittest.TestCase):
         ball34Attrs = ufe.Attributes.attributes(ball34)
         ball34XlateAttr = ball34Attrs.attribute('xformOp:translate')
 
-        self.assertEqual(ball34Obs.notifications(), 0)
+        self.assertEqual(ball34Obs.notifications, 0)
 
         ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(1, 2, 3)))
 
-        self.assertEqual(ball34Obs.notifications(), 1)
-        self.assertEqual(ball35Obs.notifications(), 0)
-        self.assertEqual(globalObs.notifications(), 1)
+        self.assertEqual(ball34Obs.notifications, 1)
+        self.assertEqual(ball35Obs.notifications, 0)
+        self.assertEqual(globalObs.notifications, 1)
 
         # Undo, redo
         cmds.undo()
 
-        self.assertEqual(ball34Obs.notifications(), 2)
-        self.assertEqual(ball35Obs.notifications(), 0)
-        self.assertEqual(globalObs.notifications(), 2)
+        self.assertEqual(ball34Obs.notifications, 2)
+        self.assertEqual(ball35Obs.notifications, 0)
+        self.assertEqual(globalObs.notifications, 2)
 
         cmds.redo()
 
-        self.assertEqual(ball34Obs.notifications(), 3)
-        self.assertEqual(ball35Obs.notifications(), 0)
-        self.assertEqual(globalObs.notifications(), 3)
+        self.assertEqual(ball34Obs.notifications, 3)
+        self.assertEqual(ball35Obs.notifications, 0)
+        self.assertEqual(globalObs.notifications, 3)
 
         # Make a change to ball35, global and ball35 observers change.
         ball35Attrs = ufe.Attributes.attributes(ball35)
@@ -509,22 +510,22 @@ class AttributeTestCase(unittest.TestCase):
 
         ufeCmd.execute(ball35XlateAttr.setCmd(ufe.Vector3d(1, 2, 3)))
 
-        self.assertEqual(ball34Obs.notifications(), 3)
-        self.assertEqual(ball35Obs.notifications(), 1)
-        self.assertEqual(globalObs.notifications(), 4)
+        self.assertEqual(ball34Obs.notifications, 3)
+        self.assertEqual(ball35Obs.notifications, 1)
+        self.assertEqual(globalObs.notifications, 4)
 
         # Undo, redo
         cmds.undo()
 
-        self.assertEqual(ball34Obs.notifications(), 3)
-        self.assertEqual(ball35Obs.notifications(), 2)
-        self.assertEqual(globalObs.notifications(), 5)
+        self.assertEqual(ball34Obs.notifications, 3)
+        self.assertEqual(ball35Obs.notifications, 2)
+        self.assertEqual(globalObs.notifications, 5)
 
         cmds.redo()
 
-        self.assertEqual(ball34Obs.notifications(), 3)
-        self.assertEqual(ball35Obs.notifications(), 3)
-        self.assertEqual(globalObs.notifications(), 6)
+        self.assertEqual(ball34Obs.notifications, 3)
+        self.assertEqual(ball35Obs.notifications, 3)
+        self.assertEqual(globalObs.notifications, 6)
 
         # Test removeObserver.
         ufe.Attributes.removeObserver(ball34, ball34Obs)
@@ -537,9 +538,9 @@ class AttributeTestCase(unittest.TestCase):
 
         ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(4, 5, 6)))
 
-        self.assertEqual(ball34Obs.notifications(), 3)
-        self.assertEqual(ball35Obs.notifications(), 3)
-        self.assertEqual(globalObs.notifications(), 7)
+        self.assertEqual(ball34Obs.notifications, 3)
+        self.assertEqual(ball35Obs.notifications, 3)
+        self.assertEqual(globalObs.notifications, 7)
 
         ufe.Attributes.removeObserver(globalObs)
 
@@ -547,6 +548,6 @@ class AttributeTestCase(unittest.TestCase):
 
         ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(7, 8, 9)))
 
-        self.assertEqual(ball34Obs.notifications(), 3)
-        self.assertEqual(ball35Obs.notifications(), 3)
-        self.assertEqual(globalObs.notifications(), 7)
+        self.assertEqual(ball34Obs.notifications, 3)
+        self.assertEqual(ball35Obs.notifications, 3)
+        self.assertEqual(globalObs.notifications, 7)
