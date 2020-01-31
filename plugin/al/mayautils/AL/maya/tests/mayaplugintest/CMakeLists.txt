@@ -101,7 +101,7 @@ add_test(
     COMMAND ${MAYA_PY_EXECUTABLE} -c "import sys;import maya.standalone; \
                                       maya.standalone.initialize(name='python'); \
                                       maya.cmds.loadPlugin('AL_MayaUtilsTests'); \
-                                      ret=maya.mel.eval('AL_maya_test_UnitTestHarness'); \
+                                      maya.mel.eval('AL_maya_test_UnitTestHarness'); \
                                       maya.standalone.uninitialize(); \
                                       "
 )

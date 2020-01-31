@@ -24,14 +24,8 @@ add_test(
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMAND ${MAYA_PY_EXECUTABLE} -c "import sys;from unittest import main;import maya.standalone; \
                                       maya.standalone.initialize(name='python'); \
-                                      import testProxyShape; testProg1 = main(module=testProxyShape,exit=False); \
-                                      import testTranslators; testProg2 = main(module=testTranslators,exit=False); \
-                                      import testLayerManager; testProg3 = main(module=testLayerManager,exit=False); \
+                                      import testSuite;main(module=testSuite,exit=False); \
                                       maya.standalone.uninitialize(); \
-                                      testRes1Failed = not testProg1.result.wasSuccessful(); \
-                                      testRes2Failed = not testProg2.result.wasSuccessful(); \
-                                      testRes3Failed = not testProg3.result.wasSuccessful(); \
-                                      sys.exit(testRes1Failed or testRes2Failed or testRes3Failed); \
                                       "
 )
 
