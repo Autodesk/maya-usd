@@ -679,10 +679,6 @@ HdVP2BasisCurves::_UpdateDrawItem(
     const auto& primvarSourceMap = _curvesSharedData._primvarSourceMap;
 
     const HdBasisCurvesTopology& topology = _curvesSharedData._topology;
-    const VtIntArray& curveVertexCounts = topology.GetCurveVertexCounts();
-    const size_t numCurves = curveVertexCounts.size();
-    const size_t numControlPoints = topology.CalculateNeededNumberOfControlPoints();
-
     const TfToken type = topology.GetCurveType();
     const TfToken wrap = topology.GetCurveWrap();
 
