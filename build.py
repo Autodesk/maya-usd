@@ -65,7 +65,7 @@ def GetCommandOutput(command):
     return None
 
 def GetGitHeadInfo(context):
-    """write out HEAD commitID and Date."""
+    """Returns HEAD commit id and date."""
     try:
         with CurrentWorkingDirectory(context.mayaUsdSrcDir):
             commitSha = subprocess.check_output('git rev-parse HEAD').decode()
