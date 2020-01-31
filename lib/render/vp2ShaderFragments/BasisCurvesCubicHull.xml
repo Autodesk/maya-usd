@@ -18,11 +18,7 @@ limitations under the License.
     </description>
     <keyword value="tessellation" />
     <properties>
-        <float4x4  name="world" semantic="world" flags="isRequirementOnly" />
-        <float4x4  name="worldView" semantic="worldview" flags="isRequirementOnly" />
-        <float4x4  name="projection" semantic="projection" flags="isRequirementOnly" />
         <float4x4  name="worldViewProj" semantic="worldviewprojection" flags="isRequirementOnly" />
-        <float4x4  name="worldInverseTranspose" semantic="worldinversetranspose" flags="isRequirementOnly" />
         <float2  name="viewportPixelSize" semantic="ViewportPixelSize" flags="isRequirementOnly" />
         <float  name="tessLevel" semantic="TESSLEVEL" flags="isRequirementOnly" />
         <struct  name="inputs" semantic="SV_PATCH" size="4" struct_name="vertOutS" flags="varyingInputParam" />
@@ -40,11 +36,6 @@ limitations under the License.
         <undefined name="GPUStage" semantic="hullShader" />
         <float4  name="tessOuterLo" semantic="patchConstantParam" flags="isRequirementOnly,varyingInputParam" />
         <float4  name="tessOuterHi" semantic="patchConstantParam" flags="isRequirementOnly,varyingInputParam" />
-        <int3  name="patchParam" semantic="PATCHPARAM" flags="isRequirementOnly,varyingInputParam" />
-        <float3  name="OsdP" semantic="OsdP" flags="isRequirementOnly,varyingInputParam" />
-        <float3  name="OsdP1" semantic="OsdP1" flags="isRequirementOnly,varyingInputParam" />
-        <float3  name="OsdP2" semantic="OsdP2" flags="isRequirementOnly,varyingInputParam" />
-        <float2  name="vSegments" semantic="vSegments" flags="isRequirementOnly,varyingInputParam" />
     </outputs>
     <implementation>
         <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">

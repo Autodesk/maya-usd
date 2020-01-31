@@ -20,20 +20,15 @@ limitations under the License.
     <properties>
         <undefined  name="GPUStage" semantic="GPUStage" />
         <float4x4  name="worldView" semantic="worldview" flags="isRequirementOnly" />
-        <float4x4  name="projection" semantic="projection" flags="isRequirementOnly" />
         <float4x4  name="worldViewIT" semantic="worldviewinversetranspose" flags="isRequirementOnly" />
         <float4x4  name="worldViewI" semantic="worldviewinverse" flags="isRequirementOnly" />
         <float4x4  name="worldViewT" semantic="worldviewtranspose" flags="isRequirementOnly" />
         <float4  name="tessOuterLo" semantic="patchConstantParam" flags="isRequirementOnly,varyingInputParam" />
         <float4  name="tessOuterHi" semantic="patchConstantParam" flags="isRequirementOnly,varyingInputParam" />
-        <struct  name="patchConstants" struct_name="hullConstantsOutS" flags="varyingInputParam" />
         <struct  name="patch" size="4" struct_name="hullOutS" />
-        <float2  name="domainCoord" semantic="SV_DomainLocation" flags="varyingInputParam" />
-        <int3  name="patchParam" semantic="PATCHPARAM" flags="isRequirementOnly,varyingInputParam" />
         <float3  name="Pm" semantic="POSITION" flags="isRequirementOnly,varyingInputParam" />
         <float3  name="Nm" semantic="NORMAL" flags="isRequirementOnly,varyingInputParam" />
         <float  name="U0_1" semantic="TEXCOORD0" flags="isRequirementOnly,varyingInputParam" />
-        <float3  name="cameraPosition" semantic="worldcameraposition" flags="isRequirementOnly" />
         <int  name="outputpatchsize" semantic="controlParam" flags="isRequirementOnly" />
         <string  name="tessprimitives" semantic="controlParam" flags="isRequirementOnly" />
         <string  name="patchspacing" semantic="controlParam" flags="isRequirementOnly" />
