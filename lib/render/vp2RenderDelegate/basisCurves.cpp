@@ -1489,6 +1489,9 @@ void HdVP2BasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBit
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
             }
             break;
+        case HdBasisCurvesGeomStylePoints:
+            renderItem = _CreatePointsRenderItem(renderItemName);
+            break;
         default:
             TF_WARN("Unsupported geomStyle");
             break;
@@ -1661,6 +1664,31 @@ HdVP2BasisCurves::_CreatePatchRenderItem(const MString& name) const
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
     renderItem->setSelectionMask(MSelectionMask::kSelectCurves);
+
+    setWantConsolidation(*renderItem, true);
+
+    return renderItem;
+}
+
+/*! \brief  Create render item for points repr.
+*/
+MHWRender::MRenderItem*
+HdVP2BasisCurves::_CreatePointsRenderItem(const MString& name) const
+{
+    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
+        name,
+        MHWRender::MRenderItem::DecorationItem,
+        MHWRender::MGeometry::kPoints
+    );
+
+    renderItem->setDrawMode(MHWRender::MGeometry::kSelectionOnly);
+    renderItem->castsShadows(false);
+    renderItem->receivesShadows(false);
+    renderItem->setShader(_delegate->Get3dFatPointShader());
+
+    MSelectionMask selectionMask(MSelectionMask::kSelectPointsForGravity);
+    selectionMask.addMask(MSelectionMask::kSelectCurves);
+    renderItem->setSelectionMask(selectionMask);
 
     setWantConsolidation(*renderItem, true);
 

@@ -122,6 +122,7 @@ private:
     MHWRender::MRenderItem* _CreatePatchRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateWireRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateBBoxRenderItem(const MString& name) const;
+    MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name) const;
 
     enum DirtyBits : HdDirtyBits {
         DirtySelection          = HdChangeTracker::CustomBitsBegin,
