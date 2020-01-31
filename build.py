@@ -64,6 +64,17 @@ def GetCommandOutput(command):
         pass
     return None
 
+def GetGitHeadInfo(context):
+    """write out HEAD commitID and Date."""
+    try:
+        with CurrentWorkingDirectory(context.mayaUsdSrcDir):
+            commitSha = subprocess.check_output('git rev-parse HEAD').decode()
+            commitDate = subprocess.check_output('git log -1 --pretty=format:"%ad"'.split()).decode()
+            return commitSha, commitDate
+    except Exception as exp:
+        PrintError("Failed to run git commands : {exp}".format(exp=exp))
+        sys.exit(1)
+
 def GetXcodeDeveloperDirectory():
     """Returns the active developer directory as reported by 'xcode-select -p'.
     Returns None if none is set."""
@@ -109,7 +120,13 @@ def Run(context, cmd):
     PrintInfo('Running "{cmd}"'.format(cmd=cmd))
 
     with open(context.logFileLocation, "a") as logfile:
-        logfile.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
+        logfile.write("#####################################################################################" + "\n")
+        logfile.write("log date: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M") + "\n")
+        commitID,commitData = GetGitHeadInfo(context)
+        logfile.write("commit sha: " + commitID)
+        logfile.write("commit date: " + commitData)
+        logfile.write("\n")
+        logfile.write("#####################################################################################" + "\n")
         logfile.write("\n")
         logfile.write(cmd)
         logfile.write("\n")
