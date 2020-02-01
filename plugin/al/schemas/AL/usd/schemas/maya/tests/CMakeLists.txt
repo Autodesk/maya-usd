@@ -32,36 +32,6 @@ target_link_libraries(${TARGET_NAME}
 # install
 install(TARGETS ${TARGET_NAME} DESTINATION ${AL_INSTALL_PREFIX}/bin)
 
-# unit tests
-set(path 
-    "${CMAKE_INSTALL_PREFIX}/lib"
-    "${CMAKE_INSTALL_PREFIX}/plugin/al/lib"
-    "$ENV{PATH}"
-)
-
-if(IS_WINDOWS)
-  list(APPEND path "${CMAKE_INSTALL_PREFIX}/lib/gtest")
-endif()
-
-set(pythonPath 
-    "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/python"
-    "$ENV{PYTHONPATH}"
-)
-
-set(pxr_pluginpath_name 
-    "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/usd"
-    "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin"
-)
-
-set(mayaPluginPath 
-    "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin"
-)
-
-separate_argument_list(path)
-separate_argument_list(pythonPath)
-separate_argument_list(pxr_pluginpath_name)
-separate_argument_list(mayaPluginPath)
-
 # handle run-time search paths
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "bin")
@@ -72,15 +42,12 @@ if(IS_MACOSX OR IS_LINUX)
     mayaUsd_install_rpath(rpath ${TARGET_NAME})
 endif()
 
+# unit tests
+
 add_test(
     NAME ${TARGET_NAME}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMAND $<TARGET_FILE:${TARGET_NAME}>
 )
 
-set_property(TEST ${TARGET_NAME} APPEND PROPERTY ENVIRONMENT 
-    "PYTHONPATH=${pythonPath}"
-    "PATH=${path}"
-    "MAYA_PLUG_IN_PATH=${mayaPluginPath}"
-    "PXR_PLUGINPATH_NAME=${pxr_pluginpath_name}"
-)
+mayaUsd_set_test_env(${TARGET_NAME} AL GTEST)
