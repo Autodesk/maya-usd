@@ -134,12 +134,6 @@ mayaUsd_add_py_test(${TARGET_NAME} "${pycode}"
     AL GTEST
 )
 
-if(IS_LINUX)
-    set_property(TEST ${TARGET_NAME} APPEND PROPERTY ENVIRONMENT 
-        "LD_LIBRARY_PATH=${MAYA_LIBRARY_DIR}:${CMAKE_INSTALL_PREFIX}/plugin/al/lib"
-    )
-endif()
-
 if(NOT SKIP_USDMAYA_TESTS)
     add_subdirectory(py)
 endif()
