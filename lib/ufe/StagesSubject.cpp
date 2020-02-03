@@ -20,7 +20,9 @@
 #include "ProxyShapeHandler.h"
 #include "private/InPathChange.h"
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/attributes.h>
+#endif
 #include <ufe/hierarchy.h>
 #include <ufe/path.h>
 #include <ufe/scene.h>
