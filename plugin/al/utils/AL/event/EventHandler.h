@@ -1143,8 +1143,9 @@ public:
     auto it = m_events.find(eventName);
     if(it != m_events.end())
     {
+      EventId eId = it->second;
       m_events.erase(it);
-      return m_scheduler->unregisterEvent(it->second);
+      return m_scheduler->unregisterEvent(eId);
     }
     return false;
   }

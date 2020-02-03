@@ -940,10 +940,10 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     if(it != m_requiredPaths.end())
     {
       UsdPrim newPrim = m_stage->GetPrimAtPath(path);
-      Transform* tm = it->second.transform();
+      Scope* tm = it->second.getTransformNode();
       if(!tm)
         continue;
-      TransformationMatrix* tmm = tm->transform();
+      BasicTransformationMatrix* tmm = tm->transform();
       if(!tmm)
         continue;
       tmm->setPrim(newPrim, tm); // Might be (invalid/nullptr) but that's OK at least it won't crash
@@ -1151,7 +1151,7 @@ void ProxyShape::validateTransforms()
         continue;
       }
 
-      Transform* tm = it.second.transform();
+      Scope* tm = it.second.getTransformNode();
       if(!tm)
       {
         UsdPrim newPrim = m_stage->GetPrimAtPath(it.first);
@@ -1457,6 +1457,13 @@ void ProxyShape::loadStage()
           stageId = StageCache::Get().Insert(m_stage);
           outputInt32Value(dataBlock, m_stageCacheId, stageId.ToLongInt());
 
+          // Set the stage in datablock so it's ready in case it needs to be accessed
+          MObject data;
+          MayaUsdStageData* usdStageData = createData<MayaUsdStageData>(MayaUsdStageData::mayaTypeId, data);
+          usdStageData->stage = m_stage;
+          usdStageData->primPath = m_path;
+          outputDataValue(dataBlock, outStageData(), usdStageData);
+          
           // Set the edit target to the session layer so any user interaction will wind up there
           m_stage->SetEditTarget(m_stage->GetSessionLayer());
           // Save the initial edit target
@@ -1613,7 +1620,12 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
   r.setLocked(lock);
   s.setLocked(lock);
 
-  if (lock && MFnDependencyNode(lockObject).typeId() == AL_USDMAYA_TRANSFORM)
+  MFnDependencyNode fn(lockObject);
+  //Ideally we would not dynamic cast here, and it's likely not strictly necessary, given that
+  //getMayaPathFromUsdPrim uses data that originally gets populated via makeUsdTransformChain, but
+  //it's certainly safter
+  Scope* transformNode = dynamic_cast<Scope*>(fn.userNode());
+  if (lock && transformNode)
   {
     MPlug plug(lockObject, Transform::pushToPrim());
     if(plug.asBool()) plug.setBool(false);
@@ -2124,14 +2136,14 @@ void ProxyShape::deserialiseTransformRefs()
         if(sl.getDependNode(0, node))
         {
           MFnDependencyNode fn(node);
-          if(fn.typeId() == AL_USDMAYA_TRANSFORM)
+          Scope* transformNode = dynamic_cast<Scope*>(fn.userNode());
+          if(transformNode)
           {
-            Transform* ptr = (Transform*)fn.userNode();
             const uint32_t required = tstrs[2].asUnsigned();
             const uint32_t selected = tstrs[3].asUnsigned();
             const uint32_t refCounts = tstrs[4].asUnsigned();
             SdfPath path(tstrs[1].asChar());
-            m_requiredPaths.emplace(path, TransformReference(node, ptr, required, selected, refCounts));
+            m_requiredPaths.emplace(path, TransformReference(node, transformNode, required, selected, refCounts));
             TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::deserialiseTransformRefs m_requiredPaths added AL_usdmaya_Transform TransformReference: %s\n", path.GetText());
           }
           else
@@ -2154,7 +2166,7 @@ void ProxyShape::deserialiseTransformRefs()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-ProxyShape::TransformReference::TransformReference(MObject mayaNode, Transform* node, uint32_t r, uint32_t s, uint32_t rc)
+ProxyShape::TransformReference::TransformReference(MObject mayaNode, Scope* node, uint32_t r, uint32_t s, uint32_t rc)
   : m_node(mayaNode)
   , m_transform(nullptr)
 {
@@ -2162,11 +2174,11 @@ ProxyShape::TransformReference::TransformReference(MObject mayaNode, Transform* 
   m_selected = s;
   m_selectedTemp = 0;
   m_refCount = rc;
-  m_transform = transform();
+  m_transform = getTransformNode();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-Transform* ProxyShape::TransformReference::transform() const
+Scope* ProxyShape::TransformReference::getTransformNode() const
 {
   MObjectHandle n(node());
   if(n.isValid() && n.isAlive())
@@ -2175,10 +2187,11 @@ Transform* ProxyShape::TransformReference::transform() const
     MFnDependencyNode fn(n.object(), &status);
     if(status == MS::kSuccess)
     {
-      if(fn.typeId() == AL_USDMAYA_TRANSFORM)
+      Scope* transformNode = dynamic_cast<Scope*>(fn.userNode());
+      if(transformNode)
       {
-        TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformReference::transform found valid AL_usdmaya_Tranform: %s\n", fn.absoluteName().asChar());
-        return (Transform*)fn.userNode();
+        TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformReference::transform found valid AL_usdmaya Transform or Scope: %s\n", fn.absoluteName().asChar());
+        return (Scope*)fn.userNode();
       }
       else
       {

@@ -36,7 +36,6 @@ namespace cmds {
 class ManageRenderer
   : public MPxCommand
 {
-  MArgDatabase makeDatabase(const MArgList& args);
 public:
   AL_MAYA_DECLARE_COMMAND();
 private:

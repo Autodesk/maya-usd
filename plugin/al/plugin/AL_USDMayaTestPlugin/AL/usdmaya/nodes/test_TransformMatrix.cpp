@@ -132,7 +132,7 @@ TEST(Transform, hasAnimation)
       MFnDependencyNode fn(obj);
 
       AL::usdmaya::nodes::Transform* ptr = (AL::usdmaya::nodes::Transform*)fn.userNode();
-      AL::usdmaya::nodes::TransformationMatrix* matrix = ptr->transform();
+      AL::usdmaya::nodes::TransformationMatrix* matrix = ptr->getTransMatrix();
       MString str = ptr->primPathPlug().asString();
 
       if(str == "/root")
@@ -289,7 +289,7 @@ TEST(Transform, primHas)
       MFnDependencyNode fn(obj);
 
       AL::usdmaya::nodes::Transform* ptr = (AL::usdmaya::nodes::Transform*)fn.userNode();
-      AL::usdmaya::nodes::TransformationMatrix* matrix = ptr->transform();
+      AL::usdmaya::nodes::TransformationMatrix* matrix = ptr->getTransMatrix();
       MString str = ptr->primPathPlug().asString();
 
       if(str == "/root")
@@ -826,7 +826,7 @@ TEST(Transform, animationValuesFromUsdAreCorrectlyRead)
     MFnTransform fnx(leafNode);
 
     AL::usdmaya::nodes::Transform* transformNode = (AL::usdmaya::nodes::Transform*)fnx.userNode();
-    AL::usdmaya::nodes::TransformationMatrix* transformMatrix = transformNode->transform();
+    AL::usdmaya::nodes::TransformationMatrix* transformMatrix = transformNode->getTransMatrix();
 
     transformNode->pushToPrimPlug().setValue(false);
     transformNode->readAnimatedValuesPlug().setValue(true);
@@ -1296,7 +1296,7 @@ TEST(Transform, getTimeCode)
     MFnTransform fnx(leafNode);
     AL::usdmaya::nodes::Transform* transformNode = (AL::usdmaya::nodes::Transform*)fnx.userNode();
 
-    AL::usdmaya::nodes::TransformationMatrix* transformMatrix = transformNode->transform();
+    AL::usdmaya::nodes::TransformationMatrix* transformMatrix = transformNode->getTransMatrix();
 
     transformNode->pushToPrimPlug().setValue(false);
     transformNode->readAnimatedValuesPlug().setValue(false);

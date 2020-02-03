@@ -31,18 +31,14 @@ macro(fetch_googletest)
         endif()
 
         message(STATUS "========== Installing GoogleTest... ==========")
-        set(FORCE_SHARED_CRT "")
-        if(IS_WINDOWS)
-            set(FORCE_SHARED_CRT -DFORCE_SHARED_CRT=OFF)
-        endif()
-        execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} . ${FORCE_SHARED_CRT}
+           execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} .
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${GOOGLETEST_BUILD_ROOT}/googletest-config )
         if(result)
             message(FATAL_ERROR "CMake step for googletest failed: ${result}")
         endif()
 
-        execute_process(COMMAND ${CMAKE_COMMAND} --build . --config ${CMAKE_BUILD_TYPE}
+        execute_process(COMMAND "${CMAKE_COMMAND}" --build . --config ${CMAKE_BUILD_TYPE}
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${GOOGLETEST_BUILD_ROOT}/googletest-config )
         if(result)
@@ -53,30 +49,29 @@ macro(fetch_googletest)
         set(GTEST_ROOT ${GOOGLETEST_BUILD_ROOT}/googletest-install CACHE path "GoogleTest installation root")
     endif()
 
+    # FindGTest should get call after GTEST_ROOT is set
+    find_package(GTest QUIET)
+
     # https://gitlab.kitware.com/cmake/cmake/issues/17799
-    # FindGtest is buggy when dealing with Debug build. 
+    # FindGtest is buggy when dealing with Debug build.
     if (CMAKE_BUILD_TYPE MATCHES Debug AND GTEST_FOUND MATCHES FALSE)
         message("Setting GTest libraries with debug...")
-
-        if (GTEST_LIBRARY_DEBUG MATCHES GTEST_LIBRARY_DEBUG-NOTFOUND)
-                set(gtest_library "")
-                set(gtest_main_library "")
-            if(WIN32)
-                set(gtest_library lib/gtestd.lib)
-                set(gtest_main_library lib/gtest_maind.lib)
-            else()
-                set(gtest_library lib64/libgtestd.a)
-                set(gtest_main_library lib64/libgtest_maind.a)
-            endif()
-                set(GTEST_INCLUDE_DIRS ${GOOGLETEST_BUILD_ROOT}/googletest-install/include)
-                set(GTEST_LIBRARY_DEBUG ${GOOGLETEST_BUILD_ROOT}/googletest-install/${gtest_library})
-                set(GTEST_MAIN_LIBRARY_DEBUG ${GOOGLETEST_BUILD_ROOT}/googletest-install/${gtest_main_library})
-        endif()
-
+        set(GTEST_INCLUDE_DIRS ${GTEST_ROOT}/include)
         set(GTEST_LIBRARY ${GTEST_LIBRARY_DEBUG})
         set(GTEST_LIBRARIES ${GTEST_LIBRARY})
         set(GTEST_MAIN_LIBRARY ${GTEST_MAIN_LIBRARY_DEBUG})
         set(GTEST_MAIN_LIBRARIES ${GTEST_MAIN_LIBRARY})
+    endif()
+
+    # On Windows shared libraries are installed in 'bin' instead of 'lib' directory.
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        set(GTEST_SHARED_LIB_NAME "gtest.dll")
+        if(CMAKE_BUILD_TYPE MATCHES Debug)
+            set(GTEST_SHARED_LIB_NAME "gtestd.dll")
+        endif()
+        install(FILES "${GTEST_ROOT}/bin/${GTEST_SHARED_LIB_NAME}" DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/gtest")
+    else()
+        install(FILES "${GTEST_LIBRARIES}" DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/gtest")
     endif()
 
 endmacro()

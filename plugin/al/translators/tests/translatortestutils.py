@@ -26,6 +26,7 @@ def importStageWithSphere(proxyShapeName='AL_usdmaya_Proxy'):
     sphereXformName, sphereShapeName = mc.polySphere()
     mc.select(sphereXformName)
     tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="test_MeshTranslator_", delete=False)
+    tempFile.close()
     mc.file(tempFile.name, exportSelected=True, force=True, type="AL usdmaya export")
     dir(tempFile)
     print "tempFile ", tempFile.name

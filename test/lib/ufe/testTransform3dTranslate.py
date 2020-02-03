@@ -20,6 +20,7 @@ import maya.api.OpenMaya as om
 import maya.cmds as cmds
 
 from ufeTestUtils import usdUtils, mayaUtils, ufeUtils
+from ufeTestUtils.testUtils import assertVectorAlmostEqual
 import ufe
 
 import unittest
@@ -113,11 +114,7 @@ class Transform3dTranslateTestCase(unittest.TestCase):
         '''
         runTimeVec = self.getRunTimeTranslation()
         ufeVec  = self.getUfeTranslation()
-        self.assertVectorAlmostEqual(runTimeVec, ufeVec)
-
-    def assertVectorAlmostEqual(self, a, b):
-        for va, vb in zip(a, b):
-            self.assertAlmostEqual(va, vb)
+        assertVectorAlmostEqual(self, runTimeVec, ufeVec)
 
     def runTestMove(self):
         '''Engine method to run move test.'''

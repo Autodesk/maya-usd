@@ -23,6 +23,7 @@
 #include <ufe/pathSegment.h>
 
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/base/tf/token.h>
 
@@ -80,6 +81,11 @@ Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath);
 
 MAYAUSD_CORE_PUBLIC
 MDagPath nameToDagPath(const std::string& name);
+
+//! Get the time along the argument path.  A gateway node (i.e. proxy shape)
+//! along the path can transform Maya's time (e.g. with scale and offset).
+MAYAUSD_CORE_PUBLIC
+UsdTimeCode getTime(const Ufe::Path& path);
 
 } // namespace ufe
 } // namespace MayaUsd

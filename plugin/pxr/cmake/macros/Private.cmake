@@ -71,7 +71,7 @@ function(_get_python_module_name LIBRARY_FILENAME MODULE_NAME)
     # or _tf.pyd/_tf_d.pyd for Python module libraries.
     # We want to strip off the leading "_" and the trailing "_d".
     set(LIBNAME ${LIBRARY_FILENAME})
-    if(IS_WINDOWS AND ${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+    if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
         string(REGEX REPLACE "_d$" "" LIBNAME ${LIBNAME})
     endif()
     string(REGEX REPLACE "^_" "" LIBNAME ${LIBNAME})
@@ -826,7 +826,7 @@ function(_pxr_python_module NAME)
         return()
     endif()
 
-    if(IS_WINDOWS AND ${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+    if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
         # On Windows when compiling with debug python the library must be named with _d.
         set(LIBRARY_NAME "_${NAME}_d")
     else()
@@ -915,24 +915,12 @@ function(_pxr_python_module NAME)
             PREFIX ""
             FOLDER "${folder}"
     )
-    if(WIN32)
-        # Python modules must be suffixed with .pyd on Windows.
-        set_target_properties(${LIBRARY_NAME}
-            PROPERTIES
-                SUFFIX ".pyd"
-        )
-    elseif(IS_MACOSX)
-        # Python modules must be suffixed with .so on Mac.
-        set_target_properties(${LIBRARY_NAME}
-            PROPERTIES
-                SUFFIX ".so"
-        )
-        set(_macDef OSMac_)
-    endif()
 
+    set_python_module_suffix(${LIBRARY_NAME})
+ 
     target_compile_definitions(${LIBRARY_NAME}
         PRIVATE
-            ${_macDef}
+            $<$<BOOL:${IS_MACOSX}>:OSMac_>
             MFB_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_PACKAGE_MODULE=${pyModuleName}
@@ -1178,15 +1166,12 @@ function(_pxr_library NAME)
     if(TARGET shared_libs)
         set(pythonModulesEnabled "PXR_PYTHON_MODULES_ENABLED=1")
     endif()
-    if(IS_MACOSX)
-        set(_macDef OSMac_)
-    endif()
     target_compile_definitions(${NAME}
         PUBLIC
             ${pythonEnabled}
             ${apiPublic}
         PRIVATE
-            ${_macDef}
+            $<$<BOOL:${IS_MACOSX}>:OSMac_>
             MFB_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_PACKAGE_MODULE=${pythonModuleName}

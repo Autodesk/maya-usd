@@ -17,6 +17,7 @@
 #
 
 from ufeTestUtils import usdUtils, mayaUtils
+import ufeTestUtils.testUtils
 import ufe
 from pxr import UsdGeom
 import random
@@ -65,8 +66,8 @@ class AttributeTestCase(unittest.TestCase):
         self.assertTrue(self.pluginsLoaded)
 
     def assertVectorAlmostEqual(self, ufeVector, usdVector):
-        for va, vb in zip(ufeVector.vector, usdVector):
-            self.assertAlmostEqual(va, vb, places=6)
+        ufeTestUtils.testUtils.assertVectorAlmostEqual(
+            self, ufeVector.vector, usdVector)
 
     def assertColorAlmostEqual(self, ufeColor, usdColor):
         for va, vb in zip(ufeColor.color, usdColor):

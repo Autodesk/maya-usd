@@ -32,7 +32,7 @@ add_library(${PXR_TRANSLATORS_PACKAGE}
 
 MAYA_SET_PLUGIN_PROPERTIES(${PXR_TRANSLATORS_PACKAGE})
 
-# rpath setup
+# handle run-time search paths
 if(IS_MACOSX OR IS_LINUX) 
     mayaUsd_init_rpath(rpath "plugin")
     mayaUsd_add_rpath(rpath "../lib")
