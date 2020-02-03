@@ -26,8 +26,6 @@ import sys, os
 
 import ufe
 
-ALL_PLUGINS = ["mayaUsdPlugin", "ufeTestCmdsPlugin"]
-
 mayaRuntimeID = 1
 mayaSeparator = "|"
 
@@ -64,9 +62,15 @@ def isMayaUsdPluginLoaded():
         Returns:
             True if plugins loaded successfully. False if a plugin failed to load
     """
-    successLoad = True
-    for plugin in ALL_PLUGINS:
-        successLoad = successLoad and loadPlugin(plugin)
+    # Load the mayaUsdPlugin first.
+    if not loadPlugin("mayaUsdPlugin"):
+        return False
+
+    # Load the UFE support plugin, for ufeSelectCmd support.  If this plugin
+    # isn't included in the distribution of Maya (e.g. Maya 2019 or 2020), use
+    # fallback test plugin.
+    if not (loadPlugin("ufeSupport") or loadPlugin("ufeTestCmdsPlugin")):
+        return False
 
     # The renderSetup Python plugin registers a file new callback to Maya.  On
     # test application exit (in TbaseApp::cleanUp()), a file new is done and
@@ -76,9 +80,9 @@ def isMayaUsdPluginLoaded():
     rs = 'renderSetup'
     if cmds.pluginInfo(rs, q=True, loaded=True):
         unloaded = cmds.unloadPlugin(rs)
-        successLoad = successLoad and (unloaded[0] == rs)
+        return (unloaded[0] == rs)
     
-    return successLoad
+    return True
 
 def createUfePathSegment(mayaPath):
     """

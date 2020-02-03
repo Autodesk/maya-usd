@@ -20,8 +20,11 @@
 #include "ProxyShapeHandler.h"
 #include "private/InPathChange.h"
 
-#include <ufe/path.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <ufe/attributes.h>
+#endif
 #include <ufe/hierarchy.h>
+#include <ufe/path.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 #include <ufe/transform3d.h>
@@ -30,6 +33,25 @@
 #include <maya/MMessage.h>
 
 #include <vector>
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <unordered_map>
+
+namespace {
+
+// The attribute change notification guard is not meant to be nested, but
+// use a counter nonetheless to provide consistent behavior in such cases.
+int attributeChangedNotificationGuardCount = 0;
+
+bool inAttributeChangedNotificationGuard()
+{
+    return attributeChangedNotificationGuardCount > 0;
+}
+
+std::unordered_map<Ufe::Path, std::string> pendingAttributeChangedNotifications;
+
+}
+#endif
 
 MAYAUSD_NS_DEF {
 namespace ufe {
@@ -147,12 +169,12 @@ void StagesSubject::afterOpen()
 			me, &StagesSubject::stageChanged, stage);
 	}
 
-	// Set up our stage to AL_usdmaya_ProxyShape UFE path (and reverse)
+	// Set up our stage to proxy shape UFE path (and reverse)
 	// mapping.  We do this with the following steps:
 	// - get all proxyShape nodes in the scene.
-	// - get their AL Python wrapper
-	// - get their Dag paths
+	// - get their Dag paths.
 	// - convert the Dag paths to UFE paths.
+	// - get their stage.
 	g_StageMap.clear();
 	auto proxyShapeNames = ProxyShapeHandler::getAllNames();
 	for (const auto& psn : proxyShapeNames)
@@ -207,6 +229,22 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 	{
 		auto usdPrimPathStr = changedPath.GetPrimPath().GetString();
 		auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+		// isPrimPropertyPath() does not consider relational attributes
+		// isPropertyPath() does consider relational attributes
+		// isRelationalAttributePath() considers only relational attributes
+		if (changedPath.IsPrimPropertyPath()) {
+			if (inAttributeChangedNotificationGuard()) {
+				pendingAttributeChangedNotifications[ufePath] =
+					changedPath.GetName();
+			}
+			else {
+				Ufe::Attributes::notify(ufePath, changedPath.GetName());
+			}
+		}
+#endif
+
 		// We need to determine if the change is a Transform3d change.
 		// We must at least pick up xformOp:translate, xformOp:rotateXYZ, 
 		// and xformOp:scale.
@@ -222,6 +260,40 @@ void StagesSubject::onStageSet(const UsdMayaProxyStageSetNotice& notice)
 {
 	afterOpen();
 }
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+AttributeChangedNotificationGuard::AttributeChangedNotificationGuard()
+{
+	if (inAttributeChangedNotificationGuard()) {
+		TF_CODING_ERROR("Attribute changed notification guard cannot be nested.");
+	}
+
+	if (attributeChangedNotificationGuardCount == 0 &&
+		!pendingAttributeChangedNotifications.empty()) {
+		TF_CODING_ERROR("Stale pending attribute changed notifications.");
+	}
+
+	++attributeChangedNotificationGuardCount;
+
+}
+
+AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
+{
+	if (--attributeChangedNotificationGuardCount < 0) {
+		TF_CODING_ERROR("Corrupt attribute changed notification guard.");
+	}
+
+	if (attributeChangedNotificationGuardCount > 0 ) {
+		return;
+	}
+
+	for (const auto& notificationInfo : pendingAttributeChangedNotifications) {
+		Ufe::Attributes::notify(notificationInfo.first, notificationInfo.second);
+	}
+
+	pendingAttributeChangedNotifications.clear();
+}
+#endif
 
 } // namespace ufe
 } // namespace MayaUsd
