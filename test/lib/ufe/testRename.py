@@ -130,8 +130,6 @@ class RenameTestCase(unittest.TestCase):
         self.assertEqual(len(propsChildren), len(propsChildrenPre))
         self.assertIn(ball35RenItem, propsChildren)
 
-        # Rename undo / redo does not work yet.  PPT, 28-Jan-2020.
-        return
         cmds.undo()
 
         def childrenNames(children):
@@ -143,6 +141,7 @@ class RenameTestCase(unittest.TestCase):
 
         self.assertNotIn(ball35RenName, propsChildrenNames)
         self.assertIn('Ball_35', propsChildrenNames)
+        self.assertEqual(len(propsChildren), len(propsChildrenPre))
 
         cmds.redo()
 
@@ -152,4 +151,5 @@ class RenameTestCase(unittest.TestCase):
 
         self.assertIn(ball35RenName, propsChildrenNames)
         self.assertNotIn('Ball_35', propsChildrenNames)
+        self.assertEqual(len(propsChildren), len(propsChildrenPre))
 

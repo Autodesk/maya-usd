@@ -19,13 +19,9 @@
 
 #include <maya/MFnDagNode.h>
 
-#include <iostream>
 #include <cassert>
 
 namespace {
-
-int stageCalls = 0;
-int pathCalls = 0;
 
 MObjectHandle proxyShapeHandle(const Ufe::Path& path)
 {
@@ -93,9 +89,6 @@ void UsdStageMap::addItem(const Ufe::Path& path, UsdStageWeakPtr stage)
 
 UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path) const
 {
-    ++stageCalls;
-    std::cout << "PPT: stage calls is " << stageCalls << std::endl;
-
     auto proxyShape = proxyShapeHandle(path);
     if (!proxyShape.isValid()) {
         return nullptr;
@@ -110,9 +103,6 @@ UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path) const
 
 Ufe::Path UsdStageMap::path(UsdStageWeakPtr stage) const
 {
-    ++pathCalls;
-    std::cout << "PPT: path calls is " << pathCalls << std::endl;
-
 	// A stage is bound to a single Dag proxy shape.
 	auto iter = fStageToObject.find(stage);
 	if (iter != std::end(fStageToObject))

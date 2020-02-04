@@ -35,8 +35,6 @@ std::size_t find(
     return foundPos == std::string::npos ? size : foundPos;
 }
 
-// Copy elision (return value optimization) will avoid duplicate std::vector
-// construction on return.
 std::vector<std::string> split(const std::string& src, char sep)
 {
     std::vector<std::string> names;

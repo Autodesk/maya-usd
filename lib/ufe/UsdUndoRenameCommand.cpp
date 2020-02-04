@@ -98,7 +98,13 @@ bool UsdUndoRenameCommand::renameRedo()
 
 bool UsdUndoRenameCommand::renameUndo()
 {
+    // Regardless of where the edit target is currently set, switch to the
+    // layer where we copied the source prim into the destination, then
+    // restore the edit target.
+    auto editTarget = fStage->GetEditTarget();
+    fStage->SetEditTarget(fLayer);
     bool status = fStage->RemovePrim(fUsdDstPath);
+    fStage->SetEditTarget(editTarget);
     if (status) {
         auto srcPrim = fStage->GetPrimAtPath(fUsdSrcPath);
         UFE_ASSERT_MSG(srcPrim, "Invalid prim cannot be activated.");
