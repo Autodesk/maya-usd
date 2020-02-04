@@ -17,7 +17,6 @@
 
 #include "renderGlobals.h"
 #include "renderOverride.h"
-#include "usdPreviewSurface.h"
 #include "viewCommand.h"
 
 #include <stdlib.h>
@@ -30,14 +29,6 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_DEFINE_ENV_SETTING(
-    MTOH_ENABLE_USD_PREVIEW_SURFACE_NODE, true,
-    "Enables the registration of the UsdPreviewSurface node."
-    "This is not required with newer version of usdMaya.");
-
-namespace {
-bool _enableUsdPreviewSurface = true;
-}
 
 PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
     MStatus ret = MS::kSuccess;
@@ -71,21 +62,6 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
         return ret;
     }
 
-    _enableUsdPreviewSurface =
-        TfGetEnvSetting(MTOH_ENABLE_USD_PREVIEW_SURFACE_NODE);
-
-    if (_enableUsdPreviewSurface) {
-        if (!plugin.registerNode(
-                MtohUsdPreviewSurface::name, MtohUsdPreviewSurface::typeId,
-                MtohUsdPreviewSurface::Creator,
-                MtohUsdPreviewSurface::Initialize, MPxNode::kDependNode,
-                &MtohUsdPreviewSurface::classification)) {
-            ret = MS::kFailure;
-            ret.perror("Error registering UsdPreviewSurface node!");
-            return ret;
-        }
-    }
-
     MtohInitializeRenderGlobals();
 
     return ret;
@@ -110,13 +86,6 @@ PLUGIN_EXPORT MStatus uninitializePlugin(MObject obj) {
     if (!plugin.deregisterCommand(MtohViewCmd::name)) {
         ret = MS::kFailure;
         ret.perror("Error deregistering mtoh command!");
-    }
-
-    if (_enableUsdPreviewSurface) {
-        if (!plugin.deregisterNode(MtohUsdPreviewSurface::typeId)) {
-            ret = MS::kFailure;
-            ret.perror("Error deregistering UsdPreviewSurface node!");
-        }
     }
 
     return ret;
