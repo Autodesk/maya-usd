@@ -388,7 +388,7 @@ private:
                 else {
                     _textureResources[paramName] = textureInstance.GetValue();
                 }
-#else // USD_VERSION_NUM < 1911
+#else // USD_VERSION_NUM == 1911
                 }
 
                 HdStTextureResourceSharedPtr texResource =
@@ -439,7 +439,7 @@ private:
                         "textureID\n");
 #if USD_VERSION_NUM >= 1911
                 _textureResourceHandles[paramName].reset();
-#else // USD_VERSION_NUM >= 1911
+#else // USD_VERSION_NUM < 1911
                 _textureResources[paramName].reset();
 #endif // USD_VERSION_NUM >= 1911
             }
@@ -463,9 +463,9 @@ private:
             auto textureType = HdTextureType::Uv;
 #if USD_VERSION_NUM >= 1911
             auto remappedName = it.param.name;
-#else
+#else // USD_VERSION_NUM < 1911
             auto remappedName = it.param.GetName();
-#endif
+#endif // USD_VERSION_NUM >= 1911
             auto attrConverter = nodeConverter->GetAttrConverter(remappedName);
             if (attrConverter) {
                 TfToken tempName = attrConverter->GetPlugName(remappedName);
@@ -477,10 +477,10 @@ private:
 #if USD_VERSION_NUM >= 1911
                     HdMaterialParam::ParamTypeTexture, it.param.name,
                     it.param.fallbackValue,
-#else
+#else // USD_VERSION_NUM < 1911
                     HdMaterialParam::ParamTypeTexture, it.param.GetName(),
                     it.param.GetFallbackValue(),
-#endif
+#endif // USD_VERSION_NUM >= 1911
                     GetID().AppendProperty(remappedName), _stSamplerCoords,
                     textureType);
 
@@ -490,9 +490,9 @@ private:
                         "connection path: %s\n",
 #if USD_VERSION_NUM >= 1911
                         ret.back().connection.GetText());
-#else
+#else // USD_VERSION_NUM < 1911
                         ret.back().GetConnection().GetText());
-#endif
+#endif // USD_VERSION_NUM >= 1911
             } else {
                 ret.emplace_back(it.param);
             }
@@ -530,10 +530,10 @@ private:
 #if USD_VERSION_NUM >= 1911
                 node, previewIt->param.name, previewIt->type,
                 &previewIt->param.fallbackValue);
-#else
+#else // USD_VERSION_NUM < 1911
                 node, previewIt->param.GetName(), previewIt->type,
                 &previewIt->param.GetFallbackValue());
-#endif
+#endif // USD_VERSION_NUM >= 1911
         } else {
             return GetPreviewMaterialParamValue(paramName);
         }
