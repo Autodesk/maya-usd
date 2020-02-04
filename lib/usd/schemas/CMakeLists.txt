@@ -53,11 +53,8 @@ endif()
 add_library(${SCHEMA_PLUGIN}
     SHARED
     MayaReference.cpp
+    ModuleDeps.cpp
     tokens.cpp
-# Python wrappers are not yet defined for this library.  See
-# plugin/al/schemas/AL/usd/schemas/maya/CMakeLists.txt
-# for the existing AL schema Python wrappers.  PPT, 26-Jul-2019.
-#    ModuleDeps.cpp
 )
 
 # Before 0.19.11, pxrConfig.cmake did not properly add the USD_ROOT/include dir
@@ -68,15 +65,6 @@ target_include_directories(${SCHEMA_PLUGIN}
     ${USD_INCLUDE_DIR}
 )
 endif()
-
-target_compile_definitions(${SCHEMA_PLUGIN}
-    PRIVATE
-        MFB_PACKAGE_NAME=${SCHEMA_PLUGIN}
-        MFB_ALT_PACKAGE_NAME=${SCHEMA_PLUGIN}
-# Python wrappers are not yet defined for this library.  PPT, 26-Jul-2019.
-#        MFB_PACKAGE_MODULE=AL.usd.schemas.maya
-        MAYAUSD_SCHEMAS_EXPORTS
-)
 
 # Hamed 2019 
 # https://stackoverflow.com/questions/25617839/undefined-reference-to-symbol-pthread-key-deleteglibc-2-2-5
@@ -101,8 +89,6 @@ if(IS_MACOSX OR IS_LINUX)
 endif()
 
 if(IS_LINUX)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags" PARENT_SCOPE)
-
     if(WANT_USD_RELATIVE_PATH)
         mayaUsd_add_rpath(rpath "../../USD/lib64")
     endif()
@@ -132,6 +118,66 @@ install(
 if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${SCHEMA_PLUGIN}> DESTINATION ${library_install_path} OPTIONAL)
 endif()
+
+####################################################################################################
+# Python bindings
+####################################################################################################
+
+set(SCHEMAS_LIBRARY_NAME schemas)
+
+if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
+    # On Windows when compiling with debug python the library must be named with _d.
+    set(SCHEMAS_PYTHON_LIBRARY_NAME "_${SCHEMAS_LIBRARY_NAME}_d")
+else()
+    set(SCHEMAS_PYTHON_LIBRARY_NAME "_${SCHEMAS_LIBRARY_NAME}")
+endif()
+
+add_library(${SCHEMAS_PYTHON_LIBRARY_NAME}
+    SHARED
+    module.cpp
+    wrapTokens.cpp
+    wrapMayaReference.cpp
+)
+    
+target_compile_definitions(${SCHEMAS_PYTHON_LIBRARY_NAME}
+    PRIVATE
+        MFB_PACKAGE_NAME=${SCHEMAS_LIBRARY_NAME}
+        MFB_ALT_PACKAGE_NAME=${SCHEMAS_LIBRARY_NAME}
+        MFB_PACKAGE_MODULE=mayaUsd.schemas
+)
+
+set_target_properties(${SCHEMAS_PYTHON_LIBRARY_NAME} 
+    PROPERTIES 
+        PREFIX ""
+)
+
+set_python_module_suffix(${SCHEMAS_PYTHON_LIBRARY_NAME})
+
+target_link_libraries(${SCHEMAS_PYTHON_LIBRARY_NAME}
+    ${SCHEMA_PLUGIN}
+)
+
+if(IS_MACOSX OR IS_LINUX)
+    mayaUsd_init_rpath(rpath "${PROJECT_NAME}")
+    mayaUsd_add_rpath(rpath "${library_install_path}")
+    mayaUsd_install_rpath(rpath ${SCHEMAS_PYTHON_LIBRARY_NAME})
+endif()
+
+install(TARGETS ${SCHEMAS_PYTHON_LIBRARY_NAME}
+    LIBRARY
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${SCHEMAS_LIBRARY_NAME}
+    RUNTIME
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${SCHEMAS_LIBRARY_NAME}
+)
+
+if(IS_WINDOWS)
+    install(FILES $<TARGET_PDB_FILE:${SCHEMAS_PYTHON_LIBRARY_NAME}> 
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${SCHEMAS_LIBRARY_NAME} OPTIONAL)
+endif()
+
+install(FILES __init__.py
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${SCHEMAS_LIBRARY_NAME}
+)
 
 ####################################################################################################
 # Install public headers
