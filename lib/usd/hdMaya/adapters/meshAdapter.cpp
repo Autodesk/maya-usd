@@ -45,8 +45,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-constexpr int MAX_SMOOTH_LEVEL = 8;
-
 const std::array<std::pair<MObject&, HdDirtyBits>, 8> _dirtyBits{
     {{MayaAttrs::mesh::pnts,
       // This is useful when the user edits the mesh.
@@ -244,10 +242,8 @@ public:
         const auto displaySmoothMesh =
             node.findPlug(MayaAttrs::mesh::displaySmoothMesh, true).asShort();
         if (displaySmoothMesh == 0) { return {0, false, false}; }
-        const auto smoothLevel = std::min(
-            MAX_SMOOTH_LEVEL,
-            std::max(
-                0, node.findPlug(MayaAttrs::mesh::smoothLevel, true).asInt()));
+        const auto smoothLevel = std::max(
+                0, node.findPlug(MayaAttrs::mesh::smoothLevel, true).asInt());
         return {smoothLevel, false, false};
 #else
         return {0, false, false};
