@@ -84,10 +84,6 @@ public:
         return _override->Render(drawContext);
     }
 
-    bool hasUIDrawables() const override { return false; }
-
-    bool requiresLightData() const override { return false; }
-
 private:
     MtohRenderOverride* _override;
 };
