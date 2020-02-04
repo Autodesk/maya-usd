@@ -61,7 +61,7 @@ public:
 
   /// \brief  sets the MObject for the transform
   /// \param  object the MObject for the custom transform node
-  virtual void setMObject(const MObject object)
+  void setMObject(const MObject object)
      { m_transformNode = object; }
 
   /// \brief  Is this transform set to write back onto the USD prim, and is it currently possible?
@@ -86,9 +86,6 @@ public:
 
 protected:
   UsdPrim m_prim;
-
-private:
-  UsdGeomScope m_scope;
   MObjectHandle m_transformNode;
 
 };

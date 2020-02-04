@@ -50,7 +50,6 @@ class TransformationMatrix
   UsdTimeCode m_time;
   std::vector<UsdGeomXformOp> m_xformops;
   std::vector<TransformOperation> m_orderedOps;
-  MObjectHandle m_transformNode;
 
   // tweak values. These are applied on top of the USD transform values to produce the final result.
   MVector m_scaleTweak;
@@ -354,11 +353,6 @@ class TransformationMatrix
   MMatrix asMatrix(double percent) const override;
 
 public:
-
-  /// \brief  sets the MObject for the transform
-  /// \param  object the MObject for the custom transform node
-  void setMObject(const MObject object) override
-    { m_transformNode = object; }
 
   /// \brief  the type ID of the transformation matrix
   AL_USDMAYA_PUBLIC
