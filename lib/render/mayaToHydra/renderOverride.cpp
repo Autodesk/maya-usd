@@ -721,14 +721,25 @@ MStatus MtohRenderOverride::setup(const MString& destination) {
     if (renderer == nullptr) { return MStatus::kFailure; }
 
     if (_operations.empty()) {
+        // Draw Misc UI elements (cameras, CVs, grid, etc), as well as
+        // possibly selection (depending on if we're using HdSt, and the
+        // selection overlay mode)
         _operations.push_back(new HdMayaSceneRender(
             "HydraRenderOverride_Scene",
             !_isUsingHdSt || _globals.selectionOverlay == MtohTokens->UseVp2));
+
+        // The main hydra render
         _operations.push_back(
             new HdMayaRender("HydraRenderOverride_Hydra", this));
+
+        // Draw maniuplators
         _operations.push_back(
             new HdMayaManipulatorRender("HydraRenderOverride_Manipulator"));
+
+        // Draw HUD elements
         _operations.push_back(new MHWRender::MHUDRender());
+
+        // Set final buffer options
         auto* presentTarget =
             new MHWRender::MPresentTarget("HydraRenderOverride_Present");
         presentTarget->setPresentDepth(true);
