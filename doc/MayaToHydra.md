@@ -4,18 +4,34 @@ Render a Maya scene using a Hydra render delegate.
 
 ## What's it good for?
 
-The primary motivation behind this project is to use HdStorm, the
-OpenGL renderer bundled with USD, as an alternative to
-Viewport 2.0.
+This project allows you to use Hydra (the pluggable USD render ecosystem)
+and Storm (the OpenGL renderer for Hydra, bundled with USD), as an
+alternative to Viewport 2.0.
 
-Why would you want to use HdStorm instead of "normal" Viewport 2.0?
+Using Hydra has big benefits for offline renderers: any renderer that
+implements a Hydra render delegate can now have an interactive render viewport
+in Maya, along with support for render proxies.
 
-1. Consistent lighting and shading between Hydra-enabled applications: Maya, Katana, usdview, etc
-1. HdStorm is open source: you can add core features as you need them
-1. HdStorm is extensible: you can create plugins for custom objects
-1. HdStorm is under active development by Pixar
+As an example, when paired with
+[arnold-usd](https://github.com/Autodesk/arnold-usd) (Arnold's USD plugin +
+render delegate), it provides an Arnold render of the viewport, where both maya
+objects and USD objects (through proxies) can be modified interactively.
 
-Using Hydra also has beneftis for offline renderers. Any renderer that implements a Hydra render delegate can now have a fully interactive render viewport in Maya, along with support for render proxies via AL_USDMaya. This could be particularly useful for newer projects, like Radeon ProRender (which already has a [render delegate](https://github.com/GPUOpen-LibrariesAndSDKs/RadeonProRenderUSD)) or in-house renderers.
+This could also be particularly useful for newer renderers, like Radeon
+ProRender (which already has a
+[render delegate](https://github.com/GPUOpen-LibrariesAndSDKs/RadeonProRenderUSD)),
+or in-house renderers, as an easier means of implementing an interactive
+render viewport.
+
+What about HdStorm, Hydra's OpenGL renderer? Why would you want to use HdStorm
+instead of "normal" Viewport 2.0, given that there are other methods for displaying
+USD proxies in Viewport 2.0? Some potential reasons include: 
+
+- Using HdStorm gives lighting and shading between Hydra-enabled applications:
+  Maya, Katana, usdview, etc
+- HdStorm is open source: you can add core features as you need them
+- HdStorm is extensible: you can create plugins for custom objects, which then allows
+  them to be displayed not just in Maya, but any Hydra-enabled application
 
 ## Usage
 
@@ -36,6 +52,7 @@ Then, using the **Renderer** viewport menu, select **GL (Hydra)** - or, if you h
 
 Shapes:
 - mesh
+- nurbsCurve
 
 Lights:
 - areaLight
@@ -48,4 +65,5 @@ Shaders:
 - UsdPreviewSurface
 - lambert
 - blinn
+- phong
 - file
