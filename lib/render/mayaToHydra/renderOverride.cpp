@@ -376,7 +376,6 @@ void MtohRenderOverride::_UpdateRenderGlobals() {
 }
 
 void MtohRenderOverride::_UpdateRenderDelegateOptions() {
-#if USD_VERSION_NUM >= 1901
     if (_renderIndex == nullptr) { return; }
     auto* renderDelegate = _renderIndex->GetRenderDelegate();
     if (renderDelegate == nullptr) { return; }
@@ -392,7 +391,6 @@ void MtohRenderOverride::_UpdateRenderDelegateOptions() {
             renderDelegate->SetRenderSetting(setting.key, setting.value);
         }
     }
-#endif
 }
 
 MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
@@ -430,16 +428,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         _taskController->SetCameraViewport(viewport);
 #endif // USD_VERSION_NUM >= 1910
 
-#if USD_VERSION_NUM >= 1907
         auto tasks = _taskController->GetRenderingTasks();
         _engine.Execute(_renderIndex, &tasks);
-#elif USD_VERSION_NUM >= 1901
-        _engine.Execute(*_renderIndex, _taskController->GetTasks());
-#else
-        _engine.Execute(
-            *_renderIndex,
-            _taskController->GetTasks(HdxTaskSetTokens->colorRender));
-#endif // USD_VERSION_NUM
     };
 
     _UpdateRenderGlobals();
@@ -573,9 +563,7 @@ void MtohRenderOverride::_InitHydraResources() {
             "MtohRenderOverride::_InitHydraResources(%s)\n",
             _rendererDesc.rendererName.GetText());
     GlfGlewInit();
-#if USD_VERSION_NUM >= 1905
     GlfContextCaps::InitInstance();
-#endif
     _rendererPlugin =
         HdRendererPluginRegistry::GetInstance().GetRendererPlugin(
             _rendererDesc.rendererName);

@@ -21,12 +21,7 @@
 
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/rprim.h>
-
-#if USD_VERSION_NUM >= 1905
 #include <pxr/imaging/hio/glslfx.h>
-#else
-#include <pxr/imaging/glf/glslfx.h>
-#endif // USD_VERSION_NUM >= 1905
 
 #include "../../../utils/util.h"
 

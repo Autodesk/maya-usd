@@ -52,19 +52,11 @@ public:
     }
 
     SdfPath ConvertIndexPathToCachePath(SdfPath const& indexPath) {
-#if USD_VERSION_NUM >= 1907
         return _usdDelegate->ConvertIndexPathToCachePath(indexPath);
-#else
-        return _usdDelegate->GetPathForUsd(indexPath);
-#endif
     }
 
     SdfPath ConvertCachePathToIndexPath(SdfPath const& cachePath) {
-#if USD_VERSION_NUM >= 1907
         return _usdDelegate->ConvertCachePathToIndexPath(cachePath);
-#else
-        return _usdDelegate->GetPathForIndex(cachePath);
-#endif
     }
 
 private:
