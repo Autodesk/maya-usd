@@ -14,11 +14,12 @@
 # limitations under the License.
 #
 
-set(TARGET_NAME MAYAUSD_TEST)
+set(TARGET_NAME MAYAUSD_SCHEMA_TEST)
 
 # Unit test scripts.
 set(test_script_files
-    testMayaUsdPythonImport.py
+    testMayaUsdSchemasPythonImport.py
+    testMayaUsdSchemasMayaReference.py
 )
 
 # copy tests to ${CMAKE_CURRENT_BINARY_DIR} and run them from there
@@ -33,28 +34,34 @@ set(path
     "${MAYA_LOCATION}/bin"
     "$ENV{PATH}"
 )
-separate_argument_list(path)
 
 set(pythonPath
     "${CMAKE_INSTALL_PREFIX}/lib/python"
     "$ENV{PYTHONPATH}"
 )
-separate_argument_list(pythonPath)
+
+if(IS_WINDOWS)
+    string(REPLACE ";" "\;" path "${path}")
+    string(REPLACE ";" "\;" pythonPath "${pythonPath}")
+else()
+    separate_arguments(path NATIVE_COMMAND "${path}")
+    separate_arguments(pythonPath NATIVE_COMMAND "${pythonPath}")
+
+    string(REPLACE "\;" ":" path "${path}")
+    string(REPLACE "\;" ":" pythonPath "${pythonPath}")
+endif()
 
 foreach(script ${test_script_files})
     mayaUsd_get_unittest_target(target ${script})
     add_test(
         NAME ${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMAND ${MAYA_PY_EXECUTABLE} -c "import sys; \
-                                          from unittest import main; \
+        COMMAND ${MAYA_PY_EXECUTABLE} -c "from unittest import main; \
                                           import maya.standalone; \
                                           maya.standalone.initialize(name='python'); \
                                           import ${target}; \
-                                          testProg = main(module=${target}, exit=False); \
-                                          maya.standalone.uninitialize(); \
-                                          sys.exit(not testProg.result.wasSuccessful());
-                                          "
+                                          main(module=${target}); \
+                                          maya.standalone.uninitialize()"
     )
     set_property(TEST ${target} APPEND PROPERTY ENVIRONMENT
         "PATH=${path}"
@@ -62,5 +69,3 @@ foreach(script ${test_script_files})
         "MAYA_NO_STANDALONE_ATEXIT=1"
     )
 endforeach()
-
-add_subdirectory(usd)

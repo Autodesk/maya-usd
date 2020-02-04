@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Z"
+)
+
+def Xform "World" (
+    kind = "group"
+)
+{
+    def ALMayaReference "Skeleton"
+    {
+        string mayaNamespace = "rig"
+        asset mayaReference = @UsdExportSkeletonWithoutBindPose.ma@
+    }
+}
