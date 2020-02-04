@@ -27,7 +27,6 @@
 #include "tokens.h"
 #include "../../usd/hdMaya/delegates/params.h"
 
-#include <tuple>
 #include <unordered_map>
 #include <vector>
 
