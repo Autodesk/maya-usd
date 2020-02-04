@@ -59,7 +59,6 @@ PxrUsdTranslators_MayaReferenceUpdater::Pull(UsdMayaPrimUpdaterContext* context)
 void
 PxrUsdTranslators_MayaReferenceUpdater::Clear(UsdMayaPrimUpdaterContext* context)
 {
-    const UsdPrim& usdPrim = GetUsdPrim<AL_usd_MayaReference>(*context);
     const MObject& parentNode = GetMayaObject();
 
     UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
