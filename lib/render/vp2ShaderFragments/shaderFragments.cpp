@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,6 +49,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (Float4ToFloat3)
     (Float4ToFloat4)
 
+    (NwFaceCameraIfNAN)
+
     (lightingContributions)
     (scaledDiffusePassThrough)
     (scaledSpecularPassThrough)
@@ -58,10 +60,12 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (UsdUVTexture)
 
+    (UsdPrimvarReader_color)
     (UsdPrimvarReader_float)
     (UsdPrimvarReader_float2)
     (UsdPrimvarReader_float3)
     (UsdPrimvarReader_float4)
+    (UsdPrimvarReader_vector)
 
     (UsdPreviewSurface)
 );
@@ -77,10 +81,12 @@ static const TfTokenVector _FragmentNames = {
 
     _tokens->UsdUVTexture,
 
+    _tokens->UsdPrimvarReader_color,
     _tokens->UsdPrimvarReader_float,
     _tokens->UsdPrimvarReader_float2,
     _tokens->UsdPrimvarReader_float3,
     _tokens->UsdPrimvarReader_float4,
+    _tokens->UsdPrimvarReader_vector,
 
     _tokens->Float4ToFloatX,
     _tokens->Float4ToFloatY,
@@ -88,6 +94,8 @@ static const TfTokenVector _FragmentNames = {
     _tokens->Float4ToFloatW,
     _tokens->Float4ToFloat3,
     _tokens->Float4ToFloat4,
+
+    _tokens->NwFaceCameraIfNAN,
 
     _tokens->lightingContributions,
     _tokens->scaledDiffusePassThrough,

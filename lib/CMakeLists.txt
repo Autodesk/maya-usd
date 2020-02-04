@@ -197,10 +197,13 @@ list(APPEND mayaUsdShaderFragments_xmls
     render/vp2ShaderFragments/FallbackShader.xml
     render/vp2ShaderFragments/Float4ToFloat3.xml
     render/vp2ShaderFragments/Float4ToFloat4.xml
+    render/vp2ShaderFragments/NwFaceCameraIfNAN.xml
+    render/vp2ShaderFragments/UsdPrimvarReader_color.xml
     render/vp2ShaderFragments/UsdPrimvarReader_float.xml
     render/vp2ShaderFragments/UsdPrimvarReader_float2.xml
     render/vp2ShaderFragments/UsdPrimvarReader_float3.xml
     render/vp2ShaderFragments/UsdPrimvarReader_float4.xml
+    render/vp2ShaderFragments/UsdPrimvarReader_vector.xml
     render/vp2ShaderFragments/UsdUVTexture.xml
     # USD plug info
     render/vp2ShaderFragments/plugInfo.json

@@ -816,7 +816,8 @@ HdVP2BasisCurves::_UpdateDrawItem(
         }
 
         // Prepare color buffer.
-        if (itemDirtyBits & HdChangeTracker::DirtyMaterialId) {
+        if (itemDirtyBits & (HdChangeTracker::DirtyMaterialId |
+                             DirtySelectionHighlight)) {
             const HdVP2Material* material = static_cast<const HdVP2Material*>(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId())
             );
@@ -865,6 +866,19 @@ HdVP2BasisCurves::_UpdateDrawItem(
                 const VtValue& value = itOpacity->second.data;
                 if (value.IsHolding<VtFloatArray>() && value.GetArraySize() > 0) {
                     alphaArray = value.UncheckedGet<VtFloatArray>();
+
+                    // It is possible that all elements in the opacity array are 1.
+                    // Due to the performance indication about transparency, we have to
+                    // traverse the array and enable transparency only when needed.
+                    if (!stateToCommit._isTransparent) {
+                        const size_t numAlphas = alphaArray.size();
+                        for (size_t i = 0; i < numAlphas; i++) {
+                            if (alphaArray[i] < 0.999f) {
+                                stateToCommit._isTransparent = true;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -971,19 +985,6 @@ HdVP2BasisCurves::_UpdateDrawItem(
 
                         drawItemData._primitiveStride = primitiveStride;
                         stateToCommit._primitiveStride = &drawItemData._primitiveStride;
-                    }
-                }
-            }
-
-            // It is possible that all elements in the opacity array are 1.
-            // Due to the performance indication about transparency, we have to
-            // traverse the array and enable transparency only when needed.
-            if (!stateToCommit._isTransparent) {
-                const size_t numAlphas = alphaArray.size();
-                for (size_t i = 0; i < numAlphas; i++) {
-                    if (alphaArray[i] < 0.999f) {
-                        stateToCommit._isTransparent = true;
-                        break;
                     }
                 }
             }
