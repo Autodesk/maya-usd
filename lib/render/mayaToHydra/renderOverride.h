@@ -156,8 +156,19 @@ private:
     HdRenderIndex* _renderIndex = nullptr;
     std::unique_ptr<MtohDefaultLightDelegate> _defaultLightDelegate = nullptr;
     HdxSelectionTrackerSharedPtr _selectionTracker;
-    HdRprimCollection _renderCollection;
-    HdRprimCollection _selectionCollection;
+    HdRprimCollection _renderCollection{
+        HdTokens->geometry,
+        HdReprSelector(
+#if MAYA_APP_VERSION >= 2019
+            HdReprTokens->refined
+#else
+            HdReprTokens->smoothHull
+#endif
+        ),
+        SdfPath::AbsoluteRootPath()};
+    HdRprimCollection _selectionCollection{
+        HdReprTokens->wire, HdReprSelector(HdReprTokens->wire)
+    };
     GlfSimpleLight _defaultLight;
 
     std::vector<HdMayaDelegatePtr> _delegates;

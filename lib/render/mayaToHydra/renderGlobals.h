@@ -24,6 +24,7 @@
 
 #include <maya/MObject.h>
 
+#include "tokens.h"
 #include "../../usd/hdMaya/delegates/params.h"
 
 #include <tuple>
@@ -37,7 +38,7 @@ struct MtohRenderGlobals {
     ~MtohRenderGlobals() = default;
     HdMayaParams delegateParams;
     GfVec4f colorSelectionHighlightColor = GfVec4f(1.0f, 1.0f, 0.0f, 0.5f);
-    TfToken selectionOverlay;
+    TfToken selectionOverlay = MtohTokens->UseVp2;
     bool colorSelectionHighlight = true;
     bool wireframeSelectionHighlight = true;
     struct RenderParam {

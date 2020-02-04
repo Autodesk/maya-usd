@@ -51,7 +51,7 @@ protected:
 private:
     GlfSimpleLight _light;
     SdfPath _lightPath;
-    bool _isSupported;
+    bool _isSupported = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

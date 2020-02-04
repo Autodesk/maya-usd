@@ -37,8 +37,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 MtohDefaultLightDelegate::MtohDefaultLightDelegate(const InitData& initData)
     : HdSceneDelegate(initData.renderIndex, initData.delegateID),
       HdMayaDelegate(initData),
-      _lightPath(initData.delegateID.AppendChild(_tokens->DefaultMayaLight)),
-      _isSupported(false) {}
+      _lightPath(initData.delegateID.AppendChild(_tokens->DefaultMayaLight))
+{}
 
 MtohDefaultLightDelegate::~MtohDefaultLightDelegate() {
     if (ARCH_UNLIKELY(!_isSupported)) { return; }

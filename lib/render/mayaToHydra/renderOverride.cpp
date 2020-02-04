@@ -155,18 +155,6 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     : MHWRender::MRenderOverride(desc.overrideName.GetText()),
       _rendererDesc(desc),
       _selectionTracker(new HdxSelectionTracker),
-      _renderCollection(
-          HdTokens->geometry,
-          HdReprSelector(
-#if MAYA_APP_VERSION >= 2019
-              HdReprTokens->refined
-#else
-              HdReprTokens->smoothHull
-#endif
-              ),
-          SdfPath::AbsoluteRootPath()),
-      _selectionCollection(
-          HdReprTokens->wire, HdReprSelector(HdReprTokens->wire)),
       _isUsingHdSt(desc.rendererName == MtohTokens->HdStormRendererPlugin) {
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
         .Msg(
