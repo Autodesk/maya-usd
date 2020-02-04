@@ -33,7 +33,10 @@ class UfePythonImportTestCase(unittest.TestCase):
         # libraries). We test the type name as a string to ensure that we're
         # not causing USD libraries to be loaded any other way.
         invalidPrim = mayaUsdUfe.getPrimFromRawItem(0)
-        # XXX: Interestingly, it appears that a default constructed UsdPrim()
-        # in C++ is currently returned to Python as a Usd.Object rather than a
-        # Usd.Prim. Will follow up with core USD...
-        self.assertEqual(type(invalidPrim).__name__, 'Object')
+
+        # Prior to USD version 20.05, a default constructed UsdPrim() in C++
+        # would be returned to Python as a Usd.Object rather than a Usd.Prim.
+        # Since we still want to support earlier versions, make sure it's one
+        # of the two.
+        typeName = type(invalidPrim).__name__
+        self.assertIn(typeName, ['Prim', 'Object'])
