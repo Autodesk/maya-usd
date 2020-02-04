@@ -29,7 +29,6 @@
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 
-#include "tokens.h"
 #include "utils.h"
 
 #include <functional>
@@ -276,7 +275,7 @@ global proc {{override}}OptionBox() {
 )mel";
 } // namespace
 
-MtohRenderGlobals::MtohRenderGlobals() : selectionOverlay(MtohTokens->UseVp2) {}
+MtohRenderGlobals::MtohRenderGlobals() {}
 
 void MtohInitializeRenderGlobals() {
     const auto& rendererDescs = MtohGetRendererDescriptions();
