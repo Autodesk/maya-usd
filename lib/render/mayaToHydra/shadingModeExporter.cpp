@@ -15,15 +15,7 @@
 //
 #include <pxr/pxr.h>
 
-#if USD_VERSION_NUM >= 1905
 #include <pxr/imaging/hio/glslfx.h>
-#else
-#include <pxr/imaging/glf/glslfx.h>
-namespace {
-auto& HioGlslfxTokens = PXR_NS::GlfGLSLFXTokens;
-}
-#endif // USD_VERSION_NUM >= 1905
-
 #include <pxr/usd/usdShade/connectableAPI.h>
 #include <pxr/usd/usdShade/shader.h>
 

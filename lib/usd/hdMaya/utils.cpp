@@ -22,13 +22,9 @@
 #include <pxr/imaging/glf/image.h>
 #include <pxr/imaging/glf/textureHandle.h>
 #include <pxr/imaging/glf/textureRegistry.h>
-
-#if USD_VERSION_NUM >= 1901
 #include <pxr/imaging/glf/udimTexture.h>
-#include <pxr/usdImaging/usdImaging/textureUtils.h>
-#endif // USD_VERSION_NUM >= 1901
-
 #include <pxr/imaging/hdSt/textureResource.h>
+#include <pxr/usdImaging/usdImaging/textureUtils.h>
 
 #include <maya/MPlugArray.h>
 
@@ -36,7 +32,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-#if USD_VERSION_NUM >= 1901
 class UdimTextureFactory : public GlfTextureFactoryBase {
 public:
     virtual GlfTextureRefPtr New(
@@ -56,7 +51,6 @@ public:
         return nullptr;
     }
 };
-#endif // USD_VERSION_NUM >= 1901
 
 } // namespace
 
@@ -132,11 +126,9 @@ HdTextureResourceSharedPtr GetFileTextureResource(
     const MObject& fileObj, const TfToken& filePath, int maxTextureMemory) {
     if (filePath.IsEmpty()) { return {}; }
     auto textureType = HdTextureType::Uv;
-#if USD_VERSION_NUM >= 1901
     if (GlfIsSupportedUdimTexture(filePath)) {
         textureType = HdTextureType::Udim;
     }
-#endif
     if (textureType != HdTextureType::Udim && !TfPathExists(filePath)) {
         return {};
     }
@@ -144,13 +136,9 @@ HdTextureResourceSharedPtr GetFileTextureResource(
     const auto origin = GlfImage::OriginLowerLeft;
     GlfTextureHandleRefPtr texture = nullptr;
     if (textureType == HdTextureType::Udim) {
-#if USD_VERSION_NUM >= 1901
         UdimTextureFactory factory;
         texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
             filePath, origin, &factory);
-#else
-        return nullptr;
-#endif
     } else {
         texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
             filePath, origin);
@@ -162,11 +150,7 @@ HdTextureResourceSharedPtr GetFileTextureResource(
     // from the uv placement node, so we don't touch those for now.
     return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
         texture,
-#if USD_VERSION_NUM >= 1901
         textureType,
-#else
-        false,
-#endif
         std::get<0>(wrapping), std::get<1>(wrapping),
 #if USD_VERSION_NUM >= 1910
         HdWrapClamp,

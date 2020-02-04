@@ -24,27 +24,13 @@
 
 #include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/glf/textureRegistry.h>
-
-#if USD_VERSION_NUM >= 1905
-#include <pxr/imaging/hio/glslfx.h>
-#else
-#include <pxr/imaging/glf/glslfx.h>
-typedef PXR_NS::GlfGLSLFX HioGlslfx;
-namespace {
-auto& HioGlslfxTokens = PXR_NS::GlfGLSLFXTokens;
-}
-#endif // USD_VERSION_NUM >= 1905
-
-#if USD_VERSION_NUM >= 1901
 #include <pxr/imaging/glf/udimTexture.h>
+#include <pxr/imaging/hdSt/textureResource.h>
+#include <pxr/imaging/hio/glslfx.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
-#endif
-
 #include <pxr/usdImaging/usdImaging/tokens.h>
-
 #include <pxr/usdImaging/usdImagingGL/package.h>
 
-#include <pxr/imaging/hdSt/textureResource.h>
 #if USD_VERSION_NUM >= 1911
 #include <pxr/imaging/hdSt/textureResourceHandle.h>
 #endif
@@ -433,8 +419,6 @@ private:
                 _textureResourceHandles[paramName] = handleInstance.GetValue();
 #endif // USD_VERSION_NUM < 1911
 
-
-#if USD_VERSION_NUM >= 1901
                 if (GlfIsSupportedUdimTexture(filePath)) {
                     if (TfDebug::IsEnabled(HDMAYA_ADAPTER_MATERIALS) &&
                         textureType != HdTextureType::Udim) {
@@ -447,7 +431,6 @@ private:
                     .Msg(
                         "  ...successfully registered texture with id: %lu\n",
                         textureId);
-#endif // USD_VERSION_NUM >= 1901
                 return true;
             } else {
                 TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
@@ -499,11 +482,8 @@ private:
                     it.param.GetFallbackValue(),
 #endif
                     GetID().AppendProperty(remappedName), _stSamplerCoords,
-#if USD_VERSION_NUM >= 1901
                     textureType);
-#else
-                    false);
-#endif
+
                 TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
                     .Msg(
                         "HdMayaShadingEngineAdapter: registered texture with "

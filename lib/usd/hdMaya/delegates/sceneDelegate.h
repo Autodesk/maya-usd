@@ -179,13 +179,7 @@ protected:
         const SdfPath& instancerId, const SdfPath& prototypeId) override;
 
     HDMAYA_API
-    GfMatrix4d GetInstancerTransform(
-#if USD_VERSION_NUM >= 1905
-        SdfPath const& instancerId
-#else
-        SdfPath const& instancerId, SdfPath const& prototypeId
-#endif
-        ) override;
+    GfMatrix4d GetInstancerTransform(SdfPath const& instancerId) override;
 
     HDMAYA_API
     SdfPath GetPathForInstanceIndex(

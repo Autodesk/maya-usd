@@ -16,16 +16,8 @@
 #include "renderGlobals.h"
 
 #include <pxr/imaging/hd/renderDelegate.h>
-#if USD_VERSION_NUM >= 1911
 #include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
-#else
-#include <pxr/imaging/hdx/rendererPlugin.h>
-#include <pxr/imaging/hdx/rendererPluginRegistry.h>
-PXR_NAMESPACE_OPEN_SCOPE
-using HdRendererPluginRegistry = HdxRendererPluginRegistry;
-PXR_NAMESPACE_CLOSE_SCOPE
-#endif
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
@@ -62,10 +54,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 namespace {
 
-#if USD_VERSION_NUM >= 1901
 std::unordered_map<TfToken, HdRenderSettingDescriptorList, TfToken::HashFunctor>
     _rendererAttributes;
-#endif
 
 void _CreateEnumAttribute(
     MFnDependencyNode& node, const TfToken& attrName,
@@ -218,12 +208,10 @@ void _GetFromPlug<int>(const MPlug& plug, int& out) {
     out = plug.asInt();
 }
 
-#if USD_VERSION_NUM >= 1901
 template <>
 void _GetFromPlug<float>(const MPlug& plug, float& out) {
     out = plug.asFloat();
 }
-#endif
 
 template <>
 void _GetFromPlug<std::string>(const MPlug& plug, std::string& out) {
@@ -252,12 +240,10 @@ void _GetColorAttribute(
     out[3] = plugA.asFloat();
 }
 
-#if USD_VERSION_NUM >= 1901
 bool _IsSupportedAttribute(const VtValue& v) {
     return v.IsHolding<bool>() || v.IsHolding<int>() || v.IsHolding<float>() ||
            v.IsHolding<GfVec4f>() || v.IsHolding<std::string>();
 }
-#endif
 
 constexpr auto _renderOverrideOptionBoxTemplate = R"mel(
 global proc {{override}}OptionBox() {
@@ -304,7 +290,6 @@ void MtohInitializeRenderGlobals() {
                 "Error in render override option box command function: \n%s",
                 status.errorString().asChar());
         }
-#if USD_VERSION_NUM >= 1901
         auto* rendererPlugin =
             HdRendererPluginRegistry::GetInstance().GetRendererPlugin(
                 rendererDesc.rendererName);
@@ -343,10 +328,6 @@ void MtohInitializeRenderGlobals() {
         ss << "}\n";
 
         const auto optionsCommand = ss.str();
-#else
-        const auto optionsCommand = TfStringPrintf(
-            "global proc %sOptions() { }", rendererDesc.overrideName.GetText());
-#endif
         status = MGlobal::executeCommand(optionsCommand.c_str());
         if (!status) {
             TF_WARN(
@@ -415,7 +396,6 @@ MObject MtohCreateRenderGlobals() {
         defGlobals.colorSelectionHighlightColor);
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
-#if USD_VERSION_NUM >= 1901
     for (const auto& rit : _rendererAttributes) {
         const auto rendererName = rit.first;
         for (const auto& attr : rit.second) {
@@ -460,8 +440,6 @@ MObject MtohCreateRenderGlobals() {
             }
         }
     }
-
-#endif
     return ret;
 }
 
@@ -496,7 +474,6 @@ MtohRenderGlobals MtohGetRenderGlobals() {
         ret.colorSelectionHighlightColor);
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
-#if USD_VERSION_NUM >= 1901
     for (const auto& rit : _rendererAttributes) {
         const auto rendererName = rit.first;
         auto& settings = ret.rendererSettings[rendererName];
@@ -529,7 +506,6 @@ MtohRenderGlobals MtohGetRenderGlobals() {
             }
         }
     }
-#endif
     return ret;
 }
 
