@@ -16,7 +16,6 @@
 
 #include "USDImportDialog.h"
 #include "factories/TreeModelFactory.h"
-//#include "TreeHeader.h"
 #include "ItemDelegate.h"
 #include "ui_USDImportDialog.h"
 
@@ -40,18 +39,6 @@ USDImportDialog::USDImportDialog(const std::string& filename, QWidget* parent)
 
 	fUI->setupUi(this);
 
-	// WIP - the search buttons are not implemented yet, so disable them.
-	fUI->findPrev->setHidden(true);
-	fUI->findNext->setHidden(true);
-	fUI->findAll->setHidden(true);
-
-#ifndef SEAN_WIP_NOT_FULLY_IMPL
-	// WIP - the load payloads checkbox does not dymamically update the tree view
-	//		 so disable it for now.
-	fUI->label_2->setHidden(true);
-	fUI->loadPayloads->setHidden(true);
-#endif
-
 	// These calls must come after the UI is initialized via "setupUi()":
 	int nbItems = 0;
 	fTreeModel = TreeModelFactory::createFromStage(fStage, this, &nbItems);
@@ -67,13 +54,6 @@ USDImportDialog::USDImportDialog(const std::string& filename, QWidget* parent)
 	fUI->treeView->setTreePosition(TreeModel::kTreeColumn_Name);
 	fUI->treeView->setAlternatingRowColors(true);
 
-// 	// Create the Spinner overlay on top of the TreeView, once it is configured:
-// 	fOverlay = std::unique_ptr<SpinnerOverlayWidget>(new SpinnerOverlayWidget(fUI->treeView));
-
-	// WIP - The header checkbox is not yet hooked up to anything so keep using 
-	//		 the normal Qt header view for now.
-//	TreeHeader* header = new TreeHeader(Qt::Horizontal, this);
-//	fUI->treeView->setHeader(header);	// Tree view takes ownership of header and deletes it.
 	QHeaderView* header = fUI->treeView->header();
 
 	header->setStretchLastSection(true);
@@ -98,29 +78,8 @@ USDImportDialog::USDImportDialog(const std::string& filename, QWidget* parent)
 	// Display the full path of the file to import:
 	fUI->usdFilePath->setText(QString::fromStdString(fFilename));
 
-#if SEAN_WIP_NOT_FULLY_IMPL
-	// Display the number of prims:
-	QString nbPrimText = fUI->primCount->text().arg(nbItems);
-	fUI->primCount->setText(nbPrimText);
-#else
-	// Hide the prim count for now as it is not dynamically updated.
-	fUI->primCount->setHidden(true);
-#endif
-
-#if SEAN_WIP_NOT_FULLY_IMPL
-	connect(fUI->filterLineEdit, &QLineEdit::textChanged, this, &USDImportDialog::onSearchFilterChanged);
-#else
-	fUI->filterLineEdit->setHidden(true);
-
-	// WIP - since we've hidden all the pieces of this layout (payloads, search)
-	//		 we'll disable this layout for now.
-	fUI->horizontalLayout_2->setEnabled(false);
-#endif
-	connect(fUI->treeView->selectionModel(), &QItemSelectionModel::selectionChanged, this,
-			&USDImportDialog::onTreeViewSelectionChanged);
-
-	// Select the first row by default:
-	fUI->treeView->setCurrentIndex(fProxyModel->index(0, 0));
+	// Make sure the "Import" button is enabled.
+	fUI->applyButton->setEnabled(true);
 }
 
 USDImportDialog::~USDImportDialog()
@@ -165,83 +124,9 @@ ImportData::PrimVariantSelections USDImportDialog::primVariantSelections() const
 	return varSels;
 }
 
-
 UsdStage::InitialLoadSet USDImportDialog::stageInitialLoadSet() const
 {
-	return fUI->loadPayloads->isChecked() ? UsdStage::InitialLoadSet::LoadAll
-										  : UsdStage::InitialLoadSet::LoadNone;
-}
-
-void USDImportDialog::onSearchFilterChanged(const QString& searchFilter)
-{
-	// Stop any search that was already ongoing but that has not yet completed:
-	if (fSearchThread != nullptr && !fSearchThread->isFinished())
-	{
-		fSearchThread->quit();
-		fSearchThread->wait();
-	}
-
-	// Create a timer that will display a Spinner if the search has been ongoing for a (small) amount of time, to let
-	// the User know that a background task is ongoing and that the application is not frozen:
-	fSearchTimer = std::unique_ptr<QTimer>(new QTimer(this));
-	fSearchTimer->setSingleShot(true);
-	connect(fSearchTimer.get(), &QTimer::timeout, fSearchTimer.get(), [this]() {
-		fUI->treeView->setEnabled(false);
-//		fOverlay->StartSpinning();
-	});
-	fSearchTimer->start(std::chrono::milliseconds(125));
-
-
-	// Create a thread to perform a search for the given criteria in the background in order to maintain a responsive
-	// UI that continues accepting input from the User:
-	fSearchThread = std::unique_ptr<USDSearchThread>(new USDSearchThread(fStage, searchFilter.toStdString()));
-	connect(fSearchThread.get(), &USDSearchThread::finished, fSearchThread.get(), [&, this]() {
-		// Since results have been received, discard the timer that was waiting for results so that the Spinner Widget
-		// is not displayed:
-		fSearchTimer->stop();
-
-		// Set the search results as the new effective data:
-		fTreeModel = fSearchThread->consumeResults();
-		fProxyModel->setSourceModel(fTreeModel.get());
-
-		// Set the View to a sensible state to reflect the new data:
-		bool searchYieledResults = fProxyModel->hasChildren();
-		fUI->treeView->expandAll();
-		fUI->treeView->selectionModel()->clearSelection();
-		fUI->treeView->setEnabled(searchYieledResults);
-		fUI->applyButton->setEnabled(false);
-// 		if (searchYieledResults)
-// 		{
-// 			fOverlay->Hide();
-// 		}
-// 		else
-// 		{
-// 			fOverlay->ShowInformationMessage(tr("Your search did not match any Prim."));
-// 		}
-	});
-	fSearchThread->start(QThread::Priority::TimeCriticalPriority);
-}
-
-void USDImportDialog::onTreeViewSelectionChanged(
-		const QItemSelection& selectedItems, const QItemSelection& deselectedItems)
-{
-	// Ensure that items cannot be deselected from the TreeView, to avoid being in a state where no item of the
-	// hierarchy from which to import is selected.
-	//
-	// Note that Qt does not trigger "selectionChanged" signals when changing selection from within the propagation
-	// chain, so this will not cause an infinite callback loop.
-	QItemSelectionModel* selectionModel = fUI->treeView->selectionModel();
-	if (selectionModel != nullptr)
-	{
-		bool selectionIsEmpty = selectionModel->selection().isEmpty();
-		if (selectionIsEmpty)
-		{
-			selectionModel->select(deselectedItems, QItemSelectionModel::Select);
-		}
-
-		// Make sure the "Import" button is disabled if no item of the Tree is selected.
-		fUI->applyButton->setEnabled(!selectionIsEmpty);
-	}
+	return UsdStage::InitialLoadSet::LoadAll;
 }
 
 } // namespace MayaUsd

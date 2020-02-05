@@ -30,12 +30,10 @@ add_library(${PROJECT_NAME} SHARED
 	cmds/USDImportDialogCmd.cpp
 	factories/TreeModelFactory.cpp
 	views/ItemDelegate.cpp
-	views/TreeHeader.cpp
 	views/TreeItem.cpp
 	views/TreeModel.cpp
 	views/USDImportDialog.cpp
 	views/USDImportDialog.ui
-	views/USDSearchThread.cpp
 )
 
 list(APPEND mayaUsdUI_headers
@@ -44,11 +42,9 @@ list(APPEND mayaUsdUI_headers
 	factories/TreeModelFactory.h
 	views/IUSDImportView.h
 	views/ItemDelegate.h
-	views/TreeHeader.h
 	views/TreeItem.h
 	views/TreeModel.h
 	views/USDImportDialog.h
-	views/USDSearchThread.h
 )
 
 # Promote headers
