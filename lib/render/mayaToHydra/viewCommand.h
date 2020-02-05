@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __MTOH_CMD_H__
-#define __MTOH_CMD_H__
+#ifndef MTOH_CMD_H
+#define MTOH_CMD_H
 
 #include <pxr/pxr.h>
 
@@ -34,4 +34,4 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __MTOH_CMD_H__
+#endif // MTOH_CMD_H

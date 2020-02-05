@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __HDMAYA_PARAMS_H__
-#define __HDMAYA_PARAMS_H__
+#ifndef HDMAYA_PARAMS_H
+#define HDMAYA_PARAMS_H
 
 #include <pxr/pxr.h>
 
@@ -31,4 +31,4 @@ struct HdMayaParams {
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_PARAMS_H__
+#endif // HDMAYA_PARAMS_H

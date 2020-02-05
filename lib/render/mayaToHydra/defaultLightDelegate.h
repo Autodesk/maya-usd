@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __MTOH_DEFAULT_LIGHT_DELEGATE_H__
-#define __MTOH_DEFAULT_LIGHT_DELEGATE_H__
+#ifndef MTOH_DEFAULT_LIGHT_DELEGATE_H
+#define MTOH_DEFAULT_LIGHT_DELEGATE_H
 
 #include <pxr/pxr.h>
 
@@ -54,4 +54,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __MTOH_DEFAULT_LIGHT_DELEGATE_H__
+#endif // MTOH_DEFAULT_LIGHT_DELEGATE_H
