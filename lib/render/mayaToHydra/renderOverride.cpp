@@ -227,15 +227,6 @@ MtohRenderOverride::~MtohRenderOverride() {
             std::remove(_allInstances.begin(), _allInstances.end(), this),
             _allInstances.end());
     }
-
-#if WANT_UFE_BUILD
-    const UFE_NS::GlobalSelection::Ptr& ufeSelection =
-        UFE_NS::GlobalSelection::get();
-    if (ufeSelection) {
-        ufeSelection->removeObserver(_ufeSelectionObserver);
-        _ufeSelectionObserver = nullptr;
-    }
-#endif // WANT_UFE_BUILD
 }
 
 void MtohRenderOverride::UpdateRenderGlobals() {
