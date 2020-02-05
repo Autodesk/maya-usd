@@ -52,3 +52,10 @@ Jan 30, 2020:
 git merge --no-ff github/dev
 git push
 ```
+
+```
+Feb 05, 2020:
+git merge --no-ff github/donnels/MAYA-101325/new_import_ui_feature_wip
+git merge --no-ff github/dev
+git push
+```
