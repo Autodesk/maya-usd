@@ -52,9 +52,12 @@ public:
 
     void Populate() override;
     void PreFrame(const MHWRender::MDrawContext& context) override;
-    void PopulateSelectedPaths(
-        const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
-        const HdSelectionSharedPtr& selection) override;
+
+    // TODO: implement this override this to add selection support
+    // for non-ufe
+//    void PopulateSelectedPaths(
+//        const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
+//        const HdSelectionSharedPtr& selection) override;
 
 #if WANT_UFE_BUILD
     void PopulateSelectedPaths(
