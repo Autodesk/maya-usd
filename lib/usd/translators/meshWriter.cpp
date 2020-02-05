@@ -229,103 +229,104 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         // time.
         return true;
     }
+    if (_GetExportArgs().exportMeshGeometry) {
 
-    unsigned int numVertices = geomMesh.numVertices();
-    unsigned int numPolygons = geomMesh.numPolygons();
+        unsigned int numVertices = geomMesh.numVertices();
+        unsigned int numPolygons = geomMesh.numPolygons();
 
-    // Set mesh attrs ==========
-    // Get points
-    // TODO: Use memcpy()
-    const float* mayaRawPoints = geomMesh.getRawPoints(&status);
-    VtArray<GfVec3f> points(numVertices);
-    for (unsigned int i = 0; i < numVertices; i++) {
-        unsigned int floatIndex = i*3;
-        points[i].Set(mayaRawPoints[floatIndex],
-                      mayaRawPoints[floatIndex+1],
-                      mayaRawPoints[floatIndex+2]);
-    }
-
-    VtArray<GfVec3f> extent(2);
-    // Compute the extent using the raw points
-    UsdGeomPointBased::ComputeExtent(points, &extent);
-
-    _SetAttribute(primSchema.GetPointsAttr(), &points, usdTime);
-    _SetAttribute(primSchema.CreateExtentAttr(), &extent, usdTime);
-
-    // Get faceVertexIndices
-    unsigned int numFaceVertices = geomMesh.numFaceVertices(&status);
-    VtArray<int>     faceVertexCounts(numPolygons);
-    VtArray<int>     faceVertexIndices(numFaceVertices);
-    MIntArray mayaFaceVertexIndices; // used in loop below
-    unsigned int curFaceVertexIndex = 0;
-    for (unsigned int i = 0; i < numPolygons; i++) {
-        geomMesh.getPolygonVertices(i, mayaFaceVertexIndices);
-        faceVertexCounts[i] = mayaFaceVertexIndices.length();
-        for (unsigned int j=0; j < mayaFaceVertexIndices.length(); j++) {
-            faceVertexIndices[ curFaceVertexIndex ] = mayaFaceVertexIndices[j]; // push_back
-            curFaceVertexIndex++;
+        // Set mesh attrs ==========
+        // Get points
+        // TODO: Use memcpy()
+        const float* mayaRawPoints = geomMesh.getRawPoints(&status);
+        VtArray<GfVec3f> points(numVertices);
+        for (unsigned int i = 0; i < numVertices; i++) {
+            unsigned int floatIndex = i*3;
+            points[i].Set(mayaRawPoints[floatIndex],
+                          mayaRawPoints[floatIndex+1],
+                          mayaRawPoints[floatIndex+2]);
         }
-    }
-    _SetAttribute(primSchema.GetFaceVertexCountsAttr(), &faceVertexCounts, usdTime);
-    _SetAttribute(primSchema.GetFaceVertexIndicesAttr(), &faceVertexIndices, usdTime);
 
-    // Read subdiv scheme tagging. If not set, we default to defaultMeshScheme
-    // flag (this is specified by the job args but defaults to catmullClark).
-    TfToken sdScheme = UsdMayaMeshUtil::GetSubdivScheme(finalMesh);
-    if (sdScheme.IsEmpty()) {
-        sdScheme = _GetExportArgs().defaultMeshScheme;
-    }
-    primSchema.CreateSubdivisionSchemeAttr(VtValue(sdScheme), true);
+        VtArray<GfVec3f> extent(2);
+        // Compute the extent using the raw points
+        UsdGeomPointBased::ComputeExtent(points, &extent);
 
-    if (sdScheme == UsdGeomTokens->none) {
-        // Polygonal mesh - export normals.
-        bool emitNormals = true; // Default to emitting normals if no tagging.
-        UsdMayaMeshUtil::GetEmitNormalsTag(finalMesh, &emitNormals);
-        if (emitNormals) {
-            VtArray<GfVec3f> meshNormals;
-            TfToken normalInterp;
+        _SetAttribute(primSchema.GetPointsAttr(), &points, usdTime);
+        _SetAttribute(primSchema.CreateExtentAttr(), &extent, usdTime);
 
-            if (UsdMayaMeshUtil::GetMeshNormals(
-                    geomMeshObj,
-                    &meshNormals,
-                    &normalInterp)) {
-                _SetAttribute(
-                    primSchema.GetNormalsAttr(),
-                    &meshNormals,
-                    usdTime);
-                primSchema.SetNormalsInterpolation(normalInterp);
+        // Get faceVertexIndices
+        unsigned int numFaceVertices = geomMesh.numFaceVertices(&status);
+        VtArray<int>     faceVertexCounts(numPolygons);
+        VtArray<int>     faceVertexIndices(numFaceVertices);
+        MIntArray mayaFaceVertexIndices; // used in loop below
+        unsigned int curFaceVertexIndex = 0;
+        for (unsigned int i = 0; i < numPolygons; i++) {
+            geomMesh.getPolygonVertices(i, mayaFaceVertexIndices);
+            faceVertexCounts[i] = mayaFaceVertexIndices.length();
+            for (unsigned int j=0; j < mayaFaceVertexIndices.length(); j++) {
+                faceVertexIndices[ curFaceVertexIndex ] = mayaFaceVertexIndices[j]; // push_back
+                curFaceVertexIndex++;
             }
         }
-    } else {
-        // Subdivision surface - export subdiv-specific attributes.
-        TfToken sdInterpBound = UsdMayaMeshUtil::GetSubdivInterpBoundary(
-            finalMesh);
-        if (!sdInterpBound.IsEmpty()) {
-            _SetAttribute(primSchema.CreateInterpolateBoundaryAttr(),
-                          sdInterpBound);
+        _SetAttribute(primSchema.GetFaceVertexCountsAttr(), &faceVertexCounts, usdTime);
+        _SetAttribute(primSchema.GetFaceVertexIndicesAttr(), &faceVertexIndices, usdTime);
+
+        // Read subdiv scheme tagging. If not set, we default to defaultMeshScheme
+        // flag (this is specified by the job args but defaults to catmullClark).
+        TfToken sdScheme = UsdMayaMeshUtil::GetSubdivScheme(finalMesh);
+        if (sdScheme.IsEmpty()) {
+            sdScheme = _GetExportArgs().defaultMeshScheme;
+        }
+        primSchema.CreateSubdivisionSchemeAttr(VtValue(sdScheme), true);
+
+        if (sdScheme == UsdGeomTokens->none) {
+            // Polygonal mesh - export normals.
+            bool emitNormals = true; // Default to emitting normals if no tagging.
+            UsdMayaMeshUtil::GetEmitNormalsTag(finalMesh, &emitNormals);
+            if (emitNormals) {
+                VtArray<GfVec3f> meshNormals;
+                TfToken normalInterp;
+
+                if (UsdMayaMeshUtil::GetMeshNormals(
+                        geomMeshObj,
+                        &meshNormals,
+                        &normalInterp)) {
+                    _SetAttribute(
+                        primSchema.GetNormalsAttr(),
+                        &meshNormals,
+                        usdTime);
+                    primSchema.SetNormalsInterpolation(normalInterp);
+                }
+            }
+        } else {
+            // Subdivision surface - export subdiv-specific attributes.
+            TfToken sdInterpBound = UsdMayaMeshUtil::GetSubdivInterpBoundary(
+                finalMesh);
+            if (!sdInterpBound.IsEmpty()) {
+                _SetAttribute(primSchema.CreateInterpolateBoundaryAttr(),
+                              sdInterpBound);
+            }
+
+            TfToken sdFVLinearInterpolation =
+                UsdMayaMeshUtil::GetSubdivFVLinearInterpolation(finalMesh);
+            if (!sdFVLinearInterpolation.IsEmpty()) {
+                _SetAttribute(primSchema.CreateFaceVaryingLinearInterpolationAttr(),
+                              sdFVLinearInterpolation);
+            }
+
+            assignSubDivTagsToUSDPrim(finalMesh, primSchema);
         }
 
-        TfToken sdFVLinearInterpolation =
-            UsdMayaMeshUtil::GetSubdivFVLinearInterpolation(finalMesh);
-        if (!sdFVLinearInterpolation.IsEmpty()) {
-            _SetAttribute(primSchema.CreateFaceVaryingLinearInterpolationAttr(),
-                          sdFVLinearInterpolation);
+        // Holes - we treat InvisibleFaces as holes
+        MUintArray mayaHoles = finalMesh.getInvisibleFaces();
+        if (mayaHoles.length() > 0) {
+            VtArray<int> subdHoles(mayaHoles.length());
+            for (unsigned int i=0; i < mayaHoles.length(); i++) {
+                subdHoles[i] = mayaHoles[i];
+            }
+            // not animatable in Maya, so we'll set default only
+            _SetAttribute(primSchema.GetHoleIndicesAttr(), &subdHoles);
         }
-
-        assignSubDivTagsToUSDPrim(finalMesh, primSchema);
     }
-
-    // Holes - we treat InvisibleFaces as holes
-    MUintArray mayaHoles = finalMesh.getInvisibleFaces();
-    if (mayaHoles.length() > 0) {
-        VtArray<int> subdHoles(mayaHoles.length());
-        for (unsigned int i=0; i < mayaHoles.length(); i++) {
-            subdHoles[i] = mayaHoles[i];
-        }
-        // not animatable in Maya, so we'll set default only
-        _SetAttribute(primSchema.GetHoleIndicesAttr(), &subdHoles);
-    }
-
     // == Write UVSets as Vec2f Primvars
     MStringArray uvSetNames;
     if (_GetExportArgs().exportMeshUVs) {

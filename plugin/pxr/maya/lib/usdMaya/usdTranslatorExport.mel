@@ -141,6 +141,8 @@ global proc int usdTranslatorExport (string $parent,
 
         checkBox -l "Export collection-based material bindings" exportCollectionBasedBindingsCheckBox;
 
+        checkBox -l "Export Geometry" exportGeometryCheckBox;
+
         checkBox -l "Export UVs" exportUVsCheckBox;
 
         checkBox -l "Export ColorSets" exportColorSetsCheckBox;
@@ -215,6 +217,8 @@ global proc int usdTranslatorExport (string $parent,
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportDisplayColorCheckBox");
                 } else if ($optionBreakDown[0] == "exportRefsAsInstanceable") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportRefsAsInstanceableCheckBox");
+                } else if ($optionBreakDown[0] == "exportGeometry") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportGeometryCheckBox");
                 } else if ($optionBreakDown[0] == "exportUVs") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportUVsCheckBox");
                 } else if ($optionBreakDown[0] == "exportMaterialCollections") {
@@ -280,6 +284,7 @@ global proc int usdTranslatorExport (string $parent,
         $currentOptions = usdTranslatorExport_AppendFromTextField($currentOptions, "materialsScopeName", "materialsScopeNameField");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportDisplayColor", "exportDisplayColorCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportRefsAsInstanceable", "exportRefsAsInstanceableCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportGeometry", "exportGeometryCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportUVs", "exportUVsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportMaterialCollections", "exportMaterialCollectionsCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromTextField($currentOptions, "materialCollectionsPath", "materialCollectionsPathField");

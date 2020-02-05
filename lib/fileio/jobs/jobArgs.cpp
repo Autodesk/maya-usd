@@ -270,6 +270,8 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
         exportMaterialCollections(
             _Boolean(userArgs,
                 UsdMayaJobExportArgsTokens->exportMaterialCollections)),
+        exportMeshGeometry(
+            _Boolean(userArgs, UsdMayaJobExportArgsTokens->exportGeometry)),
         exportMeshUVs(
             _Boolean(userArgs, UsdMayaJobExportArgsTokens->exportUVs)),
         exportNurbsExplicitUV(
@@ -366,6 +368,7 @@ operator <<(std::ostream& out, const UsdMayaJobExportArgs& exportArgs)
         << "exportDisplayColor: " << TfStringify(exportArgs.exportDisplayColor) << std::endl
         << "exportInstances: " << TfStringify(exportArgs.exportInstances) << std::endl
         << "exportMaterialCollections: " << TfStringify(exportArgs.exportMaterialCollections) << std::endl
+        << "exportMeshGeometry: " << TfStringify(exportArgs.exportMeshGeometry) << std::endl
         << "exportMeshUVs: " << TfStringify(exportArgs.exportMeshUVs) << std::endl
         << "exportNurbsExplicitUV: " << TfStringify(exportArgs.exportNurbsExplicitUV) << std::endl
         << "exportRefsAsInstanceable: " << TfStringify(exportArgs.exportRefsAsInstanceable) << std::endl
@@ -458,6 +461,7 @@ UsdMayaJobExportArgs::GetDefaultDictionary()
                 UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->exportSkels] =
                 UsdMayaJobExportArgsTokens->none.GetString();
+        d[UsdMayaJobExportArgsTokens->exportGeometry] = true;
         d[UsdMayaJobExportArgsTokens->exportUVs] = true;
         d[UsdMayaJobExportArgsTokens->exportVisibility] = true;
         d[UsdMayaJobExportArgsTokens->kind] = std::string();

@@ -65,6 +65,9 @@ MSyntax UsdMayaExportCommand::createSyntax()
     syntax.addFlag("-msn",
                    UsdMayaJobExportArgsTokens->materialsScopeName.GetText(),
                    MSyntax::kString);
+    syntax.addFlag("-geo",
+                   UsdMayaJobExportArgsTokens->exportGeometry.GetText(),
+                   MSyntax::kBoolean);
     syntax.addFlag("-uvs",
                    UsdMayaJobExportArgsTokens->exportUVs.GetText(),
                    MSyntax::kBoolean);

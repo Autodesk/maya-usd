@@ -48,6 +48,7 @@ class UsdMayaImportTranslator : public MPxFileTranslator
 
         bool haveReadMethod() const override { return true; }
         bool haveWriteMethod() const override { return false; }
+        bool haveNamespaceSupport() const override { return true; }
 
         MAYAUSD_PLUGIN_PUBLIC
         MFileKind identifyFile(

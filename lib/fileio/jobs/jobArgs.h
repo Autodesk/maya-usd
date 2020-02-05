@@ -70,6 +70,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportRefsAsInstanceable) \
     (exportSkels) \
     (exportSkin) \
+    (exportGeometry) \
     (exportUVs) \
     (exportVisibility) \
     (kind) \
@@ -142,6 +143,7 @@ struct UsdMayaJobExportArgs
     const bool exportDisplayColor;
     const bool exportInstances;
     const bool exportMaterialCollections;
+    const bool exportMeshGeometry;
     const bool exportMeshUVs;
     const bool exportNurbsExplicitUV;
     const bool exportReferenceObjects;
