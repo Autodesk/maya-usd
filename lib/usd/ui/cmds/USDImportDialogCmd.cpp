@@ -42,14 +42,6 @@ constexpr auto kClearDataFlagLong = "-clearData";
 
 }
 
-USDImportDialogCmd::USDImportDialogCmd()
-{
-}
-
-USDImportDialogCmd::~USDImportDialogCmd()
-{
-}
-
 /*static*/
 MStatus USDImportDialogCmd::initialize(MFnPlugin& plugin)
 {
@@ -100,8 +92,8 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
 				importData.setFilename(usdImportDialog->filename());
 				importData.setStageInitialLoadSet(usdImportDialog->stageInitialLoadSet());
 				importData.setRootPrimPath(usdImportDialog->rootPrimPath());
-				importData.setStagePopulationMask(std::move(usdImportDialog->stagePopulationMask()));
-				importData.setPrimVariantSelections(std::move(usdImportDialog->primVariantSelections()));
+				importData.setStagePopulationMask(usdImportDialog->stagePopulationMask());
+				importData.setPrimVariantSelections(usdImportDialog->primVariantSelections());
 			}
 			return MS::kSuccess;
 		}

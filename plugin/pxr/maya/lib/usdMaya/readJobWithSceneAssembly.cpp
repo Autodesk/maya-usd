@@ -28,10 +28,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 const static TfToken ASSEMBLY_SHADING_MODE = UsdMayaShadingModeTokens->displayColor;
 
 UsdMaya_ReadJobWithSceneAssembly::UsdMaya_ReadJobWithSceneAssembly(
-        const std::string &iFileName,
         const MayaUsd::ImportData& iImportData,
         const UsdMayaJobImportArgs &iArgs) :
-    UsdMaya_ReadJob(iFileName, iImportData, iArgs)
+    UsdMaya_ReadJob(iImportData, iArgs)
 {
 }
 

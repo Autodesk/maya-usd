@@ -30,7 +30,6 @@ option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
 option(BUILD_TESTS "Build tests." ON)
 option(WANT_USD_RELATIVE_PATH "Use relative rpaths for USD libraries" OFF)
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
-option(CMAKE_WANT_QT_BUILD "Enable building with Qt (if found)." ON)
 
 # Avoid noisy install messages
 set(CMAKE_INSTALL_MESSAGE "NEVER")
@@ -87,6 +86,16 @@ if(CMAKE_WANT_UFE_BUILD)
     else()
         message(STATUS "UFE not found. UFE features will be disabled.")
     endif()
+endif()
+
+if(DEFINED QT_LOCATION)
+    set(CMAKE_PREFIX_PATH "${QT_LOCATION}")
+    find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
+    if(Qt5_FOUND)
+        message(STATUS "Building with Qt features enabled.")
+    endif()
+else()
+    message(STATUS "QT_LOCATION not set. Building Qt features will be disabled.")
 endif()
 
 #==============================================================================

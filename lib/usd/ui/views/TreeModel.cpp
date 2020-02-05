@@ -199,7 +199,7 @@ void TreeModel::fillPrimVariantSelections(ImportData::PrimVariantSelections& pri
 				assert(varSelections.count() == varNames.count());
 				if (varSelections.count() == varNames.count())
 				{
-					ImportData::VariantSelections varSels;
+					SdfVariantSelectionMap varSels;
 					for (int i=0; i<varNames.count(); ++i)
 					{
 						varSels[varNames.at(i).toStdString()] = varSelections.at(i).toStdString();

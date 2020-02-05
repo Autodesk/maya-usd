@@ -16,7 +16,6 @@
 # =======================================================================
 #
 
-cmake_minimum_required(VERSION 3.1.1)
 project(testMayaUsdUI)
 
 if (POLICY CMP0074)

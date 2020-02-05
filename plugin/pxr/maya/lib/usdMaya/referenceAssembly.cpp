@@ -1531,11 +1531,11 @@ bool UsdMayaRepresentationHierBase::activate()
                 userArgs, shouldImportWithProxies,
                 GfInterval::GetFullInterval());
 
-    MayaUsd::ImportData importData;
+    MayaUsd::ImportData importData(usdFilePath.asChar());
     importData.setRootVariantSelections(std::move(variantSetSelections));
 	importData.setRootPrimPath(usdPrimPath.asChar());
 
-    UsdMaya_ReadJobWithSceneAssembly readJob(usdFilePath.asChar(),
+    UsdMaya_ReadJobWithSceneAssembly readJob(
                        importData,
                        importArgs);
 

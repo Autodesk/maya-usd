@@ -59,11 +59,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMaya_ReadJob::UsdMaya_ReadJob(
-        const std::string &iFileName,
         const MayaUsd::ImportData &iImportData,
         const UsdMayaJobImportArgs &iArgs) :
     mArgs(iArgs),
-    mFileName(iFileName),
     mImportData(iImportData),
     mMayaRootDagPath(),
     mDagModifierUndo(),
@@ -80,14 +78,18 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 {
     MStatus status;
 
-    SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(mFileName);
+    if (!TF_VERIFY(!mImportData.empty())) {
+        return false;
+    }
+
+    SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(mImportData.filename());
     if (!rootLayer) {
         return false;
     }
 
     TfToken modelName = UsdUtilsGetModelNameFromRootLayer(rootLayer);
 
-    MayaUsd::ImportData::VariantSelections varSelsMap = mImportData.rootVariantSelections();
+    SdfVariantSelectionMap varSelsMap = mImportData.rootVariantSelections();
     std::vector<std::pair<std::string, std::string> > varSelsVec;
     TF_FOR_ALL(iter, varSelsMap) {
         const std::string& variantSetName = iter->first;
@@ -103,11 +105,7 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     // Layer and Stage used to Read in the USD file
     UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get());
     UsdStageRefPtr stage;
-    if (mImportData.empty())
-    {
-        stage = UsdStage::Open(rootLayer, sessionLayer);
-    }
-    else if (mImportData.hasPopulationMask())
+    if (mImportData.hasPopulationMask())
     {
         stage = UsdStage::OpenMasked(rootLayer, sessionLayer,
                                      mImportData.stagePopulationMask(),
@@ -177,7 +175,7 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         TF_RUNTIME_ERROR(
                 "Unable to set root prim to <%s> when reading USD file '%s'; "
                 "using the pseudo-root </> instead",
-                primPath.c_str(), mFileName.c_str());
+                primPath.c_str(), mImportData.filename().c_str());
         usdRootPrim = stage->GetPseudoRoot();
     }
 
@@ -186,7 +184,7 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     if (!usdRootPrim) {
         TF_RUNTIME_ERROR(
                 "No default prim found in USD file '%s'",
-                mFileName.c_str());
+                mImportData.filename().c_str());
         return false;
     }
 
@@ -259,7 +257,7 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
                                                 &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
-        status = dgMod.newPlugValueString(filePathPlug, mFileName.c_str());
+        status = dgMod.newPlugValueString(filePathPlug, mImportData.filename().c_str());
         CHECK_MSTATUS_AND_RETURN(status, false);
 
         status = dgMod.doIt();

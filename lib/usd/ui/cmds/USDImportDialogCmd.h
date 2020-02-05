@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include "../api.h"
+#include <mayaUsd/ui/api.h>
 
 #include <maya/MPxCommand.h>
 
@@ -23,8 +23,8 @@ MAYAUSD_NS_DEF {
 
 class MAYAUSD_UI_PUBLIC USDImportDialogCmd : public MPxCommand {
 public:
-	USDImportDialogCmd();
-	~USDImportDialogCmd() override;
+	USDImportDialogCmd() = default;
+	~USDImportDialogCmd() override = default;
 
 	static MStatus initialize(MFnPlugin&);
 	static MStatus finalize(MFnPlugin&);

@@ -15,20 +15,17 @@
 //
 #pragma once
 
-#include "../api.h"
+#include <mayaUsd/ui/api.h>
 
 #include <memory>
 
 #include <QtWidgets/QDialog>
 #include <QtCore/QSortFilterProxyModel>
-#include <QtCore/QTimer>
 
 #include <pxr/usd/usd/stage.h>
 
 #include "IUSDImportView.h"
-// #include "SpinnerOverlayWidget.h"
 #include "TreeModel.h"
-#include "USDSearchThread.h"
 
 namespace Ui {
 	class ImportDialog;
@@ -59,26 +56,12 @@ public:
 	~USDImportDialog();
 
 	// IUSDImportView overrides
-	std::string filename() const override;
-	std::string rootPrimPath() const override;
+	const std::string& filename() const override;
+	const std::string& rootPrimPath() const override;
 	UsdStagePopulationMask stagePopulationMask() const override;
 	UsdStage::InitialLoadSet stageInitialLoadSet() const override;
 	ImportData::PrimVariantSelections primVariantSelections() const override;
 	bool execute() override;
-
-protected:
-	/**
-	 * \brief callback function executed upon changing the text in the search box.
-	 * \param searchFilter The new content of the search box.
-	 */
-	void onSearchFilterChanged(const QString& searchFilter);
-
-	/**
-	 * \brief Callback function executed upon selecting items in the TreeView.
-	 * \param selectedItems The list of TreeView items which were selected.
-	 * \param deselectedItems The list of TreeView items which were deselected.
-	 */
-	void onTreeViewSelectionChanged(const QItemSelection& selectedItems, const QItemSelection& deselectedItems);
 
 protected:
 	// Reference to the Qt UI View of the dialog:
@@ -89,13 +72,6 @@ protected:
 	// Reference to the Proxy Model used to sort and filter the USD file hierarchy:
 	std::unique_ptr<QSortFilterProxyModel> fProxyModel;
 
-	// Reference to the thread used to perform Prim searches in the background:
-	std::unique_ptr<USDSearchThread> fSearchThread;
-
-	// Reference to the timer used to display a Spinner overlay on top of the TreeView in case of lengthy search
-	// operations:
-	std::unique_ptr<QTimer> fSearchTimer;
-
 	// Reference to the USD Stage holding the list of Prims which could be imported:
 	UsdStageRefPtr fStage;
 
@@ -104,9 +80,6 @@ protected:
 
 	// The root prim path.
 	mutable std::string fRootPrimPath;
-
-// 	// TreeView overlay on which to display an animated Spinner or message to the User:
-// 	std::unique_ptr<SpinnerOverlayWidget> fOverlay;
 };
 
 } // namespace MayaUsd

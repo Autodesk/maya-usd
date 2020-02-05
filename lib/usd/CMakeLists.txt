@@ -1,10 +1,5 @@
 add_subdirectory(translators)
 
-if(CMAKE_WANT_QT_BUILD)
-    if(DEFINED QT_LOCATION)
-        message(STATUS "Building with Qt UI features enabled.")
-        add_subdirectory(ui)
-    else()
-        message(STATUS "QT_LOCATION not set. Building UI features will be disabled.")
-    endif()
+if(Qt5_FOUND)
+    add_subdirectory(ui)
 endif()

@@ -11,10 +11,6 @@ if(CMAKE_WANT_UFE_BUILD)
     endif()
 endif()
 
-if(CMAKE_WANT_QT_BUILD AND DEFINED QT_LOCATION)
-    add_definitions(-DWANT_QT_BUILD)
-endif()
-
 add_library(${PLUGIN_PACKAGE} MODULE
     plugin.cpp
     importTranslator.cpp
@@ -25,6 +21,7 @@ add_library(${PLUGIN_PACKAGE} MODULE
 target_compile_definitions(${PLUGIN_PACKAGE}
     PRIVATE
         MAYAUSD_PLUGIN_EXPORT
+        $<$<BOOL:${Qt5_FOUND}>:WANT_QT_BUILD>
 )
 
 target_include_directories(${PLUGIN_PACKAGE}
@@ -46,14 +43,8 @@ target_link_libraries(${PLUGIN_PACKAGE}
 		usd
 		usdGeom
 		usdUtils
+		$<$<BOOL:${Qt5_FOUND}>:mayaUsdUI>
 )
-
-if(CMAKE_WANT_QT_BUILD AND DEFINED QT_LOCATION)
-    target_link_libraries(${PLUGIN_PACKAGE}
-        PRIVATE
-            mayaUsdUI
-)
-endif()
 
 MAYA_SET_PLUGIN_PROPERTIES(${PLUGIN_PACKAGE})
 

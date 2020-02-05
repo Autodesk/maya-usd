@@ -43,7 +43,6 @@ class UsdMaya_ReadJob
 public:
     MAYAUSD_CORE_PUBLIC
     UsdMaya_ReadJob(
-            const std::string& iFileName,
             const MayaUsd::ImportData& iImportData,
             const UsdMayaJobImportArgs & iArgs);
 
@@ -104,7 +103,6 @@ protected:
 
     // Data
     UsdMayaJobImportArgs mArgs;
-    std::string mFileName;
     const MayaUsd::ImportData& mImportData;
     UsdMayaPrimReaderContext::ObjectRegistry mNewNodeRegistry;
     MDagPath mMayaRootDagPath;
