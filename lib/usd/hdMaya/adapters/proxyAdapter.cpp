@@ -32,14 +32,6 @@
 #include <ufe/runTimeMgr.h>
 #endif // WANT_UFE_BUILD
 
-namespace {
-
-#if WANT_UFE_BUILD
-constexpr auto USD_UFE_RUNTIME_NAME = "USD";
-// static UFE_NS::Rtid usdUfeRtid = 0;
-#endif // WANT_UFE_BUILD
-
-} // namespace
 
 PXR_NAMESPACE_OPEN_SCOPE
 

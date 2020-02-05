@@ -173,7 +173,7 @@ public:
                 }
 
                 // If there is no universal surface output, hook that up too
-                if (surfaceOutput = material.GetSurfaceOutput()) {
+                if ( (surfaceOutput = material.GetSurfaceOutput()) ) {
                     UsdShadeConnectableAPI::ConnectToSource(
                         surfaceOutput, outputProperty);
                 }

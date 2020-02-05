@@ -66,28 +66,6 @@ struct _ShaderSourceAndMeta {
     VtDictionary translucentMetadata;
 #endif
 };
-// We can't store the shader here explicitly, since it causes a deadlock
-// due to library dependencies.
-auto _PreviewShader = []() -> const _ShaderSourceAndMeta& {
-    static const auto ret = []() -> _ShaderSourceAndMeta {
-        auto& registry = SdrRegistry::GetInstance();
-        auto sdrNode = registry.GetShaderNodeByIdentifierAndType(
-            UsdImagingTokens->UsdPreviewSurface, HioGlslfxTokens->glslfx);
-        if (!sdrNode) { return {"", ""}; }
-        HioGlslfx gfx(sdrNode->GetSourceURI());
-        _ShaderSourceAndMeta ret;
-        ret.surfaceCode = gfx.GetSurfaceSource();
-        ret.displacementCode = gfx.GetDisplacementSource();
-        ret.metadata = gfx.GetMetadata();
-#ifdef HDMAYA_OIT_ENABLED
-        ret.translucentMetadata = gfx.GetMetadata();
-        ret.translucentMetadata[HdShaderTokens->materialTag] =
-            VtValue(HdxMaterialTagTokens->translucent);
-#endif
-        return ret;
-    }();
-    return ret;
-};
 
 #if USD_VERSION_NUM < 1901
 enum class HdTextureType { Uv, Ptex, Udim };
@@ -128,6 +106,29 @@ void HdMayaMaterialAdapter::Populate() {
 }
 
 #if USD_VERSION_NUM <= 1911
+
+// We can't store the shader here explicitly, since it causes a deadlock
+// due to library dependencies.
+auto _PreviewShader = []() -> const _ShaderSourceAndMeta& {
+    static const auto ret = []() -> _ShaderSourceAndMeta {
+        auto& registry = SdrRegistry::GetInstance();
+        auto sdrNode = registry.GetShaderNodeByIdentifierAndType(
+            UsdImagingTokens->UsdPreviewSurface, HioGlslfxTokens->glslfx);
+        if (!sdrNode) { return {"", ""}; }
+        HioGlslfx gfx(sdrNode->GetSourceURI());
+        _ShaderSourceAndMeta ret;
+        ret.surfaceCode = gfx.GetSurfaceSource();
+        ret.displacementCode = gfx.GetDisplacementSource();
+        ret.metadata = gfx.GetMetadata();
+#ifdef HDMAYA_OIT_ENABLED
+        ret.translucentMetadata = gfx.GetMetadata();
+        ret.translucentMetadata[HdShaderTokens->materialTag] =
+            VtValue(HdxMaterialTagTokens->translucent);
+#endif
+        return ret;
+    }();
+    return ret;
+};
 
 std::string HdMayaMaterialAdapter::GetSurfaceShaderSource() {
     return GetPreviewSurfaceSource();
