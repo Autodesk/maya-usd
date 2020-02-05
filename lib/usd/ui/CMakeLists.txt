@@ -16,7 +16,6 @@
 # =======================================================================
 #
 
-cmake_minimum_required(VERSION 3.1.1)
 project(mayaUsdUI)
 
 if (POLICY CMP0074)
@@ -27,33 +26,29 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-set(CMAKE_PREFIX_PATH "${QT_LOCATION}")
-find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
-
 add_library(${PROJECT_NAME} SHARED
+	cmds/USDImportDialogCmd.cpp
 	factories/TreeModelFactory.cpp
 	views/ItemDelegate.cpp
 	views/TreeHeader.cpp
-	views/TreeModel.cpp
 	views/TreeItem.cpp
+	views/TreeModel.cpp
 	views/USDImportDialog.cpp
-	views/USDSearchThread.cpp
 	views/USDImportDialog.ui
-	cmds/USDImportDialogCmd.cpp
+	views/USDSearchThread.cpp
 )
 
 list(APPEND mayaUsdUI_headers
+	api.h
+	cmds/USDImportDialogCmd.h
 	factories/TreeModelFactory.h
+	views/IUSDImportView.h
 	views/ItemDelegate.h
 	views/TreeHeader.h
-	views/TreeModel.h
 	views/TreeItem.h
+	views/TreeModel.h
 	views/USDImportDialog.h
 	views/USDSearchThread.h
-	views/IUSDImportView.h
-	cmds/USDImportDialogCmd.h
 )
 
 # Promote headers

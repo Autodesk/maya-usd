@@ -49,10 +49,10 @@ list(APPEND mayaUsd_src
     #
     base/debugCodes.cpp
     #
-    fileio/importData.cpp
     fileio/fallbackPrimReader.cpp
     fileio/functorPrimReader.cpp
     fileio/functorPrimWriter.cpp
+    fileio/importData.cpp
     fileio/instancedNodeWriter.cpp
     fileio/primReader.cpp
     fileio/primReaderArgs.cpp
@@ -238,10 +238,10 @@ list(APPEND mayaUsdBase_headers
 )
 
 list(APPEND mayaUsdFileio_headers
-    fileio/importData.h
     fileio/fallbackPrimReader.h
     fileio/functorPrimReader.h
     fileio/functorPrimWriter.h
+    fileio/importData.h
     fileio/instancedNodeWriter.h
     fileio/primReader.h
     fileio/primReaderArgs.h

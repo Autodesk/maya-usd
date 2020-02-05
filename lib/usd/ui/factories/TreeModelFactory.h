@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include "../api.h"
+#include <mayaUsd/ui/api.h>
 
 #include <memory>
 #include <unordered_set>
@@ -59,6 +59,7 @@ public:
 	 * \brief Create a TreeModel from the given USD Stage.
 	 * \param stage A reference to the USD Stage from which to create a TreeModel.
 	 * \param parent A reference to the parent of the TreeModel.
+	 * \param nbItems Number of items added to the TreeModel.
 	 * \return A TreeModel created from the given USD Stage.
 	 */
 	static std::unique_ptr<TreeModel> createFromStage(const UsdStageRefPtr& stage, QObject* parent = nullptr, int* nbItems = nullptr);
@@ -75,26 +76,8 @@ public:
 			const UsdStageRefPtr& stage, const std::string& searchFilter, QObject* parent = nullptr, int* nbItems = nullptr);
 
 protected:
-	/**
-	 * \brief Holder for the definition of the metadata information of SdfPath objects, so they can be used in
-	 * unordered/hashed STL containers.
-	 */
-	struct SdfPathHash
-	{
-		/**
-		 * \brief Hashing function for SDF Path objects, leveraging the already-existing hashing function provided by
-		 * the USD library.
-		 * \param path The SDF Path to hash.
-		 * \return The hash value of the given SDF Path.
-		 */
-		size_t operator()(const SdfPath& path) const
-		{
-			return path.GetHash();
-		}
-	};
-
 	// Type definition for an STL unordered set of SDF Paths:
-	using unordered_sdfpath_set = std::unordered_set<SdfPath, SdfPathHash>;
+	using unordered_sdfpath_set = std::unordered_set<SdfPath, SdfPath::Hash>;
 
 	/**
 	 * \brief Create the list of data cells used to represent the given USD Prim's data in the tree.

@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include "../api.h"
+#include <mayaUsd/ui/api.h>
 
 #include <QtWidgets/QHeaderView>
 

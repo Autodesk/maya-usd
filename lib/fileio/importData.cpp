@@ -31,11 +31,24 @@ ImportData::ImportData()
 {
 }
 
+ImportData::ImportData(const std::string& f)
+	: fLoadSet(UsdStage::InitialLoadSet::LoadAll)
+	, fRootPrimPath(kRootPrimPath)
+	, fFilename(f)
+{
+}
+
 /*static*/
 ImportData& ImportData::instance()
 {
 	static ImportData sImportData;
 	return sImportData;
+}
+
+/*static*/
+const ImportData& ImportData::cinstance()
+{
+	return instance();
 }
 
 void ImportData::clearData()
@@ -46,7 +59,7 @@ void ImportData::clearData()
 	fRootVariants.clear();
 	fPrimVariants.clear();
 	fFilename.clear();
-	fRootPrimPath.clear();
+	fRootPrimPath = kRootPrimPath;
 }
 
 bool ImportData::empty() const
@@ -55,17 +68,21 @@ bool ImportData::empty() const
 	return fFilename.empty();
 }
 
-std::string ImportData::filename() const
+const std::string& ImportData::filename() const
 {
 	return fFilename;
 }
 
 void ImportData::setFilename(const std::string& f)
 {
+	// If the input filename doesn't match what we have stored (empty or not) we
+	// clear the data because it doesn't belong to the new file.
+	if (fFilename != f)
+		clearData();
 	fFilename = f;
 }
 
-std::string ImportData::rootPrimPath() const
+const std::string& ImportData::rootPrimPath() const
 {
 	return fRootPrimPath;
 }
@@ -92,7 +109,6 @@ void ImportData::setStagePopulationMask(const UsdStagePopulationMask& mask)
 
 void ImportData::setStagePopulationMask(UsdStagePopulationMask&& mask)
 {
-	static_assert(std::is_move_assignable<UsdStagePopulationMask>::value, "UsdStagePopulationMask is not move enabled");
 	fPopMask = std::move(mask);
 }
 
@@ -111,7 +127,7 @@ bool ImportData::hasVariantSelections() const
 	return !(fRootVariants.empty() || fPrimVariants.empty());
 }
 
-const ImportData::VariantSelections& ImportData::rootVariantSelections() const
+const SdfVariantSelectionMap& ImportData::rootVariantSelections() const
 {
 	return fRootVariants;
 }
@@ -121,14 +137,13 @@ const ImportData::PrimVariantSelections& ImportData::primVariantSelections() con
 	return fPrimVariants;
 }
 
-void ImportData::setRootVariantSelections(const VariantSelections& vars)
+void ImportData::setRootVariantSelections(const SdfVariantSelectionMap& vars)
 {
 	fRootVariants = vars;
 }
 
-void ImportData::setRootVariantSelections(VariantSelections&& vars)
+void ImportData::setRootVariantSelections(SdfVariantSelectionMap&& vars)
 {
-	static_assert(std::is_move_assignable<VariantSelections>::value, "VariantSelections is not move enabled");
 	fRootVariants = std::move(vars);
 }
 
@@ -139,7 +154,6 @@ void ImportData::setPrimVariantSelections(const PrimVariantSelections& vars)
 
 void ImportData::setPrimVariantSelections(PrimVariantSelections&& vars)
 {
-	static_assert(std::is_move_assignable<PrimVariantSelections>::value, "PrimVariantSelections is not move enabled");
 	fPrimVariants = std::move(vars);
 }
 

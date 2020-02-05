@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include "../api.h"
+#include <mayaUsd/ui/api.h>
 
 #include <QtWidgets/QStyledItemDelegate>
 #include <QtCore/QList>
@@ -51,17 +51,19 @@ public:
 		kVariants,
 	};
 
-	// The type role is used to distinguish what type of delegate item we are dealing
-	// with. It should be set with one of the DELEGATE_TYPE from above.
-	static constexpr int kTypeRole = Qt::UserRole + 1;
+	enum Roles {
+		// The type role is used to distinguish what type of delegate item we are dealing
+		// with. It should be set with one of the DELEGATE_TYPE from above.
+		kTypeRole = Qt::UserRole + 1,
 
-	// The variant name role is used to hold the current variant name (from the
-	// qt label)/
-	static constexpr int kVariantNameRole = kTypeRole + 1;
+		// The variant name role is used to hold the current variant name (from the
+		// qt label)/
+		kVariantNameRole = Qt::UserRole + 2,
 
-	// The variant selection role is used to hold the current variant selection
-	// (from the qt combobox).
-	static constexpr int kVariantSelectionRole = kVariantNameRole + 1;
+		// The variant selection role is used to hold the current variant selection
+		// (from the qt combobox).
+		kVariantSelectionRole = Qt::UserRole + 3
+	};
 
 	// QStyledItemDelegate overrides
 	QWidget* createEditor(QWidget*, const QStyleOptionViewItem&, const QModelIndex&) const override;

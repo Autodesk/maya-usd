@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../api.h"
+#include <mayaUsd/ui/api.h>
 
 #include <mayaUsd/fileio/importData.h>
 
@@ -38,10 +38,10 @@ public:
 	virtual ~IUSDImportView() = 0;
 
 	//! \return The filename associated with this import view.
-	virtual std::string filename() const = 0;
+	virtual const std::string& filename() const = 0;
 
 	//! \return The root prim of the stage to use for import.
-	virtual std::string rootPrimPath() const = 0;
+	virtual const std::string& rootPrimPath() const = 0;
 
 	//! \return The USD population mask of the stage to use for import.
 	virtual UsdStagePopulationMask stagePopulationMask() const = 0;

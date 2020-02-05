@@ -20,6 +20,7 @@
 
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/sdf/types.h>
 
 #include <map>
 #include <string>
@@ -34,21 +35,18 @@ MAYAUSD_NS_DEF {
 class MAYAUSD_CORE_PUBLIC ImportData
 {
 public:
-	//! typedef std::map<std::string, std::string>
-	//! \brief Variant selections as a map of strings.
-	//! Key = variant set name, Value = variant selection
-	typedef std::map<std::string, std::string> VariantSelections;
-
-	//! typedef std::map<std::string, VariantSelections>
+	//! typedef std::map<std::string, SdfVariantSelectionMap>
 	//! \brief Variant selections mapped for prims.
 	//! Key = USD prim path, Value = Variant selections
-	typedef std::map<SdfPath, VariantSelections> PrimVariantSelections;
+	typedef std::map<SdfPath, SdfVariantSelectionMap> PrimVariantSelections;
 
 	//! \return The import data singleton instance.
 	static ImportData& instance();
+	static const ImportData& cinstance();
 
 	//! Constructor (allows creating ImportData on stack without singleton instance).
 	ImportData();
+	ImportData(const std::string& f);
 
 	//@{
 	//! No copy or move constructor/assignment.
@@ -65,13 +63,13 @@ public:
 	bool empty() const;
 
 	//! \return The filename associated with this import data.
-	std::string filename() const;
+	const std::string& filename() const;
 
 	//! Set the filename associated with this import data.
 	void setFilename(const std::string& f);
 
 	//! \return The root prim path to use when importing.
-	std::string rootPrimPath() const;
+	const std::string& rootPrimPath() const;
 
 	//! Set the root prim path to use for import.
 	void setRootPrimPath(const std::string& primPath);
@@ -100,7 +98,7 @@ public:
 	bool hasVariantSelections() const;
 
 	//! \return The USD variant selections (for the root prim) of the stage to use for import.
-	const VariantSelections& rootVariantSelections() const;
+	const SdfVariantSelectionMap& rootVariantSelections() const;
 
 	//! \return The USD variant selections (for individual prims) of the stage to use for import.
 	const PrimVariantSelections& primVariantSelections() const;
@@ -108,8 +106,8 @@ public:
 	//! Set the USD variant selections (for the root prim) of the stage to use for import.
 	//! Both 'copy' and 'move' operations are supported. To use the move version
 	//! call it with std::move(x).
-	void setRootVariantSelections(const VariantSelections& vars);
-	void setRootVariantSelections(VariantSelections&& vars);
+	void setRootVariantSelections(const SdfVariantSelectionMap& vars);
+	void setRootVariantSelections(SdfVariantSelectionMap&& vars);
 
 	//! Set the USD variant selections (for individual prims) of the stage to use for import.
 	//! Both 'copy' and 'move' operations are supported. To use the move version
@@ -120,7 +118,7 @@ public:
 private:
 	UsdStagePopulationMask		fPopMask;
 	UsdStage::InitialLoadSet	fLoadSet;
-	VariantSelections			fRootVariants;
+	SdfVariantSelectionMap		fRootVariants;
 	PrimVariantSelections		fPrimVariants;
 	std::string					fRootPrimPath;
 	std::string					fFilename;

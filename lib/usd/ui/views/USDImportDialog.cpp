@@ -24,6 +24,8 @@
 
 MAYAUSD_NS_DEF {
 
+// We need an implementation because the derived class invokes the destructor
+// and without it we have an undefined symbol.
 IUSDImportView::~IUSDImportView() { }
 
 USDImportDialog::USDImportDialog(const std::string& filename, QWidget* parent)
@@ -139,12 +141,12 @@ bool USDImportDialog::execute()
 	return exec() == QDialog::Accepted;
 }
 
-std::string USDImportDialog::filename() const
+const std::string& USDImportDialog::filename() const
 {
 	return fFilename;
 }
 
-std::string USDImportDialog::rootPrimPath() const
+const std::string& USDImportDialog::rootPrimPath() const
 {
 	return fRootPrimPath;
 }
@@ -199,7 +201,7 @@ void USDImportDialog::onSearchFilterChanged(const QString& searchFilter)
 		fSearchTimer->stop();
 
 		// Set the search results as the new effective data:
-		fTreeModel = std::move(fSearchThread->consumeResults());
+		fTreeModel = fSearchThread->consumeResults();
 		fProxyModel->setSourceModel(fTreeModel.get());
 
 		// Set the View to a sensible state to reflect the new data:

@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include "../api.h"
+#include <mayaUsd/ui/api.h>
 
 #include <memory>
 
@@ -59,8 +59,8 @@ public:
 	~USDImportDialog();
 
 	// IUSDImportView overrides
-	std::string filename() const override;
-	std::string rootPrimPath() const override;
+	const std::string& filename() const override;
+	const std::string& rootPrimPath() const override;
 	UsdStagePopulationMask stagePopulationMask() const override;
 	UsdStage::InitialLoadSet stageInitialLoadSet() const override;
 	ImportData::PrimVariantSelections primVariantSelections() const override;

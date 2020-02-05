@@ -71,7 +71,7 @@ std::unique_ptr<TreeModel> TreeModelFactory::createFromSearch(
 		return createFromStage(stage, parent, nbItems);
 	}
 
-	std::unordered_set<SdfPath, SdfPathHash> primsToIncludeInTree;
+	std::unordered_set<SdfPath, SdfPath::Hash> primsToIncludeInTree;
 
 	for (const auto& matchingPath : findMatchingPrimPaths(stage, searchFilter))
 	{
