@@ -77,14 +77,14 @@ namespace
     //! Enum class for fallback shader types
     enum class FallbackShaderType
     {
-        Common = 0,
-        BasisCurvesLinear,
-        BasisCurvesCubic,
-        Count
+        kCommon = 0,
+        kBasisCurvesLinear,
+        kBasisCurvesCubic,
+        kCount
     };
 
     //! Array of shader fragment names indexed by FallbackShaderType
-    const MString _fallbackShaderNames[FallbackShaderType::Count] =
+    const MString _fallbackShaderNames[] =
     {
         "FallbackShader",
         "BasisCurvesLinearFallbackShader",
@@ -231,11 +231,11 @@ namespace
         */
         MHWRender::MShaderInstance* GetFallbackShader(const MColor& color, FallbackShaderType type)
         {
-            if (type >= FallbackShaderType::Count) {
+            if (type >= FallbackShaderType::kCount) {
                 return nullptr;
             }
 
-            const unsigned int index = static_cast<unsigned int>(type);
+            const size_t index = static_cast<size_t>(type);
             auto& shaderMap = _fallbackShaders[index];
 
             // Look for it first with reader lock
@@ -279,7 +279,7 @@ namespace
         bool                    _isInitialized { false };  //!< Whether the shader cache is initialized
 
         //! Shader registry used by fallback shaders
-        MShaderMap              _fallbackShaders[FallbackShaderType::Count];
+        MShaderMap              _fallbackShaders[static_cast<size_t>(FallbackShaderType::kCount)];
         MShaderMap              _3dSolidShaders;
 
         MHWRender::MShaderInstance*  _fallbackCPVShader { nullptr }; //!< Fallback shader with CPV support
@@ -694,7 +694,7 @@ MString HdVP2RenderDelegate::GetLocalNodeName(const MString& name) const {
 MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackShader(
     const MColor& color) const
 {
-    return sShaderCache.GetFallbackShader(color, FallbackShaderType::Common);
+    return sShaderCache.GetFallbackShader(color, FallbackShaderType::kCommon);
 }
 
 /*! \brief  Returns a fallback shader instance when no material is bound.
@@ -709,7 +709,7 @@ MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackShader(
 MHWRender::MShaderInstance*
 HdVP2RenderDelegate::GetBasisCurvesLinearFallbackShader(const MColor& color) const
 {
-    return sShaderCache.GetFallbackShader(color, FallbackShaderType::BasisCurvesLinear);
+    return sShaderCache.GetFallbackShader(color, FallbackShaderType::kBasisCurvesLinear);
 }
 
 /*! \brief  Returns a fallback shader instance when no material is bound.
@@ -724,7 +724,7 @@ HdVP2RenderDelegate::GetBasisCurvesLinearFallbackShader(const MColor& color) con
 MHWRender::MShaderInstance*
 HdVP2RenderDelegate::GetBasisCurvesCubicFallbackShader(const MColor& color) const
 {
-    return sShaderCache.GetFallbackShader(color, FallbackShaderType::BasisCurvesCubic);
+    return sShaderCache.GetFallbackShader(color, FallbackShaderType::kBasisCurvesCubic);
 }
 
 /*! \brief  Returns a fallback CPV shader instance when no material is bound.
