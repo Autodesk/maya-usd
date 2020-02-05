@@ -45,23 +45,24 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-const std::array<std::pair<MObject&, HdDirtyBits>, 8> _dirtyBits{
-    {{MayaAttrs::mesh::pnts,
-      // This is useful when the user edits the mesh.
-      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent |
-          HdChangeTracker::DirtySubdivTags},
-     {MayaAttrs::mesh::inMesh,
-      // We are tracking topology changes and uv changes separately
-      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent |
-          HdChangeTracker::DirtySubdivTags},
-     {MayaAttrs::mesh::worldMatrix, HdChangeTracker::DirtyTransform},
-     {MayaAttrs::mesh::doubleSided, HdChangeTracker::DirtyDoubleSided},
-     {MayaAttrs::mesh::intermediateObject, HdChangeTracker::DirtyVisibility},
-     {MayaAttrs::mesh::uvPivot,
-      // Tracking manual edits to uvs.
-      HdChangeTracker::DirtyPrimvar},
-     {MayaAttrs::mesh::displaySmoothMesh, HdChangeTracker::DirtyDisplayStyle},
-     {MayaAttrs::mesh::smoothLevel, HdChangeTracker::DirtyDisplayStyle}}};
+const std::pair<MObject&, HdDirtyBits> _dirtyBits[]{
+    {MayaAttrs::mesh::pnts,
+     // This is useful when the user edits the mesh.
+     HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent |
+         HdChangeTracker::DirtySubdivTags},
+    {MayaAttrs::mesh::inMesh,
+     // We are tracking topology changes and uv changes separately
+     HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent |
+         HdChangeTracker::DirtySubdivTags},
+    {MayaAttrs::mesh::worldMatrix, HdChangeTracker::DirtyTransform},
+    {MayaAttrs::mesh::doubleSided, HdChangeTracker::DirtyDoubleSided},
+    {MayaAttrs::mesh::intermediateObject, HdChangeTracker::DirtyVisibility},
+    {MayaAttrs::mesh::uvPivot,
+     // Tracking manual edits to uvs.
+     HdChangeTracker::DirtyPrimvar},
+    {MayaAttrs::mesh::displaySmoothMesh, HdChangeTracker::DirtyDisplayStyle},
+    {MayaAttrs::mesh::smoothLevel, HdChangeTracker::DirtyDisplayStyle}
+};
 
 } // namespace
 
