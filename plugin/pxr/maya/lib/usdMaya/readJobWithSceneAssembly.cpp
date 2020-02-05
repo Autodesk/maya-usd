@@ -72,7 +72,7 @@ bool UsdMaya_ReadJobWithSceneAssembly::OverridePrimReader(
             // the file path of the top-level assembly and the path
             // to the prim within that file when creating the
             // reference assembly.
-            assetIdentifier = mFileName;
+            assetIdentifier = mImportData.filename();
             assetPrimPath = prim.GetPath();
         }
 
