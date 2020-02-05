@@ -20,7 +20,6 @@ target_include_directories(${TARGET_NAME}
 
 target_link_libraries(${TARGET_NAME}
     AL_USDMayaSchemas
-    mayaUsd
     mayaUsd_Schemas
     ${GTEST_LIBRARIES}
     sdf

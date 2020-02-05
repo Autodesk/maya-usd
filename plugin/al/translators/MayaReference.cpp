@@ -35,7 +35,7 @@
 #include "AL/usdmaya/utils/Utils.h"
 #include "AL/maya/utils/Utils.h"
 
-#include <mayaUsd/schemas/MayaReference.h>
+#include <mayaUsd_Schemas/MayaReference.h>
 #include <mayaUsd/fileio/translators/translatorMayaReference.h>
 
 #include <pxr/usd/usd/attribute.h>

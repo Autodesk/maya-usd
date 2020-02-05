@@ -94,6 +94,10 @@ if(IS_LINUX)
     endif()
 endif()
 
+target_include_directories( ${SCHEMA_PLUGIN} PUBLIC
+    ${CMAKE_BINARY_DIR}/include
+)
+
 target_link_libraries(${SCHEMA_PLUGIN} ${DEPENDANT_LIBRARIES} ${PTHREAD_LINK})
 
 set(mayaUsdSchemas_headers
@@ -102,8 +106,8 @@ set(mayaUsdSchemas_headers
     tokens.h
 )
 mayaUsd_promoteHeaderListWithSubdir(
-    SUBDIR "schemas" 
     HEADERS ${mayaUsdSchemas_headers}
+    BASE_PATH "mayaUsd_Schemas" 
 )
 
 install(
@@ -187,7 +191,7 @@ install(
     FILES
         ${mayaUsdSchemas_headers}
     DESTINATION
-        ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/schemas/
+        ${CMAKE_INSTALL_PREFIX}/include/mayaUsd_Schemas/
 )
 
 ####################################################################################################

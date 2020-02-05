@@ -3,7 +3,7 @@
 #include <iostream>
 #include <functional>
 
-#include <mayaUsd/schemas/MayaReference.h>
+#include <mayaUsd_Schemas/MayaReference.h>
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"

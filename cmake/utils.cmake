@@ -182,25 +182,30 @@ function(mayaUsd_promoteHeaderListWithSubdir)
     cmake_parse_arguments(PREFIX
         ""
         "SUBDIR" # one_value keywords
-        "HEADERS" # multi_value keywords
+        "HEADERS;BASE_PATH" # multi_value keywords
         ${ARGN}
     )
 
-    if(PREFIX_SUBDIR)
-        set(subDir ${PREFIX_SUBDIR})
-    else()
-        message(FATAL_ERROR "SUBDIR keyword is not specified.")
-    endif()
-
-    if(PREFIX_HEADERS)
+    if (PREFIX_HEADERS)
         set(headerFiles ${PREFIX_HEADERS})
     else()
         message(FATAL_ERROR "HEADERS keyword is not specified.")
     endif()
 
+    set(basePath ${CMAKE_BINARY_DIR}/include)
+    if (PREFIX_BASE_PATH)
+        set(basePath ${basePath}/${PREFIX_BASE_PATH})
+    else()
+        set(basePath ${basePath}/mayaUsd)
+    endif()
+
+    if (PREFIX_SUBDIR)
+        set(basePath ${basePath}/${PREFIX_SUBDIR})
+    endif()
+
     foreach(header ${headerFiles})
         set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/${header})
-        set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/${subDir}/${header})
+        set(dstFile ${basePath}/${header})
 
         set(content "#pragma once\n#include \"${srcFile}\"\n")
 
