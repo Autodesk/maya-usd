@@ -67,10 +67,6 @@ struct _ShaderSourceAndMeta {
 #endif
 };
 
-#if USD_VERSION_NUM < 1901
-enum class HdTextureType { Uv, Ptex, Udim };
-#endif
-
 } // namespace
 
 HdMayaMaterialAdapter::HdMayaMaterialAdapter(
