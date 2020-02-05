@@ -232,11 +232,6 @@ def RunCMake(context, extraArgs=None, stages=None):
     if generator is not None:
         generator = '-G "{gen}"'.format(gen=generator)
 
-    # On MacOS, enable the use of @rpath for relocatable builds.
-    osx_rpath = None
-    if MacOS():
-        osx_rpath = "-DCMAKE_MACOSX_RPATH=ON"
-
     # get build variant 
     variant= BuildVariant(context)
 
@@ -251,14 +246,12 @@ def RunCMake(context, extraArgs=None, stages=None):
                 '-DCMAKE_INSTALL_PREFIX="{instDir}" '
                 '-DCMAKE_BUILD_TYPE={variant} '
                 '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON '
-                '{osx_rpath} '
                 '{generator} '
                 '{extraArgs} '
                 '"{srcDir}"'
                 .format(instDir=instDir,
                         variant=variant,
                         srcDir=srcDir,
-                        osx_rpath=(osx_rpath or ""),
                         generator=(generator or ""),
                         extraArgs=(" ".join(extraArgs) if extraArgs else "")))
  
