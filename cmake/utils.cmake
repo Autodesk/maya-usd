@@ -83,8 +83,10 @@ function(mayaUsd_init_rpath rpathRef origin)
         else()
             set(origin "${CMAKE_INSTALL_PREFIX}/${origin}")
         endif()
-        get_filename_component(origin "${origin}" REALPATH)
     endif()
+    # mayaUsd_add_rpath uses REALPATH, so we must make sure we always
+    # do so here too, to get the right relative path
+    get_filename_component(origin "${origin}" REALPATH)
     set(${rpathRef} "${origin}" PARENT_SCOPE)
 endfunction()
 

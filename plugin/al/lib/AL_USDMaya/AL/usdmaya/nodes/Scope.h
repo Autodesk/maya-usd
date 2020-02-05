@@ -76,7 +76,7 @@ public:
 
   /// \brief  returns the transformation matrix for this transform node
   /// \return the transformation matrix
-  virtual BasicTransformationMatrix* transform() const
+  inline BasicTransformationMatrix* transform() const
     { return reinterpret_cast<BasicTransformationMatrix*>(transformationMatrixPtr()); }
 
   virtual const MObject getProxyShape() const

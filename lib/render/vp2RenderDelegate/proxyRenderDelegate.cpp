@@ -67,6 +67,7 @@ namespace
     //! Representation selector for selection update
     const HdReprSelector kSelectionReprSelector(HdVP2ReprTokens->selection);
 
+#if defined(WANT_UFE_BUILD)
     MGlobal::ListAdjustment GetListAdjustment()
     {
         // Keyboard modifiers can be queried from QApplication::keyboardModifiers()
@@ -96,6 +97,7 @@ namespace
 
         return listAdjustment;
     }
+#endif // defined(WANT_UFE_BUILD)
 
     //! \brief  Configure repr descriptions
     void _ConfigureReprs()
@@ -381,14 +383,17 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     const bool inSelectionPass = (frameContext.getSelectionInfo() != nullptr);
     const bool inPointSnapping = pointSnappingActive();
 
+#if defined(WANT_UFE_BUILD)
     // Query selection adjustment mode only if the update is triggered in a selection pass.
     _globalListAdjustment = (inSelectionPass && !inPointSnapping) ? GetListAdjustment() : MGlobal::kReplaceList;
-#else
+#endif // defined(WANT_UFE_BUILD)
+
+#else // !defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
     HdReprSelector reprSelector = kPointsReprSelector;
 
     constexpr bool inSelectionPass = false;
     constexpr bool inPointSnapping = false;
-#endif
+#endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
     if (inSelectionPass) {
         if (inPointSnapping && !reprSelector.Contains(HdReprTokens->points)) {
