@@ -557,9 +557,9 @@ private:
         TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
             .Msg("HdMayaShadingEngineAdapter::GetTextureResource(%s): %s\n",
                     paramName.GetText(), GetID().GetText());
-        auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
-        if (fileObj == MObject::kNullObj) { return {}; }
         if(GetDelegate()->IsHdSt()) {
+            auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
+            if (fileObj == MObject::kNullObj) { return {}; }
             return GetFileTextureResource(
                 fileObj, GetFileTexturePath(MFnDependencyNode(fileObj)),
                 GetDelegate()->GetParams().textureMemoryPerTexture);
