@@ -1,4 +1,5 @@
 //
+// Copyright 2018 Pixar
 // Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");

@@ -74,8 +74,17 @@ namespace
     const MString _pointSizeParameterName    = "pointSize";       //!< Shader parameter name
     const MString _structOutputName          = "outSurfaceFinal"; //!< Output struct name of the fallback shader
 
-    //! Name of the fallback shaders
-    const MString _fallbackShaderNames[3] =
+    //! Enum class for fallback shader types
+    enum class FallbackShaderType
+    {
+        Common = 0,
+        BasisCurvesLinear,
+        BasisCurvesCubic,
+        Count
+    };
+
+    //! Array of shader fragment names indexed by FallbackShaderType
+    const MString _fallbackShaderNames[FallbackShaderType::Count] =
     {
         "FallbackShader",
         "BasisCurvesLinearFallbackShader",
@@ -220,12 +229,13 @@ namespace
 
             \return A new or existing copy of shader instance with given color
         */
-        MHWRender::MShaderInstance* GetFallbackShader(const MColor& color, unsigned int index)
+        MHWRender::MShaderInstance* GetFallbackShader(const MColor& color, FallbackShaderType type)
         {
-            if (index >= sizeof(_fallbackShaders) / sizeof(_fallbackShaders[0])) {
+            if (type >= FallbackShaderType::Count) {
                 return nullptr;
             }
 
+            const unsigned int index = static_cast<unsigned int>(type);
             auto& shaderMap = _fallbackShaders[index];
 
             // Look for it first with reader lock
@@ -268,8 +278,9 @@ namespace
     private:
         bool                    _isInitialized { false };  //!< Whether the shader cache is initialized
 
-        MShaderMap              _fallbackShaders[3];          //!< Shader registry used by fallback shaders
-        MShaderMap              _3dSolidShaders;              //!< Shader registry used by fallback shaders
+        //! Shader registry used by fallback shaders
+        MShaderMap              _fallbackShaders[FallbackShaderType::Count];
+        MShaderMap              _3dSolidShaders;
 
         MHWRender::MShaderInstance*  _fallbackCPVShader { nullptr }; //!< Fallback shader with CPV support
         MHWRender::MShaderInstance*  _3dFatPointShader { nullptr };  //!< 3d shader for points
@@ -683,7 +694,7 @@ MString HdVP2RenderDelegate::GetLocalNodeName(const MString& name) const {
 MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackShader(
     const MColor& color) const
 {
-    return sShaderCache.GetFallbackShader(color, 0);
+    return sShaderCache.GetFallbackShader(color, FallbackShaderType::Common);
 }
 
 /*! \brief  Returns a fallback shader instance when no material is bound.
@@ -698,7 +709,7 @@ MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackShader(
 MHWRender::MShaderInstance*
 HdVP2RenderDelegate::GetBasisCurvesLinearFallbackShader(const MColor& color) const
 {
-    return sShaderCache.GetFallbackShader(color, 1);
+    return sShaderCache.GetFallbackShader(color, FallbackShaderType::BasisCurvesLinear);
 }
 
 /*! \brief  Returns a fallback shader instance when no material is bound.
@@ -713,7 +724,7 @@ HdVP2RenderDelegate::GetBasisCurvesLinearFallbackShader(const MColor& color) con
 MHWRender::MShaderInstance*
 HdVP2RenderDelegate::GetBasisCurvesCubicFallbackShader(const MColor& color) const
 {
-    return sShaderCache.GetFallbackShader(color, 2);
+    return sShaderCache.GetFallbackShader(color, FallbackShaderType::BasisCurvesCubic);
 }
 
 /*! \brief  Returns a fallback CPV shader instance when no material is bound.
