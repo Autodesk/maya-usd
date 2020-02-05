@@ -159,7 +159,7 @@ target_link_libraries(${SCHEMAS_PYTHON_LIBRARY_NAME}
 
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "${PROJECT_NAME}")
-    mayaUsd_add_rpath(rpath "${library_install_path}")
+    mayaUsd_add_rpath(rpath "../../../")
     mayaUsd_install_rpath(rpath ${SCHEMAS_PYTHON_LIBRARY_NAME})
 endif()
 
