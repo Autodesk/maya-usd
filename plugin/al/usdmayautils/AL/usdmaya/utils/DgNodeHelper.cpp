@@ -720,7 +720,7 @@ MStatus DgNodeHelper::setMatrix4x4Array(MObject node, MObject attribute, const d
     char tempStr[1024] = {0};
     for(uint32_t i = 0; i < 16 * count; i += 16)
     {
-      sprintf(tempStr, "setAttr \"%s[%d]\" -type \"matrix\" %lf %lf %lf %lf  %lf %lf %lf %lf  %lf %lf %lf %lf  %lf %lf %lf %lf;", plug.name().asChar(),
+      snprintf(tempStr, 1024, "setAttr \"%s[%d]\" -type \"matrix\" %lf %lf %lf %lf  %lf %lf %lf %lf  %lf %lf %lf %lf  %lf %lf %lf %lf;", plug.name().asChar(),
           (i >> 4),
           values[i + 0],
           values[i + 1],
@@ -804,7 +804,7 @@ MStatus DgNodeHelper::setMatrix4x4Array(MObject node, MObject attribute, const f
     char tempStr[2048] = {0};
     for(uint32_t i = 0; i < 16 * count; i += 16)
     {
-      sprintf(tempStr, "setAttr \"%s[%d]\" -type \"matrix\" %f %f %f %f  %f %f %f %f  %f %f %f %f  %f %f %f %f;", plug.name().asChar(),
+      snprintf(tempStr, 2048, "setAttr \"%s[%d]\" -type \"matrix\" %f %f %f %f  %f %f %f %f  %f %f %f %f  %f %f %f %f;", plug.name().asChar(),
           (i >> 4),
           values[i + 0],
           values[i + 1],

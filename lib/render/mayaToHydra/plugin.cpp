@@ -19,6 +19,7 @@
 #include "renderOverride.h"
 #include "viewCommand.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <pxr/base/plug/plugin.h>
@@ -39,9 +40,10 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
     // For now this is required for the HdSt backed to use lights.
     // putenv requires char* and I'm not willing to use const cast!
     constexpr const char* envVarSet = "USDIMAGING_ENABLE_SCENE_LIGHTS=1";
+    constexpr auto envVarSize = strlen(envVarSet) + 1;
     std::vector<char> envVarData;
-    envVarData.resize(strlen(envVarSet) + 1);
-    sprintf(envVarData.data(), "%s", envVarSet);
+    envVarData.resize(envVarSize);
+    snprintf(envVarData.data(), envVarSize, "%s", envVarSet);
     putenv(envVarData.data());
 
     MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");
