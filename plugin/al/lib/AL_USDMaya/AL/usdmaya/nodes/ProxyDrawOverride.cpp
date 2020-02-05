@@ -408,9 +408,6 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
     combined.insert(combined.end(), paths1.begin(), paths1.end());
     combined.insert(combined.end(), paths2.begin(), paths2.end());
 
-    engine->SetSelected(combined);
-    engine->SetSelectionColor(GfVec4f(1.0f, 2.0f/3.0f, 0.0f, 1.0f));
-
     ptr->m_params.frame = ptr->m_shape->outTimePlug().asMTime().as(MTime::uiUnit());
     engine->Render(ptr->m_rootPrim, ptr->m_params);
 
