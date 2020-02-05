@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __MTOH_RENDER_GLOBALS_H__
-#define __MTOH_RENDER_GLOBALS_H__
+#ifndef MTOH_RENDER_GLOBALS_H
+#define MTOH_RENDER_GLOBALS_H
 
 #include <pxr/pxr.h>
 
@@ -59,4 +59,4 @@ MtohRenderGlobals MtohGetRenderGlobals();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __MTOH_RENDER_GLOBALS_H__
+#endif // MTOH_RENDER_GLOBALS_H

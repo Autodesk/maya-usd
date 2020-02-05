@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __MTOH_TOKENS_H__
-#define __MTOH_TOKENS_H__
+#ifndef MTOH_TOKENS_H
+#define MTOH_TOKENS_H
 
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/pxr.h>
@@ -39,4 +39,4 @@ TF_DECLARE_PUBLIC_TOKENS(MtohTokens, , MTOH_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __MTOH_TOKENS_H__
+#endif // MTOH_TOKENS_H

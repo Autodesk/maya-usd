@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __HDMAYA_ADAPTER_TOKENS_H__
-#define __HDMAYA_ADAPTER_TOKENS_H__
+#ifndef HDMAYA_ADAPTER_TOKENS_H
+#define HDMAYA_ADAPTER_TOKENS_H
 
 #include <pxr/pxr.h>
 
@@ -67,4 +67,4 @@ TF_DECLARE_PUBLIC_TOKENS(
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_ADAPTER_TOKENS_H__
+#endif // HDMAYA_ADAPTER_TOKENS_H

@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __HDMAYA_ADAPTER_DEBUG_CODES_H__
-#define __HDMAYA_ADAPTER_DEBUG_CODES_H__
+#ifndef HDMAYA_ADAPTER_DEBUG_CODES_H
+#define HDMAYA_ADAPTER_DEBUG_CODES_H
 
 #include <pxr/pxr.h>
 
@@ -40,4 +40,4 @@ TF_DEBUG_CODES(
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_ADAPTER_DEBUG_CODES_H__
+#endif // HDMAYA_ADAPTER_DEBUG_CODES_H

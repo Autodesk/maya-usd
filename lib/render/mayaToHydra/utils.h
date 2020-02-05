@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __MTOH_UTILS_H__
-#define __MTOH_UTILS_H__
+#ifndef MTOH_UTILS_H
+#define MTOH_UTILS_H
 
 #include <pxr/pxr.h>
 
@@ -44,4 +44,4 @@ const MtohRendererDescriptionVector& MtohGetRendererDescriptions();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __MTOH_UTILS_H__
+#endif // MTOH_UTILS_H

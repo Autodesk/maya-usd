@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __HDMAYA_SHAPE_ADAPTER_H__
-#define __HDMAYA_SHAPE_ADAPTER_H__
+#ifndef HDMAYA_SHAPE_ADAPTER_H
+#define HDMAYA_SHAPE_ADAPTER_H
 
 #include <pxr/pxr.h>
 
@@ -83,4 +83,4 @@ using HdMayaShapeAdapterPtr = std::shared_ptr<HdMayaShapeAdapter>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_SHAPE_ADAPTER_H__
+#endif // HDMAYA_SHAPE_ADAPTER_H

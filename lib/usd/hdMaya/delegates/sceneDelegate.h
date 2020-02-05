@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __HDMAYA_SCENE_DELEGATE_H__
-#define __HDMAYA_SCENE_DELEGATE_H__
+#ifndef HDMAYA_SCENE_DELEGATE_H
+#define HDMAYA_SCENE_DELEGATE_H
 
 #include <pxr/pxr.h>
 
@@ -251,4 +251,4 @@ typedef std::shared_ptr<HdMayaSceneDelegate> MayaSceneDelegateSharedPtr;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_SCENE_DELEGATE_H__
+#endif // HDMAYA_SCENE_DELEGATE_H

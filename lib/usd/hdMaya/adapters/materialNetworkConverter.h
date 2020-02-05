@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __HDMAYA_MATERIAL_NETWORK_CONVERTER_H__
-#define __HDMAYA_MATERIAL_NETWORK_CONVERTER_H__
+#ifndef HDMAYA_MATERIAL_NETWORK_CONVERTER_H
+#define HDMAYA_MATERIAL_NETWORK_CONVERTER_H
 
 #include "../api.h"
 
@@ -168,4 +168,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_MATERIAL_NETWORK_CONVERTER_H__
+#endif // HDMAYA_MATERIAL_NETWORK_CONVERTER_H

@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __HDMAYA_DELEGATE_H__
-#define __HDMAYA_DELEGATE_H__
+#ifndef HDMAYA_DELEGATE_H
+#define HDMAYA_DELEGATE_H
 
 #include <pxr/pxr.h>
 
@@ -131,4 +131,4 @@ using HdMayaDelegatePtr = std::shared_ptr<HdMayaDelegate>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_DELEGATE_H__
+#endif // HDMAYA_DELEGATE_H

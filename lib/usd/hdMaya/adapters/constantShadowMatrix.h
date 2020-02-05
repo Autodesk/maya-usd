@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __HDMAYA_SHADOW_MATRIX_H__
-#define __HDMAYA_SHADOW_MATRIX_H__
+#ifndef HDMAYA_SHADOW_MATRIX_H
+#define HDMAYA_SHADOW_MATRIX_H
 
 #include <pxr/imaging/hdx/shadowMatrixComputation.h>
 #include <pxr/pxr.h>
@@ -42,4 +42,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_SHADOW_MATRIX_H__
+#endif // HDMAYA_SHADOW_MATRIX_H

@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef __HDMAYA_AL_PROXY_DELEGATE_H__
-#define __HDMAYA_AL_PROXY_DELEGATE_H__
+#ifndef HDMAYA_AL_PROXY_DELEGATE_H
+#define HDMAYA_AL_PROXY_DELEGATE_H
 
 #include "delegate.h"
 
@@ -66,4 +66,4 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_AL_PROXY_DELEGATE_H__
+#endif // HDMAYA_AL_PROXY_DELEGATE_H
