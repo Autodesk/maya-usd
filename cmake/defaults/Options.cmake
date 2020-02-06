@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-option(PXR_STRICT_BUILD_MODE "Turn on additional warnings. Enforce all warnings as errors." ON)
+option(PXR_STRICT_BUILD_MODE "Turn on additional warnings. Enforce all warnings as errors." OFF)
 option(PXR_VALIDATE_GENERATED_CODE "Validate script generated code" OFF)
 option(PXR_BUILD_TESTS "Build tests" ON)
 option(PXR_ENABLE_GL_SUPPORT "Enable OpenGL based components" ON)
