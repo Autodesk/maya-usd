@@ -32,6 +32,9 @@ namespace utils {
 
 #define AL_SUPPORT_LEGACY_NAMES 1
 
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  defines the euler rotation order
+//----------------------------------------------------------------------------------------------------------------------
 enum class RotationOrder
 {
   kXYZ, 
@@ -40,6 +43,16 @@ enum class RotationOrder
   kXZY, 
   kYXZ, 
   kZYX
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  defines the euler rotation order
+//----------------------------------------------------------------------------------------------------------------------
+enum class TransformAPI
+{
+  kCommon,   ///< transform matches the pixar common profile
+  kMaya,     ///< transform matches the maya transform profile (i.e. "transform" node)
+  kMayaJoint ///< transform matches te maya joint profile
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -202,6 +215,11 @@ public:
   bool isValid() const 
     { return bool(m_prim); }
 
+  /// \brief  returns the API this prim is compatible with
+  /// \return the transform API that was found
+  TransformAPI api() const
+    { return m_api; }
+
 protected:
   void convertMatrixOpToComponentOps(const UsdGeomXformOp& op);
   bool matchesMayaTrasformProfile(const std::vector<UsdGeomXformOp>& orderedOps);
@@ -213,10 +231,11 @@ protected:
   void insertRotateAxisOp();  
   void insertScalePivotTranslateOp(); 
   void insertRotatePivotOp();  
-  void insertRotatePivotTranslateOp(); 
-
+  void insertRotatePivotTranslateOp();
 private:
   UsdPrim m_prim;
+  UsdGeomXformOp m_pivot = UsdGeomXformOp();
+  UsdGeomXformOp m_pivotINV = UsdGeomXformOp();
   UsdGeomXformOp m_scale = UsdGeomXformOp();
   UsdGeomXformOp m_rotate = UsdGeomXformOp();
   UsdGeomXformOp m_rotateAxis = UsdGeomXformOp();
@@ -229,6 +248,7 @@ private:
   UsdGeomXformOp m_rotatePivotTranslate = UsdGeomXformOp();
   UsdGeomXformOp m_shear = UsdGeomXformOp();
   RotationOrder m_order = RotationOrder::kXYZ;
+  TransformAPI m_api = TransformAPI::kMaya;
 };
 
 AL_USD_UTILS_PUBLIC
