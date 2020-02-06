@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ struct HdVP2MeshSharedData {
 
     Sync() is passed a set of dirtyBits, indicating which scene buffers are
     dirty. It uses these to pull all of the new scene data and constructs
-    updated embree geometry objects.  Commit of changed buffers to GPU happens
+    updated geometry objects.  Commit of changed buffers to GPU happens
     in HdVP2RenderDelegate::CommitResources(), which runs on main-thread after
     all prims have been updated.
 */
@@ -100,6 +100,7 @@ private:
 
     void _UpdateDrawItem(
         HdSceneDelegate*, HdVP2DrawItem*,
+        const HdMeshReprDesc& desc,
         bool requireSmoothNormals, bool requireFlatNormals);
 
     void _UpdatePrimvarSources(

@@ -1,0 +1,62 @@
+﻿<!--
+========================================================================
+Copyright 2020 Autodesk
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+========================================================================
+-->
+<fragment uiName="BasisCurvesCubicDomain" name="BasisCurvesCubicDomain" type="domainShader" class="ShadeFragment" version="1.0" feature_level="0">
+    <description>
+        <![CDATA[Domain shader for basisCurves]]>
+    </description>
+    <keyword value="tessellation" />
+    <properties>
+        <undefined  name="GPUStage" semantic="GPUStage" />
+        <float4x4  name="worldView" semantic="worldview" flags="isRequirementOnly" />
+        <float4x4  name="projection" semantic="projection" flags="isRequirementOnly" />
+        <float4x4  name="worldViewIT" semantic="worldviewinversetranspose" flags="isRequirementOnly" />
+        <float4x4  name="worldViewI" semantic="worldviewinverse" flags="isRequirementOnly" />
+        <float4x4  name="worldViewT" semantic="worldviewtranspose" flags="isRequirementOnly" />
+        <float4  name="tessOuterLo" semantic="patchConstantParam" flags="isRequirementOnly,varyingInputParam" />
+        <float4  name="tessOuterHi" semantic="patchConstantParam" flags="isRequirementOnly,varyingInputParam" />
+        <struct  name="patchConstants" struct_name="hullConstantsOutS" flags="varyingInputParam" />
+        <struct  name="patch" size="4" struct_name="hullOutS" />
+        <float2  name="domainCoord" semantic="SV_DomainLocation" flags="varyingInputParam" />
+        <int3  name="patchParam" semantic="PATCHPARAM" flags="isRequirementOnly,varyingInputParam" />
+        <float3  name="Pm" semantic="POSITION" flags="isRequirementOnly,varyingInputParam" />
+        <float3  name="Nm" semantic="NORMAL" flags="isRequirementOnly,varyingInputParam" />
+        <float  name="U0_1" semantic="TEXCOORD0" flags="isRequirementOnly,varyingInputParam" />
+        <float3  name="cameraPosition" semantic="worldcameraposition" flags="isRequirementOnly" />
+        <int  name="outputpatchsize" semantic="controlParam" flags="isRequirementOnly" />
+        <string  name="tessprimitives" semantic="controlParam" flags="isRequirementOnly" />
+        <string  name="patchspacing" semantic="controlParam" flags="isRequirementOnly" />
+        <int  name="barriers" semantic="controlParam" flags="isRequirementOnly" />
+    </properties>
+    <values>
+        <int name="outputpatchsize" value="4"/>
+        <string name="tessprimitives" value="quads"/>
+        <string name="patchspacing" value="fractional_odd_spacing"/>
+        <int name="barriers" value="0"/>
+    </values>
+    <outputs>
+        <struct  name="structDomain" size="4" struct_name="structDomain" />
+        <undefined  name="GPUStage" semantic="domainShader" />
+        <float3  name="DS_Pm" semantic="POSITION" flags="isRequirementOnly,varyingInputParam" />
+        <float3  name="DS_Nm" semantic="DS_Nm" flags="isRequirementOnly,varyingInputParam" />
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
+            <function_name val="NOTIMPLEMENTED" />
+        </implementation>
+    </implementation>
+</fragment>
