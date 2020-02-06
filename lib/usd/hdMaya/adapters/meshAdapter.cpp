@@ -45,25 +45,24 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-constexpr int MAX_SMOOTH_LEVEL = 8;
-
-const std::array<std::pair<MObject&, HdDirtyBits>, 8> _dirtyBits{
-    {{MayaAttrs::mesh::pnts,
-      // This is useful when the user edits the mesh.
-      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent |
-          HdChangeTracker::DirtySubdivTags},
-     {MayaAttrs::mesh::inMesh,
-      // We are tracking topology changes and uv changes separately
-      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent |
-          HdChangeTracker::DirtySubdivTags},
-     {MayaAttrs::mesh::worldMatrix, HdChangeTracker::DirtyTransform},
-     {MayaAttrs::mesh::doubleSided, HdChangeTracker::DirtyDoubleSided},
-     {MayaAttrs::mesh::intermediateObject, HdChangeTracker::DirtyVisibility},
-     {MayaAttrs::mesh::uvPivot,
-      // Tracking manual edits to uvs.
-      HdChangeTracker::DirtyPrimvar},
-     {MayaAttrs::mesh::displaySmoothMesh, HdChangeTracker::DirtyDisplayStyle},
-     {MayaAttrs::mesh::smoothLevel, HdChangeTracker::DirtyDisplayStyle}}};
+const std::pair<MObject&, HdDirtyBits> _dirtyBits[]{
+    {MayaAttrs::mesh::pnts,
+     // This is useful when the user edits the mesh.
+     HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent |
+         HdChangeTracker::DirtySubdivTags},
+    {MayaAttrs::mesh::inMesh,
+     // We are tracking topology changes and uv changes separately
+     HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent |
+         HdChangeTracker::DirtySubdivTags},
+    {MayaAttrs::mesh::worldMatrix, HdChangeTracker::DirtyTransform},
+    {MayaAttrs::mesh::doubleSided, HdChangeTracker::DirtyDoubleSided},
+    {MayaAttrs::mesh::intermediateObject, HdChangeTracker::DirtyVisibility},
+    {MayaAttrs::mesh::uvPivot,
+     // Tracking manual edits to uvs.
+     HdChangeTracker::DirtyPrimvar},
+    {MayaAttrs::mesh::displaySmoothMesh, HdChangeTracker::DirtyDisplayStyle},
+    {MayaAttrs::mesh::smoothLevel, HdChangeTracker::DirtyDisplayStyle}
+};
 
 } // namespace
 
@@ -244,10 +243,8 @@ public:
         const auto displaySmoothMesh =
             node.findPlug(MayaAttrs::mesh::displaySmoothMesh, true).asShort();
         if (displaySmoothMesh == 0) { return {0, false, false}; }
-        const auto smoothLevel = std::min(
-            MAX_SMOOTH_LEVEL,
-            std::max(
-                0, node.findPlug(MayaAttrs::mesh::smoothLevel, true).asInt()));
+        const auto smoothLevel = std::max(
+                0, node.findPlug(MayaAttrs::mesh::smoothLevel, true).asInt());
         return {smoothLevel, false, false};
 #else
         return {0, false, false};

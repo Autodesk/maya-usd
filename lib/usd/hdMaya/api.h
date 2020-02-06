@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __HDMAYA_API_H__
-#define __HDMAYA_API_H__
+#ifndef HDMAYA_API_H
+#define HDMAYA_API_H
 
 #ifdef __GNUC__
 #define HDMAYA_API_EXPORT __attribute__((visibility("default")))
@@ -37,4 +37,4 @@
 #endif
 #endif
 
-#endif // __HDMAYA_API_H__
+#endif // HDMAYA_API_H

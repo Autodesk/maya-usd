@@ -16,8 +16,8 @@
 /// \file hdmaya/utils.h
 ///
 /// Utilities for Maya to Hydra, including for adapters and delegates.
-#ifndef __HDMAYA_UTILS_H__
-#define __HDMAYA_UTILS_H__
+#ifndef HDMAYA_UTILS_H
+#define HDMAYA_UTILS_H
 
 #include <pxr/pxr.h>
 
@@ -154,4 +154,4 @@ inline void MapSelectionDescendents(
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_UTILS_H_
+#endif // HDMAYA_UTILS_H

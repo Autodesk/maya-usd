@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __MTOH_VIEW_OVERRIDE_H__
-#define __MTOH_VIEW_OVERRIDE_H__
+#ifndef MTOH_VIEW_OVERRIDE_H
+#define MTOH_VIEW_OVERRIDE_H
 
 #include <pxr/imaging/glf/glew.h>
 #include <pxr/pxr.h>
@@ -156,8 +156,19 @@ private:
     HdRenderIndex* _renderIndex = nullptr;
     std::unique_ptr<MtohDefaultLightDelegate> _defaultLightDelegate = nullptr;
     HdxSelectionTrackerSharedPtr _selectionTracker;
-    HdRprimCollection _renderCollection;
-    HdRprimCollection _selectionCollection;
+    HdRprimCollection _renderCollection{
+        HdTokens->geometry,
+        HdReprSelector(
+#if MAYA_APP_VERSION >= 2019
+            HdReprTokens->refined
+#else
+            HdReprTokens->smoothHull
+#endif
+        ),
+        SdfPath::AbsoluteRootPath()};
+    HdRprimCollection _selectionCollection{
+        HdReprTokens->wire, HdReprSelector(HdReprTokens->wire)
+    };
     GlfSimpleLight _defaultLight;
 
     std::vector<HdMayaDelegatePtr> _delegates;
@@ -180,4 +191,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __MTOH_VIEW_OVERRIDE_H__
+#endif // MTOH_VIEW_OVERRIDE_H

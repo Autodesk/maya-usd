@@ -848,12 +848,7 @@ VtIntArray HdMayaSceneDelegate::GetInstanceIndices(
 }
 
 GfMatrix4d HdMayaSceneDelegate::GetInstancerTransform(
-#if USD_VERSION_NUM >= 1905
-    SdfPath const& instancerId
-#else
-    SdfPath const& instancerId, SdfPath const& prototypeId
-#endif
-) {
+    SdfPath const& instancerId) {
     return GfMatrix4d(1.0);
 }
 

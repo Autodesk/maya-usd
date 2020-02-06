@@ -47,11 +47,8 @@
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
-
-#if USD_VERSION_NUM >= 1903
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/glContext.h"
-#endif
 
 #include "maya/MDrawRegistry.h"
 #include "maya/MGlobal.h"
@@ -174,13 +171,11 @@ MStatus registerPlugin(AFnPlugin& plugin)
 {
   GlfGlewInit();
 
-  #if USD_VERSION_NUM >= 1903
   // We may be in a non-gui maya... if so,
   // GlfContextCaps::InitInstance() will error
   if (GlfGLContext::GetCurrentGLContext()->IsValid()) {
     GlfContextCaps::InitInstance();
   }
-  #endif
 
   if(!MGlobal::optionVarExists("AL_usdmaya_selectMode"))
   {

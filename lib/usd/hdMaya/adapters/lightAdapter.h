@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __HDMAYA_LIGHT_ADAPTER_H__
-#define __HDMAYA_LIGHT_ADAPTER_H__
+#ifndef HDMAYA_LIGHT_ADAPTER_H
+#define HDMAYA_LIGHT_ADAPTER_H
 
 #include <pxr/pxr.h>
 
@@ -77,4 +77,4 @@ using HdMayaLightAdapterPtr = std::shared_ptr<HdMayaLightAdapter>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_LIGHT_ADAPTER_H__
+#endif // HDMAYA_LIGHT_ADAPTER_H

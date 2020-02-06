@@ -155,18 +155,6 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     : MHWRender::MRenderOverride(desc.overrideName.GetText()),
       _rendererDesc(desc),
       _selectionTracker(new HdxSelectionTracker),
-      _renderCollection(
-          HdTokens->geometry,
-          HdReprSelector(
-#if MAYA_APP_VERSION >= 2019
-              HdReprTokens->refined
-#else
-              HdReprTokens->smoothHull
-#endif
-              ),
-          SdfPath::AbsoluteRootPath()),
-      _selectionCollection(
-          HdReprTokens->wire, HdReprSelector(HdReprTokens->wire)),
       _isUsingHdSt(desc.rendererName == MtohTokens->HdStormRendererPlugin) {
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
         .Msg(
@@ -239,15 +227,6 @@ MtohRenderOverride::~MtohRenderOverride() {
             std::remove(_allInstances.begin(), _allInstances.end(), this),
             _allInstances.end());
     }
-
-#if WANT_UFE_BUILD
-    const UFE_NS::GlobalSelection::Ptr& ufeSelection =
-        UFE_NS::GlobalSelection::get();
-    if (ufeSelection) {
-        ufeSelection->removeObserver(_ufeSelectionObserver);
-        _ufeSelectionObserver = nullptr;
-    }
-#endif // WANT_UFE_BUILD
 }
 
 void MtohRenderOverride::UpdateRenderGlobals() {
@@ -376,7 +355,6 @@ void MtohRenderOverride::_UpdateRenderGlobals() {
 }
 
 void MtohRenderOverride::_UpdateRenderDelegateOptions() {
-#if USD_VERSION_NUM >= 1901
     if (_renderIndex == nullptr) { return; }
     auto* renderDelegate = _renderIndex->GetRenderDelegate();
     if (renderDelegate == nullptr) { return; }
@@ -392,7 +370,6 @@ void MtohRenderOverride::_UpdateRenderDelegateOptions() {
             renderDelegate->SetRenderSetting(setting.key, setting.value);
         }
     }
-#endif
 }
 
 MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
@@ -430,16 +407,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         _taskController->SetCameraViewport(viewport);
 #endif // USD_VERSION_NUM >= 1910
 
-#if USD_VERSION_NUM >= 1907
         auto tasks = _taskController->GetRenderingTasks();
         _engine.Execute(_renderIndex, &tasks);
-#elif USD_VERSION_NUM >= 1901
-        _engine.Execute(*_renderIndex, _taskController->GetTasks());
-#else
-        _engine.Execute(
-            *_renderIndex,
-            _taskController->GetTasks(HdxTaskSetTokens->colorRender));
-#endif // USD_VERSION_NUM
     };
 
     _UpdateRenderGlobals();
@@ -449,16 +418,6 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 
     if (!_initializedViewport) {
         _InitHydraResources();
-// This was required to work around an issue in HdSt
-// that didn't render lights the first time. Leaving it here
-// for a while in case others run into the problem.
-#if 0
-        if (_isUsingHdSt) {
-            _taskController->SetEnableShadows(false);
-            renderFrame();
-            _taskController->SetEnableShadows(true);
-        }
-#endif
     }
 
     UBOBindingsSaver bindingsSaver;
@@ -573,9 +532,7 @@ void MtohRenderOverride::_InitHydraResources() {
             "MtohRenderOverride::_InitHydraResources(%s)\n",
             _rendererDesc.rendererName.GetText());
     GlfGlewInit();
-#if USD_VERSION_NUM >= 1905
     GlfContextCaps::InitInstance();
-#endif
     _rendererPlugin =
         HdRendererPluginRegistry::GetInstance().GetRendererPlugin(
             _rendererDesc.rendererName);
@@ -745,14 +702,25 @@ MStatus MtohRenderOverride::setup(const MString& destination) {
     if (renderer == nullptr) { return MStatus::kFailure; }
 
     if (_operations.empty()) {
+        // Draw Misc UI elements (cameras, CVs, grid, etc), as well as
+        // possibly selection (depending on if we're using HdSt, and the
+        // selection overlay mode)
         _operations.push_back(new HdMayaSceneRender(
             "HydraRenderOverride_Scene",
             !_isUsingHdSt || _globals.selectionOverlay == MtohTokens->UseVp2));
+
+        // The main hydra render
         _operations.push_back(
             new HdMayaRender("HydraRenderOverride_Hydra", this));
+
+        // Draw maniuplators
         _operations.push_back(
             new HdMayaManipulatorRender("HydraRenderOverride_Manipulator"));
+
+        // Draw HUD elements
         _operations.push_back(new MHWRender::MHUDRender());
+
+        // Set final buffer options
         auto* presentTarget =
             new MHWRender::MPresentTarget("HydraRenderOverride_Present");
         presentTarget->setPresentDepth(true);

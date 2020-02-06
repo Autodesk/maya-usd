@@ -24,27 +24,13 @@
 
 #include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/glf/textureRegistry.h>
-
-#if USD_VERSION_NUM >= 1905
-#include <pxr/imaging/hio/glslfx.h>
-#else
-#include <pxr/imaging/glf/glslfx.h>
-typedef PXR_NS::GlfGLSLFX HioGlslfx;
-namespace {
-auto& HioGlslfxTokens = PXR_NS::GlfGLSLFXTokens;
-}
-#endif // USD_VERSION_NUM >= 1905
-
-#if USD_VERSION_NUM >= 1901
 #include <pxr/imaging/glf/udimTexture.h>
+#include <pxr/imaging/hdSt/textureResource.h>
+#include <pxr/imaging/hio/glslfx.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
-#endif
-
 #include <pxr/usdImaging/usdImaging/tokens.h>
-
 #include <pxr/usdImaging/usdImagingGL/package.h>
 
-#include <pxr/imaging/hdSt/textureResource.h>
 #if USD_VERSION_NUM >= 1911
 #include <pxr/imaging/hdSt/textureResourceHandle.h>
 #endif
@@ -80,32 +66,6 @@ struct _ShaderSourceAndMeta {
     VtDictionary translucentMetadata;
 #endif
 };
-// We can't store the shader here explicitly, since it causes a deadlock
-// due to library dependencies.
-auto _PreviewShader = []() -> const _ShaderSourceAndMeta& {
-    static const auto ret = []() -> _ShaderSourceAndMeta {
-        auto& registry = SdrRegistry::GetInstance();
-        auto sdrNode = registry.GetShaderNodeByIdentifierAndType(
-            UsdImagingTokens->UsdPreviewSurface, HioGlslfxTokens->glslfx);
-        if (!sdrNode) { return {"", ""}; }
-        HioGlslfx gfx(sdrNode->GetSourceURI());
-        _ShaderSourceAndMeta ret;
-        ret.surfaceCode = gfx.GetSurfaceSource();
-        ret.displacementCode = gfx.GetDisplacementSource();
-        ret.metadata = gfx.GetMetadata();
-#ifdef HDMAYA_OIT_ENABLED
-        ret.translucentMetadata = gfx.GetMetadata();
-        ret.translucentMetadata[HdShaderTokens->materialTag] =
-            VtValue(HdxMaterialTagTokens->translucent);
-#endif
-        return ret;
-    }();
-    return ret;
-};
-
-#if USD_VERSION_NUM < 1901
-enum class HdTextureType { Uv, Ptex, Udim };
-#endif
 
 } // namespace
 
@@ -142,6 +102,29 @@ void HdMayaMaterialAdapter::Populate() {
 }
 
 #if USD_VERSION_NUM <= 1911
+
+// We can't store the shader here explicitly, since it causes a deadlock
+// due to library dependencies.
+auto _PreviewShader = []() -> const _ShaderSourceAndMeta& {
+    static const auto ret = []() -> _ShaderSourceAndMeta {
+        auto& registry = SdrRegistry::GetInstance();
+        auto sdrNode = registry.GetShaderNodeByIdentifierAndType(
+            UsdImagingTokens->UsdPreviewSurface, HioGlslfxTokens->glslfx);
+        if (!sdrNode) { return {"", ""}; }
+        HioGlslfx gfx(sdrNode->GetSourceURI());
+        _ShaderSourceAndMeta ret;
+        ret.surfaceCode = gfx.GetSurfaceSource();
+        ret.displacementCode = gfx.GetDisplacementSource();
+        ret.metadata = gfx.GetMetadata();
+#ifdef HDMAYA_OIT_ENABLED
+        ret.translucentMetadata = gfx.GetMetadata();
+        ret.translucentMetadata[HdShaderTokens->materialTag] =
+            VtValue(HdxMaterialTagTokens->translucent);
+#endif
+        return ret;
+    }();
+    return ret;
+};
 
 std::string HdMayaMaterialAdapter::GetSurfaceShaderSource() {
     return GetPreviewSurfaceSource();
@@ -402,7 +385,7 @@ private:
                 else {
                     _textureResources[paramName] = textureInstance.GetValue();
                 }
-#else // USD_VERSION_NUM < 1911
+#else // USD_VERSION_NUM == 1911
                 }
 
                 HdStTextureResourceSharedPtr texResource =
@@ -433,8 +416,6 @@ private:
                 _textureResourceHandles[paramName] = handleInstance.GetValue();
 #endif // USD_VERSION_NUM < 1911
 
-
-#if USD_VERSION_NUM >= 1901
                 if (GlfIsSupportedUdimTexture(filePath)) {
                     if (TfDebug::IsEnabled(HDMAYA_ADAPTER_MATERIALS) &&
                         textureType != HdTextureType::Udim) {
@@ -447,7 +428,6 @@ private:
                     .Msg(
                         "  ...successfully registered texture with id: %lu\n",
                         textureId);
-#endif // USD_VERSION_NUM >= 1901
                 return true;
             } else {
                 TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
@@ -456,7 +436,7 @@ private:
                         "textureID\n");
 #if USD_VERSION_NUM >= 1911
                 _textureResourceHandles[paramName].reset();
-#else // USD_VERSION_NUM >= 1911
+#else // USD_VERSION_NUM < 1911
                 _textureResources[paramName].reset();
 #endif // USD_VERSION_NUM >= 1911
             }
@@ -480,9 +460,9 @@ private:
             auto textureType = HdTextureType::Uv;
 #if USD_VERSION_NUM >= 1911
             auto remappedName = it.param.name;
-#else
+#else // USD_VERSION_NUM < 1911
             auto remappedName = it.param.GetName();
-#endif
+#endif // USD_VERSION_NUM >= 1911
             auto attrConverter = nodeConverter->GetAttrConverter(remappedName);
             if (attrConverter) {
                 TfToken tempName = attrConverter->GetPlugName(remappedName);
@@ -494,25 +474,22 @@ private:
 #if USD_VERSION_NUM >= 1911
                     HdMaterialParam::ParamTypeTexture, it.param.name,
                     it.param.fallbackValue,
-#else
+#else // USD_VERSION_NUM < 1911
                     HdMaterialParam::ParamTypeTexture, it.param.GetName(),
                     it.param.GetFallbackValue(),
-#endif
+#endif // USD_VERSION_NUM >= 1911
                     GetID().AppendProperty(remappedName), _stSamplerCoords,
-#if USD_VERSION_NUM >= 1901
                     textureType);
-#else
-                    false);
-#endif
+
                 TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
                     .Msg(
                         "HdMayaShadingEngineAdapter: registered texture with "
                         "connection path: %s\n",
 #if USD_VERSION_NUM >= 1911
                         ret.back().connection.GetText());
-#else
+#else // USD_VERSION_NUM < 1911
                         ret.back().GetConnection().GetText());
-#endif
+#endif // USD_VERSION_NUM >= 1911
             } else {
                 ret.emplace_back(it.param);
             }
@@ -550,10 +527,10 @@ private:
 #if USD_VERSION_NUM >= 1911
                 node, previewIt->param.name, previewIt->type,
                 &previewIt->param.fallbackValue);
-#else
+#else // USD_VERSION_NUM < 1911
                 node, previewIt->param.GetName(), previewIt->type,
                 &previewIt->param.GetFallbackValue());
-#endif
+#endif // USD_VERSION_NUM >= 1911
         } else {
             return GetPreviewMaterialParamValue(paramName);
         }
@@ -576,9 +553,9 @@ private:
         TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
             .Msg("HdMayaShadingEngineAdapter::GetTextureResource(%s): %s\n",
                     paramName.GetText(), GetID().GetText());
-        auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
-        if (fileObj == MObject::kNullObj) { return {}; }
         if(GetDelegate()->IsHdSt()) {
+            auto fileObj = GetConnectedFileNode(_surfaceShader, paramName);
+            if (fileObj == MObject::kNullObj) { return {}; }
             return GetFileTextureResource(
                 fileObj, GetFileTexturePath(MFnDependencyNode(fileObj)),
                 GetDelegate()->GetParams().textureMemoryPerTexture);
@@ -669,8 +646,7 @@ private:
     }
 
     bool IsTranslucent() {
-        if (_surfaceShaderType == UsdImagingTokens->UsdPreviewSurface ||
-            _surfaceShaderType == HdMayaAdapterTokens->pxrUsdPreviewSurface) {
+        if (_surfaceShaderType == HdMayaAdapterTokens->pxrUsdPreviewSurface) {
             MFnDependencyNode node(_surfaceShader);
             const auto plug =
                 node.findPlug(HdMayaAdapterTokens->opacity.GetText(), true);

@@ -37,8 +37,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 MtohDefaultLightDelegate::MtohDefaultLightDelegate(const InitData& initData)
     : HdSceneDelegate(initData.renderIndex, initData.delegateID),
       HdMayaDelegate(initData),
-      _lightPath(initData.delegateID.AppendChild(_tokens->DefaultMayaLight)),
-      _isSupported(false) {}
+      _lightPath(initData.delegateID.AppendChild(_tokens->DefaultMayaLight))
+{}
 
 MtohDefaultLightDelegate::~MtohDefaultLightDelegate() {
     if (ARCH_UNLIKELY(!_isSupported)) { return; }
@@ -131,12 +131,8 @@ VtValue MtohDefaultLightDelegate::GetLightParamValue(
             "MtohDefaultLightDelegate::GetLightParamValue(%s, %s)\n",
             id.GetText(), paramName.GetText());
 
-#if USD_VERSION_NUM >= 1905
     if (paramName == HdLightTokens->color ||
         paramName == HdTokens->displayColor) {
-#else
-    if (paramName == HdTokens->color) {
-#endif // USD_VERSION_NUM >= 1905
         const auto diffuse = _light.GetDiffuse();
         return VtValue(GfVec3f(diffuse[0], diffuse[1], diffuse[2]));
     } else if (paramName == HdLightTokens->intensity) {

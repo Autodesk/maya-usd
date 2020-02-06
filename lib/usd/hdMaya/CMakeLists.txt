@@ -6,12 +6,6 @@ set(TARGET_NAME hdMaya)
 
 option(HDMAYA_BUILD_TESTS "Build the maya-to-hydra tests" OFF)
 
-set(MTOH_CXX_STD "11"
-    CACHE
-    STRING
-    "Which C++ standard / version to use, as an integer - ie, 14 means use c++14."
-)
-
 if(CMAKE_WANT_UFE_BUILD)
     if(UFE_FOUND)
         message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
@@ -107,12 +101,6 @@ target_include_directories(${TARGET_NAME}
 if (UFE_FOUND)
     target_link_libraries(${TARGET_NAME} PUBLIC ${UFE_LIBRARY})
 endif()
-
-if (MTOH_CXX_STD MATCHES "^11$")
-    target_compile_features(${TARGET_NAME} PUBLIC cxx_std_11)
-elseif (MTOH_CXX_STD MATCHES "^14$")
-    target_compile_features(${TARGET_NAME} PUBLIC cxx_std_14)
-endif ()
 
 target_compile_definitions(${TARGET_NAME} 
     PRIVATE 

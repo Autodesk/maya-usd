@@ -15,15 +15,7 @@
 //
 #include <pxr/pxr.h>
 
-#if USD_VERSION_NUM >= 1905
 #include <pxr/imaging/hio/glslfx.h>
-#else
-#include <pxr/imaging/glf/glslfx.h>
-namespace {
-auto& HioGlslfxTokens = PXR_NS::GlfGLSLFXTokens;
-}
-#endif // USD_VERSION_NUM >= 1905
-
 #include <pxr/usd/usdShade/connectableAPI.h>
 #include <pxr/usd/usdShade/shader.h>
 
@@ -181,7 +173,7 @@ public:
                 }
 
                 // If there is no universal surface output, hook that up too
-                if (surfaceOutput = material.GetSurfaceOutput()) {
+                if ( (surfaceOutput = material.GetSurfaceOutput()) ) {
                     UsdShadeConnectableAPI::ConnectToSource(
                         surfaceOutput, outputProperty);
                 }
