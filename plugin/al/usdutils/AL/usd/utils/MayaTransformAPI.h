@@ -30,7 +30,9 @@ namespace AL {
 namespace usd {
 namespace utils {
 
+#ifndef AL_SUPPORT_LEGACY_NAMES
 #define AL_SUPPORT_LEGACY_NAMES 1
+#endif
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  defines the euler rotation order
@@ -50,13 +52,13 @@ enum class RotationOrder
 //----------------------------------------------------------------------------------------------------------------------
 enum class TransformAPI
 {
+  kFallback,
   kCommon,   ///< transform matches the pixar common profile
   kMaya,     ///< transform matches the maya transform profile (i.e. "transform" node)
-  kMayaJoint ///< transform matches te maya joint profile
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  This class provides an interface to allow you to modify maya transform nodes within USD. 
+/// \brief  This class provides an interface to simplify the general case 
 //----------------------------------------------------------------------------------------------------------------------
 class MayaTransformAPI
 {
@@ -233,6 +235,7 @@ protected:
   void insertRotatePivotOp();  
   void insertRotatePivotTranslateOp();
 private:
+  bool _matchesMayaTrasformProfile(const std::vector<UsdGeomXformOp>& orderedOps);
   UsdPrim m_prim;
   UsdGeomXformOp m_pivot = UsdGeomXformOp();
   UsdGeomXformOp m_pivotINV = UsdGeomXformOp();
