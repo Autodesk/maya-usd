@@ -59,3 +59,10 @@ git merge --no-ff github/donnels/MAYA-101325/new_import_ui_feature_wip
 git merge --no-ff github/dev
 git push
 ```
+
+```
+Feb 06, 2020:
+git merge --no-ff github/dev
+git merge --no-ff github/chenh/MAYA-101845/usd-geom-curves
+git push
+```
