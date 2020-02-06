@@ -30,13 +30,12 @@ namespace usdmaya {
 namespace cmds {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  A command that is used to pre-sync the auto generated GUI for the plugin options to a translator. 
+/// \brief  A command that is used to pre-sync the auto generated GUI for the plugin options to a translator.
 /// \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
 class SyncFileIOGui
   : public MPxCommand
 {
-  MArgDatabase makeDatabase(const MArgList& args);
 public:
   AL_MAYA_DECLARE_COMMAND();
 private:

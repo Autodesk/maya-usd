@@ -15,8 +15,6 @@
 //
 #include "sceneDelegate.h"
 
-#include <hdMaya/hdMaya.h>
-
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/range3d.h>
 #include <pxr/base/tf/type.h>
@@ -87,15 +85,13 @@ void _connectionChanged(
     }
 }
 
-template <typename T>
-inline bool _FindAdapter(const SdfPath&, const std::function<void(T*)>&) {
+template <typename T, typename F>
+inline bool _FindAdapter(const SdfPath&, F) {
     return false;
 }
 
-template <typename T, typename M0, typename... M>
-inline bool _FindAdapter(
-    const SdfPath& id, const std::function<void(T*)>& f, const M0& m0,
-    const M&... m) {
+template <typename T, typename M0, typename F, typename... M>
+inline bool _FindAdapter(const SdfPath& id, F f, const M0& m0, const M&... m) {
     auto* adapterPtr = TfMapLookupPtr(m0, id);
     if (adapterPtr == nullptr) {
         return _FindAdapter<T>(id, f, m...);
@@ -105,14 +101,13 @@ inline bool _FindAdapter(
     }
 }
 
-template <typename T>
-inline bool _RemoveAdapter(const SdfPath&, const std::function<void(T*)>&) {
+template <typename T, typename F>
+inline bool _RemoveAdapter(const SdfPath&, F) {
     return false;
 }
 
-template <typename T, typename M0, typename... M>
-inline bool _RemoveAdapter(
-    const SdfPath& id, const std::function<void(T*)>& f, M0& m0, M&... m) {
+template <typename T, typename M0, typename F, typename... M>
+inline bool _RemoveAdapter(const SdfPath& id, F f, M0& m0, M&... m) {
     auto* adapterPtr = TfMapLookupPtr(m0, id);
     if (adapterPtr == nullptr) {
         return _RemoveAdapter<T>(id, f, m...);
@@ -123,17 +118,27 @@ inline bool _RemoveAdapter(
     }
 }
 
-// This will be nicer to use with automatic parameter deduction for lambdas in
-// C++14.
-template <typename T, typename R>
-inline R _GetValue(const SdfPath&, const std::function<R(T*)>&) {
+template <typename R>
+inline R _GetDefaultValue() {
     return {};
 }
 
-template <typename T, typename R, typename M0, typename... M>
-inline R _GetValue(
-    const SdfPath& id, const std::function<R(T*)>& f, const M0& m0,
-    const M&... m) {
+// Default return value for HdTextureResource::ID, if not found, should be
+// -1, not {} - which would be 0
+template <>
+inline HdTextureResource::ID _GetDefaultValue<HdTextureResource::ID>() {
+    return HdTextureResource::ID(-1);
+}
+
+// This will be nicer to use with automatic parameter deduction for lambdas in
+// C++14.
+template <typename T, typename R, typename F>
+inline R _GetValue(const SdfPath&, F) {
+    return _GetDefaultValue<R>();
+}
+
+template <typename T, typename R, typename F, typename M0, typename... M>
+inline R _GetValue(const SdfPath& id, F f, const M0& m0, const M&... m) {
     auto* adapterPtr = TfMapLookupPtr(m0, id);
     if (adapterPtr == nullptr) {
         return _GetValue<T, R>(id, f, m...);
@@ -142,14 +147,13 @@ inline R _GetValue(
     }
 }
 
-template <typename T>
-inline void _MapAdapter(const std::function<void(T*)>&) {
+template <typename T, typename F>
+inline void _MapAdapter(F) {
     // Do nothing.
 }
 
-template <typename T, typename M0, typename... M>
-inline void _MapAdapter(
-    const std::function<void(T*)>& f, const M0& m0, const M&... m) {
+template <typename T, typename M0, typename F, typename... M>
+inline void _MapAdapter(F f, const M0& m0, const M&... m) {
     for (auto& it : m0) { f(static_cast<T*>(it.second.get())); }
     _MapAdapter<T>(f, m...);
 }
@@ -844,12 +848,7 @@ VtIntArray HdMayaSceneDelegate::GetInstanceIndices(
 }
 
 GfMatrix4d HdMayaSceneDelegate::GetInstancerTransform(
-#ifdef HDMAYA_USD_001905_BUILD
-    SdfPath const& instancerId
-#else
-    SdfPath const& instancerId, SdfPath const& prototypeId
-#endif
-) {
+    SdfPath const& instancerId) {
     return GfMatrix4d(1.0);
 }
 
@@ -1028,16 +1027,55 @@ HdTextureResourceSharedPtr HdMayaSceneDelegate::GetTextureResource(
         .Msg(
             "HdMayaSceneDelegate::GetTextureResource(%s)\n",
             textureId.GetText());
+
+#if USD_VERSION_NUM <= 1911
+
     return _GetValue<HdMayaMaterialAdapter, HdTextureResourceSharedPtr>(
         textureId.GetPrimPath(),
         [&textureId](HdMayaMaterialAdapter* a) -> HdTextureResourceSharedPtr {
             return a->GetTextureResource(textureId.GetNameToken());
         },
         _materialAdapters);
+
+#else // USD_VERSION_NUM > 1911
+
+    auto* adapterPtr = TfMapLookupPtr(_materialAdapters, textureId);
+
+    if(!adapterPtr) {
+        // For texture nodes we may have only inserted an adapter for the material
+        // not for the texture itself.
+        //
+        // UsdShade has the rule that a UsdShade node must be nested inside the
+        // UsdMaterial scope. We traverse the parent paths to find the material.
+        //
+        // Example for texture prim:
+        //    /Materials/Woody/BootMaterial/UsdShadeNodeGraph/Tex
+        // We want to find Sprim:
+        //    /Materials/Woody/BootMaterial
+
+        // While-loop to account for nesting of UsdNodeGraphs and DrawMode
+        // adapter with prototypes.
+        SdfPath parentPath = textureId;
+        while (!adapterPtr && !parentPath.IsRootPrimPath()) {
+            parentPath = parentPath.GetParentPath();
+            adapterPtr = TfMapLookupPtr(_materialAdapters, parentPath);
+        }
+    }
+
+    if (adapterPtr) {
+        return adapterPtr->get()->GetTextureResource(textureId);
+    }
+    return nullptr;
+
+#endif // USD_VERSION_NUM <= 1911
 }
 
 bool HdMayaSceneDelegate::_CreateMaterial(
     const SdfPath& id, const MObject& obj) {
+    TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+        .Msg(
+            "HdMayaSceneDelegate::_CreateMaterial(%s)\n",
+            id.GetText());
     auto materialCreator =
         HdMayaAdapterRegistry::GetMaterialAdapterCreator(obj);
     if (materialCreator == nullptr) { return false; }

@@ -31,7 +31,7 @@ target_include_directories(${PXR_PACKAGE}
 
 MAYA_SET_PLUGIN_PROPERTIES(${PXR_PACKAGE})
 
-# rpath setup
+# handle run-time search paths
 if(IS_MACOSX OR IS_LINUX) 
     mayaUsd_init_rpath(rpath "plugin")
     mayaUsd_add_rpath(rpath "../lib")

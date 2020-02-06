@@ -1,19 +1,22 @@
+#==============================================================================
+# Configuration hdMaya 
+#==============================================================================
+
 set(TARGET_NAME hdMaya)
 
-if (LUMA_USD_BUILD)
-    set(HDMAYA_LUMA_BUILD 1)
-endif ()
+option(HDMAYA_BUILD_TESTS "Build the maya-to-hydra tests" OFF)
 
-set(HDMAYA_H "${CMAKE_CURRENT_BINARY_DIR}/hdMaya.h")
-
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/hdMaya.h.in"
-    ${HDMAYA_H}
-    @ONLY
-)
+if(CMAKE_WANT_UFE_BUILD)
+    if(UFE_FOUND)
+        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
+        include_directories(${UFE_INCLUDE_DIR})
+        add_definitions(-DWANT_UFE_BUILD)
+    else()
+        message(STATUS "UFE not found. UFE features will be disabled.")
+    endif()
+endif()
 
 set(SRC
-    "${HDMAYA_H}"
     adapters/adapter.cpp
     adapters/adapterDebugCodes.cpp
     adapters/adapterRegistry.cpp
@@ -21,8 +24,6 @@ set(SRC
     adapters/areaLightAdapter.cpp
     adapters/dagAdapter.cpp
     adapters/directionalLightAdapter.cpp
-    adapters/imagePlaneAdapter.cpp
-    adapters/imagePlaneMaterialAdapter.cpp
     adapters/lightAdapter.cpp
     adapters/proxyAdapter.cpp
     adapters/materialAdapter.cpp
@@ -44,7 +45,8 @@ set(SRC
     delegates/proxyUsdImagingDelegate.cpp
     delegates/testDelegate.cpp
     
-    debugCodes.cpp)
+    debugCodes.cpp
+    utils.cpp)
 
 add_library(${TARGET_NAME} SHARED ${SRC})
 
@@ -100,12 +102,6 @@ if (UFE_FOUND)
     target_link_libraries(${TARGET_NAME} PUBLIC ${UFE_LIBRARY})
 endif()
 
-if (MTOH_CXX_STD MATCHES "^11$")
-    target_compile_features(${TARGET_NAME} PUBLIC cxx_std_11)
-elseif (MTOH_CXX_STD MATCHES "^14$")
-    target_compile_features(${TARGET_NAME} PUBLIC cxx_std_14)
-endif ()
-
 target_compile_definitions(${TARGET_NAME} 
     PRIVATE 
         "HDMAYA_EXPORT=1"
@@ -116,10 +112,6 @@ if (IS_WINDOWS)
     target_compile_definitions(${TARGET_NAME} PUBLIC "NOMINMAX=1")
 elseif (IS_MACOSX)
     target_compile_definitions(${TARGET_NAME} PUBLIC "OSMac_")
-endif ()
-
-if (LUMA_USD_BUILD)
-    target_compile_definitions(${TARGET_NAME} PRIVATE LUMA_USD_BUILD)
 endif ()
 
 set(libFileName ${CMAKE_SHARED_LIBRARY_PREFIX}${TARGET_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})

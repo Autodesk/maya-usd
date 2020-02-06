@@ -62,9 +62,10 @@ namespace {
 
       if(path.node().hasFn(MFn::kTransform))
       {
-        if(fn.typeId() == AL::usdmaya::nodes::Transform::kTypeId)
+        if(fn.typeId() == AL::usdmaya::nodes::Transform::kTypeId ||
+           fn.typeId() == AL::usdmaya::nodes::Scope::kTypeId)
         {
-          auto transform = (AL::usdmaya::nodes::Transform*)fn.userNode();
+          auto transform = (AL::usdmaya::nodes::Scope*)fn.userNode();
           if(transform)
           {
             MPlug sourcePlug = transform->inStageDataPlug().source();
@@ -114,16 +115,6 @@ MSyntax LayerCommandBase::setUpCommonSyntax()
   MSyntax syntax;
   syntax.addFlag("-p", "-proxy", MSyntax::kString);
   return syntax;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-MArgDatabase LayerCommandBase::makeDatabase(const MArgList& args)
-{
-  MStatus status;
-  MArgDatabase database(syntax(), args, &status);
-  if(!status)
-    throw status;
-  return database;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -236,7 +227,10 @@ MStatus LayerGetLayers::doIt(const MArgList& argList)
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerGetLayers::doIt\n");
   try
   {
-    MArgDatabase args = makeDatabase(argList);
+    MStatus status;
+    MArgDatabase args(syntax(), argList, &status);
+    if(!status)
+      return status;
     AL_MAYA_COMMAND_HELP(args, g_helpText);
 
     nodes::ProxyShape* proxyShape = getShapeNode(args);
@@ -374,7 +368,10 @@ MStatus LayerCreateLayer::doIt(const MArgList& argList)
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("LayerCreateLayer::doIt\n");
   try
   {
-    MArgDatabase args = makeDatabase(argList);
+    MStatus status;
+    MArgDatabase args(syntax(), argList, &status);
+    if(!status)
+      return status;
 
     AL_MAYA_COMMAND_HELP(args, g_helpText);
 
@@ -585,7 +582,11 @@ MStatus LayerCurrentEditTarget::doIt(const MArgList& argList)
 {
   try
   {
-    MArgDatabase args = makeDatabase(argList);
+    MStatus status;
+    MArgDatabase args(syntax(), argList, &status);
+    if(!status)
+      return status;
+
     AL_MAYA_COMMAND_HELP(args, g_helpText);
     if(args.isQuery())
     {
@@ -774,7 +775,11 @@ MStatus LayerSave::doIt(const MArgList& argList)
 {
   try
   {
-    MArgDatabase args = makeDatabase(argList);
+    MStatus status;
+    MArgDatabase args(syntax(), argList, &status);
+    if(!status)
+      return status;
+
     AL_MAYA_COMMAND_HELP(args, g_helpText);
 
     MString layerName = args.commandArgumentString(0);
@@ -899,7 +904,11 @@ MStatus LayerSetMuted::doIt(const MArgList& argList)
 {
   try
   {
-    MArgDatabase args = makeDatabase(argList);
+    MStatus status;
+    MArgDatabase args(syntax(), argList, &status);
+    if(!status)
+      return status;
+
     AL_MAYA_COMMAND_HELP(args, g_helpText);
 
     MString layerName = args.commandArgumentString(0);
@@ -985,7 +994,11 @@ MStatus LayerManager::doIt(const MArgList& argList)
 {
   try
   {
-    MArgDatabase args = makeDatabase(argList);
+    MStatus status;
+    MArgDatabase args(syntax(), argList, &status);
+    if(!status)
+      return status;
+
     AL_MAYA_COMMAND_HELP(args, g_helpText);
 
     nodes::LayerManager* layerManager = nodes::LayerManager::findManager();
@@ -1125,12 +1138,12 @@ void constructLayerCommandGuis()
 const char* const LayerCreateLayer::g_helpText = R"(
 LayerCreateLayer Overview:
 
-  This command provides a way to create new layers in Maya. The Layer identifier passed into the -o will attempt to find the layer, 
-  and if it doesn't exist then it is created. If a layer is created, it will create a AL::usdmaya::nodes::Layer which will contain a SdfLayerRefPtr 
+  This command provides a way to create new layers in Maya. The Layer identifier passed into the -o will attempt to find the layer,
+  and if it doesn't exist then it is created. If a layer is created, it will create a AL::usdmaya::nodes::Layer which will contain a SdfLayerRefPtr
   to the layer opened with -o.
-   
+
   This command is currently used in our pipeline to create layers on the fly. These layers may then be targeted by an EditTarget for edits
-  and these edits are saved into the maya scene file. 
+  and these edits are saved into the maya scene file.
 
   If no identifier is passed, the stage's root layer is used as the parent.
 
@@ -1227,8 +1240,8 @@ LayerCurrentEditTarget Overview:
      LayerCurrentEditTarget -l "anon:0x136d9050" -fid -proxy "ProxyShape1"
 
 
-  There are some caveats here though. If no TargetPath and SourcePath prim paths are specified, 
-  USD will only allow you to set an edit target into what is known as the current layer stack. 
+  There are some caveats here though. If no TargetPath and SourcePath prim paths are specified,
+  USD will only allow you to set an edit target into what is known as the current layer stack.
   These layers can be determined using the following command:
 
      LayerGetLayers -stack "ProxyShape1";

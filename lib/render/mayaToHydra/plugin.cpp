@@ -17,9 +17,9 @@
 
 #include "renderGlobals.h"
 #include "renderOverride.h"
-#include "usdPreviewSurface.h"
 #include "viewCommand.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <pxr/base/plug/plugin.h>
@@ -30,14 +30,6 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_DEFINE_ENV_SETTING(
-    MTOH_ENABLE_USD_PREVIEW_SURFACE_NODE, true,
-    "Enables the registration of the UsdPreviewSurface node."
-    "This is not required with newer version of usdMaya.");
-
-namespace {
-bool _enableUsdPreviewSurface = true;
-}
 
 PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
     MStatus ret = MS::kSuccess;
@@ -48,9 +40,10 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
     // For now this is required for the HdSt backed to use lights.
     // putenv requires char* and I'm not willing to use const cast!
     constexpr const char* envVarSet = "USDIMAGING_ENABLE_SCENE_LIGHTS=1";
+    const auto envVarSize = strlen(envVarSet) + 1;
     std::vector<char> envVarData;
-    envVarData.resize(strlen(envVarSet) + 1);
-    sprintf(envVarData.data(), "%s", envVarSet);
+    envVarData.resize(envVarSize);
+    snprintf(envVarData.data(), envVarSize, "%s", envVarSet);
     putenv(envVarData.data());
 
     MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");
@@ -69,21 +62,6 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
         ret = MS::kFailure;
         ret.perror("Error registering mtoh command!");
         return ret;
-    }
-
-    _enableUsdPreviewSurface =
-        TfGetEnvSetting(MTOH_ENABLE_USD_PREVIEW_SURFACE_NODE);
-
-    if (_enableUsdPreviewSurface) {
-        if (!plugin.registerNode(
-                MtohUsdPreviewSurface::name, MtohUsdPreviewSurface::typeId,
-                MtohUsdPreviewSurface::Creator,
-                MtohUsdPreviewSurface::Initialize, MPxNode::kDependNode,
-                &MtohUsdPreviewSurface::classification)) {
-            ret = MS::kFailure;
-            ret.perror("Error registering UsdPreviewSurface node!");
-            return ret;
-        }
     }
 
     MtohInitializeRenderGlobals();
@@ -110,13 +88,6 @@ PLUGIN_EXPORT MStatus uninitializePlugin(MObject obj) {
     if (!plugin.deregisterCommand(MtohViewCmd::name)) {
         ret = MS::kFailure;
         ret.perror("Error deregistering mtoh command!");
-    }
-
-    if (_enableUsdPreviewSurface) {
-        if (!plugin.deregisterNode(MtohUsdPreviewSurface::typeId)) {
-            ret = MS::kFailure;
-            ret.perror("Error deregistering UsdPreviewSurface node!");
-        }
     }
 
     return ret;

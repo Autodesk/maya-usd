@@ -35,7 +35,6 @@ namespace cmds {
 class ListTranslators
   : public MPxCommand
 {
-  MArgDatabase makeDatabase(const MArgList& args);
 public:
   AL_MAYA_DECLARE_COMMAND();
 private:

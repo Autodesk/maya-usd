@@ -15,20 +15,13 @@
 //
 #include "delegateCtx.h"
 
-#include <hdMaya/hdMaya.h>
-
 #include <pxr/base/gf/frustum.h>
 #include <pxr/base/gf/plane.h>
 #include <pxr/base/gf/range1d.h>
 
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/rprim.h>
-
-#ifdef HDMAYA_USD_001905_BUILD
 #include <pxr/imaging/hio/glslfx.h>
-#else
-#include <pxr/imaging/glf/glslfx.h>
-#endif // HDMAYA_USD_001905_BUILD
 
 #include "../../../utils/util.h"
 

@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef __HDMAYA_AL_PROXY_DELEGATE_H__
-#define __HDMAYA_AL_PROXY_DELEGATE_H__
+#ifndef HDMAYA_AL_PROXY_DELEGATE_H
+#define HDMAYA_AL_PROXY_DELEGATE_H
 
 #include "delegate.h"
 
@@ -52,9 +52,12 @@ public:
 
     void Populate() override;
     void PreFrame(const MHWRender::MDrawContext& context) override;
-    void PopulateSelectedPaths(
-        const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
-        const HdSelectionSharedPtr& selection) override;
+
+    // TODO: implement this override this to add selection support
+    // for non-ufe
+//    void PopulateSelectedPaths(
+//        const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
+//        const HdSelectionSharedPtr& selection) override;
 
 #if WANT_UFE_BUILD
     void PopulateSelectedPaths(
@@ -66,4 +69,4 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_AL_PROXY_DELEGATE_H__
+#endif // HDMAYA_AL_PROXY_DELEGATE_H

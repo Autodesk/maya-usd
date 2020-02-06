@@ -8,7 +8,6 @@ set(SRC
     renderOverride.cpp
     shadingModeExporter.cpp
     tokens.cpp
-    usdPreviewSurface.cpp
     utils.cpp
     viewCommand.cpp
 )
@@ -28,7 +27,6 @@ target_include_directories(${TARGET_NAME} PRIVATE
 )
 
 if(CMAKE_WANT_UFE_BUILD)
-    find_package(UFE QUIET)
     if(UFE_FOUND)
         message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
         include_directories(${UFE_INCLUDE_DIR})
@@ -77,18 +75,3 @@ install(
 if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/maya OPTIONAL)
 endif()
-
-
-#install(
-#    DIRECTORY scripts
-#    DESTINATION .
-#)
-
-#if (INSTALL_MAYA_MOD)
-#    install(CODE
-#    "file(WRITE \"${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.mod\"
-#\"+ ${TARGET_NAME} any ${CMAKE_INSTALL_PREFIX}
-#MAYA_SCRIPT_PATH +:= scripts
-#PYTHONPATH +:= scripts
-#\")")
-#endif ()

@@ -27,6 +27,7 @@ option(BUILD_MAYAUSD_LIBRARY "Build Core USD libraries." ON)
 option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." ON)
 option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
 option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
+option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
 option(BUILD_TESTS "Build tests." ON)
 option(WANT_USD_RELATIVE_PATH "Use relative rpaths for USD libraries" OFF)
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
@@ -106,6 +107,11 @@ if(NOT WIN32)
 endif()
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
+# Use RUNPATH instead of RPATH for all shared libs and executables on Linux
+if(IS_LINUX)
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
+endif()
 
 #==============================================================================
 # Tests
@@ -121,6 +127,8 @@ if (BUILD_TESTS)
     if (UFE_FOUND)
         add_subdirectory(test/lib/ufe)
     endif()
+
+    set(MAYAUSD_GTEST_PATH "PATH+:=lib/gtest")
 endif()
 
 #==============================================================================

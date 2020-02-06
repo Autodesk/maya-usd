@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __MTOH_VIEW_OVERRIDE_UTILS_H__
-#define __MTOH_VIEW_OVERRIDE_UTILS_H__
+#ifndef MTOH_VIEW_OVERRIDE_UTILS_H
+#define MTOH_VIEW_OVERRIDE_UTILS_H
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -84,10 +84,6 @@ public:
         return _override->Render(drawContext);
     }
 
-    bool hasUIDrawables() const override { return false; }
-
-    bool requiresLightData() const override { return false; }
-
 private:
     MtohRenderOverride* _override;
 };
@@ -142,4 +138,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __MTOH_VIEW_OVERRIDE_UTILS_H__
+#endif // MTOH_VIEW_OVERRIDE_UTILS_H

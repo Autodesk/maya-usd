@@ -13,60 +13,100 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __HDMAYA_UTILS_H__
-#define __HDMAYA_UTILS_H__
+/// \file hdmaya/utils.h
+///
+/// Utilities for Maya to Hydra, including for adapters and delegates.
+#ifndef HDMAYA_UTILS_H
+#define HDMAYA_UTILS_H
 
 #include <pxr/pxr.h>
 
 #include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/tf/token.h>
 
+#include <pxr/imaging/hd/textureResource.h>
+
+#include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MItDag.h>
 #include <maya/MItSelectionList.h>
 #include <maya/MMatrix.h>
+#include <maya/MPlug.h>
 #include <maya/MRenderUtil.h>
 #include <maya/MSelectionList.h>
 
+#include "api.h"
 #include "adapters/mayaAttrs.h"
 
 #include <functional>
+#include <tuple>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// \brief Converts a Maya matrix to a double precision GfMatrix.
+/// \param mayaMat Maya `MMatrix` to be converted.
+/// \return `GfMatrix4d` equal to \p mayaMat.
 inline GfMatrix4d GetGfMatrixFromMaya(const MMatrix& mayaMat) {
     GfMatrix4d mat;
     memcpy(mat.GetArray(), mayaMat[0], sizeof(double) * 16);
     return mat;
 }
 
-inline MString GetTextureFilePath(const MFnDependencyNode& fileNode) {
-    MString ret;
-    if (fileNode.findPlug(MayaAttrs::file::uvTilingMode, true).asShort() != 0) {
-        ret = fileNode.findPlug(MayaAttrs::file::fileTextureNamePattern, true)
-                  .asString();
-        if (ret.length() == 0) {
-            ret = fileNode
-                      .findPlug(
-                          MayaAttrs::file::computedFileTextureNamePattern, true)
-                      .asString();
-        }
-    } else {
-        ret = MRenderUtil::exactFileTextureName(fileNode.object());
-        if (ret.length() == 0) {
-            ret = fileNode.findPlug(MayaAttrs::file::fileTextureName, true)
-                      .asString();
-        }
-    }
-    return ret;
-}
+/// \brief Returns a connected "file" shader object to another shader node's
+///  parameter.
+/// \param obj Maya shader object.
+/// \param paramName Name of the parameter to be inspected for connections on
+///  \p node shader object.
+/// \return Maya object to a "file" shader node, `MObject::kNullObj` if there is
+///  no valid connection.
+HDMAYA_API
+MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName);
+
+/// \brief Returns a connected "file" shader node to another shader node's
+///  parameter.
+/// \param node Maya shader node.
+/// \param paramName Name of the parameter to be inspected for connections on
+///  \p node shader node.
+/// \return Maya object to a "file" shader node, `MObject::kNullObj` if there is
+///  no valid connection.
+HDMAYA_API
+MObject GetConnectedFileNode(
+    const MFnDependencyNode& node, const TfToken& paramName);
+
+/// \brief Returns the texture file path from a "file" shader node.
+/// \param fileNode "file" shader node.
+/// \return Full path to the texture pointed used by the file node. `<UDIM>`
+///  tags are kept intact.
+HDMAYA_API
+TfToken GetFileTexturePath(const MFnDependencyNode& fileNode);
+
+/// \brief Returns the texture resource from a "file" shader node.
+/// \param fileObj "file" shader object.
+/// \param filePath Path to the texture file held by "file" shader node.
+/// \param maxTextureMemory Maximum texture memory in bytes available for
+///  loading the texture. If the texture requires more memory
+///  than \p maxTextureMemory, higher mip-map levels are discarded until the
+///  memory required is less than \p maxTextureMemory.
+/// \return Pointer to the Hydra Texture resource.
+HDMAYA_API
+HdTextureResourceSharedPtr GetFileTextureResource(
+    const MObject& fileObj, const TfToken& filePath,
+    int maxTextureMemory = 4 * 1024 * 1024);
+
+/// \brief Returns the texture wrapping parameters from a "file" shader node.
+/// \param fileObj "file" shader object.
+/// \return A `std::tuple<HdWrap, HdWrap>` holding the wrapping parameters
+///  for s and t axis.
+HDMAYA_API
+std::tuple<HdWrap, HdWrap> GetFileTextureWrappingParams(const MObject& fileObj);
 
 /// \brief Runs a function on all recursive descendents of a selection list
-///        May optionally filter by node type. The items in the list
-///        are also included in the set of items that are iterated over
-///        (assuming they pass the filter).
+///  May optionally filter by node type. The items in the list are also included
+///  in the set of items that are iterated over (assuming they pass the filter).
+template <typename FUNC>
 inline void MapSelectionDescendents(
-    const MSelectionList& sel, std::function<void(const MDagPath&)> func,
+    const MSelectionList& sel, FUNC func,
     MFn::Type filterType = MFn::kInvalid) {
     MStatus status;
     MItDag itDag;
@@ -114,4 +154,4 @@ inline void MapSelectionDescendents(
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_UTILS_H_
+#endif // HDMAYA_UTILS_H

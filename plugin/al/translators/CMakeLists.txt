@@ -72,7 +72,7 @@ target_include_directories(
     ../lib/AL_USDMaya
 )
 
-# rpath setup
+# handle run-time search paths
 if(IS_MACOSX OR IS_LINUX) 
     mayaUsd_init_rpath(rpath "plugin")
     mayaUsd_add_rpath(rpath "../lib")
@@ -86,8 +86,6 @@ if(IS_MACOSX OR IS_LINUX)
 endif()
 
 if (IS_LINUX)
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags" PARENT_SCOPE)
-
   if(WANT_USD_RELATIVE_PATH)
       mayaUsd_add_rpath(rpath "../../../../USD/lib64")
   endif()

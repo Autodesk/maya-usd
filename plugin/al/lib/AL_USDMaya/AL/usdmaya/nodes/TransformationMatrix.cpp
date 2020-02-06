@@ -45,8 +45,7 @@ MPxTransformationMatrix* TransformationMatrix::creator()
 
 //----------------------------------------------------------------------------------------------------------------------
 TransformationMatrix::TransformationMatrix()
-  : MPxTransformationMatrix(),
-    m_prim(),
+  : BasicTransformationMatrix(),
     m_xform(),
     m_time(UsdTimeCode::Default()),
     m_scaleTweak(0, 0, 0),
@@ -75,8 +74,7 @@ TransformationMatrix::TransformationMatrix()
 
 //----------------------------------------------------------------------------------------------------------------------
 TransformationMatrix::TransformationMatrix(const UsdPrim& prim)
-  : MPxTransformationMatrix(),
-    m_prim(prim),
+  : BasicTransformationMatrix(prim),
     m_xform(prim),
     m_time(UsdTimeCode::Default()),
     m_scaleTweak(0, 0, 0),
@@ -104,7 +102,7 @@ TransformationMatrix::TransformationMatrix(const UsdPrim& prim)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void TransformationMatrix::setPrim(const UsdPrim& prim, Transform* transformNode)
+void TransformationMatrix::setPrim(const UsdPrim& prim, Scope* transformNode)
 {
   m_enableUsdWriteback = false;
   if(prim.IsValid())
@@ -856,7 +854,7 @@ bool TransformationMatrix::pushRotation(const MEulerRotation& value, UsdGeomXfor
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transformNode)
+void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformNode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::initialiseToPrim\n");
 

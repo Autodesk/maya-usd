@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __MTOH_DEFAULT_LIGHT_DELEGATE_H__
-#define __MTOH_DEFAULT_LIGHT_DELEGATE_H__
+#ifndef MTOH_DEFAULT_LIGHT_DELEGATE_H
+#define MTOH_DEFAULT_LIGHT_DELEGATE_H
 
 #include <pxr/pxr.h>
 
@@ -25,8 +25,6 @@
 
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
-
-#include <memory>
 
 #include "../../usd/hdMaya/delegates/delegateCtx.h"
 
@@ -51,9 +49,9 @@ protected:
 private:
     GlfSimpleLight _light;
     SdfPath _lightPath;
-    bool _isSupported;
+    bool _isSupported = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __MTOH_DEFAULT_LIGHT_DELEGATE_H__
+#endif // MTOH_DEFAULT_LIGHT_DELEGATE_H

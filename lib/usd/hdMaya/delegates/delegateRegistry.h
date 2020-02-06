@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __HDMAYA_DELEGATE_REGISTRY_H__
-#define __HDMAYA_DELEGATE_REGISTRY_H__
+#ifndef HDMAYA_DELEGATE_REGISTRY_H
+#define HDMAYA_DELEGATE_REGISTRY_H
 
 #include <pxr/base/tf/singleton.h>
 #include <pxr/pxr.h>
@@ -71,4 +71,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_DELEGATE_REGISTRY_H__
+#endif // HDMAYA_DELEGATE_REGISTRY_H

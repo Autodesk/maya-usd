@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __MTOH_RENDER_GLOBALS_H__
-#define __MTOH_RENDER_GLOBALS_H__
+#ifndef MTOH_RENDER_GLOBALS_H
+#define MTOH_RENDER_GLOBALS_H
 
 #include <pxr/pxr.h>
 
@@ -24,9 +24,9 @@
 
 #include <maya/MObject.h>
 
+#include "tokens.h"
 #include "../../usd/hdMaya/delegates/params.h"
 
-#include <tuple>
 #include <unordered_map>
 #include <vector>
 
@@ -37,7 +37,7 @@ struct MtohRenderGlobals {
     ~MtohRenderGlobals() = default;
     HdMayaParams delegateParams;
     GfVec4f colorSelectionHighlightColor = GfVec4f(1.0f, 1.0f, 0.0f, 0.5f);
-    TfToken selectionOverlay;
+    TfToken selectionOverlay = MtohTokens->UseVp2;
     bool colorSelectionHighlight = true;
     bool wireframeSelectionHighlight = true;
     struct RenderParam {
@@ -59,4 +59,4 @@ MtohRenderGlobals MtohGetRenderGlobals();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __MTOH_RENDER_GLOBALS_H__
+#endif // MTOH_RENDER_GLOBALS_H

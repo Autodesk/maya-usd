@@ -13,17 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __MTOH_TOKENS_H__
-#define __MTOH_TOKENS_H__
-
-#include <hdMaya/hdMaya.h>
+#ifndef MTOH_TOKENS_H
+#define MTOH_TOKENS_H
 
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#ifdef HDMAYA_USD_001910_BUILD
+#if USD_VERSION_NUM >= 1910
 #define HD_STORM_PLUGIN_NAME "HdStormRendererPlugin"
 #else
 #define HD_STORM_PLUGIN_NAME "HdStreamRendererPlugin"
@@ -41,4 +39,4 @@ TF_DECLARE_PUBLIC_TOKENS(MtohTokens, , MTOH_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __MTOH_TOKENS_H__
+#endif // MTOH_TOKENS_H

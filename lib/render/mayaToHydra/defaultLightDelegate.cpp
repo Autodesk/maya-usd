@@ -15,8 +15,6 @@
 //
 #include "defaultLightDelegate.h"
 
-#include <hdMaya/hdMaya.h>
-
 #include "../../usd/hdMaya/delegates/delegateDebugCodes.h"
 
 #include <pxr/base/gf/rotation.h>
@@ -39,8 +37,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 MtohDefaultLightDelegate::MtohDefaultLightDelegate(const InitData& initData)
     : HdSceneDelegate(initData.renderIndex, initData.delegateID),
       HdMayaDelegate(initData),
-      _lightPath(initData.delegateID.AppendChild(_tokens->DefaultMayaLight)),
-      _isSupported(false) {}
+      _lightPath(initData.delegateID.AppendChild(_tokens->DefaultMayaLight))
+{}
 
 MtohDefaultLightDelegate::~MtohDefaultLightDelegate() {
     if (ARCH_UNLIKELY(!_isSupported)) { return; }
@@ -133,12 +131,8 @@ VtValue MtohDefaultLightDelegate::GetLightParamValue(
             "MtohDefaultLightDelegate::GetLightParamValue(%s, %s)\n",
             id.GetText(), paramName.GetText());
 
-#ifdef HDMAYA_USD_001905_BUILD
     if (paramName == HdLightTokens->color ||
         paramName == HdTokens->displayColor) {
-#else
-    if (paramName == HdTokens->color) {
-#endif // HDMAYA_USD_001905_BUILD
         const auto diffuse = _light.GetDiffuse();
         return VtValue(GfVec3f(diffuse[0], diffuse[1], diffuse[2]));
     } else if (paramName == HdLightTokens->intensity) {

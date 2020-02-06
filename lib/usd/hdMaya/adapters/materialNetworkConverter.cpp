@@ -20,6 +20,8 @@
 #include "mayaAttrs.h"
 #include "tokens.h"
 
+#include "mayaUsd/utils/util.h"
+
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usdHydra/tokens.h>
@@ -345,8 +347,8 @@ public:
         MFnDependencyNode& node, const TfToken& paramName,
         const SdfValueTypeName& type, const VtValue* fallback = nullptr,
         MPlug* outPlug = nullptr) override {
-        auto path = GetTextureFilePath(node);
-        return VtValue(SdfAssetPath(path.asChar(), path.asChar()));
+        auto path = GetFileTexturePath(node);
+        return VtValue(SdfAssetPath(path.GetText(), path.GetText()));
     }
 };
 
@@ -426,8 +428,6 @@ void HdMayaMaterialNetworkConverter::initialize() {
             defaultTextureMemoryLimit);
 
     _nodeConverters = {
-        {UsdImagingTokens->UsdPreviewSurface,
-         {UsdImagingTokens->UsdPreviewSurface, {}}},
         {HdMayaAdapterTokens->pxrUsdPreviewSurface,
          {UsdImagingTokens->UsdPreviewSurface, {}}},
         {HdMayaAdapterTokens->lambert,
@@ -497,8 +497,9 @@ HdMayaShaderParam::HdMayaShaderParam(
     : param(HdMaterialParam::ParamTypeFallback, name, value), type(type) {}
 
 HdMayaMaterialNetworkConverter::HdMayaMaterialNetworkConverter(
-    HdMaterialNetwork& network, const SdfPath& prefix)
-    : _network(network), _prefix(prefix) {}
+    HdMaterialNetwork& network, const SdfPath& prefix,
+    PathToMobjMap* pathToMobj)
+    : _network(network), _prefix(prefix), _pathToMobj(pathToMobj) {}
 
 HdMaterialNode* HdMayaMaterialNetworkConverter::GetMaterial(
     const MObject& mayaNode) {
@@ -509,10 +510,8 @@ HdMaterialNode* HdMayaMaterialNetworkConverter::GetMaterial(
     if (chr == nullptr || chr[0] == '\0') { return nullptr; }
     TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
         .Msg("HdMayaMaterialNetworkConverter::GetMaterial(node=%s)\n", chr);
-    std::string usdPathStr(chr);
-    // replace namespace ":" with "_"
-    std::replace(usdPathStr.begin(), usdPathStr.end(), ':', '_');
-    const auto materialPath = _prefix.AppendPath(SdfPath(usdPathStr));
+    std::string usdNameStr = UsdMayaUtil::SanitizeName(chr);
+    const auto materialPath = _prefix.AppendChild(TfToken(usdNameStr));
 
     auto findResult = std::find_if(
             _network.nodes.begin(), _network.nodes.end(),
@@ -567,6 +566,7 @@ HdMaterialNode* HdMayaMaterialNetworkConverter::GetMaterial(
             }
         }
     }
+    if(_pathToMobj) { (*_pathToMobj)[materialPath] = mayaNode; }
     _network.nodes.push_back(material);
     return &_network.nodes.back();
 }

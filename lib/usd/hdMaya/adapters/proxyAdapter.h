@@ -1,5 +1,5 @@
-#ifndef __HDMAYA_AL_PROXY_ADAPTER_H__
-#define __HDMAYA_AL_PROXY_ADAPTER_H__
+#ifndef HDMAYA_AL_PROXY_ADAPTER_H
+#define HDMAYA_AL_PROXY_ADAPTER_H
 
 #include "../delegates/proxyUsdImagingDelegate.h"
 #include "shapeAdapter.h"
@@ -52,19 +52,11 @@ public:
     }
 
     SdfPath ConvertIndexPathToCachePath(SdfPath const& indexPath) {
-#ifdef HDMAYA_USD_001907_BUILD
         return _usdDelegate->ConvertIndexPathToCachePath(indexPath);
-#else
-        return _usdDelegate->GetPathForUsd(indexPath);
-#endif
     }
 
     SdfPath ConvertCachePathToIndexPath(SdfPath const& cachePath) {
-#ifdef HDMAYA_USD_001907_BUILD
         return _usdDelegate->ConvertCachePathToIndexPath(cachePath);
-#else
-        return _usdDelegate->GetPathForIndex(cachePath);
-#endif
     }
 
 private:
@@ -77,4 +69,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_AL_PROXY_ADAPTER_H__
+#endif // HDMAYA_AL_PROXY_ADAPTER_H

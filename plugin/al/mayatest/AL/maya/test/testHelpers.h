@@ -70,16 +70,18 @@ inline std::ostream& operator << (std::ostream& os, const MObject& obj)
   return os;
 }
 
-#ifdef _WIN32
-# define AL_PATH_CHAR "\\"
-#else
 # define AL_PATH_CHAR "/"
-#endif
 
 /// \brief  Used to generate a temporary filepath from the given filename.
 /// \param  filename the filename to append to the end of the OS temp dir
 /// \return the full path name
 AL_MAYA_TEST_PUBLIC const char* buildTempPath(const char* const filename);
+
+/// \brief  Compares two paths to make sure they are the same.  On Windows this will
+///         convert all backslashes to forward slashes before doing a string comparison.
+/// \param  pathA  the first path to compare
+/// \param  pathB  the second path to compare
+AL_MAYA_TEST_PUBLIC void compareTempPaths(std::string pathA, std::string pathB);
 
 /// \brief  A method that compares a pair of plugs (on different nodes) that test for equiality.
 /// \param  plugA  the first plug to compare

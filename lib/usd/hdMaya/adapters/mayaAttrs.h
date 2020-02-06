@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __HDMAYA_ATTRS_H__
-#define __HDMAYA_ATTRS_H__
+#ifndef HDMAYA_ATTRS_H
+#define HDMAYA_ATTRS_H
 
 #include <pxr/pxr.h>
 
@@ -166,4 +166,4 @@ MStatus initialize();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_ATTRS_H__
+#endif // HDMAYA_ATTRS_H

@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef __HDMAYA_MATERIAL_NETWORK_CONVERTER_H__
-#define __HDMAYA_MATERIAL_NETWORK_CONVERTER_H__
+#ifndef HDMAYA_MATERIAL_NETWORK_CONVERTER_H
+#define HDMAYA_MATERIAL_NETWORK_CONVERTER_H
 
 #include "../api.h"
 
@@ -118,9 +118,12 @@ private:
 
 class HdMayaMaterialNetworkConverter {
 public:
+    typedef std::unordered_map<SdfPath, MObject, SdfPath::Hash> PathToMobjMap;
+
     HDMAYA_API
     HdMayaMaterialNetworkConverter(
-        HdMaterialNetwork& network, const SdfPath& prefix);
+        HdMaterialNetwork& network, const SdfPath& prefix,
+        PathToMobjMap* pathToMobj = nullptr);
 
     HDMAYA_API
     HdMaterialNode* GetMaterial(const MObject& mayaNode);
@@ -160,8 +163,9 @@ public:
 private:
     HdMaterialNetwork& _network;
     const SdfPath& _prefix;
+    PathToMobjMap* _pathToMobj;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // __HDMAYA_MATERIAL_NETWORK_CONVERTER_H__
+#endif // HDMAYA_MATERIAL_NETWORK_CONVERTER_H

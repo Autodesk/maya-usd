@@ -20,6 +20,7 @@ import maya.api.OpenMaya as om
 import maya.cmds as cmds
 
 from ufeTestUtils import usdUtils, mayaUtils, ufeUtils
+from ufeTestUtils.testUtils import assertVectorAlmostEqual
 import testTRSBase
 import ufe
 
@@ -102,7 +103,7 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
         '''
         runTimeVec = self.runTimeTranslation()
         ufeVec  = self.ufeTranslation()
-        self.assertVectorAlmostEqual(runTimeVec, ufeVec)
+        assertVectorAlmostEqual(self, runTimeVec, ufeVec)
         return (runTimeVec, ufeVec)
 
     def multiSelectSnapshotRunTimeUFE(self, items):
@@ -115,13 +116,9 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
         for item in items:
             runTimeVec = self.runTimeTranslation(item)
             ufeVec  = self.ufeTranslation(item)
-            self.assertVectorAlmostEqual(runTimeVec, ufeVec)
+            assertVectorAlmostEqual(self, runTimeVec, ufeVec)
             snapshot.append((runTimeVec, ufeVec))
         return snapshot
-
-    def assertVectorAlmostEqual(self, a, b):
-        for va, vb in zip(a, b):
-            self.assertAlmostEqual(va, vb)
 
     def runTestMove(self, expected):
         '''Engine method to run move test.'''
@@ -261,7 +258,7 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
         backT3d = ufe.Transform3d.transform3d(backItem)
         initialTranslation = [-10, -20, -30]
         backT3d.translate(*initialTranslation)
-        self.assertVectorAlmostEqual(ufeSceneItemTranslation(backItem), 
+        assertVectorAlmostEqual(self, ufeSceneItemTranslation(backItem), 
                                      usdSceneItemTranslation(backItem))
 
         # Save the initial positions to the memento list.

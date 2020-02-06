@@ -39,38 +39,30 @@
 #include "adapterRegistry.h"
 #include "mayaAttrs.h"
 #include "shapeAdapter.h"
+#include "tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    (st)
-);
-// clang-format on
-
-constexpr int MAX_SMOOTH_LEVEL = 8;
-
-const std::array<std::pair<MObject&, HdDirtyBits>, 8> _dirtyBits{
-    {{MayaAttrs::mesh::pnts,
-      // This is useful when the user edits the mesh.
-      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent |
-          HdChangeTracker::DirtySubdivTags},
-     {MayaAttrs::mesh::inMesh,
-      // We are tracking topology changes and uv changes separately
-      HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent |
-          HdChangeTracker::DirtySubdivTags},
-     {MayaAttrs::mesh::worldMatrix, HdChangeTracker::DirtyTransform},
-     {MayaAttrs::mesh::doubleSided, HdChangeTracker::DirtyDoubleSided},
-     {MayaAttrs::mesh::intermediateObject, HdChangeTracker::DirtyVisibility},
-     {MayaAttrs::mesh::uvPivot,
-      // Tracking manual edits to uvs.
-      HdChangeTracker::DirtyPrimvar},
-     {MayaAttrs::mesh::displaySmoothMesh, HdChangeTracker::DirtyDisplayStyle},
-     {MayaAttrs::mesh::smoothLevel, HdChangeTracker::DirtyDisplayStyle}}};
+const std::pair<MObject&, HdDirtyBits> _dirtyBits[]{
+    {MayaAttrs::mesh::pnts,
+     // This is useful when the user edits the mesh.
+     HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent |
+         HdChangeTracker::DirtySubdivTags},
+    {MayaAttrs::mesh::inMesh,
+     // We are tracking topology changes and uv changes separately
+     HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent |
+         HdChangeTracker::DirtySubdivTags},
+    {MayaAttrs::mesh::worldMatrix, HdChangeTracker::DirtyTransform},
+    {MayaAttrs::mesh::doubleSided, HdChangeTracker::DirtyDoubleSided},
+    {MayaAttrs::mesh::intermediateObject, HdChangeTracker::DirtyVisibility},
+    {MayaAttrs::mesh::uvPivot,
+     // Tracking manual edits to uvs.
+     HdChangeTracker::DirtyPrimvar},
+    {MayaAttrs::mesh::displaySmoothMesh, HdChangeTracker::DirtyDisplayStyle},
+    {MayaAttrs::mesh::smoothLevel, HdChangeTracker::DirtyDisplayStyle}
+};
 
 } // namespace
 
@@ -178,7 +170,7 @@ public:
             MFnMesh mesh(GetDagPath(), &status);
             if (ARCH_UNLIKELY(!status)) { return {}; }
             return GetPoints(mesh);
-        } else if (key == _tokens->st) {
+        } else if (key == HdMayaAdapterTokens->st) {
             return GetUVs();
         }
         return {};
@@ -204,7 +196,7 @@ public:
             samples[1] = GetPoints(mesh);
             // FIXME: should we do this or in the render delegate?
             return samples[1] == samples[0] ? 1 : 2;
-        } else if (key == _tokens->st) {
+        } else if (key == HdMayaAdapterTokens->st) {
             times[0] = 0.0f;
             samples[0] = GetUVs();
             return 1;
@@ -251,10 +243,8 @@ public:
         const auto displaySmoothMesh =
             node.findPlug(MayaAttrs::mesh::displaySmoothMesh, true).asShort();
         if (displaySmoothMesh == 0) { return {0, false, false}; }
-        const auto smoothLevel = std::min(
-            MAX_SMOOTH_LEVEL,
-            std::max(
-                0, node.findPlug(MayaAttrs::mesh::smoothLevel, true).asInt()));
+        const auto smoothLevel = std::max(
+                0, node.findPlug(MayaAttrs::mesh::smoothLevel, true).asInt());
         return {smoothLevel, false, false};
 #else
         return {0, false, false};
@@ -340,7 +330,7 @@ public:
             MFnMesh mesh(GetDagPath());
             if (mesh.numUVs() > 0) {
                 HdPrimvarDescriptor desc;
-                desc.name = _tokens->st;
+                desc.name = HdMayaAdapterTokens->st;
                 desc.interpolation = interpolation;
                 desc.role = HdPrimvarRoleTokens->textureCoordinate;
                 return {desc};
