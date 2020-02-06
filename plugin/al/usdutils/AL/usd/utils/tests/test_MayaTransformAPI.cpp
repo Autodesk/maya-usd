@@ -53,6 +53,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto rotatePivotTranslate = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivotTranslate"));
@@ -61,6 +62,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto rotatePivot = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivot"));
@@ -69,6 +71,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto rotate = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotate"));
@@ -77,6 +80,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto rotateAxis = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotateAxis"));
@@ -85,6 +89,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto rotatePivotINV = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivot"), true);
@@ -93,6 +98,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto scalePivotTranslate = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivotTranslate"));
@@ -101,6 +107,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto scalePivot = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivot"));
@@ -109,6 +116,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto shear = xform.AddTransformOp(UsdGeomXformOp::PrecisionDouble, TfToken("shear"));
@@ -117,6 +125,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto scale = xform.AddScaleOp(UsdGeomXformOp::PrecisionFloat, TfToken("scale"));
@@ -125,6 +134,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto scalePivotINV = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivot"), true);
@@ -133,6 +143,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
   }
   #endif
@@ -149,6 +160,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto rotatePivotTranslate = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivotTranslate"));
@@ -157,6 +169,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto rotatePivot = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivot"));
@@ -165,6 +178,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto rotate = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat);
@@ -173,6 +187,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto rotateAxis = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotateAxis"));
@@ -181,6 +196,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto rotatePivotINV = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivot"), true);
@@ -189,6 +205,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto scalePivotTranslate = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivotTranslate"));
@@ -197,6 +214,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto scalePivot = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivot"));
@@ -205,6 +223,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto shear = xform.AddTransformOp(UsdGeomXformOp::PrecisionDouble, TfToken("shear"));
@@ -213,6 +232,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto scale = xform.AddScaleOp(UsdGeomXformOp::PrecisionFloat);
@@ -221,6 +241,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
 
     auto scalePivotINV = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivot"), true);
@@ -229,6 +250,7 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     {
       AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
+      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
     }
   }
 }
@@ -1124,5 +1146,50 @@ TEST(MayaTransformAPI, convertToTRS)
         }
       }
     }
+  }
+}
+
+const char* const commonXformDef = 
+R"(#
+#usda 1.0
+
+def Xform "pCube1"
+{
+    float3 xformOp:rotateXYZ = (1, 2, 3)
+    float3 xformOp:scale = (4, 5, 6)
+    double3 xformOp:translate = (7, 8, 9)
+    float3 xformOp:translate:pivot = (10, 11, 12)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:translate:pivot", "xformOp:rotateXYZ", "xformOp:scale", "!invert!xformOp:translate:pivot"]
+}
+)";
+
+TEST(MayaTransformAPI, commonProfile)
+{
+  {
+    const char* const path = getDataPath("common_api");
+    UsdStageRefPtr stage = UsdStage::Open(path);
+    ASSERT_TRUE(stage);
+    UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
+    ASSERT_TRUE(prim);
+
+    AL::usd::utils::MayaTransformAPI api(prim, false);
+
+    EXPECT_TRUE(api);
+    EXPECT_EQ(AL::usd::utils::TransformAPI::kCommon, api.api());
+
+    GfVec3f pivot = api.rotatePivot();
+    EXPECT_NEAR(10.0f, pivot[0], 1e-5f);
+    EXPECT_NEAR(11.0f, pivot[1], 1e-5f);
+    EXPECT_NEAR(12.0f, pivot[2], 1e-5f);
+
+    pivot[0] = 20.0f;
+    pivot[1] = 21.0f;
+    pivot[2] = 22.0f;
+    api.rotatePivot(pivot);
+    pivot[0] = pivot[1] = pivot[2] = 0;
+    pivot = api.rotatePivot();
+    EXPECT_NEAR(20.0f, pivot[0], 1e-5f);
+    EXPECT_NEAR(21.0f, pivot[1], 1e-5f);
+    EXPECT_NEAR(22.0f, pivot[2], 1e-5f);
   }
 }
