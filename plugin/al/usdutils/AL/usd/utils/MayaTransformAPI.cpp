@@ -69,6 +69,18 @@ const TfToken scaleOld("xformOp:scale:scale");
 //----------------------------------------------------------------------------------------------------------------------
 bool MayaTransformAPI::matchesMayaTrasformProfile(const std::vector<UsdGeomXformOp>& orderedOps)
 {
+  bool result = _matchesMayaTrasformProfile(orderedOps);
+  if(!result)
+  {
+    m_api = TransformAPI::kFallback;
+  }
+  return result;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool MayaTransformAPI::_matchesMayaTrasformProfile(const std::vector<UsdGeomXformOp>& orderedOps)
+{
+  // no ops defined, so we can assume the maya profile can be used. 
   if(orderedOps.empty())
     return true;
 
