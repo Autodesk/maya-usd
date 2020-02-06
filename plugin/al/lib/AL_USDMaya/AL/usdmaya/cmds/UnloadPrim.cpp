@@ -69,7 +69,9 @@ MStatus ChangeVariant::doIt(const MArgList& args)
   {
     TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ChangeVariant::doIt\n");
     MStatus status;
-    MArgDatabase database = makeDatabase(args);
+    MArgDatabase database(syntax(), args, &status);
+    if(!status)
+      return status;
 
     MString pp;
     MString vset;
@@ -145,7 +147,9 @@ MStatus ActivatePrim::doIt(const MArgList& args)
   {
     TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ActivatePrim::doIt\n");
     MStatus status;
-    MArgDatabase database = makeDatabase(args);
+    MArgDatabase database(syntax(), args, &status);
+    if(!status)
+      return status;
 
     MString pp;
     bool active = false;

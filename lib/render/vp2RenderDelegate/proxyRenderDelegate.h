@@ -175,7 +175,7 @@ private:
     MCallbackId         _mayaSelectionCallbackId{ 0 };
 #endif
 
-#if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
+#if defined(WANT_UFE_BUILD) && defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
     //! Adjustment mode for global selection list: ADD, REMOVE, REPLACE, XOR
     MGlobal::ListAdjustment _globalListAdjustment;
 #endif

@@ -10,7 +10,7 @@ set(PY_INIT_FILES
 # copy to build location for module tests
 foreach(INPUT_FILE ${PY_INIT_FILES})
   string(REPLACE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} OUTPUT_FILE ${INPUT_FILE})
-  execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${INPUT_FILE} ${OUTPUT_FILE})
+  execute_process(COMMAND "${CMAKE_COMMAND}" -E copy "${INPUT_FILE}" "${OUTPUT_FILE}")
 endforeach()
 
 set(libFile ${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
@@ -30,8 +30,8 @@ configure_file(
 # install python module
 foreach(INPUT_FILE ${PY_INIT_FILES})
   string(REPLACE ${CMAKE_CURRENT_SOURCE_DIR} ${AL_INSTALL_PREFIX}/lib/python OUTPUT_FILE ${INPUT_FILE})
-  install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${INPUT_FILE} ${OUTPUT_FILE})")
-  install(CODE "execute_process(COMMAND ${Python_EXECUTABLE} -m compileall ${OUTPUT_FILE} ${AL_INSTALL_PREFIX})")
+  install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy \"${INPUT_FILE}\" \"${OUTPUT_FILE}\")")
+  install(CODE "execute_process(COMMAND \"${Python_EXECUTABLE}\" -m compileall \"${OUTPUT_FILE}\" \"${AL_INSTALL_PREFIX}\")")
 endforeach()
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json

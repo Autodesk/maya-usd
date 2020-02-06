@@ -33,34 +33,28 @@ set(path
     "${MAYA_LOCATION}/bin"
     "$ENV{PATH}"
 )
+separate_argument_list(path)
 
 set(pythonPath
     "${CMAKE_INSTALL_PREFIX}/lib/python"
     "$ENV{PYTHONPATH}"
 )
-
-if(IS_WINDOWS)
-    string(REPLACE ";" "\;" path "${path}")
-    string(REPLACE ";" "\;" pythonPath "${pythonPath}")
-else()
-    separate_arguments(path NATIVE_COMMAND "${path}")
-    separate_arguments(pythonPath NATIVE_COMMAND "${pythonPath}")
-
-    string(REPLACE "\;" ":" path "${path}")
-    string(REPLACE "\;" ":" pythonPath "${pythonPath}")
-endif()
+separate_argument_list(pythonPath)
 
 foreach(script ${test_script_files})
     mayaUsd_get_unittest_target(target ${script})
     add_test(
         NAME ${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMAND ${MAYA_PY_EXECUTABLE} -c "from unittest import main; \
+        COMMAND ${MAYA_PY_EXECUTABLE} -c "import sys; \
+                                          from unittest import main; \
                                           import maya.standalone; \
                                           maya.standalone.initialize(name='python'); \
                                           import ${target}; \
-                                          main(module=${target}); \
-                                          maya.standalone.uninitialize()"
+                                          testProg = main(module=${target}, exit=False); \
+                                          maya.standalone.uninitialize(); \
+                                          sys.exit(not testProg.result.wasSuccessful());
+                                          "
     )
     set_property(TEST ${target} APPEND PROPERTY ENVIRONMENT
         "PATH=${path}"

@@ -8,12 +8,11 @@ project(googletest-download NONE)
 # https://github.com/abseil/googletest/blob/master/googletest/README.md
 # need to force the use of the shared C run-time.
 
-
 include(ExternalProject)
 
 set(FORCE_SHARED_CRT "")
 if(MSVC)
-  set(FORCE_SHARED_CRT -DFORCE_SHARED_CRT=OFF)
+  set(FORCE_SHARED_CRT "-DFORCE_SHARED_CRT=OFF")
 endif()
 
 ExternalProject_Add(googletest
@@ -21,5 +20,13 @@ ExternalProject_Add(googletest
   GIT_TAG           master
   SOURCE_DIR        "${GOOGLETEST_BUILD_ROOT}/googletest-src"
   BINARY_DIR        "${GOOGLETEST_BUILD_ROOT}/googletest-build"
-  CMAKE_ARGS        "-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}" "-DCMAKE_INSTALL_PREFIX=${GOOGLETEST_BUILD_ROOT}/googletest-install" "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}" "-Dgtest_force_shared_crt=ON" "-DCMAKE_POSITION_INDEPENDENT_CODE=ON" -DFORCE_SHARED_CRT=OFF ${FORCE_SHARED_CRT}
+  CMAKE_ARGS
+                    "-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
+                    "-DCMAKE_INSTALL_PREFIX=${GOOGLETEST_BUILD_ROOT}/googletest-install"
+                    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+                    "-Dgtest_force_shared_crt=ON"
+                    "-DBUILD_SHARED_LIBS=ON"
+                    "-DCMAKE_MACOSX_RPATH=ON"
+                    "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"
+                    "${FORCE_SHARED_CRT}"
 )

@@ -30,16 +30,6 @@ namespace cmds {
 AL_MAYA_DEFINE_COMMAND(SyncFileIOGui, AL_usdmaya);
 
 //----------------------------------------------------------------------------------------------------------------------
-MArgDatabase SyncFileIOGui::makeDatabase(const MArgList& args)
-{
-  MStatus status;
-  MArgDatabase database(syntax(), args, &status);
-  if(!status)
-    throw status;
-  return database;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 MSyntax SyncFileIOGui::createSyntax()
 {
   MSyntax syn;
@@ -60,15 +50,19 @@ MStatus SyncFileIOGui::doIt(const MArgList& argList)
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("AL_usdmaya_SyncFileIOGui::doIt\n");
   try
   {
-    MArgDatabase args = makeDatabase(argList);
+    MStatus status;
+    MArgDatabase args(syntax(), argList, &status);
+    if(!status)
+      return status;
+
     AL_MAYA_COMMAND_HELP(args, g_helpText);
 
     MString translatorName;
-    MStatus status = args.getCommandArgument(0, translatorName);
-    if(!status) 
+    status = args.getCommandArgument(0, translatorName);
+    if(!status)
       return status;
 
-    maya::utils::PluginTranslatorOptionsContextManager::resyncGUI(translatorName.asChar());    
+    maya::utils::PluginTranslatorOptionsContextManager::resyncGUI(translatorName.asChar());
   }
   catch(const MStatus&)
   {
@@ -79,16 +73,16 @@ MStatus SyncFileIOGui::doIt(const MArgList& argList)
 const char* const SyncFileIOGui::g_helpText =  R"(
     AL_usdmaya_SyncFileIOGui Overview:
 
-      This command is for internal use. 
+      This command is for internal use.
 
-      This command resyncs the MEL code needed to create the GUI components for plug-in file 
+      This command resyncs the MEL code needed to create the GUI components for plug-in file
     translator options. Within the AL_USDMaya plug-in, there are two possible option GUI's that
     can be synced...
 
     For Import:    AL_usdmaya_SyncFileIOGui "ImportTranslator"
     For Export:    AL_usdmaya_SyncFileIOGui "ExportTranslator"
 
-    You shouldn't have to call these methods manually - they should be called automatically. 
+    You shouldn't have to call these methods manually - they should be called automatically.
 
 )";
 

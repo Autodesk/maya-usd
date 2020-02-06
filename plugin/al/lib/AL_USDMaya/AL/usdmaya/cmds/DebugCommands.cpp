@@ -33,16 +33,6 @@ namespace cmds {
 AL_MAYA_DEFINE_COMMAND(UsdDebugCommand, AL_usdmaya);
 
 //----------------------------------------------------------------------------------------------------------------------
-MArgDatabase UsdDebugCommand::makeDatabase(const MArgList& args)
-{
-  MStatus status;
-  MArgDatabase database(syntax(), args, &status);
-  if(!status)
-    throw status;
-  return database;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 MSyntax UsdDebugCommand::createSyntax()
 {
   MSyntax syn;
@@ -66,7 +56,11 @@ MStatus UsdDebugCommand::doIt(const MArgList& argList)
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("AL_usdmaya_UsdDebugCommand::doIt\n");
   try
   {
-    MArgDatabase args = makeDatabase(argList);
+    MStatus status;
+    MArgDatabase args(syntax(), argList, &status);
+    if(!status)
+      return status;
+
     AL_MAYA_COMMAND_HELP(args, g_helpText);
 
     const bool listSymbols = args.isFlagSet("-ls");

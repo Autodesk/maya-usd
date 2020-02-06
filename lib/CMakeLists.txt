@@ -229,6 +229,8 @@ if(UFE_FOUND)
             ufe/UsdAttribute.cpp
             ufe/UsdAttributes.cpp
             ufe/UsdAttributesHandler.cpp
+            ufe/UsdObject3d.cpp
+            ufe/UsdObject3dHandler.cpp
             ufe/UsdUndoCreateGroupCommand.cpp
         )
     endif()
@@ -362,6 +364,7 @@ if(UFE_FOUND)
         ufe/UsdUndoDuplicateCommand.h
         ufe/UsdUndoRenameCommand.h
         ufe/Utils.h
+		ufe/UfeVersionCompat.h
     )
 
     if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
@@ -369,6 +372,8 @@ if(UFE_FOUND)
             ufe/UsdAttribute.h
             ufe/UsdAttributes.h
             ufe/UsdAttributesHandler.h
+            ufe/UsdObject3d.h
+            ufe/UsdObject3dHandler.h
             ufe/UsdUndoCreateGroupCommand.h
         )
     endif()
@@ -475,6 +480,7 @@ if(UFE_FOUND)
     target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
 endif()
 
+# handle run-time search paths
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "plugin")
     if(WANT_USD_RELATIVE_PATH)
@@ -620,17 +626,8 @@ if(UFE_FOUND)
         PROPERTIES 
             PREFIX ""
     )
-    if(IS_WINDOWS)
-        set_target_properties(${UFE_PYTHON_LIBRARY_NAME}
-            PROPERTIES
-                SUFFIX ".pyd"
-        )
-    elseif(IS_MACOSX)
-        set_target_properties(${UFE_PYTHON_LIBRARY_NAME}
-            PROPERTIES
-                SUFFIX ".so"
-        )
-    endif()
+
+    set_python_module_suffix(${UFE_PYTHON_LIBRARY_NAME})
 
     target_link_libraries(${UFE_PYTHON_LIBRARY_NAME}
         ${LIBRARY_NAME}

@@ -62,10 +62,6 @@ public:
   /// \return the stage from the proxy shape specified in the selected command arguments
   UsdStageRefPtr getShapeNodeStage(const MArgDatabase& args);
 
-  /// \brief  construct the arg data base from the arguments maya passed to the MPxCommands doIt method.
-  /// \param  args the raw argument list
-  /// \return the database of parsed arguments
-  MArgDatabase makeDatabase(const MArgList& args);
 };
 
 //----------------------------------------------------------------------------------------------------------------------
