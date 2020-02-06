@@ -72,9 +72,9 @@ private:
 	const UsdPrim& getUsdRootPrim() const;
 
 private:
-	Ufe::SceneItem::Ptr fItem{nullptr};
-	Hierarchy::Ptr fMayaHierarchy{nullptr};
-	Ufe::HierarchyHandler::Ptr fMayaHierarchyHandler{nullptr};
+	Ufe::SceneItem::Ptr fItem;
+	Hierarchy::Ptr fMayaHierarchy;
+	Ufe::HierarchyHandler::Ptr fMayaHierarchyHandler;
 
 	// The root prim is initialized on first use and therefore mutable.
 	mutable UsdPrim fUsdRootPrim;

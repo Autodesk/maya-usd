@@ -23,36 +23,10 @@
 #include <ufe/runTimeMgr.h>
 #include <ufe/rtid.h>
 
+#include <pxr/base/tf/stringUtils.h>
+
 using namespace MayaUsd;
 using namespace boost::python;
-
-namespace {
-
-std::size_t find(
-    const std::string& s, std::size_t size, std::size_t begin, char sep)
-{
-    std::size_t foundPos = s.find(sep, begin);
-    return foundPos == std::string::npos ? size : foundPos;
-}
-
-std::vector<std::string> split(const std::string& src, char sep)
-{
-    std::vector<std::string> names;
-    if (sep) {
-        std::size_t end = 0;
-        const std::size_t size = src.size();
-        for (std::size_t begin = 0; begin < size; begin = end+1) {
-            end = find(src, size, begin, sep);
-            names.push_back(src.substr(begin, end-begin));
-        }
-    }
-    else {
-        names.push_back(src);
-    }
-    return names;
-}
-
-}
 
 UsdPrim getPrimFromRawItem(uint64_t rawItem)
 {
@@ -107,7 +81,7 @@ UsdPrim ufePathToPrim(const std::string& ufePathString)
 {
     // The path string is a list of segment strings separated by ',' comma
     // separator.
-    auto segmentStrings = split(ufePathString, ',');
+    auto segmentStrings = TfStringTokenize(ufePathString, ",");
 
     // If there's just one segment, it's the Maya Dag path segment, so it can't
     // have a prim.

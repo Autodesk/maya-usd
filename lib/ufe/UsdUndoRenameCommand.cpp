@@ -25,6 +25,7 @@
 #include <ufe/ufeAssert.h>
 
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/base/tf/token.h>
 
@@ -98,13 +99,14 @@ bool UsdUndoRenameCommand::renameRedo()
 
 bool UsdUndoRenameCommand::renameUndo()
 {
-    // Regardless of where the edit target is currently set, switch to the
-    // layer where we copied the source prim into the destination, then
-    // restore the edit target.
-    auto editTarget = fStage->GetEditTarget();
-    fStage->SetEditTarget(fLayer);
-    bool status = fStage->RemovePrim(fUsdDstPath);
-    fStage->SetEditTarget(editTarget);
+    bool status{false};
+    {
+        // Regardless of where the edit target is currently set, switch to the
+        // layer where we copied the source prim into the destination, then
+        // restore the edit target.
+        UsdEditContext ctx(fStage, fLayer);
+        status = fStage->RemovePrim(fUsdDstPath);
+    }
     if (status) {
         auto srcPrim = fStage->GetPrimAtPath(fUsdSrcPath);
         UFE_ASSERT_MSG(srcPrim, "Invalid prim cannot be activated.");

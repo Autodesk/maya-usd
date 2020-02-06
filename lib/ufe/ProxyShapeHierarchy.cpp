@@ -110,9 +110,9 @@ bool ProxyShapeHierarchy::hasChildren() const
 {
 	const UsdPrim& rootPrim = getUsdRootPrim();
 	if (!rootPrim.IsValid()) {
-        UFE_LOG("invalid root prim in ProxyShapeHierarchy::hasChildren()");
+		UFE_LOG("invalid root prim in ProxyShapeHierarchy::hasChildren()");
 		return false;
-    }
+	}
 	return !rootPrim.GetChildren().empty();
 }
 
