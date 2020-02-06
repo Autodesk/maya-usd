@@ -31,6 +31,8 @@ const TfToken rotateZYX("xformOp:rotateZYX");
 const TfToken rotateAxis("xformOp:rotateXYZ:rotateAxis");
 const TfToken scale("xformOp:scale");
 const TfToken translate("xformOp:translate");
+const TfToken pivot("xformOp:translate:pivot");
+const TfToken pivotINV("!invert!xformOp:translate:pivot");
 const TfToken rotatePivot("xformOp:translate:rotatePivot");
 const TfToken scalePivot("xformOp:translate:scalePivot");
 const TfToken rotatePivotINV("!invert!xformOp:translate:rotatePivot");
@@ -84,11 +86,21 @@ bool MayaTransformAPI::matchesMayaTrasformProfile(const std::vector<UsdGeomXform
     name = iter->GetOpName();
   }
 
+  if(type == UsdGeomXformOp::TypeTranslate && name == tokens::pivot)
+  {
+    m_pivot = *iter;
+    m_api = TransformAPI::kCommon;
+    if(++iter == end)
+      return true;
+    type = iter->GetOpType();
+    name = iter->GetOpName();
+  }
+
   if(type == UsdGeomXformOp::TypeTranslate && name == tokens::rotatePivotTranslate)
   {
     m_rotatePivotTranslate = *iter;
     if(++iter == end)
-      return true;
+      return m_api != TransformAPI::kCommon;
     type = iter->GetOpType();
     name = iter->GetOpName();
   }
@@ -97,7 +109,7 @@ bool MayaTransformAPI::matchesMayaTrasformProfile(const std::vector<UsdGeomXform
   {
     m_rotatePivot = *iter;
     if(++iter == end)
-      return true;
+      return m_api != TransformAPI::kCommon;
     type = iter->GetOpType();
     name = iter->GetOpName();
   }
@@ -205,7 +217,7 @@ bool MayaTransformAPI::matchesMayaTrasformProfile(const std::vector<UsdGeomXform
   {
     m_rotatePivotINV = *iter;
     if(++iter == end)
-      return true;
+      return m_api != TransformAPI::kCommon;
     type = iter->GetOpType();
     name = iter->GetOpName();
   }
@@ -214,7 +226,7 @@ bool MayaTransformAPI::matchesMayaTrasformProfile(const std::vector<UsdGeomXform
   {
     m_scalePivotTranslate = *iter;
     if(++iter == end)
-      return true;
+      return m_api != TransformAPI::kCommon;
     type = iter->GetOpType();
     name = iter->GetOpName();
   }
@@ -223,7 +235,7 @@ bool MayaTransformAPI::matchesMayaTrasformProfile(const std::vector<UsdGeomXform
   {
     m_scalePivot = *iter;
     if(++iter == end)
-      return true;
+      return m_api != TransformAPI::kCommon;
     type = iter->GetOpType();
     name = iter->GetOpName();
   }
@@ -250,7 +262,16 @@ bool MayaTransformAPI::matchesMayaTrasformProfile(const std::vector<UsdGeomXform
   {
     m_scalePivotINV = *iter;
     if(++iter == end)
-      return true;
+      return m_api != TransformAPI::kCommon;
+    type = iter->GetOpType();
+    name = iter->GetOpName();
+  }
+
+  if(type == UsdGeomXformOp::TypeTranslate && name == tokens::pivotINV)
+  {
+    m_pivotINV = *iter;
+    if(++iter == end)
+      return m_api == TransformAPI::kCommon;
   }
 
   return false;
@@ -421,10 +442,14 @@ void MayaTransformAPI::rotatePivot(const GfVec3f& value, const UsdTimeCode& time
 {
   if(m_prim)
   {
-    if(!m_rotatePivot)
-      insertRotatePivotOp();
-
-    m_rotatePivot.Set(value, time);
+    if(m_api == TransformAPI::kMaya)
+    {
+      if(!m_rotatePivot)
+        insertRotatePivotOp();
+      m_rotatePivot.Set(value, time);
+    }
+    else
+      m_pivot.Set(value, time);
   }
 }
 
@@ -435,6 +460,12 @@ GfVec3f MayaTransformAPI::rotatePivot(const UsdTimeCode& time) const
   {
     GfVec3f value;
     m_rotatePivot.Get(&value, time);
+    return value;
+  }
+  if(m_pivot)
+  {
+    GfVec3f value;
+    m_pivot.Get(&value, time);
     return value;
   }
   return GfVec3f(0);
