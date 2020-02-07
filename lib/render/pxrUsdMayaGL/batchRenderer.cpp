@@ -94,6 +94,14 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 TF_INSTANTIATE_SINGLETON(UsdMayaGLBatchRenderer);
 
+const int UsdMayaGLBatchRenderer::ProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "UsdMayaGLBatchRenderer", "UsdMayaGLBatchRenderer"
+#else
+    "UsdMayaGLBatchRenderer"
+#endif
+);
+
 /* static */
 void
 UsdMayaGLBatchRenderer::Init()
