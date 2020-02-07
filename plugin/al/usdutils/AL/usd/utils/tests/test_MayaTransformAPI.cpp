@@ -1124,6 +1124,7 @@ TEST(MayaTransformAPI, convertToTRS)
     {
       AL::usd::utils::MayaTransformAPI api(prim, true);
       UsdGeomXformable xform(prim);
+      ASSERT_TRUE(prim);
       bool reset;
       std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&reset);
       ASSERT_EQ(3, ops.size());
