@@ -170,11 +170,13 @@ public:
   AL_USDMAYA_UTILS_PUBLIC
   bool applyVertexCreases();
 
-  /// \brief  creates all of the UV and colour sets on the Maya geometry
-  /// \param  createUvs enable/disable the creation of uv sets
-  /// \param  createColours enable/disable the creation of colour sets
+  /// \brief  creates all of the UV sets on the Maya geometry
   AL_USDMAYA_UTILS_PUBLIC
-  void applyPrimVars(bool createUvs = true, bool createColours = true);
+  void applyUVs();
+
+  /// \brief  creates all of the colour sets on the Maya geometry
+  AL_USDMAYA_UTILS_PUBLIC
+  void applyColourSetData();
 
   /// \brief  returns the poly shape being imported.
   MObject getPolyShape() const
