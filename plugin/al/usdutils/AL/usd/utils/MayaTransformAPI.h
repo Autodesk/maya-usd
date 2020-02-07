@@ -52,7 +52,7 @@ enum class RotationOrder
 //----------------------------------------------------------------------------------------------------------------------
 enum class TransformAPI
 {
-  kFallback,
+  kFallback, ///< no transform profile could be matched
   kCommon,   ///< transform matches the pixar common profile
   kMaya,     ///< transform matches the maya transform profile (i.e. "transform" node)
 };
@@ -235,6 +235,9 @@ protected:
   void insertRotatePivotOp();  
   void insertRotatePivotTranslateOp();
 private:
+  GfVec3f _extractScaleFromMatrix(const UsdTimeCode time) const;
+  GfVec3f _extractRotateFromMatrix(const UsdTimeCode time) const;
+  GfVec3d _extractTranslateFromMatrix(const UsdTimeCode time) const;
   bool _matchesMayaTrasformProfile(const std::vector<UsdGeomXformOp>& orderedOps);
   UsdPrim m_prim;
   UsdGeomXformOp m_pivot = UsdGeomXformOp();
