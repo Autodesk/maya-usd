@@ -82,6 +82,7 @@ void ProxyShape::serialiseTranslatorContext()
 {
   triggerEvent("PreSerialiseContext");
 
+  context()->updateUniqueKeys();
   serializedTrCtxPlug().setValue(context()->serialise());
 
   triggerEvent("PostSerialiseContext");
