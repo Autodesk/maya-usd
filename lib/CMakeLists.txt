@@ -244,6 +244,8 @@ if(UFE_FOUND)
             ufe/UsdAttribute.cpp
             ufe/UsdAttributes.cpp
             ufe/UsdAttributesHandler.cpp
+            ufe/UsdContextOps.cpp
+            ufe/UsdContextOpsHandler.cpp
             ufe/UsdObject3d.cpp
             ufe/UsdObject3dHandler.cpp
             ufe/UsdUndoCreateGroupCommand.cpp
@@ -388,6 +390,8 @@ if(UFE_FOUND)
             ufe/UsdAttribute.h
             ufe/UsdAttributes.h
             ufe/UsdAttributesHandler.h
+            ufe/UsdContextOps.h
+            ufe/UsdContextOpsHandler.h
             ufe/UsdObject3d.h
             ufe/UsdObject3dHandler.h
             ufe/UsdUndoCreateGroupCommand.h

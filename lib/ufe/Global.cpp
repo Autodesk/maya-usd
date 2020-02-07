@@ -30,6 +30,7 @@
 // Note: must come after include of ufe files so we have the define.
 #include "UsdAttributesHandler.h"
 #include "UsdObject3dHandler.h"
+#include "UsdContextOpsHandler.h"
 #else
 #include "UfeVersionCompat.h"
 #endif
@@ -97,10 +98,11 @@ MStatus initialize()
 	auto usdSceneItemOpsHandler = UsdSceneItemOpsHandler::create();
 	UFE_V2(auto usdAttributesHandler = UsdAttributesHandler::create();)
 	UFE_V2(auto usdObject3dHandler = UsdObject3dHandler::create();)
+	UFE_V2(auto usdContextOpsHandler = UsdContextOpsHandler::create();)
 	g_USDRtid = Ufe::RunTimeMgr::instance().register_(
 		kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, 
         usdSceneItemOpsHandler
-        UFE_V2(, usdAttributesHandler, usdObject3dHandler));
+        UFE_V2(, usdAttributesHandler, usdObject3dHandler, usdContextOpsHandler));
 
 #if !defined(NDEBUG)
 	assert(g_USDRtid != 0);
