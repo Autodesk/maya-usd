@@ -94,17 +94,17 @@ namespace {
         //! if valid, set the primitive stride on the render item
         int* _primitiveStride{ nullptr };
 
-        //! If valid, new shader instance to set
-        MHWRender::MShaderInstance* _shader{ nullptr };
-
-        //! Is this object transparent
-        bool _isTransparent{ false };
-
         //! Instancing doesn't have dirty bits, every time we do update, we must update instance transforms
         MMatrixArray _instanceTransforms;
 
         //! Color array to support per-instance color and selection highlight.
         MFloatArray _instanceColors;
+
+        //! If valid, new shader instance to set
+        MHWRender::MShaderInstance* _shader{ nullptr };
+
+        //! Is this object transparent
+        bool _isTransparent{ false };
 
         //! If true, associate geometric buffers to the render item and trigger consolidation/instancing update
         bool _geometryDirty{ false };
@@ -740,9 +740,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
         // Prepare normals buffer.
         if (itemDirtyBits &
             (HdChangeTracker::DirtyNormals | HdChangeTracker::DirtyDisplayStyle)) {
-            // Using a zero vector to indicate requirement of camera-facing
-            // normals when there is no authored normals.
-            VtVec3fArray normals(1, GfVec3f(0.0f, 0.0f, 0.0f));
+            VtVec3fArray normals;
 
             const auto it = primvarSourceMap.find(HdTokens->normals);
             if (it != primvarSourceMap.end()) {
@@ -750,6 +748,12 @@ HdVP2BasisCurves::_UpdateDrawItem(
                 if (ARCH_LIKELY(value.IsHolding<VtVec3fArray>())) {
                     normals = value.UncheckedGet<VtVec3fArray>();
                 }
+            }
+
+            // Using a zero vector to indicate requirement of camera-facing
+            // normals when there is no authored normals.
+            if (normals.empty()) {
+                normals.push_back(GfVec3f(0.0f, 0.0f, 0.0f));
             }
 
             normals = _BuildInterpolatedArray(topology, normals);
@@ -780,7 +784,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
         if ((refineLevel > 0) &&
             (itemDirtyBits & (HdChangeTracker::DirtyPrimvar |
                               HdChangeTracker::DirtyDisplayStyle))) {
-            VtFloatArray widths(1, 1.0f);
+            VtFloatArray widths;
 
             const auto it = primvarSourceMap.find(HdTokens->widths);
             if (it != primvarSourceMap.end()) {
@@ -788,6 +792,10 @@ HdVP2BasisCurves::_UpdateDrawItem(
                 if (value.IsHolding<VtFloatArray>()) {
                     widths = value.UncheckedGet<VtFloatArray>();
                 }
+            }
+
+            if (widths.empty()) {
+                widths.push_back(1.0f);
             }
 
             widths = _BuildInterpolatedArray(topology, widths);
@@ -849,10 +857,8 @@ HdVP2BasisCurves::_UpdateDrawItem(
         if (itemDirtyBits & (HdChangeTracker::DirtyPrimvar |
                              HdChangeTracker::DirtyDisplayStyle |
                              DirtySelectionHighlight)) {
-            // If color/opacity is not found, the 18% gray color will be used
-            // to match the default color of Hydra Storm.
-            VtVec3fArray colorArray(1, GfVec3f(0.18f, 0.18f, 0.18f));
-            VtFloatArray alphaArray(1, 1.0f);
+            VtVec3fArray colorArray;
+            VtFloatArray alphaArray;
 
             auto itColor = primvarSourceMap.find(HdTokens->displayColor);
             if (itColor != primvarSourceMap.end()) {
@@ -881,6 +887,16 @@ HdVP2BasisCurves::_UpdateDrawItem(
                         }
                     }
                 }
+            }
+
+            // If color/opacity is not found, the 18% gray color will be used
+            // to match the default color of Hydra Storm.
+            if (colorArray.empty()) {
+                colorArray.push_back(GfVec3f(0.18f, 0.18f, 0.18f));
+            }
+
+            if (alphaArray.empty()) {
+                alphaArray.push_back(1.0f);
             }
 
             if (colorArray.size() == 1 && alphaArray.size() == 1) {
@@ -927,10 +943,9 @@ HdVP2BasisCurves::_UpdateDrawItem(
                 colorArray = _BuildInterpolatedArray(topology, colorArray);
                 alphaArray = _BuildInterpolatedArray(topology, alphaArray);
 
-                const unsigned int numColors = colorArray.size();
-                const unsigned int numAlphas = alphaArray.size();
-                const unsigned int numVertices =
-                    numColors <= numAlphas ? numColors : numAlphas;
+                const size_t numColors = colorArray.size();
+                const size_t numAlphas = alphaArray.size();
+                const size_t numVertices = std::min(numColors, numAlphas);
 
                 if (numColors != numAlphas) {
                     TF_CODING_ERROR("color and opacity do not match for BasisCurve %s",
@@ -953,7 +968,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
 
                 if (bufferData) {
                     unsigned int offset = 0;
-                    for (unsigned int v = 0; v < numVertices; v++) {
+                    for (size_t v = 0; v < numVertices; v++) {
                         const GfVec3f& color = colorArray[v];
                         bufferData[offset++] = color[0];
                         bufferData[offset++] = color[1];
@@ -1036,10 +1051,15 @@ HdVP2BasisCurves::_UpdateDrawItem(
             const GfVec3d midpoint = range.GetMidpoint();
             const GfVec3d size = range.GetSize();
 
-            MTransformationMatrix transformation;
-            transformation.setScale(size.data(), MSpace::kTransform);
-            transformation.setTranslation(midpoint.data(), MSpace::kTransform);
-            worldMatrix = transformation.asMatrix() * worldMatrix;
+            MPoint midp(midpoint[0], midpoint[1], midpoint[2]);
+            midp *= worldMatrix;
+
+            auto& m = worldMatrix.matrix;
+            m[0][0] *= size[0]; m[0][1] *= size[0]; m[0][2] *= size[0]; m[0][3] *= size[0];
+            m[1][0] *= size[1]; m[1][1] *= size[1]; m[1][2] *= size[1]; m[1][3] *= size[1];
+            m[2][0] *= size[2]; m[2][1] *= size[2]; m[2][2] *= size[2]; m[2][3] *= size[2];
+            m[3][0]  = midp[0]; m[3][1]  = midp[1]; m[3][2]  = midp[2]; m[3][3]  = midp[3];
+
             stateToCommit._worldMatrix = &drawItemData._worldMatrix;
         }
     }
