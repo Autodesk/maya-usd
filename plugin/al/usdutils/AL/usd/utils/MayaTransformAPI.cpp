@@ -333,7 +333,7 @@ bool MayaTransformAPI::inheritsTransform() const
 //----------------------------------------------------------------------------------------------------------------------
 void MayaTransformAPI::scale(const GfVec3f& value, const UsdTimeCode& time)
 {
-  if(m_prim)
+  if(m_api != TransformAPI::kFallback && m_prim)
   {
     if(!m_scale)
       insertScaleOp();
@@ -345,20 +345,24 @@ void MayaTransformAPI::scale(const GfVec3f& value, const UsdTimeCode& time)
 //----------------------------------------------------------------------------------------------------------------------
 GfVec3f MayaTransformAPI::scale(const UsdTimeCode& time) const
 {
-  if(m_scale)
+  if(m_api != TransformAPI::kFallback)
   {
-    GfVec3f value;
-    m_scale.Get(&value, time);
-    return value;
+    if(m_scale)
+    {
+      GfVec3f value;
+      m_scale.Get(&value, time);
+      return value;
+    }
+    return GfVec3f(1.0f);
   }
-  return GfVec3f(1.0f);
+  return _extractScaleFromMatrix(time);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void MayaTransformAPI::rotate(const GfVec3f& value, const RotationOrder order, const UsdTimeCode& time)
 {
   const float radToDeg = 180.0f / 3.141592654f;
-  if(m_prim)
+  if(m_api != TransformAPI::kFallback && m_prim)
   {
     if(!m_rotate)
     {
@@ -372,14 +376,18 @@ void MayaTransformAPI::rotate(const GfVec3f& value, const RotationOrder order, c
 //----------------------------------------------------------------------------------------------------------------------
 GfVec3f MayaTransformAPI::rotate(const UsdTimeCode& time) const
 {
-  const float degToRad = 3.141592654f / 180.0f;
-  if(m_rotate)
+  if(m_api != TransformAPI::kFallback)
   {
-    GfVec3f value;
-    m_rotate.Get(&value, time);
-    return value * degToRad;
+    const float degToRad = 3.141592654f / 180.0f;
+    if(m_rotate)
+    {
+      GfVec3f value;
+      m_rotate.Get(&value, time);
+      return value * degToRad;
+    }
+    return GfVec3f(0);
   }
-  return GfVec3f(0);
+  return _extractRotateFromMatrix(time);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -391,7 +399,7 @@ RotationOrder MayaTransformAPI::rotateOrder() const
 //----------------------------------------------------------------------------------------------------------------------
 void MayaTransformAPI::translate(const GfVec3d& value, const UsdTimeCode& time)
 {
-  if(m_prim)
+  if(m_api != TransformAPI::kFallback && m_prim)
   {
     if(!m_translate)
       insertTranslateOp();
@@ -410,25 +418,29 @@ void MayaTransformAPI::translate(const GfVec3d& value, const UsdTimeCode& time)
 //----------------------------------------------------------------------------------------------------------------------
 GfVec3d MayaTransformAPI::translate(const UsdTimeCode& time) const
 {
-  if(m_translate)
+  if(m_api != TransformAPI::kFallback)
   {
-    if(m_translate.GetPrecision() == UsdGeomXformOp::PrecisionDouble)
+    if(m_translate)
     {
-      GfVec3d value;
+      if(m_translate.GetPrecision() == UsdGeomXformOp::PrecisionDouble)
+      {
+        GfVec3d value;
+        m_translate.Get(&value, time);
+        return value;
+      }
+      GfVec3f value;
       m_translate.Get(&value, time);
-      return value;
+      return GfVec3d(value);
     }
-    GfVec3f value;
-    m_translate.Get(&value, time);
-    return GfVec3d(value);
+    return GfVec3d(0);
   }
-  return GfVec3d(0);
+  return _extractTranslateFromMatrix(time);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void MayaTransformAPI::scalePivot(const GfVec3f& value, const UsdTimeCode& time)
 {
-  if(m_prim)
+  if(m_api != TransformAPI::kFallback && m_prim)
   {
     if(!m_scalePivot)
       insertScalePivotOp();
@@ -440,7 +452,7 @@ void MayaTransformAPI::scalePivot(const GfVec3f& value, const UsdTimeCode& time)
 //----------------------------------------------------------------------------------------------------------------------
 GfVec3f MayaTransformAPI::scalePivot(const UsdTimeCode& time) const
 {
-  if(m_scalePivot)
+  if(m_api != TransformAPI::kFallback && m_scalePivot)
   {
     GfVec3f value;
     m_scalePivot.Get(&value, time);
@@ -452,7 +464,7 @@ GfVec3f MayaTransformAPI::scalePivot(const UsdTimeCode& time) const
 //----------------------------------------------------------------------------------------------------------------------
 void MayaTransformAPI::rotatePivot(const GfVec3f& value, const UsdTimeCode& time)
 {
-  if(m_prim)
+  if(m_api != TransformAPI::kFallback && m_prim)
   {
     if(m_api == TransformAPI::kMaya)
     {
@@ -468,17 +480,20 @@ void MayaTransformAPI::rotatePivot(const GfVec3f& value, const UsdTimeCode& time
 //----------------------------------------------------------------------------------------------------------------------
 GfVec3f MayaTransformAPI::rotatePivot(const UsdTimeCode& time) const
 {
-  if(m_rotatePivot)
+  if(m_api != TransformAPI::kFallback)
   {
-    GfVec3f value;
-    m_rotatePivot.Get(&value, time);
-    return value;
-  }
-  if(m_pivot)
-  {
-    GfVec3f value;
-    m_pivot.Get(&value, time);
-    return value;
+    if(m_rotatePivot)
+    {
+      GfVec3f value;
+      m_rotatePivot.Get(&value, time);
+      return value;
+    }
+    if(m_pivot)
+    {
+      GfVec3f value;
+      m_pivot.Get(&value, time);
+      return value;
+    }
   }
   return GfVec3f(0);
 }
@@ -487,7 +502,7 @@ GfVec3f MayaTransformAPI::rotatePivot(const UsdTimeCode& time) const
 void MayaTransformAPI::rotateAxis(const GfVec3f& value, const UsdTimeCode& time)
 {
   const float radToDeg = 180.0f / 3.141592654f;
-  if(m_prim)
+  if(m_api != TransformAPI::kFallback && m_prim)
   {
     if(!m_rotateAxis)
       insertRotateAxisOp();
@@ -499,12 +514,15 @@ void MayaTransformAPI::rotateAxis(const GfVec3f& value, const UsdTimeCode& time)
 //----------------------------------------------------------------------------------------------------------------------
 GfVec3f MayaTransformAPI::rotateAxis(const UsdTimeCode& time) const
 {
-  const float degToRad = 3.141592654f / 180.0f;
-  if(m_rotateAxis)
+  if(m_api != TransformAPI::kFallback)
   {
-    GfVec3f value;
-    m_rotateAxis.Get(&value, time);
-    return value * degToRad;
+    const float degToRad = 3.141592654f / 180.0f;
+    if(m_rotateAxis)
+    {
+      GfVec3f value;
+      m_rotateAxis.Get(&value, time);
+      return value * degToRad;
+    }
   }
   return GfVec3f(0);
 }
@@ -514,7 +532,7 @@ GfVec3f MayaTransformAPI::rotateAxis(const UsdTimeCode& time) const
 //----------------------------------------------------------------------------------------------------------------------
 void MayaTransformAPI::scalePivotTranslate(const GfVec3f& value, const UsdTimeCode& time)
 {
-  if(m_prim)
+  if(m_api != TransformAPI::kFallback && m_prim)
   {
     if(!m_scalePivotTranslate)
       insertScalePivotTranslateOp();
@@ -526,11 +544,14 @@ void MayaTransformAPI::scalePivotTranslate(const GfVec3f& value, const UsdTimeCo
 //----------------------------------------------------------------------------------------------------------------------
 GfVec3f MayaTransformAPI::scalePivotTranslate(const UsdTimeCode& time) const
 {
-  if(m_scalePivotTranslate)
+  if(m_api != TransformAPI::kFallback)
   {
-    GfVec3f value;
-    m_scalePivotTranslate.Get(&value, time);
-    return value;
+    if(m_scalePivotTranslate)
+    {
+      GfVec3f value;
+      m_scalePivotTranslate.Get(&value, time);
+      return value;
+    }
   }
   return GfVec3f(0);
 }
@@ -538,7 +559,7 @@ GfVec3f MayaTransformAPI::scalePivotTranslate(const UsdTimeCode& time) const
 //----------------------------------------------------------------------------------------------------------------------
 void MayaTransformAPI::rotatePivotTranslate(const GfVec3f& value, const UsdTimeCode& time)
 {
-  if(m_prim)
+  if(m_api != TransformAPI::kFallback && m_prim)
   {
     if(!m_rotatePivotTranslate)
       insertRotatePivotTranslateOp();
@@ -550,11 +571,14 @@ void MayaTransformAPI::rotatePivotTranslate(const GfVec3f& value, const UsdTimeC
 //----------------------------------------------------------------------------------------------------------------------
 GfVec3f MayaTransformAPI::rotatePivotTranslate(const UsdTimeCode& time) const
 {
-  if(m_rotatePivotTranslate)
+  if(m_api != TransformAPI::kFallback)
   {
-    GfVec3f value;
-    m_rotatePivotTranslate.Get(&value, time);
-    return value;
+    if(m_rotatePivotTranslate)
+    {
+      GfVec3f value;
+      m_rotatePivotTranslate.Get(&value, time);
+      return value;
+    }
   }
   return GfVec3f(0);
 }
@@ -919,6 +943,7 @@ void MayaTransformAPI::convertMatrixOpToComponentOps(const UsdGeomXformOp& op)
 {
   std::vector<double> times;
   op.GetTimeSamples(&times);
+  m_api = TransformAPI::kMaya;
 
   // set up the default values
   {
@@ -937,6 +962,86 @@ void MayaTransformAPI::convertMatrixOpToComponentOps(const UsdGeomXformOp& op)
     }
   }
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+GfVec3f MayaTransformAPI::_extractScaleFromMatrix(const UsdTimeCode time) const
+{
+  UsdGeomXformable xform(m_prim);
+  GfMatrix4d transform;
+  bool resetsXformStack;
+  if(xform.GetLocalTransformation(&transform, &resetsXformStack, time))
+  {
+    GfVec3f m[3] = { 
+      GfVec3f(transform[0][0], transform[0][1], transform[0][2]),
+      GfVec3f(transform[1][0], transform[1][1], transform[1][2]),
+      GfVec3f(transform[2][0], transform[2][1], transform[2][2])
+    };
+
+    GfVec3f& rx = m[0];
+    GfVec3f& ry = m[1];
+    GfVec3f& rz = m[2];
+
+    // extract and remove the scaling.
+    GfVec3f s(rx.Normalize(), ry.Normalize(), rz.Normalize());
+
+    // Do we have a negative scaling?
+    if(GfDot(GfCross(rx, ry), rz) < 0)
+    {
+      s[2] = -s[2];
+    }
+    return s;
+  }
+  return GfVec3f(1.0f);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+GfVec3f MayaTransformAPI::_extractRotateFromMatrix(const UsdTimeCode time) const
+{
+  UsdGeomXformable xform(m_prim);
+  GfMatrix4d transform;
+  bool resetsXformStack;
+  if(xform.GetLocalTransformation(&transform, &resetsXformStack, time))
+  {
+    GfVec3f m[3] = { 
+      GfVec3f(transform[0][0], transform[0][1], transform[0][2]),
+      GfVec3f(transform[1][0], transform[1][1], transform[1][2]),
+      GfVec3f(transform[2][0], transform[2][1], transform[2][2])
+    };
+
+    GfVec3f& rx = m[0];
+    GfVec3f& ry = m[1];
+    GfVec3f& rz = m[2];
+
+    // remove the scaling.
+    rx.Normalize();
+    ry.Normalize();
+    rz.Normalize();
+
+    // Do we have a negative scaling?
+    if(GfDot(GfCross(rx, ry), rz) < 0)
+    {
+      rz = -rz;
+    }
+    GfVec3f rotation;
+    extractEuler(m, RotationOrder::kXYZ, rotation);
+    return rotation;
+  }
+  return GfVec3f(0);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+GfVec3d MayaTransformAPI::_extractTranslateFromMatrix(const UsdTimeCode time) const
+{
+  UsdGeomXformable xform(m_prim);
+  GfMatrix4d transform;
+  bool resetsXformStack;
+  if(xform.GetLocalTransformation(&transform, &resetsXformStack, time))
+  {
+    return GfVec3d(transform[3][0], transform[3][1], transform[3][2]);
+  }
+  return GfVec3d(0.0);
+}
+
 
 //----------------------------------------------------------------------------------------------------------------------
 } // utils
