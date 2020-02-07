@@ -50,6 +50,10 @@
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/usd/sdf/path.h"
 
+#if USD_VERSION_NUM < 1911
+#include "pxr/usd/usdGeom/tokens.h"
+#endif
+
 #include <maya/M3dView.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
@@ -800,6 +804,15 @@ UsdMayaGLBatchRenderer::TestIntersection(
     if (TfDebug::IsEnabled(PXRUSDMAYAGL_BATCHED_SELECTION)) {
         for (const HdxPickHit& hit : *hitSet) {
             TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
+#if USD_VERSION_NUM > 1911
+                "        HIT:\n"
+                "            delegateId      : %s\n"
+                "            objectId        : %s\n"
+                "            normalizedDepth : %f\n",
+                hit.delegateId.GetText(),
+                hit.objectId.GetText(),
+                hit.normalizedDepth);
+#else
                 "        HIT:\n"
                 "            delegateId: %s\n"
                 "            objectId  : %s\n"
@@ -807,6 +820,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
                 hit.delegateId.GetText(),
                 hit.objectId.GetText(),
                 hit.ndcDepth);
+#endif
         }
     }
 
@@ -893,6 +907,15 @@ UsdMayaGLBatchRenderer::TestIntersection(
     if (TfDebug::IsEnabled(PXRUSDMAYAGL_BATCHED_SELECTION)) {
         for (const HdxPickHit& hit : *hitSet) {
             TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
+#if USD_VERSION_NUM > 1911
+                "        HIT:\n"
+                "            delegateId      : %s\n"
+                "            objectId        : %s\n"
+                "            normalizedDepth : %f\n",
+                hit.delegateId.GetText(),
+                hit.objectId.GetText(),
+                hit.normalizedDepth);
+#else
                 "        HIT:\n"
                 "            delegateId: %s\n"
                 "            objectId  : %s\n"
@@ -900,6 +923,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
                 hit.delegateId.GetText(),
                 hit.objectId.GetText(),
                 hit.ndcDepth);
+#endif
         }
     }
 
@@ -1012,8 +1036,13 @@ UsdMayaGLBatchRenderer::_GetIntersectionPrimFilters(
             PxrMayaHdPrimFilter {
                 collection,
                 TfTokenVector{
+#if USD_VERSION_NUM >= 1911
                     HdRenderTagTokens->geometry,
                     HdRenderTagTokens->proxy}
+#else
+                    HdTokens->geometry,
+                    UsdGeomTokens->proxy}
+#endif
         });
     }
 
@@ -1137,6 +1166,17 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
 
         for (const HdxPickHit& hit : hitSet) {
             TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
+#if USD_VERSION_NUM > 1911
+                "    NEW HIT\n"
+                "        delegateId      : %s\n"
+                "        objectId        : %s\n"
+                "        instanceIndex   : %d\n"
+                "        normalizedDepth : %f\n",
+                hit.delegateId.GetText(),
+                hit.objectId.GetText(),
+                hit.instanceIndex,
+                hit.normalizedDepth);
+#else
                 "    NEW HIT\n"
                 "        delegateId   : %s\n"
                 "        objectId     : %s\n"
@@ -1146,6 +1186,7 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
                 hit.objectId.GetText(),
                 hit.instanceIndex,
                 hit.ndcDepth);
+#endif
 
             if (!hit.instancerId.IsEmpty()) {
                 const VtIntArray instanceIndices(1, hit.instanceIndex);

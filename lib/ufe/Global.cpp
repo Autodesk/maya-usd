@@ -30,6 +30,9 @@
 #ifdef UFE_V2_FEATURES_AVAILABLE
 // Note: must come after include of ufe files so we have the define.
 #include "UsdAttributesHandler.h"
+#include "UsdObject3dHandler.h"
+#else
+#include "UfeVersionCompat.h"
 #endif
 
 #include <string>
@@ -93,14 +96,13 @@ MStatus initialize()
 	auto usdHierHandler = UsdHierarchyHandler::create();
 	auto usdTrans3dHandler = UsdTransform3dHandler::create();
 	auto usdSceneItemOpsHandler = UsdSceneItemOpsHandler::create();
-#ifdef UFE_V2_FEATURES_AVAILABLE
-	auto usdAttributesHandler = UsdAttributesHandler::create();
+	UFE_V2(auto usdAttributesHandler = UsdAttributesHandler::create();)
+	UFE_V2(auto usdObject3dHandler = UsdObject3dHandler::create();)
 	g_USDRtid = Ufe::RunTimeMgr::instance().register_(
-		kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, usdSceneItemOpsHandler, usdAttributesHandler, nullptr);
-#else
-	g_USDRtid = Ufe::RunTimeMgr::instance().register_(
-		kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, usdSceneItemOpsHandler);
-#endif
+		kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, 
+        usdSceneItemOpsHandler
+        UFE_V2(, usdAttributesHandler, usdObject3dHandler));
+
 #if !defined(NDEBUG)
 	assert(g_USDRtid != 0);
 #endif

@@ -111,6 +111,8 @@ list(APPEND AL_usdmaya_nodes_headers
         AL/usdmaya/nodes/ProxyUsdGeomCamera.h
         AL/usdmaya/nodes/RendererManager.h
         AL/usdmaya/nodes/Transform.h
+        AL/usdmaya/nodes/Scope.h
+        AL/usdmaya/nodes/BasicTransformationMatrix.h
         AL/usdmaya/nodes/TransformationMatrix.h
 )
 
@@ -131,6 +133,8 @@ list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/ProxyUsdGeomCamera.cpp
         AL/usdmaya/nodes/RendererManager.cpp
         AL/usdmaya/nodes/Transform.cpp
+        AL/usdmaya/nodes/Scope.cpp
+        AL/usdmaya/nodes/BasicTransformationMatrix.cpp
         AL/usdmaya/nodes/TransformationMatrix.cpp
         AL/usdmaya/nodes/proxy/PrimFilter.cpp
 )
@@ -235,7 +239,7 @@ endif()
 set_property(GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 
 # python bindings
-if(IS_WINDOWS AND ${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
     # On Windows when compiling with debug python the library must be named with _d.
     set(PYTHON_LIBRARY_NAME _${LIBRARY_NAME}_d)
 else()
@@ -267,20 +271,17 @@ set_target_properties(${PYTHON_LIBRARY_NAME}
     PROPERTIES 
         PREFIX ""
 )
-if(IS_WINDOWS)
-    set_target_properties(${PYTHON_LIBRARY_NAME}
-        PROPERTIES
-            SUFFIX ".pyd"
-    )
-endif()
+
+set_python_module_suffix(${PYTHON_LIBRARY_NAME})
 
 target_link_libraries(${PYTHON_LIBRARY_NAME}
     ${LIBRARY_NAME}
 )
 
-# rpath setup
+# handle run-time search paths
 if(IS_MACOSX OR IS_LINUX) 
     mayaUsd_init_rpath(rpath lib/python/${arDirPath})
+    mayaUsd_add_rpath(rpath "${AL_INSTALL_PREFIX}/lib")
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     mayaUsd_install_rpath(rpath ${PYTHON_LIBRARY_NAME})
 endif()

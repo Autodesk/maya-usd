@@ -17,6 +17,7 @@
 
 #include "AL/usdmaya/Api.h"
 #include "AL/usdmaya/TransformOperation.h"
+#include "AL/usdmaya/nodes/BasicTransformationMatrix.h"
 
 #include "maya/MPxTransformationMatrix.h"
 #include "maya/MPxTransform.h"
@@ -24,11 +25,14 @@
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
 namespace usdmaya {
 namespace nodes {
+
+class Transform;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  This class provides a transformation matrix that allows you to apply tweaks over some read only
@@ -37,14 +41,15 @@ namespace nodes {
 /// \ingroup nodes
 //----------------------------------------------------------------------------------------------------------------------
 class TransformationMatrix
-  : public MPxTransformationMatrix
+  : public BasicTransformationMatrix
 {
-  UsdPrim m_prim;
+
+  friend class Transform;
+
   UsdGeomXformable m_xform;
   UsdTimeCode m_time;
   std::vector<UsdGeomXformOp> m_xformops;
   std::vector<TransformOperation> m_orderedOps;
-  MObjectHandle m_transformNode;
 
   // tweak values. These are applied on top of the USD transform values to produce the final result.
   MVector m_scaleTweak;
@@ -159,13 +164,6 @@ class TransformationMatrix
   void internal_pushDouble(const double result, UsdGeomXformOp& op) { pushDouble(result, op, getTimeCode()); }
   bool internal_pushShear(const MVector& result, UsdGeomXformOp& op) { return pushShear(result, op, getTimeCode()); }
   bool internal_pushMatrix(const MMatrix& result, UsdGeomXformOp& op) { return pushMatrix(result, op, getTimeCode()); }
-
-public:
-
-  /// \brief  sets the MObject for the transform
-  /// \param  object the MObject for the custom transform node
-  void setMObject(const MObject object)
-    { m_transformNode = object; }
 
   /// \brief  checks to see whether the transform attribute is locked
   /// \return true if the translate attribute is locked
@@ -294,6 +292,68 @@ public:
   /// return  true if written ok
   static bool pushMatrix(const MMatrix& input, UsdGeomXformOp& op, UsdTimeCode timeCode = UsdTimeCode::Default());
 
+  /// \brief  If set to true, transform values will target the animated key-frame values in the prim. If set to false,
+  ///         the transform values will target the default attribute values.
+  /// \param  enabled true to target animated values, false to target the default.
+  void enableReadAnimatedValues(bool enabled);
+
+  /// \brief  Applies a local space translation offset to the computed matrix. Useful for positioning objects on a
+  ///         table.
+  /// \param  localTranslateOffset the local space offset to apply to the transform.
+  inline void setLocalTranslationOffset(const MVector& localTranslateOffset)
+    { m_localTranslateOffset = localTranslateOffset; }
+
+  /// \brief  this method updates the internal transformation components to the given time. Only the Transform node
+  ///         should need to call this method
+  /// \param  time the new timecode
+  void updateToTime(const UsdTimeCode& time);
+
+  /// \brief  pushes any modifications on the matrix back onto the UsdPrim
+  void pushToPrim();
+
+  void notifyProxyShapeOfRedraw();
+
+  /// \brief  sets the SRT values from a matrix
+  void setFromMatrix(MObject thisNode, const MMatrix& m);
+
+  //  Translation methods:
+  MStatus translateTo(const MVector &vector, MSpace::Space = MSpace::kTransform) override;
+
+  //  Scale methods:
+  MStatus scaleTo(const MVector &, MSpace::Space = MSpace::kTransform) override;
+
+  //  Shear methods:
+  MStatus shearTo(const MVector& shear, MSpace::Space = MSpace::kTransform) override;
+
+  //  Scale pivot methods:
+  MStatus setScalePivot(const MPoint &, MSpace::Space = MSpace::kTransform, bool balance = true) override;
+  MStatus setScalePivotTranslation(const MVector &vector, MSpace::Space = MSpace::kTransform) override;
+
+  //  Rotate pivot methods:
+  MStatus setRotatePivot(const MPoint &, MSpace::Space = MSpace::kTransform, bool balance = true) override;
+  MStatus setRotatePivotTranslation(const MVector &vector, MSpace::Space = MSpace::kTransform) override;
+
+  //  Rotate order methods:
+  MStatus setRotationOrder(MTransformationMatrix::RotationOrder, bool preserve = true) override;
+
+  //  Rotation methods:
+  MStatus rotateTo(const MQuaternion &q, MSpace::Space = MSpace::kTransform) override;
+  MStatus rotateTo(const MEulerRotation &e, MSpace::Space = MSpace::kTransform) override;
+  MStatus setRotateOrientation(const MQuaternion &q, MSpace::Space = MSpace::kTransform, bool balance = true) override;
+  MStatus setRotateOrientation(const MEulerRotation &euler, MSpace::Space = MSpace::kTransform, bool balance = true) override;
+
+  /// \brief  If set to true, modifications to these transform attributes will be pushed back onto the original prim.
+  /// \param  enabled true will cause changes to this transform update the values on the USD prim. False will mean that
+  ///         the changes are simply cached internally.
+  /// \param  enabled true to write values to the usd prim when changed, false to treat the usd prim as read only.
+  void enablePushToPrim(bool enabled);
+
+  //  Compute matrix result
+  MMatrix asMatrix() const override;
+  MMatrix asMatrix(double percent) const override;
+
+public:
+
   /// \brief  the type ID of the transformation matrix
   AL_USDMAYA_PUBLIC
   static const MTypeId kTypeId;
@@ -312,18 +372,7 @@ public:
 
   /// \brief  set the prim that this transformation matrix will read/write to.
   /// \param  prim the prim
-  void setPrim(const UsdPrim& prim, Transform* transformNode);
-
-  /// \brief  If set to true, modifications to these transform attributes will be pushed back onto the original prim.
-  /// \param  enabled true will cause changes to this transform update the values on the USD prim. False will mean that
-  ///         the changes are simply cached internally.
-  /// \param  enabled true to write values to the usd prim when changed, false to treat the usd prim as read only.
-  void enablePushToPrim(bool enabled);
-
-  /// \brief  If set to true, transform values will target the animated key-frame values in the prim. If set to false,
-  ///         the transform values will target the default attribute values.
-  /// \param  enabled true to target animated values, false to target the default.
-  void enableReadAnimatedValues(bool enabled);
+  void setPrim(const UsdPrim& prim, Scope* transformNode) override;
 
   /// \brief  Returns the timecode to use when pushing the transform values to the USD prim. If readFromTimeline flag
   ///         is set to true, then the timecode will be read from the incoming time attribute on the transform node.
@@ -332,17 +381,6 @@ public:
   /// \return the timecode to use when pushing transform values to the USD prim
   inline UsdTimeCode getTimeCode()
     { return readAnimatedValues() ? m_time : UsdTimeCode::Default(); }
-
-  /// \brief  Applies a local space translation offset to the computed matrix. Useful for positioning objects on a
-  ///         table.
-  /// \param  localTranslateOffset the local space offset to apply to the transform.
-  inline void setLocalTranslationOffset(const MVector& localTranslateOffset)
-    { m_localTranslateOffset = localTranslateOffset; }
-
-  /// \brief  return the prim this transform matrix is attached to
-  /// \return the prim this transform matrix is controlling
-  inline const UsdPrim& prim() const
-    { return m_prim; }
   
   //--------------------------------------------------------------------------------------------------------------------
   /// \name  Query flags
@@ -429,12 +467,13 @@ public:
     { return (kPushPrimToMatrix & m_flags) != 0; }
 
   /// \brief  Is this transform set to write back onto the USD prim, and is it currently possible?
-  inline bool pushToPrimAvailable() const
+  bool pushToPrimAvailable() const override
     { return pushToPrimEnabled() && m_prim.IsValid(); }
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name  Convert To-From USD primitive
   //--------------------------------------------------------------------------------------------------------------------
+
 
   /// \brief  this method inspects the UsdGeomXform to find out:
   ///         -# what schema is being used (Maya, Pxr, or just a matrix)
@@ -442,52 +481,8 @@ public:
   ///         -# which, if any, of those components are animated.
   /// \param  readFromPrim if true, the maya attribute values will be updated from those found on the USD prim
   /// \param  node the transform node to which this matrix belongs (and where the USD prim will be extracted from)
-  void initialiseToPrim(bool readFromPrim = true, Transform* node = 0);
+  void initialiseToPrim(bool readFromPrim = true, Scope* node = 0) override;
 
-  /// \brief  this method updates the internal transformation components to the given time. Only the Transform node
-  ///         should need to call this method
-  /// \param  time the new timecode
-  void updateToTime(const UsdTimeCode& time);
-
-  /// \brief  pushes any modifications on the matrix back onto the UsdPrim
-  void pushToPrim();
-
-  void notifyProxyShapeOfRedraw();
-
-private:
-  /// \brief  sets the SRT values from a matrix
-  void setFromMatrix(MObject thisNode, const MMatrix& m);
-
-  //  Translation methods:
-  MStatus translateTo(const MVector &vector, MSpace::Space = MSpace::kTransform) override;
-
-  //  Scale methods:
-  MStatus scaleTo(const MVector &, MSpace::Space = MSpace::kTransform) override;
-
-  //  Shear methods:
-  MStatus shearTo(const MVector& shear, MSpace::Space = MSpace::kTransform) override;
-
-  //  Scale pivot methods:
-  MStatus setScalePivot(const MPoint &, MSpace::Space = MSpace::kTransform, bool balance = true) override;
-  MStatus setScalePivotTranslation(const MVector &vector, MSpace::Space = MSpace::kTransform) override;
-
-  //  Rotate pivot methods:
-  MStatus setRotatePivot(const MPoint &, MSpace::Space = MSpace::kTransform, bool balance = true) override;
-  MStatus setRotatePivotTranslation(const MVector &vector, MSpace::Space = MSpace::kTransform) override;
-
-  //  Rotate order methods:
-  MStatus setRotationOrder(MTransformationMatrix::RotationOrder, bool preserve = true) override;
-
-  //  Rotation methods:
-  MStatus rotateTo(const MQuaternion &q, MSpace::Space = MSpace::kTransform) override;
-  MStatus rotateTo(const MEulerRotation &e, MSpace::Space = MSpace::kTransform) override;
-  MStatus setRotateOrientation(const MQuaternion &q, MSpace::Space = MSpace::kTransform, bool balance = true) override;
-  MStatus setRotateOrientation(const MEulerRotation &euler, MSpace::Space = MSpace::kTransform, bool balance = true) override;
-
-  //  Compute matrix result
-  MMatrix asMatrix() const override;
-  MMatrix asMatrix(double percent) const override;
-public:
   void pushTranslateToPrim();
   void pushPivotToPrim();
   void pushRotatePivotTranslateToPrim();
@@ -499,6 +494,7 @@ public:
   void pushScaleToPrim();
   void pushShearToPrim();
   void pushTransformToPrim();
+
 };
 
 //----------------------------------------------------------------------------------------------------------------------

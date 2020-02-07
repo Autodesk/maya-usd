@@ -21,7 +21,8 @@ class TestTranslator(unittest.TestCase):
         import AL.usdmaya
         
         tempFile = tempfile.NamedTemporaryFile(
-            suffix=".usda", prefix="AL_USDMayaTests_exportProxyShape_", delete=True)
+            suffix=".usda", prefix="AL_USDMayaTests_exportProxyShape_", delete=False)
+        tempFile.close()
         
         mc.createNode("transform", n="world")
         mc.createNode("transform", n="geo", p="world")
@@ -105,6 +106,8 @@ class TestTranslator(unittest.TestCase):
         # check that the proper specs are being created
         specOnExportLayer = rootLayer.GetPrimAtPath(spherePrimPath)
         self.assertEqual(specOnExportLayer.specifier, Sdf.SpecifierOver)
+
+        os.remove(tempFile.name)
 
             
         

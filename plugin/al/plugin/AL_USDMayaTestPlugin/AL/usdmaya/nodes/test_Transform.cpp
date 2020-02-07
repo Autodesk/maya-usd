@@ -16,6 +16,7 @@
 #include "test_usdmaya.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
+#include "AL/usdmaya/nodes/Scope.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "maya/MAnimControl.h"
 #include "maya/MFileIO.h"
@@ -32,10 +33,14 @@
 
 using AL::usdmaya::nodes::ProxyShape;
 using AL::usdmaya::nodes::Transform;
+using AL::usdmaya::nodes::Scope;
+using AL::usdmaya::nodes::BasicTransformationMatrix;
 using AL::usdmaya::nodes::TransformationMatrix;
 
 using AL::maya::test::buildTempPath;
 
+
+// Check that we can set various values in an AL_USDMaya Transform and have USD reflect them
 TEST(Transform, noInputStage)
 {
   MStatus status;
@@ -45,7 +50,7 @@ TEST(Transform, noInputStage)
   MObject xform = dagFn.create(Transform::kTypeId);
   MFnTransform transFn(xform);
   Transform* ptrXform = (Transform*)transFn.userNode();
-  TransformationMatrix* ptrMatrix = ptrXform->transform();
+  TransformationMatrix* ptrMatrix = ptrXform->getTransMatrix();
 
   MPlug pushToPrimPlug = ptrXform->pushToPrimPlug();
   EXPECT_FALSE(pushToPrimPlug.asBool());
@@ -78,6 +83,39 @@ TEST(Transform, noInputStage)
   EXPECT_FALSE(ptrMatrix->pushToPrimAvailable());
 
   setAndCheckTranslation(4.0, 5.0, 6.0);
+}
+
+// Check that we can set various values in an AL_USDMaya Scope and have USD reflect them (or oot)
+TEST(Scope, noInputStage)
+{
+
+  MStatus status;
+  MFileIO::newFile(true);
+
+  MFnDagNode dagFn;
+  MObject xform = dagFn.create(Scope::kTypeId);
+  MFnTransform transFn(xform);
+  Scope* ptrXform = (Scope*)transFn.userNode();
+  BasicTransformationMatrix* ptrMatrix = ptrXform->transform();
+
+  EXPECT_FALSE(ptrMatrix->pushToPrimAvailable());
+
+  auto checkTranslation = [&](double x, double y, double z) {
+    MVector transOut = transFn.getTranslation(MSpace::kObject, &status);
+    EXPECT_EQ(MS::kSuccess, status);
+    EXPECT_EQ(x, transOut.x);
+    EXPECT_EQ(y, transOut.y);
+    EXPECT_EQ(z, transOut.z);
+  };
+
+  checkTranslation(0.0, 0.0, 0.0);
+  MVector transIn;
+  transIn.x = 1.0;
+  transIn.y = 2.0;
+  transIn.z = 3.0;
+  transFn.setTranslation(transIn, MSpace::kObject);
+  checkTranslation(0.0, 0.0, 0.0);
+
 }
 
 // Make sure animation data isn't lost when a Transform node exists

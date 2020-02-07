@@ -123,6 +123,8 @@ list(APPEND mayaUsd_src
     nodes/stageNode.cpp
     nodes/usdPrimProvider.cpp
     #
+    python/moduleDeps.cpp
+    #
     render/px_vp20/glslProgram.cpp
     render/px_vp20/utils.cpp
     render/px_vp20/utils_legacy.cpp
@@ -227,6 +229,8 @@ if(UFE_FOUND)
             ufe/UsdAttribute.cpp
             ufe/UsdAttributes.cpp
             ufe/UsdAttributesHandler.cpp
+            ufe/UsdObject3d.cpp
+            ufe/UsdObject3dHandler.cpp
             ufe/UsdUndoCreateGroupCommand.cpp
         )
     endif()
@@ -360,6 +364,7 @@ if(UFE_FOUND)
         ufe/UsdUndoDuplicateCommand.h
         ufe/UsdUndoRenameCommand.h
         ufe/Utils.h
+		ufe/UfeVersionCompat.h
     )
 
     if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
@@ -367,6 +372,8 @@ if(UFE_FOUND)
             ufe/UsdAttribute.h
             ufe/UsdAttributes.h
             ufe/UsdAttributesHandler.h
+            ufe/UsdObject3d.h
+            ufe/UsdObject3dHandler.h
             ufe/UsdUndoCreateGroupCommand.h
         )
     endif()
@@ -473,6 +480,7 @@ if(UFE_FOUND)
     target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
 endif()
 
+# handle run-time search paths
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "plugin")
     if(WANT_USD_RELATIVE_PATH)
@@ -596,7 +604,7 @@ install(CODE
 
 if(UFE_FOUND)
     # UFE Python Bindings
-    if(IS_WINDOWS AND ${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+    if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
         # On Windows when compiling with debug python the library must be named with _d.
         set(UFE_PYTHON_LIBRARY_NAME ufe_d)
     else()
@@ -618,17 +626,8 @@ if(UFE_FOUND)
         PROPERTIES 
             PREFIX ""
     )
-    if(IS_WINDOWS)
-        set_target_properties(${UFE_PYTHON_LIBRARY_NAME}
-            PROPERTIES
-                SUFFIX ".pyd"
-        )
-    elseif(IS_MACOSX)
-        set_target_properties(${UFE_PYTHON_LIBRARY_NAME}
-            PROPERTIES
-                SUFFIX ".so"
-        )
-    endif()
+
+    set_python_module_suffix(${UFE_PYTHON_LIBRARY_NAME})
 
     target_link_libraries(${UFE_PYTHON_LIBRARY_NAME}
         ${LIBRARY_NAME}
@@ -667,21 +666,15 @@ if(UFE_FOUND)
 
 endif()
 
-# Python extension library for mayaUsd library bindings.  Capitalize leading
-# character of library name.  Pixar's TF_WRAP_MODULE macro expects the library
-# name to be prefixed with _, but adds an underscore to the package name when
-# creating the Python extension module initialization function (see Pixar's
-# pyModule.h).  Create a package name without the leading underscore, and
-# prefix our library name with a leading underscore, to match this convention.
-string(TOUPPER "${LIBRARY_NAME}" LIBRARY_NAME_CAPS)
-string(SUBSTRING "${LIBRARY_NAME}" 1 -1 LIBRARY_NAME_END)
-string(SUBSTRING "${LIBRARY_NAME_CAPS}" 0 1 LIBRARY_NAME_BEGIN)
-string(CONCAT PACKAGE_NAME "Py" "${LIBRARY_NAME_BEGIN}" "${LIBRARY_NAME_END}")
-if(IS_WINDOWS AND ${MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG})
+# Python extension library for mayaUsd library bindings. Pixar's TF_WRAP_MODULE
+# macro expects the library name to be prefixed with _, but adds an underscore
+# to the package name when creating the Python extension module initialization
+# function (see Pixar's pyModule.h).
+if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
     # On Windows when compiling with debug python the library must be named with _d.
-    set(PYTHON_LIBRARY_NAME _${PACKAGE_NAME}_d)
+    set(PYTHON_LIBRARY_NAME _${LIBRARY_NAME}_d)
 else()
-    set(PYTHON_LIBRARY_NAME _${PACKAGE_NAME})
+    set(PYTHON_LIBRARY_NAME _${LIBRARY_NAME})
 endif()
 
 add_library(${PYTHON_LIBRARY_NAME}
@@ -708,12 +701,12 @@ endif()
 target_compile_definitions(${PYTHON_LIBRARY_NAME}
     PRIVATE
         ${_macDef}
-        MFB_PACKAGE_NAME=${PACKAGE_NAME}
-        MFB_ALT_PACKAGE_NAME=${PACKAGE_NAME}
-        MFB_PACKAGE_MODULE=${PROJECT_NAME}
+        MFB_PACKAGE_NAME=${LIBRARY_NAME}
+        MFB_ALT_PACKAGE_NAME=${LIBRARY_NAME}
+        MFB_PACKAGE_MODULE=${LIBRARY_NAME}
 )
-set_target_properties(${PYTHON_LIBRARY_NAME} 
-    PROPERTIES 
+set_target_properties(${PYTHON_LIBRARY_NAME}
+    PROPERTIES
         PREFIX ""
 )
 if(IS_WINDOWS)
@@ -766,3 +759,8 @@ install(CODE
 install(FILES python/__init__.py DESTINATION ${PYLIB_INSTALL_PREFIX})
 
 add_subdirectory(usd)
+
+if(BUILD_HDMAYA)
+    add_subdirectory(render/mayaToHydra)
+    add_dependencies(mtoh hdMaya)
+endif()

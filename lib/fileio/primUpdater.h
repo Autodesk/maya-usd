@@ -37,7 +37,11 @@ public:
     UsdMayaPrimUpdater(const MFnDependencyNode& depNodeFn,
                        const SdfPath& usdPath);
     
-    UsdMayaPrimUpdater() = default;
+    // clang errors if you use "= default" here, due to const SdfPath member
+    //    see: http://open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#253
+    // ...which it seems clang only implements if using newer version + cpp std
+    UsdMayaPrimUpdater() {}
+
     virtual ~UsdMayaPrimUpdater() = default;
 
     enum class Supports {
