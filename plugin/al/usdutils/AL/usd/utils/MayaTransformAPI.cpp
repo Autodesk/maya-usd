@@ -15,7 +15,6 @@
 //
 
 #include "AL/usd/utils/MayaTransformAPI.h"
-#include <iostream>
 
 namespace AL {
 namespace usd {
