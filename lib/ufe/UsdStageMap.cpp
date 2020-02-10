@@ -69,7 +69,12 @@ UsdStageMap g_StageMap;
 void UsdStageMap::addItem(const Ufe::Path& path, UsdStageWeakPtr stage)
 {
 	// We expect a path to the proxy shape node, therefore a single segment.
-	auto nbSegments = path.nbSegments();
+	auto nbSegments = 
+#ifdef UFE_V2_FEATURES_AVAILABLE
+        path.nbSegments();
+#else
+        path.getSegments().size();
+#endif
 	if (nbSegments != 1) {
 		TF_CODING_ERROR("A proxy shape node path can have only one segment, path '%s' has %d", path.string().c_str(), nbSegments);
 		return;
