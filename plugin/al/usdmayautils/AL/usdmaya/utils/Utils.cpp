@@ -103,9 +103,14 @@ MString mapUsdPrimToMayaNode(const UsdPrim& usdPrim,
     MGlobal::displayError("mapUsdPrimToMayaNode: Invalid prim!");
     return MString();
   }
-  TfToken mayaPathAttributeName("MayaPath");
 
-  UsdStageWeakPtr stage = usdPrim.GetStage();
+  return mapUsdPrimToMayaNode(usdPrim.GetPath(), mayaObject, proxyShapeNode);
+}
+//-----------------------------------------------------------------------------------------------------------------------
+MString mapUsdPrimToMayaNode(const SdfPath& primPath,
+                             const MObject& mayaObject,
+                             const MDagPath* const proxyShapeNode)
+{
 
   MFnDagNode mayaNode(mayaObject);
   MDagPath mayaDagPath;
@@ -115,11 +120,11 @@ MString mapUsdPrimToMayaNode(const UsdPrim& usdPrim,
   if(mayaDagPath.length() == 0 && proxyShapeNode)
   {
     // Prepend the mayaPathPrefix
-    mayaElementPath = proxyShapeNode->fullPathName().asChar() + usdPrim.GetPath().GetString();
+    mayaElementPath = proxyShapeNode->fullPathName().asChar() + primPath.GetString();
     std::replace(mayaElementPath.begin(), mayaElementPath.end(), '/','|');
   }
 
-  TF_DEBUG(ALUTILS_INFO).Msg("Mapped the path for prim=%s to mayaObject=%s\n", usdPrim.GetName().GetText(), mayaElementPath.c_str());
+  TF_DEBUG(ALUTILS_INFO).Msg("mapUsdPrimToMayaNode: Mapped the path for prim=%s to mayaObject=%s\n", primPath.GetText(), mayaElementPath.c_str());
 
   return AL::maya::utils::convert(mayaElementPath);
 }
