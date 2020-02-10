@@ -766,7 +766,10 @@ void MeshImportContext::applyColourSetData()
 
     const UsdGeomPrimvar& primvar = *it;
     TfToken name, interpolation;
-    primvar.GetDeclarationInfo(&name, nullptr, &interpolation, nullptr);
+    SdfValueTypeName typeName;
+    int elementSize;
+    
+    primvar.GetDeclarationInfo(&name, &typeName, &interpolation, &elementSize);
 
     // early out for channels that are definitely not colourSets
     if (name == prefToken || name == displayOpacityToken)
@@ -926,7 +929,10 @@ void MeshImportContext::applyUVs()
   {
     const UsdGeomPrimvar& primvar = *it;
     TfToken name, interpolation;
-    primvar.GetDeclarationInfo(&name, nullptr, &interpolation, nullptr);
+    SdfValueTypeName typeName;
+    int elementSize;
+    
+    primvar.GetDeclarationInfo(&name, &typeName, &interpolation, &elementSize);
 
     // early out for channels that are definitely not UVs
     if (name == prefToken || name == displayOpacityToken || name == displayColorToken)
