@@ -46,7 +46,6 @@ MPxTransformationMatrix* TransformationMatrix::creator()
 //----------------------------------------------------------------------------------------------------------------------
 TransformationMatrix::TransformationMatrix()
   : BasicTransformationMatrix(),
-    m_prim(),
     m_xform(),
     m_time(UsdTimeCode::Default()),
     m_scaleTweak(0, 0, 0),
@@ -75,8 +74,7 @@ TransformationMatrix::TransformationMatrix()
 
 //----------------------------------------------------------------------------------------------------------------------
 TransformationMatrix::TransformationMatrix(const UsdPrim& prim)
-  : BasicTransformationMatrix(),
-    m_prim(prim),
+  : BasicTransformationMatrix(prim),
     m_xform(prim),
     m_time(UsdTimeCode::Default()),
     m_scaleTweak(0, 0, 0),

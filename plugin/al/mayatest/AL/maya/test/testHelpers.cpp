@@ -395,7 +395,7 @@ void randomPlug(MPlug plug)
       for(int i = 0; i < 511; ++i)
       {
         char tempStr[2048];
-        sprintf(tempStr, "setAttr \"%s[%d]\" -type \"matrix\" %lf %lf %lf %lf  %lf %lf %lf %lf  %lf %lf %lf %lf  %lf %lf %lf %lf;",
+        snprintf(tempStr, 2048, "setAttr \"%s[%d]\" -type \"matrix\" %lf %lf %lf %lf  %lf %lf %lf %lf  %lf %lf %lf %lf  %lf %lf %lf %lf;",
             plug.name().asChar(),
             i,
             randDouble(),

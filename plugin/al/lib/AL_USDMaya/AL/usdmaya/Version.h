@@ -21,11 +21,7 @@
 #define stringify(a) #a
 
 #define AL_USDMAYA_VERSION_MAJOR 0
-<<<<<<< HEAD
-#define AL_USDMAYA_VERSION_MINOR 36
-=======
 #define AL_USDMAYA_VERSION_MINOR 39
->>>>>>> 6299697ed... revert change to GetDeclarationInfo - there's a runtime type check that fails
 #define AL_USDMAYA_VERSION_PATCH 0
 
 #define AL_USDMAYA_VERSION_STR xstr(AL_USDMAYA_VERSION_MAJOR) "." \
