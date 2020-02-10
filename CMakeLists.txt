@@ -91,7 +91,7 @@ endif()
 
 if(DEFINED QT_LOCATION)
     set(CMAKE_PREFIX_PATH "${QT_LOCATION}")
-    find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
+    find_package(Qt5 5.12 COMPONENTS Core Gui Widgets REQUIRED)
     if(Qt5_FOUND)
         message(STATUS "Building with Qt features enabled.")
     endif()
