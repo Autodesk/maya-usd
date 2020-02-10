@@ -46,17 +46,19 @@ namespace {
 		return uMat;
 	}
 
-	Ufe::Matrix4d primToUfeXform(const UsdPrim& prim)
+	Ufe::Matrix4d primToUfeXform(const UsdPrim& prim, const UsdTimeCode& time)
 	{
 		UsdGeomXformCache xformCache;
+		xformCache.SetTime(time);
 		GfMatrix4d usdMatrix = xformCache.GetLocalToWorldTransform(prim);
 		Ufe::Matrix4d xform = convertFromUsd(usdMatrix);
 		return xform;
 	}
 
-	Ufe::Matrix4d primToUfeExclusiveXform(const UsdPrim& prim)
+	Ufe::Matrix4d primToUfeExclusiveXform(const UsdPrim& prim, const UsdTimeCode& time)
 	{
 		UsdGeomXformCache xformCache;
+		xformCache.SetTime(time);
 		GfMatrix4d usdMatrix = xformCache.GetParentToWorldTransform(prim);
 		Ufe::Matrix4d xform = convertFromUsd(usdMatrix);
 		return xform;
@@ -128,7 +130,8 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd()
 
 void UsdTransform3d::translate(double x, double y, double z)
 {
-	translateOp(fPrim, fItem->path(), x, y, z);
+	AL::usd::utils::MayaTransformAPI api(fPrim);
+	api.translate(GfVec3f(x, y, z), timeCode());
 }
 
 Ufe::Vector3d UsdTransform3d::translation() const
@@ -159,7 +162,8 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
 
 void UsdTransform3d::scale(double x, double y, double z)
 {
-	scaleOp(fPrim, fItem->path(), x, y, z);
+	AL::usd::utils::MayaTransformAPI api(fPrim);
+	api.scale(GfVec3f(x, y, z), timeCode());
 }
 
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotTranslateCmd()
@@ -202,12 +206,12 @@ Ufe::Vector3d UsdTransform3d::scalePivot() const
 
 Ufe::Matrix4d UsdTransform3d::segmentInclusiveMatrix() const
 {
-	return primToUfeXform(fPrim);
+	return primToUfeXform(fPrim, timeCode());
 }
  
 Ufe::Matrix4d UsdTransform3d::segmentExclusiveMatrix() const
 {
-	return primToUfeExclusiveXform(fPrim);
+	return primToUfeExclusiveXform(fPrim, timeCode());
 }
 
 } // namespace ufe

@@ -16,6 +16,7 @@
 #pragma once
 
 #include "../base/api.h"
+#include "../nodes/proxyShapeBase.h"
 
 #include "UsdSceneItem.h"
 
