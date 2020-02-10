@@ -59,15 +59,11 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMaya_ReadJob::UsdMaya_ReadJob(
-        const std::string &iFileName,
-        const std::string &iPrimPath,
-        const std::map<std::string, std::string>& iVariants,
+        const MayaUsd::ImportData &iImportData,
         const UsdMayaJobImportArgs &iArgs) :
     mArgs(iArgs),
-    mFileName(iFileName),
-    mVariants(iVariants),
+    mImportData(iImportData),
     mMayaRootDagPath(),
-    mPrimPath(iPrimPath),
     mDagModifierUndo(),
     mDagModifierSeeded(false)
 {
@@ -82,15 +78,20 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 {
     MStatus status;
 
-    SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(mFileName);
+    if (!TF_VERIFY(!mImportData.empty())) {
+        return false;
+    }
+
+    SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(mImportData.filename());
     if (!rootLayer) {
         return false;
     }
 
     TfToken modelName = UsdUtilsGetModelNameFromRootLayer(rootLayer);
 
+    SdfVariantSelectionMap varSelsMap = mImportData.rootVariantSelections();
     std::vector<std::pair<std::string, std::string> > varSelsVec;
-    TF_FOR_ALL(iter, mVariants) {
+    TF_FOR_ALL(iter, varSelsMap) {
         const std::string& variantSetName = iter->first;
         const std::string& variantSelectionName = iter->second;
         varSelsVec.push_back(
@@ -103,7 +104,18 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 
     // Layer and Stage used to Read in the USD file
     UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get());
-    UsdStageRefPtr stage = UsdStage::Open(rootLayer, sessionLayer);
+    UsdStageRefPtr stage;
+    if (mImportData.hasPopulationMask())
+    {
+        stage = UsdStage::OpenMasked(rootLayer, sessionLayer,
+                                     mImportData.stagePopulationMask(),
+                                     mImportData.stageInitialLoadSet());
+    }
+    else
+    {
+        stage = UsdStage::Open(rootLayer, sessionLayer,
+                               mImportData.stageInitialLoadSet());
+    }
     if (!stage) {
         return false;
     }
@@ -156,13 +168,14 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     }
 
     // Use the primPath to get the root usdNode
-    UsdPrim usdRootPrim = mPrimPath.empty() ? stage->GetDefaultPrim() :
-        stage->GetPrimAtPath(SdfPath(mPrimPath));
-    if (!usdRootPrim && !(mPrimPath.empty() || mPrimPath == "/")) {
+    std::string primPath = mImportData.rootPrimPath();
+    UsdPrim usdRootPrim = primPath.empty() ? stage->GetDefaultPrim() :
+        stage->GetPrimAtPath(SdfPath(primPath));
+    if (!usdRootPrim && !(primPath.empty() || primPath == "/")) {
         TF_RUNTIME_ERROR(
                 "Unable to set root prim to <%s> when reading USD file '%s'; "
                 "using the pseudo-root </> instead",
-                mPrimPath.c_str(), mFileName.c_str());
+                primPath.c_str(), mImportData.filename().c_str());
         usdRootPrim = stage->GetPseudoRoot();
     }
 
@@ -171,15 +184,25 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     if (!usdRootPrim) {
         TF_RUNTIME_ERROR(
                 "No default prim found in USD file '%s'",
-                mFileName.c_str());
+                mImportData.filename().c_str());
         return false;
     }
 
     // Set the variants on the usdRootPrim
-    for (auto& variant : mVariants) {
+    for (auto& variant : mImportData.rootVariantSelections()) {
         usdRootPrim
                 .GetVariantSet(variant.first)
                 .SetVariantSelection(variant.second);
+    }
+
+    // Set the variants on all the import data prims.
+    for (auto& varPrim : mImportData.primVariantSelections()) {
+        for(auto& variant : varPrim.second) {
+            UsdPrim usdVarPrim = stage->GetPrimAtPath(varPrim.first);
+            usdVarPrim
+                .GetVariantSet(variant.first)
+                .SetVariantSelection(variant.second);
+        }
     }
 
     Usd_PrimFlagsPredicate predicate = UsdPrimDefaultPredicate;
@@ -234,7 +257,7 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
                                                 &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
-        status = dgMod.newPlugValueString(filePathPlug, mFileName.c_str());
+        status = dgMod.newPlugValueString(filePathPlug, mImportData.filename().c_str());
         CHECK_MSTATUS_AND_RETURN(status, false);
 
         status = dgMod.doIt();

@@ -1530,9 +1530,13 @@ bool UsdMayaRepresentationHierBase::activate()
             UsdMayaJobImportArgs::CreateFromDictionary(
                 userArgs, shouldImportWithProxies,
                 GfInterval::GetFullInterval());
-    UsdMaya_ReadJobWithSceneAssembly readJob(usdFilePath.asChar(),
-                       usdPrimPath.asChar(),
-                       variantSetSelections,
+
+    MayaUsd::ImportData importData(usdFilePath.asChar());
+    importData.setRootVariantSelections(std::move(variantSetSelections));
+	importData.setRootPrimPath(usdPrimPath.asChar());
+
+    UsdMaya_ReadJobWithSceneAssembly readJob(
+                       importData,
                        importArgs);
 
     // Set the assembly node as the root node of the read job.

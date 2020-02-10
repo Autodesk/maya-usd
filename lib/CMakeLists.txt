@@ -52,6 +52,7 @@ list(APPEND mayaUsd_src
     fileio/fallbackPrimReader.cpp
     fileio/functorPrimReader.cpp
     fileio/functorPrimWriter.cpp
+    fileio/importData.cpp
     fileio/instancedNodeWriter.cpp
     fileio/primReader.cpp
     fileio/primReaderArgs.cpp
@@ -244,6 +245,7 @@ list(APPEND mayaUsdFileio_headers
     fileio/fallbackPrimReader.h
     fileio/functorPrimReader.h
     fileio/functorPrimWriter.h
+    fileio/importData.h
     fileio/instancedNodeWriter.h
     fileio/primReader.h
     fileio/primReaderArgs.h
@@ -512,22 +514,22 @@ set_property(GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib
 
 # promote headers
 mayaUsd_promoteMayaUsdHeader()
-mayaUsd_promoteHeaderList(${mayaUsdBase_headers})
-mayaUsd_promoteHeaderList(${mayaUsdFileio_headers})
-mayaUsd_promoteHeaderList(${mayaUsdChaser_headers})
-mayaUsd_promoteHeaderList(${mayaUsdJobs_headers})
-mayaUsd_promoteHeaderList(${mayaUsdUtilsIO_headers})
-mayaUsd_promoteHeaderList(${mayaUsdShading_headers})
-mayaUsd_promoteHeaderList(${mayaUsdTranslators_headers})
-mayaUsd_promoteHeaderList(${mayaUsdUtils_headers})
-mayaUsd_promoteHeaderList(${mayaUsdNodes_headers})
-mayaUsd_promoteHeaderList(${mayaUsdListeners_headers})
-mayaUsd_promoteHeaderList(${mayaUsdVP2RenderDelegate_headers})
+mayaUsd_promoteHeaderList(HEADERS ${mayaUsdBase_headers})
+mayaUsd_promoteHeaderList(HEADERS ${mayaUsdFileio_headers})
+mayaUsd_promoteHeaderList(HEADERS ${mayaUsdChaser_headers})
+mayaUsd_promoteHeaderList(HEADERS ${mayaUsdJobs_headers})
+mayaUsd_promoteHeaderList(HEADERS ${mayaUsdUtilsIO_headers})
+mayaUsd_promoteHeaderList(HEADERS ${mayaUsdShading_headers})
+mayaUsd_promoteHeaderList(HEADERS ${mayaUsdTranslators_headers})
+mayaUsd_promoteHeaderList(HEADERS ${mayaUsdUtils_headers})
+mayaUsd_promoteHeaderList(HEADERS ${mayaUsdNodes_headers})
+mayaUsd_promoteHeaderList(HEADERS ${mayaUsdListeners_headers})
+mayaUsd_promoteHeaderList(HEADERS ${mayaUsdVP2RenderDelegate_headers})
 if(UFE_FOUND)
-    mayaUsd_promoteHeaderList(${mayaUsdUfe_headers})
+    mayaUsd_promoteHeaderList(HEADERS ${mayaUsdUfe_headers})
 endif()
-mayaUsd_promoteHeaderList(${mayaUsdPxrUsdMayaGL_headers})
-mayaUsd_promoteHeaderList(${mayaUsdPxVP20_headers})
+mayaUsd_promoteHeaderList(HEADERS ${mayaUsdPxrUsdMayaGL_headers})
+mayaUsd_promoteHeaderList(HEADERS ${mayaUsdPxVP20_headers})
 
 # install public headers
 install(FILES ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h
