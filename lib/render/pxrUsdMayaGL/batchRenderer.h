@@ -89,6 +89,10 @@ class UsdMayaGLBatchRenderer
 {
 public:
 
+    /// Maya profiler category ID
+    MAYAUSD_CORE_PUBLIC
+    static const int ProfilerCategory;
+
     /// Initialize the batch renderer.
     ///
     /// This should be called at least once and it is OK to call it multiple

@@ -27,6 +27,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/trace/trace.h"
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
@@ -36,6 +37,7 @@
 #include <maya/MMatrix.h>
 #include <maya/MObject.h>
 #include <maya/MPoint.h>
+#include <maya/MProfiler.h>
 #include <maya/MPxDrawOverride.h>
 #include <maya/MSelectionContext.h>
 #include <maya/MSelectionMask.h>
@@ -114,6 +116,13 @@ UsdMayaProxyDrawOverride::boundingBox(
         const MDagPath& objPath,
         const MDagPath& /* cameraPath */) const
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        UsdMayaGLBatchRenderer::ProfilerCategory,
+        MProfiler::kColorE_L1,
+        "USD Proxy Shape Computing Bounding Box (Viewport 2.0)");
+
     // If a proxy shape is connected to a Maya instancer, a draw override will
     // be generated for the proxy shape, but callbacks will get the instancer
     // DAG path instead. Since we properly handle instancers using the
@@ -182,6 +191,13 @@ UsdMayaProxyDrawOverride::prepareForDraw(
         const MHWRender::MFrameContext& frameContext,
         MUserData* oldData)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        UsdMayaGLBatchRenderer::ProfilerCategory,
+        MProfiler::kColorE_L2,
+        "USD Proxy Shape prepareForDraw() (Viewport 2.0)");
+
     // If a proxy shape is connected to a Maya instancer, a draw override will
     // be generated for the proxy shape, but callbacks will get the instancer
     // DAG path instead. Since we properly handle instancer drawing in this
@@ -246,6 +262,13 @@ UsdMayaProxyDrawOverride::userSelect(
         MPoint& hitPoint,
         const MUserData* data)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        UsdMayaGLBatchRenderer::ProfilerCategory,
+        MProfiler::kColorE_L2,
+        "USD Proxy Shape userSelect() (Viewport 2.0)");
+
     M3dView view;
     const bool hasView = px_vp20Utils::GetViewFromDrawContext(context, view);
     if (hasView &&
@@ -300,6 +323,13 @@ UsdMayaProxyDrawOverride::draw(
         const MHWRender::MDrawContext& context,
         const MUserData* data)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        UsdMayaGLBatchRenderer::ProfilerCategory,
+        MProfiler::kColorC_L1,
+        "USD Proxy Shape draw() (Viewport 2.0)");
+
     // Note that this Draw() call is only necessary when we're drawing the
     // bounding box, since that is not yet handled by Hydra and is instead done
     // internally by the batch renderer on a per-shape basis. Otherwise, the

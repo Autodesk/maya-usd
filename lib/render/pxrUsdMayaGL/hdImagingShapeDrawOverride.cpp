@@ -26,6 +26,7 @@
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/trace/trace.h"
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDGContext.h>
@@ -35,6 +36,7 @@
 #include <maya/MFrameContext.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
+#include <maya/MProfiler.h>
 #include <maya/MPxDrawOverride.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
@@ -91,6 +93,13 @@ PxrMayaHdImagingShapeDrawOverride::boundingBox(
         const MDagPath& objPath,
         const MDagPath& /* cameraPath */) const
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        UsdMayaGLBatchRenderer::ProfilerCategory,
+        MProfiler::kColorE_L1,
+        "Hydra Imaging Shape Computing Bounding Box (Viewport 2.0)");
+
     const PxrMayaHdImagingShape* imagingShape =
         PxrMayaHdImagingShape::GetShapeAtDagPath(objPath);
     if (!imagingShape) {
@@ -130,6 +139,13 @@ PxrMayaHdImagingShapeDrawOverride::prepareForDraw(
         const MHWRender::MFrameContext& frameContext,
         MUserData* oldData)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        UsdMayaGLBatchRenderer::ProfilerCategory,
+        MProfiler::kColorE_L2,
+        "Hydra Imaging Shape prepareForDraw() (Viewport 2.0)");
+
     const PxrMayaHdImagingShape* imagingShape =
         PxrMayaHdImagingShape::GetShapeAtDagPath(objPath);
     if (!imagingShape) {
@@ -203,6 +219,13 @@ PxrMayaHdImagingShapeDrawOverride::draw(
         const MHWRender::MDrawContext& context,
         const MUserData* data)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        UsdMayaGLBatchRenderer::ProfilerCategory,
+        MProfiler::kColorC_L1,
+        "Hydra Imaging Shape draw() (Viewport 2.0)");
+
     TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING).Msg(
         "PxrMayaHdImagingShapeDrawOverride::draw()\n");
 
