@@ -497,19 +497,16 @@ endif()
 
 # handle run-time search paths
 if(IS_MACOSX OR IS_LINUX)
-    mayaUsd_init_rpath(rpath "plugin")
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../USD/lib")
+    mayaUsd_init_rpath(rpath "lib")
+    if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
-    mayaUsd_install_rpath(rpath ${LIBRARY_NAME})
-endif()
-
-if (IS_LINUX)
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../USD/lib64")
+    if (IS_LINUX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
     endif()
+    mayaUsd_install_rpath(rpath ${LIBRARY_NAME})
 endif()
 
 install(TARGETS ${LIBRARY_NAME}
