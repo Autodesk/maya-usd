@@ -1061,7 +1061,22 @@ private:
   std::string generateTranslatorId(UsdPrim prim) override
    { return m_translatorManufacture.generateTranslatorId(prim); }
 
-
+  bool isPrimDirty(const UsdPrim& prim) override
+  {
+    const SdfPath path(prim.GetPath());
+    auto previous(m_context->getUniqueKeyForPath(path));
+    if (!previous)
+    {
+      return true;
+    }
+    std::string translatorId = m_translatorManufacture.generateTranslatorId(prim);
+    auto translator = m_translatorManufacture.getTranslatorFromId(translatorId);
+    auto current(translator->generateUniqueKey(prim));
+    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg(
+        "ProxyShape:isPrimDirty prim='%s' uniqueKey='%lu', previous='%lu'\n",
+        path.GetText(), current, previous);
+    return !current || current != previous;
+  }
 
 private:
   SdfPathVector m_pathsOrdered;

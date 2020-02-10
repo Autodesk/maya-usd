@@ -37,6 +37,7 @@
 
 
 #include <fstream>
+#include <set>
 
 using AL::maya::test::buildTempPath;
 
@@ -44,6 +45,7 @@ struct MockPrimFilterInterface : public AL::usdmaya::nodes::proxy::PrimFilterInt
 {
   SdfPathVector refPaths;
   SdfPathVector cameraPaths;
+  std::set<SdfPath> cleanPaths;
 
   std::string getTranslatorIdForPath(const SdfPath& path) override
   {
@@ -88,6 +90,11 @@ struct MockPrimFilterInterface : public AL::usdmaya::nodes::proxy::PrimFilterInt
        }
      }
      return translatorId;
+  }
+
+  bool isPrimDirty(const UsdPrim& prim) override
+  {
+    return !cleanPaths.count(prim.GetPath());
   }
 
 };
@@ -293,5 +300,29 @@ TEST(PrimFilter, removedPaths)
     EXPECT_TRUE(filter.newPrimSet().size() == 1);
     EXPECT_TRUE(filter.updatablePrimSet().empty());
     EXPECT_TRUE(filter.transformsToCreate().size() == 1);
+  }
+
+  /// Check to make sure nothing will be updated if prims are clean
+  {
+    const SdfPathVector previous = {
+        SdfPath("/root/hip1"),
+        SdfPath("/root/hip2"),
+    };
+    mockInterface.refPaths = previous;
+    std::vector<UsdPrim> prims;
+    for(auto it : previous)
+    {
+      prims.emplace_back(stage->GetPrimAtPath(it));
+    }
+
+    mockInterface.cleanPaths.insert(previous[0]);
+
+    AL::usdmaya::nodes::proxy::PrimFilter filter(previous, prims, &mockInterface, true);
+
+    EXPECT_TRUE(filter.removedPrimSet().empty());
+    EXPECT_TRUE(filter.newPrimSet().empty());
+    /// only one should be updated
+    EXPECT_TRUE(filter.updatablePrimSet().size() == 1);
+    EXPECT_TRUE(filter.transformsToCreate().empty());
   }
 }
