@@ -76,7 +76,7 @@ void UsdStageMap::addItem(const Ufe::Path& path, UsdStageWeakPtr stage)
         path.getSegments().size();
 #endif
 	if (nbSegments != 1) {
-		TF_CODING_ERROR("A proxy shape node path can have only one segment, path '%s' has %d", path.string().c_str(), nbSegments);
+		TF_CODING_ERROR("A proxy shape node path can have only one segment, path '%s' has %lu", path.string().c_str(), nbSegments);
 		return;
 	}
 			
