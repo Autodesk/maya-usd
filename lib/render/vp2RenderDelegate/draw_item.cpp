@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,16 +24,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 /*! \brief  Constructor.
 
 Data holder for its corresponding render item to facilitate parallelized evaluation.
-
-Position buffer is held by HdVP2Mesh and shared among its render items.
 */
 HdVP2DrawItem::HdVP2DrawItem(
     HdVP2RenderDelegate* delegate,
-    const HdRprimSharedData* sharedData,
-    const HdMeshReprDesc& desc)
+    const HdRprimSharedData* sharedData)
 : HdDrawItem(sharedData)
 , _delegate(delegate)
-, _reprDesc(desc)
 {
     // In the case of instancing, the ID of a proto has an attribute at the end,
     // we keep this info in _renderItemName so if needed we can extract proto ID
@@ -46,12 +42,6 @@ HdVP2DrawItem::HdVP2DrawItem(
 
     _renderItemData._indexBuffer.reset(
         new MHWRender::MIndexBuffer(MHWRender::MGeometry::kUnsignedInt32));
-
-    if (desc.geomStyle == HdMeshGeomStyleHull) {
-        const MHWRender::MVertexBufferDescriptor desc("",
-            MHWRender::MGeometry::kNormal, MHWRender::MGeometry::kFloat, 3);
-        _renderItemData._normalsBuffer.reset(new MHWRender::MVertexBuffer(desc));
-    }
 }
 
 //! \brief  Destructor.
@@ -63,11 +53,6 @@ HdVP2DrawItem::~HdVP2DrawItem() {
             subSceneContainer->remove(GetRenderItemName());
         }
     }
-}
-
-//! \brief  Get access to render item data.
-HdVP2DrawItem::RenderItemData& HdVP2DrawItem::GetRenderItemData() {
-    return _renderItemData;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -67,6 +67,11 @@ public:
         //! Whether or not the render item is enabled
         bool                                        _enabled{ true };
 
+        //! Primitive type of the render item
+        MHWRender::MGeometry::Primitive             _primitiveType{ MHWRender::MGeometry::kInvalidPrimitive };
+        //! Primitive stride of the render item (valid only if the primitive type is kPatch)
+        int                                         _primitiveStride{ 0 };
+
         //! Number of instances currently allocated for render item
         unsigned int                                _instanceCount{ 0 };
 
@@ -83,11 +88,13 @@ public:
     };
 
 public:
-    HdVP2DrawItem(HdVP2RenderDelegate* delegate, const HdRprimSharedData* sharedData, const HdMeshReprDesc& desc);
+    HdVP2DrawItem(HdVP2RenderDelegate* delegate, const HdRprimSharedData* sharedData);
 
     ~HdVP2DrawItem();
 
-    RenderItemData& GetRenderItemData();
+    /*! \brief  Get access to render item data.
+    */
+    RenderItemData& GetRenderItemData() { return _renderItemData; }
 
     /*! \brief  Get render item name
     */
@@ -100,10 +107,6 @@ public:
     /*! \brief  Set pointer of the associated render item
     */
     void SetRenderItem(MHWRender::MRenderItem* item) { _renderItem = item; }
-
-    /*! \brief  Get the repr desc for which the draw item was created.
-    */
-    const HdMeshReprDesc& GetReprDesc() const { return _reprDesc; }
 
     /*! \brief  Set a usage to the render item
     */
@@ -142,7 +145,6 @@ public:
 private:
 
     HdVP2RenderDelegate*    _delegate{ nullptr };   //!< VP2 render delegate for which this draw item was created
-    const HdMeshReprDesc    _reprDesc;              //!< The repr desc for which the draw item was created.
     MString                 _renderItemName;        //!< Unique name for easier debugging and profiling.
     MHWRender::MRenderItem* _renderItem{ nullptr }; //!< Pointer of the render item for fast access. No ownership is held.
     RenderItemData          _renderItemData;        //!< VP2 render item data
