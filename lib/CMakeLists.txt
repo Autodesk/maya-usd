@@ -438,6 +438,7 @@ endif()
 set(include_directories_list
     ${MAYA_INCLUDE_DIRS}
     ${PXR_INCLUDE_DIRS}
+    ${USDUTILS_INCLUDE_LOCATION}
     ${CMAKE_BINARY_DIR}/include
 )
 
@@ -477,6 +478,7 @@ target_link_libraries(${LIBRARY_NAME}
     usdSkel
     usdUtils
     vt
+    AL_USDUtils
 )
 
 if(UFE_FOUND)
