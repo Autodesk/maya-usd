@@ -23,6 +23,7 @@
 
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -38,6 +39,7 @@
 #include <maya/MObject.h>
 #include <maya/MPoint.h>
 #include <maya/MPointArray.h>
+#include <maya/MProfiler.h>
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MSelectInfo.h>
 #include <maya/MSelectionList.h>
@@ -63,6 +65,13 @@ UsdMayaProxyShapeUI::getDrawRequests(
         bool /* objectAndActiveOnly */,
         MDrawRequestQueue& requests)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        UsdMayaGLBatchRenderer::ProfilerCategory,
+        MProfiler::kColorE_L2,
+        "USD Proxy Shape getDrawRequests() (Legacy Viewport)");
+
     const MDagPath shapeDagPath = drawInfo.multiPath();
     MayaUsdProxyShapeBase* shape =
         MayaUsdProxyShapeBase::GetShapeAtDagPath(shapeDagPath);
@@ -107,6 +116,13 @@ UsdMayaProxyShapeUI::getDrawRequests(
 void
 UsdMayaProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        UsdMayaGLBatchRenderer::ProfilerCategory,
+        MProfiler::kColorC_L1,
+        "USD Proxy Shape draw() (Legacy Viewport)");
+
     if (!view.pluginObjectDisplay(MayaUsdProxyShapeBase::displayFilterName)) {
         return;
     }
@@ -129,6 +145,13 @@ UsdMayaProxyShapeUI::select(
         MSelectionList& selectionList,
         MPointArray& worldSpaceSelectedPoints) const
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        UsdMayaGLBatchRenderer::ProfilerCategory,
+        MProfiler::kColorE_L2,
+        "USD Proxy Shape select() (Legacy Viewport)");
+
     M3dView view = selectInfo.view();
 
     if (!view.pluginObjectDisplay(MayaUsdProxyShapeBase::displayFilterName)) {

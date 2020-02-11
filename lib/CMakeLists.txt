@@ -478,6 +478,7 @@ target_link_libraries(${LIBRARY_NAME}
     plug
     sdf
     tf
+    trace
     usd
     usdGeom
     usdImaging

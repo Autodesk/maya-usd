@@ -29,6 +29,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/repr.h"
@@ -48,6 +49,7 @@
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MMatrix.h>
 #include <maya/MObjectHandle.h>
+#include <maya/MProfiler.h>
 #include <maya/MPxSurfaceShape.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
@@ -122,6 +124,13 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
         const unsigned int displayStyle,
         const MHWRender::DisplayStatus displayStatus)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        UsdMayaGLBatchRenderer::ProfilerCategory,
+        MProfiler::kColorE_L2,
+        "USD Proxy Shape Syncing Shape Adapter");
+
     MayaUsdProxyShapeBase* usdProxyShape = 
             MayaUsdProxyShapeBase::GetShapeAtDagPath(shapeDagPath);
     if (!usdProxyShape) {
@@ -281,6 +290,13 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
 bool
 PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        UsdMayaGLBatchRenderer::ProfilerCategory,
+        MProfiler::kColorE_L2,
+        "USD Proxy Shape Initializing Shape Adapter");
+
     if (!TF_VERIFY(renderIndex,
                    "Cannot initialize shape adapter with invalid HdRenderIndex")) {
         return false;

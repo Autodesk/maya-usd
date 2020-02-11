@@ -18,7 +18,6 @@
 #include "../base/api.h"
 
 #include <ufe/hierarchyHandler.h>
-#include <ufe/ProxyShapeHierarchy.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {
@@ -59,7 +58,6 @@ public:
 
 private:
 	Ufe::HierarchyHandler::Ptr fMayaHierarchyHandler;
-	ProxyShapeHierarchy::Ptr fProxyShapeHierarchy;
 
 }; // ProxyShapeHierarchyHandler
 

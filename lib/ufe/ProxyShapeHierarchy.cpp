@@ -17,6 +17,7 @@
 #include "ProxyShapeHierarchy.h"
 #include "Utils.h"
 
+#include <ufe/log.h>
 #include <ufe/pathComponent.h>
 #include <ufe/pathSegment.h>
 #include <ufe/rtid.h>
@@ -37,7 +38,9 @@ extern Ufe::Rtid g_USDRtid;
 // ProxyShapeHierarchy
 //------------------------------------------------------------------------------
 
-ProxyShapeHierarchy::ProxyShapeHierarchy(Ufe::HierarchyHandler::Ptr mayaHierarchyHandler)
+ProxyShapeHierarchy::ProxyShapeHierarchy(
+    const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler
+)
 	: Ufe::Hierarchy()
 	, fMayaHierarchyHandler(mayaHierarchyHandler)
 {
@@ -48,9 +51,20 @@ ProxyShapeHierarchy::~ProxyShapeHierarchy()
 }
 
 /*static*/
-ProxyShapeHierarchy::Ptr ProxyShapeHierarchy::create(Ufe::HierarchyHandler::Ptr mayaHierarchyHandler)
+ProxyShapeHierarchy::Ptr ProxyShapeHierarchy::create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
 {
 	return std::make_shared<ProxyShapeHierarchy>(mayaHierarchyHandler);
+}
+
+/*static*/
+ProxyShapeHierarchy::Ptr ProxyShapeHierarchy::create(
+    const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler,
+    const Ufe::SceneItem::Ptr&        item
+)
+{
+    auto hierarchy = create(mayaHierarchyHandler);
+    hierarchy->setItem(item);
+    return hierarchy;
 }
 
 void ProxyShapeHierarchy::setItem(const Ufe::SceneItem::Ptr& item)
@@ -95,8 +109,10 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::sceneItem() const
 bool ProxyShapeHierarchy::hasChildren() const
 {
 	const UsdPrim& rootPrim = getUsdRootPrim();
-	if (!rootPrim.IsValid())
+	if (!rootPrim.IsValid()) {
+		UFE_LOG("invalid root prim in ProxyShapeHierarchy::hasChildren()");
 		return false;
+	}
 	return !rootPrim.GetChildren().empty();
 }
 

@@ -39,6 +39,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/imaging/glf/contextCaps.h"
@@ -66,6 +67,7 @@
 #include <maya/MMatrix.h>
 #include <maya/MObject.h>
 #include <maya/MObjectHandle.h>
+#include <maya/MProfiler.h>
 #include <maya/MSceneMessage.h>
 #include <maya/MSelectInfo.h>
 #include <maya/MSelectionContext.h>
@@ -93,6 +95,14 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 
 TF_INSTANTIATE_SINGLETON(UsdMayaGLBatchRenderer);
+
+const int UsdMayaGLBatchRenderer::ProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "UsdMayaGLBatchRenderer", "UsdMayaGLBatchRenderer"
+#else
+    "UsdMayaGLBatchRenderer"
+#endif
+);
 
 /* static */
 void
@@ -130,6 +140,13 @@ UsdMayaGLBatchRenderer::GetDelegatePrefix(const bool isViewport2) const
 bool
 UsdMayaGLBatchRenderer::AddShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Batch Renderer Adding Shape Adapter");
+
     if (!TF_VERIFY(shapeAdapter, "Cannot add invalid shape adapter")) {
         return false;
     }
@@ -237,6 +254,13 @@ UsdMayaGLBatchRenderer::AddShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter)
 bool
 UsdMayaGLBatchRenderer::RemoveShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Batch Renderer Removing Shape Adapter");
+
     if (!TF_VERIFY(shapeAdapter, "Cannot remove invalid shape adapter")) {
         return false;
     }
@@ -562,6 +586,13 @@ UsdMayaGLBatchRenderer::Draw(const MDrawRequest& request, M3dView& view)
 {
     // Legacy viewport implementation.
 
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorC_L2,
+        "Batch Renderer Draw() (Legacy Viewport)");
+
     MDrawData drawData = request.drawData();
 
     const PxrMayaHdUserData* hdUserData =
@@ -617,6 +648,13 @@ UsdMayaGLBatchRenderer::Draw(
         const MUserData* userData)
 {
     // Viewport 2.0 implementation.
+
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorC_L2,
+        "Batch Renderer Draw() (Viewport 2.0)");
 
     const PxrMayaHdUserData* hdUserData =
         dynamic_cast<const PxrMayaHdUserData*>(userData);
@@ -723,6 +761,13 @@ UsdMayaGLBatchRenderer::TestIntersection(
     // viewport-based selection method, we compute the selection against the
     // Viewport 2.0 shape adapter buckets rather than the legacy buckets, since
     // we want to compute selection against what's actually being rendered.
+
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Batch Renderer Testing Intersection (Legacy Viewport)");
 
     M3dView view = selectInfo.view();
 
@@ -834,6 +879,13 @@ UsdMayaGLBatchRenderer::TestIntersection(
         const MHWRender::MDrawContext& context)
 {
     // Viewport 2.0 implementation.
+
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Batch Renderer Testing Intersection (Viewport 2.0)");
 
     // Guard against the user clicking in the viewer before the renderer is
     // setup, or with no shape adapters registered.
@@ -1058,6 +1110,13 @@ UsdMayaGLBatchRenderer::_TestIntersection(
         const bool singleSelection,
         HdxPickHitVector* result)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Batch Renderer Testing Intersection");
+
     if (!result) {
         return false;
     }
@@ -1113,6 +1172,13 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         const GfMatrix4d& projectionMatrix,
         const bool singleSelection)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Batch Renderer Computing Selection");
+
     // If depth selection has not been turned on, then we can optimize
     // area/marquee selections by handling collections similarly to a single
     // selection, where we test intersections against the single, viewport
@@ -1210,6 +1276,13 @@ UsdMayaGLBatchRenderer::_Render(
         const GfVec4d& viewport,
         const std::vector<_RenderItem>& items)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorC_L2,
+        "Batch Renderer Rendering Batch");
+
     _taskDelegate->SetCameraState(worldToViewMatrix,
                                   projectionMatrix,
                                   viewport);
@@ -1288,7 +1361,16 @@ UsdMayaGLBatchRenderer::_Render(
     _hdEngine.SetTaskContextData(HdxTokens->selectionState,
                                  selectionTrackerValue);
 
-    _hdEngine.Execute(_renderIndex.get(), &tasks);
+    {
+        TRACE_SCOPE("Executing Hydra Tasks");
+
+        MProfilingScope hydraProfilingScope(
+            ProfilerCategory,
+            MProfiler::kColorC_L3,
+            "Batch Renderer Executing Hydra Tasks");
+
+        _hdEngine.Execute(_renderIndex.get(), &tasks);
+    }
 
     glDisable(GL_FRAMEBUFFER_SRGB_EXT);
 
@@ -1311,6 +1393,13 @@ UsdMayaGLBatchRenderer::_RenderBatches(
         const GfMatrix4d& projectionMatrix,
         const GfVec4d& viewport)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorC_L2,
+        "Batch Renderer Rendering Batches");
+
     _ShapeAdapterBucketsMap& bucketsMap = bool(vp2Context) ?
         _shapeAdapterBuckets :
         _legacyShapeAdapterBuckets;

@@ -25,6 +25,7 @@
 
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/tf/debug.h"
+#include "pxr/base/trace/trace.h"
 
 #include <maya/M3dView.h>
 #include <maya/MDGContext.h>
@@ -35,6 +36,7 @@
 #include <maya/MDrawRequestQueue.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MPlug.h>
+#include <maya/MProfiler.h>
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MStatus.h>
 
@@ -57,6 +59,13 @@ PxrMayaHdImagingShapeUI::getDrawRequests(
         bool /* objectAndActiveOnly */,
         MDrawRequestQueue& requests)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        UsdMayaGLBatchRenderer::ProfilerCategory,
+        MProfiler::kColorE_L2,
+        "Hydra Imaging Shape getDrawRequests() (Legacy Viewport)");
+
     const MDagPath shapeDagPath = drawInfo.multiPath();
     const PxrMayaHdImagingShape* imagingShape =
         PxrMayaHdImagingShape::GetShapeAtDagPath(shapeDagPath);
@@ -133,6 +142,13 @@ PxrMayaHdImagingShapeUI::getDrawRequests(
 void
 PxrMayaHdImagingShapeUI::draw(const MDrawRequest& request, M3dView& view) const
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        UsdMayaGLBatchRenderer::ProfilerCategory,
+        MProfiler::kColorC_L1,
+        "Hydra Imaging Shape draw() (Legacy Viewport)");
+
     TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING).Msg(
         "PxrMayaHdImagingShapeUI::draw()\n");
 

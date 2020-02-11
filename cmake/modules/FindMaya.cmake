@@ -6,9 +6,8 @@
 # Variables that will be defined:
 # MAYA_FOUND          Defined if a Maya installation has been detected
 # MAYA_EXECUTABLE     Path to Maya's executable
-# MAYA_PY_EXECUTABLE  Path to Maya's python executable (mayapy)
-# MAYA_LIBRARY_DIR    Path to the Maya libraries
-# MAYA_LIBRARIES      List of full paths to all the Maya libraries
+# MAYA_<lib>_FOUND    Defined if <lib> has been found
+# MAYA_<lib>_LIBRARY  Path to <lib> library
 # MAYA_INCLUDE_DIRS   Path to the devkit's include directories
 # MAYA_API_VERSION    Maya version (6-8 digits)
 #
@@ -31,6 +30,7 @@
 #  - OS-specific plugin suffix (.mll, .so, .bundle)
 #  - Removal of 'lib' prefix on osx/linux
 #  - OS-specific defines
+#  - Post-commnad for correcting Qt library linking on osx
 #  - Windows link flags for exporting initializePlugin/uninitializePlugin
 macro(MAYA_SET_PLUGIN_PROPERTIES target)
     set_target_properties(${target} PROPERTIES
@@ -166,6 +166,19 @@ find_path(MAYA_INCLUDE_DIR
         "Maya's headers path"
 )
 
+find_path(MAYA_LIBRARY_DIR
+        OpenMaya
+    HINTS
+        "${MAYA_LOCATION}"
+        "$ENV{MAYA_LOCATION}"
+        "${MAYA_BASE_DIR}"
+    PATH_SUFFIXES
+        ../../devkit/include/
+        include/
+    DOC
+        "Maya's libraries path"
+)
+
 list(APPEND MAYA_INCLUDE_DIRS ${MAYA_INCLUDE_DIR})
 
 find_path(MAYA_DEVKIT_INC_DIR
@@ -207,6 +220,7 @@ foreach(MAYA_LIB
         NO_CMAKE_SYSTEM_PATH
     )
 
+
     if (MAYA_${MAYA_LIB}_LIBRARY)
         list(APPEND MAYA_LIBRARIES ${MAYA_${MAYA_LIB}_LIBRARY})
     endif()
@@ -239,7 +253,8 @@ find_program(MAYA_PY_EXECUTABLE
 )
 
 if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MTypes.h")
-    # Extract the MAYA_API_VERSION numbers from the lib headers
+
+    # Tease the MAYA_API_VERSION numbers from the lib headers
     file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MTypes.h TMP REGEX "#define MAYA_API_VERSION.*$")
     string(REGEX MATCHALL "[0-9]+" MAYA_API_VERSION ${TMP})
 endif()
@@ -254,7 +269,6 @@ find_package_handle_standard_args(Maya
         MAYA_PY_EXECUTABLE
         MAYA_INCLUDE_DIRS
         MAYA_LIBRARIES
-        MAYA_LIBRARY_DIR
     VERSION_VAR
         MAYA_API_VERSION
 )
