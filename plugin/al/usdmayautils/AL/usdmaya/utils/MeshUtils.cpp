@@ -771,6 +771,10 @@ void MeshImportContext::applyColourSetData()
     
     primvar.GetDeclarationInfo(&name, &typeName, &interpolation, &elementSize);
 
+    TfToken role = typeName.GetRole();
+    if(role != SdfValueRoleNames->Color)
+      continue;
+
     // early out for channels that are definitely not colourSets
     if (name == prefToken || name == displayOpacityToken)
       continue;
@@ -1690,7 +1694,7 @@ void MeshExportContext::copyColourSetData()
             }
           }
         }
-        UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(colourSetNames[i].asChar()), SdfValueTypeNames->Float3Array, interpolation);
+        UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(colourSetNames[i].asChar()), SdfValueTypeNames->Color3fArray, interpolation);
         colourSet.Set(colourValues, m_timeCode);
       }
       if (MFnMesh::kRGBA == representation )
@@ -1760,7 +1764,7 @@ void MeshExportContext::copyColourSetData()
           }
         }
       }
-      UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(colourSetNames[i].asChar()), SdfValueTypeNames->Float4Array, interpolation);
+      UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(colourSetNames[i].asChar()), SdfValueTypeNames->Color4fArray, interpolation);
       colourSet.Set(colourValues, m_timeCode);
     }
   }
@@ -1809,7 +1813,7 @@ void MeshExportContext::copyColourSetData()
           }
         }
       }
-      UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(diff_report[i].setName().asChar()), SdfValueTypeNames->Float3Array, interp);
+      UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(diff_report[i].setName().asChar()), SdfValueTypeNames->Color3fArray, interp);
       colourSet.Set(colourValues, m_timeCode);
     }
     else
@@ -1840,7 +1844,7 @@ void MeshExportContext::copyColourSetData()
           }
         }
       }
-      UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(diff_report[i].setName().asChar()), SdfValueTypeNames->Float4Array, interp);
+      UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(diff_report[i].setName().asChar()), SdfValueTypeNames->Color4fArray, interp);
       colourSet.Set(colourValues, m_timeCode);
     }
   }
