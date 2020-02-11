@@ -18,6 +18,7 @@
 #include <pxr/base/gf/matrix4d.h>
 
 #include <pxr/base/tf/instantiateSingleton.h>
+#include <pxr/base/vt/value.h>
 
 #include <pxr/imaging/glf/contextCaps.h>
 
@@ -31,6 +32,11 @@ using HdRendererPluginRegistry = HdxRendererPluginRegistry;
 PXR_NAMESPACE_CLOSE_SCOPE
 #endif
 #include <pxr/imaging/hdx/tokens.h>
+
+#if USD_VERSION_NUM > 2002
+#include <pxr/imaging/hgi/hgi.h>
+#include <pxr/imaging/hgi/tokens.h>
+#endif
 
 #include <maya/M3dView.h>
 #include <maya/MDagPath.h>
@@ -154,6 +160,10 @@ private:
 MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     : MHWRender::MRenderOverride(desc.overrideName.GetText()),
       _rendererDesc(desc),
+#if USD_VERSION_NUM > 2002
+      _hgi(Hgi::GetPlatformDefaultHgi()),
+      _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())},
+#endif
       _selectionTracker(new HdxSelectionTracker),
       _isUsingHdSt(desc.rendererName == MtohTokens->HdStormRendererPlugin) {
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
@@ -537,7 +547,11 @@ void MtohRenderOverride::_InitHydraResources() {
         HdRendererPluginRegistry::GetInstance().GetRendererPlugin(
             _rendererDesc.rendererName);
     auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
+#if USD_VERSION_NUM > 2002
+    _renderIndex = HdRenderIndex::New(renderDelegate, {&_hgiDriver});
+#else
     _renderIndex = HdRenderIndex::New(renderDelegate);
+#endif
 
     _taskController = new HdxTaskController(
         _renderIndex,
