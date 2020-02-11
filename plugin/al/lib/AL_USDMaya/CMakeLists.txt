@@ -165,7 +165,6 @@ target_compile_definitions(${LIBRARY_NAME}
     PRIVATE
         ${_macDef}
         AL_MAYA_MACROS_EXPORT
-        WANT_UFE_BUILD=1
         AL_USDMAYA_EXPORT
         AL_USDMAYA_LOCATION_NAME="${AL_USDMAYA_LOCATION_NAME}"
 )
@@ -218,9 +217,7 @@ target_link_libraries(${LIBRARY_NAME}
 )
 
 if(UFE_FOUND)
-    target_compile_definitions(${LIBRARY_NAME}
-        PRIVATE
-            WANT_UFE_BUILD=1)
+    add_definitions(-DWANT_UFE_BUILD=1)
     target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
 endif()
 
