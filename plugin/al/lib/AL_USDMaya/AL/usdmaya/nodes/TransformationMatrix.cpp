@@ -35,30 +35,6 @@ namespace nodes {
 using AL::usdmaya::utils::UsdDataType;
 
 //----------------------------------------------------------------------------------------------------------------------
-// Local helper functions.  Compare two doubles or vector types for being equal within the specified error value.
-// (For the vector types, each component is checked independently.)
-
-static bool apxEq(double val1, double val2, double epsilon=0.00001)
-{
-  return fabs(val2-val1) <= epsilon;
-}
-
-static bool apxEq(const MVector &val1, const MVector &val2, double epsilon=0.00001)
-{
-  return apxEq(val1.x, val2.x, epsilon) && apxEq(val1.y, val2.y, epsilon) && apxEq(val1.z, val2.z, epsilon);
-}
-
-static bool apxEq(const MPoint &val1, const MPoint &val2, double epsilon=0.00001)
-{
-  return apxEq(val1.x, val2.x, epsilon) && apxEq(val1.y, val2.y, epsilon) && apxEq(val1.z, val2.z, epsilon);
-}
-
-static bool apxEq(const MEulerRotation &val1, const MEulerRotation &val2, double epsilon=0.00001)
-{
-  return apxEq(val1.x, val2.x, epsilon) && apxEq(val1.y, val2.y, epsilon) && apxEq(val1.z, val2.z, epsilon);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 const MTypeId TransformationMatrix::kTypeId(AL_USDMAYA_TRANSFORMATION_MATRIX);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -894,7 +870,12 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
     m_flags |= kInheritsTransform;
 
   if(matchesMayaProfile(m_xformops.begin(), m_xformops.end(), m_orderedOps.begin()))
+  {
     m_flags |= kFromMayaSchema;
+  }
+  else
+  {
+  }
 
   // Disable push to prim if enabled, otherwise MPlug value queries and setting
   // in the switch statement below will trigger pushing to the prim, which
@@ -903,24 +884,26 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
   bool pushOriginallyEnabled = pushToPrimEnabled();
   m_flags &= ~kPushToPrimEnabled;
 
+  // Enclosing the process below in try/catch in order to be able to reset
+  // the push to prim enabled to its original state in case something goes
+  // wrong...
+  //
+  try
+  {
+
   auto opIt = m_orderedOps.begin();
   for(std::vector<UsdGeomXformOp>::const_iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
   {
     const UsdGeomXformOp& op = *it;
-
-    // How many time samples does the op have?  (This will be 0 if the op only has a constant
-    // value set or if it has no value set at all.)
-    //
-    int numTimeSamples = op.GetNumTimeSamples();
-
     switch(*opIt)
     {
     case kTranslate:
       {
         m_flags |= kPrimHasTranslation;
-        if(numTimeSamples > 0)
+        if(op.GetNumTimeSamples() > 0)
+        {
           m_flags |= kAnimatedTranslation;
-
+        }
         if(readFromPrim)
         {
           MVector vecFromUsd;
@@ -952,6 +935,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
             MPlug(transformNode->thisMObject(), MPxTransform::scalePivotX).setValue(ptFromUsd.x);
             MPlug(transformNode->thisMObject(), MPxTransform::scalePivotY).setValue(ptFromUsd.y);
             MPlug(transformNode->thisMObject(), MPxTransform::scalePivotZ).setValue(ptFromUsd.z);
+            m_rotatePivotTweak[0] = m_rotatePivotTweak[1] = m_rotatePivotTweak[2] = 0;
+            m_scalePivotTweak[0] = m_scalePivotTweak[1] = m_scalePivotTweak[2] = 0;
             m_rotatePivotFromUsd = m_scalePivotFromUsd = ptFromUsd;
           }
         }
@@ -970,6 +955,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
             MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotTranslateX).setValue(vecFromUsd.x);
             MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotTranslateY).setValue(vecFromUsd.y);
             MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotTranslateZ).setValue(vecFromUsd.z);
+            m_rotatePivotTranslationTweak[0] = m_rotatePivotTranslationTweak[1] = m_rotatePivotTranslationTweak[2] = 0;
             m_rotatePivotTranslationFromUsd = vecFromUsd;
           }
         }
@@ -988,6 +974,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
             MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotX).setValue(ptFromUsd.x);
             MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotY).setValue(ptFromUsd.y);
             MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotZ).setValue(ptFromUsd.z);
+            m_rotatePivotTweak[0] = m_rotatePivotTweak[1] = m_rotatePivotTweak[2] = 0;
             m_rotatePivotFromUsd = ptFromUsd;
           }
         }
@@ -997,9 +984,10 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
     case kRotate:
       {
         m_flags |= kPrimHasRotation;
-        if(numTimeSamples > 0)
+        if(op.GetNumTimeSamples() > 0)
+        {
           m_flags |= kAnimatedRotation;
-
+        }
         if(readFromPrim)
         {
           MEulerRotation rotFromUsd;
@@ -1029,6 +1017,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
             MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisX).setValue(rotFromUsd.x);
             MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisY).setValue(rotFromUsd.y);
             MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisZ).setValue(rotFromUsd.z);
+            m_rotateOrientationTweak = MQuaternion(0, 0, 0, 1.0);
             m_rotateOrientationFromUsd = rotFromUsd.asQuaternion();
           }
         }
@@ -1052,6 +1041,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
             MPlug(transformNode->thisMObject(), MPxTransform::scalePivotTranslateX).setValue(vecFromUsd.x);
             MPlug(transformNode->thisMObject(), MPxTransform::scalePivotTranslateY).setValue(vecFromUsd.y);
             MPlug(transformNode->thisMObject(), MPxTransform::scalePivotTranslateZ).setValue(vecFromUsd.z);
+            m_scalePivotTranslationTweak[0] = m_scalePivotTranslationTweak[1] = m_scalePivotTranslationTweak[2] = 0;
             m_scalePivotTranslationFromUsd = vecFromUsd;
           }
         }
@@ -1070,6 +1060,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
             MPlug(transformNode->thisMObject(), MPxTransform::scalePivotX).setValue(ptFromUsd.x);
             MPlug(transformNode->thisMObject(), MPxTransform::scalePivotY).setValue(ptFromUsd.y);
             MPlug(transformNode->thisMObject(), MPxTransform::scalePivotZ).setValue(ptFromUsd.z);
+            m_scalePivotTweak[0] = m_scalePivotTweak[1] = m_scalePivotTweak[2] = 0;
             m_scalePivotFromUsd = ptFromUsd;
           }
         }
@@ -1079,9 +1070,10 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
     case kShear:
       {
         m_flags |= kPrimHasShear;
-        if(numTimeSamples > 0)
+        if(op.GetNumTimeSamples() > 0)
+        {
           m_flags |= kAnimatedShear;
-
+        }
         if(readFromPrim)
         {
           MVector vecFromUsd;
@@ -1101,9 +1093,10 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
     case kScale:
       {
         m_flags |= kPrimHasScale;
-        if(numTimeSamples > 0)
+        if(op.GetNumTimeSamples() > 0)
+        {
           m_flags |= kAnimatedScale;
-
+        }
         if(readFromPrim)
         {
           MVector vecFromUsd(1.0,1.0,1.0);
@@ -1136,8 +1129,10 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
         m_flags |= kPrimHasTransform;
         m_flags |= kFromMatrix;
         m_flags |= kPushPrimToMatrix;
-        if(numTimeSamples > 0)
+        if(op.GetNumTimeSamples() > 0)
+        {
           m_flags |= kAnimatedMatrix;
+        }
 
         if(readFromPrim)
         {
@@ -1155,15 +1150,34 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
     }
   }
 
+  } // end try block
+  catch(const std::exception &e)
+  {
+    // Reset the push to prim state to the value it had before we disabled
+    // it for the loop above, so if something failed in the loop, the
+    // temporary setting doesn't stay around.  Then rethrow the exception
+    // so as not to disrupt whatever else may be looking for it.
+    //
+    if(pushOriginallyEnabled)
+    {
+      m_flags |= kPushToPrimEnabled;
+    }
+    throw;
+  }
+
   // Reenable push to prim if it was enabled before.
   // (Note - I don't think we want to trigger an update of anything here, only
   // reenable push for future operations, hence not calling enablePushToPrim.)
   //
   if(pushOriginallyEnabled)
+  {
     m_flags |= kPushToPrimEnabled;
+  }
 
   if(m_flags & kAnimationMask)
+  {
     m_flags |= kReadAnimatedValues;
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1183,15 +1197,11 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
       for(std::vector<UsdGeomXformOp>::const_iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
       {
         const UsdGeomXformOp& op = *it;
-
-        // How many time samples (if any) does the op have?
-        int numTimeSamples = op.GetNumTimeSamples();
-
         switch(*opIt)
         {
         case kTranslate:
           {
-            if(numTimeSamples > 0)
+            if(op.GetNumTimeSamples() > 0)
             {
               m_flags |= kAnimatedTranslation;
               internal_readVector(m_translationFromUsd, op);
@@ -1202,7 +1212,7 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 
         case kRotate:
           {
-            if(numTimeSamples > 0)
+            if(op.GetNumTimeSamples() > 0)
             {
               m_flags |= kAnimatedRotation;
               internal_readRotation(m_rotationFromUsd, op);
@@ -1216,7 +1226,7 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 
         case kScale:
           {
-            if(numTimeSamples > 0)
+            if(op.GetNumTimeSamples() > 0)
             {
               m_flags |= kAnimatedScale;
               internal_readVector(m_scaleFromUsd, op);
@@ -1227,7 +1237,7 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 
         case kShear:
           {
-            if(numTimeSamples > 0)
+            if(op.GetNumTimeSamples() > 0)
             {
               m_flags |= kAnimatedShear;
               internal_readShear(m_shearFromUsd, op);
@@ -1238,7 +1248,7 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
 
         case kTransform:
           {
-            if(numTimeSamples > 0)
+            if(op.GetNumTimeSamples() > 0)
             {
               m_flags |= kAnimatedMatrix;
               GfMatrix4d matrix;
@@ -1311,8 +1321,10 @@ MStatus TransformationMatrix::translateTo(const MVector& vector, MSpace::Space s
     // Push new value to prim, but only if it's changing, otherwise extra work and unintended
     // side effects will happen.
     //
-    if (!apxEq(vector, m_translationFromUsd))
+    if (!vector.isEquivalent(m_translationFromUsd))
+    {
       pushTranslateToPrim();
+    }
   }
   return status;
 }
@@ -1361,8 +1373,10 @@ MStatus TransformationMatrix::scaleTo(const MVector& scale, MSpace::Space space)
       insertScaleOp();
     }
     // Push new value to prim, but only if it's changing.
-    if (!apxEq(scale, m_scaleFromUsd))
+    if (!scale.isEquivalent(m_scaleFromUsd))
+    {
       pushScaleToPrim();
+    }
   }
   return status;
 }
@@ -1409,8 +1423,10 @@ MStatus TransformationMatrix::shearTo(const MVector& shear, MSpace::Space space)
       insertShearOp();
     }
     // Push new value to prim, but only if it's changing.
-    if (!apxEq(shear, m_shearFromUsd))
+    if (!shear.isEquivalent(m_shearFromUsd))
+    {
       pushShearToPrim();
+    }
   }
   return status;
 }
@@ -1460,8 +1476,10 @@ MStatus TransformationMatrix::setScalePivot(const MPoint& sp, MSpace::Space spac
       insertScalePivotOp();
     }
     // Push new value to prim, but only if it's changing.
-    if (!apxEq(sp, m_scalePivotFromUsd))
+    if (!sp.isEquivalent(m_scalePivotFromUsd))
+    {
       pushScalePivotToPrim();
+    }
   }
   return status;
 }
@@ -1502,8 +1520,10 @@ MStatus TransformationMatrix::setScalePivotTranslation(const MVector& sp, MSpace
       insertScalePivotTranslationOp();
     }
     // Push new value to prim, but only if it's changing.
-    if (!apxEq(sp, m_scalePivotTranslationFromUsd))
+    if (!sp.isEquivalent(m_scalePivotTranslationFromUsd))
+    {
       pushScalePivotTranslateToPrim();
+    }
   }
   return status;
 }
@@ -1553,8 +1573,10 @@ MStatus TransformationMatrix::setRotatePivot(const MPoint& pivot, MSpace::Space 
       insertRotatePivotOp();
     }
     // Push new value to prim, but only if it's changing.
-    if (!apxEq(pivot, m_rotatePivotFromUsd))
+    if (!pivot.isEquivalent(m_rotatePivotFromUsd))
+    {
       pushRotatePivotToPrim();
+    }
   }
   return status;
 }
@@ -1595,8 +1617,10 @@ MStatus TransformationMatrix::setRotatePivotTranslation(const MVector &vector, M
       insertRotatePivotTranslationOp();
     }
     // Push new value to prim, but only if it's changing.
-    if (!apxEq(vector, m_rotatePivotTranslationFromUsd))
+    if (!vector.isEquivalent(m_rotatePivotTranslationFromUsd))
+    {
       pushRotatePivotTranslateToPrim();
+    }
   }
   return status;
 }
@@ -1676,8 +1700,10 @@ MStatus TransformationMatrix::rotateTo(const MQuaternion &q, MSpace::Space space
     if(m_enableUsdWriteback)
     {
       // Push new value to prim, but only if it's changing.
-      if (!apxEq(MPxTransformationMatrix::rotationValue, m_rotationFromUsd))
+      if (!MPxTransformationMatrix::rotationValue.isEquivalent(m_rotationFromUsd))
+      {
         pushRotateToPrim();
+      }
     }
   }
   return status;
@@ -1709,8 +1735,10 @@ MStatus TransformationMatrix::rotateTo(const MEulerRotation &e, MSpace::Space sp
     if(m_enableUsdWriteback)
     {
       // Push new value to prim, but only if it's changing.
-      if (!apxEq(e, m_rotationFromUsd))
+      if (!e.isEquivalent(m_rotationFromUsd))
+      {
         pushRotateToPrim();
+      }
     }
   }
   return status;
