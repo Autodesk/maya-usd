@@ -35,7 +35,7 @@ See Pixar's official github page for instructions on how to build USD: https://g
 
 |   Required    |      ![](images/pxr.png)          |         ![](images/al.png)            |
 |:------------: |:---------------:  |:-----------------:    |
-| CommitID/tag  | ceca736(>19.11)   | 631a2911(>0.34.0)     |
+| CommitID/tag  | d0d449a(>20.02)   | 631a2911(>0.34.0)     |
 
 
 For additional information on building Pixar USD, see the ***Additional Build Instruction*** section below.
