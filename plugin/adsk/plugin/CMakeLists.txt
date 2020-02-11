@@ -20,6 +20,7 @@ add_library(${PLUGIN_PACKAGE} MODULE
 target_compile_definitions(${PLUGIN_PACKAGE}
     PRIVATE
         MAYAUSD_PLUGIN_EXPORT
+        $<$<BOOL:${Qt5_FOUND}>:WANT_QT_BUILD>
 )
 
 target_include_directories(${PLUGIN_PACKAGE}
@@ -41,6 +42,7 @@ target_link_libraries(${PLUGIN_PACKAGE}
 		usd
 		usdGeom
 		usdUtils
+		$<$<BOOL:${Qt5_FOUND}>:mayaUsdUI>
 )
 
 MAYA_SET_PLUGIN_PROPERTIES(${PLUGIN_PACKAGE})

@@ -89,6 +89,16 @@ if(CMAKE_WANT_UFE_BUILD)
     endif()
 endif()
 
+if(DEFINED QT_LOCATION)
+    set(CMAKE_PREFIX_PATH "${QT_LOCATION}")
+    find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
+    if(Qt5_FOUND)
+        message(STATUS "Building with Qt features enabled.")
+    endif()
+else()
+    message(STATUS "QT_LOCATION not set. Building Qt features will be disabled.")
+endif()
+
 #==============================================================================
 # Compiler
 #==============================================================================
