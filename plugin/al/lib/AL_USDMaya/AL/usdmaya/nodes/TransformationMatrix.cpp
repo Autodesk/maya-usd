@@ -31,17 +31,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace AL {
 namespace usdmaya {
 namespace nodes {
-
+namespace {
 using AL::usdmaya::utils::UsdDataType;
-
-//----------------------------------------------------------------------------------------------------------------------
-const MTypeId TransformationMatrix::kTypeId(AL_USDMAYA_TRANSFORMATION_MATRIX);
-
-//----------------------------------------------------------------------------------------------------------------------
-MPxTransformationMatrix* TransformationMatrix::creator()
-{
-  return new TransformationMatrix;
-}
 
 //----------------------------------------------------------------------------------------------------------------------
 bool hasEmptyDefaultValue(const UsdGeomXformOp& op, UsdTimeCode time)
@@ -56,6 +47,16 @@ bool hasEmptyDefaultValue(const UsdGeomXformOp& op, UsdTimeCode time)
     }
   }
   return false;
+}
+} // anon
+
+//----------------------------------------------------------------------------------------------------------------------
+const MTypeId TransformationMatrix::kTypeId(AL_USDMAYA_TRANSFORMATION_MATRIX);
+
+//----------------------------------------------------------------------------------------------------------------------
+MPxTransformationMatrix* TransformationMatrix::creator()
+{
+  return new TransformationMatrix;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
