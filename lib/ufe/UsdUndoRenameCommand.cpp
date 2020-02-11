@@ -21,8 +21,12 @@
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 #include <ufe/log.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
 #define UFE_ENABLE_ASSERTS
 #include <ufe/ufeAssert.h>
+#else
+#include <cassert>
+#endif
 
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/editContext.h>
@@ -76,7 +80,11 @@ bool UsdUndoRenameCommand::renameRedo()
 	if (status)
 	{
         auto srcPrim = fStage->GetPrimAtPath(fUsdSrcPath);
+#ifdef UFE_V2_FEATURES_AVAILABLE
         UFE_ASSERT_MSG(srcPrim, "Invalid prim cannot be inactivated.");
+#else
+        assert(srcPrim);
+#endif
         status = srcPrim.SetActive(false);
 
         if (status) {
@@ -109,7 +117,11 @@ bool UsdUndoRenameCommand::renameUndo()
     }
     if (status) {
         auto srcPrim = fStage->GetPrimAtPath(fUsdSrcPath);
+#ifdef UFE_V2_FEATURES_AVAILABLE
         UFE_ASSERT_MSG(srcPrim, "Invalid prim cannot be activated.");
+#else
+        assert(srcPrim);
+#endif
         status = srcPrim.SetActive(true);
 
         if (status) {
