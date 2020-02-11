@@ -100,6 +100,9 @@ UsdMayaAdaptor::GetUsdTypeName() const
     }
 
     const TfType ty = GetUsdType();
+#if USD_VERSION_NUM > 2002
+    return UsdSchemaRegistry::GetInstance().GetSchemaTypeName(ty);
+#else
     const SdfPrimSpecHandle primDef = UsdSchemaRegistry::GetInstance()
             .GetPrimDefinition(ty);
     if (!primDef) {
@@ -107,6 +110,7 @@ UsdMayaAdaptor::GetUsdTypeName() const
     }
 
     return primDef->GetNameToken();
+#endif
 }
 
 TfType
@@ -154,13 +158,22 @@ UsdMayaAdaptor::GetAppliedSchemas() const
 UsdMayaAdaptor::SchemaAdaptor
 UsdMayaAdaptor::GetSchema(const TfType& ty) const
 {
+#if USD_VERSION_NUM > 2002
+    const TfToken usdTypeName =
+        UsdSchemaRegistry::GetInstance().GetSchemaTypeName(ty);
+#else
     const SdfPrimSpecHandle primDef = UsdSchemaRegistry::GetInstance()
             .GetPrimDefinition(ty);
-    if (!primDef) {
+    const TfToken usdTypeName = bool(primDef) ?
+        primDef->GetNameToken() :
+        TfToken();
+#endif
+
+    if (usdTypeName.IsEmpty()) {
         return SchemaAdaptor();
     }
 
-    return GetSchemaByName(primDef->GetNameToken());
+    return GetSchemaByName(usdTypeName);
 }
 
 UsdMayaAdaptor::SchemaAdaptor
@@ -247,15 +260,24 @@ UsdMayaAdaptor::ApplySchema(const TfType& ty)
 UsdMayaAdaptor::SchemaAdaptor
 UsdMayaAdaptor::ApplySchema(const TfType& ty, MDGModifier& modifier)
 {
+#if USD_VERSION_NUM > 2002
+    const TfToken usdTypeName =
+        UsdSchemaRegistry::GetInstance().GetSchemaTypeName(ty);
+#else
     const SdfPrimSpecHandle primDef = UsdSchemaRegistry::GetInstance()
             .GetPrimDefinition(ty);
-    if (!primDef) {
+    const TfToken usdTypeName = bool(primDef) ?
+        primDef->GetNameToken() :
+        TfToken();
+#endif
+
+    if (usdTypeName.IsEmpty()) {
         TF_CODING_ERROR("Can't find schema definition for type '%s'",
                 ty.GetTypeName().c_str());
         return SchemaAdaptor();
     }
 
-    return ApplySchemaByName(primDef->GetNameToken(), modifier);
+    return ApplySchemaByName(usdTypeName, modifier);
 }
 
 UsdMayaAdaptor::SchemaAdaptor
@@ -326,15 +348,24 @@ UsdMayaAdaptor::UnapplySchema(const TfType& ty)
 void
 UsdMayaAdaptor::UnapplySchema(const TfType& ty, MDGModifier& modifier)
 {
+#if USD_VERSION_NUM > 2002
+    const TfToken usdTypeName =
+        UsdSchemaRegistry::GetInstance().GetSchemaTypeName(ty);
+#else
     const SdfPrimSpecHandle primDef = UsdSchemaRegistry::GetInstance()
             .GetPrimDefinition(ty);
-    if (!primDef) {
+    const TfToken usdTypeName = bool(primDef) ?
+        primDef->GetNameToken() :
+        TfToken();
+#endif
+
+    if (usdTypeName.IsEmpty()) {
         TF_CODING_ERROR("Can't find schema definition for type '%s'",
                 ty.GetTypeName().c_str());
         return;
     }
 
-    UnapplySchemaByName(primDef->GetNameToken(), modifier);
+    UnapplySchemaByName(usdTypeName, modifier);
 }
 
 void
@@ -530,14 +561,22 @@ static TfToken::Set _GetRegisteredSchemas()
     std::set<TfType> derivedTypes;
     TfType::Find<T>().GetAllDerivedTypes(&derivedTypes);
 
-    UsdSchemaRegistry registry = UsdSchemaRegistry::GetInstance();
+    const UsdSchemaRegistry &registry = UsdSchemaRegistry::GetInstance();
     for (const TfType& ty : derivedTypes) {
-        SdfPrimSpecHandle primDef = registry.GetPrimDefinition(ty);
-        if (!primDef) {
+#if USD_VERSION_NUM > 2002
+        const TfToken usdTypeName = registry.GetSchemaTypeName(ty);
+#else
+        const SdfPrimSpecHandle primDef = registry.GetPrimDefinition(ty);
+        const TfToken usdTypeName = bool(primDef) ?
+            primDef->GetNameToken() :
+            TfToken();
+#endif
+
+        if (usdTypeName.IsEmpty()) {
             continue;
         }
 
-        schemas.insert(primDef->GetNameToken());
+        schemas.insert(usdTypeName);
     }
 
     return schemas;
