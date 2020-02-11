@@ -251,7 +251,11 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
     if (!_renderIndex) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorD_L1, "Allocate RenderIndex");
+#if USD_VERSION_NUM > 2002
+        _renderIndex = HdRenderIndex::New(_renderDelegate, HdDriverVector());
+#else
         _renderIndex = HdRenderIndex::New(_renderDelegate);
+#endif
 
         // Add additional configurations after render index creation.
         static std::once_flag reprsOnce;

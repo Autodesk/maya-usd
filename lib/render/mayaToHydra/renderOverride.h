@@ -21,12 +21,13 @@
 
 #include <pxr/base/tf/singleton.h>
 
+#if USD_VERSION_NUM > 2002
+#include <pxr/imaging/hd/driver.h>
+#endif
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/renderIndex.h>
-#include <pxr/imaging/hdSt/renderDelegate.h>
-
-#include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hdSt/renderDelegate.h>
 
 #if USD_VERSION_NUM >= 1911
 #include <pxr/imaging/hd/rendererPlugin.h>
@@ -52,6 +53,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include <atomic>
 #include <chrono>
+#include <memory>
 #include <mutex>
 
 #if WANT_UFE_BUILD
@@ -150,6 +152,10 @@ private:
     std::chrono::system_clock::time_point _lastRenderTime;
     std::atomic<bool> _needsClear;
 
+#if USD_VERSION_NUM > 2002
+    std::unique_ptr<class Hgi> _hgi;
+    HdDriver _hgiDriver;
+#endif
     HdEngine _engine;
     HdRendererPlugin* _rendererPlugin = nullptr;
     HdxTaskController* _taskController = nullptr;

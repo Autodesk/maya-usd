@@ -49,6 +49,10 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/tokens.h"
+#if USD_VERSION_NUM > 2002
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/tokens.h"
+#endif
 #include "pxr/usd/sdf/path.h"
 
 #if USD_VERSION_NUM < 1911
@@ -418,6 +422,10 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
         _objectSoftSelectEnabled(false),
         _softSelectOptionsCallbackId(0),
         _selectResultsKey(GfMatrix4d(0.0), GfMatrix4d(0.0), false),
+#if USD_VERSION_NUM > 2002
+        _hgi(Hgi::GetPlatformDefaultHgi()),
+        _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())},
+#endif
         _selectionResolution(256),
         _enableDepthSelection(false)
 {
@@ -429,7 +437,11 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
     _legacyViewportPrefix = _rootId.AppendChild(_tokens->LegacyViewport);
     _viewport2Prefix = _rootId.AppendChild(_tokens->Viewport2);
 
+#if USD_VERSION_NUM > 2002
+    _renderIndex.reset(HdRenderIndex::New(&_renderDelegate, {&_hgiDriver}));
+#else
     _renderIndex.reset(HdRenderIndex::New(&_renderDelegate));
+#endif
     if (!TF_VERIFY(_renderIndex)) {
         return;
     }
