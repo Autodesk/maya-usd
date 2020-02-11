@@ -17,6 +17,8 @@
 
 #include "../base/api.h"
 
+#include <ufe/rtid.h>
+
 #include <maya/MStatus.h>
 
 MAYAUSD_NS_DEF {
@@ -31,6 +33,10 @@ MStatus initialize();
 //! finalize the handlers stage model.
 MAYAUSD_CORE_PUBLIC
 MStatus finalize();
+
+//! Return the run-time ID allocated to USD.
+MAYAUSD_CORE_PUBLIC
+Ufe::Rtid getUsdRunTimeId();
 
 } // namespace ufe
 } // namespace MayaUsd

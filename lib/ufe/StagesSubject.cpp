@@ -196,32 +196,36 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 	for (const auto& changedPath : notice.GetResyncedPaths())
 	{
 		const std::string& usdPrimPathStr = changedPath.GetPrimPath().GetString();
+		// Assume proxy shapes (and thus stages) cannot be instanced.  We can
+		// therefore map the stage to a single UFE path.  Lifting this
+		// restriction would mean sending one add or delete notification for
+		// each Maya Dag path instancing the proxy shape / stage.
 		Ufe::Path ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
 		auto prim = stage->GetPrimAtPath(changedPath);
 		// Changed paths could be xformOps.
 		// These are considered as invalid null prims
 		if (prim.IsValid() && !InPathChange::inPathChange())
 		{
-            auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
+			auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
 
-            // AL LayerCommands.addSubLayer test will cause Maya to crash
-            // if we don't filter invalid sceneItems. This patch is provided
-            // to prevent crashes, but more investigation will have to be
-            // done to understand why ufePath in case of sub layer
-            // creation causes Ufe::Hierarchy::createItem to fail.
-            if (!sceneItem)
-                continue;
+			// AL LayerCommands.addSubLayer test will cause Maya to crash
+			// if we don't filter invalid sceneItems. This patch is provided
+			// to prevent crashes, but more investigation will have to be
+			// done to understand why ufePath in case of sub layer
+			// creation causes Ufe::Hierarchy::createItem to fail.
+			if (!sceneItem)
+				continue;
 
-            if (prim.IsActive())
-            {
-                auto notification = Ufe::ObjectAdd(sceneItem);
-                Ufe::Scene::notifyObjectAdd(notification);
-            }
-            else
-            {
-                auto notification = Ufe::ObjectPostDelete(sceneItem);
-                Ufe::Scene::notifyObjectDelete(notification);
-            }
+			if (prim.IsActive())
+			{
+				auto notification = Ufe::ObjectAdd(sceneItem);
+				Ufe::Scene::notifyObjectAdd(notification);
+			}
+			else
+			{
+				auto notification = Ufe::ObjectPostDelete(sceneItem);
+				Ufe::Scene::notifyObjectDelete(notification);
+			}
 		}
 	}
 
