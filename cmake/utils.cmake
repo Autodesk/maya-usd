@@ -71,7 +71,7 @@ function(mayaUsd_find_python_module module)
                 "Location of Python module ${module}")
         endif(NOT _${module}_status)
     endif(NOT ${module_found})
-endfunction(mayaUsd_find_python_module)
+endfunction()
 
 # Initialize a variable to accumulate an rpath.  The origin is the
 # RUNTIME DESTINATION of the target.  If not absolute it's appended
@@ -83,8 +83,10 @@ function(mayaUsd_init_rpath rpathRef origin)
         else()
             set(origin "${CMAKE_INSTALL_PREFIX}/${origin}")
         endif()
-        get_filename_component(origin "${origin}" REALPATH)
     endif()
+    # mayaUsd_add_rpath uses REALPATH, so we must make sure we always
+    # do so here too, to get the right relative path
+    get_filename_component(origin "${origin}" REALPATH)
     set(${rpathRef} "${origin}" PARENT_SCOPE)
 endfunction()
 
@@ -156,10 +158,36 @@ function(mayaUsd_promoteMayaUsdHeader)
     configure_file(${srcFile} ${dstFile})
 endfunction()
 
+#
+# mayaUsd_promoteHeaderList(
+#                        [SUBDIR <optional sub-directory>])
+#                        [FILES <list of files>]
+#
+#   SUBDIR        - optional sub-directory in which to promote files.
+#   FILES         - list of files to promote.
+#
 function(mayaUsd_promoteHeaderList)
-    foreach(header ${ARGV})
+    cmake_parse_arguments(PREFIX 
+        ""          # options
+        "SUBDIR"    # one_value keywords
+        "HEADERS"   # multi_value keywords
+        ${ARGN}
+    )
+
+    set(DEST_DIR ${CMAKE_BINARY_DIR}/include/mayaUsd)
+    if(PREFIX_SUBDIR)
+        set(DEST_DIR ${DEST_DIR}/${PREFIX_SUBDIR})
+    endif()
+
+     if(PREFIX_HEADERS)
+        set(headerFiles ${PREFIX_HEADERS})
+    else()
+        message(FATAL_ERROR "HEADERS keyword is not specified.")
+    endif()
+
+    foreach(header ${headerFiles})
         set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/${header})
-        set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/${header})
+        set(dstFile ${DEST_DIR}/${header})
 
         set(content "#pragma once\n#include \"${srcFile}\"\n")
 
@@ -191,9 +219,9 @@ endfunction()
 #
 function(mayaUsd_copyFiles target)
     cmake_parse_arguments(PREFIX 
-        "TARGET" 
-        "DESTINATION"
-        "FILES" 
+        ""             # options
+        "DESTINATION"  # one_value keywords
+        "FILES"        # multi_value keywords
         ${ARGN}
     )
 
@@ -234,9 +262,9 @@ endfunction()
 #
 function(mayaUsd_copyDirectory target)
     cmake_parse_arguments(PREFIX
-        "TARGET" 
-        "DESTINATION"
-        "DIRECTORY" 
+        ""             # options
+        "DESTINATION"  # one_value keywords
+        "DIRECTORY"    # multi_value keywords
         ${ARGN}
     )
 

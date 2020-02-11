@@ -232,11 +232,6 @@ def RunCMake(context, extraArgs=None, stages=None):
     if generator is not None:
         generator = '-G "{gen}"'.format(gen=generator)
 
-    # On MacOS, enable the use of @rpath for relocatable builds.
-    osx_rpath = None
-    if MacOS():
-        osx_rpath = "-DCMAKE_MACOSX_RPATH=ON"
-
     # get build variant 
     variant= BuildVariant(context)
 
@@ -250,15 +245,13 @@ def RunCMake(context, extraArgs=None, stages=None):
                 'cmake '
                 '-DCMAKE_INSTALL_PREFIX="{instDir}" '
                 '-DCMAKE_BUILD_TYPE={variant} '
-                '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON'
-                '{osx_rpath} '
+                '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON '
                 '{generator} '
                 '{extraArgs} '
                 '"{srcDir}"'
                 .format(instDir=instDir,
                         variant=variant,
                         srcDir=srcDir,
-                        osx_rpath=(osx_rpath or ""),
                         generator=(generator or ""),
                         extraArgs=(" ".join(extraArgs) if extraArgs else "")))
  
@@ -351,6 +344,10 @@ def BuildAndInstall(context, buildArgs, stages):
         else:
             extraArgs.append('-DMAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG=OFF')
 
+        if context.qtLocation:
+            extraArgs.append('-DQT_LOCATION="{qtLocation}"'
+                             .format(qtLocation=context.qtLocation))
+
         extraArgs += buildArgs
         stagesArgs += stages
 
@@ -429,6 +426,9 @@ varGroup.add_argument("--build-relwithdebug", dest="build_relwithdebug", action=
 parser.add_argument("--debug-python", dest="debug_python", action="store_true",
                       help="Define Boost Python Debug if your Python library comes with Debugging symbols (default: %(default)s).")
 
+parser.add_argument("--qt-location", type=str,
+                    help="Directory where Qt is installed.")
+
 parser.add_argument("--build-args", type=str, nargs="*", default=[],
                    help=("Comma-separated list of arguments passed into CMake when building libraries"))
 
@@ -499,6 +499,10 @@ class InstallContext:
         # Maya Devkit Location
         self.devkitLocation = (os.path.abspath(args.devkit_location)
                                 if args.devkit_location else None)
+
+        # Qt Location
+        self.qtLocation = (os.path.abspath(args.qt_location)
+                           if args.qt_location else None)
 
         # Log File Name
         logFileName="build_log.txt"

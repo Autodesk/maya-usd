@@ -25,16 +25,14 @@ class Scope;
 
 BasicTransformationMatrix::BasicTransformationMatrix()
   : MPxTransformationMatrix(),
-    m_prim(),
-    m_scope()
+    m_prim()
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("BasicTransformationMatrix::BasicTransformationMatrix\n");
 }
 
 BasicTransformationMatrix::BasicTransformationMatrix(const UsdPrim& prim)
 : MPxTransformationMatrix(),
-  m_prim(prim),
-  m_scope(prim)
+  m_prim(prim)
 {
     TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("BasicTransformationMatrix::BasicTransformationMatrix\n");
 }
@@ -53,13 +51,11 @@ void BasicTransformationMatrix::setPrim(const UsdPrim& prim, Scope* scopeNode)
     TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("BasicTransformationMatrix::setPrim %s\n", prim.GetName().GetText());
     m_prim = prim;
     UsdGeomScope scope(prim);
-    m_scope = scope;
   }
   else
   {
     TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("BasicTransformationMatrix::setPrim null\n");
     m_prim = UsdPrim();
-    m_scope = UsdGeomScope();
   }
 }
 

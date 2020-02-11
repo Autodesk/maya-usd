@@ -105,6 +105,7 @@ BUILD_MAYAUSD_LIBRARY       | builds Core USD libraries.                        
 BUILD_ADSK_PLUGIN           | builds Autodesk USD plugin.                                | ON
 BUILD_PXR_PLUGIN            | builds the Pixar USD plugin and libraries.                 | ON
 BUILD_AL_PLUGIN             | builds the Animal Logic USD plugin and libraries.          | ON
+BUILD_HDMAYA                | builds the Maya-To-Hydra plugin and scene delegate.        | ON
 BUILD_TESTS                 | builds all unit tests.                                     | ON
 WANT_USD_RELATIVE_PATH      | this flag is used for Autodesk's internal build only.      | OFF
 CMAKE_WANT_UFE_BUILD        | enables building with UFE (if found).                      | ON

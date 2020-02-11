@@ -58,8 +58,6 @@ UsdMayaImportTranslator::reader(
         MPxFileTranslator::FileAccessMode  /*mode*/)
 {
     std::string fileName(file.fullName().asChar());
-    std::string primPath("/");
-    std::map<std::string, std::string> variants;
 
     bool readAnimData = true;
     bool useCustomFrameRange = false;
@@ -111,8 +109,9 @@ UsdMayaImportTranslator::reader(
             userArgs,
             /* importWithProxyShapes = */ false,
             timeInterval);
+    MayaUsd::ImportData importData(fileName);
     UsdMaya_ReadJobWithSceneAssembly mUsdReadJob(
-        fileName, primPath, variants, jobArgs);
+        importData, jobArgs);
     std::vector<MDagPath> addedDagPaths;
     bool success = mUsdReadJob.Read(&addedDagPaths);
     return (success) ? MS::kSuccess : MS::kFailure;

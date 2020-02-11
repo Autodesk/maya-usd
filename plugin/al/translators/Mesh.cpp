@@ -99,7 +99,8 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
   
   createdObj = importContext.getPolyShape();
   fn.addMember(createdObj);
-  importContext.applyPrimVars();
+  importContext.applyUVs();
+  importContext.applyColourSetData();
 
   if (ctx)
   {

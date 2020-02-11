@@ -74,7 +74,7 @@ TransformationMatrix::TransformationMatrix()
 
 //----------------------------------------------------------------------------------------------------------------------
 TransformationMatrix::TransformationMatrix(const UsdPrim& prim)
-  : BasicTransformationMatrix(),
+  : BasicTransformationMatrix(prim),
     m_xform(prim),
     m_time(UsdTimeCode::Default()),
     m_scaleTweak(0, 0, 0),
