@@ -61,6 +61,23 @@ MString mapUsdPrimToMayaNode(const UsdPrim& usdPrim,
                              const MDagPath* const proxyShapeNode = nullptr);
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief  Returns the dagPath result of mapping UsdPrim -> Maya Object.
+///         proxyShapeNode is an optional argument, if it is passed and the passed in mayaObject's path couldn't be determined,
+///         then the corresponding maya path is determined using this AL::usdmaya::nodes::ProxyShape and the usdPrim path.
+///         It is to get around the delayed creation of nodes using a Modifier.
+/// \param  primPath the prim to map to the mayaObject
+/// \param  mayaObject the maya node to map
+/// \param  proxyShapeNode pointer to the dag path for the proxy shape
+/// \return returns the path name
+/// \ingroup usdmaya
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+MString mapUsdPrimToMayaNode(const SdfPath& primPath,
+                             const MObject& mayaObject,
+                             const MDagPath* const proxyShapeNode = nullptr);
+
+
+//----------------------------------------------------------------------------------------------------------------------
 /// \brief  convert a 4x4 matrix to an SRT transformation. Assumes that there is no shearing.
 /// \param  value the 4x4 matrix to extract the TRS values from
 /// \param  S the returned scale value

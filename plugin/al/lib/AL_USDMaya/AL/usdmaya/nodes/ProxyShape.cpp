@@ -1203,7 +1203,18 @@ std::vector<UsdPrim> ProxyShape::huntForNativeNodesUnderPrim(
   std::vector<UsdPrim> prims;
   fileio::SchemaPrimsUtils utils(manufacture);
 
-  fileio::TransformIterator it(m_stage->GetPrimAtPath(startPath), proxyTransformPath);
+  const UsdPrim prim = m_stage->GetPrimAtPath(startPath);
+  if (!prim.IsValid())
+  {
+    MString errorString;
+    errorString.format(MString("'^1s' is not a valid prim path in proxy shape: '^2s'"),
+                               startPath.GetString().c_str(),
+                               proxyTransformPath.fullPathName());
+    MGlobal::displayError(errorString);
+    return prims;
+  }
+
+  fileio::TransformIterator it(prim, proxyTransformPath);
   for(; !it.done(); it.next())
   {
     UsdPrim prim = it.prim();
@@ -1715,6 +1726,8 @@ bool ProxyShape::primHasExcludedParent(UsdPrim prim)
 //----------------------------------------------------------------------------------------------------------------------
 MString ProxyShape::recordUsdPrimToMayaPath(const UsdPrim &usdPrim,
                                             const MObject &mayaObject){
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::recordUsdPrimToMayaPath store path to %s\n", usdPrim.GetPrimPath().GetText());
+
   // Retrieve the proxy shapes transform path which will be used in the
   // UsdPrim->MayaNode mapping in the case where there is delayed node creation.
   MFnDagNode shapeFn(thisMObject());
@@ -1745,6 +1758,7 @@ MString ProxyShape::getMayaPathFromUsdPrim(const UsdPrim& usdPrim) const {
 
 void ProxyShape::findTaggedPrims()
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::findTaggedPrims\n");
   findTaggedPrims(m_hierarchyIterationLogics);
 }
 
@@ -2138,24 +2152,20 @@ void ProxyShape::deserialiseTransformRefs()
         {
           MFnDependencyNode fn(node);
           Scope* transformNode = dynamic_cast<Scope*>(fn.userNode());
+          const uint32_t required = tstrs[2].asUnsigned();
+          const uint32_t selected = tstrs[3].asUnsigned();
+          const uint32_t refCounts = tstrs[4].asUnsigned();
+          SdfPath path(tstrs[1].asChar());
+          m_requiredPaths.emplace(path, TransformReference(node, transformNode, required, selected, refCounts));          
           if(transformNode)
           {
-            const uint32_t required = tstrs[2].asUnsigned();
-            const uint32_t selected = tstrs[3].asUnsigned();
-            const uint32_t refCounts = tstrs[4].asUnsigned();
-            SdfPath path(tstrs[1].asChar());
-            m_requiredPaths.emplace(path, TransformReference(node, transformNode, required, selected, refCounts));
-            TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::deserialiseTransformRefs m_requiredPaths added AL_usdmaya_Transform TransformReference: %s\n", path.GetText());
+            UsdPrim prim = usdStage()->GetPrimAtPath(path);
+            if (usdStage()->GetPrimAtPath(path).IsValid())
+            {
+              recordUsdPrimToMayaPath(prim, node );
+            }
           }
-          else
-          {
-            const uint32_t required = tstrs[2].asUnsigned();
-            const uint32_t selected = tstrs[3].asUnsigned();
-            const uint32_t refCounts = tstrs[4].asUnsigned();
-            SdfPath path(tstrs[1].asChar());
-            m_requiredPaths.emplace(path, TransformReference(node, nullptr, required, selected, refCounts));
-            TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::deserialiseTransformRefs m_requiredPaths added TransformReference: %s\n", path.GetText());
-          }
+          TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::deserialiseTransformRefs m_requiredPaths added %s TransformReference: %s\n", transformNode? "AL_usdmaya_Transform":"", path.GetText());
         }
       }
     }
