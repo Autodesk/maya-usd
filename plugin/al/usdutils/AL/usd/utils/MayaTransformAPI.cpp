@@ -1042,7 +1042,6 @@ GfVec3d MayaTransformAPI::_extractTranslateFromMatrix(const UsdTimeCode time) co
   return GfVec3d(0.0);
 }
 
-
 //----------------------------------------------------------------------------------------------------------------------
 } // utils
 } // usd

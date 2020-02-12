@@ -220,6 +220,7 @@ target_link_libraries(${LIBRARY_NAME}
 )
 
 if(UFE_FOUND)
+    add_definitions(-DWANT_UFE_BUILD=1)
     target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
 endif()
 

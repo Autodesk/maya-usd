@@ -208,6 +208,7 @@ if(UFE_FOUND)
         ufe/UsdRootChildHierarchy.cpp
         ufe/UsdRotatePivotTranslateUndoableCommand.cpp
         ufe/UsdRotateUndoableCommand.cpp
+        ufe/UsdScalePivotTranslateUndoableCommand.cpp
         ufe/UsdScaleUndoableCommand.cpp
         ufe/UsdSceneItem.cpp
         ufe/UsdSceneItemOps.cpp
@@ -352,6 +353,7 @@ if(UFE_FOUND)
         ufe/UsdRootChildHierarchy.h
         ufe/UsdRotatePivotTranslateUndoableCommand.h
         ufe/UsdRotateUndoableCommand.h
+        ufe/UsdScalePivotTranslateUndoableCommand.h
         ufe/UsdScaleUndoableCommand.h
         ufe/UsdSceneItem.h
         ufe/UsdSceneItemOps.h
@@ -436,6 +438,7 @@ endif()
 set(include_directories_list
     ${MAYA_INCLUDE_DIRS}
     ${PXR_INCLUDE_DIRS}
+    ${USDUTILS_INCLUDE_LOCATION}
     ${CMAKE_BINARY_DIR}/include
 )
 
@@ -475,6 +478,7 @@ target_link_libraries(${LIBRARY_NAME}
     usdSkel
     usdUtils
     vt
+    AL_USDUtils
 )
 
 if(UFE_FOUND)

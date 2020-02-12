@@ -16,6 +16,7 @@
 #pragma once
 
 #include "../base/api.h"
+#include "../nodes/proxyShapeBase.h"
 
 #include "UsdSceneItem.h"
 
@@ -48,6 +49,9 @@ public:
 	static UsdTransform3d::Ptr create();
 
 	void setItem(const UsdSceneItem::Ptr& item);
+
+	UsdTimeCode timeCode() const;
+	MayaUsdProxyShapeBase* proxy() const;
 
 	// Ufe::Transform3d overrides
 	const Ufe::Path& path() const override;

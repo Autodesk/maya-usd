@@ -491,10 +491,14 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 
     auto handler = Ufe::RunTimeMgr::instance().hierarchyHandler(USD_UFE_RUNTIME_ID);
     if (handler == nullptr)
+    {
         return false;
+    }
 
     if (_proxyShape == nullptr)
+    {
         return false;
+    }
 
     // Extract id of the owner Rprim. A SdfPath directly created from the render
     // item name could be ill-formed if the render item represents instancing:
@@ -557,7 +561,6 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         TF_WARN("Unexpected MGlobal::ListAdjustment enum for selection.");
         break;
     }
-
     return true;
 #else
     return false;

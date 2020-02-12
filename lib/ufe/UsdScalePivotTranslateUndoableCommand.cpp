@@ -14,56 +14,49 @@
 // limitations under the License.
 //
 
-#include "UsdTranslateUndoableCommand.h"
+#include "UsdScalePivotTranslateUndoableCommand.h"
 #include "private/Utils.h"
-#include "Utils.h"
 #include "AL/usd/utils/MayaTransformAPI.h"
 #include "../base/debugCodes.h"
 
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
+UsdScalePivotTranslateUndoableCommand::UsdScalePivotTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, UsdTimeCode timeCode)
 	: Ufe::TranslateUndoableCommand(item)
 	, fPrim(prim)
 	, fPath(ufePath)
 	, fTimeCode(timeCode)
-	, fNoTranslateOp(false)
+	, fNoPivotOp(false)
 {
 	AL::usd::utils::MayaTransformAPI api(prim);
-	fPrevTranslateValue = api.translate(fTimeCode);
+	fPrevPivotValue = api.scalePivot(fTimeCode);
 }
 
-UsdTranslateUndoableCommand::~UsdTranslateUndoableCommand()
+UsdScalePivotTranslateUndoableCommand::~UsdScalePivotTranslateUndoableCommand()
 {
 }
 
 /*static*/
-UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
+UsdScalePivotTranslateUndoableCommand::Ptr UsdScalePivotTranslateUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, UsdTimeCode timeCode)
 {
-	return std::make_shared<UsdTranslateUndoableCommand>(prim, ufePath, item, timeCode);
+	return std::make_shared<UsdScalePivotTranslateUndoableCommand>(prim, ufePath, item, timeCode);
 }
 
-void UsdTranslateUndoableCommand::undo()
+void UsdScalePivotTranslateUndoableCommand::undo()
 {
-	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdTranslateUndoableCommand::undo %s (%lf, %lf, %lf) @%lf\n", 
-		fPath.string().c_str(), fPrevTranslateValue[0], fPrevTranslateValue[1], fPrevTranslateValue[2], fTimeCode.GetValue());
-	
+	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdScalePivotTranslateUndoableCommand::undo %s (%lf, %lf, %lf) @%lf\n", 
+		fPath.string().c_str(), fPrevPivotValue[0], fPrevPivotValue[1], fPrevPivotValue[2], fTimeCode.GetValue());
 	AL::usd::utils::MayaTransformAPI api(fPrim);
-	api.translate(fPrevTranslateValue, fTimeCode);
+	api.scalePivot(GfVec3f(fPrevPivotValue), fTimeCode);
 
 	// Todo : We would want to remove the xformOp
 	// (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
 }
 
-void UsdTranslateUndoableCommand::redo()
+void UsdScalePivotTranslateUndoableCommand::redo()
 {
-	perform();
-}
-
-void UsdTranslateUndoableCommand::perform()
-{
-	// No-op, use translate to move the object.
+	// No-op, use move to translate the rotate pivot of the object.
 	// The Maya move command directly invokes our translate() method in its
 	// redoIt(), which is invoked both for the inital move and the redo.
 }
@@ -72,12 +65,12 @@ void UsdTranslateUndoableCommand::perform()
 // Ufe::TranslateUndoableCommand overrides
 //------------------------------------------------------------------------------
 
-bool UsdTranslateUndoableCommand::translate(double x, double y, double z)
+bool UsdScalePivotTranslateUndoableCommand::translate(double x, double y, double z)
 {
-	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdTranslateUndoableCommand::translate %s (%lf, %lf, %lf) @%lf\n",
+	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdRotatePivotTranslateUndoableCommand::translate %s (%lf, %lf, %lf) @%lf\n", 
 		fPath.string().c_str(), x, y, z, fTimeCode.GetValue());
 	AL::usd::utils::MayaTransformAPI api(fPrim);
-	api.translate(GfVec3d(x, y, z), fTimeCode);
+	api.scalePivot(GfVec3f(x, y, z), fTimeCode);
 	return true;
 }
 

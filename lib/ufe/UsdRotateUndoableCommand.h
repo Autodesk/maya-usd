@@ -38,7 +38,7 @@ class MAYAUSD_CORE_PUBLIC UsdRotateUndoableCommand : public Ufe::RotateUndoableC
 public:
 	typedef std::shared_ptr<UsdRotateUndoableCommand> Ptr;
 
-	UsdRotateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
+	UsdRotateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode);
 	~UsdRotateUndoableCommand() override;
 
 	// Delete the copy/move constructors assignment operators.
@@ -48,7 +48,7 @@ public:
 	UsdRotateUndoableCommand& operator=(UsdRotateUndoableCommand&&) = delete;
 
 	//! Create a UsdRotateUndoableCommand from a USD prim, UFE path and UFE scene item.
-	static UsdRotateUndoableCommand::Ptr create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
+	static UsdRotateUndoableCommand::Ptr create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode);
 
 	// Ufe::RotateUndoableCommand overrides
 	void undo() override;
@@ -64,6 +64,7 @@ private:
 	UsdAttribute fRotateAttrib;
 	GfVec3f fPrevRotateValue;
 	std::exception_ptr fFailedInit;
+	UsdTimeCode fTimeCode;
 	bool fNoRotateOp;
 }; // UsdRotateUndoableCommand
 

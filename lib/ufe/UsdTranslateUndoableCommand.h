@@ -36,7 +36,7 @@ class MAYAUSD_CORE_PUBLIC UsdTranslateUndoableCommand : public Ufe::TranslateUnd
 public:
 	typedef std::shared_ptr<UsdTranslateUndoableCommand> Ptr;
 
-	UsdTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
+	UsdTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode);
 	~UsdTranslateUndoableCommand() override;
 
 	// Delete the copy/move constructors assignment operators.
@@ -46,7 +46,7 @@ public:
 	UsdTranslateUndoableCommand& operator=(UsdTranslateUndoableCommand&&) = delete;
 
 	//! Create a UsdTranslateUndoableCommand from a USD prim, UFE path and UFE scene item.
-	static UsdTranslateUndoableCommand::Ptr create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
+	static UsdTranslateUndoableCommand::Ptr create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode);
 
 	// Ufe::TranslateUndoableCommand overrides
 	void undo() override;
@@ -61,6 +61,7 @@ private:
 	UsdAttribute fTranslateAttrib;
 	GfVec3d fPrevTranslateValue;
 	Ufe::Path fPath;
+	UsdTimeCode fTimeCode;
 	bool fNoTranslateOp;
 }; // UsdTranslateUndoableCommand
 
