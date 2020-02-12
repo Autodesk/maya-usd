@@ -176,7 +176,7 @@ void ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(
             newpath = ptrNode->makeUsdTransformChain(usdPrim.GetParent(), modifier, nodes::ProxyShape::kRequired, &modifier2, 0, pushToPrim, readAnimatedValues);
           }
         }
-        objsToCreate.push_back(std::make_pair(newpath, usdPrim));
+        objsToCreate.emplace_back(newpath, usdPrim);
       }
       else
       {

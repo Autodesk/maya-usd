@@ -25,6 +25,7 @@
 #include "AL/usdmaya/ForwardDeclares.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
+#include "AL/usdmaya/nodes/proxy/LockManager.h"
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
 #include "AL/usdmaya/SelectabilityDB.h"
 
@@ -199,48 +200,6 @@ private:
   SdfPathHashSet m_selected;
 };
 
-//----------------------------------------------------------------------------------------------------------------------
-/// \brief  A class that provides the logic behind a hierarchy traversal through a UsdStage
-//----------------------------------------------------------------------------------------------------------------------
-struct  HierarchyIterationLogic
-{
-  /// \brief  ctor
-  HierarchyIterationLogic():
-      preIteration(nullptr),
-      iteration(nullptr),
-      postIteration(nullptr)
-  {}
-
-  /// \brief  provide a method to be called prior to iteration of the UsdStage hierarchy
-  std::function<void()> preIteration;
-
-  /// \brief  a visitor method that is called on each of the UsdPrims in the stage hierarchy
-  std::function<void(const fileio::TransformIterator& transformIterator,const UsdPrim& prim)> iteration;
-
-  /// \brief  provide a method to be called after iteration of the UsdStage hierarchy
-  std::function<void()> postIteration;
-};
-
-//----------------------------------------------------------------------------------------------------------------------
-/// \brief  implements the logic that constructs a list of objects that need to be added or removed from the selectable
-///         list of prims within a UsdStage
-//----------------------------------------------------------------------------------------------------------------------
-struct FindUnselectablePrimsLogic
-  : public HierarchyIterationLogic
-{
-  SdfPathVector newUnselectables; ///< items that need to be made unselectable
-  SdfPathVector removeUnselectables; ///< items that are unselectable, but need to be made selectable
-};
-
-//----------------------------------------------------------------------------------------------------------------------
-/// \brief  implements the logic required when searching for locked prims within a UsdStage
-//----------------------------------------------------------------------------------------------------------------------
-struct FindLockedPrimsLogic
-  : public HierarchyIterationLogic
-{
-};
-
-typedef const HierarchyIterationLogic*  HierarchyIterationLogics[3];
 typedef std::unordered_map<SdfPath, MString, SdfPath::Hash > PrimPathToDagPath;
 
 extern AL::event::EventId kPreClearStageCache;
@@ -265,6 +224,9 @@ class ProxyShape
 
   typedef MayaUsdProxyShapeBase ParentClass;
 public:
+
+  /// returns the shape's parent transform
+  MDagPath parentTransform();
 
   /// a method that registers all of the events in the ProxyShape
   AL_USDMAYA_PUBLIC
@@ -650,22 +612,7 @@ public:
 
   /// \brief aggregates logic that needs to iterate through the hierarchy looking for properties/metdata on prims
   AL_USDMAYA_PUBLIC
-  void findTaggedPrims();
-
-  AL_USDMAYA_PUBLIC
-  void findTaggedPrims(const HierarchyIterationLogics& iterationLogics);
-
-  /// \brief  searches for the excluded geometry
-  AL_USDMAYA_PUBLIC
-  void findExcludedGeometry();
-
-  /// \brief searches for paths which are selectable
-  AL_USDMAYA_PUBLIC
-  void findSelectablePrims();
-
-  //// \brief iterates the prim hierarchy calling pre/iterate/post like functions that are stored in the passed in objects
-  AL_USDMAYA_PUBLIC
-  void iteratePrimHierarchy();
+  void findPrimsWithMetaData();
 
   /// \brief  returns the plugin translator registry assigned to this shape
   /// \return the translator registry
@@ -752,6 +699,12 @@ public:
   /// \param[out] outPathVector of SdfPaths that are decendants of 'path'
   AL_USDMAYA_PUBLIC
   void onPrePrimChanged(const SdfPath& path, SdfPathVector& outPathVector);
+
+  // \brief process any USD objects which have been changed, normally by a notice of some kind
+  /// \param[in] vector of topmost paths for which hierarchy has changed
+  /// \param[in] vector of paths that changed properties
+  /// \param[in] do we need to handle the complex prim locking and selection logic that is curently on by default?
+  void processChangedObjects(const SdfPathVector& resyncedPaths, const SdfPathVector& changedOnlyPaths);
 
   /// \brief Re-Creates and updates the maya prim hierarchy starting from the specified primpath
   /// \param[in] primPath of the point in the hierarchy that is potentially undergoing structural changes
@@ -871,6 +824,14 @@ public:
   AL_USDMAYA_PUBLIC
   MSelectionMask getShapeSelectionMask() const override;
 
+
+  /// \brief  determines if this prim has a parent that has been tagged as excluded geometry 
+  ///         (i.e. will not be shown in the viewport)
+  /// \param  prim the prim to check
+  /// \return true if the prim (or a parent prim) has been tagged as excluded
+  AL_USDMAYA_PUBLIC
+  bool primHasExcludedParent(UsdPrim prim);
+
 private:
   /// \brief  constructs the USD imaging engine for this shape
   void constructGLImagingEngine();
@@ -884,9 +845,6 @@ private:
   void insertTransformRefs(const std::vector<std::pair<SdfPath, MObject>>& removedRefs, TransformReason reason);
 
   void constructExcludedPrims();
-  bool updateLockPrims(const SdfPathSet& lockTransformPrims, const SdfPathSet& lockInheritedPrims,
-                       const SdfPathSet& unlockedPrims);
-  bool lockTransformAttribute(const SdfPath& path, bool lock);
 
   MObject makeUsdTransformChain_internal(
       const UsdPrim& usdPrim,
@@ -1028,7 +986,6 @@ private:
   UsdStagePopulationMask constructStagePopulationMask(const MString &paths) const;
 
   bool isStageValid() const;
-  bool primHasExcludedParent(UsdPrim prim);
   bool initPrim(const uint32_t index, MDGContext& ctx);
 
   void layerIdChanged(SdfNotice::LayerIdentifierDidChange const& notice, UsdStageWeakPtr const& sender);
@@ -1061,6 +1018,18 @@ private:
   std::string generateTranslatorId(UsdPrim prim) override
    { return m_translatorManufacture.generateTranslatorId(prim); }
 
+public:
+  bool isLockPrimFeatureActive() const
+  {
+    bool ignoreLockPrims = MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims");
+    //The lock Prim functionality is a UI thing - no need to have it on in batch mode
+    //However, this also causes the tests to fail which is bad
+    return (/*(MGlobal::mayaState() == MGlobal::kInteractive) &&*/ !ignoreLockPrims);
+  }
+
+  void processChangedMetaData(const SdfPathVector& resyncedPaths, const SdfPathVector& changedOnlyPaths);
+  void removeMetaData(const SdfPathVector& removedPaths);
+
   bool isPrimDirty(const UsdPrim& prim) override
   {
     const SdfPath path(prim.GetPath());
@@ -1080,15 +1049,12 @@ private:
 
 private:
   SdfPathVector m_pathsOrdered;
+  AL_USDMAYA_PUBLIC
   static std::vector<MObjectHandle> m_unloadedProxyShapes;
 
   AL::usdmaya::SelectabilityDB m_selectabilityDB;
-  HierarchyIterationLogics m_hierarchyIterationLogics;
-  HierarchyIterationLogic m_findExcludedPrims;
   SelectionList m_selectionList;
-  FindUnselectablePrimsLogic m_findUnselectablePrims;
   SdfPathHashSet m_selectedPaths;
-  FindLockedPrimsLogic m_findLockedPrims;
   PrimPathToDagPath m_primPathToDagPath;
   std::vector<SdfPath> m_paths;
   std::vector<UsdPrim> m_prims;
@@ -1100,9 +1066,7 @@ private:
   MCallbackId m_onSelectionChanged = 0;
   SdfPathVector m_excludedGeometry;
   SdfPathVector m_excludedTaggedGeometry;
-  SdfPathSet m_lockTransformPrims;
-  SdfPathSet m_lockInheritedPrims;
-  SdfPathSet m_currentLockedPrims;
+  proxy::LockManager m_lockManager;
   static MObject m_transformTranslate;
   static MObject m_transformRotate;
   static MObject m_transformScale;

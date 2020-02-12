@@ -21,70 +21,89 @@ namespace usdmaya {
 //----------------------------------------------------------------------------------------------------------------------
 bool SelectabilityDB::isPathUnselectable(const SdfPath& path) const
 {
-  for(SdfPath unselectablePath : m_unselectablePaths)
+  auto begin = m_unselectablePaths.begin();
+  auto end = m_unselectablePaths.end();
+  auto foundPathEntry = end;
+  auto root = SdfPath::AbsoluteRootPath();
+  auto temp(path);
+
+  while(temp != root)
   {
-    if(path.HasPrefix(unselectablePath))
+    foundPathEntry = std::lower_bound(begin, foundPathEntry, temp);
+    if(foundPathEntry != end && temp == *foundPathEntry)
     {
       return true;
     }
+    temp = temp.GetParentPath();
   }
-
   return false;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void SelectabilityDB::removePathsAsUnselectable(const SdfPathVector& paths)
 {
-  bool needsSort = false;
   for(SdfPath path : paths)
   {
-    needsSort |= removeUnselectablePath(path);
+    removeUnselectablePath(path);
   }
 
-  if(needsSort)
+  auto end = m_unselectablePaths.end();
+  auto start = m_unselectablePaths.begin();
+  for(SdfPath path : paths)
   {
-    sort();
+    auto temp = std::lower_bound(start, end, path);
+    if(temp != end)
+    {
+      if(*temp == path)
+      {
+        temp = m_unselectablePaths.erase(temp);
+      }
+      start = temp;
+    }
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void SelectabilityDB::removePathAsUnselectable(const SdfPath& path)
 {
-  if(removeUnselectablePath(path))
-  {
-    sort();
-  }
+  removeUnselectablePath(path);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void SelectabilityDB::addPathsAsUnselectable(const SdfPathVector& paths)
 {
-  bool needsSort = false;
-  for(SdfPath path : paths)
+  auto end = m_unselectablePaths.end();
+  auto start = m_unselectablePaths.begin();
+  for(auto iter = paths.begin(), last = paths.end(); iter != last; ++iter)
   {
-    needsSort |= addUnselectablePath(path);
-  }
+    start = std::lower_bound(start, end, *iter);
 
-  if(needsSort)
-  {
-    sort();
+    // If we've hit the end, we can simply append the remaining elements in one go.
+    if(start == end)
+    {
+      m_unselectablePaths.insert(end, iter, last);
+      return;
+    }
+
+    if(*start != *iter)
+    {
+      m_unselectablePaths.insert(start, *iter);
+    }
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void SelectabilityDB::addPathAsUnselectable(const SdfPath& path)
 {
-  if(addUnselectablePath(path))
-  {
-    sort();
-  }
+  addUnselectablePath(path);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 bool SelectabilityDB::removeUnselectablePath(const SdfPath& path)
 {
-  auto foundPathEntry = std::find(m_unselectablePaths.begin(), m_unselectablePaths.end(), path);
-  if(foundPathEntry != m_unselectablePaths.end())
+  auto end = m_unselectablePaths.end();
+  auto foundPathEntry = std::lower_bound(m_unselectablePaths.begin(), end, path);
+  if(foundPathEntry != end && *foundPathEntry == path)
   {
     m_unselectablePaths.erase(foundPathEntry);
     return true;
@@ -95,7 +114,17 @@ bool SelectabilityDB::removeUnselectablePath(const SdfPath& path)
 //----------------------------------------------------------------------------------------------------------------------
 bool SelectabilityDB::addUnselectablePath(const SdfPath& path)
 {
-  if(!std::binary_search(m_unselectablePaths.begin(), m_unselectablePaths.end(), path))
+  auto end = m_unselectablePaths.end();
+  auto iter = std::lower_bound(m_unselectablePaths.begin(), end, path);
+  if(iter != end)
+  {
+    if(*iter != path)
+    {
+      m_unselectablePaths.insert(iter, path);
+      return true;
+    }
+  }
+  else
   {
     m_unselectablePaths.push_back(path);
     return true;

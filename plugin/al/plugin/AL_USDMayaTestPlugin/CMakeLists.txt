@@ -32,6 +32,7 @@ target_sources(${TARGET_NAME}
         AL/usdmaya/nodes/test_ActiveInactive.cpp
         AL/usdmaya/nodes/test_ExtraDataPlugin.cpp
         AL/usdmaya/nodes/test_LayerManager.cpp
+        AL/usdmaya/nodes/test_lockPrims.cpp
         AL/usdmaya/nodes/test_ProxyShape.cpp
         AL/usdmaya/nodes/test_ProxyShapeSelectabilityDB.cpp
         AL/usdmaya/nodes/test_ProxyUsdGeomCamera.cpp
