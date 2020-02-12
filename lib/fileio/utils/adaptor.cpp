@@ -185,7 +185,11 @@ UsdMayaAdaptor::GetSchemaByName(const TfToken& schemaName) const
 
     // Get the schema definition. If it's registered, there should be a def.
     SdfPrimSpecHandle primDef =
-            UsdSchemaRegistry::GetInstance().GetPrimDefinition(schemaName);
+#if USD_VERSION_NUM > 2002
+        UsdSchemaRegistry::GetInstance().GetSchemaPrimSpec(schemaName);
+#else
+        UsdSchemaRegistry::GetInstance().GetPrimDefinition(schemaName);
+#endif
     if (!primDef) {
         return SchemaAdaptor();
     }
@@ -317,7 +321,11 @@ UsdMayaAdaptor::ApplySchemaByName(
 
     // Get the schema definition. If it's registered, there should be a def.
     SdfPrimSpecHandle primDef =
-            UsdSchemaRegistry::GetInstance().GetPrimDefinition(schemaName);
+#if USD_VERSION_NUM > 2002
+        UsdSchemaRegistry::GetInstance().GetSchemaPrimSpec(schemaName);
+#else
+        UsdSchemaRegistry::GetInstance().GetPrimDefinition(schemaName);
+#endif
     if (!primDef) {
         TF_CODING_ERROR("Can't find schema definition for name '%s'",
                 schemaName.GetText());
