@@ -31,8 +31,24 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace AL {
 namespace usdmaya {
 namespace nodes {
-
+namespace {
 using AL::usdmaya::utils::UsdDataType;
+
+//----------------------------------------------------------------------------------------------------------------------
+bool hasEmptyDefaultValue(const UsdGeomXformOp& op, UsdTimeCode time)
+{
+  SdfPropertySpecHandleVector propSpecs = op.GetAttr().GetPropertyStack(time);
+  for(auto propSpec : propSpecs)
+  {
+    auto def = propSpec->GetDefaultValue();
+    if(def.IsEmpty())
+    {
+      return true;
+    }
+  }
+  return false;
+}
+} // anon
 
 //----------------------------------------------------------------------------------------------------------------------
 const MTypeId TransformationMatrix::kTypeId(AL_USDMAYA_TRANSFORMATION_MATRIX);
