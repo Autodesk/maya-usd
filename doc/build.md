@@ -17,7 +17,13 @@ Before building the project, consult the following table to ensure you use the r
 |    Python Packages    | PyYAML, PySide, PyOpenGL, Jinja2        | PyYAML, PySide2, PyOpenGL, Jinja2              |      PyYAML, PySide, PyOpenGL, Jinja2             |
 |    Build generator    | Visual Studio, Ninja (Recommended)    |  XCode, Ninja(Recommended)                       |    Ninja(Recommended)       |
 |    Command processor  | Visual Studio X64 2015 or 2017 command prompt  |                     bash                |             bash            |
-| Supported Maya Version|      2018, 2019, 2020           |                      2018, 2019, 2020                  |        2018,2019, 2020      | 
+| Supported Maya Version|      2018, 2019, 2020           |                      2018, 2019, 2020                  |        2018, 2019, 2020     |
+
+|        Optional       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
+|:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
+|          Qt           |           5.12.6          |                             5.12.6                           |         5.12.6              |
+
+***NOTE:*** The optional Qt features require building with Qt version 5.12.6, which is the version used by Maya 2020. They are not supported with Maya 2018 and 2019 since those versions of Maya use Qt 5.6.1.
 
 ***NOTE:*** We haven't fully tested the plug-ins on ```Catalina``` and it is still at the experimental stage.
 
