@@ -59,7 +59,7 @@ UsdMayaExportTranslator::writer(const MFileObject &file,
     
     MStringArray filteredTypes;
     // Get the options 
-    if ( optionsString.length() > 0 ) {
+    if (optionsString.length() > 0) {
         MStringArray optionList;
         MStringArray theOption;
         optionsString.split(';', optionList);

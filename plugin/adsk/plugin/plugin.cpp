@@ -61,11 +61,11 @@ MStatus initializePlugin(MObject obj)
     }
 
     status = plugin.registerFileTranslator(
-        MAYAUSD_NS::UsdMayaExportTranslator::translatorName,
+        MayaUsd::UsdMayaExportTranslator::translatorName,
         "",
-        MAYAUSD_NS::UsdMayaExportTranslator::creator,
+        MayaUsd::UsdMayaExportTranslator::creator,
         "mayaUsdTranslatorExport", // options script name
-        const_cast<char*>(MAYAUSD_NS::UsdMayaExportTranslator::GetDefaultOptions().c_str()),
+        const_cast<char*>(MayaUsd::UsdMayaExportTranslator::GetDefaultOptions().c_str()),
         false);
     if (!status) {
         status.perror("mayaUsdPlugin: unable to register export translator.");
@@ -140,7 +140,7 @@ MStatus uninitializePlugin(MObject obj)
         status.perror("mayaUsdPlugin: unable to deregister import translator.");
     }
 
-    status = plugin.deregisterFileTranslator(MAYAUSD_NS::UsdMayaExportTranslator::translatorName);
+    status = plugin.deregisterFileTranslator(MayaUsd::UsdMayaExportTranslator::translatorName);
     if (!status) {
         status.perror("mayaUsdPlugin: unable to deregister export translator.");
     }
