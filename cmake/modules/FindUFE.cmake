@@ -17,6 +17,7 @@ find_path(UFE_INCLUDE_DIR
         $ENV{UFE_INCLUDE_ROOT}
         ${UFE_INCLUDE_ROOT}
         ${MAYA_DEVKIT_LOCATION}
+        $ENV{MAYA_DEVKIT_LOCATION}
         ${MAYA_LOCATION}
         $ENV{MAYA_LOCATION}
         ${MAYA_BASE_DIR}
@@ -61,6 +62,7 @@ find_library(UFE_LIBRARY
         $ENV{UFE_LIB_ROOT}
         ${UFE_LIB_ROOT}
         ${MAYA_DEVKIT_LOCATION}
+        $ENV{MAYA_DEVKIT_LOCATION}
         ${MAYA_LOCATION}
         $ENV{MAYA_LOCATION}
         ${MAYA_BASE_DIR}
