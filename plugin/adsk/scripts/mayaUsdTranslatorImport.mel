@@ -51,15 +51,17 @@ global proc int mayaUsdTranslatorImport (string $parent,
 
         columnLayout -adj true -rs 5 mayaUsdTranslator_OptsCol;
 
-        rowLayout -numberOfColumns 3 -cw 1 $cw1 -cat 1 "right" 0;
-            text -label "Scope and Variants: " -al "right" -ann "Select a USD file and click Hierarchy View to build the scope of your import and switch variants" ;
-            textField -ed false -nbg true -text "Please select a file to enable this option" -w $cw2 mayaUsdTranslator_SelectFileField;
-            button -label "Hierarchy View" -c "string $usdFile = currentFileDialogSelection(); usdImportDialog $usdFile;" mayaUsdTranslator_ViewHierBtn;
+        if (`exists usdImportDialog`)
+        {
+            rowLayout -numberOfColumns 3 -cw 1 $cw1 -cat 1 "right" 0;
+                text -label "Scope and Variants: " -al "right" -ann "Select a USD file and click Hierarchy View to build the scope of your import and switch variants" ;
+                textField -ed false -nbg true -text "Please select a file to enable this option" -w $cw2 mayaUsdTranslator_SelectFileField;
+                button -label "Hierarchy View" -c "string $usdFile = currentFileDialogSelection(); usdImportDialog $usdFile;" mayaUsdTranslator_ViewHierBtn;
 
-            // Hide the button by default.
-            button -e -visible false mayaUsdTranslator_ViewHierBtn;
-        setParent ..;
-
+                // Hide the button by default.
+                button -e -visible false mayaUsdTranslator_ViewHierBtn;
+            setParent ..;
+        }
 //        checkBoxGrp -label "Load Payloads: " -cw 1 $cw1 mayaUsdTranslator_LoadPayloadsCheckBox;
 //
 //        optionMenuGrp -label "Coordinate System: " -cw 1 $cw1 mayaUsdTranslator_CoordSystemOptionMenu;
@@ -134,8 +136,11 @@ global proc int mayaUsdTranslatorImport (string $parent,
         $bResult = 1;
 
     } else if ($action == "fileselected") {
-        // Clear out the import data since we have a new selection.
-        usdImportDialog -clearData "";
+        if (`exists usdImportDialog`)
+        {
+            // Clear out the import data since we have a new selection.
+            usdImportDialog -clearData "";
+        }
 
         // Test the currently selected file in the import dialog to see if it is
         // a USD file.
@@ -150,17 +155,24 @@ global proc int mayaUsdTranslatorImport (string $parent,
                 $showBtn = true;
             }
         }
-        if ($showBtn)
+
+        if (`textField -exists mayaUsdTranslator_SelectFileField`)
         {
-            // Hide the field (and shrink it) and show the button (which will align with label).
-            textField -e -vis false -w 1 mayaUsdTranslator_SelectFileField;
+            if ($showBtn)
+            {
+                // Hide the field (and shrink it) and show the button (which will align with label).
+                textField -e -vis false -w 1 mayaUsdTranslator_SelectFileField;
+            }
+            else
+            {
+                // Show the field and hide the button.
+                textField -e -vis true -w $cw2 mayaUsdTranslator_SelectFileField;
+            }
         }
-        else
-        {
-            // Show the field and hide the button.
-            textField -e -vis true -w $cw2 mayaUsdTranslator_SelectFileField;
+
+        if (`button -exists mayaUsdTranslator_ViewHierBtn`) {
+            button -e -visible $showBtn mayaUsdTranslator_ViewHierBtn;
         }
-        button -e -visible $showBtn mayaUsdTranslator_ViewHierBtn;
 
         $bResult = 1;
 
