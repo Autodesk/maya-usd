@@ -31,6 +31,7 @@
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
+#include "pxr/imaging/hdx/version.h"
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
@@ -699,7 +700,11 @@ px_vp20Utils::GetLightingContextFromDrawContext(
         light.SetSpotCutoff(lightCutoff);
         light.SetSpotFalloff(lightFalloff);
         light.SetAttenuation(lightAttenuation);
+#if HDX_API_VERSION >= 6
+        light.SetShadowMatrices(std::vector<GfMatrix4d>(1,lightShadowMatrix));
+#else
         light.SetShadowMatrix(lightShadowMatrix);
+#endif
         light.SetShadowResolution(lightShadowResolution);
         light.SetShadowBias(lightShadowBias);
         light.SetHasShadow(lightShadowOn && globalShadowOn);
