@@ -753,7 +753,21 @@ void ProxyShape::serialize(UsdStageRefPtr stage, LayerManager* layerManager)
         // ...make sure for the old Maya scene, we clear the sessionLayerName plug so there is no
         // complaint when we open it.
         sessionLayerNamePlug().setValue("");
-      }      
+      }
+
+      auto rootLayer = stage->GetRootLayer();
+      if (rootLayer->IsAnonymous())
+      {
+        // For an anonymous root layer we need to update the file path to match the new
+        // identifier the layer manager may have associated the layer with.
+        MPlug filePathPlug = this->filePathPlug();
+        const std::string currentRootLayerId = AL::maya::utils::convert(filePathPlug.asString());
+        const std::string &newRootLayerId = rootLayer->GetIdentifier();
+        if (currentRootLayerId != newRootLayerId)
+        {
+          filePathPlug.setString(AL::maya::utils::convert(newRootLayerId));
+        }
+      }
 
       // Then add in the current edit target
       trackEditTargetLayer(layerManager);
@@ -1184,30 +1198,67 @@ void ProxyShape::loadStage()
 
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage original USD file path is %s\n", fileString.c_str());
 
-    boost::filesystem::path filestringPath(fileString);
-    if (filestringPath.is_absolute())
+    SdfLayerRefPtr rootLayer;
+    if (SdfLayer::IsAnonymousLayerIdentifier(fileString))
     {
-      fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
-      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the USD file path to %s\n",
-                                          fileString.c_str());
+      // For anonymous root layer we must explicitly ask for from the layer manager.
+      // This is because USD does not allow us to create a new anonymous SdfLayer
+      // with the exact same identifier. The best we can do is to ask the layer manager
+      // to create the anonymous layer, and let it manage the identifier mappings.
+      if (auto layerManager = LayerManager::findManager())
+      {
+        rootLayer = layerManager->findLayer(fileString);
+      }
+
+      if (rootLayer)
+      {
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg(
+          "ProxyShape::reloadStage found anonymous layer %s from layer manager\n",
+          fileString.c_str()
+        );
+      }
+      else
+      {
+        const std::string tag = SdfLayer::GetDisplayNameFromIdentifier(fileString);
+        rootLayer = SdfLayer::CreateAnonymous(tag);
+        if (rootLayer)
+        {
+          TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg(
+            "ProxyShape::reloadStage created anonymous layer %s (renamed to %s)\n",
+            fileString.c_str(),
+            rootLayer->GetIdentifier().c_str()
+          );
+        }
+      }
     }
     else
     {
-      fileString = UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(thisMObject(), fileString);
-      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the relative USD file path to %s\n",
-                                          fileString.c_str());
+      boost::filesystem::path filestringPath(fileString);
+      if (filestringPath.is_absolute())
+      {
+        fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the USD file path to %s\n",
+                                            fileString.c_str());
+      }
+      else
+      {
+        fileString = UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(thisMObject(), fileString);
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the relative USD file path to %s\n",
+                                            fileString.c_str());
+      }
+
+      // Fall back on providing the path "as is" to USD
+      if (fileString.empty())
+      {
+        fileString.assign(file.asChar(), file.length());
+      }
+
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage called for the usd file: %s\n", fileString.c_str());
+      rootLayer = SdfLayer::FindOrOpen(fileString);
     }
 
-    // Fall back on providing the path "as is" to USD
-    if (fileString.empty())
-    {
-      fileString.assign(file.asChar(), file.length());
-    }
-
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::loadStage called for the usd file: %s\n", fileString.c_str());
-
-    // Only try to create a stage for layers that can be opened.
-    if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString))
+     // Only try to create a stage for layers that can be opened.
+    if (rootLayer)
     {
       MStatus status;
       SdfLayerRefPtr sessionLayer;
