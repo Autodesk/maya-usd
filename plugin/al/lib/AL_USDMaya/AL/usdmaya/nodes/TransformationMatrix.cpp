@@ -60,21 +60,6 @@ MPxTransformationMatrix* TransformationMatrix::creator()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool hasEmptyDefaultValue(const UsdGeomXformOp& op, UsdTimeCode time)
-{
-  SdfPropertySpecHandleVector propSpecs = op.GetAttr().GetPropertyStack(time);
-  for(auto propSpec : propSpecs)
-  {
-    auto def = propSpec->GetDefaultValue();
-    if(def.IsEmpty())
-    {
-      return true;
-    }
-  }
-  return false;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 TransformationMatrix::TransformationMatrix()
   : BasicTransformationMatrix(),
     m_xform(),
