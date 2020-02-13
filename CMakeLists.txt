@@ -80,6 +80,14 @@ find_package(USD REQUIRED)
 include(cmake/usd.cmake)
 include(${USD_CONFIG_FILE})
 
+string(SUBSTRING ${MAYA_API_VERSION} "0" "4" MAYA_MAJOR_VERSION)
+if(${MAYA_MAJOR_VERSION} STRLESS "2019")
+    set(CMAKE_WANT_UFE_BUILD OFF)
+    message(AUTHOR_WARNING "========================================================================================= \
+                            UFE is not available in Maya${MAYA_MAJOR_VERSION}. Maya2019 and later are supported only. \
+                            ========================================================================================= ")
+endif()
+
 if(CMAKE_WANT_UFE_BUILD)
     find_package(UFE QUIET)
     if(UFE_FOUND)
