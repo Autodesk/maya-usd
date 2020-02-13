@@ -1536,6 +1536,7 @@ MStatus TranslatePrim::redoIt()
     auto stage = m_proxy->usdStage();
     AL::usd::utils::UsdPrimVector updatePrims;
 
+    AL::usdmaya::fileio::translators::TranslatorManufacture manufacture(nullptr);
     for(const SdfPath& path : m_updatePaths)
     {
       UsdPrim prim = stage->GetPrimAtPath(path);
