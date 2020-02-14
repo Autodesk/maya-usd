@@ -768,9 +768,7 @@ if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${PYTHON_LIBRARY_NAME}> DESTINATION ${PYLIB_INSTALL_PREFIX} OPTIONAL)
 endif()
 
-install(CODE
-    "file(TOUCH \"${PYLIB_INSTALL_PREFIX}/../__init__.py\")")
-
+install(FILES ae/__init__.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME})
 install(FILES python/__init__.py DESTINATION ${PYLIB_INSTALL_PREFIX})
 
 add_subdirectory(usd)
