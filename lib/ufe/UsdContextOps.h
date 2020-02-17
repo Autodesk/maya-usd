@@ -54,6 +54,7 @@ public:
 	Ufe::SceneItem::Ptr sceneItem() const override;
     Items getItems(const ItemPath& itemPath) override;
     bool doOp(const ItemPath& itemPath) override;
+    Ufe::UndoableCommand::Ptr doOpCmd(const ItemPath& itemPath) override;
 
 private:
 	UsdSceneItem::Ptr fItem;
