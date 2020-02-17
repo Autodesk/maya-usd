@@ -310,7 +310,7 @@ PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
 
 /* virtual */
 TfToken
-PxrMayaUsdPreviewSurface_Writer::GetShadingPropertyNameForMayaAttrName(
+PxrMayaUsdPreviewSurface_Writer::GetShadingAttributeNameForMayaAttrName(
         const TfToken& mayaAttrName)
 {
     if (!_usdPrim) {

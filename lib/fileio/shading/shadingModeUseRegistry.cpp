@@ -28,7 +28,6 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/property.h"
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/input.h"
@@ -292,43 +291,35 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
                         topLevelShader = UsdShadeShader(shaderPrim);
                     }
 
-                    // See if we can get the USD shading properties that the
+                    // See if we can get the USD shading attributes that the
                     // Maya plugs represent so that we can author the
                     // connection in USD.
 
                     const TfToken srcPlugName =
                         TfToken(context.GetStandardAttrName(srcPlug, false));
-                    UsdProperty srcProperty =
-                        srcShaderWriter->GetShadingPropertyForMayaAttrName(
+                    UsdAttribute srcAttribute =
+                        srcShaderWriter->GetShadingAttributeForMayaAttrName(
                             srcPlugName);
 
                     const TfToken dstPlugName =
                         TfToken(context.GetStandardAttrName(dstPlug, false));
-                    UsdProperty dstProperty =
-                        dstShaderWriter->GetShadingPropertyForMayaAttrName(
+                    UsdAttribute dstAttribute =
+                        dstShaderWriter->GetShadingAttributeForMayaAttrName(
                             dstPlugName);
 
-                    if (srcProperty && dstProperty) {
-                        UsdAttribute srcAttribute =
-                            srcProperty.As<UsdAttribute>();
-                        if (!srcAttribute) {
-                            // The source property is not a UsdAttribute,
-                            // or possibly the shader writer did not
-                            // author/create it, so we can't do anything
-                            // with it.
-                        }
-                        else if (UsdShadeInput::IsInput(srcAttribute)) {
+                    if (srcAttribute && dstAttribute) {
+                        if (UsdShadeInput::IsInput(srcAttribute)) {
                             UsdShadeInput srcInput(srcAttribute);
 
                             UsdShadeConnectableAPI::ConnectToSource(
-                                dstProperty,
+                                dstAttribute,
                                 srcInput);
                         }
                         else if (UsdShadeOutput::IsOutput(srcAttribute)) {
                             UsdShadeOutput srcOutput(srcAttribute);
 
                             UsdShadeConnectableAPI::ConnectToSource(
-                                dstProperty,
+                                dstAttribute,
                                 srcOutput);
                         }
                     }
