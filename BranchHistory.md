@@ -66,3 +66,20 @@ git merge --no-ff github/dev
 git merge --no-ff github/chenh/MAYA-101845/usd-geom-curves
 git push
 ```
+
+```
+Feb 11, 2020:
+git merge --no-ff github/dev
+git merge --no-ff github/donnels/MAYA-102920/rpath_changes_for_maya_build
+git merge --no-ff github/donnels/MAYA-103070/protect_importui_from_missing_command
+git push
+```
+
+```
+Feb 18, 2020:
+git merge --no-ff github/adsk/MAYA-102918/add_mayausd_export_translator
+git merge --no-ff github/donnels/MAYA-102920/rpath_changes_for_maya_build
+git merge --no-ff github/dev
+git push
+```
+
