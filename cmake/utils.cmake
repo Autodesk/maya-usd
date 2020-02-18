@@ -209,6 +209,49 @@ function(mayaUsd_get_unittest_target unittest_target unittest_basename)
     set(${unittest_target} "${unittest_name}" PARENT_SCOPE)
 endfunction()
 
+function(mayaUsd_promoteHeaderListWithSubdir)
+    cmake_parse_arguments(PREFIX
+        ""
+        "SUBDIR" # one_value keywords
+        "HEADERS;BASE_PATH" # multi_value keywords
+        ${ARGN}
+    )
+
+    if (PREFIX_HEADERS)
+        set(headerFiles ${PREFIX_HEADERS})
+    else()
+        message(FATAL_ERROR "HEADERS keyword is not specified.")
+    endif()
+
+    set(basePath ${CMAKE_BINARY_DIR}/include)
+    if (PREFIX_BASE_PATH)
+        set(basePath ${basePath}/${PREFIX_BASE_PATH})
+    else()
+        set(basePath ${basePath}/mayaUsd)
+    endif()
+
+    if (PREFIX_SUBDIR)
+        set(basePath ${basePath}/${PREFIX_SUBDIR})
+    endif()
+
+    foreach(header ${headerFiles})
+        set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/${header})
+        set(dstFile ${basePath}/${header})
+
+        set(content "#pragma once\n#include \"${srcFile}\"\n")
+
+        if (NOT EXISTS ${dstFile})
+            message(STATUS "promoting: " ${srcFile})
+            file(WRITE ${dstFile} "${content}")
+        else()
+            file(READ ${dstFile} oldContent)
+            if (NOT "${content}" STREQUAL "${oldContent}")
+                message(STATUS "Promoting ${srcfile}")
+                file(WRITE ${dstFile} "${content}")
+            endif()
+        endif()
+    endforeach()
+endfunction()
 #
 # mayaUsd_copyFiles( <target>
 #                    [DESTINATION <destination>]

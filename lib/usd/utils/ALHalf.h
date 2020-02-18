@@ -23,7 +23,9 @@
 ///         To enable HW conversions, pass the compiler flag -mf16c to clang or gcc.
 //----------------------------------------------------------------------------------------------------------------------
 
-#pragma once
+#ifndef UTILS_ALHALF_H
+#define UTILS_ALHALF_H
+
 #if __F16C__
 #include <immintrin.h>
 #endif
@@ -32,9 +34,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace AL {
-namespace usd {
-namespace utils {
+namespace MayaUsd {
+namespace Utils {
 
 #ifdef __F16C__
 
@@ -256,6 +257,7 @@ inline GfHalf double2half_1f(const double f)
 }
 #endif
 
-} // utils
-} // usd
-} // AL
+} // MayaUsd
+} // Utils
+
+#endif // UTILS_ALHALF_H

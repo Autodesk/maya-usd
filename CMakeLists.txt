@@ -139,11 +139,7 @@ if (BUILD_TESTS)
 
     enable_testing()
 
-    add_subdirectory(test/lib)
-
-    if (UFE_FOUND)
-        add_subdirectory(test/lib/ufe)
-    endif()
+    add_subdirectory(test)
 
     set(MAYAUSD_GTEST_PATH "PATH+:=lib/gtest")
 endif()

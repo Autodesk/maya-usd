@@ -7,7 +7,6 @@ add_library(${TARGET_NAME} SHARED)
 target_sources(${TARGET_NAME}
     PRIVATE
         plugin.cpp
-        AL/maya/test_DiffCore.cpp
         AL/maya/test_EventHandler.cpp
         AL/maya/test_MatrixToSRT.cpp
         AL/maya/test_MayaEventManager.cpp
@@ -85,7 +84,7 @@ target_link_libraries(${TARGET_NAME}
         AL_EventSystem
         AL_USDMayaUtils
         AL_MayaUtils
-        AL_USDUtils
+        USDUtils
         AL_USDMaya   #Adding this recursively pulls in lots of things
         AL_MayaTest
         AL_USDMayaSchemas

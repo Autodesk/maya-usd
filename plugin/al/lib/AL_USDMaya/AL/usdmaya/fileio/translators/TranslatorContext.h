@@ -32,7 +32,7 @@
 
 #include <vector>
 #include <string>
-#include "AL/usd/utils/ForwardDeclares.h"
+#include <usdUtils/ForwardDeclares.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

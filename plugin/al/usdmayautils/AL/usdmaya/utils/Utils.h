@@ -17,11 +17,10 @@
 #pragma once
 
 #include "AL/usdmaya/utils/Api.h"
-
+#include "AL/maya/utils/ForwardDeclares.h"
 #include "maya/MString.h"
 
-#include "AL/maya/utils/ForwardDeclares.h"
-#include "AL/usd/utils/ForwardDeclares.h"
+#include <usdUtils/ForwardDeclares.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

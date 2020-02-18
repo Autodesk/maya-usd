@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef UTILS_SIMD_H
+#define UTILS_SIMD_H
 
 #ifdef _WIN32
 # define ALIGN16(X) __declspec(align(16)) X
@@ -59,7 +60,8 @@
 # define ENABLE_SOME_AVX_ROUTINES 1
 #endif
 
-namespace AL {
+namespace MayaUsd {
+namespace Utils {
 
 #if defined(__SSE__)
 typedef __m128 f128;
@@ -415,4 +417,7 @@ inline f128 loadmask3f(const void* const ptr, size_t count)
 }
 #endif
 
-} // AL
+} // MayaUsd
+} // Utils
+
+#endif // UTILS_SIMD_H

@@ -14,8 +14,9 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/utils/Utils.h"
-#include "AL/usd/utils/DebugCodes.h"
 #include "AL/maya/utils/Utils.h"
+
+#include <usdUtils/DebugCodes.h>
 
 #include "maya/MDagPath.h"
 #include "maya/MEulerRotation.h"
@@ -119,7 +120,7 @@ MString mapUsdPrimToMayaNode(const UsdPrim& usdPrim,
     std::replace(mayaElementPath.begin(), mayaElementPath.end(), '/','|');
   }
 
-  TF_DEBUG(ALUTILS_INFO).Msg("Mapped the path for prim=%s to mayaObject=%s\n", usdPrim.GetName().GetText(), mayaElementPath.c_str());
+  TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Mapped the path for prim=%s to mayaObject=%s\n", usdPrim.GetName().GetText(), mayaElementPath.c_str());
 
   return AL::maya::utils::convert(mayaElementPath);
 }
