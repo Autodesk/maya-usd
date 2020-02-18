@@ -906,7 +906,9 @@ function(_pxr_python_module NAME)
             mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib64")
         endif()
     endif()
-
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../../../../Maya.app/Contents/MacOS")
+    endif()
     mayaUsd_install_rpath(rpath ${LIBRARY_NAME})
 
     _get_folder("_python" folder)
@@ -1238,6 +1240,10 @@ function(_pxr_library NAME)
         elseif(DEFINED PXR_USD_LOCATION)
             mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib64")
         endif()
+    endif()
+
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../../Maya.app/Contents/MacOS")
     endif()
 
     mayaUsd_install_rpath(rpath ${NAME})

@@ -31,8 +31,24 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace AL {
 namespace usdmaya {
 namespace nodes {
-
+namespace {
 using AL::usdmaya::utils::UsdDataType;
+
+//----------------------------------------------------------------------------------------------------------------------
+bool hasEmptyDefaultValue(const UsdGeomXformOp& op, UsdTimeCode time)
+{
+  SdfPropertySpecHandleVector propSpecs = op.GetAttr().GetPropertyStack(time);
+  for(auto propSpec : propSpecs)
+  {
+    auto def = propSpec->GetDefaultValue();
+    if(def.IsEmpty())
+    {
+      return true;
+    }
+  }
+  return false;
+}
+} // anon
 
 //----------------------------------------------------------------------------------------------------------------------
 const MTypeId TransformationMatrix::kTypeId(AL_USDMAYA_TRANSFORMATION_MATRIX);
@@ -57,9 +73,9 @@ TransformationMatrix::TransformationMatrix()
     m_rotatePivotTweak(0, 0, 0),
     m_rotatePivotTranslationTweak(0, 0, 0),
     m_rotateOrientationTweak(0, 0, 0, 1.0),
-    m_scaleFromUsd(1.1, 1.1, 1.1),
+    m_scaleFromUsd(1.0, 1.0, 1.0),
     m_rotationFromUsd(0, 0, 0),
-    m_translationFromUsd(0.1, 0.2, 0.3),
+    m_translationFromUsd(0.0, 0.0, 0.0),
     m_shearFromUsd(0, 0, 0),
     m_scalePivotFromUsd(0, 0, 0),
     m_scalePivotTranslationFromUsd(0, 0, 0),
@@ -240,6 +256,14 @@ bool TransformationMatrix::pushVector(const MVector& result, UsdGeomXformOp& op,
     return false;
   }
 
+  if(timeCode.IsDefault() && op.GetNumTimeSamples())
+  {
+    if(!hasEmptyDefaultValue(op, timeCode))
+    {
+      return false;
+    }
+  }
+
   TfToken typeName;
   attr.GetMetadata(SdfFieldKeys->TypeName, &typeName);
   SdfValueTypeName vtn = SdfSchema::GetInstance().FindType(typeName);
@@ -305,6 +329,15 @@ bool TransformationMatrix::pushVector(const MVector& result, UsdGeomXformOp& op,
 bool TransformationMatrix::pushShear(const MVector& result, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::pushShear %f %f %f\n%s\n", result.x, result.y, result.z, op.GetOpName().GetText());
+
+  if(timeCode.IsDefault() && op.GetNumTimeSamples())
+  {
+    if(!hasEmptyDefaultValue(op, timeCode))
+    {
+      return false;
+    }
+  }
+
   const SdfValueTypeName vtn = op.GetTypeName();
   UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
@@ -463,6 +496,14 @@ bool TransformationMatrix::readMatrix(MMatrix& result, const UsdGeomXformOp& op,
 bool TransformationMatrix::pushMatrix(const MMatrix& result, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::pushMatrix\n");
+  if(timeCode.IsDefault() && op.GetNumTimeSamples())
+  {
+    if(!hasEmptyDefaultValue(op, timeCode))
+    {
+      return false;
+    }
+  }
+
   const SdfValueTypeName vtn = op.GetTypeName();
   UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
@@ -521,6 +562,15 @@ void TransformationMatrix::setFromMatrix(MObject thisNode, const MMatrix& m)
 bool TransformationMatrix::pushPoint(const MPoint& result, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::pushPoint %f %f %f\n%s\n", result.x, result.y, result.z, op.GetOpName().GetText());
+
+  if(timeCode.IsDefault() && op.GetNumTimeSamples())
+  {
+    if(!hasEmptyDefaultValue(op, timeCode))
+    {
+      return false;
+    }
+  }
+
   const SdfValueTypeName vtn = op.GetTypeName();
   UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
   switch(attr_type)
@@ -635,6 +685,15 @@ double TransformationMatrix::readDouble(const UsdGeomXformOp& op, UsdTimeCode ti
 void TransformationMatrix::pushDouble(const double value, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::pushDouble %f\n%s\n", value, op.GetOpName().GetText());
+
+  if(timeCode.IsDefault() && op.GetNumTimeSamples())
+  {
+    if(!hasEmptyDefaultValue(op, timeCode))
+    {
+      return;
+    }
+  }
+
   UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(op.GetTypeName());
   switch(attr_type)
   {
@@ -683,7 +742,7 @@ void TransformationMatrix::pushDouble(const double value, UsdGeomXformOp& op, Us
 bool TransformationMatrix::readRotation(MEulerRotation& result, const UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::readRotation %f %f %f\n%s\n", result.x, result.y, result.z, op.GetOpName().GetText());
-  const double degToRad = 3.141592654 / 180.0;
+  const double degToRad = M_PI / 180.0;
   switch(op.GetOpType())
   {
   case UsdGeomXformOp::TypeRotateX:
@@ -813,7 +872,16 @@ bool TransformationMatrix::readRotation(MEulerRotation& result, const UsdGeomXfo
 bool TransformationMatrix::pushRotation(const MEulerRotation& value, UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::pushRotation %f %f %f\n%s\n", value.x, value.y, value.z, op.GetOpName().GetText());
-  const double radToDeg = 180.0 / 3.141592654;
+
+  if(timeCode.IsDefault() && op.GetNumTimeSamples())
+  {
+    if(!hasEmptyDefaultValue(op, timeCode))
+    {
+      return false;
+    }
+  }
+
+  const double radToDeg = 180.0 / M_PI;
   switch(op.GetOpType())
   {
   case UsdGeomXformOp::TypeRotateX:
@@ -1065,7 +1133,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
         }
         if(readFromPrim)
         {
-          MVector tempScale;
+          MVector tempScale(1.0, 1.0, 1.0);
           internal_readVector(tempScale, op);
           if(transformNode)
           {
@@ -1073,8 +1141,8 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
             MPlug(transformNode->thisMObject(), MPxTransform::scaleY).setValue(tempScale.y);
             MPlug(transformNode->thisMObject(), MPxTransform::scaleZ).setValue(tempScale.z);
             m_scaleTweak[0] = m_scaleTweak[1] = m_scaleTweak[2] = 0;
-            m_scaleFromUsd = tempScale;
           }
+          m_scaleFromUsd = tempScale;
         }
         
       }
@@ -1777,9 +1845,15 @@ void TransformationMatrix::pushTranslateToPrim()
     if(*opIt == kTranslate)
     {
       UsdGeomXformOp& op = *it;
-      internal_pushVector(MPxTransformationMatrix::translationValue, op);
-      m_translationFromUsd = MPxTransformationMatrix::translationValue;
-      m_translationTweak = MVector(0, 0, 0);
+      MVector tempTranslation;
+      internal_readVector(tempTranslation, op);	
+      // only write back if data has changed significantly
+      if(!tempTranslation.isEquivalent(MPxTransformationMatrix::translationValue))
+      {
+        internal_pushVector(MPxTransformationMatrix::translationValue, op);
+        m_translationFromUsd = MPxTransformationMatrix::translationValue;
+        m_translationTweak = MVector(0, 0, 0);
+      }
       return;
     }
   }
@@ -1799,12 +1873,18 @@ void TransformationMatrix::pushPivotToPrim()
     if(*opIt == kPivot)
     {
       UsdGeomXformOp& op = *it;
-      // is this a bug?
-      internal_pushPoint(MPxTransformationMatrix::rotatePivotValue, op);
-      m_rotatePivotFromUsd = MPxTransformationMatrix::rotatePivotValue;
-      m_rotatePivotTweak = MPoint(0, 0, 0);
-      m_scalePivotFromUsd = MPxTransformationMatrix::scalePivotValue;
-      m_scalePivotTweak = MVector(0, 0, 0);
+      MPoint tempPivot;
+      internal_readPoint(tempPivot, op);	
+
+      // only write back if data has changed significantly
+      if(!tempPivot.isEquivalent(MPxTransformationMatrix::rotatePivotValue))
+      {
+        internal_pushPoint(MPxTransformationMatrix::rotatePivotValue, op);
+        m_rotatePivotFromUsd = MPxTransformationMatrix::rotatePivotValue;
+        m_rotatePivotTweak = MPoint(0, 0, 0);
+        m_scalePivotFromUsd = MPxTransformationMatrix::scalePivotValue;
+        m_scalePivotTweak = MVector(0, 0, 0);
+      }
       return;
     }
   }
@@ -1824,9 +1904,15 @@ void TransformationMatrix::pushRotatePivotToPrim()
     if(*opIt == kRotatePivot)
     {
       UsdGeomXformOp& op = *it;
-      internal_pushPoint(MPxTransformationMatrix::rotatePivotValue, op);
-      m_rotatePivotFromUsd = MPxTransformationMatrix::rotatePivotValue;
-      m_rotatePivotTweak = MVector(0, 0, 0);
+      MPoint tempPivot;
+      internal_readPoint(tempPivot, op);	
+      // only write back if data has changed significantly
+      if(!tempPivot.isEquivalent(MPxTransformationMatrix::rotatePivotValue))
+      {
+        internal_pushPoint(MPxTransformationMatrix::rotatePivotValue, op);
+        m_rotatePivotFromUsd = MPxTransformationMatrix::rotatePivotValue;
+        m_rotatePivotTweak = MVector(0, 0, 0);
+      }
       return;
     }
   }
@@ -1846,9 +1932,15 @@ void TransformationMatrix::pushRotatePivotTranslateToPrim()
     if(*opIt == kRotatePivotTranslate)
     {
       UsdGeomXformOp& op = *it;
-      internal_pushPoint(MPxTransformationMatrix::rotatePivotTranslationValue, op);
-      m_rotatePivotTranslationFromUsd = MPxTransformationMatrix::rotatePivotTranslationValue;
-      m_rotatePivotTranslationTweak = MVector(0, 0, 0);
+      MVector tempPivotTranslation;
+      internal_readVector(tempPivotTranslation, op);	
+      // only write back if data has changed significantly
+      if(!tempPivotTranslation.isEquivalent(MPxTransformationMatrix::rotatePivotTranslationValue))
+      {
+        internal_pushPoint(MPxTransformationMatrix::rotatePivotTranslationValue, op);
+        m_rotatePivotTranslationFromUsd = MPxTransformationMatrix::rotatePivotTranslationValue;
+        m_rotatePivotTranslationTweak = MVector(0, 0, 0);
+      }
       return;
     }
   }
@@ -1868,9 +1960,16 @@ void TransformationMatrix::pushRotateToPrim()
     if(*opIt == kRotate)
     {
       UsdGeomXformOp& op = *it;
-      internal_pushRotation(MPxTransformationMatrix::rotationValue, op);
-      m_rotationFromUsd = MPxTransformationMatrix::rotationValue;
-      m_rotationTweak = MEulerRotation(0, 0, 0);
+      MEulerRotation tempRotate;
+      internal_readRotation(tempRotate, op);
+
+      // only write back if data has changed significantly
+      if(!tempRotate.isEquivalent(MPxTransformationMatrix::rotationValue))
+      {
+        internal_pushRotation(MPxTransformationMatrix::rotationValue, op);
+        m_rotationFromUsd = MPxTransformationMatrix::rotationValue;
+        m_rotationTweak = MEulerRotation(0, 0, 0);
+      }
       return;
     }
   }
@@ -1890,10 +1989,20 @@ void TransformationMatrix::pushRotateAxisToPrim()
     if(*opIt == kRotateAxis)
     {
       UsdGeomXformOp& op = *it;
-      const double radToDeg = 180.0 / 3.141592654;
-      MEulerRotation e = m_rotateOrientationFromUsd.asEulerRotation();
-      MVector vec(e.x * radToDeg, e.y * radToDeg, e.z * radToDeg);
-      internal_pushVector(vec, op);
+      MVector tempRotateAxis;
+      internal_readVector(tempRotateAxis, op);	
+      tempRotateAxis *= (M_PI / 180.0);
+
+      MEulerRotation temp(tempRotateAxis.x, tempRotateAxis.y, tempRotateAxis.z);
+
+      // only write back if data has changed significantly
+      if(!(temp.asQuaternion()).isEquivalent(m_rotateOrientationFromUsd))
+      {
+        const double radToDeg = 180.0 / M_PI;
+        MEulerRotation e = m_rotateOrientationFromUsd.asEulerRotation();
+        MVector vec(e.x * radToDeg, e.y * radToDeg, e.z * radToDeg);
+        internal_pushVector(vec, op);
+      }
       return;
     }
   }
@@ -1913,9 +2022,15 @@ void TransformationMatrix::pushScalePivotTranslateToPrim()
     if(*opIt == kScalePivotTranslate)
     {
       UsdGeomXformOp& op = *it;
-      internal_pushVector(MPxTransformationMatrix::scalePivotTranslationValue, op);
-      m_scalePivotTranslationFromUsd = MPxTransformationMatrix::scalePivotTranslationValue;
-      m_scalePivotTranslationTweak = MVector(0, 0, 0);
+      MVector tempPivotTranslation;
+      internal_readVector(tempPivotTranslation, op);	
+      // only write back if data has changed significantly
+      if(!tempPivotTranslation.isEquivalent(MPxTransformationMatrix::scalePivotTranslationValue))
+      {
+        internal_pushVector(MPxTransformationMatrix::scalePivotTranslationValue, op);
+        m_scalePivotTranslationFromUsd = MPxTransformationMatrix::scalePivotTranslationValue;
+        m_scalePivotTranslationTweak = MVector(0, 0, 0);
+      }
       return;
     }
   }
@@ -1935,9 +2050,15 @@ void TransformationMatrix::pushScalePivotToPrim()
     if(*opIt == kScalePivot)
     {
       UsdGeomXformOp& op = *it;
-      internal_pushPoint(MPxTransformationMatrix::scalePivotValue, op);
-      m_scalePivotFromUsd = MPxTransformationMatrix::scalePivotValue;
-      m_scalePivotTweak = MPoint(0, 0, 0);
+      MPoint tempPivot;
+      internal_readPoint(tempPivot, op);	
+      // only write back if data has changed significantly
+      if(!tempPivot.isEquivalent(MPxTransformationMatrix::scalePivotValue))
+      {
+        internal_pushPoint(MPxTransformationMatrix::scalePivotValue, op);
+        m_scalePivotFromUsd = MPxTransformationMatrix::scalePivotValue;
+        m_scalePivotTweak = MPoint(0, 0, 0);
+      }
       return;
     }
   }
@@ -1957,9 +2078,15 @@ void TransformationMatrix::pushScaleToPrim()
     if(*opIt == kScale)
     {
       UsdGeomXformOp& op = *it;
-      internal_pushVector(MPxTransformationMatrix::scaleValue, op);
-      m_scaleFromUsd = MPxTransformationMatrix::scaleValue;
-      m_scaleTweak = MVector(0, 0, 0);
+      MVector tempScale(1.0, 1.0, 1.0);
+      internal_readVector(tempScale, op);	
+      // only write back if data has changed significantly
+      if(!tempScale.isEquivalent(MPxTransformationMatrix::scaleValue))
+      {
+        internal_pushVector(MPxTransformationMatrix::scaleValue, op);
+        m_scaleFromUsd = MPxTransformationMatrix::scaleValue;
+        m_scaleTweak = MVector(0, 0, 0);
+      }
       return;
     }
   }
@@ -2073,7 +2200,7 @@ void TransformationMatrix::pushToPrim()
 
     case kRotateAxis:
       {
-        const double radToDeg = 180.0 / 3.141592654;
+        const double radToDeg = 180.0 / M_PI;
         MEulerRotation e = m_rotateOrientationFromUsd.asEulerRotation();
         MVector vec(e.x * radToDeg, e.y * radToDeg, e.z * radToDeg);
         internal_pushVector(vec, op);
