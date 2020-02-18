@@ -50,6 +50,10 @@ if (DEFINED USD_VERSION_NUM)
     _add_define("USD_VERSION_NUM=${USD_VERSION_NUM}")
 endif()
 
+if (DEFINED UFE_PREVIEW_VERSION_NUM)
+    _add_define("UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}")
+endif()
+
 set(_PXR_CXX_FLAGS ${_PXR_CXX_FLAGS} ${_PXR_CXX_WARNING_FLAGS})
 
 # CMake list to string.
