@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "MayaReference.h"
+#include "./ALMayaReference.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -40,29 +40,15 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
-        
-static UsdAttribute
-_CreateMayaReferenceAttr(MayaUsd_SchemasMayaReference &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateMayaReferenceAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateMayaNamespaceAttr(MayaUsd_SchemasMayaReference &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateMayaNamespaceAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->String), writeSparsely);
-}
 
 } // anonymous namespace
 
-void wrapMayaUsd_SchemasMayaReference()
+void wrapMayaUsd_SchemasALMayaReference()
 {
-    typedef MayaUsd_SchemasMayaReference This;
+    typedef MayaUsd_SchemasALMayaReference This;
 
-    class_<This, bases<UsdGeomXformable> >
-        cls("MayaReference");
+    class_<This, bases<MayaUsd_SchemasMayaReference> >
+        cls("ALMayaReference");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -87,20 +73,6 @@ void wrapMayaUsd_SchemasMayaReference()
 
         .def(!self)
 
-        
-        .def("GetMayaReferenceAttr",
-             &This::GetMayaReferenceAttr)
-        .def("CreateMayaReferenceAttr",
-             &_CreateMayaReferenceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetMayaNamespaceAttr",
-             &This::GetMayaNamespaceAttr)
-        .def("CreateMayaNamespaceAttr",
-             &_CreateMayaNamespaceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
 
     ;
 

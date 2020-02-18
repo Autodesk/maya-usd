@@ -27,14 +27,14 @@ namespace fileio {
 namespace translators {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief Class to translate an image plane in and out of maya.
+/// \brief Class to translate an maya reference into maya.
 //----------------------------------------------------------------------------------------------------------------------
 class MayaReference : public TranslatorBase
 {
 public:
   AL_USDMAYA_DECLARE_TRANSLATOR(MayaReference);
-private:
 
+protected:
   MStatus initialize() override;
   MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
   MStatus tearDown(const SdfPath& path) override;
@@ -44,6 +44,15 @@ private:
 
   bool canBeOverridden() override
     { return true; }
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief Class to translate an old schema maya reference into maya.
+//----------------------------------------------------------------------------------------------------------------------
+class ALMayaReference : public MayaReference
+{
+public:
+  AL_USDMAYA_DECLARE_TRANSLATOR(ALMayaReference);
 };
 
 //----------------------------------------------------------------------------------------------------------------------

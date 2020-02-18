@@ -52,6 +52,7 @@ endif()
 
 add_library(${SCHEMA_PLUGIN}
     SHARED
+    ALMayaReference.cpp
     MayaReference.cpp
     ModuleDeps.cpp
     tokens.cpp
@@ -102,6 +103,7 @@ target_link_libraries(${SCHEMA_PLUGIN} ${DEPENDANT_LIBRARIES} ${PTHREAD_LINK})
 
 set(mayaUsdSchemas_headers
     api.h
+    ALMayaReference.h
     MayaReference.h
     tokens.h
 )
@@ -141,6 +143,7 @@ add_library(${SCHEMAS_PYTHON_LIBRARY_NAME}
     module.cpp
     wrapTokens.cpp
     wrapMayaReference.cpp
+    wrapALMayaReference.cpp
 )
     
 target_compile_definitions(${SCHEMAS_PYTHON_LIBRARY_NAME}

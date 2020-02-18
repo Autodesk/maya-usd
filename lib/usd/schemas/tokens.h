@@ -56,11 +56,11 @@ struct MayaUsd_SchemasTokensType {
     MAYAUSD_SCHEMAS_API MayaUsd_SchemasTokensType();
     /// \brief "mayaNamespace"
     /// 
-    /// AL_usd_MayaReference
+    /// MayaUsd_SchemasMayaReference
     const TfToken mayaNamespace;
     /// \brief "mayaReference"
     /// 
-    /// AL_usd_MayaReference
+    /// MayaUsd_SchemasMayaReference
     const TfToken mayaReference;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

@@ -39,7 +39,7 @@ class MayaUsdSchemasMayaReferenceTestCase(unittest.TestCase):
 
         mayaReferenceOut = mayaUsdSchemas.MayaReference(primOut)
         self.assertTrue(mayaReferenceOut.GetPrim())
-        self.assertEqual(mayaReferenceOut.GetSchemaClassPrimDefinition().typeName, 'ALMayaReference')
+        self.assertEqual(mayaReferenceOut.GetSchemaClassPrimDefinition().typeName, 'MayaReference')
 
         mayaReferenceAttr = primOut.CreateAttribute('mayaReference', Sdf.ValueTypeNames.Asset)
         mayaReferenceAttr.Set(mayaReferencePath)

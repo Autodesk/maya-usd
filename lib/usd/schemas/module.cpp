@@ -21,5 +21,5 @@ PXR_NAMESPACE_USING_DIRECTIVE
 TF_WRAP_MODULE
 {
     TF_WRAP(MayaUsd_SchemasTokens);
-    TF_WRAP(AL_usd_MayaReference);
+    TF_WRAP(MayaUsd_SchemasMayaReference);
 }
