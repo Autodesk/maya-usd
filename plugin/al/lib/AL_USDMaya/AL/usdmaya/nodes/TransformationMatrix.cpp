@@ -945,6 +945,20 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
   {
   }
 
+  // Disable push to prim if enabled, otherwise MPlug value queries and setting
+  // in the switch statement below will trigger pushing to the prim, which
+  // will create undesirable usd "over"s.
+  //
+  bool pushOriginallyEnabled = pushToPrimEnabled();
+  m_flags &= ~kPushToPrimEnabled;
+
+  // Enclosing the process below in try/catch in order to be able to reset
+  // the push to prim enabled to its original state in case something goes
+  // wrong...
+  //
+  try
+  {
+
   auto opIt = m_orderedOps.begin();
   for(std::vector<UsdGeomXformOp>::const_iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
   {
@@ -1184,7 +1198,30 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
     }
   }
 
-  // if some animation keys are found on the transform ops, assume we have a read only viewer of the transform data.
+  } // end try block
+  catch(const std::exception &e)
+  {
+    // Reset the push to prim state to the value it had before we disabled
+    // it for the loop above, so if something failed in the loop, the
+    // temporary setting doesn't stay around.  Then rethrow the exception
+    // so as not to disrupt whatever else may be looking for it.
+    //
+    if(pushOriginallyEnabled)
+    {
+      m_flags |= kPushToPrimEnabled;
+    }
+    throw;
+  }
+
+  // Reenable push to prim if it was enabled before.
+  // (Note - I don't think we want to trigger an update of anything here, only
+  // reenable push for future operations, hence not calling enablePushToPrim.)
+  //
+  if(pushOriginallyEnabled)
+  {
+    m_flags |= kPushToPrimEnabled;
+  }
+
   if(m_flags & kAnimationMask)
   {
     m_flags &= ~kPushToPrimEnabled;
