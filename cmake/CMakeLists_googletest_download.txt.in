@@ -30,6 +30,7 @@ ExternalProject_Add(googletest
                     "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
                     "-Dgtest_force_shared_crt=ON"
                     "-DBUILD_SHARED_LIBS=ON"
+                    "-DCMAKE_MACOSX_RPATH=ON"
                     "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"
                     "${FORCE_SHARED_CRT}"
                     "-DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}"
