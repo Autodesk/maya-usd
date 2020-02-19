@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/taskController.h"
+#include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/repr.h"
@@ -126,6 +127,15 @@ namespace
         // Special token for selection update and no need to create repr. Adding
         // the empty desc to remove Hydra warning.
         HdMesh::ConfigureRepr(HdVP2ReprTokens->selection, HdMeshReprDesc());
+
+        // Wireframe desc for bbox display.
+        HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->bbox,
+            HdBasisCurvesGeomStyleWire);
+
+        // Special token for selection update and no need to create repr. Adding
+        // the null desc to remove Hydra warning.
+        HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->selection,
+            HdBasisCurvesGeomStyleInvalid);
     }
 
 #if defined(WANT_UFE_BUILD)
@@ -365,6 +375,15 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
         if (isVisible) {
             SelectionChanged();
         }
+    }
+
+    const int refineLevel = _proxyShape->getComplexity();
+    if (refineLevel != _sceneDelegate->GetRefineLevelFallback())
+    {
+        MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L1, "SetRefineLevelFallback");
+
+        _sceneDelegate->SetRefineLevelFallback(refineLevel);
     }
 }
 

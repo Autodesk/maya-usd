@@ -80,6 +80,13 @@ find_package(USD REQUIRED)
 include(cmake/usd.cmake)
 include(${USD_CONFIG_FILE})
 
+if(${MAYA_APP_VERSION} STRLESS "2019" AND CMAKE_WANT_UFE_BUILD)
+    set(CMAKE_WANT_UFE_BUILD OFF)
+    message(AUTHOR_WARNING "========================================================================================= \
+                            UFE is not available in Maya${MAYA_MAJOR_VERSION}. Maya2019 and later are supported only. \
+                            ========================================================================================= ")
+endif()
+
 if(CMAKE_WANT_UFE_BUILD)
     find_package(UFE QUIET)
     if(UFE_FOUND)
@@ -87,6 +94,16 @@ if(CMAKE_WANT_UFE_BUILD)
     else()
         message(STATUS "UFE not found. UFE features will be disabled.")
     endif()
+endif()
+
+if(DEFINED QT_LOCATION)
+    set(CMAKE_PREFIX_PATH "${QT_LOCATION}")
+    find_package(Qt5 5.12 COMPONENTS Core Gui Widgets REQUIRED)
+    if(Qt5_FOUND)
+        message(STATUS "Building with Qt features enabled.")
+    endif()
+else()
+    message(STATUS "QT_LOCATION not set. Building Qt features will be disabled.")
 endif()
 
 #==============================================================================

@@ -108,6 +108,9 @@ SdfLayerHandle defPrimSpecLayer(const UsdPrim& prim)
 
 	SdfLayerHandle defLayer;
 	auto layerStack = prim.GetStage()->GetLayerStack();
+    auto stage = prim.GetStage();
+    auto primFromPath = stage->GetPrimAtPath(prim.GetPath());
+
 	for (auto layer : layerStack)
 	{
 		auto primSpec = layer->GetPrimAtPath(prim.GetPath());

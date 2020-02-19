@@ -24,17 +24,8 @@ target_include_directories(${TARGET_NAME} PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/.."
     ${MAYA_INCLUDE_DIRS}
     ${CMAKE_BINARY_DIR}/usd
+    $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
 )
-
-if(CMAKE_WANT_UFE_BUILD)
-    if(UFE_FOUND)
-        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
-        include_directories(${UFE_INCLUDE_DIR})
-        add_definitions(-DWANT_UFE_BUILD)
-    else()
-        message(STATUS "UFE not found. UFE features will be disabled.")
-    endif()
-endif()
 
 # rpath setup
 if(IS_MACOSX OR IS_LINUX) 
@@ -54,15 +45,16 @@ if (IS_LINUX)
     endif()
 endif()
 
-# M3dView needs this (technically, MNativeWindowHdl.h)
-# private atm because M3dView is only used in .cpp right now
-if (IS_LINUX)
+target_compile_definitions(${TARGET_NAME} PRIVATE 
+    $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
+    # M3dView needs this (technically, MNativeWindowHdl.h)
+    # private atm because M3dView is only used in .cpp right now
     # gcc will NOT set this automatically
-    target_compile_definitions(${TARGET_NAME} PRIVATE "LINUX")
-elseif (IS_WINDOWS)
+    $<$<BOOL:${IS_LINUX}>:LINUX>
     # Not sure if msvcc sets this automatically, but won't hurt to redefine
-    target_compile_definitions(${TARGET_NAME} PRIVATE "_WIN32")
-endif()
+    $<$<BOOL:${IS_WINDOWS}>:_WIN32>
+)
+
 MAYA_SET_PLUGIN_PROPERTIES(${TARGET_NAME})
 
 #==============================================================================

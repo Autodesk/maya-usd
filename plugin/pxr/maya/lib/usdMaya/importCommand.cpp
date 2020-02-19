@@ -201,7 +201,11 @@ UsdMayaImportCommand::doIt(const MArgList & args)
                 /* importWithProxyShapes = */ false,
                 timeInterval);
 
-    mUsdReadJob = new UsdMaya_ReadJobWithSceneAssembly(mFileName, mPrimPath, mVariants, jobArgs);
+    MayaUsd::ImportData importData(mFileName);
+    importData.setRootVariantSelections(std::move(mVariants));
+    importData.setRootPrimPath(mPrimPath);
+
+    mUsdReadJob = new UsdMaya_ReadJobWithSceneAssembly(importData, jobArgs);
 
     // Add optional command params
     if (argData.isFlagSet("parent")) {

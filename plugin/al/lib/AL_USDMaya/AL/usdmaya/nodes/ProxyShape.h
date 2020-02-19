@@ -952,9 +952,9 @@ private:
                 << m_selected << ":"
                 << int(m_refCount) << std::endl;
     }
-    uint32_t selected() const { return m_selected; }
-    uint32_t required() const { return m_required; }
-    uint32_t refCount() const { return m_refCount; }
+    uint16_t selected() const { return m_selected; }
+    uint16_t required() const { return m_required; }
+    uint16_t refCount() const { return m_refCount; }
     void prepSelect()
       { m_selectedTemp = m_selected; }
   private:
@@ -963,10 +963,10 @@ private:
     // ref counting values
     struct
     {
-      uint64_t m_required:16;
-      uint64_t m_selectedTemp:16;
-      uint64_t m_selected:16;
-      uint64_t m_refCount:16;
+      uint16_t m_required;
+      uint16_t m_selectedTemp;
+      uint16_t m_selected;
+      uint16_t m_refCount;
     };
   };
 
@@ -1061,7 +1061,22 @@ private:
   std::string generateTranslatorId(UsdPrim prim) override
    { return m_translatorManufacture.generateTranslatorId(prim); }
 
-
+  bool isPrimDirty(const UsdPrim& prim) override
+  {
+    const SdfPath path(prim.GetPath());
+    auto previous(m_context->getUniqueKeyForPath(path));
+    if (!previous)
+    {
+      return true;
+    }
+    std::string translatorId = m_translatorManufacture.generateTranslatorId(prim);
+    auto translator = m_translatorManufacture.getTranslatorFromId(translatorId);
+    auto current(translator->generateUniqueKey(prim));
+    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg(
+        "ProxyShape:isPrimDirty prim='%s' uniqueKey='%lu', previous='%lu'\n",
+        path.GetText(), current, previous);
+    return !current || current != previous;
+  }
 
 private:
   SdfPathVector m_pathsOrdered;

@@ -17,15 +17,15 @@
 #include "ProxyShapeHierarchyHandler.h"
 #include "Utils.h"
 
+#include <ufe/ProxyShapeHierarchy.h>
+
 MAYAUSD_NS_DEF {
 namespace ufe {
 
 ProxyShapeHierarchyHandler::ProxyShapeHierarchyHandler(Ufe::HierarchyHandler::Ptr mayaHierarchyHandler)
 	: Ufe::HierarchyHandler()
 	, fMayaHierarchyHandler(mayaHierarchyHandler)
-{
-	fProxyShapeHierarchy = ProxyShapeHierarchy::create(mayaHierarchyHandler);
-}
+{}
 
 ProxyShapeHierarchyHandler::~ProxyShapeHierarchyHandler()
 {
@@ -45,8 +45,7 @@ Ufe::Hierarchy::Ptr ProxyShapeHierarchyHandler::hierarchy(const Ufe::SceneItem::
 {
 	if (isAGatewayType(item->nodeType()))
 	{
-		fProxyShapeHierarchy->setItem(item);
-		return fProxyShapeHierarchy;
+		return ProxyShapeHierarchy::create(fMayaHierarchyHandler, item);
 	}
 	else
 	{
