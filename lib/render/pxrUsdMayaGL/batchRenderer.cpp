@@ -993,6 +993,8 @@ UsdMayaGLBatchRenderer::TestIntersectionCustomPrimFilter(
     // Differs from viewport implementations in that it doesn't rely on
     // _ComputeSelection being called first.
 
+    UBOBindingsSaver bindingsSaver;
+
     return _TestIntersection(primFilter.collection,
                              primFilter.renderTags,
                              viewMatrix, projectionMatrix,
@@ -1195,6 +1197,8 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         primFilters.size());
 
     _selectResults.clear();
+
+    UBOBindingsSaver bindingsSaver;
 
     for (const PxrMayaHdPrimFilter& primFilter : primFilters) {
         TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
