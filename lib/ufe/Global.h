@@ -32,5 +32,8 @@ MStatus initialize();
 MAYAUSD_CORE_PUBLIC
 MStatus finalize();
 
+MAYAUSD_CORE_PUBLIC
+void refreshStages();
+
 } // namespace ufe
 } // namespace MayaUsd

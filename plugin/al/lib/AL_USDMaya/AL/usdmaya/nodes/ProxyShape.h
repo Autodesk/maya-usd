@@ -52,6 +52,7 @@
 
 #if defined(WANT_UFE_BUILD)
 #include "ufe/ufe.h"
+#include "ufe/selection.h"
 
 UFE_NS_DEF {
     class Path;
@@ -125,7 +126,13 @@ private:
   MSelectionList m_newSelection;
   std::vector<std::pair<SdfPath, MObject>> m_insertedRefs;
   std::vector<std::pair<SdfPath, MObject>> m_removedRefs;
-  bool m_internal;
+#if defined(WANT_UFE_BUILD)
+  Ufe::Selection m_newUFESelection = Ufe::Selection();
+  Ufe::Selection m_previousUFESelection = Ufe::Selection();
+  bool m_selectRoot = false;
+  bool m_unselectRoot = false;
+#endif
+  bool m_internal = false;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

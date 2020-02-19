@@ -33,6 +33,7 @@
 #include "maya/MQuaternion.h"
 #include "maya/MSelectionList.h"
 #include "maya/MVector.h"
+#include "mayaUsd/nodes/proxyShapePlugin.h"
 
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/sdf/types.h"
@@ -1388,75 +1389,82 @@ TEST(Transform, emptyOpsNotMade)
       assertEmptyOps();
     }
 
-    // Select the xform, to make it in maya
-    // use "-r" to insulate from previous tests, as default is append
-    MString cmd = MString("AL_usdmaya_ProxyShapeSelect -r -primPath \"")
-        + xformPath.GetText() + "\" -proxy \"" + proxyShapeMayaPath + "\"";
-    MGlobal::executeCommand(cmd);
-
-    MSelectionList sel;
-    EXPECT_TRUE(MGlobal::getActiveSelectionList(sel));
-    EXPECT_EQ(1u, sel.length());
-    MObject xformMobj;
-    EXPECT_TRUE(sel.getDependNode(0, xformMobj));
-    MFnTransform xformMfn(xformMobj);
-
-    // Make sure the usd ops haven't changed yet
+    if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
     {
-      SCOPED_TRACE("After selection");
-      assertEmptyOps();
-    }
+      // Select the xform, to make it in maya
+      // use "-r" to insulate from previous tests, as default is append
+      MString cmd = MString("AL_usdmaya_ProxyShapeSelect -r -primPath \"")
+          + xformPath.GetText() + "\" -proxy \"" + proxyShapeMayaPath + "\"";
+      MGlobal::executeCommand(cmd);
 
-    auto assertEmptyAfterQuerying = [&]() {
-      // Make sure that things are still empty as we query various plugs
-      for (auto& plugName : {
-            "translate",
-            "rotate",
-            "scale",
-            "shear",
-            "rotatePivot",
-            "rotatePivotTranslate",
-            "scalePivot",
-            "scalePivotTranslate",
-            "rotateAxis",
-            "transMinusRotatePivot"
-          })
+      MSelectionList sel;
+      EXPECT_TRUE(MGlobal::getActiveSelectionList(sel));
+      EXPECT_EQ(1u, sel.length());
+      MObject xformMobj;
+      EXPECT_TRUE(sel.getDependNode(0, xformMobj));
+      MFnTransform xformMfn(xformMobj);
+
+      // Make sure the usd ops haven't changed yet
       {
-        MPlug basePlug = xformMfn.findPlug(plugName, true, &status);
-        EXPECT_EQ(MS::kSuccess, status);
-
-        for(unsigned int i = 0; i < 3; ++i)
-        {
-          MPlug childPlug = basePlug.child(i, &status);
-          EXPECT_EQ(MS::kSuccess, status);
-
-          SCOPED_TRACE(MString("Pulling on plug: ") + childPlug.name());
-          childPlug.asDouble();
-          assertEmptyOps();
-        }
-      }
-
-      {
-        MPlug plug = xformMfn.findPlug("rotateOrder", true, &status);
-        EXPECT_EQ(MS::kSuccess, status);
-
-        SCOPED_TRACE(MString("Pulling on plug: ") + plug.name());
-        plug.asShort();
+        SCOPED_TRACE("After selection");
         assertEmptyOps();
       }
-    };
 
-    {
-      SCOPED_TRACE("Clean querying");
-      assertEmptyAfterQuerying();
+      auto assertEmptyAfterQuerying = [&]() {
+        // Make sure that things are still empty as we query various plugs
+        for (auto& plugName : {
+              "translate",
+              "rotate",
+              "scale",
+              "shear",
+              "rotatePivot",
+              "rotatePivotTranslate",
+              "scalePivot",
+              "scalePivotTranslate",
+              "rotateAxis",
+              "transMinusRotatePivot"
+            })
+        {
+          MPlug basePlug = xformMfn.findPlug(plugName, true, &status);
+          EXPECT_EQ(MS::kSuccess, status);
+
+          for(unsigned int i = 0; i < 3; ++i)
+          {
+            MPlug childPlug = basePlug.child(i, &status);
+            EXPECT_EQ(MS::kSuccess, status);
+
+            SCOPED_TRACE(MString("Pulling on plug: ") + childPlug.name());
+            childPlug.asDouble();
+            assertEmptyOps();
+          }
+        }
+
+        {
+          MPlug plug = xformMfn.findPlug("rotateOrder", true, &status);
+          EXPECT_EQ(MS::kSuccess, status);
+
+          SCOPED_TRACE(MString("Pulling on plug: ") + plug.name());
+          plug.asShort();
+          assertEmptyOps();
+        }
+      };
+
+      {
+        SCOPED_TRACE("Clean querying");
+        assertEmptyAfterQuerying();
+      }
+
+      {
+        SCOPED_TRACE("Querying after dirtying node");
+        MString cmd = MString("dgdirty \"") + xformMfn.partialPathName() + "\";";
+        status = MGlobal::executeCommand(cmd);
+        EXPECT_EQ(MS::kSuccess, status);
+        assertEmptyAfterQuerying();
+      }
     }
-
+    else
     {
-      SCOPED_TRACE("Querying after dirtying node");
-      MString cmd = MString("dgdirty \"") + xformMfn.partialPathName() + "\";";
-      status = MGlobal::executeCommand(cmd);
-      EXPECT_EQ(MS::kSuccess, status);
-      assertEmptyAfterQuerying();
+      /// \todo fix up test for UFE based selection. (Probably not needed?)
     }
   }
 }

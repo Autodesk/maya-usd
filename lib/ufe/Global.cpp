@@ -69,6 +69,14 @@ StagesSubject::Ptr g_StagesSubject;
 
 bool InPathChange::fInPathChange = false;
 
+void refreshStages()
+{
+	if(g_StagesSubject)
+	{
+		g_StagesSubject->afterOpen();
+	}
+}
+
 //------------------------------------------------------------------------------
 // Functions
 //------------------------------------------------------------------------------
