@@ -184,26 +184,18 @@ UsdMayaAdaptor::GetSchemaByName(const TfToken& schemaName) const
     }
 
     // Get the schema definition. If it's registered, there should be a def.
-    SdfPrimSpecHandle primDef =
+    SdfPrimSpecHandle primSpec;
+
 #if USD_VERSION_NUM > 2002
-        UsdSchemaRegistry::GetInstance().GetSchemaPrimSpec(schemaName);
-#else
-        UsdSchemaRegistry::GetInstance().GetPrimDefinition(schemaName);
-#endif
-    if (!primDef) {
-        return SchemaAdaptor();
-    }
-
-    // Get the schema's TfType; its name should be registered as an alias.
-    const TfType schemaType =
-            TfType::Find<UsdSchemaBase>().FindDerivedByName(schemaName);
-
     // Is this an API schema?
-    if (schemaType.IsA<UsdAPISchemaBase>()) {
-        return SchemaAdaptor(_handle.object(), primDef);
+    const UsdSchemaRegistry &schemaReg = UsdSchemaRegistry::GetInstance();
+    if (const UsdPrimDefinition *primDef =
+            schemaReg.FindAppliedAPIPrimDefinition(schemaName)) {
+        primSpec = primDef->GetSchemaPrimSpec();
     }
     // Is this a typed schema?
-    else if (schemaType.IsA<UsdSchemaBase>()) {
+    else if (const UsdPrimDefinition *primDef =
+             schemaReg.FindConcretePrimDefinition(schemaName)) {
         // XXX
         // We currently require an exact type match instead of the polymorphic
         // behavior that actual USD schema classes implement. This is because
@@ -216,7 +208,7 @@ UsdMayaAdaptor::GetSchemaByName(const TfToken& schemaName) const
         const TfToken objectTypeName = GetUsdTypeName();
         if (schemaName == objectTypeName) {
             // There's an exact MFn::Type match? Easy-peasy.
-            return SchemaAdaptor(_handle.object(), primDef);
+            primSpec = primDef->GetSchemaPrimSpec();
         }
         else {
             // If no match, do not allow usage of the typed-schema adaptor
@@ -224,6 +216,45 @@ UsdMayaAdaptor::GetSchemaByName(const TfToken& schemaName) const
             // will use the adaptor mechanism to handle this type.
             return SchemaAdaptor();
         }
+    }
+#else
+    // Get the schema's TfType; its name should be registered as an alias.
+    const TfType schemaType =
+            TfType::Find<UsdSchemaBase>().FindDerivedByName(schemaName);
+
+    // Is this an API schema?
+    if (schemaType.IsA<UsdAPISchemaBase>()) {
+        primSpec =
+            UsdSchemaRegistry::GetInstance().GetPrimDefinition(schemaName);
+    }
+    // Is this a typed schema?
+    else if (schemaType.IsA<UsdSchemaBase>()) {
+        // XXX
+        // We currently require an exact type match instead of the polymorphic
+        // behavior that actual USD schema classes implement. This is because
+        // we can't currently get the prim definition from the schema registry
+        // for non-concrete schemas like Imageable (see bug 160436). Ideally,
+        // once that's resolved, we would cache a mapping of Maya types to all
+        // compatible USD type names based on schema inheritance.
+        // (In that future world, we'll also want to special case some schemas
+        // like UsdGeomImageable to be "compatible" with all Maya nodes.)
+        const TfToken objectTypeName = GetUsdTypeName();
+        if (schemaName == objectTypeName) {
+            // There's an exact MFn::Type match? Easy-peasy.
+            primSpec =
+                UsdSchemaRegistry::GetInstance().GetPrimDefinition(schemaName);
+        }
+        else {
+            // If no match, do not allow usage of the typed-schema adaptor
+            // mechanism. The importer/exporter have not declared that they
+            // will use the adaptor mechanism to handle this type.
+            return SchemaAdaptor();
+        }
+    }
+#endif
+
+    if (primSpec) {
+        return SchemaAdaptor(_handle.object(), primSpec);
     }
 
     // We shouldn't be able to reach this (everything is either typed or API).
@@ -301,9 +332,22 @@ UsdMayaAdaptor::ApplySchemaByName(
         return SchemaAdaptor();
     }
 
+#if USD_VERSION_NUM > 2002
+    // Get the "apply" schema definition. If it's registered, there should be a 
+    // def.
+    const UsdPrimDefinition *primDef = 
+        UsdSchemaRegistry::GetInstance().FindAppliedAPIPrimDefinition(schemaName);
+    if (!primDef) {
+        TF_CODING_ERROR("'%s' is not an applied API schema",
+                schemaName.GetText());
+        return SchemaAdaptor();
+    }
+
+    SdfPrimSpecHandle primSpec = primDef->GetSchemaPrimSpec();
+#else 
     // Get the schema's TfType; its name should be registered as an alias.
     const TfType schemaType =
-            TfType::Find<UsdSchemaBase>().FindDerivedByName(schemaName);
+        TfType::Find<UsdSchemaBase>().FindDerivedByName(schemaName);
 
     // Make sure that this is an API schema. Only API schemas can be applied.
     if (!schemaType.IsA<UsdAPISchemaBase>()) {
@@ -320,13 +364,11 @@ UsdMayaAdaptor::ApplySchemaByName(
     }
 
     // Get the schema definition. If it's registered, there should be a def.
-    SdfPrimSpecHandle primDef =
-#if USD_VERSION_NUM > 2002
-        UsdSchemaRegistry::GetInstance().GetSchemaPrimSpec(schemaName);
-#else
+    SdfPrimSpecHandle primSpec =
         UsdSchemaRegistry::GetInstance().GetPrimDefinition(schemaName);
 #endif
-    if (!primDef) {
+
+    if (!primSpec) {
         TF_CODING_ERROR("Can't find schema definition for name '%s'",
                 schemaName.GetText());
         return SchemaAdaptor();
@@ -343,7 +385,7 @@ UsdMayaAdaptor::ApplySchemaByName(
                 modifier);
     }
 
-    return SchemaAdaptor(_handle.object(), primDef);
+    return SchemaAdaptor(_handle.object(), primSpec);
 }
 
 void
