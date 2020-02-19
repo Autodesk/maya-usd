@@ -73,6 +73,14 @@ ProxyShapeHierarchyHandler::Ptr g_ProxyHandler;
 
 bool InPathChange::fInPathChange = false;
 
+void refreshStages()
+{
+	if(g_StagesSubject)
+	{
+		g_StagesSubject->afterOpen();
+	}
+}
+
 //------------------------------------------------------------------------------
 // Functions
 //------------------------------------------------------------------------------

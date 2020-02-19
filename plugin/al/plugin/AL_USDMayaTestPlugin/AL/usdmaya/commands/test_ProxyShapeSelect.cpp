@@ -26,9 +26,49 @@
 
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/camera.h"
+#include "mayaUsd/nodes/proxyShapePlugin.h"
+
+#if defined(WANT_UFE_BUILD)
+#include <ufe/path.h>
+#include <ufe/globalSelection.h>
+#include <ufe/observableSelection.h>
+#endif
 
 using AL::maya::test::buildTempPath;
 
+namespace {
+
+bool isAlive(AL::usdmaya::nodes::ProxyShape* proxy, SdfPath path) 
+{
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    return proxy->isRequiredPath(path);
+  }
+
+  auto selection = Ufe::GlobalSelection::get();
+  for(auto it : *selection)
+  {
+    auto str = it->path().string();
+    if(str.find(path.GetText()) != std::string::npos)
+      return true;
+  }
+
+  return false;
+}
+
+bool isSelected(AL::usdmaya::nodes::ProxyShape* proxy, SdfPath path) 
+{
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    return proxy->isRequiredPath(path);
+  }
+
+  auto proxyShapePath = proxy->ufePath();
+  Ufe::PathSegment ps_usd(path.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
+  auto selection = Ufe::GlobalSelection::get();
+  return selection->contains(proxyShapePath + ps_usd);
+}
+} // anon
 
 TEST(ProxyShapeSelect, selectNode1)
 {
@@ -57,28 +97,52 @@ TEST(ProxyShapeSelect, selectNode1)
 
   auto compareNodes = [] (const SdfPathVector& paths)
   {
-    MSelectionList sl;
-    MGlobal::getActiveSelectionList(sl);
-    EXPECT_EQ(sl.length(), paths.size());
-    for(uint32_t i = 0; i < sl.length(); ++i)
+    if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
     {
-      MObject obj;
-      sl.getDependNode(i, obj);
-      MFnDependencyNode fn(obj);
-      MStatus status;
-      MPlug plug = fn.findPlug("primPath", &status);
-      EXPECT_EQ(MStatus(MS::kSuccess), status);
-      MString pathName = plug.asString();
-      bool found = false;
-      for(uint32_t j = 0; j < paths.size(); ++j)
+      MSelectionList sl;
+      MGlobal::getActiveSelectionList(sl);
+      EXPECT_EQ(sl.length(), paths.size());
+
+      for(uint32_t i = 0; i < sl.length(); ++i)
       {
-        if(pathName == paths[j].GetText())
+        MObject obj;
+        sl.getDependNode(i, obj);
+        MFnDependencyNode fn(obj);
+        MStatus status;
+        MPlug plug = fn.findPlug("primPath", &status);
+        EXPECT_EQ(MStatus(MS::kSuccess), status);
+        MString pathName = plug.asString();
+        bool found = false;
+        for(uint32_t j = 0; j < paths.size(); ++j)
         {
-          found = true;
-          break;
+          if(pathName == paths[j].GetText())
+          {
+            found = true;
+            break;
+          }
         }
+        EXPECT_TRUE(found);
       }
-      EXPECT_TRUE(found);
+    }
+    else
+    {
+      auto selection = Ufe::GlobalSelection::get();
+      for(auto it : *selection)
+      {
+        bool found = false;
+        for(uint32_t j = 0; j < paths.size(); ++j)
+        {
+          auto str = it->path().string();
+          auto index = str.find_first_of('/');
+
+          if(std::string(str.c_str() + index) == paths[j].GetText())
+          {
+            found = true;
+            break;
+          }
+        }
+        EXPECT_TRUE(found);
+      }
     }
   };
 
@@ -96,6 +160,7 @@ TEST(ProxyShapeSelect, selectNode1)
   MObject xform = fn.create("transform");
   MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
   MString shapeName = fn.name();
+ 
 
   AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
 
@@ -109,28 +174,35 @@ TEST(ProxyShapeSelect, selectNode1)
   MSelectionList sl;
 
   EXPECT_EQ(1u, results.length());
-  EXPECT_EQ(MString("|transform1|root|hip1|knee1|ankle1|ltoe1"), results[0]);
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    EXPECT_EQ(MString("|transform1|root|hip1|knee1|ankle1|ltoe1"), results[0]);
+  }
+  else
+  {
+    EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip1/knee1/ankle1/ltoe1"), results[0]);
+  }
   results.clear();
 
   // make sure the path is contained in the selected paths (for hydra selection)
   EXPECT_EQ(1u, proxy->selectedPaths().size());
   EXPECT_EQ(1u, proxy->selectedPaths().count(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip1/knee1/ankle1/ltoe1")});
 
 
   // make sure undo clears the previous info
   MGlobal::executeCommand("undo", false, true);
   EXPECT_EQ(0u, proxy->selectedPaths().size());
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   MGlobal::getActiveSelectionList(sl);
   EXPECT_EQ(0u, sl.length());
 
@@ -140,11 +212,11 @@ TEST(ProxyShapeSelect, selectNode1)
 
   EXPECT_EQ(1u, proxy->selectedPaths().size());
   EXPECT_EQ(1u, proxy->selectedPaths().count(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip1/knee1/ankle1/ltoe1")});
 
   // So now we have a single item selected. Let's see if we can replace this selection list
@@ -152,8 +224,16 @@ TEST(ProxyShapeSelect, selectNode1)
   // should be selected
   MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip2/knee2/ankle2/ltoe2\" -pp \"/root/hip2/knee2/ankle2/rtoe2\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
   EXPECT_EQ(2u, results.length());
-  EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|ltoe2"), results[0]);
-  EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|rtoe2"), results[1]);
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|ltoe2"), results[0]);
+    EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|rtoe2"), results[1]);
+  }
+  else
+  {
+    EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/ltoe2"), results[0]);
+    EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/rtoe2"), results[1]);
+  }
   results.clear();
 
   EXPECT_EQ(2u, proxy->selectedPaths().size());
@@ -176,16 +256,16 @@ TEST(ProxyShapeSelect, selectNode1)
 
   EXPECT_EQ(1u, proxy->selectedPaths().size());
   EXPECT_EQ(1u, proxy->selectedPaths().count(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
   compareNodes({SdfPath("/root/hip1/knee1/ankle1/ltoe1")});
 
   MGlobal::executeCommand("redo", false, true);
@@ -193,16 +273,16 @@ TEST(ProxyShapeSelect, selectNode1)
   EXPECT_EQ(2u, proxy->selectedPaths().size());
   EXPECT_EQ(1u, proxy->selectedPaths().count(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
   EXPECT_EQ(1u, proxy->selectedPaths().count(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/ltoe2"), SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
   // now attempt to clear the selection list
@@ -210,16 +290,16 @@ TEST(ProxyShapeSelect, selectNode1)
   EXPECT_EQ(0u, results.length());
 
   EXPECT_EQ(0u, proxy->selectedPaths().size());
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   MGlobal::getActiveSelectionList(sl);
   EXPECT_EQ(0u, sl.length());
 
@@ -229,31 +309,31 @@ TEST(ProxyShapeSelect, selectNode1)
   EXPECT_EQ(2u, proxy->selectedPaths().size());
   EXPECT_EQ(1u, proxy->selectedPaths().count(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
   EXPECT_EQ(1u, proxy->selectedPaths().count(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/ltoe2"), SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
   MGlobal::executeCommand("redo", false, true);
 
   EXPECT_EQ(0u, proxy->selectedPaths().size());
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   MGlobal::getActiveSelectionList(sl);
   EXPECT_EQ(0u, sl.length());
 }
@@ -286,28 +366,52 @@ TEST(ProxyShapeSelect, selectNode2)
 
   auto compareNodes = [] (const SdfPathVector& paths)
   {
-    MSelectionList sl;
-    MGlobal::getActiveSelectionList(sl);
-    EXPECT_EQ(sl.length(), paths.size());
-    for(uint32_t i = 0; i < sl.length(); ++i)
+    if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
     {
-      MObject obj;
-      sl.getDependNode(i, obj);
-      MFnDependencyNode fn(obj);
-      MStatus status;
-      MPlug plug = fn.findPlug("primPath", &status);
-      EXPECT_EQ(MStatus(MS::kSuccess), status);
-      MString pathName = plug.asString();
-      bool found = false;
-      for(uint32_t j = 0; j < paths.size(); ++j)
+      MSelectionList sl;
+      MGlobal::getActiveSelectionList(sl);
+      EXPECT_EQ(sl.length(), paths.size());
+
+      for(uint32_t i = 0; i < sl.length(); ++i)
       {
-        if(pathName == paths[j].GetText())
+        MObject obj;
+        sl.getDependNode(i, obj);
+        MFnDependencyNode fn(obj);
+        MStatus status;
+        MPlug plug = fn.findPlug("primPath", &status);
+        EXPECT_EQ(MStatus(MS::kSuccess), status);
+        MString pathName = plug.asString();
+        bool found = false;
+        for(uint32_t j = 0; j < paths.size(); ++j)
         {
-          found = true;
-          break;
+          if(pathName == paths[j].GetText())
+          {
+            found = true;
+            break;
+          }
         }
+        EXPECT_TRUE(found);
       }
-      EXPECT_TRUE(found);
+    }
+    else
+    {
+      auto selection = Ufe::GlobalSelection::get();
+      for(auto it : *selection)
+      {
+        bool found = false;
+        for(uint32_t j = 0; j < paths.size(); ++j)
+        {
+          auto str = it->path().string();
+          auto index = str.find_first_of('/');
+
+          if(std::string(str.c_str() + index) == paths[j].GetText())
+          {
+            found = true;
+            break;
+          }
+        }
+        EXPECT_TRUE(found);
+      }
     }
   };
 
@@ -341,96 +445,110 @@ TEST(ProxyShapeSelect, selectNode2)
   // should be selected
   MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -a -pp \"/root/hip2/knee2/ankle2/ltoe2\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
   EXPECT_EQ(1u, results.length());
-  EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|ltoe2"), results[0]);
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|ltoe2"), results[0]);
+  }
+  else
+  {
+    EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/ltoe2"), results[0]);
+  }
   results.clear();
 
   EXPECT_EQ(1u, proxy->selectedPaths().size());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/ltoe2")});
 
   MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -a -pp \"/root/hip2/knee2/ankle2/rtoe2\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
   EXPECT_EQ(1u, results.length());
-  EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|rtoe2"), results[0]);
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|rtoe2"), results[0]);
+  }
+  else
+  {
+    EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/rtoe2"), results[0]);
+  }
   results.clear();
 
   EXPECT_EQ(2u, proxy->selectedPaths().size());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/ltoe2"), SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
   MGlobal::executeCommand("undo", false, true);
 
   EXPECT_EQ(1u, proxy->selectedPaths().size());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/ltoe2")});
 
   MGlobal::executeCommand("undo", false, true);
 
   EXPECT_EQ(0u, proxy->selectedPaths().size());
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   MGlobal::getActiveSelectionList(sl);
   EXPECT_EQ(0u, sl.length());
 
   MGlobal::executeCommand("redo", false, true);
 
   EXPECT_EQ(1u, proxy->selectedPaths().size());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/ltoe2")});
 
 
   MGlobal::executeCommand("redo", false, true);
 
   EXPECT_EQ(2u, proxy->selectedPaths().size());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/ltoe2"), SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
   MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -d -pp \"/root/hip2/knee2/ankle2/ltoe2\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
@@ -438,16 +556,16 @@ TEST(ProxyShapeSelect, selectNode2)
   results.clear();
 
   EXPECT_EQ(1u, proxy->selectedPaths().size());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
   MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -d -pp \"/root/hip2/knee2/ankle2/rtoe2\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
@@ -455,77 +573,77 @@ TEST(ProxyShapeSelect, selectNode2)
   results.clear();
 
   EXPECT_EQ(0u, proxy->selectedPaths().size());
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   MGlobal::getActiveSelectionList(sl);
   EXPECT_EQ(0u, sl.length());
 
   MGlobal::executeCommand("undo", false, true);
 
   EXPECT_EQ(1u, proxy->selectedPaths().size());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
   MGlobal::executeCommand("undo", false, true);
 
   EXPECT_EQ(2u, proxy->selectedPaths().size());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/ltoe2"), SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
   MGlobal::executeCommand("redo", false, true);
 
   EXPECT_EQ(1u, proxy->selectedPaths().size());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
   MGlobal::executeCommand("redo", false, true);
 
   EXPECT_EQ(0u, proxy->selectedPaths().size());
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   MGlobal::getActiveSelectionList(sl);
   EXPECT_EQ(0u, sl.length());
 
@@ -560,28 +678,52 @@ TEST(ProxyShapeSelect, selectNode3)
 
   auto compareNodes = [] (const SdfPathVector& paths)
   {
-    MSelectionList sl;
-    MGlobal::getActiveSelectionList(sl);
-    EXPECT_EQ(sl.length(), paths.size());
-    for(uint32_t i = 0; i < sl.length(); ++i)
+    if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
     {
-      MObject obj;
-      sl.getDependNode(i, obj);
-      MFnDependencyNode fn(obj);
-      MStatus status;
-      MPlug plug = fn.findPlug("primPath", &status);
-      EXPECT_EQ(MStatus(MS::kSuccess), status);
-      MString pathName = plug.asString();
-      bool found = false;
-      for(uint32_t j = 0; j < paths.size(); ++j)
+      MSelectionList sl;
+      MGlobal::getActiveSelectionList(sl);
+      EXPECT_EQ(sl.length(), paths.size());
+
+      for(uint32_t i = 0; i < sl.length(); ++i)
       {
-        if(pathName == paths[j].GetText())
+        MObject obj;
+        sl.getDependNode(i, obj);
+        MFnDependencyNode fn(obj);
+        MStatus status;
+        MPlug plug = fn.findPlug("primPath", &status);
+        EXPECT_EQ(MStatus(MS::kSuccess), status);
+        MString pathName = plug.asString();
+        bool found = false;
+        for(uint32_t j = 0; j < paths.size(); ++j)
         {
-          found = true;
-          break;
+          if(pathName == paths[j].GetText())
+          {
+            found = true;
+            break;
+          }
         }
+        EXPECT_TRUE(found);
       }
-      EXPECT_TRUE(found);
+    }
+    else
+    {
+      auto selection = Ufe::GlobalSelection::get();
+      for(auto it : *selection)
+      {
+        bool found = false;
+        for(uint32_t j = 0; j < paths.size(); ++j)
+        {
+          auto str = it->path().string();
+          auto index = str.find_first_of('/');
+
+          if(std::string(str.c_str() + index) == paths[j].GetText())
+          {
+            found = true;
+            break;
+          }
+        }
+        EXPECT_TRUE(found);
+      }
     }
   };
 
@@ -622,16 +764,16 @@ TEST(ProxyShapeSelect, selectNode3)
   results.clear();
 
   EXPECT_EQ(1u, proxy->selectedPaths().size());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
   MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -d -pp \"/root/hip2/knee2/ankle2/rtoe2\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
@@ -639,97 +781,105 @@ TEST(ProxyShapeSelect, selectNode3)
   results.clear();
 
   EXPECT_EQ(0u, proxy->selectedPaths().size());
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   MGlobal::getActiveSelectionList(sl);
   EXPECT_EQ(0u, sl.length());
 
   MGlobal::executeCommand("undo", false, true);
 
   EXPECT_EQ(1u, proxy->selectedPaths().size());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
   MGlobal::executeCommand("undo", false, true);
 
   EXPECT_EQ(2u, proxy->selectedPaths().size());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/ltoe2"), SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
   MGlobal::executeCommand("redo", false, true);
 
   EXPECT_EQ(1u, proxy->selectedPaths().size());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
   MGlobal::executeCommand("redo", false, true);
 
   EXPECT_EQ(0u, proxy->selectedPaths().size());
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   MGlobal::getActiveSelectionList(sl);
   EXPECT_EQ(0u, sl.length());
 
   MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -tgl -pp \"/root/hip2/knee2/ankle2/rtoe2\" -pp \"/root/hip2/knee2/ankle2/ltoe2\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
   EXPECT_EQ(2u, results.length());
-  EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|rtoe2"), results[0]);
-  EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|ltoe2"), results[1]);
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|rtoe2"), results[0]);
+    EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|ltoe2"), results[1]);
+  }
+  else
+  {
+    EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/rtoe2"), results[0]);
+    EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/ltoe2"), results[1]);
+  }
   results.clear();
 
   EXPECT_EQ(2u, proxy->selectedPaths().size());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/ltoe2"), SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
   MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -tgl -pp \"/root/hip2/knee2/ankle2/rtoe2\" -pp \"/root/hip2/knee2/ankle2/ltoe2\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
@@ -737,78 +887,78 @@ TEST(ProxyShapeSelect, selectNode3)
   results.clear();
 
   EXPECT_EQ(0u, proxy->selectedPaths().size());
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   MGlobal::getActiveSelectionList(sl);
   EXPECT_EQ(0u, sl.length());
 
   MGlobal::executeCommand("undo", false, true);
 
   EXPECT_EQ(2u, proxy->selectedPaths().size());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/ltoe2"), SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
   MGlobal::executeCommand("undo", false, true);
 
   EXPECT_EQ(0u, proxy->selectedPaths().size());
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   MGlobal::getActiveSelectionList(sl);
   EXPECT_EQ(0u, sl.length());
 
   MGlobal::executeCommand("redo", false, true);
 
   EXPECT_EQ(2u, proxy->selectedPaths().size());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/ltoe2"), SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
   MGlobal::executeCommand("redo", false, true);
 
   EXPECT_EQ(0u, proxy->selectedPaths().size());
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   MGlobal::getActiveSelectionList(sl);
   EXPECT_EQ(0u, sl.length());
 }
@@ -850,24 +1000,40 @@ TEST(ProxyShapeSelect, selectParent)
   // select a single path
   MGlobal::executeCommand("select -cl;");
   MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip1/knee1/ankle1/ltoe1\" \"AL_usdmaya_ProxyShape1\"", false, true);
-  MSelectionList sl;
-  MGlobal::getActiveSelectionList(sl);
-  EXPECT_EQ(1u, sl.length());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    MSelectionList sl;
+    MGlobal::getActiveSelectionList(sl);
+    EXPECT_EQ(1u, sl.length());
+  }
+  else
+  {
+    auto selection = Ufe::GlobalSelection::get();
+    EXPECT_EQ(1u, selection->size());
+  }
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
 
   MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip1/knee1/ankle1\" \"AL_usdmaya_ProxyShape1\"", false, true);
-  sl.clear();
-  MGlobal::getActiveSelectionList(sl);
-  EXPECT_EQ(1u, sl.length());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    MSelectionList sl;
+    MGlobal::getActiveSelectionList(sl);
+    EXPECT_EQ(1u, sl.length());
+  }
+  else
+  {
+    auto selection = Ufe::GlobalSelection::get();
+    EXPECT_EQ(1u, selection->size());
+  }
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
 }
 
 // make sure we can select a parent transform of a node that is already selected (via the maya select command)
@@ -907,24 +1073,40 @@ TEST(ProxyShapeSelect, selectParentViaMaya)
   // select a single path
   MGlobal::executeCommand("select -cl;");
   MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip1/knee1/ankle1/ltoe1\" \"AL_usdmaya_ProxyShape1\"", false, true);
-  MSelectionList sl;
-  MGlobal::getActiveSelectionList(sl);
-  EXPECT_EQ(1u, sl.length());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    MSelectionList sl;
+    MGlobal::getActiveSelectionList(sl);
+    EXPECT_EQ(1u, sl.length());
+  }
+  else
+  {
+    auto selection = Ufe::GlobalSelection::get();
+    EXPECT_EQ(1u, selection->size());
+  }
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
 
-  MGlobal::executeCommand("select -r \"ankle1\"", false, true);
-  sl.clear();
-  MGlobal::getActiveSelectionList(sl);
-  EXPECT_EQ(1u, sl.length());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip1/knee1/ankle1\" \"AL_usdmaya_ProxyShape1\"", false, true);
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    MSelectionList sl;
+    MGlobal::getActiveSelectionList(sl);
+    EXPECT_EQ(1u, sl.length());
+  }
+  else
+  {
+    auto selection = Ufe::GlobalSelection::get();
+    EXPECT_EQ(1u, selection->size());
+  }
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
 }
 
 // make sure we can select a parent transform of a node that is already selected (via the maya select command)
@@ -964,34 +1146,61 @@ TEST(ProxyShapeSelect, selectSamePathTwice)
   // select a single path
   MGlobal::executeCommand("select -cl;");
   MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip1/knee1/ankle1/ltoe1\" \"AL_usdmaya_ProxyShape1\"", false, true);
-  MSelectionList sl;
-  MGlobal::getActiveSelectionList(sl);
-  EXPECT_EQ(1u, sl.length());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    MSelectionList sl;
+    MGlobal::getActiveSelectionList(sl);
+    EXPECT_EQ(1u, sl.length());
+  }
+  else
+  {
+    auto selection = Ufe::GlobalSelection::get();
+    EXPECT_EQ(1u, selection->size());
+  }
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
 
   uint32_t selected = 0, required = 0, refCount = 0;
   proxy->getCounts(SdfPath("/root/hip1/knee1/ankle1/ltoe1"), selected, required, refCount);
-  EXPECT_EQ(1u, selected);
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    EXPECT_EQ(1u, selected);
+  }
+  else
+  {
+    EXPECT_EQ(0u, selected);
+  }
   EXPECT_EQ(0u, required);
   EXPECT_EQ(0u, refCount);
 
   MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip1/knee1/ankle1/ltoe1\" \"AL_usdmaya_ProxyShape1\"", false, true);
-  sl.clear();
-  MGlobal::getActiveSelectionList(sl);
-  EXPECT_EQ(1u, sl.length());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    MSelectionList sl;
+    MGlobal::getActiveSelectionList(sl);
+    EXPECT_EQ(1u, sl.length());
+  }
+  else
+  {
+    auto selection = Ufe::GlobalSelection::get();
+    EXPECT_EQ(1u, selection->size());
+  }
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
 
   selected = 0, required = 0, refCount = 0;
   proxy->getCounts(SdfPath("/root/hip1/knee1/ankle1/ltoe1"), selected, required, refCount);
-  EXPECT_EQ(1u, selected);
+  // no ref counts will be generated for selected UFE transforms
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    EXPECT_EQ(1u, selected);
+  }
   EXPECT_EQ(0u, required);
   EXPECT_EQ(0u, refCount);
 }
@@ -1034,34 +1243,57 @@ TEST(ProxyShapeSelect, selectSamePathTwiceViaMaya)
   // select a single path
   MGlobal::executeCommand("select -cl;");
   MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/root/hip1/knee1/ankle1/ltoe1\" \"AL_usdmaya_ProxyShape1\"", false, true);
-  MSelectionList sl;
-  MGlobal::getActiveSelectionList(sl);
-  EXPECT_EQ(1u, sl.length());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    MSelectionList sl;
+    MGlobal::getActiveSelectionList(sl);
+    EXPECT_EQ(1u, sl.length());
+  }
+  else
+  {
+    auto selection = Ufe::GlobalSelection::get();
+    EXPECT_EQ(1u, selection->size());
+  }
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
 
   uint32_t selected = 0, required = 0, refCount = 0;
   proxy->getCounts(SdfPath("/root/hip1/knee1/ankle1/ltoe1"), selected, required, refCount);
-  EXPECT_EQ(1u, selected);
+  // no ref counts will be generated for selected UFE transforms
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    EXPECT_EQ(1u, selected);
+  }
   EXPECT_EQ(0u, required);
   EXPECT_EQ(0u, refCount);
 
   MGlobal::executeCommand("select -r \"|transform1|root|hip1|knee1|ankle1|ltoe1\"", false, true);
-  sl.clear();
-  MGlobal::getActiveSelectionList(sl);
-  EXPECT_EQ(1u, sl.length());
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    MSelectionList sl;
+    MGlobal::getActiveSelectionList(sl);
+    EXPECT_EQ(1u, sl.length());
+  }
+  else
+  {
+    auto selection = Ufe::GlobalSelection::get();
+    EXPECT_EQ(1u, selection->size());
+  }
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
 
   selected = 0, required = 0, refCount = 0;
   proxy->getCounts(SdfPath("/root/hip1/knee1/ankle1/ltoe1"), selected, required, refCount);
-  EXPECT_EQ(1u, selected);
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    EXPECT_EQ(1u, selected);
+  }
   EXPECT_EQ(0u, required);
   EXPECT_EQ(0u, refCount);
 }
@@ -1081,30 +1313,57 @@ TEST(ProxyShapeSelect, repeatedSelection)
   };
 
   auto assertSelected = [](MString objName, const SdfPath& path, AL::usdmaya::nodes::ProxyShape *proxy) {
-    MSelectionList sl;
-    MGlobal::getActiveSelectionList(sl);
-    MStringArray selStrings;
-    sl.getSelectionStrings(selStrings);
-    ASSERT_EQ(1u, selStrings.length());
-    ASSERT_EQ(objName, selStrings[0]);
+    if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+    {
+      MSelectionList sl;
+      MGlobal::getActiveSelectionList(sl);
+      MStringArray selStrings;
+      sl.getSelectionStrings(selStrings);
+      ASSERT_EQ(1u, selStrings.length());
+      ASSERT_EQ(objName, selStrings[0]);
 
-    // Make sure it's only selected ONCE!
-    auto& selectedPaths = proxy->selectedPaths();
-    ASSERT_EQ(1u, selectedPaths.size());
-    size_t pathCount = 0;
-    for (auto& it : proxy->selectedPaths()) {
-      if (it == path) {
-        pathCount += 1;
+      // Make sure it's only selected ONCE!
+      auto& selectedPaths = proxy->selectedPaths();
+      ASSERT_EQ(1u, selectedPaths.size());
+      size_t pathCount = 0;
+      for (auto& it : proxy->selectedPaths()) {
+        if (it == path) {
+          pathCount += 1;
+        }
       }
+      ASSERT_EQ(1u, pathCount);
     }
-    ASSERT_EQ(1u, pathCount);
+    else
+    {
+      auto selection = Ufe::GlobalSelection::get();
+      size_t pathCount = 0;
+      for(auto it : *selection)
+      {
+        auto str = it->path().string();
+        auto index = str.find_first_of('/');
+
+        if(std::string(str.c_str() + index) == path.GetText())
+        {
+          ++pathCount;
+        }
+      }
+      EXPECT_EQ(1u, pathCount);
+    }
   };
 
   auto assertNothingSelected = [](AL::usdmaya::nodes::ProxyShape *proxy) {
-    MSelectionList sl;
-    MGlobal::getActiveSelectionList(sl);
-    ASSERT_EQ(0u, sl.length());
-    ASSERT_EQ(0u, proxy->selectedPaths().size());
+    if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+    {
+      MSelectionList sl;
+      MGlobal::getActiveSelectionList(sl);
+      ASSERT_EQ(0u, sl.length());
+      ASSERT_EQ(0u, proxy->selectedPaths().size());
+    }
+    else
+    {
+      auto selection = Ufe::GlobalSelection::get();
+      EXPECT_EQ(0u, selection->size());
+    }
   };
 
   const std::string temp_path = buildTempPath("AL_USDMayaTests_repeatedSelection.usda");
@@ -1188,19 +1447,37 @@ TEST(ProxyShapeSelect, deselectNode)
 
   auto assertSelected = [] (MString objName)
   {
-    MSelectionList sl;
-    MGlobal::getActiveSelectionList(sl);
-    MStringArray selStrings;
-    sl.getSelectionStrings(selStrings);
-    ASSERT_EQ(1u, selStrings.length());
-    ASSERT_EQ(objName, selStrings[0]);
+    if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+    {
+      MSelectionList sl;
+      MGlobal::getActiveSelectionList(sl);
+      MStringArray selStrings;
+      sl.getSelectionStrings(selStrings);
+      ASSERT_EQ(1u, selStrings.length());
+      ASSERT_EQ(objName, selStrings[0]);
+    }
+    else
+    {
+      auto selection = Ufe::GlobalSelection::get();
+      ASSERT_EQ(1u, selection->size());
+      auto str = (*selection->begin())->path().string();
+      EXPECT_TRUE(str.find(objName.asChar()) != std::string::npos);
+    }
   };
 
   auto assertNothingSelected = [] ()
   {
-    MSelectionList sl;
-    MGlobal::getActiveSelectionList(sl);
-    ASSERT_EQ(0u, sl.length());
+    if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+    {
+      MSelectionList sl;
+      MGlobal::getActiveSelectionList(sl);
+      ASSERT_EQ(0u, sl.length());
+    }
+    else
+    {
+      auto selection = Ufe::GlobalSelection::get();
+      ASSERT_EQ(0u, selection->size());
+    }
   };
 
   const std::string temp_path = buildTempPath("AL_USDMayaTests_deselectNode.usda");
@@ -1361,7 +1638,14 @@ TEST(ProxyShapeSelect, pseudoRootSelect)
 
   MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
   EXPECT_EQ(1u, results.length());
-  EXPECT_EQ(MString("|transform1|AL_usdmaya_ProxyShape1"), results[0]);
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+  {
+    EXPECT_EQ(MString("|transform1|AL_usdmaya_ProxyShape1"), results[0]);
+  }
+  else
+  {
+    EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1"), results[0]);
+  }
   results.clear();
 
   // State 1: proxy selected

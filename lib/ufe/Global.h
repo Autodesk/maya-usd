@@ -38,5 +38,9 @@ MStatus finalize();
 MAYAUSD_CORE_PUBLIC
 Ufe::Rtid getUsdRunTimeId();
 
+//! Force the UFE internals to refresh after file open
+MAYAUSD_CORE_PUBLIC
+void refreshStages();
+
 } // namespace ufe
 } // namespace MayaUsd

@@ -1135,6 +1135,12 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
   {
     return status;
   }
+  catch(std::exception& e)
+  {
+    MStatus status = MS::kFailure;
+    status.perror( MString("(ProxyShapeSelect::doIt) : ") + e.what());
+    return status;
+  }
   catch(...)
   {
     MStatus status = MS::kFailure;
