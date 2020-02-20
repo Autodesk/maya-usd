@@ -47,6 +47,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include <chrono>
 #include <exception>
 
+#include "mayaUsd/render/px_vp20/utils.h"
 #include "../../usd/hdMaya/delegates/delegateRegistry.h"
 #include "../../usd/hdMaya/delegates/sceneDelegate.h"
 
@@ -106,48 +107,6 @@ private:
 };
 
 #endif // WANT_UFE_BUILD
-
-/// Simple RAII class to save uniform buffer bindings, to deal with a maya
-/// issue.
-///
-/// As originally explained by Pixar in their usdmaya plugin:
-///
-/// XXX: When Maya is using OpenGL Core Profile as the rendering engine (in
-/// either compatibility or strict mode), batch renders like those done in
-/// the "Render View" window or through the ogsRender command do not
-/// properly track uniform buffer binding state. This was causing issues
-/// where the first batch render performed would look correct, but then all
-/// subsequent renders done in that Maya session would be completely black
-/// (no alpha), even if the frame contained only Maya-native geometry or if
-/// a new scene was created/opened.
-///
-/// To avoid this problem, we need to save and restore Maya's bindings
-/// across Hydra calls. We try not to bog down performance by saving and
-/// restoring *all* GL_MAX_UNIFORM_BUFFER_BINDINGS possible bindings, so
-/// instead we only do just enough to avoid issues. Empirically, the
-/// problematic binding has been the material binding at index 4.
-class UBOBindingsSaver {
-public:
-    static constexpr size_t UNIFORM_BINDINGS_TO_SAVE = 5u;
-
-    UBOBindingsSaver() {
-        for (size_t i = 0u; i < _uniformBufferBindings.size(); ++i) {
-            glGetIntegeri_v(
-                GL_UNIFORM_BUFFER_BINDING, (GLuint)i,
-                &_uniformBufferBindings[i]);
-        }
-    }
-
-    ~UBOBindingsSaver() {
-        for (size_t i = 0u; i < _uniformBufferBindings.size(); ++i) {
-            glBindBufferBase(
-                GL_UNIFORM_BUFFER, (GLuint)i, _uniformBufferBindings[i]);
-        }
-    }
-
-private:
-    std::array<GLint, UNIFORM_BINDINGS_TO_SAVE> _uniformBufferBindings;
-};
 
 } // namespace
 
@@ -420,7 +379,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         _InitHydraResources();
     }
 
-    UBOBindingsSaver bindingsSaver;
+    GLUniformBufferBindingsSaver bindingsSaver;
 
     _SelectionChanged();
 
