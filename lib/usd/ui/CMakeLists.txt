@@ -18,10 +18,6 @@
 
 project(mayaUsdUI)
 
-if (POLICY CMP0074)
-    cmake_policy(SET CMP0074 OLD)
-endif()
-
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
@@ -29,22 +25,26 @@ set(CMAKE_AUTOUIC ON)
 add_library(${PROJECT_NAME} SHARED
 	cmds/USDImportDialogCmd.cpp
 	factories/TreeModelFactory.cpp
+	images/ui.qrc
 	views/ItemDelegate.cpp
 	views/TreeItem.cpp
 	views/TreeModel.cpp
 	views/USDImportDialog.cpp
 	views/USDImportDialog.ui
+	views/USDQtUtil.cpp
 )
 
 list(APPEND mayaUsdUI_headers
 	api.h
 	cmds/USDImportDialogCmd.h
 	factories/TreeModelFactory.h
+	views/IMayaMQtUtil.h
 	views/IUSDImportView.h
 	views/ItemDelegate.h
 	views/TreeItem.h
 	views/TreeModel.h
 	views/USDImportDialog.h
+	views/USDQtUtil.h
 )
 
 # Promote headers

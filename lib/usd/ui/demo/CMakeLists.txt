@@ -18,10 +18,6 @@
 
 project(testMayaUsdUI)
 
-if (POLICY CMP0074)
-    cmake_policy(SET CMP0074 OLD)
-endif()
-
 add_executable(${PROJECT_NAME}
 	testMayaUsdUI.cpp
 )
@@ -35,6 +31,7 @@ target_link_libraries(${PROJECT_NAME}
 	PRIVATE
 		# For now including this so we get boost path added.
 		usd
+		mayaUsd
 		mayaUsdUI
 		Qt5::Core
 		Qt5::Gui
