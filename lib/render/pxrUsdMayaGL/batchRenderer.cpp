@@ -993,7 +993,7 @@ UsdMayaGLBatchRenderer::TestIntersectionCustomPrimFilter(
     // Differs from viewport implementations in that it doesn't rely on
     // _ComputeSelection being called first.
 
-    UBOBindingsSaver bindingsSaver;
+    GLUniformBufferBindingsSaver bindingsSaver;
 
     return _TestIntersection(primFilter.collection,
                              primFilter.renderTags,
@@ -1198,7 +1198,7 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
 
     _selectResults.clear();
 
-    UBOBindingsSaver bindingsSaver;
+    GLUniformBufferBindingsSaver bindingsSaver;
 
     for (const PxrMayaHdPrimFilter& primFilter : primFilters) {
         TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
@@ -1298,7 +1298,7 @@ UsdMayaGLBatchRenderer::_Render(
                  GL_DEPTH_BUFFER_BIT |
                  GL_VIEWPORT_BIT);
 
-    UBOBindingsSaver bindingsSaver;
+    GLUniformBufferBindingsSaver bindingsSaver;
 
     // hydra orients all geometry during topological processing so that
     // front faces have ccw winding. We disable culling because culling

@@ -1082,7 +1082,7 @@ px_vp20Utils::OutputDisplayStatusToStream(
 }
 
 
-UBOBindingsSaver::UBOBindingsSaver()
+GLUniformBufferBindingsSaver::GLUniformBufferBindingsSaver()
 {
     for (size_t i = 0u; i < _uniformBufferBindings.size(); ++i) {
         glGetIntegeri_v(
@@ -1092,7 +1092,7 @@ UBOBindingsSaver::UBOBindingsSaver()
     }
 }
 
-UBOBindingsSaver::~UBOBindingsSaver()
+GLUniformBufferBindingsSaver::~GLUniformBufferBindingsSaver()
 {
     for (size_t i = 0u; i < _uniformBufferBindings.size(); ++i) {
         glBindBufferBase(

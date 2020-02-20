@@ -379,7 +379,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         _InitHydraResources();
     }
 
-    UBOBindingsSaver bindingsSaver;
+    GLUniformBufferBindingsSaver bindingsSaver;
 
     _SelectionChanged();
 

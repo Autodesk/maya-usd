@@ -135,16 +135,16 @@ class px_vp20Utils
 /// possible bindings, so instead we only do just enough to avoid issues.
 /// Empirically, the problematic binding has been the material binding at
 /// index 4.
-class UBOBindingsSaver
+class GLUniformBufferBindingsSaver
 {
     public:
         static constexpr size_t UNIFORM_BINDINGS_TO_SAVE = 5u;
 
         MAYAUSD_CORE_PUBLIC
-        UBOBindingsSaver();
+        GLUniformBufferBindingsSaver();
 
         MAYAUSD_CORE_PUBLIC
-        ~UBOBindingsSaver();
+        ~GLUniformBufferBindingsSaver();
 
     private:
         std::array<GLint, UNIFORM_BINDINGS_TO_SAVE> _uniformBufferBindings;
