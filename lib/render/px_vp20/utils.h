@@ -138,8 +138,6 @@ class px_vp20Utils
 class GLUniformBufferBindingsSaver
 {
     public:
-        static constexpr size_t UNIFORM_BINDINGS_TO_SAVE = 5u;
-
         MAYAUSD_CORE_PUBLIC
         GLUniformBufferBindingsSaver();
 
@@ -147,6 +145,8 @@ class GLUniformBufferBindingsSaver
         ~GLUniformBufferBindingsSaver();
 
     private:
+        static constexpr size_t UNIFORM_BINDINGS_TO_SAVE = 5u;
+
         std::array<GLint, UNIFORM_BINDINGS_TO_SAVE> _uniformBufferBindings;
 };
 
