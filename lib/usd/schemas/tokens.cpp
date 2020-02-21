@@ -13,24 +13,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "base/debugCodes.h"
-
-#include "pxr/base/tf/registryManager.h"
+#include "tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-TF_REGISTRY_FUNCTION(TfDebug)
+MayaUsd_SchemasTokensType::MayaUsd_SchemasTokensType() :
+    mayaNamespace("mayaNamespace", TfToken::Immortal),
+    mayaReference("mayaReference", TfToken::Immortal),
+    allTokens({
+        mayaNamespace,
+        mayaReference
+    })
 {
-    TF_DEBUG_ENVIRONMENT_SYMBOL(PXRUSDMAYA_REGISTRY,
-            "UsdMaya registration for usd types.");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(PXRUSDMAYA_DIAGNOSTICS,
-            "Debugging of the the diagnostics batching system in UsdMaya.");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(PXRUSDMAYA_TRANSLATORS,
-            "Debugging of translators.");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USDMAYA_PROXYSHAPEBASE,
-            "Base proxy shape evaluation");
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+TfStaticData<MayaUsd_SchemasTokensType> MayaUsd_SchemasTokens;
 
+PXR_NAMESPACE_CLOSE_SCOPE

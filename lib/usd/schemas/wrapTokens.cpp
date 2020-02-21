@@ -52,23 +52,10 @@ _AddToken(T& cls, const char* name, const TfToken& token)
 
 } // anonymous
 
-void wrapAL_USDMayaSchemasTokens()
+void wrapMayaUsd_SchemasTokens()
 {
-    boost::python::class_<AL_USDMayaSchemasTokensType, boost::noncopyable>
+    boost::python::class_<MayaUsd_SchemasTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
-    _AddToken(cls, "animationEndFrame", AL_USDMayaSchemasTokens->animationEndFrame);
-    _AddToken(cls, "animationStartFrame", AL_USDMayaSchemasTokens->animationStartFrame);
-    _AddToken(cls, "currentFrame", AL_USDMayaSchemasTokens->currentFrame);
-    _AddToken(cls, "endFrame", AL_USDMayaSchemasTokens->endFrame);
-    _AddToken(cls, "lock", AL_USDMayaSchemasTokens->lock);
-    _AddToken(cls, "lock_inherited", AL_USDMayaSchemasTokens->lock_inherited);
-    _AddToken(cls, "lock_transform", AL_USDMayaSchemasTokens->lock_transform);
-    _AddToken(cls, "lock_unlocked", AL_USDMayaSchemasTokens->lock_unlocked);
-    _AddToken(cls, "mergedTransform", AL_USDMayaSchemasTokens->mergedTransform);
-    _AddToken(cls, "mergedTransform_unmerged", AL_USDMayaSchemasTokens->mergedTransform_unmerged);
-    _AddToken(cls, "selectability", AL_USDMayaSchemasTokens->selectability);
-    _AddToken(cls, "selectability_inherited", AL_USDMayaSchemasTokens->selectability_inherited);
-    _AddToken(cls, "selectability_selectable", AL_USDMayaSchemasTokens->selectability_selectable);
-    _AddToken(cls, "selectability_unselectable", AL_USDMayaSchemasTokens->selectability_unselectable);
-    _AddToken(cls, "startFrame", AL_USDMayaSchemasTokens->startFrame);
+    _AddToken(cls, "mayaNamespace", MayaUsd_SchemasTokens->mayaNamespace);
+    _AddToken(cls, "mayaReference", MayaUsd_SchemasTokens->mayaReference);
 }

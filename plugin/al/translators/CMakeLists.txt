@@ -1,4 +1,8 @@
-list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas mayaUsd gf plug tf)
+# MayaReference provides import translation for AL_usd_MayaReference.
+# As such, its AL_USDMAYA_DEFINE_TRANSLATOR does a
+# TfType::Find<AL_usd_MayaReference>, which requires AL_usd_MayaReference's
+# typeid.  We must therefore link against mayaUsd_Schemas.
+list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas mayaUsd mayaUsd_Schemas gf plug tf)
 
 set(DIRECTORY_PATH AL/usdmaya/fileio/translators)
 
