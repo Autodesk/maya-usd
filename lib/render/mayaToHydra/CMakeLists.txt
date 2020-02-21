@@ -29,20 +29,20 @@ target_include_directories(${TARGET_NAME} PRIVATE
 
 # rpath setup
 if(IS_MACOSX OR IS_LINUX) 
-    mayaUsd_init_rpath(rpath "${TARGET_NAME}")
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../../USD/lib")
+    mayaUsd_init_rpath(rpath "lib/maya")
+    if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
+    if (IS_LINUX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
+    endif()
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../Maya.app/Contents/MacOS")
+    endif()
     mayaUsd_add_rpath(rpath "../")
     mayaUsd_install_rpath(rpath ${TARGET_NAME})
-endif()
-
-if (IS_LINUX)
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../../USD/lib64")
-    endif()
 endif()
 
 target_compile_definitions(${TARGET_NAME} PRIVATE 
