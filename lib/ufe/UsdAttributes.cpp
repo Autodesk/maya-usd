@@ -233,7 +233,7 @@ Ufe::Attribute::Type UsdAttributes::getUfeTypeForAttribute(const PXR_NS::UsdAttr
 			if (iter->second == Ufe::Attribute::kEnumString)
 			{
 #if USD_VERSION_NUM > 2002
-				auto attrDefn = PXR_NS::UsdSchemaRegistry::GetSchemaAttributeSpec(fPrim.GetTypeName(), usdAttr.GetName());
+				auto attrDefn = fPrim.GetPrimDefinition().GetSchemaAttributeSpec(usdAttr.GetName());
 #else
 				auto attrDefn = PXR_NS::UsdSchemaRegistry::GetAttributeDefinition(fPrim.GetTypeName(), usdAttr.GetName());
 #endif
