@@ -34,6 +34,7 @@
 
 #include "../../fileio/primReaderRegistry.h"
 #include "../../fileio/translators/translatorMayaReference.h"
+#include "../schemas/ALMayaReference.h"
 #include "../schemas/MayaReference.h"
 
 #include "pxr/usd/usd/prim.h"
@@ -45,7 +46,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 
-PXRUSDMAYA_DEFINE_READER(AL_usd_MayaReference, args, context)
+PXRUSDMAYA_DEFINE_READER(MayaUsd_SchemasMayaReference, args, context)
+{
+    const UsdPrim& usdPrim = args.GetUsdPrim();
+    MObject parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
+    return UsdMayaTranslatorMayaReference::update(
+        usdPrim,
+        parentNode);
+}
+
+PXRUSDMAYA_DEFINE_READER(MayaUsd_SchemasALMayaReference, args, context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
     MObject parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);

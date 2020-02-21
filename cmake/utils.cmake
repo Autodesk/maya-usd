@@ -71,7 +71,7 @@ function(mayaUsd_find_python_module module)
                 "Location of Python module ${module}")
         endif(NOT _${module}_status)
     endif(NOT ${module_found})
-endfunction(mayaUsd_find_python_module)
+endfunction()
 
 # Initialize a variable to accumulate an rpath.  The origin is the
 # RUNTIME DESTINATION of the target.  If not absolute it's appended
@@ -158,10 +158,36 @@ function(mayaUsd_promoteMayaUsdHeader)
     configure_file(${srcFile} ${dstFile})
 endfunction()
 
+#
+# mayaUsd_promoteHeaderList(
+#                        [SUBDIR <optional sub-directory>])
+#                        [FILES <list of files>]
+#
+#   SUBDIR        - optional sub-directory in which to promote files.
+#   FILES         - list of files to promote.
+#
 function(mayaUsd_promoteHeaderList)
-    foreach(header ${ARGV})
+    cmake_parse_arguments(PREFIX 
+        ""          # options
+        "SUBDIR"    # one_value keywords
+        "HEADERS"   # multi_value keywords
+        ${ARGN}
+    )
+
+    set(DEST_DIR ${CMAKE_BINARY_DIR}/include/mayaUsd)
+    if(PREFIX_SUBDIR)
+        set(DEST_DIR ${DEST_DIR}/${PREFIX_SUBDIR})
+    endif()
+
+     if(PREFIX_HEADERS)
+        set(headerFiles ${PREFIX_HEADERS})
+    else()
+        message(FATAL_ERROR "HEADERS keyword is not specified.")
+    endif()
+
+    foreach(header ${headerFiles})
         set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/${header})
-        set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/${header})
+        set(dstFile ${DEST_DIR}/${header})
 
         set(content "#pragma once\n#include \"${srcFile}\"\n")
 
@@ -182,25 +208,30 @@ function(mayaUsd_promoteHeaderListWithSubdir)
     cmake_parse_arguments(PREFIX
         ""
         "SUBDIR" # one_value keywords
-        "HEADERS" # multi_value keywords
+        "HEADERS;BASE_PATH" # multi_value keywords
         ${ARGN}
     )
 
-    if(PREFIX_SUBDIR)
-        set(subDir ${PREFIX_SUBDIR})
-    else()
-        message(FATAL_ERROR "SUBDIR keyword is not specified.")
-    endif()
-
-    if(PREFIX_HEADERS)
+    if (PREFIX_HEADERS)
         set(headerFiles ${PREFIX_HEADERS})
     else()
         message(FATAL_ERROR "HEADERS keyword is not specified.")
     endif()
 
+    set(basePath ${CMAKE_BINARY_DIR}/include)
+    if (PREFIX_BASE_PATH)
+        set(basePath ${basePath}/${PREFIX_BASE_PATH})
+    else()
+        set(basePath ${basePath}/mayaUsd)
+    endif()
+
+    if (PREFIX_SUBDIR)
+        set(basePath ${basePath}/${PREFIX_SUBDIR})
+    endif()
+
     foreach(header ${headerFiles})
         set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/${header})
-        set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/${subDir}/${header})
+        set(dstFile ${basePath}/${header})
 
         set(content "#pragma once\n#include \"${srcFile}\"\n")
 
@@ -232,9 +263,9 @@ endfunction()
 #
 function(mayaUsd_copyFiles target)
     cmake_parse_arguments(PREFIX 
-        "TARGET" 
-        "DESTINATION"
-        "FILES" 
+        ""             # options
+        "DESTINATION"  # one_value keywords
+        "FILES"        # multi_value keywords
         ${ARGN}
     )
 
@@ -275,9 +306,9 @@ endfunction()
 #
 function(mayaUsd_copyDirectory target)
     cmake_parse_arguments(PREFIX
-        "TARGET" 
-        "DESTINATION"
-        "DIRECTORY" 
+        ""             # options
+        "DESTINATION"  # one_value keywords
+        "DIRECTORY"    # multi_value keywords
         ${ARGN}
     )
 

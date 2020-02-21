@@ -22,7 +22,6 @@
 #include "UsdTransform3dHandler.h"
 #include "UsdSceneItemOpsHandler.h"
 
-#include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
 #include <ufe/hierarchyHandler.h>
 #include <ufe/ProxyShapeHierarchyHandler.h>
@@ -128,6 +127,11 @@ MStatus finalize()
 	g_StagesSubject.Reset();
 
 	return MS::kSuccess;
+}
+
+Ufe::Rtid getUsdRunTimeId()
+{
+    return g_USDRtid;
 }
 
 } // namespace ufe

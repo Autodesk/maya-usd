@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYAUSDCORE_SCHEMAS_TOKENS_H
-#define MAYAUSDCORE_SCHEMAS_TOKENS_H
+#ifndef MAYAUSD_SCHEMAS_TOKENS_H
+#define MAYAUSD_SCHEMAS_TOKENS_H
 
-/// \file MayaUsd_Schemas/tokens.h
+/// \file mayaUsd_Schemas/tokens.h
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // 
@@ -26,7 +26,7 @@
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "pxr/pxr.h"
-#include "api.h"
+#include "./api.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/token.h"
 #include <vector>
@@ -53,14 +53,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///     gprim.GetMyTokenValuedAttr().Set(MayaUsd_SchemasTokens->mayaNamespace);
 /// \endcode
 struct MayaUsd_SchemasTokensType {
-    MAYAUSDCORE_SCHEMAS_API MayaUsd_SchemasTokensType();
+    MAYAUSD_SCHEMAS_API MayaUsd_SchemasTokensType();
     /// \brief "mayaNamespace"
     /// 
-    /// AL_usd_MayaReference
+    /// MayaUsd_SchemasMayaReference
     const TfToken mayaNamespace;
     /// \brief "mayaReference"
     /// 
-    /// AL_usd_MayaReference
+    /// MayaUsd_SchemasMayaReference
     const TfToken mayaReference;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
@@ -70,7 +70,7 @@ struct MayaUsd_SchemasTokensType {
 ///
 /// A global variable with static, efficient \link TfToken TfTokens\endlink
 /// for use in all public USD API.  \sa MayaUsd_SchemasTokensType
-extern MAYAUSDCORE_SCHEMAS_API TfStaticData<MayaUsd_SchemasTokensType> MayaUsd_SchemasTokens;
+extern MAYAUSD_SCHEMAS_API TfStaticData<MayaUsd_SchemasTokensType> MayaUsd_SchemasTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -49,6 +49,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         # testRotateCmd.py
         # testScaleCmd.py
         # testTransform3dTranslate.py
+        testRename.py
     )
 endif()
 

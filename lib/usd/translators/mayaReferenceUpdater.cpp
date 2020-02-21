@@ -19,6 +19,7 @@
 #include "../../fileio/utils/adaptor.h"
 #include "../../fileio/primUpdaterRegistry.h"
 #include "../../utils/util.h"
+#include "../schemas/ALMayaReference.h"
 #include "../schemas/MayaReference.h"
 #include "../../fileio/translators/translatorMayaReference.h"
 
@@ -32,7 +33,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-PXRUSDMAYA_REGISTER_UPDATER(AL_usd_MayaReference, PxrUsdTranslators_MayaReferenceUpdater, (UsdMayaPrimUpdater::Supports::Push | UsdMayaPrimUpdater::Supports::Clear));
+PXRUSDMAYA_REGISTER_UPDATER(MayaUsd_SchemasMayaReference, PxrUsdTranslators_MayaReferenceUpdater, (UsdMayaPrimUpdater::Supports::Push | UsdMayaPrimUpdater::Supports::Clear));
+PXRUSDMAYA_REGISTER_UPDATER(MayaUsd_SchemasALMayaReference, PxrUsdTranslators_MayaReferenceUpdater, (UsdMayaPrimUpdater::Supports::Push | UsdMayaPrimUpdater::Supports::Clear));
 
 PxrUsdTranslators_MayaReferenceUpdater::PxrUsdTranslators_MayaReferenceUpdater(
         const MFnDependencyNode& depNodeFn,
@@ -45,7 +47,7 @@ PxrUsdTranslators_MayaReferenceUpdater::PxrUsdTranslators_MayaReferenceUpdater(
 bool
 PxrUsdTranslators_MayaReferenceUpdater::Pull(UsdMayaPrimUpdaterContext* context)
 {
-    const UsdPrim& usdPrim = GetUsdPrim<AL_usd_MayaReference>(*context);
+    const UsdPrim& usdPrim = GetUsdPrim<MayaUsd_SchemasMayaReference>(*context);
     const MObject& parentNode = GetMayaObject();
     
     UsdMayaTranslatorMayaReference::update(
@@ -59,7 +61,6 @@ PxrUsdTranslators_MayaReferenceUpdater::Pull(UsdMayaPrimUpdaterContext* context)
 void
 PxrUsdTranslators_MayaReferenceUpdater::Clear(UsdMayaPrimUpdaterContext* context)
 {
-    const UsdPrim& usdPrim = GetUsdPrim<AL_usd_MayaReference>(*context);
     const MObject& parentNode = GetMayaObject();
 
     UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);

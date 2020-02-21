@@ -35,6 +35,7 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/trace/trace.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/layer.h"
@@ -620,6 +621,8 @@ MayaUsdProxyShapeBase::GetOutputTime(MDataBlock dataBlock) const
 MBoundingBox
 MayaUsdProxyShapeBase::boundingBox() const
 {
+    TRACE_FUNCTION();
+
     MStatus status;
 
     // Make sure outStage is up to date

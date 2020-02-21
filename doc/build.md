@@ -17,7 +17,13 @@ Before building the project, consult the following table to ensure you use the r
 |    Python Packages    | PyYAML, PySide, PyOpenGL, Jinja2        | PyYAML, PySide2, PyOpenGL, Jinja2              |      PyYAML, PySide, PyOpenGL, Jinja2             |
 |    Build generator    | Visual Studio, Ninja (Recommended)    |  XCode, Ninja(Recommended)                       |    Ninja(Recommended)       |
 |    Command processor  | Visual Studio X64 2015 or 2017 command prompt  |                     bash                |             bash            |
-| Supported Maya Version|      2018, 2019, 2020           |                      2018, 2019, 2020                  |        2018,2019, 2020      | 
+| Supported Maya Version|      2018, 2019, 2020           |                      2018, 2019, 2020                  |        2018, 2019, 2020     |
+
+|        Optional       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
+|:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
+|          Qt           |           5.12.6          |                             5.12.6                           |         5.12.6              |
+
+***NOTE:*** The optional Qt features require building with Qt version 5.12.6, which is the version used by Maya 2020. They are not supported with Maya 2018 and 2019 since those versions of Maya use Qt 5.6.1.
 
 ***NOTE:*** We haven't fully tested the plug-ins on ```Catalina``` and it is still at the experimental stage.
 
@@ -107,7 +113,6 @@ BUILD_PXR_PLUGIN            | builds the Pixar USD plugin and libraries.        
 BUILD_AL_PLUGIN             | builds the Animal Logic USD plugin and libraries.          | ON
 BUILD_HDMAYA                | builds the Maya-To-Hydra plugin and scene delegate.        | ON
 BUILD_TESTS                 | builds all unit tests.                                     | ON
-WANT_USD_RELATIVE_PATH      | this flag is used for Autodesk's internal build only.      | OFF
 CMAKE_WANT_UFE_BUILD        | enables building with UFE (if found).                      | ON
 CMAKE_WANT_QT_BUILD         | enables building with Qt (if found).                       | ON
 

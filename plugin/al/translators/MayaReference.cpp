@@ -35,7 +35,8 @@
 #include "AL/usdmaya/utils/Utils.h"
 #include "AL/maya/utils/Utils.h"
 
-#include <mayaUsd/schemas/MayaReference.h>
+#include <mayaUsd_Schemas/ALMayaReference.h>
+#include <mayaUsd_Schemas/MayaReference.h>
 #include <mayaUsd/fileio/translators/translatorMayaReference.h>
 
 #include <pxr/usd/usd/attribute.h>
@@ -45,7 +46,8 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
-AL_USDMAYA_DEFINE_TRANSLATOR(MayaReference, AL_usd_MayaReference)
+AL_USDMAYA_DEFINE_TRANSLATOR(MayaReference, MayaUsd_SchemasMayaReference)
+AL_USDMAYA_DEFINE_TRANSLATOR(ALMayaReference, MayaUsd_SchemasALMayaReference)
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReference::initialize()

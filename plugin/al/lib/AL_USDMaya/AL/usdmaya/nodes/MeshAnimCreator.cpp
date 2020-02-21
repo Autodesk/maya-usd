@@ -96,7 +96,8 @@ MStatus MeshAnimCreator::compute(const MPlug& plug, MDataBlock& data)
     context.applyVertexNormals();
     context.applyEdgeCreases();
     context.applyVertexCreases();
-    context.applyPrimVars();
+    context.applyUVs();
+    context.applyColourSetData();
     outputHandle.set(obj);
   }
   return status;

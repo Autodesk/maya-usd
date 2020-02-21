@@ -288,6 +288,28 @@ public:
   AL_USDMAYA_PUBLIC
   void removeEntries(const SdfPathVector& itemsToRemove);
 
+  /// \brief  Get unique key for specified prim path.
+  /// \param  path target prim path
+  /// \return unique key value
+  std::size_t getUniqueKeyForPath(const SdfPath& path)
+  {
+    auto it = find(path);
+    if(it != m_primMapping.end())
+    {
+      return it->uniqueKey();
+    }
+    return 0;
+  }
+
+  /// \brief  Update all unique keys when saving Maya scene.
+  AL_USDMAYA_PUBLIC
+  void updateUniqueKeys();
+
+  /// \brief  Update unique key for a specified prim.
+  /// \param  prim target prim
+  AL_USDMAYA_PUBLIC
+  void updateUniqueKey(const UsdPrim& prim);
+
   /// \brief  An internal structure used to store a mapping between an SdfPath, the type of prim found at that location,
   ///         the maya transform that may have been created (assuming the translator plugin specifies that it needs
   ///         a parent transform), and any nodes that the translator plugin may have created.
@@ -299,7 +321,7 @@ public:
     ///         to call to tear down this prim.
     /// \param  mayaObj the maya transform
     PrimLookup(const SdfPath& path, const std::string& translatorId, MObject mayaObj)
-      : m_path(path), m_translatorId(translatorId), m_object(mayaObj), m_createdNodes() { }
+      : m_path(path), m_translatorId(translatorId), m_uniqueKey(0), m_object(mayaObj), m_createdNodes() { }
 
     /// \brief  dtor
     ~PrimLookup() {}
@@ -324,6 +346,16 @@ public:
     std::string translatorId() const
       { return m_translatorId; }
 
+    /// \brief  get the unique key of the prim
+    /// \return the unique key for this prim
+    const std::size_t uniqueKey() const
+      { return m_uniqueKey; }
+
+    /// \brief  set the unique key for this prim
+    /// \param the unique key for this prim
+    void setUniqueKey(const std::size_t key)
+      { m_uniqueKey = key; }
+
     /// \brief  get the prim type
     /// \return the type stored for this prim
     TfToken type() const
@@ -347,6 +379,7 @@ public:
   private:
     SdfPath m_path;
     std::string m_translatorId;
+    std::size_t m_uniqueKey;
     TfToken m_type;
     MObjectHandle m_object;
     MObjectHandleArray m_createdNodes;

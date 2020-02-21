@@ -27,9 +27,7 @@ class UsdMaya_ReadJobWithSceneAssembly : public UsdMaya_ReadJob
 {
 public:
     UsdMaya_ReadJobWithSceneAssembly(
-            const std::string& iFileName,
-            const std::string& iPrimPath,
-            const std::map<std::string, std::string>& iVariants,
+            const MayaUsd::ImportData& iImportData,
             const UsdMayaJobImportArgs & iArgs);
 
     ~UsdMaya_ReadJobWithSceneAssembly();

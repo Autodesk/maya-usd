@@ -6,16 +6,6 @@ set(TARGET_NAME hdMaya)
 
 option(HDMAYA_BUILD_TESTS "Build the maya-to-hydra tests" OFF)
 
-if(CMAKE_WANT_UFE_BUILD)
-    if(UFE_FOUND)
-        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
-        include_directories(${UFE_INCLUDE_DIR})
-        add_definitions(-DWANT_UFE_BUILD)
-    else()
-        message(STATUS "UFE not found. UFE features will be disabled.")
-    endif()
-endif()
-
 set(SRC
     adapters/adapter.cpp
     adapters/adapterDebugCodes.cpp
@@ -77,6 +67,7 @@ target_link_libraries(${TARGET_NAME} PUBLIC
     ${LIBRARY_NAME}
     ${TBB_LIBRARIES}
     ${PYTHON_LIBRARIES}
+    $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
 )
 
 if (USD_001905_BUILD)
@@ -86,6 +77,7 @@ endif ()
 target_include_directories(${TARGET_NAME} 
     PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/.."
+        $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         "${CMAKE_CURRENT_BINARY_DIR}/.."
@@ -98,13 +90,10 @@ target_include_directories(${TARGET_NAME}
         ${CMAKE_BINARY_DIR}
 )
 
-if (UFE_FOUND)
-    target_link_libraries(${TARGET_NAME} PUBLIC ${UFE_LIBRARY})
-endif()
-
 target_compile_definitions(${TARGET_NAME} 
     PRIVATE 
         "HDMAYA_EXPORT=1"
+        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
 )
 
 if (IS_WINDOWS)

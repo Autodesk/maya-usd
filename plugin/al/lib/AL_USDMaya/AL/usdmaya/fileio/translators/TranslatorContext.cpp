@@ -19,7 +19,7 @@
 #include "maya/MSelectionList.h"
 #include "maya/MFnDagNode.h"
 
-#include <mayaUsd/fileio/primUpdaterRegistry.h>
+#include <string>
 
 namespace AL {
 namespace usdmaya {
@@ -392,6 +392,10 @@ MString TranslatorContext::serialise() const
     {
       oss << "," << getNodeName(it.createdNodes()[i].object());
     }
+    if (it.uniqueKey())
+    {
+      oss << ",uniquekey:" << it.uniqueKey();
+    }
     oss << ";";
   }
   return MString(oss.str().c_str());
@@ -421,8 +425,27 @@ void TranslatorContext::deserialise(const MString& string)
 
     PrimLookup lookup(SdfPath(strings2[0].asChar()), strings3[0].asChar(), obj);
 
+    static const MString uniqueKeyPrefix("uniquekey:");
+
     for(uint32_t j = 2; j < strings3.length(); ++j)
     {
+      if (strings3[j].substring(0, 10) == uniqueKeyPrefix)
+      {
+        auto keyStr(strings3[j].substring(10, strings3[j].length()));
+        if (keyStr.length())
+        {
+          try
+          {
+            lookup.setUniqueKey(std::stoul(keyStr.asChar()));
+          }
+          catch (std::logic_error&)
+          {
+            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext:deserialise ignored invalid hash value for prim='%s' [hash='%s']\n", lookup.path().GetText(), keyStr.asChar());
+          }
+        }
+        continue;
+      }
+
       MSelectionList sl;
       sl.add(strings3[j].asChar());
       MObject obj;
@@ -537,6 +560,49 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void TranslatorContext::updateUniqueKeys()
+{
+  auto stage = getUsdStage();
+  for (auto& lookup: m_primMapping)
+  {
+    const auto& prim = stage->GetPrimAtPath(lookup.path());
+    if (prim)
+    {
+      std::string translatorId = getTranslatorIdForPath(lookup.path());
+      auto translator = m_proxyShape->translatorManufacture().getTranslatorFromId(translatorId);
+      if(translator)
+      {
+        auto key(translator->generateUniqueKey(prim));
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::updateUniqueKeys [generateUniqueKey] prim='%s', uniqueKey='%lu'\n", lookup.path().GetText(), key);
+        lookup.setUniqueKey(key);
+      }
+    }
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TranslatorContext::updateUniqueKey(const UsdPrim& prim)
+{
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::updateUniqueKey\n");
+
+  const auto path(prim.GetPath());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::updateUniqueKey [generateUniqueKey] updating unique key for prim='%s'\n", path.GetText());
+
+  std::string translatorId = getTranslatorIdForPath(path);
+  auto translator = m_proxyShape->translatorManufacture().getTranslatorFromId(translatorId);
+  if(translator)
+  {
+    auto it = find(path);
+    if(it != m_primMapping.end() && it->path() == path)
+    {
+      auto key(translator->generateUniqueKey(prim));
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::updateUniqueKey [generateUniqueKey] prim='%s', uniqueKey='%lu', previousUniqueKey='%lu'\n", path.GetText(), key, it->uniqueKey());
+      it->setUniqueKey(key);
+    }
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim %s", prim.GetPath().GetText());
@@ -545,23 +611,7 @@ void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
   if(stage)
   {
     std::string translatorId = m_proxyShape->context()->getTranslatorIdForPath(prim.GetPath());
-    
-    // (KxL) In 0.34 this no longer makes sense - we have to recognize different types of translatorId
-#if KXL_TO_FINISH__CHANGED_WITH_NEW_UPDATE
-    TfToken type = m_proxyShape->context()->getTypeForPath(prim.GetPath());
-    auto primUpdaterFactory = std::get<1>(UsdMayaPrimUpdaterRegistry::Find(type));
-    if(primUpdaterFactory)
-    {
-        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim [preTearDown] [primUpdater] prim=%s\n", prim.GetPath().GetText());
-        PrimUpdaterContext updaterContext(m_proxyShape->context(), UsdTimeCode::Default(), stage);
 
-        MFnDependencyNode fn(primObj);
-        auto primUpdater = primUpdaterFactory(fn, prim.GetPath());
-        primUpdater->Push(&updaterContext);
-
-        return;
-    }
-#endif
     fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().getTranslatorFromId(translatorId);
     if(translator)
     {
@@ -589,35 +639,6 @@ void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
   if(stage)
   {
     std::string translatorId = m_proxyShape->context()->getTranslatorIdForPath(path);
-
-    // (KxL) In 0.34 this no longer makes sense - we have to recognize different types of translatorId
-#if KXL_TO_FINISH__CHANGED_WITH_NEW_UPDATE
-    auto primUpdaterFactory = std::get<1>(UsdMayaPrimUpdaterRegistry::Find(type));
-    if (primUpdaterFactory)
-    {
-        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::unloadPrim [tearDown] [primUpdater] prim=%s\n Using PrimUpdater!\n", path.GetText());
-
-        UsdPrim prim = stage->GetPrimAtPath(path);
-        if(prim)
-        {
-            // run through the extra data plugins to apply to this prim
-            auto dataPlugins = m_proxyShape->translatorManufacture().getExtraDataPlugins(primObj);
-            for (auto dataPlugin : dataPlugins)
-            {
-                dataPlugin->preTearDown(prim);
-            }
-        }
-
-        PrimUpdaterContext updaterContext(m_proxyShape->context(), UsdTimeCode::Default(), stage);
-
-        MFnDependencyNode fn(primObj);
-        auto primUpdater = primUpdaterFactory(fn, prim.GetPath());
-        primUpdater->Push(&updaterContext);
-        primUpdater->Clear(&updaterContext);
-
-        return;
-    }
-#endif
 
     fileio::translators::TranslatorRefPtr translator = m_proxyShape->translatorManufacture().getTranslatorFromId(translatorId);
     if(translator)

@@ -13,15 +13,13 @@ over "GLOBAL" (
     customData = {
         string libraryName        = "@SCHEMA_PLUGIN@"
         string libraryPath        = "."
-        string libraryPrefix      = "AL_usd_"#This AL_ is here to get around that the Jinja template doesn't generate a template that supports namespaces. If we had a AL namespace then I could remove this AL.
-        string tokensPrefix       = "MayaUsd_Schemas"
     }
 ) {}
 
 
 ###################################################################################################
 
-class ALMayaReference "ALMayaReference"(
+class MayaReference "MayaReference"(
   doc = "Data used to import a maya reference."
   inherits = </Xformable>
   customData = {
@@ -36,6 +34,19 @@ class ALMayaReference "ALMayaReference"(
   string mayaNamespace (
     doc = "Namespace which the maya reference will be imported under."
   )
+}
+
+###################################################################################################
+
+class ALMayaReference "ALMayaReference"(
+  doc = "Data used to import a maya reference."
+  inherits = </MayaReference>
+  customData = {
+        string className = "ALMayaReference"
+        string fileName = "ALMayaReference"
+      }
+)
+{
 }
 
 ###################################################################################################

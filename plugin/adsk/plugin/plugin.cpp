@@ -25,6 +25,9 @@
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 
 #include <mayaUsd/utils/undoHelperCommand.h>
+#if defined(WANT_QT_BUILD)
+#include <mayaUsd/ui/cmds/USDImportDialogCmd.h>
+#endif
 
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/Global.h>
@@ -49,7 +52,7 @@ MStatus initializePlugin(MObject obj)
     MFnPlugin plugin(obj, "Autodesk", "1.0", "Any");
 
     status = plugin.registerFileTranslator(
-        "mayaUsdImport",
+        "USD Import",
         "",
         UsdMayaImportTranslator::creator,
         "mayaUsdTranslatorImport", // options script name
@@ -83,6 +86,14 @@ MStatus initializePlugin(MObject obj)
         status.perror(std::string("registerCommand ").append(
                           UsdMayaUndoHelperCommand::name()).c_str());
     }
+
+#if defined(WANT_QT_BUILD)
+    status = MayaUsd::USDImportDialogCmd::initialize(plugin);
+    if (!status) {
+        MString err("registerCommand" ); err += MayaUsd::USDImportDialogCmd::fsName;
+        status.perror(err);
+    }
+#endif
 
     // As of 2-Aug-2019, these PlugPlugin translators are not loaded
     // automatically.  To be investigated.  A duplicate of this code is in the
@@ -123,7 +134,15 @@ MStatus uninitializePlugin(MObject obj)
                           UsdMayaUndoHelperCommand::name()).c_str());
     }
 
-    status = plugin.deregisterFileTranslator("mayaUsdImport");
+#if defined(WANT_QT_BUILD)
+    status = MayaUsd::USDImportDialogCmd::finalize(plugin);
+    if (!status) {
+        MString err("deregisterCommand" ); err += MayaUsd::USDImportDialogCmd::fsName;
+        status.perror(err);
+    }
+#endif
+
+    status = plugin.deregisterFileTranslator("USD Import");
     if (!status) {
         status.perror("mayaUsdPlugin: unable to deregister import translator.");
     }

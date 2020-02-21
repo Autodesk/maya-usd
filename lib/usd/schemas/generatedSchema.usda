@@ -3,7 +3,7 @@
     "WARNING: THIS FILE IS GENERATED.  DO NOT EDIT."
 )
 
-class ALMayaReference "ALMayaReference" (
+class MayaReference "MayaReference" (
     doc = "Data used to import a maya reference."
 )
 {

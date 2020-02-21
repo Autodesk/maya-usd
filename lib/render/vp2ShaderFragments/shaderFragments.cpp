@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,6 +32,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
+    (BasisCurvesCubicDomain)
+    (BasisCurvesCubicFallbackShader)
+    (BasisCurvesCubicHull)
+    (BasisCurvesLinearDomain)
+    (BasisCurvesLinearFallbackShader)
+    (BasisCurvesLinearHull)
+
     (FallbackCPVShader)
     (FallbackShader)
 
@@ -42,6 +49,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (Float4ToFloat3)
     (Float4ToFloat4)
 
+    (NwFaceCameraIfNAN)
+
     (lightingContributions)
     (scaledDiffusePassThrough)
     (scaledSpecularPassThrough)
@@ -51,21 +60,33 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (UsdUVTexture)
 
+    (UsdPrimvarReader_color)
     (UsdPrimvarReader_float)
     (UsdPrimvarReader_float2)
     (UsdPrimvarReader_float3)
     (UsdPrimvarReader_float4)
+    (UsdPrimvarReader_vector)
 
     (UsdPreviewSurface)
 );
 
+static const TfTokenVector _LanguageSpecificFragmentNames = {
+    _tokens->BasisCurvesLinearDomain,
+    _tokens->BasisCurvesCubicDomain
+};
+
 static const TfTokenVector _FragmentNames = {
+    _tokens->BasisCurvesLinearHull,
+    _tokens->BasisCurvesCubicHull,
+
     _tokens->UsdUVTexture,
 
+    _tokens->UsdPrimvarReader_color,
     _tokens->UsdPrimvarReader_float,
     _tokens->UsdPrimvarReader_float2,
     _tokens->UsdPrimvarReader_float3,
     _tokens->UsdPrimvarReader_float4,
+    _tokens->UsdPrimvarReader_vector,
 
     _tokens->Float4ToFloatX,
     _tokens->Float4ToFloatY,
@@ -73,6 +94,8 @@ static const TfTokenVector _FragmentNames = {
     _tokens->Float4ToFloatW,
     _tokens->Float4ToFloat3,
     _tokens->Float4ToFloat4,
+
+    _tokens->NwFaceCameraIfNAN,
 
     _tokens->lightingContributions,
     _tokens->scaledDiffusePassThrough,
@@ -83,6 +106,8 @@ static const TfTokenVector _FragmentNames = {
 };
 
 static const TfTokenVector _FragmentGraphNames = {
+    _tokens->BasisCurvesCubicFallbackShader,
+    _tokens->BasisCurvesLinearFallbackShader,
     _tokens->FallbackCPVShader,
     _tokens->FallbackShader,
     _tokens->UsdPreviewSurface
@@ -125,7 +150,41 @@ MStatus HdVP2ShaderFragments::registerFragments()
         return MS::kSuccess;
     }
 
+    std::string language;
+
+    switch (theRenderer->drawAPI()) {
+    case MHWRender::kOpenGLCoreProfile: language = "GLSL"; break;
+    case MHWRender::kDirectX11:         language = "HLSL"; break;
+    case MHWRender::kOpenGL:            language = "Cg";   break;
+    default: MGlobal::displayError("Unknown draw API");    break;
+    }
+
     // Register all fragments.
+    for (const TfToken& fragNameToken : _LanguageSpecificFragmentNames) {
+        const MString fragName(fragNameToken.GetText());
+
+        if (fragmentManager->hasFragment(fragName)) {
+            continue;
+        }
+
+        const std::string fragXmlFile =
+            TfStringPrintf("%s_%s.xml", fragName.asChar(), language.c_str());
+        const std::string fragXmlPath = _GetResourcePath(fragXmlFile);
+
+        const MString addedName =
+            fragmentManager->addShadeFragmentFromFile(
+                fragXmlPath.c_str(),
+                false);
+
+        if (addedName != fragName) {
+            MGlobal::displayError(
+                TfStringPrintf("Failed to register fragment '%s' from file: %s",
+                    fragName.asChar(),
+                    fragXmlPath.c_str()).c_str());
+            return MS::kFailure;
+        }
+    }
+
     for (const TfToken& fragNameToken : _FragmentNames) {
         const MString fragName(fragNameToken.GetText());
 

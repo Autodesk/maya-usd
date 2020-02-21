@@ -42,14 +42,14 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
-_CreateMayaReferenceAttr(AL_usd_MayaReference &self,
+_CreateMayaReferenceAttr(MayaUsd_SchemasMayaReference &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateMayaReferenceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
         
 static UsdAttribute
-_CreateMayaNamespaceAttr(AL_usd_MayaReference &self,
+_CreateMayaNamespaceAttr(MayaUsd_SchemasMayaReference &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateMayaNamespaceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->String), writeSparsely);
@@ -57,9 +57,9 @@ _CreateMayaNamespaceAttr(AL_usd_MayaReference &self,
 
 } // anonymous namespace
 
-void wrapAL_usd_MayaReference()
+void wrapMayaUsd_SchemasMayaReference()
 {
-    typedef AL_usd_MayaReference This;
+    typedef MayaUsd_SchemasMayaReference This;
 
     class_<This, bases<UsdGeomXformable> >
         cls("MayaReference");
