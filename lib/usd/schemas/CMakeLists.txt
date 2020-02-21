@@ -110,6 +110,16 @@ endif()
 
 target_link_libraries(${SCHEMA_PLUGIN} ${DEPENDANT_LIBRARIES} ${PTHREAD_LINK})
 
+set(mayaUsdSchemas_headers
+    api.h
+    MayaReference.h
+    tokens.h
+)
+mayaUsd_promoteHeaderListWithSubdir(
+    SUBDIR "schemas" 
+    HEADERS ${mayaUsdSchemas_headers}
+)
+
 install(
     TARGETS ${SCHEMA_PLUGIN}
     LIBRARY
@@ -129,11 +139,9 @@ endif()
 
 install(
     FILES
-        MayaReference.h
-        api.h
-        tokens.h
+        ${mayaUsdSchemas_headers}
     DESTINATION
-        ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/schemas
+        ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/schemas/
 )
 
 ####################################################################################################

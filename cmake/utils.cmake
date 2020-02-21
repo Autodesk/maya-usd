@@ -178,6 +178,45 @@ function(mayaUsd_promoteHeaderList)
     endforeach()
 endfunction()
 
+function(mayaUsd_promoteHeaderListWithSubdir)
+    cmake_parse_arguments(PREFIX
+        ""
+        "SUBDIR" # one_value keywords
+        "HEADERS" # multi_value keywords
+        ${ARGN}
+    )
+
+    if(PREFIX_SUBDIR)
+        set(subDir ${PREFIX_SUBDIR})
+    else()
+        message(FATAL_ERROR "SUBDIR keyword is not specified.")
+    endif()
+
+    if(PREFIX_HEADERS)
+        set(headerFiles ${PREFIX_HEADERS})
+    else()
+        message(FATAL_ERROR "HEADERS keyword is not specified.")
+    endif()
+
+    foreach(header ${headerFiles})
+        set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/${header})
+        set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/${subDir}/${header})
+
+        set(content "#pragma once\n#include \"${srcFile}\"\n")
+
+        if (NOT EXISTS ${dstFile})
+            message(STATUS "promoting: " ${srcFile})
+            file(WRITE ${dstFile} "${content}")
+        else()
+            file(READ ${dstFile} oldContent)
+            if (NOT "${content}" STREQUAL "${oldContent}")
+                message(STATUS "Promoting ${srcfile}")
+                file(WRITE ${dstFile} "${content}")
+            endif()
+        endif()
+    endforeach()
+endfunction()
+
 function(mayaUsd_get_unittest_target unittest_target unittest_basename)
     get_filename_component(unittest_name ${unittest_basename} NAME_WE)
     set(${unittest_target} "${unittest_name}" PARENT_SCOPE)
