@@ -78,16 +78,6 @@ typedef void (*proxy_function_prototype)(void* userData, AL::usdmaya::nodes::Pro
 const char* ProxyShape::s_selectionMaskName = "al_ProxyShape";
 
 //----------------------------------------------------------------------------------------------------------------------
-MDagPath ProxyShape::parentTransform()
-{
-  MFnDagNode fn(thisMObject());
-  MDagPath proxyTransformPath;
-  fn.getPath(proxyTransformPath);
-  proxyTransformPath.pop();
-  return proxyTransformPath;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialiseTranslatorContext()
 {
   triggerEvent("PreSerialiseContext");

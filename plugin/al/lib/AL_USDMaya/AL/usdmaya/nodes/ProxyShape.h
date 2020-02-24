@@ -225,9 +225,6 @@ class ProxyShape
   typedef MayaUsdProxyShapeBase ParentClass;
 public:
 
-  /// returns the shape's parent transform
-  MDagPath parentTransform();
-
   /// a method that registers all of the events in the ProxyShape
   AL_USDMAYA_PUBLIC
   void registerEvents();

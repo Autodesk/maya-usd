@@ -31,7 +31,6 @@ namespace fileio {
 TransformIterator::TransformIterator(UsdStageRefPtr stage, const MDagPath& parentPath, bool stopOnInstance)
   : m_primStack(),
     m_stage(stage),
-    m_currentItem(0), 
     m_stopOnInstance(stopOnInstance)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TransformIterator::TransformIterator parent path: %s\n", parentPath.fullPathName().asChar());
@@ -53,9 +52,8 @@ TransformIterator::TransformIterator(UsdStageRefPtr stage, const MDagPath& paren
 
 //----------------------------------------------------------------------------------------------------------------------
 TransformIterator::TransformIterator(const UsdPrim& usdStartPrim, const MDagPath& mayaStartPath, bool stopOnInstance)
-  : m_primStack()
-  , m_stage(usdStartPrim.GetStage())
-  , m_currentItem(0), 
+  : m_primStack(),
+    m_stage(usdStartPrim.GetStage()),
     m_stopOnInstance(stopOnInstance)
 {
   m_primStack.reserve(128);
