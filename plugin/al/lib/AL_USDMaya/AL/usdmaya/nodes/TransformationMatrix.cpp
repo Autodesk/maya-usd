@@ -1135,6 +1135,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
               MPlug(transformNode->thisMObject(), MPxTransform::shearXZ).setValue(tempShear.y);
               MPlug(transformNode->thisMObject(), MPxTransform::shearYZ).setValue(tempShear.z);
               m_shearTweak[0] = m_shearTweak[1] = m_shearTweak[2] = 0;
+              m_shearFromUsd = tempShear;
             }
           }
         }
@@ -1157,10 +1158,9 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
               MPlug(transformNode->thisMObject(), MPxTransform::scaleY).setValue(tempScale.y);
               MPlug(transformNode->thisMObject(), MPxTransform::scaleZ).setValue(tempScale.z);
               m_scaleTweak[0] = m_scaleTweak[1] = m_scaleTweak[2] = 0;
+              m_scaleFromUsd = tempScale;
             }
-            m_scaleFromUsd = tempScale;
-          }
-          
+          } 
         }
         break;
 
@@ -1348,7 +1348,14 @@ MStatus TransformationMatrix::translateTo(const MVector& vector, MSpace::Space s
     {
       insertTranslateOp();
     }
-    pushTranslateToPrim();
+
+    // Push new value to prim, but only if it's changing, otherwise extra work and unintended
+    // side effects will happen.
+    //
+    if (!vector.isEquivalent(m_translationFromUsd))
+    {
+      pushTranslateToPrim();
+    }
   }
   return status;
 }
@@ -1396,7 +1403,11 @@ MStatus TransformationMatrix::scaleTo(const MVector& scale, MSpace::Space space)
       // rare case: add a new scale op into the prim
       insertScaleOp();
     }
-    pushScaleToPrim();
+    // Push new value to prim, but only if it's changing.
+    if (!scale.isEquivalent(m_scaleFromUsd))
+    {
+      pushScaleToPrim();
+    }
   }
   return status;
 }
@@ -1442,7 +1453,11 @@ MStatus TransformationMatrix::shearTo(const MVector& shear, MSpace::Space space)
       // rare case: add a new scale op into the prim
       insertShearOp();
     }
-    pushShearToPrim();
+    // Push new value to prim, but only if it's changing.
+    if (!shear.isEquivalent(m_shearFromUsd))
+    {
+      pushShearToPrim();
+    }
   }
   return status;
 }
@@ -1487,11 +1502,15 @@ MStatus TransformationMatrix::setScalePivot(const MPoint& sp, MSpace::Space spac
     {
     }
     else
-    if(!pushPrimToMatrix() && sp != MPoint(0.0, 0.0, 0.0, 1.0))
+    if(!pushPrimToMatrix() && sp != MPoint(0.0, 0.0, 0.0))
     {
       insertScalePivotOp();
     }
-    pushScalePivotToPrim();
+    // Push new value to prim, but only if it's changing.
+    if (!sp.isEquivalent(m_scalePivotFromUsd))
+    {
+      pushScalePivotToPrim();
+    }
   }
   return status;
 }
@@ -1531,7 +1550,11 @@ MStatus TransformationMatrix::setScalePivotTranslation(const MVector& sp, MSpace
     {
       insertScalePivotTranslationOp();
     }
-    pushScalePivotTranslateToPrim();
+    // Push new value to prim, but only if it's changing.
+    if (!sp.isEquivalent(m_scalePivotTranslationFromUsd))
+    {
+      pushScalePivotTranslateToPrim();
+    }
   }
   return status;
 }
@@ -1576,11 +1599,15 @@ MStatus TransformationMatrix::setRotatePivot(const MPoint& pivot, MSpace::Space 
     {
     }
     else
-    if(!pushPrimToMatrix() && pivot != MPoint(0.0, 0.0, 0.0, 1.0))
+    if(!pushPrimToMatrix() && pivot != MPoint(0.0, 0.0, 0.0))
     {
       insertRotatePivotOp();
     }
-    pushRotatePivotToPrim();
+    // Push new value to prim, but only if it's changing.
+    if (!pivot.isEquivalent(m_rotatePivotFromUsd))
+    {
+      pushRotatePivotToPrim();
+    }
   }
   return status;
 }
@@ -1616,11 +1643,15 @@ MStatus TransformationMatrix::setRotatePivotTranslation(const MVector &vector, M
     {
     }
     else
-    if(!pushPrimToMatrix() && vector != MPoint(0.0, 0.0, 0.0, 1.0))
+    if(!pushPrimToMatrix() && vector != MVector(0.0, 0.0, 0.0))
     {
       insertRotatePivotTranslationOp();
     }
-    pushRotatePivotTranslateToPrim();
+    // Push new value to prim, but only if it's changing.
+    if (!vector.isEquivalent(m_rotatePivotTranslationFromUsd))
+    {
+      pushRotatePivotTranslateToPrim();
+    }
   }
   return status;
 }
@@ -1699,7 +1730,11 @@ MStatus TransformationMatrix::rotateTo(const MQuaternion &q, MSpace::Space space
     }
     if(m_enableUsdWriteback)
     {
-      pushRotateToPrim();
+      // Push new value to prim, but only if it's changing.
+      if (!MPxTransformationMatrix::rotationValue.isEquivalent(m_rotationFromUsd))
+      {
+        pushRotateToPrim();
+      }
     }
   }
   return status;
@@ -1730,7 +1765,11 @@ MStatus TransformationMatrix::rotateTo(const MEulerRotation &e, MSpace::Space sp
     }
     if(m_enableUsdWriteback)
     {
-      pushRotateToPrim();
+      // Push new value to prim, but only if it's changing.
+      if (!e.isEquivalent(m_rotationFromUsd))
+      {
+        pushRotateToPrim();
+      }
     }
   }
   return status;

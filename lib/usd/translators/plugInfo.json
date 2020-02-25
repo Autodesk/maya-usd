@@ -22,7 +22,15 @@
                 "UsdRiPxrEnvDayLight",
                 "UsdShadeMaterial",
                 "UsdSkelRoot",
-                "UsdSkelSkeleton"
+                "UsdSkelSkeleton",
+                "MayaUsd_SchemasALMayaReference",
+                "MayaUsd_SchemasMayaReference"
+              ]
+            },
+            "PrimUpdater": {
+              "providesTranslator": [
+                "MayaUsd_SchemasALMayaReference",
+                "MayaUsd_SchemasMayaReference"
               ]
             },
             "PrimWriter": {
