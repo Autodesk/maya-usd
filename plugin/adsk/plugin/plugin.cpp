@@ -111,7 +111,7 @@ MStatus initializePlugin(MObject obj)
     // automatically.  To be investigated.  A duplicate of this code is in the
     // Pixar plugin.cpp.
     const std::vector<std::string> translatorPluginNames{
-        "mayaUsd_Translators"};
+        "mayaUsd_Schemas", "mayaUsd_Translators"};
     const auto& plugRegistry = PlugRegistry::GetInstance();
     std::stringstream msg("mayaUsdPlugin: ");
     for (const auto& pluginName : translatorPluginNames) {

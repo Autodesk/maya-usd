@@ -13,17 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef AL_USDMAYASCHEMAS_GENERATED_MAYAREFERENCE_H
-#define AL_USDMAYASCHEMAS_GENERATED_MAYAREFERENCE_H
+#ifndef MAYAUSD_SCHEMAS_GENERATED_ALMAYAREFERENCE_H
+#define MAYAUSD_SCHEMAS_GENERATED_ALMAYAREFERENCE_H
 
-/// \file AL_USDMayaSchemas/MayaReference.h
+/// \file mayaUsd_Schemas/ALMayaReference.h
 
 #include "pxr/pxr.h"
 #include "./api.h"
-#include "pxr/usd/usdGeom/xformable.h"
+#include "./MayaReference.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "./tokens.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -42,11 +41,11 @@ class SdfAssetPath;
 // ALMAYAREFERENCE                                                            //
 // -------------------------------------------------------------------------- //
 
-/// \class AL_usd_MayaReference
+/// \class MayaUsd_SchemasALMayaReference
 ///
 /// Data used to import a maya reference.
 ///
-class AL_usd_MayaReference : public UsdGeomXformable
+class MayaUsd_SchemasALMayaReference : public MayaUsd_SchemasMayaReference
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -54,45 +53,45 @@ public:
     /// \sa UsdSchemaType
     static const UsdSchemaType schemaType = UsdSchemaType::ConcreteTyped;
 
-    /// Construct a AL_usd_MayaReference on UsdPrim \p prim .
-    /// Equivalent to AL_usd_MayaReference::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a MayaUsd_SchemasALMayaReference on UsdPrim \p prim .
+    /// Equivalent to MayaUsd_SchemasALMayaReference::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit AL_usd_MayaReference(const UsdPrim& prim=UsdPrim())
-        : UsdGeomXformable(prim)
+    explicit MayaUsd_SchemasALMayaReference(const UsdPrim& prim=UsdPrim())
+        : MayaUsd_SchemasMayaReference(prim)
     {
     }
 
-    /// Construct a AL_usd_MayaReference on the prim held by \p schemaObj .
-    /// Should be preferred over AL_usd_MayaReference(schemaObj.GetPrim()),
+    /// Construct a MayaUsd_SchemasALMayaReference on the prim held by \p schemaObj .
+    /// Should be preferred over MayaUsd_SchemasALMayaReference(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit AL_usd_MayaReference(const UsdSchemaBase& schemaObj)
-        : UsdGeomXformable(schemaObj)
+    explicit MayaUsd_SchemasALMayaReference(const UsdSchemaBase& schemaObj)
+        : MayaUsd_SchemasMayaReference(schemaObj)
     {
     }
 
     /// Destructor.
-    AL_USDMAYASCHEMAS_API
-    virtual ~AL_usd_MayaReference();
+    MAYAUSD_SCHEMAS_API
+    virtual ~MayaUsd_SchemasALMayaReference();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
-    AL_USDMAYASCHEMAS_API
+    MAYAUSD_SCHEMAS_API
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a AL_usd_MayaReference holding the prim adhering to this
+    /// Return a MayaUsd_SchemasALMayaReference holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// AL_usd_MayaReference(stage->GetPrimAtPath(path));
+    /// MayaUsd_SchemasALMayaReference(stage->GetPrimAtPath(path));
     /// \endcode
     ///
-    AL_USDMAYASCHEMAS_API
-    static AL_usd_MayaReference
+    MAYAUSD_SCHEMAS_API
+    static MayaUsd_SchemasALMayaReference
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
@@ -117,70 +116,28 @@ public:
     /// specify this schema class, in case a stronger typeName opinion overrides
     /// the opinion at the current EditTarget.
     ///
-    AL_USDMAYASCHEMAS_API
-    static AL_usd_MayaReference
+    MAYAUSD_SCHEMAS_API
+    static MayaUsd_SchemasALMayaReference
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 protected:
     /// Returns the type of schema this class belongs to.
     ///
     /// \sa UsdSchemaType
-    AL_USDMAYASCHEMAS_API
-    virtual UsdSchemaType _GetSchemaType() const;
+    MAYAUSD_SCHEMAS_API
+    UsdSchemaType _GetSchemaType() const override;
 
 private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
-    AL_USDMAYASCHEMAS_API
+    MAYAUSD_SCHEMAS_API
     static const TfType &_GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
-    AL_USDMAYASCHEMAS_API
-    virtual const TfType &_GetTfType() const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // MAYAREFERENCE 
-    // --------------------------------------------------------------------- //
-    /// Path to the maya reference.
-    ///
-    /// \n  C++ Type: SdfAssetPath
-    /// \n  Usd Type: SdfValueTypeNames->Asset
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
-    AL_USDMAYASCHEMAS_API
-    UsdAttribute GetMayaReferenceAttr() const;
-
-    /// See GetMayaReferenceAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    AL_USDMAYASCHEMAS_API
-    UsdAttribute CreateMayaReferenceAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // MAYANAMESPACE 
-    // --------------------------------------------------------------------- //
-    /// Namespace which the maya reference will be imported under.
-    ///
-    /// \n  C++ Type: std::string
-    /// \n  Usd Type: SdfValueTypeNames->String
-    /// \n  Variability: SdfVariabilityVarying
-    /// \n  Fallback Value: No Fallback
-    AL_USDMAYASCHEMAS_API
-    UsdAttribute GetMayaNamespaceAttr() const;
-
-    /// See GetMayaNamespaceAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    AL_USDMAYASCHEMAS_API
-    UsdAttribute CreateMayaNamespaceAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    MAYAUSD_SCHEMAS_API
+    const TfType &_GetTfType() const override;
 
 public:
     // ===================================================================== //

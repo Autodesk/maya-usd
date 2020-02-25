@@ -62,3 +62,5 @@ foreach(script ${test_script_files})
         "MAYA_NO_STANDALONE_ATEXIT=1"
     )
 endforeach()
+
+add_subdirectory(usd)

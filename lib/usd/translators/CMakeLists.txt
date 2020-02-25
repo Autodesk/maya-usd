@@ -28,6 +28,7 @@ list(APPEND DEPENDANT_LIBRARIES
     vt
     ${MAYA_LIBRARIES}
     ${LIBRARY_NAME}
+	mayaUsd_Schemas
 )
 
 list(APPEND source
@@ -40,6 +41,8 @@ list(APPEND source
     lightWriter.cpp
     locatorWriter.cpp
     materialReader.cpp
+    mayaReferenceReader.cpp
+    mayaReferenceUpdater.cpp
     meshReader.cpp
     meshWriter.cpp
     meshWriter_Primvars.cpp
