@@ -52,7 +52,7 @@ public:
 
 	// Ufe::ContextOps overrides
 	Ufe::SceneItem::Ptr sceneItem() const override;
-    Items getItems(const ItemPath& itemPath) override;
+    Items getItems(const ItemPath& itemPath) const override;
     Ufe::UndoableCommand::Ptr doOpCmd(const ItemPath& itemPath) override;
 
 private:

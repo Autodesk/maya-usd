@@ -28,49 +28,6 @@
 
 namespace {
 
-// Production-quality code would use a separate Python module file for this
-// purpose, for ease of maintenance and separation of concerns.  PPT, 18-Feb-20.
-const char* listAttributesScript = R"(
-import maya.cmds as cmds
-from functools import partial
-
-def dismissUSDListAttributes(data, msg):
-    cmds.layoutDialog(dismiss=msg)
-
-def buildUSDListAttributesDialog():
-    form = cmds.setParent(q=True)
-
-    # layoutDialog's are unfortunately not resizable, so hard code a size
-    # here, to make sure all UI elements are visible.
-    #
-    cmds.formLayout(form, e=True, width=500)
-
-    sceneItem = next(iter(ufe.GlobalSelection.get()))
-
-    # Listing the attributes requires Attributes interface support.  This
-    # should have been validated by the context ops interface.
-    attr = ufe.Attributes.attributes(sceneItem)
-    attrNames = attr.attributeNames
-
-    attributesWidget = cmds.textField(editable=False, text='\n'.join(attrNames))
-
-    okBtn = cmds.button(label='OK',
-                        command=partial(dismissUSDListAttributes, msg='ok'))
-
-    vSpc = 10
-    hSpc = 10
-
-    cmds.formLayout(
-        form, edit=True,
-        attachForm=[(attributesWidget, 'top',    vSpc),
-                    (attributesWidget, 'left',   0),
-                    (attributesWidget, 'right',  0),
-                    (okBtn,            'bottom', vSpc),
-                    (okBtn,            'right',  hSpc)])
-
-cmds.layoutDialog(ui=buildUSDListAttributesDialog, title='Attributes')
-)";
-
 class SetVariantSelectionUndoableCommand : public Ufe::UndoableCommand
 {
 public:
@@ -136,14 +93,14 @@ Ufe::SceneItem::Ptr UsdContextOps::sceneItem() const
 
 Ufe::ContextOps::Items UsdContextOps::getItems(
     const Ufe::ContextOps::ItemPath& itemPath
-)
+) const
 {
     Ufe::ContextOps::Items items;
     if (itemPath.empty()) {
-        // Top-level items.  Variant sets, visibility, and list attributes.
+        // Top-level items.  Variant sets and visibility.
         if (fPrim.HasVariantSets()) {
-            Ufe::ContextItem variantSetsOp("Variant Sets", "Variant Sets", true);
-            items.push_back(variantSetsOp);
+            items.emplace_back(
+                "Variant Sets", "Variant Sets", Ufe::ContextItem::kHasChildren);
         }
         auto attributes = Ufe::Attributes::attributes(sceneItem());
         if (attributes) {
@@ -154,12 +111,8 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
                 auto current = visibility->get();
                 const std::string l = (current == "invisible") ?
                     std::string("Make Visible") : std::string("Make Invisible");
-                Ufe::ContextItem visibilityOp("Toggle Visibility", l);
-                items.push_back(visibilityOp);
+                items.emplace_back("Toggle Visibility", l);
             }
-            Ufe::ContextItem listAttribsOp(
-                "List Attributes", "List Attributes...");
-            items.push_back(listAttribsOp);
         }
     }
     else {
@@ -172,7 +125,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
                 // Variant sets list.
                 for (auto i = varSetsNames.crbegin(); i != varSetsNames.crend(); ++i) {
                     
-                    items.push_back(Ufe::ContextItem(*i, *i, true));
+                    items.emplace_back(*i, *i, Ufe::ContextItem::kHasChildren);
                 }
             }
             else {
@@ -185,9 +138,10 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
 
                 const auto varNames = varSet.GetVariantNames();
                 for (const auto& vn : varNames) {
-                    const bool isSelected(vn == selected);
-                    items.push_back(
-                        Ufe::ContextItem(vn, vn, false, true, isSelected, true));
+                    const bool checked(vn == selected);
+                    items.emplace_back(vn, vn, Ufe::ContextItem::kNoChildren,
+                                       Ufe::ContextItem::kCheckable, checked,
+                                       Ufe::ContextItem::kExclusive);
                 }
             } // Variants of a variant set
         } // Variant sets
@@ -225,9 +179,6 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return visibility->setCmd(
             current == "invisible" ? "inherited" : "invisible");
     } // Visibility
-    else if (itemPath[0] == "List Attributes") {
-        MGlobal::executePythonCommand(listAttributesScript);
-    }
 
     return nullptr;
 }
