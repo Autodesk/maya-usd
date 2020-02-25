@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "utils.h"
+#include "tokens.h"
 
 #if USD_VERSION_NUM >= 1911
 #include <pxr/imaging/hd/rendererPlugin.h>
@@ -25,6 +26,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 using HdRendererPluginRegistry = HdxRendererPluginRegistry;
 PXR_NAMESPACE_CLOSE_SCOPE
 #endif
+
+#include <pxr/imaging/glf/contextCaps.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -60,6 +63,10 @@ MtohRendererInitialization MtohInitializeRenderPlugins() {
             if (!plugin)
                 continue;
 
+            // XXX: As of 22.02, this needs to be called for Storm
+            if (pluginDesc.id == MtohTokens->HdStormRendererPlugin)
+                GlfContextCaps::InitInstance();
+
             HdRenderDelegate* delegate = plugin->IsSupported() ?
                 plugin->CreateRenderDelegate() : nullptr;
             if (delegate) {
@@ -69,7 +76,7 @@ MtohRendererInitialization MtohInitializeRenderPlugins() {
                         TfStringPrintf("mtohRenderOverride_%s", renderer.GetText())
                     ),
                     TfToken(
-                        TfStringPrintf("%s (Hydra)", renderer.GetText())
+                        TfStringPrintf("%s (Hydra)", pluginDesc.displayName.c_str())
                     )
                 );
 
