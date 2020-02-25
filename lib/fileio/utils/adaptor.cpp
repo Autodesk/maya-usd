@@ -530,7 +530,7 @@ static TfToken::Set _GetRegisteredSchemas()
     std::set<TfType> derivedTypes;
     TfType::Find<T>().GetAllDerivedTypes(&derivedTypes);
 
-    UsdSchemaRegistry registry = UsdSchemaRegistry::GetInstance();
+    const UsdSchemaRegistry& registry = UsdSchemaRegistry::GetInstance();
     for (const TfType& ty : derivedTypes) {
         SdfPrimSpecHandle primDef = registry.GetPrimDefinition(ty);
         if (!primDef) {
