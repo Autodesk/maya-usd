@@ -2,6 +2,8 @@ list(APPEND scripts_src
     mayaUsdTranslatorImport.mel
     mayaUsdTranslatorExport.mel
     AEmayaUsdProxyShapeTemplate.mel
+    mayaUsdMenu.mel
+    mayaUsd_createStagesFromExistingLayer.mel
 )
 
 install(FILES ${scripts_src}

@@ -111,6 +111,7 @@ const MString MayaUsdProxyShapeBase::displayFilterLabel("USD Proxies");
 MObject MayaUsdProxyShapeBase::filePathAttr;
 MObject MayaUsdProxyShapeBase::primPathAttr;
 MObject MayaUsdProxyShapeBase::excludePrimPathsAttr;
+MObject MayaUsdProxyShapeBase::loadPayloadsAttr;
 MObject MayaUsdProxyShapeBase::timeAttr;
 MObject MayaUsdProxyShapeBase::complexityAttr;
 MObject MayaUsdProxyShapeBase::inStageDataAttr;
@@ -175,6 +176,20 @@ MayaUsdProxyShapeBase::initialize()
     typedAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = addAttribute(excludePrimPathsAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    loadPayloadsAttr = numericAttrFn.create(
+        "loadPayloads",
+        "lpl",
+        MFnNumericData::kBoolean,
+        0.0,
+        &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    numericAttrFn.setDefault(true);
+    numericAttrFn.setKeyable(true);
+    numericAttrFn.setReadable(false);
+    numericAttrFn.setAffectsAppearance(true);
+    retValue = addAttribute(loadPayloadsAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     timeAttr = unitAttrFn.create(
@@ -294,6 +309,11 @@ MayaUsdProxyShapeBase::initialize()
     retValue = attributeAffects(primPathAttr, inStageDataCachedAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(primPathAttr, outStageDataAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    retValue = attributeAffects(loadPayloadsAttr, inStageDataCachedAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = attributeAffects(loadPayloadsAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     retValue = attributeAffects(inStageDataAttr, inStageDataCachedAttr);
@@ -453,6 +473,13 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         // == Load the Stage
         UsdStageRefPtr usdStage;
         SdfPath        primPath;
+        auto           loadSet = UsdStage::InitialLoadSet::LoadAll;
+
+        MDataHandle loadPayloadsHandle = dataBlock.inputValue(loadPayloadsAttr, &retValue);
+        CHECK_MSTATUS_AND_RETURN_IT(retValue);
+        if (!loadPayloadsHandle.asBool()) {
+            loadSet = UsdStage::InitialLoadSet::LoadNone;
+        }
 
         if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
             UsdStageCacheContext ctx(UsdMayaStageCache::Get());
@@ -460,10 +487,12 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             if (sessionLayer) {
                 usdStage = UsdStage::Open(rootLayer,
                         sessionLayer,
-                        ArGetResolver().GetCurrentContext());
+                        ArGetResolver().GetCurrentContext(),
+                        loadSet);
             } else {
                 usdStage = UsdStage::Open(rootLayer,
-                        ArGetResolver().GetCurrentContext());
+                        ArGetResolver().GetCurrentContext(),
+                        loadSet);
             }
 
             usdStage->SetEditTarget(usdStage->GetSessionLayer());
