@@ -277,29 +277,23 @@ global proc {{override}}OptionBox() {
 
 MtohRenderGlobals::MtohRenderGlobals() {}
 
-void MtohInitializeRenderGlobals() {
-    const auto& rendererDescs = MtohGetRendererDescriptions();
-    for (const auto& rendererDesc : rendererDescs) {
+void MtohInitializeRenderGlobals(MtohRendererInitialization validRenderers) {
+    assert(validRenderers.first.size() == validRenderers.second.size() &&  "Unbalanced arguments");
+    for (size_t i = 0, n = validRenderers.first.size(); i < n; ++i) {
+        const auto& rendererDesc = validRenderers.first[i];
         const auto optionBoxCommand = TfStringReplace(
             _renderOverrideOptionBoxTemplate, "{{override}}",
             rendererDesc.overrideName.GetText());
+
         auto status = MGlobal::executeCommand(optionBoxCommand.c_str());
         if (!status) {
             TF_WARN(
                 "Error in render override option box command function: \n%s",
                 status.errorString().asChar());
         }
-        auto* rendererPlugin =
-            HdRendererPluginRegistry::GetInstance().GetRendererPlugin(
-                rendererDesc.rendererName);
-        if (rendererPlugin == nullptr) { continue; }
-        auto* renderDelegate = rendererPlugin->CreateRenderDelegate();
-        if (renderDelegate == nullptr) { continue; }
-        const auto rendererSettingDescriptors =
-            renderDelegate->GetRenderSettingDescriptors();
-        _rendererAttributes[rendererDesc.rendererName] =
-            rendererSettingDescriptors;
-        delete renderDelegate;
+
+        auto& rendererSettingDescriptors = _rendererAttributes[rendererDesc.rendererName];
+        rendererSettingDescriptors = std::move(validRenderers.second[i]);
 
         std::stringstream ss;
         ss << "global proc " << rendererDesc.overrideName << "Options() {\n";

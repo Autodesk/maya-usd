@@ -33,20 +33,6 @@ constexpr auto MTOH_DEFAULT_RENDERER_PLUGIN_NAME =
     "MTOH_DEFAULT_RENDERER_PLUGIN";
 }
 
-TfTokenVector MtohGetRendererPlugins() {
-    static const auto ret = []() -> TfTokenVector {
-        HfPluginDescVector pluginDescs;
-        HdRendererPluginRegistry::GetInstance().GetPluginDescs(&pluginDescs);
-
-        TfTokenVector r;
-        r.reserve(pluginDescs.size());
-        for (const auto& desc : pluginDescs) { r.emplace_back(desc.id); }
-        return r;
-    }();
-
-    return ret;
-}
-
 std::string MtohGetRendererPluginDisplayName(const TfToken& id) {
     HfPluginDesc pluginDesc;
     if (!TF_VERIFY(HdRendererPluginRegistry::GetInstance().GetPluginDesc(
@@ -57,36 +43,86 @@ std::string MtohGetRendererPluginDisplayName(const TfToken& id) {
     return pluginDesc.displayName;
 }
 
-TfToken MtohGetDefaultRenderer() {
-    const auto l = MtohGetRendererPlugins();
-    if (l.empty()) { return {}; }
-    const auto* defaultRenderer = getenv(MTOH_DEFAULT_RENDERER_PLUGIN_NAME);
-    if (defaultRenderer == nullptr) { return l[0]; }
-    const TfToken defaultRendererToken(defaultRenderer);
-    if (std::find(l.begin(), l.end(), defaultRendererToken) != l.end()) {
-        return defaultRendererToken;
-    }
-    return l[0];
-}
+MtohRendererInitialization MtohInitializeRenderPlugins() {
+    using Storage = std::pair<MtohRendererDescriptionVector, MtohRendererSettingsVector>;
+    static const Storage ret = []() -> Storage {
+        HdRendererPluginRegistry& pluginRegistry = HdRendererPluginRegistry::GetInstance();
+        HfPluginDescVector pluginDescs;
+        pluginRegistry.GetPluginDescs(&pluginDescs);
 
-const MtohRendererDescriptionVector& MtohGetRendererDescriptions() {
-    static const auto ret = []() -> MtohRendererDescriptionVector {
-        MtohRendererDescriptionVector r;
-        const auto& plugins = MtohGetRendererPlugins();
-        if (plugins.empty()) { return r; }
-        r.reserve(plugins.size());
-        for (const auto& plugin : plugins) {
-            r.emplace_back(
-                plugin,
-                TfToken(
-                    TfStringPrintf("mtohRenderOverride_%s", plugin.GetText())),
-                TfToken(TfStringPrintf(
-                    "%s (Hydra)",
-                    MtohGetRendererPluginDisplayName(plugin).c_str())));
+        Storage store;
+        store.first.reserve(pluginDescs.size());
+        store.second.reserve(pluginDescs.size());
+
+        for (const auto& pluginDesc : pluginDescs) {
+            const TfToken renderer = pluginDesc.id;
+            HdRendererPlugin* plugin = pluginRegistry.GetRendererPlugin(renderer);
+            if (!plugin)
+                continue;
+
+            HdRenderDelegate* delegate = plugin->IsSupported() ?
+                plugin->CreateRenderDelegate() : nullptr;
+            if (delegate) {
+                store.first.emplace_back(
+                    renderer,
+                    TfToken(
+                        TfStringPrintf("mtohRenderOverride_%s", renderer.GetText())
+                    ),
+                    TfToken(
+                        TfStringPrintf("%s (Hydra)", renderer.GetText())
+                    )
+                );
+
+                store.second.emplace_back(
+                    std::move(delegate->GetRenderSettingDescriptors()));
+
+                plugin->DeleteRenderDelegate(delegate);
+            }
+            // XXX: No 'delete plugin', should plugin be cached as well?
         }
-        return r;
+        // Make sure the static's size doesn't have any extra overhead
+        store.first.shrink_to_fit();
+        store.second.shrink_to_fit();
+        return store;
     }();
     return ret;
 }
+
+const MtohRendererDescriptionVector& MtohGetRendererDescriptions() {
+    return MtohInitializeRenderPlugins().first;
+}
+
+TfTokenVector MtohGetRendererPlugins() {
+    // This is returning a copy, so just build it up
+    TfTokenVector ret;
+    for (auto& plugin : MtohGetRendererDescriptions())
+        ret.emplace_back(plugin.rendererName);
+    return ret;
+}
+
+TfToken MtohGetDefaultRenderer() {
+    const MtohRendererDescriptionVector& plugins = MtohGetRendererDescriptions();
+    if (plugins.empty())
+        return {};
+
+    const auto* defaultRenderer = getenv(MTOH_DEFAULT_RENDERER_PLUGIN_NAME);
+    if (defaultRenderer == nullptr) {
+        // FIXME: Why have two of these ?
+        // In the case of MTOH_DEFAULT_RENDERER_PLUGIN_NAME, HD_DEFAULT_RENDERER
+        // will still be created once during UsdImagingGL initialization
+        // Give the UsdImagingGL env-variable a try ...
+        defaultRenderer = getenv("HD_DEFAULT_RENDERER");
+        if (defaultRenderer == nullptr)
+            return plugins.front().rendererName;
+    }
+
+    const TfToken defaultRendererToken(defaultRenderer);
+    auto it = std::find_if(plugins.begin(), plugins.end(),
+        [&](const MtohRendererDescription& desc) -> bool {
+            return desc.rendererName == defaultRendererToken;
+        });
+    return it == plugins.end() ? plugins.front().rendererName : defaultRendererToken;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

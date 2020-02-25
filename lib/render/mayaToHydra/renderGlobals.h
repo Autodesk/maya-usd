@@ -25,6 +25,7 @@
 #include <maya/MObject.h>
 
 #include "tokens.h"
+#include "utils.h"
 #include "../../usd/hdMaya/delegates/params.h"
 
 #include <unordered_map>
@@ -51,7 +52,7 @@ struct MtohRenderGlobals {
 };
 
 // Reading renderer delegate attributes and generating UI code.
-void MtohInitializeRenderGlobals();
+void MtohInitializeRenderGlobals(MtohRendererInitialization init);
 // Creating render globals attributes on "defaultRenderGlobals"
 MObject MtohCreateRenderGlobals();
 // Returning the settings stored on "defaultRenderGlobals"

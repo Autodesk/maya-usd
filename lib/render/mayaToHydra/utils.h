@@ -19,6 +19,7 @@
 #include <pxr/pxr.h>
 
 #include <pxr/base/tf/token.h>
+#include <pxr/imaging/hd/renderDelegate.h>
 
 #include <string>
 #include <vector>
@@ -36,11 +37,21 @@ struct MtohRendererDescription {
 };
 
 using MtohRendererDescriptionVector = std::vector<MtohRendererDescription>;
+using MtohRendererSettingsVector = std::vector<HdRenderSettingDescriptorList>;
 
 TfTokenVector MtohGetRendererPlugins();
 std::string MtohGetRendererPluginDisplayName(const TfToken& id);
 TfToken MtohGetDefaultRenderer();
 const MtohRendererDescriptionVector& MtohGetRendererDescriptions();
+
+// Initialize the render-delegates list to all known valid delegates.
+// This function should only be called once (on start-up).
+//
+// The second item (MtohRendererSettingsVector) is only valid from that call
+// as continuing initialization may relocate/move the items.
+//
+using MtohRendererInitialization = std::pair<const MtohRendererDescriptionVector&, MtohRendererSettingsVector>;
+MtohRendererInitialization MtohInitializeRenderPlugins();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
