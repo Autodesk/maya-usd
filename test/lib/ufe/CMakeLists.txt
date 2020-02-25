@@ -34,7 +34,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testGroupCmd.py
         testAttribute.py
         testAttributes.py
-        testContextOps.py
 		# The following files test UFE_V1 interfaces, and therefore should not
 		# depend on UFE_V2.  However, the test code relies on capability to
 		# retrieve a USD prim from a UFE scene item, which in turn depends on
@@ -52,6 +51,11 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         # testTransform3dTranslate.py
         testRename.py
     )
+    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2009)
+        list(APPEND test_script_files
+            testContextOps.py
+        )
+    endif()
 endif()
 
 # copy ufe tests to ${CMAKE_CURRENT_BINARY_DIR} and run them from there
