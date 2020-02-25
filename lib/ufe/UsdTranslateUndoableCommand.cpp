@@ -23,10 +23,12 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
+UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
+	const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
 	: Ufe::TranslateUndoableCommand(item)
 	, fPrim(prim)
 	, fPath(ufePath)
+	, fTimeCode(timeCode)
 	, fNoTranslateOp(false)
 {
 	MayaUsdUtils::MayaTransformAPI api(prim);
@@ -38,9 +40,10 @@ UsdTranslateUndoableCommand::~UsdTranslateUndoableCommand()
 }
 
 /*static*/
-UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
+UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(
+	const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
 {
-	return std::make_shared<UsdTranslateUndoableCommand>(prim, ufePath, item);
+	return std::make_shared<UsdTranslateUndoableCommand>(prim, ufePath, item, timeCode);
 }
 
 void UsdTranslateUndoableCommand::undo()

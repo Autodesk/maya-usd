@@ -1069,7 +1069,10 @@ public:
 
 private:
 
+  AL_USDMAYA_PUBLIC
   void notifyPreSelectionChanged() override;
+
+  AL_USDMAYA_PUBLIC
   void notifyPostSelectionChanged() override;
 
   SdfPathVector m_pathsOrdered;

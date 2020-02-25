@@ -34,6 +34,13 @@
 #include <ufe/observableSelection.h>
 #endif
 
+#include "mayaUsd/nodes/proxyShapePlugin.h"
+
+#include <ufe/globalSelection.h>
+#include <ufe/observableSelection.h>
+
+#include "AL/usdmaya/TypeIDs.h"
+
 using AL::maya::test::buildTempPath;
 
 namespace {

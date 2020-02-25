@@ -1229,7 +1229,9 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
 
   auto stage = m_stage;
   if(!stage)
+  {
     return false;
+  }
   triggerEvent("SelectionStarted");
 
   m_pleaseIgnoreSelection = true;

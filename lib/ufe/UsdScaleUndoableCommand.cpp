@@ -23,10 +23,11 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdScaleUndoableCommand::UsdScaleUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
+UsdScaleUndoableCommand::UsdScaleUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
 	: Ufe::ScaleUndoableCommand(item)
 	, fPrim(prim)
 	, fPath(ufePath)
+	, fTimeCode(timeCode)
 	, fNoScaleOp(false)
 {
 	MayaUsdUtils::MayaTransformAPI api(prim);
@@ -38,9 +39,9 @@ UsdScaleUndoableCommand::~UsdScaleUndoableCommand()
 }
 
 /*static*/
-UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
+UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
 {
-	return std::make_shared<UsdScaleUndoableCommand>(prim, ufePath, item);
+	return std::make_shared<UsdScaleUndoableCommand>(prim, ufePath, item, timeCode);
 }
 
 void UsdScaleUndoableCommand::undo()

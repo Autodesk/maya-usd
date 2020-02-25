@@ -25,6 +25,9 @@
 
 #include <pxr/usd/usdGeom/xformCache.h>
 
+#include <maya/MSelectionList.h>
+#include <maya/MFnDagNode.h>
+
 MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -77,6 +80,32 @@ void UsdTransform3d::setItem(const UsdSceneItem::Ptr& item)
 	fItem = item;
 }
 
+MayaUsdProxyShapeBase* UsdTransform3d::proxy() const
+{
+	auto ufePath = path();
+	const auto& pathStr = ufePath.string();
+	auto pos = pathStr.find_first_of('/');
+
+	MString dagPathStr(pathStr.c_str() + 6, pos - 6);
+	MSelectionList sl;
+	sl.add(dagPathStr);
+	MDagPath dagPath;
+	sl.getDagPath(0, dagPath);
+	MFnDagNode fn(dagPath);
+  return (MayaUsdProxyShapeBase*)fn.userNode();
+}
+
+UsdTimeCode UsdTransform3d::timeCode() const
+{
+	MayaUsdProxyShapeBase* proxyShape = proxy();
+	if(proxyShape)
+	{
+		auto value = proxyShape->getTime();
+		return value;
+	}
+	return UsdTimeCode::Default();
+}
+
 //------------------------------------------------------------------------------
 // Ufe::Transform3d overrides
 //------------------------------------------------------------------------------
@@ -93,7 +122,7 @@ Ufe::SceneItem::Ptr UsdTransform3d::sceneItem() const
 
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd()
 {
-	auto translateCmd = UsdTranslateUndoableCommand::create(fPrim, fItem->path(), fItem);
+	auto translateCmd = UsdTranslateUndoableCommand::create(fPrim, fItem->path(), fItem, timeCode());
 	return translateCmd;
 }
 
@@ -112,7 +141,7 @@ Ufe::Vector3d UsdTransform3d::translation() const
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd()
 {
-	auto rotateCmd = UsdRotateUndoableCommand::create(fPrim, fItem->path(), fItem);
+	auto rotateCmd = UsdRotateUndoableCommand::create(fPrim, fItem->path(), fItem, timeCode());
 	return rotateCmd;
 }
 
@@ -125,7 +154,7 @@ void UsdTransform3d::rotate(double x, double y, double z)
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
 {
-	auto scaleCmd = UsdScaleUndoableCommand::create(fPrim, fItem->path(), fItem);
+	auto scaleCmd = UsdScaleUndoableCommand::create(fPrim, fItem->path(), fItem, timeCode());
 	return scaleCmd;
 }
 
@@ -137,7 +166,7 @@ void UsdTransform3d::scale(double x, double y, double z)
 
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotTranslateCmd()
 {
-	auto translateCmd = UsdRotatePivotTranslateUndoableCommand::create(fPrim, fItem->path(), fItem);
+	auto translateCmd = UsdRotatePivotTranslateUndoableCommand::create(fPrim, fItem->path(), fItem, timeCode());
 	return translateCmd;
 }
 

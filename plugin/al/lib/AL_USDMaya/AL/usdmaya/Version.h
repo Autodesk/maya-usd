@@ -20,9 +20,9 @@
 #define xstr(a) stringify(a)
 #define stringify(a) #a
 
-#define AL_USDMAYA_VERSION_MAJOR 0
-#define AL_USDMAYA_VERSION_MINOR 39
-#define AL_USDMAYA_VERSION_PATCH 1
+#define AL_USDMAYA_VERSION_MAJOR 1
+#define AL_USDMAYA_VERSION_MINOR 0
+#define AL_USDMAYA_VERSION_PATCH 0
 
 #define AL_USDMAYA_VERSION_STR xstr(AL_USDMAYA_VERSION_MAJOR) "." \
                                xstr(AL_USDMAYA_VERSION_MINOR) "." \

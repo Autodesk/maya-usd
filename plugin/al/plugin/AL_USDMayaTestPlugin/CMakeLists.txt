@@ -62,6 +62,10 @@ elseif(IS_LINUX)
     set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
 endif()
 
+if(UFE_FOUND)
+    add_definitions(-DWANT_UFE_BUILD=1)
+endif()
+
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         AL_USDMAYA_UNITTEST

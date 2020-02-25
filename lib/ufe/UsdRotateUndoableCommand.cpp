@@ -22,10 +22,12 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdRotateUndoableCommand::UsdRotateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
+UsdRotateUndoableCommand::UsdRotateUndoableCommand(
+	const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
 	: Ufe::RotateUndoableCommand(item)
 	, fPrim(prim)
 	, fPath(ufePath)
+	, fTimeCode(timeCode)
 	, fNoRotateOp(false)
 {
 	MayaUsdUtils::MayaTransformAPI api(fPrim);
@@ -37,9 +39,10 @@ UsdRotateUndoableCommand::~UsdRotateUndoableCommand()
 }
 
 /*static*/
-UsdRotateUndoableCommand::Ptr UsdRotateUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
+UsdRotateUndoableCommand::Ptr UsdRotateUndoableCommand::create(
+	const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
 {
-	return std::make_shared<UsdRotateUndoableCommand>(prim, ufePath, item);
+	return std::make_shared<UsdRotateUndoableCommand>(prim, ufePath, item, timeCode);
 }
 
 void UsdRotateUndoableCommand::undo()

@@ -22,7 +22,8 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdScalePivotTranslateUndoableCommand::UsdScalePivotTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, UsdTimeCode timeCode)
+UsdScalePivotTranslateUndoableCommand::UsdScalePivotTranslateUndoableCommand(
+	const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
 	: Ufe::TranslateUndoableCommand(item)
 	, fPrim(prim)
 	, fPath(ufePath)
@@ -38,7 +39,8 @@ UsdScalePivotTranslateUndoableCommand::~UsdScalePivotTranslateUndoableCommand()
 }
 
 /*static*/
-UsdScalePivotTranslateUndoableCommand::Ptr UsdScalePivotTranslateUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, UsdTimeCode timeCode)
+UsdScalePivotTranslateUndoableCommand::Ptr UsdScalePivotTranslateUndoableCommand::create(
+	const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
 {
 	return std::make_shared<UsdScalePivotTranslateUndoableCommand>(prim, ufePath, item, timeCode);
 }

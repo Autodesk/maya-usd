@@ -73,14 +73,6 @@ ProxyShapeHierarchyHandler::Ptr g_ProxyHandler;
 
 bool InPathChange::fInPathChange = false;
 
-void refreshStages()
-{
-	if(g_StagesSubject)
-	{
-		g_StagesSubject->afterOpen();
-	}
-}
-
 //------------------------------------------------------------------------------
 // Functions
 //------------------------------------------------------------------------------
@@ -89,12 +81,6 @@ void refreshStages()
 {
 	if(g_StagesSubject)
 	{
-		if(Ufe::RunTimeMgr::instance().hierarchyHandler(g_MayaRtid) != g_ProxyHandler)
-		{
-			g_ProxyHandler = ProxyShapeHierarchyHandler::create(g_MayaHierarchyHandler);
-			Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, g_ProxyHandler);
-		}
-
 		g_StagesSubject->afterOpen();
 	}
 }

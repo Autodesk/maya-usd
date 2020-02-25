@@ -142,7 +142,7 @@ private:
     void _FilterSelection();
     void _UpdateSelectionStates();
 
-    const MayaUsdProxyShapeBase*  _proxyShape{ nullptr }; //!< DG proxy shape node
+    MayaUsdProxyShapeBase*        _proxyShape{ nullptr }; //!< DG proxy shape node
     MDagPath                      _proxyDagPath;          //!< DAG path of the proxy shape (assuming no DAG instancing)
 
     // USD & Hydra Objects
