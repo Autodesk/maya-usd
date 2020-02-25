@@ -15,6 +15,8 @@
 //
 #pragma once
 
+#include "TreeItem.h"
+
 #include <mayaUsd/ui/api.h>
 
 #include <QtGui/QStandardItemModel>
@@ -28,6 +30,8 @@ class QTreeView;
 PXR_NAMESPACE_USING_DIRECTIVE
 
 MAYAUSD_NS_DEF {
+
+class IMayaMQtUtil;
 
 /**
  * \brief Qt Model to explore the hierarchy of a USD file.
@@ -45,13 +49,11 @@ public:
 	 * \brief Constructor.
 	 * \param parent A reference to the parent of the TreeModel.
 	 */
-	explicit TreeModel(QObject* parent = nullptr) noexcept;
+	explicit TreeModel(const IMayaMQtUtil* mayaQtUtil, const ImportData* importData = nullptr, QObject* parent = nullptr) noexcept;
 
 	// QStandardItemModel overrides
-	QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 	Qt::ItemFlags flags(const QModelIndex &index) const override;
-	bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
 
 	/**
 	 * \brief Order of the columns as they appear in the Tree.
@@ -66,13 +68,30 @@ public:
 		kTreeColumn_Last				// Last element of the enum.
 	};
 
+	void setRootPrimPath(const std::string& path);
+	void getRootPrimPath(std::string&, const QModelIndex& parent);
 	void fillStagePopulationMask(UsdStagePopulationMask& popMask, const QModelIndex& parent);
 	void fillPrimVariantSelections(ImportData::PrimVariantSelections& primVariantSelections, const QModelIndex& parent);
 	void openPersistentEditors(QTreeView* tv, const QModelIndex& parent);
 
+	const ImportData* importData() const { return fImportData; }
+	const IMayaMQtUtil* mayaQtUtil() const { return fMayaQtUtil; }
+
+	void onItemClicked(TreeItem* item);
+
 private:
-	void setParentsCheckState(const QModelIndex &child, Qt::CheckState state);
-	void setChildCheckState(const QModelIndex &parent, Qt::CheckState state);
+	void uncheckEnableTree();
+	void checkEnableItem(TreeItem* item);
+
+	void setParentsCheckState(const QModelIndex &child, TreeItem::CheckState state);
+	void setChildCheckState(const QModelIndex &parent, TreeItem::CheckState state);
+
+private:
+	// Extra import data, if any to set the initial state of dialog from.
+	const ImportData*			fImportData;
+
+	// Special interface we can use to perform Maya Qt utilities (such as Pixmap loading).
+	const IMayaMQtUtil*			fMayaQtUtil;
 };
 
 } // namespace MayaUsd

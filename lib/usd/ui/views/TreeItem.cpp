@@ -15,17 +15,26 @@
 //
 
 #include "TreeItem.h"
+#include "TreeModel.h"
 #include "ItemDelegate.h"
+#include "IMayaMQtUtil.h"
+
+#include <maya/MQtUtil.h>
 
 #include <cassert>
 
 MAYAUSD_NS_DEF {
 
+QPixmap* TreeItem::fsCheckBoxOn = nullptr;
+QPixmap* TreeItem::fsCheckBoxOnDisabled = nullptr;
+QPixmap* TreeItem::fsCheckBoxOff = nullptr;
+QPixmap* TreeItem::fsCheckBoxOffDisabled = nullptr;
+
 TreeItem::TreeItem(const UsdPrim& prim, Type t) noexcept
 	: ParentClass()
 	, fPrim(prim)
 	, fType(t)
-	, fCheckState(Qt::Unchecked)
+	, fCheckState(CheckState::kChecked_Disabled)
 	, fVariantSelectionModified(false)
 {
 	initializeItem();
@@ -41,7 +50,36 @@ int TreeItem::type() const
 	return ParentClass::ItemType::UserType;
 }
 
-void TreeItem::setCheckState(Qt::CheckState st)
+const QPixmap& TreeItem::checkImage() const
+{
+	if (fsCheckBoxOn == nullptr)
+	{
+		const TreeModel* treeModel = qobject_cast<const TreeModel*>(model());
+		if (treeModel != nullptr)
+		{
+			fsCheckBoxOn = treeModel->mayaQtUtil()->createPixmap("checkboxOn.png");
+			fsCheckBoxOnDisabled = treeModel->mayaQtUtil()->createPixmap("checkboxOnDisabled.png");
+			fsCheckBoxOff = treeModel->mayaQtUtil()->createPixmap("checkboxOff.png");
+			fsCheckBoxOffDisabled = treeModel->mayaQtUtil()->createPixmap("checkboxOffDisabled.png");
+		}
+	}
+
+	switch (fCheckState)
+	{
+	case CheckState::kChecked:
+		return *fsCheckBoxOn;
+	case CheckState::kChecked_Disabled:
+		return *fsCheckBoxOnDisabled;
+	case CheckState::kUnchecked:
+		return *fsCheckBoxOff;
+	case CheckState::kUnchecked_Disabled:
+		return *fsCheckBoxOffDisabled;
+	default:
+		return *fsCheckBoxOffDisabled;
+	}
+}
+
+void TreeItem::setCheckState(TreeItem::CheckState st)
 {
 	assert(fType == Type::kLoad);
 	if (fType == Type::kLoad)
@@ -60,7 +98,7 @@ void TreeItem::initializeItem()
 	switch (fType)
 	{
 	case Type::kLoad:
-		fCheckState = Qt::Checked;
+		fCheckState = CheckState::kChecked_Disabled;
 		break;
 	case Type::kName:
 		if (fPrim.IsPseudoRoot())

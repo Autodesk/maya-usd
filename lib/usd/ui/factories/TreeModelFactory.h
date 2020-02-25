@@ -32,7 +32,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 MAYAUSD_NS_DEF {
 
+class IMayaMQtUtil;
 class TreeModel;
+class ImportData;
 
 /**
  * \brief Factory to create a tree-like structure of USD content suitable to be displayed in a TreeView.
@@ -51,7 +53,7 @@ public:
 	 * \param parent A reference to the parent of the TreeModel.
 	 * \return An empty TreeModel.
 	 */
-	static std::unique_ptr<TreeModel> createEmptyTreeModel(QObject* parent = nullptr);
+	static std::unique_ptr<TreeModel> createEmptyTreeModel(const IMayaMQtUtil* mayaQtUtil, const ImportData* importData = nullptr, QObject* parent = nullptr);
 
 	/**
 	 * \brief Create a TreeModel from the given USD Stage.
@@ -60,7 +62,11 @@ public:
 	 * \param nbItems Number of items added to the TreeModel.
 	 * \return A TreeModel created from the given USD Stage.
 	 */
-	static std::unique_ptr<TreeModel> createFromStage(const UsdStageRefPtr& stage, QObject* parent = nullptr, int* nbItems = nullptr);
+	static std::unique_ptr<TreeModel> createFromStage(const UsdStageRefPtr& stage,
+													  const IMayaMQtUtil* mayaQtUtil,
+													  const ImportData* importData = nullptr,
+													  QObject* parent = nullptr,
+													  int* nbItems = nullptr);
 
 protected:
 	// Type definition for an STL unordered set of SDF Paths:

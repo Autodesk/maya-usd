@@ -15,6 +15,7 @@
 //
 
 #include "USDImportDialog.h"
+#include "IMayaMQtUtil.h"
 #include "factories/TreeModelFactory.h"
 #include "ItemDelegate.h"
 #include "ui_USDImportDialog.h"
@@ -27,7 +28,7 @@ MAYAUSD_NS_DEF {
 // and without it we have an undefined symbol.
 IUSDImportView::~IUSDImportView() { }
 
-USDImportDialog::USDImportDialog(const std::string& filename, QWidget* parent)
+USDImportDialog::USDImportDialog(const std::string& filename, const ImportData* importData,const IMayaMQtUtil* mayaQtUtil, QWidget* parent /*= nullptr*/)
 	: QDialog{ parent }
 	, fUI{ new Ui::ImportDialog() }
 	, fStage{ UsdStage::Open(filename, UsdStage::InitialLoadSet::LoadNone) }
@@ -36,13 +37,28 @@ USDImportDialog::USDImportDialog(const std::string& filename, QWidget* parent)
 {
 	if (!fStage)
 		throw std::invalid_argument("Invalid filename passed to USD Import Dialog");
+	if (mayaQtUtil == nullptr)
+		throw std::invalid_argument("Invalid IMayaMQtUtil passed to USD Import Dialog");
 
 	fUI->setupUi(this);
 
+	// If we were given some import data we will only use it if it matches our
+	// input filename. In the case where the user opened dialog, clicked Apply and
+	// then reopens the dialog we want to reset the dialog to the previous state.
+	const ImportData* matchingImportData = nullptr;
+	if ((importData != nullptr) && (fFilename == importData->filename()))
+	{
+		fRootPrimPath = importData->rootPrimPath();
+		matchingImportData = importData;
+	}
+
 	// These calls must come after the UI is initialized via "setupUi()":
 	int nbItems = 0;
-	fTreeModel = TreeModelFactory::createFromStage(fStage, this, &nbItems);
+	fTreeModel = TreeModelFactory::createFromStage(fStage, mayaQtUtil, matchingImportData, this, &nbItems);
 	fProxyModel = std::unique_ptr<QSortFilterProxyModel>(new QSortFilterProxyModel(this));
+
+	// Set the root prim path in the tree model. This will set the default check states.
+	fTreeModel->setRootPrimPath(fRootPrimPath);
 
 	// Configure the TreeView of the dialog:
 	fProxyModel->setSourceModel(fTreeModel.get());
@@ -53,6 +69,8 @@ USDImportDialog::USDImportDialog(const std::string& filename, QWidget* parent)
 	fUI->treeView->expandToDepth(3);
 	fUI->treeView->setTreePosition(TreeModel::kTreeColumn_Name);
 	fUI->treeView->setAlternatingRowColors(true);
+	fUI->treeView->setSelectionMode(QAbstractItemView::SingleSelection);
+	QObject::connect(fUI->treeView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onItemClicked(const QModelIndex&)));
 
 	QHeaderView* header = fUI->treeView->header();
 
@@ -66,8 +84,8 @@ USDImportDialog::USDImportDialog(const std::string& filename, QWidget* parent)
 	// Must be done AFTER we set our item delegate
 	fTreeModel->openPersistentEditors(fUI->treeView, QModelIndex());
 
-	// Use the same width for the NAME column of the TreeView as the 1.8 * width of the "filter" text box above it:
-	constexpr int kLoadWidth = 25;
+	// Set some initial widths for the tree view columns.
+	const int kLoadWidth = mayaQtUtil->dpiScale(25);
 	constexpr int kTypeWidth = 120;
 	constexpr int kNameWidth = 500;
 	header->setMinimumSectionSize(kLoadWidth);
@@ -107,6 +125,10 @@ const std::string& USDImportDialog::filename() const
 
 const std::string& USDImportDialog::rootPrimPath() const
 {
+	std::string rootPrimPath;
+	fTreeModel->getRootPrimPath(rootPrimPath, QModelIndex());
+	if (!rootPrimPath.empty())
+		fRootPrimPath = rootPrimPath;
 	return fRootPrimPath;
 }
 
@@ -127,6 +149,22 @@ ImportData::PrimVariantSelections USDImportDialog::primVariantSelections() const
 UsdStage::InitialLoadSet USDImportDialog::stageInitialLoadSet() const
 {
 	return UsdStage::InitialLoadSet::LoadAll;
+}
+
+void USDImportDialog::onItemClicked(const QModelIndex& index)
+{
+	TreeItem* item = static_cast<TreeItem*>(fTreeModel->itemFromIndex(fProxyModel->mapToSource(index)));
+	if (item != nullptr)
+	{
+		// When user checks a prim that is in a collapsed state, then that prim
+		// gets checked-enabled and it expands to show its immediate children.
+		fTreeModel->onItemClicked(item);
+		if (!fUI->treeView->isExpanded(index))
+		{
+			if (item->checkState() == TreeItem::CheckState::kChecked)
+				fUI->treeView->expand(index);
+		}
+	}
 }
 
 } // namespace MayaUsd
