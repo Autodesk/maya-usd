@@ -23,6 +23,14 @@ proc mayaUsdTranslatorExport_SetCheckbox(string $arg, string $widget) {
     }
 }
 
+proc mayaUsdTranslatorExport_SetOppositeCheckbox(string $arg, string $widget) {
+    if ($arg == "0") {
+        checkBoxGrp -e -v1 true $widget;
+    } else {
+        checkBoxGrp -e -v1 false $widget;
+    }
+}
+
 proc mayaUsdTranslatorExport_SetTextField(string $arg, string $widget) {
     textFieldGrp -e -text $arg $widget;
 }
@@ -37,6 +45,27 @@ proc mayaUsdTranslatorExport_SetOptionMenuByAnnotation(
         }
 
         $index++;
+    }
+}
+
+proc mayaUsdTranslatorExport_SetOptionMenuByBool (
+        string $ann, string $widget) {
+    // Mapping between a boolean option and an option menu with two choices.
+    // False maps to the first menu item, which is index 1.
+    // True maps to the second menu item, which is index 2.
+    int $optionAsBool = 1;
+    if ("1" == $ann)
+    {
+        $optionAsBool = 2;
+    }
+    optionMenuGrp -e -select $optionAsBool $widget;
+}
+
+proc string mayaUsdTranslatorExport_AppendOppositeFromCheckbox(string $currentOptions, string $arg, string $widget) {
+    if (`checkBoxGrp -q -v1 $widget` == 1) {
+        return $currentOptions + ";" + $arg + "=0";
+    } else {
+        return $currentOptions + ";" + $arg + "=1";
     }
 }
 
@@ -56,10 +85,20 @@ proc string mayaUsdTranslatorExport_AppendFromPopup(string $currentOptions, stri
     return $currentOptions + ";" + $arg + "=" + $annotation;
 }
 
+proc string mayaUsdTranslatorExport_AppendFromBoolPopup(string $currentOptions, string $arg, string $widget) {
+    int $index = `optionMenuGrp -q -select $widget` - 1;
+    return $currentOptions + ";" + $arg + "=" + $index;
+}
+
 proc string mayaUsdTranslatorExport_AppendFrameRange(string $currentOptions) {
     int $start = `intFieldGrp -q -value1 framRangeFields`;
     int $end = `intFieldGrp -q -value2 framRangeFields`;
     return $currentOptions + ";startTime=" + $start + ";endTime=" + $end;
+}
+
+proc string mayaUsdTranslatorExport_AppendFromIntField(string $currentOptions, string $arg, string $widget) {
+    string $value = `intFieldGrp -q -value1 $widget`;
+    return $currentOptions + ";" + $arg + "=" + $value;
 }
 
 proc string mayaUsdTranslatorExport_AppendFromFloatField(string $currentOptions, string $arg, string $widget) {
@@ -115,6 +154,19 @@ global proc int mayaUsdTranslatorExport (string $parent,
     int $index;
 
     if ($action == "post") {
+        string $parentScopAnn = "Name of the USD scope that is the parent of the exported data.";
+        string $colorSetsAnn = "Exports Maya Color Sets as USD primvars.";
+        string $uvSetsAnn = "Exports Maya UV Sets as USD primvars.";
+        string $animDataAnn = "Exports Maya animation data as USD time samples.";
+        string $frameStepAnn = "Specifies the increment between USD time sample frames during animation export";
+        string $eulerFilterAnn = "Exports the euler angle filtering that was performed in Maya.";
+        string $visibilityAnn = "Exports Maya visibility attributes as USD metadata.";
+        string $mergeShapesAnn = "Merges Maya transform and shape nodes into a single USD prim.";
+        string $namespacesAnn = "By default, namespaces are exported to the USD file in the following format: nameSpaceExample_pPlatonic1";
+        string $instancesAnn = "Exports Maya instances as USD instanceable references.";
+        string $subdMethodAnn = "Exports the selected subdivision method as a USD uniform attribute.";
+        string $frameSamplesAnn = "Specifies the value(s) used to multi-sample time frames during animation export. Multiple values separated by a space (-0.1 0.2) are supported.";
+
         setParent $parent;
 
         columnLayout -adj true usdOptsCol;
@@ -122,22 +174,23 @@ global proc int mayaUsdTranslatorExport (string $parent,
         frameLayout -label "Output" -collapsable true -collapse false;
             separator -style "none";
 
-            textFieldGrp -l "Create USD Parent Scope:" -placeholderText "USD Prim Name" parentScopeField;
+            textFieldGrp -l "Create USD Parent Scope:" -placeholderText "USD Prim Name" 
+                -annotation $parentScopAnn parentScopeField;
 
             separator -style "none";
         setParent ..;
 
         frameLayout -label "Geometry" -collapsable true -collapse false;
             separator -style "none";
-            optionMenuGrp -l "Default Mesh Scheme:" defaultMeshSchemePopup;
+            optionMenuGrp -l "Subdivision Method:" -annotation $subdMethodAnn defaultMeshSchemePopup;
                 menuItem -l "Catmull-Clark" -ann "catmullClark";
                 menuItem -l "Bilinear" -ann "bilinear";
                 menuItem -l "Loop" -ann "loop";
-                menuItem -l "Polygonal Mesh" -ann "none";
+                menuItem -l "None (Polygonal Mesh)" -ann "none";
 
-            checkBoxGrp -l "Color Sets:" exportColorSetsCheckBox;
+            checkBoxGrp -l "Color Sets:" -annotation $colorSetsAnn exportColorSetsCheckBox;
 
-            checkBoxGrp -l "UV Sets:" exportUVsCheckBox;
+            checkBoxGrp -l "UV Sets:" -annotation $uvSetsAnn exportUVsCheckBox;
             
             separator -style "none";
         setParent ..;
@@ -145,7 +198,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
         frameLayout -label "Animation" -collapsable true -collapse false;
             separator -style "none";
 
-            checkBoxGrp -l "Animation Data: " -cc ("mayaUsdTranslatorExport_AnimationCB") animationCheckBox;
+            checkBoxGrp -l "Animation Data: " -cc ("mayaUsdTranslatorExport_AnimationCB") 
+                -annotation $animDataAnn animationCheckBox;
 
             columnLayout -width 100 animOptsCol;
                 rowLayout -numberOfColumns 2 -columnAttach 2 "left" 20;
@@ -153,9 +207,12 @@ global proc int mayaUsdTranslatorExport (string $parent,
                     button -l "Use Animation Range" -command ("mayaUsdTranslatorExport_AnimationRangeCB") animRangeButton;
                 setParent ..;
 
-                floatFieldGrp -l "Frame Step:" -v1 1 -cw 1 175 frameStrideField;
+                floatFieldGrp -l "Frame Step:" -v1 1 -cw 1 175 -annotation $frameStepAnn frameStrideField;
 
-                checkBoxGrp -l "Euler Filter:" -cw 1 175 eulerFilterCheckBox;
+                textFieldGrp -l "Frame Sample:" -cw 1 175 -annotation $frameSamplesAnn frameSampleField;
+
+                checkBoxGrp -l "Euler Filter:" -cw 1 175 
+                    -annotation $eulerFilterAnn eulerFilterCheckBox;
             setParent ..;
 
             separator -style "none";
@@ -164,13 +221,16 @@ global proc int mayaUsdTranslatorExport (string $parent,
         frameLayout -label "Advanced" -collapsable true -collapse true;
             separator -style "none";
 
-            checkBoxGrp -l "Visibility:" exportVisibilityCheckBox;
+            checkBoxGrp -l "Visibility:" -annotation $visibilityAnn exportVisibilityCheckBox;
 
-            checkBoxGrp -l "Export Instances:" exportInstancesCheckBox;
+            optionMenuGrp -l "Instances:" -annotation $instancesAnn exportInstancesPopup;
+                menuItem -l "Flatten";
+                menuItem -l "Convert to USD Instanceable References";
 
-            checkBoxGrp -l "Merge Transform and Shapes:" mergeTransformAndShapeCheckBox;
+            checkBoxGrp -l "Merge Transform and Shape\nNodes:" 
+                -annotation $mergeShapesAnn mergeTransformAndShapeCheckBox;
 
-            checkBoxGrp -l "Strip Namespaces:" stripNamespacesCheckBox;
+            checkBoxGrp -l "Include Namespaces:" -annotation $namespacesAnn includeNamespacesCheckBox;
 
             separator -style "none";
         setParent ..;
@@ -202,16 +262,18 @@ global proc int mayaUsdTranslatorExport (string $parent,
                 } else if ($optionBreakDown[0] == "frameStride") {
                     float $frameStride = $optionBreakDown[1];
                     floatFieldGrp -e -v1 $frameStride frameStrideField;
+                } else if ($optionBreakDown[0] == "frameSample") {
+                    mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], "frameSampleField");
                 } else if ($optionBreakDown[0] == "parentScope") {
                     mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], "parentScopeField");
                 } else if ($optionBreakDown[0] == "exportInstances") {
-                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportInstancesCheckBox");                    
+                    mayaUsdTranslatorExport_SetOptionMenuByBool($optionBreakDown[1], "exportInstancesPopup");
                 } else if ($optionBreakDown[0] == "exportVisibility") {
                     mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportVisibilityCheckBox");
                 } else if ($optionBreakDown[0] == "mergeTransformAndShape") {
-                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "mergeTransformAndShapeCheckBox");                    
+                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "mergeTransformAndShapeCheckBox");
                 } else if ($optionBreakDown[0] == "stripNamespaces") {
-                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "stripNamespacesCheckBox");                    
+                    mayaUsdTranslatorExport_SetOppositeCheckbox($optionBreakDown[1], "includeNamespacesCheckBox");
                 }
             }
         }
@@ -228,11 +290,12 @@ global proc int mayaUsdTranslatorExport (string $parent,
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "eulerFilter", "eulerFilterCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendFrameRange($currentOptions);
         $currentOptions = mayaUsdTranslatorExport_AppendFromFloatField($currentOptions, "frameStride", "frameStrideField");
+        $currentOptions = mayaUsdTranslatorExport_AppendFromTextField($currentOptions, "frameSample", "frameSampleField");
         $currentOptions = mayaUsdTranslatorExport_AppendFromTextField($currentOptions, "parentScope", "parentScopeField");
-        $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportInstances", "exportInstancesCheckBox");
+        $currentOptions = mayaUsdTranslatorExport_AppendFromBoolPopup($currentOptions, "exportInstances", "exportInstancesPopup");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportVisibility", "exportVisibilityCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeTransformAndShape", "mergeTransformAndShapeCheckBox");
-        $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "stripNamespaces", "stripNamespacesCheckBox");
+        $currentOptions = mayaUsdTranslatorExport_AppendOppositeFromCheckbox($currentOptions, "stripNamespaces", "includeNamespacesCheckBox");
 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;

@@ -16,6 +16,10 @@
 //
 #include "exportTranslator.h"
 
+#include <string>
+#include <set>
+#include <sstream>
+
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/jobs/writeJob.h>
@@ -26,7 +30,7 @@
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
 
-#include <string>
+
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -57,6 +61,8 @@ UsdMayaExportTranslator::writer(const MFileObject &file,
     double frameStride = 1.0;
     bool append=false;
     
+    std::set<double> frameSamples;
+
     MStringArray filteredTypes;
     // Get the options 
     if (optionsString.length() > 0) {
@@ -86,6 +92,16 @@ UsdMayaExportTranslator::writer(const MFileObject &file,
             else if (argName == "filterTypes") {
                 theOption[1].split(',', filteredTypes);
             }
+            else if (argName == "frameSample") {
+                MStringArray samplesStrings;
+                theOption[1].split(' ', samplesStrings);
+                unsigned int nbSams = samplesStrings.length();
+                for(unsigned int sam=0; sam<nbSams; ++sam) {
+                    if (samplesStrings[sam].isDouble()) {
+                        frameSamples.insert(samplesStrings[sam].asDouble());
+                    }
+                }
+            }            
             else {
                 userArgs[argName] = UsdMayaUtil::ParseArgumentValue(
                     argName, theOption[1].asChar(),
@@ -118,7 +134,8 @@ UsdMayaExportTranslator::writer(const MFileObject &file,
 
     // Convert selection list to jobArgs dagPaths
     UsdMayaUtil::MDagPathSet dagPaths;
-    for (unsigned int i=0; i < objSelList.length(); i++) {
+    unsigned int len = objSelList.length();
+    for (unsigned int i=0; i < len; i++) {
         MDagPath dagPath;
         if (objSelList.getDagPath(i, dagPath) == MS::kSuccess) {
             dagPaths.insert(dagPath);
@@ -131,10 +148,12 @@ UsdMayaExportTranslator::writer(const MFileObject &file,
     }
 
     const std::vector<double> timeSamples = UsdMayaWriteUtil::GetTimeSamples(
-            timeInterval, std::set<double>(), frameStride);
+            timeInterval, frameSamples, frameStride);
     PXR_NS::UsdMayaJobExportArgs jobArgs = PXR_NS::UsdMayaJobExportArgs::CreateFromDictionary(
             userArgs, dagPaths, timeSamples);
-    for (unsigned int i=0; i < filteredTypes.length(); ++i) {
+    
+    len = filteredTypes.length();
+    for (unsigned int i=0; i < len; ++i) {
         jobArgs.AddFilteredTypeName(filteredTypes[i].asChar());
     }
 
@@ -184,25 +203,23 @@ UsdMayaExportTranslator::GetDefaultOptions()
     static std::string defaultOptions;
     static std::once_flag once;
     std::call_once(once, []() {
-        std::vector<std::string> entries;
+        std::ostringstream optionsStream;
         for (const std::pair<std::string, VtValue> keyValue :
                 PXR_NS::UsdMayaJobExportArgs::GetDefaultDictionary()) {
             if (keyValue.second.IsHolding<bool>()) {
-                entries.push_back(TfStringPrintf("%s=%d",
-                        keyValue.first.c_str(),
-                        static_cast<int>(keyValue.second.Get<bool>())));
+                optionsStream << keyValue.first.c_str() << "=" << static_cast<int>(keyValue.second.Get<bool>()) << ";";
             }
             else if (keyValue.second.IsHolding<std::string>()) {
-                entries.push_back(TfStringPrintf("%s=%s",
-                        keyValue.first.c_str(),
-                        keyValue.second.Get<std::string>().c_str()));
+                optionsStream << keyValue.first.c_str() << "=" << keyValue.second.Get<std::string>().c_str() << ";";
             }
         }
-        entries.push_back("animation=0");
-        entries.push_back("startTime=1");
-        entries.push_back("endTime=1");
-        entries.push_back("frameStride=1.0");
-        defaultOptions = TfStringJoin(entries, ";");
+        optionsStream << "animation=0;";
+        optionsStream << "startTime=1;";
+        optionsStream << "endTime=1;";
+        optionsStream << "frameStride=1.0;";
+        optionsStream << "frameSample=0.0;";
+
+        defaultOptions = optionsStream.str();
     });
 
     return defaultOptions;
