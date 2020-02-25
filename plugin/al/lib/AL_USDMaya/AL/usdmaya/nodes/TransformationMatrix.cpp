@@ -935,7 +935,9 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
   m_orderedOps.resize(m_xformops.size());
 
   if(!resetsXformStack)
+  {
     m_flags |= kInheritsTransform;
+  }
 
   if(matchesMayaProfile(m_xformops.begin(), m_xformops.end(), m_orderedOps.begin()))
   {
@@ -945,281 +947,261 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Scope* transformN
   {
   }
 
-  // Disable push to prim if enabled, otherwise MPlug value queries and setting
-  // in the switch statement below will trigger pushing to the prim, which
-  // will create undesirable usd "over"s.
-  //
-  bool pushOriginallyEnabled = pushToPrimEnabled();
-  m_flags &= ~kPushToPrimEnabled;
-
-  // Enclosing the process below in try/catch in order to be able to reset
-  // the push to prim enabled to its original state in case something goes
-  // wrong...
-  //
-  try
   {
-
-  auto opIt = m_orderedOps.begin();
-  for(std::vector<UsdGeomXformOp>::const_iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
-  {
-    const UsdGeomXformOp& op = *it;
-    switch(*opIt)
-    {
-    case kTranslate:
-      {
-        m_flags |= kPrimHasTranslation;
-        if(op.GetNumTimeSamples() > 1)
-        {
-          m_flags |= kAnimatedTranslation;
-        }
-        if(readFromPrim)
-        {
-          MVector tempTranslation;
-          internal_readVector(tempTranslation, op);	
-          if(transformNode)
-          {
-            MPlug(transformNode->thisMObject(), MPxTransform::translateX).setValue(tempTranslation.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::translateY).setValue(tempTranslation.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::translateZ).setValue(tempTranslation.z);
-            m_translationTweak[0] = m_translationTweak[1] = m_translationTweak[2] = 0;
-            m_translationFromUsd = tempTranslation;
-          }
-        }
-      }
-      break;
-
-    case kPivot:
-      {
-        m_flags |= kPrimHasPivot;
-        if(readFromPrim)
-        {
-          internal_readPoint(m_scalePivotFromUsd, op);
-          m_rotatePivotFromUsd = m_scalePivotFromUsd;
-          if(transformNode)
-          {
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotX).setValue(m_rotatePivotFromUsd.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotY).setValue(m_rotatePivotFromUsd.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotZ).setValue(m_rotatePivotFromUsd.z);
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotX).setValue(m_scalePivotFromUsd.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotY).setValue(m_scalePivotFromUsd.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotZ).setValue(m_scalePivotFromUsd.z);
-          }
-        }
-      }
-      break;
-
-    case kRotatePivotTranslate:
-      {
-        m_flags |= kPrimHasRotatePivotTranslate;
-        if(readFromPrim)
-        {
-          internal_readVector(m_rotatePivotTranslationFromUsd, op);
-          if(transformNode)
-          {
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotTranslateX).setValue(m_rotatePivotTranslationFromUsd.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotTranslateY).setValue(m_rotatePivotTranslationFromUsd.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotTranslateZ).setValue(m_rotatePivotTranslationFromUsd.z);
-          }
-        }
-      }
-      break;
-
-    case kRotatePivot:
-      {
-        m_flags |= kPrimHasRotatePivot;
-        if(readFromPrim)
-        {
-          internal_readPoint(m_rotatePivotFromUsd, op);
-          if(transformNode)
-          {
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotX).setValue(m_rotatePivotFromUsd.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotY).setValue(m_rotatePivotFromUsd.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotZ).setValue(m_rotatePivotFromUsd.z);
-          }
-        }
-      }
-      break;
-
-    case kRotate:
-      {
-        m_flags |= kPrimHasRotation;
-        if(op.GetNumTimeSamples() > 1)
-        {
-          m_flags |= kAnimatedRotation;
-        }
-        if(readFromPrim)
-        {
-          internal_readRotation(m_rotationFromUsd, op);
-          if(transformNode)
-          {
-            m_rotationTweak[0] = m_rotationTweak[1] = m_rotationTweak[2] = 0;
-            // attempting to set the rotation via the attributes can end up failing when using zxy rotation orders. 
-            // The only reliable way to set this value would appeear to be via MFnTransform :(
-            MFnTransform fn(m_transformNode.object());
-            fn.setRotation(m_rotationFromUsd);
-          }
-        }
-      }
-      break;
-
-    case kRotateAxis:
-      {
-        m_flags |= kPrimHasRotateAxes;
-        if(readFromPrim) {
-          MEulerRotation eulers;
-          internal_readRotation(eulers, op);
-          m_rotateOrientationFromUsd = eulers.asQuaternion();
-          if(transformNode)
-          {
-            MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisX).setValue(eulers.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisY).setValue(eulers.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisZ).setValue(eulers.z);
-          }
-        }
-      }
-      break;
-
-    case kRotatePivotInv:
-      {
-      }
-      break;
-
-    case kScalePivotTranslate:
-      {
-        m_flags |= kPrimHasScalePivotTranslate;
-        if(readFromPrim)
-        {
-          internal_readVector(m_scalePivotTranslationFromUsd, op);
-          if(transformNode)
-          {
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotTranslateX).setValue(m_scalePivotTranslationFromUsd.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotTranslateY).setValue(m_scalePivotTranslationFromUsd.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotTranslateZ).setValue(m_scalePivotTranslationFromUsd.z);
-          }
-        }
-      }
-      break;
-
-    case kScalePivot:
-      {
-        m_flags |= kPrimHasScalePivot;
-        if(readFromPrim)
-        {
-          internal_readPoint(m_scalePivotFromUsd, op);
-          if(transformNode)
-          {
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotX).setValue(m_scalePivotFromUsd.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotY).setValue(m_scalePivotFromUsd.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::scalePivotZ).setValue(m_scalePivotFromUsd.z);
-          }
-        }
-      }
-      break;
-
-    case kShear:
-      {
-        m_flags |= kPrimHasShear;
-        if(op.GetNumTimeSamples() > 1)
-        {
-          m_flags |= kAnimatedShear;
-        }
-        if(readFromPrim)
-        {
-          MVector tempShear;
-          internal_readShear(tempShear, op);	
-          if(transformNode)
-          {
-            MPlug(transformNode->thisMObject(), MPxTransform::shearXY).setValue(tempShear.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::shearXZ).setValue(tempShear.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::shearYZ).setValue(tempShear.z);
-            m_shearTweak[0] = m_shearTweak[1] = m_shearTweak[2] = 0;
-          }
-        }
-      }
-      break;
-
-    case kScale:
-      {
-        m_flags |= kPrimHasScale;
-        if(op.GetNumTimeSamples() > 1)
-        {
-          m_flags |= kAnimatedScale;
-        }
-        if(readFromPrim)
-        {
-          MVector tempScale(1.0, 1.0, 1.0);
-          internal_readVector(tempScale, op);
-          if(transformNode)
-          {
-            MPlug(transformNode->thisMObject(), MPxTransform::scaleX).setValue(tempScale.x);
-            MPlug(transformNode->thisMObject(), MPxTransform::scaleY).setValue(tempScale.y);
-            MPlug(transformNode->thisMObject(), MPxTransform::scaleZ).setValue(tempScale.z);
-            m_scaleTweak[0] = m_scaleTweak[1] = m_scaleTweak[2] = 0;
-          }
-          m_scaleFromUsd = tempScale;
-        }
-        
-      }
-      break;
-
-    case kScalePivotInv:
-      {
-      }
-      break;
-
-    case kPivotInv:
-      {
-      }
-      break;
-
-    case kTransform:
-      {
-        m_flags |= kPrimHasTransform;
-        m_flags |= kFromMatrix;
-        m_flags |= kPushPrimToMatrix;
-        if(op.GetNumTimeSamples() > 1)
-        {
-          m_flags |= kAnimatedMatrix;
-        }
-
-        if(readFromPrim)
-        {
-          MMatrix m;
-          internal_readMatrix(m, op);
-          setFromMatrix(transformNode->thisMObject(), m);
-        }
-      }
-      break;
-
-    case kUnknownOp:
-      {
-      }
-      break;
-    }
-  }
-
-  } // end try block
-  catch(const std::exception &e)
-  {
-    // Reset the push to prim state to the value it had before we disabled
-    // it for the loop above, so if something failed in the loop, the
-    // temporary setting doesn't stay around.  Then rethrow the exception
-    // so as not to disrupt whatever else may be looking for it.
+    // We want to disable push to prim if enabled, otherwise MPlug value queries
+    // and setting in the switch statement below will trigger pushing to the prim,
+    // which creates undesirable "over"s.  To accomplish this, we create an object
+    // which disables push to prim when created and resets that state back to what
+    // it was originally when it goes out of scope.
     //
-    if(pushOriginallyEnabled)
-    {
-      m_flags |= kPushToPrimEnabled;
-    }
-    throw;
-  }
+    // (Note that, because of m_flags processing at the end of this method, we need
+    // to create a scope for disableNow which ends before that processing happens
+    // instead of simply letting disableNow go out of scope when the function
+    // exits.)
+    // 
+    Scoped_DisablePushToPrim disableNow(*this);
 
-  // Reenable push to prim if it was enabled before.
-  // (Note - I don't think we want to trigger an update of anything here, only
-  // reenable push for future operations, hence not calling enablePushToPrim.)
-  //
-  if(pushOriginallyEnabled)
-  {
-    m_flags |= kPushToPrimEnabled;
+    auto opIt = m_orderedOps.begin();
+    for(std::vector<UsdGeomXformOp>::const_iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
+    {
+      const UsdGeomXformOp& op = *it;
+      switch(*opIt)
+      {
+      case kTranslate:
+        {
+          m_flags |= kPrimHasTranslation;
+          if(op.GetNumTimeSamples() > 1)
+          {
+            m_flags |= kAnimatedTranslation;
+          }
+          if(readFromPrim)
+          {
+            MVector tempTranslation;
+            internal_readVector(tempTranslation, op);	
+            if(transformNode)
+            {
+              MPlug(transformNode->thisMObject(), MPxTransform::translateX).setValue(tempTranslation.x);
+              MPlug(transformNode->thisMObject(), MPxTransform::translateY).setValue(tempTranslation.y);
+              MPlug(transformNode->thisMObject(), MPxTransform::translateZ).setValue(tempTranslation.z);
+              m_translationTweak[0] = m_translationTweak[1] = m_translationTweak[2] = 0;
+              m_translationFromUsd = tempTranslation;
+            }
+          }
+        }
+        break;
+
+      case kPivot:
+        {
+          m_flags |= kPrimHasPivot;
+          if(readFromPrim)
+          {
+            internal_readPoint(m_scalePivotFromUsd, op);
+            m_rotatePivotFromUsd = m_scalePivotFromUsd;
+            if(transformNode)
+            {
+              MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotX).setValue(m_rotatePivotFromUsd.x);
+              MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotY).setValue(m_rotatePivotFromUsd.y);
+              MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotZ).setValue(m_rotatePivotFromUsd.z);
+              MPlug(transformNode->thisMObject(), MPxTransform::scalePivotX).setValue(m_scalePivotFromUsd.x);
+              MPlug(transformNode->thisMObject(), MPxTransform::scalePivotY).setValue(m_scalePivotFromUsd.y);
+              MPlug(transformNode->thisMObject(), MPxTransform::scalePivotZ).setValue(m_scalePivotFromUsd.z);
+            }
+          }
+        }
+        break;
+
+      case kRotatePivotTranslate:
+        {
+          m_flags |= kPrimHasRotatePivotTranslate;
+          if(readFromPrim)
+          {
+            internal_readVector(m_rotatePivotTranslationFromUsd, op);
+            if(transformNode)
+            {
+              MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotTranslateX).setValue(m_rotatePivotTranslationFromUsd.x);
+              MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotTranslateY).setValue(m_rotatePivotTranslationFromUsd.y);
+              MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotTranslateZ).setValue(m_rotatePivotTranslationFromUsd.z);
+            }
+          }
+        }
+        break;
+
+      case kRotatePivot:
+        {
+          m_flags |= kPrimHasRotatePivot;
+          if(readFromPrim)
+          {
+            internal_readPoint(m_rotatePivotFromUsd, op);
+            if(transformNode)
+            {
+              MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotX).setValue(m_rotatePivotFromUsd.x);
+              MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotY).setValue(m_rotatePivotFromUsd.y);
+              MPlug(transformNode->thisMObject(), MPxTransform::rotatePivotZ).setValue(m_rotatePivotFromUsd.z);
+            }
+          }
+        }
+        break;
+
+      case kRotate:
+        {
+          m_flags |= kPrimHasRotation;
+          if(op.GetNumTimeSamples() > 1)
+          {
+            m_flags |= kAnimatedRotation;
+          }
+          if(readFromPrim)
+          {
+            internal_readRotation(m_rotationFromUsd, op);
+            if(transformNode)
+            {
+              m_rotationTweak[0] = m_rotationTweak[1] = m_rotationTweak[2] = 0;
+              // attempting to set the rotation via the attributes can end up failing when using zxy rotation orders. 
+              // The only reliable way to set this value would appeear to be via MFnTransform :(
+              MFnTransform fn(m_transformNode.object());
+              fn.setRotation(m_rotationFromUsd);
+            }
+          }
+        }
+        break;
+
+      case kRotateAxis:
+        {
+          m_flags |= kPrimHasRotateAxes;
+          if(readFromPrim) {
+            MEulerRotation eulers;
+            internal_readRotation(eulers, op);
+            m_rotateOrientationFromUsd = eulers.asQuaternion();
+            if(transformNode)
+            {
+              MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisX).setValue(eulers.x);
+              MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisY).setValue(eulers.y);
+              MPlug(transformNode->thisMObject(), MPxTransform::rotateAxisZ).setValue(eulers.z);
+            }
+          }
+        }
+        break;
+
+      case kRotatePivotInv:
+        {
+        }
+        break;
+
+      case kScalePivotTranslate:
+        {
+          m_flags |= kPrimHasScalePivotTranslate;
+          if(readFromPrim)
+          {
+            internal_readVector(m_scalePivotTranslationFromUsd, op);
+            if(transformNode)
+            {
+              MPlug(transformNode->thisMObject(), MPxTransform::scalePivotTranslateX).setValue(m_scalePivotTranslationFromUsd.x);
+              MPlug(transformNode->thisMObject(), MPxTransform::scalePivotTranslateY).setValue(m_scalePivotTranslationFromUsd.y);
+              MPlug(transformNode->thisMObject(), MPxTransform::scalePivotTranslateZ).setValue(m_scalePivotTranslationFromUsd.z);
+            }
+          }
+        }
+        break;
+
+      case kScalePivot:
+        {
+          m_flags |= kPrimHasScalePivot;
+          if(readFromPrim)
+          {
+            internal_readPoint(m_scalePivotFromUsd, op);
+            if(transformNode)
+            {
+              MPlug(transformNode->thisMObject(), MPxTransform::scalePivotX).setValue(m_scalePivotFromUsd.x);
+              MPlug(transformNode->thisMObject(), MPxTransform::scalePivotY).setValue(m_scalePivotFromUsd.y);
+              MPlug(transformNode->thisMObject(), MPxTransform::scalePivotZ).setValue(m_scalePivotFromUsd.z);
+            }
+          }
+        }
+        break;
+
+      case kShear:
+        {
+          m_flags |= kPrimHasShear;
+          if(op.GetNumTimeSamples() > 1)
+          {
+            m_flags |= kAnimatedShear;
+          }
+          if(readFromPrim)
+          {
+            MVector tempShear;
+            internal_readShear(tempShear, op);	
+            if(transformNode)
+            {
+              MPlug(transformNode->thisMObject(), MPxTransform::shearXY).setValue(tempShear.x);
+              MPlug(transformNode->thisMObject(), MPxTransform::shearXZ).setValue(tempShear.y);
+              MPlug(transformNode->thisMObject(), MPxTransform::shearYZ).setValue(tempShear.z);
+              m_shearTweak[0] = m_shearTweak[1] = m_shearTweak[2] = 0;
+            }
+          }
+        }
+        break;
+
+      case kScale:
+        {
+          m_flags |= kPrimHasScale;
+          if(op.GetNumTimeSamples() > 1)
+          {
+            m_flags |= kAnimatedScale;
+          }
+          if(readFromPrim)
+          {
+            MVector tempScale(1.0, 1.0, 1.0);
+            internal_readVector(tempScale, op);
+            if(transformNode)
+            {
+              MPlug(transformNode->thisMObject(), MPxTransform::scaleX).setValue(tempScale.x);
+              MPlug(transformNode->thisMObject(), MPxTransform::scaleY).setValue(tempScale.y);
+              MPlug(transformNode->thisMObject(), MPxTransform::scaleZ).setValue(tempScale.z);
+              m_scaleTweak[0] = m_scaleTweak[1] = m_scaleTweak[2] = 0;
+            }
+            m_scaleFromUsd = tempScale;
+          }
+          
+        }
+        break;
+
+      case kScalePivotInv:
+        {
+        }
+        break;
+
+      case kPivotInv:
+        {
+        }
+        break;
+
+      case kTransform:
+        {
+          m_flags |= kPrimHasTransform;
+          m_flags |= kFromMatrix;
+          m_flags |= kPushPrimToMatrix;
+          if(op.GetNumTimeSamples() > 1)
+          {
+            m_flags |= kAnimatedMatrix;
+          }
+
+          if(readFromPrim)
+          {
+            MMatrix m;
+            internal_readMatrix(m, op);
+            setFromMatrix(transformNode->thisMObject(), m);
+          }
+        }
+        break;
+
+      case kUnknownOp:
+        {
+        }
+        break;
+      }
+    }
+
+    // Push to prim will now be reset to its original state as the
+    // disableNow variable goes out of scope here...
   }
 
   if(m_flags & kAnimationMask)
