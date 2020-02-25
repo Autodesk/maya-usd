@@ -24,9 +24,18 @@ global proc stageFromExistingLayer_UISetup(string $parent) {
     $parent = `scrollLayout -childResizable true`;
 
     frameLayout -label "USD Layer Options";
-    textFieldGrp -l "Prim Path:" primPathField;
-    textFieldGrp -l "Exclude Prim Path:" excludePrimPathField;
-    checkBoxGrp -l "Load Payloads:" loadPayloadsCheckBox;
+    textFieldGrp -l "Prim Path:" 
+        -ann "Loads the specified prim path. If a matching prim path is not found, all prims in the file are loaded." 
+        -sbm "Loads the specified prim path" 
+        primPathField;
+    textFieldGrp -l "Exclude Prim Paths:" 
+        -ann "Excludes the specified prim paths from the loaded USD data. Multiple prim paths must be separated by a comma." 
+        -sbm "Excludes the specified prim paths from the loaded USD data" 
+        excludePrimPathField;
+    checkBoxGrp -l "Load Payloads:" 
+        -ann "When on, loads all prims marked as payloads. When off, all prims marked as payloads and their children are not loaded." 
+        -sbm "Loads prims marked as payloads" 
+        loadPayloadsCheckBox;
 }
 
 // stageFromExistingLayer_UIInit
