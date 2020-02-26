@@ -244,6 +244,12 @@ if(UFE_FOUND)
             ufe/UsdObject3dHandler.cpp
             ufe/UsdUndoCreateGroupCommand.cpp
         )
+        if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2009)
+            list(APPEND mayaUsd_src
+                ufe/UsdContextOps.cpp
+                ufe/UsdContextOpsHandler.cpp
+            )
+        endif()
     endif()
 endif()
 
@@ -384,6 +390,8 @@ if(UFE_FOUND)
             ufe/UsdAttribute.h
             ufe/UsdAttributes.h
             ufe/UsdAttributesHandler.h
+            ufe/UsdContextOps.h
+            ufe/UsdContextOpsHandler.h
             ufe/UsdObject3d.h
             ufe/UsdObject3dHandler.h
             ufe/UsdUndoCreateGroupCommand.h
