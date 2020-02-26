@@ -51,8 +51,6 @@ struct MtohRenderGlobals {
         rendererSettings;
 };
 
-// Reading renderer delegate attributes and generating UI code.
-void MtohInitializeRenderGlobals(MtohRendererInitialization init);
 // Creating render globals attributes on "defaultRenderGlobals"
 MObject MtohCreateRenderGlobals();
 // Returning the settings stored on "defaultRenderGlobals"

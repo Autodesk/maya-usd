@@ -16,6 +16,8 @@
 #include "utils.h"
 #include "tokens.h"
 
+#include <maya/MGlobal.h>
+
 #if USD_VERSION_NUM >= 1911
 #include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
@@ -34,20 +36,96 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace {
 constexpr auto MTOH_DEFAULT_RENDERER_PLUGIN_NAME =
     "MTOH_DEFAULT_RENDERER_PLUGIN";
+
+constexpr auto _renderOverrideOptionBoxTemplate = R"mel(
+global proc {{override}}OptionBox() {
+    string $windowName = "{{override}}OptionsWindow";
+    if (`window -exists $windowName`) {
+        showWindow $windowName;
+        return;
+    }
+    string $cc = "mtoh -updateRenderGlobals; refresh -f";
+
+    mtoh -createRenderGlobals;
+
+    window -title "Maya to Hydra Settings" "{{override}}OptionsWindow";
+    scrollLayout;
+    frameLayout -label "Hydra Settings";
+    columnLayout;
+    attrControlGrp -label "Enable Motion Samples" -attribute "defaultRenderGlobals.mtohEnableMotionSamples" -changeCommand $cc;
+    attrControlGrp -label "Texture Memory Per Texture (KB)" -attribute "defaultRenderGlobals.mtohTextureMemoryPerTexture" -changeCommand $cc;
+    attrControlGrp -label "OpenGL Selection Overlay" -attribute "defaultRenderGlobals.mtohSelectionOverlay" -changeCommand $cc;
+    attrControlGrp -label "Show Wireframe on Selected Objects" -attribute "defaultRenderGlobals.mtohWireframeSelectionHighlight" -changeCommand $cc;
+    attrControlGrp -label "Highlight Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlight" -changeCommand $cc;
+    attrControlGrp -label "Highlight Color for Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlightColor" -changeCommand $cc;
+    setParent ..;
+    setParent ..;
+    {{override}}Options();
+    setParent ..;
+
+    showWindow $windowName;
+}
+)mel";
+
+bool _IsSupportedAttribute(const VtValue& v) {
+    return v.IsHolding<bool>() || v.IsHolding<int>() || v.IsHolding<float>() ||
+           v.IsHolding<GfVec4f>() || v.IsHolding<std::string>();
 }
 
-std::string MtohGetRendererPluginDisplayName(const TfToken& id) {
-    HfPluginDesc pluginDesc;
-    if (!TF_VERIFY(HdRendererPluginRegistry::GetInstance().GetPluginDesc(
-            id, &pluginDesc))) {
-        return {};
+static void _BuildOptionsMenu(const MtohRendererDescription& rendererDesc,
+    const HdRenderSettingDescriptorList& rendererSettingDescriptors)
+{
+    const auto optionBoxCommand = TfStringReplace(
+        _renderOverrideOptionBoxTemplate, "{{override}}",
+        rendererDesc.overrideName.GetText());
+
+    auto status = MGlobal::executeCommand(optionBoxCommand.c_str());
+    if (!status) {
+        TF_WARN(
+            "Error in render override option box command function: \n%s",
+            status.errorString().asChar());
     }
 
-    return pluginDesc.displayName;
-}
+    std::stringstream ss;
+    ss << "global proc " << rendererDesc.overrideName << "Options() {\n";
+    ss << "\tstring $cc = \"mtoh -updateRenderGlobals; refresh -f\";\n";
+    ss << "\tframeLayout -label \"" << rendererDesc.displayName
+       << "Options\" -collapsable true;\n";
+    ss << "\tcolumnLayout;\n";
+    for (const auto& desc : rendererSettingDescriptors) {
+        if (!_IsSupportedAttribute(desc.defaultValue))
+            continue;
 
-MtohRendererInitialization MtohInitializeRenderPlugins() {
-    using Storage = std::pair<MtohRendererDescriptionVector, MtohRendererSettingsVector>;
+        const auto attrName = TfStringPrintf(
+            "%s%s", rendererDesc.rendererName.GetText(),
+            desc.key.GetText());
+        ss << "\tattrControlGrp -label \"" << desc.name
+           << "\" -attribute \"defaultRenderGlobals." << attrName
+           << "\" -changeCommand $cc;\n";
+    }
+    if (rendererDesc.rendererName == MtohTokens->HdStormRendererPlugin) {
+        ss << "\tattrControlGrp -label \"Maximum shadow map size"
+           << "\" -attribute \"defaultRenderGlobals."
+           << MtohTokens->mtohMaximumShadowMapResolution.GetString()
+           << "\" -changeCommand $cc;\n";
+    }
+    ss << "\tsetParent ..;\n";
+    ss << "\tsetParent ..;\n";
+    ss << "}\n";
+
+    const auto optionsCommand = ss.str();
+    status = MGlobal::executeCommand(optionsCommand.c_str());
+    if (!status) {
+        TF_WARN(
+            "Error in render delegate options function: \n%s",
+            status.errorString().asChar());
+    }
+
+}
+std::pair<const MtohRendererDescriptionVector&, const MtohRendererSettings&>
+MtohInitializeRenderPlugins() {
+    using Storage = std::pair<MtohRendererDescriptionVector, MtohRendererSettings>;
+
     static const Storage ret = []() -> Storage {
         HdRendererPluginRegistry& pluginRegistry = HdRendererPluginRegistry::GetInstance();
         HfPluginDescVector pluginDescs;
@@ -55,7 +133,6 @@ MtohRendererInitialization MtohInitializeRenderPlugins() {
 
         Storage store;
         store.first.reserve(pluginDescs.size());
-        store.second.reserve(pluginDescs.size());
 
         for (const auto& pluginDesc : pluginDescs) {
             const TfToken renderer = pluginDesc.id;
@@ -69,42 +146,58 @@ MtohRendererInitialization MtohInitializeRenderPlugins() {
 
             HdRenderDelegate* delegate = plugin->IsSupported() ?
                 plugin->CreateRenderDelegate() : nullptr;
-            if (delegate) {
-                store.first.emplace_back(
-                    renderer,
-                    TfToken(
-                        TfStringPrintf("mtohRenderOverride_%s", renderer.GetText())
-                    ),
-                    TfToken(
-                        TfStringPrintf("%s (Hydra)", pluginDesc.displayName.c_str())
-                    )
-                );
 
-                store.second.emplace_back(
-                    std::move(delegate->GetRenderSettingDescriptors()));
+            // No 'delete plugin', should plugin be cached as well?
+            if (!delegate)
+                continue;
 
-                plugin->DeleteRenderDelegate(delegate);
-            }
-            // XXX: No 'delete plugin', should plugin be cached as well?
+            auto& rendererSettingDescriptors = store.second.emplace(renderer,
+                delegate->GetRenderSettingDescriptors()).first->second;
+
+            // We only needed the delegate for the settings, so release
+            plugin->DeleteRenderDelegate(delegate);
+            // Null it out to make any possible usage later obv, wrong!
+            delegate = nullptr;
+
+            store.first.emplace_back(
+                renderer,
+                TfToken(
+                    TfStringPrintf("mtohRenderOverride_%s", renderer.GetText())
+                ),
+                TfToken(
+                    TfStringPrintf("%s (Hydra)", pluginDesc.displayName.c_str())
+                )
+            );
+
+            _BuildOptionsMenu(store.first.back(), rendererSettingDescriptors);
         }
+
         // Make sure the static's size doesn't have any extra overhead
         store.first.shrink_to_fit();
-        store.second.shrink_to_fit();
+        assert(store.first.size() == store.second.size());
         return store;
     }();
     return ret;
+}
+
+}
+
+std::string MtohGetRendererPluginDisplayName(const TfToken& id) {
+    HfPluginDesc pluginDesc;
+    if (!TF_VERIFY(HdRendererPluginRegistry::GetInstance().GetPluginDesc(
+            id, &pluginDesc))) {
+        return {};
+    }
+
+    return pluginDesc.displayName;
 }
 
 const MtohRendererDescriptionVector& MtohGetRendererDescriptions() {
     return MtohInitializeRenderPlugins().first;
 }
 
-TfTokenVector MtohGetRendererPlugins() {
-    // This is returning a copy, so just build it up
-    TfTokenVector ret;
-    for (auto& plugin : MtohGetRendererDescriptions())
-        ret.emplace_back(plugin.rendererName);
-    return ret;
+const MtohRendererSettings& MtohGetRendererSettings() {
+    return MtohInitializeRenderPlugins().second;
 }
 
 TfToken MtohGetDefaultRenderer() {

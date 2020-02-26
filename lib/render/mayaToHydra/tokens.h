@@ -31,7 +31,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define MTOH_TOKENS \
     ((HdStormRendererPlugin, HD_STORM_PLUGIN_NAME)) \
     (UseHdSt) \
-                    (UseVp2)
+    (UseVp2)  \
+    (mtohMaximumShadowMapResolution)
 // clang-format on
 
 // This is not an exported API.

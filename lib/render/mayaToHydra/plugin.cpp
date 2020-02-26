@@ -56,17 +56,13 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
         return ret;
     }
 
-    auto plugins = MtohInitializeRenderPlugins();
     if (auto* renderer = MHWRender::MRenderer::theRenderer()) {
-        for (const auto& desc : plugins.first) {
+        for (const auto& desc : MtohGetRendererDescriptions()) {
             std::unique_ptr<MtohRenderOverride> mtohRenderer(new MtohRenderOverride(desc));
             renderer->registerOverride(mtohRenderer.get());
             mtohRenderer.release();
         }
     }
-
-    // We're done with plugins, move it into render-globals
-    MtohInitializeRenderGlobals(std::move(plugins));
 
     return ret;
 }
