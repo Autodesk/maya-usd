@@ -69,7 +69,8 @@ global proc {{override}}OptionBox() {
 
 bool _IsSupportedAttribute(const VtValue& v) {
     return v.IsHolding<bool>() || v.IsHolding<int>() || v.IsHolding<float>() ||
-           v.IsHolding<GfVec4f>() || v.IsHolding<std::string>();
+           v.IsHolding<GfVec4f>() || v.IsHolding<std::string>() ||
+           v.IsHolding<TfEnum>();
 }
 
 static void _BuildOptionsMenu(const MtohRendererDescription& rendererDesc,
