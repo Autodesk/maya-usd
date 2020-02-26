@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 import distutils.util
+import time
 
 ############################################################
 # Helpers for printing output
@@ -45,7 +46,6 @@ def PrintError(error):
     print "ERROR:", error
 
 ############################################################
-
 def Windows():
     return platform.system() == "Windows"
 
@@ -186,6 +186,18 @@ def onerror(func, path, exc_info):
         func(path)
     else:
         raise
+
+def StartBuild():
+    global start_time
+    start_time = time.time()
+
+def StopBuild():
+    end_time = time.time()
+    elapsed_seconds = end_time - start_time
+    hours, remainder = divmod(elapsed_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    print("Elapsed time: {:02}:{:02}:{:02}".format(int(hours), int(minutes), int(seconds)))
+
 ############################################################
 # contextmanager
 @contextlib.contextmanager
@@ -581,7 +593,9 @@ if __name__ == "__main__":
 
     # BuildAndInstall
     if any(stage in ['clean', 'configure', 'build', 'install'] for stage in context.stagesArgs):
+        StartBuild()
         BuildAndInstall(context, context.buildArgs, context.stagesArgs)
+        StopBuild()
 
     # Run Tests
     if 'test' in context.stagesArgs:
