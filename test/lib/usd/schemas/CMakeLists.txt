@@ -13,41 +13,8 @@ mayaUsd_copyFiles(${TARGET_NAME}
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
     FILES ${test_script_files})
 
-set(path
-    "${CMAKE_INSTALL_PREFIX}/lib"
-    "${MAYA_LOCATION}/bin"
-    "$ENV{PATH}"
-)
-
-set(pythonPath
-    "${CMAKE_INSTALL_PREFIX}/lib/python"
-    "$ENV{PYTHONPATH}"
-)
-
-set(pxrPluginPath 
-    "${CMAKE_INSTALL_PREFIX}/lib/usd"
-)
-
-separate_argument_list(path)
-separate_argument_list(pythonPath)
-separate_argument_list(pxrPluginPath)
 
 foreach(script ${test_script_files})
     mayaUsd_get_unittest_target(target ${script})
-    add_test(
-        NAME ${target}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMAND ${MAYA_PY_EXECUTABLE} -c "from unittest import main; \
-                                          import maya.standalone; \
-                                          maya.standalone.initialize(name='python'); \
-                                          import ${target}; \
-                                          main(module=${target}); \
-                                          maya.standalone.uninitialize()"
-    )
-    set_property(TEST ${target} APPEND PROPERTY ENVIRONMENT
-        "PATH=${path}"
-        "PYTHONPATH=${pythonPath}"
-        "PXR_PLUGINPATH_NAME=${pxrPluginPath}"
-        "MAYA_NO_STANDALONE_ATEXIT=1"
-    )
+    mayaUsd_add_pymodule_test(${target})
 endforeach()

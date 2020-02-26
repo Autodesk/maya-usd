@@ -278,7 +278,7 @@ function(mayaUsd_set_test_env test_name)
         list(APPEND PXR_PLUGINPATH_NAME "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin")
     endif()
     
-    # inherit PATH and PYTHONPATH from ENV to get USD entires
+    # inherit PATH and PYTHONPATH from ENV to get USD entries
     # these should come last (esp PYTHONPATH, in case another module is overriding
     # with pkgutil) 
     list(APPEND PATH $ENV{PATH})
