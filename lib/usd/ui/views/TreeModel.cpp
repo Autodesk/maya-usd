@@ -53,7 +53,7 @@ TreeItem* findTreeItem(TreeModel* treeModel, const QModelIndex& parent, std::fun
 
 }
 
-TreeModel::TreeModel(const IMayaMQtUtil* mayaQtUtil, const ImportData* importData /*= nullptr*/, QObject* parent /*= nullptr*/) noexcept
+TreeModel::TreeModel(const IMayaMQtUtil& mayaQtUtil, const ImportData* importData /*= nullptr*/, QObject* parent /*= nullptr*/) noexcept
 	: ParentClass{ parent }
 	, fImportData{ importData }
 	, fMayaQtUtil{ mayaQtUtil }

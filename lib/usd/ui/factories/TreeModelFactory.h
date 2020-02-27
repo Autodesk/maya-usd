@@ -53,7 +53,7 @@ public:
 	 * \param parent A reference to the parent of the TreeModel.
 	 * \return An empty TreeModel.
 	 */
-	static std::unique_ptr<TreeModel> createEmptyTreeModel(const IMayaMQtUtil* mayaQtUtil, const ImportData* importData = nullptr, QObject* parent = nullptr);
+	static std::unique_ptr<TreeModel> createEmptyTreeModel(const IMayaMQtUtil& mayaQtUtil, const ImportData* importData = nullptr, QObject* parent = nullptr);
 
 	/**
 	 * \brief Create a TreeModel from the given USD Stage.
@@ -63,7 +63,7 @@ public:
 	 * \return A TreeModel created from the given USD Stage.
 	 */
 	static std::unique_ptr<TreeModel> createFromStage(const UsdStageRefPtr& stage,
-													  const IMayaMQtUtil* mayaQtUtil,
+													  const IMayaMQtUtil& mayaQtUtil,
 													  const ImportData* importData = nullptr,
 													  QObject* parent = nullptr,
 													  int* nbItems = nullptr);

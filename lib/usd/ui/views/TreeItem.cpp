@@ -57,10 +57,10 @@ const QPixmap& TreeItem::checkImage() const
 		const TreeModel* treeModel = qobject_cast<const TreeModel*>(model());
 		if (treeModel != nullptr)
 		{
-			fsCheckBoxOn = treeModel->mayaQtUtil()->createPixmap("checkboxOn.png");
-			fsCheckBoxOnDisabled = treeModel->mayaQtUtil()->createPixmap("checkboxOnDisabled.png");
-			fsCheckBoxOff = treeModel->mayaQtUtil()->createPixmap("checkboxOff.png");
-			fsCheckBoxOffDisabled = treeModel->mayaQtUtil()->createPixmap("checkboxOffDisabled.png");
+			fsCheckBoxOn = treeModel->mayaQtUtil().createPixmap("checkboxOn.png");
+			fsCheckBoxOnDisabled = treeModel->mayaQtUtil().createPixmap("checkboxOnDisabled.png");
+			fsCheckBoxOff = treeModel->mayaQtUtil().createPixmap("checkboxOff.png");
+			fsCheckBoxOffDisabled = treeModel->mayaQtUtil().createPixmap("checkboxOffDisabled.png");
 		}
 		else
 		{

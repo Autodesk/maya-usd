@@ -52,7 +52,7 @@ public:
 	 * \param filename Absolute file path of a USD file to import.
 	 * \param parent A reference to the parent widget of the dialog.
 	 */
-	explicit USDImportDialog(const std::string& filename, const ImportData* importData, const IMayaMQtUtil* mayaQtUtil, QWidget* parent = nullptr);
+	explicit USDImportDialog(const std::string& filename, const ImportData* importData, const IMayaMQtUtil& mayaQtUtil, QWidget* parent = nullptr);
 
 	//! Destructor.
 	~USDImportDialog();

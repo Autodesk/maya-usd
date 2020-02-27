@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 
     // Create and show the ImportUI
     TestUIQtUtil uiQtUtil;
-    MayaUsd::USDImportDialog usdImportDialog(usdFile, &importData, &uiQtUtil);
+    MayaUsd::USDImportDialog usdImportDialog(usdFile, &importData, uiQtUtil);
 
     // Give the dialog the Maya dark style.
     QStyle* adsk = app.style();

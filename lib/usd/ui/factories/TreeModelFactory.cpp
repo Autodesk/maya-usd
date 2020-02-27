@@ -37,7 +37,7 @@ static_assert(!std::is_constructible<TreeModelFactory>::value, "TreeModelFactory
 
 
 /*static*/
-std::unique_ptr<TreeModel> TreeModelFactory::createEmptyTreeModel(const IMayaMQtUtil* mayaQtUtil, const ImportData* importData /*= nullptr*/, QObject* parent /*= nullptr*/)
+std::unique_ptr<TreeModel> TreeModelFactory::createEmptyTreeModel(const IMayaMQtUtil& mayaQtUtil, const ImportData* importData /*= nullptr*/, QObject* parent /*= nullptr*/)
 {
 	std::unique_ptr<TreeModel> treeModel(new TreeModel(mayaQtUtil, importData, parent));
 	treeModel->setHorizontalHeaderLabels({	QObject::tr(""),
@@ -51,7 +51,7 @@ std::unique_ptr<TreeModel> TreeModelFactory::createEmptyTreeModel(const IMayaMQt
 std::unique_ptr<TreeModel> TreeModelFactory::createFromStage
 (
 	const UsdStageRefPtr& stage,
-	const IMayaMQtUtil* mayaQtUtil,
+	const IMayaMQtUtil& mayaQtUtil,
 	const ImportData* importData /*= nullptr*/,
 	QObject* parent, int* nbItems /*= nullptr*/
 )

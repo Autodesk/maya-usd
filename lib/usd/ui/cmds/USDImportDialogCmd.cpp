@@ -105,7 +105,7 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
 			USDQtUtil usdQtUtil;
 			ImportData& importData = ImportData::instance();
 			MString usdFile = fo.resolvedFullName();
-			std::unique_ptr<IUSDImportView> usdImportDialog(new USDImportDialog(usdFile.asChar(), &importData, &usdQtUtil, MQtUtil::mainWindow()));
+			std::unique_ptr<IUSDImportView> usdImportDialog(new USDImportDialog(usdFile.asChar(), &importData, usdQtUtil, MQtUtil::mainWindow()));
 			if (usdImportDialog->execute())
 			{
 				// The user clicked 'Apply' so copy the info from the dialog to the import data instance.
