@@ -227,7 +227,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
                 menuItem -l "Flatten";
                 menuItem -l "Convert to USD Instanceable References";
 
-            checkBoxGrp -l "Merge Transform and Shape\nNodes:" 
+            checkBoxGrp -l "Merge Transform and\nShape Nodes:" 
                 -annotation $mergeShapesAnn mergeTransformAndShapeCheckBox;
 
             checkBoxGrp -l "Include Namespaces:" -annotation $namespacesAnn includeNamespacesCheckBox;
