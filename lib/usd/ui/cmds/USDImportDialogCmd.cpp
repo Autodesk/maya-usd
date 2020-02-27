@@ -81,42 +81,43 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
 			setResult(rootPrimPath.c_str());
 			return MS::kSuccess;
 		}
-	}
-	else
-	{
-		if(argData.isFlagSet(kClearDataFlag))
-		{
-			ImportData& importData = ImportData::instance();
-			importData.clearData();
-			return MS::kSuccess;
-		}
 
-		MStringArray filenameArray;
-		st = argData.getObjects(filenameArray);
-		if (st && (filenameArray.length() > 0))
+		return MS::kInvalidParameter;
+	}
+
+	// Edit flags below:
+	if(argData.isFlagSet(kClearDataFlag))
+	{
+		ImportData& importData = ImportData::instance();
+		importData.clearData();
+		return MS::kSuccess;
+	}
+
+	MStringArray filenameArray;
+	st = argData.getObjects(filenameArray);
+	if (st && (filenameArray.length() > 0))
+	{
+		// We only use the first one.
+		MFileObject fo;
+		fo.setRawFullName(filenameArray[0]);
+		if (fo.exists())
 		{
-			// We only use the first one.
-			MFileObject fo;
-			fo.setRawFullName(filenameArray[0]);
-			if (fo.exists())
+			USDQtUtil usdQtUtil;
+			ImportData& importData = ImportData::instance();
+			MString usdFile = fo.resolvedFullName();
+			std::unique_ptr<IUSDImportView> usdImportDialog(new USDImportDialog(usdFile.asChar(), &importData, &usdQtUtil, MQtUtil::mainWindow()));
+			if (usdImportDialog->execute())
 			{
-				USDQtUtil usdQtUtil;
-				ImportData& importData = ImportData::instance();
-				MString usdFile = fo.resolvedFullName();
-				std::unique_ptr<IUSDImportView> usdImportDialog(new USDImportDialog(usdFile.asChar(), &importData, &usdQtUtil, MQtUtil::mainWindow()));
-				if (usdImportDialog->execute())
-				{
-					// The user clicked 'Apply' so copy the info from the dialog to the import data instance.
-					importData.setFilename(usdImportDialog->filename());
-					importData.setStageInitialLoadSet(usdImportDialog->stageInitialLoadSet());
-					importData.setRootPrimPath(usdImportDialog->rootPrimPath());
-					// Don't set the stage pop mask until we solve how to use it together with
-					// the root prim path.
-					//importData.setStagePopulationMask(usdImportDialog->stagePopulationMask());
-					importData.setPrimVariantSelections(usdImportDialog->primVariantSelections());
-				}
-				return MS::kSuccess;
+				// The user clicked 'Apply' so copy the info from the dialog to the import data instance.
+				importData.setFilename(usdImportDialog->filename());
+				importData.setStageInitialLoadSet(usdImportDialog->stageInitialLoadSet());
+				importData.setRootPrimPath(usdImportDialog->rootPrimPath());
+				// Don't set the stage pop mask until we solve how to use it together with
+				// the root prim path.
+				//importData.setStagePopulationMask(usdImportDialog->stagePopulationMask());
+				importData.setPrimVariantSelections(usdImportDialog->primVariantSelections());
 			}
+			return MS::kSuccess;
 		}
 	}
 

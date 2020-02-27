@@ -22,10 +22,6 @@
 
 MAYAUSD_NS_DEF {
 
-USDQtUtil::~USDQtUtil()
-{
-}
-
 int USDQtUtil::dpiScale(int size) const
 {
 	return MQtUtil::dpiScale(size);

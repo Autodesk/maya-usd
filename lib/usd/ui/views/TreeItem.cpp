@@ -62,6 +62,15 @@ const QPixmap& TreeItem::checkImage() const
 			fsCheckBoxOff = treeModel->mayaQtUtil()->createPixmap("checkboxOff.png");
 			fsCheckBoxOffDisabled = treeModel->mayaQtUtil()->createPixmap("checkboxOffDisabled.png");
 		}
+		else
+		{
+			// The tree model should never be null, but we can recover here if it is.
+			TF_RUNTIME_ERROR("Unexpected null tree model");
+			fsCheckBoxOn = new QPixmap(":/checkboxOn.png");
+			fsCheckBoxOnDisabled = new QPixmap(":/checkboxOnDisabled.png");
+			fsCheckBoxOff = new QPixmap(":/checkboxOff.png");
+			fsCheckBoxOffDisabled = new QPixmap(":/checkboxOffDisabled.png");
+		}
 	}
 
 	switch (fCheckState)

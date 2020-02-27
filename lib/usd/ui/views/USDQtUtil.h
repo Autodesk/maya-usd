@@ -23,7 +23,7 @@ MAYAUSD_NS_DEF {
 class MAYAUSD_UI_PUBLIC USDQtUtil : public IMayaMQtUtil
 {
 public:
-	~USDQtUtil() override;
+	~USDQtUtil() override = default;
 
 	int dpiScale(int size) const override;
 	float dpiScale(float size) const override;

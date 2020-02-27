@@ -30,16 +30,12 @@
 class TestUIQtUtil : public MayaUsd::IMayaMQtUtil
 {
 public:
-	~TestUIQtUtil() override;
+	~TestUIQtUtil() override = default;
 
 	int dpiScale(int size) const override;
 	float dpiScale(float size) const override;
 	QPixmap* createPixmap(const std::string& imageName) const override;
 };
-
-TestUIQtUtil::~TestUIQtUtil()
-{
-}
 
 int TestUIQtUtil::dpiScale(int size) const
 {
