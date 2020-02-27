@@ -51,20 +51,18 @@ public:
 
 	UsdSceneItem::Ptr renamedItem() const;
 
-	//! Rename the prim hierarchy at usdSrcPath to usdDstPath.
-	bool rename(SdfLayerHandle layer, const Ufe::Path& ufeSrcPath, const SdfPath& usdSrcPath, const SdfPath& usdDstPath);
+private:
 
 	// UsdUndoRenameCommand overrides
 	void undo() override;
 	void redo() override;
 
-private:
-	bool internalRename(SdfLayerHandle layer, const Ufe::Path& ufeSrcPath, const SdfPath& usdSrcPath, const SdfPath& usdDstPath);
+	bool renameRedo();
+	bool renameUndo();
 
-private:
 	UsdStageWeakPtr fStage;
 	SdfLayerHandle fLayer;
-	Ufe::Path fUfeSrcPath;
+    UsdSceneItem::Ptr fUfeSrcItem;
 	SdfPath fUsdSrcPath;
 	UsdSceneItem::Ptr fUfeDstItem;
 	SdfPath fUsdDstPath;

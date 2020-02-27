@@ -55,6 +55,11 @@ struct PrimFilterInterface
 
 
   virtual std::string generateTranslatorId(UsdPrim prim) = 0;
+
+  /// \brief  check if a prim is dirty.
+  /// \param  prim the prim to check.
+  /// \return returns true if yes, false otherwise.
+  virtual bool isPrimDirty(const UsdPrim& prim) = 0;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

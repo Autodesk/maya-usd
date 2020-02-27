@@ -27,6 +27,7 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/imaging/garch/gl.h"
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
@@ -1077,6 +1078,27 @@ px_vp20Utils::OutputDisplayStatusToStream(
         case MHWRender::kNoStatus:
             stream << "kNoStatus";
             break;
+    }
+}
+
+
+GLUniformBufferBindingsSaver::GLUniformBufferBindingsSaver()
+{
+    for (size_t i = 0u; i < _uniformBufferBindings.size(); ++i) {
+        glGetIntegeri_v(
+            GL_UNIFORM_BUFFER_BINDING,
+            static_cast<GLuint>(i),
+            &_uniformBufferBindings[i]);
+    }
+}
+
+GLUniformBufferBindingsSaver::~GLUniformBufferBindingsSaver()
+{
+    for (size_t i = 0u; i < _uniformBufferBindings.size(); ++i) {
+        glBindBufferBase(
+            GL_UNIFORM_BUFFER,
+            static_cast<GLuint>(i),
+            _uniformBufferBindings[i]);
     }
 }
 

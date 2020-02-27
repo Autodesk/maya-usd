@@ -26,8 +26,10 @@ list(APPEND DEPENDANT_LIBRARIES
     usdSkel
     usdUtils
     vt
+    OpenMayaFX
     ${MAYA_LIBRARIES}
     ${LIBRARY_NAME}
+	mayaUsd_Schemas
 )
 
 list(APPEND source
@@ -40,6 +42,8 @@ list(APPEND source
     lightWriter.cpp
     locatorWriter.cpp
     materialReader.cpp
+    mayaReferenceReader.cpp
+    mayaReferenceUpdater.cpp
     meshReader.cpp
     meshWriter.cpp
     meshWriter_Primvars.cpp
@@ -63,21 +67,20 @@ add_library(${TRANSLATORS_PLUGIN} SHARED ${source})
 #======================================================================
 if(IS_MACOSX OR IS_LINUX)
     # rpath setup
-    mayaUsd_init_rpath(rpath "plugin")
+    mayaUsd_init_rpath(rpath "lib")
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../USD/lib")
+    if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
-    mayaUsd_install_rpath(rpath ${TRANSLATORS_PLUGIN})
-endif()
-
-if(IS_LINUX)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags" PARENT_SCOPE)
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../USD/lib64")
+    if(IS_LINUX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
     endif()
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../Maya.app/Contents/MacOS")
+    endif()
+    mayaUsd_install_rpath(rpath ${TRANSLATORS_PLUGIN})
 endif()
 
 if(IS_MACOSX)

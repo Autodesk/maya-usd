@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -80,6 +80,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (Float4ToFloatZ)
     (Float4ToFloatW)
     (Float4ToFloat3)
+
+    (UsdPrimvarReader_color)
+    (UsdPrimvarReader_vector)
 );
 
 //! Helper utility function to test whether a node is a UsdShade primvar reader.
@@ -89,7 +92,8 @@ bool _IsUsdPrimvarReader(const HdMaterialNode& node)
     return (id == UsdImagingTokens->UsdPrimvarReader_float ||
             id == UsdImagingTokens->UsdPrimvarReader_float2 ||
             id == UsdImagingTokens->UsdPrimvarReader_float3 ||
-            id == UsdImagingTokens->UsdPrimvarReader_float4);
+            id == UsdImagingTokens->UsdPrimvarReader_float4 ||
+            id == _tokens->UsdPrimvarReader_vector);
 }
 
 //! Helper utility function to test whether a node is a UsdShade UV texture.
@@ -148,7 +152,26 @@ void _ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet)
 
     for (const HdMaterialNode &node : inNet.nodes)
     {
+        TfToken primvarToRead;
+
+        const bool isUsdPrimvarReader = _IsUsdPrimvarReader(node);
+        if (isUsdPrimvarReader) {
+            auto it = node.parameters.find(_tokens->varname);
+            if (it != node.parameters.end()) {
+                primvarToRead = TfToken(TfStringify(it->second));
+            }
+        }
+
         outNet.nodes.push_back(node);
+
+        // If the primvar reader is reading color or opacity, change it to
+        // UsdPrimvarReader_color which can create COLOR stream requirement
+        // instead of generic TEXCOORD stream.
+        if (primvarToRead == HdTokens->displayColor ||
+            primvarToRead == HdTokens->displayOpacity) {
+            auto& nodeToChange = outNet.nodes.back();
+            nodeToChange.identifier = _tokens->UsdPrimvarReader_color;
+        }
 
         // Copy outgoing connections and if needed add passthrough node/connection.
         for (const HdMaterialRelationship& rel : inNet.relationships) {
@@ -170,6 +193,12 @@ void _ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet)
                 passThroughId = _tokens->Float4ToFloatZ;
             }
             else if (rel.inputName == _tokens->a || rel.inputName == _tokens->w) {
+                passThroughId = _tokens->Float4ToFloatW;
+            }
+            else if (primvarToRead == HdTokens->displayColor) {
+                passThroughId = _tokens->Float4ToFloat3;
+            }
+            else if (primvarToRead == HdTokens->displayOpacity) {
                 passThroughId = _tokens->Float4ToFloatW;
             }
             else {
@@ -205,10 +234,9 @@ void _ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet)
         // UsdImagingMaterialAdapter doesn't create primvar requirements as
         // expected. Workaround by manually looking up "varname" parameter.
         // https://groups.google.com/forum/#!msg/usd-interest/z-14AgJKOcU/1uJJ1thXBgAJ
-        else if (_IsUsdPrimvarReader(node)) {
-            auto it = node.parameters.find(_tokens->varname);
-            if (it != node.parameters.end()) {
-                outNet.primvars.push_back(TfToken(TfStringify(it->second)));
+        else if (isUsdPrimvarReader) {
+            if (!primvarToRead.IsEmpty()) {
+                outNet.primvars.push_back(primvarToRead);
             }
         }
     }

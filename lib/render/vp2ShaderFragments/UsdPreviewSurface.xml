@@ -1,6 +1,8 @@
 <!--
 ========================================================================
 Copyright 2018 Pixar
+Copyright 2020 Autodesk
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -21,6 +23,7 @@ limitations under the License.
         <fragment_ref name="mayaShaderGeom" ref="mayaShaderGeom"/>
 
         <!-- Fragments for extracting computed dot products. -->
+        <fragment_ref name="NwFaceCameraIfNAN" ref="NwFaceCameraIfNAN"/>
         <fragment_ref name="mayaShaderGeom_Float4GetX" ref="Float4ToFloatX"/>
         <fragment_ref name="mayaShaderGeom_Float4GetY" ref="Float4ToFloatY"/>
         <fragment_ref name="mayaShaderGeom_Float4GetZ" ref="Float4ToFloatZ"/>
@@ -49,6 +52,7 @@ limitations under the License.
         <!-- mayaShaderGeom packs the dot products into a float4, so we
              extract them individually for use as parameters to the lighting
              fragment. -->
+        <connect from="NwFaceCameraIfNAN.output" to="mayaShaderGeom.Nw" name="Nw"/>
         <connect from="mayaShaderGeom.mayaShaderGeom" to="mayaShaderGeom_Float4GetX.input" name="input"/>
         <connect from="mayaShaderGeom.mayaShaderGeom" to="mayaShaderGeom_Float4GetY.input" name="input"/>
         <connect from="mayaShaderGeom.mayaShaderGeom" to="mayaShaderGeom_Float4GetZ.input" name="input"/>
@@ -91,9 +95,8 @@ limitations under the License.
 
         <!-- Maya Parameters for Lighting -->
         <undefined name="GPUStage" ref="mayaComputeSurfaceFinal.GPUStage" semantic="GPUStage"/>
-        <float3 name="Nw" ref="mayaShaderGeom.Nw" flags="varyingInputParam"/>
+        <float3 name="Nw" ref="NwFaceCameraIfNAN.Nw" flags="varyingInputParam"/>
         <float3 name="Lw" ref="mayaShaderGeom.Lw"/>
-        <float3 name="Vw" ref="mayaShaderGeom.Vw" flags="varyingInputParam"/>
         <float3 name="HLw" ref="mayaHVector.HLw"/>
         <float3 name="diffuseI" ref="usdPreviewSurfaceLighting.diffuseIrradiance"/>
         <float3 name="specularI" ref="usdPreviewSurfaceLighting.specularIrradiance"/>

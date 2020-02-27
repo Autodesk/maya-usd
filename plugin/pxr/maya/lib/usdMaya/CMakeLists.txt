@@ -109,6 +109,7 @@ pxr_test_scripts(
         testenv/testUsdImportCamera.py
         testenv/testUsdImportColorSets.py
         testenv/testUsdImportFrameRange.py
+        testenv/testUsdImportMayaReference.py
         testenv/testUsdImportMesh.py
         testenv/testUsdImportNestedAssemblyAnimation.py
         testenv/testUsdImportRfMLight.py
@@ -737,6 +738,22 @@ pxr_register_test(testUsdImportFrameRange
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdImportFrameRange"
     TESTENV testUsdImportFrameRange
+    ENV
+        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
+        MAYA_DISABLE_CIP=1
+        MAYA_NO_STANDALONE_ATEXIT=1
+        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+)
+
+pxr_install_test_dir(
+    SRC testenv/UsdImportMayaReferenceTest
+    DEST testUsdImportMayaReference
+)
+pxr_register_test(testUsdImportMayaReference
+    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
+    COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdImportMayaReference"
+    TESTENV testUsdImportMayaReference
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
         MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources

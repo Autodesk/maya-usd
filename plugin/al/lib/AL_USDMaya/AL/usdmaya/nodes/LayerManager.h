@@ -30,7 +30,19 @@
 
 #include <map>
 #include <set>
-#include <boost/thread.hpp>
+
+// On Windows, against certain versions of Maya and with strict compiler
+// settings on, we are getting warning-as-error problems with a couple
+// boost includes.  Disabling those warnings for the specific includes
+// for now instead of disabling the strict settings at a higher level.
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4002 )
+#endif
+  #include <boost/thread.hpp>
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

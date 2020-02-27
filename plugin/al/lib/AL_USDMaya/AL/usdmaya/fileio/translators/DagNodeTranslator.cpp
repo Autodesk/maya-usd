@@ -41,7 +41,7 @@ MObject DagNodeTranslator::m_initialShadingGroup = MObject::kNullObj;
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DagNodeTranslator::registerType()
 {
-  const char* const errorString = "Unable to extract attribute for DagNodeTranslator";
+  const char* const errorString = "DagNodeTranslator::Unable to extract attribute for DagNodeTranslator";
   MNodeClass fn("transform");
   MStatus status;
 
@@ -67,11 +67,20 @@ void DagNodeTranslator::initialiseDefaultShadingGroup(MObject& target)
 //----------------------------------------------------------------------------------------------------------------------
 MObject DagNodeTranslator::createNode(const UsdPrim& from, MObject parent, const char* nodeType, const ImporterParams& params)
 {
+  std::string xformError = std::string("DagNodeTranslator::createNode error creating node of type ") + nodeType
+      + ". Create transform instead";
+  MStatus status;
   MFnDagNode fn;
-  MObject to = fn.create(nodeType);
 
-  MStatus status = copyAttributes(from, to, params);
-  AL_MAYA_CHECK_ERROR_RETURN_NULL_MOBJECT(status, "Dag node translator: unable t/o get attributes");
+  MObject to = fn.create(nodeType, parent, &status);
+  AL_MAYA_CHECK_ERROR2(status, xformError.c_str());
+  if (status!= MS::kSuccess) {
+    to = fn.create("transform", parent, &status);
+  }
+  AL_MAYA_CHECK_ERROR2(status, "DagNodeTranslator::createNode error creating node of type transform");
+
+  status = copyAttributes(from, to, params);
+  AL_MAYA_CHECK_ERROR_RETURN_NULL_MOBJECT(status, "DagNodeTranslator::createNode unable to copy attributes");
 
   return to;
 }
@@ -90,7 +99,7 @@ MStatus DagNodeTranslator::applyDefaultMaterialOnShape(MObject shape)
 {
   MStatus status;
   MFnSet fn(m_initialShadingGroup, &status);
-  AL_MAYA_CHECK_ERROR(status, "Unable to attach MfnSet to initialShadingGroup");
+  AL_MAYA_CHECK_ERROR(status, "DagNodeTranslator::Unable to attach MfnSet to initialShadingGroup");
   return fn.addMember(shape);
 }
 

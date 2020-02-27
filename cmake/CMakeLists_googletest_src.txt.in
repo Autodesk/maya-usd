@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.2)
+cmake_minimum_required(VERSION 3.12.0)
 
 project(googletest-download NONE)
 
@@ -7,6 +7,10 @@ project(googletest-download NONE)
 # Need to force the use of the shared C run-time.
 
 include(ExternalProject)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(FORCE_SHARED_CRT "")
 if(MSVC)
@@ -27,4 +31,7 @@ ExternalProject_Add(googletest
                     "-DCMAKE_MACOSX_RPATH=ON"
                     "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"
                     "${FORCE_SHARED_CRT}"
+                    "-DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}"
+                    "-DCMAKE_CXX_EXTENSIONS=${CMAKE_CXX_EXTENSIONS}"
+                    "-DCMAKE_CXX_STANDARD_REQUIRED=${CMAKE_CXX_STANDARD_REQUIRED}"
 )

@@ -17,6 +17,7 @@ find_path(UFE_INCLUDE_DIR
         $ENV{UFE_INCLUDE_ROOT}
         ${UFE_INCLUDE_ROOT}
         ${MAYA_DEVKIT_LOCATION}
+        $ENV{MAYA_DEVKIT_LOCATION}
         ${MAYA_LOCATION}
         $ENV{MAYA_LOCATION}
         ${MAYA_BASE_DIR}
@@ -43,6 +44,10 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/ufe.h")
     endforeach()
     set(UFE_VERSION ${UFE_MAJOR_VERSION}.${UFE_MINOR_VERSION}.${UFE_PATCH_LEVEL})
 
+    if("${UFE_MAJOR_VERSION}" STREQUAL "0")
+        math(EXPR UFE_PREVIEW_VERSION_NUM "${UFE_MINOR_VERSION} * 1000 + ${UFE_PATCH_LEVEL}")
+    endif()
+
     file(STRINGS
         "${UFE_INCLUDE_DIR}/ufe/ufe.h"
         _ufe_features
@@ -61,6 +66,7 @@ find_library(UFE_LIBRARY
         $ENV{UFE_LIB_ROOT}
         ${UFE_LIB_ROOT}
         ${MAYA_DEVKIT_LOCATION}
+        $ENV{MAYA_DEVKIT_LOCATION}
         ${MAYA_LOCATION}
         $ENV{MAYA_LOCATION}
         ${MAYA_BASE_DIR}

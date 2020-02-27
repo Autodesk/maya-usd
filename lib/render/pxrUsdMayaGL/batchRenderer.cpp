@@ -22,8 +22,8 @@
 #include "./debugCodes.h"
 #include "./userData.h"
 
-#include "../px_vp20/utils.h"
-#include "../px_vp20/utils_legacy.h"
+#include "mayaUsd/render/px_vp20/utils.h"
+#include "mayaUsd/render/px_vp20/utils_legacy.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2i.h"
@@ -39,6 +39,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/trace/trace.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/imaging/glf/contextCaps.h"
@@ -66,6 +67,7 @@
 #include <maya/MMatrix.h>
 #include <maya/MObject.h>
 #include <maya/MObjectHandle.h>
+#include <maya/MProfiler.h>
 #include <maya/MSceneMessage.h>
 #include <maya/MSelectInfo.h>
 #include <maya/MSelectionContext.h>
@@ -93,6 +95,14 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 
 TF_INSTANTIATE_SINGLETON(UsdMayaGLBatchRenderer);
+
+const int UsdMayaGLBatchRenderer::ProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "UsdMayaGLBatchRenderer", "UsdMayaGLBatchRenderer"
+#else
+    "UsdMayaGLBatchRenderer"
+#endif
+);
 
 /* static */
 void
@@ -130,6 +140,13 @@ UsdMayaGLBatchRenderer::GetDelegatePrefix(const bool isViewport2) const
 bool
 UsdMayaGLBatchRenderer::AddShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Batch Renderer Adding Shape Adapter");
+
     if (!TF_VERIFY(shapeAdapter, "Cannot add invalid shape adapter")) {
         return false;
     }
@@ -237,6 +254,13 @@ UsdMayaGLBatchRenderer::AddShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter)
 bool
 UsdMayaGLBatchRenderer::RemoveShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Batch Renderer Removing Shape Adapter");
+
     if (!TF_VERIFY(shapeAdapter, "Cannot remove invalid shape adapter")) {
         return false;
     }
@@ -562,6 +586,13 @@ UsdMayaGLBatchRenderer::Draw(const MDrawRequest& request, M3dView& view)
 {
     // Legacy viewport implementation.
 
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorC_L2,
+        "Batch Renderer Draw() (Legacy Viewport)");
+
     MDrawData drawData = request.drawData();
 
     const PxrMayaHdUserData* hdUserData =
@@ -617,6 +648,13 @@ UsdMayaGLBatchRenderer::Draw(
         const MUserData* userData)
 {
     // Viewport 2.0 implementation.
+
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorC_L2,
+        "Batch Renderer Draw() (Viewport 2.0)");
 
     const PxrMayaHdUserData* hdUserData =
         dynamic_cast<const PxrMayaHdUserData*>(userData);
@@ -723,6 +761,13 @@ UsdMayaGLBatchRenderer::TestIntersection(
     // viewport-based selection method, we compute the selection against the
     // Viewport 2.0 shape adapter buckets rather than the legacy buckets, since
     // we want to compute selection against what's actually being rendered.
+
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Batch Renderer Testing Intersection (Legacy Viewport)");
 
     M3dView view = selectInfo.view();
 
@@ -835,6 +880,13 @@ UsdMayaGLBatchRenderer::TestIntersection(
 {
     // Viewport 2.0 implementation.
 
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Batch Renderer Testing Intersection (Viewport 2.0)");
+
     // Guard against the user clicking in the viewer before the renderer is
     // setup, or with no shape adapters registered.
     if (!_renderIndex || _shapeAdapterBuckets.empty()) {
@@ -940,6 +992,8 @@ UsdMayaGLBatchRenderer::TestIntersectionCustomPrimFilter(
     // Custom collection implementation.
     // Differs from viewport implementations in that it doesn't rely on
     // _ComputeSelection being called first.
+
+    GLUniformBufferBindingsSaver bindingsSaver;
 
     return _TestIntersection(primFilter.collection,
                              primFilter.renderTags,
@@ -1058,6 +1112,13 @@ UsdMayaGLBatchRenderer::_TestIntersection(
         const bool singleSelection,
         HdxPickHitVector* result)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Batch Renderer Testing Intersection");
+
     if (!result) {
         return false;
     }
@@ -1113,6 +1174,13 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         const GfMatrix4d& projectionMatrix,
         const bool singleSelection)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Batch Renderer Computing Selection");
+
     // If depth selection has not been turned on, then we can optimize
     // area/marquee selections by handling collections similarly to a single
     // selection, where we test intersections against the single, viewport
@@ -1129,6 +1197,8 @@ UsdMayaGLBatchRenderer::_ComputeSelection(
         primFilters.size());
 
     _selectResults.clear();
+
+    GLUniformBufferBindingsSaver bindingsSaver;
 
     for (const PxrMayaHdPrimFilter& primFilter : primFilters) {
         TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
@@ -1210,6 +1280,13 @@ UsdMayaGLBatchRenderer::_Render(
         const GfVec4d& viewport,
         const std::vector<_RenderItem>& items)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorC_L2,
+        "Batch Renderer Rendering Batch");
+
     _taskDelegate->SetCameraState(worldToViewMatrix,
                                   projectionMatrix,
                                   viewport);
@@ -1221,27 +1298,7 @@ UsdMayaGLBatchRenderer::_Render(
                  GL_DEPTH_BUFFER_BIT |
                  GL_VIEWPORT_BIT);
 
-    // XXX: When Maya is using OpenGL Core Profile as the rendering engine (in
-    // either compatibility or strict mode), batch renders like those done in
-    // the "Render View" window or through the ogsRender command do not
-    // properly track uniform buffer binding state. This was causing issues
-    // where the first batch render performed would look correct, but then all
-    // subsequent renders done in that Maya session would be completely black
-    // (no alpha), even if the frame contained only Maya-native geometry or if
-    // a new scene was created/opened.
-    //
-    // To avoid this problem, we need to save and restore Maya's bindings
-    // across Hydra calls. We try not to bog down performance by saving and
-    // restoring *all* GL_MAX_UNIFORM_BUFFER_BINDINGS possible bindings, so
-    // instead we only do just enough to avoid issues. Empirically, the
-    // problematic binding has been the material binding at index 4.
-    static constexpr size_t _UNIFORM_BINDINGS_TO_SAVE = 5u;
-    std::vector<GLint> uniformBufferBindings(_UNIFORM_BINDINGS_TO_SAVE, 0);
-    for (size_t i = 0u; i < uniformBufferBindings.size(); ++i) {
-        glGetIntegeri_v(GL_UNIFORM_BUFFER_BINDING,
-                        (GLuint)i,
-                        &uniformBufferBindings[i]);
-    }
+    GLUniformBufferBindingsSaver bindingsSaver;
 
     // hydra orients all geometry during topological processing so that
     // front faces have ccw winding. We disable culling because culling
@@ -1288,16 +1345,18 @@ UsdMayaGLBatchRenderer::_Render(
     _hdEngine.SetTaskContextData(HdxTokens->selectionState,
                                  selectionTrackerValue);
 
-    _hdEngine.Execute(_renderIndex.get(), &tasks);
+    {
+        TRACE_SCOPE("Executing Hydra Tasks");
+
+        MProfilingScope hydraProfilingScope(
+            ProfilerCategory,
+            MProfiler::kColorC_L3,
+            "Batch Renderer Executing Hydra Tasks");
+
+        _hdEngine.Execute(_renderIndex.get(), &tasks);
+    }
 
     glDisable(GL_FRAMEBUFFER_SRGB_EXT);
-
-    // XXX: Restore Maya's uniform buffer binding state. See above for details.
-    for (size_t i = 0u; i < uniformBufferBindings.size(); ++i) {
-        glBindBufferBase(GL_UNIFORM_BUFFER,
-                         (GLuint)i,
-                         uniformBufferBindings[i]);
-    }
 
     glPopAttrib(); // GL_LIGHTING_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT |
                    // GL_DEPTH_BUFFER_BIT | GL_VIEWPORT_BIT
@@ -1311,6 +1370,13 @@ UsdMayaGLBatchRenderer::_RenderBatches(
         const GfMatrix4d& projectionMatrix,
         const GfVec4d& viewport)
 {
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorC_L2,
+        "Batch Renderer Rendering Batches");
+
     _ShapeAdapterBucketsMap& bucketsMap = bool(vp2Context) ?
         _shapeAdapterBuckets :
         _legacyShapeAdapterBuckets;

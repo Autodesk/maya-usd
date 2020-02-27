@@ -75,8 +75,13 @@ NodeFactory::~NodeFactory()
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeFactory::createNode(const UsdPrim& from, const char* const nodeType, MObject parent, bool parentUnmerged)
 {
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg(" NodeFactory::createNode: %s of type %s\n", from.GetPrimPath().GetText(), nodeType);
   std::unordered_map<std::string, translators::DgNodeTranslator*>::iterator it = m_builders.find(nodeType);
-  if(it == m_builders.end()) return MObject::kNullObj;
+  if(it == m_builders.end())
+  {
+    //If we can't find a specific translator, use the DagNodeTranslator
+    it = m_builders.find("dagNode");
+  }
   MObject obj = it->second->createNode(from, parent, nodeType, *m_params);
   setupNode(from, obj, parent, parentUnmerged);
   return obj;

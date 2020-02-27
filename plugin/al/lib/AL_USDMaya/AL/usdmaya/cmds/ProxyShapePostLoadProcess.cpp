@@ -351,6 +351,9 @@ void ProxyShapePostLoadProcess::connectSchemaPrims(
           dataPlugin->postImport(prim);
         }
       }
+
+      context->updateUniqueKey(prim);
+
       AL_END_PROFILE_SECTION();
     }
   }

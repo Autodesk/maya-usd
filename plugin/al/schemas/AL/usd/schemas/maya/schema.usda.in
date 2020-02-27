@@ -85,25 +85,6 @@ doc = "Data used to import a maya reference."
 
 ###################################################################################################
 
-class ALMayaReference "ALMayaReference"(
-  doc = "Data used to import a maya reference."
-  inherits = </Xformable>
-  customData = {
-        string className = "MayaReference"
-        string fileName = "MayaReference"
-      }
-)
-{
-  asset mayaReference(
-    doc = "Path to the maya reference."
-  )
-  string mayaNamespace (
-    doc = "Namespace which the maya reference will be imported under."
-  )
-}
-
-###################################################################################################
-
 class ALFrameRange "ALFrameRange"(
   doc = "Maya Frame Range"
   inherits = </Typed>

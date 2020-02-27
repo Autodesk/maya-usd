@@ -28,11 +28,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 const static TfToken ASSEMBLY_SHADING_MODE = UsdMayaShadingModeTokens->displayColor;
 
 UsdMaya_ReadJobWithSceneAssembly::UsdMaya_ReadJobWithSceneAssembly(
-        const std::string &iFileName,
-        const std::string &iPrimPath,
-        const std::map<std::string, std::string>& iVariants,
+        const MayaUsd::ImportData& iImportData,
         const UsdMayaJobImportArgs &iArgs) :
-    UsdMaya_ReadJob(iFileName, iPrimPath, iVariants, iArgs)
+    UsdMaya_ReadJob(iImportData, iArgs)
 {
 }
 
@@ -74,7 +72,7 @@ bool UsdMaya_ReadJobWithSceneAssembly::OverridePrimReader(
             // the file path of the top-level assembly and the path
             // to the prim within that file when creating the
             // reference assembly.
-            assetIdentifier = mFileName;
+            assetIdentifier = mImportData.filename();
             assetPrimPath = prim.GetPath();
         }
 
