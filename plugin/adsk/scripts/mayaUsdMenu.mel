@@ -94,7 +94,7 @@ global proc mayaUsdMenu_createMenuCallback() {
                 -label "Universal Scene Description (USD)" 
                 -annotation "Create a USD stage" 
                 -version $mayaVersion`;
-            menuItem -runTimeCommand mayaUsdCreateStageFromExistingLayer -version $mayaVersion;
+            menuItem -runTimeCommand mayaUsdCreateStageFromExistingLayer;
         } else {
             error "Could not create mayaUSD create menu";
         }

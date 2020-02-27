@@ -61,14 +61,19 @@ global proc stageFromExistingLayer_UICommit(string $parent, string $selectedFile
     $stageFromExistingLayer_primPath = `textFieldGrp -q -text  primPathField`;
     $stageFromExistingLayer_excludePrimPath = `textFieldGrp -q -text  excludePrimPathField`;
     $stageFromExistingLayer_loadPayloads =  `checkBoxGrp -q -value1 loadPayloadsCheckBox`;
+}
 
+proc doCreateStage(string $fileName) {
     // actually load the file
-    string $fileName = $selectedFile;
     string $baseName = capitalizeString(`basenameEx $fileName`);
     if( isValidObjectName($baseName) )
         $baseName += "_usd";
     else
         $baseName = "UsdStage";
+
+    global string $stageFromExistingLayer_primPath;
+    global string $stageFromExistingLayer_excludePrimPath;
+    global int $stageFromExistingLayer_loadPayloads;
 
     string $shapeNode = `createNode "mayaUsdProxyShape" -skipSelect -name ($baseName+"Shape")`;
     setAttr -type "string" ($shapeNode+".filePath") $fileName;
@@ -76,17 +81,23 @@ global proc stageFromExistingLayer_UICommit(string $parent, string $selectedFile
     setAttr -type "string" ($shapeNode+".excludePrimPaths") $stageFromExistingLayer_excludePrimPath;
     setAttr ($shapeNode+".loadPayloads") $stageFromExistingLayer_loadPayloads;
     connectAttr time1.outTime ($shapeNode+".time");
+    select -r $shapeNode;
 }
 
 global proc mayaUsd_createStagesFromExistingLayer() {
-    fileDialog2 
-    -fileMode 1
-    -caption "Create USD Stage From Existing Layer"
-    -fileFilter "All USD Files (*.usd *.usda *.usdc *.usdz);;*.usd;;*.usda;;*.usdc;;*.usdz"
-    -okCaption "Create"
-    -optionsUICreate "stageFromExistingLayer_UISetup"
-    -optionsUIInit "stageFromExistingLayer_UIInit"
-    -optionsUICommit2 "stageFromExistingLayer_UICommit";
+    string $result[] = `fileDialog2 
+        -fileMode 1
+        -caption "Create USD Stage From Existing Layer"
+        -fileFilter "All USD Files (*.usd *.usda *.usdc *.usdz);;*.usd;;*.usda;;*.usdc;;*.usdz"
+        -okCaption "Create"
+        -optionsUICreate "stageFromExistingLayer_UISetup"
+        -optionsUIInit "stageFromExistingLayer_UIInit"
+        -optionsUICommit2 "stageFromExistingLayer_UICommit"`;
+
+    if (size($result) > 0) {
+        doCreateStage($result[0]);
+    }
+        
 }
 
 

@@ -182,10 +182,9 @@ MayaUsdProxyShapeBase::initialize()
         "loadPayloads",
         "lpl",
         MFnNumericData::kBoolean,
-        0.0,
+        1.0,
         &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    numericAttrFn.setDefault(true);
     numericAttrFn.setKeyable(true);
     numericAttrFn.setReadable(false);
     numericAttrFn.setAffectsAppearance(true);
