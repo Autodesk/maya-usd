@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef UTILS_FORWARDDECLARES_H
-#define UTILS_FORWARDDECLARES_H
+#pragma once
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
@@ -33,10 +32,6 @@ class UsdLuxDistantLight;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-namespace MayaUsd {
-namespace Utils {
+namespace MayaUsdUtils {
   typedef std::vector<PXR_NS::UsdPrim> UsdPrimVector;
-} // MayaUsd
-} // Utils
-
-#endif // UTILS_FORWARDDECLARES_H
+} // MayaUsdUtils

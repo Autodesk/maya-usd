@@ -17,7 +17,7 @@
 
 #include "AL/usdmaya/utils/Api.h"
 
-#include <usdUtils/ForwardDeclares.h>
+#include <MayaUsdUtils/ForwardDeclares.h>
 
 #include "maya/MFnMesh.h"
 

@@ -17,7 +17,7 @@
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
-#include <usdUtils/SIMD.h>
+#include <MayaUsdUtils/SIMD.h>
 
 #include "maya/MObject.h"
 #include "maya/MStatus.h"

@@ -20,7 +20,7 @@
 #include "AL/maya/utils/ForwardDeclares.h"
 #include "maya/MString.h"
 
-#include <usdUtils/ForwardDeclares.h>
+#include <MayaUsdUtils/ForwardDeclares.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

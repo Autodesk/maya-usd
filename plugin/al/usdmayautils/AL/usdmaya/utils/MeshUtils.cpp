@@ -19,8 +19,8 @@
 #include "AL/usdmaya/utils/DiffPrimVar.h"
 #include "AL/usdmaya/utils/Utils.h"
 
-#include <usdUtils/DebugCodes.h>
-#include <usdUtils/DiffCore.h>
+#include <MayaUsdUtils/DebugCodes.h>
+#include <MayaUsdUtils/DiffCore.h>
 
 #include "pxr/usd/usdUtils/pipeline.h"
 
@@ -2067,7 +2067,7 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
         fnMesh.getNormalIds(normalCounts, normalIndices);
 
         // if prim vars are all identical, we have a constant value
-        if(MayaUsd::Utils::vec3AreAllTheSame(normalsData, numNormals))
+        if(MayaUsdUtils::vec3AreAllTheSame(normalsData, numNormals))
         {
           VtArray<GfVec3f> normals(1);
           if(copyAsPrimvar)
@@ -2086,7 +2086,7 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
         else
         if(numNormals != normalIndices.length())
         {
-          if(MayaUsd::Utils::compareArray(&normalIndices[0], &faceConnects[0], normalIndices.length(), faceConnects.length()))
+          if(MayaUsdUtils::compareArray(&normalIndices[0], &faceConnects[0], normalIndices.length(), faceConnects.length()))
           {
             VtArray<GfVec3f> normals(numNormals);
             if(copyAsPrimvar)

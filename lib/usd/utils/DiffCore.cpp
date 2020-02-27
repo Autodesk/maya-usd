@@ -18,8 +18,7 @@
 #include <cmath>
 #include <algorithm>
 
-namespace MayaUsd {
-namespace Utils {
+namespace MayaUsdUtils {
 
 //----------------------------------------------------------------------------------------------------------------------
 bool vec2AreAllTheSame(const float* u, const float* v, size_t count)
@@ -1478,5 +1477,4 @@ bool compareRGBAArray(
   return true;
 }
 
-} // MayaUsd
-} // Utils
+} // MayaUsdUtils

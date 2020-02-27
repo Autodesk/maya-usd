@@ -32,7 +32,7 @@
 
 #include <vector>
 #include <string>
-#include <usdUtils/ForwardDeclares.h>
+#include <MayaUsdUtils/ForwardDeclares.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

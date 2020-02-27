@@ -48,7 +48,7 @@ target_compile_definitions(${USDMAYA_UTILS_LIBRARY_NAME}
 )
 
 target_link_libraries(${USDMAYA_UTILS_LIBRARY_NAME}
-  USDUtils
+  MayaUsdUtils
   AL_MayaUtils
   ar 
   gf 

@@ -1,4 +1,4 @@
-set(TARGET_NAME "USDUtils")
+set(TARGET_NAME "MayaUsdUtils")
 
 add_library(${TARGET_NAME} SHARED)
 
@@ -41,7 +41,7 @@ target_link_libraries(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 # promote headers
 # -----------------------------------------------------------------------------
-set(usdutils_headers
+set(headers
     ALHalf.h
     Api.h
     DebugCodes.h
@@ -52,8 +52,8 @@ set(usdutils_headers
 
 mayaUsd_promoteHeaderListWithSubdir( 
     HEADERS 
-        ${usdutils_headers}
-    BASE_PATH "usdUtils"
+        ${headers}
+    BASE_PATH ${TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------
@@ -66,8 +66,8 @@ install(TARGETS ${TARGET_NAME}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd
 )
 
-install(FILES ${usdutils_headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/usdUtils/
+install(FILES ${headers}
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${TARGET_NAME}
 )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")

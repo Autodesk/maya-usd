@@ -21,7 +21,7 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/sdf/path.h"
 
-#include <usdUtils/ForwardDeclares.h>
+#include <MayaUsdUtils/ForwardDeclares.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -76,7 +76,7 @@ public:
   /// \param  proxy the proxy shape
   /// \param  forceImport mirrors the status of the -fi flag
   AL_USDMAYA_PUBLIC
-  PrimFilter(const SdfPathVector& previousPrims, const MayaUsd::Utils::UsdPrimVector& newPrimSet, PrimFilterInterface* proxy, bool forceImport = false);
+  PrimFilter(const SdfPathVector& previousPrims, const MayaUsdUtils::UsdPrimVector& newPrimSet, PrimFilterInterface* proxy, bool forceImport = false);
 
   /// \brief  returns the set of prims to create
   inline const std::vector<UsdPrim>& newPrimSet() const

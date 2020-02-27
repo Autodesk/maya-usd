@@ -845,7 +845,7 @@ public:
   /// \param param are flags which direct the translation of the prims
   AL_USDMAYA_PUBLIC
   void translatePrimsIntoMaya(
-      const MayaUsd::Utils::UsdPrimVector& importPrims,
+      const MayaUsdUtils::UsdPrimVector& importPrims,
       const SdfPathVector& teardownPaths,
       const fileio::translators::TranslatorParameters& param = fileio::translators::TranslatorParameters());
 

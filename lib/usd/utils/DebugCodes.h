@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef UTILS_DEBUGCODES_H
-#define UTILS_DEBUGCODES_H
+#pragma once
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/debug.h"
@@ -22,5 +21,3 @@
 PXR_NAMESPACE_OPEN_SCOPE
 TF_DEBUG_CODES(MAYAUSDUTILS_INFO);
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // UTILS_DEBUGCODES_H

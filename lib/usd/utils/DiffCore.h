@@ -13,15 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef UTILS_DIFFCORE_H
-#define UTILS_DIFFCORE_H
+#pragma once
 
 #include "Api.h"
 #include "ALHalf.h"
 #include <cstdint>
 
-namespace MayaUsd {
-namespace Utils {
+namespace MayaUsdUtils {
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  tests to see whether the U & V coordinates are identical
@@ -445,7 +443,4 @@ bool compareRGBAArray(
     const float eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
-} // MayaUsd
-} // Utils
-
-#endif // UTILS_DIFFCORE_H
+} // MayaUsdUtils
