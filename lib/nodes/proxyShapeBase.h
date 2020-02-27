@@ -98,6 +98,8 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         MAYAUSD_CORE_PUBLIC
         static MObject excludePrimPathsAttr;
         MAYAUSD_CORE_PUBLIC
+        static MObject loadPayloadsAttr;
+        MAYAUSD_CORE_PUBLIC
         static MObject timeAttr;
         MAYAUSD_CORE_PUBLIC
         static MObject complexityAttr;
