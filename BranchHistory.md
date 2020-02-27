@@ -91,3 +91,10 @@ git merge --no-ff github/Autodesk/tremblp/MAYA-103495/contextual_operations
 git merge --no-ff github/roussel/MAYA-103409/Minimal_Create_USD_Stage
 git merge --no-ff github/dev
 ```
+
+```
+Feb 27, 2020:
+git merge --no-ff github/adsk/MAYA-102918/add_mayausd_export_translator
+git merge --no-ff github/fowlert/MAYA-103561/enable_usdz_read
+git merge --no-ff github/roussel/MAYA-103409/Minimal_Create_USD_Stage
+```
