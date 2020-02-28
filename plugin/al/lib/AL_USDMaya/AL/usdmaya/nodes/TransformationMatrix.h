@@ -495,6 +495,36 @@ public:
   void pushShearToPrim();
   void pushTransformToPrim();
 
+  // Helper class.  Creating a variable of this class temporarily disables
+  // push to prim after saving its original state.  When the variable goes
+  // out of scope, the original push to prim state is restored by the
+  // destructor.
+  //
+  class Scoped_DisablePushToPrim
+  {
+  public:
+    Scoped_DisablePushToPrim(TransformationMatrix& tm) : m_transformationMatrix(tm)
+    {
+      m_IsPushToPrimEnabled = m_transformationMatrix.pushToPrimEnabled();
+      m_transformationMatrix.m_flags &= ~TransformationMatrix::kPushToPrimEnabled;
+    }
+
+    ~Scoped_DisablePushToPrim()
+    {
+      if(m_IsPushToPrimEnabled)
+      {
+        m_transformationMatrix.m_flags |= TransformationMatrix::kPushToPrimEnabled;
+      }
+    }
+
+  private:
+    // The TransformationMatrix whose push to prim state is being affected.
+    TransformationMatrix& m_transformationMatrix;
+
+    // Holder for the original value of push to prim state. 
+    bool m_IsPushToPrimEnabled;
+  };
+
 };
 
 //----------------------------------------------------------------------------------------------------------------------

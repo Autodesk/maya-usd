@@ -647,7 +647,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<GfVec3i>()) {
-        if (_HasNumericType(attrPlug, MFnNumericData::k2Int)) {
+        if (_HasNumericType(attrPlug, MFnNumericData::k3Int)) {
             GfVec3i v = newValue.Get<GfVec3i>();
             MFnNumericData data;
             MObject dataObj = data.create(MFnNumericData::k3Int);

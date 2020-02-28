@@ -44,6 +44,10 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/ufe.h")
     endforeach()
     set(UFE_VERSION ${UFE_MAJOR_VERSION}.${UFE_MINOR_VERSION}.${UFE_PATCH_LEVEL})
 
+    if("${UFE_MAJOR_VERSION}" STREQUAL "0")
+        math(EXPR UFE_PREVIEW_VERSION_NUM "${UFE_MINOR_VERSION} * 1000 + ${UFE_PATCH_LEVEL}")
+    endif()
+
     file(STRINGS
         "${UFE_INCLUDE_DIR}/ufe/ufe.h"
         _ufe_features

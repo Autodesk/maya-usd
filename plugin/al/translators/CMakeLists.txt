@@ -1,4 +1,8 @@
-list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas mayaUsd gf plug tf)
+# MayaReference provides import translation for AL_usd_MayaReference.
+# As such, its AL_USDMAYA_DEFINE_TRANSLATOR does a
+# TfType::Find<AL_usd_MayaReference>, which requires AL_usd_MayaReference's
+# typeid.  We must therefore link against mayaUsd_Schemas.
+list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas mayaUsd mayaUsd_Schemas gf plug tf)
 
 set(DIRECTORY_PATH AL/usdmaya/fileio/translators)
 
@@ -70,21 +74,21 @@ target_include_directories(
 
 # handle run-time search paths
 if(IS_MACOSX OR IS_LINUX) 
-    mayaUsd_init_rpath(rpath "plugin")
+    mayaUsd_init_rpath(rpath "lib")
     mayaUsd_add_rpath(rpath "../lib")
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../../../USD/lib")
+    if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
+    if (IS_LINUX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
+    endif()
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../Maya.app/Contents/MacOS")
+    endif()
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     mayaUsd_install_rpath(rpath ${TRANSLATORS_PACKAGE})
-endif()
-
-if (IS_LINUX)
-  if(WANT_USD_RELATIVE_PATH)
-      mayaUsd_add_rpath(rpath "../../../../USD/lib64")
-  endif()
 endif()
 
 target_link_libraries(${TRANSLATORS_PACKAGE} ${DEPENDANT_LIBRARIES})

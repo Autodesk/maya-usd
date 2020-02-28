@@ -91,6 +91,7 @@ list(APPEND mayaUsd_src
     fileio/translators/translatorCurves.cpp
     fileio/translators/translatorGprim.cpp
     fileio/translators/translatorMaterial.cpp
+    fileio/translators/translatorMayaReference.cpp
     fileio/translators/translatorMesh.cpp
     fileio/translators/translatorMesh_PrimVars.cpp
     fileio/translators/translatorMesh_SubDiv.cpp
@@ -314,6 +315,7 @@ list(APPEND mayaUsdTranslators_headers
     fileio/translators/translatorCurves.h
     fileio/translators/translatorGprim.h
     fileio/translators/translatorMaterial.h
+    fileio/translators/translatorMayaReference.h
     fileio/translators/translatorMesh.h
     fileio/translators/translatorNurbsPatch.h
     fileio/translators/translatorPrim.h
@@ -497,19 +499,19 @@ endif()
 
 # handle run-time search paths
 if(IS_MACOSX OR IS_LINUX)
-    mayaUsd_init_rpath(rpath "plugin")
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../USD/lib")
+    mayaUsd_init_rpath(rpath "lib")
+    if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
-    mayaUsd_install_rpath(rpath ${LIBRARY_NAME})
-endif()
-
-if (IS_LINUX)
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../USD/lib64")
+    if (IS_LINUX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
     endif()
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../Maya.app/Contents/MacOS")
+    endif()
+    mayaUsd_install_rpath(rpath ${LIBRARY_NAME})
 endif()
 
 install(TARGETS ${LIBRARY_NAME}
@@ -651,6 +653,9 @@ if(UFE_FOUND)
     if(IS_MACOSX OR IS_LINUX)
         mayaUsd_init_rpath(rpath "${PROJECT_NAME}")
         mayaUsd_add_rpath(rpath "../..")
+        if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+            mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
+        endif()
         mayaUsd_install_rpath(rpath ${UFE_PYTHON_LIBRARY_NAME})
     endif()
 
@@ -753,6 +758,10 @@ set(PYLIB_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/lib)
 if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "lib")
     mayaUsd_add_rpath(rpath "../../..")
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../../Maya.app/Contents/MacOS")
+        mayaUsd_add_rpath(rpath "../../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
+    endif()
     mayaUsd_install_rpath(rpath ${PYTHON_LIBRARY_NAME})
 endif()
 

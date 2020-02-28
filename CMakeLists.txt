@@ -29,8 +29,14 @@ option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
 option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
 option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
 option(BUILD_TESTS "Build tests." ON)
-option(WANT_USD_RELATIVE_PATH "Use relative rpaths for USD libraries" OFF)
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
+
+#==============================================================================
+# Internal flags to control build
+#==============================================================================
+# MAYAUSD_TO_USD_RELATIVE_PATH : Set this variable to any relative path from install
+#                                folder to USD location. If defined will set relative
+#                                rpaths for USD libraries.
 
 # Avoid noisy install messages
 set(CMAKE_INSTALL_MESSAGE "NEVER")
