@@ -16,7 +16,7 @@
 #pragma once
 #include <AL/usdmaya/ForwardDeclares.h>
 
-#include <MayaUsdUtils/ForwardDeclares.h>
+#include <mayaUsdUtils/ForwardDeclares.h>
 
 #include "maya/MSelectionList.h"
 #include "maya/MStringArray.h"

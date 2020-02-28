@@ -19,8 +19,8 @@
 #include "AL/usdmaya/utils/DiffPrimVar.h"
 #include "AL/usdmaya/utils/Utils.h"
 
-#include <MayaUsdUtils/DebugCodes.h>
-#include <MayaUsdUtils/DiffCore.h>
+#include <mayaUsdUtils/DebugCodes.h>
+#include <mayaUsdUtils/DiffCore.h>
 
 #include "pxr/usd/usdUtils/pipeline.h"
 

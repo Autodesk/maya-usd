@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/utils/DiffPrimVar.h"
-#include <MayaUsdUtils/SIMD.h>
-#include <MayaUsdUtils/DiffCore.h>
+#include <mayaUsdUtils/SIMD.h>
+#include <mayaUsdUtils/DiffCore.h>
 
 #include "maya/MDoubleArray.h"
 #include "maya/MFloatArray.h"

@@ -1,5 +1,5 @@
-#include <MayaUsdUtils/DiffCore.h>
-#include <MayaUsdUtils/ALHalf.h>
+#include <mayaUsdUtils/DiffCore.h>
+#include <mayaUsdUtils/ALHalf.h>
 
 #include <gtest/gtest.h>
 

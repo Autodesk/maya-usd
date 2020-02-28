@@ -21,7 +21,7 @@
 #include "pxr/usd/sdf/layer.h"
 #include "AL/maya/utils/FileTranslatorOptions.h"
 
-#include <MayaUsdUtils/ForwardDeclares.h>
+#include <mayaUsdUtils/ForwardDeclares.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -20,7 +20,7 @@
 #include "AL/usdmaya/utils/DgNodeHelper.h"
 #include "AL/usdmaya/utils/Utils.h"
 
-#include <MayaUsdUtils/DiffCore.h>
+#include <mayaUsdUtils/DiffCore.h>
 
 #include "maya/MDoubleArray.h"
 #include "maya/MFloatArray.h"

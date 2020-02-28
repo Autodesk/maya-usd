@@ -16,8 +16,8 @@
 #include "AL/usdmaya/utils/DgNodeHelper.h"
 #include "AL/maya/utils/NodeHelper.h"
 
-#include <MayaUsdUtils/ALHalf.h>
-#include <MayaUsdUtils/SIMD.h>
+#include <mayaUsdUtils/ALHalf.h>
+#include <mayaUsdUtils/SIMD.h>
 
 #include "maya/MDGModifier.h"
 #include "maya/MFloatArray.h"

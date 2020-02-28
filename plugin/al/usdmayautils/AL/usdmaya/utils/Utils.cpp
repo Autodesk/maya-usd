@@ -16,7 +16,7 @@
 #include "AL/usdmaya/utils/Utils.h"
 #include "AL/maya/utils/Utils.h"
 
-#include <MayaUsdUtils/DebugCodes.h>
+#include <mayaUsdUtils/DebugCodes.h>
 
 #include "maya/MDagPath.h"
 #include "maya/MEulerRotation.h"

@@ -17,7 +17,7 @@
 #pragma once
 
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
-#include <MayaUsdUtils/ForwardDeclares.h>
+#include <mayaUsdUtils/ForwardDeclares.h>
 
 namespace AL {
 namespace usdmaya {
