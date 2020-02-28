@@ -218,9 +218,25 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         Ufe::Path ufePath() const;
 #endif
 
+        /// Returns whether the proxy shape allows subpaths within its
+        /// hierarchy to be selected independently when using the Viewport 2.0
+        /// render delegate.
+        ///
+        /// UFE/subpath selection must be enabled or disabled when constructing
+        /// the proxy shape. This is primarily intended as a mechanism for
+        /// UsdMayaProxyShape to disable UFE/subpath selection. Most of the
+        /// usage of pxrUsdProxyShape nodes is when they are brought in by
+        /// activating the "Collapsed" representation of
+        /// pxrUsdReferenceAssembly nodes. In that case, they are intended to
+        /// be read-only proxies, and any edits to prims within the hierarchy
+        /// should be represented as assembly edits.
+        bool isUfeSelectionEnabled() const {
+            return _isUfeSelectionEnabled;
+        }
+
     protected:
         MAYAUSD_CORE_PUBLIC
-        MayaUsdProxyShapeBase();
+        MayaUsdProxyShapeBase(const bool enableUfeSelection = true);
 
         MAYAUSD_CORE_PUBLIC
         ~MayaUsdProxyShapeBase() override;
@@ -287,6 +303,9 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         size_t                              _excludePrimPathsVersion{ 1 };
 
         static ClosestPointDelegate _sharedClosestPointDelegate;
+
+        // Whether or not the proxy shape has enabled UFE/subpath selection
+        const bool _isUfeSelectionEnabled;
 };
 
 
