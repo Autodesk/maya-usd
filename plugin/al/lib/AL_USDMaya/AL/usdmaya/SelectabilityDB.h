@@ -16,6 +16,7 @@
 #pragma once
 
 #include "AL/usdmaya/Api.h"
+#include "AL/usdmaya/ForwardDeclares.h"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
@@ -28,8 +29,19 @@ namespace usdmaya {
 ///---------------------------------------------------------------------------------------------------------------------
 /// \brief  Logic that stores a sorted list of paths which represent Selectable points in the USD hierarchy
 ///---------------------------------------------------------------------------------------------------------------------
-class SelectabilityDB {
+class SelectabilityDB
+{
+  // at little unpleasant design wise, however it means the proxy shape can directly modify the internal 
+  // list of unselectable paths. I have looked at moving some of that logic into this class, however that would
+  // incur a performance penalty (lock & excluded prim processing can be done at the same time).
+  friend class nodes::ProxyShape;
 public:
+
+  SelectabilityDB()
+    : m_unselectablePaths()
+  {
+    m_unselectablePaths.reserve(128);
+  }
 
   ///-------------------------------------------------------------------------------------------------------------------
   /// \brief  Determines this path is unselectable
@@ -39,11 +51,37 @@ public:
   bool isPathUnselectable(const SdfPath& path) const;
 
   ///-------------------------------------------------------------------------------------------------------------------
+  /// \brief  Determines whether there is an internal entry for the path specified (and only this path!). If you wish 
+  ///         to determine selectability, call isPathUnselectable instead.
+  /// \param  path the path to check to see if exists
+  /// \return true if the path is contained, false if not.
+  ///-------------------------------------------------------------------------------------------------------------------
+  bool containsPath(const SdfPath& path) const
+  {
+    auto foundPathEntry = std::lower_bound(m_unselectablePaths.begin(), m_unselectablePaths.end(), path);
+    if(foundPathEntry != m_unselectablePaths.end() && path == *foundPathEntry)
+    {
+      return true;
+    }
+    return false;
+  }
+
+  ///-------------------------------------------------------------------------------------------------------------------
   /// \brief  Adds a list of paths to the selectable list
   /// \param  paths which will be added as selectable. All children paths will be also unselectable
   ///-------------------------------------------------------------------------------------------------------------------
   AL_USDMAYA_PUBLIC
   void addPathsAsUnselectable(const SdfPathVector& paths);
+
+  ///-------------------------------------------------------------------------------------------------------------------
+  /// \brief  Sets a list of paths to the selectable list
+  /// \param  paths which will be added as selectable. All children paths will be also unselectable
+  ///-------------------------------------------------------------------------------------------------------------------
+  void setPathsAsUnselectable(const SdfPathVector& paths)
+  {
+    m_unselectablePaths = paths;
+    std::sort(m_unselectablePaths.begin(), m_unselectablePaths.end());
+  }
 
   ///-------------------------------------------------------------------------------------------------------------------
   /// \brief  Adds a path to the unselectable list
@@ -73,7 +111,6 @@ public:
   void removePathAsUnselectable(const SdfPath& path);
 
 private:
-  inline void sort(){std::sort(m_unselectablePaths.begin(), m_unselectablePaths.end());}
   bool addUnselectablePath(const SdfPath& path);
   bool removeUnselectablePath(const SdfPath& path);
 
