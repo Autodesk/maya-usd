@@ -26,7 +26,6 @@ list(APPEND DEPENDANT_LIBRARIES
     usdSkel
     usdUtils
     vt
-    OpenMayaFX
     ${MAYA_LIBRARIES}
     ${LIBRARY_NAME}
 	mayaUsd_Schemas
